@@ -18,7 +18,7 @@ void BookBaseList()
 {
   // ...
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -36,16 +36,16 @@ void BookBaseList()
   // Remark: If I want to change the ordering of bin lables, simply change the
   // ordering in enum eConfiguration { ... }, nothing needs to be changed here.
   fBasePro->GetXaxis()->SetBinLabel(eTaskName,
-                                    Form("fTaskName = %s", fTaskName.Data()));
+                                    Form("fTaskName = %s", tc.fTaskName.Data())); // TBI 20240115 or use the full name tc.fTaskName ?
   fBasePro->GetXaxis()->SetBinLabel(eRunNumber,
-                                    Form("fRunNumber = %s", fRunNumber.Data()));
-  fBasePro->GetXaxis()->SetBinLabel(eVerbose, "fVerbose");
-  fBasePro->Fill(eVerbose - 0.5, (Int_t)fVerbose);
+                                    Form("tc.fRunNumber = %s", tc.fRunNumber.Data()));
+  fBasePro->GetXaxis()->SetBinLabel(eVerbose, "fVerbose"); // TBI 20240115 or use the full name tc.fVerbose ?
+  fBasePro->Fill(eVerbose - 0.5, (Int_t)tc.fVerbose);
   fBasePro->GetXaxis()->SetBinLabel(eVerboseForEachParticle,
-                                    "fVerboseForEachParticle");
-  fBasePro->Fill(eVerboseForEachParticle - 0.5, (Int_t)fVerboseForEachParticle);
-  fBasePro->GetXaxis()->SetBinLabel(eUseCCDB, "fUseCCDB");
-  fBasePro->Fill(eUseCCDB - 0.5, (Int_t)fUseCCDB);
+                                    "fVerboseForEachParticle"); // TBI 20240115 or use the full name tc.fVerboseForEachParticle ?
+  fBasePro->Fill(eVerboseForEachParticle - 0.5, (Int_t)tc.fVerboseForEachParticle);
+  fBasePro->GetXaxis()->SetBinLabel(eUseCCDB, "fUseCCDB"); // TBI 20240115 or use the full name tc.fUseCCDB ?
+  fBasePro->Fill(eUseCCDB - 0.5, (Int_t)tc.fUseCCDB);
 
   fBaseList->Add(fBasePro);
 
@@ -59,18 +59,18 @@ void WhatToProcess()
   // Use in combination with configurable cfWhatToProcess.
   // TBI 20231017 I call this function, but it still has no desired effect, until I can call PROCESS_SWITCH(  ) by passing a variable, instead only literals 'true' or 'false', as it is now
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
-  if (fWhatToProcess.EqualTo("Rec")) {
+  if (tc.fWhatToProcess.EqualTo("Rec")) {
     gProcessRec = true;
-  } else if (fWhatToProcess.EqualTo("RecSim")) {
+  } else if (tc.fWhatToProcess.EqualTo("RecSim")) {
     gProcessRecSim = true;
-  } else if (fWhatToProcess.EqualTo("Sim")) {
+  } else if (tc.fWhatToProcess.EqualTo("Sim")) {
     gProcessSim = true;
   } else {
-    LOGF(info, "\033[1;32m This option is not supported! fWhatToProcess = %s \033[0m", fWhatToProcess.Data());
+    LOGF(info, "\033[1;32m This option is not supported! tc.fWhatToProcess = %s \033[0m", tc.fWhatToProcess.Data());
     LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
   }
 
@@ -91,8 +91,9 @@ void DefaultConfiguration()
 {
   // Default task configuration.
   // a) Default values are hardcoded as Configurables in the file
-  // MuPa-Configurables.h b) If corresponding fields are available in an
-  // external json file at run time, the default values hardcoded here are
+  // MuPa-Configurables.h
+
+  // b) If corresponding fields are available in an external json file at run time, the default values hardcoded here are
   // overwritten with values set in json file.
   //    Remember #1: To take into account configuration from external json file,
   //    use additional flag for executable, e.g.: --configuration
@@ -104,27 +105,36 @@ void DefaultConfiguration()
   //    identical to the internal definitions in MuPa-Configurables.h, the
   //    settings in json file are silently ignored.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
   // Configurable<string> cfTaskName{ ... }
-  fTaskName = TString(cfTaskName);
+  tc.fTaskName = TString(cfTaskName);
 
   // Configurable<bool> cfVerbose{ ... }
-  fVerbose = cfVerbose;
+  tc.fVerbose = cfVerbose;
 
   // Configurable<bool> cfVerboseForEachParticle{ ... }
-  fVerboseForEachParticle = cfVerboseForEachParticle;
+  tc.fVerboseForEachParticle = cfVerboseForEachParticle;
 
   // Configurable<bool> cfDoAdditionalInsanityChecks{ ... }
-  fDoAdditionalInsanityChecks = cfDoAdditionalInsanityChecks;
+  tc.fDoAdditionalInsanityChecks = cfDoAdditionalInsanityChecks;
 
   // Configurable<bool> cfUseCCDB{ ... }
-  fUseCCDB = cfUseCCDB;
+  tc.fUseCCDB = cfUseCCDB;
 
   // Configurable<string> cfWhatToProcess{ ... )
-  fWhatToProcess = TString(cfWhatToProcess);
+  tc.fWhatToProcess = TString(cfWhatToProcess);
+
+  // Configurable<unsigned int> cfRandomSeed{ ... )
+  tc.fRandomSeed = cfRandomSeed;
+
+  // Configurable<bool> cfUseFisherYates{ ... }
+  tc.fUseFisherYates = cfUseFisherYates;
+
+  // Configurable<int> cfFixedNumberOfRandomlySelectedTracks{ ... }
+  tc.fFixedNumberOfRandomlySelectedTracks = cfFixedNumberOfRandomlySelectedTracks;
 
   // ...
 
@@ -156,15 +166,16 @@ void DefaultConfiguration()
 
   // ...
 
+  // *) Nested loops:
+  // Configurable<string> cfCalculateNestedLoops{ ... }
+  fCalculateNestedLoops = cfCalculateNestedLoops;
+
+  // Configurable<string> cfCalculateCustomNestedLoops{ ... }
+  fCalculateCustomNestedLoop = cfCalculateCustomNestedLoops;
+
+  // *) TBI 20231108 not ported yet:
   // task->SetCalculateQvector(kTRUE);
   fCalculateQvector = kTRUE;
-
-  // task->SetCalculateNestedLoops(kFALSE);
-  fCalculateNestedLoops = kFALSE;
-
-  // task->SetCalculateCustomNestedLoop(kFALSE); // independent e-b-e
-  // cross-check with custom nested loop
-  fCalculateCustomNestedLoop = kFALSE;
 
 } // void DefaultConfiguration()
 
@@ -178,7 +189,7 @@ void DefaultBooking()
   // b) Particle histograms;
   // c) QA;
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -216,10 +227,15 @@ void DefaultBinning()
 {
   // Default binning for all histograms.
 
+  // TBI 20240114 If some of these values are going to change frequently, add support for them in MuPa-Configurables.h,
+  // in the same way I did it for DefaultCuts().
+
   // a) Default binning for event histograms;
   // b) Default binning for particle histograms;
+  // c) Default binning for results histograms;
+  // d) Variable-length binning set via MuPa-Configurables.h.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -287,9 +303,92 @@ void DefaultBinning()
   cph_a.fParticleHistogramsBins[eDCA_z][1] = -10.;
   cph_a.fParticleHistogramsBins[eDCA_z][2] = 10.;
 
-  // ...
+  // c) Default binning for results histograms:
+  //    Remark: These bins apply to following categories fCorrelationsPro, fNestedLoopsPro, fTest0Pro, and fResultsHist.
+  rh_a.fResultsHistogramsFixedLengthBins[AFO_INTEGRATED][0] = 1;
+  rh_a.fResultsHistogramsFixedLengthBins[AFO_INTEGRATED][1] = 0.;
+  rh_a.fResultsHistogramsFixedLengthBins[AFO_INTEGRATED][2] = 1.;
+
+  rh_a.fResultsHistogramsFixedLengthBins[AFO_MULTIPLICITY][0] = 1000;
+  rh_a.fResultsHistogramsFixedLengthBins[AFO_MULTIPLICITY][1] = 0.;
+  rh_a.fResultsHistogramsFixedLengthBins[AFO_MULTIPLICITY][2] = 5000.;
+
+  rh_a.fResultsHistogramsFixedLengthBins[AFO_CENTRALITY][0] = 100;
+  rh_a.fResultsHistogramsFixedLengthBins[AFO_CENTRALITY][1] = 0.;
+  rh_a.fResultsHistogramsFixedLengthBins[AFO_CENTRALITY][2] = 100.;
+
+  rh_a.fResultsHistogramsFixedLengthBins[AFO_PT][0] = cph_a.fParticleHistogramsBins[ePt][0];
+  rh_a.fResultsHistogramsFixedLengthBins[AFO_PT][1] = cph_a.fParticleHistogramsBins[ePt][1];
+  rh_a.fResultsHistogramsFixedLengthBins[AFO_PT][2] = cph_a.fParticleHistogramsBins[ePt][2];
+
+  rh_a.fResultsHistogramsFixedLengthBins[AFO_ETA][0] = cph_a.fParticleHistogramsBins[eEta][0];
+  rh_a.fResultsHistogramsFixedLengthBins[AFO_ETA][1] = cph_a.fParticleHistogramsBins[eEta][1];
+  rh_a.fResultsHistogramsFixedLengthBins[AFO_ETA][2] = cph_a.fParticleHistogramsBins[eEta][2];
+
+  // d) Variable-length binning set via MuPa-Configurables.h:
+  if (cUseVariableLength_mult_bins) {
+    rh_a.fUseResultsHistogramsVariableLengthBins[AFO_MULTIPLICITY] = kTRUE;
+    rh_a.fResultsHistogramsVariableLengthBinsString[AFO_MULTIPLICITY] = cVariableLength_mult_bins;
+    this->CastStringIntoArray(AFO_MULTIPLICITY);
+  }
+  if (cUseVariableLength_cent_bins) {
+    rh_a.fUseResultsHistogramsVariableLengthBins[AFO_CENTRALITY] = kTRUE;
+    rh_a.fResultsHistogramsVariableLengthBinsString[AFO_CENTRALITY] = cVariableLength_cent_bins;
+    this->CastStringIntoArray(AFO_CENTRALITY);
+  }
+  if (cUseVariableLength_pt_bins) {
+    rh_a.fUseResultsHistogramsVariableLengthBins[AFO_PT] = kTRUE;
+    rh_a.fResultsHistogramsVariableLengthBinsString[AFO_PT] = cVariableLength_pt_bins;
+    this->CastStringIntoArray(AFO_PT);
+  }
+  if (cUseVariableLength_eta_bins) {
+    rh_a.fUseResultsHistogramsVariableLengthBins[AFO_ETA] = kTRUE;
+    rh_a.fResultsHistogramsVariableLengthBinsString[AFO_ETA] = cVariableLength_eta_bins;
+    this->CastStringIntoArray(AFO_ETA);
+  }
 
 } // void DefaultBinning()
+
+//============================================================
+
+void CastStringIntoArray(Int_t AFO)
+{
+  // Temporary function, to be removed eventually. Here temporarily I am casting e.g. a string "1.0,2.0,5.0" into corresponding TArrayD.
+  // TBI 20240114 This function is used until I figure out how to pass array directly via configurable.
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
+  }
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m Casting a string %s into TArrayD .... \033[0m", rh_a.fResultsHistogramsVariableLengthBinsString[AFO].Data());
+  }
+
+  TObjArray* oa = rh_a.fResultsHistogramsVariableLengthBinsString[AFO].Tokenize(",");
+  if (!oa) {
+    LOGF(fatal, "in function \033[1;31m%s at line %d \n fResultsHistogramsVariableLengthBinsString[AFO] = %s\033[0m", __PRETTY_FUNCTION__, __LINE__, rh_a.fResultsHistogramsVariableLengthBinsString[AFO].Data());
+    cout << __LINE__ << endl;
+    exit(1);
+  }
+  Int_t nEntries = oa->GetEntries();
+  rh_a.fResultsHistogramsVariableLengthBins[AFO] = new TArrayD(nEntries);
+  for (Int_t i = 0; i < nEntries; i++) {
+    // cout<< TString(oa->At(i)->GetName()).Atof() <<endl;
+    rh_a.fResultsHistogramsVariableLengthBins[AFO]->AddAt(TString(oa->At(i)->GetName()).Atof(), i);
+  }
+  delete oa; // yes, otherwise it's a memory leak
+
+  if (tc.fVerbose) {
+    for (Int_t i = 0; i < rh_a.fResultsHistogramsVariableLengthBins[AFO]->GetSize(); i++) {
+      LOGF(info, "\033[1;32m [%d] : %f \033[0m", i, rh_a.fResultsHistogramsVariableLengthBins[AFO]->At(i));
+    }
+  }
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m Done! \033[0m");
+  }
+
+} // void CastStringIntoArray(Int_t AFO)
 
 //============================================================
 
@@ -300,7 +399,7 @@ void DefaultCuts()
   // a) Default event cuts;
   // b) Default particle cuts.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -370,6 +469,41 @@ void DefaultCuts()
 
 //============================================================
 
+void InsanityChecks()
+{
+  // Do insanity checks on configuration, booking, binning and cuts.
+
+  // *) Insanity checks on configuration;
+  // *) Insanity checks on booking;
+  // *) Insanity checks on binning;
+  // *) Insanity checks on cuts.
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
+  }
+
+  // *) Insanity checks on configuration:
+  if (tc.fRandomSeed < 0) {
+    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+  }
+
+  if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && !tc.fUseFisherYates) {
+    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+  }
+
+  // *) Insanity checks on booking:
+  // ...
+
+  // *) Insanity checks on binning:
+  // ...
+
+  // *) Insanity checks on cuts:
+  // ...
+
+} // void InsanityChecks()
+
+//============================================================
+
 void BookAndNestAllLists()
 {
   // *) QA;
@@ -382,7 +516,7 @@ void BookAndNestAllLists()
   // *) Test0;
   // *) Results.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -451,7 +585,7 @@ void BookEventHistograms()
   // a) Book the profile holding flags;
   // b) Book specific event histograms.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -515,7 +649,7 @@ void BookParticleHistograms()
   // a) Book the profile holding flags;
   // b) Book specific particle histograms.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -580,7 +714,7 @@ void BookQvectorHistograms()
   // a) Book the profile holding flags;
   // b) ...
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -613,7 +747,7 @@ void BookCorrelationsHistograms()
   // b) Common local labels;
   // c) Histograms.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -641,34 +775,31 @@ void BookCorrelationsHistograms()
     "#varphi_{1}+#varphi_{2}+#varphi_{3}+#varphi_{4}-#varphi_{5}-#varphi_{6}-"
     "#varphi_{7}-#varphi_{8}"};
 
-  TString vvVariable[3] = {"int", "mult", "cent"};
-
   // c) Histograms:
   for (Int_t k = 0; k < 4; k++) // order [2p=0,4p=1,6p=2,8p=3]
   {
     for (Int_t n = 0; n < 6; n++) // harmonic [n=1,n=2,...,n=6]
     {
-      for (Int_t v = 0; v < 3;
-           v++) // variable [0=integrated,1=vs. multiplicity,2=vs. centrality]
+      for (Int_t v = 0; v < eAsFunctionOf_N;
+           v++) // variable [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pt,4=eta]
       {
-        // ... TBI 20220809 ... port the rest
+        // per demand, variable-length binning:
+        if (rh_a.fUseResultsHistogramsVariableLengthBins[v]) {
+          c_a.fCorrelationsPro[k][n][v] = new TProfile(Form("fCorrelationsPro[%d][%d][%s]", k, n, rh_a.fResultsHistogramsRawName[v].Data()), "some title", rh_a.fResultsHistogramsVariableLengthBins[v]->GetSize() - 1, rh_a.fResultsHistogramsVariableLengthBins[v]->GetArray());
+        } else {
+          // the default fixed-length binning:
+          c_a.fCorrelationsPro[k][n][v] = new TProfile(Form("fCorrelationsPro[%d][%d][%s]", k, n, rh_a.fResultsHistogramsRawName[v].Data()),
+                                                       "some title", (Int_t)rh_a.fResultsHistogramsFixedLengthBins[v][0], rh_a.fResultsHistogramsFixedLengthBins[v][1], rh_a.fResultsHistogramsFixedLengthBins[v][2]);
+        }
 
-        // c_a.fCorrelationsPro[k][n][v] = new
-        // TProfile(Form("c_a.fCorrelationsPro[%d][%d][%s]",k,n,vvVariable[v].Data()),harmonicArray.Data(),vvvariableNBins[v],vvvariableMinMax[v][0],vvvariableMinMax[v][1]);
-        c_a.fCorrelationsPro[k][n][v] = new TProfile(
-          Form("fCorrelationsPro[%d][%d][%s]", k, n, vvVariable[v].Data()),
-          "some title", 2000, 0., 2000.);
         c_a.fCorrelationsPro[k][n][v]->SetStats(kFALSE);
         c_a.fCorrelationsPro[k][n][v]->Sumw2();
-        c_a.fCorrelationsPro[k][n][v]->GetXaxis()->SetTitle(
-          vvVariable[v].Data());
-        c_a.fCorrelationsPro[k][n][v]->GetYaxis()->SetTitle(
-          Form("#LT#LTcos[%s(%s)]#GT#GT", 1 == n + 1 ? "" : Form("%d", n + 1),
-               oVariable[k].Data()));
+        c_a.fCorrelationsPro[k][n][v]->GetXaxis()->SetTitle(rh_a.fResultsHistogramsXaxisTitle[v].Data());
+        c_a.fCorrelationsPro[k][n][v]->GetYaxis()->SetTitle(Form("#LT#LTcos[%s(%s)]#GT#GT", 1 == n + 1 ? "" : Form("%d", n + 1), oVariable[k].Data()));
         fCorrelationsList->Add(c_a.fCorrelationsPro[k][n][v]);
       }
     }
-  }
+  } // for (Int_t k = 0; k < 4; k++) // order [2p=0,4p=1,6p=2,8p=3]
 
 } // BookCorrelationsHistograms()
 
@@ -682,7 +813,7 @@ void BookWeightsHistograms()
   // b) Common local labels;
   // c) Histograms.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -743,7 +874,7 @@ void BookNestedLoopsHistograms()
   // a) Book the profile holding flags;
   // *) ...
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -782,64 +913,38 @@ void BookNestedLoopsHistograms()
     "#varphi_{1}+#varphi_{2}+#varphi_{3}+#varphi_{4}-#varphi_{5}-#varphi_{6}-"
     "#varphi_{7}-#varphi_{8}"};
 
-  /*
-  Int_t vvvariableNBins[5] =
-  {1,(Int_t)fMultiplicityBins[0],(Int_t)fCentralityBins[0],
-                              fUseCustomKineDependenceBins[PTq] ?
-  fKineDependenceBins[PTq]->GetSize()-1 : (Int_t)fKinematicsBins[PT][0],
-                              fUseCustomKineDependenceBins[ETAq] ?
-  fKineDependenceBins[ETAq]->GetSize()-1 : (Int_t)fKinematicsBins[ETA][0]};
-  Double_t vvvariableMinMax[5][2] = { {0.,1.}, // integrated
-                                      {fMultiplicityBins[1],fMultiplicityBins[2]},
-  // multiplicity {fCentralityBins[1],fCentralityBins[2]}, // centrality
-                                      {fKinematicsBins[PT][1],fKinematicsBins[PT][2]},
-                                      {fKinematicsBins[ETA][1],fKinematicsBins[ETA][2]}
-                                    };
-  */
-
-  TString vvVariable[3] = {"integrated", "multiplicity", "centrality"};
-
   for (Int_t k = 0; k < 4; k++) // order [2p=0,4p=1,6p=2,8p=3]
   {
     for (Int_t n = 0; n < 6; n++) // harmonic [n=1,n=2,...,n=6]
     {
-      for (Int_t v = 0; v < 3;
-           v++) // variable [0=integrated,1=vs. multiplicity,2=vs. centrality]
+      for (Int_t v = 0; v < eAsFunctionOf_N;
+           v++) // variable [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pt,4=eta]
       {
 
         // if(PTKINE == v  && !fCalculatePtCorrelations){continue;}
         // if(ETAKINE == v  && !fCalculateEtaCorrelations){continue;}
 
-        /*
-        // per demand, custom meeting for kine dependence:
-        if(PTKINE == v  && fUseCustomKineDependenceBins[PTq])
-        {
-         fNestedLoopsPro[k][n][v] = new
-        TProfile(Form("fNestedLoopsPro[%d][%d][%d]",k,n,v),Form("#LT#LTcos[%s(%s)]#GT#GT",1==n+1?"":Form("%d",n+1),oVariable[k].Data()),fKineDependenceBins[PTq]->GetSize()-1,fKineDependenceBins[PTq]->GetArray());
-        }
-        else if(ETAKINE == v  && fUseCustomKineDependenceBins[ETAq])
-        {
-         fNestedLoopsPro[k][n][v] = new
-        TProfile(Form("fNestedLoopsPro[%d][%d][%d]",k,n,v),Form("#LT#LTcos[%s(%s)]#GT#GT",1==n+1?"":Form("%d",n+1),oVariable[k].Data()),fKineDependenceBins[ETAq]->GetSize()-1,fKineDependenceBins[ETAq]->GetArray());
-        }
-        else
-        {
-        */
-        // the default binning:
-        // fNestedLoopsPro[k][n][v] = new
-        // TProfile(Form("fNestedLoopsPro[%d][%d][%d]",k,n,v),Form("#LT#LTcos[%s(%s)]#GT#GT",1==n+1?"":Form("%d",n+1),oVariable[k].Data()),vvvariableNBins[v],vvvariableMinMax[v][0],vvvariableMinMax[v][1]);
-        nl_a.fNestedLoopsPro[k][n][v] = new TProfile(
-          Form("fNestedLoopsPro[%d][%d][%d]", k, n, v),
-          Form("#LT#LTcos[%s(%s)]#GT#GT", 1 == n + 1 ? "" : Form("%d", n + 1),
-               oVariable[k].Data()),
-          2000, 0., 2000.);
-        // } // else
+        // per demand, variable-length binning:
+        if (rh_a.fUseResultsHistogramsVariableLengthBins[v]) {
+          nl_a.fNestedLoopsPro[k][n][v] = new TProfile(
+            Form("fNestedLoopsPro[%d][%d][%d]", k, n, v),
+            Form("#LT#LTcos[%s(%s)]#GT#GT", 1 == n + 1 ? "" : Form("%d", n + 1),
+                 oVariable[k].Data()),
+            rh_a.fResultsHistogramsVariableLengthBins[v]->GetSize() - 1, rh_a.fResultsHistogramsVariableLengthBins[v]->GetArray());
+        } else {
+          // the default fixed-length binning:
+          nl_a.fNestedLoopsPro[k][n][v] = new TProfile(
+            Form("fNestedLoopsPro[%d][%d][%d]", k, n, v),
+            Form("#LT#LTcos[%s(%s)]#GT#GT", 1 == n + 1 ? "" : Form("%d", n + 1),
+                 oVariable[k].Data()),
+            (Int_t)rh_a.fResultsHistogramsFixedLengthBins[v][0], rh_a.fResultsHistogramsFixedLengthBins[v][1], rh_a.fResultsHistogramsFixedLengthBins[v][2]);
+        } // else
+
         nl_a.fNestedLoopsPro[k][n][v]->SetStats(kFALSE);
         nl_a.fNestedLoopsPro[k][n][v]->Sumw2();
         nl_a.fNestedLoopsPro[k][n][v]->GetXaxis()->SetTitle(
-          vvVariable[v].Data());
-        // fNestedLoopsPro[k][n][v]->SetFillColor(colorsW[v]-10);
-        // fNestedLoopsPro[k][n][v]->SetLineColor(colorsW[v]);
+          rh_a.fResultsHistogramsXaxisTitle[v].Data());
+
         /*
         if(fUseFixedNumberOfRandomlySelectedTracks && 1==v) // just a warning
         for the meaning of multiplicity in this special case
@@ -869,7 +974,7 @@ void BookTest0Histograms()
   // c) Retreive labels from placeholder;
   // d) Book what needs to be booked.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -897,6 +1002,45 @@ void BookTest0Histograms()
          __PRETTY_FUNCTION__, __LINE__);
   }
 
+  // d) Book what needs to be booked:
+  for (Int_t mo = 0; mo < gMaxCorrelator; mo++) {
+    for (Int_t mi = 0; mi < gMaxIndex; mi++) {
+      if (!t0_a.fTest0Labels[mo][mi]) {
+        continue;
+      }
+      {
+        for (Int_t v = 0; v < eAsFunctionOf_N; v++) {
+          /*
+                // decide what is booked, then later valid pointer to fCorrelationsPro[k][n][v] is used as a boolean, in the standard way:
+                if(AFO_INTEGRATED == v && fDoNotCalculateCorrelationsAsFunctionOf[AFO_INTEGRATED]){continue;}
+                if(AFO_MULTIPLICITY == v && fDoNotCalculateCorrelationsAsFunctionOf[AFO_MULTIPLICITY]){continue;}
+                if(AFO_CENTRALITY == v && fDoNotCalculateCorrelationsAsFunctionOf[AFO_CENTRALITY]){continue;}
+                if(AFO_PT == v && fDoNotCalculateCorrelationsAsFunctionOf[AFO_PT]){continue;}
+                if(AFO_ETA == v && fDoNotCalculateCorrelationsAsFunctionOf[AFO_ETA]){continue;}
+          */
+
+          // per demand, variable-length binning:
+          if (rh_a.fUseResultsHistogramsVariableLengthBins[v]) {
+            t0_a.fTest0Pro[mo][mi][v] = new TProfile(Form("fTest0Pro[%d][%d][%s]", mo, mi, rh_a.fResultsHistogramsRawName[v].Data()), t0_a.fTest0Labels[mo][mi]->Data(), rh_a.fResultsHistogramsVariableLengthBins[v]->GetSize() - 1, rh_a.fResultsHistogramsVariableLengthBins[v]->GetArray());
+          } else {
+            // the default fixed-length binning:
+            t0_a.fTest0Pro[mo][mi][v] = new TProfile(Form("fTest0Pro[%d][%d][%s]", mo, mi, rh_a.fResultsHistogramsRawName[v].Data()), t0_a.fTest0Labels[mo][mi]->Data(), (Int_t)rh_a.fResultsHistogramsFixedLengthBins[v][0], rh_a.fResultsHistogramsFixedLengthBins[v][1], rh_a.fResultsHistogramsFixedLengthBins[v][2]);
+          }
+          t0_a.fTest0Pro[mo][mi][v]->SetStats(kFALSE);
+          t0_a.fTest0Pro[mo][mi][v]->Sumw2();
+          t0_a.fTest0Pro[mo][mi][v]->GetXaxis()->SetTitle(rh_a.fResultsHistogramsXaxisTitle[v].Data());
+          /*
+                if(fUseFixedNumberOfRandomlySelectedParticles && 1==v) // just a warning for the meaning of multiplicity in this special case
+                {
+                 fTest0Pro[mo][mi][1]->GetXaxis()->SetTitle("WARNING: for each multiplicity, fFixedNumberOfRandomlySelectedParticles is selected randomly in Q-vector");
+                }
+          */
+          fTest0List->Add(t0_a.fTest0Pro[mo][mi][v]); // yes, this has to be here
+        }                                             // for(Int_t v=0;v<eAsFunctionOf_N;v++) // variable, see content of enum eAsFunctionOf
+      }                                               // if(fTest0Labels[mo][mi])
+    }                                                 // for(Int_t mi=0;mi<gMaxIndex;mi++)
+  }                                                   // for(Int_t mo=0;mo<gMaxCorrelator;mo++)
+
 } // void BookTest0Histograms()
 
 //============================================================
@@ -908,7 +1052,7 @@ void BookResultsHistograms()
   // a) Book the profile holding flags;
   // *) ...
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -934,20 +1078,21 @@ void Preprocess(T const& collision)
 {
   // Do all thingies before starting to process data (e.g. count number of events, fetch the run number, etc.).
 
-  if (fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
+  if (tc.fVerbose) {
+    // LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__); // full function signature (including arguments, etc.), too verbose here...
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__); // just a bare function name
   }
 
   // *) If I reached max number of events, ignore the remaining collisions:
   if (MaxNumberOfEvents()) {
-    fProcessRemainingEvents = kFALSE;
+    tc.fProcessRemainingEvents = kFALSE;
   }
 
   // *) Determine and propagate run number info to already booked objects:
-  if (!fRunNumberIsDetermined) {
+  if (!tc.fRunNumberIsDetermined) {
     DetermineAndPropagateRunNumber(collision);
   }
-  if (fDoAdditionalInsanityChecks && fRunNumberIsDetermined) {
+  if (tc.fDoAdditionalInsanityChecks && tc.fRunNumberIsDetermined) {
     CheckCurrentRunNumber(collision);
   }
 
@@ -976,20 +1121,21 @@ void DetermineAndPropagateRunNumber(T const& collision)
   // a) Determine run number;
   // b) Propagate run number to all booked objects, wherever that info is relevant.
 
-  if (fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
+  if (tc.fVerbose) {
+    // LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__); // full function signature (including arguments, etc.), too verbose here...
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__); // just a bare function name
   }
 
   // a) Determine run number for reconstructed data:
-  fRunNumber = Form("%d", collision.bc().runNumber()); // implemented for both aod::Collision and aod::McCollision, so I can use it straight, as long as I have subscribed to aod::BCs
-  if (fRunNumber.EqualTo("")) {
+  tc.fRunNumber = Form("%d", collision.bc().runNumber()); // implemented for both aod::Collision and aod::McCollision, so I can use it straight, as long as I have subscribed to aod::BCs
+  if (tc.fRunNumber.EqualTo("")) {
     LOGF(error, "\033[1;33m%s fRunNumber is empty, collision->bc().runNumber() failed...\033[0m", __PRETTY_FUNCTION__);
     LOGF(fatal, "collision->bc().runNumber() = %d", collision.bc().runNumber());
   }
-  fRunNumberIsDetermined = kTRUE;
+  tc.fRunNumberIsDetermined = kTRUE;
 
   // b) Propagate run number to all booked objects, wherever that info is relevant:
-  fBasePro->GetXaxis()->SetBinLabel(eRunNumber, Form("fRunNumber = %s", fRunNumber.Data()));
+  fBasePro->GetXaxis()->SetBinLabel(eRunNumber, Form("tc.fRunNumber = %s", tc.fRunNumber.Data()));
   // ...
 
 } // template <typename T> void DetermineAndPropagateRunNumber(T const& collision)
@@ -1001,9 +1147,9 @@ void CheckCurrentRunNumber(T const& collision)
 {
   // Insanity check for the current run number.
 
-  if (!fRunNumber.EqualTo(Form("%d", collision.bc().runNumber()))) {
+  if (!tc.fRunNumber.EqualTo(Form("%d", collision.bc().runNumber()))) {
     LOGF(error, "\033[1;33m%s Run number changed within process(). This most likely indicates that a given masterjob is processing 2 or more different runs in one go.\033[0m", __PRETTY_FUNCTION__);
-    LOGF(fatal, "fRunNumber = %s, collision.bc().runNumber() = %d", fRunNumber.Data(), collision.bc().runNumber());
+    LOGF(fatal, "tc.fRunNumber = %s, collision.bc().runNumber() = %d", tc.fRunNumber.Data(), collision.bc().runNumber());
   }
 
 } // template <typename T> void CheckCurrentRunNumber(T const& collision)
@@ -1019,7 +1165,7 @@ void ResetEventByEventQuantities()
   // c) Reset ebe containers for nested loops;
   // d) Fisher-Yates algorithm.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -1066,8 +1212,9 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
   // a) Event cuts on info available in reconstructed (and corresponding MC truth simulated);
   // b) Event cuts on info available only in simulated data.
 
-  if (fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
+  if (tc.fVerbose) {
+    // LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__); // full function signature (including arguments, etc.), too verbose here...
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__); // just a bare function name
   }
 
   // a) Event cuts on info available in reconstructed ...:
@@ -1076,6 +1223,9 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
     //   *) TotalMultiplicity:
     if ((tracks.size() < ceh_a.fEventCuts[eTotalMultiplicity][eMin]) ||
         (tracks.size() > ceh_a.fEventCuts[eTotalMultiplicity][eMax])) {
+      if (tc.fVerbose) {
+        LOGF(info, "\033[1;31m%s eTotalMultiplicity\033[0m", __FUNCTION__); // just a bare function name
+      }
       return kFALSE;
     }
     //   *) SelectedTracks: => cut directly in void process( ... )
@@ -1087,21 +1237,33 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
     //   *) Vertex_x:
     if ((collision.posX() < ceh_a.fEventCuts[eVertex_x][eMin]) ||
         (collision.posX() > ceh_a.fEventCuts[eVertex_x][eMax])) {
+      if (tc.fVerbose) {
+        LOGF(info, "\033[1;31m%s eVertex_x\033[0m", __FUNCTION__); // just a bare function name
+      }
       return kFALSE;
     }
     //   *) Vertex_y:
     if ((collision.posY() < ceh_a.fEventCuts[eVertex_y][eMin]) ||
         (collision.posY() > ceh_a.fEventCuts[eVertex_y][eMax])) {
+      if (tc.fVerbose) {
+        LOGF(info, "\033[1;31m%s eVertex_y\033[0m", __FUNCTION__); // just a bare function name
+      }
       return kFALSE;
     }
     //   *) Vertex_z:
     if ((collision.posZ() < ceh_a.fEventCuts[eVertex_z][eMin]) ||
         (collision.posZ() > ceh_a.fEventCuts[eVertex_z][eMax])) {
+      if (tc.fVerbose) {
+        LOGF(info, "\033[1;31m%s eVertex_z\033[0m", __FUNCTION__); // just a bare function name
+      }
       return kFALSE;
     }
     //   *) NContributors:
     if ((collision.numContrib() < ceh_a.fEventCuts[eNContributors][eMin]) ||
         (collision.numContrib() > ceh_a.fEventCuts[eNContributors][eMax])) {
+      if (tc.fVerbose) {
+        LOGF(info, "\033[1;31m%s eNContributors\033[0m", __FUNCTION__); // just a bare function name
+      }
       return kFALSE;
     }
     // TBI 20231106 continue here with other event cuts on reconstructed info
@@ -1124,6 +1286,9 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
     //   *) Impact parameter:
     if ((collision.impactParameter() < ceh_a.fEventCuts[eImpactParameter][eMin]) ||
         (collision.impactParameter() > ceh_a.fEventCuts[eImpactParameter][eMax])) {
+      if (tc.fVerbose) {
+        LOGF(info, "\033[1;31m%s eImpactParameter\033[0m", __FUNCTION__); // just a bare function name
+      }
       return kFALSE;
     }
     // ...
@@ -1143,8 +1308,9 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
   // a) Fill reconstructed (and corresponding MC truth simulated);
   // b) Fill only simulated.
 
-  if (fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
+  if (tc.fVerbose) {
+    // LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__); // full function signature (including arguments, etc.), too verbose here...
+    LOGF(info, "\033[1;32m%s eBeforeAfter = %d \033[0m", __FUNCTION__, (Int_t)ba); // just a bare function name
   }
 
   // a) Fill reconstructed ...:
@@ -1155,6 +1321,7 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
     ceh_a.fEventHistograms[eVertex_z][eRec][ba]->Fill(collision.posZ());
     ceh_a.fEventHistograms[eNContributors][eRec][ba]->Fill(collision.numContrib());
     ceh_a.fEventHistograms[eTotalMultiplicity][eRec][ba]->Fill(tracks.size()); // TBI 20231106 check and validate further
+    ceh_a.fEventHistograms[eSelectedTracks][eRec][ba]->Fill(fSelectedTracks);  // TBI 20240108 this one makes sense only for eAfter
 
     // ... and corresponding MC truth simulated ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
     if constexpr (rs == eRecAndSim) {
@@ -1167,15 +1334,16 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
       ceh_a.fEventHistograms[eVertex_y][eSim][ba]->Fill(collision.mcCollision().posY());
       ceh_a.fEventHistograms[eVertex_z][eSim][ba]->Fill(collision.mcCollision().posZ());
       // ceh_a.fEventHistograms[eTotalMultiplicity][eSim][ba]->Fill(tracks.size()); // TBI 20231106 check how to get corresponding MC truth info, and validate further
+      // ceh_a.fEventHistograms[eSelectedTracks][eSim][ba]->Fill(fSelectedTracks); // TBI 20240108 this one makes sense only for eAfter + re-think if I really need it here
     } // if constexpr (rs == eRecAndSim) {
   }   // if constexpr (rs == eRec || rs == eRecAndSim) {
 
   // b) Fill only simulated:
   if constexpr (rs == eSim) {
     ceh_a.fEventHistograms[eImpactParameter][eSim][ba]->Fill(collision.impactParameter()); // yes, because in this branch 'collision' is always aod::McCollision
+    ceh_a.fEventHistograms[eSelectedTracks][eSim][ba]->Fill(fSelectedTracks);              // TBI 20240108 this one makes sense only for eAfter
 
     // ceh_a.fEventHistograms[eTotalMultiplicity][eSim][ba]->Fill(tracks.size()); // TBI 20231030 check further how to use the same thing for 'sim'
-    // SelectedTracks => filled directly in void process( ... )
   } // if constexpr (rs == eSim) {
 
 } // template <eRecSim rs, typename T1, typename T2> void FillEventHistograms(...)
@@ -1190,7 +1358,7 @@ Bool_t ParticleCuts(T const& track)
   // a) Particle cuts on info available in reconstructed (and corresponding MC truth simulated);
   // b) Particle cuts on info available only in simulated data.
 
-  if (fVerboseForEachParticle) {
+  if (tc.fVerboseForEachParticle) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -1243,7 +1411,7 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba)
   // a) Fill reconstructed (and corresponding MC truth simulated);
   // b) Fill only simulated.
 
-  if (fVerboseForEachParticle) {
+  if (tc.fVerboseForEachParticle) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -1289,16 +1457,15 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba)
 
 void CalculateCorrelations()
 {
-  // Calculate analytically multiparticle correlations from Q-vectors
+  // Calculate analytically multiparticle correlations from Q-vectors.
   // In this method, only isotropic correlations for which all harmonics are the
-  // same are evaluated. For the calculus of generic multiparticle correlations,
-  // see method CalculateGenericCorrelations()
+  // same are evaluated.
 
   // a) Flush 'n' fill the generic Q-vectors;
   // b) Calculate correlations;
   // c) Flush the generic Q-vectors.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -1315,55 +1482,46 @@ void CalculateCorrelations()
   for (Int_t h = 1; h <= gMaxHarmonic; h++) // harmonic
   {
     // 2p:
-    // if(fSelectedTracks<2){return;}
-    // if(fVerbose){cout<<Form("   => CalculateCorrelations(void), 2p, h = %d
-    // .... ",h)<<endl;}
+    if (fSelectedTracks < 2) {
+      return;
+    }
+    if (tc.fVerbose) {
+      LOGF(info, "\033[1;32m%s => calculating 2-particle correlations....\033[0m", __PRETTY_FUNCTION__);
+    }
     TComplex two = Two(h, -h);
     Double_t twoC = two.Re(); // cos
     // Double_t twoS = two.Im(); // sin
-    Double_t wTwo =
-      Two(0, 0).Re(); // Weight is 'number of combinations' by default TBI
-                      // 20220809 add support for other weights
+    Double_t wTwo = Two(0, 0).Re(); // Weight is 'number of combinations' by default TBI
+                                    // 20220809 add support for other weights
     if (wTwo > 0.0) {
       twoC /= wTwo;
     } else {
-      return;
-    } // ... TBI 20220809 ... use the line below eventually
-    // else { Exit(__PRETTY_FUNCTION__,__LINE__,Form("wTwo = %f is not positive.
-    // fSelectedTracks = %d",wTwo,fSelectedTracks)); return; }
+      LOGF(fatal, "In function \033[1;31m%s at line %d, wTwo = %f <=0. fSelectedTracks = %d\033[0m", __PRETTY_FUNCTION__, __LINE__, wTwo, fSelectedTracks);
+    }
 
-    /* ... TBI 20220809 ... enable eventually
-  if(fCalculateCustomNestedLoop)
-  {
-   // e-b-e sanity check:
-   TArrayI *harmonics = new TArrayI(2);
-   harmonics->SetAt(h,0);
-   harmonics->SetAt(-h,1);
-   Double_t nestedLoopValue = this->CalculateCustomNestedLoop(harmonics);
-   if(TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(twoC -
-  nestedLoopValue)>1.e-5)
-   {
-    Exit(__PRETTY_FUNCTION__,__LINE__,Form("nestedLoopValue = %f is not the same
-  as twoC = %f",nestedLoopValue,twoC)); exit(1);
-   }
-   else
-   {
-    cout<<Form("=> e-b-e check with CustomNestedLoop is OK for isotropic 2-p,
-  harmonic %d",h)<<endl;
-    //cout<<Form("   value = %f",twoC)<<endl;
-   }
-   delete harmonics; harmonics = NULL;
-  } // if(fCalculateCustomNestedLoop)
+    if (fCalculateCustomNestedLoop) {
+      // e-b-e sanity check:
+      TArrayI* harmonics = new TArrayI(2);
+      harmonics->SetAt(h, 0);
+      harmonics->SetAt(-h, 1);
+      Double_t nestedLoopValue = this->CalculateCustomNestedLoop(harmonics);
+      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(twoC - nestedLoopValue) > 1.e-5) {
+        LOGF(fatal, "in function \033[1;31m%s at line %d, nestedLoopValue = %f is not the same as twoC = %f\033[0m", __PRETTY_FUNCTION__, __LINE__, nestedLoopValue, twoC);
+      } else {
+        LOGF(info, "=> e-b-e check with CustomNestedLoop is OK for isotropic 2-p, harmonic %d", h);
+      }
+      delete harmonics;
+      harmonics = NULL;
+    } // if(fCalculateCustomNestedLoop)
 
-  // for on-the-fly and internal validation, rescale results with theoretical
-  value: if(fCalculateOnTheFly && fOnTheFlyFlowAmplitudes &&
-  fRescaleWithTheoreticalInput &&
-     TMath::Abs(fOnTheFlyFlowAmplitudes->GetAt(h-1))>0.){twoC/=pow(fOnTheFlyFlowAmplitudes->GetAt(h-1),2.);}
-  else if(fUseInternalValidation && fInternalValidationAmplitudes &&
-  fRescaleWithTheoreticalInput &&
-          TMath::Abs(fInternalValidationAmplitudes->GetAt(h-1))>0.){twoC/=pow(fInternalValidationAmplitudes->GetAt(h-1),2.);}
-
-*/
+    /*
+      // for on-the-fly and internal validation, rescale results with theoretical value: if(fCalculateOnTheFly && fOnTheFlyFlowAmplitudes &&
+      fRescaleWithTheoreticalInput &&
+         TMath::Abs(fOnTheFlyFlowAmplitudes->GetAt(h-1))>0.){twoC/=pow(fOnTheFlyFlowAmplitudes->GetAt(h-1),2.);}
+      else if(fUseInternalValidation && fInternalValidationAmplitudes &&
+      fRescaleWithTheoreticalInput &&
+              TMath::Abs(fInternalValidationAmplitudes->GetAt(h-1))>0.){twoC/=pow(fInternalValidationAmplitudes->GetAt(h-1),2.);}
+    */
 
     // integrated:
     if (c_a.fCorrelationsPro[0][h - 1][0]) {
@@ -1374,7 +1532,56 @@ void CalculateCorrelations()
     // vs. centrality:
     // if(c_a.fCorrelationsPro[0][h-1][2]){c_a.fCorrelationsPro[0][h-1][2]->Fill(fCentrality,twoC,wTwo);}
 
-    // ... TBI 20220809 port the rest ...
+    // 4p:
+    if (fSelectedTracks < 4) {
+      continue;
+    } // yes, continue, because I can still calculate 2-p in other harmonics!
+    if (tc.fVerbose) {
+      LOGF(info, "\033[1;32m%s => calculating 4-particle correlations....\033[0m", __PRETTY_FUNCTION__);
+    }
+    TComplex four = Four(h, h, -h, -h);
+    Double_t fourC = four.Re(); // cos
+    // Double_t fourS = four.Im(); // sin
+    Double_t wFour = Four(0, 0, 0, 0).Re(); // Weight is 'number of combinations' by default TBI_20210515 add support for other weights
+    if (wFour > 0.0) {
+      fourC /= wFour;
+    } else {
+      LOGF(fatal, "In function \033[1;31m%s at line %d, wFour = %f <=0. fSelectedTracks = %d\033[0m", __PRETTY_FUNCTION__, __LINE__, wFour, fSelectedTracks);
+      // TBI 20240110 shall I 'continue' here, instead of bailing out?
+    }
+
+    if (fCalculateCustomNestedLoop) {
+      // e-b-e sanity check:
+      TArrayI* harmonics = new TArrayI(4);
+      harmonics->SetAt(h, 0);
+      harmonics->SetAt(h, 1);
+      harmonics->SetAt(-h, 2);
+      harmonics->SetAt(-h, 3);
+      Double_t nestedLoopValue = this->CalculateCustomNestedLoop(harmonics);
+      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(fourC - nestedLoopValue) > 1.e-5) {
+        LOGF(fatal, "in function \033[1;31m%s at line %d, nestedLoopValue = %f is not the same as fourC = %f\033[0m", __PRETTY_FUNCTION__, __LINE__, nestedLoopValue, fourC);
+      } else {
+        LOGF(info, "=> e-b-e check with CustomNestedLoop is OK for isotropic 4-p, harmonic %d", h);
+      }
+      delete harmonics;
+      harmonics = NULL;
+    } // if(fCalculateCustomNestedLoop)
+
+    //    if(fUseInternalValidation && fInternalValidationAmplitudes && fRescaleWithTheoreticalInput &&
+    //       TMath::Abs(fInternalValidationAmplitudes->GetAt(h-1))>0.){fourC/=pow(fInternalValidationAmplitudes->GetAt(h-1),4.);}
+
+    // integrated:
+    if (c_a.fCorrelationsPro[1][h - 1][0]) {
+      c_a.fCorrelationsPro[1][h - 1][0]->Fill(0.5, fourC, wFour);
+    }
+
+    /*
+        if(fCorrelationsPro[1][h-1][AFO_MULTIPLICITY]){fCorrelationsPro[1][h-1][AFO_MULTIPLICITY]->Fill(fSelectedTracks+0.5,fourC,wFour);}
+        // vs. centrality:
+        if(fCorrelationsPro[1][h-1][AFO_CENTRALITY]){fCorrelationsPro[1][h-1][AFO_CENTRALITY]->Fill(fCentrality,fourC,wFour);}
+    */
+
+    // TBC 6-p and 8-p
 
   } // for(Int_t h=1;h<=gMaxHarmonic;h++) // harmonic
 
@@ -1385,11 +1592,215 @@ void CalculateCorrelations()
 
 //============================================================
 
+void CalculateTest0()
+{
+  // Calculate Test0.
+
+  // a) Flush 'n' fill the generic Q-vectors;
+  // b) Calculate correlations;
+  // c) Flush the generic Q-vectors.
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
+  }
+
+  // a) Flush 'n' fill the generic Q-vectors:
+  ResetQ();
+  for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
+    for (Int_t wp = 0; wp < gMaxCorrelator + 1; wp++) // weight power
+    {
+      qv_a.fQ[h][wp] = qv_a.fQvector[h][wp];
+    }
+  }
+
+  // b) Calculate correlations:
+  Double_t correlation = 0.; // still has to be divided with 'weight' later, to get average correlation
+  Double_t weight = 0.;
+  Int_t n[gMaxCorrelator] = {0}; // array holding harmonics
+
+  for (Int_t mo = 0; mo < gMaxCorrelator; mo++) {
+    for (Int_t mi = 0; mi < gMaxIndex; mi++) {
+      // TBI 20210913 I do not have to loop each time all the way up to gMaxCorrelator and gMaxIndex, but nevermind now, it's not a big efficiency loss.
+
+      // Sanitize the labels (If necessary. Locally this is irrelevant):
+      if (!t0_a.fTest0Labels[mo][mi]) // I do not stream them.
+      {
+        for (Int_t v = 0; v < eAsFunctionOf_N; v++) {
+          if (t0_a.fTest0Pro[mo][mi][v]) {
+            t0_a.fTest0Labels[mo][mi] = new TString(t0_a.fTest0Pro[mo][mi][v]->GetTitle()); // there is no memory leak here, since this is executed only once due to if(!fTest0Labels[mo][mi])
+            break;                                                                          // yes, since for all v they are the same, so I just need to fetch it from one
+          }
+        }
+      } // if(!t0_afTest0Labels[mo][mi])
+
+      if (t0_a.fTest0Labels[mo][mi]) {
+        // Extract harmonics from TString, FS is " ":
+        for (Int_t h = 0; h <= mo; h++) {
+          TObjArray* oa = t0_a.fTest0Labels[mo][mi]->Tokenize(" ");
+          if (!oa) {
+            LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
+                 __PRETTY_FUNCTION__, __LINE__);
+          }
+          n[h] = TString(oa->At(h)->GetName()).Atoi();
+          delete oa; // yes, otherwise it's a memory leak
+        }
+
+        switch (mo + 1) // which order? yes, mo+1
+        {
+          case 1:
+            if (fSelectedTracks < 1) {
+              return;
+            }
+            correlation = One(n[0]).Re();
+            weight = One(0).Re();
+            break;
+
+          case 2:
+            if (fSelectedTracks < 2) {
+              return;
+            }
+            correlation = Two(n[0], n[1]).Re();
+            weight = Two(0, 0).Re();
+            break;
+
+          case 3:
+            if (fSelectedTracks < 3) {
+              return;
+            }
+            correlation = Three(n[0], n[1], n[2]).Re();
+            weight = Three(0, 0, 0).Re();
+            break;
+
+          case 4:
+            if (fSelectedTracks < 4) {
+              return;
+            }
+            correlation = Four(n[0], n[1], n[2], n[3]).Re();
+            weight = Four(0, 0, 0, 0).Re();
+            break;
+
+            /*
+                 case 5:
+                  if(fSelectedTracks<5){return;}
+                  correlation = Five(n[0],n[1],n[2],n[3],n[4]).Re();
+                  weight = Five(0,0,0,0,0).Re();
+                 break;
+
+                 case 6:
+                  if(fSelectedTracks<6){return;}
+                  correlation = Six(n[0],n[1],n[2],n[3],n[4],n[5]).Re();
+                  weight = Six(0,0,0,0,0,0).Re();
+                 break;
+
+                 case 7:
+                  if(fSelectedTracks<7){return;}
+                  correlation = Seven(n[0],n[1],n[2],n[3],n[4],n[5],n[6]).Re();
+                  weight = Seven(0,0,0,0,0,0,0).Re();
+                 break;
+
+                 case 8:
+                  if(fSelectedTracks<8){return;}
+                  correlation = Eight(n[0],n[1],n[2],n[3],n[4],n[5],n[6],n[7]).Re();
+                  weight = Eight(0,0,0,0,0,0,0,0).Re();
+                 break;
+
+                 case 9:
+                  if(fSelectedTracks<9){return;}
+                  correlation = Nine(n[0],n[1],n[2],n[3],n[4],n[5],n[6],n[7],n[8]).Re();
+                  weight = Nine(0,0,0,0,0,0,0,0,0).Re();
+                 break;
+
+                 case 10:
+                  if(fSelectedTracks<10){return;}
+                  correlation = Ten(n[0],n[1],n[2],n[3],n[4],n[5],n[6],n[7],n[8],n[9]).Re();
+                  weight = Ten(0,0,0,0,0,0,0,0,0,0).Re();
+                 break;
+
+                 case 11:
+                  if(fSelectedTracks<11){return;}
+                  correlation = Eleven(n[0],n[1],n[2],n[3],n[4],n[5],n[6],n[7],n[8],n[9],n[10]).Re();
+                  weight = Eleven(0,0,0,0,0,0,0,0,0,0,0).Re();
+                 break;
+
+                 case 12:
+                  if(fSelectedTracks<12){return;}
+                  correlation = Twelve(n[0],n[1],n[2],n[3],n[4],n[5],n[6],n[7],n[8],n[9],n[10],n[11]).Re();
+                  weight = Twelve(0,0,0,0,0,0,0,0,0,0,0,0).Re();
+                 break;
+            */
+
+          default:
+            LOGF(fatal, "in function \033[1;31m%s at line %d\n Not supported yet: %s \n\n\033[0m", __PRETTY_FUNCTION__, __LINE__, t0_a.fTest0Labels[mo][mi]->Data());
+        } // switch(mo+1)
+
+        // Insanity check on weight:
+        if (!(weight > 0.)) {
+          LOGF(fatal, "in function \033[1;31m%s at line %d\n Is perhaps order of correlator bigger than the number of particles?: %s \n\n\033[0m", __PRETTY_FUNCTION__, __LINE__, t0_a.fTest0Labels[mo][mi]->Data());
+        }
+
+        // e-b-e sanity check:
+        if (fCalculateCustomNestedLoop) {
+          TArrayI* harmonics = new TArrayI(mo + 1);
+          for (Int_t i = 0; i < mo + 1; i++) {
+            harmonics->SetAt(n[i], i);
+          }
+          Double_t nestedLoopValue = this->CalculateCustomNestedLoop(harmonics);
+          if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(correlation / weight - nestedLoopValue) > 1.e-5) {
+            LOGF(fatal, "in function \033[1;31m%s at line %d, nestedLoopValue = %f is not the same as correlation/weight = %f, for correlator %s\033[0m", __PRETTY_FUNCTION__, __LINE__, nestedLoopValue, correlation / weight, t0_a.fTest0Labels[mo][mi]->Data());
+          } else {
+            LOGF(info, "=> e-b-e check with CustomNestedLoop is OK for %d-p Test0 corr. %s", mo + 1, t0_a.fTest0Labels[mo][mi]->Data());
+          }
+          delete harmonics;
+          harmonics = NULL;
+        } // if(fCalculateCustomNestedLoop)
+
+        /*
+            // To ease comparison, rescale with theoretical value. Now all Test0 results shall be at 1:
+            if(fUseInternalValidation && fInternalValidationAmplitudes && fInternalValidationPlanes && fRescaleWithTheoreticalInput)
+            {
+             TArrayI *harmonics = new TArrayI(mo+1);
+             for(Int_t i=0;i<mo+1;i++)
+             {
+              harmonics->SetAt(n[i],i);
+             }
+             TComplex theoreticalValue = TheoreticalValue(harmonics,fInternalValidationAmplitudes,fInternalValidationPlanes);
+             if(TMath::Abs(theoreticalValue.Re()) > 0.)
+             {
+              correlation /= theoreticalValue.Re();
+             }
+             delete harmonics; harmonics = NULL;
+            } // if(fUseInternalValidation && fRescaleWithTheoreticalInput)
+        */
+
+        // Finally, fill:
+        // integrated:
+        if (t0_a.fTest0Pro[mo][mi][0]) // TBI 20240110 replace 0 with new enum AFO_INTEGRATED, also in the lines below
+        {
+          t0_a.fTest0Pro[mo][mi][0]->Fill(0.5, correlation / weight, weight);
+        }
+        /*
+        // vs. multiplicity:
+        if(fTest0Pro[mo][mi][AFO_MULTIPLICITY]){fTest0Pro[mo][mi][AFO_MULTIPLICITY]->Fill(fSelectedTracks+0.5,correlation/weight,weight);}
+        // vs. centrality:
+        if(fTest0Pro[mo][mi][AFO_CENTRALITY]){fTest0Pro[mo][mi][AFO_CENTRALITY]->Fill(fCentrality,correlation/weight,weight);}
+        */
+
+      } // if(fTest0Labels[mo][mi])
+    }   // for(Int_t mi=0;mi<gMaxIndex;mi++)
+  }     // for(Int_t mo=0;mo<gMaxCorrelator;mo++)
+
+  // c) Flush the generic Q-vectors:
+  ResetQ();
+
+} // void CalculateTest0()
+
+//============================================================
+
 void CalculateNestedLoops()
 {
   // Calculate correlations with nested loops.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -1460,7 +1871,7 @@ void ComparisonNestedLoopsVsCorrelations()
   // b) Comparison vs. multiplicity;
   // c) Comparison vs. centrality;
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -1587,7 +1998,7 @@ void ResetQ()
   // Reset the components of generic Q-vectors. Use it whenever you call the
   // standard functions for correlations, for some custom Q-vectors.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -1607,7 +2018,7 @@ void SetWeightsHist(TH1D* const hist, const char* variable)
   // Copy histogram holding weights from an external file to the corresponding
   // data member.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -1648,7 +2059,7 @@ TH1D* GetWeightsHist(const char* variable)
 {
   // The standard getter.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -1688,12 +2099,12 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber,
   // or in CCDB; d) Handle the AliEn case; e) Handle the CCDB case; f) Handle
   // the local case; g) The final touch on histogram with weights.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
     LOGF(info, "\033[1;33m filePath = %s\033[0m", filePath);
     LOGF(info, "\033[1;33m runNumber = %s\033[0m", runNumber);
     LOGF(info, "\033[1;33m variable = %s\033[0m", variable);
-    LOGF(info, "\033[1;33m fTaskName = %s\033[0m", fTaskName.Data());
+    LOGF(info, "\033[1;33m fTaskName = %s\033[0m", tc.fTaskName.Data());
   }
 
   // a) Return value:
@@ -1753,7 +2164,7 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber,
     }
 
     hist = reinterpret_cast<TH1D*>(GetObjectFromList(
-      listWithRuns, Form("%s_%s", variable, fTaskName.Data())));
+      listWithRuns, Form("%s_%s", variable, tc.fTaskName.Data())));
     if (!hist) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
@@ -1774,7 +2185,7 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber,
     //    https://indico.cern.ch/event/1267433/timetable/#20230417.detailed
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
-    if (fVerbose) {
+    if (tc.fVerbose) {
       LOGF(info, "\033[1;32mAccessing in CCDB %s\033[0m",
            TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data());
     }
@@ -1797,10 +2208,10 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber,
     }
 
     hist = reinterpret_cast<TH1D*>(GetObjectFromList(
-      listWithRuns, Form("%s_%s", variable, fTaskName.Data())));
+      listWithRuns, Form("%s_%s", variable, tc.fTaskName.Data())));
 
     if (!hist) {
-      LOGF(info, "\033[1;33m%s_%s \033[0m", variable, fTaskName.Data());
+      LOGF(info, "\033[1;33m%s_%s \033[0m", variable, tc.fTaskName.Data());
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
     }
@@ -1847,7 +2258,7 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber,
     }
 
     hist = reinterpret_cast<TH1D*>(GetObjectFromList(
-      listWithRuns, Form("%s_%s", variable, fTaskName.Data())));
+      listWithRuns, Form("%s_%s", variable, tc.fTaskName.Data())));
     if (!hist) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
@@ -1881,7 +2292,7 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
   // d) Handle the CCDB case;
   // e) Handle the local case.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -1919,10 +2330,24 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
     }
-    oaFile->GetObject(
-      "labels", oa); // TBI 20230530 hardcoded name of TObjArray is "labels",
-                     // perhaps I can do this also via Configurables? Keep in
-                     // sync with O2::TranslateASCIIintoObjArray
+
+    // Fetch TObjArray from external file (keep in sync with local file case below):
+    TList* lok = oaFile->GetListOfKeys();
+    if (!lok) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
+           __PRETTY_FUNCTION__, __LINE__);
+    }
+    for (Int_t l = 0; l < lok->GetEntries(); l++) {
+      oaFile->GetObject(lok->At(l)->GetName(), oa);
+      if (oa && TString(oa->ClassName()).EqualTo("TObjArray")) {
+        break; // TBI 20231107 the working assumption is that in an external file there is only one TObjArray object,
+               // and here I fetch it, whatever its name is. The advantage is that I do not have to do
+               // any additional work for TObjArray's name. Since I do not anticipate ever having more than 1
+               // TObjArray in an external file, this shall be alright. With the current implementation,
+               // if there are multiple TObjArray objects in the same ROOT file, the first one will be fetched.
+      }
+    } // for(Int_t l=0;l<lok->GetEntries();l++)
+
     if (!oa) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
            __PRETTY_FUNCTION__, __LINE__);
@@ -1969,7 +2394,7 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
            __PRETTY_FUNCTION__, __LINE__);
     }
 
-    // Fetch TObjArray from external file:
+    // Fetch TObjArray from external file (keep in sync with AliEn file case above):
     TList* lok = oaFile->GetListOfKeys();
     if (!lok) {
       LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
@@ -1991,7 +2416,7 @@ TObjArray* GetObjArrayWithLabels(const char* filePath)
 
   } // else {
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s => Fetched TObjArray named \"%s\" from file %s\033[0m", __PRETTY_FUNCTION__, oa->GetName(), filePath);
   }
 
@@ -2010,7 +2435,7 @@ void StoreLabelsInPlaceholder()
   // c) Book the placeholder fTest0LabelsPlaceholder for all labels;
   // d) Finally, store the labels from external source into placeholder.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -2072,7 +2497,7 @@ Bool_t RetrieveCorrelationsLabels()
   // Generate the labels of all correlations of interest, i.e. retrieve them
   // from TH1I *fTest0LabelsPlaceholder
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -2218,12 +2643,12 @@ void GetParticleWeights()
   //    b) Hyperloop proceeses the dataset one masterjob per run number.
   //    If any of these 2 assumptions are violated, this code will have to be modified.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
   if (pw_a.fUseWeights[wPHI]) {
-    TH1D* phiWeights = GetHistogramWithWeights(fFileWithWeights.Data(), fRunNumber.Data(), "phi");
+    TH1D* phiWeights = GetHistogramWithWeights(fFileWithWeights.Data(), tc.fRunNumber.Data(), "phi");
     if (!phiWeights) {
       LOGF(fatal, "in function \033[1;31m%s at line %d, phiWeights is NULL. Check the external file %s with particle weights\033[0m", __PRETTY_FUNCTION__, __LINE__, fFileWithWeights.Data());
     }
@@ -2231,7 +2656,7 @@ void GetParticleWeights()
   }
 
   if (pw_a.fUseWeights[wPT]) {
-    TH1D* ptWeights = GetHistogramWithWeights(fFileWithWeights.Data(), fRunNumber.Data(), "pt");
+    TH1D* ptWeights = GetHistogramWithWeights(fFileWithWeights.Data(), tc.fRunNumber.Data(), "pt");
     if (!ptWeights) {
       LOGF(fatal, "in function \033[1;31m%s at line %d, ptWeights is NULL. Check the external file %s with particle weights\033[0m", __PRETTY_FUNCTION__, __LINE__, fFileWithWeights.Data());
     }
@@ -2239,7 +2664,7 @@ void GetParticleWeights()
   }
 
   if (pw_a.fUseWeights[wETA]) {
-    TH1D* etaWeights = GetHistogramWithWeights(fFileWithWeights.Data(), fRunNumber.Data(), "eta");
+    TH1D* etaWeights = GetHistogramWithWeights(fFileWithWeights.Data(), tc.fRunNumber.Data(), "eta");
     if (!etaWeights) {
       LOGF(fatal, "in function \033[1;31m%s at line %d, etaWeights is NULL. Check the external file %s with particle weights\033[0m", __PRETTY_FUNCTION__, __LINE__, fFileWithWeights.Data());
     }
@@ -2254,7 +2679,7 @@ Bool_t MaxNumberOfEvents()
 {
   // Check if max number of events was reached. See also configurable cNumberOfEvents_max.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
@@ -2283,26 +2708,242 @@ Bool_t MaxNumberOfEvents()
 
 //============================================================
 
+Double_t CalculateCustomNestedLoop(TArrayI* harmonics)
+{
+  // For the specified harmonics, get the correlation from nested loops.
+  // Order of correlator is the number of harmonics, i.e. the number of elements in an array.
+
+  // a) Determine the order of correlator;
+  // b) Custom nested loop;
+  // c) Return value.
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
+  }
+
+  if (!harmonics) {
+    cout << __LINE__ << endl;
+    exit(1);
+  }
+
+  Int_t nParticles = fSelectedTracks;
+  /* TBI 20231108 enable eventually
+  if(fUseFixedNumberOfRandomlySelectedParticles)
+  {
+   nParticles = 0;
+   for(Int_t i=0;i<nl_a.ftaNestedLoops[0]->GetSize();i++)
+   {
+    if(TMath::Abs(nl_a.ftaNestedLoops[0]->GetAt(i)) > 0. && TMath::Abs(nl_a.ftaNestedLoops[1]->GetAt(i)) > 0.){nParticles++;}
+   }
+  }
+  */
+
+  // a) Determine the order of correlator;
+  Int_t order = harmonics->GetSize();
+  if (0 == order || order > gMaxCorrelator) {
+    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+  }
+
+  // b) Custom nested loop:
+  TProfile* profile = new TProfile("profile", "", 1, 0., 1.); // helper profile to get all averages automatically
+  // profile->Sumw2();
+  Double_t value = 0.;  // cos of current multiplet
+  Double_t weight = 1.; // weight of current multiplet
+  for (int i1 = 0; i1 < nParticles; i1++) {
+    Double_t dPhi1 = nl_a.ftaNestedLoops[0]->GetAt(i1);
+    Double_t dW1 = nl_a.ftaNestedLoops[1]->GetAt(i1);
+    if (1 == order) {
+      value = TMath::Cos(harmonics->GetAt(0) * dPhi1);
+      weight = dW1;
+      profile->Fill(0.5, value, weight);
+      continue;
+    }
+    for (int i2 = 0; i2 < nParticles; i2++) {
+      if (i2 == i1) {
+        continue;
+      }
+      Double_t dPhi2 = nl_a.ftaNestedLoops[0]->GetAt(i2);
+      Double_t dW2 = nl_a.ftaNestedLoops[1]->GetAt(i2);
+      if (2 == order) {
+        value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2);
+        weight = dW1 * dW2;
+        profile->Fill(0.5, value, weight);
+        continue;
+      }
+      for (int i3 = 0; i3 < nParticles; i3++) {
+        if (i3 == i1 || i3 == i2) {
+          continue;
+        }
+        Double_t dPhi3 = nl_a.ftaNestedLoops[0]->GetAt(i3);
+        Double_t dW3 = nl_a.ftaNestedLoops[1]->GetAt(i3);
+        if (3 == order) {
+          value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3);
+          weight = dW1 * dW2 * dW3;
+          profile->Fill(0.5, value, weight);
+          continue;
+        }
+        for (int i4 = 0; i4 < nParticles; i4++) {
+          if (i4 == i1 || i4 == i2 || i4 == i3) {
+            continue;
+          }
+          Double_t dPhi4 = nl_a.ftaNestedLoops[0]->GetAt(i4);
+          Double_t dW4 = nl_a.ftaNestedLoops[1]->GetAt(i4);
+          if (4 == order) {
+            value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4);
+            weight = dW1 * dW2 * dW3 * dW4;
+            profile->Fill(0.5, value, weight);
+            continue;
+          }
+          for (int i5 = 0; i5 < nParticles; i5++) {
+            if (i5 == i1 || i5 == i2 || i5 == i3 || i5 == i4) {
+              continue;
+            }
+            Double_t dPhi5 = nl_a.ftaNestedLoops[0]->GetAt(i5);
+            Double_t dW5 = nl_a.ftaNestedLoops[1]->GetAt(i5);
+            if (5 == order) {
+              value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5);
+              weight = dW1 * dW2 * dW3 * dW4 * dW5;
+              profile->Fill(0.5, value, weight);
+              continue;
+            }
+            for (int i6 = 0; i6 < nParticles; i6++) {
+              if (i6 == i1 || i6 == i2 || i6 == i3 || i6 == i4 || i6 == i5) {
+                continue;
+              }
+              Double_t dPhi6 = nl_a.ftaNestedLoops[0]->GetAt(i6);
+              Double_t dW6 = nl_a.ftaNestedLoops[1]->GetAt(i6);
+              if (6 == order) {
+                value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6);
+                weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6;
+                profile->Fill(0.5, value, weight);
+                continue;
+              }
+              for (int i7 = 0; i7 < nParticles; i7++) {
+                if (i7 == i1 || i7 == i2 || i7 == i3 || i7 == i4 || i7 == i5 || i7 == i6) {
+                  continue;
+                }
+                Double_t dPhi7 = nl_a.ftaNestedLoops[0]->GetAt(i7);
+                Double_t dW7 = nl_a.ftaNestedLoops[1]->GetAt(i7);
+                if (7 == order) {
+                  value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7);
+                  weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7;
+                  profile->Fill(0.5, value, weight);
+                  continue;
+                }
+                for (int i8 = 0; i8 < nParticles; i8++) {
+                  if (i8 == i1 || i8 == i2 || i8 == i3 || i8 == i4 || i8 == i5 || i8 == i6 || i8 == i7) {
+                    continue;
+                  }
+                  Double_t dPhi8 = nl_a.ftaNestedLoops[0]->GetAt(i8);
+                  Double_t dW8 = nl_a.ftaNestedLoops[1]->GetAt(i8);
+                  if (8 == order) {
+                    value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8);
+                    weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8;
+                    profile->Fill(0.5, value, weight);
+                    continue;
+                  }
+                  for (int i9 = 0; i9 < nParticles; i9++) {
+                    if (i9 == i1 || i9 == i2 || i9 == i3 || i9 == i4 || i9 == i5 || i9 == i6 || i9 == i7 || i9 == i8) {
+                      continue;
+                    }
+                    Double_t dPhi9 = nl_a.ftaNestedLoops[0]->GetAt(i9);
+                    Double_t dW9 = nl_a.ftaNestedLoops[1]->GetAt(i9);
+                    if (9 == order) {
+                      value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9);
+                      weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8 * dW9;
+                      profile->Fill(0.5, value, weight);
+                      continue;
+                    }
+                    for (int i10 = 0; i10 < nParticles; i10++) {
+                      if (i10 == i1 || i10 == i2 || i10 == i3 || i10 == i4 || i10 == i5 || i10 == i6 || i10 == i7 || i10 == i8 || i10 == i9) {
+                        continue;
+                      }
+                      Double_t dPhi10 = nl_a.ftaNestedLoops[0]->GetAt(i10);
+                      Double_t dW10 = nl_a.ftaNestedLoops[1]->GetAt(i10);
+                      if (10 == order) {
+                        value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10);
+                        weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8 * dW9 * dW10;
+                        profile->Fill(0.5, value, weight);
+                        continue;
+                      }
+                      for (int i11 = 0; i11 < nParticles; i11++) {
+                        if (i11 == i1 || i11 == i2 || i11 == i3 || i11 == i4 || i11 == i5 || i11 == i6 || i11 == i7 || i11 == i8 || i11 == i9 || i11 == i10) {
+                          continue;
+                        }
+                        Double_t dPhi11 = nl_a.ftaNestedLoops[0]->GetAt(i11);
+                        Double_t dW11 = nl_a.ftaNestedLoops[1]->GetAt(i11);
+                        if (11 == order) {
+                          value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10 + harmonics->GetAt(10) * dPhi11);
+                          weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8 * dW9 * dW10 * dW11;
+                          profile->Fill(0.5, value, weight);
+                          continue;
+                        }
+                        for (int i12 = 0; i12 < nParticles; i12++) {
+                          if (i12 == i1 || i12 == i2 || i12 == i3 || i12 == i4 || i12 == i5 || i12 == i6 || i12 == i7 || i12 == i8 || i12 == i9 || i12 == i10 || i12 == i11) {
+                            continue;
+                          }
+                          Double_t dPhi12 = nl_a.ftaNestedLoops[0]->GetAt(i12);
+                          Double_t dW12 = nl_a.ftaNestedLoops[1]->GetAt(i12);
+                          if (12 == order) {
+                            value = TMath::Cos(harmonics->GetAt(0) * dPhi1 + harmonics->GetAt(1) * dPhi2 + harmonics->GetAt(2) * dPhi3 + harmonics->GetAt(3) * dPhi4 + harmonics->GetAt(4) * dPhi5 + harmonics->GetAt(5) * dPhi6 + harmonics->GetAt(6) * dPhi7 + harmonics->GetAt(7) * dPhi8 + harmonics->GetAt(8) * dPhi9 + harmonics->GetAt(9) * dPhi10 + harmonics->GetAt(10) * dPhi11 + harmonics->GetAt(11) * dPhi12);
+                            weight = dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8 * dW9 * dW10 * dW11 * dW12;
+                            profile->Fill(0.5, value, weight);
+                            continue;
+                          }
+
+                          // ... it's easy to continue the above pattern here
+
+                        } // for(int i12=0; i12<nParticles; i12++)
+                      }   // for(int i11=0; i11<nParticles; i11++)
+                    }     // for(int i10=0; i10<nParticles; i10++)
+                  }       // for(int i9=0; i9<nParticles; i9++)
+                }         // for(int i8=0; i8<nParticles; i8++)
+              }           // for(int i7=0; i7<nParticles; i7++)
+            }             // for(int i6=0; i6<nParticles; i6++)
+          }               // for(int i5=0; i5<nParticles; i5++)
+        }                 // for(int i4=0; i4<nParticles; i4++)
+      }                   // for(int i3=0; i3<nParticles; i3++)
+    }                     // for(int i2=0; i2<nParticles; i2++)
+  }                       // for(int i1=0; i1<nParticles; i1++)
+
+  // c) Return value:
+  Double_t finalValue = profile->GetBinContent(1);
+  delete profile;
+  profile = NULL;
+  return finalValue;
+
+} // Double_t CalculateCustomNestedLoop(TArrayI *harmonics)
+
+//============================================================
+
 void CalculateEverything()
 {
   // Calculate everything for selected events and particles.
   // Remark: Data members for Q-vectors, containers for nested loops, etc., must all be filled when this function is called.
 
-  if (fVerbose) {
+  if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
+  // *) Progress info:
+  LOGF(info, "\033[1;32m=> Processing event %d/%d (selected/total) .... \033[0m", (Int_t)ceh_a.fEventHistograms[eNumberOfEvents][eRec][eAfter]->GetBinContent(1), (Int_t)ceh_a.fEventHistograms[eNumberOfEvents][eRec][eBefore]->GetBinContent(1));
+
   // *) Calculate multiparticle correlations (standard, isotropic, same harmonic):
   if (fCalculateCorrelations) {
-    CalculateCorrelations();
+    this->CalculateCorrelations();
+  }
+
+  // *) Calculate Test0: TBI 20240110 name convention
+  if (fCalculateTest0) {
+    this->CalculateTest0();
   }
 
   // *) Calculate nested loops:
   if (fCalculateNestedLoops) {
-    CalculateNestedLoops();
+    this->CalculateNestedLoops();
 
     // TBI 20220823 this shall be called after all events are processed, only temporarily here called for each event:
-    ComparisonNestedLoopsVsCorrelations();
+    this->ComparisonNestedLoopsVsCorrelations();
   }
 
 } // void CalculateEverything()
@@ -2314,10 +2955,11 @@ void Steer(T1 const& collision, T2 const& tracks)
 {
   // This is the only function to be called in processRec(...), processRecSim(...), and processSim(...).
   // All analysis workflow is defined step-by-step here, via dedicated function calls.
-  // Order of function calls obviously does matter.
+  // The order of function calls obviously matters.
 
-  if (fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
+  if (tc.fVerbose) {
+    // LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__); // full function signature (including arguments, etc.), too verbose here...
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__); // just a bare function name
   }
 
   // *) Do all thingies before starting to process data from this collision (e.g. count number of events, fetch the run number, etc.):
@@ -2331,28 +2973,20 @@ void Steer(T1 const& collision, T2 const& tracks)
     return;
   }
 
-  // *) Fill event histograms after event cuts:
-  FillEventHistograms<rs>(collision, tracks, eAfter);
-
   // *) Main loop over particles:
   MainLoopOverParticles<rs>(tracks);
 
-  // *) Fill remaining event histograms after event AND particle cuts:
-  //    TBI 20231106 move this also to a dedicated method?
-  if constexpr (rs == eRec || rs == eRecAndSim) {
-    ceh_a.fEventHistograms[eSelectedTracks][eRec][eAfter]->Fill(fSelectedTracks);
-    if constexpr (rs == eRecAndSim) {
-      ceh_a.fEventHistograms[eSelectedTracks][eSim][eAfter]->Fill(fSelectedTracks); // TBI 20231106 re-think what to really fill here
-    }
-  }
-  if constexpr (rs == eSim) {
-    ceh_a.fEventHistograms[eSelectedTracks][eSim][eAfter]->Fill(fSelectedTracks);
-  }
-
   // *) Remaining event cuts which can be applied only after the loop over particles is performed:
   if ((fSelectedTracks < ceh_a.fEventCuts[eSelectedTracks][eMin]) || (fSelectedTracks > ceh_a.fEventCuts[eSelectedTracks][eMax])) {
+    if (tc.fVerbose) {
+      LOGF(info, "\033[1;31m%s eSelectedTracks\033[0m", __FUNCTION__); // just a bare function name
+    }
+    ResetEventByEventQuantities();
     return;
   }
+
+  // *) Fill event histograms after event AND particle cuts: // TBI 20240110 not sure still if this one is called here, or it has to be moved above
+  FillEventHistograms<rs>(collision, tracks, eAfter);
 
   // *) Calculate everything for selected events and particles:
   CalculateEverything();
@@ -2360,7 +2994,7 @@ void Steer(T1 const& collision, T2 const& tracks)
   // *) Reset event-by-event quantities:
   ResetEventByEventQuantities();
 
-} // template <typename T1, typename T2> void Steer(T1 const* collision, T2 const* tracks)
+} // template <eRecSim rs, typename T1, typename T2> void Steer(T1 const* collision, T2 const* tracks)
 
 //============================================================
 
@@ -2374,8 +3008,9 @@ void MainLoopOverParticles(T const& tracks)
   // To process both 'rec' and 'sim', set gProcessRecSim = true via configurable "cfWhatToProcess".
   // To process only 'sim', set gProcessSim = true via configurable "cfWhatToProcess".
 
-  if (fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
+  if (tc.fVerbose) {
+    // LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__); // full function signature (including arguments, etc.), too verbose here...
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__); // just a bare function name
   }
 
   // *) Local kinematic variables and corresponding particle weights:
