@@ -48,7 +48,7 @@ struct jetspectraDerivedMaker {
 
   // Custom track cuts for the cut variation study
   TrackSelection customTrackCuts;
-  Configurable<int> itsPattern{"itsPattern", 1, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
+  Configurable<int> itsPattern{"itsPattern", 2, "0 = Run3ITSibAny, 1 = Run3ITSibTwo, 2 = Run3ITSallAny, 3 = Run3ITSall7Layers"};  
   Configurable<bool> requireITS{"requireITS", true, "Additional cut on the ITS requirement"};
   Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
   Configurable<bool> requireGoldenChi2{"requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
