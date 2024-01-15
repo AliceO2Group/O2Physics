@@ -131,17 +131,16 @@ struct TreeWriterTpcV0 {
   TRandom3* fRndm = new TRandom3(0);
   bool downsampleTsalisCharged(double pt, double factor1Pt, double sqrts, double mass)
   {
-    if (factor1Pt < 0) {
+    if (factor1Pt < 0.) {
       return true;
     }
     const double prob = tsalisCharged(pt, mass, sqrts) * pt;
     const double probNorm = tsalisCharged(1., mass, sqrts);
-    int triggerMask = false;
-    if ((fRndm->Rndm() * ((prob / probNorm) * pt * pt)) < factor1Pt) {
-      triggerMask = true;
+    if ((fRndm->Rndm() * ((prob / probNorm) * pt * pt)) > factor1Pt) {
+      return false;
+    } else {
+      return true;
     }
-
-    return triggerMask;
   };
 
   /// Event selection
