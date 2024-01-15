@@ -16,9 +16,9 @@
 #include <filesystem>
 #include <iostream>
 #include <random>
-#include "FemtoDreamCutculator.h"
-#include "FemtoDreamSelection.h"
-#include "FemtoDreamTrackSelection.h"
+#include "femtoDreamCutCulator.h"
+#include "femtoDreamSelection.h"
+#include "femtoDreamTrackSelection.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
 
 using namespace o2::analysis::femtoDream;
