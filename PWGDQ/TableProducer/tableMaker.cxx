@@ -1199,7 +1199,7 @@ struct TableMaker {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithV0BitsForMaps, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
-  // Produce barrel only tables, with DalitzBits ------------------------------------------------------------------------------------------------
+  // Produce barrel only tables, with DalitzBits -----------------------------------------------------------------------------------------------
   void processBarrelOnlyWithDalitzBits(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                        soa::Filtered<MyBarrelTracksWithDalitzBits> const& tracksBarrel)
   {
