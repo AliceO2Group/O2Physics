@@ -160,7 +160,7 @@ struct femtoUniverseProducerTask {
   Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kPIDnSigmaMax, "ConfTrk"), std::vector<float>{3.5f, 3.f, 2.5f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kPIDnSigmaMax, "Track selection: ")};
   Configurable<float> ConfTrkPIDnSigmaOffsetTPC{"ConfTrkPIDnSigmaOffsetTPC", 0., "Offset for TPC nSigma because of bad calibration"};
   Configurable<float> ConfTrkPIDnSigmaOffsetTOF{"ConfTrkPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
-  Configurable<std::vector<int>> ConfTrkPIDspecies{"ConfTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
+  Configurable<std::vector<int>> ConfTrkPIDspecies{"ConfTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID, Pion:2; Kaon:3; Proton:4; Deuteron:5"};
   // Numbers from ~/alice/O2/DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h //static constexpr ID Pion = 2; static constexpr ID Kaon = 3; static constexpr ID Proton = 4; static constexpr ID Deuteron = 5;
   Configurable<float> ConfTOFpTmin{"ConfTOFpTmin", 500, "TOF pT min"};
 
@@ -621,9 +621,13 @@ struct femtoUniverseProducerTask {
         continue;
       }
 
-      if (!(ConfIsActivateV0 || ConfIsActivatePhi)) {
-        if (track.pt() > ConfTOFpTmin) {
-          if (!track.hasTOF()) {
+      if (track.pt() > ConfTOFpTmin) {
+        if (!track.hasTOF()) {
+          continue;
+        }
+        std::vector<int> tmpPids = ConfChildPIDspecies;
+        for (o2::track::PID pid : tmpPids) {
+          if (!trackCuts.getNsigmaTOF(track, pid) < ConfTOFnSigmaCut) {
             continue;
           }
         }
