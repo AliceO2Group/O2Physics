@@ -174,7 +174,6 @@ struct AnalysisEventSelection {
     // do nothing
   }
 
-
   PROCESS_SWITCH(AnalysisEventSelection, processNoSkimmed, "Run event selection without skimming", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmed, "Run event selection on DQ skimmed events", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy process function", false);
@@ -590,7 +589,7 @@ struct AnalysisSameEventPairing {
 
   void processDecayToEESkimmed(soa::Filtered<MyEventsSelected>::iterator const& event,
                                soa::Filtered<MyBarrelTracksSelected> const& tracks,
-                              ReducedMCTracks const& tracksMC)
+                               ReducedMCTracks const& tracksMC)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
