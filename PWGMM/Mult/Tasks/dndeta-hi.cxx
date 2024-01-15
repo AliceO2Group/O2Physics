@@ -67,10 +67,7 @@ using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 using DaughterTrack = soa::Join<aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>;
 using ExTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, DaughterTrack>;
 using FiTracks = soa::Filtered<ExTracks>;
-// using FiTracks = ExTracks;
-// using Particles = soa::Filtered<soa::Join<aod::McParticles, aod::ParticlesToTracks>>;
 using Particles = soa::Join<aod::McParticles, aod::ParticlesToTracks>;
-// using Particle = Particles;
 using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 using LabeledTracksEx = soa::Join<LabeledTracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
 using FiLTracks = soa::Filtered<LabeledTracksEx>;
@@ -271,40 +268,11 @@ struct MultiplicityCounter {
 
   expressions::Filter trackSelectionProper = ((aod::track::trackCutFlag & trackSelectionITS) == trackSelectionITS) && ifnode(ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC), ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true) && ncheckbit(aod::track::trackCutFlag, trackSelectionDCA);
 
-  // static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
-  // TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
-  // TrackSelectionFlags::kITSHits;
-
-  // static constexpr TrackSelectionFlags::flagtype trackSelectionTPC =
-  // TrackSelectionFlags::kTPCNCls |
-  // TrackSelectionFlags::kTPCCrossedRowsOverNCls |
-  // TrackSelectionFlags::kTPCChi2NDF;
-
-  // static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
-  // TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
-
-  // expressions::Filter trackSelectionProper = (aod::track::trackCutFlag & TrackSelectionFlags::kQualityTracks) == TrackSelectionFlags::kQualityTracks ;
-  // Filter trackSelectionProper = ncheckbit(aod::track::trackCutFlag, trackSelectionDCA);
-
-  // expressions::Filter trackSelectionProper = requireGlobalTrackWoPtEtaInFilter();
-  // expressions::Filter atrackFilter = (aod::track::bestCollisionId >= 0) &&
-  //	(nabs(aod::track::bestDCAZ) <= 2.f) &&
-  //	(nabs(aod::track::bestDCAXY) <= ((0.0105f + 0.0350f / npow(aod::track::pts, 1.1f))));
-  // expressions::Filter primaries = (aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary;
   expressions::Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau;
 
   Partition<Particles> mcSample = nabs(aod::mcparticle::eta) < estimatorEta;
   Partition<aod::Tracks> tSample = nabs(aod::track::eta) < estimatorEta;
-  // Partition<aod::MFTTracks> tSample2 = (aod::fwdtrack::eta < -2.f) && (aod::fwdtrack::eta > -4.f);
   Partition<FiTracks> tSample3 = nabs(aod::track::eta) < estimatorEta;
-  // Partition<soa::Filtered<LabeledTracksEx>> lsample = nabs(aod::track::eta) < estimatorEta;
-
-  // Preslice<FiTracks> perCol = aod::track::collisionId;
-  // Preslice<soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>> mcmfttracks_slice = o2::aod::fwdtrack::collisionId;
-  // Preslice<soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>> mctracks_slice = aod::track::collisionId;
-  // Preslice<aod::McParticles> mcparticle_slice = o2::aod::mcparticle::mcCollisionId;
-  // Preslice<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>> tracks_slice = aod::track::collisionId;
-  // Preslice<aod::MFTTracks> mfttracks_slice = o2::aod::fwdtrack::collisionId;
 
   void processEventStat(
     FullBCs const& bcs,
@@ -349,7 +317,6 @@ struct MultiplicityCounter {
       Bool_1d btrigc(kTrigend, false);
       registry.fill(HIST("Selection"), 1.);
       auto z = collision.posZ();
-      // auto permfttracks = tSample2->sliceByCached(aod::fwdtrack::collisionId, collision.globalIndex(), cache);
       auto pertracks = tSample3->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       auto Ntrk = 0;
 
@@ -369,7 +336,6 @@ struct MultiplicityCounter {
           Ntrk++; // charged track check
       }
       if (Ntrk > 0) {
-        // registry.fill(HIST("Selection"), 3.);
         if (btrigc[kSel8])
           btrigc[kSel8g0] = true;
       }
@@ -406,9 +372,6 @@ struct MultiplicityCounter {
 
         for (auto itrigc = 1u; itrigc < kTrigend; itrigc++) {
           if (btrigc[itrigc]) {
-            // if (track.phi()>3.08 && track.phi()<3.14) {
-            //   continue;
-            // }
             registry.fill(HIST("hphieta"), Double_t(kDATA), Double_t(itrigc), track.phi(), track.eta(), cent);
             registry.fill(HIST("hrecdndeta"), Double_t(kDATA), Double_t(itrigc), z, track.eta(), cent, Double_t(kParDATA), track.phi());
           }
@@ -417,33 +380,19 @@ struct MultiplicityCounter {
     }
   }
 
-  // template <typename MC, typename C>
-  // PresliceUnsorted<aod::McCollisionLabels> perMcCol = aod::mccollisionlabel::mcCollisionId;
-  // PresliceUnsorted<soa::Join<MyCollisions, aod::McCollisionLabels>> perMcCol = o2::aod::mccollisionlabel::mcCollisionId;
   PresliceUnsorted<soa::Join<MyCollisions, aod::McCollisionLabels>> perMcCol = o2::aod::mccollisionlabel::mcCollisionId;
   Preslice<aod::McParticles> perMCColparticles = aod::mcparticle::mcCollisionId;
   void processMCCounting(
-    aod::McCollisions const& mcCollisions, soa::Join<MyCollisionsCent, aod::McCollisionLabels> const& collisions, Particles const& mcParticles
-    //, soa::Filtered<aod::McPArticles> const& mcParticles
-    ,
-    FiLTracks const& tracks
-    //, FiTracks  const& tracks
-    //, DaughterTracks const&
-    // soa::SmallGroups<aod::ReassignedTracksCore> const& atracks,
-    // soa::Join<aod::MFTTracks, aod::McMFTTrackLabels> const& mfttracks
-  )
+    aod::McCollisions const& mcCollisions, soa::Join<MyCollisionsCent, aod::McCollisionLabels> const& collisions, Particles const& mcParticles,
+    FiLTracks const& tracks)
   {
-    //[[maybe_unused]] constexpr bool hasCentrality = C::template contains<aod::CentFT0Cs>() || C::template contains<aod::CentFT0Ms>() || hasCent<MC>();
     for (auto& mcCollision : mcCollisions) {
       Bool_1d bevtc(kECend, false);
       bevtc[kINEL] = true;
       registry.fill(HIST("Selection"), 1.);
 
-      // auto z = collision.posZ();
       auto mcz = mcCollision.posZ();
       auto genz = mcz;
-
-      // auto cent = -1;
 
       auto Ntrk_gen = 0;
       auto particles = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
@@ -477,7 +426,6 @@ struct MultiplicityCounter {
         auto kp = pdg->GetParticle(particle.pdgCode());
         if (kp != nullptr) {
           if (std::abs(kp->Charge()) >= 3) {
-            // if (bevtc[kINEL] == true && btrigc[kSel8] == true && std::abs(particle.eta())<0.8 && std::abs(mcz)<10 && particle.has_tracks()) registry.fill(HIST("hdndptefficiency"), particle.pt());
             if (bevtc[kINEL] && std::abs(particle.eta()) < 0.8 && std::abs(mcz) < 10) {
               registry.fill(HIST("hgendndpt"), particle.pt());
               if (particle.pt() < 0.1) {
@@ -558,11 +506,7 @@ struct MultiplicityCounter {
         }
       }
 
-      // if (collisionsample.size()>=2) continue;
-
       for (auto& collision : collisionsample) {
-        // ncoll++;
-        // if (!collision.has_mcCollision()) continue;
         auto cent = -1.0;
         if (IsPbPb) {
           if constexpr (MyCollisionsCent::template contains<aod::CentFT0Cs>())
@@ -599,12 +543,7 @@ struct MultiplicityCounter {
         }
 
         auto Ntrk_rec = 0;
-        // auto trackspart = lsample->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-        // auto trackspart = mctracks_slice->sliceByCached(aod::track::collisionId, collision.globalIndex(),cache);
-        // auto trackspart = lsample->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
         auto trackspart = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-        // trackspart.bindExternalIndices(&mcParticles);
-        // cout<<tracks.size()<< "<-tracks  ->trackpers->">
         for (auto& track : trackspart) {
           if (std::abs(track.eta()) < 1) {
             Ntrk_rec++;
@@ -612,7 +551,6 @@ struct MultiplicityCounter {
         }
 
         if (Ntrk_rec > 0) {
-          // registry.fill(HIST("Selection"), 3.);
           if (btrigc[kSel8])
             btrigc[kSel8g0] = true;
         }
@@ -669,7 +607,6 @@ struct MultiplicityCounter {
               auto pdg_mother = mother.pdgCode();
               if (pdg_mother == 310 || std::abs(pdg_mother) == 3122) {
                 pid = kMotherStrange;
-                // cout<< "MotherIDS : "<<MotherIDs <<" pdgcode = "<<pdg_mother<<endl;
               }
             }
             if (find(mclabels.begin(), mclabels.end(), track.mcParticleId()) != mclabels.end())
@@ -678,13 +615,11 @@ struct MultiplicityCounter {
             registry.fill(HIST("hetaresponse"), particle.eta(), track.eta(), cent);
             if (bevtc[kINEL] && btrigc[kSel8] && std::abs(track.eta()) < 0.8 && std::abs(z) < 10 && pid != kBkg && pid != kNotPrimary)
               registry.fill(HIST("hdndptefficiency"), particle.pt());
-            // if (bevtc[kINEL]   && std::abs(particle.eta())<0.8 && std::abs(mcz)<10 ) registry.fill(HIST("hgendndpt"), particle.pt());
             if (btrigc[kSel8] && bevtc[kINELg0])
               registry.fill(HIST("recetaINELg0Sel8recz10"), track.eta(), z);
             for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
               for (auto itrigc = 1u; itrigc < kTrigend; itrigc++) {
                 if (bevtc[ievtc] && btrigc[itrigc]) {
-                  // if (track.phi()>3.08 && track.phi()<3.14) continue;
                   registry.fill(HIST("hrecdndeta"), Double_t(ievtc), Double_t(itrigc), z, particle.eta(), cent, Double_t(pid), particle.phi());
                   registry.fill(HIST("hphieta"), Double_t(ievtc), Double_t(itrigc), track.phi(), track.eta(), cent);
                 }
@@ -695,29 +630,11 @@ struct MultiplicityCounter {
             for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
               for (auto itrigc = 1u; itrigc < kTrigend; itrigc++) {
                 if (bevtc[ievtc] && btrigc[itrigc]) {
-                  // if (track.phi()>3.08 && track.phi()<3.14) continue;
                   registry.fill(HIST("hrecdndeta"), Double_t(ievtc), Double_t(itrigc), z, track.eta(), cent, Double_t(kBkg), track.phi());
                 }
               }
             }
           }
-
-          // registry.fill(HIST("Tracks/ProcessMCCounting/hStatusCode"), Double_t(kINEL), Double_t(kAll), track.template mcParticle_as<Particles>().getGenStatusCode());
-          // registry.fill(HIST("Tracks/ProcessMCCounting/hMCStatusCode"), Double_t(kINEL), Double_t(kAll), track.template mcParticle_as<Particles>().getHepMCStatusCode());
-          // registrfill(HIST("Tracks/ProcessMCCounting/hProcessCode"), Double_t(kINEL), Double_t(kAll), track.template mcParticle_as<Particles>().getProcess());
-          // }
-          //  else{
-          //	for (auto ievtc = 1u; ievtc < kECend; ievtc++)
-          //	{
-          //		for (auto itrigc = 1u; itrigc < kTrigend; itrigc++)
-          //		{
-          //			if (bevtc[ievtc] == true && btrigc[itrigc] == true){
-          //				registry.fill(HIST("hrecdndeta"), Double_t(ievtc), Double_t(itrigc), z, track.eta(),cent, Double_t(kBkg), track.pt());
-          //			}
-          //		}
-          //	}
-
-          //}
         }
       }
     }
@@ -748,44 +665,10 @@ struct MultiplicityCounter {
     MyCollisionsCent const& collisions,
     FiTracks const& tracks)
   {
-    // runCounting(collisions, tracks, fullV0s, mfttracks);
     runCounting(collisions, tracks);
   }
   PROCESS_SWITCH(MultiplicityCounter, processCounting, "Count tracks with Centrality", false);
 
-  /*void processMCCounting(
-  //aod::McCollisions::iterator const& mccollision
-  //, soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions
-  //, Particles const& mcParticles
-  //, soa::Filtered<LabeledTracksEx> const& Fitrks
-  //, DaughterTracks const& Dautrks
-  //soa::SmallGroups<aod::ReassignedTracksCore> const& atracks,
-  //soa::Join<aod::MFTTracks, aod::McMFTTrackLabels> const& mfttracks
-  //)
-  aod::McCollisions::iterator const& mcCollision
-  , o2::soa::SmallGroups<soa::Join<MyCollisions, aod::McCollisionLabels>> const& collisions
-  , Particles const& particles
-  //, soa::Filtered<LabeledTracksEx> const& Fitrks
-  , FiTracks const& Fitrks
-  )
-  {
-  // runMCCounting(collisions, MCCollisions, fullV0s, mcParticles, Fitrks, Dautrks, atracks, mfttracks);
-  //runMCCounting<MyCollisions,McCollisions>(collisions
-  runMCCounting<McCollisions,MyCollisions>(mcCollision
-  , collisions
-  , particles
-  , Fitrks
-  //, Dautrks
-  //, atracks
-  //, mfttracks
-  );
-
-  }*/
-
-  // void processGen(
-  //   aod::McCollisions::iterator const& mcCollision,
-  //   o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>> const& collisions,
-  //   Particles const& mcParticles, FiTracks const& tracks)
   void processGen(
     aod::McCollisions::iterator const& mcCollision, Particles const& mcParticles)
   {
@@ -804,7 +687,6 @@ struct MultiplicityCounter {
         }
       }
     }
-    // cout<<"INEL? "<<bevtc[kINEL]<<"  INEL>0? "<<bevtc[kINELg0]<<endl;
     for (auto ievtc = 1u; ievtc < kECend; ievtc++) {
       if (bevtc[ievtc])
         registry.fill(HIST("hgenzvtx"), Double_t(ievtc), genz, -1.0);
@@ -875,13 +757,6 @@ struct MultiplicityCounter {
 
       for (auto& v0 : fullV0s) {
 
-        // auto pTrack = v0.template posTrack_as<FiTracks>();
-        // auto nTrack = v0.template negTrack_as<FiTracks>();
-
-        // if (v0.v0radius() > v0radius &&
-        //	v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa &&
-        // abs(pTrack.eta()) < etadau &&
-        // abs(nTrack.eta()) < etadau && fabs(z)<10 && fabs(v0.eta())<0.5) {
         if (fabs(z) < 10) {
           registry.fill(HIST("hv0mass"), cent, Double_t(kK0short), v0.eta(), Double_t(v0.mK0Short()));
           registry.fill(HIST("hv0mass"), cent, Double_t(kLambda), v0.eta(), Double_t(v0.mLambda()));
@@ -910,8 +785,6 @@ struct MultiplicityCounter {
         if constexpr (MyCollisionsCent::template contains<aod::CentFT0Ms>())
           cent = collision.centFT0M();
       }
-
-      // auto mcCollision = collision.mcCollision();
 
       if (useEvSel && !collision.sel8()) // event selection cut
         continue;
