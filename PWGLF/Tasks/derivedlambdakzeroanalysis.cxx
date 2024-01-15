@@ -68,10 +68,10 @@ struct derivedlambdakzeroanalysis {
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "min DCA Neg To PV (cm)"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "min DCA Pos To PV (cm)"};
   Configurable<float> v0radius{"v0radius", 5.0, "minimum V0 radius (cm)"};
-  
+
   // PID (TPC)
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
-  
+
   Configurable<bool> doQA{"doQA", true, "do topological variable QA histograms"};
   Configurable<float> massWindowQA{"massWindowQA", 0.005f, "mass window for QA plots"};
 
@@ -109,8 +109,8 @@ struct derivedlambdakzeroanalysis {
     histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
 
     // QA histograms if requested
-    if(doQA){
-      // initialize for K0short... 
+    if (doQA) {
+      // initialize for K0short...
       histos.add("K0Short/h3dPosDCAxy", "h3dPosDCAxy", kTH3F, {axisCentrality, axisPt, axisDCAtoPV});
       histos.add("K0Short/h3dNegDCAxy", "h3dNegDCAxy", kTH3F, {axisCentrality, axisPt, axisDCAtoPV});
       histos.add("K0Short/h3dDCADaughters", "h3dDCADaughters", kTH3F, {axisCentrality, axisPt, axisDCAdau});
@@ -124,44 +124,46 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0>
-  bool compatibleTPC( TV0 v0, int sp){
+  bool compatibleTPC(TV0 v0, int sp)
+  {
     float pidPos = TMath::Abs(v0.template posTrackExtra_as<dauTracks>().tpcNSigmaPi());
     float pidNeg = TMath::Abs(v0.template negTrackExtra_as<dauTracks>().tpcNSigmaPi());
 
-    if(sp==spLambda)
+    if (sp == spLambda)
       pidPos = TMath::Abs(v0.template posTrackExtra_as<dauTracks>().tpcNSigmaPr());
-    if(sp==spAntiLambda)
+    if (sp == spAntiLambda)
       pidNeg = TMath::Abs(v0.template negTrackExtra_as<dauTracks>().tpcNSigmaPr());
 
-    if(pidPos<TpcPidNsigmaCut && pidNeg<TpcPidNsigmaCut)
-      return true; 
+    if (pidPos < TpcPidNsigmaCut && pidNeg < TpcPidNsigmaCut)
+      return true;
 
-    // if not, then not 
+    // if not, then not
     return false;
   }
 
   template <typename TV0>
-  void fillQAHistograms( TV0 v0, int sp, float centrality){
+  void fillQAHistograms(TV0 v0, int sp, float centrality)
+  {
     float massRef = o2::constants::physics::MassKaonNeutral;
 
-    if(sp!=spK0Short)
+    if (sp != spK0Short)
       massRef = o2::constants::physics::MassLambda;
 
-    if( std::abs(v0.mK0Short()-massRef) < massWindowQA && sp == spK0Short){
+    if (std::abs(v0.mK0Short() - massRef) < massWindowQA && sp == spK0Short) {
       histos.fill(HIST("K0Short/h3dPosDCAxy"), centrality, v0.pt(), v0.dcapostopv());
       histos.fill(HIST("K0Short/h3dNegDCAxy"), centrality, v0.pt(), v0.dcanegtopv());
       histos.fill(HIST("K0Short/h3dDCADaughters"), centrality, v0.pt(), v0.dcaV0daughters());
       histos.fill(HIST("K0Short/h3dPointingAngle"), centrality, v0.pt(), TMath::ACos(v0.v0cosPA()));
       histos.fill(HIST("K0Short/h3dV0Radius"), centrality, v0.pt(), v0.v0radius());
     }
-    if( std::abs(v0.mLambda()-massRef) < massWindowQA && sp == spLambda){
+    if (std::abs(v0.mLambda() - massRef) < massWindowQA && sp == spLambda) {
       histos.fill(HIST("Lambda/h3dPosDCAxy"), centrality, v0.pt(), v0.dcapostopv());
       histos.fill(HIST("Lambda/h3dNegDCAxy"), centrality, v0.pt(), v0.dcanegtopv());
       histos.fill(HIST("Lambda/h3dDCADaughters"), centrality, v0.pt(), v0.dcaV0daughters());
       histos.fill(HIST("Lambda/h3dPointingAngle"), centrality, v0.pt(), TMath::ACos(v0.v0cosPA()));
       histos.fill(HIST("Lambda/h3dV0Radius"), centrality, v0.pt(), v0.v0radius());
     }
-    if( std::abs(v0.mAntiLambda()-massRef) < massWindowQA && sp == spAntiLambda){
+    if (std::abs(v0.mAntiLambda() - massRef) < massWindowQA && sp == spAntiLambda) {
       histos.fill(HIST("AntiLambda/h3dPosDCAxy"), centrality, v0.pt(), v0.dcapostopv());
       histos.fill(HIST("AntiLambda/h3dNegDCAxy"), centrality, v0.pt(), v0.dcanegtopv());
       histos.fill(HIST("AntiLambda/h3dDCADaughters"), centrality, v0.pt(), v0.dcaV0daughters());
@@ -170,40 +172,42 @@ struct derivedlambdakzeroanalysis {
     }
   }
 
-  Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcav0dau&& aod::v0data::v0cosPA > v0cospa;
+  Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters<dcav0dau && aod::v0data::v0cosPA> v0cospa;
 
   void process(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& collision, soa::Filtered<soa::Join<aod::V0Cores, aod::V0Extras>> const& fullV0s, dauTracks const&)
   {
     histos.fill(HIST("hEventSelection"), 0.5 /* all collisions */);
-    if (!collision.sel8()) { 
+    if (!collision.sel8()) {
       return;
     }
     histos.fill(HIST("hEventSelection"), 1.5 /* sel8 collisions */);
 
-    if (std::abs(collision.posZ()) > 10.f) { 
+    if (std::abs(collision.posZ()) > 10.f) {
       return;
     }
     histos.fill(HIST("hEventSelection"), 2.5 /* vertex-Z selected */);
     histos.fill(HIST("hEventCentrality"), collision.centFT0C());
 
     for (auto& v0 : fullV0s) {
-      if(std::abs(v0.negativeeta())>daughterEtaCut || std::abs(v0.positiveeta())>daughterEtaCut)
-        continue; //remove acceptance that's badly reproduced by MC
+      if (std::abs(v0.negativeeta()) > daughterEtaCut || std::abs(v0.positiveeta()) > daughterEtaCut)
+        continue; // remove acceptance that's badly reproduced by MC
 
       if (v0.v0radius() > v0radius) {
         // ___________________________________
-        //Analysis 1: Lambda
+        // Analysis 1: Lambda
         if (TMath::Abs(v0.yLambda()) < rapidityCut) {
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < lifetimecut->get("lifetimecutLambda")) {
             // Lambda daughter PID
-            if (compatibleTPC(v0,spLambda)) {
+            if (compatibleTPC(v0, spLambda)) {
               histos.fill(HIST("h3dMassLambda"), collision.centFT0C(), v0.pt(), v0.mLambda());
-              if( doQA ) fillQAHistograms( v0, spLambda, collision.centFT0C()); 
-            }         
+              if (doQA)
+                fillQAHistograms(v0, spLambda, collision.centFT0C());
+            }
             // AntiLambda daughter PID
-            if (compatibleTPC(v0,spAntiLambda)) {
+            if (compatibleTPC(v0, spAntiLambda)) {
               histos.fill(HIST("h3dMassAntiLambda"), collision.centFT0C(), v0.pt(), v0.mAntiLambda());
-              if( doQA ) fillQAHistograms( v0, spAntiLambda, collision.centFT0C() );   
+              if (doQA)
+                fillQAHistograms(v0, spAntiLambda, collision.centFT0C());
             }
           }
         }
@@ -211,13 +215,14 @@ struct derivedlambdakzeroanalysis {
         // Analysis 2: K0Short
         if (TMath::Abs(v0.yK0Short()) < rapidityCut) {
           if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < lifetimecut->get("lifetimecutK0S")) {
-            if (compatibleTPC(v0,spK0Short)) {
+            if (compatibleTPC(v0, spK0Short)) {
               histos.fill(HIST("h3dMassK0Short"), collision.centFT0C(), v0.pt(), v0.mK0Short());
-              if( doQA ) fillQAHistograms( v0, spK0Short, collision.centFT0C());          
+              if (doQA)
+                fillQAHistograms(v0, spK0Short, collision.centFT0C());
             }
           }
         }
-      } //end radius check
+      } // end radius check
     }
   }
 };
