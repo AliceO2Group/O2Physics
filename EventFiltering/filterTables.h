@@ -21,7 +21,7 @@ namespace o2::aod
 {
 namespace filtering
 {
-DECLARE_SOA_COLUMN(He, hasHe, bool); //!
+DECLARE_SOA_COLUMN(He, hasHe, bool);             //!
 DECLARE_SOA_COLUMN(H3L3Body, hasH3L3Body, bool); //! hypertriton 3body
 
 // diffraction
