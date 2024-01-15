@@ -22,9 +22,8 @@
 #include "Framework/StepTHn.h"
 #include "Framework/runDataProcessing.h"
 
-#include "FemtoDreamEventHisto.h"
-#include "FemtoDreamParticleHisto.h"
-#include "FemtoUtils.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
 
 using namespace o2;

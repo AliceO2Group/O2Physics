@@ -24,9 +24,9 @@
 
 #include <TDatabasePDG.h> // FIXME
 
-#include "FemtoDreamObjectSelection.h"
-#include "FemtoDreamSelection.h"
-#include "FemtoDreamTrackSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamObjectSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Framework/HistogramRegistry.h"

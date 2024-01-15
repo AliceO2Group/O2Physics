@@ -26,7 +26,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "FemtoDreamObjectSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamObjectSelection.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/HistogramRegistry.h"
 

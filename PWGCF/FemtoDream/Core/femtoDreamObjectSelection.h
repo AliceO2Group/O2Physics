@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include "FemtoDreamSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/HistogramRegistry.h"
 #include "PWGCF/DataModel/FemtoDerived.h"

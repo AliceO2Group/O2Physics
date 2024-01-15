@@ -25,12 +25,12 @@
 #include "Framework/StepTHn.h"
 
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include "FemtoDreamParticleHisto.h"
-#include "FemtoDreamEventHisto.h"
-#include "FemtoDreamPairCleaner.h"
-#include "FemtoDreamContainer.h"
-#include "FemtoDreamDetaDphiStar.h"
-#include "FemtoUtils.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamContainer.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamDetaDphiStar.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 
 using namespace o2;
 using namespace o2::aod;

@@ -17,8 +17,9 @@
 
 #include "TMath.h"
 #include <CCDB/BasicCCDBManager.h>
-#include "FemtoDreamCollisionSelection.h"
-#include "FemtoDreamTrackSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamCollisionSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -35,7 +36,6 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "Math/Vector4D.h"
-#include "FemtoUtils.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;

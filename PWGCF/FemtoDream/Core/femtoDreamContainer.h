@@ -24,7 +24,7 @@
 #include <string>
 
 #include "Framework/HistogramRegistry.h"
-#include "FemtoDreamMath.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamMath.h"
 
 #include "Math/Vector4D.h"
 #include "TMath.h"
