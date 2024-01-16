@@ -63,7 +63,7 @@ struct derivedlambdakzeroanalysis {
   Configurable<float> daughterEtaCut{"daughterEtaCut", 0.8, "max eta for daughters"};
 
   // Standard 5 topological criteria
-  Configurable<double> v0cospa{"v0cospa", 0.995, "min V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> v0cospa{"v0cospa", 0.995, "min V0 CosPA"};
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "max DCA V0 Daughters (cm)"};
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "min DCA Neg To PV (cm)"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "min DCA Pos To PV (cm)"};
