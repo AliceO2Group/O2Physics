@@ -28,13 +28,17 @@ using framework::Service;
 double ctpRateFetcher::fetch(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber, std::string sourceName)
 {
   if (sourceName.find("ZNC") != std::string::npos) {
-    return fetchCTPratesInputs(ccdb, timeStamp, runNumber, 26) / (sourceName.find("hadronic") != std::string::npos ? 28. : 1.);
+    if (runNumber < 544448) {
+      return fetchCTPratesInputs(ccdb, timeStamp, runNumber, 26) / (sourceName.find("hadronic") != std::string::npos ? 28. : 1.);
+    } else {
+      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "C1ZNC-B-NOPF-CRU") / (sourceName.find("hadronic") != std::string::npos ? 28. : 1.);
+    }
   } else if (sourceName == "T0CE") {
     return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVXTCE-B-NOPF-CRU");
   } else if (sourceName == "T0SC") {
     return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVXTSC-B-NOPF-CRU");
   } else if (sourceName == "T0VTX") {
-    if (runNumber < 295000) {
+    if (runNumber < 534202) {
       return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "minbias_TVX_L0"); // 2022
     } else {
       return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-B-NOPF-CRU");
