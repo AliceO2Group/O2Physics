@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2024 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -39,27 +39,97 @@
 #include "TLorentzVector.h"
 #include "TVector3.h"
 
-// \struct Pi0QCTask
-/// \brief Simple monitoring task for EMCal clusters
+/// \brief Simple pi0 reconstruction task used to scale the cell energy based on the difference in mass position in data and MC
+/// \author Nicolas Strangmann <nicolas.strangmann@cern.ch>, Goethe University Frankfurt / Oak Ridge National Laoratory
 /// \author Joshua Koenig <joshua.konig@cern.ch>, Goethe University Frankfurt
-/// \since 25.05.2022
+/// \since 12.01.2024
 ///
-/// This task is meant to be used for QC for the emcal using properties of the pi0
-/// - ...
-/// Simple event selection using the flag doEventSel is provided, which selects INT7 events if set to 1
-/// For pilot beam data, instead of relying on the event selection, one can veto specific BC IDS using the flag
-/// fDoVetoBCID.
+/// The task distiguishes the regions of EMCal, DCal and the 1/3rd modules and within these it differentiated between
+/// the region on the edge, the region behind the TRD support structure and the rest (inner region)
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using collisionEvSelIt = o2::aod::Collision;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 using selectedCluster = o2::soa::Filtered<o2::aod::EMCALCluster>;
-using selectedAmbiguousClusters = o2::soa::Filtered<o2::aod::EMCALAmbiguousClusters>;
-using selectedAmbiguousCluster = o2::soa::Filtered<o2::aod::EMCALAmbiguousCluster>;
+
+o2::emcal::Geometry* gEMCalGeometry = nullptr;
+const int NAcceptanceCategories = 10;
+enum Acceptance_Category {
+  kFullAcceptance = 0,
+  kEMCalbehindTRD = 1,
+  kEMCalBorder = 2,
+  kEMCalInside = 3,
+  kDCalbehindTRD = 4,
+  kDCalBorder = 5,
+  kDCalInside = 6,
+  kOneThirdbehindTRD = 7,
+  kOneThirdBorder = 8,
+  kOneThirdInside = 9
+};
+
+// Columns behind the TRD support structure to investigate the scaling factor seperately for this region
+std::array<int, 20> TRDColumns = {5, 6, 7, 8, 9, 34, 35, 36, 37, 38, 59, 60, 61, 62, 63, 87, 88, 89, 90, 91};
+
+// Returns a boolean on whether a given EMCal column is behind the TRD support structure
+bool IsBehindTRD(int col)
+{
+  return std::find(std::begin(TRDColumns), std::end(TRDColumns), col) != std::end(TRDColumns);
+}
+
+// Returns a boolean on whether a given EMCal row is on the border of a given supermodule
+bool IsAtBorder(int row, bool smallmodule)
+{
+  return (row == 0 || (smallmodule && row == 7) || (!smallmodule && row == 23));
+}
+
+int GetAcceptanceCategory(int cellid)
+{
+  auto [supermodule, module, phiInModule, etaInModule] = gEMCalGeometry->GetCellIndex(cellid);
+  auto [row, col] = gEMCalGeometry->GetCellPhiEtaIndexInSModule(supermodule, module, phiInModule, etaInModule);
+
+  // Add 48 columns for all odd supermodules and 16 for uneven DCal supermodules
+  if (supermodule % 2) {
+    col += 48;
+    if (supermodule > 11 && supermodule < 18) {
+      col += 16;
+    }
+  }
+
+  // LOGF(info, "cellid: %d\tsupermodule: %d\tmodule: %d\tphiInModule: %d\tetaInModule: %d\trow: %d\tcol: %d", cellid, supermodule, module, phiInModule, etaInModule, row, col);
+
+  if (supermodule >= 0 && supermodule <= 9) {
+    if (IsBehindTRD(col)) {
+      return kEMCalbehindTRD;
+    } else if (IsAtBorder(row, false)) {
+      return kEMCalBorder;
+    } else {
+      return kEMCalInside;
+    }
+  } else if (supermodule >= 12 && supermodule <= 17) {
+    if (IsBehindTRD(col)) {
+      return kDCalbehindTRD;
+    } else if (IsAtBorder(row, false)) {
+      return kDCalBorder;
+    } else {
+      return kDCalInside;
+    }
+  } else if (supermodule == 10 || supermodule == 11 || supermodule == 18 || supermodule == 19) {
+    if (IsBehindTRD(col)) {
+      return kOneThirdbehindTRD;
+    } else if (IsAtBorder(row, false)) {
+      return kOneThirdBorder;
+    } else {
+      return kOneThirdInside;
+    }
+  } else {
+    LOGF(error, Form("Supermodule %d not found", supermodule));
+    return 0;
+  }
+}
 
 struct Photon {
-  Photon(float eta_tmp, float phi_tmp, float energy_tmp, int clusid = 0)
+  Photon(float eta_tmp, float phi_tmp, float energy_tmp, int clusteridin = 0, int acceptance_categoryin = 0)
   {
     eta = eta_tmp;
     phi = phi_tmp;
@@ -71,7 +141,9 @@ struct Photon {
     pz = energy * std::cos(theta);
     pt = std::sqrt(px * px + py * py);
     photon.SetPxPyPzE(px, py, pz, energy);
-    id = clusid;
+    clusterid = clusteridin;
+
+    acceptance_category = acceptance_categoryin;
   }
 
   TLorentzVector photon;
@@ -84,7 +156,8 @@ struct Photon {
   bool onDCal; // Checks whether photon is in phi region of the DCal, otherwise: EMCal
   float energy;
   float theta;
-  int id;
+  int acceptance_category;
+  int clusterid;
 };
 
 struct Meson {
@@ -102,39 +175,12 @@ struct Meson {
   float getOpeningAngle() const { return pgamma1.photon.Angle(pgamma2.photon.Vect()); }
 };
 
-struct EventMixVec {
-
-  void AddEvent(std::vector<Photon> vecGamma)
-  {
-    if (vecEvtMix.size() < nEVtMixSize) {
-      vecEvtMix.push_back(vecGamma);
-    } else {
-      vecEvtMix.erase(vecEvtMix.begin() + nEVtMixSize - 1);
-      vecEvtMix.push_back(vecGamma);
-    }
-  }
-  Photon* getPhoton(unsigned int iEvt, unsigned int iGamma)
-  {
-    if (vecEvtMix.size() >= iEvt)
-      return nullptr;
-    if (vecEvtMix[iEvt].size() >= iGamma)
-      return nullptr;
-    return &vecEvtMix[iEvt][iGamma];
-  }
-
-  std::vector<std::vector<Photon>> vecEvtMix;
-  unsigned int nEVtMixSize = 20;
-};
-
-struct Pi0QCTask {
+struct Pi0EnergyScaleCalibTask {
   HistogramRegistry mHistManager{"NeutralMesonHistograms"};
-  o2::emcal::Geometry* mGeometry = nullptr;
+  Preslice<o2::aod::EMCALClusterCells> perCluster = o2::aod::emcalclustercell::emcalclusterId;
 
   // configurable parameters
-  // TODO adapt mDoEventSel switch to also allow selection of other triggers (e.g. EMC7)
   Configurable<bool> mDoEventSel{"doEventSel", 0, "demand kINT7"};
-  Configurable<std::string> mVetoBCID{"vetoBCID", "", "BC ID(s) to be excluded, this should be used as an alternative to the event selection"};
-  Configurable<std::string> mSelectBCID{"selectBCID", "all", "BC ID(s) to be included, this should be used as an alternative to the event selection"};
   Configurable<double> mVertexCut{"vertexCut", -1, "apply z-vertex cut with value in cm"};
   Configurable<int> mTimeMin{"TimeMinCut", -600, "apply min timing cut (in ns)"};
   Configurable<int> mTimeMax{"TimeMaxCut", 900, "apply min timing cut (in ns)"};
@@ -144,12 +190,10 @@ struct Pi0QCTask {
   Configurable<int> mMinNCellsCut{"MinNCellsCut", 1, "apply min cluster number of cell cut"};
   Configurable<float> mMinOpenAngleCut{"OpeningAngleCut", 0.0202, "apply min opening angle cut"};
   Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
-  Configurable<bool> mSplitEMCalDCal{"SplitEMCalDCal", 0, "Create and fill inv mass histograms for photons on EMCal and DCal individually"};
-  std::vector<int> mVetoBCIDs;
-  std::vector<int> mSelectBCIDs;
+  Configurable<bool> mRequireBothPhotonsFromAcceptance{"RequireBothPhotonsFromAcceptance", 0, "Require both photons to be from the same acceptance category"};
 
-  ConfigurableAxis pTBinning{"pTBinning", {500, 0.0f, 50.0f}, "Binning used along pT axis for inv mass histograms"};
-  ConfigurableAxis invmassBinning{"invmassBinning", {400, 0.0f, 0.8f}, "Binning used for inv mass axis in inv mass - pT histograms"};
+  ConfigurableAxis pTBinning{"pTBinning", {200, 0.0f, 20.0f}, "Binning used along pT axis for inv mass histograms"};
+  ConfigurableAxis invmassBinning{"invmassBinning", {200, 0.0f, 0.4f}, "Binning used for inv mass axis in inv mass - pT histograms"};
 
   // define cluster filter. It selects only those clusters which are of the type
   // specified in the string mClusterDefinition,e.g. kV3Default, which is V3 clusterizer with default
@@ -160,9 +204,6 @@ struct Pi0QCTask {
   // define container for photons
   std::vector<Photon> mPhotons;
 
-  // event mixing class
-  EventMixVec evtMix;
-
   /// \brief Create output histograms and initialize geometry
   void init(InitContext const&)
   {
@@ -170,13 +211,12 @@ struct Pi0QCTask {
     using o2HistType = HistType;
     using o2Axis = AxisSpec;
 
-    // load geometry just in case we need it
-    mGeometry = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
+    // load geometry used to match a cellid to a supermodule and the row+column
+    gEMCalGeometry = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
 
     // create common axes
-    LOG(info) << "Creating histograms";
     const o2Axis bcAxis{3501, -0.5, 3500.5};
-    const o2Axis energyAxis{makeClusterBinning(), "#it{E} (GeV)"};
+    const o2Axis AccCategoryAxis{10, -0.5, 9.5};
 
     mHistManager.add("events", "events;;#it{count}", o2HistType::kTH1F, {{4, 0.5, 4.5}});
     auto heventType = mHistManager.get<TH1>(HIST("events"));
@@ -192,10 +232,9 @@ struct Pi0QCTask {
     // cluster properties
     for (bool iBeforeCuts : {false, true}) {
       const char* ClusterDirectory = iBeforeCuts ? "ClustersBeforeCuts" : "ClustersAfterCuts";
-      mHistManager.add(Form("%s/clusterE", ClusterDirectory), "Energy of cluster", o2HistType::kTH1F, {energyAxis});
-      mHistManager.add(Form("%s/clusterE_SimpleBinning", ClusterDirectory), "Energy of cluster", o2HistType::kTH1F, {{400, 0, 100, "#it{E} (GeV)"}});
+      mHistManager.add(Form("%s/clusterE", ClusterDirectory), "Energy of cluster", o2HistType::kTH1F, {{400, 0, 100, "#it{E} (GeV)"}});
       mHistManager.add(Form("%s/clusterTime", ClusterDirectory), "Time of cluster", o2HistType::kTH1F, {{500, -250, 250, "#it{t}_{cls} (ns)"}});
-      mHistManager.add(Form("%s/clusterEtaPhi", ClusterDirectory), "Eta and phi of cluster", o2HistType::kTH2F, {{100, -1, 1, "#eta"}, {100, 0, 2 * TMath::Pi(), "#phi"}});
+      mHistManager.add(Form("%s/clusterEtaPhi", ClusterDirectory), "Eta and phi of cluster", o2HistType::kTH3F, {{200, -1, 1, "#eta"}, {200, 0, 2 * TMath::Pi(), "#phi"}, AccCategoryAxis});
       mHistManager.add(Form("%s/clusterM02", ClusterDirectory), "M02 of cluster", o2HistType::kTH1F, {{400, 0, 5, "#it{M}_{02}"}});
       mHistManager.add(Form("%s/clusterM20", ClusterDirectory), "M20 of cluster", o2HistType::kTH1F, {{400, 0, 2.5, "#it{M}_{20}"}});
       mHistManager.add(Form("%s/clusterNLM", ClusterDirectory), "Number of local maxima of cluster", o2HistType::kTH1I, {{10, 0, 10, "#it{N}_{local maxima}"}});
@@ -203,44 +242,16 @@ struct Pi0QCTask {
       mHistManager.add(Form("%s/clusterDistanceToBadChannel", ClusterDirectory), "Distance to bad channel", o2HistType::kTH1F, {{100, 0, 100, "#it{d}"}});
     }
 
-    // meson related histograms
-    mHistManager.add("invMassVsPt", "invariant mass and pT of meson candidates", o2HistType::kTH2F, {invmassBinning, pTBinning});
-    mHistManager.add("invMassVsPtBackground", "invariant mass and pT of background meson candidates", o2HistType::kTH2F, {invmassBinning, pTBinning});
-    mHistManager.add("invMassVsPtMixedBackground", "invariant mass and pT of mixed background meson candidates", o2HistType::kTH2F, {invmassBinning, pTBinning});
-
-    if (mSplitEMCalDCal) {
-      mHistManager.add("invMassVsPt_EMCal", "invariant mass and pT of meson candidates with both clusters on EMCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
-      mHistManager.add("invMassVsPtBackground_EMCal", "invariant mass and pT of background meson candidates with both clusters on EMCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
-      mHistManager.add("invMassVsPtMixedBackground_EMCal", "invariant mass and pT of mixed background meson candidates with both clusters on EMCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
-      mHistManager.add("invMassVsPt_DCal", "invariant mass and pT of meson candidates with both clusters on DCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
-      mHistManager.add("invMassVsPtBackground_DCal", "invariant mass and pT of background meson candidates with both clusters on DCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
-      mHistManager.add("invMassVsPtMixedBackground_DCal", "invariant mass and pT of mixed background meson candidates with both clusters on DCal", o2HistType::kTH2F, {invmassBinning, pTBinning});
-    }
-
-    if (mVetoBCID->length()) {
-      std::stringstream parser(mVetoBCID.value);
-      std::string token;
-      int bcid;
-      while (std::getline(parser, token, ',')) {
-        bcid = std::stoi(token);
-        LOG(info) << "Veto BCID " << bcid;
-        mVetoBCIDs.push_back(bcid);
-      }
-    }
-    if (mSelectBCID.value != "all") {
-      std::stringstream parser(mSelectBCID.value);
-      std::string token;
-      int bcid;
-      while (std::getline(parser, token, ',')) {
-        bcid = std::stoi(token);
-        LOG(info) << "Select BCID " << bcid;
-        mSelectBCIDs.push_back(bcid);
-      }
-    }
+    mHistManager.add("invMassVsPtVsAcc", "invariant mass and pT of meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, AccCategoryAxis});
+    mHistManager.add("invMassVsPtVsAccBackground", "invariant mass and pT of background meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, AccCategoryAxis});
+    initCategoryAxis(mHistManager.get<TH3>(HIST("invMassVsPtVsAcc")).get());
+    initCategoryAxis(mHistManager.get<TH3>(HIST("invMassVsPtVsAccBackground")).get());
+    initCategoryAxis(mHistManager.get<TH3>(HIST("ClustersBeforeCuts/clusterEtaPhi")).get());
+    initCategoryAxis(mHistManager.get<TH3>(HIST("ClustersAfterCuts/clusterEtaPhi")).get());
   }
 
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCollisions(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::EMCALMatchedCollisions>::iterator const& collision, selectedClusters const& clusters)
+  void process(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::EMCALMatchedCollisions>::iterator const& collision, o2::aod::Calos const& allcalos, selectedClusters const& clusters, o2::aod::EMCALClusterCells const& cells)
   {
     mHistManager.fill(HIST("events"), 1); // Fill "All events" bin of event histogram
     LOG(debug) << "processCollisions";
@@ -251,9 +262,6 @@ struct Pi0QCTask {
     }
     mHistManager.fill(HIST("events"), 2); // Fill "One collision in BC" bin of event histogram
 
-    // do event selection if mDoEventSel is specified
-    // currently the event selection is hard coded to kTVXinEMC
-    // but other selections are possible that are defined in TriggerAliases.h
     if (mDoEventSel && (!collision.alias_bit(kTVXinEMC))) {
       LOG(debug) << "Event not selected becaus it is not kTVXinEMC, skipping";
       return;
@@ -267,39 +275,29 @@ struct Pi0QCTask {
     mHistManager.fill(HIST("events"), 4); // Fill "Selected" bin of event histogram
     mHistManager.fill(HIST("eventVertexZSelected"), collision.posZ());
 
-    ProcessClusters(clusters);
+    ProcessClusters(clusters, cells);
     ProcessMesons();
   }
-  PROCESS_SWITCH(Pi0QCTask, processCollisions, "Process clusters from collision", false);
 
-  /// \brief Process EMCAL clusters that are not matched to a collision
-  /// This is not needed for most users
-  void processAmbiguous(o2::aod::BCs::iterator const& bc, selectedAmbiguousClusters const& clusters)
+  template <typename Cluster>
+  int GetLeadingCellID(Cluster const& cluster, o2::aod::EMCALClusterCells const& cells)
   {
-    LOG(debug) << "processAmbiguous";
-    // TODO: remove this loop and put it in separate process function that only takes care of ambiguous clusters
-    o2::InteractionRecord eventIR;
-    eventIR.setFromLong(bc.globalBC());
-    mHistManager.fill(HIST("eventBCAll"), eventIR.bc);
-    if (std::find(mVetoBCIDs.begin(), mVetoBCIDs.end(), eventIR.bc) != mVetoBCIDs.end()) {
-      LOG(info) << "Event rejected because of veto BCID " << eventIR.bc;
-      return;
+    auto cellsofcluster = cells.sliceBy(perCluster, cluster.globalIndex());
+    double maxamp = 0;
+    int cellid = -1;
+    for (const auto& cell : cellsofcluster) {
+      if (cell.calo().amplitude() > maxamp) {
+        maxamp = cell.calo().amplitude();
+        cellid = cell.calo().cellNumber();
+      }
     }
-    if (mSelectBCIDs.size() && (std::find(mSelectBCIDs.begin(), mSelectBCIDs.end(), eventIR.bc) == mSelectBCIDs.end())) {
-      return;
-    }
-    mHistManager.fill(HIST("eventBCSelected"), eventIR.bc);
-
-    ProcessAmbiguousClusters(clusters);
-    ProcessMesons();
+    return cellid;
   }
-  PROCESS_SWITCH(Pi0QCTask, processAmbiguous, "Process Ambiguous clusters", false);
 
   /// \brief Process EMCAL clusters that are matched to a collisions
   template <typename Clusters>
-  void ProcessClusters(Clusters const& clusters)
+  void ProcessClusters(Clusters const& clusters, o2::aod::EMCALClusterCells const& cells)
   {
-    LOG(debug) << "ProcessClusters";
     // clear photon vector
     mPhotons.clear();
 
@@ -309,58 +307,32 @@ struct Pi0QCTask {
     // auto eventClusters = clusters.select(o2::aod::emcalcluster::bcId == theCollision.bc().globalBC());
     for (const auto& cluster : clusters) {
 
-      // o2::InteractionRecord eventIR;
       auto collID = cluster.collisionId();
       if (globalCollID == -1000)
         globalCollID = collID;
 
-      if (globalCollID != collID) {
-        LOG(info) << "Something went wrong with the collision ID";
+      int cellid = GetLeadingCellID(cluster, cells);
+
+      FillClusterQAHistos<decltype(cluster), 0>(cluster, cellid);
+
+      if (ClusterRejectedByCut(cluster)) {
+        continue;
       }
 
-      FillClusterQAHistos<decltype(cluster), 0>(cluster);
-
-      if (ClusterRejectedByCut(cluster))
-        continue;
-
-      FillClusterQAHistos<decltype(cluster), 1>(cluster);
+      FillClusterQAHistos<decltype(cluster), 1>(cluster, cellid);
 
       // put clusters in photon vector
-      mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.id()));
-    }
-  }
-
-  /// \brief Process EMCAL clusters that are not matched to a collisions
-  template <typename Clusters>
-  void ProcessAmbiguousClusters(Clusters const& clusters)
-  {
-    LOG(debug) << "ProcessClusters";
-    // clear photon vector
-    mPhotons.clear();
-
-    // loop over all clusters from accepted collision
-    for (const auto& cluster : clusters) {
-
-      FillClusterQAHistos<decltype(cluster), 0>(cluster);
-
-      if (ClusterRejectedByCut(cluster))
-        continue;
-
-      FillClusterQAHistos<decltype(cluster), 1>(cluster);
-
-      // put clusters in photon vector
-      mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.id()));
+      mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.id(), GetAcceptanceCategory(cellid)));
     }
   }
 
   /// \brief Fills the standard QA histograms for a given cluster
   template <typename Cluster, int BeforeCuts>
-  void FillClusterQAHistos(Cluster const& cluster)
+  void FillClusterQAHistos(Cluster const& cluster, int cellid)
   {
     // In this implementation the cluster properties are directly loaded from the flat table,
     // in the future one should consider using the AnalysisCluster object to work with after loading.
     static constexpr std::string_view clusterQAHistEnergy[2] = {"ClustersBeforeCuts/clusterE", "ClustersAfterCuts/clusterE"};
-    static constexpr std::string_view clusterQAHistEnergySimpleBinning[2] = {"ClustersBeforeCuts/clusterE_SimpleBinning", "ClustersAfterCuts/clusterE_SimpleBinning"};
     static constexpr std::string_view clusterQAHistTime[2] = {"ClustersBeforeCuts/clusterTime", "ClustersAfterCuts/clusterTime"};
     static constexpr std::string_view clusterQAHistEtaPhi[2] = {"ClustersBeforeCuts/clusterEtaPhi", "ClustersAfterCuts/clusterEtaPhi"};
     static constexpr std::string_view clusterQAHistM02[2] = {"ClustersBeforeCuts/clusterM02", "ClustersAfterCuts/clusterM02"};
@@ -369,9 +341,9 @@ struct Pi0QCTask {
     static constexpr std::string_view clusterQAHistNCells[2] = {"ClustersBeforeCuts/clusterNCells", "ClustersAfterCuts/clusterNCells"};
     static constexpr std::string_view clusterQAHistDistanceToBadChannel[2] = {"ClustersBeforeCuts/clusterDistanceToBadChannel", "ClustersAfterCuts/clusterDistanceToBadChannel"};
     mHistManager.fill(HIST(clusterQAHistEnergy[BeforeCuts]), cluster.energy());
-    mHistManager.fill(HIST(clusterQAHistEnergySimpleBinning[BeforeCuts]), cluster.energy());
     mHistManager.fill(HIST(clusterQAHistTime[BeforeCuts]), cluster.time());
-    mHistManager.fill(HIST(clusterQAHistEtaPhi[BeforeCuts]), cluster.eta(), cluster.phi());
+    mHistManager.fill(HIST(clusterQAHistEtaPhi[BeforeCuts]), cluster.eta(), cluster.phi(), 0);
+    mHistManager.fill(HIST(clusterQAHistEtaPhi[BeforeCuts]), cluster.eta(), cluster.phi(), GetAcceptanceCategory(cellid));
     mHistManager.fill(HIST(clusterQAHistM02[BeforeCuts]), cluster.m02());
     mHistManager.fill(HIST(clusterQAHistM20[BeforeCuts]), cluster.m20());
     mHistManager.fill(HIST(clusterQAHistNLM[BeforeCuts]), cluster.nlm());
@@ -409,8 +381,6 @@ struct Pi0QCTask {
   /// \brief Process meson candidates, calculate invariant mass and pT and fill histograms
   void ProcessMesons()
   {
-    LOG(debug) << "ProcessMesons " << mPhotons.size();
-
     // if less then 2 clusters are found, skip event
     if (mPhotons.size() < 2)
       return;
@@ -418,28 +388,19 @@ struct Pi0QCTask {
     // loop over all photon combinations and build meson candidates
     for (unsigned int ig1 = 0; ig1 < mPhotons.size(); ++ig1) {
       for (unsigned int ig2 = ig1 + 1; ig2 < mPhotons.size(); ++ig2) {
-
-        // build meson from photons
-        Meson meson(mPhotons[ig1], mPhotons[ig2]);
+        Meson meson(mPhotons[ig1], mPhotons[ig2]); // build meson from photons
         if (meson.getOpeningAngle() > mMinOpenAngleCut) {
-          mHistManager.fill(HIST("invMassVsPt"), meson.getMass(), meson.getPt());
-
-          if (mSplitEMCalDCal) {
-            if (!mPhotons[ig1].onDCal && !mPhotons[ig2].onDCal) {
-              mHistManager.fill(HIST("invMassVsPt_EMCal"), meson.getMass(), meson.getPt());
-            } else if (mPhotons[ig1].onDCal && mPhotons[ig2].onDCal) {
-              mHistManager.fill(HIST("invMassVsPt_DCal"), meson.getMass(), meson.getPt());
+          mHistManager.fill(HIST("invMassVsPtVsAcc"), meson.getMass(), meson.getPt(), 0);
+          for (int iAcceptanceCategory = 1; iAcceptanceCategory < NAcceptanceCategories; iAcceptanceCategory++) {
+            if ((!mRequireBothPhotonsFromAcceptance && (mPhotons[ig1].acceptance_category == iAcceptanceCategory || mPhotons[ig2].acceptance_category == iAcceptanceCategory)) ||
+                (mPhotons[ig1].acceptance_category == iAcceptanceCategory && mPhotons[ig2].acceptance_category == iAcceptanceCategory)) {
+              mHistManager.fill(HIST("invMassVsPtVsAcc"), meson.getMass(), meson.getPt(), iAcceptanceCategory);
             }
           }
+          CalculateBackground(meson, ig1, ig2); // calculate background candidates (rotation background)
         }
-
-        // calculate background candidates (rotation background)
-        CalculateBackground(meson, ig1, ig2);
       }
-      CalculateMixedBack(mPhotons[ig1]);
     }
-
-    evtMix.AddEvent(mPhotons);
   }
 
   /// \brief Calculate background (using rotation background method)
@@ -471,8 +432,8 @@ struct Pi0QCTask {
       lvRotationPhoton2.Rotate(rotationAngle, lvRotationPion);
 
       // initialize Photon objects for rotated photons
-      Photon rotPhoton1(lvRotationPhoton1.Eta(), lvRotationPhoton1.Phi(), lvRotationPhoton1.E(), mPhotons[ig1].id);
-      Photon rotPhoton2(lvRotationPhoton2.Eta(), lvRotationPhoton2.Phi(), lvRotationPhoton2.E(), mPhotons[ig2].id);
+      Photon rotPhoton1(lvRotationPhoton1.Eta(), lvRotationPhoton1.Phi(), lvRotationPhoton1.E(), mPhotons[ig1].clusterid, mPhotons[ig1].acceptance_category);
+      Photon rotPhoton2(lvRotationPhoton2.Eta(), lvRotationPhoton2.Phi(), lvRotationPhoton2.E(), mPhotons[ig2].clusterid, mPhotons[ig2].acceptance_category);
 
       // build meson from rotated photons
       Meson mesonRotated1(rotPhoton1, mPhotons[ig3]);
@@ -480,74 +441,45 @@ struct Pi0QCTask {
 
       // Fill histograms
       if (mesonRotated1.getOpeningAngle() > mMinOpenAngleCut) {
-        mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated1.getMass(), mesonRotated1.getPt());
-        if (mSplitEMCalDCal) {
-          if (!mPhotons[ig1].onDCal && !mPhotons[ig2].onDCal && !mPhotons[ig3].onDCal) {
-            mHistManager.fill(HIST("invMassVsPtBackground_EMCal"), mesonRotated1.getMass(), mesonRotated1.getPt());
-          } else if (mPhotons[ig1].onDCal && mPhotons[ig2].onDCal && mPhotons[ig3].onDCal) {
-            mHistManager.fill(HIST("invMassVsPtBackground_DCal"), mesonRotated1.getMass(), mesonRotated1.getPt());
+        mHistManager.fill(HIST("invMassVsPtVsAccBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), 0);
+        for (int iAcceptanceCategory = 1; iAcceptanceCategory < NAcceptanceCategories; iAcceptanceCategory++) {
+          if ((!mRequireBothPhotonsFromAcceptance && (rotPhoton1.acceptance_category == iAcceptanceCategory || mPhotons[ig3].acceptance_category == iAcceptanceCategory)) ||
+              (rotPhoton1.acceptance_category == iAcceptanceCategory && mPhotons[ig3].acceptance_category == iAcceptanceCategory)) {
+            mHistManager.fill(HIST("invMassVsPtVsAccBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), iAcceptanceCategory);
           }
         }
       }
       if (mesonRotated2.getOpeningAngle() > mMinOpenAngleCut) {
-        mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated2.getMass(), mesonRotated2.getPt());
-        if (mSplitEMCalDCal) {
-          if (!mPhotons[ig1].onDCal && !mPhotons[ig2].onDCal && !mPhotons[ig3].onDCal) {
-            mHistManager.fill(HIST("invMassVsPtBackground_EMCal"), mesonRotated2.getMass(), mesonRotated2.getPt());
-          } else if (mPhotons[ig1].onDCal && mPhotons[ig2].onDCal && mPhotons[ig3].onDCal) {
-            mHistManager.fill(HIST("invMassVsPtBackground_DCal"), mesonRotated2.getMass(), mesonRotated2.getPt());
+        mHistManager.fill(HIST("invMassVsPtVsAccBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), 0);
+        for (int iAcceptanceCategory = 1; iAcceptanceCategory < NAcceptanceCategories; iAcceptanceCategory++) {
+          if ((!mRequireBothPhotonsFromAcceptance && (rotPhoton2.acceptance_category == iAcceptanceCategory || mPhotons[ig3].acceptance_category == iAcceptanceCategory)) ||
+              (rotPhoton2.acceptance_category == iAcceptanceCategory && mPhotons[ig3].acceptance_category == iAcceptanceCategory)) {
+            mHistManager.fill(HIST("invMassVsPtVsAccBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), iAcceptanceCategory);
           }
         }
       }
     }
   }
 
-  void CalculateMixedBack(Photon gamma)
+  // Beautify acceptance category bin labels
+  void initCategoryAxis(TH3* hist)
   {
-    for (unsigned int i = 0; i < evtMix.vecEvtMix.size(); ++i) {
-      for (unsigned int ig1 = 0; ig1 < evtMix.vecEvtMix[i].size(); ++ig1) {
-        Meson meson(gamma, evtMix.vecEvtMix[i][ig1]);
-        if (meson.getOpeningAngle() > mMinOpenAngleCut) {
-          mHistManager.fill(HIST("invMassVsPtMixedBackground"), meson.getMass(), meson.getPt());
-          if (mSplitEMCalDCal) {
-            if (!gamma.onDCal && !evtMix.vecEvtMix[i][ig1].onDCal) {
-              mHistManager.fill(HIST("invMassVsPtMixedBackground_EMCal"), meson.getMass(), meson.getPt());
-            } else if (gamma.onDCal && evtMix.vecEvtMix[i][ig1].onDCal) {
-              mHistManager.fill(HIST("invMassVsPtMixedBackground_DCal"), meson.getMass(), meson.getPt());
-            }
-          }
-        }
-      }
-    }
-  }
-
-  /// \brief Create binning for cluster energy/pT axis (variable bin size)
-  /// direct port from binning often used in AliPhysics for debugging
-  /// \return vector with bin limits
-  std::vector<double> makeClusterBinning() const
-  {
-    std::vector<double> result;
-    int nBinsPt = 179;
-    double maxPt = 60;
-    for (Int_t i = 0; i < nBinsPt + 1; i++) {
-      if (i < 100) {
-        result.emplace_back(0.10 * i);
-      } else if (i < 140) {
-        result.emplace_back(10. + 0.25 * (i - 100));
-      } else if (i < 180) {
-        result.emplace_back(20. + 1.00 * (i - 140));
-      } else {
-        result.emplace_back(maxPt);
-      }
-    }
-    return result;
+    hist->GetZaxis()->SetTitle("Acceptance Category");
+    hist->GetZaxis()->SetBinLabel(1, "FullAcceptance");
+    hist->GetZaxis()->SetBinLabel(2, "EMCalbehindTRD");
+    hist->GetZaxis()->SetBinLabel(3, "EMCalBorder");
+    hist->GetZaxis()->SetBinLabel(4, "EMCalInside");
+    hist->GetZaxis()->SetBinLabel(5, "DCalbehindTRD");
+    hist->GetZaxis()->SetBinLabel(6, "DCalBorder");
+    hist->GetZaxis()->SetBinLabel(7, "DCalInside");
+    hist->GetZaxis()->SetBinLabel(8, "OneThirdbehindTRD");
+    hist->GetZaxis()->SetBinLabel(9, "OneThirdBorder");
+    hist->GetZaxis()->SetBinLabel(10, "OneThirdInside");
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{
-    adaptAnalysisTask<Pi0QCTask>(cfgc, TaskName{"EMCPi0QCTask"}, SetDefaultProcesses{{{"processCollisions", true}, {"processAmbiguous", false}}}),
-    adaptAnalysisTask<Pi0QCTask>(cfgc, TaskName{"EMCPi0QCTaskAmbiguous"}, SetDefaultProcesses{{{"processCollisions", false}, {"processAmbiguous", true}}})};
-  return workflow;
+  return WorkflowSpec{
+    adaptAnalysisTask<Pi0EnergyScaleCalibTask>(cfgc)};
 }
