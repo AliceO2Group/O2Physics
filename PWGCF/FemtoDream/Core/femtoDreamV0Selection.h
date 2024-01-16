@@ -15,8 +15,8 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
-#ifndef PWGCF_FEMTODREAM_FEMTODREAMV0SELECTION_H_
-#define PWGCF_FEMTODREAM_FEMTODREAMV0SELECTION_H_
+#ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMV0SELECTION_H_
+#define PWGCF_FEMTODREAM_CORE_FEMTODREAMV0SELECTION_H_
 
 #include <iostream>
 #include <string>
@@ -24,9 +24,9 @@
 
 #include <TDatabasePDG.h> // FIXME
 
-#include "FemtoDreamObjectSelection.h"
-#include "FemtoDreamSelection.h"
-#include "FemtoDreamTrackSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamObjectSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Framework/HistogramRegistry.h"
@@ -707,4 +707,4 @@ void FemtoDreamV0Selection::fillQA(C const& col, V const& v0, T const& posTrack,
 
 } // namespace o2::analysis::femtoDream
 
-#endif // PWGCF_FEMTODREAM_FEMTODREAMV0SELECTION_H_
+#endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMV0SELECTION_H_

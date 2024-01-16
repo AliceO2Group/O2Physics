@@ -17,15 +17,15 @@
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 
-#ifndef PWGCF_FEMTODREAM_FEMTODREAMCONTAINERTHREEBODY_H_
-#define PWGCF_FEMTODREAM_FEMTODREAMCONTAINERTHREEBODY_H_
+#ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMCONTAINERTHREEBODY_H_
+#define PWGCF_FEMTODREAM_CORE_FEMTODREAMCONTAINERTHREEBODY_H_
 
 #include <fairlogger/Logger.h>
 #include <vector>
 #include <string>
 
 #include "Framework/HistogramRegistry.h"
-#include "FemtoDreamMath.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamMath.h"
 
 #include "Math/Vector4D.h"
 #include "TMath.h"
@@ -224,4 +224,4 @@ class FemtoDreamContainerThreeBody
 
 } // namespace o2::analysis::femtoDream
 
-#endif // PWGCF_FEMTODREAM_FEMTODREAMCONTAINERTHREEBODY_H_
+#endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMCONTAINERTHREEBODY_H_
