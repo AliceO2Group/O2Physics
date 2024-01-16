@@ -1631,8 +1631,8 @@ void CalculateCorrelations()
       c_a.fCorrelationsPro[1][h - 1][AFO_MULTIPLICITY]->Fill(fSelectedTracks + 0.5, fourC, wFour);
     }
     // vs. centrality:
-    if (c_a.fCorrelationsPro[1][h - 1][AFO_MULTIPLICITY]) {
-      c_a.fCorrelationsPro[1][h - 1][AFO_MULTIPLICITY]->Fill(fCentrality, fourC, wFour);
+    if (c_a.fCorrelationsPro[1][h - 1][AFO_CENTRALITY]) {
+      c_a.fCorrelationsPro[1][h - 1][AFO_CENTRALITY]->Fill(fCentrality, fourC, wFour);
     }
 
     // 6p:
@@ -1684,8 +1684,8 @@ void CalculateCorrelations()
       c_a.fCorrelationsPro[2][h - 1][AFO_MULTIPLICITY]->Fill(fSelectedTracks + 0.5, sixC, wSix);
     }
     // vs. centrality:
-    if (c_a.fCorrelationsPro[2][h - 1][AFO_MULTIPLICITY]) {
-      c_a.fCorrelationsPro[2][h - 1][AFO_MULTIPLICITY]->Fill(fCentrality, sixC, wSix);
+    if (c_a.fCorrelationsPro[2][h - 1][AFO_CENTRALITY]) {
+      c_a.fCorrelationsPro[2][h - 1][AFO_CENTRALITY]->Fill(fCentrality, sixC, wSix);
     }
 
     // 8p:
@@ -1739,8 +1739,8 @@ void CalculateCorrelations()
       c_a.fCorrelationsPro[3][h - 1][AFO_MULTIPLICITY]->Fill(fSelectedTracks + 0.5, eightC, wEight);
     }
     // vs. centrality:
-    if (c_a.fCorrelationsPro[3][h - 1][AFO_MULTIPLICITY]) {
-      c_a.fCorrelationsPro[3][h - 1][AFO_MULTIPLICITY]->Fill(fCentrality, eightC, wEight);
+    if (c_a.fCorrelationsPro[3][h - 1][AFO_CENTRALITY]) {
+      c_a.fCorrelationsPro[3][h - 1][AFO_CENTRALITY]->Fill(fCentrality, eightC, wEight);
     }
   } // for(Int_t h=1;h<=gMaxHarmonic;h++) // harmonic
 
