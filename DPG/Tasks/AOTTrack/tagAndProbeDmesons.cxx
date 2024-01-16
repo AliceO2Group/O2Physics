@@ -47,6 +47,7 @@ enum TagChannels : uint8_t {
 
 enum TrackTypes : uint8_t {
   GlobalWoDca = 0,
+  GlobalWoDcaWoItsIb,
   GlobalWoDcaWoIts,
   GlobalWoDcaWoTpc,
   NTrackTypes
@@ -560,6 +561,20 @@ struct ProbeThirdTrack {
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetMaxChi2PerClusterITS(36.f);
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetMaxDcaZ(2.f);
 
+    // TPC tracks (global tracks without ITS IB requirement)
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetTrackType(o2::aod::track::TrackTypeEnum::Track);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetPtRange(0.1f, 1e10f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetEtaRange(-0.8f, 0.8f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetRequireITSRefit(true);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetRequireTPCRefit(true);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetRequireGoldenChi2(true);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetMinNCrossedRowsTPC(70);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetMaxChi2PerClusterTPC(4.f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetRequireHitsInITSLayers(3, {0, 1, 2, 3, 4, 5, 6}); // at least three hits in whatever layer
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetMaxChi2PerClusterITS(36.f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetMaxDcaZ(2.f);
+
     // TPC tracks (global tracks without ITS requirements)
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetTrackType(o2::aod::track::TrackTypeEnum::Track);
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetPtRange(0.1f, 1e10f);
@@ -585,7 +600,7 @@ struct ProbeThirdTrack {
     std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMass = {AxisSpec{450, 1.65f, 2.10f}, AxisSpec{450, 1.65f, 2.10f}, AxisSpec{350, 0.135f, 0.17f}, AxisSpec{350, 0.135f, 0.17f}};
     std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMassTag = {AxisSpec{250, 0.f, 2.5f}, AxisSpec{200, constants::physics::MassPhi - 0.05f, constants::physics::MassPhi + 0.05f}, AxisSpec{400, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}, AxisSpec{400, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}};
 
-    std::string trackTypes[aod::tagandprobe::TrackTypes::NTrackTypes] = {"ItsTpc", "Tpc", "Its"};
+    std::string trackTypes[aod::tagandprobe::TrackTypes::NTrackTypes] = {"ItsTpc", "ItsTpcNoIb", "Tpc", "Its"};
     std::string tagChannels[aod::tagandprobe::TagChannels::NTagChannels] = {"DplusToKPiPi", "DsOrDplusToKKPi", "DstarPlusToDzeroPi", "DstarMinusToDzeroBarPi"};
 
     for (int iChannel{0}; iChannel < aod::tagandprobe::TagChannels::NTagChannels; ++iChannel) {
