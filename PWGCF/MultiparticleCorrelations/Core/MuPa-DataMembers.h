@@ -185,12 +185,12 @@ TProfile* fResultsFlagsPro = NULL; //!<! profile to hold all flags for results
 TH1D* fResultsHist = NULL;         //!<! example histogram to store some results
 struct ResultsHistograms_Arrays {
   // Remark: These settings apply to following categories fCorrelationsPro, fNestedLoopsPro, fTest0Pro, and fResultsHist
-  Double_t fResultsHistogramsFixedLengthBins[eAsFunctionOf_N][3] = {{0.}};    // [nBins,min,max]
-  TArrayD* fResultsHistogramsVariableLengthBins[eAsFunctionOf_N] = {NULL};    // here for each variable in eAsFunctionOf I specify array holding bin boundaries
-  Bool_t fUseResultsHistogramsVariableLengthBins[eAsFunctionOf_N] = {kFALSE}; // use or not variable-length bins
-  TString fResultsHistogramsVariableLengthBinsString[eAsFunctionOf_N] = {""}; // TBI 20240113 temporary I do it this way
-  TString fResultsHistogramsXaxisTitle[eAsFunctionOf_N] = {"integrated", "multiplicity", "centrality", "p_{T}", "#eta"};
-  TString fResultsHistogramsRawName[eAsFunctionOf_N] = {"int", "mult", "cent", "pt", "eta"}; // this is how it appears simplified in the hist name when saved to the file
-} rh_a;                                                                                      // "rh_a" labels an instance of this group of histograms
+  Double_t fResultsHistogramsFixedLengthBins[eAsFunctionOf_N][3] = {{0.}};                                               // [nBins,min,max]
+  TArrayD* fResultsHistogramsVariableLengthBins[eAsFunctionOf_N] = {NULL};                                               // here for each variable in eAsFunctionOf I specify array holding bin boundaries
+  Bool_t fUseResultsHistogramsVariableLengthBins[eAsFunctionOf_N] = {kFALSE};                                            // use or not variable-length bins
+  TString fResultsHistogramsVariableLengthBinsString[eAsFunctionOf_N] = {""};                                            // TBI 20240113 temporary I do it this way
+  TString fResultsHistogramsXaxisTitle[eAsFunctionOf_N] = {"integrated", "multiplicity", "centrality", "p_{T}", "#eta"}; // keep ordering in sync with enum eAsFunctionOf
+  TString fResultsHistogramsRawName[eAsFunctionOf_N] = {"int", "mult", "cent", "pt", "eta"};                             // this is how it appears simplified in the hist name when saved to the file
+} rh_a;                                                                                                                  // "rh_a" labels an instance of this group of histograms
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
