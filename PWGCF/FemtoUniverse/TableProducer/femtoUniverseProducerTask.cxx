@@ -242,8 +242,6 @@ struct femtoUniverseProducerTask {
 
   // D0/D0bar mesons
   struct : o2::framework::ConfigurableGroup {
-    Configurable<int> ConfD0SelectionFlag{"ConfD0SelectionFlag", 1, "Selection Flag for D0"};
-    Configurable<int> ConfD0barSelectionFlag{"ConfD0barSelectionFlag", 1, "Selection Flag for D0bar"};
     Configurable<float> ConfD0D0barCandMaxY{"ConfD0D0barCandMaxY", 4.0, "max. cand. rapidity"};
     Configurable<float> ConfD0D0barMinPt{"ConfD0D0barMinPt", 0., "min. cand. pT"};
   } ConfD0Selection;
@@ -775,15 +773,15 @@ struct femtoUniverseProducerTask {
       auto postrack = hfCand.template prong0_as<TrackType>();
       auto negtrack = hfCand.template prong1_as<TrackType>();
 
-      if (hfCand.isSelD0() == ConfD0Selection.ConfD0SelectionFlag && hfCand.isSelD0bar() != ConfD0Selection.ConfD0barSelectionFlag) {
+      if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 0) {
         invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
-        invMassD0bar = -hfHelper.invMassD0ToPiK(hfCand);
-      } else if (hfCand.isSelD0() != ConfD0Selection.ConfD0SelectionFlag && hfCand.isSelD0bar() == ConfD0Selection.ConfD0barSelectionFlag) {
+        invMassD0bar = -hfHelper.invMassD0barToKPi(hfCand);
+      } else if (hfCand.isSelD0() == 0 && hfCand.isSelD0bar() == 1) {
         invMassD0 = -hfHelper.invMassD0ToPiK(hfCand);
-        invMassD0bar = hfHelper.invMassD0ToPiK(hfCand);
-      } else if (hfCand.isSelD0() == ConfD0Selection.ConfD0SelectionFlag && hfCand.isSelD0bar() == ConfD0Selection.ConfD0barSelectionFlag) {
+        invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
+      } else if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 1) {
         invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
-        invMassD0bar = hfHelper.invMassD0ToPiK(hfCand);
+        invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
       } else {
         invMassD0 = 0.0;
         invMassD0bar = 0.0;
