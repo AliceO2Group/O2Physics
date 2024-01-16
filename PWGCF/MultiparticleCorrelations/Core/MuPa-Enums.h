@@ -62,4 +62,13 @@ enum eParticleHistograms {
   eParticleHistograms_N
 };
 
+enum eAsFunctionOf {
+  AFO_INTEGRATED = 0,
+  AFO_MULTIPLICITY = 1,
+  AFO_CENTRALITY = 2,
+  AFO_PT = 3,
+  AFO_ETA = 4,
+  eAsFunctionOf_N
+}; // prefix is needed, to avoid conflict with enum eKinematics
+
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_

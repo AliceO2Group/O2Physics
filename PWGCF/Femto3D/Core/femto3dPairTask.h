@@ -169,6 +169,7 @@ class FemtoPair
   float GetKstar() const;
   TVector3 Get3dKstar() const;
   float GetKt() const;
+  float GetMt() const; // test
 
  private:
   TrackType _first = NULL;
@@ -257,6 +258,26 @@ float FemtoPair<TrackType>::GetKt() const
     return -1000;
 
   return 0.5 * std::sqrt(std::pow(_first->px() + _second->px(), 2) + std::pow(_first->py() + _second->py(), 2));
+}
+
+template <typename TrackType>
+float FemtoPair<TrackType>::GetMt() const
+{
+  if (_first == NULL || _second == NULL)
+    return -1000;
+  if (!(_magfield1 * _magfield2))
+    return -1000;
+  if (!(_PDG1 * _PDG2))
+    return -1000;
+
+  TLorentzVector first4momentum;
+  first4momentum.SetPtEtaPhiM(_first->pt(), _first->eta(), _first->phi(), particle_mass(_PDG1));
+  TLorentzVector second4momentum;
+  second4momentum.SetPtEtaPhiM(_second->pt(), _second->eta(), _second->phi(), particle_mass(_PDG2));
+
+  TLorentzVector fourmomentasum = first4momentum + second4momentum;
+
+  return 0.5 * fourmomentasum.Mt();
 }
 } // namespace o2::aod::singletrackselector
 

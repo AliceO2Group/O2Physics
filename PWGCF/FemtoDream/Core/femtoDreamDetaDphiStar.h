@@ -13,8 +13,8 @@
 /// \brief FemtoDreamDetaDphiStar - Checks particles for the close pair rejection.
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 
-#ifndef PWGCF_FEMTODREAM_FEMTODREAMDETADPHISTAR_H_
-#define PWGCF_FEMTODREAM_FEMTODREAMDETADPHISTAR_H_
+#ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMDETADPHISTAR_H_
+#define PWGCF_FEMTODREAM_CORE_FEMTODREAMDETADPHISTAR_H_
 
 #include <memory>
 #include <string>
@@ -204,4 +204,4 @@ class FemtoDreamDetaDphiStar
 } /* namespace femtoDream */
 } /* namespace o2::analysis */
 
-#endif // PWGCF_FEMTODREAM_FEMTODREAMDETADPHISTAR_H_
+#endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMDETADPHISTAR_H_

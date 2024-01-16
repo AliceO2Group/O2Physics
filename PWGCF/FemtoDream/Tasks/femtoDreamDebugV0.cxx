@@ -26,9 +26,8 @@
 #include "fairlogger/Logger.h"
 
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include "FemtoDreamParticleHisto.h"
-#include "FemtoDreamEventHisto.h"
-#include "FemtoUtils.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;

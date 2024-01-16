@@ -16,15 +16,15 @@
 /// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
-#ifndef PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_
-#define PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_
+#ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMCONTAINER_H_
+#define PWGCF_FEMTODREAM_CORE_FEMTODREAMCONTAINER_H_
 
 #include <fairlogger/Logger.h>
 #include <vector>
 #include <string>
 
 #include "Framework/HistogramRegistry.h"
-#include "FemtoDreamMath.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamMath.h"
 
 #include "Math/Vector4D.h"
 #include "TMath.h"
@@ -265,4 +265,4 @@ class FemtoDreamContainer
 
 } // namespace o2::analysis::femtoDream
 
-#endif // PWGCF_FEMTODREAM_FEMTODREAMCONTAINER_H_
+#endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMCONTAINER_H_

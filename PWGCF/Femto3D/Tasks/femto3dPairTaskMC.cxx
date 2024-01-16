@@ -61,12 +61,14 @@ struct FemtoCorrelationsMC {
   Configurable<std::vector<float>> _tpcNSigma_1{"tpcNSigma_1", std::vector<float>{-3.0f, 3.0f}, "first particle PID: Nsigma range in TPC before the TOF is used"};
   Configurable<float> _PIDtrshld_1{"PIDtrshld_1", 10.0, "first particle PID: value of momentum from which the PID is done with TOF (before that only TPC is used)"};
   Configurable<std::vector<float>> _tofNSigma_1{"tofNSigma_1", std::vector<float>{-3.0f, 3.0f}, "first particle PID: Nsigma range in TOF"};
+  Configurable<float> _tpcNSigmaResidual_1{"tpcNSigmaResidual_1", 5, "first particle PID: residual TPC Nsigma cut (abs. value) to use with the TOF"};
 
   Configurable<int> _sign_2{"sign_2", 1, "sign of the second particle in a pair"};
   Configurable<int> _particlePDG_2{"particlePDG_2", 2212, "PDG code of the second particle in a pair to perform PID for (only pion, kaon, proton and deurton are supported now)"};
   Configurable<std::vector<float>> _tpcNSigma_2{"tpcNSigma_2", std::vector<float>{-3.0f, 3.0f}, "second particle PID: Nsigma range in TPC before the TOF is used"};
   Configurable<float> _PIDtrshld_2{"PIDtrshld_2", 10.0, "second particle PID: value of momentum from which the PID is done with TOF (before that only TPC is used)"};
   Configurable<std::vector<float>> _tofNSigma_2{"tofNSigma_2", std::vector<float>{-3.0f, 3.0f}, "second particle PID: Nsigma range in TOF"};
+  Configurable<float> _tpcNSigmaResidual_2{"tpcNSigmaResidual_2", 5, "second particle PID: residual TPC Nsigma cut (abs. value) to use with the TOF"};
 
   Configurable<int> _particlePDGtoReject{"particlePDGtoRejectFromSecond", 0, "applied only if the particles are non-identical and only to the second particle in the pair!!!"};
   Configurable<std::vector<float>> _rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", std::vector<float>{-0.0f, 0.0f}, "TOF rejection Nsigma range for the particle specified with PDG to be rejected"};
@@ -123,40 +125,26 @@ struct FemtoCorrelationsMC {
     registry.add("FirstParticle/dcaxyz_vs_pt_weakdecay", "dcaxyz_vs_pt_weakdecay", kTH3F, {{100, 0., 5., "pt"}, {250, -1., 1., "DCA_XY(pt) weakdecay"}, {250, -1., 1., "DCA_Z(pt) weakdecay"}});
     registry.add("FirstParticle/dcaxyz_vs_pt_material", "dcaxyz_vs_pt_material", kTH3F, {{100, 0., 5., "pt"}, {250, -1., 1., "DCA_XY(pt) material"}, {250, -1., 1., "DCA_Z(pt) material"}});
 
-    registry.add("FirstParticle/3dmomentumEl", "3dmomentumEl", kTH3F, {{100, 0., 5., "px"}, {100, 0., 5., "py"}, {100, 0., 5., "pz"}});
-    registry.add("FirstParticle/3dmomentumMu", "3dmomentumMu", kTH3F, {{100, 0., 5., "px"}, {100, 0., 5., "py"}, {100, 0., 5., "pz"}});
-    registry.add("FirstParticle/3dmomentumPi", "3dmomentumPi", kTH3F, {{100, 0., 5., "px"}, {100, 0., 5., "py"}, {100, 0., 5., "pz"}});
-    registry.add("FirstParticle/3dmomentumKa", "3dmomentumKa", kTH3F, {{100, 0., 5., "px"}, {100, 0., 5., "py"}, {100, 0., 5., "pz"}});
-    registry.add("FirstParticle/3dmomentumPr", "3dmomentumPr", kTH3F, {{100, 0., 5., "px"}, {100, 0., 5., "py"}, {100, 0., 5., "pz"}});
-    registry.add("FirstParticle/3dmomentumDe", "3dmomentumDe", kTH3F, {{100, 0., 5., "px"}, {100, 0., 5., "py"}, {100, 0., 5., "pz"}});
-    registry.add("FirstParticle/3dmomentumAll", "3dmomentumAll", kTH3F, {{100, 0., 5., "px"}, {100, 0., 5., "py"}, {100, 0., 5., "pz"}});
-    registry.add("FirstParticle/PtSpectraEl", "PtSpectraEl", kTH1F, {{100, 0., 5.}});
-    registry.add("FirstParticle/PtSpectraMu", "PtSpectraMu", kTH1F, {{100, 0., 5.}});
-    registry.add("FirstParticle/PtSpectraPi", "PtSpectraPi", kTH1F, {{100, 0., 5.}});
-    registry.add("FirstParticle/PtSpectraKa", "PtSpectraKa", kTH1F, {{100, 0., 5.}});
-    registry.add("FirstParticle/PtSpectraPr", "PtSpectraPr", kTH1F, {{100, 0., 5.}});
-    registry.add("FirstParticle/PtSpectraDe", "PtSpectraDe", kTH1F, {{100, 0., 5.}});
-    registry.add("FirstParticle/PtSpectraAll", "PtSpectrAll", kTH1F, {{100, 0., 5.}});
+    registry.add("FirstParticle/pSpectraEl", "pSpectraEl", kTH1F, {{100, 0., 5., "p"}});
+    registry.add("FirstParticle/pSpectraMu", "pSpectraMu", kTH1F, {{100, 0., 5., "p"}});
+    registry.add("FirstParticle/pSpectraPi", "pSpectraPi", kTH1F, {{100, 0., 5., "p"}});
+    registry.add("FirstParticle/pSpectraKa", "pSpectraKa", kTH1F, {{100, 0., 5., "p"}});
+    registry.add("FirstParticle/pSpectraPr", "pSpectraPr", kTH1F, {{100, 0., 5., "p"}});
+    registry.add("FirstParticle/pSpectraDe", "pSpectraDe", kTH1F, {{100, 0., 5., "p"}});
+    registry.add("FirstParticle/pSpectraAll", "pSpectrAll", kTH1F, {{100, 0., 5., "p"}});
 
     if (!IsIdentical) {
       registry.add("SecondParticle/dcaxyz_vs_pt_primary", "dcaxyz_vs_pt_primary", kTH3F, {{100, 0., 5., "pt"}, {200, -1., 1., "DCA_XY(pt) primary"}, {200, -1., 1., "DCA_Z(pt) primary"}});
       registry.add("SecondParticle/dcaxyz_vs_pt_weakdecay", "dcaxyz_vs_pt_weakdecay", kTH3F, {{100, 0., 5., "pt"}, {200, -1., 1., "DCA_XY(pt) weakdecay"}, {200, -1., 1., "DCA_Z(pt) weakdecay"}});
       registry.add("SecondParticle/dcaxyz_vs_pt_material", "dcaxyz_vs_pt_material", kTH3F, {{100, 0., 5., "pt"}, {200, -1., 1., "DCA_XY(pt) material"}, {200, -1., 1., "DCA_Z(pt) material"}});
 
-      registry.add("SecondParticle/3dmomentumEl", "3dmomentumEl", kTH3F, {{100, 0., 5., "px"}, {100, 0., 5., "py"}, {100, 0., 5., "pz"}});
-      registry.add("SecondParticle/3dmomentumMu", "3dmomentumMu", kTH3F, {{100, 0., 5., "px"}, {100, 0., 5., "py"}, {100, 0., 5., "pz"}});
-      registry.add("SecondParticle/3dmomentumPi", "3dmomentumPi", kTH3F, {{100, 0., 5., "px"}, {100, 0., 5., "py"}, {100, 0., 5., "pz"}});
-      registry.add("SecondParticle/3dmomentumKa", "3dmomentumKa", kTH3F, {{100, 0., 5., "px"}, {100, 0., 5., "py"}, {100, 0., 5., "pz"}});
-      registry.add("SecondParticle/3dmomentumPr", "3dmomentumPr", kTH3F, {{100, 0., 5., "px"}, {100, 0., 5., "py"}, {100, 0., 5., "pz"}});
-      registry.add("SecondParticle/3dmomentumDe", "3dmomentumDe", kTH3F, {{100, 0., 5., "px"}, {100, 0., 5., "py"}, {100, 0., 5., "pz"}});
-      registry.add("SecondParticle/3dmomentumAll", "3dmomentumAll", kTH3F, {{100, 0., 5., "px"}, {100, 0., 5., "py"}, {100, 0., 5., "pz"}});
-      registry.add("SecondParticle/PtSpectraEl", "PtSpectraEl", kTH1F, {{100, 0., 5.}});
-      registry.add("SecondParticle/PtSpectraMu", "PtSpectraMu", kTH1F, {{100, 0., 5.}});
-      registry.add("SecondParticle/PtSpectraPi", "PtSpectraPi", kTH1F, {{100, 0., 5.}});
-      registry.add("SecondParticle/PtSpectraKa", "PtSpectraKa", kTH1F, {{100, 0., 5.}});
-      registry.add("SecondParticle/PtSpectraPr", "PtSpectraPr", kTH1F, {{100, 0., 5.}});
-      registry.add("SecondParticle/PtSpectraDe", "PtSpectraDe", kTH1F, {{100, 0., 5.}});
-      registry.add("SecondParticle/PtSpectraAll", "PtSpectrAll", kTH1F, {{100, 0., 5.}});
+      registry.add("SecondParticle/pSpectraEl", "pSpectraEl", kTH1F, {{100, 0., 5., "p"}});
+      registry.add("SecondParticle/pSpectraMu", "pSpectraMu", kTH1F, {{100, 0., 5., "p"}});
+      registry.add("SecondParticle/pSpectraPi", "pSpectraPi", kTH1F, {{100, 0., 5., "p"}});
+      registry.add("SecondParticle/pSpectraKa", "pSpectraKa", kTH1F, {{100, 0., 5., "p"}});
+      registry.add("SecondParticle/pSpectraPr", "pSpectraPr", kTH1F, {{100, 0., 5., "p"}});
+      registry.add("SecondParticle/pSpectraDe", "pSpectraDe", kTH1F, {{100, 0., 5., "p"}});
+      registry.add("SecondParticle/pSpectraAll", "pSpectrAll", kTH1F, {{100, 0., 5., "p"}});
     }
 
     registry.add("ResolutionMatrix", "ResolutionMatrix_rec(gen)", kTH2F, {{CFkStarBinning, "k*_gen (GeV/c)"}, {CFkStarBinning, "k*_rec (GeV/c)"}});
@@ -226,7 +214,7 @@ struct FemtoCorrelationsMC {
       if (track.tpcNClsShared() > _tpcNClsShared || track.itsNCls() < _itsNCls)
         continue;
 
-      if (track.sign() == _sign_1 && (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1))) {
+      if (track.sign() == _sign_1 && (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1, _tpcNSigmaResidual_1))) {
         trackOrigin = track.origin();
         switch (trackOrigin) {
           case 0:
@@ -246,40 +234,33 @@ struct FemtoCorrelationsMC {
 
         trackPDG = abs(track.pdgCode());
 
-        registry.fill(HIST("FirstParticle/3dmomentumAll"), track.px_MC(), track.py_MC(), track.pz_MC());
-        registry.fill(HIST("FirstParticle/PtSpectraAll"), track.pt_MC());
+        registry.fill(HIST("FirstParticle/pSpectraAll"), track.p_MC());
 
         switch (trackPDG) {
           case 11:
-            registry.fill(HIST("FirstParticle/3dmomentumEl"), track.px_MC(), track.py_MC(), track.pz_MC());
-            registry.fill(HIST("FirstParticle/PtSpectraEl"), track.pt_MC());
+            registry.fill(HIST("FirstParticle/pSpectraEl"), track.p_MC());
             break;
           case 13:
-            registry.fill(HIST("FirstParticle/3dmomentumMu"), track.px_MC(), track.py_MC(), track.pz_MC());
-            registry.fill(HIST("FirstParticle/PtSpectraMu"), track.pt_MC());
+            registry.fill(HIST("FirstParticle/pSpectraMu"), track.p_MC());
             break;
           case 211:
-            registry.fill(HIST("FirstParticle/3dmomentumPi"), track.px_MC(), track.py_MC(), track.pz_MC());
-            registry.fill(HIST("FirstParticle/PtSpectraPi"), track.pt_MC());
+            registry.fill(HIST("FirstParticle/pSpectraPi"), track.p_MC());
             break;
           case 321:
-            registry.fill(HIST("FirstParticle/3dmomentumKa"), track.px_MC(), track.py_MC(), track.pz_MC());
-            registry.fill(HIST("FirstParticle/PtSpectraKa"), track.pt_MC());
+            registry.fill(HIST("FirstParticle/pSpectraKa"), track.p_MC());
             break;
           case 2212:
-            registry.fill(HIST("FirstParticle/3dmomentumPr"), track.px_MC(), track.py_MC(), track.pz_MC());
-            registry.fill(HIST("FirstParticle/PtSpectraPr"), track.pt_MC());
+            registry.fill(HIST("FirstParticle/pSpectraPr"), track.p_MC());
             break;
           case 1000010020:
-            registry.fill(HIST("FirstParticle/3dmomentumDe"), track.px_MC(), track.py_MC(), track.pz_MC());
-            registry.fill(HIST("FirstParticle/PtSpectraDe"), track.pt_MC());
+            registry.fill(HIST("FirstParticle/pSpectraDe"), track.p_MC());
             break;
         }
       }
 
       if (IsIdentical) {
         continue;
-      } else if (track.sign() != _sign_2 && !TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF)) && (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_2) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
+      } else if (track.sign() != _sign_2 && !TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF)) && (track.p() < _PIDtrshld_2 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_2) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_2, _tpcNSigmaResidual_2))) { // filling the map: eventID <-> selected particles2 if (see condition above ^)
         trackOrigin = track.origin();
         switch (trackOrigin) {
           case 0:
@@ -299,33 +280,26 @@ struct FemtoCorrelationsMC {
 
         trackPDG = abs(track.pdgCode());
 
-        registry.fill(HIST("SecondParticle/3dmomentumAll"), track.px_MC(), track.py_MC(), track.pz_MC());
-        registry.fill(HIST("SecondParticle/PtSpectraAll"), track.pt_MC());
+        registry.fill(HIST("SecondParticle/pSpectraAll"), track.p_MC());
 
         switch (trackPDG) {
           case 11:
-            registry.fill(HIST("SecondParticle/3dmomentumEl"), track.px_MC(), track.py_MC(), track.pz_MC());
-            registry.fill(HIST("SecondParticle/PtSpectraEl"), track.pt_MC());
+            registry.fill(HIST("SecondParticle/pSpectraEl"), track.p_MC());
             break;
           case 13:
-            registry.fill(HIST("SecondParticle/3dmomentumMu"), track.px_MC(), track.py_MC(), track.pz_MC());
-            registry.fill(HIST("SecondParticle/PtSpectraMu"), track.pt_MC());
+            registry.fill(HIST("SecondParticle/pSpectraMu"), track.p_MC());
             break;
           case 211:
-            registry.fill(HIST("SecondParticle/3dmomentumPi"), track.px_MC(), track.py_MC(), track.pz_MC());
-            registry.fill(HIST("SecondParticle/PtSpectraPi"), track.pt_MC());
+            registry.fill(HIST("SecondParticle/pSpectraPi"), track.p_MC());
             break;
           case 321:
-            registry.fill(HIST("SecondParticle/3dmomentumKa"), track.px_MC(), track.py_MC(), track.pz_MC());
-            registry.fill(HIST("SecondParticle/PtSpectraKa"), track.pt_MC());
+            registry.fill(HIST("SecondParticle/pSpectraKa"), track.p_MC());
             break;
           case 2212:
-            registry.fill(HIST("SecondParticle/3dmomentumPr"), track.px_MC(), track.py_MC(), track.pz_MC());
-            registry.fill(HIST("SecondParticle/PtSpectraPr"), track.pt_MC());
+            registry.fill(HIST("SecondParticle/pSpectraPr"), track.p_MC());
             break;
           case 1000010020:
-            registry.fill(HIST("SecondParticle/3dmomentumDe"), track.px_MC(), track.py_MC(), track.pz_MC());
-            registry.fill(HIST("SecondParticle/PtSpectraDe"), track.pt_MC());
+            registry.fill(HIST("SecondParticle/pSpectraDe"), track.p_MC());
             break;
         }
       }

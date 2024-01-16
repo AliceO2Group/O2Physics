@@ -15,12 +15,9 @@
 /// andreas.mathis@ph.tum.de \author Luca Barioglio, TU München,
 /// luca.barioglio@cern.ch
 
-#ifndef PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
-#define PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_
+#ifndef PWGCF_FEMTODREAM_UTILS_FEMTODREAMCUTCULATOR_H_
+#define PWGCF_FEMTODREAM_UTILS_FEMTODREAMCUTCULATOR_H_
 
-#include "FemtoDreamSelection.h"
-#include "FemtoDreamTrackSelection.h"
-#include "FemtoDreamV0Selection.h"
 #include <bitset>
 #include <functional>
 #include <iostream>
@@ -31,6 +28,10 @@
 #include <iterator>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
+
+#include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamV0Selection.h"
 
 namespace o2::analysis::femtoDream
 {
@@ -366,4 +367,4 @@ class FemtoDreamCutculator
 };
 } // namespace o2::analysis::femtoDream
 
-#endif // PWGCF_FEMTODREAM_FEMTODREAMCUTCULATOR_H_ */
+#endif // PWGCF_FEMTODREAM_UTILS_FEMTODREAMCUTCULATOR_H_

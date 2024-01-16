@@ -55,7 +55,7 @@ struct singleTrackSelector {
 
   Configurable<std::vector<int>> _particlesToKeep{"particlesToKeepPDGs", std::vector<int>{2212, 1000010020}, "PDG codes of perticles for which the 'singletrackselector' tables will be created (only proton and deurton are supported now)"};
   Configurable<std::vector<float>> keepWithinNsigmaTPC{"keepWithinNsigmaTPC", std::vector<float>{-4.0f, 4.0f}, "TPC range for preselection of particles specified with PDG"};
-  Configurable<std::vector<int>> _particlesToReject{"particlesToRejectPDGs", std::vector<int>{211}, "PDG codes of particles that will be rejected with TOF (only pion, kaon, proton and deurton are supported now)"};
+  Configurable<std::vector<int>> _particlesToReject{"particlesToRejectPDGs", std::vector<int>{211, 321}, "PDG codes of particles that will be rejected with TOF (only pion, kaon, proton and deurton are supported now)"};
   Configurable<std::vector<float>> rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", std::vector<float>{-5.0f, 5.0f}, "TOF rejection Nsigma range for particles specified with PDG to be rejected"};
 
   Configurable<float> _min_P{"min_P", 0.f, "lower mometum limit"};
