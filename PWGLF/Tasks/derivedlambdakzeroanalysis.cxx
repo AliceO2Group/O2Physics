@@ -223,7 +223,7 @@ struct derivedlambdakzeroanalysis {
           }
         }
       } // end radius check
-    } // env V0 loop
+    }   // env V0 loop
   }
 };
 
