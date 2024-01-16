@@ -34,15 +34,13 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 /// Extends the cascdata table with expression columns
-struct cascadeInitializer {
+struct cascadespawner {
   Spawns<aod::CascCore> cascdataext;
-  Spawns<aod::KFCascCore> kfcascdataext;
-  Spawns<aod::TraCascCore> tracascdataext;
   void init(InitContext const&) {}
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<cascadeInitializer>(cfgc)};
+    adaptAnalysisTask<cascadespawner>(cfgc)};
 }

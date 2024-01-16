@@ -36,7 +36,6 @@ using namespace o2::framework::expressions;
 // Extends the v0data table with expression columns
 struct lambdakzerospawner {
   Spawns<aod::V0Cores> v0cores;
-  Spawns<aod::V0fCCores> v0fccores;
   void init(InitContext const&) {}
 };
 
