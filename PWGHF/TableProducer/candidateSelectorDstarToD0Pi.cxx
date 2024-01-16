@@ -187,7 +187,7 @@ struct HfCandidateSelectorDstarToD0Pi {
     if (std::abs(candidate.impParamSoftPi()) > cutsDstar->get(binPt, "d0SoftPi")) {
       return false;
     }
-    if (std::abs(candidate.normalisedImpParamSoftPi()) > cutsDstar->get(binPt, "d0SoftPiNormalised")) {
+    if (std::abs(candidate.normalisedImpParamSoftPi()) < cutsDstar->get(binPt, "d0SoftPiNormalised")) {
       return false;
     }
     // selection on pT of soft Pi
