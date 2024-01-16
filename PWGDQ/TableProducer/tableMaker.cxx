@@ -1337,7 +1337,7 @@ struct TableMaker {
 
   // Produce muon tables only, with muon cov matrix and multiplicity-----------------------------------------------------------------------------------
   void processMuonOnlyWithCovAndMults(MyEventsWithMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
-                              soa::Filtered<MyMuonsWithCov> const& tracksMuon)
+                                      soa::Filtered<MyMuonsWithCov> const& tracksMuon)
   {
     fullSkimming<gkEventFillMapWithMult, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
   }
