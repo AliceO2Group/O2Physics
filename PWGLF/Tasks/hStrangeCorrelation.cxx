@@ -223,12 +223,8 @@ struct correlateStrangeness {
         auto assoc = assocCandidate.cascData();
 
         //---] removing autocorrelations [---
-        auto v0index = assoc.v0_as<o2::aod::V0sLinked>();
-        if (!(v0index.has_v0Data()))
-          continue;                      // this should not happen - included for safety
-        auto assocV0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
-        auto postrack = assocV0.posTrack_as<TracksComplete>();
-        auto negtrack = assocV0.negTrack_as<TracksComplete>();
+        auto postrack = assoc.posTrack_as<TracksComplete>();
+        auto negtrack = assoc.negTrack_as<TracksComplete>();
         auto bachtrack = assoc.bachelor_as<TracksComplete>();
         if (doAutocorrelationRejection) {
           if (trigg.globalIndex() == postrack.globalIndex()) {

@@ -98,21 +98,14 @@ struct k892pmanalysis {
     histos.add("QAbefore/trkpT_k0s", "pT distribution of k0short track candidates", kTH1F, {ptAxisQA});
     histos.add("QAafter/trkpT_pi", "pT distribution of pion track candidates", kTH1F, {ptAxisQA});
     histos.add("QAafter/trkpT_k0s", "pT distribution of k0short track candidates", kTH1F, {ptAxisQA});
+    // Mass vs Pt vs Multiplicity 3-dimensional histogram
+    histos.add("k892pmMassPtMult3d", "Charged K*(892) mass vs pT vs V0multiplicity distribution", kTH3F, {invMassAxis, ptAxis, centAxis});
 
-    /*if (doprocessMCLight) {
+    if (doprocessMCLight) {
       // MC QA
-      histos.add("QAMCTrue/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
-      histos.add("QAMCTrue/trkDCAxy_ka", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {dcaxyAxis});
-      histos.add("QAMCTrue/trkDCAz_pi", "DCAz distribution of pion track candidates", HistType::kTH1F, {dcazAxis});
-      histos.add("QAMCTrue/trkDCAz_ka", "DCAz distribution of kaon track candidates", HistType::kTH1F, {dcazAxis});
-      histos.add("h3Reck892invmass", "Invariant mass of Reconstructed MC K(892)0", kTH3F, {centAxis, ptAxis, invMassAxis});
-      histos.add("h3Reck892invmassAnti", "Invariant mass of Reconstructed MC Anti-K(892)0", kTH3F, {centAxis, ptAxis, invMassAxis});
-      histos.add("k892pmGen", "pT distribution of True MC K(892)0", kTH1F, {ptAxis});
-      histos.add("k892pmGenAnti", "pT distribution of True MC Anti-K(892)0", kTH1F, {ptAxis});
-      histos.add("k892Rec", "pT distribution of Reconstructed MC K(892)0", kTH1F, {ptAxis});
-      histos.add("k892RecAnti", "pT distribution of Reconstructed MC Anti-K(892)0", kTH1F, {ptAxis});
-      histos.add("k892Recinvmass", "Inv mass distribution of Reconstructed MC Phi", kTH1F, {invMassAxis});
-    }*/
+      histos.add("k892pmPtGen", "pT distribution of True MC charged K*(892)", kTH1F, {ptAxis});
+      histos.add("k892pmPtRec", "pT distribution of Reconstructed MC charged K*(892)", kTH1F, {ptAxis});
+    }
     // Print output histograms statistics
     LOG(info) << "Size of the histograms in spectraTOF";
     histos.print();
@@ -217,7 +210,7 @@ struct k892pmanalysis {
       for (auto& v0 : dV0s) {
         // Full index policy is needed to consider all possible combinations
         if (v0.indices()[0] == trkId || v0.indices()[1] == trkId)
-          continue; // To avoid comibining secondary and primary pions
+          continue; // To avoid combining secondary and primary pions
         //// Initialize variables
         // trk: Pion, v0: K0s
 
@@ -234,17 +227,28 @@ struct k892pmanalysis {
 
         if (!IsV0QAFilled) {
           // pt QA (after cuts)
-          histos.fill(HIST("QAafter/trkpT_k0s"), v0.pt());
+          histos.fill(HIST("QAafter/trkpT_k0s"), v0ptK0s);
+          // K0s mass QA (after cuts)
+          histos.fill(HIST("QAafter/k0shortmass"), v0.mK0Short());
         }
 
         lDecayDaughter.SetXYZM(trk.px(), trk.py(), trk.pz(), massPi);
         lDecayV0.SetXYZM(v0.px(), v0.py(), v0.pz(), massK0);
         lResonance = lDecayDaughter + lDecayV0;
         // Filling invariant mass histograms
-        // K0s mass QA (after cuts)
-        histos.fill(HIST("QAafter/k0shortmass"), lDecayV0.M());
         // K*(892)pm mass
         histos.fill(HIST("k892pminvmass"), lResonance.M());
+        // K*(892)pm 3d mass, pt, multiplicity histogram
+        histos.fill(HIST("k892pmMassPtMult3d"), lResonance.M(), lResonance.Pt(), multiplicity);
+        if constexpr (IsMC) {
+          if (abs(trk.pdgCode()) != 211 || abs(v0.pdgCode()) != 310) // Skip to next iteration if duaghters are not charged pion + K0s/AntiK0s
+            continue;
+          if (trk.motherPDG() != v0.motherPDG())
+            continue;
+          if (trk.motherPDG() != 323)
+            continue;
+          histos.fill(HIST("k892pmPtRec"), lResonance.Pt());
+        }
         IsV0Processed = true;
       }
       if (IsV0Processed) {
@@ -262,35 +266,32 @@ struct k892pmanalysis {
   }
   PROCESS_SWITCH(k892pmanalysis, processDataLight, "Process Event for data", false);
 
-  /*void processMCLight(aod::ResoCollision& collision,
-                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
+  void processMCLight(aod::ResoCollision& collision,
+                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks,
+                      soa::Join<aod::ResoV0s, aod::ResoMCV0s> const& resov0s)
   {
-    fillHistograms<true, false>(collision, resotracks, resotracks);
+    fillHistograms<true, false>(collision, resotracks, resov0s);
   }
-  PROCESS_SWITCH(k892pmanalysis, processMCLight, "Process Event for MC", false);*/
+  PROCESS_SWITCH(k892pmanalysis, processMCLight, "Process Event for MC", false);
 
   void processMCTrue(aod::ResoMCParents& resoParents)
   {
     for (auto& part : resoParents) {  // loop over all pre-filtered MC particles
       if (abs(part.pdgCode()) != 323) // K*892(pm)
         continue;
-      if (abs(part.y()) > 0.5) { // rapidity cut
+      if (abs(part.y()) > 0.5) // rapidity cut
         continue;
-      }
       bool pass1 = false;
       bool pass2 = false;
-      if (abs(part.daughterPDG1()) == 211 || abs(part.daughterPDG2()) == 310) { // At least one decay to K0s
+      if (part.daughterPDG1() == 211 && part.daughterPDG2() == 310) { // One decay to K0s and the other to pi+ (K*(892)+ mother) - Particle pass
         pass1 = true;
       }
-      if (abs(part.daughterPDG1()) == 310 || abs(part.daughterPDG2()) == 211) { // At least one decay to K0s
+      if (part.daughterPDG1() == -211 && part.daughterPDG2() == -310) { // One decay to AntiK0s and the other to pi- (K*(892)- mother) - Antiparticle pass
         pass2 = true;
       }
-      if (!pass1 || !pass2) // If we have both decay products
+      if (!pass1 || !pass2) // Go on only if we have both decay products, else skip to next iteration
         continue;
-      if (part.pdgCode() > 0)
-        histos.fill(HIST("k892pmGen"), part.pt());
-      else
-        histos.fill(HIST("k892pmGenAnti"), part.pt());
+      histos.fill(HIST("k892pmPtGen"), part.pt());
     }
   }
   PROCESS_SWITCH(k892pmanalysis, processMCTrue, "Process Event for MC", false);

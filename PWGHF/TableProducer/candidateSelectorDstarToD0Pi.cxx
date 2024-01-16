@@ -128,7 +128,7 @@ struct HfCandidateSelectorDstarToD0Pi {
       return false;
     }
     // normalised decay length in XY plane
-    if (candidate.decayLengthXYNormalisedD0() < cutsD0->get(binPt, "normalized decay length XY")) {
+    if (candidate.decayLengthXYNormalisedD0() < cutsD0->get(binPt, "min norm decay length XY")) {
       return false;
     }
 
@@ -148,14 +148,14 @@ struct HfCandidateSelectorDstarToD0Pi {
     // decay exponentail law, with tau = beta*gamma*ctau
     // decay length > ctau retains (1-1/e)
 
-    double decayLengthCut = std::min((candidate.pD0() * 0.0066) + 0.01, cutsD0->get(binPt, "minimum decay length"));
+    double decayLengthCut = std::min((candidate.pD0() * 0.0066) + 0.01, cutsD0->get(binPt, "min decay length"));
     if (candidate.decayLengthD0() * candidate.decayLengthD0() < decayLengthCut * decayLengthCut) {
       return false;
     }
-    if (candidate.decayLengthD0() > cutsD0->get(binPt, "decay length")) {
+    if (candidate.decayLengthD0() > cutsD0->get(binPt, "max decay length")) {
       return false;
     }
-    if (candidate.decayLengthXYD0() > cutsD0->get(binPt, "decay length XY")) {
+    if (candidate.decayLengthXYD0() > cutsD0->get(binPt, "max decay length XY")) {
       return false;
     }
 

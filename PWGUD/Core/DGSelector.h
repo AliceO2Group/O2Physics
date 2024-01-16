@@ -43,11 +43,50 @@ class DGSelector
     LOGF(debug, "Collision %f", collision.collisionTime());
     LOGF(debug, "Number of close BCs: %i", bcRange.size());
 
-    // check that there are no FIT signals in any of the compatible BCs
+    // return if FIT veto is found in any of the compatible BCs
     // Double Gap (DG) condition
-    for (auto const& bc : bcRange) {
-      if (!udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
-        return 1;
+    // 4 types of vetoes:
+    //  0 TVX
+    //  1 TSC
+    //  2 TCE
+    //  3 TOR
+    int vetoToApply = -1;
+    if (diffCuts.withTVX()) {
+      vetoToApply = 0;
+    } else if (diffCuts.withTSC()) {
+      vetoToApply = 1;
+    } else if (diffCuts.withTCE()) {
+      vetoToApply = 2;
+    } else if (diffCuts.withTOR()) {
+      vetoToApply = 3;
+    }
+    if (vetoToApply >= 0) {
+      for (auto const& bc : bcRange) {
+        switch (vetoToApply) {
+          case 0:
+            if (udhelpers::TVX(bc)) {
+              return 1;
+            }
+            break;
+          case 1:
+            if (udhelpers::TSC(bc)) {
+              return 1;
+            }
+            break;
+          case 2:
+            if (udhelpers::TCE(bc)) {
+              return 1;
+            }
+            break;
+          case 3:
+            if (!udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
+              return 1;
+            }
+            break;
+          default:
+            LOGF(info, "Invalid veto trigger value: %d", vetoToApply);
+            break;
+        }
       }
     }
 
@@ -55,7 +94,7 @@ class DGSelector
     LOGF(debug, "FwdTracks %i", fwdtracks.size());
     if (!diffCuts.withFwdTracks()) {
       for (auto& fwdtrack : fwdtracks) {
-        LOGF(info, "  %i / %f / %f / %f / %f", fwdtrack.trackType(), fwdtrack.eta(), fwdtrack.pt(), fwdtrack.p(), fwdtrack.trackTimeRes());
+        LOGF(debug, "  %i / %f / %f / %f / %f", fwdtrack.trackType(), fwdtrack.eta(), fwdtrack.pt(), fwdtrack.p(), fwdtrack.trackTimeRes());
         // only consider tracks with MID (good timing)
         if (fwdtrack.trackType() == 0 || fwdtrack.trackType() == 3) {
           return 2;

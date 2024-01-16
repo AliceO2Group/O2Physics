@@ -29,6 +29,7 @@
 #include "DetectorsBase/GeometryManager.h"
 
 #include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/DataModel/EMCALMatchedCollisions.h"
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -58,6 +59,7 @@ struct EmcalCorrectionTask {
   Produces<o2::aod::EMCALClusterCells> clustercells; // cells belonging to given cluster
   Produces<o2::aod::EMCALAmbiguousClusterCells> clustercellsambiguous;
   Produces<o2::aod::EMCALMatchedTracks> matchedTracks;
+  Produces<o2::aod::EMCALMatchedCollisions> emcalcollisionmatch;
 
   // Preslices
   Preslice<myGlobTracks> perCollision = o2::aod::track::collisionId;
@@ -218,6 +220,7 @@ struct EmcalCorrectionTask {
 
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
+    std::unordered_map<uint64_t, int> numberCollsInBC; // Number of collisions mapped to the global BC index of all BCs
     for (auto bc : bcs) {
       LOG(debug) << "Next BC";
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
@@ -226,6 +229,8 @@ struct EmcalCorrectionTask {
       // Get the collisions matched to the BC using foundBCId of the collision
       auto collisionsInFoundBC = collisions.sliceBy(collisionsPerFoundBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(cellsPerFoundBC, bc.globalIndex());
+
+      numberCollsInBC.insert(std::pair<uint64_t, int>(bc.globalIndex(), collisionsInFoundBC.size()));
 
       if (!cellsInBC.size()) {
         LOG(debug) << "No cells found for BC";
@@ -302,6 +307,18 @@ struct EmcalCorrectionTask {
       LOG(debug) << "Done with process BC.";
       nBCsProcessed++;
     } // end of bc loop
+
+    // Loop through all collisions and fill emcalcollisionmatch with a boolean stating, whether the collision was ambiguous (not the only collision in its BC)
+    for (const auto& collision : collisions) {
+      auto globalbcid = collision.foundBC_as<bcEvSels>().globalIndex();
+      auto found = numberCollsInBC.find(globalbcid);
+      if (found != numberCollsInBC.end()) {
+        emcalcollisionmatch(collision.globalIndex(), found->second != 1);
+      } else {
+        LOG(warning) << "BC not found in map of number of collisions.";
+      }
+    } // end of collision loop
+
     LOG(detail) << "Processed " << nBCsProcessed << " BCs with " << nCellsProcessed << " cells";
   }
   PROCESS_SWITCH(EmcalCorrectionTask, processFull, "run full analysis", true);
@@ -561,8 +578,7 @@ struct EmcalCorrectionTask {
       mHistManager.fill(HIST("hClusterE"), cluster.E());
       mHistManager.fill(HIST("hClusterEtaPhi"), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()));
       if (IndexMapPair && trackGlobalIndex) {
-        for (unsigned int iTrack = 0;
-             iTrack < std::get<0>(*IndexMapPair)[iCluster].size(); iTrack++) {
+        for (unsigned int iTrack = 0; iTrack < std::get<0>(*IndexMapPair)[iCluster].size(); iTrack++) {
           if (std::get<0>(*IndexMapPair)[iCluster][iTrack] >= 0) {
             LOG(debug) << "Found track " << (*trackGlobalIndex)[std::get<0>(*IndexMapPair)[iCluster][iTrack]] << " in cluster " << cluster.getID();
             matchedTracks(clusters.lastIndex(), (*trackGlobalIndex)[std::get<0>(*IndexMapPair)[iCluster][iTrack]]);

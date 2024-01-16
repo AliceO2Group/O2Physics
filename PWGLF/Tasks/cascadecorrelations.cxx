@@ -92,23 +92,16 @@ struct cascadeSelector {
   Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"};
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIUWithPID const&)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, FullTracksExtIUWithPID const&)
   {
     for (auto& casc : Cascades) {
-      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0.has_v0Data())) {
-        cascflags(0);
-        continue; // reject if no v0data
-      }
-      auto v0data = v0.v0Data();
-
       // TODO: make QA histo with info on where cascades fail selections
 
       // Let's try to do some PID & track quality cuts
       // these are the tracks:
       auto bachTrack = casc.bachelor_as<FullTracksExtIUWithPID>();
-      auto posTrack = v0data.posTrack_as<FullTracksExtIUWithPID>();
-      auto negTrack = v0data.negTrack_as<FullTracksExtIUWithPID>();
+      auto posTrack = casc.posTrack_as<FullTracksExtIUWithPID>();
+      auto negTrack = casc.negTrack_as<FullTracksExtIUWithPID>();
 
       // TPC N crossed rows
       if (posTrack.tpcNClsCrossedRows() < minTPCCrossedRows || negTrack.tpcNClsCrossedRows() < minTPCCrossedRows || bachTrack.tpcNClsCrossedRows() < minTPCCrossedRows) {
@@ -244,12 +237,6 @@ struct cascadeCorrelations {
 
     // Some QA on the cascades
     for (auto& casc : Cascades) {
-
-      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0.has_v0Data())) {
-        continue; // reject if no v0data
-      }
-
       if (casc.isSelected() != 2) { // not exclusively an Omega --> consistent with Xi or both
         if (casc.sign() < 0) {
           registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt());
@@ -291,13 +278,12 @@ struct cascadeCorrelations {
       auto trigger = *triggerAddress;
       auto assoc = *assocAddress;
 
-      auto lambdaTrigg = trigger.v0_as<o2::aod::V0sLinked>();
-      auto lambdaAssoc = assoc.v0_as<o2::aod::V0sLinked>();
-      if (!(lambdaTrigg.has_v0Data()) || !(lambdaAssoc.has_v0Data())) {
-        continue; // reject if no v0data in either of the lambda's
-      }
-      auto v0dataTrigg = lambdaTrigg.v0Data();
-      auto v0dataAssoc = lambdaAssoc.v0Data();
+      // track indices for posterior checks
+      // retains logic of V0 index while being safe wrt data model
+      int posIdTrigg = trigger.posTrackId();
+      int negIdTrigg = trigger.negTrackId();
+      int posIdAssoc = assoc.posTrackId();
+      int negIdAssoc = assoc.negTrackId();
 
       // calculate angular correlations
       double deta = trigger.eta() - assoc.eta();
@@ -317,17 +303,14 @@ struct cascadeCorrelations {
         registry.fill(HIST("hOmOmOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
       } else { // same-sign
         // make sure to check for autocorrelations - only possible in same-sign correlations
-        if (v0dataTrigg.v0Id() == v0dataAssoc.v0Id()) {
+        if (posIdTrigg == posIdAssoc && negIdTrigg == negIdAssoc) {
           // LOGF(info, "same v0 in SS correlation! %d %d", v0dataTrigg.v0Id(), v0dataAssoc.v0Id());
           registry.fill(HIST("hAutoCorrelation"), 0);
           continue;
         }
         int bachIdTrigg = trigger.bachelorId();
         int bachIdAssoc = assoc.bachelorId();
-        int posIdTrigg = v0dataTrigg.posTrackId();
-        int negIdTrigg = v0dataTrigg.negTrackId();
-        int posIdAssoc = v0dataAssoc.posTrackId();
-        int negIdAssoc = v0dataAssoc.negTrackId();
+
         if (bachIdTrigg == bachIdAssoc) {
           // LOGF(info, "same bachelor in SS correlation! %d %d", bachIdTrigg, bachIdAssoc);
           registry.fill(HIST("hAutoCorrelation"), 1);

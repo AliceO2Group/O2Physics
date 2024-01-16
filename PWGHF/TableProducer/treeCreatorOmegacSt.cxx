@@ -68,6 +68,7 @@ DECLARE_SOA_COLUMN(PxPion, pxPion, float);
 DECLARE_SOA_COLUMN(PyPion, pyPion, float);
 DECLARE_SOA_COLUMN(PzPion, pzPion, float);
 DECLARE_SOA_COLUMN(IsPositivePion, isPositivePion, bool);
+DECLARE_SOA_COLUMN(ITSClusterMapPion, itsClusterMapPion, uint8_t);
 DECLARE_SOA_COLUMN(CpaOmegac, cpaOmegac, float);
 DECLARE_SOA_COLUMN(CpaOmega, cpaOmega, float);
 DECLARE_SOA_COLUMN(DcaXYOmega, dcaXYOmega, float);
@@ -126,6 +127,7 @@ DECLARE_SOA_TABLE(HfOmegacSt, "AOD", "HFOMEGACST",
                   st_omegac::PyPion,
                   st_omegac::PzPion,
                   st_omegac::IsPositivePion,
+                  st_omegac::ITSClusterMapPion,
                   st_omegac::CpaOmegac,
                   st_omegac::CpaOmega,
                   st_omegac::DcaXYOmega,
@@ -457,6 +459,7 @@ struct HfTreeCreatorOmegacSt {
                               momenta[1][1],
                               momenta[1][2],
                               track.sign() > 0 ? true : false,
+                              track.itsClusterMap(),
                               cpaOmegaC,
                               cpaOmega,
                               impactParameterTrk.getY(),

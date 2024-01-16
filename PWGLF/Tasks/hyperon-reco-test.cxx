@@ -160,8 +160,6 @@ struct myXi {
 
   void process(aod::Collision const& collision,
                soa::Join<aod::CascDataExt, aod::McCascLabels> const& Cascades,
-               aod::V0sLinked const& V0linked,
-               aod::V0Datas const& V0s,
                DauTracks const& tracks,
                aod::McParticles const& mcParticles)
   {
@@ -177,20 +175,18 @@ struct myXi {
         }
       }
 
-      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
-      auto v0 = v0index.v0Data();
-      auto posdau = v0.posTrack_as<DauTracks>();
-      auto negdau = v0.negTrack_as<DauTracks>();
+      auto posdau = casc.posTrack_as<DauTracks>();
+      auto negdau = casc.negTrack_as<DauTracks>();
       auto bachelor = casc.bachelor_as<DauTracks>();
 
       if ( // Dau & bach track cuts
         TMath::Abs(posdau.eta()) < rapidity && TMath::Abs(negdau.eta()) < rapidity && TMath::Abs(bachelor.eta()) < rapidity && posdau.tpcNClsCrossedRows() > mincrossedrow && negdau.tpcNClsCrossedRows() > mincrossedrow && bachelor.tpcNClsCrossedRows() > mincrossedrow && posdau.pt() > minpt && negdau.pt() > minpt && bachelor.pt() > minpt && TMath::Abs(casc.dcapostopv()) > dcatopv && TMath::Abs(casc.dcanegtopv()) > dcatopv && TMath::Abs(casc.dcabachtopv()) > dcatopv && TMath::Abs(posdau.tpcNSigmaPr()) < tpcsigma && TMath::Abs(negdau.tpcNSigmaPi()) < tpcsigma && TMath::Abs(bachelor.tpcNSigmaPi()) < tpcsigma && bachelor.sign() < 0 &&
 
         // V0 cuts
-        casc.v0radius() > v0radius && casc.dcaV0daughters() < dcav0dau && v0.dcav0topv() > dcav0topv && casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
-        registry.fill(HIST("hmyLambda"), v0.mLambda());
+        casc.v0radius() > v0radius && casc.dcaV0daughters() < dcav0dau && casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv && casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+        registry.fill(HIST("hmyLambda"), casc.mLambda());
 
-        if (TMath::Abs(v0.mLambda() - o2::constants::physics::MassLambda0) < v0masswindow &&
+        if (TMath::Abs(casc.mLambda() - o2::constants::physics::MassLambda0) < v0masswindow &&
 
             // Cascade cut
             casc.cascradius() > cascradius && casc.dcacascdaughters() < dcacascdau && casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa && TMath::Abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) > removeOmega && casc.sign() < 0) {
@@ -258,8 +254,6 @@ struct myOmega {
 
   void process(aod::Collision const& collision,
                soa::Join<aod::CascDataExt, aod::McCascLabels> const& Cascades,
-               aod::V0sLinked const& V0linked,
-               aod::V0Datas const& V0s,
                DauTracks const& tracks,
                aod::McParticles const& mcParticles)
   {
@@ -275,20 +269,18 @@ struct myOmega {
         }
       }
 
-      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
-      auto v0 = v0index.v0Data();
-      auto posdau = v0.posTrack_as<DauTracks>();
-      auto negdau = v0.negTrack_as<DauTracks>();
+      auto posdau = casc.posTrack_as<DauTracks>();
+      auto negdau = casc.negTrack_as<DauTracks>();
       auto bachelor = casc.bachelor_as<DauTracks>();
 
       if ( // Dau & bach track cuts
         TMath::Abs(posdau.eta()) < rapidity && TMath::Abs(negdau.eta()) < rapidity && TMath::Abs(bachelor.eta()) < rapidity && posdau.tpcNClsCrossedRows() > mincrossedrow && negdau.tpcNClsCrossedRows() > mincrossedrow && bachelor.tpcNClsCrossedRows() > mincrossedrow && posdau.pt() > minpt && negdau.pt() > minpt && bachelor.pt() > minpt && TMath::Abs(casc.dcapostopv()) > dcatopv && TMath::Abs(casc.dcanegtopv()) > dcatopv && TMath::Abs(casc.dcabachtopv()) > dcatopv && TMath::Abs(posdau.tpcNSigmaPr()) < tpcsigma && TMath::Abs(negdau.tpcNSigmaPi()) < tpcsigma && TMath::Abs(bachelor.tpcNSigmaKa()) < tpcsigma && bachelor.sign() < 0 &&
 
         // V0 cuts
-        casc.v0radius() > v0radius && casc.dcaV0daughters() < dcav0dau && v0.dcav0topv() > dcav0topv && casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
-        registry.fill(HIST("hmyLambda"), v0.mLambda());
+        casc.v0radius() > v0radius && casc.dcaV0daughters() < dcav0dau && casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv && casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > v0cospa) {
+        registry.fill(HIST("hmyLambda"), casc.mLambda());
 
-        if (TMath::Abs(v0.mLambda() - o2::constants::physics::MassLambda0) < v0masswindow &&
+        if (TMath::Abs(casc.mLambda() - o2::constants::physics::MassLambda0) < v0masswindow &&
 
             // Cascade cut
             casc.cascradius() > cascradius && casc.dcacascdaughters() < dcacascdau && casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospa && TMath::Abs(casc.mXi() - o2::constants::physics::MassXiMinus) > removeXi && casc.sign() < 0) {

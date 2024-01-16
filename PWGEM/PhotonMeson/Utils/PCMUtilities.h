@@ -194,4 +194,11 @@ float getPsiPair(float pxpos, float pypos, float pzpos, float pxneg, float pyneg
   return std::asin(clipToPM1(argsin));
 }
 //_______________________________________________________________________
+float getOpeningAngle(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
+{
+  float ptot2 = RecoDecay::p2(pxpos, pypos, pzpos) * RecoDecay::p2(pxneg, pyneg, pzneg);
+  float argcos = RecoDecay::dotProd(std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}) / std::sqrt(ptot2);
+  return std::acos(argcos);
+}
+//_______________________________________________________________________
 #endif // PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_

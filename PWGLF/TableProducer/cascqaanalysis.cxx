@@ -166,15 +166,13 @@ struct cascqaanalysis {
   bool AcceptCascCandidate(TCascade const& cascCand, float const& pvx, float const& pvy, float const& pvz)
   {
     // Access daughter tracks
-    auto v0index = cascCand.template v0_as<o2::aod::V0sLinked>();
-    auto v0 = v0index.v0Data();
-    auto posdau = v0.template posTrack_as<TCascTracksTo>();
-    auto negdau = v0.template negTrack_as<TCascTracksTo>();
+    auto posdau = cascCand.template posTrack_as<TCascTracksTo>();
+    auto negdau = cascCand.template negTrack_as<TCascTracksTo>();
     auto bachelor = cascCand.template bachelor_as<TCascTracksTo>();
 
     // Basic set of selections
     if (cascCand.cascradius() > cascradius &&
-        v0.v0radius() > v0radius &&
+        cascCand.v0radius() > v0radius &&
         cascCand.casccosPA(pvx, pvy, pvz) > casccospa &&
         cascCand.v0cosPA(pvx, pvy, pvz) > v0cospa &&
         TMath::Abs(posdau.eta()) < etadau &&
@@ -323,7 +321,6 @@ struct cascqaanalysis {
                              aod::PVMults, aod::FT0Mults, aod::FV0Mults,
                              aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
                    soa::Filtered<aod::CascDataExt> const& Cascades,
-                   aod::V0sLinked const&,
                    aod::V0Datas const&,
                    DauTracks const&)
   {
@@ -352,21 +349,14 @@ struct cascqaanalysis {
 
     for (const auto& casc : Cascades) {              // loop over Cascades
       registry.fill(HIST("hCandidateCounter"), 0.5); // all candidates
-
-      // Access daughter tracks
-      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0index.has_v0Data())) {
-        return; // skip those cascades for which V0 doesn't exist
-      }
-      registry.fill(HIST("hCandidateCounter"), 1.5); // v0data exists
+      registry.fill(HIST("hCandidateCounter"), 1.5); // v0data exists, deprecated
 
       if (AcceptCascCandidate<DauTracks>(casc, collision.posX(), collision.posY(), collision.posZ())) {
         registry.fill(HIST("hCandidateCounter"), 2.5); // passed topo cuts
         // Fill table
         if (fRand->Rndm() < lEventScale) {
-          auto v0 = v0index.v0Data();
-          auto posdau = v0.posTrack_as<DauTracks>();
-          auto negdau = v0.negTrack_as<DauTracks>();
+          auto posdau = casc.posTrack_as<DauTracks>();
+          auto negdau = casc.negTrack_as<DauTracks>();
           auto bachelor = casc.bachelor_as<DauTracks>();
 
           // ITS N hits
@@ -423,8 +413,7 @@ struct cascqaanalysis {
                     soa::Filtered<LabeledCascades> const& Cascades,
                     DauTracks const&,
                     aod::McCollisions const&,
-                    aod::McParticles const& mcParticles,
-                    aod::V0sLinked const&)
+                    aod::McParticles const& mcParticles)
   {
     if (!AcceptEvent(collision, 1)) {
       return;
@@ -455,13 +444,7 @@ struct cascqaanalysis {
 
     for (const auto& casc : Cascades) {              // loop over Cascades
       registry.fill(HIST("hCandidateCounter"), 0.5); // all candidates
-      // Access daughter tracks
-      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0index.has_v0Data())) {
-        return; // skip those cascades for which V0 doesn't exist
-      }
-
-      registry.fill(HIST("hCandidateCounter"), 1.5); // v0data exists
+      registry.fill(HIST("hCandidateCounter"), 1.5); // v0data exists - deprecated
 
       if (AcceptCascCandidate<DauTracks>(casc, collision.posX(), collision.posY(), collision.posZ())) {
         registry.fill(HIST("hCandidateCounter"), 2.5); // passed topo cuts
@@ -479,9 +462,8 @@ struct cascqaanalysis {
         }
         if (fRand->Rndm() < lEventScale) {
           // Fill table
-          auto v0 = v0index.v0Data();
-          auto posdau = v0.posTrack_as<DauTracks>();
-          auto negdau = v0.negTrack_as<DauTracks>();
+          auto posdau = casc.posTrack_as<DauTracks>();
+          auto negdau = casc.negTrack_as<DauTracks>();
           auto bachelor = casc.bachelor_as<DauTracks>();
 
           // ITS N hits

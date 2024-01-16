@@ -13,11 +13,17 @@
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_
 
 enum eConfiguration {
-  eTaskName = 1,
-  eRunNumber = 2,
-  eVerbose = 3,
-  eVerboseForEachParticle = 4,
-  eUseCCDB = 5,
+  eTaskName = 1, // here I start from 1 exceptionally, because this enum's are used as bin contents, and ROOT starts counting bins from 1
+  eRunNumber,
+  eVerbose,
+  eVerboseForEachParticle,
+  eDoAdditionalInsanityChecks,
+  eUseCCDB,
+  eProcessRemainingEvents,
+  eWhatToProcess,
+  eRandomSeed,
+  eUseFisherYates,
+  eFixedNumberOfRandomlySelectedTracks,
   eConfiguration_N
 };
 
@@ -40,7 +46,7 @@ enum eWeights { wPHI = 0,
                 eWeights_N };
 
 enum eEventHistograms {
-  eNumberOfEvents,
+  eNumberOfEvents = 0,
   eTotalMultiplicity,
   eSelectedTracks,
   eCentrality,
@@ -53,7 +59,7 @@ enum eEventHistograms {
 };
 
 enum eParticleHistograms {
-  ePhi,
+  ePhi = 0,
   ePt,
   eEta,
   etpcNClsCrossedRows, // from aod::TracksExtra
@@ -61,5 +67,14 @@ enum eParticleHistograms {
   eDCA_z,
   eParticleHistograms_N
 };
+
+enum eAsFunctionOf {
+  AFO_INTEGRATED = 0,
+  AFO_MULTIPLICITY = 1,
+  AFO_CENTRALITY = 2,
+  AFO_PT = 3,
+  AFO_ETA = 4,
+  eAsFunctionOf_N
+}; // prefix is needed, to avoid conflict with enum eKinematics
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_

@@ -490,12 +490,13 @@ struct reso2initializer {
   template <bool isMC, typename CollisionType, typename CascType, typename TrackType>
   void fillCascades(CollisionType const& collision, CascType const& cascades, TrackType const& tracks)
   {
-    int childIDs[2] = {0, 0}; // these IDs are necessary to keep track of the children
+    int childIDs[3] = {0, 0, 0}; // these IDs are necessary to keep track of the children
     for (auto& casc : cascades) {
       if (!IsCascSelected<isMC>(collision, casc, tracks))
         continue;
-      childIDs[0] = casc.v0Id();
-      childIDs[1] = casc.bachelorId();
+      childIDs[0] = casc.posTrackId();
+      childIDs[1] = casc.negTrackId();
+      childIDs[2] = casc.bachelorId();
       reso2cascades(resoCollisions.lastIndex(),
                     casc.pt(),
                     casc.px(),
