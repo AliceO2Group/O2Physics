@@ -216,6 +216,9 @@ struct HfCandidateSelectorLc {
       auto statusLcToPKPi = 0;
       auto statusLcToPiKP = 0;
 
+      outputMlLcToPKPi.clear();
+      outputMlLcToPiKP.clear();
+
       auto ptCand = candidate.pt();
 
       if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
