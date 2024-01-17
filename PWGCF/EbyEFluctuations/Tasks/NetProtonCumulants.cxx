@@ -132,11 +132,11 @@ struct NetProtonCumulants_Table_QA {
           const float combNSigmaKa = std::sqrt(pow(track.tpcNSigmaKa(), 2.0) + pow(track.tofNSigmaKa(), 2.0));
 
 	  int flag2=0;
-	  if (track.tpcNSigmaPr() < 3.0)
+	  if (combNSigmaPr() < 3.0)
 	    flag2+=1;
-	  if (track.tpcNSigmaPi() < 3.0)
+	  if (combNSigmaPi() < 3.0)
 	    flag2+=1;
-	  if (track.tpcNSigmaKa() < 3.0)
+	  if (combNSigmaKa() < 3.0)
 	    flag2+=1;
 	  
           if (!(flag2 > 1) && !(combNSigmaPr > combNSigmaPi) && !(combNSigmaPr > combNSigmaKa)) {
