@@ -83,10 +83,26 @@ bool IsAtBorder(int row, bool smallmodule)
   return (row == 0 || (smallmodule && row == 7) || (!smallmodule && row == 23));
 }
 
-int GetAcceptanceCategory(int cellid)
+// Return one of nine acceptance categories and set the second and third parameter to the global row and column
+int GetAcceptanceCategory(int cellid, int& globalrow, int& globalcol)
 {
   auto [supermodule, module, phiInModule, etaInModule] = gEMCalGeometry->GetCellIndex(cellid);
   auto [row, col] = gEMCalGeometry->GetCellPhiEtaIndexInSModule(supermodule, module, phiInModule, etaInModule);
+
+  // Calculate offset of global rows and columns
+  int xoffset = supermodule % 2 * 48;
+  int yoffset = supermodule / 2 * 24;
+
+  if (supermodule > 11 && supermodule < 18) {
+    xoffset = supermodule % 2 * 64;
+  }
+  if (supermodule > 11) {
+    yoffset = (supermodule - 12) / 2 * 24 + (5 * 24 + 8);
+  }
+
+  // Add the offset to the local column and row
+  globalcol = col + xoffset;
+  globalrow = row + yoffset;
 
   // Add 48 columns for all odd supermodules and 16 for uneven DCal supermodules
   if (supermodule % 2) {
@@ -117,7 +133,7 @@ int GetAcceptanceCategory(int cellid)
   } else if (supermodule == 10 || supermodule == 11 || supermodule == 18 || supermodule == 19) {
     if (IsBehindTRD(col)) {
       return kOneThirdbehindTRD;
-    } else if (IsAtBorder(row, false)) {
+    } else if (IsAtBorder(row, true)) {
       return kOneThirdBorder;
     } else {
       return kOneThirdInside;
@@ -129,11 +145,10 @@ int GetAcceptanceCategory(int cellid)
 }
 
 struct Photon {
-  Photon(float eta_tmp, float phi_tmp, float energy_tmp, int clusteridin = 0, int acceptance_categoryin = 0)
+  Photon(float eta_tmp, float phi_tmp, float energy_tmp, int clusteridin = 0, int cellidin = 0)
   {
     eta = eta_tmp;
     phi = phi_tmp;
-    onDCal = (phi < 6 && phi > 4);
     energy = energy_tmp;
     theta = 2 * std::atan2(std::exp(-eta), 1);
     px = energy * std::sin(theta) * std::cos(phi);
@@ -142,8 +157,9 @@ struct Photon {
     pt = std::sqrt(px * px + py * py);
     photon.SetPxPyPzE(px, py, pz, energy);
     clusterid = clusteridin;
+    cellid = cellidin;
 
-    acceptance_category = acceptance_categoryin;
+    acceptance_category = GetAcceptanceCategory(cellid, row, col);
   }
 
   TLorentzVector photon;
@@ -153,10 +169,12 @@ struct Photon {
   float pz;
   float eta;
   float phi;
-  bool onDCal; // Checks whether photon is in phi region of the DCal, otherwise: EMCal
   float energy;
   float theta;
-  int acceptance_category;
+  int row;                 // Global row
+  int col;                 // Global column
+  int acceptance_category; // One of the nine acceptance categories (EMCal, DCal or one third and behindTRD, border and inside)
+  int cellid;
   int clusterid;
 };
 
@@ -217,6 +235,8 @@ struct Pi0EnergyScaleCalibTask {
     // create common axes
     const o2Axis bcAxis{3501, -0.5, 3500.5};
     const o2Axis AccCategoryAxis{10, -0.5, 9.5};
+    const o2Axis RowAxis{208, -0.5, 207.5};
+    const o2Axis ColAxis{96, -0.5, 95.5};
 
     mHistManager.add("events", "events;;#it{count}", o2HistType::kTH1F, {{4, 0.5, 4.5}});
     auto heventType = mHistManager.get<TH1>(HIST("events"));
@@ -235,6 +255,8 @@ struct Pi0EnergyScaleCalibTask {
       mHistManager.add(Form("%s/clusterE", ClusterDirectory), "Energy of cluster", o2HistType::kTH1F, {{400, 0, 100, "#it{E} (GeV)"}});
       mHistManager.add(Form("%s/clusterTime", ClusterDirectory), "Time of cluster", o2HistType::kTH1F, {{500, -250, 250, "#it{t}_{cls} (ns)"}});
       mHistManager.add(Form("%s/clusterEtaPhi", ClusterDirectory), "Eta and phi of cluster", o2HistType::kTH3F, {{200, -1, 1, "#eta"}, {200, 0, 2 * TMath::Pi(), "#phi"}, AccCategoryAxis});
+      mHistManager.add(Form("%s/clusterEtaPhiVsRow", ClusterDirectory), "Eta and phi of cluster", o2HistType::kTH3F, {{200, -1, 1, "#eta"}, {200, 0, 2 * TMath::Pi(), "#phi"}, RowAxis});
+      mHistManager.add(Form("%s/clusterEtaPhiVsCol", ClusterDirectory), "Eta and phi of cluster", o2HistType::kTH3F, {{200, -1, 1, "#eta"}, {200, 0, 2 * TMath::Pi(), "#phi"}, ColAxis});
       mHistManager.add(Form("%s/clusterM02", ClusterDirectory), "M02 of cluster", o2HistType::kTH1F, {{400, 0, 5, "#it{M}_{02}"}});
       mHistManager.add(Form("%s/clusterM20", ClusterDirectory), "M20 of cluster", o2HistType::kTH1F, {{400, 0, 2.5, "#it{M}_{20}"}});
       mHistManager.add(Form("%s/clusterNLM", ClusterDirectory), "Number of local maxima of cluster", o2HistType::kTH1I, {{10, 0, 10, "#it{N}_{local maxima}"}});
@@ -244,6 +266,10 @@ struct Pi0EnergyScaleCalibTask {
 
     mHistManager.add("invMassVsPtVsAcc", "invariant mass and pT of meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, AccCategoryAxis});
     mHistManager.add("invMassVsPtVsAccBackground", "invariant mass and pT of background meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, AccCategoryAxis});
+    mHistManager.add("invMassVsPtVsRow", "invariant mass and pT of meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, RowAxis});
+    mHistManager.add("invMassVsPtVsRowBackground", "invariant mass and pT of background meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, RowAxis});
+    mHistManager.add("invMassVsPtVsCol", "invariant mass and pT of background meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, ColAxis});
+    mHistManager.add("invMassVsPtVsColBackground", "invariant mass and pT of background meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, ColAxis});
     initCategoryAxis(mHistManager.get<TH3>(HIST("invMassVsPtVsAcc")).get());
     initCategoryAxis(mHistManager.get<TH3>(HIST("invMassVsPtVsAccBackground")).get());
     initCategoryAxis(mHistManager.get<TH3>(HIST("ClustersBeforeCuts/clusterEtaPhi")).get());
@@ -322,7 +348,7 @@ struct Pi0EnergyScaleCalibTask {
       FillClusterQAHistos<decltype(cluster), 1>(cluster, cellid);
 
       // put clusters in photon vector
-      mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.id(), GetAcceptanceCategory(cellid)));
+      mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.id(), cellid));
     }
   }
 
@@ -335,6 +361,8 @@ struct Pi0EnergyScaleCalibTask {
     static constexpr std::string_view clusterQAHistEnergy[2] = {"ClustersBeforeCuts/clusterE", "ClustersAfterCuts/clusterE"};
     static constexpr std::string_view clusterQAHistTime[2] = {"ClustersBeforeCuts/clusterTime", "ClustersAfterCuts/clusterTime"};
     static constexpr std::string_view clusterQAHistEtaPhi[2] = {"ClustersBeforeCuts/clusterEtaPhi", "ClustersAfterCuts/clusterEtaPhi"};
+    static constexpr std::string_view clusterQAHistEtaPhiRow[2] = {"ClustersBeforeCuts/clusterEtaPhiVsRow", "ClustersAfterCuts/clusterEtaPhiVsRow"};
+    static constexpr std::string_view clusterQAHistEtaPhiCol[2] = {"ClustersBeforeCuts/clusterEtaPhiVsCol", "ClustersAfterCuts/clusterEtaPhiVsCol"};
     static constexpr std::string_view clusterQAHistM02[2] = {"ClustersBeforeCuts/clusterM02", "ClustersAfterCuts/clusterM02"};
     static constexpr std::string_view clusterQAHistM20[2] = {"ClustersBeforeCuts/clusterM20", "ClustersAfterCuts/clusterM20"};
     static constexpr std::string_view clusterQAHistNLM[2] = {"ClustersBeforeCuts/clusterNLM", "ClustersAfterCuts/clusterNLM"};
@@ -343,7 +371,10 @@ struct Pi0EnergyScaleCalibTask {
     mHistManager.fill(HIST(clusterQAHistEnergy[BeforeCuts]), cluster.energy());
     mHistManager.fill(HIST(clusterQAHistTime[BeforeCuts]), cluster.time());
     mHistManager.fill(HIST(clusterQAHistEtaPhi[BeforeCuts]), cluster.eta(), cluster.phi(), 0);
-    mHistManager.fill(HIST(clusterQAHistEtaPhi[BeforeCuts]), cluster.eta(), cluster.phi(), GetAcceptanceCategory(cellid));
+    int row, col = 0; // Initialize row and column, which are set in GetAcceptanceCategory and then used to fill the eta phi map
+    mHistManager.fill(HIST(clusterQAHistEtaPhi[BeforeCuts]), cluster.eta(), cluster.phi(), GetAcceptanceCategory(cellid, row, col));
+    mHistManager.fill(HIST(clusterQAHistEtaPhiRow[BeforeCuts]), cluster.eta(), cluster.phi(), row);
+    mHistManager.fill(HIST(clusterQAHistEtaPhiCol[BeforeCuts]), cluster.eta(), cluster.phi(), col);
     mHistManager.fill(HIST(clusterQAHistM02[BeforeCuts]), cluster.m02());
     mHistManager.fill(HIST(clusterQAHistM20[BeforeCuts]), cluster.m20());
     mHistManager.fill(HIST(clusterQAHistNLM[BeforeCuts]), cluster.nlm());
@@ -391,6 +422,10 @@ struct Pi0EnergyScaleCalibTask {
         Meson meson(mPhotons[ig1], mPhotons[ig2]); // build meson from photons
         if (meson.getOpeningAngle() > mMinOpenAngleCut) {
           mHistManager.fill(HIST("invMassVsPtVsAcc"), meson.getMass(), meson.getPt(), 0);
+          mHistManager.fill(HIST("invMassVsPtVsRow"), meson.getMass(), meson.getPt(), mPhotons[ig1].row);
+          mHistManager.fill(HIST("invMassVsPtVsRow"), meson.getMass(), meson.getPt(), mPhotons[ig2].row);
+          mHistManager.fill(HIST("invMassVsPtVsCol"), meson.getMass(), meson.getPt(), mPhotons[ig1].col);
+          mHistManager.fill(HIST("invMassVsPtVsCol"), meson.getMass(), meson.getPt(), mPhotons[ig2].col);
           for (int iAcceptanceCategory = 1; iAcceptanceCategory < NAcceptanceCategories; iAcceptanceCategory++) {
             if ((!mRequireBothPhotonsFromAcceptance && (mPhotons[ig1].acceptance_category == iAcceptanceCategory || mPhotons[ig2].acceptance_category == iAcceptanceCategory)) ||
                 (mPhotons[ig1].acceptance_category == iAcceptanceCategory && mPhotons[ig2].acceptance_category == iAcceptanceCategory)) {
@@ -432,8 +467,8 @@ struct Pi0EnergyScaleCalibTask {
       lvRotationPhoton2.Rotate(rotationAngle, lvRotationPion);
 
       // initialize Photon objects for rotated photons
-      Photon rotPhoton1(lvRotationPhoton1.Eta(), lvRotationPhoton1.Phi(), lvRotationPhoton1.E(), mPhotons[ig1].clusterid, mPhotons[ig1].acceptance_category);
-      Photon rotPhoton2(lvRotationPhoton2.Eta(), lvRotationPhoton2.Phi(), lvRotationPhoton2.E(), mPhotons[ig2].clusterid, mPhotons[ig2].acceptance_category);
+      Photon rotPhoton1(lvRotationPhoton1.Eta(), lvRotationPhoton1.Phi(), lvRotationPhoton1.E(), mPhotons[ig1].clusterid, mPhotons[ig1].cellid);
+      Photon rotPhoton2(lvRotationPhoton2.Eta(), lvRotationPhoton2.Phi(), lvRotationPhoton2.E(), mPhotons[ig2].clusterid, mPhotons[ig2].cellid);
 
       // build meson from rotated photons
       Meson mesonRotated1(rotPhoton1, mPhotons[ig3]);
@@ -442,6 +477,10 @@ struct Pi0EnergyScaleCalibTask {
       // Fill histograms
       if (mesonRotated1.getOpeningAngle() > mMinOpenAngleCut) {
         mHistManager.fill(HIST("invMassVsPtVsAccBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), 0);
+        mHistManager.fill(HIST("invMassVsPtVsRowBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), mPhotons[ig3].row);
+        mHistManager.fill(HIST("invMassVsPtVsRowBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), rotPhoton1.row);
+        mHistManager.fill(HIST("invMassVsPtVsColBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), mPhotons[ig3].col);
+        mHistManager.fill(HIST("invMassVsPtVsColBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), rotPhoton1.col);
         for (int iAcceptanceCategory = 1; iAcceptanceCategory < NAcceptanceCategories; iAcceptanceCategory++) {
           if ((!mRequireBothPhotonsFromAcceptance && (rotPhoton1.acceptance_category == iAcceptanceCategory || mPhotons[ig3].acceptance_category == iAcceptanceCategory)) ||
               (rotPhoton1.acceptance_category == iAcceptanceCategory && mPhotons[ig3].acceptance_category == iAcceptanceCategory)) {
@@ -450,11 +489,15 @@ struct Pi0EnergyScaleCalibTask {
         }
       }
       if (mesonRotated2.getOpeningAngle() > mMinOpenAngleCut) {
-        mHistManager.fill(HIST("invMassVsPtVsAccBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), 0);
+        mHistManager.fill(HIST("invMassVsPtVsAccBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), 0);
+        mHistManager.fill(HIST("invMassVsPtVsRowBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), mPhotons[ig3].row);
+        mHistManager.fill(HIST("invMassVsPtVsRowBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), rotPhoton2.row);
+        mHistManager.fill(HIST("invMassVsPtVsColBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), mPhotons[ig3].col);
+        mHistManager.fill(HIST("invMassVsPtVsColBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), rotPhoton2.col);
         for (int iAcceptanceCategory = 1; iAcceptanceCategory < NAcceptanceCategories; iAcceptanceCategory++) {
           if ((!mRequireBothPhotonsFromAcceptance && (rotPhoton2.acceptance_category == iAcceptanceCategory || mPhotons[ig3].acceptance_category == iAcceptanceCategory)) ||
               (rotPhoton2.acceptance_category == iAcceptanceCategory && mPhotons[ig3].acceptance_category == iAcceptanceCategory)) {
-            mHistManager.fill(HIST("invMassVsPtVsAccBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), iAcceptanceCategory);
+            mHistManager.fill(HIST("invMassVsPtVsAccBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), iAcceptanceCategory);
           }
         }
       }
