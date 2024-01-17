@@ -25,7 +25,7 @@
 // the value is the corresponding value in EnumInputFeatures
 #define FILL_MAP_LCTOPKPI(FEATURE)                                   \
   {                                                                  \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesLcToPKPi::FEATURE) \
+#FEATURE, static_cast < uint8_t>(InputFeaturesLcToPKPi::FEATURE) \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
