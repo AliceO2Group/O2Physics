@@ -13,6 +13,7 @@
 /// \brief Jet tagging related utilities
 ///
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
+/// \author Hanseo Park <hanseo.park@cern.ch>
 
 #ifndef PWGJE_CORE_JETTAGGINGUTILITIES_H_
 #define PWGJE_CORE_JETTAGGINGUTILITIES_H_
@@ -38,6 +39,7 @@ enum JetTaggingSpecies {
 
 namespace JetTaggingUtilities
 {
+const int cmTomum = 10000;
 /**
  * returns the globalIndex of the earliest mother of a particle in the shower. returns -1 if a suitable mother is not found
  *
@@ -180,6 +182,7 @@ int mcdJetFromHFShower(T const& jet, U const& tracks, V const& particles, float 
     int originalHFMotherIndex = getOriginalHFMotherIndex<V>(hfparticle);
     if (originalHFMotherIndex > -1.0) {
 
+      //return origin;
       if (JetUtilities::deltaR(jet, particles.iteratorAt(originalHFMotherIndex)) < dRMax) {
 
         return origin;
@@ -273,6 +276,21 @@ int jetOrigin(T const& jet, U const& particles, float dRMax = 0.25)
   }
 
   return 0;
+}
+
+/**
+ * return geometric sign which is calculated scalar product between jet axis with DCA (track propagated to PV )
+ *
+ * @param collision which is needed external table of collision due to postion X and Y
+ * @param jet
+ * @param track which is needed each DCA_X and Y which is measured in jettaggerhfExtension.cxx
+ */
+template <typename T, typename U, typename V>
+int getGeoSign(T const& collision, U const& jet, V const& track)
+{
+  auto sign = TMath::Sign(1, (track.dcaX() - collision.posX()) * jet.px() + (track.dcaY() - collision.posY()) * jet.py() + (track.dcaZ() - collision.posZ())*jet.pz());
+  if (sign < -1 || sign > 1) LOGF(info, Form("Sign is %d", sign));
+  return sign;
 }
 
 }; // namespace JetTaggingUtilities
