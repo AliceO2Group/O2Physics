@@ -144,7 +144,7 @@ struct cascadeSelector {
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, FullTracksExtIUWithPID const&)
   {
     for (auto& casc : Cascades) {
-      
+
       // these are the tracks:
       auto bachTrack = casc.bachelor_as<FullTracksExtIUWithPID>();
       auto posTrack = casc.posTrack_as<FullTracksExtIUWithPID>();
@@ -162,7 +162,7 @@ struct cascadeSelector {
       registry.fill(HIST("hDCAV0Dau"), casc.dcaV0daughters(), casc.mXi(), casc.pt());
       registry.fill(HIST("hDCACascDau"), casc.dcacascdaughters(), casc.mXi(), casc.pt());
       registry.fill(HIST("hLambdaMass"), casc.mLambda(), casc.mXi(), casc.pt());
-      
+
       registry.fill(HIST("hITSnClustersPos"), posTrack.itsNCls(), casc.mXi(), casc.pt());
       registry.fill(HIST("hITSnClustersNeg"), negTrack.itsNCls(), casc.mXi(), casc.pt());
       registry.fill(HIST("hITSnClustersBach"), bachTrack.itsNCls(), casc.mXi(), casc.pt());
@@ -186,7 +186,7 @@ struct cascadeSelector {
         cascflags(0);
         continue;
       }
-      registry.fill(HIST("hSelectionStatus"), 2); // passes nITS clusters 
+      registry.fill(HIST("hSelectionStatus"), 2); // passes nITS clusters
       registry.fill(HIST("hMassXi2"), casc.mXi(), casc.pt());
 
       //// TOPO CUTS //// TODO: improve!
@@ -235,7 +235,7 @@ struct cascadeSelector {
       }
       registry.fill(HIST("hSelectionStatus"), 4); // fails at V0 daughters PID
       registry.fill(HIST("hMassXi4"), casc.mXi(), casc.pt());
-      
+
       // Bachelor check
       if (TMath::Abs(bachTrack.tpcNSigmaPi()) < tpcNsigmaBachelor) {
         if (TMath::Abs(bachTrack.tpcNSigmaKa()) < tpcNsigmaBachelor) {
@@ -383,30 +383,30 @@ struct cascadeCorrelations {
       // Fill the correct histograms based on same-sign or opposite-sign
       if (trigger.sign() * assoc.sign() < 0) { // opposite-sign
         // check for autocorrelations between mis-identified kaons (omega bach) and protons (lambda daughter) TODO: improve logic?
-        if(trigger.isSelected() >= 2){
-          if(trigger.sign() > 0 && trigger.bachelorId() == posIdAssoc){
+        if (trigger.isSelected() >= 2) {
+          if (trigger.sign() > 0 && trigger.bachelorId() == posIdAssoc) {
             // K+ from trigger Omega is the same as proton from assoc lambda
             registry.fill(HIST("hAutoCorrelationOS"), 1);
             continue;
           }
-          if(trigger.sign() < 0 && trigger.bachelorId() == negIdAssoc){
+          if (trigger.sign() < 0 && trigger.bachelorId() == negIdAssoc) {
             // K- from trigger Omega is the same as antiproton from assoc antilambda
             registry.fill(HIST("hAutoCorrelationOS"), -1);
             continue;
           }
         }
-        if(assoc.isSelected() >= 2){
-          if(assoc.sign() > 0 && assoc.bachelorId() == posIdTrigg){
+        if (assoc.isSelected() >= 2) {
+          if (assoc.sign() > 0 && assoc.bachelorId() == posIdTrigg) {
             // K+ from assoc Omega is the same as proton from trigger lambda
             registry.fill(HIST("hAutoCorrelationOS"), 1);
             continue;
           }
-          if(assoc.sign() < 0 && assoc.bachelorId() == negIdTrigg){
+          if (assoc.sign() < 0 && assoc.bachelorId() == negIdTrigg) {
             // K- from assoc Omega is the same as antiproton from trigger antilambda
             registry.fill(HIST("hAutoCorrelationOS"), -1);
             continue;
           }
-        }        
+        }
 
         registry.fill(HIST("hDeltaPhiOS"), dphi);
         registry.fill(HIST("hXiXiOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
