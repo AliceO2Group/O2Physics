@@ -82,7 +82,7 @@ struct JetTaggerHFTask {
         vecSignedIP3Ds.push_back(geoSign * TMath::Abs(track.dcaXYZ()) / TMath::Sqrt(track.sigmaDcaXYZ2()) * JetTaggingUtilities::cmTomum);
       }
       constTableData(taggingTableData.lastIndex(), trackconst);
-      constTCTableData(0, jet.pt(), jet.eta(), jet.phi(), vecGeoSign, vecTrackPt, vecTrackEta, vecTrackPhi, vecSignedIP2D, vecSignedIP2Ds, vecSignedIP3D, vecSignedIP3Ds);
+      constTCTableData(taggingTableData.lastIndex(), 0, jet.pt(), jet.eta(), jet.phi(), vecGeoSign, vecTrackPt, vecTrackEta, vecTrackPhi, vecSignedIP2D, vecSignedIP2Ds, vecSignedIP3D, vecSignedIP3Ds);
     }
   }
   PROCESS_SWITCH(JetTaggerHFTask, processData, "Fill tagging decision for data jets", false);
@@ -120,7 +120,7 @@ struct JetTaggerHFTask {
         vecSignedIP3Ds.push_back(geoSign * TMath::Abs(track.dcaXYZ()) / TMath::Sqrt(track.sigmaDcaXYZ2()));
       }
       constTableMCD(taggingTableMCD.lastIndex(), trackconst);
-      constTCTableMCD(origin, mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), vecGeoSign, vecTrackPt, vecTrackEta, vecTrackPhi, vecSignedIP2D, vecSignedIP2Ds, vecSignedIP3D, vecSignedIP3Ds);
+      constTCTableMCD(taggingTableMCD.lastIndex(), origin, mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), vecGeoSign, vecTrackPt, vecTrackEta, vecTrackPhi, vecSignedIP2D, vecSignedIP2Ds, vecSignedIP3D, vecSignedIP3Ds);
     }
   }
   PROCESS_SWITCH(JetTaggerHFTask, processMCD, "Fill tagging decision for mcd jets", false);
