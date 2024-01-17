@@ -1007,7 +1007,7 @@ struct lambdakzeroPreselector {
     bool negITSonly = !lNegTrack.hasTPC();
 
     // No baryons in decay
-    if (((bitcheck(maskElement, bitdEdxGamma) || bitcheck(maskElement, bitdEdxK0Short)) || passdEdx) && (posRowsOK && negRowsOK))
+    if (((bitcheck(maskElement, bitdEdxGamma) || bitcheck(maskElement, bitdEdxK0Short)) || passdEdx) && (posRowsOK && negRowsOK) && (!forceITSOnlyMesons || (posITSonly && negITSonly)))
       bitset(maskElement, bitTrackQuality);
     // With baryons in decay
     if ((bitcheck(maskElement, bitdEdxLambda) || passdEdx) &&
