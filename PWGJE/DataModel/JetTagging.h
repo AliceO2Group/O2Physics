@@ -18,6 +18,7 @@
 #define PWGJE_DATAMODEL_JETTAGGING_H_
 
 #include <cmath>
+#include <vector>
 #include "Framework/AnalysisDataModel.h"
 #include "PWGJE/DataModel/Jet.h"
 
@@ -161,20 +162,6 @@ JETTAGGING_TABLES_DEF(Neutral, JTrack, "N");
 JETTAGGING_TABLES_DEF(D0Charged, JTrack, "D0");
 JETTAGGING_TABLES_DEF(LcCharged, JTrack, "Lc");
 JETTAGGING_TABLES_DEF(BplusCharged, JTrack, "BPL");
-
-/*
-//#define JETTAGGING_TABLES_DEF(_jet_type_, _description_)                                                    \
-//  JETTAGGING_TABLE_DEF(_jet_type_##Jet, _jet_type_##jet, _description_)                                     \
-//  JETTAGGING_TABLE_DEF(_jet_type_##MCDetectorLevelJet, _jet_type_##mcdetectorleveljet, _description_ "MCD") \
-//  JETTAGGING_TABLE_DEF(_jet_type_##MCParticleLevelJet, _jet_type_##mcparticleleveljet, _description_ "MCP")
-
-//JETTAGGING_TABLES_DEF(Charged, "C");
-//JETTAGGING_TABLES_DEF(Full, "F");
-//JETTAGGING_TABLES_DEF(Neutral, "N");
-//JETTAGGING_TABLES_DEF(D0Charged, "D0");
-//JETTAGGING_TABLES_DEF(LcCharged, "Lc");
-//JETTAGGING_TABLES_DEF(BplusCharged, "BPL");
-*/
 
 } // namespace o2::aod
 
