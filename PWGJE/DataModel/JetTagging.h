@@ -83,18 +83,18 @@ DECLARE_SOA_COLUMN(GeoSign, geoSign, int);
 
 namespace constituenttc
 {
-	DECLARE_SOA_COLUMN(JetFlavour, jetFlavour, float);
-	DECLARE_SOA_COLUMN(JetPt, jetPt, float);
-	DECLARE_SOA_COLUMN(JetEta, jetEta, float);
-	DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
-	DECLARE_SOA_COLUMN(VecGeoSign, vecGeoSign, std::vector<int>);
-	DECLARE_SOA_COLUMN(VecTrackPt, vecTrackPt, std::vector<float>);
-	DECLARE_SOA_COLUMN(VecTrackEta, vecTrackEta, std::vector<float>);
-	DECLARE_SOA_COLUMN(VecTrackPhi, vecTrackPhi, std::vector<float>);
-	DECLARE_SOA_COLUMN(VecSignedIP2D, vecSignedIP2D, std::vector<float>);
-	DECLARE_SOA_COLUMN(VecSignedIP2Ds, vecSignedIP2Ds, std::vector<float>);
-	DECLARE_SOA_COLUMN(VecSignedIP3D, vecSignedIP3D, std::vector<float>);
-	DECLARE_SOA_COLUMN(VecSignedIP3Ds, vecSignedIP3Ds, std::vector<float>);
+DECLARE_SOA_COLUMN(JetFlavour, jetFlavour, float);
+DECLARE_SOA_COLUMN(JetPt, jetPt, float);
+DECLARE_SOA_COLUMN(JetEta, jetEta, float);
+DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
+DECLARE_SOA_COLUMN(VecGeoSign, vecGeoSign, std::vector<int>);
+DECLARE_SOA_COLUMN(VecTrackPt, vecTrackPt, std::vector<float>);
+DECLARE_SOA_COLUMN(VecTrackEta, vecTrackEta, std::vector<float>);
+DECLARE_SOA_COLUMN(VecTrackPhi, vecTrackPhi, std::vector<float>);
+DECLARE_SOA_COLUMN(VecSignedIP2D, vecSignedIP2D, std::vector<float>);
+DECLARE_SOA_COLUMN(VecSignedIP2Ds, vecSignedIP2Ds, std::vector<float>);
+DECLARE_SOA_COLUMN(VecSignedIP3D, vecSignedIP3D, std::vector<float>);
+DECLARE_SOA_COLUMN(VecSignedIP3Ds, vecSignedIP3Ds, std::vector<float>);
 } // namespace constituenttc
 
 // Defines the jet substrcuture table definition
@@ -125,18 +125,18 @@ namespace constituenttc
 // Defines tagger track extention
 #define DECLARE_TAGTRACK_TC_TABLE(_jet_type_, _name_, _description_)              \
   DECLARE_SOA_TABLE(_jet_type_##Tag##Constituent##TCs, "AOD", _description_ "TC", \
-										_name_##tag##constituents::_jet_type_##Tag##Id, \
-                    constituent##tc::JetFlavour,                     \
-                    constituent##tc::JetPt,                          \
-                    constituent##tc::JetEta,                         \
-                    constituent##tc::JetPhi,                         \
-                    constituent##tc::VecGeoSign,                     \
-                    constituent##tc::VecTrackPt,                     \
-                    constituent##tc::VecTrackEta,                    \
-                    constituent##tc::VecTrackPhi,                    \
-                    constituent##tc::VecSignedIP2D,                  \
-                    constituent##tc::VecSignedIP2Ds,                 \
-                    constituent##tc::VecSignedIP3D,                  \
+                    _name_##tag##constituents::_jet_type_##Tag##Id,               \
+                    constituent##tc::JetFlavour,                                  \
+                    constituent##tc::JetPt,                                       \
+                    constituent##tc::JetEta,                                      \
+                    constituent##tc::JetPhi,                                      \
+                    constituent##tc::VecGeoSign,                                  \
+                    constituent##tc::VecTrackPt,                                  \
+                    constituent##tc::VecTrackEta,                                 \
+                    constituent##tc::VecTrackPhi,                                 \
+                    constituent##tc::VecSignedIP2D,                               \
+                    constituent##tc::VecSignedIP2Ds,                              \
+                    constituent##tc::VecSignedIP3D,                               \
                     constituent##tc::VecSignedIP3Ds);
 
 // combine definition of tables for jets, constituents, and substructure
