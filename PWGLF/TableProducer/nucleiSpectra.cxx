@@ -328,31 +328,6 @@ struct nucleiSpectra {
     }
     spectra.fill(HIST("hRecVtxZData"), collision.posZ());
 
-    if constexpr (std::is_same<Tcoll, CollWithQvec>::value) {
-      nucleiFlowTable(collision.centFV0A(),
-                      collision.centFT0M(),
-                      collision.centFT0A(),
-                      collision.centFT0C(),
-                      collision.qvecFV0ARe(),
-                      collision.qvecFV0AIm(),
-                      collision.sumAmplFV0A(),
-                      collision.qvecFT0MRe(),
-                      collision.qvecFT0MIm(),
-                      collision.sumAmplFT0M(),
-                      collision.qvecFT0ARe(),
-                      collision.qvecFT0AIm(),
-                      collision.sumAmplFT0A(),
-                      collision.qvecFT0CRe(),
-                      collision.qvecFT0CIm(),
-                      collision.sumAmplFT0C(),
-                      collision.qvecBPosRe(),
-                      collision.qvecBPosIm(),
-                      collision.nTrkBPos(),
-                      collision.qvecBNegRe(),
-                      collision.qvecBNegIm(),
-                      collision.nTrkBNeg());
-    }
-
     const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
 
     const double bgScalings[5][2]{
@@ -455,6 +430,32 @@ struct nucleiSpectra {
         }
       }
       if (flag & (kProton | kDeuteron | kTriton | kHe3 | kHe4)) {
+        if constexpr (std::is_same<Tcoll, CollWithQvec>::value) {
+          if (nuclei::candidates.empty()) {
+            nucleiFlowTable(collision.centFV0A(),
+                            collision.centFT0M(),
+                            collision.centFT0A(),
+                            collision.centFT0C(),
+                            collision.qvecFV0ARe(),
+                            collision.qvecFV0AIm(),
+                            collision.sumAmplFV0A(),
+                            collision.qvecFT0MRe(),
+                            collision.qvecFT0MIm(),
+                            collision.sumAmplFT0M(),
+                            collision.qvecFT0ARe(),
+                            collision.qvecFT0AIm(),
+                            collision.sumAmplFT0A(),
+                            collision.qvecFT0CRe(),
+                            collision.qvecFT0CIm(),
+                            collision.sumAmplFT0C(),
+                            collision.qvecBPosRe(),
+                            collision.qvecBPosIm(),
+                            collision.nTrkBPos(),
+                            collision.qvecBNegRe(),
+                            collision.qvecBNegIm(),
+                            collision.nTrkBNeg());
+          }
+        }
         nuclei::candidates.emplace_back(NucleusCandidate{static_cast<int>(track.globalIndex()), (1 - 2 * iC) * trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), track.tpcInnerParam(), beta, collision.posZ(), dcaInfo[0], dcaInfo[1], track.tpcSignal(), track.itsChi2NCl(),
                                                          track.tpcChi2NCl(), flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(), static_cast<uint8_t>(track.tpcNClsFound()), static_cast<int>(nucleiFlowTable.lastIndex())});
       }
