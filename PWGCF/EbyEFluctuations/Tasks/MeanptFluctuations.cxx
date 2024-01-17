@@ -26,6 +26,8 @@
 #include "TList.h"
 #include "TProfile.h"
 #include "TProfile2D.h"
+#include "TH2D.h"
+#include "TH1D.h"
 #include "TRandom3.h"
 #include "TMath.h"
 
@@ -150,6 +152,7 @@ struct MeanptFluctuations_analysis {
   Configurable<int> cfgNSubsample{"cfgNSubsample", 10, "Number of subsamples"};
   ConfigurableAxis centAxis{"centAxis", {90, 0, 90}, ""};
   ConfigurableAxis multAxis{"multAxis", {5000, 0.5, 5000.5}, ""};
+  ConfigurableAxis meanpTAxis{"meanpTAxis", {500, 0, 5.0}, ""};
 
   expressions::Filter Nch_filter = aod::ptQn::n_ch > 3.0f;
   using FilteredMultPtQn = soa::Filtered<aod::MultPtQn>;
@@ -173,6 +176,8 @@ struct MeanptFluctuations_analysis {
     registry.add("Prof_var_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
     registry.add("Prof_skew_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
     registry.add("Prof_kurt_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
+    registry.add("Hist2D_Nch_centrality", "", {HistType::kTH2D, {centAxis, multAxis}});
+    registry.add("Hist2D_meanpt_centrality", "", {HistType::kTH2D, {centAxis, meanpTAxis}});
 
     // initial array
     Subsample.resize(cfgNSubsample);
@@ -203,11 +208,13 @@ struct MeanptFluctuations_analysis {
     skewness_term1 = (TMath::Power(event_ptqn.q1(), 3.0f) - 3.0f * event_ptqn.q2() * event_ptqn.q1() + 2.0f * event_ptqn.q3()) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f) * (event_ptqn.n_ch() - 2.0f));
     kurtosis_term1 = (TMath::Power(event_ptqn.q1(), 4.0f) - (6.0f * event_ptqn.q4()) + (8.0f * event_ptqn.q1() * event_ptqn.q3()) - (6.0f * TMath::Power(event_ptqn.q1(), 2.0f) * event_ptqn.q2()) + (3.0f * TMath::Power(event_ptqn.q2(), 2.0f))) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f) * (event_ptqn.n_ch() - 2.0f) * (event_ptqn.n_ch() - 3.0f));
 
-    // filling profiles for central values
+    // filling profiles and histograms for central values
     registry.get<TProfile2D>(HIST("Prof_mean_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), mean_term1);
     registry.get<TProfile2D>(HIST("Prof_var_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), variance_term1);
     registry.get<TProfile2D>(HIST("Prof_skew_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), skewness_term1);
     registry.get<TProfile2D>(HIST("Prof_kurt_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), kurtosis_term1);
+    registry.fill(HIST("Hist2D_Nch_centrality"), event_ptqn.centrality(), event_ptqn.n_ch());
+    registry.fill(HIST("Hist2D_meanpt_centrality"), event_ptqn.centrality(), mean_term1);
 
     // selecting subsample and filling profiles
     float l_Random = fRndm->Rndm();
