@@ -366,7 +366,7 @@ struct derivedCascadeAnalysis {
     return true;
   }
 
-  void processCascades(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs> const&)
+  void processCascades(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs> const&)
   {
 
     if (!IsEventAccepted(coll))
@@ -540,7 +540,7 @@ struct derivedCascadeAnalysis {
       }
     }
   }
-  void processCascadesMCrec(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascMCCores> const& Cascades, soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs> const&, aod::MotherMCParts const&)
+  void processCascadesMCrec(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascMCCores> const& Cascades, soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs> const&, aod::MotherMCParts const&)
   {
     if (!IsEventAccepted(coll))
       return;
