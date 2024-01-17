@@ -39,7 +39,6 @@ using namespace o2::framework::expressions;
 
 // STEP 1
 // Example task illustrating how to acess information from different tables
-
 namespace o2::aod
 {
 using MyCollisions = soa::Join<aod::Collisions,
