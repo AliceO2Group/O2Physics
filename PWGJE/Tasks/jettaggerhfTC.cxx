@@ -104,7 +104,7 @@ struct JetTaggerHFTC {
       registry.add("h3_jet_pt_track_pt_sign_impact_parameter_xy_significance_N2", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterXYSignificanceAxis}}});
       registry.add("h3_jet_pt_track_pt_sign_impact_parameter_xy_significance_N3", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterXYSignificanceAxis}}});
     }
-    if (doprocessIPsMCD ||doprocessIPsMCPMCDMatched ) {
+    if (doprocessIPsMCD || doprocessIPsMCPMCDMatched) {
       registry.add("h3_jet_pt_track_pt_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_track_eta_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {etaAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_track_phi_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {phiAxis}, {jetFlavourAxis}}});
@@ -145,7 +145,6 @@ struct JetTaggerHFTC {
       registry.add("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2", "", {HistType::kTH3F, {{jetPtAxis}, {impactParameterXYZSignificanceAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N3", "", {HistType::kTH3F, {{jetPtAxis}, {impactParameterXYZSignificanceAxis}, {jetFlavourAxis}}});
     }
-
   }
 
   using TracksData = soa::Join<aod::JTracks, aod::JTrackPIs, aod::JTrackTagDcas, aod::JTrackTagDcaCovs>;
@@ -217,7 +216,6 @@ struct JetTaggerHFTC {
       if (TracksImpXY.size() > 2) { // N3
         registry.fill(HIST("h3_jet_pt_track_pt_sign_impact_parameter_xy_significance_N3"), jet.pt(), TracksSignImpXYSig[2][1], TracksSignImpXYSig[2][0]);
       }
-
     }
   }
 
@@ -229,7 +227,7 @@ struct JetTaggerHFTC {
       std::vector<float> TracksImpXY[numberOfJetFlavourSpecies], TracksSignImpXY[numberOfJetFlavourSpecies], TracksImpXYSig[numberOfJetFlavourSpecies], TracksSignImpXYSig[numberOfJetFlavourSpecies];
       std::vector<float> TracksImpZ[numberOfJetFlavourSpecies], TracksSignImpZ[numberOfJetFlavourSpecies], TracksImpZSig[numberOfJetFlavourSpecies], TracksSignImpZSig[numberOfJetFlavourSpecies];
       std::vector<float> TracksImpXYZ[numberOfJetFlavourSpecies], TracksSignImpXYZ[numberOfJetFlavourSpecies], TracksImpXYZSig[numberOfJetFlavourSpecies], TracksSignImpXYZSig[numberOfJetFlavourSpecies];
-      int jetflavour = mcdjet.origin(); 
+      int jetflavour = mcdjet.origin();
       if (jetflavour == JetTaggingSpecies::none) {
         LOGF(debug, "NOT DEFINE JET FLAVOR");
       }
@@ -325,7 +323,6 @@ struct JetTaggerHFTC {
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N2"), mcdjet.pt(), TracksSignImpZSig[jetflavour][2], jetflavour);
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][2], jetflavour);
       }
-
     }
   }
 
@@ -334,16 +331,15 @@ struct JetTaggerHFTC {
   {
     for (auto& mcpjet : mcpjets) {
       std::cout << "mcpjet pt: " << mcpjet.pt() << "\n";
-
     }
   }
-  
+
   template <typename T, typename U, typename V>
   void fillHistogramIPsMCPMCDMatched(T const& collision, U const& mcpjets)
   {
     for (auto& mcpjet : mcpjets) {
       for (auto& mcdjet : mcpjet.template matchedJetGeo_as<V>()) {
-        int jetflavour = mcdjet.origin(); 
+        int jetflavour = mcdjet.origin();
         if (jetflavour == JetTaggingSpecies::none) {
           LOGF(debug, "NOT DEFINE JET FLAVOR");
         }
@@ -370,24 +366,23 @@ struct JetTaggerHFTC {
   }
   PROCESS_SWITCH(JetTaggerHFTC, processIPsMCD, "Fill impact parameter inpormation for mcd jets", false);
 
-  void processIPsMCP(JetTagTableMCP const& mcpjets, TracksMC&, aod::JMcParticles const& particles) 
+  void processIPsMCP(JetTagTableMCP const& mcpjets, TracksMC&, aod::JMcParticles const& particles)
   {
-    //fillHistogramIPsMCP<soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs>, JetTagTableMCP, TracksMC>(jcollision, mcpjets);
+    // fillHistogramIPsMCP<soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs>, JetTagTableMCP, TracksMC>(jcollision, mcpjets);
   }
   PROCESS_SWITCH(JetTaggerHFTC, processIPsMCP, "Fill impact parameter inpormation for mcp jets", false);
 
-  void processIPsMCPMCDMatched(JetTagTableMCD const& mcdjets, JetTagTableMCP const& mcpjets, TracksMC const& tracks, aod::JMcParticles const& particles) 
+  void processIPsMCPMCDMatched(JetTagTableMCD const& mcdjets, JetTagTableMCP const& mcpjets, TracksMC const& tracks, aod::JMcParticles const& particles)
   {
-    //fillHistogramIPsMCPMCDMatched<soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs>, JetTagTableMCP, TracksMC>(jcollision, mcpjets);
+    // fillHistogramIPsMCPMCDMatched<soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs>, JetTagTableMCP, TracksMC>(jcollision, mcpjets);
   }
   PROCESS_SWITCH(JetTaggerHFTC, processIPsMCPMCDMatched, "Fill impact parameter inpormation for mcd matched mcp jets", false);
 
   void processJPMCD(JetTagTableMCD const& mcdjets, TracksMC const& tracks, aod::McParticles const& particles)
   {
-    //fillHistogramJPMCD(collision, mcdjets, particles);
+    // fillHistogramJPMCD(collision, mcdjets, particles);
   }
   PROCESS_SWITCH(JetTaggerHFTC, processJPMCD, "Fill track and jet probability for mcd jets", false);
-
 };
 
 using JetTaggerTCChargedDataJets = soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetTags, aod::ChargedJetTagConstituents>;
@@ -403,7 +398,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   tasks.emplace_back(
     adaptAnalysisTask<JetTaggerTCCharged>(cfgc,
-                                                 SetDefaultProcesses{}, TaskName{"jet-taggerhf-tc-charged"}));
+                                          SetDefaultProcesses{}, TaskName{"jet-taggerhf-tc-charged"}));
   /*
   tasks.emplace_back(
     adaptAnalysisTask<JetTaggerTCFull>(cfgc,

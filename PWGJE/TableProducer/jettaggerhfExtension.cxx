@@ -49,7 +49,7 @@ struct JetTaggerHFTrackExtension {
   const o2::dataformats::MeanVertexObject* mVtx = nullptr;
   o2::parameters::GRPMagField* grpmag = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
-  
+
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
@@ -117,7 +117,7 @@ struct JetTaggerHFTrackExtension {
   {
     dcaXYZ = std::sqrt(dcaXY * dcaXY + dcaZ * dcaZ);
     float dFdxy = 2 * dcaXY / dcaXYZ;
-    float dFdz = 2* dcaZ / dcaXYZ;
+    float dFdz = 2 * dcaZ / dcaXYZ;
     sigmaDcaXYZ2 = std::abs(cYY * dFdxy * dFdxy + cZZ * dFdz * dFdz + 2 * cZY * dFdxy * dFdz);
   }
 
@@ -145,15 +145,15 @@ struct JetTaggerHFTrackExtension {
         }
       }
       auto xyz = trackPar.getXYZGlo();
-      float dcaX =999.;
-      float dcaY= 999.;
-      if (track.has_collision()){
+      float dcaX = 999.;
+      float dcaY = 999.;
+      if (track.has_collision()) {
         auto const& collision = track.collision();
-        dcaX = xyz.X()-collision.posX();
-        dcaY = xyz.Y()-collision.posY();
+        dcaX = xyz.X() - collision.posX();
+        dcaY = xyz.Y() - collision.posY();
       } else {
-        dcaX = xyz.X()-mVtx->getX();
-        dcaY = xyz.Y()-mVtx->getY();
+        dcaX = xyz.X() - mVtx->getX();
+        dcaY = xyz.Y() - mVtx->getY();
       }
 
       float dcaXY = track.dcaXY();
@@ -166,9 +166,9 @@ struct JetTaggerHFTrackExtension {
       float sigmaDcaXY2 = track.sigmaDcaXY2();
       float sigmaDcaZ2 = track.sigmaDcaZ2();
       float dcaXYZ, sigmaDcaXYZ2;
-      calculateDcaXYZ(dcaXYZ, sigmaDcaXYZ2, dcaXY, dcaZ, track.cYY(), track.cZY(), track.cZZ(),sigmaDcaXY2, sigmaDcaZ2);
+      calculateDcaXYZ(dcaXYZ, sigmaDcaXYZ2, dcaXY, dcaZ, track.cYY(), track.cZY(), track.cZZ(), sigmaDcaXY2, sigmaDcaZ2);
 
-      jTracksTagDcaTable(dcaX, dcaY, dcaXY, dcaZ, dcaXYZ); 
+      jTracksTagDcaTable(dcaX, dcaY, dcaXY, dcaZ, dcaXYZ);
       jTracksTagDcaCovTable(sigmaDcaXY2, sigmaDcaZ2, sigmaDcaXYZ2);
 
       if (doFillHistogram) {
@@ -183,7 +183,7 @@ struct JetTaggerHFTrackExtension {
       }
     } else {
       // TODO: set size of JTracks that some track doesn't have collision
-      jTracksTagDcaTable(0, 0, 0, 0, 0); 
+      jTracksTagDcaTable(0, 0, 0, 0, 0);
       jTracksTagDcaCovTable(0, 0, 0);
     }
   }

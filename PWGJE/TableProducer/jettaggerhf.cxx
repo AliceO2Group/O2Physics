@@ -68,7 +68,7 @@ struct JetTaggerHFTask {
       std::vector<int> trackconst;
       std::vector<int> vecGeoSign;
       std::vector<float> vecTrackPt, vecTrackEta, vecTrackPhi, vecSignedIP2D, vecSignedIP2Ds, vecSignedIP3D, vecSignedIP3Ds;
-      for (auto& track : jet.template tracks_as<JetTagTracksData>()){
+      for (auto& track : jet.template tracks_as<JetTagTracksData>()) {
         trackconst.push_back(track.globalIndex());
         int geoSign = JetTaggingUtilities::getGeoSign(collision, jet, track);
         trackconst.push_back(track.globalIndex());
@@ -81,8 +81,8 @@ struct JetTaggerHFTask {
         vecSignedIP3D.push_back(track.dcaXYZ() / TMath::Sqrt(track.sigmaDcaXYZ2()) * JetTaggingUtilities::cmTomum);
         vecSignedIP3Ds.push_back(geoSign * TMath::Abs(track.dcaXYZ()) / TMath::Sqrt(track.sigmaDcaXYZ2()) * JetTaggingUtilities::cmTomum);
       }
-    constTableData(taggingTableData.lastIndex(), trackconst);
-    constTCTableData(0, jet.pt(), jet.eta(), jet.phi(), vecGeoSign, vecTrackPt, vecTrackEta, vecTrackPhi, vecSignedIP2D, vecSignedIP2Ds, vecSignedIP3D, vecSignedIP3Ds);
+      constTableData(taggingTableData.lastIndex(), trackconst);
+      constTCTableData(0, jet.pt(), jet.eta(), jet.phi(), vecGeoSign, vecTrackPt, vecTrackEta, vecTrackPhi, vecSignedIP2D, vecSignedIP2Ds, vecSignedIP3D, vecSignedIP3Ds);
     }
   }
   PROCESS_SWITCH(JetTaggerHFTask, processData, "Fill tagging decision for data jets", false);
@@ -92,9 +92,11 @@ struct JetTaggerHFTask {
     auto collision = jcollision.template collision_as<aod::Collisions>();
     for (auto& mcdjet : mcdjets) {
       typename JetTagTracksMC::iterator hftrack;
-      int origin =0;
-      if (!doWShower) origin = JetTaggingUtilities::mcdJetFromHFShower(mcdjet, tracks, particles, maxDeltaR); 
-      else origin = JetTaggingUtilities::jetTrackFromHFShower(mcdjet, tracks, particles, hftrack);
+      int origin = 0;
+      if (!doWShower)
+        origin = JetTaggingUtilities::mcdJetFromHFShower(mcdjet, tracks, particles, maxDeltaR);
+      else
+        origin = JetTaggingUtilities::jetTrackFromHFShower(mcdjet, tracks, particles, hftrack);
       int algorithm1 = 0;
       int algorithm2 = 0;
       int algorithm3 = 0;
@@ -105,7 +107,7 @@ struct JetTaggerHFTask {
       std::vector<int> trackconst;
       std::vector<int> vecGeoSign;
       std::vector<float> vecTrackPt, vecTrackEta, vecTrackPhi, vecSignedIP2D, vecSignedIP2Ds, vecSignedIP3D, vecSignedIP3Ds;
-      for (auto& track : mcdjet.template tracks_as<JetTagTracksMC>()){
+      for (auto& track : mcdjet.template tracks_as<JetTagTracksMC>()) {
         int geoSign = JetTaggingUtilities::getGeoSign(collision, mcdjet, track);
         trackconst.push_back(track.globalIndex());
         vecGeoSign.push_back(geoSign);
@@ -134,12 +136,12 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   std::vector<o2::framework::DataProcessorSpec> tasks;
 
   tasks.emplace_back(
-      adaptAnalysisTask<JetTaggerChargedJets>(cfgc,
-        SetDefaultProcesses{}, TaskName{"jet-taggerhf-charged"}));
+    adaptAnalysisTask<JetTaggerChargedJets>(cfgc,
+                                            SetDefaultProcesses{}, TaskName{"jet-taggerhf-charged"}));
 
   tasks.emplace_back(
-      adaptAnalysisTask<JetTaggerFullJets>(cfgc,
-        SetDefaultProcesses{}, TaskName{"jet-taggerhf-full"}));
+    adaptAnalysisTask<JetTaggerFullJets>(cfgc,
+                                         SetDefaultProcesses{}, TaskName{"jet-taggerhf-full"}));
   /*
      tasks.emplace_back(
      adaptAnalysisTask<JetTaggerNeutralJets>(cfgc,
