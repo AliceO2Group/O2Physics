@@ -20,8 +20,8 @@ o2physics_add_dpl_workflow(mean-pt-fluc-id
                     COMPONENT_NAME Analysis)
 
 
-o2physics_add_dpl_workflow(mean-pt-pbpb-fluc
-                    SOURCES MeanpTFlucPbPbIdentified.cxx
+o2physics_add_dpl_workflow(meanpt-fluct-identified
+                    SOURCES MeanpTFlucIdentified.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
