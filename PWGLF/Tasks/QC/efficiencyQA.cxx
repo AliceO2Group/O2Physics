@@ -36,6 +36,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi>;
+using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
 namespace
 {
@@ -66,6 +67,7 @@ struct ProbeTrack {
   uint64_t globalIndex;
   uint64_t globalIndexTpc;
   int32_t collIndex;
+  int64_t bcIndex;
   float p;
   float pt;
   float pProp;
@@ -76,6 +78,8 @@ struct ProbeTrack {
   float vtx0;
   float vtx1;
   float vtx2;
+  float time;
+  float timeRes;
   uint8_t detectorMap;
   uint64_t globalIndexTag;
 };
@@ -107,6 +111,7 @@ struct efficiencyQA {
 
   Configurable<bool> findTpcLeg{"findTpcLeg", false, "toggle search of missing tpc segment"};
   Configurable<bool> useTpcTracksFromSameColl{"useTpcTracksFromSameColl", true, "toggle post-matching to tpc segment associated to collision"};
+  Configurable<bool> useCollisionWindow{"useCollisionWindow", false, "toogle collision window in re-matching"};
   Configurable<bool> propToTPCinnerWall{"propToTPCinnerWall", false, "toggle propagation of tracks to the TPC inner wall"};
   Configurable<bool> refitVertex{"refitVertex", false, "toggle refit of decay vertex using tag and tpc prolongation"};
   Configurable<float> ptWindow{"ptWindow", 0.05f, "pt window to search tpc segment"};
@@ -115,6 +120,8 @@ struct efficiencyQA {
   Configurable<float> massWindow{"massWindow", 0.03f, "mass window to search tpc segment"};
   Configurable<float> cosPaWindow{"cosPaWindow", 0.8f, "cosPa window to search tpc segment"};
   Configurable<int> collIdWindow{"collIdWindow", 6, "collision index window to search tpc segment"};
+
+  Configurable<float> trackTimingCut{"trackTimingCut", 3.f, "track timing cut, number of sigmas"};
 
   // CCDB options
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -138,6 +145,7 @@ struct efficiencyQA {
   ConfigurableAxis phiResAxis{"phiResAxis", {800, -4.f, 4.f}, "binning for the phi resolution of V0 daughter tracks"};
   ConfigurableAxis cosPaAxis{"cosPaAxis", {1000, -1.f, 1.f}, "binning for the cosine of pointing angle"};
   ConfigurableAxis collIdResAxis{"collIdResAxis", {1.e2, -50., 50.}, "binning for the collision ID resolution"};
+  ConfigurableAxis timeResAxis{"timeResAxis", {1000, -50., 50.}, "binning for the collision ID resolution"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -146,6 +154,9 @@ struct efficiencyQA {
 
   Preslice<aod::V0s> perCollisionV0s = o2::aod::v0::collisionId;
   Preslice<TracksFull> perCollisionTracks = o2::aod::track::collisionId;
+
+  double LHCRFFreq = 400.789e6;
+  double LHCBunchSpacingNS = 10 * 1.e9 / LHCRFFreq;
 
   void init(InitContext const&)
   {
@@ -225,6 +236,7 @@ struct efficiencyQA {
         histos.add<TH3>("ptEtaPhiTpcIts", ";#it{p}^{TPC}_{T} - #it{p}^{ITS}_{T} (GeV/#it{c});#eta^{TPC} - #eta^{ITS};#phi^{TPC} - #phi^{ITS} (rad)", HistType::kTH3F, {ptResAxis, etaResAxis, phiResAxis});
         histos.add<TH1>("collTpcIts", ";ID_{coll}^{TPC} - ID_{coll}^{ITS};Entries", HistType::kTH1F, {collIdResAxis});
         histos.add<TH1>("collTpcV0", ";ID_{coll}^{TPC} - ID_{coll}^{V0};Entries", HistType::kTH1F, {collIdResAxis});
+        histos.add<TH1>("timeTpcIts", ";(#it{t}^{TPC} - #it{t}^{ITS}) / #sigma (a.u.);Entries", HistType::kTH1F, {timeResAxis});
       }
     }
   }
@@ -291,7 +303,7 @@ struct efficiencyQA {
   }
 
   template <class T>
-  void fillTagAndProbe(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0s const& V0s, TracksFull const& tracks)
+  void fillTagAndProbe(SelCollisions::iterator const& collision, aod::V0s const& V0s, TracksFull const& tracks, SelCollisions const&)
   {
     auto tpcTracks = useTpcTracksFromSameColl ? tracks.sliceBy(perCollisionTracks, collision.globalIndex()) : tracks;
     for (auto& v0 : V0s) {
@@ -417,7 +429,15 @@ struct efficiencyQA {
       probe.vtx0 = vtx[0];
       probe.vtx1 = vtx[1];
       probe.vtx2 = vtx[2];
+      probe.time = probeTrack.trackTime();
+      probe.timeRes = probeTrack.trackTimeRes();
       probe.collIndex = probeTrack.collisionId();
+      if (probeTrack.has_collision()) {
+        auto collisionIts = probeTrack.template collision_as<SelCollisions>();
+        probe.bcIndex = int64_t(collisionIts.bcId());
+      } else {
+        continue; // TODO: check ambiguous tracks (?)
+      }
 
       if (probeTrack.hasITS() && !probeTrack.hasTPC() && findTpcLeg) {
         auto acceptIts = !(probeTrack.itsChi2NCl() > 36. || probeTrack.itsNCls() < 4);
@@ -430,6 +450,18 @@ struct efficiencyQA {
         for (auto& tpcTrack : tpcTracks) {
           if (std::abs(tpcTrack.collisionId() - probeTrack.collisionId()) > collIdWindow) {
             continue;
+          }
+          if (!useCollisionWindow) {
+            if (!tpcTrack.has_collision()) {
+              continue;
+            }
+            auto collisionTpc = tpcTrack.template collision_as<SelCollisions>();
+            auto bcTpc = int64_t(collisionTpc.bcId());
+            float tdiff = (bcTpc - probe.bcIndex) * LHCBunchSpacingNS + tpcTrack.trackTime() - probe.time;
+            float nsigmaT = tdiff / std::sqrt(std::pow(tpcTrack.trackTimeRes(), 2) + std::pow(probe.timeRes, 2));
+            if (nsigmaT > trackTimingCut) {
+              continue;
+            }
           }
           if (std::abs(tpcTrack.eta()) > etaMax) {
             continue;
@@ -538,7 +570,7 @@ struct efficiencyQA {
     }
   }
 
-  void fillProbeMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TracksFull const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
+  void fillProbeMC(SelCollisions::iterator const& collision, TracksFull const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, SelCollisions const&)
   {
     auto tracks_thisEvent = useTpcTracksFromSameColl ? tracks.sliceBy(perCollisionTracks, collision.globalIndex()) : tracks;
 
@@ -581,6 +613,11 @@ struct efficiencyQA {
             LOGF(debug, "globalID = %lld, probeCollId = %d, tpcCollId = %d", collision.globalIndex(), probeTrack.collIndex, tpcTrack.collisionId());
             histos.fill(HIST("collTpcIts"), tpcTrack.collisionId() - probeTrack.collIndex);
             histos.fill(HIST("collTpcV0"), tpcTrack.collisionId() - collision.globalIndex());
+
+            auto collisionTpc = tpcTrack.template collision_as<SelCollisions>();
+            float tdiff = (int64_t(collisionTpc.bcId()) - probeTrack.bcIndex) * LHCBunchSpacingNS + tpcTrack.trackTime() - probeTrack.time;
+            float nsigmaT = tdiff / std::sqrt(std::pow(tpcTrack.trackTimeRes(), 2) + std::pow(probeTrack.timeRes, 2));
+            histos.fill(HIST("timeTpcIts"), nsigmaT);
 
             auto trackCov = getTrackParCov(tpcTrack);
             gpu::gpustd::array<float, 2> dcaInfo;
@@ -648,7 +685,7 @@ struct efficiencyQA {
     }
   }
 
-  void processTagAndProbe(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
+  void processTagAndProbe(SelCollisions const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       probeTracks.clear();
@@ -667,12 +704,12 @@ struct efficiencyQA {
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0s, collIdx);
       V0Table_thisCollision.bindExternalIndices(&tracks);
-      fillTagAndProbe<TracksFull>(collision, V0Table_thisCollision, tracks);
+      fillTagAndProbe<TracksFull>(collision, V0Table_thisCollision, tracks, collisions);
     }
   }
   PROCESS_SWITCH(efficiencyQA, processTagAndProbe, "Tag and probe analysis", true);
 
-  void processTagAndProbeMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
+  void processTagAndProbeMC(SelCollisions const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
     for (const auto& collision : collisions) {
       probeTracks.clear();
@@ -691,14 +728,14 @@ struct efficiencyQA {
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0s, collIdx);
       V0Table_thisCollision.bindExternalIndices(&tracks);
-      fillTagAndProbe<TracksFull>(collision, V0Table_thisCollision, tracks);
+      fillTagAndProbe<TracksFull>(collision, V0Table_thisCollision, tracks, collisions);
 
-      fillProbeMC(collision, tracks, trackLabelsMC, particlesMC);
+      fillProbeMC(collision, tracks, trackLabelsMC, particlesMC, collisions);
     }
   }
   PROCESS_SWITCH(efficiencyQA, processTagAndProbeMC, "Tag and probe analysis on MC", false);
 
-  void processMcTracks(soa::Join<aod::Collisions, aod::EvSels> const& collisions, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
+  void processMcTracks(SelCollisions const& collisions, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
