@@ -27,7 +27,7 @@
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
-
+#include <Math/Vector4D.h>
 #include <cmath>
 #include <array>
 #include <cstdlib>
@@ -98,8 +98,9 @@ struct phianalysisrun3 {
         histos.add("h3PhiInvMassMixedCside", "Invariant mass of Phi meson Mixed C side", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
       }
     } else if (isMC) {
-      histos.add("hMC", "MC Event statistics", kTH1F, {{2, 0.0f, 2.0f}});
+      histos.add("hMC", "MC Event statistics", kTH1F, {{5, 0.0f, 4.0f}});
       histos.add("h1PhiGen", "Phi meson Gen", kTH1F, {{100, 0.0f, 10.0f}});
+      histos.add("h1PhiGensamecoll", "Phi meson Gen same coll", kTH1F, {{100, 0.0f, 10.0f}});
       histos.add("h2PhiRec", "Phi meson Rec", kTH2F, {{100, 0.0f, 10.0f}, {200, -0.1, 0.1}});
     }
   }
@@ -311,37 +312,63 @@ struct phianalysisrun3 {
   }
 
   PROCESS_SWITCH(phianalysisrun3, processMixedEvent, "Process Mixed event", false);
-  void processGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)
+  void processGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
+    histos.fill(HIST("hMC"), 0.5);
     if (std::abs(mcCollision.posZ()) < cfgCutVertex) {
-      histos.fill(HIST("hMC"), 0.5);
-      for (auto& mcParticle : mcParticles) {
+      histos.fill(HIST("hMC"), 1.5);
+    }
+    int Nchinel = 0;
+    for (auto& mcParticle : mcParticles) {
+      auto pdgcode = std::abs(mcParticle.pdgCode());
+      if (mcParticle.isPhysicalPrimary() && (pdgcode == 211 || pdgcode == 321 || pdgcode == 2212 || pdgcode == 11 || pdgcode == 13)) {
+        if (std::abs(mcParticle.eta()) < 1.0) {
+          Nchinel = Nchinel + 1;
+        }
+      }
+    }
+    if (Nchinel > 0 && std::abs(mcCollision.posZ()) < cfgCutVertex)
+      histos.fill(HIST("hMC"), 2.5);
+    std::vector<int64_t> SelectedEvents(collisions.size());
+    int nevts = 0;
+    for (const auto& collision : collisions) {
+      if (!collision.sel8() || std::abs(collision.mcCollision().posZ()) > cfgCutVertex) {
+        continue;
+      }
+      SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+    }
+    SelectedEvents.resize(nevts);
+    const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end();
 
-        if (std::abs(mcParticle.y()) > 0.5) {
+    if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
+      return;
+    }
+    histos.fill(HIST("hMC"), 3.5);
+    for (auto& mcParticle : mcParticles) {
+      if (std::abs(mcParticle.y()) > 0.5) {
+        continue;
+      }
+      if (mcParticle.pdgCode() != 333) {
+        continue;
+      }
+      auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
+      if (kDaughters.size() != 2) {
+        continue;
+      }
+      auto daughtp = false;
+      auto daughtm = false;
+      for (auto kCurrentDaughter : kDaughters) {
+        if (!kCurrentDaughter.isPhysicalPrimary()) {
           continue;
         }
-        if (mcParticle.pdgCode() != 333) {
-          continue;
+        if (kCurrentDaughter.pdgCode() == +321) {
+          daughtp = true;
+        } else if (kCurrentDaughter.pdgCode() == -321) {
+          daughtm = true;
         }
-        auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
-        if (kDaughters.size() != 2) {
-          continue;
-        }
-        auto daughtp = false;
-        auto daughtm = false;
-        for (auto kCurrentDaughter : kDaughters) {
-          if (!kCurrentDaughter.isPhysicalPrimary()) {
-            continue;
-          }
-          if (kCurrentDaughter.pdgCode() == +321) {
-            daughtp = true;
-          } else if (kCurrentDaughter.pdgCode() == -321) {
-            daughtm = true;
-          }
-        }
-        if (daughtp && daughtm) {
-          histos.fill(HIST("h1PhiGen"), mcParticle.pt());
-        }
+      }
+      if (daughtp && daughtm) {
+        histos.fill(HIST("h1PhiGen"), mcParticle.pt());
       }
     }
   }
@@ -355,7 +382,7 @@ struct phianalysisrun3 {
     if (std::abs(collision.mcCollision().posZ()) > cfgCutVertex || !collision.sel8()) {
       return;
     }
-    histos.fill(HIST("hMC"), 1.5);
+    histos.fill(HIST("hMC"), 4.5);
     for (auto track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
