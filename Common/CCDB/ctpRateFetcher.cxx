@@ -31,7 +31,7 @@ double ctpRateFetcher::fetch(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t
     if (runNumber < 544448) {
       return fetchCTPratesInputs(ccdb, timeStamp, runNumber, 26) / (sourceName.find("hadronic") != std::string::npos ? 28. : 1.);
     } else {
-      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "C1ZNC-B-NOPF-CRU") / (sourceName.find("hadronic") != std::string::npos ? 28. : 1.);
+      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "C1ZNC-B-NOPF-CRU", 6) / (sourceName.find("hadronic") != std::string::npos ? 28. : 1.);
     }
   } else if (sourceName == "T0CE") {
     return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVXTCE-B-NOPF-CRU");
@@ -48,7 +48,7 @@ double ctpRateFetcher::fetch(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t
   return -1.;
 }
 
-double ctpRateFetcher::fetchCTPratesClasses(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber, std::string className)
+double ctpRateFetcher::fetchCTPratesClasses(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber, std::string className, int inputType)
 {
   getCTPscalers(ccdb, timeStamp, runNumber);
   getCTPconfig(ccdb, timeStamp, runNumber);
@@ -66,9 +66,9 @@ double ctpRateFetcher::fetchCTPratesClasses(Service<o2::ccdb::BasicCCDBManager>&
     LOG(fatal) << "Trigger class " << className << " not found in CTPConfiguration";
   }
 
-  auto rate{mScalers->getRateGivenT(timeStamp, classIndex, 1)};
+  auto rate{mScalers->getRateGivenT(timeStamp, classIndex, inputType)};
 
-  return rate.second;
+  return pileUpCorrection(rate.second);
 }
 
 double ctpRateFetcher::fetchCTPratesInputs(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber, int input)
