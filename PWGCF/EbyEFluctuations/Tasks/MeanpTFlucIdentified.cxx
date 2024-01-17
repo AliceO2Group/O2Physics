@@ -12,26 +12,24 @@
 /// \author Sweta Singh (sweta.singh@cern.ch)
 
 // O2 includes
-#include "Framework/AnalysisTask.h"          
-#include "Framework/runDataProcessing.h"     
-#include "Common/DataModel/EventSelection.h" 
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h" 
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/CCDB/EventSelectionParams.h"
-#include "Common/Core/TrackSelection.h"            
-#include "Common/DataModel/TrackSelectionTables.h" 
-#include "Common/DataModel/Centrality.h"           
-#include "Framework/AnalysisDataModel.h"     
-#include "Framework/ASoAHelpers.h"          
-#include "Framework/HistogramRegistry.h"    
-#include "Framework/RunningWorkflowInfo.h"  
-#include "CommonConstants/MathConstants.h"  
-#include "PWGCF/Core/CorrelationContainer.h" 
-#include "PWGCF/Core/PairCuts.h"             
-#include "Common/DataModel/FT0Corrected.h" 
-
-
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/Centrality.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "CommonConstants/MathConstants.h"
+#include "PWGCF/Core/CorrelationContainer.h"
+#include "PWGCF/Core/PairCuts.h"
+#include "Common/DataModel/FT0Corrected.h"
 
 using namespace std;
 
@@ -62,7 +60,6 @@ using MyTrack = MyTracks::iterator;
 struct MeanpTFlucIdentified {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-
   // Equivalent of the AliRoot task UserCreateOutputObjects
   void init(o2::framework::InitContext&)
   {
@@ -85,8 +82,8 @@ struct MeanpTFlucIdentified {
     AxisSpec centAxis = {20, 0., 100., "centrality"};
     AxisSpec subAxis = {30, 0., 30., "sample"};
     AxisSpec nchAxis = {3200, 0., 3200., "nch"};
-    AxisSpec varAxis1 = {6000, 0., 6., "var1"}; 
-    AxisSpec varAxis2 = {600, 0., 6., "var2"};  
+    AxisSpec varAxis1 = {6000, 0., 6., "var1"};
+    AxisSpec varAxis2 = {600, 0., 6., "var2"};
 
     // Add histograms to histogram manager (as in the output object of in AliPhysics)
     histos.add("hZvtx_before_sel", "hZvtx_before_sel", kTH1F, {vtxZAxis});
@@ -126,9 +123,7 @@ struct MeanpTFlucIdentified {
     histos.add("hPtChProton", "hPtChProton", kTH2F, {nchAxis, ptAxis});
 
     histos.add("hMeanPtCh", "hMeanPtCh", kTH2F, {nChAxis, ptAxis});
-    histos.add("hCent","hCent",kTH2F,{nChAxis, centAxis});
-
-
+    histos.add("hCent", "hCent", kTH2F, {nChAxis, centAxis});
 
     histos.add("hVar1", "hVar1", kTH2F, {centAxis, varAxis1});
     histos.add("hVar2", "hVar2", kTH2F, {centAxis, varAxis2});
@@ -205,8 +200,6 @@ struct MeanpTFlucIdentified {
     std::vector<float> VMeanPtKaon;
     std::vector<float> VMeanPtProton;
 
-
-
     float Q1 = 0, Q2 = 0;
     float Q1pi = 0, Q2pi = 0;
     float Q1k = 0, Q2k = 0;
@@ -222,7 +215,8 @@ struct MeanpTFlucIdentified {
     // Perfroming the track selection==============================================================================================================
     for (auto track : inputTracks) { // Loop over tracks
 
-        if (!track.isGlobalTrack()) return;
+      if (!track.isGlobalTrack())
+        return;
 
       if (!((fabs(track.eta()) < 0.8) && (fabs(track.dcaXY()) < 0.12) && (fabs(track.dcaZ()) < 1.) && (track.pt() > 0.15 && track.pt() < 2.))) {
         continue;
@@ -286,8 +280,6 @@ struct MeanpTFlucIdentified {
             histos.fill(HIST("hPtChPion"), nCh, VMeanPtPion[jPi]);
           }
 
-
-
           nChpi += 1.;
           Q1pi += track.pt();
           Q2pi += (track.pt() * track.pt());
@@ -310,8 +302,6 @@ struct MeanpTFlucIdentified {
           for (ULong64_t jKa = 0; jKa < VMeanPtKaon.size(); jKa++) {
             histos.fill(HIST("hPtChKaon"), nCh, VMeanPtKaon[jKa]);
           }
-
-
 
           nChk += 1.;
           Q1k += track.pt();
@@ -336,7 +326,6 @@ struct MeanpTFlucIdentified {
             histos.fill(HIST("hPtChProton"), nCh, VMeanPtProton[jPr]);
           }
 
-
           nChp += 1.;
           Q1p += track.pt();
           Q2p += (track.pt() * track.pt());
@@ -344,9 +333,9 @@ struct MeanpTFlucIdentified {
       }
 
     } // Track loop ends!
-      VMeanPtPion.clear();
-      VMeanPtKaon.clear();
-      VMeanPtProton.clear();
+    VMeanPtPion.clear();
+    VMeanPtKaon.clear();
+    VMeanPtProton.clear();
 
     if (nCh < 2)
       return;
@@ -399,7 +388,6 @@ struct MeanpTFlucIdentified {
     histos.fill(HIST("hVar2px"), nCh, var2p);
     histos.fill(HIST("hVarpx"), sample, nChp);
 
-
     for (ULong64_t j = 0; j < VMeanPt.size(); j++) {
       histos.fill(HIST("hPtCh"), nCh, VMeanPt[j]);
     }
@@ -407,8 +395,6 @@ struct MeanpTFlucIdentified {
     VMeanPt.clear();
 
   } // event loop ends!
-  
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
