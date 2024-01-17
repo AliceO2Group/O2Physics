@@ -122,7 +122,7 @@ DECLARE_SOA_COLUMN(GeoSign, geoSign, int);
     DECLARE_SOA_COLUMN(VecSignedIP2Ds, vecSignedIP2Ds, std::vector<float>);       \
     DECLARE_SOA_COLUMN(VecSignedIP3D, vecSignedIP3D, std::vector<float>);         \
     DECLARE_SOA_COLUMN(VecSignedIP3Ds, vecSignedIP3Ds, std::vector<float>);       \
-  }                                                                               \
+  } /* namespace _name_##tag##constituent##tc */                                  \
   DECLARE_SOA_TABLE(_jet_type_##Tag##Constituent##TCs, "AOD", _description_ "TC", \
                     _name_##tag##constituent##tc::JetFlavour,                     \
                     _name_##tag##constituent##tc::JetPt,                          \
