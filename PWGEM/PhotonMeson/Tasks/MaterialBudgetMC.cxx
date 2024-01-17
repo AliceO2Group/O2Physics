@@ -409,6 +409,9 @@ struct MaterialBudgetMC {
         int photonid = IsEleFromPC(mctrack, mcparticles);
         if (photonid > 0) {
           auto mcphoton = mcparticles.iteratorAt(photonid);
+          if (abs(mcphoton.y()) > maxY) {
+            continue;
+          }
           if (!IsPhysicalPrimary(mcphoton.emreducedmcevent(), mcphoton, mcparticles)) {
             continue;
           }
