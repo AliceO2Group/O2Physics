@@ -138,8 +138,7 @@ struct NetProtonCumulants_Table_QA {
 	    flag2+=1;
 	  if (combNSigmaKa() < 3.0)
 	    flag2+=1;
-	  
-          if (!(flag2 > 1) && !(combNSigmaPr > combNSigmaPi) && !(combNSigmaPr > combNSigmaKa)) {
+	  if (!(flag2 > 1) && !(combNSigmaPr > combNSigmaPi) && !(combNSigmaPr > combNSigmaKa)) {
             if (combNSigmaPr() < cfgnSigmaCut) {
               flag = 1;
             }
