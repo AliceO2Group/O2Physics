@@ -132,8 +132,8 @@ struct antidLambdaEbye {
         track.itsChi2NCl() > 36.f ||
         !(track.trackType() & o2::aod::track::TPCrefit) ||
         !(track.trackType() & o2::aod::track::ITSrefit)) {
-        return false;
-      }
+      return false;
+    }
     return true;
   }
 
@@ -220,10 +220,10 @@ struct antidLambdaEbye {
     initCCDB(bc);
 
     if (!collision.sel8())
-    return;
+      return;
 
     if (std::abs(collision.posZ()) > zVtxMax)
-    return;
+      return;
 
     const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
 
@@ -292,8 +292,7 @@ struct antidLambdaEbye {
       if (matter) {
         q1L += 1.; // TODO: correct for efficiency
         q2L += 1.;
-      }
-      else {
+      } else {
         q1antiL += 1.; // TODO: correct for efficiency
         q2antiL += 1.;
       }
