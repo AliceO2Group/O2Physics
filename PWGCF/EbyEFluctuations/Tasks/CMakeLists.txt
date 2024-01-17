@@ -15,7 +15,7 @@ o2physics_add_dpl_workflow(meanpt-fluctuations
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mean-pt-fluc-id
-                    SOURCES EbyEmeanPtFlucIdentified.cxx
+                    SOURCES MeanPtFlucIdentified.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
