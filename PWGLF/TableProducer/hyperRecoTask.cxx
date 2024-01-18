@@ -536,9 +536,9 @@ struct hyperRecoTask {
 
   void processDataWithFlow(CollisionsFullWithFlow const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
   {
-    hyperCandidates.clear();
 
     for (const auto& collision : collisions) {
+      hyperCandidates.clear();
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
