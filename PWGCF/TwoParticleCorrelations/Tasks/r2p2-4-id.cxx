@@ -117,7 +117,7 @@ struct FillFlagsTable {
             nsigma_array[0] = track.tpcNSigmaPi();
             nsigma_array[1] = track.tpcNSigmaKa();
             nsigma_array[2] = track.tpcNSigmaPr();
-            if (fabs(nsigma_array[(binNpid / 10) - 1]) < fabs(nsigma_array[(binNpid % 10) - 1])) //The track is identified as the particle whose |nsigma| is the least.
+            if (fabs(nsigma_array[(binNpid / 10) - 1]) < fabs(nsigma_array[(binNpid % 10) - 1])) // The track is identified as the particle whose |nsigma| is the least.
               binNpid /= 10;
             else
               binNpid %= 10;
