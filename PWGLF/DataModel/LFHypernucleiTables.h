@@ -40,7 +40,6 @@ DECLARE_SOA_COLUMN(QVecXFV0A, qVecXFV0A, float);           // Q vector x compone
 DECLARE_SOA_COLUMN(QVecYFV0A, qVecYFV0A, float);           // Q vector y component with FV0A estimator
 DECLARE_SOA_COLUMN(QVecAmpFV0A, qVecAmpFV0A, float);       // Q vector amplitude with FV0A estimator
 
-
 DECLARE_SOA_COLUMN(IsMatter, isMatter, bool);                       // bool: true for matter
 DECLARE_SOA_COLUMN(PtHe3, ptHe3, float);                            // Pt of the He daughter
 DECLARE_SOA_COLUMN(PhiHe3, phiHe3, float);                          // Phi of the He daughter

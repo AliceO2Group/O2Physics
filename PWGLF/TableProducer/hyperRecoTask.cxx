@@ -563,19 +563,19 @@ struct hyperRecoTask {
 
       for (auto& hypCand : hyperCandidates) {
         outputDataTableWithFlow(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
-                        collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.sumAmplFT0A(),
-                        collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.sumAmplFT0C(),
-                        collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.sumAmplFT0M(),
-                        collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.sumAmplFV0A(),
-                        collision.posX(), collision.posY(), collision.posZ(),
-                        hypCand.isMatter,
-                        hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
-                        hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
-                        hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
-                        hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
-                        hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
-                        hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
-                        hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags);
+                                collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.sumAmplFT0A(),
+                                collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.sumAmplFT0C(),
+                                collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.sumAmplFT0M(),
+                                collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.sumAmplFV0A(),
+                                collision.posX(), collision.posY(), collision.posZ(),
+                                hypCand.isMatter,
+                                hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
+                                hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
+                                hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
+                                hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
+                                hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
+                                hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
+                                hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags);
       }
     }
   }
