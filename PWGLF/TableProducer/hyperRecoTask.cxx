@@ -71,23 +71,6 @@ struct hyperCandidate {
   float genPhi() const { return std::atan2(gMom[1], gMom[0]); }
   float genEta() const { return std::asinh(gMom[2] / genPt()); }
 
-  float centralityFT0A = -1;
-  float centralityFT0C = -1;
-  float centralityFT0M = -1;
-  float qVecXFT0A = -1;
-  float qVecYFT0A = -1;
-  float qVecAmpFT0A = -1;
-  float qVecXFT0C = -1;
-  float qVecYFT0C = -1;
-  float qVecAmpFT0C = -1;
-  float qVecXFT0M = -1;
-  float qVecYFT0M = -1;
-  float qVecAmpFT0M = -1;
-  float qVecXFV0A = -1;
-  float qVecYFV0A = -1;
-  float qVecAmpFV0A = -1;
-  std::array<float, 3> primVtx;
-
   int posTrackID;
   int negTrackID;
   float dcaV0dau = -10;
