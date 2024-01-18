@@ -235,7 +235,7 @@ struct hypertriton3bodyAnalysis {
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, MyTracks const& tracks)
   {
     registry.fill(HIST("hSelectedEventCounter"), 0.5);
-    if (event_sel8_Selection && !collision.sel8()) {
+    if (event_sel8_selection && !collision.sel8()) {
       return;
     }
     if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm

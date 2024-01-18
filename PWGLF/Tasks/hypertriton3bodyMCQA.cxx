@@ -333,7 +333,7 @@ struct hypertriton3bodyAnalysisMc {
       }
       FillCandCounter(kCandDcaDau, isFromHypertriton);
       registry.fill(HIST("hDeuteronTOFVsPBeforeTOFCut"), track2.sign() * track2.p(), track2.tofNSigmaDe());
-      if (isFromHypertriton){
+      if (isFromHypertriton) {
         registry.fill(HIST("hDeuteronTOFVsPBeforeTOFCutSig"), track2.sign() * track2.p(), track2.tofNSigmaDe());
       }
       if ((track2.tofNSigmaDe() < TofPidNsigmaMin || track2.tofNSigmaDe() > TofPidNsigmaMax) && track2.p() > minDeuteronPUseTOF) {
@@ -341,7 +341,7 @@ struct hypertriton3bodyAnalysisMc {
       }
       FillCandCounter(kCandTOFPID, isFromHypertriton);
       registry.fill(HIST("hDeuteronTOFVsPAtferTOFCut"), track2.sign() * track2.p(), track2.tofNSigmaDe());
-      if (isFromHypertriton){
+      if (isFromHypertriton) {
         registry.fill(HIST("hDeuteronTOFVsPAtferTOFCutSig"), track2.sign() * track2.p(), track2.tofNSigmaDe());
       }
 
@@ -921,12 +921,12 @@ struct hypertriton3bodyMcParticleCount {
     std::vector<int64_t> SelectedEvents(collisions.size());
     int nevts = 0;
     for (const auto& collision : collisions) {
-    if (event_sel8_selection && !collision.sel8()) {
-      continue;
-    }
-    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
-      continue;
-    }
+      if (event_sel8_selection && !collision.sel8()) {
+        continue;
+      }
+      if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+        continue;
+      }
       SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
     }
     SelectedEvents.resize(nevts);
