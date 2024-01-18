@@ -44,23 +44,23 @@ DECLARE_SOA_COLUMN(MatchedMc2, matchedMc2, uint8_t); //! MC matching of candidat
 } // namespace hf_correlation_d_meson_pair_testing
 
 // Definition of the D meson pair table. Contains the info needed at Data level.
-#define DECLARE_DMESON_PAIR_TABLE_TESTING(_pair_type_, _marker_value_, _description_) \
-  DECLARE_SOA_TABLE(_pair_type_, "AOD", _description_, o2::soa::Marker<_marker_value_>,  \
-                    hf_correlation_d_meson_pair_testing::PtCand1,                     \
-                    hf_correlation_d_meson_pair_testing::PtCand2,                     \
-                    hf_correlation_d_meson_pair_testing::YCand1,                      \
-                    hf_correlation_d_meson_pair_testing::YCand2,                      \
-                    hf_correlation_d_meson_pair_testing::MDCand1,                     \
-                    hf_correlation_d_meson_pair_testing::MDbarCand1,                  \
-                    hf_correlation_d_meson_pair_testing::MDCand2,                     \
-                    hf_correlation_d_meson_pair_testing::MDbarCand2,                  \
+#define DECLARE_DMESON_PAIR_TABLE_TESTING(_pair_type_, _marker_value_, _description_)   \
+  DECLARE_SOA_TABLE(_pair_type_, "AOD", _description_, o2::soa::Marker<_marker_value_>, \
+                    hf_correlation_d_meson_pair_testing::PtCand1,                       \
+                    hf_correlation_d_meson_pair_testing::PtCand2,                       \
+                    hf_correlation_d_meson_pair_testing::YCand1,                        \
+                    hf_correlation_d_meson_pair_testing::YCand2,                        \
+                    hf_correlation_d_meson_pair_testing::MDCand1,                       \
+                    hf_correlation_d_meson_pair_testing::MDbarCand1,                    \
+                    hf_correlation_d_meson_pair_testing::MDCand2,                       \
+                    hf_correlation_d_meson_pair_testing::MDbarCand2,                    \
                     hf_correlation_d_meson_pair_testing::PairType);
 // Definition of the D meson pair table with info at MC level.
-#define DECLARE_DMESON_PAIR_MCINFO_TABLE_TESTING(_pair_type_, _marker_value_, _description_)  \
+#define DECLARE_DMESON_PAIR_MCINFO_TABLE_TESTING(_pair_type_, _marker_value_, _description_)     \
   DECLARE_SOA_TABLE(_pair_type_, "AOD", _description_ "MCINFO", o2::soa::Marker<_marker_value_>, \
-                    hf_correlation_d_meson_pair_testing::Origin1,                             \
-                    hf_correlation_d_meson_pair_testing::Origin2,                             \
-                    hf_correlation_d_meson_pair_testing::MatchedMc1,                          \
+                    hf_correlation_d_meson_pair_testing::Origin1,                                \
+                    hf_correlation_d_meson_pair_testing::Origin2,                                \
+                    hf_correlation_d_meson_pair_testing::MatchedMc1,                             \
                     hf_correlation_d_meson_pair_testing::MatchedMc2);
 
 // Creation of tables with D Meson Pairs info
