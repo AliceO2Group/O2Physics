@@ -39,7 +39,7 @@ void BookBaseList()
                                     Form("fTaskName = %s", tc.fTaskName.Data()));
 
   fBasePro->GetXaxis()->SetBinLabel(eRunNumber,
-                                    Form("tc.fRunNumber = %s", tc.fRunNumber.Data()));
+                                    Form("fRunNumber = %s", tc.fRunNumber.Data()));
 
   fBasePro->GetXaxis()->SetBinLabel(eVerbose, "fVerbose");
   fBasePro->Fill(eVerbose - 0.5, (Int_t)tc.fVerbose);
@@ -57,7 +57,7 @@ void BookBaseList()
   fBasePro->Fill(eProcessRemainingEvents - 0.5, (Int_t)tc.fProcessRemainingEvents);
 
   fBasePro->GetXaxis()->SetBinLabel(eWhatToProcess,
-                                    Form("tc.WhatToProcess = %s", tc.fWhatToProcess.Data()));
+                                    Form("WhatToProcess = %s", tc.fWhatToProcess.Data()));
 
   fBasePro->GetXaxis()->SetBinLabel(eRandomSeed, "fRandomSeed");
   fBasePro->Fill(eRandomSeed - 0.5, (Int_t)tc.fRandomSeed);
@@ -125,6 +125,10 @@ void DefaultConfiguration()
   //    Remember #2: If names of Configurables in the json file are not
   //    identical to the internal definitions in MuPa-Configurables.h, the
   //    settings in json file are silently ignored.
+
+  // c) Scientific notation is NOT supported in json file. E.g. if you have
+  //            "cSelectedTracks_max": "1e3",
+  //    that setting and ALL other ones in json are silently ignored.
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
@@ -1010,7 +1014,7 @@ void BookTest0Histograms()
 
   // a) Book the profile holding flags;
   // b) Book placeholder and make sure all labels are stored in the placeholder;
-  // c) Retreive labels from placeholder;
+  // c) Retrieve labels from placeholder;
   // d) Book what needs to be booked;
   // e) Few quick insanity checks on booking.
 
@@ -1036,7 +1040,7 @@ void BookTest0Histograms()
     fTest0List->Add(fTest0LabelsPlaceholder);
   }
 
-  // c) Retreive labels from placeholder:
+  // c) Retrieve labels from placeholder:
   if (!(this->RetrieveCorrelationsLabels())) {
     LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
          __PRETTY_FUNCTION__, __LINE__);
@@ -1221,7 +1225,7 @@ void ResetEventByEventQuantities()
   fSelectedTracks = 0;
   fCentrality = 0;
 
-  // c) Q-vectors:
+  // b) Q-vectors:
   if (fCalculateQvector) {
     ResetQ(); // generic Q-vector
     for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
@@ -1232,7 +1236,7 @@ void ResetEventByEventQuantities()
     }
   } // if(fCalculateQvector)
 
-  // d) Reset ebe containers for nested loops:
+  // c) Reset ebe containers for nested loops:
   if (fCalculateNestedLoops || fCalculateCustomNestedLoop) {
     if (nl_a.ftaNestedLoops[0]) {
       nl_a.ftaNestedLoops[0]->Reset();
@@ -1246,7 +1250,13 @@ void ResetEventByEventQuantities()
 
   } // if(fCalculateNestedLoops||fCalculateCustomNestedLoop)
 
-  // ... TBI 20220809 port the rest ...
+  // d) Fisher-Yates algorithm:
+  if (tc.fUseFisherYates) {
+    delete tc.fRandomIndices;
+    tc.fRandomIndices = NULL;
+  }
+
+  // ... TBI 20240117 port the rest ...
 
 } // void ResetEventByEventQuantities()
 
@@ -2930,7 +2940,8 @@ void StoreLabelsInPlaceholder()
   // a) Initialize all counters;
   // b) Fetch TObjArray with labels from an external file;
   // c) Book the placeholder fTest0LabelsPlaceholder for all labels;
-  // d) Finally, store the labels from external source into placeholder.
+  // d) Finally, store the labels from external source into placeholder;
+  // e) Insantity check on labels.
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
@@ -2984,6 +2995,19 @@ void StoreLabelsInPlaceholder()
     // cout<<TString(line).Data()<<endl;
     // cout<<oa->GetEntries()<<endl;
   } // for(Int_t e=0; e<nLabels; e++)
+
+  // e) Insantity check on labels:
+  //    Here I am merely checking that harmonic larget than gMaxHarmonic was not requested.
+  for (Int_t b = 1; b <= fTest0LabelsPlaceholder->GetXaxis()->GetNbins(); b++) {
+    TObjArray* temp = TString(fTest0LabelsPlaceholder->GetXaxis()->GetBinLabel(b)).Tokenize(" ");
+    for (Int_t h = 0; h < temp->GetEntries(); h++) {
+      if (TMath::Abs(TString(temp->At(h)->GetName()).Atoi()) > gMaxHarmonic) {
+        LOGF(info, "\033[1;31m bin = %d, label = %s, gMaxHarmonic = %d\033[0m", b, fTest0LabelsPlaceholder->GetXaxis()->GetBinLabel(b), (Int_t)gMaxHarmonic);
+        LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+      }          // if(TString(temp->At(h)->GetName()).Atoi() > gMaxHarmonic) {
+    }            // for(Int_t h = 0; h < temp->GetEntries(); h++) {
+    delete temp; // yes, otherwise it's a memory leak
+  }              // for(Int_t b = 1; b <= fTest0LabelsPlaceholder->GetXaxis()->GetNbins(); b++) {
 
 } // void StoreLabelsInPlaceholder()
 
@@ -3426,6 +3450,35 @@ void DetermineCentrality()
 
 //============================================================
 
+void RandomIndices(Int_t nTracks)
+{
+  // Randomize indices using Fisher-Yates algorithm.
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
+  }
+
+  if (nTracks < 1) {
+    return;
+  }
+
+  // Fisher-Yates algorithm:
+  tc.fRandomIndices = new TArrayI(nTracks);
+  tc.fRandomIndices->Reset(); // just in case there is some random garbage in memory at init
+  for (Int_t i = 0; i < nTracks; i++) {
+    tc.fRandomIndices->AddAt(i, i);
+  }
+  for (Int_t i = nTracks - 1; i >= 1; i--) {
+    Int_t j = gRandom->Integer(i + 1);
+    Int_t temp = tc.fRandomIndices->GetAt(j);
+    tc.fRandomIndices->AddAt(tc.fRandomIndices->GetAt(i), j);
+    tc.fRandomIndices->AddAt(temp, i);
+  } // end of for(Int_t i=nTracks-1;i>=1;i--)
+
+} // void RandomIndices(Int_t nTracks)
+
+//============================================================
+
 void CalculateEverything()
 {
   // Calculate everything for selected events and particles.
@@ -3531,7 +3584,28 @@ void MainLoopOverParticles(T const& tracks)
   Double_t wToPowerP = 1.;       // weight raised to power p
   fSelectedTracks = 0;           // reset number of selected tracks
 
-  for (auto& track : tracks) {
+  // *) If random access of tracks from collection is requested, use Fisher-Yates algorithm to generate random indices:
+  if (tc.fUseFisherYates) {
+    if (tc.fRandomIndices) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+    }
+    this->RandomIndices(tracks.size());
+    if (!tc.fRandomIndices) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+    }
+  }
+
+  // *) Main loop over particles:
+  // for (auto& track : tracks) { // default standard way of looping of tracks
+  auto track = tracks.iteratorAt(0); // set the type and scope from one instance
+  for (int64_t i = 0; i < tracks.size(); i++) {
+
+    // *) Access track sequentially from collection of tracks (default), or randomly using Fisher-Yates algorithm:
+    if (!tc.fUseFisherYates) {
+      track = tracks.iteratorAt(i);
+    } else {
+      track = tracks.iteratorAt((int64_t)tc.fRandomIndices->GetAt(i));
+    }
 
     // *) Fill particle histograms before particle cuts:
     FillParticleHistograms<rs>(track, eBefore);
