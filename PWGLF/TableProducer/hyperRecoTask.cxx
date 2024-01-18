@@ -41,7 +41,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
-using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::QvectorFT0As, aod::QvectorFT0Cs, aod::QvectorFT0Ms>;
+using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
+using CollisionsFullWithFlow = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::QvectorFT0As, aod::QvectorFT0Cs, aod::QvectorFT0Ms, aod::QvectorFV0As>;
 
 namespace
 {
@@ -82,6 +83,9 @@ struct hyperCandidate {
   float qVecXFT0M = -1;
   float qVecYFT0M = -1;
   float qVecAmpFT0M = -1;
+  float qVecXFV0A = -1;
+  float qVecYFV0A = -1;
+  float qVecAmpFV0A = -1;
   std::array<float, 3> primVtx;
 
   int posTrackID;
@@ -261,8 +265,8 @@ struct hyperRecoTask {
     mRunNumber = bc.runNumber();
   }
 
-  template <class T>
-  void fillCandidateData(CollisionsFull::iterator const& collision, aod::V0s const& V0s)
+  template <typename Tcoll>
+  void fillCandidateData(Tcoll::iterator const& collision, aod::V0s const& V0s)
   {
     if (mBBparamsHe[5] < 0) {
       LOG(fatal) << "Bethe-Bloch parameters for He3 not set, please check your CCDB and configuration";
@@ -332,7 +336,7 @@ struct hyperRecoTask {
       hePropTrack.getPxPyPzGlo(hypCand.momHe3);
       piPropTrack.getPxPyPzGlo(hypCand.momPi);
 
-      // he momentum has to be multiplied by 2 (charge)
+      // the momentum has to be multiplied by 2 (charge)
       for (int i = 0; i < 3; i++) {
         hypCand.momHe3[i] *= 2;
       }
@@ -344,21 +348,7 @@ struct hyperRecoTask {
       float piE = std::sqrt(piP2 + piMass * piMass);
       float h3lE = he3E + piE;
       float h4lE = he4E + piE;
-
-      hypCand.primVtx = array{collision.posX(), collision.posY(), collision.posZ()};
-      hypCand.centralityFT0A = collision.centFT0A();
-      hypCand.centralityFT0C = collision.centFT0C();
-      hypCand.centralityFT0M = collision.centFT0M();
-      hypCand.qVecXFT0A = collision.qvecFT0ARe();
-      hypCand.qVecYFT0A = collision.qvecFT0AIm();
-      hypCand.qVecAmpFT0A = collision.sumAmplFT0A();
-      hypCand.qVecXFT0C = collision.qvecFT0CRe();
-      hypCand.qVecYFT0C = collision.qvecFT0CIm();
-      hypCand.qVecAmpFT0C = collision.sumAmplFT0C();
-      hypCand.qVecXFT0M = collision.qvecFT0MRe();
-      hypCand.qVecYFT0M = collision.qvecFT0MIm();
-      hypCand.qVecAmpFT0M = collision.sumAmplFT0M();
-
+      }
       std::array<float, 3> hypMom;
       const auto& vtx = fitter.getPCACandidate();
       for (int i = 0; i < 3; i++) {
@@ -380,14 +370,16 @@ struct hyperRecoTask {
       if (hypCand.dcaV0dau > dcav0dau) {
         continue;
       }
+      
+      std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
 
-      double cosPA = RecoDecay::cpa(hypCand.primVtx, array{hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2]}, array{hypMom[0], hypMom[1], hypMom[2]});
+      double cosPA = RecoDecay::cpa(primVtx, hypCand.decVtx, hypMom);
       if (cosPA < v0cospa) {
         continue;
       }
 
       for (int i = 0; i < 3; i++) {
-        hypCand.decVtx[i] = hypCand.decVtx[i] - hypCand.primVtx[i];
+        hypCand.decVtx[i] = hypCand.decVtx[i] - primVtx[i];
       }
 
       // if survived all selections, propagate decay daughters to PV
@@ -500,6 +492,49 @@ struct hyperRecoTask {
 
   void processData(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
   {
+
+    for (const auto& collision : collisions) {
+    hyperCandidates.clear();
+
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+
+      hEvents->Fill(0.);
+      if (!collision.sel8())
+        continue;
+
+      hEvents->Fill(1.);
+
+      if (std::abs(collision.posZ()) > 10.f)
+        continue;
+
+      hEvents->Fill(2.);
+      hZvtx->Fill(collision.posZ());
+
+      const uint64_t collIdx = collision.globalIndex();
+      auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
+      V0Table_thisCollision.bindExternalIndices(&tracks);
+
+      fillCandidateData<TracksFull>(collision, V0Table_thisCollision);
+
+      for (auto& hypCand : hyperCandidates) {
+      outputDataTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                      collision.posX(), collision.posY(), collision.posZ(),
+                      hypCand.isMatter,
+                      hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
+                      hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
+                      hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
+                      hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
+                      hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
+                      hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
+                      hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags);
+    }
+    }
+  }
+  PROCESS_SWITCH(hyperRecoTask, processData, "Data analysis", true);
+
+  void processDataWithFlow(CollisionsFullWithFlow const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
+  {
     hyperCandidates.clear();
 
     for (const auto& collision : collisions) {
@@ -524,25 +559,26 @@ struct hyperRecoTask {
       V0Table_thisCollision.bindExternalIndices(&tracks);
 
       fillCandidateData<TracksFull>(collision, V0Table_thisCollision);
-    }
 
-    for (auto& hypCand : hyperCandidates) {
-      outputDataTable(hypCand.centralityFT0A, hypCand.centralityFT0C, hypCand.centralityFT0M,
-                      hypCand.qVecXFT0A, hypCand.qVecYFT0A, hypCand.qVecAmpFT0A,
-                      hypCand.qVecXFT0C, hypCand.qVecYFT0C, hypCand.qVecAmpFT0C,
-                      hypCand.qVecXFT0M, hypCand.qVecYFT0M, hypCand.qVecAmpFT0M,
+      for (auto& hypCand : hyperCandidates) {
+      outputDataTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                      collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.sumAmplFT0A(),
+                      collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.sumAmplFT0C(), 
+                      collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.sumAmplFT0M(), 
+                      collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.sumAmplFV0A(), 
+                      collision.posX(), collision.posY(), collision.posZ(),
                       hypCand.isMatter,
                       hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
                       hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
-                      hypCand.primVtx[0], hypCand.primVtx[1], hypCand.primVtx[2],
                       hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
                       hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                       hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                       hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
                       hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags);
     }
+    }
   }
-  PROCESS_SWITCH(hyperRecoTask, processData, "Data analysis", true);
+  PROCESS_SWITCH(hyperRecoTask, processDataWithFlow, "Data analysis with flow", false);
 
   void processMC(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
@@ -575,9 +611,6 @@ struct hyperRecoTask {
         continue;
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
       outputMCTable(hypCand.centralityFT0A, hypCand.centralityFT0C, hypCand.centralityFT0M,
-                    hypCand.qVecXFT0A, hypCand.qVecYFT0A, hypCand.qVecAmpFT0A,
-                    hypCand.qVecXFT0C, hypCand.qVecYFT0C, hypCand.qVecAmpFT0C,
-                    hypCand.qVecXFT0M, hypCand.qVecYFT0M, hypCand.qVecAmpFT0M,
                     hypCand.isMatter,
                     hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
                     hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
