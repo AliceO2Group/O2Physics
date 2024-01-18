@@ -11,7 +11,6 @@
 
 /// \author Sweta Singh (sweta.singh@cern.ch)
 
-// O2 includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Common/DataModel/EventSelection.h"
@@ -31,14 +30,11 @@
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
 
-using namespace std;
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace std;
 
-// STEP 1
-// Example task illustrating how to acess information from different tables
 namespace o2::aod
 {
 using MyCollisions = soa::Join<aod::Collisions,
@@ -59,20 +55,14 @@ using MyTrack = MyTracks::iterator;
 struct IdentifiedMeanPtFluctuations {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-
   void init(o2::framework::InitContext&)
   {
-    // Define your axes
-    // Constant bin width axis
     AxisSpec vtxZAxis = {100, -20, 20, "Z (cm)"};
     AxisSpec dcaAxis = {1002, -5.01, 5.01, "DCA_{xy} (cm)"};
-
     AxisSpec ptAxis = {40, 0.0, 4.0, "#it{p}_{T} (GeV/#it{c})"};
-
     AxisSpec pAxis = {40, 0.0, 4.0, "#it{p} (GeV/#it{c})"};
     AxisSpec betaAxis = {200, 0.0, 2.0, "TOF_{#beta} (GeV/#it{c})"};
     AxisSpec dEdxAxis = {2000, 0.0, 200.0, "dE/dx (GeV/#it{c})"};
-
     AxisSpec etaAxis = {100, -1.5, 1.5, "#eta"};
     AxisSpec nSigmaTPCAxis = {100, -5., 5., "n#sigma_{TPC}^{proton}"};
     AxisSpec nSigmaTPCAxispid = {110, -5.5, 5.5, "n#sigma_{TPC}"};
@@ -84,11 +74,10 @@ struct IdentifiedMeanPtFluctuations {
     AxisSpec varAxis1 = {6000, 0., 6., "var1"};
     AxisSpec varAxis2 = {600, 0., 6., "var2"};
 
-    // Add histograms to histogram manager (as in the output object of in AliPhysics)
+    // QA Plots
     histos.add("hZvtx_before_sel", "hZvtx_before_sel", kTH1F, {vtxZAxis});
     histos.add("hZvtx_after_sel", "hZvtx_after_sel", kTH1F, {vtxZAxis});
     histos.add("hZvtx_after_sel8", "hZvtx_after_sel8", kTH1F, {vtxZAxis});
-
     histos.add("hP", "hP", kTH1F, {pAxis});
     histos.add("hEta", ";hEta", kTH1F, {etaAxis});
     histos.add("hPt", ";#it{p}_{T} (GeV/#it{c})", kTH1F, {ptAxis});
@@ -170,12 +159,10 @@ struct IdentifiedMeanPtFluctuations {
     histos.add("hdEdx", "hdEdx", kTH2F, {pAxis, dEdxAxis});
   }
 
-  // Equivalent of the AliRoot task UserExec
   void process(aod::MyCollision const& coll, aod::MyTracks const& inputTracks)
 
   {
 
-    // Performing the event selection
     histos.fill(HIST("hZvtx_before_sel"), coll.posZ());
     if (fabs(coll.posZ()) > 10.f) {
       return;
@@ -211,8 +198,9 @@ struct IdentifiedMeanPtFluctuations {
     int sample = histos.get<TH1>(HIST("hZvtx_before_sel"))->GetEntries();
     sample = sample % 30;
 
-    // Perfroming the track selection==============================================================================================================
-    for (auto track : inputTracks) { // Loop over tracks
+    // Perfroming the track  selection==============================================================================================================
+    for (auto track : inputTracks) {
+      // Loop over tracks
 
       if (!track.isGlobalTrack())
         return;
@@ -330,8 +318,8 @@ struct IdentifiedMeanPtFluctuations {
           Q2p += (track.pt() * track.pt());
         }
       }
-
-    } // Track loop ends!
+    }
+    // Track loop ends!
     VMeanPtPion.clear();
     VMeanPtKaon.clear();
     VMeanPtProton.clear();
@@ -352,7 +340,6 @@ struct IdentifiedMeanPtFluctuations {
     histos.fill(HIST("hVar1pi"), cent, var1pi);
     var2pi = (Q1pi / nChpi);
     histos.fill(HIST("hVar2pi"), cent, var2pi);
-    // histos.fill(HIST("hVar"), sample, cent);
 
     //----------------------- kaons ---------------------------------------
 
@@ -360,7 +347,6 @@ struct IdentifiedMeanPtFluctuations {
     histos.fill(HIST("hVar1k"), cent, var1k);
     var2k = (Q1k / nChk);
     histos.fill(HIST("hVar2k"), cent, var2k);
-    // histos.fill(HIST("hVar"), sample, cent);
 
     //---------------------------- protons ----------------------------------
 
@@ -368,7 +354,6 @@ struct IdentifiedMeanPtFluctuations {
     histos.fill(HIST("hVar1p"), cent, var1p);
     var2p = (Q1p / nChp);
     histos.fill(HIST("hVar2p"), cent, var2p);
-    // histos.fill(HIST("hVar"), sample, cent);
 
     //-----------------------nch-------------------------------------
     histos.fill(HIST("hVar1x"), nCh, var1);
@@ -398,7 +383,6 @@ struct IdentifiedMeanPtFluctuations {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  // Equivalent to the AddTask in AliPhysics
   WorkflowSpec workflow{adaptAnalysisTask<IdentifiedMeanPtFluctuations>(cfgc)};
   return workflow;
 }
