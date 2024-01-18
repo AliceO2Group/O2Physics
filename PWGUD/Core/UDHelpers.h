@@ -21,6 +21,7 @@
 #include "TLorentzVector.h"
 #include "Framework/Logger.h"
 #include "DataFormatsFT0/Digit.h"
+#include "DataFormatsFIT/Triggers.h"
 #include "CommonConstants/LHCConstants.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -49,7 +50,6 @@ int8_t netCharge(TCs tracks)
   return nch;
 }
 
-// -----------------------------------------------------------------------------
 // return net charge of tracks
 template <bool onlyPV, typename std::enable_if<!onlyPV>::type* = nullptr, typename TCs>
 int8_t netCharge(TCs tracks)
@@ -118,7 +118,7 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
 
   // check [min,max]BC to overlap with [bcs.iteratorAt([0,bcs.size() - 1])
   if (maxBC < bcs.iteratorAt(0).globalBC() || minBC > bcs.iteratorAt(bcs.size() - 1).globalBC()) {
-    LOGF(info, "<compatibleBCs> No overlap of [%d, %d] and [%d, %d]", minBC, maxBC, bcs.iteratorAt(0).globalBC(), bcs.iteratorAt(bcs.size() - 1).globalBC());
+    LOGF(debug, "<compatibleBCs> No overlap of [%d, %d] and [%d, %d]", minBC, maxBC, bcs.iteratorAt(0).globalBC(), bcs.iteratorAt(bcs.size() - 1).globalBC());
     return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
   }
 
@@ -297,34 +297,22 @@ bool hasGoodPID(DGCutparHolder diffCuts, TC track)
 // -----------------------------------------------------------------------------
 float FV0AmplitudeA(aod::FV0A&& fv0)
 {
-  float totAmplitude = 0;
-  for (auto amp : fv0.amplitude()) {
-    totAmplitude += amp;
-  }
-
-  return totAmplitude;
+  const auto& ampsA = fv0.amplitude();
+  return std::accumulate(ampsA.begin(), ampsA.end(), 0.f);
 }
 
 // -----------------------------------------------------------------------------
 float FT0AmplitudeA(aod::FT0&& ft0)
 {
-  float totAmplitude = 0;
-  for (auto amp : ft0.amplitudeA()) {
-    totAmplitude += amp;
-  }
-
-  return totAmplitude;
+  const auto& ampsA = ft0.amplitudeA();
+  return std::accumulate(ampsA.begin(), ampsA.end(), 0.f);
 }
 
 // -----------------------------------------------------------------------------
 float FT0AmplitudeC(aod::FT0&& ft0)
 {
-  float totAmplitude = 0;
-  for (auto amp : ft0.amplitudeC()) {
-    totAmplitude += amp;
-  }
-
-  return totAmplitude;
+  const auto& ampsC = ft0.amplitudeC();
+  return std::accumulate(ampsC.begin(), ampsC.end(), 0.f);
 }
 
 // -----------------------------------------------------------------------------
@@ -351,68 +339,11 @@ float FDDAmplitudeC(aod::FDD&& fdd)
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanFV0(T& bc, float maxFITtime, float limitA)
-{
-  if (bc.has_foundFV0()) {
-    bool ota = std::abs(bc.foundFV0().time()) <= maxFITtime;
-    bool oma = FV0AmplitudeA(bc.foundFV0()) <= limitA;
-    return ota && oma;
-  } else {
-    return true;
-  }
-}
-
-// -----------------------------------------------------------------------------
-template <typename T>
-bool cleanFT0(T& bc, float maxFITtime, float limitA, float limitC)
-{
-  if (bc.has_foundFT0()) {
-
-    // check times and amplitudes
-    bool ota = std::abs(bc.foundFT0().timeA()) <= maxFITtime;
-    bool otc = std::abs(bc.foundFT0().timeC()) <= maxFITtime;
-    bool oma = FT0AmplitudeA(bc.foundFT0()) <= limitA;
-    bool omc = FT0AmplitudeC(bc.foundFT0()) <= limitC;
-
-    // compare decisions with FT0 trigger decisions
-    std::bitset<8> triggers = bc.foundFT0().triggerMask();
-    bool ora = !triggers[o2::ft0::Triggers::bitA];
-    bool orc = !triggers[o2::ft0::Triggers::bitC];
-    LOGF(debug, "ota %f otc %f ora/FT0AmplitudeA %d/%d orc/FT0AmplitudeC %d/%d", bc.foundFT0().timeA(), bc.foundFT0().timeC(), ora, oma, orc, omc);
-
-    return ota && oma && otc && omc;
-  } else {
-    return true;
-  }
-}
-
-// -----------------------------------------------------------------------------
-template <typename T>
-bool cleanFDD(T& bc, float maxFITtime, float limitA, float limitC)
-{
-  if (bc.has_foundFDD()) {
-    bool ota = std::abs(bc.foundFDD().timeA()) <= maxFITtime;
-    bool otc = std::abs(bc.foundFDD().timeC()) <= maxFITtime;
-    bool oma = FDDAmplitudeA(bc.foundFDD()) <= limitA;
-    bool omc = FDDAmplitudeC(bc.foundFDD()) <= limitC;
-    return ota && oma && otc && omc;
-  } else {
-    return true;
-  }
-}
-// -----------------------------------------------------------------------------
-template <typename T>
 bool cleanFT0A(T& bc, float maxFITtime, float limitA)
 {
-  if (bc.has_foundFT0()) {
+  if (bc.has_foundFT0() && limitA >= 0.) {
     bool ota = std::abs(bc.foundFT0().timeA()) <= maxFITtime;
     bool oma = FT0AmplitudeA(bc.foundFT0()) <= limitA;
-
-    // compare decisions with FT0 trigger decisions
-    std::bitset<8> triggers = bc.foundFT0().triggerMask();
-    bool ora = !triggers[o2::ft0::Triggers::bitA];
-    LOGF(debug, "ota %f ora/FT0AmplitudeA %d/%d", bc.foundFT0().timeA(), ora, oma);
-
     return ota && oma;
   } else {
     return true;
@@ -423,15 +354,9 @@ bool cleanFT0A(T& bc, float maxFITtime, float limitA)
 template <typename T>
 bool cleanFT0C(T& bc, float maxFITtime, float limitC)
 {
-  if (bc.has_foundFT0()) {
+  if (bc.has_foundFT0() && limitC >= 0.) {
     bool otc = std::abs(bc.foundFT0().timeC()) <= maxFITtime;
     bool omc = FT0AmplitudeC(bc.foundFT0()) <= limitC;
-
-    // compare decisions with FT0 trigger decisions
-    std::bitset<8> triggers = bc.foundFT0().triggerMask();
-    bool orc = !triggers[o2::ft0::Triggers::bitC];
-    LOGF(debug, "otc %f orc/FT0AmplitudeC %d/%d", bc.foundFT0().timeC(), orc, omc);
-
     return otc && omc;
   } else {
     return true;
@@ -442,7 +367,7 @@ bool cleanFT0C(T& bc, float maxFITtime, float limitC)
 template <typename T>
 bool cleanFDDA(T& bc, float maxFITtime, float limitA)
 {
-  if (bc.has_foundFDD()) {
+  if (bc.has_foundFDD() && limitA >= 0.) {
     bool ota = std::abs(bc.foundFDD().timeA()) <= maxFITtime;
     bool oma = FDDAmplitudeA(bc.foundFDD()) <= limitA;
     return ota && oma;
@@ -455,7 +380,7 @@ bool cleanFDDA(T& bc, float maxFITtime, float limitA)
 template <typename T>
 bool cleanFDDC(T& bc, float maxFITtime, float limitC)
 {
-  if (bc.has_foundFDD()) {
+  if (bc.has_foundFDD() && limitC >= 0.) {
     bool otc = std::abs(bc.foundFDD().timeC()) <= maxFITtime;
     bool omc = FDDAmplitudeC(bc.foundFDD()) <= limitC;
     return otc && omc;
@@ -463,6 +388,36 @@ bool cleanFDDC(T& bc, float maxFITtime, float limitC)
     return true;
   }
 }
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool cleanFV0(T& bc, float maxFITtime, float limitA)
+{
+  if (bc.has_foundFV0() && limitA >= 0.) {
+    bool ota = std::abs(bc.foundFV0().time()) <= maxFITtime;
+    bool oma = FV0AmplitudeA(bc.foundFV0()) <= limitA;
+    return ota && oma;
+  } else {
+    return true;
+  }
+}
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool cleanFT0(T& bc, float maxFITtime, float limitA, float limitC)
+{
+  return cleanFT0A(bc, maxFITtime, limitA) &&
+         cleanFT0C(bc, maxFITtime, limitC);
+}
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool cleanFDD(T& bc, float maxFITtime, float limitA, float limitC)
+{
+  return cleanFDDA(bc, maxFITtime, limitA) &&
+         cleanFDDC(bc, maxFITtime, limitC);
+}
+
 // -----------------------------------------------------------------------------
 // FIT amplitude limits
 //  lims[0]: FV0A
@@ -483,20 +438,21 @@ bool cleanFITCollision(T& col, float maxFITtime, std::vector<float> lims)
 {
   bool isCleanFV0 = true;
   if (col.has_foundFV0()) {
-    isCleanFV0 = (std::abs(col.foundFV0().time()) <= maxFITtime) && (FV0AmplitudeA(col.foundFV0()) < lims[0]);
+    isCleanFV0 = lims[0] < 0. ? true : (std::abs(col.foundFV0().time()) <= maxFITtime) && (FV0AmplitudeA(col.foundFV0()) < lims[0]);
   }
   bool isCleanFT0 = true;
   if (col.has_foundFT0()) {
-    isCleanFT0 = (std::abs(col.foundFT0().timeA()) <= maxFITtime) && (FT0AmplitudeA(col.foundFT0()) < lims[1]) &&
-                 (std::abs(col.foundFT0().timeC()) <= maxFITtime) && (FT0AmplitudeC(col.foundFT0()) < lims[2]);
+    isCleanFT0 = (lims[1] < 0. ? true : (std::abs(col.foundFT0().timeA()) <= maxFITtime) && (FT0AmplitudeA(col.foundFT0()) < lims[1])) &&
+                 (lims[2] < 0. ? true : (std::abs(col.foundFT0().timeC()) <= maxFITtime) && (FT0AmplitudeC(col.foundFT0()) < lims[2]));
   }
   bool isCleanFDD = true;
   if (col.has_foundFDD()) {
-    isCleanFDD = (std::abs(col.foundFDD().timeA()) <= maxFITtime) && (FDDAmplitudeA(col.foundFDD()) < lims[3]) &&
-                 (std::abs(col.foundFDD().timeC()) <= maxFITtime) && (FDDAmplitudeC(col.foundFDD()) < lims[4]);
+    isCleanFDD = (lims[3] < 0. ? true : (std::abs(col.foundFDD().timeA()) <= maxFITtime) && (FDDAmplitudeA(col.foundFDD()) < lims[3])) &&
+                 (lims[4] < 0. ? true : (std::abs(col.foundFDD().timeC()) <= maxFITtime) && (FDDAmplitudeC(col.foundFDD()) < lims[4]));
   }
   return (isCleanFV0 && isCleanFT0 && isCleanFDD);
 }
+
 // -----------------------------------------------------------------------------
 template <typename T>
 bool cleanFITA(T& bc, float maxFITtime, std::vector<float> lims)
@@ -513,6 +469,52 @@ bool cleanFITC(T& bc, float maxFITtime, std::vector<float> lims)
   return cleanFT0C(bc, maxFITtime, lims[2]) &&
          cleanFDDC(bc, maxFITtime, lims[4]);
 }
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool TVX(T& bc)
+{
+  bool tvx = false;
+  if (bc.has_foundFT0()) {
+    auto ft0 = bc.foundFT0();
+    tvx = TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitVertex);
+  }
+  return tvx;
+}
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool TSC(T& bc)
+{
+  bool tsc = false;
+  if (bc.has_foundFT0()) {
+    auto ft0 = bc.foundFT0();
+    tsc = TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitSCen);
+  }
+  return tsc;
+}
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool TCE(T& bc)
+{
+  bool tce = false;
+  if (bc.has_foundFT0()) {
+    auto ft0 = bc.foundFT0();
+    tce = TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitCen);
+  }
+  return tce;
+}
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool TOR(T& bc, float maxFITtime, std::vector<float> lims)
+{
+  auto torA = !cleanFT0A(bc, maxFITtime, lims);
+  auto torC = !cleanFT0C(bc, maxFITtime, lims);
+  return torA || torC;
+}
+
 // -----------------------------------------------------------------------------
 // fill BB and BG information into FITInfo
 template <typename BCR>

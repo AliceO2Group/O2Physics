@@ -160,7 +160,7 @@ struct JetTriggerQA {
     histProcessed->GetXaxis()->SetBinLabel(15, "Selected Gamma very low DCAL");
 
     std::array<std::string, TriggerType_t::kNTriggers> triggerlabels = {{"MB", "EMC Any", "EMC MB", "EMC jet full high", "EMC jet full low", "EMC jet neutral high", "EMC jet neutral low", "EMC gamma very high", "DCL gamma very high", "EMC gamma high", "DCL gamma high", "EMC gamma low", "DCL gamma low", "EMC gamma very low", "DCL gamma very low"}};
-    registry.add("hTriggerCorrelation", "Correlation between EMCAL triggers", HistType::kTH2D, {{TriggerType_t::kNTriggers, -0.5, TriggerType_t::kNTriggers - 0.5, "Main trigger"}, {TriggerType_t::kNTriggers, -0.5, TriggerType_t::kNTriggers - 0.5, "Associated trigger"}});
+    registry.add("hTriggerCorrelation", "Correlation between EMCAL triggers", HistType::kTH2D, {{TriggerType_t::kNTriggers, -0.5, (double)TriggerType_t::kNTriggers - 0.5, "Main trigger"}, {TriggerType_t::kNTriggers, -0.5, (double)TriggerType_t::kNTriggers - 0.5, "Associated trigger"}});
     auto triggerCorrelation = registry.get<TH2>(HIST("hTriggerCorrelation"));
     for (std::size_t triggertype = 0; triggertype < TriggerType_t::kNTriggers; triggertype++) {
       triggerCorrelation->GetXaxis()->SetBinLabel(triggertype + 1, triggerlabels[triggertype].data());

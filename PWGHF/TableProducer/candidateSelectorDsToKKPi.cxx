@@ -22,13 +22,19 @@
 #include "Common/Core/TrackSelectorPID.h"
 
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/HfMlResponse.h"
+#include "PWGHF/Core/HfMlResponseDsToKKPi.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
+
+/// Struct to extend TracksPid tables
+struct HfCandidateSelectorDsToKKPiExpressions {
+  Spawns<aod::TracksPidPiExt> rowTracksPidFullPi;
+  Spawns<aod::TracksPidKaExt> rowTracksPidFullKa;
+};
 
 /// Struct for applying Ds to KKpi selection cuts
 struct HfCandidateSelectorDsToKKPi {
@@ -56,6 +62,7 @@ struct HfCandidateSelectorDsToKKPi {
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTDs"}, "Paths of models on CCDB"};
@@ -64,13 +71,14 @@ struct HfCandidateSelectorDsToKKPi {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   HfHelper hfHelper;
-  o2::analysis::HfMlResponse<float> hfMlResponse;
-  std::vector<float> outputMl = {};
+  o2::analysis::HfMlResponseDsToKKPi<float> hfMlResponse;
+  std::vector<float> outputMlDsToKKPi = {};
+  std::vector<float> outputMlDsToPiKK = {};
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
 
-  using TracksSel = soa::Join<aod::TracksWDca, aod::TracksPidPi, aod::TracksPidKa>;
+  using TracksSel = soa::Join<aod::TracksWDca, aod::TracksPidPiExt, aod::TracksPidKaExt>;
 
   HistogramRegistry registry{"registry"};
 
@@ -105,8 +113,8 @@ struct HfCandidateSelectorDsToKKPi {
       } else {
         hfMlResponse.setModelPathsLocal(onnxFileNames);
       }
+      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
-      outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
     }
   }
 
@@ -211,10 +219,13 @@ struct HfCandidateSelectorDsToKKPi {
       auto statusDsToKKPi = 0;
       auto statusDsToPiKK = 0;
 
+      outputMlDsToKKPi.clear();
+      outputMlDsToPiKK.clear();
+
       if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DsToKKPi)) {
         hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
         if (applyMl) {
-          hfMlDsToKKPiCandidate(outputMl);
+          hfMlDsToKKPiCandidate(outputMlDsToKKPi, outputMlDsToPiKK);
         }
         if (activateQA) {
           registry.fill(HIST("hSelections"), 1, candidate.pt());
@@ -235,7 +246,7 @@ struct HfCandidateSelectorDsToKKPi {
       if (!selection(candidate)) {
         hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
         if (applyMl) {
-          hfMlDsToKKPiCandidate(outputMl);
+          hfMlDsToKKPiCandidate(outputMlDsToKKPi, outputMlDsToPiKK);
         }
         continue;
       }
@@ -245,7 +256,7 @@ struct HfCandidateSelectorDsToKKPi {
       if (!topolDsToKKPi && !topolDsToPiKK) {
         hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
         if (applyMl) {
-          hfMlDsToKKPiCandidate(outputMl);
+          hfMlDsToKKPiCandidate(outputMlDsToKKPi, outputMlDsToPiKK);
         }
         continue;
       }
@@ -277,7 +288,7 @@ struct HfCandidateSelectorDsToKKPi {
       if (!pidDsToKKPi && !pidDsToPiKK) {
         hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
         if (applyMl) {
-          hfMlDsToKKPiCandidate(outputMl);
+          hfMlDsToKKPiCandidate(outputMlDsToKKPi, outputMlDsToPiKK);
         }
         continue;
       }
@@ -293,27 +304,28 @@ struct HfCandidateSelectorDsToKKPi {
 
       if (applyMl) {
         // ML selections
-        std::vector<float> inputFeatures{candidate.ptProng0(),
-                                         trackPos1.dcaXY(),
-                                         trackPos1.dcaZ(),
-                                         candidate.ptProng1(),
-                                         trackNeg.dcaXY(),
-                                         trackNeg.dcaZ(),
-                                         candidate.ptProng2(),
-                                         trackPos2.dcaXY(),
-                                         trackPos2.dcaZ()};
+        bool isSelectedMlDsToKKPi = false;
+        bool isSelectedMlDsToPiKK = false;
 
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, candidate.pt(), outputMl);
-        hfMlDsToKKPiCandidate(outputMl);
+        if (topolDsToKKPi && pidDsToKKPi) {
+          std::vector<float> inputFeaturesDsToKKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, true);
+          isSelectedMlDsToKKPi = hfMlResponse.isSelectedMl(inputFeaturesDsToKKPi, candidate.pt(), outputMlDsToKKPi);
+        }
+        if (topolDsToPiKK && pidDsToPiKK) {
+          std::vector<float> inputFeaturesDsToPiKK = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, false);
+          isSelectedMlDsToPiKK = hfMlResponse.isSelectedMl(inputFeaturesDsToPiKK, candidate.pt(), outputMlDsToPiKK);
+        }
 
-        if (!isSelectedMl) {
+        hfMlDsToKKPiCandidate(outputMlDsToKKPi, outputMlDsToPiKK);
+
+        if (!isSelectedMlDsToKKPi && !isSelectedMlDsToPiKK) {
           hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
           continue;
         }
-        if (topolDsToKKPi && pidDsToKKPi) {
+        if (isSelectedMlDsToKKPi) {
           SETBIT(statusDsToKKPi, aod::SelectionStep::RecoMl);
         }
-        if (topolDsToPiKK && pidDsToPiKK) {
+        if (isSelectedMlDsToPiKK) {
           SETBIT(statusDsToPiKK, aod::SelectionStep::RecoMl);
         }
         if (activateQA) {
@@ -328,5 +340,7 @@ struct HfCandidateSelectorDsToKKPi {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfCandidateSelectorDsToKKPi>(cfgc)};
+  return WorkflowSpec{
+    adaptAnalysisTask<HfCandidateSelectorDsToKKPiExpressions>(cfgc),
+    adaptAnalysisTask<HfCandidateSelectorDsToKKPi>(cfgc)};
 }

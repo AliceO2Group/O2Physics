@@ -17,6 +17,7 @@
 // Data (run3):
 // o2-analysis-lf-nuclei-spectra, o2-analysis-timestamp
 // o2-analysis-pid-tof-base, o2-analysis-multiplicity-table, o2-analysis-event-selection
+// (to add flow: o2-analysis-qvector-table, o2-analysis-centrality-table)
 
 #include <cmath>
 
@@ -32,6 +33,8 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
+#include "Common/Core/EventPlaneHelper.h"
+#include "Common/DataModel/Qvectors.h"
 
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -72,6 +75,7 @@ struct NucleusCandidate {
   uint8_t TPCcrossedRows;
   uint8_t ITSclsMap;
   uint8_t TPCnCls;
+  int selCollIndex;
 };
 
 namespace nuclei
@@ -161,12 +165,14 @@ struct nucleiSpectra {
 
   Produces<o2::aod::NucleiTable> nucleiTable;
   Produces<o2::aod::NucleiTableMC> nucleiTableMC;
+  Produces<o2::aod::NucleiFlowColls> nucleiFlowTable;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   Configurable<std::string> cfgCentralityEstimator{"cfgCentralityEstimator", "V0A", "Centrality estimator name"};
   Configurable<float> cfgCMrapidity{"cfgCMrapidity", 0.f, "Rapidity of the center of mass (only for p-Pb)"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
+  Configurable<float> cfgCutTpcMom{"cfgCutTpcMom", 0.2f, "Minimum TPC momentum for tracks"};
   Configurable<float> cfgCutRapidityMin{"cfgCutRapidityMin", -0.5, "Minimum rapidity for tracks"};
   Configurable<float> cfgCutRapidityMax{"cfgCutRapidityMax", 0.5, "Maximum rapidity for tracks"};
   Configurable<bool> cfgCutOnReconstructedRapidity{"cfgCutOnReconstructedRapidity", false, "Cut on reconstructed rapidity"};
@@ -209,9 +215,12 @@ struct nucleiSpectra {
   float mBz = 0.f;
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = nabs(aod::track::eta) < cfgCutEta;
+  Filter trackFilter = nabs(aod::track::eta) < cfgCutEta && aod::track::tpcInnerParam > cfgCutTpcMom;
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime>>;
+
+  // Flow analysis
+  using CollWithQvec = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>::iterator;
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   o2::pid::tof::Beta<TrackCandidates::iterator> responseBeta;
@@ -288,12 +297,12 @@ struct nucleiSpectra {
         for (int iPID{0}; iPID < 2; ++iPID) {
           nuclei::hDCAxy[iPID][iS][iC] = spectra.add<TH3>(fmt::format("hDCAxy{}_{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCAxy {} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], dcaxyAxes[iS]});
           nuclei::hDCAz[iPID][iS][iC] = spectra.add<TH3>(fmt::format("hDCAz{}_{}_{}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("DCAz {} {} {}", nuclei::pidName[iPID], nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], dcazAxes[iS]});
-          nuclei::hDeltaP[iPID][iS] = spectra.add<TH2>(fmt::format("hDeltaP{}_{}", nuclei::pidName[iPID], nuclei::names[iS]).data(), fmt::format("#Delta#it{p}/#it{p} {} {}", nuclei::pidName[iPID], nuclei::names[iS]).data(), HistType::kTH2D, {{232, 0.2, 6., "#it{p} (GeV/#it{c})"}, {200, -1, 1, "(#it{p}_{IU} - #it{p}_{TPC}) / #it{p}"}});
         }
         nuclei::hTOFmass[iS][iC] = spectra.add<TH3>(fmt::format("h{}TOFmass{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("TOF mass - {}  PDG mass", nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], tofMassAxis});
         nuclei::hTOFmassEta[iS][iC] = spectra.add<TH3>(fmt::format("h{}TOFmassEta{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("TOF mass - {}  PDG mass", nuclei::names[iS]).data(), HistType::kTH3D, {etaAxis, ptAxes[iS], tofMassAxis});
         nuclei::hMomRes[iS][iC] = spectra.add<TH3>(fmt::format("h{}MomRes{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Momentum resolution {}", nuclei::names[iS]).data(), HistType::kTH3D, {centAxis, ptAxes[iS], ptResAxis});
         nuclei::hGenNuclei[iS][iC] = spectra.add<TH2>(fmt::format("h{}Gen{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Generated {}", nuclei::names[iS]).data(), HistType::kTH2D, {centAxis, ptAxes[iS]});
+        nuclei::hDeltaP[iC][iS] = spectra.add<TH2>(fmt::format("hDeltaP{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("#Delta#it{{p}}/#it{{p}} {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH2D, {{232, 0.2, 6., "#it{{p}} (GeV/#it{{c}})"}, {200, -1.0, 1.0, "(#it{{p}}_{{IU}} - #it{{p}}_{{TPC}}) / #it{{p}}"}});
       }
     }
 
@@ -307,10 +316,10 @@ struct nucleiSpectra {
     o2::base::Propagator::Instance(true)->setMatLUT(nuclei::lut);
   }
 
-  template <typename TC>
-  void fillDataInfo(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TC const& tracks)
+  template <typename Tcoll, typename Ttrks>
+  void fillDataInfo(Tcoll const& collision, Ttrks const& tracks)
   {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
     // collision process loop
@@ -421,8 +430,34 @@ struct nucleiSpectra {
         }
       }
       if (flag & (kProton | kDeuteron | kTriton | kHe3 | kHe4)) {
+        if constexpr (std::is_same<Tcoll, CollWithQvec>::value) {
+          if (nuclei::candidates.empty()) {
+            nucleiFlowTable(collision.centFV0A(),
+                            collision.centFT0M(),
+                            collision.centFT0A(),
+                            collision.centFT0C(),
+                            collision.qvecFV0ARe(),
+                            collision.qvecFV0AIm(),
+                            collision.sumAmplFV0A(),
+                            collision.qvecFT0MRe(),
+                            collision.qvecFT0MIm(),
+                            collision.sumAmplFT0M(),
+                            collision.qvecFT0ARe(),
+                            collision.qvecFT0AIm(),
+                            collision.sumAmplFT0A(),
+                            collision.qvecFT0CRe(),
+                            collision.qvecFT0CIm(),
+                            collision.sumAmplFT0C(),
+                            collision.qvecBPosRe(),
+                            collision.qvecBPosIm(),
+                            collision.nTrkBPos(),
+                            collision.qvecBNegRe(),
+                            collision.qvecBNegIm(),
+                            collision.nTrkBNeg());
+          }
+        }
         nuclei::candidates.emplace_back(NucleusCandidate{static_cast<int>(track.globalIndex()), (1 - 2 * iC) * trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), track.tpcInnerParam(), beta, collision.posZ(), dcaInfo[0], dcaInfo[1], track.tpcSignal(), track.itsChi2NCl(),
-                                                         track.tpcChi2NCl(), flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(), static_cast<uint8_t>(track.tpcNClsFound())});
+                                                         track.tpcChi2NCl(), flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(), static_cast<uint8_t>(track.tpcNClsFound()), static_cast<int>(nucleiFlowTable.lastIndex())});
       }
     } // end loop over tracks
 
@@ -435,10 +470,20 @@ struct nucleiSpectra {
     nuclei::candidates.clear();
     fillDataInfo(collision, tracks);
     for (auto& c : nuclei::candidates) {
-      nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls);
+      nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.selCollIndex);
     }
   }
   PROCESS_SWITCH(nucleiSpectra, processData, "Data analysis", true);
+
+  void processDataFlow(CollWithQvec const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
+  {
+    nuclei::candidates.clear();
+    fillDataInfo(collision, tracks);
+    for (auto& c : nuclei::candidates) {
+      nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.selCollIndex);
+    }
+  }
+  PROCESS_SWITCH(nucleiSpectra, processDataFlow, "Data analysis with flow", false);
 
   Preslice<TrackCandidates> tracksPerCollisions = aod::track::collisionId;
   void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>> const& collisions, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)

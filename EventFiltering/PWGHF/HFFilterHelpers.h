@@ -321,8 +321,8 @@ class HfFilterHelper
   int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic, const int8_t isSelected, const int& activateQA, H2 hMassVsPt);
   template <typename V0, typename Coll, typename T, typename H2>
   int8_t isSelectedV0(const V0& v0, const std::array<T, 2>& dauTracks, const Coll& collision, const int& activateQA, H2 hV0Selected, std::array<H2, 4>& hArmPod);
-  template <typename Casc, typename V0, typename T, typename Coll>
-  bool isSelectedCascade(const Casc& casc, const V0& v0, const std::array<T, 3>& dauTracks, const Coll& collision);
+  template <typename Casc, typename T, typename Coll>
+  bool isSelectedCascade(const Casc& casc, const std::array<T, 3>& dauTracks, const Coll& collision);
   template <typename T, typename T2>
   int8_t isSelectedBachelorForCharmBaryon(const T& track, const T2& dca);
   template <typename T, typename U>
@@ -400,7 +400,7 @@ class HfFilterHelper
 
   // PID recalibrations
   int mTpcPidCalibrationOption{0};                        // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
-  std::array<TH3F*, 4> mHistMapPiPr{};                    // Map for TPC PID postcalibrations for pions and protons
+  std::array<TH3F*, 6> mHistMapPiPrKa{};                  // Map for TPC PID postcalibrations for pions, kaon and protons
   std::array<std::vector<double>, 6> mBetheBlochPiKaPr{}; // Bethe-Bloch parametrisations for pions, antipions, kaons, antikaons, protons, antiprotons in TPC
 };
 
@@ -954,12 +954,11 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
 
 /// Basic selection of cascade candidates
 /// \param casc is the cascade candidate
-/// \param v0 is the cascade daughter
 /// \param dauTracks is a 3-element array with bachelor, positive and negative V0 daughter tracks
 /// \param collision is the collision
 /// \return true if cascade passes all cuts
-template <typename Casc, typename V0, typename T, typename Coll>
-inline bool HfFilterHelper::isSelectedCascade(const Casc& casc, const V0& v0, const std::array<T, 3>& dauTracks, const Coll& collision)
+template <typename Casc, typename T, typename Coll>
+inline bool HfFilterHelper::isSelectedCascade(const Casc& casc, const std::array<T, 3>& dauTracks, const Coll& collision)
 {
   // eta of daughters
   if (std::fabs(dauTracks[0].eta()) > 1. || std::fabs(dauTracks[1].eta()) > 1. || std::fabs(dauTracks[2].eta()) > 1.) { // cut all V0 daughters with |eta| > 1.
@@ -967,7 +966,7 @@ inline bool HfFilterHelper::isSelectedCascade(const Casc& casc, const V0& v0, co
   }
 
   // V0 radius
-  if (v0.v0radius() < 1.2) {
+  if (casc.v0radius() < 1.2) {
     return false;
   }
 
@@ -1152,6 +1151,7 @@ inline int8_t HfFilterHelper::isBDTSelected(const T& scores, const U& thresholdB
   if (scores[0] > thresholdBDTScores.get(0u, 0u)) {
     return retValue;
   }
+  retValue |= BIT(RecoDecay::OriginType::None); // signal, but not yet tagged as prompt or nonprompt
   if (scores[1] > thresholdBDTScores.get(0u, 1u)) {
     retValue |= BIT(RecoDecay::OriginType::Prompt);
   }
@@ -1336,18 +1336,19 @@ inline void HfFilterHelper::setTpcRecalibMaps(o2::framework::Service<o2::ccdb::B
   if (!calibList) {
     LOG(fatal) << "Can not find the TPC Post Calibration object!";
   }
-  mHistMapPiPr[0] = nullptr;
-  mHistMapPiPr[1] = nullptr;
-  mHistMapPiPr[2] = nullptr;
-  mHistMapPiPr[3] = nullptr;
+  std::array<std::string, 6> mapNames = {"mean_map_pion", "sigma_map_pion", "mean_map_kaon", "sigma_map_kaon", "mean_map_proton", "sigma_map_proton"};
 
-  mHistMapPiPr[0] = reinterpret_cast<TH3F*>(calibList->FindObject("mean_map_pion"));
-  mHistMapPiPr[1] = reinterpret_cast<TH3F*>(calibList->FindObject("sigma_map_pion"));
-  mHistMapPiPr[2] = reinterpret_cast<TH3F*>(calibList->FindObject("mean_map_proton"));
-  mHistMapPiPr[3] = reinterpret_cast<TH3F*>(calibList->FindObject("sigma_map_proton"));
+  for (size_t iMap = 0; iMap < mapNames.size(); iMap++) {
+    mHistMapPiPrKa[iMap] = nullptr;
+  }
 
-  if (!mHistMapPiPr[0] || !mHistMapPiPr[1] || !mHistMapPiPr[0] || !mHistMapPiPr[1]) {
-    LOG(fatal) << "Can not find histograms!";
+  for (size_t iMap = 0; iMap < mapNames.size(); iMap++) {
+
+    mHistMapPiPrKa[iMap] = reinterpret_cast<TH3F*>(calibList->FindObject(mapNames[iMap].data()));
+    if (!mHistMapPiPrKa[iMap]) {
+      LOG(fatal) << "Cannot find histogram: " << mapNames[iMap].data();
+      return;
+    }
   }
 }
 
@@ -1453,34 +1454,34 @@ inline float HfFilterHelper::getTPCPostCalib(const T& track, const int& pidSpeci
   float tpcNSigma{0.};
   int iHist{0};
 
-  if (pidSpecies == kKa) {
-    tpcNSigma = track.tpcNSigmaKa();
-    iHist = 0; // same as pions
-  } else if (pidSpecies == kPi) {
+  if (pidSpecies == kPi) {
     tpcNSigma = track.tpcNSigmaPi();
     iHist = 0;
+  } else if (pidSpecies == kKa) {
+    tpcNSigma = track.tpcNSigmaKa();
+    iHist = 2;
   } else if (pidSpecies == kPr) {
     tpcNSigma = track.tpcNSigmaPr();
-    iHist = 2;
+    iHist = 4;
   } else {
     LOG(fatal) << "Wrong PID Species be selected, please check!";
   }
-  if (!mHistMapPiPr[iHist] || !mHistMapPiPr[iHist + 1]) {
+  if (!mHistMapPiPrKa[iHist] || !mHistMapPiPrKa[iHist + 1]) {
     LOGP(warn, "Postcalibration TPC PID histograms not set. Use default Nsigma values.");
   }
 
-  auto binTPCNCls = mHistMapPiPr[iHist]->GetXaxis()->FindBin(tpcNCls);
+  auto binTPCNCls = mHistMapPiPrKa[iHist]->GetXaxis()->FindBin(tpcNCls);
   binTPCNCls = (binTPCNCls == 0 ? 1 : binTPCNCls);
-  binTPCNCls = std::min(mHistMapPiPr[iHist]->GetXaxis()->GetNbins(), binTPCNCls);
-  auto binPin = mHistMapPiPr[iHist]->GetYaxis()->FindBin(tpcPin);
+  binTPCNCls = std::min(mHistMapPiPrKa[iHist]->GetXaxis()->GetNbins(), binTPCNCls);
+  auto binPin = mHistMapPiPrKa[iHist]->GetYaxis()->FindBin(tpcPin);
   binPin = (binPin == 0 ? 1 : binPin);
-  binPin = std::min(mHistMapPiPr[iHist]->GetYaxis()->GetNbins(), binPin);
-  auto binEta = mHistMapPiPr[iHist]->GetZaxis()->FindBin(eta);
+  binPin = std::min(mHistMapPiPrKa[iHist]->GetYaxis()->GetNbins(), binPin);
+  auto binEta = mHistMapPiPrKa[iHist]->GetZaxis()->FindBin(eta);
   binEta = (binEta == 0 ? 1 : binEta);
-  binEta = std::min(mHistMapPiPr[iHist]->GetZaxis()->GetNbins(), binEta);
+  binEta = std::min(mHistMapPiPrKa[iHist]->GetZaxis()->GetNbins(), binEta);
 
-  auto mean = mHistMapPiPr[iHist]->GetBinContent(binTPCNCls, binPin, binEta);
-  auto width = mHistMapPiPr[iHist + 1]->GetBinContent(binTPCNCls, binPin, binEta);
+  auto mean = mHistMapPiPrKa[iHist]->GetBinContent(binTPCNCls, binPin, binEta);
+  auto width = mHistMapPiPrKa[iHist + 1]->GetBinContent(binTPCNCls, binPin, binEta);
 
   return (tpcNSigma - mean) / width;
 }

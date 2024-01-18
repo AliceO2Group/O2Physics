@@ -25,6 +25,9 @@ namespace o2::aod
 namespace hyperrec
 {
 DECLARE_SOA_COLUMN(IsMatter, isMatter, bool);                       // bool: true for matter
+DECLARE_SOA_COLUMN(CentralityFT0A, centralityFT0A, float);          // centrality with FT0A estimator
+DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float);          // centrality with FT0C estimator
+DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float);          // centrality with FT0M estimator
 DECLARE_SOA_COLUMN(PtHe3, ptHe3, float);                            // Pt of the He daughter
 DECLARE_SOA_COLUMN(PhiHe3, phiHe3, float);                          // Phi of the He daughter
 DECLARE_SOA_COLUMN(EtaHe3, etaHe3, float);                          // Eta of the He daughter
@@ -67,6 +70,9 @@ DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                       // bool: tru
 DECLARE_SOA_TABLE(DataHypCands, "AOD", "DATAHYPCANDS",
                   o2::soa::Index<>,
                   hyperrec::IsMatter,
+                  hyperrec::CentralityFT0A,
+                  hyperrec::CentralityFT0C,
+                  hyperrec::CentralityFT0M,
                   hyperrec::PtHe3,
                   hyperrec::PhiHe3,
                   hyperrec::EtaHe3,
@@ -96,6 +102,9 @@ DECLARE_SOA_TABLE(DataHypCands, "AOD", "DATAHYPCANDS",
 DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   o2::soa::Index<>,
                   hyperrec::IsMatter,
+                  hyperrec::CentralityFT0A,
+                  hyperrec::CentralityFT0C,
+                  hyperrec::CentralityFT0M,
                   hyperrec::PtHe3,
                   hyperrec::PhiHe3,
                   hyperrec::EtaHe3,

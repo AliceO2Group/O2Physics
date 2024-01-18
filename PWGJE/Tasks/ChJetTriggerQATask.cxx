@@ -91,79 +91,12 @@ struct ChJetTriggerQATask {
   Configurable<bool> bLowPtTrigger{"bLowPtTrigger", false, "charged jet low pT trigger selection"};
   Configurable<bool> bHighPtTrigger{"bHighPtTrigger", false, "charged jet high pT trigger selection"};
 
+  Configurable<bool> bAddSupplementHistosToOutput{"bAddAdditionalHistosToOutput", false, "add supplementary histos to the output"};
+  Configurable<bool> bAddBigHistosToOutput{"bAddBigHistosToOutput", false, "add 3D histos to the output"};
+
   float fiducialVolume; // 0.9 - jetR
 
-  HistogramRegistry spectra{
-    "spectra",
-    {
-      {"vertexZ", "z vertex", {HistType::kTH1F, {{400, -20., +20.}}}}, //
-      {"ptphiTrackInclGood",
-       "pT vs phi inclusive good tracks",
-       {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}}}, //
-      {"ptetaTrackInclGood",
-       "pT vs eta inclusive good tracks",
-       {HistType::kTH2F, {{100, 0., +100.}, {80, -1., 1.}}}}, //
-      {"phietaTrackAllInclGood",
-       "phi vs eta all inclusive good tracks",
-       {HistType::kTH2F, {{80, -1., 1.}, {60, 0, TMath::TwoPi()}}}}, //
-      {"phietaTrackHighPtInclGood",
-       "phi vs eta inclusive good tracks with pT > 10 GeV",
-       {HistType::kTH2F, {{80, -1., 1.}, {60, 0, TMath::TwoPi()}}}}, //
-      {"ptJetChInclFidVol",
-       "inclusive charged jet pT in fiducial volume",
-       {HistType::kTH1F, {{200, 0., +200.}}}}, //
-      {"ptJetChInclFullVol",
-       "inclusive charged jet pT in full volume",
-       {HistType::kTH1F, {{200, 0., +200.}}}}, //
-      {"ptphiJetChInclFidVol",
-       "inclusive charged jet pT vs phi in fiducial volume",
-       {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}}}, //
-      {"ptphiJetChInclFullVol",
-       "inclusive charged jet pT vs phi in full TPC volume",
-       {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}}}, //
-      {"ptetaJetChInclFidVol",
-       "inclusive charged jet pT vs eta in fiducial volume",
-       {HistType::kTH2F, {{100, 0., +100.}, {80, -1., 1.}}}}, //
-      {"phietaJetChInclFidVol",
-       "inclusive charged jet phi vs eta in fiducial volume",
-       {HistType::kTH2F, {{80, -1., 1.}, {60, 0, TMath::TwoPi()}}}}, //
-      {"phietaJetChInclFullVol",
-       "inclusive charged jet phi vs eta in full TPC volume",
-       {HistType::kTH2F, {{80, -1., 1.}, {60, 0, TMath::TwoPi()}}}}, //
-      {"phietaJetChInclHighPtFidVol",
-       "inclusive charged jet phi vs eta in fiducial volume",
-       {HistType::kTH2F, {{80, -1., 1.}, {60, 0, TMath::TwoPi()}}}}, //
-      {"phietaJetChInclHighPtFullVol",
-       "inclusive charged jet phi vs eta in full TPC volume",
-       {HistType::kTH2F, {{80, -1., 1.}, {60, 0, TMath::TwoPi()}}}}, //
-      {"ptetaJetChInclFullVol",
-       "inclusive charged jet pT vs eta in full TPC volume",
-       {HistType::kTH2F, {{100, 0., +100.}, {80, -1., 1.}}}}, //
-      {"fLeadJetChPtVsLeadingTrack",
-       "inclusive charged jet pT in TPC volume",
-       {HistType::kTH2F, {{200, 0., +200.}, {200, 0., +200.}}}}, //
-      {"ptetaLeadingTrack",
-       "pT vs eta leading tracks",
-       {HistType::kTH2F, {{100, 0., +100.}, {80, -1., 1.}}}}, //
-      {"ptphiLeadingTrack",
-       "pT vs phi leading tracks",
-       {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}}}, //
-      {"ptetaLeadingJet",
-       "pT vs eta leading jet",
-       {HistType::kTH2F, {{100, 0., +100.}, {80, -1., 1.}}}}, //
-      {"ptphiLeadingJet",
-       "pT vs phi leading jet",
-       {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}}}, //
-      {"jetAreaFullVol",
-       "area of all jets in full TPC volume",
-       {HistType::kTH2F, {{100, 0., +100.}, {50, 0., 2.}}}}, //
-      {"jetAreaFidVol",
-       "area of all jets in fiducial volume",
-       {HistType::kTH2F, {{100, 0., +100.}, {50, 0., 2.}}}}, //
-      {"tracksThatWereNotJetConstituentsPtEtaPhi",
-       "PtEtaPhi of tracksThatWereNotjetConsituents in full volume",
-       {HistType::kTH3F, {{100, 0., +100.}, {40, -1., 1.}, {60, 0., TMath::TwoPi()}}}} //
-    }};
+  HistogramRegistry spectra;
 
   int eventSelection = -1;
   int trackSelection = -1;
@@ -172,6 +105,40 @@ struct ChJetTriggerQATask {
     fiducialVolume = static_cast<float>(cfgTPCVolume) - static_cast<float>(cfgJetR);
     eventSelection = JetDerivedDataUtilities::initialiseEventSelection(static_cast<std::string>(evSel));
     trackSelection = JetDerivedDataUtilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+
+    // Basic histos
+    spectra.add("vertexZ", "z vertex", {HistType::kTH1F, {{400, -20., +20.}}});
+    spectra.add("ptphiTrackInclGood", "pT vs phi inclusive good tracks", {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}});
+    spectra.add("ptetaTrackInclGood", "pT vs eta inclusive good tracks", {HistType::kTH2F, {{100, 0., +100.}, {80, -1., 1.}}});
+    spectra.add("ptJetChInclFidVol", "inclusive charged jet pT in fiducial volume", {HistType::kTH1F, {{200, 0., +200.}}});
+    spectra.add("ptphiJetChInclFidVol", "inclusive charged jet pT vs phi in fiducial volume", {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}});
+    spectra.add("ptphiJetChInclFullVol", "inclusive charged jet pT vs phi in full TPC volume", {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}});
+    spectra.add("ptetaJetChInclFidVol", "inclusive charged jet pT vs eta in fiducial volume", {HistType::kTH2F, {{100, 0., +100.}, {80, -1., 1.}}});
+    spectra.add("ptetaJetChInclFullVol", "inclusive charged jet pT vs eta in full TPC volume", {HistType::kTH2F, {{100, 0., +100.}, {80, -1., 1.}}});
+    spectra.add("ptetaLeadingJetFullVol", "pT vs eta leading jet", {HistType::kTH2F, {{100, 0., +100.}, {80, -1., 1.}}});
+    spectra.add("ptphiLeadingJetFullVol", "pT vs phi leading jet", {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}});
+
+    // Supplementary plots
+    if (bAddSupplementHistosToOutput) {
+      spectra.add("ptJetChInclFullVol", "inclusive charged jet pT in full volume", {HistType::kTH1F, {{200, 0., +200.}}});
+      spectra.add("phietaTrackAllInclGood", "phi vs eta all inclusive good tracks", {HistType::kTH2F, {{80, -1., 1.}, {60, 0, TMath::TwoPi()}}});
+      spectra.add("phietaTrackHighPtInclGood", "phi vs eta inclusive good tracks with pT > 10 GeV", {HistType::kTH2F, {{80, -1., 1.}, {60, 0, TMath::TwoPi()}}});
+      spectra.add("phietaJetChInclFidVol", "inclusive charged jet phi vs eta in fiducial volume", {HistType::kTH2F, {{80, -1., 1.}, {60, 0, TMath::TwoPi()}}});
+      spectra.add("phietaJetChInclFullVol", "inclusive charged jet phi vs eta in full TPC volume", {HistType::kTH2F, {{80, -1., 1.}, {60, 0, TMath::TwoPi()}}});
+      spectra.add("phietaJetChInclHighPtFidVol", "inclusive charged jet phi vs eta in fiducial volume", {HistType::kTH2F, {{80, -1., 1.}, {60, 0, TMath::TwoPi()}}});
+      spectra.add("phietaJetChInclHighPtFullVol", "inclusive charged jet phi vs eta in full TPC volume", {HistType::kTH2F, {{80, -1., 1.}, {60, 0, TMath::TwoPi()}}});
+      spectra.add("ptetaLeadingTrack", "pT vs eta leading tracks", {HistType::kTH2F, {{100, 0., +100.}, {80, -1., 1.}}});
+      spectra.add("ptphiLeadingTrack", "pT vs phi leading tracks", {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}});
+      spectra.add("jetAreaFullVol", "area of all jets in full TPC volume", {HistType::kTH2F, {{100, 0., +100.}, {50, 0., 2.}}});
+      spectra.add("jetAreaFidVol", "area of all jets in fiducial volume", {HistType::kTH2F, {{100, 0., +100.}, {50, 0., 2.}}});
+    }
+
+    // 3D histogram
+    if (bAddBigHistosToOutput) {
+      spectra.add("fLeadJetChPtVsLeadingTrack", "inclusive charged jet pT in TPC volume", {HistType::kTH2F, {{200, 0., +200.}, {200, 0., +200.}}});
+      spectra.add("tracksThatWereNotJetConstituentsPtEtaPhi", "PtEtaPhi of tracksThatWereNotjetConsituents in full volume",
+                  {HistType::kTH3F, {{100, 0., +100.}, {40, -1., 1.}, {60, 0., TMath::TwoPi()}}});
+    }
   }
 
   // declare filters on collisions
@@ -217,13 +184,16 @@ struct ChJetTriggerQATask {
 
       TLorentzVector v;
 
-      for (auto& trk : tracks) { //loop over filtered tracks in full TPC volume having pT > 100 MeV
+      for (auto& trk : tracks) { // loop over filtered tracks in full TPC volume having pT > 100 MeV
 
         if (!JetDerivedDataUtilities::selectTrack(trk, trackSelection)) {
           continue;
         }
-        v.SetPtEtaPhiM(trk.pt(), trk.eta(), trk.phi(), 0.139);
-        acceptedTracks.push_back(GoodTrack(v, false, trk.globalIndex()));
+
+        if (bAddBigHistosToOutput) {
+          v.SetPtEtaPhiM(trk.pt(), trk.eta(), trk.phi(), 0.139);
+          acceptedTracks.push_back(GoodTrack(v, false, trk.globalIndex()));
+        }
 
         spectra.fill(
           HIST("ptphiTrackInclGood"), trk.pt(),
@@ -232,14 +202,16 @@ struct ChJetTriggerQATask {
           HIST("ptetaTrackInclGood"), trk.pt(),
           trk.eta()); // Inclusive Track pT vs eta spectrum in TPC volume
 
-        spectra.fill(
-          HIST("phietaTrackAllInclGood"), trk.eta(),
-          trk.phi()); // Inclusive Track pT vs eta spectrum in TPC volume
-
-        if (trk.pt() > 5.0) {
+        if (bAddSupplementHistosToOutput) {
           spectra.fill(
-            HIST("phietaTrackHighPtInclGood"), trk.eta(),
+            HIST("phietaTrackAllInclGood"), trk.eta(),
             trk.phi()); // Inclusive Track pT vs eta spectrum in TPC volume
+
+          if (trk.pt() > 5.0) {
+            spectra.fill(
+              HIST("phietaTrackHighPtInclGood"), trk.eta(),
+              trk.phi()); // Inclusive Track pT vs eta spectrum in TPC volume
+          }
         }
 
         if (trk.pt() >
@@ -250,11 +222,13 @@ struct ChJetTriggerQATask {
         }
       }
 
-      if (leadingTrackPt > -1.) {
-        spectra.fill(HIST("ptphiLeadingTrack"), leadingTrackPt,
-                     leadingTrackPhi);
-        spectra.fill(HIST("ptetaLeadingTrack"), leadingTrackPt,
-                     leadingTrackEta);
+      if (bAddSupplementHistosToOutput) {
+        if (leadingTrackPt > -1.) {
+          spectra.fill(HIST("ptphiLeadingTrack"), leadingTrackPt,
+                       leadingTrackPhi);
+          spectra.fill(HIST("ptetaLeadingTrack"), leadingTrackPt,
+                       leadingTrackEta);
+        }
       }
 
       // Find leading jet pT in full TPC volume
@@ -268,32 +242,38 @@ struct ChJetTriggerQATask {
           }
 
           // access jet constituents as tracks
-          for (auto& jct : jet.tracks_as<TrackCandidates>()) {
-            for (UInt_t itr = 0; itr < acceptedTracks.size(); itr++) {
-              if (acceptedTracks[itr].globalIndex == jct.globalIndex()) {
+          if (bAddBigHistosToOutput) {
+            for (auto& jct : jet.tracks_as<TrackCandidates>()) {
+              for (UInt_t itr = 0; itr < acceptedTracks.size(); itr++) {
+                if (acceptedTracks[itr].globalIndex == jct.globalIndex()) {
 
-                acceptedTracks[itr].isJetConstituent = true; // initialization
-                break;
+                  acceptedTracks[itr].isJetConstituent = true; // initialization
+                  break;
+                }
               }
             }
           }
         }
       }
 
-      for (UInt_t itr = 0; itr < acceptedTracks.size(); itr++) {
-        if (!acceptedTracks[itr].isJetConstituent) {
-          spectra.fill(HIST("tracksThatWereNotJetConstituentsPtEtaPhi"), acceptedTracks[itr].lv.Pt(), acceptedTracks[itr].lv.Eta(), TVector2::Phi_0_2pi(acceptedTracks[itr].lv.Phi()));
+      if (bAddBigHistosToOutput) {
+        for (UInt_t itr = 0; itr < acceptedTracks.size(); itr++) {
+          if (!acceptedTracks[itr].isJetConstituent) {
+            spectra.fill(HIST("tracksThatWereNotJetConstituentsPtEtaPhi"), acceptedTracks[itr].lv.Pt(), acceptedTracks[itr].lv.Eta(), TVector2::Phi_0_2pi(acceptedTracks[itr].lv.Phi()));
+          }
         }
       }
 
       if (leadingJetPt > -1.) {
-        spectra.fill(HIST("ptphiLeadingJet"), leadingJetPt, leadingJetPhi);
-        spectra.fill(HIST("ptetaLeadingJet"), leadingJetPt, leadingJetEta);
+        spectra.fill(HIST("ptphiLeadingJetFullVol"), leadingJetPt, leadingJetPhi);
+        spectra.fill(HIST("ptetaLeadingJetFullVol"), leadingJetPt, leadingJetEta);
       }
 
-      if (leadingJetPt > -1. && leadingTrackPt > -1.) {
-        spectra.fill(HIST("fLeadJetChPtVsLeadingTrack"), leadingTrackPt,
-                     leadingJetPt); // leading jet pT versus leading track pT
+      if (bAddBigHistosToOutput) {
+        if (leadingJetPt > -1. && leadingTrackPt > -1.) {
+          spectra.fill(HIST("fLeadJetChPtVsLeadingTrack"), leadingTrackPt,
+                       leadingJetPt); // leading jet pT versus leading track pT
+        }
       }
 
       // Inclusive Jet pT spectrum in Fiducial volume
@@ -302,22 +282,29 @@ struct ChJetTriggerQATask {
           spectra.fill(HIST("ptJetChInclFidVol"), jet.pt());
           spectra.fill(HIST("ptphiJetChInclFidVol"), jet.pt(), jet.phi());
           spectra.fill(HIST("ptetaJetChInclFidVol"), jet.pt(), jet.eta());
-          spectra.fill(HIST("phietaJetChInclFidVol"), jet.eta(), jet.phi());
-          if (jet.pt() > 10.0) {
-            spectra.fill(HIST("phietaJetChInclHighPtFidVol"), jet.eta(), jet.phi());
+
+          if (bAddSupplementHistosToOutput) {
+            spectra.fill(HIST("phietaJetChInclFidVol"), jet.eta(), jet.phi());
+            if (jet.pt() > 10.0) {
+              spectra.fill(HIST("phietaJetChInclHighPtFidVol"), jet.eta(), jet.phi());
+            }
+            spectra.fill(HIST("jetAreaFidVol"), jet.pt(), jet.area());
           }
-          spectra.fill(HIST("jetAreaFidVol"), jet.pt(), jet.area());
         }
 
         if (fabs(jet.eta()) < static_cast<float>(cfgTPCVolume)) {
-          spectra.fill(HIST("ptJetChInclFullVol"), jet.pt());
           spectra.fill(HIST("ptphiJetChInclFullVol"), jet.pt(), jet.phi());
           spectra.fill(HIST("ptetaJetChInclFullVol"), jet.pt(), jet.eta());
-          spectra.fill(HIST("phietaJetChInclFullVol"), jet.eta(), jet.phi());
-          if (jet.pt() > 10.0) {
-            spectra.fill(HIST("phietaJetChInclHighPtFullVol"), jet.eta(), jet.phi());
+
+          if (bAddSupplementHistosToOutput) {
+            spectra.fill(HIST("ptJetChInclFullVol"), jet.pt());
+
+            spectra.fill(HIST("phietaJetChInclFullVol"), jet.eta(), jet.phi());
+            if (jet.pt() > 10.0) {
+              spectra.fill(HIST("phietaJetChInclHighPtFullVol"), jet.eta(), jet.phi());
+            }
+            spectra.fill(HIST("jetAreaFullVol"), jet.pt(), jet.area());
           }
-          spectra.fill(HIST("jetAreaFullVol"), jet.pt(), jet.area());
         }
       }
     }

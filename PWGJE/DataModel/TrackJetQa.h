@@ -40,11 +40,10 @@ using namespace o2::framework::expressions;
 // Derived data model for track optimization (and cut variation)
 namespace o2::aod
 {
-namespace jetspectra
+namespace jetcollisions
 {
-
 // Collision info
-DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision has occurred
+DECLARE_SOA_COLUMN(GlobalIdx, globalIdx, int64_t);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(Sel8, sel8, bool);
 DECLARE_SOA_COLUMN(MultNTracksPV, multNTracksPV, int);
@@ -52,13 +51,19 @@ DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);
 DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);
 DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);
+} // namespace jetcollisions
+
+namespace jettrack
+{
 // Track info
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);             //! Index to the collision
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);          //! Id of collision
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! IsPVContributor
 DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);                   //! Has or not the TRD match
+DECLARE_SOA_COLUMN(HasITS, hasITS, bool);                   //! Has or not the ITS match
+DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);                   //! Has or not the TPC match         // Addtional selections for trackJetqa //
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                   // if a track passed the isGlobalTrack requirement
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);                         // if a track passed the isGlobalTrackWoDCA requirement
-DECLARE_SOA_COLUMN(IsGlobalTrackWoPtEta, isGlobalTrackWoPtEta, bool);                     // all tracks in the derived table have to pass this requirement !
+DECLARE_SOA_COLUMN(IsGlobalTrackWoPtEta, isGlobalTrackWoPtEta, bool);                     // if a track passed the isGlobalTrackWoPtEta requirement
 DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);
 DECLARE_SOA_COLUMN(TPCFractionSharedCls, tpcFractionSharedCls, float);
 DECLARE_SOA_COLUMN(ITSClusterMap, itsClusterMap, float);
@@ -67,38 +72,44 @@ DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, int16_t);
 DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
 DECLARE_SOA_COLUMN(TPCFoundOverFindableCls, tpcFoundOverFindableCls, float);
 
-} // namespace jetspectra
+} // namespace jettrack
 
 DECLARE_SOA_TABLE(JeColls, "AOD", "JECOLLS",
                   o2::soa::Index<>,
+                  collision::CollisionTime,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
-                  jetspectra::Sel8,
-                  jetspectra::MultNTracksPV,
-                  jetspectra::MultFT0A,
-                  jetspectra::MultFT0C,
-                  jetspectra::CentFT0A,
-                  jetspectra::CentFT0C,
-                  jetspectra::RunNumber);
-using JeColl = JeColls::iterator;
+                  jetcollisions::Sel8,
+                  jetcollisions::MultNTracksPV,
+                  jetcollisions::MultFT0A,
+                  jetcollisions::MultFT0C,
+                  jetcollisions::CentFT0A,
+                  jetcollisions::CentFT0C,
+                  jetcollisions::RunNumber);
+
+// using JeColl = JeColls::iterator;
 
 DECLARE_SOA_TABLE(JeTracks, "AOD", "JETRACKS",
                   o2::soa::Index<>,
-                  jetspectra::CollisionId,
+                  jettrack::CollisionId,
+                  track::TrackTime,
                   track::Signed1Pt, track::Eta, track::Phi, track::Pt,
                   track::Sigma1Pt,
                   track::Alpha,
                   track::X, track::Y, track::Z,
                   track::Snp,
                   track::Tgl,
-                  jetspectra::IsPVContributor,
-                  jetspectra::HasTRD,
-                  jetspectra::IsGlobalTrack,
-                  jetspectra::IsGlobalTrackWoDCA,
-                  jetspectra::IsGlobalTrackWoPtEta,
+                  jettrack::IsPVContributor,
+                  jettrack::HasTRD,
+                  jettrack::HasITS,
+                  jettrack::HasTPC,
+                  jettrack::IsGlobalTrack,
+                  jettrack::IsGlobalTrackWoDCA,
+                  jettrack::IsGlobalTrackWoPtEta,
                   track::Flags,
+                  track::TrackType,
                   track::Length,
                   track::TPCChi2NCl, track::ITSChi2NCl, track::TOFChi2,
                   track::TPCNClsShared,
@@ -106,12 +117,12 @@ DECLARE_SOA_TABLE(JeTracks, "AOD", "JETRACKS",
                   track::TPCNClsFindableMinusFound,
                   track::TPCNClsFindableMinusCrossedRows,
                   track::ITSClusterMap,
-                  jetspectra::ITSNCls,
-                  jetspectra::TPCFractionSharedCls,
-                  jetspectra::TPCNClsFound,
-                  jetspectra::TPCNClsCrossedRows,
-                  jetspectra::TPCCrossedRowsOverFindableCls,
-                  jetspectra::TPCFoundOverFindableCls,
+                  jettrack::ITSNCls,
+                  jettrack::TPCFractionSharedCls,
+                  jettrack::TPCNClsFound,
+                  jettrack::TPCNClsCrossedRows,
+                  jettrack::TPCCrossedRowsOverFindableCls,
+                  jettrack::TPCFoundOverFindableCls,
                   track::DcaXY,
                   track::DcaZ);
 } // namespace o2::aod

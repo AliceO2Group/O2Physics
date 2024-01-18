@@ -53,13 +53,13 @@ struct lambdakzeromcbuilder {
   // build V0 labels
   void process(aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const& particlesMC)
   {
-    int pdgCode = -1, pdgCodeMother = -1, pdgCodePositive = -1, pdgCodeNegative = -1;
-    bool isPhysicalPrimary = false;
-    float xmc = -999.0f, ymc = -999.0f, zmc = -999.0f;
-    float pxposmc = -999.0f, pyposmc = -999.0f, pzposmc = -999.0f;
-    float pxnegmc = -999.0f, pynegmc = -999.0f, pznegmc = -999.0f;
     for (auto& v0 : v0table) {
-      int lLabel = -1;
+      int lLabel = -1, lMotherLabel = -1;
+      int pdgCode = -1, pdgCodeMother = -1, pdgCodePositive = -1, pdgCodeNegative = -1;
+      bool isPhysicalPrimary = false;
+      float xmc = -999.0f, ymc = -999.0f, zmc = -999.0f;
+      float pxposmc = -999.0f, pyposmc = -999.0f, pzposmc = -999.0f;
+      float pxnegmc = -999.0f, pynegmc = -999.0f, pznegmc = -999.0f;
 
       auto lNegTrack = v0.negTrack_as<aod::McTrackLabels>();
       auto lPosTrack = v0.posTrack_as<aod::McTrackLabels>();
@@ -83,14 +83,15 @@ struct lambdakzeromcbuilder {
               if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
                 lLabel = lNegMother.globalIndex();
                 // acquire information
-                xmc = lNegMother.vx();
-                ymc = lNegMother.vy();
-                zmc = lNegMother.vz();
+                xmc = lMCPosTrack.vx();
+                ymc = lMCPosTrack.vy();
+                zmc = lMCPosTrack.vz();
                 pdgCode = lNegMother.pdgCode();
                 isPhysicalPrimary = lNegMother.isPhysicalPrimary();
                 if (lNegMother.has_mothers()) {
                   for (auto& lNegGrandMother : lNegMother.mothers_as<aod::McParticles>()) {
                     pdgCodeMother = lNegGrandMother.pdgCode();
+                    lMotherLabel = lNegGrandMother.globalIndex();
                   }
                 }
               }
@@ -100,7 +101,7 @@ struct lambdakzeromcbuilder {
       } // end association check
       // Construct label table (note: this will be joinable with V0Datas!)
       v0labels(
-        lLabel);
+        lLabel, lMotherLabel);
       if (populateV0MCCores) {
         v0mccores(
           pdgCode, pdgCodeMother, pdgCodePositive, pdgCodeNegative,

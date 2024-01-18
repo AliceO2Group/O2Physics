@@ -104,16 +104,22 @@ enum CutDirection {
   CutNot          // do not cut on score
 };
 
-static constexpr int nBinsPt = 6;
+static constexpr int nBinsPt = 12;
 static constexpr int nCutScores = 3;
 // default values for the pT bin edges, offset by 1 from the bin numbers in cuts array
 constexpr double binsPt[nBinsPt + 1] = {
   0.,
   1.,
   2.,
+  3.,
   4.,
+  5.,
   6.,
+  8.,
   10.,
+  12.,
+  16.,
+  24.,
   50.};
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
@@ -132,6 +138,12 @@ constexpr double cuts[nBinsPt][nCutScores] = {
   {0.5, 0.5, 0.5},
   {0.5, 0.5, 0.5},
   {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
+  {0.5, 0.5, 0.5},
   {0.5, 0.5, 0.5}};
 
 // row labels
@@ -142,10 +154,16 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 3",
   "pT bin 4",
   "pT bin 5",
-};
+  "pT bin 6",
+  "pT bin 7",
+  "pT bin 8",
+  "pT bin 9",
+  "pT bin 10",
+  "pT bin 11"};
 
 // column labels
 static const std::vector<std::string> labelsCutScore = {"score class 1", "score class 2", "score class 3"};
+static const std::vector<std::string> labelsDmesCutScore = {"ML score charm bkg", "ML score charm prompt", "ML score charm nonprompt"};
 } // namespace hf_cuts_ml
 
 namespace hf_cuts_presel_2prong
@@ -335,6 +353,94 @@ static const std::vector<std::string> labelsPt = {
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "DCA", "cos theta*", "pT K", "pT Pi", "d0K", "d0pi", "d0d0", "cos pointing angle", "cos pointing angle xy", "min norm decay length XY", "max decay length", "max decay length XY", "min decay length", "norm dauImpPar XY"};
 } // namespace hf_cuts_d0_to_pi_k
+
+namespace hf_cuts_dstar_to_d0_pi
+{
+static constexpr int nBinsPt = 23;
+static constexpr int nCutVars = 8;
+// default values for the pT bin edges (can be used to configure histogram axis)
+// offset by 1 from the bin numbers in cuts array
+constexpr double binsPt[nBinsPt + 1] = {
+  1.0,
+  1.5,
+  2.0,
+  2.5,
+  3.0,
+  3.5,
+  4.0,
+  4.5,
+  5.0,
+  5.5,
+  6.0,
+  6.5,
+  7.0,
+  7.5,
+  8.0,
+  9.0,
+  10.0,
+  12.0,
+  16.0,
+  20.0,
+  24.0,
+  36.0,
+  50.0,
+  100.0};
+auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+
+// row labels
+static const std::vector<std::string> labelsPt = {
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5",
+  "pT bin 6",
+  "pT bin 7",
+  "pT bin 8",
+  "pT bin 9",
+  "pT bin 10",
+  "pT bin 11",
+  "pT bin 12",
+  "pT bin 13",
+  "pT bin 14",
+  "pT bin 15",
+  "pT bin 16",
+  "pT bin 17",
+  "pT bin 18",
+  "pT bin 19",
+  "pT bin 20",
+  "pT bin 21",
+  "pT bin 22"};
+
+// column label
+static const std::vector<std::string> labelsCutVar = {"ptSoftPiMin", "ptSoftPiMax", "d0SoftPi", "d0SoftPiNormalised", "deltaMInvDstar", "chi2PCA", "d0Prong0Normalised", "d0Prong1Normalised"};
+
+// default values for the cuts
+constexpr double cuts[nBinsPt][nCutVars] = {{0.05, 0.3, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 0.3, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 0.4, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 0.4, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 0.6, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 0.6, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 0.6, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0}};
+} // namespace hf_cuts_dstar_to_d0_pi
 
 namespace hf_cuts_lc_to_p_k_pi
 {
