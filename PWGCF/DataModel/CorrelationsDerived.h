@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_CFDERIVED_H
-#define O2_ANALYSIS_CFDERIVED_H
+#ifndef PWGCF_DATAMODEL_CORRELATIONSDERIVED_H_
+#define PWGCF_DATAMODEL_CORRELATIONSDERIVED_H_
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
