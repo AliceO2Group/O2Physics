@@ -165,6 +165,8 @@ struct hyperRecoTask {
 
   // std vector of candidates
   std::vector<hyperCandidate> hyperCandidates;
+  // vector to keep track of MC mothers already filled
+  std::vector<unsigned int> filledMothers;
 
   Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
 
@@ -408,7 +410,6 @@ struct hyperRecoTask {
 
   void fillMCinfo(aod::McTrackLabels const& trackLabels, aod::McParticles const& particlesMC)
   {
-    std::vector<unsigned int> filledMothers;
     for (auto& hypCand : hyperCandidates) {
       auto mcLabPos = trackLabels.rawIteratorAt(hypCand.posTrackID);
       auto mcLabNeg = trackLabels.rawIteratorAt(hypCand.negTrackID);
@@ -440,54 +441,6 @@ struct hyperRecoTask {
           }
         }
       }
-    }
-
-    for (auto& mcPart : particlesMC) {
-
-      if (std::abs(mcPart.pdgCode()) != hyperPdg)
-        continue;
-      std::array<float, 3> secVtx;
-      std::array<float, 3> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
-      std::array<float, 3> momMother = {mcPart.px(), mcPart.py(), mcPart.pz()};
-      std::array<float, 3> momHe3;
-      bool isHeFound = false;
-      for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
-        if (std::abs(mcDaught.pdgCode()) == heDauPdg) {
-          secVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
-          momHe3 = {mcDaught.px(), mcDaught.py(), mcDaught.pz()};
-          isHeFound = true;
-          break;
-        }
-      }
-      if (mcPart.pdgCode() > 0) {
-        hIsMatterGen->Fill(0.);
-      } else {
-        hIsMatterGen->Fill(1.);
-      }
-      if (!isHeFound) {
-        hDecayChannel->Fill(1.);
-        continue;
-      }
-      hDecayChannel->Fill(0.);
-      if (mcPart.pdgCode() > 0) {
-        hIsMatterGenTwoBody->Fill(0.);
-      } else {
-        hIsMatterGenTwoBody->Fill(1.);
-      }
-      if (std::find(filledMothers.begin(), filledMothers.end(), mcPart.globalIndex()) != std::end(filledMothers)) {
-        continue;
-      }
-      hyperCandidate hypCand;
-      for (int i = 0; i < 3; i++) {
-        hypCand.gDecVtx[i] = secVtx[i] - primVtx[i];
-        hypCand.gMom[i] = momMother[i];
-        hypCand.gMomHe3[i] = momHe3[i];
-      }
-      hypCand.posTrackID = -1;
-      hypCand.negTrackID = -1;
-      hypCand.isSignal = true;
-      hypCand.pdgCode = mcPart.pdgCode();
-      hyperCandidates.push_back(hypCand);
     }
   }
 
@@ -583,10 +536,9 @@ struct hyperRecoTask {
 
   void processMC(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
-    hyperCandidates.clear();
 
     for (const auto& collision : collisions) {
-
+      hyperCandidates.clear();
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
@@ -604,23 +556,84 @@ struct hyperRecoTask {
       V0Table_thisCollision.bindExternalIndices(&tracks);
 
       fillCandidateData(collision, V0Table_thisCollision);
+      fillMCinfo(trackLabelsMC, particlesMC);
+
+      for (auto& hypCand : hyperCandidates) {
+        if (!hypCand.isSignal && mcSignalOnly)
+          continue;
+        int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
+        outputMCTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                      hypCand.isMatter,
+                      hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
+                      hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
+                      collision.posX(), collision.posY(), collision.posZ(),
+                      hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
+                      hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
+                      hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
+                      hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
+                      hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags,
+                      chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
+                      hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal);
+      }
     }
 
-    fillMCinfo(trackLabelsMC, particlesMC);
-    for (auto& hypCand : hyperCandidates) {
-      if (!hypCand.isSignal && mcSignalOnly)
+    // now we fill only the signal candidates that were not reconstructed
+    for (auto& mcPart : particlesMC) {
+
+      if (std::abs(mcPart.pdgCode()) != hyperPdg)
         continue;
+      std::array<float, 3> secVtx;
+      std::array<float, 3> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
+      std::array<float, 3> momMother = {mcPart.px(), mcPart.py(), mcPart.pz()};
+      std::array<float, 3> momHe3;
+      bool isHeFound = false;
+      for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
+        if (std::abs(mcDaught.pdgCode()) == heDauPdg) {
+          secVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
+          momHe3 = {mcDaught.px(), mcDaught.py(), mcDaught.pz()};
+          isHeFound = true;
+          break;
+        }
+      }
+      if (mcPart.pdgCode() > 0) {
+        hIsMatterGen->Fill(0.);
+      } else {
+        hIsMatterGen->Fill(1.);
+      }
+      if (!isHeFound) {
+        hDecayChannel->Fill(1.);
+        continue;
+      }
+      hDecayChannel->Fill(0.);
+      if (mcPart.pdgCode() > 0) {
+        hIsMatterGenTwoBody->Fill(0.);
+      } else {
+        hIsMatterGenTwoBody->Fill(1.);
+      }
+      if (std::find(filledMothers.begin(), filledMothers.end(), mcPart.globalIndex()) != std::end(filledMothers)) {
+        continue;
+      }
+      hyperCandidate hypCand;
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
-      outputMCTable(hypCand.centralityFT0A, hypCand.centralityFT0C, hypCand.centralityFT0M,
-                    hypCand.isMatter,
-                    hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
-                    hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
-                    hypCand.primVtx[0], hypCand.primVtx[1], hypCand.primVtx[2],
-                    hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
-                    hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
-                    hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
-                    hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
-                    hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags,
+      for (int i = 0; i < 3; i++) {
+        hypCand.gDecVtx[i] = secVtx[i] - primVtx[i];
+        hypCand.gMom[i] = momMother[i];
+        hypCand.gMomHe3[i] = momHe3[i];
+      }
+      hypCand.posTrackID = -1;
+      hypCand.negTrackID = -1;
+      hypCand.isSignal = true;
+      hypCand.pdgCode = mcPart.pdgCode();
+      outputMCTable(-1, -1, -1,
+                    0,
+                    -1, -1, -1,
+                    -1, -1, -1,
+                    -1, -1, -1,
+                    -1, -1, -1,
+                    -1, -1, -1,
+                    -1, -1, -1,
+                    -1, -1, -1, -1,
+                    -1, -1, -1,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal);
     }
