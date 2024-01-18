@@ -546,10 +546,10 @@ struct hyperRecoTask {
           continue;
         int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
         outputMCTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                      collision.posX(), collision.posY(), collision.posZ(),
                       hypCand.isMatter,
                       hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
                       hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
-                      collision.posX(), collision.posY(), collision.posZ(),
                       hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
                       hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                       hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
