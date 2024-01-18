@@ -19,7 +19,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/RecoDecay.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/ASoA.h"
 
@@ -270,8 +269,9 @@ struct CheckFilterBit {
             int partpdg = std::abs(mcparticle.pdgCode());
             if (indexMatchOK && mcparticle.isPhysicalPrimary() && (partpdg == 211 || partpdg == 321 || partpdg == 2212 || partpdg == 11 || partpdg == 13)) {
               issamemcpt = mcparticle.pt();
-            } else
+            } else {
               issamemcpt = -mcparticle.pt();
+            }
           }
         }
       }
@@ -293,8 +293,9 @@ struct CheckFilterBit {
             int partpdg = std::abs(mcparticle.pdgCode());
             if (indexMatchOK && mcparticle.isPhysicalPrimary() && (partpdg == 211 || partpdg == 321 || partpdg == 2212 || partpdg == 11 || partpdg == 13)) {
               issamemcpt = mcparticle.pt();
-            } else
+            } else {
               issamemcpt = -mcparticle.pt();
+            }
           }
         }
       }
@@ -315,8 +316,9 @@ struct CheckFilterBit {
             int partpdg = std::abs(mcparticle.pdgCode());
             if (indexMatchOK && mcparticle.isPhysicalPrimary() && (partpdg == 211 || partpdg == 321 || partpdg == 2212 || partpdg == 11 || partpdg == 13)) {
               issamemcpt = mcparticle.pt();
-            } else
+            } else {
               issamemcpt = -mcparticle.pt();
+            }
           }
         }
       }
@@ -337,8 +339,9 @@ struct CheckFilterBit {
             int partpdg = std::abs(mcparticle.pdgCode());
             if (indexMatchOK && mcparticle.isPhysicalPrimary() && (partpdg == 211 || partpdg == 321 || partpdg == 2212 || partpdg == 11 || partpdg == 13)) {
               issamemcpt = mcparticle.pt();
-            } else
+            } else {
               issamemcpt = -mcparticle.pt();
+            }
           }
         }
       }
