@@ -66,6 +66,8 @@ enum DQTriggers {
   kSingleMuLow,
   kSingleMuHigh,
   kDiMuon,
+  kLMeeIMR,
+  kLMeehighMass,
   kNTriggersDQ
 };
 } // namespace
