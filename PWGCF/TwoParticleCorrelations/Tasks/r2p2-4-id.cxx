@@ -105,9 +105,9 @@ struct FillFlagsTable {
     for (auto track : tracks) {
       etabin = (track.eta() + 0.8) * 15; // 15= 24/1.6
       phibin = 36 * track.phi() / (2 * constants::math::PI);
-      if ((etabin < 0) || (etabin >= 24) || (phibin < 0) || (phibin >= 36))
+      if ((etabin < 0) || (etabin >= 24) || (phibin < 0) || (phibin >= 36)) {
         binNpid = -1;
-      else {
+      } else {
         binNpid = 0;
         for (int i = 0; i < 4; i++) {
           if (pidarray<decltype(track)>[i](track))
