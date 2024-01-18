@@ -8,11 +8,18 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include <experimental/type_traits>
+
+#include <TH1F.h>
+#include <cmath>
+#include <TDirectory.h>
+#include <THn.h>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/StepTHn.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
@@ -26,12 +33,6 @@
 #include "PWGCF/Core/PairCuts.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
-
-#include <TH1F.h>
-#include <cmath>
-#include <TDirectory.h>
-#include <THn.h>
-#include <experimental/type_traits>
 
 using namespace o2;
 using namespace o2::framework;
@@ -106,7 +107,7 @@ struct CorrelationTask {
   Filter cfMCParticleFilter = (nabs(aod::cfmcparticle::eta) < cfgCutEta) && (aod::cfmcparticle::pt > cfgCutPt) && (aod::cfmcparticle::sign != 0);
 
   // HF filters
-  Filter track2pFilter = (aod::cf2prongtrack::eta < cfgCutEta) && (aod::cf2prongtrack::pt > cfgCutPt) && (cfgDecayParticleMask == 0 || ((uint8_t)cfgDecayParticleMask & aod::cf2prongtrack::mask) != (uint8_t)0u);
+  Filter track2pFilter = (aod::cf2prongtrack::eta < cfgCutEta) && (aod::cf2prongtrack::pt > cfgCutPt);
 
   // Output definitions
   OutputObj<CorrelationContainer> same{"sameEvent"};
@@ -181,7 +182,7 @@ struct CorrelationTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
   }
 
@@ -216,6 +217,10 @@ struct CorrelationTask {
   {
     fillQA(collision, multiplicity, tracks1);
     for (auto& track2 : tracks2) {
+      if constexpr (std::is_same<TTracks2, aod::CF2ProngTracks>::value) {
+        if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track2.decay())) == 0u)
+          continue;
+      }
       registry.fill(HIST("yieldsTrack2"), multiplicity, track2.pt(), track2.eta());
       registry.fill(HIST("etaphiTrack2"), multiplicity, track2.eta(), track2.phi());
     }
@@ -298,6 +303,8 @@ struct CorrelationTask {
         }
         if constexpr (std::is_same<TTracks2, aod::CF2ProngTracks>::value) {
           if (track1.globalIndex() == track2.cfTrackProng0Id() || track1.globalIndex() == track2.cfTrackProng1Id()) // do not correlate daughter tracks of the same event
+            continue;
+          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track2.decay())) == 0u)
             continue;
         }
 

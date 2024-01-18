@@ -37,7 +37,7 @@ struct Filter2Prong {
   using HFCandidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
   void processData(aod::Collisions::iterator const& collision, aod::BCsWithTimestamps const&, aod::CFCollRefs const& cfcollisions, aod::CFTrackRefs const& cftracks, HFCandidates const& candidates)
   {
-    if (cftracks.size() <= 0)
+    if (cfcollisions.size() <= 0 || cftracks.size() <= 0)
       return; // rejected collision
     if (cfgVerbosity > 0 && candidates.size() > 0)
       LOGF(info, "Candidates for collision: %lu, cfcollisions: %lu, CFTracks: %lu", candidates.size(), cfcollisions.size(), cftracks.size());
@@ -57,11 +57,10 @@ struct Filter2Prong {
       }
       // look-up the collision id
       auto collisionId = cfcollisions.begin().globalIndex();
-      uint8_t m = 0u;
-      if ((c.hfflag() & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) != 0)
-        m |= aod::cf2prongtrack::kD0ToPiK;
+      if ((c.hfflag() & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) == 0)
+        continue;
       output2ProngTracks(collisionId,
-                         prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), m);
+                         prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), aod::cf2prongtrack::D0ToPiK);
     }
   }
   PROCESS_SWITCH(Filter2Prong, processData, "Process data D0 candidates", true);

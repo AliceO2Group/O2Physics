@@ -98,20 +98,23 @@ namespace cf2prongtrack
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(CFTrackProng0, cfTrackProng0, int, CFTracks, "_0"); //! Index to prong 1 CFTrack
 DECLARE_SOA_INDEX_COLUMN_FULL(CFTrackProng1, cfTrackProng1, int, CFTracks, "_1"); //! Index to prong 2 CFTrack
-// type
-DECLARE_SOA_COLUMN(Pt, pt, float);       //! pT (GeV/c)
-DECLARE_SOA_COLUMN(Eta, eta, float);     //! Pseudorapidity
-DECLARE_SOA_COLUMN(Phi, phi, float);     //! Phi angle
-DECLARE_SOA_COLUMN(Mask, mask, uint8_t); //! Selection mask
-const uint8_t kD0ToPiK = 0x1;
+DECLARE_SOA_COLUMN(Pt, pt, float);                                                //! pT (GeV/c)
+DECLARE_SOA_COLUMN(Eta, eta, float);                                              //! Pseudorapidity
+DECLARE_SOA_COLUMN(Phi, phi, float);                                              //! Phi angle
+DECLARE_SOA_COLUMN(Decay, decay, uint8_t);                                        //! Particle decay
+enum ParticleDecay {
+  D0ToPiK,
+  JPsiToEE,
+  JPsiToMuMu
+};
 } // namespace cf2prongtrack
 DECLARE_SOA_TABLE(CF2ProngTracks, "AOD", "CF2PRONGTRACK", //! Reduced track table
                   o2::soa::Index<>,
                   cftrack::CFCollisionId,
                   cf2prongtrack::CFTrackProng0Id,
                   cf2prongtrack::CFTrackProng1Id,
-                  cf2prongtrack::Pt, cf2prongtrack::Eta, cf2prongtrack::Phi, cf2prongtrack::Mask);
+                  cf2prongtrack::Pt, cf2prongtrack::Eta, cf2prongtrack::Phi, cf2prongtrack::Decay);
 using CF2ProngTrack = CF2ProngTracks::iterator;
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_CFDERIVED_H
+#endif // PWGCF_DATAMODEL_CORRELATIONSDERIVED_H_
