@@ -35,24 +35,6 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
     cut->SetRxyRange(1, 90);
     return cut;
   }
-  if (!nameStr.compare("qc_lc")) { // qc for late conversion
-    // for track
-    cut->SetTrackPtRange(0.02f, 1e10f);
-    // cut->SetTrackEtaRange(-0.9, +0.9);
-    cut->SetMinNCrossedRowsTPC(20);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    cut->SetChi2PerClusterTPC(0.0, 4.0);
-    cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetIsWithinBeamPipe(true);
-    // for v0
-    cut->SetV0PtRange(0.1f, 1e10f);
-    cut->SetV0EtaRange(-0.9, +0.9);
-    cut->SetMinCosPA(0.99);
-    cut->SetMaxPCA(1.5);
-    cut->SetRxyRange(42, 90);
-    cut->SetAPRange(0.95, 0.01);
-    return cut;
-  }
   if (!nameStr.compare("qc")) {
     // for track
     cut->SetTrackPtRange(0.02f, 1e10f);

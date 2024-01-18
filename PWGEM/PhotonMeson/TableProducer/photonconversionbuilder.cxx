@@ -346,6 +346,9 @@ struct PhotonConversionBuilder {
     if (rxy_tmp > maxX + margin_r_tpconly) {
       return;
     }
+    if (rxy_tmp < abs(xyz[2]) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
+      return; // RZ line cut
+    }
 
     KFPTrack kfp_track_pos = createKFPTrackFromTrack(pos);
     KFPTrack kfp_track_ele = createKFPTrackFromTrack(ele);
