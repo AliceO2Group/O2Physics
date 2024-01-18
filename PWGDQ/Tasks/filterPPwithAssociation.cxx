@@ -62,12 +62,12 @@ namespace
 {
 enum DQTriggers {
   kSingleE = 0,
+  kLMeeIMR,
+  kLMeeHMR,
   kDiElectron,
   kSingleMuLow,
   kSingleMuHigh,
   kDiMuon,
-  kLMeeIMR,
-  kLMeehighMass,
   kNTriggersDQ
 };
 } // namespace
