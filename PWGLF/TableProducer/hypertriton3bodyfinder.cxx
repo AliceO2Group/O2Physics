@@ -1076,7 +1076,7 @@ struct hypertriton3bodyComparewithDecay3body {
   HistogramRegistry registry{
     "registry",
       {
-        {"hCheckCounter", "hCheckCounter", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
+        {"hCheckCounter", "hCheckCounter", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
         {"hHypertritonMCPt", "hHypertritonMCPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
         {"hAntiHypertritonMCPt", "hAntiHypertritonMCPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
         {"hHypertritonMCMass", "hHypertritonMCMass", {HistType::kTH1F, {{40, 2.95f, 3.05f}}}},
@@ -1090,7 +1090,9 @@ struct hypertriton3bodyComparewithDecay3body {
   void init(InitContext const&)
   {
     registry.get<TH1>(HIST("hCheckCounter"))->GetXaxis()->SetBinLabel(1, "Sig in Decay3body");
-    registry.get<TH1>(HIST("hCheckCounter"))->GetXaxis()->SetBinLabel(2, "Sig contained by finder");
+    registry.get<TH1>(HIST("hCheckCounter"))->GetXaxis()->SetBinLabel(2, "Sig SameCol");
+    registry.get<TH1>(HIST("hCheckCounter"))->GetXaxis()->SetBinLabel(3, "Sig contained by finder");
+    registry.get<TH1>(HIST("hCheckCounter"))->GetXaxis()->SetBinLabel(4, "Sig SameIndex");
   }
 
   void processDoNotCompare(aod::Collisions::iterator const& collision)
@@ -1112,9 +1114,6 @@ struct hypertriton3bodyComparewithDecay3body {
       auto lMCTrack1 = lTrack1.mcParticle_as<aod::McParticles>();
       auto lMCTrack2 = lTrack2.mcParticle_as<aod::McParticles>();
       if (!lMCTrack0.has_mothers() || !lMCTrack1.has_mothers() || !lMCTrack2.has_mothers()) {
-        continue;
-      }
-      if (lTrack0.collisionId() != lTrack1.collisionId() || lTrack0.collisionId() != lTrack2.collisionId()) {
         continue;
       }
 
@@ -1152,15 +1151,20 @@ struct hypertriton3bodyComparewithDecay3body {
 
       registry.fill(HIST("hCheckCounter"), 0.5);
 
+      if (lTrack0.collisionId() != lTrack1.collisionId() || lTrack0.collisionId() != lTrack2.collisionId()) {
+        continue;
+      }
+      registry.fill(HIST("hCheckCounter"), 1.5);
+
       for(auto vtx : vtx3bodydatas){
         if (vtx.mcParticleId() == -1){
           continue;
         }
         auto mcparticle = vtx.mcParticle_as<aod::McParticles>();
         if(mcparticle.globalIndex() == lGlobalIndex){
-          registry.fill(HIST("hCheckCounter"), 2.5);
+          registry.fill(HIST("hCheckCounter"), 3.5);
           if (lTrack0.globalIndex() == vtx.track0Id() && lTrack1.globalIndex() == vtx.track1Id() &&lTrack2.globalIndex() == vtx.track2Id()){
-            registry.fill(HIST("hCheckCounter"), 1.5);
+            registry.fill(HIST("hCheckCounter"), 2.5);
             if (lPDG > 0){
               registry.fill(HIST("hPairedHypertritonMCPt"), lPt);
             }
