@@ -90,30 +90,41 @@ namespace o2::aod
 {
 namespace idr2p2columns
 {
-DECLARE_SOA_COLUMN(BinFlag, binflag, bool); // To flag tracks without proper binning
-DECLARE_SOA_COLUMN(PID, pid, int);          // Flag for type of particle
+DECLARE_SOA_COLUMN(BinNPIDFlag, binNpid, int8_t); // Flag tracks without proper binning as -1, and indicate type of particle 0->un-Id, 1->pion, 2->kaon, 3->proton
 } // namespace idr2p2columns
-DECLARE_SOA_TABLE(Flags, "AOD", "Flags", idr2p2columns::BinFlag, idr2p2columns::PID);
+DECLARE_SOA_TABLE(Flags, "AOD", "Flags", idr2p2columns::BinNPIDFlag);
 } // namespace o2::aod
 struct FillFlagsTable {
   Produces<aod::Flags> ftable;
+
   void process(soa::Join<aod::Tracks, aod::TrackSelection, aod::pidTPCPi, aod::pidTOFPi, aod::pidTPCPr, aod::pidTOFPr, aod::pidTPCKa, aod::pidTOFKa, aod::pidTPCEl, aod::pidTOFbeta, aod::TracksExtra> const& tracks)
   {
-    bool binflag;
-    int etabin, phibin, pid;
+    int etabin, phibin;
+    int8_t binNpid;
+    float nsigma_array[3];
     for (auto track : tracks) {
       etabin = (track.eta() + 0.8) * 15; // 15= 24/1.6
       phibin = 36 * track.phi() / (2 * constants::math::PI);
       if ((etabin < 0) || (etabin >= 24) || (phibin < 0) || (phibin >= 36))
-        binflag = false;
-      else
-        binflag = true;
-      pid = 0;
-      for (int i = 0; i < 4; i++) {
-        if (pidarray<decltype(track)>[i](track))
-          pid = pid * 10 + i;
+        binNpid = -1;
+      else {
+        binNpid = 0;
+        for (int i = 0; i < 4; i++) {
+          if (pidarray<decltype(track)>[i](track))
+            binNpid = binNpid * 10 + i;
+          if (binNpid > 10) // If a track is identified as two different tracks.
+          {
+            nsigma_array[0] = track.tpcNSigmaPi();
+            nsigma_array[1] = track.tpcNSigmaKa();
+            nsigma_array[2] = track.tpcNSigmaPr();
+            if (fabs(nsigma_array[(binNpid / 10) - 1]) < fabs(nsigma_array[(binNpid % 10) - 1])) //The track is identified as the particle whose |nsigma| is the least.
+              binNpid /= 10;
+            else
+              binNpid %= 10;
+          }
+        }
       }
-      ftable(binflag, pid);
+      ftable(binNpid);
     }
   }
 };
@@ -125,7 +136,7 @@ struct r2p24id {
   Filter collisionFilter = (nabs(aod::collision::posZ) < 10.f);
   Filter ptfilter = aod::track::pt > minpT&& aod::track::pt < maxpT;
   Filter globalfilter = requireGlobalTrackInFilter();
-  Filter properbinfilter = aod::idr2p2columns::binflag == true;
+  Filter properbinfilter = aod::idr2p2columns::binNpid != -1;
   //---------------------------------------------------------------------------
   HistogramRegistry histos{"R2P2", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -374,60 +385,56 @@ struct r2p24id {
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& filteredCollision, soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::Flags>> const& tracks)
   {
     int mult = 0;
-    int pid1, pid2;
+    int8_t pid1, pid2;
     int sign1, sign2;
     int etabin1, phibin1, etabin2, phibin2;
 
     for (auto track1 : tracks) {
+
       mult++;
       histos.fill(HIST("h1d_n1_phi"), track1.phi());
       histos.fill(HIST("h1d_n1_eta"), track1.eta());
       histos.fill(HIST("h1d_n1_pt"), track1.pt());
       //---Single Particle Distribution----------------------------------------
       sign1 = (track1.sign() + 1) / 2;
-      pid1 = track1.pid();
-      for (int i = pid1;; i /= 10) // Filling histograms for different particle species; i%10 = 0 means ch, 1->pi, 2->ka, 3->pr.
+      pid1 = track1.binNpid();
+      if (pid1 > 0) // Filling histograms for different particle species; pid1 = 0 means ch, 1->pi, 2->ka, 3->pr.
       {
-        hist.h1d_1p[i % 10][sign1]->Fill(track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt())); // h1d_n1_pt*
-        hist.h2d_1p[i % 10][sign1][0]->Fill(track1.eta(), track1.phi());                                // h2d_n1_etaphi*
-        hist.h2d_1p[i % 10][sign1][1]->Fill(track1.eta(), track1.phi(), track1.pt());                   // h2d_pt_etaPhi*
-        if (i < 1)
-          break;
+        hist.h1d_1p[pid1][sign1]->Fill(track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt())); // h1d_n1_pt*
+        hist.h2d_1p[pid1][sign1][0]->Fill(track1.eta(), track1.phi());                                // h2d_n1_etaphi*
+        hist.h2d_1p[pid1][sign1][1]->Fill(track1.eta(), track1.phi(), track1.pt());                   // h2d_pt_etaPhi*
       }
+      hist.h1d_1p[0][sign1]->Fill(track1.pt(), 1.0 / (2.0 * constants::math::PI * track1.pt())); // h1d_n1_pt*ch
+      hist.h2d_1p[0][sign1][0]->Fill(track1.eta(), track1.phi());                                // h2d_n1_etaphi*ch
+      hist.h2d_1p[0][sign1][1]->Fill(track1.eta(), track1.phi(), track1.pt());                   // h2d_pt_etaPhi*ch
       //-----------------------------------------------------------------------
       etabin1 = (track1.eta() + 0.8) * 15; // 15= 24/1.6
       phibin1 = 36 * track1.phi() / (2 * constants::math::PI);
 
       for (auto track2 : tracks) {
+
         if (track1.index() == track2.index())
           continue;
         etabin2 = (track2.eta() + 0.8) * 15; // 15= 24/1.6
         phibin2 = 36 * track2.phi() / (2 * constants::math::PI);
         sign2 = (track2.sign() + 1) / 2;
-        pid2 = track2.pid();
+        pid2 = track2.binNpid();
+
         //-----Two Particle Distribution---------------------------------------
-        int i, n1, n2;
-        for (int e = pid1;; e /= 10) {
-          n1 = e % 10;
+        int i;
+        if ((pid1 > 0) && (pid2 >= pid1)) {
+          i = ((pid2 - pid1) / 2 + (pid2 - pid1) % 2);
+          i = i + (pid1 + pid2) * (1 + i) / 2; // This formula gives 1 for pipi, 2 for kaka, 3->prpr, 4->pik, 5->pip, 6->kp
 
-          for (int f = pid2; (f % 10) >= n1; f /= 10) {
-            if ((e == 0) && (f != 0))
-              continue; // No ch-pi or ch-ka or ch-pr pairs
-
-            n2 = f % 10;
-            i = ((n2 - n1) / 2 + (n2 - n1) % 2);
-            i = i + (n1 + n2) * (1 + i) / 2; // This formula gives 0 for chch, 1 for pipi, 2 for kaka, 3->prpr, 4->pik, 5->pip, 6->kp
-
-            hist.h2d_2p[i][sign1][sign2][0]->Fill(36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);                            // h2d_n2_eta1Phi1Eta2Phi2*
-            hist.h2d_2p[i][sign1][sign2][1]->Fill(36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());               // h2d_npt_eta1Phi1Eta2Phi2*
-            hist.h2d_2p[i][sign1][sign2][2]->Fill(36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());               // h2d_ptn_eta1Phi1Eta2Phi2*
-            hist.h2d_2p[i][sign1][sign2][3]->Fill(36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt()); // h2d_ptpt_eta1Phi1Eta2Phi2*
-            if (f < 1)
-              break;
-          }
-          if (e < 1)
-            break;
+          hist.h2d_2p[i][sign1][sign2][0]->Fill(36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);                            // h2d_n2_eta1Phi1Eta2Phi2*
+          hist.h2d_2p[i][sign1][sign2][1]->Fill(36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());               // h2d_npt_eta1Phi1Eta2Phi2*
+          hist.h2d_2p[i][sign1][sign2][2]->Fill(36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());               // h2d_ptn_eta1Phi1Eta2Phi2*
+          hist.h2d_2p[i][sign1][sign2][3]->Fill(36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt()); // h2d_ptpt_eta1Phi1Eta2Phi2*
         }
+        hist.h2d_2p[0][sign1][sign2][0]->Fill(36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5);                            // h2d_n2_eta1Phi1Eta2Phi2*chch
+        hist.h2d_2p[0][sign1][sign2][1]->Fill(36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track2.pt());               // h2d_npt_eta1Phi1Eta2Phi2*chch
+        hist.h2d_2p[0][sign1][sign2][2]->Fill(36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt());               // h2d_ptn_eta1Phi1Eta2Phi2*chch
+        hist.h2d_2p[0][sign1][sign2][3]->Fill(36 * etabin1 + phibin1 + 0.5, 36 * etabin2 + phibin2 + 0.5, track1.pt() * track2.pt()); // h2d_ptpt_eta1Phi1Eta2Phi2*chch
         //---------------------------------------------------------------------
       }
     }
