@@ -53,23 +53,8 @@ using collisionEvSelIt = o2::aod::Collision;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 using selectedCluster = o2::soa::Filtered<o2::aod::EMCALCluster>;
 
-o2::emcal::Geometry* gEMCalGeometry = nullptr;
-const int NAcceptanceCategories = 10;
-enum Acceptance_Category {
-  kFullAcceptance = 0,
-  kEMCalbehindTRD = 1,
-  kEMCalBorder = 2,
-  kEMCalInside = 3,
-  kDCalbehindTRD = 4,
-  kDCalBorder = 5,
-  kDCalInside = 6,
-  kOneThirdbehindTRD = 7,
-  kOneThirdBorder = 8,
-  kOneThirdInside = 9
-};
-
 // Columns behind the TRD support structure to investigate the scaling factor seperately for this region
-std::array<int, 20> TRDColumns = {5, 6, 7, 8, 9, 34, 35, 36, 37, 38, 59, 60, 61, 62, 63, 87, 88, 89, 90, 91};
+constexpr std::array<int, 20> TRDColumns{5, 6, 7, 8, 9, 34, 35, 36, 37, 38, 59, 60, 61, 62, 63, 87, 88, 89, 90, 91};
 
 // Returns a boolean on whether a given EMCal column is behind the TRD support structure
 bool IsBehindTRD(int col)
@@ -84,10 +69,10 @@ bool IsAtBorder(int row, bool smallmodule)
 }
 
 // Return one of nine acceptance categories and set the second and third parameter to the global row and column
-int GetAcceptanceCategory(int cellid, int& globalrow, int& globalcol)
+int GetAcceptanceCategory(int cellid, int& globalrow, int& globalcol, int& supermodulecategory)
 {
-  auto [supermodule, module, phiInModule, etaInModule] = gEMCalGeometry->GetCellIndex(cellid);
-  auto [row, col] = gEMCalGeometry->GetCellPhiEtaIndexInSModule(supermodule, module, phiInModule, etaInModule);
+  auto [supermodule, module, phiInModule, etaInModule] = o2::emcal::Geometry::GetInstance()->GetCellIndex(cellid);
+  auto [row, col] = o2::emcal::Geometry::GetInstance()->GetCellPhiEtaIndexInSModule(supermodule, module, phiInModule, etaInModule);
 
   // Calculate offset of global rows and columns
   int xoffset = supermodule % 2 * 48;
@@ -115,32 +100,35 @@ int GetAcceptanceCategory(int cellid, int& globalrow, int& globalcol)
   // LOGF(info, "cellid: %d\tsupermodule: %d\tmodule: %d\tphiInModule: %d\tetaInModule: %d\trow: %d\tcol: %d", cellid, supermodule, module, phiInModule, etaInModule, row, col);
 
   if (supermodule >= 0 && supermodule <= 9) {
+    supermodulecategory = 0;
     if (IsBehindTRD(col)) {
-      return kEMCalbehindTRD;
+      return 1; // EMCalbehindTRD
     } else if (IsAtBorder(row, false)) {
-      return kEMCalBorder;
+      return 2; // EMCalBorder
     } else {
-      return kEMCalInside;
+      return 3; // EMCalInside
     }
   } else if (supermodule >= 12 && supermodule <= 17) {
+    supermodulecategory = 1;
     if (IsBehindTRD(col)) {
-      return kDCalbehindTRD;
+      return 4; // DCalbehindTRD
     } else if (IsAtBorder(row, false)) {
-      return kDCalBorder;
+      return 5; // DCalBorder
     } else {
-      return kDCalInside;
+      return 6; // DCalInside
     }
   } else if (supermodule == 10 || supermodule == 11 || supermodule == 18 || supermodule == 19) {
+    supermodulecategory = 2;
     if (IsBehindTRD(col)) {
-      return kOneThirdbehindTRD;
+      return 7; // OneThirdbehindTRD
     } else if (IsAtBorder(row, true)) {
-      return kOneThirdBorder;
+      return 8; // OneThirdBorder
     } else {
-      return kOneThirdInside;
+      return 9; // OneThirdInside
     }
   } else {
     LOGF(error, Form("Supermodule %d not found", supermodule));
-    return 0;
+    return -1;
   }
 }
 
@@ -159,7 +147,7 @@ struct Photon {
     clusterid = clusteridin;
     cellid = cellidin;
 
-    acceptance_category = GetAcceptanceCategory(cellid, row, col);
+    acceptance_category = GetAcceptanceCategory(cellid, row, col, supermodulecategory);
   }
 
   TLorentzVector photon;
@@ -176,6 +164,7 @@ struct Photon {
   int acceptance_category; // One of the nine acceptance categories (EMCal, DCal or one third and behindTRD, border and inside)
   int cellid;
   int clusterid;
+  int supermodulecategory; // 0: Full, 1: 2/3, 2: 1/3
 };
 
 struct Meson {
@@ -222,6 +211,8 @@ struct Pi0EnergyScaleCalibTask {
   // define container for photons
   std::vector<Photon> mPhotons;
 
+  int NAcceptanceCategories;
+
   /// \brief Create output histograms and initialize geometry
   void init(InitContext const&)
   {
@@ -230,7 +221,9 @@ struct Pi0EnergyScaleCalibTask {
     using o2Axis = AxisSpec;
 
     // load geometry used to match a cellid to a supermodule and the row+column
-    gEMCalGeometry = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
+    o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
+
+    NAcceptanceCategories = 10;
 
     // create common axes
     const o2Axis bcAxis{3501, -0.5, 3500.5};
@@ -250,19 +243,17 @@ struct Pi0EnergyScaleCalibTask {
     mHistManager.add("eventVertexZSelected", "z-vertex of event (selected events)", o2HistType::kTH1F, {{200, -20, 20}});
 
     // cluster properties
-    for (bool iBeforeCuts : {false, true}) {
-      const char* ClusterDirectory = iBeforeCuts ? "ClustersBeforeCuts" : "ClustersAfterCuts";
-      mHistManager.add(Form("%s/clusterE", ClusterDirectory), "Energy of cluster", o2HistType::kTH1F, {{400, 0, 100, "#it{E} (GeV)"}});
-      mHistManager.add(Form("%s/clusterTime", ClusterDirectory), "Time of cluster", o2HistType::kTH1F, {{500, -250, 250, "#it{t}_{cls} (ns)"}});
-      mHistManager.add(Form("%s/clusterEtaPhi", ClusterDirectory), "Eta and phi of cluster", o2HistType::kTH3F, {{200, -1, 1, "#eta"}, {200, 0, 2 * TMath::Pi(), "#phi"}, AccCategoryAxis});
-      mHistManager.add(Form("%s/clusterEtaPhiVsRow", ClusterDirectory), "Eta and phi of cluster", o2HistType::kTH3F, {{200, -1, 1, "#eta"}, {200, 0, 2 * TMath::Pi(), "#phi"}, RowAxis});
-      mHistManager.add(Form("%s/clusterEtaPhiVsCol", ClusterDirectory), "Eta and phi of cluster", o2HistType::kTH3F, {{200, -1, 1, "#eta"}, {200, 0, 2 * TMath::Pi(), "#phi"}, ColAxis});
-      mHistManager.add(Form("%s/clusterM02", ClusterDirectory), "M02 of cluster", o2HistType::kTH1F, {{400, 0, 5, "#it{M}_{02}"}});
-      mHistManager.add(Form("%s/clusterM20", ClusterDirectory), "M20 of cluster", o2HistType::kTH1F, {{400, 0, 2.5, "#it{M}_{20}"}});
-      mHistManager.add(Form("%s/clusterNLM", ClusterDirectory), "Number of local maxima of cluster", o2HistType::kTH1I, {{10, 0, 10, "#it{N}_{local maxima}"}});
-      mHistManager.add(Form("%s/clusterNCells", ClusterDirectory), "Number of cells in cluster", o2HistType::kTH1I, {{50, 0, 50, "#it{N}_{cells}"}});
-      mHistManager.add(Form("%s/clusterDistanceToBadChannel", ClusterDirectory), "Distance to bad channel", o2HistType::kTH1F, {{100, 0, 100, "#it{d}"}});
-    }
+    mHistManager.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {{400, 0, 100, "#it{E} (GeV)"}});
+    mHistManager.add("clusterTime", "Time of cluster", o2HistType::kTH1F, {{500, -250, 250, "#it{t}_{cls} (ns)"}});
+    mHistManager.add("clusterEtaPhi", "Eta and phi of cluster", o2HistType::kTH3F, {{200, -1, 1, "#eta"}, {200, 0, 2 * TMath::Pi(), "#phi"}, AccCategoryAxis});
+    mHistManager.add("clusterEtaPhiVsRow", "Eta and phi of cluster", o2HistType::kTH3F, {{200, -1, 1, "#eta"}, {200, 0, 2 * TMath::Pi(), "#phi"}, RowAxis});
+    mHistManager.add("clusterEtaPhiVsCol", "Eta and phi of cluster", o2HistType::kTH3F, {{200, -1, 1, "#eta"}, {200, 0, 2 * TMath::Pi(), "#phi"}, ColAxis});
+    mHistManager.add("clusterEtaPhiVsSMCat", "Eta and phi of cluster", o2HistType::kTH3F, {{200, -1, 1, "#eta"}, {200, 0, 2 * TMath::Pi(), "#phi"}, {3, -0.5, 2.5}});
+    mHistManager.add("clusterM02", "M02 of cluster", o2HistType::kTH1F, {{400, 0, 5, "#it{M}_{02}"}});
+    mHistManager.add("clusterM20", "M20 of cluster", o2HistType::kTH1F, {{400, 0, 2.5, "#it{M}_{20}"}});
+    mHistManager.add("clusterNLM", "Number of local maxima of cluster", o2HistType::kTH1I, {{10, 0, 10, "#it{N}_{local maxima}"}});
+    mHistManager.add("clusterNCells", "Number of cells in cluster", o2HistType::kTH1I, {{50, 0, 50, "#it{N}_{cells}"}});
+    mHistManager.add("clusterDistanceToBadChannel", "Distance to bad channel", o2HistType::kTH1F, {{100, 0, 100, "#it{d}"}});
 
     mHistManager.add("invMassVsPtVsAcc", "invariant mass and pT of meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, AccCategoryAxis});
     mHistManager.add("invMassVsPtVsAccBackground", "invariant mass and pT of background meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, AccCategoryAxis});
@@ -270,10 +261,11 @@ struct Pi0EnergyScaleCalibTask {
     mHistManager.add("invMassVsPtVsRowBackground", "invariant mass and pT of background meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, RowAxis});
     mHistManager.add("invMassVsPtVsCol", "invariant mass and pT of background meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, ColAxis});
     mHistManager.add("invMassVsPtVsColBackground", "invariant mass and pT of background meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, ColAxis});
+    mHistManager.add("invMassVsPtVsSMCat", "invariant mass and pT of background meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, {3, -0.5, 2.5}});
+    mHistManager.add("invMassVsPtVsSMCatBackground", "invariant mass and pT of background meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, {3, -0.5, 2.5}});
     initCategoryAxis(mHistManager.get<TH3>(HIST("invMassVsPtVsAcc")).get());
     initCategoryAxis(mHistManager.get<TH3>(HIST("invMassVsPtVsAccBackground")).get());
-    initCategoryAxis(mHistManager.get<TH3>(HIST("ClustersBeforeCuts/clusterEtaPhi")).get());
-    initCategoryAxis(mHistManager.get<TH3>(HIST("ClustersAfterCuts/clusterEtaPhi")).get());
+    initCategoryAxis(mHistManager.get<TH3>(HIST("clusterEtaPhi")).get());
   }
 
   /// \brief Process EMCAL clusters that are matched to a collisions
@@ -339,13 +331,11 @@ struct Pi0EnergyScaleCalibTask {
 
       int cellid = GetLeadingCellID(cluster, cells);
 
-      FillClusterQAHistos<decltype(cluster), 0>(cluster, cellid);
-
       if (ClusterRejectedByCut(cluster)) {
         continue;
       }
 
-      FillClusterQAHistos<decltype(cluster), 1>(cluster, cellid);
+      FillClusterQAHistos(cluster, cellid);
 
       // put clusters in photon vector
       mPhotons.push_back(Photon(cluster.eta(), cluster.phi(), cluster.energy(), cluster.id(), cellid));
@@ -353,33 +343,24 @@ struct Pi0EnergyScaleCalibTask {
   }
 
   /// \brief Fills the standard QA histograms for a given cluster
-  template <typename Cluster, int BeforeCuts>
+  template <typename Cluster>
   void FillClusterQAHistos(Cluster const& cluster, int cellid)
   {
     // In this implementation the cluster properties are directly loaded from the flat table,
     // in the future one should consider using the AnalysisCluster object to work with after loading.
-    static constexpr std::string_view clusterQAHistEnergy[2] = {"ClustersBeforeCuts/clusterE", "ClustersAfterCuts/clusterE"};
-    static constexpr std::string_view clusterQAHistTime[2] = {"ClustersBeforeCuts/clusterTime", "ClustersAfterCuts/clusterTime"};
-    static constexpr std::string_view clusterQAHistEtaPhi[2] = {"ClustersBeforeCuts/clusterEtaPhi", "ClustersAfterCuts/clusterEtaPhi"};
-    static constexpr std::string_view clusterQAHistEtaPhiRow[2] = {"ClustersBeforeCuts/clusterEtaPhiVsRow", "ClustersAfterCuts/clusterEtaPhiVsRow"};
-    static constexpr std::string_view clusterQAHistEtaPhiCol[2] = {"ClustersBeforeCuts/clusterEtaPhiVsCol", "ClustersAfterCuts/clusterEtaPhiVsCol"};
-    static constexpr std::string_view clusterQAHistM02[2] = {"ClustersBeforeCuts/clusterM02", "ClustersAfterCuts/clusterM02"};
-    static constexpr std::string_view clusterQAHistM20[2] = {"ClustersBeforeCuts/clusterM20", "ClustersAfterCuts/clusterM20"};
-    static constexpr std::string_view clusterQAHistNLM[2] = {"ClustersBeforeCuts/clusterNLM", "ClustersAfterCuts/clusterNLM"};
-    static constexpr std::string_view clusterQAHistNCells[2] = {"ClustersBeforeCuts/clusterNCells", "ClustersAfterCuts/clusterNCells"};
-    static constexpr std::string_view clusterQAHistDistanceToBadChannel[2] = {"ClustersBeforeCuts/clusterDistanceToBadChannel", "ClustersAfterCuts/clusterDistanceToBadChannel"};
-    mHistManager.fill(HIST(clusterQAHistEnergy[BeforeCuts]), cluster.energy());
-    mHistManager.fill(HIST(clusterQAHistTime[BeforeCuts]), cluster.time());
-    mHistManager.fill(HIST(clusterQAHistEtaPhi[BeforeCuts]), cluster.eta(), cluster.phi(), 0);
-    int row, col = 0; // Initialize row and column, which are set in GetAcceptanceCategory and then used to fill the eta phi map
-    mHistManager.fill(HIST(clusterQAHistEtaPhi[BeforeCuts]), cluster.eta(), cluster.phi(), GetAcceptanceCategory(cellid, row, col));
-    mHistManager.fill(HIST(clusterQAHistEtaPhiRow[BeforeCuts]), cluster.eta(), cluster.phi(), row);
-    mHistManager.fill(HIST(clusterQAHistEtaPhiCol[BeforeCuts]), cluster.eta(), cluster.phi(), col);
-    mHistManager.fill(HIST(clusterQAHistM02[BeforeCuts]), cluster.m02());
-    mHistManager.fill(HIST(clusterQAHistM20[BeforeCuts]), cluster.m20());
-    mHistManager.fill(HIST(clusterQAHistNLM[BeforeCuts]), cluster.nlm());
-    mHistManager.fill(HIST(clusterQAHistNCells[BeforeCuts]), cluster.nCells());
-    mHistManager.fill(HIST(clusterQAHistDistanceToBadChannel[BeforeCuts]), cluster.distanceToBadChannel());
+    mHistManager.fill(HIST("clusterE"), cluster.energy());
+    mHistManager.fill(HIST("clusterTime"), cluster.time());
+    mHistManager.fill(HIST("clusterEtaPhi"), cluster.eta(), cluster.phi(), 0.);
+    int row, col, supermodulecategory = 0; // Initialize row and column, which are set in GetAcceptanceCategory and then used to fill the eta phi map
+    mHistManager.fill(HIST("clusterEtaPhi"), cluster.eta(), cluster.phi(), GetAcceptanceCategory(cellid, row, col, supermodulecategory));
+    mHistManager.fill(HIST("clusterEtaPhiVsRow"), cluster.eta(), cluster.phi(), row);
+    mHistManager.fill(HIST("clusterEtaPhiVsCol"), cluster.eta(), cluster.phi(), col);
+    mHistManager.fill(HIST("clusterEtaPhiVsSMCat"), cluster.eta(), cluster.phi(), supermodulecategory);
+    mHistManager.fill(HIST("clusterM02"), cluster.m02());
+    mHistManager.fill(HIST("clusterM20"), cluster.m20());
+    mHistManager.fill(HIST("clusterNLM"), cluster.nlm());
+    mHistManager.fill(HIST("clusterNCells"), cluster.nCells());
+    mHistManager.fill(HIST("clusterDistanceToBadChannel"), cluster.distanceToBadChannel());
   }
 
   /// \brief Return a boolean that states, whether a cluster should be rejected by the applied cluster cuts
@@ -421,7 +402,9 @@ struct Pi0EnergyScaleCalibTask {
       for (unsigned int ig2 = ig1 + 1; ig2 < mPhotons.size(); ++ig2) {
         Meson meson(mPhotons[ig1], mPhotons[ig2]); // build meson from photons
         if (meson.getOpeningAngle() > mMinOpenAngleCut) {
-          mHistManager.fill(HIST("invMassVsPtVsAcc"), meson.getMass(), meson.getPt(), 0);
+          mHistManager.fill(HIST("invMassVsPtVsAcc"), meson.getMass(), meson.getPt(), 0.);
+          if (mPhotons[ig1].supermodulecategory == mPhotons[ig2].supermodulecategory)
+            mHistManager.fill(HIST("invMassVsPtVsSMCat"), meson.getMass(), meson.getPt(), mPhotons[ig1].supermodulecategory);
           mHistManager.fill(HIST("invMassVsPtVsRow"), meson.getMass(), meson.getPt(), mPhotons[ig1].row);
           mHistManager.fill(HIST("invMassVsPtVsRow"), meson.getMass(), meson.getPt(), mPhotons[ig2].row);
           mHistManager.fill(HIST("invMassVsPtVsCol"), meson.getMass(), meson.getPt(), mPhotons[ig1].col);
@@ -477,6 +460,8 @@ struct Pi0EnergyScaleCalibTask {
       // Fill histograms
       if (mesonRotated1.getOpeningAngle() > mMinOpenAngleCut) {
         mHistManager.fill(HIST("invMassVsPtVsAccBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), 0);
+        if (mPhotons[ig3].supermodulecategory == rotPhoton1.supermodulecategory)
+          mHistManager.fill(HIST("invMassVsPtVsSMCatBackground"), meson.getMass(), meson.getPt(), mPhotons[ig3].supermodulecategory);
         mHistManager.fill(HIST("invMassVsPtVsRowBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), mPhotons[ig3].row);
         mHistManager.fill(HIST("invMassVsPtVsRowBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), rotPhoton1.row);
         mHistManager.fill(HIST("invMassVsPtVsColBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), mPhotons[ig3].col);
@@ -490,6 +475,8 @@ struct Pi0EnergyScaleCalibTask {
       }
       if (mesonRotated2.getOpeningAngle() > mMinOpenAngleCut) {
         mHistManager.fill(HIST("invMassVsPtVsAccBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), 0);
+        if (mPhotons[ig3].supermodulecategory == rotPhoton2.supermodulecategory)
+          mHistManager.fill(HIST("invMassVsPtVsSMCatBackground"), meson.getMass(), meson.getPt(), mPhotons[ig3].supermodulecategory);
         mHistManager.fill(HIST("invMassVsPtVsRowBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), mPhotons[ig3].row);
         mHistManager.fill(HIST("invMassVsPtVsRowBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), rotPhoton2.row);
         mHistManager.fill(HIST("invMassVsPtVsColBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), mPhotons[ig3].col);
