@@ -557,7 +557,7 @@ struct JetFinderHFQATask {
     candidateBasePhi = candidateBase.phi();
     candidateBaseEta = candidateBase.eta();
 
-    if (jetBase.template has_matchedJetGeo()) {
+    if (jetBase.has_matchedJetGeo()) {
       for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
         if (jetTag.pt() > pTHatMaxMCP * pTHat) {
           continue;
@@ -585,7 +585,7 @@ struct JetFinderHFQATask {
         }
       }
     }
-    if (jetBase.template has_matchedJetPt()) {
+    if (jetBase.has_matchedJetPt()) {
 
       for (auto& jetTag : jetBase.template matchedJetPt_as<std::decay_t<U>>()) {
         if (jetTag.pt() > pTHatMaxMCP * pTHat) {
@@ -614,7 +614,7 @@ struct JetFinderHFQATask {
         }
       }
     }
-    if (jetBase.template has_matchedJetCand()) {
+    if (jetBase.has_matchedJetCand()) {
       for (auto& jetTag : jetBase.template matchedJetCand_as<std::decay_t<U>>()) {
         if (jetTag.pt() > pTHatMaxMCP * pTHat) {
           continue;
@@ -642,7 +642,7 @@ struct JetFinderHFQATask {
         }
       }
     }
-    if (jetBase.template has_matchedJetGeo() && jetBase.template has_matchedJetPt()) {
+    if (jetBase.has_matchedJetGeo() && jetBase.has_matchedJetPt()) {
       for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
         if (jetTag.pt() > pTHatMaxMCP * pTHat) {
           continue;
@@ -673,7 +673,7 @@ struct JetFinderHFQATask {
         }
       }
     }
-    if (jetBase.template has_matchedJetGeo() && jetBase.template has_matchedJetCand()) {
+    if (jetBase.has_matchedJetGeo() && jetBase.has_matchedJetCand()) {
       for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
         if (jetTag.pt() > pTHatMaxMCP * pTHat) {
           continue;
@@ -704,7 +704,7 @@ struct JetFinderHFQATask {
         }
       }
     }
-    if (jetBase.template has_matchedJetPt() && jetBase.template has_matchedJetCand()) {
+    if (jetBase.has_matchedJetPt() && jetBase.has_matchedJetCand()) {
       for (auto& jetTag : jetBase.template matchedJetPt_as<std::decay_t<U>>()) {
         if (jetTag.pt() > pTHatMaxMCP * pTHat) {
           continue;
@@ -736,7 +736,7 @@ struct JetFinderHFQATask {
       }
     }
 
-    if (jetBase.template has_matchedJetGeo() && jetBase.template has_matchedJetPt() && jetBase.template has_matchedJetCand()) {
+    if (jetBase.has_matchedJetGeo() && jetBase.has_matchedJetPt() && jetBase.has_matchedJetCand()) {
       for (auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
         if (jetTag.pt() > pTHatMaxMCP * pTHat) {
           continue;

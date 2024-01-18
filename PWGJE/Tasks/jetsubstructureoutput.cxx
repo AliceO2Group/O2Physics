@@ -91,12 +91,12 @@ struct JetSubstructureOutputTask {
         if (jet.r() == round(jetRadiiValue * 100.0f)) {
           std::vector<int> geoMatching;
           std::vector<int> ptMatching;
-          if (jet.template has_matchedJetGeo()) {
+          if (jet.has_matchedJetGeo()) {
             for (auto& jetTag : jet.template matchedJetGeo_as<V>()) {
               geoMatching.push_back(jetTag.globalIndex());
             }
           }
-          if (jet.template has_matchedJetPt()) {
+          if (jet.has_matchedJetPt()) {
             for (auto& jetTag : jet.template matchedJetPt_as<V>()) {
               ptMatching.push_back(jetTag.globalIndex());
             }

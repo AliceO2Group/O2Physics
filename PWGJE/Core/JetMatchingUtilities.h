@@ -343,7 +343,7 @@ void MatchHF(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::v
           const auto candidateBaseDaughterParticle = candidateBase.template prong1_as<N>().template mcParticle_as<O>();
           const auto candidateBaseMcId = candidateBaseDaughterParticle.template mothers_first_as<O>().globalIndex();
           const auto candidateTag = jetTag.template hfcandidates_first_as<M>();
-          const auto candidateTagId = candidateTag.template mcParticleId();
+          const auto candidateTagId = candidateTag.mcParticleId();
           if (candidateBaseMcId == candidateTagId) {
             baseToTagMatchingHF[jetBase.globalIndex()].push_back(jetTag.globalIndex());
             tagToBaseMatchingHF[jetTag.globalIndex()].push_back(jetBase.globalIndex());
@@ -366,7 +366,7 @@ auto constexpr getTrackId(T const& track)
   if constexpr (isMc) {
 
     if (track.has_mcParticle()) {
-      return track.template mcParticleId();
+      return track.mcParticleId();
     } else {
       return -1;
     }

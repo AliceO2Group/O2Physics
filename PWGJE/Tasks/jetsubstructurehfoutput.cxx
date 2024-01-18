@@ -105,17 +105,17 @@ struct JetSubstructureHFOutputTask {
           std::vector<int> geoMatching;
           std::vector<int> ptMatching;
           std::vector<int> hfMatching;
-          if (jet.template has_matchedJetGeo()) {
+          if (jet.has_matchedJetGeo()) {
             for (auto& jetTag : jet.template matchedJetGeo_as<V>()) {
               geoMatching.push_back(jetTag.globalIndex());
             }
           }
-          if (jet.template has_matchedJetPt()) {
+          if (jet.has_matchedJetPt()) {
             for (auto& jetTag : jet.template matchedJetPt_as<V>()) {
               ptMatching.push_back(jetTag.globalIndex());
             }
           }
-          if (jet.template has_matchedJetCand()) {
+          if (jet.has_matchedJetCand()) {
             for (auto& jetTag : jet.template matchedJetCand_as<V>()) {
               hfMatching.push_back(jetTag.globalIndex());
             }
