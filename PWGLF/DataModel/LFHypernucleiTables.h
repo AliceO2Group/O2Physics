@@ -81,7 +81,7 @@ DECLARE_SOA_COLUMN(IsReco, isReco, bool);                           // bool: tru
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                       // bool: true for signal
 } // namespace hyperrec
 
-DECLARE_SOA_TABLE(DataHypCands, "AOD", "DATAHYPCANDS",
+DECLARE_SOA_TABLE(DataHypCands, "AOD", "HYPCANDS",
                   o2::soa::Index<>,
                   hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
                   hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
@@ -96,7 +96,7 @@ DECLARE_SOA_TABLE(DataHypCands, "AOD", "DATAHYPCANDS",
                   hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
                   hyperrec::Flags);
 
-DECLARE_SOA_TABLE(DataHypCandsFlow, "AOD", "DATAHYPCANDSFLOW",
+DECLARE_SOA_TABLE(DataHypCandsFlow, "AOD", "HYPCANDSFLOW",
                   o2::soa::Index<>,
                   hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
                   hyperrec::QVecXFT0A, hyperrec::QVecYFT0A, hyperrec::QVecAmpFT0A,
@@ -140,6 +140,7 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::IsSignal);
 
 using DataHypCand = DataHypCands::iterator;
+using DataHypCandFlow = DataHypCandsFlow::iterator;
 using MCHypCand = MCHypCands::iterator;
 
 } // namespace o2::aod

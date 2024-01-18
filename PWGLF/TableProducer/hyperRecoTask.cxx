@@ -119,6 +119,7 @@ struct hyperCandidate {
 struct hyperRecoTask {
 
   Produces<aod::DataHypCands> outputDataTable;
+  Produces<aod::DataHypCandsFlow> outputDataTableWithFlow;
   Produces<aod::MCHypCands> outputMCTable;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -265,16 +266,16 @@ struct hyperRecoTask {
     mRunNumber = bc.runNumber();
   }
 
-  template <typename Tcoll>
-  void fillCandidateData(Tcoll::iterator const& collision, aod::V0s const& V0s)
+  template <class Tcoll>
+  void fillCandidateData(Tcoll const& collision, aod::V0s const& V0s)
   {
     if (mBBparamsHe[5] < 0) {
       LOG(fatal) << "Bethe-Bloch parameters for He3 not set, please check your CCDB and configuration";
     }
     for (auto& v0 : V0s) {
 
-      auto posTrack = v0.posTrack_as<T>();
-      auto negTrack = v0.negTrack_as<T>();
+      auto posTrack = v0.posTrack_as<TracksFull>();
+      auto negTrack = v0.negTrack_as<TracksFull>();
 
       if (std::abs(posTrack.eta()) > etaMax || std::abs(negTrack.eta()) > etaMax)
         continue;
@@ -348,7 +349,7 @@ struct hyperRecoTask {
       float piE = std::sqrt(piP2 + piMass * piMass);
       float h3lE = he3E + piE;
       float h4lE = he4E + piE;
-      }
+
       std::array<float, 3> hypMom;
       const auto& vtx = fitter.getPCACandidate();
       for (int i = 0; i < 3; i++) {
@@ -370,7 +371,7 @@ struct hyperRecoTask {
       if (hypCand.dcaV0dau > dcav0dau) {
         continue;
       }
-      
+
       std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
 
       double cosPA = RecoDecay::cpa(primVtx, hypCand.decVtx, hypMom);
@@ -494,7 +495,7 @@ struct hyperRecoTask {
   {
 
     for (const auto& collision : collisions) {
-    hyperCandidates.clear();
+      hyperCandidates.clear();
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -515,20 +516,20 @@ struct hyperRecoTask {
       auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
       V0Table_thisCollision.bindExternalIndices(&tracks);
 
-      fillCandidateData<TracksFull>(collision, V0Table_thisCollision);
+      fillCandidateData(collision, V0Table_thisCollision);
 
       for (auto& hypCand : hyperCandidates) {
-      outputDataTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
-                      collision.posX(), collision.posY(), collision.posZ(),
-                      hypCand.isMatter,
-                      hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
-                      hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
-                      hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
-                      hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
-                      hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
-                      hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
-                      hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags);
-    }
+        outputDataTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                        collision.posX(), collision.posY(), collision.posZ(),
+                        hypCand.isMatter,
+                        hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
+                        hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
+                        hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
+                        hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
+                        hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
+                        hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
+                        hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags);
+      }
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processData, "Data analysis", true);
@@ -558,24 +559,24 @@ struct hyperRecoTask {
       auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
       V0Table_thisCollision.bindExternalIndices(&tracks);
 
-      fillCandidateData<TracksFull>(collision, V0Table_thisCollision);
+      fillCandidateData(collision, V0Table_thisCollision);
 
       for (auto& hypCand : hyperCandidates) {
-      outputDataTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
-                      collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.sumAmplFT0A(),
-                      collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.sumAmplFT0C(), 
-                      collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.sumAmplFT0M(), 
-                      collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.sumAmplFV0A(), 
-                      collision.posX(), collision.posY(), collision.posZ(),
-                      hypCand.isMatter,
-                      hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
-                      hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
-                      hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
-                      hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
-                      hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
-                      hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
-                      hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags);
-    }
+        outputDataTableWithFlow(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                        collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.sumAmplFT0A(),
+                        collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.sumAmplFT0C(),
+                        collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.sumAmplFT0M(),
+                        collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.sumAmplFV0A(),
+                        collision.posX(), collision.posY(), collision.posZ(),
+                        hypCand.isMatter,
+                        hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
+                        hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
+                        hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
+                        hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
+                        hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
+                        hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
+                        hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags);
+      }
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processDataWithFlow, "Data analysis with flow", false);
@@ -602,7 +603,7 @@ struct hyperRecoTask {
       auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
       V0Table_thisCollision.bindExternalIndices(&tracks);
 
-      fillCandidateData<TracksFull>(collision, V0Table_thisCollision);
+      fillCandidateData(collision, V0Table_thisCollision);
     }
 
     fillMCinfo(trackLabelsMC, particlesMC);
