@@ -166,7 +166,7 @@ struct TaskPolarisationCharmHadrons {
           pzDau = candidate.pzProng0();
           invMassCharmHadForSparse = hfHelper.invMassLcToPKPi(candidate);
           if constexpr (withMl) {
-            std::vector<float> bdtScores = candidate.mlProbLcToPKPi;
+            std::vector<float> bdtScores = candidate.mlProbLcToPKPi();
             if (bdtScores.size() == 3) {
               // protect from empty vectors
               // the BDT output score might be empty if no preselections were enabled (selectionFlag null)
@@ -182,7 +182,7 @@ struct TaskPolarisationCharmHadrons {
           pzDau = candidate.pzProng2();
           invMassCharmHadForSparse = hfHelper.invMassLcToPiKP(candidate);
           if constexpr (withMl) {
-            std::vector<float> bdtScores = candidate.mlProbLcToPiKP;
+            std::vector<float> bdtScores = candidate.mlProbLcToPiKP();
             if (bdtScores.size() == 3) {
               // protect from empty vectors
               // the BDT output score might be empty if no preselections were enabled (selectionFlag null)
