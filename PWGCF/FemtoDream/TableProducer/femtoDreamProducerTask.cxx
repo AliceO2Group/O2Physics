@@ -80,7 +80,7 @@ struct femtoDreamProducerTask {
 
   Configurable<bool> ConfIsDebug{"ConfIsDebug", true, "Enable Debug tables"};
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
-  //Configurable<bool> ConfIsUseMultiplicityPercentile{"ConfIsUseMultiplicityPercentile", true, "Use multiplicity percentile (ccdb object for MC may be missing)"};
+  // Configurable<bool> ConfIsUseMultiplicityPercentile{"ConfIsUseMultiplicityPercentile", true, "Use multiplicity percentile (ccdb object for MC may be missing)"};
   Configurable<bool> ConfIsForceGRP{"ConfIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
   /// Event cuts
@@ -157,7 +157,7 @@ struct femtoDreamProducerTask {
     if (doprocessData == false && doprocessMC == false && doprocessMC_noCentrality == false) {
       LOGF(fatal, "Neither processData nor processMC enabled. Please choose one.");
     }
-    if ( (doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMC_noCentrality == true) || (doprocessMC == true && doprocessMC_noCentrality == true) ) {
+    if ((doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMC_noCentrality == true) || (doprocessMC == true && doprocessMC_noCentrality == true)) {
       LOGF(fatal,
            "Cannot enable more than one process switch at the same time. "
            "Please choose one.");
@@ -532,13 +532,13 @@ struct femtoDreamProducerTask {
     fillCollisionsAndTracksAndV0<true, true>(col, tracks, fullV0s);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC, "Provide MC data", false);
-  
+
   void processMC_noCentrality(aod::FemtoFullCollision_noCent_MC const& col,
-                 aod::BCsWithTimestamps const&,
-                 soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                 aod::McCollisions const& mcCollisions,
-                 aod::McParticles const& mcParticles,
-                 soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
+                              aod::BCsWithTimestamps const&,
+                              soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                              aod::McCollisions const& mcCollisions,
+                              aod::McParticles const& mcParticles,
+                              soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
