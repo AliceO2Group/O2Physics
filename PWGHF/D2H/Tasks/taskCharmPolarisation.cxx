@@ -120,6 +120,7 @@ struct TaskPolarisationCharmHadrons {
     // loop over mass hypotheses
     for (uint8_t iMass = 0u; iMass < nMassHypos; iMass++) {
 
+      // variable definition
       float pxDau{-1000.}, pyDau{-1000.}, pzDau{-1000.};
       float pxCharmHad{-1000.}, pyCharmHad{-1000.}, pzCharmHad{-1000.};
       float massDau{0.}, invMassCharmHad{0.}, invMassCharmHadForSparse{0.};
