@@ -292,7 +292,7 @@ struct MultiplicitySelector {
       output(c.centFT0M());
     }
   }
-  PROCESS_SWITCH(MultiplicitySelector, processFT0M, "Select FT0M centrality as multiplicity", true);
+  PROCESS_SWITCH(MultiplicitySelector, processFT0M, "Select FT0M centrality as multiplicity", false);
 
   void processFT0C(aod::CentFT0Cs const& centralities)
   {
@@ -300,7 +300,7 @@ struct MultiplicitySelector {
       output(c.centFT0C());
     }
   }
-  PROCESS_SWITCH(MultiplicitySelector, processFT0C, "Select FT0C centrality as multiplicity", true);
+  PROCESS_SWITCH(MultiplicitySelector, processFT0C, "Select FT0C centrality as multiplicity", false);
 
   void processFT0A(aod::CentFT0As const& centralities)
   {
@@ -308,7 +308,7 @@ struct MultiplicitySelector {
       output(c.centFT0A());
     }
   }
-  PROCESS_SWITCH(MultiplicitySelector, processFT0A, "Select FT0A centrality as multiplicity", true);
+  PROCESS_SWITCH(MultiplicitySelector, processFT0A, "Select FT0A centrality as multiplicity", false);
 
   void processRun2V0M(aod::CentRun2V0Ms const& centralities)
   {
