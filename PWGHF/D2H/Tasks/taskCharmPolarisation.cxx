@@ -63,6 +63,8 @@ struct TaskPolarisationCharmHadrons {
   float massDstar{0.f};
   float massLc{0.f};
 
+  uint8_t nMassHypos{0u};
+
   Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 Pi"};
   Configurable<bool> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", false, "Selection Flag for Lc decay to P K Pi"};
 
@@ -105,6 +107,15 @@ struct TaskPolarisationCharmHadrons {
     } else {
       registry.add("hSparseCharmPolarisation", "THn for polarisation studies", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisCosThetaStarProduction, thnAxisCosThetaStarBeam, thnAxisCosThetaStarRandom});
     }
+
+    // inv. mass hypothesis to loop over
+    // e.g.: Lc->pKpi has the ambiguity pKpi vs. piKp
+    if (doprocessDstar || doprocessDstarWithMl) {
+      nMassHypos = 1;
+    } else if (doprocessLcToPKPi || doprocessLcToPKPiWithMl) {
+      nMassHypos = charm_polarisation::MassHyposLcToPKPi::NMassHypoLcToPKPi;
+    }
+
   }; // end init
 
   /// \param candidates are the selected candidates
@@ -112,10 +123,6 @@ struct TaskPolarisationCharmHadrons {
   template <uint8_t channel, bool withMl, typename Cand>
   void runPolarisationAnalysis(Cand const& candidate, Tracks const& tracks)
   {
-
-    // inv. mass hypothesis to loop over
-    // e.g.: Lc->pKpi has the ambiguity pKpi vs. piKp
-    uint8_t nMassHypos = (channel == charm_polarisation::DecayChannel::LcToPKPi) ? charm_polarisation::MassHyposLcToPKPi::NMassHypoLcToPKPi : 1;
 
     // loop over mass hypotheses
     for (uint8_t iMass = 0u; iMass < nMassHypos; iMass++) {
@@ -157,14 +164,24 @@ struct TaskPolarisationCharmHadrons {
           pyDau = candidate.pyProng0();
           pzDau = candidate.pzProng0();
           invMassCharmHadForSparse = hfHelper.invMassLcToPKPi(candidate);
+          if constexpr (withMl) {
+            outputMl[0] = candidate.mlProbLcToPKPi.at(0);
+            outputMl[1] = candidate.mlProbLcToPKPi.at(1);
+            outputMl[2] = candidate.mlProbLcToPKPi.at(2);
+          }
         }
 
         // reconstructed as piKp
-        if (iMass == charm_polarisation::MassHyposLcToPKPi::PiKP && candidate.isSelLcToPiKP() >= selectionFlagLcToPKPi) {
+        else if (iMass == charm_polarisation::MassHyposLcToPKPi::PiKP && candidate.isSelLcToPiKP() >= selectionFlagLcToPKPi) {
           pxDau = candidate.pxProng2();
           pyDau = candidate.pyProng2();
           pzDau = candidate.pzProng2();
           invMassCharmHadForSparse = hfHelper.invMassLcToPiKP(candidate);
+          if constexpr (withMl) {
+            outputMl[0] = candidate.mlProbLcToPiKP.at(0);
+            outputMl[1] = candidate.mlProbLcToPiKP.at(1);
+            outputMl[2] = candidate.mlProbLcToPiKP.at(2);
+          }
         }
 
         // NB: no need to check cases in which candidate.isSelLcToPKPi() and candidate.isSelLcToPiKP() are both false, because they are rejected already by the Filter
@@ -175,11 +192,6 @@ struct TaskPolarisationCharmHadrons {
         pzCharmHad = candidate.pz();
         massDau = massProton; // (*)
         rapidity = candidate.y(massLc);
-        if constexpr (withMl) {
-          outputMl[0] = -1.;
-          outputMl[1] = -1.;
-          outputMl[2] = -1.;
-        }
 
       } // Lc->pKpi
 
@@ -239,7 +251,7 @@ struct TaskPolarisationCharmHadrons {
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPi, "Process Lc candidates without ML", false);
 
   // Lc->pKpi with ML cuts
-  void processLcToPKPiWithMl(soa::Filtered<CandLcToPKPiWSelFlag>::iterator const& lcCandidate, Tracks const& tracks)
+  void processLcToPKPiWithMl(soa::Filtered<soa::Join<CandLcToPKPiWSelFlag, aod::HfMlLcToPKPi>>::iterator const& lcCandidate, Tracks const& tracks)
   {
     runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true>(lcCandidate, tracks);
   }
