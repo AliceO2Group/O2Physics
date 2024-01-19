@@ -80,7 +80,6 @@ struct femtoDreamProducerTask {
 
   Configurable<bool> ConfIsDebug{"ConfIsDebug", true, "Enable Debug tables"};
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
-  // Configurable<bool> ConfIsUseMultiplicityPercentile{"ConfIsUseMultiplicityPercentile", true, "Use multiplicity percentile (ccdb object for MC may be missing)"};
   Configurable<bool> ConfIsForceGRP{"ConfIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
   /// Event cuts
