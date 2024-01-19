@@ -424,5 +424,16 @@ int countGlobalTracks(Ts tracks)
 	return nTotal;
 }
 
+template <typename TTracks>
+void collectCandIDs(std::unordered_map<int32_t, std::vector<int32_t>>& tracksPerCand, TTracks& tracks)
+{
+    for (const auto& tr : tracks) {
+        int32_t candId = tr.udCollisionId();
+        if (candId < 0) {
+            continue;
+        }
+        tracksPerCand[candId].push_back(tr.globalIndex());
+    }
+}
 
 #endif //ALISW_UPCTAUCENTRALBARRELHELPERRL_H
