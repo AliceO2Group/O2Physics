@@ -14,7 +14,7 @@
 //
 // This code loops over a StoredVtx3BodyDatas table and produces some
 // standard analysis output. It requires either
-// the hypertriton3bodybuilder or hypertriton3bodyfinder (not recommaended) tasks
+// the hypertriton3bodybuilder or hypertriton3bodyfinder (not recommended) tasks
 // to have been executed in the workflow (before).
 //
 // author: yuanzhe.wang@cern.ch
@@ -140,7 +140,6 @@ struct hypertriton3bodyAnalysis {
   Configurable<float> TofPidNsigmaMax{"TofPidNsigmaMax", 8, "TofPidNsigmaMax"};
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
   Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
-  Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
   Configurable<float> lifetimecut{"lifetimecut", 40., "lifetimecut"}; // ct
   Configurable<float> minProtonPt{"minProtonPt", 0.3, "minProtonPt"};
   Configurable<float> maxProtonPt{"maxProtonPt", 5, "maxProtonPt"};
@@ -236,9 +235,6 @@ struct hypertriton3bodyAnalysis {
   {
     registry.fill(HIST("hSelectedEventCounter"), 0.5);
     if (event_sel8_selection && !collision.sel8()) {
-      return;
-    }
-    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
       return;
     }
     registry.fill(HIST("hSelectedEventCounter"), 1.5);
