@@ -10,8 +10,11 @@
 // or submit itself to any jurisdiction.
 
 #include <CCDB/BasicCCDBManager.h>
+#include <algorithm>
+#include <numeric>
 #include <cmath>
 #include <vector>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/ASoAHelpers.h"
@@ -22,12 +25,16 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include "TList.h"
 #include "TProfile.h"
 #include "TProfile2D.h"
+#include "TH2D.h"
+#include "TH1D.h"
 #include "TRandom3.h"
 #include "TMath.h"
+#include "TF1.h"
 
 namespace o2::aod
 {
@@ -47,14 +54,19 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+#define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
+
 struct MeanptFluctuations_QA_QnTable {
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutPtLower{"cfgCutPtLower", 0.2f, "Lower pT cut"};
   Configurable<float> cfgCutPtUpper{"cfgCutPtUpper", 3.0f, "Higher pT cut"};
   Configurable<float> cfgCutTpcChi2NCl{"cfgCutTpcChi2NCl", 2.5f, "Maximum TPCchi2NCl"};
-  // Configurable<float> cfgCutTrackDcaXY{"cfgCutTrackDcaXY", 0.1f, "Maximum DcaXY"};
+  // Configurable<float> cfgCutTrackDcaXY{"cfgCutTrackDcaXY", 0.2f, "Maximum DcaXY"};
   Configurable<float> cfgCutTrackDcaZ{"cfgCutTrackDcaZ", 2.0f, "Maximum DcaZ"};
+  ConfigurableAxis nchAxis{"nchAxis", {5000, 0.5, 5000.5}, ""};
+
+  O2_DEFINE_CONFIGURABLE(cfgUse22sEventCut, bool, true, "Use 22s event cut on mult correlations")
 
   // Filter command***********
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -69,9 +81,16 @@ struct MeanptFluctuations_QA_QnTable {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // filtering collisions and tracks***********
-  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
+  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
   // using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
+
+  // Event selection cuts - Alex
+  TF1* fMultPVCutLow = nullptr;
+  TF1* fMultPVCutHigh = nullptr;
+  TF1* fMultCutLow = nullptr;
+  TF1* fMultCutHigh = nullptr;
+  TF1* fMultMultPVCut = nullptr;
 
   // Equivalent of the AliRoot task UserCreateOutputObjects
   void init(o2::framework::InitContext&)
@@ -95,6 +114,56 @@ struct MeanptFluctuations_QA_QnTable {
     histos.add("hDcaXY", ";#it{dca}_{XY}", kTH1F, {{1000, -5, 5}});
     histos.add("hDcaZ", ";#it{dca}_{Z}", kTH1F, {{1000, -5, 5}});
     histos.add("hMeanPt", "", kTProfile, {centAxis});
+    histos.add("Hist2D_globalTracks_PVTracks", "", {HistType::kTH2D, {nchAxis, nchAxis}});
+    histos.add("Hist2D_cent_nch", "", {HistType::kTH2D, {nchAxis, centAxis}});
+
+    // Event selection - Alex
+    if (cfgUse22sEventCut) {
+      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+      fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
+      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+      fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
+
+      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x)", 0, 100);
+      fMultCutLow->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
+      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x)", 0, 100);
+      fMultCutHigh->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
+      fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
+      fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
+    }
+
+  } //! end init function
+
+  template <typename TCollision>
+  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality)
+  {
+    if (collision.alias_bit(kTVXinTRD)) {
+      // TRD triggered
+      return 0;
+    }
+    float vtxz = -999;
+    if (collision.numContrib() > 1) {
+      vtxz = collision.posZ();
+      float zRes = TMath::Sqrt(collision.covZZ());
+      if (zRes > 0.25 && collision.numContrib() < 20)
+        vtxz = -999;
+    }
+    auto multNTracksPV = collision.multNTracksPV();
+
+    if ((vtxz > cfgCutVertex) || (vtxz < -1.0 * cfgCutVertex))
+      return 0;
+    if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+      return 0;
+    if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+      return 0;
+    if (multTrk < fMultCutLow->Eval(centrality))
+      return 0;
+    if (multTrk > fMultCutHigh->Eval(centrality))
+      return 0;
+    if (multTrk > fMultMultPVCut->Eval(multNTracksPV))
+      return 0;
+
+    return 1;
   }
 
   Produces<aod::MultPtQn> mult_ptQn;
@@ -102,8 +171,17 @@ struct MeanptFluctuations_QA_QnTable {
   // void process(aod::Collision const& coll, aod::Tracks const& inputTracks)
   void process(aodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, aodTracks const& inputTracks)
   {
+    if (!coll.sel8())
+      return;
+
+    const auto CentralityFT0C = coll.centFT0C();
+    if (cfgUse22sEventCut && !eventSelected(coll, inputTracks.size(), CentralityFT0C))
+      return;
+
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
     histos.fill(HIST("hCentrality"), coll.centFT0C());
+    histos.fill(HIST("Hist2D_globalTracks_PVTracks"), coll.multNTracksPV(), inputTracks.size());
+    histos.fill(HIST("Hist2D_cent_nch"), inputTracks.size(), CentralityFT0C);
 
     // variables
     double cent = coll.centFT0C();
@@ -150,6 +228,7 @@ struct MeanptFluctuations_analysis {
   Configurable<int> cfgNSubsample{"cfgNSubsample", 10, "Number of subsamples"};
   ConfigurableAxis centAxis{"centAxis", {90, 0, 90}, ""};
   ConfigurableAxis multAxis{"multAxis", {5000, 0.5, 5000.5}, ""};
+  ConfigurableAxis meanpTAxis{"meanpTAxis", {500, 0, 5.0}, ""};
 
   expressions::Filter Nch_filter = aod::ptQn::n_ch > 3.0f;
   using FilteredMultPtQn = soa::Filtered<aod::MultPtQn>;
@@ -173,6 +252,8 @@ struct MeanptFluctuations_analysis {
     registry.add("Prof_var_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
     registry.add("Prof_skew_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
     registry.add("Prof_kurt_t1", "", {HistType::kTProfile2D, {centAxis, multAxis}});
+    registry.add("Hist2D_Nch_centrality", "", {HistType::kTH2D, {centAxis, multAxis}});
+    registry.add("Hist2D_meanpt_centrality", "", {HistType::kTH2D, {centAxis, meanpTAxis}});
 
     // initial array
     Subsample.resize(cfgNSubsample);
@@ -203,11 +284,13 @@ struct MeanptFluctuations_analysis {
     skewness_term1 = (TMath::Power(event_ptqn.q1(), 3.0f) - 3.0f * event_ptqn.q2() * event_ptqn.q1() + 2.0f * event_ptqn.q3()) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f) * (event_ptqn.n_ch() - 2.0f));
     kurtosis_term1 = (TMath::Power(event_ptqn.q1(), 4.0f) - (6.0f * event_ptqn.q4()) + (8.0f * event_ptqn.q1() * event_ptqn.q3()) - (6.0f * TMath::Power(event_ptqn.q1(), 2.0f) * event_ptqn.q2()) + (3.0f * TMath::Power(event_ptqn.q2(), 2.0f))) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f) * (event_ptqn.n_ch() - 2.0f) * (event_ptqn.n_ch() - 3.0f));
 
-    // filling profiles for central values
+    // filling profiles and histograms for central values
     registry.get<TProfile2D>(HIST("Prof_mean_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), mean_term1);
     registry.get<TProfile2D>(HIST("Prof_var_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), variance_term1);
     registry.get<TProfile2D>(HIST("Prof_skew_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), skewness_term1);
     registry.get<TProfile2D>(HIST("Prof_kurt_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), kurtosis_term1);
+    registry.fill(HIST("Hist2D_Nch_centrality"), event_ptqn.centrality(), event_ptqn.n_ch());
+    registry.fill(HIST("Hist2D_meanpt_centrality"), event_ptqn.centrality(), mean_term1);
 
     // selecting subsample and filling profiles
     float l_Random = fRndm->Rndm();

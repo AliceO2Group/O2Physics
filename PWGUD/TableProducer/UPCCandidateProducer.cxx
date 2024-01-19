@@ -82,7 +82,7 @@ struct UpcCandProducer {
 
   using BCsWithBcSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
 
-  using ForwardTracks = o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov>;
+  using ForwardTracks = o2::soa::Join<o2::aod::UDFwdTracksProp, o2::aod::UDFwdTracksCovProp>;
 
   using BarrelTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA,
                                      o2::aod::pidTPCFullEl, o2::aod::pidTPCFullMu, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
@@ -124,7 +124,8 @@ struct UpcCandProducer {
     histRegistry.get<TH1>(HIST("BarrelsSelCounter"))->GetXaxis()->SetBinLabel(upchelpers::kBarrelSelDCAZ + 1, "DCAZ");
   }
 
-  bool applyFwdCuts(const ForwardTracks::iterator& track)
+  template <typename T>
+  bool applyFwdCuts(const T& track)
   {
     histRegistry.fill(HIST("MuonsSelCounter"), upchelpers::kFwdSelAll, 1);
 
@@ -154,7 +155,8 @@ struct UpcCandProducer {
     return pass;
   }
 
-  bool applyBarCuts(const BarrelTracks::iterator& track)
+  template <typename T>
+  bool applyBarCuts(const T& track)
   {
     // using any cuts at all?
     if (!upcCuts.getUseBarCuts())
@@ -1154,10 +1156,14 @@ struct UpcCandProducer {
     int32_t candID = 0;
     for (auto& pair : bcsMatchedTrIdsMID) {
       auto globalBC = pair.first;
-      auto& fwdTrackIDs = pair.second; // only MID-matched tracks at the moment
+      const auto& fwdTrackIDs = pair.second; // only MID-matched tracks at the moment
       int32_t nMIDs = fwdTrackIDs.size();
       if (nMIDs > fNFwdProngs) // too many tracks
         continue;
+      std::vector<int64_t> trkCandIDs{};
+      if (nMIDs == fNFwdProngs) {
+        trkCandIDs.insert(trkCandIDs.end(), fwdTrackIDs.begin(), fwdTrackIDs.end());
+      }
       uint64_t closestBcMCH = 0;
       if (nMIDs < fNFwdProngs && nBcsWithMCH > 0) { // adding MCH tracks
         auto itClosestBcMCH = findClosestTrackBCiter(globalBC, bcsMatchedTrIdsMCH);
@@ -1167,9 +1173,10 @@ struct UpcCandProducer {
           continue;
         auto& mchTracks = itClosestBcMCH->second;
         int32_t nMCHs = mchTracks.size();
-        if (nMCHs + nMIDs > fNFwdProngs)
+        if ((nMCHs + nMIDs) != fNFwdProngs)
           continue;
-        fwdTrackIDs.insert(fwdTrackIDs.end(), mchTracks.begin(), mchTracks.end());
+        trkCandIDs.insert(trkCandIDs.end(), fwdTrackIDs.begin(), fwdTrackIDs.end());
+        trkCandIDs.insert(trkCandIDs.end(), mchTracks.begin(), mchTracks.end());
       }
       upchelpers::FITInfo fitInfo{};
       fitInfo.timeFT0A = -999.f;
@@ -1213,12 +1220,12 @@ struct UpcCandProducer {
       uint16_t numContrib = fNFwdProngs;
       int8_t netCharge = 0;
       float RgtrwTOF = 0.;
-      for (auto id : fwdTrackIDs) {
+      for (auto id : trkCandIDs) {
         auto tr = fwdTracks.iteratorAt(id);
         netCharge += tr.sign();
       }
       // store used tracks
-      fillFwdTracks(fwdTracks, fwdTrackIDs, candID, globalBC, closestBcMCH, mcFwdTrackLabels);
+      fillFwdTracks(fwdTracks, trkCandIDs, candID, globalBC, closestBcMCH, mcFwdTrackLabels);
       eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
@@ -1227,6 +1234,7 @@ struct UpcCandProducer {
                           fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                           fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
       candID++;
+      trkCandIDs.clear();
     }
 
     ambFwdTrBCs.clear();

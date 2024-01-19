@@ -63,6 +63,11 @@ o2physics_add_dpl_workflow(hyhefour-analysis
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(antid-lambda-ebye
+                    SOURCES antidLambdaEbye.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 # Spectra
 o2physics_add_dpl_workflow(mc-spectra-efficiency
                     SOURCES mcspectraefficiency.cxx
@@ -157,6 +162,11 @@ o2physics_add_dpl_workflow(kinkanalysis
 
 o2physics_add_dpl_workflow(vzero-cascade-absorption
                     SOURCES vzero_cascade_absorption.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(derivedcascadeanalysis
+                    SOURCES derivedcascadeanalysis.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

@@ -63,11 +63,11 @@ struct derivedlambdakzeroanalysis {
   Configurable<float> daughterEtaCut{"daughterEtaCut", 0.8, "max eta for daughters"};
 
   // Standard 5 topological criteria
-  Configurable<double> v0cospa{"v0cospa", 0.995, "min V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> v0cospa{"v0cospa", 0.97, "min V0 CosPA"};
   Configurable<float> dcav0dau{"dcav0dau", 1.0, "max DCA V0 Daughters (cm)"};
-  Configurable<float> dcanegtopv{"dcanegtopv", .1, "min DCA Neg To PV (cm)"};
-  Configurable<float> dcapostopv{"dcapostopv", .1, "min DCA Pos To PV (cm)"};
-  Configurable<float> v0radius{"v0radius", 5.0, "minimum V0 radius (cm)"};
+  Configurable<float> dcanegtopv{"dcanegtopv", .05, "min DCA Neg To PV (cm)"};
+  Configurable<float> dcapostopv{"dcapostopv", .05, "min DCA Pos To PV (cm)"};
+  Configurable<float> v0radius{"v0radius", 1.2, "minimum V0 radius (cm)"};
 
   // PID (TPC)
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
@@ -174,7 +174,7 @@ struct derivedlambdakzeroanalysis {
 
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters<dcav0dau && aod::v0data::v0cosPA> v0cospa;
 
-  void process(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& collision, soa::Filtered<soa::Join<aod::V0Cores, aod::V0Extras>> const& fullV0s, dauTracks const&)
+  void process(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& collision, soa::Filtered<soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>> const& fullV0s, dauTracks const&)
   {
     histos.fill(HIST("hEventSelection"), 0.5 /* all collisions */);
     if (!collision.sel8()) {
@@ -223,7 +223,7 @@ struct derivedlambdakzeroanalysis {
           }
         }
       } // end radius check
-    }
+    }   // env V0 loop
   }
 };
 
