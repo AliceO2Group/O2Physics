@@ -78,6 +78,10 @@ struct TaskPolarisationCharmHadrons
 
   void init(InitContext&)
   {
+    if (doprocessDstar && doprocessDstarWithMl) {
+      LOGP(fatal, "Only one process function should be enabled at a time, please check your configuration");
+    }
+
     massPi = o2::constants::physics::MassPiPlus;
     massProton = o2::constants::physics::MassProton;
     massDstar = o2::constants::physics::MassDStar;
@@ -112,7 +116,9 @@ struct TaskPolarisationCharmHadrons
       invMassCharmHadForSparse = (prongSoftPi.sign() > 0) ? (invMassCharmHad - candidate.invMassD0()) : (invMassCharmHad - candidate.invMassD0Bar()); // different for D*
       rapidity = candidate.y(massDstar);
       if constexpr (withMl) {
-        outputMl = std::array{-1., -1., -1.}; // not yet implemented in the selector
+        outputMl[0] = -1.; // not yet implemented in the selector
+        outputMl[1] = -1.; // not yet implemented in the selector
+        outputMl[2] = -1.; // not yet implemented in the selector
       }
     }
 
@@ -146,7 +152,7 @@ struct TaskPolarisationCharmHadrons
   {
     runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false>(dstarCandidate, tracks);
   }
-  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstar, "Process Dstar candidates without ML", false);
+  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstar, "Process Dstar candidates without ML", true);
 
   // Dstar with rectangular cuts
   void processDstarWithMl(soa::Filtered<CandDstarWSelFlag>::iterator const&, Tracks const&)
