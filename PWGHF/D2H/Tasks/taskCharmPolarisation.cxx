@@ -41,15 +41,14 @@ namespace o2::aod
 namespace charm_polarisation
 {
 enum DecayChannel : uint8_t {
-    DstarToDzeroPi = 0,
-    LcToPKPi,
-    LcToPK0S
+  DstarToDzeroPi = 0,
+  LcToPKPi,
+  LcToPK0S
 };
 }
-}
+} // namespace o2::aod
 
-struct TaskPolarisationCharmHadrons 
-{
+struct TaskPolarisationCharmHadrons {
   using CandDstarWSelFlag = soa::Join<aod::HfCandDstar, aod::HfSelDstarToD0Pi>;
 
   float massPi{0.f};
