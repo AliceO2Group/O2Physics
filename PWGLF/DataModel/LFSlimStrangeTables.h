@@ -36,7 +36,7 @@ DECLARE_SOA_COLUMN(TpcNsigmaPi, tpcNsigmaPi, float);
 DECLARE_SOA_COLUMN(TpcNsigmaPr, tpcNsigmaPr, float);
 } // namespace SlimLambdaTables
 
-DECLARE_SOA_TABLE(LambdaTable, "AOD", "LAMBDATABLE",
+DECLARE_SOA_TABLE(LambdaTableML, "AOD", "LAMBDATABLEML",
                   SlimLambdaTables::Pt,
                   SlimLambdaTables::Eta,
                   SlimLambdaTables::CentFT0C,

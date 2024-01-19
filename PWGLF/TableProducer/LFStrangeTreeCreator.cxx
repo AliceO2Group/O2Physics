@@ -41,7 +41,7 @@ using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, 
 
 struct LFStrangeTreeCreator {
 
-  Produces<aod::LambdaTable> lambdaTable;
+  Produces<aod::LambdaTableML> lambdaTableML;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -199,20 +199,20 @@ struct LFStrangeTreeCreator {
       histos.fill(HIST("dcaPosPv"), v0.dcapostopv());
       histos.fill(HIST("dcaNegPv"), v0.dcanegtopv());
 
-      lambdaTable(v0.pt(),
-                  v0.eta(),
-                  collision.centFT0C(),
-                  matter,
-                  matter ? v0.mLambda() : v0.mAntiLambda(),
-                  ct,
-                  v0.v0radius(),
-                  v0.dcav0topv(),
-                  matter ? v0.dcanegtopv() : v0.dcapostopv(),
-                  matter ? v0.dcapostopv() : v0.dcanegtopv(),
-                  v0.dcaV0daughters(),
-                  v0.v0cosPA(),
-                  tpcNsigmaPi,
-                  tpcNsigmaPr);
+      lambdaTableML(v0.pt(),
+                    v0.eta(),
+                    collision.centFT0C(),
+                    matter,
+                    matter ? v0.mLambda() : v0.mAntiLambda(),
+                    ct,
+                    v0.v0radius(),
+                    v0.dcav0topv(),
+                    matter ? v0.dcanegtopv() : v0.dcapostopv(),
+                    matter ? v0.dcapostopv() : v0.dcanegtopv(),
+                    v0.dcaV0daughters(),
+                    v0.v0cosPA(),
+                    tpcNsigmaPi,
+                    tpcNsigmaPr);
     }
   }
 };
