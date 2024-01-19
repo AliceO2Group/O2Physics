@@ -26,12 +26,14 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
 
 using namespace o2;
 using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
+using namespace o2::pwgem::photonmeson;
 
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov,
                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -68,13 +70,18 @@ struct skimmerPrimaryElectron {
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
   Configurable<float> dca_xy_max{"dca_xy_max", 1.0f, "max DCAxy in cm"};
   Configurable<float> dca_z_max{"dca_z_max", 1.0f, "max DCAz in cm"};
-  Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 1.0f, "max DCA 3D in sigma"};
+  Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 1.5f, "max DCA 3D in sigma"};
   Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -4.0, "min. TPC n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 4.0, "max. TPC n sigma for electron inclusion"};
   Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 4.0, "max. TOF n sigma for electron inclusion"};
+  Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", -2.0, "min. TPC n sigma for pion exclusion"}; // set to -2 for lowB, -999 for nominalB
   Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 2.0, "max. TPC n sigma for pion exclusion"};
+  Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 2.0, "max. TPC n sigma for kaon exclusion"};
+  Configurable<float> maxTPCNsigmaPr{"maxTPCNsigmaPr", 2.0, "max. TPC n sigma for proton exclusion"};
   Configurable<float> maxMee{"maxMee", 0.5, "max. mee to store ee pairs"};
   Configurable<bool> storeLS{"storeLS", false, "flag to store LS pairs"};
+  Configurable<bool> applyKaRej_TPC{"applyKaRej_TPC", false, "flag to apply Kaon rejection in TPC at the skimming level"}; // used for CEFP only
+  Configurable<bool> applyPrRej_TPC{"applyPrRej_TPC", false, "flag to apply Kaon rejection in TPC at the skimming level"}; // used for CEFP only
 
   HistogramRegistry fRegistry{
     "fRegistry",
@@ -204,17 +211,36 @@ struct skimmerPrimaryElectron {
   template <typename TTrack>
   bool isElectron(TTrack const& track)
   {
-    return isElectron_TPChadrej(track) || isElectron_TOFrecovery(track);
+    return isElectron_TPChadrej(track) || isElectron_TOFrecovery(track) || isElectron_TOFrecovery(track);
   }
 
   template <typename TTrack>
   bool isElectron_TPChadrej(TTrack const& track)
   {
-    return abs(track.tpcNSigmaEl()) < maxTPCNsigmaEl && abs(track.tpcNSigmaPi()) > maxTPCNsigmaPi;
+    if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
+      return false;
+    }
+    if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi) {
+      return false;
+    }
+    if (applyKaRej_TPC && abs(track.tpcNSigmaKa()) < maxTPCNsigmaKa) {
+      return false;
+    }
+    if (applyPrRej_TPC && abs(track.tpcNSigmaPr()) < maxTPCNsigmaPr) {
+      return false;
+    }
+
+    return true;
   }
 
   template <typename TTrack>
   bool isElectron_TOFrecovery(TTrack const& track)
+  {
+    return (minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl) && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl && abs(track.tpcNSigmaPi()) > maxTPCNsigmaPi;
+  }
+
+  template <typename TTrack>
+  bool isElectron_TOFrecovery_lowB(TTrack const& track)
   {
     // TOF info is available for pin > 0.12 GeV/c at B=0.2T and pin > 0.34 GeV/c at B=0.5T
     return abs(track.tpcNSigmaEl()) < maxTPCNsigmaEl && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl && track.tpcInnerParam() < 0.4; // TOF recovery only at low pin.
@@ -395,13 +421,15 @@ struct prefilterPrimaryElectron {
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
 
+  Configurable<float> max_pt_itsonly{"max_pt_itsonly", 0.15, "max pT for ITSonly tracks at PV"};
   Configurable<float> min_dcatopv{"min_dcatopv", -1.f, "DCAxyTo PV"};
   Configurable<float> minpt{"minpt", 0.05, "min pt for track for loose track sample"};
   Configurable<float> maxeta{"maxeta", 1.2, "eta acceptance for loose track sample"};
   Configurable<int> mincrossedrows{"mincrossedrows", 40, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max chi2/NclsTPC"};
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max chi2/NclsITS"};
-  Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 4.0, "max. TPC n sigma for electron"};
+  Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -4.0, "min. TPC n sigma for electron inclusion"};
+  Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 4.0, "max. TPC n sigma for electron inclusion"};
   Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
   Configurable<float> intercept{"intercept", -0.0280, "intercept for m vs. phiv"};
 
@@ -478,8 +506,12 @@ struct prefilterPrimaryElectron {
       return false;
     }
 
+    if (isITSonlyTrack(track) && track.pt() > max_pt_itsonly) {
+      return false;
+    }
+
     if (track.hasTPC()) {
-      if (abs(track.tpcNSigmaEl()) > maxTPCNsigmaEl) {
+      if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
         return false;
       }
       if (track.tpcNClsCrossedRows() < mincrossedrows) {

@@ -73,8 +73,9 @@ struct phosCalibration {
   Configurable<double> mMaxCellTimeMain{"maxCellTimeMain", 100.e-9, "Max. cell time of main bunch selection"};
   Configurable<int> mMixedEvents{"mixedEvents", 10, "number of events to mix"};
   Configurable<bool> mSkipL1phase{"skipL1phase", false, "do not correct L1 phase from CCDB"};
-  Configurable<std::string> mBadMapPath{"badmapPath", "alien:///alice/cern.ch/user/p/prsnko/Calib/BadMap/snapshot.root", "path to BadMap snapshot"};
-  Configurable<std::string> mCalibPath{"calibPath", "alien:///alice/cern.ch/user/p/prsnko/Calib/CalibParams/snapshot.root", "path to Calibration snapshot"};
+  Configurable<std::string> mBadMapPath{"badmapPath", "PHS/Calib/BadMap", "path to BadMap snapshot"};
+  Configurable<std::string> mCalibPath{"calibPath", "PHS/Calib/CalibParams", "path to Calibration snapshot"};
+  Configurable<std::string> mL1PhasePath{"L1phasePath", "PHS/Calib/L1phase", "path to L1phase snapshot"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -89,10 +90,6 @@ struct phosCalibration {
   std::vector<o2::phos::TriggerRecord> phosClusterTrigRecs;
   std::vector<photon> event;
   int mL1 = 0;
-
-  // calibration will be set on first processing
-  std::unique_ptr<const o2::phos::BadChannelsMap> badMap;   // = ccdb->get<o2::phos::BadChannelsMap>("PHS/Calib/BadMap");
-  std::unique_ptr<const o2::phos::CalibParams> calibParams; // = ccdb->get<o2::phos::CalibParams>("PHS/Calib/CalibParams");
 
   /// \brief Create output histograms
   void init(o2::framework::InitContext const&)
@@ -151,7 +148,10 @@ struct phosCalibration {
     // clusterize
     // Fill clusters histograms
 
-    if (bcs.begin() == bcs.end()) {
+    int64_t timestamp = 0;
+    if (bcs.begin() != bcs.end()) {
+      timestamp = bcs.begin().timestamp(); // timestamp for CCDB object retrieval
+    } else {
       return;
     }
 
@@ -160,30 +160,22 @@ struct phosCalibration {
       clusterizer->initialize();
     }
 
-    if (!badMap) {
-      LOG(info) << "Reading BadMap from: " << mBadMapPath.value;
-      TFile* fBadMap = TFile::Open(mBadMapPath.value.data());
-      if (fBadMap == nullptr) { // probably, TGrid not connected yet?
-        TGrid::Connect("alien");
-        fBadMap = TFile::Open(mBadMapPath.value.data());
-      }
-      o2::phos::BadChannelsMap* bm1 = (o2::phos::BadChannelsMap*)fBadMap->Get("ccdb_object");
-      badMap.reset(bm1);
-      fBadMap->Close();
-      clusterizer->setBadMap(badMap.get());
-      LOG(info) << "Read bad map";
+    const o2::phos::BadChannelsMap* badMap = ccdb->getForTimeStamp<o2::phos::BadChannelsMap>(mBadMapPath, timestamp);
+    const o2::phos::CalibParams* calibParams = ccdb->getForTimeStamp<o2::phos::CalibParams>(mCalibPath, timestamp);
+
+    if (badMap) {
+      clusterizer->setBadMap(badMap);
+    } else {
+      LOG(fatal) << "Can not get PHOS Bad Map";
     }
-    if (!calibParams) {
-      LOG(info) << "Reading Calibration from: " << mCalibPath.value;
-      TFile* fCalib = TFile::Open(mCalibPath.value.data());
-      o2::phos::CalibParams* calib1 = (o2::phos::CalibParams*)fCalib->Get("ccdb_object");
-      calibParams.reset(calib1);
-      fCalib->Close();
-      clusterizer->setCalibration(calibParams.get());
-      LOG(info) << "Read calibration";
+    if (calibParams) {
+      clusterizer->setCalibration(calibParams);
+    } else {
+      LOG(fatal) << "Can not get PHOS calibration";
     }
+
     if (!mSkipL1phase && mL1 == 0) { // should be read, but not read yet
-      const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>("PHS/Calib/L1phase", bcs.begin().timestamp());
+      const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>(mL1PhasePath, timestamp);
       if (vec) {
         clusterizer->setL1phase((*vec)[0]);
         mL1 = (*vec)[0];
