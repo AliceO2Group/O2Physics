@@ -38,7 +38,6 @@ using namespace o2::framework::expressions;
 
 using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPr, aod::pidTPCPi>;
 
-
 struct LFStrangeTreeCreator {
 
   Produces<aod::LambdaTableML> lambdaTableML;
