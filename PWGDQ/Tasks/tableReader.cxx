@@ -1248,15 +1248,15 @@ struct AnalysisFwdTrackPid {
 
   void init(o2::framework::InitContext& context)
   {
-
   }
 
   // Template function to pair mft tracks and muon tracks
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename Muons, typename MftTracks>
-  void runFwdTrackPid(TEvent const& event, Muons const& muons, MftTracks const& mftTracks) {
+  void runFwdTrackPid(TEvent const& event, Muons const& muons, MftTracks const& mftTracks)
+  {
     fwdPidAllList.reserve(1);
     for (const auto& muon : muons) {
-      if(muon.has_matchMFTTrack() && muon.trackType() == 0) {
+      if (muon.has_matchMFTTrack() && muon.trackType() == 0) {
         LOGP(info, "{} - {}", muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT());
         auto mftTrack = muon.template matchMFTTrack_as<MyMftTracks>();
         fwdPidAllList(muon.trackType(), event.posX(), event.posY(), event.posZ(), event.numContrib(), muon.pt(), muon.eta(), muon.phi(), mftTrack.mftClusterSizesAndTrackFlags(), muon.fwdDcaX(), muon.fwdDcaY(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT());

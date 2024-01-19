@@ -271,10 +271,10 @@ DECLARE_SOA_COLUMN(Pt, pt, float);   //!
 DECLARE_SOA_COLUMN(Eta, eta, float); //!
 DECLARE_SOA_COLUMN(Phi, phi, float); //!
 DECLARE_SOA_COLUMN(Sign, sign, int); //!
-DECLARE_SOA_COLUMN(FwdDcaX, fwdDcaX, float); //!
-DECLARE_SOA_COLUMN(FwdDcaY, fwdDcaY, float); //!
+DECLARE_SOA_COLUMN(FwdDcaX, fwdDcaX, float);                                              //!
+DECLARE_SOA_COLUMN(FwdDcaY, fwdDcaY, float);                                              //!
 DECLARE_SOA_COLUMN(MftClusterSizesAndTrackFlags, mftClusterSizesAndTrackFlags, uint64_t); //!
-DECLARE_SOA_COLUMN(MftNClusters, mftNClusters, int); //!
+DECLARE_SOA_COLUMN(MftNClusters, mftNClusters, int);                                      //!
 } // namespace reducedmft
 
 // MFT track kinematics
@@ -284,7 +284,7 @@ DECLARE_SOA_TABLE(ReducedMFTTracks, "AOD", "RMFTTR", //!
 
 // MFT tracks extra info (cluster size, sign)
 DECLARE_SOA_TABLE(ReducedMFTTracksExtra, "AOD", "RMFTTREXTRA", //!
-                  reducedmft::MftClusterSizesAndTrackFlags, reducedmft::Sign, 
+                  reducedmft::MftClusterSizesAndTrackFlags, reducedmft::Sign,
                   reducedmft::FwdDcaX, reducedmft::FwdDcaY, reducedmft::MftNClusters);
 
 // iterator
@@ -539,14 +539,14 @@ using DimuonAll = DimuonsAll::iterator;
 // mft PID reduced data model
 namespace fwdpid
 {
-  DECLARE_SOA_COLUMN(Pt, pt, float);   //!
-  DECLARE_SOA_COLUMN(Eta, eta, float); //!
-  DECLARE_SOA_COLUMN(Phi, phi, float); //!
+DECLARE_SOA_COLUMN(Pt, pt, float);   //!
+DECLARE_SOA_COLUMN(Eta, eta, float); //!
+DECLARE_SOA_COLUMN(Phi, phi, float); //!
 } // namespace fwdpid
 
 DECLARE_SOA_TABLE(FwdPidsAll, "AOD", "RTFWDPIDALL", //!
                   fwdtrack::TrackType, collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
-                  fwdpid::Pt, fwdpid::Eta, fwdpid::Phi, reducedmft::MftClusterSizesAndTrackFlags, 
+                  fwdpid::Pt, fwdpid::Eta, fwdpid::Phi, reducedmft::MftClusterSizesAndTrackFlags,
                   reducedmft::FwdDcaX, reducedmft::FwdDcaY, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT);
 
 using FwdPidAll = FwdPidsAll::iterator;
