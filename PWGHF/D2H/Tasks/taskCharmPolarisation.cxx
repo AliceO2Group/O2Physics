@@ -133,7 +133,7 @@ struct TaskPolarisationCharmHadrons {
       float pxCharmHad{-1000.}, pyCharmHad{-1000.}, pzCharmHad{-1000.};
       float massDau{0.}, invMassCharmHad{0.}, invMassCharmHadForSparse{0.};
       float rapidity{-999.};
-      std::array<float, 3> outputMl{};
+      std::array<float, 3> outputMl{-1., -1., -1.};
 
       if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
         // Dstar analysis
@@ -166,9 +166,14 @@ struct TaskPolarisationCharmHadrons {
           pzDau = candidate.pzProng0();
           invMassCharmHadForSparse = hfHelper.invMassLcToPKPi(candidate);
           if constexpr (withMl) {
-            outputMl[0] = candidate.mlProbLcToPKPi.at(0);
-            outputMl[1] = candidate.mlProbLcToPKPi.at(1);
-            outputMl[2] = candidate.mlProbLcToPKPi.at(2);
+            std::vector<float> bdtScores = candidate.mlProbLcToPKPi;
+            if(bdtScores.size() == 3) {
+              // protect from empty vectors
+              // the BDT output score might be empty if no preselections were enabled (selectionFlag null)
+              outputMl[0] = candidate.bdtScores.at(0);
+              outputMl[1] = candidate.bdtScores.at(1);
+              outputMl[2] = candidate.bdtScores.at(2);
+            }
           }
         } else if (iMass == charm_polarisation::MassHyposLcToPKPi::PiKP && candidate.isSelLcToPiKP() >= selectionFlagLcToPKPi) {
           // reconstructed as piKp
@@ -177,9 +182,14 @@ struct TaskPolarisationCharmHadrons {
           pzDau = candidate.pzProng2();
           invMassCharmHadForSparse = hfHelper.invMassLcToPiKP(candidate);
           if constexpr (withMl) {
-            outputMl[0] = candidate.mlProbLcToPiKP.at(0);
-            outputMl[1] = candidate.mlProbLcToPiKP.at(1);
-            outputMl[2] = candidate.mlProbLcToPiKP.at(2);
+            std::vector<float> bdtScores = candidate.mlProbLcToPiKP;
+            if(bdtScores.size() == 3) {
+              // protect from empty vectors
+              // the BDT output score might be empty if no preselections were enabled (selectionFlag null)
+              outputMl[0] = candidate.bdtScores.at(0);
+              outputMl[1] = candidate.bdtScores.at(1);
+              outputMl[2] = candidate.bdtScores.at(2);
+            }
           }
         }
 
