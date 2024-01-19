@@ -170,9 +170,9 @@ struct TaskPolarisationCharmHadrons {
             if (bdtScores.size() == 3) {
               // protect from empty vectors
               // the BDT output score might be empty if no preselections were enabled (selectionFlag null)
-              outputMl[0] = candidate.bdtScores.at(0);
-              outputMl[1] = candidate.bdtScores.at(1);
-              outputMl[2] = candidate.bdtScores.at(2);
+              outputMl[0] = bdtScores.at(0);
+              outputMl[1] = bdtScores.at(1);
+              outputMl[2] = bdtScores.at(2);
             }
           }
         } else if (iMass == charm_polarisation::MassHyposLcToPKPi::PiKP && candidate.isSelLcToPiKP() >= selectionFlagLcToPKPi) {
@@ -186,9 +186,9 @@ struct TaskPolarisationCharmHadrons {
             if (bdtScores.size() == 3) {
               // protect from empty vectors
               // the BDT output score might be empty if no preselections were enabled (selectionFlag null)
-              outputMl[0] = candidate.bdtScores.at(0);
-              outputMl[1] = candidate.bdtScores.at(1);
-              outputMl[2] = candidate.bdtScores.at(2);
+              outputMl[0] = bdtScores.at(0);
+              outputMl[1] = bdtScores.at(1);
+              outputMl[2] = bdtScores.at(2);
             }
           }
         }
