@@ -15,6 +15,10 @@
 /// \author Jinjoo Seo <jseo@cern.ch>, Heidelberg University
 /// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, Heidelberg University
 
+#ifndef HomogeneousField
+#define HomogeneousField
+#endif
+
 #include <KFParticleBase.h>
 #include <KFParticle.h>
 #include <KFPTrack.h>
@@ -46,18 +50,21 @@ using namespace o2::framework;
 /// Reconstruction of heavy-flavour 3-prong decay candidates
 struct HfCandidateCreatorXicPlus {
   Produces<aod::HfCandXicPlus> rowCandidateBase;
+  Produces<aod::HfCandXicPlusKF> rowCandidateKF;
 
   // vertexing
+  Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions"};
+  Configurable<bool> fillHistograms{"fillHistograms", true, "do validation plots"};
+  // DCA fitter
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
-  Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
-  Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
-  Configurable<double> maxChi2{"maxChi2", 100., "discard vertices with chi2/Nprongs > this (or sum{DCAi^2}/Nprongs for abs. distance minimization)"};
-  Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions"};
-  Configurable<bool> fillHistograms{"fillHistograms", true, "do validation plots"};
+  Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
+  //Configurable<double> maxChi2{"maxChi2", 100., "discard vertices with chi2/Nprongs > this (or sum{DCAi^2}/Nprongs for abs. distance minimization)"};
+  // KFParticle
 
   // magnetic field setting from CCDB
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
@@ -118,18 +125,19 @@ struct HfCandidateCreatorXicPlus {
     }
   }
 
-  // Will be modified
+  //using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
   using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
-  using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
+  using CascFullKF = soa::Join<aod::KFCascDatas, aod::KFCascCovs>;
+
 
   template <bool doPvRefit, typename CandType, typename TTracks>
   void runCreatorXicPlusWithDcaFitter(aod::Collisions const& collisions,
-                                          CandType const& rowsTrackIndexXicPlus,
-                                          aod::V0sLinked const& v0Linked,
-                                          V0Full const& v0s,
-                                          CascFull const& cascs,
-                                          TTracks const& tracks,
-                                          aod::BCsWithTimestamps const& bcWithTimeStamps)
+                                      CandType const& rowsTrackIndexXicPlus,
+                                      // aod::V0sLinked const& v0Linked,
+                                      // V0Full const& v0s,
+                                      CascFull const& cascs,
+                                      TTracks const& tracks,
+                                      aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // 3-prong vertex fitter
     o2::vertexing::DCAFitterN<3> df;
@@ -161,16 +169,16 @@ struct HfCandidateCreatorXicPlus {
       // cascade daughter - charged particle
       auto trackPionFromXi = casc.template bachelor_as<TTracks>(); // pion <- xi track from TTracks table
       // cascade daughter - V0
-      auto v0 = casc.template v0_as<aod::V0sLinked>();
+      /*auto v0 = casc.template v0_as<aod::V0sLinked>();
       auto v0Element = v0.template v0Data_as<V0Full>(); // V0 element from LF table containing V0 info
       if (!v0.has_v0Data()) { // check that V0 data are stored
           continue;
-        }
+        }*/
       
       // V0 positive daughter
-      auto trackV0PosDau = v0Element.template posTrack_as<TTracks>(); // p <- V0 track (positive track) from TTracks table
+      auto trackV0PosDau = casc.template posTrack_as<TTracks>(); // p <- V0 track (positive track) from TTracks table
       // V0 negative daughter
-      auto trackV0NegDau = v0Element.template negTrack_as<TTracks>(); // pion <- V0 track (negative track) from TTracks table
+      auto trackV0NegDau = casc.template negTrack_as<TTracks>(); // pion <- V0 track (negative track) from TTracks table
 
       // check that particles come from the same collision
       if (rejDiffCollTrack) {
@@ -183,25 +191,25 @@ struct HfCandidateCreatorXicPlus {
       }
 
       //--------------------------reconstruct V0 track---------------------------
-      // pseudorapidity
+      // pseudorapidity (only to store in candidate table)
       double pseudorapV0PosDau = trackV0PosDau.eta();
       double pseudorapV0NegDau = trackV0NegDau.eta();
 
-      // pion & p <- V0 tracks
+      // pion & p <- V0 tracks (unused?)
       auto trackParCovV0PosDau = getTrackParCov(trackV0PosDau);
       auto trackParCovV0NegDau = getTrackParCov(trackV0NegDau);
 
-      // info from LF table
+      // info from LF table (only to store in candidate table)
       std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()}; // pVec stands for vector containing the 3-momentum components
       std::array<float, 3> vertexV0 = {casc.xlambda(), casc.ylambda(), casc.zlambda()};
       std::array<float, 3> pVecV0PosDau = {casc.pxpos(), casc.pypos(), casc.pzpos()};
       std::array<float, 3> pVecV0NegDau = {casc.pxneg(), casc.pyneg(), casc.pzneg()};
 
       //-----------------------------reconstruct cascade track-----------------------------
-      // pseudorapidity
+      // pseudorapidity (only to store in candidate table)
       double pseudorapPionFromXi = trackPionFromXi.eta();
 
-      // pion <- casc track to be processed with DCAfitter
+      // pion <- casc track to be processed with DCAfitter (unused?)
       auto trackParCovPionFromXi = getTrackParCov(trackPionFromXi);
 
       // info from LF table
@@ -250,14 +258,18 @@ struct HfCandidateCreatorXicPlus {
         continue;
       }
 
+      // set hfFlag
+      int hfFlag = BIT(aod::hf_cand_xicplustoxipipi::DecayType::XicPlusToXiPiPi);
+
+      // get SV properties
       const auto& secondaryVertex = df.getPCACandidate();
       auto chi2SV = df.getChi2AtPCACandidate();
       auto covMatrixSV = df.calcPCACovMatrixFlat();
+
+      // get track momenta
       trackParVar0 = df.getTrack(0);
       trackParVar1 = df.getTrack(1);
       trackCasc = df.getTrack(2);
-
-      // get track momenta
       std::array<float, 3> pVec0;
       std::array<float, 3> pVec1;
       std::array<float, 3> pVec2;
@@ -285,7 +297,6 @@ struct HfCandidateCreatorXicPlus {
         primaryVertex.setSigmaZ2(rowTrackIndexXicPlus.pvRefitSigmaZ2());
         covMatrixPV = primaryVertex.getCov();
       }
-
       // calculate impact parameter
       o2::dataformats::DCA impactParameter0;
       o2::dataformats::DCA impactParameter1;
@@ -294,10 +305,7 @@ struct HfCandidateCreatorXicPlus {
       trackParVar1.propagateToDCA(primaryVertex, bz, &impactParameter1);
       trackCasc.propagateToDCA(primaryVertex, bz, &impactParameterCasc);
 
-      // set hfFlag
-      int hfFlag = 1 << aod::hf_cand_xicplustoxipipi::DecayType::XicPlusToXiPiPi;
-
-      // calculate invariant mass
+      // get invariant mass
       auto arrayMomenta = std::array{pVec0, pVec1, pVec2};
       massXiPiPi = RecoDecay::m(std::move(arrayMomenta), std::array{massXiMinusFromPdg, massPionFromPdg, massPionFromPdg});
 
@@ -333,7 +341,7 @@ struct HfCandidateCreatorXicPlus {
       // fill candidate table rows
       rowCandidateBase(collision.globalIndex(),
                        rowTrackIndexXicPlus.prong0Id(), rowTrackIndexXicPlus.prong1Id(), rowTrackIndexXicPlus.cascadeId(),
-                       trackPionFromXi.globalIndex(),v0Element.globalIndex(), v0Element.posTrackId(), v0Element.negTrackId(),
+                       trackPionFromXi.globalIndex(), casc.posTrackId(), casc.negTrackId(),
                        primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
                        errorDecayLength, errorDecayLengthXY,
@@ -355,20 +363,32 @@ struct HfCandidateCreatorXicPlus {
     } // loop over track triplets
   } // template
 
+  /*// Cascade to KFParticle converter
+  KFParticle createKFParticleFromKFCascTables(CascFullKF const& cascKF)
+  {
+    // read {X,Y,Z,Px,Py,Pz} and corresponding covariance matrix from KF cascade Tables
+    std::array<float, 6> parPosMom = {cascKF.x(), cascKF.y(), cascKF.z(), cascKF.px(), cascKF.py(), cascKF.pz()};
+    std::array<float, 15> covPosMom = cascKF.kfTrackCovMatrix();
+
+    // create KFParticle
+    KFParticle kfCasc;
+    kfCasc.Create(parPosMom, covPosMom, cascKF.sign(), cascKF.m());
+    return kfCasc;
+  }*/
+
   template <bool doPvRefit, typename CandType, typename TTracks>
   void runCreatorXicPlusWithKFParticle(aod::Collisions const& collisions,
-                                          CandType const& rowsTrackIndexXicPlus,
-                                          aod::V0sLinked const&,
-                                          V0Full const&,
-                                          CascFull const&,
-                                          TTracks const& tracks,
-                                          aod::BCsWithTimestamps const& bcWithTimeStamps)
+                                       CandType const& rowsTrackIndexXicPlus,
+                                       CascFullKF const&,
+                                       TTracks const& tracks,
+                                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // loop over triplets of track indices
     for (const auto& rowTrackIndexXicPlus : rowsTrackIndexXicPlus) {
       auto track0 = rowTrackIndexXicPlus.template prong0_as<TTracks>();
       auto track1 = rowTrackIndexXicPlus.template prong1_as<TTracks>();
-      auto casc = rowTrackIndexXicPlus.template cascade_as<CascFull>();
+      auto casc = rowTrackIndexXicPlus.template cascade_as<CascFullKF>();
+      auto collision = rowTrackIndexXicPlus.collision();
 
       // preselect cascade candidates
       if (doCascadePreselection) {
@@ -380,81 +400,6 @@ struct HfCandidateCreatorXicPlus {
         }
       }
 
-      //----------------accessing particles in the decay chain-------------
-      // cascade daughter - charged particle
-      auto trackPionFromXi = casc.template bachelor_as<TTracks>(); // pion <- xi track from TTracks table
-      // cascade daughter - V0
-      auto v0 = casc.template v0_as<aod::V0sLinked>();
-      auto v0Element = v0.template v0Data_as<V0Full>(); // V0 element from LF table containing V0 info
-      if (!v0.has_v0Data()) { // check that V0 data are stored
-          continue;
-        }
-      // V0 positive daughter
-      auto trackV0PosDau = v0Element.template posTrack_as<TTracks>(); // p <- V0 track (positive track) from TTracks table
-      // V0 negative daughter
-      auto trackV0NegDau = v0Element.template negTrack_as<TTracks>(); // pion <- V0 track (negative track) from TTracks table
-
-      // check that particles come from the same collision
-      if (rejDiffCollTrack) {
-        if (trackV0PosDau.collisionId() != trackV0NegDau.collisionId()) {
-          continue;
-        }
-        if (trackPionFromXi.collisionId() != trackV0PosDau.collisionId()) {
-          continue;
-        }
-      }
-
-      //--------------------------reconstruct V0 track---------------------------
-      // pseudorapidity
-      // double pseudorapV0PosDau = trackV0PosDau.eta();
-      // double pseudorapV0NegDau = trackV0NegDau.eta();
-
-      // pion & p <- V0 tracks
-      auto trackParCovV0PosDau = getTrackParCov(trackV0PosDau);
-      auto trackParCovV0NegDau = getTrackParCov(trackV0NegDau);
-
-      // info from LF table
-      // std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()}; // pVec stands for vector containing the 3-momentum components
-      // std::array<float, 3> vertexV0 = {casc.xlambda(), casc.ylambda(), casc.zlambda()};
-      //std::array<float, 3> pVecV0PosDau = {casc.pxpos(), casc.pypos(), casc.pzpos()};
-      //std::array<float, 3> pVecV0NegDau = {casc.pxneg(), casc.pyneg(), casc.pzneg()};
-
-      //-----------------------------reconstruct cascade track-----------------------------
-      // pseudorapidity
-      // double pseudorapPionFromXi = trackPionFromXi.eta();
-
-      // pion <- casc track to be processed with DCAfitter
-      auto trackParCovPionFromXi = getTrackParCov(trackPionFromXi);
-
-      // info from LF table
-      std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
-      std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
-      std::array<float, 21> covCasc = {0.};
-      constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-      for (int i = 0; i < 6; i++) {
-        covCasc[MomInd[i]] = casc.momentumCovMat()[i];
-        covCasc[i] = casc.positionCovMat()[i];
-      }
-
-      // create cascade track
-      o2::track::TrackParCov trackCasc;
-      if (trackPionFromXi.sign() > 0) {
-        trackCasc = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, 1, true);
-      } else if (trackPionFromXi.sign() < 0) {
-        trackCasc = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, -1, true);
-      } else {
-        continue;
-      }
-
-      trackCasc.setAbsCharge(1);
-      trackCasc.setPID(o2::track::PID::XiMinus);
-
-      //std::array<float, 3> pVecPionFromXi = {casc.pxbach(), casc.pybach(), casc.pzbach()};
-
-      auto trackParVar0 = getTrackParCov(track0);
-      auto trackParVar1 = getTrackParCov(track1);
-      auto collision = rowTrackIndexXicPlus.collision();
-
       /// Set the magnetic field from ccdb.
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
       /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
@@ -465,26 +410,66 @@ struct HfCandidateCreatorXicPlus {
         bz = o2::base::Propagator::Instance()->getNominalBz();
         LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
       }
+      KFParticle::SetField(bz);
+
+      // initialize primary vertex
+      KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
       float covMatrixPV[6];
 
-      //KFParticle::SetField(bz);
-      //KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
-
       if constexpr (doPvRefit) {
-        // to do
+        kfpVertex.SetXYZ(rowTrackIndexXicPlus.pvRefitX(), rowTrackIndexXicPlus.pvRefitY(), rowTrackIndexXicPlus.pvRefitZ());
+        // covariance matrix
+        kfpVertex.SetCovarianceMatrix(rowTrackIndexXicPlus.pvRefitSigmaX2(), rowTrackIndexXicPlus.pvRefitSigmaXY(), rowTrackIndexXicPlus.pvRefitSigmaY2(), rowTrackIndexXicPlus.pvRefitSigmaXZ(), rowTrackIndexXicPlus.pvRefitSigmaYZ(), rowTrackIndexXicPlus.pvRefitSigmaZ2());
       }
-      //kfpVertex.GetCovarianceMatrix(covMatrixPV);
-      //KFParticle KFPV(kfpVertex);
+      kfpVertex.GetCovarianceMatrix(covMatrixPV);
+      KFParticle KFPV(kfpVertex);
 
-
-      /*KFPTrack kfpTrack0 = createKFPTrackFromTrack(track0);
+      KFPTrack kfpTrack0 = createKFPTrackFromTrack(track0);
       KFPTrack kfpTrack1 = createKFPTrackFromTrack(track1);
-      KFPTrack kfpCasc = createKFPTrackFromTrack(trackCasc);*/
 
+      KFParticle kfPion0(kfpTrack0, kPiPlus);
+      KFParticle kfPion1(kfpTrack1, kPiPlus);
+      //create Xi as KFParticle
+      // read {X,Y,Z,Px,Py,Pz} and corresponding covariance matrix from KF cascade Tables
+      std::array<float, 6> xyzpxpypz = {casc.x(), casc.y(), casc.z(), casc.px(), casc.py(), casc.pz()};
+      float parPosMom[6];
+      for (int i{0}; i < 6; ++i) {
+        parPosMom[i] =xyzpxpypz[i];
+      }
+      // create KFParticle
+      KFParticle kfXi;
+      kfXi.Create(parPosMom, casc.kfTrackCovMat(), casc.sign(), casc.m(1));
+
+      KFParticle kfCandXicPlus;
+      const KFParticle* kfDaughtersXicPlus[3] = {&kfPion0, &kfPion1, &kfXi};
+      kfCandXicPlus.SetConstructMethod(2);
+      kfCandXicPlus.Construct(kfDaughtersXicPlus, 3);
+
+      // set hfFlag
+      int hfFlag = BIT(aod::hf_cand_xicplustoxipipi::DecayType::XicPlusToXiPiPi);
+
+      auto covMatrixSV = kfCandXicPlus.CovarianceMatrix();
+      auto massXicPlus = kfCandXicPlus.GetMass();
+      auto chi2SV = kfCandXicPlus.GetChi2();
+
+      // get impact parameters of XicPlus daughters
+      float impactParameter0XY = 0., errImpactParameter0XY = 0.;
+      float impactParameter1XY = 0., errImpactParameter1XY = 0.;
+      float impactParameterXiXY = 0., errImpactParameterXiXY = 0.;
+      kfPion0.GetDistanceFromVertexXY(KFPV, impactParameter0XY, errImpactParameter0XY);
+      kfPion1.GetDistanceFromVertexXY(KFPV, impactParameter1XY, errImpactParameter1XY);
+      kfXi.GetDistanceFromVertexXY(KFPV, impactParameterXiXY, errImpactParameterXiXY);
+
+      // get error of decay length
+      double phi, theta;
+      getPointDirection(std::array{KFPV.GetX(), KFPV.GetY(), KFPV.GetZ()}, std::array{kfCandXicPlus.GetX(), kfCandXicPlus.GetY(), kfCandXicPlus.GetZ()}, phi, theta);
+      auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
+      auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
+  
       // fill histograms
-      /*if (fillHistograms) {
+      if (fillHistograms) {
         // invariant mass
-        hMass3->Fill(massXiPiPi);
+        hMass3->Fill(massXicPlus);
         // covariance matrix elements of PV
         hCovPVXX->Fill(covMatrixPV[0]);
         hCovPVYY->Fill(covMatrixPV[2]);
@@ -496,63 +481,77 @@ struct HfCandidateCreatorXicPlus {
         hCovSVXZ->Fill(covMatrixSV[3]);
         hCovSVZZ->Fill(covMatrixSV[5]);
         // DCAs of prongs
-        hDcaXYProngs->Fill(track0.pt(), impactParameter0.getY());
-        hDcaXYProngs->Fill(track1.pt(), impactParameter1.getY());
-        //hDcaXYProngs->Fill(trackCasc.pt(), impactParameterCasc.getY());
-        hDcaZProngs->Fill(track0.pt(), impactParameter0.getZ());
-        hDcaZProngs->Fill(track1.pt(), impactParameter1.getZ());
-        //hDcaZProngs->Fill(trackCasc.pt(), impactParameterCasc.getZ());
-      }*/
+        hDcaXYProngs->Fill(kfPion0.GetPt(), impactParameter0XY);
+        hDcaXYProngs->Fill(kfPion1.GetPt(), impactParameter1XY);
+        hDcaXYProngs->Fill(kfXi.GetPt(), impactParameterXiXY);
+        //hDcaZProngs->Fill(kfPion0.GetPt(), impactParameter0.getZ());
+        //hDcaZProngs->Fill(kfPion1.GetPt(), impactParameter1.getZ());
+        //hDcaZProngs->Fill(kfXi.GetPt(), impactParameterCasc.getZ());
+      }
       // fill candidate table rows
-      //rowCandidateBase();
+      rowCandidateKF(collision.globalIndex(),
+                     rowTrackIndexXicPlus.prong0Id(), rowTrackIndexXicPlus.prong1Id(), rowTrackIndexXicPlus.cascadeId(),
+                     casc.bachelorId(), casc.posTrackId(), casc.negTrackId(),
+                     KFPV.GetX(), KFPV.GetY(), KFPV.GetZ(),
+                     kfCandXicPlus.GetX(), kfCandXicPlus.GetX(), kfCandXicPlus.GetX(),
+                     errorDecayLength, errorDecayLengthXY,
+                     chi2SV,
+                     casc.x(), casc.y(), casc.z(),
+                     casc.xlambda(), casc.ylambda(), casc.zlambda(),
+                     kfPion0.GetPx(), kfPion0.GetPy(), kfPion0.GetPz(),
+                     kfPion1.GetPx(), kfPion1.GetPy(), kfPion1.GetPz(),
+                     kfXi.GetPx(), kfXi.GetPy(), kfXi.GetPz(),
+                     impactParameter0XY, impactParameter1XY, impactParameterXiXY,
+                     errImpactParameter0XY, errImpactParameter1XY, errImpactParameterXiXY,
+                     casc.pxbach(), casc.pybach(), casc.pzbach(),
+                     casc.pxlambda(), casc.pylambda(), casc.pzlambda(),
+                     casc.pxpos(), casc.pypos(), casc.pzpos(),
+                     casc.pxneg(), casc.pyneg(), casc.pzneg(),
+                     hfFlag);
     } // loop over track triplets
   } // template
 
   void processPvRefitWithDCAFitterN(aod::Collisions const& collisions,
                                     soa::Join<aod::HfCascLf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexXicPlus,
-                                    aod::V0sLinked const& v0Linked,
-                                    V0Full const& v0s,
+                                    //aod::V0sLinked const& v0Linked,
+                                    //V0Full const& v0s,
                                     CascFull const& cascs,
                                     aod::TracksWCovDca const& tracks,
                                     aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreatorXicPlusWithDcaFitter<true>(collisions, rowsTrackIndexXicPlus, v0Linked, v0s, cascs, tracks, bcWithTimeStamps);
+    runCreatorXicPlusWithDcaFitter<true>(collisions, rowsTrackIndexXicPlus, cascs, tracks, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfCandidateCreatorXicPlus, processPvRefitWithDCAFitterN, "Run candidate creator with PV refit", false);
 
   void processNoPvRefitWithDCAFitterN(aod::Collisions const& collisions,
-                                    aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
-                                    aod::V0sLinked const& v0Linked,
-                                    V0Full const& v0s,
-                                    CascFull const& cascs,
-                                    aod::TracksWCovDca const& tracks,
-                                    aod::BCsWithTimestamps const& bcWithTimeStamps)
+                                      aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
+                                      // aod::V0sLinked const& v0Linked,
+                                      // V0Full const& v0s,
+                                      CascFull const& cascs,
+                                      aod::TracksWCovDca const& tracks,
+                                      aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreatorXicPlusWithDcaFitter<false>(collisions, rowsTrackIndexXicPlus, v0Linked, v0s, cascs, tracks, bcWithTimeStamps);
+    runCreatorXicPlusWithDcaFitter<false>(collisions, rowsTrackIndexXicPlus, cascs, tracks, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfCandidateCreatorXicPlus, processNoPvRefitWithDCAFitterN, "Run candidate creator without PV refit", true);
   
   void processPvRefitWithKFParticle(aod::Collisions const& collisions,
-                                    aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus, 
-                                    aod::V0sLinked const& v0Linked,
-                                    V0Full const& v0s,
-                                    CascFull const& cascs,
-                                    aod::TracksWCovDca const& tracks,
+                                    soa::Join<aod::HfCascLf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexXicPlus,
+                                    CascFullKF const& cascs,
+                                    aod::TracksWCovExtra const& tracks,
                                     aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    // runCreatorXicPlusWithKFParticle<true>(collisions, rowsTrackIndexXicPlus, v0Linked, v0s, cascs, tracks, bcWithTimeStamps);
+    runCreatorXicPlusWithKFParticle<true>(collisions, rowsTrackIndexXicPlus, cascs, tracks, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfCandidateCreatorXicPlus, processPvRefitWithKFParticle, "Run candidate creator with PV refit", false);
 
   void processNoPvRefitWithKFParticle(aod::Collisions const& collisions,
-                                    aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
-                                    aod::V0sLinked const& v0Linked,
-                                    V0Full const& v0s,
-                                    CascFull const& cascs,
-                                    aod::TracksWCovDca const& tracks,
-                                    aod::BCsWithTimestamps const& bcWithTimeStamps)
+                                      aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
+                                      CascFullKF const& cascs,
+                                      aod::TracksWCovExtra const& tracks,
+                                      aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    // runCreatorXicPlusWithKFParticle<false>(collisions, rowsTrackIndexXicPlus, v0Linked, v0s, cascs, tracks, bcWithTimeStamps);
+    runCreatorXicPlusWithKFParticle<false>(collisions, rowsTrackIndexXicPlus, cascs, tracks, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfCandidateCreatorXicPlus, processNoPvRefitWithKFParticle, "Run candidate creator without PV refit", false);
 }; //struct
