@@ -48,15 +48,15 @@ float meanMultV0A = 0.f;
 
 struct FlattenictyCharged {
 
-  HistogramRegistry flatchrg{"flatchrg",{},OutputObjHandlingPolicy::AnalysisObject,true,true};
+  HistogramRegistry flatchrg{"flatchrg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   TrackSelection mTrackSelector;
 
-  Configurable<float> cutTrkEta{"cutTrkEta", 0.8f,"Eta range for tracks"};
+  Configurable<float> cutTrkEta{"cutTrkEta", 0.8f, "Eta range for tracks"};
   Configurable<float> cutTrkPtMin{"cutTrkPtMin", 0.15f, "Minimum pT of tracks"};
-//   Configurable<uint32_t> cutTrkMult{"cutTrkMult", 200, "max measured multiplicity"};
+  //   Configurable<uint32_t> cutTrkMult{"cutTrkMult", 200, "max measured multiplicity"};
   Configurable<float> cutVtxzMin{"cutVtxzMin", -10.f, "Minimum value for z-vertex"};
-  Configurable<float> cutVtxzMax{"cutVtxzMax",  10.f, "Maximum value for z-vertex"};
+  Configurable<float> cutVtxzMax{"cutVtxzMax", 10.f, "Maximum value for z-vertex"};
 
   ConfigurableAxis multBins{"multBins", {1001, -0.5, 1000.5}, ""};
 
@@ -64,11 +64,11 @@ struct FlattenictyCharged {
   Configurable<bool> selt0vtx{"selt0vtx", 0, "apply T0 vertext trigger"};
   Configurable<bool> selt0time{"selt0time", 0, "apply 1ns cut T0A and T0C"};
 
-// //   Configurable<float> avPyT0A{"avPyT0A", 8.16, "nch from pythia T0A"};
+  // //   Configurable<float> avPyT0A{"avPyT0A", 8.16, "nch from pythia T0A"};
   Configurable<float> avPyT0C{"avPyT0C", 8.83, "nch from pythia T0C"};
   Configurable<float> avPyFV0{"avPyFV0", 21.44, "nch from pythia FV0"};
 
-  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch","URL of the CCDB database"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB database"};
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -80,7 +80,7 @@ struct FlattenictyCharged {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     if (!ccdbApi.isHostReachable()) {
-      LOGF(fatal, "CCDB host %s is not reacheable, cannot go forward",url.value.data());
+      LOGF(fatal, "CCDB host %s is not reacheable, cannot go forward", url.value.data());
     }
 
     mTrackSelector.SetPtRange(0.15f, 1e10f);
@@ -98,19 +98,19 @@ struct FlattenictyCharged {
     mTrackSelector.SetMaxDcaZ(1.f);
 
     std::vector<double> ptBinEdges = {
-    0.0,  0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5,
-    0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
-    1.1 , 1.2, 1.3,  1.4, 1.5 , 1.6, 1.7 , 1.8, 1.9 , 2.0,
-    2.2 , 2.4, 2.6,  2.8, 3.0 , 3.2, 3.4 , 3.6, 3.8 , 4.0,
-    4.5 , 5.0, 5.5,  6.0, 6.5 , 7.0, 8.0 , 9.0, 10.0,11.0,
-    12.0,13.0,14.0, 15.0, 16.0, 18.0,20.0, 22.0,24.0,26.0,
-    30.0};
+      0.0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5,
+      0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
+      1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0,
+      2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
+      4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0,
+      12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0,
+      30.0};
     const AxisSpec PtAxis{ptBinEdges, "#it{p}_{T} (GeV/#it{c})", "pt"};
     const AxisSpec ZAxis = {40, -20.0, 20.0};
     const AxisSpec PhiAxis = {600, 0, 2 * M_PI};
     const AxisSpec EtaAxisGlobal = {50, -5.0, 5.0};
-    const AxisSpec EtaAxis = {20, 2.2, 5.1};  // FV0
-//     const AxisSpec FlatAxis = {102, -0.01, +1.01};
+    const AxisSpec EtaAxis = {20, 2.2, 5.1}; // FV0
+                                             //     const AxisSpec FlatAxis = {102, -0.01, +1.01};
     const AxisSpec CombEstAxis = {500, -0.5, 499.5};
     AxisSpec MultAxis = {multBins, "N_{trk}"};
 
@@ -215,67 +215,66 @@ struct FlattenictyCharged {
 
   Filter trackFilter = (nabs(aod::track::eta) < cutTrkEta) && (aod::track::pt > cutTrkPtMin);
   using TrackTableData = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
-  using CollisionTableData  = soa::Join<aod::Collisions, aod::EvSels>;
+  using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
 
-void process(CollisionTableData::iterator const& collision, TrackTableData const& tracks, soa::Join<aod::BCs, aod::Timestamps> const& bcs, /*aod::MFTTracks const& mfttracks,*/ aod::FT0s const& ft0s,aod::FV0As const& fv0s)
-{
-  LOGF(debug, "<FlattenictyCharged> Collision %d", collision.globalIndex());
+  void process(CollisionTableData::iterator const& collision, TrackTableData const& tracks, soa::Join<aod::BCs, aod::Timestamps> const& bcs, /*aod::MFTTracks const& mfttracks,*/ aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+  {
+    LOGF(debug, "<FlattenictyCharged> Collision %d", collision.globalIndex());
 
-  auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
 
-  meanMultT0C = 0.f;
-  auto vMeanMultT0C = ccdb->getForTimeStamp<std::vector<double>>("Users/e/ekryshen/meanT0C", bc.timestamp());
-  meanMultT0C = (*vMeanMultT0C)[0];
+    meanMultT0C = 0.f;
+    auto vMeanMultT0C = ccdb->getForTimeStamp<std::vector<double>>("Users/e/ekryshen/meanT0C", bc.timestamp());
+    meanMultT0C = (*vMeanMultT0C)[0];
 
-//   meanMultT0A = 0.f;
-//   auto vMeanMultT0A = ccdb->getForTimeStamp<std::vector<double>>("Users/e/ekryshen/meanT0A", bc.timestamp());
-//   meanMultT0A = (*vMeanMultT0A)[0];
+    //   meanMultT0A = 0.f;
+    //   auto vMeanMultT0A = ccdb->getForTimeStamp<std::vector<double>>("Users/e/ekryshen/meanT0A", bc.timestamp());
+    //   meanMultT0A = (*vMeanMultT0A)[0];
 
-  meanMultV0A = 0.f;
-  auto vMeanMultV0A = ccdb->getForTimeStamp<std::vector<double>>("Users/e/ekryshen/meanV0A", bc.timestamp());
-  meanMultV0A = (*vMeanMultV0A)[0];
+    meanMultV0A = 0.f;
+    auto vMeanMultV0A = ccdb->getForTimeStamp<std::vector<double>>("Users/e/ekryshen/meanV0A", bc.timestamp());
+    meanMultV0A = (*vMeanMultV0A)[0];
 
-//   float fac_FT0A_ebe = 1.;
-  float fac_FT0C_ebe = 1.;
-  float fac_FV0_ebe = 1.;
+    //   float fac_FT0A_ebe = 1.;
+    float fac_FT0C_ebe = 1.;
+    float fac_FV0_ebe = 1.;
 
-//   if (meanMultT0A > 0) {
-//     fac_FT0A_ebe = avPyT0A / meanMultT0A;
-//   }
-  if (meanMultT0C > 0) {
-    fac_FT0C_ebe = avPyT0C / meanMultT0C;
-  }
-  if (meanMultV0A > 0) {
-    fac_FV0_ebe = avPyFV0 / meanMultV0A;
-  }
+    //   if (meanMultT0A > 0) {
+    //     fac_FT0A_ebe = avPyT0A / meanMultT0A;
+    //   }
+    if (meanMultT0C > 0) {
+      fac_FT0C_ebe = avPyT0C / meanMultT0C;
+    }
+    if (meanMultV0A > 0) {
+      fac_FV0_ebe = avPyFV0 / meanMultV0A;
+    }
 
+    bool isAcceptedEvent = false;
+    flatchrg.fill(HIST("Events/selection"), 1.);
 
-  bool isAcceptedEvent = false;
-  flatchrg.fill(HIST("Events/selection"), 1.);
+    if (collision.sel8()) {
+      isAcceptedEvent = true;
+    }
 
-  if (collision.sel8()) {
-    isAcceptedEvent = true;
-  }
+    if (!isAcceptedEvent) {
+      return;
+    }
 
-  if (!isAcceptedEvent) {
-    return;
-  }
+    flatchrg.fill(HIST("Events/selection"), 2.);
 
-  flatchrg.fill(HIST("Events/selection"), 2.);
+    auto vtxZ = collision.posZ();
+    flatchrg.fill(HIST("Tracks/VtxZ"), vtxZ);
 
-  auto vtxZ = collision.posZ();
-  flatchrg.fill(HIST("Tracks/VtxZ"), vtxZ);
+    bool isGoodEvent = false;
+    if (vtxZ > cutVtxzMin && vtxZ < cutVtxzMax) {
+      isGoodEvent = true;
+    }
 
-  bool isGoodEvent = false;
-  if (vtxZ > cutVtxzMin && vtxZ < cutVtxzMax) {
-    isGoodEvent = true;
-  }
+    if (!isGoodEvent) {
+      return;
+    }
 
-  if (!isGoodEvent) {
-    return;
-  }
-
-  flatchrg.fill(HIST("Events/selection"), 3.);
+    flatchrg.fill(HIST("Events/selection"), 3.);
 
     //__________  FT0   mult. esimator
     //
@@ -344,7 +343,7 @@ void process(CollisionTableData::iterator const& collision, TrackTableData const
       flatenicity_fv0 = GetFlatenicity(RhoLattice, nCells);
     }
 
-    flatchrg.fill(HIST("h1flatencityFV0"), 1.-flatenicity_fv0);
+    flatchrg.fill(HIST("h1flatencityFV0"), 1. - flatenicity_fv0);
 
     flatchrg.fill(HIST("hMultFV0"), sumAmpFV0);
     flatchrg.fill(HIST("hMultFV01to4Ring"), sumAmpFV01to4Ring);
@@ -353,7 +352,7 @@ void process(CollisionTableData::iterator const& collision, TrackTableData const
     if (selt0vtx && !isOkvtxtrig && !isOkFV0OrA) {
       return;
     }
-    if (selt0time && !isOkTimeFT0) {// to reduce beam-gas background
+    if (selt0time && !isOkTimeFT0) { // to reduce beam-gas background
       return;
     }
     if (sel8 && !collision.sel8()) {
@@ -412,13 +411,12 @@ void process(CollisionTableData::iterator const& collision, TrackTableData const
         flatchrg.fill(HIST("hFT0C"), amplitude);
       }
       flatchrg.fill(HIST("hMultFT0Csel"), sumAmpFT0Csel);
-
     }
     float flatenicity_t0a = GetFlatenicity(RhoLatticeT0A, nCellsT0A);
     float flatenicity_t0c = GetFlatenicity(RhoLatticeT0C, nCellsT0C);
 
-    flatchrg.fill(HIST("h1flatencityFT0A"), 1.-flatenicity_t0a);
-    flatchrg.fill(HIST("h1flatencityFT0C"), 1.-flatenicity_t0c);
+    flatchrg.fill(HIST("h1flatencityFT0A"), 1. - flatenicity_t0a);
+    flatchrg.fill(HIST("h1flatencityFT0C"), 1. - flatenicity_t0c);
 
     //__________  FLATTENICITY - combined
 
@@ -446,26 +444,25 @@ void process(CollisionTableData::iterator const& collision, TrackTableData const
         for (int ie = 0; ie < nEta; ++ie) {
           if (meanMultV0A > 0 && meanMultT0C > 0) {
             combest += ampl[ie] * weightsEta[ie] / deltaEeta[ie];
-          }
-          else{
+          } else {
             combest += ampl[ie] * factebye[ie] / deltaEeta[ie];
           }
-           all_weights += weightsEta[ie];
-          }
-          combest /= all_weights;
+          all_weights += weightsEta[ie];
+        }
+        combest /= all_weights;
       }
     }
 
     flatchrg.fill(HIST("hFV0FT0C"), combest);
 
     for (auto& track : tracks) {
-      //if (!track.isGlobalTrack()) {
+      // if (!track.isGlobalTrack()) {
       if (!mTrackSelector.IsSelected(track)) {
-          continue;
+        continue;
       }
 
       if (!track.isPVContributor()) {
-          continue;
+        continue;
       }
 
       flatchrg.fill(HIST("Tracks/EtaGlobal"), track.eta());
@@ -477,17 +474,14 @@ void process(CollisionTableData::iterator const& collision, TrackTableData const
       flatchrg.fill(HIST("Tracks/PhiEtaGlobal"), phi, track.eta());
 
       flatchrg.fill(HIST("hPtVsFV0FT0C"), combest, track.pt());
-      flatchrg.fill(HIST("hPtVs1flatencityFV0"), 1.-flatenicity_fv0, track.pt());
+      flatchrg.fill(HIST("hPtVs1flatencityFV0"), 1. - flatenicity_fv0, track.pt());
     }
-
-}
-
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-//       adaptAnalysisTask<FlattenictyQA>(cfgc),
-      adaptAnalysisTask<FlattenictyCharged>(cfgc)
-    };
+    //       adaptAnalysisTask<FlattenictyQA>(cfgc),
+    adaptAnalysisTask<FlattenictyCharged>(cfgc)};
 }
