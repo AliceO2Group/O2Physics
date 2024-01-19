@@ -271,7 +271,10 @@ DECLARE_SOA_COLUMN(Pt, pt, float);   //!
 DECLARE_SOA_COLUMN(Eta, eta, float); //!
 DECLARE_SOA_COLUMN(Phi, phi, float); //!
 DECLARE_SOA_COLUMN(Sign, sign, int); //!
+DECLARE_SOA_COLUMN(FwdDcaX, fwdDcaX, float);                                              //!
+DECLARE_SOA_COLUMN(FwdDcaY, fwdDcaY, float);                                              //!
 DECLARE_SOA_COLUMN(MftClusterSizesAndTrackFlags, mftClusterSizesAndTrackFlags, uint64_t); //!
+DECLARE_SOA_COLUMN(MftNClusters, mftNClusters, int);                                      //!
 } // namespace reducedmft
 
 // MFT track kinematics
@@ -281,7 +284,8 @@ DECLARE_SOA_TABLE(ReducedMFTTracks, "AOD", "RMFTTR", //!
 
 // MFT tracks extra info (cluster size, sign)
 DECLARE_SOA_TABLE(ReducedMFTTracksExtra, "AOD", "RMFTTREXTRA", //!
-                  reducedmft::MftClusterSizesAndTrackFlags, reducedmft::Sign);
+                  reducedmft::MftClusterSizesAndTrackFlags, reducedmft::Sign,
+                  reducedmft::FwdDcaX, reducedmft::FwdDcaY, reducedmft::MftNClusters);
 
 // iterator
 using ReducedMFTTrack = ReducedMFTTracks::iterator;
@@ -318,7 +322,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh3, midBoardCh3, //!
 DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh4, midBoardCh4, //!
                            [](uint32_t midBoards) -> int { return static_cast<int>((midBoards >> 24) & 0xFF); });
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(MCHTrack, matchMCHTrack, int, "RTMuons_MatchMCHTrack");
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(ReducedMFTTrack, matchMFTTrack, int, "RTMuons_MatchMFTTrack"); //!  matching index pointing to the ReducedMFTTrack table if filled
+DECLARE_SOA_INDEX_COLUMN(ReducedMFTTrack, matchMFTTrack); //! matching index pointing to the ReducedMFTTrack table if filled
 } // namespace reducedmuon
 
 // Muon track kinematics
@@ -531,6 +535,21 @@ using DileptonExtra = DileptonsExtra::iterator;
 using DileptonFlow = DileptonsFlow::iterator;
 using DileptonInfo = DileptonsInfo::iterator;
 using DimuonAll = DimuonsAll::iterator;
+
+// mft PID reduced data model
+namespace fwdpid
+{
+DECLARE_SOA_COLUMN(Pt, pt, float);   //!
+DECLARE_SOA_COLUMN(Eta, eta, float); //!
+DECLARE_SOA_COLUMN(Phi, phi, float); //!
+} // namespace fwdpid
+
+DECLARE_SOA_TABLE(FwdPidsAll, "AOD", "RTFWDPIDALL", //!
+                  fwdtrack::TrackType, collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
+                  fwdpid::Pt, fwdpid::Eta, fwdpid::Phi, reducedmft::MftClusterSizesAndTrackFlags,
+                  reducedmft::FwdDcaX, reducedmft::FwdDcaY, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT);
+
+using FwdPidAll = FwdPidsAll::iterator;
 
 // candidate information
 namespace dileptonTrackCandidate
