@@ -166,13 +166,12 @@ struct TaskPolarisationCharmHadrons {
           pzDau = candidate.pzProng0();
           invMassCharmHadForSparse = hfHelper.invMassLcToPKPi(candidate);
           if constexpr (withMl) {
-            std::vector<float> bdtScores = candidate.mlProbLcToPKPi();
-            if (bdtScores.size() == 3) {
+            if (candidate.mlProbLcToPKPi().size() == 3) {
               // protect from empty vectors
               // the BDT output score might be empty if no preselections were enabled (selectionFlag null)
-              outputMl[0] = bdtScores.at(0);
-              outputMl[1] = bdtScores.at(1);
-              outputMl[2] = bdtScores.at(2);
+              outputMl[0] = candidate.mlProbLcToPKPi().at(0);
+              outputMl[1] = candidate.mlProbLcToPKPi().at(1);
+              outputMl[2] = candidate.mlProbLcToPKPi().at(2);
             }
           }
         } else if (iMass == charm_polarisation::MassHyposLcToPKPi::PiKP && candidate.isSelLcToPiKP() >= selectionFlagLcToPKPi) {
@@ -182,13 +181,12 @@ struct TaskPolarisationCharmHadrons {
           pzDau = candidate.pzProng2();
           invMassCharmHadForSparse = hfHelper.invMassLcToPiKP(candidate);
           if constexpr (withMl) {
-            std::vector<float> bdtScores = candidate.mlProbLcToPiKP();
-            if (bdtScores.size() == 3) {
+            if (candidate.mlProbLcToPiKP().size() == 3) {
               // protect from empty vectors
               // the BDT output score might be empty if no preselections were enabled (selectionFlag null)
-              outputMl[0] = bdtScores.at(0);
-              outputMl[1] = bdtScores.at(1);
-              outputMl[2] = bdtScores.at(2);
+              outputMl[0] = candidate.mlProbLcToPiKP().at(0);
+              outputMl[1] = candidate.mlProbLcToPiKP().at(1);
+              outputMl[2] = candidate.mlProbLcToPiKP().at(2);
             }
           }
         }
