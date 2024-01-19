@@ -265,13 +265,19 @@ struct hyperRecoTask {
       if (std::abs(posTrack.eta()) > etaMax || std::abs(negTrack.eta()) > etaMax)
         continue;
 
-      if (posTrack.tpcNClsFound() >= heliumNtpcClusMin)
-        hDeDxTot->Fill(posTrack.tpcInnerParam(), posTrack.tpcSignal());
-      if (negTrack.tpcNClsFound() >= heliumNtpcClusMin)
-        hDeDxTot->Fill(-negTrack.tpcInnerParam(), negTrack.tpcSignal());
+      // temporary fix: tpcInnerParam() returns the momentum in all the software tags before: https://github.com/AliceO2Group/AliceO2/pull/12521
+      bool posHeliumPID = posTrack.pidForTracking() == o2::track::PID::Helium3 || posTrack.pidForTracking() == o2::track::PID::Alpha;
+      bool negHeliumPID = negTrack.pidForTracking() == o2::track::PID::Helium3 || negTrack.pidForTracking() == o2::track::PID::Alpha;
+      float posRigidity = posHeliumPID ? posTrack.tpcInnerParam() / 2 : posTrack.tpcInnerParam();
+      float negRigidity = negHeliumPID ? negTrack.tpcInnerParam() / 2 : negTrack.tpcInnerParam();
 
-      double expBethePos{tpc::BetheBlochAleph(static_cast<float>(posTrack.tpcInnerParam() * 2 / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4])};
-      double expBetheNeg{tpc::BetheBlochAleph(static_cast<float>(negTrack.tpcInnerParam() * 2 / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4])};
+      if (posTrack.tpcNClsFound() >= heliumNtpcClusMin)
+        hDeDxTot->Fill(posRigidity, posTrack.tpcSignal());
+      if (negTrack.tpcNClsFound() >= heliumNtpcClusMin)
+        hDeDxTot->Fill(-negRigidity, negTrack.tpcSignal());
+
+      double expBethePos{tpc::BetheBlochAleph(static_cast<float>(posRigidity * 2 / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4])};
+      double expBetheNeg{tpc::BetheBlochAleph(static_cast<float>(negRigidity * 2 / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4])};
       double expSigmaPos{expBethePos * mBBparamsHe[5]};
       double expSigmaNeg{expBetheNeg * mBBparamsHe[5]};
       auto nSigmaTPCpos = static_cast<float>((posTrack.tpcSignal() - expBethePos) / expSigmaPos);
@@ -297,8 +303,8 @@ struct hyperRecoTask {
       hypCand.nTPCClustersPi = !hypCand.isMatter ? posTrack.tpcNClsFound() : negTrack.tpcNClsFound();
       hypCand.tpcSignalPi = !hypCand.isMatter ? posTrack.tpcSignal() : negTrack.tpcSignal();
       hypCand.clusterSizeITSPi = !hypCand.isMatter ? posTrack.itsClusterSizes() : negTrack.itsClusterSizes();
-      hypCand.momHe3TPC = hypCand.isMatter ? posTrack.tpcInnerParam() : negTrack.tpcInnerParam();
-      hypCand.momPiTPC = !hypCand.isMatter ? posTrack.tpcInnerParam() : negTrack.tpcInnerParam();
+      hypCand.momHe3TPC = hypCand.isMatter ? posRigidity : negRigidity;
+      hypCand.momPiTPC = !hypCand.isMatter ? posRigidity : negRigidity;
 
       hypCand.flags |= hypCand.isMatter ? static_cast<uint8_t>((posTrack.pidForTracking() & 0xF) << 4) : static_cast<uint8_t>((negTrack.pidForTracking() & 0xF) << 4);
       hypCand.flags |= hypCand.isMatter ? static_cast<uint8_t>(negTrack.pidForTracking() & 0xF) : static_cast<uint8_t>(posTrack.pidForTracking() & 0xF);
@@ -384,8 +390,8 @@ struct hyperRecoTask {
 
       int chargeFactor = -1 + 2 * hypCand.isMatter;
 
-      hDeDx3HeSel->Fill(chargeFactor * he3track.tpcInnerParam(), he3track.tpcSignal());
-      hNsigma3HeSel->Fill(chargeFactor * he3track.tpcInnerParam(), hypCand.nSigmaHe3);
+      hDeDx3HeSel->Fill(chargeFactor * posRigidity, he3track.tpcSignal());
+      hNsigma3HeSel->Fill(chargeFactor * negRigidity, hypCand.nSigmaHe3);
 
       hyperCandidates.push_back(hypCand);
     }
