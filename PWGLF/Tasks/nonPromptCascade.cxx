@@ -752,8 +752,10 @@ struct NonPromptCascadeTask {
         continue;
       }
 
+      if (isOmega) {
+        registry.fill(HIST("h_PIDcutsOmega"), 4, massOmega);
+      }
       registry.fill(HIST("h_PIDcutsXi"), 4, massXi);
-      registry.fill(HIST("h_PIDcutsOmega"), 4, massOmega);
 
       LOG(debug) << "TPCSignal ntrack " << pionTrack.sign() << "/" << pionTrack.tpcInnerParam() << "/" << pionTrack.tpcSignal();
       if (nSigmaTPC[3] < cfgCutsPID->get(3u, 0u) || nSigmaTPC[3] > cfgCutsPID->get(3u, 1u)) {
