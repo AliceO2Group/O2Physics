@@ -341,7 +341,7 @@ struct chargedkstaranalysis {
   // Defining filters for events (event selection)
   // Processed events will be already fulfilling the event selection
   // requirements
-  //Filter eventFilter = (o2::aod::evsel::sel8 == true);
+  // Filter eventFilter = (o2::aod::evsel::sel8 == true);
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
 
   Filter acceptanceFilter =
@@ -479,8 +479,8 @@ struct chargedkstaranalysis {
             continue;
           if (PionIndex.at(i1) == KshortNegDaughIndex.at(i3))
             continue;
-	  if (PioncollIndex.at(i1) != V0collIndex.at(i3))
-	    continue;
+          if (PioncollIndex.at(i1) != V0collIndex.at(i3))
+            continue;
           CKSVector = pions.at(i1) + kshorts.at(i3);
 
           if (TMath::Abs(CKSVector.Rapidity()) < 0.5) {
@@ -521,7 +521,7 @@ struct chargedkstaranalysis {
 
         if (!(selectionTrack(t1)))
           continue;
-	if (!(selectionPID(t1)))
+        if (!(selectionPID(t1)))
           continue;
         if (!SelectionV0(c2, t2, multiplicity))
           continue;
