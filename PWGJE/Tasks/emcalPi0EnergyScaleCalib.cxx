@@ -201,6 +201,8 @@ struct Pi0EnergyScaleCalibTask {
 
   ConfigurableAxis pTBinning{"pTBinning", {200, 0.0f, 20.0f}, "Binning used along pT axis for inv mass histograms"};
   ConfigurableAxis invmassBinning{"invmassBinning", {200, 0.0f, 0.4f}, "Binning used for inv mass axis in inv mass - pT histograms"};
+  ConfigurableAxis etaBinning{"etaBinning", {100, -1.0f, 1.0f}, "Binning used for eta axis in eta-phi maps"};
+  ConfigurableAxis phiBinning{"phiBinning", {100, 0.0f, 6.2832f}, "Binning used for eta axis in eta-phi maps"};
 
   // define cluster filter. It selects only those clusters which are of the type
   // specified in the string mClusterDefinition,e.g. kV3Default, which is V3 clusterizer with default
@@ -245,10 +247,10 @@ struct Pi0EnergyScaleCalibTask {
     // cluster properties
     mHistManager.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {{400, 0, 100, "#it{E} (GeV)"}});
     mHistManager.add("clusterTime", "Time of cluster", o2HistType::kTH1F, {{500, -250, 250, "#it{t}_{cls} (ns)"}});
-    mHistManager.add("clusterEtaPhi", "Eta and phi of cluster", o2HistType::kTH3F, {{200, -1, 1, "#eta"}, {200, 0, 2 * TMath::Pi(), "#phi"}, AccCategoryAxis});
-    mHistManager.add("clusterEtaPhiVsRow", "Eta and phi of cluster", o2HistType::kTH3F, {{200, -1, 1, "#eta"}, {200, 0, 2 * TMath::Pi(), "#phi"}, RowAxis});
-    mHistManager.add("clusterEtaPhiVsCol", "Eta and phi of cluster", o2HistType::kTH3F, {{200, -1, 1, "#eta"}, {200, 0, 2 * TMath::Pi(), "#phi"}, ColAxis});
-    mHistManager.add("clusterEtaPhiVsSMCat", "Eta and phi of cluster", o2HistType::kTH3F, {{200, -1, 1, "#eta"}, {200, 0, 2 * TMath::Pi(), "#phi"}, {3, -0.5, 2.5}});
+    mHistManager.add("clusterEtaPhi", "Eta and phi of cluster", o2HistType::kTH3F, {etaBinning, phiBinning, AccCategoryAxis});
+    mHistManager.add("clusterEtaPhiVsRow", "Eta and phi of cluster", o2HistType::kTH3F, {etaBinning, phiBinning, RowAxis});
+    mHistManager.add("clusterEtaPhiVsCol", "Eta and phi of cluster", o2HistType::kTH3F, {etaBinning, phiBinning, ColAxis});
+    mHistManager.add("clusterEtaPhiVsSMCat", "Eta and phi of cluster", o2HistType::kTH3F, {etaBinning, phiBinning, {3, -0.5, 2.5}});
     mHistManager.add("clusterM02", "M02 of cluster", o2HistType::kTH1F, {{400, 0, 5, "#it{M}_{02}"}});
     mHistManager.add("clusterM20", "M20 of cluster", o2HistType::kTH1F, {{400, 0, 2.5, "#it{M}_{20}"}});
     mHistManager.add("clusterNLM", "Number of local maxima of cluster", o2HistType::kTH1I, {{10, 0, 10, "#it{N}_{local maxima}"}});
