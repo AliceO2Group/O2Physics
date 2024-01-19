@@ -587,11 +587,21 @@ struct TableMaker {
 
         mftOffsets[mft.globalIndex()] = mft.offsets();
 
+        double chi2 = mft.chi2();
+        SMatrix5 tpars(mft.x(), mft.y(), mft.phi(), mft.tgl(), mft.signed1Pt());
+        std::vector<double> v1;
+        SMatrix55 tcovs(v1.begin(), v1.end());
+        o2::track::TrackParCovFwd pars1{mft.z(), tpars, tcovs, chi2};
+        pars1.propagateToZlinear(collision.posZ());
+
+        double dcaX = (pars1.getX() - collision.posX());
+        double dcaY = (pars1.getY() - collision.posY());
+
         VarManager::FillTrack<gkMFTFillMap>(mft);
         fHistMan->FillHistClass("MftTracks", VarManager::fgValues);
 
         trackMFT(event.lastIndex(), trackFilteringTag, mft.pt(), mft.eta(), mft.phi());
-        trackMFTExtra(mft.mftClusterSizesAndTrackFlags(), mft.sign());
+        trackMFTExtra(mft.mftClusterSizesAndTrackFlags(), mft.sign(), dcaX, dcaY, mft.nClusters());
       } // end of mft : mftTracks
 
     } // end if constexpr (TMFTFillMap)
