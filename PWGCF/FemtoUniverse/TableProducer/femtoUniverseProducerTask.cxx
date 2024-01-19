@@ -242,8 +242,7 @@ struct femtoUniverseProducerTask {
 
   // D0/D0bar mesons
   struct : o2::framework::ConfigurableGroup {
-    Configurable<float> ConfD0D0barCandMaxY{"ConfD0D0barCandMaxY", 4.0, "max. cand. rapidity"};
-    Configurable<float> ConfD0D0barMinPt{"ConfD0D0barMinPt", 0., "min. cand. pT"};
+    Configurable<float> ConfD0D0barCandMaxY{"ConfD0D0barCandMaxY", -1., "max. cand. rapidity"};
   } ConfD0Selection;
 
   HfHelper hfHelper;
@@ -749,7 +748,6 @@ struct femtoUniverseProducerTask {
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     double invMassD0 = 0.0;
     double invMassD0bar = 0.0;
-    // phiCuts.fillQA<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild>(col, p1, p1, p2, ConfPhiChildOne.ConfPDGCodePartOne, ConfPhiChildTwo.ConfPDGCodePartTwo); ///\todo fill QA also for daughters
 
     for (auto const& hfCand : hfCands) {
 
@@ -758,10 +756,6 @@ struct femtoUniverseProducerTask {
       }
 
       if (ConfD0Selection.ConfD0D0barCandMaxY >= 0. && std::abs(hfHelper.yD0(hfCand)) > ConfD0Selection.ConfD0D0barCandMaxY) {
-        continue;
-      }
-
-      if (hfCand.pt() > ConfD0Selection.ConfD0D0barMinPt) {
         continue;
       }
 
