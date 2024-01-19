@@ -1,6 +1,6 @@
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
-// All rights not expressly granted are reserved.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright
+// holders. All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
@@ -10,32 +10,32 @@
 // or submit itself to any jurisdiction.
 //
 /// \file flatenicty-chrg.cxx
-/// \author Gyula Bencedi (gyula.bencedi@cern.ch), Antonio Ortiz (antonio.ortiz@cern.ch)
-/// \brief Task to produce inclusive charged particle pT distributions as a function of charged-particle flattenicity
-/// \since 2023
+/// \author Gyula Bencedi (gyula.bencedi@cern.ch), Antonio Ortiz
+/// (antonio.ortiz@cern.ch) \brief Task to produce inclusive charged particle pT
+/// distributions as a function of charged-particle flattenicity \since 2023
 
 #include <cmath>
 #include <string>
-#include <vector>
 #include <string_view>
+#include <vector>
 
+#include "EventFiltering/filterTables.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/StaticFor.h"
 #include "Framework/runDataProcessing.h"
-#include "EventFiltering/filterTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
-#include "DataFormatsFT0/Digit.h"
-#include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "DataFormatsFT0/Digit.h"
+#include "ReconstructionDataFormats/Track.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -48,15 +48,19 @@ float meanMultV0A = 0.f;
 
 struct FlattenictyCharged {
 
-  HistogramRegistry flatchrg{"flatchrg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry flatchrg{
+      "flatchrg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   TrackSelection mTrackSelector;
 
   Configurable<float> cutTrkEta{"cutTrkEta", 0.8f, "Eta range for tracks"};
   Configurable<float> cutTrkPtMin{"cutTrkPtMin", 0.15f, "Minimum pT of tracks"};
-  //   Configurable<uint32_t> cutTrkMult{"cutTrkMult", 200, "max measured multiplicity"};
-  Configurable<float> cutVtxzMin{"cutVtxzMin", -10.f, "Minimum value for z-vertex"};
-  Configurable<float> cutVtxzMax{"cutVtxzMax", 10.f, "Maximum value for z-vertex"};
+  //   Configurable<uint32_t> cutTrkMult{"cutTrkMult", 200, "max measured
+  //   multiplicity"};
+  Configurable<float> cutVtxzMin{"cutVtxzMin", -10.f,
+                                 "Minimum value for z-vertex"};
+  Configurable<float> cutVtxzMax{"cutVtxzMax", 10.f,
+                                 "Maximum value for z-vertex"};
 
   ConfigurableAxis multBins{"multBins", {1001, -0.5, 1000.5}, ""};
 
@@ -68,19 +72,20 @@ struct FlattenictyCharged {
   Configurable<float> avPyT0C{"avPyT0C", 8.83, "nch from pythia T0C"};
   Configurable<float> avPyFV0{"avPyFV0", 21.44, "nch from pythia FV0"};
 
-  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB database"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch",
+                                "URL of the CCDB database"};
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  void init(InitContext&)
-  {
+  void init(InitContext &) {
     ccdbApi.init(o2::base::NameConf::getCCDBServer());
     ccdb->setURL(url.value); //
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     if (!ccdbApi.isHostReachable()) {
-      LOGF(fatal, "CCDB host %s is not reacheable, cannot go forward", url.value.data());
+      LOGF(fatal, "CCDB host %s is not reacheable, cannot go forward",
+           url.value.data());
     }
 
     mTrackSelector.SetPtRange(0.15f, 1e10f);
@@ -92,80 +97,121 @@ struct FlattenictyCharged {
     mTrackSelector.SetMinNCrossedRowsTPC(70);
     mTrackSelector.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
     mTrackSelector.SetMaxChi2PerClusterTPC(4.f);
-    mTrackSelector.SetRequireHitsInITSLayers(1, {0, 1}); // one hit in any SPD layer
+    mTrackSelector.SetRequireHitsInITSLayers(
+        1, {0, 1}); // one hit in any SPD layer
     mTrackSelector.SetMaxChi2PerClusterITS(36.f);
     mTrackSelector.SetMaxDcaXY(1.f);
     mTrackSelector.SetMaxDcaZ(1.f);
 
     std::vector<double> ptBinEdges = {
-      0.0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5,
-      0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
-      1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0,
-      2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0,
-      4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0,
-      12.0, 13.0, 14.0, 15.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0,
-      30.0};
+        0.0,  0.1,  0.15, 0.2,  0.25, 0.3,  0.35, 0.4,  0.45, 0.5,  0.55,
+        0.6,  0.65, 0.7,  0.75, 0.8,  0.85, 0.9,  0.95, 1.0,  1.1,  1.2,
+        1.3,  1.4,  1.5,  1.6,  1.7,  1.8,  1.9,  2.0,  2.2,  2.4,  2.6,
+        2.8,  3.0,  3.2,  3.4,  3.6,  3.8,  4.0,  4.5,  5.0,  5.5,  6.0,
+        6.5,  7.0,  8.0,  9.0,  10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0,
+        18.0, 20.0, 22.0, 24.0, 26.0, 30.0};
     const AxisSpec PtAxis{ptBinEdges, "#it{p}_{T} (GeV/#it{c})", "pt"};
     const AxisSpec ZAxis = {40, -20.0, 20.0};
     const AxisSpec PhiAxis = {600, 0, 2 * M_PI};
     const AxisSpec EtaAxisGlobal = {50, -5.0, 5.0};
     const AxisSpec EtaAxis = {20, 2.2, 5.1}; // FV0
-                                             //     const AxisSpec FlatAxis = {102, -0.01, +1.01};
+    //     const AxisSpec FlatAxis = {102, -0.01, +1.01};
     const AxisSpec CombEstAxis = {500, -0.5, 499.5};
     AxisSpec MultAxis = {multBins, "N_{trk}"};
 
-    flatchrg.add("hMultFV0", "hMultFV0", HistType::kTH1F, {{1000, -0.5, 99999.5, "FV0 amplitude"}});
-    flatchrg.add("hMultFV01to4Ring", "hMultFV01to4Ring", HistType::kTH1F, {{1000, -0.5, 99999.5, "FV0 amplitude (rings 1-4)"}});
-    flatchrg.add("hMultFV05Ring", "hMultFV05Ring", HistType::kTH1F, {{1000, -0.5, 99999.5, "FV0 amplitude (ring 5)"}});
+    flatchrg.add("hMultFV0", "hMultFV0", HistType::kTH1F,
+                 {{1000, -0.5, 99999.5, "FV0 amplitude"}});
+    flatchrg.add("hMultFV01to4Ring", "hMultFV01to4Ring", HistType::kTH1F,
+                 {{1000, -0.5, 99999.5, "FV0 amplitude (rings 1-4)"}});
+    flatchrg.add("hMultFV05Ring", "hMultFV05Ring", HistType::kTH1F,
+                 {{1000, -0.5, 99999.5, "FV0 amplitude (ring 5)"}});
 
-    flatchrg.add("hMultFV0sel", "hMultFV0sel", HistType::kTH1F, {{1000, -0.5, 99999.5, "FV0 amplitude"}});
-    flatchrg.add("hMultFV01to4Ringsel", "hMultFV01to4Ringsel", HistType::kTH1F, {{1000, -0.5, 99999.5, "FV0 amplitude (rings 1-4)"}});
-    flatchrg.add("hMultFV05Ringsel", "hMultFV05Ringsel", HistType::kTH1F, {{1000, -0.5, 99999.5, "FV0 amplitude (ring 5)"}});
+    flatchrg.add("hMultFV0sel", "hMultFV0sel", HistType::kTH1F,
+                 {{1000, -0.5, 99999.5, "FV0 amplitude"}});
+    flatchrg.add("hMultFV01to4Ringsel", "hMultFV01to4Ringsel", HistType::kTH1F,
+                 {{1000, -0.5, 99999.5, "FV0 amplitude (rings 1-4)"}});
+    flatchrg.add("hMultFV05Ringsel", "hMultFV05Ringsel", HistType::kTH1F,
+                 {{1000, -0.5, 99999.5, "FV0 amplitude (ring 5)"}});
 
-    flatchrg.add("hT0C_time", "T0C_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
-    flatchrg.add("hT0A_time", "T0A_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
-    flatchrg.add("hT0C_time_sel", "T0C_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
-    flatchrg.add("hT0A_time_sel", "T0A_time", HistType::kTH1F, {{160, -40., 40., "FT0C time"}});
+    flatchrg.add("hT0C_time", "T0C_time", HistType::kTH1F,
+                 {{160, -40., 40., "FT0C time"}});
+    flatchrg.add("hT0A_time", "T0A_time", HistType::kTH1F,
+                 {{160, -40., 40., "FT0C time"}});
+    flatchrg.add("hT0C_time_sel", "T0C_time", HistType::kTH1F,
+                 {{160, -40., 40., "FT0C time"}});
+    flatchrg.add("hT0A_time_sel", "T0A_time", HistType::kTH1F,
+                 {{160, -40., 40., "FT0C time"}});
 
-    flatchrg.add("hAmpT0AVsCh", "", HistType::kTH2F, {{24, -0.5, 23.5, "ch"}, {600, -0.5, +5999.5, "FT0A amplitude vs channel"}});
-    flatchrg.add("hFT0A", "FT0A", HistType::kTH1F, {{600, -0.5, 599.5, "FT0A amplitudes"}});
+    flatchrg.add("hAmpT0AVsCh", "", HistType::kTH2F,
+                 {{24, -0.5, 23.5, "ch"},
+                  {600, -0.5, +5999.5, "FT0A amplitude vs channel"}});
+    flatchrg.add("hFT0A", "FT0A", HistType::kTH1F,
+                 {{600, -0.5, 599.5, "FT0A amplitudes"}});
 
-    flatchrg.add("hAmpT0CVsCh", "", HistType::kTH2F, {{28, -0.5, 27.5, "ch"}, {600, -0.5, +5999.5, "FT0C amplitude vs channel"}});
-    flatchrg.add("hFT0C", "FT0C", HistType::kTH1F, {{600, -0.5, 599.5, "FT0C amplitudes"}});
+    flatchrg.add("hAmpT0CVsCh", "", HistType::kTH2F,
+                 {{28, -0.5, 27.5, "ch"},
+                  {600, -0.5, +5999.5, "FT0C amplitude vs channel"}});
+    flatchrg.add("hFT0C", "FT0C", HistType::kTH1F,
+                 {{600, -0.5, 599.5, "FT0C amplitudes"}});
 
-    flatchrg.add("hMultFT0C", "hMultFT0C", HistType::kTH1F, {{600, -0.5, 5999.5, "FT0C amplitude"}});
-    flatchrg.add("hMultFT0Csel", "hMultFT0C", HistType::kTH1F, {{600, -0.5, 5999.5, "FT0C amplitude"}});
-    flatchrg.add("hMultFT0A", "hMultFT0A", HistType::kTH1F, {{600, -0.5, 5999.5, "FT0A amplitude"}});
-    flatchrg.add("hMultFT0Asel", "hMultFT0A", HistType::kTH1F, {{600, -0.5, 5999.5, "FT0A amplitude"}});
+    flatchrg.add("hMultFT0C", "hMultFT0C", HistType::kTH1F,
+                 {{600, -0.5, 5999.5, "FT0C amplitude"}});
+    flatchrg.add("hMultFT0Csel", "hMultFT0C", HistType::kTH1F,
+                 {{600, -0.5, 5999.5, "FT0C amplitude"}});
+    flatchrg.add("hMultFT0A", "hMultFT0A", HistType::kTH1F,
+                 {{600, -0.5, 5999.5, "FT0A amplitude"}});
+    flatchrg.add("hMultFT0Asel", "hMultFT0A", HistType::kTH1F,
+                 {{600, -0.5, 5999.5, "FT0A amplitude"}});
 
-    flatchrg.add("h1flatencityFV0", "", HistType::kTH1F, {{102, -0.01, 1.01, "1-flatencityFV0"}});
-    flatchrg.add("h1flatencityFT0A", "", HistType::kTH1F, {{102, -0.01, 1.01, "1-flatencityFT0A"}});
-    flatchrg.add("h1flatencityFT0C", "", HistType::kTH1F, {{102, -0.01, 1.01, "1-flatencityFT0C"}});
-    flatchrg.add("h1flatencityFV0FT0C", "", HistType::kTH1F, {{102, -0.01, 1.01, "1-flatencityFV0FT0C"}});
-    flatchrg.add("hFV0FT0C", "", HistType::kTH1F, {{102, -0.5, 499.5, "FV0_FT0C"}});
+    flatchrg.add("h1flatencityFV0", "", HistType::kTH1F,
+                 {{102, -0.01, 1.01, "1-flatencityFV0"}});
+    flatchrg.add("h1flatencityFT0A", "", HistType::kTH1F,
+                 {{102, -0.01, 1.01, "1-flatencityFT0A"}});
+    flatchrg.add("h1flatencityFT0C", "", HistType::kTH1F,
+                 {{102, -0.01, 1.01, "1-flatencityFT0C"}});
+    flatchrg.add("h1flatencityFV0FT0C", "", HistType::kTH1F,
+                 {{102, -0.01, 1.01, "1-flatencityFV0FT0C"}});
+    flatchrg.add("hFV0FT0C", "", HistType::kTH1F,
+                 {{102, -0.5, 499.5, "FV0_FT0C"}});
 
-    flatchrg.add("hPtVsFV0FT0C", " ; #it{p}_{T} (GeV/#it{c}); FV0_FT0C", HistType::kTH2F, {{500, -0.5, 499.5, "fv0ft0c"}, {100, -0.5, 99.5, "#it{p}_{T} (GeV/#it{c})"}});
-    flatchrg.add("hPtVs1flatencityFV0", " ; #it{p}_{T} (GeV/#it{c}); FV0_FT0C", HistType::kTH2F, {{102, -0.01, 1.01, "1flatFV0"}, {100, -0.5, 99.5, "#it{p}_{T} (GeV/#it{c})"}});
+    flatchrg.add("hPtVsFV0FT0C", " ; #it{p}_{T} (GeV/#it{c}); FV0_FT0C",
+                 HistType::kTH2F,
+                 {{500, -0.5, 499.5, "fv0ft0c"},
+                  {100, -0.5, 99.5, "#it{p}_{T} (GeV/#it{c})"}});
+    flatchrg.add("hPtVs1flatencityFV0", " ; #it{p}_{T} (GeV/#it{c}); FV0_FT0C",
+                 HistType::kTH2F,
+                 {{102, -0.01, 1.01, "1flatFV0"},
+                  {100, -0.5, 99.5, "#it{p}_{T} (GeV/#it{c})"}});
 
     // event level histos
-    flatchrg.add({"Events/selection", ";status;events", {HistType::kTH1F, {{4, 0.5, 4.5}}}});
+    flatchrg.add({"Events/selection",
+                  ";status;events",
+                  {HistType::kTH1F, {{4, 0.5, 4.5}}}});
     auto hstat = flatchrg.get<TH1>(HIST("Events/selection"));
-    auto* x = hstat->GetXaxis();
+    auto *x = hstat->GetXaxis();
     x->SetBinLabel(1, "All");
     x->SetBinLabel(2, "Selected trigger");
     x->SetBinLabel(3, "Selected zvtx");
     x->SetBinLabel(4, "Selected INEL>0");
 
     // track level histos
-    flatchrg.add({"Tracks/VtxZ", " ; #it{z}_{vtx} (cm)", {HistType::kTH1F, {ZAxis}}});
-    flatchrg.add({"Tracks/EtaVtxZGlobal", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxisGlobal, ZAxis}}});
-    flatchrg.add({"Tracks/EtaGlobal", "; #eta; #it{z}_{vtx} (cm); tracks", {HistType::kTH1F, {EtaAxisGlobal}}});
-    flatchrg.add({"Tracks/PhiEtaGlobal", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxisGlobal}}});
-    flatchrg.add({"Tracks/PtEtaGlobal", " ; #it{p}_{T} (GeV/#it{c}); #eta", {HistType::kTH2F, {PtAxis, EtaAxisGlobal}}});
+    flatchrg.add(
+        {"Tracks/VtxZ", " ; #it{z}_{vtx} (cm)", {HistType::kTH1F, {ZAxis}}});
+    flatchrg.add({"Tracks/EtaVtxZGlobal",
+                  "; #eta; #it{z}_{vtx} (cm); tracks",
+                  {HistType::kTH2F, {EtaAxisGlobal, ZAxis}}});
+    flatchrg.add({"Tracks/EtaGlobal",
+                  "; #eta; #it{z}_{vtx} (cm); tracks",
+                  {HistType::kTH1F, {EtaAxisGlobal}}});
+    flatchrg.add({"Tracks/PhiEtaGlobal",
+                  "; #varphi; #eta; tracks",
+                  {HistType::kTH2F, {PhiAxis, EtaAxisGlobal}}});
+    flatchrg.add({"Tracks/PtEtaGlobal",
+                  " ; #it{p}_{T} (GeV/#it{c}); #eta",
+                  {HistType::kTH2F, {PtAxis, EtaAxisGlobal}}});
   }
 
-  int getT0ASector(int i_ch)
-  {
+  int getT0ASector(int i_ch) {
     int i_sec_t0a = -1;
     for (int i_sec = 0; i_sec < 24; ++i_sec) {
       if (i_ch >= 4 * i_sec && i_ch <= 3 + 4 * i_sec) {
@@ -176,8 +222,7 @@ struct FlattenictyCharged {
     return i_sec_t0a;
   }
 
-  int getT0CSector(int i_ch)
-  {
+  int getT0CSector(int i_ch) {
     int i_sec_t0c = -1;
     for (int i_sec = 0; i_sec < 28; ++i_sec) {
       if (i_ch >= 4 * i_sec && i_ch <= 3 + 4 * i_sec) {
@@ -188,8 +233,7 @@ struct FlattenictyCharged {
     return i_sec_t0c;
   }
 
-  float GetFlatenicity(float signals[], int entries)
-  {
+  float GetFlatenicity(float signals[], int entries) {
     float flat = 9999;
     float mRho = 0;
     for (int iCell = 0; iCell < entries; ++iCell) {
@@ -213,26 +257,35 @@ struct FlattenictyCharged {
     return flat;
   }
 
-  Filter trackFilter = (nabs(aod::track::eta) < cutTrkEta) && (aod::track::pt > cutTrkPtMin);
-  using TrackTableData = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
+  Filter trackFilter =
+      (nabs(aod::track::eta) < cutTrkEta) && (aod::track::pt > cutTrkPtMin);
+  using TrackTableData =
+      soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
+                              aod::TrackSelection>>;
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
 
-  void process(CollisionTableData::iterator const& collision, TrackTableData const& tracks, soa::Join<aod::BCs, aod::Timestamps> const& bcs, /*aod::MFTTracks const& mfttracks,*/ aod::FT0s const& ft0s, aod::FV0As const& fv0s)
-  {
+  void process(CollisionTableData::iterator const &collision,
+               TrackTableData const &tracks,
+               soa::Join<aod::BCs, aod::Timestamps> const &bcs,
+               /*aod::MFTTracks const& mfttracks,*/ aod::FT0s const &ft0s,
+               aod::FV0As const &fv0s) {
     LOGF(debug, "<FlattenictyCharged> Collision %d", collision.globalIndex());
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
 
     meanMultT0C = 0.f;
-    auto vMeanMultT0C = ccdb->getForTimeStamp<std::vector<double>>("Users/e/ekryshen/meanT0C", bc.timestamp());
+    auto vMeanMultT0C = ccdb->getForTimeStamp<std::vector<double>>(
+        "Users/e/ekryshen/meanT0C", bc.timestamp());
     meanMultT0C = (*vMeanMultT0C)[0];
 
     //   meanMultT0A = 0.f;
-    //   auto vMeanMultT0A = ccdb->getForTimeStamp<std::vector<double>>("Users/e/ekryshen/meanT0A", bc.timestamp());
-    //   meanMultT0A = (*vMeanMultT0A)[0];
+    //   auto vMeanMultT0A =
+    //   ccdb->getForTimeStamp<std::vector<double>>("Users/e/ekryshen/meanT0A",
+    //   bc.timestamp()); meanMultT0A = (*vMeanMultT0A)[0];
 
     meanMultV0A = 0.f;
-    auto vMeanMultV0A = ccdb->getForTimeStamp<std::vector<double>>("Users/e/ekryshen/meanV0A", bc.timestamp());
+    auto vMeanMultV0A = ccdb->getForTimeStamp<std::vector<double>>(
+        "Users/e/ekryshen/meanV0A", bc.timestamp());
     meanMultV0A = (*vMeanMultV0A)[0];
 
     //   float fac_FT0A_ebe = 1.;
@@ -423,7 +476,8 @@ struct FlattenictyCharged {
     float combest = 0.;
 
     // option 1
-    flatchrg.fill(HIST("h1flatencityFV0FT0C"), (1.0 - (flatenicity_fv0 + flatenicity_t0c) / 2.0));
+    flatchrg.fill(HIST("h1flatencityFV0FT0C"),
+                  (1.0 - (flatenicity_fv0 + flatenicity_t0c) / 2.0));
 
     // option 2
     const int nEta = 2; // FT0C + FV0
@@ -455,7 +509,7 @@ struct FlattenictyCharged {
 
     flatchrg.fill(HIST("hFV0FT0C"), combest);
 
-    for (auto& track : tracks) {
+    for (auto &track : tracks) {
       // if (!track.isGlobalTrack()) {
       if (!mTrackSelector.IsSelected(track)) {
         continue;
@@ -474,14 +528,13 @@ struct FlattenictyCharged {
       flatchrg.fill(HIST("Tracks/PhiEtaGlobal"), phi, track.eta());
 
       flatchrg.fill(HIST("hPtVsFV0FT0C"), combest, track.pt());
-      flatchrg.fill(HIST("hPtVs1flatencityFV0"), 1. - flatenicity_fv0, track.pt());
+      flatchrg.fill(HIST("hPtVs1flatencityFV0"), 1. - flatenicity_fv0,
+                    track.pt());
     }
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{
-    //       adaptAnalysisTask<FlattenictyQA>(cfgc),
-    adaptAnalysisTask<FlattenictyCharged>(cfgc)};
+WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
+  return WorkflowSpec{//       adaptAnalysisTask<FlattenictyQA>(cfgc),
+                      adaptAnalysisTask<FlattenictyCharged>(cfgc)};
 }
