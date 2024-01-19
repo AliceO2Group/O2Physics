@@ -724,23 +724,28 @@ struct NonPromptCascadeTask {
       // QA PID
       float nSigmaTPC[nParticles]{bachelor.tpcNSigmaKa(), bachelor.tpcNSigmaPi(), protonTrack.tpcNSigmaPr(), pionTrack.tpcNSigmaPi()};
 
+      bool isBachelorSurvived = false;
       if (isOmega) {
         if (bachelor.hasTPC()) {
           LOG(debug) << "TPCSignal bachelor " << bachelor.sign() << "/" << bachelor.tpcInnerParam() << "/" << bachelor.tpcSignal();
-          if (nSigmaTPC[0] < cfgCutsPID->get(0u, 0u) || nSigmaTPC[0] > cfgCutsPID->get(0u, 1u)) {
-            continue;
+          if (nSigmaTPC[0] > cfgCutsPID->get(0u, 0u) && nSigmaTPC[0] < cfgCutsPID->get(0u, 1u)) {
+            registry.fill(HIST("h_PIDcutsOmega"), 3, massOmega);
+            isBachelorSurvived = true;
           }
         }
-        registry.fill(HIST("h_PIDcutsOmega"), 3, massOmega);
       }
 
       if (bachelor.hasTPC()) {
         LOG(debug) << "TPCSignal bachelor " << bachelor.sign() << "/" << bachelor.tpcInnerParam() << "/" << bachelor.tpcSignal();
-        if (nSigmaTPC[1] < cfgCutsPID->get(1u, 0u) || nSigmaTPC[1] > cfgCutsPID->get(1u, 1u)) {
-          continue;
+        if (nSigmaTPC[1] > cfgCutsPID->get(1u, 0u) && nSigmaTPC[1] < cfgCutsPID->get(1u, 1u)) {
+          registry.fill(HIST("h_PIDcutsXi"), 3, massXi);
+          isBachelorSurvived = true;
         }
       }
-      registry.fill(HIST("h_PIDcutsXi"), 3, massXi);
+
+      if (!isBachelorSurvived) {
+        continue;
+      }
 
       LOG(debug) << "TPCSignal protonTrack " << protonTrack.sign() << "/" << protonTrack.tpcInnerParam() << "/" << protonTrack.tpcSignal();
       if (nSigmaTPC[2] < cfgCutsPID->get(2u, 0u) || nSigmaTPC[2] > cfgCutsPID->get(2u, 1u)) {
