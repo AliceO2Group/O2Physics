@@ -110,10 +110,11 @@ struct TaskPolarisationCharmHadrons {
 
     // inv. mass hypothesis to loop over
     // e.g.: Lc->pKpi has the ambiguity pKpi vs. piKp
-    if (doprocessDstar || doprocessDstarWithMl) {
-      nMassHypos = 1;
-    } else if (doprocessLcToPKPi || doprocessLcToPKPiWithMl) {
+    if (doprocessLcToPKPi || doprocessLcToPKPiWithMl) {
       nMassHypos = charm_polarisation::MassHyposLcToPKPi::NMassHypoLcToPKPi;
+    } else {
+      // D*, Lc->pK0s
+      nMassHypos = 1;
     }
 
   }; // end init
