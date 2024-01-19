@@ -225,11 +225,11 @@ struct femtoDreamProducerReducedTask {
     int mult = 0;
     int multNtr = 0;
     if (ConfIsRun3) {
-      if constexpr (useCentrality){
+      if constexpr (useCentrality) {
         mult = col.centFT0M();
       } else {
         mult = 0.;
-      } 
+      }
       multNtr = col.multNTracksPV();
     } else {
       mult = 1; // multiplicity percentile is known in Run 2
@@ -314,7 +314,7 @@ struct femtoDreamProducerReducedTask {
     fillCollisionsAndTracks<false, true>(col, tracks);
   }
   PROCESS_SWITCH(femtoDreamProducerReducedTask, processData, "Provide experimental data", true);
-  
+
   void processMC(aod::FemtoFullCollisionMC const& col,
                  aod::BCsWithTimestamps const&,
                  soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
@@ -328,9 +328,9 @@ struct femtoDreamProducerReducedTask {
   PROCESS_SWITCH(femtoDreamProducerReducedTask, processMC, "Provide MC data", false);
 
   void processMC_noCentrality(aod::FemtoFullCollision_noCent_MC const& col,
-                 aod::BCsWithTimestamps const&,
-                 soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                 aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+                              aod::BCsWithTimestamps const&,
+                              soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                              aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
