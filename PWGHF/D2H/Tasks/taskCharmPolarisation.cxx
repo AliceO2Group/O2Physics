@@ -159,8 +159,8 @@ struct TaskPolarisationCharmHadrons {
         // Lc->pKpi analysis
         // polarization measured from the proton daughter (*)
 
-        // reconstructed as pKpi
         if (iMass == charm_polarisation::MassHyposLcToPKPi::PKPi && candidate.isSelLcToPKPi() >= selectionFlagLcToPKPi) {
+          // reconstructed as pKpi
           pxDau = candidate.pxProng0();
           pyDau = candidate.pyProng0();
           pzDau = candidate.pzProng0();
@@ -170,10 +170,8 @@ struct TaskPolarisationCharmHadrons {
             outputMl[1] = candidate.mlProbLcToPKPi.at(1);
             outputMl[2] = candidate.mlProbLcToPKPi.at(2);
           }
-        }
-
-        // reconstructed as piKp
-        else if (iMass == charm_polarisation::MassHyposLcToPKPi::PiKP && candidate.isSelLcToPiKP() >= selectionFlagLcToPKPi) {
+        } else if (iMass == charm_polarisation::MassHyposLcToPKPi::PiKP && candidate.isSelLcToPiKP() >= selectionFlagLcToPKPi) {
+          // reconstructed as piKp
           pxDau = candidate.pxProng2();
           pyDau = candidate.pyProng2();
           pzDau = candidate.pzProng2();
