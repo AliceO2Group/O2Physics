@@ -49,7 +49,11 @@ enum eEventHistograms {
   eNumberOfEvents = 0,
   eTotalMultiplicity,
   eSelectedTracks,
-  eCentrality,
+  eMultFV0M,      // ref. mult from helper task o2-analysis-multiplicity-table
+  eMultFT0M,      // ref. mult from helper task o2-analysis-multiplicity-table
+  eMultTPC,       // ref. mult from helper task o2-analysis-multiplicity-table
+  eMultNTracksPV, // ref. mult from helper task o2-analysis-multiplicity-table
+  eCentrality,    // default centrality estimator
   eVertex_x,
   eVertex_y,
   eVertex_z,
