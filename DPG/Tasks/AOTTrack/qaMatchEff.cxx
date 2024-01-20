@@ -140,6 +140,7 @@ struct qaMatchEff {
   // configuration for THnSparse's
   //
   Configurable<bool> makethn{"makethn", false, "choose if produce thnsparse"};
+<<<<<<< HEAD
   ConfigurableAxis thnd0{"thnd0", {600, -3.0f, 3.0f}, "impact parameter in xy [cm]"};
   ConfigurableAxis thnPt{"thnPt", {30, 0.0f, 15.0f}, "pt [GeV/c]"};
   ConfigurableAxis thnPhi{"thnPhi", {18, 0.0f, TMath::TwoPi()}, "phi"};
@@ -147,13 +148,33 @@ struct qaMatchEff {
   ConfigurableAxis thnType{"thnType", {3, -0.5f, 2.5f}, "0: primary, 1: physical secondary, 2: sec. from material"};
   ConfigurableAxis thnLabelSign{"thnLabelSign", {3, -1.5f, 1.5f}, "-1/+1 antip./particle"};
   ConfigurableAxis thnSpec{"thnSpec", {5, 0.5f, 5.5f}, "particle from MC (1,2,3,4,5 -> e,pi,K,P,other)"};
+=======
+  ConfigurableAxis thnd0{"thnd0", {150, -3.0f, 3.0f}, "impact parameter in xy [cm]"};
+  ConfigurableAxis thndz{"thndz", {150, -10.0f, 10.0f}, "impact parameter in z [cm]"};
+  ConfigurableAxis thnPt{"thnPt", {80, 0.0f, 20.0f}, "pt [GeV/c]"};
+  //  ConfigurableAxis thnPhi{"thnPhi", {18, 0.0f, TMath::TwoPi()}, "phi"};
+  ConfigurableAxis thnEta{"thnEta", {20, -2.0f, 2.0f}, "eta"};
+  ConfigurableAxis thnType{"thnType", {3, -0.5f, 2.5f}, "0: primary, 1: physical secondary, 2: sec. from material"};
+  ConfigurableAxis thnLabelSign{"thnLabelSign", {3, -1.5f, 1.5f}, "MC -1/+1 antip./particle"};
+  ConfigurableAxis thnSpec{"thnSpec", {10, -0.5f, 9.5f}, "particle ID"};
+  ConfigurableAxis thnITSclumap{"thnITSclumap", {128, -0.5f, 127.5f}, "ITS cluster map"};
+  ConfigurableAxis thnTPCclu{"thnTPCclu", {81, -0.5f, 160.5f}, "TPC nclust found"};
+  ConfigurableAxis thnHasDet{"thnHasDet", {7, -0.5f, 6.5f}, "presence of ITS, TPC, TOF"};
+>>>>>>> 3e667c30 (ThNsparse updated for dca and m.e. analysis)
   AxisSpec thnd0Axis{thnd0, "#it{d}_{r#it{#varphi}} [cm]"};
   AxisSpec thnPtAxis{thnPt, "#it{p}_{T}^{reco} [GeV/#it{c}]"};
   AxisSpec thnPhiAxis{thnPhi, "#varphi"};
   AxisSpec thnEtaAxis{thnEta, "#it{#eta}"};
   AxisSpec thnTypeAxis{thnType, "0:prim-1:sec-2:matsec"};
   AxisSpec thnLabelSignAxis{thnLabelSign, "+/- 1 for part./antipart."};
+<<<<<<< HEAD
   AxisSpec thnSpecAxis{thnSpec, "particle from MC (1,2,3,4,5 -> e,pi,K,P,other)"};
+=======
+  AxisSpec thnSpecAxis{thnSpec, "particle ID"};
+  AxisSpec thnITSclumapAxis{thnITSclumap, "ITS cluster map"};
+  AxisSpec thnTPCcluAxis{thnTPCclu, "TPC nclust found"};
+  AxisSpec thnHasDetAxis{thnHasDet, "presence of ITS, TPC, TOF"};
+>>>>>>> 3e667c30 (ThNsparse updated for dca and m.e. analysis)
   //
   // Tracks selection object
   TrackSelection cutObject;
@@ -251,7 +272,12 @@ struct qaMatchEff {
     //
     // thnsparse for fractions - only if selected
     if (makethn)
+<<<<<<< HEAD
       histos.add("data/sparse/thnsforfrac", "Sparse histo for imp. par. fraction analysis - data", kTHnSparseF, {thnd0Axis, thnPtAxis, thnPhiAxis, thnEtaAxis, thnTypeAxis, thnLabelSignAxis, thnSpecAxis});
+=======
+      histos.add("data/sparse/thnsforfrac", "Sparse histo for imp. par. fraction analysis - data", kTHnSparseF,
+                 {thnd0Axis, thndzAxis, thnPtAxis, thnEtaAxis, thnTypeAxis, thnLabelSignAxis, thnSpecAxis, thnITSclumapAxis, thnTPCcluAxis, thnHasDetAxis});
+>>>>>>> 3e667c30 (ThNsparse updated for dca and m.e. analysis)
 
     /// control plots
     histos.add("data/control/itsHitsMatched", "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
@@ -709,7 +735,12 @@ struct qaMatchEff {
     //
     // thnsparse for fractions
     if (makethn)
+<<<<<<< HEAD
       histos.add("MC/sparse/thnsforfrac", "Sparse histo for imp. par. fraction analysis - MC", kTHnSparseF, {thnd0Axis, thnPtAxis, thnPhiAxis, thnEtaAxis, thnTypeAxis, thnLabelSignAxis, thnSpecAxis});
+=======
+      histos.add("MC/sparse/thnsforfrac", "Sparse histo for imp. par. fraction analysis - MC", kTHnSparseF,
+                 {thnd0Axis, thndzAxis, thnPtAxis, thnEtaAxis, thnTypeAxis, thnLabelSignAxis, thnSpecAxis, thnITSclumapAxis, thnTPCcluAxis, thnHasDetAxis});
+>>>>>>> 3e667c30 (ThNsparse updated for dca and m.e. analysis)
 
     /// control plots
     histos.add("MC/control/itsHitsMatched", "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
@@ -1451,6 +1482,7 @@ struct qaMatchEff {
           default:
             specind = 5;
         }
+<<<<<<< HEAD
       }
       //
       //
@@ -1460,8 +1492,112 @@ struct qaMatchEff {
           histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), trackPt, track.phi(), track.eta(), sayPrim, signPDGCode, specind);
         } else {
           histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), trackPt, track.phi(), track.eta(), sayPrim, signPDGCode, specind);
+=======
+      } else {
+        // PID info for ThNSparse filling
+        //
+        //    WARNING !!!     MIND the order of lines below, pions are preferred over kaons which are preferred over protons
+        specind = -99;
+        if (isProton && !(isKaon || isPion))
+          specind = 4; // pions ONLY
+        if (isKaon && !(isPion || isProton))
+          specind = 3; // kaons ONLY
+        if (isPion && !(isKaon || isProton))
+          specind = 2; // protons ONLY
+        if (isPion && isKaon && !isProton)
+          specind = 5; // maybe pion, maybe kaon
+        if (isPion && isProton && !isKaon)
+          specind = 6; // maybe pion, maybe proton
+        if (isKaon && isProton && !isPion)
+          specind = 7; // maybe proton, maybe kaon
+        if (isPion && isKaon && isProton)
+          specind = 9; // maybe pion, maybe kaon, maybe proton
+      }
+      //
+      //***************************************************************************************************************************************************************************
+      //  MIND!!!!   THESE SETS OVERLAP!!!  ___M__U__S__T___ select one of the conditions in the analysis
+      hasdet = 0;
+      if (trkWITS && isTrackSelectedITSCuts(track)) {
+        hasdet = 1;
+        //
+        //
+        // fill thnsparse for fraction analysis
+        if (makethn) {
+          if constexpr (IS_MC) {
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          } else {
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          }
+>>>>>>> 3e667c30 (ThNsparse updated for dca and m.e. analysis)
         }
       }
+      if (trkWTPC && isTrackSelectedTPCCuts(track)) {
+        hasdet = 2;
+        //
+        //
+        // fill thnsparse for fraction analysis
+        if (makethn) {
+          if constexpr (IS_MC) {
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          } else {
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          }
+        }
+      }
+      if (trkWITS && trkWTPC && isTrackSelectedTPCCuts(track) && isTrackSelectedITSCuts(track)) {
+        hasdet = 3;
+        //
+        //
+        // fill thnsparse for fraction analysis
+        if (makethn) {
+          if constexpr (IS_MC) {
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          } else {
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          }
+        }
+      }
+      if (trkWTOF && trkWTPC && isTrackSelectedTPCCuts(track)) {
+        hasdet = 4;
+        //
+        //
+        // fill thnsparse for fraction analysis
+        if (makethn) {
+          if constexpr (IS_MC) {
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          } else {
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          }
+        }
+      }
+      if (trkWITS && isTrackSelectedITSCuts(track) && trkWTOF) {
+        hasdet = 5;
+        //
+        //
+        // fill thnsparse for fraction analysis
+        if (makethn) {
+          if constexpr (IS_MC) {
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          } else {
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          }
+        }
+      }
+      if (trkWITS && trkWTOF && trkWTPC && isTrackSelectedTPCCuts(track) && isTrackSelectedITSCuts(track)) {
+        hasdet = 6;
+        //
+        //
+        // fill thnsparse for fraction analysis
+        if (makethn) {
+          if constexpr (IS_MC) {
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          } else {
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          }
+        }
+      }
+      //***************************************************************************************************************************************************************************
+      //
       //
       // all tracks, no conditions
       //
