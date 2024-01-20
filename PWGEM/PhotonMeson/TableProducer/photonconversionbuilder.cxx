@@ -394,20 +394,16 @@ struct PhotonConversionBuilder {
       return;
     }
 
-    //// Apply a topological constraint of the gamma to the PV. Parameters will be given at the primary vertex.
-    // KFParticle gammaKF_PV = gammaKF_DecayVtx;
-    // gammaKF_PV.SetProductionVertex(KFPV);
-    // LOGF(info, "gammaKF_PV.GetPx() = %f, gammaKF_DecayVtx.GetPx() = %f", gammaKF_PV.GetPx(), gammaKF_DecayVtx.GetPx());
-    // LOGF(info, "gammaKF_PV.GetPy() = %f, gammaKF_DecayVtx.GetPy() = %f", gammaKF_PV.GetPy(), gammaKF_DecayVtx.GetPy());
-    // LOGF(info, "gammaKF_PV.GetPz() = %f, gammaKF_DecayVtx.GetPz() = %f", gammaKF_PV.GetPz(), gammaKF_DecayVtx.GetPz());
+    // Apply a topological constraint of the gamma to the PV. Parameters will be given at the primary vertex.
+    KFParticle gammaKF_PV = gammaKF;
+    gammaKF_PV.SetProductionVertex(KFPV);
+    float v0pt = RecoDecay::sqrtSumOfSquares(gammaKF_PV.GetPx(), gammaKF_PV.GetPy());
+    float v0eta = RecoDecay::eta(std::array{gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz()});
+    float v0phi = RecoDecay::phi(gammaKF_PV.GetPx(), gammaKF_PV.GetPy()) > 0.f ? RecoDecay::phi(gammaKF_PV.GetPx(), gammaKF_PV.GetPy()) : RecoDecay::phi(gammaKF_PV.GetPx(), gammaKF_PV.GetPy()) + TMath::TwoPi();
 
-    float v0pt = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy());
-    float v0eta = RecoDecay::eta(std::array{gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz()});
-    float v0phi = RecoDecay::phi(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy()) > 0.f ? RecoDecay::phi(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy()) : RecoDecay::phi(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy()) + TMath::TwoPi();
-
-    // if (fabs(v0eta) > max_eta_v0 || v0pt < min_pt_v0) {
-    //   return;
-    // }
+    if (fabs(v0eta) > max_eta_v0 || v0pt < min_pt_v0) {
+      return;
+    }
 
     if (isITSonlyTrack(ele) && isITSonlyTrack(pos) && v0pt > max_pt_v0_itsonly) {
       return;
@@ -489,7 +485,7 @@ struct PhotonConversionBuilder {
 
       v0photonskf(collision.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                   gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
-                  gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz(),
+                  gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz(),
                   v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
                   cospa_kf, pca_kf, alpha, qt, chi2kf);
 
