@@ -73,6 +73,7 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH2F*>(list->FindObject("hEtaPhi"))->Fill(obj.phi(), obj.eta());
     reinterpret_cast<TH2F*>(list->FindObject("hRadius"))->Fill(obj.vz(), obj.v0radius());
     reinterpret_cast<TH1F*>(list->FindObject("hCosPA"))->Fill(obj.cospa());
+    reinterpret_cast<TH2F*>(list->FindObject("hCosPA_Rxy"))->Fill(obj.v0radius(), obj.cospa());
     reinterpret_cast<TH1F*>(list->FindObject("hPCA"))->Fill(obj.pca());
     reinterpret_cast<TH2F*>(list->FindObject("hPCA_Rxy"))->Fill(obj.v0radius(), obj.pca());
     reinterpret_cast<TH2F*>(list->FindObject("hDCAxyz"))->Fill(obj.dcaXYv0topv(), obj.dcaZv0topv());
