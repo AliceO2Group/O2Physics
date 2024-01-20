@@ -68,4 +68,4 @@ o2physics_add_dpl_workflow(multiplicity-pb-pb
 o2physics_add_dpl_workflow(flattenicty-chrg
                   SOURCES flattenicty-chrg.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                  COMPONENT_NAME Analysis)		
+                  COMPONENT_NAME Analysis)
