@@ -49,9 +49,9 @@ const double efficiencyDmesonDefault[nPtBinsMassAndEfficiency] = {};
 auto vecEfficiencyDmeson = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + nPtBinsMassAndEfficiency};
 
 // histogram binning definition
-const int massAxisNBins = 120;
-const double massAxisMin = 1.5848;
-const double massAxisMax = 2.1848;
+const int massAxisNBins = 200;
+const double massAxisMin = 1.3848;
+const double massAxisMax = 2.3848;
 const int phiAxisNBins = 32;
 const double phiAxisMin = 0.;
 const double phiAxisMax = o2::constants::math::TwoPI;
