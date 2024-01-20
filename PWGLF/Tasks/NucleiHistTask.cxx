@@ -669,7 +669,6 @@ struct NucleiHistTask {
 
           spectra_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta());
         }
-
       }
 
       //**************   check offline-trigger (skimming) condidition Deuteron   *******************
@@ -1280,7 +1279,6 @@ struct NucleiHistTask {
       }
     }
   }
-
 
   //****************************************************************************************************
 
