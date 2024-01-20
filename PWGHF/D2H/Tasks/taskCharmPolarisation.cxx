@@ -169,9 +169,9 @@ struct TaskPolarisationCharmHadrons {
             if (candidate.mlProbLcToPKPi().size() == 3) {
               // protect from empty vectors
               // the BDT output score might be empty if no preselections were enabled (selectionFlag null)
-              outputMl[0] = candidate.mlProbLcToPKPi().at(0);
-              outputMl[1] = candidate.mlProbLcToPKPi().at(1);
-              outputMl[2] = candidate.mlProbLcToPKPi().at(2);
+              outputMl[0] = candidate.mlProbLcToPKPi()[0];
+              outputMl[1] = candidate.mlProbLcToPKPi()[1];
+              outputMl[2] = candidate.mlProbLcToPKPi()[2];
             }
           }
         } else if (iMass == charm_polarisation::MassHyposLcToPKPi::PiKP && candidate.isSelLcToPiKP() >= selectionFlagLcToPKPi) {
@@ -184,9 +184,9 @@ struct TaskPolarisationCharmHadrons {
             if (candidate.mlProbLcToPiKP().size() == 3) {
               // protect from empty vectors
               // the BDT output score might be empty if no preselections were enabled (selectionFlag null)
-              outputMl[0] = candidate.mlProbLcToPiKP().at(0);
-              outputMl[1] = candidate.mlProbLcToPiKP().at(1);
-              outputMl[2] = candidate.mlProbLcToPiKP().at(2);
+              outputMl[0] = candidate.mlProbLcToPiKP()[0];
+              outputMl[1] = candidate.mlProbLcToPiKP()[1];
+              outputMl[2] = candidate.mlProbLcToPiKP()[2];
             }
           }
         }
