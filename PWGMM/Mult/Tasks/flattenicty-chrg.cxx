@@ -52,7 +52,11 @@ float meanMultV0A = 0.f;
 struct FlattenictyCharged {
 
   HistogramRegistry flatchrg{
-      "flatchrg", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+    "flatchrg",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
 
   TrackSelection mTrackSelector;
 
@@ -81,7 +85,8 @@ struct FlattenictyCharged {
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  void init(InitContext &) {
+  void init(InitContext&)
+  {
     ccdbApi.init(o2::base::NameConf::getCCDBServer());
     ccdb->setURL(url.value); //
     ccdb->setCaching(true);
@@ -101,18 +106,18 @@ struct FlattenictyCharged {
     mTrackSelector.SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
     mTrackSelector.SetMaxChi2PerClusterTPC(4.f);
     mTrackSelector.SetRequireHitsInITSLayers(
-        1, {0, 1}); // one hit in any SPD layer
+      1, {0, 1}); // one hit in any SPD layer
     mTrackSelector.SetMaxChi2PerClusterITS(36.f);
     mTrackSelector.SetMaxDcaXY(1.f);
     mTrackSelector.SetMaxDcaZ(1.f);
 
     std::vector<double> ptBinEdges = {
-        0.0,  0.1,  0.15, 0.2,  0.25, 0.3,  0.35, 0.4,  0.45, 0.5,  0.55,
-        0.6,  0.65, 0.7,  0.75, 0.8,  0.85, 0.9,  0.95, 1.0,  1.1,  1.2,
-        1.3,  1.4,  1.5,  1.6,  1.7,  1.8,  1.9,  2.0,  2.2,  2.4,  2.6,
-        2.8,  3.0,  3.2,  3.4,  3.6,  3.8,  4.0,  4.5,  5.0,  5.5,  6.0,
-        6.5,  7.0,  8.0,  9.0,  10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0,
-        18.0, 20.0, 22.0, 24.0, 26.0, 30.0};
+      0.0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55,
+      0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2,
+      1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6,
+      2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0, 5.5, 6.0,
+      6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0,
+      18.0, 20.0, 22.0, 24.0, 26.0, 30.0};
     const AxisSpec PtAxis{ptBinEdges, "#it{p}_{T} (GeV/#it{c})", "pt"};
     const AxisSpec ZAxis = {40, -20.0, 20.0};
     const AxisSpec PhiAxis = {600, 0, 2 * M_PI};
@@ -190,7 +195,7 @@ struct FlattenictyCharged {
                   ";status;events",
                   {HistType::kTH1F, {{4, 0.5, 4.5}}}});
     auto hstat = flatchrg.get<TH1>(HIST("Events/selection"));
-    auto *x = hstat->GetXaxis();
+    auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All");
     x->SetBinLabel(2, "Selected trigger");
     x->SetBinLabel(3, "Selected zvtx");
@@ -198,7 +203,7 @@ struct FlattenictyCharged {
 
     // track level histos
     flatchrg.add(
-        {"Tracks/VtxZ", " ; #it{z}_{vtx} (cm)", {HistType::kTH1F, {ZAxis}}});
+      {"Tracks/VtxZ", " ; #it{z}_{vtx} (cm)", {HistType::kTH1F, {ZAxis}}});
     flatchrg.add({"Tracks/EtaVtxZGlobal",
                   "; #eta; #it{z}_{vtx} (cm); tracks",
                   {HistType::kTH2F, {EtaAxisGlobal, ZAxis}}});
@@ -213,7 +218,8 @@ struct FlattenictyCharged {
                   {HistType::kTH2F, {PtAxis, EtaAxisGlobal}}});
   }
 
-  int getT0ASector(int i_ch) {
+  int getT0ASector(int i_ch)
+  {
     int i_sec_t0a = -1;
     for (int i_sec = 0; i_sec < 24; ++i_sec) {
       if (i_ch >= 4 * i_sec && i_ch <= 3 + 4 * i_sec) {
@@ -224,7 +230,8 @@ struct FlattenictyCharged {
     return i_sec_t0a;
   }
 
-  int getT0CSector(int i_ch) {
+  int getT0CSector(int i_ch)
+  {
     int i_sec_t0c = -1;
     for (int i_sec = 0; i_sec < 28; ++i_sec) {
       if (i_ch >= 4 * i_sec && i_ch <= 3 + 4 * i_sec) {
@@ -235,7 +242,8 @@ struct FlattenictyCharged {
     return i_sec_t0c;
   }
 
-  float GetFlatenicity(float signals[], int entries) {
+  float GetFlatenicity(float signals[], int entries)
+  {
     float flat = 9999;
     float mRho = 0;
     for (int iCell = 0; iCell < entries; ++iCell) {
@@ -260,24 +268,25 @@ struct FlattenictyCharged {
   }
 
   Filter trackFilter =
-      (nabs(aod::track::eta) < cutTrkEta) && (aod::track::pt > cutTrkPtMin);
+    (nabs(aod::track::eta) < cutTrkEta) && (aod::track::pt > cutTrkPtMin);
   using TrackTableData =
-      soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-                              aod::TrackSelection>>;
+    soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
+                            aod::TrackSelection>>;
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
 
-  void process(CollisionTableData::iterator const &collision,
-               TrackTableData const &tracks,
-               soa::Join<aod::BCs, aod::Timestamps> const &bcs,
-               /*aod::MFTTracks const& mfttracks,*/ aod::FT0s const &ft0s,
-               aod::FV0As const &fv0s) {
+  void process(CollisionTableData::iterator const& collision,
+               TrackTableData const& tracks,
+               soa::Join<aod::BCs, aod::Timestamps> const& bcs,
+               /*aod::MFTTracks const& mfttracks,*/ aod::FT0s const& ft0s,
+               aod::FV0As const& fv0s)
+  {
     LOGF(debug, "<FlattenictyCharged> Collision %d", collision.globalIndex());
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
 
     meanMultT0C = 0.f;
     auto vMeanMultT0C = ccdb->getForTimeStamp<std::vector<double>>(
-        "Users/e/ekryshen/meanT0C", bc.timestamp());
+      "Users/e/ekryshen/meanT0C", bc.timestamp());
     meanMultT0C = (*vMeanMultT0C)[0];
 
     //   meanMultT0A = 0.f;
@@ -287,7 +296,7 @@ struct FlattenictyCharged {
 
     meanMultV0A = 0.f;
     auto vMeanMultV0A = ccdb->getForTimeStamp<std::vector<double>>(
-        "Users/e/ekryshen/meanV0A", bc.timestamp());
+      "Users/e/ekryshen/meanV0A", bc.timestamp());
     meanMultV0A = (*vMeanMultV0A)[0];
 
     //   float fac_FT0A_ebe = 1.;
@@ -511,7 +520,7 @@ struct FlattenictyCharged {
 
     flatchrg.fill(HIST("hFV0FT0C"), combest);
 
-    for (auto &track : tracks) {
+    for (auto& track : tracks) {
       // if (!track.isGlobalTrack()) {
       if (!mTrackSelector.IsSelected(track)) {
         continue;
@@ -536,7 +545,8 @@ struct FlattenictyCharged {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{//       adaptAnalysisTask<FlattenictyQA>(cfgc),
                       adaptAnalysisTask<FlattenictyCharged>(cfgc)};
 }
