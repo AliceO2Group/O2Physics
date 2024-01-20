@@ -385,14 +385,19 @@ class V0PhotonCut : public TNamed
         // if (abs(track.y()) > abs(track.x() * TMath::Tan(10.f * TMath::DegToRad())) + 15.f) {
         //   return false;
         // }
-
+        if (track.x() < 0.1 && abs(track.y()) > 15.f) {
+          return false;
+        }
         if (track.x() > 82.9 && abs(track.y()) > abs(track.x() * TMath::Tan(10.f * TMath::DegToRad())) + 5.f) {
           return false;
         }
-
-        const float slope = TMath::Tan(2 * TMath::ATan(TMath::Exp(-0.5)));
-        return !(track.x() > 82.9 && abs(track.y()) < 15.f && abs(abs(track.z()) - track.x() / slope) < 7.f && 15.f < abs(track.dcaXY()));
-        // return !(track.x() > 82.9 && abs(track.y()) < 40.f && abs(abs(track.z()) - 47.f) < 3.f && 15.f < abs(track.dcaXY()));
+        if (track.x() > 82.9 && abs(track.y()) < 15.0 && abs(abs(track.z()) - 45.0) < 2.0) {
+          return false;
+        }
+        return true;
+        // const float slope = TMath::Tan(2 * TMath::ATan(TMath::Exp(-0.5)));
+        // return !(track.x() > 82.9 && abs(track.y()) < 15.f && abs(abs(track.z()) - track.x() / slope) < 3.f && 15.f < abs(track.dcaXY()));
+        //// return !(track.x() > 82.9 && abs(track.y()) < 40.f && abs(abs(track.z()) - 47.f) < 3.f && 15.f < abs(track.dcaXY()));
       }
       case V0PhotonCuts::kRequireITSTPC:
         return isITSTPCTrack(track);

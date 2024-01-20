@@ -73,7 +73,7 @@ DECLARE_SOA_COLUMN(YQvecTPCneg, yQvecTPCneg, float);
 DECLARE_SOA_COLUMN(AmplQvecTPCneg, amplQvecTPCneg, float);
 } // namespace NucleiFlowTableNS
 
-DECLARE_SOA_TABLE(NucleiFlowColls, "AOD", "NUCLEIFLOWCOLLS",
+DECLARE_SOA_TABLE(NucleiFlowColls, "AOD", "NUCLEIFLOWCOLL",
                   o2::soa::Index<>,
                   NucleiFlowTableNS::CentFV0A,
                   NucleiFlowTableNS::CentFT0M,

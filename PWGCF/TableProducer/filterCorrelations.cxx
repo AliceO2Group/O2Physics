@@ -265,6 +265,15 @@ struct MultiplicitySelector {
     if (doprocessTracks) {
       enabledFunctions++;
     }
+    if (doprocessFT0M) {
+      enabledFunctions++;
+    }
+    if (doprocessFT0C) {
+      enabledFunctions++;
+    }
+    if (doprocessFT0A) {
+      enabledFunctions++;
+    }
 
     if (enabledFunctions != 1) {
       LOGP(fatal, "{} multiplicity selectors enabled but we need exactly 1.", enabledFunctions);
@@ -276,6 +285,30 @@ struct MultiplicitySelector {
     output(tracks.size());
   }
   PROCESS_SWITCH(MultiplicitySelector, processTracks, "Select track count as multiplicity", false);
+
+  void processFT0M(aod::CentFT0Ms const& centralities)
+  {
+    for (auto& c : centralities) {
+      output(c.centFT0M());
+    }
+  }
+  PROCESS_SWITCH(MultiplicitySelector, processFT0M, "Select FT0M centrality as multiplicity", false);
+
+  void processFT0C(aod::CentFT0Cs const& centralities)
+  {
+    for (auto& c : centralities) {
+      output(c.centFT0C());
+    }
+  }
+  PROCESS_SWITCH(MultiplicitySelector, processFT0C, "Select FT0C centrality as multiplicity", false);
+
+  void processFT0A(aod::CentFT0As const& centralities)
+  {
+    for (auto& c : centralities) {
+      output(c.centFT0A());
+    }
+  }
+  PROCESS_SWITCH(MultiplicitySelector, processFT0A, "Select FT0A centrality as multiplicity", false);
 
   void processRun2V0M(aod::CentRun2V0Ms const& centralities)
   {
