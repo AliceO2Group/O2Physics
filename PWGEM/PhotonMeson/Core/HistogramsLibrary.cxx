@@ -78,9 +78,10 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 2000, 0.0f, 20));
     list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f));
     list->Add(new TH2F("hRadius", "V0Radius; radius in Z (cm);radius in XY (cm)", 200, -100, 100, 200, 0.0f, 100.0f));
-    list->Add(new TH1F("hCosPA", "V0CosPA;cosine pointing angle", 100, 0.99f, 1.0f));
-    list->Add(new TH1F("hPCA", "distance between 2 legs;PCA (cm)", 200, 0.0f, 2.0f));
-    list->Add(new TH2F("hPCA_Rxy", "distance between 2 legs vs. R_{xy};R_{xy} (cm);PCA (cm)", 200, 0.f, 100.f, 200, 0.0f, 2.0f));
+    list->Add(new TH1F("hCosPA", "V0CosPA;cosine pointing angle", 100, 0.9f, 1.0f));
+    list->Add(new TH2F("hCosPA_Rxy", "cos PA vs. R_{xy};R_{xy} (cm);cosine pointing angle", 100, 0.f, 100.f, 100, 0.9f, 1.0f));
+    list->Add(new TH1F("hPCA", "distance between 2 legs;PCA (cm)", 500, 0.0f, 5.0f));
+    list->Add(new TH2F("hPCA_Rxy", "distance between 2 legs vs. R_{xy};R_{xy} (cm);PCA (cm)", 100, 0.f, 100.f, 500, 0.0f, 5.0f));
     list->Add(new TH2F("hDCAxyz", "DCA to PV;DCA_{xy} (cm);DCA_{z} (cm)", 200, -5.f, +5.f, 200, -5.f, +5.f));
     list->Add(new TH2F("hAPplot", "AP plot;#alpha;q_{T} (GeV/c)", 200, -1.0f, +1.0f, 250, 0.0f, 0.25f));
     list->Add(new TH2F("hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
