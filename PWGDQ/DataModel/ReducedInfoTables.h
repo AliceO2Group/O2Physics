@@ -545,9 +545,9 @@ DECLARE_SOA_COLUMN(Phi, phi, float); //!
 } // namespace fwdpid
 
 DECLARE_SOA_TABLE(FwdPidsAll, "AOD", "RTFWDPIDALL", //!
-                  fwdtrack::TrackType, collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib, 
-                  fwdpid::Pt, fwdpid::Eta, fwdpid::Phi, 
-                  reducedmft::MftClusterSizesAndTrackFlags, 
+                  fwdtrack::TrackType, collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
+                  fwdpid::Pt, fwdpid::Eta, fwdpid::Phi,
+                  reducedmft::MftClusterSizesAndTrackFlags,
                   reducedmft::FwdDcaX, reducedmft::FwdDcaY, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT);
 
 using FwdPidAll = FwdPidsAll::iterator;
