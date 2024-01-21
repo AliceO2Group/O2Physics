@@ -211,7 +211,7 @@ struct skimmerPrimaryElectron {
   template <typename TTrack>
   bool isElectron(TTrack const& track)
   {
-    return isElectron_TPChadrej(track) || isElectron_TOFrecovery(track) || isElectron_TOFrecovery(track);
+    return isElectron_TPChadrej(track) || isElectron_TOFrecovery(track) || isElectron_TOFrecovery_lowB(track);
   }
 
   template <typename TTrack>
@@ -236,14 +236,17 @@ struct skimmerPrimaryElectron {
   template <typename TTrack>
   bool isElectron_TOFrecovery(TTrack const& track)
   {
-    return (minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl) && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl && abs(track.tpcNSigmaPi()) > maxTPCNsigmaPi;
+    if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi) {
+      return false;
+    }
+    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl;
   }
 
   template <typename TTrack>
   bool isElectron_TOFrecovery_lowB(TTrack const& track)
   {
-    // TOF info is available for pin > 0.12 GeV/c at B=0.2T and pin > 0.34 GeV/c at B=0.5T
-    return abs(track.tpcNSigmaEl()) < maxTPCNsigmaEl && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl && track.tpcInnerParam() < 0.4; // TOF recovery only at low pin.
+    // TOF info is available for pin > 0.12 GeV/c at B=0.2T and pin > 0.34 GeV/c at B=0.5T. This is for electron recovery in pion rejection band.
+    return minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl && abs(track.tofNSigmaEl()) < maxTOFNsigmaEl && track.tpcInnerParam() < 0.4; // TOF recovery only at low pin.
   }
 
   template <bool isMC, typename TTracks>
