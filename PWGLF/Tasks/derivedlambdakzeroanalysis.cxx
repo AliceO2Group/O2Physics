@@ -53,9 +53,14 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
+using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras>;
+
+// simple checkers
+#define bitset(var, nbit) ((var) |= (1 << (nbit)))
+#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
 struct derivedlambdakzeroanalysis {
-
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Selection criteria: acceptance
@@ -69,34 +74,96 @@ struct derivedlambdakzeroanalysis {
   Configurable<float> dcapostopv{"dcapostopv", .05, "min DCA Pos To PV (cm)"};
   Configurable<float> v0radius{"v0radius", 1.2, "minimum V0 radius (cm)"};
 
+  // Additional selection on the AP plot (exclusive for K0Short)
+  // original equation: lArmPt*5>TMath::Abs(lArmAlpha)
+  Configurable<float> armPodCut{"armPodCut", 5.0f, "pT * (cut) > |alpha|, AP cut. Negative: no cut"};
+
   // PID (TPC)
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
 
   Configurable<bool> doQA{"doQA", true, "do topological variable QA histograms"};
-  Configurable<float> massWindowQA{"massWindowQA", 0.005f, "mass window for QA plots"};
+  Configurable<float> qaMinPt{"qaMinPt", 0.0f, "minimum pT for QA plots"};
+  Configurable<float> qaMaxPt{"qaMaxPt", 0.0f, "maximum pT for QA plots"};
+
+  // for MC 
+  Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
 
   static constexpr float defaultLifetimeCuts[1][2] = {{30., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
 
-  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
+  ConfigurableAxis axisPtCoarse{"axisPtCoarse", {VARIABLE_WIDTH, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 10.0f, 15.0f}, "pt axis for QA"};
   ConfigurableAxis axisK0Mass{"axisK0Mass", {200, 0.4f, 0.6f}, ""};
   ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, ""};
-  ConfigurableAxis axisCentrality{"axisCentrality", {100, 0.0f, 100.0f}, ""};
+  ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, "Centrality"};
 
   // topological variable QA axes
-  ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {100, -0.5f, 0.5f}, "DCA (cm)"};
-  ConfigurableAxis axisDCAdau{"axisDCAdau", {200, 0.0f, 2.0f}, "DCA (cm)"};
-  ConfigurableAxis axisPointingAngle{"axisPointingAngle", {200, 0.0f, 2.0f}, "pointing angle (rad)"};
-  ConfigurableAxis axisV0Radius{"axisV0Radius", {200, 0.0f, 60.0f}, "V0 2D radius (cm)"};
+  ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {20, 0.0f, 1.0f}, "DCA (cm)"};
+  ConfigurableAxis axisDCAdau{"axisDCAdau", {20, 0.0f, 2.0f}, "DCA (cm)"};
+  ConfigurableAxis axisPointingAngle{"axisPointingAngle", {20, 0.0f, 2.0f}, "pointing angle (rad)"};
+  ConfigurableAxis axisV0Radius{"axisV0Radius", {20, 0.0f, 60.0f}, "V0 2D radius (cm)"};
+
+  // AP plot axes
+  ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
+  ConfigurableAxis axisAPQt{"axisAPQt", {220, 0.0f, 0.5f}, "V0 AP alpha"};
 
   enum species { spK0Short = 0,
                  spLambda,
                  spAntiLambda };
 
+  enum selection { selCosPA = 0,
+                   selRadius,
+                   selDCANegToPV, 
+                   selDCAPosToPV,
+                   selDCAV0Dau, 
+                   selK0ShortRapidity,
+                   selLambdaRapidity, 
+                   selK0ShortTPC, 
+                   selLambdaTPC, 
+                   selAntiLambdaTPC, 
+                   selK0ShortCTau, 
+                   selLambdaCTau,
+                   selK0ShortArmenteros,
+                   selConsiderK0Short, // for mc tagging
+                   selConsiderLambda, // for mc tagging
+                   selConsiderAntiLambda // for mc tagging
+                   }; // all bits used 
+
+  uint16_t maskTopological;
+  uint16_t maskTopoNoV0Radius;
+  uint16_t maskTopoNoDCANegToPV;
+  uint16_t maskTopoNoDCAPosToPV;
+  uint16_t maskTopoNoCosPA;
+  uint16_t maskTopoNoDCAV0Dau;
+
+  uint16_t maskK0ShortSpecific;
+  uint16_t maskLambdaSpecific;
+  uint16_t maskAntiLambdaSpecific;
+
+  uint16_t maskSelectionK0Short;
+  uint16_t maskSelectionLambda;
+  uint16_t maskSelectionAntiLambda;
+
   void init(InitContext const&)
   {
+    // initialise bit masks 
+    maskTopological = (1 << selCosPA) | (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau);
+    maskTopoNoV0Radius = (1 << selCosPA) | (1 << selDCANegToPV) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau);
+    maskTopoNoDCANegToPV = (1 << selCosPA) | (1 << selRadius) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau);
+    maskTopoNoDCAPosToPV = (1 << selCosPA) | (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAV0Dau);
+    maskTopoNoCosPA = (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau);
+    maskTopoNoDCAV0Dau = (1 << selCosPA) | (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV);
+
+    maskK0ShortSpecific = (1 << selK0ShortRapidity) | (1 << selK0ShortTPC) | (1 << selK0ShortCTau) | (1 << selK0ShortArmenteros) | (1 << selConsiderK0Short);
+    maskLambdaSpecific = (1 << selLambdaRapidity) | (1 << selLambdaTPC) | (1 << selLambdaCTau) | (1 << selConsiderLambda);
+    maskAntiLambdaSpecific = (1 << selLambdaRapidity) | (1 << selAntiLambdaTPC) | (1 << selLambdaCTau) | (1 << selConsiderAntiLambda);
+
+    maskSelectionK0Short = maskTopological | maskK0ShortSpecific;
+    maskSelectionLambda = maskTopological | maskLambdaSpecific;
+    maskSelectionAntiLambda = maskTopological | maskAntiLambdaSpecific;
+
     // Event Counters
-    histos.add("hEventSelection", "hEventSelection", kTH1F, {{2, -0.5f, +2.5f}});
+    histos.add("hEventSelection", "hEventSelection", kTH1F, {{3, -0.5f, +2.5f}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
@@ -108,18 +175,30 @@ struct derivedlambdakzeroanalysis {
     histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
     histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
 
+    // demo // fast
+    histos.add("hMassK0Short", "hMassK0Short", kTH1F, {axisK0Mass});
+
     // QA histograms if requested
     if (doQA) {
       // initialize for K0short...
-      histos.add("K0Short/h3dPosDCAxy", "h3dPosDCAxy", kTH3F, {axisCentrality, axisPt, axisDCAtoPV});
-      histos.add("K0Short/h3dNegDCAxy", "h3dNegDCAxy", kTH3F, {axisCentrality, axisPt, axisDCAtoPV});
-      histos.add("K0Short/h3dDCADaughters", "h3dDCADaughters", kTH3F, {axisCentrality, axisPt, axisDCAdau});
-      histos.add("K0Short/h3dPointingAngle", "h3dPointingAngle", kTH3F, {axisCentrality, axisPt, axisPointingAngle});
-      histos.add("K0Short/h3dV0Radius", "h3dV0Radius", kTH3F, {axisCentrality, axisPt, axisV0Radius});
+      histos.add("K0Short/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAtoPV});
+      histos.add("K0Short/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAtoPV});
+      histos.add("K0Short/h4dDCADaughters", "h4dDCADaughters", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAdau});
+      histos.add("K0Short/h4dPointingAngle", "h4dPointingAngle", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisPointingAngle});
+      histos.add("K0Short/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisV0Radius});
 
-      // ...clone for Lambda and AntiLambda
-      histos.addClone("K0Short/", "Lambda/");
-      histos.addClone("K0Short/", "AntiLambda/");
+      histos.add("Lambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
+      histos.add("Lambda/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
+      histos.add("Lambda/h4dDCADaughters", "h4dDCADaughters", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAdau});
+      histos.add("Lambda/h4dPointingAngle", "h4dPointingAngle", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPointingAngle});
+      histos.add("Lambda/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisV0Radius});
+
+      // identical axes for AntiLambda, please
+      histos.addClone("Lambda/", "AntiLambda/");
+
+      // Check if doing the right thing in AP space please
+      histos.add("GeneralQA/h2dArmenterosAll", "h2dArmenterosAll", kTH2F, {axisAPAlpha, axisAPQt});
+      histos.add("GeneralQA/h2dArmenterosSelected", "h2dArmenterosSelected", kTH2F, {axisAPAlpha, axisAPQt});
     }
   }
 
@@ -141,90 +220,193 @@ struct derivedlambdakzeroanalysis {
     return false;
   }
 
-  template <typename TV0>
-  void fillQAHistograms(TV0 v0, int sp, float centrality)
+  template <typename TV0, typename TCollision>
+  uint16_t computeReconstructionBitmap(TV0 v0, TCollision collision)
+  // precalculate this information so that a check is one mask operation, not many
   {
-    float massRef = o2::constants::physics::MassKaonNeutral;
+    uint16_t bitMap = 0;
+    // Base topological variables
+    if(v0.v0radius() > v0radius) bitset(bitMap,selRadius);
+    if(TMath::Abs(v0.dcapostopv()) > dcapostopv) bitset(bitMap,selDCAPosToPV);
+    if(TMath::Abs(v0.dcanegtopv()) > dcanegtopv) bitset(bitMap,selDCANegToPV);
+    if(v0.v0cosPA() > v0cospa) bitset(bitMap,selCosPA);
+    if(v0.dcaV0daughters() < dcav0dau) bitset(bitMap,selDCAV0Dau);
 
-    if (sp != spK0Short)
-      massRef = o2::constants::physics::MassLambda;
+    // rapidity
+    if(TMath::Abs(v0.yLambda()) < rapidityCut) bitset(bitMap,selLambdaRapidity);
+    if(TMath::Abs(v0.yK0Short()) < rapidityCut) bitset(bitMap,selK0ShortRapidity);
 
-    if (std::abs(v0.mK0Short() - massRef) < massWindowQA && sp == spK0Short) {
-      histos.fill(HIST("K0Short/h3dPosDCAxy"), centrality, v0.pt(), v0.dcapostopv());
-      histos.fill(HIST("K0Short/h3dNegDCAxy"), centrality, v0.pt(), v0.dcanegtopv());
-      histos.fill(HIST("K0Short/h3dDCADaughters"), centrality, v0.pt(), v0.dcaV0daughters());
-      histos.fill(HIST("K0Short/h3dPointingAngle"), centrality, v0.pt(), TMath::ACos(v0.v0cosPA()));
-      histos.fill(HIST("K0Short/h3dV0Radius"), centrality, v0.pt(), v0.v0radius());
-    }
-    if (std::abs(v0.mLambda() - massRef) < massWindowQA && sp == spLambda) {
-      histos.fill(HIST("Lambda/h3dPosDCAxy"), centrality, v0.pt(), v0.dcapostopv());
-      histos.fill(HIST("Lambda/h3dNegDCAxy"), centrality, v0.pt(), v0.dcanegtopv());
-      histos.fill(HIST("Lambda/h3dDCADaughters"), centrality, v0.pt(), v0.dcaV0daughters());
-      histos.fill(HIST("Lambda/h3dPointingAngle"), centrality, v0.pt(), TMath::ACos(v0.v0cosPA()));
-      histos.fill(HIST("Lambda/h3dV0Radius"), centrality, v0.pt(), v0.v0radius());
-    }
-    if (std::abs(v0.mAntiLambda() - massRef) < massWindowQA && sp == spAntiLambda) {
-      histos.fill(HIST("AntiLambda/h3dPosDCAxy"), centrality, v0.pt(), v0.dcapostopv());
-      histos.fill(HIST("AntiLambda/h3dNegDCAxy"), centrality, v0.pt(), v0.dcanegtopv());
-      histos.fill(HIST("AntiLambda/h3dDCADaughters"), centrality, v0.pt(), v0.dcaV0daughters());
-      histos.fill(HIST("AntiLambda/h3dPointingAngle"), centrality, v0.pt(), TMath::ACos(v0.v0cosPA()));
-      histos.fill(HIST("AntiLambda/h3dV0Radius"), centrality, v0.pt(), v0.v0radius());
-    }
+    // TPC PID
+    if(compatibleTPC(v0, spK0Short)) bitset(bitMap,selK0ShortTPC);
+    if(compatibleTPC(v0, spLambda)) bitset(bitMap,selLambdaTPC);
+    if(compatibleTPC(v0, spAntiLambda)) bitset(bitMap,selAntiLambdaTPC);
+  
+    // proper lifetime
+    if(v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < lifetimecut->get("lifetimecutLambda")) bitset(bitMap,selLambdaCTau);
+    if(v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < lifetimecut->get("lifetimecutK0S")) bitset(bitMap,selK0ShortCTau);
+
+    // armenteros
+    if( v0.qtarm()*armPodCut > TMath::Abs(v0.alpha()) || armPodCut < 1e-4 ) bitset(bitMap,selK0ShortArmenteros);
+
+    return bitMap; 
   }
 
-  Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&& nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters<dcav0dau && aod::v0data::v0cosPA> v0cospa;
-
-  void process(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& collision, soa::Filtered<soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>> const& fullV0s, dauTracks const&)
+  template <typename TV0>
+  uint16_t computeMCAssociation(TV0 v0)
+  // precalculate this information so that a check is one mask operation, not many
   {
-    histos.fill(HIST("hEventSelection"), 0.5 /* all collisions */);
+    uint16_t bitMap = 0;
+    // check for specific particle species
+
+    if(v0.pdgCode() == 310 && v0.pdgCodePositive() == 211 &&  v0.pdgCodeNegative() == -211 && v0.isPhysicalPrimary() ){ 
+      bitset(bitMap, selConsiderK0Short);
+    }
+    if(v0.pdgCode() == 3122 && v0.pdgCodePositive() == 2212 &&  v0.pdgCodeNegative() == -211 && v0.isPhysicalPrimary() ){ 
+      bitset(bitMap, selConsiderLambda);
+    }
+    if(v0.pdgCode() == -3122 && v0.pdgCodePositive() == 211 &&  v0.pdgCodeNegative() == -2212 && v0.isPhysicalPrimary() ){ 
+      bitset(bitMap, selConsiderAntiLambda);
+    }
+    return bitMap; 
+  }
+
+  bool verifyMask(uint16_t bitmap, uint16_t mask){
+    return (bitmap & mask) == mask;
+  } 
+
+  template <typename TV0, typename TCollision>
+  void analyseCandidate(TV0 v0, TCollision collision, uint16_t selMap)
+  // precalculate this information so that a check is one mask operation, not many
+  {
+      // __________________________________________
+      // main analysis
+      if ( verifyMask(selMap, maskSelectionK0Short) ){
+        histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), v0.alpha(), v0.qtarm()); // cross-check
+        histos.fill(HIST("h3dMassK0Short"), collision.centFT0C(), v0.pt(), v0.mK0Short());
+        histos.fill(HIST("hMassK0Short"), v0.mK0Short());
+      } 
+      if ( verifyMask(selMap, maskSelectionLambda) ){
+        histos.fill(HIST("h3dMassLambda"), collision.centFT0C(), v0.pt(), v0.mLambda());
+      } 
+      if ( verifyMask(selMap, maskSelectionAntiLambda) ){
+        histos.fill(HIST("h3dMassAntiLambda"), collision.centFT0C(), v0.pt(), v0.mAntiLambda());
+      } 
+
+      // __________________________________________
+      // do systematics / qa plots
+      if( doQA ){
+        // K0 systematic sweep block
+        if ( verifyMask(selMap, maskTopoNoV0Radius | maskK0ShortSpecific ) )
+          histos.fill(HIST("K0Short/h4dV0Radius"), collision.centFT0C(), v0.pt(), v0.mK0Short(), v0.v0radius());
+        if ( verifyMask(selMap, maskTopoNoDCAPosToPV | maskK0ShortSpecific ) )
+          histos.fill(HIST("K0Short/h4dPosDCAToPV"), collision.centFT0C(), v0.pt(), v0.mK0Short(), TMath::Abs(v0.dcapostopv()));
+        if ( verifyMask(selMap, maskTopoNoDCANegToPV | maskK0ShortSpecific ) )
+          histos.fill(HIST("K0Short/h4dNegDCAToPV"), collision.centFT0C(), v0.pt(), v0.mK0Short(), TMath::Abs(v0.dcanegtopv()));
+        if ( verifyMask(selMap, maskTopoNoCosPA | maskK0ShortSpecific ) )
+          histos.fill(HIST("K0Short/h4dPointingAngle"), collision.centFT0C(), v0.pt(), v0.mK0Short(), TMath::ACos(v0.v0cosPA()));
+        if ( verifyMask(selMap, maskTopoNoDCAV0Dau | maskK0ShortSpecific ) )
+          histos.fill(HIST("K0Short/h4dDCADaughters"), collision.centFT0C(), v0.pt(), v0.mK0Short(), v0.dcaV0daughters());
+
+        // K0 systematic sweep block
+        if ( verifyMask(selMap, maskTopoNoV0Radius | maskLambdaSpecific ) )
+          histos.fill(HIST("Lambda/h4dV0Radius"), collision.centFT0C(), v0.pt(), v0.mLambda(), v0.v0radius());
+        if ( verifyMask(selMap, maskTopoNoDCAPosToPV | maskLambdaSpecific ) )
+          histos.fill(HIST("Lambda/h4dPosDCAToPV"), collision.centFT0C(), v0.pt(), v0.mLambda(), TMath::Abs(v0.dcapostopv()));
+        if ( verifyMask(selMap, maskTopoNoDCANegToPV | maskLambdaSpecific ) )
+          histos.fill(HIST("Lambda/h4dNegDCAToPV"), collision.centFT0C(), v0.pt(), v0.mLambda(), TMath::Abs(v0.dcanegtopv()));
+        if ( verifyMask(selMap, maskTopoNoCosPA | maskLambdaSpecific ) )
+          histos.fill(HIST("Lambda/h4dPointingAngle"), collision.centFT0C(), v0.pt(), v0.mLambda(), TMath::ACos(v0.v0cosPA()));
+        if ( verifyMask(selMap, maskTopoNoDCAV0Dau | maskLambdaSpecific ) )
+          histos.fill(HIST("Lambda/h4dDCADaughters"), collision.centFT0C(), v0.pt(), v0.mLambda(), v0.dcaV0daughters());
+
+        // K0 systematic sweep block
+        if ( verifyMask(selMap, maskTopoNoV0Radius | maskAntiLambdaSpecific ) )
+          histos.fill(HIST("AntiLambda/h4dV0Radius"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), v0.v0radius());
+        if ( verifyMask(selMap, maskTopoNoDCAPosToPV | maskAntiLambdaSpecific ) )
+          histos.fill(HIST("AntiLambda/h4dPosDCAToPV"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), TMath::Abs(v0.dcapostopv()));
+        if ( verifyMask(selMap, maskTopoNoDCANegToPV | maskAntiLambdaSpecific ) )
+          histos.fill(HIST("AntiLambda/h4dNegDCAToPV"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), TMath::Abs(v0.dcanegtopv()));
+        if ( verifyMask(selMap, maskTopoNoCosPA | maskAntiLambdaSpecific ) )
+          histos.fill(HIST("AntiLambda/h4dPointingAngle"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), TMath::ACos(v0.v0cosPA()));
+        if ( verifyMask(selMap, maskTopoNoDCAV0Dau | maskAntiLambdaSpecific ) )
+          histos.fill(HIST("AntiLambda/h4dDCADaughters"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), v0.dcaV0daughters());
+      } // end systematics / qa
+  }
+
+  // ______________________________________________________
+  // Real data processing - no MC subscription
+  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& collision, v0Candidates const& fullV0s, dauTracks const&)
+  {
+    histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
     if (!collision.sel8()) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 1.5 /* sel8 collisions */);
+    histos.fill(HIST("hEventSelection"), 1 /* sel8 collisions */);
 
     if (std::abs(collision.posZ()) > 10.f) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 2.5 /* vertex-Z selected */);
+    histos.fill(HIST("hEventSelection"), 2 /* vertex-Z selected */);
     histos.fill(HIST("hEventCentrality"), collision.centFT0C());
 
+    // __________________________________________
+    // perform main analysis
     for (auto& v0 : fullV0s) {
       if (std::abs(v0.negativeeta()) > daughterEtaCut || std::abs(v0.positiveeta()) > daughterEtaCut)
-        continue; // remove acceptance that's badly reproduced by MC
+        continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
-      if (v0.v0radius() > v0radius) {
-        // ___________________________________
-        // Analysis 1: Lambda
-        if (TMath::Abs(v0.yLambda()) < rapidityCut) {
-          if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < lifetimecut->get("lifetimecutLambda")) {
-            // Lambda daughter PID
-            if (compatibleTPC(v0, spLambda)) {
-              histos.fill(HIST("h3dMassLambda"), collision.centFT0C(), v0.pt(), v0.mLambda());
-              if (doQA)
-                fillQAHistograms(v0, spLambda, collision.centFT0C());
-            }
-            // AntiLambda daughter PID
-            if (compatibleTPC(v0, spAntiLambda)) {
-              histos.fill(HIST("h3dMassAntiLambda"), collision.centFT0C(), v0.pt(), v0.mAntiLambda());
-              if (doQA)
-                fillQAHistograms(v0, spAntiLambda, collision.centFT0C());
-            }
-          }
-        }
-        // ___________________________________
-        // Analysis 2: K0Short
-        if (TMath::Abs(v0.yK0Short()) < rapidityCut) {
-          if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < lifetimecut->get("lifetimecutK0S")) {
-            if (compatibleTPC(v0, spK0Short)) {
-              histos.fill(HIST("h3dMassK0Short"), collision.centFT0C(), v0.pt(), v0.mK0Short());
-              if (doQA)
-                fillQAHistograms(v0, spK0Short, collision.centFT0C());
-            }
-          }
-        }
-      } // end radius check
-    }   // env V0 loop
+      // fill AP plot for all V0s
+      histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
+
+      uint16_t selMap = computeReconstructionBitmap(v0, collision); 
+
+      // consider for histograms for all species
+      selMap = selMap | (1 << selConsiderK0Short) | (1 << selConsiderLambda) | (1 << selConsiderAntiLambda); 
+
+      analyseCandidate(v0, collision, selMap);
+    } // end v0 loop 
   }
+
+  // ______________________________________________________
+  // Simulated processing (subscribes to MC information too)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&)
+  {
+    histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
+    if (!collision.sel8()) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 1 /* sel8 collisions */);
+
+    if (std::abs(collision.posZ()) > 10.f) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 2 /* vertex-Z selected */);
+    histos.fill(HIST("hEventCentrality"), collision.centFT0C());
+
+    // __________________________________________
+    // perform main analysis
+    for (auto& v0 : fullV0s) {
+      if (std::abs(v0.negativeeta()) > daughterEtaCut || std::abs(v0.positiveeta()) > daughterEtaCut)
+        continue; // remove acceptance that's badly reproduced by MC / superfluous in future
+
+      // fill AP plot for all V0s
+      histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
+
+      uint16_t selMap = computeReconstructionBitmap(v0, collision); 
+
+      // consider only associated candidates if asked to do so
+      if( doMCAssociation ){  
+        selMap = selMap | computeMCAssociation(v0);
+      }else{
+        selMap = selMap | (1 << selConsiderK0Short) | (1 << selConsiderLambda) | (1 << selConsiderAntiLambda); 
+      }
+
+      analyseCandidate(v0, collision, selMap);
+    } // end v0 loop 
+  }
+
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processRealData, "process as if real data", true);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processMonteCarlo, "process as if MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
