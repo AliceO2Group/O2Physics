@@ -36,9 +36,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using Collisions = soa::Join<aod::JCollisions, aod::JMcCollisionLbs>;
-using Tracks = soa::Join<aod::JTracks, aod::JMcTrackLbs>;
-
 template <typename CollisionTable, typename JetTable, typename JetEventWeightTable, typename TrackTable>
 struct nSubJettiness {
 
@@ -104,7 +101,7 @@ struct nSubJettiness {
   void jetToPseudoJet(JetTableElement const& jet, fastjet::PseudoJet& pseudoJet, std::vector<fastjet::PseudoJet> jetConstituents, fastjet::ClusterSequence& clusterSeqInput)
   {
     for (auto& jetConstituent : jet.template tracks_as<TrackTable>()) {
-      FastJetUtilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
+      fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
     }
 
     fastjet::JetDefinition jet_def(fastjet::JetAlgorithm::kt_algorithm, 2.5 * jet.r() / 100);
@@ -197,20 +194,20 @@ struct nSubJettiness {
   }
   PROCESS_SWITCH(nSubJettiness, processJetsWeighted, "Process function with weighted events, turned off by default", false);
 
-  void processDummy(aod::JTracks const& track)
+  void processDummy(JetTracks const& tracks)
   {
   }
   PROCESS_SWITCH(nSubJettiness, processDummy, "Dummy process function, turned on by default", true);
 };
-using NSubjettinessChargedJetMCParticleLevel = nSubJettiness<aod::JMcCollisions, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>, aod::ChargedMCParticleLevelJetEventWeights, aod::JMcParticles>;
-using NSubjettinessChargedJetMCDetectorLevel = nSubJettiness<aod::JCollisions, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::ChargedMCDetectorLevelJetEventWeights, aod::JTracks>;
-// using NSubjettinessChargedJetMCParticleLevel = nSubJettiness<aod::JMcCollisions, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>, aod::JMcParticles>;
-// using NSubjettinessChargedJetMCDetectorLevel = nSubJettiness<aod::JCollisions,   soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::JTracks>;
-// using NSubjettinessChargedJetDataLevel       = nSubJettiness<aod::JCollisions,   soa::Join<aod::ChargedJets,                aod::ChargedJetConstituents>,                aod::JTracks>;
+using NSubjettinessChargedJetMCParticleLevel = nSubJettiness<JetMcCollisions, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>, aod::ChargedMCParticleLevelJetEventWeights, JetParticles>;
+using NSubjettinessChargedJetMCDetectorLevel = nSubJettiness<JetCollisions, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::ChargedMCDetectorLevelJetEventWeights, JetTracks>;
+// using NSubjettinessChargedJetMCParticleLevel = nSubJettiness<JetMcCollisions, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>, JetParticles>;
+// using NSubjettinessChargedJetMCDetectorLevel = nSubJettiness<JetCollisions,   soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, JetTracks;
+// using NSubjettinessChargedJetDataLevel       = nSubJettiness<JetCollisions,   soa::Join<aod::ChargedJets,                aod::ChargedJetConstituents>,                JetTracks>;
 
-// using NSubjettinessD0ChargedJetMCParticleLevel = nSubJettiness<aod::JMcCollisions, soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetEventWeights>, aod::JMcParticles>;
-// using NSubjettinessD0ChargedJetMCDetectorLevel = nSubJettiness<aod::JCollisions,   soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights>, aod::JTracks>;
-// // using NSubjettinessD0ChargedJetDataLevel       = nSubJettiness<aod::JCollisions,   soa::Join<aod::D0ChargedJets,                aod::D0ChargedJetConstituents>,                                                            aod::JTracks>;
+// using NSubjettinessD0ChargedJetMCParticleLevel = nSubJettiness<JetMcCollisions, soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetEventWeights>, JetParticles>;
+// using NSubjettinessD0ChargedJetMCDetectorLevel = nSubJettiness<JetCollisions,   soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights>, JetTracks>;
+// // using NSubjettinessD0ChargedJetDataLevel       = nSubJettiness<JetCollisions,   soa::Join<aod::D0ChargedJets,                aod::D0ChargedJetConstituents>,                                                            JetTracks>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

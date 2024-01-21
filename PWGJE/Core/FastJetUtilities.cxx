@@ -11,7 +11,7 @@
 
 #include "FastJetUtilities.h"
 
-void FastJetUtilities::setFastJetUserInfo(std::vector<fastjet::PseudoJet>& constituents, int index, int status)
+void fastjetutilities::setFastJetUserInfo(std::vector<fastjet::PseudoJet>& constituents, int index, int status)
 {
   fastjet_user_info* user_info = new fastjet_user_info(status, index); // FIXME: can setting this as a pointer be avoided?
   constituents.back().set_user_info(user_info);
@@ -28,11 +28,4 @@ void FastJetUtilities::setFastJetUserInfo(std::vector<fastjet::PseudoJet>& const
     }
     constituents.back().set_user_index(i); // FIXME: needed for constituent subtraction, but need to be quite careful to make sure indices dont overlap between tracks, clusters and HF candidates. Current solution might not be optimal
   }
-}
-
-// Selector of HF candidates
-fastjet::Selector FastJetUtilities::SelectorIsHFCand()
-{
-  // This method is applied on particles or jet constituents only !!!
-  return fastjet::Selector(new SW_IsHFCand());
 }
