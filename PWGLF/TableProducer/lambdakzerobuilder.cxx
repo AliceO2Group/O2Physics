@@ -685,9 +685,9 @@ struct lambdakzeroBuilder {
       return false; // reject if not within desired window
     }
 
-    if (TMath::Abs(RecoDecay::eta(std::array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]})) > maxDaughterEta || 
-    TMath::Abs(RecoDecay::eta(std::array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]})) > maxDaughterEta) {
-      return false; //reject - daughters have too large eta to be reliable for MC corrections
+    if (TMath::Abs(RecoDecay::eta(std::array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]})) > maxDaughterEta ||
+        TMath::Abs(RecoDecay::eta(std::array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]})) > maxDaughterEta) {
+      return false; // reject - daughters have too large eta to be reliable for MC corrections
     }
 
     // Passes momentum window check
