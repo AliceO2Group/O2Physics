@@ -530,6 +530,7 @@ struct hyperRecoTask {
 
   void processMC(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
+    filledMothers.clear();
 
     for (const auto& collision : collisions) {
       hyperCandidates.clear();
