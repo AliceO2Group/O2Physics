@@ -729,6 +729,25 @@ struct JetFragmentation {
 
   PROCESS_SWITCH(JetFragmentation, processMcP, "Monte Carlo particle level", false);
 
+  void processDataRun3(aod::JCollision const& collision,
+                       soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
+                       aod::JTracks const& tracks)
+  {
+    float nJets = 0, nTracks = 0;
+    for (const auto& track : tracks) {
+      if (track.pt() > 0.1) {
+        nTracks++;
+        registry.fill(HIST("data/tracks/trackPtEtaPhi"), track.pt(), track.eta(), track.phi());
+      }
+    }
+    for (const auto& jet : jets) {
+      nJets++;
+      fillDataRun3Histograms(jet);
+    }
+    registry.fill(HIST("data/nJetsnTracks"), nJets, nTracks);
+  }
+  PROCESS_SWITCH(JetFragmentation, processDataRun3, "Run 3 Data", false);
+
   void processMcMatched(soa::Join<aod::JCollisions, aod::JMcCollisionLbs>::iterator const& collision,
                         soa::Join<McDJets, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets> const& mcDetJets,
                         McTracks const& tracks,
@@ -801,25 +820,6 @@ struct JetFragmentation {
     }
   }
   PROCESS_SWITCH(JetFragmentation, processMcV0, "Monte Carlo V0", false);
-
-  void processDataRun3(aod::JCollision const& collision,
-                       soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
-                       aod::JTracks const& tracks)
-  {
-    float nJets = 0, nTracks = 0;
-    for (const auto& track : tracks) {
-      if (track.pt() > 0.1) {
-        nTracks++;
-        registry.fill(HIST("data/tracks/trackPtEtaPhi"), track.pt(), track.eta(), track.phi());
-      }
-    }
-    for (const auto& jet : jets) {
-      nJets++;
-      fillDataRun3Histograms(jet);
-    }
-    registry.fill(HIST("data/nJetsnTracks"), nJets, nTracks);
-  }
-  PROCESS_SWITCH(JetFragmentation, processDataRun3, "Run 3 Data", false);
 
   void processDataV0(aod::Collisions::iterator const& collision,
                      aod::V0Datas const& V0s,
