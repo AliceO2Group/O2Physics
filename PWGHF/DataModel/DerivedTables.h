@@ -90,10 +90,10 @@ auto py(TPt pt, TPhi phi)
   return pt * std::sin(phi);
 }
 
-template <typename TPt, typename TPhi, typename TM>
-auto pz(TPt pt, TPhi eta, TM m)
+template <typename TPt, typename TPhi>
+auto pz(TPt pt, TPhi eta)
 {
-  return std::sqrt(pt * pt + m * m) * std::sinh(y(pt, eta, m));
+  return pt * std::sinh(eta);
 }
 
 } // namespace functions
@@ -104,9 +104,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! D0 px
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! D0 py
                            [](float pt, float phi) -> float { return functions::py(pt, phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! D0 px
-                           [](float pt, float eta) -> float { return functions::pz(pt, eta, o2::constants::physics::MassD0); });
+                           [](float pt, float eta) -> float { return functions::pz(pt, eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! D0 momentum
-                           [](float pt, float eta, float phi) -> float { return RecoDecay::p(functions::px(pt, phi), functions::py(pt, phi), functions::pz(pt, eta, o2::constants::physics::MassD0)); });
+                           [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 } // namespace hf_cand_base
 
 // Candidate properties used for selection
@@ -196,7 +196,7 @@ DECLARE_SOA_TABLE(HfD0Bases, "AOD", "HFD0BASE", //! Table with basic candidate p
                   hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
-                  hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta, hf_cand_base::Phi>);
+                  hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>);
 
 DECLARE_SOA_TABLE(StoredHfD0Bases, "AOD1", "HFD0BASE", //! Table with basic candidate properties used in the analyses (stored version)
                   o2::soa::Index<>,
@@ -209,7 +209,7 @@ DECLARE_SOA_TABLE(StoredHfD0Bases, "AOD1", "HFD0BASE", //! Table with basic cand
                   hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
-                  hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta, hf_cand_base::Phi>,
+                  hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,
                   soa::Marker<1>);
 
 // candidates for removal:
@@ -362,7 +362,7 @@ DECLARE_SOA_TABLE(HfD0PBases, "AOD", "HFD0PBASE", //! Table with MC particle inf
                   hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
-                  hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta, hf_cand_base::Phi>);
+                  hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>);
 
 DECLARE_SOA_TABLE(StoredHfD0PBases, "AOD1", "HFD0PBASE", //! Table with MC particle info (stored version)
                   o2::soa::Index<>,
@@ -375,7 +375,7 @@ DECLARE_SOA_TABLE(StoredHfD0PBases, "AOD1", "HFD0PBASE", //! Table with MC parti
                   hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
                   hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
-                  hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta, hf_cand_base::Phi>,
+                  hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,
                   soa::Marker<1>);
 
 DECLARE_SOA_TABLE(HfD0PIds, "AOD", "HFD0PID", //! Table with global indices for MC particles
