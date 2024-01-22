@@ -34,6 +34,7 @@ struct phianalysisTHnSparse {
 
   SliceCache cache;
 
+  Configurable<bool> produceTrue{"produce-true", false, "Produce True and Gen histograms."};
   Configurable<int> verboselevel{"verbose-level", 0, "Verbose level"};
   Configurable<int> refresh{"print-refresh", 0, "Freqency of print event information."};
   Configurable<int> refresh_index{"print-refresh-index", 0, "Freqency of print event information index."};
@@ -47,7 +48,7 @@ struct phianalysisTHnSparse {
 
   ConfigurableAxis invaxis{"invAxis", {130, 0.97, 1.1}, "Invariant mass axis binning."};
   ConfigurableAxis ptaxis{"ptAxis", {20, 0., 20.}, "Pt axis binning."};
-  ConfigurableAxis mcposZ{"mcposZ", {40, -20., 20.}, "Z vertex position axis binning."};
+  ConfigurableAxis posZ{"posZ", {40, -20., 20.}, "Z vertex position axis binning."};
   ConfigurableAxis multiplicityaxis{"multiplicityAxis", {50, 0., 5000.}, "Multiplicity axis binning."};
   ConfigurableAxis rapidityaxis{"rapidityAxis", {10., -1.0 * rapidityCut, rapidityCut}, "Rapidity axis binning."};
   ConfigurableAxis nsigmatrackaxis{"nsigmatrackaxis", {300, -15., 15.}, "NSigma axis binning."};
@@ -55,13 +56,9 @@ struct phianalysisTHnSparse {
   ConfigurableAxis nsigmaaxis2{"nsigmaAxis2", {1, 0., tpcnSigma2}, "NSigma axis binning in THnSparse."};
 
   HistogramRegistry registry{"registry",
-                             {{"hNsigmaPos", "hNsigmaPos", {HistType::kTH1F, {nsigmatrackaxis}}},
-                              {"hNsigmaNeg", "hNsigmaNeg", {HistType::kTH1F, {nsigmatrackaxis}}},
-                              {"motherGen", "motherGen", {HistType::kTH1F, {ptaxis}}},
-                              {"motherTrue", "motherTrue", {HistType::kTH1F, {ptaxis}}},
-                              {"motherBgr", "motherBgr", {HistType::kTH1F, {ptaxis}}},
-                              {"mcTrueposZ", "mcTrueposZ", {HistType::kTH1F, {mcposZ}}},
-                              {"mcGenposZ", "mcGenposZ", {HistType::kTH1F, {mcposZ}}}}};
+                             {
+                               {"hVz", "Z Vertex", {HistType::kTH1F, {posZ}}},
+                             }};
 
   // defined in DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h
   float mass1 = o2::track::PID::getMass(dauther1);
@@ -101,12 +98,14 @@ struct phianalysisTHnSparse {
     AxisSpec nsigmatrackaxis1 = {nsigmaaxis1, fmt::format("nSigma particle 1({})", mass1), "ns1"};
     AxisSpec nsigmatrackaxis2 = {nsigmaaxis1, fmt::format("nSigma particle 2({})", mass2), "ns2"};
     HistogramConfigSpec pairHisto({HistType::kTHnSparseF, {invAxis, ptAxis, mAxis, nsigmatrackaxis1, nsigmatrackaxis2, yAxis}});
-    registry.add("unlike", "Unlike", pairHisto);
-    registry.add("likep", "Likep", pairHisto);
-    registry.add("liken", "Liken", pairHisto);
 
-    registry.add("unlikeTrue", "UnlikeTrue", pairHisto);
-    registry.add("unlikeGen", "UnlikeGen", pairHisto);
+    registry.add("unlikepm", "Unlike PM", pairHisto);
+    registry.add("likepp", "Like PP", pairHisto);
+    registry.add("likemm", "Like MM", pairHisto);
+    if (produceTrue) {
+      registry.add("unlikepmTrue", "Unlike True PM", pairHisto);
+      registry.add("unlikepmGen", "Unlike Gen PM", pairHisto);
+    }
   }
 
   template <typename T>
@@ -149,13 +148,9 @@ struct phianalysisTHnSparse {
       LOGF(info, "pos=%lld neg=%lld, Z vertex position: %f [cm], %d, mult:%f.0", posDauthers.size(), negDauthers.size(), collision.posZ(),
            collision.globalIndex(), multiplicity);
 
-    for (const auto& trk : posDauthers) {
-      registry.fill(HIST("hNsigmaPos"), trk.tpcNSigmaKa());
-    }
-
-    for (const auto& trk : negDauthers) {
-      registry.fill(HIST("hNsigmaNeg"), trk.tpcNSigmaKa());
-    }
+    if (std::abs(collision.posZ()) > zVertex)
+      return;
+    registry.fill(HIST("hVz"), collision.posZ());
 
     for (auto& [track1, track2] : combinations(o2::soa::CombinationsUpperIndexPolicy(posDauthers, negDauthers))) {
 
@@ -170,7 +165,7 @@ struct phianalysisTHnSparse {
       if (verboselevel > 1)
         LOGF(info, "Unlike-sign: d1=%ld , d2=%ld , mother=%f", track1.globalIndex(), track2.globalIndex(), mother.Mag());
 
-      registry.fill(HIST("unlike"), mother.Mag(), mother.Pt(), multiplicity, std::abs(track1.tpcNSigmaKa()), std::abs(track2.tpcNSigmaKa()), mother.Rapidity());
+      registry.fill(HIST("unlikepm"), mother.Mag(), mother.Pt(), multiplicity, std::abs(track1.tpcNSigmaKa()), std::abs(track2.tpcNSigmaKa()), mother.Rapidity());
     }
 
     for (auto& [track1, track2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(posDauthers, posDauthers))) {
@@ -186,7 +181,7 @@ struct phianalysisTHnSparse {
       if (verboselevel > 1)
         LOGF(info, "Like-sign positive: d1=%ld , d2=%ld , mother=%f", track1.globalIndex(), track2.globalIndex(), mother.Mag());
 
-      registry.fill(HIST("likep"), mother.Mag(), mother.Pt(), multiplicity, std::abs(track1.tpcNSigmaKa()), std::abs(track2.tpcNSigmaKa()), mother.Rapidity());
+      registry.fill(HIST("likepp"), mother.Mag(), mother.Pt(), multiplicity, std::abs(track1.tpcNSigmaKa()), std::abs(track2.tpcNSigmaKa()), mother.Rapidity());
     }
 
     for (auto& [track1, track2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(negDauthers, negDauthers))) {
@@ -202,7 +197,7 @@ struct phianalysisTHnSparse {
       if (verboselevel > 1)
         LOGF(info, "Like-sign negative: d1=%ld , d2=%ld , mother=%f", track1.globalIndex(), track2.globalIndex(), mother.Mag());
 
-      registry.fill(HIST("liken"), mother.Mag(), mother.Pt(), multiplicity, std::abs(track1.tpcNSigmaKa()), std::abs(track2.tpcNSigmaKa()), mother.Rapidity());
+      registry.fill(HIST("likemm"), mother.Mag(), mother.Pt(), multiplicity, std::abs(track1.tpcNSigmaKa()), std::abs(track2.tpcNSigmaKa()), mother.Rapidity());
     }
   }
 
@@ -210,6 +205,9 @@ struct phianalysisTHnSparse {
 
   void processTrue(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
+    if (!produceTrue)
+      return;
+
     auto posDauthersMC = positiveMC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negDauthersMC = negativeMC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
@@ -218,63 +216,61 @@ struct phianalysisTHnSparse {
       return;
     }
 
-    if (std::abs(collision.posZ()) < zVertex) {
-      registry.fill(HIST("mcTrueposZ"), collision.posZ());
+    if (std::abs(collision.posZ()) > zVertex)
+      return;
 
-      multiplicityMC = collision.multFT0A() + collision.multFT0C();
+    multiplicityMC = collision.multFT0A() + collision.multFT0C();
 
-      for (auto& [track1, track2] : combinations(o2::soa::CombinationsUpperIndexPolicy(posDauthersMC, negDauthersMC))) {
+    for (auto& [track1, track2] : combinations(o2::soa::CombinationsUpperIndexPolicy(posDauthersMC, negDauthersMC))) {
 
-        if (!track1.has_mcParticle()) {
-          LOGF(warning, "No MC particle for track, skip...");
-          continue;
-        }
+      if (!track1.has_mcParticle()) {
+        LOGF(warning, "No MC particle for track, skip...");
+        continue;
+      }
 
-        if (!track2.has_mcParticle()) {
-          LOGF(warning, "No MC particle for track, skip...");
-          continue;
-        }
+      if (!track2.has_mcParticle()) {
+        LOGF(warning, "No MC particle for track, skip...");
+        continue;
+      }
 
-        if (!selectedTrack(track1))
-          continue;
+      if (!selectedTrack(track1))
+        continue;
 
-        if (!selectedTrack(track2))
-          continue;
+      if (!selectedTrack(track2))
+        continue;
 
-        const auto mctrack1 = track1.mcParticle();
-        const auto mctrack2 = track2.mcParticle();
-        int track1PDG = std::abs(mctrack1.pdgCode());
-        int track2PDG = std::abs(mctrack2.pdgCode());
+      const auto mctrack1 = track1.mcParticle();
+      const auto mctrack2 = track2.mcParticle();
+      int track1PDG = std::abs(mctrack1.pdgCode());
+      int track2PDG = std::abs(mctrack2.pdgCode());
 
-        if (!(track1PDG == 321 && track2PDG == 321)) {
-          continue;
-        }
-        for (auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
-          for (auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
-            if (mothertrack1.pdgCode() != mothertrack2.pdgCode())
-              continue;
+      if (!(track1PDG == 321 && track2PDG == 321)) {
+        continue;
+      }
+      for (auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
+        for (auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
+          if (mothertrack1.pdgCode() != mothertrack2.pdgCode())
+            continue;
 
-            if (mothertrack1.globalIndex() != mothertrack2.globalIndex())
-              continue;
+          if (mothertrack1.globalIndex() != mothertrack2.globalIndex())
+            continue;
 
-            if (std::abs(mothertrack1.y()) > rapidityCut)
-              continue;
+          if (std::abs(mothertrack1.y()) > rapidityCut)
+            continue;
 
-            if (std::abs(mothertrack2.y()) > rapidityCut)
-              continue;
+          if (std::abs(mothertrack2.y()) > rapidityCut)
+            continue;
 
-            if (std::abs(mothertrack1.pdgCode()) != 333)
-              continue;
+          if (std::abs(mothertrack1.pdgCode()) != 333)
+            continue;
 
-            registry.fill(HIST("motherTrue"), mothertrack1.pt());
-            n++;
-            if (verboselevel > 1)
-              LOGF(info, "True: %d, d1=%d (%ld), d2=%d (%ld), mother=%d (%ld)", n, mctrack1.pdgCode(), mctrack1.globalIndex(), mctrack2.pdgCode(), mctrack2.globalIndex(), mothertrack1.pdgCode(), mothertrack1.globalIndex());
+          n++;
+          if (verboselevel > 1)
+            LOGF(info, "True: %d, d1=%d (%ld), d2=%d (%ld), mother=%d (%ld)", n, mctrack1.pdgCode(), mctrack1.globalIndex(), mctrack2.pdgCode(), mctrack2.globalIndex(), mothertrack1.pdgCode(), mothertrack1.globalIndex());
 
-            if (!selectedPair(mother, mctrack1, mctrack2))
-              continue;
-            registry.fill(HIST("unlikeTrue"), mother.Mag(), mother.Pt(), multiplicityMC, std::abs(track1.tpcNSigmaKa()), std::abs(track2.tpcNSigmaKa()), mother.Rapidity());
-          }
+          if (!selectedPair(mother, mctrack1, mctrack2))
+            continue;
+          registry.fill(HIST("unlikepmTrue"), mother.Mag(), mother.Pt(), multiplicityMC, std::abs(track1.tpcNSigmaKa()), std::abs(track2.tpcNSigmaKa()), mother.Rapidity());
         }
       }
     }
@@ -286,51 +282,50 @@ struct phianalysisTHnSparse {
 
   void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
-    if (std::abs(mcCollision.posZ()) < zVertex) {
-      registry.fill(HIST("mcGenposZ"), mcCollision.posZ());
+    if (!produceTrue)
+      return;
 
-      int nuberofPhi = 0;
+    if (std::abs(mcCollision.posZ()) > zVertex)
+      return;
 
-      for (auto& particle : mcParticles) {
-        if (std::abs(particle.y()) > rapidityCut)
+    int nuberofPhi = 0;
+
+    for (auto& particle : mcParticles) {
+      if (std::abs(particle.y()) > rapidityCut)
+        continue;
+
+      if (particle.pdgCode() == 333) {
+        auto daughters = particle.daughters_as<aod::McParticles>();
+        if (daughters.size() != 2)
           continue;
 
-        if (particle.pdgCode() == 333) {
-          auto daughters = particle.daughters_as<aod::McParticles>();
-          if (daughters.size() != 2)
+        auto daup = false;
+        auto daun = false;
+
+        for (auto& dau : daughters) {
+          if (!dau.isPhysicalPrimary())
             continue;
 
-          auto daup = false;
-          auto daun = false;
-
-          for (auto& dau : daughters) {
-            if (!dau.isPhysicalPrimary())
-              continue;
-
-            if (dau.pdgCode() == +321) {
-              daup = true;
-              d1.SetXYZM(dau.px(), dau.py(), dau.pz(), mass1);
-            } else if (dau.pdgCode() == -321) {
-              daun = true;
-              d2.SetXYZM(dau.px(), dau.py(), dau.pz(), mass2);
-            }
+          if (dau.pdgCode() == +321) {
+            daup = true;
+            d1.SetXYZM(dau.px(), dau.py(), dau.pz(), mass1);
+          } else if (dau.pdgCode() == -321) {
+            daun = true;
+            d2.SetXYZM(dau.px(), dau.py(), dau.pz(), mass2);
           }
-          if (!daup && !daun)
-            continue;
-
-          mother = d1 + d2;
-
-          registry.fill(HIST("unlikeGen"), mother.Mag(), mother.Pt(), multiplicityMC, tpcnSigma1 / 2.0, tpcnSigma2 / 2.0, mother.Rapidity());
-          registry.fill(HIST("motherGen"), particle.pt());
-
-          nuberofPhi++;
-          numberofEntries++;
-
-          if (verboselevel > 1)
-            LOGF(info, "Gen:  %d, #Phi =%d, mother=%d (%ld), Inv.mass:%f, Pt= %f", numberofEntries, nuberofPhi, particle.pdgCode(), particle.globalIndex(), mother.Mag(), mother.Pt());
-        } else {
-          registry.fill(HIST("motherBgr"), particle.pt());
         }
+        if (!daup && !daun)
+          continue;
+
+        mother = d1 + d2;
+
+        registry.fill(HIST("unlikepmGen"), mother.Mag(), mother.Pt(), multiplicityMC, tpcnSigma1 / 2.0, tpcnSigma2 / 2.0, mother.Rapidity());
+
+        nuberofPhi++;
+        numberofEntries++;
+
+        if (verboselevel > 1)
+          LOGF(info, "Gen:  %d, #Phi =%d, mother=%d (%ld), Inv.mass:%f, Pt= %f", numberofEntries, nuberofPhi, particle.pdgCode(), particle.globalIndex(), mother.Mag(), mother.Pt());
       }
     }
   }

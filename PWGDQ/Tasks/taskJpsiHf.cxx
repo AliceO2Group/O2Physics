@@ -132,18 +132,23 @@ struct taskJPsiHf {
     }
   }
 
-  void processRedJspiD0(RedJpDmColCounts const& normCounters, MyRedEvents const& events, MyRedPairCandidatesSelected const& dileptons, MyRedD0CandidatesSelected const& dmesons)
+  void processRedJspiD0(MyRedEvents::iterator const& event, MyRedPairCandidatesSelected const& dileptons, MyRedD0CandidatesSelected const& dmesons)
   {
+    // Fill the column of collisions with pairs
+    hCollisions->Fill(1.f);
+    runDileptonDmeson(event, dileptons, dmesons);
+  }
+
+  void processNormCounter(RedJpDmColCounts const& normCounters)
+  {
+    // Fill the column with all collisions
     for (const auto& normCounter : normCounters) {
       hCollisions->Fill(0.f, static_cast<float>(normCounter.numColls()));
-    }
-    for (const auto& event : events) {
-      hCollisions->Fill(1.f);
-      runDileptonDmeson(event, dileptons, dmesons);
     }
   }
 
   PROCESS_SWITCH(taskJPsiHf, processRedJspiD0, "Process J/psi - D0", true);
+  PROCESS_SWITCH(taskJPsiHf, processNormCounter, "Process normalization counter", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

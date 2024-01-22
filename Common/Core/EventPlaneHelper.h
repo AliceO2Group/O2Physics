@@ -90,7 +90,7 @@ class EventPlaneHelper
                           float& lambdaPlus, float& lambdaMinus);
 
   // Method to calculate the event plane from the provided (Qx, Qy), for n = 2.
-  float GetEventPlane(const float qx, const float qy);
+  float GetEventPlane(const float qx, const float qy, int nmode = 2);
 
   // Method to calculate the resolution R2 for the provided profile.
   float GetResolution(const float RefA, const float RefB, const float sig, int nmode = 2);

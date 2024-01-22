@@ -38,6 +38,8 @@
 
 #include "Framework/DataTypes.h"
 // #include "MCHTracking/TrackExtrap.h"
+#include "TGeoGlobalMagField.h"
+#include "Field/MagneticField.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/Vertex.h"
 #include "DCAFitter/DCAFitterN.h"
@@ -343,6 +345,9 @@ class VarManager : public TObject
     kMuonDCAy,
     kMuonTime,
     kMuonTimeRes,
+    kMftNClusters,
+    kMftClusterSize,
+    kMftMeanClusterSize,
 
     // MC particle variables
     kMCPdgCode,
@@ -546,6 +551,11 @@ class VarManager : public TObject
   {
     KFParticle::SetField(magField);
     fgUsedKF = true;
+  }
+  // Setup magnetic field for muon propagation
+  static void SetupMuonMagField()
+  {
+    o2::mch::TrackExtrap::setField();
   }
 
   // Setup the 2 prong DCAFitterN
@@ -802,7 +812,6 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
     values = fgValues;
   }
   if constexpr ((fillMap & MuonCov) > 0) {
-    o2::mch::TrackExtrap::setField();
     double chi2 = muon.chi2();
     SMatrix5 tpars(muon.x(), muon.y(), muon.phi(), muon.tgl(), muon.signed1Pt());
     std::vector<double> v1{muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(),
@@ -810,11 +819,30 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
                            muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
     SMatrix55 tcovs(v1.begin(), v1.end());
     o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
-    o2::dataformats::GlobalFwdTrack track(fwdtrack);
-    auto mchTrack = mMatching.FwdtoMCH(track);
-    o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
-    auto propmuon = mMatching.MCHtoFwd(mchTrack);
+    o2::dataformats::GlobalFwdTrack propmuon;
+    if (static_cast<int>(muon.trackType()) > 2) {
+      o2::dataformats::GlobalFwdTrack track;
+      track.setParameters(tpars);
+      track.setZ(fwdtrack.getZ());
+      track.setCovariances(tcovs);
+      auto mchTrack = mMatching.FwdtoMCH(track);
+      o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
+      auto proptrack = mMatching.MCHtoFwd(mchTrack);
+      propmuon.setParameters(proptrack.getParameters());
+      propmuon.setZ(proptrack.getZ());
+      propmuon.setCovariances(proptrack.getCovariances());
 
+    } else if (static_cast<int>(muon.trackType()) < 2) {
+      double centerMFT[3] = {0, 0, -61.4};
+      o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+      auto Bz = field->getBz(centerMFT); // Get field at centre of MFT
+      auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), collision.posX(), collision.posY(), collision.posZ());
+      auto x2x0 = static_cast<float>(geoMan.meanX2X0);
+      fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);
+      propmuon.setParameters(fwdtrack.getParameters());
+      propmuon.setZ(fwdtrack.getZ());
+      propmuon.setCovariances(fwdtrack.getCovariances());
+    }
     values[kPt] = propmuon.getPt();
     values[kX] = propmuon.getX();
     values[kY] = propmuon.getY();
@@ -1059,6 +1087,25 @@ void VarManager::FillTrack(T const& track, float* values)
 {
   if (!values) {
     values = fgValues;
+  }
+
+  if constexpr ((fillMap & TrackMFT) > 0) {
+    values[kPt] = track.pt();
+    values[kEta] = track.eta();
+    values[kPhi] = track.phi();
+    values[kMftNClusters] = track.nClusters();
+
+    uint64_t mftClsAndFlgs = track.mftClusterSizesAndTrackFlags();
+    double meanClusterSize = 0;
+    for (int i = 0; i < 10; ++i) {
+      double size = (mftClsAndFlgs >> (i * 6)) & 0x3fULL;
+      values[kMftClusterSize + i] = (mftClsAndFlgs >> (i * 6)) & 0x3fULL;
+      if (size > 0) {
+        meanClusterSize += size;
+      }
+    }
+    meanClusterSize /= track.nClusters();
+    values[kMftMeanClusterSize] = meanClusterSize;
   }
 
   // Quantities based on the basic table (contains just kine information and filter bits)
@@ -2017,11 +2064,23 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
           auto geoMan2 = o2::base::GeometryManager::meanMaterialBudget(t2.x(), t2.y(), t2.z(), KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY(), KFGeoTwoProng.GetZ());
           auto x2x01 = static_cast<float>(geoMan1.meanX2X0);
           auto x2x02 = static_cast<float>(geoMan2.meanX2X0);
-          pars1.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, fgFitterTwoProngFwd.getBz(), x2x01);
-          pars2.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, fgFitterTwoProngFwd.getBz(), x2x02);
+          float B[3];
+          float xyz[3] = {0, 0, 0};
+          KFGeoTwoProng.GetFieldValue(xyz, B);
+          pars1.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, B[2], x2x01);
+          pars2.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, B[2], x2x02);
           v1 = {pars1.getPt(), pars1.getEta(), pars1.getPhi(), m1};
           v2 = {pars2.getPt(), pars2.getEta(), pars2.getPhi(), m2};
           v12 = v1 + v2;
+          values[kMass] = v12.M();
+          values[kPt] = v12.Pt();
+          values[kEta] = v12.Eta();
+          values[kPhi] = v12.Phi();
+          values[kRap] = -v12.Rapidity();
+          values[kVertexingTauxy] = KFGeoTwoProng.GetPseudoProperDecayTime(KFPV, v12.M()) / (o2::constants::physics::LightSpeedCm2NS);
+          values[kVertexingTauz] = dzPair2PV * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
+          values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.Pt() * o2::constants::physics::LightSpeedCm2NS);
+          values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
 
           values[kPt1] = pars1.getPt();
           values[kEta1] = pars1.getEta();

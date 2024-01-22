@@ -23,7 +23,6 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/V0.h"
 
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
@@ -82,18 +81,14 @@ struct HfDataCreatorDplusPiReduced {
   Configurable<int> selectionFlagD{"selectionFlagD", 1, "Selection Flag for D"};
 
   // magnetic field setting from CCDB
-  Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
-  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
   HfHelper hfHelper;
 
   // CCDB service
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int runNumber;
 
   // O2DatabasePDG service
@@ -153,12 +148,12 @@ struct HfDataCreatorDplusPiReduced {
     df3.setMinRelChi2Change(minRelChi2Change);
     df3.setUseAbsDCA(useAbsDCA);
     df3.setWeightedFinalPCA(useWeightedFinalPCA);
+    df3.setMatCorrType(noMatCorr);
 
     // Configure CCDB access
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
 
     // invariant-mass window cut
@@ -171,19 +166,21 @@ struct HfDataCreatorDplusPiReduced {
 
   /// Pion selection (D Pi <-- B0)
   /// \param trackPion is a track with the pion hypothesis
+  /// \param trackParCovPion is the track parametrisation of the pion
+  /// \param dcaPion is the 2-D array with track DCAs of the pion
   /// \param track0 is prong0 of selected D candidate
   /// \param track1 is prong1 of selected D candidate
   /// \param track2 is prong2 of selected D candidate
   /// \return true if trackPion passes all cuts
-  template <typename T1, typename T2>
-  bool isPionSelected(const T1& trackPion, const T2& track0, const T2& track1, const T2& track2)
+  template <typename T1, typename T2, typename T3>
+  bool isPionSelected(const T1& trackPion, const T2& trackParCovPion, const T3& dcaPion, const T1& track0, const T1& track1, const T1& track2)
   {
     // check isGlobalTrackWoDCA status for pions if wanted
     if (usePionIsGlobalTrackWoDCA && !trackPion.isGlobalTrackWoDCA()) {
       return false;
     }
     // minimum pT selection
-    if (trackPion.pt() < ptPionMin || !isSelectedTrackDCA(trackPion)) {
+    if (trackParCovPion.getPt() < ptPionMin || !isSelectedTrackDCA(trackParCovPion, dcaPion)) {
       return false;
     }
     // reject pions that are D daughters
@@ -198,20 +195,21 @@ struct HfDataCreatorDplusPiReduced {
   }
 
   /// Single-track cuts for pions on dcaXY
-  /// \param track is a track
+  /// \param trackPar is the track parametrisation
+  /// \param dca is the 2-D array with track DCAs
   /// \return true if track passes all cuts
-  template <typename T>
-  bool isSelectedTrackDCA(const T& track)
+  template <typename T1, typename T2>
+  bool isSelectedTrackDCA(const T1& trackPar, const T2& dca)
   {
-    auto pTBinTrack = findBin(binsPtPion, track.pt());
+    auto pTBinTrack = findBin(binsPtPion, trackPar.getPt());
     if (pTBinTrack == -1) {
       return false;
     }
 
-    if (std::abs(track.dcaXY()) < cutsTrackPionDCA->get(pTBinTrack, "min_dcaxytoprimary")) {
+    if (std::abs(dca[0]) < cutsTrackPionDCA->get(pTBinTrack, "min_dcaxytoprimary")) {
       return false; // minimum DCAxy
     }
-    if (std::abs(track.dcaXY()) > cutsTrackPionDCA->get(pTBinTrack, "max_dcaxytoprimary")) {
+    if (std::abs(dca[0]) > cutsTrackPionDCA->get(pTBinTrack, "max_dcaxytoprimary")) {
       return false; // maximum DCAxy
     }
     return true;
@@ -240,9 +238,14 @@ struct HfDataCreatorDplusPiReduced {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
       LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
-      initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
+      if (grpo == nullptr) {
+        LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+      }
+      o2::base::Propagator::initFieldFromGRP(grpo);
       bz = o2::base::Propagator::Instance()->getNominalBz();
       LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
+      runNumber = bc.runNumber();
     }
     df3.setBz(bz);
 
@@ -303,20 +306,28 @@ struct HfDataCreatorDplusPiReduced {
       df3.getTrack(2).getPxPyPzGlo(pVec2);
 
       // D∓ → π∓ K± π∓
-      std::array<float, 3> pVecPiK = RecoDecay::pVec(pVec0, pVec1);
       std::array<float, 3> pVecD = RecoDecay::pVec(pVec0, pVec1, pVec2);
-      auto trackParCovPiK = o2::dataformats::V0(df3.getPCACandidatePos(), pVecPiK, df3.calcPCACovMatrixFlat(), trackParCov0, trackParCov1);
-      auto trackParCovD = o2::dataformats::V0(df3.getPCACandidatePos(), pVecD, df3.calcPCACovMatrixFlat(), trackParCovPiK, trackParCov2);
+      auto trackParCovD = df3.createParentTrackParCov();
+      int charge = (track1.signed1Pt() > 0) ? -1 : 1;
+      trackParCovD.setAbsCharge(charge); // to be sure
 
       for (const auto& trackId : trackIndices) {
         auto trackPion = trackId.template track_as<T>();
 
         // apply selections on pion tracks
-        if (!isPionSelected(trackPion, track0, track1, track2) || !isSelectedTrackDCA(trackPion)) {
+        auto trackParCovPion = getTrackParCov(trackPion);
+        o2::gpu::gpustd::array<float, 2> dcaPion{trackPion.dcaXY(), trackPion.dcaZ()};
+        std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
+        if (trackPion.collisionId() != thisCollId) {
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovPion, 2.f, noMatCorr, &dcaPion);
+          getPxPyPz(trackParCovPion, pVecPion);
+        }
+
+        // apply selections on pion tracks
+        if (!isPionSelected(trackPion, trackParCovPion, dcaPion, track0, track1, track2)) {
           continue;
         }
-        registry.fill(HIST("hPtPion"), trackPion.pt());
-        std::array<float, 3> pVecPion = {trackPion.px(), trackPion.py(), trackPion.pz()};
+        registry.fill(HIST("hPtPion"), trackParCovPion.getPt());
         // compute invariant mass square and apply selection
         auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massD, massPi});
         if ((invMass2DPi < invMass2DPiMin) || (invMass2DPi > invMass2DPiMax)) {
@@ -327,15 +338,15 @@ struct HfDataCreatorDplusPiReduced {
         // if information on track already stored, go to next track
         if (!selectedTracksPion.count(trackPion.globalIndex())) {
           hfTrackPion(trackPion.globalIndex(), indexHfReducedCollision,
-                      trackPion.x(), trackPion.alpha(),
-                      trackPion.y(), trackPion.z(), trackPion.snp(),
-                      trackPion.tgl(), trackPion.signed1Pt());
-          hfTrackCovPion(trackPion.cYY(), trackPion.cZY(), trackPion.cZZ(),
-                         trackPion.cSnpY(), trackPion.cSnpZ(),
-                         trackPion.cSnpSnp(), trackPion.cTglY(), trackPion.cTglZ(),
-                         trackPion.cTglSnp(), trackPion.cTglTgl(),
-                         trackPion.c1PtY(), trackPion.c1PtZ(), trackPion.c1PtSnp(),
-                         trackPion.c1PtTgl(), trackPion.c1Pt21Pt2());
+                      trackParCovPion.getX(), trackParCovPion.getAlpha(),
+                      trackParCovPion.getY(), trackParCovPion.getZ(), trackParCovPion.getSnp(),
+                      trackParCovPion.getTgl(), trackParCovPion.getQ2Pt());
+          hfTrackCovPion(trackParCovPion.getSigmaY2(), trackParCovPion.getSigmaZY(), trackParCovPion.getSigmaZ2(),
+                         trackParCovPion.getSigmaSnpY(), trackParCovPion.getSigmaSnpZ(),
+                         trackParCovPion.getSigmaSnp2(), trackParCovPion.getSigmaTglY(), trackParCovPion.getSigmaTglZ(),
+                         trackParCovPion.getSigmaTglSnp(), trackParCovPion.getSigmaTgl2(),
+                         trackParCovPion.getSigma1PtY(), trackParCovPion.getSigma1PtZ(), trackParCovPion.getSigma1PtSnp(),
+                         trackParCovPion.getSigma1PtTgl(), trackParCovPion.getSigma1Pt2());
           hfTrackPidPion(trackPion.hasTPC(), trackPion.hasTOF(),
                          trackPion.tpcNSigmaPi(), trackPion.tofNSigmaPi());
           // add trackPion.globalIndex() to a list
@@ -353,6 +364,7 @@ struct HfDataCreatorDplusPiReduced {
           int8_t debug{0};
           // B0 → D- π+ → (π- K+ π-) π+
           auto indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersB0, Pdg::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
+          auto motherPt = -1.f;
           if (indexRec > -1) {
             // D- → π- K+ π-
             // Printf("Checking D- → π- K+ π-");
@@ -363,10 +375,14 @@ struct HfDataCreatorDplusPiReduced {
               debug = 1;
               LOGF(debug, "B0 decays in the expected final state but the condition on the intermediate state is not fulfilled");
             }
+
+            auto indexMother = RecoDecay::getMother(particlesMc, trackPion.template mcParticle_as<P>(), Pdg::kB0, true);
+            if (indexMother >= 0) {
+              auto particleMother = particlesMc.rawIteratorAt(indexMother);
+              motherPt = particleMother.pt();
+            }
           }
-          auto indexMother = RecoDecay::getMother(particlesMc, trackPion.template mcParticle_as<P>(), Pdg::kB0, true);
-          auto particleMother = particlesMc.rawIteratorAt(indexMother);
-          rowHfDPiMcRecReduced(indexHfCand3Prong, selectedTracksPion[trackPion.globalIndex()], flag, debug, particleMother.pt());
+          rowHfDPiMcRecReduced(indexHfCand3Prong, selectedTracksPion[trackPion.globalIndex()], flag, debug, motherPt);
         }
         fillHfCand3Prong = true;
       }                       // pion loop
@@ -538,7 +554,7 @@ struct HfDataCreatorDplusPiReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD.sliceBy(candsDPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<true, true>(collision, candsD, trackIndices, tracks, particlesMc, bcs);
+      runDataCreation<true, true>(collision, candsDThisColl, trackIdsThisCollision, tracks, particlesMc, bcs);
     }
     runMcGen(particlesMc);
   }

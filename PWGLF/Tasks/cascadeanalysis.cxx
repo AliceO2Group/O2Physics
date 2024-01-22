@@ -188,14 +188,10 @@ struct cascadeAnalysis {
     bool lConsistentWithLambda = true;
     bool lConsistentWithXi = true;
     bool lConsistentWithOm = true;
-    auto v0 = lCascade.template v0_as<o2::aod::V0sLinked>();
-    if (!(v0.has_v0Data())) {
-      return 0; // reject
-    }
-    auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
+
     auto bachTrack = lCascade.template bachelor_as<TCascTracksTo>();
-    auto posTrack = v0data.template posTrack_as<TCascTracksTo>();
-    auto negTrack = v0data.template negTrack_as<TCascTracksTo>();
+    auto posTrack = lCascade.template posTrack_as<TCascTracksTo>();
+    auto negTrack = lCascade.template negTrack_as<TCascTracksTo>();
 
     // Bachelor: depends on type
     if (TMath::Abs(bachTrack.tpcNSigmaPi()) > tpcNsigmaBachelor && tpcNsigmaBachelor < 9.99)
@@ -224,15 +220,9 @@ struct cascadeAnalysis {
   // function to process cascades and generate corresponding invariant mass distributions
   {
     registry.fill(HIST("hCandidateCounter"), 0.5); // all candidates
-    auto v0 = casc.template v0_as<o2::aod::V0sLinked>();
-    if (!(v0.has_v0Data())) {
-      return; // skip those cascades for which V0 doesn't exist
-    }
-    registry.fill(HIST("hCandidateCounter"), 1.5); // v0data exists
-    auto v0data = v0.v0Data();                     // de-reference index to correct v0data in case it exists
     auto bachTrackCast = casc.template bachelor_as<TCascTracksTo>();
-    auto posTrackCast = v0data.template posTrack_as<TCascTracksTo>();
-    auto negTrackCast = v0data.template negTrack_as<TCascTracksTo>();
+    auto posTrackCast = casc.template posTrack_as<TCascTracksTo>();
+    auto negTrackCast = casc.template negTrack_as<TCascTracksTo>();
 
     // track-level selections
     Bool_t lEnoughTPCNClsBac = kTRUE;
@@ -326,7 +316,7 @@ struct cascadeAnalysis {
     }
   }
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, FullTracksExtIU const&)
   // process function subscribing to Run 3-like analysis objects
   {
     // Run 3 event selection criteria
@@ -340,7 +330,7 @@ struct cascadeAnalysis {
   }
   PROCESS_SWITCH(cascadeAnalysis, processRun3, "Process Run 3 data", true);
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExt const&)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, FullTracksExt const&)
   // process function subscribing to Run 3-like analysis objects
   {
     // Run 2 event selection criteria
@@ -357,7 +347,7 @@ struct cascadeAnalysis {
   }
   PROCESS_SWITCH(cascadeAnalysis, processRun2, "Process Run 2 data", false);
 
-  void processRun3VsMultiplicity(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
+  void processRun3VsMultiplicity(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, FullTracksExtIU const&)
   // process function subscribing to Run 3-like analysis objects
   {
     // Run 3 event selection criteria
@@ -371,7 +361,7 @@ struct cascadeAnalysis {
   }
   PROCESS_SWITCH(cascadeAnalysis, processRun3VsMultiplicity, "Process Run 3 data vs multiplicity", false);
 
-  void processRun2VsMultiplicity(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExt const&)
+  void processRun2VsMultiplicity(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, FullTracksExt const&)
   // process function subscribing to Run 3-like analysis objects
   {
     // Run 2 event selection criteria
@@ -388,7 +378,7 @@ struct cascadeAnalysis {
   }
   PROCESS_SWITCH(cascadeAnalysis, processRun2VsMultiplicity, "Process Run 2 data vs multiplicity", false);
 
-  void processRun3WithPID(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIUWithPID const&)
+  void processRun3WithPID(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, FullTracksExtIUWithPID const&)
   // process function subscribing to Run 3-like analysis objects
   {
     // Run 3 event selection criteria
@@ -403,7 +393,7 @@ struct cascadeAnalysis {
   }
   PROCESS_SWITCH(cascadeAnalysis, processRun3WithPID, "Process Run 3 data  with PID", false);
 
-  void processRun2WithPID(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtWithPID const&)
+  void processRun2WithPID(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, FullTracksExtWithPID const&)
   // process function subscribing to Run 3-like analysis objects
   {
     // Run 2 event selection criteria
@@ -421,7 +411,7 @@ struct cascadeAnalysis {
   }
   PROCESS_SWITCH(cascadeAnalysis, processRun2WithPID, "Process Run 2 data  with PID", false);
 
-  void processRun3VsMultiplicityWithPID(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIUWithPID const&)
+  void processRun3VsMultiplicityWithPID(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, FullTracksExtIUWithPID const&)
   // process function subscribing to Run 3-like analysis objects
   {
     // Run 3 event selection criteria
@@ -436,7 +426,7 @@ struct cascadeAnalysis {
   }
   PROCESS_SWITCH(cascadeAnalysis, processRun3VsMultiplicityWithPID, "Process Run 3 data vs multiplicity with PID", false);
 
-  void processRun2VsMultiplicityWithPID(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtWithPID const&)
+  void processRun2VsMultiplicityWithPID(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, soa::Filtered<aod::CascDataExt> const& Cascades, FullTracksExtWithPID const&)
   // process function subscribing to Run 3-like analysis objects
   {
     // Run 2 event selection criteria

@@ -353,6 +353,31 @@ DECLARE_SOA_TABLE(UDFwdTracksExtra, "AOD", "UDFWDTRACKEXTRA",
 using UDFwdTrack = UDFwdTracks::iterator;
 using UDFwdTrackExtra = UDFwdTracksExtra::iterator;
 
+DECLARE_SOA_TABLE(UDFwdTracksProp, "AOD", "UDFWDTRACKPROP",
+                  o2::soa::Index<>, fwdtrack::CollisionId, fwdtrack::TrackType,
+                  fwdtrack::X, fwdtrack::Y, fwdtrack::Z, fwdtrack::Phi, fwdtrack::Tgl,
+                  fwdtrack::Signed1Pt,
+                  fwdtrack::Px<fwdtrack::Pt, fwdtrack::Phi>,
+                  fwdtrack::Py<fwdtrack::Pt, fwdtrack::Phi>,
+                  fwdtrack::Pz<fwdtrack::Pt, fwdtrack::Tgl>,
+                  fwdtrack::Sign<fwdtrack::Signed1Pt>,
+                  fwdtrack::Eta,
+                  fwdtrack::Pt,
+                  fwdtrack::P,
+                  fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
+                  fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
+                  fwdtrack::MatchScoreMCHMFT, fwdtrack::MFTTrackId, fwdtrack::MCHTrackId,
+                  fwdtrack::MCHBitMap, fwdtrack::MIDBoards, fwdtrack::MIDBitMap,
+                  fwdtrack::TrackTime, fwdtrack::TrackTimeRes);
+
+DECLARE_SOA_TABLE(UDFwdTracksCovProp, "AOD", "UDFWDTRKCOVPROP",
+                  fwdtrack::SigmaX, fwdtrack::SigmaY, fwdtrack::SigmaTgl, fwdtrack::SigmaPhi, fwdtrack::Sigma1Pt,
+                  fwdtrack::RhoXY, fwdtrack::RhoPhiY, fwdtrack::RhoPhiX, fwdtrack::RhoTglX, fwdtrack::RhoTglY,
+                  fwdtrack::RhoTglPhi, fwdtrack::Rho1PtX, fwdtrack::Rho1PtY, fwdtrack::Rho1PtPhi, fwdtrack::Rho1PtTgl);
+
+using UDFwdTrackProp = UDFwdTracksProp::iterator;
+using UDFwdTrackCovProp = UDFwdTracksCovProp::iterator;
+
 namespace udmcfwdtracklabel
 {
 DECLARE_SOA_INDEX_COLUMN(UDMcParticle, udMcParticle);

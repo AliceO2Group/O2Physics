@@ -21,6 +21,8 @@
 
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 
+#include "Common/DataModel/EventSelection.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -88,8 +90,12 @@ struct multiplicityPbPb {
   }
 
   // void process(aod::Collision const& collision, soa::Filtered<myCompleteTracks> const& tracks, aod::McParticles const&)
-  void process(aod::Collision const& collision, soa::Filtered<myCompleteTracks> const& tracks)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<myCompleteTracks> const& tracks)
   {
+    if (!collision.sel8()) {
+      return;
+    }
+
     int trackCounter = 0;
 
     // auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());

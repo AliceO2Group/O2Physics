@@ -39,6 +39,13 @@
 #include "PWGDQ/Core/MCSignalLibrary.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Field/MagneticField.h"
+#include "TGeoGlobalMagField.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "CCDB/BasicCCDBManager.h"
 
 using std::cout;
 using std::endl;
@@ -138,12 +145,23 @@ struct TableMakerMC {
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<bool> fConfigDetailedQA{"cfgDetailedQA", false, "If true, include more QA histograms (BeforeCuts classes)"};
   Configurable<bool> fIsAmbiguous{"cfgIsAmbiguous", false, "Whether we enable QA plots for ambiguous tracks"};
+  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<bool> fPropMuon{"cfgPropMuon", false, "Propgate muon tracks through absorber"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> grpmagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
+
+  Service<o2::ccdb::BasicCCDBManager> fCCDB;
+
+  o2::parameters::GRPObject* grpmagrun2 = nullptr; // for run 2, we access the GRPObject from GLO/GRP/GRP
+  o2::parameters::GRPMagField* grpmag = nullptr;   // for run 3, we access GRPMagField from GLO/Config/GRPMagField
 
   AnalysisCompositeCut* fEventCut;              //! Event selection cut
   std::vector<AnalysisCompositeCut> fTrackCuts; //! Barrel track cuts
   std::vector<AnalysisCompositeCut> fMuonCuts;  //! Muon track cuts
 
   bool fDoDetailedQA = false; // Bool to set detailed QA true, if QA is set true
+  int fCurrentRun;            // needed to detect if the run changed and trigger update of calibrations etc.
 
   // TODO: filter on TPC dedx used temporarily until electron PID will be improved
   Filter barrelSelectedTracks = ifnode(fIsRun2.node() == true, aod::track::trackType == uint8_t(aod::track::Run2Track), aod::track::trackType == uint8_t(aod::track::Track)) && o2::aod::track::pt >= fConfigBarrelTrackPtLow && nabs(o2::aod::track::eta) <= 0.9f;
@@ -152,6 +170,15 @@ struct TableMakerMC {
 
   void init(o2::framework::InitContext& context)
   {
+    fCCDB->setURL(fConfigCcdbUrl);
+    fCCDB->setCaching(true);
+    fCCDB->setLocalObjectValidityChecking();
+    if (fPropMuon) {
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        fCCDB->get<TGeoManager>(geoPath);
+      }
+    }
+
     // Define cuts --------------------------------------------------------------------------------------------
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigEventCuts.value;
@@ -336,6 +363,25 @@ struct TableMakerMC {
       if (!collision.has_mcCollision()) {
         continue;
       }
+      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+      if (fCurrentRun != bc.runNumber()) {
+        if (fIsRun2 == true) {
+          grpmagrun2 = fCCDB->getForTimeStamp<o2::parameters::GRPObject>(grpmagPathRun2, bc.timestamp());
+          if (grpmagrun2 != nullptr) {
+            o2::base::Propagator::initFieldFromGRP(grpmagrun2);
+          }
+        } else {
+          if (fPropMuon) {
+            VarManager::SetupMuonMagField();
+          }
+          grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+          if (grpmag != nullptr) {
+            o2::base::Propagator::initFieldFromGRP(grpmag);
+          }
+        }
+        fCurrentRun = bc.runNumber();
+      }
+
       // get the trigger aliases
       uint32_t triggerAliases = collision.alias_raw();
       // store the selection decisions
@@ -345,7 +391,6 @@ struct TableMakerMC {
       }
 
       auto mcCollision = collision.mcCollision();
-      auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
       VarManager::fgValues[VarManager::kRunNo] = bc.runNumber();
       VarManager::fgValues[VarManager::kBC] = bc.globalBC();
@@ -613,6 +658,9 @@ struct TableMakerMC {
           }
 
           VarManager::FillTrack<TMuonFillMap>(muon);
+          if (fPropMuon) {
+            VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
+          }
 
           if (muon.index() > idxPrev + 1) { // checks if some muons are filtered even before the skimming function
             nDel += muon.index() - (idxPrev + 1);
