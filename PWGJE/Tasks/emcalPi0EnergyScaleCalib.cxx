@@ -463,7 +463,7 @@ struct Pi0EnergyScaleCalibTask {
       if (mesonRotated1.getOpeningAngle() > mMinOpenAngleCut) {
         mHistManager.fill(HIST("invMassVsPtVsAccBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), 0);
         if (mPhotons[ig3].supermodulecategory == rotPhoton1.supermodulecategory)
-          mHistManager.fill(HIST("invMassVsPtVsSMCatBackground"), meson.getMass(), meson.getPt(), mPhotons[ig3].supermodulecategory);
+          mHistManager.fill(HIST("invMassVsPtVsSMCatBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), mPhotons[ig3].supermodulecategory);
         mHistManager.fill(HIST("invMassVsPtVsRowBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), mPhotons[ig3].row);
         mHistManager.fill(HIST("invMassVsPtVsRowBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), rotPhoton1.row);
         mHistManager.fill(HIST("invMassVsPtVsColBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), mPhotons[ig3].col);
@@ -478,7 +478,7 @@ struct Pi0EnergyScaleCalibTask {
       if (mesonRotated2.getOpeningAngle() > mMinOpenAngleCut) {
         mHistManager.fill(HIST("invMassVsPtVsAccBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), 0);
         if (mPhotons[ig3].supermodulecategory == rotPhoton2.supermodulecategory)
-          mHistManager.fill(HIST("invMassVsPtVsSMCatBackground"), meson.getMass(), meson.getPt(), mPhotons[ig3].supermodulecategory);
+          mHistManager.fill(HIST("invMassVsPtVsSMCatBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), mPhotons[ig3].supermodulecategory);
         mHistManager.fill(HIST("invMassVsPtVsRowBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), mPhotons[ig3].row);
         mHistManager.fill(HIST("invMassVsPtVsRowBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), rotPhoton2.row);
         mHistManager.fill(HIST("invMassVsPtVsColBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), mPhotons[ig3].col);
