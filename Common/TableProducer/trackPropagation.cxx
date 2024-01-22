@@ -76,7 +76,7 @@ struct TrackPropagation {
   Configurable<float> minPropagationRadius{"minPropagationDistance", o2::constants::geom::XTPCInnerRef + 0.1, "Only tracks which are at a smaller radius will be propagated, defaults to TPC inner wall"};
   // for TrackTuner only (MC smearing)
   Configurable<bool> useTrackTuner{"useTrackTuner", 0, "Apply Improver/DCA corrections to MC"};
-  Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackCovMat=1|updateCurvature=0|updatePulls=0|pathCurrFileDcaXY=Users/h/hsharma/dcaCorr/LHC22l1b3_dcaXY|pathUpgrFileDcaXY=Users/h/hsharma/dcaCorr/LHC22s_apass5_dcaXY|pathCurrFileDcaZ=Users/h/hsharma/dcaCorr/LHC22l1b3_dcaZ|pathUpgrFileDcaZ=Users/h/hsharma/dcaCorr/LHC22s_apass5_dcaZ|nameFile=corrFile.root|oneOverPtCurrent=0|oneOverPtUpgrded=0", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
+  Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackCovMat=1|updateCurvature=0|updatePulls=0|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/PbPb2022|nameInputFile=trackTuner_DataLHC22sPass5_McLHC22l1b2_run529397.root|usePvRefitCorrections=0|oneOverPtCurrent=0|oneOverPtUpgrded=0", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
   OutputObj<TH1D> trackTunedTracks{TH1D("trackTunedTracks", "", 1, 0.5, 1.5), OutputObjHandlingPolicy::AnalysisObject};
 
   using tracksIUWithMc = soa::Join<aod::StoredTracksIU, aod::McTrackLabels, aod::TracksCovIU>;

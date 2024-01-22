@@ -30,13 +30,12 @@ struct TrackTuner {
   bool updateTrackCovMat = false;
   bool updateCurvature = false;
   bool updatePulls = false;
-  std::string pathCurrFileDcaXY = ""; // Path to file containing current DCAxy graphs
-  std::string pathUpgrFileDcaXY = ""; // Path to file containing New DCAxy graphs
-  std::string pathCurrFileDcaZ = "";  // Path to file containing current DCAz graphs
-  std::string pathUpgrFileDcaZ = "";  // Path to file containing New DCAz graphs
-  std::string nameFile = "";          // Common Name of different files containing graphs, found in the above paths
-  float oneOverPtCurrent = 0.;        // 1/pt old
-  float oneOverPtUpgrded = 0.;        // 1/pt new
+  bool isInputFileFromCCDB = false;    // query input file from CCDB or local folder
+  std::string pathInputFile = "";      // Path to file containing DCAxy, DCAz graphs from data (upgr) and MC (current)
+  std::string nameInputFile = "";      // Common Name of different files containing graphs, found in the above paths
+  bool usePvRefitCorrections = false;  // establish whether to use corrections obtained with or w/o PV refit
+  float oneOverPtCurrent = 0.;         // 1/pt old
+  float oneOverPtUpgrded = 0.;         // 1/pt new
   ///////////////////////////////
 
   o2::ccdb::CcdbApi ccdbApi;
@@ -103,16 +102,24 @@ struct TrackTuner {
                  eUpdateTrackCovMat,
                  eUpdateCurvature,
                  eUpdatePulls,
-                 ePathCurrFileDcaXY,
-                 ePathUpgrFileDcaXY,
-                 ePathCurrFileDcaZ,
-                 ePathUpgrFileDcaZ,
-                 eNameCurrFile,
+                 ePathInputFile,
+                 eIsInputFileFromCCDB,
+                 eNameInputFile,
+                 eUsePvRefitCorrections,
                  eOneOverPtCurrent,
                  eOneOverPtUpgrded,
                  eNPars };
     std::map<uint8_t, std::string> mapParNames = {
-      std::make_pair(static_cast<uint8_t>(eDebugInfo), "debugInfo"), std::make_pair(static_cast<uint8_t>(eUpdateTrackCovMat), "updateTrackCovMat"), std::make_pair(static_cast<uint8_t>(eUpdateCurvature), "updateCurvature"), std::make_pair(static_cast<uint8_t>(eUpdatePulls), "updatePulls"), std::make_pair(static_cast<uint8_t>(ePathCurrFileDcaXY), "pathCurrFileDcaXY"), std::make_pair(static_cast<uint8_t>(ePathUpgrFileDcaXY), "pathUpgrFileDcaXY"), std::make_pair(static_cast<uint8_t>(ePathCurrFileDcaZ), "pathCurrFileDcaZ"), std::make_pair(static_cast<uint8_t>(ePathUpgrFileDcaZ), "pathUpgrFileDcaZ"), std::make_pair(static_cast<uint8_t>(eNameCurrFile), "nameFile"), std::make_pair(static_cast<uint8_t>(eOneOverPtCurrent), "oneOverPtCurrent"), std::make_pair(static_cast<uint8_t>(eOneOverPtUpgrded), "oneOverPtUpgrded")};
+      std::make_pair(static_cast<uint8_t>(eDebugInfo), "debugInfo"),
+      std::make_pair(static_cast<uint8_t>(eUpdateTrackCovMat), "updateTrackCovMat"),
+      std::make_pair(static_cast<uint8_t>(eUpdateCurvature), "updateCurvature"),
+      std::make_pair(static_cast<uint8_t>(eUpdatePulls), "updatePulls"),
+      std::make_pair(static_cast<uint8_t>(eIsInputFileFromCCDB), "isInputFileFromCCDB"),
+      std::make_pair(static_cast<uint8_t>(ePathInputFile), "pathInputFile"),
+      std::make_pair(static_cast<uint8_t>(eNameInputFile), "nameInputFile"),
+      std::make_pair(static_cast<uint8_t>(eUsePvRefitCorrections), "usePvRefitCorrections"),
+      std::make_pair(static_cast<uint8_t>(eOneOverPtCurrent), "oneOverPtCurrent"),
+      std::make_pair(static_cast<uint8_t>(eOneOverPtUpgrded), "oneOverPtUpgrded")};
     ///////////////////////////////////////////////////////////////////////////////////
     LOG(info) << "[TrackTuner]";
     LOG(info) << "[TrackTuner] >>> Parameters before the custom settings";
@@ -120,11 +127,10 @@ struct TrackTuner {
     LOG(info) << "[TrackTuner]     updateTrackCovMat = " << updateTrackCovMat;
     LOG(info) << "[TrackTuner]     updateCurvature = " << updateCurvature;
     LOG(info) << "[TrackTuner]     updatePulls = " << updatePulls;
-    LOG(info) << "[TrackTuner]     pathCurrFileDcaXY = " << pathCurrFileDcaXY;
-    LOG(info) << "[TrackTuner]     pathUpgrFileDcaXY = " << pathUpgrFileDcaXY;
-    LOG(info) << "[TrackTuner]     pathCurrFileDcaZ = " << pathCurrFileDcaZ;
-    LOG(info) << "[TrackTuner]     pathUpgrFileDcaZ = " << pathUpgrFileDcaZ;
-    LOG(info) << "[TrackTuner]     nameFile = " << nameFile;
+    LOG(info) << "[TrackTuner]     isInputFileFromCCDB = " << isInputFileFromCCDB;
+    LOG(info) << "[TrackTuner]     pathInputFile = " << pathInputFile;
+    LOG(info) << "[TrackTuner]     nameInputFile = " << nameInputFile;
+    LOG(info) << "[TrackTuner]     usePvRefitCorrections = " << usePvRefitCorrections;
     LOG(info) << "[TrackTuner]     oneOverPtCurrent = " << oneOverPtCurrent;
     LOG(info) << "[TrackTuner]     oneOverPtUpgrded = " << oneOverPtUpgrded;
 
@@ -200,26 +206,22 @@ struct TrackTuner {
     setBoolFromString(updatePulls, getValueString(eUpdatePulls));
     LOG(info) << "[TrackTuner]     updatePulls = " << updatePulls;
     outputString += ", updatePulls=" + std::to_string(updatePulls);
-    // Configure pathCurrFileDcaXY
-    pathCurrFileDcaXY = getValueString(ePathCurrFileDcaXY);
-    outputString += ", pathCurrFileDcaXY=" + pathCurrFileDcaXY;
-    LOG(info) << "[TrackTuner]     pathCurrFileDcaXY = " << pathCurrFileDcaXY;
-    // Configure pathUpgrFileDcaXY
-    pathUpgrFileDcaXY = getValueString(ePathUpgrFileDcaXY);
-    outputString += ", pathUpgrFileDcaXY=" + pathUpgrFileDcaXY;
-    LOG(info) << "[TrackTuner]     pathUpgrFileDcaXY = " << pathUpgrFileDcaXY;
-    // Configure pathCurrFileDcaZ
-    pathCurrFileDcaZ = getValueString(ePathCurrFileDcaZ);
-    outputString += ", pathCurrFileDcaZ=" + pathCurrFileDcaZ;
-    LOG(info) << "[TrackTuner]     pathCurrFileDcaZ = " << pathCurrFileDcaZ;
-    // Configure pathUpgrFileDcaZ
-    pathUpgrFileDcaZ = getValueString(ePathUpgrFileDcaZ);
-    outputString += ", pathUpgrFileDcaZ=" + pathUpgrFileDcaZ;
-    LOG(info) << "[TrackTuner]     pathUpgrFileDcaZ = " << pathUpgrFileDcaZ;
-    // Configure nameFile
-    nameFile = getValueString(eNameCurrFile);
-    outputString += ", nameFile=" + nameFile;
-    LOG(info) << "[TrackTuner]     nameFile = " << nameFile;
+    // Configure isInputFileFromCCDB
+    setBoolFromString(isInputFileFromCCDB, getValueString(eIsInputFileFromCCDB));
+    LOG(info) << "[TrackTuner]     isInputFileFromCCDB = " << isInputFileFromCCDB;
+    outputString += ", isInputFileFromCCDB=" + std::to_string(isInputFileFromCCDB);
+    // Configure pathInputFile
+    pathInputFile = getValueString(ePathInputFile);
+    outputString += ", pathInputFile=" + pathInputFile;
+    LOG(info) << "[TrackTuner]     pathInputFile = " << pathInputFile;
+    // Configure nameInputFile
+    nameInputFile = getValueString(eNameInputFile);
+    outputString += ", nameInputFile=" + nameInputFile;
+    LOG(info) << "[TrackTuner]     nameInputFile = " << nameInputFile;
+    // Configure usePvRefitCorrections
+    setBoolFromString(usePvRefitCorrections, getValueString(eUsePvRefitCorrections));
+    outputString += ", usePvRefitCorrections=" + usePvRefitCorrections;
+    LOG(info) << "[TrackTuner]     usePvRefitCorrections = " << usePvRefitCorrections;
     // Configure oneOverPtCurr
     oneOverPtCurrent = std::stof(getValueString(eOneOverPtCurrent));
     outputString += ", oneOverPtCurrent=" + std::to_string(oneOverPtCurrent);
@@ -234,71 +236,74 @@ struct TrackTuner {
 
   void getDcaGraphs()
   {
-    /*
-    TODO
-    --> add possibility to pick-up the file from CCDB
-    */
-    o2::ccdb::CcdbApi ccdbApi;
-    std::string tmpDir[4] = {"./tmp/sim/dcaXY", "./tmp/sim/dcaZ", "./tmp/data/dcaXY", "./tmp/data/dcaZ"};
-    ccdbApi.init("http://alice-ccdb.cern.ch");
+    std::string fullNameInputFile = "";
+ 
+    if(isInputFileFromCCDB) {
+      /// use input correction file from CCDB
 
-    bool isCurrDCAxy = ccdbApi.retrieveBlob(pathCurrFileDcaXY.data(), tmpDir[0], metadata, 0, false, nameFile.data());
-    if (!isCurrDCAxy) {
-      LOG(fatal) << "[TrackTuner] DCAxy file for MC not found on CCDB, please check the pathCurrFileDcaXY and nameFile!";
-    }
-    bool isCurrDCAz = ccdbApi.retrieveBlob(pathCurrFileDcaZ.data(), tmpDir[1], metadata, 0, false, nameFile.data());
-    if (!isCurrDCAz) {
-      LOG(fatal) << "[TrackTuner] DCAz file for MC not found on CCDB, please check the pathCurrFileDcaZ and nameFile!";
-    }
-    bool isUpgrDCAxy = ccdbApi.retrieveBlob(pathUpgrFileDcaXY.data(), tmpDir[2], metadata, 0, false, nameFile.data());
-    if (!isUpgrDCAxy) {
-      LOG(fatal) << "[TrackTuner] DCAxy file for Data not found on CCDB, please check the pathUpgrFileDcaXY and nameFile!";
-    }
-    bool isUpgrDCAz = ccdbApi.retrieveBlob(pathUpgrFileDcaZ.data(), tmpDir[3], metadata, 0, false, nameFile.data());
-    if (!isUpgrDCAz) {
-      LOG(fatal) << "[TrackTuner] DCAz file for Data not found on CCDB, please check the pathUpgrFileDcaZ and nameFile!";
+      // properly init the ccdb
+      o2::ccdb::CcdbApi ccdbApi;
+      std::string tmpDir = ".";
+      ccdbApi.init("http://alice-ccdb.cern.ch");
+
+      // get the file from CCDB
+      if (!ccdbApi.retrieveBlob(pathInputFile.data(), tmpDir, metadata, 0, false, nameInputFile.data())) {
+        LOG(fatal) << "[TrackTuner] input file not found on CCDB, please check the pathInputFile and nameInputFile!";
+      }
+
+      // point to the file in the tmp local folder
+      fullNameInputFile = tmpDir + std::string("/") + nameInputFile;
+    } else {
+      /// use input correction file from local filesystem
+      fullNameInputFile = pathInputFile + std::string("/") + nameInputFile;
     }
 
-    const std::string fnameDCAxyFileCurr = tmpDir[0] + "/" + nameFile;
-    const std::string fnameDCAzFileCurr = tmpDir[1] + "/" + nameFile;
-    const std::string fnameDCAxyFileUpgr = tmpDir[2] + "/" + nameFile;
-    const std::string fnameDCAzFileUpgr = tmpDir[3] + "/" + nameFile;
-
-    // if ((fnameDCAxyFileCurr == "") || (fnameDCAzFileCurr == "") || (fnameDCAxyFileUpgr == "") || (fnameDCAzFileUpgr == "")) {
-    //   LOG(fatal) << "[TrackTuner] No Correction DCA files provided!";
-    //   return;
-    // }
-
-    std::unique_ptr<TFile> fileCurrDcaXY(TFile::Open(fnameDCAxyFileCurr.c_str(), "READ"));
-    std::unique_ptr<TFile> fileUpgrDcaXY(TFile::Open(fnameDCAxyFileUpgr.c_str(), "READ"));
-
-    std::unique_ptr<TFile> fileCurrDcaZ(TFile::Open(fnameDCAzFileCurr.c_str(), "READ"));
-    std::unique_ptr<TFile> fileUpgrDcaZ(TFile::Open(fnameDCAzFileUpgr.c_str(), "READ"));
-
-    if (!fileCurrDcaXY.get() || !fileUpgrDcaXY.get() || !fileCurrDcaZ.get() || !fileUpgrDcaZ.get()) {
-      LOG(fatal) << "Something wrong with the input files for dca correction. Fix it!";
+    /// open the input correction file
+    std::unique_ptr<TFile> inputFile(TFile::Open(fullNameInputFile.c_str(), "READ"));
+    if (!inputFile.get()) {
+      LOG(fatal) << "Something wrong with the input file" << fullNameInputFile << " for dca correction. Fix it!";
     }
 
-    std::string grDcaResName = "tge_DCA_res_withoutPVrefit_all";
-    std::string grDcaMeanName = "tge_DCA_mean_withoutPVrefit_all";
-    std::string grDcaPullName = "tge_DCAPulls_res_withoutPVrefit_all";
+    // choose wheter to use corrections w/ PV refit or w/o it, and retrieve the proper TDirectory
+    std::string dir = "woPvRefit";
+    if(usePvRefitCorrections) {
+      dir = "withPvRefit";
+    }
+    TDirectory* td = dynamic_cast<TDirectory*>(inputFile->Get(dir.c_str()));
+    if (!td) {
+      LOG(fatal) << "TDirectory " << td << " not found in input file" << inputFile->GetName() <<". Fix it!";
+    }
 
-    grDcaXYResVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(fileCurrDcaXY->Get(grDcaResName.c_str())));
-    grDcaXYResVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(fileUpgrDcaXY->Get(grDcaResName.c_str())));
-    grDcaXYMeanVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(fileCurrDcaXY->Get(grDcaMeanName.c_str())));
-    grDcaXYMeanVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(fileUpgrDcaXY->Get(grDcaMeanName.c_str())));
-    grDcaXYPullVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(fileCurrDcaXY->Get(grDcaPullName.c_str())));
-    grDcaXYPullVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(fileUpgrDcaXY->Get(grDcaPullName.c_str())));
+    std::string grDcaXYResNameCurr = "resCurrentDcaXY";
+    std::string grDcaXYMeanNameCurr = "meanCurrentDcaXY";
+    std::string grDcaXYPullNameCurr = "pullsCurrentDcaXY";
+    std::string grDcaXYResNameUpgr = "resUpgrDcaXY";
+    std::string grDcaXYMeanNameUpgr = "meanUpgrDcaXY";
+    std::string grDcaXYPullNameUpgr = "pullsUpgrDcaXY";
+    
+    grDcaXYResVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYResNameCurr.c_str())));
+    grDcaXYResVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYResNameUpgr.c_str())));
+    grDcaXYMeanVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYMeanNameCurr.c_str())));
+    grDcaXYMeanVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYMeanNameUpgr.c_str())));
+    grDcaXYPullVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYPullNameCurr.c_str())));
+    grDcaXYPullVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYPullNameUpgr.c_str())));
     if (!grDcaXYResVsPtPionCurrent.get() || !grDcaXYResVsPtPionUpgrded.get() || !grDcaXYMeanVsPtPionCurrent.get() || !grDcaXYMeanVsPtPionUpgrded.get() || !grDcaXYPullVsPtPionCurrent.get() || !grDcaXYPullVsPtPionUpgrded.get()) {
       LOG(fatal) << "Something wrong with the names of the correction graphs for dcaXY. Fix it!";
     }
 
-    grDcaZResVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(fileCurrDcaZ->Get(grDcaResName.c_str())));
-    grDcaZResVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(fileUpgrDcaZ->Get(grDcaResName.c_str())));
-    grDcaZMeanVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(fileCurrDcaZ->Get(grDcaMeanName.c_str())));
-    grDcaZMeanVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(fileUpgrDcaZ->Get(grDcaMeanName.c_str())));
-    grDcaZPullVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(fileCurrDcaZ->Get(grDcaPullName.c_str())));
-    grDcaZPullVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(fileUpgrDcaZ->Get(grDcaPullName.c_str())));
+    std::string grDcaZResNameCurr = "resCurrentDcaZ";
+    std::string grDcaZMeanNameCurr = "meanCurrentDcaZ";
+    std::string grDcaZPullNameCurr = "pullsCurrentDcaZ";
+    std::string grDcaZResNameUpgr = "resUpgrDcaZ";
+    std::string grDcaZMeanNameUpgr = "meanUpgrDcaZ";
+    std::string grDcaZPullNameUpgr = "pullsUpgrDcaZ";
+
+    grDcaZResVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZResNameCurr.c_str())));
+    grDcaZResVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZResNameUpgr.c_str())));
+    grDcaZMeanVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZMeanNameCurr.c_str())));
+    grDcaZMeanVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZMeanNameUpgr.c_str())));
+    grDcaZPullVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZPullNameCurr.c_str())));
+    grDcaZPullVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZPullNameUpgr.c_str())));
     if (!grDcaZResVsPtPionCurrent.get() || !grDcaZResVsPtPionUpgrded.get() || !grDcaZMeanVsPtPionCurrent.get() || !grDcaZMeanVsPtPionUpgrded.get() || !grDcaZPullVsPtPionCurrent.get() || !grDcaZPullVsPtPionUpgrded.get()) {
       LOG(fatal) << "Something wrong with the names of the correction graphs for dcaZ. Fix it!";
     }
