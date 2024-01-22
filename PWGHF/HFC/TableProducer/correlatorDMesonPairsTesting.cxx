@@ -29,6 +29,7 @@
 
 using namespace o2;
 using namespace o2::analysis;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -241,10 +242,10 @@ struct HfCorrelatorDMesonPairsTesting {
   uint8_t assignParticleTypeD0Gen(const T& particle)
   {
     uint8_t particleType(0);
-    if (particle.pdgCode() == pdg::Code::kD0) { // just checking the particle PDG, not the decay channel
+    if (particle.pdgCode() == Pdg::kD0) { // just checking the particle PDG, not the decay channel
       SETBIT(particleType, TrueD);
     }
-    if (particle.pdgCode() == (-pdg::Code::kD0)) { // just checking the particle PDG, not the decay channel
+    if (particle.pdgCode() == (-Pdg::kD0)) { // just checking the particle PDG, not the decay channel
       SETBIT(particleType, TrueDbar);
     }
     return particleType;
@@ -327,7 +328,7 @@ struct HfCorrelatorDMesonPairsTesting {
       registry.fill(HIST("hPtProng1"), candidate.ptProng1());
       registry.fill(HIST("hEta"), candidate.eta());
       registry.fill(HIST("hPhi"), candidate.phi());
-      registry.fill(HIST("hY"), candidate.y(o2::analysis::pdg::MassD0));
+      registry.fill(HIST("hY"), candidate.y(MassD0));
       registry.fill(HIST("hPtCandAfterCut"), candidate.pt());
       registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate), candidate.pt());
 
@@ -603,7 +604,7 @@ struct HfCorrelatorDMesonPairsTesting {
     int nDevent = 0, nDbarevent = 0, nDDbarevent = 0, nDorDbarevent = 0;
     for (const auto& particle : mcParticles) {
       // check if the particle is D0 or D0bar
-      if (std::abs(particle.pdgCode()) != pdg::Code::kD0) {
+      if (std::abs(particle.pdgCode()) != Pdg::kD0) {
         continue;
       }
       if (abs(particle.y()) > yCandMax) {
@@ -641,12 +642,12 @@ struct HfCorrelatorDMesonPairsTesting {
       registry.fill(HIST("hInputCheckD0OrD0barMcGen"), nDorDbarevent);
     }
 
-    auto massD = o2::analysis::pdg::MassD0;
-    auto massDbar = o2::analysis::pdg::MassD0Bar;
+    auto massD = MassD0;
+    auto massDbar = MassD0Bar;
 
     for (const auto& particle1 : mcParticles) {
       // check if the particle is D0 or D0bar
-      if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) {
+      if (std::abs(particle1.pdgCode()) != Pdg::kD0) {
         continue;
       }
       registry.fill(HIST("hPtCandMcGen"), particle1.pt());
@@ -682,7 +683,7 @@ struct HfCorrelatorDMesonPairsTesting {
 
       for (const auto& particle2 : mcParticles) {
         // check if the particle is D0 or D0bar
-        if (std::abs(particle2.pdgCode()) != pdg::Code::kD0) {
+        if (std::abs(particle2.pdgCode()) != Pdg::kD0) {
           continue;
         }
         // avoid double counting
