@@ -187,6 +187,13 @@ DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float); // Momentum at inner wa
 DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);         // dE/dx TPC
 DECLARE_SOA_COLUMN(Beta, beta, float);                   // TOF beta
 
+DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity, //! Track rapidity, computed under the mass assumption given as input
+                           [](float p, float eta, float mass) -> float {
+                             const auto pz = p * std::tanh(eta);
+                             const auto energy = std::sqrt(p * p + mass * mass);
+                             return 0.5f * log((energy + pz) / (energy - pz));
+                           });
+
 } // namespace singletrackselector
 
 DECLARE_SOA_TABLE_FULL(SingleTrackSels, "SelTracks", "AOD", "SINGLETRACKSEL", // Table of the variables for single track selection.
@@ -229,6 +236,7 @@ DECLARE_SOA_TABLE_FULL(SingleTrackSels, "SelTracks", "AOD", "SINGLETRACKSEL", //
                        singletrackselector::TOFNSigmaDe<singletrackselector::StoredTOFNSigmaDe>,
                        singletrackselector::TPCNSigmaDe<singletrackselector::StoredTPCNSigmaDe>,
 
+                       singletrackselector::Rapidity<singletrackselector::P, singletrackselector::Eta>,
                        singletrackselector::Energy<singletrackselector::P>,
                        singletrackselector::Pt<singletrackselector::P, singletrackselector::Eta>,
                        singletrackselector::Px<singletrackselector::P, singletrackselector::Eta, singletrackselector::Phi>,
