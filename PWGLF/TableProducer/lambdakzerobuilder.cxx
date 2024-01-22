@@ -125,6 +125,7 @@ struct lambdakzeroBuilder {
   // select momentum slice if desired
   Configurable<float> minimumPt{"minimumPt", 0.0f, "Minimum pT to store candidate"};
   Configurable<float> maximumPt{"maximumPt", 1000.0f, "Maximum pT to store candidate"};
+  Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximum daughter eta"};
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -682,6 +683,11 @@ struct lambdakzeroBuilder {
 
     if (lPt < minimumPt || lPt > maximumPt) {
       return false; // reject if not within desired window
+    }
+
+    if (TMath::Abs(RecoDecay::eta(std::array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]})) > maxDaughterEta ||
+        TMath::Abs(RecoDecay::eta(std::array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]})) > maxDaughterEta) {
+      return false; // reject - daughters have too large eta to be reliable for MC corrections
     }
 
     // Passes momentum window check
