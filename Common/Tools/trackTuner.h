@@ -1,3 +1,19 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+/// \file trackTuner.h
+/// \brief Service to "smear" track parameters in MC simulations
+/// \author Andrea Rossi (andrea.rossi@cern.ch), INFN Padova, Italy
+/// \author Himanshu Sharma (himanshu.sharma@cern.ch), INFN Padova, Italy
+/// \author Mattia Faggin (mattia.faggin@cern.ch), CERN
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -30,37 +46,37 @@ struct TrackTuner {
   bool updateTrackCovMat = false;
   bool updateCurvature = false;
   bool updatePulls = false;
-  bool isInputFileFromCCDB = false;    // query input file from CCDB or local folder
-  std::string pathInputFile = "";      // Path to file containing DCAxy, DCAz graphs from data (upgr) and MC (current)
-  std::string nameInputFile = "";      // Common Name of different files containing graphs, found in the above paths
-  bool usePvRefitCorrections = false;  // establish whether to use corrections obtained with or w/o PV refit
-  float oneOverPtCurrent = 0.;         // 1/pt old
-  float oneOverPtUpgrded = 0.;         // 1/pt new
+  bool isInputFileFromCCDB = false;   // query input file from CCDB or local folder
+  std::string pathInputFile = "";     // Path to file containing DCAxy, DCAz graphs from data (upgr) and MC (current)
+  std::string nameInputFile = "";     // Common Name of different files containing graphs, found in the above paths
+  bool usePvRefitCorrections = false; // establish whether to use corrections obtained with or w/o PV refit
+  float oneOverPtCurrent = 0.;        // 1/pt old
+  float oneOverPtUpgr = 0.;           // 1/pt new
   ///////////////////////////////
 
   o2::ccdb::CcdbApi ccdbApi;
   std::map<std::string, std::string> metadata;
 
   std::unique_ptr<TGraphErrors> grDcaXYResVsPtPionCurrent;
-  std::unique_ptr<TGraphErrors> grDcaXYResVsPtPionUpgrded;
+  std::unique_ptr<TGraphErrors> grDcaXYResVsPtPionUpgr;
 
   std::unique_ptr<TGraphErrors> grDcaZResVsPtPionCurrent;
-  std::unique_ptr<TGraphErrors> grDcaZResVsPtPionUpgrded;
+  std::unique_ptr<TGraphErrors> grDcaZResVsPtPionUpgr;
 
   std::unique_ptr<TGraphErrors> grDcaXYMeanVsPtPionCurrent;
-  std::unique_ptr<TGraphErrors> grDcaXYMeanVsPtPionUpgrded;
+  std::unique_ptr<TGraphErrors> grDcaXYMeanVsPtPionUpgr;
 
   std::unique_ptr<TGraphErrors> grDcaZMeanVsPtPionCurrent;
-  std::unique_ptr<TGraphErrors> grDcaZMeanVsPtPionUpgrded;
+  std::unique_ptr<TGraphErrors> grDcaZMeanVsPtPionUpgr;
 
   std::unique_ptr<TGraphErrors> grOneOverPtPionCurrent;
-  std::unique_ptr<TGraphErrors> grOneOverPtPionUpgrded;
+  std::unique_ptr<TGraphErrors> grOneOverPtPionUpgr;
 
   std::unique_ptr<TGraphErrors> grDcaXYPullVsPtPionCurrent;
-  std::unique_ptr<TGraphErrors> grDcaXYPullVsPtPionUpgrded;
+  std::unique_ptr<TGraphErrors> grDcaXYPullVsPtPionUpgr;
 
   std::unique_ptr<TGraphErrors> grDcaZPullVsPtPionCurrent;
-  std::unique_ptr<TGraphErrors> grDcaZPullVsPtPionUpgrded;
+  std::unique_ptr<TGraphErrors> grDcaZPullVsPtPionUpgr;
 
   /// @brief Function to configure the TrackTuner parameters
   /// @param inputString Input string with all parameter configuration. Format: <name>=<value>|<name>=<value>
@@ -107,7 +123,7 @@ struct TrackTuner {
                  eNameInputFile,
                  eUsePvRefitCorrections,
                  eOneOverPtCurrent,
-                 eOneOverPtUpgrded,
+                 eOneOverPtUpgr,
                  eNPars };
     std::map<uint8_t, std::string> mapParNames = {
       std::make_pair(static_cast<uint8_t>(eDebugInfo), "debugInfo"),
@@ -119,7 +135,7 @@ struct TrackTuner {
       std::make_pair(static_cast<uint8_t>(eNameInputFile), "nameInputFile"),
       std::make_pair(static_cast<uint8_t>(eUsePvRefitCorrections), "usePvRefitCorrections"),
       std::make_pair(static_cast<uint8_t>(eOneOverPtCurrent), "oneOverPtCurrent"),
-      std::make_pair(static_cast<uint8_t>(eOneOverPtUpgrded), "oneOverPtUpgrded")};
+      std::make_pair(static_cast<uint8_t>(eOneOverPtUpgr), "oneOverPtUpgr")};
     ///////////////////////////////////////////////////////////////////////////////////
     LOG(info) << "[TrackTuner]";
     LOG(info) << "[TrackTuner] >>> Parameters before the custom settings";
@@ -132,7 +148,7 @@ struct TrackTuner {
     LOG(info) << "[TrackTuner]     nameInputFile = " << nameInputFile;
     LOG(info) << "[TrackTuner]     usePvRefitCorrections = " << usePvRefitCorrections;
     LOG(info) << "[TrackTuner]     oneOverPtCurrent = " << oneOverPtCurrent;
-    LOG(info) << "[TrackTuner]     oneOverPtUpgrded = " << oneOverPtUpgrded;
+    LOG(info) << "[TrackTuner]     oneOverPtUpgr = " << oneOverPtUpgr;
 
     // ##############################################################################################
     // ########   split the original string, separating substrings delimited by "|" symbol   ########
@@ -226,10 +242,10 @@ struct TrackTuner {
     oneOverPtCurrent = std::stof(getValueString(eOneOverPtCurrent));
     outputString += ", oneOverPtCurrent=" + std::to_string(oneOverPtCurrent);
     LOG(info) << "[TrackTuner]     oneOverPtCurrent = " << oneOverPtCurrent;
-    // Configure oneOverPtUpgrded
-    oneOverPtUpgrded = std::stof(getValueString(eOneOverPtUpgrded));
-    outputString += ", oneOverPtUpgrded=" + std::to_string(oneOverPtUpgrded);
-    LOG(info) << "[TrackTuner]     oneOverPtUpgrded = " << oneOverPtUpgrded;
+    // Configure oneOverPtUpgr
+    oneOverPtUpgr = std::stof(getValueString(eOneOverPtUpgr));
+    outputString += ", oneOverPtUpgr=" + std::to_string(oneOverPtUpgr);
+    LOG(info) << "[TrackTuner]     oneOverPtUpgr = " << oneOverPtUpgr;
 
     return outputString;
   }
@@ -237,8 +253,8 @@ struct TrackTuner {
   void getDcaGraphs()
   {
     std::string fullNameInputFile = "";
- 
-    if(isInputFileFromCCDB) {
+
+    if (isInputFileFromCCDB) {
       /// use input correction file from CCDB
 
       // properly init the ccdb
@@ -266,12 +282,12 @@ struct TrackTuner {
 
     // choose wheter to use corrections w/ PV refit or w/o it, and retrieve the proper TDirectory
     std::string dir = "woPvRefit";
-    if(usePvRefitCorrections) {
+    if (usePvRefitCorrections) {
       dir = "withPvRefit";
     }
     TDirectory* td = dynamic_cast<TDirectory*>(inputFile->Get(dir.c_str()));
     if (!td) {
-      LOG(fatal) << "TDirectory " << td << " not found in input file" << inputFile->GetName() <<". Fix it!";
+      LOG(fatal) << "TDirectory " << td << " not found in input file" << inputFile->GetName() << ". Fix it!";
     }
 
     std::string grDcaXYResNameCurr = "resCurrentDcaXY";
@@ -280,14 +296,14 @@ struct TrackTuner {
     std::string grDcaXYResNameUpgr = "resUpgrDcaXY";
     std::string grDcaXYMeanNameUpgr = "meanUpgrDcaXY";
     std::string grDcaXYPullNameUpgr = "pullsUpgrDcaXY";
-    
+
     grDcaXYResVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYResNameCurr.c_str())));
-    grDcaXYResVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYResNameUpgr.c_str())));
+    grDcaXYResVsPtPionUpgr.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYResNameUpgr.c_str())));
     grDcaXYMeanVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYMeanNameCurr.c_str())));
-    grDcaXYMeanVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYMeanNameUpgr.c_str())));
+    grDcaXYMeanVsPtPionUpgr.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYMeanNameUpgr.c_str())));
     grDcaXYPullVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYPullNameCurr.c_str())));
-    grDcaXYPullVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYPullNameUpgr.c_str())));
-    if (!grDcaXYResVsPtPionCurrent.get() || !grDcaXYResVsPtPionUpgrded.get() || !grDcaXYMeanVsPtPionCurrent.get() || !grDcaXYMeanVsPtPionUpgrded.get() || !grDcaXYPullVsPtPionCurrent.get() || !grDcaXYPullVsPtPionUpgrded.get()) {
+    grDcaXYPullVsPtPionUpgr.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaXYPullNameUpgr.c_str())));
+    if (!grDcaXYResVsPtPionCurrent.get() || !grDcaXYResVsPtPionUpgr.get() || !grDcaXYMeanVsPtPionCurrent.get() || !grDcaXYMeanVsPtPionUpgr.get() || !grDcaXYPullVsPtPionCurrent.get() || !grDcaXYPullVsPtPionUpgr.get()) {
       LOG(fatal) << "Something wrong with the names of the correction graphs for dcaXY. Fix it!";
     }
 
@@ -299,12 +315,12 @@ struct TrackTuner {
     std::string grDcaZPullNameUpgr = "pullsUpgrDcaZ";
 
     grDcaZResVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZResNameCurr.c_str())));
-    grDcaZResVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZResNameUpgr.c_str())));
+    grDcaZResVsPtPionUpgr.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZResNameUpgr.c_str())));
     grDcaZMeanVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZMeanNameCurr.c_str())));
-    grDcaZMeanVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZMeanNameUpgr.c_str())));
+    grDcaZMeanVsPtPionUpgr.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZMeanNameUpgr.c_str())));
     grDcaZPullVsPtPionCurrent.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZPullNameCurr.c_str())));
-    grDcaZPullVsPtPionUpgrded.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZPullNameUpgr.c_str())));
-    if (!grDcaZResVsPtPionCurrent.get() || !grDcaZResVsPtPionUpgrded.get() || !grDcaZMeanVsPtPionCurrent.get() || !grDcaZMeanVsPtPionUpgrded.get() || !grDcaZPullVsPtPionCurrent.get() || !grDcaZPullVsPtPionUpgrded.get()) {
+    grDcaZPullVsPtPionUpgr.reset(dynamic_cast<TGraphErrors*>(td->Get(grDcaZPullNameUpgr.c_str())));
+    if (!grDcaZResVsPtPionCurrent.get() || !grDcaZResVsPtPionUpgr.get() || !grDcaZMeanVsPtPionCurrent.get() || !grDcaZMeanVsPtPionUpgr.get() || !grDcaZPullVsPtPionCurrent.get() || !grDcaZPullVsPtPionUpgr.get()) {
       LOG(fatal) << "Something wrong with the names of the correction graphs for dcaZ. Fix it!";
     }
   }
@@ -318,60 +334,60 @@ struct TrackTuner {
     double DcaXYResCurrent = 0.0; // sd0rpo=0.;
     double DcaZResCurrent = 0.0;  // sd0zo =0.;
 
-    double DcaXYResUpgrded = 0.0; // sd0rpn=0.;
-    double DcaZResUpgrded = 0.0;  // sd0zn =0.;
+    double DcaXYResUpgr = 0.0; // sd0rpn=0.;
+    double DcaZResUpgr = 0.0;  // sd0zn =0.;
 
     // double OneOverPtCurrent = 0.0; // spt1o =0.;
-    // double OneOverPtUpgrded = 0.0; // spt1n =0.;
+    // double OneOverPtUpgr = 0.0; // spt1n =0.;
 
     double DcaXYMeanCurrent = 0.0; // sd0mrpo=0.;
-    double DcaXYMeanUpgrded = 0.0; // sd0mrpn=0.;
+    double DcaXYMeanUpgr = 0.0;    // sd0mrpn=0.;
 
     double DcaXYPullCurrent = 1.0;
-    double DcaXYPullUpgrded = 1.0;
+    double DcaXYPullUpgr = 1.0;
 
     double DcaZPullCurrent = 1.0;
-    double DcaZPullUpgrded = 1.0;
+    double DcaZPullUpgr = 1.0;
 
     DcaXYResCurrent = EvalGraph(ptMC, grDcaXYResVsPtPionCurrent.get());
-    DcaXYResUpgrded = EvalGraph(ptMC, grDcaXYResVsPtPionUpgrded.get());
+    DcaXYResUpgr = EvalGraph(ptMC, grDcaXYResVsPtPionUpgr.get());
 
     // DcaXYResCurrent = 1.0;
-    // DcaXYResUpgrded = 1.5;
+    // DcaXYResUpgr = 1.5;
 
     DcaZResCurrent = EvalGraph(ptMC, grDcaZResVsPtPionCurrent.get());
-    DcaZResUpgrded = EvalGraph(ptMC, grDcaZResVsPtPionUpgrded.get());
+    DcaZResUpgr = EvalGraph(ptMC, grDcaZResVsPtPionUpgr.get());
 
     // DcaZResCurrent = 1.0;
-    // DcaZResUpgrded = 1.0;
+    // DcaZResUpgr = 1.0;
 
     // OneOverPtCurrent = EvalGraph(ptMC, grOneOverPtPionCurrent.get() );
-    // OneOverPtUpgrded = EvalGraph(ptMC, grOneOverPtPionUpgrded.get() );
+    // OneOverPtUpgr = EvalGraph(ptMC, grOneOverPtPionUpgr.get() );
 
     // OneOverPtCurrent = 1.0;
-    // OneOverPtUpgrded = 2.0;
+    // OneOverPtUpgr = 2.0;
 
     DcaXYMeanCurrent = EvalGraph(ptMC, grDcaXYMeanVsPtPionCurrent.get());
-    DcaXYMeanUpgrded = EvalGraph(ptMC, grDcaXYMeanVsPtPionUpgrded.get());
+    DcaXYMeanUpgr = EvalGraph(ptMC, grDcaXYMeanVsPtPionUpgr.get());
 
     // DcaXYMeanCurrent = 0.0;
-    // DcaXYMeanUpgrded = 0.0;
+    // DcaXYMeanUpgr = 0.0;
 
     DcaXYPullCurrent = EvalGraph(ptMC, grDcaXYPullVsPtPionCurrent.get());
-    DcaXYPullUpgrded = EvalGraph(ptMC, grDcaXYPullVsPtPionUpgrded.get());
+    DcaXYPullUpgr = EvalGraph(ptMC, grDcaXYPullVsPtPionUpgr.get());
 
     DcaZPullCurrent = EvalGraph(ptMC, grDcaZPullVsPtPionCurrent.get());
-    DcaZPullUpgrded = EvalGraph(ptMC, grDcaZPullVsPtPionUpgrded.get());
+    DcaZPullUpgr = EvalGraph(ptMC, grDcaZPullVsPtPionUpgr.get());
 
     //  Unit conversion, is it required ??
     DcaXYResCurrent *= 1.e-4;
     DcaZResCurrent *= 1.e-4;
 
-    DcaXYResUpgrded *= 1.e-4;
-    DcaZResUpgrded *= 1.e-4;
+    DcaXYResUpgr *= 1.e-4;
+    DcaZResUpgr *= 1.e-4;
 
     DcaXYMeanCurrent *= 1.e-4;
-    DcaXYMeanUpgrded *= 1.e-4;
+    DcaXYMeanUpgr *= 1.e-4;
 
     // Apply the smearing
     // ---------------------------------------------
@@ -438,46 +454,46 @@ struct TrackTuner {
     double diffDcaZFromMCCurent = trackParDcaZCurrent - trackParDcaZMC;
 
     // double dd0zn =dd0zo *(sd0zo >0. ? (sd0zn /sd0zo ) : 1.);
-    double diffDcaZFromMCUpgrded = diffDcaZFromMCCurent * (DcaZResCurrent > 0. ? (DcaZResUpgrded / DcaZResCurrent) : 1.);
+    double diffDcaZFromMCUpgr = diffDcaZFromMCCurent * (DcaZResCurrent > 0. ? (DcaZResUpgr / DcaZResCurrent) : 1.);
 
     // double d0zn  =d0zmc+dd0zn;
-    double trackParDcaZUpgrded = trackParDcaZMC + diffDcaZFromMCUpgrded;
+    double trackParDcaZUpgr = trackParDcaZMC + diffDcaZFromMCUpgr;
 
     // double dd0rpo=d0rpo-d0rpmc;
     double diffDcaXYFromMCCurent = trackParDcaXYCurrent - trackParDcaXYMC;
 
     // double dd0rpn=dd0rpo*(sd0rpo>0. ? (sd0rpn/sd0rpo) : 1.);
-    double diffDcaXYFromMCUpgrded = diffDcaXYFromMCCurent * (DcaXYResCurrent > 0. ? (DcaXYResUpgrded / DcaXYResCurrent) : 1.);
+    double diffDcaXYFromMCUpgr = diffDcaXYFromMCCurent * (DcaXYResCurrent > 0. ? (DcaXYResUpgr / DcaXYResCurrent) : 1.);
 
     // double dd0mrpn=TMath::Abs(sd0mrpn)-TMath::Abs(sd0mrpo);
-    // double diffDcaXYMeanUpgMinusCur = TMath::Abs(DcaXYMeanUpgrded) - TMath::Abs(DcaXYMeanCurrent) ;
-    double diffDcaXYMeanUpgMinusCur = DcaXYMeanUpgrded - DcaXYMeanCurrent;
+    // double diffDcaXYMeanUpgMinusCur = TMath::Abs(DcaXYMeanUpgr) - TMath::Abs(DcaXYMeanCurrent) ;
+    double diffDcaXYMeanUpgMinusCur = DcaXYMeanUpgr - DcaXYMeanCurrent;
 
     // double d0rpn =d0rpmc+dd0rpn-dd0mrpn;
-    double trackParDcaXYUpgrded = trackParDcaXYMC + diffDcaXYFromMCUpgrded - diffDcaXYMeanUpgMinusCur;
+    double trackParDcaXYUpgr = trackParDcaXYMC + diffDcaXYFromMCUpgr - diffDcaXYMeanUpgMinusCur;
 
     if (debugInfo) {
-      LOG(info) << DcaZResCurrent << ", " << DcaZResUpgrded << ", diff(DcaZ - DcaZMC): " << diffDcaZFromMCCurent << ", diff upgraded: " << diffDcaZFromMCUpgrded << ", DcaZ Upgrded : " << trackParDcaZUpgrded;
-      LOG(info) << DcaXYResCurrent << ", " << DcaXYResUpgrded << ", diff(DcaY - DcaYMC): " << diffDcaXYFromMCCurent << ", diff upgraded: " << diffDcaXYFromMCUpgrded << ", DcaY Upgrded :" << trackParDcaXYUpgrded;
+      LOG(info) << DcaZResCurrent << ", " << DcaZResUpgr << ", diff(DcaZ - DcaZMC): " << diffDcaZFromMCCurent << ", diff upgraded: " << diffDcaZFromMCUpgr << ", DcaZ Upgr : " << trackParDcaZUpgr;
+      LOG(info) << DcaXYResCurrent << ", " << DcaXYResUpgr << ", diff(DcaY - DcaYMC): " << diffDcaXYFromMCCurent << ", diff upgraded: " << diffDcaXYFromMCUpgr << ", DcaY Upgr :" << trackParDcaXYUpgr;
     }
 
     // option mimic data
     // ----------------------
     // if(fMimicData){
     //     // dd0mrpn=sd0mrpn-sd0mrpo;
-    //     diffDcaXYMeanUpgMinusCur = DcaXYMeanUpgrded - DcaXYMeanCurrent;
+    //     diffDcaXYMeanUpgMinusCur = DcaXYMeanUpgr - DcaXYMeanCurrent;
     //     // d0rpn = d0rpmc+dd0rpn+dd0mrpn;
-    //     trackParDcaXYUpgrded =  diffDcaXYFromMCCurent + diffDcaXYFromMCUpgrded + diffDcaXYMeanUpgMinusCur;
+    //     trackParDcaXYUpgr =  diffDcaXYFromMCCurent + diffDcaXYFromMCUpgr + diffDcaXYMeanUpgMinusCur;
     // }
 
     // setting updated track parameters
     // --------------------------------
     // param[0]=d0rpn;
     // double oldDCAxyValue = trackParCov.getY();
-    trackParCov.setY(trackParDcaXYUpgrded);
+    trackParCov.setY(trackParDcaXYUpgr);
     // trackParCov.setY(oldDCAxyValue);
     // param[1]=d0zn ;
-    trackParCov.setZ(trackParDcaZUpgrded);
+    trackParCov.setZ(trackParDcaZUpgr);
 
     if (updateCurvature) {
       // --------------------------------------
@@ -485,16 +501,16 @@ struct TrackTuner {
       double diffOneOverPtFromMCCurent = trackParOneOverPtCurrent - trackParOneOverPtMC;
 
       // double dpt1n =dpt1o *(spt1o >0. ? (spt1n /spt1o ) : 1.);
-      double diffOneOverPtFromMCUpgrded = diffOneOverPtFromMCCurent * (oneOverPtCurrent > 0. ? (oneOverPtUpgrded / oneOverPtCurrent) : 1.);
+      double diffOneOverPtFromMCUpgr = diffOneOverPtFromMCCurent * (oneOverPtCurrent > 0. ? (oneOverPtUpgr / oneOverPtCurrent) : 1.);
 
       // double pt1n  = pt1mc+dpt1n;
-      double trackParOneOverPtUpgrded = trackParOneOverPtMC + diffOneOverPtFromMCUpgrded;
+      double trackParOneOverPtUpgr = trackParOneOverPtMC + diffOneOverPtFromMCUpgr;
 
       // param[4]=pt1n ;
-      trackParCov.setQ2Pt(trackParOneOverPtUpgrded);
+      trackParCov.setQ2Pt(trackParOneOverPtUpgr);
     }
     // if(debugInfo){
-    //  LOG(info) << "Inside tuneTrackParams() before modifying trackParCov.getY(): " << trackParCov.getY() << " trackParOneOverPtMC = " << trackParOneOverPtMC << " diffOneOverPtFromMCUpgrded = "  << diffOneOverPtFromMCUpgrded <<  std::endl;
+    //  LOG(info) << "Inside tuneTrackParams() before modifying trackParCov.getY(): " << trackParCov.getY() << " trackParOneOverPtMC = " << trackParOneOverPtMC << " diffOneOverPtFromMCUpgr = "  << diffOneOverPtFromMCUpgr <<  std::endl;
     //}
 
     // Updating Single Track Covariance matrices
@@ -516,79 +532,79 @@ struct TrackTuner {
       //       if(sd0rpo>0.)            covar[0]*=(sd0rpn/sd0rpo)*(sd0rpn/sd0rpo);//yy
       sigmaY2 = trackParCov.getSigmaY2();
       if (DcaXYResCurrent > 0.)
-        sigmaY2 *= ((DcaXYResUpgrded / DcaXYResCurrent) * (DcaXYResUpgrded / DcaXYResCurrent));
+        sigmaY2 *= ((DcaXYResUpgr / DcaXYResCurrent) * (DcaXYResUpgr / DcaXYResCurrent));
       trackParCov.setCov(sigmaY2, 0);
 
       //       if(sd0zo>0. && sd0rpo>0.)covar[1]*=(sd0rpn/sd0rpo)*(sd0zn/sd0zo);//yz
       sigmaZY = trackParCov.getSigmaZY();
       if (DcaZResCurrent > 0. && DcaXYResCurrent > 0.)
-        sigmaZY *= ((DcaXYResUpgrded / DcaXYResCurrent) * (DcaXYResUpgrded / DcaXYResCurrent));
+        sigmaZY *= ((DcaXYResUpgr / DcaXYResCurrent) * (DcaXYResUpgr / DcaXYResCurrent));
       trackParCov.setCov(sigmaZY, 1);
 
       //       if(sd0zo>0.)             covar[2]*=(sd0zn/sd0zo)*(sd0zn/sd0zo);//zz
       sigmaZ2 = trackParCov.getSigmaZ2();
       if (DcaZResCurrent > 0.)
-        sigmaZ2 *= ((DcaZResUpgrded / DcaZResCurrent) * (DcaZResUpgrded / DcaZResCurrent));
+        sigmaZ2 *= ((DcaZResUpgr / DcaZResCurrent) * (DcaZResUpgr / DcaZResCurrent));
       trackParCov.setCov(sigmaZ2, 2);
 
       //       if(sd0rpo>0.)            covar[3]*=(sd0rpn/sd0rpo);//yl
       sigmaSnpY = trackParCov.getSigmaSnpY();
       if (DcaXYResCurrent > 0.)
-        sigmaSnpY *= ((DcaXYResUpgrded / DcaXYResCurrent));
+        sigmaSnpY *= ((DcaXYResUpgr / DcaXYResCurrent));
       trackParCov.setCov(sigmaSnpY, 3);
 
       //       if(sd0zo>0.)             covar[4]*=(sd0zn/sd0zo);//zl
       sigmaSnpZ = trackParCov.getSigmaSnpZ();
       if (DcaZResCurrent > 0.)
-        sigmaSnpZ *= ((DcaZResUpgrded / DcaZResCurrent));
+        sigmaSnpZ *= ((DcaZResUpgr / DcaZResCurrent));
       trackParCov.setCov(sigmaSnpZ, 4);
 
       //       if(sd0rpo>0.)            covar[6]*=(sd0rpn/sd0rpo);//ysenT
       sigmaTglY = trackParCov.getSigmaTglY();
       if (DcaXYResCurrent > 0.)
-        sigmaTglY *= ((DcaXYResUpgrded / DcaXYResCurrent));
+        sigmaTglY *= ((DcaXYResUpgr / DcaXYResCurrent));
       trackParCov.setCov(sigmaTglY, 6);
 
       //       if(sd0zo>0.)             covar[7]*=(sd0zn/sd0zo);//zsenT
       sigmaTglZ = trackParCov.getSigmaTglZ();
       if (DcaZResCurrent > 0.)
-        sigmaTglZ *= ((DcaZResUpgrded / DcaZResCurrent));
+        sigmaTglZ *= ((DcaZResUpgr / DcaZResCurrent));
       trackParCov.setCov(sigmaTglZ, 7);
 
       //       if(sd0rpo>0. && spt1o>0.)covar[10]*=(sd0rpn/sd0rpo)*(spt1n/spt1o);//ypt
       sigma1PtY = trackParCov.getSigma1PtY();
       if (DcaXYResCurrent > 0. && oneOverPtCurrent > 0.)
-        sigma1PtY *= ((DcaXYResUpgrded / DcaXYResCurrent) * (oneOverPtUpgrded / oneOverPtCurrent));
+        sigma1PtY *= ((DcaXYResUpgr / DcaXYResCurrent) * (oneOverPtUpgr / oneOverPtCurrent));
       trackParCov.setCov(sigma1PtY, 10);
 
       //       if(sd0zo>0. && spt1o>0.) covar[11]*=(sd0zn/sd0zo)*(spt1n/spt1o);//zpt
       sigma1PtZ = trackParCov.getSigma1PtZ();
       if (DcaZResCurrent > 0. && oneOverPtCurrent > 0.)
-        sigma1PtZ *= ((DcaZResUpgrded / DcaZResCurrent) * (oneOverPtUpgrded / oneOverPtCurrent));
+        sigma1PtZ *= ((DcaZResUpgr / DcaZResCurrent) * (oneOverPtUpgr / oneOverPtCurrent));
       trackParCov.setCov(sigma1PtZ, 11);
 
       //       if(spt1o>0.)             covar[12]*=(spt1n/spt1o);//sinPhipt
       sigma1PtSnp = trackParCov.getSigma1PtSnp();
       if (oneOverPtCurrent > 0.)
-        sigma1PtSnp *= (oneOverPtUpgrded / oneOverPtCurrent);
+        sigma1PtSnp *= (oneOverPtUpgr / oneOverPtCurrent);
       trackParCov.setCov(sigma1PtSnp, 12);
 
       //       if(spt1o>0.)             covar[13]*=(spt1n/spt1o);//tanTpt
       sigma1PtTgl = trackParCov.getSigma1PtTgl();
       if (oneOverPtCurrent > 0.)
-        sigma1PtTgl *= (oneOverPtUpgrded / oneOverPtCurrent);
+        sigma1PtTgl *= (oneOverPtUpgr / oneOverPtCurrent);
       trackParCov.setCov(sigma1PtTgl, 13);
 
       //       if(spt1o>0.)             covar[14]*=(spt1n/spt1o)*(spt1n/spt1o);//ptpt
       sigma1Pt2 = trackParCov.getSigma1Pt2();
       if (oneOverPtCurrent > 0.)
-        sigma1Pt2 *= (oneOverPtUpgrded / oneOverPtCurrent);
+        sigma1Pt2 *= (oneOverPtUpgr / oneOverPtCurrent);
       trackParCov.setCov(sigma1Pt2, 14);
     }
 
     if (updatePulls) {
-      double ratioDCAxyPulls = DcaXYPullCurrent / DcaXYPullUpgrded;
-      double ratioDCAzPulls = DcaZPullCurrent / DcaZPullUpgrded;
+      double ratioDCAxyPulls = DcaXYPullCurrent / DcaXYPullUpgr;
+      double ratioDCAzPulls = DcaZPullCurrent / DcaZPullUpgr;
 
       // covar[0]*=pullcorr*pullcorr;//yy
 

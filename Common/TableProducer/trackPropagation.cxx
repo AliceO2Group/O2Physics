@@ -13,22 +13,6 @@
 // Task to add a table of track parameters propagated to the primary vertex
 //
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "CommonUtils/NameConf.h"
-#include "CCDB/CcdbApi.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/HistogramRegistry.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "CommonConstants/GeomConstants.h"
 #include "TableHelper.h"
 #include "Common/Tools/trackTuner.h"
 
@@ -55,7 +39,6 @@ struct TrackPropagation {
   Produces<aod::TracksDCACov> tracksDCACov;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::ccdb::CcdbApi ccdbApi;
 
   bool fillTracksDCA = false;
   bool fillTracksDCACov = false;
@@ -76,7 +59,7 @@ struct TrackPropagation {
   Configurable<float> minPropagationRadius{"minPropagationDistance", o2::constants::geom::XTPCInnerRef + 0.1, "Only tracks which are at a smaller radius will be propagated, defaults to TPC inner wall"};
   // for TrackTuner only (MC smearing)
   Configurable<bool> useTrackTuner{"useTrackTuner", 0, "Apply Improver/DCA corrections to MC"};
-  Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackCovMat=1|updateCurvature=0|updatePulls=0|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/PbPb2022|nameInputFile=trackTuner_DataLHC22sPass5_McLHC22l1b2_run529397.root|usePvRefitCorrections=0|oneOverPtCurrent=0|oneOverPtUpgrded=0", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
+  Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackCovMat=1|updateCurvature=0|updatePulls=0|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/PbPb2022|nameInputFile=trackTuner_DataLHC22sPass5_McLHC22l1b2_run529397.root|usePvRefitCorrections=0|oneOverPtCurrent=0|oneOverPtUpgr=0", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
   OutputObj<TH1D> trackTunedTracks{TH1D("trackTunedTracks", "", 1, 0.5, 1.5), OutputObjHandlingPolicy::AnalysisObject};
 
   using tracksIUWithMc = soa::Join<aod::StoredTracksIU, aod::McTrackLabels, aod::TracksCovIU>;
