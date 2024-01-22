@@ -66,7 +66,7 @@ struct TaskPolarisationCharmHadrons {
   uint8_t nMassHypos{0u};
 
   Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 Pi"};
-  Configurable<bool> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", false, "Selection Flag for Lc decay to P K Pi"};
+  Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for Lc decay to P K Pi"};
 
   ConfigurableAxis thnAxisInvMass{"thnAxisInvMass", {100, 1.78, 2.05}, "#it{M} (GeV/#it{c}^{2})"};
   ConfigurableAxis thnAxisPt{"thnAxisPt", {100, 0., 100.}, "#it{p}_{T} (GeV/#it{c})"};
