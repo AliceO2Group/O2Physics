@@ -27,9 +27,11 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "CCDB/BasicCCDBManager.h"
 #include <cmath>
 #include <iostream>
 
@@ -42,7 +44,7 @@ using std::array;
 using CascadesCrossLinked = soa::Join<aod::Cascades, aod::CascDataLink, aod::KFCascDataLink>;
 using CascDataLabeled = soa::Join<aod::CascDatas, aod::CascCovs, aod::McCascLabels>;
 using KFCascDataLabeled = soa::Join<aod::KFCascDatas, aod::KFCascCovs, aod::McKFCascLabels>;
-using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksCovIU>;
+using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksCovIU, o2::aod::TracksExtra>;
 
 struct kfStrangenessStudy {
 
@@ -54,6 +56,19 @@ struct kfStrangenessStudy {
   /// Filters
   Filter collisionFilter = (aod::evsel::sel8 == true);
 
+  // CCDB
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::MatLayerCylSet* lut;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  int runNumber{0};
+  double bz = 0.;
+
+  // magnetic field settings for CCDB
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
+  Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
   /// Cascade data
   int isDCAfitter = 0, isKF = 0;
   float ptRec = -1.0f, ptRecKF = -1.0f;
@@ -61,53 +76,60 @@ struct kfStrangenessStudy {
   float massXi = -1.0f, massXiKF = -1.0f;
   float massLambda = -1.0f, massLambdaKF = -1.0f;
   float cascRad = -1.0f, cascRadKF = -1.0f;
-  float vtxXrec = -1.0f, vtxYrec = -1.0f, vtxZrec = -1.0f, vtxXrecKF = -1.0f, vtxYrecKF = -1.0f, vtxZrecKF = -1.0f;
-  float vtxXrecErr = -1.0f, vtxYrecErr = -1.0f, vtxZrecErr = -1.0f, vtxXrecErrKF = -1.0f, vtxYrecErrKF = -1.0f, vtxZrecErrKF = -1.0f;
-  float vtxXrecV0 = -1.0f, vtxYrecV0 = -1.0f, vtxZrecV0 = -1.0f, vtxXrecKFV0 = -1.0f, vtxYrecKFV0 = -1.0f, vtxZrecKFV0 = -1.0f;
-  float vtxXrecErrV0 = -1.0f, vtxYrecErrV0 = -1.0f, vtxZrecErrV0 = -1.0f, vtxXrecErrKFV0 = -1.0f, vtxYrecErrKFV0 = -1.0f, vtxZrecErrKFV0 = -1.0f;
+  std::array<float, 3> vtxRec, vtxRecKF;
+  std::array<float, 3> vtxRecErr, vtxRecErrKF;
+  std::array<float, 3> vtxRecV0, vtxRecKFV0;
+  std::array<float, 3> vtxRecErrV0, vtxRecErrKFV0;
   float dcaXYCascToPV = -1.0f, dcaXYCascToPVKF = -1.0f;
   float dcaZCascToPV = -1.0f, dcaZCascToPVKF = -1.0f;
   float dcaCascDaughters = -1.0f, dcaCascDaughtersKF = -1.0f;
   float dcaV0Daughters = -1.0f, dcaV0DaughtersKF = -1.0f;
-  float dcaPosToPV = -1.0f, dcaPosToPVKF = -1.0f;
-  float dcaNegToPV = -1.0f, dcaNegToPVKF = -1.0f;
+  float dcaProtonToPV = -1.0f, dcaProtonToPVKF = -1.0f;
+  float dcaPionToPV = -1.0f, dcaPionToPVKF = -1.0f;
   float dcaBachToPV = -1.0f, dcaBachToPVKF = -1.0f;
   float cascPointingAngle = -1.0f, cascPointingAngleKF = -1.0f;
   float v0PointingAngle = -1.0f, v0PointingAngleKF = -1.0f;
   float V0Rad = -1.0f, V0RadKF = -1.0f;
   int charge = 0;
-  std::array<float, 3> momPosRecIU;
-  std::array<float, 3> momNegRecIU;
-  std::array<float, 3> momPosRecIUErr;
-  std::array<float, 3> momNegRecIUErr;
-  std::array<float, 3> momPosRec;
-  std::array<float, 3> momNegRec;
-  std::array<float, 3> momPosRecErr;
-  std::array<float, 3> momNegRecErr;
-  std::array<float, 3> posPosRec;
-  std::array<float, 3> posNegRec;
-  std::array<float, 3> posPosRecErr;
-  std::array<float, 3> posNegRecErr;
+  float etaProton = -1.0, etaPion = -1.0;
+  int tpcNClsProton = 0, tpcNClsPion = 0;
+  std::array<float, 3> momProtonRecIU;
+  std::array<float, 3> momPionRecIU;
+  std::array<float, 3> momProtonRecIUErr;
+  std::array<float, 3> momPionRecIUErr;
+  std::array<float, 3> momProtonRec;
+  std::array<float, 3> momPionRec;
+  std::array<float, 3> momProtonRecErr;
+  std::array<float, 3> momPionRecErr;
+  std::array<float, 3> posProtonRec;
+  std::array<float, 3> posPionRec;
+  std::array<float, 3> posProtonRecErr;
+  std::array<float, 3> posPionRecErr;
 
   /// Additional cascade MC data
   int isTrueCasc = 0;
   float ptGen = -1.0f;
   float ptGenV0 = -1.0f;
-  float vtxXgen = -1.0f, vtxYgen = -1.0f, vtxZgen = -1.0f;
-  float vtxXgenV0 = -1.0f, vtxYgenV0 = -1.0f, vtxZgenV0 = -1.0f;
-  float vtxXgen_firstDau = -1., vtxYgen_firstDau = -1., vtxZgen_firstDau = -1;
-  float vtxXgen_firstV0Dau = -1., vtxYgen_firstV0Dau = -1., vtxZgen_firstV0Dau = -1;
-  float prodVtxXgen  = -1.0f, prodVtxYgen  = -1.0f, prodVtxZgen  = -1.0f;
+  std::array<float, 3> vtxGen;
+  std::array<float, 3> vtxGenV0;
+  std::array<float, 3> prodVtxGen;
   int source = 0;
-  std::array<float, 3> momPosGen;
-  std::array<float, 3> momNegGen;
+  std::array<float, 3> momProtonGen;
+  std::array<float, 3> momPionGen;
 
   // counter and checks
   int recocase = 0;
 
-
   void init(InitContext const&)
   {
+
+    /// CCDB
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
+    runNumber = 0;
+
     /// QA histos
     histos.add("hChargeCounter", "hChargeCounter", kTH1F, {{3, -1.5f, 1.5f}});
     histos.add("hChargeCounterCascDatas", "hChargeCounterCascDatas", kTH1F, {{3, -1.5f, 1.5f}});
@@ -145,6 +167,23 @@ struct kfStrangenessStudy {
     histos.add("hCase", "hCase", kTH1F, {{5, 0, 5}});
   }
 
+  void initCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
+                o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string const& ccdbPathGrp, o2::base::MatLayerCylSet* lut)
+  {
+    if (mRunNumber != bc.runNumber()) {
+      LOGF(info, "====== initCCDB function called");
+      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrp, bc.timestamp());
+      if (grpo == nullptr) {
+        LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+      }
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+      LOGF(info, "Setting magnetic field to current %f A for run %d from its GRP CCDB object (type o2::parameters::GRPMagField)", grpo->getL3Current(), bc.runNumber());
+    
+      mRunNumber = bc.runNumber();
+    }
+  } /// end initCCDB
+
   template <typename TCollision, typename TCascade, typename TCascDatas, typename TKFCascDatas, typename TV0, typename TV0Datas, typename TV0fCDatas>
   void getCascDatas(TCollision const& collision, TCascade const& cascade, TCascDatas const&, TKFCascDatas const&, TV0 const&, TV0Datas const&, TV0fCDatas const&)
   {
@@ -158,35 +197,40 @@ struct kfStrangenessStudy {
       if (v0index.has_v0Data()) {
         // V0 passed both standard and cascade V0 selections
         auto v0data = v0index.template v0Data_as<TV0Datas>();
-        vtxXrecErrV0 = sqrt(v0data.positionCovMat()[0]);
-        vtxYrecErrV0 = sqrt(v0data.positionCovMat()[2]);
-        vtxZrecErrV0 = sqrt(v0data.positionCovMat()[5]);
+        vtxRecErrV0[0] = sqrt(v0data.positionCovMat()[0]);
+        vtxRecErrV0[1] = sqrt(v0data.positionCovMat()[2]);
+        vtxRecErrV0[2] = sqrt(v0data.positionCovMat()[5]);
       } else if (v0index.has_v0fCData()) {
         // V0 passed only cascade V0 selections, use this instead
         auto v0data = v0index.template v0fCData_as<TV0fCDatas>();
-        vtxXrecErrV0 = sqrt(v0data.positionCovMat()[0]);
-        vtxYrecErrV0 = sqrt(v0data.positionCovMat()[2]);
-        vtxZrecErrV0 = sqrt(v0data.positionCovMat()[5]);
+        vtxRecErrV0[0] = sqrt(v0data.positionCovMat()[0]);
+        vtxRecErrV0[1] = sqrt(v0data.positionCovMat()[2]);
+        vtxRecErrV0[2] = sqrt(v0data.positionCovMat()[5]);
       }
       ptRec = cascdata.pt();
-      vtxXrec = cascdata.x();
-      vtxYrec = cascdata.y();
-      vtxZrec = cascdata.z();
-      vtxXrecErr = sqrt(cascdata.positionCovMat()[0]);
-      vtxYrecErr = sqrt(cascdata.positionCovMat()[2]);
-      vtxZrecErr = sqrt(cascdata.positionCovMat()[5]);
+      vtxRec[0] = cascdata.x();
+      vtxRec[1] = cascdata.y();
+      vtxRec[2] = cascdata.z();
+      vtxRecErr[0] = sqrt(cascdata.positionCovMat()[0]);
+      vtxRecErr[1] = sqrt(cascdata.positionCovMat()[2]);
+      vtxRecErr[2] = sqrt(cascdata.positionCovMat()[5]);
       ptRecV0 = sqrt((cascdata.pxpos()+cascdata.pxneg())*(cascdata.pxpos()+cascdata.pxneg()) + (cascdata.pypos()+cascdata.pyneg())*(cascdata.pypos()+cascdata.pyneg())); // taken from daughters from lambdakzerobuiler
-      vtxXrecV0 = cascdata.xlambda();
-      vtxYrecV0 = cascdata.ylambda();
-      vtxZrecV0 = cascdata.zlambda();
+      vtxRecV0[0] = cascdata.xlambda();
+      vtxRecV0[1] = cascdata.ylambda();
+      vtxRecV0[2] = cascdata.zlambda();
       massLambda = cascdata.mLambda();
       massXi = cascdata.mXi();
       dcaXYCascToPV = cascdata.dcaXYCascToPV();
       dcaZCascToPV = cascdata.dcaZCascToPV();
       dcaCascDaughters = cascdata.dcacascdaughters();
       dcaV0Daughters = cascdata.dcaV0daughters();
-      dcaPosToPV = cascdata.dcapostopv();
-      dcaNegToPV = cascdata.dcanegtopv();
+      if (charge == -1) {
+        dcaProtonToPV = cascdata.dcapostopv();
+        dcaPionToPV = cascdata.dcanegtopv();
+      } else if (charge == +1) {
+        dcaProtonToPV = cascdata.dcanegtopv();
+        dcaPionToPV = cascdata.dcapostopv();
+      }
       dcaBachToPV = cascdata.dcabachtopv();
       cascPointingAngle = TMath::ACos(cascdata.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
       cascRad = cascdata.cascradius();
@@ -194,9 +238,9 @@ struct kfStrangenessStudy {
       v0PointingAngle = TMath::ACos(cascdata.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
 
       // fill QA histos
-      histos.fill(HIST("hVertexX"), vtxXrec);
-      histos.fill(HIST("hVertexY"), vtxYrec);
-      histos.fill(HIST("hVertexZ"), vtxZrec);
+      histos.fill(HIST("hVertexX"), vtxRec[0]);
+      histos.fill(HIST("hVertexY"), vtxRec[1]);
+      histos.fill(HIST("hVertexZ"), vtxRec[2]);
       histos.fill(HIST("hDCAxy"), dcaXYCascToPV);
       histos.fill(HIST("hCascRadius"), cascRad);
       histos.fill(HIST("hPointingAngle"), cascPointingAngle);
@@ -212,63 +256,98 @@ struct kfStrangenessStudy {
       isKF = 1;
       auto cascdatakf = cascade.template kfCascData_as<TKFCascDatas>();
       ptRecKF = cascdatakf.pt();
-      vtxXrecKF = cascdatakf.x();
-      vtxYrecKF = cascdatakf.y();
-      vtxZrecKF = cascdatakf.z();
-      vtxXrecErrKF = sqrt(cascdatakf.kfTrackCovMat()[0]);
-      vtxYrecErrKF = sqrt(cascdatakf.kfTrackCovMat()[2]);
-      vtxZrecErrKF = sqrt(cascdatakf.kfTrackCovMat()[5]);
+      vtxRecKF[0] = cascdatakf.x();
+      vtxRecKF[1] = cascdatakf.y();
+      vtxRecKF[2] = cascdatakf.z();
+      vtxRecErrKF[0] = sqrt(cascdatakf.kfTrackCovMat()[0]);
+      vtxRecErrKF[1] = sqrt(cascdatakf.kfTrackCovMat()[2]);
+      vtxRecErrKF[2] = sqrt(cascdatakf.kfTrackCovMat()[5]);
       ptRecKFV0 = sqrt(cascdatakf.pxv0()*cascdatakf.pxv0() + cascdatakf.pyv0()*cascdatakf.pyv0()); // taken from KFV0
-      vtxXrecKFV0 = cascdatakf.xlambda();
-      vtxYrecKFV0 = cascdatakf.ylambda();
-      vtxZrecKFV0 = cascdatakf.zlambda();
-      vtxXrecErrKFV0 = sqrt(cascdatakf.kfTrackCovMatV0()[0]);
-      vtxYrecErrKFV0 = sqrt(cascdatakf.kfTrackCovMatV0()[2]);
-      vtxZrecErrKFV0 = sqrt(cascdatakf.kfTrackCovMatV0()[5]);
+      vtxRecKFV0[0] = cascdatakf.xlambda();
+      vtxRecKFV0[1] = cascdatakf.ylambda();
+      vtxRecKFV0[2] = cascdatakf.zlambda();
+      vtxRecErrKFV0[0] = sqrt(cascdatakf.kfTrackCovMatV0()[0]);
+      vtxRecErrKFV0[1] = sqrt(cascdatakf.kfTrackCovMatV0()[2]);
+      vtxRecErrKFV0[2] = sqrt(cascdatakf.kfTrackCovMatV0()[5]);
       massLambdaKF = cascdatakf.mLambda();
       massXiKF = cascdatakf.mXi();
       dcaXYCascToPVKF = cascdatakf.dcaXYCascToPV();
       dcaZCascToPVKF = cascdatakf.dcaZCascToPV();
       dcaCascDaughtersKF = cascdatakf.dcacascdaughters();
       dcaV0DaughtersKF = cascdatakf.dcaV0daughters();
-      dcaPosToPVKF = cascdatakf.dcapostopv();
-      dcaNegToPVKF = cascdatakf.dcanegtopv();
+      if (charge == -1) {
+        dcaProtonToPVKF = cascdatakf.dcapostopv();
+        dcaPionToPVKF = cascdatakf.dcanegtopv();
+      } else if (charge == +1) {
+        dcaProtonToPVKF = cascdatakf.dcanegtopv();
+        dcaPionToPVKF = cascdatakf.dcapostopv();
+      }
       dcaBachToPVKF = cascdatakf.dcabachtopv();
       cascPointingAngleKF = TMath::ACos(cascdatakf.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
       cascRadKF = cascdatakf.cascradius();
       V0RadKF = cascdatakf.v0radius();
       v0PointingAngleKF = TMath::ACos(cascdatakf.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
-      // daughter momenta at vertex (from pre-minimisation if enabled)
-      momPosRec[0] = cascdatakf.pxpos();
-      momPosRec[1] = cascdatakf.pypos();
-      momPosRec[2] = cascdatakf.pzpos();
-      momNegRec[0] = cascdatakf.pxneg();
-      momNegRec[1] = cascdatakf.pyneg();
-      momNegRec[2] = cascdatakf.pzneg();
-      momPosRecErr[0] = cascdatakf.pxposerr();
-      momPosRecErr[1] = cascdatakf.pyposerr();
-      momPosRecErr[2] = cascdatakf.pzposerr();
-      momNegRecErr[0] = cascdatakf.pxnegerr();
-      momNegRecErr[1] = cascdatakf.pynegerr();
-      momNegRecErr[2] = cascdatakf.pznegerr();
-      // daughter track position at vertex (after pre-minimisation!)
-      posPosRec[0] = cascdatakf.xpos();
-      posPosRec[1] = cascdatakf.ypos();
-      posPosRec[2] = cascdatakf.zpos();
-      posNegRec[0] = cascdatakf.xneg();
-      posNegRec[1] = cascdatakf.yneg();
-      posNegRec[2] = cascdatakf.zneg();
-      posPosRecErr[0] = cascdatakf.xposerr();
-      posPosRecErr[1] = cascdatakf.yposerr();
-      posPosRecErr[2] = cascdatakf.zposerr();
-      posNegRecErr[0] = cascdatakf.xnegerr();
-      posNegRecErr[1] = cascdatakf.ynegerr();
-      posNegRecErr[2] = cascdatakf.znegerr();
-
+  
+      if (charge == -1) {
+        // daughter momenta at vertex (from pre-minimisation if enabled)
+        momProtonRec[0] = cascdatakf.pxpos();
+        momProtonRec[1] = cascdatakf.pypos();
+        momProtonRec[2] = cascdatakf.pzpos();
+        momPionRec[0] = cascdatakf.pxneg();
+        momPionRec[1] = cascdatakf.pyneg();
+        momPionRec[2] = cascdatakf.pzneg();
+        momProtonRecErr[0] = cascdatakf.pxposerr();
+        momProtonRecErr[1] = cascdatakf.pyposerr();
+        momProtonRecErr[2] = cascdatakf.pzposerr();
+        momPionRecErr[0] = cascdatakf.pxnegerr();
+        momPionRecErr[1] = cascdatakf.pynegerr();
+        momPionRecErr[2] = cascdatakf.pznegerr();
+        // daughter track position at vertex (after pre-minimisation!)
+        // posProtonRec[0] = cascdatakf.xpos();
+        // posProtonRec[1] = cascdatakf.ypos();
+        // posProtonRec[2] = cascdatakf.zpos();
+        // posPionRec[0] = cascdatakf.xneg();
+        // posPionRec[1] = cascdatakf.yneg();
+        // posPionRec[2] = cascdatakf.zneg();
+        // posProtonRecErr[0] = cascdatakf.xposerr();
+        // posProtonRecErr[1] = cascdatakf.yposerr();
+        // posProtonRecErr[2] = cascdatakf.zposerr();
+        // posPionRecErr[0] = cascdatakf.xnegerr();
+        // posPionRecErr[1] = cascdatakf.ynegerr();
+        // posPionRecErr[2] = cascdatakf.znegerr();
+      } else if (charge == +1) {
+        // daughter momenta at vertex (from pre-minimisation if enabled)
+        momProtonRec[0] = cascdatakf.pxneg();
+        momProtonRec[1] = cascdatakf.pyneg();
+        momProtonRec[2] = cascdatakf.pzneg();
+        momPionRec[0] = cascdatakf.pxpos();
+        momPionRec[1] = cascdatakf.pypos();
+        momPionRec[2] = cascdatakf.pzpos();
+        momProtonRecErr[0] = cascdatakf.pxnegerr();
+        momProtonRecErr[1] = cascdatakf.pynegerr();
+        momProtonRecErr[2] = cascdatakf.pynegerr();
+        momPionRecErr[0] = cascdatakf.pxposerr();
+        momPionRecErr[1] = cascdatakf.pyposerr();
+        momPionRecErr[2] = cascdatakf.pzposerr();
+        // daughter track position at vertex (after pre-minimisation!)
+        // posProtonRec[0] = cascdatakf.xneg();
+        // posProtonRec[1] = cascdatakf.yneg();
+        // posProtonRec[2] = cascdatakf.zneg();
+        // posPionRec[0] = cascdatakf.xpos();
+        // posPionRec[1] = cascdatakf.ypos();
+        // posPionRec[2] = cascdatakf.zpos();
+        // posProtonRecErr[0] = cascdatakf.xnegerr();
+        // posProtonRecErr[1] = cascdatakf.ynegerr();
+        // posProtonRecErr[2] = cascdatakf.znegerr();
+        // posPionRecErr[0] = cascdatakf.xposerr();
+        // posPionRecErr[1] = cascdatakf.yposerr();
+        // posPionRecErr[2] = cascdatakf.zposerr();
+      }
+      
       // fill QA histos
-      histos.fill(HIST("hKFVertexX"), vtxXrecKF);
-      histos.fill(HIST("hKFVertexY"), vtxYrecKF);
-      histos.fill(HIST("hKFVertexZ"), vtxZrecKF);
+      histos.fill(HIST("hKFVertexX"), vtxRecKF[0]);
+      histos.fill(HIST("hKFVertexY"), vtxRecKF[1]);
+      histos.fill(HIST("hKFVertexZ"), vtxRecKF[2]);
       histos.fill(HIST("hKFDCAxy"), dcaXYCascToPVKF);
       histos.fill(HIST("hKFCascRadius"), cascRadKF);
       histos.fill(HIST("hKFPointingAngle"), cascPointingAngleKF);
@@ -278,8 +357,8 @@ struct kfStrangenessStudy {
     }
   }
 
-  template <typename TCollision, typename TCascData, typename TV0s, typename TMCParticle>
-  void getCascMCdata(TCollision const& collision, TCascData const& cascdata, TV0s const&, TMCParticle const& mcparticles)
+  template <typename TCollision, typename TCascData, typename TFullTracksIU, typename TMCParticle>
+  void getCascMCdata(TCollision const& collision, TCascData const& cascdata, TFullTracksIU const&, TMCParticle const& mcparticles)
   {
     if (cascdata.has_mcParticle() && cascdata.mcParticleId() > -1 && cascdata.mcParticleId() <= mcparticles.size()) {
       auto MCcascade = cascdata.template mcParticle_as<TMCParticle>();
@@ -291,25 +370,30 @@ struct kfStrangenessStudy {
         if (abs(MCv0.pdgCode()) == 3122 && MCv0.has_daughters()) {
           // cascade
           ptGen = MCcascade.pt();
-          prodVtxXgen = MCcascade.vx();
-          prodVtxYgen = MCcascade.vy();
-          prodVtxZgen = MCcascade.vz();
-          vtxXgen_firstDau = MCv0.vx();
-          vtxYgen_firstDau = MCv0.vy();
-          vtxZgen_firstDau = MCv0.vz();
+          prodVtxGen[0] = MCcascade.vx();
+          prodVtxGen[1] = MCcascade.vy();
+          prodVtxGen[2] = MCcascade.vz();
+          vtxGen[0] = MCv0.vx();
+          vtxGen[1] = MCv0.vy();
+          vtxGen[2] = MCv0.vz();
           // V0
           ptGenV0 = MCv0.pt();
-          vtxXgen_firstV0Dau = MCv0.template daughters_as<TMCParticle>().begin().vx();
-          vtxYgen_firstV0Dau = MCv0.template daughters_as<TMCParticle>().begin().vy();
-          vtxZgen_firstV0Dau = MCv0.template daughters_as<TMCParticle>().begin().vz();
+          vtxGenV0[0] = MCv0.template daughters_as<TMCParticle>().begin().vx(); // MC V0 vertex
+          vtxGenV0[1] = MCv0.template daughters_as<TMCParticle>().begin().vy();
+          vtxGenV0[2] = MCv0.template daughters_as<TMCParticle>().begin().vz();
           // daughters
-          momPosGen[0] = MCv0.template daughters_as<TMCParticle>().begin().px();
-          momPosGen[1] = MCv0.template daughters_as<TMCParticle>().begin().py();
-          momPosGen[2] = MCv0.template daughters_as<TMCParticle>().begin().pz();
-          momNegGen[0] = (MCv0.template daughters_as<TMCParticle>().begin() + 1).px();
-          momNegGen[1] = (MCv0.template daughters_as<TMCParticle>().begin() + 1).py();
-          momNegGen[2] = (MCv0.template daughters_as<TMCParticle>().begin() + 1).pz();
-
+          for (auto& d : MCv0.template daughters_as<TMCParticle>()) {
+            if (abs(d.pdgCode()) == 2212) {
+              momProtonGen[0] = d.px();
+              momProtonGen[1] = d.py();
+              momProtonGen[2] = d.pz();
+            } else if (abs(d.pdgCode()) == 211) {
+              momPionGen[0] = d.px();
+              momPionGen[1] = d.py();
+              momPionGen[2] = d.pz();
+            }
+          }
+          
           if (abs(MCcascade.pdgCode()) == 3312) { // Xi
             isTrueCasc = 1;
           } else {
@@ -324,13 +408,48 @@ struct kfStrangenessStudy {
           } else {
             source = -2;
           }
+
+          // reconstructed daughter track position at MC truth V0 vertex
+          // get daughter tracks from V0
+          auto posTrack = cascdata.template posTrack_as<TFullTracksIU>();
+          auto negTrack = cascdata.template negTrack_as<TFullTracksIU>();
+          o2::track::TrackParCov posTrackParCov = getTrackParCov(posTrack);
+          o2::track::TrackParCov negTrackParCov = getTrackParCov(negTrack);
+          // propagate to V0 MC vertex
+          posTrackParCov.propagateTo(vtxGenV0[0], bz); // propagate the track to the X closest to the V0 vertex
+          negTrackParCov.propagateTo(vtxGenV0[0], bz); // propagate the track to the X closest to the V0 vertex
+          // get new daughter track position and uncertainties
+          std::array<float, 3> protonxyz, pionxyz;
+          std::array<float, 21> protoncv, pioncv;
+          if (charge == -1) {
+            posTrackParCov.getXYZGlo(protonxyz);
+            negTrackParCov.getXYZGlo(pionxyz);
+            posTrackParCov.getCovXYZPxPyPzGlo(protoncv);
+            negTrackParCov.getCovXYZPxPyPzGlo(pioncv);
+          } else if (charge == +1) {
+            negTrackParCov.getXYZGlo(protonxyz);
+            posTrackParCov.getXYZGlo(pionxyz);
+            posTrackParCov.getCovXYZPxPyPzGlo(pioncv);
+            negTrackParCov.getCovXYZPxPyPzGlo(protoncv);
+          }
+          for (int i = 0; i < 3; i++) {
+            posProtonRec[i] = protonxyz[i];
+            posPionRec[i] = pionxyz[i];
+          }
+          posProtonRecErr[0] = sqrt(protoncv[0]);
+          posProtonRecErr[1] = sqrt(protoncv[2]);
+          posProtonRecErr[2] = sqrt(protoncv[5]);
+          posPionRecErr[0] = sqrt(pioncv[0]);
+          posPionRecErr[1] = sqrt(pioncv[2]);
+          posPionRecErr[2] = sqrt(pioncv[5]);
+          
           // fill cascade table
           fillCascMCTable(collision);
 
           // fill QA histos --> vertex position from daughters!
-          histos.fill(HIST("hGenDecayVtxX_firstDau"), vtxXgen_firstDau);
-          histos.fill(HIST("hGenDecayVtxY_firstDau"), vtxYgen_firstDau);
-          histos.fill(HIST("hGenDecayVtxZ_firstDau"), vtxZgen_firstDau);
+          histos.fill(HIST("hGenDecayVtxX_firstDau"), vtxGen[0]);
+          histos.fill(HIST("hGenDecayVtxY_firstDau"), vtxGen[1]);
+          histos.fill(HIST("hGenDecayVtxZ_firstDau"), vtxGen[2]);
 
           histos.fill(HIST("hGenSource"), source);
           histos.fill(HIST("hChargeCounterCascDatas"), charge);
@@ -349,8 +468,8 @@ struct kfStrangenessStudy {
             ptRec, ptRecKF,
             massXi, massXiKF,
             cascRad, cascRadKF,
-            vtxXrec, vtxYrec, vtxZrec, vtxXrecErr, vtxYrecErr, vtxZrecErr,
-            vtxXrecKF, vtxYrecKF, vtxZrecKF, vtxXrecErrKF, vtxYrecErrKF, vtxZrecErrKF,
+            vtxRec[0], vtxRec[1], vtxRec[2], vtxRecErr[0], vtxRecErr[1], vtxRecErr[2],
+            vtxRecKF[0], vtxRecKF[1], vtxRecKF[2], vtxRecErrKF[0], vtxRecErrKF[1], vtxRecErrKF[2],
             dcaXYCascToPV, dcaXYCascToPVKF,
             dcaZCascToPV, dcaZCascToPVKF,
             dcaCascDaughters, dcaCascDaughtersKF,
@@ -359,17 +478,19 @@ struct kfStrangenessStudy {
             ptRecV0, ptRecKFV0,
             massLambda, massLambdaKF,
             V0Rad, V0RadKF,
-            vtxXrecV0, vtxYrecV0, vtxZrecV0, vtxXrecErrV0, vtxYrecErrV0, vtxZrecErrV0,
-            vtxXrecKFV0, vtxYrecKFV0, vtxZrecKFV0, vtxXrecErrKFV0, vtxYrecErrKFV0, vtxZrecErrKFV0,
+            vtxRecV0[0], vtxRecV0[1], vtxRecV0[2], vtxRecErrV0[0], vtxRecErrV0[1], vtxRecErrV0[2],
+            vtxRecKFV0[0], vtxRecKFV0[1], vtxRecKFV0[2], vtxRecErrKFV0[0], vtxRecErrKFV0[1], vtxRecErrKFV0[2],
             dcaV0Daughters, dcaV0DaughtersKF,
-            dcaPosToPV, dcaPosToPVKF,
-            dcaNegToPV, dcaNegToPVKF,
+            dcaProtonToPV, dcaProtonToPVKF,
+            dcaPionToPV, dcaPionToPVKF,
             dcaBachToPV, dcaBachToPVKF,
             v0PointingAngle, v0PointingAngleKF,
-            momPosRecIU[0], momPosRecIU[1], momPosRecIU[2], momPosRecIUErr[0], momPosRecIUErr[1], momPosRecIUErr[2],
-            momNegRecIU[0], momNegRecIU[1], momNegRecIU[2], momNegRecIUErr[0], momNegRecIUErr[1], momNegRecIUErr[2],
-            momPosRec[0], momPosRec[1], momPosRec[2], momPosRecErr[0], momPosRecErr[1], momPosRecErr[2],
-            momNegRec[0], momNegRec[1], momNegRec[2], momNegRecErr[0], momNegRecErr[1], momNegRecErr[2],
+            momProtonRecIU[0], momProtonRecIU[1], momProtonRecIU[2], momProtonRecIUErr[0], momProtonRecIUErr[1], momProtonRecIUErr[2],
+            momPionRecIU[0], momPionRecIU[1], momPionRecIU[2], momPionRecIUErr[0], momPionRecIUErr[1], momPionRecIUErr[2],
+            momProtonRec[0], momProtonRec[1], momProtonRec[2], momProtonRecErr[0], momProtonRecErr[1], momProtonRecErr[2],
+            momPionRec[0], momPionRec[1], momPionRec[2], momPionRecErr[0], momPionRecErr[1], momPionRecErr[2],
+            etaProton, etaPion,
+            tpcNClsProton, tpcNClsPion,
             isDCAfitter, isKF);
   }
 
@@ -380,10 +501,10 @@ struct kfStrangenessStudy {
               ptRec, ptRecKF, ptGen,
               massXi, massXiKF,
               cascRad, cascRadKF,
-              vtxXrec, vtxYrec, vtxZrec, vtxXrecErr, vtxYrecErr, vtxZrecErr,
-              vtxXrecKF, vtxYrecKF, vtxZrecKF, vtxXrecErrKF, vtxYrecErrKF, vtxZrecErrKF,
-              vtxXgen_firstDau, vtxYgen_firstDau, vtxZgen_firstDau,
-              prodVtxXgen, prodVtxYgen, prodVtxZgen,
+              vtxRec[0], vtxRec[1], vtxRec[2], vtxRecErr[0], vtxRecErr[1], vtxRecErr[2],
+              vtxRecKF[0], vtxRecKF[1], vtxRecKF[2], vtxRecErrKF[0], vtxRecErrKF[1], vtxRecErrKF[2],
+              vtxGen[0], vtxGen[1], vtxGen[2],
+              prodVtxGen[0], prodVtxGen[1], prodVtxGen[2],
               dcaXYCascToPV, dcaXYCascToPVKF,
               dcaZCascToPV, dcaZCascToPVKF,
               dcaCascDaughters, dcaCascDaughtersKF,
@@ -392,22 +513,24 @@ struct kfStrangenessStudy {
               ptRecV0, ptRecKFV0, ptGenV0,
               massLambda, massLambdaKF,
               V0Rad, V0RadKF,
-              vtxXrecV0, vtxYrecV0, vtxZrecV0, vtxXrecErrV0, vtxYrecErrV0, vtxZrecErrV0,
-              vtxXrecKFV0, vtxYrecKFV0, vtxZrecKFV0, vtxXrecErrKFV0, vtxYrecErrKFV0, vtxZrecErrKFV0,
-              vtxXgen_firstV0Dau, vtxYgen_firstV0Dau, vtxZgen_firstV0Dau,
+              vtxRecV0[0], vtxRecV0[1], vtxRecV0[2], vtxRecErrV0[0], vtxRecErrV0[1], vtxRecErrV0[2],
+              vtxRecKFV0[0], vtxRecKFV0[1], vtxRecKFV0[2], vtxRecErrKFV0[0], vtxRecErrKFV0[1], vtxRecErrKFV0[2],
+              vtxGenV0[0], vtxGenV0[1], vtxGenV0[2],
               dcaV0Daughters, dcaV0DaughtersKF,
-              dcaPosToPV, dcaPosToPVKF,
-              dcaNegToPV, dcaNegToPVKF,
+              dcaProtonToPV, dcaProtonToPVKF,
+              dcaPionToPV, dcaPionToPVKF,
               dcaBachToPV, dcaBachToPVKF,
               v0PointingAngle, v0PointingAngleKF,
-              momPosRecIU[0], momPosRecIU[1], momPosRecIU[2], momPosRecIUErr[0], momPosRecIUErr[1], momPosRecIUErr[2],
-              momNegRecIU[0], momNegRecIU[1], momNegRecIU[2], momNegRecIUErr[0], momNegRecIUErr[1], momNegRecIUErr[2],
-              momPosRec[0], momPosRec[1], momPosRec[2], momPosRecErr[0], momPosRecErr[1], momPosRecErr[2],
-              momNegRec[0], momNegRec[1], momNegRec[2], momNegRecErr[0], momNegRecErr[1], momNegRecErr[2],
-              momPosGen[0], momPosGen[1], momPosGen[2],
-              momNegGen[0], momNegGen[1], momNegGen[2],
-              posPosRec[0], posPosRec[1], posPosRec[2], posPosRecErr[0], posPosRecErr[1], posPosRecErr[2],
-              posNegRec[0], posNegRec[1], posNegRec[2], posNegRecErr[0], posNegRecErr[1], posNegRecErr[2],
+              momProtonRecIU[0], momProtonRecIU[1], momProtonRecIU[2], momProtonRecIUErr[0], momProtonRecIUErr[1], momProtonRecIUErr[2],
+              momPionRecIU[0], momPionRecIU[1], momPionRecIU[2], momPionRecIUErr[0], momPionRecIUErr[1], momPionRecIUErr[2],
+              momProtonRec[0], momProtonRec[1], momProtonRec[2], momProtonRecErr[0], momProtonRecErr[1], momProtonRecErr[2],
+              momPionRec[0], momPionRec[1], momPionRec[2], momPionRecErr[0], momPionRecErr[1], momPionRecErr[2],
+              momProtonGen[0], momProtonGen[1], momProtonGen[2],
+              momPionGen[0], momPionGen[1], momPionGen[2],
+              posProtonRec[0], posProtonRec[1], posProtonRec[2], posProtonRecErr[0], posProtonRecErr[1], posProtonRecErr[2],
+              posPionRec[0], posPionRec[1], posPionRec[2], posPionRecErr[0], posPionRecErr[1], posPionRecErr[2],
+              etaProton, etaPion,
+              tpcNClsProton, tpcNClsPion,
               isDCAfitter, isKF,
               isTrueCasc,
               source);
@@ -424,55 +547,69 @@ struct kfStrangenessStudy {
     massXi = -1.0f; massXiKF = -1.0f;
     massLambda = -1.0f; massLambdaKF = -1.0f;
     cascRad = -1.0f; cascRadKF = -1.0f;
-    vtxXrec = -1.0f; vtxYrec = -1.0f; vtxZrec = -1.0f; vtxXrecKF = -1.0f; vtxYrecKF = -1.0f; vtxZrecKF = -1.0f;
-    vtxXrecErr = -1.0f; vtxYrecErr = -1.0f; vtxZrecErr = -1.0f; vtxXrecErrKF = -1.0f; vtxYrecErrKF = -1.0f; vtxZrecErrKF = -1.0f;
-    vtxXrecV0 = -1.0f; vtxYrecV0 = -1.0f; vtxZrecV0 = -1.0f; vtxXrecKFV0 = -1.0f; vtxYrecKFV0 = -1.0f; vtxZrecKFV0 = -1.0f;
-    vtxXrecErrV0 = -1.0f; vtxYrecErrV0 = -1.0f; vtxZrecErrV0 = -1.0f; vtxXrecErrKFV0 = -1.0f; vtxYrecErrKFV0 = -1.0f; vtxZrecErrKFV0 = -1.0f;
     dcaXYCascToPV = -1.0f; dcaXYCascToPVKF = -1.0f;
     dcaZCascToPV = -1.0f; dcaZCascToPVKF = -1.0f;
     dcaCascDaughters = -1.0f; dcaCascDaughtersKF = -1.0f;
     dcaV0Daughters = -1.0f; dcaV0DaughtersKF = -1.0f;
-    dcaPosToPV = -1.0f; dcaPosToPVKF = -1.0f;
-    dcaNegToPV = -1.0f; dcaNegToPVKF = -1.0f;
+    dcaProtonToPV = -1.0f; dcaProtonToPVKF = -1.0f;
+    dcaPionToPV = -1.0f; dcaPionToPVKF = -1.0f;
     dcaBachToPV = -1.0f; dcaBachToPVKF = -1.0f;
     cascPointingAngle = -1.0f; cascPointingAngleKF = -1.0f;
     v0PointingAngle = -1.0f; v0PointingAngleKF = -1.0f;
     V0Rad = -1.0f; V0RadKF = -1.0f;
     charge = 0;
+    etaProton = -1.0, etaPion = -1.0;
+    tpcNClsProton = 0, tpcNClsPion = 0;
     for (int i = 0; i < 3; i++) {
-      momPosRecIU[i] = -1.0f;
-      momNegRecIU[i] = -1.0f;
-      momPosRecIUErr[i] = -1.0f;
-      momNegRecIUErr[i] = -1.0f;
-      momPosRec[i] = -1.0f;
-      momNegRec[i] = -1.0f;
-      momPosRecErr[i] = -1.0f;
-      momNegRecErr[i] = -1.0f;
-      posPosRec[i] = -1.0f;
-      posNegRec[i] = -1.0f;
-      posPosRecErr[i] = -1.0f;
-      posNegRecErr[i] = -1.0f;
+      vtxRec[i] = -1.0f;
+      vtxRecKF[i] = -1.0f;
+      vtxRecErr[i] = -1.0f;
+      vtxRecErrKF[i] = -1.0f;
+      vtxRecV0[i] = -1.0f;
+      vtxRecKFV0[i] = -1.0f;
+      vtxRecErrV0[i] = -1.0f;
+      vtxRecErrKFV0[i] = -1.0f;
+
+      momProtonRecIU[i] = -1.0f;
+      momPionRecIU[i] = -1.0f;
+      momProtonRecIUErr[i] = -1.0f;
+      momPionRecIUErr[i] = -1.0f;
+      momProtonRec[i] = -1.0f;
+      momPionRec[i] = -1.0f;
+      momProtonRecErr[i] = -1.0f;
+      momPionRecErr[i] = -1.0f;
+      posProtonRec[i] = -1.0f;
+      posPionRec[i] = -1.0f;
+      posProtonRecErr[i] = -1.0f;
+      posPionRecErr[i] = -1.0f;
       
       // Additional cascade MC data
-      momPosGen[i] = -1.0f;
-      momNegGen[i] = -1.0f;
+      vtxGen[i] = -1.0f;
+      vtxGenV0[i] = -1.0f;
+      prodVtxGen[i]  = -1.0f;
+      momProtonGen[i] = -1.0f;
+      momPionGen[i] = -1.0f;
     }
 
     /// Additional cascade MC data
     isTrueCasc = 0;
     ptGen = -1.0f;
     ptGenV0 = -1.0f;
-    vtxXgen = -1.0f; vtxYgen = -1.0f; vtxZgen = -1.0f;
-    vtxXgenV0 = -1.0f; vtxYgenV0 = -1.0f; vtxZgenV0 = -1.0f;
-    vtxXgen_firstDau = -1.; vtxYgen_firstDau = -1.; vtxZgen_firstDau = -1;
-    vtxXgen_firstV0Dau = -1.; vtxYgen_firstV0Dau = -1.; vtxZgen_firstV0Dau = -1;
-    prodVtxXgen  = -1.0f; prodVtxYgen  = -1.0f; prodVtxZgen  = -1.0f;
     source = 0;
 
   }
 
-  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, aod::V0sLinked const& V0s, soa::Join<aod::V0fCDatas, aod::V0fCCovs> const& V0fCDatas, soa::Join<aod::V0Datas, aod::V0Covs> const& V0Datas, CascadesCrossLinked const& Cascades, soa::Join<aod::CascDatas, aod::CascCovs> const& CascDatas, soa::Join<aod::KFCascDatas, aod::KFCascCovs> const& KFCascDatas, FullTracksIU const&)
+  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, 
+                  aod::V0sLinked const& V0s, 
+                  soa::Join<aod::V0fCDatas, aod::V0fCCovs> const& V0fCDatas, 
+                  soa::Join<aod::V0Datas, aod::V0Covs> const& V0Datas, 
+                  CascadesCrossLinked const& Cascades, 
+                  soa::Join<aod::CascDatas, aod::CascCovs> const& CascDatas, 
+                  soa::Join<aod::KFCascDatas, aod::KFCascCovs> const& KFCascDatas, 
+                  FullTracksIU const&,
+                  aod::BCsWithTimestamps const&)
   {
+
     /// Event selection
     histos.fill(HIST("hEventSelectionFlow"), 1.f);
     // select collisions in acceptance
@@ -492,23 +629,39 @@ struct kfStrangenessStudy {
       }
       histos.fill(HIST("hChargeCounter"), charge);
 
-      // store daughter momenta and uncertainties at IU
+      // store daughter momenta and uncertainties at IU (an eta)
       auto v0 = cascade.v0_as<aod::V0sLinked>(); // soa::Join<o2::aod::V0s, o2::aod::V0DataLink>
       auto posTrack = v0.posTrack_as<FullTracksIU>();
       auto negTrack = v0.negTrack_as<FullTracksIU>();
       o2::track::TrackParCov posTrackParCov = getTrackParCov(posTrack);
       o2::track::TrackParCov negTrackParCov = getTrackParCov(negTrack);
-      posTrackParCov.getPxPyPzGlo(momPosRecIU);
-      negTrackParCov.getPxPyPzGlo(momNegRecIU);
-      std::array<float, 21> cvposini, cvnegini;
-      posTrackParCov.getCovXYZPxPyPzGlo(cvposini);
-      negTrackParCov.getCovXYZPxPyPzGlo(cvnegini);
-      momPosRecIUErr[0] = cvposini[9];
-      momPosRecIUErr[1] = cvposini[14];
-      momPosRecIUErr[2] = cvposini[21];
-      momNegRecIUErr[0] = cvnegini[9];
-      momNegRecIUErr[1] = cvnegini[14];
-      momNegRecIUErr[2] = cvnegini[21];
+      std::array<float, 21> cvproton, cvpion;
+      if (charge == -1) {
+        posTrackParCov.getPxPyPzGlo(momProtonRecIU);
+        negTrackParCov.getPxPyPzGlo(momPionRecIU);
+        posTrackParCov.getCovXYZPxPyPzGlo(cvproton);
+        negTrackParCov.getCovXYZPxPyPzGlo(cvpion);
+        etaProton = posTrack.eta();
+        etaPion = negTrack.eta();
+        tpcNClsProton = posTrack.tpcNClsFound();
+        tpcNClsPion = negTrack.tpcNClsFound();
+      } else if (charge == +1) {
+        posTrackParCov.getPxPyPzGlo(momPionRecIU);
+        negTrackParCov.getPxPyPzGlo(momProtonRecIU);
+        posTrackParCov.getCovXYZPxPyPzGlo(cvproton);
+        negTrackParCov.getCovXYZPxPyPzGlo(cvpion);
+        etaProton = negTrack.eta();
+        etaPion = posTrack.eta();
+        tpcNClsProton = negTrack.tpcNClsFound();
+        tpcNClsPion = posTrack.tpcNClsFound();
+      }
+      momProtonRecIUErr[0] = sqrt(cvproton[9]);
+      momProtonRecIUErr[1] = sqrt(cvproton[14]);
+      momProtonRecIUErr[2] = sqrt(cvproton[21]);
+      momPionRecIUErr[0] = sqrt(cvpion[9]);
+      momPionRecIUErr[1] = sqrt(cvpion[14]);
+      momPionRecIUErr[2] = sqrt(cvpion[21]);
+      
 
       // get cascade data and fill table
       getCascDatas(collision, cascade, CascDatas, KFCascDatas, V0s, V0Datas, V0fCDatas);
@@ -519,8 +672,24 @@ struct kfStrangenessStudy {
   } // end process
   PROCESS_SWITCH(kfStrangenessStudy, processData, "process data", true);
 
-  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, aod::V0sLinked const& V0s, soa::Join<aod::V0Datas, aod::V0Covs> const& V0Datas, soa::Join<aod::V0fCDatas, aod::V0fCCovs> const& V0fCDatas, CascadesCrossLinked const& Cascades, CascDataLabeled const& CascDatas, KFCascDataLabeled const& KFCascDatas, FullTracksIU const&, aod::McParticles const& particlesMC)
+  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, 
+                aod::V0sLinked const& V0s, 
+                soa::Join<aod::V0Datas, aod::V0Covs> const& V0Datas, 
+                soa::Join<aod::V0fCDatas, aod::V0fCCovs> const& V0fCDatas, 
+                CascadesCrossLinked const& Cascades, 
+                CascDataLabeled const& CascDatas, 
+                KFCascDataLabeled const& KFCascDatas, 
+                FullTracksIU const& TracksIU, 
+                aod::McParticles const& particlesMC,
+                aod::BCsWithTimestamps const&)
   {
+    /// magnetic field from CCDB
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    if (runNumber != bc.runNumber()) {
+      initCCDB(bc, runNumber, ccdb, ccdbPathGrpMag, lut);
+      bz = o2::base::Propagator::Instance()->getNominalBz();
+    }
+
     /// Event selection
     histos.fill(HIST("hEventSelectionFlow"), 1.f);
     // select collisions in acceptance
@@ -540,23 +709,38 @@ struct kfStrangenessStudy {
       }
       histos.fill(HIST("hChargeCounter"), charge);
 
-      // store daughter momenta and uncertainties at IU
+      // store daughter momenta and uncertainties at IU (and eta)
       auto v0 = cascade.v0_as<aod::V0sLinked>();
       auto posTrack = v0.posTrack_as<FullTracksIU>();
       auto negTrack = v0.negTrack_as<FullTracksIU>();
       o2::track::TrackParCov posTrackParCov = getTrackParCov(posTrack);
       o2::track::TrackParCov negTrackParCov = getTrackParCov(negTrack);
-      posTrackParCov.getPxPyPzGlo(momPosRecIU);
-      negTrackParCov.getPxPyPzGlo(momNegRecIU);
-      std::array<float, 21> cvpos, cvneg;
-      posTrackParCov.getCovXYZPxPyPzGlo(cvpos);
-      negTrackParCov.getCovXYZPxPyPzGlo(cvneg);
-      momPosRecIUErr[0] = sqrt(cvpos[9]);
-      momPosRecIUErr[1] = sqrt(cvpos[14]);
-      momPosRecIUErr[2] = sqrt(cvpos[21]);
-      momNegRecIUErr[0] = sqrt(cvneg[9]);
-      momNegRecIUErr[1] = sqrt(cvneg[14]);
-      momNegRecIUErr[2] = sqrt(cvneg[21]);
+      std::array<float, 21> cvproton, cvpion;
+      if (charge == -1) {
+        posTrackParCov.getPxPyPzGlo(momProtonRecIU);
+        negTrackParCov.getPxPyPzGlo(momPionRecIU);
+        posTrackParCov.getCovXYZPxPyPzGlo(cvproton);
+        negTrackParCov.getCovXYZPxPyPzGlo(cvpion);
+        etaProton = posTrack.eta();
+        etaPion = negTrack.eta();
+        tpcNClsProton = posTrack.tpcNClsFound();
+        tpcNClsPion = negTrack.tpcNClsFound();
+      } else if (charge == +1) {
+        posTrackParCov.getPxPyPzGlo(momPionRecIU);
+        negTrackParCov.getPxPyPzGlo(momProtonRecIU);
+        posTrackParCov.getCovXYZPxPyPzGlo(cvproton);
+        negTrackParCov.getCovXYZPxPyPzGlo(cvpion);
+        etaProton = negTrack.eta();
+        etaPion = posTrack.eta();
+        tpcNClsProton = negTrack.tpcNClsFound();
+        tpcNClsPion = posTrack.tpcNClsFound();
+      }
+      momProtonRecIUErr[0] = sqrt(cvproton[9]);
+      momProtonRecIUErr[1] = sqrt(cvproton[14]);
+      momProtonRecIUErr[2] = sqrt(cvproton[21]);
+      momPionRecIUErr[0] = sqrt(cvpion[9]);
+      momPionRecIUErr[1] = sqrt(cvpion[14]);
+      momPionRecIUErr[2] = sqrt(cvpion[21]);
 
       // get cascade data
       getCascDatas(collision, cascade, CascDatas, KFCascDatas, V0s, V0Datas, V0fCDatas);
@@ -566,19 +750,19 @@ struct kfStrangenessStudy {
         LOG(info) << "Both fitters were successful!";
         recocase = 1;
         auto cascdata = cascade.cascData_as<CascDataLabeled>();
-        getCascMCdata(collision, cascdata, V0s, particlesMC);
+        getCascMCdata(collision, cascdata, TracksIU, particlesMC);
       }
       if (cascade.has_kfCascData() && !cascade.has_cascData()) {
         LOG(info) << "Only KF was successful!";
         recocase = 2;
         auto cascdata = cascade.kfCascData_as<KFCascDataLabeled>();
-        getCascMCdata(collision, cascdata, V0s, particlesMC);
+        getCascMCdata(collision, cascdata, TracksIU, particlesMC);
       }
       if (!cascade.has_kfCascData() && cascade.has_cascData()) {
         LOG(info) << "Only DCA fitter was successful!";
         recocase = 3;
         auto cascdata = cascade.cascData_as<CascDataLabeled>();
-        getCascMCdata(collision, cascdata, V0s, particlesMC);
+        getCascMCdata(collision, cascdata, TracksIU, particlesMC);
       }
 
     } // end cascade loop

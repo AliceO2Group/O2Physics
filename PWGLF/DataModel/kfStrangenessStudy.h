@@ -139,56 +139,62 @@ DECLARE_SOA_COLUMN(V0ProdVtxZMC, v0prodvtxzmc, float);
 
 // ********* Daughters **********
 // DCA
-DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);
-DECLARE_SOA_COLUMN(DCAPosToPVKF, dcapostopvkf, float);
-DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);
-DECLARE_SOA_COLUMN(DCANegToPVKF, dcanegtopvkf, float);
+DECLARE_SOA_COLUMN(DCAProtonToPV, dcaprotontopv, float);
+DECLARE_SOA_COLUMN(DCAProtonToPVKF, dcaprotontopvkf, float);
+DECLARE_SOA_COLUMN(DCAPionToPV, dcapiontopv, float);
+DECLARE_SOA_COLUMN(DCAPionToPVKF, dcapiontopvkf, float);
 DECLARE_SOA_COLUMN(DCABachToPV, dcabachtopv, float);
 DECLARE_SOA_COLUMN(DCABachToPVKF, dcabachtopvkf, float);
 // momentum
-DECLARE_SOA_COLUMN(PxPosIURec, pxposiurec, float);
-DECLARE_SOA_COLUMN(PyPosIURec, pyposiurec, float);
-DECLARE_SOA_COLUMN(PzPosIURec, pzposiurec, float);
-DECLARE_SOA_COLUMN(PxPosIURecErr, pxposiurecerr, float);
-DECLARE_SOA_COLUMN(PyPosIURecErr, pyposiurecerr, float);
-DECLARE_SOA_COLUMN(PzPosIURecErr, pzposiurecerr, float);
-DECLARE_SOA_COLUMN(PxNegIURec, pxnegiurec, float);
-DECLARE_SOA_COLUMN(PyNegIURec, pynegiurec, float);
-DECLARE_SOA_COLUMN(PzNegIURec, pznegiurec, float);
-DECLARE_SOA_COLUMN(PxNegIURecErr, pxnegiurecerr, float);
-DECLARE_SOA_COLUMN(PyNegIURecErr, pynegiurecerr, float);
-DECLARE_SOA_COLUMN(PzNegIURecErr, pznegiurecerr, float);
-DECLARE_SOA_COLUMN(PxPosRec, pxposrec, float);
-DECLARE_SOA_COLUMN(PyPosRec, pyposrec, float);
-DECLARE_SOA_COLUMN(PzPosRec, pzposrec, float);
-DECLARE_SOA_COLUMN(PxPosRecErr, pxposrecerr, float);
-DECLARE_SOA_COLUMN(PyPosRecErr, pyposrecerr, float);
-DECLARE_SOA_COLUMN(PzPosRecErr, pzposrecerr, float);
-DECLARE_SOA_COLUMN(PxNegRec, pxnegrec, float);
-DECLARE_SOA_COLUMN(PyNegRec, pynegrec, float);
-DECLARE_SOA_COLUMN(PzNegRec, pznegrec, float);
-DECLARE_SOA_COLUMN(PxNegRecErr, pxnegrecerr, float);
-DECLARE_SOA_COLUMN(PyNegRecErr, pynegrecerr, float);
-DECLARE_SOA_COLUMN(PzNegRecErr, pznegrecerr, float);
-DECLARE_SOA_COLUMN(PxPosMC, pxposmc, float);
-DECLARE_SOA_COLUMN(PyPosMC, pyposmc, float);
-DECLARE_SOA_COLUMN(PzPosMC, pzposmc, float);
-DECLARE_SOA_COLUMN(PxNegMC, pxnegmc, float);
-DECLARE_SOA_COLUMN(PyNegMC, pynegmc, float);
-DECLARE_SOA_COLUMN(PzNegMC, pznegmc, float);
+DECLARE_SOA_COLUMN(PxProtonIURec, pxprotoniurec, float);
+DECLARE_SOA_COLUMN(PyProtonIURec, pyprotoniurec, float);
+DECLARE_SOA_COLUMN(PzProtonIURec, pzprotoniurec, float);
+DECLARE_SOA_COLUMN(PxProtonIURecErr, pxprotoniurecerr, float);
+DECLARE_SOA_COLUMN(PyProtonIURecErr, pyprotoniurecerr, float);
+DECLARE_SOA_COLUMN(PzProtonIURecErr, pzprotoniurecerr, float);
+DECLARE_SOA_COLUMN(PxPionIURec, pxpioniurec, float);
+DECLARE_SOA_COLUMN(PyPionIURec, pypioniurec, float);
+DECLARE_SOA_COLUMN(PzPionIURec, pzpioniurec, float);
+DECLARE_SOA_COLUMN(PxPionIURecErr, pxpioniurecerr, float);
+DECLARE_SOA_COLUMN(PyPionIURecErr, pypioniurecerr, float);
+DECLARE_SOA_COLUMN(PzPionIURecErr, pzpioniurecerr, float);
+DECLARE_SOA_COLUMN(PxProtonRec, pxprotonrec, float);
+DECLARE_SOA_COLUMN(PyProtonRec, pyprotonrec, float);
+DECLARE_SOA_COLUMN(PzProtonRec, pzprotonrec, float);
+DECLARE_SOA_COLUMN(PxProtonRecErr, pxprotonrecerr, float);
+DECLARE_SOA_COLUMN(PyProtonRecErr, pyprotonrecerr, float);
+DECLARE_SOA_COLUMN(PzProtonRecErr, pzprotonrecerr, float);
+DECLARE_SOA_COLUMN(PxPionRec, pxpionrec, float);
+DECLARE_SOA_COLUMN(PyPionRec, pypionrec, float);
+DECLARE_SOA_COLUMN(PzPionRec, pzpionrec, float);
+DECLARE_SOA_COLUMN(PxPionRecErr, pxpionrecerr, float);
+DECLARE_SOA_COLUMN(PyPionRecErr, pypionrecerr, float);
+DECLARE_SOA_COLUMN(PzPionRecErr, pzpionrecerr, float);
+DECLARE_SOA_COLUMN(PxProtonMC, pxprotonmc, float);
+DECLARE_SOA_COLUMN(PyProtonMC, pyprotonmc, float);
+DECLARE_SOA_COLUMN(PzProtonMC, pzprotonmc, float);
+DECLARE_SOA_COLUMN(PxPionMC, pxpionmc, float);
+DECLARE_SOA_COLUMN(PyPionMC, pypionmc, float);
+DECLARE_SOA_COLUMN(PzPionMC, pzpionmc, float);
 // position
-DECLARE_SOA_COLUMN(XPosRec, xposrec, float);
-DECLARE_SOA_COLUMN(YPosRec, yposrec, float);
-DECLARE_SOA_COLUMN(ZPosRec, zposrec, float);
-DECLARE_SOA_COLUMN(XPosRecErr, xposrecerr, float);
-DECLARE_SOA_COLUMN(YPosRecErr, yposrecerr, float);
-DECLARE_SOA_COLUMN(ZPosRecErr, zposrecerr, float);
-DECLARE_SOA_COLUMN(XNegRec, xnegrec, float);
-DECLARE_SOA_COLUMN(YNegRec, ynegrec, float);
-DECLARE_SOA_COLUMN(ZNegRec, znegrec, float);
-DECLARE_SOA_COLUMN(XNegRecErr, xnegrecerr, float);
-DECLARE_SOA_COLUMN(YNegRecErr, ynegrecerr, float);
-DECLARE_SOA_COLUMN(ZNegRecErr, znegrecerr, float);
+DECLARE_SOA_COLUMN(XProtonRec, xprotonrec, float);
+DECLARE_SOA_COLUMN(YProtonRec, yprotonrec, float);
+DECLARE_SOA_COLUMN(ZProtonRec, zprotonrec, float);
+DECLARE_SOA_COLUMN(XProtonRecErr, xprotonrecerr, float);
+DECLARE_SOA_COLUMN(YProtonRecErr, yprotonrecerr, float);
+DECLARE_SOA_COLUMN(ZProtonRecErr, zprotonrecerr, float);
+DECLARE_SOA_COLUMN(XPionRec, xpionrec, float);
+DECLARE_SOA_COLUMN(YPionRec, ypionrec, float);
+DECLARE_SOA_COLUMN(ZPionRec, zpionrec, float);
+DECLARE_SOA_COLUMN(XPionRecErr, xpionrecerr, float);
+DECLARE_SOA_COLUMN(YPionRecErr, ypionrecerr, float);
+DECLARE_SOA_COLUMN(ZPionRecErr, zpionrecerr, float);
+// eta
+DECLARE_SOA_COLUMN(EtaProton, etaproton, float);
+DECLARE_SOA_COLUMN(EtaPion, etapion, float);
+// TPC clusters
+DECLARE_SOA_COLUMN(TPCNClsProton, tpcnclsproton, float);
+DECLARE_SOA_COLUMN(TPCNClsPion, tpcnclspion, float);
 
 
 // ********* MC info **********
@@ -251,38 +257,42 @@ DECLARE_SOA_TABLE(CascCand, "AOD", "CASCCAND",
                   kfStrangenessStudy::V0VtxZErrKF,
                   kfStrangenessStudy::DCAV0Dau,
                   kfStrangenessStudy::DCAV0DauKF,
-                  kfStrangenessStudy::DCAPosToPV,
-                  kfStrangenessStudy::DCAPosToPVKF,
-                  kfStrangenessStudy::DCANegToPV,
-                  kfStrangenessStudy::DCANegToPVKF,
+                  kfStrangenessStudy::DCAProtonToPV,
+                  kfStrangenessStudy::DCAProtonToPVKF,
+                  kfStrangenessStudy::DCAPionToPV,
+                  kfStrangenessStudy::DCAPionToPVKF,
                   kfStrangenessStudy::DCABachToPV,
                   kfStrangenessStudy::DCABachToPVKF,
                   kfStrangenessStudy::PAV0ToPV,
                   kfStrangenessStudy::PAV0ToPVKF,
-                  kfStrangenessStudy::PxPosIURec,
-                  kfStrangenessStudy::PyPosIURec,
-                  kfStrangenessStudy::PzPosIURec,
-                  kfStrangenessStudy::PxPosIURecErr,
-                  kfStrangenessStudy::PyPosIURecErr,
-                  kfStrangenessStudy::PzPosIURecErr,
-                  kfStrangenessStudy::PxNegIURec,
-                  kfStrangenessStudy::PyNegIURec,
-                  kfStrangenessStudy::PzNegIURec,
-                  kfStrangenessStudy::PxNegIURecErr,
-                  kfStrangenessStudy::PyNegIURecErr,
-                  kfStrangenessStudy::PzNegIURecErr,
-                  kfStrangenessStudy::PxPosRec,
-                  kfStrangenessStudy::PyPosRec,
-                  kfStrangenessStudy::PzPosRec,
-                  kfStrangenessStudy::PxPosRecErr,
-                  kfStrangenessStudy::PyPosRecErr,
-                  kfStrangenessStudy::PzPosRecErr,
-                  kfStrangenessStudy::PxNegRec,
-                  kfStrangenessStudy::PyNegRec,
-                  kfStrangenessStudy::PzNegRec,
-                  kfStrangenessStudy::PxNegRecErr,
-                  kfStrangenessStudy::PyNegRecErr,
-                  kfStrangenessStudy::PzNegRecErr,
+                  kfStrangenessStudy::PxProtonIURec,
+                  kfStrangenessStudy::PyProtonIURec,
+                  kfStrangenessStudy::PzProtonIURec,
+                  kfStrangenessStudy::PxProtonIURecErr,
+                  kfStrangenessStudy::PyProtonIURecErr,
+                  kfStrangenessStudy::PzProtonIURecErr,
+                  kfStrangenessStudy::PxPionIURec,
+                  kfStrangenessStudy::PyPionIURec,
+                  kfStrangenessStudy::PzPionIURec,
+                  kfStrangenessStudy::PxPionIURecErr,
+                  kfStrangenessStudy::PyPionIURecErr,
+                  kfStrangenessStudy::PzPionIURecErr,
+                  kfStrangenessStudy::PxProtonRec,
+                  kfStrangenessStudy::PyProtonRec,
+                  kfStrangenessStudy::PzProtonRec,
+                  kfStrangenessStudy::PxProtonRecErr,
+                  kfStrangenessStudy::PyProtonRecErr,
+                  kfStrangenessStudy::PzProtonRecErr,
+                  kfStrangenessStudy::PxPionRec,
+                  kfStrangenessStudy::PyPionRec,
+                  kfStrangenessStudy::PzPionRec,
+                  kfStrangenessStudy::PxPionRecErr,
+                  kfStrangenessStudy::PyPionRecErr,
+                  kfStrangenessStudy::PzPionRecErr,
+                  kfStrangenessStudy::EtaProton,
+                  kfStrangenessStudy::EtaPion,
+                  kfStrangenessStudy::TPCNClsProton,
+                  kfStrangenessStudy::TPCNClsPion,
                   kfStrangenessStudy::IsDCAFitter,
                   kfStrangenessStudy::IsKF);
 
@@ -346,56 +356,60 @@ DECLARE_SOA_TABLE(CascCandMC, "AOD", "CASCCANDMC",
                   kfStrangenessStudy::V0VtxZMC,
                   kfStrangenessStudy::DCAV0Dau,
                   kfStrangenessStudy::DCAV0DauKF,
-                  kfStrangenessStudy::DCAPosToPV,
-                  kfStrangenessStudy::DCAPosToPVKF,
-                  kfStrangenessStudy::DCANegToPV,
-                  kfStrangenessStudy::DCANegToPVKF,
+                  kfStrangenessStudy::DCAProtonToPV,
+                  kfStrangenessStudy::DCAProtonToPVKF,
+                  kfStrangenessStudy::DCAPionToPV,
+                  kfStrangenessStudy::DCAPionToPVKF,
                   kfStrangenessStudy::DCABachToPV,
                   kfStrangenessStudy::DCABachToPVKF,
                   kfStrangenessStudy::PAV0ToPV,
                   kfStrangenessStudy::PAV0ToPVKF,
-                  kfStrangenessStudy::PxPosIURec,
-                  kfStrangenessStudy::PyPosIURec,
-                  kfStrangenessStudy::PzPosIURec,
-                  kfStrangenessStudy::PxPosIURecErr,
-                  kfStrangenessStudy::PyPosIURecErr,
-                  kfStrangenessStudy::PzPosIURecErr,
-                  kfStrangenessStudy::PxNegIURec,
-                  kfStrangenessStudy::PyNegIURec,
-                  kfStrangenessStudy::PzNegIURec,
-                  kfStrangenessStudy::PxNegIURecErr,
-                  kfStrangenessStudy::PyNegIURecErr,
-                  kfStrangenessStudy::PzNegIURecErr,
-                  kfStrangenessStudy::PxPosRec,
-                  kfStrangenessStudy::PyPosRec,
-                  kfStrangenessStudy::PzPosRec,
-                  kfStrangenessStudy::PxPosRecErr,
-                  kfStrangenessStudy::PyPosRecErr,
-                  kfStrangenessStudy::PzPosRecErr,
-                  kfStrangenessStudy::PxNegRec,
-                  kfStrangenessStudy::PyNegRec,
-                  kfStrangenessStudy::PzNegRec,
-                  kfStrangenessStudy::PxNegRecErr,
-                  kfStrangenessStudy::PyNegRecErr,
-                  kfStrangenessStudy::PzNegRecErr,
-                  kfStrangenessStudy::PxPosMC,
-                  kfStrangenessStudy::PyPosMC,
-                  kfStrangenessStudy::PzPosMC,
-                  kfStrangenessStudy::PxNegMC,
-                  kfStrangenessStudy::PyNegMC,
-                  kfStrangenessStudy::PzNegMC,
-                  kfStrangenessStudy::XPosRec,
-                  kfStrangenessStudy::YPosRec,
-                  kfStrangenessStudy::ZPosRec,
-                  kfStrangenessStudy::XPosRecErr,
-                  kfStrangenessStudy::YPosRecErr,
-                  kfStrangenessStudy::ZPosRecErr,
-                  kfStrangenessStudy::XNegRec,
-                  kfStrangenessStudy::YNegRec,
-                  kfStrangenessStudy::ZNegRec,
-                  kfStrangenessStudy::XNegRecErr,
-                  kfStrangenessStudy::YNegRecErr,
-                  kfStrangenessStudy::ZNegRecErr,
+                  kfStrangenessStudy::PxProtonIURec,
+                  kfStrangenessStudy::PyProtonIURec,
+                  kfStrangenessStudy::PzProtonIURec,
+                  kfStrangenessStudy::PxProtonIURecErr,
+                  kfStrangenessStudy::PyProtonIURecErr,
+                  kfStrangenessStudy::PzProtonIURecErr,
+                  kfStrangenessStudy::PxPionIURec,
+                  kfStrangenessStudy::PyPionIURec,
+                  kfStrangenessStudy::PzPionIURec,
+                  kfStrangenessStudy::PxPionIURecErr,
+                  kfStrangenessStudy::PyPionIURecErr,
+                  kfStrangenessStudy::PzPionIURecErr,
+                  kfStrangenessStudy::PxProtonRec,
+                  kfStrangenessStudy::PyProtonRec,
+                  kfStrangenessStudy::PzProtonRec,
+                  kfStrangenessStudy::PxProtonRecErr,
+                  kfStrangenessStudy::PyProtonRecErr,
+                  kfStrangenessStudy::PzProtonRecErr,
+                  kfStrangenessStudy::PxPionRec,
+                  kfStrangenessStudy::PyPionRec,
+                  kfStrangenessStudy::PzPionRec,
+                  kfStrangenessStudy::PxPionRecErr,
+                  kfStrangenessStudy::PyPionRecErr,
+                  kfStrangenessStudy::PzPionRecErr,
+                  kfStrangenessStudy::PxProtonMC,
+                  kfStrangenessStudy::PyProtonMC,
+                  kfStrangenessStudy::PzProtonMC,
+                  kfStrangenessStudy::PxPionMC,
+                  kfStrangenessStudy::PyPionMC,
+                  kfStrangenessStudy::PzPionMC,
+                  kfStrangenessStudy::XProtonRec,
+                  kfStrangenessStudy::YProtonRec,
+                  kfStrangenessStudy::ZProtonRec,
+                  kfStrangenessStudy::XProtonRecErr,
+                  kfStrangenessStudy::YProtonRecErr,
+                  kfStrangenessStudy::ZProtonRecErr,
+                  kfStrangenessStudy::XPionRec,
+                  kfStrangenessStudy::YPionRec,
+                  kfStrangenessStudy::ZPionRec,
+                  kfStrangenessStudy::XPionRecErr,
+                  kfStrangenessStudy::YPionRecErr,
+                  kfStrangenessStudy::ZPionRecErr,
+                  kfStrangenessStudy::EtaProton,
+                  kfStrangenessStudy::EtaPion,
+                  kfStrangenessStudy::TPCNClsProton,
+                  kfStrangenessStudy::TPCNClsPion,
                   kfStrangenessStudy::IsDCAFitter,
                   kfStrangenessStudy::IsKF,
                   kfStrangenessStudy::IsTrueCasc,
