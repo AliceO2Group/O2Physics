@@ -122,6 +122,11 @@ struct lambdakzeroBuilder {
 
   Configurable<int> tpcrefit{"tpcrefit", 0, "demand TPC refit"};
 
+  // select momentum slice if desired
+  Configurable<float> minimumPt{"minimumPt", 0.0f, "Minimum pT to store candidate"};
+  Configurable<float> maximumPt{"maximumPt", 1000.0f, "Maximum pT to store candidate"};
+  Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximum daughter eta"};
+
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
@@ -143,7 +148,13 @@ struct lambdakzeroBuilder {
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
 
-  // generate and fill extra QA histograms is requested
+  // round some V0 core variables up to a certain level of precision if requested
+  // useful to keep derived data sizes under control
+  // variables that are rounded include the DCAs but not the CosPA (precision needed)
+  Configurable<bool> roundDCAVariables{"roundDCAVariables", false, "round topological variables"};
+  Configurable<float> precisionDCAs{"precisionDCAs", 0.01f, "precision to keep the DCAs with"};
+
+  // generate and fill extra QA histograms if requested
   Configurable<bool> d_doQA{"d_doQA", false, "Do basic QA"};
   Configurable<int> dQANBinsRadius{"dQANBinsRadius", 500, "Number of radius bins in QA histo"};
   Configurable<int> dQANBinsPtCoarse{"dQANBinsPtCoarse", 10, "Number of pT bins in QA histo"};
@@ -191,6 +202,7 @@ struct lambdakzeroBuilder {
                 kV0DCADau,
                 kV0CosPA,
                 kV0Radius,
+                kWithinMomentumRange,
                 kCountStandardV0,
                 kCountV0forCascade,
                 kNV0Steps };
@@ -233,6 +245,23 @@ struct lambdakzeroBuilder {
     return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
   }
 
+  float roundToPrecision(float number, float step = 0.01)
+  {
+    // this function rounds a certain number in an axis that is quantized by
+    // the variable 'step'; the rounded number is placed halfway between
+    // n*step and (n+1)*step such that analysis can be done with absolutely
+    // no issue with precision 'step'.
+    return step * static_cast<float>(static_cast<int>((number) / step)) + TMath::Sign(1.0f, number) * (0.5f) * step;
+  }
+
+  void roundV0CandidateVariables()
+  {
+    v0candidate.dcaV0dau = roundToPrecision(v0candidate.dcaV0dau, precisionDCAs);
+    v0candidate.posDCAxy = roundToPrecision(v0candidate.posDCAxy, precisionDCAs);
+    v0candidate.negDCAxy = roundToPrecision(v0candidate.negDCAxy, precisionDCAs);
+    v0candidate.dcav0topv = roundToPrecision(v0candidate.dcav0topv, precisionDCAs);
+  }
+
   void resetHistos()
   {
     statisticsRegistry.exceptions = 0;
@@ -273,8 +302,9 @@ struct lambdakzeroBuilder {
     h->GetXaxis()->SetBinLabel(4, "DCA V0 Dau");
     h->GetXaxis()->SetBinLabel(5, "CosPA");
     h->GetXaxis()->SetBinLabel(6, "Radius");
-    h->GetXaxis()->SetBinLabel(7, "Count: Standard V0");
-    h->GetXaxis()->SetBinLabel(8, "Count: V0 exc. for casc");
+    h->GetXaxis()->SetBinLabel(7, "Within momentum range");
+    h->GetXaxis()->SetBinLabel(8, "Count: Standard V0");
+    h->GetXaxis()->SetBinLabel(9, "Count: V0 exc. for casc");
 
     randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
@@ -646,6 +676,23 @@ struct lambdakzeroBuilder {
     statisticsRegistry.v0stats[kV0Radius]++;
     // Return OK: passed all v0 candidate selecton criteria
 
+    auto px = v0candidate.posP[0] + v0candidate.negP[0];
+    auto py = v0candidate.posP[1] + v0candidate.negP[1];
+    auto pz = v0candidate.posP[2] + v0candidate.negP[2];
+    auto lPt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
+
+    if (lPt < minimumPt || lPt > maximumPt) {
+      return false; // reject if not within desired window
+    }
+
+    if (TMath::Abs(RecoDecay::eta(std::array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]})) > maxDaughterEta ||
+        TMath::Abs(RecoDecay::eta(std::array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]})) > maxDaughterEta) {
+      return false; // reject - daughters have too large eta to be reliable for MC corrections
+    }
+
+    // Passes momentum window check
+    statisticsRegistry.v0stats[kWithinMomentumRange]++;
+
     if (d_doTrackQA) {
       if (posTrack.itsNCls() < 10)
         statisticsRegistry.posITSclu[posTrack.itsNCls()]++;
@@ -665,10 +712,6 @@ struct lambdakzeroBuilder {
       auto lHypertritonMass = RecoDecay::m(array{array{2.0f * v0candidate.posP[0], 2.0f * v0candidate.posP[1], 2.0f * v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPionCharged});
       auto lAntiHypertritonMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{2.0f * v0candidate.negP[0], 2.0f * v0candidate.negP[1], 2.0f * v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassHelium3});
 
-      auto px = v0candidate.posP[0] + v0candidate.negP[0];
-      auto py = v0candidate.posP[1] + v0candidate.negP[1];
-      auto pz = v0candidate.posP[2] + v0candidate.negP[2];
-      auto lPt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
       auto lPtHy = RecoDecay::sqrtSumOfSquares(2.0f * v0candidate.posP[0] + v0candidate.negP[0], 2.0f * v0candidate.posP[1] + v0candidate.negP[1]);
       auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + 2.0f * v0candidate.negP[0], v0candidate.posP[1] + 2.0f * v0candidate.negP[1]);
 
@@ -781,9 +824,12 @@ struct lambdakzeroBuilder {
         continue; // doesn't pass selections
       }
 
+      // round the DCA variables to a certain precision if asked
+      if (roundDCAVariables)
+        roundV0CandidateVariables();
+
       // V0 logic reminder
       // 0: v0 saved for the only due to the cascade, 1: standalone v0, 3: standard v0 with photon-only test
-
       if (V0.v0Type() > 0) {
         if (V0.v0Type() > 1 && !storePhotonCandidates)
           continue;
@@ -917,6 +963,9 @@ struct lambdakzeroPreselector {
   // context-aware selections
   Configurable<bool> dPreselectOnlyBaryons{"dPreselectOnlyBaryons", false, "apply TPC dE/dx and quality only to baryon daughters"};
 
+  // for debugging and further tests
+  Configurable<bool> forceITSOnlyMesons{"forceITSOnlyMesons", false, "force meson-like daughters to be ITS-only to pass Lambda/AntiLambda selections (yes/no)"};
+
   // for bit-packed maps
   std::vector<uint16_t> selectionMask;
   enum v0bit { bitInteresting = 0,
@@ -955,17 +1004,33 @@ struct lambdakzeroPreselector {
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
 
+    // crossed rows conditionals
+    bool posRowsOK = lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows;
+    bool negRowsOK = lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows;
+
+    // check track explicitly for absence of TPC
+    bool posITSonly = !lPosTrack.hasTPC();
+    bool negITSonly = !lNegTrack.hasTPC();
+
     // No baryons in decay
-    if (((bitcheck(maskElement, bitdEdxGamma) || bitcheck(maskElement, bitdEdxK0Short)) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows))
+    if (((bitcheck(maskElement, bitdEdxGamma) || bitcheck(maskElement, bitdEdxK0Short)) || passdEdx) && (posRowsOK && negRowsOK) && (!forceITSOnlyMesons || (posITSonly && negITSonly)))
       bitset(maskElement, bitTrackQuality);
     // With baryons in decay
-    if ((bitcheck(maskElement, bitdEdxLambda) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+    if ((bitcheck(maskElement, bitdEdxLambda) || passdEdx) &&
+        (posRowsOK && (negRowsOK || dPreselectOnlyBaryons)) &&
+        (!forceITSOnlyMesons || negITSonly))
       bitset(maskElement, bitTrackQuality);
-    if ((bitcheck(maskElement, bitdEdxAntiLambda) || passdEdx) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+    if ((bitcheck(maskElement, bitdEdxAntiLambda) || passdEdx) &&
+        (negRowsOK && (posRowsOK || dPreselectOnlyBaryons)) &&
+        (!forceITSOnlyMesons || posITSonly))
       bitset(maskElement, bitTrackQuality);
-    if ((bitcheck(maskElement, bitdEdxHypertriton) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+    if ((bitcheck(maskElement, bitdEdxHypertriton) || passdEdx) &&
+        (posRowsOK && (negRowsOK || dPreselectOnlyBaryons)) &&
+        (!forceITSOnlyMesons || negITSonly))
       bitset(maskElement, bitTrackQuality);
-    if ((bitcheck(maskElement, bitdEdxAntiHypertriton) || passdEdx) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+    if ((bitcheck(maskElement, bitdEdxAntiHypertriton) || passdEdx) &&
+        (negRowsOK && (posRowsOK || dPreselectOnlyBaryons)) &&
+        (!forceITSOnlyMesons || posITSonly))
       bitset(maskElement, bitTrackQuality);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*

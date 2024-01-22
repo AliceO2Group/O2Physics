@@ -94,8 +94,8 @@ struct FITInfo {
   int32_t distClosestBcV0A = 999;
 };
 
-template <typename TSelectorsArray>
-void applyFwdCuts(UPCCutparHolder& upcCuts, const ForwardTracks::iterator& track, TSelectorsArray& fwdSelectors)
+template <typename T, typename TSelectorsArray>
+void applyFwdCuts(UPCCutparHolder& upcCuts, const T& track, TSelectorsArray& fwdSelectors)
 {
   fwdSelectors[kFwdSelPt] = track.pt() > upcCuts.getFwdPtLow() && track.pt() < upcCuts.getFwdPtHigh();                                                     // check pt
   fwdSelectors[kFwdSelEta] = track.eta() > upcCuts.getFwdEtaLow() && track.eta() < upcCuts.getFwdEtaHigh();                                                // check pseudorapidity
@@ -104,8 +104,8 @@ void applyFwdCuts(UPCCutparHolder& upcCuts, const ForwardTracks::iterator& track
   fwdSelectors[kFwdSelChi2] = track.chi2() > upcCuts.getFwdChi2Low() && track.chi2() < upcCuts.getFwdChi2High();                                           // check chi2
 }
 
-template <typename TSelectorsArray>
-void applyBarrelCuts(UPCCutparHolder& upcCuts, const BarrelTracks::iterator& track, TSelectorsArray& barrelSelectors)
+template <typename T, typename TSelectorsArray>
+void applyBarrelCuts(UPCCutparHolder& upcCuts, const T& track, TSelectorsArray& barrelSelectors)
 {
   barrelSelectors[kAmbiguous] = true;
   if (upcCuts.getAmbigSwitch())

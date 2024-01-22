@@ -459,8 +459,8 @@ struct nuclei_in_jets {
     // Number of Stored Particles
     int nParticles = static_cast<int>(particle_ID.size());
 
-    // Event Counter: Skip Events with less than 2 Particles
-    if (nParticles < 2)
+    // Event Counter: Skip Events with 0 Particles
+    if (nParticles < 1)
       return;
     registryQC.fill(HIST("number_of_events_data"), 4.5);
 
@@ -549,11 +549,6 @@ struct nuclei_in_jets {
     // Multiplicity inside Jet + UE
     int nParticlesJetUE = static_cast<int>(jet_particle_ID.size());
 
-    // Event Counter: Skip Events with only 1 Particle inside jet cone
-    if (nParticlesJetUE < 2)
-      return;
-    registryQC.fill(HIST("number_of_events_data"), 6.5);
-
     // QA Plots
     registryQC.fill(HIST("eta_leading"), p_leading.Eta());
     registryQC.fill(HIST("phi_leading"), TVector2::Phi_0_2pi(p_leading.Phi()));
@@ -578,14 +573,14 @@ struct nuclei_in_jets {
     // Event Counter: Skip Events with Rmax=0
     if (Rmax == 0)
       return;
-    registryQC.fill(HIST("number_of_events_data"), 7.5);
+    registryQC.fill(HIST("number_of_events_data"), 6.5);
     registryQC.fill(HIST("r_max_jet"), Rmax);
 
     // Event Counter: Skip Events with jet not fully inside acceptance
     float eta_jet_axis = p_leading.Eta();
     if ((TMath::Abs(eta_jet_axis) + Rmax_jet_ue) > max_eta)
       return;
-    registryQC.fill(HIST("number_of_events_data"), 8.5);
+    registryQC.fill(HIST("number_of_events_data"), 7.5);
 
     // Fill Jet Multiplicity
     registryQC.fill(HIST("jet_plus_ue_multiplicity"), nParticlesJetAndUE);
@@ -681,7 +676,7 @@ struct nuclei_in_jets {
       if (particle_of_interest == nucleus::proton) {
         if (pt < 1.0)
           registryData.fill(HIST("antiproton_jet_tpc"), pt, nsigmaTPCPr, jet_Nch);
-        if (pt >= 1.0 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && jet_track.hasTOF())
+        if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && jet_track.hasTOF())
           registryData.fill(HIST("antiproton_jet_tof"), pt, nsigmaTOFPr, jet_Nch);
       }
 
@@ -689,7 +684,7 @@ struct nuclei_in_jets {
       if (particle_of_interest == nucleus::deuteron) {
         if (pt < 1.0)
           registryData.fill(HIST("antideuteron_jet_tpc"), pt, nsigmaTPCDe, jet_Nch);
-        if (pt >= 1.0 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && jet_track.hasTOF())
+        if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && jet_track.hasTOF())
           registryData.fill(HIST("antideuteron_jet_tof"), pt, nsigmaTOFDe, jet_Nch);
       }
 
@@ -733,7 +728,7 @@ struct nuclei_in_jets {
       if (particle_of_interest == nucleus::proton) {
         if (pt < 1.0)
           registryData.fill(HIST("antiproton_ue_tpc"), pt, nsigmaTPCPr, jet_Nch);
-        if (pt >= 1.0 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && ue_track.hasTOF())
+        if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && ue_track.hasTOF())
           registryData.fill(HIST("antiproton_ue_tof"), pt, nsigmaTOFPr, jet_Nch);
       }
 
@@ -741,7 +736,7 @@ struct nuclei_in_jets {
       if (particle_of_interest == nucleus::deuteron) {
         if (pt < 1.0)
           registryData.fill(HIST("antideuteron_ue_tpc"), pt, nsigmaTPCDe, jet_Nch);
-        if (pt >= 1.0 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && ue_track.hasTOF())
+        if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && ue_track.hasTOF())
           registryData.fill(HIST("antideuteron_ue_tof"), pt, nsigmaTOFDe, jet_Nch);
       }
 

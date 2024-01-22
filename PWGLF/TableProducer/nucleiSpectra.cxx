@@ -17,6 +17,7 @@
 // Data (run3):
 // o2-analysis-lf-nuclei-spectra, o2-analysis-timestamp
 // o2-analysis-pid-tof-base, o2-analysis-multiplicity-table, o2-analysis-event-selection
+// (to add flow: o2-analysis-qvector-table, o2-analysis-centrality-table)
 
 #include <cmath>
 
@@ -32,6 +33,8 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
+#include "Common/Core/EventPlaneHelper.h"
+#include "Common/DataModel/Qvectors.h"
 
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -72,6 +75,7 @@ struct NucleusCandidate {
   uint8_t TPCcrossedRows;
   uint8_t ITSclsMap;
   uint8_t TPCnCls;
+  int selCollIndex;
 };
 
 namespace nuclei
@@ -161,6 +165,7 @@ struct nucleiSpectra {
 
   Produces<o2::aod::NucleiTable> nucleiTable;
   Produces<o2::aod::NucleiTableMC> nucleiTableMC;
+  Produces<o2::aod::NucleiFlowColls> nucleiFlowTable;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   Configurable<std::string> cfgCentralityEstimator{"cfgCentralityEstimator", "V0A", "Centrality estimator name"};
@@ -213,6 +218,9 @@ struct nucleiSpectra {
   Filter trackFilter = nabs(aod::track::eta) < cfgCutEta && aod::track::tpcInnerParam > cfgCutTpcMom;
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime>>;
+
+  // Flow analysis
+  using CollWithQvec = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>::iterator;
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   o2::pid::tof::Beta<TrackCandidates::iterator> responseBeta;
@@ -308,10 +316,10 @@ struct nucleiSpectra {
     o2::base::Propagator::Instance(true)->setMatLUT(nuclei::lut);
   }
 
-  template <typename TC>
-  void fillDataInfo(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TC const& tracks)
+  template <typename Tcoll, typename Ttrks>
+  void fillDataInfo(Tcoll const& collision, Ttrks const& tracks)
   {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
     // collision process loop
@@ -422,8 +430,34 @@ struct nucleiSpectra {
         }
       }
       if (flag & (kProton | kDeuteron | kTriton | kHe3 | kHe4)) {
+        if constexpr (std::is_same<Tcoll, CollWithQvec>::value) {
+          if (nuclei::candidates.empty()) {
+            nucleiFlowTable(collision.centFV0A(),
+                            collision.centFT0M(),
+                            collision.centFT0A(),
+                            collision.centFT0C(),
+                            collision.qvecFV0ARe(),
+                            collision.qvecFV0AIm(),
+                            collision.sumAmplFV0A(),
+                            collision.qvecFT0MRe(),
+                            collision.qvecFT0MIm(),
+                            collision.sumAmplFT0M(),
+                            collision.qvecFT0ARe(),
+                            collision.qvecFT0AIm(),
+                            collision.sumAmplFT0A(),
+                            collision.qvecFT0CRe(),
+                            collision.qvecFT0CIm(),
+                            collision.sumAmplFT0C(),
+                            collision.qvecBPosRe(),
+                            collision.qvecBPosIm(),
+                            collision.nTrkBPos(),
+                            collision.qvecBNegRe(),
+                            collision.qvecBNegIm(),
+                            collision.nTrkBNeg());
+          }
+        }
         nuclei::candidates.emplace_back(NucleusCandidate{static_cast<int>(track.globalIndex()), (1 - 2 * iC) * trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), track.tpcInnerParam(), beta, collision.posZ(), dcaInfo[0], dcaInfo[1], track.tpcSignal(), track.itsChi2NCl(),
-                                                         track.tpcChi2NCl(), flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(), static_cast<uint8_t>(track.tpcNClsFound())});
+                                                         track.tpcChi2NCl(), flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(), static_cast<uint8_t>(track.tpcNClsFound()), static_cast<int>(nucleiFlowTable.lastIndex())});
       }
     } // end loop over tracks
 
@@ -436,10 +470,20 @@ struct nucleiSpectra {
     nuclei::candidates.clear();
     fillDataInfo(collision, tracks);
     for (auto& c : nuclei::candidates) {
-      nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls);
+      nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.selCollIndex);
     }
   }
   PROCESS_SWITCH(nucleiSpectra, processData, "Data analysis", true);
+
+  void processDataFlow(CollWithQvec const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
+  {
+    nuclei::candidates.clear();
+    fillDataInfo(collision, tracks);
+    for (auto& c : nuclei::candidates) {
+      nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.selCollIndex);
+    }
+  }
+  PROCESS_SWITCH(nucleiSpectra, processDataFlow, "Data analysis with flow", false);
 
   Preslice<TrackCandidates> tracksPerCollisions = aod::track::collisionId;
   void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>> const& collisions, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)

@@ -17,8 +17,8 @@
 #include "TDatabasePDG.h"
 
 /// FemtoDream includes
-#include "PWGCF/FemtoDream/FemtoDreamMath.h"
-#include "PWGCF/FemtoDream/FemtoUtils.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamMath.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
 
 using namespace o2;

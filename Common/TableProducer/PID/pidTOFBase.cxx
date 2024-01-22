@@ -29,6 +29,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "TableHelper.h"
 #include "pidTOFBase.h"
 
@@ -47,14 +48,36 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 #include "Framework/runDataProcessing.h"
 
+/// Selection criteria for tracks used for TOF event time
+float trackDistanceForGoodMatch = 999.f;
+float trackDistanceForGoodMatchLowMult = 999.f;
+int multiplicityThreshold = 0;
+using Run3Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
+using Run3Cols = o2::soa::Join<aod::Collisions, aod::PVMults>;
+bool isTrackGoodMatchForTOFPID(const Run3Trks::iterator& tr, const Run3Cols& ev)
+{
+  if (!tr.hasTOF()) {
+    return false;
+  }
+  if (tr.has_collision() && tr.collision_as<Run3Cols>().multNTracksPVeta1() < multiplicityThreshold) {
+    return tr.tofChi2() < trackDistanceForGoodMatchLowMult;
+  }
+  return tr.tofChi2() < trackDistanceForGoodMatch;
+}
+
 /// Task to produce the TOF signal from the trackTime information
 struct tofSignal {
   o2::framework::Produces<o2::aod::TOFSignal> table;
-  bool enableTable = false;
+  o2::framework::Produces<o2::aod::pidTOFFlags> tableFlags;
+  bool enableTable = false;      // Flag to check if the TOF signal table is requested or not
+  bool enableTableFlags = false; // Flag to check if the TOF signal flags table is requested or not
   // CCDB configuration
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
   Configurable<std::string> timeShiftCCDBPath{"timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"};
+  Configurable<float> distanceForGoodMatch{"distanceForGoodMatch", 999.f, "Maximum distance to consider a good match"};
+  Configurable<float> distanceForGoodMatchLowMult{"distanceForGoodMatchLowMult", 999.f, "Maximum distance to consider a good match for low multiplicity events"};
+  Configurable<int> multThreshold{"multThreshold", 0, "Multiplicity threshold to consider a low multiplicity event"};
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -70,16 +93,30 @@ struct tofSignal {
     if (enableTable) {
       LOG(info) << "Table TOFSignal enabled!";
     }
+    enableTableFlags = isTableRequiredInWorkflow(initContext, "pidTOFFlags");
+    if (enableTableFlags) {
+      LOG(info) << "Table pidTOFFlags enabled!";
+    }
+    trackDistanceForGoodMatch = distanceForGoodMatch;
+    trackDistanceForGoodMatchLowMult = distanceForGoodMatchLowMult;
+    multiplicityThreshold = multThreshold;
+    LOG(info) << "Configuring selections for good match: " << trackDistanceForGoodMatch << " low mult " << trackDistanceForGoodMatchLowMult << " mult. threshold " << multiplicityThreshold;
   }
-  using Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
-  void processRun3(Trks const& tracks)
+  void processRun3(Run3Trks const& tracks, Run3Cols const& collisions)
   {
     if (!enableTable) {
       return;
     }
     table.reserve(tracks.size());
+    if (enableTableFlags) {
+      tableFlags.reserve(tracks.size());
+    }
     for (auto& t : tracks) {
-      table(o2::pid::tof::TOFSignal<Trks::iterator>::GetTOFSignal(t));
+      table(o2::pid::tof::TOFSignal<Run3Trks::iterator>::GetTOFSignal(t));
+      if (!enableTableFlags) {
+        continue;
+      }
+      tableFlags(isTrackGoodMatchForTOFPID(t, collisions));
     }
   }
   PROCESS_SWITCH(tofSignal, processRun3, "Process Run3 data i.e. input is TrackIU", true);
@@ -91,8 +128,15 @@ struct tofSignal {
       return;
     }
     table.reserve(tracks.size());
+    if (enableTableFlags) {
+      tableFlags.reserve(tracks.size());
+    }
     for (auto& t : tracks) {
       table(o2::pid::tof::TOFSignal<TrksRun2::iterator>::GetTOFSignal(t));
+      if (!enableTableFlags) {
+        continue;
+      }
+      tableFlags(true);
     }
   }
   PROCESS_SWITCH(tofSignal, processRun2, "Process Run2 data i.e. input is Tracks", false);
