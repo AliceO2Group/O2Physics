@@ -130,9 +130,9 @@ struct TrackPropagation {
   o2::track::TrackParametrization<float> mTrackPar;
   o2::track::TrackParametrizationWithError<float> mTrackParCov;
 
-  template <bool IS_MC, bool fillCovMat = false, bool useTrkPid = false, typename TTrack, typename particle>
+  template <typename TTrack, typename Particle, bool isMc, bool fillCovMat = false, bool useTrkPid = false>
   void fillTrackTables(TTrack const& tracks,
-                       particle const& mcParticles,
+                       Particle const& mcParticles,
                        aod::Collisions const&,
                        aod::BCsWithTimestamps const& bcs)
   {
@@ -178,7 +178,7 @@ struct TrackPropagation {
       aod::track::TrackTypeEnum trackType = (aod::track::TrackTypeEnum)track.trackType();
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
       if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
-        if constexpr (IS_MC && fillCovMat) { /// track tuner ok only if cov. matrix is used
+        if constexpr (isMc && fillCovMat) { /// track tuner ok only if cov. matrix is used
           if (useTrackTuner) {
             // call track propagator
             // this function reads many many things
@@ -242,33 +242,33 @@ struct TrackPropagation {
 
   void processStandard(aod::StoredTracksIU const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   {
-    fillTrackTables</*IS_MC = */ false, /*fillCovMat =*/false, /*useTrkPid =*/false>(tracks, tracks, collisions, bcs);
+    fillTrackTables</*TTrack*/ aod::StoredTracksIU, /*Particle*/ aod::StoredTracksIU, /*isMc = */ false, /*fillCovMat =*/false, /*useTrkPid =*/false>(tracks, tracks, collisions, bcs);
   }
   PROCESS_SWITCH(TrackPropagation, processStandard, "Process without covariance", true);
 
   void processStandardWithPID(soa::Join<aod::StoredTracksIU, aod::TracksExtra> const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   {
-    fillTrackTables</*IS_MC = */ false, /*fillCovMat =*/false, /*useTrkPid =*/true>(tracks, tracks, collisions, bcs);
+    fillTrackTables</*TTrack*/ soa::Join<aod::StoredTracksIU, aod::TracksExtra>, /*Particle*/ soa::Join<aod::StoredTracksIU, aod::TracksExtra>, /*isMc = */ false, /*fillCovMat =*/false, /*useTrkPid =*/true>(tracks, tracks, collisions, bcs);
   }
   PROCESS_SWITCH(TrackPropagation, processStandardWithPID, "Process without covariance and with PID in tracking", false);
 
   // -----------------------
   void processCovarianceMc(tracksIUWithMc const& tracks, aod::McParticles const& mcParticles, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   {
-    fillTrackTables</*IS_MC = */ true, /*fillCovMat =*/true, /*useTrkPid =*/false, tracksIUWithMc, aod::McParticles>(tracks, mcParticles, collisions, bcs);
+    fillTrackTables</*TTrack*/ tracksIUWithMc, /*Particle*/ aod::McParticles, /*isMc = */ true, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, mcParticles, collisions, bcs);
   }
   PROCESS_SWITCH(TrackPropagation, processCovarianceMc, "Process with covariance on MC", false);
 
   void processCovarianceData(tracksIU const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   {
-    fillTrackTables</*IS_MC = */ false, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, tracks, collisions, bcs);
+    fillTrackTables</*TTrack*/ tracksIU, /*Particle*/ tracksIU, /*isMc = */ false, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, tracks, collisions, bcs);
   }
   PROCESS_SWITCH(TrackPropagation, processCovarianceData, "Process with covariance on Data", false);
   // ------------------------
 
   void processCovarianceWithPID(soa::Join<aod::StoredTracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   {
-    fillTrackTables</*IS_MC = */ false, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, tracks, collisions, bcs);
+    fillTrackTables</*TTrack*/ soa::Join<aod::StoredTracksIU, aod::TracksCovIU, aod::TracksExtra>, /*Particle*/ soa::Join<aod::StoredTracksIU, aod::TracksCovIU, aod::TracksExtra>, /*isMc = */ false, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, tracks, collisions, bcs);
   }
   PROCESS_SWITCH(TrackPropagation, processCovarianceWithPID, "Process with covariance and with PID in tracking", false);
 };
