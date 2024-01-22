@@ -128,8 +128,15 @@ struct tofSignal {
       return;
     }
     table.reserve(tracks.size());
+    if (enableTableFlags) {
+      tableFlags.reserve(tracks.size());
+    }
     for (auto& t : tracks) {
       table(o2::pid::tof::TOFSignal<TrksRun2::iterator>::GetTOFSignal(t));
+      if (!enableTableFlags) {
+        continue;
+      }
+      tableFlags(true);
     }
   }
   PROCESS_SWITCH(tofSignal, processRun2, "Process Run2 data i.e. input is Tracks", false);
