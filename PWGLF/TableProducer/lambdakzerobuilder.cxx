@@ -413,10 +413,10 @@ struct lambdakzeroBuilder {
         for (auto const& input : device.inputs) {
           if (device.name.compare("lambdakzero-initializer") == 0)
             continue; // don't listen to the initializer, it's just to extend stuff
-          const std::string v0IndicesName = "V0Indices";
-          const std::string v0fCIndicesName = "V0fCIndices";
-          if ((input.matcher.binding == v0IndicesName || input.matcher.binding == v0fCIndicesName) && device.name.compare("multistrange-builder") != 0) {
-            LOGF(info, "Device named %s has subscribed to a V0Indices table! Will now scan for desired settings...", device.name);
+          const std::string v0CoresName = "V0Cores";
+          const std::string v0fCCoressName = "V0fCCores";
+          if ((input.matcher.binding == v0CoresName || input.matcher.binding == v0fCCoressName) && device.name.compare("multistrange-builder") != 0) {
+            LOGF(info, "Device named %s has subscribed to a V0Cores table! Will now scan for desired settings...", device.name);
             for (auto const& option : device.options) {
               // 5 V0 topological selections
               if (option.name.compare("v0setting_cospa") == 0) {
