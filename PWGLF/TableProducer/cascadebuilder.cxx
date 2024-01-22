@@ -513,10 +513,11 @@ struct cascadeBuilder {
         for (auto const& input : device.inputs) {
           if (device.name.compare("cascade-initializer") == 0)
             continue; // don't listen to the initializer, it's just to extend stuff
-          const std::string CascDataName = "StoredCascDatas";
-          const std::string CascDataExtName = "CascDatasExtension";
-          if (input.matcher.binding == CascDataName || input.matcher.binding == CascDataExtName) {
-            LOGF(info, "Device named %s has subscribed to CascData table! Will now scan for desired settings...", device.name);
+          const std::string CascIndicesName = "CascIndices";
+          const std::string KFCascIndicesName = "KFCascIndices";
+          const std::string TraCascIndicesName = "TraCascIndices";
+          if (input.matcher.binding == CascIndicesName || input.matcher.binding == KFCascIndicesName || input.matcher.binding == TraCascIndicesName) {
+            LOGF(info, "Device named %s has subscribed to a CascIndices table! Will now scan for desired settings...", device.name);
             for (auto const& option : device.options) {
               // 5 V0 topological selections + 1 mass
               if (option.name.compare("cascadesetting_cospa") == 0) {
