@@ -502,13 +502,13 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     const int nm_hbt = 6;
     double m_hbt[nm_hbt] = {0.0, 0.14, 0.5, 1.1, 2.0, 2.7};
 
-    const int ndim = 9; // m1, m2, kt, qinv, qlong_cms, qout_cms, qside_cms, qt_cms, qlong_lcms
-    const int nbins[ndim] = {nm_hbt - 1, nm_hbt - 1, 10, 40, 80, 80, 80, 40, 80};
-    const double xmin[ndim] = {0.0, 0.0, 0.0, 0.0, -0.4, -0.4, -0.4, 0.0, -0.4};
-    const double xmax[ndim] = {2.7, 2.7, 1.0, 0.4, +0.4, +0.4, +0.4, +0.4, +0.4};
+    const int ndim = 8; // m1, m2, kt, qinv, qlong_cms, qout_cms, qside_cms, qlong_lcms
+    const int nbins[ndim] = {nm_hbt - 1, nm_hbt - 1, 10, 40, 80, 80, 80, 80};
+    const double xmin[ndim] = {0.0, 0.0, 0.0, 0.0, -0.4, -0.4, -0.4, -0.4};
+    const double xmax[ndim] = {2.7, 2.7, 1.0, 0.4, +0.4, +0.4, +0.4, +0.4};
 
-    THnSparseF* hs_q_same = new THnSparseF("hs_q_same", "hs_q_same;m_{1} (GeV/c^{2});m_{2} (GeV/c^{2});k_{T} (GeV/c);q_{inv} (GeV/c);q_{long}^{CMS} (GeV/c);q_{out}^{CMS} (GeV/c);q_{side}^{CMS} (GeV/c);q_{T}^{CMS} (GeV/c);q_{long}^{LCMS} (GeV/c);", ndim, nbins, xmin, xmax);
-    THnSparseF* hs_q_mix = new THnSparseF("hs_q_mix", "hs_q_mix;m_{1} (GeV/c^{2});m_{2} (GeV/c^{2});k_{T} (GeV/c);q_{inv} (GeV/c);q_{long}^{CMS} (GeV/c);q_{out}^{CMS} (GeV/c);q_{side}^{CMS} (GeV/c);q_{T}^{CMS} (GeV/c);q_{long}^{LCMS} (GeV/c);", ndim, nbins, xmin, xmax);
+    THnSparseF* hs_q_same = new THnSparseF("hs_q_same", "hs_q_same;m_{1} (GeV/c^{2});m_{2} (GeV/c^{2});k_{T} (GeV/c);q_{inv} (GeV/c);q_{long}^{CMS} (GeV/c);q_{out}^{CMS} (GeV/c);q_{side}^{CMS} (GeV/c);q_{long}^{LCMS} (GeV/c);", ndim, nbins, xmin, xmax);
+    THnSparseF* hs_q_mix = new THnSparseF("hs_q_mix", "hs_q_mix;m_{1} (GeV/c^{2});m_{2} (GeV/c^{2});k_{T} (GeV/c);q_{inv} (GeV/c);q_{long}^{CMS} (GeV/c);q_{out}^{CMS} (GeV/c);q_{side}^{CMS} (GeV/c);q_{long}^{LCMS} (GeV/c);", ndim, nbins, xmin, xmax);
     hs_q_same->Sumw2();
     hs_q_mix->Sumw2();
     hs_q_same->SetBinEdges(0, m_hbt);

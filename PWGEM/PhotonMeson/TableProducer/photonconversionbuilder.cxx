@@ -90,8 +90,11 @@ struct PhotonConversionBuilder {
   Configurable<float> maxX{"maxX", 83.1, "max X for track IU"};
 
   // v0 cuts
-  Configurable<float> min_v0cospa{"min_v0cospa", 0.95, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<float> max_dcav0dau{"max_dcav0dau", 3.0, "max distance btween 2 legs"};
+  Configurable<float> min_v0cospa_tpconly{"min_v0cospa_tpconly", 0.95, "min V0 CosPA to V0s with TPConly tracks"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> min_v0cospa_its{"min_v0cospa_its", 0.99, "min V0 CosPA to V0s with ITs hits"};               // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> max_dcav0dau_tpconly{"max_dcav0dau_tpconly", 3.0, "max distance btween 2 legs to V0s with TPConly tracks"};
+  Configurable<float> max_dcav0dau_its{"max_dcav0dau_its", 0.5, "max distance btween 2 legs to V0s with ITS hits"};
+  Configurable<float> max_dcav0dau_itsibss{"max_dcav0dau_itsibss", 1.0, "max distance btween 2 legs to V0s with ITS hits on ITSib SS"};
   Configurable<float> min_v0radius{"min_v0radius", 1.0, "min v0 radius"};
   Configurable<float> margin_r_its{"margin_r_its", 3.0, "margin for r cut in cm"};
   Configurable<float> margin_r_tpconly{"margin_r_tpconly", 7.0, "margin for r cut in cm"};
@@ -103,7 +106,7 @@ struct PhotonConversionBuilder {
   Configurable<float> max_eta_v0{"max_eta_v0", 0.9, "max eta for v0 photons at SV"};
   Configurable<float> kfMassConstrain{"kfMassConstrain", -1.f, "mass constrain for the KFParticle mother particle"};
   Configurable<float> max_r_req_its{"max_r_req_its", 16.0, "max Rxy for V0 with ITS hits"};
-  Configurable<float> min_r_tpconly{"min_r_tpconly", 32.0, "min Rxy for V0 with TPConly tracks"};
+  Configurable<float> min_r_tpconly{"min_r_tpconly", 36.0, "min Rxy for V0 with TPConly tracks"};
   Configurable<float> max_dcatopv_xy_v0{"max_dcatopv_xy_v0", +1e+10, "max. DCAxy to PV for V0"};
   Configurable<float> max_dcatopv_z_v0{"max_dcatopv_z_v0", +1e+10, "max. DCAz to PV for V0"};
 
@@ -357,8 +360,14 @@ struct PhotonConversionBuilder {
     gammaKF_DecayVtx.TransportToPoint(xyz);
 
     float cospa_kf = cpaFromKF(gammaKF_DecayVtx, KFPV);
-    if (cospa_kf < min_v0cospa) {
-      return;
+    if (!ele.hasITS() && !pos.hasITS()) {
+      if (cospa_kf < min_v0cospa_tpconly) {
+        return;
+      }
+    } else {
+      if (cospa_kf < min_v0cospa_its) {
+        return;
+      }
     }
 
     float rxy = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY());
@@ -424,8 +433,20 @@ struct PhotonConversionBuilder {
     kfp_ele_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
 
     float pca_kf = kfp_pos_DecayVtx.GetDistanceFromParticle(kfp_ele_DecayVtx);
-    if (pca_kf > max_dcav0dau) {
-      return;
+    if (!ele.hasITS() && !pos.hasITS()) {
+      if (pca_kf > max_dcav0dau_tpconly) {
+        return;
+      }
+    } else {
+      if (rxy < max_r_req_its) {
+        if (pca_kf > max_dcav0dau_itsibss) {
+          return;
+        }
+      } else if (rxy < min_r_tpconly) {
+        if (pca_kf > max_dcav0dau_its) {
+          return;
+        }
+      }
     }
 
     float pos_pt = RecoDecay::sqrtSumOfSquares(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy());
