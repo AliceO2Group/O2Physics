@@ -334,7 +334,7 @@ struct TrackTuner {
   void tuneTrackParams(T1 const& mcparticle, T2& trackParCov, T3 const& matCorr, T4 dcaInfoCov)
   {
 
-    double ptMC = TMath::Abs(mcparticle.pt());
+    double ptMC = mcparticle.pt();
 
     double dcaXYResCurrent = 0.0; // sd0rpo=0.;
     double dcaZResCurrent = 0.0;  // sd0zo =0.;
@@ -470,8 +470,8 @@ struct TrackTuner {
     // double dd0rpn=dd0rpo*(sd0rpo>0. ? (sd0rpn/sd0rpo) : 1.);
     double diffDcaXYFromMCUpgr = diffDcaXYFromMCCurent * (dcaXYResCurrent > 0. ? (dcaXYResUpgr / dcaXYResCurrent) : 1.);
 
-    // double dd0mrpn=TMath::Abs(sd0mrpn)-TMath::Abs(sd0mrpo);
-    // double diffDcaXYMeanUpgMinusCur = TMath::Abs(dcaXYMeanUpgr) - TMath::Abs(dcaXYMeanCurrent) ;
+    // double dd0mrpn=std::abs(sd0mrpn)-std::abs(sd0mrpo);
+    // double diffDcaXYMeanUpgMinusCur = std::abs(dcaXYMeanUpgr) - std::abs(dcaXYMeanCurrent) ;
     double diffDcaXYMeanUpgMinusCur = dcaXYMeanUpgr - dcaXYMeanCurrent;
 
     // double d0rpn =d0rpmc+dd0rpn-dd0mrpn;
