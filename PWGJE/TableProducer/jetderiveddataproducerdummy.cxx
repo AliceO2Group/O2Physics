@@ -25,9 +25,14 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetDerivedDataProducerDummyTask {
-  Produces<aod::HfD0Bases> D0Table;
-  Produces<aod::HfD0Mcs> D0McTable;
-  Produces<aod::HfD0PBases> D0ParticleTable;
+
+  Produces<aod::HfD0CollBases> d0CollisionsTable;
+  Produces<aod::HfD0Bases> d0sTable;
+  Produces<aod::HfD0Pars> d0ParsTable;
+  Produces<aod::HfD0ParEs> d0ParExtrasTable;
+  Produces<aod::HfD0Sels> d0SelsTable;
+  Produces<aod::HfD0Mcs> d0McsTable;
+  Produces<aod::HfD0PBases> d0ParticlesTable;
 
   void init(InitContext const&)
   {
