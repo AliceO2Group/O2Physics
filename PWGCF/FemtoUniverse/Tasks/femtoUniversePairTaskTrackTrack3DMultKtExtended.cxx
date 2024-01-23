@@ -15,6 +15,7 @@
 /// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@pw.edu.pl
 
 #include <vector>
+#include "TRandom2.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -470,6 +471,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
       }
     } else {
       /// Now build the combinations for identical particles pairs
+      TRandom2 *randgen = new TRandom2(1);
+      double rand;
+      
       for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsOne))) {
 
         if (!IsParticleNSigma((int8_t)2, p1.pt(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p1, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p1, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p1, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon))) {
@@ -495,8 +499,13 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
           case 2: {
             float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass1);
             float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass1);
-
-            sameEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+            rand = randgen->Rndm();
+            if (rand > 0.5) {
+              sameEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+            }
+            else {
+              sameEventContPP.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+            }
             if (cfgProcessMultBins)
               sameEventMultContPP.fill<float>(kstar, multCol, kT);
             break;
@@ -505,8 +514,13 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
           case 3: {
             float kstar = FemtoUniverseMath::getkstar(p1, mass2, p2, mass2);
             float kT = FemtoUniverseMath::getkT(p1, mass2, p2, mass2);
-
-            sameEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+            rand = randgen->Rndm();
+            if (rand > 0.5) {
+              sameEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+            }
+            else {
+              sameEventContMM.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+            }
             if (cfgProcessMultBins)
               sameEventMultContMM.fill<float>(kstar, multCol, kT);
             break;
