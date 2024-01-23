@@ -34,7 +34,7 @@ using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 struct perfK0sResolution {
   ConfigurableAxis mBins{"mBins", {200, 0.4f, 0.6f}, "Mass binning"};
   ConfigurableAxis pTBins{"pTBins", {200, 0.f, 10.f}, "pT binning"};
-  ConfigurableAxis pTResBins{"pTResBins", {200, -0.8f, 0.8f}, "pT resolution binning"};
+  ConfigurableAxis pTResBins{"pTResBins", {200, -1.2f, 1.2f}, "pT resolution binning"};
   ConfigurableAxis etaBins{"etaBins", {2, -1.f, 1.f}, "eta binning"};
   ConfigurableAxis etaBinsDauthers{"etaBinsDauthers", {2, -1.f, 1.f}, "eta binning"};
   ConfigurableAxis phiBins{"phiBins", {4, 0.f, 6.28f}, "phi binning"};
