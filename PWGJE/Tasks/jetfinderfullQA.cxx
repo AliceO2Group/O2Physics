@@ -258,41 +258,6 @@ struct JetFinderFullQATask {
   }
 
   template <typename T>
-  void fillRhoAreaSubtractedHistograms(T const& jet, float rho, float weight = 1.0)
-  {
-    if (jet.r() == round(selectedJetsRadius * 100.0f)) {
-      registry.fill(HIST("h_jet_pt_rhoareasubtracted"), jet.pt() - (rho * jet.area()), weight);
-      registry.fill(HIST("h_jet_eta_rhoareasubtracted"), jet.eta(), weight);
-      registry.fill(HIST("h_jet_phi_rhoareasubtracted"), jet.phi(), weight);
-      registry.fill(HIST("h_jet_ntracks_rhoareasubtracted"), jet.tracks().size(), weight);
-      registry.fill(HIST("h_jet_nclusters_rhoareasubtracted"), jet.clusters().size(), weight);
-    }
-
-    registry.fill(HIST("h3_jet_r_jet_pt_jet_eta_rhoareasubtracted"), jet.r() / 100.0, jet.pt() - (rho * jet.area()), jet.eta(), weight);
-    registry.fill(HIST("h3_jet_r_jet_pt_jet_phi_rhoareasubtracted"), jet.r() / 100.0, jet.pt() - (rho * jet.area()), jet.phi(), weight);
-    registry.fill(HIST("h3_jet_r_jet_eta_jet_phi_rhoareasubtracted"), jet.r() / 100.0, jet.eta(), jet.phi(), weight);
-    registry.fill(HIST("h3_jet_r_jet_pt_jet_ntracks_rhoareasubtracted"), jet.r() / 100.0, jet.pt() - (rho * jet.area()), jet.tracks().size(), weight);
-    registry.fill(HIST("h3_jet_r_jet_pt_jet_nclusters_rhoareasubtracted"), jet.r() / 100.0, jet.pt() - (rho * jet.area()), jet.clusters().size(), weight);
-    registry.fill(HIST("h3_jet_r_jet_pt_jet_area_rhoareasubtracted"), jet.r() / 100.0, jet.pt() - (rho * jet.area()), jet.area(), weight);
-    registry.fill(HIST("h3_jet_r_jet_pt_jet_pt_rhoareasubtracted"), jet.r() / 100.0, jet.pt(), jet.pt() - (rho * jet.area()), weight);
-
-    for (auto& constituent : jet.template tracks_as<JetTracks>()) {
-
-      registry.fill(HIST("h3_jet_r_jet_pt_track_pt_rhoareasubtracted"), jet.r() / 100.0, jet.pt() - (rho * jet.area()), constituent.pt(), weight);
-      registry.fill(HIST("h3_jet_r_jet_pt_track_eta_rhoareasubtracted"), jet.r() / 100.0, jet.pt() - (rho * jet.area()), constituent.eta(), weight);
-      registry.fill(HIST("h3_jet_r_jet_pt_track_phi_rhoareasubtracted"), jet.r() / 100.0, jet.pt() - (rho * jet.area()), constituent.phi(), weight);
-    }
-
-    for (auto& cluster : jet.template clusters_as<JetClusters>()) {
-      double clusterpt = cluster.energy() / std::cosh(cluster.eta());
-      registry.fill(HIST("h3_jet_r_jet_pt_cluster_pt_rhoareasubtracted"), jet.r() / 100.0, jet.pt() - (rho * jet.area()), clusterpt, weight);
-      registry.fill(HIST("h3_jet_r_jet_pt_cluster_eta_rhoareasubtracted"), jet.r() / 100.0, jet.pt() - (rho * jet.area()), cluster.eta(), weight);
-      registry.fill(HIST("h3_jet_r_jet_pt_cluster_phi_rhoareasubtracted"), jet.r() / 100.0, jet.pt() - (rho * jet.area()), cluster.phi(), weight);
-      registry.fill(HIST("h3_jet_r_jet_pt_cluster_energy_rhoareasubtracted"), jet.r() / 100.0, jet.pt() - (rho * jet.area()), cluster.energy(), weight);
-    }
-  }
-
-  template <typename T>
   void fillMCPHistograms(T const& jet, float weight = 1.0)
   {
 
