@@ -9,72 +9,72 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(v0cascades-qa
-    SOURCES v0cascadesqa.cxx
+o2physics_add_dpl_workflow(rsnanalysis
+    SOURCES rsnanalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(track-checks
-    SOURCES trackchecks.cxx
+o2physics_add_dpl_workflow(phianalysis
+    SOURCES phianalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(resonanceqa
-    SOURCES resonanceqa.cxx
+o2physics_add_dpl_workflow(k892analysis
+    SOURCES k892analysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(pid-qa
-    SOURCES lfpidqa.cxx
+o2physics_add_dpl_workflow(k892pmanalysis
+    SOURCES k892pmanalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(strarecostudy
-    SOURCES straRecoStudy.cxx
-    PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(kfperformancestudy
-    SOURCES kfPerformanceStudy.cxx
-    PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(lfpropstudy
-    SOURCES lfpropStudy.cxx
+o2physics_add_dpl_workflow(lambda1520analysis
+    SOURCES lambda1520analysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(tpc-dedx-postcalibration
-    SOURCES tpc_dEdx_postcalibration.cxx
+o2physics_add_dpl_workflow(k1analysis
+    SOURCES k1analysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(tpc-dedx-qa
-    SOURCES tpc_dedx_qa.cxx
+o2physics_add_dpl_workflow(phianalysisrun3
+    SOURCES phianalysisrun3.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(vertexqa
-    SOURCES vertexQA.cxx
+o2physics_add_dpl_workflow(f0980analysis
+    SOURCES f0980analysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(efficiencyqa
-    SOURCES efficiencyQA.cxx
+o2physics_add_dpl_workflow(lambda1520spherocityanalysis
+    SOURCES lambda1520SpherocityAnalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(strangenessqcpp
-    SOURCES strangenessQCPP.cxx
+o2physics_add_dpl_workflow(delta-analysis
+    SOURCES deltaanalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(strangepidqa
-    SOURCES strangepidqa.cxx
+o2physics_add_dpl_workflow(rhoanalysis
+    SOURCES rhoanalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(stqa
-    SOURCES stqa.cxx
-    PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore
+o2physics_add_dpl_workflow(phi-analysis-thnsparse
+    SOURCES phianalysisTHnSparse.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(f1protoncorrelation
+    SOURCES f1protoncorrelation.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(chargedkstaranalysis
+    SOURCES chargedkstaranalysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
