@@ -15,8 +15,14 @@
 /// \author Himanshu Sharma (himanshu.sharma@cern.ch), INFN Padova, Italy
 /// \author Mattia Faggin (mattia.faggin@cern.ch), CERN
 
-#ifndef TRACKTUNER_H
-#define TRACKTUNER_H
+#ifndef COMMON_TOOLS_TRACKTUNER_H_
+#define COMMON_TOOLS_TRACKTUNER_H_
+
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
@@ -38,11 +44,6 @@
 
 #include <TGraphErrors.h>
 
-#include <map>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
 
 struct TrackTuner {
 
@@ -683,4 +684,4 @@ struct TrackTuner {
   }
 };
 
-#endif // TRACKTUNER_H
+#endif // COMMON_TOOLS_TRACKTUNER_H_
