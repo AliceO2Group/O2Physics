@@ -471,7 +471,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
       }
     } else {
       /// Now build the combinations for identical particles pairs
-      TRandom2 *randgen = new TRandom2(1);
+      TRandom2* randgen = new TRandom2(1);
       double rand;
       for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsOne))) {
 
@@ -501,8 +501,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
             rand = randgen->Rndm();
             if (rand > 0.5) {
               sameEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
-            }
-            else {
+            } else {
               sameEventContPP.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
             }
             if (cfgProcessMultBins)
@@ -513,11 +512,11 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
           case 3: {
             float kstar = FemtoUniverseMath::getkstar(p1, mass2, p2, mass2);
             float kT = FemtoUniverseMath::getkT(p1, mass2, p2, mass2);
+
             rand = randgen->Rndm();
             if (rand > 0.5) {
               sameEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
-            }
-            else {
+            } else {
               sameEventContMM.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
             }
             if (cfgProcessMultBins)
@@ -541,6 +540,11 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
 
     auto thegroupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+
+    /*if(rand > 0.5) {
+      auto thegroupPartsTwo = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+      auto thegroupPartsOne = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    }*/
 
     bool fillQA = true;
 
