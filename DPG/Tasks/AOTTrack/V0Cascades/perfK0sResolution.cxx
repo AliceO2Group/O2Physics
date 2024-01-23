@@ -68,7 +68,7 @@ struct perfK0sResolution {
     rK0sResolution.add("h2_massphi", "h2_massphi", {HistType::kTH2F, {mAxis, phiAxis}});
     if (useMultidimHisto) {
       rK0sResolution.add("thn_mass", "thn_mass", kTHnSparseF, {mAxis, pTAxis, etaAxis, phiAxis, etaAxisPosD, etaAxisNegD});
-    } 
+    }
   }
 
   // Selection criteria
@@ -187,10 +187,10 @@ struct perfK0sResolution {
   }
 
   // Filters on V0s
-  Filter v0Filter = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv && 
-                    nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
-                    aod::v0data::dcaV0daughters < v0setting_dcav0dau &&
-                    aod::v0data::v0cosPA > v0setting_cospa);
+  Filter v0Filter = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv &&
+                     nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
+                     aod::v0data::dcaV0daughters < v0setting_dcav0dau &&
+                     aod::v0data::v0cosPA > v0setting_cospa);
 
   // Event selection
   Filter eventFilter = (eventSelection && o2::aod::evsel::sel8 == true);
@@ -244,7 +244,7 @@ struct perfK0sResolution {
   PROCESS_SWITCH(perfK0sResolution, processMC, "Process MC", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) 
-{ 
-  return WorkflowSpec{adaptAnalysisTask<perfK0sResolution>(cfgc)}; 
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{adaptAnalysisTask<perfK0sResolution>(cfgc)};
 }
