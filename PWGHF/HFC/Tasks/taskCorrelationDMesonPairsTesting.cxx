@@ -13,7 +13,6 @@
 /// \brief D-Dbar analysis task - data-like, MC-reco and MC-kine analyses for D0 and DPlus pairs.
 /// \note Temporary code for tests of D0-D0 correlations
 ///
-/// \author Fabio Colamaria <fabio.colamaria@ba.infn.it>, INFN Bari
 /// \author Andrea Tavira García <tavira-garcia@ijclab.in2p3.fr>, IJCLab Orsay
 
 #include "Framework/AnalysisTask.h"
@@ -40,11 +39,8 @@ enum PairTypeSel {
 } // namespace
 
 // string definitions, used for histogram axis labels
-const TString stringPtD = "#it{p}_{T}^{D_{1}} (GeV/#it{c});";
-const TString stringPtDbar = "#it{p}_{T}^{D_{2}} (GeV/#it{c});";
-const TString stringDDbar = "D meson pair candidates ";
-const TString stringMassD = "inv. mass D_{1} (GeV/#it{c}^{2});";
-const TString stringMassDbar = "inv. mass D_{2} (GeV/#it{c}^{2});";
+const std::string stringCorrelationPairs = "D meson pair candidates 2D;inv. mass D_{1} (GeV/#it{c}^{2});inv. mass D_{2} (GeV/#it{c}^{2});#it{p}_{T}^{D_{1}} (GeV/#it{c});#it{p}_{T}^{D_{2}} (GeV/#it{c});#eta D_{1};#eta D_{2};";
+const std::string stringCorrelationPairsFinerBinning = "D meson pair candidates 2D Finer Binning;inv. mass D_{1} (GeV/#it{c}^{2});inv. mass D_{2} (GeV/#it{c}^{2});#it{p}_{T}^{D_{1}} (GeV/#it{c});#it{p}_{T}^{D_{2}} (GeV/#it{c});#eta D_{1};#eta D_{2};";
 
 // definition of vectors for standard ptbin and invariant mass configurables
 const int nPtBinsCorrelations = 8;
@@ -62,10 +58,10 @@ struct HfTaskCorrelationDMesonPairsTesting {
 
   HistogramRegistry registry{
     "registry",
-    {{"hMass2DCorrelationPairsLS", stringDDbar + "2D;inv. mass D (GeV/#it{c}^{2});inv. mass Dbar (GeV/#it{c}^{2});" + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsOS", stringDDbar + "2D;inv. mass D (GeV/#it{c}^{2});inv. mass Dbar (GeV/#it{c}^{2});" + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsLSMcGen", stringDDbar + "2D;inv. mass D (GeV/#it{c}^{2});inv. mass Dbar (GeV/#it{c}^{2});" + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsOSMcGen", stringDDbar + "2D;inv. mass D (GeV/#it{c}^{2});inv. mass Dbar (GeV/#it{c}^{2});" + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairs}}};
+    {{"hMass2DCorrelationPairsLS", stringCorrelationPairs.data(), hTHnMass2DCorrPairs},
+     {"hMass2DCorrelationPairsOS", stringCorrelationPairs.data(), hTHnMass2DCorrPairs},
+     {"hMass2DCorrelationPairsLSMcGen", stringCorrelationPairs.data(), hTHnMass2DCorrPairs},
+     {"hMass2DCorrelationPairsOSMcGen", stringCorrelationPairs.data(), hTHnMass2DCorrPairs}}};
 
   void init(InitContext&)
   {
@@ -74,14 +70,14 @@ struct HfTaskCorrelationDMesonPairsTesting {
     const double* valuespTaxis = binsPtCorrelations->data();
 
     if (enableFinerBinning) {
-      registry.add("hMass2DCorrelationPairsLSFinerBinning", stringDDbar + "2D Finer Binning;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsLSFinerBinning", stringCorrelationPairsFinerBinning.data(), hTHnMass2DCorrPairsFinerBinning);
       registry.get<THnSparse>(HIST("hMass2DCorrelationPairsLSFinerBinning"))->Sumw2();
-      registry.add("hMass2DCorrelationPairsOSFinerBinning", stringDDbar + "2D Finer Binning;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsOSFinerBinning", stringCorrelationPairsFinerBinning.data(), hTHnMass2DCorrPairsFinerBinning);
       registry.get<THnSparse>(HIST("hMass2DCorrelationPairsOSFinerBinning"))->Sumw2();
 
-      registry.add("hMass2DCorrelationPairsLSMcGenFinerBinning", stringDDbar + "2D Finer Binning;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsLSMcGenFinerBinning", stringCorrelationPairsFinerBinning.data(), hTHnMass2DCorrPairsFinerBinning);
       registry.get<THnSparse>(HIST("hMass2DCorrelationPairsLSMcGenFinerBinning"))->Sumw2();
-      registry.add("hMass2DCorrelationPairsOSMcGenFinerBinning", stringDDbar + "2D Finer Binning;" + stringMassD + stringMassDbar + stringPtD + stringPtDbar + "entries", hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsOSMcGenFinerBinning", stringCorrelationPairsFinerBinning.data(), hTHnMass2DCorrPairsFinerBinning);
       registry.get<THnSparse>(HIST("hMass2DCorrelationPairsOSMcGenFinerBinning"))->Sumw2();
     }
 

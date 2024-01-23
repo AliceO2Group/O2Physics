@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file correlatorDMesonPairs.cxx
-/// \brief D0(bar) and DPlus(Minus) correlator task - data-like, MC-reco and MC-kine analyses.
+/// \brief D0(bar) correlator task - data-like, MC-reco and MC-kine analyses.
 /// \note Temporary code for tests of D0-D0 correlations
 ///
 /// \author Andrea Tavira García <tavira-garcia@ijclab.in2p3.fr>, IJCLab Orsay
@@ -464,11 +464,7 @@ struct HfCorrelatorDMesonPairsTesting {
       bool isDCand1 = isD(candidateType1);
       bool isDbarCand1 = isDbar(candidateType1);
 
-      for (const auto& candidate2 : selectedD0CandidatesGrouped) {
-        // avoid double counting
-        if (candidate1.mRowIndex >= candidate2.mRowIndex) {
-          continue;
-        }
+      for (auto candidate2 = candidate1 + 1; candidate2 != selectedD0CandidatesGrouped.end(); ++candidate2) {
         if (abs(hfHelper.yD0(candidate2)) > yCandMax) {
           continue;
         }
@@ -525,11 +521,7 @@ struct HfCorrelatorDMesonPairsTesting {
         registry.fill(HIST("hStatusSinglePart"), 6);
       }
 
-      for (const auto& candidate2 : selectedD0CandidatesGroupedMc) {
-        // avoid double counting
-        if (candidate1.mRowIndex >= candidate2.mRowIndex) {
-          continue;
-        }
+      for (auto candidate2 = candidate1 + 1; candidate2 != selectedD0CandidatesGroupedMc.end(); ++candidate2) {
         if (abs(hfHelper.yD0(candidate2)) > yCandMax) {
           continue;
         }
@@ -552,22 +544,18 @@ struct HfCorrelatorDMesonPairsTesting {
         registry.fill(HIST("hMatchingMcRec"), 1);
         if (matchedRec1 == 1) {
           registry.fill(HIST("hMatchingMcRec"), 2);
-        }
-        if (matchedRec1 == -1) {
+        } else if (matchedRec1 == -1) {
           registry.fill(HIST("hMatchingMcRec"), 3);
-        }
-        if (matchedRec1 == 0) {
+        } else if (matchedRec1 == 0) {
           registry.fill(HIST("hMatchingMcRec"), 4);
         }
         // Fill hMatchingMcRec - Cand 2
         registry.fill(HIST("hMatchingMcRec"), 5);
         if (matchedRec2 == 1) {
           registry.fill(HIST("hMatchingMcRec"), 6);
-        }
-        if (matchedRec2 == -1) {
+        } else if (matchedRec2 == -1) {
           registry.fill(HIST("hMatchingMcRec"), 7);
-        }
-        if (matchedRec2 == 0) {
+        } else if (matchedRec2 == 0) {
           registry.fill(HIST("hMatchingMcRec"), 8);
         }
         fillEntry(candidate1, candidate2, isDCand1, isDbarCand1, isDCand2, isDbarCand2);
@@ -681,13 +669,9 @@ struct HfCorrelatorDMesonPairsTesting {
         registry.fill(HIST("hStatusSinglePartMcGen"), 4);
       }
 
-      for (const auto& particle2 : mcParticles) {
+      for (auto particle2 = particle1 + 1; particle2 != mcParticles.end(); ++particle2) {
         // check if the particle is D0 or D0bar
         if (std::abs(particle2.pdgCode()) != Pdg::kD0) {
-          continue;
-        }
-        // avoid double counting
-        if (particle1.mRowIndex >= particle2.mRowIndex) {
           continue;
         }
         if (abs(particle2.y()) > yCandMax) {
@@ -710,22 +694,18 @@ struct HfCorrelatorDMesonPairsTesting {
         registry.fill(HIST("hMatchingMcGen"), 1);
         if (matchedGen1 == 1) {
           registry.fill(HIST("hMatchingMcGen"), 2);
-        }
-        if (matchedGen1 == -1) {
+        } else if (matchedGen1 == -1) {
           registry.fill(HIST("hMatchingMcGen"), 3);
-        }
-        if (matchedGen1 == 0) {
+        } else if (matchedGen1 == 0) {
           registry.fill(HIST("hMatchingMcGen"), 4);
         }
         // Fill hMatchingMcRec - Cand 2
         registry.fill(HIST("hMatchingMcGen"), 5);
         if (matchedGen2 == 1) {
           registry.fill(HIST("hMatchingMcGen"), 6);
-        }
-        if (matchedGen2 == -1) {
+        } else if (matchedGen2 == -1) {
           registry.fill(HIST("hMatchingMcGen"), 7);
-        }
-        if (matchedGen2 == 0) {
+        } else if (matchedGen2 == 0) {
           registry.fill(HIST("hMatchingMcGen"), 8);
         }
 
