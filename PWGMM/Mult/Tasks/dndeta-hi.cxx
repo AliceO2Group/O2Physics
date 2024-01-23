@@ -454,10 +454,9 @@ struct MultiplicityCounter {
       auto collisionsample = collisions.sliceBy(perMcCol, mcCollision.globalIndex());
       auto cent = -1.0;
 
-      if (collisionsample.size() != 1){
+      if (collisionsample.size() != 1) {
         cent = -1.0;
-	  }
-      else {
+      } else {
         for (auto& collision : collisionsample) {
           if (IsPbPb) {
             if constexpr (MyCollisionsCent::template contains<aod::CentFT0Cs>())
