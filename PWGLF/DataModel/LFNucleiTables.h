@@ -99,6 +99,7 @@ DECLARE_SOA_COLUMN(ITSChi2NCl, itsChi2NCl, float);
 // For MC
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
 DECLARE_SOA_COLUMN(ProducedByGenerator, producedByGenerator, bool);
+DECLARE_SOA_COLUMN(GetProcess, getProcess, int);
 
 } // namespace full
 namespace dummy
@@ -230,6 +231,7 @@ DECLARE_SOA_TABLE(LfCandNucleusMC, "AOD", "LFNUCLMC",
                   mcparticle::PdgCode,
                   full::IsPhysicalPrimary,
                   full::ProducedByGenerator,
+                  full::GetProcess,
                   mcparticle::Px,
                   mcparticle::Py,
                   mcparticle::Pz);
