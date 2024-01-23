@@ -44,7 +44,6 @@ DECLARE_SOA_COLUMN(ImpactParameterNormalised1, impactParameterNormalised1, float
 DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);
 DECLARE_SOA_COLUMN(PProng2, pProng2, float);
 DECLARE_SOA_COLUMN(ImpactParameterNormalised2, impactParameterNormalised2, float);
-DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);
 DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(P, p, float);
@@ -80,7 +79,6 @@ DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
-DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t);
 DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3Prong, "_0");
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
@@ -117,7 +115,8 @@ DECLARE_SOA_TABLE(HfCandXicLites, "AOD", "HFCANDXICLITE",
                   full::NSigTofPi2,
                   full::NSigTofKa2,
                   full::NSigTofPr2,
-                  full::CandidateSelFlag,
+                  hf_sel_candidate_xic::IsSelXicToPKPi,
+                  hf_sel_candidate_xic::IsSelXicToPiKP,
                   full::M,
                   full::Pt,
                   full::Cpa,
@@ -125,8 +124,7 @@ DECLARE_SOA_TABLE(HfCandXicLites, "AOD", "HFCANDXICLITE",
                   full::Eta,
                   full::Phi,
                   full::FlagMc,
-                  full::OriginMcRec,
-                  full::IsCandidateSwapped)
+                  full::OriginMcRec)
 
 DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   full::CollisionId,
@@ -186,7 +184,8 @@ DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   full::NSigTofPi2,
                   full::NSigTofKa2,
                   full::NSigTofPr2,
-                  full::CandidateSelFlag,
+                  hf_sel_candidate_xic::IsSelXicToPKPi,
+                  hf_sel_candidate_xic::IsSelXicToPiKP,
                   full::M,
                   full::Pt,
                   full::P,
@@ -199,7 +198,6 @@ DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   full::E,
                   full::FlagMc,
                   full::OriginMcRec,
-                  full::IsCandidateSwapped,
                   full::CandidateId);
 
 DECLARE_SOA_TABLE(HfCandXicFullEvs, "AOD", "HFCANDXICFULLEV",
@@ -340,6 +338,7 @@ struct HfTreeCreatorXicToPKPi {
         candidate.phi(),
         flagMc,
         originMc);
+
     } else {
       rowCandidateFull(
         candidate.collisionId(),

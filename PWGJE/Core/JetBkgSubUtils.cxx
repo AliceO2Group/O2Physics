@@ -20,15 +20,20 @@
 #include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/Core/FastJetUtilities.h"
 
-JetBkgSubUtils::JetBkgSubUtils(float jetBkgR_out, float bkgEtaMin_out, float bkgEtaMax_out, float bkgPhiMin_out, float bkgPhiMax_out, float constSubAlpha_out, float constSubRMax_out, fastjet::GhostedAreaSpec ghostAreaSpec_out, int nHardReject) : jetBkgR(jetBkgR_out),
-                                                                                                                                                                                                                                                      bkgEtaMin(bkgEtaMin_out),
-                                                                                                                                                                                                                                                      bkgEtaMax(bkgEtaMax_out),
-                                                                                                                                                                                                                                                      bkgPhiMin(bkgPhiMin_out),
-                                                                                                                                                                                                                                                      bkgPhiMax(bkgPhiMax_out),
-                                                                                                                                                                                                                                                      constSubAlpha(constSubAlpha_out),
-                                                                                                                                                                                                                                                      constSubRMax(constSubRMax_out),
-                                                                                                                                                                                                                                                      ghostAreaSpec(ghostAreaSpec_out)
+JetBkgSubUtils::JetBkgSubUtils(float jetBkgR_out, float bkgEtaMin_out, float bkgEtaMax_out, float bkgPhiMin_out, float bkgPhiMax_out, float constSubAlpha_out, float constSubRMax_out, int nHardReject_out, fastjet::GhostedAreaSpec ghostAreaSpec_out) : jetBkgR(jetBkgR_out),
+                                                                                                                                                                                                                                                          bkgEtaMin(bkgEtaMin_out),
+                                                                                                                                                                                                                                                          bkgEtaMax(bkgEtaMax_out),
+                                                                                                                                                                                                                                                          bkgPhiMin(bkgPhiMin_out),
+                                                                                                                                                                                                                                                          bkgPhiMax(bkgPhiMax_out),
+                                                                                                                                                                                                                                                          constSubAlpha(constSubAlpha_out),
+                                                                                                                                                                                                                                                          constSubRMax(constSubRMax_out),
+                                                                                                                                                                                                                                                          nHardReject(nHardReject_out),
+                                                                                                                                                                                                                                                          ghostAreaSpec(ghostAreaSpec_out)
 
+{
+}
+
+void JetBkgSubUtils::initialise()
 {
   // Note: if you are using the PerpCone method you should jetBkgR to be the same as the anit_kt jets R, otherwise use R=0.2
   jetDefBkg = fastjet::JetDefinition(algorithmBkg, jetBkgR, recombSchemeBkg, fastjet::Best);
@@ -38,13 +43,14 @@ JetBkgSubUtils::JetBkgSubUtils(float jetBkgR_out, float bkgEtaMin_out, float bkg
 
 std::tuple<double, double> JetBkgSubUtils::estimateRhoAreaMedian(const std::vector<fastjet::PseudoJet>& inputParticles, bool doSparseSub)
 {
+  JetBkgSubUtils::initialise();
 
   if (inputParticles.size() == 0) {
     return std::make_tuple(0.0, 0.0);
   }
 
   // cluster the kT jets
-  fastjet::ClusterSequenceArea clusterSeq(removeHFCand ? selRemoveHFCand(inputParticles) : inputParticles, jetDefBkg, areaDefBkg);
+  fastjet::ClusterSequenceArea clusterSeq(inputParticles, jetDefBkg, areaDefBkg);
 
   // select jets in detector acceptance
   std::vector<fastjet::PseudoJet> alljets = selRho(clusterSeq.inclusive_jets());
@@ -67,8 +73,13 @@ std::tuple<double, double> JetBkgSubUtils::estimateRhoAreaMedian(const std::vect
     totalAreaCovered += ijet.area();
   }
   // calculate Rho as the median of the jet pT / jet area
-  double rho = TMath::Median<double>(rhovector.size(), rhovector.data());
-  double rhoM = TMath::Median<double>(rhoMdvector.size(), rhoMdvector.data());
+
+  double rho = 0.0;
+  double rhoM = 0.0;
+  if (rhovector.size() != 0) {
+    rho = TMath::Median<double>(rhovector.size(), rhovector.data());
+    rhoM = TMath::Median<double>(rhoMdvector.size(), rhoMdvector.data());
+  }
 
   if (doSparseSub) {
     // calculate The ocupancy factor, which the ratio of covered area / total area
@@ -83,12 +94,10 @@ std::tuple<double, double> JetBkgSubUtils::estimateRhoAreaMedian(const std::vect
 std::tuple<double, double> JetBkgSubUtils::estimateRhoPerpCone(const std::vector<fastjet::PseudoJet>& inputParticles, const std::vector<fastjet::PseudoJet>& jets)
 {
 
+  JetBkgSubUtils::initialise();
   if (inputParticles.size() == 0 || jets.size() == 0) {
     return std::make_tuple(0.0, 0.0);
   }
-
-  // Select a list of particles without the HF candidate
-  std::vector<fastjet::PseudoJet> inputPartnoHF = removeHFCand ? selRemoveHFCand(inputParticles) : inputParticles;
 
   double perpPtDensity1 = 0;
   double perpPtDensity2 = 0;
@@ -113,7 +122,7 @@ std::tuple<double, double> JetBkgSubUtils::estimateRhoPerpCone(const std::vector
   PerpendicularConeAxisPhi1 = RecoDecay::constrainAngle<double, double>(leadingJet.phi() + (M_PI / 2.)); // This will contrain the angel between 0-2Pi
   PerpendicularConeAxisPhi2 = RecoDecay::constrainAngle<double, double>(leadingJet.phi() - (M_PI / 2.)); // This will contrain the angel between 0-2Pi
 
-  for (auto& particle : inputPartnoHF) {
+  for (auto& particle : inputParticles) {
     // sum the momentum of all paricles that fill the two cones
     dPhi1 = particle.phi() - PerpendicularConeAxisPhi1;
     dPhi1 = RecoDecay::constrainAngle<double, double>(dPhi1, -M_PI); // This will contrain the angel between -pi & Pi
@@ -138,7 +147,7 @@ std::tuple<double, double> JetBkgSubUtils::estimateRhoPerpCone(const std::vector
   return std::make_tuple(perpPtDensity, perpMdDensity);
 }
 
-fastjet::PseudoJet JetBkgSubUtils::doRhoAreaSub(fastjet::PseudoJet& jet, double& rhoParam, double& rhoMParam)
+fastjet::PseudoJet JetBkgSubUtils::doRhoAreaSub(fastjet::PseudoJet& jet, double rhoParam, double rhoMParam)
 {
 
   fastjet::Subtractor sub = fastjet::Subtractor(rhoParam, rhoMParam);
@@ -148,18 +157,16 @@ fastjet::PseudoJet JetBkgSubUtils::doRhoAreaSub(fastjet::PseudoJet& jet, double&
   return sub(jet);
 }
 
-std::vector<fastjet::PseudoJet> JetBkgSubUtils::doEventConstSub(std::vector<fastjet::PseudoJet>& inputParticles, double& rhoParam, double& rhoMParam)
+std::vector<fastjet::PseudoJet> JetBkgSubUtils::doEventConstSub(std::vector<fastjet::PseudoJet>& inputParticles, double rhoParam, double rhoMParam)
 {
 
+  JetBkgSubUtils::initialise();
   fastjet::contrib::ConstituentSubtractor constituentSub(rhoParam, rhoMParam);
   constituentSub.set_distance_type(fastjet::contrib::ConstituentSubtractor::deltaR); /// deltaR=sqrt((y_i-y_j)^2+(phi_i-phi_j)^2)), longitudinal Lorentz invariant
   constituentSub.set_max_distance(constSubRMax);
   constituentSub.set_alpha(constSubAlpha);
   constituentSub.set_ghost_area(ghostAreaSpec.ghost_area());
   constituentSub.set_max_eta(maxEtaEvent);
-  if (removeHFCand) {
-    constituentSub.set_particle_selector(&selRemoveHFCand);
-  }
 
   // by default, the masses of all particles are set to zero. With this flag the jet mass will also be subtracted
   if (doRhoMassSub) {
@@ -169,9 +176,9 @@ std::vector<fastjet::PseudoJet> JetBkgSubUtils::doEventConstSub(std::vector<fast
   return constituentSub.subtract_event(inputParticles, maxEtaEvent);
 }
 
-std::vector<fastjet::PseudoJet> JetBkgSubUtils::doJetConstSub(std::vector<fastjet::PseudoJet>& jets, double& rhoParam, double& rhoMParam)
+std::vector<fastjet::PseudoJet> JetBkgSubUtils::doJetConstSub(std::vector<fastjet::PseudoJet>& jets, double rhoParam, double rhoMParam)
 {
-
+  JetBkgSubUtils::initialise();
   if (jets.size() == 0) {
     return std::vector<fastjet::PseudoJet>();
   }
@@ -184,9 +191,6 @@ std::vector<fastjet::PseudoJet> JetBkgSubUtils::doJetConstSub(std::vector<fastje
   constituentSub.set_alpha(constSubAlpha);
   constituentSub.set_ghost_area(ghostAreaSpec.ghost_area());
   constituentSub.set_max_eta(bkgEtaMax);
-  if (removeHFCand) {
-    constituentSub.set_particle_selector(&selRemoveHFCand);
-  }
 
   // by default, the masses of all particles are set to zero. With this flag the jet mass will also be subtracted
   if (doRhoMassSub) {

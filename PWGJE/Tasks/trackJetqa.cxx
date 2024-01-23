@@ -29,7 +29,7 @@
 
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/TrackJetQa.h"
-#include "PWGJE/TableProducer/jetfinder.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"

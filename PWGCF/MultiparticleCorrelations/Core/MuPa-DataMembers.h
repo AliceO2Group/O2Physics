@@ -56,6 +56,7 @@ struct TaskConfiguration {
   TString fWhatToProcess = "Rec";                  // "Rec" = process only reconstructed, "Sim" = process only simulated, "RecSim" = process both reconstructed and simulated
   UInt_t fRandomSeed = 0;                          // argument to TRandom3 constructor. By default it is 0 (i.e. seed is guaranteed to be unique in time and space), use SetRandomSeed(...) to change it
   Bool_t fUseFisherYates = kFALSE;                 // algorithm used to randomize particle indices, set via configurable
+  TArrayI* fRandomIndices = NULL;                  // array to store random indices obtained from Fisher-Yates algorithm
   Int_t fFixedNumberOfRandomlySelectedTracks = -1; // use a fixed number of randomly selected particles in each event. It is set and applied, if > 0. Set to <=0 to ignore.
 
   // Bool_t fRescaleWithTheoreticalInput; // if kTRUE, all measured correlators are
@@ -126,7 +127,7 @@ Bool_t fCalculateCorrelations =
 struct Correlations_Arrays {
   TProfile* fCorrelationsPro[4][gMaxHarmonic][eAsFunctionOf_N] = {
     {{NULL}}}; //! multiparticle correlations
-               //! [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=6][0=integrated,1=vs.
+               //! [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=gMaxHarmonic][0=integrated,1=vs.
                //! multiplicity,2=vs. centrality,3=pT,4=eta]
 } c_a;
 
@@ -151,9 +152,9 @@ Bool_t fCalculateNestedLoops = kTRUE; // calculate and store correlations with
 Bool_t fCalculateCustomNestedLoop =
   kFALSE; // validate e-b-e all correlations with custom nested loop
 struct NestedLoops_Arrays {
-  TProfile* fNestedLoopsPro[4][6][eAsFunctionOf_N] = {
+  TProfile* fNestedLoopsPro[4][gMaxHarmonic][eAsFunctionOf_N] = {
     {{NULL}}};                         //! multiparticle correlations from nested loops
-                                       //! [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=6][0=integrated,1=vs.
+                                       //! [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=gMaxHarmonic][0=integrated,1=vs.
                                        //! multiplicity,2=vs. centrality,3=pT,4=eta]
   TArrayD* ftaNestedLoops[2] = {NULL}; //! e-b-e container for nested loops
                                        //! [0=angles;1=product of all weights]
@@ -185,12 +186,12 @@ TProfile* fResultsFlagsPro = NULL; //!<! profile to hold all flags for results
 TH1D* fResultsHist = NULL;         //!<! example histogram to store some results
 struct ResultsHistograms_Arrays {
   // Remark: These settings apply to following categories fCorrelationsPro, fNestedLoopsPro, fTest0Pro, and fResultsHist
-  Double_t fResultsHistogramsFixedLengthBins[eAsFunctionOf_N][3] = {{0.}};    // [nBins,min,max]
-  TArrayD* fResultsHistogramsVariableLengthBins[eAsFunctionOf_N] = {NULL};    // here for each variable in eAsFunctionOf I specify array holding bin boundaries
-  Bool_t fUseResultsHistogramsVariableLengthBins[eAsFunctionOf_N] = {kFALSE}; // use or not variable-length bins
-  TString fResultsHistogramsVariableLengthBinsString[eAsFunctionOf_N] = {""}; // TBI 20240113 temporary I do it this way
-  TString fResultsHistogramsXaxisTitle[eAsFunctionOf_N] = {"integrated", "multiplicity", "centrality", "p_{T}", "#eta"};
-  TString fResultsHistogramsRawName[eAsFunctionOf_N] = {"int", "mult", "cent", "pt", "eta"}; // this is how it appears simplified in the hist name when saved to the file
-} rh_a;                                                                                      // "rh_a" labels an instance of this group of histograms
+  Double_t fResultsHistogramsFixedLengthBins[eAsFunctionOf_N][3] = {{0.}};                                               // [nBins,min,max]
+  TArrayD* fResultsHistogramsVariableLengthBins[eAsFunctionOf_N] = {NULL};                                               // here for each variable in eAsFunctionOf I specify array holding bin boundaries
+  Bool_t fUseResultsHistogramsVariableLengthBins[eAsFunctionOf_N] = {kFALSE};                                            // use or not variable-length bins
+  TString fResultsHistogramsVariableLengthBinsString[eAsFunctionOf_N] = {""};                                            // TBI 20240113 temporary I do it this way
+  TString fResultsHistogramsXaxisTitle[eAsFunctionOf_N] = {"integrated", "multiplicity", "centrality", "p_{T}", "#eta"}; // keep ordering in sync with enum eAsFunctionOf
+  TString fResultsHistogramsRawName[eAsFunctionOf_N] = {"int", "mult", "cent", "pt", "eta"};                             // this is how it appears simplified in the hist name when saved to the file
+} rh_a;                                                                                                                  // "rh_a" labels an instance of this group of histograms
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_

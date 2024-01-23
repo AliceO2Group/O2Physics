@@ -57,6 +57,8 @@ struct skimmerDalitzEE {
     "fRegistry",
     {
       {"hNpairs", "hNpairs;pair type;Number of Pairs", {HistType::kTH1F, {{3, -1.5f, +1.5f}}}},
+      {"hNele", "hNele;centrality FT0C;Number of electrons", {HistType::kTH2F, {{110, 0, 110}, {101, -0.5f, +100.5f}}}},
+      {"hNpos", "hNpos;centrality FT0C;Number of positrons", {HistType::kTH2F, {{110, 0, 110}, {101, -0.5f, +100.5f}}}},
     },
   };
 
@@ -133,6 +135,9 @@ struct skimmerDalitzEE {
     for (auto& collision : collisions) {
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectron::emreducedeventId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emreducedeventId, collision.globalIndex(), cache);
+      fRegistry.fill(HIST("hNpos"), collision.centFT0C(), posTracks_per_coll.size());
+      fRegistry.fill(HIST("hNele"), collision.centFT0C(), negTracks_per_coll.size());
+      // LOGF(info, "collision.centFT0C() = %f, posTracks_per_coll.size() = %d, negTracks_per_coll.size() = %d", collision.centFT0C() , posTracks_per_coll.size(), negTracks_per_coll.size());
 
       int npair_uls = 0, npair_lspp = 0, npair_lsmm = 0;
       npair_uls = fillPairTable<EM_EEPairType::kULS, false>(collision, posTracks_per_coll, negTracks_per_coll); // ULS
