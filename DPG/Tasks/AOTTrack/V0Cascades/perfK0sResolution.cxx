@@ -36,6 +36,7 @@ struct perfK0sResolution {
   ConfigurableAxis pTBins{"pTBins", {200, 0.f, 10.f}, "pT binning"};
   ConfigurableAxis pTResBins{"pTResBins", {200, -0.8f, 0.8f}, "pT resolution binning"};
   ConfigurableAxis etaBins{"etaBins", {2, -1.f, 1.f}, "eta binning"};
+  ConfigurableAxis etaBinsDauthers{"etaBinsDauthers", {2, -1.f, 1.f}, "eta binning"};
   ConfigurableAxis phiBins{"phiBins", {4, 0.f, 6.28f}, "phi binning"};
 
   HistogramRegistry rK0sResolution{"K0sResolution"};
@@ -46,6 +47,8 @@ struct perfK0sResolution {
     const AxisSpec pTAxis{pTBins, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec pTResAxis{pTResBins, "#Delta#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec etaAxis{etaBins, "#eta"};
+    const AxisSpec etaAxisPosD{etaBinsDauthers, "#eta pos."};
+    const AxisSpec etaAxisNegD{etaBinsDauthers, "#eta neg."};
     const AxisSpec phiAxis{phiBins, "#phi"};
 
     int nProc = 0;
@@ -63,6 +66,9 @@ struct perfK0sResolution {
     rK0sResolution.add("h2_masspT", "h2_masspT", {HistType::kTH2F, {mAxis, pTAxis}});
     rK0sResolution.add("h2_masseta", "h2_masseta", {HistType::kTH2F, {mAxis, etaAxis}});
     rK0sResolution.add("h2_massphi", "h2_massphi", {HistType::kTH2F, {mAxis, phiAxis}});
+    if (useMultidimHisto) {
+      rK0sResolution.add("thn_mass", "thn_mass", kTHnSparseF, {mAxis, pTAxis, etaAxis, phiAxis, etaAxisPosD, etaAxisNegD});
+    } 
   }
 
   // Selection criteria
@@ -79,6 +85,8 @@ struct perfK0sResolution {
   Configurable<int> trdSelectionNeg{"trdSelectionNeg", 0, "Flag for the TRD selection on negative daughters: -1 no TRD, 0 no selection, 1 TRD"};
   Configurable<int> tofSelectionPos{"tofSelectionPos", 0, "Flag for the TOF selection on positive daughters: -1 no TOF, 0 no selection, 1 TOF"};
   Configurable<int> tofSelectionNeg{"tofSelectionNeg", 0, "Flag for the TOF selection on negative daughters: -1 no TOF, 0 no selection, 1 TOF"};
+
+  Configurable<bool> useMultidimHisto{"useMultidimHisto", false, "use multidimentional histograms"};
 
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -199,6 +207,9 @@ struct perfK0sResolution {
       rK0sResolution.fill(HIST("h2_masspT"), v0.mK0Short(), v0.pt());
       rK0sResolution.fill(HIST("h2_masseta"), v0.mK0Short(), v0.eta());
       rK0sResolution.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
+      if (useMultidimHisto) {
+        rK0sResolution.fill(HIST("thn_mass"), v0.mK0Short(), v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta());
+      }
     }
   }
   PROCESS_SWITCH(perfK0sResolution, processData, "Process data", true);
@@ -225,6 +236,9 @@ struct perfK0sResolution {
       rK0sResolution.fill(HIST("h2_masspT"), v0.mK0Short(), v0.pt());
       rK0sResolution.fill(HIST("h2_masseta"), v0.mK0Short(), v0.eta());
       rK0sResolution.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
+      if (useMultidimHisto) {
+        rK0sResolution.fill(HIST("thn_mass"), v0.mK0Short(), v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta());
+      }
     }
   }
   PROCESS_SWITCH(perfK0sResolution, processMC, "Process MC", false);
