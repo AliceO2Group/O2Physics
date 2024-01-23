@@ -51,8 +51,8 @@ struct DalitzEEQC {
   std::vector<DalitzEECut> fDalitzEECuts;
 
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
-  Configurable<std::vector<float>> cfgArrCentMin{"cfgArrCentMin", {0.0f, 10.0f, 20.0f, 40.0f, 60.0f, 80.0f}, "cent min array"};  // overlap (e.g.  0,  0) is not allowed.
-  Configurable<std::vector<float>> cfgArrCentMax{"cfgArrCentMax", {10.0f, 20.0f, 40.0f, 60.0f, 80.0f, 999.f}, "cent max array"}; // overlap (e.g. 10, 20) is not allowed.
+  Configurable<std::vector<float>> cfgArrCentMin{"cfgArrCentMin", {0.0f, 10.0f, 20.0f, 40.0f, 60.0f, 80.0f}, "cent min array"};
+  Configurable<std::vector<float>> cfgArrCentMax{"cfgArrCentMax", {10.0f, 20.0f, 40.0f, 60.0f, 80.0f, 999.f}, "cent max array"};
   std::vector<float> vec_cent_min;
   std::vector<float> vec_cent_max;
 
