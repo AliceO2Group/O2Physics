@@ -39,8 +39,8 @@ enum PairTypeSel {
 } // namespace
 
 // string definitions, used for histogram axis labels
-const std::string stringCorrelationPairs = "D meson pair candidates 2D;inv. mass D_{1} (GeV/#it{c}^{2});inv. mass D_{2} (GeV/#it{c}^{2});#it{p}_{T}^{D_{1}} (GeV/#it{c});#it{p}_{T}^{D_{2}} (GeV/#it{c});#eta D_{1};#eta D_{2};";
-const std::string stringCorrelationPairsFinerBinning = "D meson pair candidates 2D Finer Binning;inv. mass D_{1} (GeV/#it{c}^{2});inv. mass D_{2} (GeV/#it{c}^{2});#it{p}_{T}^{D_{1}} (GeV/#it{c});#it{p}_{T}^{D_{2}} (GeV/#it{c});#eta D_{1};#eta D_{2};";
+const char stringCorrelationPairs[180] = "D meson pair candidates 2D;inv. mass D_{1} (GeV/#it{c}^{2});inv. mass D_{2} (GeV/#it{c}^{2});#it{p}_{T}^{D_{1}} (GeV/#it{c});#it{p}_{T}^{D_{2}} (GeV/#it{c});#eta D_{1};#eta D_{2};";
+const char stringCorrelationPairsFinerBinning[194] = "D meson pair candidates 2D Finer Binning;inv. mass D_{1} (GeV/#it{c}^{2});inv. mass D_{2} (GeV/#it{c}^{2});#it{p}_{T}^{D_{1}} (GeV/#it{c});#it{p}_{T}^{D_{2}} (GeV/#it{c});#eta D_{1};#eta D_{2};";
 
 // definition of vectors for standard ptbin and invariant mass configurables
 const int nPtBinsCorrelations = 8;
@@ -58,10 +58,10 @@ struct HfTaskCorrelationDMesonPairsTesting {
 
   HistogramRegistry registry{
     "registry",
-    {{"hMass2DCorrelationPairsLS", stringCorrelationPairs.data(), hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsOS", stringCorrelationPairs.data(), hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsLSMcGen", stringCorrelationPairs.data(), hTHnMass2DCorrPairs},
-     {"hMass2DCorrelationPairsOSMcGen", stringCorrelationPairs.data(), hTHnMass2DCorrPairs}}};
+    {{"hMass2DCorrelationPairsLS", stringCorrelationPairs, hTHnMass2DCorrPairs},
+     {"hMass2DCorrelationPairsOS", stringCorrelationPairs, hTHnMass2DCorrPairs},
+     {"hMass2DCorrelationPairsLSMcGen", stringCorrelationPairs, hTHnMass2DCorrPairs},
+     {"hMass2DCorrelationPairsOSMcGen", stringCorrelationPairs, hTHnMass2DCorrPairs}}};
 
   void init(InitContext&)
   {
@@ -70,14 +70,14 @@ struct HfTaskCorrelationDMesonPairsTesting {
     const double* valuespTaxis = binsPtCorrelations->data();
 
     if (enableFinerBinning) {
-      registry.add("hMass2DCorrelationPairsLSFinerBinning", stringCorrelationPairsFinerBinning.data(), hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsLSFinerBinning", stringCorrelationPairsFinerBinning, hTHnMass2DCorrPairsFinerBinning);
       registry.get<THnSparse>(HIST("hMass2DCorrelationPairsLSFinerBinning"))->Sumw2();
-      registry.add("hMass2DCorrelationPairsOSFinerBinning", stringCorrelationPairsFinerBinning.data(), hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsOSFinerBinning", stringCorrelationPairsFinerBinning, hTHnMass2DCorrPairsFinerBinning);
       registry.get<THnSparse>(HIST("hMass2DCorrelationPairsOSFinerBinning"))->Sumw2();
 
-      registry.add("hMass2DCorrelationPairsLSMcGenFinerBinning", stringCorrelationPairsFinerBinning.data(), hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsLSMcGenFinerBinning", stringCorrelationPairsFinerBinning, hTHnMass2DCorrPairsFinerBinning);
       registry.get<THnSparse>(HIST("hMass2DCorrelationPairsLSMcGenFinerBinning"))->Sumw2();
-      registry.add("hMass2DCorrelationPairsOSMcGenFinerBinning", stringCorrelationPairsFinerBinning.data(), hTHnMass2DCorrPairsFinerBinning);
+      registry.add("hMass2DCorrelationPairsOSMcGenFinerBinning", stringCorrelationPairsFinerBinning, hTHnMass2DCorrPairsFinerBinning);
       registry.get<THnSparse>(HIST("hMass2DCorrelationPairsOSMcGenFinerBinning"))->Sumw2();
     }
 
