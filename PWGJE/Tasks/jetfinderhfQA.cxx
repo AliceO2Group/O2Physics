@@ -93,10 +93,10 @@ struct JetFinderHFQATask {
     }
 
     if (doprocessJetsData || doprocessJetsMCD || doprocessJetsMCDWeighted) {
-      registry.add("h_jet_pt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
-      registry.add("h_jet_eta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
-      registry.add("h_jet_phi", "jet #varphi;#varphi_{jet};entries", {HistType::kTH1F, {{160, -1.0, 7.}}});
-      registry.add("h_jet_ntracks", "jet N tracks;N_{jet tracks};entries", {HistType::kTH1F, {{200, -0.5, 199.5}}});
+      registry.add("h2_jet_centrality_pt", "jet pT vs centrality; centrality; #it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH2F, {{1200, -10.0, 110.0}, {200, 0., 200.}}});
+      registry.add("h2_jet_centrality_eta", "jet #eta vs centrality; centrality; #eta_{jet}", {HistType::kTH2F, {{1200, -10.0, 110.0}, {100, -1.0, 1.0}}});
+      registry.add("h2_jet_centrality_phi", "jet #varphi vs centrality; centrality; #varphi_{jet}", {HistType::kTH2F, {{1200, -10.0, 110.0}, {160, -1.0, 7.}}});
+      registry.add("h2_jet_centrality_ntracks", "jet N tracks vs centrality; centrality; N_{jet tracks}", {HistType::kTH2F, {{1200, -10.0, 110.0}, {200, -0.5, 199.5}}});
       registry.add("h3_jet_r_jet_pt_jet_eta", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#eta_{jet}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
       registry.add("h3_jet_r_jet_pt_jet_phi", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#varphi_{jet}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {160, -1.0, 7.}}});
       registry.add("h3_jet_r_jet_eta_jet_phi", "#it{R}_{jet};#eta_{jet};#varphi_{jet}", {HistType::kTH3F, {{jetRadiiBins, ""}, {100, -1.0, 1.0}, {160, -1.0, 7.}}});
@@ -115,10 +115,10 @@ struct JetFinderHFQATask {
 
     if (doprocessJetsRhoAreaSubData) {
 
-      registry.add("h_jet_pt_rhoareasubtracted", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
-      registry.add("h_jet_eta_rhoareasubtracted", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
-      registry.add("h_jet_phi_rhoareasubtracted", "jet #varphi;#varphi_{jet};entries", {HistType::kTH1F, {{160, -1.0, 7.}}});
-      registry.add("h_jet_ntracks_rhoareasubtracted", "jet N tracks;N_{jet tracks};entries", {HistType::kTH1F, {{200, -0.5, 199.5}}});
+      registry.add("h2_jet_centrality_pt_rhoareasubtracted", "jet pT vs centrality; centrality; #it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH2F, {{1200, -10.0, 110.0}, {200, 0., 200.}}});
+      registry.add("h2_jet_centrality_eta_rhoareasubtracted", "jet #eta vs centrality; centrality; #eta_{jet}", {HistType::kTH2F, {{1200, -10.0, 110.0}, {100, -1.0, 1.0}}});
+      registry.add("h2_jet_centrality_phi_rhoareasubtracted", "jet #varphi vs centrality; centrality; #varphi_{jet}", {HistType::kTH2F, {{1200, -10.0, 110.0}, {160, -1.0, 7.}}});
+      registry.add("h2_jet_centrality_ntracks_rhoareasubtracted", "jet N tracks vs centrality; centrality; N_{jet tracks}", {HistType::kTH2F, {{1200, -10.0, 110.0}, {200, -0.5, 199.5}}});
       registry.add("h3_jet_r_jet_pt_jet_eta_rhoareasubtracted", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#eta_{jet}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
       registry.add("h3_jet_r_jet_pt_jet_phi_rhoareasubtracted", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#varphi_{jet}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {160, -1.0, 7.}}});
       registry.add("h3_jet_r_jet_eta_jet_phi_rhoareasubtracted", "#it{R}_{jet};#eta_{jet};#varphi_{jet}", {HistType::kTH3F, {{jetRadiiBins, ""}, {100, -1.0, 1.0}, {160, -1.0, 7.}}});
@@ -135,10 +135,10 @@ struct JetFinderHFQATask {
     }
 
     if (doprocessEvtWiseConstSubJetsData) {
-      registry.add("h_jet_pt_eventwiseconstituentsubtracted", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
-      registry.add("h_jet_eta_eventwiseconstituentsubtracted", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
-      registry.add("h_jet_phi_eventwiseconstituentsubtracted", "jet #varphi;#varphi_{jet};entries", {HistType::kTH1F, {{160, -1.0, 7.}}});
-      registry.add("h_jet_ntracks_eventwiseconstituentsubtracted", "jet N tracks;N_{jet tracks};entries", {HistType::kTH1F, {{200, -0.5, 199.5}}});
+      registry.add("h2_jet_centrality_pt_eventwiseconstituentsubtracted", "jet pT vs centrality; centrality; #it{p}_{T,jet} (GeV/#it{c})", {HistType::kTH2F, {{1200, -10.0, 110.0}, {200, 0., 200.}}});
+      registry.add("h2_jet_centrality_eta_eventwiseconstituentsubtracted", "jet #eta vs centrality; centrality; #eta_{jet}", {HistType::kTH2F, {{1200, -10.0, 110.0}, {100, -1.0, 1.0}}});
+      registry.add("h2_jet_centrality_phi_eventwiseconstituentsubtracted", "jet #varphi vs centrality; centrality; #varphi_{jet}", {HistType::kTH2F, {{1200, -10.0, 110.0}, {160, -1.0, 7.}}});
+      registry.add("h2_jet_centrality_ntracks_eventwiseconstituentsubtracted", "jet N tracks vs centrality; centrality; N_{jet tracks}", {HistType::kTH2F, {{1200, -10.0, 110.0}, {200, -0.5, 199.5}}});
       registry.add("h3_jet_r_jet_pt_jet_eta_eventwiseconstituentsubtracted", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#eta_{jet}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {100, -1.0, 1.0}}});
       registry.add("h3_jet_r_jet_pt_jet_phi_eventwiseconstituentsubtracted", "#it{R}_{jet};#it{p}_{T,jet} (GeV/#it{c});#varphi_{jet}", {HistType::kTH3F, {{jetRadiiBins, ""}, {200, 0., 200.}, {160, -1.0, 7.}}});
       registry.add("h3_jet_r_jet_eta_jet_phi_eventwiseconstituentsubtracted", "#it{R}_{jet};#eta_{jet};#varphi_{jet}", {HistType::kTH3F, {{jetRadiiBins, ""}, {100, -1.0, 1.0}, {160, -1.0, 7.}}});
@@ -154,8 +154,8 @@ struct JetFinderHFQATask {
     }
 
     if (doprocessRho) {
-      registry.add("h2_rho_centrality", "#it{rho} (GeV/area); centrality", {HistType::kTH2F, {{400, 0., 400.0}, {1100, 0., 110.}}});
-      registry.add("h2_rhom_centrality", "#it{rho}_{m} (GeV/area); centrality", {HistType::kTH2F, {{400, 0., 400.0}, {1100, 0., 110.}}});
+      registry.add("h2_rho_centrality", "; centrality; #it{rho} (GeV/area)", {HistType::kTH2F, {{1200, -10., 110.}, {400, 0., 400.0}}});
+      registry.add("h2_rhom_centrality", ";centrality; #it{rho}_{m} (GeV/area)", {HistType::kTH2F, {{1200, -10., 110.}, {100, 0., 100.0}}});
     }
 
     if (doprocessJetsMCP || doprocessJetsMCPWeighted) {
@@ -387,7 +387,7 @@ struct JetFinderHFQATask {
   PresliceOptional<BkgRhoTable> perBplusCandidateRhos = aod::bkgbplus::candidateId;
 
   template <typename T, typename U>
-  void fillHistograms(T const& jet, float weight = 1.0)
+  void fillHistograms(T const& jet, float centrality, float weight = 1.0)
   {
 
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
@@ -396,10 +396,10 @@ struct JetFinderHFQATask {
     }
 
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
-      registry.fill(HIST("h_jet_pt"), jet.pt(), weight);
-      registry.fill(HIST("h_jet_eta"), jet.eta(), weight);
-      registry.fill(HIST("h_jet_phi"), jet.phi(), weight);
-      registry.fill(HIST("h_jet_ntracks"), jet.tracks().size() + jet.hfcandidates().size(), weight);
+      registry.fill(HIST("h2_jet_centrality_pt"), centrality, jet.pt(), weight);
+      registry.fill(HIST("h2_jet_centrality_eta"), centrality, jet.eta(), weight);
+      registry.fill(HIST("h2_jet_centrality_phi"), centrality, jet.phi(), weight);
+      registry.fill(HIST("h2_jet_centrality_ntracks"), centrality, jet.tracks().size() + jet.hfcandidates().size(), weight);
     }
 
     registry.fill(HIST("h3_jet_r_jet_pt_jet_eta"), jet.r() / 100.0, jet.pt(), jet.eta(), weight);
@@ -434,13 +434,13 @@ struct JetFinderHFQATask {
   }
 
   template <typename T, typename U>
-  void fillRhoAreaSubtractedHistograms(T const& jet, float rho, float weight = 1.0)
+  void fillRhoAreaSubtractedHistograms(T const& jet, float centrality, float rho, float weight = 1.0)
   {
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
-      registry.fill(HIST("h_jet_pt_rhoareasubtracted"), jet.pt() - (rho * jet.area()), weight);
-      registry.fill(HIST("h_jet_eta_rhoareasubtracted"), jet.eta(), weight);
-      registry.fill(HIST("h_jet_phi_rhoareasubtracted"), jet.phi(), weight);
-      registry.fill(HIST("h_jet_ntracks_rhoareasubtracted"), jet.tracks().size(), weight);
+      registry.fill(HIST("h2_jet_centrality_pt_rhoareasubtracted"), centrality, jet.pt() - (rho * jet.area()), weight);
+      registry.fill(HIST("h2_jet_centrality_eta_rhoareasubtracted"), centrality, jet.eta(), weight);
+      registry.fill(HIST("h2_jet_centrality_phi_rhoareasubtracted"), centrality, jet.phi(), weight);
+      registry.fill(HIST("h2_jet_centrality_ntracks_rhoareasubtracted"), centrality, jet.tracks().size(), weight);
     }
 
     registry.fill(HIST("h3_jet_r_jet_pt_jet_eta_rhoareasubtracted"), jet.r() / 100.0, jet.pt() - (rho * jet.area()), jet.eta(), weight);
@@ -466,13 +466,13 @@ struct JetFinderHFQATask {
   }
 
   template <typename T, typename U, typename V>
-  void fillEventWiseConstituentSubtractedHistograms(T const& jet, float weight = 1.0)
+  void fillEventWiseConstituentSubtractedHistograms(T const& jet, float centrality, float weight = 1.0)
   {
     if (jet.r() == round(selectedJetsRadius * 100.0f)) {
-      registry.fill(HIST("h_jet_pt_eventwiseconstituentsubtracted"), jet.pt(), weight);
-      registry.fill(HIST("h_jet_eta_eventwiseconstituentsubtracted"), jet.eta(), weight);
-      registry.fill(HIST("h_jet_phi_eventwiseconstituentsubtracted"), jet.phi(), weight);
-      registry.fill(HIST("h_jet_ntracks_eventwiseconstituentsubtracted"), jet.tracks().size(), weight);
+      registry.fill(HIST("h2_jet_centrality_pt_eventwiseconstituentsubtracted"), centrality, jet.pt(), weight);
+      registry.fill(HIST("h2_jet_centrality_eta_eventwiseconstituentsubtracted"), centrality, jet.eta(), weight);
+      registry.fill(HIST("h2_jet_centrality_phi_eventwiseconstituentsubtracted"), centrality, jet.phi(), weight);
+      registry.fill(HIST("h2_jet_centrality_ntracks_eventwiseconstituentsubtracted"), centrality, jet.tracks().size(), weight);
     }
 
     registry.fill(HIST("h3_jet_r_jet_pt_jet_eta_eventwiseconstituentsubtracted"), jet.r() / 100.0, jet.pt(), jet.eta(), weight);
@@ -795,7 +795,7 @@ struct JetFinderHFQATask {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
-      fillHistograms<typename JetTableDataJoined::iterator, CandidateTableData>(jet);
+      fillHistograms<typename JetTableDataJoined::iterator, CandidateTableData>(jet, collision.centrality());
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsData, "jet finder HF QA data", false);
@@ -806,7 +806,7 @@ struct JetFinderHFQATask {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
-      fillHistograms<typename JetTableMCDJoined::iterator, CandidateTableMCD>(jet);
+      fillHistograms<typename JetTableMCDJoined::iterator, CandidateTableMCD>(jet, collision.centrality());
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsMCD, "jet finder HF QA mcd", false);
@@ -817,7 +817,7 @@ struct JetFinderHFQATask {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
-      fillHistograms<typename JetTableMCDWeightedJoined::iterator, CandidateTableMCD>(jet, jet.eventWeight());
+      fillHistograms<typename JetTableMCDWeightedJoined::iterator, CandidateTableMCD>(jet, collision.centrality(), jet.eventWeight());
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsMCDWeighted, "jet finder HF QA mcd on weighted events", false);
@@ -1097,19 +1097,19 @@ struct JetFinderHFQATask {
   }
   PROCESS_SWITCH(JetFinderHFQATask, processTracksSub, "QA for charged event-wise embedded subtracted tracks", false);
 
-  void processRho(JetCollision const& collision, CandidateTableData const& candidates, BkgRhoTable const& Rhos)
+  void processRho(JetCollision const& collision, CandidateTableData const& candidates, BkgRhoTable const& bkgRhos)
   {
     for (auto const& candidate : candidates) {
-      auto rho = jethfutilities::slicedPerCandidate(Rhos, candidate, perD0CandidateRhos, perLcCandidateRhos, perBplusCandidateRhos).iteratorAt(0);
-      registry.fill(HIST("h2_rho_centrality"), rho.rho(), collision.centrality());
-      registry.fill(HIST("h2_rhom_centrality"), rho.rhoM(), collision.centrality());
+      auto bkgRho = jethfutilities::slicedPerCandidate(bkgRhos, candidate, perD0CandidateRhos, perLcCandidateRhos, perBplusCandidateRhos).iteratorAt(0);
+      registry.fill(HIST("h2_rho_centrality"), collision.centrality(), bkgRho.rho());
+      registry.fill(HIST("h2_rhom_centrality"), collision.centrality(), bkgRho.rhoM());
       break; // currently only fills it for the first candidate in the event (not pT ordered)
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processRho, "QA for rho-area subtracted jets", false);
 
   void processJetsRhoAreaSubData(soa::Filtered<JetCollisions>::iterator const& collision,
-                                 BkgRhoTable const& Rhos,
+                                 BkgRhoTable const& bkgRhos,
                                  JetTableDataJoined const& jets,
                                  CandidateTableData const& candidates,
                                  JetTracks const& tracks)
@@ -1119,8 +1119,8 @@ struct JetFinderHFQATask {
         continue;
       }
       auto const jetCandidate = jet.template hfcandidates_first_as<CandidateTableData>();
-      auto rho = jethfutilities::slicedPerCandidate(Rhos, jetCandidate, perD0CandidateRhos, perLcCandidateRhos, perBplusCandidateRhos).iteratorAt(0);
-      fillRhoAreaSubtractedHistograms<typename JetTableDataJoined::iterator, CandidateTableData>(jet, rho.rho());
+      auto bkgRho = jethfutilities::slicedPerCandidate(bkgRhos, jetCandidate, perD0CandidateRhos, perLcCandidateRhos, perBplusCandidateRhos).iteratorAt(0);
+      fillRhoAreaSubtractedHistograms<typename JetTableDataJoined::iterator, CandidateTableData>(jet, collision.centrality(), bkgRho.rho());
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processJetsRhoAreaSubData, "jet finder HF QA for rho-area subtracted jets", false);
@@ -1131,7 +1131,7 @@ struct JetFinderHFQATask {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
-      fillEventWiseConstituentSubtractedHistograms<typename JetTableDataSubJoined::iterator, CandidateTableData, JetTracksDataSub>(jet);
+      fillEventWiseConstituentSubtractedHistograms<typename JetTableDataSubJoined::iterator, CandidateTableData, JetTracksDataSub>(jet, collision.centrality());
     }
   }
   PROCESS_SWITCH(JetFinderHFQATask, processEvtWiseConstSubJetsData, "jet finder HF QA for eventwise constituent-subtracted jets data", false);
