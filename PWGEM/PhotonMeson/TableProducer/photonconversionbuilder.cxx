@@ -78,10 +78,10 @@ struct PhotonConversionBuilder {
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
 
   // single track cuts
-  Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 25, "min ncluster tpc"};
+  Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 10, "min ncluster tpc"};
   Configurable<int> mincrossedrows{"mincrossedrows", 10, "min crossed rows"};
-  Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
-  Configurable<float> maxchi2its{"maxchi2its", 5.0, "max chi2/NclsITS"};
+  Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max chi2/NclsTPC"}; // default 4.0 + 1.0
+  Configurable<float> maxchi2its{"maxchi2its", 6.0, "max chi2/NclsITS"}; // default 5.0 + 1.0
   Configurable<float> maxpt_itsonly{"maxpt_itsonly", 0.15, "max pT for ITSonly tracks at SV"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 4.0, "max. TPC n sigma for electron"};
   Configurable<float> dcanegtopv{"dcanegtopv", 0.1, "DCA Neg To PV"};
@@ -90,11 +90,12 @@ struct PhotonConversionBuilder {
   Configurable<float> maxX{"maxX", 83.1, "max X for track IU"};
 
   // v0 cuts
-  Configurable<float> min_v0cospa_tpconly{"min_v0cospa_tpconly", 0.95, "min V0 CosPA to V0s with TPConly tracks"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> min_v0cospa_tpconly{"min_v0cospa_tpconly", 0.99, "min V0 CosPA to V0s with TPConly tracks"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> min_v0cospa_its{"min_v0cospa_its", 0.99, "min V0 CosPA to V0s with ITs hits"};               // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> max_dcav0dau_tpconly{"max_dcav0dau_tpconly", 3.0, "max distance btween 2 legs to V0s with TPConly tracks"};
   Configurable<float> max_dcav0dau_its{"max_dcav0dau_its", 0.5, "max distance btween 2 legs to V0s with ITS hits"};
   Configurable<float> max_dcav0dau_itsibss{"max_dcav0dau_itsibss", 1.0, "max distance btween 2 legs to V0s with ITS hits on ITSib SS"};
+  Configurable<float> max_dcav0dau_tpc_inner_fc{"max_dcav0dau_tpc_inner_fc", 1.5, "max distance btween 2 legs to V0s with ITS hits on TPC inner FC"};
   Configurable<float> min_v0radius{"min_v0radius", 1.0, "min v0 radius"};
   Configurable<float> margin_r_its{"margin_r_its", 3.0, "margin for r cut in cm"};
   Configurable<float> margin_r_tpconly{"margin_r_tpconly", 7.0, "margin for r cut in cm"};
@@ -107,6 +108,7 @@ struct PhotonConversionBuilder {
   Configurable<float> kfMassConstrain{"kfMassConstrain", -1.f, "mass constrain for the KFParticle mother particle"};
   Configurable<float> max_r_req_its{"max_r_req_its", 16.0, "max Rxy for V0 with ITS hits"};
   Configurable<float> min_r_tpconly{"min_r_tpconly", 36.0, "min Rxy for V0 with TPConly tracks"};
+  Configurable<float> max_r_itsmft_ss{"max_r_itsmft_ss", 66.0, "max Rxy for ITS/MFT SS"};
   Configurable<float> max_dcatopv_xy_v0{"max_dcatopv_xy_v0", +1e+10, "max. DCAxy to PV for V0"};
   Configurable<float> max_dcatopv_z_v0{"max_dcatopv_z_v0", +1e+10, "max. DCAz to PV for V0"};
 
@@ -257,9 +259,9 @@ struct PhotonConversionBuilder {
         return false;
       }
 
-      if (abs(track.z() / track.x() - track.tgl()) > 0.4) {
-        return false;
-      }
+      // if (abs(track.z() / track.x() - track.tgl()) > 0.4) {
+      //   return false;
+      // }
 
       auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
       bool its_ob_only = hits_ib <= its_ib_Requirement.first;
@@ -331,11 +333,9 @@ struct PhotonConversionBuilder {
     float xyz[3] = {0.f, 0.f, 0.f};
     Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz, matCorr);
     float rxy_tmp = RecoDecay::sqrtSumOfSquares(xyz[0], xyz[1]);
-
     if (rxy_tmp > maxX + margin_r_tpconly) {
       return;
     }
-
     if (rxy_tmp < abs(xyz[2]) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
       return; // RZ line cut
     }
@@ -393,6 +393,9 @@ struct PhotonConversionBuilder {
       }
     }
 
+    if (rxy > maxX + margin_r_tpconly) {
+      return;
+    }
     if (rxy < abs(gammaKF_DecayVtx.GetZ()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
       return; // RZ line cut
     }
@@ -434,8 +437,14 @@ struct PhotonConversionBuilder {
 
     float pca_kf = kfp_pos_DecayVtx.GetDistanceFromParticle(kfp_ele_DecayVtx);
     if (!ele.hasITS() && !pos.hasITS()) {
-      if (pca_kf > max_dcav0dau_tpconly) {
-        return;
+      if (max_r_itsmft_ss < rxy && rxy < maxX + margin_r_tpconly) {
+        if (pca_kf > max_dcav0dau_tpc_inner_fc) {
+          return;
+        }
+      } else {
+        if (pca_kf > max_dcav0dau_tpconly) {
+          return;
+        }
       }
     } else {
       if (rxy < max_r_req_its) {
