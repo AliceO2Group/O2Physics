@@ -44,7 +44,6 @@
 
 #include <TGraphErrors.h>
 
-
 struct TrackTuner {
 
   ///////////////////////////////
