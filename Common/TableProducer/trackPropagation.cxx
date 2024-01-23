@@ -14,7 +14,7 @@
 //
 
 #include "TableHelper.h"
-#include "Common/Tools/trackTuner.h"
+#include "Common/Tools/TrackTuner.h"
 
 // The Run 3 AO2D stores the tracks at the point of innermost update. For a track with ITS this is the innermost (or second innermost)
 // ITS layer. For a track without ITS, this is the TPC inner wall or for loopers in the TPC even a radius beyond that.
@@ -58,35 +58,35 @@ struct TrackPropagation {
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   Configurable<float> minPropagationRadius{"minPropagationDistance", o2::constants::geom::XTPCInnerRef + 0.1, "Only tracks which are at a smaller radius will be propagated, defaults to TPC inner wall"};
   // for TrackTuner only (MC smearing)
-  Configurable<bool> useTrackTuner{"useTrackTuner", 0, "Apply Improver/DCA corrections to MC"};
+  Configurable<bool> useTrackTuner{"useTrackTuner", false, "Apply Improver/DCA corrections to MC"};
   Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackCovMat=1|updateCurvature=0|updatePulls=0|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/PbPb2022|nameInputFile=trackTuner_DataLHC22sPass5_McLHC22l1b2_run529397.root|usePvRefitCorrections=0|oneOverPtCurrent=0|oneOverPtUpgr=0", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
   OutputObj<TH1D> trackTunedTracks{TH1D("trackTunedTracks", "", 1, 0.5, 1.5), OutputObjHandlingPolicy::AnalysisObject};
 
-  using tracksIUWithMc = soa::Join<aod::StoredTracksIU, aod::McTrackLabels, aod::TracksCovIU>;
-  using tracksIU = soa::Join<aod::StoredTracksIU, aod::TracksCovIU>;
+  using TracksIUWithMc = soa::Join<aod::StoredTracksIU, aod::McTrackLabels, aod::TracksCovIU>;
+  using TracksIU = soa::Join<aod::StoredTracksIU, aod::TracksCovIU>;
 
   void init(o2::framework::InitContext& initContext)
   {
     int nEnabledProcesses = 0;
-    if (doprocessStandard == true) {
+    if (doprocessStandard) {
       LOG(info) << "Enabling processStandard";
       nEnabledProcesses++;
     }
-    if (doprocessCovarianceMc == true) {
+    if (doprocessCovarianceMc) {
       LOG(info) << "Enabling processCovarianceMc";
       nEnabledProcesses++;
     }
 
-    if (doprocessCovarianceData == true) {
+    if (doprocessCovarianceData) {
       LOG(info) << "Enabling processCovarianceData";
       nEnabledProcesses++;
     }
 
-    if (doprocessStandardWithPID == true) {
+    if (doprocessStandardWithPID) {
       LOG(info) << "Enabling processStandardWithPID";
       nEnabledProcesses++;
     }
-    if (doprocessCovarianceWithPID == true) {
+    if (doprocessCovarianceWithPID) {
       LOG(info) << "Enabling processCovarianceWithPID";
       nEnabledProcesses++;
     }
@@ -130,9 +130,9 @@ struct TrackPropagation {
   o2::track::TrackParametrization<float> mTrackPar;
   o2::track::TrackParametrizationWithError<float> mTrackParCov;
 
-  template <typename TTrack, typename Particle, bool isMc, bool fillCovMat = false, bool useTrkPid = false>
+  template <typename TTrack, typename TParticle, bool isMc, bool fillCovMat = false, bool useTrkPid = false>
   void fillTrackTables(TTrack const& tracks,
-                       Particle const& mcParticles,
+                       TParticle const& mcParticles,
                        aod::Collisions const&,
                        aod::BCsWithTimestamps const& bcs)
   {
@@ -183,12 +183,12 @@ struct TrackPropagation {
             // call track propagator
             // this function reads many many things
             //  - reads track params
-            bool has_MCparticle = track.has_mcParticle();
-            if (has_MCparticle) {
+            bool hasMcParticle = track.has_mcParticle();
+            if (hasMcParticle) {
               // LOG(info) << " MC particle exists... ";
               // LOG(info) << "Inside trackPropagation: before calling tuneTrackParams trackParCov.getY(): " << trackParCov.getY();
-              auto mcparticle = track.mcParticle();
-              trackTunerObj.tuneTrackParams(mcparticle, mTrackParCov, matCorr, &mDcaInfoCov);
+              auto mcParticle = track.mcParticle();
+              trackTunerObj.tuneTrackParams(mcParticle, mTrackParCov, matCorr, &mDcaInfoCov);
               // LOG(info) << "Inside trackPropagation: after calling tuneTrackParams trackParCov.getY(): " << trackParCov.getY();
               trackTunedTracks->Fill(1);
             }
@@ -253,15 +253,15 @@ struct TrackPropagation {
   PROCESS_SWITCH(TrackPropagation, processStandardWithPID, "Process without covariance and with PID in tracking", false);
 
   // -----------------------
-  void processCovarianceMc(tracksIUWithMc const& tracks, aod::McParticles const& mcParticles, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
+  void processCovarianceMc(TracksIUWithMc const& tracks, aod::McParticles const& mcParticles, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   {
-    fillTrackTables</*TTrack*/ tracksIUWithMc, /*Particle*/ aod::McParticles, /*isMc = */ true, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, mcParticles, collisions, bcs);
+    fillTrackTables</*TTrack*/ TracksIUWithMc, /*Particle*/ aod::McParticles, /*isMc = */ true, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, mcParticles, collisions, bcs);
   }
   PROCESS_SWITCH(TrackPropagation, processCovarianceMc, "Process with covariance on MC", false);
 
-  void processCovarianceData(tracksIU const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
+  void processCovarianceData(TracksIU const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   {
-    fillTrackTables</*TTrack*/ tracksIU, /*Particle*/ tracksIU, /*isMc = */ false, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, tracks, collisions, bcs);
+    fillTrackTables</*TTrack*/ TracksIU, /*Particle*/ TracksIU, /*isMc = */ false, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, tracks, collisions, bcs);
   }
   PROCESS_SWITCH(TrackPropagation, processCovarianceData, "Process with covariance on Data", false);
   // ------------------------
