@@ -207,13 +207,14 @@ struct LfTreeCreatorNuclei {
           tableCandidateMC(particle.pdgCode(),
                            particle.isPhysicalPrimary(),
                            particle.producedByGenerator(),
+                           particle.getProcess(),
                            particle.px(),
                            particle.py(),
                            particle.pz());
           // if(particle.pdgCode() == 1000010020) LOG(info)<<"[TC]Deuteron PDGcode ===="<<particle.pdgCode();
           continue;
         }
-        tableCandidateMC(0, -1, -1, 0, 0, 0);
+        tableCandidateMC(0, -1, -1, 0, 0, 0, 0);
       }
     }
   }

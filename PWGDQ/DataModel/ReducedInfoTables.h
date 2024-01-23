@@ -542,11 +542,12 @@ namespace fwdpid
 DECLARE_SOA_COLUMN(Pt, pt, float);   //!
 DECLARE_SOA_COLUMN(Eta, eta, float); //!
 DECLARE_SOA_COLUMN(Phi, phi, float); //!
+DECLARE_SOA_COLUMN(Sign, sign, int); //!
 } // namespace fwdpid
 
 DECLARE_SOA_TABLE(FwdPidsAll, "AOD", "RTFWDPIDALL", //!
                   fwdtrack::TrackType, collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
-                  fwdpid::Pt, fwdpid::Eta, fwdpid::Phi,
+                  fwdpid::Pt, fwdpid::Eta, fwdpid::Phi, fwdpid::Sign,
                   reducedmft::MftClusterSizesAndTrackFlags,
                   reducedmft::FwdDcaX, reducedmft::FwdDcaY, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT);
 

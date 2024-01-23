@@ -15,12 +15,17 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/TrackSelectionTables.h" // needed for aod::TracksDCA table
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 using namespace o2;
 using namespace o2::framework;
 
-using CollisionRec = aod::Collision;
-using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator;
-using CollisionSim = aod::McCollision;
+using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Ms>; // TBI 20240120 add support for other centrality estimators, why aod::Cents doesn't work?
+
+using CollisionRec = soa::Join<aod::Collisions, EventSelection>::iterator;
+using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection>::iterator;
+using CollisionSim = aod::McCollision; // TBI 20240120 add support for centrality also for this case
 
 using TracksRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
 using TrackRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>::iterator;

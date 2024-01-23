@@ -110,6 +110,7 @@ struct hyperRecoTask {
   Configurable<double> v0cospa{"hypcospa", 0.95, "V0 CosPA"};
   Configurable<float> masswidth{"hypmasswidth", 0.06, "Mass width (GeV/c^2)"};
   Configurable<float> dcav0dau{"hypdcaDau", 1.0, "DCA V0 Daughters"};
+  Configurable<float> ptmin{"ptmin", 0.5, "Minimum pT of the hypercandidate"};
   Configurable<float> etaMax{"eta", 1., "eta daughter"};
   Configurable<float> heliumNsigmaMax{"heliumNsigmaMax", 5, "helium dEdx cut (n sigma)"};
   Configurable<float> heliumNtpcClusMin{"heliumNtpcClusMin", 80, "helium NTPC clusters cut"};
@@ -348,6 +349,10 @@ struct hyperRecoTask {
         hypMom[i] = hypCand.momHe3[i] + hypCand.momPi[i];
       }
 
+      float hypPt = std::hypot(hypMom[0], hypMom[1]);
+      if (hypPt < ptmin)
+        continue;
+
       float massH3L = std::sqrt(h3lE * h3lE - hypMom[0] * hypMom[0] - hypMom[1] * hypMom[1] - hypMom[2] * hypMom[2]);
       float massH4L = std::sqrt(h4lE * h4lE - hypMom[0] * hypMom[0] - hypMom[1] * hypMom[1] - hypMom[2] * hypMom[2]);
       bool isHypMass = false;
@@ -525,6 +530,7 @@ struct hyperRecoTask {
 
   void processMC(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
+    filledMothers.clear();
 
     for (const auto& collision : collisions) {
       hyperCandidates.clear();

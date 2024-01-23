@@ -76,7 +76,7 @@ struct JetSubstructureOutputTask {
     jetSubstructureOutputTable(jetOutputTable.lastIndex(), jet.zg(), jet.rg(), jet.nsd());
   }
 
-  template <typename T, typename U, typename V, typename M, typename N, typename O>
+  template <bool hasMatching, typename T, typename U, typename V, typename M, typename N, typename O>
   void analyseCharged(T const& collision, U const& jets, V const& jetsTag, M& collisionOutputTable, N& jetOutputTable, O& jetSubstructureOutputTable)
   {
 
@@ -91,14 +91,16 @@ struct JetSubstructureOutputTask {
         if (jet.r() == round(jetRadiiValue * 100.0f)) {
           std::vector<int> geoMatching;
           std::vector<int> ptMatching;
-          if (jet.has_matchedJetGeo()) {
-            for (auto& jetTag : jet.template matchedJetGeo_as<V>()) {
-              geoMatching.push_back(jetTag.globalIndex());
+          if constexpr (hasMatching) {
+            if (jet.has_matchedJetGeo()) {
+              for (auto& jetTag : jet.template matchedJetGeo_as<V>()) {
+                geoMatching.push_back(jetTag.globalIndex());
+              }
             }
-          }
-          if (jet.has_matchedJetPt()) {
-            for (auto& jetTag : jet.template matchedJetPt_as<V>()) {
-              ptMatching.push_back(jetTag.globalIndex());
+            if (jet.has_matchedJetPt()) {
+              for (auto& jetTag : jet.template matchedJetPt_as<V>()) {
+                ptMatching.push_back(jetTag.globalIndex());
+              }
             }
           }
           if (nJetInCollision == 0) {
@@ -116,20 +118,20 @@ struct JetSubstructureOutputTask {
   PROCESS_SWITCH(JetSubstructureOutputTask, processDummy, "Dummy process function turned on by default", true);
 
   void processOutputData(JetCollision const& collision,
-                         soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures, aod::ChargedJetsMatchedToChargedEventWiseSubtractedJets>> const& jets,
-                         aod::ChargedEventWiseSubtractedJets const& jetsTag,
+                         soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures>> const& jets,
                          JetTracks const& tracks)
   {
-    analyseCharged(collision, jets, jetsTag, collisionOutputTableData, jetOutputTableData, jetSubstructureOutputTableData);
+    analyseCharged<false>(collision, jets, jets, collisionOutputTableData, jetOutputTableData, jetSubstructureOutputTableData);
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutputData, "jet substructure output Data", false);
 
   void processOutputDataSub(JetCollision const& collision,
-                            soa::Filtered<soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents, aod::ChargedEventWiseSubtractedJetSubstructures, aod::ChargedEventWiseSubtractedJetsMatchedToChargedJets>> const& jets,
-                            aod::ChargedJets const& jetsTag,
+                            soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures, aod::ChargedJetsMatchedToChargedEventWiseSubtractedJets>> const& jets,
+                            soa::Filtered<soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents, aod::ChargedEventWiseSubtractedJetSubstructures, aod::ChargedEventWiseSubtractedJetsMatchedToChargedJets>> const& jetsSub,
                             JetTracks const& tracks)
   {
-    analyseCharged(collision, jets, jetsTag, collisionOutputTableDataSub, jetOutputTableDataSub, jetSubstructureOutputTableDataSub);
+    analyseCharged<true>(collision, jets, jetsSub, collisionOutputTableData, jetOutputTableData, jetSubstructureOutputTableData);
+    analyseCharged<true>(collision, jetsSub, jets, collisionOutputTableDataSub, jetOutputTableDataSub, jetSubstructureOutputTableDataSub);
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutputDataSub, "jet substructure output event-wise subtracted Data", false);
 
@@ -138,7 +140,7 @@ struct JetSubstructureOutputTask {
                         aod::ChargedMCParticleLevelJets const& jetsTag,
                         JetTracks const& tracks)
   {
-    analyseCharged(collision, jets, jetsTag, collisionOutputTableMCD, jetOutputTableMCD, jetSubstructureOutputTableMCD);
+    analyseCharged<true>(collision, jets, jetsTag, collisionOutputTableMCD, jetOutputTableMCD, jetSubstructureOutputTableMCD);
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutputMCD, "jet substructure output MCD", false);
 

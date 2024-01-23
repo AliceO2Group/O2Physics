@@ -91,6 +91,7 @@ struct perfK0sResolution {
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
+  Configurable<bool> useMultidimHisto{"useMultidimHisto", false, "use multidimentional histograms"};
 
   template <typename T1, typename T2, typename C>
   bool acceptV0(const T1& v0, const T2& ntrack, const T2& ptrack, const C& collision)

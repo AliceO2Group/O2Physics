@@ -71,6 +71,8 @@ struct phianalysisrun3 {
   Configurable<bool> ismanualDCAcut{"ismanualDCAcut", true, "ismanualDCAcut"};
   Configurable<bool> isITSOnlycut{"isITSOnlycut", true, "isITSOnlycut"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
+  Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
+  Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
   // MC
   Configurable<bool> isMC{"isMC", false, "Run MC"};
   void init(o2::framework::InitContext&)
@@ -138,6 +140,23 @@ struct phianalysisrun3 {
       return true;
     }
     return false;
+  }
+  // deep angle cut on pair to remove photon conversion
+  template <typename T1, typename T2>
+  bool selectionPair(const T1& candidate1, const T2& candidate2)
+  {
+    double pt1, pt2, pz1, pz2, p1, p2, angle;
+    pt1 = candidate1.pt();
+    pt2 = candidate2.pt();
+    pz1 = candidate1.pz();
+    pz2 = candidate2.pz();
+    p1 = candidate1.p();
+    p2 = candidate2.p();
+    angle = TMath::ACos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
+    if (isDeepAngle && angle < cfgDeepAngle) {
+      return false;
+    }
+    return true;
   }
   template <typename T1, typename T2>
   void FillinvMass(const T1& candidate1, const T2& candidate2, float multiplicity, bool unlike, bool mix, bool likesign, bool rotation, float massd1, float massd2)
@@ -218,7 +237,7 @@ struct phianalysisrun3 {
   // BinningType binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
 
   // using BinningTypeTPCMultiplicity =  ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
-  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
+  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   // using BinningTypeCentrality = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
 
   // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
@@ -231,9 +250,9 @@ struct phianalysisrun3 {
     }
     float multiplicity;
     if (cfgMultFT0)
-      multiplicity = collision.multZeqFT0A() + collision.multZeqFT0C();
+      multiplicity = collision.centFT0C();
     if (!cfgMultFT0)
-      multiplicity = collision.centFT0M();
+      multiplicity = collision.numContrib();
     histos.fill(HIST("hCentrality"), multiplicity);
     histos.fill(HIST("hNcontributor"), collision.numContrib());
     histos.fill(HIST("hVtxZ"), collision.posZ());
@@ -253,6 +272,9 @@ struct phianalysisrun3 {
         }
         auto track2ID = track2.globalIndex();
         if (track2ID <= track1ID) {
+          continue;
+        }
+        if (!selectionPair(track1, track2)) {
           continue;
         }
         bool unlike = true;
@@ -286,9 +308,9 @@ struct phianalysisrun3 {
 
       float multiplicity;
       if (cfgMultFT0)
-        multiplicity = c1.multZeqFT0A() + c1.multZeqFT0C();
+        multiplicity = c1.centFT0C();
       if (!cfgMultFT0)
-        multiplicity = c1.centFT0M();
+        multiplicity = c1.numContrib();
 
       for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         bool unlike = false;
@@ -299,6 +321,9 @@ struct phianalysisrun3 {
           continue;
         }
         if (!selectionTrack(t2)) {
+          continue;
+        }
+        if (!selectionPair(t1, t2)) {
           continue;
         }
         if (isITSOnlycut) {
@@ -400,6 +425,9 @@ struct phianalysisrun3 {
         }
         auto track2ID = track2.globalIndex();
         if (track2ID <= track1ID) {
+          continue;
+        }
+        if (!selectionPair(track1, track2)) {
           continue;
         }
         if (track1.sign() * track2.sign() > 0) {
