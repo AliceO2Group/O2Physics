@@ -3309,6 +3309,12 @@ struct HfTrackIndexSkimCreatorLfCascades {
       registry.add("hMassXicZeroOmegacZeroToXiPi", "2-prong candidates;inv. mass (#Xi #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 2., 3.}}});
       registry.add("hMassOmegacZeroToOmegaPi", "2-prong candidates;inv. mass (#Omega #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 2., 3.}}});
       registry.add("hMassXicPlusToXiPiPi", "3-prong candidates;inv. mass (#Xi #pi #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 2., 3.}}});
+
+      // dcaFitter exception counter
+      registry.add("hFitterStatusXi2Prong", "Charm DCAFitter status (xi hyp. - 2prong);status;entries", {HistType::kTH1F, {{2, -0.5, 1.5}}}); // 0 --> successful call of DCAFitter 1 --> exception found by DCAFitter
+      registry.add("hFitterStatusOmega2Prong", "Charm DCAFitter status (omega hyp. - 2prong);status;entries", {HistType::kTH1F, {{2, -0.5, 1.5}}}); // 0 --> successful call of DCAFitter 1 --> exception found by DCAFitter
+      registry.add("hFitterStatusXi3Prong", "Charm DCAFitter status (xi hyp. - 3prong);status;entries", {HistType::kTH1F, {{2, -0.5, 1.5}}}); // 0 --> successful call of DCAFitter 1 --> exception found by DCAFitter                 
+
     }
   }
 
@@ -3509,7 +3515,16 @@ struct HfTrackIndexSkimCreatorLfCascades {
           auto trackParVarPion1 = getTrackParCov(trackPion1);
 
           // find charm baryon decay using xi PID hypothesis
-          int nVtxFrom2ProngFitterXiHyp = df2.process(trackCascXi2Prong, trackParVarPion1);
+          int nVtxFrom2ProngFitterXiHyp = 0;
+          try{
+            nVtxFrom2ProngFitterXiHyp = df2.process(trackCascXi2Prong, trackParVarPion1);
+          } catch (...) {
+            LOGF(info, "Exception caught: failed to find charm baryon vertex (2prong - xi)");
+            hFitterStatusXi2Prong->Fill(1);
+            continue;
+          }
+          hFitterStatusXi2Prong->Fill(0);
+
           if (nVtxFrom2ProngFitterXiHyp > 0) {
 
             df2.propagateTracksToVertex();
@@ -3536,8 +3551,17 @@ struct HfTrackIndexSkimCreatorLfCascades {
             }
           }
 
-          // find charm baryon decay using omega PID hypothesis
-          int nVtxFrom2ProngFitterOmegaHyp = df2.process(trackCascOmega, trackParVarPion1);
+          // find charm baryon decay using omega PID hypothesis  
+          int nVtxFrom2ProngFitterOmegaHyp = 0;
+          try{
+            nVtxFrom2ProngFitterOmegaHyp = df2.process(trackCascOmega, trackParVarPion1);
+          } catch (...) {
+            LOGF(info, "Exception caught: failed to find charm baryon vertex (2prong - omega)");
+            hFitterStatusOmega2Prong->Fill(1);
+            continue;
+          }
+          hFitterStatusOmega2Prong->Fill(0);
+
           if (nVtxFrom2ProngFitterOmegaHyp > 0) {
 
             df2.propagateTracksToVertex();
@@ -3605,7 +3629,16 @@ struct HfTrackIndexSkimCreatorLfCascades {
               auto trackParVarPion2 = getTrackParCov(trackPion2);
 
               // reconstruct Xic with DCAFitter
-              int nVtxFrom3ProngFitterXiHyp = df3.process(trackCascXi3Prong, trackParVarPion1, trackParVarPion2);
+              int nVtxFrom3ProngFitterXiHyp = 0;
+              try{
+                nVtxFrom3ProngFitterXiHyp = df3.process(trackCascXi3Prong, trackParVarPion1, trackParVarPion2);
+              } catch (...) {
+                LOGF(info, "Exception caught: failed to find charm baryon vertex (3prong - xi)");
+                hFitterStatusXi3Prong->Fill(1);
+                continue;
+              }
+              hFitterStatusXi3Prong->Fill(0);
+              
               if (nVtxFrom3ProngFitterXiHyp > 0) {
 
                 df3.propagateTracksToVertex();
