@@ -44,7 +44,6 @@ DECLARE_SOA_COLUMN(XDecayVtxV0, xDecayVtxV0, float);
 DECLARE_SOA_COLUMN(YDecayVtxV0, yDecayVtxV0, float);
 DECLARE_SOA_COLUMN(ZDecayVtxV0, zDecayVtxV0, float);
 DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t); // sign of pi <- xi
-DECLARE_SOA_COLUMN(Chi2PCACharmBaryon, chi2PCACharmBaryon, float);
 DECLARE_SOA_COLUMN(CovVtxCharmBaryonXX, covVtxCharmBaryonXX, float);
 DECLARE_SOA_COLUMN(CovVtxCharmBaryonYY, covVtxCharmBaryonYY, float);
 DECLARE_SOA_COLUMN(CovVtxCharmBaryonZZ, covVtxCharmBaryonZZ, float);
@@ -135,11 +134,11 @@ DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
-                  full::XPv, full::YPv, full::ZPv, collision::NumContrib,
+                  full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
                   full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
-                  full::SignDecay, full::Chi2PCACharmBaryon,
+                  full::SignDecay,
                   full::CovVtxCharmBaryonXX, full::CovVtxCharmBaryonYY, full::CovVtxCharmBaryonZZ,
                   full::PxCharmBaryon, full::PyCharmBaryon, full::PzCharmBaryon,
                   full::PxCasc, full::PyCasc, full::PzCasc,
@@ -185,6 +184,7 @@ struct HfTreeCreatorToXiPi {
       candidate.yPv(),
       candidate.zPv(),
       candidate.collision().numContrib(),
+      candidate.collision().chi2(),
       candidate.xDecayVtxCharmBaryon(),
       candidate.yDecayVtxCharmBaryon(),
       candidate.zDecayVtxCharmBaryon(),
@@ -195,7 +195,6 @@ struct HfTreeCreatorToXiPi {
       candidate.yDecayVtxV0(),
       candidate.zDecayVtxV0(),
       candidate.signDecay(),
-      candidate.chi2PCACharmBaryon(),
       candidate.covVtxCharmBaryon0(),
       candidate.covVtxCharmBaryon3(),
       candidate.covVtxCharmBaryon5(),
