@@ -254,7 +254,7 @@ struct HfTreeCreatorLcToPKPi {
   Produces<o2::aod::HfCandLcFullPs> rowCandidateFullParticles;
 
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
-  Configurable<bool> fillLiteTableIds{"fillLiteTableIds", false, "Fill a single-column table with collision index"};
+  Configurable<bool> fillCollIdTable{"fillCollIdTable", false, "Fill a single-column table with collision index"};
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
 
   HfHelper hfHelper;
@@ -297,7 +297,7 @@ struct HfTreeCreatorLcToPKPi {
     } else {
       rowCandidateFull.reserve(candidates.size());
     }
-    if (fillLiteTableIds) {
+    if (fillCollIdTable) {
       /// save also candidate collision indices
       rowCollisionId.reserve(candidates.size());
     }
@@ -367,7 +367,7 @@ struct HfTreeCreatorLcToPKPi {
               candidate.isCandidateSwapped());
             // candidate.globalIndex());
 
-            if (fillLiteTableIds) {
+            if (fillCollIdTable) {
               /// save also candidate collision indices
               rowCollisionId(candidate.collisionId());
             }
@@ -500,7 +500,7 @@ struct HfTreeCreatorLcToPKPi {
     } else {
       rowCandidateFull.reserve(candidates.size());
     }
-    if (fillLiteTableIds) {
+    if (fillCollIdTable) {
       /// save also candidate collision indices
       rowCollisionId.reserve(candidates.size());
     }
@@ -570,7 +570,7 @@ struct HfTreeCreatorLcToPKPi {
               0.);
             // candidate.globalIndex());
 
-            if (fillLiteTableIds) {
+            if (fillCollIdTable) {
               /// save also candidate collision indices
               rowCollisionId(candidate.collisionId());
             }
