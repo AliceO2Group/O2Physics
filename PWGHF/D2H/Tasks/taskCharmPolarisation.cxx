@@ -68,9 +68,9 @@ struct TaskPolarisationCharmHadrons {
   Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 Pi"};
   Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for Lc decay to P K Pi"};
 
-  ConfigurableAxis thnAxisInvMass{"thnAxisInvMass", {100, 1.78, 2.05}, "#it{M} (GeV/#it{c}^{2})"};
+  ConfigurableAxis thnAxisInvMass{"thnAxisInvMass", {200, 0.139, 0.179}, "#it{M} (GeV/#it{c}^{2})"};
   ConfigurableAxis thnAxisPt{"thnAxisPt", {100, 0., 100.}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis thnAxisPz{"thnAxisPz", {100, 0., 100.}, "|#it{p}_{z}| (GeV/#it{c})"};
+  ConfigurableAxis thnAxisPz{"thnAxisPz", {100, -50., 50.}, "|#it{p}_{z}| (GeV/#it{c})"};
   ConfigurableAxis thnAxisY{"thnAxisY", {20, -1., 1.}, "#it{y}"};
   ConfigurableAxis thnAxisCosThetaStarHelicity{"thnAxisCosThetaStarHelicity", {20, -1., 1.}, "cos(#vartheta_{helicity})"};
   ConfigurableAxis thnAxisCosThetaStarProduction{"thnAxisCosThetaStarProduction", {20, -1., 1.}, "cos(#vartheta_{production})"};
@@ -215,10 +215,10 @@ struct TaskPolarisationCharmHadrons {
       ROOT::Math::XYZVector helicityVec = fourVecMother.Vect();
       ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(pyCharmHad, -pxCharmHad, 0.);
 
-      float cosThetaStarHelicity = std::abs(helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2()));
-      float cosThetaStarProduction = std::abs(normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2()));
-      float cosThetaStarBeam = std::abs(beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()));
-      float cosThetaStarRandom = std::abs(randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()));
+      float cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2());
+      float cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2());
+      float cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
+      float cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
 
       if constexpr (withMl) {
         registry.fill(HIST("hSparseCharmPolarisation"), invMassCharmHadForSparse, candidate.pt(), pzCharmHad, rapidity, cosThetaStarHelicity, cosThetaStarProduction, cosThetaStarBeam, cosThetaStarRandom, outputMl[0], outputMl[1], outputMl[2]);
