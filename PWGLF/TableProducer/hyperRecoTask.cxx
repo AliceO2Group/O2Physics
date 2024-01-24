@@ -393,10 +393,9 @@ struct hyperRecoTask {
       hypCand.posTrackID = posTrack.globalIndex();
       hypCand.negTrackID = negTrack.globalIndex();
 
-      int chargeFactor = -1 + 2 * hypCand.isMatter;
-
-      hDeDx3HeSel->Fill(chargeFactor * posRigidity, he3track.tpcSignal());
-      hNsigma3HeSel->Fill(chargeFactor * negRigidity, hypCand.nSigmaHe3);
+      int chargeFactor = -1 + 2 * hypCand.isMatter;      
+      hDeDx3HeSel->Fill(chargeFactor * hypCand.momHe3TPC, he3track.tpcSignal());
+      hNsigma3HeSel->Fill(chargeFactor * hypCand.momHe3TPC, hypCand.nSigmaHe3);
 
       hyperCandidates.push_back(hypCand);
     }
