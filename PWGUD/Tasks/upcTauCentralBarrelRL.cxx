@@ -207,6 +207,7 @@ struct UpcTauCentralBarrelRL {
 	Configurable<bool> verboseInfo{"verboseInfo", true, {"Print general info to terminal; default it true."}};
 	Configurable<bool> printMetaInfo{"printMetaInfo", false, {"Print general info to terminal about collision, tracks, particles...; default it false."}};
 	Configurable<bool> verboseDebug{"verboseDebug", false, {"Print debug info to terminal; default it false."}};
+    Configurable<bool> isSGproducer{"isSGproducer", false, {"Turn on/off DG flag within SG producer."}};
 	Configurable<int> applyTrackCuts{"applyTrackCuts", 0, {"Apply n selections on track; default it no cut."}};
 	Configurable<int> applySingleTrackCut{"applySingleTrackCut", 0, {"Apply selection n on track, applyTrackCuts must be at maximum for full usage; default it no cut."}};
 
@@ -223,6 +224,7 @@ struct UpcTauCentralBarrelRL {
 
     using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
     using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
+//    using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions>::iterator;
 
 
 	// init
@@ -487,6 +489,13 @@ struct UpcTauCentralBarrelRL {
 		}
 
         histos.get<TH1>(HIST("Events/hCountCollisions"))->Fill(1);
+
+//        if (isSGproducer){
+//            if (reconstructedCollision.gapSide() == 0) histos.get<TH1>(HIST("Events/hCountCollisions"))->Fill(2);
+//            if (reconstructedCollision.gapSide() == 1) histos.get<TH1>(HIST("Events/hCountCollisions"))->Fill(3);
+//            if (reconstructedCollision.gapSide() != 2) return;
+//            histos.get<TH1>(HIST("Events/hCountCollisions"))->Fill(4);
+//        }
 
 //        int typeParticle = testPIDhypothesis(track);
 //        if (typeParticle >= 0 && typeParticle < (sizeof(P_MASS) / sizeof(float))) {
@@ -1077,8 +1086,8 @@ struct UpcTauCentralBarrelRL {
         histosCustom.get<TH1>(HIST("Custom/hCountCollisions"))->Fill(7);
 
         TLorentzVector mother, daug[2];
-        daug[0].SetPxPyPzE(trk1.px(),trk1.py(),trk1.pz(),energy(pdg->Mass(0.13),trk1.px(),trk1.py(),trk1.pz()));
-        daug[1].SetPxPyPzE(trk2.px(),trk2.py(),trk2.pz(),energy(pdg->Mass(0.13),trk2.px(),trk2.py(),trk2.pz()));
+        daug[0].SetPxPyPzE(trk1.px(),trk1.py(),trk1.pz(),energy(pdg->Mass(13),trk1.px(),trk1.py(),trk1.pz()));
+        daug[1].SetPxPyPzE(trk2.px(),trk2.py(),trk2.pz(),energy(pdg->Mass(13),trk2.px(),trk2.py(),trk2.pz()));
         mother = daug[0] + daug[1];
 
         if (mother.Pt() > 0.2) return;
