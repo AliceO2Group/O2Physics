@@ -92,7 +92,6 @@ DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
-                  full::CollisionId,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -143,6 +142,9 @@ DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
                   full::FlagMc,
                   full::OriginMcRec,
                   full::IsCandidateSwapped);
+
+DECLARE_SOA_TABLE(HfCollIdLCLite, "AOD", "HFCOLLIDLCLITE",
+                  full::CollisionId);
 
 DECLARE_SOA_TABLE(HfCandLcFulls, "AOD", "HFCANDLCFULL",
                   full::CollisionId,
@@ -213,9 +215,7 @@ DECLARE_SOA_TABLE(HfCandLcFulls, "AOD", "HFCANDLCFULL",
                   full::E,
                   full::FlagMc,
                   full::OriginMcRec,
-                  full::IsCandidateSwapped);
-
-DECLARE_SOA_TABLE(HfCandId, "AOD", "HFCANDID",
+                  full::IsCandidateSwapped,
                   full::CandidateId);
 
 DECLARE_SOA_TABLE(HfCandLcFullEvs, "AOD", "HFCANDLCFULLEV",
@@ -249,12 +249,12 @@ DECLARE_SOA_TABLE(HfCandLcFullPs, "AOD", "HFCANDLCFULLP",
 struct HfTreeCreatorLcToPKPi {
   Produces<o2::aod::HfCandLcFulls> rowCandidateFull;
   Produces<o2::aod::HfCandLcLites> rowCandidateLite;
-  Produces<o2::aod::HfCandId> rowCandidateId;
+  Produces<o2::aod::HfCollIdLCLite> rowCollisionId;
   Produces<o2::aod::HfCandLcFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandLcFullPs> rowCandidateFullParticles;
 
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
-  Configurable<bool> fillCandidateId{"fillCandidateId", false, "Fill a single-column table with candidate global index"};
+  Configurable<bool> fillLiteTableIds{"fillLiteTableIds", false, "Fill a single-column table with collision index"};
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
 
   HfHelper hfHelper;
@@ -297,9 +297,9 @@ struct HfTreeCreatorLcToPKPi {
     } else {
       rowCandidateFull.reserve(candidates.size());
     }
-    if (fillCandidateId) {
-      /// save also candidate indices
-      rowCandidateId.reserve(candidates.size());
+    if (fillLiteTableIds) {
+      /// save also candidate collision indices
+      rowCollisionId.reserve(candidates.size());
     }
     for (const auto& candidate : candidates) {
       auto trackPos1 = candidate.prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
@@ -315,7 +315,6 @@ struct HfTreeCreatorLcToPKPi {
         if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           if (fillCandidateLiteTable) {
             rowCandidateLite(
-              candidate.collisionId(),
               candidate.posX(),
               candidate.posY(),
               candidate.posZ(),
@@ -367,6 +366,12 @@ struct HfTreeCreatorLcToPKPi {
               candidate.originMcRec(),
               candidate.isCandidateSwapped());
             // candidate.globalIndex());
+
+            if (fillLiteTableIds) {
+              /// save also candidate collision indices
+              rowCollisionId(candidate.collisionId());
+            }
+
           } else {
             rowCandidateFull(
               candidate.collisionId(),
@@ -437,13 +442,8 @@ struct HfTreeCreatorLcToPKPi {
               FunctionE,
               candidate.flagMcMatchRec(),
               candidate.originMcRec(),
-              candidate.isCandidateSwapped());
-            // candidate.globalIndex());
-          }
-
-          if (fillCandidateId) {
-            /// save also candidate indices
-            rowCandidateId(candidate.globalIndex());
+              candidate.isCandidateSwapped(),
+              candidate.globalIndex());
           }
         }
       };
@@ -500,9 +500,9 @@ struct HfTreeCreatorLcToPKPi {
     } else {
       rowCandidateFull.reserve(candidates.size());
     }
-    if (fillCandidateId) {
-      /// save also candidate indices
-      rowCandidateId.reserve(candidates.size());
+    if (fillLiteTableIds) {
+      /// save also candidate collision indices
+      rowCollisionId.reserve(candidates.size());
     }
     for (const auto& candidate : candidates) {
       auto trackPos1 = candidate.prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
@@ -518,7 +518,6 @@ struct HfTreeCreatorLcToPKPi {
         if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
           if (fillCandidateLiteTable) {
             rowCandidateLite(
-              candidate.collisionId(),
               candidate.posX(),
               candidate.posY(),
               candidate.posZ(),
@@ -570,6 +569,12 @@ struct HfTreeCreatorLcToPKPi {
               0.,
               0.);
             // candidate.globalIndex());
+
+            if (fillLiteTableIds) {
+              /// save also candidate collision indices
+              rowCollisionId(candidate.collisionId());
+            }
+
           } else {
             rowCandidateFull(
               candidate.collisionId(),
@@ -640,13 +645,8 @@ struct HfTreeCreatorLcToPKPi {
               FunctionE,
               0.,
               0.,
-              0.);
-            // candidate.globalIndex());
-          }
-
-          if (fillCandidateId) {
-            /// save also candidate indices
-            rowCandidateId(candidate.globalIndex());
+              0.,
+              candidate.globalIndex());
           }
         }
       };
