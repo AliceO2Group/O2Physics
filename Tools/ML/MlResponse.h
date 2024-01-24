@@ -59,6 +59,10 @@ class MlResponse
   /// \param nClasses is the number of classes for each model
   void configure(const std::vector<double>& binsLimits, const o2::framework::LabeledArray<double>& cuts, const std::vector<int>& cutDir, const uint8_t& nClasses)
   {
+    if (cutDir.size() != nClasses) {
+      LOG(fatal) << "Number of classes (" << static_cast<int>(nClasses) << ") different from the number of cuts on model scores (" << cutDir.size() << ")! Please check your configurables.";
+    }
+
     mBinsLimits = binsLimits;
     mCuts = cuts;
     mCutDir = cutDir;
@@ -89,7 +93,7 @@ class MlResponse
       if (retrieveSuccess) {
         mPaths[iFile] = onnxFiles[iFile];
       } else {
-        LOG(fatal) << "Error encountered while accessing the ML model from " << pathsCCDB[iFile] << ". Maybe the ML model doesn't exist yet for this run number or timestamp?";
+        LOG(fatal) << "Error encountered while accessing the ML model from " << pathsCCDB[iFile] << "! Maybe the ML model doesn't exist yet for this run number or timestamp?";
       }
     }
   }
@@ -125,7 +129,7 @@ class MlResponse
       if (mAvailableInputFeatures.count(inputFeature)) {
         mCachedIndices.emplace_back(mAvailableInputFeatures[inputFeature]);
       } else {
-        LOG(fatal) << "Input feature " << inputFeature << " not available. Please check your configurables.";
+        LOG(fatal) << "Input feature " << inputFeature << " not available! Please check your configurables.";
       }
     }
   }
@@ -137,6 +141,10 @@ class MlResponse
   template <typename T1, typename T2>
   std::vector<TypeOutputScore> getModelOutput(T1& input, const T2& nModel)
   {
+    if (nModel < 0 || static_cast<std::size_t>(nModel) >= mModels.size()) {
+      LOG(fatal) << "Model index " << nModel << " is out of range! The number of initialised models is " << mModels.size() << ". Please check your configurables.";
+    }
+
     TypeOutputScore* outputPtr = mModels[nModel].evalModel(input);
     return std::vector<TypeOutputScore>{outputPtr, outputPtr + mNClasses};
   }
@@ -148,7 +156,7 @@ class MlResponse
   template <typename T1, typename T2>
   bool isSelectedMl(T1& input, const T2& candVar)
   {
-    auto nModel = findBin(candVar);
+    int nModel = findBin(candVar);
     auto output = getModelOutput(input, nModel);
     uint8_t iClass{0};
     for (const auto& outputValue : output) {
@@ -174,7 +182,7 @@ class MlResponse
   template <typename T1, typename T2>
   bool isSelectedMl(T1& input, const T2& candVar, std::vector<TypeOutputScore>& output)
   {
-    auto nModel = findBin(candVar);
+    int nModel = findBin(candVar);
     output = getModelOutput(input, nModel);
     uint8_t iClass{0};
     for (const auto& outputValue : output) {
@@ -203,7 +211,7 @@ class MlResponse
   std::map<std::string, uint8_t> mAvailableInputFeatures; // map of available input features
   std::vector<uint8_t> mCachedIndices;                    // vector of index correspondance between configurables and available input features
 
-  virtual void setAvailableInputFeatures() { return; }    // method to fill the map of available input features
+  virtual void setAvailableInputFeatures() { return; } // method to fill the map of available input features
 
  private:
   /// Finds matching bin in mBinsLimits
