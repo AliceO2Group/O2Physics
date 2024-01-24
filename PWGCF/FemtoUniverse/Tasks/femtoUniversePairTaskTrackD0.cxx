@@ -82,7 +82,6 @@ struct femtoUniversePairTaskTrackD0 {
   struct : o2::framework::ConfigurableGroup {
     Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
     Configurable<int> ConfPDGCodeTrack{"ConfPDGCodeTrack", 2212, "Particle 2 - PDG code"};
-    // Configurable<uint32_t> ConfCutTrack{"ConfCutTrack", 5542474, "Particle 2 - Selection bit"};
     Configurable<int> ConfPIDTrack{"ConfPIDTrack", 2, "Particle 2 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
     Configurable<int8_t> ConfTrackSign{"ConfTrackSign", 1, "Track sign"};
     Configurable<bool> ConfIsTrackIdentified{"ConfIsTrackIdentified", true, "Enable PID for the track"};
@@ -92,6 +91,8 @@ struct femtoUniversePairTaskTrackD0 {
   struct : o2::framework::ConfigurableGroup {
     Configurable<int> ConfPDGCodeD0{"ConfPDGCodeD0", 421, "D0 meson - PDG code"};
     Configurable<int> ConfPDGCodeD0bar{"ConfPDGCodeD0bar", -421, "D0bar meson - PDG code"};
+    Configurable<double> ConfMinInvMassD0D0bar{"ConfMinInvMassD0D0bar", 1.65, "D0/D0bar sel. - min. invMass"};
+    Configurable<double> ConfMaxInvMassD0D0bar{"ConfMaxInvMassD0D0bar", 2.05, "D0/D0bar sel. - max. invMass"};
   } ConfDmesons;
 
   /// Partitions for particle 1
@@ -99,8 +100,12 @@ struct femtoUniversePairTaskTrackD0 {
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsTrackMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack));
 
   /// Partitions for particle 2
-  Partition<FemtoFullParticles> partsD0D0bar = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0));
+  Partition<FemtoFullParticles> partsAllDmesons = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0));
+  Partition<FemtoFullParticles> partsOnlyD0D0bar = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0)) && (aod::femtouniverseparticle::mLambda < 0.0f || aod::femtouniverseparticle::mAntiLambda < 0.0f);
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsD0D0barMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0));
+
+  /// Partition for D0/D0bar daughters
+  Partition<FemtoFullParticles> partsDmesonsChildren = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0Child);
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 2> trackHistoPartTrack;
@@ -132,10 +137,16 @@ struct femtoUniversePairTaskTrackD0 {
   ConfigurableAxis ConfkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis ConfkTBins{"ConfkTBins", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis ConfmTBins{"ConfmTBins", {225, 0., 7.5}, "binning mT"};
+  ConfigurableAxis ConfPtBins{"ConfPtBins", {360, 0., 36.}, "binning pT"};
+  ConfigurableAxis ConfInvMassBins{"ConfInvMassBins", {500, 0., 5.0}, "binning inv. mass"};
+  ConfigurableAxis ConfInvMassFinerBins{"ConfInvMassFinerBins", {120, 1.5848, 2.1848}, "finer binning of inv. mass"};
+
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
   Configurable<float> ConfCPRdeltaPhiMax{"ConfCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaPhiCut{"ConfCPRdeltaPhiCut", 0.0, "Delta Phi cut for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaEtaCut{"ConfCPRdeltaEtaCut", 0.0, "Delta Eta cut for Close Pair Rejection"};
 
   FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::same, femtoUniverseFemtoContainer::Observable::kstar> sameEventFemtoCont;
   FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::mixed, femtoUniverseFemtoContainer::Observable::kstar> mixedEventFemtoCont;
@@ -151,16 +162,22 @@ struct femtoUniversePairTaskTrackD0 {
   HistogramRegistry MixQaRegistry{"MixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   HistogramRegistry registry{"registry",
-                             {{"hInvMassD0", ";#it{M}(K^{-}#pi^{+}) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {{300, 1.75, 2.05}}}},
-                              {"hInvMassD0bar", ";#it{M}(#pi^{-}K^{+}) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {{300, 1.75, 2.05}}}},
-                              {"hPtD0", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{300, 0., 15.}}}},
-                              {"hPtD0bar", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{300, 0., 15.}}}},
+                             {{"hInvMassD0", ";#it{M}(K^{-}#pi^{+}) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {ConfInvMassBins}}},
+                              {"hInvMassD0bar", ";#it{M}(#pi^{-}K^{+}) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {ConfInvMassBins}}},
+                              {"hMassVsPt", "; #it{M}(#pi^{-}K^{+}) (GeV/#it{c}^{2}); p_{T} (GeV/#it{c})", {HistType::kTH2F, {ConfInvMassBins, ConfPtBins}}},
+                              {"hMassVsPtFiner", "; #it{M}(#pi^{-}K^{+}) (GeV/#it{c}^{2}); p_{T} (GeV/#it{c})", {HistType::kTH2F, {ConfInvMassFinerBins, ConfPtBins}}},
+                              {"hInvMassVsPtOnlyD0D0bar", "; #it{M}(#pi^{-}K^{+}) (GeV/#it{c}^{2}); p_{T} (GeV/#it{c})", {HistType::kTH2F, {ConfInvMassBins, ConfPtBins}}},
+                              {"hPtDmesonCand", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {ConfPtBins}}},
+                              {"hPtD0", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {ConfPtBins}}},
+                              {"hPtD0bar", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {ConfPtBins}}},
+                              {"hPhiDmesonCand", ";#varphi (rad);counts", {HistType::kTH1F, {{80, 0., 2. * o2::constants::math::PI}}}},
                               {"hPhiD0", ";#varphi (rad);counts", {HistType::kTH1F, {{80, 0., 2. * o2::constants::math::PI}}}},
                               {"hPhiD0bar", ";#varphi (rad);counts", {HistType::kTH1F, {{80, 0., 2. * o2::constants::math::PI}}}},
+                              {"hEtaDmesonCand", ";#eta ;counts", {HistType::kTH1F, {{200, -1., 1.}}}},
                               {"hEtaD0", ";#eta ;counts", {HistType::kTH1F, {{200, -1., 1.}}}},
                               {"hEtaD0bar", ";#eta ;counts", {HistType::kTH1F, {{200, -1., 1.}}}},
-                              {"hDecayLengthD0", ";decay length (cm);counts", {HistType::kTH1F, {{100, 0., 0.5}}}},
-                              {"hDecayLengthD0bar", ";decay length (cm);counts", {HistType::kTH1F, {{100, 0., 0.5}}}},
+                              {"hDecayLengthD0", ";decay length (cm);counts", {HistType::kTH1F, {{800, 0., 4.}}}},
+                              {"hDecayLengthD0bar", ";decay length (cm);counts", {HistType::kTH1F, {{800, 0., 4.}}}},
                               {"hDeltaPhi", "; #Delta #varphi (rad);counts", {HistType::kTH1F, {{80, -0.5 * o2::constants::math::PI, 2. * o2::constants::math::PI}}}},
                               {"hPtDaughters", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{300, 0., 12.}}}},
                               {"hMomentumDaughters", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{300, 0., 15.}}}},
@@ -306,7 +323,7 @@ struct femtoUniversePairTaskTrackD0 {
 
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRPlotPerRadii.value);
     }
 
     vPIDTrack = ConfTrack.ConfPIDTrack.value;
@@ -322,44 +339,54 @@ struct femtoUniversePairTaskTrackD0 {
 
   void processD0mesons(o2::aod::FDCollision& col, FemtoFullParticles& parts)
   {
-    auto groupPartsD0D0bar = partsD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    // auto groupPartsD0D0barDaugh = partsD0D0barDaughters->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
+    auto groupPartsOnlyD0D0bar = partsOnlyD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsAllDmesons = partsAllDmesons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsD0D0barChildren = partsDmesonsChildren->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
-    for (auto& d0d0bar : groupPartsD0D0bar) {
-      if (d0d0bar.mLambda() > 0 && d0d0bar.mAntiLambda() < 0) {
-        registry.fill(HIST("hInvMassD0"), d0d0bar.mLambda());
+    // loop over all D mesons
+    for (auto const& dmeson : groupPartsAllDmesons) {
+
+      if (dmeson.mLambda() > 0.0f) {
+        registry.fill(HIST("hMassVsPt"), dmeson.mLambda(), dmeson.pt());
+        registry.fill(HIST("hMassVsPtFiner"), dmeson.mLambda(), dmeson.pt());
+      }
+
+      if (dmeson.mAntiLambda() > 0.0f) {
+        registry.fill(HIST("hMassVsPt"), dmeson.mAntiLambda(), dmeson.pt());
+        registry.fill(HIST("hMassVsPtFiner"), dmeson.mAntiLambda(), dmeson.pt());
+      }
+
+      registry.fill(HIST("hPtDmesonCand"), dmeson.pt());
+      registry.fill(HIST("hPhiDmesonCand"), dmeson.phi());
+      registry.fill(HIST("hEtaDmesonCand"), dmeson.eta());
+    }
+
+    // loop over D0/D0bar mesons (ONLY)
+    for (auto const& d0d0bar : groupPartsOnlyD0D0bar) {
+      if (d0d0bar.mLambda() > 0.0f && d0d0bar.mAntiLambda() < 0.0f) {
+        registry.fill(HIST("hInvMassVsPtOnlyD0D0bar"), d0d0bar.mLambda(), d0d0bar.pt());
+        if (d0d0bar.mLambda() > ConfDmesons.ConfMinInvMassD0D0bar && d0d0bar.mLambda() < ConfDmesons.ConfMaxInvMassD0D0bar) {
+          registry.fill(HIST("hInvMassD0"), d0d0bar.mLambda());
+        }
         registry.fill(HIST("hPtD0"), d0d0bar.pt());
         registry.fill(HIST("hPhiD0"), d0d0bar.phi());
         registry.fill(HIST("hEtaD0"), d0d0bar.eta());
       }
-      if (d0d0bar.mLambda() < 0 && d0d0bar.mAntiLambda() > 0) {
-        registry.fill(HIST("hInvMassD0bar"), d0d0bar.mAntiLambda());
+      if (d0d0bar.mLambda() < 0.0f && d0d0bar.mAntiLambda() > 0.0f) {
+        registry.fill(HIST("hInvMassVsPtOnlyD0D0bar"), d0d0bar.mAntiLambda(), d0d0bar.pt());
+        if (d0d0bar.mAntiLambda() > ConfDmesons.ConfMinInvMassD0D0bar && d0d0bar.mAntiLambda() < ConfDmesons.ConfMaxInvMassD0D0bar) {
+          registry.fill(HIST("hInvMassD0bar"), d0d0bar.mAntiLambda());
+        }
         registry.fill(HIST("hPtD0bar"), d0d0bar.pt());
         registry.fill(HIST("hPhiD0bar"), d0d0bar.phi());
         registry.fill(HIST("hEtaD0bar"), d0d0bar.eta());
       }
     }
 
-    /*for (auto& daughD0D0bar : groupPartsD0D0barDaugh) {
-      if (daughD0D0bar.flagD0() == 1) {
-        registry.fill(HIST("hMomentumDaughters"), daughD0D0bar.p());
-        registry.fill(HIST("hPtDaughters"), daughD0D0bar.pt());
-        registry.fill(HIST("hSignDaughters"), daughD0D0bar.sign());
-        registry.fill(HIST("hbetaDaughters"), daughD0D0bar.beta(), daughD0D0bar.p());
-        registry.fill(HIST("hdEdxDaughters"), daughD0D0bar.tpcSignal(), daughD0D0bar.p());
-        registry.fill(HIST("hDCAxyDaughters"), daughD0D0bar.dcaXY());
-        registry.fill(HIST("hDCAzDaughters"), daughD0D0bar.dcaZ());
-      }
-      if (daughD0D0bar.flagD0bar() == 1) {
-        registry.fill(HIST("hMomentumDaughters"), daughD0D0bar.p());
-        registry.fill(HIST("hPtDaughters"), daughD0D0bar.pt());
-        registry.fill(HIST("hSignDaughters"), daughD0D0bar.sign());
-        registry.fill(HIST("hbetaDaughters"), daughD0D0bar.beta(), daughD0D0bar.p());
-        registry.fill(HIST("hdEdxDaughters"), daughD0D0bar.tpcSignal(), daughD0D0bar.p());
-        registry.fill(HIST("hDCAxyDaughters"), daughD0D0bar.dcaXY());
-        registry.fill(HIST("hDCAzDaughters"), daughD0D0bar.dcaZ());
-      }
-    }*/
+    // loop over D mesons childen
+    for (auto const& daughD0D0bar : groupPartsD0D0barChildren) {
+      registry.fill(HIST("hPtDaughters"), daughD0D0bar.pt());
+    }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackD0, processD0mesons, "Enable processing D0 mesons", true);
 
@@ -424,7 +451,7 @@ struct femtoUniversePairTaskTrackD0 {
     fillCollision(col);
 
     auto thegroupPartsTrack = partsTrack->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    auto thegroupPartsD0 = partsD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsD0 = partsAllDmesons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
     doSameEvent<false>(thegroupPartsTrack, thegroupPartsD0, parts, col.magField(), col.multNtr());
   }
@@ -490,7 +517,7 @@ struct femtoUniversePairTaskTrackD0 {
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
 
       auto groupPartsTrack = partsTrack->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
-      auto groupPartsD0 = partsD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsD0 = partsAllDmesons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();

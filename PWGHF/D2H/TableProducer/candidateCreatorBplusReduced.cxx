@@ -35,7 +35,7 @@ using namespace o2::framework::expressions;
 
 /// Reconstruction of B+ candidates
 struct HfCandidateCreatorBplusReduced {
-  Produces<aod::HfCandBplusBase> rowCandidateBase; // table defined in CandidateReconstructionTables.h
+  Produces<aod::HfCandBplusBase> rowCandidateBase;    // table defined in CandidateReconstructionTables.h
   Produces<aod::HfRedBplusProngs> rowCandidateProngs; // table defined in ReducedDataModel.h
 
   // vertexing
@@ -202,11 +202,17 @@ struct HfCandidateCreatorBplusReducedExpressions {
   void processMc(HfMcRecRedD0Pis const& rowsD0PiMcRec, HfRedBplusProngs const& candsBplus)
   {
     for (const auto& candBplus : candsBplus) {
+      bool filledMcInfo{false};
       for (const auto& rowD0PiMcRec : rowsD0PiMcRec) {
         if ((rowD0PiMcRec.prong0Id() != candBplus.prong0Id()) || (rowD0PiMcRec.prong1Id() != candBplus.prong1Id())) {
           continue;
         }
-        rowBplusMcRec(rowD0PiMcRec.flagMcMatchRec(), rowD0PiMcRec.ptMother());
+        rowBplusMcRec(rowD0PiMcRec.flagMcMatchRec(), rowD0PiMcRec.debugMcRec(), rowD0PiMcRec.ptMother());
+        filledMcInfo = true;
+        break;
+      }
+      if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D-Pi creator
+        rowBplusMcRec(0, -1, -1.f);
       }
     }
   }

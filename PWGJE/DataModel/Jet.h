@@ -27,20 +27,14 @@
 #include "Framework/AnalysisDataModel.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGJE/DataModel/JetReducedDataHF.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
+
+#include "PWGHF/DataModel/DerivedTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 namespace o2::aod
 {
-
-namespace rho
-{
-DECLARE_SOA_COLUMN(Rho, rho, float);   //!
-DECLARE_SOA_COLUMN(RhoM, rhoM, float); //!
-} // namespace rho
-DECLARE_SOA_TABLE(JCollisionRhos, "AOD", "JCollisionRhos",
-                  o2::soa::Index<>,
-                  rho::Rho,
-                  rho::RhoM);
 
 namespace jet
 {
@@ -62,26 +56,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //!
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! absolute p
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 } // namespace jet
-
-// Constituent sub
-namespace constituentssub
-{
-// Jet index column will be added in the macro
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(Energy, energy, float);
-DECLARE_SOA_COLUMN(Mass, mass, float);
-DECLARE_SOA_COLUMN(Source, source, int);
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px,
-                           [](float pt, float phi) -> float { return pt * std::cos(phi); });
-DECLARE_SOA_DYNAMIC_COLUMN(Py, py,
-                           [](float pt, float phi) -> float { return pt * std::sin(phi); });
-DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz,
-                           [](float pt, float eta) -> float { return pt * std::sinh(eta); });
-DECLARE_SOA_DYNAMIC_COLUMN(P, p,
-                           [](float pt, float eta) -> float { return pt * std::cosh(eta); });
-} // namespace constituentssub
 } // namespace o2::aod
 
 // Defines the jet table definition
@@ -118,9 +92,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
   {                                                                                                 \
     DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL(_jet_type_, matchedJetCand, int32_t, _jet_type_##s, "_hf"); \
   }
-  // DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetGeo, int32_t, _jet_type_##s, "_geo");
-  // DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetPt, int32_t, _jet_type_##s, "_pt");
-  // DECLARE_SOA_INDEX_COLUMN_FULL(_jet_type_, matchedJetCand, int32_t, _jet_type_##s, "_hf");
 
 #define DECLARE_CONSTITUENTS_TABLE(_jet_type_, _name_, _Description_, _track_type_, _cand_type_)      \
   namespace _name_##constituents                                                                      \
@@ -130,43 +101,30 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
     DECLARE_SOA_ARRAY_INDEX_COLUMN(JCluster, clusters);                                               \
     DECLARE_SOA_ARRAY_INDEX_COLUMN_FULL(HfCandidates, hfcandidates, int32_t, _cand_type_, "_hfcand"); \
   }                                                                                                   \
-  DECLARE_SOA_TABLE(_jet_type_##Constituents, "AOD", _Description_ "CONSTS",                          \
+  DECLARE_SOA_TABLE(_jet_type_##Constituents, "AOD", _Description_ "C",                               \
                     _name_##constituents::_jet_type_##Id,                                             \
                     _name_##constituents::_track_type_##Ids,                                          \
                     _name_##constituents::JClusterIds,                                                \
                     _name_##constituents::HfCandidatesIds);
 
-// Defines the jet constituent sub table
-// NOTE: This relies on the jet index column being defined in the constituents namespace.
-//       Since these are always paired together, there's no point in redefining them.
-#define DECLARE_CONSTITUENTS_SUB_TABLE(_jet_type_, _name_, _Description_)           \
-  DECLARE_SOA_TABLE(_jet_type_##ConstituentsSub, "AOD", _Description_ "CONSTSUB",   \
-                    _name_##constituents::_jet_type_##Id,                           \
-                    constituentssub::Pt,                                            \
-                    constituentssub::Eta,                                           \
-                    constituentssub::Phi,                                           \
-                    constituentssub::Energy,                                        \
-                    constituentssub::Mass,                                          \
-                    constituentssub::Source,                                        \
-                    constituentssub::Px<constituentssub::Pt, constituentssub::Phi>, \
-                    constituentssub::Py<constituentssub::Pt, constituentssub::Phi>, \
-                    constituentssub::Pz<constituentssub::Pt, constituentssub::Eta>, \
-                    constituentssub::P<constituentssub::Pt, constituentssub::Eta>);
-
-// combine definition of tables for jets, constituents, and substructure
-#define DECLARE_JET_TABLES(_collision_name_, _jet_type_, _const_type_, _hfcand_type_, _description_)        \
+// combine definition of tables for jets, constituents
+#define DECLARE_JET_TABLES(_collision_name_, _jet_type_, _track_type_, _hfcand_type_, _description_)        \
   DECLARE_JET_TABLE(_collision_name_, _jet_type_##Jet, _jet_type_##jet, _description_);                     \
   using _jet_type_##Jet = _jet_type_##Jet##s::iterator;                                                     \
-  DECLARE_CONSTITUENTS_TABLE(_jet_type_##Jet, _jet_type_##jet, _description_, _const_type_, _hfcand_type_); \
-  using _jet_type_##Jet##Constituent = _jet_type_##Jet##Constituents::iterator;                             \
-  DECLARE_CONSTITUENTS_SUB_TABLE(_jet_type_##Jet, _jet_type_##jet, _description_);                          \
-  using _jet_type_##Jet##ConstituentSub = _jet_type_##Jet##ConstituentsSub::iterator;
+  DECLARE_CONSTITUENTS_TABLE(_jet_type_##Jet, _jet_type_##jet, _description_, _track_type_, _hfcand_type_); \
+  using _jet_type_##Jet##Constituent = _jet_type_##Jet##Constituents::iterator;
 
-#define DECLARE_JETMATCHING_TABLE(_jet_type_base_, _jet_type_tag_, _description_)               \
-  DECLARE_SOA_TABLE(_jet_type_base_##JetsMatchedTo##_jet_type_tag_##Jets, "AOD", _description_, \
-                    _jet_type_tag_##jetmatchingGeo::_jet_type_tag_##JetIds,                     \
-                    _jet_type_tag_##jetmatchingPt::_jet_type_tag_##JetIds,                      \
-                    _jet_type_tag_##jetmatchingCand::_jet_type_tag_##JetIds);                   \
+#define DECLARE_JETMATCHING_TABLE(_jet_type_base_, _jet_type_tag_, _description_)                 \
+  namespace _jet_type_base_##jetsmatchedto##_jet_type_tag_                                        \
+  {                                                                                               \
+    DECLARE_SOA_DYNAMIC_COLUMN(Dummy##_jet_type_base_##s, dummy##_jet_type_base_##s,              \
+                               []() -> int { return 0; });                                        \
+  }                                                                                               \
+  DECLARE_SOA_TABLE(_jet_type_base_##JetsMatchedTo##_jet_type_tag_##Jets, "AOD", _description_,   \
+                    _jet_type_tag_##jetmatchingGeo::_jet_type_tag_##JetIds,                       \
+                    _jet_type_tag_##jetmatchingPt::_jet_type_tag_##JetIds,                        \
+                    _jet_type_tag_##jetmatchingCand::_jet_type_tag_##JetIds,                      \
+                    _jet_type_base_##jetsmatchedto##_jet_type_tag_::Dummy##_jet_type_base_##s<>); \
   using _jet_type_base_##JetsMatchedTo##_jet_type_tag_##Jet = _jet_type_base_##JetsMatchedTo##_jet_type_tag_##Jets::iterator;
 
 #define DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_, _name_, _description_) \
@@ -181,26 +139,59 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
   using _jet_type_##JetEventWeight = _jet_type_##JetEventWeights::iterator;
 
 // generate tables for data-, detector- and particle-level jets
-#define DECLARE_JET_TABLES_LEVELS(_jet_type_, _hfcand_type_, _shortname_)                                      \
-  DECLARE_JET_TABLES(JCollision, _jet_type_, JTrack, _hfcand_type_, _shortname_ "JET")                         \
-  DECLARE_JET_TABLES(JCollision, _jet_type_##MCDetectorLevel, JTrack, _hfcand_type_, _shortname_ "DJET")       \
-  DECLARE_JET_TABLES(JMcCollision, _jet_type_##MCParticleLevel, JMcParticle, JMcParticles, _shortname_ "PJET") \
-  DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCParticleLevel, _shortname_ "JETMD2P")   \
-  DECLARE_JETMATCHING_TABLE(_jet_type_##MCParticleLevel, _jet_type_##MCDetectorLevel, _shortname_ "JETMP2D")   \
-  DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCDetectorLevel, _shortname_ "JETMDEW") \
-  DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_##MCParticleLevel, _jet_type_##MCParticleLevel, _shortname_ "JETMPEW")
-
+#define DECLARE_JET_TABLES_LEVELS(_jet_type_, _subtracted_track_type_, _hfcand_type_, _hfparticle_type_, _shortname_)                                 \
+  DECLARE_JET_TABLES(JCollision, _jet_type_, JTrack, _hfcand_type_, _shortname_ "JET")                                                                \
+  DECLARE_JET_TABLES(JCollision, _jet_type_##MCDetectorLevel, JTrack, _hfcand_type_, _shortname_ "DJET")                                              \
+  DECLARE_JET_TABLES(JMcCollision, _jet_type_##MCParticleLevel, JMcParticle, _hfparticle_type_, _shortname_ "PJET")                                   \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCParticleLevel, _shortname_ "JETD2P")                                           \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##MCParticleLevel, _jet_type_##MCDetectorLevel, _shortname_ "JETP2D")                                           \
+  DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCDetectorLevel, _shortname_ "DJETMW")                                         \
+  DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_##MCParticleLevel, _jet_type_##MCParticleLevel, _shortname_ "PETMPW")                                         \
+  DECLARE_JET_TABLES(JCollision, _jet_type_##EventWiseSubtracted, _subtracted_track_type_, _hfcand_type_, _shortname_ "JETEWS")                       \
+  DECLARE_JETMATCHING_TABLE(_jet_type_, _jet_type_##EventWiseSubtracted, _shortname_ "JET2EWS")                                                       \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##EventWiseSubtracted, _jet_type_, _shortname_ "JETEWS2")                                                       \
+  DECLARE_JET_TABLES(JCollision, _jet_type_##MCDetectorLevelEventWiseSubtracted, _subtracted_track_type_, _hfcand_type_, _shortname_ "DJETEWS")       \
+  DECLARE_MCEVENTWEIGHT_TABLE(_jet_type_##MCDetectorLevelEventWiseSubtracted, _jet_type_##MCDetectorLevelEventWiseSubtracted, _shortname_ "DJETEWSW") \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevel, _jet_type_##MCDetectorLevelEventWiseSubtracted, _shortname_ "DJET2DEWS")                     \
+  DECLARE_JETMATCHING_TABLE(_jet_type_##MCDetectorLevelEventWiseSubtracted, _jet_type_##MCDetectorLevel, _shortname_ "JETDEWS2D")                     \
+  DECLARE_JET_TABLES(JMcCollision, _jet_type_##MCParticleLevelEventWiseSubtracted, _subtracted_track_type_, _hfparticle_type_, _shortname_ "PJETEWS")
 namespace o2::aod
 {
-DECLARE_JET_TABLES_LEVELS(Charged, HfCand2Prong, "C");
-DECLARE_JET_TABLES_LEVELS(Full, HfCand2Prong, "F");
-DECLARE_JET_TABLES_LEVELS(Neutral, HfCand2Prong, "N");
-DECLARE_JET_TABLES_LEVELS(D0Charged, HfCand2Prong, "D0");
-DECLARE_JET_TABLES_LEVELS(LcCharged, HfCand3Prong, "Lc");
-DECLARE_JET_TABLES_LEVELS(BplusCharged, HfCandBplus, "BPl");
+DECLARE_JET_TABLES_LEVELS(Charged, JTrackSub, HfD0Bases, HfD0PBases, "C");
+DECLARE_JET_TABLES_LEVELS(Full, JTrackSub, HfD0Bases, HfD0PBases, "F");
+DECLARE_JET_TABLES_LEVELS(Neutral, JTrackSub, HfD0Bases, HfD0PBases, "N");
+DECLARE_JET_TABLES_LEVELS(D0Charged, JTrackD0Sub, HfD0Bases, HfD0PBases, "D0");
+DECLARE_JET_TABLES_LEVELS(LcCharged, JTrackLcSub, HfCand3Prong, HfD0PBases, "Lc");
+DECLARE_JET_TABLES_LEVELS(BplusCharged, JTrackBplusSub, HfCandBplus, HfD0PBases, "BPl");
 
-// Hybrid intermediate
-DECLARE_JET_TABLES(JCollision, HybridIntermediate, JTrack, HfCand2Prong, "JEHYIN");
 } // namespace o2::aod
+
+using JetCollisions = o2::aod::JCollisions;
+using JetCollision = JetCollisions::iterator;
+using JetCollisionsMCD = o2::soa::Join<JetCollisions, o2::aod::JMcCollisionLbs>;
+using JetTracks = o2::aod::JTracks;
+using JetTracksMCD = o2::soa::Join<JetTracks, o2::aod::JMcTrackLbs>;
+using JetTracksSub = o2::aod::JTrackSubs;
+using JetClusters = o2::aod::JClusters;
+
+using JetMcCollisions = o2::aod::JMcCollisions;
+using JetMcCollision = JetMcCollisions::iterator;
+using JetParticles = o2::aod::JMcParticles;
+
+using CandidatesD0MCP = o2::soa::Join<o2::aod::HfD0PBases, o2::aod::JD0PIds>;
+using CandidatesLcMCP = o2::soa::Join<o2::aod::JMcParticles, o2::aod::HfCand3ProngMcGen>;
+using CandidatesBplusMCP = o2::soa::Join<o2::aod::JMcParticles, o2::aod::HfCandBplusMcGen>;
+
+using CandidatesD0Data = o2::soa::Join<o2::aod::HfD0Bases, o2::aod::HfD0Pars, o2::aod::HfD0ParEs, o2::aod::HfD0Sels, o2::aod::JD0Ids>;
+using CandidatesD0MCD = o2::soa::Join<o2::aod::HfD0Bases, o2::aod::HfD0Pars, o2::aod::HfD0ParEs, o2::aod::HfD0Sels, o2::aod::HfD0Mcs, o2::aod::JD0Ids>;
+using JetTracksSubD0 = o2::aod::JTrackD0Subs;
+
+using CandidatesBplusData = o2::soa::Join<o2::aod::HfCandBplus, o2::aod::HfSelBplusToD0Pi>;
+using CandidatesBplusMCD = o2::soa::Join<o2::aod::HfCandBplus, o2::aod::HfSelBplusToD0Pi, o2::aod::HfCandBplusMcRec>;
+using JetTracksSubBplus = o2::aod::JTrackBplusSubs;
+
+using CandidatesLcData = o2::soa::Join<o2::aod::HfCand3Prong, o2::aod::HfSelLc>;
+using CandidatesLcMCD = o2::soa::Join<o2::aod::HfCand3Prong, o2::aod::HfSelLc, o2::aod::HfCand3ProngMcRec>;
+using JetTracksSubLc = o2::aod::JTrackLcSubs;
 
 #endif // PWGJE_DATAMODEL_JET_H_

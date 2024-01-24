@@ -122,7 +122,7 @@ o2physics_add_dpl_workflow(candidate-selector-lb-to-lc-pi
 
 o2physics_add_dpl_workflow(candidate-selector-lc
                     SOURCES candidateSelectorLc.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-lc-pid-ml
@@ -217,4 +217,9 @@ o2physics_add_dpl_workflow(tree-creator-xicc-to-p-k-pi-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+# Derived-data creators
 
+o2physics_add_dpl_workflow(derived-data-creator-d0-to-k-pi
+                    SOURCES derivedDataCreatorD0ToKPi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

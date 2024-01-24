@@ -325,14 +325,19 @@ struct reso2initializer {
     switch (multEstimator) {
       case 0:
         returnValue = ResoEvents.centFT0M();
+        break;
       case 1:
         returnValue = ResoEvents.centFT0C();
+        break;
       case 2:
         returnValue = ResoEvents.centFT0A();
+        break;
       case 99:
         returnValue = ResoEvents.centFV0A();
+        break;
       default:
         returnValue = ResoEvents.centFT0M();
+        break;
     }
     return returnValue;
   }
@@ -345,14 +350,19 @@ struct reso2initializer {
     switch (multEstimator) {
       case 0:
         returnValue = ResoEvents.multFT0M();
+        break;
       case 1:
         returnValue = ResoEvents.multFT0C();
+        break;
       case 2:
         returnValue = ResoEvents.multFT0A();
+        break;
       case 99:
         returnValue = ResoEvents.multFV0A();
+        break;
       default:
         returnValue = ResoEvents.multFT0M();
+        break;
     }
     return returnValue;
   }
@@ -490,12 +500,13 @@ struct reso2initializer {
   template <bool isMC, typename CollisionType, typename CascType, typename TrackType>
   void fillCascades(CollisionType const& collision, CascType const& cascades, TrackType const& tracks)
   {
-    int childIDs[2] = {0, 0}; // these IDs are necessary to keep track of the children
+    int childIDs[3] = {0, 0, 0}; // these IDs are necessary to keep track of the children
     for (auto& casc : cascades) {
       if (!IsCascSelected<isMC>(collision, casc, tracks))
         continue;
-      childIDs[0] = casc.v0Id();
-      childIDs[1] = casc.bachelorId();
+      childIDs[0] = casc.posTrackId();
+      childIDs[1] = casc.negTrackId();
+      childIDs[2] = casc.bachelorId();
       reso2cascades(resoCollisions.lastIndex(),
                     casc.pt(),
                     casc.px(),

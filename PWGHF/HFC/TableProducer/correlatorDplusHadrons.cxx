@@ -154,6 +154,8 @@ struct HfDplusSelection {
 struct HfCorrelatorDplusHadrons {
   Produces<aod::DplusHadronPair> entryDplusHadronPair;
   Produces<aod::DplusHadronRecoInfo> entryDplusHadronRecoInfo;
+  Produces<aod::Dplus> entryDplus;
+  Produces<aod::Hadron> entryHadron;
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
   Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
@@ -238,8 +240,11 @@ struct HfCorrelatorDplusHadrons {
   /// Dplus-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
                    aod::TracksWDca const& tracks,
-                   soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
+                   soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates, aod::BCsWithTimestamps const&)
   {
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int gCollisionId = collision.globalIndex();
+    int64_t timeStamp = bc.timestamp();
     if (selectedDplusCandidates.size() > 0) {
       int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFV0M()));
       int nTracks = 0;
@@ -263,7 +268,7 @@ struct HfCorrelatorDplusHadrons {
       registry.fill(HIST("hMultiplicity"), nTracks);
 
       auto selectedDplusCandidatesGrouped = selectedDplusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-
+      int cntDplus = 0;
       for (const auto& candidate1 : selectedDplusCandidatesGrouped) {
         if (yCandMax >= 0. && std::abs(hfHelper.yDplus(candidate1)) > yCandMax) {
           continue;
@@ -294,6 +299,7 @@ struct HfCorrelatorDplusHadrons {
         registry.fill(HIST("hY"), hfHelper.yDplus(candidate1));
         registry.fill(HIST("hSelectionStatus"), candidate1.isSelDplusToPiKPi());
         registry.fill(HIST("hDplusBin"), poolBin);
+        entryDplus(candidate1.phi(), candidate1.eta(), candidate1.pt(), hfHelper.invMassDplusToPiKPi(candidate1), poolBin, gCollisionId, timeStamp);
         // Dplus-Hadron correlation dedicated section
         // if the candidate is a Dplus, search for Hadrons and evaluate correlations
         for (const auto& track : tracks) {
@@ -315,8 +321,11 @@ struct HfCorrelatorDplusHadrons {
                                candidate1.pt(),
                                track.pt(), poolBin);
           entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate1), 0);
+          if (cntDplus == 0)
+            entryHadron(track.phi(), track.eta(), track.pt(), poolBin, gCollisionId, timeStamp);
         } // Hadron Tracks loop
-      }   // end outer Dplus loop
+        cntDplus++;
+      } // end outer Dplus loop
       registry.fill(HIST("hZvtx"), collision.posZ());
       registry.fill(HIST("hMultV0M"), collision.multFV0M());
     }

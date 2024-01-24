@@ -35,6 +35,7 @@ struct perfK0sResolution {
   ConfigurableAxis mBins{"mBins", {200, 0.4f, 0.6f}, "Mass binning"};
   ConfigurableAxis pTBins{"pTBins", {200, 0.f, 10.f}, "pT binning"};
   ConfigurableAxis etaBins{"etaBins", {2, -1.f, 1.f}, "eta binning"};
+  ConfigurableAxis etaBinsDauthers{"etaBinsDauthers", {2, -1.f, 1.f}, "eta binning"};
   ConfigurableAxis phiBins{"phiBins", {4, 0.f, 6.28f}, "phi binning"};
 
   HistogramRegistry registry{"K0sResolution"};
@@ -44,6 +45,8 @@ struct perfK0sResolution {
     const AxisSpec mAxis{mBins, "#it{m} (GeV/#it{c}^{2})"};
     const AxisSpec pTAxis{pTBins, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec etaAxis{etaBins, "#eta"};
+    const AxisSpec etaAxisPosD{etaBinsDauthers, "#eta pos."};
+    const AxisSpec etaAxisNegD{etaBinsDauthers, "#eta neg."};
     const AxisSpec phiAxis{phiBins, "#phi"};
 
     int nProc = 0;
@@ -59,6 +62,10 @@ struct perfK0sResolution {
     registry.add("h2_masspT", "h2_masspT", {HistType::kTH2F, {mAxis, pTAxis}});
     registry.add("h2_masseta", "h2_masseta", {HistType::kTH2F, {mAxis, etaAxis}});
     registry.add("h2_massphi", "h2_massphi", {HistType::kTH2F, {mAxis, phiAxis}});
+    if (!useMultidimHisto) {
+      return;
+    }
+    registry.add("thn_mass", "thn_mass", kTHnSparseF, {mAxis, pTAxis, etaAxis, phiAxis, etaAxisPosD, etaAxisNegD});
   }
 
   // Selection criteria
@@ -75,6 +82,7 @@ struct perfK0sResolution {
   Configurable<int> tofSelectionPos{"tofSelectionPos", 0, "Flag for the TOF selection on positive daughters: -1 no TOF, 0 no selection, 1 TOF"};
   Configurable<int> tofSelectionNeg{"tofSelectionNeg", 0, "Flag for the TOF selection on negative daughters: -1 no TOF, 0 no selection, 1 TOF"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
+  Configurable<bool> useMultidimHisto{"useMultidimHisto", false, "use multidimentional histograms"};
 
   template <typename T1, typename T2, typename C>
   bool acceptV0(const T1& v0, const T2& ntrack, const T2& ptrack, const C& collision)
@@ -190,6 +198,9 @@ struct perfK0sResolution {
       registry.fill(HIST("h2_masspT"), v0.mK0Short(), v0.pt());
       registry.fill(HIST("h2_masseta"), v0.mK0Short(), v0.eta());
       registry.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
+      if (useMultidimHisto) {
+        registry.fill(HIST("thn_mass"), v0.mK0Short(), v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta());
+      }
     }
   }
   PROCESS_SWITCH(perfK0sResolution, processData, "Process data", true);
@@ -217,6 +228,9 @@ struct perfK0sResolution {
       registry.fill(HIST("h2_masspT"), v0.mK0Short(), v0.pt());
       registry.fill(HIST("h2_masseta"), v0.mK0Short(), v0.eta());
       registry.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
+      if (useMultidimHisto) {
+        registry.fill(HIST("thn_mass"), v0.mK0Short(), v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta());
+      }
     }
   }
   PROCESS_SWITCH(perfK0sResolution, processMC, "Process MC", false);

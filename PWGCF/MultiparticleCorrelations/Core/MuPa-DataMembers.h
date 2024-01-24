@@ -35,42 +35,35 @@ OutputObj<TList> fBaseList{"Default list name",
                            OutputObjHandlingPolicy::AnalysisObject,
                            OutputObjSourceType::OutputObjSource};
 TProfile* fBasePro = NULL; //!<! keeps flags relevant for the whole analysis
-UInt_t fRandomSeed = 0;    // argument to TRandom3 constructor. By default is 0,
-                           // use SetRandomSeed(...) to change it
 
 // *) Task configuration:
-TString fTaskName = "";  // task name - this one is used to get the right weights
-                         // programatically for this analysis
-TString fRunNumber = ""; // over which run number this task is executed
-Bool_t fRunNumberIsDetermined =
-  kFALSE; // ensures that run number is determined in process() and propagated to already booked objects only once
-Bool_t fVerbose =
-  kFALSE; // print additional info like Green(__PRETTY_FUNCTION__); etc., to
-          // be used during debugging, but not for function calls per particle
-Bool_t fVerboseForEachParticle =
-  kFALSE; // print additional info like Green(__PRETTY_FUNCTION__); etc., to
-          // be used during debugging, also for function calls per particle
-Bool_t fDoAdditionalInsanityChecks =
-  kFALSE; // do additional insanity checks at run time, at the expense of losing a bit of performance
-          // For instance, check if the run number in the current 'collision' is the same as run number in the first 'collision', etc.
-Bool_t fUseCCDB =
-  kFALSE; // access personal files from CCDB (kTRUE, this is set as default in
-          // Configurables), or from home dir in AliEn (kFALSE, use with care,
-          // as this is discouraged)
-Bool_t fProcessRemainingEvents =
-  kTRUE;                        // if certain criteria is reached, e.g. max number of processed events, ignore all subsequent events TBI 20231019 I need instead graceful exit, see preamble of MaxNumberOfEvents()
-TString fWhatToProcess = "Rec"; // "Rec" = process only reconstructed, "Sim" = process only simulated, "RecSim" = process both reconstructed and simulated
-// UInt_t fRandomSeed; // argument to TRandom3 constructor. By default it is 0,
-// use SetRandomSeed(...) to change it Bool_t fUseFisherYates; // use
-// SetUseFisherYates(kTRUE); in the steering macro to randomize particle indices
-// Bool_t fUseFixedNumberOfRandomlySelectedTracks; // use or not fixed number of
-// randomly selected particles in each event. Use always in combination with
-// SetUseFisherYates(kTRUE) Int_t fFixedNumberOfRandomlySelectedTracks; // set
-// here a fixed number of randomly selected particles in each event. Use always
-// in combination with SetUseFisherYates(kTRUE) Bool_t
-// fRescaleWithTheoreticalInput; // if kTRUE, all measured correlators are
-// rescaled with theoretical input, so that in profiles everything is at 1. Used
-// both in OTF and internal val.
+struct TaskConfiguration {
+  TString fTaskName = "";                          // task name - this one is used to get the right weights
+                                                   // programatically for this analysis
+  TString fRunNumber = "";                         // over which run number this task is executed
+  Bool_t fRunNumberIsDetermined = kFALSE;          // ensures that run number is determined in process() and propagated to already booked objects only once
+  Bool_t fVerbose = kFALSE;                        // print additional info like Green(__PRETTY_FUNCTION__); etc., to
+                                                   // be used during debugging, but not for function calls per particle
+  Bool_t fVerboseForEachParticle = kFALSE;         // print additional info like Green(__PRETTY_FUNCTION__); etc., to
+                                                   // be used during debugging, also for function calls per particle
+  Bool_t fDoAdditionalInsanityChecks = kFALSE;     // do additional insanity checks at run time, at the expense of losing a bit of performance
+                                                   // For instance, check if the run number in the current 'collision' is the same as run number in the first 'collision', etc.
+  Bool_t fUseCCDB = kFALSE;                        // access personal files from CCDB (kTRUE, this is set as default in
+                                                   // Configurables), or from home dir in AliEn (kFALSE, use with care,
+                                                   // as this is discouraged)
+  Bool_t fProcessRemainingEvents = kTRUE;          // if certain criteria is reached, e.g. max number of processed events, ignore all subsequent events
+                                                   // TBI 20231019 I need instead graceful exit, see preamble of MaxNumberOfEvents()
+  TString fWhatToProcess = "Rec";                  // "Rec" = process only reconstructed, "Sim" = process only simulated, "RecSim" = process both reconstructed and simulated
+  UInt_t fRandomSeed = 0;                          // argument to TRandom3 constructor. By default it is 0 (i.e. seed is guaranteed to be unique in time and space), use SetRandomSeed(...) to change it
+  Bool_t fUseFisherYates = kFALSE;                 // algorithm used to randomize particle indices, set via configurable
+  TArrayI* fRandomIndices = NULL;                  // array to store random indices obtained from Fisher-Yates algorithm
+  Int_t fFixedNumberOfRandomlySelectedTracks = -1; // use a fixed number of randomly selected particles in each event. It is set and applied, if > 0. Set to <=0 to ignore.
+
+  // Bool_t fRescaleWithTheoreticalInput; // if kTRUE, all measured correlators are
+  // rescaled with theoretical input, so that in profiles everything is at 1. Used
+  // both in OTF and internal val.
+
+} tc; // "tc" labels an instance of this group of variables.
 
 // *) Event-by-event quantities:
 Int_t fSelectedTracks =
@@ -132,10 +125,10 @@ TProfile* fCorrelationsFlagsPro =
 Bool_t fCalculateCorrelations =
   kTRUE; // calculate and store integrated correlations
 struct Correlations_Arrays {
-  TProfile* fCorrelationsPro[4][gMaxHarmonic][3] = {
+  TProfile* fCorrelationsPro[4][gMaxHarmonic][eAsFunctionOf_N] = {
     {{NULL}}}; //! multiparticle correlations
-               //! [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=6][0=integrated,1=vs.
-               //! multiplicity,2=vs. centrality]
+               //! [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=gMaxHarmonic][0=integrated,1=vs.
+               //! multiplicity,2=vs. centrality,3=pT,4=eta]
 } c_a;
 
 // *) Particle weights:
@@ -159,9 +152,9 @@ Bool_t fCalculateNestedLoops = kTRUE; // calculate and store correlations with
 Bool_t fCalculateCustomNestedLoop =
   kFALSE; // validate e-b-e all correlations with custom nested loop
 struct NestedLoops_Arrays {
-  TProfile* fNestedLoopsPro[4][6][5] = {
+  TProfile* fNestedLoopsPro[4][gMaxHarmonic][eAsFunctionOf_N] = {
     {{NULL}}};                         //! multiparticle correlations from nested loops
-                                       //! [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=6][0=integrated,1=vs.
+                                       //! [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=gMaxHarmonic][0=integrated,1=vs.
                                        //! multiplicity,2=vs. centrality,3=pT,4=eta]
   TArrayD* ftaNestedLoops[2] = {NULL}; //! e-b-e container for nested loops
                                        //! [0=angles;1=product of all weights]
@@ -175,9 +168,8 @@ TList* fTest0List = NULL;        // list to hold all objects for Test0
 TProfile* fTest0FlagsPro = NULL; // store all flags for Test0
 Bool_t fCalculateTest0 = kFALSE; // calculate or not Test0
 struct Test0_Arrays {
-  TProfile* fTest0Pro[gMaxCorrelator][gMaxIndex][5] = {
-    {{NULL}}}; //! [gMaxCorrelator][gMaxIndex][3]
-               //! [order][index][0=integrated,1=vs. multiplicity,2=vs.
+  TProfile* fTest0Pro[gMaxCorrelator][gMaxIndex][eAsFunctionOf_N] = {
+    {{NULL}}}; //! [order][index][0=integrated,1=vs. multiplicity,2=vs.
                //! centrality,3=pT,4=eta]
   TString* fTest0Labels[gMaxCorrelator][gMaxIndex] = {
     {NULL}}; // all labels: k-p'th order is stored in k-1'th index. So yes, I
@@ -192,5 +184,14 @@ TH1I* fTest0LabelsPlaceholder =
 TList* fResultsList = NULL;        //!<! list to hold all results
 TProfile* fResultsFlagsPro = NULL; //!<! profile to hold all flags for results
 TH1D* fResultsHist = NULL;         //!<! example histogram to store some results
+struct ResultsHistograms_Arrays {
+  // Remark: These settings apply to following categories fCorrelationsPro, fNestedLoopsPro, fTest0Pro, and fResultsHist
+  Double_t fResultsHistogramsFixedLengthBins[eAsFunctionOf_N][3] = {{0.}};                                               // [nBins,min,max]
+  TArrayD* fResultsHistogramsVariableLengthBins[eAsFunctionOf_N] = {NULL};                                               // here for each variable in eAsFunctionOf I specify array holding bin boundaries
+  Bool_t fUseResultsHistogramsVariableLengthBins[eAsFunctionOf_N] = {kFALSE};                                            // use or not variable-length bins
+  TString fResultsHistogramsVariableLengthBinsString[eAsFunctionOf_N] = {""};                                            // TBI 20240113 temporary I do it this way
+  TString fResultsHistogramsXaxisTitle[eAsFunctionOf_N] = {"integrated", "multiplicity", "centrality", "p_{T}", "#eta"}; // keep ordering in sync with enum eAsFunctionOf
+  TString fResultsHistogramsRawName[eAsFunctionOf_N] = {"int", "mult", "cent", "pt", "eta"};                             // this is how it appears simplified in the hist name when saved to the file
+} rh_a;                                                                                                                  // "rh_a" labels an instance of this group of histograms
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_

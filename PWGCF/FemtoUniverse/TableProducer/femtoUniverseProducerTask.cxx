@@ -21,6 +21,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -55,13 +56,17 @@ namespace o2::aod
 
 using FemtoFullCollision =
   soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator;
+using FemtoFullCollisionCentRun2 =
+  soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator;
+using FemtoFullCollisionCentRun3 =
+  soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator;
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks =
   soa::Join<aod::FullTracks, aod::TracksDCA, aod::TOFSignal, aod::pidTPCEl, aod::TrackSelection,
             aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
-            aod::pidTPCDe, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
-            aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
+            aod::pidTPCDe, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 
 // using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join
 // table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s>
@@ -113,9 +118,14 @@ struct femtoUniverseProducerTask {
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
   Configurable<bool> ConfIsActivateV0{"ConfIsActivateV0", true, "Activate filling of V0 into femtouniverse tables"};
-  Configurable<bool> ConfIsActivatePhi{"ConfIsActivatePhi", true, "Activate filling of Phi into femtouniverse tables"};
+  Configurable<bool> ConfIsActivatePhi{"ConfIsActivatePhi", false, "Activate filling of Phi into femtouniverse tables"};
   Configurable<bool> ConfMCTruthAnalysisWithPID{"ConfMCTruthAnalysisWithPID", true, "1: take only particles with specified PDG, 0: all particles (for MC Truth)"};
   Configurable<std::vector<int>> ConfMCTruthPDGCodes{"ConfMCTruthPDGCodes", std::vector<int>{211, -211, 2212, -2212, 333}, "PDG of particles to be stored"};
+  Configurable<float> ConfCentFT0Min{"ConfCentFT0Min", 0.f, "Min CentFT0 value for centrality selection"};
+  Configurable<float> ConfCentFT0Max{"ConfCentFT0Max", 200.f, "Max CentFT0 value for centrality selection"};
+
+  Filter CustomCollCentFilter = (aod::cent::centFT0C > ConfCentFT0Min) &&
+                                (aod::cent::centFT0C < ConfCentFT0Max);
 
   // just sanity check to make sure in case there are problems in conversion or
   // MC production it does not affect results
@@ -150,8 +160,9 @@ struct femtoUniverseProducerTask {
   Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kPIDnSigmaMax, "ConfTrk"), std::vector<float>{3.5f, 3.f, 2.5f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kPIDnSigmaMax, "Track selection: ")};
   Configurable<float> ConfTrkPIDnSigmaOffsetTPC{"ConfTrkPIDnSigmaOffsetTPC", 0., "Offset for TPC nSigma because of bad calibration"};
   Configurable<float> ConfTrkPIDnSigmaOffsetTOF{"ConfTrkPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
-  Configurable<std::vector<int>> ConfTrkPIDspecies{"ConfTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
+  Configurable<std::vector<int>> ConfTrkPIDspecies{"ConfTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID (Pion=2, Kaon=3, Proton=4, Deuteron=5)"};
   // Numbers from ~/alice/O2/DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h //static constexpr ID Pion = 2; static constexpr ID Kaon = 3; static constexpr ID Proton = 4; static constexpr ID Deuteron = 5;
+  Configurable<float> ConfTOFpTmin{"ConfTOFpTmin", 500, "TOF pT min"};
 
   // TrackSelection *o2PhysicsTrackSelection;
   /// \todo Labeled array (see Track-Track task)
@@ -231,10 +242,7 @@ struct femtoUniverseProducerTask {
 
   // D0/D0bar mesons
   struct : o2::framework::ConfigurableGroup {
-    Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
-    Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-    Configurable<float> yCandMax{"yCandMax", 4.0, "max. cand. rapidity"};
-    Configurable<float> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
+    Configurable<float> ConfD0D0barCandMaxY{"ConfD0D0barCandMaxY", -1., "max. cand. rapidity"};
   } ConfD0Selection;
 
   HfHelper hfHelper;
@@ -301,10 +309,10 @@ struct femtoUniverseProducerTask {
 
   void init(InitContext&)
   {
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackD0mesonData) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth) == false) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth) == false) {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackD0mesonData) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth) == true) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth) == true) {
       LOGF(fatal,
            "Cannot enable process Data and process MC at the same time. "
            "Please choose one.");
@@ -442,9 +450,9 @@ struct femtoUniverseProducerTask {
                        particle.dcaXY(), particle.dcaZ(), particle.tpcSignal(),
                        particle.tpcNSigmaStoreEl(), particle.tpcNSigmaStorePi(),
                        particle.tpcNSigmaStoreKa(), particle.tpcNSigmaStorePr(),
-                       particle.tpcNSigmaStoreDe(), particle.tofNSigmaStoreEl(),
-                       particle.tofNSigmaStorePi(), particle.tofNSigmaStoreKa(),
-                       particle.tofNSigmaStorePr(), particle.tofNSigmaStoreDe(),
+                       particle.tpcNSigmaStoreDe(), particle.tofNSigmaEl(),
+                       particle.tofNSigmaPi(), particle.tofNSigmaKa(),
+                       particle.tofNSigmaPr(), particle.tofNSigmaDe(),
                        -999., -999., -999., -999., -999., -999.);
     } else if constexpr (isPhiOrD0) {
       outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
@@ -530,20 +538,27 @@ struct femtoUniverseProducerTask {
   template <typename CollisionType, typename TrackType>
   void fillMCTruthCollisions(CollisionType const& col, TrackType const& tracks)
   {
-    const auto vtxZ = col.posZ();
-    const auto spher = 0; // colCuts.computeSphericity(col, tracks);
-    int mult = 0;
-    int multNtr = 0;
-    if (ConfIsRun3) {
-      mult = col.multFV0M();
-      multNtr = col.multNTracksPV();
-    } else {
-      mult = 0.5 * (col.multFV0M()); /// For benchmarking on Run 2, V0M in
-                                     /// FemtoUniverseRun2 is defined V0M/2
-      multNtr = col.multTracklets();
+    for (auto& c : col) {
+      const auto vtxZ = c.posZ();
+      const auto spher = 0; // colCuts.computeSphericity(col, tracks);
+      int mult = 0;
+      int multNtr = 0;
+
+      // colCuts.fillQA(c); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
+      outputCollision(vtxZ, mult, multNtr, spher, mMagField);
     }
-    if (ConfEvtUseTPCmult) {
-      multNtr = col.multTPC();
+  }
+
+  template <bool isMC, typename CollisionType, typename TrackType>
+  void fillCollisionsCentRun2(CollisionType const& col, TrackType const& tracks)
+  {
+    const auto vtxZ = col.posZ();
+    const auto spher = colCuts.computeSphericity(col, tracks);
+    int cent = 0;
+    int multNtr = 0;
+    if (!ConfIsRun3) {
+      cent = col.centRun2V0M();
+      multNtr = col.centRun2V0M();
     }
 
     // check whether the basic event selection criteria are fulfilled
@@ -551,17 +566,43 @@ struct femtoUniverseProducerTask {
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any
     // particle candidates for such collisions
+    if (!colCuts.isSelected(col)) {
+      if (ConfIsTrigger) {
+        outputCollision(vtxZ, cent, multNtr, spher, mMagField); //////
+      }
+      return;
+    }
 
-    // CHECK WHAT CUTS SHOULD BE USED FOR MC TRUTH
-    //  if (!colCuts.isSelected(col)) {
-    //    if (ConfIsTrigger) {
-    //      outputCollision(vtxZ, mult, multNtr, spher, mMagField);
-    //    }
-    //    return;
-    //  }
+    // colCuts.fillQA(col); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
+    outputCollision(vtxZ, cent, multNtr, spher, mMagField);
+  }
 
-    colCuts.fillQA(col);
-    outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+  template <bool isMC, typename CollisionType, typename TrackType>
+  void fillCollisionsCentRun3(CollisionType const& col, TrackType const& tracks)
+  {
+    const auto vtxZ = col.posZ();
+    const auto spher = colCuts.computeSphericity(col, tracks);
+    int cent = 0;
+    int multNtr = 0;
+    if (ConfIsRun3) {
+      multNtr = col.centFT0C();
+      cent = col.centFT0C();
+    }
+
+    // check whether the basic event selection criteria are fulfilled
+    // if the basic selection is NOT fulfilled:
+    // in case of skimming run - don't store such collisions
+    // in case of trigger run - store such collisions but don't store any
+    // particle candidates for such collisions
+    if (!colCuts.isSelected(col)) {
+      if (ConfIsTrigger) {
+        outputCollision(vtxZ, cent, multNtr, spher, mMagField); //////
+      }
+      return;
+    }
+
+    // colCuts.fillQA(col); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
+    outputCollision(vtxZ, cent, multNtr, spher, mMagField);
   }
 
   template <bool isMC, typename TrackType>
@@ -575,6 +616,12 @@ struct femtoUniverseProducerTask {
       /// point looking further at the track
       if (!trackCuts.isSelectedMinimal(track)) {
         continue;
+      }
+
+      if (track.pt() > ConfTOFpTmin) {
+        if (!track.hasTOF()) {
+          continue;
+        }
       }
 
       trackCuts.fillQA<aod::femtouniverseparticle::ParticleType::kTrack,
@@ -699,7 +746,6 @@ struct femtoUniverseProducerTask {
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     double invMassD0 = 0.0;
     double invMassD0bar = 0.0;
-    // phiCuts.fillQA<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild>(col, p1, p1, p2, ConfPhiChildOne.ConfPDGCodePartOne, ConfPhiChildTwo.ConfPDGCodePartTwo); ///\todo fill QA also for daughters
 
     for (auto const& hfCand : hfCands) {
 
@@ -707,7 +753,7 @@ struct femtoUniverseProducerTask {
         continue;
       }
 
-      if (ConfD0Selection.yCandMax >= 0. && std::abs(hfHelper.yD0(hfCand)) > ConfD0Selection.yCandMax) {
+      if (ConfD0Selection.ConfD0D0barCandMaxY >= 0. && std::abs(hfHelper.yD0(hfCand)) > ConfD0Selection.ConfD0D0barCandMaxY) {
         continue;
       }
 
@@ -721,13 +767,13 @@ struct femtoUniverseProducerTask {
 
       if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 0) {
         invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
-        invMassD0bar = -hfHelper.invMassD0ToPiK(hfCand);
+        invMassD0bar = -hfHelper.invMassD0barToKPi(hfCand);
       } else if (hfCand.isSelD0() == 0 && hfCand.isSelD0bar() == 1) {
         invMassD0 = -hfHelper.invMassD0ToPiK(hfCand);
-        invMassD0bar = hfHelper.invMassD0ToPiK(hfCand);
+        invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
       } else if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 1) {
         invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
-        invMassD0bar = hfHelper.invMassD0ToPiK(hfCand);
+        invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
       } else {
         invMassD0 = 0.0;
         invMassD0bar = 0.0;
@@ -861,7 +907,7 @@ struct femtoUniverseProducerTask {
                   p1.dcaXY(),
                   childIDs,
                   0,
-                  0);
+                  1); // sign, workaround for now
       const int rowOfPosTrack = outputParts.lastIndex();
       if constexpr (isMC) {
         fillMCParticle(p1, o2::aod::femtouniverseparticle::ParticleType::kPhiChild);
@@ -881,7 +927,7 @@ struct femtoUniverseProducerTask {
                   p2.dcaXY(),
                   childIDs,
                   0,
-                  0);
+                  -1); // sign, workaround for now
       const int rowOfNegTrack = outputParts.lastIndex();
       if constexpr (isMC) {
         fillMCParticle(p2, o2::aod::femtouniverseparticle::ParticleType::kPhiChild);
@@ -929,8 +975,7 @@ struct femtoUniverseProducerTask {
 
       if (ConfMCTruthAnalysisWithPID) {
         bool pass = false;
-        std::vector<int> tmpPDGCodes = ConfMCTruthPDGCodes;
-        ; // necessary due to some features of the Configurable
+        std::vector<int> tmpPDGCodes = ConfMCTruthPDGCodes; // necessary due to some features of the Configurable
         for (uint32_t pdg : tmpPDGCodes) {
           if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
             if (pdgCode == 333) { // ATTENTION: workaround for now, because all Phi mesons are NOT primary particles for now.
@@ -1053,7 +1098,7 @@ struct femtoUniverseProducerTask {
     fillTracks<false>(tracks);
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackData,
-                 "Provide experimental data for track track", false);
+                 "Provide experimental data for track track", true);
 
   // using FilteredFemtoFullTracks = soa::Filtered<FemtoFullTracks>;
   void processTrackPhiData(aod::FemtoFullCollision const& col,
@@ -1087,17 +1132,43 @@ struct femtoUniverseProducerTask {
                  "Provide experimental data for track D0 meson", false);
 
   void
-    processTrackMCTruth(aod::FemtoFullCollisionMC const& col,
-                        aod::BCsWithTimestamps const&,
-                        aod::McCollisions const& mcCollisions,
-                        aod::McParticles const& mcParticles)
+    processTrackMCTruth(aod::McCollision const& mcCol,
+                        soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
+                        aod::McParticles const& mcParticles,
+                        aod::BCsWithTimestamps const&)
   {
     // magnetic field for run not needed for mc truth
     // fill the tables
-    fillMCTruthCollisions(col, mcParticles);
+    fillMCTruthCollisions(collisions, mcParticles);
     fillParticles(mcParticles);
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMCTruth, "Provide MC data for MC truth track analysis", false);
+
+  void
+    processTrackCentRun2Data(aod::FemtoFullCollisionCentRun2 const& col,
+                             aod::BCsWithTimestamps const&,
+                             aod::FemtoFullTracks const& tracks)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisionsCentRun2<false>(col, tracks);
+    fillTracks<false>(tracks);
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackCentRun2Data, "Provide experimental data for Run 2 with centrality for track track", false);
+
+  void
+    processTrackCentRun3Data(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>::iterator const& col,
+                             aod::BCsWithTimestamps const&,
+                             aod::FemtoFullTracks const& tracks)
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisionsCentRun3<false>(col, tracks);
+    fillTracks<false>(tracks);
+  }
+  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackCentRun3Data, "Provide experimental data for Run 3 with centrality for track track", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

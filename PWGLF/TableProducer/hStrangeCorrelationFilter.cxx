@@ -397,14 +397,9 @@ struct hstrangecorrelationfilter {
     /// _________________________________________________
     /// Step 3: Populate table with associated Cascades
     for (auto const& casc : Cascades) {
-      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0.has_v0Data())) {
-        return; // skip those cascades for which V0 doesn't exist
-      }
-      auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
       auto bachTrackCast = casc.bachelor_as<DauTracks>();
-      auto posTrackCast = v0data.posTrack_as<DauTracks>();
-      auto negTrackCast = v0data.negTrack_as<DauTracks>();
+      auto posTrackCast = casc.posTrack_as<DauTracks>();
+      auto negTrackCast = casc.negTrack_as<DauTracks>();
       auto origCascadeEntry = casc.cascade_as<CascadesLinkedTagged>();
 
       // minimum TPC crossed rows
