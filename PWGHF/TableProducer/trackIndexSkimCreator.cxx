@@ -2193,7 +2193,6 @@ struct HfTrackIndexSkimCreator {
             try {
               nVtxFrom2ProngFitter = df2.process(trackParVarPos1, trackParVarNeg1);
             } catch (...) {
-              LOGF(info, "Exception caught: failed to find vertex (2prong)");
               continue;
             }
 
@@ -2521,7 +2520,6 @@ struct HfTrackIndexSkimCreator {
               try {
                 nVtxFrom3ProngFitter = df3.process(trackParVarPos1, trackParVarNeg1, trackParVarPos2);
               } catch (...) {
-                LOGF(info, "Exception caught: failed to find vertex (3prong)");
                 continue;
               }
 
@@ -2785,7 +2783,6 @@ struct HfTrackIndexSkimCreator {
               try {
                 nVtxFrom3ProngFitterSecondLoop = df3.process(trackParVarNeg1, trackParVarPos1, trackParVarNeg2);
               } catch (...) {
-                LOGF(info, "Exception caught: failed to find vertex (3prong)");
                 continue;
               }
 
@@ -3168,7 +3165,6 @@ struct HfTrackIndexSkimCreatorCascades {
           try {
             nCand2 = fitter.process(trackV0, trackBach);
           } catch (...) {
-            LOGF(info, "Exception caught: failed to find cascade vertex");
             continue;
           }
 
@@ -3549,7 +3545,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
           try {
             nVtxFrom2ProngFitterXiHyp = df2.process(trackCascXi2Prong, trackParVarPion1);
           } catch (...) {
-            LOGF(info, "Exception caught: failed to find charm baryon vertex (2prong - xi)");
             if (fillHistograms) {
               registry.fill(HIST("hFitterStatusXi2Prong"), 1);
             }
@@ -3590,7 +3585,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
           try {
             nVtxFrom2ProngFitterOmegaHyp = df2.process(trackCascOmega, trackParVarPion1);
           } catch (...) {
-            LOGF(info, "Exception caught: failed to find charm baryon vertex (2prong - omega)");
             if (fillHistograms) {
               registry.fill(HIST("hFitterStatusOmega2Prong"), 1);
             }
@@ -3671,7 +3665,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
               try {
                 nVtxFrom3ProngFitterXiHyp = df3.process(trackCascXi3Prong, trackParVarPion1, trackParVarPion2);
               } catch (...) {
-                LOGF(info, "Exception caught: failed to find charm baryon vertex (3prong - xi)");
                 if (fillHistograms) {
                   registry.fill(HIST("hFitterStatusXi3Prong"), 1);
                 }
