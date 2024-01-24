@@ -2189,7 +2189,15 @@ struct HfTrackIndexSkimCreator {
             is2ProngPreselected(pVecTrackPos1, pVecTrackNeg1, dcaInfoPos1[0], dcaInfoNeg1[0], cutStatus2Prong, whichHypo2Prong, isSelected2ProngCand);
 
             // secondary vertex reconstruction and further 2-prong selections
-            if (isSelected2ProngCand > 0 && df2.process(trackParVarPos1, trackParVarNeg1) > 0) { // should it be this or > 0 or are they equivalent
+            int nVtxFrom2ProngFitter = 0;
+            try {
+              nVtxFrom2ProngFitter = df2.process(trackParVarPos1, trackParVarNeg1);
+            } catch (...) {
+              LOGF(info, "Exception caught: failed to find vertex (2prong)");
+              continue;
+            }
+
+            if (isSelected2ProngCand > 0 && nVtxFrom2ProngFitter > 0) { // should it be this or > 0 or are they equivalent
               // get secondary vertex
               const auto& secondaryVertex2 = df2.getPCACandidate();
               // get track momenta
@@ -2509,7 +2517,15 @@ struct HfTrackIndexSkimCreator {
               }
 
               // reconstruct the 3-prong secondary vertex
-              if (df3.process(trackParVarPos1, trackParVarNeg1, trackParVarPos2) == 0) {
+              int nVtxFrom3ProngFitter = 0;
+              try {
+                nVtxFrom3ProngFitter = df3.process(trackParVarPos1, trackParVarNeg1, trackParVarPos2);
+              } catch (...) {
+                LOGF(info, "Exception caught: failed to find vertex (3prong)");
+                continue;
+              }
+
+              if (nVtxFrom3ProngFitter == 0) {
                 continue;
               }
               // get secondary vertex
@@ -2765,7 +2781,15 @@ struct HfTrackIndexSkimCreator {
               }
 
               // reconstruct the 3-prong secondary vertex
-              if (df3.process(trackParVarNeg1, trackParVarPos1, trackParVarNeg2) == 0) {
+              int nVtxFrom3ProngFitterSecondLoop = 0;
+              try {
+                nVtxFrom3ProngFitterSecondLoop = df3.process(trackParVarNeg1, trackParVarPos1, trackParVarNeg2);
+              } catch (...) {
+                LOGF(info, "Exception caught: failed to find vertex (3prong)");
+                continue;
+              }
+
+              if (nVtxFrom3ProngFitterSecondLoop == 0) {
                 continue;
               }
               // get secondary vertex
@@ -3140,7 +3164,14 @@ struct HfTrackIndexSkimCreatorCascades {
           auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg); // build the V0 track
 
           // now we find the DCA between the V0 and the bachelor, for the cascade
-          int nCand2 = fitter.process(trackV0, trackBach);
+          int nCand2 = 0;
+          try {
+            nCand2 = fitter.process(trackV0, trackBach);
+          } catch (...) {
+            LOGF(info, "Exception caught: failed to find cascade vertex");
+            continue;
+          }
+
           if (nCand2 == 0) {
             continue;
           }
