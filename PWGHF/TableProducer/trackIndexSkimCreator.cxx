@@ -3550,12 +3550,12 @@ struct HfTrackIndexSkimCreatorLfCascades {
             nVtxFrom2ProngFitterXiHyp = df2.process(trackCascXi2Prong, trackParVarPion1);
           } catch (...) {
             LOGF(info, "Exception caught: failed to find charm baryon vertex (2prong - xi)");
-            if (fillHistograms){
+            if (fillHistograms) {
               registry.fill(HIST("hFitterStatusXi2Prong"), 1);
             }
             continue;
           }
-          if (fillHistograms){
+          if (fillHistograms) {
             registry.fill(HIST("hFitterStatusXi2Prong"), 0);
           }
 
@@ -3591,12 +3591,12 @@ struct HfTrackIndexSkimCreatorLfCascades {
             nVtxFrom2ProngFitterOmegaHyp = df2.process(trackCascOmega, trackParVarPion1);
           } catch (...) {
             LOGF(info, "Exception caught: failed to find charm baryon vertex (2prong - omega)");
-            if (fillHistograms){
+            if (fillHistograms) {
               registry.fill(HIST("hFitterStatusOmega2Prong"), 1);
             }
             continue;
           }
-          if (fillHistograms){
+          if (fillHistograms) {
             registry.fill(HIST("hFitterStatusOmega2Prong"), 0);
           }
 
@@ -3672,12 +3672,12 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 nVtxFrom3ProngFitterXiHyp = df3.process(trackCascXi3Prong, trackParVarPion1, trackParVarPion2);
               } catch (...) {
                 LOGF(info, "Exception caught: failed to find charm baryon vertex (3prong - xi)");
-                if (fillHistograms){
+                if (fillHistograms) {
                   registry.fill(HIST("hFitterStatusXi3Prong"), 1);
                 }
                 continue;
               }
-              if (fillHistograms){
+              if (fillHistograms) {
                 registry.fill(HIST("hFitterStatusXi3Prong"), 0);
               }
 
