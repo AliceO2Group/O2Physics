@@ -108,6 +108,9 @@ DECLARE_SOA_COLUMN(DecLenCascade, decLenCascade, double);
 DECLARE_SOA_COLUMN(DecLenV0, decLenV0, double);
 DECLARE_SOA_COLUMN(ErrorDecayLengthCharmBaryon, errorDecayLengthCharmBaryon, float);
 DECLARE_SOA_COLUMN(ErrorDecayLengthXYCharmBaryon, errorDecayLengthXYCharmBaryon, float);
+DECLARE_SOA_COLUMN(NormImpParCascade, normImpParCascade, double);
+DECLARE_SOA_COLUMN(NormImpParPiFromCharmBar, normImpParPiFromCharmBar, double);
+DECLARE_SOA_COLUMN(NormDecayLenCharmBar, normDecayLenCharmBar, double);
 // from creator - MC
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
@@ -159,6 +162,7 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::DcaZToPvV0Dau0, full::DcaZToPvV0Dau1, full::DcaZToPvCascDau,
                   full::DcaCascDau, full::DcaV0Dau, full::DcaCharmBaryonDau,
                   full::DecLenCharmBaryon, full::DecLenCascade, full::DecLenV0, full::ErrorDecayLengthCharmBaryon, full::ErrorDecayLengthXYCharmBaryon,
+                  full::NormImpParCascade, full::NormImpParPiFromCharmBar, full::NormDecayLenCharmBar,
                   full::StatusPidLambda, full::StatusPidCascade, full::StatusPidCharmBaryon,
                   full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassCharmBaryon, full::ResultSelections, full::PidTpcInfoStored, full::PidTofInfoStored,
                   full::TpcNSigmaPiFromCharmBaryon, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
@@ -259,6 +263,9 @@ struct HfTreeCreatorToXiPi {
       candidate.decLenV0(),
       candidate.errorDecayLengthCharmBaryon(),
       candidate.errorDecayLengthXYCharmBaryon(),
+      candidate.impactParCascXY()/candidate.errImpactParCascXY(),
+      candidate.impactParPiFromCharmBaryonXY()/candidate.errImpactParPiFromCharmBaryonXY(),
+      candidate.decLenCharmBaryon()/candidate.errorDecayLengthCharmBaryon(),
       candidate.statusPidLambda(),
       candidate.statusPidCascade(),
       candidate.statusPidCharmBaryon(),
