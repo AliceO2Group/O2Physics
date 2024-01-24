@@ -255,6 +255,8 @@ struct HfTreeCreatorLcToPKPi {
 
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   Configurable<bool> fillCollIdTable{"fillCollIdTable", false, "Fill a single-column table with collision index"};
+  Configurable<bool> keepOnlySignalMc{"keepOnlySignalMc", false, "Fill MC tree only with signal candidates"};
+  Configurable<bool> keepOnlyBkg{"keepOnlyBkg", false, "Fill MC tree only with background candidates"};
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
 
   HfHelper hfHelper;
@@ -305,6 +307,7 @@ struct HfTreeCreatorLcToPKPi {
       auto trackPos1 = candidate.prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.prong2_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
+      bool isMcCandidateSignal = std::abs(candidate.flagMcMatchRec()) == (1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi);
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float FunctionInvMass,
@@ -312,7 +315,7 @@ struct HfTreeCreatorLcToPKPi {
                            float FunctionY,
                            float FunctionE) {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
-        if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
+        if (FunctionSelection >= 1 && (/*keep all*/ (!keepOnlySignalMc && !keepOnlyBkg) || /*keep only signal*/ (keepOnlySignalMc && isMcCandidateSignal) || /*keep only background and downsample it*/ (keepOnlyBkg && !isMcCandidateSignal && pseudoRndm < downSampleBkgFactor))) {
           if (fillCandidateLiteTable) {
             rowCandidateLite(
               candidate.posX(),
