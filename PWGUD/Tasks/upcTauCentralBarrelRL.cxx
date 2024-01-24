@@ -286,8 +286,11 @@ struct UpcTauCentralBarrelRL {
         histos.add("EventTwoTracks/TwoElectrons/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)",HistType::kTH2D,{axisPt,axisPt});
         histos.add("EventTwoTracks/TwoElectrons/hDaughtersPhi", ";Daughter 1 #phi (rad);Daughter 2 #phi (rad)",HistType::kTH2D,{axisPhi,axisPhi});
         histos.add("EventTwoTracks/TwoElectrons/hDaughtersRapidity", ";Daughter 1 #it{y} (-);Daughter 2 #it{y} (-)",HistType::kTH2D,{axisRap,axisRap});
-
-
+        histos.add("EventTwoTracks/TwoElectrons/hLeadingP", ";Leading #it{p} (GeV/c);Number of events (-)",HistType::kTH1D,{axisMom});
+        histos.add("EventTwoTracks/TwoElectrons/hLeadingPwide", ";Leading #it{p} (GeV/c);Number of events (-)",HistType::kTH1D,{axisMomWide});
+        histos.add("EventTwoTracks/TwoElectrons/hLeadingPt", ";Leading #it{p_{T}} (GeV/c);Number of events (-)",HistType::kTH1D,{axisPt});
+        histos.add("EventTwoTracks/TwoElectrons/hLeadingPhi", ";Leading #phi (rad);Number of events (-)",HistType::kTH1D,{axisPhi});
+        histos.add("EventTwoTracks/TwoElectrons/hLeadingRapidity", ";Leading #it{y} (-);Number of events (-)",HistType::kTH1D,{axisRap});
 
         histos.add("EventTwoTracks/TwoMuons/hInvariantMass",";Invariant mass (GeV/c^{2});Number of events (-)",HistType::kTH1D,{axisInvMass});
         histos.add("EventTwoTracks/TwoMuons/hInvariantMassWide",";Invariant mass (GeV/c^{2});Number of events (-)",HistType::kTH1D,{axisInvMassWide});
@@ -700,6 +703,11 @@ struct UpcTauCentralBarrelRL {
                 histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/hDaughtersPt"))->Fill(daug[0].Pt(),daug[1].Pt());
                 histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/hDaughtersPhi"))->Fill(daug[0].Phi(),daug[1].Phi());
                 histos.get<TH2>(HIST("EventTwoTracks/TwoElectrons/hDaughtersRapidity"))->Fill(daug[0].Rapidity(),daug[1].Rapidity());
+                histos.get<TH1>(HIST("EventTwoTracks/TwoElectrons/hLeadingP"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].P() : daug[1].P()));
+                histos.get<TH1>(HIST("EventTwoTracks/TwoElectrons/hLeadingPwide"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].P() : daug[1].P()));
+                histos.get<TH1>(HIST("EventTwoTracks/TwoElectrons/hLeadingPt"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Pt() : daug[1].Pt()));
+                histos.get<TH1>(HIST("EventTwoTracks/TwoElectrons/hLeadingPhi"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Phi() : daug[1].Phi()));
+                histos.get<TH1>(HIST("EventTwoTracks/TwoElectrons/hLeadingRapidity"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Rapidity() : daug[1].Rapidity()));
 			}
 			if (countPVGTmuons == 2) {
 				histos.get<TH1>(HIST("Events/hChannelsRatio"))->Fill(1);
