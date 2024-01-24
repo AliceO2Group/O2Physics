@@ -42,6 +42,7 @@ enum Parts {
 enum Tasks {
   kTrackTrack,
   kTrackV0,
+  kTrackTrackTrack,
   kNTasks,
 };
 } // namespace CollisionMasks
@@ -175,6 +176,22 @@ struct femoDreamCollisionMasker {
             NegChildPIDTPCBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
           }
         }
+      } else if (device.name.find("femto-dream-triplet-task-track-track-track") != std::string::npos) {
+        LOG(info) << "Matched workflow: " << device.name;
+        TaskFinder = CollisionMasks::kTrackTrackTrack;
+        for (auto const& option : device.options) {
+          if (option.name.compare(std::string("ConfCutPart")) == 0) {
+            TrackCutBits.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
+          } else if (option.name.compare(std::string("ConfTPCPIDBit")) == 0) {
+            TrackPIDTPCBits.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
+          } else if (option.name.compare(std::string("ConfTPCTOFPIDBit")) == 0) {
+            TrackPIDTPCTOFBits.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
+          } else if (option.name.compare(std::string("ConfPIDthrMom")) == 0) {
+            TrackPIDThreshold.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("ConfMaxpT")) == 0) {
+            FilterPtMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          }
+        }
       }
     }
 
@@ -186,7 +203,7 @@ struct femoDreamCollisionMasker {
     }
   }
 
-  // make bitmask for a track
+  // make bitmask for a track for two body task
   template <typename T, typename R>
   void MaskForTrack(T& BitSet, CollisionMasks::Parts P, R& track)
   {
@@ -197,6 +214,36 @@ struct femoDreamCollisionMasker {
       // check filter cuts
       if (track.pt() < FilterPtMin.at(P).at(index) || track.pt() > FilterPtMax.at(P).at(index) ||
           track.eta() < FilterEtaMin.at(P).at(index) || track.eta() > FilterEtaMax.at(P).at(index)) {
+        // if they are not passed, skip the particle
+        continue;
+      }
+      // set the bit at the index of the selection equal to one if the track passes all selections
+      // check track cuts
+      if ((track.cut() & TrackCutBits.at(P).at(index)) == TrackCutBits.at(P).at(index)) {
+        // check pid cuts
+        if (track.p() <= TrackPIDThreshold.at(P).at(index)) {
+          if ((track.pidcut() & TrackPIDTPCBits.at(P).at(index)) == TrackPIDTPCBits.at(P).at(index)) {
+            BitSet.at(P).set(index);
+          }
+        } else {
+          if ((track.pidcut() & TrackPIDTPCTOFBits.at(P).at(index)) == TrackPIDTPCTOFBits.at(P).at(index)) {
+            BitSet.at(P).set(index);
+          }
+        }
+      }
+    }
+  }
+
+  // make bitmask for a track for three body task
+  template <typename T, typename R>
+  void MaskForTrack_ThreeBody(T& BitSet, CollisionMasks::Parts P, R& track)
+  {
+    if (track.partType() != static_cast<uint8_t>(femtodreamparticle::kTrack)) {
+      return;
+    }
+    for (size_t index = 0; index < TrackCutBits.at(P).size(); index++) {
+      // check filter cuts
+      if (track.pt() > FilterPtMax.at(P).at(index)) {
         // if they are not passed, skip the particle
         continue;
       }
@@ -272,6 +319,15 @@ struct femoDreamCollisionMasker {
         for (auto const& part : parts) {
           MaskForTrack(Mask, CollisionMasks::kPartOne, part);
           MaskForV0(Mask, CollisionMasks::kPartTwo, part, parts);
+        }
+        // TODO: add all supported pair/triplet tasks
+        break;
+      case CollisionMasks::kTrackTrackTrack:
+        // triplet-track-track-track task
+        // create mask track
+        for (auto const& part : parts) {
+          // currently three-body task can be run only for three identical tracks, only one part needs to be checked
+          MaskForTrack_ThreeBody(Mask, CollisionMasks::kPartOne, part);
         }
         // TODO: add all supported pair/triplet tasks
         break;
