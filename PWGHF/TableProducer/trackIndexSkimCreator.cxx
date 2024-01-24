@@ -3519,10 +3519,14 @@ struct HfTrackIndexSkimCreatorLfCascades {
             nVtxFrom2ProngFitterXiHyp = df2.process(trackCascXi2Prong, trackParVarPion1);
           } catch (...) {
             LOGF(info, "Exception caught: failed to find charm baryon vertex (2prong - xi)");
-            registry.fill(HIST("hFitterStatusXi2Prong"), 1);
+            if (fillHistograms){
+              registry.fill(HIST("hFitterStatusXi2Prong"), 1);
+            }
             continue;
           }
-          registry.fill(HIST("hFitterStatusXi2Prong"), 0);
+          if (fillHistograms){
+            registry.fill(HIST("hFitterStatusXi2Prong"), 0);
+          }
 
           if (nVtxFrom2ProngFitterXiHyp > 0) {
 
@@ -3556,10 +3560,14 @@ struct HfTrackIndexSkimCreatorLfCascades {
             nVtxFrom2ProngFitterOmegaHyp = df2.process(trackCascOmega, trackParVarPion1);
           } catch (...) {
             LOGF(info, "Exception caught: failed to find charm baryon vertex (2prong - omega)");
-            registry.fill(HIST("hFitterStatusOmega2Prong"), 1);
+            if (fillHistograms){
+              registry.fill(HIST("hFitterStatusOmega2Prong"), 1);
+            }
             continue;
           }
-          registry.fill(HIST("hFitterStatusOmega2Prong"), 0);
+          if (fillHistograms){
+            registry.fill(HIST("hFitterStatusOmega2Prong"), 0);
+          }
 
           if (nVtxFrom2ProngFitterOmegaHyp > 0) {
 
@@ -3633,10 +3641,14 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 nVtxFrom3ProngFitterXiHyp = df3.process(trackCascXi3Prong, trackParVarPion1, trackParVarPion2);
               } catch (...) {
                 LOGF(info, "Exception caught: failed to find charm baryon vertex (3prong - xi)");
-                registry.fill(HIST("hFitterStatusXi3Prong"), 1);
+                if (fillHistograms){
+                  registry.fill(HIST("hFitterStatusXi3Prong"), 1);
+                }
                 continue;
               }
-              registry.fill(HIST("hFitterStatusXi3Prong"), 0);
+              if (fillHistograms){
+                registry.fill(HIST("hFitterStatusXi3Prong"), 0);
+              }
 
               if (nVtxFrom3ProngFitterXiHyp > 0) {
 
