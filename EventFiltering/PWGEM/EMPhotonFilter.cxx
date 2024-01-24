@@ -32,8 +32,8 @@ using namespace o2::framework::expressions;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using MyCollision = MyCollisions::iterator;
 
-// using MyPrimaryElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsPrefilterBit>;
-// using MyPrimaryElectron = MyPrimaryElectrons::iterator;
+using MyPrimaryElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsPrefilterBit>;
+using MyPrimaryElectron = MyPrimaryElectrons::iterator;
 
 struct EMPhotonFilter {
 
@@ -49,10 +49,7 @@ struct EMPhotonFilter {
     kPHOS_Pair = 2,
     kPHOS_Nbar = 3,
     kPCM_HighPtPhoton = 4,
-    kPCM_MatCalib = 5,
-    kPCM_EtaDalitz = 6,
-    kPCM_EtaGG = 7,
-    kPCM_EE = 8,
+    kPCM_EE = 5,
     kNtrg
   };
 
@@ -64,16 +61,33 @@ struct EMPhotonFilter {
   Configurable<int> nNbar{"nNbar", 2, "Minimal number of nbar clusters"};
 
   // for PCM
-  Configurable<float> min_pt_tagging{"min_pt_tagging", 0.f, "min. pT for tagging"};
-  Configurable<float> max_mee_pi0_dalitz{"max_mee_pi0_dalitz", 0.12, "max. mee for pi0 dalitz decay"};
-  Configurable<float> min_meeg_pi0{"min_meeg_pi0", 0.04, "min. meeg for pi0"};
-  Configurable<float> max_meeg_pi0{"max_meeg_pi0", 0.24, "max. meeg for pi0"};
-  Configurable<float> max_mee_eta_dalitz{"max_mee_eta_dalitz", 0.5, "max. mee for eta dalitz decay"};
-  Configurable<float> min_meeg_eta{"min_meeg_eta", 0.35, "min. meeg for eta"};
-  Configurable<float> max_meeg_eta{"max_meeg_eta", 0.75, "max. meeg for eta"};
+  Configurable<float> minpt_v0{"minpt_v0", 0.1, "min pt for v0"};
+  Configurable<float> maxeta_v0{"maxeta_v0", 0.9, "eta acceptance for v0"};
+  Configurable<float> min_pt_pcm_photon{"min_pt_pcm_photon", 0.f, "min. pT for PCM photon"};
+  Configurable<float> minTPCNsigmaEl_v0{"minTPCNsigmaEl_v0", -3.5, "min. TPC n sigma for electron inclusion"};
+  Configurable<float> maxTPCNsigmaEl_v0{"maxTPCNsigmaEl_v0", +3.5, "max. TPC n sigma for electron inclusion"};
+  Configurable<float> max_dcatopv_xy_v0{"max_dcatopv_xy_v0", +1e+10, "max. DCAxy to PV for V0"};
+  Configurable<float> max_dcatopv_z_v0{"max_dcatopv_z_v0", +1e+10, "max. DCAz to PV for V0"};
+
+  // for prompt dielectron
+  Configurable<float> minpt{"minpt", 0.2, "min pt for track"};
+  Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
+  Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 1.0f, "max DCA 3D in sigma"}; // for single track
+  Configurable<int> mincrossedrows{"mincrossedrows", 80, "min crossed rows"};
+  Configurable<float> minTPCNsigmaEl_primary{"minTPCNsigmaEl_primary", -3.0, "min. TPC n sigma for electron inclusion"};
+  Configurable<float> maxTPCNsigmaEl_primary{"maxTPCNsigmaEl_primary", +4.0, "max. TPC n sigma for electron inclusion"};
+  Configurable<float> minTOFNsigmaEl_primary{"minTOFNsigmaEl_primary", -4.0, "min. TOF n sigma for electron inclusion"}; // require TOF
+  Configurable<float> maxTOFNsigmaEl_primary{"maxTOFNsigmaEl_primary", +4.0, "max. TOF n sigma for electron inclusion"}; // require TOF
+  Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", -2.0, "min. TPC n sigma for pion exclusion"};                     // set to -2 for lowB, -999 for nominalB
+  Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 2.0, "max. TPC n sigma for pion exclusion"};
+  Configurable<float> min_pin_tof{"min_pin_tof", 0.4, "tof is required above this threshold in pin"};
   Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
   Configurable<float> intercept{"intercept", -0.0280, "intercept for m vs. phiv"};
-  Configurable<float> min_pt_pcm_photon{"min_pt_pcm_photon", 4.f, "min. pT for PCM photon"};
+  Configurable<float> min_mee{"min_mee", 0.0, "min. mee"};
+  Configurable<float> max_mee{"max_mee", 0.5, "max. mee"};
+  Configurable<float> min_meeg{"min_meeg", 0.3, "min. meeg"};
+  Configurable<float> max_meeg{"max_meeg", 0.8, "max. meeg"};
+  Configurable<bool> applyPF{"applyPF", false, "apply pre-filter for primary electron"}; // i.e. reject electron from photon conversion with phiv
 
   HistogramRegistry mHistManager{"events", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -92,14 +106,64 @@ struct EMPhotonFilter {
     scalers->GetXaxis()->SetBinLabel(10, "PHOS photon & pair");
     scalers->GetXaxis()->SetBinLabel(11, "events with PHOS");
     scalers->GetXaxis()->SetBinLabel(12, "PCM high p_{T} photon");
-    scalers->GetXaxis()->SetBinLabel(13, "PCM Material budget calibration");
-    scalers->GetXaxis()->SetBinLabel(14, "PCM #eta #rightarrow ee#gamma");
-    scalers->GetXaxis()->SetBinLabel(15, "PCM #eta #rightarrow #gamma#gamma");
-    scalers->GetXaxis()->SetBinLabel(16, "PCM DalitzEE #gamma-#gamma^{*} BEC");
+    scalers->GetXaxis()->SetBinLabel(13, "PCM #gamma and dielectron");
+  }
+
+  template <typename TTrack>
+  bool isSelectedSecondary(TTrack const& track)
+  {
+    if (track.hasTPC() && (track.tpcNSigmaEl() < minTPCNsigmaEl_v0 || maxTPCNsigmaEl_v0 < track.tpcNSigmaEl())) {
+      return false;
+    }
+    return true;
+  }
+  template <typename TTrack>
+  bool isSelectedPrimary(TTrack const& track)
+  {
+    if (!track.hasITS() || !track.hasTPC()) {
+      return false;
+    }
+
+    if (track.pt() < minpt || abs(track.eta()) > maxeta) {
+      return false;
+    }
+
+    if (track.tpcNClsCrossedRows() < mincrossedrows) {
+      return false;
+    }
+
+    if (track.tpcNSigmaEl() < minTPCNsigmaEl_primary || maxTPCNsigmaEl_primary < track.tpcNSigmaEl()) {
+      return false;
+    }
+
+    if ((track.tofNSigmaEl() < minTOFNsigmaEl_primary || maxTOFNsigmaEl_primary < track.tofNSigmaEl()) && track.tpcInnerParam() > min_pin_tof) {
+      return false;
+    }
+
+    if (minTPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < maxTPCNsigmaPi) {
+      return false;
+    }
+
+    if (applyPF && track.pfb() > 0) {
+      return false;
+    }
+
+    float dca_3d = 999.f;
+    float det = track.cYY() * track.cZZ() - track.cZY() * track.cZY();
+    if (det < 0) {
+      dca_3d = 999.f;
+    } else {
+      float chi2 = (track.dcaXY() * track.dcaXY() * track.cZZ() + track.dcaZ() * track.dcaZ() * track.cYY() - 2. * track.dcaXY() * track.dcaZ() * track.cZY()) / det;
+      dca_3d = std::sqrt(std::abs(chi2) / 2.);
+    }
+    if (dca_3d > dca_3d_sigma_max) {
+      return false;
+    }
+    return true;
   }
 
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
-  // Preslice<aod::DalitzEEs> perCollision_ee = aod::dalitzee::collisionId;
+  Preslice<aod::DalitzEEs> perCollision_ee = aod::dalitzee::collisionId;
   Preslice<aod::CaloClusters> perCollision_phos = aod::calocluster::collisionId;
   // Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
@@ -122,9 +186,14 @@ struct EMPhotonFilter {
 
       if constexpr (static_cast<bool>(system & EM_Filter_PhotonType::kPCM)) {
         auto photons1_per_coll = photons1.sliceBy(perCollision_pcm, collision.globalIndex());
-        // auto dielectrons_per_coll = dielectrons.sliceBy(perCollision_ee, collision.globalIndex());
+        auto dielectrons_per_coll = dielectrons.sliceBy(perCollision_ee, collision.globalIndex());
 
         for (auto& v0photon : photons1_per_coll) {
+          auto pos_sv = v0photon.template posTrack_as<TV0Legs>();
+          auto ele_sv = v0photon.template negTrack_as<TV0Legs>();
+          if (!isSelectedSecondary(pos_sv) || !isSelectedSecondary(ele_sv)) {
+            continue;
+          }
           if (v0photon.pt() > min_pt_pcm_photon) {
             keepEvent[kPCM_HighPtPhoton] = true;
             mHistManager.fill(HIST("hEventCounter"), 12);
@@ -132,67 +201,34 @@ struct EMPhotonFilter {
           }
         } // end of single v0 photon loop
 
-        // for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_per_coll, dielectrons_per_coll))) {
-        //   if (g2.pt() < min_pt_tagging) { // this is only to increase rejection factor
-        //     continue;
-        //   }
-        //   if (g2.mass() > max_mee_pi0_dalitz) { // select only pi0 candidates
-        //     continue;
-        //   }
-        //   if (g2.mass() < slope * g2.phiv() + intercept) {
-        //     continue;
-        //   }
-        //   ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-        //   ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
-        //   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+        for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_per_coll, dielectrons_per_coll))) {
+          auto pos_sv = g1.template posTrack_as<TV0Legs>();
+          auto ele_sv = g1.template negTrack_as<TV0Legs>();
+          if (!isSelectedSecondary(pos_sv) || !isSelectedSecondary(ele_sv)) {
+            continue;
+          }
 
-        //   if (min_meeg_pi0 < v12.M() && v12.M() < max_meeg_pi0) {
-        //     keepEvent[kPCM_MatCalib] = true;
-        //     mHistManager.fill(HIST("hEventCounter"), 13);
-        //     break;
-        //   }
+          auto pos_pv = g2.template posTrack_as<TEMPrimaryElectrons>();
+          auto ele_pv = g2.template negTrack_as<TEMPrimaryElectrons>();
+          if (!isSelectedPrimary(pos_pv) || !isSelectedPrimary(ele_pv)) {
+            continue;
+          }
+          if (g2.mass() < min_mee || max_mee < g2.mass()) {
+            continue;
+          }
+          if (g2.mass() < slope * g2.phiv() + intercept) {
+            continue;
+          }
 
-        // } // end of dielectron-photon pair loop
-
-        // for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_per_coll, dielectrons_per_coll))) {
-        //   if (g2.mass() > max_mee_eta_dalitz) { // select only eta candidates
-        //     continue;
-        //   }
-        //   if (g2.mass() < slope * g2.phiv() + intercept) {
-        //     continue;
-        //   }
-
-        //   ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-        //   ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
-        //   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-
-        //   if (min_meeg_eta < v12.M() && v12.M() < max_meeg_eta) { // eta -> eeg
-        //     keepEvent[kPCM_EtaDalitz] = true;
-        //     mHistManager.fill(HIST("hEventCounter"), 14);
-        //     break;
-        //   }
-        // } // end of dielectron-photon pair loop
-
-        // for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_per_coll, photons1_per_coll))) {
-        //   ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-        //   ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-        //   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-
-        //   if (min_meeg_eta < v12.M() && v12.M() < max_meeg_eta) { // eta -> gg
-        //     keepEvent[kPCM_EtaGG] = true;
-        //     mHistManager.fill(HIST("hEventCounter"), 15);
-        //     break;
-        //   }
-        // } // end of photon-photon pair loop
-
-        // for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_per_coll, dielectrons_per_coll))) {
-        //   if (g2.mass() < slope * g2.phiv() + intercept) {
-        //     continue;
-        //   }
-        //   keepEvent[kPCM_EE] = true;
-        //   mHistManager.fill(HIST("hEventCounter"), 16);
-        //   break;
-        // } // end of dielectron-photon pair loop
+          ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+          ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          if (min_meeg < v12.M() && v12.M() < max_meeg) {
+            keepEvent[kPCM_EE] = true;
+            mHistManager.fill(HIST("hEventCounter"), 13);
+            break;
+          }
+        } // end of photon + dielectron pair loop
 
       } // end of PCM decision
 
@@ -264,19 +300,25 @@ struct EMPhotonFilter {
       // if constexpr (static_cast<bool>(system & EM_Filter_PhotonType::kEMC)) {
       //   // so far, do nothing.
       // }
-      tags(keepEvent[kPHOS_Photon], keepEvent[kPHOS_Nbar], keepEvent[kPCM_HighPtPhoton]);
+
+      tags(keepEvent[kPHOS_Photon], keepEvent[kPHOS_Nbar], keepEvent[kPCM_HighPtPhoton], keepEvent[kPCM_EE]);
     } // end of collision loop
   }
 
-  // void process_PCM(MyCollisions const& collisions, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::DalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons)
-  void process_PCM(MyCollisions const& collisions, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs)
+  Filter PCMFilter = o2::aod::v0photonkf::dcaXYtopv < max_dcatopv_xy_v0 && o2::aod::v0photonkf::dcaZtopv < max_dcatopv_z_v0;
+  using filteredV0PhotonsKF = Filtered<aod::V0PhotonsKF>;
+
+  Filter DalitzEEFilter = o2::aod::dalitzee::sign == 0; // analyze only uls
+  using filteredDalitzEEs = Filtered<aod::DalitzEEs>;
+
+  void process_PCM(MyCollisions const& collisions, filteredV0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, filteredDalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons)
   {
     const uint8_t system = EM_Filter_PhotonType::kPCM;
-    runFilter<system>(collisions, v0photons, nullptr, nullptr, v0legs, nullptr, nullptr);
+    runFilter<system>(collisions, v0photons, nullptr, nullptr, v0legs, dielectrons, emprimaryelectrons);
   }
 
   Filter phosCluFilter = (o2::aod::calocluster::e > 0.3f);
-  using CluCandidates = o2::soa::Filtered<o2::aod::CaloClusters>;
+  using CluCandidates = Filtered<o2::aod::CaloClusters>;
   void process_PHOS(MyCollisions const& collisions, CluCandidates const& clusters)
   {
     const uint8_t system = EM_Filter_PhotonType::kPHOS;
@@ -289,18 +331,16 @@ struct EMPhotonFilter {
     runFilter<system>(collisions, nullptr, nullptr, clusters, nullptr, nullptr, nullptr);
   }
 
-  // void process_PCM_PHOS(MyCollisions const& collisions, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, aod::DalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons, CluCandidates const& clusters)
-  void process_PCM_PHOS(MyCollisions const& collisions, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, CluCandidates const& clusters)
+  void process_PCM_PHOS(MyCollisions const& collisions, filteredV0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, filteredDalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons, CluCandidates const& clusters)
   {
     const uint8_t system = EM_Filter_PhotonType::kPCM | EM_Filter_PhotonType::kPHOS;
-    // runFilter<system>(collisions, v0photons, clusters, nullptr, v0legs, dielectrons, emprimaryelectrons);
-    runFilter<system>(collisions, v0photons, clusters, nullptr, v0legs, nullptr, nullptr);
+    runFilter<system>(collisions, v0photons, clusters, nullptr, v0legs, dielectrons, emprimaryelectrons);
   }
 
   void processDummy(MyCollisions const& collisions)
   {
     for (int i = 0; i < collisions.size(); i++) {
-      tags(false, false, false);
+      tags(false, false, false, false);
     }
   }
 
