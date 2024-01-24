@@ -32,7 +32,7 @@ DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int8_t); //! collision rejectio
 DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);            //! FT0M multiplicity
 } // namespace hf_coll_base
 
-DECLARE_SOA_TABLE(HfD0CollBases, "AOD1", "HFD0COLLBASE", //! Table with basic collision info
+DECLARE_SOA_TABLE(HfD0CollBases, "AOD", "HFD0COLLBASE", //! Table with basic collision info
                   o2::soa::Index<>,
                   collision::NumContrib,
                   hf_coll_base::IsEventReject,
@@ -40,7 +40,7 @@ DECLARE_SOA_TABLE(HfD0CollBases, "AOD1", "HFD0COLLBASE", //! Table with basic co
 
 using HfD0CollBase = HfD0CollBases::iterator;
 
-DECLARE_SOA_TABLE(StoredHfD0CollBases, "AOD", "HFD0COLLBASE", //! Table with basic collision info (stored version)
+DECLARE_SOA_TABLE(StoredHfD0CollBases, "AOD1", "HFD0COLLBASE", //! Table with basic collision info (stored version)
                   o2::soa::Index<>,
                   collision::NumContrib,
                   hf_coll_base::IsEventReject,
@@ -49,10 +49,10 @@ DECLARE_SOA_TABLE(StoredHfD0CollBases, "AOD", "HFD0COLLBASE", //! Table with bas
 
 using StoredHfD0CollBase = StoredHfD0CollBases::iterator;
 
-DECLARE_SOA_TABLE(HfD0CollIds, "AOD1", "HFD0COLLID", //! Table with global indices for collisions
+DECLARE_SOA_TABLE(HfD0CollIds, "AOD", "HFD0COLLID", //! Table with global indices for collisions
                   hf_cand::CollisionId);
 
-DECLARE_SOA_TABLE(StoredHfD0CollIds, "AOD", "HFD0COLLID", //! Table with global indices for collisions (stored version)
+DECLARE_SOA_TABLE(StoredHfD0CollIds, "AOD1", "HFD0COLLID", //! Table with global indices for collisions (stored version)
                   hf_cand::CollisionId,
                   soa::Marker<1>);
 
@@ -77,9 +77,36 @@ auto y(TPt pt, TEta eta, TM m)
 {
   return std::log((RecoDecay::sqrtSumOfSquares(m, pt * std::cosh(eta)) + pt * std::sinh(eta)) / RecoDecay::sqrtSumOfSquares(m, pt));
 }
+
+template <typename TPt, typename TPhi>
+auto px(TPt pt, TPhi phi)
+{
+  return pt * std::cos(phi);
+}
+
+template <typename TPt, typename TPhi>
+auto py(TPt pt, TPhi phi)
+{
+  return pt * std::sin(phi);
+}
+
+template <typename TPt, typename TPhi>
+auto pz(TPt pt, TPhi eta)
+{
+  return pt * std::sinh(eta);
+}
+
 } // namespace functions
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! D0 rapidity
                            [](float pt, float eta) -> float { return functions::y(pt, eta, o2::constants::physics::MassD0); });
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! D0 px
+                           [](float pt, float phi) -> float { return functions::px(pt, phi); });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! D0 py
+                           [](float pt, float phi) -> float { return functions::py(pt, phi); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! D0 px
+                           [](float pt, float eta) -> float { return functions::pz(pt, eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! D0 momentum
+                           [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 } // namespace hf_cand_base
 
 // Candidate properties used for selection
@@ -158,30 +185,38 @@ DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);            //! ML score
 DECLARE_SOA_COLUMN(MlScoreNonPrompt, mlScoreNonPrompt, float);      //! ML score for non-prompt class
 } // namespace hf_cand_mc
 
-DECLARE_SOA_TABLE(HfD0Bases, "AOD1", "HFD0BASE", //! Table with basic candidate properties used in the analyses
+DECLARE_SOA_TABLE(HfD0Bases, "AOD", "HFD0BASE", //! Table with basic candidate properties used in the analyses
                   o2::soa::Index<>,
                   hf_cand_base::HfD0CollBaseId,
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
                   hf_cand_base::M,
-                  hf_cand_base::Y<hf_cand_base::Pt, hf_cand_base::Eta>);
+                  hf_cand_base::Y<hf_cand_base::Pt, hf_cand_base::Eta>,
+                  hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
+                  hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
+                  hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
+                  hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>);
 
-DECLARE_SOA_TABLE(StoredHfD0Bases, "AOD", "HFD0BASE", //! Table with basic candidate properties used in the analyses (stored version)
+DECLARE_SOA_TABLE(StoredHfD0Bases, "AOD1", "HFD0BASE", //! Table with basic candidate properties used in the analyses (stored version)
                   o2::soa::Index<>,
-                  hf_cand_base::StoredHfD0CollBaseId,
+                  hf_cand_base::HfD0CollBaseId,
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
                   hf_cand_base::Phi,
                   hf_cand_base::M,
                   hf_cand_base::Y<hf_cand_base::Pt, hf_cand_base::Eta>,
+                  hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
+                  hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
+                  hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
+                  hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,
                   soa::Marker<1>);
 
 // candidates for removal:
 // PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep Pt, Eta, Phi instead
 // XY: CpaXY, DecayLengthXY, ErrorDecayLengthXY
 // normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
-DECLARE_SOA_TABLE(HfD0Pars, "AOD1", "HFD0PAR", //! Table with candidate properties used for selection
+DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR", //! Table with candidate properties used for selection
                   hf_cand::Chi2PCA,
                   hf_cand_par::DecayLength,
                   hf_cand_par::DecayLengthXY,
@@ -210,7 +245,7 @@ DECLARE_SOA_TABLE(HfD0Pars, "AOD1", "HFD0PAR", //! Table with candidate properti
                   hf_cand_par::MaxNormalisedDeltaIP,
                   hf_cand_par::ImpactParameterProduct);
 
-DECLARE_SOA_TABLE(StoredHfD0Pars, "AOD", "HFD0PAR", //! Table with candidate properties used for selection (stored version)
+DECLARE_SOA_TABLE(StoredHfD0Pars, "AOD1", "HFD0PAR", //! Table with candidate properties used for selection (stored version)
                   hf_cand::Chi2PCA,
                   hf_cand_par::DecayLength,
                   hf_cand_par::DecayLengthXY,
@@ -240,7 +275,7 @@ DECLARE_SOA_TABLE(StoredHfD0Pars, "AOD", "HFD0PAR", //! Table with candidate pro
                   hf_cand_par::ImpactParameterProduct,
                   soa::Marker<1>);
 
-DECLARE_SOA_TABLE(HfD0ParEs, "AOD1", "HFD0PARE", //! Table with additional candidate properties used for selection
+DECLARE_SOA_TABLE(HfD0ParEs, "AOD", "HFD0PARE", //! Table with additional candidate properties used for selection
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -264,7 +299,7 @@ DECLARE_SOA_TABLE(HfD0ParEs, "AOD1", "HFD0PARE", //! Table with additional candi
                   hf_cand_par::CosThetaStar,
                   hf_cand_par::Ct);
 
-DECLARE_SOA_TABLE(StoredHfD0ParEs, "AOD", "HFD0PARE", //! Table with additional candidate properties used for selection (stored version)
+DECLARE_SOA_TABLE(StoredHfD0ParEs, "AOD1", "HFD0PARE", //! Table with additional candidate properties used for selection (stored version)
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -289,43 +324,34 @@ DECLARE_SOA_TABLE(StoredHfD0ParEs, "AOD", "HFD0PARE", //! Table with additional 
                   hf_cand_par::Ct,
                   soa::Marker<1>);
 
-DECLARE_SOA_TABLE(HfD0Sels, "AOD1", "HFD0SEL", //! Table with candidate selection flags
+DECLARE_SOA_TABLE(HfD0Sels, "AOD", "HFD0SEL", //! Table with candidate selection flags
                   hf_cand_sel::CandidateSelFlag);
 
-DECLARE_SOA_TABLE(StoredHfD0Sels, "AOD", "HFD0SEL", //! Table with candidate selection flags (stored version)
+DECLARE_SOA_TABLE(StoredHfD0Sels, "AOD1", "HFD0SEL", //! Table with candidate selection flags (stored version)
                   hf_cand_sel::CandidateSelFlag,
                   soa::Marker<1>);
 
-DECLARE_SOA_TABLE(HfD0Ids, "AOD1", "HFD0ID", //! Table with global indices for candidates
+DECLARE_SOA_TABLE(HfD0Ids, "AOD", "HFD0ID", //! Table with global indices for candidates
                   hf_cand::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id);
 
-DECLARE_SOA_TABLE(StoredHfD0Ids, "AOD", "HFD0ID", //! Table with global indices for candidates (stored version)
+DECLARE_SOA_TABLE(StoredHfD0Ids, "AOD1", "HFD0ID", //! Table with global indices for candidates (stored version)
                   hf_cand::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id,
                   soa::Marker<1>);
 
-DECLARE_SOA_TABLE(HfD0Mcs, "AOD1", "HFD0MC", //! Table with MC candidate info
+DECLARE_SOA_TABLE(HfD0Mcs, "AOD", "HFD0MC", //! Table with MC candidate info
                   hf_cand_mc::FlagMcMatchRec,
                   hf_cand_mc::OriginMcRec);
 
-DECLARE_SOA_TABLE(StoredHfD0Mcs, "AOD", "HFD0MC", //! Table with MC candidate info (stored version)
+DECLARE_SOA_TABLE(StoredHfD0Mcs, "AOD1", "HFD0MC", //! Table with MC candidate info (stored version)
                   hf_cand_mc::FlagMcMatchRec,
                   hf_cand_mc::OriginMcRec,
                   soa::Marker<1>);
 
-DECLARE_SOA_TABLE(HfD0PBases, "AOD1", "HFD0PBASE", //! Table with MC particle info
-                  o2::soa::Index<>,
-                  hf_cand_base::Pt,
-                  hf_cand_base::Eta,
-                  hf_cand_base::Phi,
-                  hf_cand_mc::FlagMcMatchGen,
-                  hf_cand_mc::OriginMcGen,
-                  hf_cand_base::Y<hf_cand_base::Pt, hf_cand_base::Eta>);
-
-DECLARE_SOA_TABLE(StoredHfD0PBases, "AOD", "HFD0PBASE", //! Table with MC particle info (stored version)
+DECLARE_SOA_TABLE(HfD0PBases, "AOD", "HFD0PBASE", //! Table with MC particle info
                   o2::soa::Index<>,
                   hf_cand_base::Pt,
                   hf_cand_base::Eta,
@@ -333,13 +359,30 @@ DECLARE_SOA_TABLE(StoredHfD0PBases, "AOD", "HFD0PBASE", //! Table with MC partic
                   hf_cand_mc::FlagMcMatchGen,
                   hf_cand_mc::OriginMcGen,
                   hf_cand_base::Y<hf_cand_base::Pt, hf_cand_base::Eta>,
+                  hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
+                  hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
+                  hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
+                  hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>);
+
+DECLARE_SOA_TABLE(StoredHfD0PBases, "AOD1", "HFD0PBASE", //! Table with MC particle info (stored version)
+                  o2::soa::Index<>,
+                  hf_cand_base::Pt,
+                  hf_cand_base::Eta,
+                  hf_cand_base::Phi,
+                  hf_cand_mc::FlagMcMatchGen,
+                  hf_cand_mc::OriginMcGen,
+                  hf_cand_base::Y<hf_cand_base::Pt, hf_cand_base::Eta>,
+                  hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
+                  hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
+                  hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
+                  hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,
                   soa::Marker<1>);
 
-DECLARE_SOA_TABLE(HfD0PIds, "AOD1", "HFD0PID", //! Table with global indices for MC particles
+DECLARE_SOA_TABLE(HfD0PIds, "AOD", "HFD0PID", //! Table with global indices for MC particles
                   hf_cand_base::McCollisionId,
                   hf_cand_base::McParticleId);
 
-DECLARE_SOA_TABLE(StoredHfD0PIds, "AOD", "HFD0PID", //! Table with global indices for MC particles (stored version)
+DECLARE_SOA_TABLE(StoredHfD0PIds, "AOD1", "HFD0PID", //! Table with global indices for MC particles (stored version)
                   hf_cand_base::McCollisionId,
                   hf_cand_base::McParticleId,
                   soa::Marker<1>);

@@ -62,7 +62,7 @@ DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "BARRELTRACKCUTS", emanalysisflags::Is
 // No skimming: works for events and single tracks
 using MyEventsAOD = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 using MyEventsSelectedAOD = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::EventCuts>;
-using MyMCEventsSelectedAOD = soa::Join<aod::McCollisions, aod::EventMCCuts>;
+// using MyMCEventsSelectedAOD = soa::Join<aod::McCollisions, aod::EventMCCuts>;
 using MyBarrelTracksAOD = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
                                     aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
                                     aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -174,8 +174,8 @@ struct AnalysisEventSelection {
     // do nothing
   }
 
-  PROCESS_SWITCH(AnalysisEventSelection, processAOD, "Run event selection without skimming", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmed, "Run event selection on DQ skimmed events", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processAOD, "Run event selection without skimming", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy process function", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummyAOD, "Dummy process function", false);
 };
@@ -248,8 +248,8 @@ struct AnalysisTrackSelection {
     }
   }
 
-  template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, uint32_t TTrackMCFillMap, typename TEvent, typename TTracks>
-  void runSelection(TEvent const& event, TTracks const& tracks)
+  template <uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, uint32_t TTrackMCFillMap, typename TEvent, typename TTracks, typename TEventsMC, typename TTracksMC>
+  void runSelection(TEvent const& event, TTracks const& tracks, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
   {
     VarManager::ResetValues(0, VarManager::kNMCParticleVariables);
     // fill event information which might be needed in histograms that combine track and event properties
@@ -328,13 +328,13 @@ struct AnalysisTrackSelection {
     }     // end loop over tracks
   }
 
-  void processSkimmed(MyEventsSelected::iterator const& event, MyBarrelTracks const& tracks)
+  void processSkimmed(MyEventsSelected::iterator const& event, MyBarrelTracks const& tracks, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
-    runSelection<gkEventFillMap, gkMCEventFillMap, gkTrackFillMap, gkParticleMCFillMap>(event, tracks);
+    runSelection<gkEventFillMap, gkMCEventFillMap, gkTrackFillMap, gkParticleMCFillMap>(event, tracks, eventsMC, tracksMC);
   }
-  void processAOD(MyEventsSelectedAOD::iterator const& event, MyBarrelTracksAOD const& tracks)
+  void processAOD(MyEventsSelectedAOD::iterator const& event, MyBarrelTracksAOD const& tracks, aod::McCollisions const& eventsMC, aod::McParticles const& tracksMC)
   {
-    runSelection<gkEventFillMapAOD, gkMCEventFillMapAOD, gkTrackFillMapAOD, gkParticleMCFillMapAOD>(event, tracks);
+    runSelection<gkEventFillMapAOD, gkMCEventFillMapAOD, gkTrackFillMapAOD, gkParticleMCFillMapAOD>(event, tracks, eventsMC, tracksMC);
   }
 
   void processDummy(MyEvents&)
@@ -624,7 +624,7 @@ struct AnalysisSameEventPairing {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMapAOD>(event);
-    // VarManager::FillEvent<gkMCEventFillMapAOD>(event.reducedMCevent());
+    VarManager::FillEvent<gkMCEventFillMapAOD>(event.mcCollision());
 
     runPairing<VarManager::kDecayToEE, gkEventFillMapAOD, gkTrackFillMapAOD>(event, tracks, tracks);
     auto groupedMCTracks = tracksMC.sliceBy(perMcCollision, event.mcCollision().globalIndex());

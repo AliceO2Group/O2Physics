@@ -56,6 +56,7 @@ struct TaskConfiguration {
   TString fWhatToProcess = "Rec";                  // "Rec" = process only reconstructed, "Sim" = process only simulated, "RecSim" = process both reconstructed and simulated
   UInt_t fRandomSeed = 0;                          // argument to TRandom3 constructor. By default it is 0 (i.e. seed is guaranteed to be unique in time and space), use SetRandomSeed(...) to change it
   Bool_t fUseFisherYates = kFALSE;                 // algorithm used to randomize particle indices, set via configurable
+  TArrayI* fRandomIndices = NULL;                  // array to store random indices obtained from Fisher-Yates algorithm
   Int_t fFixedNumberOfRandomlySelectedTracks = -1; // use a fixed number of randomly selected particles in each event. It is set and applied, if > 0. Set to <=0 to ignore.
 
   // Bool_t fRescaleWithTheoreticalInput; // if kTRUE, all measured correlators are
@@ -126,7 +127,7 @@ Bool_t fCalculateCorrelations =
 struct Correlations_Arrays {
   TProfile* fCorrelationsPro[4][gMaxHarmonic][eAsFunctionOf_N] = {
     {{NULL}}}; //! multiparticle correlations
-               //! [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=6][0=integrated,1=vs.
+               //! [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=gMaxHarmonic][0=integrated,1=vs.
                //! multiplicity,2=vs. centrality,3=pT,4=eta]
 } c_a;
 
@@ -151,9 +152,9 @@ Bool_t fCalculateNestedLoops = kTRUE; // calculate and store correlations with
 Bool_t fCalculateCustomNestedLoop =
   kFALSE; // validate e-b-e all correlations with custom nested loop
 struct NestedLoops_Arrays {
-  TProfile* fNestedLoopsPro[4][6][eAsFunctionOf_N] = {
+  TProfile* fNestedLoopsPro[4][gMaxHarmonic][eAsFunctionOf_N] = {
     {{NULL}}};                         //! multiparticle correlations from nested loops
-                                       //! [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=6][0=integrated,1=vs.
+                                       //! [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=gMaxHarmonic][0=integrated,1=vs.
                                        //! multiplicity,2=vs. centrality,3=pT,4=eta]
   TArrayD* ftaNestedLoops[2] = {NULL}; //! e-b-e container for nested loops
                                        //! [0=angles;1=product of all weights]

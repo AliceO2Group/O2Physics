@@ -58,7 +58,9 @@ struct PCMQCMC {
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of v0 photon cuts"};
-  Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for generated particles"};
+  Configurable<float> maxY{"maxY", 0.9f, "maximum rapidity for generated particles"};
+  Configurable<float> maxRgen{"maxRgen", 90.f, "maximum radius for generated particles"};
+  Configurable<float> margin_z_mc{"margin_z_mc", 7.0, "margin for z cut in cm for MC"};
 
   std::vector<V0PhotonCut> fPCMCuts;
 
@@ -271,9 +273,40 @@ struct PCMQCMC {
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPt_Photon"))->Fill(mctrack.pt());
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hY_Photon"))->Fill(mctrack.y());
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPhi_Photon"))->Fill(mctrack.phi());
+
+          bool is_ele_fromPC = false;
+          bool is_pos_fromPC = false;
+          auto daughtersIds = mctrack.daughtersIds(); // always size = 2. first and last index. one should run loop from the first index to the last index.
+          for (auto& daughterId : daughtersIds) {
+            if (daughterId < 0) {
+              continue;
+            }
+            auto daughter = mcparticles.iteratorAt(daughterId); // always electron and positron
+            float rxy_gen_e = sqrt(pow(daughter.vx(), 2) + pow(daughter.vy(), 2));
+            if (rxy_gen_e > maxRgen || rxy_gen_e < abs(daughter.vz()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-maxY))) - margin_z_mc) {
+              continue;
+            }
+
+            if (daughter.pdgCode() == 11) { // electron from photon conversion
+              is_ele_fromPC = true;
+            } else if (daughter.pdgCode() == -11) { // positron from photon conversion
+              is_pos_fromPC = true;
+            }
+          }                                     // end of daughter loop
+          if (is_ele_fromPC && is_pos_fromPC) { // ele and pos from photon conversion
+            reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPt_ConvertedPhoton"))->Fill(mctrack.pt());
+            reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hY_ConvertedPhoton"))->Fill(mctrack.y());
+            reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPhi_ConvertedPhoton"))->Fill(mctrack.phi());
+
+            auto daughter = mcparticles.iteratorAt(daughtersIds[0]); // choose ele or pos.
+            float rxy_gen_e = sqrt(pow(daughter.vx(), 2) + pow(daughter.vy(), 2));
+            reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hPhotonRZ"))->Fill(daughter.vz(), rxy_gen_e);
+            reinterpret_cast<TH2F*>(fMainList->FindObject("Generated")->FindObject("hPhotonRxy"))->Fill(daughter.vx(), daughter.vy());
+            reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPhotonPhivsRxy"))->Fill(daughter.phi(), rxy_gen_e);
+          }
         }
-      }
-    }
+      } // end of mctrack loop per collision
+    }   // end of collision loop
   }
 
   void processDummy(MyCollisions const& collisions)

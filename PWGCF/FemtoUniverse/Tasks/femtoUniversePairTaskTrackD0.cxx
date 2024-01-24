@@ -100,7 +100,7 @@ struct femtoUniversePairTaskTrackD0 {
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsTrackMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack));
 
   /// Partitions for particle 2
-  Partition<FemtoFullParticles> partsAllDmesons = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0);
+  Partition<FemtoFullParticles> partsAllDmesons = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0));
   Partition<FemtoFullParticles> partsOnlyD0D0bar = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0)) && (aod::femtouniverseparticle::mLambda < 0.0f || aod::femtouniverseparticle::mAntiLambda < 0.0f);
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsD0D0barMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0));
 
@@ -352,8 +352,8 @@ struct femtoUniversePairTaskTrackD0 {
       }
 
       if (dmeson.mAntiLambda() > 0.0f) {
-        registry.fill(HIST("hMassVsPt"), dmeson.mLambda(), dmeson.pt());
-        registry.fill(HIST("hMassVsPtFiner"), dmeson.mLambda(), dmeson.pt());
+        registry.fill(HIST("hMassVsPt"), dmeson.mAntiLambda(), dmeson.pt());
+        registry.fill(HIST("hMassVsPtFiner"), dmeson.mAntiLambda(), dmeson.pt());
       }
 
       registry.fill(HIST("hPtDmesonCand"), dmeson.pt());
@@ -373,7 +373,7 @@ struct femtoUniversePairTaskTrackD0 {
         registry.fill(HIST("hEtaD0"), d0d0bar.eta());
       }
       if (d0d0bar.mLambda() < 0.0f && d0d0bar.mAntiLambda() > 0.0f) {
-        registry.fill(HIST("hInvMassVsPtOnlyD0D0bar"), d0d0bar.mLambda(), d0d0bar.pt());
+        registry.fill(HIST("hInvMassVsPtOnlyD0D0bar"), d0d0bar.mAntiLambda(), d0d0bar.pt());
         if (d0d0bar.mAntiLambda() > ConfDmesons.ConfMinInvMassD0D0bar && d0d0bar.mAntiLambda() < ConfDmesons.ConfMaxInvMassD0D0bar) {
           registry.fill(HIST("hInvMassD0bar"), d0d0bar.mAntiLambda());
         }
@@ -451,7 +451,7 @@ struct femtoUniversePairTaskTrackD0 {
     fillCollision(col);
 
     auto thegroupPartsTrack = partsTrack->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    auto thegroupPartsD0 = partsOnlyD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsD0 = partsAllDmesons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
     doSameEvent<false>(thegroupPartsTrack, thegroupPartsD0, parts, col.magField(), col.multNtr());
   }
@@ -517,7 +517,7 @@ struct femtoUniversePairTaskTrackD0 {
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
 
       auto groupPartsTrack = partsTrack->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
-      auto groupPartsD0 = partsOnlyD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsD0 = partsAllDmesons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();

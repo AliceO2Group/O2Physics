@@ -49,9 +49,9 @@ const double efficiencyDmesonDefault[nPtBinsMassAndEfficiency] = {};
 auto vecEfficiencyDmeson = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + nPtBinsMassAndEfficiency};
 
 // histogram binning definition
-const int massAxisNBins = 120;
-const double massAxisMin = 1.5848;
-const double massAxisMax = 2.1848;
+const int massAxisNBins = 200;
+const double massAxisMin = 1.3848;
+const double massAxisMax = 2.3848;
 const int phiAxisNBins = 32;
 const double phiAxisMin = 0.;
 const double phiAxisMax = o2::constants::math::TwoPI;
@@ -458,7 +458,7 @@ struct HfCorrelatorD0Hadrons {
         registry.fill(HIST("hSelectionStatusRec"), candidate1.isSelD0bar() + (candidate1.isSelD0() * 2));
       }
       // fill invariant mass plots from D0/D0bar signal and background candidates
-      if (candidate1.isSelD0() >= selectionFlagD0) {                  // only reco as D0
+      if (candidate1.isSelD0() >= selectionFlagD0) {                                       // only reco as D0
         if (candidate1.flagMcMatchRec() == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) { // also matched as D0
           registry.fill(HIST("hMassD0RecSig"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
         } else if (candidate1.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
@@ -467,7 +467,7 @@ struct HfCorrelatorD0Hadrons {
           registry.fill(HIST("hMassD0RecBg"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), efficiencyWeight);
         }
       }
-      if (candidate1.isSelD0bar() >= selectionFlagD0bar) {               // only reco as D0bar
+      if (candidate1.isSelD0bar() >= selectionFlagD0bar) {                                    // only reco as D0bar
         if (candidate1.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) { // also matched as D0bar
           registry.fill(HIST("hMassD0barRecSig"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), efficiencyWeight);
         } else if (candidate1.flagMcMatchRec() == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {

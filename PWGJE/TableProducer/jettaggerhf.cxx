@@ -62,9 +62,9 @@ struct JetTaggerHFTask {
       int algorithm1 = jet.globalIndex(); // This needs to be changed. It is only done because O2Physics compilation breaks if jet is unused
       int algorithm2 = 0;
       int algorithm3 = 0;
-      // if (doAlgorithm1) algorithm1 = JetTaggingUtilities::Algorithm1((mcdjet, tracks);
-      // if (doAlgorithm2) algorithm2 = JetTaggingUtilities::Algorithm2((mcdjet, tracks);
-      // if (doAlgorithm3) algorithm3 = JetTaggingUtilities::Algorithm3((mcdjet, tracks);
+      // if (doAlgorithm1) algorithm1 = jettaggingutilities::Algorithm1((mcdjet, tracks);
+      // if (doAlgorithm2) algorithm2 = jettaggingutilities::Algorithm2((mcdjet, tracks);
+      // if (doAlgorithm3) algorithm3 = jettaggingutilities::Algorithm3((mcdjet, tracks);
       taggingTableData(0, algorithm1, algorithm2, algorithm3);
       std::vector<int> trackconst;
       std::vector<int> vecGeoSign;
@@ -102,9 +102,9 @@ struct JetTaggerHFTask {
       int algorithm1 = 0;
       int algorithm2 = 0;
       int algorithm3 = 0;
-      // if (doAlgorithm1) algorithm1 = JetTaggingUtilities::Algorithm1((mcdjet, tracks);
-      // if (doAlgorithm2) algorithm2 = JetTaggingUtilities::Algorithm2((mcdjet, tracks);
-      // if (doAlgorithm3) algorithm3 = JetTaggingUtilities::Algorithm3((mcdjet, tracks);
+      // if (doAlgorithm1) algorithm1 = jettaggingutilities::Algorithm1((mcdjet, tracks);
+      // if (doAlgorithm2) algorithm2 = jettaggingutilities::Algorithm2((mcdjet, tracks);
+      // if (doAlgorithm3) algorithm3 = jettaggingutilities::Algorithm3((mcdjet, tracks);
       taggingTableMCD(origin, algorithm1, algorithm2, algorithm3);
       std::vector<int> trackconst;
       std::vector<int> vecGeoSign;

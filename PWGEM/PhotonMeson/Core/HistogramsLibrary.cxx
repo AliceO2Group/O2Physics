@@ -78,9 +78,10 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 2000, 0.0f, 20));
     list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f));
     list->Add(new TH2F("hRadius", "V0Radius; radius in Z (cm);radius in XY (cm)", 200, -100, 100, 200, 0.0f, 100.0f));
-    list->Add(new TH1F("hCosPA", "V0CosPA;cosine pointing angle", 100, 0.99f, 1.0f));
-    list->Add(new TH1F("hPCA", "distance between 2 legs;PCA (cm)", 200, 0.0f, 2.0f));
-    list->Add(new TH2F("hPCA_Rxy", "distance between 2 legs vs. R_{xy};R_{xy} (cm);PCA (cm)", 200, 0.f, 100.f, 200, 0.0f, 2.0f));
+    list->Add(new TH1F("hCosPA", "V0CosPA;cosine pointing angle", 100, 0.9f, 1.0f));
+    list->Add(new TH2F("hCosPA_Rxy", "cos PA vs. R_{xy};R_{xy} (cm);cosine pointing angle", 100, 0.f, 100.f, 100, 0.9f, 1.0f));
+    list->Add(new TH1F("hPCA", "distance between 2 legs;PCA (cm)", 500, 0.0f, 5.0f));
+    list->Add(new TH2F("hPCA_Rxy", "distance between 2 legs vs. R_{xy};R_{xy} (cm);PCA (cm)", 100, 0.f, 100.f, 500, 0.0f, 5.0f));
     list->Add(new TH2F("hDCAxyz", "DCA to PV;DCA_{xy} (cm);DCA_{z} (cm)", 200, -5.f, +5.f, 200, -5.f, +5.f));
     list->Add(new TH2F("hAPplot", "AP plot;#alpha;q_{T} (GeV/c)", 200, -1.0f, +1.0f, 250, 0.0f, 0.25f));
     list->Add(new TH2F("hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
@@ -192,6 +193,22 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       list->Add(hs_dilepton_lspp_dca_same);
       list->Add(hs_dilepton_lsmm_dca_same);
 
+      if (TString(subGroup) == "mix") {
+        THnSparseF* hs_dilepton_uls_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_same->Clone("hs_dilepton_uls_mix"));
+        THnSparseF* hs_dilepton_lspp_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lspp_same->Clone("hs_dilepton_lspp_mix"));
+        THnSparseF* hs_dilepton_lsmm_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lsmm_same->Clone("hs_dilepton_lsmm_mix"));
+        list->Add(hs_dilepton_uls_mix);
+        list->Add(hs_dilepton_lspp_mix);
+        list->Add(hs_dilepton_lsmm_mix);
+
+        THnSparseF* hs_dilepton_uls_dca_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_uls_dca_mix"));
+        THnSparseF* hs_dilepton_lspp_dca_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lspp_dca_same->Clone("hs_dilepton_lspp_dca_mix"));
+        THnSparseF* hs_dilepton_lsmm_dca_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lsmm_dca_same->Clone("hs_dilepton_lsmm_dca_mix"));
+        list->Add(hs_dilepton_uls_dca_mix);
+        list->Add(hs_dilepton_lspp_dca_mix);
+        list->Add(hs_dilepton_lsmm_dca_mix);
+      }
+
       if (TString(subGroup) == "mc") {
         // create phiv template
         list->Add(new TH2F("hMvsPhiV_Pi0", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", 32, 0, 3.2, 100, 0.0f, 0.1f));    // ee from pi0 dalitz decay
@@ -201,43 +218,35 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
         list->Add(new TH2F("hMvsOPA_Pi0", "m_{ee} vs. opening angle;opening angle (rad.);m_{ee} (GeV/c^{2})", 100, 0, 0.1, 100, 0.0f, 0.1f));    // ee from pi0 dalitz decay
         list->Add(new TH2F("hMvsOPA_Eta", "m_{ee} vs. opening angle;opening angle (rad.);m_{ee} (GeV/c^{2})", 100, 0, 0.1, 100, 0.0f, 0.1f));    // ee from eta dalitz decay
         list->Add(new TH2F("hMvsOPA_Photon", "m_{ee} vs. opening angle;opening angle (rad.);m_{ee} (GeV/c^{2})", 100, 0, 0.1, 100, 0.0f, 0.1f)); // ee from photon conversion
-
-      } // end of mc
+      }                                                                                                                                          // end of mc
     } else if (TString(histClass).Contains("MuMu")) {
       const int ndim = 4; // m, pt, dca, phiv
       const int nbins[ndim] = {90, 20, 50, 1};
       const double xmin[ndim] = {0.2, 0.0, 0.0, 0.0};
       const double xmax[ndim] = {1.1, 2.0, 5.0, 3.2};
 
-      hs_dilepton_uls_same = new THnSparseF("hs_dilepton_uls_same", "hs_dilepton_uls;m_{#mu#mu} (GeV/c^{2});p_{T,#mu#mu} (GeV/c);DCA_{xy,#mu#mu} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
+      hs_dilepton_uls_same = new THnSparseF("hs_dilepton_uls_same", "hs_dilepton_uls;m_{#mu#mu} (GeV/c^{2});p_{T,#mu#mu} (GeV/c);DCA_{#mu#mu}^{3D} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
       hs_dilepton_uls_same->Sumw2();
       list->Add(hs_dilepton_uls_same);
 
-      hs_dilepton_lspp_same = new THnSparseF("hs_dilepton_lspp_same", "hs_dilepton_lspp;m_{#mu#mu} (GeV/c^{2});p_{T,#mu#mu} (GeV/c);DCA_{xy,#mu#mu} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
+      hs_dilepton_lspp_same = new THnSparseF("hs_dilepton_lspp_same", "hs_dilepton_lspp;m_{#mu#mu} (GeV/c^{2});p_{T,#mu#mu} (GeV/c);DCA_{#mu#mu}^{3D} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
       hs_dilepton_lspp_same->Sumw2();
       list->Add(hs_dilepton_lspp_same);
 
-      hs_dilepton_lsmm_same = new THnSparseF("hs_dilepton_lsmm_same", "hs_dilepton_lsmm;m_{#mu#mu} (GeV/c^{2});p_{T,#mu#mu} (GeV/c);DCA_{xy,#mu#mu} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
+      hs_dilepton_lsmm_same = new THnSparseF("hs_dilepton_lsmm_same", "hs_dilepton_lsmm;m_{#mu#mu} (GeV/c^{2});p_{T,#mu#mu} (GeV/c);DCA_{#mu#mu}^{3D} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
       hs_dilepton_lsmm_same->Sumw2();
       list->Add(hs_dilepton_lsmm_same);
+
+      if (TString(subGroup) == "mix") {
+        THnSparseF* hs_dilepton_uls_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_same->Clone("hs_dilepton_uls_mix"));
+        THnSparseF* hs_dilepton_lspp_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lspp_same->Clone("hs_dilepton_lspp_mix"));
+        THnSparseF* hs_dilepton_lsmm_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lsmm_same->Clone("hs_dilepton_lsmm_mix"));
+        list->Add(hs_dilepton_uls_mix);
+        list->Add(hs_dilepton_lspp_mix);
+        list->Add(hs_dilepton_lsmm_mix);
+      }
     } else {
       LOGF(info, "EE or MuMu are supported.");
-    }
-
-    if (TString(subGroup) == "mix") {
-      THnSparseF* hs_dilepton_uls_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_same->Clone("hs_dilepton_uls_mix"));
-      THnSparseF* hs_dilepton_lspp_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lspp_same->Clone("hs_dilepton_lspp_mix"));
-      THnSparseF* hs_dilepton_lsmm_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lsmm_same->Clone("hs_dilepton_lsmm_mix"));
-      list->Add(hs_dilepton_uls_mix);
-      list->Add(hs_dilepton_lspp_mix);
-      list->Add(hs_dilepton_lsmm_mix);
-
-      THnSparseF* hs_dilepton_uls_dca_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_uls_dca_mix"));
-      THnSparseF* hs_dilepton_lspp_dca_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lspp_dca_same->Clone("hs_dilepton_lspp_dca_mix"));
-      THnSparseF* hs_dilepton_lsmm_dca_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lsmm_dca_same->Clone("hs_dilepton_lsmm_dca_mix"));
-      list->Add(hs_dilepton_uls_dca_mix);
-      list->Add(hs_dilepton_lspp_dca_mix);
-      list->Add(hs_dilepton_lsmm_dca_mix);
     }
 
     list->Add(new TH1F("hNpair_uls", "Number of ULS pairs per collision", 101, -0.5f, 100.5f));
@@ -410,16 +419,16 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hZvtx_after", "vertex z; Zvtx (cm)", 100, -50, +50));
     list->Add(new TH1F("hNrecPerMCCollision", "Nrec per mc collisions;N_{rec} collisions per MC collisions", 101, -0.5f, 100.5f));
 
-    if (TString(subGroup) == "ConversionStudy") {
-      list->Add(new TH2F("hPhotonRxy", "conversion point in XY MC;V_{x} (cm);V_{y} (cm)", 2000, -100.0f, 100.0f, 2000, -100.0f, 100.0f));
-      list->Add(new TH2F("hPhotonRZ", "conversion point in RZ MC;V_{z} (cm);R_{xy} (cm)", 5000, -250.0f, 250.0f, 1000, 0.f, 100.0f));
-      list->Add(new TH2F("hPhotonPhivsRxy", "conversion point of #varphi vs. R_{xy} MC;#varphi (rad.);R_{xy} (cm);N_{e}", 360, 0.0f, TMath::TwoPi(), 200, 0, 200));
-    }
-
     if (TString(subGroup) == "Photon") {
       list->Add(new TH1F("hPt_Photon", "photon pT;p_{T} (GeV/c)", 2000, 0.0f, 20));
       list->Add(new TH1F("hY_Photon", "photon y;rapidity y", 40, -2.0f, 2.0f));
       list->Add(new TH1F("hPhi_Photon", "photon #varphi;#varphi (rad.)", 180, 0, TMath::TwoPi()));
+      list->Add(new TH1F("hPt_ConvertedPhoton", "converted photon pT;p_{T} (GeV/c)", 2000, 0.0f, 20));
+      list->Add(new TH1F("hY_ConvertedPhoton", "converted photon y;rapidity y", 40, -2.0f, 2.0f));
+      list->Add(new TH1F("hPhi_ConvertedPhoton", "converted photon #varphi;#varphi (rad.)", 180, 0, TMath::TwoPi()));
+      list->Add(new TH2F("hPhotonRxy", "conversion point in XY MC;V_{x} (cm);V_{y} (cm)", 2000, -100.0f, 100.0f, 2000, -100.0f, 100.0f));
+      list->Add(new TH2F("hPhotonRZ", "conversion point in RZ MC;V_{z} (cm);R_{xy} (cm)", 2000, -100.0f, 100.0f, 1000, 0.f, 100.0f));
+      list->Add(new TH2F("hPhotonPhivsRxy", "conversion point of #varphi vs. R_{xy} MC;#varphi (rad.);R_{xy} (cm);N_{e}", 360, 0.0f, TMath::TwoPi(), 100, 0, 100));
     }
 
     if (TString(subGroup) == "Pi0Eta") {
@@ -455,25 +464,25 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     pTgg10[i] = 0.5 * (i - 50) + 5.0; // from 5 to 10 GeV/c, evety 0.5 GeV/c
   }
   if (TString(histClass) == "tagging_pi0") {
-    list->Add(new TH2F("hMggPt_Same", "m_{ee#gamma} vs. p_{T,ee};m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
-    list->Add(new TH2F("hMggPt_Mixed", "m_{ee#gamma} vs. p_{T,ee};m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
+    list->Add(new TH2F("hMggPt_Same", "m_{ee#gamma} vs. p_{T,#gamma};m_{ee#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
+    list->Add(new TH2F("hMggPt_Mixed", "m_{ee#gamma} vs. p_{T,#gamma};m_{ee#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10));
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Same"))->Sumw2();
     reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Mixed"))->Sumw2();
   }
   if (TString(histClass) == "tagging_pi0_mc") {
     if (TString(subGroup) == "pcm") {
-      list->Add(new TH1F("hPt_v0photon_Pi0_Primary", "reconstcuted v0 photon from primary #pi^{0};p_{T,ee} (GeV/c);N_{ee}^{#pi^{0}}", npTgg10 - 1, pTgg10)); // denominator for conditional probability
+      list->Add(new TH1F("hPt_v0photon_Pi0_Primary", "reconstcuted v0 photon from primary #pi^{0};p_{T,#gamma} (GeV/c);N_{#gamma}^{#pi^{0}}", npTgg10 - 1, pTgg10)); // denominator for conditional probability
       reinterpret_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0_Primary"))->Sumw2();
-      list->Add(new TH1F("hPt_v0photon_Pi0_FromWD", "reconstcuted v0 photon from #pi^{0} from WD;p_{T,ee} (GeV/c);N_{ee}^{#pi^{0}}", npTgg10 - 1, pTgg10)); // denominator for conditional probability
+      list->Add(new TH1F("hPt_v0photon_Pi0_FromWD", "reconstcuted v0 photon from #pi^{0} from WD;p_{T,#gamma} (GeV/c);N_{#gamma}^{#pi^{0}}", npTgg10 - 1, pTgg10)); // denominator for conditional probability
       reinterpret_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0_FromWD"))->Sumw2();
-      list->Add(new TH1F("hPt_v0photon_Pi0_hs", "reconstcuted v0 photon from #pi^{0} from hadronic shower in materials;p_{T,ee} (GeV/c);N_{ee}^{#pi^{0}}", npTgg10 - 1, pTgg10)); // denominator for conditional probability
+      list->Add(new TH1F("hPt_v0photon_Pi0_hs", "reconstcuted v0 photon from #pi^{0} from hadronic shower in materials;p_{T,#gamma} (GeV/c);N_{#gamma}^{#pi^{0}}", npTgg10 - 1, pTgg10)); // denominator for conditional probability
       reinterpret_cast<TH1F*>(list->FindObject("hPt_v0photon_Pi0_hs"))->Sumw2();
     } else if (TString(subGroup) == "pair") {
-      list->Add(new TH2F("hMggPt_Pi0_Primary", "reconstructed m_{ee#gamma} vs. p_{T,ee} from primary #pi^{0};m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c);N_{ee}^{tagged #pi^{0}}", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10)); // numerator for conditional probability
+      list->Add(new TH2F("hMggPt_Pi0_Primary", "reconstructed m_{ee#gamma} vs. p_{T,#gamma} from primary #pi^{0};m_{ee#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c);N_{#gamma}^{tagged #pi^{0}}", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10)); // numerator for conditional probability
       reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0_Primary"))->Sumw2();
-      list->Add(new TH2F("hMggPt_Pi0_FromWD", "reconstructed m_{ee#gamma} vs. p_{T,ee} from #pi^{0} from WD;m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c);N_{ee}^{tagged #pi^{0}}", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10)); // numerator for conditional probability
+      list->Add(new TH2F("hMggPt_Pi0_FromWD", "reconstructed m_{ee#gamma} vs. p_{T,#gamma} from #pi^{0} from WD;m_{ee#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c);N_{#gamma}^{tagged #pi^{0}}", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10)); // numerator for conditional probability
       reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0_FromWD"))->Sumw2();
-      list->Add(new TH2F("hMggPt_Pi0_hs", "reconstructed m_{ee#gamma} vs. p_{T,ee} from #pi^{0} from hadronic shower in material;m_{ee#gamma} (GeV/c^{2});p_{T,ee} (GeV/c);N_{ee}^{tagged #pi^{0}}", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10)); // numerator for conditional probability
+      list->Add(new TH2F("hMggPt_Pi0_hs", "reconstructed m_{ee#gamma} vs. p_{T,#gamma} from #pi^{0} from hadronic shower in material;m_{ee#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c);N_{#gamma}^{tagged #pi^{0}}", nmgg04 - 1, mgg04, npTgg10 - 1, pTgg10)); // numerator for conditional probability
       reinterpret_cast<TH2F*>(list->FindObject("hMggPt_Pi0_hs"))->Sumw2();
     }
   }
@@ -493,13 +502,13 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     const int nm_hbt = 6;
     double m_hbt[nm_hbt] = {0.0, 0.14, 0.5, 1.1, 2.0, 2.7};
 
-    const int ndim = 9; // m1, m2, kt, qinv, qlong_cms, qout_cms, qside_cms, qt_cms, qlong_lcms
-    const int nbins[ndim] = {nm_hbt - 1, nm_hbt - 1, 10, 40, 80, 80, 80, 40, 80};
-    const double xmin[ndim] = {0.0, 0.0, 0.0, 0.0, -0.4, -0.4, -0.4, 0.0, -0.4};
-    const double xmax[ndim] = {2.7, 2.7, 1.0, 0.4, +0.4, +0.4, +0.4, +0.4, +0.4};
+    const int ndim = 8; // m1, m2, kt, qinv, qlong_cms, qout_cms, qside_cms, qlong_lcms
+    const int nbins[ndim] = {nm_hbt - 1, nm_hbt - 1, 10, 40, 80, 80, 80, 80};
+    const double xmin[ndim] = {0.0, 0.0, 0.0, 0.0, -0.4, -0.4, -0.4, -0.4};
+    const double xmax[ndim] = {2.7, 2.7, 1.0, 0.4, +0.4, +0.4, +0.4, +0.4};
 
-    THnSparseF* hs_q_same = new THnSparseF("hs_q_same", "hs_q_same;m_{1} (GeV/c^{2});m_{2} (GeV/c^{2});k_{T} (GeV/c);q_{inv} (GeV/c);q_{long}^{CMS} (GeV/c);q_{out}^{CMS} (GeV/c);q_{side}^{CMS} (GeV/c);q_{T}^{CMS} (GeV/c);q_{long}^{LCMS} (GeV/c);", ndim, nbins, xmin, xmax);
-    THnSparseF* hs_q_mix = new THnSparseF("hs_q_mix", "hs_q_mix;m_{1} (GeV/c^{2});m_{2} (GeV/c^{2});k_{T} (GeV/c);q_{inv} (GeV/c);q_{long}^{CMS} (GeV/c);q_{out}^{CMS} (GeV/c);q_{side}^{CMS} (GeV/c);q_{T}^{CMS} (GeV/c);q_{long}^{LCMS} (GeV/c);", ndim, nbins, xmin, xmax);
+    THnSparseF* hs_q_same = new THnSparseF("hs_q_same", "hs_q_same;m_{1} (GeV/c^{2});m_{2} (GeV/c^{2});k_{T} (GeV/c);q_{inv} (GeV/c);q_{long}^{CMS} (GeV/c);q_{out}^{CMS} (GeV/c);q_{side}^{CMS} (GeV/c);q_{long}^{LCMS} (GeV/c);", ndim, nbins, xmin, xmax);
+    THnSparseF* hs_q_mix = new THnSparseF("hs_q_mix", "hs_q_mix;m_{1} (GeV/c^{2});m_{2} (GeV/c^{2});k_{T} (GeV/c);q_{inv} (GeV/c);q_{long}^{CMS} (GeV/c);q_{out}^{CMS} (GeV/c);q_{side}^{CMS} (GeV/c);q_{long}^{LCMS} (GeV/c);", ndim, nbins, xmin, xmax);
     hs_q_same->Sumw2();
     hs_q_mix->Sumw2();
     hs_q_same->SetBinEdges(0, m_hbt);

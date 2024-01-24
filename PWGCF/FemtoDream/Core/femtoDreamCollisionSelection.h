@@ -131,15 +131,15 @@ class FemtoDreamCollisionSelection
   /// \tparam T type of the collision
   /// \param col Collision
   template <typename T>
-  void fillQA(T const& col)
+  void fillQA(T const& col, float cent)
   {
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST("Event/Zvtx"), col.posZ());
       mHistogramRegistry->fill(HIST("Event/MultNTracksPV"), col.multNTracksPV());
       mHistogramRegistry->fill(HIST("Event/MultTPC"), col.multTPC());
       if (mCheckIsRun3) {
-        mHistogramRegistry->fill(HIST("Event/MultPercentile"), col.centFT0M());
-        mHistogramRegistry->fill(HIST("Event/MultPercentileVSMultNTracksPV"), col.centFT0M(), col.multNTracksPV());
+        mHistogramRegistry->fill(HIST("Event/MultPercentile"), cent);
+        mHistogramRegistry->fill(HIST("Event/MultPercentileVSMultNTracksPV"), cent, col.multNTracksPV());
       } else {
         mHistogramRegistry->fill(HIST("Event/MultNTracklets"), col.multTracklets());
       }

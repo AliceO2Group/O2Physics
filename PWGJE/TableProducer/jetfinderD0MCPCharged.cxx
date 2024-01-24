@@ -15,7 +15,7 @@
 
 #include "PWGJE/TableProducer/jetfinderhf.cxx"
 
-using JetFinderD0MCParticleLevelCharged = JetFinderHFTask<CandidatesD0Data, CandidatesD0MCD, ParticlesD0, o2::aod::D0ChargedMCParticleLevelJets, o2::aod::D0ChargedMCParticleLevelJetConstituents, o2::aod::D0ChargedMCParticleLevelJetConstituentsSub>;
+using JetFinderD0MCParticleLevelCharged = JetFinderHFTask<CandidatesD0Data, CandidatesD0MCD, CandidatesD0MCP, JetTracksSubD0, aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0ChargedMCParticleLevelEventWiseSubtractedJets, aod::D0ChargedMCParticleLevelEventWiseSubtractedJetConstituents>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
