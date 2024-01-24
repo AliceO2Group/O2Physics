@@ -258,7 +258,7 @@ struct HfTreeCreatorLcToPKPi {
   Configurable<bool> keepOnlySignalMc{"keepOnlySignalMc", false, "Fill MC tree only with signal candidates"};
   Configurable<bool> keepOnlyBkg{"keepOnlyBkg", false, "Fill MC tree only with background candidates"};
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
-  Configurable<float> downSamplePtMax{"downSampleBkgPtMax", 100.f, "Max. pt for background downsampling"};
+  Configurable<float> downSampleBkgPtMax{"downSampleBkgPtMax", 100.f, "Max. pt for background downsampling"};
 
   HfHelper hfHelper;
 
@@ -316,7 +316,7 @@ struct HfTreeCreatorLcToPKPi {
                            float FunctionY,
                            float FunctionE) {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
-        if (FunctionSelection >= 1 && (/*keep all*/ (!keepOnlySignalMc && !keepOnlyBkg) || /*keep only signal*/ (keepOnlySignalMc && isMcCandidateSignal) || /*keep only background and downsample it*/ (keepOnlyBkg && !isMcCandidateSignal && pseudoRndm < downSampleBkgFactor && candidate.pt() < downSamplePtMax))) {
+        if (FunctionSelection >= 1 && (/*keep all*/ (!keepOnlySignalMc && !keepOnlyBkg) || /*keep only signal*/ (keepOnlySignalMc && isMcCandidateSignal) || /*keep only background and downsample it*/ (keepOnlyBkg && !isMcCandidateSignal && pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
           if (fillCandidateLiteTable) {
             rowCandidateLite(
               candidate.posX(),
@@ -519,7 +519,7 @@ struct HfTreeCreatorLcToPKPi {
                            float FunctionY,
                            float FunctionE) {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
-        if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor && candidate.pt() < downSamplePtMax) {
+        if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax) {
           if (fillCandidateLiteTable) {
             rowCandidateLite(
               candidate.posX(),
