@@ -135,7 +135,7 @@ DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
-                  full::XPv, full::YPv, full::ZPv, collision::NumContrib,
+                  full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
                   full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
@@ -185,6 +185,7 @@ struct HfTreeCreatorToXiPi {
       candidate.yPv(),
       candidate.zPv(),
       candidate.collision().numContrib(),
+      candidate.collision().chi2(),
       candidate.xDecayVtxCharmBaryon(),
       candidate.yDecayVtxCharmBaryon(),
       candidate.zDecayVtxCharmBaryon(),
