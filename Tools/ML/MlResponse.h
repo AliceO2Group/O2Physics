@@ -141,31 +141,14 @@ class MlResponse
     return std::vector<TypeOutputScore>{outputPtr, outputPtr + mNClasses};
   }
 
-  /// Finds pT bin in an array.
-  /// \param bins  array of pT bins
-  /// \param value  pT
-  /// \return index of the pT bin
-  /// \note Accounts for the offset so that pt bin array can be used to also configure a histogram axis.
-  template <typename T1, typename T2>
-  int findBin(T1 const& binsPt, T2 value)
-  {
-    if (value < binsPt->front()) {
-      return -1;
-    }
-    if (value >= binsPt->back()) {
-      return -1;
-    }
-    return std::distance(binsPt->begin(), std::upper_bound(binsPt->begin(), binsPt->end(), value)) - 1;
-  }
-
   /// ML selections
   /// \param input is the input features
-  /// \param pt is the candidate transverse momentum
+  /// \param candVar is the variable value (e.g. pT) used to select which model to use
   /// \return boolean telling if model predictions pass the cuts
   template <typename T1, typename T2>
-  bool isSelectedMl(T1& input, const T2& pt)
+  bool isSelectedMl(T1& input, const T2& candVar)
   {
-    auto nModel = findBin(&mBinsLimits, pt);
+    auto nModel = findBin(candVar);
     auto output = getModelOutput(input, nModel);
     uint8_t iClass{0};
     for (const auto& outputValue : output) {
@@ -185,13 +168,13 @@ class MlResponse
 
   /// ML selections
   /// \param input is the input features
-  /// \param pt is the candidate transverse momentum
+  /// \param candVar is the variable value (e.g. pT) used to select which model to use
   /// \param output is a container to be filled with model output
   /// \return boolean telling if model predictions pass the cuts
   template <typename T1, typename T2>
-  bool isSelectedMl(T1& input, const T2& pt, std::vector<TypeOutputScore>& output)
+  bool isSelectedMl(T1& input, const T2& candVar, std::vector<TypeOutputScore>& output)
   {
-    auto nModel = findBin(&mBinsLimits, pt);
+    auto nModel = findBin(candVar);
     output = getModelOutput(input, nModel);
     uint8_t iClass{0};
     for (const auto& outputValue : output) {
@@ -221,6 +204,23 @@ class MlResponse
   std::vector<uint8_t> mCachedIndices;                    // vector of index correspondance between configurables and available input features
 
   virtual void setAvailableInputFeatures() { return; }    // method to fill the map of available input features
+
+ private:
+  /// Finds matching bin in mBinsLimits
+  /// \param value e.g. pT
+  /// \return index of the matching bin, used to access mModels
+  /// \note Accounts for the offset due to mBinsLimits storing bin limits (same convention as needed to configure a histogram axis)
+  template <typename T>
+  int findBin(T const& value)
+  {
+    if (value < mBinsLimits.front()) {
+      return -1;
+    }
+    if (value >= mBinsLimits.back()) {
+      return -1;
+    }
+    return std::distance(mBinsLimits.begin(), std::upper_bound(mBinsLimits.begin(), mBinsLimits.end(), value)) - 1;
+  }
 };
 
 } // namespace analysis
