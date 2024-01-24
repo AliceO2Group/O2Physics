@@ -398,6 +398,8 @@ struct UpcTauCentralBarrelRL {
         histos.add("EventTwoTracks/PionsSelection/hInvariantMassWide",";Invariant mass (GeV/c^{2});Number of events (-)",HistType::kTH1D,{axisInvMassWide});
         histos.add("EventTwoTracks/PionsSelection/hInvariantMassPtCut",";Invariant mass (GeV/c^{2});Number of events (-)",HistType::kTH1D,{axisInvMass});
         histos.add("EventTwoTracks/PionsSelection/hInvariantMassWidePtCut",";Invariant mass (GeV/c^{2});Number of events (-)",HistType::kTH1D,{axisInvMassWide});
+        histos.add("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutUS",";Invariant mass (GeV/c^{2});Number of events (-)",HistType::kTH1D,{axisInvMassWide});
+        histos.add("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutLS",";Invariant mass (GeV/c^{2});Number of events (-)",HistType::kTH1D,{axisInvMassWide});
         histos.add("EventTwoTracks/PionsSelection/hAcoplanarity",";#Delta#phi (rad);Number of events (-)",HistType::kTH1D,{axisAcoplanarity});
         histos.add("EventTwoTracks/PionsSelection/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)",HistType::kTH1D,{axisMom});
         histos.add("EventTwoTracks/PionsSelection/hMotherPwide", ";Mother #it{p} (GeV/c);Number of events (-)",HistType::kTH1D,{axisMomWide});
@@ -643,6 +645,7 @@ struct UpcTauCentralBarrelRL {
             pion[1].SetPxPyPzE(trkDaug2.px(),trkDaug2.py(),trkDaug2.pz(),energy(pdg->Mass(211),trkDaug2.px(),trkDaug2.py(),trkDaug2.pz()));
             motherOfPions = pion[0] + pion[1];
             auto acoplanarity = calculateAcoplanarity(daug[0].Phi(),daug[1].Phi());
+            auto sign = trkDaug1.sign()*trkDaug2.sign();
 
             if (trkDaug1.hasTPC()) {
                 histosPID.get<TH2>(HIST("EventTwoTracks/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
@@ -865,6 +868,8 @@ struct UpcTauCentralBarrelRL {
                 if (motherOfPions.Pt() < 0.2) {
                     histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hInvariantMassPtCut"))->Fill(motherOfPions.M());
                     histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hInvariantMassWidePtCut"))->Fill(motherOfPions.M());
+                    if (sign < 0) histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutUS"))->Fill(motherOfPions.M());
+                    if (sign > 0) histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutLS"))->Fill(motherOfPions.M());
                 }
             }
 		}
