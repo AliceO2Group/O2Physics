@@ -18,7 +18,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/ASoAHelpers.h"
-#include <Framework/Configurable.h>
+#include "Framework/Configurable.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "PWGLF/DataModel/LFSlimNucleiTables.h"
 #include "Common/Core/EventPlaneHelper.h"
@@ -81,7 +81,7 @@ enum kDetector {
   kTPCpos = 4,
   kTPCneg = 5
 };
-}
+} // namespace flow
 
 struct nucleiFlow {
 
