@@ -147,6 +147,8 @@ struct JetTaggerHFTC {
     }
   }
 
+  Preslice<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetTags, aod::ChargedMCDetectorLevelJetTagConstituents>> slicejetcolId = o2::aod::jet::collisionId;
+
   using TracksData = soa::Join<aod::JTracks, aod::JTrackPIs, aod::JTrackTagDcas, aod::JTrackTagDcaCovs>;
   using TracksMC = soa::Join<aod::JTracks, aod::JTrackPIs, aod::JTrackTagDcas, aod::JTrackTagDcaCovs, aod::JMcTrackLbs>;
   template <typename T, typename U, typename V>
@@ -156,7 +158,7 @@ struct JetTaggerHFTC {
       std::vector<std::vector<float>> TracksImpXY, TracksSignImpXY, TracksImpXYSig, TracksSignImpXYSig;
       std::vector<std::vector<float>> TracksImpZ, TracksSignImpZ, TracksImpZSig, TracksSignImpZSig;
       std::vector<std::vector<float>> TracksImpXYZ, TracksSignImpXYZ, TracksImpXYZSig, TracksSignImpXYZSig;
-      for (auto& track : jet.template tracktags_as<V>()) {
+      for (auto& track : jet.template tracks_as<V>()) {
 
         // General parameters
         registry.fill(HIST("h3_jet_pt_track_pt_track_eta"), jet.pt(), track.pt(), track.eta());
@@ -164,16 +166,16 @@ struct JetTaggerHFTC {
 
         float varImpXY, varSignImpXY, varImpXYSig, varSignImpXYSig, varImpZ, varSignImpZ, varImpZSig, varSignImpZSig, varImpXYZ, varSignImpXYZ, varImpXYZSig, varSignImpXYZSig;
         int geoSign = JetTaggingUtilities::getGeoSign(collision, jet, track);
-        varImpXY = track.dcaXY();
-        varSignImpXY = geoSign * TMath::Abs(track.dcaXY());
+        varImpXY = track.dcaXY() * 10000;
+        varSignImpXY = geoSign * TMath::Abs(track.dcaXY()) * 10000;
         varImpXYSig = track.dcaXY() / TMath::Sqrt(track.sigmaDcaXY2());
         varSignImpXYSig = geoSign * TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
-        varImpZ = track.dcaZ();
-        varSignImpZ = geoSign * TMath::Abs(track.dcaZ());
+        varImpZ = track.dcaZ() * 10000;
+        varSignImpZ = geoSign * TMath::Abs(track.dcaZ()) * 10000;
         varImpZSig = track.dcaZ() / TMath::Sqrt(track.sigmaDcaZ2());
         varSignImpZSig = geoSign * TMath::Abs(track.dcaZ()) / TMath::Sqrt(track.sigmaDcaZ2());
-        varImpXYZ = track.dcaXYZ();
-        varSignImpXYZ = geoSign * TMath::Abs(track.dcaXYZ());
+        varImpXYZ = track.dcaXYZ() * 10000;
+        varSignImpXYZ = geoSign * TMath::Abs(track.dcaXYZ()) * 10000;
         varImpXYZSig = track.dcaXYZ() / TMath::Sqrt(track.sigmaDcaXYZ2());
         varSignImpXYZSig = geoSign * TMath::Abs(track.dcaXYZ()) / TMath::Sqrt(track.sigmaDcaXYZ2());
 
@@ -239,16 +241,16 @@ struct JetTaggerHFTC {
 
         float varImpXY, varSignImpXY, varImpXYSig, varSignImpXYSig, varImpZ, varSignImpZ, varImpZSig, varSignImpZSig, varImpXYZ, varSignImpXYZ, varImpXYZSig, varSignImpXYZSig;
         int geoSign = JetTaggingUtilities::getGeoSign(collision, mcdjet, track);
-        varImpXY = track.dcaXY();
-        varSignImpXY = geoSign * TMath::Abs(track.dcaXY());
+        varImpXY = track.dcaXY() * 10000;
+        varSignImpXY = geoSign * TMath::Abs(track.dcaXY()) * 10000;
         varImpXYSig = track.dcaXY() / TMath::Sqrt(track.sigmaDcaXY2());
         varSignImpXYSig = geoSign * TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
-        varImpZ = track.dcaZ();
-        varSignImpZ = geoSign * TMath::Abs(track.dcaZ());
+        varImpZ = track.dcaZ() * 10000;
+        varSignImpZ = geoSign * TMath::Abs(track.dcaZ()) * 10000;
         varImpZSig = track.dcaZ() / TMath::Sqrt(track.sigmaDcaZ2());
         varSignImpZSig = geoSign * TMath::Abs(track.dcaZ()) / TMath::Sqrt(track.sigmaDcaZ2());
-        varImpXYZ = track.dcaXYZ();
-        varSignImpXYZ = geoSign * TMath::Abs(track.dcaXYZ());
+        varImpXYZ = track.dcaXYZ() * 10000;
+        varSignImpXYZ = geoSign * TMath::Abs(track.dcaXYZ()) * 10000;
         varImpXYZSig = track.dcaXYZ() / TMath::Sqrt(track.sigmaDcaXYZ2());
         varSignImpXYZSig = geoSign * TMath::Abs(track.dcaXYZ()) / TMath::Sqrt(track.sigmaDcaXYZ2());
 
@@ -307,6 +309,13 @@ struct JetTaggerHFTC {
       sort(TracksImpXYZSig[jetflavour].begin(), TracksImpXYZSig[jetflavour].end(), std::greater<float>());
       sort(TracksSignImpXYZSig[jetflavour].begin(), TracksSignImpXYZSig[jetflavour].end(), std::greater<float>());
 
+      if (TracksSignImpXYSig[jetflavour][0] < TracksSignImpXYSig[jetflavour][1] ||
+          TracksSignImpXYSig[jetflavour][1] < TracksSignImpXYSig[jetflavour][2] ||
+          TracksSignImpXYSig[jetflavour][0] < TracksSignImpXYSig[jetflavour][2]) {
+        std::cout << "it is not correctly ordering" << "\n";
+        std::cout << "N1: " << TracksSignImpXYSig[jetflavour][0] << " N2: " << TracksSignImpXYSig[jetflavour][1] << " N3: " << TracksSignImpXYSig[jetflavour][2] << "\n";
+        continue;
+      }
       if (TracksImpXY[jetflavour].size() > 0) { // N1
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N1"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][0], jetflavour);
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N1"), mcdjet.pt(), TracksSignImpZSig[jetflavour][0], jetflavour);

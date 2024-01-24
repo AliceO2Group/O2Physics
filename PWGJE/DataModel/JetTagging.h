@@ -87,7 +87,8 @@ DECLARE_SOA_COLUMN(JetFlavour, jetFlavour, float);
 DECLARE_SOA_COLUMN(JetPt, jetPt, float);
 DECLARE_SOA_COLUMN(JetEta, jetEta, float);
 DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
-DECLARE_SOA_COLUMN(VecGeoSign, vecGeoSign, std::vector<int>);
+DECLARE_SOA_ARRAY_COLUMN(VecGeoSign, vecGeoSign, int)
+//DECLARE_SOA_COLUMN(VecGeoSign, vecGeoSign, std::vector<int>);
 DECLARE_SOA_COLUMN(VecTrackPt, vecTrackPt, std::vector<float>);
 DECLARE_SOA_COLUMN(VecTrackEta, vecTrackEta, std::vector<float>);
 DECLARE_SOA_COLUMN(VecTrackPhi, vecTrackPhi, std::vector<float>);
@@ -112,7 +113,7 @@ DECLARE_SOA_COLUMN(VecSignedIP3Ds, vecSignedIP3Ds, std::vector<float>);
                     _name_##tagging::Algorithm2,                 \
                     _name_##tagging::Algorithm3);
 
-#define DECLARE_TAGTRACK_TABLE(_jet_type_, _name_, _track_type_, _description_)  \
+#define TRACKTAG_TABLE_DEF(_jet_type_, _name_, _track_type_, _description_)  \
   namespace _name_##tag##constituents                                            \
   {                                                                              \
     DECLARE_SOA_INDEX_COLUMN(_jet_type_##Tag, jettags);                          \
@@ -123,7 +124,7 @@ DECLARE_SOA_COLUMN(VecSignedIP3Ds, vecSignedIP3Ds, std::vector<float>);
                     _name_##tag##constituents::_track_type_##Tag##Ids);
 
 // Defines tagger track extention
-#define DECLARE_TAGTRACK_TC_TABLE(_jet_type_, _name_, _description_)              \
+#define TRACKTAGTC_TABLE_DEF(_jet_type_, _name_, _description_)              \
   DECLARE_SOA_TABLE(_jet_type_##Tag##Constituent##TCs, "AOD", _description_ "TC", \
                     _name_##tag##constituents::_jet_type_##Tag##Id,               \
                     constituent##tc::JetFlavour,                                  \
@@ -143,19 +144,19 @@ DECLARE_SOA_COLUMN(VecSignedIP3Ds, vecSignedIP3Ds, std::vector<float>);
 #define JETTAGGING_TABLES_DEF(_jet_type_, _track_type_, _description_)                                                          \
   JETTAGGING_TABLE_DEF(_jet_type_##Jet, _jet_type_##jet, _description_);                                                        \
   using _jet_type_##Jet##Tag = _jet_type_##Jet##Tag##s::iterator;                                                               \
-  DECLARE_TAGTRACK_TABLE(_jet_type_##Jet, _jet_type_##jet, _track_type_, _description_ "T")                                     \
+  TRACKTAG_TABLE_DEF(_jet_type_##Jet, _jet_type_##jet, _track_type_, _description_ "T")                                     \
   using _jet_type_##Jet##Tag##Constituent = _jet_type_##Jet##Tag##Constituents::iterator;                                       \
-  DECLARE_TAGTRACK_TC_TABLE(_jet_type_##Jet, _jet_type_##jet, _description_)                                                    \
+  TRACKTAGTC_TABLE_DEF(_jet_type_##Jet, _jet_type_##jet, _description_)                                                    \
   using _jet_type_##Jet##Tag##Constituent##TC = _jet_type_##Jet##Tag##Constituent##TCs::iterator;                               \
   JETTAGGING_TABLE_DEF(_jet_type_##MCDetectorLevelJet, _jet_type_##mcdetectorleveljet, _description_ "MCD");                    \
   using _jet_type_##MCDetectorLevelJet##Tag = _jet_type_##MCDetectorLevelJet##Tag##s::iterator;                                 \
-  DECLARE_TAGTRACK_TABLE(_jet_type_##MCDetectorLevelJet, _jet_type_##mcdetectorleveljet, _track_type_, _description_ "DTAG")    \
+  TRACKTAG_TABLE_DEF(_jet_type_##MCDetectorLevelJet, _jet_type_##mcdetectorleveljet, _track_type_, _description_ "DTAG")    \
   using _jet_type_##MCDetectorLevel##Jet##Tag##Constituent = _jet_type_##MCDetectorLevel##Jet##Tag##Constituents::iterator;     \
-  DECLARE_TAGTRACK_TC_TABLE(_jet_type_##MCDetectorLevelJet, _jet_type_##mcdetectorleveljet, _description_ "MCD")                \
+  TRACKTAGTC_TABLE_DEF(_jet_type_##MCDetectorLevelJet, _jet_type_##mcdetectorleveljet, _description_ "MCD")                \
   using _jet_type_##MCDetectorLevelJet##Tag##Constituent##TC = _jet_type_##MCDetectorLevelJet##Tag##Constituent##TCs::iterator; \
   JETTAGGING_TABLE_DEF(_jet_type_##MCParticleLevelJet, _jet_type_##mcparticleleveljet, _description_ "MCP");                    \
   using _jet_type_##MCParticleLevelJet##Tag = _jet_type_##MCParticleLevelJet##Tag##s::iterator;                                 \
-  DECLARE_TAGTRACK_TABLE(_jet_type_##MCParticleLevelJet, _jet_type_##mcparticleleveljet, _track_type_, _description_ "PTAG")    \
+  TRACKTAG_TABLE_DEF(_jet_type_##MCParticleLevelJet, _jet_type_##mcparticleleveljet, _track_type_, _description_ "PTAG")    \
   using _jet_type_##MCParticleLevel##Jet##Tag##Constituent = _jet_type_##MCParticleLevel##Jet##Tag##Constituents::iterator;
 
 JETTAGGING_TABLES_DEF(Charged, JTrack, "C");

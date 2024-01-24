@@ -68,13 +68,14 @@ struct JetTaggerHFTrackExtension {
   ConfigurableAxis binDcaXYZSigma{"binDcaXYZSigma", {1001, -0.5f, 1.5f}, ""};
 
   // Axis
-  AxisSpec DcaXAxis = {binDcaX, "DCA_{X} [#mum]"};
-  AxisSpec DcaYAxis = {binDcaY, "DCA_{Y} [#mum]"};
-  AxisSpec DcaXYAxis = {binDcaXY, "DCA_{XY} [#mum]"};
-  AxisSpec DcaZAxis = {binDcaZ, "DCA_{Z} [#mum]"};
-  AxisSpec DcaXYZAxis = {binDcaXYZ, "DCA_{XYZ} [#mum]"};
-  AxisSpec DcaXYSigmaAxis = {binDcaXY, "#sigma_{DCA_{XY}} [#mum]"};
-  AxisSpec DcaXYZSigmaAxis = {binDcaXY, "#sigma_{DCA_{XYZ}} [#mum]"};
+  AxisSpec DcaXAxis = {binDcaX, "DCA_{X} [cm]"};
+  AxisSpec DcaYAxis = {binDcaY, "DCA_{Y} [cm]"};
+  AxisSpec DcaXYAxis = {binDcaXY, "DCA_{XY} [cm]"};
+  AxisSpec DcaXYExtAxis = {binDcaXY, "DCA_{XY}^{Ext} [cm]"};
+  AxisSpec DcaZAxis = {binDcaZ, "DCA_{Z} [cm]"};
+  AxisSpec DcaXYZAxis = {binDcaXYZ, "DCA_{XYZ} [cm]"};
+  AxisSpec DcaXYSigmaAxis = {binDcaXY, "#sigma_{DCA_{XY}} [cm]"};
+  AxisSpec DcaXYZSigmaAxis = {binDcaXY, "#sigma_{DCA_{XYZ}} [cm]"};
 
   int runNumber = -1;
 
@@ -88,14 +89,14 @@ struct JetTaggerHFTrackExtension {
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
 
     if (doFillHistogram) {
-      registry.add("hDCAx", "DCA to PV; DCA_{x} (#mum)", {HistType::kTH1F, {DcaXAxis}});
-      registry.add("hDCAy", "DCA to PV; DCA_{y} (#mum)", {HistType::kTH1F, {DcaYAxis}});
-      registry.add("hDCAz", "DCA to PV; DCA_{z} (#mum)", {HistType::kTH1F, {DcaZAxis}});
-      registry.add("hDCAxy", "DCA to PV; DCA_{xy} (#mum)", {HistType::kTH1F, {DcaXYAxis}});
-      registry.add("hDCAxyz", "DCA to PV; DCA_{xyz} (#mum)", {HistType::kTH1F, {DcaXYZAxis}});
-      registry.add("hDCAxyVsDCAxyFromExt", "DCA to PV; DCA_{xy} (#mum); DCA_{xy}^{ext} (#mum)", {HistType::kTH2F, {{DcaXYAxis}, {DcaXYAxis}}});
-      registry.add("hDCAxy_uncertainty", "uncertainty of DCA to PV; #sigma_{DCA_{xy}} (#mum)", {HistType::kTH1F, {DcaXYSigmaAxis}});
-      registry.add("hDCAxyz_uncertainty", "uncertainty of DCA to PV; #sigma_{DCA_{xyz}} (#mum)", {HistType::kTH1F, {DcaXYZSigmaAxis}});
+      registry.add("hDCAx", "DCA to PV; DCA_{x} (cm)", {HistType::kTH1F, {DcaXAxis}});
+      registry.add("hDCAy", "DCA to PV; DCA_{y} (cm)", {HistType::kTH1F, {DcaYAxis}});
+      registry.add("hDCAz", "DCA to PV; DCA_{z} (cm)", {HistType::kTH1F, {DcaZAxis}});
+      registry.add("hDCAxy", "DCA to PV; DCA_{xy} (cm)", {HistType::kTH1F, {DcaXYAxis}});
+      registry.add("hDCAxyz", "DCA to PV; DCA_{xyz} (cm)", {HistType::kTH1F, {DcaXYZAxis}});
+      registry.add("hDCAxyVsDCAxyFromExt", "DCA to PV; DCA_{xy} (cm); DCA_{xy}^{ext} (cm)", {HistType::kTH2F, {{DcaXYAxis}, {DcaXYExtAxis}}});
+      registry.add("hDCAxy_uncertainty", "uncertainty of DCA to PV; #sigma_{DCA_{xy}} (cm)", {HistType::kTH1F, {DcaXYSigmaAxis}});
+      registry.add("hDCAxyz_uncertainty", "uncertainty of DCA to PV; #sigma_{DCA_{xyz}} (cm)", {HistType::kTH1F, {DcaXYZSigmaAxis}});
     }
   }
 
@@ -126,7 +127,7 @@ struct JetTaggerHFTrackExtension {
   }
   PROCESS_SWITCH(JetTaggerHFTrackExtension, processDummy, "Dummy process", true);
 
-  void processTracks(soa::Join<aod::Tracks, aod::TracksCov, aod::TrackSelection, aod::TracksDCA, aod::TracksDCACov, aod::McTrackLabels>::iterator const& track, aod::BCsWithTimestamps&, aod::Collisions&)
+  void processTracks(soa::Join<aod::Tracks, aod::TracksCov, aod::TrackSelection, aod::TracksDCA, aod::TracksDCACov>::iterator const& track, aod::BCsWithTimestamps&, aod::Collisions&)
   {
     if (track.has_collision()) {
       auto collisionbc = track.collision_as<aod::Collisions>();
@@ -136,14 +137,14 @@ struct JetTaggerHFTrackExtension {
       dcaInfo[0] = 999;
       dcaInfo[1] = 999;
       auto trackPar = getTrackPar(track);
-      if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
-        if (track.has_collision()) {
-          auto const& collision = track.collision();
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
-        } else {
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({mVtx->getX(), mVtx->getY(), mVtx->getZ()}, trackPar, 2.f, matCorr, &dcaInfo);
-        }
-      }
+//      if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
+//        if (track.has_collision()) {
+//          auto const& collision = track.collision();
+//          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
+//        } else {
+//          o2::base::Propagator::Instance()->propagateToDCABxByBz({mVtx->getX(), mVtx->getY(), mVtx->getZ()}, trackPar, 2.f, matCorr, &dcaInfo);
+//        }
+//      }
       auto xyz = trackPar.getXYZGlo();
       float dcaX = 999.;
       float dcaY = 999.;
@@ -159,9 +160,9 @@ struct JetTaggerHFTrackExtension {
       float dcaXY = track.dcaXY();
       float dcaXYfromExt = std::sqrt(dcaX * dcaX + dcaY * dcaY);
       float absdcaXY = TMath::Abs(dcaXY);
-      if (absdcaXY < dcaXYfromExt || absdcaXY > dcaXYfromExt) {
-        LOGF(info, Form("DCA value is not same. abs(dcaXY): %f, dcaXYfromExt: %f", absdcaXY, dcaXYfromExt));
-      }
+//      if (absdcaXY < dcaXYfromExt || absdcaXY > dcaXYfromExt) {
+//        LOGF(info, Form("DCA value is not same. abs(dcaXY): %f, dcaXYfromExt: %f", absdcaXY, dcaXYfromExt));
+//      }
       float dcaZ = track.dcaZ();
       float sigmaDcaXY2 = track.sigmaDcaXY2();
       float sigmaDcaZ2 = track.sigmaDcaZ2();

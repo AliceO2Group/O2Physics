@@ -49,6 +49,7 @@ struct JetTaggerHFTask {
   using JetTagTracksData = soa::Join<aod::JTracks, aod::JTrackTagDcas, aod::JTrackTagDcaCovs>;
   using JetTagTracksMC = soa::Join<aod::JTracks, aod::JMcTrackLbs, aod::JTrackTagDcas, aod::JTrackTagDcaCovs>;
 
+
   void processDummy(aod::Collision const& collision)
   {
   }
@@ -90,6 +91,7 @@ struct JetTaggerHFTask {
   void processMCD(soa::Join<aod::JCollisions, aod::JCollisionPIs>::iterator const& jcollision, aod::Collisions&, JetTableMCD const& mcdjets, aod::JTracks&, JetTagTracksMC const& tracks, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles)
   {
     auto collision = jcollision.template collision_as<aod::Collisions>();
+
     for (auto& mcdjet : mcdjets) {
       typename JetTagTracksMC::iterator hftrack;
       int origin = 0;
