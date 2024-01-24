@@ -39,9 +39,9 @@ enum CutDirection {
   CutNot          // do not cut on score
 };
 } // namespace cuts_ml
+
 namespace analysis
 {
-
 // TypeOutputScore is the type of the output score from o2::ml::OnnxModel (float by default)
 template <typename TypeOutputScore = float>
 class MlResponse
@@ -68,18 +68,19 @@ class MlResponse
     mPaths = std::vector<std::string>(mNModels);
   }
 
-  /// Set models paths to CCDB
+  /// Set model paths to CCDB
   /// \param onnxFiles is a vector of onnx file names, one for each bin
   /// \param ccdbApi is the CCDB API
-  /// \param pathCCDB is the model path in CCDB
+  /// \param pathsCCDB is a vector of model paths in CCDB, one for each bin
   /// \param timestampCCDB is the CCDB timestamp
+  /// \note On the CCDB, different models must be stored in different folders
   void setModelPathsCCDB(const std::vector<std::string>& onnxFiles, const o2::ccdb::CcdbApi& ccdbApi, const std::vector<std::string>& pathsCCDB, int64_t timestampCCDB)
   {
     if (onnxFiles.size() != mNModels) {
       LOG(fatal) << "Number of expected models (" << mNModels << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
     }
     if (pathsCCDB.size() != mNModels) {
-      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the number of paths (" << onnxFiles.size() << ")! Please check your configurables.";
+      LOG(fatal) << "Number of expected models (" << mNModels << ") different from the number of CCDB paths (" << pathsCCDB.size() << ")! Please check your configurables.";
     }
 
     for (auto iFile{0}; iFile < mNModels; ++iFile) {
@@ -88,24 +89,23 @@ class MlResponse
       if (retrieveSuccess) {
         mPaths[iFile] = onnxFiles[iFile];
       } else {
-        LOG(fatal) << "Error encountered while accessing the ML model from CCDB! Maybe the ML model doesn't exist yet for this runnumber/timestamp?";
+        LOG(fatal) << "Error encountered while accessing the ML model from " << pathsCCDB[iFile] << ". Maybe the ML model doesn't exist yet for this run number or timestamp?";
       }
     }
   }
 
-  /// Set models paths to local or cvmfs
+  /// Set model paths to local or cvmfs
   /// \param onnxFiles is a vector of onnx file names, one for each bin
   void setModelPathsLocal(const std::vector<std::string>& onnxFiles)
   {
     if (onnxFiles.size() != mNModels) {
       LOG(fatal) << "Number of expected models (" << mNModels << ") different from the one set (" << onnxFiles.size() << ")! Please check your configurables.";
     }
-
     mPaths = onnxFiles;
   }
 
   /// Initialize class instance (initialize OnnxModels)
-  /// \param enableOptimizations is a switch no enable optimizations
+  /// \param enableOptimizations is a switch to enable optimizations
   /// \param threads is the number of active threads
   void init(bool enableOptimizations = false, int threads = 0)
   {
@@ -218,9 +218,9 @@ class MlResponse
   std::vector<int> mCutDir = {};                          // direction of the cuts on the model scores (no cut is also supported)
   o2::framework::LabeledArray<double> mCuts = {};         // array of cut values to apply on the model scores
   std::map<std::string, uint8_t> mAvailableInputFeatures; // map of available input features
-  std::vector<uint8_t> mCachedIndices;                    // vector of indices correspondance between configurable and available input features
+  std::vector<uint8_t> mCachedIndices;                    // vector of index correspondance between configurables and available input features
 
-  virtual void setAvailableInputFeatures() { return; } // method to fill the map of available input features
+  virtual void setAvailableInputFeatures() { return; }    // method to fill the map of available input features
 };
 
 } // namespace analysis
