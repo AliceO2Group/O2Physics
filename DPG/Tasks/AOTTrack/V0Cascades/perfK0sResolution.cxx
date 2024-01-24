@@ -61,13 +61,19 @@ struct perfK0sResolution {
       nProc++;
     }
 
-    rK0sResolution.add("h2_massPosPtRes", "h2_massPosPtRes", {HistType::kTH2F, {mAxis, pTResAxis}});
-    rK0sResolution.add("h2_massNegPtRes", "h2_massNegPtRes", {HistType::kTH2F, {mAxis, pTResAxis}});
+    if (doprocessMC) {
+      rK0sResolution.add("h2_massPosPtRes", "h2_massPosPtRes", {HistType::kTH2F, {mAxis, pTResAxis}});
+      rK0sResolution.add("h2_massNegPtRes", "h2_massNegPtRes", {HistType::kTH2F, {mAxis, pTResAxis}});
+    }
     rK0sResolution.add("h2_masspT", "h2_masspT", {HistType::kTH2F, {mAxis, pTAxis}});
     rK0sResolution.add("h2_masseta", "h2_masseta", {HistType::kTH2F, {mAxis, etaAxis}});
     rK0sResolution.add("h2_massphi", "h2_massphi", {HistType::kTH2F, {mAxis, phiAxis}});
     if (useMultidimHisto) {
-      rK0sResolution.add("thn_mass", "thn_mass", kTHnSparseF, {mAxis, pTAxis, etaAxis, phiAxis, etaAxisPosD, etaAxisNegD});
+      if (doprocessMC) {
+        rK0sResolution.add("thn_mass", "thn_mass", kTHnSparseF, {mAxis, pTAxis, etaAxis, phiAxis, etaAxisPosD, etaAxisNegD, pTResAxis, pTResAxis});
+      } else {
+        rK0sResolution.add("thn_mass", "thn_mass", kTHnSparseF, {mAxis, pTAxis, etaAxis, phiAxis, etaAxisPosD, etaAxisNegD});
+      }
     }
   }
 
@@ -232,12 +238,14 @@ struct perfK0sResolution {
       }
 
       rK0sResolution.fill(HIST("h2_massPosPtRes"), v0.mK0Short(), posTrack.pt() - posTrack.mcParticle().pt());
-      rK0sResolution.fill(HIST("h2_massNegPtRes"), v0.mK0Short(), posTrack.pt() - posTrack.mcParticle().pt());
+      rK0sResolution.fill(HIST("h2_massNegPtRes"), v0.mK0Short(), negTrack.pt() - negTrack.mcParticle().pt());
       rK0sResolution.fill(HIST("h2_masspT"), v0.mK0Short(), v0.pt());
       rK0sResolution.fill(HIST("h2_masseta"), v0.mK0Short(), v0.eta());
       rK0sResolution.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
       if (useMultidimHisto) {
-        rK0sResolution.fill(HIST("thn_mass"), v0.mK0Short(), v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta());
+        rK0sResolution.fill(HIST("thn_mass"), v0.mK0Short(), v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta(),
+                            posTrack.pt() - posTrack.mcParticle().pt(),
+                            negTrack.pt() - negTrack.mcParticle().pt());
       }
     }
   }
