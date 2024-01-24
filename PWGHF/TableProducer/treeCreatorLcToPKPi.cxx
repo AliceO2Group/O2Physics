@@ -142,8 +142,7 @@ DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
                   full::Y,
                   full::FlagMc,
                   full::OriginMcRec,
-                  full::IsCandidateSwapped,
-                  full::CandidateId);
+                  full::IsCandidateSwapped);
 
 DECLARE_SOA_TABLE(HfCandLcFulls, "AOD", "HFCANDLCFULL",
                   full::CollisionId,
@@ -214,7 +213,9 @@ DECLARE_SOA_TABLE(HfCandLcFulls, "AOD", "HFCANDLCFULL",
                   full::E,
                   full::FlagMc,
                   full::OriginMcRec,
-                  full::IsCandidateSwapped,
+                  full::IsCandidateSwapped);
+
+DECLARE_SOA_TABLE(HfCandId, "AOD", "HFCANDID",
                   full::CandidateId);
 
 DECLARE_SOA_TABLE(HfCandLcFullEvs, "AOD", "HFCANDLCFULLEV",
@@ -248,10 +249,12 @@ DECLARE_SOA_TABLE(HfCandLcFullPs, "AOD", "HFCANDLCFULLP",
 struct HfTreeCreatorLcToPKPi {
   Produces<o2::aod::HfCandLcFulls> rowCandidateFull;
   Produces<o2::aod::HfCandLcLites> rowCandidateLite;
+  Produces<o2::aod::HfCandId> rowCandidateId;
   Produces<o2::aod::HfCandLcFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandLcFullPs> rowCandidateFullParticles;
 
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
+  Configurable<bool> fillCandidateId{"fillCandidateId", false, "Fill a single-column table with candidate global index"};
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
 
   HfHelper hfHelper;
@@ -293,6 +296,10 @@ struct HfTreeCreatorLcToPKPi {
       rowCandidateLite.reserve(candidates.size());
     } else {
       rowCandidateFull.reserve(candidates.size());
+    }
+    if (fillCandidateId) {
+      /// save also candidate indices
+      rowCandidateId.reserve(candidates.size());
     }
     for (const auto& candidate : candidates) {
       auto trackPos1 = candidate.prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
@@ -358,8 +365,8 @@ struct HfTreeCreatorLcToPKPi {
               FunctionY,
               candidate.flagMcMatchRec(),
               candidate.originMcRec(),
-              candidate.isCandidateSwapped(),
-              candidate.globalIndex());
+              candidate.isCandidateSwapped());
+            // candidate.globalIndex());
           } else {
             rowCandidateFull(
               candidate.collisionId(),
@@ -430,8 +437,13 @@ struct HfTreeCreatorLcToPKPi {
               FunctionE,
               candidate.flagMcMatchRec(),
               candidate.originMcRec(),
-              candidate.isCandidateSwapped(),
-              candidate.globalIndex());
+              candidate.isCandidateSwapped());
+            // candidate.globalIndex());
+          }
+
+          if (fillCandidateId) {
+            /// save also candidate indices
+            rowCandidateId(candidate.globalIndex());
           }
         }
       };
@@ -488,6 +500,10 @@ struct HfTreeCreatorLcToPKPi {
     } else {
       rowCandidateFull.reserve(candidates.size());
     }
+    if (fillCandidateId) {
+      /// save also candidate indices
+      rowCandidateId.reserve(candidates.size());
+    }
     for (const auto& candidate : candidates) {
       auto trackPos1 = candidate.prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
@@ -552,8 +568,8 @@ struct HfTreeCreatorLcToPKPi {
               FunctionY,
               0.,
               0.,
-              0.,
-              candidate.globalIndex());
+              0.);
+            // candidate.globalIndex());
           } else {
             rowCandidateFull(
               candidate.collisionId(),
@@ -624,8 +640,13 @@ struct HfTreeCreatorLcToPKPi {
               FunctionE,
               0.,
               0.,
-              0.,
-              candidate.globalIndex());
+              0.);
+            // candidate.globalIndex());
+          }
+
+          if (fillCandidateId) {
+            /// save also candidate indices
+            rowCandidateId(candidate.globalIndex());
           }
         }
       };
