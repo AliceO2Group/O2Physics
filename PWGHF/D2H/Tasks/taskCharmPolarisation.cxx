@@ -70,7 +70,7 @@ struct TaskPolarisationCharmHadrons {
 
   ConfigurableAxis thnAxisInvMass{"thnAxisInvMass", {200, 0.139, 0.179}, "#it{M} (GeV/#it{c}^{2})"};
   ConfigurableAxis thnAxisPt{"thnAxisPt", {100, 0., 100.}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis thnAxisPz{"thnAxisPz", {100, -50., 50.}, "|#it{p}_{z}| (GeV/#it{c})"};
+  ConfigurableAxis thnAxisPz{"thnAxisPz", {100, -50., 50.}, "#it{p}_{z} (GeV/#it{c})"};
   ConfigurableAxis thnAxisY{"thnAxisY", {20, -1., 1.}, "#it{y}"};
   ConfigurableAxis thnAxisCosThetaStarHelicity{"thnAxisCosThetaStarHelicity", {20, -1., 1.}, "cos(#vartheta_{helicity})"};
   ConfigurableAxis thnAxisCosThetaStarProduction{"thnAxisCosThetaStarProduction", {20, -1., 1.}, "cos(#vartheta_{production})"};
