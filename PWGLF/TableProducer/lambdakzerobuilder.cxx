@@ -125,6 +125,7 @@ struct lambdakzeroBuilder {
   // select momentum slice if desired
   Configurable<float> minimumPt{"minimumPt", 0.0f, "Minimum pT to store candidate"};
   Configurable<float> maximumPt{"maximumPt", 1000.0f, "Maximum pT to store candidate"};
+  Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximum daughter eta"};
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -684,6 +685,11 @@ struct lambdakzeroBuilder {
       return false; // reject if not within desired window
     }
 
+    if (TMath::Abs(RecoDecay::eta(std::array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]})) > maxDaughterEta ||
+        TMath::Abs(RecoDecay::eta(std::array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]})) > maxDaughterEta) {
+      return false; // reject - daughters have too large eta to be reliable for MC corrections
+    }
+
     // Passes momentum window check
     statisticsRegistry.v0stats[kWithinMomentumRange]++;
 
@@ -957,6 +963,9 @@ struct lambdakzeroPreselector {
   // context-aware selections
   Configurable<bool> dPreselectOnlyBaryons{"dPreselectOnlyBaryons", false, "apply TPC dE/dx and quality only to baryon daughters"};
 
+  // for debugging and further tests
+  Configurable<bool> forceITSOnlyMesons{"forceITSOnlyMesons", false, "force meson-like daughters to be ITS-only to pass Lambda/AntiLambda selections (yes/no)"};
+
   // for bit-packed maps
   std::vector<uint16_t> selectionMask;
   enum v0bit { bitInteresting = 0,
@@ -995,17 +1004,33 @@ struct lambdakzeroPreselector {
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
 
+    // crossed rows conditionals
+    bool posRowsOK = lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows;
+    bool negRowsOK = lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows;
+
+    // check track explicitly for absence of TPC
+    bool posITSonly = !lPosTrack.hasTPC();
+    bool negITSonly = !lNegTrack.hasTPC();
+
     // No baryons in decay
-    if (((bitcheck(maskElement, bitdEdxGamma) || bitcheck(maskElement, bitdEdxK0Short)) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows))
+    if (((bitcheck(maskElement, bitdEdxGamma) || bitcheck(maskElement, bitdEdxK0Short)) || passdEdx) && (posRowsOK && negRowsOK) && (!forceITSOnlyMesons || (posITSonly && negITSonly)))
       bitset(maskElement, bitTrackQuality);
     // With baryons in decay
-    if ((bitcheck(maskElement, bitdEdxLambda) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+    if ((bitcheck(maskElement, bitdEdxLambda) || passdEdx) &&
+        (posRowsOK && (negRowsOK || dPreselectOnlyBaryons)) &&
+        (!forceITSOnlyMesons || negITSonly))
       bitset(maskElement, bitTrackQuality);
-    if ((bitcheck(maskElement, bitdEdxAntiLambda) || passdEdx) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+    if ((bitcheck(maskElement, bitdEdxAntiLambda) || passdEdx) &&
+        (negRowsOK && (posRowsOK || dPreselectOnlyBaryons)) &&
+        (!forceITSOnlyMesons || posITSonly))
       bitset(maskElement, bitTrackQuality);
-    if ((bitcheck(maskElement, bitdEdxHypertriton) || passdEdx) && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+    if ((bitcheck(maskElement, bitdEdxHypertriton) || passdEdx) &&
+        (posRowsOK && (negRowsOK || dPreselectOnlyBaryons)) &&
+        (!forceITSOnlyMesons || negITSonly))
       bitset(maskElement, bitTrackQuality);
-    if ((bitcheck(maskElement, bitdEdxAntiHypertriton) || passdEdx) && (lNegTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows && (lPosTrack.tpcNClsCrossedRows() >= dTPCNCrossedRows || dPreselectOnlyBaryons)))
+    if ((bitcheck(maskElement, bitdEdxAntiHypertriton) || passdEdx) &&
+        (negRowsOK && (posRowsOK || dPreselectOnlyBaryons)) &&
+        (!forceITSOnlyMesons || posITSonly))
       bitset(maskElement, bitTrackQuality);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*

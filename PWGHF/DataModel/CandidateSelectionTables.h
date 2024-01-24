@@ -153,11 +153,15 @@ DECLARE_SOA_TABLE(HfSelDstarToD0Pi, "AOD", "HFSELDSTAR", //! Table stores inform
 
 namespace hf_sel_candidate_lc
 {
-DECLARE_SOA_COLUMN(IsSelLcToPKPi, isSelLcToPKPi, int); //!
-DECLARE_SOA_COLUMN(IsSelLcToPiKP, isSelLcToPiKP, int); //!
+DECLARE_SOA_COLUMN(IsSelLcToPKPi, isSelLcToPKPi, int);                  //!
+DECLARE_SOA_COLUMN(IsSelLcToPiKP, isSelLcToPiKP, int);                  //!
+DECLARE_SOA_COLUMN(MlProbLcToPKPi, mlProbLcToPKPi, std::vector<float>); //!
+DECLARE_SOA_COLUMN(MlProbLcToPiKP, mlProbLcToPiKP, std::vector<float>); //!
 } // namespace hf_sel_candidate_lc
 DECLARE_SOA_TABLE(HfSelLc, "AOD", "HFSELLC", //!
                   hf_sel_candidate_lc::IsSelLcToPKPi, hf_sel_candidate_lc::IsSelLcToPiKP);
+DECLARE_SOA_TABLE(HfMlLcToPKPi, "AOD", "HFMLLc", //!
+                  hf_sel_candidate_lc::MlProbLcToPKPi, hf_sel_candidate_lc::MlProbLcToPiKP);
 
 namespace hf_sel_candidate_lc_alice3
 {

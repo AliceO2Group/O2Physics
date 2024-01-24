@@ -341,7 +341,7 @@ struct chargedkstaranalysis {
   // Defining filters for events (event selection)
   // Processed events will be already fulfilling the event selection
   // requirements
-  Filter eventFilter = (o2::aod::evsel::sel8 == true);
+  // Filter eventFilter = (o2::aod::evsel::sel8 == true);
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
 
   Filter acceptanceFilter =
@@ -351,7 +351,7 @@ struct chargedkstaranalysis {
 
   using EventCandidates = soa::Filtered<
     soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs,
-              aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::Mults>>;
+              aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
   using TrackCandidates = soa::Filtered<
     soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
               aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
@@ -363,11 +363,11 @@ struct chargedkstaranalysis {
     "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{
     "axisMultiplicityClass",
-    {20, 0, 100},
+    {1, 0, 100},
     "multiplicity percentile for bin"};
   ConfigurableAxis axisMultiplicity{
     "axisMultiplicity",
-    {2000, 0, 10000},
+    {1, 0, 10000},
     "TPC multiplicity  for bin"};
 
   using BinningTypeTPCMultiplicity =
@@ -397,6 +397,8 @@ struct chargedkstaranalysis {
 
     std::vector<ROOT::Math::PtEtaPhiMVector> pions, kshorts;
     std::vector<int64_t> PionIndex = {};
+    std::vector<int64_t> PioncollIndex = {};
+    std::vector<int64_t> V0collIndex = {};
     std::vector<int64_t> KshortPosDaughIndex = {};
     std::vector<int64_t> KshortNegDaughIndex = {};
 
@@ -438,6 +440,7 @@ struct chargedkstaranalysis {
                                         massPi);
       pions.push_back(temp1);
       PionIndex.push_back(track1.globalIndex());
+      PioncollIndex.push_back(track1.collisionId());
 
     } // track loop ends
 
@@ -461,6 +464,7 @@ struct chargedkstaranalysis {
 
       ROOT::Math::PtEtaPhiMVector temp2(v0.pt(), v0.eta(), v0.phi(), massK0s);
       kshorts.push_back(temp2);
+      V0collIndex.push_back(v0.collisionId());
       KshortPosDaughIndex.push_back(postrack.globalIndex());
       KshortNegDaughIndex.push_back(negtrack.globalIndex());
     }
@@ -474,6 +478,8 @@ struct chargedkstaranalysis {
           if (PionIndex.at(i1) == KshortPosDaughIndex.at(i3))
             continue;
           if (PionIndex.at(i1) == KshortNegDaughIndex.at(i3))
+            continue;
+          if (PioncollIndex.at(i1) != V0collIndex.at(i3))
             continue;
           CKSVector = pions.at(i1) + kshorts.at(i3);
 
@@ -513,7 +519,9 @@ struct chargedkstaranalysis {
       for (auto& [t1, t2] : o2::soa::combinations(
              o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
-        if (!(selectionTrack(t1) || selectionPID(t1)))
+        if (!(selectionTrack(t1)))
+          continue;
+        if (!(selectionPID(t1)))
           continue;
         if (!SelectionV0(c2, t2, multiplicity))
           continue;

@@ -55,6 +55,7 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 1, "Verbosity level (0 = major, 1 = per collision)")
   O2_DEFINE_CONFIGURABLE(cfgTrigger, int, 7, "Trigger choice: (0 = none, 7 = sel7, 8 = sel8)")
   O2_DEFINE_CONFIGURABLE(cfgCollisionFlags, uint16_t, aod::collision::CollisionFlagsRun2::Run2VertexerTracks, "Request collision flags if non-zero (0 = off, 1 = Run2VertexerTracks)")
+  O2_DEFINE_CONFIGURABLE(cfgTransientTables, bool, false, "Output transient tables for collision and track IDs")
 
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -77,6 +78,9 @@ struct FilterCF {
 
   Produces<aod::CFMcCollisions> outputMcCollisions;
   Produces<aod::CFMcParticles> outputMcParticles;
+
+  Produces<aod::CFCollRefs> outputCollRefs;
+  Produces<aod::CFTrackRefs> outputTrackRefs;
 
   template <typename TCollision>
   bool keepCollision(TCollision& collision)
@@ -104,6 +108,9 @@ struct FilterCF {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
 
+    if (cfgTransientTables)
+      outputCollRefs(collision.globalIndex());
+
     for (auto& track : tracks) {
       uint8_t trackType = 0;
       if (track.isGlobalTrack()) {
@@ -113,6 +120,8 @@ struct FilterCF {
       }
 
       outputTracks(outputCollisions.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign(), trackType);
+      if (cfgTransientTables)
+        outputTrackRefs(collision.globalIndex(), track.globalIndex());
 
       yields->Fill(collision.multiplicity(), track.pt(), track.eta());
       etaphi->Fill(collision.multiplicity(), track.eta(), track.phi());
@@ -256,6 +265,15 @@ struct MultiplicitySelector {
     if (doprocessTracks) {
       enabledFunctions++;
     }
+    if (doprocessFT0M) {
+      enabledFunctions++;
+    }
+    if (doprocessFT0C) {
+      enabledFunctions++;
+    }
+    if (doprocessFT0A) {
+      enabledFunctions++;
+    }
 
     if (enabledFunctions != 1) {
       LOGP(fatal, "{} multiplicity selectors enabled but we need exactly 1.", enabledFunctions);
@@ -267,6 +285,30 @@ struct MultiplicitySelector {
     output(tracks.size());
   }
   PROCESS_SWITCH(MultiplicitySelector, processTracks, "Select track count as multiplicity", false);
+
+  void processFT0M(aod::CentFT0Ms const& centralities)
+  {
+    for (auto& c : centralities) {
+      output(c.centFT0M());
+    }
+  }
+  PROCESS_SWITCH(MultiplicitySelector, processFT0M, "Select FT0M centrality as multiplicity", false);
+
+  void processFT0C(aod::CentFT0Cs const& centralities)
+  {
+    for (auto& c : centralities) {
+      output(c.centFT0C());
+    }
+  }
+  PROCESS_SWITCH(MultiplicitySelector, processFT0C, "Select FT0C centrality as multiplicity", false);
+
+  void processFT0A(aod::CentFT0As const& centralities)
+  {
+    for (auto& c : centralities) {
+      output(c.centFT0A());
+    }
+  }
+  PROCESS_SWITCH(MultiplicitySelector, processFT0A, "Select FT0A centrality as multiplicity", false);
 
   void processRun2V0M(aod::CentRun2V0Ms const& centralities)
   {

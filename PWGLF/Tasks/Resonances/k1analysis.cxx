@@ -53,14 +53,14 @@ struct k1analysis {
   Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 0.1, "Track DCAz cut to PV Maximum"};
   Configurable<double> cMinDCAzToPVcut{"cMinDCAzToPVcut", 0.0, "Track DCAz cut to PV Minimum"};
   /// PID Selections
-  Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};              // TPC
-  Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};              // TOF
+  Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};                // TPC
+  Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};                // TOF
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};  // Combined
   Configurable<bool> cUseOnlyTOFTrackPi{"cUseOnlyTOFTrackPi", false, "Use only TOF track for PID selection"}; // Use only TOF track for Pion PID selection
   Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"}; // Use only TOF track for Kaon PID selection
   // Kaon
-  Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};              // TPC
-  Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"};              // TOF
+  Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};               // TPC
+  Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"};               // TOF
   Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", -999, "Combined nSigma cut for Kaon"}; // Combined
   // Track selections
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
@@ -343,12 +343,12 @@ struct k1analysis {
         if (trk1.sign() > 0) {                                // Positive pion
           if (trk2.sign() > 0)                                // Positive kaon
             histos.fill(HIST("hK892invmass_PP"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M());
-          else                                                                                                  // Negative kaon
-            histos.fill(HIST("hK892invmass_PN"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M());        // Anti-K(892)0
-        } else {                                                                                                // Negative pion
-          if (trk2.sign() > 0)                                                                                  // Positive kaon
-            histos.fill(HIST("hK892invmass_NP"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M());        // K(892)0
-          else                                                                                                  // Negative kaon
+          else                                                                                           // Negative kaon
+            histos.fill(HIST("hK892invmass_PN"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M()); // Anti-K(892)0
+        } else {                                                                                         // Negative pion
+          if (trk2.sign() > 0)                                                                           // Positive kaon
+            histos.fill(HIST("hK892invmass_NP"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M()); // K(892)0
+          else                                                                                           // Negative kaon
             histos.fill(HIST("hK892invmass_NN"), multiplicity, lResonanceK892.Pt(), lResonanceK892.M());
         }
       }

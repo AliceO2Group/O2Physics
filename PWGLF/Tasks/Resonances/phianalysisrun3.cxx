@@ -27,7 +27,7 @@
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
-
+#include <Math/Vector4D.h>
 #include <cmath>
 #include <array>
 #include <cstdlib>
@@ -71,6 +71,8 @@ struct phianalysisrun3 {
   Configurable<bool> ismanualDCAcut{"ismanualDCAcut", true, "ismanualDCAcut"};
   Configurable<bool> isITSOnlycut{"isITSOnlycut", true, "isITSOnlycut"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
+  Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
+  Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
   // MC
   Configurable<bool> isMC{"isMC", false, "Run MC"};
   void init(o2::framework::InitContext&)
@@ -98,8 +100,9 @@ struct phianalysisrun3 {
         histos.add("h3PhiInvMassMixedCside", "Invariant mass of Phi meson Mixed C side", kTH3F, {{201, -0.5, 200.5}, {100, 0.0f, 10.0f}, {200, 0.9, 1.1}});
       }
     } else if (isMC) {
-      histos.add("hMC", "MC Event statistics", kTH1F, {{2, 0.0f, 2.0f}});
+      histos.add("hMC", "MC Event statistics", kTH1F, {{5, 0.0f, 4.0f}});
       histos.add("h1PhiGen", "Phi meson Gen", kTH1F, {{100, 0.0f, 10.0f}});
+      histos.add("h1PhiGensamecoll", "Phi meson Gen same coll", kTH1F, {{100, 0.0f, 10.0f}});
       histos.add("h2PhiRec", "Phi meson Rec", kTH2F, {{100, 0.0f, 10.0f}, {200, -0.1, 0.1}});
     }
   }
@@ -137,6 +140,23 @@ struct phianalysisrun3 {
       return true;
     }
     return false;
+  }
+  // deep angle cut on pair to remove photon conversion
+  template <typename T1, typename T2>
+  bool selectionPair(const T1& candidate1, const T2& candidate2)
+  {
+    double pt1, pt2, pz1, pz2, p1, p2, angle;
+    pt1 = candidate1.pt();
+    pt2 = candidate2.pt();
+    pz1 = candidate1.pz();
+    pz2 = candidate2.pz();
+    p1 = candidate1.p();
+    p2 = candidate2.p();
+    angle = TMath::ACos((pt1 * pt2 + pz1 * pz2) / (p1 * p2));
+    if (isDeepAngle && angle < cfgDeepAngle) {
+      return false;
+    }
+    return true;
   }
   template <typename T1, typename T2>
   void FillinvMass(const T1& candidate1, const T2& candidate2, float multiplicity, bool unlike, bool mix, bool likesign, bool rotation, float massd1, float massd2)
@@ -217,7 +237,7 @@ struct phianalysisrun3 {
   // BinningType binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
 
   // using BinningTypeTPCMultiplicity =  ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
-  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
+  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   // using BinningTypeCentrality = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
 
   // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
@@ -230,9 +250,9 @@ struct phianalysisrun3 {
     }
     float multiplicity;
     if (cfgMultFT0)
-      multiplicity = collision.multZeqFT0A() + collision.multZeqFT0C();
+      multiplicity = collision.centFT0C();
     if (!cfgMultFT0)
-      multiplicity = collision.centFT0M();
+      multiplicity = collision.numContrib();
     histos.fill(HIST("hCentrality"), multiplicity);
     histos.fill(HIST("hNcontributor"), collision.numContrib());
     histos.fill(HIST("hVtxZ"), collision.posZ());
@@ -252,6 +272,9 @@ struct phianalysisrun3 {
         }
         auto track2ID = track2.globalIndex();
         if (track2ID <= track1ID) {
+          continue;
+        }
+        if (!selectionPair(track1, track2)) {
           continue;
         }
         bool unlike = true;
@@ -285,9 +308,9 @@ struct phianalysisrun3 {
 
       float multiplicity;
       if (cfgMultFT0)
-        multiplicity = c1.multZeqFT0A() + c1.multZeqFT0C();
+        multiplicity = c1.centFT0C();
       if (!cfgMultFT0)
-        multiplicity = c1.centFT0M();
+        multiplicity = c1.numContrib();
 
       for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         bool unlike = false;
@@ -298,6 +321,9 @@ struct phianalysisrun3 {
           continue;
         }
         if (!selectionTrack(t2)) {
+          continue;
+        }
+        if (!selectionPair(t1, t2)) {
           continue;
         }
         if (isITSOnlycut) {
@@ -311,37 +337,63 @@ struct phianalysisrun3 {
   }
 
   PROCESS_SWITCH(phianalysisrun3, processMixedEvent, "Process Mixed event", false);
-  void processGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)
+  void processGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   {
+    histos.fill(HIST("hMC"), 0.5);
     if (std::abs(mcCollision.posZ()) < cfgCutVertex) {
-      histos.fill(HIST("hMC"), 0.5);
-      for (auto& mcParticle : mcParticles) {
+      histos.fill(HIST("hMC"), 1.5);
+    }
+    int Nchinel = 0;
+    for (auto& mcParticle : mcParticles) {
+      auto pdgcode = std::abs(mcParticle.pdgCode());
+      if (mcParticle.isPhysicalPrimary() && (pdgcode == 211 || pdgcode == 321 || pdgcode == 2212 || pdgcode == 11 || pdgcode == 13)) {
+        if (std::abs(mcParticle.eta()) < 1.0) {
+          Nchinel = Nchinel + 1;
+        }
+      }
+    }
+    if (Nchinel > 0 && std::abs(mcCollision.posZ()) < cfgCutVertex)
+      histos.fill(HIST("hMC"), 2.5);
+    std::vector<int64_t> SelectedEvents(collisions.size());
+    int nevts = 0;
+    for (const auto& collision : collisions) {
+      if (!collision.sel8() || std::abs(collision.mcCollision().posZ()) > cfgCutVertex) {
+        continue;
+      }
+      SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+    }
+    SelectedEvents.resize(nevts);
+    const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end();
 
-        if (std::abs(mcParticle.y()) > 0.5) {
+    if (!evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
+      return;
+    }
+    histos.fill(HIST("hMC"), 3.5);
+    for (auto& mcParticle : mcParticles) {
+      if (std::abs(mcParticle.y()) > 0.5) {
+        continue;
+      }
+      if (mcParticle.pdgCode() != 333) {
+        continue;
+      }
+      auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
+      if (kDaughters.size() != 2) {
+        continue;
+      }
+      auto daughtp = false;
+      auto daughtm = false;
+      for (auto kCurrentDaughter : kDaughters) {
+        if (!kCurrentDaughter.isPhysicalPrimary()) {
           continue;
         }
-        if (mcParticle.pdgCode() != 333) {
-          continue;
+        if (kCurrentDaughter.pdgCode() == +321) {
+          daughtp = true;
+        } else if (kCurrentDaughter.pdgCode() == -321) {
+          daughtm = true;
         }
-        auto kDaughters = mcParticle.daughters_as<aod::McParticles>();
-        if (kDaughters.size() != 2) {
-          continue;
-        }
-        auto daughtp = false;
-        auto daughtm = false;
-        for (auto kCurrentDaughter : kDaughters) {
-          if (!kCurrentDaughter.isPhysicalPrimary()) {
-            continue;
-          }
-          if (kCurrentDaughter.pdgCode() == +321) {
-            daughtp = true;
-          } else if (kCurrentDaughter.pdgCode() == -321) {
-            daughtm = true;
-          }
-        }
-        if (daughtp && daughtm) {
-          histos.fill(HIST("h1PhiGen"), mcParticle.pt());
-        }
+      }
+      if (daughtp && daughtm) {
+        histos.fill(HIST("h1PhiGen"), mcParticle.pt());
       }
     }
   }
@@ -355,7 +407,7 @@ struct phianalysisrun3 {
     if (std::abs(collision.mcCollision().posZ()) > cfgCutVertex || !collision.sel8()) {
       return;
     }
-    histos.fill(HIST("hMC"), 1.5);
+    histos.fill(HIST("hMC"), 4.5);
     for (auto track1 : tracks) {
       if (!selectionTrack(track1)) {
         continue;
@@ -373,6 +425,9 @@ struct phianalysisrun3 {
         }
         auto track2ID = track2.globalIndex();
         if (track2ID <= track1ID) {
+          continue;
+        }
+        if (!selectionPair(track1, track2)) {
           continue;
         }
         if (track1.sign() * track2.sign() > 0) {

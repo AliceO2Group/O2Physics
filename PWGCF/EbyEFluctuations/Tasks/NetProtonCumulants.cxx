@@ -79,7 +79,7 @@ struct NetProtonCumulants_Table_QA {
     // Variable bin width axis
     std::vector<double> ptBinning = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4.};
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
-    std::vector<double> centBining = {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90};
+    std::vector<double> centBining = {0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90};
     AxisSpec centAxis = {centBining, "centrality (%)"};
     AxisSpec netProtonAxis = {2001, -1000.5, 1000.5, "net-proton number"};
 
@@ -130,8 +130,16 @@ struct NetProtonCumulants_Table_QA {
           const float combNSigmaPr = std::sqrt(pow(track.tpcNSigmaPr(), 2.0) + pow(track.tofNSigmaPr(), 2.0));
           const float combNSigmaPi = std::sqrt(pow(track.tpcNSigmaPi(), 2.0) + pow(track.tofNSigmaPi(), 2.0));
           const float combNSigmaKa = std::sqrt(pow(track.tpcNSigmaKa(), 2.0) + pow(track.tofNSigmaKa(), 2.0));
-          if (!(combNSigmaPr > combNSigmaPi) && !(combNSigmaPr > combNSigmaKa)) {
-            if (track.tpcNSigmaPr() < cfgnSigmaCut) {
+
+          int flag2 = 0;
+          if (combNSigmaPr < 3.0)
+            flag2 += 1;
+          if (combNSigmaPi < 3.0)
+            flag2 += 1;
+          if (combNSigmaKa < 3.0)
+            flag2 += 1;
+          if (!(flag2 > 1) && !(combNSigmaPr > combNSigmaPi) && !(combNSigmaPr > combNSigmaKa)) {
+            if (combNSigmaPr < cfgnSigmaCut) {
               flag = 1;
             }
           }
