@@ -113,6 +113,8 @@ struct CorrelationTask {
   OutputObj<CorrelationContainer> same{"sameEvent"};
   OutputObj<CorrelationContainer> mixed{"mixedEvent"};
 
+  std::vector<float> efficiencyAssociatedCache;
+
   struct Config {
     bool mPairCuts = false;
     THn* mEfficiencyTrigger = nullptr;
@@ -175,6 +177,8 @@ struct CorrelationTask {
 
     same->setTrackEtaCut(cfgCutEta);
     mixed->setTrackEtaCut(cfgCutEta);
+
+    efficiencyAssociatedCache.reserve(512);
 
     // o2-ccdb-upload -p Users/jgrosseo/correlations/LHC15o -f /tmp/correction_2011_global.root -k correction
 
@@ -261,13 +265,12 @@ struct CorrelationTask {
   void fillCorrelations(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight)
   {
     // Cache efficiency for particles (too many FindBin lookups)
-    float* efficiencyAssociated = nullptr;
     if constexpr (step == CorrelationContainer::kCFStepCorrected) {
       if (cfg.mEfficiencyAssociated) {
-        efficiencyAssociated = new float[tracks2.size()];
-        int i = 0;
+        efficiencyAssociatedCache.clear();
+        efficiencyAssociatedCache.reserve(tracks2.size());
         for (auto& track : tracks2) {
-          efficiencyAssociated[i++] = getEfficiencyCorrection(cfg.mEfficiencyAssociated, track.eta(), track.pt(), multiplicity, posZ);
+          efficiencyAssociatedCache.push_back(getEfficiencyCorrection(cfg.mEfficiencyAssociated, track.eta(), track.pt(), multiplicity, posZ));
         }
       }
     }
@@ -348,7 +351,7 @@ struct CorrelationTask {
         float associatedWeight = triggerWeight;
         if constexpr (step == CorrelationContainer::kCFStepCorrected) {
           if (cfg.mEfficiencyAssociated) {
-            associatedWeight *= efficiencyAssociated[track2.filteredIndex()];
+            associatedWeight *= efficiencyAssociatedCache[track2.filteredIndex()];
           }
         }
 
@@ -364,8 +367,6 @@ struct CorrelationTask {
                                     track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, associatedWeight);
       }
     }
-
-    delete[] efficiencyAssociated;
   }
 
   void loadEfficiency(uint64_t timestamp)
