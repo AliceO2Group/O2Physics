@@ -53,7 +53,7 @@ struct UpcTauCentralBarrelRL {
 	HistogramRegistry histos{
 		"histos",
 		{
-            {"Events/hCountCollisions", ";ůNumber of analysed collision (-)", { HistType::kTH1D, { {10,0.5,10.5} } } },
+            {"Events/hCountCollisions", ";Number of analysed collision (-)", { HistType::kTH1D, { {10,0.5,10.5} } } },
 			{"Events/hNreconstructedTracks", ";Number of tracks in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
 			{"Events/hNreconstructedPVGTelectrons", ";Number of good track electrons from primary vertex in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
 			{"Events/hNreconstructedPVGTmuons", ";Number of good track muons from primary vertex in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
