@@ -309,85 +309,83 @@ struct JetTaggerHFTC {
       sort(TracksSignImpXYZ[jetflavour].begin(), TracksSignImpXYZ[jetflavour].end(), std::greater<float>());
       sort(TracksImpXYZSig[jetflavour].begin(), TracksImpXYZSig[jetflavour].end(), std::greater<float>());
       sort(TracksSignImpXYZSig[jetflavour].begin(), TracksSignImpXYZSig[jetflavour].end(), std::greater<float>());
-    }
-    if (TracksImpXY[jetflavour].size() > 0) { // N1
-      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N1"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][0], jetflavour);
-      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N1"), mcdjet.pt(), TracksSignImpZSig[jetflavour][0], jetflavour);
-      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N1"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][0], jetflavour);
-    }
 
-    if (TracksImpXY[jetflavour].size() > 1) { // N2
-      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][1], jetflavour);
-      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N2"), mcdjet.pt(), TracksSignImpZSig[jetflavour][1], jetflavour);
-      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][1], jetflavour);
-    }
-    if (TracksImpXY[jetflavour].size() > 2) { // N3
-      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][2], jetflavour);
-      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N2"), mcdjet.pt(), TracksSignImpZSig[jetflavour][2], jetflavour);
-      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][2], jetflavour);
-    }
-  }
-}
-
-template <typename T, typename U, typename V>
-void fillHistogramIPsMCP(T const& collision, U const& mcpjets)
-{
-  for (auto& mcpjet : mcpjets) {
-    std::cout << "mcpjet pt: " << mcpjet.pt() << "\n";
-  }
-}
-
-template <typename T, typename U, typename V>
-void fillHistogramIPsMCPMCDMatched(T const& collision, U const& mcpjets)
-{
-  for (auto& mcpjet : mcpjets) {
-    for (auto& mcdjet : mcpjet.template matchedJetGeo_as<V>()) {
-      int jetflavour = mcdjet.origin();
-      if (jetflavour == JetTaggingSpecies::none) {
-        LOGF(debug, "NOT DEFINE JET FLAVOR");
+      if (TracksImpXY[jetflavour].size() > 0) { // N1
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N1"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][0], jetflavour);
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N1"), mcdjet.pt(), TracksSignImpZSig[jetflavour][0], jetflavour);
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N1"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][0], jetflavour);
+      }
+      if (TracksImpXY[jetflavour].size() > 1) { // N2
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][1], jetflavour);
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N2"), mcdjet.pt(), TracksSignImpZSig[jetflavour][1], jetflavour);
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][1], jetflavour);
+      }
+      if (TracksImpXY[jetflavour].size() > 2) { // N3
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][2], jetflavour);
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N2"), mcdjet.pt(), TracksSignImpZSig[jetflavour][2], jetflavour);
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][2], jetflavour);
       }
     }
   }
-}
 
-void processDummy(aod::Collision const& collision, aod::Tracks const& tracks)
-{
-}
-PROCESS_SWITCH(JetTaggerHFTC, processDummy, "Dummy process", true);
+  template <typename T, typename U, typename V>
+  void fillHistogramIPsMCP(T const& collision, U const& mcpjets)
+  {
+    for (auto& mcpjet : mcpjets) {
+      std::cout << "mcpjet pt: " << mcpjet.pt() << "\n";
+    }
+  }
 
-void processIPsData(soa::Join<aod::JCollisions, aod::JCollisionPIs>::iterator const& jcollision, aod::Collisions&, JetTagTableData const& jets, TagTracksData const&)
-{
-  auto oricoll = jcollision.template collision_as<aod::Collisions>();
-  fillHistogramIPsData<aod::Collision, JetTagTableData, TagTracksData>(oricoll, jets);
-}
-PROCESS_SWITCH(JetTaggerHFTC, processIPsData, "Fill impact parameter inpormation for data jets", false);
+  template <typename T, typename U, typename V>
+  void fillHistogramIPsMCPMCDMatched(T const& collision, U const& mcpjets)
+  {
+    for (auto& mcpjet : mcpjets) {
+      for (auto& mcdjet : mcpjet.template matchedJetGeo_as<V>()) {
+        int jetflavour = mcdjet.origin();
+        if (jetflavour == JetTaggingSpecies::none) {
+          LOGF(debug, "NOT DEFINE JET FLAVOR");
+        }
+      }
+    }
+  }
 
-void processIPsMCD(soa::Join<aod::JCollisions, aod::JCollisionPIs>::iterator const& jcollision, aod::Collisions&, JetTagTableMCD const& mcdjets, TagTracksMCD&, aod::JMcParticles&)
-{
-  auto oricoll = jcollision.template collision_as<aod::Collisions>();
-  fillHistogramIPsMCD<aod::Collision, JetTagTableMCD, TagTracksMCD>(oricoll, mcdjets);
-}
-PROCESS_SWITCH(JetTaggerHFTC, processIPsMCD, "Fill impact parameter inpormation for mcd jets", false);
+  void processDummy(aod::Collision const& collision, aod::Tracks const& tracks)
+  {
+  }
+  PROCESS_SWITCH(JetTaggerHFTC, processDummy, "Dummy process", true);
 
-void processIPsMCP(JetTagTableMCP const& mcpjets, TagTracksMCD&, aod::JMcParticles const& particles)
-{
-  // fillHistogramIPsMCP<soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs>, JetTagTableMCP, TagTracksMCD>(jcollision, mcpjets);
-}
-PROCESS_SWITCH(JetTaggerHFTC, processIPsMCP, "Fill impact parameter inpormation for mcp jets", false);
+  void processIPsData(soa::Join<aod::JCollisions, aod::JCollisionPIs>::iterator const& jcollision, aod::Collisions&, JetTagTableData const& jets, TagTracksData const&)
+  {
+    auto oricoll = jcollision.template collision_as<aod::Collisions>();
+    fillHistogramIPsData<aod::Collision, JetTagTableData, TagTracksData>(oricoll, jets);
+  }
+  PROCESS_SWITCH(JetTaggerHFTC, processIPsData, "Fill impact parameter inpormation for data jets", false);
 
-void processIPsMCPMCDMatched(JetTagTableMCD const& mcdjets, JetTagTableMCP const& mcpjets, TagTracksMCD const& tracks, aod::JMcParticles const& particles)
-{
-  // fillHistogramIPsMCPMCDMatched<soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs>, JetTagTableMCP, TagTracksMCD>(jcollision, mcpjets);
-}
-PROCESS_SWITCH(JetTaggerHFTC, processIPsMCPMCDMatched, "Fill impact parameter inpormation for mcd matched mcp jets", false);
+  void processIPsMCD(soa::Join<aod::JCollisions, aod::JCollisionPIs>::iterator const& jcollision, aod::Collisions&, JetTagTableMCD const& mcdjets, TagTracksMCD&, aod::JMcParticles&)
+  {
+    auto oricoll = jcollision.template collision_as<aod::Collisions>();
+    fillHistogramIPsMCD<aod::Collision, JetTagTableMCD, TagTracksMCD>(oricoll, mcdjets);
+  }
+  PROCESS_SWITCH(JetTaggerHFTC, processIPsMCD, "Fill impact parameter inpormation for mcd jets", false);
 
-void processJPMCD(JetTagTableMCD const& mcdjets, TagTracksMCD const& tracks, aod::McParticles const& particles)
-{
-  // fillHistogramJPMCD(collision, mcdjets, particles);
-}
-PROCESS_SWITCH(JetTaggerHFTC, processJPMCD, "Fill track and jet probability for mcd jets", false);
-}
-;
+  void processIPsMCP(JetTagTableMCP const& mcpjets, TagTracksMCD&, aod::JMcParticles const& particles)
+  {
+    // fillHistogramIPsMCP<soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs>, JetTagTableMCP, TagTracksMCD>(jcollision, mcpjets);
+  }
+  PROCESS_SWITCH(JetTaggerHFTC, processIPsMCP, "Fill impact parameter inpormation for mcp jets", false);
+
+  void processIPsMCPMCDMatched(JetTagTableMCD const& mcdjets, JetTagTableMCP const& mcpjets, TagTracksMCD const& tracks, aod::JMcParticles const& particles)
+  {
+    // fillHistogramIPsMCPMCDMatched<soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs>, JetTagTableMCP, TagTracksMCD>(jcollision, mcpjets);
+  }
+  PROCESS_SWITCH(JetTaggerHFTC, processIPsMCPMCDMatched, "Fill impact parameter inpormation for mcd matched mcp jets", false);
+
+  void processJPMCD(JetTagTableMCD const& mcdjets, TagTracksMCD const& tracks, aod::McParticles const& particles)
+  {
+    // fillHistogramJPMCD(collision, mcdjets, particles);
+  }
+  PROCESS_SWITCH(JetTaggerHFTC, processJPMCD, "Fill track and jet probability for mcd jets", false);
+};
 
 using JetTaggerTCChargedDataJets = soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetTags>;
 using JetTaggerTCChargedMCDJets = soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetTags>;
