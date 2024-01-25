@@ -13,8 +13,11 @@
 /// \author Roman Lavicka, roman.lavicka@cern.ch
 /// \since  27.10.2022
 
-#ifndef ALISW_UPCTAUCENTRALBARRELHELPERRL_H
-#define ALISW_UPCTAUCENTRALBARRELHELPERRL_H
+#ifndef PWGUD_CORE_UPCTAUCENTRALBARRELHELPERRL_H_
+#define PWGUD_CORE_UPCTAUCENTRALBARRELHELPERRL_H_
+
+#include <string>
+#include <algorithm>
 
 using namespace o2;
 using namespace o2::framework;
@@ -83,12 +86,17 @@ template <typename T>
 int trackPDG(T trackPIDinfo)
 // using testPIDhypothesis, reads enumMyParticle and return pdg value
 {
-	if (testPIDhypothesis(trackPIDinfo) == P_ELECTRON) return 11;
-	else if (testPIDhypothesis(trackPIDinfo) == P_MUON) return 13;
-	else if (testPIDhypothesis(trackPIDinfo) == P_PION) return 211;
-	else if (testPIDhypothesis(trackPIDinfo) == P_KAON) return 321;
-	else if (testPIDhypothesis(trackPIDinfo) == P_PROTON) return 2212;
-	else {
+	if (testPIDhypothesis(trackPIDinfo) == P_ELECTRON) {
+        return 11;
+    } else if (testPIDhypothesis(trackPIDinfo) == P_MUON) {
+        return 13;
+    } else if (testPIDhypothesis(trackPIDinfo) == P_PION) {
+        return 211;
+    } else if (testPIDhypothesis(trackPIDinfo) == P_KAON) {
+        return 321;
+    } else if (testPIDhypothesis(trackPIDinfo) == P_PROTON) {
+        return 2212;
+    } else {
 		printMediumMessage("Something is wrong with track PDG selector");
 		return -1.;
 	}
@@ -97,12 +105,17 @@ int trackPDG(T trackPIDinfo)
 int enumMyParticle(int valuePDG)
 // reads pdg value and returns particle number as in enumMyParticle
 {
-	if (std::abs(valuePDG) == 11) return P_ELECTRON;
-	else if (std::abs(valuePDG) == 13) return P_MUON;
-	else if (std::abs(valuePDG) == 211) return P_PION;
-	else if (std::abs(valuePDG) == 321) return P_KAON;
-	else if (std::abs(valuePDG) == 2212) return P_PROTON;
-	else {
+	if (std::abs(valuePDG) == 11) {
+        return P_ELECTRON;
+    } else if (std::abs(valuePDG) == 13) {
+        return P_MUON;
+    } else if (std::abs(valuePDG) == 211) {
+        return P_PION;
+    } else if (std::abs(valuePDG) == 321) {
+        return P_KAON;
+    } else if (std::abs(valuePDG) == 2212) {
+        return P_PROTON;
+    } else {
 		printMediumMessage("PDG value not found in enumMyParticle. Returning -1.");
 		return -1.;
 	}
@@ -157,4 +170,4 @@ double calculateAcoplanarity(double phi_trk1, double phi_trk2)
     else return (o2::constants::math::TwoPI-aco);
 }
 
-#endif //ALISW_UPCTAUCENTRALBARRELHELPERRL_H
+#endif //PWGUD_CORE_UPCTAUCENTRALBARRELHELPERRL_H_
