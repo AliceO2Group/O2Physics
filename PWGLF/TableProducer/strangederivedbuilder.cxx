@@ -100,10 +100,10 @@ struct strangederivedbuilder {
 
   //__________________________________________________
   // Q-vectors
-  Produces<aod::StraFT0AQVs> StraFT0AQVs;     // FT0A Q-vector
-  Produces<aod::StraFT0CQVs> StraFT0CQVs;     // FT0C Q-vector
-  Produces<aod::StraFT0MQVs> StraFT0MQVs;     // FT0M Q-vector
-  Produces<aod::StraFV0AQVs> StraFV0AQVs;     // FV0A Q-vector
+  Produces<aod::StraFT0AQVs> StraFT0AQVs; // FT0A Q-vector
+  Produces<aod::StraFT0CQVs> StraFT0CQVs; // FT0C Q-vector
+  Produces<aod::StraFT0MQVs> StraFT0MQVs; // FT0M Q-vector
+  Produces<aod::StraFV0AQVs> StraFV0AQVs; // FV0A Q-vector
 
   // histogram registry for bookkeeping
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};

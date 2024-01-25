@@ -853,9 +853,9 @@ struct lambdakzeroBuilder {
                 v0candidate.cosPA,
                 v0candidate.dcav0topv,
                 V0.v0Type());
-        if(createV0PosAtDCAs)
+        if (createV0PosAtDCAs)
           v0dauPositions(v0candidate.posPosition[0], v0candidate.posPosition[1], v0candidate.posPosition[2],
-                  v0candidate.negPosition[0], v0candidate.negPosition[1], v0candidate.negPosition[2]);
+                         v0candidate.negPosition[0], v0candidate.negPosition[1], v0candidate.negPosition[2]);
       } else {
         // place V0s built exclusively for the sake of cascades
         // in a fully independent table (though identical) to make

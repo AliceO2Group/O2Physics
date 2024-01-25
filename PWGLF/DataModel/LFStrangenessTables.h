@@ -146,13 +146,12 @@ DECLARE_SOA_COLUMN(Y, y, float);         //! decay position Y
 DECLARE_SOA_COLUMN(Z, z, float);         //! decay position Z
 
 // decay daughter positions for refit studies (specific purpose)
-DECLARE_SOA_COLUMN(XPosAtDCA, xPosAtDCA, float);         //! decay position X
-DECLARE_SOA_COLUMN(YPosAtDCA, yPosAtDCA, float);         //! decay position Y
-DECLARE_SOA_COLUMN(ZPosAtDCA, zPosAtDCA, float);         //! decay position Z
-DECLARE_SOA_COLUMN(XNegAtDCA, xNegAtDCA, float);         //! decay position X
-DECLARE_SOA_COLUMN(YNegAtDCA, yNegAtDCA, float);         //! decay position Y
-DECLARE_SOA_COLUMN(ZNegAtDCA, zNegAtDCA, float);         //! decay position Z
-
+DECLARE_SOA_COLUMN(XPosAtDCA, xPosAtDCA, float); //! decay position X
+DECLARE_SOA_COLUMN(YPosAtDCA, yPosAtDCA, float); //! decay position Y
+DECLARE_SOA_COLUMN(ZPosAtDCA, zPosAtDCA, float); //! decay position Z
+DECLARE_SOA_COLUMN(XNegAtDCA, xNegAtDCA, float); //! decay position X
+DECLARE_SOA_COLUMN(YNegAtDCA, yNegAtDCA, float); //! decay position Y
+DECLARE_SOA_COLUMN(ZNegAtDCA, zNegAtDCA, float); //! decay position Z
 
 // Saved from finding: DCAs
 DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0daughters, float); //! DCA between V0 daughters
@@ -411,8 +410,8 @@ DECLARE_SOA_EXTENDED_TABLE_USER(V0Cores, StoredV0Cores, "V0COREEXT",            
                                 v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta); // the table name has here to be the one with EXT which is not nice and under study
 
 DECLARE_SOA_TABLE(V0TraPosAtDCAs, "AOD", "V0TRAPOSATDCAs", //! positions of tracks at their DCA for debug
-                       v0data::XPosAtDCA, v0data::YPosAtDCA, v0data::ZPosAtDCA,
-                       v0data::XNegAtDCA, v0data::YNegAtDCA, v0data::ZNegAtDCA);
+                  v0data::XPosAtDCA, v0data::YPosAtDCA, v0data::ZPosAtDCA,
+                  v0data::XNegAtDCA, v0data::YNegAtDCA, v0data::ZNegAtDCA);
 
 DECLARE_SOA_TABLE_FULL(V0Covs, "V0Covs", "AOD", "V0COVS", //! V0 covariance matrices
                        v0data::PositionCovMat, v0data::MomentumCovMat, o2::soa::Marker<1>);
