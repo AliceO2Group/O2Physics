@@ -85,8 +85,20 @@ struct JetSubstructureHFOutputTask {
   template <typename T, typename U, typename V, typename M, typename N>
   void fillTables(T const& jet, U const& cand, int32_t collisionIndex, int32_t candidateIndex, V& collisionOutputTable, M& jetOutputTable, N& jetSubstructureOutputTable, std::vector<int> geoMatching, std::vector<int> ptMatching, std::vector<int> candMatching)
   {
+    std::vector<float> energyMotherVec;
+    std::vector<float> ptLeadingVec;
+    std::vector<float> ptSubLeadingVec;
+    std::vector<float> thetaVec;
+    auto energyMotherSpan = jet.energyMother();
+    auto ptLeadingSpan = jet.ptLeading();
+    auto ptSubLeadingSpan = jet.ptSubLeading();
+    auto thetaSpan = jet.theta();
+    std::copy(energyMotherSpan.begin(), energyMotherSpan.end(), std::back_inserter(energyMotherVec));
+    std::copy(ptLeadingSpan.begin(), ptLeadingSpan.end(), std::back_inserter(ptLeadingVec));
+    std::copy(ptSubLeadingSpan.begin(), ptSubLeadingSpan.end(), std::back_inserter(ptSubLeadingVec));
+    std::copy(thetaSpan.begin(), thetaSpan.end(), std::back_inserter(thetaVec));
     jetOutputTable(collisionIndex, candidateIndex, geoMatching, ptMatching, candMatching, jet.pt(), jet.phi(), jet.eta(), jet.r(), jet.tracks().size() + jet.hfcandidates().size()); // here we take the decision to keep the collision index consistent with the JE framework in case it is later needed to join to other tables. The candidate Index however can be linked to the HF tables
-    jetSubstructureOutputTable(jetOutputTable.lastIndex(), jet.zg(), jet.rg(), jet.nsd());
+    jetSubstructureOutputTable(jetOutputTable.lastIndex(), energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec);
   }
 
   template <bool isMatched, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename S>

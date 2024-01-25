@@ -18,6 +18,7 @@
 #define PWGJE_DATAMODEL_JETSUBSTRUCTURE_H_
 
 #include <cmath>
+#include <vector>
 #include "Framework/AnalysisDataModel.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -36,10 +37,11 @@ DECLARE_SOA_COLUMN(EventSel, eventSel, uint8_t);   //!
 } // namespace jetcollision
 
 namespace jetsubstructure
-{                                    //!
-DECLARE_SOA_COLUMN(Zg, zg, float);   //!
-DECLARE_SOA_COLUMN(Rg, rg, float);   //!
-DECLARE_SOA_COLUMN(Nsd, nsd, float); //!
+{                                                                   //!
+DECLARE_SOA_COLUMN(EnergyMother, energyMother, std::vector<float>); //!
+DECLARE_SOA_COLUMN(PtLeading, ptLeading, std::vector<float>);       //!
+DECLARE_SOA_COLUMN(PtSubLeading, ptSubLeading, std::vector<float>); //!
+DECLARE_SOA_COLUMN(Theta, theta, std::vector<float>);               //!
 } // namespace jetsubstructure
 
 namespace jetoutput
@@ -90,8 +92,8 @@ DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, int); //!
     DECLARE_SOA_DYNAMIC_COLUMN(Dummy##_jet_type_, dummy##_jet_type_, []() -> int { return 0; });                                                                                                                                                                                                                                                                                                   \
   }                                                                                                                                                                                                                                                                                                                                                                                                \
                                                                                                                                                                                                                                                                                                                                                                                                    \
-  DECLARE_SOA_TABLE(_jet_type_##Substructures, "AOD", _description_ "SS", jetsubstructure::Zg, jetsubstructure::Rg, jetsubstructure::Nsd, _name_##substructure::Dummy##_jet_type_<>);                                                                                                                                                                                                              \
-  DECLARE_SOA_TABLE(_jet_type_##SubstructureOutputs, "AOD", _description_ "SSO", _name_##substructure::_jet_type_##OutputId, jetsubstructure::Zg, jetsubstructure::Rg, jetsubstructure::Nsd);                                                                                                                                                                                                      \
+  DECLARE_SOA_TABLE(_jet_type_##Substructures, "AOD", _description_ "SS", jetsubstructure::EnergyMother, jetsubstructure::PtLeading, jetsubstructure::PtSubLeading, jetsubstructure::Theta, _name_##substructure::Dummy##_jet_type_<>);                                                                                                                                                            \
+  DECLARE_SOA_TABLE(_jet_type_##SubstructureOutputs, "AOD", _description_ "SSO", _name_##substructure::_jet_type_##OutputId, jetsubstructure::EnergyMother, jetsubstructure::PtLeading, jetsubstructure::PtSubLeading, jetsubstructure::Theta);                                                                                                                                                    \
                                                                                                                                                                                                                                                                                                                                                                                                    \
   using _jet_type_##Output = _jet_type_##Outputs::iterator;                                                                                                                                                                                                                                                                                                                                        \
   using _jet_type_##SubstructureOutput = _jet_type_##SubstructureOutputs::iterator;
