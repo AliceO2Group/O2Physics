@@ -94,6 +94,7 @@ struct lambdakzeroBuilder {
   Produces<aod::StoredV0Cores> v0cores;
   Produces<aod::V0TrackXs> v0trackXs;
   Produces<aod::V0Covs> v0covs; // covariances
+  Produces<aod::V0TraPosAtDCAs> v0dauPositions; // auxiliary debug information
 
   Produces<aod::V0fCIndices> v0fcindices;
   Produces<aod::StoredV0fCCores> v0fccores;
@@ -104,6 +105,7 @@ struct lambdakzeroBuilder {
 
   // Configurables related to table creation
   Configurable<int> createV0CovMats{"createV0CovMats", -1, {"Produces V0 cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> createV0PosAtDCAs{"createV0PosAtDCAs", 0, {"Produces V0 track positions at minima. 0: don't, 1: yes. Default: no (0)"}};
 
   Configurable<bool> storePhotonCandidates{"storePhotonCandidates", false, "store photon candidates (yes/no)"};
 
@@ -214,6 +216,8 @@ struct lambdakzeroBuilder {
     std::array<float, 3> pos;
     std::array<float, 3> posP;
     std::array<float, 3> negP;
+    std::array<float, 3> posPosition;
+    std::array<float, 3> negPosition;
     float dcaV0dau;
     float posDCAxy;
     float negDCAxy;
@@ -635,6 +639,8 @@ struct lambdakzeroBuilder {
     lNegativeTrack = fitter.getTrack(1);
     lPositiveTrack.getPxPyPzGlo(v0candidate.posP);
     lNegativeTrack.getPxPyPzGlo(v0candidate.negP);
+    lPositiveTrack.getXYZGlo(v0candidate.posPosition);
+    lNegativeTrack.getXYZGlo(v0candidate.negPosition);
 
     // get decay vertex coordinates
     const auto& vtx = fitter.getPCACandidate();
@@ -847,6 +853,9 @@ struct lambdakzeroBuilder {
                 v0candidate.cosPA,
                 v0candidate.dcav0topv,
                 V0.v0Type());
+        if(createV0PosAtDCAs)
+          v0dauPositions(v0candidate.posPosition[0], v0candidate.posPosition[1], v0candidate.posPosition[2],
+                  v0candidate.negPosition[0], v0candidate.negPosition[1], v0candidate.negPosition[2]);
       } else {
         // place V0s built exclusively for the sake of cascades
         // in a fully independent table (though identical) to make
