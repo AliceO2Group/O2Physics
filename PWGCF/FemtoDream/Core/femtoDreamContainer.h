@@ -87,6 +87,8 @@ class FemtoDreamContainer
     mHistogramRegistry->add((folderName + "/kstarPtPart2").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 2 (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, pTAxis});
     mHistogramRegistry->add((folderName + "/MultPtPart1").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); Multiplicity", kTH2F, {pTAxis, multAxis});
     mHistogramRegistry->add((folderName + "/MultPtPart2").c_str(), "; #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity", kTH2F, {pTAxis, multAxis});
+    mHistogramRegistry->add((folderName + "/MultPercentilePtPart1").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); Multiplicity Percentile", kTH2F, {pTAxis, multPercentileAxis});
+    mHistogramRegistry->add((folderName + "/MultPercentilePtPart2").c_str(), "; #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity Percentile", kTH2F, {pTAxis, multPercentileAxis});
     mHistogramRegistry->add((folderName + "/PtPart1PtPart2").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c})", kTH2F, {pTAxis, pTAxis});
     if (use4dplots) {
       mHistogramRegistry->add((folderName + "/relPairkstarmTMultMultPercentile").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2}); Multiplicity").c_str(), kTHnSparseF, {femtoObsAxis, mTAxis4D, multAxis4D, multPercentileAxis4D});
@@ -194,6 +196,8 @@ class FemtoDreamContainer
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/kstarPtPart2"), femtoObs, part2.pt());
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/MultPtPart1"), part1.pt(), mult);
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/MultPtPart2"), part2.pt(), mult);
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/MultPercentilePtPart1"), part1.pt(), multPercentile);
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/MultPercentilePtPart2"), part2.pt(), multPercentile);
     mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/PtPart1PtPart2"), part1.pt(), part2.pt());
     if (use4dplots) {
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkstarmTMultMultPercentile"), femtoObs, mT, mult, multPercentile);

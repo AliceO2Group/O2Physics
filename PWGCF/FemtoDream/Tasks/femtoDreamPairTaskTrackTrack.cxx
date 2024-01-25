@@ -15,8 +15,6 @@
 /// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
-#include <Framework/Configurable.h>
-#include <Framework/Expressions.h>
 #include <cstdint>
 #include <vector>
 #include <bitset>
@@ -27,6 +25,8 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/Configurable.h"
+#include "Framework/Expressions.h"
 #include "TDatabasePDG.h"
 
 #include "PWGCF/DataModel/FemtoDerived.h"
@@ -47,10 +47,6 @@ struct femtoDreamPairTaskTrackTrack {
   SliceCache cache;
   Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
 
-  using MaskedCollisions = soa::Join<FDCollisions, FDColMasks>;
-  using MaskedCollision = MaskedCollisions::iterator;
-  femtodreamcollision::BitMaskType MaskBit = -1;
-
   /// General options
   Configurable<bool> ConfOptIsMC{"ConfOptIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
   Configurable<bool> ConfOptUse4D{"ConfOptUse4D", false, "Enable four dimensional histogramms (to be used only for analysis with high statistics): k* vs multiplicity vs multiplicity percentil vs mT"};
@@ -62,6 +58,21 @@ struct femtoDreamPairTaskTrackTrack {
   Configurable<float> ConfOptCPRdeltaPhiMax{"ConfOptCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
   Configurable<float> ConfOptCPRdeltaEtaMax{"ConfOptCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
   ConfigurableAxis ConfOptDummy{"ConfOptDummy", {1, 0, 1}, "Dummy axis"};
+
+  /// Event selection
+  Configurable<int> ConfEvent_minMult{"ConfEvent_minMult", 0, "Minimum Multiplicity (MultNtr)"};
+  Configurable<int> ConfEvent_maxMult{"ConfEvent_maxMult", 99999, "Maximum Multiplicity (MultNtr)"};
+  Configurable<float> ConfEvent_minMultPercentile{"ConfEvent_minMultPercentile", 0, "Minimum Multiplicity Percentile"};
+  Configurable<float> ConfEvent_maxMultPercentile{"ConfEvent_maxMultPercentile", 100, "Maximum Multiplicity Percentile"};
+
+  Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= ConfEvent_minMult && aod::femtodreamcollision::multNtr <= ConfEvent_maxMult;
+  Filter EventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= ConfEvent_minMultPercentile && aod::femtodreamcollision::multV0M <= ConfEvent_maxMultPercentile;
+
+  using FilteredCollisions = soa::Filtered<FDCollisions>;
+  using FilteredCollision = FilteredCollisions::iterator;
+  using FilteredMaskedCollisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks>>;
+  using FilteredMaskedCollision = FilteredMaskedCollisions::iterator;
+  femtodreamcollision::BitMaskType BitMask = -1;
 
   /// Track 1
   Configurable<int> ConfTrk1_PDGCode{"ConfTrk1_PDGCode", 2212, "PDG code of particle 1 (Track)"};
@@ -138,12 +149,12 @@ struct femtoDreamPairTaskTrackTrack {
 
   ConfigurableAxis ConfBin4Dkstar{"ConfBin4Dkstar", {1500, 0., 6.}, "binning kstar for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
   ConfigurableAxis ConfBin4DmT{"ConfBin4DmT", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
-  ConfigurableAxis ConfBin4DMult{"ConfBin4Dmult", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "multiplicity Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
+  ConfigurableAxis ConfBin4Dmult{"ConfBin4Dmult", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "multiplicity Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
   ConfigurableAxis ConfBin4DmultPercentile{"ConfBin4DmultPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
 
   // Mixing configurables
   ConfigurableAxis ConfMixingBinMult{"ConfMixingBinMult", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"};
-  ConfigurableAxis ConfMixingBinMultPercentile{"ConfMixingBinMultPercentile", {10, 0.f, 100.f}, "Mixing bins - multiplicity percentile"};
+  ConfigurableAxis ConfMixingBinMultPercentile{"ConfMixingBinMultPercentile", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f}, "Mixing bins - multiplicity percentile"};
   ConfigurableAxis ConfMixingBinVztx{"ConfMixingBinVztx", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   Configurable<int> ConfMixingDepth{"ConfMixingDepth", 5, "Number of events for mixing"};
   Configurable<int> ConfMixingPolicy{"ConfMixingBinPolicy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
@@ -165,17 +176,17 @@ struct femtoDreamPairTaskTrackTrack {
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, ConfBinTrackpT, ConfBinTempFitVar, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk1_PDGCode);
     if (!ConfOptSameSpecies) {
-      trackHistoPartTwo.init(&qaRegistry, ConfBinpT, ConfBinTempFitVar, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk2_PDGCode);
+      trackHistoPartTwo.init(&qaRegistry, ConfBinTrackpT, ConfBinTempFitVar, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk2_PDGCode);
     }
 
     sameEventCont.init(&resultRegistry,
                        ConfBinkstar, ConfBinpT, ConfBinkT, ConfBinmT, ConfMixingBinMult, ConfMixingBinMultPercentile,
-                       ConfBin4Dkstar, ConfBin4DmT, ConfBin4DMult, ConfBin4DmultPercentile,
+                       ConfBin4Dkstar, ConfBin4DmT, ConfBin4Dmult, ConfBin4DmultPercentile,
                        ConfOptIsMC, ConfOptUse4D, ConfOptExtendedPlots,
                        ConfOptHighkstarCut);
     mixedEventCont.init(&resultRegistry,
                         ConfBinkstar, ConfBinpT, ConfBinkT, ConfBinmT, ConfMixingBinMult, ConfMixingBinMultPercentile,
-                        ConfBin4Dkstar, ConfBin4DmT, ConfBin4DMult, ConfBin4DmultPercentile,
+                        ConfBin4Dkstar, ConfBin4DmT, ConfBin4Dmult, ConfBin4DmultPercentile,
                         ConfOptIsMC, ConfOptUse4D, ConfOptExtendedPlots,
                         ConfOptHighkstarCut);
 
@@ -209,7 +220,7 @@ struct femtoDreamPairTaskTrackTrack {
             containsNameValuePair(device.options, "ConfTrk2_minEta", ConfTrk2_minEta.value) &&
             containsNameValuePair(device.options, "ConfTrk2_maxEta", ConfTrk2_maxEta.value)) {
           mask.set(index);
-          MaskBit = static_cast<femtodreamcollision::BitMaskType>(mask.to_ulong());
+          BitMask = static_cast<femtodreamcollision::BitMaskType>(mask.to_ulong());
           LOG(info) << "Device name matched: " << device.name;
           LOG(info) << "Bitmask for collisions: " << mask.to_string();
           break;
@@ -245,6 +256,9 @@ struct femtoDreamPairTaskTrackTrack {
   template <bool isMC, typename PartitionType, typename PartType, typename Collision>
   void doSameEvent(PartitionType SliceTrk1, PartitionType SliceTrk2, PartType parts, Collision col)
   {
+    for (auto& part : SliceTrk1) {
+      trackHistoPartOne.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt);
+    }
 
     if (!ConfOptSameSpecies.value) {
       for (auto& part : SliceTrk2) {
@@ -285,7 +299,7 @@ struct femtoDreamPairTaskTrackTrack {
   /// process function for to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoDreamParticleTable
-  void processSameEvent(o2::aod::FDCollision& col, o2::aod::FDParticles& parts)
+  void processSameEvent(FilteredCollision& col, o2::aod::FDParticles& parts)
   {
     fillCollision(col);
     auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
@@ -297,14 +311,14 @@ struct femtoDreamPairTaskTrackTrack {
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEvent, "Enable processing same event", true);
 
-  void processSameEventMasked(MaskedCollision& col, o2::aod::FDParticles& parts)
+  void processSameEventMasked(FilteredMaskedCollision& col, o2::aod::FDParticles& parts)
   {
     if (ConfOptSameSpecies.value) {
-      if ((col.bitmaskTrackOne() & MaskBit) != MaskBit) {
+      if ((col.bitmaskTrackOne() & BitMask) != BitMask) {
         return;
       }
     } else {
-      if ((col.bitmaskTrackOne() & MaskBit) != MaskBit && (col.bitmaskTrackTwo() & MaskBit) != MaskBit) {
+      if ((col.bitmaskTrackOne() & BitMask) != BitMask && (col.bitmaskTrackTwo() & BitMask) != BitMask) {
         return;
       }
     }
@@ -319,7 +333,7 @@ struct femtoDreamPairTaskTrackTrack {
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoDreamParticles and FemtoDreamMCLables to access Monte Carlo truth
   /// \param FemtoDreamMCParticles subscribe to the Monte Carlo truth table
-  void processSameEventMC(o2::aod::FDCollision& col, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
+  void processSameEventMC(FilteredCollision& col, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
                           o2::aod::FDMCParticles&)
   {
     fillCollision(col);
@@ -332,15 +346,15 @@ struct femtoDreamPairTaskTrackTrack {
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
-  void processSameEventMCMasked(MaskedCollision& col, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
+  void processSameEventMCMasked(FilteredMaskedCollision& col, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
                                 o2::aod::FDMCParticles&)
   {
     if (ConfOptSameSpecies.value) {
-      if ((col.bitmaskTrackOne() & MaskBit) != MaskBit) {
+      if ((col.bitmaskTrackOne() & BitMask) != BitMask) {
         return;
       }
     } else {
-      if ((col.bitmaskTrackOne() & MaskBit) != MaskBit && (col.bitmaskTrackTwo() & MaskBit) != MaskBit) {
+      if ((col.bitmaskTrackOne() & BitMask) != BitMask && (col.bitmaskTrackTwo() & BitMask) != BitMask) {
         return;
       }
     }
@@ -374,8 +388,8 @@ struct femtoDreamPairTaskTrackTrack {
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
   void doMixedEvent_Masked(CollisionType& cols, PartType& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
   {
-    Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & MaskBit) == MaskBit;
-    Partition<CollisionType> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & MaskBit) == MaskBit;
+    Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask;
+    Partition<CollisionType> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask;
     PartitionMaskedCol1.bindTable(cols);
     PartitionMaskedCol2.bindTable(cols);
     for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockUpperIndexPolicy(policy, ConfMixingDepth.value, -1, PartitionMaskedCol1, PartitionMaskedCol2))) {
@@ -395,30 +409,36 @@ struct femtoDreamPairTaskTrackTrack {
   /// process function for to call doMixedEvent with Data
   /// @param cols subscribe to the collisions table (Data)
   /// @param parts subscribe to the femtoDreamParticleTable
-  void processMixedEvent(o2::aod::FDCollisions& cols, o2::aod::FDParticles& parts)
+  void processMixedEvent(FilteredCollisions& cols, o2::aod::FDParticles& parts)
   {
     switch (ConfMixingPolicy.value) {
       case femtodreamcollision::kMult:
         doMixedEvent_NotMasked<false>(cols, parts, PartitionTrk1, PartitionTrk2, colBinningMult);
+        break;
       case femtodreamcollision::kMultPercentile:
         doMixedEvent_NotMasked<false>(cols, parts, PartitionTrk1, PartitionTrk2, colBinningMultPercentile);
+        break;
       case femtodreamcollision::kMultMultPercentile:
         doMixedEvent_NotMasked<false>(cols, parts, PartitionTrk1, PartitionTrk2, colBinningMultMultPercentile);
+        break;
       default:
         LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
     }
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processMixedEvent, "Enable processing mixed events", true);
 
-  void processMixedEventMasked(MaskedCollisions& cols, o2::aod::FDParticles& parts)
+  void processMixedEventMasked(FilteredMaskedCollisions& cols, o2::aod::FDParticles& parts)
   {
     switch (ConfMixingPolicy.value) {
-      case femtodreamcollision::kMult:
+      case static_cast<int>(femtodreamcollision::kMult):
         doMixedEvent_Masked<false>(cols, parts, PartitionTrk1, PartitionTrk2, colBinningMult);
+        break;
       case femtodreamcollision::kMultPercentile:
         doMixedEvent_Masked<false>(cols, parts, PartitionTrk1, PartitionTrk2, colBinningMultPercentile);
+        break;
       case femtodreamcollision::kMultMultPercentile:
         doMixedEvent_Masked<false>(cols, parts, PartitionTrk1, PartitionTrk2, colBinningMultMultPercentile);
+        break;
       default:
         LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
     }
@@ -429,30 +449,36 @@ struct femtoDreamPairTaskTrackTrack {
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// @param parts subscribe to joined table FemtoDreamParticles and FemtoDreamMCLables to access Monte Carlo truth
   /// @param FemtoDreamMCParticles subscribe to the Monte Carlo truth table
-  void processMixedEventMC(o2::aod::FDCollisions& cols, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
+  void processMixedEventMC(FilteredCollisions& cols, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
   {
     switch (ConfMixingPolicy.value) {
       case femtodreamcollision::kMult:
         doMixedEvent_NotMasked<true>(cols, parts, PartitionMCTrk1, PartitionMCTrk2, colBinningMult);
+        break;
       case femtodreamcollision::kMultPercentile:
         doMixedEvent_NotMasked<true>(cols, parts, PartitionMCTrk1, PartitionMCTrk2, colBinningMultPercentile);
+        break;
       case femtodreamcollision::kMultMultPercentile:
         doMixedEvent_NotMasked<true>(cols, parts, PartitionMCTrk1, PartitionMCTrk2, colBinningMultMultPercentile);
+        break;
       default:
         LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
     }
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processMixedEventMC, "Enable processing mixed events MC", false);
 
-  void processMixedEventMCMasked(MaskedCollisions& cols, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
+  void processMixedEventMCMasked(FilteredMaskedCollisions& cols, soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts, o2::aod::FDMCParticles&)
   {
     switch (ConfMixingPolicy.value) {
       case femtodreamcollision::kMult:
         doMixedEvent_Masked<true>(cols, parts, PartitionMCTrk1, PartitionMCTrk2, colBinningMult);
+        break;
       case femtodreamcollision::kMultPercentile:
         doMixedEvent_Masked<true>(cols, parts, PartitionMCTrk1, PartitionMCTrk2, colBinningMultPercentile);
+        break;
       case femtodreamcollision::kMultMultPercentile:
         doMixedEvent_Masked<true>(cols, parts, PartitionMCTrk1, PartitionMCTrk2, colBinningMultMultPercentile);
+        break;
       default:
         LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
     }
