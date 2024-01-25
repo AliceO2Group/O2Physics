@@ -994,7 +994,6 @@ DECLARE_SOA_COLUMN(XDecayVtxV0, xDecayVtxV0, float);
 DECLARE_SOA_COLUMN(YDecayVtxV0, yDecayVtxV0, float);
 DECLARE_SOA_COLUMN(ZDecayVtxV0, zDecayVtxV0, float);
 DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t); // sign of pi <- xi
-DECLARE_SOA_COLUMN(Chi2PCACharmBaryon, chi2PCACharmBaryon, float);
 DECLARE_SOA_COLUMN(CovVtxCharmBaryon0, covVtxCharmBaryon0, float);
 DECLARE_SOA_COLUMN(CovVtxCharmBaryon1, covVtxCharmBaryon1, float);
 DECLARE_SOA_COLUMN(CovVtxCharmBaryon2, covVtxCharmBaryon2, float);
@@ -1092,7 +1091,6 @@ DECLARE_SOA_TABLE(HfCandToXiPi, "AOD", "HFCANDTOXIPI",
                   hf_cand_toxipi::XDecayVtxCascade, hf_cand_toxipi::YDecayVtxCascade, hf_cand_toxipi::ZDecayVtxCascade,
                   hf_cand_toxipi::XDecayVtxV0, hf_cand_toxipi::YDecayVtxV0, hf_cand_toxipi::ZDecayVtxV0,
                   hf_cand_toxipi::SignDecay, // charge pi<-cascade (neg -> omegac, pos -> antiomegac)
-                  hf_cand_toxipi::Chi2PCACharmBaryon,
                   hf_cand_toxipi::CovVtxCharmBaryon0, hf_cand_toxipi::CovVtxCharmBaryon1, hf_cand_toxipi::CovVtxCharmBaryon2, hf_cand_toxipi::CovVtxCharmBaryon3, hf_cand_toxipi::CovVtxCharmBaryon4, hf_cand_toxipi::CovVtxCharmBaryon5,
                   hf_cand_toxipi::PxCharmBaryon, hf_cand_toxipi::PyCharmBaryon, hf_cand_toxipi::PzCharmBaryon,
                   hf_cand_toxipi::PxCasc, hf_cand_toxipi::PyCasc, hf_cand_toxipi::PzCasc,
