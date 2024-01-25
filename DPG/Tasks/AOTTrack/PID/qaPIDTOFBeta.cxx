@@ -47,6 +47,7 @@ struct tofPidBetaQa {
   ConfigurableAxis tofMassBins{"tofMassBins", {1000, 0, 3.f}, "Binning in the TOF mass plot"};
   ConfigurableAxis tofBetaBins{"tofBetaBins", {4000, 0, 2.f}, "Binning in the TOF beta plot"};
   ConfigurableAxis trackLengthBins{"trackLengthBins", {100, 0, 1000.f}, "Binning in track length plot"};
+  Configurable<bool> requireGoodMatchTracks{"requireGoodMatchTracks", false, "Require good match tracks"};
 
   void init(o2::framework::InitContext&)
   {
@@ -58,6 +59,7 @@ struct tofPidBetaQa {
     const AxisSpec etaAxis{100, -2, 2, "#it{#eta}"};
     const AxisSpec colTimeAxis{100, -2000, 2000, "Collision time (ps)"};
     const AxisSpec lAxis{trackLengthBins, "Track length (cm)"};
+    const AxisSpec tofChi2Axis{1000, 0, 20, "TOF residual (cm)"};
     const AxisSpec ptResoAxis{100, 0, 0.1, "#sigma_{#it{p}_{T}}"};
     const AxisSpec pAxisPosNeg{2 * nBinsP, -maxP, maxP, "#it{p}/z (GeV/#it{c})"};
     AxisSpec ptAxis{nBinsP, minP, maxP, "#it{p}_{T} (GeV/#it{c})"};
@@ -173,6 +175,7 @@ struct tofPidBetaQa {
       }
     }
 
+    histos.add("event/tofchi2", "", HistType::kTH1F, {tofChi2Axis});
     histos.add("event/eta", "", HistType::kTH1F, {etaAxis});
     histos.add("event/length", "", HistType::kTH1F, {lAxis});
     if (splitTrdTracks) {
@@ -190,6 +193,7 @@ struct tofPidBetaQa {
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
     h->GetXaxis()->SetBinLabel(2, "hasTOF");
     h->GetXaxis()->SetBinLabel(3, "isGlobalTrack");
+    h->GetXaxis()->SetBinLabel(4, "goodTOFMatch");
   }
 
   Filter eventFilter = (applyEvSel.node() == 0) ||
@@ -205,7 +209,8 @@ struct tofPidBetaQa {
   using CollisionCandidate = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
                                     aod::pidTOFbeta, aod::pidTOFmass,
-                                    aod::pidEvTimeFlags, aod::TOFSignal, aod::TOFEvTime>;
+                                    aod::pidEvTimeFlags, aod::TOFSignal, aod::TOFEvTime,
+                                    aod::pidTOFFlags>;
   void process(CollisionCandidate const& collision,
                soa::Filtered<TrackCandidates> const& tracks)
   {
@@ -239,6 +244,11 @@ struct tofPidBetaQa {
         continue;
       }
       histos.fill(HIST("event/trackselection"), 3.f);
+      if (requireGoodMatchTracks.value && !track.goodTOFMatch()) { // Skipping tracks without good match
+        continue;
+      }
+      histos.fill(HIST("event/trackselection"), 4.f);
+
       if (splitSignalPerCharge) {
         histos.fill(HIST("tofmass/inclusive"), track.p(), track.mass(), track.sign());
         histos.fill(HIST("tofbeta/inclusive"), track.p(), track.beta(), track.sign());
@@ -283,6 +293,7 @@ struct tofPidBetaQa {
         }
       }
       histos.fill(HIST("event/length"), track.length());
+      histos.fill(HIST("event/tofchi2"), track.tofChi2());
       histos.fill(HIST("event/eta"), track.eta());
       histos.fill(HIST("event/tofsignal"), track.p(), track.tofSignal());
       histos.fill(HIST("event/pt"), track.pt());
