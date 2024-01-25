@@ -57,7 +57,7 @@ struct hJetAnalysis {
                              {{"hNtrig", "number of triggers;trigger type;entries", {HistType::kTH1F, {{2, 0, 2}}}},
                               {"hPtTrack", "Track p_{T};p_{T};entries", {HistType::kTH1F, {{100, 0, 100}}}},
                               {"hEtaTrack", "Track #eta;#eta;entries", {HistType::kTH1F, {{20, -1, 1}}}},
-                              {"hPhiTrack", "Track #phi;#phi;entries", {HistType::kTH1F, {{200, -3.2, 6.4}}}},
+                              {"hPhiTrack", "Track #phi;#phi;entries", {HistType::kTH1F, {{200, -M_PI, 2 * M_PI}}}},
                               {"hReferencePtDPhi", "jet p_{T} vs DPhi;p_{T,jet};#Delta#phi", {HistType::kTH2F, {{150, 0, 150}, {100, M_PI - 0.6, M_PI}}}},
                               {"hSignalPtDPhi", "jet p_{T} vs DPhi;p_{T,jet};#Delta#phi", {HistType::kTH2F, {{150, 0, 150}, {100, M_PI - 0.6, M_PI}}}},
                               {"hReferencePt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{150, 0, 150}}}},
@@ -69,7 +69,12 @@ struct hJetAnalysis {
                               {"hJetSignalConstituentMultiplicity", "jet constituent multiplicity;p_{T,jet};#Delta#phi;N_{constituents}", {HistType::kTH3F, {{150, 0, 150}, {100, M_PI - 0.6, M_PI}, {50, 0, 50}}}},
                               {"hJetReferenceConstituentMultiplicity", "jet constituent multiplicity;p_{T,jet};#Delta#phi;N_{constituents}", {HistType::kTH3F, {{150, 0, 150}, {100, M_PI - 0.6, M_PI}, {50, 0, 50}}}},
                               {"hJetSignalConstituentPt", "jet constituent p_{T};p_{T,jet};#Delta#phi;p_{T,constituent}", {HistType::kTH3F, {{150, 0, 150}, {100, M_PI - 0.6, M_PI}, {150, 0, 150}}}},
-                              {"hJetReferenceConstituentPt", "jet constituent p_{T};p_{T,jet};#Delta#phi;p_{T,constituent}", {HistType::kTH3F, {{150, 0, 150}, {100, M_PI - 0.6, M_PI}, {150, 0, 150}}}}}};
+                              {"hJetReferenceConstituentPt", "jet constituent p_{T};p_{T,jet};#Delta#phi;p_{T,constituent}", {HistType::kTH3F, {{150, 0, 150}, {100, M_PI - 0.6, M_PI}, {150, 0, 150}}}},
+                              {"hSigEventTriggers", "N_{triggers};events", {HistType::kTH1F, {{10, 0, 10}}}},
+                              {"hRefEventTriggers", "N_{triggers};events", {HistType::kTH1F, {{10, 0, 10}}}},
+                              {"hJetPt", "jet p_{T};p_{T,jet};entries", {HistType::kTH1F, {{150, 0, 150}}}},
+                              {"hJetEta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{20, -1, 1}}}},
+                              {"hJetPhi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{200, -M_PI, 2 * M_PI}}}}}};
 
   void init(InitContext const&) {}
 
@@ -119,14 +124,19 @@ struct hJetAnalysis {
       if (is_sig_col) {
         registry.fill(HIST("hNtrig"), 1.5);
         registry.fill(HIST("hJetSignalMultiplicity"), jets.size());
+        registry.fill(HIST("hSigEventTriggers"), n_TT);
       }
       if (!is_sig_col) {
         registry.fill(HIST("hNtrig"), 0.5);
         registry.fill(HIST("hJetReferenceMultiplicity"), jets.size());
+        registry.fill(HIST("hRefEventTriggers"), n_TT);
       }
     }
 
     for (auto& jet : jets) {
+      registry.fill(HIST("hJetPt"), jet.pt());
+      registry.fill(HIST("hJetEta"), jet.eta());
+      registry.fill(HIST("hJetPhi"), jet.phi());
       if (n_TT > 0) {
         float dphi = dPhi(jet.phi(), phi_TT);
         if (is_sig_col && std::abs(dphi) > M_PI - 0.6) {
