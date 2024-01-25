@@ -207,10 +207,10 @@ struct hypertriton3bodyAnalysisMc {
       {"hProtonTPCVsPt", "hProtonTPCVsPt", {HistType::kTH2F, {{50, 0.0f, 5.0f, "#it{p}_{T} (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
       {"hPionTPCVsPt", "hPionTPCVsPt", {HistType::kTH2F, {{20, 0.0f, 2.0f, "#it{p}_{T} (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
       {"hDeuteronTPCVsPt", "hDeuteronTPCVsPt", {HistType::kTH2F, {{80, 0.0f, 8.0f, "#it{p}_{T} (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
-      {"hDeuteronTOFVsPBeforeTOFCut", "hDeuteronTOFVsPBeforeTOFCut", {HistType::kTH2F, {{160, -8.0f, 8.0f, "p/z (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
-      {"hDeuteronTOFVsPBeforeTOFCutSig", "hDeuteronTOFVsPBeforeTOFCutSig", {HistType::kTH2F, {{160, -8.0f, 8.0f, "p/z (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
-      {"hDeuteronTOFVsPAtferTOFCut", "hDeuteronTOFVsPAtferTOFCut", {HistType::kTH2F, {{160, -8.0f, 8.0f, "p/z (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
-      {"hDeuteronTOFVsPAtferTOFCutSig", "hDeuteronTOFVsPAtferTOFCutSig", {HistType::kTH2F, {{160, -8.0f, 8.0f, "p/z (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
+      {"hDeuteronTOFVsPBeforeTOFCut", "hDeuteronTOFVsPBeforeTOFCut", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TPC n#sigma"}}}},
+      {"hDeuteronTOFVsPBeforeTOFCutSig", "hDeuteronTOFVsPBeforeTOFCutSig", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TPC n#sigma"}}}},
+      {"hDeuteronTOFVsPAtferTOFCut", "hDeuteronTOFVsPAtferTOFCut", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TPC n#sigma"}}}},
+      {"hDeuteronTOFVsPAtferTOFCutSig", "hDeuteronTOFVsPAtferTOFCutSig", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TPC n#sigma"}}}},
 
       {"hDalitz", "hDalitz", {HistType::kTH2F, {{120, 7.85, 8.45, "M^{2}(dp) (GeV^{2}/c^{4})"}, {60, 1.1, 1.4, "M^{2}(p#pi) (GeV^{2}/c^{4})"}}}},
       {"h3dMassHypertriton", "h3dMassHypertriton", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {80, 2.96f, 3.04f, "Inv. Mass (GeV/c^{2})"}}}},
@@ -595,7 +595,7 @@ struct hypertriton3bodyTrackMcinfo {
       {"hDauPionNsigmaPion", "hDauPionNsigmaPion", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
       {"hDauPionTPCVsPt", "hDauPionTPCVsPt", {HistType::kTH2F, {{20, 0.0f, 2.0f, "#it{p}_{T} (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
 
-      {"hDeuteronCount", "hDeuteronCount", {HistType::kTH1F, {{6, 0.0f, 6.0f}}}},
+      {"hDeuteronCount", "hDeuteronCount", {HistType::kTH1F, {{7, 0.0f, 7.0f}}}},
       {"hDeuteronPt", "hDeuteronPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hDeuteronP", "hDeuteronP", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hDeuteronMcPt", "hDeuteronMcPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
@@ -609,6 +609,8 @@ struct hypertriton3bodyTrackMcinfo {
       {"hDauDeuteronPt", "hDauDeuteronPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hDauDeuteronMcPt", "hDauDeuteronMcPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hDauDeuteronTPCVsPt", "hDauDeuteronTPCVsPt", {HistType::kTH2F, {{80, 0.0f, 8.0f, "#it{p}_{T} (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
+      {"hDauDeuteronTOFNSigmaVsP", "hDauDeuteronTOFNSigmaVsP", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {200, -100.0f, 100.0f, "TPC n#sigma"}}}},
+      {"hDauDeuteronTOFNSigmaVsPifhasTOF", "hDauDeuteronTOFNSigmaVsPifhasTOF", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {200, -100.0f, 100.0f, "TPC n#sigma"}}}},
 
       {"hTPCBB", "hTPCBB", {HistType::kTH2F, {{120, -8.0f, 8.0f, "p/z(GeV/c)"}, {100, 0.0f, 1000.0f, "TPCSignal"}}}},
 
@@ -628,25 +630,14 @@ struct hypertriton3bodyTrackMcinfo {
     registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(6, "McisPion");
     registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(7, "McisDeuteron");
 
-    registry.get<TH1>(HIST("hProtonCount"))->GetXaxis()->SetBinLabel(1, "hasMom");
-    registry.get<TH1>(HIST("hProtonCount"))->GetXaxis()->SetBinLabel(2, "FromHypertriton");
-    registry.get<TH1>(HIST("hProtonCount"))->GetXaxis()->SetBinLabel(3, "TPCNcls");
-    registry.get<TH1>(HIST("hProtonCount"))->GetXaxis()->SetBinLabel(4, "Eta");
-    registry.get<TH1>(HIST("hProtonCount"))->GetXaxis()->SetBinLabel(5, "Pt");
-    registry.get<TH1>(HIST("hProtonCount"))->GetXaxis()->SetBinLabel(6, "TPCPID");
-    registry.get<TH1>(HIST("hPionCount"))->GetXaxis()->SetBinLabel(1, "hasMom");
-    registry.get<TH1>(HIST("hPionCount"))->GetXaxis()->SetBinLabel(2, "FromHypertriton");
-    registry.get<TH1>(HIST("hPionCount"))->GetXaxis()->SetBinLabel(3, "TPCNcls");
-    registry.get<TH1>(HIST("hPionCount"))->GetXaxis()->SetBinLabel(4, "Eta");
-    registry.get<TH1>(HIST("hPionCount"))->GetXaxis()->SetBinLabel(5, "Pt");
-    registry.get<TH1>(HIST("hPionCount"))->GetXaxis()->SetBinLabel(6, "TPCPID");
+    TString TrackCounterbinLabel[6] = {"hasMom", "FromHypertriton", "TPCNcls", "Eta", "Pt", "TPCPID"};
+    for (int i{0}; i < 6; i++) {
+      registry.get<TH1>(HIST("hProtonCount"))->GetXaxis()->SetBinLabel(i + 1, TrackCounterbinLabel[i]);
+      registry.get<TH1>(HIST("hPionCount"))->GetXaxis()->SetBinLabel(i + 1, TrackCounterbinLabel[i]);
+      registry.get<TH1>(HIST("hDeuteronCount"))->GetXaxis()->SetBinLabel(i + 1, TrackCounterbinLabel[i]);
+    }
     registry.get<TH1>(HIST("hPionCount"))->GetXaxis()->SetBinLabel(7, "DcatoPV");
-    registry.get<TH1>(HIST("hDeuteronCount"))->GetXaxis()->SetBinLabel(1, "hasMom");
-    registry.get<TH1>(HIST("hDeuteronCount"))->GetXaxis()->SetBinLabel(2, "FromHypertriton");
-    registry.get<TH1>(HIST("hDeuteronCount"))->GetXaxis()->SetBinLabel(3, "TPCNcls");
-    registry.get<TH1>(HIST("hDeuteronCount"))->GetXaxis()->SetBinLabel(4, "Eta");
-    registry.get<TH1>(HIST("hDeuteronCount"))->GetXaxis()->SetBinLabel(5, "Pt");
-    registry.get<TH1>(HIST("hDeuteronCount"))->GetXaxis()->SetBinLabel(6, "TPCPID");
+    registry.get<TH1>(HIST("hDeuteronCount"))->GetXaxis()->SetBinLabel(7, "hasTOF");
     registry.get<TH1>(HIST("hDuplicatedH3LDaughers"))->GetXaxis()->SetBinLabel(1, "proton");
     registry.get<TH1>(HIST("hDuplicatedH3LDaughers"))->GetXaxis()->SetBinLabel(2, "pion");
     registry.get<TH1>(HIST("hDuplicatedH3LDaughers"))->GetXaxis()->SetBinLabel(3, "deuteron");
@@ -845,6 +836,10 @@ struct hypertriton3bodyTrackMcinfo {
             registry.fill(HIST("hDauDeuteronPt"), track.pt());
             registry.fill(HIST("hDauDeuteronMcPt"), mcparticle.pt());
             registry.fill(HIST("hDauDeuteronTPCVsPt"), track.pt(), track.tpcNSigmaDe());
+            registry.fill(HIST("hDauDeuteronTOFNSigmaVsP"), track.sign() * track.p(), track.tofNSigmaDe());
+            if (track.hasTOF()) {
+              registry.fill(HIST("hDauDeuteronTOFNSigmaVsPifhasTOF"), track.sign() * track.p(), track.tofNSigmaDe());
+            }
             if (track.tpcNClsCrossedRows() < 70) {
               continue;
             }
@@ -861,6 +856,10 @@ struct hypertriton3bodyTrackMcinfo {
               continue;
             }
             registry.fill(HIST("hDeuteronCount"), 5.5);
+            if (track.hasTOF()) {
+              continue;
+            }
+            registry.fill(HIST("hDeuteronCount"), 6.5);
           }
         }
 

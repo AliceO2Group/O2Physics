@@ -849,7 +849,7 @@ struct hypertriton3bodyFinder {
 
     DecayFinder<FullTracksExtIU>(collision, ptracks, ntracks, goodtracks);
   }
-  PROCESS_SWITCH(hypertriton3bodyFinder, processData, "Produce StoredVtx3BodyDatas with data", false);
+  PROCESS_SWITCH(hypertriton3bodyFinder, processData, "Produce StoredVtx3BodyDatas with data", true);
 
   void processCFFilteredData(aod::Collisions const& collisions, aod::CFFilters const& cffilters, aod::V0GoodPosTracks const& Ptracks, aod::V0GoodNegTracks const& Ntracks, aod::V0GoodTracks const& Goodtracks, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
@@ -872,7 +872,7 @@ struct hypertriton3bodyFinder {
       DecayFinder<FullTracksExtIU>(collision, ptracks, ntracks, goodtracks);
     }
   }
-  PROCESS_SWITCH(hypertriton3bodyFinder, processCFFilteredData, "Produce StoredVtx3BodyDatas with data using CFtriggers", true);
+  PROCESS_SWITCH(hypertriton3bodyFinder, processCFFilteredData, "Produce StoredVtx3BodyDatas with data using CFtriggers", false);
 
   void processMC(aod::Collision const& collision, aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks, aod::V0GoodTracks const& goodtracks, aod::McParticles const& mcparticles, FullTracksExtMCIU const&, aod::BCsWithTimestamps const&)
   {
@@ -1075,7 +1075,10 @@ struct hypertriton3bodyComparewithDecay3body {
   HistogramRegistry registry{
     "registry",
     {
-      {"hCheckCounter", "hCheckCounter", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
+      {"hTestCounter", "hTestCounter", {HistType::kTH1F, {{8, 0.0f, 8.0f}}}},
+      {"hMotherCounter", "hMotherCounter", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
+      {"hCheckCounter", "hCheckCounter", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
+      {"hHypertritonMCPtTotal", "hHypertritonMCPtTotal", {HistType::kTH1F, {{20, 0.0f, 10.0f}}}},
       {"hHypertritonMCPt", "hHypertritonMCPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"hAntiHypertritonMCPt", "hAntiHypertritonMCPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"hHypertritonMCMass", "hHypertritonMCMass", {HistType::kTH1F, {{40, 2.95f, 3.05f}}}},
@@ -1088,53 +1091,97 @@ struct hypertriton3bodyComparewithDecay3body {
 
   void init(InitContext const&)
   {
-    registry.get<TH1>(HIST("hCheckCounter"))->GetXaxis()->SetBinLabel(1, "Sig in Decay3body");
-    registry.get<TH1>(HIST("hCheckCounter"))->GetXaxis()->SetBinLabel(2, "Sig SameCol");
-    registry.get<TH1>(HIST("hCheckCounter"))->GetXaxis()->SetBinLabel(3, "Sig contained by finder");
-    registry.get<TH1>(HIST("hCheckCounter"))->GetXaxis()->SetBinLabel(4, "Sig SameIndex");
+    registry.get<TH1>(HIST("hCheckCounter"))->GetXaxis()->SetBinLabel(1, "Total");
+    registry.get<TH1>(HIST("hCheckCounter"))->GetXaxis()->SetBinLabel(2, "Sig in Decay3body");
+    registry.get<TH1>(HIST("hCheckCounter"))->GetXaxis()->SetBinLabel(3, "Sig SameCol");
+    registry.get<TH1>(HIST("hCheckCounter"))->GetXaxis()->SetBinLabel(4, "Sig contained by finder");
+    registry.get<TH1>(HIST("hCheckCounter"))->GetXaxis()->SetBinLabel(5, "Sig SameIndex");
   }
+  struct Indexdaughters { // check duplicated paired daughters
+    int64_t index0;
+    int64_t index1;
+    int64_t index2;
+    bool operator==(const Indexdaughters& t) const
+    {
+      return (this->index0 == t.index0 && this->index1 == t.index1 && this->index2 == t.index2);
+    }
+  };
 
   void processDoNotCompare(aod::Collisions::iterator const& collision)
   {
     // dummy process function - should not be required in the future
   }
-  PROCESS_SWITCH(hypertriton3bodyComparewithDecay3body, processDoNotCompare, "Do not do comparison with MC", true);
+  PROCESS_SWITCH(hypertriton3bodyComparewithDecay3body, processDoNotCompare, "Do not do comparison", true);
 
-  void processComparison(aod::Decay3Bodys const& decay3bodytable, soa::Join<aod::Vtx3BodyDatas, aod::McVtx3BodyLabels> const& vtx3bodydatas, LabeledTracks const&, aod::McParticles const& particlesMC)
+  void processDoComparison(aod::Decay3Bodys const& decay3bodytable, soa::Join<aod::Vtx3BodyDatas, aod::McVtx3BodyLabels> const& vtx3bodydatas, LabeledTracks const&, aod::McParticles const& particlesMC)
   {
+    std::vector<Indexdaughters> set_pair;
     for (auto d3body : decay3bodytable) {
+      registry.fill(HIST("hCheckCounter"), 0.5);
+      registry.fill(HIST("hTestCounter"), 0.5);
       auto lTrack0 = d3body.track0_as<LabeledTracks>();
       auto lTrack1 = d3body.track1_as<LabeledTracks>();
       auto lTrack2 = d3body.track2_as<LabeledTracks>();
       if (!lTrack0.has_mcParticle() || !lTrack1.has_mcParticle() || !lTrack2.has_mcParticle()) {
         continue;
       }
+      registry.fill(HIST("hTestCounter"), 1.5);
       auto lMCTrack0 = lTrack0.mcParticle_as<aod::McParticles>();
       auto lMCTrack1 = lTrack1.mcParticle_as<aod::McParticles>();
       auto lMCTrack2 = lTrack2.mcParticle_as<aod::McParticles>();
+      /*if (lMCTrack0.isPhysicalPrimary() || lMCTrack1.isPhysicalPrimary() || lMCTrack2.isPhysicalPrimary()) {
+        continue;
+      }*/
+      /*if (lMCTrack0.producedByGenerator() || lMCTrack1.producedByGenerator() || lMCTrack2.producedByGenerator()) {
+        continue;
+      }*/
+      registry.fill(HIST("hTestCounter"), 2.5);
+
       if (!lMCTrack0.has_mothers() || !lMCTrack1.has_mothers() || !lMCTrack2.has_mothers()) {
         continue;
       }
+      registry.fill(HIST("hTestCounter"), 3.5);
 
       int lPDG = -1;
       float lPt = -1;
-      bool is3bodyDecay = false;
+      bool is3bodyDecayedH3L = false;
       int lGlobalIndex = -1;
+      int nmother = 0, dummyindex;
+      for (auto& lMother0 : lMCTrack0.mothers_as<aod::McParticles>()) {
+        ++nmother;
+        dummyindex = lMother0.globalIndex();
+      }
+      registry.fill(HIST("hMotherCounter"), nmother);
+      nmother = 0;
+      for (auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
+        ++nmother;
+        dummyindex = lMother1.globalIndex();
+      }
+      registry.fill(HIST("hMotherCounter"), nmother);
+      nmother = 0;
+      for (auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
+        ++nmother;
+        dummyindex = lMother2.globalIndex();
+      }
+      registry.fill(HIST("hMotherCounter"), nmother);
+
       for (auto& lMother0 : lMCTrack0.mothers_as<aod::McParticles>()) {
         for (auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
           for (auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
-            if (lMother0.globalIndex() == lMother1.globalIndex() && lMother0.globalIndex() == lMother2.globalIndex()) {
+          registry.fill(HIST("hTestCounter"), 4.5);
+            if (lMother0.globalIndex() == lMother1.globalIndex() && lMother0.globalIndex() == lMother2.globalIndex()) { // vtxs with the same mother
+          registry.fill(HIST("hTestCounter"), 7.5);
               lGlobalIndex = lMother1.globalIndex();
               lPDG = lMother1.pdgCode();
               lPt = lMother1.pt();
               if (lPDG == 1010010030 && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == 1000010020) {
-                is3bodyDecay = true; // vtxs with the same mother
+                is3bodyDecayedH3L = true;
                 double hypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
                 registry.fill(HIST("hHypertritonMCPt"), lPt);
                 registry.fill(HIST("hHypertritonMCMass"), hypertritonMCMass);
               }
               if (lPDG == -1010010030 && lMCTrack0.pdgCode() == 211 && lMCTrack1.pdgCode() == -2212 && lMCTrack2.pdgCode() == -1000010020) {
-                is3bodyDecay = true; // vtxs with the same mother
+                is3bodyDecayedH3L = true;
                 double antiHypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron});
                 registry.fill(HIST("hAntiHypertritonMCPt"), lPt);
                 registry.fill(HIST("hAntiHypertritonMCMass"), antiHypertritonMCMass);
@@ -1144,16 +1191,31 @@ struct hypertriton3bodyComparewithDecay3body {
         }
       } // end association check
 
-      if (!is3bodyDecay || std::abs(lPDG) != 1010010030) {
+      if (!is3bodyDecayedH3L) {
         continue;
       }
 
-      registry.fill(HIST("hCheckCounter"), 0.5);
+      registry.fill(HIST("hCheckCounter"), 1.5);
+      registry.fill(HIST("hTestCounter"), 5.5);
+      // for check
+      registry.fill(HIST("hHypertritonMCPtTotal"), lPt);
+      /*if ( (lPt >= 3.5 && lPt < 4.0) || (lPt >= 8.5 && lPt < 9.0) )  {
+        std::cout << "---------------------- Num:" << registry.get<TH1>(HIST("hCheckCounter"))->GetBinContent(1) << "-----------------------------" << std::endl;
+        std::cout << "track0Pt=" << lMCTrack0.pt() << " track1Pt=" << lMCTrack1.pt() << " track2Pt=" << lMCTrack2.pt() << std::endl;
+        std::cout << "MotherTrackPt=" << lPt << std::endl; 
+      }*/
+
+      Indexdaughters temp = {lMCTrack0.globalIndex(), lMCTrack1.globalIndex(), lMCTrack2.globalIndex()};
+      auto p = std::find(set_pair.begin(), set_pair.end(), temp);
+      if (p == set_pair.end()) {
+        set_pair.push_back(temp);
+        registry.fill(HIST("hTestCounter"), 6.5);
+      }
 
       if (lTrack0.collisionId() != lTrack1.collisionId() || lTrack0.collisionId() != lTrack2.collisionId()) {
         continue;
       }
-      registry.fill(HIST("hCheckCounter"), 1.5);
+      registry.fill(HIST("hCheckCounter"), 2.5);
 
       for (auto vtx : vtx3bodydatas) {
         if (vtx.mcParticleId() == -1) {
@@ -1161,9 +1223,9 @@ struct hypertriton3bodyComparewithDecay3body {
         }
         auto mcparticle = vtx.mcParticle_as<aod::McParticles>();
         if (mcparticle.globalIndex() == lGlobalIndex) {
-          registry.fill(HIST("hCheckCounter"), 3.5);
+          registry.fill(HIST("hCheckCounter"), 4.5); // rare case check: if motherId matches but daughters not
           if (lTrack0.globalIndex() == vtx.track0Id() && lTrack1.globalIndex() == vtx.track1Id() && lTrack2.globalIndex() == vtx.track2Id()) {
-            registry.fill(HIST("hCheckCounter"), 2.5);
+            registry.fill(HIST("hCheckCounter"), 3.5);
             if (lPDG > 0) {
               registry.fill(HIST("hPairedHypertritonMCPt"), lPt);
             } else {
@@ -1175,7 +1237,7 @@ struct hypertriton3bodyComparewithDecay3body {
       }
     }
   }
-  PROCESS_SWITCH(hypertriton3bodyComparewithDecay3body, processComparison, "Do not do comparison with MC", true);
+  PROCESS_SWITCH(hypertriton3bodyComparewithDecay3body, processDoComparison, "Compare decay3bodys and finder method with MC", true);
 };
 
 struct hypertriton3bodyInitializer {
