@@ -103,7 +103,7 @@ using JetTrackTagTC = JetTracksTagTC::iterator;
     DECLARE_SOA_COLUMN(VecSignedIP2Ds, vecSignedIP2Ds, std::vector<float>); \
     DECLARE_SOA_COLUMN(VecSignedIP3D, vecSignedIP3D, std::vector<float>);   \
     DECLARE_SOA_COLUMN(VecSignedIP3Ds, vecSignedIP3Ds, std::vector<float>); \
-  } // namespace _name_##storedjettag
+  } // namespace _name_
 
 #define STOREDJETTAG_TABLE_DEF(_jet_type_, _name_, _description_)         \
   DECLARE_SOA_TABLE(Stored##_jet_type_##Tags, "AOD", _description_ "SJT", \
