@@ -53,45 +53,20 @@ struct UpcTauCentralBarrelRL {
 	HistogramRegistry histos{
 		"histos",
 		{
-            {"Meta/hEffectOfSelectionsElEl", "Effect of cuts;Selection (-);Number of events (-)", { HistType::kTH1D, { {20,-0.5,19.5} } } },
-            {"Meta/hEffectOfSelectionsElMupi", "Effect of cuts;Selection (-);Number of events (-)", { HistType::kTH1D, { {20,-0.5,19.5} } } },
-			{"Meta/hEffectOfTrackSelectionExtensions", "Effect of track cuts;Selection (-);Number of tracks (-)", { HistType::kTH1D, { {20,-0.5,19.5} } } },
-			{"Meta/hCumulativeEffectOfTrackSelectionExtensions", "Effect of track cuts;Selection (-);Number of tracks (-)", { HistType::kTH1D, { {20,-0.5,19.5} } } },
-			{"Meta/hPDGcodes", ";PDG codes (-);Number of events (-)", { HistType::kTH1D, { {6001,-3000.,3000.} } } },
-			{"Meta/hPDGcodesOthers", ";PDG codes (-);Number of events (-)", { HistType::kTH1D, { {6001,-3000.,3000.} } } },
             {"Events/hCountCollisions", ";ůNumber of analysed collision (-)", { HistType::kTH1D, { {10,0.5,10.5} } } },
-			{"Events/hNgeneratedParticles", ";Number of particles in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
 			{"Events/hNreconstructedTracks", ";Number of tracks in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
-			{"Events/hNgeneratedElectrons", ";Number of electrons in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
-			{"Events/hNgeneratedPrimaryElectrons", ";Number of primary electrons from mother decay in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
-			{"Events/hNgeneratedPrimaryMuons", ";Number of primary muons from mother decay in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
-			{"Events/hNgeneratedPrimaryPions", ";Number of primary pions from mother decay in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
-			{"Events/hNgeneratedPrimaryOthers", ";Number of primary NOT electron/muon/pion particles from mother decay in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
-			{"Events/hNproducedByGeneratorElectrons", ";Number of generator produced electrons from mother decay in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
-			{"Events/hNreconstructedCollisions", ";Number of asociated reconstructed collisions in a generated collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
-			{"Events/hNgeneratedPrimary", ";Number of primary particles from mother decay in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
-			{"Events/hNgeneratedNotPrimary", ";Number of NOT primary particles from mother decay in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
-			{"Events/hNgeneratedParticlesWithRecoColl", ";Number of generated particles in a reconstructed collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
-			{"Events/hNgeneratedElectronsWithRecoColl", ";Number of generated electrons in a reconstructed collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
-			{"Events/hNgeneratedPrimaryElectronsWithRecoColl", ";Number of generated primary electrons from mother decay in a reconstructed collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
 			{"Events/hNreconstructedPVGTelectrons", ";Number of good track electrons from primary vertex in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
 			{"Events/hNreconstructedPVGTmuons", ";Number of good track muons from primary vertex in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
 			{"Events/hNreconstructedPVGTpions", ";Number of good track pions from primary vertex in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
 			{"Events/hNreconstructedPVGTothers", ";Number of good track NOT electron/muon/pion particles from primary vertex in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
 			{"Events/hNreconstructedPVGT", ";Number of good track particles from primary vertex in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
 			{"Events/hNreconstructedNotPVGT", ";Number of good track particles from NOT primary vertex in a collision (-);Number of events (-)", { HistType::kTH1D, { {30,-0.5,29.5} } } },
-			{"Events/hVtxZ", ";Vertex z-position (cm);Number of events (-)", { HistType::kTH1D, { {1000,-30.,30.} } } },
-			{"Events/hVtxZrecToGen", ";Vertex z-position: (reconstructed collision) - (generated collisions) (cm);Number of events (-)", { HistType::kTH1D, { {1000,-.5,.5} } } },
-			{"Events/hVtxTransversal", ";Vertex x-position (cm);Vertex y-position (cm)", { HistType::kTH2D, { {1000,-0.1,0.1}, {1000,-0.1,0.1} } } },
 			{"Events/hChannelsRatio", ";Channels (-);Branching Ratio (-)", { HistType::kTH1D, { {10,-0.5,9.5} } } }
 		}
 	};
 	HistogramRegistry histosPID{
 		"histosPID",
 		{
-			{"Tracks/raw/PID/hTrackPIDvsMCtruth", "All tracks (with has_mcparticle);track PID based on TPC and/or TOF;MC truth information", { HistType::kTH2F, { {6,-1.5,4.5}, {6,-1.5,4.5} } } },
-			{"Tracks/raw/PID/hTPCshift", ";TPC nSigma shift (a.u.);Number of events (-)", { HistType::kTH1D, { {2200,-1100.,1100.} } } },
-			{"Tracks/raw/PID/hTPCshiftDetail", ";TPC nSigma shift (a.u.);Number of events (-)", { HistType::kTH1D, { {200,-10.,10.} } } },
 			{"Tracks/raw/PID/hTPCsignalVsZ", "All tracks;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {200,-20.,20.}, {200,0.,200} } } },
 			{"Tracks/raw/PID/hTPCsignalVsP", "All tracks;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,0.,200} } } },
 			{"Tracks/raw/PID/hTPCsignalVsPt", "All tracks;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,0.,200} } } },
@@ -107,25 +82,11 @@ struct UpcTauCentralBarrelRL {
 			{"Tracks/raw/PID/NegCharge/hTPCsignalVsPt", "Negatively charged track;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,0.,200} } } },
 			{"Tracks/raw/PID/NegCharge/hTPCsignalVsEta", "Negatively charged track;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {500,-2.,2.} , {200,0.,200} } } },
 			{"Tracks/raw/PID/NegCharge/hTPCsignalVsPhi", "Negatively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {64,0,2*TMath::Pi()}, {200,0.,200} } } },
-			{"Tracks/GoodTrack/PID/hTrackPIDvsMCtruth", "All good tracks (with has_mcparticle);track PID based on TPC and/or TOF;MC truth information", { HistType::kTH2F, { {6,-1.5,4.5}, {6,-1.5,4.5} } } },
-			{"Tracks/GoodTrack/PID/hTPCshift", ";TPC nSigma shift (a.u.);Number of events (-)", { HistType::kTH1D, { {2200,-1100.,1100.} } } },
-			{"Tracks/GoodTrack/PID/hTPCshiftDetail", ";TPC nSigma shift (a.u.);Number of events (-)", { HistType::kTH1D, { {200,-10.,10.} } } },
 			{"Tracks/GoodTrack/PID/hTPCsignalVsZ", "All good tracks;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {200,-20.,20.}, {200,0.,200} } } },
 			{"Tracks/GoodTrack/PID/hTPCsignalVsP", "All good tracks;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,0.,200} } } },
 			{"Tracks/GoodTrack/PID/hTPCsignalVsPt", "All good tracks;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,0.,200} } } },
 			{"Tracks/GoodTrack/PID/hTPCsignalVsEta", "All good tracks;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {500,-2.,2.} , {200,0.,200} } } },
 			{"Tracks/GoodTrack/PID/hTPCsignalVsPhi", "All good tracks;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {64,0,2*TMath::Pi()}, {200,0.,200} } } },
-			{"Tracks/GoodTrack/PID/Custom/hTrackPIDvsMCtruth", "All good tracks (with has_mcparticle);track PID based on TPC and/or TOF;MC truth information", { HistType::kTH2F, { {6,-1.5,4.5}, {6,-1.5,4.5} } } },
-			{"Tracks/GoodTrack/PID/PtCut/hTrackPIDvsMCtruth1", "#it{p}#in(0,0.1) (GeV/c);track PID based on TPC and/or TOF;MC truth information", { HistType::kTH2F, { {6,-1.5,4.5}, {6,-1.5,4.5} } } },
-			{"Tracks/GoodTrack/PID/PtCut/hTrackPIDvsMCtruth2", "#it{p}#in(0.1,0.2) (GeV/c);track PID based on TPC and/or TOF;MC truth information", { HistType::kTH2F, { {6,-1.5,4.5}, {6,-1.5,4.5} } } },
-			{"Tracks/GoodTrack/PID/PtCut/hTrackPIDvsMCtruth2b", "#it{p}#in(0.15,0.2) (GeV/c);track PID based on TPC and/or TOF;MC truth information", { HistType::kTH2F, { {6,-1.5,4.5}, {6,-1.5,4.5} } } },
-			{"Tracks/GoodTrack/PID/PtCut/hTrackPIDvsMCtruth3", "#it{p}#in(0.2,0.4) (GeV/c);track PID based on TPC and/or TOF;MC truth information", { HistType::kTH2F, { {6,-1.5,4.5}, {6,-1.5,4.5} } } },
-			{"Tracks/GoodTrack/PID/PtCut/hTrackPIDvsMCtruth3b", "#it{p}#in(0.25,0.4) (GeV/c);track PID based on TPC and/or TOF;MC truth information", { HistType::kTH2F, { {6,-1.5,4.5}, {6,-1.5,4.5} } } },
-			{"Tracks/GoodTrack/PID/PtCut/hTrackPIDvsMCtruth3c", "#it{p}#in(0.3,0.4) (GeV/c);track PID based on TPC and/or TOF;MC truth information", { HistType::kTH2F, { {6,-1.5,4.5}, {6,-1.5,4.5} } } },
-			{"Tracks/GoodTrack/PID/PtCut/hTrackPIDvsMCtruth4", "#it{p}#in(0.4,0.6) (GeV/c);track PID based on TPC and/or TOF;MC truth information", { HistType::kTH2F, { {6,-1.5,4.5}, {6,-1.5,4.5} } } },
-			{"Tracks/GoodTrack/PID/PtCut/hTrackPIDvsMCtruth5", "#it{p}#in(0.6,0.8) (GeV/c);track PID based on TPC and/or TOF;MC truth information", { HistType::kTH2F, { {6,-1.5,4.5}, {6,-1.5,4.5} } } },
-			{"Tracks/GoodTrack/PID/PtCut/hTrackPIDvsMCtruth6", "#it{p}#in(0.8,1.) (GeV/c);track PID based on TPC and/or TOF;MC truth information", { HistType::kTH2F, { {6,-1.5,4.5}, {6,-1.5,4.5} } } },
-			{"Tracks/GoodTrack/PID/PtCut/hTrackPIDvsMCtruth7", "#it{p}#in(1.,2.) (GeV/c);track PID based on TPC and/or TOF;MC truth information", { HistType::kTH2F, { {6,-1.5,4.5}, {6,-1.5,4.5} } } },
 			{"Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsZ", "Positively charged track;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {200,-20.,20.}, {200,0.,200} } } },
 			{"Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsP", "Positively charged track;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,0.,200} } } },
 			{"Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsPt", "Positively charged track;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,0.,200} } } },
@@ -172,60 +133,14 @@ struct UpcTauCentralBarrelRL {
 		}
 	};
 
-	HistogramRegistry histosCustom{
-		"histosCustom",
-		{
-            {"Custom/hCountCollisions", ";Number of analysed collision (-)", { HistType::kTH1D, { {10,0.5,10.5} } } },
-			{"Custom/Tracks/GoodTrack/hTrackZ", ";Track z-vertex (cm);Number of events (-)", { HistType::kTH1D, { {200,-20.,20.} } } },
-			{"Custom/Tracks/GoodTrack/hTrackP", ";Track #it{p} (GeV/c);Number of events (-)", { HistType::kTH1D, { {100,0.,2.} } } },
-			{"Custom/Tracks/GoodTrack/hTrackPt", ";Track #it{p_{#rm T}} (GeV/c);Number of events (-)", { HistType::kTH1D, { {200,0.,2.} } } },
-			{"Custom/Tracks/GoodTrack/hTrackPhi", ";Track #phi (rad);Number of events (-)", { HistType::kTH1D, { {64,0,2*TMath::Pi()} } } },
-			{"Custom/Tracks/GoodTrack/hTrackEta", ";Track #eta (-);Number of events (-)", { HistType::kTH1D, { {500,-2.,2.} } } },
-			{"Custom/Tracks/GoodTrack/hTrackZdelta", ";z-vertex (reco-truth) (cm);Number of events (-)", { HistType::kTH1D, { {200,-.2,.2} } } },
-			{"Custom/Tracks/GoodTrack/hTrackPdelta", ";#it{p} (reco-truth) (GeV/c);Number of events (-)", { HistType::kTH1D, { {100,-.4,.4} } } },
-			{"Custom/Tracks/GoodTrack/hTrackPtDelta", ";#it{p_{#rm T}} (reco-truth) (GeV/c);Number of events (-)", { HistType::kTH1D, { {200,-.4,.4} } } },
-			{"Custom/Tracks/GoodTrack/hTrackPhiDelta", ";#phi (reco-truth) (rad);Number of events (-)", { HistType::kTH1D, { {64,-.2,.2} } } },
-			{"Custom/Tracks/GoodTrack/hTrackEtaDelta", ";#eta (reco-truth) (-);Number of events (-)", { HistType::kTH1D, { {500,-.1,.1} } } },
-			{"Custom/Tracks/GoodTrack/PID/hTPCsignalVsP", "Wrongly identified track;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,0.,200} } } },
-			{"Custom/Tracks/GoodTrack/PID/hTPCnSigmaElPi", ";n#sigma_{TPC} electron (arb. units);n#sigma_{TPC} pion (arb. units)", { HistType::kTH2D, { {200,-10.,10.}, {200,-10.,10.} } } },
-			{"Custom/Tracks/GoodTrack/PID/hTPCnSigmaElVsP", ";Track #it{p} (GeV/c);n#sigma_{TPC} electron (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,-10.,10.} } } },
-			{"Custom/Tracks/GoodTrack/PID/Custom/hTPCsignalVsP", "Wrongly identified track;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,0.,200} } } },
-			{"Custom/Tracks/GoodTrack/PID/Custom/hTPCnSigmaElPi", ";n#sigma_{TPC} electron (arb. units);n#sigma_{TPC} pion (arb. units)", { HistType::kTH2D, { {200,-10.,10.}, {200,-10.,10.} } } },
-			{"Custom/Tracks/GoodTrack/PID/Custom/hTPCnSigmaElVsP", ";Track #it{p} (GeV/c);n#sigma_{TPC} electron (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,-10.,10.} } } },
-			{"Custom/Tracks/GoodTrack/Correct/PID/hTPCsignalVsP", "Correctly identified track;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,0.,200} } } },
-			{"Custom/Tracks/GoodTrack/Correct/PID/hTPCnSigmaElPi", ";n#sigma_{TPC} electron (arb. units);n#sigma_{TPC} pion (arb. units)", { HistType::kTH2D, { {200,-10.,10.}, {200,-10.,10.} } } },
-			{"Custom/Tracks/GoodTrack/Correct/PID/hTPCnSigmaElVsP", ";Track #it{p} (GeV/c);n#sigma_{TPC} electron (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,-10.,10.} } } },
-			{"Custom/Tracks/GoodTrack/Correct/PID/Custom/hTPCsignalVsP", "Correctly identified track;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,0.,200} } } },
-			{"Custom/Tracks/GoodTrack/Correct/PID/Custom/hTPCnSigmaElPi", ";n#sigma_{TPC} electron (arb. units);n#sigma_{TPC} pion (arb. units)", { HistType::kTH2D, { {200,-10.,10.}, {200,-10.,10.} } } },
-			{"Custom/Tracks/GoodTrack/Correct/PID/Custom/hTPCnSigmaElVsP", ";Track #it{p} (GeV/c);n#sigma_{TPC} electron (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,-10.,10.} } } },
-			{"Custom/Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsP", "Positively charged track;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,0.,200} } } },
-			{"Custom/Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsP", "Negatively charged track;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", { HistType::kTH2D, { {200,0.,2.}, {200,0.,200} } } }
-		}
-	};
-
 	// declare configurables
 	Configurable<bool> verboseInfo{"verboseInfo", true, {"Print general info to terminal; default it true."}};
-	Configurable<bool> printMetaInfo{"printMetaInfo", false, {"Print general info to terminal about collision, tracks, particles...; default it false."}};
 	Configurable<bool> verboseDebug{"verboseDebug", false, {"Print debug info to terminal; default it false."}};
-    Configurable<bool> isSGproducer{"isSGproducer", false, {"Turn on/off DG flag within SG producer."}};
-	Configurable<int> applyTrackCuts{"applyTrackCuts", 0, {"Apply n selections on track; default it no cut."}};
-	Configurable<int> applySingleTrackCut{"applySingleTrackCut", 0, {"Apply selection n on track, applyTrackCuts must be at maximum for full usage; default it no cut."}};
-
-	// declare filters
-//	Filter nCollisionContributorsFilter = aod::collision::numContrib > 2;
-
-	// declare shortcuts
-//	using ReconstructedTCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension,
-//													aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-//													aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
-//													aod::McTrackLabels>;
-//	using ReconstructedCollision = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>::iterator;
-//	using ReconstructedCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+    Configurable<int> whichGapSide{"whichGapSide", 2, {"0 for side A, 1 for side C, 2 for both sides"}};
 
     using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
     using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
-//    using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions>::iterator;
-
+    using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions>::iterator;
 
 	// init
 	void init(InitContext&){
@@ -465,10 +380,6 @@ struct UpcTauCentralBarrelRL {
         histos.add("EventSixTracks/SixPions/hMotherPhi", ";Mother #phi (rad);Number of events (-)",HistType::kTH1D,{axisPhi});
         histos.add("EventSixTracks/SixPions/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)",HistType::kTH1D,{axisRap});
 
-
-        histosCustom.add("Custom/EventTwoTracks/hInvariantMass",";Invariant mass (GeV/c^{2});Number of events (-)",HistType::kTH1D,{axisInvMass});
-        histosCustom.add("Custom/EventTwoTracks/hInvariantMassWide",";Invariant mass (GeV/c^{2});Number of events (-)",HistType::kTH1D,{axisInvMassWide});
-
 	} // end init
 
 	// run (always called before process :( )
@@ -479,35 +390,17 @@ struct UpcTauCentralBarrelRL {
 
 	} // end run
 
-	// declare preslices = table cross-connections
-//	Preslice<ReconstructedTCs> perCollision = aod::track::collisionId;
-//	Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
-//	Preslice<aod::McCollisions> perBC = aod::mccollision::bcId;
-
 	// process
-	void processSimulatorLevel(FullUDCollision const& reconstructedCollision,
-                               FullUDTracks const& reconstructedBarrelTracks) {
+
+    template <typename C, typename Ts>
+	void fillHistograms(C reconstructedCollision, Ts reconstructedBarrelTracks) {
 
 		if(isFirstReconstructedCollisions){
 			isFirstReconstructedCollisions = false;
 			if (verboseInfo) printLargeMessage("START LOOPING OVER RECONSTRUCTED COLLISIONS");
 		}
 
-        histos.get<TH1>(HIST("Events/hCountCollisions"))->Fill(1);
-
-//        if (isSGproducer){
-//            if (reconstructedCollision.gapSide() == 0) histos.get<TH1>(HIST("Events/hCountCollisions"))->Fill(2);
-//            if (reconstructedCollision.gapSide() == 1) histos.get<TH1>(HIST("Events/hCountCollisions"))->Fill(3);
-//            if (reconstructedCollision.gapSide() != 2) return;
-//            histos.get<TH1>(HIST("Events/hCountCollisions"))->Fill(4);
-//        }
-
-//        int typeParticle = testPIDhypothesis(track);
-//        if (typeParticle >= 0 && typeParticle < (sizeof(P_MASS) / sizeof(float))) {
-//            float mass = P_MASS[typeParticle];
-//            registry.get<TH1>(HIST("hTrackEnergy"))->Fill(energy(mass, trkPx, trkPy, trkPz));
-//            registry.get<TH1>(HIST("hTrackRapidity"))->Fill(rapidity(mass, trkPx, trkPy, trkPz));
-//        }
+        histos.get<TH1>(HIST("Events/hCountCollisions"))->Fill(4); // 1, 2 and 3 are reserved for single-gap
 
 		// Loop over tracks without selections
 		for (auto& track : reconstructedBarrelTracks){
@@ -555,7 +448,7 @@ struct UpcTauCentralBarrelRL {
         std::vector<int> vecPVidx;
 		// Loop over tracks with selections
 		for (auto& track : reconstructedBarrelTracks){
-			if (!selectTrack(track,applyTrackCuts)) continue;
+			if (track.isPVContributor()!=1) continue;
             float trkPx = track.px();
             float trkPy = track.py();
             float trkPz = track.pz();
@@ -1021,237 +914,34 @@ struct UpcTauCentralBarrelRL {
 			}
 		}
 		else {
-//			for (auto & track: reconstructedBarrelTracks){
-//				histos.get<TH1>(HIST("Meta/hPDGcodesOthers"))->Fill(track.pdgCode());
 				if (verboseDebug){
 					printMediumMessage("Other particles");
 				}
-//			}
 		}
 
-	}//processSimulatorLevel
+	}//end fillHistograms
 
+    void processDGrecoLevel(FullUDCollision const& reconstructedCollision,
+                            FullUDTracks const& reconstructedBarrelTracks) {
+        countCollisions++;
 
-    // process
-    void processJpsiMuMu(FullUDCollision const& reconstructedCollision, FullUDTracks const& reconstructedBarrelTracks) {
+        fillHistograms(reconstructedCollision,reconstructedBarrelTracks);
 
-        if(isFirstReconstructedCollisions){
-            isFirstReconstructedCollisions = false;
-            if (verboseInfo) printLargeMessage("START LOOPING OVER RECONSTRUCTED COLLISIONS");
-        }
+    } // end processDGrecoLevel
 
-        histosCustom.get<TH1>(HIST("Custom/hCountCollisions"))->Fill(1);
+    void processSGrecoLevel(FullSGUDCollision const& reconstructedCollision,
+                            FullUDTracks const& reconstructedBarrelTracks) {
+        countCollisions++;
 
+        if (reconstructedCollision.gapSide() == 0) histos.get<TH1>(HIST("Events/hCountCollisions"))->Fill(1);
+        if (reconstructedCollision.gapSide() == 1) histos.get<TH1>(HIST("Events/hCountCollisions"))->Fill(2);
+        if (reconstructedCollision.gapSide() == 2) histos.get<TH1>(HIST("Events/hCountCollisions"))->Fill(3);
+        if (reconstructedCollision.gapSide() != whichGapSide) return;
 
-        std::unordered_map<int32_t, std::vector<int32_t>> tracksPerCand;
-        collectCandIDs(tracksPerCand, reconstructedBarrelTracks);
+        fillHistograms(reconstructedCollision,reconstructedBarrelTracks);
 
-        // assuming that candidates have exatly 2 central barrel tracks
-//        for (const auto& item : tracksPerCand) {
-//            int32_t trId1 = item.second[0];
-//            int32_t trId2 = item.second[1];
-//            int32_t candID = item.first;
-//            const auto& cand = eventCandidates.iteratorAt(candID);
-//            const auto& tr1 = barTracks.iteratorAt(trId1);
-//            const auto& tr2 = barTracks.iteratorAt(trId2);
-//            processCandidate<2>(cand, tr1, tr2, (o2::aod::UDMcParticles*)nullptr, (o2::aod::UDMcTrackLabels*)nullptr, (o2::aod::UDMcFwdTrackLabels*)nullptr);
-//        }
+    } // end processDGrecoLevel
 
-
-        std::vector<int> vecPVidx;
-        int nTracks = 0;
-        for (auto& track : reconstructedBarrelTracks){
-//            LOGF(info,"+++++++++++++ %f %i %i +++++++++++++",track.pt(),track.sign(),track.isPVContributor());
-            vecPVidx.push_back(track.index());
-            nTracks++;
-        }
-        // UPCCandidateAnalyzer hack
-//        for (auto& item : tracksPerCand){
-//            LOGF(info,"+++++++++++++ %i +++++++++++++",item.second.size());
-//            vecPVidx.push_back(item.second[0]);
-//            vecPVidx.push_back(item.second[1]);
-//            nTracks++;
-//        }
-
-//        LOGF(info,"+++++++++++++ %i %i +++++++++++++",reconstructedBarrelTracks.size(),nTracks);
-
-//        if (reconstructedBarrelTracks.size()!=2) return;
-//        if (nTracks!=2) return;
-        histosCustom.get<TH1>(HIST("Custom/hCountCollisions"))->Fill(2);
-
-        const auto& trk1 = reconstructedBarrelTracks.iteratorAt(vecPVidx[0]);
-        const auto& trk2 = reconstructedBarrelTracks.iteratorAt(vecPVidx[1]);
-//        const auto acoplanarity = calculateAcoplanarity(phi(trk1.px(), trk1.py()),phi(trk2.px(), trk2.py()));
-
-//        if (acoplanarity < o2::constants::math::PI*144/180) return;
-        histosCustom.get<TH1>(HIST("Custom/hCountCollisions"))->Fill(3);
-
-        if (trk1.sign()*trk2.sign()!=-1) return;
-        histosCustom.get<TH1>(HIST("Custom/hCountCollisions"))->Fill(4);
-
-        if(!trk1.hasTPC() || !trk2.hasTPC() ) return;
-        histosCustom.get<TH1>(HIST("Custom/hCountCollisions"))->Fill(5);
-
-//        if (testPIDhypothesis(trk1)!=P_MUON || testPIDhypothesis(trk2)!=P_MUON) return;
-        histosCustom.get<TH1>(HIST("Custom/hCountCollisions"))->Fill(6);
-
-//        if (trk1.tpcNSigmaMu()*trk1.tpcNSigmaMu() + trk2.tpcNSigmaMu()*trk2.tpcNSigmaMu() > 9) return;
-        histosCustom.get<TH1>(HIST("Custom/hCountCollisions"))->Fill(7);
-
-        TLorentzVector mother, daug[2];
-        daug[0].SetPxPyPzE(trk1.px(),trk1.py(),trk1.pz(),energy(pdg->Mass(13),trk1.px(),trk1.py(),trk1.pz()));
-        daug[1].SetPxPyPzE(trk2.px(),trk2.py(),trk2.pz(),energy(pdg->Mass(13),trk2.px(),trk2.py(),trk2.pz()));
-        mother = daug[0] + daug[1];
-
-        if (mother.Pt() > 0.2) return;
-        histosCustom.get<TH1>(HIST("Custom/hCountCollisions"))->Fill(8);
-
-        histosCustom.get<TH1>(HIST("Custom/EventTwoTracks/hInvariantMass"))->Fill(mother.M());
-        histosCustom.get<TH1>(HIST("Custom/EventTwoTracks/hInvariantMassWide"))->Fill(mother.M());
-
-        if (mother.M() < 3.0 || mother.M() > 3.2) return;
-        histosCustom.get<TH1>(HIST("Custom/hCountCollisions"))->Fill(9);
-
-
-
-
-//        std::vector<int> vecPVidx;
-        // Loop over tracks with selections
-//        for (auto& track : reconstructedBarrelTracks){
-////			if (!selectTrack(track,applyTrackCuts)) continue;
-//            float trkPx = track.px();
-//            float trkPy = track.py();
-//            float trkPz = track.pz();
-////			histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackZ"))->Fill(track.z());
-//            histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackP"))->Fill(momentum(trkPx, trkPy, trkPz));
-//            histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackPt"))->Fill(track.pt());
-//            histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackPhi"))->Fill(phi(trkPx, trkPy));
-//            histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackEta"))->Fill(eta(trkPx, trkPy, trkPz));
-////			histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/hTPCsignalVsZ"))->Fill(track.z(),track.tpcSignal());
-//            histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/hTPCsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz),track.tpcSignal());
-//            histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/hTPCsignalVsPt"))->Fill(track.pt(),track.tpcSignal());
-//            histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz),track.tpcSignal());
-//            histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/hTPCsignalVsPhi"))->Fill(phi(trkPx, trkPy),track.tpcSignal());
-//            if (track.hasTPC()) {
-//                if(track.sign()==1){
-////					histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsZ"))->Fill(track.z(),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsPt"))->Fill(track.pt(),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsPhi"))->Fill(phi(trkPx, trkPy),track.tpcSignal());
-//                }
-//                else if(track.sign()==-1){
-////					histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsZ"))->Fill(track.z(),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsPt"))->Fill(track.pt(),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsPhi"))->Fill(phi(trkPx, trkPy),track.tpcSignal());
-//                }
-//                else {
-//                    printMediumMessage("Track has no charge");
-//                }
-//            }
-//            countPVGT++;
-//            int hypothesisID = testPIDhypothesis(track);
-//            if (hypothesisID == P_ELECTRON || hypothesisID == P_MUON || hypothesisID == P_PION) {
-//                countPVGTselected++;
-//                vecPVidx.push_back(track.index());
-//                if (hypothesisID == P_ELECTRON){
-//                    countPVGTelectrons++;
-////					histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCsignalVsZ"))->Fill(track.z(),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCsignalVsPt"))->Fill(track.pt(),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Electron/hTPCsignalVsPhi"))->Fill(phi(trkPx, trkPy),track.tpcSignal());
-//                }
-//                else if (hypothesisID == P_MUON){
-//                    countPVGTmuons++;
-////					histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTPCsignalVsZ"))->Fill(track.z(),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTPCsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTPCsignalVsPt"))->Fill(track.pt(),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Muon/hTPCsignalVsPhi"))->Fill(phi(trkPx, trkPy),track.tpcSignal());
-//                }
-//                else {
-//                    countPVGTpions++;
-////					histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCsignalVsZ"))->Fill(track.z(),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCsignalVsPt"))->Fill(track.pt(),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz),track.tpcSignal());
-//                    histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Pion/hTPCsignalVsPhi"))->Fill(phi(trkPx, trkPy),track.tpcSignal());
-//                }
-//            }
-//            else {
-//                countPVGTothers++;
-////				histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Others/hTPCsignalVsZ"))->Fill(track.z(),track.tpcSignal());
-//                histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Others/hTPCsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz),track.tpcSignal());
-//                histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Others/hTPCsignalVsPt"))->Fill(track.pt(),track.tpcSignal());
-//                histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Others/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz),track.tpcSignal());
-//                histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/Others/hTPCsignalVsPhi"))->Fill(phi(trkPx, trkPy),track.tpcSignal());
-//            }
-//        }// Loop over tracks with selections
-
-
-//        if (countPVGTselected == 2) {
-//            TLorentzVector mother, daug[2];
-//            const auto& trkDaug1 = reconstructedBarrelTracks.iteratorAt(vecPVidx[0]);
-//            const auto& trkDaug2 = reconstructedBarrelTracks.iteratorAt(vecPVidx[1]);
-//            daug[0].SetPxPyPzE(trkDaug1.px(),trkDaug1.py(),trkDaug1.pz(),energy(pdg->Mass(trackPDG(trkDaug1)),trkDaug1.px(),trkDaug1.py(),trkDaug1.pz()));
-//            daug[1].SetPxPyPzE(trkDaug2.px(),trkDaug2.py(),trkDaug2.pz(),energy(pdg->Mass(trackPDG(trkDaug2)),trkDaug2.px(),trkDaug2.py(),trkDaug2.pz()));
-//            mother = daug[0] + daug[1];
-//
-//            if (trkDaug1.hasTPC()) {
-//                histosPID.get<TH2>(HIST("EventTwoTracks/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
-//                if (countPVGTelectrons == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
-//                if (countPVGTmuons == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoMuons/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
-//                if (countPVGTpions == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoPions/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
-//                if (countPVGTelectrons == 1 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventTwoTracks/ElectronMuon/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
-//                if (countPVGTelectrons == 1 && countPVGTpions == 1) histosPID.get<TH2>(HIST("EventTwoTracks/ElectronPion/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
-//                if (countPVGTpions == 1 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventTwoTracks/MuonPion/PID/hTPCsignalVsP"))->Fill(daug[0].P(),trkDaug1.tpcSignal());
-//            }
-//            if (trkDaug2.hasTPC()) {
-//                histosPID.get<TH2>(HIST("EventTwoTracks/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
-//                if (countPVGTelectrons == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
-//                if (countPVGTmuons == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoMuons/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
-//                if (countPVGTpions == 2) histosPID.get<TH2>(HIST("EventTwoTracks/TwoPions/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
-//                if (countPVGTelectrons == 1 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventTwoTracks/ElectronMuon/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
-//                if (countPVGTelectrons == 1 && countPVGTpions == 1) histosPID.get<TH2>(HIST("EventTwoTracks/ElectronPion/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
-//                if (countPVGTpions == 1 && countPVGTmuons == 1) histosPID.get<TH2>(HIST("EventTwoTracks/MuonPion/PID/hTPCsignalVsP"))->Fill(daug[1].P(),trkDaug2.tpcSignal());
-//            }
-//
-//            histos.get<TH1>(HIST("EventTwoTracks/hInvariantMass"))->Fill(mother.M());
-//            histos.get<TH1>(HIST("EventTwoTracks/hInvariantMassWide"))->Fill(mother.M());
-//            histos.get<TH1>(HIST("EventTwoTracks/hAcoplanarity"))->Fill(acoplanarity);
-//            histos.get<TH1>(HIST("EventTwoTracks/hMotherP"))->Fill(mother.P());
-//            histos.get<TH1>(HIST("EventTwoTracks/hMotherPwide"))->Fill(mother.P());
-//            histos.get<TH1>(HIST("EventTwoTracks/hMotherPt"))->Fill(mother.Pt());
-//            histos.get<TH1>(HIST("EventTwoTracks/hMotherPhi"))->Fill(mother.Phi());
-//            histos.get<TH1>(HIST("EventTwoTracks/hMotherRapidity"))->Fill(mother.Rapidity());
-//            histos.get<TH2>(HIST("EventTwoTracks/hDaughtersP"))->Fill(daug[0].P(),daug[1].P());
-//            histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPwide"))->Fill(daug[0].P(),daug[1].P());
-//            histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPt"))->Fill(daug[0].Pt(),daug[1].Pt());
-//            histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPhi"))->Fill(daug[0].Phi(),daug[1].Phi());
-//            histos.get<TH2>(HIST("EventTwoTracks/hDaughtersRapidity"))->Fill(daug[0].Rapidity(),daug[1].Rapidity());
-//
-//            if (countPVGTmuons == 2) {
-//                histos.get<TH1>(HIST("Events/hChannelsRatio"))->Fill(1);
-//                histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hInvariantMass"))->Fill(mother.M());
-//                histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hInvariantMassWide"))->Fill(mother.M());
-//                histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hAcoplanarity"))->Fill(acoplanarity);
-//                histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hMotherP"))->Fill(mother.P());
-//                histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hMotherPwide"))->Fill(mother.P());
-//                histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hMotherPt"))->Fill(mother.Pt());
-//                histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hMotherPhi"))->Fill(mother.Phi());
-//                histos.get<TH1>(HIST("EventTwoTracks/TwoMuons/hMotherRapidity"))->Fill(mother.Rapidity());
-//                histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersP"))->Fill(daug[0].P(),daug[1].P());
-//                histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersPwide"))->Fill(daug[0].P(),daug[1].P());
-//                histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersPt"))->Fill(daug[0].Pt(),daug[1].Pt());
-//                histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersPhi"))->Fill(daug[0].Phi(),daug[1].Phi());
-//                histos.get<TH2>(HIST("EventTwoTracks/TwoMuons/hDaughtersRapidity"))->Fill(daug[0].Rapidity(),daug[1].Rapidity());
-//            }
-//        }
-
-    }//processJpsiMuMu
 
 	void processAnalysisFinished(FullUDCollision const& collisions){
 
@@ -1261,9 +951,9 @@ struct UpcTauCentralBarrelRL {
 
 	} // end processAnalysisFinished
 
-	PROCESS_SWITCH(UpcTauCentralBarrelRL, processSimulatorLevel, "Iterate UD tables with reconstructed data", false);
-    PROCESS_SWITCH(UpcTauCentralBarrelRL, processJpsiMuMu, "Iterate UD tables with reconstructed data with focus on Jpsi (Run 2 selection)", false);
-	PROCESS_SWITCH(UpcTauCentralBarrelRL, processAnalysisFinished, "Simply runs in the end", true);
+	PROCESS_SWITCH(UpcTauCentralBarrelRL, processDGrecoLevel, "Iterate UD tables with reconstructed data created by DG-Candidate-Producer", false);
+    PROCESS_SWITCH(UpcTauCentralBarrelRL, processSGrecoLevel, "Iterate UD tables with reconstructed data created by SG-Candidate-Producer", false);
+	PROCESS_SWITCH(UpcTauCentralBarrelRL, processAnalysisFinished, "Simply runs in the end of the dataframe", true);
 
 };
 
