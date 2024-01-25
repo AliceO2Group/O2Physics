@@ -495,10 +495,10 @@ using V0MCData = V0MCDatas::iterator;
 // definitions of indices for interlink tables
 namespace v0data
 {
-DECLARE_SOA_INDEX_COLUMN(V0Data, v0Data); //! Index to V0Data entry
+DECLARE_SOA_INDEX_COLUMN(V0Data, v0Data);                         //! Index to V0Data entry
 DECLARE_SOA_INDEX_COLUMN(V0fCData, v0fCData);                     //! Index to V0Data entry
 DECLARE_SOA_INDEX_COLUMN_FULL(V0MC, v0MC, int, V0MCCores, "_MC"); //!
-}
+} // namespace v0data
 
 DECLARE_SOA_TABLE(V0DataLink, "AOD", "V0DATALINK", //! Joinable table with V0s which links to V0Data which is not produced for all entries
                   o2::soa::Index<>, v0data::V0DataId, v0data::V0fCDataId);
@@ -996,10 +996,10 @@ using CascDataExt = CascDatas;
 
 namespace cascdata
 {
-DECLARE_SOA_INDEX_COLUMN(CascData, cascData); //! Index to CascData entry
-DECLARE_SOA_INDEX_COLUMN(KFCascData, kfCascData); //! Index to CascData entry
+DECLARE_SOA_INDEX_COLUMN(CascData, cascData);       //! Index to CascData entry
+DECLARE_SOA_INDEX_COLUMN(KFCascData, kfCascData);   //! Index to CascData entry
 DECLARE_SOA_INDEX_COLUMN(TraCascData, traCascData); //! Index to CascData entry
-}
+} // namespace cascdata
 
 DECLARE_SOA_TABLE(CascDataLink, "AOD", "CASCDATALINK", //! Joinable table with Cascades which links to CascData which is not produced for all entries
                   cascdata::CascDataId);
@@ -1043,7 +1043,7 @@ DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
 // Definition of labels for V0s
 namespace mcv0label
 {
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);                                               //! MC particle for V0
 DECLARE_SOA_INDEX_COLUMN_FULL(McMotherParticle, mcMotherParticle, int, McParticles, "_Mother"); //!
 } // namespace mcv0label
 
@@ -1064,9 +1064,9 @@ using McFullV0Label = McFullV0Labels::iterator;
 // Definition of labels for cascades
 namespace mccasclabel
 {
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Cascade
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);                                               //! MC particle for Cascade
 DECLARE_SOA_INDEX_COLUMN_FULL(McMotherParticle, mcMotherParticle, int, McParticles, "_Mother"); //!
-DECLARE_SOA_COLUMN(IsBachBaryonCandidate, isBachBaryonCandidate, bool); //! will this be built or not?
+DECLARE_SOA_COLUMN(IsBachBaryonCandidate, isBachBaryonCandidate, bool);                         //! will this be built or not?
 } // namespace mccasclabel
 
 DECLARE_SOA_TABLE(McCascLabels, "AOD", "MCCASCLABEL", //! Table joinable with CascData containing the MC labels
