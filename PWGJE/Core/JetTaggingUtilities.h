@@ -34,7 +34,8 @@ enum JetTaggingSpecies {
   beauty = 2,
   lightflavour = 3,
   lightquark = 4,
-  gluon = 5
+  gluon = 5,
+  numberOfSpecies = 6
 };
 
 namespace jettaggingutilities
@@ -290,12 +291,24 @@ int jetOrigin(T const& jet, U const& particles, float dRMax = 0.25)
 template <typename T, typename U, typename V>
 int getGeoSign(T const& collision, U const& jet, V const& track)
 {
-  auto sign = TMath::Sign(1, track.dcaX() * jet.px() + track.dcaY() * jet.py() + track.dcaZ() * jet.pz());
+  auto trackPar = getTrackPar(track);
+  auto xyz = trackPar.getXYZGlo();
+  auto dcaX = xyz.X() - collision.posX();
+  auto dcaY = xyz.Y() - collision.posY();
+  auto sign = TMath::Sign(1, dcaX * jet.px() + dcaY * jet.py() + track.dcaZ() * jet.pz());
   if (sign < -1 || sign > 1)
     LOGF(info, Form("Sign is %d", sign));
   return sign;
 }
 
-}; // namespace JetTaggingUtilities
+void calculateDcaXYZ(float& dcaXYZ, float& sigmaDcaXYZ2, float dcaXY, float dcaZ, float cYY, float cZY, float cZZ, float sigmaDcaXY2, float sigmaDcaZ2)
+{
+  dcaXYZ = std::sqrt(dcaXY * dcaXY + dcaZ * dcaZ);
+  float dFdxy = 2 * dcaXY / dcaXYZ;
+  float dFdz = 2 * dcaZ / dcaXYZ;
+  sigmaDcaXYZ2 = std::abs(cYY * dFdxy * dFdxy + cZZ * dFdz * dFdz + 2 * cZY * dFdxy * dFdz);
+}
+
+}; // namespace jettaggingutilities
 
 #endif // PWGJE_CORE_JETTAGGINGUTILITIES_H_

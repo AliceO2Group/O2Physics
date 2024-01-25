@@ -53,8 +53,8 @@ struct JetTaggerHFTC {
   ConfigurableAxis binImpactParameterXYSignificance{"binImpactParameterXYSignificance", {801, -40.5f, 40.5f}, ""}; // test
   ConfigurableAxis binImpactParameterZ{"binImpactParameterZ", {801, -400.5f, 400.5f}, ""};
   ConfigurableAxis binImpactParameterZSignificance{"binImpactParameterZSignificance", {801, -40.5f, 40.5f}, ""}; // test
-  ConfigurableAxis binImpactParameterXYZ{"binImpactParameterXYZ", {201, -100.5f, 100.5f}, ""};
-  ConfigurableAxis binImpactParameterXYZSignificance{"binImpactParameterXYZSignificance", {501, -100.5f, 100.5f}, ""};
+  ConfigurableAxis binImpactParameterXYZ{"binImpactParameterXYZ", {2001, -1000.5f, 1000.5f}, ""};
+  ConfigurableAxis binImpactParameterXYZSignificance{"binImpactParameterXYZSignificance", {2001, -1000.5f, 1000.5f}, ""};
   ConfigurableAxis binTrackProbability{"binTrackProbability", {100, 0.f, 1.f}, ""};
   ConfigurableAxis binJetProbability{"binJetProbability", {100, 0.f, 1.f}, ""};
   ConfigurableAxis binJetProbabilityLog{"binJetProbabilityLog", {100, 0.f, 10.f}, ""};
@@ -147,10 +147,9 @@ struct JetTaggerHFTC {
     }
   }
 
-  Preslice<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetTags, aod::ChargedMCDetectorLevelJetTagConstituents>> slicejetcolId = o2::aod::jet::collisionId;
+  using TagTracksData = soa::Join<JetTracks, aod::JetTracksTagTC>;
+  using TagTracksMCD = soa::Join<JetTracksMCD, aod::JetTracksTagTC>;
 
-  using TracksData = soa::Join<aod::JTracks, aod::JTrackPIs, aod::JTrackTagDcas, aod::JTrackTagDcaCovs>;
-  using TracksMC = soa::Join<aod::JTracks, aod::JTrackPIs, aod::JTrackTagDcas, aod::JTrackTagDcaCovs, aod::JMcTrackLbs>;
   template <typename T, typename U, typename V>
   void fillHistogramIPsData(T const& collision, U const& jets)
   {
@@ -165,17 +164,18 @@ struct JetTaggerHFTC {
         registry.fill(HIST("h3_jet_pt_track_pt_track_phi"), jet.pt(), track.pt(), track.phi());
 
         float varImpXY, varSignImpXY, varImpXYSig, varSignImpXYSig, varImpZ, varSignImpZ, varImpZSig, varSignImpZSig, varImpXYZ, varSignImpXYZ, varImpXYZSig, varSignImpXYZSig;
-        int geoSign = JetTaggingUtilities::getGeoSign(collision, jet, track);
-        varImpXY = track.dcaXY() * 10000;
-        varSignImpXY = geoSign * TMath::Abs(track.dcaXY()) * 10000;
+        // int geoSign = jettaggingutilities::getGeoSign(collision, jet, track);
+        int geoSign = TMath::Sign(1, track.dcaX() * jet.px() + track.dcaY() * jet.py() + track.dcaZ() * jet.pz());
+        varImpXY = track.dcaXY() * jettaggingutilities::cmTomum;
+        varSignImpXY = geoSign * TMath::Abs(track.dcaXY()) * jettaggingutilities::cmTomum;
         varImpXYSig = track.dcaXY() / TMath::Sqrt(track.sigmaDcaXY2());
         varSignImpXYSig = geoSign * TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
-        varImpZ = track.dcaZ() * 10000;
-        varSignImpZ = geoSign * TMath::Abs(track.dcaZ()) * 10000;
+        varImpZ = track.dcaZ() * jettaggingutilities::cmTomum;
+        varSignImpZ = geoSign * TMath::Abs(track.dcaZ()) * jettaggingutilities::cmTomum;
         varImpZSig = track.dcaZ() / TMath::Sqrt(track.sigmaDcaZ2());
         varSignImpZSig = geoSign * TMath::Abs(track.dcaZ()) / TMath::Sqrt(track.sigmaDcaZ2());
-        varImpXYZ = track.dcaXYZ() * 10000;
-        varSignImpXYZ = geoSign * TMath::Abs(track.dcaXYZ()) * 10000;
+        varImpXYZ = track.dcaXYZ() * jettaggingutilities::cmTomum;
+        varSignImpXYZ = geoSign * TMath::Abs(track.dcaXYZ()) * jettaggingutilities::cmTomum;
         varImpXYZSig = track.dcaXYZ() / TMath::Sqrt(track.sigmaDcaXYZ2());
         varSignImpXYZSig = geoSign * TMath::Abs(track.dcaXYZ()) / TMath::Sqrt(track.sigmaDcaXYZ2());
 
@@ -224,7 +224,7 @@ struct JetTaggerHFTC {
   template <typename T, typename U, typename V>
   void fillHistogramIPsMCD(T const& collision, U const& mcdjets)
   {
-    int numberOfJetFlavourSpecies = 6; // TODO
+    int numberOfJetFlavourSpecies = JetTaggingSpecies::numberOfSpecies;
     for (auto& mcdjet : mcdjets) {
       std::vector<float> TracksImpXY[numberOfJetFlavourSpecies], TracksSignImpXY[numberOfJetFlavourSpecies], TracksImpXYSig[numberOfJetFlavourSpecies], TracksSignImpXYSig[numberOfJetFlavourSpecies];
       std::vector<float> TracksImpZ[numberOfJetFlavourSpecies], TracksSignImpZ[numberOfJetFlavourSpecies], TracksImpZSig[numberOfJetFlavourSpecies], TracksSignImpZSig[numberOfJetFlavourSpecies];
@@ -240,17 +240,18 @@ struct JetTaggerHFTC {
         registry.fill(HIST("h3_jet_pt_track_phi_flavour"), mcdjet.pt(), track.phi(), jetflavour);
 
         float varImpXY, varSignImpXY, varImpXYSig, varSignImpXYSig, varImpZ, varSignImpZ, varImpZSig, varSignImpZSig, varImpXYZ, varSignImpXYZ, varImpXYZSig, varSignImpXYZSig;
-        int geoSign = JetTaggingUtilities::getGeoSign(collision, mcdjet, track);
-        varImpXY = track.dcaXY() * 10000;
-        varSignImpXY = geoSign * TMath::Abs(track.dcaXY()) * 10000;
+        // int geoSign = jettaggingutilities::getGeoSign(collision, mcdjet, track);
+        int geoSign = TMath::Sign(1, track.dcaX() * mcdjet.px() + track.dcaY() * mcdjet.py() + track.dcaZ() * mcdjet.pz());
+        varImpXY = track.dcaXY() * jettaggingutilities::cmTomum;
+        varSignImpXY = geoSign * TMath::Abs(track.dcaXY()) * jettaggingutilities::cmTomum;
         varImpXYSig = track.dcaXY() / TMath::Sqrt(track.sigmaDcaXY2());
         varSignImpXYSig = geoSign * TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
-        varImpZ = track.dcaZ() * 10000;
-        varSignImpZ = geoSign * TMath::Abs(track.dcaZ()) * 10000;
+        varImpZ = track.dcaZ() * jettaggingutilities::cmTomum;
+        varSignImpZ = geoSign * TMath::Abs(track.dcaZ()) * jettaggingutilities::cmTomum;
         varImpZSig = track.dcaZ() / TMath::Sqrt(track.sigmaDcaZ2());
         varSignImpZSig = geoSign * TMath::Abs(track.dcaZ()) / TMath::Sqrt(track.sigmaDcaZ2());
-        varImpXYZ = track.dcaXYZ() * 10000;
-        varSignImpXYZ = geoSign * TMath::Abs(track.dcaXYZ()) * 10000;
+        varImpXYZ = track.dcaXYZ() * jettaggingutilities::cmTomum;
+        varSignImpXYZ = geoSign * TMath::Abs(track.dcaXYZ()) * jettaggingutilities::cmTomum;
         varImpXYZSig = track.dcaXYZ() / TMath::Sqrt(track.sigmaDcaXYZ2());
         varSignImpXYZSig = geoSign * TMath::Abs(track.dcaXYZ()) / TMath::Sqrt(track.sigmaDcaXYZ2());
 
@@ -308,94 +309,88 @@ struct JetTaggerHFTC {
       sort(TracksSignImpXYZ[jetflavour].begin(), TracksSignImpXYZ[jetflavour].end(), std::greater<float>());
       sort(TracksImpXYZSig[jetflavour].begin(), TracksImpXYZSig[jetflavour].end(), std::greater<float>());
       sort(TracksSignImpXYZSig[jetflavour].begin(), TracksSignImpXYZSig[jetflavour].end(), std::greater<float>());
+    }
+    if (TracksImpXY[jetflavour].size() > 0) { // N1
+      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N1"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][0], jetflavour);
+      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N1"), mcdjet.pt(), TracksSignImpZSig[jetflavour][0], jetflavour);
+      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N1"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][0], jetflavour);
+    }
 
-      if (TracksSignImpXYSig[jetflavour][0] < TracksSignImpXYSig[jetflavour][1] ||
-          TracksSignImpXYSig[jetflavour][1] < TracksSignImpXYSig[jetflavour][2] ||
-          TracksSignImpXYSig[jetflavour][0] < TracksSignImpXYSig[jetflavour][2]) {
-        std::cout << "it is not correctly ordering" << "\n";
-        std::cout << "N1: " << TracksSignImpXYSig[jetflavour][0] << " N2: " << TracksSignImpXYSig[jetflavour][1] << " N3: " << TracksSignImpXYSig[jetflavour][2] << "\n";
-        continue;
-      }
-      if (TracksImpXY[jetflavour].size() > 0) { // N1
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N1"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][0], jetflavour);
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N1"), mcdjet.pt(), TracksSignImpZSig[jetflavour][0], jetflavour);
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N1"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][0], jetflavour);
-      }
+    if (TracksImpXY[jetflavour].size() > 1) { // N2
+      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][1], jetflavour);
+      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N2"), mcdjet.pt(), TracksSignImpZSig[jetflavour][1], jetflavour);
+      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][1], jetflavour);
+    }
+    if (TracksImpXY[jetflavour].size() > 2) { // N3
+      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][2], jetflavour);
+      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N2"), mcdjet.pt(), TracksSignImpZSig[jetflavour][2], jetflavour);
+      registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][2], jetflavour);
+    }
+  }
+}
 
-      if (TracksImpXY[jetflavour].size() > 1) { // N2
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][1], jetflavour);
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N2"), mcdjet.pt(), TracksSignImpZSig[jetflavour][1], jetflavour);
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][1], jetflavour);
-      }
-      if (TracksImpXY[jetflavour].size() > 2) { // N3
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][2], jetflavour);
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N2"), mcdjet.pt(), TracksSignImpZSig[jetflavour][2], jetflavour);
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][2], jetflavour);
+template <typename T, typename U, typename V>
+void fillHistogramIPsMCP(T const& collision, U const& mcpjets)
+{
+  for (auto& mcpjet : mcpjets) {
+    std::cout << "mcpjet pt: " << mcpjet.pt() << "\n";
+  }
+}
+
+template <typename T, typename U, typename V>
+void fillHistogramIPsMCPMCDMatched(T const& collision, U const& mcpjets)
+{
+  for (auto& mcpjet : mcpjets) {
+    for (auto& mcdjet : mcpjet.template matchedJetGeo_as<V>()) {
+      int jetflavour = mcdjet.origin();
+      if (jetflavour == JetTaggingSpecies::none) {
+        LOGF(debug, "NOT DEFINE JET FLAVOR");
       }
     }
   }
+}
 
-  template <typename T, typename U, typename V>
-  void fillHistogramIPsMCP(T const& collision, U const& mcpjets)
-  {
-    for (auto& mcpjet : mcpjets) {
-      std::cout << "mcpjet pt: " << mcpjet.pt() << "\n";
-    }
-  }
+void processDummy(aod::Collision const& collision, aod::Tracks const& tracks)
+{
+}
+PROCESS_SWITCH(JetTaggerHFTC, processDummy, "Dummy process", true);
 
-  template <typename T, typename U, typename V>
-  void fillHistogramIPsMCPMCDMatched(T const& collision, U const& mcpjets)
-  {
-    for (auto& mcpjet : mcpjets) {
-      for (auto& mcdjet : mcpjet.template matchedJetGeo_as<V>()) {
-        int jetflavour = mcdjet.origin();
-        if (jetflavour == JetTaggingSpecies::none) {
-          LOGF(debug, "NOT DEFINE JET FLAVOR");
-        }
-      }
-    }
-  }
+void processIPsData(soa::Join<aod::JCollisions, aod::JCollisionPIs>::iterator const& jcollision, aod::Collisions&, JetTagTableData const& jets, TagTracksData const&)
+{
+  auto oricoll = jcollision.template collision_as<aod::Collisions>();
+  fillHistogramIPsData<aod::Collision, JetTagTableData, TagTracksData>(oricoll, jets);
+}
+PROCESS_SWITCH(JetTaggerHFTC, processIPsData, "Fill impact parameter inpormation for data jets", false);
 
-  void processDummy(aod::Collision const& collision, aod::Tracks const& tracks)
-  {
-  }
-  PROCESS_SWITCH(JetTaggerHFTC, processDummy, "Dummy process", true);
+void processIPsMCD(soa::Join<aod::JCollisions, aod::JCollisionPIs>::iterator const& jcollision, aod::Collisions&, JetTagTableMCD const& mcdjets, TagTracksMCD&, aod::JMcParticles&)
+{
+  auto oricoll = jcollision.template collision_as<aod::Collisions>();
+  fillHistogramIPsMCD<aod::Collision, JetTagTableMCD, TagTracksMCD>(oricoll, mcdjets);
+}
+PROCESS_SWITCH(JetTaggerHFTC, processIPsMCD, "Fill impact parameter inpormation for mcd jets", false);
 
-  void processIPsData(soa::Join<aod::JCollisions, aod::JCollisionPIs>::iterator const& jcollision, aod::Collisions&, JetTagTableData const& jets, TracksData const&)
-  {
-    auto oricoll = jcollision.template collision_as<aod::Collisions>();
-    fillHistogramIPsData<aod::Collision, JetTagTableData, TracksData>(oricoll, jets);
-  }
-  PROCESS_SWITCH(JetTaggerHFTC, processIPsData, "Fill impact parameter inpormation for data jets", false);
+void processIPsMCP(JetTagTableMCP const& mcpjets, TagTracksMCD&, aod::JMcParticles const& particles)
+{
+  // fillHistogramIPsMCP<soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs>, JetTagTableMCP, TagTracksMCD>(jcollision, mcpjets);
+}
+PROCESS_SWITCH(JetTaggerHFTC, processIPsMCP, "Fill impact parameter inpormation for mcp jets", false);
 
-  void processIPsMCD(soa::Join<aod::JCollisions, aod::JCollisionPIs>::iterator const& jcollision, aod::Collisions&, JetTagTableMCD const& mcdjets, TracksMC&, aod::JMcParticles&)
-  {
-    auto oricoll = jcollision.template collision_as<aod::Collisions>();
-    fillHistogramIPsMCD<aod::Collision, JetTagTableMCD, TracksMC>(oricoll, mcdjets);
-  }
-  PROCESS_SWITCH(JetTaggerHFTC, processIPsMCD, "Fill impact parameter inpormation for mcd jets", false);
+void processIPsMCPMCDMatched(JetTagTableMCD const& mcdjets, JetTagTableMCP const& mcpjets, TagTracksMCD const& tracks, aod::JMcParticles const& particles)
+{
+  // fillHistogramIPsMCPMCDMatched<soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs>, JetTagTableMCP, TagTracksMCD>(jcollision, mcpjets);
+}
+PROCESS_SWITCH(JetTaggerHFTC, processIPsMCPMCDMatched, "Fill impact parameter inpormation for mcd matched mcp jets", false);
 
-  void processIPsMCP(JetTagTableMCP const& mcpjets, TracksMC&, aod::JMcParticles const& particles)
-  {
-    // fillHistogramIPsMCP<soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs>, JetTagTableMCP, TracksMC>(jcollision, mcpjets);
-  }
-  PROCESS_SWITCH(JetTaggerHFTC, processIPsMCP, "Fill impact parameter inpormation for mcp jets", false);
+void processJPMCD(JetTagTableMCD const& mcdjets, TagTracksMCD const& tracks, aod::McParticles const& particles)
+{
+  // fillHistogramJPMCD(collision, mcdjets, particles);
+}
+PROCESS_SWITCH(JetTaggerHFTC, processJPMCD, "Fill track and jet probability for mcd jets", false);
+}
+;
 
-  void processIPsMCPMCDMatched(JetTagTableMCD const& mcdjets, JetTagTableMCP const& mcpjets, TracksMC const& tracks, aod::JMcParticles const& particles)
-  {
-    // fillHistogramIPsMCPMCDMatched<soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs>, JetTagTableMCP, TracksMC>(jcollision, mcpjets);
-  }
-  PROCESS_SWITCH(JetTaggerHFTC, processIPsMCPMCDMatched, "Fill impact parameter inpormation for mcd matched mcp jets", false);
-
-  void processJPMCD(JetTagTableMCD const& mcdjets, TracksMC const& tracks, aod::McParticles const& particles)
-  {
-    // fillHistogramJPMCD(collision, mcdjets, particles);
-  }
-  PROCESS_SWITCH(JetTaggerHFTC, processJPMCD, "Fill track and jet probability for mcd jets", false);
-};
-
-using JetTaggerTCChargedDataJets = soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetTags, aod::ChargedJetTagConstituents>;
-using JetTaggerTCChargedMCDJets = soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetTags, aod::ChargedMCDetectorLevelJetTagConstituents>;
+using JetTaggerTCChargedDataJets = soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetTags>;
+using JetTaggerTCChargedMCDJets = soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetTags>;
 using JetTaggerTCChargedMCPJets = soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>;
 
 using JetTaggerTCCharged = JetTaggerHFTC<JetTaggerTCChargedDataJets, JetTaggerTCChargedMCDJets, JetTaggerTCChargedMCPJets>;
