@@ -75,6 +75,7 @@ struct NucleusCandidate {
   uint8_t TPCcrossedRows;
   uint8_t ITSclsMap;
   uint8_t TPCnCls;
+  uint32_t clusterSizesITS;
   int selCollIndex;
 };
 
@@ -457,7 +458,7 @@ struct nucleiSpectra {
           }
         }
         nuclei::candidates.emplace_back(NucleusCandidate{static_cast<int>(track.globalIndex()), (1 - 2 * iC) * trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), track.tpcInnerParam(), beta, collision.posZ(), dcaInfo[0], dcaInfo[1], track.tpcSignal(), track.itsChi2NCl(),
-                                                         track.tpcChi2NCl(), flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(), static_cast<uint8_t>(track.tpcNClsFound()), static_cast<int>(nucleiFlowTable.lastIndex())});
+                                                         track.tpcChi2NCl(), flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(), static_cast<uint8_t>(track.tpcNClsFound()), static_cast<uint32_t>(track.itsClusterSizes()), static_cast<int>(nucleiFlowTable.lastIndex())});
       }
     } // end loop over tracks
 
@@ -470,7 +471,7 @@ struct nucleiSpectra {
     nuclei::candidates.clear();
     fillDataInfo(collision, tracks);
     for (auto& c : nuclei::candidates) {
-      nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.selCollIndex);
+      nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, c.selCollIndex);
     }
   }
   PROCESS_SWITCH(nucleiSpectra, processData, "Data analysis", true);
@@ -480,7 +481,7 @@ struct nucleiSpectra {
     nuclei::candidates.clear();
     fillDataInfo(collision, tracks);
     for (auto& c : nuclei::candidates) {
-      nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.selCollIndex);
+      nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, c.selCollIndex);
     }
   }
   PROCESS_SWITCH(nucleiSpectra, processDataFlow, "Data analysis with flow", false);
@@ -509,7 +510,7 @@ struct nucleiSpectra {
         c.flags |= kIsSecondaryFromMaterial;
       }
 
-      nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode());
+      nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode());
       for (int iS{0}; iS < nuclei::species; ++iS) {
         if (std::abs(particle.pdgCode()) == nuclei::codes[iS]) {
           nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt * nuclei::charges[iS]), 1. - std::abs(c.pt * nuclei::charges[iS]) / particle.pt());
@@ -538,7 +539,7 @@ struct nucleiSpectra {
         }
 
         if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
-          nucleiTableMC(999., 999., 999., 0., 0., 999., 999., 999., -1, -1, -1, flags, 0, 0, 0, 0, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode());
+          nucleiTableMC(999., 999., 999., 0., 0., 999., 999., 999., -1, -1, -1, flags, 0, 0, 0, 0, 0, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode());
         }
         break;
       }
