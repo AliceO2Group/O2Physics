@@ -304,7 +304,7 @@ struct LFStrangeTreeCreator {
 
     fillRecoLambda(collision, V0s, tracks);
     for (auto& candidateV0 : candidateV0s) {
-      LOG(info) << candidateV0.pt;
+      // LOG(info) << candidateV0.pt;
       lambdaTableML(
         candidateV0.pt,
         candidateV0.eta,
