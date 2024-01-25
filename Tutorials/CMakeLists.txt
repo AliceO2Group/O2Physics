@@ -112,6 +112,11 @@ o2physics_add_dpl_workflow(mc-histograms
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
+o2physics_add_dpl_workflow(mc-only
+                  SOURCES src/mcOnly.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
 o2physics_add_dpl_workflow(ccdbaccess
                   SOURCES src/ccdbaccess.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::CCDB O2::Framework O2Physics::AnalysisCore
