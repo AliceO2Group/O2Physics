@@ -218,7 +218,7 @@ struct LFStrangeTreeCreator {
               auto len = std::sqrt(std::pow(secVtx[0] - posPrimVtx[0], 2) + std::pow(secVtx[1] - posPrimVtx[1], 2) + std::pow(secVtx[2] - posPrimVtx[2], 2));
               candidateV0.pdgCode = posMother.pdgCode();
               candidateV0.genEta = posMother.eta();
-              candidateV0.genCt = len /  (mom + 1e-10) * o2::constants::physics::MassLambda0;
+              candidateV0.genCt = len / (mom + 1e-10) * o2::constants::physics::MassLambda0;
               checkedV0s.push_back(posMother.globalIndex());
             }
           }
