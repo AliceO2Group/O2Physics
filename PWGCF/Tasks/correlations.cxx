@@ -107,7 +107,7 @@ struct CorrelationTask {
   Filter cfMCParticleFilter = (nabs(aod::cfmcparticle::eta) < cfgCutEta) && (aod::cfmcparticle::pt > cfgCutPt) && (aod::cfmcparticle::sign != 0);
 
   // HF filters
-  Filter track2pFilter = (aod::cf2prongtrack::eta < cfgCutEta) && (aod::cf2prongtrack::pt > cfgCutPt);
+  Filter track2pFilter = (nabs(aod::cf2prongtrack::eta) < cfgCutEta) && (aod::cf2prongtrack::pt > cfgCutPt);
 
   // Output definitions
   OutputObj<CorrelationContainer> same{"sameEvent"};
@@ -135,7 +135,7 @@ struct CorrelationTask {
   {
     registry.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
-    if (doprocessSame2ProngDerived) {
+    if (doprocessSame2ProngDerived || doprocessMixed2ProngDerived) {
       registry.add("yieldsTrack2", "multiplicity/centrality vs pT vs eta (track2)", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
       registry.add("etaphiTrack2", "multiplicity/centrality vs eta vs phi (track2)", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
     }
@@ -552,6 +552,44 @@ struct CorrelationTask {
     }
   }
   PROCESS_SWITCH(CorrelationTask, processMixedDerived, "Process mixed events on derived data", false);
+
+  void processMixed2ProngDerived(derivedCollisions& collisions, derivedTracks const& tracks, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
+  {
+    // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
+    auto tracksTuple = std::make_tuple(tracks,p2tracks);
+    Pair<derivedCollisions, derivedTracks, soa::Filtered<aod::CF2ProngTracks>, BinningTypeDerived> pairs{configurableBinningDerived, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+
+    for (auto it = pairs.begin(); it != pairs.end(); it++) {
+      auto& [collision1, tracks1, collision2, tracks2] = *it;
+      int bin = configurableBinningDerived.getBin({collision1.posZ(), collision1.multiplicity()});
+      float eventWeight = 1.0f / it.currentWindowNeighbours();
+      int field = 0;
+      if (cfgTwoTrackCut > 0) {
+        field = getMagneticField(collision1.timestamp());
+      }
+
+      if (cfgVerbosity > 0) {
+        LOGF(info, "processMixed2ProngDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), collision1.multiplicity(), collision2.globalIndex(), collision2.posZ(), collision2.multiplicity());
+      }
+
+      if (it.isNewWindow()) {
+        loadEfficiency(collision1.timestamp());
+
+        mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepReconstructed);
+      }
+
+      registry.fill(HIST("eventcount_mixed"), bin);
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight);
+
+      if (cfg.mEfficiencyAssociated || cfg.mEfficiencyTrigger) {
+        if (it.isNewWindow()) {
+          mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepCorrected);
+        }
+        fillCorrelations<CorrelationContainer::kCFStepCorrected>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight);
+      }
+    }
+  }
+  PROCESS_SWITCH(CorrelationTask, processMixed2ProngDerived, "Process mixed events on derived data", false);
 
   // Version with combinations
   /*void processWithCombinations(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<aod::Tracks> const& tracks)
