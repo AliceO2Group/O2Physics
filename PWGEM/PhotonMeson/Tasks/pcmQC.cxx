@@ -56,7 +56,7 @@ using MyV0Photon = MyV0Photons::iterator;
 
 struct PCMQC {
 
-  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,wwire_ib,qc,qc_ITSTPC,qc_ITSonly,qc_TPConly,nocut", "Comma separated list of v0 photon cuts"};
+  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "qc,qc_ITSTPC,qc_ITSonly,qc_TPConly,wwire_ib,nocut", "Comma separated list of v0 photon cuts"};
 
   std::vector<V0PhotonCut> fPCMCuts;
 
