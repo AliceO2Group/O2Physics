@@ -72,8 +72,20 @@ struct JetSubstructureOutputTask {
   template <typename T, typename U, typename V, typename M>
   void fillTables(T const& jet, int32_t collisionIndex, U& collisionOutputTable, V& jetOutputTable, M& jetSubstructureOutputTable, std::vector<int> geoMatching, std::vector<int> ptMatching, std::vector<int> candMatching)
   {
+    std::vector<float> energyMotherVec;
+    std::vector<float> ptLeadingVec;
+    std::vector<float> ptSubLeadingVec;
+    std::vector<float> thetaVec;
+    auto energyMotherSpan = jet.energyMother();
+    auto ptLeadingSpan = jet.ptLeading();
+    auto ptSubLeadingSpan = jet.ptSubLeading();
+    auto thetaSpan = jet.theta();
+    std::copy(energyMotherSpan.begin(), energyMotherSpan.end(), std::back_inserter(energyMotherVec));
+    std::copy(ptLeadingSpan.begin(), ptLeadingSpan.end(), std::back_inserter(ptLeadingVec));
+    std::copy(ptSubLeadingSpan.begin(), ptSubLeadingSpan.end(), std::back_inserter(ptSubLeadingVec));
+    std::copy(thetaSpan.begin(), thetaSpan.end(), std::back_inserter(thetaVec));
     jetOutputTable(collisionIndex, -1, geoMatching, ptMatching, candMatching, jet.pt(), jet.phi(), jet.eta(), jet.r(), jet.tracks().size());
-    jetSubstructureOutputTable(jetOutputTable.lastIndex(), jet.zg(), jet.rg(), jet.nsd());
+    jetSubstructureOutputTable(jetOutputTable.lastIndex(), energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec);
   }
 
   template <bool hasMatching, typename T, typename U, typename V, typename M, typename N, typename O>
