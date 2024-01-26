@@ -59,9 +59,9 @@ struct kfStrangenessStudy {
   // CCDB
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int runNumber{0};
+  int mRunNumber{0};
   double bz = 0.;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   // magnetic field settings for CCDB
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -122,13 +122,11 @@ struct kfStrangenessStudy {
 
   void init(InitContext const&)
   {
-
     /// CCDB
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    runNumber = 0;
 
     /// QA histos
     histos.add("hChargeCounter", "hChargeCounter", kTH1F, {{3, -1.5f, 1.5f}});
@@ -167,20 +165,24 @@ struct kfStrangenessStudy {
     histos.add("hCase", "hCase", kTH1F, {{5, 0, 5}});
   }
 
-  void initCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
-                o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string const& ccdbPathGrp, o2::base::MatLayerCylSet* lut)
+  void initCCDB(o2::aod::BCsWithTimestamps::iterator const& bc)
   {
     if (mRunNumber != bc.runNumber()) {
       LOGF(info, "====== initCCDB function called");
-      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrp, bc.timestamp());
-      if (grpo == nullptr) {
-        LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+
+      o2::parameters::GRPMagField* grpmag = 0x0;
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << ccdbPathGrpMag << " of object GRPMagField and " << ccdbPathGrp << " of object GRPObject for timestamp " << bc.timestamp();
       }
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      o2::base::Propagator::Instance()->setMatLUT(lut);
-      LOGF(info, "Setting magnetic field to current %f A for run %d from its GRP CCDB object (type o2::parameters::GRPMagField)", grpo->getL3Current(), bc.runNumber());
-    
+      o2::base::Propagator::initFieldFromGRP(grpmag);
+      // Fetch magnetic field from ccdb for current collision
+      bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      LOG(info) << "Retrieved GRP for timestamp " << bc.timestamp() << " with magnetic field of " << bz << " kZG";
+
       mRunNumber = bc.runNumber();
+      // set material correction
+      o2::base::Propagator::Instance()->setMatLUT(lut);
     }
   } /// end initCCDB
 
@@ -302,19 +304,6 @@ struct kfStrangenessStudy {
         momPionRecErr[0] = cascdatakf.pxnegerr();
         momPionRecErr[1] = cascdatakf.pynegerr();
         momPionRecErr[2] = cascdatakf.pznegerr();
-        // daughter track position at vertex (after pre-minimisation!)
-        // posProtonRec[0] = cascdatakf.xpos();
-        // posProtonRec[1] = cascdatakf.ypos();
-        // posProtonRec[2] = cascdatakf.zpos();
-        // posPionRec[0] = cascdatakf.xneg();
-        // posPionRec[1] = cascdatakf.yneg();
-        // posPionRec[2] = cascdatakf.zneg();
-        // posProtonRecErr[0] = cascdatakf.xposerr();
-        // posProtonRecErr[1] = cascdatakf.yposerr();
-        // posProtonRecErr[2] = cascdatakf.zposerr();
-        // posPionRecErr[0] = cascdatakf.xnegerr();
-        // posPionRecErr[1] = cascdatakf.ynegerr();
-        // posPionRecErr[2] = cascdatakf.znegerr();
       } else if (charge == +1) {
         // daughter momenta at vertex (from pre-minimisation if enabled)
         momProtonRec[0] = cascdatakf.pxneg();
@@ -329,19 +318,6 @@ struct kfStrangenessStudy {
         momPionRecErr[0] = cascdatakf.pxposerr();
         momPionRecErr[1] = cascdatakf.pyposerr();
         momPionRecErr[2] = cascdatakf.pzposerr();
-        // daughter track position at vertex (after pre-minimisation!)
-        // posProtonRec[0] = cascdatakf.xneg();
-        // posProtonRec[1] = cascdatakf.yneg();
-        // posProtonRec[2] = cascdatakf.zneg();
-        // posPionRec[0] = cascdatakf.xpos();
-        // posPionRec[1] = cascdatakf.ypos();
-        // posPionRec[2] = cascdatakf.zpos();
-        // posProtonRecErr[0] = cascdatakf.xnegerr();
-        // posProtonRecErr[1] = cascdatakf.ynegerr();
-        // posProtonRecErr[2] = cascdatakf.znegerr();
-        // posPionRecErr[0] = cascdatakf.xposerr();
-        // posPionRecErr[1] = cascdatakf.yposerr();
-        // posPionRecErr[2] = cascdatakf.zposerr();
       }
       
       // fill QA histos
@@ -416,8 +392,8 @@ struct kfStrangenessStudy {
           o2::track::TrackParCov posTrackParCov = getTrackParCov(posTrack);
           o2::track::TrackParCov negTrackParCov = getTrackParCov(negTrack);
           // propagate to V0 MC vertex
-          posTrackParCov.propagateTo(vtxGenV0[0], bz); // propagate the track to the X closest to the V0 vertex
-          negTrackParCov.propagateTo(vtxGenV0[0], bz); // propagate the track to the X closest to the V0 vertex
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({vtxGenV0[0], vtxGenV0[1], vtxGenV0[2]}, posTrackParCov, 2.f, matCorr);
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({vtxGenV0[0], vtxGenV0[1], vtxGenV0[2]}, negTrackParCov, 2.f, matCorr);
           // get new daughter track position and uncertainties
           std::array<float, 3> protonxyz, pionxyz;
           std::array<float, 21> protoncv, pioncv;
@@ -657,10 +633,10 @@ struct kfStrangenessStudy {
       }
       momProtonRecIUErr[0] = sqrt(cvproton[9]);
       momProtonRecIUErr[1] = sqrt(cvproton[14]);
-      momProtonRecIUErr[2] = sqrt(cvproton[21]);
+      momProtonRecIUErr[2] = sqrt(cvproton[20]);
       momPionRecIUErr[0] = sqrt(cvpion[9]);
       momPionRecIUErr[1] = sqrt(cvpion[14]);
-      momPionRecIUErr[2] = sqrt(cvpion[21]);
+      momPionRecIUErr[2] = sqrt(cvpion[20]);
       
 
       // get cascade data and fill table
@@ -685,10 +661,7 @@ struct kfStrangenessStudy {
   {
     /// magnetic field from CCDB
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    if (runNumber != bc.runNumber()) {
-      initCCDB(bc, runNumber, ccdb, ccdbPathGrpMag, lut);
-      bz = o2::base::Propagator::Instance()->getNominalBz();
-    }
+    initCCDB(bc);
 
     /// Event selection
     histos.fill(HIST("hEventSelectionFlow"), 1.f);
@@ -737,10 +710,10 @@ struct kfStrangenessStudy {
       }
       momProtonRecIUErr[0] = sqrt(cvproton[9]);
       momProtonRecIUErr[1] = sqrt(cvproton[14]);
-      momProtonRecIUErr[2] = sqrt(cvproton[21]);
+      momProtonRecIUErr[2] = sqrt(cvproton[20]);
       momPionRecIUErr[0] = sqrt(cvpion[9]);
       momPionRecIUErr[1] = sqrt(cvpion[14]);
-      momPionRecIUErr[2] = sqrt(cvpion[21]);
+      momPionRecIUErr[2] = sqrt(cvpion[20]);
 
       // get cascade data
       getCascDatas(collision, cascade, CascDatas, KFCascDatas, V0s, V0Datas, V0fCDatas);
