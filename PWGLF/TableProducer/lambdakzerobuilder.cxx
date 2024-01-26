@@ -415,12 +415,17 @@ struct lambdakzeroBuilder {
       for (DeviceSpec const& device : workflows.devices) {
         // Step 1: check if this device subscribed to the V0data table
         for (auto const& input : device.inputs) {
-          if (device.name.compare("lambdakzero-initializer") == 0)
-            continue; // don't listen to the initializer, it's just to extend stuff
-          const std::string v0DataName = "V0Datas";
-          const std::string v0DataExtName = "V0DatasExtension";
-          if ((input.matcher.binding == v0DataName || input.matcher.binding == v0DataExtName) && device.name.compare("multistrange-builder") != 0) {
-            LOGF(info, "Device named %s has subscribed to V0datas table! Will now scan for desired settings...", device.name);
+          if (device.name.compare("lambdakzero-initializer") == 0 || device.name.compare("cascade-initializer") == 0)
+            continue; // don't listen to the initializers, it's just to extend stuff
+          const std::string v0CoresName = "V0Cores";
+          const std::string v0fCCoressName = "V0fCCores";
+          const std::string CascCoresName = "StoredCascCores";
+          const std::string KFCascCoresName = "StoredKFCascCores";
+          const std::string TraCascCoresName = "StoredTraCascCores";
+          // Logic: device is subscribed to a V0 table (excluding the cascade builder) or it's subscribed a Casc table
+          if (((input.matcher.binding == v0CoresName || input.matcher.binding == v0fCCoressName) && device.name.compare("cascade-builder") != 0) ||
+              input.matcher.binding == CascCoresName || input.matcher.binding == KFCascCoresName || input.matcher.binding == TraCascCoresName) {
+            LOGF(info, "Device named %s has subscribed to a V0/Casc Cores table! Will now scan for desired settings...", device.name);
             for (auto const& option : device.options) {
               // 5 V0 topological selections
               if (option.name.compare("v0setting_cospa") == 0) {
