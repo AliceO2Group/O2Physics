@@ -258,6 +258,7 @@ class VarManager : public TObject
     kITSncls,
     kITSchi2,
     kITSlayerHit,
+    kITSmeanClsSize,
     kIsTPCrefit,
     kTPCncls,
     kITSClusterMap,
@@ -1218,6 +1219,17 @@ void VarManager::FillTrack(T const& track, float* values)
     if constexpr ((fillMap & TrackExtra) > 0) {
       if (fgUsedVars[kITSncls]) {
         values[kITSncls] = track.itsNCls(); // dynamic column
+      }
+      if (fgUsedVars[kITSmeanClsSize]) {
+        values[kITSmeanClsSize] = 0.0;
+        uint32_t clsizeflag = track.itsClusterSizes();
+        float mcls = 0.;
+        for (unsigned int layer = 0; layer < 7; layer++) {
+          mcls += (clsizeflag >> (layer * 4)) & 0xF;
+        }
+        if(track.itsNCls() > 0) {
+          values[kITSmeanClsSize] = mcls/track.itsNCls();
+        }
       }
     }
     if constexpr ((fillMap & ReducedTrackBarrel) > 0) {
