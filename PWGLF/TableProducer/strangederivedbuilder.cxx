@@ -65,7 +65,7 @@ struct strangederivedbuilder {
   // fundamental building blocks of derived data
   Produces<aod::StraCollision> strangeColl;      // characterises collisions
   Produces<aod::StraCents> strangeCents;         // characterises collisions / centrality
-  Produces<aod::StraRawCents> strangeRawCents;         // characterises collisions / centrality
+  Produces<aod::StraRawCents> strangeRawCents;   // characterises collisions / centrality
   Produces<aod::StraEvSels> strangeEvSels;       // characterises collisions / sel8 selection
   Produces<aod::StraStamps> strangeStamps;       // provides timestamps, run numbers
   Produces<aod::V0CollRefs> v0collref;           // references collisions from V0s
@@ -197,11 +197,11 @@ struct strangederivedbuilder {
         auto bc = collision.bc_as<aod::BCsWithTimestamps>();
         strangeStamps(bc.runNumber(), bc.timestamp());
 
-        if(fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1){
-          strangeRawCents( collision.multFT0A() * static_cast<float>(fillRawFT0A), 
-                           collision.multFT0C() * static_cast<float>(fillRawFT0C), 
-                           collision.multFT0A() * static_cast<float>(fillRawFV0A),
-                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1) ); 
+        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1) {
+          strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
+                          collision.multFT0C() * static_cast<float>(fillRawFT0C),
+                          collision.multFT0A() * static_cast<float>(fillRawFV0A),
+                          collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1));
         }
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
@@ -230,11 +230,11 @@ struct strangederivedbuilder {
         auto bc = collision.bc_as<aod::BCsWithTimestamps>();
         strangeStamps(bc.runNumber(), bc.timestamp());
 
-        if(fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1){
-          strangeRawCents( collision.multFT0A() * static_cast<float>(fillRawFT0A), 
-                           collision.multFT0C() * static_cast<float>(fillRawFT0C), 
-                           collision.multFT0A() * static_cast<float>(fillRawFV0A),
-                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1) ); 
+        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1) {
+          strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
+                          collision.multFT0C() * static_cast<float>(fillRawFT0C),
+                          collision.multFT0A() * static_cast<float>(fillRawFV0A),
+                          collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1));
         }
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
