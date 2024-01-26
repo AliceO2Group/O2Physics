@@ -29,10 +29,10 @@ namespace femtodreamcollision
 {
 // Define different methods for the event mixing
 enum CollisionBinning {
- kMult, //! Bin collision in number of charged tracks for mixing
- kMultPercentile, //! Bin collision in multiplicity percentile for mixing
- kMultMultPercentile, //! Bin collision in number of charged tracks and multiplicity percentile for mixing
- kNCollisionBinning
+  kMult,               //! Bin collision in number of charged tracks for mixing
+  kMultPercentile,     //! Bin collision in multiplicity percentile for mixing
+  kMultMultPercentile, //! Bin collision in number of charged tracks and multiplicity percentile for mixing
+  kNCollisionBinning
 };
 
 DECLARE_SOA_COLUMN(MultV0M, multV0M, float);       //! V0M multiplicity
