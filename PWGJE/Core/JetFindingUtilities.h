@@ -149,7 +149,7 @@ bool analyseCandidateMC(std::vector<fastjet::PseudoJet>& inputParticles, T const
  * @param doHFJetFinding set whether only jets containing a HF candidate are saved
  */
 template <typename T, typename U, typename V>
-void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputParticles, std::vector<double> jetRadius, T const& collision, U& jetsTable, V& constituentsTable, bool doHFJetFinding = false)
+void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputParticles, std::vector<double> jetRadius, float jetAreaFractionMin, T const& collision, U& jetsTable, V& constituentsTable, bool doHFJetFinding = false)
 {
   auto jetRValues = static_cast<std::vector<double>>(jetRadius);
   for (auto R : jetRValues) {
@@ -168,6 +168,9 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
         if (!isHFJet) {
           continue;
         }
+      }
+      if (jet.has_area() && jet.area() < jetAreaFractionMin * M_PI * R * R) {
+        continue;
       }
       std::vector<int> trackconst;
       std::vector<int> candconst;
@@ -228,7 +231,7 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::stri
       if (candidate != std::nullopt) {
         auto cand = candidate.value();
         auto hfParticle = cand.template mcParticle_as<T>();
-        if (jethfutilities::isDaughterParticle(hfParticle, particles, particle.globalIndex()) || (hfParticle.globalIndex() == particle.globalIndex())) {
+        if (jethfutilities::isDaughterParticle(hfParticle, particle.globalIndex()) || (hfParticle.globalIndex() == particle.globalIndex())) {
           continue;
         }
       }
