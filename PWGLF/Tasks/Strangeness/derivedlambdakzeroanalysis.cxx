@@ -179,8 +179,10 @@ struct derivedlambdakzeroanalysis {
     // histograms versus mass
     if(analyseK0Short)
       histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3F, {axisCentrality, axisPt, axisK0Mass});
-    histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
-    histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+    if(analyseLambda)
+      histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+    if(analyseAntiLambda)
+      histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
 
     // demo // fast
     histos.add("hMassK0Short", "hMassK0Short", kTH1F, {axisK0Mass});
