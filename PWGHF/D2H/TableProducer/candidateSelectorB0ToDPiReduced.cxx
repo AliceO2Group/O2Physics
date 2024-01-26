@@ -162,7 +162,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
         int pidTrackPi{TrackSelectorPID::Status::NotApplicable};
         if (usePionPid == 1) {
           pidTrackPi = selectorPion.statusTpcOrTof(trackPi);
-        } else if (usePionPid == 2) {
+        } else {
           pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         }
         if (!hfHelper.selectionB0ToDPiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
