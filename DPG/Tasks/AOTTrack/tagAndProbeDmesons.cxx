@@ -591,7 +591,6 @@ struct ProbeThirdTrack {
     const AxisSpec axisPtTag{{0.05f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.f, 12.f, 15.f, 20.f, 25.f, 30.f}};
     const AxisSpec axisPtD{{0.f, 0.5f, 1.f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.f, 11.f, 12.f, 14.f, 16.f, 20.f, 24.f, 36.f, 50.f}};
     const AxisSpec axisEtaProbe{20, -1.f, 1.f};
-    const AxisSpec axisPhiProbe{45, 0.f, o2::constants::math::TwoPI};
     const AxisSpec axisNumCrossRowTpc{51, 49.5f, 100.5f};
     const AxisSpec axisTpcChi2PerClus{8, 2.f, 10.f};
     const AxisSpec axisNumCluIts{5, 2.5f, 7.5f};
@@ -604,8 +603,8 @@ struct ProbeThirdTrack {
     for (int iChannel{0}; iChannel < aod::tagandprobe::TagChannels::NTagChannels; ++iChannel) {
       for (int iTrackType{0}; iTrackType < aod::tagandprobe::TrackTypes::NTrackTypes; ++iTrackType) {
         histos[iChannel][iTrackType] = registry.add<THnSparse>(Form("h%sVsPtProbeTag_%s", tagChannels[iChannel].data(), trackTypes[iTrackType].data()),
-                                                               "; #it{p}_{T}(D) (GeV/#it{c}); #it{p}_{T}(tag) (GeV/#it{c}); #it{p}_{T}(probe) (GeV/#it{c}); #it{p}_{T}^{TPC in}(probe) (GeV/#it{c}); #it{M}(D) (GeV/#it{c}^{2}); #it{M}(tag) (GeV/#it{c}^{2}); #it{#eta}(probe); #varphi(probe); #it{N}_{cross rows}^{TPC}(probe); #chi^{2}/#it{N}_{clusters}^{TPC}(probe); #it{N}_{clusters}^{ITS}(probe);",
-                                                               HistType::kTHnSparseF, {axisPtD, axisPtTag, axisPtProbe, axisPtProbe, axisMass[iChannel], axisMassTag[iChannel], axisEtaProbe, axisPhiProbe, axisNumCrossRowTpc, axisTpcChi2PerClus, axisNumCluIts});
+                                                               "; #it{p}_{T}(D) (GeV/#it{c}); #it{p}_{T}(tag) (GeV/#it{c}); #it{p}_{T}(probe) (GeV/#it{c}); #it{p}_{T}^{TPC in}(probe) (GeV/#it{c}); #it{M}(D) (GeV/#it{c}^{2}); #it{M}(tag) (GeV/#it{c}^{2}); #it{#eta}(probe); #it{N}_{cross rows}^{TPC}(probe); #chi^{2}/#it{N}_{clusters}^{TPC}(probe); #it{N}_{clusters}^{ITS}(probe);",
+                                                               HistType::kTHnSparseF, {axisPtD, axisPtTag, axisPtProbe, axisPtProbe, axisMass[iChannel], axisMassTag[iChannel], axisEtaProbe, axisNumCrossRowTpc, axisTpcChi2PerClus, axisNumCluIts});
       }
     }
   }
@@ -649,7 +648,6 @@ struct ProbeThirdTrack {
       auto ptTrackThird = trackThird.pt();
       auto ptTpcInnerTrackThird = trackThird.tpcInnerParam() / std::sqrt(1.f + trackThird.tgl() * trackThird.tgl());
       auto etaTrackThird = trackThird.eta();
-      auto phiTrackThird = trackThird.phi();
       auto numTpcCrossRowTrackThird = trackThird.tpcNClsCrossedRows();
       auto numTpcChi2NumCluTrackThird = trackThird.tpcChi2NCl();
       auto numItsCluTrackThird = trackThird.itsNCls();
@@ -662,7 +660,7 @@ struct ProbeThirdTrack {
       }
       for (int iTrackType{0}; iTrackType < aod::tagandprobe::TrackTypes::NTrackTypes; ++iTrackType) {
         if (trackSelector[iTrackType].IsSelected(trackThird)) {
-          histos[channel][iTrackType]->Fill(ptD, ptTag, ptTrackThird, ptTpcInnerTrackThird, invMass, invMassTag, etaTrackThird, phiTrackThird, numTpcCrossRowTrackThird, numTpcChi2NumCluTrackThird, numItsCluTrackThird);
+          histos[channel][iTrackType]->Fill(ptD, ptTag, ptTrackThird, ptTpcInnerTrackThird, invMass, invMassTag, etaTrackThird, numTpcCrossRowTrackThird, numTpcChi2NumCluTrackThird, numItsCluTrackThird);
         }
       }
     }
