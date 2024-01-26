@@ -119,8 +119,7 @@ struct HfTaskDstarToD0Pi {
     registry.add("QA/hPtVsYNonPromptDstarGen", "MC Matched Non-Prompt D* Candidates at Generator Level; #it{p}_{T} of  D*; #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
   }
 
-  void process(aod::Tracks const&,
-               CandDstarWSelFlag const&)
+  void process(CandDstarWSelFlag const&)
   {
     for (const auto& candDstar : rowsSelectedCandDstar) {
       auto yDstar = candDstar.y(constants::physics::MassDStar);
@@ -155,8 +154,8 @@ struct HfTaskDstarToD0Pi {
       auto invD0 = candDstar.invMassD0();
       auto invD0Bar = candDstar.invMassD0Bar();
 
-      auto prongSoftPi = candDstar.prongPi_as<aod::Tracks>();
-      if (prongSoftPi.sign() > 0) {
+      auto signDstar = candDstar.signSoftPi();
+      if (signDstar) {
         registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invDstar - invD0), candDstar.pt());
         registry.fill(HIST("Yield/hInvMassD0"), invD0, candDstar.ptD0());
         registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (invDstar - invD0));
@@ -164,7 +163,7 @@ struct HfTaskDstarToD0Pi {
         // filling pt of two pronges of D0
         registry.fill(HIST("QA/hPtProng0D0"), candDstar.ptProng0());
         registry.fill(HIST("QA/hPtProng1D0"), candDstar.ptProng1());
-      } else if (prongSoftPi.sign() < 0) {
+      } else if (signDstar) {
         registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invAntiDstar - invD0Bar), candDstar.pt());
         registry.fill(HIST("Yield/hInvMassD0"), invD0Bar, candDstar.ptD0());
         registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (invAntiDstar - invD0Bar));
