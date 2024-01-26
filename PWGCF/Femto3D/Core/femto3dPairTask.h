@@ -144,6 +144,8 @@ class FemtoPair
   void SetMagField2(const float& magfield2) { _magfield2 = magfield2; }
   void SetPDG1(const int& PDG1) { _PDG1 = PDG1; }
   void SetPDG2(const int& PDG2) { _PDG2 = PDG2; }
+  int GetPDG1() { return _PDG1; }
+  int GetPDG2() { return _PDG2; }
   void ResetPair();
   void ResetAll();
 
@@ -151,7 +153,7 @@ class FemtoPair
   TrackType* GetSecondParticle() const { return _second; }
   bool IsIdentical() { return _isidentical; }
 
-  bool IsClosePair(const float& deta = 0.01, const float& dphi = 0.01, const float& radius = 1.2);
+  bool IsClosePair(const float& deta = 0.01, const float& dphi = 0.01, const float& radius = 1.2) const;
   float GetEtaDiff() const
   {
     if (_first != NULL && _second != NULL)
@@ -199,7 +201,7 @@ void FemtoPair<TrackType>::ResetAll()
 }
 
 template <typename TrackType>
-bool FemtoPair<TrackType>::IsClosePair(const float& deta, const float& dphi, const float& radius)
+bool FemtoPair<TrackType>::IsClosePair(const float& deta, const float& dphi, const float& radius) const
 {
   if (_first == NULL || _second == NULL)
     return true;
