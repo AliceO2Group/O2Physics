@@ -16,6 +16,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Qvectors.h"
 
@@ -30,6 +31,8 @@ DECLARE_SOA_TABLE(StraCollisions, "AOD", "STRACOLLISION", //! basic collision pr
 DECLARE_SOA_TABLE(StraCents, "AOD", "STRACENTS", //! centrality percentiles
                   cent::CentFT0M, cent::CentFT0A,
                   cent::CentFT0C, cent::CentFV0A);
+DECLARE_SOA_TABLE(StraRawCents, "AOD", "STRARAWCENTS", //! debug information
+                  mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, mult::MultNTracksPVeta1);
 DECLARE_SOA_TABLE(StraEvSels, "AOD", "STRAEVSELS", //! event selection: sel8
                   evsel::Sel8);
 DECLARE_SOA_TABLE(StraFT0AQVs, "AOD", "STRAFT0AQVS", //! t0a Qvec
