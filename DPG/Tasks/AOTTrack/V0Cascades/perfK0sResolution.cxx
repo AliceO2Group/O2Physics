@@ -248,8 +248,8 @@ struct perfK0sResolution {
       rK0sResolution.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
       if (useMultidimHisto) {
         rK0sResolution.fill(HIST("thn_mass"), v0.mK0Short(), v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta(),
-                            1./v0.positivept() - 1./posTrack.mcParticle().pt(),
-                            1./v0.negativept() - 1./negTrack.mcParticle().pt(),
+                            1. / v0.positivept() - 1. / posTrack.mcParticle().pt(),
+                            1. / v0.negativept() - 1. / negTrack.mcParticle().pt(),
                             isTrueK0s);
       }
     }
