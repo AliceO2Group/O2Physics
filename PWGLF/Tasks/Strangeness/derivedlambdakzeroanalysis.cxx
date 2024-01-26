@@ -9,15 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Example V0 analysis task
-// ========================
+// V0 analysis task
+// ================
 //
-// This code loops over a V0Data table and produces some
+// This code loops over a V0Cores table and produces some
 // standard analysis output. It is meant to be run over
 // derived data.
 //
 //    Comments, questions, complaints, suggestions?
 //    Please write to:
+//    romain.schotter@cern.ch
 //    david.dobrigkeit.chinellato@cern.ch
 //
 #include "Framework/runDataProcessing.h"
@@ -62,6 +63,11 @@ using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, 
 
 struct derivedlambdakzeroanalysis {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  // master analysis switches
+  Configurable<bool> analyseK0Short{"analyseK0Short", true, "process K0Short-like candidates"};
+  Configurable<bool> analyseLambda{"analyseLambda", true, "process Lambda-like candidates"};
+  Configurable<bool> analyseAntiLambda{"analyseAntiLambda", true, "process AntiLambda-like candidates"};
 
   // Selection criteria: acceptance
   Configurable<float> rapidityCut{"rapidityCut", 0.5, "rapidity"};
@@ -171,7 +177,8 @@ struct derivedlambdakzeroanalysis {
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
 
     // histograms versus mass
-    histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3F, {axisCentrality, axisPt, axisK0Mass});
+    if(analyseK0Short)
+      histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3F, {axisCentrality, axisPt, axisK0Mass});
     histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
     histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
 
@@ -181,20 +188,27 @@ struct derivedlambdakzeroanalysis {
     // QA histograms if requested
     if (doQA) {
       // initialize for K0short...
-      histos.add("K0Short/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAtoPV});
-      histos.add("K0Short/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAtoPV});
-      histos.add("K0Short/h4dDCADaughters", "h4dDCADaughters", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAdau});
-      histos.add("K0Short/h4dPointingAngle", "h4dPointingAngle", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisPointingAngle});
-      histos.add("K0Short/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisV0Radius});
-
-      histos.add("Lambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
-      histos.add("Lambda/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
-      histos.add("Lambda/h4dDCADaughters", "h4dDCADaughters", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAdau});
-      histos.add("Lambda/h4dPointingAngle", "h4dPointingAngle", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPointingAngle});
-      histos.add("Lambda/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisV0Radius});
-
-      // identical axes for AntiLambda, please
-      histos.addClone("Lambda/", "AntiLambda/");
+      if(analyseK0Short){
+        histos.add("K0Short/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAtoPV});
+        histos.add("K0Short/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAtoPV});
+        histos.add("K0Short/h4dDCADaughters", "h4dDCADaughters", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAdau});
+        histos.add("K0Short/h4dPointingAngle", "h4dPointingAngle", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisPointingAngle});
+        histos.add("K0Short/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisV0Radius});
+      }
+      if(analyseLambda){
+        histos.add("Lambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
+        histos.add("Lambda/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
+        histos.add("Lambda/h4dDCADaughters", "h4dDCADaughters", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAdau});
+        histos.add("Lambda/h4dPointingAngle", "h4dPointingAngle", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPointingAngle});
+        histos.add("Lambda/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisV0Radius});
+      }
+      if(analyseAntiLambda){
+        histos.add("AntiLambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
+        histos.add("AntiLambda/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
+        histos.add("AntiLambda/h4dDCADaughters", "h4dDCADaughters", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAdau});
+        histos.add("AntiLambda/h4dPointingAngle", "h4dPointingAngle", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPointingAngle});
+        histos.add("AntiLambda/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisV0Radius});
+      }
 
       // Check if doing the right thing in AP space please
       histos.add("GeneralQA/h2dArmenterosAll", "h2dArmenterosAll", kTH2F, {axisAPAlpha, axisAPQt});
@@ -294,56 +308,58 @@ struct derivedlambdakzeroanalysis {
   {
     // __________________________________________
     // main analysis
-    if (verifyMask(selMap, maskSelectionK0Short)) {
+    if (verifyMask(selMap, maskSelectionK0Short) && analyseK0Short) {
       histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), v0.alpha(), v0.qtarm()); // cross-check
       histos.fill(HIST("h3dMassK0Short"), collision.centFT0C(), v0.pt(), v0.mK0Short());
       histos.fill(HIST("hMassK0Short"), v0.mK0Short());
     }
-    if (verifyMask(selMap, maskSelectionLambda)) {
+    if (verifyMask(selMap, maskSelectionLambda) && analyseLambda) {
       histos.fill(HIST("h3dMassLambda"), collision.centFT0C(), v0.pt(), v0.mLambda());
     }
-    if (verifyMask(selMap, maskSelectionAntiLambda)) {
+    if (verifyMask(selMap, maskSelectionAntiLambda) && analyseAntiLambda) {
       histos.fill(HIST("h3dMassAntiLambda"), collision.centFT0C(), v0.pt(), v0.mAntiLambda());
     }
 
     // __________________________________________
     // do systematics / qa plots
     if (doQA) {
-      // K0 systematic sweep block
-      if (verifyMask(selMap, maskTopoNoV0Radius | maskK0ShortSpecific))
-        histos.fill(HIST("K0Short/h4dV0Radius"), collision.centFT0C(), v0.pt(), v0.mK0Short(), v0.v0radius());
-      if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskK0ShortSpecific))
-        histos.fill(HIST("K0Short/h4dPosDCAToPV"), collision.centFT0C(), v0.pt(), v0.mK0Short(), TMath::Abs(v0.dcapostopv()));
-      if (verifyMask(selMap, maskTopoNoDCANegToPV | maskK0ShortSpecific))
-        histos.fill(HIST("K0Short/h4dNegDCAToPV"), collision.centFT0C(), v0.pt(), v0.mK0Short(), TMath::Abs(v0.dcanegtopv()));
-      if (verifyMask(selMap, maskTopoNoCosPA | maskK0ShortSpecific))
-        histos.fill(HIST("K0Short/h4dPointingAngle"), collision.centFT0C(), v0.pt(), v0.mK0Short(), TMath::ACos(v0.v0cosPA()));
-      if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskK0ShortSpecific))
-        histos.fill(HIST("K0Short/h4dDCADaughters"), collision.centFT0C(), v0.pt(), v0.mK0Short(), v0.dcaV0daughters());
+      if( analyseK0Short ){
+        if (verifyMask(selMap, maskTopoNoV0Radius | maskK0ShortSpecific))
+          histos.fill(HIST("K0Short/h4dV0Radius"), collision.centFT0C(), v0.pt(), v0.mK0Short(), v0.v0radius());
+        if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskK0ShortSpecific))
+          histos.fill(HIST("K0Short/h4dPosDCAToPV"), collision.centFT0C(), v0.pt(), v0.mK0Short(), TMath::Abs(v0.dcapostopv()));
+        if (verifyMask(selMap, maskTopoNoDCANegToPV | maskK0ShortSpecific))
+          histos.fill(HIST("K0Short/h4dNegDCAToPV"), collision.centFT0C(), v0.pt(), v0.mK0Short(), TMath::Abs(v0.dcanegtopv()));
+        if (verifyMask(selMap, maskTopoNoCosPA | maskK0ShortSpecific))
+          histos.fill(HIST("K0Short/h4dPointingAngle"), collision.centFT0C(), v0.pt(), v0.mK0Short(), TMath::ACos(v0.v0cosPA()));
+        if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskK0ShortSpecific))
+          histos.fill(HIST("K0Short/h4dDCADaughters"), collision.centFT0C(), v0.pt(), v0.mK0Short(), v0.dcaV0daughters());
+      }
 
-      // K0 systematic sweep block
-      if (verifyMask(selMap, maskTopoNoV0Radius | maskLambdaSpecific))
-        histos.fill(HIST("Lambda/h4dV0Radius"), collision.centFT0C(), v0.pt(), v0.mLambda(), v0.v0radius());
-      if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskLambdaSpecific))
-        histos.fill(HIST("Lambda/h4dPosDCAToPV"), collision.centFT0C(), v0.pt(), v0.mLambda(), TMath::Abs(v0.dcapostopv()));
-      if (verifyMask(selMap, maskTopoNoDCANegToPV | maskLambdaSpecific))
-        histos.fill(HIST("Lambda/h4dNegDCAToPV"), collision.centFT0C(), v0.pt(), v0.mLambda(), TMath::Abs(v0.dcanegtopv()));
-      if (verifyMask(selMap, maskTopoNoCosPA | maskLambdaSpecific))
-        histos.fill(HIST("Lambda/h4dPointingAngle"), collision.centFT0C(), v0.pt(), v0.mLambda(), TMath::ACos(v0.v0cosPA()));
-      if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskLambdaSpecific))
-        histos.fill(HIST("Lambda/h4dDCADaughters"), collision.centFT0C(), v0.pt(), v0.mLambda(), v0.dcaV0daughters());
-
-      // K0 systematic sweep block
-      if (verifyMask(selMap, maskTopoNoV0Radius | maskAntiLambdaSpecific))
-        histos.fill(HIST("AntiLambda/h4dV0Radius"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), v0.v0radius());
-      if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskAntiLambdaSpecific))
-        histos.fill(HIST("AntiLambda/h4dPosDCAToPV"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), TMath::Abs(v0.dcapostopv()));
-      if (verifyMask(selMap, maskTopoNoDCANegToPV | maskAntiLambdaSpecific))
-        histos.fill(HIST("AntiLambda/h4dNegDCAToPV"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), TMath::Abs(v0.dcanegtopv()));
-      if (verifyMask(selMap, maskTopoNoCosPA | maskAntiLambdaSpecific))
-        histos.fill(HIST("AntiLambda/h4dPointingAngle"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), TMath::ACos(v0.v0cosPA()));
-      if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskAntiLambdaSpecific))
-        histos.fill(HIST("AntiLambda/h4dDCADaughters"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), v0.dcaV0daughters());
+      if( analyseLambda ){
+        if (verifyMask(selMap, maskTopoNoV0Radius | maskLambdaSpecific))
+          histos.fill(HIST("Lambda/h4dV0Radius"), collision.centFT0C(), v0.pt(), v0.mLambda(), v0.v0radius());
+        if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskLambdaSpecific))
+          histos.fill(HIST("Lambda/h4dPosDCAToPV"), collision.centFT0C(), v0.pt(), v0.mLambda(), TMath::Abs(v0.dcapostopv()));
+        if (verifyMask(selMap, maskTopoNoDCANegToPV | maskLambdaSpecific))
+          histos.fill(HIST("Lambda/h4dNegDCAToPV"), collision.centFT0C(), v0.pt(), v0.mLambda(), TMath::Abs(v0.dcanegtopv()));
+        if (verifyMask(selMap, maskTopoNoCosPA | maskLambdaSpecific))
+          histos.fill(HIST("Lambda/h4dPointingAngle"), collision.centFT0C(), v0.pt(), v0.mLambda(), TMath::ACos(v0.v0cosPA()));
+        if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskLambdaSpecific))
+          histos.fill(HIST("Lambda/h4dDCADaughters"), collision.centFT0C(), v0.pt(), v0.mLambda(), v0.dcaV0daughters());
+      }
+      if( analyseAntiLambda ){
+        if (verifyMask(selMap, maskTopoNoV0Radius | maskAntiLambdaSpecific))
+          histos.fill(HIST("AntiLambda/h4dV0Radius"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), v0.v0radius());
+        if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskAntiLambdaSpecific))
+          histos.fill(HIST("AntiLambda/h4dPosDCAToPV"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), TMath::Abs(v0.dcapostopv()));
+        if (verifyMask(selMap, maskTopoNoDCANegToPV | maskAntiLambdaSpecific))
+          histos.fill(HIST("AntiLambda/h4dNegDCAToPV"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), TMath::Abs(v0.dcanegtopv()));
+        if (verifyMask(selMap, maskTopoNoCosPA | maskAntiLambdaSpecific))
+          histos.fill(HIST("AntiLambda/h4dPointingAngle"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), TMath::ACos(v0.v0cosPA()));
+        if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskAntiLambdaSpecific))
+          histos.fill(HIST("AntiLambda/h4dDCADaughters"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), v0.dcaV0daughters());
+      }
     } // end systematics / qa
   }
 
