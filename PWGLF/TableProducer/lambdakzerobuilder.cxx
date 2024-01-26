@@ -418,8 +418,8 @@ struct lambdakzeroBuilder {
           const std::string CascCoresName = "StoredCascCores";
           const std::string KFCascCoresName = "StoredKFCascCores";
           const std::string TraCascCoresName = "StoredTraCascCores";
-          // Logic: device is subscribed to a V0 table (excluding the cascade builder) or it's subscribed a Casc table 
-          if (((input.matcher.binding == v0CoresName || input.matcher.binding == v0fCCoressName) && device.name.compare("cascade-builder") != 0 ) ||
+          // Logic: device is subscribed to a V0 table (excluding the cascade builder) or it's subscribed a Casc table
+          if (((input.matcher.binding == v0CoresName || input.matcher.binding == v0fCCoressName) && device.name.compare("cascade-builder") != 0) ||
               input.matcher.binding == CascCoresName || input.matcher.binding == KFCascCoresName || input.matcher.binding == TraCascCoresName) {
             LOGF(info, "Device named %s has subscribed to a V0/Casc Cores table! Will now scan for desired settings...", device.name);
             for (auto const& option : device.options) {
