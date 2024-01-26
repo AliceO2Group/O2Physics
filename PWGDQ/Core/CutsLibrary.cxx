@@ -875,13 +875,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   std::vector<TString> vecTypetrack;
-  vecTypetrack.emplace_back("");              // default TightGlobalTrackRun3
-  vecTypetrack.emplace_back("_7ITSncls");     // default TightGlobalTrackRun3 but with 7 ITS clusters
-  vecTypetrack.emplace_back("_ITS");          // Ask only for ITS requirements
-  vecTypetrack.emplace_back("_ITSalone");     // Ask only for ITS requirements + ITSalone (no TPC matching)
-  vecTypetrack.emplace_back("_TPC");          // Ask only for TPC requirements
-  vecTypetrack.emplace_back("_TPCalone");     // Ask only for TPC requirements + TPCalone (no ITS matching)
-  vecTypetrack.emplace_back("_TPCnoTRD");     // Ask only for TPC requirements no TRD matching
+  vecTypetrack.emplace_back("");          // default TightGlobalTrackRun3
+  vecTypetrack.emplace_back("_7ITSncls"); // default TightGlobalTrackRun3 but with 7 ITS clusters
+  vecTypetrack.emplace_back("_ITS");      // Ask only for ITS requirements
+  vecTypetrack.emplace_back("_ITSalone"); // Ask only for ITS requirements + ITSalone (no TPC matching)
+  vecTypetrack.emplace_back("_TPC");      // Ask only for TPC requirements
+  vecTypetrack.emplace_back("_TPCalone"); // Ask only for TPC requirements + TPCalone (no ITS matching)
+  vecTypetrack.emplace_back("_TPCnoTRD"); // Ask only for TPC requirements no TRD matching
 
   // loop to define PID cuts with and without post calibration
   for (int icase = 0; icase < vecTypetrack.size(); icase++) {
@@ -2738,13 +2738,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   std::vector<TString> vecTypetrack;
-  vecTypetrack.emplace_back("");              // default TightGlobalTrackRun3 as above
-  vecTypetrack.emplace_back("_7ITSncls");     // default TightGlobalTrackRun3 but with 7 ITS clusters
-  vecTypetrack.emplace_back("_ITS");          // Ask only for ITS requirements
-  vecTypetrack.emplace_back("_ITSalone");     // Ask only for ITS requirements + ITSalone (no TPC matching)
-  vecTypetrack.emplace_back("_TPC");          // Ask only for TPC requirements
-  vecTypetrack.emplace_back("_TPCalone");     // Ask only for TPC requirements + TPCalone (no ITS matching)
-  vecTypetrack.emplace_back("_TPCnoTRD");     // Ask only for TPC requirements no TRD matching
+  vecTypetrack.emplace_back("");          // default TightGlobalTrackRun3 as above
+  vecTypetrack.emplace_back("_7ITSncls"); // default TightGlobalTrackRun3 but with 7 ITS clusters
+  vecTypetrack.emplace_back("_ITS");      // Ask only for ITS requirements
+  vecTypetrack.emplace_back("_ITSalone"); // Ask only for ITS requirements + ITSalone (no TPC matching)
+  vecTypetrack.emplace_back("_TPC");      // Ask only for TPC requirements
+  vecTypetrack.emplace_back("_TPCalone"); // Ask only for TPC requirements + TPCalone (no ITS matching)
+  vecTypetrack.emplace_back("_TPCnoTRD"); // Ask only for TPC requirements no TRD matching
 
   // loop to define PID cuts with and without post calibration
   for (int icase = 1; icase < vecTypetrack.size(); icase++) {

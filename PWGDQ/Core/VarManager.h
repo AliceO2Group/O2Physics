@@ -1227,8 +1227,8 @@ void VarManager::FillTrack(T const& track, float* values)
         for (unsigned int layer = 0; layer < 7; layer++) {
           mcls += (clsizeflag >> (layer * 4)) & 0xF;
         }
-        if(track.itsNCls() > 0) {
-          values[kITSmeanClsSize] = mcls/track.itsNCls();
+        if (track.itsNCls() > 0) {
+          values[kITSmeanClsSize] = mcls / track.itsNCls();
         }
       }
     }
