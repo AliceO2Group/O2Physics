@@ -110,10 +110,11 @@ struct hyperRecoTask {
   Configurable<double> v0cospa{"hypcospa", 0.95, "V0 CosPA"};
   Configurable<float> masswidth{"hypmasswidth", 0.06, "Mass width (GeV/c^2)"};
   Configurable<float> dcav0dau{"hypdcaDau", 1.0, "DCA V0 Daughters"};
-  Configurable<float> ptmin{"ptmin", 0.5, "Minimum pT of the hypercandidate"};
+  Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT of the hypercandidate"};
+  Configurable<float> TPCRigidityMinHe{"TPCRigidityMinHe", 0.2, "Minimum rigidity of the helium candidate"};
   Configurable<float> etaMax{"eta", 1., "eta daughter"};
-  Configurable<float> heliumNsigmaMax{"heliumNsigmaMax", 5, "helium dEdx cut (n sigma)"};
-  Configurable<float> heliumNtpcClusMin{"heliumNtpcClusMin", 80, "helium NTPC clusters cut"};
+  Configurable<float> nSigmaMaxHe{"nSigmaMaxHe", 5, "helium dEdx cut (n sigma)"};
+  Configurable<float> nTPCClusMinHe{"nTPCClusMinHe", 80, "helium NTPC clusters cut"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
@@ -272,10 +273,8 @@ struct hyperRecoTask {
       float posRigidity = posHeliumPID ? posTrack.tpcInnerParam() / 2 : posTrack.tpcInnerParam();
       float negRigidity = negHeliumPID ? negTrack.tpcInnerParam() / 2 : negTrack.tpcInnerParam();
 
-      if (posTrack.tpcNClsFound() >= heliumNtpcClusMin)
-        hDeDxTot->Fill(posRigidity, posTrack.tpcSignal());
-      if (negTrack.tpcNClsFound() >= heliumNtpcClusMin)
-        hDeDxTot->Fill(-negRigidity, negTrack.tpcSignal());
+      hDeDxTot->Fill(posRigidity, posTrack.tpcSignal());
+      hDeDxTot->Fill(-negRigidity, negTrack.tpcSignal());
 
       double expBethePos{tpc::BetheBlochAleph(static_cast<float>(posRigidity * 2 / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4])};
       double expBetheNeg{tpc::BetheBlochAleph(static_cast<float>(negRigidity * 2 / constants::physics::MassHelium3), mBBparamsHe[0], mBBparamsHe[1], mBBparamsHe[2], mBBparamsHe[3], mBBparamsHe[4])};
@@ -285,8 +284,8 @@ struct hyperRecoTask {
       auto nSigmaTPCneg = static_cast<float>((negTrack.tpcSignal() - expBetheNeg) / expSigmaNeg);
 
       // ITS only tracks do not have TPC information. TPCnSigma: only lower cut to allow for both hypertriton and hyperhydrogen4 reconstruction
-      bool isHe = posTrack.hasTPC() && nSigmaTPCpos > -1 * heliumNsigmaMax;
-      bool isAntiHe = negTrack.hasTPC() && nSigmaTPCneg > -1 * heliumNsigmaMax;
+      bool isHe = posTrack.hasTPC() && nSigmaTPCpos > -1 * nSigmaMaxHe;
+      bool isAntiHe = negTrack.hasTPC() && nSigmaTPCneg > -1 * nSigmaMaxHe;
 
       if (!isHe && !isAntiHe)
         continue;
@@ -294,7 +293,8 @@ struct hyperRecoTask {
       hyperCandidate hypCand;
       hypCand.isMatter = isHe && isAntiHe ? std::abs(nSigmaTPCpos) < std::abs(nSigmaTPCneg) : isHe;
       auto& he3track = hypCand.isMatter ? posTrack : negTrack;
-      if (he3track.tpcNClsFound() < heliumNtpcClusMin)
+      auto& he3Rigidity = hypCand.isMatter ? posRigidity : negRigidity;
+      if (he3track.tpcNClsFound() < nTPCClusMinHe || he3Rigidity < TPCRigidityMinHe)
         continue;
 
       hypCand.nSigmaHe3 = hypCand.isMatter ? nSigmaTPCpos : nSigmaTPCneg;
@@ -350,7 +350,7 @@ struct hyperRecoTask {
       }
 
       float hypPt = std::hypot(hypMom[0], hypMom[1]);
-      if (hypPt < ptmin)
+      if (hypPt < ptMin)
         continue;
 
       float massH3L = std::sqrt(h3lE * h3lE - hypMom[0] * hypMom[0] - hypMom[1] * hypMom[1] - hypMom[2] * hypMom[2]);
