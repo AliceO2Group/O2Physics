@@ -44,6 +44,7 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/Qvectors.h"
 #include "Framework/StaticFor.h"
 
 using namespace o2;
@@ -96,6 +97,13 @@ struct strangederivedbuilder {
   // raw TOF PID for posterior use if requested
   Produces<aod::V0TOFs> v0tofs;     // V0 part
   Produces<aod::CascTOFs> casctofs; // cascade part
+
+  //__________________________________________________
+  // Q-vectors
+  Produces<aod::StraFT0AQVs> StraFT0AQVs; // FT0A Q-vector
+  Produces<aod::StraFT0CQVs> StraFT0CQVs; // FT0C Q-vector
+  Produces<aod::StraFT0MQVs> StraFT0MQVs; // FT0M Q-vector
+  Produces<aod::StraFV0AQVs> StraFV0AQVs; // FV0A Q-vector
 
   // histogram registry for bookkeeping
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -508,6 +516,23 @@ struct strangederivedbuilder {
     }
   }
 
+  void processFT0AQVectors(soa::Join<aod::Collisions, aod::QvectorFT0As>::iterator const& collision)
+  {
+    StraFT0AQVs(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.sumAmplFT0A());
+  }
+  void processFT0CQVectors(soa::Join<aod::Collisions, aod::QvectorFT0Cs>::iterator const& collision)
+  {
+    StraFT0CQVs(collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.sumAmplFT0C());
+  }
+  void processFT0MQVectors(soa::Join<aod::Collisions, aod::QvectorFT0Ms>::iterator const& collision)
+  {
+    StraFT0MQVs(collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.sumAmplFT0M());
+  }
+  void processFV0AQVectors(soa::Join<aod::Collisions, aod::QvectorFV0As>::iterator const& collision)
+  {
+    StraFV0AQVs(collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.sumAmplFV0A());
+  }
+
   PROCESS_SWITCH(strangederivedbuilder, processCollisionsV0sOnly, "Produce collisions (V0s only)", true);
   PROCESS_SWITCH(strangederivedbuilder, processCollisions, "Produce collisions (V0s + casc)", true);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasV0sOnly, "Produce track extra information (V0s only)", true);
@@ -519,6 +544,10 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processReconstructedSimulation, "Produce reco-ed simulated information", true);
   PROCESS_SWITCH(strangederivedbuilder, processProduceV0TOFs, "Produce V0TOFs table", true);
   PROCESS_SWITCH(strangederivedbuilder, processProduceCascTOFs, "Produce CascTOFs table", true);
+  PROCESS_SWITCH(strangederivedbuilder, processFT0AQVectors, "Produce FT0A Q-vectors table", false);
+  PROCESS_SWITCH(strangederivedbuilder, processFT0CQVectors, "Produce FT0C Q-vectors table", false);
+  PROCESS_SWITCH(strangederivedbuilder, processFT0MQVectors, "Produce FT0M Q-vectors table", false);
+  PROCESS_SWITCH(strangederivedbuilder, processFV0AQVectors, "Produce FV0A Q-vectors table", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
