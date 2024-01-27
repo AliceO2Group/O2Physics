@@ -205,15 +205,17 @@ struct lambdakzeroBuilder {
   o2::vertexing::DCAFitterN<2> fitter;
 
   // provision to repeat mass selections while doing AND with PID selections
-  // fixme : this could be done more uniformly svertexer with reconstruction 
-  //         but that requires decoupling the mass window selections in O2 
-  //         - to be done at a later stage 
+  // fixme : this could be done more uniformly svertexer with reconstruction
+  //         but that requires decoupling the mass window selections in O2
+  //         - to be done at a later stage
 
-  float getMassSigmaK0Short(float pt){
-    return massCutK0->get("constant") + pt*massCutK0->get("linear") + massCutK0->get("expoConstant")*TMath::Exp(-pt/massCutK0->get("expoRelax"));
+  float getMassSigmaK0Short(float pt)
+  {
+    return massCutK0->get("constant") + pt * massCutK0->get("linear") + massCutK0->get("expoConstant") * TMath::Exp(-pt / massCutK0->get("expoRelax"));
   }
-  float getMassSigmaLambda(float pt){
-    return massCutLambda->get("constant") + pt*massCutLambda->get("linear") + massCutLambda->get("expoConstant")*TMath::Exp(-pt/massCutLambda->get("expoRelax"));
+  float getMassSigmaLambda(float pt)
+  {
+    return massCutLambda->get("constant") + pt * massCutLambda->get("linear") + massCutLambda->get("expoConstant") * TMath::Exp(-pt / massCutLambda->get("expoRelax"));
   }
 
   Filter taggedFilter = aod::v0tag::isInteresting == true;
@@ -716,7 +718,7 @@ struct lambdakzeroBuilder {
     auto pz = v0candidate.posP[2] + v0candidate.negP[2];
     auto lPt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
 
-    // Momentum range check 
+    // Momentum range check
     if (lPt < minimumPt || lPt > maximumPt) {
       return false; // reject if not within desired window
     }
@@ -738,26 +740,26 @@ struct lambdakzeroBuilder {
     auto lHypertritonMass = RecoDecay::m(array{array{2.0f * v0candidate.posP[0], 2.0f * v0candidate.posP[1], 2.0f * v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPionCharged});
     auto lAntiHypertritonMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{2.0f * v0candidate.negP[0], 2.0f * v0candidate.negP[1], 2.0f * v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassHelium3});
 
-    // mass window check 
-    bool desiredMass = false; 
-    if( massWindownumberOfSigmas > 1e+3 ){
+    // mass window check
+    bool desiredMass = false;
+    if (massWindownumberOfSigmas > 1e+3) {
       desiredMass = true; // safety fallback
-    }else{
-      // check if user requested to correlate mass requirement with TPC PID 
+    } else {
+      // check if user requested to correlate mass requirement with TPC PID
       // (useful for data volume reduction)
       bool dEdxK0Short = V0.isdEdxK0Short() || !massWindowWithTPCPID;
       bool dEdxLambda = V0.isdEdxLambda() || !massWindowWithTPCPID;
       bool dEdxAntiLambda = V0.isdEdxAntiLambda() || !massWindowWithTPCPID;
-      
-      if( dEdxK0Short && TMath::Abs(v0candidate.k0ShortMass-o2::constants::physics::MassKaonNeutral) < massWindownumberOfSigmas*getMassSigmaK0Short(lPt) + massWindowSafetyMargin ) 
+
+      if (dEdxK0Short && TMath::Abs(v0candidate.k0ShortMass - o2::constants::physics::MassKaonNeutral) < massWindownumberOfSigmas * getMassSigmaK0Short(lPt) + massWindowSafetyMargin)
         desiredMass = true;
-      if( dEdxLambda && TMath::Abs(v0candidate.lambdaMass-o2::constants::physics::MassLambda) < massWindownumberOfSigmas*getMassSigmaLambda(lPt) + massWindowSafetyMargin ) 
+      if (dEdxLambda && TMath::Abs(v0candidate.lambdaMass - o2::constants::physics::MassLambda) < massWindownumberOfSigmas * getMassSigmaLambda(lPt) + massWindowSafetyMargin)
         desiredMass = true;
-      if( dEdxAntiLambda && TMath::Abs(v0candidate.antiLambdaMass-o2::constants::physics::MassLambda) < massWindownumberOfSigmas*getMassSigmaLambda(lPt) + massWindowSafetyMargin ) 
+      if (dEdxAntiLambda && TMath::Abs(v0candidate.antiLambdaMass - o2::constants::physics::MassLambda) < massWindownumberOfSigmas * getMassSigmaLambda(lPt) + massWindowSafetyMargin)
         desiredMass = true;
     }
 
-    if(!desiredMass) 
+    if (!desiredMass)
       return false;
 
     if (d_doTrackQA) {
