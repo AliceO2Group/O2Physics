@@ -367,7 +367,7 @@ struct chargedkstaranalysis {
     "multiplicity percentile for bin"};
   ConfigurableAxis axisMultiplicity{
     "axisMultiplicity",
-    {1000, 0, 10000},
+    {2, 0, 100},
     "TPC multiplicity  for bin"};
 
   using BinningTypeTPCMultiplicity =
