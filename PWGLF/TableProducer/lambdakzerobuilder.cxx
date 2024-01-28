@@ -183,6 +183,17 @@ struct lambdakzeroBuilder {
   ConfigurableAxis axisDCACHI2{"axisDCACHI2", {500, 0, 50}, "#chi^{2}"};
   ConfigurableAxis axisPositionGuess{"axisPositionGuess", {240, 0, 120}, "(cm)"};
 
+  // default parameters from central Pb-Pb (worst case scenario), PbPb 2023 pass1
+  // fuctional form: [0]+[1]*x+[2]*TMath::Exp(-x/[3])
+
+  static constexpr float defaultK0MassWindowParameters[1][4] = {{2.81882e-03, 1.14057e-03, 1.72138e-03, 5.00262e-01}};
+  static constexpr float defaultLambdaWindowParameters[1][4] = {{1.17518e-03, 1.24099e-04, 5.47937e-03, 3.08009e-01}};
+  Configurable<LabeledArray<float>> massCutK0{"massCutK0", {defaultK0MassWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for K0"};
+  Configurable<LabeledArray<float>> massCutLambda{"massCutLambda", {defaultLambdaWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for Lambda"};
+  Configurable<float> massWindownumberOfSigmas{"massWindownumberOfSigmas", 5e+6, "number of sigmas around mass peaks to keep"};
+  Configurable<bool> massWindowWithTPCPID{"massWindowWithTPCPID", true, "when checking mass windows, correlate with TPC dE/dx"};
+  Configurable<float> massWindowSafetyMargin{"massWindowSafetyMargin", 0.001, "Extra mass window safety margin"};
+
   int mRunNumber;
   float d_bz;
   float maxSnp;  // max sine phi for propagation
@@ -192,6 +203,20 @@ struct lambdakzeroBuilder {
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
+
+  // provision to repeat mass selections while doing AND with PID selections
+  // fixme : this could be done more uniformly svertexer with reconstruction
+  //         but that requires decoupling the mass window selections in O2
+  //         - to be done at a later stage
+
+  float getMassSigmaK0Short(float pt)
+  {
+    return massCutK0->get("constant") + pt * massCutK0->get("linear") + massCutK0->get("expoConstant") * TMath::Exp(-pt / massCutK0->get("expoRelax"));
+  }
+  float getMassSigmaLambda(float pt)
+  {
+    return massCutLambda->get("constant") + pt * massCutLambda->get("linear") + massCutLambda->get("expoConstant") * TMath::Exp(-pt / massCutLambda->get("expoRelax"));
+  }
 
   Filter taggedFilter = aod::v0tag::isInteresting == true;
 
@@ -224,8 +249,9 @@ struct lambdakzeroBuilder {
     float cosPA;
     float dcav0topv;
     float V0radius;
+    float k0ShortMass;
     float lambdaMass;
-    float antilambdaMass;
+    float antiLambdaMass;
   } v0candidate;
 
   // Helper struct to do bookkeeping of building parameters
@@ -692,10 +718,12 @@ struct lambdakzeroBuilder {
     auto pz = v0candidate.posP[2] + v0candidate.negP[2];
     auto lPt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
 
+    // Momentum range check
     if (lPt < minimumPt || lPt > maximumPt) {
       return false; // reject if not within desired window
     }
 
+    // Daughter eta check
     if (TMath::Abs(RecoDecay::eta(std::array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]})) > maxDaughterEta ||
         TMath::Abs(RecoDecay::eta(std::array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]})) > maxDaughterEta) {
       return false; // reject - daughters have too large eta to be reliable for MC corrections
@@ -703,6 +731,36 @@ struct lambdakzeroBuilder {
 
     // Passes momentum window check
     statisticsRegistry.v0stats[kWithinMomentumRange]++;
+
+    // Calculate masses
+    auto lGammaMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
+    v0candidate.k0ShortMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
+    v0candidate.lambdaMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+    v0candidate.antiLambdaMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
+    auto lHypertritonMass = RecoDecay::m(array{array{2.0f * v0candidate.posP[0], 2.0f * v0candidate.posP[1], 2.0f * v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPionCharged});
+    auto lAntiHypertritonMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{2.0f * v0candidate.negP[0], 2.0f * v0candidate.negP[1], 2.0f * v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassHelium3});
+
+    // mass window check
+    bool desiredMass = false;
+    if (massWindownumberOfSigmas > 1e+3) {
+      desiredMass = true; // safety fallback
+    } else {
+      // check if user requested to correlate mass requirement with TPC PID
+      // (useful for data volume reduction)
+      bool dEdxK0Short = V0.isdEdxK0Short() || !massWindowWithTPCPID;
+      bool dEdxLambda = V0.isdEdxLambda() || !massWindowWithTPCPID;
+      bool dEdxAntiLambda = V0.isdEdxAntiLambda() || !massWindowWithTPCPID;
+
+      if (dEdxK0Short && TMath::Abs(v0candidate.k0ShortMass - o2::constants::physics::MassKaonNeutral) < massWindownumberOfSigmas * getMassSigmaK0Short(lPt) + massWindowSafetyMargin)
+        desiredMass = true;
+      if (dEdxLambda && TMath::Abs(v0candidate.lambdaMass - o2::constants::physics::MassLambda) < massWindownumberOfSigmas * getMassSigmaLambda(lPt) + massWindowSafetyMargin)
+        desiredMass = true;
+      if (dEdxAntiLambda && TMath::Abs(v0candidate.antiLambdaMass - o2::constants::physics::MassLambda) < massWindownumberOfSigmas * getMassSigmaLambda(lPt) + massWindowSafetyMargin)
+        desiredMass = true;
+    }
+
+    if (!desiredMass)
+      return false;
 
     if (d_doTrackQA) {
       if (posTrack.itsNCls() < 10)
@@ -715,14 +773,6 @@ struct lambdakzeroBuilder {
       bool mcUnchecked = !d_QA_checkMC;
       bool dEdxUnchecked = !d_QA_checkdEdx;
 
-      // Calculate masses
-      auto lGammaMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
-      auto lK0ShortMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
-      auto lLambdaMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
-      auto lAntiLambdaMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
-      auto lHypertritonMass = RecoDecay::m(array{array{2.0f * v0candidate.posP[0], 2.0f * v0candidate.posP[1], 2.0f * v0candidate.posP[2]}, array{v0candidate.negP[0], v0candidate.negP[1], v0candidate.negP[2]}}, array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPionCharged});
-      auto lAntiHypertritonMass = RecoDecay::m(array{array{v0candidate.posP[0], v0candidate.posP[1], v0candidate.posP[2]}, array{2.0f * v0candidate.negP[0], 2.0f * v0candidate.negP[1], 2.0f * v0candidate.negP[2]}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassHelium3});
-
       auto lPtHy = RecoDecay::sqrtSumOfSquares(2.0f * v0candidate.posP[0] + v0candidate.negP[0], 2.0f * v0candidate.posP[1] + v0candidate.negP[1]);
       auto lPtAnHy = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + 2.0f * v0candidate.negP[0], v0candidate.posP[1] + 2.0f * v0candidate.negP[1]);
 
@@ -731,11 +781,11 @@ struct lambdakzeroBuilder {
         if ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))
           registry.fill(HIST("h2dGammaMass"), lPt, lGammaMass);
         if ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))
-          registry.fill(HIST("h2dK0ShortMass"), lPt, lK0ShortMass);
+          registry.fill(HIST("h2dK0ShortMass"), lPt, v0candidate.k0ShortMass);
         if ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))
-          registry.fill(HIST("h2dLambdaMass"), lPt, lLambdaMass);
+          registry.fill(HIST("h2dLambdaMass"), lPt, v0candidate.lambdaMass);
         if ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))
-          registry.fill(HIST("h2dAntiLambdaMass"), lPt, lAntiLambdaMass);
+          registry.fill(HIST("h2dAntiLambdaMass"), lPt, v0candidate.antiLambdaMass);
         if ((V0.isdEdxHypertriton() || dEdxUnchecked) && (V0.isTrueHypertriton() || mcUnchecked))
           registry.fill(HIST("h2dHypertritonMass"), lPtHy, lHypertritonMass);
         if ((V0.isdEdxAntiHypertriton() || dEdxUnchecked) && (V0.isTrueAntiHypertriton() || mcUnchecked))
@@ -747,15 +797,15 @@ struct lambdakzeroBuilder {
         registry.fill(HIST("h2dITSCluMap_Gamma"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
         registry.fill(HIST("h2dXIU_Gamma"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
-      if (TMath::Abs(lK0ShortMass - 0.497) < dQAK0ShortMassWindow && ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))) {
+      if (TMath::Abs(v0candidate.k0ShortMass - 0.497) < dQAK0ShortMassWindow && ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_K0Short"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
         registry.fill(HIST("h2dXIU_K0Short"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
-      if (TMath::Abs(lLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))) {
+      if (TMath::Abs(v0candidate.lambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_Lambda"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
         registry.fill(HIST("h2dXIU_Lambda"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
-      if (TMath::Abs(lAntiLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))) {
+      if (TMath::Abs(v0candidate.antiLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_AntiLambda"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
         registry.fill(HIST("h2dXIU_AntiLambda"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
