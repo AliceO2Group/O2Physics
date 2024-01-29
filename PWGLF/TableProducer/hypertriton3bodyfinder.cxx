@@ -555,9 +555,8 @@ struct hypertriton3bodyFinder {
       return false;
     }
 
-    int cand = 0;
-    auto& trPProp = fitter.getTrack(0, cand);
-    auto& trNProp = fitter.getTrack(1, cand);
+    auto& trPProp = fitter.getTrack(0);
+    auto& trNProp = fitter.getTrack(1);
     std::array<float, 3> pP, pN;
     trPProp.getPxPyPzGlo(pP);
     trNProp.getPxPyPzGlo(pN);
@@ -700,7 +699,7 @@ struct hypertriton3bodyFinder {
     o2::base::Propagator::Instance()->propagateToDCABxByBz({dCollision.posX(), dCollision.posY(), dCollision.posZ()}, Track2Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
     auto Track2dcaXY = dcaInfo[0];
 
-    //  Not involved: H3L DCA Check
+    // H3L DCA Check
     // auto track3B = o2::track::TrackParCov(vertexXYZ, p3B, fitter3body.calcPCACovMatrixFlat(cand3B), t2.sign());
     auto track3B = o2::track::TrackParCov(vertexXYZ, p3B, dBachtrack.sign());
     o2::dataformats::DCA dca;

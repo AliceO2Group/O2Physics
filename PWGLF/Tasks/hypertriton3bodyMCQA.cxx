@@ -207,10 +207,10 @@ struct hypertriton3bodyAnalysisMc {
       {"hProtonTPCVsPt", "hProtonTPCVsPt", {HistType::kTH2F, {{50, 0.0f, 5.0f, "#it{p}_{T} (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
       {"hPionTPCVsPt", "hPionTPCVsPt", {HistType::kTH2F, {{20, 0.0f, 2.0f, "#it{p}_{T} (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
       {"hDeuteronTPCVsPt", "hDeuteronTPCVsPt", {HistType::kTH2F, {{80, 0.0f, 8.0f, "#it{p}_{T} (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
-      {"hDeuteronTOFVsPBeforeTOFCut", "hDeuteronTOFVsPBeforeTOFCut", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TPC n#sigma"}}}},
-      {"hDeuteronTOFVsPBeforeTOFCutSig", "hDeuteronTOFVsPBeforeTOFCutSig", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TPC n#sigma"}}}},
-      {"hDeuteronTOFVsPAtferTOFCut", "hDeuteronTOFVsPAtferTOFCut", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TPC n#sigma"}}}},
-      {"hDeuteronTOFVsPAtferTOFCutSig", "hDeuteronTOFVsPAtferTOFCutSig", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TPC n#sigma"}}}},
+      {"hDeuteronTOFVsPBeforeTOFCut", "hDeuteronTOFVsPBeforeTOFCut", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}}}},
+      {"hDeuteronTOFVsPBeforeTOFCutSig", "hDeuteronTOFVsPBeforeTOFCutSig", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}}}},
+      {"hDeuteronTOFVsPAtferTOFCut", "hDeuteronTOFVsPAtferTOFCut", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}}}},
+      {"hDeuteronTOFVsPAtferTOFCutSig", "hDeuteronTOFVsPAtferTOFCutSig", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}}}},
 
       {"hDalitz", "hDalitz", {HistType::kTH2F, {{120, 7.85, 8.45, "M^{2}(dp) (GeV^{2}/c^{4})"}, {60, 1.1, 1.4, "M^{2}(p#pi) (GeV^{2}/c^{4})"}}}},
       {"h3dMassHypertriton", "h3dMassHypertriton", {HistType::kTH3F, {{20, 0.0f, 100.0f, "Cent (%)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {80, 2.96f, 3.04f, "Inv. Mass (GeV/c^{2})"}}}},
@@ -496,7 +496,7 @@ struct hypertriton3bodyLabelCheck {
   HistogramRegistry registry{
     "registry",
     {
-      {"hLabeledVtxCounter", "hLabeledVtxCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+      {"hLabeledVtxCounter", "hLabeledVtxCounter", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
       {"hMassTrueH3L", "hMassTrueH3L", {HistType::kTH1F, {{80, 2.96f, 3.04f}}}},
       {"hMassTrueH3LMatter", "hMassTrueH3LMatter", {HistType::kTH1F, {{80, 2.96f, 3.04f}}}},
       {"hMassTrueH3LAntiMatter", "hMassTrueH3LAntiMatter", {HistType::kTH1F, {{80, 2.96f, 3.04f}}}},
@@ -507,6 +507,7 @@ struct hypertriton3bodyLabelCheck {
   {
     registry.get<TH1>(HIST("hLabeledVtxCounter"))->GetXaxis()->SetBinLabel(1, "Readin");
     registry.get<TH1>(HIST("hLabeledVtxCounter"))->GetXaxis()->SetBinLabel(2, "TrueMCH3L");
+    registry.get<TH1>(HIST("hLabeledVtxCounter"))->GetXaxis()->SetBinLabel(3, "Nonrepetitive");
   }
 
   Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
@@ -523,6 +524,7 @@ struct hypertriton3bodyLabelCheck {
       return;
     }
 
+    std::vector<int64_t> set_mothertrack;
     for (auto& vtx : vtx3bodydatas) {
       registry.fill(HIST("hLabeledVtxCounter"), 0.5);
       if (vtx.mcParticleId() != -1) {
@@ -531,10 +533,20 @@ struct hypertriton3bodyLabelCheck {
           registry.fill(HIST("hLabeledVtxCounter"), 1.5);
           registry.fill(HIST("hMassTrueH3L"), vtx.mHypertriton());
           registry.fill(HIST("hMassTrueH3LMatter"), vtx.mHypertriton());
+          auto p = std::find(set_mothertrack.begin(), set_mothertrack.end(), mcparticle.globalIndex());
+          if (p == set_mothertrack.end()){
+            set_mothertrack.push_back(mcparticle.globalIndex());
+            registry.fill(HIST("hLabeledVtxCounter"), 2.5);
+          }
         } else if (mcparticle.pdgCode() == -1010010030) {
           registry.fill(HIST("hLabeledVtxCounter"), 1.5);
           registry.fill(HIST("hMassTrueH3L"), vtx.mAntiHypertriton());
           registry.fill(HIST("hMassTrueH3LAntiMatter"), vtx.mAntiHypertriton());
+          auto p = std::find(set_mothertrack.begin(), set_mothertrack.end(), mcparticle.globalIndex());
+          if (p == set_mothertrack.end()){
+            set_mothertrack.push_back(mcparticle.globalIndex());
+            registry.fill(HIST("hLabeledVtxCounter"), 2.5);
+          }
         }
       }
     }
