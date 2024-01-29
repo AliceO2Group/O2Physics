@@ -107,7 +107,8 @@ struct qVectorsCorrection {
 
     // Fill the registry with the needed objects.
     const AxisSpec axisCent{110, 0., 110.};
-    const AxisSpec axisQvec{1000, -5, 5};
+    const AxisSpec axisQvec{1000, -3, 3};
+    const AxisSpec axisQvecF{1000, -0.3, 0.3};
     const AxisSpec axisConst{12, 0., 12.}; // 4 constants x 3 detectors.
     const AxisSpec axisEvtPl{360, -constants::math::PI, constants::math::PI};
 
@@ -117,19 +118,19 @@ struct qVectorsCorrection {
     histosQA.add("Centrality_0-5/histCent", "Centrality distribution",
                  HistType::kTH1F, {axisCent});
 
-    histosQA.add("Centrality_0-5/histQvecUncor", "", {HistType::kTH2F, {axisQvec, axisQvec}});
-    histosQA.add("Centrality_0-5/histQvecRectr", "", {HistType::kTH2F, {axisQvec, axisQvec}});
-    histosQA.add("Centrality_0-5/histQvecTwist", "", {HistType::kTH2F, {axisQvec, axisQvec}});
+    histosQA.add("Centrality_0-5/histQvecUncor", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
+    histosQA.add("Centrality_0-5/histQvecRectr", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
+    histosQA.add("Centrality_0-5/histQvecTwist", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
     histosQA.add("Centrality_0-5/histQvecFinal", "", {HistType::kTH2F, {axisQvec, axisQvec}});
 
-    histosQA.add("Centrality_0-5/histQvecRefAUncor", "", {HistType::kTH2F, {axisQvec, axisQvec}});
-    histosQA.add("Centrality_0-5/histQvecRefARectr", "", {HistType::kTH2F, {axisQvec, axisQvec}});
-    histosQA.add("Centrality_0-5/histQvecRefATwist", "", {HistType::kTH2F, {axisQvec, axisQvec}});
+    histosQA.add("Centrality_0-5/histQvecRefAUncor", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
+    histosQA.add("Centrality_0-5/histQvecRefARectr", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
+    histosQA.add("Centrality_0-5/histQvecRefATwist", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
     histosQA.add("Centrality_0-5/histQvecRefAFinal", "", {HistType::kTH2F, {axisQvec, axisQvec}});
 
-    histosQA.add("Centrality_0-5/histQvecRefBUncor", "", {HistType::kTH2F, {axisQvec, axisQvec}});
-    histosQA.add("Centrality_0-5/histQvecRefBRectr", "", {HistType::kTH2F, {axisQvec, axisQvec}});
-    histosQA.add("Centrality_0-5/histQvecRefBTwist", "", {HistType::kTH2F, {axisQvec, axisQvec}});
+    histosQA.add("Centrality_0-5/histQvecRefBUncor", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
+    histosQA.add("Centrality_0-5/histQvecRefBRectr", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
+    histosQA.add("Centrality_0-5/histQvecRefBTwist", "", {HistType::kTH2F, {axisQvecF, axisQvecF}});
     histosQA.add("Centrality_0-5/histQvecRefBFinal", "", {HistType::kTH2F, {axisQvec, axisQvec}});
 
     histosQA.add("Centrality_0-5/histEvtPlUncor", "", {HistType::kTH1F, {axisEvtPl}});

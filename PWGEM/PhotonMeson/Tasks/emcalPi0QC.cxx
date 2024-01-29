@@ -159,8 +159,6 @@ struct Pi0QCTask {
 
   // define container for photons
   std::vector<Photon> mPhotons;
-  // define container for photons for each collision
-  std::map<int, std::vector<Photon>> mapPhotons;
 
   // event mixing class
   EventMixVec evtMix;
@@ -304,7 +302,6 @@ struct Pi0QCTask {
     LOG(debug) << "ProcessClusters";
     // clear photon vector
     mPhotons.clear();
-    mapPhotons.clear();
 
     int globalCollID = -1000;
 
@@ -395,9 +392,12 @@ struct Pi0QCTask {
       LOG(debug) << "Cluster rejected because of nCells cut";
       return true;
     }
-    if (cluster.m02() < mClusterMinM02Cut || cluster.m02() > mClusterMaxM02Cut) {
-      LOG(debug) << "Cluster rejected because of m02 cut";
-      return true;
+    // Only apply M02 cut when cluster contains more than one cell
+    if (cluster.nCells() > 1) {
+      if (cluster.m02() < mClusterMinM02Cut || cluster.m02() > mClusterMaxM02Cut) {
+        LOG(debug) << "Cluster rejected because of m02 cut";
+        return true;
+      }
     }
     if (cluster.time() < mTimeMin || cluster.time() > mTimeMax) {
       LOG(debug) << "Cluster rejected because of time cut";

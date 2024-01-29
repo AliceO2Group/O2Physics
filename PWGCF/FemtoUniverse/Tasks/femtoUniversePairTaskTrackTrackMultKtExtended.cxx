@@ -162,6 +162,8 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
   Configurable<float> ConfCPRdeltaPhiMax{"ConfCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaPhiCut{"ConfCPRdeltaPhiCut", 0.0, "Delta Phi cut for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaEtaCut{"ConfCPRdeltaEtaCut", 0.0, "Delta Eta cut for Close Pair Rejection"};
 
   Configurable<bool> cfgProcessPM{"cfgProcessPM", false, "Process particles of the opposite charge"};
   Configurable<bool> cfgProcessPP{"cfgProcessPP", true, "Process particles of the same, positice charge"};
@@ -389,7 +391,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
 
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRPlotPerRadii.value);
     }
 
     vPIDPartOne = trackonefilter.ConfPIDPartOne.value;
