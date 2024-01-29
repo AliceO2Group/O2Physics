@@ -263,7 +263,7 @@ struct TrackPropagation {
   {
     fillTrackTables</*TTrack*/ TracksIU, /*Particle*/ TracksIU, /*isMc = */ false, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, tracks, collisions, bcs);
   }
-  PROCESS_SWITCH(TrackPropagation, processCovariance, "Process with covariance on Data", false);
+  PROCESS_SWITCH(TrackPropagation, processCovariance, "Process with covariance", false);
   // ------------------------
 
   void processCovarianceWithPID(soa::Join<aod::StoredTracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
