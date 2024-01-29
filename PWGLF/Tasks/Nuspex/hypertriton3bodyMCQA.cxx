@@ -890,13 +890,13 @@ struct hypertriton3bodyTrackMcinfo {
     }
 
     std::vector<Indexdaughters> set_pair;
-    for (int iproton = 0; iproton < (int)protons.size(); iproton++) {
+    for (auto iproton = 0; iproton < protons.size(); iproton++) {
       auto track0 = tracks.iteratorAt(protons[iproton]);
       auto mctrack0 = track0.mcParticle_as<aod::McParticles>();
-      for (int ipion = 0; ipion < (int)pions.size(); ipion++) {
+      for (auto ipion = 0; ipion < pions.size(); ipion++) {
         auto track1 = tracks.iteratorAt(pions[ipion]);
         auto mctrack1 = track1.mcParticle_as<aod::McParticles>();
-        for (int ideuteron = 0; ideuteron < (int)deuterons.size(); ideuteron++) {
+        for (auto ideuteron = 0; ideuteron < deuterons.size(); ideuteron++) {
           auto track2 = tracks.iteratorAt(deuterons[ideuteron]);
           auto mctrack2 = track2.mcParticle_as<aod::McParticles>();
           if (isPairedH3LDaughters<aod::McParticles>(mctrack0, mctrack1, mctrack2)) {
