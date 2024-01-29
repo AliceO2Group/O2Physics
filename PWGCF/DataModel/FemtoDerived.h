@@ -46,7 +46,7 @@ DECLARE_SOA_COLUMN(BitMaskTrackOne, bitmaskTrackOne, BitMaskType);     //! Bit f
 DECLARE_SOA_COLUMN(BitMaskTrackTwo, bitmaskTrackTwo, BitMaskType);     //! Bit for track two
 DECLARE_SOA_COLUMN(BitMaskTrackThree, bitmaskTrackThree, BitMaskType); //! Bit for track three
 
-DECLARE_SOA_COLUMN(Downsampling, downsampling, bool); //! Flag for downsampling
+DECLARE_SOA_COLUMN(Downsample, downsample, bool); //! Flag for downsampling
 } // namespace femtodreamcollision
 
 DECLARE_SOA_TABLE(FDCollisions, "AOD", "FDCOLLISION",
@@ -64,7 +64,7 @@ DECLARE_SOA_TABLE(FDColMasks, "AOD", "FDCOLMASK",
                   femtodreamcollision::BitMaskTrackThree);
 
 DECLARE_SOA_TABLE(FDDownSample, "AOD", "FDDOWNSAMPLE",
-                  femtodreamcollision::Downsampling);
+                  femtodreamcollision::Downsample);
 
 /// FemtoDreamTrack
 namespace femtodreamparticle
