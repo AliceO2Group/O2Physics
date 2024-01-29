@@ -371,12 +371,12 @@ struct TableMakerMC {
             o2::base::Propagator::initFieldFromGRP(grpmagrun2);
           }
         } else {
-          if (fPropMuon) {
-            VarManager::SetupMuonMagField();
-          }
           grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
           if (grpmag != nullptr) {
             o2::base::Propagator::initFieldFromGRP(grpmag);
+          }
+          if (fPropMuon) {
+            VarManager::SetupMuonMagField();
           }
         }
         fCurrentRun = bc.runNumber();
