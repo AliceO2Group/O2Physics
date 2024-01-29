@@ -195,8 +195,8 @@ struct lambdakzeroBuilder {
   Configurable<float> massWindowSafetyMargin{"massWindowSafetyMargin", 0.001, "Extra mass window safety margin"};
 
   // apply lifetime cuts to K0Short and Lambda candidates
-  // unit of measurement: centimeters 
-  // lifetime of Lambda ~7.9cm but keep in mind feeddown from cascades 
+  // unit of measurement: centimeters
+  // lifetime of Lambda ~7.9cm but keep in mind feeddown from cascades
   // lifetime of K0Short ~2.5cm, no feeddown and plenty to cut
   static constexpr float defaultLifetimeCuts[1][2] = {{1e+6, 1e+6}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
@@ -738,10 +738,10 @@ struct lambdakzeroBuilder {
       return false; // reject - daughters have too large eta to be reliable for MC corrections
     }
 
-    // calculate proper lifetime 
-    // m*L/p for each hypothesis 
-    float lML2P_K0Short = o2::constants::physics::MassKaonNeutral*lLengthTraveled/lPtotal;
-    float lML2P_Lambda = o2::constants::physics::MassLambda*lLengthTraveled/lPtotal;
+    // calculate proper lifetime
+    // m*L/p for each hypothesis
+    float lML2P_K0Short = o2::constants::physics::MassKaonNeutral * lLengthTraveled / lPtotal;
+    float lML2P_Lambda = o2::constants::physics::MassLambda * lLengthTraveled / lPtotal;
 
     // Passes momentum window check
     statisticsRegistry.v0stats[kWithinMomentumRange]++;
@@ -762,10 +762,10 @@ struct lambdakzeroBuilder {
     bool desiredMassAntiLambda = false;
 
     if (massWindownumberOfSigmas > 1e+3) {
-      desiredMassK0Short = true; // safety fallback
-      desiredMassLambda = true; // safety fallback
+      desiredMassK0Short = true;    // safety fallback
+      desiredMassLambda = true;     // safety fallback
       desiredMassAntiLambda = true; // safety fallback
-    }else{ 
+    } else {
       desiredMassK0Short = TMath::Abs(v0candidate.k0ShortMass - o2::constants::physics::MassKaonNeutral) < massWindownumberOfSigmas * getMassSigmaK0Short(lPt) + massWindowSafetyMargin;
       desiredMassLambda = TMath::Abs(v0candidate.lambdaMass - o2::constants::physics::MassLambda) < massWindownumberOfSigmas * getMassSigmaLambda(lPt) + massWindowSafetyMargin;
       desiredMassAntiLambda = TMath::Abs(v0candidate.antiLambdaMass - o2::constants::physics::MassLambda) < massWindownumberOfSigmas * getMassSigmaLambda(lPt) + massWindowSafetyMargin;
@@ -778,8 +778,8 @@ struct lambdakzeroBuilder {
     bool dEdxAntiLambda = V0.isdEdxAntiLambda() || !massWindowWithTPCPID;
 
     // check proper lifetime if asked for
-    bool passML2P_K0Short = lML2P_K0Short < lifetimecut->get("lifetimecutK0S") || lifetimecut->get("lifetimecutK0S") > 1000; 
-    bool passML2P_Lambda = lML2P_Lambda < lifetimecut->get("lifetimecutLambda") || lifetimecut->get("lifetimecutLambda") > 1000; 
+    bool passML2P_K0Short = lML2P_K0Short < lifetimecut->get("lifetimecutK0S") || lifetimecut->get("lifetimecutK0S") > 1000;
+    bool passML2P_Lambda = lML2P_Lambda < lifetimecut->get("lifetimecutLambda") || lifetimecut->get("lifetimecutLambda") > 1000;
 
     if (passML2P_K0Short && dEdxK0Short && desiredMassK0Short)
       keepCandidate = true;
