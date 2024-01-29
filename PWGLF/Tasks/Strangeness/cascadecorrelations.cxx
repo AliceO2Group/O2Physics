@@ -92,9 +92,9 @@ struct cascadeSelector {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
   // TODO: variables as function of Omega mass, only do Xi for now
-  AxisSpec vertexAxis = {200, -10.0f, 10.0f, "cm"};
-  AxisSpec dcaAxis = {100, 0.0f, 10.0f, "cm"};
-  AxisSpec invMassAxis = {1000, 1.0f, 2.0f, "Inv. Mass (GeV/c^{2})"};
+  AxisSpec vertexAxis = {100, -10.0f, 10.0f, "cm"};
+  AxisSpec dcaAxis = {50, 0.0f, 5.0f, "cm"};
+  AxisSpec invMassAxis = {100, 1.25f, 1.45f, "Inv. Mass (GeV/c^{2})"};
   AxisSpec ptAxis = {100, 0, 15, "#it{p}_{T}"};
   HistogramRegistry registry{
     "registry",
@@ -261,12 +261,12 @@ struct cascadeSelector {
 };    // struct
 
 struct cascadeCorrelations {
-  AxisSpec invMassAxis = {3000, 0.0f, 3.0f, "Inv. Mass (GeV/c^{2})"};
+  AxisSpec invMassAxis = {2000, 1.0f, 3.0f, "Inv. Mass (GeV/c^{2})"};
   AxisSpec deltaPhiAxis = {100, -PI / 2, 1.5 * PI, "#Delta#varphi"};
   AxisSpec deltaEtaAxis = {40, -2, 2, "#Delta#eta"};
   AxisSpec ptAxis = {200, 0, 15, "#it{p}_{T}"};
   AxisSpec selectionFlagAxis = {4, -0.5f, 3.5f, "Selection flag of casc candidate"};
-  AxisSpec vertexAxis = {1000, -10.0f, 10.0f, "cm"};
+  AxisSpec vertexAxis = {200, -10.0f, 10.0f, "cm"};
   AxisSpec multiplicityAxis{100, 0, 100, "Multiplicity (MultFT0M?)"};
 
   HistogramRegistry registry{
@@ -281,15 +281,15 @@ struct cascadeCorrelations {
       // basic selection variables
       {"hV0Radius", "hV0Radius", {HistType::kTH1F, {{1000, 0.0f, 100.0f, "cm"}}}},
       {"hCascRadius", "hCascRadius", {HistType::kTH1F, {{1000, 0.0f, 100.0f, "cm"}}}},
-      {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{1000, 0.95f, 1.0f}}}},
-      {"hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{1000, 0.95f, 1.0f}}}},
+      {"hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.95f, 1.0f}}}},
+      {"hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{100, 0.95f, 1.0f}}}},
       {"hDCAPosToPV", "hDCAPosToPV", {HistType::kTH1F, {vertexAxis}}},
       {"hDCANegToPV", "hDCANegToPV", {HistType::kTH1F, {vertexAxis}}},
       {"hDCABachToPV", "hDCABachToPV", {HistType::kTH1F, {vertexAxis}}},
       {"hDCAV0ToPV", "hDCAV0ToPV", {HistType::kTH1F, {vertexAxis}}},
-      {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{1000, 0.0f, 10.0f, "cm^{2}"}}}},
-      {"hDCACascDau", "hDCACascDau", {HistType::kTH1F, {{1000, 0.0f, 10.0f, "cm^{2}"}}}},
-      {"hLambdaMass", "hLambdaMass", {HistType::kTH1F, {{1000, 0.0f, 10.0f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"hDCAV0Dau", "hDCAV0Dau", {HistType::kTH1F, {{100, 0.0f, 10.0f, "cm^{2}"}}}},
+      {"hDCACascDau", "hDCACascDau", {HistType::kTH1F, {{100, 0.0f, 10.0f, "cm^{2}"}}}},
+      {"hLambdaMass", "hLambdaMass", {HistType::kTH1F, {{500, 1.0f, 1.5f, "Inv. Mass (GeV/c^{2})"}}}},
 
       {"hSelectionFlag", "hSelectionFlag", {HistType::kTH1I, {selectionFlagAxis}}},
       {"hAutoCorrelation", "hAutoCorrelation", {HistType::kTH1I, {{4, -0.5f, 3.5f, "Types of SS autocorrelation"}}}},

@@ -299,7 +299,7 @@ struct PhotonHBT {
               ROOT::Math::PtEtaPhiMVector k12 = 0.5 * (v1 + v2);
               float qinv = -q12.M();
               float kt = k12.Pt();
-              float qt = q12.Pt();
+              // float qt = q12.Pt();
               float qlong_cms = q12.Pz();
 
               ROOT::Math::XYZVector q_3d = q12.Vect();                                   // 3D q vector
@@ -331,8 +331,7 @@ struct PhotonHBT {
               values[4] = qlong_cms;
               values[5] = qout_cms;
               values[6] = qside_cms;
-              values[7] = qt;
-              values[8] = qlong_lcms;
+              values[7] = qlong_lcms;
               reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_same"))->Fill(values);
             }  // end of combination
           }    // end of pair cut loop
@@ -369,7 +368,7 @@ struct PhotonHBT {
                 ROOT::Math::PtEtaPhiMVector k12 = 0.5 * (v1 + v2);
                 float qinv = -q12.M();
                 float kt = k12.Pt();
-                float qt = q12.Pt();
+                // float qt = q12.Pt();
                 float qlong_cms = q12.Pz();
 
                 ROOT::Math::XYZVector q_3d = q12.Vect();                                   // 3D q vector
@@ -393,8 +392,7 @@ struct PhotonHBT {
                 values[4] = qlong_cms;
                 values[5] = qout_cms;
                 values[6] = qside_cms;
-                values[7] = qt;
-                values[8] = qlong_lcms;
+                values[7] = qlong_lcms;
                 reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_same"))->Fill(values);
               } // end of combination
             }   // end of pair cut loop
@@ -454,7 +452,7 @@ struct PhotonHBT {
               ROOT::Math::PtEtaPhiMVector k12 = 0.5 * (v1 + v2);
               float qinv = -q12.M();
               float kt = k12.Pt();
-              float qt = q12.Pt();
+              // float qt = q12.Pt();
               float qlong_cms = q12.Pz();
 
               ROOT::Math::XYZVector q_3d = q12.Vect();                                   // 3D q vector
@@ -478,8 +476,7 @@ struct PhotonHBT {
               values[4] = qlong_cms;
               values[5] = qout_cms;
               values[6] = qside_cms;
-              values[7] = qt;
-              values[8] = qlong_lcms;
+              values[7] = qlong_lcms;
               reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_mix"))->Fill(values);
             } // end of different photon combinations
           }   // end of pair cut loop

@@ -41,6 +41,7 @@ DECLARE_SOA_COLUMN(TPCfindableCls, tpcFindableCls, uint8_t);
 DECLARE_SOA_COLUMN(TPCcrossedRows, tpcCrossedRows, uint8_t);
 DECLARE_SOA_COLUMN(ITSclsMap, itsClsMap, uint8_t);
 DECLARE_SOA_COLUMN(TPCnCls, tpcNCls, uint8_t);
+DECLARE_SOA_COLUMN(ITSclusterSizes, itsClusterSizes, uint32_t);
 DECLARE_SOA_COLUMN(gPt, genPt, float);
 DECLARE_SOA_COLUMN(gEta, genEta, float);
 DECLARE_SOA_COLUMN(gPhi, genPhi, float);
@@ -73,7 +74,7 @@ DECLARE_SOA_COLUMN(YQvecTPCneg, yQvecTPCneg, float);
 DECLARE_SOA_COLUMN(AmplQvecTPCneg, amplQvecTPCneg, float);
 } // namespace NucleiFlowTableNS
 
-DECLARE_SOA_TABLE(NucleiFlowColls, "AOD", "NUCLEIFLOWCOLLS",
+DECLARE_SOA_TABLE(NucleiFlowColls, "AOD", "NUCLEIFLOWCOLL",
                   o2::soa::Index<>,
                   NucleiFlowTableNS::CentFV0A,
                   NucleiFlowTableNS::CentFT0M,
@@ -122,6 +123,7 @@ DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::TPCcrossedRows,
                   NucleiTableNS::ITSclsMap,
                   NucleiTableNS::TPCnCls,
+                  NucleiTableNS::ITSclusterSizes,
                   NucleiTableNS::NucleiFlowCollId)
 
 DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
@@ -141,6 +143,7 @@ DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::TPCcrossedRows,
                   NucleiTableNS::ITSclsMap,
                   NucleiTableNS::TPCnCls,
+                  NucleiTableNS::ITSclusterSizes,
                   NucleiTableNS::gPt,
                   NucleiTableNS::gEta,
                   NucleiTableNS::gPhi,

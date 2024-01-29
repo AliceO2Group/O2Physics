@@ -29,7 +29,7 @@
 
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/TrackJetQa.h"
-#include "PWGJE/TableProducer/jetfinder.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -53,7 +53,7 @@ struct TrackJetQa {
 
   // Custom track cuts for the cut variation study
   TrackSelection customTrackCuts;
-  Configurable<int> itsPattern{"itsPattern", 1, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
+  Configurable<int> itsPattern{"itsPattern", 2, "0 = Run3ITSibAny, 1 = Run3ITSibTwo, 2 = Run3ITSallAny, 3 = Run3ITSall7Layers"};
   Configurable<bool> requireITS{"requireITS", true, "Additional cut on the ITS requirement"};
   Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
   Configurable<bool> requireGoldenChi2{"requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
@@ -159,7 +159,7 @@ struct TrackJetQa {
 
     histos.add("Centrality/FT0M", "CentFT0M", HistType::kTH1D, {axisPercentileFT0M});
     histos.add("Centrality/FT0A", "CentFT0A", HistType::kTH1D, {axisPercentileFT0A});
-    histos.add("Centrality/FT0C", "CentFT0C", HistType::kTH1D, {axisPercentileFT0M});
+    histos.add("Centrality/FT0C", "CentFT0C", HistType::kTH1D, {axisPercentileFT0C});
     histos.add("Mult/NTracksPV", "MultNTracksPV", HistType::kTH1D, {axisMultiplicityPV});
     histos.add("Mult/FT0M", "MultFT0M", HistType::kTH1D, {axisMultiplicityFT0M});
     histos.add("Mult/FT0A", "MultFT0A", HistType::kTH1D, {axisMultiplicityFT0A});

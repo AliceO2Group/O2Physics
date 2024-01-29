@@ -223,7 +223,7 @@ struct FemtoCorrelations {
         Pair->SetPair(tracks[ii], tracks[iii]);
         float pair_kT = Pair->GetKt();
 
-        if (pair_kT < *_kTbins.value.begin() || pair_kT > *(_kTbins.value.end() - 1))
+        if (pair_kT < *_kTbins.value.begin() || pair_kT >= *(_kTbins.value.end() - 1))
           continue;
 
         int kTbin = o2::aod::singletrackselector::getBinIndex<int>(pair_kT, _kTbins);
@@ -269,7 +269,7 @@ struct FemtoCorrelations {
         Pair->SetPair(ii, iii);
         float pair_kT = Pair->GetKt();
 
-        if (pair_kT < *_kTbins.value.begin() || pair_kT > *(_kTbins.value.end() - 1))
+        if (pair_kT < *_kTbins.value.begin() || pair_kT >= *(_kTbins.value.end() - 1))
           continue;
 
         int kTbin = o2::aod::singletrackselector::getBinIndex<int>(pair_kT, _kTbins);
@@ -317,7 +317,7 @@ struct FemtoCorrelations {
         continue;
       if (track.tpcNClsShared() > _tpcNClsShared || track.itsNCls() < _itsNCls)
         continue;
-      if (track.singleCollSel().multPerc() < *_centBins.value.begin() || track.singleCollSel().multPerc() > *(_centBins.value.end() - 1))
+      if (track.singleCollSel().multPerc() < *_centBins.value.begin() || track.singleCollSel().multPerc() >= *(_centBins.value.end() - 1))
         continue;
 
       if (track.sign() == _sign_1 && (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1, _tpcNSigmaResidual_1))) { // filling the map: eventID <-> selected particles1
@@ -368,7 +368,7 @@ struct FemtoCorrelations {
     }
 
     for (auto collision : collisions) {
-      if (collision.multPerc() < *_centBins.value.begin() || collision.multPerc() > *(_centBins.value.end() - 1))
+      if (collision.multPerc() < *_centBins.value.begin() || collision.multPerc() >= *(_centBins.value.end() - 1))
         continue;
 
       if (selectedtracks_1.find(collision.globalIndex()) == selectedtracks_1.end()) {

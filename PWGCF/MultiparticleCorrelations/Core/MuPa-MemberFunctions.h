@@ -224,6 +224,10 @@ void DefaultBooking()
   ceh_a.fBookEventHistograms[eNumberOfEvents] = kTRUE;
   ceh_a.fBookEventHistograms[eTotalMultiplicity] = kTRUE;
   ceh_a.fBookEventHistograms[eSelectedTracks] = kTRUE;
+  ceh_a.fBookEventHistograms[eMultFV0M] = kTRUE;
+  ceh_a.fBookEventHistograms[eMultFT0M] = kTRUE;
+  ceh_a.fBookEventHistograms[eMultTPC] = kTRUE;
+  ceh_a.fBookEventHistograms[eMultNTracksPV] = kTRUE;
   ceh_a.fBookEventHistograms[eCentrality] = kTRUE;
   ceh_a.fBookEventHistograms[eVertex_x] = kTRUE;
   ceh_a.fBookEventHistograms[eVertex_y] = kTRUE;
@@ -277,10 +281,26 @@ void DefaultBinning()
   ceh_a.fEventHistogramsBins[eSelectedTracks][0] = 10000;
   ceh_a.fEventHistogramsBins[eSelectedTracks][1] = 0.;
   ceh_a.fEventHistogramsBins[eSelectedTracks][2] = 10000.;
+  // ... TBI 20240120
+  ceh_a.fEventHistogramsBins[eMultFV0M][0] = 10000;
+  ceh_a.fEventHistogramsBins[eMultFV0M][1] = 0.;
+  ceh_a.fEventHistogramsBins[eMultFV0M][2] = 10000.;
+  // ... TBI 20240120
+  ceh_a.fEventHistogramsBins[eMultFT0M][0] = 10000;
+  ceh_a.fEventHistogramsBins[eMultFT0M][1] = 0.;
+  ceh_a.fEventHistogramsBins[eMultFT0M][2] = 10000.;
+  // ... TBI 20240120
+  ceh_a.fEventHistogramsBins[eMultTPC][0] = 10000;
+  ceh_a.fEventHistogramsBins[eMultTPC][1] = 0.;
+  ceh_a.fEventHistogramsBins[eMultTPC][2] = 10000.;
+  // ... TBI 20240120
+  ceh_a.fEventHistogramsBins[eMultNTracksPV][0] = 10000;
+  ceh_a.fEventHistogramsBins[eMultNTracksPV][1] = 0.;
+  ceh_a.fEventHistogramsBins[eMultNTracksPV][2] = 10000.;
   // task->SetEventHistogramsBins("Centrality",100,0.,100.);
-  ceh_a.fEventHistogramsBins[eCentrality][0] = 100;
+  ceh_a.fEventHistogramsBins[eCentrality][0] = 110; // intentionally, because if centrality is not determined, it's set to 105.0 at the moment
   ceh_a.fEventHistogramsBins[eCentrality][1] = 0.;
-  ceh_a.fEventHistogramsBins[eCentrality][2] = 100.;
+  ceh_a.fEventHistogramsBins[eCentrality][2] = 110.;
   // task->SetEventHistogramsBins("Vertex_x",1000,-20.,20.);
   ceh_a.fEventHistogramsBins[eVertex_x][0] = 1000;
   ceh_a.fEventHistogramsBins[eVertex_x][1] = -20.;
@@ -627,7 +647,7 @@ void BookEventHistograms()
 
   // b) Book specific control event histograms:
   TString stype[eEventHistograms_N] = {
-    "NumberOfEvents", "TotalMultiplicity", "SelectedTracks",
+    "NumberOfEvents", "TotalMultiplicity", "SelectedTracks", "MultFV0M", "MultFT0M", "MultTPC", "MultNTracksPV",
     "Centrality", "Vertex_x", "Vertex_y",
     "Vertex_z", "NContributors", "ImpactParameter"}; // keep in sync. with enum eEventHistograms
   TString srs[2] = {"rec", "sim"};
@@ -1380,6 +1400,11 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
     ceh_a.fEventHistograms[eNContributors][eRec][ba]->Fill(collision.numContrib());
     ceh_a.fEventHistograms[eTotalMultiplicity][eRec][ba]->Fill(tracks.size()); // TBI 20231106 check and validate further
     ceh_a.fEventHistograms[eSelectedTracks][eRec][ba]->Fill(fSelectedTracks);  // TBI 20240108 this one makes sense only for eAfter
+    ceh_a.fEventHistograms[eMultFT0M][eRec][ba]->Fill(collision.multFT0M());
+    ceh_a.fEventHistograms[eMultFV0M][eRec][ba]->Fill(collision.multFV0M());
+    ceh_a.fEventHistograms[eMultTPC][eRec][ba]->Fill(collision.multTPC());
+    ceh_a.fEventHistograms[eMultNTracksPV][eRec][ba]->Fill(collision.multNTracksPV());
+    ceh_a.fEventHistograms[eCentrality][eRec][ba]->Fill(fCentrality); // TBI 20240120 for the time being, I fill only default centrality
 
     // ... and corresponding MC truth simulated ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
     if constexpr (rs == eRecAndSim) {
@@ -1393,6 +1418,8 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
       ceh_a.fEventHistograms[eVertex_z][eSim][ba]->Fill(collision.mcCollision().posZ());
       // ceh_a.fEventHistograms[eTotalMultiplicity][eSim][ba]->Fill(tracks.size()); // TBI 20231106 check how to get corresponding MC truth info, and validate further
       // ceh_a.fEventHistograms[eSelectedTracks][eSim][ba]->Fill(fSelectedTracks); // TBI 20240108 this one makes sense only for eAfter + re-think if I really need it here
+      // TBI 20240120 eMultFT0M, ..., eMultNTracksPV are not needed here
+      // ceh_a.fEventHistograms[eCentrality][eSim][ba]->Fill(fCentrality); // TBI 20240120 this case is still not supported in DetermineCentrality()
     } // if constexpr (rs == eRecAndSim) {
   }   // if constexpr (rs == eRec || rs == eRecAndSim) {
 
@@ -1400,7 +1427,7 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
   if constexpr (rs == eSim) {
     ceh_a.fEventHistograms[eImpactParameter][eSim][ba]->Fill(collision.impactParameter()); // yes, because in this branch 'collision' is always aod::McCollision
     ceh_a.fEventHistograms[eSelectedTracks][eSim][ba]->Fill(fSelectedTracks);              // TBI 20240108 this one makes sense only for eAfter
-
+    // ceh_a.fEventHistograms[eCentrality][eSim][ba]->Fill(fCentrality); // TBI 20240120 this case is still not supported in DetermineCentrality()
     // ceh_a.fEventHistograms[eTotalMultiplicity][eSim][ba]->Fill(tracks.size()); // TBI 20231030 check further how to use the same thing for 'sim'
   } // if constexpr (rs == eSim) {
 
@@ -3436,17 +3463,36 @@ Double_t CalculateCustomNestedLoop(TArrayI* harmonics)
 
 //============================================================
 
-void DetermineCentrality()
+template <eRecSim rs, typename T>
+void DetermineCentrality(T const& collision)
 {
   // Determine collision centrality.
 
+  // a) For real data, determine centrality from default centrality estimator;
+  // b) For simulated data, determine centrality directly from impact parameter.
+
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__); // just a bare function name
   }
 
-  fCentrality = gRandom->Uniform(0., 100.); // TBI 20240116 not finalized yet, just added infrastructure
+  // a) For real data, determine centrality from default centrality estimator:
+  if constexpr (rs == eRec || rs == eRecAndSim) {
+    // fCentrality = gRandom->Uniform(0.,100.);  // collision.centFT0M(); // TBI 20240120 not ready yet, estimators are specific for Run 1,2,3 data processing ...
+    fCentrality = collision.centFT0M(); // TBI 20240120 not ready yet, estimators are specific for Run 1,2,3 data processing ...
+    // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
+  }
 
-} // void DetermineCentrality()
+  // b) For simulated data, determine centrality directly from impact parameter:
+  if constexpr (rs == eSim) {
+    fCentrality = -44.; // TBI 20240120 add support eventualy
+  }                     // if constexpr (rs == eSim) {
+
+  // TBI 20240120 remove this printout eventually:
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m fCentrality = %f\033[0m", fCentrality);
+  }
+
+} // template <eRecSim rs, typename T> void DetermineCentrality(T const& collision)
 
 //============================================================
 
@@ -3526,8 +3572,8 @@ void Steer(T1 const& collision, T2 const& tracks)
   // *) Do all thingies before starting to process data from this collision (e.g. count number of events, fetch the run number, etc.):
   Preprocess(collision);
 
-  // *) Determine collision centrality: // TBI 20240116 not finalized yet, just added infrastructure
-  DetermineCentrality();
+  // *) Determine collision centrality:
+  DetermineCentrality<rs>(collision);
 
   // *) Fill event histograms before event cuts:
   FillEventHistograms<rs>(collision, tracks, eBefore);
@@ -3675,7 +3721,18 @@ void MainLoopOverParticles(T const& tracks)
       break;
     }
 
+    // *) Break the loop if fixed number of particles is taken randomly from each event (use always in combination with tc.fUseFisherYates = kTRUE):
+    if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && tc.fFixedNumberOfRandomlySelectedTracks == fSelectedTracks) {
+      LOGF(info, "\033[1;32mBreaking the loop over particles, since requested fixed number of %d particles was reached\033[0m", tc.fFixedNumberOfRandomlySelectedTracks);
+      break;
+    }
+
   } // for (auto& track : tracks)
+
+  // *) Insanity check on fixed number of randomly selected tracks:
+  if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && tc.fFixedNumberOfRandomlySelectedTracks < fSelectedTracks) {
+    LOGF(fatal, "\033[1;31mIn this event there are too few particles (fSelectedTracks = %d), and requested number of fixed number randomly selected tracks %d couldn't be reached\033[0m", fSelectedTracks, tc.fFixedNumberOfRandomlySelectedTracks);
+  }
 
 } // template <eRecSim rs, typename T> void MainLoopOverParticles(T const& tracks) {
 

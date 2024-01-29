@@ -36,7 +36,7 @@ enum JetTaggingSpecies {
   gluon = 5
 };
 
-namespace JetTaggingUtilities
+namespace jettaggingutilities
 {
 /**
  * returns the globalIndex of the earliest mother of a particle in the shower. returns -1 if a suitable mother is not found
@@ -180,7 +180,7 @@ int mcdJetFromHFShower(T const& jet, U const& tracks, V const& particles, float 
     int originalHFMotherIndex = getOriginalHFMotherIndex<V>(hfparticle);
     if (originalHFMotherIndex > -1.0) {
 
-      if (JetUtilities::deltaR(jet, particles.iteratorAt(originalHFMotherIndex)) < dRMax) {
+      if (jetutilities::deltaR(jet, particles.iteratorAt(originalHFMotherIndex)) < dRMax) {
 
         return origin;
 
@@ -217,7 +217,7 @@ int mcpJetFromHFShower(T const& jet, U const& particles, float dRMax = 0.25)
     int originalHFMotherIndex = getOriginalHFMotherIndex<U>(hfparticle);
     if (originalHFMotherIndex > -1.0) {
 
-      if (JetUtilities::deltaR(jet, particles.iteratorAt(originalHFMotherIndex)) < dRMax) {
+      if (jetutilities::deltaR(jet, particles.iteratorAt(originalHFMotherIndex)) < dRMax) {
 
         return origin;
 
@@ -260,8 +260,8 @@ int jetOrigin(T const& jet, U const& particles, float dRMax = 0.25)
     }
   }
 
-  float dR1 = JetUtilities::deltaR(jet, parton1);
-  float dR2 = JetUtilities::deltaR(jet, parton2);
+  float dR1 = jetutilities::deltaR(jet, parton1);
+  float dR2 = jetutilities::deltaR(jet, parton2);
 
   if (dR1 <= dR2 && dR1 < dRMax) {
 
@@ -275,6 +275,6 @@ int jetOrigin(T const& jet, U const& particles, float dRMax = 0.25)
   return 0;
 }
 
-}; // namespace JetTaggingUtilities
+}; // namespace jettaggingutilities
 
 #endif // PWGJE_CORE_JETTAGGINGUTILITIES_H_

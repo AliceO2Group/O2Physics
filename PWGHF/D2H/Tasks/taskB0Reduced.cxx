@@ -97,8 +97,8 @@ struct HfTaskB0Reduced {
   Configurable<int> selectionFlagB0{"selectionFlagB0", 1, "Selection Flag for B0"};
   Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
   Configurable<float> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
-  Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. track pseudo-rapidity"};
-  Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "min. track transverse momentum"};
+  Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. track pseudo-rapidity for acceptance calculation"};
+  Configurable<float> ptTrackMin{"ptTrackMin", 0.1, "min. track transverse momentum for acceptance calculation"};
   Configurable<bool> fillHistograms{"fillHistograms", true, "Flag to enable histogram filling"};
   Configurable<bool> fillSparses{"fillSparses", false, "Flag to enable sparse filling"};
   Configurable<bool> fillTree{"fillTree", false, "Flag to enable tree filling"};
