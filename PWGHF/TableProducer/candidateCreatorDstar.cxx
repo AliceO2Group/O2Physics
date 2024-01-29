@@ -255,9 +255,10 @@ struct HfCandidateCreatorDstar {
       // D0 pt magnitude
       auto ptD0 = RecoDecay::pt(pVecD0);
 
-      // Soft pi momentum vector
+      // Soft pi momentum vector and sign
       std::array<float, 3> pVecSoftPi;
       trackPiParVar.getPxPyPzGlo(pVecSoftPi);
+      int8_t signSoftPi = static_cast<int8_t>(trackPi.sign());
 
       // D* pt magnitude
       auto ptDstar = RecoDecay::pt(pVecD0, pVecSoftPi);
@@ -267,6 +268,7 @@ struct HfCandidateCreatorDstar {
                        primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                        rowTrackIndexDstar.prong0Id(), rowTrackIndexDstar.prongD0Id(),
                        pVecSoftPi[0], pVecSoftPi[1], pVecSoftPi[2],
+                       signSoftPi,
                        impactParameterPi.getY(), std::sqrt(impactParameterPi.getSigmaY2()),
                        pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2],
                        pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2]);

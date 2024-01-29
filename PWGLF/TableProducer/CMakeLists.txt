@@ -18,7 +18,6 @@ o2physics_add_dpl_workflow(tpcpid
                     COMPONENT_NAME Analysis)
 
 # Strangeness
-
 o2physics_add_dpl_workflow(lambdakzerobuilder
                     SOURCES lambdakzerobuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
@@ -82,6 +81,22 @@ o2physics_add_dpl_workflow(hstrangecorrelationfilter
 o2physics_add_dpl_workflow(st-coll-ids
                     SOURCES stCollIds.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strange-tree-creator
+                    SOURCES LFStrangeTreeCreator.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+# strange derived - spawners
+o2physics_add_dpl_workflow(lambdakzerospawner
+                    SOURCES lambdakzerospawner.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascadespawner
+                    SOURCES cascadespawner.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 # Nuclei

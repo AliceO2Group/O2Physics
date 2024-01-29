@@ -33,10 +33,10 @@
 
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetFindingUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/TableProducer/jetfinder.h"
 
 #include "Framework/HistogramRegistry.h"
 
@@ -103,8 +103,8 @@ struct ChJetTriggerQATask {
   void init(o2::framework::InitContext&)
   {
     fiducialVolume = static_cast<float>(cfgTPCVolume) - static_cast<float>(cfgJetR);
-    eventSelection = JetDerivedDataUtilities::initialiseEventSelection(static_cast<std::string>(evSel));
-    trackSelection = JetDerivedDataUtilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(evSel));
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
 
     // Basic histos
     spectra.add("vertexZ", "z vertex", {HistType::kTH1F, {{400, -20., +20.}}});
@@ -151,19 +151,18 @@ struct ChJetTriggerQATask {
   Filter jetRadiusSelection = (o2::aod::jet::r == nround(cfgJetR.node() * 100.0f));
 
   using filteredJets = o2::soa::Filtered<o2::aod::ChargedJets>;
-  using TrackCandidates = aod::JTracks;
 
   void
-    process(soa::Filtered<soa::Join<aod::JCollisions,
+    process(soa::Filtered<soa::Join<JetCollisions,
                                     aod::JChTrigSels>>::iterator const& collision,
-            soa::Filtered<TrackCandidates> const& tracks, o2::soa::Filtered<soa::Join<o2::aod::ChargedJets, aod::ChargedJetConstituents>> const& jets)
+            soa::Filtered<JetTracks> const& tracks, o2::soa::Filtered<soa::Join<o2::aod::ChargedJets, aod::ChargedJetConstituents>> const& jets)
   {
 
-    if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
 
-    if ((bLowPtTrigger && JetDerivedDataUtilities::selectChargedTrigger(collision, JetDerivedDataUtilities::JTrigSelCh::chargedLow)) || (bHighPtTrigger && JetDerivedDataUtilities::selectChargedTrigger(collision, JetDerivedDataUtilities::JTrigSelCh::chargedHigh)) || ((!bLowPtTrigger) && (!bHighPtTrigger))) {
+    if ((bLowPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedLow)) || (bHighPtTrigger && jetderiveddatautilities::selectChargedTrigger(collision, jetderiveddatautilities::JTrigSelCh::chargedHigh)) || ((!bLowPtTrigger) && (!bHighPtTrigger))) {
       // bLowPtTrigger=1  and bHighPtTrigger=0 --> fill histos with low trigger only
       // bLowPtTrigger=0  and bHighPtTrigger=1 --> fill histos with high trigger only
       // bLowPtTrigger=1  and bHighPtTrigger=1 --> fill histos with mixture of low and high trigger
@@ -186,7 +185,7 @@ struct ChJetTriggerQATask {
 
       for (auto& trk : tracks) { // loop over filtered tracks in full TPC volume having pT > 100 MeV
 
-        if (!JetDerivedDataUtilities::selectTrack(trk, trackSelection)) {
+        if (!jetderiveddatautilities::selectTrack(trk, trackSelection)) {
           continue;
         }
 
@@ -243,7 +242,7 @@ struct ChJetTriggerQATask {
 
           // access jet constituents as tracks
           if (bAddBigHistosToOutput) {
-            for (auto& jct : jet.tracks_as<TrackCandidates>()) {
+            for (auto& jct : jet.tracks_as<JetTracks>()) {
               for (UInt_t itr = 0; itr < acceptedTracks.size(); itr++) {
                 if (acceptedTracks[itr].globalIndex == jct.globalIndex()) {
 

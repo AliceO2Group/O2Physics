@@ -53,12 +53,13 @@ struct QAHistograms {
   Configurable<int> _tpcNClsShared{"maxTpcNClsShared", 0, "maximum allowed number of TPC shared clasters"};
   Configurable<int> _itsNCls{"minItsNCls", 0, "minimum allowed number of ITS clasters for a track"};
   Configurable<float> _itsChi2NCl{"itsChi2NCl", 100.0, "upper limit for chi2 value of a fit over ITS clasters for a track"};
-  Configurable<int> _particlePDG{"particlePDG", 2212, "PDG code of a particle to perform PID for (only proton and deurton are supported now)"};
+  Configurable<int> _particlePDG{"particlePDG", 2212, "PDG code of a particle to perform PID for (only pion, kaon, proton and deurton are supported now)"};
   Configurable<std::vector<float>> _tpcNSigma{"tpcNSigma", std::vector<float>{-4.0f, 4.0f}, "Nsigma range in TPC before the TOF is used"};
   Configurable<float> _PIDtrshld{"PIDtrshld", 10.0, "value of momentum from which the PID is done with TOF (before that only TPC is used)"};
   Configurable<std::vector<float>> _tofNSigma{"tofNSigma", std::vector<float>{-4.0f, 4.0f}, "Nsigma range in TOF"};
+  Configurable<float> _tpcNSigmaResidual{"tpcNSigmaResidual", 5, "residual TPC Nsigma cut (abs. value) to use with the TOF"};
 
-  Configurable<int> _particlePDGtoReject{"particlePDGtoReject", 211, "PDG codes of perticles that will be rejected with TOF (only proton and deurton are supported now)"};
+  Configurable<int> _particlePDGtoReject{"particlePDGtoReject", 211, "PDG codes of perticles that will be rejected with TOF (only pion, kaon, proton and deurton are supported now)"};
   Configurable<std::vector<float>> _rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", std::vector<float>{-0.0f, 0.0f}, "TOF rejection Nsigma range for particles specified with PDG to be rejected"};
 
   std::pair<int, std::vector<float>> TPCcuts;
@@ -153,7 +154,7 @@ struct QAHistograms {
         registry.fill(HIST("TOFSignal_nocuts"), track.p(), track.beta());
       }
 
-      if (!TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF)) && (track.p() < _PIDtrshld ? o2::aod::singletrackselector::TPCselection(track, TPCcuts) : o2::aod::singletrackselector::TOFselection(track, TOFcuts))) {
+      if (!TOFselection(track, std::make_pair(_particlePDGtoReject, _rejectWithinNsigmaTOF)) && (track.p() < _PIDtrshld ? o2::aod::singletrackselector::TPCselection(track, TPCcuts) : o2::aod::singletrackselector::TOFselection(track, TOFcuts, _tpcNSigmaResidual))) {
         registry.fill(HIST("eta"), track.eta());
         registry.fill(HIST("phi"), track.phi());
         registry.fill(HIST("px"), track.px());
