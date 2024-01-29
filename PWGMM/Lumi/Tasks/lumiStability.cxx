@@ -27,41 +27,23 @@ using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
 
 int nBCsPerOrbit = 3564;
 
-namespace o2::aod
-{
-  namespace trigvertex {
-    DECLARE_SOA_COLUMN(TrigVetexCounterFDD, tvcfdd, uint64_t);
-    DECLARE_SOA_COLUMN(TrigVetexCounterFT0, tvcft0, uint64_t);
-    //DECLARE_SOA_COLUMN(RunNumber, runnumber, uint64_t);
-  } //namespace trigvertex
-
-  DECLARE_SOA_TABLE(TrigVertexInfo, "AOD", "TrigVertexInfo",
-                    trigvertex::TrigVetexCounterFDD,
-                    trigvertex::TrigVetexCounterFT0); //,
-                    //trigvertex::RunNumber);
-} //namespace o2::aod
-
-struct myExampleTask {
-  Produces<o2::aod::TrigVertexInfo> rowtrigvertex;
+struct lumiStabilityTask {
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext const&)
   {
-    const AxisSpec axisFDDTrigVertex{nBCsPerOrbit + 1, 0.5f, nBCsPerOrbit + 0.5f, "BC in FDD"};
-    const AxisSpec axisFT0TrigVertex{nBCsPerOrbit + 1, 0.5f, nBCsPerOrbit + 0.5f, "BC in FT0"};
+    const AxisSpec axisFDDTrigggerVertex{nBCsPerOrbit + 1, 0.5f, nBCsPerOrbit + 0.5f};
+    const AxisSpec axisFT0TrigggerVertex{nBCsPerOrbit + 1, 0.5f, nBCsPerOrbit + 0.5f};
 
     // histo about triggers
-    histos.add("BCFDD", "BCFDD", kTH1F, {axisFDDTrigVertex});
-    histos.add("BCFT0", "BCFT0", kTH1F, {axisFT0TrigVertex});
+    histos.add("FDD/bcVertexTrigger", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisFDDTrigggerVertex});
+    histos.add("FT0/bcVertexTrigger", "vertex trigger per BC (FT0);BC in FDD; counts", kTH1F, {axisFT0TrigggerVertex});
   }
 
   void process(aod::FT0s const& ft0s, aod::FDDs const& fdds, aod::BCsWithTimestamps const&)
   {
-    int NTrigVertexFDD = 0;
-    int NTrigVertexFT0 = 0;
-
-    for( auto const& fdd: fdds){
+    for(auto const& fdd: fdds){
       auto bc = fdd.bc_as<BCsWithTimestamps>();
       if(!bc.timestamp()) continue;
 
@@ -72,8 +54,7 @@ struct myExampleTask {
       bool vertex = fddTriggers[o2::fdd::Triggers::bitVertex];
 
       if(vertex){
-        histos.fill(HIST("BCFDD"), localBC);
-        NTrigVertexFDD++;
+        histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
       } // vertex true
     } // loop over FDD events
 
@@ -88,18 +69,14 @@ struct myExampleTask {
       bool vertex = fT0Triggers[o2::fdd::Triggers::bitVertex];
 
       if(vertex){
-        histos.fill(HIST("BCFT0"), localBC);
-        NTrigVertexFT0++;
+        histos.fill(HIST("FT0/bcVertexTrigger"), localBC);
       } // vertex true
     } // loop over FT0 events
-    rowtrigvertex(NTrigVertexFDD,NTrigVertexFT0);
-    NTrigVertexFDD = 0;
-    NTrigVertexFDD = 0;
-  } //end processF
+  } //end process
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<myExampleTask>(cfgc)};
+    adaptAnalysisTask<lumiStabilityTask>(cfgc)};
 }
