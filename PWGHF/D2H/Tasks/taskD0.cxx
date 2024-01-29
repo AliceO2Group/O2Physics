@@ -40,6 +40,8 @@ struct HfTaskD0 {
   Configurable<int> selectionCand{"selectionCand", 1, "Selection Flag for conj. topol. selected candidates"};
   Configurable<int> selectionPid{"selectionPid", 1, "Selection Flag for reco PID candidates"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
+  // ML inference
+  Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
 
   HfHelper hfHelper;
 
@@ -48,10 +50,22 @@ struct HfTaskD0 {
   using D0CandidatesKF = soa::Join<D0Candidates, aod::HfCand2ProngKF>;
   using D0CandidatesMcKF = soa::Join<D0CandidatesKF, aod::HfCand2ProngMcRec>;
 
+  using D0CandidatesMl = soa::Join<D0Candidates, aod::HfMlD0>;
+  using D0CandidatesMlMc = soa::Join<D0CandidatesMl, aod::HfCand2ProngMcRec>;
+  using D0CandidatesMlKF = soa::Join<D0CandidatesMl, aod::HfCand2ProngKF>;
+  using D0CandidatesMlMcKF = soa::Join<D0CandidatesMlKF, aod::HfCand2ProngMcRec>;
+
   Partition<D0Candidates> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   Partition<D0CandidatesKF> selectedD0CandidatesKF = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   Partition<D0CandidatesMc> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
   Partition<D0CandidatesMcKF> selectedD0CandidatesMcKF = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
+
+  Partition<D0CandidatesMl> selectedD0CandidatesMl = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<D0CandidatesMlKF> selectedD0CandidatesMlKF = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<D0CandidatesMlMc> selectedD0CandidatesMlMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
+  Partition<D0CandidatesMlMcKF> selectedD0CandidatesMlMcKF = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
+
+  HistogramConfigSpec hTHnBdtScoreVsMassVsPtVsYVsOrigin{HistType::kTHnSparseD, {{100, 0.f, 1.f}, {100, 0.f, 1.f}, {500, 0., 5.}, {360, 0., 36.}, {100, -5., 5.}, {3, -0.5, 2.5}}};
 
   HistogramRegistry registry{
     "registry",
@@ -131,11 +145,11 @@ struct HfTaskD0 {
 
   void init(InitContext&)
   {
-    std::array<bool, 4> doprocess{doprocessDataWithDCAFitterN, doprocessDataWithKFParticle, doprocessMcWithDCAFitterN, doprocessMcWithKFParticle};
+    std::array<bool, 8> doprocess{doprocessDataWithDCAFitterN, doprocessDataWithKFParticle, doprocessMcWithDCAFitterN, doprocessMcWithKFParticle, doprocessDataWithDCAFitterNMl, doprocessDataWithKFParticleMl, doprocessMcWithDCAFitterNMl, doprocessMcWithKFParticleMl};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) == 0) {
       LOGP(fatal, "At least one process function should be enabled at a time.");
     }
-    if ((doprocessDataWithDCAFitterN || doprocessMcWithDCAFitterN) && (doprocessDataWithKFParticle || doprocessMcWithKFParticle)) {
+    if ((doprocessDataWithDCAFitterN || doprocessMcWithDCAFitterN || doprocessDataWithDCAFitterNMl || doprocessMcWithDCAFitterNMl) && (doprocessDataWithKFParticle || doprocessMcWithKFParticle || doprocessDataWithKFParticleMl || doprocessMcWithKFParticleMl)) {
       LOGP(fatal, "DCAFitterN and KFParticle can not be enabled at a time.");
     }
 
@@ -177,9 +191,14 @@ struct HfTaskD0 {
     registry.add("hNormalisedDecLengthxyVsPtSig", "2-prong candidates;decay length xy (cm) vs #it{p}_{T} for signal;entries", {HistType::kTH2F, {{800, 0., 40.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthVsPtSig", "2-prong candidates;decay length (cm) vs #it{p}_{T} for signal;entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthxyVsPtSig", "2-prong candidates;decay length xy (cm) vs #it{p}_{T} for signal;entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+  
+    if (applyMl) {
+      registry.add("hBdtScoreVsMassVsPtVsYVsOrigin", "2-prong candidates;BDT score bkg.;BDT score non-prompt;inv. mass (#pi K) (GeV/#it{c}^{2});#it{p}_{T};Origin", hTHnBdtScoreVsMassVsPtVsYVsOrigin);
+      registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsOrigin"))->Sumw2();
+    }
   }
 
-  template <int reconstructionType, typename CandType>
+  template <int reconstructionType, bool applyMl, typename CandType>
   void processData(CandType const& candidates)
   {
     for (const auto& candidate : candidates) {
@@ -238,21 +257,42 @@ struct HfTaskD0 {
       registry.fill(HIST("hCtFinerBinning"), hfHelper.ctD0(candidate), ptCandidate);
       registry.fill(HIST("hCPAFinerBinning"), candidate.cpa(), ptCandidate);
       registry.fill(HIST("hCPAXYFinerBinning"), candidate.cpaXY(), ptCandidate);
+
+      if constexpr (applyMl) {
+        if (candidate.isSelD0() >= selectionFlagD0) {
+          registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOrigin"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, hfHelper.yD0(candidate), 0);
+        }
+        if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+          registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOrigin"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, hfHelper.yD0(candidate), 0);
+        }
+      }
     }
   }
   void processDataWithDCAFitterN(D0Candidates const&)
   {
-    processData<aod::hf_cand::VertexerType::DCAFitter>(selectedD0Candidates);
+    processData<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0Candidates);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterN, "process taskD0 with DCAFitterN", true);
 
   void processDataWithKFParticle(D0CandidatesKF const&)
   {
-    processData<aod::hf_cand::VertexerType::KfParticle>(selectedD0CandidatesKF);
+    processData<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesKF);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithKFParticle, "process taskD0 with KFParticle", false);
 
-  template <int reconstructionType, typename CandType>
+  void processDataWithDCAFitterNMl(D0CandidatesMl const&)
+  {
+    processData<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMl);
+  }
+  PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterNMl, "process taskD0 with DCAFitterN and ML selections", false);
+
+  void processDataWithKFParticleMl(D0CandidatesMlKF const&)
+  {
+    processData<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlKF);
+  }
+  PROCESS_SWITCH(HfTaskD0, processDataWithKFParticleMl, "process taskD0 with KFParticle and ML selections", false);
+
+  template <int reconstructionType, bool applyMl, typename CandType>
   void processMc(CandType const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                  aod::TracksWMc const& tracks)
@@ -389,6 +429,9 @@ struct HfTaskD0 {
           registry.fill(HIST("hDecLengthVsPtSig"), declengthCandidate, ptCandidate);
           registry.fill(HIST("hDecLengthxyVsPtSig"), declengthxyCandidate, ptCandidate);
           registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
+          if constexpr (applyMl) {
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOrigin"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, rapidityCandidate, candidate.originMcRec());
+          }
         } else {
           registry.fill(HIST("hPtProng0Bkg"), ptProng0, rapidityCandidate);
           registry.fill(HIST("hPtProng1Bkg"), ptProng1, rapidityCandidate);
@@ -413,6 +456,9 @@ struct HfTaskD0 {
         registry.fill(HIST("hMassSigBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
         if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0bar"), massD0bar, ptCandidate, rapidityCandidate);
+          if constexpr (applyMl) {
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOrigin"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, rapidityCandidate, candidate.originMcRec());
+          }
         } else {
           registry.fill(HIST("hMassBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
           if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
@@ -449,7 +495,7 @@ struct HfTaskD0 {
                                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                aod::TracksWMc const& tracks)
   {
-    processMc<aod::hf_cand::VertexerType::DCAFitter>(selectedD0CandidatesMc, mcParticles, tracks);
+    processMc<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0CandidatesMc, mcParticles, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterN, "Process MC with DCAFitterN", false);
 
@@ -457,9 +503,25 @@ struct HfTaskD0 {
                                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                aod::TracksWMc const& tracks)
   {
-    processMc<aod::hf_cand::VertexerType::KfParticle>(selectedD0CandidatesMcKF, mcParticles, tracks);
+    processMc<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesMcKF, mcParticles, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticle, "Process MC with KFParticle", false);
+
+  void processMcWithDCAFitterNMl(D0CandidatesMlMc const&,
+                                 soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
+                                 aod::TracksWMc const& tracks)
+  {
+    processMc<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMlMc, mcParticles, tracks);
+  }
+  PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterNMl, "Process MC with DCAFitterN and ML selection", false);
+
+  void processMcWithKFParticleMl(D0CandidatesMlMcKF const&,
+                                 soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
+                                 aod::TracksWMc const& tracks)
+  {
+    processMc<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlMcKF, mcParticles, tracks);
+  }
+  PROCESS_SWITCH(HfTaskD0, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
