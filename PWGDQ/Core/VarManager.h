@@ -2511,14 +2511,14 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     values[kDeltaEta] = dilepton.eta() - hadron.eta();
   }
   if (fgUsedVars[kMass]) {
-     values[kMass] = dilepton.mass();
-  }  
+    values[kMass] = dilepton.mass();
+  }
   if (fgUsedVars[kPt1]) {
-     values[kPt1] = dilepton.pt();
-  } 
+    values[kPt1] = dilepton.pt();
+  }
   if (fgUsedVars[kPt2]) {
-     values[kPt2] = hadron.pt();
-  }  
+    values[kPt2] = hadron.pt();
+  }
 }
 
 template <typename T>
