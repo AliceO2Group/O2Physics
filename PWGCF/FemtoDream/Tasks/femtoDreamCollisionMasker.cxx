@@ -16,7 +16,6 @@
 #include <vector>
 #include <bitset>
 #include <algorithm>
-#include <stdlib.h>
 #include <random>
 
 #include "fairlogger/Logger.h"
