@@ -60,11 +60,7 @@ const double ptDAxisMin = 0.;
 const double ptDAxisMax = 36.;
 
 // definition of ME variables
-std::vector<double> zBins{VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0};
-std::vector<double> multBins{VARIABLE_WIDTH, 0., 200., 500.0, 5000.};
-std::vector<double> multBinsMcGen{VARIABLE_WIDTH, 0., 20., 50.0, 500.}; // In MCGen multiplicity is defined by counting primaries
 using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
-BinningType corrBinning{{zBins, multBins}, true};
 
 // Code to select a Dmeson in a collision
 struct HfDplusSelection {
@@ -170,7 +166,10 @@ struct HfCorrelatorDplusHadrons {
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson}, "Efficiency values for Dplus meson"};
-
+  ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis ConfMultBinsMcGen{"ConfMultBinsMcGen", {VARIABLE_WIDTH,  0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - multiplicity"}; // In MCGen multiplicity is defined by counting
+                                       
   HfHelper hfHelper;
   SliceCache cache;
 
@@ -242,6 +241,7 @@ struct HfCorrelatorDplusHadrons {
                    aod::TracksWDca const& tracks,
                    soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates, aod::BCsWithTimestamps const&)
   {
+    BinningType corrBinning{{ConfVtxBins, ConfMultBins}, true};
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int gCollisionId = collision.globalIndex();
     int64_t timeStamp = bc.timestamp();
@@ -337,6 +337,7 @@ struct HfCorrelatorDplusHadrons {
                     aod::TracksWDca const& tracks,
                     soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
   {
+    BinningType corrBinning{{ConfVtxBins, ConfMultBins}, true};
     if (selectedDplusCandidatesMc.size() > 0) {
       int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFV0M()));
       int nTracks = 0;
@@ -447,8 +448,8 @@ struct HfCorrelatorDplusHadrons {
       return nTracks;
     };
     using BinningTypeMCGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
-    BinningTypeMCGen corrBinningMcGen{{getTracksSize}, {zBins, multBinsMcGen}, true};
-
+    BinningTypeMCGen corrBinningMcGen{{getTracksSize}, {ConfVtxBins, ConfMultBinsMcGen}, true};
+    
     // MC gen level
     for (const auto& particle1 : mcParticles) {
       // check if the particle is Dplus  (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
@@ -514,6 +515,7 @@ struct HfCorrelatorDplusHadrons {
                              MyCandidatesData const& candidates,
                              MyTracks const& tracks)
   {
+    BinningType corrBinning{{ConfVtxBins, ConfMultBins}, true};
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<MySelCollisions, MyCandidatesData, MyTracks, BinningType> pairData{corrBinning, 5, -1, collisions, tracksTuple, &cache};
 
@@ -536,6 +538,7 @@ struct HfCorrelatorDplusHadrons {
                               MyCandidatesMcRec const& candidates,
                               MyTracks const& tracks)
   {
+    BinningType corrBinning{{ConfVtxBins, ConfMultBins}, true};
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<MySelCollisions, MyCandidatesMcRec, MyTracks, BinningType> pairMcRec{corrBinning, 5, -1, collisions, tracksTuple, &cache};
 
@@ -569,8 +572,8 @@ struct HfCorrelatorDplusHadrons {
     };
 
     using BinningTypeMcGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
-    BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {zBins, multBins}, true};
-
+    BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {ConfVtxBins, ConfMultBinsMcGen}, true};
+    
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
     Pair<McCollisionsSel, McParticlesSel, McParticlesSel, BinningTypeMcGen> pairMcGen{corrBinningMcGen, 5, -1, collisions, tracksTuple, &cache};
 
