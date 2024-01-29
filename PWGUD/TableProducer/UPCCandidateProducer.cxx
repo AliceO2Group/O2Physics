@@ -100,6 +100,10 @@ struct UpcCandProducer {
 
     upcCuts = (UPCCutparHolder)inputCuts;
 
+    const AxisSpec axisTrgCounters{10, 0.5, 10.5, ""};
+    histRegistry.add("hCountersTrg", "", kTH1F, {axisTrgCounters});
+    histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(1, "TCE");
+
     const AxisSpec axisBcDist{201, 0.5, 200.5, ""};
     histRegistry.add("hDistToITSTPC", "", kTH1F, {axisBcDist});
 
@@ -255,9 +259,10 @@ struct UpcCandProducer {
     return (dbc1 <= dbc2) ? it1 : it2;
   }
 
+  template <typename TBCs>
   void skimMCInfo(o2::aod::McCollisions const& mcCollisions,
                   o2::aod::McParticles const& mcParticles,
-                  BCsWithBcSels const& bcs)
+                  TBCs const& bcs)
   {
     std::vector<int32_t> newEventIDs(mcCollisions.size(), -1);
 
@@ -329,7 +334,7 @@ struct UpcCandProducer {
         continue;
       }
       const auto& mcEvent = mcCollisions.iteratorAt(i);
-      auto bc = mcEvent.bc_as<BCsWithBcSels>();
+      const auto& bc = mcEvent.bc_as<TBCs>();
       udMCCollisions(bc.globalBC(), mcEvent.generatorsID(), mcEvent.posX(), mcEvent.posY(), mcEvent.posZ(),
                      mcEvent.t(), mcEvent.weight(), mcEvent.impactParameter());
     }
@@ -540,13 +545,13 @@ struct UpcCandProducer {
   }
 
   // "uncorrected" bcs
-  template <int32_t tracksSwitch, typename TAmbTracks>
+  template <int32_t tracksSwitch, typename TBCs, typename TAmbTracks>
   void collectAmbTrackBCs(std::unordered_map<int64_t, uint64_t>& ambTrIds,
                           TAmbTracks ambTracks)
   {
     for (const auto& ambTrk : ambTracks) {
       auto trkId = getAmbTrackId<tracksSwitch>(ambTrk);
-      const auto& bcSlice = ambTrk.bc();
+      const auto& bcSlice = ambTrk.template bc_as<TBCs>();
       uint64_t trackBC = -1;
       if (bcSlice.size() != 0) {
         auto first = bcSlice.begin();
@@ -568,9 +573,10 @@ struct UpcCandProducer {
 
   // trackType == 0 -> hasTOF
   // trackType == 1 -> hasITS and not hasTOF
+  template <typename TBCs>
   void collectBarrelTracks(std::vector<BCTracksPair>& bcsMatchedTrIds,
                            int trackType,
-                           BCsWithBcSels const& bcs,
+                           TBCs const& bcs,
                            o2::aod::Collisions const& collisions,
                            BarrelTracks const& barrelTracks,
                            o2::aod::AmbiguousTracks const& ambBarrelTracks,
@@ -591,7 +597,7 @@ struct UpcCandProducer {
       if (trk.has_collision()) {
         const auto& col = trk.collision();
         nContrib = col.numContrib();
-        trackBC = col.bc_as<BCsWithBcSels>().globalBC();
+        trackBC = col.bc_as<TBCs>().globalBC();
       } else {
         auto ambIter = ambBarrelTrBCs.find(trkId);
         if (ambIter != ambBarrelTrBCs.end())
@@ -605,9 +611,10 @@ struct UpcCandProducer {
     }
   }
 
+  template <typename TBCs>
   void collectForwardTracks(std::vector<BCTracksPair>& bcsMatchedTrIds,
                             int typeFilter,
-                            BCsWithBcSels const& bcs,
+                            TBCs const& bcs,
                             o2::aod::Collisions const& collisions,
                             ForwardTracks const& fwdTracks,
                             o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
@@ -625,7 +632,7 @@ struct UpcCandProducer {
       if (ambIter == ambFwdTrBCs.end()) {
         const auto& col = trk.collision();
         nContrib = col.numContrib();
-        trackBC = col.bc_as<BCsWithBcSels>().globalBC();
+        trackBC = col.bc_as<TBCs>().globalBC();
       } else {
         trackBC = ambIter->second;
       }
@@ -681,7 +688,7 @@ struct UpcCandProducer {
 
   void createCandidatesCentral(BarrelTracks const& barrelTracks,
                                o2::aod::AmbiguousTracks const& ambBarrelTracks,
-                               BCsWithBcSels const& bcs,
+                               o2::aod::BCs const& bcs,
                                o2::aod::Collisions const& collisions,
                                o2::aod::FT0s const& ft0s,
                                o2::aod::FDDs const& fdds,
@@ -695,7 +702,7 @@ struct UpcCandProducer {
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambBarrelTrBCs;
     if (upcCuts.getAmbigSwitch() != 1)
-      collectAmbTrackBCs<0>(ambBarrelTrBCs, ambBarrelTracks);
+      collectAmbTrackBCs<0, o2::aod::BCs>(ambBarrelTrBCs, ambBarrelTracks);
 
     collectBarrelTracks(bcsMatchedTrIdsTOF,
                         0,
@@ -716,23 +723,28 @@ struct UpcCandProducer {
     std::map<uint64_t, int32_t> mapGlobalBcWithTVX{};
     std::map<uint64_t, int32_t> mapGlobalBcWithTSC{};
     for (auto ft0 : ft0s) {
-      uint64_t globalBC = ft0.bc_as<BCsWithBcSels>().globalBC();
+      uint64_t globalBC = ft0.bc_as<o2::aod::BCs>().globalBC();
       int32_t globalIndex = ft0.globalIndex();
       if (!(std::abs(ft0.timeA()) > 2.f && std::abs(ft0.timeC()) > 2.f))
         mapGlobalBcWithTOR[globalBC] = globalIndex;
-      if (TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitVertex)) // TVX
+      if (TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitVertex)) { // TVX
         mapGlobalBcWithTVX[globalBC] = globalIndex;
+      }
+      if (TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitCen)) { // TVX & TCE
+        histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("TCE", 1);
+      }
       if (TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitVertex) &&
           (TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitCen) ||
-           TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitSCen))) // TVX & (TSC | TCE)
+           TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitSCen))) { // TVX & (TSC | TCE)
         mapGlobalBcWithTSC[globalBC] = globalIndex;
+      }
     }
 
     std::map<uint64_t, int32_t> mapGlobalBcWithV0A{};
     for (auto fv0a : fv0as) {
       if (std::abs(fv0a.time()) > 15.f)
         continue;
-      uint64_t globalBC = fv0a.bc_as<BCsWithBcSels>().globalBC();
+      uint64_t globalBC = fv0a.bc_as<o2::aod::BCs>().globalBC();
       mapGlobalBcWithV0A[globalBC] = fv0a.globalIndex();
     }
 
@@ -944,10 +956,10 @@ struct UpcCandProducer {
 
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambBarrelTrBCs;
-    collectAmbTrackBCs<0>(ambBarrelTrBCs, ambBarrelTracks);
+    collectAmbTrackBCs<0, BCsWithBcSels>(ambBarrelTrBCs, ambBarrelTracks);
 
     std::unordered_map<int64_t, uint64_t> ambFwdTrBCs;
-    collectAmbTrackBCs<1>(ambFwdTrBCs, ambFwdTracks);
+    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, ambFwdTracks);
 
     collectForwardTracks(bcsMatchedTrIdsMID,
                          o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack,
@@ -1124,7 +1136,7 @@ struct UpcCandProducer {
 
   void createCandidatesFwd(ForwardTracks const& fwdTracks,
                            o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                           BCsWithBcSels const& bcs,
+                           o2::aod::BCs const& bcs,
                            o2::aod::Collisions const& collisions,
                            o2::aod::FT0s const& ft0s,
                            o2::aod::FDDs const& fdds,
@@ -1137,7 +1149,7 @@ struct UpcCandProducer {
 
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambFwdTrBCs;
-    collectAmbTrackBCs<1>(ambFwdTrBCs, ambFwdTracks);
+    collectAmbTrackBCs<1, o2::aod::BCs>(ambFwdTrBCs, ambFwdTracks);
 
     collectForwardTracks(bcsMatchedTrIdsMID,
                          o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack,
@@ -1159,9 +1171,12 @@ struct UpcCandProducer {
     for (const auto& ft0 : ft0s) {
       if (!TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitVertex))
         continue;
+      if (TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitCen)) { // TVX & TCE
+        histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("TCE", 1);
+      }
       if (std::abs(ft0.timeA()) > 2.f)
         continue;
-      uint64_t globalBC = ft0.bc_as<BCsWithBcSels>().globalBC();
+      uint64_t globalBC = ft0.bc_as<o2::aod::BCs>().globalBC();
       mapGlobalBcWithT0A[globalBC] = ft0.globalIndex();
     }
 
@@ -1171,7 +1186,7 @@ struct UpcCandProducer {
         continue;
       if (std::abs(fv0a.time()) > 15.f)
         continue;
-      uint64_t globalBC = fv0a.bc_as<BCsWithBcSels>().globalBC();
+      uint64_t globalBC = fv0a.bc_as<o2::aod::BCs>().globalBC();
       mapGlobalBcWithV0A[globalBC] = fv0a.globalIndex();
     }
 
@@ -1312,7 +1327,7 @@ struct UpcCandProducer {
   // create candidates for central region
   void processCentral(BarrelTracks const& barrelTracks,
                       o2::aod::AmbiguousTracks const& ambBarrelTracks,
-                      BCsWithBcSels const& bcs,
+                      o2::aod::BCs const& bcs,
                       o2::aod::Collisions const& collisions,
                       o2::aod::FT0s const& ft0s,
                       o2::aod::FDDs const& fdds,
@@ -1356,7 +1371,7 @@ struct UpcCandProducer {
   // create candidates for central region
   void processCentralMC(BarrelTracks const& barrelTracks,
                         o2::aod::AmbiguousTracks const& ambBarrelTracks,
-                        BCsWithBcSels const& bcs,
+                        o2::aod::BCs const& bcs,
                         o2::aod::Collisions const& collisions,
                         o2::aod::FT0s const& ft0s,
                         o2::aod::FDDs const& fdds,
@@ -1377,7 +1392,7 @@ struct UpcCandProducer {
   // forward: n fwd tracks
   void processForward(ForwardTracks const& fwdTracks,
                       o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                      BCsWithBcSels const& bcs,
+                      o2::aod::BCs const& bcs,
                       o2::aod::Collisions const& collisions,
                       o2::aod::FT0s const& ft0s,
                       o2::aod::FDDs const& fdds,
@@ -1392,7 +1407,7 @@ struct UpcCandProducer {
 
   void processForwardMC(ForwardTracks const& fwdTracks,
                         o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                        BCsWithBcSels const& bcs,
+                        o2::aod::BCs const& bcs,
                         o2::aod::Collisions const& collisions,
                         o2::aod::FT0s const& ft0s,
                         o2::aod::FDDs const& fdds,
