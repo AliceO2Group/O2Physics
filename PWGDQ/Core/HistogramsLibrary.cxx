@@ -815,7 +815,6 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     nJPsiHadCorr[1] = TArrayD(kDelEtaBins + 1, DelEtaBinLims);
     nJPsiHadCorr[2] = TArrayD(kDelPhiBins + 1, DelPhiBinLims);
     nJPsiHadCorr[3] = TArrayD(kPtBins + 1, PtBinLims);
-    // nJPsiHadCorr[4] = TArrayD(kPtBins + 1, PtBinLims);
 
     int varsJPsiHadCorr[4] = {VarManager::kMass, VarManager::kDeltaEta, VarManager::kDeltaPhi, VarManager::kPt1};
     hm->AddHistogram(histClass, "InvMass_DelEta_DelPhi", "", 4, varsJPsiHadCorr, nJPsiHadCorr);
