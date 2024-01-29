@@ -43,9 +43,10 @@ struct lumiStabilityTask {
 
   void process(aod::FT0s const& ft0s, aod::FDDs const& fdds, aod::BCsWithTimestamps const&)
   {
-    for(auto const& fdd: fdds){
+    for (auto const& fdd : fdds) {
       auto bc = fdd.bc_as<BCsWithTimestamps>();
-      if(!bc.timestamp()) continue;
+      if (!bc.timestamp())
+        continue;
 
       Long64_t globalBC = bc.globalBC();
       int localBC = globalBC % nBCsPerOrbit;
@@ -53,14 +54,15 @@ struct lumiStabilityTask {
       std::bitset<8> fddTriggers = fdd.triggerMask();
       bool vertex = fddTriggers[o2::fdd::Triggers::bitVertex];
 
-      if(vertex){
+      if (vertex) {
         histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
       } // vertex true
-    } // loop over FDD events
+    }   // loop over FDD events
 
-    for(auto const& ft0 : ft0s){
+    for (auto const& ft0 : ft0s) {
       auto bc = ft0.bc_as<BCsWithTimestamps>();
-      if(!bc.timestamp()) continue;
+      if (!bc.timestamp())
+        continue;
 
       Long64_t globalBC = bc.globalBC();
       int localBC = globalBC % nBCsPerOrbit;
@@ -68,11 +70,11 @@ struct lumiStabilityTask {
       std::bitset<8> fT0Triggers = ft0.triggerMask();
       bool vertex = fT0Triggers[o2::fdd::Triggers::bitVertex];
 
-      if(vertex){
+      if (vertex) {
         histos.fill(HIST("FT0/bcVertexTrigger"), localBC);
       } // vertex true
-    } // loop over FT0 events
-  } //end process
+    }   // loop over FT0 events
+  }     // end process
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
