@@ -1303,7 +1303,7 @@ struct AnalysisDileptonHadron {
     // TODO: Create separate histogram directories for each selection used in the creation of the dileptons
     // TODO: Implement possibly multiple selections for the associated track ?
     if (context.mOptions.get<bool>("processSkimmed")) {
-      //DefineHistograms(fHistMan, "DileptonsSelected;DileptonHadronInvMass;DileptonHadronCorrelation", fConfigAddDileptonHadHistogram); // define all histograms
+      // DefineHistograms(fHistMan, "DileptonsSelected;DileptonHadronInvMass;DileptonHadronCorrelation", fConfigAddDileptonHadHistogram); // define all histograms
       DefineHistograms(fHistMan, "DileptonsSelectedSE;DileptonHadronCorrelationSE;DileptonsSelectedSE_After", fConfigAddDileptonHadHistogram); // define all histograms
     }
     if (context.mOptions.get<bool>("processMixedEvent")) {
@@ -1406,19 +1406,18 @@ struct AnalysisDileptonHadron {
         if (index == indexLepton1 || index == indexLepton2) {
           continue;
         }
-        //cout<<"fValuesHadron = "<<fValuesHadron<<endl; // (info, "fValuesHadron = %llu", fValuesHadron);
-        
-        //VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, hadron, fValuesHadron);
-        //fHistMan->FillHistClass("DileptonHadronInvMass", fValuesHadron);
-        
-       
+        // cout<<"fValuesHadron = "<<fValuesHadron<<endl; // (info, "fValuesHadron = %llu", fValuesHadron);
+
+        // VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, hadron, fValuesHadron);
+        // fHistMan->FillHistClass("DileptonHadronInvMass", fValuesHadron);
+
         fHistMan->FillHistClass("DileptonsSelectedSE_After", fValuesDilepton);
 
         VarManager::FillDileptonHadron(dilepton, hadron, fValuesDilepton);
         fHistMan->FillHistClass("DileptonHadronCorrelationSE", fValuesDilepton);
 
         // table to be written out for ML analysis
-        //BmesonsTable(fValuesHadron[VarManager::kPairMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz], fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle], fValuesHadron[VarManager::kVertexingChi2PCA]);
+        // BmesonsTable(fValuesHadron[VarManager::kPairMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz], fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle], fValuesHadron[VarManager::kVertexingChi2PCA]);
       }
     }
   }
@@ -1536,9 +1535,9 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurab
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-mass");
     }
 
-    //if (classStr.Contains("DileptonHadronCorrelation")) {
-    //  dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-correlation");
-    //}
+    // if (classStr.Contains("DileptonHadronCorrelation")) {
+    //   dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-correlation");
+    // }
 
     if (classStr.Contains("DileptonHadronCorrelation")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-array-correlation");

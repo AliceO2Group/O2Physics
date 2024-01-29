@@ -791,29 +791,33 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
 
   if (groupStr.Contains("dilepton-hadron-array-correlation")) {
     const int kInvMassBins = 500;
-    double InvMassBinLims[kInvMassBins+1];
-    for (int i = 0; i <=kInvMassBins; i++) InvMassBinLims[i] = 0 + i * 0.01;
+    double InvMassBinLims[kInvMassBins + 1];
+    for (int i = 0; i <= kInvMassBins; i++)
+      InvMassBinLims[i] = 0 + i * 0.01;
 
     const int kDelEtaBins = 20;
-    double DelEtaBinLims[kDelEtaBins+1];
-    for (int i = 0; i <=kDelEtaBins; i++) DelEtaBinLims[i] = -2 + i * 0.2;
+    double DelEtaBinLims[kDelEtaBins + 1];
+    for (int i = 0; i <= kDelEtaBins; i++)
+      DelEtaBinLims[i] = -2 + i * 0.2;
 
     const int kDelPhiBins = 50;
-    double DelPhiBinLims[kDelEtaBins+1];
-    for (int i = 0; i <=kDelPhiBins; i++) DelPhiBinLims[i] = -8 + i * 0.32;
-      
+    double DelPhiBinLims[kDelEtaBins + 1];
+    for (int i = 0; i <= kDelPhiBins; i++)
+      DelPhiBinLims[i] = -8 + i * 0.32;
+
     const int kPtBins = 20;
-    double PtBinLims[kPtBins+1];
-    for (int i = 0; i <=kPtBins; i++) PtBinLims[i] = 0 + i * 1;
+    double PtBinLims[kPtBins + 1];
+    for (int i = 0; i <= kPtBins; i++)
+      PtBinLims[i] = 0 + i * 1;
 
     TArrayD nJPsiHadCorr[4];
-      nJPsiHadCorr[0] = TArrayD(kInvMassBins + 1, InvMassBinLims);
-      nJPsiHadCorr[1] = TArrayD(kDelEtaBins + 1, DelEtaBinLims);
-      nJPsiHadCorr[2] = TArrayD(kDelPhiBins + 1, DelPhiBinLims);
-      nJPsiHadCorr[3] = TArrayD(kPtBins + 1, PtBinLims);
-      //nJPsiHadCorr[4] = TArrayD(kPtBins + 1, PtBinLims);
-     
-    int varsJPsiHadCorr[4] = {VarManager::kMass, VarManager::kDeltaEta, VarManager::kDeltaPhi, VarManager::kPt1};    // ,  VarManager::kPt2
+    nJPsiHadCorr[0] = TArrayD(kInvMassBins + 1, InvMassBinLims);
+    nJPsiHadCorr[1] = TArrayD(kDelEtaBins + 1, DelEtaBinLims);
+    nJPsiHadCorr[2] = TArrayD(kDelPhiBins + 1, DelPhiBinLims);
+    nJPsiHadCorr[3] = TArrayD(kPtBins + 1, PtBinLims);
+    // nJPsiHadCorr[4] = TArrayD(kPtBins + 1, PtBinLims);
+
+    int varsJPsiHadCorr[4] = {VarManager::kMass, VarManager::kDeltaEta, VarManager::kDeltaPhi, VarManager::kPt1}; // ,  VarManager::kPt2
     hm->AddHistogram(histClass, "InvMass_DelEta_DelPhi", "", 4, varsJPsiHadCorr, nJPsiHadCorr);
   }
   if (groupStr.Contains("dilepton-charmhadron")) {
