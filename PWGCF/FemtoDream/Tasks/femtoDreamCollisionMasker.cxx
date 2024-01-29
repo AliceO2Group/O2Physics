@@ -356,7 +356,7 @@ struct femoDreamCollisionMasker {
     bool UseInMixedEvent = true;
     std::uniform_real_distribution<> dist(0, 1);
 
-    if (ConfSeed.value > 0 && (1-dist(*rng)) > ConfDownsampling.value) {
+    if (ConfSeed.value > 0 && (1 - dist(*rng)) > ConfDownsampling.value) {
       UseInMixedEvent = false;
     }
 
