@@ -1167,9 +1167,9 @@ struct hypertriton3bodyComparewithDecay3body {
       for (auto& lMother0 : lMCTrack0.mothers_as<aod::McParticles>()) {
         for (auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
           for (auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
-          registry.fill(HIST("hTestCounter"), 4.5);
+            registry.fill(HIST("hTestCounter"), 4.5);
             if (lMother0.globalIndex() == lMother1.globalIndex() && lMother0.globalIndex() == lMother2.globalIndex()) { // vtxs with the same mother
-          registry.fill(HIST("hTestCounter"), 7.5);
+              registry.fill(HIST("hTestCounter"), 7.5);
               lGlobalIndex = lMother1.globalIndex();
               lPDG = lMother1.pdgCode();
               lPt = lMother1.pt();
@@ -1201,7 +1201,7 @@ struct hypertriton3bodyComparewithDecay3body {
       /*if ( (lPt >= 3.5 && lPt < 4.0) || (lPt >= 8.5 && lPt < 9.0) )  {
         std::cout << "---------------------- Num:" << registry.get<TH1>(HIST("hCheckCounter"))->GetBinContent(1) << "-----------------------------" << std::endl;
         std::cout << "track0Pt=" << lMCTrack0.pt() << " track1Pt=" << lMCTrack1.pt() << " track2Pt=" << lMCTrack2.pt() << std::endl;
-        std::cout << "MotherTrackPt=" << lPt << std::endl; 
+        std::cout << "MotherTrackPt=" << lPt << std::endl;
       }*/
 
       Indexdaughters temp = {lMCTrack0.globalIndex(), lMCTrack1.globalIndex(), lMCTrack2.globalIndex()};

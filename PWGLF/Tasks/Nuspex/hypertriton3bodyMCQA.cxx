@@ -534,7 +534,7 @@ struct hypertriton3bodyLabelCheck {
           registry.fill(HIST("hMassTrueH3L"), vtx.mHypertriton());
           registry.fill(HIST("hMassTrueH3LMatter"), vtx.mHypertriton());
           auto p = std::find(set_mothertrack.begin(), set_mothertrack.end(), mcparticle.globalIndex());
-          if (p == set_mothertrack.end()){
+          if (p == set_mothertrack.end()) {
             set_mothertrack.push_back(mcparticle.globalIndex());
             registry.fill(HIST("hLabeledVtxCounter"), 2.5);
           }
@@ -543,7 +543,7 @@ struct hypertriton3bodyLabelCheck {
           registry.fill(HIST("hMassTrueH3L"), vtx.mAntiHypertriton());
           registry.fill(HIST("hMassTrueH3LAntiMatter"), vtx.mAntiHypertriton());
           auto p = std::find(set_mothertrack.begin(), set_mothertrack.end(), mcparticle.globalIndex());
-          if (p == set_mothertrack.end()){
+          if (p == set_mothertrack.end()) {
             set_mothertrack.push_back(mcparticle.globalIndex());
             registry.fill(HIST("hLabeledVtxCounter"), 2.5);
           }
