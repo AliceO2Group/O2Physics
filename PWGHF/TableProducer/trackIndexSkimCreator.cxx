@@ -1073,7 +1073,8 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
       isSelectedTrack(track, trackPt, trackEta, pvRefitDcaXYDcaZ, statusProng);
       int8_t isProton = isSelectedProton<pidStrategy>(track);
-      rowSelectedTrack(statusProng, isProton);
+      bool isPositive = track.sign() > 0;
+      rowSelectedTrack(statusProng, isProton, isPositive);
     }
   }
 
@@ -1264,6 +1265,8 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
 /// Pre-selection of 2-prong and 3-prong secondary vertices
 struct HfTrackIndexSkimCreator {
+  SliceCache cache;
+
   Produces<aod::Hf2Prongs> rowTrackIndexProng2;
   Produces<aod::HfCutStatus2Prong> rowProng2CutStatus;
   Produces<aod::HfPvRefit2Prong> rowProng2PVrefit;
@@ -1369,12 +1372,14 @@ struct HfTrackIndexSkimCreator {
   Preslice<TracksWithPVRefitAndDCA> tracksPerCollision = aod::track::collisionId; // needed for PV refit
 
   // filter track indices
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > 0);
+  Filter filterSelectTrackIds = ((aod::hf_sel_track::isSelProng & BIT(CandidateType::Cand2Prong)) != 0u) || ((aod::hf_sel_track::isSelProng & BIT(CandidateType::Cand3Prong)) != 0u) || ((aod::hf_sel_track::isSelProng & BIT(CandidateType::CandDstar)) != 0u);
   Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
 
-  // FIXME
-  // Partition<TracksWithPVRefitAndDCA> tracksPos = aod::track::signed1Pt > 0.f;
-  // Partition<TracksWithPVRefitAndDCA> tracksNeg = aod::track::signed1Pt < 0.f;
+  // define partitions
+  Partition<FilteredTrackAssocSel> positiveFor2And3Prongs = aod::hf_sel_track::isPositive == true && (((aod::hf_sel_track::isSelProng & BIT(CandidateType::Cand2Prong)) != 0u) || ((aod::hf_sel_track::isSelProng & BIT(CandidateType::Cand3Prong)) != 0u));
+  Partition<FilteredTrackAssocSel> negativeFor2And3Prongs = aod::hf_sel_track::isPositive == false && (((aod::hf_sel_track::isSelProng & BIT(CandidateType::Cand2Prong)) != 0u) || ((aod::hf_sel_track::isSelProng & BIT(CandidateType::Cand3Prong)) != 0u));
+  Partition<FilteredTrackAssocSel> positiveSelected = aod::hf_sel_track::isPositive == true;  // including tracks for D* soft pion
+  Partition<FilteredTrackAssocSel> negativeSelected = aod::hf_sel_track::isPositive == false; // including tracks for D* soft pion
 
   // QA of PV refit
   ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
@@ -2110,28 +2115,20 @@ struct HfTrackIndexSkimCreator {
       //  return;
       //}
 
-      // first loop over positive tracks
-      // for (auto trackPos1 = tracksPos.begin(); trackPos1 != tracksPos.end(); ++trackPos1) {
-
       auto thisCollId = collision.globalIndex();
-      auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+
+      // first loop over positive tracks
+      auto groupedTrackIndicesPos1 = positiveFor2And3Prongs->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
       int lastFilledD0 = -1; // index to be filled in table for D* mesons
       int counterTrackPos1{0};
-      for (auto trackIndexPos1 = groupedTrackIndices.begin(); trackIndexPos1 != groupedTrackIndices.end(); ++trackIndexPos1) {
+      for (auto trackIndexPos1 = groupedTrackIndicesPos1.begin(); trackIndexPos1 != groupedTrackIndicesPos1.end(); ++trackIndexPos1) {
         counterTrackPos1++;
         auto trackPos1 = trackIndexPos1.template track_as<TTracks>();
-
-        if (trackPos1.signed1Pt() < 0) {
-          continue;
-        }
 
         // retrieve the selection flag that corresponds to this collision
         auto isSelProngPos1 = trackIndexPos1.isSelProng();
         bool sel2ProngStatusPos = TESTBIT(isSelProngPos1, CandidateType::Cand2Prong);
         bool sel3ProngStatusPos1 = TESTBIT(isSelProngPos1, CandidateType::Cand3Prong);
-        if (!sel2ProngStatusPos && !sel3ProngStatusPos1) {
-          continue;
-        }
 
         auto trackParVarPos1 = getTrackParCov(trackPos1);
         std::array<float, 3> pVecTrackPos1{trackPos1.px(), trackPos1.py(), trackPos1.pz()};
@@ -2142,22 +2139,16 @@ struct HfTrackIndexSkimCreator {
         }
 
         // first loop over negative tracks
-        // for (auto trackNeg1 = tracksNeg.begin(); trackNeg1 != tracksNeg.end(); ++trackNeg1) {
         int counterTrackNeg1{0};
-        for (auto trackIndexNeg1 = groupedTrackIndices.begin(); trackIndexNeg1 != groupedTrackIndices.end(); ++trackIndexNeg1) {
+        auto groupedTrackIndicesNeg1 = negativeFor2And3Prongs->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+        for (auto trackIndexNeg1 = groupedTrackIndicesNeg1.begin(); trackIndexNeg1 != groupedTrackIndicesNeg1.end(); ++trackIndexNeg1) {
           counterTrackNeg1++;
           auto trackNeg1 = trackIndexNeg1.template track_as<TTracks>();
-          if (trackNeg1.signed1Pt() > 0) {
-            continue;
-          }
 
           // retrieve the selection flag that corresponds to this collision
           auto isSelProngNeg1 = trackIndexNeg1.isSelProng();
           bool sel2ProngStatusNeg = TESTBIT(isSelProngNeg1, CandidateType::Cand2Prong);
           bool sel3ProngStatusNeg1 = TESTBIT(isSelProngNeg1, CandidateType::Cand3Prong);
-          if (!sel2ProngStatusNeg && !sel3ProngStatusNeg1) {
-            continue;
-          }
 
           auto trackParVarNeg1 = getTrackParCov(trackNeg1);
           std::array<float, 3> pVecTrackNeg1{trackNeg1.px(), trackNeg1.py(), trackNeg1.pz()};
@@ -2347,15 +2338,14 @@ struct HfTrackIndexSkimCreator {
             }
 
             // second loop over positive tracks
-            // for (auto trackPos2 = trackPos1 + 1; trackPos2 != tracksPos.end(); ++trackPos2) {
             int counterTrackPos2{0};
-            auto startTrackIndexPos2 = (doDstar) ? groupedTrackIndices.begin() : trackIndexPos1 + 1;
-            for (auto trackIndexPos2 = startTrackIndexPos2; trackIndexPos2 != groupedTrackIndices.end(); ++trackIndexPos2) {
+            auto groupedTrackIndicesPos2 = positiveSelected->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+            auto startTrackIndexPos2 = (doDstar) ? groupedTrackIndicesPos2.begin() : trackIndexPos1 + 1;
+            auto endTrackIndexPos2 = (doDstar) ? groupedTrackIndicesPos2.end() : groupedTrackIndicesPos1.end();
+            for (auto trackIndexPos2 = startTrackIndexPos2; trackIndexPos2 != endTrackIndexPos2; ++trackIndexPos2) {
               counterTrackPos2++;
               auto trackPos2 = trackIndexPos2.template track_as<TTracks>();
-              if (trackPos2.signed1Pt() < 0) {
-                continue;
-              }
+
               auto trackParVarPos2 = getTrackParCov(trackPos2);
               std::array<float, 3> pVecTrackPos2{trackPos2.px(), trackPos2.py(), trackPos2.pz()};
               o2::gpu::gpustd::array<float, 2> dcaInfoPos2{trackPos2.dcaXY(), trackPos2.dcaZ()};
@@ -2609,15 +2599,13 @@ struct HfTrackIndexSkimCreator {
             }
 
             // second loop over negative tracks
-            // for (auto trackNeg2 = trackNeg1 + 1; trackNeg2 != tracksNeg.end(); ++trackNeg2) {
             int counterTrackNeg2{0};
-            auto startTrackIndexNeg2 = (doDstar) ? groupedTrackIndices.begin() : trackIndexNeg1 + 1;
-            for (auto trackIndexNeg2 = startTrackIndexNeg2; trackIndexNeg2 != groupedTrackIndices.end(); ++trackIndexNeg2) {
+            auto groupedTrackIndicesNeg2 = negativeSelected->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+            auto startTrackIndexNeg2 = (doDstar) ? groupedTrackIndicesNeg2.begin() : trackIndexNeg1 + 1;
+            auto endTrackIndexNeg2 = (doDstar) ? groupedTrackIndicesNeg2.end() : groupedTrackIndicesNeg1.end();
+            for (auto trackIndexNeg2 = startTrackIndexNeg2; trackIndexNeg2 != endTrackIndexNeg2; ++trackIndexNeg2) {
               counterTrackNeg2++;
               auto trackNeg2 = trackIndexNeg2.template track_as<TTracks>();
-              if (trackNeg2.signed1Pt() > 0) {
-                continue;
-              }
 
               auto trackParVarNeg2 = getTrackParCov(trackNeg2);
               std::array<float, 3> pVecTrackNeg2{trackNeg2.px(), trackNeg2.py(), trackNeg2.pz()};
