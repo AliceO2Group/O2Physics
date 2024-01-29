@@ -96,7 +96,7 @@ struct femoDreamCollisionMasker {
     // seed rng for downsampling
     if (ConfSeed.value > 0) {
       rng = new std::mt19937(ConfSeed.value);
-    };
+    }
 
     std::vector<std::string> MatchedWorkflows;
     LOG(info) << "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*";
