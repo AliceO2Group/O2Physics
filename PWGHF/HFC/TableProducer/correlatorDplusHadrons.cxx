@@ -168,8 +168,8 @@ struct HfCorrelatorDplusHadrons {
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson}, "Efficiency values for Dplus meson"};
   ConfigurableAxis confMultBins{"confMultBins", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis confVtxBins{"confVtxBins", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis confMultBinsMcGen{"confMultBinsMcGen", {VARIABLE_WIDTH,  0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - multiplicity"}; // In MCGen multiplicity is defined by counting tracks
-                                       
+  ConfigurableAxis confMultBinsMcGen{"confMultBinsMcGen", {VARIABLE_WIDTH, 0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - multiplicity"}; // In MCGen multiplicity is defined by counting tracks
+
   HfHelper hfHelper;
   SliceCache cache;
 
@@ -449,7 +449,7 @@ struct HfCorrelatorDplusHadrons {
     };
     using BinningTypeMCGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
     BinningTypeMCGen corrBinningMcGen{{getTracksSize}, {confVtxBins, confMultBinsMcGen}, true};
-    
+
     // MC gen level
     for (const auto& particle1 : mcParticles) {
       // check if the particle is Dplus  (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
@@ -573,7 +573,7 @@ struct HfCorrelatorDplusHadrons {
 
     using BinningTypeMcGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
     BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {confVtxBins, confMultBinsMcGen}, true};
-    
+
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
     Pair<McCollisionsSel, McParticlesSel, McParticlesSel, BinningTypeMcGen> pairMcGen{corrBinningMcGen, 5, -1, collisions, tracksTuple, &cache};
 
