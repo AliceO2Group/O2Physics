@@ -93,7 +93,8 @@ struct kinkAnalysis {
                             Pion,
                             Xi,
                             OmegaToL,
-                            OmegaToXi };
+                            OmegaToXi,
+                            Hypertriton };
 
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
   Configurable<double> cfgBz{"cfgBz", -999, "bz field, -999 is automatic"};
@@ -172,7 +173,7 @@ struct kinkAnalysis {
   float angleCutFunction(int particleName, float x)
   {
 
-    float mSigmaMinus = 1.197449, mSigmaPlus = 1.189449, mKaon = 0.493677, mPion = 0.13957018, mXi = 1.321, mOmega = 1.67245;
+    float mSigmaMinus = 1.197449, mSigmaPlus = 1.189449, mKaon = 0.493677, mPion = 0.13957018, mXi = 1.321, mOmega = 1.67245, mHypertriton = 2.99131;
     float par1 = mSigmaMinus; /// Default value is for SigmaMinus
     float par2 = 0.8;
     float par3 = M_PI;
@@ -211,9 +212,14 @@ struct kinkAnalysis {
         par1 = mPion;
         par2 = 0.2731374;
         break;
+
+      case Hypertriton:
+        par1 = mHypertriton;
+        par2 = 0.07;
+        break;
     }
 
-    if ((particleName == SigmaMinus) || (particleName == SigmaPlusToPi) || (particleName == SigmaPlusToProton) || (particleName == Xi) || (particleName == OmegaToXi) || (particleName == OmegaToL))
+    if ((particleName == SigmaMinus) || (particleName == SigmaPlusToPi) || (particleName == SigmaPlusToProton) || (particleName == Xi) || (particleName == OmegaToXi) || (particleName == OmegaToL) || (particleName == Hypertriton))
       return par1 * (par2 / (sqrt((x * x) * (1 - (par2 * par2)) - ((par1 * par1) * (par2 * par2))))) * (180. / par3) + 1;
 
     return ((atan(par1 * par2 * (1.0 / (sqrt((x * x) * (1.0 - (par1 * par1)) - (par1 * par1) * (par2 * par2)))))) * 180.) / par3;
@@ -271,6 +277,13 @@ struct kinkAnalysis {
             particlePdgCode = -3112;
           break;
 
+        case Hypertriton:
+          if (cfgMotherCharge == -1)
+            particlePdgCode = 1010010030;
+          else 
+            particlePdgCode = -1010010030;
+          break; 
+
         default:
           particlePdgCode = 3112;
       }
@@ -284,12 +297,17 @@ struct kinkAnalysis {
     const AxisSpec axisqT{1000, 0.0, 1.0, "q_{T}"};
     const AxisSpec axisRmother{500, 0.0, 50.0, "#it{R}_{mother} (cm)"};
     const AxisSpec axisDCAdaugh{1000, 0.0, 10.0, "#it{DCA}_{daughter} (cm)"};
-    const AxisSpec axisSigmaMass{300, cfgLowerHistLimit, cfgUpperHistLimit, "#it{M}_{inv} (Gev/#it{c^{2}})"};
+
+    const AxisSpec axisSigmaMass{1000, 1.1, 1.4, "#it{M}_{inv} (Gev/#it{c^{2}})"};
+    const AxisSpec hypAxisMass{100, 2.9, 3.6, "#it{M}_{inv} (Gev/#it{c^{2}})"};
+    const AxisSpec axisPtHyp{100, 0., 15, "#it{p}_{T} (GeV/#it{c})"};
+
     const AxisSpec axisdtime{10000, 0, 50, "#delta t"};
     const AxisSpec axisPt{500, 0., 50., "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisdphi{360, 0, 360, "#delta phi"};
     const AxisSpec axisdz{400, -20., 20, "#delta z"};
     const AxisSpec axisPdgCodes{8001, -4000.5, 4000.5, "mother pdg codes"};
+
 
     // create histograms
     histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
@@ -317,6 +335,10 @@ struct kinkAnalysis {
     histos.add("hptMDelse", "hptMDelse", kTH2F, {axisPt, axisPt});
     histos.add("hPtMinusRecMcTrthM", "hPtMinusRecMcTrthM", kTH2F, {axisSigmaMass, axisPt});
     histos.add("hPtMinusRecMcTrthelse", "hPtMinusRecMcTrthelse", kTH2F, {axisSigmaMass, axisPt});
+
+    histos.add("hHypMass", "hHypMass", kTH1F, {hypAxisMass});
+    histos.add("hHypMassMC", "hHypMassMC", kTH1F, {hypAxisMass});
+    histos.add("hHypMassPt", "hHypMassPt", kTH2F, {hypAxisMass, axisPtHyp});
 
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(cfgLUTpath));
     ft2.setMaxChi2(5);
@@ -538,6 +560,12 @@ struct kinkAnalysis {
         mChargedDaughter = 0.13957039;
         mNeutralDaughter = 1.31486;
         break;
+
+      case Hypertriton:
+        mMother = 2.99131;
+        mChargedDaughter = 2.808921;
+        mNeutralDaughter = 0.1349766;
+        break;
     }
 
     o2::dataformats::VertexBase primaryVertex;
@@ -605,13 +633,22 @@ struct kinkAnalysis {
           LOG(debug) << "Brackets do not match";
           continue;
         }
-
+        
         const auto& trackDgh = tracks.iteratorAt(static_cast<uint64_t>(seedD.Idxtr));
 
         if ((seedD.mcParticleIdx != -1) && partTable) {
           auto mcParticle = partTable->rawIteratorAt(seedD.mcParticleIdx);
           daughterPdg = mcParticle.pdgCode();
         }
+
+        bool isDaughter = false;
+
+        if(cfgIsMC && (particleName == Hypertriton)){
+          int tritPDG = 1000010030;
+          if (abs(daughterPdg) == tritPDG)
+            isDaughter = true;
+        }
+
         PionTr = getTrackParCov(trackDgh);
 
         SigmaTr2.getPxPyPzGlo(sigmaPin);
@@ -626,6 +663,10 @@ struct kinkAnalysis {
         }
         if (particleName == OmegaToL) {
           if (trackDgh.tpcNSigmaKa() > cfgNsigmaTPCdaughter)
+            continue;
+        }
+        if (particleName == Hypertriton){
+          if (trackDgh.tpcNSigmaPr() > cfgNsigmaTPCdaughter)
             continue;
         }
 
@@ -686,6 +727,9 @@ struct kinkAnalysis {
               neutronPabs = sqrt(pow((sigmaPDC[2] - pionPDC[2]), 2) + pow((sigmaPDC[1] - pionPDC[1]), 2) + pow((sigmaPDC[0] - pionPDC[0]), 2));
               neutronM = sqrt((sigmaE - pionE) * (sigmaE - pionE) - neutronPabs * neutronPabs);
 
+              if(abs(neutronM - mNeutralDaughter)/mNeutralDaughter > 0.1)
+                continue;
+
               if ((particleName == SigmaMinus) || (particleName == SigmaPlusToPi)) {
                 if ((theta * radToDeg > (angleCutFunction(particleName, sigmaPabsDC))) && (sigmaPabsDC > 1.6))
                   continue;
@@ -720,11 +764,24 @@ struct kinkAnalysis {
                     continue;
               }
 
+              if (particleName == Hypertriton) {
+                //if (sigmaPabsDC < 2.5)
+                //  if (theta * radToDeg < 2.5)
+                //    continue;
+                if (sigmaPabsDC > 0.6)
+                  if (theta * radToDeg > angleCutFunction(particleName, sigmaPabsDC))
+                    continue;
+              }
+
               if (!cfgIsMC)
                 if (sigmaPt < 1.6)
                   continue;
 
-              if (theta * radToDeg < 0.5)
+              if (particleName != Hypertriton){
+                if (theta * radToDeg < 0.5)
+                  continue;
+              }
+              else if (theta * radToDeg < 0.2)
                 continue;
 
               if ((qT < qTlower) || (qT > qTupper))
@@ -739,6 +796,20 @@ struct kinkAnalysis {
               neutronE = sqrt(mNeutralDaughter * mNeutralDaughter + pow((sigmaPDC[2] - pionPDC[2]), 2) + pow((sigmaPDC[1] - pionPDC[1]), 2) + pow((sigmaPDC[0] - pionPDC[0]), 2));
 
               mass = sqrt((neutronE + pionE) * (neutronE + pionE) - sigmaPabsDC * sigmaPabsDC);
+
+              if(particleName == Hypertriton){
+              histos.fill(HIST("hHypMass"), mass);
+              histos.fill(HIST("hHypMassPt"), mass, sigmaPt);
+
+              if(isDaughter)
+                histos.fill(HIST("hHypMassMC"), mass);
+              }
+
+              if ((chargeM == -1) && (chargeD == -1) || (chargeM == 1) && (chargeD == 1)){
+                if (cfgIsMC) {
+                  histos.fill(HIST("hcodes"), motherPdg, daughterPdg);
+                }
+              }
 
               if ((chargeM == -1) && (chargeD == -1)) {
                 if (cfgIsMC) {
