@@ -139,6 +139,10 @@ static const float MomCorLimits[2][nMomCorCuts] =
 static const float PIDForTrackingTable[2][nTracks]{
   {-1, 0.75},
   {-1, 1.2}};
+static const float ITSCutsTable[1][nTracks]={
+{1,1}
+};
+
 
 static const float triggerSwitches[1][nAllTriggers]{
   {1, 1, 1, 1, 1, 1}};
@@ -298,14 +302,14 @@ struct CFFilter {
     "ConfTrkTPCsClsMax",
     160,
     "Maximum number of shared TPC clusters"};
-  Configurable<float> ConfTrkITSnclsMin{
+  Configurable<LabeledArray<float>> ConfTrkITSnclsMin{
     "ConfTrkITSnclsMin",
-    0,
-    "Minimum number of ITS clusters"};
-  Configurable<float> ConfTrkITSnclsIbMin{
-    "ConfTrkITSnclsIbMin",
-    0,
-    "Minimum number of ITS clusters in the inner barrel"};
+    {CFTrigger::ITSCutsTable[0], CFTrigger::nTracks, 1, CFTrigger::SpeciesName,std::vector<std::string>{"Limit"}},
+     "Minimum number of ITS clusters"};
+  Configurable<LabeledArray<float>> ConfTrkITSnclsIBMin{
+    "ConfTrkITSnclsIBMin",
+    {CFTrigger::ITSCutsTable[0], CFTrigger::nTracks, 1, CFTrigger::SpeciesName,std::vector<std::string>{"Limit"}},
+     "Minimum number of ITS clusters in the inner barrel"};
   Configurable<float> ConfTrkDCAxyMax{
     "ConfTrkDCAxyMax",
     0.15,
@@ -898,12 +902,12 @@ struct CFFilter {
     if (tpcNClsS > ConfTrkTPCsClsMax) {
       return false;
     }
-    if (itsNCls < ConfTrkITSnclsMin) {
-      return false;
-    }
-    if (itsNClsIB < ConfTrkITSnclsIbMin) {
-      return false;
-    }
+      if (itsNCls < ConfTrkITSnclsMin->get(partSpecies, "Limit")) {
+        return false;
+      }
+      if (itsNClsIB < ConfTrkITSnclsIBMin->get(partSpecies, "Limit")) {
+        return false;
+      }
     if (std::abs(dcaXY) > ConfTrkDCAxyMax) {
       return false;
     }
