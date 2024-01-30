@@ -54,15 +54,24 @@ class ResoPair : public MyFemtoPair
   ResoPair() {}
   ResoPair(trkType const& first, trkType const& second) : MyFemtoPair(first, second)
   {
-    lDecayDaughter1.SetPtEtaPhiM(first->pt(), first->eta(), first->phi(), particle_mass(GetPDG1()));
-    lDecayDaughter2.SetPtEtaPhiM(second->pt(), second->eta(), second->phi(), particle_mass(GetPDG2()));
-    lResonance = lDecayDaughter1 + lDecayDaughter2;
+    SetPair(first, second);
   };
   ResoPair(trkType const& first, trkType const& second, const bool& isidentical) : MyFemtoPair(first, second, isidentical){};
   bool IsClosePair() const { return MyFemtoPair::IsClosePair(_deta, _dphi, _radius); }
   void SetEtaDiff(const float deta) { _deta = deta; }
   void SetPhiStarDiff(const float dphi) { _dphi = dphi; }
-  float GetInvMass() const { return lResonance.M(); }
+  void SetPair(trkType const& first, trkType const& second)
+  {
+    MyFemtoPair::SetPair(first, second);
+    lDecayDaughter1.SetPtEtaPhiM(first->pt(), first->eta(), first->phi(), particle_mass(GetPDG1()));
+    lDecayDaughter2.SetPtEtaPhiM(second->pt(), second->eta(), second->phi(), particle_mass(GetPDG2()));
+    lResonance = lDecayDaughter1 + lDecayDaughter2;
+  }
+  float GetInvMass() const
+  {
+    // LOG(info) << "Mass = " << lResonance.M() << " 1 " << lDecayDaughter1.M() << " 2 " << lDecayDaughter2.M();
+    return lResonance.M();
+  }
   float GetPt() const { return lResonance.Pt(); }
   float GetRapidity() const { return lResonance.Rapidity(); }
 
@@ -161,7 +170,7 @@ struct K0MixedEvents {
   void init(o2::framework::InitContext&)
   {
     IsIdentical = (_sign_1 * _particlePDG_1 == _sign_2 * _particlePDG_2);
-    LOG(info) << "IsIdentical = " << IsIdentical << " sign1 " << _sign_1 << " Pdg1 " << _particlePDG_1 << " Pdg2 " << _particlePDG_2 << " sign2 " << _sign_2;
+    LOG(info) << "IsIdentical=" << IsIdentical << "; sign1=" << _sign_1 << "; Pdg1=" << _particlePDG_1 << "; total1=" << _sign_1 * _particlePDG_1 << " -- Pdg2=" << _particlePDG_2 << "; sign2=" << _sign_2 << "; total2=" << _sign_2 * _particlePDG_2;
 
     Pair->SetIdentical(IsIdentical);
     Pair->SetPDG1(_particlePDG_1);
@@ -173,7 +182,7 @@ struct K0MixedEvents {
     TPCcuts_2 = std::make_pair(_particlePDG_2, _tpcNSigma_2);
     TOFcuts_2 = std::make_pair(_particlePDG_2, _tofNSigma_2);
 
-    const AxisSpec kStarAxis{CFkStarBinning, "Inv. mass (GeV/c^{2})"};
+    const AxisSpec invMassAxis{CFkStarBinning, "Inv. mass (GeV/c^{2})"};
     const AxisSpec ptAxis{ptBinning, "#it{p}_{T} (GeV/c)"};
     const AxisSpec dcaXyAxis{dcaXyBinning, "DCA_{xy} (cm)"};
 
@@ -181,10 +190,10 @@ struct K0MixedEvents {
     registry.add("VTXc", "VTXc", kTH1F, {{100, -20., 20., "vtx"}});
     registry.add("VTX", "VTX", kTH1F, {{100, -20., 20., "vtx"}});
     registry.add("SEcand", "SEcand", kTH1F, {{2, 0.5, 2.5}});
-    registry.add("SE", "SE", kTH1F, {kStarAxis});
-    registry.add("ME", "ME", kTH1F, {kStarAxis});
-    registry.add("SEvsPt", "SEvsPt", kTH2D, {kStarAxis, ptAxis});
-    registry.add("MEvsPt", "MEvsPt", kTH2D, {kStarAxis, ptAxis});
+    registry.add("SE", "SE", kTH1F, {invMassAxis});
+    registry.add("ME", "ME", kTH1F, {invMassAxis});
+    registry.add("SEvsPt", "SEvsPt", kTH2D, {invMassAxis, ptAxis});
+    registry.add("MEvsPt", "MEvsPt", kTH2D, {invMassAxis, ptAxis});
     registry.add("eta", Form("eta_%i", (int)_particlePDG_1), kTH2F, {ptAxis, {100, -10., 10., "#eta"}});
     registry.add("p_first", Form("p_%i", (int)_particlePDG_1), kTH1F, {ptAxis});
     registry.add("dcaXY_first", Form("dca_%i", (int)_particlePDG_1), kTH2F, {ptAxis, dcaXyAxis});
