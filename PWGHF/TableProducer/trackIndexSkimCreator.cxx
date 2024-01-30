@@ -380,7 +380,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   Configurable<bool> useIsQualityTrackITSForBachLfCasc{"useIsQualityTrackITSForBachLfCasc", true, "check isQualityTrackITS status for bachelor in cascade + bachelor decays"};
   // soft pion cuts for D*
   Configurable<double> ptMinSoftPionForDstar{"ptMinSoftPionForDstar", 0.05, "min. track pT for soft pion in D* candidate"};
-  Configurable<double> ptMaxSoftPionForDstar{"ptMaxSoftPionForDstar", 2., "max. track pT for soft pion in D* candidate"};
   Configurable<double> etaMinSoftPionForDstar{"etaMinSoftPionForDstar", -99999., "min. pseudorapidity for soft pion in D* candidate"};
   Configurable<double> etaMaxSoftPionForDstar{"etaMaxSoftPionForDstar", 0.8, "max. pseudorapidity for soft pion in D* candidate"};
   Configurable<LabeledArray<double>> cutsTrackDstar{"cutsTrackDstar", {hf_cuts_single_track::cutsTrackPrimary[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for the soft pion of D* candidates"};
@@ -619,7 +618,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandV0bachelor + iCut);
       }
     }
-    if (trackPt < ptMinSoftPionForDstar || trackPt > ptMaxSoftPionForDstar) {
+    if (trackPt < ptMinSoftPionForDstar) {
       CLRBIT(statusProng, CandidateType::CandDstar);
       if (fillHistograms) {
         registry.fill(HIST("hRejTracks"), (nCuts + 1) * CandidateType::CandDstar + iCut);
@@ -1372,12 +1371,12 @@ struct HfTrackIndexSkimCreator {
   Preslice<TracksWithPVRefitAndDCA> tracksPerCollision = aod::track::collisionId; // needed for PV refit
 
   // filter track indices
-  Filter filterSelectTrackIds = ((aod::hf_sel_track::isSelProng & BIT(CandidateType::Cand2Prong)) != 0u) || ((aod::hf_sel_track::isSelProng & BIT(CandidateType::Cand3Prong)) != 0u) || ((aod::hf_sel_track::isSelProng & BIT(CandidateType::CandDstar)) != 0u);
+  Filter filterSelectTrackIds = ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand2Prong))) != 0u) || ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand3Prong))) != 0u) || ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandDstar))) != 0u);
   Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
 
   // define partitions
-  Partition<FilteredTrackAssocSel> positiveFor2And3Prongs = aod::hf_sel_track::isPositive == true && (((aod::hf_sel_track::isSelProng & BIT(CandidateType::Cand2Prong)) != 0u) || ((aod::hf_sel_track::isSelProng & BIT(CandidateType::Cand3Prong)) != 0u));
-  Partition<FilteredTrackAssocSel> negativeFor2And3Prongs = aod::hf_sel_track::isPositive == false && (((aod::hf_sel_track::isSelProng & BIT(CandidateType::Cand2Prong)) != 0u) || ((aod::hf_sel_track::isSelProng & BIT(CandidateType::Cand3Prong)) != 0u));
+  Partition<FilteredTrackAssocSel> positiveFor2And3Prongs = aod::hf_sel_track::isPositive == true && (((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand2Prong))) != 0u) || ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand3Prong))) != 0u));
+  Partition<FilteredTrackAssocSel> negativeFor2And3Prongs = aod::hf_sel_track::isPositive == false && (((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand2Prong))) != 0u) || ((aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::Cand3Prong))) != 0u));
   Partition<FilteredTrackAssocSel> positiveSelected = aod::hf_sel_track::isPositive == true;  // including tracks for D* soft pion
   Partition<FilteredTrackAssocSel> negativeSelected = aod::hf_sel_track::isPositive == false; // including tracks for D* soft pion
 
@@ -2976,8 +2975,7 @@ struct HfTrackIndexSkimCreatorCascades {
   double mass2K0sP{0.}; // WHY HERE?
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > 0);
-  // Partition<MyTracks> TracksWithPVRefitAndDCA = aod::hf_sel_track::isSelProng >= 4;
+  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandV0bachelor))) != 0u;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
@@ -3058,13 +3056,8 @@ struct HfTrackIndexSkimCreatorCascades {
 
         // selections on the bachelor
 
-        // // retrieve the selection flag that corresponds to this collision
-        auto isSelProngBach = bachIdx.isSelProng();
-
         // pT cut
-        if (!TESTBIT(isSelProngBach, CandidateType::CandV0bachelor)) {
-          continue;
-        }
+        // FIXME: this should go in the tag-sel-tracks
         if (tpcRefitBach) {
           if (!(bach.trackType() & o2::aod::track::TPCrefit)) {
             continue;
@@ -3338,7 +3331,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > 0);
+  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandCascadeBachelor))) != 0u;
 
   Preslice<aod::TracksWCovDca> tracksPerCollision = aod::track::collisionId;                     // needed for PV refit
   Preslice<SelectedHfTrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
@@ -3504,10 +3497,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
         for (auto trackIdPion1 = groupedBachTrackIndices.begin(); trackIdPion1 != groupedBachTrackIndices.end(); ++trackIdPion1) {
 
           hfFlag = 0;
-
-          if (!TESTBIT(trackIdPion1.isSelProng(), CandidateType::CandCascadeBachelor)) {
-            continue;
-          }
 
           auto trackPion1 = trackIdPion1.track_as<aod::TracksWCovDca>();
 
