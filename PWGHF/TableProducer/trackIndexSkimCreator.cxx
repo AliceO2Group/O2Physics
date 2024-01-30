@@ -2102,8 +2102,8 @@ struct HfTrackIndexSkimCreator {
         cutStatus3Prong[iDecay3P] = std::vector<bool>(kNCuts3Prong[iDecay3P], true);
       }
 
-      int whichHypo2Prong[kN2ProngDecays + 1]; // we also put D0 for D* in the last slot 
-      int whichHypo3Prong[kN3ProngDecays]; 
+      int whichHypo2Prong[kN2ProngDecays + 1]; // we also put D0 for D* in the last slot
+      int whichHypo3Prong[kN3ProngDecays];
 
       // set the magnetic field from CCDB
       auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
@@ -2835,7 +2835,7 @@ struct HfTrackIndexSkimCreator {
                 if (debug) {
                   rowDstarCutStatus(cutStatus);
                 }
-              } 
+              }
             }
 
             // second loop over negative tracks
@@ -2875,7 +2875,6 @@ struct HfTrackIndexSkimCreator {
               }
             }
           } // end of D*
-
         }
       }
 
