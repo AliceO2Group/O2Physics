@@ -223,7 +223,7 @@ struct DGCandProducer {
     }
     auto bc = collision.foundBC_as<BCs>();
     LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
-    
+
     // fill FIT histograms
     fillFIThistograms(bc);
 
