@@ -48,6 +48,8 @@ struct UpcCandProducer {
   Produces<o2::aod::UDCollisionsSelsCent> eventCandidatesSelsCent;
   Produces<o2::aod::UDCollisionsSelsFwd> eventCandidatesSelsFwd;
 
+  Produces<o2::aod::UDZdcsReduced> udZdcsReduced;
+
   std::vector<bool> fwdSelectors;
   std::vector<bool> barrelSelectors;
 
@@ -693,6 +695,7 @@ struct UpcCandProducer {
                                o2::aod::FT0s const& ft0s,
                                o2::aod::FDDs const& fdds,
                                o2::aod::FV0As const& fv0as,
+                               o2::aod::Zdcs const& zdcs,
                                const o2::aod::McTrackLabels* mcBarrelTrackLabels)
   {
     // pairs of global BCs and vectors of matched track IDs:
@@ -722,7 +725,7 @@ struct UpcCandProducer {
     std::map<uint64_t, int32_t> mapGlobalBcWithTOR{};
     std::map<uint64_t, int32_t> mapGlobalBcWithTVX{};
     std::map<uint64_t, int32_t> mapGlobalBcWithTSC{};
-    for (auto ft0 : ft0s) {
+    for (const auto& ft0 : ft0s) {
       uint64_t globalBC = ft0.bc_as<o2::aod::BCs>().globalBC();
       int32_t globalIndex = ft0.globalIndex();
       if (!(std::abs(ft0.timeA()) > 2.f && std::abs(ft0.timeC()) > 2.f))
@@ -741,17 +744,26 @@ struct UpcCandProducer {
     }
 
     std::map<uint64_t, int32_t> mapGlobalBcWithV0A{};
-    for (auto fv0a : fv0as) {
+    for (const auto& fv0a : fv0as) {
       if (std::abs(fv0a.time()) > 15.f)
         continue;
       uint64_t globalBC = fv0a.bc_as<o2::aod::BCs>().globalBC();
       mapGlobalBcWithV0A[globalBC] = fv0a.globalIndex();
     }
 
+    std::map<uint64_t, int32_t> mapGlobalBcWithZdc{};
+    for (const auto& zdc : zdcs) {
+      if (std::abs(zdc.timeZNA()) > 2.f && std::abs(zdc.timeZNC()) > 2.f)
+        continue;
+      auto globalBC = zdc.bc_as<o2::aod::BCs>().globalBC();
+      mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
+    }
+
     auto nTORs = mapGlobalBcWithTOR.size();
     auto nTSCs = mapGlobalBcWithTSC.size();
     auto nTVXs = mapGlobalBcWithTVX.size();
     auto nFV0As = mapGlobalBcWithV0A.size();
+    auto nZdcs = mapGlobalBcWithZdc.size();
     auto nBcsWithITSTPC = bcsMatchedTrIdsITSTPC.size();
 
     // todo: calculate position of UD collision?
@@ -845,6 +857,17 @@ struct UpcCandProducer {
       upchelpers::FITInfo fitInfo{};
       if (!updateFitInfo(globalBC, fitInfo))
         continue;
+      if (nZdcs > 0) {
+        auto itZDC = mapGlobalBcWithZdc.find(globalBC);
+        if (itZDC != mapGlobalBcWithZdc.end()) {
+          const auto& zdc = zdcs.iteratorAt(itZDC->second);
+          float timeZNA = zdc.timeZNA();
+          float timeZNC = zdc.timeZNC();
+          float eComZNA = zdc.energyCommonZNA();
+          float eComZNC = zdc.energyCommonZNC();
+          udZdcsReduced(candID, timeZNA, timeZNC, eComZNA, eComZNC);
+        }
+      }
       uint16_t numContrib = fNBarProngs;
       int8_t netCharge = 0;
       float RgtrwTOF = 0.;
@@ -867,7 +890,8 @@ struct UpcCandProducer {
                           fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
       eventCandidatesSelsCent(fitInfo.distClosestBcTOR,
                               fitInfo.distClosestBcTSC,
-                              fitInfo.distClosestBcTVX);
+                              fitInfo.distClosestBcTVX,
+                              fitInfo.distClosestBcV0A);
       candID++;
     }
 
@@ -898,6 +922,17 @@ struct UpcCandProducer {
       upchelpers::FITInfo fitInfo{};
       if (!updateFitInfo(globalBC, fitInfo))
         continue;
+      if (nZdcs > 0) {
+        auto itZDC = mapGlobalBcWithZdc.find(globalBC);
+        if (itZDC != mapGlobalBcWithZdc.end()) {
+          const auto& zdc = zdcs.iteratorAt(itZDC->second);
+          float timeZNA = zdc.timeZNA();
+          float timeZNC = zdc.timeZNC();
+          float eComZNA = zdc.energyCommonZNA();
+          float eComZNC = zdc.energyCommonZNC();
+          udZdcsReduced(candID, timeZNA, timeZNC, eComZNA, eComZNC);
+        }
+      }
       uint16_t numContrib = fNBarProngs;
       int8_t netCharge = 0;
       float RgtrwTOF = 0.;
@@ -920,7 +955,8 @@ struct UpcCandProducer {
                           fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
       eventCandidatesSelsCent(fitInfo.distClosestBcTOR,
                               fitInfo.distClosestBcTSC,
-                              fitInfo.distClosestBcTVX);
+                              fitInfo.distClosestBcTVX,
+                              fitInfo.distClosestBcV0A);
       barrelTrackIDs.clear();
       candID++;
     }
@@ -1141,6 +1177,7 @@ struct UpcCandProducer {
                            o2::aod::FT0s const& ft0s,
                            o2::aod::FDDs const& fdds,
                            o2::aod::FV0As const& fv0as,
+                           o2::aod::Zdcs const& zdcs,
                            const o2::aod::McFwdTrackLabels* mcFwdTrackLabels)
   {
     // pairs of global BCs and vectors of matched track IDs:
@@ -1190,8 +1227,17 @@ struct UpcCandProducer {
       mapGlobalBcWithV0A[globalBC] = fv0a.globalIndex();
     }
 
+    std::map<uint64_t, int32_t> mapGlobalBcWithZdc{};
+    for (const auto& zdc : zdcs) {
+      if (std::abs(zdc.timeZNA()) > 2.f && std::abs(zdc.timeZNC()) > 2.f)
+        continue;
+      auto globalBC = zdc.bc_as<o2::aod::BCs>().globalBC();
+      mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
+    }
+
     auto nFT0s = mapGlobalBcWithT0A.size();
     auto nFV0As = mapGlobalBcWithV0A.size();
+    auto nZdcs = mapGlobalBcWithZdc.size();
     auto nBcsWithMCH = bcsMatchedTrIdsMCH.size();
 
     // todo: calculate position of UD collision?
@@ -1241,7 +1287,7 @@ struct UpcCandProducer {
       if (nFT0s > 0) {
         uint64_t closestBcT0A = findClosestBC(globalBC, mapGlobalBcWithT0A);
         int64_t distClosestBcT0A = globalBC - static_cast<int64_t>(closestBcT0A);
-        if (std::abs(distClosestBcT0A) < fFilterFT0)
+        if (std::abs(distClosestBcT0A) <= fFilterFT0)
           continue;
         fitInfo.distClosestBcT0A = distClosestBcT0A;
         auto ft0Id = mapGlobalBcWithT0A.at(closestBcT0A);
@@ -1257,7 +1303,7 @@ struct UpcCandProducer {
       if (nFV0As > 0) {
         uint64_t closestBcV0A = findClosestBC(globalBC, mapGlobalBcWithV0A);
         int64_t distClosestBcV0A = globalBC - static_cast<int64_t>(closestBcV0A);
-        if (std::abs(distClosestBcV0A) < fFilterFV0)
+        if (std::abs(distClosestBcV0A) <= fFilterFV0)
           continue;
         fitInfo.distClosestBcV0A = distClosestBcV0A;
         auto fv0aId = mapGlobalBcWithV0A.at(closestBcV0A);
@@ -1266,6 +1312,17 @@ struct UpcCandProducer {
         const auto& v0Amps = fv0a.amplitude();
         fitInfo.ampFV0A = std::accumulate(v0Amps.begin(), v0Amps.end(), 0.f);
         fillAmplitudes(fv0as, mapGlobalBcWithV0A, amplitudesV0A, relBCsV0A, globalBC);
+      }
+      if (nZdcs > 0) {
+        auto itZDC = mapGlobalBcWithZdc.find(globalBC);
+        if (itZDC != mapGlobalBcWithZdc.end()) {
+          const auto& zdc = zdcs.iteratorAt(itZDC->second);
+          float timeZNA = zdc.timeZNA();
+          float timeZNC = zdc.timeZNC();
+          float eComZNA = zdc.energyCommonZNA();
+          float eComZNC = zdc.energyCommonZNC();
+          udZdcsReduced(candID, timeZNA, timeZNC, eComZNA, eComZNC);
+        }
       }
       uint16_t numContrib = fNFwdProngs;
       int8_t netCharge = 0;
@@ -1331,12 +1388,13 @@ struct UpcCandProducer {
                       o2::aod::Collisions const& collisions,
                       o2::aod::FT0s const& ft0s,
                       o2::aod::FDDs const& fdds,
-                      o2::aod::FV0As const& fv0as)
+                      o2::aod::FV0As const& fv0as,
+                      o2::aod::Zdcs const& zdcs)
   {
     fDoMC = false;
     createCandidatesCentral(barrelTracks, ambBarrelTracks,
                             bcs, collisions,
-                            ft0s, fdds, fv0as,
+                            ft0s, fdds, fv0as, zdcs,
                             (o2::aod::McTrackLabels*)nullptr);
   }
 
@@ -1376,6 +1434,7 @@ struct UpcCandProducer {
                         o2::aod::FT0s const& ft0s,
                         o2::aod::FDDs const& fdds,
                         o2::aod::FV0As const& fv0as,
+                        o2::aod::Zdcs const& zdcs,
                         o2::aod::McCollisions const& mcCollisions, o2::aod::McParticles const& mcParticles,
                         o2::aod::McTrackLabels const& mcBarrelTrackLabels)
   {
@@ -1383,7 +1442,7 @@ struct UpcCandProducer {
     skimMCInfo(mcCollisions, mcParticles, bcs);
     createCandidatesCentral(barrelTracks, ambBarrelTracks,
                             bcs, collisions,
-                            ft0s, fdds, fv0as,
+                            ft0s, fdds, fv0as, zdcs,
                             &mcBarrelTrackLabels);
     fNewPartIDs.clear();
   }
@@ -1396,12 +1455,13 @@ struct UpcCandProducer {
                       o2::aod::Collisions const& collisions,
                       o2::aod::FT0s const& ft0s,
                       o2::aod::FDDs const& fdds,
-                      o2::aod::FV0As const& fv0as)
+                      o2::aod::FV0As const& fv0as,
+                      o2::aod::Zdcs const& zdcs)
   {
     fDoMC = false;
     createCandidatesFwd(fwdTracks, ambFwdTracks,
                         bcs, collisions,
-                        ft0s, fdds, fv0as,
+                        ft0s, fdds, fv0as, zdcs,
                         (o2::aod::McFwdTrackLabels*)nullptr);
   }
 
@@ -1412,6 +1472,7 @@ struct UpcCandProducer {
                         o2::aod::FT0s const& ft0s,
                         o2::aod::FDDs const& fdds,
                         o2::aod::FV0As const& fv0as,
+                        o2::aod::Zdcs const& zdcs,
                         o2::aod::McCollisions const& mcCollisions, o2::aod::McParticles const& mcParticles,
                         o2::aod::McFwdTrackLabels const& mcFwdTrackLabels)
   {
@@ -1419,7 +1480,7 @@ struct UpcCandProducer {
     skimMCInfo(mcCollisions, mcParticles, bcs);
     createCandidatesFwd(fwdTracks, ambFwdTracks,
                         bcs, collisions,
-                        ft0s, fdds, fv0as,
+                        ft0s, fdds, fv0as, zdcs,
                         &mcFwdTrackLabels);
   }
 
