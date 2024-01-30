@@ -148,6 +148,8 @@ struct efficiencyQA {
   ConfigurableAxis collIdResAxis{"collIdResAxis", {1.e2, -50., 50.}, "binning for the collision ID resolution"};
   ConfigurableAxis timeResAxis{"timeResAxis", {1000, -50., 50.}, "binning for the collision ID resolution"};
 
+  ConfigurableAxis nGenRecAxis{"nGenRecAxis", {20, 0, 20}, "binning for the detector response matrix axis"};
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   int mRunNumber;
@@ -242,6 +244,8 @@ struct efficiencyQA {
         histos.add<TH1>("collTpcV0", ";ID_{coll}^{TPC} - ID_{coll}^{V0};Entries", HistType::kTH1F, {collIdResAxis});
         histos.add<TH1>("timeTpcIts", ";(#it{t}^{TPC} - #it{t}^{ITS}) / #sigma (a.u.);Entries", HistType::kTH1F, {timeResAxis});
       }
+
+      histos.add<TH2>("detRespMatrix", ";#it{N}_{gen};#it{N}_{rec}", HistType::kTH2F, {nGenRecAxis, nGenRecAxis});
     }
   }
 
@@ -334,6 +338,7 @@ struct efficiencyQA {
   template <class T>
   void fillTagAndProbe(SelCollisions::iterator const& collision, aod::V0s const& V0s, TracksFull const& tracks, SelCollisions const&)
   {
+    float nGenRec[]{0.f, 0.f};
     auto tpcTracks = useTpcTracksFromSameColl ? tracks.sliceBy(perCollisionTracks, collision.globalIndex()) : tracks;
     for (auto& v0 : V0s) {
       auto posTrack = v0.posTrack_as<T>();
@@ -443,6 +448,8 @@ struct efficiencyQA {
       histos.fill(HIST("tagCuts"), 7., tagTrack.sign() * tagTrack.pt());
 
       histos.fill(HIST("massV0"), massV0);
+
+      nGenRec[0] += 1.f;
 
       auto trackPt = probeTrack.sign() * std::hypot(momProbe[0], momProbe[1]);
       auto trackP = probeTrack.sign() * std::hypot(trackPt, momProbe[2]);
@@ -596,8 +603,14 @@ struct efficiencyQA {
         if (probe.globalIndexTpc > 0) {
           hPiRec->Fill(7., trackPt, trackEta);
         }
+        bool itsAccept = !(probeTrack.itsChi2NCl() > 36. || probeTrack.itsNCls() < 4);
+        bool tpcAccept = !(probeTrack.tpcCrossedRowsOverFindableCls() < 0.8 || probeTrack.tpcNClsCrossedRows() < 70 || probeTrack.tpcChi2NCl() > 4. || probeTrack.tpcNClsFound() < 90);
+        if (probeTrack.hasITS() && probeTrack.hasTPC() && itsAccept && tpcAccept) {
+          nGenRec[1] += 1.f;
+        }
       }
     }
+    histos.fill(HIST("detRespMatrix"), nGenRec[0], nGenRec[1]);
   }
 
   void fillProbeMC(SelCollisions::iterator const& collision, TracksFull const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, SelCollisions const&)
