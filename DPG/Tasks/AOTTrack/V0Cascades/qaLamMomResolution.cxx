@@ -23,6 +23,7 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "DPG/Tasks/AOTTrack/V0Cascades/qaLamMomResolution.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -35,9 +36,8 @@ using namespace o2::framework::expressions;
 using V0DatasLabeled = soa::Join<aod::V0Datas, aod::V0Covs, aod::McV0Labels>;
 
 struct qaLamMomResolution {
-  ConfigurableAxis mBins{"mBins", {200, 1.0f, 1.2f}, "Mass binning"};
-  ConfigurableAxis momBins{"momBins", {500, 0.f, 10.f}, "momentum binning"};
-  ConfigurableAxis ResBins{"ResBins", {200, -0.2f, 0.2f}, "residual binning"};
+
+  Produces<aod::LamDaughters> lamdaughters;
 
   Configurable<bool> collSelection{"collSelection", true, "collision selection"};
 
@@ -50,85 +50,134 @@ struct qaLamMomResolution {
   int PosPionPDG = 211;
   int NegPionPDG = -211;
 
+  float massLambda = -1.0f;
+  float radiusLambda = -1.0f;
+  float etaProton = -1.0, etaPion = -1.0;
+  int tpcNClsProton = 0, tpcNClsPion = 0;
+  int chargeProton = 0, chargePion = 0;
+  // daughter momenta
+  std::array<float, 3> momProtonRecIU;
+  std::array<float, 3> momPionRecIU;
+  std::array<float, 3> momProtonRecIUErr;
+  std::array<float, 3> momPionRecIUErr;
+  std::array<float, 3> momProtonRec;
+  std::array<float, 3> momPionRec;
+  std::array<float, 3> momProtonRecErr;
+  std::array<float, 3> momPionRecErr;
+  // MC info
+  std::array<float, 3> momProtonGen;
+  std::array<float, 3> momPionGen;
+
   void init(InitContext const&)
   {
-    const AxisSpec mAxis{mBins, "#it{m}(p#pi) (GeV/#it{c}^{2})"};
-    const AxisSpec PxAxis{momBins, "#it{p}_{x} (GeV/#it{c})"};
-    const AxisSpec PyAxis{momBins, "#it{p}_{y} (GeV/#it{c})"};
-    const AxisSpec PzAxis{momBins, "#it{p}_{z} (GeV/#it{c})"};
-    const AxisSpec PtAxis{momBins, "#it{p}_{t} (GeV/#it{c})"};
-    const AxisSpec PxResidualAxis{ResBins, "(#it{p}_{x}^{rec} - #it{p}_{x}^{MC}) / #sigma_{#it{p}_{x}}"};
-    const AxisSpec PyResidualAxis{ResBins, "(#it{p}_{y}^{rec} - #it{p}_{y}^{MC}) / #sigma_{#it{p}_{y}}"};
-    const AxisSpec PzResidualAxis{ResBins, "(#it{p}_{z}^{rec} - #it{p}_{z}^{MC}) / #sigma_{#it{p}_{z}}"};
-    const AxisSpec PtResidualAxis{ResBins, "(#it{p}_{t}^{rec} - #it{p}_{t}^{MC}) / #sigma_{#it{p}_{t}}"};
-
-    // Lambda histograms
-    hist.add("Lambda/hMassLambda", "Invariant mass Lambda", {HistType::kTH2F, {PtAxis, mAxis}});
-    hist.add("Lambda/hPxResolutionProton", "#it{p}_{x} proton at V0 vtx", {HistType::kTH2F, {PxAxis, PxResidualAxis}});
-    hist.add("Lambda/hPxResolutionPion", "#it{p}_{x} pion at V0 vtx", {HistType::kTH2F, {PxAxis, PxResidualAxis}});
-    hist.add("Lambda/hPxResolutionProtonIU", "#it{p}_{x} proton at IU", {HistType::kTH2F, {PxAxis, PxResidualAxis}});
-    hist.add("Lambda/hPxResolutionPionIU", "#it{p}_{x} pion at IU", {HistType::kTH2F, {PxAxis, PxResidualAxis}});
-    hist.add("Lambda/hPyResolutionProton", "#it{p}_{y} proton at V0 vtx", {HistType::kTH2F, {PyAxis, PyResidualAxis}});
-    hist.add("Lambda/hPyResolutionPion", "#it{p}_{y} pion at V0 vtx", {HistType::kTH2F, {PyAxis, PyResidualAxis}});
-    hist.add("Lambda/hPyResolutionProtonIU", "#it{p}_{y} proton at IU", {HistType::kTH2F, {PyAxis, PyResidualAxis}});
-    hist.add("Lambda/hPyResolutionPionIU", "#it{p}_{x} pion at IU", {HistType::kTH2F, {PyAxis, PyResidualAxis}});
-    hist.add("Lambda/hPzResolutionProton", "#it{p}_{z} proton at V0 vtx", {HistType::kTH2F, {PzAxis, PzResidualAxis}});
-    hist.add("Lambda/hPzResolutionPion", "#it{p}_{z} pion at V0 vtx", {HistType::kTH2F, {PzAxis, PzResidualAxis}});
-    hist.add("Lambda/hPzResolutionProtonIU", "#it{p}_{z} proton at IU", {HistType::kTH2F, {PzAxis, PzResidualAxis}});
-    hist.add("Lambda/hPzResolutionPionIU", "#it{p}_{z} pion at IU", {HistType::kTH2F, {PzAxis, PzResidualAxis}});
-    hist.add("Lambda/hPtResolutionProton", "#it{p}_{t} proton at V0 vtx", {HistType::kTH2F, {PtAxis, PtResidualAxis}});
-    hist.add("Lambda/hPtResolutionPion", "#it{p}_{t} pion at V0 vtx", {HistType::kTH2F, {PtAxis, PtResidualAxis}});
-    hist.add("Lambda/hPtResolutionProtonIU", "#it{p}_{t} proton at IU", {HistType::kTH2F, {PtAxis, PtResidualAxis}});
-    hist.add("Lambda/hPtResolutionPionIU", "#it{p}_{t} pion at IU", {HistType::kTH2F, {PtAxis, PtResidualAxis}});
-
-    // Anti-Lambda histograms
-    hist.add("AntiLambda/hMassAntiLambda", "Invariant mass Anti-Lambda", {HistType::kTH2F, {PtAxis, mAxis}});
-    hist.add("AntiLambda/hPxResolutionProton", "#it{p}_{x} anti-proton at V0 vtx", {HistType::kTH2F, {PxAxis, PxResidualAxis}});
-    hist.add("AntiLambda/hPxResolutionPion", "#it{p}_{x} pion at V0 vtx", {HistType::kTH2F, {PxAxis, PxResidualAxis}});
-    hist.add("AntiLambda/hPxResolutionProtonIU", "#it{p}_{x} anti-proton at IU", {HistType::kTH2F, {PxAxis, PxResidualAxis}});
-    hist.add("AntiLambda/hPxResolutionPionIU", "#it{p}_{x} pion at IU", {HistType::kTH2F, {PxAxis, PxResidualAxis}});
-    hist.add("AntiLambda/hPyResolutionProton", "#it{p}_{y} anti-proton at V0 vtx", {HistType::kTH2F, {PyAxis, PyResidualAxis}});
-    hist.add("AntiLambda/hPyResolutionPion", "#it{p}_{y} pion at V0 vtx", {HistType::kTH2F, {PyAxis, PyResidualAxis}});
-    hist.add("AntiLambda/hPyResolutionProtonIU", "#it{p}_{y} anti-proton at IU", {HistType::kTH2F, {PyAxis, PyResidualAxis}});
-    hist.add("AntiLambda/hPyResolutionPionIU", "#it{p}_{x} pion at IU", {HistType::kTH2F, {PyAxis, PyResidualAxis}});
-    hist.add("AntiLambda/hPzResolutionProton", "#it{p}_{z} anti-proton at V0 vtx", {HistType::kTH2F, {PzAxis, PzResidualAxis}});
-    hist.add("AntiLambda/hPzResolutionPion", "#it{p}_{z} pion at V0 vtx", {HistType::kTH2F, {PzAxis, PzResidualAxis}});
-    hist.add("AntiLambda/hPzResolutionProtonIU", "#it{p}_{z} anti-proton at IU", {HistType::kTH2F, {PzAxis, PzResidualAxis}});
-    hist.add("AntiLambda/hPzResolutionPionIU", "#it{p}_{z} pion at IU", {HistType::kTH2F, {PzAxis, PzResidualAxis}});
-    hist.add("AntiLambda/hPtResolutionProton", "#it{p}_{t} anti-proton at V0 vtx", {HistType::kTH2F, {PtAxis, PtResidualAxis}});
-    hist.add("AntiLambda/hPtResolutionPion", "#it{p}_{t} pion at V0 vtx", {HistType::kTH2F, {PtAxis, PtResidualAxis}});
-    hist.add("AntiLambda/hPtResolutionProtonIU", "#it{p}_{t} anti-proton at IU", {HistType::kTH2F, {PtAxis, PtResidualAxis}});
-    hist.add("AntiLambda/hPtResolutionPionIU", "#it{p}_{t} pion at IU", {HistType::kTH2F, {PtAxis, PtResidualAxis}});
+    auto hEventSelectionFlow = hist.add<TH1>("hEventSelectionFlow", "Event selection flow", kTH1F, {{2, 0.5f, 2.5f}});
+    hEventSelectionFlow->GetXaxis()->SetBinLabel(hEventSelectionFlow->FindBin(1), "Sel8");
+    hEventSelectionFlow->GetXaxis()->SetBinLabel(hEventSelectionFlow->FindBin(2), "|Vtx_{z}|<10cm");
   }
 
-  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, V0DatasLabeled const& V0Datas, aod::McParticles const& mcparticles, soa::Join<aod::TracksIU, aod::TracksCovIU, aod::McTrackLabels> const&)
-  { 
-    double PtProton, PtPion, sigmaPtProton, sigmaPtPion;
+  void resetVars()
+  {
+    massLambda = -1.0f;
+    radiusLambda = -1.0f;
+    etaProton = -1.0, etaPion = -1.0;
+    tpcNClsProton = 0, tpcNClsPion = 0;
+    chargeProton = 0, chargePion = 0;
+    for (int i = 0; i < 3; i++) {
+      momProtonRecIU[i] = -1.0f;
+      momPionRecIU[i] = -1.0f;
+      momProtonRecIUErr[i] = -1.0f;
+      momPionRecIUErr[i] = -1.0f;
+      momProtonRec[i] = -1.0f;
+      momPionRec[i] = -1.0f;
+      momProtonRecErr[i] = -1.0f;
+      momPionRecErr[i] = -1.0f;
+      momProtonGen[i] = -1.0f;
+      momPionGen[i] = -1.0f;
+    }
+  }
+
+  template <typename TCollision>
+  void fillTable(TCollision const& collision)
+  {
+    lamdaughters(collision.globalIndex(),
+                massLambda, radiusLambda,
+                chargeProton, chargePion,
+                etaProton, etaPion,
+                tpcNClsProton, tpcNClsPion,
+                momProtonRec[0], momProtonRec[1], momProtonRec[2],
+                momProtonRecErr[0], momProtonRecErr[1], momProtonRecErr[2],
+                momPionRec[0], momPionRec[1], momPionRec[2],
+                momPionRecErr[0], momPionRecErr[1], momPionRecErr[2],
+                momProtonRecIU[0], momProtonRecIU[1], momProtonRecIU[2],
+                momProtonRecIUErr[0], momProtonRecIUErr[1], momProtonRecIUErr[2],
+                momPionRecIU[0], momPionRecIU[1], momPionRecIU[2],
+                momPionRecIUErr[0], momPionRecIUErr[1], momPionRecIUErr[2],
+                momProtonGen[0], momProtonGen[1], momProtonGen[2],
+                momPionGen[0], momPionGen[1], momPionGen[2]);
+  }
+
+  template <typename TProton, typename TPion>
+  void getInfo(TProton const& protonTrackIU, TPion const& pionTrackIU)
+  {
+    // daughter momenta at IU
     o2::track::TrackParCov protonTrackParCov, pionTrackParCov;
     std::array<float, 21> protoncv, pioncv;
+    protonTrackParCov = getTrackParCov(protonTrackIU);
+    pionTrackParCov = getTrackParCov(pionTrackIU);
+    protonTrackParCov.getCovXYZPxPyPzGlo(protoncv);
+    pionTrackParCov.getCovXYZPxPyPzGlo(pioncv);
+    // proton
+    momProtonRecIU[0] = protonTrackIU.px();
+    momProtonRecIU[1] = protonTrackIU.py();
+    momProtonRecIU[2] = protonTrackIU.pz();
+    momProtonRecIUErr[0] = sqrt(protoncv[9]);
+    momProtonRecIUErr[1] = sqrt(protoncv[14]);
+    momProtonRecIUErr[2] = sqrt(protoncv[20]);
+    // pion
+    momPionRecIU[0] = pionTrackIU.px();
+    momPionRecIU[1] = pionTrackIU.py();
+    momPionRecIU[2] = pionTrackIU.pz();
+    momPionRecIUErr[0] = sqrt(pioncv[9]);
+    momPionRecIUErr[1] = sqrt(pioncv[14]);
+    momPionRecIUErr[2] = sqrt(pioncv[20]);
 
-    // selection
-    if (collSelection && (!collision.sel8() || abs(collision.posZ()) >= 10.))
+    // daughter charges, eta, nTPCclusters
+    chargeProton = protonTrackIU.sign();
+    chargePion = pionTrackIU.sign();
+    etaProton = protonTrackIU.eta();
+    etaPion = pionTrackIU.eta();
+    tpcNClsProton = protonTrackIU.tpcNClsFound();
+    tpcNClsPion = pionTrackIU.tpcNClsFound();
+  }
+
+  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, 
+                V0DatasLabeled const& V0Datas, 
+                aod::McParticles const& mcparticles, 
+                soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels> const&)
+  { 
+
+    // event selection
+    if (collSelection && !collision.sel8()) {
       return;
+    }
+    hist.fill(HIST("hEventSelectionFlow"), 1.f);
+    if (collSelection && (abs(collision.posZ()) >= 10.)) {
+      return;
+    }
+    hist.fill(HIST("hEventSelectionFlow"), 2.f);
 
     for (auto& v0data : V0Datas) {
 
-      // get reconstructed info
-      // double massLambda = v0data.mLambda();
-      // double massAntiLambda = v0data.mAntiLambda();
+      resetVars();
 
-      // get MC info
       if (v0data.has_mcParticle() && v0data.mcParticleId() > -1 && v0data.mcParticleId() <= mcparticles.size()) {
         auto MCv0 = v0data.mcParticle_as<aod::McParticles>();
 
-        if (!MCv0.has_daughters()) 
-          continue;
-
         // Lambda
-        if (MCv0.pdgCode() == LambdaPDG) {
+        if (MCv0.has_daughters() && MCv0.pdgCode() == LambdaPDG) {
           LOG(debug) << "V0 is a Lambda.";
-          const auto& protonTrackIU = v0data.posTrack_as<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::McTrackLabels>>();
-          const auto& pionTrackIU = v0data.negTrack_as<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::McTrackLabels>>();
+          const auto& protonTrackIU = v0data.posTrack_as<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels>>();
+          const auto& pionTrackIU = v0data.negTrack_as<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels>>();
 
           if (protonTrackIU.has_mcParticle() && pionTrackIU.has_mcParticle()) {
 
@@ -138,36 +187,35 @@ struct qaLamMomResolution {
             if (MCproton.pdgCode() == ProtonPDG && MCpion.pdgCode() == NegPionPDG) {
 
               // lambda mass
-              hist.fill(HIST("Lambda/hMassLambda"), v0data.pt(), v0data.mLambda());
-              // momentum resolution at Lambda vertex
-              hist.fill(HIST("Lambda/hPxResolutionProton"), MCproton.px(), (v0data.pxpos() - MCproton.px()) / sqrt(v0data.covmatposdau()[9]));
-              hist.fill(HIST("Lambda/hPxResolutionPion"), MCpion.px(), (v0data.pxneg() - MCpion.px()) / sqrt(v0data.covmatnegdau()[9]));
-              hist.fill(HIST("Lambda/hPyResolutionProton"), MCproton.py(), (v0data.pypos() - MCproton.py()) / sqrt(v0data.covmatposdau()[14]));
-              hist.fill(HIST("Lambda/hPyResolutionPion"), MCpion.py(), (v0data.pyneg() - MCpion.py()) / sqrt(v0data.covmatnegdau()[14]));
-              hist.fill(HIST("Lambda/hPzResolutionProton"), MCproton.pz() ,(v0data.pzpos() - MCproton.pz()) / sqrt(v0data.covmatposdau()[20]));
-              hist.fill(HIST("Lambda/hPzResolutionPion"), MCpion.pz(), (v0data.pzneg() - MCpion.pz()) / sqrt(v0data.covmatnegdau()[20]));
-              // pT
-              PtProton = sqrt(v0data.pxpos()*v0data.pxpos() + v0data.pypos()*v0data.pypos());
-              PtPion = sqrt(v0data.pxneg()*v0data.pxneg() + v0data.pyneg()*v0data.pyneg());
-              sigmaPtProton = sqrt(v0data.covmatposdau()[9] + v0data.covmatposdau()[14]);
-              sigmaPtPion = sqrt(v0data.covmatnegdau()[9] + v0data.covmatnegdau()[14]);
-              hist.fill(HIST("Lambda/hPtResolutionProton"), MCproton.pt(), (PtProton - MCproton.pt()) / sigmaPtProton);
-              hist.fill(HIST("Lambda/hPtResolutionPion"), MCpion.pt(), (PtPion - MCpion.pt()) / sigmaPtPion);
+              massLambda = v0data.mLambda();
+              radiusLambda = v0data.v0radius();
+              /// daughter momenta at Lambda vertex
+              // proton
+              momProtonRec[0] = v0data.pxpos();
+              momProtonRec[1] = v0data.pypos();
+              momProtonRec[2] = v0data.pzpos();
+              momProtonRecErr[0] = sqrt(v0data.covmatposdau()[9]);
+              momProtonRecErr[1] = sqrt(v0data.covmatposdau()[14]);
+              momProtonRecErr[2] = sqrt(v0data.covmatposdau()[20]);
+              momProtonGen[0] = MCproton.px();
+              momProtonGen[1] = MCproton.py();
+              momProtonGen[2] = MCproton.pz();
+              // pion
+              momPionRec[0] = v0data.pxneg();
+              momPionRec[1] = v0data.pyneg();
+              momPionRec[2] = v0data.pzneg();
+              momPionRecErr[0] = sqrt(v0data.covmatnegdau()[9]);
+              momPionRecErr[1] = sqrt(v0data.covmatnegdau()[14]);
+              momPionRecErr[2] = sqrt(v0data.covmatnegdau()[20]);
+              momPionGen[0] = MCpion.px();
+              momPionGen[1] = MCpion.py();
+              momPionGen[2] = MCpion.pz();
 
-              // momentum resolution at IU
-              protonTrackParCov = getTrackParCov(protonTrackIU);
-              pionTrackParCov = getTrackParCov(pionTrackIU);
-              protonTrackParCov.getCovXYZPxPyPzGlo(protoncv);
-              pionTrackParCov.getCovXYZPxPyPzGlo(pioncv);
-              hist.fill(HIST("Lambda/hPxResolutionProtonIU"), MCproton.px(), (protonTrackIU.px() - MCproton.px()) / sqrt(protoncv[9]));
-              hist.fill(HIST("Lambda/hPxResolutionPionIU"), MCpion.px(), (pionTrackIU.px() - MCpion.px()) / sqrt(pioncv[9]));
-              hist.fill(HIST("Lambda/hPyResolutionProtonIU"), MCproton.py(), (protonTrackIU.py() - MCproton.py()) / sqrt(protoncv[14]));
-              hist.fill(HIST("Lambda/hPyResolutionPionIU"), MCpion.py(), (pionTrackIU.py() - MCpion.py()) / sqrt(pioncv[14]));
-              hist.fill(HIST("Lambda/hPzResolutionProtonIU"), MCproton.pz(), (protonTrackIU.pz() - MCproton.pz()) / sqrt(protoncv[20]));
-              hist.fill(HIST("Lambda/hPzResolutionPionIU"), MCpion.pz(), (pionTrackIU.pz() - MCpion.pz()) / sqrt(pioncv[20]));
-              // pT
-              hist.fill(HIST("Lambda/hPtResolutionProtonIU"), MCproton.pt(), (protonTrackIU.pt() - MCproton.pt()) / sqrt(protoncv[9] + protoncv[14]));
-              hist.fill(HIST("Lambda/hPtResolutionPionIU"), MCpion.pt(), (pionTrackIU.pt() - MCpion.pt()) / sqrt(pioncv[9] + pioncv[14]));
+              // get daughter momenta at IU, charge, eta, nTPCclusters
+              getInfo(protonTrackIU, pionTrackIU);
+
+              // fill table
+              fillTable(collision);
             }
           }
         } // end Lambda
@@ -175,8 +223,8 @@ struct qaLamMomResolution {
         // Anti-Lambda
         if (MCv0.pdgCode() == AntiLambdaPDG) {
           LOG(debug) << "V0 is an Anti-Lambda.";
-          const auto& protonTrackIU = v0data.negTrack_as<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::McTrackLabels>>();
-          const auto& pionTrackIU = v0data.posTrack_as<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::McTrackLabels>>();
+          const auto& protonTrackIU = v0data.negTrack_as<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels>>();
+          const auto& pionTrackIU = v0data.posTrack_as<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels>>();
 
           if (protonTrackIU.has_mcParticle() && pionTrackIU.has_mcParticle()) {
 
@@ -185,37 +233,36 @@ struct qaLamMomResolution {
 
             if (MCproton.pdgCode() == AntiProtonPDG && MCpion.pdgCode() == PosPionPDG) {
 
-              // anti-lambda mass
-              hist.fill(HIST("AntiLambda/hMassAntiLambda"), v0data.pt(), v0data.mAntiLambda());
-              // momentum resolution at Lambda vertex
-              hist.fill(HIST("AntiLambda/hPxResolutionProton"), MCproton.px(), (v0data.pxneg() - MCproton.px()) / sqrt(v0data.covmatnegdau()[9]));
-              hist.fill(HIST("AntiLambda/hPxResolutionPion"), MCpion.px(), (v0data.pxpos() - MCpion.px()) / sqrt(v0data.covmatposdau()[9]));
-              hist.fill(HIST("AntiLambda/hPyResolutionProton"), MCproton.py(), (v0data.pyneg() - MCproton.py()) / sqrt(v0data.covmatnegdau()[14]));
-              hist.fill(HIST("AntiLambda/hPyResolutionPion"), MCpion.py(), (v0data.pypos() - MCpion.py()) / sqrt(v0data.covmatposdau()[14]));
-              hist.fill(HIST("AntiLambda/hPzResolutionProton"), MCproton.pz(), (v0data.pzneg() - MCproton.pz()) / sqrt(v0data.covmatnegdau()[20]));
-              hist.fill(HIST("AntiLambda/hPzResolutionPion"), MCpion.pz(), (v0data.pzpos() - MCpion.pz()) / sqrt(v0data.covmatposdau()[20]));
-              // pT
-              PtProton = sqrt(v0data.pxneg()*v0data.pxneg() + v0data.pyneg()*v0data.pyneg());
-              PtPion = sqrt(v0data.pxpos()*v0data.pxpos() + v0data.pypos()*v0data.pypos());
-              sigmaPtProton = sqrt(v0data.covmatnegdau()[9] + v0data.covmatnegdau()[14]);
-              sigmaPtPion = sqrt(v0data.covmatposdau()[9] + v0data.covmatposdau()[14]);
-              hist.fill(HIST("AntiLambda/hPtResolutionProton"), MCproton.pt(), (PtProton - MCproton.pt()) / sigmaPtProton);
-              hist.fill(HIST("AntiLambda/hPtResolutionPion"), MCpion.pt(), (PtPion - MCpion.pt()) / sigmaPtPion);
+              // lambda mass and radius
+              massLambda = v0data.mAntiLambda();
+              radiusLambda = v0data.v0radius();
+              /// daughter momenta at Lambda vertex
+              // proton
+              momProtonRec[0] = v0data.pxneg();
+              momProtonRec[1] = v0data.pyneg();
+              momProtonRec[2] = v0data.pzneg();
+              momProtonRecErr[0] = sqrt(v0data.covmatnegdau()[9]);
+              momProtonRecErr[1] = sqrt(v0data.covmatnegdau()[14]);
+              momProtonRecErr[2] = sqrt(v0data.covmatnegdau()[20]);
+              momProtonGen[0] = MCproton.px();
+              momProtonGen[1] = MCproton.py();
+              momProtonGen[2] = MCproton.pz();
+              // pion
+              momPionRec[0] = v0data.pxpos();
+              momPionRec[1] = v0data.pypos();
+              momPionRec[2] = v0data.pzpos();
+              momPionRecErr[0] = sqrt(v0data.covmatposdau()[9]);
+              momPionRecErr[1] = sqrt(v0data.covmatposdau()[14]);
+              momPionRecErr[2] = sqrt(v0data.covmatposdau()[20]);
+              momPionGen[0] = MCpion.px();
+              momPionGen[1] = MCpion.py();
+              momPionGen[2] = MCpion.pz();
 
-              // momentum resolution at IU
-              protonTrackParCov = getTrackParCov(protonTrackIU);
-              pionTrackParCov = getTrackParCov(pionTrackIU);
-              protonTrackParCov.getCovXYZPxPyPzGlo(protoncv);
-              pionTrackParCov.getCovXYZPxPyPzGlo(pioncv);
-              hist.fill(HIST("AntiLambda/hPxResolutionProtonIU"), MCproton.px(), (protonTrackIU.px() - MCproton.px()) / sqrt(protoncv[9]));
-              hist.fill(HIST("AntiLambda/hPxResolutionPionIU"), MCpion.px(), (pionTrackIU.px() - MCpion.px()) / sqrt(pioncv[9]));
-              hist.fill(HIST("AntiLambda/hPyResolutionProtonIU"), MCproton.py(), (protonTrackIU.py() - MCproton.py()) / sqrt(protoncv[14]));
-              hist.fill(HIST("AntiLambda/hPyResolutionPionIU"), MCpion.py(), (pionTrackIU.py() - MCpion.py()) / sqrt(pioncv[14]));
-              hist.fill(HIST("AntiLambda/hPzResolutionProtonIU"), MCproton.pz(), (protonTrackIU.pz() - MCproton.pz()) / sqrt(protoncv[20]));
-              hist.fill(HIST("AntiLambda/hPzResolutionPionIU"), MCpion.pz(), (pionTrackIU.pz() - MCpion.pz()) / sqrt(pioncv[20]));
-              // pT
-              hist.fill(HIST("AntiLambda/hPtResolutionProtonIU"), MCproton.pt(), (protonTrackIU.pt() - MCproton.pt()) / sqrt(protoncv[9] + protoncv[14]));
-              hist.fill(HIST("AntiLambda/hPtResolutionPionIU"), MCpion.pt(), (pionTrackIU.pt() - MCpion.pt()) / sqrt(pioncv[9] + pioncv[14]));
+              // get daughter momenta at IU, charge, eta, nTPCclusters
+              getInfo(protonTrackIU, pionTrackIU);
+
+              // fill table
+              fillTable(collision);
             }
           }
         } // end Anti-Lambda
