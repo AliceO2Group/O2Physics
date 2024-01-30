@@ -70,7 +70,7 @@ struct femtoDreamPairTaskTrackTrack {
 
   using FilteredCollisions = soa::Filtered<FDCollisions>;
   using FilteredCollision = FilteredCollisions::iterator;
-  using FilteredMaskedCollisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks>>;
+  using FilteredMaskedCollisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks, FDDownSample>>;
   using FilteredMaskedCollision = FilteredMaskedCollisions::iterator;
   femtodreamcollision::BitMaskType BitMask = -1;
 
@@ -388,8 +388,8 @@ struct femtoDreamPairTaskTrackTrack {
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
   void doMixedEvent_Masked(CollisionType& cols, PartType& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
   {
-    Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask;
-    Partition<CollisionType> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask;
+    Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
+    Partition<CollisionType> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
     PartitionMaskedCol1.bindTable(cols);
     PartitionMaskedCol2.bindTable(cols);
     for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockUpperIndexPolicy(policy, ConfMixingDepth.value, -1, PartitionMaskedCol1, PartitionMaskedCol2))) {
