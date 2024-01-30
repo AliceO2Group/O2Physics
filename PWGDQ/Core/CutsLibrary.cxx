@@ -420,6 +420,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("hasTOF")) {
+    cut->AddCut(GetAnalysisCut("hasTOF"));
+    return cut;
+  }
+
   if (!nameStr.compare("PIDCalib")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -2960,6 +2965,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("PrimaryTrack_DCAz")) {
     cut->AddCut(VarManager::kTrackDCAz, -0.3, 0.3);
+    return cut;
+  }
+
+  if (!nameStr.compare("hasTOF")) {
+    cut->AddCut(VarManager::kHasTOF, 0.5, 1.5);
     return cut;
   }
 
