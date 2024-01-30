@@ -140,6 +140,11 @@ DECLARE_SOA_COLUMN(DBcTVX, dBcTVX, int32_t); //! distance to closest TVX
 DECLARE_SOA_COLUMN(DBcV0A, dBcV0A, int32_t); //! distance to closest V0A
 DECLARE_SOA_COLUMN(DBcT0A, dBcT0A, int32_t); //! distance to closest T0A
 
+DECLARE_SOA_COLUMN(AmplitudesT0A, amplitudesT0A, std::vector<float>); //! total T0A amplitudes in neighbouring BCs
+DECLARE_SOA_COLUMN(AmplitudesV0A, amplitudesV0A, std::vector<float>); //! total V0A amplitudes in neighbouring BCs
+DECLARE_SOA_COLUMN(AmpRelBCsT0A, ampRelBCsT0A, std::vector<int8_t>);  //! glob. BC w.r.t. candidate BC, size = size of amplitudes
+DECLARE_SOA_COLUMN(AmpRelBCsV0A, ampRelBCsV0A, std::vector<int8_t>);  //! glob. BC w.r.t. candidate BC, size = size of amplitudes
+
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 
 DECLARE_SOA_INDEX_COLUMN(UDMcCollision, udMcCollision);
@@ -181,12 +186,20 @@ DECLARE_SOA_TABLE(UDCollisionsSels, "AOD", "UDCOLLISIONSEL",
                   udcollision::BBFV0A<udcollision::BBFV0APF>, udcollision::BGFV0A<udcollision::BGFV0APF>,
                   udcollision::BBFDDA<udcollision::BBFDDAPF>, udcollision::BBFDDC<udcollision::BBFDDCPF>, udcollision::BGFDDA<udcollision::BGFDDAPF>, udcollision::BGFDDC<udcollision::BGFDDCPF>);
 
-DECLARE_SOA_TABLE(UDCollisionsSelsExtra, "AOD", "UDCOLSELEXTRA",
+// central barrel-specific selections
+DECLARE_SOA_TABLE(UDCollisionsSelsCent, "AOD", "UDCOLSELCNT",
                   udcollision::DBcTOR,
                   udcollision::DBcTSC,
-                  udcollision::DBcTVX,
+                  udcollision::DBcTVX);
+
+// forward-specific selections
+DECLARE_SOA_TABLE(UDCollisionsSelsFwd, "AOD", "UDCOLSELFWD",
                   udcollision::DBcV0A,
-                  udcollision::DBcT0A);
+                  udcollision::DBcT0A,
+                  udcollision::AmplitudesT0A,
+                  udcollision::AmpRelBCsT0A,
+                  udcollision::AmplitudesV0A,
+                  udcollision::AmpRelBCsV0A);
 
 DECLARE_SOA_TABLE(UDCollsLabels, "AOD", "UDCOLLSLABEL",
                   udcollision::CollisionId);
@@ -197,7 +210,8 @@ DECLARE_SOA_TABLE(UDMcCollsLabels, "AOD", "UDMCCOLLSLABEL",
 using UDCollision = UDCollisions::iterator;
 using SGCollision = SGCollisions::iterator;
 using UDCollisionsSel = UDCollisionsSels::iterator;
-using UDCollisionsSelExtra = UDCollisionsSelsExtra::iterator;
+using UDCollisionsSelCent = UDCollisionsSelsCent::iterator;
+using UDCollisionsSelFwd = UDCollisionsSelsFwd::iterator;
 using UDCollsLabel = UDCollsLabels::iterator;
 using UDMcCollsLabel = UDMcCollsLabels::iterator;
 
