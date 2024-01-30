@@ -41,13 +41,14 @@ using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 namespace
 {
 const float piMass = o2::constants::physics::MassPionCharged;
-std::shared_ptr<TH2> hPiRec;
-std::shared_ptr<TH3> hPiRecMass;
+std::shared_ptr<TH3> hPiRec;
+std::shared_ptr<THnSparse> hPiRecMass;
 std::shared_ptr<TH2> hTagCuts;
 std::shared_ptr<TH2> hTpcSegment;
 std::shared_ptr<TH3> hPtRes;
 std::shared_ptr<TH3> hEtaRes;
 std::shared_ptr<TH3> hPhiRes;
+std::shared_ptr<TH3> hPiRecSec;
 float invMass2Body(std::array<float, 3>& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC, float const& massB, float const& massC)
 {
   float p2B = momB[0] * momB[0] + momB[1] * momB[1] + momB[2] * momB[2];
@@ -166,17 +167,20 @@ struct efficiencyQA {
     ccdb->setFatalWhenNull(false);
 
     histos.add<TH1>("zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
-    hPiRec = histos.add<TH2>("piRec", ";;#it{p}_{T} (GeV/#it{c});Entries", HistType::kTH2F, {recAxis, ptAxis});
+    hPiRec = histos.add<TH3>("piRec", ";;#it{p}_{T} (GeV/#it{c});#it{#eta}", HistType::kTH3F, {recAxis, ptAxis, etaAxis});
     std::string binLabels[]{"Decays", "ITS", "ITS only", "TPC", "TPC only", "ITS+TPC", "TPC+TOF", " "};
     for (int iB{0}; iB < hPiRec->GetNbinsX(); ++iB) {
       hPiRec->GetXaxis()->SetBinLabel(iB + 1, binLabels[iB].data());
     }
     if (doprocessMcTracks) {
+      hPiRecSec = histos.add<TH3>("piRecSec", ";;#it{p}_{T} (GeV/#it{c});#it{#eta}", HistType::kTH3F, {recAxis, ptAxis, etaAxis});
       hPiRec->GetXaxis()->SetBinLabel(1, "Generated");
+      hPiRecSec->GetXaxis()->SetBinLabel(1, "Generated");
       hPtRes = histos.add<TH3>("ptRes", ";;#it{p}_{T}^{rec} (GeV/#it{c});#it{p}_{T}^{rec} - #it{p}_{T}^{MC} (GeV/#it{c})", HistType::kTH3F, {recAxis, ptAxis, ptResAxis});
       hEtaRes = histos.add<TH3>("etaRes", ";;#it{p}_{T}^{rec} (GeV/#it{c});#eta^{rec} - #eta^{MC} (rad)", HistType::kTH3F, {recAxis, ptAxis, etaResAxis});
       hPhiRes = histos.add<TH3>("phiRes", ";;#it{p}_{T}^{rec} (GeV/#it{c});#phi^{rec} - #phi^{MC} (rad)", HistType::kTH3F, {recAxis, ptAxis, phiResAxis});
       for (int iB{1}; iB < hPtRes->GetNbinsX(); ++iB) {
+        hPiRecSec->GetXaxis()->SetBinLabel(iB + 1, binLabels[iB].data());
         hPtRes->GetXaxis()->SetBinLabel(iB + 1, binLabels[iB].data());
         hEtaRes->GetXaxis()->SetBinLabel(iB + 1, binLabels[iB].data());
         hPhiRes->GetXaxis()->SetBinLabel(iB + 1, binLabels[iB].data());
@@ -203,7 +207,7 @@ struct efficiencyQA {
       fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
 
       histos.add<TH1>("massV0", ";#it{M}(#pi^{+} + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH1F, {massK0sAxis});
-      hPiRecMass = histos.add<TH3>("piRecMass", ";;#it{p}_{T} (GeV/#it{c});#it{M}(#pi^{+} + #pi^{-}) (GeV/#it{c}^{2})", HistType::kTH3F, {recAxis, ptAxis, massK0sAxis});
+      hPiRecMass = histos.add<THnSparse>("piRecMass", ";;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{M}(#pi^{+} + #pi^{-}) (GeV/#it{c}^{2})", HistType::kTHnSparseF, {recAxis, ptAxis, etaAxis, massK0sAxis});
       hTagCuts = histos.add<TH2>("tagCuts", ";;#it{p}_{T} (GeV/#it{c})", HistType::kTH2F, {recAxis, ptAxis});
 
       histos.add<TH2>("massTagTpc", ";#it{p} (GeV/#it{c});#it{M}(#pi^{+} + #pi^{-}) (GeV/#it{c}^{2})", HistType::kTH2F, {ptAxis, massK0sAxis});
@@ -215,10 +219,10 @@ struct efficiencyQA {
       for (int iB{0}; iB < hTagCuts->GetNbinsX(); ++iB) {
         hTagCuts->GetXaxis()->SetBinLabel(iB + 1, binLabelsTag[iB].data());
       }
-      for (int iB{0}; iB < hPiRecMass->GetNbinsX(); ++iB) {
-        hPiRecMass->GetXaxis()->SetBinLabel(iB + 1, binLabels[iB].data());
+      for (int iB{0}; iB < hPiRecMass->GetAxis(0)->GetNbins(); ++iB) {
+        hPiRecMass->GetAxis(0)->SetBinLabel(iB + 1, binLabels[iB].data());
       }
-      hPiRecMass->GetXaxis()->SetBinLabel(8, "ITS w/ TPC leg");
+      hPiRecMass->GetAxis(0)->SetBinLabel(8, "ITS w/ TPC leg");
 
       if (doprocessTagAndProbeMC) {
         std::string binLabelsTpc[]{"hasTPCsegment", "foundTPCsegment", "allFoundTPCsegment", "foundTPCsegment (w/ fake)"};
@@ -298,6 +302,31 @@ struct efficiencyQA {
       }
       if (track.hasTOF() && !track.hasITS()) {
         hist->Fill(6., y, z);
+      }
+    }
+  }
+
+  template <class T>
+  void fillHistTrack(T const& track, std::shared_ptr<THnBase> hist, float const& y, float const& z = 1, float const& t = 1)
+  {
+    bool itsAccept = !(track.itsChi2NCl() > 36. || track.itsNCls() < 4);
+    bool tpcAccept = !(track.tpcCrossedRowsOverFindableCls() < 0.8 || track.tpcNClsCrossedRows() < 70 || track.tpcChi2NCl() > 4. || track.tpcNClsFound() < 90);
+    if (track.hasITS()) {
+      hist->Fill(std::array<double, 4>{1., y, z, t}.data());
+    }
+    if (track.hasITS() && itsAccept && !track.hasTPC()) {
+      hist->Fill(std::array<double, 4>{2., y, z, t}.data());
+    }
+    if (track.hasTPC() && tpcAccept) {
+      hist->Fill(std::array<double, 4>{3., y, z, t}.data());
+      if (!track.hasITS()) {
+        hist->Fill(std::array<double, 4>{4., y, z, t}.data());
+      }
+      if (track.hasITS() && itsAccept) {
+        hist->Fill(std::array<double, 4>{5., y, z, t}.data());
+      }
+      if (track.hasTOF() && !track.hasITS()) {
+        hist->Fill(std::array<double, 4>{6., y, z, t}.data());
       }
     }
   }
@@ -417,6 +446,7 @@ struct efficiencyQA {
 
       auto trackPt = probeTrack.sign() * std::hypot(momProbe[0], momProbe[1]);
       auto trackP = probeTrack.sign() * std::hypot(trackPt, momProbe[2]);
+      auto trackEta = probeTrackCov.getEta();
 
       ProbeTrack probe;
       probe.globalIndex = probeTrack.globalIndex();
@@ -554,17 +584,17 @@ struct efficiencyQA {
         }
       }
 
-      hPiRecMass->Fill(0., trackPt, massV0);
+      hPiRecMass->Fill(0., trackPt, trackEta, massV0);
       if (probe.globalIndexTpc > 0) {
-        hPiRecMass->Fill(7., trackPt, massV0);
+        hPiRecMass->Fill(7., trackPt, trackEta, massV0);
       }
-      fillHistTrack(probeTrack, hPiRecMass, trackPt, massV0);
+      fillHistTrack(probeTrack, hPiRecMass, trackPt, trackEta, massV0);
       if (std::abs(massV0 - o2::constants::physics::MassKaonNeutral) < massMax) {
         probeTracks.push_back(probe);
-        hPiRec->Fill(0., trackPt);
-        fillHistTrack(probeTrack, hPiRec, trackPt);
+        hPiRec->Fill(0., trackPt, trackEta);
+        fillHistTrack(probeTrack, hPiRec, trackPt, trackEta);
         if (probe.globalIndexTpc > 0) {
-          hPiRec->Fill(7., trackPt);
+          hPiRec->Fill(7., trackPt, trackEta);
         }
       }
     }
@@ -768,9 +798,6 @@ struct efficiencyQA {
           if (std::abs(mcTrack.pdgCode()) != 211) {
             continue;
           }
-          if (!mcTrack.isPhysicalPrimary()) {
-            continue;
-          }
           const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
 
           auto trackParCov = getTrackParCov(track);
@@ -778,11 +805,26 @@ struct efficiencyQA {
           o2::base::Propagator::Instance()->propagateToDCA(collVtx, trackParCov, d_bz, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfo);
 
           auto trackPt = track.sign() * trackParCov.getPt();
-          fillHistTrack(track, hPiRec, trackPt);
-
-          fillHistTrack(track, hPtRes, track.sign() * trackParCov.getPt(), trackParCov.getPt() - mcTrack.pt());
-          fillHistTrack(track, hEtaRes, track.sign() * trackParCov.getPt(), trackParCov.getEta() - mcTrack.eta());
-          fillHistTrack(track, hPhiRes, track.sign() * trackParCov.getPt(), trackParCov.getPhi() - mcTrack.phi());
+          auto trackEta = trackParCov.getEta();
+          if (mcTrack.isPhysicalPrimary()) {
+            fillHistTrack(track, hPiRec, trackPt, trackEta);
+            fillHistTrack(track, hPtRes, track.sign() * trackParCov.getPt(), trackParCov.getPt() - mcTrack.pt());
+            fillHistTrack(track, hEtaRes, track.sign() * trackParCov.getPt(), trackParCov.getEta() - mcTrack.eta());
+            fillHistTrack(track, hPhiRes, track.sign() * trackParCov.getPt(), trackParCov.getPhi() - mcTrack.phi());
+          }
+          else {
+            for (auto& mother : mcTrack.template mothers_as<aod::McParticles>()) {
+              if (mother.pdgCode() != 310) {
+                continue;
+              }
+              auto radius = std::hypot(mcTrack.vx(), mcTrack.vy());
+              if (radius > v0radiusMax) {
+                continue;
+              }
+              fillHistTrack(track, hPiRecSec, trackPt, trackEta);
+              break;
+            }
+          }
         }
       }
     }
@@ -795,10 +837,22 @@ struct efficiencyQA {
       if (std::abs(pdgCode) != 211) {
         continue;
       }
-      if (!partMC.isPhysicalPrimary()) {
-        continue;
+      if (partMC.isPhysicalPrimary()) {
+        hPiRec->Fill(0., pdgCode / std::abs(pdgCode) * partMC.pt(), partMC.eta());
       }
-      hPiRec->Fill(0., pdgCode / std::abs(pdgCode) * partMC.pt());
+      else {
+        for (auto& mother : partMC.template mothers_as<aod::McParticles>()) {
+          if (mother.pdgCode() != 310) {
+            continue;
+          }
+          auto radius = std::hypot(partMC.vx(), partMC.vy());
+          if (radius > v0radiusMax) {
+            continue;
+          }
+          hPiRecSec->Fill(0., pdgCode / std::abs(pdgCode) * partMC.pt(), partMC.eta());
+          break;
+        }
+      }
     }
   }
   PROCESS_SWITCH(efficiencyQA, processMcTracks, "MC tracks analysis", false);
