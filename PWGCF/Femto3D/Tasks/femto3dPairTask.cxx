@@ -14,7 +14,7 @@
 /// \since 31 May 2023
 
 #include <ctime>
-#include <algorithm>    // std::random_shuffle
+#include <algorithm> // std::random_shuffle
 #include <random>
 #include <chrono>
 #include <vector>
@@ -412,9 +412,9 @@ struct FemtoCorrelations {
           int centBin = std::floor((i->first).second);
           MultHistos[centBin]->Fill(col1->mult());
 
-          if(_fill3dCF){ // shuffling is important only for 3D because if there are any sudden order/correlation in the tables, it could couse unwanted asymmetries in the final 3d rel. momentum distributions; irrelevant in 1D case because the absolute value of the rel.momentum is taken
+          if (_fill3dCF) { // shuffling is important only for 3D because if there are any sudden order/correlation in the tables, it could couse unwanted asymmetries in the final 3d rel. momentum distributions; irrelevant in 1D case because the absolute value of the rel.momentum is taken
             std::mt19937 gen(std::chrono::steady_clock::now().time_since_epoch().count());
-            std::shuffle (selectedtracks_1[col1->index()].begin(), selectedtracks_1[col1->index()].end(), gen);
+            std::shuffle(selectedtracks_1[col1->index()].begin(), selectedtracks_1[col1->index()].end(), gen);
           }
 
           mixTracks(selectedtracks_1[col1->index()], centBin); // mixing SE identical
@@ -449,9 +449,9 @@ struct FemtoCorrelations {
           int centBin = std::floor((i->first).second);
           MultHistos[centBin]->Fill(col1->mult());
 
-          if(_fill3dCF){
+          if (_fill3dCF) {
             std::mt19937 gen(std::chrono::steady_clock::now().time_since_epoch().count());
-            std::shuffle (selectedtracks_1[col1->index()].begin(), selectedtracks_1[col1->index()].end(), gen);
+            std::shuffle(selectedtracks_1[col1->index()].begin(), selectedtracks_1[col1->index()].end(), gen);
           }
 
           mixTracks<0>(selectedtracks_1[col1->index()], selectedtracks_2[col1->index()], centBin); // mixing SE non-identical, in <> brackets: 0 -- SE; 1 -- ME

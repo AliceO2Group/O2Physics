@@ -162,8 +162,6 @@ struct FemtoCorrelationsMC {
       for (int iii = ii + 1; iii < tracks.size(); iii++) {
 
         Pair->SetPair(tracks[ii], tracks[iii]);
-        Pair->SetMagField1((tracks[ii]->template singleCollSel_as<soa::Filtered<FilteredCollisions>>()).magField());
-        Pair->SetMagField2((tracks[iii]->template singleCollSel_as<soa::Filtered<FilteredCollisions>>()).magField());
 
         registry.fill(HIST("DoubleTrackEffects"), Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
         Pair->ResetPair();
@@ -178,8 +176,6 @@ struct FemtoCorrelationsMC {
       for (auto iii : tracks2) {
 
         Pair->SetPair(ii, iii);
-        Pair->SetMagField1((ii->template singleCollSel_as<soa::Filtered<FilteredCollisions>>()).magField());
-        Pair->SetMagField2((iii->template singleCollSel_as<soa::Filtered<FilteredCollisions>>()).magField());
 
         registry.fill(HIST("DoubleTrackEffects"), Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
         Pair->ResetPair();
@@ -324,7 +320,6 @@ struct FemtoCorrelationsMC {
 
     //====================================== filling deta(dphi*) & res. matrix starts here ======================================
 
-
     if (IsIdentical) { //====================================== identical ======================================
 
       for (auto i = mixbins.begin(); i != mixbins.end(); i++) { // iterating over all vertex&mult bins
@@ -336,14 +331,14 @@ struct FemtoCorrelationsMC {
           Pair->SetMagField1(col1->magField());
           Pair->SetMagField2(col1->magField());
 
-          fillEtaPhi(selectedtracks_1[col1->index()]);  // filling deta(dphi*) -- SE identical
+          fillEtaPhi(selectedtracks_1[col1->index()]); // filling deta(dphi*) -- SE identical
 
           for (int indx2 = indx1 + 1; indx2 < (i->second).size(); indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
 
             auto col2 = (i->second)[indx2];
 
             Pair->SetMagField2(col2->magField());
-            fillResMatrix(selectedtracks_1[col1->index()], selectedtracks_1[col2->index()]);  // filling res. matrix -- ME identical
+            fillResMatrix(selectedtracks_1[col1->index()], selectedtracks_1[col2->index()]); // filling res. matrix -- ME identical
           }
         }
       }

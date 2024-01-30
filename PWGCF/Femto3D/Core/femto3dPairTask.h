@@ -73,7 +73,7 @@ float GetKstarFrom4vectors(TLorentzVector& first4momentum, TLorentzVector& secon
     TLorentzVector fourmomentadif = first4momentum - second4momentum;
 
     fourmomentadif.Boost((-1) * fourmomentasum.BoostVector());
-    
+
     return 0.5 * abs(fourmomentadif.Vect().Mag());
   }
 }
@@ -84,9 +84,9 @@ TVector3 GetQLCMSFrom4vectors(TLorentzVector& first4momentum, TLorentzVector& se
 {
   TLorentzVector fourmomentasum = first4momentum + second4momentum;
   TLorentzVector fourmomentadif = first4momentum - second4momentum;
-  
-  fourmomentadif.Boost(0.0, 0.0, (-1) * fourmomentasum.BoostVector().Z());  // boost to LCMS
-  fourmomentadif.RotateZ((-1) * fourmomentasum.Phi()); // rotate so the X axis is along pair's kT
+
+  fourmomentadif.Boost(0.0, 0.0, (-1) * fourmomentasum.BoostVector().Z()); // boost to LCMS
+  fourmomentadif.RotateZ((-1) * fourmomentasum.Phi());                     // rotate so the X axis is along pair's kT
 
   return fourmomentadif.Vect();
 }
