@@ -48,7 +48,7 @@ namespace o2::aod
 
 using FemtoFullCollision = soa::Join<aod::Collisions,
                                      aod::EvSels,
-                                     aod::Mults, 
+                                     aod::Mults,
                                      aod::CentFT0Cs>::iterator;
 using FemtoFullCollisionMC = soa::Join<aod::Collisions,
                                        aod::EvSels,
