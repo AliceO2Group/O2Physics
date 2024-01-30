@@ -290,9 +290,9 @@ struct HfTaskSigmac {
   /// @brief function to fill the histograms needed in analysis (data)
   /// @param candidatesSc are the reconstructed candidate Σc0,++
   /// @param
-  template <bool useMl, typename L>
+  template <bool useMl, typename CandsLc>
   void fillHistosData(aod::HfCandSc const& candidatesSc,
-                      L const& candidatesLc,
+                      CandsLc const& candidatesLc,
                       aod::Tracks const&)
   {
 
@@ -303,7 +303,7 @@ struct HfTaskSigmac {
 
       /// get the candidate Λc+ used to build the candidate Σc0,++
       /// and understand which mass hypotheses are possible
-      const auto& candidateLc = candSc.prongLc_as<L>();
+      const auto& candidateLc = candSc.prongLc_as<CandsLc>();
       // const int iscandidateLcpKpi = (candidateLc.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
       // const int iscandidateLcpiKp = (candidateLc.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
       const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candidateLc, candSc);
@@ -374,7 +374,12 @@ struct HfTaskSigmac {
             if constexpr (useMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
-              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, candidateLc.mlProbLcToPKPi()[0], candidateLc.mlProbLcToPKPi()[2], 0, 0, ptSc, std::abs(chargeSc));
+              std::array<float, 2> outputMl{-1., -1.};
+              if (candidateLc.mlProbLcToPKPi().size() > 0) {
+                outputMl.at(0) = candidateLc.mlProbLcToPKPi()[0]; /// bkg score
+                outputMl.at(1) = candidateLc.mlProbLcToPKPi()[2]; /// non-prompt score
+              }
+              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc));
             } else {
               /// fill w/o BDT information
               registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc));
@@ -442,7 +447,12 @@ struct HfTaskSigmac {
             if constexpr (useMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
-              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, candidateLc.mlProbLcToPiKP()[0], candidateLc.mlProbLcToPiKP()[2], 0, 0, ptSc, std::abs(chargeSc));
+              std::array<float, 2> outputMl{-1., -1.};
+              if (candidateLc.mlProbLcToPiKP().size() > 0) {
+                outputMl.at(0) = candidateLc.mlProbLcToPiKP()[0]; /// bkg score
+                outputMl.at(1) = candidateLc.mlProbLcToPiKP()[2]; /// non-prompt score
+              }
+              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), 0, 0, ptSc, std::abs(chargeSc));
             } else {
               /// fill w/o BDT information
               registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0, ptSc, std::abs(chargeSc));
@@ -467,7 +477,12 @@ struct HfTaskSigmac {
             if constexpr (useMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
-              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, candidateLc.mlProbLcToPKPi()[0], candidateLc.mlProbLcToPKPi()[2], 0, 0);
+              std::array<float, 2> outputMl{-1., -1.};
+              if (candidateLc.mlProbLcToPKPi().size() > 0) {
+                outputMl.at(0) = candidateLc.mlProbLcToPKPi()[0]; /// bkg score
+                outputMl.at(1) = candidateLc.mlProbLcToPKPi()[2]; /// non-prompt score
+              }
+              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), 0, 0);
             } else {
               /// fill w/o BDT information
               registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0);
@@ -478,7 +493,12 @@ struct HfTaskSigmac {
             if constexpr (useMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
-              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, candidateLc.mlProbLcToPiKP()[0], candidateLc.mlProbLcToPiKP()[2], 0, 0);
+              std::array<float, 2> outputMl{-1., -1.};
+              if (candidateLc.mlProbLcToPiKP().size() > 0) {
+                outputMl.at(0) = candidateLc.mlProbLcToPiKP()[0]; /// bkg score
+                outputMl.at(1) = candidateLc.mlProbLcToPiKP()[2]; /// non-prompt score
+              }
+              registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), 0, 0);
             } else {
               /// fill w/o BDT information
               registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, 0, 0);
@@ -493,12 +513,12 @@ struct HfTaskSigmac {
   /// @param candidatesSc are the reconstructed candidate Σc0,++ with MC info
   /// @param mcParticles are the generated particles with flags wheter they are Σc0,++ or not
   /// @param
-  template <bool useMl, typename L>
+  template <bool useMl, typename CandsLc>
   void fillHistosMc(soa::Join<aod::HfCandSc, aod::HfCandScMcRec> const& candidatesSc,
                     soa::Join<aod::McParticles, aod::HfCandScMcGen> const& mcParticlesSc,
                     soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticlesLc,
                     aod::McParticles const& mcParticles, // this establishes the type of particle obtained with the .mcParticle() getter
-                    L const& candidatesLc,
+                    CandsLc const& candidatesLc,
                     aod::TracksWMc const&)
   {
 
@@ -631,7 +651,7 @@ struct HfTaskSigmac {
 
       /// get the candidate Λc+ used to build the Σc0
       /// and understand which mass hypotheses are possible
-      const auto& candidateLc = candSc.prongLc_as<L>();
+      const auto& candidateLc = candSc.prongLc_as<CandsLc>();
       const int isCandPKPiPiKP = isDecayToPKPiToPiKP(candidateLc, candSc);
 
       // candidateLc.flagMcDecayChanRec();
@@ -723,7 +743,12 @@ struct HfTaskSigmac {
             if constexpr (useMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
-              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, candidateLc.mlProbLcToPKPi()[0], candidateLc.mlProbLcToPKPi()[2], origin, channel, ptSc, std::abs(chargeSc));
+              std::array<float, 2> outputMl{-1., -1.};
+              if (candidateLc.mlProbLcToPKPi().size() > 0) {
+                outputMl.at(0) = candidateLc.mlProbLcToPKPi()[0]; /// bkg score
+                outputMl.at(1) = candidateLc.mlProbLcToPKPi()[2]; /// non-prompt score
+              }
+              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc));
             } else {
               /// fill w/o BDT information
               registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc));
@@ -792,7 +817,12 @@ struct HfTaskSigmac {
             if constexpr (useMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
-              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, candidateLc.mlProbLcToPiKP()[0], candidateLc.mlProbLcToPiKP()[2], origin, channel, ptSc, std::abs(chargeSc));
+              std::array<float, 2> outputMl{-1., -1.};
+              if (candidateLc.mlProbLcToPiKP().size() > 0) {
+                outputMl.at(0) = candidateLc.mlProbLcToPiKP()[0]; /// bkg score
+                outputMl.at(1) = candidateLc.mlProbLcToPiKP()[2]; /// non-prompt score
+              }
+              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc));
             } else {
               /// fill w/o BDT information
               registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc));
@@ -888,7 +918,12 @@ struct HfTaskSigmac {
             if constexpr (useMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
-              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, candidateLc.mlProbLcToPKPi()[0], candidateLc.mlProbLcToPKPi()[2], origin, channel, ptSc, std::abs(chargeSc));
+              std::array<float, 2> outputMl{-1., -1.};
+              if (candidateLc.mlProbLcToPKPi().size() > 0) {
+                outputMl.at(0) = candidateLc.mlProbLcToPKPi()[0]; /// bkg score
+                outputMl.at(1) = candidateLc.mlProbLcToPKPi()[2]; /// non-prompt score
+              }
+              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc));
             } else {
               /// fill w/o BDT information
               registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc));
@@ -955,7 +990,12 @@ struct HfTaskSigmac {
             if constexpr (useMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
-              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, candidateLc.mlProbLcToPiKP()[0], candidateLc.mlProbLcToPiKP()[2], origin, channel, ptSc, std::abs(chargeSc));
+              std::array<float, 2> outputMl{-1., -1.};
+              if (candidateLc.mlProbLcToPiKP().size() > 0) {
+                outputMl.at(0) = candidateLc.mlProbLcToPiKP()[0]; /// bkg score
+                outputMl.at(1) = candidateLc.mlProbLcToPiKP()[2]; /// non-prompt score
+              }
+              registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, outputMl.at(0), outputMl.at(1), origin, channel, ptSc, std::abs(chargeSc));
             } else {
               /// fill w/o BDT information
               registry.get<THnSparse>(HIST("hnSigmaC"))->Fill(ptLc, deltaMass, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel, ptSc, std::abs(chargeSc));
@@ -989,7 +1029,12 @@ struct HfTaskSigmac {
           if constexpr (useMl) {
             /// fill with ML information
             /// BDT index 0: bkg score; BDT index 2: non-prompt score
-            registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, candidateLc.mlProbLcToPKPi()[0], candidateLc.mlProbLcToPKPi()[2], origin, channel);
+            std::array<float, 2> outputMl{-1., -1.};
+            if (candidateLc.mlProbLcToPKPi().size() > 0) {
+              outputMl.at(0) = candidateLc.mlProbLcToPKPi()[0]; /// bkg score
+              outputMl.at(1) = candidateLc.mlProbLcToPKPi()[2]; /// non-prompt score
+            }
+            registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), origin, channel);
           } else {
             /// fill w/o BDT information
             registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel);
@@ -1000,7 +1045,12 @@ struct HfTaskSigmac {
           if constexpr (useMl) {
             /// fill with ML information
             /// BDT index 0: bkg score; BDT index 2: non-prompt score
-            registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, candidateLc.mlProbLcToPiKP()[0], candidateLc.mlProbLcToPiKP()[2], origin, channel);
+            std::array<float, 2> outputMl{-1., -1.};
+            if (candidateLc.mlProbLcToPiKP().size() > 0) {
+              outputMl.at(0) = candidateLc.mlProbLcToPiKP()[0]; /// bkg score
+              outputMl.at(1) = candidateLc.mlProbLcToPiKP()[2]; /// non-prompt score
+            }
+            registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, outputMl.at(0), outputMl.at(1), origin, channel);
           } else {
             /// fill w/o BDT information
             registry.get<THnSparse>(HIST("hnLambdaC"))->Fill(ptLc, massLc, decLengthLc, decLengthXYLc, cpaLc, cpaXYLc, origin, channel);
