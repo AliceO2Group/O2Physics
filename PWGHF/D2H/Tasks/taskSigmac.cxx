@@ -1021,7 +1021,7 @@ struct HfTaskSigmac {
   }
   PROCESS_SWITCH(HfTaskSigmac, processDataWoMl, "Process data w/o ML information on Lc", true);
 
-  /// @brief process function to fill the histograms needed in analysis w/o ML information (data)
+  /// @brief process function to fill the histograms needed in analysis with ML information (data)
   void processDataWithMl(aod::HfCandSc const& candidatesSc,
                          soa::Join<RecoLc, aod::HfMlLcToPKPi> const& candidatesLc,
                          aod::Tracks const& tracks)
