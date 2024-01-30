@@ -242,13 +242,29 @@ class CollisionAssociation
           if constexpr (isCentralBarrel) {
             if (mUsePvAssociation && track.isPVContributor()) {
               thresholdTime = trackTimeRes;
-            } else if (TESTBIT(track.flags(), o2::aod::track::TrackTimeResIsRange)) {
-              thresholdTime = std::sqrt(sigmaTimeRes2) + mTimeMargin;
+            } else if (TESTBIT(track.flags(), o2::aod::track::TrackTimeResIsRange))
+            {
+              //the track time resolution is a range, not a gaussian resolution
+              thresholdTime = trackTimeRes + mNumSigmaForTimeCompat * std::sqrt(collTimeRes2) + mTimeMargin;
             } else {
               thresholdTime = mNumSigmaForTimeCompat * std::sqrt(sigmaTimeRes2) + mTimeMargin;
             }
-          } else {
-            thresholdTime = mNumSigmaForTimeCompat * std::sqrt(sigmaTimeRes2) + mTimeMargin;
+          }
+          else
+          {
+            //the track is not a central track
+            if constexpr (TTracks::template contains<o2::aod::MFTTracks>())
+            {
+              //then the track is an MFT track, or an MFT track with additionnal joined info
+              //in this case TrackTimeResIsRange
+              thresholdTime = trackTimeRes + mNumSigmaForTimeCompat * std::sqrt(collTimeRes2) + mTimeMargin;
+            }
+            else
+            {
+              //the track is a fwd track, with a gaussian time resolution
+              thresholdTime = mNumSigmaForTimeCompat * std::sqrt(sigmaTimeRes2) + mTimeMargin;
+            }
+
           }
 
           if (std::abs(deltaTime) < thresholdTime) {
