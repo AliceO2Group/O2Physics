@@ -131,9 +131,9 @@ struct DGCandProducer {
   template <typename TBC>
   void fillFIThistograms(TBC const& bc)
   {
-    std::array<bool, 5> triggers{{true, udhelpers::TOR(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits()), 
+    std::array<bool, 5> triggers{{true, udhelpers::TOR(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits()),
                                   udhelpers::TVX(bc), udhelpers::TSC(bc), udhelpers::TCE(bc)}};
-    
+
     if (bc.has_foundFV0()) {
       auto fv0 = bc.foundFV0();
       auto ampA = udhelpers::FV0AmplitudeA(fv0);
@@ -186,13 +186,13 @@ struct DGCandProducer {
     registry.add("reco/TPCsignal2", "2 prong events, TPC signal versus p_{T} of particle 2", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
     registry.add("reco/sig1VsSig2TPC", "2 prong events, TPC signal versus TPC signal", {HistType::kTH2F, {{100, 0., 100.}, {100, 0., 100.}}});
 
-    //FIT amplitudes
-    //  0: unconditional
-    //  1: TOR              5: no TOR
-    //  2: TVX              6: no TVX
-    //  3: TSC              7: no TSC
-    //  4: TCE              8: no TCE
-    registry.add("reco/fv0",  "FV0 amplitudes",  {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
+    // FIT amplitudes
+    //   0: unconditional
+    //   1: TOR              5: no TOR
+    //   2: TVX              6: no TVX
+    //   3: TSC              7: no TSC
+    //   4: TCE              8: no TCE
+    registry.add("reco/fv0", "FV0 amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
     registry.add("reco/ft0A", "FT0A amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
     registry.add("reco/ft0C", "FT0C amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
     registry.add("reco/fddA", "FDDA amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
@@ -210,7 +210,7 @@ struct DGCandProducer {
     }
     auto bc = collision.foundBC_as<BCs>();
     LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
-    
+
     // fill FIT histograms
     fillFIThistograms(bc);
 
