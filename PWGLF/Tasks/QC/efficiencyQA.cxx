@@ -811,8 +811,7 @@ struct efficiencyQA {
             fillHistTrack(track, hPtRes, track.sign() * trackParCov.getPt(), trackParCov.getPt() - mcTrack.pt());
             fillHistTrack(track, hEtaRes, track.sign() * trackParCov.getPt(), trackParCov.getEta() - mcTrack.eta());
             fillHistTrack(track, hPhiRes, track.sign() * trackParCov.getPt(), trackParCov.getPhi() - mcTrack.phi());
-          }
-          else {
+          } else {
             for (auto& mother : mcTrack.template mothers_as<aod::McParticles>()) {
               if (mother.pdgCode() != 310) {
                 continue;
@@ -839,8 +838,7 @@ struct efficiencyQA {
       }
       if (partMC.isPhysicalPrimary()) {
         hPiRec->Fill(0., pdgCode / std::abs(pdgCode) * partMC.pt(), partMC.eta());
-      }
-      else {
+      } else {
         for (auto& mother : partMC.template mothers_as<aod::McParticles>()) {
           if (mother.pdgCode() != 310) {
             continue;
