@@ -56,7 +56,7 @@ struct tpcSpectraPiKaPr {
     histos.fill(HIST(hpt[i]), track.pt());
   }
 
-  //Defining filters and input
+  // Defining filters and input
   Configurable<float> cfgNSigmaCut{"cfgNSigmaCut", 3, "Value of the Nsigma cut"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};

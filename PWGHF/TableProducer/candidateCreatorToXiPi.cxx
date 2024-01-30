@@ -209,7 +209,6 @@ struct HfCandidateCreatorToXiPi {
       hFitterStatus->Fill(0);
       hCandidateCounter->Fill(2);
       auto vertexCharmBaryonFromFitter = df.getPCACandidate();
-      auto chi2PCACharmBaryon = df.getChi2AtPCACandidate();
       std::array<float, 3> pVecCascAsD;
       std::array<float, 3> pVecPionFromCharmBaryon;
       df.propagateTracksToVertex();
@@ -301,7 +300,7 @@ struct HfCandidateCreatorToXiPi {
                    vertexCasc[0], vertexCasc[1], vertexCasc[2],
                    vertexV0[0], vertexV0[1], vertexV0[2],
                    trackXiDauCharged.sign(),
-                   chi2PCACharmBaryon, covVtxCharmBaryon[0], covVtxCharmBaryon[1], covVtxCharmBaryon[2], covVtxCharmBaryon[3], covVtxCharmBaryon[4], covVtxCharmBaryon[5],
+                   covVtxCharmBaryon[0], covVtxCharmBaryon[1], covVtxCharmBaryon[2], covVtxCharmBaryon[3], covVtxCharmBaryon[4], covVtxCharmBaryon[5],
                    pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],
                    pVecCasc[0], pVecCasc[1], pVecCasc[2],
                    pVecPionFromCharmBaryon[0], pVecPionFromCharmBaryon[1], pVecPionFromCharmBaryon[2],

@@ -37,7 +37,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
   Configurable<float> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<float> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // Enable PID
-  Configurable<bool> usePid{"usePid", true, "Switch for PID selection at track level"};
+  Configurable<int> usePionPid{"usePionPid", 1, "Switch for PID selection for the bachelor pion (0: none, 1: TPC or TOF, 2: TPC and TOF)"};
   Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::NotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<float> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
@@ -58,8 +58,6 @@ struct HfCandidateSelectorB0ToDPiReduced {
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
 
-  // check if selectionFlagD (defined in dataCreatorDplusPiReduced.cxx) and usePid configurables are in sync
-  bool selectionFlagDAndUsePidInSync = true;
   // variable that will store the value of selectionFlagD (defined in dataCreatorDplusPiReduced.cxx)
   int mySelectionFlagD = -1;
 
@@ -77,7 +75,11 @@ struct HfCandidateSelectorB0ToDPiReduced {
       LOGP(fatal, "Only one process function for data should be enabled at a time.");
     }
 
-    if (usePid) {
+    if (usePionPid < 0 || usePionPid > 2) {
+      LOGP(fatal, "Invalid PID option in configurable, please set 0 (no PID), 1 (TPC or TOF), or 2 (TPC and TOF)");
+    }
+
+    if (usePionPid) {
       selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
       selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
       selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -114,15 +116,6 @@ struct HfCandidateSelectorB0ToDPiReduced {
     // get DplusPi creator configurable
     for (const auto& config : configs) {
       mySelectionFlagD = config.mySelectionFlagD();
-
-      if (usePid && !TESTBIT(mySelectionFlagD, SelectionStep::RecoPID)) {
-        selectionFlagDAndUsePidInSync = false;
-        LOG(warning) << "PID selections required on B0 daughters (usePid=true) but no PID selections on D candidates were required a priori (selectionFlagD<7). Set selectionFlagD=7 in hf-candidate-creator-b0";
-      }
-      if (!usePid && TESTBIT(mySelectionFlagD, SelectionStep::RecoPID)) {
-        selectionFlagDAndUsePidInSync = false;
-        LOG(warning) << "No PID selections required on B0 daughters (usePid=false) but PID selections on D candidates were required a priori (selectionFlagD=7). Set selectionFlagD<7 in hf-candidate-creator-b0";
-      }
     }
 
     for (const auto& hfCandB0 : hfCandsB0) {
@@ -163,15 +156,15 @@ struct HfCandidateSelectorB0ToDPiReduced {
         registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoTopol, ptCandB0);
       }
 
-      // checking if selectionFlagD and usePid are in sync
-      if (!selectionFlagDAndUsePidInSync) {
-        hfSelB0ToDPiCandidate(statusB0ToDPi);
-        continue;
-      }
       // track-level PID selection
-      if (usePid) {
+      if (usePionPid) {
         auto trackPi = hfCandB0.template prong1_as<TracksPion>();
-        int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
+        int pidTrackPi{TrackSelectorPID::Status::NotApplicable};
+        if (usePionPid == 1) {
+          pidTrackPi = selectorPion.statusTpcOrTof(trackPi);
+        } else {
+          pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
+        }
         if (!hfHelper.selectionB0ToDPiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B0 candidate selection failed at PID selection");
           hfSelB0ToDPiCandidate(statusB0ToDPi);

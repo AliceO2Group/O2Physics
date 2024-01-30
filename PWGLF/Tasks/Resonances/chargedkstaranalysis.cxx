@@ -363,20 +363,20 @@ struct chargedkstaranalysis {
     "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{
     "axisMultiplicityClass",
-    {20, 0, 100},
+    {1, 0, 100},
     "multiplicity percentile for bin"};
   ConfigurableAxis axisMultiplicity{
     "axisMultiplicity",
-    {2000, 0, 10000},
+    {2, 0, 100},
     "TPC multiplicity  for bin"};
 
   using BinningTypeTPCMultiplicity =
     ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
-  using BinningTypeVertexContributor =
-    ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
+  // using BinningTypeVertexContributor =
+  // ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
   using BinningTypeCentralityM =
     ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-  using BinningTypeCentralityC =
+  using BinningTypeVertexContributor =
     ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
 
   BinningTypeVertexContributor binningOnPositions{
