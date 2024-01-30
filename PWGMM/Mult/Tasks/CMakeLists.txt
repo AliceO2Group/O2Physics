@@ -59,3 +59,13 @@ o2physics_add_dpl_workflow(heavy-ion-mult
                     SOURCES heavy-ion-mult.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(multiplicity-pb-pb
+                  SOURCES multiplicityPbPb.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(flattenicty-chrg
+                  SOURCES flattenicty-chrg.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)

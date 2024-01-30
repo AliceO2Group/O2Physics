@@ -42,7 +42,7 @@ DECLARE_SOA_COLUMN(IsRecoHfFlag, isRecoHfFlag, int); //!
 DECLARE_SOA_COLUMN(IsRecoTopol, isRecoTopol, int);   //!
 DECLARE_SOA_COLUMN(IsRecoCand, isRecoCand, int);     //!
 DECLARE_SOA_COLUMN(IsRecoPid, isRecoPid, int);
-DECLARE_SOA_COLUMN(MlProbD0, mlProbD0, std::vector<float>); //!
+DECLARE_SOA_COLUMN(MlProbD0, mlProbD0, std::vector<float>);       //!
 DECLARE_SOA_COLUMN(MlProbD0bar, mlProbD0bar, std::vector<float>); //!
 } // namespace hf_sel_candidate_d0
 
@@ -110,7 +110,7 @@ DECLARE_SOA_TABLE(HfSelD0Alice3Forward, "AOD", "HFSELD0A3F", //!
 
 namespace hf_sel_candidate_dplus
 {
-DECLARE_SOA_COLUMN(IsSelDplusToPiKPi, isSelDplusToPiKPi, int); //!
+DECLARE_SOA_COLUMN(IsSelDplusToPiKPi, isSelDplusToPiKPi, int);                  //!
 DECLARE_SOA_COLUMN(MlProbDplusToPiKPi, mlProbDplusToPiKPi, std::vector<float>); //!
 } // namespace hf_sel_candidate_dplus
 
@@ -122,24 +122,46 @@ DECLARE_SOA_TABLE(HfMlDplusToPiKPi, "AOD", "HFMLDPLUS", //!
 
 namespace hf_sel_candidate_ds
 {
-DECLARE_SOA_COLUMN(IsSelDsToKKPi, isSelDsToKKPi, int); //!
-DECLARE_SOA_COLUMN(IsSelDsToPiKK, isSelDsToPiKK, int); //!
+DECLARE_SOA_COLUMN(IsSelDsToKKPi, isSelDsToKKPi, int);                  //!
+DECLARE_SOA_COLUMN(IsSelDsToPiKK, isSelDsToPiKK, int);                  //!
 DECLARE_SOA_COLUMN(MlProbDsToKKPi, mlProbDsToKKPi, std::vector<float>); //!
+DECLARE_SOA_COLUMN(MlProbDsToPiKK, mlProbDsToPiKK, std::vector<float>); //!
 } // namespace hf_sel_candidate_ds
 
 DECLARE_SOA_TABLE(HfSelDsToKKPi, "AOD", "HFSELDS", //!
                   hf_sel_candidate_ds::IsSelDsToKKPi, hf_sel_candidate_ds::IsSelDsToPiKK);
 
 DECLARE_SOA_TABLE(HfMlDsToKKPi, "AOD", "HFMLDS", //!
-                  hf_sel_candidate_ds::MlProbDsToKKPi);
+                  hf_sel_candidate_ds::MlProbDsToKKPi, hf_sel_candidate_ds::MlProbDsToPiKK);
+
+namespace hf_sel_candidate_dstar
+{
+DECLARE_SOA_COLUMN(IsSelDstarToD0Pi, isSelDstarToD0Pi, bool); //! checking if all four of following check pass
+DECLARE_SOA_COLUMN(IsRecoD0Flag, isRecoD0Flag, bool);         //! checking DecayType::D0ToPiK of D0prong
+DECLARE_SOA_COLUMN(IsRecoTopol, isRecoTopol, bool);           //! checking conjugate independent Topological selection on Dstar
+DECLARE_SOA_COLUMN(IsRecoCand, isRecoCand, bool);             //! checking conjugate dependent Topological selecton on Dstar
+DECLARE_SOA_COLUMN(IsRecoPid, isRecoPid, bool);               //! checking PID selection on daughters of D0Prong
+
+} // namespace hf_sel_candidate_dstar
+
+DECLARE_SOA_TABLE(HfSelDstarToD0Pi, "AOD", "HFSELDSTAR", //! Table stores information about selection flag on Dstar candidate
+                  hf_sel_candidate_dstar::IsSelDstarToD0Pi,
+                  hf_sel_candidate_dstar::IsRecoD0Flag,
+                  hf_sel_candidate_dstar::IsRecoTopol,
+                  hf_sel_candidate_dstar::IsRecoCand,
+                  hf_sel_candidate_dstar::IsRecoPid);
 
 namespace hf_sel_candidate_lc
 {
-DECLARE_SOA_COLUMN(IsSelLcToPKPi, isSelLcToPKPi, int); //!
-DECLARE_SOA_COLUMN(IsSelLcToPiKP, isSelLcToPiKP, int); //!
+DECLARE_SOA_COLUMN(IsSelLcToPKPi, isSelLcToPKPi, int);                  //!
+DECLARE_SOA_COLUMN(IsSelLcToPiKP, isSelLcToPiKP, int);                  //!
+DECLARE_SOA_COLUMN(MlProbLcToPKPi, mlProbLcToPKPi, std::vector<float>); //!
+DECLARE_SOA_COLUMN(MlProbLcToPiKP, mlProbLcToPiKP, std::vector<float>); //!
 } // namespace hf_sel_candidate_lc
 DECLARE_SOA_TABLE(HfSelLc, "AOD", "HFSELLC", //!
                   hf_sel_candidate_lc::IsSelLcToPKPi, hf_sel_candidate_lc::IsSelLcToPiKP);
+DECLARE_SOA_TABLE(HfMlLcToPKPi, "AOD", "HFMLLc", //!
+                  hf_sel_candidate_lc::MlProbLcToPKPi, hf_sel_candidate_lc::MlProbLcToPiKP);
 
 namespace hf_sel_candidate_lc_alice3
 {
@@ -223,7 +245,7 @@ DECLARE_SOA_TABLE(HfSelB0ToDPi, "AOD", "HFSELB0", //!
 
 namespace hf_sel_candidate_bs
 {
-DECLARE_SOA_COLUMN(IsSelBsToDsPi, isSelBsToDsPi, int); //!
+DECLARE_SOA_COLUMN(IsSelBsToDsPi, isSelBsToDsPi, int);                  //!
 DECLARE_SOA_COLUMN(MlProbBsToDsPi, mlProbBsToDsPi, std::vector<float>); //!
 } // namespace hf_sel_candidate_bs
 
@@ -268,12 +290,16 @@ DECLARE_SOA_TABLE(HfSelChicToJpsiGamma, "AOD", "HFSELCHIC", //!
 
 namespace hf_sel_candidate_xic
 {
-DECLARE_SOA_COLUMN(IsSelXicToPKPi, isSelXicToPKPi, int); //!
-DECLARE_SOA_COLUMN(IsSelXicToPiKP, isSelXicToPiKP, int); //!
+DECLARE_SOA_COLUMN(IsSelXicToPKPi, isSelXicToPKPi, int);                  //!
+DECLARE_SOA_COLUMN(IsSelXicToPiKP, isSelXicToPiKP, int);                  //!
+DECLARE_SOA_COLUMN(MlProbXicToPKPi, mlProbXicToPKPi, std::vector<float>); //!
+DECLARE_SOA_COLUMN(MlProbXicToPiKP, mlProbXicToPiKP, std::vector<float>); //!
 } // namespace hf_sel_candidate_xic
 
 DECLARE_SOA_TABLE(HfSelXicToPKPi, "AOD", "HFSELXIC", //!
                   hf_sel_candidate_xic::IsSelXicToPKPi, hf_sel_candidate_xic::IsSelXicToPiKP);
+DECLARE_SOA_TABLE(HfMlXicToPKPi, "AOD", "HFMLXIC", //!
+                  hf_sel_candidate_xic::MlProbXicToPKPi, hf_sel_candidate_xic::MlProbXicToPiKP);
 
 namespace hf_sel_candidate_xicc
 {

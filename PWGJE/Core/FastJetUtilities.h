@@ -33,7 +33,7 @@ enum class JetConstituentStatus {
   candidateHF = 2
 };
 
-namespace FastJetUtilities
+namespace fastjetutilities
 {
 
 static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(211)->Mass(); //can be removed when pion mass becomes default for unidentified tracks
@@ -71,29 +71,6 @@ class fastjet_user_info : public fastjet::PseudoJet::UserInfoBase
  */
 
 void setFastJetUserInfo(std::vector<fastjet::PseudoJet>& constituents, int index = -99999999, int status = static_cast<int>(JetConstituentStatus::track));
-
-// Class defined to select the HF candidate particle
-// This method is applied on particles or jet constituents only !!!
-class SW_IsHFCand : public fastjet::SelectorWorker
-{
- public:
-  // default ctor
-  SW_IsHFCand() {}
-
-  // the selector's description
-  std::string description() const
-  {
-    return "HF candidate selector";
-  }
-
-  bool pass(const fastjet::PseudoJet& p) const
-  {
-    return (p.user_info<fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::candidateHF));
-  }
-};
-
-// Selector of HF candidates
-fastjet::Selector SelectorIsHFCand();
 
 /**
  * Add track as a pseudojet object to the fastjet vector
@@ -135,6 +112,6 @@ void fillClusters(const T& constituent, std::vector<fastjet::PseudoJet>& constit
   setFastJetUserInfo(constituents, index, status);
 }
 
-}; // namespace FastJetUtilities
+}; // namespace fastjetutilities
 
 #endif // PWGJE_CORE_FASTJETUTILITIES_H_

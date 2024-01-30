@@ -86,7 +86,7 @@ struct DalitzEEQCMC {
     for (auto& cut : fDalitzEECuts) {
       std::string_view cutname = cut.GetName();
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("Track")->FindObject(cutname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list, "Track");
+      o2::aod::emphotonhistograms::DefineHistograms(list, "Track", "mc");
     }
 
     // for DalitzEEs
@@ -145,6 +145,9 @@ struct DalitzEEQCMC {
     THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
     double values[4] = {0, 0, 0, 0};
+    double values_single[4] = {0, 0, 0, 0};
+    float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
+    float det_pos = 999.f, det_ele = 999.f;
 
     for (auto& collision : collisions) {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_before"))->Fill(collision.posZ());
@@ -192,14 +195,36 @@ struct DalitzEEQCMC {
           if (mother_id > 0) {
             auto mcmother = mcparticles.iteratorAt(mother_id);
             if (IsPhysicalPrimary(mcmother.emreducedmcevent(), mcmother, mcparticles)) {
+              det_pos = pos.cYY() * pos.cZZ() - pos.cZY() * pos.cZY();
+              det_ele = ele.cYY() * ele.cZZ() - ele.cZY() * ele.cZY();
+              if (det_pos < 0 || det_ele < 0) {
+                dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
+                LOGF(info, "determinant is negative.");
+              } else {
+                float chi2pos = (pos.dcaXY() * pos.dcaXY() * pos.cZZ() + pos.dcaZ() * pos.dcaZ() * pos.cYY() - 2. * pos.dcaXY() * pos.dcaZ() * pos.cZY()) / det_pos;
+                float chi2ele = (ele.dcaXY() * ele.dcaXY() * ele.cZZ() + ele.dcaZ() * ele.dcaZ() * ele.cYY() - 2. * ele.dcaXY() * ele.dcaZ() * ele.cZY()) / det_ele;
+                dca_pos_3d = std::sqrt(std::abs(chi2pos) / 2.);
+                dca_ele_3d = std::sqrt(std::abs(chi2ele) / 2.);
+                dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
+              }
+              values_single[0] = uls_pair.mass();
+              values_single[1] = dca_pos_3d;
+              values_single[2] = dca_ele_3d;
+              values_single[3] = dca_ee_3d;
+              reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_dca_same"))->Fill(values_single);
+
               values[0] = uls_pair.mass();
               values[1] = uls_pair.pt();
-              values[2] = uls_pair.dcaXY();
+              values[2] = dca_ee_3d;
               values[3] = uls_pair.phiv();
               reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_same"))->Fill(values);
 
               if (mcmother.pdgCode() == 111) {
                 reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_Pi0"))->Fill(uls_pair.phiv(), uls_pair.mass());
+                reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsOPA_Pi0"))->Fill(uls_pair.opangle(), uls_pair.mass());
+              } else if (mcmother.pdgCode() == 221) {
+                reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_Eta"))->Fill(uls_pair.phiv(), uls_pair.mass());
+                reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsOPA_Eta"))->Fill(uls_pair.opangle(), uls_pair.mass());
               }
 
               nuls++;
@@ -207,6 +232,10 @@ struct DalitzEEQCMC {
                 if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
                   o2::aod::emphotonhistograms::FillHistClass<EMHistType::kTrack>(list_track_cut, "", track);
                   used_trackIds.emplace_back(track.globalIndex());
+                  auto mctrack = track.template emmcparticle_as<aod::EMMCParticles>();
+                  reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPtOverPtGen"))->Fill(mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
+                  reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaEta"))->Fill(mctrack.pt(), track.eta() - mctrack.eta());
+                  reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPhi"))->Fill(mctrack.pt(), track.phi() - mctrack.phi());
                 }
               }
             } // end of LF
@@ -214,6 +243,7 @@ struct DalitzEEQCMC {
             auto mcphoton = mcparticles.iteratorAt(photonid);
             if (IsPhysicalPrimary(mcphoton.emreducedmcevent(), mcphoton, mcparticles) && IsEleFromPC(elemc, mcparticles) && IsEleFromPC(posmc, mcparticles)) {
               reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsPhiV_Photon"))->Fill(uls_pair.phiv(), uls_pair.mass());
+              reinterpret_cast<TH2F*>(list_dalitzee_cut->FindObject("hMvsOPA_Photon"))->Fill(uls_pair.opangle(), uls_pair.mass());
             }
           }
         } // end of uls pair loop

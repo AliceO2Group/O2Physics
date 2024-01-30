@@ -86,7 +86,7 @@ struct DalitzMuMuQCMC {
     for (auto& cut : fDalitzMuMuCuts) {
       std::string_view cutname = cut.GetName();
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("Track")->FindObject(cutname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list, "Track", "Mu");
+      o2::aod::emphotonhistograms::DefineHistograms(list, "Track", "Mu,mc");
     }
 
     // for DalitzMuMus
@@ -203,6 +203,10 @@ struct DalitzMuMuQCMC {
                 if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
                   o2::aod::emphotonhistograms::FillHistClass<EMHistType::kTrack>(list_track_cut, "", track);
                   used_trackIds.emplace_back(track.globalIndex());
+                  auto mctrack = track.template emmcparticle_as<aod::EMMCParticles>();
+                  reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPtOverPtGen"))->Fill(mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
+                  reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaEta"))->Fill(mctrack.pt(), track.eta() - mctrack.eta());
+                  reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPhi"))->Fill(mctrack.pt(), track.phi() - mctrack.phi());
                 }
               }
             } // end of LF

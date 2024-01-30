@@ -269,14 +269,14 @@ DECLARE_SOA_COLUMN(Px, px, float);                                      //! px f
 DECLARE_SOA_COLUMN(Py, py, float);                                      //! py for photon kf
 DECLARE_SOA_COLUMN(Pz, pz, float);                                      //! pz for photon kf
 DECLARE_SOA_COLUMN(MGamma, mGamma, float);                              //! invariant mass of dielectron at SV
-DECLARE_SOA_COLUMN(MGammaPV, mGammaPV, float);                          //! invariant mass of dielectron at PV
-DECLARE_SOA_COLUMN(DCAxyV0ToPV, dcaXYv0topv, float);                    //! DCAxy of V0 to PV
-DECLARE_SOA_COLUMN(DCAzV0ToPV, dcaZv0topv, float);                      //! DCAz of V0 to PV
-DECLARE_SOA_COLUMN(CosPA, cospa, float);                                //!
-DECLARE_SOA_COLUMN(PCA, pca, float);                                    //!
-DECLARE_SOA_COLUMN(Alpha, alpha, float);                                //!
-DECLARE_SOA_COLUMN(QtArm, qtarm, float);                                //!
-DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float);                  // Chi2 / NDF of the reconstructed V0
+// DECLARE_SOA_COLUMN(MGammaPV, mGammaPV, float);                          //! invariant mass of dielectron at PV
+DECLARE_SOA_COLUMN(DCAxyToPV, dcaXYtopv, float);       //! DCAxy of V0 to PV
+DECLARE_SOA_COLUMN(DCAzToPV, dcaZtopv, float);         //! DCAz of V0 to PV
+DECLARE_SOA_COLUMN(CosPA, cospa, float);               //!
+DECLARE_SOA_COLUMN(PCA, pca, float);                   //!
+DECLARE_SOA_COLUMN(Alpha, alpha, float);               //!
+DECLARE_SOA_COLUMN(QtArm, qtarm, float);               //!
+DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float); // Chi2 / NDF of the reconstructed V0
 
 DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](float px, float py, float pz, float m = 0) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz, m); }); //! energy of v0 photn, mass to be given as argument when getter is called!
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
@@ -289,8 +289,8 @@ DECLARE_SOA_TABLE(V0PhotonsKF, "AOD", "V0PHOTONKF", //!
                   o2::soa::Index<>, v0photonkf::CollisionId, v0photonkf::PosTrackId, v0photonkf::NegTrackId,
                   v0photonkf::Vx, v0photonkf::Vy, v0photonkf::Vz,
                   v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz,
-                  v0photonkf::MGamma, v0photonkf::MGammaPV,
-                  v0photonkf::DCAxyV0ToPV, v0photonkf::DCAzV0ToPV,
+                  v0photonkf::MGamma,
+                  v0photonkf::DCAxyToPV, v0photonkf::DCAzToPV,
                   v0photonkf::CosPA, v0photonkf::PCA,
                   v0photonkf::Alpha, v0photonkf::QtArm,
                   v0photonkf::ChiSquareNDF,
@@ -328,7 +328,7 @@ DECLARE_SOA_TABLE(EMPrimaryElectrons, "AOD", "EMPRIMARYEL", //!
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
                   pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
-                  track::ITSClusterMap, track::ITSChi2NCl, track::DetectorMap, track::Signed1Pt, track::CYY, track::CZZ,
+                  track::ITSClusterMap, track::ITSChi2NCl, track::DetectorMap, track::Signed1Pt, track::CYY, track::CZZ, track::CZY,
 
                   // dynamic column
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
@@ -363,6 +363,7 @@ DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
 DECLARE_SOA_COLUMN(PhiV, phiv, float);
+DECLARE_SOA_COLUMN(OpeningAngle, opangle, float);
 DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
 DECLARE_SOA_COLUMN(DCAZ, dcaZ, float);
 DECLARE_SOA_COLUMN(Sign, sign, int);                                                                                                     //!
@@ -370,7 +371,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Energy, e, [](float pt, float eta, float m) { return 
 } // namespace dalitzee
 DECLARE_SOA_TABLE(DalitzEEs, "AOD", "DALITZEE", //!
                   o2::soa::Index<>, dalitzee::CollisionId, dalitzee::PosTrackId, dalitzee::NegTrackId,
-                  dalitzee::Pt, dalitzee::Eta, dalitzee::Phi, dalitzee::Mass, dalitzee::PhiV, dalitzee::DCAXY, dalitzee::DCAZ, dalitzee::Sign,
+                  dalitzee::Pt, dalitzee::Eta, dalitzee::Phi, dalitzee::Mass, dalitzee::PhiV, dalitzee::OpeningAngle, dalitzee::DCAXY, dalitzee::DCAZ, dalitzee::Sign,
                   dalitzee::Energy<o2::aod::dalitzee::Pt, o2::aod::dalitzee::Eta, o2::aod::dalitzee::Mass>);
 // iterators
 using DalitzEE = DalitzEEs::iterator;
@@ -398,7 +399,7 @@ DECLARE_SOA_TABLE(EMPrimaryMuons, "AOD", "EMPRIMARYMU", //!
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
                   pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
-                  track::ITSClusterMap, track::ITSChi2NCl, track::DetectorMap, track::Signed1Pt, track::CYY, track::CZZ,
+                  track::ITSClusterMap, track::ITSChi2NCl, track::DetectorMap, track::Signed1Pt, track::CYY, track::CZZ, track::CZY,
 
                   // dynamic column
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
@@ -433,6 +434,7 @@ DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
 DECLARE_SOA_COLUMN(PhiV, phiv, float);
+DECLARE_SOA_COLUMN(OpeningAngle, opangle, float);
 DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
 DECLARE_SOA_COLUMN(DCAZ, dcaZ, float);
 DECLARE_SOA_COLUMN(Sign, sign, int);                                                                                                     //!
@@ -440,7 +442,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Energy, e, [](float pt, float eta, float m) { return 
 } // namespace dalitzmumu
 DECLARE_SOA_TABLE(DalitzMuMus, "AOD", "DALITZMUMU", //!
                   o2::soa::Index<>, dalitzmumu::CollisionId, dalitzmumu::PosTrackId, dalitzmumu::NegTrackId,
-                  dalitzmumu::Pt, dalitzmumu::Eta, dalitzmumu::Phi, dalitzmumu::Mass, dalitzmumu::PhiV, dalitzmumu::DCAXY, dalitzmumu::DCAZ, dalitzmumu::Sign,
+                  dalitzmumu::Pt, dalitzmumu::Eta, dalitzmumu::Phi, dalitzmumu::Mass, dalitzmumu::PhiV, dalitzmumu::OpeningAngle, dalitzmumu::DCAXY, dalitzmumu::DCAZ, dalitzmumu::Sign,
                   dalitzmumu::Energy<o2::aod::dalitzmumu::Pt, o2::aod::dalitzmumu::Eta, o2::aod::dalitzmumu::Mass>);
 // iterators
 using DalitzMuMu = DalitzMuMus::iterator;

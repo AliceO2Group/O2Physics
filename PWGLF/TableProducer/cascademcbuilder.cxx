@@ -59,29 +59,22 @@ struct cascademcbuilder {
   // build cascade labels
   void processCascades(aod::CascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const&)
   {
-    int pdgCode = -1, pdgCodeMother = -1;
-    int pdgCodePositive = -1, pdgCodeNegative = -1, pdgCodeBachelor = -1, pdgCodeV0 = -1;
-    bool isPhysicalPrimary = false;
-    float xmc = -999.0f, ymc = -999.0f, zmc = -999.0f;
-    float xlmc = -999.0f, ylmc = -999.0f, zlmc = -999.0f;
-    float pxposmc = -999.0f, pyposmc = -999.0f, pzposmc = -999.0f;
-    float pxnegmc = -999.0f, pynegmc = -999.0f, pznegmc = -999.0f;
-    float pxbachmc = -999.0f, pybachmc = -999.0f, pzbachmc = -999.0f;
-    float px = -999.0f, py = -999.0f, pz = -999.0f;
     for (auto& casc : casctable) {
-      // Loop over those that actually have the corresponding V0 associated to them
-      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0.has_v0Data())) {
-        casclabels(-1);
-        continue; // skip those cascades for which V0 doesn't exist
-      }
-      auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
-      int lLabel = -1;
+      int pdgCode = -1, pdgCodeMother = -1;
+      int pdgCodePositive = -1, pdgCodeNegative = -1, pdgCodeBachelor = -1, pdgCodeV0 = -1;
+      bool isPhysicalPrimary = false;
+      float xmc = -999.0f, ymc = -999.0f, zmc = -999.0f;
+      float xlmc = -999.0f, ylmc = -999.0f, zlmc = -999.0f;
+      float pxposmc = -999.0f, pyposmc = -999.0f, pzposmc = -999.0f;
+      float pxnegmc = -999.0f, pynegmc = -999.0f, pznegmc = -999.0f;
+      float pxbachmc = -999.0f, pybachmc = -999.0f, pzbachmc = -999.0f;
+      float px = -999.0f, py = -999.0f, pz = -999.0f;
+      int lLabel = -1, lMotherLabel = -1;
 
       // Acquire all three daughter tracks, please
       auto lBachTrack = casc.bachelor_as<aod::McTrackLabels>();
-      auto lNegTrack = v0data.negTrack_as<aod::McTrackLabels>();
-      auto lPosTrack = v0data.posTrack_as<aod::McTrackLabels>();
+      auto lNegTrack = casc.negTrack_as<aod::McTrackLabels>();
+      auto lPosTrack = casc.posTrack_as<aod::McTrackLabels>();
 
       // Association check
       // There might be smarter ways of doing this in the future
@@ -109,9 +102,9 @@ struct cascademcbuilder {
             for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
               if (lNegMother == lPosMother) {
                 // acquire information
-                xlmc = lNegMother.vx();
-                ylmc = lNegMother.vy();
-                zlmc = lNegMother.vz();
+                xlmc = lMCPosTrack.vx();
+                ylmc = lMCPosTrack.vy();
+                zlmc = lMCPosTrack.vz();
                 pdgCodeV0 = lNegMother.pdgCode();
 
                 // if we got to this level, it means the mother particle exists and is the same
@@ -122,15 +115,16 @@ struct cascademcbuilder {
                       lLabel = lV0Mother.globalIndex();
                       pdgCode = lV0Mother.pdgCode();
                       isPhysicalPrimary = lV0Mother.isPhysicalPrimary();
-                      xmc = lV0Mother.vx();
-                      ymc = lV0Mother.vy();
-                      zmc = lV0Mother.vz();
+                      xmc = lMCBachTrack.vx();
+                      ymc = lMCBachTrack.vy();
+                      zmc = lMCBachTrack.vz();
                       px = lV0Mother.px();
                       py = lV0Mother.py();
                       pz = lV0Mother.pz();
                       if (lV0Mother.has_mothers()) {
                         for (auto& lV0GrandMother : lV0Mother.mothers_as<aod::McParticles>()) {
                           pdgCodeMother = lV0GrandMother.pdgCode();
+                          lMotherLabel = lV0GrandMother.globalIndex();
                         }
                       }
                     }
@@ -143,7 +137,7 @@ struct cascademcbuilder {
       }     // end association check
       // Construct label table (note: this will be joinable with CascDatas)
       casclabels(
-        lLabel);
+        lLabel, lMotherLabel);
       if (populateCascMCCores) {
         cascmccores(
           pdgCode, pdgCodeMother, pdgCodeV0, isPhysicalPrimary,
@@ -162,14 +156,12 @@ struct cascademcbuilder {
   void processKFCascades(aod::KFCascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const&)
   {
     for (auto& casc : casctable) {
-      // Loop over those that actually have the corresponding V0 associated to them
-      auto v0 = casc.v0();
       int lLabel = -1;
 
       // Acquire all three daughter tracks, please
       auto lBachTrack = casc.bachelor_as<aod::McTrackLabels>();
-      auto lNegTrack = v0.negTrack_as<aod::McTrackLabels>();
-      auto lPosTrack = v0.posTrack_as<aod::McTrackLabels>();
+      auto lNegTrack = casc.negTrack_as<aod::McTrackLabels>();
+      auto lPosTrack = casc.posTrack_as<aod::McTrackLabels>();
 
       // Association check
       // There might be smarter ways of doing this in the future
@@ -207,19 +199,12 @@ struct cascademcbuilder {
   void processTrackedCascades(aod::TraCascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const&)
   {
     for (auto& casc : casctable) {
-      // Loop over those that actually have the corresponding V0 associated to them
-      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0.has_v0Data())) {
-        tracasclabels(-1);
-        continue; // skip those cascades for which V0 doesn't exist
-      }
-      auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
       int lLabel = -1;
 
       // Acquire all three daughter tracks, please
       auto lBachTrack = casc.bachelor_as<aod::McTrackLabels>();
-      auto lNegTrack = v0data.negTrack_as<aod::McTrackLabels>();
-      auto lPosTrack = v0data.posTrack_as<aod::McTrackLabels>();
+      auto lNegTrack = casc.negTrack_as<aod::McTrackLabels>();
+      auto lPosTrack = casc.posTrack_as<aod::McTrackLabels>();
 
       // Association check
       // There might be smarter ways of doing this in the future
@@ -259,18 +244,10 @@ struct cascademcbuilder {
     for (auto& casc : casctable) {
       bool bbTag = false; // bachelor-baryon correlation tag to pass
 
-      // Loop over those that actually have the corresponding V0 associated to them
-      auto v0 = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0.has_v0Data())) {
-        bbtags(bbTag);
-        continue; // skip those cascades for which V0 doesn't exist
-      }
-      auto v0data = v0.v0Data(); // de-reference index to correct v0data in case it exists
-
       // Acquire all three daughter tracks, please
       auto lBachTrack = casc.bachelor_as<aod::McTrackLabels>();
-      auto lNegTrack = v0data.negTrack_as<aod::McTrackLabels>();
-      auto lPosTrack = v0data.posTrack_as<aod::McTrackLabels>();
+      auto lNegTrack = casc.negTrack_as<aod::McTrackLabels>();
+      auto lPosTrack = casc.posTrack_as<aod::McTrackLabels>();
 
       // Bachelor-baryon association checker
       // this will allow for analyses to pinpoint the effect of spurious, unwanted correlations!

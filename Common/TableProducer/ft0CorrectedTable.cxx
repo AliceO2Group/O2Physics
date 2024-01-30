@@ -8,20 +8,20 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+#include <bitset>
+#include "Common/DataModel/FT0Corrected.h"
 #include "Framework/ConfigParamSpec.h"
-
-using namespace o2;
-using namespace o2::framework;
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Framework/AnalysisDataModel.h"
 #include "CommonConstants/LHCConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
-#include "Common/DataModel/FT0Corrected.h"
 #include "DataFormatsFT0/Digit.h"
-#include <bitset>
+
+using namespace o2;
+using namespace o2::framework;
 
 using namespace o2::aod;
 struct FT0CorrectedTable {
@@ -36,6 +36,7 @@ struct FT0CorrectedTable {
       float vertex_corr = vertexPV / o2::constants::physics::LightSpeedCm2NS;
       float t0A = 1e10;
       float t0C = 1e10;
+      constexpr float dummyTime = 30.; // Due to HW limitations time can be only within range (-25,25) ns, dummy time is around 32 ns
       if (collision.has_foundFT0()) {
         auto ft0 = collision.foundFT0();
         std::bitset<8> triggers = ft0.triggerMask();
@@ -43,10 +44,10 @@ struct FT0CorrectedTable {
         bool orc = triggers[o2::ft0::Triggers::bitC];
         LOGF(debug, "triggers OrA %i OrC %i ", ora, orc);
         LOGF(debug, " T0A = %f, T0C %f, vertex_corr %f", ft0.timeA(), ft0.timeC(), vertex_corr);
-        if (ora) {
+        if (ora && ft0.timeA() < dummyTime) {
           t0A = ft0.timeA() + vertex_corr;
         }
-        if (orc) {
+        if (orc && ft0.timeC() < dummyTime) {
           t0C = ft0.timeC() - vertex_corr;
         }
       }

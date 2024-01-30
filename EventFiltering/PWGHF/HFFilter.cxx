@@ -106,6 +106,8 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<std::string> onnxFileXicToPiKPConf{"onnxFileXicToPiKPConf", "", "ONNX file for ML model for Xic+ candidates"};
   Configurable<LabeledArray<double>> thresholdBDTScoreXicToPiKP{"thresholdBDTScoreXicToPiKP", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Xic+ candidates"};
 
+  Configurable<bool> acceptBdtBkgOnly{"acceptBdtBkgOnly", true, "Enable / disable selection based on BDT bkg score only"};
+
   // CCDB configuration
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -294,7 +296,6 @@ struct HfFilter { // Main struct for HF triggers
   void process(CollsWithEvSel const& collisions,
                aod::BCsWithTimestamps const&,
                aod::V0Datas const& theV0s,
-               aod::V0sLinked const& v0Links,
                aod::CascDatas const& cascades,
                aod::Hf2Prongs const& cand2Prongs,
                aod::Hf3Prongs const& cand3Prongs,
@@ -376,12 +377,13 @@ struct HfFilter { // Main struct for HF triggers
           getPxPyPz(trackParNeg, pVecNeg);
         }
 
-        bool isCharmTagged{true}, isBeautyTagged{true};
+        bool isSignalTagged{true}, isCharmTagged{true}, isBeautyTagged{true};
 
         // apply ML models
         int tagBDT = 0;
         float scoresToFill[3] = {-1., -1., -1.};
         if (applyML && onnxFiles[kD0] != "") {
+          isSignalTagged = false;
           isCharmTagged = false;
           isBeautyTagged = false;
 
@@ -413,9 +415,10 @@ struct HfFilter { // Main struct for HF triggers
 
           isCharmTagged = TESTBIT(tagBDT, RecoDecay::OriginType::Prompt);
           isBeautyTagged = TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt);
+          isSignalTagged = acceptBdtBkgOnly ? TESTBIT(tagBDT, RecoDecay::OriginType::None) : (isCharmTagged || isBeautyTagged);
         }
 
-        if (!isCharmTagged && !isBeautyTagged) {
+        if (!isSignalTagged) {
           continue;
         }
 
@@ -546,7 +549,7 @@ struct HfFilter { // Main struct for HF triggers
         // 2-prong with Gamma (conversion photon)
         auto v0sThisCollision = theV0s.sliceBy(v0sPerCollision, thisCollId);
         for (const auto& v0 : v0sThisCollision) {
-          if (!keepEvent[kV0Charm2P] && (isCharmTagged || isBeautyTagged) && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1))) {
+          if (!keepEvent[kV0Charm2P] && (isSignalTagged) && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1))) {
             auto posTrack = v0.posTrack_as<BigTracksPID>();
             auto negTrack = v0.negTrack_as<BigTracksPID>();
             auto selV0 = helper.isSelectedV0(v0, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod);
@@ -694,6 +697,7 @@ struct HfFilter { // Main struct for HF triggers
           }
         }
 
+        std::array<int8_t, kNCharmParticles - 1> isSignalTagged = is3Prong;
         std::array<int8_t, kNCharmParticles - 1> isCharmTagged = is3Prong;
         std::array<int8_t, kNCharmParticles - 1> isBeautyTagged = is3Prong;
 
@@ -703,6 +707,7 @@ struct HfFilter { // Main struct for HF triggers
         } // initialize BDT scores array outside ML loop
         // apply ML models
         if (applyML) {
+          isSignalTagged = std::array<int8_t, kNCharmParticles - 1>{0};
           isCharmTagged = std::array<int8_t, kNCharmParticles - 1>{0};
           isBeautyTagged = std::array<int8_t, kNCharmParticles - 1>{0};
 
@@ -733,6 +738,7 @@ struct HfFilter { // Main struct for HF triggers
 
             isCharmTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::Prompt);
             isBeautyTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt);
+            isSignalTagged[iCharmPart] = acceptBdtBkgOnly ? TESTBIT(tagBDT, RecoDecay::OriginType::None) : (isCharmTagged[iCharmPart] || isBeautyTagged[iCharmPart]);
 
             if (activateQA > 1) {
               hBDTScoreBkg[iCharmPart + 1]->Fill(scoresToFill[iCharmPart][0]);
@@ -742,7 +748,7 @@ struct HfFilter { // Main struct for HF triggers
           }
         }
 
-        if (!std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0) && !std::accumulate(isBeautyTagged.begin(), isBeautyTagged.end(), 0)) {
+        if (!std::accumulate(isSignalTagged.begin(), isSignalTagged.end(), 0)) {
           continue;
         }
 
@@ -784,7 +790,7 @@ struct HfFilter { // Main struct for HF triggers
           keepEvent[kHighPt3P] = true;
           if (activateQA) {
             for (auto iCharmPart{1}; iCharmPart < kNCharmParticles; ++iCharmPart) {
-              if (is3Prong[iCharmPart - 1] && (isCharmTagged[iCharmPart - 1] || isBeautyTagged[iCharmPart - 1])) {
+              if (is3Prong[iCharmPart - 1] && (isSignalTagged[iCharmPart - 1])) {
                 hCharmHighPt[iCharmPart]->Fill(pt3Prong);
               }
             }
@@ -855,9 +861,9 @@ struct HfFilter { // Main struct for HF triggers
 
         // 3-prong with V0 (Ds gamma, D+ K0S, D+ Lambda)
         auto v0sThisCollision = theV0s.sliceBy(v0sPerCollision, thisCollId);
-        bool isGoodDsToKKPi = (isCharmTagged[kDs - 1] || isBeautyTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 0);
-        bool isGoodDsToPiKK = (isCharmTagged[kDs - 1] || isBeautyTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 1);
-        bool isGoodDPlus = (isCharmTagged[kDplus - 1] || isBeautyTagged[kDplus - 1]) && is3ProngInMass[kDplus - 1];
+        bool isGoodDsToKKPi = (isSignalTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 0);
+        bool isGoodDsToPiKK = (isSignalTagged[kDs - 1]) && TESTBIT(is3ProngInMass[kDs - 1], 1);
+        bool isGoodDPlus = (isSignalTagged[kDplus - 1]) && is3ProngInMass[kDplus - 1];
         auto massDPlusCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massPi});
         auto massDsKKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massKa, massKa, massPi});
         auto massDsPiKK = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird}, std::array{massPi, massKa, massKa});
@@ -938,15 +944,11 @@ struct HfFilter { // Main struct for HF triggers
       if (!keepEvent[kCharmBarToXiBach]) {
         auto cascThisColl = cascades.sliceBy(cascPerCollision, thisCollId);
         for (const auto& casc : cascThisColl) {
-          if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) { // check that V0 data are stored
-            continue;
-          }
           auto bachelorCasc = casc.bachelor_as<BigTracksPID>();
-          auto v0 = casc.v0_as<aod::V0sLinked>();
-          auto v0Element = v0.v0Data_as<aod::V0Datas>();
-          auto v0DauPos = v0Element.posTrack_as<BigTracksPID>();
-          auto v0DauNeg = v0Element.negTrack_as<BigTracksPID>();
-          if (!helper.isSelectedCascade(casc, v0Element, std::array{bachelorCasc, v0DauPos, v0DauNeg}, collision)) {
+          auto v0DauPos = casc.posTrack_as<BigTracksPID>();
+          auto v0DauNeg = casc.negTrack_as<BigTracksPID>();
+
+          if (!helper.isSelectedCascade(casc, std::array{bachelorCasc, v0DauPos, v0DauNeg}, collision)) {
             continue;
           }
           if (activateQA) {

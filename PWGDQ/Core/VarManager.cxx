@@ -378,6 +378,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kITSchi2] = "";
   fgVariableNames[kITSlayerHit] = "ITS layer";
   fgVariableUnits[kITSlayerHit] = "";
+  fgVariableNames[kITSmeanClsSize] = "ITS mean Cls Size";
+  fgVariableUnits[kITSmeanClsSize] = "";
   fgVariableNames[kTPCncls] = "TPC #cls";
   fgVariableUnits[kTPCncls] = "";
   fgVariableNames[kTPCnclsCR] = "TPC #cls crossed rows";
@@ -438,6 +440,12 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kIsLegFromOmega] = "";
   fgVariableNames[kMuonNClusters] = "muon n-clusters";
   fgVariableUnits[kMuonNClusters] = "";
+  fgVariableNames[kMftNClusters] = "MFT n-clusters";
+  fgVariableUnits[kMftNClusters] = "";
+  fgVariableNames[kMftClusterSize] = "MFT cluster size";
+  fgVariableUnits[kMftClusterSize] = "";
+  fgVariableNames[kMftMeanClusterSize] = "<MFT cluster size>";
+  fgVariableUnits[kMftMeanClusterSize] = "";
   fgVariableNames[kMuonRAtAbsorberEnd] = "R at the end of the absorber";
   fgVariableUnits[kMuonRAtAbsorberEnd] = "cm";
   fgVariableNames[kMuonPDca] = "p x dca";

@@ -35,7 +35,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using V0DatasAdditional = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation>;
+using V0DatasAdditional = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
 using V0LegsWithMC = soa::Join<aod::V0Legs, aod::MCParticleIndex>;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
@@ -608,7 +608,7 @@ struct GammaConversions {
     }
   }
 
-  Preslice<V0DatasAdditional> perCollision = aod::v0photonkf::collisionId;
+  Preslice<V0DatasAdditional> perCollision = aod::v0photonkf::emreducedeventId;
   void processRec(aod::EMReducedEvents::iterator const& theCollision,
                   V0DatasAdditional const& theV0s,
                   aod::V0Legs const& theAllTracks)
@@ -617,7 +617,7 @@ struct GammaConversions {
             "hCollisionZ",
             theCollision.posZ());
 
-    auto theV0s_per_coll = theV0s.sliceBy(perCollision, theCollision.collisionId());
+    auto theV0s_per_coll = theV0s.sliceBy(perCollision, theCollision.globalIndex());
     for (auto& lV0 : theV0s_per_coll) {
 
       float lV0CosinePA = lV0.cospa();
@@ -644,7 +644,7 @@ struct GammaConversions {
             "hCollisionZ",
             theCollision.posZ());
 
-    auto theV0s_per_coll = theV0s.sliceBy(perCollision, theCollision.collisionId());
+    auto theV0s_per_coll = theV0s.sliceBy(perCollision, theCollision.globalIndex());
     for (auto& lV0 : theV0s) {
 
       float lV0CosinePA = lV0.cospa();

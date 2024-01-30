@@ -15,12 +15,17 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/TrackSelectionTables.h" // needed for aod::TracksDCA table
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 using namespace o2;
 using namespace o2::framework;
 
-using CollisionRec = aod::Collision;
-using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator;
-using CollisionSim = aod::McCollision;
+using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Ms>; // TBI 20240120 add support for other centrality estimators, why aod::Cents doesn't work?
+
+using CollisionRec = soa::Join<aod::Collisions, EventSelection>::iterator;
+using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection>::iterator;
+using CollisionSim = aod::McCollision; // TBI 20240120 add support for centrality also for this case
 
 using TracksRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
 using TrackRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>::iterator;
@@ -48,9 +53,8 @@ using namespace std;
 // *) Global constants:
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-GlobalConstants.h"
 
-// *) These are indended flags for PROCESS_SWITCH, have to be global, at least for the time being...
-//    TBI 20231017 check this further, it doesn't work yet this way. It seems I have to pass to PROCESS_SWITCH(  ) only literals 'true' or 'false'
-//    TBI 20231020 I could as well re-define them as data members...
+// *) These are intended flags for PROCESS_SWITCH, at the moment I have to pass to PROCESS_SWITCH(  ) only literals 'true' or 'false' as the last arguments.
+//    TBI 20231108 I could as well re-define them as data members, if it remains like that...
 bool gProcessRec = false;
 bool gProcessRecSim = false;
 bool gProcessSim = false;
@@ -77,9 +81,10 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   void init(InitContext const&)
   {
     // *) Trick to avoid name clashes, part 1;
-    // *) Book base list;
     // *) Default configuration, booking, binning and cuts;
-    // *) Configure the task with setters and getters;
+    // *) Insanity checks;
+    // *) Book random generator;
+    // *) Book base list;
     // *) Book all remaining objects;
     // ...
     // *) Trick to avoid name clashes, part 2;
@@ -94,12 +99,15 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     DefaultBinning();
     DefaultCuts(); // Remark: has to be called after DefaultBinning(), since some default cuts are defined through default binning, to ease bookeeping
 
+    // *) Insanity checks:
+    InsanityChecks();
+
     // *) Set what to process - only rec, both rec and sim, only sim:
     WhatToProcess(); // yes, this can be called here, after calling all Default* member functions above, because this has an effect only on Book* members functions
 
     // *) Book random generator:
     delete gRandom;
-    gRandom = new TRandom3(fRandomSeed); // if uiSeed is 0, the seed is determined uniquely in space and time via TUUID
+    gRandom = new TRandom3(tc.fRandomSeed); // if uiSeed is 0, the seed is determined uniquely in space and time via TUUID
 
     // *) Book base list:
     BookBaseList();
@@ -139,7 +147,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     }
 
     // *) If I reached max number of events, ignore the remaining collisions:
-    if (!fProcessRemainingEvents) {
+    if (!tc.fProcessRemainingEvents) {
       return; // TBI 20231008 Temporarily implemented this way. But what I really need here is a graceful exit
               // from subsequent processing (which will also dump the output file, etc.). When that's possible,
               // move this to a member function Steer(...)
@@ -164,7 +172,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     }
 
     // *) If I reached max number of events, ignore the remaining collisions:
-    if (!fProcessRemainingEvents) {
+    if (!tc.fProcessRemainingEvents) {
       return;
     }
 
@@ -188,7 +196,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     }
 
     // *) If I reached max number of events, ignore the remaining collisions:
-    if (!fProcessRemainingEvents) {
+    if (!tc.fProcessRemainingEvents) {
       return;
     }
 

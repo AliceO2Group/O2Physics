@@ -181,7 +181,7 @@ struct preProcessMCcollisions {
     histos.add("h2dNContribSpecialCorr2b", "h2dNContribSpecialCorr2b", kTH2D, {axisContributorsTRD, axisContributorsTOF});
   }
 
-  void processData(TracksCompleteIU const& tracks)
+  void processData(aod::Collisions const& colls)
   {
     // Dummy process
   }
@@ -363,6 +363,7 @@ struct straRecoStudy {
     const AxisSpec axisVsPt{(int)NBinsPt, 0, MaxPt, "#it{p}_{T} (GeV/c)"};
     const AxisSpec axisVsPtCoarse{(int)NBinsPtCoarse, 0, MaxPt, "#it{p}_{T} (GeV/c)"};
 
+    const AxisSpec axisGammaMass{400, 0.000f, 0.400f, "Inv. Mass (GeV/c^{2})"};
     const AxisSpec axisK0ShortMass{400, 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"};
     const AxisSpec axisLambdaMass{400, 1.01f, 1.21f, "Inv. Mass (GeV/c^{2})"};
     const AxisSpec axisXiMass{400, 1.22f, 1.42f, "Inv. Mass (GeV/c^{2})"};
@@ -382,17 +383,17 @@ struct straRecoStudy {
     const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
     const AxisSpec axisRadius{(int)160, 0.0f, +80.0f, "Radius (cm)"};
 
-    TString lSpecies[] = {"K0Short", "Lambda", "AntiLambda", "XiMinus", "XiPlus", "OmegaMinus", "OmegaPlus"};
-    const AxisSpec lMassAxis[] = {axisK0ShortMass, axisLambdaMass, axisLambdaMass, axisXiMass, axisXiMass, axisOmegaMass, axisOmegaMass};
+    TString lSpecies[] = {"Gamma", "K0Short", "Lambda", "AntiLambda", "XiMinus", "XiPlus", "OmegaMinus", "OmegaPlus"};
+    const AxisSpec lMassAxis[] = {axisGammaMass, axisK0ShortMass, axisLambdaMass, axisLambdaMass, axisXiMass, axisXiMass, axisOmegaMass, axisOmegaMass};
 
     // Creation of histograms: MC generated
-    for (Int_t i = 0; i < 7; i++)
+    for (Int_t i = 0; i < 8; i++)
       histos.add(Form("hGen%s", lSpecies[i].Data()), Form("hGen%s", lSpecies[i].Data()), kTH1F, {axisVsPt});
-    for (Int_t i = 0; i < 7; i++)
+    for (Int_t i = 0; i < 8; i++)
       histos.add(Form("hGenWithPV%s", lSpecies[i].Data()), Form("hGenWithPV%s", lSpecies[i].Data()), kTH1F, {axisVsPt});
 
     // Creation of histograms: mass affairs
-    for (Int_t i = 0; i < 7; i++)
+    for (Int_t i = 0; i < 8; i++)
       histos.add(Form("h2dMass%s", lSpecies[i].Data()), Form("h2dMass%s", lSpecies[i].Data()), kTH2F, {axisVsPt, lMassAxis[i]});
 
     // Topo sel QA
@@ -616,14 +617,8 @@ struct straRecoStudy {
       return;
 
     auto bachPartTrack = casc.template bachelor_as<TracksCompleteIUMC>();
-
-    auto v0index = casc.template v0_as<o2::aod::V0sLinked>();
-    if (!(v0index.has_v0Data())) {
-      return;
-    }
-    auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
-    auto posPartTrack = v0.template posTrack_as<TracksCompleteIUMC>();
-    auto negPartTrack = v0.template negTrack_as<TracksCompleteIUMC>();
+    auto posPartTrack = casc.template posTrack_as<TracksCompleteIUMC>();
+    auto negPartTrack = casc.template negTrack_as<TracksCompleteIUMC>();
 
     if (cascmc.pdgCode() == 3312) {
       histos.fill(HIST("h3dTrackPtsXiMinusP"), casc.pt(), posPartTrack.itsNCls(), posPartTrack.tpcNClsCrossedRows());
@@ -697,14 +692,14 @@ struct straRecoStudy {
     }
   }
 
-  void processCascade(CollisionsWithEvSels const& collisions, aod::V0Datas const&, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&, aod::V0sLinked const&)
+  void processCascade(CollisionsWithEvSels const& collisions, aod::V0Datas const&, soa::Filtered<CascMC> const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&)
   {
     for (auto& casc : Cascades) {
       processCascadeCandidate(casc);
     }
   }
   PROCESS_SWITCH(straRecoStudy, processCascade, "Regular cascade analysis", true);
-  void processTrackedCascade(CollisionsWithEvSels const& collisions, aod::V0Datas const&, TraCascMC const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&, aod::V0sLinked const&)
+  void processTrackedCascade(CollisionsWithEvSels const& collisions, aod::V0Datas const&, TraCascMC const& Cascades, TracksCompleteIUMC const& tracks, aod::McParticles const&)
   {
     for (auto& casc : Cascades) {
       processCascadeCandidate(casc);
@@ -722,13 +717,8 @@ struct straRecoStudy {
     }
     for (auto& casc : Cascades) {
       auto bachPartTrack = casc.bachelor_as<TracksCompleteIU>();
-      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0index.has_v0Data())) {
-        continue;
-      }
-      auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
-      auto posPartTrack = v0.posTrack_as<TracksCompleteIU>();
-      auto negPartTrack = v0.negTrack_as<TracksCompleteIU>();
+      auto posPartTrack = casc.posTrack_as<TracksCompleteIU>();
+      auto negPartTrack = casc.negTrack_as<TracksCompleteIU>();
 
       histos.fill(HIST("h2dITSCluMap_CascPositive"), (float)posPartTrack.itsClusterMap(), casc.v0radius());
       histos.fill(HIST("h2dITSCluMap_CascNegative"), (float)negPartTrack.itsClusterMap(), casc.v0radius());
@@ -779,7 +769,7 @@ struct straRecoStudy {
   {
     // check if collision successfully reconstructed
     for (auto& mcp : mcParticles) {
-      if (TMath::Abs(mcp.y()) < 0.5) {
+      if (TMath::Abs(mcp.eta()) < 0.5) {
         if (mcp.pdgCode() == 310)
           histos.fill(HIST("hGenWithPVK0Short"), mcp.pt());
         if (mcp.pdgCode() == 3122)
@@ -803,7 +793,9 @@ struct straRecoStudy {
   {
     // check if collision successfully reconstructed
     for (auto& mcp : mcParticles) {
-      if (TMath::Abs(mcp.y()) < 0.5) {
+      if (TMath::Abs(mcp.eta()) < 0.5) {
+        if (mcp.pdgCode() == 22)
+          histos.fill(HIST("hGenGamma"), mcp.pt());
         if (mcp.pdgCode() == 310)
           histos.fill(HIST("hGenK0Short"), mcp.pt());
         if (mcp.pdgCode() == 3122)

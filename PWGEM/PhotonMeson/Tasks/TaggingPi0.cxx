@@ -44,7 +44,7 @@ using namespace o2::aod::photonpair;
 using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNgPCM, aod::EMReducedEventsNgPHOS, aod::EMReducedEventsNgEMC>;
 using MyCollision = MyCollisions::iterator;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMReducedEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
@@ -92,8 +92,8 @@ struct TaggingPi0 {
     if (context.mOptions.get<bool>("processPCMPCMibw")) {
       fPairNames.push_back("PCMPCMibw");
     }
-    if (context.mOptions.get<bool>("processPCMDalitz")) {
-      fPairNames.push_back("PCMDalitz");
+    if (context.mOptions.get<bool>("processPCMDalitzEE")) {
+      fPairNames.push_back("PCMDalitzEE");
     }
     if (context.mOptions.get<bool>("processPCMPHOS")) {
       fPairNames.push_back("PCMPHOS");
@@ -140,7 +140,7 @@ struct TaggingPi0 {
     }     // end of cut1 loop
   }
 
-  static constexpr std::string_view pairnames[8] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PCMDalitz", "PHOSEMC", "PCMPCMibw"};
+  static constexpr std::string_view pairnames[8] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PCMDalitzEE", "PCMDalitzMuMu", "PHOSEMC"};
   void addhistograms()
   {
     fMainList->SetOwner(true);
@@ -171,7 +171,7 @@ struct TaggingPi0 {
       if (pairname == "PCMEMC") {
         add_pair_histograms(list_pair, pairname, fPCMCuts, fEMCCuts, fPairCuts);
       }
-      if (pairname == "PCMDalitz") {
+      if (pairname == "PCMDalitzEE") {
         add_pair_histograms(list_pair, pairname, fPCMCuts, fDalitzEECuts, fPairCuts);
       }
 
@@ -401,8 +401,8 @@ struct TaggingPi0 {
     // LOGF(info, "Number of collisions after filtering: %d", collisions.size());
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ndepth, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
 
-      // LOGF(info, "Mixed event collisionId: (%d, %d) , counter = %d, ngpcm: (%d, %d), ngphos: (%d, %d), ngemc: (%d, %d)",
-      //     collision1.collisionId(), collision2.collisionId(), nev, collision1.ngpcm(), collision2.ngpcm(), collision1.ngphos(), collision2.ngphos(), collision1.ngemc(), collision2.ngemc());
+      // LOGF(info, "Mixed event globalIndex: (%d, %d) , counter = %d, ngpcm: (%d, %d), ngphos: (%d, %d), ngemc: (%d, %d)",
+      //     collision1.globalIndex(), collision2.globalIndex(), nev, collision1.ngpcm(), collision2.ngpcm(), collision1.ngphos(), collision2.ngphos(), collision1.ngemc(), collision2.ngemc());
 
       auto photons_coll1 = photons1.sliceBy(perCollision1, collision1.globalIndex());
       auto photons_coll2 = photons2.sliceBy(perCollision2, collision2.globalIndex());
@@ -413,7 +413,7 @@ struct TaggingPi0 {
         for (auto& cut2 : cuts2) {
           for (auto& paircut : paircuts) {
             for (auto& [g1, g2] : combinations(soa::CombinationsFullIndexPolicy(photons_coll1, photons_coll2))) {
-              // LOGF(info, "Mixed event photon pair: (%d, %d) from events (%d, %d), photon event: (%d, %d)", g1.index(), g2.index(), collision1.index(), collision2.index(), g1.collisionId(), g2.collisionId());
+              // LOGF(info, "Mixed event photon pair: (%d, %d) from events (%d, %d), photon event: (%d, %d)", g1.index(), g2.index(), collision1.index(), collision2.index(), g1.globalIndex(), g2.globalIndex());
 
               if ((pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) && (TString(cut1.GetName()) != TString(cut2.GetName()))) {
                 continue;
@@ -467,7 +467,7 @@ struct TaggingPi0 {
     SameEventPairing<PairType::kPCMPCMibw>(collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMibwCuts, fPairCuts, legs, nullptr);
     MixedEventPairing<PairType::kPCMPCMibw>(filtered_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMibwCuts, fPairCuts, legs, nullptr);
   }
-  void processPCMDalitz(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs, MyFilteredDalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons)
+  void processPCMDalitzEE(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs, MyFilteredDalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons)
   {
     SameEventPairing<PairType::kPCMDalitzEE>(collisions, v0photons, dielectrons, perCollision_pcm, perCollision_dalitz, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimaryelectrons);
     MixedEventPairing<PairType::kPCMDalitzEE>(filtered_collisions, v0photons, dielectrons, perCollision_pcm, perCollision_dalitz, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimaryelectrons);
@@ -491,7 +491,7 @@ struct TaggingPi0 {
   }
 
   PROCESS_SWITCH(TaggingPi0, processPCMPCMibw, "pairing PCM-PCMibw", false);
-  PROCESS_SWITCH(TaggingPi0, processPCMDalitz, "pairing PCM-Dalitz", false);
+  PROCESS_SWITCH(TaggingPi0, processPCMDalitzEE, "pairing PCM-Dalitz", false);
   PROCESS_SWITCH(TaggingPi0, processPCMPHOS, "pairing PCM-PHOS", false);
   PROCESS_SWITCH(TaggingPi0, processPCMEMC, "pairing PCM-EMCal", false);
   PROCESS_SWITCH(TaggingPi0, processDummy, "Dummy function", true);

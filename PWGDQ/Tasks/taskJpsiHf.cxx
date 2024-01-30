@@ -26,12 +26,24 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
+
+// pT differential BDT cuts
+namespace bdtcuts
+{
+static constexpr int nBinsPt = 14;
+constexpr float binsPt[nBinsPt + 1] = {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 10.0f, 12.0f, 16.0f, 24.0f, 36.0f, 1000.0f};
+constexpr float bdtCuts[nBinsPt][3] = {{1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}};
+static const std::vector<std::string> labelsPt{};
+static const std::vector<std::string> labelsCutsBdt = {"BDT background", "BDT prompt", "BDT nonprompt"};
+} // namespace bdtcuts
 
 // Declarations of various short names
 using MyRedEvents = aod::RedJpDmColls;
@@ -47,14 +59,24 @@ struct taskJPsiHf {
   Produces<RedDleptDmesAll> redDileptDimesAll;
 
   // HF configurables
-  Configurable<double> massHfCandMin{"massHfCandMin", 1.5, "minimum HF mass"};
-  Configurable<double> massHfCandMax{"massHfCandMax", 2.1, "maximum HF mass"};
+  Configurable<float> massHfCandMin{"massHfCandMin", 1.5f, "minimum HF mass"};
+  Configurable<float> massHfCandMax{"massHfCandMax", 2.1f, "maximum HF mass"};
+  Configurable<std::vector<float>> binsPtDmesForBdt{"binsPtDmesForBdt", std::vector<float>{bdtcuts::binsPt, bdtcuts::binsPt + bdtcuts::nBinsPt + 1}, "pT bin limits for BDT cuts"};
+  Configurable<LabeledArray<float>> cutsDmesBdt{"cutsDmesBdt", {bdtcuts::bdtCuts[0], bdtcuts::nBinsPt, 3, bdtcuts::labelsPt, bdtcuts::labelsCutsBdt}, "D-meson BDT selections per pT bin"};
+
   // DQ configurables
-  Configurable<double> massDileptonCandMin{"massDileptonCandMin", 1, "minimum dilepton mass"};
-  Configurable<double> massDileptonCandMax{"massDileptonCandMax", 5, "maximum dilepton mass"};
+  Configurable<float> massDileptonCandMin{"massDileptonCandMin", 1.f, "minimum dilepton mass"};
+  Configurable<float> massDileptonCandMax{"massDileptonCandMax", 5.f, "maximum dilepton mass"};
+
+  // histogram for normalisation
+  std::shared_ptr<TH1> hCollisions;
+  HistogramRegistry registry{"registry"};
 
   void init(o2::framework::InitContext& context)
   {
+    hCollisions = registry.add<TH1>("hCollisions", ";;entries", HistType::kTH1F, {{2, -0.5, 1.5}});
+    hCollisions->GetXaxis()->SetBinLabel(1, "all collisions");
+    hCollisions->GetXaxis()->SetBinLabel(2, "collisions with pairs");
   }
 
   // Template function to run pair - hadron combinations
@@ -81,18 +103,29 @@ struct taskJPsiHf {
         phiDmeson = RecoDecay::phi(dmeson.px(), dmeson.py());
         deltaPhi = RecoDecay::constrainAngle(phiDilepton - phiDmeson, -o2::constants::math::PIHalf);
 
+        auto ptBinDmesForBdt = findBin(binsPtDmesForBdt, ptDmeson);
+        if (ptBinDmesForBdt == -1) {
+          continue;
+        }
+
         if (dmeson.massD0() > 0) {
           rapDmeson = RecoDecay::y(std::array{dmeson.px(), dmeson.py(), dmeson.pz()}, dmeson.massD0());
           deltaRap = rapDilepton - rapDmeson;
-          if ((dilepton.mass() > massDileptonCandMin && dilepton.mass() < massDileptonCandMax) && (dmeson.massD0() > massHfCandMin && dmeson.massD0() < massHfCandMax)) {
-            redDileptDimesAll(dilepton.mass(), dmeson.massD0(), ptDilepton, ptDmeson, rapDilepton, rapDmeson, phiDilepton, phiDmeson, deltaRap, deltaPhi, dmeson.bdtBkgMassHypo0(), dmeson.bdtPromptMassHypo0(), dmeson.bdtNonpromptMassHypo0());
+          auto bdtBkg = dmeson.bdtBkgMassHypo0();
+          auto bdtPrompt = dmeson.bdtPromptMassHypo0();
+          auto bdtNonPrompt = dmeson.bdtNonpromptMassHypo0();
+          if ((dilepton.mass() > massDileptonCandMin && dilepton.mass() < massDileptonCandMax) && (dmeson.massD0() > massHfCandMin && dmeson.massD0() < massHfCandMax && bdtBkg < cutsDmesBdt->get(ptBinDmesForBdt, "BDT background") && bdtPrompt > cutsDmesBdt->get(ptBinDmesForBdt, "BDT prompt") && bdtNonPrompt > cutsDmesBdt->get(ptBinDmesForBdt, "BDT nonprompt"))) {
+            redDileptDimesAll(dilepton.mass(), dmeson.massD0(), ptDilepton, ptDmeson, rapDilepton, rapDmeson, phiDilepton, phiDmeson, deltaRap, deltaPhi, bdtBkg, bdtPrompt, bdtNonPrompt);
           }
         }
         if (dmeson.massD0bar() > 0) {
           rapDmeson = RecoDecay::y(std::array{dmeson.px(), dmeson.py(), dmeson.pz()}, dmeson.massD0bar());
           deltaRap = rapDilepton - rapDmeson;
-          if ((dilepton.mass() > massDileptonCandMin && dilepton.mass() < massDileptonCandMax) && (dmeson.massD0() > massHfCandMin && dmeson.massD0() < massHfCandMax)) {
-            redDileptDimesAll(dilepton.mass(), dmeson.massD0bar(), ptDilepton, ptDmeson, rapDilepton, rapDmeson, phiDilepton, phiDmeson, deltaRap, deltaPhi, dmeson.bdtBkgMassHypo1(), dmeson.bdtPromptMassHypo1(), dmeson.bdtNonpromptMassHypo1());
+          auto bdtBkg = dmeson.bdtBkgMassHypo1();
+          auto bdtPrompt = dmeson.bdtPromptMassHypo1();
+          auto bdtNonPrompt = dmeson.bdtNonpromptMassHypo1();
+          if ((dilepton.mass() > massDileptonCandMin && dilepton.mass() < massDileptonCandMax) && (dmeson.massD0() > massHfCandMin && dmeson.massD0() < massHfCandMax && bdtBkg < cutsDmesBdt->get(ptBinDmesForBdt, "BDT background") && bdtPrompt > cutsDmesBdt->get(ptBinDmesForBdt, "BDT prompt") && bdtNonPrompt > cutsDmesBdt->get(ptBinDmesForBdt, "BDT nonprompt"))) {
+            redDileptDimesAll(dilepton.mass(), dmeson.massD0bar(), ptDilepton, ptDmeson, rapDilepton, rapDmeson, phiDilepton, phiDmeson, deltaRap, deltaPhi, bdtBkg, bdtPrompt, bdtNonPrompt);
           }
         }
       }
@@ -101,10 +134,21 @@ struct taskJPsiHf {
 
   void processRedJspiD0(MyRedEvents::iterator const& event, MyRedPairCandidatesSelected const& dileptons, MyRedD0CandidatesSelected const& dmesons)
   {
+    // Fill the column of collisions with pairs
+    hCollisions->Fill(1.f);
     runDileptonDmeson(event, dileptons, dmesons);
   }
 
+  void processNormCounter(RedJpDmColCounts const& normCounters)
+  {
+    // Fill the column with all collisions
+    for (const auto& normCounter : normCounters) {
+      hCollisions->Fill(0.f, static_cast<float>(normCounter.numColls()));
+    }
+  }
+
   PROCESS_SWITCH(taskJPsiHf, processRedJspiD0, "Process J/psi - D0", true);
+  PROCESS_SWITCH(taskJPsiHf, processNormCounter, "Process normalization counter", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

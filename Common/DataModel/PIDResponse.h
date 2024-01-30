@@ -46,6 +46,13 @@ void packInTable(const float& valueToBin, T& table)
   }
 }
 
+// Function to unpack a binned value into a float
+template <typename binningType>
+float unPackInTable(const typename binningType::binned_t& valueToUnpack)
+{
+  return binningType::bin_width * static_cast<float>(valueToUnpack);
+}
+
 // Checkers for TOF PID hypothesis availability (runtime)
 template <class T>
 using hasTOFEl = decltype(std::declval<T&>().tofNSigmaEl());
@@ -381,7 +388,8 @@ enum PIDFlags : uint8_t {
 };
 }
 
-DECLARE_SOA_COLUMN(TOFFlags, tofFlags, uint8_t);             //! Flag for the complementary TOF PID information
+DECLARE_SOA_COLUMN(GoodTOFMatch, goodTOFMatch, bool);        //! Bool for the TOF PID information on the single track information
+DECLARE_SOA_COLUMN(TOFFlags, tofFlags, uint8_t);             //! Flag for the complementary TOF PID information for the event time
 DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeDefined, isEvTimeDefined, //! True if the Event Time was computed with any method i.e. there is a usable event time
                            [](uint8_t flags) -> bool { return (flags > 0); });
 DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeTOF, isEvTimeTOF, //! True if the Event Time was computed with the TOF
@@ -481,7 +489,7 @@ DECLARE_SOA_COLUMN(TOFNSigmaAl, tofNSigmaAl, float); //! Nsigma separation with 
 // Macro to convert the stored Nsigmas to floats
 #define DEFINE_UNWRAP_NSIGMA_COLUMN(COLUMN, COLUMN_NAME) \
   DECLARE_SOA_DYNAMIC_COLUMN(COLUMN, COLUMN_NAME,        \
-                             [](binning::binned_t nsigma_binned) -> float { return binning::bin_width * static_cast<float>(nsigma_binned); });
+                             [](binning::binned_t nsigma_binned) -> float { return o2::aod::pidutils::unPackInTable<binning>(nsigma_binned); });
 
 namespace pidtof_tiny
 {
@@ -521,6 +529,9 @@ DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaAl, tofNSigmaAl); //! Unwrapped (float) nsi
 
 DECLARE_SOA_TABLE(TOFSignal, "AOD", "TOFSignal", //! Table of the TOF signal
                   pidtofsignal::TOFSignal);
+
+DECLARE_SOA_TABLE(pidTOFFlags, "AOD", "pidTOFFlags", //! Table of the flags for TOF signal quality on the track level
+                  pidflags::GoodTOFMatch);
 
 DECLARE_SOA_TABLE(pidTOFbeta, "AOD", "pidTOFbeta", //! Table of the TOF beta
                   pidtofbeta::Beta, pidtofbeta::BetaError);
