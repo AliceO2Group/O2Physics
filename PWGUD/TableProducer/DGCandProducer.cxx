@@ -133,7 +133,6 @@ struct DGCandProducer {
   {
     std::array<bool, 5> triggers{{true, udhelpers::TOR(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits()),
                                   udhelpers::TVX(bc), udhelpers::TSC(bc), udhelpers::TCE(bc)}};
-
     if (bc.has_foundFV0()) {
       auto fv0 = bc.foundFV0();
       auto ampA = udhelpers::FV0AmplitudeA(fv0);
@@ -210,6 +209,9 @@ struct DGCandProducer {
     }
     auto bc = collision.foundBC_as<BCs>();
     LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
+    
+    // fill FIT histograms
+    fillFIThistograms(bc);
 
     // fill FIT histograms
     fillFIThistograms(bc);
