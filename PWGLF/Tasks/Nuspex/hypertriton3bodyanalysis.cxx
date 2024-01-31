@@ -383,9 +383,8 @@ struct hypertriton3bodyAnalysis {
       if (saveDcaHist == 1) {
         registry.fill(HIST("h3dMassHypertritonDca"), candData.dcaVtxdaughters(), candData.pt(), candData.mHypertriton());
       }
-    }
-    // AntiHypertriton
-    else if ((track2.sign() < 0 && candData.mAntiHypertriton() > h3LMassLowerlimit && candData.mAntiHypertriton() < h3LMassUpperlimit)) {
+    } else if ((track2.sign() < 0 && candData.mAntiHypertriton() > h3LMassLowerlimit && candData.mAntiHypertriton() < h3LMassUpperlimit)) {
+      // AntiHypertriton
       if_hasvtx = true;
       FillCandCounter(kCandInvMass, isTrueCand);
 
