@@ -172,7 +172,8 @@ struct HfCorrelatorDplusHadrons {
 
   HfHelper hfHelper;
   SliceCache cache;
-
+  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
+                                       
   // Event Mixing for the Data Mode
   using MySelCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>>;
   using MyTracks = soa::Filtered<aod::TracksWDca>;
@@ -234,6 +235,7 @@ struct HfCorrelatorDplusHadrons {
     registry.add("hMassDplusMCRecSig", "Dplus signal candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassDplusMCRecBkg", "Dplus background candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hcountDplustriggersMCGen", "Dplus trigger particles - MC gen;;N of trigger Dplus", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    corrBinning = {{binsZVtx, binsMultiplicity}, true};
   }
 
   /// Dplus-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
@@ -241,7 +243,6 @@ struct HfCorrelatorDplusHadrons {
                    aod::TracksWDca const& tracks,
                    soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates, aod::BCsWithTimestamps const&)
   {
-    BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int gCollisionId = collision.globalIndex();
     int64_t timeStamp = bc.timestamp();
@@ -337,7 +338,6 @@ struct HfCorrelatorDplusHadrons {
                     aod::TracksWDca const& tracks,
                     soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
   {
-    BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
     if (selectedDplusCandidatesMc.size() > 0) {
       int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFV0M()));
       int nTracks = 0;
@@ -515,7 +515,6 @@ struct HfCorrelatorDplusHadrons {
                              MyCandidatesData const& candidates,
                              MyTracks const& tracks)
   {
-    BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<MySelCollisions, MyCandidatesData, MyTracks, BinningType> pairData{corrBinning, 5, -1, collisions, tracksTuple, &cache};
 
@@ -538,7 +537,6 @@ struct HfCorrelatorDplusHadrons {
                               MyCandidatesMcRec const& candidates,
                               MyTracks const& tracks)
   {
-    BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
     auto tracksTuple = std::make_tuple(candidates, tracks);
     Pair<MySelCollisions, MyCandidatesMcRec, MyTracks, BinningType> pairMcRec{corrBinning, 5, -1, collisions, tracksTuple, &cache};
 
