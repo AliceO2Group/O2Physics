@@ -45,6 +45,8 @@ using BitMaskType = uint32_t; //! Definition of the data type for the collision 
 DECLARE_SOA_COLUMN(BitMaskTrackOne, bitmaskTrackOne, BitMaskType);     //! Bit for track one
 DECLARE_SOA_COLUMN(BitMaskTrackTwo, bitmaskTrackTwo, BitMaskType);     //! Bit for track two
 DECLARE_SOA_COLUMN(BitMaskTrackThree, bitmaskTrackThree, BitMaskType); //! Bit for track three
+
+DECLARE_SOA_COLUMN(Downsample, downsample, bool); //! Flag for downsampling
 } // namespace femtodreamcollision
 
 DECLARE_SOA_TABLE(FDCollisions, "AOD", "FDCOLLISION",
@@ -60,6 +62,9 @@ DECLARE_SOA_TABLE(FDColMasks, "AOD", "FDCOLMASK",
                   femtodreamcollision::BitMaskTrackOne,
                   femtodreamcollision::BitMaskTrackTwo,
                   femtodreamcollision::BitMaskTrackThree);
+
+DECLARE_SOA_TABLE(FDDownSample, "AOD", "FDDOWNSAMPLE",
+                  femtodreamcollision::Downsample);
 
 /// FemtoDreamTrack
 namespace femtodreamparticle
