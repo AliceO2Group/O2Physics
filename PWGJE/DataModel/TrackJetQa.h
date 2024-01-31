@@ -57,14 +57,14 @@ DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
 namespace jettrack
 {
 // Track info
-DECLARE_SOA_COLUMN(CollisionId, collisionId, int);          //! Id of collision
-DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //! IsPVContributor
-DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);                   //! Has or not the TRD match
-DECLARE_SOA_COLUMN(HasITS, hasITS, bool);                   //! Has or not the ITS match
-DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);                   //! Has or not the TPC match         // Addtional selections for trackJetqa //
-DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                   // if a track passed the isGlobalTrack requirement
-DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);                         // if a track passed the isGlobalTrackWoDCA requirement
-DECLARE_SOA_COLUMN(IsGlobalTrackWoPtEta, isGlobalTrackWoPtEta, bool);                     // if a track passed the isGlobalTrackWoPtEta requirement
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                    //! Id of collision
+DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);           //! IsPVContributor
+DECLARE_SOA_COLUMN(HasTRD, hasTRD, bool);                             //! Has or not the TRD match
+DECLARE_SOA_COLUMN(HasITS, hasITS, bool);                             //! Has or not the ITS match
+DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);                             //! Has or not the TPC match         // Addtional selections for trackJetqa //
+DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);               // if a track passed the isGlobalTrack requirement
+DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);     // if a track passed the isGlobalTrackWoDCA requirement
+DECLARE_SOA_COLUMN(IsGlobalTrackWoPtEta, isGlobalTrackWoPtEta, bool); // if a track passed the isGlobalTrackWoPtEta requirement
 DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);
 DECLARE_SOA_COLUMN(TPCFractionSharedCls, tpcFractionSharedCls, float);
 DECLARE_SOA_COLUMN(ITSClusterMap, itsClusterMap, float);

@@ -320,7 +320,7 @@ class DalitzEECut : public TNamed
         return mMinMee <= pair.mass() && pair.mass() <= mMaxMee;
 
       case DalitzEECuts::kPhiV:
-        return mMinPhivPair <= pair.phiv() && pair.phiv() <= (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(pair.mass()) : mMaxPhivPair);
+        return (mMinPhivPair <= pair.phiv() && pair.phiv() <= (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(pair.mass()) : mMaxPhivPair)) ^ mSelectPC;
 
       default:
         return false;
@@ -385,6 +385,7 @@ class DalitzEECut : public TNamed
   void SetPairEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
   void SetMeeRange(float min = 0.f, float max = 0.5);
   void SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut);
+  void SelectPhotonConversion(bool flag);
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
@@ -427,6 +428,7 @@ class DalitzEECut : public TNamed
   float mMinPairEta{-1e10f}, mMaxPairEta{1e10f}; // range in eta
   float mMinPhivPair{0.f}, mMaxPhivPair{+3.2};
   std::function<float(float)> mMaxPhivPairMeeDep{}; // max phiv as a function of mee
+  bool mSelectPC{false};                            // flag to select photon conversion used in mMaxPhivPairMeeDep
 
   // kinematic cuts
   float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};      // range in pT

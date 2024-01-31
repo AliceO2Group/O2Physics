@@ -183,7 +183,6 @@ struct DalitzMuMuQC {
             det_ele = ele.cYY() * ele.cZZ() - ele.cZY() * ele.cZY();
             if (det_pos < 0 || det_ele < 0) {
               dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
-              LOGF(info, "determinant is negative.");
             } else {
               float chi2pos = (pos.dcaXY() * pos.dcaXY() * pos.cZZ() + pos.dcaZ() * pos.dcaZ() * pos.cYY() - 2. * pos.dcaXY() * pos.dcaZ() * pos.cZY()) / det_pos;
               float chi2ele = (ele.dcaXY() * ele.dcaXY() * ele.cZZ() + ele.dcaZ() * ele.dcaZ() * ele.cYY() - 2. * ele.dcaXY() * ele.dcaZ() * ele.cZY()) / det_ele;
@@ -216,7 +215,6 @@ struct DalitzMuMuQC {
             det_ele = ele.cYY() * ele.cZZ() - ele.cZY() * ele.cZY();
             if (det_pos < 0 || det_ele < 0) {
               dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
-              LOGF(info, "determinant is negative.");
             } else {
               float chi2pos = (pos.dcaXY() * pos.dcaXY() * pos.cZZ() + pos.dcaZ() * pos.dcaZ() * pos.cYY() - 2. * pos.dcaXY() * pos.dcaZ() * pos.cZY()) / det_pos;
               float chi2ele = (ele.dcaXY() * ele.dcaXY() * ele.cZZ() + ele.dcaZ() * ele.dcaZ() * ele.cYY() - 2. * ele.dcaXY() * ele.dcaZ() * ele.cZY()) / det_ele;
@@ -242,7 +240,6 @@ struct DalitzMuMuQC {
             det_ele = ele.cYY() * ele.cZZ() - ele.cZY() * ele.cZY();
             if (det_pos < 0 || det_ele < 0) {
               dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
-              LOGF(info, "determinant is negative.");
             } else {
               float chi2pos = (pos.dcaXY() * pos.dcaXY() * pos.cZZ() + pos.dcaZ() * pos.dcaZ() * pos.cYY() - 2. * pos.dcaXY() * pos.dcaZ() * pos.cZY()) / det_pos;
               float chi2ele = (ele.dcaXY() * ele.dcaXY() * ele.cZZ() + ele.dcaZ() * ele.dcaZ() * ele.cYY() - 2. * ele.dcaXY() * ele.dcaZ() * ele.cZY()) / det_ele;
@@ -302,7 +299,6 @@ struct DalitzMuMuQC {
           det_ele = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
           if (det_pos < 0 || det_ele < 0) {
             dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
-            LOGF(info, "determinant is negative.");
           } else {
             float chi2pos = (t1.dcaXY() * t1.dcaXY() * t1.cZZ() + t1.dcaZ() * t1.dcaZ() * t1.cYY() - 2. * t1.dcaXY() * t1.dcaZ() * t1.cZY()) / det_pos;
             float chi2ele = (t2.dcaXY() * t2.dcaXY() * t2.cZZ() + t2.dcaZ() * t2.dcaZ() * t2.cYY() - 2. * t2.dcaXY() * t2.dcaZ() * t2.cZY()) / det_ele;
