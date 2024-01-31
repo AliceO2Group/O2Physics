@@ -28,10 +28,10 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "PWGCF/GenericFramework/FlowContainer.h"
-#include "PWGCF/GenericFramework/GFWCumulant.h"
-#include "PWGCF/GenericFramework/GFW.h"
-#include "PWGCF/GenericFramework/GFWWeights.h"
+#include "PWGCF/GenericFramework/Core/FlowContainer.h"
+#include "PWGCF/GenericFramework/Core/GFWCumulant.h"
+#include "PWGCF/GenericFramework/Core/GFW.h"
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/Core/HistogramManager.h"
@@ -47,7 +47,7 @@
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 
-#include "PWGCF/GenericFramework/GFWPowerArray.h"
+#include "PWGCF/GenericFramework/Core/GFWPowerArray.h"
 #include "TProfile.h"
 
 using std::cout;
@@ -165,7 +165,7 @@ struct DqCumulantFlow {
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
 
   // // // CCDB access
@@ -346,7 +346,7 @@ struct DqCumulantFlow {
       if (TMath::Abs(val) < 1)
         registry.fill(tarName, axis, val, dnx);
       return;
-    };
+    }
     return;
   }
 
