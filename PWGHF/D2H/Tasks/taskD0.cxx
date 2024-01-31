@@ -30,6 +30,15 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 /// D0 analysis task
+namespace
+{
+enum CandTypeSel {
+  SigD0= 0,      // Signal D0
+  SigD0bar,      // Signal D0bar 
+  ReflectedD0,   // Reflected D0
+  ReflectedD0bar // Reflected D0bar
+};
+} // namespace
 struct HfTaskD0 {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
@@ -65,7 +74,7 @@ struct HfTaskD0 {
   Partition<D0CandidatesMlMc> selectedD0CandidatesMlMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
   Partition<D0CandidatesMlMcKF> selectedD0CandidatesMlMcKF = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
 
-  HistogramConfigSpec hTHnBdtScoreVsMassVsPtVsYVsOriginVsIsD0{HistType::kTHnSparseD, {{100, 0.f, 1.f}, {100, 0.f, 1.f}, {120, 1.5848, 2.1848}, {360, 0., 36.}, {100, -5., 5.}, {3, -0.5, 2.5}, {2, -0.5, 1.5}}};
+  HistogramConfigSpec hTHnBdtScoreVsMassVsPtVsYVsOriginVsD0Type{HistType::kTHnSparseD, {{100, 0.f, 1.f}, {100, 0.f, 1.f}, {120, 1.5848, 2.1848}, {360, 0., 36.}, {100, -5., 5.}, {3, -0.5, 2.5}, {4, -0.5, 3.5}}};
 
   HistogramRegistry registry{
     "registry",
@@ -193,8 +202,8 @@ struct HfTaskD0 {
     registry.add("hDecLengthxyVsPtSig", "2-prong candidates;decay length xy (cm) vs #it{p}_{T} for signal;entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
     if (applyMl) {
-      registry.add("hBdtScoreVsMassVsPtVsYVsOriginVsIsD0", "2-prong candidates;BDT score bkg.;BDT score non-prompt;inv. mass (#pi K) (GeV/#it{c}^{2});#it{p}_{T};y;Origin;D0 vs. D0bar;", hTHnBdtScoreVsMassVsPtVsYVsOriginVsIsD0);
-      registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsIsD0"))->Sumw2();
+      registry.add("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type", "2-prong candidates;BDT score bkg.;BDT score non-prompt;inv. mass (#pi K) (GeV/#it{c}^{2});#it{p}_{T};y;Origin;D0 Type;", hTHnBdtScoreVsMassVsPtVsYVsOriginVsD0Type);
+      registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"))->Sumw2();
     }
   }
 
@@ -218,7 +227,6 @@ struct HfTaskD0 {
         massD0bar = hfHelper.invMassD0barToKPi(candidate);
       }
       auto ptCandidate = candidate.pt();
-      bool isD0;
 
       if (candidate.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("hMass"), massD0, ptCandidate);
@@ -261,12 +269,10 @@ struct HfTaskD0 {
 
       if constexpr (applyMl) {
         if (candidate.isSelD0() >= selectionFlagD0) {
-          isD0 = true;
-          registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsIsD0"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, hfHelper.yD0(candidate), 0, isD0);
+          registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, hfHelper.yD0(candidate), 0, SigD0);
         }
         if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-          isD0 = false;
-          registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsIsD0"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, hfHelper.yD0(candidate), 0, isD0);
+          registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, hfHelper.yD0(candidate), 0, SigD0bar);
         }
       }
     }
@@ -406,7 +412,6 @@ struct HfTaskD0 {
       auto ctCandidate = hfHelper.ctD0(candidate);
       auto cpaCandidate = candidate.cpa();
       auto cpaxyCandidate = candidate.cpaXY();
-      bool isD0;
       if (candidate.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("hMassSigBkgD0"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
@@ -434,8 +439,7 @@ struct HfTaskD0 {
           registry.fill(HIST("hDecLengthxyVsPtSig"), declengthxyCandidate, ptCandidate);
           registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
           if constexpr (applyMl) {
-            isD0 = true;
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsIsD0"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, rapidityCandidate, candidate.originMcRec(), isD0);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, rapidityCandidate, candidate.originMcRec(), SigD0);
           }
         } else {
           registry.fill(HIST("hPtProng0Bkg"), ptProng0, rapidityCandidate);
@@ -454,6 +458,9 @@ struct HfTaskD0 {
           registry.fill(HIST("hMassBkgD0"), massD0, ptCandidate, rapidityCandidate);
           if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
             registry.fill(HIST("hMassReflBkgD0"), massD0, ptCandidate, rapidityCandidate);
+            if constexpr (applyMl) {
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, rapidityCandidate, candidate.originMcRec(), ReflectedD0);
+            }
           }
         }
       }
@@ -462,13 +469,15 @@ struct HfTaskD0 {
         if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0bar"), massD0bar, ptCandidate, rapidityCandidate);
           if constexpr (applyMl) {
-            isD0 = false;
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsIsD0"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, rapidityCandidate, candidate.originMcRec(), isD0);
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, rapidityCandidate, candidate.originMcRec(), SigD0bar);
           }
         } else {
           registry.fill(HIST("hMassBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
           if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
             registry.fill(HIST("hMassReflBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
+            if constexpr (applyMl) {
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, rapidityCandidate, candidate.originMcRec(), ReflectedD0bar);
+            }
           }
         }
       }
