@@ -1112,24 +1112,24 @@ struct lambdakzeroPreselector {
     if (((bitcheck(maskElement, bitdEdxGamma) || bitcheck(maskElement, bitdEdxK0Short)) || passdEdx) && (posRowsOK && negRowsOK) && (!forceITSOnlyMesons || (posITSonly && negITSonly)))
       bitset(maskElement, bitTrackQuality);
     // With baryons in decay
-    if ((bitcheck(maskElement, bitdEdxLambda) || passdEdx) && // logical AND with dEdx 
-        (posRowsOK && (negRowsOK || dPreselectOnlyBaryons)) && // rows requirement 
-        ((posRowsOK || longPosITSonly) && (negRowsOK || longNegITSonly)) && // if ITS-only, check for min length 
+    if ((bitcheck(maskElement, bitdEdxLambda) || passdEdx) &&               // logical AND with dEdx
+        (posRowsOK && (negRowsOK || dPreselectOnlyBaryons)) &&              // rows requirement
+        ((posRowsOK || longPosITSonly) && (negRowsOK || longNegITSonly)) && // if ITS-only, check for min length
         (!forceITSOnlyMesons || negITSonly))
       bitset(maskElement, bitTrackQuality);
-    if ((bitcheck(maskElement, bitdEdxAntiLambda) || passdEdx) && // logical AND with dEdx 
-        (negRowsOK && (posRowsOK || dPreselectOnlyBaryons)) && // rows requirement 
-        ((posRowsOK || longPosITSonly) && (negRowsOK || longNegITSonly)) && // if ITS-only, check for min length 
+    if ((bitcheck(maskElement, bitdEdxAntiLambda) || passdEdx) &&           // logical AND with dEdx
+        (negRowsOK && (posRowsOK || dPreselectOnlyBaryons)) &&              // rows requirement
+        ((posRowsOK || longPosITSonly) && (negRowsOK || longNegITSonly)) && // if ITS-only, check for min length
         (!forceITSOnlyMesons || posITSonly))
       bitset(maskElement, bitTrackQuality);
-    if ((bitcheck(maskElement, bitdEdxHypertriton) || passdEdx) && // logical AND with dEdx 
-        (posRowsOK && (negRowsOK || dPreselectOnlyBaryons)) && // rows requirement 
-        ((posRowsOK || longPosITSonly) && (negRowsOK || longNegITSonly)) && // if ITS-only, check for min length 
+    if ((bitcheck(maskElement, bitdEdxHypertriton) || passdEdx) &&          // logical AND with dEdx
+        (posRowsOK && (negRowsOK || dPreselectOnlyBaryons)) &&              // rows requirement
+        ((posRowsOK || longPosITSonly) && (negRowsOK || longNegITSonly)) && // if ITS-only, check for min length
         (!forceITSOnlyMesons || negITSonly))
       bitset(maskElement, bitTrackQuality);
-    if ((bitcheck(maskElement, bitdEdxAntiHypertriton) || passdEdx) && // logical AND with dEdx 
-        (negRowsOK && (posRowsOK || dPreselectOnlyBaryons)) && // rows requirement 
-        ((posRowsOK || longPosITSonly) && (negRowsOK || longNegITSonly)) && // if ITS-only, check for min length 
+    if ((bitcheck(maskElement, bitdEdxAntiHypertriton) || passdEdx) &&      // logical AND with dEdx
+        (negRowsOK && (posRowsOK || dPreselectOnlyBaryons)) &&              // rows requirement
+        ((posRowsOK || longPosITSonly) && (negRowsOK || longNegITSonly)) && // if ITS-only, check for min length
         (!forceITSOnlyMesons || posITSonly))
       bitset(maskElement, bitTrackQuality);
   }
