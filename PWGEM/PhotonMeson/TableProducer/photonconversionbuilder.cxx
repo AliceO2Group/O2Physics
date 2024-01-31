@@ -281,7 +281,7 @@ struct PhotonConversionBuilder {
            track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
            track.tpcChi2NCl(), track.tpcInnerParam(), track.tpcSignal(),
            track.tpcNSigmaEl(), track.tpcNSigmaPi(),
-           track.itsClusterMap(), track.itsChi2NCl(), track.detectorMap(),
+           track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(),
            track.x(), track.y(), track.z(), track.tgl(), track.signed1Pt());
   }
 
@@ -453,6 +453,10 @@ struct PhotonConversionBuilder {
         }
       } else if (rxy < min_r_tpconly) {
         if (pca_kf > max_dcav0dau_its) {
+          return;
+        }
+      } else {
+        if (pca_kf > max_dcav0dau_tpconly) {
           return;
         }
       }

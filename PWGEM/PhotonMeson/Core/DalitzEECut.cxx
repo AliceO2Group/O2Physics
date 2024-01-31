@@ -43,6 +43,11 @@ void DalitzEECut::SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut)
   mMaxPhivPairMeeDep = meeDepCut;
   LOG(info) << "DalitzEE Cut, set max phiv pair mee dep: " << mMaxPhivPairMeeDep(0.02);
 }
+void DalitzEECut::SelectPhotonConversion(bool flag)
+{
+  mSelectPC = flag;
+  LOG(info) << "DalitzEE Cut, select photon conversion: " << mSelectPC;
+}
 void DalitzEECut::SetTrackPtRange(float minPt, float maxPt)
 {
   mMinTrackPt = minPt;
