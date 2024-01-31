@@ -307,7 +307,7 @@ struct CFFilter {
   Configurable<LabeledArray<float>> ConfTrkITSnclsIBMin{
     "ConfTrkITSnclsIBMin",
     {CFTrigger::ITSCutsTable[0], 1, CFTrigger::nTracks, std::vector<std::string>{"Cut"}, CFTrigger::SpeciesName},
-    "Minimum number of ITS clusters"};
+    "Minimum number of ITS clusters in the inner barrel"};
   Configurable<float> ConfTrkDCAxyMax{
     "ConfTrkDCAxyMax",
     0.15,
