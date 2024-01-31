@@ -70,27 +70,25 @@ float GetKstarFrom4vectors(TLorentzVector& first4momentum, TLorentzVector& secon
     return 0.5 * abs(fourmomentadiff.Mag());
   } else {
     TLorentzVector fourmomentasum = first4momentum + second4momentum;
+    TLorentzVector fourmomentadif = first4momentum - second4momentum;
 
-    first4momentum.Boost((-1) * fourmomentasum.BoostVector());
-    second4momentum.Boost((-1) * fourmomentasum.BoostVector());
+    fourmomentadif.Boost((-1) * fourmomentasum.BoostVector());
 
-    TVector3 qinv = first4momentum.Vect() - second4momentum.Vect();
-    return 0.5 * abs(qinv.Mag());
+    return 0.5 * abs(fourmomentadif.Vect().Mag());
   }
 }
 
 //====================================================================================
 
-TVector3 Get3dKstarFrom4vectors(TLorentzVector& first4momentum, TLorentzVector& second4momentum)
+TVector3 GetQLCMSFrom4vectors(TLorentzVector& first4momentum, TLorentzVector& second4momentum)
 {
   TLorentzVector fourmomentasum = first4momentum + second4momentum;
-  first4momentum.Boost(0.0, 0.0, (-1) * fourmomentasum.BoostVector().Z());  // boost to LCMS
-  second4momentum.Boost(0.0, 0.0, (-1) * fourmomentasum.BoostVector().Z()); // boost to LCMS
+  TLorentzVector fourmomentadif = first4momentum - second4momentum;
 
-  TVector3 qinv = first4momentum.Vect() - second4momentum.Vect();
-  qinv.RotateZ((-1) * fourmomentasum.Phi()); // rotate so the X axis is along pair's kT
+  fourmomentadif.Boost(0.0, 0.0, (-1) * fourmomentasum.BoostVector().Z()); // boost to LCMS
+  fourmomentadif.RotateZ((-1) * fourmomentasum.Phi());                     // rotate so the X axis is along pair's kT
 
-  return 0.5 * qinv;
+  return fourmomentadif.Vect();
 }
 
 //====================================================================================
@@ -169,7 +167,7 @@ class FemtoPair
       return 1000;
   }
   float GetKstar() const;
-  TVector3 Get3dKstar() const;
+  TVector3 GetQLCMS() const;
   float GetKt() const;
   float GetMt() const; // test
 
@@ -232,7 +230,7 @@ float FemtoPair<TrackType>::GetKstar() const
 }
 
 template <typename TrackType>
-TVector3 FemtoPair<TrackType>::Get3dKstar() const
+TVector3 FemtoPair<TrackType>::GetQLCMS() const
 {
   if (_first == NULL || _second == NULL)
     return TVector3(-1000, -1000, -1000);
@@ -246,7 +244,7 @@ TVector3 FemtoPair<TrackType>::Get3dKstar() const
   TLorentzVector second4momentum;
   second4momentum.SetPtEtaPhiM(_second->pt(), _second->eta(), _second->phi(), particle_mass(_PDG2));
 
-  return Get3dKstarFrom4vectors(first4momentum, second4momentum);
+  return GetQLCMSFrom4vectors(first4momentum, second4momentum);
 }
 
 template <typename TrackType>
