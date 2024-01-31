@@ -341,98 +341,104 @@ struct kfStrangenessStudy {
 
       if (MCcascade.has_daughters()) {
         LOG(info) << "MC cascade has daughters, getting MC info.";
+        LOG(info) << "MCcascade.has_daughters() = " << MCcascade.has_daughters();
         // get MC V0
-        auto MCv0 = MCcascade.template daughters_as<TMCParticle>().begin();
-        if (abs(MCv0.pdgCode()) == 3122 && MCv0.has_daughters()) {
-          // cascade
-          ptGen = MCcascade.pt();
-          prodVtxGen[0] = MCcascade.vx();
-          prodVtxGen[1] = MCcascade.vy();
-          prodVtxGen[2] = MCcascade.vz();
-          vtxGen[0] = MCv0.vx();
-          vtxGen[1] = MCv0.vy();
-          vtxGen[2] = MCv0.vz();
-          // V0
-          ptGenV0 = MCv0.pt();
-          vtxGenV0[0] = MCv0.template daughters_as<TMCParticle>().begin().vx(); // MC V0 vertex
-          vtxGenV0[1] = MCv0.template daughters_as<TMCParticle>().begin().vy();
-          vtxGenV0[2] = MCv0.template daughters_as<TMCParticle>().begin().vz();
-          // daughters
-          for (auto& d : MCv0.template daughters_as<TMCParticle>()) {
-            if (abs(d.pdgCode()) == 2212) {
-              momProtonGen[0] = d.px();
-              momProtonGen[1] = d.py();
-              momProtonGen[2] = d.pz();
-            } else if (abs(d.pdgCode()) == 211) {
-              momPionGen[0] = d.px();
-              momPionGen[1] = d.py();
-              momPionGen[2] = d.pz();
+        for (auto const& MCv0 : MCcascade.template daughters_as<TMCParticle>()) {
+          LOG(info) << "Entered loop over daughters.";
+          if (abs(MCv0.pdgCode()) == 3122 && MCv0.has_daughters()) {
+            LOG(info) << "Daughter is a Lambda and has daughters.";
+            // cascade
+            ptGen = MCcascade.pt();
+            prodVtxGen[0] = MCcascade.vx();
+            prodVtxGen[1] = MCcascade.vy();
+            prodVtxGen[2] = MCcascade.vz();
+            vtxGen[0] = MCv0.vx();
+            vtxGen[1] = MCv0.vy();
+            vtxGen[2] = MCv0.vz();
+            // V0
+            ptGenV0 = MCv0.pt();
+            vtxGenV0[0] = MCv0.template daughters_as<TMCParticle>().begin().vx(); // MC V0 vertex
+            vtxGenV0[1] = MCv0.template daughters_as<TMCParticle>().begin().vy();
+            vtxGenV0[2] = MCv0.template daughters_as<TMCParticle>().begin().vz();
+            // daughters
+            for (auto& d : MCv0.template daughters_as<TMCParticle>()) {
+              LOG(info) << "Entered V0 daughter loop.";
+              if (abs(d.pdgCode()) == 2212) {
+                LOG(info) << "V0 daughter is a proton.";
+                momProtonGen[0] = d.px();
+                momProtonGen[1] = d.py();
+                momProtonGen[2] = d.pz();
+              } else if (abs(d.pdgCode()) == 211) {
+                LOG(info) << "V0 daughter is a pion.";
+                momPionGen[0] = d.px();
+                momPionGen[1] = d.py();
+                momPionGen[2] = d.pz();
+              }
             }
-          }
-          
-          if (abs(MCcascade.pdgCode()) == 3312) { // Xi
-            isTrueCasc = 1;
+            
+            if (abs(MCcascade.pdgCode()) == 3312) { // Xi
+              isTrueCasc = 1;
+            } else {
+              isTrueCasc = 0;
+            }
+            if (MCcascade.isPhysicalPrimary()) {
+              source = 1;
+            } else if (MCcascade.getProcess() == 4) { // from particle decay
+              source = 2;
+            } else if (MCcascade.fromBackgroundEvent()) {
+              source = -1;
+            } else {
+              source = -2;
+            }
+
+            // reconstructed daughter track position at MC truth V0 vertex
+            // get daughter tracks from V0
+            auto posTrack = cascdata.template posTrack_as<TFullTracksIU>();
+            auto negTrack = cascdata.template negTrack_as<TFullTracksIU>();
+            o2::track::TrackParCov posTrackParCov = getTrackParCov(posTrack);
+            o2::track::TrackParCov negTrackParCov = getTrackParCov(negTrack);
+            // propagate to V0 MC vertex
+            o2::base::Propagator::Instance()->propagateToDCABxByBz({vtxGenV0[0], vtxGenV0[1], vtxGenV0[2]}, posTrackParCov, 2.f, matCorr);
+            o2::base::Propagator::Instance()->propagateToDCABxByBz({vtxGenV0[0], vtxGenV0[1], vtxGenV0[2]}, negTrackParCov, 2.f, matCorr);
+            // get new daughter track position and uncertainties
+            std::array<float, 3> protonxyz, pionxyz;
+            std::array<float, 21> protoncv, pioncv;
+            if (charge == -1) {
+              posTrackParCov.getXYZGlo(protonxyz);
+              negTrackParCov.getXYZGlo(pionxyz);
+              posTrackParCov.getCovXYZPxPyPzGlo(protoncv);
+              negTrackParCov.getCovXYZPxPyPzGlo(pioncv);
+            } else if (charge == +1) {
+              negTrackParCov.getXYZGlo(protonxyz);
+              posTrackParCov.getXYZGlo(pionxyz);
+              posTrackParCov.getCovXYZPxPyPzGlo(pioncv);
+              negTrackParCov.getCovXYZPxPyPzGlo(protoncv);
+            }
+            for (int i = 0; i < 3; i++) {
+              posProtonRec[i] = protonxyz[i];
+              posPionRec[i] = pionxyz[i];
+            }
+            posProtonRecErr[0] = sqrt(protoncv[0]);
+            posProtonRecErr[1] = sqrt(protoncv[2]);
+            posProtonRecErr[2] = sqrt(protoncv[5]);
+            posPionRecErr[0] = sqrt(pioncv[0]);
+            posPionRecErr[1] = sqrt(pioncv[2]);
+            posPionRecErr[2] = sqrt(pioncv[5]);
+            
+            // fill cascade table
+            fillCascMCTable(collision);
+
+            // fill QA histos --> vertex position from daughters!
+            histos.fill(HIST("hGenDecayVtxX_firstDau"), vtxGen[0]);
+            histos.fill(HIST("hGenDecayVtxY_firstDau"), vtxGen[1]);
+            histos.fill(HIST("hGenDecayVtxZ_firstDau"), vtxGen[2]);
+
+            histos.fill(HIST("hGenSource"), source);
+            histos.fill(HIST("hChargeCounterCascDatas"), charge);
           } else {
-            isTrueCasc = 0;
-          }
-          if (MCcascade.isPhysicalPrimary()) {
-            source = 1;
-          } else if (MCcascade.getProcess() == 4) { // from particle decay
-            source = 2;
-          } else if (MCcascade.fromBackgroundEvent()) {
-            source = -1;
-          } else {
-            source = -2;
-          }
-
-          // reconstructed daughter track position at MC truth V0 vertex
-          // get daughter tracks from V0
-          auto posTrack = cascdata.template posTrack_as<TFullTracksIU>();
-          auto negTrack = cascdata.template negTrack_as<TFullTracksIU>();
-          o2::track::TrackParCov posTrackParCov = getTrackParCov(posTrack);
-          o2::track::TrackParCov negTrackParCov = getTrackParCov(negTrack);
-          // propagate to V0 MC vertex
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({vtxGenV0[0], vtxGenV0[1], vtxGenV0[2]}, posTrackParCov, 2.f, matCorr);
-          o2::base::Propagator::Instance()->propagateToDCABxByBz({vtxGenV0[0], vtxGenV0[1], vtxGenV0[2]}, negTrackParCov, 2.f, matCorr);
-          // get new daughter track position and uncertainties
-          std::array<float, 3> protonxyz, pionxyz;
-          std::array<float, 21> protoncv, pioncv;
-          if (charge == -1) {
-            posTrackParCov.getXYZGlo(protonxyz);
-            negTrackParCov.getXYZGlo(pionxyz);
-            posTrackParCov.getCovXYZPxPyPzGlo(protoncv);
-            negTrackParCov.getCovXYZPxPyPzGlo(pioncv);
-          } else if (charge == +1) {
-            negTrackParCov.getXYZGlo(protonxyz);
-            posTrackParCov.getXYZGlo(pionxyz);
-            posTrackParCov.getCovXYZPxPyPzGlo(pioncv);
-            negTrackParCov.getCovXYZPxPyPzGlo(protoncv);
-          }
-          for (int i = 0; i < 3; i++) {
-            posProtonRec[i] = protonxyz[i];
-            posPionRec[i] = pionxyz[i];
-          }
-          posProtonRecErr[0] = sqrt(protoncv[0]);
-          posProtonRecErr[1] = sqrt(protoncv[2]);
-          posProtonRecErr[2] = sqrt(protoncv[5]);
-          posPionRecErr[0] = sqrt(pioncv[0]);
-          posPionRecErr[1] = sqrt(pioncv[2]);
-          posPionRecErr[2] = sqrt(pioncv[5]);
-          
-          // fill cascade table
-          fillCascMCTable(collision);
-
-          // fill QA histos --> vertex position from daughters!
-          histos.fill(HIST("hGenDecayVtxX_firstDau"), vtxGen[0]);
-          histos.fill(HIST("hGenDecayVtxY_firstDau"), vtxGen[1]);
-          histos.fill(HIST("hGenDecayVtxZ_firstDau"), vtxGen[2]);
-
-          histos.fill(HIST("hGenSource"), source);
-          histos.fill(HIST("hChargeCounterCascDatas"), charge);
-
-        } else {
-          LOG(info) << "V0 is no Lambda and/or has no daughters. V0 PDG code: " << MCv0.pdgCode();
-        } // end v0 has daughters and is Lambda
+            LOG(debug) << "Daughter is no Lambda and/or has no daughters. V0 PDG code: " << MCv0.pdgCode();
+          } // end v0 has daughters and is Lambda
+        } // end loop cascade daughters
       } // end cascade has daughters
     } // end cascade has MC particle
   }
@@ -646,7 +652,7 @@ struct kfStrangenessStudy {
       }
     } // end cascade loop
   } // end process
-  PROCESS_SWITCH(kfStrangenessStudy, processData, "process data", true);
+  PROCESS_SWITCH(kfStrangenessStudy, processData, "process data", false);
 
   void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, 
                 aod::V0sLinked const& V0s, 
@@ -740,7 +746,7 @@ struct kfStrangenessStudy {
 
     } // end cascade loop
   } // end process
-  PROCESS_SWITCH(kfStrangenessStudy, processMC, "process MC", false);
+  PROCESS_SWITCH(kfStrangenessStudy, processMC, "process MC", true);
 
 };
 
