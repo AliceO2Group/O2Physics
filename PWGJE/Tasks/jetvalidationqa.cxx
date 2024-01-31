@@ -12,7 +12,6 @@
 /// \author Johanna Lömker <johanna.lomker@cern.ch>
 //  \since Dec 2022
 
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
