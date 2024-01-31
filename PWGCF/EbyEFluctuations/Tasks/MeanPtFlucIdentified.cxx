@@ -78,7 +78,7 @@ struct meanPtFlucId {
   Configurable<float> prP5{"prP5", 1.13, "proton p (5)"};
   Configurable<float> prP6{"prP6", 1.18, "proton p (6)"};
   ConfigurableAxis multTPCBins{"multTPCBins", {150, 0, 150}, "TPC Multiplicity bins"};
-  ConfigurableAxis multFT0MBins{"multFT0MBins", {150, 0, 1500}, "Forward Multiplicity bins"};
+  ConfigurableAxis multFT0MBins{"multFT0MBins", {150, 0, 10000}, "Forward Multiplicity bins"};
   ConfigurableAxis dcaXYBins{"dcaXYBins", {100, -0.15, 0.15}, "dcaXY bins"};
   ConfigurableAxis dcaZBins{"dcaZBins", {100, -1.2, 1.2}, "dcaZ bins"};
 
@@ -302,10 +302,10 @@ struct meanPtFlucId {
     double pt_Pi = 0, Q1_Pi = 0, Q2_Pi = 0, Q3_Pi = 0, Q4_Pi = 0;
     double pt_Pr = 0, Q1_Pr = 0, Q2_Pr = 0, Q3_Pr = 0, Q4_Pr = 0;
     double pt_Ka = 0, Q1_Ka = 0, Q2_Ka = 0, Q3_Ka = 0, Q4_Ka = 0;
-    double mean_Q1_Ch, mean_Q1_Pi, mean_Q1_Ka, mean_Q1_Pr;
-    double twopart_Ch, twopart_Pi, twopart_Ka, twopart_Pr;
-    double threepart_Ch, threepart_Pi, threepart_Ka, threepart_Pr;
-    double fourpart_Ch, fourpart_Pi, fourpart_Ka, fourpart_Pr;
+    double mean_Q1_Ch = 0, mean_Q1_Pi = 0, mean_Q1_Ka = 0, mean_Q1_Pr = 0;
+    double twopart_Ch = 0, twopart_Pi = 0, twopart_Ka = 0, twopart_Pr = 0;
+    double threepart_Ch = 0, threepart_Pi = 0, threepart_Ka = 0, threepart_Pr = 0;
+    double fourpart_Ch = 0, fourpart_Pi = 0, fourpart_Ka = 0, fourpart_Pr = 0;
 
     for (auto& track : tracks) {
       if (!selTrack(track))
@@ -422,63 +422,63 @@ struct meanPtFlucId {
     hist.fill(HIST(dire[3]) + HIST("h_Mult"), N_Pr);
 
     parts(Q1_ch, Q2_ch, Q3_ch, Q4_ch, Nch, &mean_Q1_Ch, &twopart_Ch, &threepart_Ch, &fourpart_Ch);
-    if (Nch > 0) {
+    if (Nch > 0 && mean_Q1_Ch != 0) {
       hist.fill(HIST(dire[0]) + HIST("h_mean_Q1"), mean_Q1_Ch);
       hist.fill(HIST(dire[0]) + HIST("p_mean_Q1"), NTPC, mean_Q1_Ch);
       hist.fill(HIST(dire[0]) + HIST("h_mean_Q1_Mult"), NTPC, mean_Q1_Ch, Cent_FT0M);
     }
-    if (Nch > 1)
+    if (Nch > 1 && twopart_Ch != 0)
       hist.fill(HIST(dire[0]) + HIST("h_twopart_Mult"), NTPC, twopart_Ch, Cent_FT0M);
 
-    if (Nch > 2)
+    if (Nch > 2 && threepart_Ch != 0)
       hist.fill(HIST(dire[0]) + HIST("h_threepart_Mult"), NTPC, threepart_Ch, Cent_FT0M);
 
-    if (Nch > 3)
+    if (Nch > 3 && fourpart_Ch != 0)
       hist.fill(HIST(dire[0]) + HIST("h_fourpart_Mult"), NTPC, fourpart_Ch, Cent_FT0M);
 
     parts(Q1_Pi, Q2_Pi, Q3_Pi, Q4_Pi, N_Pi, &mean_Q1_Pi, &twopart_Pi, &threepart_Pi, &fourpart_Pi);
-    if (N_Pi > 0) {
+    if (N_Pi > 0 && mean_Q1_Pi != 0) {
       hist.fill(HIST(dire[1]) + HIST("h_mean_Q1"), mean_Q1_Pi);
       hist.fill(HIST(dire[1]) + HIST("p_mean_Q1"), NTPC, mean_Q1_Pi);
       hist.fill(HIST(dire[1]) + HIST("h_mean_Q1_Mult"), NTPC, mean_Q1_Pi, Cent_FT0M);
     }
-    if (N_Pi > 1)
+    if (N_Pi > 1 && twopart_Pi != 0)
       hist.fill(HIST(dire[1]) + HIST("h_twopart_Mult"), NTPC, twopart_Pi, Cent_FT0M);
 
-    if (N_Pi > 2)
+    if (N_Pi > 2 && threepart_Pi != 0)
       hist.fill(HIST(dire[1]) + HIST("h_threepart_Mult"), NTPC, threepart_Pi, Cent_FT0M);
 
-    if (N_Pi > 3)
+    if (N_Pi > 3 && fourpart_Pi != 0)
       hist.fill(HIST(dire[1]) + HIST("h_fourpart_Mult"), NTPC, fourpart_Pi, Cent_FT0M);
 
     parts(Q1_Ka, Q2_Ka, Q3_Ka, Q4_Ka, N_Ka, &mean_Q1_Ka, &twopart_Ka, &threepart_Ka, &fourpart_Ka);
-    if (N_Ka > 0) {
+    if (N_Ka > 0 && mean_Q1_Ka != 0) {
       hist.fill(HIST(dire[2]) + HIST("h_mean_Q1"), mean_Q1_Ka);
       hist.fill(HIST(dire[2]) + HIST("p_mean_Q1"), NTPC, mean_Q1_Ka);
       hist.fill(HIST(dire[2]) + HIST("h_mean_Q1_Mult"), NTPC, mean_Q1_Ka, Cent_FT0M);
     }
-    if (N_Ka > 1)
+    if (N_Ka > 1 && twopart_Ka != 0)
       hist.fill(HIST(dire[2]) + HIST("h_twopart_Mult"), NTPC, twopart_Ka, Cent_FT0M);
 
-    if (N_Ka > 2)
+    if (N_Ka > 2 && threepart_Ka != 0)
       hist.fill(HIST(dire[2]) + HIST("h_threepart_Mult"), NTPC, threepart_Ka, Cent_FT0M);
 
-    if (N_Ka > 3)
+    if (N_Ka > 3 && fourpart_Ka != 0)
       hist.fill(HIST(dire[2]) + HIST("h_fourpart_Mult"), NTPC, fourpart_Ka, Cent_FT0M);
 
     parts(Q1_Pr, Q2_Pr, Q3_Pr, Q4_Pr, N_Pr, &mean_Q1_Pr, &twopart_Pr, &threepart_Pr, &fourpart_Pr);
-    if (N_Pr > 0) {
+    if (N_Pr > 0 && mean_Q1_Pr != 0) {
       hist.fill(HIST(dire[3]) + HIST("h_mean_Q1"), mean_Q1_Pr);
       hist.fill(HIST(dire[3]) + HIST("p_mean_Q1"), NTPC, mean_Q1_Pr);
       hist.fill(HIST(dire[3]) + HIST("h_mean_Q1_Mult"), NTPC, mean_Q1_Pr, N_FT0M);
     }
-    if (N_Pr > 1)
+    if (N_Pr > 1 && twopart_Pr != 0)
       hist.fill(HIST(dire[3]) + HIST("h_twopart_Mult"), NTPC, twopart_Pr, Cent_FT0M);
 
-    if (N_Pr > 2)
+    if (N_Pr > 2 && threepart_Pr != 0)
       hist.fill(HIST(dire[3]) + HIST("h_threepart_Mult"), NTPC, threepart_Pr, Cent_FT0M);
 
-    if (N_Pr > 3)
+    if (N_Pr > 3 && fourpart_Pr != 0)
       hist.fill(HIST(dire[3]) + HIST("h_fourpart_Mult"), NTPC, fourpart_Pr, Cent_FT0M);
   }
   void process_Run2(MyRun2Collisions::iterator const& col, MyAllTracks const& tracks)
