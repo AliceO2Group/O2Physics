@@ -33,8 +33,8 @@ using namespace o2::framework::expressions;
 namespace
 {
 enum CandTypeSel {
-  SigD0= 0,      // Signal D0
-  SigD0bar,      // Signal D0bar 
+  SigD0 = 0,     // Signal D0
+  SigD0bar,      // Signal D0bar
   ReflectedD0,   // Reflected D0
   ReflectedD0bar // Reflected D0bar
 };
