@@ -483,7 +483,7 @@ struct hypertriton3bodyFinder {
   //------------------------------------------------------------------
   // Check the info of good tracks
   template <class TTrackTo, typename TGoodTrackTable>
-  void CheckGoodTracks(TGoodTrackTable const& dGoodtracks, aod::McParticles const& mcparticles)
+  void CheckGoodTracks(TGoodTrackTable const& dGoodtracks, aod::McParticles const& particlesMC)
   {
     for (auto& goodtrackid : dGoodtracks) {
       auto goodtrack = goodtrackid.template goodTrack_as<TTrackTo>();
@@ -870,18 +870,18 @@ struct hypertriton3bodyFinder {
   }
   PROCESS_SWITCH(hypertriton3bodyFinder, processCFFilteredData, "Produce StoredVtx3BodyDatas with data using CFtriggers", false);
 
-  void processMC(aod::Collision const& collision, aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks, aod::V0GoodTracks const& goodtracks, aod::McParticles const& mcparticles, MCLabeledFullTracksExtIU const&, aod::BCsWithTimestamps const&)
+  void processMC(aod::Collision const& collision, aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks, aod::V0GoodTracks const& goodtracks, aod::McParticles const& particlesMC, MCLabeledFullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     registry.fill(HIST("hEventCounter"), 0.5);
 
-    CheckGoodTracks<MCLabeledFullTracksExtIU>(goodtracks, mcparticles);
+    CheckGoodTracks<MCLabeledFullTracksExtIU>(goodtracks, particlesMC);
     DecayFinderMC<MCLabeledFullTracksExtIU>(collision, ptracks, ntracks, goodtracks);
   }
   PROCESS_SWITCH(hypertriton3bodyFinder, processMC, "Produce StoredVtx3BodyDatas with MC", false);
 
-  void processCFFilteredMC(aod::Collisions const& collisions, aod::CFFilters const& cffilters, aod::V0GoodPosTracks const& Ptracks, aod::V0GoodNegTracks const& Ntracks, aod::V0GoodTracks const& Goodtracks, aod::V0s const& V0s, aod::V0Datas const& fullV0s, aod::McParticles const& mcparticles, MCLabeledFullTracksExtIU const&, aod::BCsWithTimestamps const&)
+  void processCFFilteredMC(aod::Collisions const& collisions, aod::CFFilters const& cffilters, aod::V0GoodPosTracks const& Ptracks, aod::V0GoodNegTracks const& Ntracks, aod::V0GoodTracks const& Goodtracks, aod::V0s const& V0s, aod::V0Datas const& fullV0s, aod::McParticles const& particlesMC, MCLabeledFullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
     for (int i{0}; i < collisions.size(); i++) {
       auto collision = collisions.iteratorAt(i);
@@ -891,7 +891,7 @@ struct hypertriton3bodyFinder {
       registry.fill(HIST("hEventCounter"), 0.5);
 
       auto goodtracks = Goodtracks.sliceBy(perCollisionGoodTracks, collision.globalIndex());
-      CheckGoodTracks<MCLabeledFullTracksExtIU>(goodtracks, mcparticles);
+      CheckGoodTracks<MCLabeledFullTracksExtIU>(goodtracks, particlesMC);
       auto v0s = V0s.sliceBy(perCollisionV0s, collision.globalIndex());
       auto fullv0s = fullV0s.sliceBy(perCollisionV0Datas, collision.globalIndex());
       VirtualLambdaCheck<MCLabeledFullTracksExtIU>(collision, v0s, 0);
@@ -1071,8 +1071,7 @@ struct hypertriton3bodyComparewithDecay3body {
   HistogramRegistry registry{
     "registry",
     {
-      {"hTestCounter", "hTestCounter", {HistType::kTH1F, {{8, 0.0f, 8.0f}}}},
-      {"hMotherCounter", "hMotherCounter", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
+      {"hMCInfoCounter", "hMCInfoCounter", {HistType::kTH1F, {{8, 0.0f, 8.0f}}}},
       {"hCheckCounter", "hCheckCounter", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
       {"hHypertritonMCPtTotal", "hHypertritonMCPtTotal", {HistType::kTH1F, {{20, 0.0f, 10.0f}}}},
       {"hHypertritonMCPt", "hHypertritonMCPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
@@ -1114,59 +1113,41 @@ struct hypertriton3bodyComparewithDecay3body {
     std::vector<Indexdaughters> set_pair;
     for (auto d3body : decay3bodytable) {
       registry.fill(HIST("hCheckCounter"), 0.5);
-      registry.fill(HIST("hTestCounter"), 0.5);
+      registry.fill(HIST("hMCInfoCounter"), 0.5);
       auto lTrack0 = d3body.track0_as<MCLabeledFullTracksExtIU>();
       auto lTrack1 = d3body.track1_as<MCLabeledFullTracksExtIU>();
       auto lTrack2 = d3body.track2_as<MCLabeledFullTracksExtIU>();
       if (!lTrack0.has_mcParticle() || !lTrack1.has_mcParticle() || !lTrack2.has_mcParticle()) {
         continue;
       }
-      registry.fill(HIST("hTestCounter"), 1.5);
+      registry.fill(HIST("hMCInfoCounter"), 1.5);
       auto lMCTrack0 = lTrack0.mcParticle_as<aod::McParticles>();
       auto lMCTrack1 = lTrack1.mcParticle_as<aod::McParticles>();
       auto lMCTrack2 = lTrack2.mcParticle_as<aod::McParticles>();
-      /*if (lMCTrack0.isPhysicalPrimary() || lMCTrack1.isPhysicalPrimary() || lMCTrack2.isPhysicalPrimary()) {
+      if (lMCTrack0.isPhysicalPrimary() || lMCTrack1.isPhysicalPrimary() || lMCTrack2.isPhysicalPrimary()) {
         continue;
-      }*/
-      /*if (lMCTrack0.producedByGenerator() || lMCTrack1.producedByGenerator() || lMCTrack2.producedByGenerator()) {
+      }
+      if (lMCTrack0.producedByGenerator() || lMCTrack1.producedByGenerator() || lMCTrack2.producedByGenerator()) {
         continue;
-      }*/
-      registry.fill(HIST("hTestCounter"), 2.5);
+      }
+      registry.fill(HIST("hMCInfoCounter"), 2.5);
 
       if (!lMCTrack0.has_mothers() || !lMCTrack1.has_mothers() || !lMCTrack2.has_mothers()) {
         continue;
       }
-      registry.fill(HIST("hTestCounter"), 3.5);
+      registry.fill(HIST("hMCInfoCounter"), 3.5);
 
       int lPDG = -1;
       float lPt = -1;
       bool is3bodyDecayedH3L = false;
       int lGlobalIndex = -1;
-      int nmother = 0, dummyindex;
-      for (auto& lMother0 : lMCTrack0.mothers_as<aod::McParticles>()) {
-        ++nmother;
-        dummyindex = lMother0.globalIndex();
-      }
-      registry.fill(HIST("hMotherCounter"), nmother);
-      nmother = 0;
-      for (auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
-        ++nmother;
-        dummyindex = lMother1.globalIndex();
-      }
-      registry.fill(HIST("hMotherCounter"), nmother);
-      nmother = 0;
-      for (auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
-        ++nmother;
-        dummyindex = lMother2.globalIndex();
-      }
-      registry.fill(HIST("hMotherCounter"), nmother);
 
       for (auto& lMother0 : lMCTrack0.mothers_as<aod::McParticles>()) {
         for (auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
           for (auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
-            registry.fill(HIST("hTestCounter"), 4.5);
+            registry.fill(HIST("hMCInfoCounter"), 4.5);
             if (lMother0.globalIndex() == lMother1.globalIndex() && lMother0.globalIndex() == lMother2.globalIndex()) { // vtxs with the same mother
-              registry.fill(HIST("hTestCounter"), 7.5);
+              registry.fill(HIST("hMCInfoCounter"), 7.5);
               lGlobalIndex = lMother1.globalIndex();
               lPDG = lMother1.pdgCode();
               lPt = lMother1.pt();
@@ -1192,20 +1173,15 @@ struct hypertriton3bodyComparewithDecay3body {
       }
 
       registry.fill(HIST("hCheckCounter"), 1.5);
-      registry.fill(HIST("hTestCounter"), 5.5);
+      registry.fill(HIST("hMCInfoCounter"), 5.5);
       // for check
       registry.fill(HIST("hHypertritonMCPtTotal"), lPt);
-      /*if ( (lPt >= 3.5 && lPt < 4.0) || (lPt >= 8.5 && lPt < 9.0) )  {
-        std::cout << "---------------------- Num:" << registry.get<TH1>(HIST("hCheckCounter"))->GetBinContent(1) << "-----------------------------" << std::endl;
-        std::cout << "track0Pt=" << lMCTrack0.pt() << " track1Pt=" << lMCTrack1.pt() << " track2Pt=" << lMCTrack2.pt() << std::endl;
-        std::cout << "MotherTrackPt=" << lPt << std::endl;
-      }*/
 
       Indexdaughters temp = {lMCTrack0.globalIndex(), lMCTrack1.globalIndex(), lMCTrack2.globalIndex()};
       auto p = std::find(set_pair.begin(), set_pair.end(), temp);
       if (p == set_pair.end()) {
         set_pair.push_back(temp);
-        registry.fill(HIST("hTestCounter"), 6.5);
+        registry.fill(HIST("hMCInfoCounter"), 6.5);
       }
 
       if (lTrack0.collisionId() != lTrack1.collisionId() || lTrack0.collisionId() != lTrack2.collisionId()) {

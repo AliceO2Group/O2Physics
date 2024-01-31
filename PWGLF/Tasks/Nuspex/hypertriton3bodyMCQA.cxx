@@ -181,7 +181,7 @@ struct hypertriton3bodyTrackMcinfo {
   {
     registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(1, "Readin");
     registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(2, "Has_mcparticle");
-    registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(3, "Rapidity Cut(off)");
+    registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(3, "Rapidity Cut");
     registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(4, "McisHypertriton");
     registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(5, "McisProton");
     registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(6, "McisPion");
@@ -219,7 +219,7 @@ struct hypertriton3bodyTrackMcinfo {
     }
   };
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::McParticles const& mcparticles, MCLabeledFullTracksExtIU const& tracks)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::McParticles const& particlesMC, MCLabeledFullTracksExtIU const& tracks)
   {
 
     registry.fill(HIST("hTotalCollCounter"), 0.5);
@@ -435,13 +435,13 @@ struct hypertriton3bodyTrackMcinfo {
     }
 
     std::vector<Indexdaughters> set_pair;
-    for (auto iproton = 0; iproton < protons.size(); iproton++) {
+    for (size_t iproton = 0; iproton < protons.size(); iproton++) {
       auto track0 = tracks.iteratorAt(protons[iproton]);
       auto mctrack0 = track0.mcParticle_as<aod::McParticles>();
-      for (auto ipion = 0; ipion < pions.size(); ipion++) {
+      for (size_t ipion = 0; ipion < pions.size(); ipion++) {
         auto track1 = tracks.iteratorAt(pions[ipion]);
         auto mctrack1 = track1.mcParticle_as<aod::McParticles>();
-        for (auto ideuteron = 0; ideuteron < deuterons.size(); ideuteron++) {
+        for (size_t ideuteron = 0; ideuteron < deuterons.size(); ideuteron++) {
           auto track2 = tracks.iteratorAt(deuterons[ideuteron]);
           auto mctrack2 = track2.mcParticle_as<aod::McParticles>();
           if (isPairedH3LDaughters<aod::McParticles>(mctrack0, mctrack1, mctrack2)) {
@@ -511,10 +511,10 @@ struct hypertriton3bodyMcParticleCount {
     registry.get<TH1>(HIST("hMcHypertritonCount"))->GetXaxis()->SetBinLabel(9, "PtCut");
   }
 
-  Configurable<float> rapidityMCcut{"rapidityMCcut", 0.9, "rapidity cut MC count"};
+  Configurable<float> rapidityMCcut{"rapidityMCcut", 1, "rapidity cut MC count"};
   Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
 
-  void process(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>& collisions)
+  void process(aod::McCollision const& mcCollision, aod::McParticles const& particlesMC, const soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>& collisions)
   {
     std::vector<int64_t> SelectedEvents(collisions.size());
     int nevts = 0;
@@ -534,7 +534,7 @@ struct hypertriton3bodyMcParticleCount {
       // return;
     }
 
-    for (auto& mcparticle : mcParticles) {
+    for (auto& mcparticle : particlesMC) {
 
       registry.fill(HIST("hMcPhysicalPrimaryParticleCount"), 0.5);
 
@@ -620,7 +620,9 @@ struct hypertriton3bodyMcParticleCount {
         continue;
       }
       registry.fill(HIST("hMcPhysicalPrimaryParticleCount"), 1.5);
-      // if (TMath::Abs(mcparticle.y()) > rapidityMCcut) {continue;}
+      if (TMath::Abs(mcparticle.y()) > rapidityMCcut) {
+        continue;
+      }
       registry.fill(HIST("hMcPhysicalPrimaryParticleCount"), 2.5);
 
       if (mcparticle.pdgCode() == 211 || mcparticle.pdgCode() == -211) {
