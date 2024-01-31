@@ -1054,10 +1054,11 @@ struct lambdakzeroPreselector {
   Configurable<int> dTPCNCrossedRows{"dTPCNCrossedRows", 50, "Minimum TPC crossed rows"};
 
   // context-aware selections
-  Configurable<bool> dPreselectOnlyBaryons{"dPreselectOnlyBaryons", false, "apply TPC dE/dx and quality only to baryon daughters"};
+  Configurable<bool> dPreselectOnlyBaryons{"dPreselectOnlyBaryons", false, "apply TPC dE/dx only to baryon daughters"};
 
   // for debugging and further tests
   Configurable<bool> forceITSOnlyMesons{"forceITSOnlyMesons", false, "force meson-like daughters to be ITS-only to pass Lambda/AntiLambda selections (yes/no)"};
+  Configurable<int> minITSCluITSOnly{"minITSCluITSOnly", 0, "minimum number of ITS clusters to ask for if daughter track does not have TPC"};
 
   // for bit-packed maps
   std::vector<uint16_t> selectionMask;
@@ -1104,25 +1105,31 @@ struct lambdakzeroPreselector {
     // check track explicitly for absence of TPC
     bool posITSonly = !lPosTrack.hasTPC();
     bool negITSonly = !lNegTrack.hasTPC();
+    bool longPosITSonly = posITSonly && lPosTrack.itsNCls() >= minITSCluITSOnly;
+    bool longNegITSonly = negITSonly && lNegTrack.itsNCls() >= minITSCluITSOnly;
 
     // No baryons in decay
     if (((bitcheck(maskElement, bitdEdxGamma) || bitcheck(maskElement, bitdEdxK0Short)) || passdEdx) && (posRowsOK && negRowsOK) && (!forceITSOnlyMesons || (posITSonly && negITSonly)))
       bitset(maskElement, bitTrackQuality);
     // With baryons in decay
-    if ((bitcheck(maskElement, bitdEdxLambda) || passdEdx) &&
-        (posRowsOK && (negRowsOK || dPreselectOnlyBaryons)) &&
+    if ((bitcheck(maskElement, bitdEdxLambda) || passdEdx) &&               // logical AND with dEdx
+        (posRowsOK && (negRowsOK || dPreselectOnlyBaryons)) &&              // rows requirement
+        ((posRowsOK || longPosITSonly) && (negRowsOK || longNegITSonly)) && // if ITS-only, check for min length
         (!forceITSOnlyMesons || negITSonly))
       bitset(maskElement, bitTrackQuality);
-    if ((bitcheck(maskElement, bitdEdxAntiLambda) || passdEdx) &&
-        (negRowsOK && (posRowsOK || dPreselectOnlyBaryons)) &&
+    if ((bitcheck(maskElement, bitdEdxAntiLambda) || passdEdx) &&           // logical AND with dEdx
+        (negRowsOK && (posRowsOK || dPreselectOnlyBaryons)) &&              // rows requirement
+        ((posRowsOK || longPosITSonly) && (negRowsOK || longNegITSonly)) && // if ITS-only, check for min length
         (!forceITSOnlyMesons || posITSonly))
       bitset(maskElement, bitTrackQuality);
-    if ((bitcheck(maskElement, bitdEdxHypertriton) || passdEdx) &&
-        (posRowsOK && (negRowsOK || dPreselectOnlyBaryons)) &&
+    if ((bitcheck(maskElement, bitdEdxHypertriton) || passdEdx) &&          // logical AND with dEdx
+        (posRowsOK && (negRowsOK || dPreselectOnlyBaryons)) &&              // rows requirement
+        ((posRowsOK || longPosITSonly) && (negRowsOK || longNegITSonly)) && // if ITS-only, check for min length
         (!forceITSOnlyMesons || negITSonly))
       bitset(maskElement, bitTrackQuality);
-    if ((bitcheck(maskElement, bitdEdxAntiHypertriton) || passdEdx) &&
-        (negRowsOK && (posRowsOK || dPreselectOnlyBaryons)) &&
+    if ((bitcheck(maskElement, bitdEdxAntiHypertriton) || passdEdx) &&      // logical AND with dEdx
+        (negRowsOK && (posRowsOK || dPreselectOnlyBaryons)) &&              // rows requirement
+        ((posRowsOK || longPosITSonly) && (negRowsOK || longNegITSonly)) && // if ITS-only, check for min length
         (!forceITSOnlyMesons || posITSonly))
       bitset(maskElement, bitTrackQuality);
   }

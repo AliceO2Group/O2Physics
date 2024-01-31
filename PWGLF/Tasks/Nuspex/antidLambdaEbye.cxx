@@ -94,11 +94,14 @@ struct antidLambdaEbye {
   Configurable<float> lambdaPtMin{"lambdaPtMin", 0.5f, "minimum (anti)lambda pT (GeV/c)"};
   Configurable<float> lambdaPtMax{"lambdaPtMax", 3.0f, "maximum (anti)lambda pT (GeV/c)"};
 
+  Configurable<float> antidNcrossedRows{"antidNcrossedRows", 70, "Minimum number of crossed TPC rows"};
   Configurable<float> antidNclusItsCut{"antidNclusITScut", 5, "Minimum number of ITS clusters"};
   Configurable<float> antidNclusTpcCut{"antidNclusTPCcut", 70, "Minimum number of TPC clusters"};
   Configurable<float> antidNsigmaTpcCut{"antidNsigmaTpcCut", 4.f, "TPC PID cut"};
   Configurable<float> antidNsigmaTofCut{"antidNsigmaTofCut", 4.f, "TOF PID cut"};
   Configurable<float> antidDcaCut{"antidDcaCut", 0.1f, "DCA antid to PV"};
+  Configurable<float> tpcInnerParamMax{"tpcInnerParamMax", 0.6f, "(temporary) tpc inner param cut"};
+  Configurable<float> tofMassMax{"tofMassMax", 0.3f, "(temporary) tof mass cut"};
 
   Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1, "DCA V0 Daughters"};
   Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1f, "DCA Pos To PV"};
@@ -142,7 +145,7 @@ struct antidLambdaEbye {
     }
     if (track.itsNCls() < antidNclusItsCut ||
         track.tpcNClsFound() < antidNclusTpcCut ||
-        track.tpcNClsCrossedRows() < 70 ||
+        track.tpcNClsCrossedRows() < antidNcrossedRows ||
         track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
         track.tpcChi2NCl() > 4.f ||
         track.itsChi2NCl() > 36.f) {
@@ -189,17 +192,18 @@ struct antidLambdaEbye {
     histos.add<TH1>("dcaNegPv", ";dcaNegPv;Entries", {HistType::kTH1F}, {dcaDaughPvAxis});
 
     // antid QA
-    histos.add<TH2>("tpcNsigma", ";#it{p}_{TPC};tpcNsigma", {HistType::kTH2F, {momAxis, tpcNsigmaAxis}});
-    histos.add<TH2>("tpcNsigmaGlo", ";#it{p}_{glo};tpcNsigma", {HistType::kTH2F, {momAxis, tpcNsigmaAxis}});
+    histos.add<TH2>("tpcNsigma", ";#it{p}_{TPC} (GeV/#it{c});tpcNsigma", {HistType::kTH2F}, {momAxis, tpcNsigmaAxis});
+    histos.add<TH2>("tpcNsigmaGlo", ";#it{p}_{T} (GeV/#it{c});tpcNsigma", {HistType::kTH2F}, {momAxis, tpcNsigmaAxis});
     // histos.add<TH2>("tofNsigma", ";#it{p}_{glo};tofNsigma;Entries", {HistType::kTH2F}, {momAxis, tofNsigmaAxis});
-    histos.add<TH2>("tofMass", ";#it{p}_{glo};Mass (GeV/#it{c}^{2});Entries", {HistType::kTH2F}, {momAxis, tofMassAxis});
+    histos.add<TH2>("tofMass", ";#it{p}_{glo} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", {HistType::kTH2F}, {momAxis, tofMassAxis});
+    histos.add<TH2>("tofMassFull", ";#it{p}_{glo} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", {HistType::kTH2F}, {momAxis, tofMassAxis});
     auto hmomCorr = histos.add<TH3>("momCorr", ";#it{p}_{glo} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c});", {HistType::kTH3F}, {momAxisFine, momResAxis, trackingPidAxis});
     histos.add<TH2>("tpcSignal", ";#it{p}_{TPC} (GeV/#it{c});TPC signal (a.u.)", {HistType::kTH2F}, {momAxisFine, tpcAxis});
     histos.add<TH2>("tpcSignalBkg", ";#it{p}_{TPC} (GeV/#it{c});TPC signal (a.u.)", {HistType::kTH2F}, {momAxisFine, tpcAxis});
     auto htpcSignal_glo = histos.add<TH3>("tpcSignal_glo", ";#it{p}_{glo} (GeV/#it{c});TPC signal (a.u.);", {HistType::kTH3F}, {momAxisFine, tpcAxis, trackingPidAxis});
     auto htpcSignalBkg_glo = histos.add<TH3>("tpcSignalBkg_glo", ";#it{p}_{glo} (GeV/#it{c});TPC signal (a.u.);", {HistType::kTH3F}, {momAxisFine, tpcAxis, trackingPidAxis});
     histos.add<TH2>("tofSignal", ";#it{p}_{TPC} (GeV/#it{c});TOF signal (a.u.)", {HistType::kTH2F}, {momAxisFine, tofAxis});
-    histos.add<TH2>("tofSignal_glo", ";#it{p} (GeV/#it{c});TOF signal (a.u.)", {HistType::kTH2F}, {momAxisFine, tofAxis});
+    histos.add<TH2>("tofSignal_glo", ";#it{p}_{T} (GeV/#it{c});TOF signal (a.u.)", {HistType::kTH2F}, {momAxisFine, tofAxis});
 
     for (int i{1}; i < hmomCorr->GetNbinsZ() + 1; ++i) {
       hmomCorr->GetZaxis()->SetBinLabel(i, pidHypotheses[i - 1].data());
@@ -274,7 +278,7 @@ struct antidLambdaEbye {
       }
 
       histos.fill(HIST("tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
-      histos.fill(HIST("tpcSignal_glo"), track.p(), track.tpcSignal(), track.pidForTracking());
+      histos.fill(HIST("tpcSignal_glo"), trackParCov.getP(), track.tpcSignal(), track.pidForTracking());
 
       if (trackParCov.getPt() < antidPtMin || trackParCov.getPt() > antidPtMax) {
         continue;
@@ -284,30 +288,45 @@ struct antidLambdaEbye {
       double expSigma{expBethe * cfgBetheBlochParams->get("d", "resolution")};
       auto nSigmaTPC = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
 
-      if (std::abs(nSigmaTPC) > antidNsigmaTpcCut) {
-        continue;
-      }
       float beta{track.hasTOF() ? responseBeta.GetBeta(track) : -999.f};
       beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta));
       float mass{track.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f)};
+      bool hasTof = track.hasTOF() && track.tofChi2() < 3;
 
-      if (trackParCov.getPt() > antidPtTof) {
-        histos.fill(HIST("tofMass"), track.p(), mass);
-        histos.fill(HIST("tofSignal_glo"), track.p(), beta);
+      if (std::abs(nSigmaTPC) > antidNsigmaTpcCut) {
+        continue;
+      }
+      histos.fill(HIST("tpcNsigma"), track.tpcInnerParam(), nSigmaTPC);
+      histos.fill(HIST("momCorr"), trackParCov.getP(), track.tpcInnerParam() - trackParCov.getP(), track.pidForTracking());
+      // check contamination
+      if (track.tpcInnerParam() < tpcInnerParamMax) {
+        histos.fill(HIST("tpcSignalBkg"), track.tpcInnerParam(), track.tpcSignal());
+        histos.fill(HIST("tpcSignalBkg_glo"), trackParCov.getP(), track.tpcSignal(), track.pidForTracking());
+      }
+
+      if (trackParCov.getPt() > antidPtTof && hasTof) {
+        histos.fill(HIST("tofSignal_glo"), trackParCov.getP(), beta);
         histos.fill(HIST("tofSignal"), track.tpcInnerParam(), beta);
       }
 
-      histos.fill(HIST("tpcNsigma"), track.tpcInnerParam(), nSigmaTPC);
-      histos.fill(HIST("tpcNsigmaGlo"), track.p(), nSigmaTPC);
-
-      histos.fill(HIST("momCorr"), track.p(), track.tpcInnerParam() - track.p(), track.pidForTracking());
-      // check contamination
-      if (std::abs((track.tpcInnerParam() - track.p() + 1.8 / 1.7 * (track.p() - 0.3))) < 0.2) {
-        histos.fill(HIST("tpcSignalBkg"), track.tpcInnerParam(), track.tpcSignal());
-        histos.fill(HIST("tpcSignalBkg_glo"), track.p(), track.tpcSignal(), track.pidForTracking());
+      // temporary cut to reject fake matches
+      if (track.tpcInnerParam() < tpcInnerParamMax) {
+        continue;
       }
-      q1antid += 1.; // TODO: correct for efficiency
-      q2antid += 1.;
+      if (trackParCov.getPt() > antidPtTof && !track.hasTOF()) {
+        continue;
+      }
+      histos.fill(HIST("tofMassFull"), trackParCov.getPt(), mass);
+      if (trackParCov.getPt() > antidPtTof && track.tofChi2() > 3) {
+        continue;
+      }
+      histos.fill(HIST("tofMass"), trackParCov.getPt(), mass);
+
+      if (trackParCov.getPt() <= antidPtTof || (trackParCov.getPt() > antidPtTof && hasTof && std::abs(mass - o2::constants::physics::MassDeuteron) < tofMassMax)) {
+        histos.fill(HIST("tpcNsigmaGlo"), trackParCov.getPt(), nSigmaTPC);
+        q1antid += 1.; // TODO: correct for efficiency
+        q2antid += 1.;
+      }
     }
 
     double q1L{0.}, q2L{0.}, q1antiL{0.}, q2antiL{0.};

@@ -228,7 +228,51 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float px, float py, float pz) -> float { ret
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array{px, py, pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) -> float { return RecoDecay::phi(px, py); });
-// DECLARE_SOA_COLUMN(IsAmbTrack, isAmbTrack, bool); //!
+DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITS, meanClusterSizeITS, [](uint32_t itsClusterSizes) -> float {
+  int total_cluster_size = 0, nl = 0;
+  for (unsigned int layer = 0; layer < 7; layer++) {
+    int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
+    if (cluster_size_per_layer > 0) {
+      nl++;
+    }
+    total_cluster_size += cluster_size_per_layer;
+  }
+  if (nl > 0) {
+    return static_cast<float>(total_cluster_size) / static_cast<float>(nl);
+  } else {
+    return 0;
+  }
+});
+DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSib, meanClusterSizeITSib, [](uint32_t itsClusterSizes) -> float {
+  int total_cluster_size = 0, nl = 0;
+  for (unsigned int layer = 0; layer < 3; layer++) {
+    int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
+    if (cluster_size_per_layer > 0) {
+      nl++;
+    }
+    total_cluster_size += cluster_size_per_layer;
+  }
+  if (nl > 0) {
+    return static_cast<float>(total_cluster_size) / static_cast<float>(nl);
+  } else {
+    return 0;
+  }
+});
+DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32_t itsClusterSizes) -> float {
+  int total_cluster_size = 0, nl = 0;
+  for (unsigned int layer = 4; layer < 7; layer++) {
+    int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
+    if (cluster_size_per_layer > 0) {
+      nl++;
+    }
+    total_cluster_size += cluster_size_per_layer;
+  }
+  if (nl > 0) {
+    return static_cast<float>(total_cluster_size) / static_cast<float>(nl);
+  } else {
+    return 0;
+  }
+});
 } // namespace v0leg
 DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
                   o2::soa::Index<>, v0leg::CollisionId, v0leg::TrackId, v0leg::Sign,
@@ -237,7 +281,7 @@ DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
                   track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows,
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
-                  track::ITSClusterMap, track::ITSChi2NCl, track::DetectorMap,
+                  track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap,
                   track::X, track::Y, track::Z, track::Tgl, track::Signed1Pt,
 
                   // dynamic column
@@ -249,9 +293,12 @@ DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
-                  track::ITSNCls<track::ITSClusterMap>,
+                  track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
                   track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>,
-                  track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>);
+                  track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
+                  v0leg::MeanClusterSizeITS<track::ITSClusterSizes>,
+                  v0leg::MeanClusterSizeITSib<track::ITSClusterSizes>,
+                  v0leg::MeanClusterSizeITSob<track::ITSClusterSizes>);
 
 // iterators
 using V0Leg = V0Legs::iterator;
@@ -269,14 +316,13 @@ DECLARE_SOA_COLUMN(Px, px, float);                                      //! px f
 DECLARE_SOA_COLUMN(Py, py, float);                                      //! py for photon kf
 DECLARE_SOA_COLUMN(Pz, pz, float);                                      //! pz for photon kf
 DECLARE_SOA_COLUMN(MGamma, mGamma, float);                              //! invariant mass of dielectron at SV
-// DECLARE_SOA_COLUMN(MGammaPV, mGammaPV, float);                          //! invariant mass of dielectron at PV
-DECLARE_SOA_COLUMN(DCAxyToPV, dcaXYtopv, float);       //! DCAxy of V0 to PV
-DECLARE_SOA_COLUMN(DCAzToPV, dcaZtopv, float);         //! DCAz of V0 to PV
-DECLARE_SOA_COLUMN(CosPA, cospa, float);               //!
-DECLARE_SOA_COLUMN(PCA, pca, float);                   //!
-DECLARE_SOA_COLUMN(Alpha, alpha, float);               //!
-DECLARE_SOA_COLUMN(QtArm, qtarm, float);               //!
-DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float); // Chi2 / NDF of the reconstructed V0
+DECLARE_SOA_COLUMN(DCAxyToPV, dcaXYtopv, float);                        //! DCAxy of V0 to PV
+DECLARE_SOA_COLUMN(DCAzToPV, dcaZtopv, float);                          //! DCAz of V0 to PV
+DECLARE_SOA_COLUMN(CosPA, cospa, float);                                //!
+DECLARE_SOA_COLUMN(PCA, pca, float);                                    //!
+DECLARE_SOA_COLUMN(Alpha, alpha, float);                                //!
+DECLARE_SOA_COLUMN(QtArm, qtarm, float);                                //!
+DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float);                  // Chi2 / NDF of the reconstructed V0
 
 DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](float px, float py, float pz, float m = 0) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz, m); }); //! energy of v0 photn, mass to be given as argument when getter is called!
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
@@ -319,6 +365,51 @@ DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITS, meanClusterSizeITS, [](uint32_t itsClusterSizes) -> float {
+  int total_cluster_size = 0, nl = 0;
+  for (unsigned int layer = 0; layer < 7; layer++) {
+    int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
+    if (cluster_size_per_layer > 0) {
+      nl++;
+    }
+    total_cluster_size += cluster_size_per_layer;
+  }
+  if (nl > 0) {
+    return static_cast<float>(total_cluster_size) / static_cast<float>(nl);
+  } else {
+    return 0;
+  }
+});
+DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSib, meanClusterSizeITSib, [](uint32_t itsClusterSizes) -> float {
+  int total_cluster_size = 0, nl = 0;
+  for (unsigned int layer = 0; layer < 3; layer++) {
+    int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
+    if (cluster_size_per_layer > 0) {
+      nl++;
+    }
+    total_cluster_size += cluster_size_per_layer;
+  }
+  if (nl > 0) {
+    return static_cast<float>(total_cluster_size) / static_cast<float>(nl);
+  } else {
+    return 0;
+  }
+});
+DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32_t itsClusterSizes) -> float {
+  int total_cluster_size = 0, nl = 0;
+  for (unsigned int layer = 4; layer < 7; layer++) {
+    int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
+    if (cluster_size_per_layer > 0) {
+      nl++;
+    }
+    total_cluster_size += cluster_size_per_layer;
+  }
+  if (nl > 0) {
+    return static_cast<float>(total_cluster_size) / static_cast<float>(nl);
+  } else {
+    return 0;
+  }
+});
 } // namespace emprimaryelectron
 DECLARE_SOA_TABLE(EMPrimaryElectrons, "AOD", "EMPRIMARYEL", //!
                   o2::soa::Index<>, emprimaryelectron::CollisionId,
@@ -328,19 +419,22 @@ DECLARE_SOA_TABLE(EMPrimaryElectrons, "AOD", "EMPRIMARYEL", //!
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
                   pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
-                  track::ITSClusterMap, track::ITSChi2NCl, track::DetectorMap, track::Signed1Pt, track::CYY, track::CZZ, track::CZY,
+                  track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap, track::Signed1Pt, track::CYY, track::CZZ, track::CZY,
 
                   // dynamic column
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
-                  track::ITSNCls<track::ITSClusterMap>,
+                  track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
                   track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>,
                   track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
                   emprimaryelectron::Px<track::Pt, track::Phi>,
                   emprimaryelectron::Py<track::Pt, track::Phi>,
-                  emprimaryelectron::Pz<track::Pt, track::Eta>);
+                  emprimaryelectron::Pz<track::Pt, track::Eta>,
+                  emprimaryelectron::MeanClusterSizeITS<track::ITSClusterSizes>,
+                  emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
+                  emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
 // iterators
 using EMPrimaryElectron = EMPrimaryElectrons::iterator;
 
@@ -362,16 +456,16 @@ DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
+DECLARE_SOA_COLUMN(Rapidity, rapidity, float);
 DECLARE_SOA_COLUMN(PhiV, phiv, float);
 DECLARE_SOA_COLUMN(OpeningAngle, opangle, float);
-DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
-DECLARE_SOA_COLUMN(DCAZ, dcaZ, float);
 DECLARE_SOA_COLUMN(Sign, sign, int);                                                                                                     //!
 DECLARE_SOA_DYNAMIC_COLUMN(Energy, e, [](float pt, float eta, float m) { return RecoDecay::sqrtSumOfSquares(pt * std::cosh(eta), m); }); // e = sqrt(p*p + m*m)
 } // namespace dalitzee
 DECLARE_SOA_TABLE(DalitzEEs, "AOD", "DALITZEE", //!
                   o2::soa::Index<>, dalitzee::CollisionId, dalitzee::PosTrackId, dalitzee::NegTrackId,
-                  dalitzee::Pt, dalitzee::Eta, dalitzee::Phi, dalitzee::Mass, dalitzee::PhiV, dalitzee::OpeningAngle, dalitzee::DCAXY, dalitzee::DCAZ, dalitzee::Sign,
+                  dalitzee::Pt, dalitzee::Eta, dalitzee::Phi, dalitzee::Mass, dalitzee::Rapidity,
+                  dalitzee::PhiV, dalitzee::OpeningAngle, dalitzee::Sign,
                   dalitzee::Energy<o2::aod::dalitzee::Pt, o2::aod::dalitzee::Eta, o2::aod::dalitzee::Mass>);
 // iterators
 using DalitzEE = DalitzEEs::iterator;
@@ -390,6 +484,51 @@ DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITS, meanClusterSizeITS, [](uint32_t itsClusterSizes) -> float {
+  int total_cluster_size = 0, nl = 0;
+  for (unsigned int layer = 0; layer < 7; layer++) {
+    int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
+    if (cluster_size_per_layer > 0) {
+      nl++;
+    }
+    total_cluster_size += cluster_size_per_layer;
+  }
+  if (nl > 0) {
+    return static_cast<float>(total_cluster_size) / static_cast<float>(nl);
+  } else {
+    return 0;
+  }
+});
+DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSib, meanClusterSizeITSib, [](uint32_t itsClusterSizes) -> float {
+  int total_cluster_size = 0, nl = 0;
+  for (unsigned int layer = 0; layer < 3; layer++) {
+    int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
+    if (cluster_size_per_layer > 0) {
+      nl++;
+    }
+    total_cluster_size += cluster_size_per_layer;
+  }
+  if (nl > 0) {
+    return static_cast<float>(total_cluster_size) / static_cast<float>(nl);
+  } else {
+    return 0;
+  }
+});
+DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32_t itsClusterSizes) -> float {
+  int total_cluster_size = 0, nl = 0;
+  for (unsigned int layer = 4; layer < 7; layer++) {
+    int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
+    if (cluster_size_per_layer > 0) {
+      nl++;
+    }
+    total_cluster_size += cluster_size_per_layer;
+  }
+  if (nl > 0) {
+    return static_cast<float>(total_cluster_size) / static_cast<float>(nl);
+  } else {
+    return 0;
+  }
+});
 } // namespace emprimarymuon
 DECLARE_SOA_TABLE(EMPrimaryMuons, "AOD", "EMPRIMARYMU", //!
                   o2::soa::Index<>, emprimarymuon::CollisionId,
@@ -399,19 +538,22 @@ DECLARE_SOA_TABLE(EMPrimaryMuons, "AOD", "EMPRIMARYMU", //!
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
                   pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
-                  track::ITSClusterMap, track::ITSChi2NCl, track::DetectorMap, track::Signed1Pt, track::CYY, track::CZZ, track::CZY,
+                  track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap, track::Signed1Pt, track::CYY, track::CZZ, track::CZY,
 
                   // dynamic column
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
-                  track::ITSNCls<track::ITSClusterMap>,
+                  track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
                   track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>,
                   track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
                   emprimarymuon::Px<track::Pt, track::Phi>,
                   emprimarymuon::Py<track::Pt, track::Phi>,
-                  emprimarymuon::Pz<track::Pt, track::Eta>);
+                  emprimarymuon::Pz<track::Pt, track::Eta>,
+                  emprimarymuon::MeanClusterSizeITS<track::ITSClusterSizes>,
+                  emprimarymuon::MeanClusterSizeITSib<track::ITSClusterSizes>,
+                  emprimarymuon::MeanClusterSizeITSob<track::ITSClusterSizes>);
 // iterators
 using EMPrimaryMuon = EMPrimaryMuons::iterator;
 
@@ -433,16 +575,16 @@ DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
+DECLARE_SOA_COLUMN(Rapidity, rapidity, float);
 DECLARE_SOA_COLUMN(PhiV, phiv, float);
 DECLARE_SOA_COLUMN(OpeningAngle, opangle, float);
-DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
-DECLARE_SOA_COLUMN(DCAZ, dcaZ, float);
 DECLARE_SOA_COLUMN(Sign, sign, int);                                                                                                     //!
 DECLARE_SOA_DYNAMIC_COLUMN(Energy, e, [](float pt, float eta, float m) { return RecoDecay::sqrtSumOfSquares(pt * std::cosh(eta), m); }); // e = sqrt(p*p + m*m)
 } // namespace dalitzmumu
 DECLARE_SOA_TABLE(DalitzMuMus, "AOD", "DALITZMUMU", //!
                   o2::soa::Index<>, dalitzmumu::CollisionId, dalitzmumu::PosTrackId, dalitzmumu::NegTrackId,
-                  dalitzmumu::Pt, dalitzmumu::Eta, dalitzmumu::Phi, dalitzmumu::Mass, dalitzmumu::PhiV, dalitzmumu::OpeningAngle, dalitzmumu::DCAXY, dalitzmumu::DCAZ, dalitzmumu::Sign,
+                  dalitzmumu::Pt, dalitzmumu::Eta, dalitzmumu::Phi, dalitzmumu::Mass, dalitzmumu::Rapidity,
+                  dalitzmumu::PhiV, dalitzmumu::OpeningAngle, dalitzmumu::Sign,
                   dalitzmumu::Energy<o2::aod::dalitzmumu::Pt, o2::aod::dalitzmumu::Eta, o2::aod::dalitzmumu::Mass>);
 // iterators
 using DalitzMuMu = DalitzMuMus::iterator;
