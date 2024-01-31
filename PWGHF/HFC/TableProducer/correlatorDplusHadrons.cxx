@@ -173,7 +173,7 @@ struct HfCorrelatorDplusHadrons {
   HfHelper hfHelper;
   SliceCache cache;
   BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
-                                       
+
   // Event Mixing for the Data Mode
   using MySelCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>>;
   using MyTracks = soa::Filtered<aod::TracksWDca>;
