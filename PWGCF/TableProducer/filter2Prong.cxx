@@ -31,7 +31,9 @@ using namespace o2::math_utils::detail;
 
 struct Filter2Prong {
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 0, "Verbosity level (0 = major, 1 = per collision)")
+  O2_DEFINE_CONFIGURABLE(cfgYMax, float, -1.0f, "Maximum candidate rapidity")
 
+  HfHelper hfHelper;
   Produces<aod::CF2ProngTracks> output2ProngTracks;
 
   using HFCandidates = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
@@ -58,8 +60,16 @@ struct Filter2Prong {
       // look-up the collision id
       if ((c.hfflag() & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) == 0)
         continue;
+      if (cfgYMax >= 0.0f && std::abs(hfHelper.yD0(c)) > cfgYMax)
+        continue;
+      float mD0 = hfHelper.invMassD0ToPiK(c);
+      float mD0bar = hfHelper.invMassD0barToKPi(c);
+      if (c.isSelD0() == 0)
+        mD0 = -mD0; // use negative value to indicate no selection
+      if (c.isSelD0bar() == 0)
+        mD0bar = -mD0bar;
       output2ProngTracks(cfcollisions.begin().globalIndex(),
-                         prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), aod::cf2prongtrack::D0ToPiK);
+                         prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), mD0, mD0bar, aod::cf2prongtrack::D0ToPiK);
     }
   }
   PROCESS_SWITCH(Filter2Prong, processData, "Process data D0 candidates", true);
