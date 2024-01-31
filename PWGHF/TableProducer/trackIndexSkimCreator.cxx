@@ -524,7 +524,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   /// \param hfTrack is a track
   /// \return true if the track is compatible with a proton hypothesis
   template <int pidStrategy, typename T>
-  int8_t isSelectedProton(const T& hfTrack)
+  uint8_t isSelectedProton(const T& hfTrack)
   {
 
     std::array<int, 3> statusPid = {TrackSelectorPID::Accepted, TrackSelectorPID::Accepted, TrackSelectorPID::Accepted};
@@ -1287,6 +1287,8 @@ struct HfTrackIndexSkimCreator {
   // Configurable<int> nCollsMax{"nCollsMax", -1, "Max collisions per file"}; //can be added to run over limited collisions per file - for tesing purposes
   // preselection
   Configurable<double> ptTolerance{"ptTolerance", 0.1, "pT tolerance in GeV/c for applying preselections before vertex reconstruction"};
+  // preselection of 3-prongs using the decay length computed only with the first two tracks
+  Configurable<double> minTwoTrackDecayLengthFor3Prongs{"twoTrackDecayLengthFor3Prongs", 0., "Minimum decay length computed with 2 tracks for 3-prongs to speedup combinatorial"};
   // vertexing
   // Configurable<double> bz{"bz", 5., "magnetic field kG"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
@@ -2195,6 +2197,7 @@ struct HfTrackIndexSkimCreator {
 
           // 2-prong vertex reconstruction
           float pt2Prong{-1.};
+          bool is2ProngCandidateGoodFor3Prong{sel3ProngStatusPos1 && sel3ProngStatusNeg1};
           if (sel2ProngStatusPos && sel2ProngStatusNeg) {
 
             // 2-prong preselections
@@ -2287,6 +2290,10 @@ struct HfTrackIndexSkimCreator {
                 pvCoord2Prong[2] = pvRefitCoord2Prong[2];
               }
               is2ProngSelected(pVecCandProng2, secondaryVertex2, pvCoord2Prong, cutStatus2Prong, isSelected2ProngCand);
+              auto decLen = RecoDecay::distance(pvCoord2Prong, secondaryVertex2);
+              if (decLen < minTwoTrackDecayLengthFor3Prongs) {
+                is2ProngCandidateGoodFor3Prong = false;
+              }
 
               if (isSelected2ProngCand > 0) {
                 // fill table row
@@ -2353,7 +2360,7 @@ struct HfTrackIndexSkimCreator {
             isSelected2ProngCand = 0; // reset to 0 not to use the D0 to build a D* meson
           }
 
-          if (do3Prong == 1 && sel3ProngStatusPos1 && sel3ProngStatusNeg1) { // if 3 prongs are enabled and the first 2 tracks are selected for the 3-prong channels
+          if (do3Prong == 1 && is2ProngCandidateGoodFor3Prong) { // if 3 prongs are enabled and the first 2 tracks are selected for the 3-prong channels
             // second loop over positive tracks
             for (auto trackIndexPos2 = trackIndexPos1 + 1; trackIndexPos2 != groupedTrackIndicesPos1.end(); ++trackIndexPos2) {
 
@@ -2992,7 +2999,7 @@ struct HfTrackIndexSkimCreatorCascades {
   double mass2K0sP{0.}; // WHY HERE?
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandV0bachelor))) != 0u;
+  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandV0bachelor))) != 0u && (applyProtonPid == false || (aod::hf_sel_track::isProton & static_cast<uint8_t>(BIT(ChannelsProtonPid::LcToPK0S))) != 0u);
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
@@ -3081,11 +3088,6 @@ struct HfTrackIndexSkimCreatorCascades {
           }
         }
         if (bach.tpcNClsCrossedRows() < nCrossedRowsMinBach) {
-          continue;
-        }
-
-        // PID
-        if (applyProtonPid && !TESTBIT(bachIdx.isProton(), ChannelsProtonPid::LcToPK0S)) {
           continue;
         }
 
