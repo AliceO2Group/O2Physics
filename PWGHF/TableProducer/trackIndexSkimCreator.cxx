@@ -1277,7 +1277,7 @@ struct HfTrackIndexSkimCreator {
   Produces<aod::HfPvRefitDstar> rowDstarPVrefit;
 
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
-  Configurable<int> do3Prong{"do3Prong", 0, "do 3 prong"};
+  Configurable<bool> do3Prong{"do3Prong", 0, "do 3 prong"};
   Configurable<bool> doDstar{"doDstar", false, "do D* candidates"};
   Configurable<bool> debug{"debug", false, "debug mode"};
   Configurable<bool> debugPvRefit{"debugPvRefit", false, "debug lines for primary vertex refit"};
@@ -1288,8 +1288,8 @@ struct HfTrackIndexSkimCreator {
   // preselection
   Configurable<double> ptTolerance{"ptTolerance", 0.1, "pT tolerance in GeV/c for applying preselections before vertex reconstruction"};
   // preselection of 3-prongs using the decay length computed only with the first two tracks
-  Configurable<double> minTwoTrackDecayLengthFor3Prongs{"twoTrackDecayLengthFor3Prongs", 0., "Minimum decay length computed with 2 tracks for 3-prongs to speedup combinatorial"};
-  Configurable<double> maxTwoTrackChi2PcaFor3Prongs{"maxTwoTrackChi2PcaFor3Prongs", 10000., "Maximum chi2 pca computed with 2 tracks for 3-prongs to speedup combinatorial"};
+  Configurable<double> minTwoTrackDecayLengthFor3Prongs{"minTwoTrackDecayLengthFor3Prongs", 0., "Minimum decay length computed with 2 tracks for 3-prongs to speedup combinatorial"};
+  Configurable<double> maxTwoTrackChi2PcaFor3Prongs{"maxTwoTrackChi2PcaFor3Prongs", 1.e10, "Maximum chi2 pca computed with 2 tracks for 3-prongs to speedup combinatorial"};
   // vertexing
   // Configurable<double> bz{"bz", 5., "magnetic field kG"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
@@ -2381,7 +2381,7 @@ struct HfTrackIndexSkimCreator {
           }
 
           // if the cut on the decay length of 3-prongs computed with the first two tracks is enabled and the vertex was not computed for the D0, we compute it now
-          if (do3Prong == 1 && minTwoTrackDecayLengthFor3Prongs > 0.f && is2ProngCandidateGoodFor3Prong && nVtxFrom2ProngFitter == 0) {
+          if (do3Prong == 1 && is2ProngCandidateGoodFor3Prong && (minTwoTrackDecayLengthFor3Prongs > 0.f || maxTwoTrackChi2PcaFor3Prongs < 1.e9f) && nVtxFrom2ProngFitter == 0) {
             try {
               nVtxFrom2ProngFitter = df2.process(trackParVarPos1, trackParVarNeg1);
             } catch (...) {
