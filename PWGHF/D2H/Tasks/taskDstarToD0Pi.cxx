@@ -45,9 +45,9 @@ struct HfTaskDstarToD0Pi {
   Partition<CandDstarWSelFlag> rowsSelectedCandDstar = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Partition<CandDstarWSelFlagMcRec> rowsSelectedCandDstarMcRec = aod::hf_sel_candidate_dstar::isRecoD0Flag == selectionFlagHfD0ToPiK;
 
-  ConfigurableAxis binningImpactParam{"binningImpactParam",{1000,0.1,-0.1}," Bins of Impact Parameter"};
-  ConfigurableAxis binningDecayLength{"binningDecayLength",{1000,0.0,0.7},"Bins of Decay Length"};
-  ConfigurableAxis binningNormDecayLength{"binningNormDecayLength",{1000,0.0,40.0},"Bins of Normalised Decay Length"};
+  ConfigurableAxis binningImpactParam{"binningImpactParam", {1000, 0.1, -0.1}, " Bins of Impact Parameter"};
+  ConfigurableAxis binningDecayLength{"binningDecayLength", {1000, 0.0, 0.7}, "Bins of Decay Length"};
+  ConfigurableAxis binningNormDecayLength{"binningNormDecayLength", {1000, 0.0, 40.0}, "Bins of Normalised Decay Length"};
 
   HistogramRegistry registry{
     "registry",
@@ -63,9 +63,9 @@ struct HfTaskDstarToD0Pi {
   {
     auto vecPtBins = (std::vector<double>)ptBins;
 
-    AxisSpec axisImpactParam = {binningImpactParam,"impact parameter (cm)"};
-    AxisSpec axisDecayLength = {binningDecayLength," decay length (cm)"};
-    AxisSpec axisNormDecayLength = {binningNormDecayLength,"normalised decay length (cm)"};
+    AxisSpec axisImpactParam = {binningImpactParam, "impact parameter (cm)"};
+    AxisSpec axisDecayLength = {binningDecayLength, " decay length (cm)"};
+    AxisSpec axisNormDecayLength = {binningNormDecayLength, "normalised decay length (cm)"};
 
     registry.add("Yield/hDeltaInvMassDstar2D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0.13, 0.16}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
     registry.add("Yield/hDeltaInvMassDstar1D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2}); entries", {HistType::kTH1F, {{100, 0.13, 0.16}}}, true);
