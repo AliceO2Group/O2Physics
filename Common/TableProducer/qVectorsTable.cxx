@@ -159,7 +159,8 @@ struct qVectorsTable {
           cfgCorr.push_back(cfgFT0CCorr);
         }
       }
-      if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0A",cfgCcdbParam.nolaterthan.value))->empty() {)
+
+      if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0A",cfgCcdbParam.nolaterthan.value))->empty()) {
         cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0A",cfgCcdbParam.nolaterthan.value)));
       } else {
         if (cfgFT0ACorr->size() < 48) {
@@ -168,6 +169,7 @@ struct qVectorsTable {
           cfgCorr.push_back(cfgFT0ACorr);
         }
       }
+
       if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0M",cfgCcdbParam.nolaterthan.value))->empty()) {
         cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0M",cfgCcdbParam.nolaterthan.value)));
       } else {
@@ -177,6 +179,7 @@ struct qVectorsTable {
           cfgCorr.push_back(cfgFT0MCorr);
         }
       }
+
       if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0C",cfgCcdbParam.nolaterthan.value))->empty()) {
         cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0C",cfgCcdbParam.nolaterthan.value)));
       } else {
@@ -186,6 +189,7 @@ struct qVectorsTable {
           cfgCorr.push_back(cfgFV0ACorr);
         }
       } // no FV0A
+
       if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/BPos",cfgCcdbParam.nolaterthan.value))->empty()) {
         cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/BPos",cfgCcdbParam.nolaterthan.value)));
       } else {
@@ -195,6 +199,7 @@ struct qVectorsTable {
           cfgCorr.push_back(cfgBPosCorr);
         }
       }
+
       if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/BNeg",cfgCcdbParam.nolaterthan.value))->empty()) {
         cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/BNeg",cfgCcdbParam.nolaterthan.value)));
       } else {
