@@ -113,7 +113,7 @@ DECLARE_SOA_COLUMN(PCMHighPtPhoton, hasPCMHighPtPhoton, bool); //! PCM high pT p
 // DECLARE_SOA_COLUMN(PCMMatCalib, hasPCMMatCalib, bool);         //! PCM material budget calibration
 // DECLARE_SOA_COLUMN(PCMEtaDalitz, hasPCMEtaDalitz, bool);       //! PCM eta -> ee gamma
 // DECLARE_SOA_COLUMN(PCMEtaGG, hasPCMEtaGG, bool);               //! PCM eta -> ee gamma
-// DECLARE_SOA_COLUMN(PCMandEE, hasPCMandEE, bool);               //! PCM and ee
+DECLARE_SOA_COLUMN(PCMandEE, hasPCMandEE, bool); //! PCM and ee
 } // namespace filtering
 
 namespace decision
@@ -196,7 +196,7 @@ using MultFilter = MultFilters::iterator;
 
 // photons
 DECLARE_SOA_TABLE(PhotonFilters, "AOD", "PhotonFilters", //!
-                  filtering::PHOSPhoton, filtering::PHOSnbar, filtering::PCMHighPtPhoton);
+                  filtering::PHOSPhoton, filtering::PHOSnbar, filtering::PCMHighPtPhoton, filtering::PCMandEE);
 
 using PhotonFilter = PhotonFilters::iterator;
 
