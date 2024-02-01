@@ -233,11 +233,11 @@ struct TauTau13topo {
     registry.add("fit/bbFDDCbit", "FDDC bits;bit;entries", {HistType::kTH1F, {{32, 0., 32.}}});
     registry.add("fit/bbFT0Aamplitude", "FT0A amplitude;Amplitude;entries", {HistType::kTH1F, {{100, -5., 95.}}});
     registry.add("fit/bbFT0Camplitude", "FT0C amplitude;Amplitude;entries", {HistType::kTH1F, {{100, -5., 95.}}});
-    registry.add("fit/bbFT0ACamplitude", "FT0A vs FT0C amplitude;Amplitude FT0A;Amplitude FT0C;entries", {HistType::kTH2F, {{100, -5., 95.},{100, -5., 95.}}});
+    registry.add("fit/bbFT0ACamplitude", "FT0A vs FT0C amplitude;Amplitude FT0A;Amplitude FT0C;entries", {HistType::kTH2F, {{100, -5., 95.}, {100, -5., 95.}}});
     registry.add("fit/bbFV0Aamplitude", "FV0A amplitude;Amplitude;entries", {HistType::kTH1F, {{100, -5., 95.}}});
     registry.add("fit/bbFDDAamplitude", "FDDA amplitude;Amplitude;entries", {HistType::kTH1F, {{100, -5., 95.}}});
     registry.add("fit/bbFDDCamplitude", "FDDC amplitude;Amplitude;entries", {HistType::kTH1F, {{100, -5., 95.}}});
-    registry.add("fit/bbFDDACamplitude", "FDDA vs FDDC amplitude;Amplitude FDDA;Amplitude FDDC;entries", {HistType::kTH2F, {{100, -5., 95.},{100, -5., 95.}}});
+    registry.add("fit/bbFDDACamplitude", "FDDA vs FDDC amplitude;Amplitude FDDA;Amplitude FDDC;entries", {HistType::kTH2F, {{100, -5., 95.}, {100, -5., 95.}}});
     registry.add("fit/timeFT0", "FT0 time;time FT0A; time FT0C;entries", {HistType::kTH2F, {{100, -5., 35.}, {100, -5., 35.}}});
     registry.add("fit/timeFDD", "FDD time;time FDDA; time FDDC;entries", {HistType::kTH2F, {{100, -5., 35.}, {100, -5., 35.}}});
   }
@@ -275,29 +275,44 @@ struct TauTau13topo {
     registry.get<TH1>(HIST("control/cut") + HIST(histoname[mode]) + HIST("/h13EtaSum"))->Fill(pi3etasum);
   }
 
-  int TrackCheck(auto track){
-    //1
-    if(track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF()) return 0;
-    else if(!track.hasITS() && track.hasTPC() && !track.hasTRD() && !track.hasTOF()) return 1;
-    else if(!track.hasITS() && !track.hasTPC() && track.hasTRD() && !track.hasTOF()) return 2;
-    else if(!track.hasITS() && !track.hasTPC() && !track.hasTRD() && track.hasTOF()) return 3;
-    //2
-    else if(track.hasITS() && track.hasTPC() && !track.hasTRD() && !track.hasTOF()) return 4;
-    else if(track.hasITS() && !track.hasTPC() && track.hasTRD() && !track.hasTOF()) return 5;
-    else if(track.hasITS() && !track.hasTPC() && !track.hasTRD() && track.hasTOF()) return 6;
-    else if(!track.hasITS() && track.hasTPC() && track.hasTRD() && !track.hasTOF()) return 7;
-    else if(!track.hasITS() && track.hasTPC() && !track.hasTRD() && track.hasTOF()) return 8;
-    else if(!track.hasITS() && !track.hasTPC() && track.hasTRD() && track.hasTOF()) return 9;
-    //3
-    else if(track.hasITS() && track.hasTPC() && track.hasTRD() && !track.hasTOF()) return 10;
-    else if(track.hasITS() && track.hasTPC() && !track.hasTRD() && track.hasTOF()) return 11;
-    else if(track.hasITS() && !track.hasTPC() && track.hasTRD() && track.hasTOF()) return 12;
-    else if(!track.hasITS() && track.hasTPC() && track.hasTRD() && track.hasTOF()) return 13;
-    //4
-    else if(track.hasITS() && track.hasTPC() && track.hasTRD() && track.hasTOF()) return 14;
+  int TrackCheck(auto track)
+  {
+    // 1
+    if (track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF())
+      return 0;
+    else if (!track.hasITS() && track.hasTPC() && !track.hasTRD() && !track.hasTOF())
+      return 1;
+    else if (!track.hasITS() && !track.hasTPC() && track.hasTRD() && !track.hasTOF())
+      return 2;
+    else if (!track.hasITS() && !track.hasTPC() && !track.hasTRD() && track.hasTOF())
+      return 3;
+    // 2
+    else if (track.hasITS() && track.hasTPC() && !track.hasTRD() && !track.hasTOF())
+      return 4;
+    else if (track.hasITS() && !track.hasTPC() && track.hasTRD() && !track.hasTOF())
+      return 5;
+    else if (track.hasITS() && !track.hasTPC() && !track.hasTRD() && track.hasTOF())
+      return 6;
+    else if (!track.hasITS() && track.hasTPC() && track.hasTRD() && !track.hasTOF())
+      return 7;
+    else if (!track.hasITS() && track.hasTPC() && !track.hasTRD() && track.hasTOF())
+      return 8;
+    else if (!track.hasITS() && !track.hasTPC() && track.hasTRD() && track.hasTOF())
+      return 9;
+    // 3
+    else if (track.hasITS() && track.hasTPC() && track.hasTRD() && !track.hasTOF())
+      return 10;
+    else if (track.hasITS() && track.hasTPC() && !track.hasTRD() && track.hasTOF())
+      return 11;
+    else if (track.hasITS() && !track.hasTPC() && track.hasTRD() && track.hasTOF())
+      return 12;
+    else if (!track.hasITS() && track.hasTPC() && track.hasTRD() && track.hasTOF())
+      return 13;
+    // 4
+    else if (track.hasITS() && track.hasTPC() && track.hasTRD() && track.hasTOF())
+      return 14;
     return -1;
   }
-
 
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>;
   using UDCollisionFull = UDCollisionsFull::iterator;
@@ -328,7 +343,7 @@ struct TauTau13topo {
     TLorentzVector p;
     TParticlePDG* pion = pdg->GetParticle(211);
     // loop over PV contributors
-    for (const auto &trk : PVContributors) {
+    for (const auto& trk : PVContributors) {
       p.SetXYZM(trk.px(), trk.py(), trk.pz(), pion->Mass());
       registry.get<TH1>(HIST("global/hTrackPtPV"))->Fill(p.Pt());
       if (TMath::Abs(p.Eta()) < trkEtacut)
@@ -414,11 +429,11 @@ struct TauTau13topo {
     }
     registry.get<TH1>(HIST("fit/bbFT0Aamplitude"))->Fill(dgcand.totalFT0AmplitudeA());
     registry.get<TH1>(HIST("fit/bbFT0Camplitude"))->Fill(dgcand.totalFT0AmplitudeC());
-    registry.get<TH2>(HIST("fit/bbFT0ACamplitude"))->Fill(dgcand.totalFT0AmplitudeA(),dgcand.totalFT0AmplitudeC());
+    registry.get<TH2>(HIST("fit/bbFT0ACamplitude"))->Fill(dgcand.totalFT0AmplitudeA(), dgcand.totalFT0AmplitudeC());
     registry.get<TH1>(HIST("fit/bbFV0Aamplitude"))->Fill(dgcand.totalFV0AmplitudeA());
     registry.get<TH1>(HIST("fit/bbFDDAamplitude"))->Fill(dgcand.totalFDDAmplitudeA());
     registry.get<TH1>(HIST("fit/bbFDDCamplitude"))->Fill(dgcand.totalFDDAmplitudeC());
-    registry.get<TH2>(HIST("fit/bbFDDACamplitude"))->Fill(dgcand.totalFDDAmplitudeA(),dgcand.totalFDDAmplitudeC());
+    registry.get<TH2>(HIST("fit/bbFDDACamplitude"))->Fill(dgcand.totalFDDAmplitudeA(), dgcand.totalFDDAmplitudeC());
 
     registry.get<TH2>(HIST("fit/timeFT0"))->Fill(dgcand.timeFT0A(), dgcand.timeFT0C());
     registry.get<TH2>(HIST("fit/timeFDD"))->Fill(dgcand.timeFDDA(), dgcand.timeFDDC());
@@ -466,7 +481,7 @@ struct TauTau13topo {
     // first loop to add all the tracks together
     TLorentzVector p1;
     p = TLorentzVector(0., 0., 0., 0.);
-    for (const auto &trk : PVContributors) {
+    for (const auto& trk : PVContributors) {
       p1.SetXYZM(trk.px(), trk.py(), trk.pz(), pion->Mass());
       p += p1;
       scalarPtsum += trk.pt();
@@ -483,12 +498,12 @@ struct TauTau13topo {
     // second loop to calculate 1 by 1 each combinatorial variable
     int counterTmp = 0;
     int tmpTrkCheck = -1;
-    for (const auto &trk : PVContributors) {
-      tmpTrkCheck = TrackCheck(trk); //check detectors associated to track
+    for (const auto& trk : PVContributors) {
+      tmpTrkCheck = TrackCheck(trk); // check detectors associated to track
       registry.get<TH1>(HIST("global/hTrkCheck"))->Fill(tmpTrkCheck);
 
       v1.SetXYZ(trk.px(), trk.py(), trk.pz());
-      for (const auto &trk1 : PVContributors) {
+      for (const auto& trk1 : PVContributors) {
         if (trk.index() == trk1.index())
           continue;
         vtmp.SetXYZ(trk1.px(), trk1.py(), trk1.pz());
@@ -580,8 +595,8 @@ struct TauTau13topo {
       }
 
       if (pttot < 0.15) {
-	registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut8"))->Fill(tmpMomentum[i], tmpDedx[i]);
-      } 
+        registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut8"))->Fill(tmpMomentum[i], tmpDedx[i]);
+      }
 
       if (TMath::Abs(nSigmaPr[i]) > maxNsigmaPrVetocut) { // default is 3
         flagPr[i] = true;
@@ -606,7 +621,6 @@ struct TauTau13topo {
     int counterVcal = !flagVcalPV[0] + !flagVcalPV[1] + !flagVcalPV[2] + !flagVcalPV[3];
     int counterTotal = flagTotal[0] + flagTotal[1] + flagTotal[2] + flagTotal[3];
 
-
     registry.get<TH1>(HIST("global/hNCombAfterCut"))->Fill(5. + counterM3pi, 1.);
     registry.get<TH1>(HIST("global/hNCombAfterCut"))->Fill(10. + counterDphi, 1.);
     registry.get<TH1>(HIST("global/hNCombAfterCut"))->Fill(15. + counterEl, 1.);
@@ -626,102 +640,102 @@ struct TauTau13topo {
       for (int i = 0; i < 4; i++) {
         if (flagEl[i]) {
           registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut20"))->Fill(tmpMomentum[i], tmpDedx[i]);
-	  FillControlHistos<20>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], pi3etasum[i]);
+          FillControlHistos<20>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], pi3etasum[i]);
           registry.get<TH2>(HIST("control/cut20/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
-	}
+        }
       }
 
       if (flagEl[0] * flagPi[0] + flagEl[1] * flagPi[1] + flagEl[2] * flagPi[2] + flagEl[3] * flagPi[3] > 0) { // pi veto, cut21
         registry.get<TH1>(HIST("global/hEventEff"))->Fill(7., 1.);
-	registry.get<TH1>(HIST("control/cut21/h4trkPtTot"))->Fill(pttot);
-	registry.get<TH1>(HIST("control/cut21/h4piMass"))->Fill(mass4pi);
-	registry.get<TH2>(HIST("control/cut21/h4trkMassVsPt"))->Fill(mass4pi, pttot);
+        registry.get<TH1>(HIST("control/cut21/h4trkPtTot"))->Fill(pttot);
+        registry.get<TH1>(HIST("control/cut21/h4piMass"))->Fill(mass4pi);
+        registry.get<TH2>(HIST("control/cut21/h4trkMassVsPt"))->Fill(mass4pi, pttot);
         for (int i = 0; i < 4; i++) {
           if (flagEl[i] && flagPi[i]) {
             registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut21"))->Fill(tmpMomentum[i], tmpDedx[i]);
-	    FillControlHistos<21>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], pi3etasum[i]);
-	    registry.get<TH2>(HIST("control/cut21/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
-	  }
+            FillControlHistos<21>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], pi3etasum[i]);
+            registry.get<TH2>(HIST("control/cut21/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
+          }
         }
 
         if (flagEl[0] * flagPi[0] * !flagVcalPV[0] +
-	    flagEl[1] * flagPi[1] * !flagVcalPV[1] +
-	    flagEl[2] * flagPi[2] * !flagVcalPV[2] +
-	    flagEl[3] * flagPi[3] * !flagVcalPV[3] >
+              flagEl[1] * flagPi[1] * !flagVcalPV[1] +
+              flagEl[2] * flagPi[2] * !flagVcalPV[2] +
+              flagEl[3] * flagPi[3] * !flagVcalPV[3] >
             0) { // vcal veto, cut22
           registry.get<TH1>(HIST("global/hEventEff"))->Fill(8., 1.);
-	  registry.get<TH1>(HIST("control/cut22/h4trkPtTot"))->Fill(pttot);
-	  registry.get<TH1>(HIST("control/cut22/h4piMass"))->Fill(mass4pi);
-	  registry.get<TH2>(HIST("control/cut22/h4trkMassVsPt"))->Fill(mass4pi, pttot);
+          registry.get<TH1>(HIST("control/cut22/h4trkPtTot"))->Fill(pttot);
+          registry.get<TH1>(HIST("control/cut22/h4piMass"))->Fill(mass4pi);
+          registry.get<TH2>(HIST("control/cut22/h4trkMassVsPt"))->Fill(mass4pi, pttot);
           for (int i = 0; i < 4; i++) {
             if (flagEl[i] && flagPi[i] && !flagVcalPV[i]) {
               registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut22"))->Fill(tmpMomentum[i], tmpDedx[i]);
-	      FillControlHistos<22>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], pi3etasum[i]);
-	      registry.get<TH2>(HIST("control/cut22/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
-	    }
+              FillControlHistos<22>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], pi3etasum[i]);
+              registry.get<TH2>(HIST("control/cut22/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
+            }
           }
 
           if (flagEl[0] * flagPi[0] * !flagVcalPV[0] * flagPt[0] +
-	      flagEl[1] * flagPi[1] * !flagVcalPV[1] * flagPt[1] +
-	      flagEl[2] * flagPi[2] * !flagVcalPV[2] * flagPt[2] +
-	      flagEl[3] * flagPi[3] * !flagVcalPV[3] * flagPt[3] >
+                flagEl[1] * flagPi[1] * !flagVcalPV[1] * flagPt[1] +
+                flagEl[2] * flagPi[2] * !flagVcalPV[2] * flagPt[2] +
+                flagEl[3] * flagPi[3] * !flagVcalPV[3] * flagPt[3] >
               0) { // pT veto, cut23
             registry.get<TH1>(HIST("global/hEventEff"))->Fill(9., 1.);
-	    registry.get<TH1>(HIST("control/cut23/h4trkPtTot"))->Fill(pttot);
-	    registry.get<TH1>(HIST("control/cut23/h4piMass"))->Fill(mass4pi);
-	    registry.get<TH2>(HIST("control/cut23/h4trkMassVsPt"))->Fill(mass4pi, pttot);
+            registry.get<TH1>(HIST("control/cut23/h4trkPtTot"))->Fill(pttot);
+            registry.get<TH1>(HIST("control/cut23/h4piMass"))->Fill(mass4pi);
+            registry.get<TH2>(HIST("control/cut23/h4trkMassVsPt"))->Fill(mass4pi, pttot);
             for (int i = 0; i < 4; i++) {
               if (flagEl[i] && flagPi[i] && !flagVcalPV[i] && flagPt[i]) {
                 registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut23"))->Fill(tmpMomentum[i], tmpDedx[i]);
-		FillControlHistos<23>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], pi3etasum[i]);
-		registry.get<TH2>(HIST("control/cut23/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
-	      }
+                FillControlHistos<23>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], pi3etasum[i]);
+                registry.get<TH2>(HIST("control/cut23/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
+              }
             }
 
-	    if (flagEl[0] * flagPi[0] * !flagVcalPV[0] * flagPt[0] * flagPr[0] +
-		flagEl[1] * flagPi[1] * !flagVcalPV[1] * flagPt[1] * flagPr[1] +
-		flagEl[2] * flagPi[2] * !flagVcalPV[2] * flagPt[2] * flagPr[2] +
-		flagEl[3] * flagPi[3] * !flagVcalPV[3] * flagPt[3] * flagPr[3] >
-		0) { // proton veto, cut24
-	      registry.get<TH1>(HIST("global/hEventEff"))->Fill(10., 1.);
-	      registry.get<TH1>(HIST("control/cut24/h4trkPtTot"))->Fill(pttot);
-	      registry.get<TH1>(HIST("control/cut24/h4piMass"))->Fill(mass4pi);
-	      registry.get<TH2>(HIST("control/cut24/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-	      for (int i = 0; i < 4; i++) {
-		if (flagEl[i] && flagPi[i] && !flagVcalPV[i] && flagPt[i] && flagPr[i]) {
-		  registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut24"))->Fill(tmpMomentum[i], tmpDedx[i]);
-		  FillControlHistos<24>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], pi3etasum[i]);
-		  registry.get<TH2>(HIST("control/cut24/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
-		}
-	      }
+            if (flagEl[0] * flagPi[0] * !flagVcalPV[0] * flagPt[0] * flagPr[0] +
+                  flagEl[1] * flagPi[1] * !flagVcalPV[1] * flagPt[1] * flagPr[1] +
+                  flagEl[2] * flagPi[2] * !flagVcalPV[2] * flagPt[2] * flagPr[2] +
+                  flagEl[3] * flagPi[3] * !flagVcalPV[3] * flagPt[3] * flagPr[3] >
+                0) { // proton veto, cut24
+              registry.get<TH1>(HIST("global/hEventEff"))->Fill(10., 1.);
+              registry.get<TH1>(HIST("control/cut24/h4trkPtTot"))->Fill(pttot);
+              registry.get<TH1>(HIST("control/cut24/h4piMass"))->Fill(mass4pi);
+              registry.get<TH2>(HIST("control/cut24/h4trkMassVsPt"))->Fill(mass4pi, pttot);
+              for (int i = 0; i < 4; i++) {
+                if (flagEl[i] && flagPi[i] && !flagVcalPV[i] && flagPt[i] && flagPr[i]) {
+                  registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut24"))->Fill(tmpMomentum[i], tmpDedx[i]);
+                  FillControlHistos<24>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], pi3etasum[i]);
+                  registry.get<TH2>(HIST("control/cut24/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
+                }
+              }
 
-	      if (flagEl[0] * flagPi[0] * !flagVcalPV[0] * flagPt[0] * flagPr[0] * flagKa[0] +
-		  flagEl[1] * flagPi[1] * !flagVcalPV[1] * flagPt[1] * flagPr[1] * flagKa[1] +
-		  flagEl[2] * flagPi[2] * !flagVcalPV[2] * flagPt[2] * flagPr[2] * flagKa[2] +
-		  flagEl[3] * flagPi[3] * !flagVcalPV[3] * flagPt[3] * flagPr[3] * flagKa[3] >
-		  0) { // kaon veto, cut25
-		registry.get<TH1>(HIST("global/hEventEff"))->Fill(11., 1.);
-		registry.get<TH1>(HIST("control/cut25/h4trkPtTot"))->Fill(pttot);
-		registry.get<TH1>(HIST("control/cut25/h4piMass"))->Fill(mass4pi);
-		registry.get<TH2>(HIST("control/cut25/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-		for (int i = 0; i < 4; i++) {
-		  if (flagEl[i] && flagPi[i] && !flagVcalPV[i] && flagPt[i] && flagPr[i] && flagKa[i]) {
-		    registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut25"))->Fill(tmpMomentum[i], tmpDedx[i]);
-		    FillControlHistos<25>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], pi3etasum[i]);
-		    registry.get<TH2>(HIST("control/cut25/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
-		  }
-		}
-		
-	      } else {
-		if (verbose) {
-		  LOGF(debug, "<tautau13topo> Candidate rejected: all electrons vetoed by piPID+Vcal+pT+prPID+KaPID");
-		}
-	      } // end of kaon veto
-	    } else {
-	      if (verbose) {
-		LOGF(debug, "<tautau13topo> Candidate rejected: all electrons vetoed by piPID+Vcal+pT+prPID");
-	      }
-	    } // end of proton veto
+              if (flagEl[0] * flagPi[0] * !flagVcalPV[0] * flagPt[0] * flagPr[0] * flagKa[0] +
+                    flagEl[1] * flagPi[1] * !flagVcalPV[1] * flagPt[1] * flagPr[1] * flagKa[1] +
+                    flagEl[2] * flagPi[2] * !flagVcalPV[2] * flagPt[2] * flagPr[2] * flagKa[2] +
+                    flagEl[3] * flagPi[3] * !flagVcalPV[3] * flagPt[3] * flagPr[3] * flagKa[3] >
+                  0) { // kaon veto, cut25
+                registry.get<TH1>(HIST("global/hEventEff"))->Fill(11., 1.);
+                registry.get<TH1>(HIST("control/cut25/h4trkPtTot"))->Fill(pttot);
+                registry.get<TH1>(HIST("control/cut25/h4piMass"))->Fill(mass4pi);
+                registry.get<TH2>(HIST("control/cut25/h4trkMassVsPt"))->Fill(mass4pi, pttot);
+                for (int i = 0; i < 4; i++) {
+                  if (flagEl[i] && flagPi[i] && !flagVcalPV[i] && flagPt[i] && flagPr[i] && flagKa[i]) {
+                    registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut25"))->Fill(tmpMomentum[i], tmpDedx[i]);
+                    FillControlHistos<25>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], pi3etasum[i]);
+                    registry.get<TH2>(HIST("control/cut25/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
+                  }
+                }
+
+              } else {
+                if (verbose) {
+                  LOGF(debug, "<tautau13topo> Candidate rejected: all electrons vetoed by piPID+Vcal+pT+prPID+KaPID");
+                }
+              } // end of kaon veto
+            } else {
+              if (verbose) {
+                LOGF(debug, "<tautau13topo> Candidate rejected: all electrons vetoed by piPID+Vcal+pT+prPID");
+              }
+            } // end of proton veto
           } else {
             if (verbose) {
               LOGF(debug, "<tautau13topo> Candidate rejected: all electrons vetoed by piPID+Vcal+pT");
@@ -736,7 +750,7 @@ struct TauTau13topo {
         if (verbose) {
           LOGF(debug, "<tautau13topo> Candidate rejected: all electrons vetoed by pi PID");
         }
-      } // end of pi veto
+      }      // end of pi veto
     } else { // no electron
       if (verbose) {
         LOGF(debug, "<tautau13topo> Candidate rejected: no electron PID among 4 tracks");
