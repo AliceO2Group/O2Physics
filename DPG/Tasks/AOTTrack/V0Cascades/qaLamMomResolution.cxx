@@ -13,7 +13,6 @@
 /// \file   qaLamMomResolution.cxx
 /// \author Carolina Reetz c.reetz@cern.ch
 /// \brief  QA task to study momentum resolution of Lambda daughter tracks
-/// \TODO:  differentiate between pos and neg eta
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
