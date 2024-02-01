@@ -153,7 +153,7 @@ struct qVectorsTable {
       if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0C",cfgCcdbParam.nolaterthan.value))->empty())
         cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0C",cfgCcdbParam.nolaterthan.value)));
       else {
-        if (cfgFT0CCorr->size() < 48) 
+        if (cfgFT0CCorr->size() < 48)
           LOGF(fatal, "No proper correction factor assigned for FT0C");
         else {
           cfgCorr.push_back(cfgFT0CCorr);
