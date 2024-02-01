@@ -143,7 +143,7 @@ struct derivedlambdakzeroanalysis {
                    selConsiderK0Short,   // for mc tagging
                    selConsiderLambda,    // for mc tagging
                    selConsiderAntiLambda // for mc tagging
-  };                                    
+  };
 
   uint32_t maskTopological;
   uint32_t maskTopoNoV0Radius;
@@ -172,14 +172,14 @@ struct derivedlambdakzeroanalysis {
     maskTopoNoDCAV0Dau = (1 << selCosPA) | (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV);
 
     maskTrackTypes = 0;
-    if(requirePosITSonly) {
+    if (requirePosITSonly) {
       maskTrackTypes = (1 << selPosItsOnly);
-    }else{
+    } else {
       maskTrackTypes = (1 << selPosGoodTPCTrack);
     }
-    if(requireNegITSonly) {
+    if (requireNegITSonly) {
       maskTrackTypes = (1 << selNegItsOnly);
-    }else{
+    } else {
       maskTrackTypes = (1 << selNegGoodTPCTrack);
     }
 
@@ -289,20 +289,20 @@ struct derivedlambdakzeroanalysis {
       bitset(bitMap, selLambdaTPC);
     if (compatibleTPC(v0, spAntiLambda))
       bitset(bitMap, selAntiLambdaTPC);
-    
+
     auto posTrackExtra = v0.posTrackExtra();
     auto negTrackExtra = v0.negTrackExtra();
-    
+
     // TPC quality
-    if(posTrackExtra.tpcCrossedRows()>=minTPCrows)
+    if (posTrackExtra.tpcCrossedRows() >= minTPCrows)
       bitset(bitMap, selPosGoodTPCTrack);
-    if(negTrackExtra.tpcCrossedRows()>=minTPCrows)
+    if (negTrackExtra.tpcCrossedRows() >= minTPCrows)
       bitset(bitMap, selNegGoodTPCTrack);
 
     // ITS only tag
-    if(posTrackExtra.tpcCrossedRows()<1)
+    if (posTrackExtra.tpcCrossedRows() < 1)
       bitset(bitMap, selPosItsOnly);
-    if(negTrackExtra.tpcCrossedRows()<1)
+    if (negTrackExtra.tpcCrossedRows() < 1)
       bitset(bitMap, selNegItsOnly);
 
     // proper lifetime
