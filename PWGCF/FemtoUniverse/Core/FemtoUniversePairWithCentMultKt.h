@@ -61,9 +61,7 @@ class PairWithCentMultKt
       PairWithCentMultKtRegistry->add(HistName.c_str(), HistTitle.c_str(), HistType::kTH1F, {kstarAxis});
       PairWithCentMultKtRegistry->add(HistName3D.c_str(), HistTitle.c_str(), HistType::kTH3F, {kOutAxis, kSideAxis, kLongAxis});
       if (UseKt) {
-        std::cout << "Working 0" << std::endl;
         for (int i = 0; i < static_cast<int>(KtBins.size() - 1); i++) {
-          std::cout << "Working 1" << std::endl;
           std::string kt_bin1_string = std::to_string(KtBins[i]);
           std::replace(kt_bin1_string.begin(), kt_bin1_string.end(), '.', '_');
           std::string kt_bin2_string = std::to_string(KtBins[i + 1]);
@@ -80,7 +78,6 @@ class PairWithCentMultKt
       }
       if (Use3D) {
         for (int i = 0; i < static_cast<int>(KtBins.size() - 1); i++) {
-          std::cout << "Working 2" << std::endl;
           std::string kt_bin1_string = std::to_string(KtBins[i]);
           std::replace(kt_bin1_string.begin(), kt_bin1_string.end(), '.', '_');
           std::string kt_bin2_string = std::to_string(KtBins[i + 1]);
