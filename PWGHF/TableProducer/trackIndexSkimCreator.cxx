@@ -1289,6 +1289,7 @@ struct HfTrackIndexSkimCreator {
   Configurable<double> ptTolerance{"ptTolerance", 0.1, "pT tolerance in GeV/c for applying preselections before vertex reconstruction"};
   // preselection of 3-prongs using the decay length computed only with the first two tracks
   Configurable<double> minTwoTrackDecayLengthFor3Prongs{"twoTrackDecayLengthFor3Prongs", 0., "Minimum decay length computed with 2 tracks for 3-prongs to speedup combinatorial"};
+  Configurable<double> maxTwoTrackChi2PcaFor3Prongs{"maxTwoTrackChi2PcaFor3Prongs", 10000., "Maximum chi2 pca computed with 2 tracks for 3-prongs to speedup combinatorial"};
   // vertexing
   // Configurable<double> bz{"bz", 5., "magnetic field kG"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
@@ -1768,6 +1769,25 @@ struct HfTrackIndexSkimCreator {
         }
       }
     }
+  }
+
+  /// Method to perform selections for 2-prong candidates after vertex reconstruction
+  /// \param secVtx is the secondary vertex
+  /// \param primVtx is the primary vertex
+  /// \param dcaFitter is the DCAFitter used for the 2-track vertex
+  /// \returns true if the candidate is selected
+  template <typename T1, typename T2, typename T3>
+  bool isTwoTrackVertexSelectedFor3Prongs(const T1& secVtx, const T2& primVtx, const T3& dcaFitter)
+  {
+    if (dcaFitter.getChi2AtPCACandidate() > maxTwoTrackChi2PcaFor3Prongs) {
+      return false;
+    }
+    auto decLen = RecoDecay::distance(primVtx, secVtx);
+    if (decLen < minTwoTrackDecayLengthFor3Prongs) {
+      return false;
+    }
+
+    return true;
   }
 
   /// Method to perform selections for 3-prong candidates after vertex reconstruction
@@ -2291,10 +2311,7 @@ struct HfTrackIndexSkimCreator {
                 }
                 is2ProngSelected(pVecCandProng2, secondaryVertex2, pvCoord2Prong, cutStatus2Prong, isSelected2ProngCand);
                 if (is2ProngCandidateGoodFor3Prong && do3Prong == 1) {
-                  auto decLen = RecoDecay::distance(pvCoord2Prong, secondaryVertex2);
-                  if (decLen < minTwoTrackDecayLengthFor3Prongs) {
-                    is2ProngCandidateGoodFor3Prong = false;
-                  }
+                  is2ProngCandidateGoodFor3Prong = isTwoTrackVertexSelectedFor3Prongs(secondaryVertex2, pvCoord2Prong, df2);
                 }
 
                 if (isSelected2ProngCand > 0) {
@@ -2372,10 +2389,7 @@ struct HfTrackIndexSkimCreator {
             if (nVtxFrom2ProngFitter > 0) {
               const auto& secondaryVertex2 = df2.getPCACandidate();
               std::array<float, 3> pvCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()};
-              auto decLen = RecoDecay::distance(pvCoord2Prong, secondaryVertex2);
-              if (decLen < minTwoTrackDecayLengthFor3Prongs) {
-                is2ProngCandidateGoodFor3Prong = false;
-              }
+              is2ProngCandidateGoodFor3Prong = isTwoTrackVertexSelectedFor3Prongs(secondaryVertex2, pvCoord2Prong, df2);
             } else {
               is2ProngCandidateGoodFor3Prong = false;
             }
