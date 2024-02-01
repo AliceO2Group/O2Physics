@@ -149,7 +149,7 @@ struct qVectorsTable {
       LOGF(fatal, "Could not get the alignment parameters for FV0.");
     }
 
-    if (cfgCCDBConst==1) {
+    if (cfgCCDBConst == 1) {
       if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0C", cfgCcdbParam.nolaterthan.value))->empty()) {
         cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0C", cfgCcdbParam.nolaterthan.value)));
       } else {
@@ -209,7 +209,7 @@ struct qVectorsTable {
           cfgCorr.push_back(cfgBNegCorr);
         }
       }
-    } else if (cfgCCDBConst==2) {
+    } else if (cfgCCDBConst == 2) {
       if (cfgFT0CCorr->size() < 48) {
         LOGF(fatal, "No proper correction factor assigned for FT0C");
       }
