@@ -14,7 +14,7 @@
 //
 // This code loops over a StoredVtx3BodyDatas table and produces some
 // standard analysis output. It requires either
-// the hypertriton3bodybuilder or hypertriton3bodyfinder (not recommaended) tasks
+// the hypertriton3bodybuilder or hypertriton3bodyfinder (not recommended) tasks
 // to have been executed in the workflow (before).
 //
 // author: yuanzhe.wang@cern.ch
@@ -139,7 +139,7 @@ struct hypertriton3bodyAnalysis {
   Configurable<float> TofPidNsigmaMin{"TofPidNsigmaMin", -4, "TofPidNsigmaMin"};
   Configurable<float> TofPidNsigmaMax{"TofPidNsigmaMax", 8, "TofPidNsigmaMax"};
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
-  Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
+  Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
   Configurable<float> lifetimecut{"lifetimecut", 40., "lifetimecut"}; // ct
   Configurable<float> minProtonPt{"minProtonPt", 0.3, "minProtonPt"};
   Configurable<float> maxProtonPt{"maxProtonPt", 5, "maxProtonPt"};
@@ -225,7 +225,7 @@ struct hypertriton3bodyAnalysis {
       registry.add("h3dMassAntiHypertritonDca", "h3dMassAntiHypertritonDca", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisHypertriton}});
     }
 
-    TString CandCounterbinLabel[11] = {"Total", "VtxCosPA", "TrackEta", "MomRapidity", "Lifetime", "DcaV0Dau", "d TOFPID", "TPCPID&Mass", "TPCNcls", "DauPt", "PionDcatoPV"};
+    TString CandCounterbinLabel[11] = {"Total", "VtxCosPA", "TrackEta", "MomRapidity", "Lifetime", "VtxDcaDau", "d TOFPID", "TPCPID&Mass", "TPCNcls", "DauPt", "PionDcatoPV"};
     for (int i{0}; i < kNVtxSteps; i++) {
       registry.get<TH1>(HIST("hSelectedCandidatesCounter"))->GetXaxis()->SetBinLabel(i + 1, CandCounterbinLabel[i]);
     }
@@ -234,7 +234,7 @@ struct hypertriton3bodyAnalysis {
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, MyTracks const& tracks)
   {
     registry.fill(HIST("hSelectedEventCounter"), 0.5);
-    if (eventSelection && !collision.sel8()) {
+    if (event_sel8_selection && !collision.sel8()) {
       return;
     }
     registry.fill(HIST("hSelectedEventCounter"), 1.5);

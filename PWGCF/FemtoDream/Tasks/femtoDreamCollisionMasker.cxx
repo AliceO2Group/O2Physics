@@ -16,6 +16,7 @@
 #include <vector>
 #include <bitset>
 #include <algorithm>
+#include <random>
 
 #include "fairlogger/Logger.h"
 #include "Framework/Configurable.h"
@@ -49,6 +50,13 @@ enum Tasks {
 
 struct femoDreamCollisionMasker {
   Produces<FDColMasks> Masks;
+  Produces<FDDownSample> DownSample;
+
+  // configurable for downsampling
+  Configurable<float> ConfDownsampling{"ConfDownsampling", -1., "Fraction of events to be used in mixed event sample. Factor should be between 0 and 1. Deactivate with negative value"};
+  Configurable<uint> ConfSeed{"ConfSeed", 29012024, "Seed for downsampling"};
+
+  std::mt19937* rng = nullptr;
 
   // particle selection bits
   std::array<std::vector<femtodreamparticle::cutContainerType>, CollisionMasks::kNParts> TrackCutBits;
@@ -84,6 +92,12 @@ struct femoDreamCollisionMasker {
 
   void init(InitContext& context)
   {
+
+    // seed rng for downsampling
+    if (ConfSeed.value > 0) {
+      rng = new std::mt19937(ConfSeed.value);
+    }
+
     std::vector<std::string> MatchedWorkflows;
     LOG(info) << "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*";
     LOG(info) << " Collision masker self-configuration ";
@@ -338,6 +352,15 @@ struct femoDreamCollisionMasker {
     Masks(static_cast<femtodreamcollision::BitMaskType>(Mask.at(CollisionMasks::kPartOne).to_ulong()),
           static_cast<femtodreamcollision::BitMaskType>(Mask.at(CollisionMasks::kPartTwo).to_ulong()),
           static_cast<femtodreamcollision::BitMaskType>(Mask.at(CollisionMasks::kPartThree).to_ulong()));
+
+    bool UseInMixedEvent = true;
+    std::uniform_real_distribution<> dist(0, 1);
+
+    if (ConfSeed.value > 0 && (1 - dist(*rng)) > ConfDownsampling.value) {
+      UseInMixedEvent = false;
+    }
+
+    DownSample(UseInMixedEvent);
   };
 };
 

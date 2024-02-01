@@ -308,10 +308,10 @@ struct BcSelectionTask {
       float csZEM = isPP ? -1. : 415.2e6;
       float csZNC = isPP ? -1. : 214.5e6;
       if (run > 543437 && run < 543514) {
-        csTCE = 8.3;
+        csTCE = 8.3e6;
       }
       if (run >= 543514) {
-        csTCE = 3.97;
+        csTCE = 3.97e6;
       }
 
       // Fill TVX (T0 vertex) counters

@@ -50,6 +50,11 @@ bool IsPhysicalPrimary(TCollision const& mccollision, TTrack const& mctrack, TMC
         }
         if (mp.has_mothers()) {
           motherid = mp.mothersIds()[0]; // first mother index
+          auto mp_tmp = mcTracks.iteratorAt(motherid);
+          int pdg_mother_tmp = mp_tmp.pdgCode();
+          if (pdg_mother_tmp == pdg_mother) { // strange protection. mother of 111 is 111. observed in LHC23k6d on 25.January.2024
+            return false;
+          }
         } else {
           motherid = -999;
         }
