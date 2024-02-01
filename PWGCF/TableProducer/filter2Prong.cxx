@@ -62,14 +62,12 @@ struct Filter2Prong {
         continue;
       if (cfgYMax >= 0.0f && std::abs(hfHelper.yD0(c)) > cfgYMax)
         continue;
-      float mD0 = hfHelper.invMassD0ToPiK(c);
-      float mD0bar = hfHelper.invMassD0barToKPi(c);
-      if (c.isSelD0() == 0)
-        mD0 = -mD0; // use negative value to indicate no selection
-      if (c.isSelD0bar() == 0)
-        mD0bar = -mD0bar;
-      output2ProngTracks(cfcollisions.begin().globalIndex(),
-                         prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), mD0, mD0bar, aod::cf2prongtrack::D0ToPiK);
+      if (c.isSelD0() > 0)
+        output2ProngTracks(cfcollisions.begin().globalIndex(),
+                           prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0ToPiK(c), aod::cf2prongtrack::D0ToPiK);
+      if (c.isSelD0bar() > 0)
+        output2ProngTracks(cfcollisions.begin().globalIndex(),
+                           prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), hfHelper.invMassD0barToKPi(c), aod::cf2prongtrack::D0barToKPi);
     }
   }
   PROCESS_SWITCH(Filter2Prong, processData, "Process data D0 candidates", true);

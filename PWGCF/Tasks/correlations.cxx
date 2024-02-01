@@ -141,7 +141,7 @@ struct CorrelationTask {
       registry.add("yieldsTrigger", "multiplicity/centrality vs pT vs eta (triggers)", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
       registry.add("etaphiTrigger", "multiplicity/centrality vs eta vs phi (triggers)", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
       registry.add("invMass", "2-prong invariant mass (GeV)", {HistType::kTH1F, {{100, 0, 3, "Mass"}}});
-      registry.add("invMassAnti", "anti 2-prong invariant mass (GeV)", {HistType::kTH1F, {{100, 0, 3, "Mass"}}});
+      // registry.add("invMassAnti", "anti 2-prong invariant mass (GeV)", {HistType::kTH1F, {{100, 0, 3, "Mass"}}});
     }
 
     const int maxMixBin = AxisSpec(axisMultiplicity).getNbins() * AxisSpec(axisVertex).getNbins();
@@ -226,7 +226,7 @@ struct CorrelationTask {
         if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track1.decay())) == 0u)
           continue;
         registry.fill(HIST("invMass"), track1.invMass());
-        registry.fill(HIST("invMassAnti"), track1.invMassAnti());
+        // registry.fill(HIST("invMassAnti"), track1.invMassAnti());
       }
       registry.fill(HIST("yieldsTrigger"), multiplicity, track1.pt(), track1.eta());
       registry.fill(HIST("etaphiTrigger"), multiplicity, track1.eta(), track1.phi());

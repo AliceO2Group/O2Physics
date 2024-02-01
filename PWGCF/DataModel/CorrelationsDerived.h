@@ -102,10 +102,10 @@ DECLARE_SOA_COLUMN(Pt, pt, float);                                              
 DECLARE_SOA_COLUMN(Eta, eta, float);                                              //! Pseudorapidity
 DECLARE_SOA_COLUMN(Phi, phi, float);                                              //! Phi angle
 DECLARE_SOA_COLUMN(InvMass, invMass, float);                                      //! Invariant mass
-DECLARE_SOA_COLUMN(InvMassAnti, invMassAnti, float);                              //! Invariant mass of anti-particle
 DECLARE_SOA_COLUMN(Decay, decay, uint8_t);                                        //! Particle decay
 enum ParticleDecay {
   D0ToPiK,
+  D0barToKPi,
   JPsiToEE,
   JPsiToMuMu
 };
@@ -115,7 +115,7 @@ DECLARE_SOA_TABLE(CF2ProngTracks, "AOD", "CF2PRONGTRACK", //! Reduced track tabl
                   cftrack::CFCollisionId,
                   cf2prongtrack::CFTrackProng0Id,
                   cf2prongtrack::CFTrackProng1Id,
-                  cf2prongtrack::Pt, cf2prongtrack::Eta, cf2prongtrack::Phi, cf2prongtrack::InvMass, cf2prongtrack::InvMassAnti, cf2prongtrack::Decay);
+                  cf2prongtrack::Pt, cf2prongtrack::Eta, cf2prongtrack::Phi, cf2prongtrack::InvMass, cf2prongtrack::Decay);
 using CF2ProngTrack = CF2ProngTracks::iterator;
 } // namespace o2::aod
 
