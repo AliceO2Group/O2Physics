@@ -22,15 +22,14 @@
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/cascqaanalysis.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "TRandom3.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TrkPidInfo = soa::Join<aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa>;
-using DauTracks = soa::Join<aod::TracksIU, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, TrkPidInfo>;
-using LabeledCascades = soa::Join<aod::CascDataExt, aod::McCascLabels>;
+using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;  
 
 namespace cascadev2 {
 enum species { Xi = 0,
@@ -88,7 +87,6 @@ struct cascadeFlow {
         pdgCode); 
   }
 
-  //  void processTrainingBackground(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs> const&) {
   void processTrainingBackground(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&) {
     
     if (!coll.sel8() || std::abs(coll.posZ()) > 10.) {
