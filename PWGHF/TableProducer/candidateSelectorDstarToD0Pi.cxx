@@ -137,7 +137,7 @@ struct HfCandidateSelectorDstarToD0Pi {
     if (candidate.chi2PCAD0() > cutsDstar->get(binPt, "chi2PCA")) {
       return false;
     }
-    if (candidate.impactParameterXYD0() > cutsD0->get(binPt, "DCA")) {
+    if (std::abs(candidate.impactParameterXYD0()) > cutsD0->get(binPt, "DCA")) {
       return false;
     }
     // d0Prong0Normalised,1
