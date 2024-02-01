@@ -68,6 +68,7 @@ enum class InputFeaturesLcToPKPi : uint8_t {
   decayLengthXYNormalised,
   cpa,
   cpaXY,
+  chi2PCA,
   tpcNSigmaP0,  // 0
   tpcNSigmaKa0, // 0
   tpcNSigmaPi0, // 0
@@ -131,6 +132,7 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LCTOPKPI(decayLengthXYNormalised);
         CHECK_AND_FILL_VEC_LCTOPKPI(cpa);
         CHECK_AND_FILL_VEC_LCTOPKPI(cpaXY);
+        CHECK_AND_FILL_VEC_LCTOPKPI(chi2PCA);
         // TPC PID variables
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong0, tpcNSigmaP0, tpcNSigmaPr);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(prong0, tpcNSigmaKa0, tpcNSigmaKa);
@@ -183,6 +185,7 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_LCTOPKPI(decayLengthXYNormalised),
       FILL_MAP_LCTOPKPI(cpa),
       FILL_MAP_LCTOPKPI(cpaXY),
+      FILL_MAP_LCTOPKPI(chi2PCA),
       // TPC PID variables
       FILL_MAP_LCTOPKPI(tpcNSigmaP0),
       FILL_MAP_LCTOPKPI(tpcNSigmaKa0),
