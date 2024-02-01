@@ -2290,7 +2290,7 @@ struct HfTrackIndexSkimCreator {
                   pvCoord2Prong[2] = pvRefitCoord2Prong[2];
                 }
                 is2ProngSelected(pVecCandProng2, secondaryVertex2, pvCoord2Prong, cutStatus2Prong, isSelected2ProngCand);
-                if (is2ProngCandidateGoodFor3Prong) {
+                if (is2ProngCandidateGoodFor3Prong && do3Prong == 1) {
                   auto decLen = RecoDecay::distance(pvCoord2Prong, secondaryVertex2);
                   if (decLen < minTwoTrackDecayLengthFor3Prongs) {
                     is2ProngCandidateGoodFor3Prong = false;
@@ -2364,7 +2364,7 @@ struct HfTrackIndexSkimCreator {
           }
 
           // if the cut on the decay length of 3-prongs computed with the first two tracks is enabled and the vertex was not computed for the D0, we compute it now
-          if (minTwoTrackDecayLengthFor3Prongs > 0.f && is2ProngCandidateGoodFor3Prong && nVtxFrom2ProngFitter == 0) {
+          if (do3Prong == 1 && minTwoTrackDecayLengthFor3Prongs > 0.f && is2ProngCandidateGoodFor3Prong && nVtxFrom2ProngFitter == 0) {
             try {
               nVtxFrom2ProngFitter = df2.process(trackParVarPos1, trackParVarNeg1);
             } catch (...) {
