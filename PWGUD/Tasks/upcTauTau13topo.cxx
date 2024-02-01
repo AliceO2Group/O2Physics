@@ -567,28 +567,33 @@ struct TauTau13topo {
     for (int i = 0; i < 4; i++) {
       if (pi3invMass[i] < 1.8) {
         flagIM[i] = true;
-      } else
+      } else {
         registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut2"))->Fill(tmpMomentum[i], tmpDedx[i]);
+      }
 
       if (pi3deltaPhi[i] > 1.6) {
         flagDP[i] = true;
-      } else
+      } else {
         registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut3"))->Fill(tmpMomentum[i], tmpDedx[i]);
+      }
 
       if (minNsigmaElcut < nSigmaEl[i] && nSigmaEl[i] < maxNsigmaElcut) { // default (-2,3)
         flagEl[i] = true;
-      } else
+      } else {
         registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut4"))->Fill(tmpMomentum[i], tmpDedx[i]);
+      }
 
       if (TMath::Abs(nSigmaPi[i]) > maxNsigmaPiVetocut) { // default is 4
         flagPi[i] = true;
-      } else
+      } else {
         registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut5"))->Fill(tmpMomentum[i], tmpDedx[i]);
+      }
 
       if (tmpPt[i] > minPtEtrkcut) { // 0.25
         flagPt[i] = true;
-      } else
+      } else {
         registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut6"))->Fill(tmpMomentum[i], tmpDedx[i]);
+      }
 
       if (flagVcalPV[i]) {
         registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut7"))->Fill(tmpMomentum[i], tmpDedx[i]);
@@ -600,13 +605,15 @@ struct TauTau13topo {
 
       if (TMath::Abs(nSigmaPr[i]) > maxNsigmaPrVetocut) { // default is 3
         flagPr[i] = true;
-      } else
+      } else {
         registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut9"))->Fill(tmpMomentum[i], tmpDedx[i]);
+      }
 
       if (TMath::Abs(nSigmaKa[i]) > maxNsigmaKaVetocut) { // default is 3
         flagKa[i] = true;
-      } else
+      } else {
         registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut10"))->Fill(tmpMomentum[i], tmpDedx[i]);
+      }
 
       flagTotal[i] = flagEl[i] && flagPi[i] && flagPt[i] && !flagVcalPV[i] && flagPr[i] && flagKa[i];
     }
