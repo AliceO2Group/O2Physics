@@ -56,6 +56,8 @@ struct lfmatchingqa {
   ConfigurableAxis momAxisFine{"momAxisFine", {2.e3, -5.f, 5.f}, "momentum axis binning"};
   ConfigurableAxis momResAxis{"momResAxis", {2.e2, -2.f, 2.f}, "momentum resolution binning"};
   ConfigurableAxis tpcAxis{"tpcAxis", {4e3, 0.f, 4.e3f}, "tpc signal axis binning"};
+  ConfigurableAxis dcaAxis{"dcaAxis", {100, -0.1f, 0.1f}, "dca axis binning"};
+  ConfigurableAxis itsClusSizeAxis{"itsClusSizeAxis", {90, 1, 15}, "its cluster size axis binning"};
   ConfigurableAxis trackingPidAxis{"trackingPidAxis", {static_cast<double>(pidHypotheses.size()), 0, static_cast<double>(pidHypotheses.size())}, "tracking pid hypothesis binning"};
 
   // Cut values
@@ -64,14 +66,14 @@ struct lfmatchingqa {
   Configurable<float> ptMin{"ptMin", 0.05f, "minimum pT (GeV/c)"};
   Configurable<float> nClusITSCut{"nClusITSCut", 7, "Minimum number of ITS clusters"};
   Configurable<float> nClusTPCCut{"nClusTPCCut", 70, "Minimum number of TPC clusters"};
-  Configurable<float> dcaCut{"dcaCut", 0.05f, "DCA to PV"};
+  Configurable<float> dcaCut{"dcaCut", 0.1f, "DCA to PV"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   template <class T>
   bool selectTrack(T const& track)
   {
-    if (std::abs(track.eta()) > etaMax || track.pt() < ptMin) {
+    if (std::abs(track.eta()) > etaMax || track.pt() < ptMin || std::abs(track.dcaXY()) > dcaCut) {
       return false;
     }
     if (track.itsNCls() < nClusITSCut ||
@@ -107,11 +109,11 @@ struct lfmatchingqa {
     histos.add<TH3>("tpcNsigmaDe", ";#it{p}_{TPC}; #it{p}_{GLO}; n#sigma_{TPC} (d)", {HistType::kTH3F, {momAxis, momAxis, tpcNsigmaAxis}});
     histos.add<TH3>("tpcNsigmaHe", ";#it{p}_{TPC}; #it{p}_{GLO}; n#sigma_{TPC} (He3)", {HistType::kTH3F, {momAxis, momAxis, tpcNsigmaAxis}});
 
-    auto pidHypoPi = histos.add<TH3>("pidHypoPi", ";#it{p}_{TPC} (GeV/#it{c}); n#sigma_{TPC} (#pi);", {HistType::kTH3F}, {momAxisFine, momResAxis, trackingPidAxis});
-    auto pidHypoKa = histos.add<TH3>("pidHypoKa", ";#it{p}_{TPC} (GeV/#it{c}); n#sigma_{TPC} (K);", {HistType::kTH3F}, {momAxisFine, momResAxis, trackingPidAxis});
-    auto pidHypoPr = histos.add<TH3>("pidHypoPr", ";#it{p}_{TPC} (GeV/#it{c}); n#sigma_{TPC} (p);", {HistType::kTH3F}, {momAxisFine, momResAxis, trackingPidAxis});
-    auto pidHypoDe = histos.add<TH3>("pidHypoDe", ";#it{p}_{TPC} (GeV/#it{c}); n#sigma_{TPC} (d);", {HistType::kTH3F}, {momAxisFine, momResAxis, trackingPidAxis});
-    auto pidHypoHe = histos.add<TH3>("pidHypoHe", ";#it{p}_{TPC} (GeV/#it{c}); n#sigma_{TPC} (He3);", {HistType::kTH3F}, {momAxisFine, momResAxis, trackingPidAxis});
+    auto pidHypoPi = histos.add<TH3>("pidHypoPi", ";#it{p}_{TPC} (GeV/#it{c}); n#sigma_{TPC} (#pi);", {HistType::kTH3F}, {momAxisFine, tpcNsigmaAxis, trackingPidAxis});
+    auto pidHypoKa = histos.add<TH3>("pidHypoKa", ";#it{p}_{TPC} (GeV/#it{c}); n#sigma_{TPC} (K);", {HistType::kTH3F}, {momAxisFine, tpcNsigmaAxis, trackingPidAxis});
+    auto pidHypoPr = histos.add<TH3>("pidHypoPr", ";#it{p}_{TPC} (GeV/#it{c}); n#sigma_{TPC} (p);", {HistType::kTH3F}, {momAxisFine, tpcNsigmaAxis, trackingPidAxis});
+    auto pidHypoDe = histos.add<TH3>("pidHypoDe", ";#it{p}_{TPC} (GeV/#it{c}); n#sigma_{TPC} (d);", {HistType::kTH3F}, {momAxisFine, tpcNsigmaAxis, trackingPidAxis});
+    auto pidHypoHe = histos.add<TH3>("pidHypoHe", ";#it{p}_{TPC} (GeV/#it{c}); n#sigma_{TPC} (He3);", {HistType::kTH3F}, {momAxisFine, tpcNsigmaAxis, trackingPidAxis});
     for (int i{1}; i < pidHypoPi->GetNbinsZ() + 1; ++i) {
       pidHypoPi->GetZaxis()->SetBinLabel(i, pidHypotheses[i - 1].data());
       pidHypoKa->GetZaxis()->SetBinLabel(i, pidHypotheses[i - 1].data());
@@ -120,17 +122,23 @@ struct lfmatchingqa {
       pidHypoHe->GetZaxis()->SetBinLabel(i, pidHypotheses[i - 1].data());
     }
 
-    histos.add<TH3>("momCorrPi", ";#it{p}_{TPC}; #it{p}_{GLO};#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c})", {HistType::kTH3F, {momAxis, momAxis, momResAxis}});
-    histos.add<TH3>("momCorrKa", ";#it{p}_{TPC}; #it{p}_{GLO};#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c})", {HistType::kTH3F, {momAxis, momAxis, momResAxis}});
-    histos.add<TH3>("momCorrPr", ";#it{p}_{TPC}; #it{p}_{GLO};#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c})", {HistType::kTH3F, {momAxis, momAxis, momResAxis}});
-    histos.add<TH3>("momCorrDe", ";#it{p}_{TPC}; #it{p}_{GLO};#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c})", {HistType::kTH3F, {momAxis, momAxis, momResAxis}});
-    histos.add<TH3>("momCorrHe", ";#it{p}_{TPC}; #it{p}_{GLO};#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c})", {HistType::kTH3F, {momAxis, momAxis, momResAxis}});
+    histos.add<TH3>("momCorrPi", ";#it{p}_{TPC} (GeV/#it{c}); #it{p}_{GLO} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c})", {HistType::kTH3F, {momAxis, momAxis, momResAxis}});
+    histos.add<TH3>("momCorrKa", ";#it{p}_{TPC} (GeV/#it{c}); #it{p}_{GLO} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c})", {HistType::kTH3F, {momAxis, momAxis, momResAxis}});
+    histos.add<TH3>("momCorrPr", ";#it{p}_{TPC} (GeV/#it{c}); #it{p}_{GLO} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c})", {HistType::kTH3F, {momAxis, momAxis, momResAxis}});
+    histos.add<TH3>("momCorrDe", ";#it{p}_{TPC} (GeV/#it{c}); #it{p}_{GLO} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c})", {HistType::kTH3F, {momAxis, momAxis, momResAxis}});
+    histos.add<TH3>("momCorrHe", ";#it{p}_{TPC} (GeV/#it{c}); #it{p}_{GLO} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c})", {HistType::kTH3F, {momAxis, momAxis, momResAxis}});
 
-    histos.add<TH3>("itsClusSizePi", ";#it{p}_{TPC}; #it{p}_{GLO}; <ITS Cluster size> (#pi)", {HistType::kTH3F, {momAxis, momAxis, {10, 0, 10}}});
-    histos.add<TH3>("itsClusSizeKa", ";#it{p}_{TPC}; #it{p}_{GLO}; <ITS Cluster size> (K)", {HistType::kTH3F, {momAxis, momAxis, {10, 0, 10}}});
-    histos.add<TH3>("itsClusSizePr", ";#it{p}_{TPC}; #it{p}_{GLO}; <ITS Cluster size> (p)", {HistType::kTH3F, {momAxis, momAxis, {10, 0, 10}}});
-    histos.add<TH3>("itsClusSizeDe", ";#it{p}_{TPC}; #it{p}_{GLO}; <ITS Cluster size> (d)", {HistType::kTH3F, {momAxis, momAxis, {10, 0, 10}}});
-    histos.add<TH3>("itsClusSizeHe", ";#it{p}_{TPC}; #it{p}_{GLO}; <ITS Cluster size> (He3)", {HistType::kTH3F, {momAxis, momAxis, {10, 0, 10}}});
+    histos.add<TH3>("dcaPi", "; #it{p}_{GLO} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c}); DCA_{xy} (cm)", {HistType::kTH3F, {momAxis, momResAxis, dcaAxis}});
+    histos.add<TH3>("dcaKa", "; #it{p}_{GLO} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c}); DCA_{xy} (cm)", {HistType::kTH3F, {momAxis, momResAxis, dcaAxis}});
+    histos.add<TH3>("dcaPr", "; #it{p}_{GLO} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c}); DCA_{xy} (cm)", {HistType::kTH3F, {momAxis, momResAxis, dcaAxis}});
+    histos.add<TH3>("dcaDe", "; #it{p}_{GLO} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c}); DCA_{xy} (cm)", {HistType::kTH3F, {momAxis, momResAxis, dcaAxis}});
+    histos.add<TH3>("dcaHe", "; #it{p}_{GLO} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c}); DCA_{xy} (cm)", {HistType::kTH3F, {momAxis, momResAxis, dcaAxis}});
+
+    histos.add<TH3>("itsClusSizePi", ";#it{p}_{TPC} (GeV/#it{c}); #it{p}_{GLO} (GeV/#it{c}); <ITS Cluster size> x cos(#lambda) (#pi)", {HistType::kTH3F, {momAxis, momAxis, itsClusSizeAxis}});
+    histos.add<TH3>("itsClusSizeKa", ";#it{p}_{TPC} (GeV/#it{c}); #it{p}_{GLO} (GeV/#it{c}); <ITS Cluster size> x cos(#lambda) (K)", {HistType::kTH3F, {momAxis, momAxis, itsClusSizeAxis}});
+    histos.add<TH3>("itsClusSizePr", ";#it{p}_{TPC} (GeV/#it{c}); #it{p}_{GLO} (GeV/#it{c}); <ITS Cluster size> x cos(#lambda) (p)", {HistType::kTH3F, {momAxis, momAxis, itsClusSizeAxis}});
+    histos.add<TH3>("itsClusSizeDe", ";#it{p}_{TPC} (GeV/#it{c}); #it{p}_{GLO} (GeV/#it{c}); <ITS Cluster size> x cos(#lambda) (d)", {HistType::kTH3F, {momAxis, momAxis, itsClusSizeAxis}});
+    histos.add<TH3>("itsClusSizeHe", ";#it{p}_{TPC} (GeV/#it{c}); #it{p}_{GLO} (GeV/#it{c}); <ITS Cluster size> x cos(#lambda) (He3)", {HistType::kTH3F, {momAxis, momAxis, itsClusSizeAxis}});
   }
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TracksFull const& tracks, aod::BCs const&)
@@ -186,25 +194,33 @@ struct lfmatchingqa {
       }
 
       // Filling the mom corr and cl sizes histograms (nSigma < 2 required)
+      // calculating cos(L) of the track
+      float cosL = 1 / std::sqrt(1.f + track.tgl() * track.tgl());
+
       if (abs(track.tpcNSigmaPi()) < 2) {
         histos.fill(HIST("momCorrPi"), signTPCMom, signGloMom, track.tpcInnerParam() - track.p());
-        histos.fill(HIST("itsClusSizePi"), signTPCMom, signGloMom, getITSClSize(track));
+        histos.fill(HIST("dcaPi"), signGloMom, track.tpcInnerParam() - track.p(), track.dcaXY());
+        histos.fill(HIST("itsClusSizePi"), signTPCMom, signGloMom, getITSClSize(track) * cosL);
       }
       if (abs(track.tpcNSigmaKa()) < 2) {
         histos.fill(HIST("momCorrKa"), signTPCMom, signGloMom, track.tpcInnerParam() - track.p());
-        histos.fill(HIST("itsClusSizeKa"), signTPCMom, signGloMom, getITSClSize(track));
+        histos.fill(HIST("dcaKa"), signGloMom, track.tpcInnerParam() - track.p(), track.dcaXY());
+        histos.fill(HIST("itsClusSizeKa"), signTPCMom, signGloMom, getITSClSize(track) * cosL);
       }
       if (abs(track.tpcNSigmaPr()) < 2) {
         histos.fill(HIST("momCorrPr"), signTPCMom, signGloMom, track.tpcInnerParam() - track.p());
-        histos.fill(HIST("itsClusSizePr"), signTPCMom, signGloMom, getITSClSize(track));
+        histos.fill(HIST("dcaPr"), signGloMom, track.tpcInnerParam() - track.p(), track.dcaXY());
+        histos.fill(HIST("itsClusSizePr"), signTPCMom, signGloMom, getITSClSize(track) * cosL);
       }
       if (abs(tpcNSigmaDeu) < 2) {
         histos.fill(HIST("momCorrDe"), signTPCMom, signGloMom, track.tpcInnerParam() - track.p());
-        histos.fill(HIST("itsClusSizeDe"), signTPCMom, signGloMom, getITSClSize(track));
+        histos.fill(HIST("dcaDe"), signGloMom, track.tpcInnerParam() - track.p(), track.dcaXY());
+        histos.fill(HIST("itsClusSizeDe"), signTPCMom, signGloMom, getITSClSize(track) * cosL);
       }
       if (abs(tpcNSigmaHe3) < 2) {
         histos.fill(HIST("momCorrHe"), signTPCMom, signGloMom, track.tpcInnerParam() - track.p());
-        histos.fill(HIST("itsClusSizeHe"), signTPCMom, signGloMom, getITSClSize(track));
+        histos.fill(HIST("dcaHe"), signGloMom, track.tpcInnerParam() - track.p(), track.dcaXY());
+        histos.fill(HIST("itsClusSizeHe"), signTPCMom, signGloMom, getITSClSize(track) * cosL);
       }
     }
   }
