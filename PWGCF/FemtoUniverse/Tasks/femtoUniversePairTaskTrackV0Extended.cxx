@@ -128,15 +128,14 @@ struct femtoUniversePairTaskTrackV0Extended {
     }
   }
 
-
   bool IsNSigmaTPC(float nsigmaTPCParticle)
   {
-      if (TMath::Abs(nsigmaTPCParticle) < ConfNsigmaTPCParticle) {
-        return true;
-      } else {
-        return false;
-      }
-}
+    if (TMath::Abs(nsigmaTPCParticle) < ConfNsigmaTPCParticle) {
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   template <typename T>
   bool IsParticleCombined(const T& part, int id)
@@ -147,7 +146,6 @@ struct femtoUniversePairTaskTrackV0Extended {
 
     return IsNSigmaCombined(part.p(), tpcNSigmas[id], tofNSigmas[id]);
   }
-
 
   template <typename T>
   bool IsParticleTPC(const T& part, int id)
