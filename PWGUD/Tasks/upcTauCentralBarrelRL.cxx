@@ -126,10 +126,12 @@ struct UpcTauCentralBarrelRL {
      {"EventSixTracks/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"EventSixTracks/SixPions/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}}}};
 
-  // declare configurables
-  Configurable<bool> verboseInfo{"verboseInfo", true, {"Print general info to terminal; default it true."}};
-  Configurable<bool> verboseDebug{"verboseDebug", false, {"Print debug info to terminal; default it false."}};
-  Configurable<int> whichGapSide{"whichGapSide", 2, {"0 for side A, 1 for side C, 2 for both sides"}};
+	// declare configurables
+	Configurable<bool> verboseInfo{"verboseInfo", true, {"Print general info to terminal; default it true."}};
+	Configurable<bool> verboseDebug{"verboseDebug", false, {"Print debug info to terminal; default it false."}};
+    Configurable<int> whichGapSide{"whichGapSide", 2, {"0 for side A, 1 for side C, 2 for both sides"}};
+    Configurable<float> cutAvgITSclusterSize{"cutAvgITSclusterSize", 3.5, {"specific study"}};
+    Configurable<float> cutPtAvgITSclusterSize{"cutPtAvgITSclusterSize", 0.7, {"specific study"}};
 
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
   using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
