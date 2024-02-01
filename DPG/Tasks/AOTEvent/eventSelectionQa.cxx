@@ -798,7 +798,7 @@ struct EventSelectionQaTask {
     for (const auto& track : tracks) {
       auto mapAmbTrIdsIt = mapAmbTrIds.find(track.globalIndex());
       int ambTrId = mapAmbTrIdsIt == mapAmbTrIds.end() ? -1 : mapAmbTrIdsIt->second;
-      int indexBc = ambTrId < 0 ? track.collision_as<ColEvSels>().bc_as<BCsRun3>().globalIndex() : ambTracks.iteratorAt(ambTrId).bc().begin().globalIndex();
+      int indexBc = ambTrId < 0 ? track.collision_as<ColEvSels>().bc_as<BCsRun3>().globalIndex() : ambTracks.iteratorAt(ambTrId).bc_as<BCsRun3>().begin().globalIndex();
       auto bc = bcs.iteratorAt(indexBc);
       int64_t globalBC = bc.globalBC() + floor(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
 
