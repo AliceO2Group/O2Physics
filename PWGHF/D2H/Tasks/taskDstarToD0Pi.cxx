@@ -45,7 +45,7 @@ struct HfTaskDstarToD0Pi {
   Partition<CandDstarWSelFlag> rowsSelectedCandDstar = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Partition<CandDstarWSelFlagMcRec> rowsSelectedCandDstarMcRec = aod::hf_sel_candidate_dstar::isRecoD0Flag == selectionFlagHfD0ToPiK;
 
-  ConfigurableAxis binningImpactParam{"binningImpactParam",{1000,0.1,-0.1}," Bins of Imapct Parameter"};
+  ConfigurableAxis binningImpactParam{"binningImpactParam",{1000,0.1,-0.1}," Bins of Impact Parameter"};
   ConfigurableAxis binningDecayLength{"binningDecayLength",{1000,0.0,0.7},"Bins of Decay Length"};
   ConfigurableAxis binningNormDecayLength{"binningNormDecayLength",{1000,0.0,40.0},"Bins of Normalised Decay Length"};
 
