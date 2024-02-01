@@ -23,8 +23,8 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_LCTOPKPI(FEATURE)                               \
-  {                                                              \
+#define FILL_MAP_LCTOPKPI(FEATURE)                                   \
+  {                                                                  \
 #FEATURE, static_cast < uint8_t>(InputFeaturesLcToPKPi::FEATURE) \
   }
 
