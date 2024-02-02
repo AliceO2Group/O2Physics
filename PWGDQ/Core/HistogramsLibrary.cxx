@@ -816,7 +816,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     nJPsiHadCorr[2] = TArrayD(kDelPhiBins + 1, DelPhiBinLims);
     nJPsiHadCorr[3] = TArrayD(kPtBins + 1, PtBinLims);
 
-    int varsJPsiHadCorr[4] = {VarManager::kMass, VarManager::kDeltaEta, VarManager::kDeltaPhi, VarManager::kPt1};
+    int varsJPsiHadCorr[4] = {VarManager::kPairMassDau, VarManager::kDeltaEta, VarManager::kDeltaPhi, VarManager::kPairPtDau};
     hm->AddHistogram(histClass, "InvMass_DelEta_DelPhi", "", 4, varsJPsiHadCorr, nJPsiHadCorr);
   }
   if (groupStr.Contains("dilepton-charmhadron")) {
