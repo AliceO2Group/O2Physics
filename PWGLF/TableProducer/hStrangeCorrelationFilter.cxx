@@ -130,7 +130,7 @@ struct hstrangecorrelationfilter {
   using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA>;
   // using IDTracks= soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::TOFSignal>; // prepared for Bayesian PID
   using IDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal, aod::TracksDCA>;
-  using V0DatasWithoutTrackX = soa::Join<V0Indices, V0Cores>;
+  using V0DatasWithoutTrackX = soa::Join<aod::V0Indices, aod::V0Cores>;
 
   Produces<aod::TriggerTracks> triggerTrack;
   Produces<aod::AssocPions> assocPion;
