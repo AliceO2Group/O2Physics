@@ -122,9 +122,6 @@ constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | Va
 // constexpr static int pairTypeMuMu = VarManager::kDecayToMuMu;
 // constexpr static int pairTypeEMu = VarManager::kElectronMuon;
 
-void DefineHistograms(HistogramManager* histMan, TString histClasses);
-void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar);
-
 // Fill the FlowContainer
 void FillFC(GFW* fGFW, OutputObj<FlowContainer> fFC, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool fillflag);
 
@@ -218,7 +215,6 @@ struct DqCumulantFlow {
   } cfg;
 
   // Define output
-  HistogramManager* fHistMan = nullptr;
   OutputObj<FlowContainer> fFC{FlowContainer("flowContainer")};
   OutputObj<THashList> fOutputList{"outputQA"};
   HistogramRegistry registry{"registry"};
@@ -261,18 +257,8 @@ struct DqCumulantFlow {
     fValuesDilepton = new float[VarManager::kNVars];
     fValuesHadron = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
-    fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
-    fHistMan->SetUseDefaultVariableNames(kTRUE);
-    fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
-
-    // TODO: Create separate histogram directories for each selection used in the creation of the dileptons
-    // TODO: Implement possibly multiple selections for the associated track ?
-    if (context.mOptions.get<bool>("processSkimmed") || context.mOptions.get<bool>("processSkimmedDimuon")) {
-      DefineHistograms(fHistMan, "DileptonsSelected", fConfigAddDileptonHadHistogram); // define all histograms
-    }
 
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
-    fOutputList.setObject(fHistMan->GetMainHistogramList());
     TString configCutNamesStr = fConfigTrackCuts.value;
     if (!configCutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(configCutNamesStr.Tokenize(","));
@@ -406,7 +392,6 @@ struct DqCumulantFlow {
 
         // VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
         VarManager::FillTrack<fgDimuonsFillMap>(dilepton, fValuesDilepton);
-        fHistMan->FillHistClass("DileptonsSelected", fValuesDilepton);
 
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::ReducedTrack)) {
           fGFW->Fill(dilepton.eta(), 0, dilepton.phi(), wacc * weff, 4);
@@ -489,53 +474,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<DqCumulantFlow>(cfgc)};
-}
-
-void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar)
-{
-  //
-  // Define here the histograms for all the classes required in analysis.
-  //  The histogram classes are provided in the histClasses string, separated by semicolon ";"
-  //  The histogram classes and their components histograms are defined below depending on the name of the histogram class
-  //
-  std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
-  for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
-    TString classStr = objArray->At(iclass)->GetName();
-    histMan->AddHistClass(classStr.Data());
-
-    TString histName = configVar.value;
-    // NOTE: The level of detail for histogramming can be controlled via configurables
-    if (classStr.Contains("Event")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", histName);
-    }
-
-    if (classStr.Contains("Track") && !classStr.Contains("Pairs")) {
-
-      if (classStr.Contains("Muon")) {
-        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", histName);
-      }
-    }
-
-    if (classStr.Contains("Pairs")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", histName);
-    }
-
-    if (classStr.Contains("DileptonsSelected")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "barrel");
-    }
-
-    if (classStr.Contains("HadronsSelected")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", histName);
-    }
-
-    if (classStr.Contains("DileptonHadronInvMass")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-mass");
-    }
-
-    if (classStr.Contains("DileptonHadronCorrelation")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-correlation");
-    }
-  } // end loop over histogram classes
 }
 
 void FillFC(GFW* fGFW, OutputObj<FlowContainer> fFC, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool fillflag)
