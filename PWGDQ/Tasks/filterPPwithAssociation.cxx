@@ -62,6 +62,8 @@ namespace
 {
 enum DQTriggers {
   kSingleE = 0,
+  kLMeeIMR,
+  kLMeeHMR,
   kDiElectron,
   kSingleMuLow,
   kSingleMuHigh,
@@ -1029,8 +1031,8 @@ struct DQFilterPPTask {
   Configurable<std::string> fConfigBarrelSelections{"cfgBarrelSels", "jpsiPID1:pairMassLow:1", "<track-cut>:[<pair-cut>]:<n>,[<track-cut>:[<pair-cut>]:<n>],..."};
   Configurable<std::string> fConfigMuonSelections{"cfgMuonSels", "muonQualityCuts:pairNoCut:1", "<muon-cut>:[<pair-cut>]:<n>"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
-  Configurable<bool> fConfigFilterLsBarrelTracksPairs{"cfgWithBarrelLS", false, "If true, also select like sign (--/++) barrel track pairs"};
-  Configurable<bool> fConfigFilterLsMuonsPairs{"cfgWithMuonLS", false, "If true, also select like sign (--/++) muon pairs"};
+  Configurable<std::string> fConfigFilterLsBarrelTracksPairs{"cfgWithBarrelLS", "false", "Comma separated list of booleans for each trigger, If true, also select like sign (--/++) barrel track pairs"};
+  Configurable<std::string> fConfigFilterLsMuonsPairs{"cfgWithMuonLS", "false", "Comma separated list of booleans for each trigger, If true, also select like sign (--/++) muon pairs"};
 
   int fNBarrelCuts;                                    // number of barrel selections
   int fNMuonCuts;                                      // number of muon selections
@@ -1167,6 +1169,17 @@ struct DQFilterPPTask {
       }
     }
 
+    // check which selection should use like sign (LS) (--/++) barrel track pairs
+    uint32_t pairingLS = 0; // used to set in which cut setting LS pairs will be analysed
+    TString barrelLSstr = fConfigFilterLsBarrelTracksPairs.value;
+    std::unique_ptr<TObjArray> objArrayLS(barrelLSstr.Tokenize(","));
+    for (int icut = 0; icut < fNBarrelCuts; icut++) {
+      TString objStr = objArrayLS->At(icut)->GetName();
+      if (!objStr.CompareTo("true")) {
+        pairingLS |= (uint32_t(1) << icut);
+      }
+    }
+
     // run pairing if there is at least one selection that requires it
     uint32_t pairFilter = 0;
     if (pairingMask > 0) {
@@ -1181,16 +1194,17 @@ struct DQFilterPPTask {
         // get the tracks from the index stored in the association
         auto t1 = a1.template track_as<TTracks>();
         auto t2 = a2.template track_as<TTracks>();
-        // keep just opposite-sign pairs
-        if (!fConfigFilterLsBarrelTracksPairs) {
-          if (t1.sign() * t2.sign() > 0) {
-            continue;
-          }
-        }
 
         // construct the pair and apply pair cuts
         VarManager::FillPair<VarManager::kDecayToEE, TTrackFillMap>(t1, t2); // compute pair quantities
         for (int icut = 0; icut < fNBarrelCuts; icut++) {
+          // select like-sign pairs if trigger has set boolean true within fConfigFilterLsBarrelTracksPairs
+          if (!(pairingLS & (uint32_t(1) << icut))) {
+            if (t1.sign() * t2.sign() > 0) {
+              continue;
+            }
+          }
+
           if (!(pairFilter & (uint32_t(1) << icut))) {
             continue;
           }
@@ -1226,6 +1240,16 @@ struct DQFilterPPTask {
       }
     }
 
+    pairingLS = 0; // reset the decisions for muons
+    TString musonLSstr = fConfigFilterLsMuonsPairs.value;
+    std::unique_ptr<TObjArray> objArrayMuonLS(musonLSstr.Tokenize(","));
+    for (int icut = 0; icut < fNMuonCuts; icut++) {
+      TString objStr = objArrayMuonLS->At(icut)->GetName();
+      if (!objStr.CompareTo("true")) {
+        pairingLS |= (uint32_t(1) << icut);
+      }
+    }
+
     // run pairing if there is at least one selection that requires it
     pairFilter = 0;
     if (pairingMask > 0) {
@@ -1241,16 +1265,16 @@ struct DQFilterPPTask {
         // get the real muon tracks
         auto t1 = a1.template fwdtrack_as<TMuons>();
         auto t2 = a2.template fwdtrack_as<TMuons>();
-        // keep just opposite-sign pairs
-        if (!fConfigFilterLsMuonsPairs) {
-          if (t1.sign() * t2.sign() > 0) {
-            continue;
-          }
-        }
 
         // construct the pair and apply cuts
         VarManager::FillPair<VarManager::kDecayToMuMu, TTrackFillMap>(t1, t2); // compute pair quantities
         for (int icut = 0; icut < fNMuonCuts; icut++) {
+          // select like-sign pairs if trigger has set boolean true within fConfigFilterLsMuonsPairs
+          if (!(pairingLS & (uint32_t(1) << icut))) {
+            if (t1.sign() * t2.sign() > 0) {
+              continue;
+            }
+          }
           if (!(pairFilter & (uint32_t(1) << icut))) {
             continue;
           }
@@ -1415,13 +1439,13 @@ struct DQFilterPPTask {
       fStats->Fill(-2.0);
       if (!collision.isDQEventSelected()) {
         eventFilter(0);
-        dqtable(false, false, false, false, false);
+        dqtable(false, false, false, false, false, false, false);
       }
       fStats->Fill(-1.0);
 
       if (fFiltersMap.find(collision.globalIndex()) == fFiltersMap.end()) {
         eventFilter(0);
-        dqtable(false, false, false, false, false);
+        dqtable(false, false, false, false, false, false, false);
       } else {
         totalEventsTriggered++;
         for (int i = 0; i < fNBarrelCuts + fNMuonCuts; i++) {
@@ -1430,7 +1454,7 @@ struct DQFilterPPTask {
         }
         eventFilter(fFiltersMap[collision.globalIndex()]);
         auto dqDecisions = fCEFPfilters[collision.globalIndex()];
-        dqtable(dqDecisions[0], dqDecisions[1], dqDecisions[2], dqDecisions[3], dqDecisions[4]);
+        dqtable(dqDecisions[0], dqDecisions[1], dqDecisions[2], dqDecisions[3], dqDecisions[4], dqDecisions[5], dqDecisions[6]);
       }
     }
 
