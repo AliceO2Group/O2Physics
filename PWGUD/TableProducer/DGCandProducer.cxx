@@ -35,6 +35,7 @@ struct DGCandProducer {
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
   Produces<aod::UDCollsLabels> outputCollsLabels;
   Produces<aod::UDZdcs> outputZdcs;
+  Produces<aod::UDZdcsReduced> outputZdcsReduced;
   Produces<aod::UDTracks> outputTracks;
   Produces<aod::UDTracksCov> outputTracksCov;
   Produces<aod::UDTracksDCA> outputTracksDCA;
@@ -107,7 +108,7 @@ struct DGCandProducer {
                     track.tofNSigmaKa(),
                     track.tofNSigmaPr());
     outputTracksExtra(track.tpcInnerParam(),
-                      track.itsClusterMap(),
+                      track.itsClusterSizes(),
                       track.tpcNClsFindable(),
                       track.tpcNClsFindableMinusFound(),
                       track.tpcNClsFindableMinusCrossedRows(),
@@ -131,8 +132,11 @@ struct DGCandProducer {
   template <typename TBC>
   void fillFIThistograms(TBC const& bc)
   {
-    std::array<bool, 5> triggers{{true, udhelpers::TOR(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits()),
+    std::array<bool, 5> triggers{{true, !udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits()),
                                   udhelpers::TVX(bc), udhelpers::TSC(bc), udhelpers::TCE(bc)}};
+    if (!triggers[1]) {
+      LOGF(info, "NoTOR trigger");
+    }
     if (bc.has_foundFV0()) {
       auto fv0 = bc.foundFV0();
       auto ampA = udhelpers::FV0AmplitudeA(fv0);
@@ -141,6 +145,11 @@ struct DGCandProducer {
       registry.get<TH2>(HIST("reco/fv0"))->Fill(ampA, triggers[2] ? 2 : 6);
       registry.get<TH2>(HIST("reco/fv0"))->Fill(ampA, triggers[3] ? 3 : 7);
       registry.get<TH2>(HIST("reco/fv0"))->Fill(ampA, triggers[4] ? 4 : 8);
+      
+      if (!triggers[1]) {
+        LOGF(info, "  fv0: %f", ampA);
+      }
+
     }
     if (bc.has_foundFT0()) {
       auto ft0 = bc.foundFT0();
@@ -156,6 +165,11 @@ struct DGCandProducer {
       registry.get<TH2>(HIST("reco/ft0C"))->Fill(ampC, triggers[3] ? 3 : 7);
       registry.get<TH2>(HIST("reco/ft0A"))->Fill(ampA, triggers[4] ? 4 : 8);
       registry.get<TH2>(HIST("reco/ft0C"))->Fill(ampC, triggers[4] ? 4 : 8);
+      
+      if (!triggers[1]) {
+        LOGF(info, "  ft0: %f %f", ampA, ampC);
+      }
+
     }
     if (bc.has_foundFDD()) {
       auto fdd = bc.foundFDD();
@@ -171,6 +185,11 @@ struct DGCandProducer {
       registry.get<TH2>(HIST("reco/fddC"))->Fill(ampC, triggers[3] ? 3 : 7);
       registry.get<TH2>(HIST("reco/fddA"))->Fill(ampA, triggers[4] ? 4 : 8);
       registry.get<TH2>(HIST("reco/fddC"))->Fill(ampC, triggers[4] ? 4 : 8);
+
+      if (!triggers[1]) {
+        LOGF(info, "  fdd: %f %f", ampA, ampC);
+      }
+
     }
   }
 
@@ -191,7 +210,7 @@ struct DGCandProducer {
     //   2: TVX              6: no TVX
     //   3: TSC              7: no TSC
     //   4: TCE              8: no TCE
-    registry.add("reco/fv0", "FV0 amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
+    registry.add("reco/fv0",  "FV0 amplitudes",  {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
     registry.add("reco/ft0A", "FT0A amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
     registry.add("reco/ft0C", "FT0C amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
     registry.add("reco/fddA", "FDDA amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
@@ -268,6 +287,12 @@ struct DGCandProducer {
         auto times = std::vector(zdc.time().begin(), zdc.time().end());
         auto chTs = std::vector(zdc.channelT().begin(), zdc.channelT().end());
         outputZdcs(outputCollisions.lastIndex(), enes, chEs, amps, times, chTs);
+
+        float timeZNA = zdc.timeZNA();
+        float timeZNC = zdc.timeZNC();
+        float eComZNA = zdc.energyCommonZNA();
+        float eComZNC = zdc.energyCommonZNC();
+        outputZdcsReduced(outputCollisions.lastIndex(), timeZNA, timeZNC, eComZNA, eComZNC);
       }
 
       // produce TPC signal histograms for 2-track events
