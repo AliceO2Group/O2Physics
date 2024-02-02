@@ -290,8 +290,8 @@ struct derivedlambdakzeroanalysis {
     if (compatibleTPC(v0, spAntiLambda))
       bitset(bitMap, selAntiLambdaTPC);
 
-    auto posTrackExtra = v0.posTrackExtra();
-    auto negTrackExtra = v0.negTrackExtra();
+    auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
+    auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
 
     // TPC quality
     if (posTrackExtra.tpcCrossedRows() >= minTPCrows)
