@@ -57,7 +57,11 @@ struct MultiplicityExtraTable {
     float multFT0C = 0.f;
     float multFT0A = 0.f;
     float multFV0A = 0.f;
+    float multFDDA = 0.f;
+    float multFDDC = 0.f;
+    uint8_t multFT0TriggerBits = 0;
     uint8_t multFV0TriggerBits = 0;
+    uint8_t multFDDTriggerBits = 0;
     uint64_t multBCTriggerMask = bc.triggerMask();
 
     // initialize - from Arvind
@@ -76,11 +80,6 @@ struct MultiplicityExtraTable {
       std::map<std::string, std::string> mapHeader;
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
       CollidingBunch = grplhcif->getBunchFilling().getBCPattern();
-      // for (int i = 0; i < (int)CollidingBunch.size(); i++) {
-      //   if (CollidingBunch.test(i)) {
-      //     LOG(info) << i << "  ";
-      //   }
-      // }
     } // new run number
 
     bool collidingBC = CollidingBunch.test(localBC);
@@ -89,7 +88,7 @@ struct MultiplicityExtraTable {
       auto ft0 = bc.ft0();
       std::bitset<8> triggers = ft0.triggerMask();
       Tvx = triggers[o2::fit::Triggers::bitVertex];
-      multFV0TriggerBits = static_cast<uint8_t>(triggers.to_ulong());
+      multFT0TriggerBits = static_cast<uint8_t>(triggers.to_ulong());
 
       // calculate T0 charge
       for (auto amplitude : ft0.amplitudeA()) {
@@ -98,19 +97,40 @@ struct MultiplicityExtraTable {
       for (auto amplitude : ft0.amplitudeC()) {
         multFT0C += amplitude;
       }
+    }else{
+      multFT0A = -999.0f;
+      multFT0C = -999.0f;
+    }
+    if (bc.has_fv0a()) {
+      auto fv0 = bc.fv0a();
+      std::bitset<8> fV0Triggers = fv0.triggerMask();
+      multFV0TriggerBits = static_cast<uint8_t>(fV0Triggers.to_ulong());
 
-      if (bc.has_fv0a()) {
-        auto fv0 = bc.fv0a();
-        std::bitset<8> fV0Triggers = fv0.triggerMask();
-
-        for (auto amplitude : fv0.amplitude()) {
-          multFV0A += amplitude;
-        }
-        isFV0OrA = fV0Triggers[o2::fit::Triggers::bitA];
-      } // fv0
+      for (auto amplitude : fv0.amplitude()) {
+        multFV0A += amplitude;
+      }
+      isFV0OrA = fV0Triggers[o2::fit::Triggers::bitA];
+    }else{
+      multFV0A = -999.0f;
     }
 
-    multBC(multFT0A, multFT0C, multFV0A, Tvx, isFV0OrA, multFV0TriggerBits, multBCTriggerMask, collidingBC);
+    if( bc.has_fdd()){ 
+      auto fdd = bc.fdd();
+      std::bitset<8> fFDDTriggers = fdd.triggerMask();
+      multFDDTriggerBits = static_cast<uint8_t>(fFDDTriggers.to_ulong());
+
+      for (auto amplitude : fdd.chargeA()) {
+        multFDDA += amplitude;
+      }
+      for (auto amplitude : fdd.chargeC()) {
+        multFDDC += amplitude;
+      }
+    }else{
+      multFDDA = -999.0f;
+      multFDDC = -999.0f;
+    }
+
+    multBC(multFT0A, multFT0C, multFV0A, multFDDA, multFDDC, Tvx, isFV0OrA, multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC);
   }
 };
 
