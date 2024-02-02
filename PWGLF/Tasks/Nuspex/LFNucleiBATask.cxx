@@ -1736,6 +1736,7 @@ struct LFNucleiBATask {
             isProdByGen = track.mcParticle().producedByGenerator();
             isWeakDecay = track.mcParticle().getProcess() == 4;
             pdgCode = track.mcParticle().pdgCode();
+            genPt = track.mcParticle().pt();
           }
           switch (pdgCode) {
             case PDGProton:
@@ -1798,6 +1799,13 @@ struct LFNucleiBATask {
                     histos.fill(HIST("tracks/deuteron/histDeuteronPtShiftRec"), DPt);
                     histos.fill(HIST("tracks/deuteron/histDeuteronPtRec"), track.pt());
                     histos.fill(HIST("spectraGen/deuteron/histDeuteronPtShiftCorrection"), DPt, DPt - genPt);
+                  } else {
+                    histos.fill(HIST("spectraGen/deuteron/histDeuteronPtShift"), track.pt(), track.pt() - genPt);
+                    histos.fill(HIST("spectraGen/deuteron/histDeuteronPtShiftVsEta"), track.eta(), track.pt() - genPt);
+                    // histos.fill(HIST("spectraGen/histPShift"), track.p(), track.p() - track.mcParticle().p());
+                    histos.fill(HIST("tracks/deuteron/histDeuteronPtShiftRec"), DPt);
+                    histos.fill(HIST("tracks/deuteron/histDeuteronPtRec"), track.pt());
+                    histos.fill(HIST("spectraGen/deuteron/histDeuteronPtShiftCorrection"), DPt, DPt - genPt);
                   }
                 }
                 if (!isPhysPrim && !isProdByGen) {
@@ -1818,6 +1826,13 @@ struct LFNucleiBATask {
                   histos.fill(HIST("tracks/deuteron/dca/before/hDCAxyVsPtantiDeuteronTruePrim"), antiDPt, track.dcaXY());
                   histos.fill(HIST("tracks/deuteron/dca/before/hDCAzVsPtantiDeuteronTruePrim"), antiDPt, track.dcaZ());
                   if constexpr (IsFilteredData) {
+                    histos.fill(HIST("spectraGen/deuteron/histAntiDeuteronPtShift"), track.pt(), track.pt() - genPt);
+                    histos.fill(HIST("spectraGen/deuteron/histAntiDeuteronPtShiftVsEta"), track.eta(), track.pt() - genPt);
+                    // histos.fill(HIST("spectraGen/histPShift"), track.p(), track.p() - track.mcParticle().p());
+                    histos.fill(HIST("tracks/deuteron/histAntiDeuteronPtShiftRec"), antiDPt);
+                    histos.fill(HIST("tracks/deuteron/histAntiDeuteronPtRec"), track.pt());
+                    histos.fill(HIST("spectraGen/deuteron/histAntiDeuteronPtShiftCorrection"), antiDPt, antiDPt - genPt);
+                  } else {
                     histos.fill(HIST("spectraGen/deuteron/histAntiDeuteronPtShift"), track.pt(), track.pt() - genPt);
                     histos.fill(HIST("spectraGen/deuteron/histAntiDeuteronPtShiftVsEta"), track.eta(), track.pt() - genPt);
                     // histos.fill(HIST("spectraGen/histPShift"), track.p(), track.p() - track.mcParticle().p());
