@@ -2804,7 +2804,7 @@ struct HfTrackIndexSkimCreator {
 
           if (doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (pt2Prong + ptTolerance) * 1.2 > binsPtDstarToD0Pi->at(0) && whichHypo2Prong[kN2ProngDecays] != 0) { // if D* enabled and pt of the D0 is larger than the minimum of the D* one within 20% (D* and D0 momenta are very similar, always within 20% according to PYTHIA8)
             // second loop over positive tracks
-            if (TESTBIT(whichHypo2Prong[kN2ProngDecays], 0) && (!applyKaonPidIn3Prongs || TESTBIT(trackIndexNeg1.isIdentifiedPid()))) { // only for D0 candidates; moreover if kaon PID enabled, apply to the negative track
+            if (TESTBIT(whichHypo2Prong[kN2ProngDecays], 0) && (!applyKaonPidIn3Prongs || TESTBIT(trackIndexNeg1.isIdentifiedPid(), channelKaonPid))) { // only for D0 candidates; moreover if kaon PID enabled, apply to the negative track
               auto groupedTrackIndicesSoftPionsPos = positiveSoftPions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
               for (auto trackIndexPos2 = groupedTrackIndicesSoftPionsPos.begin(); trackIndexPos2 != groupedTrackIndicesSoftPionsPos.end(); ++trackIndexPos2) {
                 if (trackIndexPos2 == trackIndexPos1) {
@@ -2841,7 +2841,7 @@ struct HfTrackIndexSkimCreator {
             }
 
             // second loop over negative tracks
-            if (TESTBIT(whichHypo2Prong[kN2ProngDecays], 1) && (!applyKaonPidIn3Prongs || TESTBIT(trackIndexPos1.isIdentifiedPid()))) { // only for D0bar candidates; moreover if kaon PID enabled, apply to the positive track
+            if (TESTBIT(whichHypo2Prong[kN2ProngDecays], 1) && (!applyKaonPidIn3Prongs || TESTBIT(trackIndexPos1.isIdentifiedPid(), channelKaonPid))) { // only for D0bar candidates; moreover if kaon PID enabled, apply to the positive track
               auto groupedTrackIndicesSoftPionsNeg = negativeSoftPions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
               for (auto trackIndexNeg2 = groupedTrackIndicesSoftPionsNeg.begin(); trackIndexNeg2 != groupedTrackIndicesSoftPionsNeg.end(); ++trackIndexNeg2) {
                 if (trackIndexNeg1 == trackIndexNeg2) {
