@@ -197,12 +197,14 @@ struct singleTrackSelector {
 
           if constexpr (isMC) {
             int origin = -1;
-            if (track.mcParticle().isPhysicalPrimary())
-              origin = 0;
-            if (!track.mcParticle().isPhysicalPrimary() && track.mcParticle().producedByGenerator())
-              origin = 1;
-            if (!track.mcParticle().isPhysicalPrimary() && !track.mcParticle().producedByGenerator())
-              origin = 2;
+            if (track.mcParticle().isPhysicalPrimary()) {
+              origin = 0; // primary
+            } else {
+              if (track.mcParticle().getProcess() == 4)
+                origin = 1; // weak
+              else
+                origin = 2; // material
+            }
 
             if (origin == -1)
               LOGF(fatal, "Could not define the origin (primary/weak decay/material) of the track!!!");
@@ -213,7 +215,6 @@ struct singleTrackSelector {
                        track.mcParticle().eta(),
                        track.mcParticle().phi());
           }
-
           break; // break the loop with particlesToKeep after the 'if' condition is satisfied -- don't want double entries
         }
     }
