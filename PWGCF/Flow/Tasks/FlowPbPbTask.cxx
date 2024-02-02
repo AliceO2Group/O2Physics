@@ -26,6 +26,7 @@
 #include "GFWPowerArray.h"
 #include "GFW.h"
 #include "GFWCumulant.h"
+#include "GFWWeights.h"
 #include "FlowContainer.h"
 #include "TList.h"
 #include <TProfile.h>
@@ -48,16 +49,24 @@ struct FlowPbPbTask {
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
+  O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
+  O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
+  O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
   ConfigurableAxis axisPtHist{"axisPtHist", {100, 0., 10.}, "pt axis for histograms"};
-  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2., 2.25, 2.5, 2.75, 3.0, 3.25, 3.50, 3.75, 4.0, 4.5, 5.0, 5.5, 6.0, 7.0, 8.0, 9.0, 10.0}, "pt axis for histograms"};
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, "pt axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+
+  // Corrections
+  TH1D* mEfficiency = nullptr;
+  GFWWeights* mAcceptance = nullptr;
+  bool correctionsLoaded = false;
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -66,6 +75,7 @@ struct FlowPbPbTask {
 
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
+  OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
   HistogramRegistry registry{"registry"};
 
   // define global variables
@@ -125,6 +135,11 @@ struct FlowPbPbTask {
     int nPtBins = axis.binEdges.size() - 1;
     double* PtBins = &(axis.binEdges)[0];
     fPtAxis = new TAxis(nPtBins, PtBins);
+
+    if (cfgOutputNUAWeights) {
+      fWeights->SetPtBins(nPtBins, PtBins);
+      fWeights->Init(true, false);
+    }
 
     // add in FlowContainer to Get boostrap sample automatically
     TObjArray* oba = new TObjArray();
@@ -292,8 +307,48 @@ struct FlowPbPbTask {
     return;
   }
 
+  void loadCorrections(uint64_t timestamp)
+  {
+    if (correctionsLoaded)
+      return;
+    if (cfgAcceptance.value.empty() == false) {
+      mAcceptance = ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance, timestamp);
+      if (mAcceptance)
+        LOGF(info, "Loaded acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
+      else
+        LOGF(warning, "Could not load acceptance weights from %s (%p)", cfgAcceptance.value.c_str(), (void*)mAcceptance);
+    }
+    if (cfgEfficiency.value.empty() == false) {
+      mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
+      if (mEfficiency == nullptr) {
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
+      }
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+    }
+    correctionsLoaded = true;
+  }
+
+  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, const float& phi, const float& eta, const float& pt, const float& vtxz)
+  {
+    float eff = 1.;
+    if (mEfficiency)
+      eff = mEfficiency->GetBinContent(mEfficiency->FindBin(pt));
+    else
+      eff = 1.0;
+    if (eff == 0)
+      return false;
+    weight_nue = 1. / eff;
+    if (mAcceptance)
+      weight_nua = mAcceptance->GetNUA(phi, eta, vtxz);
+    else
+      weight_nua = 1;
+    return true;
+  }
+
   void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
   {
+    if (!collision.sel8())
+      return;
     int Ntot = tracks.size();
     if (Ntot < 1)
       return;
@@ -304,6 +359,9 @@ struct FlowPbPbTask {
     registry.fill(HIST("hCent"), collision.centFT0C());
     fGFW->Clear();
     const auto cent = collision.centFT0C();
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    loadCorrections(bc.timestamp());
+
     float weff = 1, wacc = 1;
     double weffEvent = 0, waccEvent = 0;
     int TrackNum = 0;
@@ -314,11 +372,16 @@ struct FlowPbPbTask {
     for (auto& track : tracks) {
       double pt = track.pt();
       double eta = track.eta();
+      double phi = track.phi();
+      if (cfgOutputNUAWeights)
+        fWeights->Fill(phi, eta, vtxz, pt, cent, 0);
+      if (!setCurrentParticleWeights(weff, wacc, phi, eta, pt, vtxz))
+        continue;
       bool WithinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
       bool WithinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within RF pT range
       bool WithinEtaGap08 = (eta >= -0.4) && (eta <= 0.4);
       if (WithinPtRef) {
-        registry.fill(HIST("hPhi"), track.phi());
+        registry.fill(HIST("hPhi"), phi);
         registry.fill(HIST("hEta"), track.eta());
         registry.fill(HIST("hPt"), pt);
         weffEvent += weff;
@@ -334,11 +397,11 @@ struct FlowPbPbTask {
         }
       }
       if (WithinPtRef)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1);
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 1);
       if (WithinPtPOI)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 2);
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 2);
       if (WithinPtPOI && WithinPtRef)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 4);
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 4);
     }
 
     double WeffEvent_diff_WithGap08 = weffEvent_WithinGap08 * weffEvent_WithinGap08 - weffEventSquare_WithinGap08;
