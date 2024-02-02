@@ -516,15 +516,15 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
     // configure proton PID
     for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
-      selectorProton[iChannel].setRangePtTpc(selectionsPid->get(iChannel, 0u), selectionsPid->get(iChannel, 1u)); // 0u == "minPtTpc", 1u == "maxPtTpc"
-      selectorProton[iChannel].setRangePtTof(selectionsPid->get(iChannel, 3u), selectionsPid->get(iChannel, 4u)); // 3u == "minPtTof, 4u == "maxPtTof"
+      selectorProton[iChannel].setRangePtTpc(selectionsPid->get(iChannel, 0u), selectionsPid->get(iChannel, 1u));      // 0u == "minPtTpc", 1u == "maxPtTpc"
+      selectorProton[iChannel].setRangePtTof(selectionsPid->get(iChannel, 3u), selectionsPid->get(iChannel, 4u));      // 3u == "minPtTof, 4u == "maxPtTof"
       selectorProton[iChannel].setRangeNSigmaTpc(-selectionsPid->get(iChannel, 2u), selectionsPid->get(iChannel, 2u)); // 2u == "nSigmaMaxTpc"
       selectorProton[iChannel].setRangeNSigmaTof(-selectionsPid->get(iChannel, 5u), selectionsPid->get(iChannel, 5u)); // 5u == "nSigmaMaxTof"
     }
     // after the proton PID we have the kaon PID
-    selectorKaon.setRangePtTpc(selectionsPid->get(channelKaonPid, 0u), selectionsPid->get(channelKaonPid, 1u)); // 0u == "minPtTpc", 1u == "maxPtTpc" 
-    selectorKaon.setRangePtTof(selectionsPid->get(channelKaonPid, 3u), selectionsPid->get(channelKaonPid, 4u)); // 3u == "minPtTof, 4u == "maxPtTof" 
-    selectorKaon.setRangeNSigmaTpc(-selectionsPid->get(channelKaonPid, 2u), selectionsPid->get(channelKaonPid, 2u)); // 2u == "nSigmaMaxTpc" 
+    selectorKaon.setRangePtTpc(selectionsPid->get(channelKaonPid, 0u), selectionsPid->get(channelKaonPid, 1u));      // 0u == "minPtTpc", 1u == "maxPtTpc"
+    selectorKaon.setRangePtTof(selectionsPid->get(channelKaonPid, 3u), selectionsPid->get(channelKaonPid, 4u));      // 3u == "minPtTof, 4u == "maxPtTof"
+    selectorKaon.setRangeNSigmaTpc(-selectionsPid->get(channelKaonPid, 2u), selectionsPid->get(channelKaonPid, 2u)); // 2u == "nSigmaMaxTpc"
     selectorKaon.setRangeNSigmaTof(-selectionsPid->get(channelKaonPid, 5u), selectionsPid->get(channelKaonPid, 5u)); // 5u == "nSigmaMaxTof"
   }
 
