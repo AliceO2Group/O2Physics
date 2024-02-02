@@ -43,7 +43,7 @@ static constexpr std::array<float, nNuclei> masses{
 static constexpr std::array<int, nNuclei> charges{1, 1, 2};
 static const std::vector<std::string> matterOrNot{"Matter", "Antimatter"};
 static const std::vector<std::string> nucleiNames{"H2", "H3", "Helium"};
-static const std::vector<std::string> hypernucleiNames{"H3L"};
+static const std::vector<std::string> hypernucleiNames{"H3L"}; // 3-body decay case
 static const std::vector<std::string> cutsNames{
   "TPCnSigmaMin", "TPCnSigmaMax", "TOFnSigmaMin", "TOFnSigmaMax", "TOFpidStartPt"};
 constexpr double betheBlochDefault[nNuclei][6]{
