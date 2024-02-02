@@ -1784,7 +1784,7 @@ struct HfTrackIndexSkimCreator {
         // cosp
         if ((debug || TESTBIT(isSelected, iDecay3P))) {
           auto cpa = RecoDecay::cpa(primVtx, secVtx, pVecCand);
-          if (cpa < cut3Prong[iDecay3P].get(pTBin, 2u)) {
+          if (cpa < cut3Prong[iDecay3P].get(pTBin, 2u)) { // 2u == cospIndex[iDecay3P]
             CLRBIT(isSelected, iDecay3P);
             if (debug) {
               cutStatus[iDecay3P][2] = false;
