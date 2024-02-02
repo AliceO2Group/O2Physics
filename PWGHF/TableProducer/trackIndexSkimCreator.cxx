@@ -1834,7 +1834,7 @@ struct HfTrackIndexSkimCreator {
     }
 
     // D0 mass
-    double deltaMassD0 = cutsDstarToD0Pi->get(pTBin, 1u);
+    double deltaMassD0 = cutsDstarToD0Pi->get(pTBin, 1u); // 1u == deltaMassD0Index
     double invMassD0 = RecoDecay::m(arrMomD0, std::array{massPi, massK});
     if (std::abs(invMassD0 - massDzero) > deltaMassD0) {
       isSelected = 0;
