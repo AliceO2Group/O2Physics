@@ -197,9 +197,9 @@ struct singleTrackSelector {
 
           if constexpr (isMC) {
             int origin = -1;
-            if (track.mcParticle().isPhysicalPrimary())
+            if (track.mcParticle().isPhysicalPrimary()) {
               origin = 0; // primary
-            else {
+            } else {
               if (track.mcParticle().getProcess() == 4)
                 origin = 1; // weak
               else
