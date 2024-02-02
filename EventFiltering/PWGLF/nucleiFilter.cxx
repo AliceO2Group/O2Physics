@@ -43,7 +43,7 @@ static constexpr std::array<float, nNuclei> masses{
 static constexpr std::array<int, nNuclei> charges{1, 1, 2};
 static const std::vector<std::string> matterOrNot{"Matter", "Antimatter"};
 static const std::vector<std::string> nucleiNames{"H2", "H3", "Helium"};
-static const std::vector<std::string> hypernucleiNames{"H3L"};
+static const std::vector<std::string> hypernucleiNames{"H3L"}; // 3-body decay case
 static const std::vector<std::string> cutsNames{
   "TPCnSigmaMin", "TPCnSigmaMax", "TOFnSigmaMin", "TOFnSigmaMax", "TOFpidStartPt"};
 constexpr double betheBlochDefault[nNuclei][6]{
@@ -90,16 +90,16 @@ struct nucleiFilter {
   Configurable<LabeledArray<float>> cfgCutsPID{"nucleiCutsPID", {cutsPID[0], nNuclei, nCutsPID, nucleiNames, cutsNames}, "Nuclei PID selections"};
 
   // configurable for hypertriton 3body decay
-  Configurable<float> minCosPA3body{"minCosPA3body", 0.9, "minCosPA3body"};
+  Configurable<float> minCosPA3body{"minCosPA3body", 0.99, "minCosPA3body"};
   Configurable<float> dcavtxdau{"dcavtxdau", 1.0, "DCA Vtx Daughters"};
-  Configurable<float> dcapiontopv{"dcapiontopv", 0.00, "DCA Pion To PV"};
-  Configurable<float> TofPidNsigmaMin{"TofPidNsigmaMin", -4, "TofPidNsigmaMin"};
-  Configurable<float> TofPidNsigmaMax{"TofPidNsigmaMax", 8, "TofPidNsigmaMax"};
+  Configurable<float> dcapiontopv{"dcapiontopv", 0.05, "DCA Pion To PV"};
+  Configurable<float> TofPidNsigmaMin{"TofPidNsigmaMin", -5, "TofPidNsigmaMin"};
+  Configurable<float> TofPidNsigmaMax{"TofPidNsigmaMax", 5, "TofPidNsigmaMax"};
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
   Configurable<float> lifetimecut{"lifetimecut", 40., "lifetimecut"}; // ct
   Configurable<float> minProtonPt{"minProtonPt", 0.3, "minProtonPt"};
   Configurable<float> maxProtonPt{"maxProtonPt", 5, "maxProtonPt"};
-  Configurable<float> minPionPt{"minPionPt", 0.2, "minPionPt"};
+  Configurable<float> minPionPt{"minPionPt", 0.1, "minPionPt"};
   Configurable<float> maxPionPt{"maxPionPt", 1.2, "maxPionPt"};
   Configurable<float> minDeuteronPt{"minDeuteronPt", 0.6, "minDeuteronPt"};
   Configurable<float> maxDeuteronPt{"maxDeuteronPt", 10, "maxDeuteronPt"};
@@ -128,10 +128,13 @@ struct nucleiFilter {
       h2TPCnSigma[iN] = qaHists.add<TH2>(Form("fTPCcounts_%s", nucleiNames[iN].data()), "n-sigma TPC", HistType::kTH2F, {{100, -5, 5, "#it{p} /Z (GeV/#it{c})"}, {200, -10., +10., "n#sigma_{He} (a. u.)"}});
     }
 
-    auto scalers{std::get<std::shared_ptr<TH1>>(qaHists.add("fProcessedEvents", ";;Number of filtered events", HistType::kTH1F, {{nNuclei + 1, -0.5, nNuclei + 0.5}}))};
+    auto scalers{std::get<std::shared_ptr<TH1>>(qaHists.add("fProcessedEvents", ";;Number of filtered events", HistType::kTH1F, {{nNuclei + nHyperNuclei + 1, -0.5, nNuclei + nHyperNuclei + 0.5}}))};
     scalers->GetXaxis()->SetBinLabel(1, "Processed events");
     for (uint32_t iS{0}; iS < nucleiNames.size(); ++iS) {
       scalers->GetXaxis()->SetBinLabel(iS + 2, nucleiNames[iS].data());
+    }
+    for (uint32_t iS{0}; iS < hypernucleiNames.size(); ++iS) {
+      scalers->GetXaxis()->SetBinLabel(iS + nucleiNames.size() + 2, hypernucleiNames[iS].data());
     }
   }
 
@@ -241,7 +244,7 @@ struct nucleiFilter {
       }
     } // end loop over hypertriton 3body decay candidates
 
-    for (int iDecision{0}; iDecision < 3; ++iDecision) {
+    for (int iDecision{0}; iDecision < nNuclei + nHyperNuclei; ++iDecision) {
       if (keepEvent[iDecision]) {
         qaHists.fill(HIST("fProcessedEvents"), iDecision + 1);
       }
