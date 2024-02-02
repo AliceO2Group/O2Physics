@@ -1795,7 +1795,7 @@ struct HfTrackIndexSkimCreator {
         // decay length
         if ((debug || TESTBIT(isSelected, iDecay3P))) {
           auto decayLength = RecoDecay::distance(primVtx, secVtx);
-          if (decayLength < cut3Prong[iDecay3P].get(pTBin, 3u)) {
+          if (decayLength < cut3Prong[iDecay3P].get(pTBin, 3u)) { // 3u == decLenIndex[iDecay3P]
             CLRBIT(isSelected, iDecay3P);
             if (debug) {
               cutStatus[iDecay3P][3] = false;
