@@ -267,10 +267,10 @@ namespace reducedmft
 DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent);        //!
 DECLARE_SOA_COLUMN(FilteringFlags, filteringFlags, uint8_t); //!
 
-DECLARE_SOA_COLUMN(Pt, pt, float);   //!
-DECLARE_SOA_COLUMN(Eta, eta, float); //!
-DECLARE_SOA_COLUMN(Phi, phi, float); //!
-DECLARE_SOA_COLUMN(Sign, sign, int); //!
+DECLARE_SOA_COLUMN(Pt, pt, float);                                                        //!
+DECLARE_SOA_COLUMN(Eta, eta, float);                                                      //!
+DECLARE_SOA_COLUMN(Phi, phi, float);                                                      //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                                                      //!
 DECLARE_SOA_COLUMN(MftClusterSizesAndTrackFlags, mftClusterSizesAndTrackFlags, uint64_t); //!
 } // namespace reducedmft
 
@@ -438,30 +438,30 @@ DECLARE_SOA_COLUMN(FwdDcaY2, fwdDcaY2, float); //! Y component of forward DCA
 // pair information
 namespace reducedpair
 {
-DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent);  //!
-DECLARE_SOA_COLUMN(Mass, mass, float);                 //!
-DECLARE_SOA_COLUMN(Pt, pt, float);                     //!
-DECLARE_SOA_COLUMN(Eta, eta, float);                   //!
-DECLARE_SOA_COLUMN(Phi, phi, float);                   //!
-DECLARE_SOA_COLUMN(Sign, sign, int);                   //!
-DECLARE_SOA_COLUMN(FilterMap, filterMap, uint32_t);    //!
-DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);  //!
-DECLARE_SOA_COLUMN(Tauz, tauz, float);                 //! Longitudinal pseudo-proper time of lepton pair (in ns)
-DECLARE_SOA_COLUMN(TauzErr, tauzErr, float);           //! Error on longitudinal pseudo-proper time of lepton pair (in ns)
-DECLARE_SOA_COLUMN(Tauxy, tauxy, float);               //! Transverse pseudo-proper time of lepton pair (in ns)
-DECLARE_SOA_COLUMN(TauxyErr, tauxyErr, float);         //! Error on transverse pseudo-proper time of lepton pair (in ns)
-DECLARE_SOA_COLUMN(Lz, lz, float);                     //! Longitudinal projection of decay length
-DECLARE_SOA_COLUMN(Lxy, lxy, float);                   //! Transverse projection of decay length
-DECLARE_SOA_COLUMN(Chi2pca, chi2pca, float);           //! Chi2 for PCA of the dilepton
+DECLARE_SOA_INDEX_COLUMN(ReducedEvent, reducedevent);          //!
+DECLARE_SOA_COLUMN(Mass, mass, float);                         //!
+DECLARE_SOA_COLUMN(Pt, pt, float);                             //!
+DECLARE_SOA_COLUMN(Eta, eta, float);                           //!
+DECLARE_SOA_COLUMN(Phi, phi, float);                           //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                           //!
+DECLARE_SOA_COLUMN(FilterMap, filterMap, uint32_t);            //!
+DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);          //!
+DECLARE_SOA_COLUMN(Tauz, tauz, float);                         //! Longitudinal pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(TauzErr, tauzErr, float);                   //! Error on longitudinal pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(Tauxy, tauxy, float);                       //! Transverse pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(TauxyErr, tauxyErr, float);                 //! Error on transverse pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(Lz, lz, float);                             //! Longitudinal projection of decay length
+DECLARE_SOA_COLUMN(Lxy, lxy, float);                           //! Transverse projection of decay length
+DECLARE_SOA_COLUMN(Chi2pca, chi2pca, float);                   //! Chi2 for PCA of the dilepton
 DECLARE_SOA_COLUMN(CosPointingAngle, cosPointingAngle, float); //! Cosine of the pointing angle
-DECLARE_SOA_COLUMN(U2Q2, u2q2, float);                 //! Scalar product between unitary vector with event flow vector (harmonic 2)
-DECLARE_SOA_COLUMN(U3Q3, u3q3, float);                 //! Scalar product between unitary vector with event flow vector (harmonic 3)
-DECLARE_SOA_COLUMN(Cos2DeltaPhi, cos2deltaphi, float); //! Cosinus term using event plane angle (harmonic 2)
-DECLARE_SOA_COLUMN(Cos3DeltaPhi, cos3deltaphi, float); //! Cosinus term using event plane angle (harmonic 3)
-DECLARE_SOA_COLUMN(Psi2A, psi2a, float);               //! Event plane for sub-sample A
-DECLARE_SOA_COLUMN(Psi2B, psi2b, float);               //! Event plane for sub-sample B
-DECLARE_SOA_COLUMN(Psi2C, psi2c, float);               //! Event plane for sub-sample C
-DECLARE_SOA_COLUMN(CollisionId, collisionId, int);     //!
+DECLARE_SOA_COLUMN(U2Q2, u2q2, float);                         //! Scalar product between unitary vector with event flow vector (harmonic 2)
+DECLARE_SOA_COLUMN(U3Q3, u3q3, float);                         //! Scalar product between unitary vector with event flow vector (harmonic 3)
+DECLARE_SOA_COLUMN(Cos2DeltaPhi, cos2deltaphi, float);         //! Cosinus term using event plane angle (harmonic 2)
+DECLARE_SOA_COLUMN(Cos3DeltaPhi, cos3deltaphi, float);         //! Cosinus term using event plane angle (harmonic 3)
+DECLARE_SOA_COLUMN(R2SP, r2sp, float);                         //! Event plane resolution for SP method
+DECLARE_SOA_COLUMN(R2EP, r2ep, float);                         //! Event plane resolution for EP method
+DECLARE_SOA_COLUMN(CentFT0C, centft0c, float);                 //! Centrality information from FT0C
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);             //!
 // DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -497,11 +497,7 @@ DECLARE_SOA_TABLE(DileptonsFlow, "AOD", "RTDILEPTONFLOW", //!
                   reducedpair::U2Q2,
                   reducedpair::U3Q3,
                   reducedpair::Cos2DeltaPhi,
-                  reducedpair::Cos3DeltaPhi,
-                  reducedpair::Psi2A,
-                  reducedpair::Psi2B,
-                  reducedpair::Psi2C
-                  );
+                  reducedpair::Cos3DeltaPhi);
 
 // Dilepton collision information (joined with DileptonsExtra) allowing to connect different tables (cross PWGs)
 DECLARE_SOA_TABLE(DileptonsInfo, "AOD", "RTDILEPTONINFO",
@@ -530,12 +526,11 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   dilepton_track_index::IsAmbig1, dilepton_track_index::IsAmbig2,
                   reducedpair::U2Q2,
                   reducedpair::U3Q3,
+                  reducedpair::R2EP,
+                  reducedpair::R2SP,
+                  reducedpair::CentFT0C,
                   reducedpair::Cos2DeltaPhi,
-                  reducedpair::Cos3DeltaPhi,
-                  reducedpair::Psi2A,
-                  reducedpair::Psi2B,
-                  reducedpair::Psi2C
-                  );
+                  reducedpair::Cos3DeltaPhi);
 
 using Dilepton = Dileptons::iterator;
 using DileptonExtra = DileptonsExtra::iterator;

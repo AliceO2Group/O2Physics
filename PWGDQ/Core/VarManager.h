@@ -1056,7 +1056,6 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kPsi2A] = getEventPlane(2, event.q2x0a(), event.q2y0a());
     values[kPsi2B] = getEventPlane(2, event.q2x0b(), event.q2y0b());
     values[kPsi2C] = getEventPlane(2, event.q2x0c(), event.q2y0c());
-
   }
 
   if constexpr ((fillMap & CollisionMC) > 0) {
@@ -2400,7 +2399,7 @@ void VarManager::FillQVectorFromGFW(C const& collision, A const& compA2, A const
 
   // TODO: provide different computations for R
   // Compute the R factor using the 2 sub-events technique for second and third harmonic
-  //Compute event planes
+  // Compute event planes
   auto Psi2B = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
   auto Psi3B = getEventPlane(3, values[kQ3X0B], values[kQ3Y0B]);
   auto Psi2C = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
