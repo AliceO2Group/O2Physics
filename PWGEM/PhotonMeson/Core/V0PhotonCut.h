@@ -301,17 +301,17 @@ class V0PhotonCut : public TNamed
         // const float z_max = +31.15;           // cm
         float x = abs(v0.vx()); // cm, measured secondary vertex of gamma->ee
         float y = v0.vy();      // cm, measured secondary vertex of gamma->ee
-        // float z = v0.vz();   // cm, measured secondary vertex of gamma->ee
+        float z = v0.vz();      // cm, measured secondary vertex of gamma->ee
 
         float rxy = sqrt(x * x + y * y);
-        if (rxy < 7.0 || 16.0 < rxy) {
+        if (rxy < 7.0 || 15.0 < rxy) {
           return false;
         }
 
-        // float z_exp = z_min + (rxy - rxy_min) / TMath::Tan(10.86 * TMath::DegToRad()); // cm, expected position rxy of W wire as a function of z
-        // if (abs(z - z_exp) > margin_z) {
-        //   return false;
-        // }
+        // r = 0.192 * z + 8.88 (cm) expected wire position in RZ plane.TMath::Tan(10.86 * TMath::DegToRad()) = 0.192
+        if (rxy > 0.192 * z + 14.0) { // upper limit
+          return false;
+        }
 
         float dxy = abs(1.0 * y - x * TMath::Tan(-8.52 * TMath::DegToRad())) / sqrt(pow(1.0, 2) + pow(TMath::Tan(-8.52 * TMath::DegToRad()), 2));
         return !(dxy > margin_xy);
@@ -382,6 +382,10 @@ class V0PhotonCut : public TNamed
         return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
 
       case V0PhotonCuts::kIsWithinBeamPipe: {
+        if (!isTPConlyTrack(track)) { // TPC-TRD, TPC-TOF, TPC-TRD-TOF are constrained.
+          return true;
+        }
+
         // if (abs(track.y()) > abs(track.x() * TMath::Tan(10.f * TMath::DegToRad())) + 15.f) {
         //   return false;
         // }
@@ -391,7 +395,7 @@ class V0PhotonCut : public TNamed
         if (track.x() > 82.9 && abs(track.y()) > abs(track.x() * TMath::Tan(10.f * TMath::DegToRad())) + 5.f) {
           return false;
         }
-        if (track.x() > 82.9 && abs(track.y()) < 15.0 && abs(abs(track.z()) - 45.0) < 2.0) {
+        if (track.x() > 82.9 && abs(track.y()) < 15.0 && abs(abs(track.z()) - 44.5) < 2.5) {
           return false;
         }
         return true;

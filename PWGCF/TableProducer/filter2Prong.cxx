@@ -56,10 +56,9 @@ struct Filter2Prong {
         }
       }
       // look-up the collision id
-      auto collisionId = cfcollisions.begin().globalIndex();
       if ((c.hfflag() & (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) == 0)
         continue;
-      output2ProngTracks(collisionId,
+      output2ProngTracks(cfcollisions.begin().globalIndex(),
                          prongCFId[0], prongCFId[1], c.pt(), c.eta(), c.phi(), aod::cf2prongtrack::D0ToPiK);
     }
   }

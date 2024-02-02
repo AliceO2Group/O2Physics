@@ -60,7 +60,6 @@ struct TaggingPi0MC {
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_0_120_tpchadrejortofreq,mee_0_120_tpchadrejortofreq_lowB", "Comma separated list of Dalitz ee cuts"};
-  Configurable<std::string> fConfigPCMibwCuts{"cfgPCMibwCuts", "wwire_ib", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
   Configurable<std::string> fConfigEMCCuts{"fConfigEMCCuts", "standard", "Comma separated list of EMCal photon cuts"};
   Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "nocut", "Comma separated list of pair cuts"};
@@ -84,7 +83,6 @@ struct TaggingPi0MC {
 
   std::vector<V0PhotonCut> fPCMCuts;
   std::vector<DalitzEECut> fDalitzEECuts;
-  std::vector<V0PhotonCut> fPCMibwCuts;
   std::vector<PHOSPhotonCut> fPHOSCuts;
   std::vector<EMCPhotonCut> fEMCCuts;
   std::vector<PairCut> fPairCuts;
@@ -92,9 +90,6 @@ struct TaggingPi0MC {
   std::vector<std::string> fPairNames;
   void init(InitContext& context)
   {
-    if (context.mOptions.get<bool>("processPCMPCMibw")) {
-      fPairNames.push_back("PCMPCMibw");
-    }
     if (context.mOptions.get<bool>("processPCMDalitzEE")) {
       fPairNames.push_back("PCMDalitzEE");
     }
@@ -107,7 +102,6 @@ struct TaggingPi0MC {
 
     DefinePCMCuts();
     DefineDalitzEECuts();
-    DefinePCMibwCuts();
     DefinePHOSCuts();
     DefineEMCCuts();
     DefinePairCuts();
@@ -144,7 +138,7 @@ struct TaggingPi0MC {
     }     // end of cut1 loop
   }
 
-  static constexpr std::string_view pairnames[8] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PCMDalitzEE", "PCMDalitzMuMu", "PHOSEMC"};
+  static constexpr std::string_view pairnames[9] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PCMDalitzEE", "PCMDalitzMuMu", "PHOSEMC", "DalitzEEDalitzEE"};
   void addhistograms()
   {
     fMainList->SetOwner(true);
@@ -173,9 +167,6 @@ struct TaggingPi0MC {
 
       o2::aod::emphotonhistograms::AddHistClass(list_pair, pairname.data());
 
-      if (pairname == "PCMPCMibw") {
-        add_pair_histograms(list_pair, pairname, fPCMCuts, fPCMibwCuts, fPairCuts);
-      }
       if (pairname == "PCMDalitzEE") {
         add_pair_histograms(list_pair, pairname, fPCMCuts, fDalitzEECuts, fPairCuts);
       }
@@ -215,20 +206,6 @@ struct TaggingPi0MC {
       }
     }
     LOGF(info, "Number of DalitzEE cuts = %d", fDalitzEECuts.size());
-  }
-
-  void DefinePCMibwCuts()
-  {
-    TString cutNamesStr = fConfigPCMibwCuts.value;
-    if (!cutNamesStr.IsNull()) {
-      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
-      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        const char* cutname = objArray->At(icut)->GetName();
-        LOGF(info, "add cut : %s", cutname);
-        fPCMibwCuts.push_back(*pcmcuts::GetCut(cutname));
-      }
-    }
-    LOGF(info, "Number of PCMibw cuts = %d", fPCMibwCuts.size());
   }
 
   void DefinePHOSCuts()
@@ -305,9 +282,7 @@ struct TaggingPi0MC {
   bool IsSelectedPair(TG1 const& g1, TG2 const& g2, TCut1 const& cut1, TCut2 const& cut2)
   {
     bool is_selected_pair = false;
-    if constexpr (pairtype == PairType::kPCMPCMibw) {
-      is_selected_pair = o2::aod::photonpair::IsSelectedPair<MyMCV0Legs, MyMCV0Legs>(g1, g2, cut1, cut2);
-    } else if constexpr (pairtype == PairType::kPCMPHOS) {
+    if constexpr (pairtype == PairType::kPCMPHOS) {
       is_selected_pair = o2::aod::photonpair::IsSelectedPair<MyMCV0Legs, int>(g1, g2, cut1, cut2);
     } else if constexpr (pairtype == PairType::kPCMEMC) {
       is_selected_pair = o2::aod::photonpair::IsSelectedPair<MyMCV0Legs, aod::SkimEMCMTs>(g1, g2, cut1, cut2);
@@ -428,25 +403,7 @@ struct TaggingPi0MC {
               }
 
               int pi0id = -1;
-              if constexpr (pairtype == PairType::kPCMPCMibw) {
-                auto pos2 = g2.template posTrack_as<MyMCV0Legs>();
-                auto ele2 = g2.template negTrack_as<MyMCV0Legs>();
-                auto pos2mc = pos2.template emmcparticle_as<aod::EMMCParticles>();
-                auto ele2mc = ele2.template emmcparticle_as<aod::EMMCParticles>();
-
-                int photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles);
-                if (photonid2 < 0) { // check swap, true electron is reconstructed as positron and vice versa.
-                  photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, 11, -11, 22, mcparticles);
-                }
-
-                if (photonid1 < 0 || photonid2 < 0) {
-                  continue;
-                }
-
-                auto g1mc = mcparticles.iteratorAt(photonid1);
-                auto g2mc = mcparticles.iteratorAt(photonid2);
-                pi0id = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 111, mcparticles);
-              } else if constexpr (pairtype == PairType::kPCMDalitzEE) {
+              if constexpr (pairtype == PairType::kPCMDalitzEE) {
                 auto g1mc = mcparticles.iteratorAt(photonid1);
                 auto pos2 = g2.template posTrack_as<MyMCTracks>();
                 auto ele2 = g2.template negTrack_as<MyMCTracks>();
@@ -496,10 +453,6 @@ struct TaggingPi0MC {
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
-  void processPCMPCMibw(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
-  {
-    TruePairing<PairType::kPCMPCMibw>(collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMibwCuts, fPairCuts, legs, nullptr, mcparticles, mccollisions);
-  }
   void processPCMDalitzEE(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& legs, MyFilteredDalitzEEs const& dielectrons, MyMCTracks const& emprimaryelectrons, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
   {
     TruePairing<PairType::kPCMDalitzEE>(collisions, v0photons, dielectrons, perCollision_pcm, perCollision_dalitz, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimaryelectrons, mcparticles, mccollisions);
@@ -517,7 +470,6 @@ struct TaggingPi0MC {
 
   void processDummy(MyCollisions const& collision) {}
 
-  PROCESS_SWITCH(TaggingPi0MC, processPCMPCMibw, "pairing PCM-PCMibw", false);
   PROCESS_SWITCH(TaggingPi0MC, processPCMDalitzEE, "pairing PCM-Dalitz", false);
   PROCESS_SWITCH(TaggingPi0MC, processPCMPHOS, "pairing PCM-PHOS", false);
   PROCESS_SWITCH(TaggingPi0MC, processPCMEMC, "pairing PCM-EMCal", false);

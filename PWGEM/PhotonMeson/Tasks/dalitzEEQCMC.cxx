@@ -50,6 +50,8 @@ struct DalitzEEQCMC {
   Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_all_tpchadrejortofreq_lowB,nocut", "Comma separated list of dalitz ee cuts"};
   std::vector<DalitzEECut> fDalitzEECuts;
 
+  Configurable<bool> cfgDoDCAstudy{"cfgDoDCAstudy", false, "flag to fill histograms for DCA"};
+
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputTrack{"Track"};
   OutputObj<THashList> fOutputDalitzEE{"DalitzEE"};
@@ -93,7 +95,12 @@ struct DalitzEEQCMC {
     for (auto& cut : fDalitzEECuts) {
       std::string_view cutname = cut.GetName();
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("DalitzEE")->FindObject(cutname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list, "DalitzEE", "mc");
+      // o2::aod::emphotonhistograms::DefineHistograms(list, "DalitzEE", "mc");
+      std::string histo_sub_group = "mc,";
+      if (cfgDoDCAstudy) {
+        histo_sub_group += "dca";
+      }
+      o2::aod::emphotonhistograms::DefineHistograms(list, "DalitzEE", histo_sub_group.data());
     }
   }
 
@@ -199,7 +206,6 @@ struct DalitzEEQCMC {
               det_ele = ele.cYY() * ele.cZZ() - ele.cZY() * ele.cZY();
               if (det_pos < 0 || det_ele < 0) {
                 dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
-                LOGF(info, "determinant is negative.");
               } else {
                 float chi2pos = (pos.dcaXY() * pos.dcaXY() * pos.cZZ() + pos.dcaZ() * pos.dcaZ() * pos.cYY() - 2. * pos.dcaXY() * pos.dcaZ() * pos.cZY()) / det_pos;
                 float chi2ele = (ele.dcaXY() * ele.dcaXY() * ele.cZZ() + ele.dcaZ() * ele.dcaZ() * ele.cYY() - 2. * ele.dcaXY() * ele.dcaZ() * ele.cZY()) / det_ele;
@@ -207,11 +213,14 @@ struct DalitzEEQCMC {
                 dca_ele_3d = std::sqrt(std::abs(chi2ele) / 2.);
                 dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
               }
-              values_single[0] = uls_pair.mass();
-              values_single[1] = dca_pos_3d;
-              values_single[2] = dca_ele_3d;
-              values_single[3] = dca_ee_3d;
-              reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_dca_same"))->Fill(values_single);
+
+              if (cfgDoDCAstudy) {
+                values_single[0] = uls_pair.mass();
+                values_single[1] = dca_pos_3d;
+                values_single[2] = dca_ele_3d;
+                values_single[3] = dca_ee_3d;
+                reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_dca_same"))->Fill(values_single);
+              }
 
               values[0] = uls_pair.mass();
               values[1] = uls_pair.pt();
