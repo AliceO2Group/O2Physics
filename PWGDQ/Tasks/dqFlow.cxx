@@ -307,7 +307,7 @@ struct DQEventQvector {
       Q3vecP = gfwCumP.Vec(3, fConfigNPow);
       Q3vecFull = gfwCumFull.Vec(3, fConfigNPow);
     }
-
+    //
     // Fill the VarManager::fgValues with the Q vector quantities
     VarManager::FillQVectorFromGFW(collision, Q2vecFull, Q2vecN, Q2vecP, Q3vecFull, Q3vecN, Q3vecP, nentriesFull, nentriesN, nentriesP);
 
@@ -323,7 +323,6 @@ struct DQEventQvector {
     if (fEventCut->IsSelected(VarManager::fgValues)) {
       eventQvector(VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kQ3X0A], VarManager::fgValues[VarManager::kQ3Y0A], VarManager::fgValues[VarManager::kQ3X0B], VarManager::fgValues[VarManager::kQ3Y0B], VarManager::fgValues[VarManager::kQ3X0C], VarManager::fgValues[VarManager::kQ3Y0C]);
     }
-
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 2
