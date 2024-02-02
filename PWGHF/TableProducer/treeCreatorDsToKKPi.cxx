@@ -34,28 +34,28 @@ namespace o2::aod
 namespace full
 {
 // Decay daughters
-DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);     //! Transverse momentum of prong0 (GeV/c)
-DECLARE_SOA_COLUMN(PProng0, pProng0, float);       //! Momentum of prong0 (GeV/c)
-DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);     //! Transverse momentum of prong1 (GeV/c)
-DECLARE_SOA_COLUMN(PProng1, pProng1, float);       //! Momentum of prong1 (in GeV/c)
-DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);     //! Transverse momentum of prong2 (GeV/c)
-DECLARE_SOA_COLUMN(PProng2, pProng2, float);       //! Momentum of prong2 (GeV/c)
-DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float); //! TPC Nsigma separation for prong0 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float); //! TPC Nsigma separation for prong0 with kaon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float); //! TOF Nsigma separation for prong0 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float); //! TOF Nsigma separation for prong0 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);           //! Transverse momentum of prong0 (GeV/c)
+DECLARE_SOA_COLUMN(PProng0, pProng0, float);             //! Momentum of prong0 (GeV/c)
+DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);           //! Transverse momentum of prong1 (GeV/c)
+DECLARE_SOA_COLUMN(PProng1, pProng1, float);             //! Momentum of prong1 (in GeV/c)
+DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);           //! Transverse momentum of prong2 (GeV/c)
+DECLARE_SOA_COLUMN(PProng2, pProng2, float);             //! Momentum of prong2 (GeV/c)
+DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);       //! TPC Nsigma separation for prong0 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);       //! TPC Nsigma separation for prong0 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float);       //! TOF Nsigma separation for prong0 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);       //! TOF Nsigma separation for prong0 with kaon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcTofPi0, nSigTpcTofPi0, float); //! TPC and TOF combined Nsigma separation for prong0 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcTofKa0, nSigTpcTofKa0, float); //! TPC and TOF combined Nsigma separation for prong0 with kaon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float); //! TPC Nsigma separation for prong1 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float); //! TPC Nsigma separation for prong1 with kaon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float); //! TOF Nsigma separation for prong1 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float); //! TOF Nsigma separation for prong1 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);       //! TPC Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float);       //! TPC Nsigma separation for prong1 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);       //! TOF Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);       //! TOF Nsigma separation for prong1 with kaon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcTofPi1, nSigTpcTofPi1, float); //! TPC and TOF combined Nsigma separation for prong1 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcTofKa1, nSigTpcTofKa1, float); //! TPC and TOF combined Nsigma separation for prong1 with kaon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float); //! TPC Nsigma separation for prong2 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcKa2, nSigTpcKa2, float); //! TPC Nsigma separation for prong2 with kaon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float); //! TOF Nsigma separation for prong2 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float); //! TOF Nsigma separation for prong2 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float);       //! TPC Nsigma separation for prong2 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcKa2, nSigTpcKa2, float);       //! TPC Nsigma separation for prong2 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float);       //! TOF Nsigma separation for prong2 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float);       //! TOF Nsigma separation for prong2 with kaon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcTofPi2, nSigTpcTofPi2, float); //! TPC and TOF combined Nsigma separation for prong2 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcTofKa2, nSigTpcTofKa2, float); //! TPC and TOF combined Nsigma separation for prong2 with kaon mass hypothesis
 // Candidate
