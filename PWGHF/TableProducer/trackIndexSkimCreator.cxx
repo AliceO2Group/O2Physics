@@ -1845,7 +1845,7 @@ struct HfTrackIndexSkimCreator {
     }
 
     // D*+ mass
-    double maxDeltaMass = cutsDstarToD0Pi->get(pTBin, 0u);
+    double maxDeltaMass = cutsDstarToD0Pi->get(pTBin, 0u); // 0u == deltaMassIndex
     double invMassDstar = RecoDecay::m(arrMom, std::array{massPi, massK, massPi});
     deltaMass = invMassDstar - invMassD0;
     if (deltaMass > maxDeltaMass) {
