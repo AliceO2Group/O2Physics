@@ -85,7 +85,7 @@ enum kDetector {
 
 struct nucleiFlow {
 
-  Configurable<int> cfgCentDetector{"cfgCentDetector", 0, "Detector for centrality estimation (V0A: 0, T0M: 1, T0A: 2, T0C: 3"};
+  Configurable<int> cfgCentDetector{"cfgCentDetector", 0, "Detector for centrality estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3)"};
   Configurable<int> cfgHarmonic{"cfgHarmonic", 2, "cfgHarmonic number"};
   Configurable<int> cfgQvecDetector{"cfgQvecDetector", 0, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5)"};
   Configurable<int> cfgSpecies{"cfgSpecies", 3, "Species under study (proton: 0, deuteron: 1, triton: 2, helion: 3, alpha: 4)"};
@@ -207,14 +207,14 @@ struct nucleiFlow {
     const AxisSpec nSigmaTPCHe3Axis{nSigmaBins, "n{#sigma}_{TPC}({}^{3}He)"};
     const AxisSpec ptAxis{ptBins, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec centAxis{centBins, "centrality(%)"};
-    const AxisSpec FT0AspAxis{spBins, "#hat{u}_{2} #upoint #vec{Q}_{2}^{T0A}"};
-    const AxisSpec FT0CspAxis{spBins, "#hat{u}_{2} #upoint #vec{Q}_{2}^{T0C}"};
-    const AxisSpec FV0AspAxis{spBins, "#hat{u}_{2} #upoint #vec{Q}_{2}^{V0A}"};
+    const AxisSpec FT0AspAxis{spBins, "#hat{u}_{2} #upoint #vec{Q}_{2}^{FT0A}"};
+    const AxisSpec FT0CspAxis{spBins, "#hat{u}_{2} #upoint #vec{Q}_{2}^{FT0C}"};
+    const AxisSpec FV0AspAxis{spBins, "#hat{u}_{2} #upoint #vec{Q}_{2}^{FV0A}"};
 
-    histos.add("hCentV0A", "V0A", HistType::kTH1F, {centAxis});
-    histos.add("hCentT0M", "T0M", HistType::kTH1F, {centAxis});
-    histos.add("hCentT0A", "T0A", HistType::kTH1F, {centAxis});
-    histos.add("hCentT0C", "T0C", HistType::kTH1F, {centAxis});
+    histos.add("hCentFV0A", "FV0A", HistType::kTH1F, {centAxis});
+    histos.add("hCentFT0M", "FT0M", HistType::kTH1F, {centAxis});
+    histos.add("hCentFT0A", "FT0A", HistType::kTH1F, {centAxis});
+    histos.add("hCentFT0C", "FT0C", HistType::kTH1F, {centAxis});
 
     histos.add("hSpFT0AvsNsigmaHe3VsPtvsCent", "", HistType::kTHnSparseF, {FT0AspAxis, nSigmaTPCHe3Axis, ptAxis, centAxis});
     histos.add("hSpFT0CvsNsigmaHe3VsPtvsCent", "", HistType::kTHnSparseF, {FT0CspAxis, nSigmaTPCHe3Axis, ptAxis, centAxis});
@@ -223,10 +223,10 @@ struct nucleiFlow {
 
   void process(aod::NucleiFlowColl const& coll, aod::NucleiTable const& tracks)
   {
-    histos.fill(HIST("hCentV0A"), coll.centFV0A());
-    histos.fill(HIST("hCentT0M"), coll.centFT0M());
-    histos.fill(HIST("hCentT0A"), coll.centFT0A());
-    histos.fill(HIST("hCentT0C"), coll.centFT0C());
+    histos.fill(HIST("hCentFV0A"), coll.centFV0A());
+    histos.fill(HIST("hCentFT0M"), coll.centFT0M());
+    histos.fill(HIST("hCentFT0A"), coll.centFT0A());
+    histos.fill(HIST("hCentFT0C"), coll.centFT0C());
 
     // Select the centrality value to be stored in the output histograms
     float ref_cent = getRefCentrality(coll);

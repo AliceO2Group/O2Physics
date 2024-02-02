@@ -120,9 +120,8 @@ struct TaskPolarisationCharmHadrons {
   }; // end init
 
   /// \param candidates are the selected candidates
-  /// \param tracks are the tracks
   template <uint8_t channel, bool withMl, typename Cand>
-  void runPolarisationAnalysis(Cand const& candidate, Tracks const& tracks)
+  void runPolarisationAnalysis(Cand const& candidate)
   {
 
     // loop over mass hypotheses
@@ -146,9 +145,8 @@ struct TaskPolarisationCharmHadrons {
         pyCharmHad = candidate.pyDstar();
         pzCharmHad = candidate.pzDstar();
         massDau = massPi; // (*)
-        auto prongSoftPi = candidate.template prongPi_as<aod::Tracks>();
-        invMassCharmHad = (prongSoftPi.sign() > 0) ? candidate.invMassDstar() : candidate.invMassAntiDstar();
-        invMassCharmHadForSparse = (prongSoftPi.sign() > 0) ? (invMassCharmHad - candidate.invMassD0()) : (invMassCharmHad - candidate.invMassD0Bar()); // different for D*
+        invMassCharmHad = (candidate.signSoftPi() > 0) ? candidate.invMassDstar() : candidate.invMassAntiDstar();
+        invMassCharmHadForSparse = (candidate.signSoftPi() > 0) ? (invMassCharmHad - candidate.invMassD0()) : (invMassCharmHad - candidate.invMassD0Bar()); // different for D*
         rapidity = candidate.y(massDstar);
         if constexpr (withMl) {
           outputMl[0] = -1.; // not yet implemented in the selector
@@ -233,14 +231,14 @@ struct TaskPolarisationCharmHadrons {
   /////////////////////////
 
   // Dstar with rectangular cuts
-  void processDstar(soa::Filtered<CandDstarWSelFlag>::iterator const& dstarCandidate, Tracks const& tracks)
+  void processDstar(soa::Filtered<CandDstarWSelFlag>::iterator const& dstarCandidate)
   {
-    runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false>(dstarCandidate, tracks);
+    runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false>(dstarCandidate);
   }
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstar, "Process Dstar candidates without ML", true);
 
   // Dstar with ML cuts
-  void processDstarWithMl(soa::Filtered<CandDstarWSelFlag>::iterator const&, Tracks const&)
+  void processDstarWithMl(soa::Filtered<CandDstarWSelFlag>::iterator const&)
   {
     // DUMMY
   }
@@ -251,16 +249,16 @@ struct TaskPolarisationCharmHadrons {
   ////////////////////////////
 
   // Lc->pKpi with rectangular cuts
-  void processLcToPKPi(soa::Filtered<CandLcToPKPiWSelFlag>::iterator const& lcCandidate, Tracks const& tracks)
+  void processLcToPKPi(soa::Filtered<CandLcToPKPiWSelFlag>::iterator const& lcCandidate)
   {
-    runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false>(lcCandidate, tracks);
+    runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false>(lcCandidate);
   }
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPi, "Process Lc candidates without ML", false);
 
   // Lc->pKpi with ML cuts
-  void processLcToPKPiWithMl(soa::Filtered<soa::Join<CandLcToPKPiWSelFlag, aod::HfMlLcToPKPi>>::iterator const& lcCandidate, Tracks const& tracks)
+  void processLcToPKPiWithMl(soa::Filtered<soa::Join<CandLcToPKPiWSelFlag, aod::HfMlLcToPKPi>>::iterator const& lcCandidate)
   {
-    runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true>(lcCandidate, tracks);
+    runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true>(lcCandidate);
   }
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPiWithMl, "Process Lc candidates with ML", false);
 };

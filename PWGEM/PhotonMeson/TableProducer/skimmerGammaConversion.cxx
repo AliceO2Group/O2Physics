@@ -189,7 +189,7 @@ struct skimmerGammaConversion {
            theTrack.tpcNClsFindable(), theTrack.tpcNClsFindableMinusFound(), theTrack.tpcNClsFindableMinusCrossedRows(),
            theTrack.tpcChi2NCl(), theTrack.tpcInnerParam(), theTrack.tpcSignal(),
            theTrack.tpcNSigmaEl(), theTrack.tpcNSigmaPi(),
-           theTrack.itsClusterMap(), theTrack.itsChi2NCl(), theTrack.detectorMap(),
+           theTrack.itsClusterSizes(), theTrack.itsChi2NCl(), theTrack.detectorMap(),
            theTrack.x(), theTrack.y(), theTrack.z(), theTrack.tgl(), theTrack.signed1Pt());
   }
 

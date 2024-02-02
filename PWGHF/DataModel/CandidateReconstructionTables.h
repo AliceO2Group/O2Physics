@@ -152,13 +152,15 @@ DECLARE_SOA_TABLE(HfSelCollision, "AOD", "HFSELCOLLISION", //!
 
 namespace hf_sel_track
 {
-DECLARE_SOA_COLUMN(IsSelProng, isSelProng, int); //!
-DECLARE_SOA_COLUMN(IsProton, isProton, int8_t);  //!
+DECLARE_SOA_COLUMN(IsSelProng, isSelProng, uint32_t); //!
+DECLARE_SOA_COLUMN(IsProton, isProton, uint32_t);     //!
+DECLARE_SOA_COLUMN(IsPositive, isPositive, bool);     //!
 } // namespace hf_sel_track
 
 DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //!
                   hf_sel_track::IsSelProng,
-                  hf_sel_track::IsProton);
+                  hf_sel_track::IsProton,
+                  hf_sel_track::IsPositive);
 
 namespace hf_pv_refit_track
 {
@@ -1556,6 +1558,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(NormalisedImpParamSoftPi, normalisedImpParamSoftPi,
 DECLARE_SOA_COLUMN(PxSoftPi, pxSoftPi, float);
 DECLARE_SOA_COLUMN(PySoftPi, pySoftPi, float);
 DECLARE_SOA_COLUMN(PzSoftPi, pzSoftPi, float);
+DECLARE_SOA_COLUMN(SignSoftPi, signSoftPi, int8_t);
 // Dstar momenta
 DECLARE_SOA_EXPRESSION_COLUMN(PxDstar, pxDstar, float, 1.f * aod::hf_cand::pxProng0 + 1.f * aod::hf_cand::pxProng1 + 1.f * aod::hf_cand_dstar::pxSoftPi);
 DECLARE_SOA_EXPRESSION_COLUMN(PyDstar, pyDstar, float, 1.f * aod::hf_cand::pyProng0 + 1.f * aod::hf_cand::pyProng1 + 1.f * aod::hf_cand_dstar::pySoftPi);
@@ -1658,6 +1661,7 @@ DECLARE_SOA_TABLE(HfCandDstarBase, "AOD", "HFCANDDSTRBASE",
                   hf_track_index::ProngD0Id, // Index column points to Hf2Prongs table filled by indexSkimcreator
                   // Softpi
                   hf_cand_dstar::PxSoftPi, hf_cand_dstar::PySoftPi, hf_cand_dstar::PzSoftPi,
+                  hf_cand_dstar::SignSoftPi,
                   hf_cand_dstar::ImpParamSoftPi, hf_cand_dstar::ErrorImpParamSoftPi,
                   // Two pronges of D0
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,

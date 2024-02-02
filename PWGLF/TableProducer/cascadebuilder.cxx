@@ -194,6 +194,8 @@ struct cascadeBuilder {
   Configurable<bool> roundDCAVariables{"roundDCAVariables", false, "round topological variables"};
   Configurable<float> precisionDCAs{"precisionDCAs", 0.01f, "precision to keep the DCAs with"};
 
+  Configurable<float> maxDaughterEta{"maxDaughterEta", 5.0, "Maximum daughter eta"};
+
   int mRunNumber;
   float d_bz;
   float maxSnp;  // max sine phi for propagation
@@ -218,6 +220,7 @@ struct cascadeBuilder {
                   kCascDCADau,
                   kCascCosPA,
                   kCascRadius,
+                  kCascDauEta,
                   kCascTracked,
                   kNCascSteps };
 
@@ -340,7 +343,8 @@ struct cascadeBuilder {
     h->GetXaxis()->SetBinLabel(6, "DCA dau");
     h->GetXaxis()->SetBinLabel(7, "CosPA");
     h->GetXaxis()->SetBinLabel(8, "Radius");
-    h->GetXaxis()->SetBinLabel(9, "Tracked");
+    h->GetXaxis()->SetBinLabel(9, "Pass dau eta");
+    h->GetXaxis()->SetBinLabel(10, "Tracked");
 
     // Optionally, add extra QA histograms to processing chain
     if (d_doQA) {
@@ -513,10 +517,11 @@ struct cascadeBuilder {
         for (auto const& input : device.inputs) {
           if (device.name.compare("cascade-initializer") == 0)
             continue; // don't listen to the initializer, it's just to extend stuff
-          const std::string CascDataName = "StoredCascDatas";
-          const std::string CascDataExtName = "CascDatasExtension";
-          if (input.matcher.binding == CascDataName || input.matcher.binding == CascDataExtName) {
-            LOGF(info, "Device named %s has subscribed to CascData table! Will now scan for desired settings...", device.name);
+          const std::string CascCoresName = "StoredCascCores";
+          const std::string KFCascCoresName = "StoredKFCascCores";
+          const std::string TraCascCoresName = "StoredTraCascCores";
+          if (input.matcher.binding == CascCoresName || input.matcher.binding == KFCascCoresName || input.matcher.binding == TraCascCoresName) {
+            LOGF(info, "Device named %s has subscribed to a CascCores table! Will now scan for desired settings...", device.name);
             for (auto const& option : device.options) {
               // 5 V0 topological selections + 1 mass
               if (option.name.compare("cascadesetting_cospa") == 0) {
@@ -948,6 +953,12 @@ struct cascadeBuilder {
       return false;
     statisticsRegistry.cascstats[kCascRadius]++;
 
+    // Daughter eta check
+    if (TMath::Abs(RecoDecay::eta(std::array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]})) > maxDaughterEta) {
+      return false; // reject - daughters have too large eta to be reliable for MC corrections
+    }
+    statisticsRegistry.cascstats[kCascDauEta]++;
+
     // Calculate DCAxy of the cascade (with bending)
     lCascadeTrack = fitter.createParentTrackParCov();
     lCascadeTrack.setAbsCharge(cascadecandidate.charge); // to be sure
@@ -1277,6 +1288,11 @@ struct cascadeBuilder {
     cascadecandidate.cascradius = RecoDecay::sqrtSumOfSquares(cascadecandidate.pos[0], cascadecandidate.pos[1]);
     if (cascadecandidate.cascradius < cascradius)
       return false;
+
+    // Daughter eta check
+    if (TMath::Abs(RecoDecay::eta(std::array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]})) > maxDaughterEta) {
+      return false; // reject - daughters have too large eta to be reliable for MC corrections
+    }
 
     // Calculate masses a priori
     cascadecandidate.kfMLambda = KFV0.GetMass();
