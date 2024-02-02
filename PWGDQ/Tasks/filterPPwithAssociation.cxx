@@ -1174,8 +1174,8 @@ struct DQFilterPPTask {
     TString barrelLSstr = fConfigFilterLsBarrelTracksPairs.value;
     std::unique_ptr<TObjArray> objArrayLS(barrelLSstr.Tokenize(","));
     for (int icut = 0; icut < fNBarrelCuts; icut++) {
-      TString* objStr = (TString*)objArrayLS->At(icut);
-      if (!objStr->CompareTo("true")) {
+      TString objStr = objArrayLS->At(icut)->GetName();
+      if (!objStr.CompareTo("true")) {
         pairingLS |= (uint32_t(1) << icut);
       }
     }
@@ -1199,7 +1199,7 @@ struct DQFilterPPTask {
         VarManager::FillPair<VarManager::kDecayToEE, TTrackFillMap>(t1, t2); // compute pair quantities
         for (int icut = 0; icut < fNBarrelCuts; icut++) {
           // select like-sign pairs if trigger has set boolean true within fConfigFilterLsBarrelTracksPairs
-          if (pairingLS & (uint32_t(1) << icut)) {
+          if (!(pairingLS & (uint32_t(1) << icut))) {
             if (t1.sign() * t2.sign() > 0) {
               continue;
             }
@@ -1244,8 +1244,8 @@ struct DQFilterPPTask {
     TString musonLSstr = fConfigFilterLsMuonsPairs.value;
     std::unique_ptr<TObjArray> objArrayMuonLS(musonLSstr.Tokenize(","));
     for (int icut = 0; icut < fNMuonCuts; icut++) {
-      TString* objStr = (TString*)objArrayMuonLS->At(icut);
-      if (!objStr->CompareTo("true")) {
+      TString objStr = objArrayMuonLS->At(icut)->GetName();
+      if (!objStr.CompareTo("true")) {
         pairingLS |= (uint32_t(1) << icut);
       }
     }
@@ -1270,7 +1270,7 @@ struct DQFilterPPTask {
         VarManager::FillPair<VarManager::kDecayToMuMu, TTrackFillMap>(t1, t2); // compute pair quantities
         for (int icut = 0; icut < fNMuonCuts; icut++) {
           // select like-sign pairs if trigger has set boolean true within fConfigFilterLsMuonsPairs
-          if (pairingLS & (uint32_t(1) << icut)) {
+          if (!(pairingLS & (uint32_t(1) << icut))) {
             if (t1.sign() * t2.sign() > 0) {
               continue;
             }
