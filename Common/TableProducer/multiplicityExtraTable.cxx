@@ -97,7 +97,7 @@ struct MultiplicityExtraTable {
       for (auto amplitude : ft0.amplitudeC()) {
         multFT0C += amplitude;
       }
-    }else{
+    } else {
       multFT0A = -999.0f;
       multFT0C = -999.0f;
     }
@@ -110,11 +110,11 @@ struct MultiplicityExtraTable {
         multFV0A += amplitude;
       }
       isFV0OrA = fV0Triggers[o2::fit::Triggers::bitA];
-    }else{
+    } else {
       multFV0A = -999.0f;
     }
 
-    if( bc.has_fdd()){ 
+    if (bc.has_fdd()) {
       auto fdd = bc.fdd();
       std::bitset<8> fFDDTriggers = fdd.triggerMask();
       multFDDTriggerBits = static_cast<uint8_t>(fFDDTriggers.to_ulong());
@@ -125,7 +125,7 @@ struct MultiplicityExtraTable {
       for (auto amplitude : fdd.chargeC()) {
         multFDDC += amplitude;
       }
-    }else{
+    } else {
       multFDDA = -999.0f;
       multFDDC = -999.0f;
     }
