@@ -145,11 +145,10 @@ struct DGCandProducer {
       registry.get<TH2>(HIST("reco/fv0"))->Fill(ampA, triggers[2] ? 2 : 6);
       registry.get<TH2>(HIST("reco/fv0"))->Fill(ampA, triggers[3] ? 3 : 7);
       registry.get<TH2>(HIST("reco/fv0"))->Fill(ampA, triggers[4] ? 4 : 8);
-      
+
       if (!triggers[1]) {
         LOGF(info, "  fv0: %f", ampA);
       }
-
     }
     if (bc.has_foundFT0()) {
       auto ft0 = bc.foundFT0();
@@ -165,11 +164,10 @@ struct DGCandProducer {
       registry.get<TH2>(HIST("reco/ft0C"))->Fill(ampC, triggers[3] ? 3 : 7);
       registry.get<TH2>(HIST("reco/ft0A"))->Fill(ampA, triggers[4] ? 4 : 8);
       registry.get<TH2>(HIST("reco/ft0C"))->Fill(ampC, triggers[4] ? 4 : 8);
-      
+
       if (!triggers[1]) {
         LOGF(info, "  ft0: %f %f", ampA, ampC);
       }
-
     }
     if (bc.has_foundFDD()) {
       auto fdd = bc.foundFDD();
@@ -189,7 +187,6 @@ struct DGCandProducer {
       if (!triggers[1]) {
         LOGF(info, "  fdd: %f %f", ampA, ampC);
       }
-
     }
   }
 
@@ -210,7 +207,7 @@ struct DGCandProducer {
     //   2: TVX              6: no TVX
     //   3: TSC              7: no TSC
     //   4: TCE              8: no TCE
-    registry.add("reco/fv0",  "FV0 amplitudes",  {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
+    registry.add("reco/fv0", "FV0 amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
     registry.add("reco/ft0A", "FT0A amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
     registry.add("reco/ft0C", "FT0C amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
     registry.add("reco/fddA", "FDDA amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
