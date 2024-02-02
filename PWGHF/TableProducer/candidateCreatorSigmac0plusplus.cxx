@@ -15,7 +15,7 @@
 ///
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
-#include "CCDB/BasicCCDBManager.h"             // for dca recalculation
+#include "CCDB/BasicCCDBManager.h" // for dca recalculation
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPMagField.h" // for dca recalculation
 #include "DataFormatsParameters/GRPObject.h"   // for dca recalculation
@@ -201,9 +201,9 @@ struct HfCandidateCreatorSigmac0plusplus {
       //////////////////////////////////////////////////////////////////////////////////////
 
       /// Exclude the current candidate soft pion if it corresponds already to a candidate Lc prong
-      int indexProng0 = candLc.template prong0_as<aod::Tracks>().globalIndex();
-      int indexProng1 = candLc.template prong1_as<aod::Tracks>().globalIndex();
-      int indexProng2 = candLc.template prong2_as<aod::Tracks>().globalIndex();
+      int indexProng0 = candLc.template prong0_as<aod::TracksWDcaExtra>().globalIndex();
+      int indexProng1 = candLc.template prong1_as<aod::TracksWDcaExtra>().globalIndex();
+      int indexProng2 = candLc.template prong2_as<aod::TracksWDcaExtra>().globalIndex();
       int indexSoftPi = trackSoftPi.globalIndex();
       if (indexSoftPi == indexProng0 || indexSoftPi == indexProng1 || indexSoftPi == indexProng2) {
         continue;

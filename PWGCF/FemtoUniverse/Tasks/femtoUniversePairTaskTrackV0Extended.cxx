@@ -42,12 +42,12 @@ struct femtoUniversePairTaskTrackV0Extended {
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
 
-  /// Particle 1 (from track)
+  /// Particle 1 (track)
   Configurable<int> ConfTrkPDGCodePartOne{"ConfTrkPDGCodePartOne", 211, "Particle 1 (Track) - PDG code"};
   Configurable<int> ConfTrackChoicePartOne{"ConfTrackChoicePartOne", 1, "0:Proton, 1:Pion, 2:Kaon"};
   ConfigurableAxis ConfTrkTempFitVarBins{"ConfTrkDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfTrkTempFitVarpTBins{"ConfTrkTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
-  // Configurable<int> ConfChargePart1{"ConfChargePart1", 1, "sign of particle 1"}; // not used
+  Configurable<int> ConfChargePart1{"ConfChargePart1", 0, "sign of particle 1"};
   Configurable<float> ConfHPtPart1{"ConfHPtPart1", 4.0f, "higher limit for pt of particle 1"};
   Configurable<float> ConfLPtPart1{"ConfLPtPart1", 0.3f, "lower limit for pt of particle 1"};
   Configurable<float> Confmom{"Confmom", 0.5, "momentum threshold for particle identification using TOF"};
@@ -55,17 +55,17 @@ struct femtoUniversePairTaskTrackV0Extended {
   Configurable<float> ConfNsigmaCombinedParticle{"ConfNsigmaCombinedParticle", 3.0, "TPC and TOF Sigma (combined) for particle momentum > Confmom"};
 
   /// Partition for particle 1
-  // Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == ConfChargePart1 && aod::femtouniverseparticle::pt < ConfHPtPart1 && aod::femtouniverseparticle::pt > ConfLPtPart1;
-  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::pt < ConfHPtPart1 && aod::femtouniverseparticle::pt > ConfLPtPart1;
+  Partition<FemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == ConfChargePart1 && aod::femtouniverseparticle::pt < ConfHPtPart1 && aod::femtouniverseparticle::pt > ConfLPtPart1;
 
   /// Histogramming for particle 1
-  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 1> trackHistoPartOne;
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 3> trackHistoPartOnePos;
+  FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 4> trackHistoPartOneNeg;
 
-  /// Particle 2 (from V0)
+  /// Particle 2 (V0)
   Configurable<int> ConfV0PDGCodePartTwo{"ConfV0PDGCodePartTwo", 3122, "Particle 2 (V0) - PDG code"};
   ConfigurableAxis ConfV0TempFitVarBins{"ConfV0TempFitVarBins", {300, 0.95, 1.}, "V0: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfV0TempFitVarpTBins{"ConfV0TempFitVarpTBins", {20, 0.5, 4.05}, "V0: pT binning of the pT vs. TempFitVar plot"};
-  // Configurable<int> ConfChildnSpecies{"ConfChildnSpecies", 2, "Number of particle spieces (for V0 children) with PID info"}; // not used
+  Configurable<int> ConfV0PosChildType{"ConfV0PosChildType", -1, "identifier for positive v0 daughter"};
   ConfigurableAxis ConfChildTempFitVarBins{"ConfChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
   Configurable<float> ConfHPtPart2{"ConfHPtPart2", 4.0f, "higher limit for pt of particle 2"};
@@ -128,12 +128,25 @@ struct femtoUniversePairTaskTrackV0Extended {
     }
   }
 
+  template <typename T>
+  bool IsParticleType(const T& part, int id)
+  {
+    const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStoreKa())};
+    // const float tofNSigmas[3] = {part.tofNSigmaPr(), part.tofNSigmaPi(), part.tofNSigmaKa()};
+    const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStoreKa())};
+
+    return IsParticleNSigma(part.p(), tpcNSigmas[id], tofNSigmas[id]);
+  }
+
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
-    qaRegistry.add("Tracks_one/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-    qaRegistry.add("Tracks_one/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
-    trackHistoPartOne.init(&qaRegistry, ConfTrkTempFitVarpTBins, ConfTrkTempFitVarBins, ConfIsMC, ConfTrkPDGCodePartOne);
+    qaRegistry.add("Tracks_pos/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    qaRegistry.add("Tracks_pos/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    qaRegistry.add("Tracks_neg/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    qaRegistry.add("Tracks_neg/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}", kTH2F, {{100, 0, 10}, {100, -5, 5}});
+    trackHistoPartOnePos.init(&qaRegistry, ConfTrkTempFitVarpTBins, ConfTrkTempFitVarBins, ConfIsMC, ConfTrkPDGCodePartOne);
+    trackHistoPartOneNeg.init(&qaRegistry, ConfTrkTempFitVarpTBins, ConfTrkTempFitVarBins, ConfIsMC, ConfTrkPDGCodePartOne);
     trackHistoPartTwo.init(&qaRegistry, ConfV0TempFitVarpTBins, ConfV0TempFitVarBins, ConfIsMC, ConfV0PDGCodePartTwo);
     posChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, false);
     negChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, false);
@@ -166,6 +179,8 @@ struct femtoUniversePairTaskTrackV0Extended {
       const auto& posChild = parts.iteratorAt(part.index() - 2);
       const auto& negChild = parts.iteratorAt(part.index() - 1);
       // printf("-- V0 d- %d d+ %d\n",negChild.globalIndex(),posChild.globalIndex());
+      if (ConfV0PosChildType >= 0 && !IsParticleType(posChild, ConfV0PosChildType))
+        continue;
 
       trackHistoPartTwo.fillQA<false, false>(part);
       posChildHistos.fillQA<false, false>(posChild);
@@ -173,17 +188,22 @@ struct femtoUniversePairTaskTrackV0Extended {
     }
 
     for (auto& part : groupPartsOne) {
-      /// PID using stored binned nsigma
+      /// PID plot for particle 1
       const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStoreKa())};
-      const float tofNSigmas[3] = {part.tofNSigmaPr(), part.tofNSigmaPi(), part.tofNSigmaKa()};
+      // const float tofNSigmas[3] = {part.tofNSigmaPr(), part.tofNSigmaPi(), part.tofNSigmaKa()};
+      const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStoreKa())};
 
-      if (!IsParticleNSigma(part.p(), tpcNSigmas[ConfTrackChoicePartOne], tofNSigmas[ConfTrackChoicePartOne])) {
+      if (!IsParticleNSigma(part.p(), tpcNSigmas[ConfTrackChoicePartOne], tofNSigmas[ConfTrackChoicePartOne]))
         continue;
+      if (part.sign() > 0) {
+        qaRegistry.fill(HIST("Tracks_pos/nSigmaTPC"), part.p(), tpcNSigmas[ConfTrackChoicePartOne]);
+        qaRegistry.fill(HIST("Tracks_pos/nSigmaTOF"), part.p(), tofNSigmas[ConfTrackChoicePartOne]);
+        trackHistoPartOnePos.fillQA<false, false>(part);
+      } else if (part.sign() < 0) {
+        qaRegistry.fill(HIST("Tracks_neg/nSigmaTPC"), part.p(), tpcNSigmas[ConfTrackChoicePartOne]);
+        qaRegistry.fill(HIST("Tracks_neg/nSigmaTOF"), part.p(), tofNSigmas[ConfTrackChoicePartOne]);
+        trackHistoPartOneNeg.fillQA<false, false>(part);
       }
-      qaRegistry.fill(HIST("Tracks_one/nSigmaTPC"), part.p(), tpcNSigmas[ConfTrackChoicePartOne]);
-      qaRegistry.fill(HIST("Tracks_one/nSigmaTOF"), part.p(), tofNSigmas[ConfTrackChoicePartOne]);
-
-      trackHistoPartOne.fillQA<false, false>(part);
     }
 
     /// Now build the combinations
@@ -198,12 +218,11 @@ struct femtoUniversePairTaskTrackV0Extended {
         continue;
       }
       /// PID using stored binned nsigma
-      const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStoreKa())};
-      const float tofNSigmas[3] = {p1.tofNSigmaPr(), p1.tofNSigmaPi(), p1.tofNSigmaKa()};
-
-      if (!IsParticleNSigma(p1.p(), tpcNSigmas[ConfTrackChoicePartOne], tofNSigmas[ConfTrackChoicePartOne])) {
+      if (!IsParticleType(p1, ConfTrackChoicePartOne))
         continue;
-      }
+      const auto& posChild = parts.iteratorAt(p2.index() - 2);
+      if (ConfV0PosChildType >= 0 && !IsParticleType(posChild, ConfV0PosChildType))
+        continue;
       sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
     }
   }
@@ -240,12 +259,11 @@ struct femtoUniversePairTaskTrackV0Extended {
           continue;
         }
         /// PID using stored binned nsigma
-        const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(p1.tpcNSigmaStoreKa())};
-        const float tofNSigmas[3] = {p1.tofNSigmaPr(), p1.tofNSigmaPi(), p1.tofNSigmaKa()};
-
-        if (!IsParticleNSigma(p1.p(), tpcNSigmas[ConfTrackChoicePartOne], tofNSigmas[ConfTrackChoicePartOne])) {
+        if (!IsParticleType(p1, ConfTrackChoicePartOne))
           continue;
-        }
+        const auto& posChild = parts.iteratorAt(p2.index() - 2);
+        if (ConfV0PosChildType >= 0 && !IsParticleType(posChild, ConfV0PosChildType))
+          continue;
         mixedEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
       }
     }

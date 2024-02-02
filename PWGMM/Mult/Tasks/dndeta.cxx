@@ -1121,22 +1121,6 @@ struct MultiplicityCounter {
       c_gen = mcCollision.centrality();
     }
 
-    auto nCharged = countParticles(particles);
-    if constexpr (hasRecoCent<C>()) {
-      binnedRegistry.fill(HIST(NtrkZvtxGen_t), nCharged, mcCollision.posZ(), c_gen);
-      binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGen), c_gen);
-    } else {
-      inclusiveRegistry.fill(HIST(NtrkZvtxGen_t), nCharged, mcCollision.posZ());
-      inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGen));
-    }
-
-    if (nCharged > 0) {
-      if constexpr (hasRecoCent<C>()) {
-        binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGengt0), c_gen);
-      } else {
-        inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGengt0));
-      }
-    }
     bool atLeastOne = false;
     bool atLeastOne_gt0 = false;
     bool atLeastOne_PVgt0 = false;
@@ -1215,6 +1199,23 @@ struct MultiplicityCounter {
       }
     }
 
+    auto nCharged = countParticles(particles);
+    if constexpr (hasRecoCent<C>()) {
+      binnedRegistry.fill(HIST(NtrkZvtxGen_t), nCharged, mcCollision.posZ(), c_gen);
+      binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGen), c_gen);
+    } else {
+      inclusiveRegistry.fill(HIST(NtrkZvtxGen_t), nCharged, mcCollision.posZ());
+      inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGen));
+    }
+
+    if (nCharged > 0) {
+      if constexpr (hasRecoCent<C>()) {
+        binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGengt0), c_gen);
+      } else {
+        inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGengt0));
+      }
+    }
+
     if (fillResponse) {
       for (auto i = 0U; i < NrecPerCol.size(); ++i) {
         if constexpr (hasRecoCent<C>()) {
@@ -1274,22 +1275,6 @@ struct MultiplicityCounter {
       c_gen = mcCollision.centrality();
     }
 
-    auto nCharged = countParticles(particles);
-    if constexpr (hasRecoCent<C>()) {
-      binnedRegistry.fill(HIST(NtrkZvtxGen_t), nCharged, mcCollision.posZ(), c_gen);
-      binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGen), c_gen);
-    } else {
-      inclusiveRegistry.fill(HIST(NtrkZvtxGen_t), nCharged, mcCollision.posZ());
-      inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGen));
-    }
-
-    if (nCharged > 0) {
-      if constexpr (hasRecoCent<C>()) {
-        binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGengt0), c_gen);
-      } else {
-        inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGengt0));
-      }
-    }
     bool atLeastOne = false;
     bool atLeastOne_gt0 = false;
     bool atLeastOne_PVgt0 = false;
@@ -1364,6 +1349,23 @@ struct MultiplicityCounter {
         } else {
           inclusiveRegistry.fill(HIST(NtrkZvtxGen), Nrec, collision.posZ());
         }
+      }
+    }
+
+    auto nCharged = countParticles(particles);
+    if constexpr (hasRecoCent<C>()) {
+      binnedRegistry.fill(HIST(NtrkZvtxGen_t), nCharged, mcCollision.posZ(), c_gen);
+      binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGen), c_gen);
+    } else {
+      inclusiveRegistry.fill(HIST(NtrkZvtxGen_t), nCharged, mcCollision.posZ());
+      inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGen));
+    }
+
+    if (nCharged > 0) {
+      if constexpr (hasRecoCent<C>()) {
+        binnedRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGengt0), c_gen);
+      } else {
+        inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kGengt0));
       }
     }
 

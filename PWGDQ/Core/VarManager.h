@@ -258,6 +258,7 @@ class VarManager : public TObject
     kITSncls,
     kITSchi2,
     kITSlayerHit,
+    kITSmeanClsSize,
     kIsTPCrefit,
     kTPCncls,
     kITSClusterMap,
@@ -833,12 +834,12 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
       propmuon.setCovariances(proptrack.getCovariances());
 
     } else if (static_cast<int>(muon.trackType()) < 2) {
-      double centerMFT[3] = {0, 0, -61.4};
-      o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
-      auto Bz = field->getBz(centerMFT); // Get field at centre of MFT
+      double x[3] = {0., 0., 0.};
+      double b[3] = {0., 0., 0.};
+      TGeoGlobalMagField::Instance()->Field(x, b);
       auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), collision.posX(), collision.posY(), collision.posZ());
       auto x2x0 = static_cast<float>(geoMan.meanX2X0);
-      fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);
+      fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, b[2], x2x0);
       propmuon.setParameters(fwdtrack.getParameters());
       propmuon.setZ(fwdtrack.getZ());
       propmuon.setCovariances(fwdtrack.getCovariances());
@@ -1218,6 +1219,17 @@ void VarManager::FillTrack(T const& track, float* values)
     if constexpr ((fillMap & TrackExtra) > 0) {
       if (fgUsedVars[kITSncls]) {
         values[kITSncls] = track.itsNCls(); // dynamic column
+      }
+      if (fgUsedVars[kITSmeanClsSize]) {
+        values[kITSmeanClsSize] = 0.0;
+        uint32_t clsizeflag = track.itsClusterSizes();
+        float mcls = 0.;
+        for (unsigned int layer = 0; layer < 7; layer++) {
+          mcls += (clsizeflag >> (layer * 4)) & 0xF;
+        }
+        if (track.itsNCls() > 0) {
+          values[kITSmeanClsSize] = mcls / track.itsNCls();
+        }
       }
     }
     if constexpr ((fillMap & ReducedTrackBarrel) > 0) {
@@ -1992,7 +2004,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
           values[kVertexingLxyz] = 1.e-8f;
         values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
         values[kVertexingTauxy] = KFGeoTwoProng.GetPseudoProperDecayTime(KFPV, KFGeoTwoProng.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
-        values[kVertexingTauz] = dzPair2PV * KFGeoTwoProng.GetMass() / (TMath::Abs(KFGeoTwoProng.GetPz()) * o2::constants::physics::LightSpeedCm2NS);
+        values[kVertexingTauz] = -1 * dzPair2PV * KFGeoTwoProng.GetMass() / (TMath::Abs(KFGeoTwoProng.GetPz()) * o2::constants::physics::LightSpeedCm2NS);
         values[kVertexingTauxyErr] = values[kVertexingLxyErr] * KFGeoTwoProng.GetMass() / (KFGeoTwoProng.GetPt() * o2::constants::physics::LightSpeedCm2NS);
         values[kVertexingTauzErr] = values[kVertexingLzErr] * KFGeoTwoProng.GetMass() / (TMath::Abs(KFGeoTwoProng.GetPz()) * o2::constants::physics::LightSpeedCm2NS);
         values[kCosPointingAngle] = (std::sqrt(dxPair2PV * dxPair2PV) * v12.Px() +
@@ -2067,6 +2079,15 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
           float B[3];
           float xyz[3] = {0, 0, 0};
           KFGeoTwoProng.GetFieldValue(xyz, B);
+          // TODO: find better soluton to handle cases where KF outputs negative variances
+          float covXX = 0.1;
+          float covYY = 0.1;
+          if (KFGeoTwoProng.GetCovariance(0, 0) > 0) {
+            covXX = KFGeoTwoProng.GetCovariance(0, 0);
+          }
+          if (KFGeoTwoProng.GetCovariance(1, 1) > 0) {
+            covYY = KFGeoTwoProng.GetCovariance(0, 0);
+          }
           pars1.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, B[2], x2x01);
           pars2.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, B[2], x2x02);
           v1 = {pars1.getPt(), pars1.getEta(), pars1.getPhi(), m1};
@@ -2078,7 +2099,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
           values[kPhi] = v12.Phi();
           values[kRap] = -v12.Rapidity();
           values[kVertexingTauxy] = KFGeoTwoProng.GetPseudoProperDecayTime(KFPV, v12.M()) / (o2::constants::physics::LightSpeedCm2NS);
-          values[kVertexingTauz] = dzPair2PV * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
+          values[kVertexingTauz] = -1 * dzPair2PV * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
           values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.Pt() * o2::constants::physics::LightSpeedCm2NS);
           values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
 

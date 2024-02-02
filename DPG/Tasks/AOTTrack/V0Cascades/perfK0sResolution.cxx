@@ -35,6 +35,7 @@ struct perfK0sResolution {
   ConfigurableAxis mBins{"mBins", {200, 0.4f, 0.6f}, "Mass binning"};
   ConfigurableAxis pTBins{"pTBins", {200, 0.f, 10.f}, "pT binning"};
   ConfigurableAxis pTResBins{"pTResBins", {200, -1.2f, 1.2f}, "pT resolution binning"};
+  ConfigurableAxis invpTResBins{"invpTResBins", {200, -1.2f, 1.2f}, "inv pT resolution binning"};
   ConfigurableAxis etaBins{"etaBins", {2, -1.f, 1.f}, "eta binning"};
   ConfigurableAxis etaBinsDauthers{"etaBinsDauthers", {2, -1.f, 1.f}, "eta binning"};
   ConfigurableAxis phiBins{"phiBins", {4, 0.f, 6.28f}, "phi binning"};
@@ -46,10 +47,12 @@ struct perfK0sResolution {
     const AxisSpec mAxis{mBins, "#it{m} (GeV/#it{c}^{2})"};
     const AxisSpec pTAxis{pTBins, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec pTResAxis{pTResBins, "#Delta#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec invpTResAxis{invpTResBins, "1/#it{p}_{T}-1/#it{p}_{T}^{MC} (GeV/#it{c})^{-1}"};
     const AxisSpec etaAxis{etaBins, "#eta"};
     const AxisSpec etaAxisPosD{etaBinsDauthers, "#eta pos."};
     const AxisSpec etaAxisNegD{etaBinsDauthers, "#eta neg."};
     const AxisSpec phiAxis{phiBins, "#phi"};
+    const AxisSpec trueK0Axis{2, -0.5, 1.5, "True K0"};
 
     int nProc = 0;
     if (doprocessData) {
@@ -61,13 +64,19 @@ struct perfK0sResolution {
       nProc++;
     }
 
-    rK0sResolution.add("h2_massPosPtRes", "h2_massPosPtRes", {HistType::kTH2F, {mAxis, pTResAxis}});
-    rK0sResolution.add("h2_massNegPtRes", "h2_massNegPtRes", {HistType::kTH2F, {mAxis, pTResAxis}});
+    if (doprocessMC) {
+      rK0sResolution.add("h2_massPosPtRes", "h2_massPosPtRes", {HistType::kTH2F, {mAxis, pTResAxis}});
+      rK0sResolution.add("h2_massNegPtRes", "h2_massNegPtRes", {HistType::kTH2F, {mAxis, pTResAxis}});
+    }
     rK0sResolution.add("h2_masspT", "h2_masspT", {HistType::kTH2F, {mAxis, pTAxis}});
     rK0sResolution.add("h2_masseta", "h2_masseta", {HistType::kTH2F, {mAxis, etaAxis}});
     rK0sResolution.add("h2_massphi", "h2_massphi", {HistType::kTH2F, {mAxis, phiAxis}});
     if (useMultidimHisto) {
-      rK0sResolution.add("thn_mass", "thn_mass", kTHnSparseF, {mAxis, pTAxis, etaAxis, phiAxis, etaAxisPosD, etaAxisNegD});
+      if (doprocessMC) {
+        rK0sResolution.add("thn_mass", "thn_mass", kTHnSparseF, {mAxis, pTAxis, etaAxis, phiAxis, etaAxisPosD, etaAxisNegD, invpTResAxis, invpTResAxis, trueK0Axis});
+      } else {
+        rK0sResolution.add("thn_mass", "thn_mass", kTHnSparseF, {mAxis, pTAxis, etaAxis, phiAxis, etaAxisPosD, etaAxisNegD});
+      }
     }
   }
 
@@ -214,7 +223,8 @@ struct perfK0sResolution {
   }
   PROCESS_SWITCH(perfK0sResolution, processData, "Process data", true);
 
-  void processMC(soa::Filtered<SelectedCollisions>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, soa::Join<PIDTracks, aod::McTrackLabels> const& tracks, aod::McParticles const&)
+  void processMC(soa::Filtered<SelectedCollisions>::iterator const& collision, soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>> const& fullV0s,
+                 soa::Join<PIDTracks, aod::McTrackLabels> const& tracks, aod::McParticles const&)
   {
     for (auto& v0 : fullV0s) {
       const auto& posTrack = v0.posTrack_as<soa::Join<PIDTracks, aod::McTrackLabels>>();
@@ -230,14 +240,17 @@ struct perfK0sResolution {
       if (posTrack.mcParticle().pdgCode() != 211 || negTrack.mcParticle().pdgCode() != -211) {
         continue;
       }
-
-      rK0sResolution.fill(HIST("h2_massPosPtRes"), v0.mK0Short(), posTrack.pt() - posTrack.mcParticle().pt());
-      rK0sResolution.fill(HIST("h2_massNegPtRes"), v0.mK0Short(), posTrack.pt() - posTrack.mcParticle().pt());
+      const bool isTrueK0s = (v0.has_mcParticle() && v0.mcParticle().pdgCode() == 310);
+      rK0sResolution.fill(HIST("h2_massPosPtRes"), v0.mK0Short(), v0.positivept() - posTrack.mcParticle().pt());
+      rK0sResolution.fill(HIST("h2_massNegPtRes"), v0.mK0Short(), v0.negativept() - negTrack.mcParticle().pt());
       rK0sResolution.fill(HIST("h2_masspT"), v0.mK0Short(), v0.pt());
       rK0sResolution.fill(HIST("h2_masseta"), v0.mK0Short(), v0.eta());
       rK0sResolution.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
       if (useMultidimHisto) {
-        rK0sResolution.fill(HIST("thn_mass"), v0.mK0Short(), v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta());
+        rK0sResolution.fill(HIST("thn_mass"), v0.mK0Short(), v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta(),
+                            1. / v0.positivept() - 1. / posTrack.mcParticle().pt(),
+                            1. / v0.negativept() - 1. / negTrack.mcParticle().pt(),
+                            isTrueK0s);
       }
     }
   }

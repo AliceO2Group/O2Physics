@@ -68,9 +68,9 @@ struct TaskPolarisationCharmHadrons {
   Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 Pi"};
   Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for Lc decay to P K Pi"};
 
-  ConfigurableAxis thnAxisInvMass{"thnAxisInvMass", {100, 1.78, 2.05}, "#it{M} (GeV/#it{c}^{2})"};
+  ConfigurableAxis thnAxisInvMass{"thnAxisInvMass", {200, 0.139, 0.179}, "#it{M} (GeV/#it{c}^{2})"};
   ConfigurableAxis thnAxisPt{"thnAxisPt", {100, 0., 100.}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis thnAxisPz{"thnAxisPz", {100, 0., 100.}, "|#it{p}_{z}| (GeV/#it{c})"};
+  ConfigurableAxis thnAxisPz{"thnAxisPz", {100, -50., 50.}, "#it{p}_{z} (GeV/#it{c})"};
   ConfigurableAxis thnAxisY{"thnAxisY", {20, -1., 1.}, "#it{y}"};
   ConfigurableAxis thnAxisCosThetaStarHelicity{"thnAxisCosThetaStarHelicity", {20, -1., 1.}, "cos(#vartheta_{helicity})"};
   ConfigurableAxis thnAxisCosThetaStarProduction{"thnAxisCosThetaStarProduction", {20, -1., 1.}, "cos(#vartheta_{production})"};
@@ -120,9 +120,8 @@ struct TaskPolarisationCharmHadrons {
   }; // end init
 
   /// \param candidates are the selected candidates
-  /// \param tracks are the tracks
   template <uint8_t channel, bool withMl, typename Cand>
-  void runPolarisationAnalysis(Cand const& candidate, Tracks const& tracks)
+  void runPolarisationAnalysis(Cand const& candidate)
   {
 
     // loop over mass hypotheses
@@ -146,9 +145,8 @@ struct TaskPolarisationCharmHadrons {
         pyCharmHad = candidate.pyDstar();
         pzCharmHad = candidate.pzDstar();
         massDau = massPi; // (*)
-        auto prongSoftPi = candidate.template prongPi_as<aod::Tracks>();
-        invMassCharmHad = (prongSoftPi.sign() > 0) ? candidate.invMassDstar() : candidate.invMassAntiDstar();
-        invMassCharmHadForSparse = (prongSoftPi.sign() > 0) ? (invMassCharmHad - candidate.invMassD0()) : (invMassCharmHad - candidate.invMassD0Bar()); // different for D*
+        invMassCharmHad = (candidate.signSoftPi() > 0) ? candidate.invMassDstar() : candidate.invMassAntiDstar();
+        invMassCharmHadForSparse = (candidate.signSoftPi() > 0) ? (invMassCharmHad - candidate.invMassD0()) : (invMassCharmHad - candidate.invMassD0Bar()); // different for D*
         rapidity = candidate.y(massDstar);
         if constexpr (withMl) {
           outputMl[0] = -1.; // not yet implemented in the selector
@@ -215,10 +213,10 @@ struct TaskPolarisationCharmHadrons {
       ROOT::Math::XYZVector helicityVec = fourVecMother.Vect();
       ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(pyCharmHad, -pxCharmHad, 0.);
 
-      float cosThetaStarHelicity = std::abs(helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2()));
-      float cosThetaStarProduction = std::abs(normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2()));
-      float cosThetaStarBeam = std::abs(beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()));
-      float cosThetaStarRandom = std::abs(randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()));
+      float cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2());
+      float cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2());
+      float cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
+      float cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
 
       if constexpr (withMl) {
         registry.fill(HIST("hSparseCharmPolarisation"), invMassCharmHadForSparse, candidate.pt(), pzCharmHad, rapidity, cosThetaStarHelicity, cosThetaStarProduction, cosThetaStarBeam, cosThetaStarRandom, outputMl[0], outputMl[1], outputMl[2]);
@@ -233,14 +231,14 @@ struct TaskPolarisationCharmHadrons {
   /////////////////////////
 
   // Dstar with rectangular cuts
-  void processDstar(soa::Filtered<CandDstarWSelFlag>::iterator const& dstarCandidate, Tracks const& tracks)
+  void processDstar(soa::Filtered<CandDstarWSelFlag>::iterator const& dstarCandidate)
   {
-    runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false>(dstarCandidate, tracks);
+    runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false>(dstarCandidate);
   }
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstar, "Process Dstar candidates without ML", true);
 
   // Dstar with ML cuts
-  void processDstarWithMl(soa::Filtered<CandDstarWSelFlag>::iterator const&, Tracks const&)
+  void processDstarWithMl(soa::Filtered<CandDstarWSelFlag>::iterator const&)
   {
     // DUMMY
   }
@@ -251,16 +249,16 @@ struct TaskPolarisationCharmHadrons {
   ////////////////////////////
 
   // Lc->pKpi with rectangular cuts
-  void processLcToPKPi(soa::Filtered<CandLcToPKPiWSelFlag>::iterator const& lcCandidate, Tracks const& tracks)
+  void processLcToPKPi(soa::Filtered<CandLcToPKPiWSelFlag>::iterator const& lcCandidate)
   {
-    runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false>(lcCandidate, tracks);
+    runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false>(lcCandidate);
   }
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPi, "Process Lc candidates without ML", false);
 
   // Lc->pKpi with ML cuts
-  void processLcToPKPiWithMl(soa::Filtered<soa::Join<CandLcToPKPiWSelFlag, aod::HfMlLcToPKPi>>::iterator const& lcCandidate, Tracks const& tracks)
+  void processLcToPKPiWithMl(soa::Filtered<soa::Join<CandLcToPKPiWSelFlag, aod::HfMlLcToPKPi>>::iterator const& lcCandidate)
   {
-    runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true>(lcCandidate, tracks);
+    runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true>(lcCandidate);
   }
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPiWithMl, "Process Lc candidates with ML", false);
 };

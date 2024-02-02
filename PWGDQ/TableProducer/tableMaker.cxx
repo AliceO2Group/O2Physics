@@ -364,12 +364,12 @@ struct TableMaker {
           o2::base::Propagator::initFieldFromGRP(grpmagrun2);
         }
       } else {
-        if (fPropMuon) {
-          VarManager::SetupMuonMagField();
-        }
         grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
         if (grpmag != nullptr) {
           o2::base::Propagator::initFieldFromGRP(grpmag);
+        }
+        if (fPropMuon) {
+          VarManager::SetupMuonMagField();
         }
       }
 
@@ -748,14 +748,34 @@ struct TableMaker {
   void fullSkimmingIndices(TEvent const& collision, aod::BCsWithTimestamps const&, TTracks const& tracksBarrel, TMuons const& tracksMuon, AssocTracks const& trackIndices, AssocMuons const& fwdtrackIndices)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    if (fConfigComputeTPCpostCalib && fCurrentRun != bc.runNumber()) {
-      auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
-      VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
-      VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
-      VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
-      VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
-      VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
-      VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
+    if (fCurrentRun != bc.runNumber()) {
+      if (fConfigComputeTPCpostCalib) {
+        auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
+        VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
+        VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
+        VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
+        VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
+        VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
+        VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
+        if (fConfigComputeTPCpostCalibKaon) {
+          VarManager::SetCalibrationObject(VarManager::kTPCKaonMean, calibList->FindObject("mean_map_kaon"));
+          VarManager::SetCalibrationObject(VarManager::kTPCKaonSigma, calibList->FindObject("sigma_map_kaon"));
+        }
+      }
+      if (fIsRun2 == true) {
+        grpmagrun2 = fCCDB->getForTimeStamp<o2::parameters::GRPObject>(grpmagPathRun2, bc.timestamp());
+        if (grpmagrun2 != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpmagrun2);
+        }
+      } else {
+        grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+        if (grpmag != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpmag);
+        }
+        if (fPropMuon) {
+          VarManager::SetupMuonMagField();
+        }
+      }
       fCurrentRun = bc.runNumber();
     }
 
