@@ -84,6 +84,19 @@ class FemtoUniversePairCleaner
         return false;
       }
       return part1.globalIndex() != part2.globalIndex();
+    } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kD0) {
+      /// Track-D0 combination part1 is hadron and part2 is D0
+      if (part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kD0) {
+        LOG(fatal) << "FemtoUniversePairCleaner: passed arguments don't agree with FemtoUniversePairCleaner instantiation! Please provide second argument kD0 candidate.";
+        return false;
+      }
+      // Getting D0 (part2) children
+      const auto& posChild = particles.iteratorAt(part2.index() - 2);
+      const auto& negChild = particles.iteratorAt(part2.index() - 1);
+      if (part1.globalIndex() == posChild.globalIndex() || part1.globalIndex() == negChild.globalIndex()) {
+        return false;
+      }
+      return part1.globalIndex() != part2.globalIndex();
     } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kPhi) {
       /// Track-Phi combination part1 is Phi and part 2 is hadron
       if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kPhi) {

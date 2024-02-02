@@ -10,61 +10,76 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_dpl_workflow(v0cascades-qa
-                    SOURCES v0cascadesqa.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+    SOURCES v0cascadesqa.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(track-checks
-                    SOURCES trackchecks.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+    SOURCES trackchecks.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(resonanceqa
-                    SOURCES resonanceqa.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+    SOURCES resonanceqa.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(pid-qa
-                    SOURCES lfpidqa.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+    SOURCES lfpidqa.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(strarecostudy
-                    SOURCES straRecoStudy.cxx
-                    PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+    SOURCES straRecoStudy.cxx
+    PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(kfperformancestudy
-                    SOURCES kfPerformanceStudy.cxx
-                    PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+    SOURCES kfPerformanceStudy.cxx
+    PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(its-tpc-matching-qa
+    SOURCES lfITSTPCMatchingQA.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lfpropstudy
-                    SOURCES lfpropStudy.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+    SOURCES lfpropStudy.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(tpc-dedx-postcalibration
-                    SOURCES tpc_dEdx_postcalibration.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+    SOURCES tpc_dEdx_postcalibration.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(tpc-dedx-qa
-                    SOURCES tpc_dedx_qa.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+    SOURCES tpc_dedx_qa.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(vertexqa
-                    SOURCES vertexQA.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+    SOURCES vertexQA.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(efficiencyqa
-                    SOURCES efficiencyQA.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+    SOURCES efficiencyQA.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(strangenessqcpp
-                    SOURCES strangenessQCPP.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+    SOURCES strangenessQCPP.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strangepidqa
+    SOURCES strangepidqa.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(stqa
+    SOURCES stqa.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
+// Contact: florian.eisenhut@cern.ch
 //
-// Analysis task for processing O2::DQ MC skimmed AODs
+// Analysis task to generate Monte Carlo templates of different heavy-flavour dielectron sources
 //
 #include <iostream>
 #include <vector>
@@ -32,6 +32,7 @@
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/MCSignal.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using std::cout;
 using std::endl;
@@ -46,25 +47,48 @@ using namespace o2::aod;
 namespace o2::aod
 {
 
-namespace dqanalysisflags
+namespace emanalysisflags
 {
+DECLARE_SOA_COLUMN(IsMCEventSelected, isMCEventSelected, int);
 DECLARE_SOA_COLUMN(IsEventSelected, isEventSelected, int);
 DECLARE_SOA_COLUMN(IsBarrelSelected, isBarrelSelected, int);
-} // namespace dqanalysisflags
+} // namespace emanalysisflags
 
-DECLARE_SOA_TABLE(EventCuts, "AOD", "EVENTCUTS", dqanalysisflags::IsEventSelected);
-DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "BARRELTRACKCUTS", dqanalysisflags::IsBarrelSelected);
+DECLARE_SOA_TABLE(EventMCCuts, "AOD", "EVENTMCCUTS", emanalysisflags::IsMCEventSelected);
+DECLARE_SOA_TABLE(EventCuts, "AOD", "EVENTCUTS", emanalysisflags::IsEventSelected);
+DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "BARRELTRACKCUTS", emanalysisflags::IsBarrelSelected);
 } // namespace o2::aod
 
+// No skimming: works for events and single tracks
+using MyEventsAOD = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+using MyEventsSelectedAOD = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::EventCuts>;
+// using MyMCEventsSelectedAOD = soa::Join<aod::McCollisions, aod::EventMCCuts>;
+using MyBarrelTracksAOD = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
+                                    aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                    aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                    aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                    aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
+                                    aod::McTrackLabels>;
+using MyBarrelTracksSelectedAOD = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
+                                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                            aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                            aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
+                                            aod::BarrelTrackCuts, aod::McTrackLabels>;
+// using MyMCTrackAOD = soa::Join<aod::McParticles, aod::SmearedTracks>;
+
+constexpr static uint32_t gkEventFillMapAOD = VarManager::ObjTypes::Collision;
+constexpr static uint32_t gkMCEventFillMapAOD = VarManager::ObjTypes::CollisionMC;
+constexpr static uint32_t gkTrackFillMapAOD = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkParticleMCFillMapAOD = VarManager::ObjTypes::ParticleMC;
+
+// Skimmed data
 // using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMC>;
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedMCEventLabels>;
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::ReducedMCEventLabels>;
-// TODO: make secondary vertexing optional
-// using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedMCEventLabels>;
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedMCEventLabels>;
 
 using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
-// using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
 using MyBarrelTracksSelected = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::ReducedTracksBarrelLabels>;
 using MyBarrelTracksSelectedWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::ReducedTracksBarrelLabels>;
 
@@ -135,13 +159,25 @@ struct AnalysisEventSelection {
   {
     runSelection<gkEventFillMap, gkMCEventFillMap>(event, mcEvents);
   }
+
+  void processAOD(MyEventsAOD::iterator const& event, aod::McCollisions const& mcEvents)
+  {
+    runSelection<gkEventFillMapAOD, gkMCEventFillMapAOD>(event, mcEvents);
+  }
+
   void processDummy(MyEvents&)
+  {
+    // do nothing
+  }
+  void processDummyAOD(MyEventsAOD&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmed, "Run event selection on DQ skimmed events", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processAOD, "Run event selection without skimming", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy process function", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processDummyAOD, "Dummy process function", false);
 };
 
 struct AnalysisTrackSelection {
@@ -296,21 +332,32 @@ struct AnalysisTrackSelection {
   {
     runSelection<gkEventFillMap, gkMCEventFillMap, gkTrackFillMap, gkParticleMCFillMap>(event, tracks, eventsMC, tracksMC);
   }
+  void processAOD(MyEventsSelectedAOD::iterator const& event, MyBarrelTracksAOD const& tracks, aod::McCollisions const& eventsMC, aod::McParticles const& tracksMC)
+  {
+    runSelection<gkEventFillMapAOD, gkMCEventFillMapAOD, gkTrackFillMapAOD, gkParticleMCFillMapAOD>(event, tracks, eventsMC, tracksMC);
+  }
+
   void processDummy(MyEvents&)
+  {
+    // do nothing
+  }
+  void processDummyAOD(MyEventsAOD&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(AnalysisTrackSelection, processSkimmed, "Run barrel track selection on DQ skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processAOD, "Run barrel track selection without skimming", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy process function", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processDummyAOD, "Dummy process function", false);
 };
 
 struct AnalysisSameEventPairing {
   Produces<aod::Dileptons> dileptonList;
   Produces<aod::DileptonsExtra> dileptonExtraList;
   OutputObj<THashList> fOutputList{"output"};
-  Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
-  Filter filterBarrelTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
+  Filter filterEventSelected = aod::emanalysisflags::isEventSelected == 1;
+  Filter filterBarrelTrackSelected = aod::emanalysisflags::isBarrelSelected > 0;
   Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMCRecSignals{"cfgBarrelMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
   Configurable<std::string> fConfigMCGenSignals{"cfgBarrelMCGenSignals", "", "Comma separated list of MC signals (generated)"};
@@ -408,8 +455,8 @@ struct AnalysisSameEventPairing {
     VarManager::SetupTwoProngFwdDCAFitter(5.0f, true, 200.0f, 1.0e-3f, 0.9f, true);
   }
 
-  template <int TPairType, uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks1, typename TTracks2, typename TEventsMC, typename TTracksMC>
-  void runPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
+  template <int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks1, typename TTracks2>
+  void runPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2)
   {
     // establish the right histogram classes to be filled depending on TPairType (ee,mumu,emu)
     unsigned int ncuts = fBarrelHistNames.size();
@@ -431,10 +478,6 @@ struct AnalysisSameEventPairing {
         continue;
       }
       VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
-      // secondary vertexing is not implemented for e-mu pairs so we need to hide this function from the e-mu analysis for now
-      if (fConfigDoSecVtxProp && TPairType == VarManager::kDecayToEE) {
-        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fPropToPCA, VarManager::fgValues);
-      }
 
       // run MC matching for this pair
       uint32_t mcDecision = 0;
@@ -539,18 +582,21 @@ struct AnalysisSameEventPairing {
     } // end of true pairing loop
   }   // end runMCGen
 
+  // skimmed
   PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+  // non skimmed
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
   void processDecayToEESkimmed(soa::Filtered<MyEventsSelected>::iterator const& event,
                                soa::Filtered<MyBarrelTracksSelected> const& tracks,
-                               ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+                               ReducedMCTracks const& tracksMC)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event);
     VarManager::FillEvent<gkMCEventFillMap>(event.reducedMCevent());
 
-    runPairing<VarManager::kDecayToEE, gkEventFillMap, gkMCEventFillMap, gkTrackFillMap>(event, tracks, tracks, eventsMC, tracksMC);
+    runPairing<VarManager::kDecayToEE, gkEventFillMap, gkTrackFillMap>(event, tracks, tracks);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
     runMCGen(groupedMCTracks);
@@ -558,15 +604,30 @@ struct AnalysisSameEventPairing {
 
   void processDecayToEEVertexingSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event,
                                         soa::Filtered<MyBarrelTracksSelectedWithCov> const& tracks,
-                                        ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+                                        ReducedMCTracks const& tracksMC)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMapWithCov>(event);
     VarManager::FillEvent<gkMCEventFillMap>(event.reducedMCevent());
 
-    runPairing<VarManager::kDecayToEE, gkEventFillMapWithCov, gkMCEventFillMap, gkTrackFillMapWithCov>(event, tracks, tracks, eventsMC, tracksMC);
+    runPairing<VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, tracks, tracks);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
+    groupedMCTracks.bindInternalIndicesTo(&tracksMC);
+    runMCGen(groupedMCTracks);
+  }
+
+  void processDecayToEEAOD(soa::Filtered<MyEventsSelectedAOD>::iterator const& event,
+                           soa::Filtered<MyBarrelTracksSelectedAOD> const& tracks,
+                           aod::McParticles const& tracksMC)
+  {
+    // Reset the fValues array
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillEvent<gkEventFillMapAOD>(event);
+    VarManager::FillEvent<gkMCEventFillMapAOD>(event.mcCollision());
+
+    runPairing<VarManager::kDecayToEE, gkEventFillMapAOD, gkTrackFillMapAOD>(event, tracks, tracks);
+    auto groupedMCTracks = tracksMC.sliceBy(perMcCollision, event.mcCollision().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
     runMCGen(groupedMCTracks);
   }
@@ -575,10 +636,16 @@ struct AnalysisSameEventPairing {
   {
     // do nothing
   }
+  void processDummyAOD(MyEventsAOD&)
+  {
+    // do nothing
+  }
 
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmed, "Run barrel barrel pairing on DQ skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEEVertexingSkimmed, "Run barrel barrel pairing on DQ skimmed tracks including vertexing", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEEAOD, "Run barrel barrel pairing on non skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy process function", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processDummyAOD, "Dummy process function", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -45,6 +45,9 @@ struct caloClusterProducerTask {
   Configurable<bool> useCoreE{"coreE", 0, "0 - full energy, 1 - core energy"};
   Configurable<bool> skipL1phase{"skipL1phase", false, "skip or apply L1phase time correction"};
   Configurable<std::vector<double>> cpvMinE{"cpvCluMinAmp", {20., 50., 50.}, "minimal CPV cluster amplitude per module"};
+  Configurable<std::string> mBadMapPath{"badmapPath", "PHS/Calib/BadMap", "path to BadMap snapshot"};
+  Configurable<std::string> mCalibPath{"calibPath", "PHS/Calib/CalibParams", "path to Calibration snapshot"};
+  Configurable<std::string> mL1PhasePath{"L1phasePath", "Users/d/daveryan/PHS/Calib/L1phase", "path to L1phase snapshot"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -139,11 +142,11 @@ struct caloClusterProducerTask {
     // Fill output table
 
     // calibration may be updated by CCDB fetcher
-    const o2::phos::BadChannelsMap* badMap = ccdb->getForTimeStamp<o2::phos::BadChannelsMap>("PHS/Calib/BadMap", timestamp);
-    const o2::phos::CalibParams* calibParams = ccdb->getForTimeStamp<o2::phos::CalibParams>("PHS/Calib/CalibParams", timestamp);
+    const o2::phos::BadChannelsMap* badMap = ccdb->getForTimeStamp<o2::phos::BadChannelsMap>(mBadMapPath, timestamp);
+    const o2::phos::CalibParams* calibParams = ccdb->getForTimeStamp<o2::phos::CalibParams>(mCalibPath, timestamp);
 
     if (!isMC && !skipL1phase) {
-      const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>("PHS/Calib/L1phase", timestamp);
+      const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>(mL1PhasePath, timestamp);
       if (vec) {
         clusterizerPHOS->setL1phase((*vec)[0]);
       } else {

@@ -124,14 +124,19 @@ struct hJetAnalysis {
       if (is_sig_col) {
         registry.fill(HIST("hNtrig"), 1.5);
         registry.fill(HIST("hJetSignalMultiplicity"), jets.size());
+        registry.fill(HIST("hSigEventTriggers"), n_TT);
       }
       if (!is_sig_col) {
         registry.fill(HIST("hNtrig"), 0.5);
         registry.fill(HIST("hJetReferenceMultiplicity"), jets.size());
+        registry.fill(HIST("hRefEventTriggers"), n_TT);
       }
     }
 
     for (auto& jet : jets) {
+      registry.fill(HIST("hJetPt"), jet.pt());
+      registry.fill(HIST("hJetEta"), jet.eta());
+      registry.fill(HIST("hJetPhi"), jet.phi());
       if (n_TT > 0) {
         float dphi = dPhi(jet.phi(), phi_TT);
         if (is_sig_col) {
