@@ -328,9 +328,9 @@ struct chargedkstaranalysis {
     if (tpcNClsF < ConfDaughTPCnclsMin) {
       return false;
     }
-    if (std::abs(dcaXY) < ConfDaughDCAMin) {
+    /*if (std::abs(dcaXY) < ConfDaughDCAMin) {
       return false;
-    }
+      }*/
     if (std::abs(nsigmaV0Daughter) > ConfDaughPIDCuts) {
       return false;
     }
