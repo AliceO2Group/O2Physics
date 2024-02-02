@@ -518,7 +518,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
       selectorProton[iChannel].setRangePtTpc(selectionsPid->get(iChannel, 0u), selectionsPid->get(iChannel, 1u)); // 0u == "minPtTpc", 1u == "maxPtTpc"
       selectorProton[iChannel].setRangePtTof(selectionsPid->get(iChannel, 3u), selectionsPid->get(iChannel, 4u)); // 3u == "minPtTof, 4u == "maxPtTof"
-      selectorProton[iChannel].setRangeNSigmaTpc(-selectionsPid->get(iChannel, 2u), selectionsPid->get(iChannel, 2u));
+      selectorProton[iChannel].setRangeNSigmaTpc(-selectionsPid->get(iChannel, 2u), selectionsPid->get(iChannel, 2u)); // 2u == "nSigmaMaxTpc"
       selectorProton[iChannel].setRangeNSigmaTof(-selectionsPid->get(iChannel, 5u), selectionsPid->get(iChannel, 5u));
     }
     // after the proton PID we have the kaon PID
