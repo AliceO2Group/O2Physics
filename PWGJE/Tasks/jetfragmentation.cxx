@@ -460,6 +460,9 @@ struct JetFragmentation {
   template <typename CollisionType, typename V0Type>
   bool IsK0SCandidate(CollisionType const& collision, V0Type v0)
   {
+    if (!IsV0Candidate(v0)) {
+      return false;
+    }
     double ctauK0s = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short;
     if (ctauK0s > lifetimecutK0S) {
       return false;
@@ -478,6 +481,9 @@ struct JetFragmentation {
   template <typename CollisionType, typename V0Type>
   bool IsLambdaCandidate(CollisionType const& collision, V0Type v0)
   {
+    if (!IsV0Candidate(v0)) {
+      return false;
+    }
     double ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
     if (ctauLambda > lifetimecutLambda) {
       return false;
@@ -496,6 +502,9 @@ struct JetFragmentation {
   template <typename CollisionType, typename V0Type>
   bool IsAntiLambdaCandidate(CollisionType const& collision, V0Type v0)
   {
+    if (!IsV0Candidate(v0)) {
+      return false;
+    }
     double ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
     if (ctauAntiLambda > lifetimecutLambda) {
       return false;
@@ -639,10 +648,6 @@ struct JetFragmentation {
       registry.fill(HIST("data/V0/V0PtDCAposneg"), v0.pt(), v0.dcapostopv(), v0.dcanegtopv());
       registry.fill(HIST("data/V0/V0PtDCAd"), v0.pt(), v0.dcaV0daughters());
 
-      if (!IsV0Candidate(v0)) {
-        continue;
-      }
-
       if (IsLambdaCandidate(collision, v0)) {
         registry.fill(HIST("data/V0/LambdaPtEtaPhi"), v0.pt(), v0.eta(), v0.phi());
         registry.fill(HIST("data/V0/LambdaPtCtauMass"), v0.pt(), ctauLambda, v0.mLambda());
@@ -696,10 +701,6 @@ struct JetFragmentation {
     registry.fill(HIST("data/jets/V0/jetPtV0TrackProjRadiusCosPA"), jet.pt(), trackProj, v0.v0radius(), v0.v0cosPA());
     registry.fill(HIST("data/jets/V0/jetPtV0TrackProjDCAposneg"), jet.pt(), trackProj, v0.dcapostopv(), v0.dcanegtopv());
     registry.fill(HIST("data/jets/V0/jetPtV0TrackProjDCAd"), jet.pt(), trackProj, v0.dcaV0daughters());
-
-    if (!IsV0Candidate(v0)) {
-      return;
-    }
 
     if (IsK0SCandidate(collision, v0)) {
       registry.fill(HIST("data/jets/V0/jetPtK0SPtCtau"), jet.pt(), v0.pt(), ctauK0s);
