@@ -129,12 +129,12 @@ DECLARE_SOA_COLUMN(MultBCFV0A, multBCFV0A, float);                     //!
 DECLARE_SOA_COLUMN(MultBCFDDA, multBCFDDA, float);                     //!
 DECLARE_SOA_COLUMN(MultBCFDDC, multBCFDDC, float);                     //!
 
-DECLARE_SOA_COLUMN(MultBCFZNA, multBCFZNA, float);                     //!
-DECLARE_SOA_COLUMN(MultBCFZNC, multBCFZNC, float);                     //!
-DECLARE_SOA_COLUMN(MultBCFZEM1, multBCFZEM1, float);                   //!
-DECLARE_SOA_COLUMN(MultBCFZEM2, multBCFZEM2, float);                   //!
-DECLARE_SOA_COLUMN(MultBCFZPA, multBCFZPA, float);                     //!
-DECLARE_SOA_COLUMN(MultBCFZPC, multBCFZPC, float);                     //!
+DECLARE_SOA_COLUMN(MultBCFZNA, multBCFZNA, float);   //!
+DECLARE_SOA_COLUMN(MultBCFZNC, multBCFZNC, float);   //!
+DECLARE_SOA_COLUMN(MultBCFZEM1, multBCFZEM1, float); //!
+DECLARE_SOA_COLUMN(MultBCFZEM2, multBCFZEM2, float); //!
+DECLARE_SOA_COLUMN(MultBCFZPA, multBCFZPA, float);   //!
+DECLARE_SOA_COLUMN(MultBCFZPC, multBCFZPC, float);   //!
 
 DECLARE_SOA_COLUMN(MultBCTVX, multBCTVX, bool);                        //!
 DECLARE_SOA_COLUMN(MultBCFV0OrA, multBCFV0OrA, bool);                  //!
