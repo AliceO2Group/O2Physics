@@ -411,6 +411,9 @@ class VarManager : public TObject
     kDCATrackVtxProd,
     kU2Q2,
     kU3Q3,
+    kPsi2A,
+    kPsi2B,
+    kPsi2C,
     kCos2DeltaPhi,
     kCos3DeltaPhi,
     kNPairVariables,
@@ -1051,6 +1054,9 @@ void VarManager::FillEvent(T const& event, float* values)
     if (event.q3y0b() * event.q3y0c() != 0.0) {
       values[kR3EP] = TMath::Cos(3 * (getEventPlane(3, event.q3x0b(), event.q3y0b()) - getEventPlane(3, event.q3x0c(), event.q3y0c())));
     }
+    values[kPsi2A] = getEventPlane(2, event.q2x0a(), event.q2y0a());
+    values[kPsi2B] = getEventPlane(2, event.q2x0b(), event.q2y0b());
+    values[kPsi2C] = getEventPlane(2, event.q2x0c(), event.q2y0c());
   }
 
   if constexpr ((fillMap & CollisionMC) > 0) {
@@ -2414,6 +2420,7 @@ void VarManager::FillQVectorFromGFW(C const& collision, A const& compA2, A const
 
   // TODO: provide different computations for R
   // Compute the R factor using the 2 sub-events technique for second and third harmonic
+  // Compute event planes
   auto Psi2B = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
   auto Psi3B = getEventPlane(3, values[kQ3X0B], values[kQ3Y0B]);
   auto Psi2C = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
@@ -2426,6 +2433,9 @@ void VarManager::FillQVectorFromGFW(C const& collision, A const& compA2, A const
   if (values[kQ3Y0B] * values[kQ3Y0C] != 0.0) {
     values[kR3EP] = TMath::Cos(3 * (Psi3B - Psi3C));
   }
+  values[kPsi2A] = getEventPlane(2, values[kQ2X0A], values[kQ2Y0A]);
+  values[kPsi2B] = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
+  values[kPsi2C] = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
 }
 
 template <int pairType, typename T1, typename T2>
@@ -2469,6 +2479,9 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kU3Q3] = -999.;
     values[kCos2DeltaPhi] = -999.;
     values[kCos3DeltaPhi] = -999.;
+    values[kPsi2A] = -999.;
+    values[kPsi2B] = -999.;
+    values[kPsi2C] = -999.;
   }
 }
 
