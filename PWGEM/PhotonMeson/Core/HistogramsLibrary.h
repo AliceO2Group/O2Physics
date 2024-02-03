@@ -73,9 +73,10 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH2F*>(list->FindObject("hEtaPhi"))->Fill(obj.phi(), obj.eta());
     reinterpret_cast<TH2F*>(list->FindObject("hRadius"))->Fill(obj.vz(), obj.v0radius());
     reinterpret_cast<TH1F*>(list->FindObject("hCosPA"))->Fill(obj.cospa());
+    reinterpret_cast<TH2F*>(list->FindObject("hCosPA_Rxy"))->Fill(obj.v0radius(), obj.cospa());
     reinterpret_cast<TH1F*>(list->FindObject("hPCA"))->Fill(obj.pca());
     reinterpret_cast<TH2F*>(list->FindObject("hPCA_Rxy"))->Fill(obj.v0radius(), obj.pca());
-    reinterpret_cast<TH2F*>(list->FindObject("hDCAxyz"))->Fill(obj.dcaXYv0topv(), obj.dcaZv0topv());
+    reinterpret_cast<TH2F*>(list->FindObject("hDCAxyz"))->Fill(obj.dcaXYtopv(), obj.dcaZtopv());
     reinterpret_cast<TH2F*>(list->FindObject("hAPplot"))->Fill(obj.alpha(), obj.qtarm());
     reinterpret_cast<TH2F*>(list->FindObject("hMassGamma"))->Fill(obj.v0radius(), obj.mGamma());
     reinterpret_cast<TH2F*>(list->FindObject("hGammaRxy"))->Fill(obj.vx(), obj.vy());
@@ -97,14 +98,13 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH1F*>(list->FindObject("hChi2TPC"))->Fill(obj.tpcChi2NCl());
     reinterpret_cast<TH1F*>(list->FindObject("hChi2ITS"))->Fill(obj.itsChi2NCl());
     reinterpret_cast<TH1F*>(list->FindObject("hITSClusterMap"))->Fill(obj.itsClusterMap());
+    reinterpret_cast<TH1F*>(list->FindObject("hMeanClusterSizeITS"))->Fill(obj.meanClusterSizeITS() * std::cos(std::atan(obj.tgl())));
     reinterpret_cast<TH2F*>(list->FindObject("hTPCdEdx"))->Fill(obj.tpcInnerParam(), obj.tpcSignal());
     reinterpret_cast<TH2F*>(list->FindObject("hTPCNsigmaEl"))->Fill(obj.tpcInnerParam(), obj.tpcNSigmaEl());
     reinterpret_cast<TH2F*>(list->FindObject("hTPCNsigmaPi"))->Fill(obj.tpcInnerParam(), obj.tpcNSigmaPi());
     reinterpret_cast<TH2F*>(list->FindObject("hXY"))->Fill(obj.x(), obj.y());
     reinterpret_cast<TH2F*>(list->FindObject("hZX"))->Fill(obj.z(), obj.x());
     reinterpret_cast<TH2F*>(list->FindObject("hZY"))->Fill(obj.z(), obj.y());
-    reinterpret_cast<TH2F*>(list->FindObject("hDCAxyZ"))->Fill(obj.z(), obj.dcaXY());
-    reinterpret_cast<TH2F*>(list->FindObject("hXZ_tgl"))->Fill(obj.tgl(), obj.z() / obj.x() - obj.tgl());
   } else if constexpr (htype == EMHistType::kTrack) {
     reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Fill(obj.pt());
     reinterpret_cast<TH1F*>(list->FindObject("hQoverPt"))->Fill(obj.sign() / obj.pt());
@@ -121,6 +121,7 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH1F*>(list->FindObject("hChi2TPC"))->Fill(obj.tpcChi2NCl());
     reinterpret_cast<TH1F*>(list->FindObject("hChi2ITS"))->Fill(obj.itsChi2NCl());
     reinterpret_cast<TH1F*>(list->FindObject("hITSClusterMap"))->Fill(obj.itsClusterMap());
+    reinterpret_cast<TH1F*>(list->FindObject("hMeanClusterSizeITS"))->Fill(obj.meanClusterSizeITS() * std::cos(std::atan(obj.tgl())));
     reinterpret_cast<TH2F*>(list->FindObject("hTPCdEdx"))->Fill(obj.tpcInnerParam(), obj.tpcSignal());
     reinterpret_cast<TH2F*>(list->FindObject("hTPCNsigmaEl"))->Fill(obj.tpcInnerParam(), obj.tpcNSigmaEl());
     reinterpret_cast<TH2F*>(list->FindObject("hTPCNsigmaMu"))->Fill(obj.tpcInnerParam(), obj.tpcNSigmaMu());

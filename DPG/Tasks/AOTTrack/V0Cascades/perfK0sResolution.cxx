@@ -34,17 +34,25 @@ using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 struct perfK0sResolution {
   ConfigurableAxis mBins{"mBins", {200, 0.4f, 0.6f}, "Mass binning"};
   ConfigurableAxis pTBins{"pTBins", {200, 0.f, 10.f}, "pT binning"};
+  ConfigurableAxis pTResBins{"pTResBins", {200, -1.2f, 1.2f}, "pT resolution binning"};
+  ConfigurableAxis invpTResBins{"invpTResBins", {200, -1.2f, 1.2f}, "inv pT resolution binning"};
   ConfigurableAxis etaBins{"etaBins", {2, -1.f, 1.f}, "eta binning"};
+  ConfigurableAxis etaBinsDauthers{"etaBinsDauthers", {2, -1.f, 1.f}, "eta binning"};
   ConfigurableAxis phiBins{"phiBins", {4, 0.f, 6.28f}, "phi binning"};
 
-  HistogramRegistry registry{"K0sResolution"};
+  HistogramRegistry rK0sResolution{"K0sResolution"};
 
   void init(InitContext const&)
   {
     const AxisSpec mAxis{mBins, "#it{m} (GeV/#it{c}^{2})"};
     const AxisSpec pTAxis{pTBins, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec pTResAxis{pTResBins, "#Delta#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec invpTResAxis{invpTResBins, "1/#it{p}_{T}-1/#it{p}_{T}^{MC} (GeV/#it{c})^{-1}"};
     const AxisSpec etaAxis{etaBins, "#eta"};
+    const AxisSpec etaAxisPosD{etaBinsDauthers, "#eta pos."};
+    const AxisSpec etaAxisNegD{etaBinsDauthers, "#eta neg."};
     const AxisSpec phiAxis{phiBins, "#phi"};
+    const AxisSpec trueK0Axis{2, -0.5, 1.5, "True K0"};
 
     int nProc = 0;
     if (doprocessData) {
@@ -56,34 +64,48 @@ struct perfK0sResolution {
       nProc++;
     }
 
-    registry.add("h2_masspT", "h2_masspT", {HistType::kTH2F, {mAxis, pTAxis}});
-    registry.add("h2_masseta", "h2_masseta", {HistType::kTH2F, {mAxis, etaAxis}});
-    registry.add("h2_massphi", "h2_massphi", {HistType::kTH2F, {mAxis, phiAxis}});
+    if (doprocessMC) {
+      rK0sResolution.add("h2_massPosPtRes", "h2_massPosPtRes", {HistType::kTH2F, {mAxis, pTResAxis}});
+      rK0sResolution.add("h2_massNegPtRes", "h2_massNegPtRes", {HistType::kTH2F, {mAxis, pTResAxis}});
+    }
+    rK0sResolution.add("h2_masspT", "h2_masspT", {HistType::kTH2F, {mAxis, pTAxis}});
+    rK0sResolution.add("h2_masseta", "h2_masseta", {HistType::kTH2F, {mAxis, etaAxis}});
+    rK0sResolution.add("h2_massphi", "h2_massphi", {HistType::kTH2F, {mAxis, phiAxis}});
+    if (useMultidimHisto) {
+      if (doprocessMC) {
+        rK0sResolution.add("thn_mass", "thn_mass", kTHnSparseF, {mAxis, pTAxis, etaAxis, phiAxis, etaAxisPosD, etaAxisNegD, invpTResAxis, invpTResAxis, trueK0Axis});
+      } else {
+        rK0sResolution.add("thn_mass", "thn_mass", kTHnSparseF, {mAxis, pTAxis, etaAxis, phiAxis, etaAxisPosD, etaAxisNegD});
+      }
+    }
   }
 
   // Selection criteria
-  Configurable<double> v0setting_cospa{"v0setting_cospa", 0.995, "V0 CosPA"};
+  Configurable<float> v0setting_cospa{"v0setting_cospa", 0.995, "V0 CosPA"}; // shoudl be double in future
   Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1., "DCA V0 Daughters"};
   Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "DCA Pos To PV"};
   Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "DCA Neg To PV"};
   Configurable<float> v0setting_radius{"v0setting_radius", 0.9, "V0 Radius"};
+  Configurable<float> v0setting_rapidity{"v0setting_rapidity", 0.5, "rapidity"};
+
   Configurable<float> v0lifetime{"v0lifetime", 3., "n ctau"};
-  Configurable<float> rapidity{"rapidity", 0.5, "rapidity"};
   Configurable<float> nSigTPC{"nSigTPC", 10., "nSigTPC"};
   Configurable<int> trdSelectionPos{"trdSelectionPos", 0, "Flag for the TRD selection on positive daughters: -1 no TRD, 0 no selection, 1 TRD"};
   Configurable<int> trdSelectionNeg{"trdSelectionNeg", 0, "Flag for the TRD selection on negative daughters: -1 no TRD, 0 no selection, 1 TRD"};
   Configurable<int> tofSelectionPos{"tofSelectionPos", 0, "Flag for the TOF selection on positive daughters: -1 no TOF, 0 no selection, 1 TOF"};
   Configurable<int> tofSelectionNeg{"tofSelectionNeg", 0, "Flag for the TOF selection on negative daughters: -1 no TOF, 0 no selection, 1 TOF"};
+
+  Configurable<bool> useMultidimHisto{"useMultidimHisto", false, "use multidimentional histograms"};
+
+  // Configurable for event selection
+  Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
 
   template <typename T1, typename T2, typename C>
   bool acceptV0(const T1& v0, const T2& ntrack, const T2& ptrack, const C& collision)
   {
     // Apply selections on V0
-    if (TMath::Abs(v0.yK0Short()) > rapidity) {
-      return false;
-    }
-    if (v0.v0cosPA() < v0setting_cospa) {
+    if (TMath::Abs(v0.yK0Short()) > v0setting_rapidity) {
       return false;
     }
     if (v0.v0radius() < v0setting_radius) {
@@ -173,34 +195,38 @@ struct perfK0sResolution {
     return true;
   }
 
-  Filter v0Filter = nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv&& nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv&& aod::v0data::dcaV0daughters < v0setting_dcav0dau;
+  // Filters on V0s
+  Filter v0Filter = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv &&
+                     nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
+                     aod::v0data::dcaV0daughters < v0setting_dcav0dau &&
+                     aod::v0data::v0cosPA > v0setting_cospa);
 
-  void processData(SelectedCollisions::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, PIDTracks const& tracks)
+  // Event selection
+  Filter eventFilter = (eventSelection && o2::aod::evsel::sel8 == true);
+  Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
+
+  void processData(soa::Filtered<SelectedCollisions>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, PIDTracks const& tracks)
   {
-    if (eventSelection && !collision.sel8())
-      return;
-
     for (auto& v0 : fullV0s) {
-
       const auto& posTrack = v0.posTrack_as<PIDTracks>();
       const auto& negTrack = v0.negTrack_as<PIDTracks>();
       if (!acceptV0(v0, negTrack, posTrack, collision))
         continue;
 
-      registry.fill(HIST("h2_masspT"), v0.mK0Short(), v0.pt());
-      registry.fill(HIST("h2_masseta"), v0.mK0Short(), v0.eta());
-      registry.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
+      rK0sResolution.fill(HIST("h2_masspT"), v0.mK0Short(), v0.pt());
+      rK0sResolution.fill(HIST("h2_masseta"), v0.mK0Short(), v0.eta());
+      rK0sResolution.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
+      if (useMultidimHisto) {
+        rK0sResolution.fill(HIST("thn_mass"), v0.mK0Short(), v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta());
+      }
     }
   }
   PROCESS_SWITCH(perfK0sResolution, processData, "Process data", true);
 
-  void processMC(SelectedCollisions::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, soa::Join<PIDTracks, aod::McTrackLabels> const& tracks, aod::McParticles const&)
+  void processMC(soa::Filtered<SelectedCollisions>::iterator const& collision, soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>> const& fullV0s,
+                 soa::Join<PIDTracks, aod::McTrackLabels> const& tracks, aod::McParticles const&)
   {
-    if (eventSelection && !collision.sel8())
-      return;
-
     for (auto& v0 : fullV0s) {
-
       const auto& posTrack = v0.posTrack_as<soa::Join<PIDTracks, aod::McTrackLabels>>();
       const auto& negTrack = v0.negTrack_as<soa::Join<PIDTracks, aod::McTrackLabels>>();
       if (!acceptV0(v0, negTrack, posTrack, collision))
@@ -211,15 +237,27 @@ struct perfK0sResolution {
       if (!negTrack.has_mcParticle()) {
         continue;
       }
-      if (posTrack.mcParticle().pdgCode() != PID::Pion || negTrack.mcParticle().pdgCode() != PID::Pion) {
+      if (posTrack.mcParticle().pdgCode() != 211 || negTrack.mcParticle().pdgCode() != -211) {
         continue;
       }
-      registry.fill(HIST("h2_masspT"), v0.mK0Short(), v0.pt());
-      registry.fill(HIST("h2_masseta"), v0.mK0Short(), v0.eta());
-      registry.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
+      const bool isTrueK0s = (v0.has_mcParticle() && v0.mcParticle().pdgCode() == 310);
+      rK0sResolution.fill(HIST("h2_massPosPtRes"), v0.mK0Short(), v0.positivept() - posTrack.mcParticle().pt());
+      rK0sResolution.fill(HIST("h2_massNegPtRes"), v0.mK0Short(), v0.negativept() - negTrack.mcParticle().pt());
+      rK0sResolution.fill(HIST("h2_masspT"), v0.mK0Short(), v0.pt());
+      rK0sResolution.fill(HIST("h2_masseta"), v0.mK0Short(), v0.eta());
+      rK0sResolution.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
+      if (useMultidimHisto) {
+        rK0sResolution.fill(HIST("thn_mass"), v0.mK0Short(), v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta(),
+                            1. / v0.positivept() - 1. / posTrack.mcParticle().pt(),
+                            1. / v0.negativept() - 1. / negTrack.mcParticle().pt(),
+                            isTrueK0s);
+      }
     }
   }
   PROCESS_SWITCH(perfK0sResolution, processMC, "Process MC", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<perfK0sResolution>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{adaptAnalysisTask<perfK0sResolution>(cfgc)};
+}

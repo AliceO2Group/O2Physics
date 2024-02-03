@@ -47,6 +47,7 @@ enum TagChannels : uint8_t {
 
 enum TrackTypes : uint8_t {
   GlobalWoDca = 0,
+  GlobalWoDcaWoItsIb,
   GlobalWoDcaWoIts,
   GlobalWoDcaWoTpc,
   NTrackTypes
@@ -548,49 +549,62 @@ struct ProbeThirdTrack {
   {
     // ITS-TPC tracks (global tracks)
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetTrackType(o2::aod::track::TrackTypeEnum::Track);
-    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetPtRange(0.1f, 1e10f);
-    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetEtaRange(-0.8f, 0.8f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetPtRange(0.05f, 1e10f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetEtaRange(-1.f, 1.f);
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetRequireITSRefit(true);
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetRequireTPCRefit(true);
-    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetRequireGoldenChi2(true);
-    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetMinNCrossedRowsTPC(70);
-    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
-    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetMaxChi2PerClusterTPC(4.f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetMinNCrossedRowsTPC(50);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetMaxChi2PerClusterTPC(10.f);
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetRequireHitsInITSLayers(1, {0, 1, 2}); // one hit in any IB layer
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetMaxChi2PerClusterITS(36.f);
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDca].SetMaxDcaZ(2.f);
 
+    // TPC tracks (global tracks without ITS IB requirement)
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetTrackType(o2::aod::track::TrackTypeEnum::Track);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetPtRange(0.05f, 1e10f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetEtaRange(-1.f, 1.f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetRequireTPCRefit(true);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetMinNCrossedRowsTPC(50);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetMaxChi2PerClusterTPC(10.f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetRequireHitsInITSLayers(3, {0, 1, 2, 3, 4, 5, 6}); // at least three hits in whatever layer
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetMaxChi2PerClusterITS(36.f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoItsIb].SetMaxDcaZ(2.f);
+
     // TPC tracks (global tracks without ITS requirements)
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetTrackType(o2::aod::track::TrackTypeEnum::Track);
-    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetPtRange(0.1f, 1e10f);
-    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetEtaRange(-0.8f, 0.8f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetPtRange(0.05f, 1e10f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetEtaRange(-1.f, 1.f);
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetRequireTPCRefit(true);
-    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetRequireGoldenChi2(true);
-    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetMinNCrossedRowsTPC(70);
-    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetMinNCrossedRowsOverFindableClustersTPC(0.8f);
-    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetMaxChi2PerClusterTPC(4.f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetMinNCrossedRowsTPC(50);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoIts].SetMaxChi2PerClusterTPC(10.f);
 
     // ITS tracks (global tracks without TPC requirements)
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoTpc].SetTrackType(o2::aod::track::TrackTypeEnum::Track);
-    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoTpc].SetPtRange(0.1f, 1e10f);
-    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoTpc].SetEtaRange(-0.8f, 0.8f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoTpc].SetPtRange(0.05f, 1e10f);
+    trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoTpc].SetEtaRange(-1.f, 1.f);
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoTpc].SetRequireITSRefit(true);
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoTpc].SetRequireHitsInITSLayers(1, {0, 1, 2}); // one hit in any SPD layer
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoTpc].SetMaxChi2PerClusterITS(36.f);
     trackSelector[aod::tagandprobe::TrackTypes::GlobalWoDcaWoTpc].SetMaxDcaZ(2.f);
 
-    const AxisSpec axisPtProbe{250, 0.f, 25.f};
-    const AxisSpec axisPtTag{250, 0.f, 50.f};
-    const AxisSpec axisPtD{50, 0.f, 50.f};
-    std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMass = {AxisSpec{450, 1.65f, 2.10f}, AxisSpec{450, 1.65f, 2.10f}, AxisSpec{350, 0.135f, 0.17f}, AxisSpec{350, 0.135f, 0.17f}};
-    std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMassTag = {AxisSpec{250, 0.f, 2.5f}, AxisSpec{200, constants::physics::MassPhi - 0.05f, constants::physics::MassPhi + 0.05f}, AxisSpec{400, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}, AxisSpec{400, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}};
+    const AxisSpec axisPtProbe{{0.05f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.f, 12.f, 15.f, 20.f, 25.f, 30.f}};
+    const AxisSpec axisPtTag{{0.05f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.f, 12.f, 15.f, 20.f, 25.f, 30.f}};
+    const AxisSpec axisPtD{{0.f, 0.5f, 1.f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.f, 11.f, 12.f, 14.f, 16.f, 20.f, 24.f, 36.f, 50.f}};
+    const AxisSpec axisEtaProbe{20, -1.f, 1.f};
+    const AxisSpec axisNumCrossRowTpc{51, 49.5f, 100.5f};
+    const AxisSpec axisTpcChi2PerClus{8, 2.f, 10.f};
+    const AxisSpec axisNumCluIts{5, 2.5f, 7.5f};
+    std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMass = {AxisSpec{225, 1.65f, 2.10f}, AxisSpec{225, 1.65f, 2.10f}, AxisSpec{350, 0.135f, 0.17f}, AxisSpec{350, 0.135f, 0.17f}};
+    std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMassTag = {AxisSpec{125, 0.f, 2.5f}, AxisSpec{100, constants::physics::MassPhi - 0.05f, constants::physics::MassPhi + 0.05f}, AxisSpec{200, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}, AxisSpec{200, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}};
 
-    std::string trackTypes[aod::tagandprobe::TrackTypes::NTrackTypes] = {"ItsTpc", "Tpc", "Its"};
+    std::string trackTypes[aod::tagandprobe::TrackTypes::NTrackTypes] = {"ItsTpc", "ItsTpcNoIb", "Tpc", "Its"};
     std::string tagChannels[aod::tagandprobe::TagChannels::NTagChannels] = {"DplusToKPiPi", "DsOrDplusToKKPi", "DstarPlusToDzeroPi", "DstarMinusToDzeroBarPi"};
 
     for (int iChannel{0}; iChannel < aod::tagandprobe::TagChannels::NTagChannels; ++iChannel) {
       for (int iTrackType{0}; iTrackType < aod::tagandprobe::TrackTypes::NTrackTypes; ++iTrackType) {
-        histos[iChannel][iTrackType] = registry.add<THnSparse>(Form("h%sVsPtProbeTag_%s", tagChannels[iChannel].data(), trackTypes[iTrackType].data()), "; #it{p}_{T}(D) (GeV/#it{c}); #it{p}_{T}(tag) (GeV/#it{c}); #it{p}_{T}(probe track) (GeV/#it{c}); #it{M}(D) (GeV/#it{c}^{2}); #it{M}(tag) (GeV/#it{c}^{2});", HistType::kTHnSparseF, {axisPtD, axisPtTag, axisPtProbe, axisMass[iChannel], axisMassTag[iChannel]});
+        histos[iChannel][iTrackType] = registry.add<THnSparse>(Form("h%sVsPtProbeTag_%s", tagChannels[iChannel].data(), trackTypes[iTrackType].data()),
+                                                               "; #it{p}_{T}(D) (GeV/#it{c}); #it{p}_{T}(tag) (GeV/#it{c}); #it{p}_{T}(probe) (GeV/#it{c}); #it{p}_{T}^{TPC in}(probe) (GeV/#it{c}); #it{M}(D) (GeV/#it{c}^{2}); #it{M}(tag) (GeV/#it{c}^{2}); #it{#eta}(probe); #it{N}_{cross rows}^{TPC}(probe); #chi^{2}/#it{N}_{clusters}^{TPC}(probe); #it{N}_{clusters}^{ITS}(probe);",
+                                                               HistType::kTHnSparseF, {axisPtD, axisPtTag, axisPtProbe, axisPtProbe, axisMass[iChannel], axisMassTag[iChannel], axisEtaProbe, axisNumCrossRowTpc, axisTpcChi2PerClus, axisNumCluIts});
       }
     }
   }
@@ -632,6 +646,11 @@ struct ProbeThirdTrack {
         continue;
       }
       auto ptTrackThird = trackThird.pt();
+      auto ptTpcInnerTrackThird = trackThird.tpcInnerParam() / std::sqrt(1.f + trackThird.tgl() * trackThird.tgl());
+      auto etaTrackThird = trackThird.eta();
+      auto numTpcCrossRowTrackThird = trackThird.tpcNClsCrossedRows();
+      auto numTpcChi2NumCluTrackThird = trackThird.tpcChi2NCl();
+      auto numItsCluTrackThird = trackThird.itsNCls();
       float invMass{-1.f}, invMassTag{-1.f}, ptTag{-1.f}, ptD{-1.f};
       computeInvariantMass(trackFirst, trackSecond, trackThird, channel, ptTag, invMassTag, ptD, invMass);
       if ((channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) && invMass > 0.17f) {
@@ -641,7 +660,7 @@ struct ProbeThirdTrack {
       }
       for (int iTrackType{0}; iTrackType < aod::tagandprobe::TrackTypes::NTrackTypes; ++iTrackType) {
         if (trackSelector[iTrackType].IsSelected(trackThird)) {
-          histos[channel][iTrackType]->Fill(ptD, ptTag, ptTrackThird, invMass, invMassTag);
+          histos[channel][iTrackType]->Fill(ptD, ptTag, ptTrackThird, ptTpcInnerTrackThird, invMass, invMassTag, etaTrackThird, numTpcCrossRowTrackThird, numTpcChi2NumCluTrackThird, numItsCluTrackThird);
         }
       }
     }

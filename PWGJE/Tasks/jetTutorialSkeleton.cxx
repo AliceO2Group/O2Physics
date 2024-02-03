@@ -77,8 +77,8 @@ struct JetTutorialSkeletonTask {
 
   void init(o2::framework::InitContext&)
   {
-    eventSelection = JetDerivedDataUtilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
-    trackSelection = JetDerivedDataUtilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
   }
 
   Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
@@ -148,10 +148,10 @@ struct JetTutorialSkeletonTask {
   }
   PROCESS_SWITCH(JetTutorialSkeletonTask, processDataRecoil, "hadron-recoil jets", false);
 
-  void processDataBackgroundSubtracted(soa::Join<aod::JCollisions, aod::JCollisionRhos>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
+  /*void processDataBackgroundSubtracted(soa::Join<aod::JCollisions, aod::JCollisionRhos>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
   {
   }
-  PROCESS_SWITCH(JetTutorialSkeletonTask, processDataBackgroundSubtracted, "baackground subtracted jets", false);
+  PROCESS_SWITCH(JetTutorialSkeletonTask, processDataBackgroundSubtracted, "baackground subtracted jets", false);*/
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetTutorialSkeletonTask>(cfgc, TaskName{"jet-tutorial-skeleton"})}; }

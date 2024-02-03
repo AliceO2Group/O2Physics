@@ -45,6 +45,10 @@ struct HfTaskDstarToD0Pi {
   Partition<CandDstarWSelFlag> rowsSelectedCandDstar = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Partition<CandDstarWSelFlagMcRec> rowsSelectedCandDstarMcRec = aod::hf_sel_candidate_dstar::isRecoD0Flag == selectionFlagHfD0ToPiK;
 
+  ConfigurableAxis binningImpactParam{"binningImpactParam", {1000, 0.1, -0.1}, " Bins of Impact Parameter"};
+  ConfigurableAxis binningDecayLength{"binningDecayLength", {1000, 0.0, 0.7}, "Bins of Decay Length"};
+  ConfigurableAxis binningNormDecayLength{"binningNormDecayLength", {1000, 0.0, 40.0}, "Bins of Normalised Decay Length"};
+
   HistogramRegistry registry{
     "registry",
     {{"QA/hPtDstar", "Dstar Candidates; Dstar candidate #it{p}_{T} (GeV/#it{c}); entries", {HistType::kTH1F, {{360, 0., 36.}}}},
@@ -59,28 +63,32 @@ struct HfTaskDstarToD0Pi {
   {
     auto vecPtBins = (std::vector<double>)ptBins;
 
-    registry.add("Yield/hDeltaInvMassDstar2D", "#Delta #it{M}_{inv} D* Candidate; inv. mass (#pi #pi k) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0.13, 0.16}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
-    registry.add("Yield/hDeltaInvMassDstar1D", "#Delta #it{M}_{inv} D* Candidate; inv. mass (#pi #pi k) (GeV/#it{c}^{2}); entries", {HistType::kTH1F, {{100, 0.13, 0.16}}}, true);
+    AxisSpec axisImpactParam = {binningImpactParam, "impact parameter (cm)"};
+    AxisSpec axisDecayLength = {binningDecayLength, " decay length (cm)"};
+    AxisSpec axisNormDecayLength = {binningNormDecayLength, "normalised decay length (cm)"};
+
+    registry.add("Yield/hDeltaInvMassDstar2D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0.13, 0.16}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
+    registry.add("Yield/hDeltaInvMassDstar1D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2}); entries", {HistType::kTH1F, {{100, 0.13, 0.16}}}, true);
     registry.add("Yield/hInvMassDstar", "#Delta #it{M}_{inv} D* Candidate; inv. mass (#pi #pi k) (GeV/#it{c}^{2}); entries", {HistType::kTH1F, {{500, 0., 5.0}}}, true);
     registry.add("Yield/hInvMassD0", "#it{M}_{inv}D^{0} candidate;#it{M}_{inv} D^{0} (GeV/#it{c});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{500, 0., 5.0}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
     // only QA
     registry.add("QA/hEtaDstar", "D* Candidate; D* Candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("QA/hCtD0", "D0 Candidate; D0 Candidate's proper life time #it{c}#tau (cm) ; entries ", {HistType::kTH2F, {{120, -20., 100.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("QA/hDecayLengthD0", "D0 Candidate; D0 Candidate's decay length (cm); entries", {HistType::kTH2F, {{800, 0., 4.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("QA/hDecayLengthXYD0", "D0 Candidate; D0 Candidate's decay length xy (cm);  entries", {HistType::kTH2F, {{800, 0., 4.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("QA/hDecayLengthNormalisedD0", "D0 Candidates;Do Candidate's normalised decay length (cm); entries", {HistType::kTH2F, {{800, 0., 40.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("QA/hDecayLengthXYNormalisedD0", "D0 candidate; D0 Candidate's normalised decay length xy (cm); entries", {HistType::kTH2F, {{800, 0., 40.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("QA/hCtD0", "D0 Candidate; D0 Candidate's proper life time #it{c}#tau (cm) ; entries ", {HistType::kTH2F, {{1000, -0.1, 14.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("QA/hDecayLengthD0", "D0 Candidate; D0 Candidate's decay length (cm); entries", {HistType::kTH2F, {axisDecayLength, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("QA/hDecayLengthXYD0", "D0 Candidate; D0 Candidate's decay length xy (cm);  entries", {HistType::kTH2F, {axisDecayLength, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("QA/hDecayLengthNormalisedD0", "D0 Candidates;Do Candidate's normalised decay length (cm); entries", {HistType::kTH2F, {axisNormDecayLength, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("QA/hDecayLengthXYNormalisedD0", "D0 candidate; D0 Candidate's normalised decay length xy (cm); entries", {HistType::kTH2F, {axisNormDecayLength, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("QA/hCPAD0", "D0 Candidates; D0 Candidate's cosine pointing angle; entries", {HistType::kTH2F, {{110, -1., 1.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("QA/hCPAxyD0", "D0 candidates; D0 Candidate's cosine of pointing angle xy; entries", {HistType::kTH2F, {{110, -1., 1.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("QA/hImpactParameterXYD0", "D0 Candidates; D0 Candidate's reconstructed impact parameter xy (cm); entries", {HistType::kTH2F, {{200, -1., 1.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("QA/hDeltaIPMaxNormalisedD0", "D0 Candidate; D0 Candidate's Norm. Delta IP; entries", {HistType::kTH2F, {{200, -20., 20.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("QA/hSqSumProngesImpactParameterD0", "D0 Candidates; Sqr Sum of Impact params of D0 Pronges; enteries ", {HistType::kTH2F, {{100, 0., 1.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("QA/hDecayLengthErrorD0", "D0 Candidates; D0 Candidate's Decay Lenth Error (cm); entries", {HistType::kTH2F, {{100, 0., 1.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("QA/hDecayLengthXYErrorD0", "D0 Candidates; D0 Candidate's Decay Length Error XY (cm); entries", {HistType::kTH2F, {{100, 0., 1.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("QA/hImpactParameterError", "D0 Pronges; Impactparam error of different D0 Pronges (cm); entries", {HistType::kTH2F, {{100, 0., 1.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("QA/hd0Prong0", "Prong0; DCAxy of Prong0 (cm); entries", {HistType::kTH2F, {{100, -1., 1.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("QA/hd0Prong1", "Prong1; DCAxy of Prong1 (cm); entries", {HistType::kTH2F, {{100, -1., 1.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("QA/hd0ProngSoftPi", "ProngSoftPi; DCAxy of Prong Soft Pi (cm); entries", {HistType::kTH2F, {{100, -1., 1.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("QA/hImpactParameterXYD0", "D0 Candidates; D0 Candidate's reconstructed impact parameter xy (cm); entries", {HistType::kTH2F, {axisImpactParam, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("QA/hDeltaIPMaxNormalisedD0", "D0 Candidate; D0 Candidate's Norm. Delta IP; entries", {HistType::kTH2F, {{1000, -20., 20.}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("QA/hSqSumProngsImpactParameterD0", "D0 Candidates; Sqr Sum of Impact params of D0 Prongs; entries ", {HistType::kTH2F, {{1000, 0., 0.25}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("QA/hDecayLengthErrorD0", "D0 Candidates; D0 Candidate's Decay Length Error (cm); entries", {HistType::kTH2F, {axisDecayLength, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("QA/hDecayLengthXYErrorD0", "D0 Candidates; D0 Candidate's Decay Length Error XY (cm); entries", {HistType::kTH2F, {axisDecayLength, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("QA/hImpactParameterError", "D0 Prongs; Impact param error of different D0 Prongs (cm); entries", {HistType::kTH2F, {axisImpactParam, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("QA/hd0Prong0", "Prong0; DCAxy of Prong0 (cm); entries", {HistType::kTH2F, {axisImpactParam, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("QA/hd0Prong1", "Prong1; DCAxy of Prong1 (cm); entries", {HistType::kTH2F, {axisImpactParam, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("QA/hd0ProngSoftPi", "ProngSoftPi; DCAxy of Prong Soft Pi (cm); entries", {HistType::kTH2F, {axisImpactParam, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
     // MC Matching at Reconstruction Level Successful
     registry.add("QA/hCPASkimD0RecSig", "MC Matched Skimed D* Candidates at Reconstruction Level; cosine of pointing angle", {HistType::kTH1F, {{110, -1.1, 1.1}}});
     registry.add("QA/hEtaSkimD0RecSig", "MC Matched Skimed D* Candidates at Reconstruction Level; #it{#eta} of D0 Prong", {HistType::kTH1F, {{100, -2., 2.}}});
@@ -119,8 +127,7 @@ struct HfTaskDstarToD0Pi {
     registry.add("QA/hPtVsYNonPromptDstarGen", "MC Matched Non-Prompt D* Candidates at Generator Level; #it{p}_{T} of  D*; #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
   }
 
-  void process(aod::Tracks const&,
-               CandDstarWSelFlag const&)
+  void process(CandDstarWSelFlag const&)
   {
     for (const auto& candDstar : rowsSelectedCandDstar) {
       auto yDstar = candDstar.y(constants::physics::MassDStar);
@@ -140,7 +147,7 @@ struct HfTaskDstarToD0Pi {
       registry.fill(HIST("QA/hCPAxyD0"), candDstar.cpaXYD0(), candDstar.pt());
       registry.fill(HIST("QA/hImpactParameterXYD0"), candDstar.impactParameterXYD0(), candDstar.pt());
       registry.fill(HIST("QA/hDeltaIPMaxNormalisedD0"), candDstar.deltaIPNormalisedMaxD0(), candDstar.pt());
-      registry.fill(HIST("QA/hSqSumProngesImpactParameterD0"), candDstar.impactParameterProngSqSumD0(), candDstar.pt());
+      registry.fill(HIST("QA/hSqSumProngsImpactParameterD0"), candDstar.impactParameterProngSqSumD0(), candDstar.pt());
       registry.fill(HIST("QA/hDecayLengthErrorD0"), candDstar.errorDecayLengthD0(), candDstar.pt());
       registry.fill(HIST("QA/hDecayLengthXYErrorD0"), candDstar.errorDecayLengthXYD0(), candDstar.pt());
       registry.fill(HIST("QA/hImpactParameterError"), candDstar.errorImpactParameter0(), candDstar.pt());
@@ -155,8 +162,8 @@ struct HfTaskDstarToD0Pi {
       auto invD0 = candDstar.invMassD0();
       auto invD0Bar = candDstar.invMassD0Bar();
 
-      auto prongSoftPi = candDstar.prongPi_as<aod::Tracks>();
-      if (prongSoftPi.sign() > 0) {
+      auto signDstar = candDstar.signSoftPi();
+      if (signDstar) {
         registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invDstar - invD0), candDstar.pt());
         registry.fill(HIST("Yield/hInvMassD0"), invD0, candDstar.ptD0());
         registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (invDstar - invD0));
@@ -164,7 +171,7 @@ struct HfTaskDstarToD0Pi {
         // filling pt of two pronges of D0
         registry.fill(HIST("QA/hPtProng0D0"), candDstar.ptProng0());
         registry.fill(HIST("QA/hPtProng1D0"), candDstar.ptProng1());
-      } else if (prongSoftPi.sign() < 0) {
+      } else if (signDstar) {
         registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invAntiDstar - invD0Bar), candDstar.pt());
         registry.fill(HIST("Yield/hInvMassD0"), invD0Bar, candDstar.ptD0());
         registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (invAntiDstar - invD0Bar));

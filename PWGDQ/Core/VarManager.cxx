@@ -378,6 +378,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kITSchi2] = "";
   fgVariableNames[kITSlayerHit] = "ITS layer";
   fgVariableUnits[kITSlayerHit] = "";
+  fgVariableNames[kITSmeanClsSize] = "ITS mean Cls Size";
+  fgVariableUnits[kITSmeanClsSize] = "";
   fgVariableNames[kTPCncls] = "TPC #cls";
   fgVariableUnits[kTPCncls] = "";
   fgVariableNames[kTPCnclsCR] = "TPC #cls crossed rows";

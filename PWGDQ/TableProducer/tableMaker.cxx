@@ -364,12 +364,12 @@ struct TableMaker {
           o2::base::Propagator::initFieldFromGRP(grpmagrun2);
         }
       } else {
-        if (fPropMuon) {
-          VarManager::SetupMuonMagField();
-        }
         grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
         if (grpmag != nullptr) {
           o2::base::Propagator::initFieldFromGRP(grpmag);
+        }
+        if (fPropMuon) {
+          VarManager::SetupMuonMagField();
         }
       }
 
@@ -587,11 +587,21 @@ struct TableMaker {
 
         mftOffsets[mft.globalIndex()] = mft.offsets();
 
+        double chi2 = mft.chi2();
+        SMatrix5 tpars(mft.x(), mft.y(), mft.phi(), mft.tgl(), mft.signed1Pt());
+        std::vector<double> v1;
+        SMatrix55 tcovs(v1.begin(), v1.end());
+        o2::track::TrackParCovFwd pars1{mft.z(), tpars, tcovs, chi2};
+        pars1.propagateToZlinear(collision.posZ());
+
+        double dcaX = (pars1.getX() - collision.posX());
+        double dcaY = (pars1.getY() - collision.posY());
+
         VarManager::FillTrack<gkMFTFillMap>(mft);
         fHistMan->FillHistClass("MftTracks", VarManager::fgValues);
 
         trackMFT(event.lastIndex(), trackFilteringTag, mft.pt(), mft.eta(), mft.phi());
-        trackMFTExtra(mft.mftClusterSizesAndTrackFlags(), mft.sign());
+        trackMFTExtra(mft.mftClusterSizesAndTrackFlags(), mft.sign(), dcaX, dcaY, mft.nClusters());
       } // end of mft : mftTracks
 
     } // end if constexpr (TMFTFillMap)
@@ -738,14 +748,34 @@ struct TableMaker {
   void fullSkimmingIndices(TEvent const& collision, aod::BCsWithTimestamps const&, TTracks const& tracksBarrel, TMuons const& tracksMuon, AssocTracks const& trackIndices, AssocMuons const& fwdtrackIndices)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    if (fConfigComputeTPCpostCalib && fCurrentRun != bc.runNumber()) {
-      auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
-      VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
-      VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
-      VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
-      VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
-      VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
-      VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
+    if (fCurrentRun != bc.runNumber()) {
+      if (fConfigComputeTPCpostCalib) {
+        auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
+        VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
+        VarManager::SetCalibrationObject(VarManager::kTPCElectronSigma, calibList->FindObject("sigma_map_electron"));
+        VarManager::SetCalibrationObject(VarManager::kTPCPionMean, calibList->FindObject("mean_map_pion"));
+        VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
+        VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
+        VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
+        if (fConfigComputeTPCpostCalibKaon) {
+          VarManager::SetCalibrationObject(VarManager::kTPCKaonMean, calibList->FindObject("mean_map_kaon"));
+          VarManager::SetCalibrationObject(VarManager::kTPCKaonSigma, calibList->FindObject("sigma_map_kaon"));
+        }
+      }
+      if (fIsRun2 == true) {
+        grpmagrun2 = fCCDB->getForTimeStamp<o2::parameters::GRPObject>(grpmagPathRun2, bc.timestamp());
+        if (grpmagrun2 != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpmagrun2);
+        }
+      } else {
+        grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+        if (grpmag != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpmag);
+        }
+        if (fPropMuon) {
+          VarManager::SetupMuonMagField();
+        }
+      }
       fCurrentRun = bc.runNumber();
     }
 
@@ -1155,6 +1185,13 @@ struct TableMaker {
     fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
   }
 
+  // Produce barrel + muon tables, with covariance, centrality and multiplicity ---------------------------------------------------------------------------
+  void processFullWithCovCentAndMults(MyEventsWithCentAndMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                      soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel, soa::Filtered<MyMuonsWithCov> const& tracksMuon)
+  {
+    fullSkimming<gkEventFillMapWithCentAndMults, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
+  }
+
   // Produce barrel + muon tables, with track covariance matrix and event filtering ----------------------------------------------------------------------------------------
   void processFullWithCovAndEventFilter(MyEventsWithFilter::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                         soa::Filtered<MyBarrelTracksWithCov> const& tracksBarrel, soa::Filtered<MyMuonsWithCov> const& tracksMuon)
@@ -1335,6 +1372,12 @@ struct TableMaker {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
   }
 
+  // Produce muon tables only, with muon cov matrix and multiplicity-----------------------------------------------------------------------------------
+  void processMuonOnlyWithCovAndMults(MyEventsWithMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                      soa::Filtered<MyMuonsWithCov> const& tracksMuon)
+  {
+    fullSkimming<gkEventFillMapWithMult, 0u, gkMuonFillMapWithCov>(collision, bcs, nullptr, tracksMuon, nullptr, nullptr);
+  }
   // Produce muon tables only, with muon cov matrix, with event filtering --------------------------------------------------------------------------------------------
   void processMuonOnlyWithCovAndEventFilter(MyEventsWithFilter::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                             soa::Filtered<MyMuonsWithCov> const& tracksMuon)
@@ -1514,6 +1557,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processFullWithCovMultsAndEventFilter, "Build full DQ skimmed data model, w/ track and fwdtrack covariance tables, w/ event filter and multiplicities", false);
   PROCESS_SWITCH(TableMaker, processFullWithCent, "Build full DQ skimmed data model, w/ centrality", false);
   PROCESS_SWITCH(TableMaker, processFullWithCentAndMults, "Build full DQ skimmed data model, w/ centrality and multiplicities", false);
+  PROCESS_SWITCH(TableMaker, processFullWithCovCentAndMults, "Build full DQ skimmed data model, w/ centrality, multiplicities and track covariances", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithV0Bits, "Build full DQ skimmed data model, w/o centrality, w/ V0Bits", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithV0BitsAndMaps, "Build full DQ skimmed data model, w/o multiplicity, w/ V0Bits", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithDalitzBits, "Build barrel-only DQ skimmed data model, w/o centrality, w/ DalitzBits", false);
@@ -1533,6 +1577,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithCentAndMults, "Build muon-only DQ skimmed data model, w/ centrality and multiplicities", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithCovAndCent, "Build muon-only DQ skimmed data model, w/ centrality and muon cov matrix", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithCov, "Build muon-only DQ skimmed data model, w/ muon cov matrix", false);
+  PROCESS_SWITCH(TableMaker, processMuonOnlyWithCovAndMults, "Build muon-only DQ skimmed data model, w/ muon cov matrix and multiplicity", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithCovAndEventFilter, "Build muon-only DQ skimmed data model, w/ muon cov matrix, w/ event filter", false);
   PROCESS_SWITCH(TableMaker, processMuonOnly, "Build muon-only DQ skimmed data model", false);
   PROCESS_SWITCH(TableMaker, processMuonOnlyWithEventFilter, "Build muon-only DQ skimmed data model, w/ event filter", false);

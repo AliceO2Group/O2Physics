@@ -26,30 +26,38 @@ using namespace o2::framework::expressions;
 
 #include "Framework/runDataProcessing.h"
 
-template <typename MCDetectorLevelJetTable, typename MCDetectorLevelWeightsTable>
+template <typename MCDetectorLevelJetTable, typename MCDetectorLevelWeightsTable, typename MCDetectorLevelEventWiseSubtractedJetTable, typename MCDetectorLevelEventWiseSubtractedWeightsTable>
 
 struct JetEventWeightMCDTask {
   Produces<MCDetectorLevelWeightsTable> mcDetectorLevelWeightsTable;
+  Produces<MCDetectorLevelEventWiseSubtractedWeightsTable> mcDetectorLevelEventWiseSubtractedWeightsTable;
 
-  void processDummy(aod::JCollisions const& collisions)
+  void processDummy(JetCollisions const& collisions)
   {
   }
   PROCESS_SWITCH(JetEventWeightMCDTask, processDummy, "Dummy process", true);
 
-  void processMCDetectorLevelEventWeight(MCDetectorLevelJetTable const& jet, soa::Join<aod::JCollisions, aod::JMcCollisionLbs> const& collisions, aod::JMcCollisions const& mcCollisions)
+  void processMCDetectorLevelEventWeight(MCDetectorLevelJetTable const& jet, soa::Join<JetCollisions, aod::JMcCollisionLbs> const& collisions, JetMcCollisions const& mcCollisions)
   {
-    auto collision = jet.template collision_as<soa::Join<aod::JCollisions, aod::JMcCollisionLbs>>();
+    auto collision = jet.template collision_as<soa::Join<JetCollisions, aod::JMcCollisionLbs>>();
     mcDetectorLevelWeightsTable(jet.globalIndex(), collision.mcCollision().weight());
   }
   PROCESS_SWITCH(JetEventWeightMCDTask, processMCDetectorLevelEventWeight, "Fill event weight tables for detector level MC jets", false);
+
+  void processMCDetectorLevelEventWiseSubtractedEventWeight(MCDetectorLevelEventWiseSubtractedJetTable const& jet, soa::Join<JetCollisions, aod::JMcCollisionLbs> const& collisions, JetMcCollisions const& mcCollisions)
+  {
+    auto collision = jet.template collision_as<soa::Join<JetCollisions, aod::JMcCollisionLbs>>();
+    mcDetectorLevelEventWiseSubtractedWeightsTable(jet.globalIndex(), collision.mcCollision().weight());
+  }
+  PROCESS_SWITCH(JetEventWeightMCDTask, processMCDetectorLevelEventWiseSubtractedEventWeight, "Fill event weight tables for detector level MC jets", false);
 };
 
-using ChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::ChargedMCDetectorLevelJet, aod::ChargedMCDetectorLevelJetEventWeights>;
-using NeutralMCJetsEventWeight = JetEventWeightMCDTask<aod::NeutralMCDetectorLevelJet, aod::NeutralMCDetectorLevelJetEventWeights>;
-using FullMCJetsEventWeight = JetEventWeightMCDTask<aod::FullMCDetectorLevelJet, aod::FullMCDetectorLevelJetEventWeights>;
-using D0ChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::D0ChargedMCDetectorLevelJet, aod::D0ChargedMCDetectorLevelJetEventWeights>;
-using LcChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::LcChargedMCDetectorLevelJet, aod::LcChargedMCDetectorLevelJetEventWeights>;
-using BplusChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::BplusChargedMCDetectorLevelJet, aod::BplusChargedMCDetectorLevelJetEventWeights>;
+using ChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::ChargedMCDetectorLevelJet, aod::ChargedMCDetectorLevelJetEventWeights, aod::ChargedMCDetectorLevelEventWiseSubtractedJet, aod::ChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
+using NeutralMCJetsEventWeight = JetEventWeightMCDTask<aod::NeutralMCDetectorLevelJet, aod::NeutralMCDetectorLevelJetEventWeights, aod::NeutralMCDetectorLevelEventWiseSubtractedJet, aod::NeutralMCDetectorLevelEventWiseSubtractedJetEventWeights>;
+using FullMCJetsEventWeight = JetEventWeightMCDTask<aod::FullMCDetectorLevelJet, aod::FullMCDetectorLevelJetEventWeights, aod::FullMCDetectorLevelEventWiseSubtractedJet, aod::FullMCDetectorLevelEventWiseSubtractedJetEventWeights>;
+using D0ChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::D0ChargedMCDetectorLevelJet, aod::D0ChargedMCDetectorLevelJetEventWeights, aod::D0ChargedMCDetectorLevelEventWiseSubtractedJet, aod::D0ChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
+using LcChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::LcChargedMCDetectorLevelJet, aod::LcChargedMCDetectorLevelJetEventWeights, aod::LcChargedMCDetectorLevelEventWiseSubtractedJet, aod::LcChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
+using BplusChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::BplusChargedMCDetectorLevelJet, aod::BplusChargedMCDetectorLevelJetEventWeights, aod::BplusChargedMCDetectorLevelEventWiseSubtractedJet, aod::BplusChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

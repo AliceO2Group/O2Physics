@@ -40,6 +40,13 @@
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "CommonConstants/LHCConstants.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Field/MagneticField.h"
+#include "TGeoGlobalMagField.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsBase/GeometryManager.h"
 
 using std::cout;
 using std::endl;
@@ -55,6 +62,8 @@ namespace
 {
 enum DQTriggers {
   kSingleE = 0,
+  kLMeeIMR,
+  kLMeeHMR,
   kDiElectron,
   kSingleMuLow,
   kSingleMuHigh,
@@ -556,6 +565,10 @@ struct DQMuonsSelection {
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
   Configurable<float> fConfigMuonPtLow{"cfgMuonLowPt", 0.5f, "Low pt cut for muons"};
   Configurable<int> fConfigCollisionMuonAssoc{"cfgCollisionMuonAssoc", 0, "0 - standard association, 1 - time compatibility, 2 - ambiguous"};
+  Configurable<bool> fPropMuon{"cfgPropMuon", false, "Propgate muon tracks through absorber"};
+  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<float> fConfigAssocTimeMargin{"cfgAssocTimeMargin", 0.0f, "Extra time margin to be considered when doing collision - muon matching (in ns)"};
   Configurable<float> fConfigSigmaForTimeCompat{"cfgSigmaForTimeCompat", 4.0, "nSigma window when doing collision - track matching "};
   Configurable<float> fSigmaTrack{"cfgSigmaTrack", 1.0, "Number of sigma for track time window"};
@@ -563,6 +576,11 @@ struct DQMuonsSelection {
   Configurable<float> fTimeMarginTrack{"cfgTimeMarginTrack", 0.0, "Number of sigma for track time window"};
   Configurable<float> fTimeMarginVtx{"cfgTimeMarginVtx", 0.0, "Number of sigma for vertex time window"};
   Configurable<float> fTimeBias{"cfgTimeBias", 0.0, "Number of sigma for track time window"};
+
+  Service<o2::ccdb::BasicCCDBManager> fCCDB;
+  o2::parameters::GRPMagField* grpmag = nullptr; // for run 3, we access GRPMagField from GLO/Config/GRPMagField
+
+  int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   // TODO: configure the histogram classes to be filled by QA
 
@@ -577,6 +595,15 @@ struct DQMuonsSelection {
 
   void init(o2::framework::InitContext&)
   {
+    fCCDB->setURL(fConfigCcdbUrl);
+    fCCDB->setCaching(true);
+    fCCDB->setLocalObjectValidityChecking();
+    if (fPropMuon) {
+      if (!o2::base::GeometryManager::isGeometryLoaded()) {
+        fCCDB->get<TGeoManager>(geoPath);
+      }
+    }
+
     TString cutNamesStr = fConfigCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
@@ -614,8 +641,20 @@ struct DQMuonsSelection {
   }
 
   template <uint32_t TMuonFillMap, typename TMuons>
-  void runMuonSelection(TMuons const& muons)
+  void runMuonSelection(Collisions const& collisions, aod::BCsWithTimestamps const& bcs, TMuons const& muons)
   {
+    auto bc = bcs.begin(); // check just the first bc to get the run number
+    if (fCurrentRun != bc.runNumber()) {
+      fCurrentRun = bc.runNumber();
+      if (fPropMuon) {
+        VarManager::SetupMuonMagField();
+      }
+      grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+      if (grpmag != nullptr) {
+        o2::base::Propagator::initFieldFromGRP(grpmag);
+      }
+    }
+
     fSelectedMuons.clear();
 
     uint32_t filterMap = uint32_t(0);
@@ -626,6 +665,9 @@ struct DQMuonsSelection {
       filterMap = uint32_t(0);
       // NOTE: here we do not exclude orphan muon tracks
       VarManager::FillTrack<TMuonFillMap>(muon);
+      if (fPropMuon) {
+        VarManager::FillPropagateMuon<TMuonFillMap>(muon, collisions);
+      }
       if (fConfigQA) {
         fHistMan->FillHistClass("Muon_BeforeCuts", VarManager::fgValues);
       }
@@ -956,7 +998,7 @@ struct DQMuonsSelection {
                         soa::Filtered<MyMuons> const& filteredMuons,
                         AmbiguousFwdTracks const& ambFwdTracks)
   {
-    runMuonSelection<gkMuonFillMap>(filteredMuons);
+    runMuonSelection<gkMuonFillMap>(collisions, bcstimestamp, filteredMuons);
     if (fConfigCollisionMuonAssoc.value == 0) {
       associateMuonsToCollisionsStandard(collisions, muons);
     } else if (fConfigCollisionMuonAssoc.value == 1) {
@@ -989,8 +1031,8 @@ struct DQFilterPPTask {
   Configurable<std::string> fConfigBarrelSelections{"cfgBarrelSels", "jpsiPID1:pairMassLow:1", "<track-cut>:[<pair-cut>]:<n>,[<track-cut>:[<pair-cut>]:<n>],..."};
   Configurable<std::string> fConfigMuonSelections{"cfgMuonSels", "muonQualityCuts:pairNoCut:1", "<muon-cut>:[<pair-cut>]:<n>"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
-  Configurable<bool> fConfigFilterLsBarrelTracksPairs{"cfgWithBarrelLS", false, "If true, also select like sign (--/++) barrel track pairs"};
-  Configurable<bool> fConfigFilterLsMuonsPairs{"cfgWithMuonLS", false, "If true, also select like sign (--/++) muon pairs"};
+  Configurable<std::string> fConfigFilterLsBarrelTracksPairs{"cfgWithBarrelLS", "false", "Comma separated list of booleans for each trigger, If true, also select like sign (--/++) barrel track pairs"};
+  Configurable<std::string> fConfigFilterLsMuonsPairs{"cfgWithMuonLS", "false", "Comma separated list of booleans for each trigger, If true, also select like sign (--/++) muon pairs"};
 
   int fNBarrelCuts;                                    // number of barrel selections
   int fNMuonCuts;                                      // number of muon selections
@@ -1127,6 +1169,17 @@ struct DQFilterPPTask {
       }
     }
 
+    // check which selection should use like sign (LS) (--/++) barrel track pairs
+    uint32_t pairingLS = 0; // used to set in which cut setting LS pairs will be analysed
+    TString barrelLSstr = fConfigFilterLsBarrelTracksPairs.value;
+    std::unique_ptr<TObjArray> objArrayLS(barrelLSstr.Tokenize(","));
+    for (int icut = 0; icut < fNBarrelCuts; icut++) {
+      TString objStr = objArrayLS->At(icut)->GetName();
+      if (!objStr.CompareTo("true")) {
+        pairingLS |= (uint32_t(1) << icut);
+      }
+    }
+
     // run pairing if there is at least one selection that requires it
     uint32_t pairFilter = 0;
     if (pairingMask > 0) {
@@ -1141,16 +1194,17 @@ struct DQFilterPPTask {
         // get the tracks from the index stored in the association
         auto t1 = a1.template track_as<TTracks>();
         auto t2 = a2.template track_as<TTracks>();
-        // keep just opposite-sign pairs
-        if (!fConfigFilterLsBarrelTracksPairs) {
-          if (t1.sign() * t2.sign() > 0) {
-            continue;
-          }
-        }
 
         // construct the pair and apply pair cuts
         VarManager::FillPair<VarManager::kDecayToEE, TTrackFillMap>(t1, t2); // compute pair quantities
         for (int icut = 0; icut < fNBarrelCuts; icut++) {
+          // select like-sign pairs if trigger has set boolean true within fConfigFilterLsBarrelTracksPairs
+          if (!(pairingLS & (uint32_t(1) << icut))) {
+            if (t1.sign() * t2.sign() > 0) {
+              continue;
+            }
+          }
+
           if (!(pairFilter & (uint32_t(1) << icut))) {
             continue;
           }
@@ -1186,6 +1240,16 @@ struct DQFilterPPTask {
       }
     }
 
+    pairingLS = 0; // reset the decisions for muons
+    TString musonLSstr = fConfigFilterLsMuonsPairs.value;
+    std::unique_ptr<TObjArray> objArrayMuonLS(musonLSstr.Tokenize(","));
+    for (int icut = 0; icut < fNMuonCuts; icut++) {
+      TString objStr = objArrayMuonLS->At(icut)->GetName();
+      if (!objStr.CompareTo("true")) {
+        pairingLS |= (uint32_t(1) << icut);
+      }
+    }
+
     // run pairing if there is at least one selection that requires it
     pairFilter = 0;
     if (pairingMask > 0) {
@@ -1201,16 +1265,16 @@ struct DQFilterPPTask {
         // get the real muon tracks
         auto t1 = a1.template fwdtrack_as<TMuons>();
         auto t2 = a2.template fwdtrack_as<TMuons>();
-        // keep just opposite-sign pairs
-        if (!fConfigFilterLsMuonsPairs) {
-          if (t1.sign() * t2.sign() > 0) {
-            continue;
-          }
-        }
 
         // construct the pair and apply cuts
         VarManager::FillPair<VarManager::kDecayToMuMu, TTrackFillMap>(t1, t2); // compute pair quantities
         for (int icut = 0; icut < fNMuonCuts; icut++) {
+          // select like-sign pairs if trigger has set boolean true within fConfigFilterLsMuonsPairs
+          if (!(pairingLS & (uint32_t(1) << icut))) {
+            if (t1.sign() * t2.sign() > 0) {
+              continue;
+            }
+          }
           if (!(pairFilter & (uint32_t(1) << icut))) {
             continue;
           }
@@ -1375,13 +1439,13 @@ struct DQFilterPPTask {
       fStats->Fill(-2.0);
       if (!collision.isDQEventSelected()) {
         eventFilter(0);
-        dqtable(false, false, false, false, false);
+        dqtable(false, false, false, false, false, false, false);
       }
       fStats->Fill(-1.0);
 
       if (fFiltersMap.find(collision.globalIndex()) == fFiltersMap.end()) {
         eventFilter(0);
-        dqtable(false, false, false, false, false);
+        dqtable(false, false, false, false, false, false, false);
       } else {
         totalEventsTriggered++;
         for (int i = 0; i < fNBarrelCuts + fNMuonCuts; i++) {
@@ -1390,7 +1454,7 @@ struct DQFilterPPTask {
         }
         eventFilter(fFiltersMap[collision.globalIndex()]);
         auto dqDecisions = fCEFPfilters[collision.globalIndex()];
-        dqtable(dqDecisions[0], dqDecisions[1], dqDecisions[2], dqDecisions[3], dqDecisions[4]);
+        dqtable(dqDecisions[0], dqDecisions[1], dqDecisions[2], dqDecisions[3], dqDecisions[4], dqDecisions[5], dqDecisions[6]);
       }
     }
 
