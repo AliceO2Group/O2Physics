@@ -63,15 +63,16 @@ static const std::vector<std::string> labelsPtTrack{};
 static const std::vector<std::string> labelsCutVarTrack = {"min_dcaxytoprimary", "max_dcaxytoprimary"};
 } // namespace hf_cuts_single_track
 
-namespace hf_presel_proton_pid
+namespace hf_presel_pid
 {
 // default values for the PID cuts for protons in the track-index-skim-creator
-constexpr float cutsProtonPid[3][6] = {{0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
-                                       {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
-                                       {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f}};
-static const std::vector<std::string> labelsCutsProtonPid = {"minPtTpc", "maxPtTpc", "nSigmaMaxTpc", "minPtTof", "maxPtTof", "nSigmaMaxTof"};
-static const std::vector<std::string> labelsRowsProtonPid = {"LcToPKPi", "XicToPKPi", "LcToPK0S"};
-} // namespace hf_presel_proton_pid
+constexpr float cutsPid[4][6] = {{0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                 {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                 {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                 {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f}};
+static const std::vector<std::string> labelsCutsPid = {"minPtTpc", "maxPtTpc", "nSigmaMaxTpc", "minPtTof", "maxPtTof", "nSigmaMaxTof"};
+static const std::vector<std::string> labelsRowsPid = {"ProtonInLcToPKPi", "ProtonInXicToPKPi", "ProtonInLcToPK0S", "KaonIn3Prongs"};
+} // namespace hf_presel_pid
 
 namespace hf_cuts_bdt_multiclass
 {
