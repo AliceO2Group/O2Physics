@@ -59,6 +59,15 @@ struct MultiplicityExtraTable {
     float multFV0A = 0.f;
     float multFDDA = 0.f;
     float multFDDC = 0.f;
+
+    // ZDC amplitudes
+    float multZEM1 = -1.f;
+    float multZEM2 = -1.f;
+    float multZNA = -1.f;
+    float multZNC = -1.f;
+    float multZPA = -1.f;
+    float multZPC = -1.f;
+
     uint8_t multFT0TriggerBits = 0;
     uint8_t multFV0TriggerBits = 0;
     uint8_t multFDDTriggerBits = 0;
@@ -130,7 +139,23 @@ struct MultiplicityExtraTable {
       multFDDC = -999.0f;
     }
 
-    multBC(multFT0A, multFT0C, multFV0A, multFDDA, multFDDC, Tvx, isFV0OrA, multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC);
+    if (bc.has_zdc()) {
+      multZNA = bc.zdc().amplitudeZNA();
+      multZNC = bc.zdc().amplitudeZNC();
+      multZEM1 = bc.zdc().amplitudeZEM1();
+      multZEM2 = bc.zdc().amplitudeZEM2();
+      multZPA = bc.zdc().amplitudeZPA();
+      multZPC = bc.zdc().amplitudeZPC();
+    } else {
+      multZNA = -999.f;
+      multZNC = -999.f;
+      multZEM1 = -999.f;
+      multZEM2 = -999.f;
+      multZPA = -999.f;
+      multZPC = -999.f;
+    }
+
+    multBC(multFT0A, multFT0C, multFV0A, multFDDA, multFDDC, multZNA, multZNC, multZEM1, multZEM2, multZPA, multZPC, Tvx, isFV0OrA, multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC);
   }
 };
 
