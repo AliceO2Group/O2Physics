@@ -132,8 +132,7 @@ struct lfmatchingqa {
       histos.fill(HIST("thnDe"), signTPCMom, signGloMom, track.tpcInnerParam() - track.p(), track.dcaXY(), getITSClSize(track) * cosL, track.tpcSignal(), tpcNSigmaDeu, track.pidForTracking(), pidMC, genPMC);
     }
     if (abs(tpcNSigmaHe3) < 4) {
-      histos.fill(HIST("tpcNsigmaHe"), signTPCMom, signGloMom, tpcNSigmaHe3);
-      histos.fill(HIST("pidHypoHe"), signTPCMom, tpcNSigmaHe3, track.pidForTracking());
+      histos.fill(HIST("thnHe"), signTPCMom, signGloMom, track.tpcInnerParam() - track.p(), track.dcaXY(), getITSClSize(track) * cosL, track.tpcSignal(), tpcNSigmaHe3, track.pidForTracking(), pidMC, genPMC);
     }
   }
 
@@ -169,9 +168,8 @@ struct lfmatchingqa {
     for (const auto& track : tracks) {
       if (!selectTrack(track)) {
         continue;
-
-        fillHistograms(track, -1, -999);
       }
+      fillHistograms(track, -1, -999);
     }
   }
   PROCESS_SWITCH(lfmatchingqa, processData, "Data analysis", true);
