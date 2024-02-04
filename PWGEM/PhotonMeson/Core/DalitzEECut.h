@@ -418,6 +418,9 @@ class DalitzEECut : public TNamed
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
   void ApplyPrefilter(bool flag);
 
+  // Getters
+  bool IsPhotonConversionSelected() const { return mSelectPC; }
+
   /// @brief Print the track selection
   void print() const;
 
