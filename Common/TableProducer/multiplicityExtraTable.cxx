@@ -50,7 +50,7 @@ struct MultiplicityExtraTable {
 
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
-  void process(BCsWithRun3Matchings::iterator const& bc, aod::FV0As const&, aod::FT0s const& ft0s, aod::FDDs const&)
+  void process(BCsWithRun3Matchings::iterator const& bc, aod::FV0As const&, aod::FT0s const& ft0s, aod::FDDs const&, aod::Zdcs const&)
   {
     bool Tvx = false;
     bool isFV0OrA = false;
