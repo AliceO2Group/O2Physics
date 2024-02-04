@@ -105,7 +105,7 @@ class DalitzEECut : public TNamed
     if (mass < mMinMee || mMaxMee < mass) {
       return false;
     }
-    if (phiv < mMinPhivPair || (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(mass) : mMaxPhivPair) < phiv) {
+    if ((phiv < mMinPhivPair || (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(mass) : mMaxPhivPair) < phiv) ^ mSelectPC) {
       return false;
     }
     return true;
