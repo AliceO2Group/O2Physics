@@ -11,8 +11,8 @@
 
 /// \file qaLamMomResolution.h
 
-#ifndef QALAMMOMRESOLUTION_H_
-#define QALAMMOMRESOLUTION_H_
+#ifndef DPG_TASKS_AOTTRACK_V0CASCADES_QALAMMOMRESOLUTION_H_
+#define DPG_TASKS_AOTTRACK_V0CASCADES_QALAMMOMRESOLUTION_H_
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -137,4 +137,4 @@ DECLARE_SOA_TABLE(LamDaughters, "AOD", "LAMDAUGHTERS",
                   qaLamMomResolution::DCAzPionErr);
 } // namespace o2::aod
 
-#endif // QALAMMOMRESOLUTION_H_
+#endif // DPG_TASKS_AOTTRACK_V0CASCADES_QALAMMOMRESOLUTION_H_
