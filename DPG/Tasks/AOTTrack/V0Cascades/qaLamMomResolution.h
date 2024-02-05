@@ -26,6 +26,7 @@ DECLARE_SOA_COLUMN(CollID, collid, int);
 // Lambda
 DECLARE_SOA_COLUMN(MLambda, mLambda, float);
 DECLARE_SOA_COLUMN(RLambda, rLambda, float);
+DECLARE_SOA_COLUMN(PtLambda, ptLambda, float);
 
 // charge
 DECLARE_SOA_COLUMN(ChargeProton, chargeProton, int);
@@ -62,6 +63,18 @@ DECLARE_SOA_COLUMN(PzProtonIUErr, pzProtonIUErr, float);
 DECLARE_SOA_COLUMN(PxPionIUErr, pxPionIUErr, float);
 DECLARE_SOA_COLUMN(PyPionIUErr, pyPionIUErr, float);
 DECLARE_SOA_COLUMN(PzPionIUErr, pzPionIUErr, float);
+DECLARE_SOA_COLUMN(Sigma1PtProtonIU, sigma1ptProtonIU, float);
+DECLARE_SOA_COLUMN(Sigma1PtPionIU, sigma1ptPionIU, float);
+// DCA
+DECLARE_SOA_COLUMN(DCAxyProton, dcaxyProton, float);
+DECLARE_SOA_COLUMN(DCAxyPion, dcaxyPion, float);
+DECLARE_SOA_COLUMN(DCAzProton, dcazProton, float);
+DECLARE_SOA_COLUMN(DCAzPion, dcazPion, float);
+// DCA uncertainties
+DECLARE_SOA_COLUMN(DCAxyProtonErr, dcaxyProtonErr, float);
+DECLARE_SOA_COLUMN(DCAxyPionErr, dcaxyPionErr, float);
+DECLARE_SOA_COLUMN(DCAzProtonErr, dcazProtonErr, float);
+DECLARE_SOA_COLUMN(DCAzPionErr, dcazPionErr, float);
 // MC
 DECLARE_SOA_COLUMN(PxProtonMC, pxProtonMC, float);
 DECLARE_SOA_COLUMN(PyProtonMC, pyProtonMC, float);
@@ -75,6 +88,7 @@ DECLARE_SOA_TABLE(LamDaughters, "AOD", "LAMDAUGHTERS",
                   qaLamMomResolution::CollID,
                   qaLamMomResolution::MLambda,
                   qaLamMomResolution::RLambda,
+                  qaLamMomResolution::PtLambda,
                   qaLamMomResolution::ChargeProton,
                   qaLamMomResolution::ChargePion,
                   qaLamMomResolution::EtaProton,
@@ -110,7 +124,17 @@ DECLARE_SOA_TABLE(LamDaughters, "AOD", "LAMDAUGHTERS",
                   qaLamMomResolution::PzProtonMC,
                   qaLamMomResolution::PxPionMC,
                   qaLamMomResolution::PyPionMC,
-                  qaLamMomResolution::PzPionMC
+                  qaLamMomResolution::PzPionMC,
+                  qaLamMomResolution::Sigma1PtProtonIU,
+                  qaLamMomResolution::Sigma1PtPionIU,
+                  qaLamMomResolution::DCAxyProton,
+                  qaLamMomResolution::DCAzProton,
+                  qaLamMomResolution::DCAxyProtonErr,
+                  qaLamMomResolution::DCAzProtonErr,
+                  qaLamMomResolution::DCAxyPion,
+                  qaLamMomResolution::DCAzPion,
+                  qaLamMomResolution::DCAxyPionErr,
+                  qaLamMomResolution::DCAzPionErr
                   );
 } // namespace o2::aod
 
