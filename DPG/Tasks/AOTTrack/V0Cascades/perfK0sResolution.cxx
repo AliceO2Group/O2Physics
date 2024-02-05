@@ -37,9 +37,9 @@ struct perfK0sResolution {
   ConfigurableAxis pTResBins{"pTResBins", {200, -1.2f, 1.2f}, "pT resolution binning"};
   ConfigurableAxis pTResRelBins{"pTResRelBins", {200, -0.2f, 0.2f}, "pT relative resolution binning"};
   ConfigurableAxis invpTResBins{"invpTResBins", {200, -1.2f, 1.2f}, "inv pT resolution binning"};
-  ConfigurableAxis etaBins{"etaBins", {200, -1.f, 1.f}, "eta binning"};
-  ConfigurableAxis etaBinsDauthers{"etaBinsDauthers", {200, -1.f, 1.f}, "eta binning for daughters"};
-  ConfigurableAxis phiBins{"phiBins", {628, 0.f, 6.28f}, "phi binning"};
+  ConfigurableAxis etaBins{"etaBins", {2, -1.f, 1.f}, "eta binning"};
+  ConfigurableAxis etaBinsDauthers{"etaBinsDauthers", {100, -1.f, 1.f}, "eta binning for daughters"};
+  ConfigurableAxis phiBins{"phiBins", {100, 0.f, 6.28f}, "phi binning"};
 
   HistogramRegistry rK0sResolution{"K0sResolution", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rK0sDauResolution{"K0sDauResolution", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
