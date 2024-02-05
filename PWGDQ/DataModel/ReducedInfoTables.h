@@ -454,6 +454,8 @@ DECLARE_SOA_COLUMN(Tauz, tauz, float);                 //! Longitudinal pseudo-p
 DECLARE_SOA_COLUMN(TauzErr, tauzErr, float);           //! Error on longitudinal pseudo-proper time of lepton pair (in ns)
 DECLARE_SOA_COLUMN(Tauxy, tauxy, float);               //! Transverse pseudo-proper time of lepton pair (in ns)
 DECLARE_SOA_COLUMN(TauxyErr, tauxyErr, float);         //! Error on transverse pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(VertexPz, vertexPz, float);
+DECLARE_SOA_COLUMN(SVertex, sVertex, float);
 DECLARE_SOA_COLUMN(Lz, lz, float);                     //! Longitudinal projection of decay length
 DECLARE_SOA_COLUMN(Lxy, lxy, float);                   //! Transverse projection of decay length
 DECLARE_SOA_COLUMN(Chi2pca, chi2pca, float);           //! Chi2 for PCA of the dilepton
@@ -534,7 +536,9 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   reducedpair::R2SP,
                   reducedpair::CentFT0C,
                   reducedpair::Cos2DeltaPhi,
-                  reducedpair::Cos3DeltaPhi);
+                  reducedpair::Cos3DeltaPhi,
+                  reducedpair::VertexPz,
+                  reducedpair::SVertex);
 
 using Dilepton = Dileptons::iterator;
 using DileptonExtra = DileptonsExtra::iterator;
