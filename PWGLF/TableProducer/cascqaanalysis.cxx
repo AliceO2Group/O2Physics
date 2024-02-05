@@ -320,9 +320,9 @@ struct cascqaanalysis {
   void processData(soa::Join<aod::Collisions, aod::EvSels,
                              aod::PVMults, aod::FT0Mults, aod::FV0Mults,
                              aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
-                             soa::Filtered<aod::CascDataExt> const& Cascades,
-                             aod::V0Datas const&,
-                             DauTracks const&)
+                   soa::Filtered<aod::CascDataExt> const& Cascades,
+                   aod::V0Datas const&,
+                   DauTracks const&)
   {
     if (!AcceptEvent(collision, 1)) {
       return;
@@ -409,11 +409,11 @@ struct cascqaanalysis {
   void processMCrec(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels,
                               aod::PVMults, aod::FT0Mults, aod::FV0Mults,
                               aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
-                              aod::V0Datas const&,
-                              soa::Filtered<LabeledCascades> const& Cascades,
-                              DauTracks const&,
-                              aod::McCollisions const&,
-                              aod::McParticles const& mcParticles)
+                    aod::V0Datas const&,
+                    soa::Filtered<LabeledCascades> const& Cascades,
+                    DauTracks const&,
+                    aod::McCollisions const&,
+                    aod::McParticles const& mcParticles)
   {
     if (!AcceptEvent(collision, 1)) {
       return;
