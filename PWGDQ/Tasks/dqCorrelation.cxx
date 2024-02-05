@@ -8,7 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
+/// @author  Victor Valencia
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
 #include <iostream>
@@ -89,16 +89,11 @@ using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtende
 using MyEventsHashSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes>;
 using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
-// using MyEventsVtxCovSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector>;
-// using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
-// using MyEventsHashSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector>;
 
 using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID>;
 using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID>;
 using MyBarrelTracksSelected = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts>;
-using MyBarrelTracksSelectedWithPrefilter = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::Prefilter>;
-using MyBarrelTracksSelectedWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts>;
-using MyBarrelTracksSelectedWithColl = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::ReducedTracksBarrelInfo>;
+
 // using MyPairCandidatesSelected = soa::Join<aod::Dileptons, aod::DileptonsExtra>;
 using MyPairCandidatesSelected = aod::Dileptons;
 using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsInfo>;
@@ -108,34 +103,19 @@ using MyMuonTracksSelectedWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuo
 
 // bit maps used for the Fill functions of the VarManager
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
-// constexpr static uint32_t gkEventFillMapWithCov = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov;
-//  constexpr static uint32_t gkEventFillMapWithQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventQvector;
-//  constexpr static uint32_t gkEventFillMapWithCovQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID;
-// constexpr static uint32_t gkTrackFillMapWithCov = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelCov | VarManager::ObjTypes::ReducedTrackBarrelPID;
-//  constexpr static uint32_t gkTrackFillMapWithColl = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::ReducedTrackBarrel | VarManager::ObjTypes::ReducedTrackBarrelPID | VarManager::ObjTypes::ReducedTrackCollInfo;
-
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra;
-//  constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::ReducedMuonExtra | VarManager::ObjTypes::ReducedMuonCov;
-
-// constexpr static int pairTypeEE = VarManager::kDecayToEE;
-// constexpr static int pairTypeMuMu = VarManager::kDecayToMuMu;
-// constexpr static int pairTypeEMu = VarManager::kElectronMuon;
 
 // Fill the FlowContainer
 void FillFC(GFW* fGFW, OutputObj<FlowContainer> fFC, const GFW::CorrConfig& corrconf, const double& cent, const double& rndm, bool fillflag);
 
 struct DqCumulantFlow {
 
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -6.0, 1.5}, "eta axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {100, 0, 20}, "pt axis for histograms"};
   ConfigurableAxis axisMass{"axisMass", {40, 2, 4}, "mass axis for histograms"};
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   Configurable<uint8_t> fConfigNPow{"cfgNPow", 0, "Power of weights for Q vector"};
   // Configurables for the reference flow
   Configurable<string> fConfigTrackCuts{"cfgLeptonCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
@@ -146,15 +126,12 @@ struct DqCumulantFlow {
   Configurable<float> fConfigEtaLimitMin{"cfgEtaLimitMin", -0.4f, "Eta gap min separation, only if using subEvents"};
   Configurable<float> fConfigEtaLimitMax{"cfgEtaLimitMax", 0.4f, "Eta gap max separation, only if using subEvents"};
 
-  /////////////////////
 
   Configurable<float> fConfigMuonCutEtaMin{"cfgCutEtaMinMuon", -4.f, "Eta min range for muons"};
   Configurable<float> fConfigMuonCutEtaMax{"cfgCutEtaMaxMuon", -2.5f, "Eta max range for muons"};
 
   Configurable<float> fConfigMultiplicityMin{"cfgMultiplicityMin", 3500.0f, "Multiplicity for 30%"};
   Configurable<float> fConfigMultiplicityMax{"cfgMultiplicityMax", 2000.0f, "Multiplicity for 60%"};
-
-  /////////////////////
 
   // Configurables for the dilepton and dilepton cuts
   Configurable<float> fConfigDileptonLowMass{"cfgDileptonLowMass", 2., "Low mass cut for the dileptons used in analysis"};
@@ -165,34 +142,17 @@ struct DqCumulantFlow {
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
 
-  // // // CCDB access
-  // Service<ccdb::BasicCCDBManager> ccdb;
-  // // CCDB access for the efficiencies and acceptances
-  // Configurable<std::string> fConfigEfficiency{"ccdb-path-efficiency", "Users/r/rcaron/efficiency", "CCDB path to efficiency object"};
-  // Configurable<std::string> fConfigAcceptance{"ccdb-path-acceptance", "", "CCDB path to acceptance or GFWWeights object"};
-  // Configurable<std::string> fConfigURL{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  // Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-
   // Configurables for histograms
   Configurable<std::string> fConfigAddDileptonHadHistogram{"cfgAddDileptonHadHistogram", "", "Comma separated list of histograms"};
 
   // Configurables for FlowContainer (e.g charged particles pt-differential v2{2}, v2{3}, ...)
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100.1}, "multiplicity / centrality axis for histograms"};
 
-  ////////////////////////////////////////////////////////////////////////////////
   // Define the filter for events
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
 
-  // Define the filter for barrel tracks and forward tracks
-  Filter trackFilter = (nabs(aod::track::eta) <= fConfigCutEtaMax) && (aod::track::pt > fConfigCutPtMin) && (aod::track::pt < fConfigCutPtMax);
-  Filter fwdFilter = (nabs(aod::fwdtrack::eta) <= fConfigMuonCutEtaMax) && (nabs(aod::fwdtrack::eta) >= fConfigMuonCutEtaMin);
-  // Filter fwdFilter = (aod::fwdtrack::eta < -2.f) && (aod::fwdtrack::eta > -4.5f);
-
   // Define the filter for the dileptons
-  // Filter dileptonFilter = aod::reducedpair::mass > fConfigDileptonLowMass.value&& aod::reducedpair::mass < fConfigDileptonHighMass.value&& aod::reducedpair::sign == 0;
   Filter dileptonFilter = aod::reducedpair::sign == 0;
-  // Filter filterBarrelTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
-  // Filter filterMuonSelected = aod::dqanalysisflags::isMuonlSelected > 0;
 
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
   constexpr static uint32_t fgDimuonsFillMap = VarManager::ObjTypes::ReducedMuon | VarManager::ObjTypes::Pair;   // fill map
@@ -201,9 +161,6 @@ struct DqCumulantFlow {
   float* fValuesDilepton;
   float* fValuesHadron;
 
-  // NOTE: the barrel track filter is shared between the filters for dilepton electron candidates (first n-bits)
-  //       and the associated hadrons (n+1 bit) --> see the barrel track selection task
-  //      The current condition should be replaced when bitwise operators will become available in Filter expressions
   int fNHadronCutBit;
 
   NoBinningPolicy<aod::dqanalysisflags::MixingHash> hashBin;
@@ -228,7 +185,6 @@ struct DqCumulantFlow {
   void init(o2::framework::InitContext& context)
   {
 
-    /////////////////////////////////////////////////////////////////////////////////////
 
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
@@ -250,9 +206,7 @@ struct DqCumulantFlow {
     registry.add("c22_cent_muon", "c22_cent_muon", {HistType::kTProfile, {{100, 0, 100}}});
     registry.add("hCent_muon", "", {HistType::kTH1D, {{10, 0.0, 100.0}}});
     registry.add("hCent_muon2", "", {HistType::kTH1D, {{10, 0.0, 100.0}}});
-
     registry.add("dimuon_mass", "", {HistType::kTH1D, {{300, 0.0, 5.0}}});
-    /////////////////////////////////////////////////////////////////////////////////////
 
     fValuesDilepton = new float[VarManager::kNVars];
     fValuesHadron = new float[VarManager::kNVars];
@@ -267,22 +221,8 @@ struct DqCumulantFlow {
       fNHadronCutBit = 0;
     }
 
-    // ccdb->setURL(fConfigURL.value);
-    // ccdb->setCaching(true);
-    // ccdb->setLocalObjectValidityChecking();
-    // ccdb->setCreatedNotAfter(fConfigNoLaterThan.value);
-
     VarManager::SetDefaultVarNames();
 
-    // // Global effiencies
-    // if (fConfigEfficiency.value.empty() == false) {
-    //   cfg.mEfficiency = ccdb->getForTimeStamp<TH1D>(fConfigEfficiency.value, fConfigNoLaterThan.value);
-    // }
-
-    // // Global acceptance or GFWeights to correct for NUA in the track loop
-    // if (fConfigAcceptance.value.empty() == false) {
-    //   cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(fConfigAcceptance.value, fConfigNoLaterThan.value);
-    // }
 
     // Reference flow
     TObjArray* oba = new TObjArray();
@@ -346,9 +286,6 @@ struct DqCumulantFlow {
     VarManager::FillEvent<TEventFillMap>(event, fValuesHadron);
     VarManager::FillEvent<TEventFillMap>(event, fValuesDilepton);
 
-    // Set the global index offset to find the proper lepton
-    // TO DO: remove it once the issue with lepton index is solved
-    // int indexOffset = -999;
     std::vector<int> trackGlobalIndexes;
 
     float weff = 1.0, wacc = 1.0;
@@ -356,7 +293,6 @@ struct DqCumulantFlow {
     if (dileptons.size() > 0) {
       for (auto track : tracks) {
         trackGlobalIndexes.push_back(track.globalIndex());
-        // std::cout << track.index() << " " << track.globalIndex() << std::endl;
       }
 
       for (auto& track : tracks) {
@@ -390,7 +326,6 @@ struct DqCumulantFlow {
       for (auto dilepton : dileptons) {
         registry.fill(HIST("dimuon_mass"), dilepton.mass());
 
-        // VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
         VarManager::FillTrack<fgDimuonsFillMap>(dilepton, fValuesDilepton);
 
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::ReducedTrack)) {
@@ -431,9 +366,6 @@ struct DqCumulantFlow {
     double l_Random = fRndm->Rndm(); // used only to compute correlators
     bool fillFlag = kFALSE;          // could be used later
     for (uint64_t l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-      // FillFC(corrconfigs.at(l_ind), VarManager::fgValues[VarManager::kCentFT0C], l_Random, fillFlag);
-      // Because of the absence of the multipilcity, the multiplicity is set to 5 temporarily.
-      // FillFC(fGFW, fFC, corrconfigs.at(l_ind), 5, l_Random, fillFlag);
       FillFC(fGFW, fFC, corrconfigs.at(l_ind), VarManager::fgValues[VarManager::kCentFT0C], l_Random, fillFlag);
     }
   }
@@ -448,22 +380,8 @@ struct DqCumulantFlow {
   }
   void processDummy(MyEvents&)
   {
-    // do nothing
-  }
 
-  // same for Covariance...
-  //    void processSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelectedWithCov const& tracks, soa::Filtered<MyPairCandidatesSelected> const& dileptons)
-  //  {
-  //    runDileptonHadron<VarManager::kBtoJpsiEEK, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, tracks, dileptons);
-  //  }
-  //  void processSkimmedDimuon(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelectedWithCov  const& tracks, soa::Filtered<MyPairCandidatesSelected> const& dileptons)
-  //  {
-  //    runDileptonHadron<VarManager::kDecayToMuMu, gkEventFillMapWithCov, gkMuonFillMapWithCov>(event, tracks, dileptons);
-  //  }
-  //  void processDummy(MyEvents&)
-  //  {
-  //    // do nothing
-  //  }
+  }
 
   PROCESS_SWITCH(DqCumulantFlow, processSkimmed, "Run dilepton-hadron pairing, using skimmed data", false);
   PROCESS_SWITCH(DqCumulantFlow, processSkimmedDimuon, "Run dilepton-hadron pairing, using skimmed data", false);
