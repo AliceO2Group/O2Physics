@@ -280,9 +280,9 @@ struct kinkAnalysis {
         case Hypertriton:
           if (cfgMotherCharge == -1)
             particlePdgCode = 1010010030;
-          else 
+          else
             particlePdgCode = -1010010030;
-          break; 
+          break;
 
         default:
           particlePdgCode = 3112;
@@ -307,7 +307,6 @@ struct kinkAnalysis {
     const AxisSpec axisdphi{360, 0, 360, "#delta phi"};
     const AxisSpec axisdz{400, -20., 20, "#delta z"};
     const AxisSpec axisPdgCodes{8001, -4000.5, 4000.5, "mother pdg codes"};
-
 
     // create histograms
     histos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
@@ -404,8 +403,9 @@ struct kinkAnalysis {
     TrackCand trForpool;
 
     std::array<std::vector<TrackCand>, 4> pools; // pools of positive and negative seeds sorted in min VtxID
-cfgNsigmaTPCdaughter
-    std::vector<uint8_t> selected(tracks.size(), 0u);
+    cfgNsigmaTPCdaughter
+      std::vector<uint8_t>
+        selected(tracks.size(), 0u);
     std::vector<uint64_t> globalBCvector;
 
     int index{0};
@@ -638,7 +638,7 @@ cfgNsigmaTPCdaughter
           LOG(debug) << "Brackets do not match";
           continue;
         }
-        
+
         const auto& trackDgh = tracks.iteratorAt(static_cast<uint64_t>(seedD.Idxtr));
 
         if ((seedD.mcParticleIdx != -1) && partTable) {
@@ -648,7 +648,7 @@ cfgNsigmaTPCdaughter
 
         bool isDaughter = false;
 
-        if(cfgIsMC && (particleName == Hypertriton)){
+        if (cfgIsMC && (particleName == Hypertriton)) {
           int tritPDG = 1000010030;
           if (abs(daughterPdg) == tritPDG)
             isDaughter = true;
@@ -670,7 +670,7 @@ cfgNsigmaTPCdaughter
           if (trackDgh.tpcNSigmaKa() > cfgNsigmaTPCdaughter)
             continue;
         }
-        if (particleName == Hypertriton){
+        if (particleName == Hypertriton) {
           if (trackDgh.tpcNSigmaTr() > cfgNsigmaTPCdaughter)
             continue;
         }
@@ -732,7 +732,7 @@ cfgNsigmaTPCdaughter
               neutronPabs = sqrt(pow((sigmaPDC[2] - pionPDC[2]), 2) + pow((sigmaPDC[1] - pionPDC[1]), 2) + pow((sigmaPDC[0] - pionPDC[0]), 2));
               neutronM = sqrt((sigmaE - pionE) * (sigmaE - pionE) - neutronPabs * neutronPabs);
 
-              if(abs(neutronM - mNeutralDaughter)/mNeutralDaughter > 0.1)
+              if (abs(neutronM - mNeutralDaughter) / mNeutralDaughter > 0.1)
                 continue;
 
               if ((particleName == SigmaMinus) || (particleName == SigmaPlusToPi)) {
@@ -770,9 +770,9 @@ cfgNsigmaTPCdaughter
               }
 
               if (particleName == Hypertriton) {
-                //if (sigmaPabsDC < 2.5)
-                //  if (theta * radToDeg < 2.5)
-                //    continue;
+                // if (sigmaPabsDC < 2.5)
+                //   if (theta * radToDeg < 2.5)
+                //     continue;
                 if (sigmaPabsDC > 0.6)
                   if (theta * radToDeg > angleCutFunction(particleName, sigmaPabsDC))
                     continue;
@@ -782,11 +782,10 @@ cfgNsigmaTPCdaughter
                 if (sigmaPt < 1.6)
                   continue;
 
-              if (particleName != Hypertriton){
+              if (particleName != Hypertriton) {
                 if (theta * radToDeg < 0.5)
                   continue;
-              }
-              else if (theta * radToDeg < 0.2)
+              } else if (theta * radToDeg < 0.2)
                 continue;
 
               if ((qT < qTlower) || (qT > qTupper))
@@ -802,23 +801,22 @@ cfgNsigmaTPCdaughter
 
               mass = sqrt((neutronE + pionE) * (neutronE + pionE) - sigmaPabsDC * sigmaPabsDC);
 
-              if(particleName == Hypertriton){
-              histos.fill(HIST("hHypMass"), mass);
-              histos.fill(HIST("hHypMassPt"), mass, sigmaPt);
+              if (particleName == Hypertriton) {
+                histos.fill(HIST("hHypMass"), mass);
+                histos.fill(HIST("hHypMassPt"), mass, sigmaPt);
 
-              histos.fill(HIST("hNSigmaTrVsPt"), sigmaPt, trackDgh.tpcNSigmaTr());
-              
+                histos.fill(HIST("hNSigmaTrVsPt"), sigmaPt, trackDgh.tpcNSigmaTr());
               }
 
-              if(isDaughter)
+              if (isDaughter)
                 histos.fill(HIST("hHypMassMC"), mass);
-              }
+            }
 
-              if ((chargeM == -1) && (chargeD == -1) || (chargeM == 1) && (chargeD == 1)){
-                if (cfgIsMC) {
-                  histos.fill(HIST("hcodes"), motherPdg, daughterPdg);
-                }
+            if ((chargeM == -1) && (chargeD == -1) || (chargeM == 1) && (chargeD == 1)) {
+              if (cfgIsMC) {
+                histos.fill(HIST("hcodes"), motherPdg, daughterPdg);
               }
+            }
 
               if ((chargeM == -1) && (chargeD == -1)) {
                 if (cfgIsMC) {
@@ -829,17 +827,14 @@ cfgNsigmaTPCdaughter
                   } else if ((motherPdg == particlePdgCode || motherPdg == -3222) && (daughterPdg != -211)) {
                     histos.fill(HIST("hptMtrue"), sigmaPt, PionTr.getPt());
                     histos.fill(HIST("hPtMinusRecMcTrthM"), mass, sigmaPt);
-                  } else if ((motherPdg == particlePdgCode) && particleName == Hypertriton){
-                    histos.fill(HIST("hpRes"), sigmaPt, (mcMotherPt - sigmaPt)/mcMotherPt);
+                  } else if ((motherPdg == particlePdgCode) && particleName == Hypertriton) {
+                    histos.fill(HIST("hpRes"), sigmaPt, (mcMotherPt - sigmaPt) / mcMotherPt);
                   }
-                  
+
                   else { // if ((motherPdg != particlePdgCode)&&(daughterPdg!=-211)) {
                     histos.fill(HIST("hptMDelse"), sigmaPt, PionTr.getPt());
                     histos.fill(HIST("hPtMinusRecMcTrthelse"), mass, sigmaPt);
                   }
-
-                
-                  
                 }
                 histos.fill(HIST("hMassMinusPt"), mass, sigmaPt);
               }
