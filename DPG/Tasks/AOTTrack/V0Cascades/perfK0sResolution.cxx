@@ -38,7 +38,7 @@ struct perfK0sResolution {
   ConfigurableAxis pTResRelBins{"pTResRelBins", {200, -0.2f, 0.2f}, "pT relative resolution binning"};
   ConfigurableAxis invpTResBins{"invpTResBins", {200, -1.2f, 1.2f}, "inv pT resolution binning"};
   ConfigurableAxis etaBins{"etaBins", {200, -1.f, 1.f}, "eta binning"};
-  ConfigurableAxis etaBinsDauthers{"etaBinsDauthers", {200, -1.f, 1.f}, "eta binning"};
+  ConfigurableAxis etaBinsDauthers{"etaBinsDauthers", {200, -1.f, 1.f}, "eta binning for daughters"};
   ConfigurableAxis phiBins{"phiBins", {628, 0.f, 6.28f}, "phi binning"};
 
   HistogramRegistry rK0sResolution{"K0sResolution", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -150,7 +150,7 @@ struct perfK0sResolution {
         }
         break;
       default:
-        LOG(fatal) << "Invalid TRD selection for positive daughter";
+        LOG(fatal) << "Invalid TOF selection for positive daughter";
         break;
     }
     switch (tofSelectionNeg) {
@@ -167,7 +167,7 @@ struct perfK0sResolution {
         }
         break;
       default:
-        LOG(fatal) << "Invalid TRD selection for negative daughter";
+        LOG(fatal) << "Invalid TOF selection for negative daughter";
         break;
     }
     // TRD selection
