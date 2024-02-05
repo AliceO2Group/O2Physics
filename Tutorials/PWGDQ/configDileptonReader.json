@@ -1,0 +1,19 @@
+{
+    "internal-dpl-clock": "",
+    "internal-dpl-aod-reader": {
+        "time-limit": "0",
+        "orbit-offset-enumeration": "0",
+        "orbit-multiplier-enumeration": "0",
+        "start-value-enumeration": "0",
+        "end-value-enumeration": "-1",
+        "step-value-enumeration": "1",
+        "aod-file": "/Users/emiliebarreau/alice/ServiceTask_Analysis/Analysis_LHC22o_pass5_skimQC1/TM_Reassociation/matchedQualityCuts/dileptonAOD_LHC22o_Global_PCA.root",
+        "aod-reader-json": "readerConfiguration_dileptons.json"
+    },
+    "dilepton-reader": {
+        "ptCut": "0.5",
+        "chi2Cut" : "0.0"
+    },
+    "internal-dpl-aod-global-analysis-file-sink": "",
+    "internal-dpl-aod-writer": ""
+}
