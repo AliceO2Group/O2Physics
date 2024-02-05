@@ -33,11 +33,14 @@ enum JetTaggingSpecies {
   beauty = 2,
   lightflavour = 3,
   lightquark = 4,
-  gluon = 5
+  gluon = 5,
+  numberOfSpecies = 6
 };
 
 namespace jettaggingutilities
 {
+const int cmTomum = 10000; // using cm -> #mum for impact parameter (dca)
+
 /**
  * returns the globalIndex of the earliest mother of a particle in the shower. returns -1 if a suitable mother is not found
  *
@@ -275,6 +278,35 @@ int jetOrigin(T const& jet, U const& particles, float dRMax = 0.25)
   return 0;
 }
 
+/**
+ * return geometric sign which is calculated scalar product between jet axis with DCA (track propagated to PV )
+ * positive and negative value are expected from primary vertex
+ * positive value is expected from secondary vertex
+ *
+ * @param collision which is needed external table of collision due to postion X and Y
+ * @param jet
+ * @param track which is needed each DCA_X and Y which is measured in jettaggerhfExtension.cxx
+ */
+template <typename T, typename U, typename V>
+int getGeoSign(T const& collision, U const& jet, V const& track)
+{
+  auto trackPar = getTrackPar(track);
+  auto xyz = trackPar.getXYZGlo();
+  auto dcaX = xyz.X() - collision.posX();
+  auto dcaY = xyz.Y() - collision.posY();
+  auto sign = TMath::Sign(1, dcaX * jet.px() + dcaY * jet.py() + track.dcaZ() * jet.pz());
+  if (sign < -1 || sign > 1)
+    LOGF(info, Form("Sign is %d", sign));
+  return sign;
+}
+
+void calculateDcaXYZ(float& dcaXYZ, float& sigmaDcaXYZ2, float dcaXY, float dcaZ, float cYY, float cZY, float cZZ, float sigmaDcaXY2, float sigmaDcaZ2)
+{
+  dcaXYZ = std::sqrt(dcaXY * dcaXY + dcaZ * dcaZ);
+  float dFdxy = 2 * dcaXY / dcaXYZ;
+  float dFdz = 2 * dcaZ / dcaXYZ;
+  sigmaDcaXYZ2 = std::abs(cYY * dFdxy * dFdxy + cZZ * dFdz * dFdz + 2 * cZY * dFdxy * dFdz);
+}
 }; // namespace jettaggingutilities
 
 #endif // PWGJE_CORE_JETTAGGINGUTILITIES_H_
