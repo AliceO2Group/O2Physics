@@ -45,7 +45,6 @@
 #include "PWGJE/DataModel/JetSubstructure.h"
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
 
 using namespace o2;
 using namespace o2::track;
