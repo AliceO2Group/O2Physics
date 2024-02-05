@@ -403,7 +403,7 @@ struct kinkAnalysis {
     TrackCand trForpool;
 
     std::array<std::vector<TrackCand>, 4> pools; // pools of positive and negative seeds sorted in min VtxID
-      std::vector<uint8_t> selected(tracks.size(), 0u);
+    std::vector<uint8_t> selected(tracks.size(), 0u);
     std::vector<uint64_t> globalBCvector;
 
     int index{0};
@@ -804,15 +804,15 @@ struct kinkAnalysis {
                 histos.fill(HIST("hHypMassPt"), mass, sigmaPt);
 
                 histos.fill(HIST("hNSigmaTrVsPt"), sigmaPt, trackDgh.tpcNSigmaTr());
-              if (isDaughter)
-                histos.fill(HIST("hHypMassMC"), mass);
-            }
-
-            if (((chargeM == -1) && (chargeD == -1)) || ((chargeM == 1) && (chargeD == 1))) {
-              if (cfgIsMC) {
-                histos.fill(HIST("hcodes"), motherPdg, daughterPdg);
+                if (isDaughter)
+                  histos.fill(HIST("hHypMassMC"), mass);
               }
-            }
+
+              if (((chargeM == -1) && (chargeD == -1)) || ((chargeM == 1) && (chargeD == 1))) {
+                if (cfgIsMC) {
+                  histos.fill(HIST("hcodes"), motherPdg, daughterPdg);
+                }
+              }
 
               if ((chargeM == -1) && (chargeD == -1)) {
                 if (cfgIsMC) {
@@ -823,7 +823,7 @@ struct kinkAnalysis {
                   } else if ((motherPdg == particlePdgCode || motherPdg == -3222) && (daughterPdg != -211)) {
                     histos.fill(HIST("hptMtrue"), sigmaPt, PionTr.getPt());
                     histos.fill(HIST("hPtMinusRecMcTrthM"), mass, sigmaPt);
-                  //} else if ((abs(motherPdg) == abs(particlePdgCode)) && particleName == Hypertriton) {
+                    //} else if ((abs(motherPdg) == abs(particlePdgCode)) && particleName == Hypertriton) {
                   } else if ((motherPdg == particlePdgCode || motherPdg == -1010010030) && (daughterPdg == -1000010030 || daughterPdg == 1000010030)) {
                     histos.fill(HIST("hpRes"), sigmaPt, (mcMotherPt - sigmaPt) / mcMotherPt);
                   }
