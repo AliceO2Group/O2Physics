@@ -126,7 +126,6 @@ struct DqCumulantFlow {
   Configurable<float> fConfigEtaLimitMin{"cfgEtaLimitMin", -0.4f, "Eta gap min separation, only if using subEvents"};
   Configurable<float> fConfigEtaLimitMax{"cfgEtaLimitMax", 0.4f, "Eta gap max separation, only if using subEvents"};
 
-
   Configurable<float> fConfigMuonCutEtaMin{"cfgCutEtaMinMuon", -4.f, "Eta min range for muons"};
   Configurable<float> fConfigMuonCutEtaMax{"cfgCutEtaMaxMuon", -2.5f, "Eta max range for muons"};
 
@@ -185,7 +184,6 @@ struct DqCumulantFlow {
   void init(o2::framework::InitContext& context)
   {
 
-
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(nolaterthan.value);
@@ -222,7 +220,6 @@ struct DqCumulantFlow {
     }
 
     VarManager::SetDefaultVarNames();
-
 
     // Reference flow
     TObjArray* oba = new TObjArray();
@@ -380,7 +377,6 @@ struct DqCumulantFlow {
   }
   void processDummy(MyEvents&)
   {
-
   }
 
   PROCESS_SWITCH(DqCumulantFlow, processSkimmed, "Run dilepton-hadron pairing, using skimmed data", false);
