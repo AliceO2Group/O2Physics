@@ -389,7 +389,7 @@ struct UpcCandProducer {
       if (!track.hasTOF() && closestBcITSTPC != std::numeric_limits<uint64_t>::max())
         trTime = (static_cast<int64_t>(globalBC) - static_cast<int64_t>(closestBcITSTPC)) * o2::constants::lhc::LHCBunchSpacingNS; // track time relative to TOF track
       udTracks(candID, track.px(), track.py(), track.pz(), track.sign(), globalBC, trTime, track.trackTimeRes());
-      udTracksExtra(track.tpcInnerParam(), track.itsClusterMap(), track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
+      udTracksExtra(track.tpcInnerParam(), track.itsClusterSizes(), track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
                     track.tpcNClsShared(), track.trdPattern(), track.itsChi2NCl(), track.tpcChi2NCl(), track.trdChi2(), track.tofChi2(),
                     track.tpcSignal(), track.tofSignal(), track.trdSignal(), track.length(), track.tofExpMom(), track.detectorMap());
       udTracksPID(track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),

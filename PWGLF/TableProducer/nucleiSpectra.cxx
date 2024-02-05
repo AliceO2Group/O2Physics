@@ -322,11 +322,11 @@ struct nucleiSpectra {
         nuclei::hGenNuclei[iS][iC] = spectra.add<TH2>(fmt::format("h{}Gen{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Generated {}", nuclei::names[iS]).data(), HistType::kTH2D, {centAxis, ptAxes[iS]});
         nuclei::hDeltaP[iC][iS] = spectra.add<TH2>(fmt::format("hDeltaP{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("#Delta#it{{p}}/#it{{p}} {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTH2D, {{232, 0.2, 6., "#it{{p}} (GeV/#it{{c}})"}, {200, -1.0, 1.0, "(#it{p}_{IU} - #it{p}_{TPC}) / #it{p}"}});
       }
-      if (doprocessDataFlow) {
-        spectra.add("hScalarProductFT0AvsFT0C", "", HistType::kTH2F, {ft0Aft0CspAxis, centAxis});
-        spectra.add("hScalarProductFV0AvsFT0C", "", HistType::kTH2F, {fv0Aft0CspAxis, centAxis});
-        spectra.add("hScalarProductFV0AvsFT0A", "", HistType::kTH2F, {fv0Aft0AspAxis, centAxis});
-      }
+    }
+    if (doprocessDataFlow) {
+      spectra.add("hScalarProductFT0AvsFT0C", "", HistType::kTH2F, {ft0Aft0CspAxis, centAxis});
+      spectra.add("hScalarProductFV0AvsFT0C", "", HistType::kTH2F, {fv0Aft0CspAxis, centAxis});
+      spectra.add("hScalarProductFV0AvsFT0A", "", HistType::kTH2F, {fv0Aft0AspAxis, centAxis});
     }
 
     for (int iS{0}; iS < nuclei::species; ++iS) {
@@ -379,7 +379,7 @@ struct nucleiSpectra {
       if (doprocessDataFlow) {
         spectra.fill(HIST("hScalarProductFT0AvsFT0C"), collision.qvecFT0ARe() * collision.qvecFT0CRe() + collision.qvecFT0AIm() * collision.qvecFT0CIm(), centrality);
         spectra.fill(HIST("hScalarProductFV0AvsFT0C"), collision.qvecFV0ARe() * collision.qvecFT0CRe() + collision.qvecFV0AIm() * collision.qvecFT0CIm(), centrality);
-        spectra.fill(HIST("hScalarProductFV0AvsFT0C"), collision.qvecFT0ARe() * collision.qvecFV0ARe() + collision.qvecFT0AIm() * collision.qvecFV0AIm(), centrality);
+        spectra.fill(HIST("hScalarProductFV0AvsFT0A"), collision.qvecFT0ARe() * collision.qvecFV0ARe() + collision.qvecFT0AIm() * collision.qvecFV0AIm(), centrality);
       }
     }
 
