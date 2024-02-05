@@ -340,6 +340,9 @@ struct kinkAnalysis {
     histos.add("hHypMassMC", "hHypMassMC", kTH1F, {hypAxisMass});
     histos.add("hHypMassPt", "hHypMassPt", kTH2F, {hypAxisMass, axisPtHyp});
 
+    histos.add("hNSigmaTrVsPt", "hNSigmaTrVsPt", kTH2F, {axisPt, {100, -5, 5, "nSigmaTPC"}});
+    histos.add("hpRes", "pRes", kTH2F, {axisPt, {100, -0.5, 0.5, "pRes"}});
+
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(cfgLUTpath));
     ft2.setMaxChi2(5);
     ft2.setUseAbsDCA(true);
@@ -401,7 +404,7 @@ struct kinkAnalysis {
     TrackCand trForpool;
 
     std::array<std::vector<TrackCand>, 4> pools; // pools of positive and negative seeds sorted in min VtxID
-
+cfgNsigmaTPCdaughter
     std::vector<uint8_t> selected(tracks.size(), 0u);
     std::vector<uint64_t> globalBCvector;
 
@@ -516,6 +519,7 @@ struct kinkAnalysis {
     const int poolCh1 = chargeM < 0 ? 1 : 0;
     const int poolCh2 = chargeD < 0 ? 1 : 0;
     int motherPdg = 999;
+    float mcMotherPt = 0;
     int daughterPdg = 777;
 
     switch (particleName) {
@@ -602,6 +606,7 @@ struct kinkAnalysis {
       if ((seedM.mcParticleIdx != -1) && partTable) {
         auto mcParticle = partTable->rawIteratorAt(seedM.mcParticleIdx);
         motherPdg = mcParticle.pdgCode();
+        mcMotherPt = mcParticle.pt();
       }
 
       if (trackM.has_collision()) {
@@ -666,7 +671,7 @@ struct kinkAnalysis {
             continue;
         }
         if (particleName == Hypertriton){
-          if (trackDgh.tpcNSigmaPr() > cfgNsigmaTPCdaughter)
+          if (trackDgh.tpcNSigmaTr() > cfgNsigmaTPCdaughter)
             continue;
         }
 
@@ -801,6 +806,10 @@ struct kinkAnalysis {
               histos.fill(HIST("hHypMass"), mass);
               histos.fill(HIST("hHypMassPt"), mass, sigmaPt);
 
+              histos.fill(HIST("hNSigmaTrVsPt"), sigmaPt, trackDgh.tpcNSigmaTr());
+              
+              }
+
               if(isDaughter)
                 histos.fill(HIST("hHypMassMC"), mass);
               }
@@ -820,10 +829,17 @@ struct kinkAnalysis {
                   } else if ((motherPdg == particlePdgCode || motherPdg == -3222) && (daughterPdg != -211)) {
                     histos.fill(HIST("hptMtrue"), sigmaPt, PionTr.getPt());
                     histos.fill(HIST("hPtMinusRecMcTrthM"), mass, sigmaPt);
-                  } else { // if ((motherPdg != particlePdgCode)&&(daughterPdg!=-211)) {
+                  } else if ((motherPdg == particlePdgCode) && particleName == Hypertriton){
+                    histos.fill(HIST("hpRes"), sigmaPt, (mcMotherPt - sigmaPt)/mcMotherPt);
+                  }
+                  
+                  else { // if ((motherPdg != particlePdgCode)&&(daughterPdg!=-211)) {
                     histos.fill(HIST("hptMDelse"), sigmaPt, PionTr.getPt());
                     histos.fill(HIST("hPtMinusRecMcTrthelse"), mass, sigmaPt);
                   }
+
+                
+                  
                 }
                 histos.fill(HIST("hMassMinusPt"), mass, sigmaPt);
               }
