@@ -72,10 +72,13 @@ struct CheckFilterBit {
   // Binning
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
   ConfigurableAxis binsEta{"binsEta", {30, -1.5, 1.5}, ""};
+  ConfigurableAxis binsLength{"binsLength", {VARIABLE_WIDTH, 0.0, 10., 20., 50., 80., 120., 160., 200., 240., 280., 320., 380, 420, 460., 500., 550}, ""};
   Configurable<float> zVtxCut{"zVtxCut", 10., "Primary Vtx z cut"};
   ConfigurableAxis binsPhi{"binsPhi", {180, 0., 2 * M_PI}, "Phi binning"};
   ConfigurableAxis binsTPCITSmatching{"binsTPCITSmatching", {2, 0.5, 2.5}, "ITSTPCmatching"};
-  ConfigurableAxis binsNclustTPC{"binsNclustTPC", {VARIABLE_WIDTH, -0.5, 0.5, 10, 50, 60, 70, 80, 90, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160}, ""};
+  ConfigurableAxis binsNclustTPC{"binsNclustTPC", {VARIABLE_WIDTH, -0.5, 0.5, 10, 30, 50, 60, 70, 80, 90, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160}, ""};
+  ConfigurableAxis binsRxy{"binsRxy", {VARIABLE_WIDTH, 0.0, 0.5, 1., 1.5, 2., 2.5, 3., 4., 10., 10., 20., 50., 80., 120., 160., 200., 240., 280., 320., 380, 420, 460., 500., 550}, ""};
+  ConfigurableAxis binsIsPropagaed{"binsIsPropaged", {2, -0.5, 1.5}, "isTrackWithinBeamPipe"};
 
   HistogramRegistry histos;
   Int_t ncollisionCounter = 0;
@@ -83,15 +86,15 @@ struct CheckFilterBit {
   using Tracksextension = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA>;
   using TracksextensionMC = soa::Join<Tracksextension, aod::McTrackLabels>;
   SliceCache cache;
-  Partition<Tracksextension> positiveTPConlyTracks = o2::aod::track::signed1Pt > fzero&& o2::aod::track::tpcNClsFindable > (uint8_t)0 && o2::aod::track::itsChi2NCl < (float_t)0;  //&& (o2::aod::track::detectorMap & o2::aod::track::TPC) ==o2::aod::track::TPC && (o2::aod::track::detectorMap & o2::aod::track::ITS) ==0;
-  Partition<Tracksextension> negativeTPConlyTracks = o2::aod::track::signed1Pt < fzero && o2::aod::track::tpcNClsFindable > (uint8_t)0 && o2::aod::track::itsChi2NCl < (float_t)0; //&& (o2::aod::track::detectorMap & o2::aod::track::TPC) ==o2::aod::track::TPC && (o2::aod::track::detectorMap & o2::aod::track::ITS) ==0;
-  Partition<Tracksextension> positiveITSonlyTracks = o2::aod::track::signed1Pt > fzero&& o2::aod::track::tpcChi2NCl<(float_t)0 && o2::aod::track::itsChi2NCl>(float_t) 0;          // && (o2::aod::track::detectorMap & o2::aod::track::TPC) ==0 && (o2::aod::track::detectorMap & o2::aod::track::ITS) ==o2::aod::track::ITS && o2::aod::track::passedITSNCls==true;// && o2::aod::track::itsNCls==7;
-  Partition<Tracksextension> negativeITSonlyTracks = o2::aod::track::signed1Pt < fzero && o2::aod::track::tpcChi2NCl < (float_t)0 && o2::aod::track::itsChi2NCl > (float_t)0;      // && (o2::aod::track::detectorMap & o2::aod::track::TPC)  ==0 &&(o2::aod::track::detectorMap & o2::aod::track::ITS) ==o2::aod::track::ITS && o2::aod::track::passedITSNCls==true;// && o2::aod::track::itsNCls==7;
+  Partition<Tracksextension> positiveTPConlyTracks = o2::aod::track::signed1Pt > fzero&& o2::aod::track::tpcNClsFindable > (uint8_t)0 && o2::aod::track::itsChi2NCl < (float_t)0 && o2::aod::track::trackType == (uint8_t)o2::aod::track::TrackTypeEnum::Track;  //&& (o2::aod::track::detectorMap & o2::aod::track::TPC) ==o2::aod::track::TPC && (o2::aod::track::detectorMap & o2::aod::track::ITS) ==0;
+  Partition<Tracksextension> negativeTPConlyTracks = o2::aod::track::signed1Pt < fzero && o2::aod::track::tpcNClsFindable > (uint8_t)0 && o2::aod::track::itsChi2NCl < (float_t)0 && o2::aod::track::trackType == (uint8_t)o2::aod::track::TrackTypeEnum::Track; //&& (o2::aod::track::detectorMap & o2::aod::track::TPC) ==o2::aod::track::TPC && (o2::aod::track::detectorMap & o2::aod::track::ITS) ==0;
+  Partition<Tracksextension> positiveITSonlyTracks = o2::aod::track::signed1Pt > fzero&& o2::aod::track::tpcChi2NCl<(float_t)0 && o2::aod::track::itsChi2NCl>(float_t) 0 && o2::aod::track::trackType == (uint8_t)o2::aod::track::TrackTypeEnum::Track;          // && (o2::aod::track::detectorMap & o2::aod::track::TPC) ==0 && (o2::aod::track::detectorMap & o2::aod::track::ITS) ==o2::aod::track::ITS && o2::aod::track::passedITSNCls==true;// && o2::aod::track::itsNCls==7;
+  Partition<Tracksextension> negativeITSonlyTracks = o2::aod::track::signed1Pt < fzero && o2::aod::track::tpcChi2NCl < (float_t)0 && o2::aod::track::itsChi2NCl > (float_t)0 && o2::aod::track::trackType == (uint8_t)o2::aod::track::TrackTypeEnum::Track;      // && (o2::aod::track::detectorMap & o2::aod::track::TPC)  ==0 &&(o2::aod::track::detectorMap & o2::aod::track::ITS) ==o2::aod::track::ITS && o2::aod::track::passedITSNCls==true;// && o2::aod::track::itsNCls==7;
 
-  Partition<TracksextensionMC> positiveTPConlyTracksMC = o2::aod::track::signed1Pt > fzero&& o2::aod::track::tpcNClsFindable > (uint8_t)0 && o2::aod::track::itsChi2NCl < (float_t)0;  //&& (o2::aod::track::detectorMap & o2::aod::track::TPC) ==o2::aod::track::TPC && (o2::aod::track::detectorMap & o2::aod::track::ITS) ==0;
-  Partition<TracksextensionMC> negativeTPConlyTracksMC = o2::aod::track::signed1Pt < fzero && o2::aod::track::tpcNClsFindable > (uint8_t)0 && o2::aod::track::itsChi2NCl < (float_t)0; //&& (o2::aod::track::detectorMap & o2::aod::track::TPC) ==o2::aod::track::TPC && (o2::aod::track::detectorMap & o2::aod::track::ITS) ==0;
-  Partition<TracksextensionMC> positiveITSonlyTracksMC = o2::aod::track::signed1Pt > fzero&& o2::aod::track::tpcChi2NCl<(float_t)0 && o2::aod::track::itsChi2NCl>(float_t) 0;          // && (o2::aod::track::detectorMap & o2::aod::track::TPC) ==0 && (o2::aod::track::detectorMap & o2::aod::track::ITS) ==o2::aod::track::ITS && o2::aod::track::passedITSNCls==true;// && o2::aod::track::itsNCls==7;
-  Partition<TracksextensionMC> negativeITSonlyTracksMC = o2::aod::track::signed1Pt < fzero && o2::aod::track::tpcChi2NCl < (float_t)0 && o2::aod::track::itsChi2NCl > (float_t)0;      // && (o2::aod::track::detectorMap & o2::aod::track::TPC)  ==0 &&(o2::aod::track::detectorMap & o2::aod::track::ITS) ==o2::aod::track::ITS && o2::aod::track::passedITSNCls==true;// && o2::aod::track::itsNCls==7;
+  Partition<TracksextensionMC> positiveTPConlyTracksMC = o2::aod::track::signed1Pt > fzero&& o2::aod::track::tpcNClsFindable > (uint8_t)0 && o2::aod::track::itsChi2NCl < (float_t)0 && o2::aod::track::trackType == (uint8_t)o2::aod::track::TrackTypeEnum::Track;  //&& (o2::aod::track::detectorMap & o2::aod::track::TPC) ==o2::aod::track::TPC && (o2::aod::track::detectorMap & o2::aod::track::ITS) ==0;
+  Partition<TracksextensionMC> negativeTPConlyTracksMC = o2::aod::track::signed1Pt < fzero && o2::aod::track::tpcNClsFindable > (uint8_t)0 && o2::aod::track::itsChi2NCl < (float_t)0 && o2::aod::track::trackType == (uint8_t)o2::aod::track::TrackTypeEnum::Track; //&& (o2::aod::track::detectorMap & o2::aod::track::TPC) ==o2::aod::track::TPC && (o2::aod::track::detectorMap & o2::aod::track::ITS) ==0;
+  Partition<TracksextensionMC> positiveITSonlyTracksMC = o2::aod::track::signed1Pt > fzero&& o2::aod::track::tpcChi2NCl<(float_t)0 && o2::aod::track::itsChi2NCl>(float_t) 0 && o2::aod::track::trackType == (uint8_t)o2::aod::track::TrackTypeEnum::Track;          // && (o2::aod::track::detectorMap & o2::aod::track::TPC) ==0 && (o2::aod::track::detectorMap & o2::aod::track::ITS) ==o2::aod::track::ITS && o2::aod::track::passedITSNCls==true;// && o2::aod::track::itsNCls==7;
+  Partition<TracksextensionMC> negativeITSonlyTracksMC = o2::aod::track::signed1Pt < fzero && o2::aod::track::tpcChi2NCl < (float_t)0 && o2::aod::track::itsChi2NCl > (float_t)0 && o2::aod::track::trackType == (uint8_t)o2::aod::track::TrackTypeEnum::Track;      // && (o2::aod::track::detectorMap & o2::aod::track::TPC)  ==0 &&(o2::aod::track::detectorMap & o2::aod::track::ITS) ==o2::aod::track::ITS && o2::aod::track::passedITSNCls==true;// && o2::aod::track::itsNCls==7;
 
   void init(InitContext const&)
   {
@@ -101,7 +104,9 @@ struct CheckFilterBit {
     const AxisSpec axisPhi{binsPhi, "#it{#varphi}"};
     const AxisSpec axisNclustTPC{binsNclustTPC, "NclustTPC"};
     const AxisSpec axisTPCITSmatching{binsNclustTPC, "NclustTPC"};
-
+    const AxisSpec axisLength{binsLength, "track length (cm)"};
+    const AxisSpec axisRxy{binsRxy, "track Rxy (cm)"};
+    const AxisSpec axisIsPropagated{binsIsPropagaed, "is track within BP"};
     histos.add("EventProp/histMCcollZ", "MC coll Z (cm); #it{z_{MCcoll}} (cm)", kTH1D, {{100, -20., 20.}});
     histos.add("EventProp/histDatacollZ", "MC coll Z (cm); #it{z_{MCcoll}} (cm)", kTH1D, {{100, -20., 20.}});
     histos.add("EventProp/histPtTrackNegCollID", "pt", kTH1D, {axisPt});
@@ -116,6 +121,8 @@ struct CheckFilterBit {
     histos.add("Tracks/Reco/histpt3DFB5", "FB5 tracks;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/Reco/histpt3DITSonly", "ITSonly tracks;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
     histos.add("Tracks/Reco/histpt3DTPConly", "TPConly tracks;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
+    histos.add("Tracks/Reco/histpt3DTPConlyPtLengthRadiusNclust", "TPConly PtLengthRadiusNclust;#it{p}_{T} (GeV/#it{c});length (cm);Rx,y (cm);nclust;isPropagated", HistType::kTHnF, {axisPt, axisLength, axisRxy, axisNclustTPC, axisIsPropagated});
+    histos.add("Tracks/Reco/histpt3DFB0PtLengthRadiusNclust", "TPConly PtLengthRadiusNclust;#it{p}_{T} (GeV/#it{c});length (cm);Rx,y (cm);nclust;isPropagated", HistType::kTHnF, {axisPt, axisLength, axisRxy, axisNclustTPC, axisIsPropagated});
 
     histos.add("Tracks/MCgen/histMCgenpt", "pt", kTH1D, {axisPt});
     histos.add("Tracks/MCgen/histMCgen3dPhysPrimary", "MC Phys. Prim.;#it{p}_{T} (GeV/#it{c});#it{#eta};#it{#varphi}", kTH3D, {axisPt, axisEta, axisPhi});
@@ -187,8 +194,10 @@ struct CheckFilterBit {
     if (track.itsNClsInnerBarrel() > 0)
       hasITS++;
     histos.fill(HIST("Tracks/Reco/histNclustTPC"), track.pt(), track.eta(), track.phi(), track.tpcNClsFound(), hasITS);
-    if (track.isGlobalTrack())
+    if (track.isGlobalTrack()) {
       histos.fill(HIST("Tracks/Reco/histpt3DFB0"), track.pt(), track.eta(), track.phi());
+      histos.fill(HIST("Tracks/Reco/histpt3DFB0PtLengthRadiusNclust"), track.pt(), track.length(), std::sqrt(track.x() * track.x() + track.y() * track.y()), track.tpcNClsFound(), track.isWithinBeamPipe() ? 1 : 0);
+    }
     if (track.trackCutFlagFb1())
       histos.fill(HIST("Tracks/Reco/histpt3DFB1"), track.pt(), track.eta(), track.phi());
     if (track.trackCutFlagFb2())
@@ -203,6 +212,10 @@ struct CheckFilterBit {
       histos.fill(HIST("Tracks/Reco/histpt3DITSonly"), track.pt(), track.eta(), track.phi());
     if (track.itsChi2NCl() < 0. && track.tpcChi2NCl() > 0.)
       histos.fill(HIST("Tracks/Reco/histpt3DTPConly"), track.pt(), track.eta(), track.phi());
+    if (std::abs(track.eta()) < 0.8) {
+      histos.fill(HIST("Tracks/Reco/histpt3DTPConlyPtLengthRadiusNclust"), track.pt(), track.length(), std::sqrt(track.x() * track.x() + track.y() * track.y()), track.tpcNClsFound(), track.isWithinBeamPipe() ? 1 : 0);
+      // Printf("track length %f, radius %f, isPropagated %d, tracktype %d",track.length(),std::sqrt(track.x()*track.x()+track.y()*track.y()),track.isWithinBeamPipe()?1:0,track.trackType());
+    }
   }
 
   void processData(Tracksextension const& tracks)
