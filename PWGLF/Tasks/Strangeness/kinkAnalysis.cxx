@@ -339,8 +339,8 @@ struct kinkAnalysis {
     histos.add("hHypMassMC", "hHypMassMC", kTH1F, {hypAxisMass});
     histos.add("hHypMassPt", "hHypMassPt", kTH2F, {hypAxisMass, axisPtHyp});
 
-    histos.add("hNSigmaTrVsPt", "hNSigmaTrVsPt", kTH2F, {axisPt, {100, -5, 5, "nSigmaTPC"}});
-    histos.add("hpRes", "pRes", kTH2F, {axisPt, {100, -0.5, 0.5, "pRes"}});
+    histos.add("hNSigmaTrVsPt", "hNSigmaTrVsPt", kTH2F, {axisPtHyp, {100, -5, 5, "nSigmaTPC"}});
+    histos.add("hpRes", "hpRes", kTH2F, {axisPtHyp, {100, -0.5, 0.5, "p_{T} Res"}});
 
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(cfgLUTpath));
     ft2.setMaxChi2(5);
@@ -823,7 +823,8 @@ struct kinkAnalysis {
                   } else if ((motherPdg == particlePdgCode || motherPdg == -3222) && (daughterPdg != -211)) {
                     histos.fill(HIST("hptMtrue"), sigmaPt, PionTr.getPt());
                     histos.fill(HIST("hPtMinusRecMcTrthM"), mass, sigmaPt);
-                  } else if ((motherPdg == particlePdgCode) && particleName == Hypertriton) {
+                  //} else if ((abs(motherPdg) == abs(particlePdgCode)) && particleName == Hypertriton) {
+                  } else if ((motherPdg == particlePdgCode || motherPdg == -1010010030) && (daughterPdg == -1000010030 || daughterPdg == 1000010030)) {
                     histos.fill(HIST("hpRes"), sigmaPt, (mcMotherPt - sigmaPt) / mcMotherPt);
                   }
 
