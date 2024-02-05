@@ -133,12 +133,13 @@ struct hypertriton3bodyAnalysis {
   Configurable<double> vtxcospa{"vtxcospa", 0.99, "Vtx CosPA"};         // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcavtxdau{"dcavtxdau", 1.0, "DCA Vtx Daughters"}; // loose cut
   Configurable<float> dcapiontopv{"dcapiontopv", .00, "DCA Pion To PV"};
-  Configurable<float> etacut{"etacut", 1, "etacut"};
+  Configurable<float> etacut{"etacut", 0.9, "etacut"};
   Configurable<float> rapiditycut{"rapiditycut", 1, "rapiditycut"};
-  Configurable<float> TofPidNsigmaMin{"TofPidNsigmaMin", -4, "TofPidNsigmaMin"};
-  Configurable<float> TofPidNsigmaMax{"TofPidNsigmaMax", 4, "TofPidNsigmaMax"};
+  Configurable<float> TofPidNsigmaMin{"TofPidNsigmaMin", -5, "TofPidNsigmaMin"};
+  Configurable<float> TofPidNsigmaMax{"TofPidNsigmaMax", 5, "TofPidNsigmaMax"};
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
   Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
+  Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
   Configurable<float> lifetimecut{"lifetimecut", 40., "lifetimecut"}; // ct
   Configurable<float> minProtonPt{"minProtonPt", 0.3, "minProtonPt"};
   Configurable<float> maxProtonPt{"maxProtonPt", 5, "maxProtonPt"};
@@ -158,7 +159,7 @@ struct hypertriton3bodyAnalysis {
   HistogramRegistry registry{
     "registry",
     {
-      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
+      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
       {"hCandidatesCounter", "hCandidatesCounter", {HistType::kTH1F, {{12, 0.0f, 12.0f}}}},
       {"hMassHypertriton", "hMassHypertriton", {HistType::kTH1F, {{80, 2.96f, 3.04f}}}},
       {"hMassAntiHypertriton", "hMassAntiHypertriton", {HistType::kTH1F, {{80, 2.96f, 3.04f}}}},
@@ -266,6 +267,10 @@ struct hypertriton3bodyAnalysis {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/c)"};
     AxisSpec massAxisHypertriton = {80, 2.96f, 3.04f, "Inv. Mass (GeV/c^{2})"};
 
+    registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(1, "total");
+    registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(2, "sel8");
+    registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(3, "vertexZ");
+    registry.get<TH1>(HIST("hEventCounter"))->GetXaxis()->SetBinLabel(4, "has Candidate");
     if (saveDcaHist == 1) {
       registry.add("h3dMassHypertritonDca", "h3dMassHypertritonDca", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisHypertriton}});
       registry.add("h3dMassAntiHypertritonDca", "h3dMassAntiHypertritonDca", {HistType::kTH3F, {dcaAxis, ptAxis, massAxisHypertriton}});
@@ -484,6 +489,10 @@ struct hypertriton3bodyAnalysis {
       return;
     }
     registry.fill(HIST("hEventCounter"), 1.5);
+    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+      return;
+    }
+    registry.fill(HIST("hEventCounter"), 2.5);
 
     bool if_hasvtx = false;
 
@@ -492,7 +501,7 @@ struct hypertriton3bodyAnalysis {
     }
 
     if (if_hasvtx)
-      registry.fill(HIST("hEventCounter"), 2.5);
+      registry.fill(HIST("hEventCounter"), 3.5);
     fillHistos();
     resetHistos();
   }
@@ -510,6 +519,10 @@ struct hypertriton3bodyAnalysis {
         continue;
       }
       registry.fill(HIST("hEventCounter"), 1.5);
+      if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+        return;
+      }
+      registry.fill(HIST("hEventCounter"), 2.5);
 
       bool if_hasvtx = false;
       auto vtxsthiscol = vtx3bodydatas.sliceBy(perCollisionVtx3BodyDatas, collision.globalIndex());
@@ -551,7 +564,7 @@ struct hypertriton3bodyAnalysis {
       }
 
       if (if_hasvtx)
-        registry.fill(HIST("hEventCounter"), 2.5);
+        registry.fill(HIST("hEventCounter"), 3.5);
       fillHistos();
       resetHistos();
     }
@@ -579,6 +592,7 @@ struct hypertriton3bodyLabelCheck {
   }
 
   Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
+  Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
   {
@@ -589,6 +603,10 @@ struct hypertriton3bodyLabelCheck {
   void processCheckLabel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::Vtx3BodyDatas, aod::McVtx3BodyLabels> const& vtx3bodydatas, MCLabeledFullTracksExtIU const& tracks, aod::McParticles const& particlesMC)
   {
     if (event_sel8_selection && !collision.sel8()) {
+      return;
+    }
+
+    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
       return;
     }
 

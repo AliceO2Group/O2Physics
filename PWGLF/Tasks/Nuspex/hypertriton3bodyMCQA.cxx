@@ -105,7 +105,7 @@ struct hypertriton3bodyTrackMcinfo {
   HistogramRegistry registry{
     "registry",
     {
-      {"hTotalCollCounter", "hTotalCollCounter", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
+      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
       {"hParticleCount", "hParticleCount", {HistType::kTH1F, {{7, 0.0f, 7.0f}}}},
 
       {"hTPCNClsCrossedRows", "hTPCNClsCrossedRows", {HistType::kTH1F, {{240, 0.0f, 240.0f}}}},
@@ -208,6 +208,7 @@ struct hypertriton3bodyTrackMcinfo {
   Configurable<float> minDeuteronPt{"minDeuteronPt", 0.6, "minDeuteronPt"};
   Configurable<float> maxDeuteronPt{"maxDeuteronPt", 10, "maxDeuteronPt"};
   Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
+  Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
 
   struct Indexdaughters { // check duplicated paired daughters
     int64_t index0;
@@ -222,11 +223,15 @@ struct hypertriton3bodyTrackMcinfo {
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::McParticles const& particlesMC, MCLabeledFullTracksExtIU const& tracks)
   {
 
-    registry.fill(HIST("hTotalCollCounter"), 0.5);
+    registry.fill(HIST("hEventCounter"), 0.5);
     if (event_sel8_selection && !collision.sel8()) {
       return;
     }
-    registry.fill(HIST("hTotalCollCounter"), 1.5);
+    registry.fill(HIST("hEventCounter"), 1.5);
+    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+      return;
+    }
+    registry.fill(HIST("hEventCounter"), 2.5);
 
     std::vector<int> protons, pions, deuterons;                     // index for daughter tracks
     std::unordered_set<int64_t> set_proton, set_pion, set_deuteron; // check duplicated daughters
@@ -513,6 +518,7 @@ struct hypertriton3bodyMcParticleCount {
 
   Configurable<float> rapidityMCcut{"rapidityMCcut", 1, "rapidity cut MC count"};
   Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
+  Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
 
   void process(aod::McCollision const& mcCollision, aod::McParticles const& particlesMC, const soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>& collisions)
   {
@@ -520,6 +526,9 @@ struct hypertriton3bodyMcParticleCount {
     int nevts = 0;
     for (const auto& collision : collisions) {
       if (event_sel8_selection && !collision.sel8()) {
+        continue;
+      }
+      if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
         continue;
       }
       SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();

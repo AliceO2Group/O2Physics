@@ -411,6 +411,9 @@ class VarManager : public TObject
     kDCATrackVtxProd,
     kU2Q2,
     kU3Q3,
+    kPsi2A,
+    kPsi2B,
+    kPsi2C,
     kCos2DeltaPhi,
     kCos3DeltaPhi,
     kNPairVariables,
@@ -618,6 +621,8 @@ class VarManager : public TObject
     return (1.0 / harm) * TMath::ATan(qnya / qnxa);
   };
 
+  template <typename T, typename C>
+  static o2::dataformats::GlobalFwdTrack PropagateMuon(const T& muon, const C& collision);
   template <uint32_t fillMap, typename T, typename C>
   static void FillPropagateMuon(const T& muon, const C& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T>
@@ -626,6 +631,8 @@ class VarManager : public TObject
   static void FillTrack(T const& track, float* values = nullptr);
   template <typename U, typename T>
   static void FillTrackMC(const U& mcStack, T const& track, float* values = nullptr);
+  template <uint32_t fillMap, typename T1, typename T2, typename C>
+  static void FillPairPropagateMuon(T1 const& muon1, T2 const& muon2, const C& collision, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename T1, typename T2>
   static void FillPair(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
@@ -806,6 +813,43 @@ KFPVertex VarManager::createKFPVertexFromCollision(const T& collision)
   return kfpVertex;
 }
 
+template <typename T, typename C>
+o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C& collision)
+{
+  double chi2 = muon.chi2();
+  SMatrix5 tpars(muon.x(), muon.y(), muon.phi(), muon.tgl(), muon.signed1Pt());
+  std::vector<double> v1{muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(),
+                         muon.cPhiPhi(), muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(),
+                         muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
+  SMatrix55 tcovs(v1.begin(), v1.end());
+  o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
+  o2::dataformats::GlobalFwdTrack propmuon;
+  if (static_cast<int>(muon.trackType()) > 2) {
+    o2::dataformats::GlobalFwdTrack track;
+    track.setParameters(tpars);
+    track.setZ(fwdtrack.getZ());
+    track.setCovariances(tcovs);
+    auto mchTrack = mMatching.FwdtoMCH(track);
+    o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
+    auto proptrack = mMatching.MCHtoFwd(mchTrack);
+    propmuon.setParameters(proptrack.getParameters());
+    propmuon.setZ(proptrack.getZ());
+    propmuon.setCovariances(proptrack.getCovariances());
+
+  } else if (static_cast<int>(muon.trackType()) < 2) {
+    double centerMFT[3] = {0, 0, -61.4};
+    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    auto Bz = field->getBz(centerMFT); // Get field at centre of MFT
+    auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), collision.posX(), collision.posY(), collision.posZ());
+    auto x2x0 = static_cast<float>(geoMan.meanX2X0);
+    fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);
+    propmuon.setParameters(fwdtrack.getParameters());
+    propmuon.setZ(fwdtrack.getZ());
+    propmuon.setCovariances(fwdtrack.getCovariances());
+  }
+  return propmuon;
+}
+
 template <uint32_t fillMap, typename T, typename C>
 void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* values)
 {
@@ -813,37 +857,7 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
     values = fgValues;
   }
   if constexpr ((fillMap & MuonCov) > 0) {
-    double chi2 = muon.chi2();
-    SMatrix5 tpars(muon.x(), muon.y(), muon.phi(), muon.tgl(), muon.signed1Pt());
-    std::vector<double> v1{muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(),
-                           muon.cPhiPhi(), muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(),
-                           muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
-    SMatrix55 tcovs(v1.begin(), v1.end());
-    o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
-    o2::dataformats::GlobalFwdTrack propmuon;
-    if (static_cast<int>(muon.trackType()) > 2) {
-      o2::dataformats::GlobalFwdTrack track;
-      track.setParameters(tpars);
-      track.setZ(fwdtrack.getZ());
-      track.setCovariances(tcovs);
-      auto mchTrack = mMatching.FwdtoMCH(track);
-      o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
-      auto proptrack = mMatching.MCHtoFwd(mchTrack);
-      propmuon.setParameters(proptrack.getParameters());
-      propmuon.setZ(proptrack.getZ());
-      propmuon.setCovariances(proptrack.getCovariances());
-
-    } else if (static_cast<int>(muon.trackType()) < 2) {
-      double x[3] = {0., 0., 0.};
-      double b[3] = {0., 0., 0.};
-      TGeoGlobalMagField::Instance()->Field(x, b);
-      auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), collision.posX(), collision.posY(), collision.posZ());
-      auto x2x0 = static_cast<float>(geoMan.meanX2X0);
-      fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, b[2], x2x0);
-      propmuon.setParameters(fwdtrack.getParameters());
-      propmuon.setZ(fwdtrack.getZ());
-      propmuon.setCovariances(fwdtrack.getCovariances());
-    }
+    o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muon, collision);
     values[kPt] = propmuon.getPt();
     values[kX] = propmuon.getX();
     values[kY] = propmuon.getY();
@@ -1051,6 +1065,9 @@ void VarManager::FillEvent(T const& event, float* values)
     if (event.q3y0b() * event.q3y0c() != 0.0) {
       values[kR3EP] = TMath::Cos(3 * (getEventPlane(3, event.q3x0b(), event.q3y0b()) - getEventPlane(3, event.q3x0c(), event.q3y0c())));
     }
+    values[kPsi2A] = getEventPlane(2, event.q2x0a(), event.q2y0a());
+    values[kPsi2B] = getEventPlane(2, event.q2x0b(), event.q2y0b());
+    values[kPsi2C] = getEventPlane(2, event.q2x0c(), event.q2y0c());
   }
 
   if constexpr ((fillMap & CollisionMC) > 0) {
@@ -1501,6 +1518,31 @@ void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
   }
 
   FillTrackDerived(values);
+}
+
+template <uint32_t fillMap, typename T1, typename T2, typename C>
+void VarManager::FillPairPropagateMuon(T1 const& muon1, T2 const& muon2, const C& collision, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+  o2::dataformats::GlobalFwdTrack propmuon1 = PropagateMuon(muon1, collision);
+  o2::dataformats::GlobalFwdTrack propmuon2 = PropagateMuon(muon2, collision);
+
+  float m = o2::constants::physics::MassMuon;
+
+  ROOT::Math::PtEtaPhiMVector v1(propmuon1.getPt(), propmuon1.getEta(), propmuon1.getPhi(), m);
+  ROOT::Math::PtEtaPhiMVector v2(propmuon2.getPt(), propmuon2.getEta(), propmuon2.getPhi(), m);
+  ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+  values[kMass] = v12.M();
+  values[kPt] = v12.Pt();
+  values[kEta] = v12.Eta();
+  values[kPhi] = v12.Phi();
+  values[kRap] = -v12.Rapidity();
+
+  double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
+  double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
+  values[kDeltaPtotTracks] = Ptot1 - Ptot2;
 }
 
 template <int pairType, uint32_t fillMap, typename T1, typename T2>
@@ -2414,6 +2456,7 @@ void VarManager::FillQVectorFromGFW(C const& collision, A const& compA2, A const
 
   // TODO: provide different computations for R
   // Compute the R factor using the 2 sub-events technique for second and third harmonic
+  // Compute event planes
   auto Psi2B = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
   auto Psi3B = getEventPlane(3, values[kQ3X0B], values[kQ3Y0B]);
   auto Psi2C = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
@@ -2426,6 +2469,9 @@ void VarManager::FillQVectorFromGFW(C const& collision, A const& compA2, A const
   if (values[kQ3Y0B] * values[kQ3Y0C] != 0.0) {
     values[kR3EP] = TMath::Cos(3 * (Psi3B - Psi3C));
   }
+  values[kPsi2A] = getEventPlane(2, values[kQ2X0A], values[kQ2Y0A]);
+  values[kPsi2B] = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
+  values[kPsi2C] = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
 }
 
 template <int pairType, typename T1, typename T2>
@@ -2469,6 +2515,9 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kU3Q3] = -999.;
     values[kCos2DeltaPhi] = -999.;
     values[kCos3DeltaPhi] = -999.;
+    values[kPsi2A] = -999.;
+    values[kPsi2B] = -999.;
+    values[kPsi2C] = -999.;
   }
 }
 

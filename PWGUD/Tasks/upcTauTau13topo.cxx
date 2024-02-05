@@ -336,7 +336,7 @@ struct TauTau13topo {
 
     registry.get<TH1>(HIST("global/hNTracksPV"))->Fill(PVContributors.size());
 
-    UChar_t clustermap1;
+    uint32_t clusterSizes;
     int nTofTrk = 0;
     int nEtaIn15 = 0;
     int nITSbits = 0;
@@ -351,11 +351,11 @@ struct TauTau13topo {
       registry.get<TH2>(HIST("global/hTrackEtaPhiPV"))->Fill(p.Eta(), p.Phi());
       nITSbits = -1;
       if (trk.hasITS()) { // ITS track
-        clustermap1 = trk.itsClusterMap();
-        for (int bitNo = 0; bitNo < 7; bitNo++) {
-          if (TESTBIT(clustermap1, bitNo)) { // check ITS bits/layers for each PV track
-            registry.get<TH1>(HIST("global/hITSbitPVtrk"))->Fill(bitNo, 1.);
-            registry.get<TH2>(HIST("global/hITSbitVsEtaPVtrk"))->Fill(p.Eta(), bitNo, 1.);
+        clusterSizes = trk.itsClusterSizes();
+        for (int layer = 0; layer < 7; layer++) {
+          if ((clusterSizes >> (layer * 4)) & 0xf) {
+            registry.get<TH1>(HIST("global/hITSbitPVtrk"))->Fill(layer, 1.);
+            registry.get<TH2>(HIST("global/hITSbitVsEtaPVtrk"))->Fill(p.Eta(), layer, 1.);
             nITSbits++;
           }
         } // end of loop over ITS bits

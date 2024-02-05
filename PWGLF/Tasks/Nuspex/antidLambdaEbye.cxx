@@ -166,7 +166,7 @@ struct antidLambdaEbye {
 
     histos.add<TH1>("zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
 
-    histos.add<TH1>("nEv", ";#it{N}_{ev};Entries", {HistType::kTH1D}, {centAxis});
+    histos.add<TH1>("nEv", ";Centrality (%);Entries", {HistType::kTH1D}, {centAxis});
 
     histos.add<TH1>("q1antid", ";Centrality (%);#it{q}_{1}(#bar{d})", {HistType::kTH1D}, {centAxis});
     histos.add<TH1>("q1sqantid", ";Centrality (%);#it{q}_{1}^{2}(#bar{d})", {HistType::kTH1D}, {centAxis});
@@ -180,6 +180,7 @@ struct antidLambdaEbye {
     histos.add<TH1>("q1sqL", ";Centrality (%);#it{q}_{1}^{2}(#Lambda)", {HistType::kTH1D}, {centAxis});
     histos.add<TH1>("q2L", ";Centrality (%);#it{q}_{2}(#Lambda)", {HistType::kTH1D}, {centAxis});
 
+    histos.add<TH1>("q11LantiL", ";Centrality (%);#it{q}_{11}(#Lambda, #bar{#Lambda})", {HistType::kTH1D}, {centAxis});
     histos.add<TH1>("q11Lantid", ";Centrality (%);#it{q}_{11}(#Lambda, #bar{d})", {HistType::kTH1D}, {centAxis});
     histos.add<TH1>("q11antiLantid", ";Centrality (%);#it{q}_{11}(#bar{#Lambda}, #bar{d})", {HistType::kTH1D}, {centAxis});
 
@@ -387,6 +388,7 @@ struct antidLambdaEbye {
     histos.fill(HIST("q1sqantiL"), collision.centFT0C(), std::pow(q1antiL, 2));
     histos.fill(HIST("q2antiL"), collision.centFT0C(), q2antiL);
 
+    histos.fill(HIST("q11LantiL"), collision.centFT0C(), q1L * q1antiL);
     histos.fill(HIST("q11Lantid"), collision.centFT0C(), q1L * q1antid);
     histos.fill(HIST("q11antiLantid"), collision.centFT0C(), q1antiL * q1antid);
   }
