@@ -204,11 +204,10 @@ float EventPlaneHelper::GetEventPlane(const float qx, const float qy, int nmode)
   return (1. / nmode) * (TMath::ATan2(qy, qx));
 }
 
-float EventPlaneHelper::GetResolution(const float RefA, const float RefB, const float sig, int nmode)
+float EventPlaneHelper::GetResolution(const float RefA, const float RefB, int nmode)
 {
-  if (std::abs(std::cos((RefA - RefB) * nmode)) > 1e-8) {
-    return std::sqrt(std::cos((sig - RefA) * nmode) * std::cos((sig - RefB) * nmode) / std::cos((RefA - RefB) * nmode));
-  } else {
-    return -1;
+  if (std::cos((RefA - RefB) * nmode) > 0) {
+    return std::sqrt(std::cos((RefA - RefB) * nmode));
   }
+  return -999.;
 }
