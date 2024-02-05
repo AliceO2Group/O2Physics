@@ -13,9 +13,12 @@
 /// \brief Tasks creates bitmasks for femtodream collisions
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
+#include <cstdint>
 #include <vector>
 #include <bitset>
 #include <algorithm>
+#include <random>
+#include <chrono>
 
 #include "fairlogger/Logger.h"
 #include "Framework/Configurable.h"
@@ -49,6 +52,13 @@ enum Tasks {
 
 struct femoDreamCollisionMasker {
   Produces<FDColMasks> Masks;
+  Produces<FDDownSample> DownSample;
+
+  // configurable for downsampling
+  Configurable<float> ConfDownsampling{"ConfDownsampling", -1., "Fraction of events to be used in mixed event sample. Factor should be between 0 and 1. Deactivate with negative value"};
+  Configurable<uint64_t> ConfSeed{"ConfSeed", 0, "Seed for downsampling. Set to 0 for using a seed unique in time."};
+
+  std::mt19937* rng = nullptr;
 
   // particle selection bits
   std::array<std::vector<femtodreamparticle::cutContainerType>, CollisionMasks::kNParts> TrackCutBits;
@@ -84,6 +94,18 @@ struct femoDreamCollisionMasker {
 
   void init(InitContext& context)
   {
+
+    // seed rng for downsampling
+    if (ConfDownsampling.value > 0) {
+      uint64_t randomSeed = 0;
+      if (ConfSeed.value == 0) {
+        randomSeed = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+      } else {
+        randomSeed = ConfSeed.value;
+      }
+      rng = new std::mt19937(randomSeed);
+    }
+
     std::vector<std::string> MatchedWorkflows;
     LOG(info) << "*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*";
     LOG(info) << " Collision masker self-configuration ";
@@ -338,6 +360,15 @@ struct femoDreamCollisionMasker {
     Masks(static_cast<femtodreamcollision::BitMaskType>(Mask.at(CollisionMasks::kPartOne).to_ulong()),
           static_cast<femtodreamcollision::BitMaskType>(Mask.at(CollisionMasks::kPartTwo).to_ulong()),
           static_cast<femtodreamcollision::BitMaskType>(Mask.at(CollisionMasks::kPartThree).to_ulong()));
+
+    bool UseInMixedEvent = true;
+    std::uniform_real_distribution<> dist(0, 1);
+
+    if (ConfDownsampling.value > 0 && (1 - dist(*rng)) > ConfDownsampling.value) {
+      UseInMixedEvent = false;
+    }
+
+    DownSample(UseInMixedEvent);
   };
 };
 

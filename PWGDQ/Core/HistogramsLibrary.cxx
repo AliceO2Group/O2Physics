@@ -151,6 +151,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Q2Y0A_CentFT0C", "", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 100, -1.0, 1.0, VarManager::kQ2Y0A);
       hm->AddHistogram(histClass, "Q3X0A_CentFT0C", "", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 100, -1.0, 1.0, VarManager::kQ3X0A);
       hm->AddHistogram(histClass, "Q3Y0A_CentFT0C", "", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 100, -1.0, 1.0, VarManager::kQ3Y0A);
+      hm->AddHistogram(histClass, "Psi2A", "", false, 100, -2.0, 2.0, VarManager::kPsi2A);
+      hm->AddHistogram(histClass, "Psi2B", "", false, 100, -2.0, 2.0, VarManager::kPsi2B);
+      hm->AddHistogram(histClass, "Psi2C", "", false, 100, -2.0, 2.0, VarManager::kPsi2C);
+      hm->AddHistogram(histClass, "Psi2A_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 100, -2.0, 2.0, VarManager::kPsi2A);
+      hm->AddHistogram(histClass, "Psi2B_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 100, -2.0, 2.0, VarManager::kPsi2B);
+      hm->AddHistogram(histClass, "Psi2C_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 100, -2.0, 2.0, VarManager::kPsi2C);
     }
     if (subGroupStr.Contains("res")) {
       hm->AddHistogram(histClass, "R2SP_CentV0M", "", true, 9, 0.0, 90.0, VarManager::kCentVZERO, 100, -1.0, 1.0, VarManager::kR2SP);
@@ -467,10 +473,10 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "MCHBitMap_vs_pt", "MCH vs pt", false, 1025, 0.0, 1025.0, VarManager::kMCHBitMap, 400, 0, 100, VarManager::kPt);
       hm->AddHistogram(histClass, "MuonTime", "", false, 100, -1.0, 1.0, VarManager::kMuonTime);
       hm->AddHistogram(histClass, "MuonTimeRes", "", false, 100, -1.0, 1.0, VarManager::kMuonTimeRes);
-      hm->AddHistogram(histClass, "MuonDcaX_vs_phi", "", false, 1000, -1.0, 1.0, VarManager::kMuonDCAx, 200, -2. * TMath::Pi(), 2. * TMath::Pi(), VarManager::kPhi);
-      hm->AddHistogram(histClass, "MuonDcaY_vs_phi", "", false, 1000, -1.0, 1.0, VarManager::kMuonDCAy, 200, -2. * TMath::Pi(), 2. * TMath::Pi(), VarManager::kPhi);
-      hm->AddHistogram(histClass, "MuonDcaX_vs_eta", "", false, 1000, -1.0, 1.0, VarManager::kMuonDCAx, 500, -5.0, 5.0, VarManager::kEta);
-      hm->AddHistogram(histClass, "MuonDcaY_vs_eta", "", false, 1000, -1.0, 1.0, VarManager::kMuonDCAy, 500, -5.0, 5.0, VarManager::kEta);
+      hm->AddHistogram(histClass, "MuonDcaX_vs_phi", "", false, 2000, -20.0, 20.0, VarManager::kMuonDCAx, 200, -2. * TMath::Pi(), 2. * TMath::Pi(), VarManager::kPhi);
+      hm->AddHistogram(histClass, "MuonDcaY_vs_phi", "", false, 2000, -20.0, 20.0, VarManager::kMuonDCAy, 200, -2. * TMath::Pi(), 2. * TMath::Pi(), VarManager::kPhi);
+      hm->AddHistogram(histClass, "MuonDcaX_vs_eta", "", false, 2000, -20.0, 20.0, VarManager::kMuonDCAx, 500, -5.0, 5.0, VarManager::kEta);
+      hm->AddHistogram(histClass, "MuonDcaY_vs_eta", "", false, 2000, -20.0, 20.0, VarManager::kMuonDCAy, 500, -5.0, 5.0, VarManager::kEta);
     }
     if (subGroupStr.Contains("muon-pdca")) {
       hm->AddHistogram(histClass, "p", "p", false, 200, 0.0, 20.0, VarManager::kP);
@@ -789,6 +795,36 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "DeltaEta_DeltaPhiSym", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -8.0, 8.0, VarManager::kDeltaPhiSym);
   }
 
+  if (groupStr.Contains("dilepton-hadron-array-correlation")) {
+    const int kInvMassBins = 500;
+    double InvMassBinLims[kInvMassBins + 1];
+    for (int i = 0; i <= kInvMassBins; i++)
+      InvMassBinLims[i] = 0 + i * 0.01;
+
+    const int kDelEtaBins = 20;
+    double DelEtaBinLims[kDelEtaBins + 1];
+    for (int i = 0; i <= kDelEtaBins; i++)
+      DelEtaBinLims[i] = -2 + i * 0.2;
+
+    const int kDelPhiBins = 50;
+    double DelPhiBinLims[kDelEtaBins + 1];
+    for (int i = 0; i <= kDelPhiBins; i++)
+      DelPhiBinLims[i] = -8 + i * 0.32;
+
+    const int kPtBins = 20;
+    double PtBinLims[kPtBins + 1];
+    for (int i = 0; i <= kPtBins; i++)
+      PtBinLims[i] = 0 + i * 1;
+
+    TArrayD nJPsiHadCorr[4];
+    nJPsiHadCorr[0] = TArrayD(kInvMassBins + 1, InvMassBinLims);
+    nJPsiHadCorr[1] = TArrayD(kDelEtaBins + 1, DelEtaBinLims);
+    nJPsiHadCorr[2] = TArrayD(kDelPhiBins + 1, DelPhiBinLims);
+    nJPsiHadCorr[3] = TArrayD(kPtBins + 1, PtBinLims);
+
+    int varsJPsiHadCorr[4] = {VarManager::kPairMassDau, VarManager::kDeltaEta, VarManager::kDeltaPhi, VarManager::kPairPtDau};
+    hm->AddHistogram(histClass, "InvMass_DelEta_DelPhi", "", 4, varsJPsiHadCorr, nJPsiHadCorr);
+  }
   if (groupStr.Contains("dilepton-charmhadron")) {
     if (subGroupStr.EqualTo("jpsitomumu")) {
       hm->AddHistogram(histClass, "hMassVsPtJPsi", "", false, 100, 0.f, 50.f, VarManager::kPt, 300, 2.f, 5.f, VarManager::kMass);

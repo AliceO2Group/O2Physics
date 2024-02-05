@@ -420,6 +420,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("hasTOF")) {
+    cut->AddCut(GetAnalysisCut("hasTOF"));
+    return cut;
+  }
+
   if (!nameStr.compare("PIDCalib")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -918,6 +923,21 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
       return cut;
     }
 
+    // 2 cuts to separate pos & neg tracks
+    if (!nameStr.compare(Form("lmee_posTrack_selection%s", vecTypetrack.at(icase).Data()))) {
+      cut->AddCut(GetAnalysisCut("posTrack"));
+      cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrack.at(icase).Data())));
+      cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
+      return cut;
+    }
+
+    if (!nameStr.compare(Form("lmee_negTrack_selection%s", vecTypetrack.at(icase).Data()))) {
+      cut->AddCut(GetAnalysisCut("negTrack"));
+      cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrack.at(icase).Data())));
+      cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
+      return cut;
+    }
+
     // 4 cuts to separate pos & neg tracks in pos & neg eta range low B field
     if (!nameStr.compare(Form("lmee_lowB_posTrack_posEta_selection%s", vecTypetrack.at(icase).Data()))) {
       cut->AddCut(GetAnalysisCut("posTrack"));
@@ -946,6 +966,21 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     if (!nameStr.compare(Form("lmee_lowB_negTrack_negEta_selection%s", vecTypetrack.at(icase).Data()))) {
       cut->AddCut(GetAnalysisCut("negTrack"));
       cut->AddCut(GetAnalysisCut("negEtaSel"));
+      cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrack.at(icase).Data())));
+      cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+      return cut;
+    }
+
+    // 2 cuts to separate pos & neg tracks in low B field
+    if (!nameStr.compare(Form("lmee_lowB_posTrack_selection%s", vecTypetrack.at(icase).Data()))) {
+      cut->AddCut(GetAnalysisCut("posTrack"));
+      cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrack.at(icase).Data())));
+      cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+      return cut;
+    }
+
+    if (!nameStr.compare(Form("lmee_lowB_negTrack_selection%s", vecTypetrack.at(icase).Data()))) {
+      cut->AddCut(GetAnalysisCut("negTrack"));
       cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrack.at(icase).Data())));
       cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
       return cut;
@@ -2930,6 +2965,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("PrimaryTrack_DCAz")) {
     cut->AddCut(VarManager::kTrackDCAz, -0.3, 0.3);
+    return cut;
+  }
+
+  if (!nameStr.compare("hasTOF")) {
+    cut->AddCut(VarManager::kHasTOF, 0.5, 1.5);
     return cut;
   }
 

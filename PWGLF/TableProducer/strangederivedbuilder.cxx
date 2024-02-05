@@ -503,7 +503,7 @@ struct strangederivedbuilder {
     histos.fill(HIST("h2dNVerticesVsCentrality"), bestCentrality, collisions.size());
 
     for (auto& mcp : mcParticles) {
-      if (TMath::Abs(mcp.y()) < 0.5) {
+      if (TMath::Abs(mcp.y()) < 0.5 && mcp.isPhysicalPrimary()) {
         static_for<0, nSpecies - 1>([&](auto i) {
           constexpr int index = i.value;
           if (mcp.pdgCode() == particlePDGCodes[index] && bitcheck(enabledBits, index)) {

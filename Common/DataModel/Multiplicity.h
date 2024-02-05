@@ -25,6 +25,10 @@ DECLARE_SOA_COLUMN(MultFDDA, multFDDA, float); //!
 DECLARE_SOA_COLUMN(MultFDDC, multFDDC, float); //!
 DECLARE_SOA_COLUMN(MultZNA, multZNA, float);   //!
 DECLARE_SOA_COLUMN(MultZNC, multZNC, float);   //!
+DECLARE_SOA_COLUMN(MultZEM1, multZEM1, float); //!
+DECLARE_SOA_COLUMN(MultZEM2, multZEM2, float); //!
+DECLARE_SOA_COLUMN(MultZPA, multZPA, float);   //!
+DECLARE_SOA_COLUMN(MultZPC, multZPC, float);   //!
 DECLARE_SOA_DYNAMIC_COLUMN(MultFV0M, multFV0M, //!
                            [](float multFV0A, float multFV0C) -> float { return multFV0A + multFV0C; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultFT0M, multFT0M, //!
@@ -76,7 +80,7 @@ DECLARE_SOA_TABLE(FDDMults, "AOD", "FDDMULT", //! Multiplicity with the FDD dete
                   mult::MultFDDA, mult::MultFDDC,
                   mult::MultFDDM<mult::MultFDDA, mult::MultFDDC>);
 DECLARE_SOA_TABLE(ZDCMults, "AOD", "ZDCMULT", //! Multiplicity with the ZDC detector
-                  mult::MultZNA, mult::MultZNC);
+                  mult::MultZNA, mult::MultZNC, mult::MultZEM1, mult::MultZEM2, mult::MultZPA, mult::MultZPC);
 DECLARE_SOA_TABLE(TrackletMults, "AOD", "TRKLTMULT", //! Multiplicity with tracklets (only Run2)
                   mult::MultTracklets);
 DECLARE_SOA_TABLE(TPCMults, "AOD", "TPCMULT", //! Multiplicity with TPC
@@ -122,9 +126,21 @@ namespace multBC
 DECLARE_SOA_COLUMN(MultBCFT0A, multBCFT0A, float);                     //!
 DECLARE_SOA_COLUMN(MultBCFT0C, multBCFT0C, float);                     //!
 DECLARE_SOA_COLUMN(MultBCFV0A, multBCFV0A, float);                     //!
+DECLARE_SOA_COLUMN(MultBCFDDA, multBCFDDA, float);                     //!
+DECLARE_SOA_COLUMN(MultBCFDDC, multBCFDDC, float);                     //!
+
+DECLARE_SOA_COLUMN(MultBCFZNA, multBCFZNA, float);   //!
+DECLARE_SOA_COLUMN(MultBCFZNC, multBCFZNC, float);   //!
+DECLARE_SOA_COLUMN(MultBCFZEM1, multBCFZEM1, float); //!
+DECLARE_SOA_COLUMN(MultBCFZEM2, multBCFZEM2, float); //!
+DECLARE_SOA_COLUMN(MultBCFZPA, multBCFZPA, float);   //!
+DECLARE_SOA_COLUMN(MultBCFZPC, multBCFZPC, float);   //!
+
 DECLARE_SOA_COLUMN(MultBCTVX, multBCTVX, bool);                        //!
 DECLARE_SOA_COLUMN(MultBCFV0OrA, multBCFV0OrA, bool);                  //!
 DECLARE_SOA_COLUMN(MultBCV0triggerBits, multBCV0triggerBits, uint8_t); //!
+DECLARE_SOA_COLUMN(MultBCT0triggerBits, multBCT0triggerBits, uint8_t); //!
+DECLARE_SOA_COLUMN(MultBCFDDtriggerBits, multBCFDDtriggerBits, uint8_t); //!
 DECLARE_SOA_COLUMN(MultBCTriggerMask, multBCTriggerMask, uint64_t);    //! CTP trigger mask
 DECLARE_SOA_COLUMN(MultBCColliding, multBCColliding, bool);            //! CTP trigger mask
 } // namespace multBC
@@ -132,9 +148,19 @@ DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
                   multBC::MultBCFT0A,
                   multBC::MultBCFT0C,
                   multBC::MultBCFV0A,
+                  multBC::MultBCFDDA,
+                  multBC::MultBCFDDC,
+                  multBC::MultBCFZNA,
+                  multBC::MultBCFZNC,
+                  multBC::MultBCFZEM1,
+                  multBC::MultBCFZEM2,
+                  multBC::MultBCFZPA,
+                  multBC::MultBCFZPC,
                   multBC::MultBCTVX,
                   multBC::MultBCFV0OrA,
                   multBC::MultBCV0triggerBits,
+                  multBC::MultBCT0triggerBits,
+                  multBC::MultBCFDDtriggerBits,
                   multBC::MultBCTriggerMask,
                   multBC::MultBCColliding);
 using MultBC = MultsBC::iterator;

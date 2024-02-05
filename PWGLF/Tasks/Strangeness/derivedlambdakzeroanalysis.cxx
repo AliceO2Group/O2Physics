@@ -85,6 +85,11 @@ struct derivedlambdakzeroanalysis {
   // original equation: lArmPt*5>TMath::Abs(lArmAlpha)
   Configurable<float> armPodCut{"armPodCut", 5.0f, "pT * (cut) > |alpha|, AP cut. Negative: no cut"};
 
+  // Track quality
+  Configurable<int> minTPCrows{"minTPCrows", 70, "minimum TPC crossed rows"};
+  Configurable<bool> requirePosITSonly{"requirePosITSonly", false, "require that positive track is ITSonly (overrides TPC quality)"};
+  Configurable<bool> requireNegITSonly{"requireNegITSonly", false, "require that negative track is ITSonly (overrides TPC quality)"};
+
   // PID (TPC)
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
 
@@ -131,25 +136,30 @@ struct derivedlambdakzeroanalysis {
                    selK0ShortCTau,
                    selLambdaCTau,
                    selK0ShortArmenteros,
+                   selPosGoodTPCTrack,
+                   selNegGoodTPCTrack,
+                   selPosItsOnly,
+                   selNegItsOnly,
                    selConsiderK0Short,   // for mc tagging
                    selConsiderLambda,    // for mc tagging
                    selConsiderAntiLambda // for mc tagging
-  };                                     // all bits used
+  };
 
-  uint16_t maskTopological;
-  uint16_t maskTopoNoV0Radius;
-  uint16_t maskTopoNoDCANegToPV;
-  uint16_t maskTopoNoDCAPosToPV;
-  uint16_t maskTopoNoCosPA;
-  uint16_t maskTopoNoDCAV0Dau;
+  uint32_t maskTopological;
+  uint32_t maskTopoNoV0Radius;
+  uint32_t maskTopoNoDCANegToPV;
+  uint32_t maskTopoNoDCAPosToPV;
+  uint32_t maskTopoNoCosPA;
+  uint32_t maskTopoNoDCAV0Dau;
+  uint32_t maskTrackTypes;
 
-  uint16_t maskK0ShortSpecific;
-  uint16_t maskLambdaSpecific;
-  uint16_t maskAntiLambdaSpecific;
+  uint32_t maskK0ShortSpecific;
+  uint32_t maskLambdaSpecific;
+  uint32_t maskAntiLambdaSpecific;
 
-  uint16_t maskSelectionK0Short;
-  uint16_t maskSelectionLambda;
-  uint16_t maskSelectionAntiLambda;
+  uint32_t maskSelectionK0Short;
+  uint32_t maskSelectionLambda;
+  uint32_t maskSelectionAntiLambda;
 
   void init(InitContext const&)
   {
@@ -161,13 +171,25 @@ struct derivedlambdakzeroanalysis {
     maskTopoNoCosPA = (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau);
     maskTopoNoDCAV0Dau = (1 << selCosPA) | (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV);
 
+    maskTrackTypes = 0;
+    if (requirePosITSonly) {
+      maskTrackTypes = (1 << selPosItsOnly);
+    } else {
+      maskTrackTypes = (1 << selPosGoodTPCTrack);
+    }
+    if (requireNegITSonly) {
+      maskTrackTypes = (1 << selNegItsOnly);
+    } else {
+      maskTrackTypes = (1 << selNegGoodTPCTrack);
+    }
+
     maskK0ShortSpecific = (1 << selK0ShortRapidity) | (1 << selK0ShortTPC) | (1 << selK0ShortCTau) | (1 << selK0ShortArmenteros) | (1 << selConsiderK0Short);
     maskLambdaSpecific = (1 << selLambdaRapidity) | (1 << selLambdaTPC) | (1 << selLambdaCTau) | (1 << selConsiderLambda);
     maskAntiLambdaSpecific = (1 << selLambdaRapidity) | (1 << selAntiLambdaTPC) | (1 << selLambdaCTau) | (1 << selConsiderAntiLambda);
 
-    maskSelectionK0Short = maskTopological | maskK0ShortSpecific;
-    maskSelectionLambda = maskTopological | maskLambdaSpecific;
-    maskSelectionAntiLambda = maskTopological | maskAntiLambdaSpecific;
+    maskSelectionK0Short = maskTopological | maskTrackTypes | maskK0ShortSpecific;
+    maskSelectionLambda = maskTopological | maskTrackTypes | maskLambdaSpecific;
+    maskSelectionAntiLambda = maskTopological | maskTrackTypes | maskAntiLambdaSpecific;
 
     // Event Counters
     histos.add("hEventSelection", "hEventSelection", kTH1F, {{3, -0.5f, +2.5f}});
@@ -238,10 +260,10 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0, typename TCollision>
-  uint16_t computeReconstructionBitmap(TV0 v0, TCollision collision)
+  uint32_t computeReconstructionBitmap(TV0 v0, TCollision collision)
   // precalculate this information so that a check is one mask operation, not many
   {
-    uint16_t bitMap = 0;
+    uint32_t bitMap = 0;
     // Base topological variables
     if (v0.v0radius() > v0radius)
       bitset(bitMap, selRadius);
@@ -268,6 +290,21 @@ struct derivedlambdakzeroanalysis {
     if (compatibleTPC(v0, spAntiLambda))
       bitset(bitMap, selAntiLambdaTPC);
 
+    auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
+    auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
+
+    // TPC quality
+    if (posTrackExtra.tpcCrossedRows() >= minTPCrows)
+      bitset(bitMap, selPosGoodTPCTrack);
+    if (negTrackExtra.tpcCrossedRows() >= minTPCrows)
+      bitset(bitMap, selNegGoodTPCTrack);
+
+    // ITS only tag
+    if (posTrackExtra.tpcCrossedRows() < 1)
+      bitset(bitMap, selPosItsOnly);
+    if (negTrackExtra.tpcCrossedRows() < 1)
+      bitset(bitMap, selNegItsOnly);
+
     // proper lifetime
     if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < lifetimecut->get("lifetimecutLambda"))
       bitset(bitMap, selLambdaCTau);
@@ -282,10 +319,10 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0>
-  uint16_t computeMCAssociation(TV0 v0)
+  uint32_t computeMCAssociation(TV0 v0)
   // precalculate this information so that a check is one mask operation, not many
   {
-    uint16_t bitMap = 0;
+    uint32_t bitMap = 0;
     // check for specific particle species
 
     if (v0.pdgCode() == 310 && v0.pdgCodePositive() == 211 && v0.pdgCodeNegative() == -211 && v0.isPhysicalPrimary()) {
@@ -300,13 +337,13 @@ struct derivedlambdakzeroanalysis {
     return bitMap;
   }
 
-  bool verifyMask(uint16_t bitmap, uint16_t mask)
+  bool verifyMask(uint32_t bitmap, uint32_t mask)
   {
     return (bitmap & mask) == mask;
   }
 
   template <typename TV0, typename TCollision>
-  void analyseCandidate(TV0 v0, TCollision collision, uint16_t selMap)
+  void analyseCandidate(TV0 v0, TCollision collision, uint32_t selMap)
   // precalculate this information so that a check is one mask operation, not many
   {
     // __________________________________________
@@ -391,7 +428,7 @@ struct derivedlambdakzeroanalysis {
       // fill AP plot for all V0s
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
 
-      uint16_t selMap = computeReconstructionBitmap(v0, collision);
+      uint32_t selMap = computeReconstructionBitmap(v0, collision);
 
       // consider for histograms for all species
       selMap = selMap | (1 << selConsiderK0Short) | (1 << selConsiderLambda) | (1 << selConsiderAntiLambda);
@@ -425,7 +462,7 @@ struct derivedlambdakzeroanalysis {
       // fill AP plot for all V0s
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
 
-      uint16_t selMap = computeReconstructionBitmap(v0, collision);
+      uint32_t selMap = computeReconstructionBitmap(v0, collision);
 
       // consider only associated candidates if asked to do so
       if (doMCAssociation) {

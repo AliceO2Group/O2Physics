@@ -57,9 +57,9 @@ using MyV0Photon = MyV0Photons::iterator;
 struct PCMQCMC {
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 
-  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of v0 photon cuts"};
+  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "qc,qc_ITSTPC,qc_ITSonly,qc_TPConly,wwire_ib,nocut", "Comma separated list of v0 photon cuts"};
   Configurable<float> maxY{"maxY", 0.9f, "maximum rapidity for generated particles"};
-  Configurable<float> maxRgen{"maxRgen", 90.f, "maximum radius for generated particles"};
+  Configurable<float> maxRgen{"maxRgen", 100.f, "maximum radius for generated particles"};
   Configurable<float> margin_z_mc{"margin_z_mc", 7.0, "margin for z cut in cm for MC"};
 
   std::vector<V0PhotonCut> fPCMCuts;
@@ -185,6 +185,7 @@ struct PCMQCMC {
             auto mcphoton = mcparticles.iteratorAt(photonid);
             float rxy_rec = sqrt(v0.vx() * v0.vx() + v0.vy() * v0.vy());
             float rxy_mc = sqrt(posmc.vx() * posmc.vx() + posmc.vy() * posmc.vy());
+            float eta_cp = std::atanh(v0.vz() / sqrt(pow(v0.vx(), 2) + pow(v0.vy(), 2) + pow(v0.vz(), 2)));
 
             o2::aod::emphotonhistograms::FillHistClass<EMHistType::kV0>(list_v0_cut, "", v0);
             if (IsPhysicalPrimary(mcphoton.emreducedmcevent(), mcphoton, mcparticles)) {
@@ -198,6 +199,10 @@ struct PCMQCMC {
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPtOverPtGen"))->Fill(mcphoton.pt(), (v0.pt() - mcphoton.pt()) / mcphoton.pt());
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaEta"))->Fill(mcphoton.pt(), v0.eta() - mcphoton.eta());
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPhi"))->Fill(mcphoton.pt(), v0.phi() - mcphoton.phi());
+
+              reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hEtaRec_DeltaPtOverPtGen"))->Fill(eta_cp, (v0.pt() - mcphoton.pt()) / mcphoton.pt());
+              reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hEtaRec_DeltaEta"))->Fill(eta_cp, v0.eta() - mcphoton.eta());
+              reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hEtaRec_DeltaPhi"))->Fill(eta_cp, v0.phi() - mcphoton.phi());
 
             } else if (IsFromWD(mcphoton.emreducedmcevent(), mcphoton, mcparticles)) {
               reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hPt_Photon_FromWD"))->Fill(v0.pt());
@@ -227,6 +232,9 @@ struct PCMQCMC {
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0Leg")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPtOverPtGen"))->Fill(mcleg.pt(), (leg.pt() - mcleg.pt()) / mcleg.pt());
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0Leg")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaEta"))->Fill(mcleg.pt(), leg.eta() - mcleg.eta());
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0Leg")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPhi"))->Fill(mcleg.pt(), leg.phi() - mcleg.phi());
+              reinterpret_cast<TH2F*>(fMainList->FindObject("V0Leg")->FindObject(cut.GetName())->FindObject("hEtaRec_DeltaPtOverPtGen"))->Fill(eta_cp, (leg.pt() - mcleg.pt()) / mcleg.pt());
+              reinterpret_cast<TH2F*>(fMainList->FindObject("V0Leg")->FindObject(cut.GetName())->FindObject("hEtaRec_DeltaEta"))->Fill(eta_cp, leg.eta() - mcleg.eta());
+              reinterpret_cast<TH2F*>(fMainList->FindObject("V0Leg")->FindObject(cut.GetName())->FindObject("hEtaRec_DeltaPhi"))->Fill(eta_cp, leg.phi() - mcleg.phi());
             }
           }
         } // end of v0 loop
