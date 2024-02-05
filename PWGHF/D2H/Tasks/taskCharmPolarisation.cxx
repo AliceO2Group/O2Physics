@@ -68,18 +68,18 @@ struct TaskPolarisationCharmHadrons {
   Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 Pi"};
   Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for Lc decay to P K Pi"};
 
-  ConfigurableAxis thnAxisInvMass{"thnAxisInvMass", {200, 0.139, 0.179}, "#it{M} (GeV/#it{c}^{2})"};
-  ConfigurableAxis thnAxisPt{"thnAxisPt", {100, 0., 100.}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis thnAxisPz{"thnAxisPz", {100, -50., 50.}, "#it{p}_{z} (GeV/#it{c})"};
-  ConfigurableAxis thnAxisY{"thnAxisY", {20, -1., 1.}, "#it{y}"};
-  ConfigurableAxis thnAxisCosThetaStarHelicity{"thnAxisCosThetaStarHelicity", {20, -1., 1.}, "cos(#vartheta_{helicity})"};
-  ConfigurableAxis thnAxisCosThetaStarProduction{"thnAxisCosThetaStarProduction", {20, -1., 1.}, "cos(#vartheta_{production})"};
-  ConfigurableAxis thnAxisCosThetaStarRandom{"thnAxisCosThetaStarRandom", {20, -1., 1.}, "cos(#vartheta_{random})"};
-  ConfigurableAxis thnAxisCosThetaStarBeam{"thnAxisCosThetaStarBeam", {20, -1., 1.}, "cos(#vartheta_{beam})"};
-  ConfigurableAxis thnConfigAxisMlBkg{"thnConfigAxisMlBkg", {100, 0., 1.}, "ML bkg"};
-  ConfigurableAxis thnConfigAxisMlPrompt{"thnConfigAxisMlPrompt", {100, 0., 1.}, "ML prompt"};
-  ConfigurableAxis thnConfigAxisMlNonPrompt{"thnConfigAxisMlNonPrompt", {100, 0., 1.}, "ML non-prompt"};
-  // ConfigurableAxis thnAxisCent{"thnAxisCent", {102, -1., 101.}, "centrality (%)"};
+  ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {200, 0.139, 0.179}, "#it{M} (GeV/#it{c}^{2})"};
+  ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0., 100.}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis configThnAxisPz{"configThnAxisPz", {100, -50., 50.}, "#it{p}_{z} (GeV/#it{c})"};
+  ConfigurableAxis configThnAxisY{"configThnAxisY", {20, -1., 1.}, "#it{y}"};
+  ConfigurableAxis configThnAxisCosThetaStarHelicity{"configThnAxisCosThetaStarHelicity", {20, -1., 1.}, "cos(#vartheta_{helicity})"};
+  ConfigurableAxis configThnAxisCosThetaStarProduction{"configThnAxisCosThetaStarProduction", {20, -1., 1.}, "cos(#vartheta_{production})"};
+  ConfigurableAxis configThnAxisCosThetaStarRandom{"configThnAxisCosThetaStarRandom", {20, -1., 1.}, "cos(#vartheta_{random})"};
+  ConfigurableAxis configThnAxisCosThetaStarBeam{"configThnAxisCosThetaStarBeam", {20, -1., 1.}, "cos(#vartheta_{beam})"};
+  ConfigurableAxis configThnAxisMlBkg{"configThnAxisMlBkg", {100, 0., 1.}, "ML bkg"};
+  // ConfigurableAxis configThnAxisMlPrompt{"configThnAxisMlPrompt", {100, 0., 1.}, "ML prompt"};
+  ConfigurableAxis configThnAxisMlNonPrompt{"configThnAxisMlNonPrompt", {100, 0., 1.}, "ML non-prompt"};
+  // ConfigurableAxis configThnAxisCent{"configThnAxisCent", {102, -1., 101.}, "centrality (%)"};
 
   Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Filter filterSelectLcToPKPiCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi) || (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPKPi);
@@ -102,8 +102,19 @@ struct TaskPolarisationCharmHadrons {
     massDstar = o2::constants::physics::MassDStar;
     massLc = o2::constants::physics::MassLambdaCPlus;
 
+    const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec thnAxisPz{configThnAxisPz, "#it{p}_{z} (GeV/#it{c})"};
+    const AxisSpec thnAxisY{configThnAxisY, "#it{y}"};
+    const AxisSpec thnAxisCosThetaStarHelicity{configThnAxisCosThetaStarHelicity, "cos(#vartheta_{helicity})"};
+    const AxisSpec thnAxisCosThetaStarProduction{configThnAxisCosThetaStarProduction, "cos(#vartheta_{production})"};
+    const AxisSpec thnAxisCosThetaStarRandom{configThnAxisCosThetaStarRandom, "cos(#vartheta_{random})"};
+    const AxisSpec thnAxisCosThetaStarBeam{configThnAxisCosThetaStarBeam, "cos(#vartheta_{beam})"};
+    const AxisSpec thnAxisMlBkg{configThnAxisMlBkg, "ML bkg"};
+    const AxisSpec thnAxisMlNonPrompt{configThnAxisMlNonPrompt, "ML non-prompt"};
+
     if (doprocessDstarWithMl || doprocessLcToPKPiWithMl) {
-      registry.add("hSparseCharmPolarisation", "THn for polarisation studies", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisCosThetaStarProduction, thnAxisCosThetaStarBeam, thnAxisCosThetaStarRandom, thnConfigAxisMlBkg, thnConfigAxisMlPrompt, thnConfigAxisMlNonPrompt});
+      registry.add("hSparseCharmPolarisation", "THn for polarisation studies", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisCosThetaStarProduction, thnAxisCosThetaStarBeam, thnAxisCosThetaStarRandom, thnAxisMlBkg, /*thnConfigAxisMlPrompt,*/ thnAxisMlNonPrompt});
     } else {
       registry.add("hSparseCharmPolarisation", "THn for polarisation studies", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisCosThetaStarProduction, thnAxisCosThetaStarBeam, thnAxisCosThetaStarRandom});
     }
@@ -219,7 +230,7 @@ struct TaskPolarisationCharmHadrons {
       float cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
 
       if constexpr (withMl) {
-        registry.fill(HIST("hSparseCharmPolarisation"), invMassCharmHadForSparse, candidate.pt(), pzCharmHad, rapidity, cosThetaStarHelicity, cosThetaStarProduction, cosThetaStarBeam, cosThetaStarRandom, outputMl[0], outputMl[1], outputMl[2]);
+        registry.fill(HIST("hSparseCharmPolarisation"), invMassCharmHadForSparse, candidate.pt(), pzCharmHad, rapidity, cosThetaStarHelicity, cosThetaStarProduction, cosThetaStarBeam, cosThetaStarRandom, outputMl[0], /*outputMl[1],*/ outputMl[2]);
       } else {
         registry.fill(HIST("hSparseCharmPolarisation"), invMassCharmHadForSparse, candidate.pt(), pzCharmHad, rapidity, cosThetaStarHelicity, cosThetaStarProduction, cosThetaStarBeam, cosThetaStarRandom);
       }

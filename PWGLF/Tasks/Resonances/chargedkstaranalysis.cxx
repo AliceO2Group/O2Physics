@@ -306,7 +306,7 @@ struct chargedkstaranalysis {
   {
     const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
-    const auto dcaXY = track.dcaXY();
+    // const auto dcaXY = track.dcaXY();
     const auto sign = track.sign();
 
     if (!track.hasTPC())
@@ -328,9 +328,9 @@ struct chargedkstaranalysis {
     if (tpcNClsF < ConfDaughTPCnclsMin) {
       return false;
     }
-    if (std::abs(dcaXY) < ConfDaughDCAMin) {
+    /*if (std::abs(dcaXY) < ConfDaughDCAMin) {
       return false;
-    }
+      }*/
     if (std::abs(nsigmaV0Daughter) > ConfDaughPIDCuts) {
       return false;
     }

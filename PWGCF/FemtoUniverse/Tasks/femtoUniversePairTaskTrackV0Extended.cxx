@@ -111,7 +111,7 @@ struct femtoUniversePairTaskTrackV0Extended {
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  bool IsParticleNSigma(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle)
+  bool IsNSigmaCombined(float mom, float nsigmaTPCParticle, float nsigmaTOFParticle)
   {
     if (mom <= Confmom) {
       if (TMath::Abs(nsigmaTPCParticle) < ConfNsigmaTPCParticle) {
@@ -128,14 +128,31 @@ struct femtoUniversePairTaskTrackV0Extended {
     }
   }
 
+  bool IsNSigmaTPC(float nsigmaTPCParticle)
+  {
+    if (TMath::Abs(nsigmaTPCParticle) < ConfNsigmaTPCParticle) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   template <typename T>
-  bool IsParticleType(const T& part, int id)
+  bool IsParticleCombined(const T& part, int id)
   {
     const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStoreKa())};
     // const float tofNSigmas[3] = {part.tofNSigmaPr(), part.tofNSigmaPi(), part.tofNSigmaKa()};
     const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStoreKa())};
 
-    return IsParticleNSigma(part.p(), tpcNSigmas[id], tofNSigmas[id]);
+    return IsNSigmaCombined(part.p(), tpcNSigmas[id], tofNSigmas[id]);
+  }
+
+  template <typename T>
+  bool IsParticleTPC(const T& part, int id)
+  {
+    const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStoreKa())};
+
+    return IsNSigmaTPC(tpcNSigmas[id]);
   }
 
   void init(InitContext&)
@@ -151,10 +168,8 @@ struct femtoUniversePairTaskTrackV0Extended {
     posChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, false);
     negChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, false);
 
-    // sameEventCont.setDeltaEta(-1.5, 1.5);
     sameEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfEtaBins, ConfPhiBins, ConfIsMC, ConfUse3D);
     sameEventCont.setPDGCodes(ConfTrkPDGCodePartOne, ConfV0PDGCodePartTwo);
-    // mixedEventCont.setDeltaEta(-1.5, 1.5);
     mixedEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfEtaBins, ConfPhiBins, ConfIsMC, ConfUse3D);
     mixedEventCont.setPDGCodes(ConfTrkPDGCodePartOne, ConfV0PDGCodePartTwo);
 
@@ -179,7 +194,7 @@ struct femtoUniversePairTaskTrackV0Extended {
       const auto& posChild = parts.iteratorAt(part.index() - 2);
       const auto& negChild = parts.iteratorAt(part.index() - 1);
       // printf("-- V0 d- %d d+ %d\n",negChild.globalIndex(),posChild.globalIndex());
-      if (ConfV0PosChildType >= 0 && !IsParticleType(posChild, ConfV0PosChildType))
+      if (ConfV0PosChildType >= 0 && !IsParticleTPC(posChild, ConfV0PosChildType))
         continue;
 
       trackHistoPartTwo.fillQA<false, false>(part);
@@ -190,10 +205,9 @@ struct femtoUniversePairTaskTrackV0Extended {
     for (auto& part : groupPartsOne) {
       /// PID plot for particle 1
       const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStoreKa())};
-      // const float tofNSigmas[3] = {part.tofNSigmaPr(), part.tofNSigmaPi(), part.tofNSigmaKa()};
       const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStoreKa())};
 
-      if (!IsParticleNSigma(part.p(), tpcNSigmas[ConfTrackChoicePartOne], tofNSigmas[ConfTrackChoicePartOne]))
+      if (!IsNSigmaCombined(part.p(), tpcNSigmas[ConfTrackChoicePartOne], tofNSigmas[ConfTrackChoicePartOne]))
         continue;
       if (part.sign() > 0) {
         qaRegistry.fill(HIST("Tracks_pos/nSigmaTPC"), part.p(), tpcNSigmas[ConfTrackChoicePartOne]);
@@ -218,10 +232,10 @@ struct femtoUniversePairTaskTrackV0Extended {
         continue;
       }
       /// PID using stored binned nsigma
-      if (!IsParticleType(p1, ConfTrackChoicePartOne))
+      if (!IsParticleCombined(p1, ConfTrackChoicePartOne))
         continue;
       const auto& posChild = parts.iteratorAt(p2.index() - 2);
-      if (ConfV0PosChildType >= 0 && !IsParticleType(posChild, ConfV0PosChildType))
+      if (ConfV0PosChildType >= 0 && !IsParticleTPC(posChild, ConfV0PosChildType))
         continue;
       sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
     }
@@ -259,10 +273,10 @@ struct femtoUniversePairTaskTrackV0Extended {
           continue;
         }
         /// PID using stored binned nsigma
-        if (!IsParticleType(p1, ConfTrackChoicePartOne))
+        if (!IsParticleCombined(p1, ConfTrackChoicePartOne))
           continue;
         const auto& posChild = parts.iteratorAt(p2.index() - 2);
-        if (ConfV0PosChildType >= 0 && !IsParticleType(posChild, ConfV0PosChildType))
+        if (ConfV0PosChildType >= 0 && !IsParticleTPC(posChild, ConfV0PosChildType))
           continue;
         mixedEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
       }

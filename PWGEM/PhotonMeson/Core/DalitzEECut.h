@@ -105,7 +105,7 @@ class DalitzEECut : public TNamed
     if (mass < mMinMee || mMaxMee < mass) {
       return false;
     }
-    if (phiv < mMinPhivPair || (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(mass) : mMaxPhivPair) < phiv) {
+    if ((phiv < mMinPhivPair || (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(mass) : mMaxPhivPair) < phiv) ^ mSelectPC) {
       return false;
     }
     return true;
@@ -417,6 +417,9 @@ class DalitzEECut : public TNamed
   void SetMaxDcaZ(float maxDcaZ);           // in cm
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
   void ApplyPrefilter(bool flag);
+
+  // Getters
+  bool IsPhotonConversionSelected() const { return mSelectPC; }
 
   /// @brief Print the track selection
   void print() const;

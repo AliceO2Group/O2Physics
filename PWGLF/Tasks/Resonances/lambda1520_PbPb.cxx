@@ -13,8 +13,10 @@
 /// ///        Invariant Mass Reconstruction of Lambda(1520) Resonance.
 ///
 /// \author Yash Patley <yash.patley@cern.ch>
-///  \author Naisr Mehdi Malik
+///  \author Nasir Mehdi Malik
 
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <TLorentzVector.h>
 #include <TRandom.h>
 #include <cmath>
@@ -42,7 +44,6 @@ struct lambdaAnalysis_pb {
   // Configurables.
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histogram"};
   Configurable<int> nBinsInvM{"nBinsInvM", 120, "N bins in InvMass histogram"};
-  Configurable<int> nBinsSp{"nBinsSp", 120, "N bins in spherocity histogram"};
   Configurable<bool> doRotate{"doRotate", true, "rotated inv mass spectra"};
 
   // Tracks
@@ -76,10 +77,8 @@ struct lambdaAnalysis_pb {
   Configurable<std::vector<float>> kaonTPCPIDp{"kaonTPCPIDp", {0., 0.25, 0.3, 0.45}, "pT dependent TPC cuts kaons"};
   Configurable<std::vector<float>> kaonTPCPIDcut{"kaonTPCPIDcut", {6, 3.5, 2.5}, "TPC nsigma cuts kaons"};
   // Event Mixing.
-  Configurable<bool> cMixnoBin{"cMixnoBin", false, " BinsType to be mixed"};
   Configurable<int> cNumMixEv{"cNumMixEv", 20, "Number of Events to be mixed"};
-  Configurable<float> MultDiff{"nMultDiffn", 10, "mult diff"};
-  Configurable<float> VzDiff{"VzDiff", 1, "vz diff"};
+
   ConfigurableAxis cMixVtxBins{"cMixVtxBins", {VARIABLE_WIDTH, -10.0f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis cMixMultBins{"cMixMultBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"};
 
@@ -123,18 +122,26 @@ struct lambdaAnalysis_pb {
     histos.add("QAafter/Proton/h2d_pr_dca_xy", "dca_{xy} Protons", kTH2F, {axisPt_pid, axisDCAxy});
     histos.add("QAafter/Proton/h2d_pr_dEdx_p", "TPC Signal Protons", kTH2F, {axisP_pid, axisdEdx});
     histos.add("QAafter/Proton/h2d_pr_nsigma_tpc_pt", " Protons", kTH2F, {axisPt_pid, axisTPCNsigma});
+    histos.add("QAafter/Proton/h2d_Prpi_nsigma_tpc_p", " Protons pion", kTH2F, {axisPt_pid, axisTPCNsigma});
+    histos.add("QAafter/Proton/h2d_Prka_nsigma_tpc_p", " Protons kaon", kTH2F, {axisPt_pid, axisTPCNsigma});
     histos.add("QAafter/Proton/h2d_pr_nsigma_tpc_p", " Protons", kTH2F, {axisP_pid, axisTPCNsigma});
     histos.add("QAafter/Proton/h2d_pr_nsigma_tof_pt", " Protons", kTH2F, {axisPt_pid, axisTOFNsigma});
     histos.add("QAafter/Proton/h2d_pr_nsigma_tof_p", " Protons", kTH2F, {axisP_pid, axisTOFNsigma});
+    histos.add("QAafter/Proton/h2d_Prpi_nsigma_tof_p", " Protons pion", kTH2F, {axisP_pid, axisTOFNsigma});
+    histos.add("QAafter/Proton/h2d_Prka_nsigma_tof_p", " Protons kaon", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAafter/Proton/h2d_pr_nsigma_tof_vs_tpc", "n#sigma(TOF) vs n#sigma(TPC) Protons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
     histos.add("QAafter/Kaon/h1d_ka_pt", "p_{T}-spectra Kaons", kTH1F, {axisPt_pid});
     histos.add("QAafter/Kaon/h2d_ka_dca_z", "dca_{z} Kaons", kTH2F, {axisPt_pid, axisDCAz});
     histos.add("QAafter/Kaon/h2d_ka_dca_xy", "dca_{xy} Kaons", kTH2F, {axisPt_pid, axisDCAxy});
     histos.add("QAafter/Kaon/h2d_ka_dEdx_p", "TPC Signal Kaon", kTH2F, {axisP_pid, axisdEdx});
+    histos.add("QAafter/Kaon/h2d_Kapi_nsigma_tpc_p", " Kaons pion", kTH2F, {axisPt_pid, axisTPCNsigma});
+    histos.add("QAafter/Kaon/h2d_Kapr_nsigma_tpc_p", " Kaons proton", kTH2F, {axisP_pid, axisTPCNsigma});
     histos.add("QAafter/Kaon/h2d_ka_nsigma_tpc_pt", " Kaons", kTH2F, {axisPt_pid, axisTPCNsigma});
     histos.add("QAafter/Kaon/h2d_ka_nsigma_tpc_p", " Kaons", kTH2F, {axisP_pid, axisTPCNsigma});
     histos.add("QAafter/Kaon/h2d_ka_nsigma_tof_pt", " Kaons", kTH2F, {axisPt_pid, axisTOFNsigma});
     histos.add("QAafter/Kaon/h2d_ka_nsigma_tof_p", " Kaons", kTH2F, {axisP_pid, axisTOFNsigma});
+    histos.add("QAafter/Kaon/h2d_Kapi_nsigma_tof_p", " Kaons pion", kTH2F, {axisP_pid, axisTOFNsigma});
+    histos.add("QAafter/Kaon/h2d_Kapr_nsigma_tof_p", " Kaons proton", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAafter/Kaon/h2d_ka_nsigma_tof_vs_tpc", "n#sigma(TOF) vs n#sigma(TPC) Kaons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
 
     // QA checks for protons and kaons
@@ -333,21 +340,33 @@ struct lambdaAnalysis_pb {
         continue;
       if (cTPCRefit && !trkKa.passedTPCRefit())
         continue;
+      auto _pxPr = trkPr.px();
+      auto _pyPr = trkPr.py();
+      auto _pzPr = trkPr.pz();
+      auto _pxKa = trkKa.px();
+      auto _pyKa = trkKa.py();
+      auto _pzKa = trkKa.pz();
 
-      p_ptot = TMath::Sqrt(trkPr.px() * trkPr.px() + trkPr.py() * trkPr.py() + trkPr.pz() * trkPr.pz());
-      k_ptot = TMath::Sqrt(trkKa.px() * trkKa.px() + trkKa.py() * trkKa.py() + trkKa.pz() * trkKa.pz());
+      p_ptot = TMath::Sqrt(_pxPr * _pxPr + _pyPr * _pyPr + _pzPr * _pzPr);
+      k_ptot = TMath::Sqrt(_pxKa * _pxKa + _pyKa * _pyKa + _pzKa * _pzKa);
 
       // Fill QA before track selection.
       if (!mix) {
-        histos.fill(HIST("QAbefore/Proton/h2d_pr_nsigma_tpc_p"), p_ptot, trkPr.tpcNSigmaPr());
+        auto _tpcnsigmaPr = trkPr.tpcNSigmaPr();
+
+        histos.fill(HIST("QAbefore/Proton/h2d_pr_nsigma_tpc_p"), p_ptot, _tpcnsigmaPr);
+        // histos.fill(HIST("QAbefore/Proton/h2d_prel_nsigma_tpc_p"), p_ptot, trkPr.tpcNSigmaEl());
         if (trkPr.hasTOF()) {
-          histos.fill(HIST("QAbefore/Proton/h2d_pr_nsigma_tof_p"), p_ptot, trkPr.tofNSigmaPr());
-          histos.fill(HIST("QAbefore/Proton/h2d_pr_nsigma_tof_vs_tpc"), trkPr.tpcNSigmaPr(), trkPr.tofNSigmaPr());
+          auto _tofnsigmaPr = trkPr.tofNSigmaPr();
+          histos.fill(HIST("QAbefore/Proton/h2d_pr_nsigma_tof_p"), p_ptot, _tofnsigmaPr);
+          histos.fill(HIST("QAbefore/Proton/h2d_pr_nsigma_tof_vs_tpc"), _tpcnsigmaPr, _tofnsigmaPr);
         }
-        histos.fill(HIST("QAbefore/Kaon/h2d_ka_nsigma_tpc_p"), k_ptot, trkKa.tpcNSigmaKa());
+        auto _tpcnsigmaKa = trkKa.tpcNSigmaKa();
+        histos.fill(HIST("QAbefore/Kaon/h2d_ka_nsigma_tpc_p"), k_ptot, _tpcnsigmaKa);
         if (trkKa.hasTOF()) {
-          histos.fill(HIST("QAbefore/Kaon/h2d_ka_nsigma_tof_p"), k_ptot, trkKa.tofNSigmaKa());
-          histos.fill(HIST("QAbefore/Kaon/h2d_ka_nsigma_tof_vs_tpc"), trkKa.tpcNSigmaKa(), trkKa.tofNSigmaKa());
+          auto _tofnsigmaKa = trkKa.tofNSigmaKa();
+          histos.fill(HIST("QAbefore/Kaon/h2d_ka_nsigma_tof_p"), k_ptot, _tofnsigmaKa);
+          histos.fill(HIST("QAbefore/Kaon/h2d_ka_nsigma_tof_vs_tpc"), _tpcnsigmaKa, _tofnsigmaKa);
         }
       }
 
@@ -361,29 +380,45 @@ struct lambdaAnalysis_pb {
 
       // Fill QA after track selection.
       if constexpr (!mix) {
+        auto _ptPr = trkPr.pt();
+        auto _tpcnsigmaPr = trkPr.tpcNSigmaPr();
+
         // Proton
-        histos.fill(HIST("QAafter/Proton/h1d_pr_pt"), trkPr.pt());
-        histos.fill(HIST("QAafter/Proton/h2d_pr_dca_z"), trkPr.pt(), trkPr.dcaZ());
-        histos.fill(HIST("QAafter/Proton/h2d_pr_dca_xy"), trkPr.pt(), trkPr.dcaXY());
+        histos.fill(HIST("QAafter/Proton/h1d_pr_pt"), _ptPr);
+        histos.fill(HIST("QAafter/Proton/h2d_pr_dca_z"), _ptPr, trkPr.dcaZ());
+        histos.fill(HIST("QAafter/Proton/h2d_pr_dca_xy"), _ptPr, trkPr.dcaXY());
         histos.fill(HIST("QAafter/Proton/h2d_pr_dEdx_p"), p_ptot, trkPr.tpcSignal());
-        histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tpc_p"), p_ptot, trkPr.tpcNSigmaPr());
-        histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tpc_pt"), trkPr.pt(), trkPr.tpcNSigmaPr());
+        histos.fill(HIST("QAafter/Proton/h2d_Prpi_nsigma_tpc_p"), p_ptot, trkPr.tpcNSigmaPi());
+        histos.fill(HIST("QAafter/Proton/h2d_Prka_nsigma_tpc_p"), p_ptot, trkPr.tpcNSigmaKa());
+        histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tpc_p"), p_ptot, _tpcnsigmaPr);
+        histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tpc_pt"), _ptPr, _tpcnsigmaPr);
         if (!cUseTpcOnly && trkPr.hasTOF()) {
-          histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tof_p"), p_ptot, trkPr.tofNSigmaPr());
-          histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tof_pt"), trkPr.pt(), trkPr.tofNSigmaPr());
-          histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tof_vs_tpc"), trkPr.tpcNSigmaPr(), trkPr.tofNSigmaPr());
+          auto _tofnsigmaPr = trkPr.tofNSigmaPr();
+          histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tof_p"), p_ptot, _tofnsigmaPr);
+          histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tof_pt"), _ptPr, _tofnsigmaPr);
+          histos.fill(HIST("QAafter/Proton/h2d_Prpi_nsigma_tof_p"), p_ptot, trkPr.tofNSigmaPi());
+          histos.fill(HIST("QAafter/Proton/h2d_Prka_nsigma_tof_p"), p_ptot, trkPr.tofNSigmaKa());
+          histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tof_vs_tpc"), _tpcnsigmaPr, _tofnsigmaPr);
         }
+        auto _ptKa = trkKa.pt();
+        auto _tpcnsigmaKa = trkKa.tpcNSigmaKa();
+
         // Kaon
-        histos.fill(HIST("QAafter/Kaon/h1d_ka_pt"), trkKa.pt());
-        histos.fill(HIST("QAafter/Kaon/h2d_ka_dca_z"), trkKa.pt(), trkKa.dcaZ());
-        histos.fill(HIST("QAafter/Kaon/h2d_ka_dca_xy"), trkKa.pt(), trkKa.dcaXY());
+        histos.fill(HIST("QAafter/Kaon/h1d_ka_pt"), _ptKa);
+        histos.fill(HIST("QAafter/Kaon/h2d_ka_dca_z"), _ptKa, trkKa.dcaZ());
+        histos.fill(HIST("QAafter/Kaon/h2d_ka_dca_xy"), _ptKa, trkKa.dcaXY());
         histos.fill(HIST("QAafter/Kaon/h2d_ka_dEdx_p"), k_ptot, trkKa.tpcSignal());
-        histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tpc_p"), k_ptot, trkKa.tpcNSigmaKa());
-        histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tpc_pt"), trkKa.pt(), trkKa.tpcNSigmaKa());
+        histos.fill(HIST("QAafter/Kaon/h2d_Kapi_nsigma_tpc_p"), k_ptot, trkKa.tpcNSigmaPi());
+        histos.fill(HIST("QAafter/Kaon/h2d_Kapr_nsigma_tpc_p"), k_ptot, trkKa.tpcNSigmaPr());
+        histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tpc_p"), k_ptot, _tpcnsigmaKa);
+        histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tpc_pt"), _ptKa, _tpcnsigmaKa);
         if (!cUseTpcOnly && trkKa.hasTOF()) {
-          histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tof_p"), k_ptot, trkKa.tofNSigmaKa());
-          histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tof_pt"), trkKa.pt(), trkKa.tofNSigmaKa());
-          histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tof_vs_tpc"), trkKa.tpcNSigmaKa(), trkKa.tofNSigmaKa());
+          auto _tofnsigmaKa = trkKa.tofNSigmaKa();
+          histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tof_p"), k_ptot, _tofnsigmaKa);
+          histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tof_pt"), _ptKa, _tofnsigmaKa);
+          histos.fill(HIST("QAafter/Kaon/h2d_Kapi_nsigma_tof_p"), k_ptot, trkKa.tofNSigmaPi());
+          histos.fill(HIST("QAafter/Kaon/h2d_Kapr_nsigma_tof_p"), k_ptot, trkPr.tofNSigmaPr());
+          histos.fill(HIST("QAafter/Kaon/h2d_ka_nsigma_tof_vs_tpc"), _tpcnsigmaKa, _tofnsigmaKa);
         }
       }
 
@@ -397,8 +432,8 @@ struct lambdaAnalysis_pb {
 
       // Apply kinematic cuts.
       if (cKinCuts) {
-        TVector3 v1(trkPr.px(), trkPr.py(), trkPr.pz());
-        TVector3 v2(trkKa.px(), trkKa.py(), trkKa.pz());
+        TVector3 v1(_pxPr, _pyPr, _pzPr);
+        TVector3 v2(_pxKa, _pyKa, _pzKa);
         float alpha = v1.Angle(v2);
         if (alpha > 1.4 && alpha < 2.4)
           continue;
@@ -554,9 +589,8 @@ struct lambdaAnalysis_pb {
   }
   PROCESS_SWITCH(lambdaAnalysis_pb, processMCTrue, "Process Event for MC", false);
 
-  // Processing Event Mixing
-
   using BinningType2 = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
+
   void processMix(resoCols& collisions, resoTracks const& tracks)
   {
 
@@ -564,20 +598,11 @@ struct lambdaAnalysis_pb {
 
     BinningType2 binningPositions2{{cMixVtxBins, cMixMultBins}, true};
     auto tracksTuple = std::make_tuple(tracks);
-    if (cMixnoBin) {
-      SameKindPair<resoCols, resoTracks, BinningType2> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
-      for (auto& [c1, t1, c2, t2] : pairs) {
-        if (abs(c1.size() - c2.size()) > MultDiff || abs(c1.posZ() - c2.posZ()) > VzDiff)
-          continue;
-        histos.fill(HIST("Event/mixing_vzVsmultpercentile"), c1.cent());
-        fillDataHistos<true, false>(t1, t2, c1.cent());
-      }
-    } else {
-      SameKindPair<resoCols, resoTracks, BinningType2> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
-      for (auto& [c1, t1, c2, t2] : pairs) {
-        histos.fill(HIST("Event/mixing_vzVsmultpercentile"), c1.cent());
-        fillDataHistos<true, false>(t1, t2, c1.cent());
-      }
+
+    SameKindPair<resoCols, resoTracks, BinningType2> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    for (auto& [c1, t1, c2, t2] : pairs) {
+      histos.fill(HIST("Event/mixing_vzVsmultpercentile"), c1.cent());
+      fillDataHistos<true, false>(t1, t2, c1.cent());
     }
   }
 
