@@ -74,14 +74,8 @@ struct JetLundReclustering {
   {
     eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
     
-    registry.add("PrimaryLundPlane_kT_3D", "Primary Lund 3D plane;ln(R/Delta);ln(k_{t}/GeV);{p}_{t}", {HistType::kTH3F, {{100, 0, 20}, {100, -20, 20}, {20, 0, 200}}});
-    registry.add("PrimaryLundPlane_kT_2D", "Primary Lund 2D plane;ln(R/Delta);ln(k_{t}/GeV)", {HistType::kTH2F, {{100, 0, 20}, {100, -20, 20}}});
-    registry.add("PrimaryLundPlane_z_3D", "Primary Lund 3D plane;ln(R/Delta);ln(1/z);{p}_{t}", {HistType::kTH3F, {{100, 0, 20}, {100, -20, 20}, {20, 0, 200}}});
-    registry.add("PrimaryLundPlane_z_2D", "Primary Lund 2D plane;ln(R/Delta);ln(1/z)", {HistType::kTH2F, {{100, 0, 20}, {100, -20, 20}}});
-    registry.add("jet_pt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});number of entries", {HistType::kTH1F, {{100, 0, 200}}});
-    registry.add("jet_eta", "jet #eta;#it{p}_{T} [GeV/c];#eta_{jet}", {HistType::kTH2F, {{100, 0, 200}, {180, -0.9, 0.9}}});
-    registry.add("jet_phi", "jet #phi;#it{p}_{T} [GeV/c];#phi_{jet} [rad]", {HistType::kTH2F, {{100, 0, 200}, {180, 0., 2 * M_PI}}});
-    registry.add("jet_etaVSphi", "#jet eta VS phi;#eta_{jet};#phi_{jet} [rad]", {HistType::kTH2F, {{180, -0.9, 0.9}, {180, 0., 2 * M_PI}}});
+    registry.add("PrimaryLundPlane_kT", "Primary Lund 3D plane;ln(R/Delta);ln(k_{t}/GeV);{p}_{t}", {HistType::kTH3F, {{100, 0, 10}, {100, -10, 10}, {20, 0, 200}}});
+    registry.add("PrimaryLundPlane_z", "Primary Lund 3D plane;ln(R/Delta);ln(1/z);{p}_{t}", {HistType::kTH3F, {{100, 0, 10}, {100, 0, 10}, {20, 0, 200}}});
     registry.add("jet_PtEtaPhi", "Correlation of jet #it{p}_{T}, #eta and #phi;#it{p}_{T,jet} (GeV/#it{c});#eta_{jet};#phi_{jet} [rad]", {HistType::kTH3F, {{100, 0, 200}, {180, -0.9, 0.9}, {180, 0., 2 * M_PI}}});
   
     jetReclusterer.isReclustering = true;
@@ -112,10 +106,8 @@ struct JetLundReclustering {
       double coord1 = std::log(jetRadius/deltaR);
       double coord2 = std::log(kt);
       double coord3 = std::log(1/z);
-      registry.fill(HIST("PrimaryLundPlane_kT_3D"), coord1, coord2, jet.pt());
-      registry.fill(HIST("PrimaryLundPlane_kT_2D"), coord1, coord2);
-      registry.fill(HIST("PrimaryLundPlane_z_3D"), coord1, coord3, jet.pt());
-      registry.fill(HIST("PrimaryLundPlane_z_2D"), coord1, coord3);
+      registry.fill(HIST("PrimaryLundPlane_kT"), coord1, coord2, jet.pt());
+      registry.fill(HIST("PrimaryLundPlane_z"), coord1, coord3, jet.pt());
       pair = j1;
     }
   }
@@ -135,10 +127,6 @@ struct JetLundReclustering {
       return;
     }
     for (const auto& jet : jets) {
-      registry.fill(HIST("jet_pt"), jet.pt());
-      registry.fill(HIST("jet_eta"), jet.pt(), jet.eta());
-      registry.fill(HIST("jet_phi"), jet.pt(), jet.phi());
-      registry.fill(HIST("jet_etaVSphi"), jet.eta(), jet.phi());
       registry.fill(HIST("jet_PtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
       jetConstituents.clear();
         for (auto& jetConstituent : jet.tracks_as<JetTracks>()) {
