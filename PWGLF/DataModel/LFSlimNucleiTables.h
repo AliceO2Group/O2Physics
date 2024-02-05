@@ -46,6 +46,7 @@ DECLARE_SOA_COLUMN(gPt, genPt, float);
 DECLARE_SOA_COLUMN(gEta, genEta, float);
 DECLARE_SOA_COLUMN(gPhi, genPhi, float);
 DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
+DECLARE_SOA_COLUMN(SurvivedEventSelection, survivedEventSelection, bool);
 
 } // namespace NucleiTableNS
 namespace NucleiFlowTableNS
@@ -147,7 +148,8 @@ DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::gPt,
                   NucleiTableNS::gEta,
                   NucleiTableNS::gPhi,
-                  NucleiTableNS::PDGcode)
+                  NucleiTableNS::PDGcode,
+                  NucleiTableNS::SurvivedEventSelection)
 
 } // namespace o2::aod
 
