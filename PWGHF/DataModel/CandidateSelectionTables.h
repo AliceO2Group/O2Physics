@@ -238,10 +238,14 @@ DECLARE_SOA_TABLE(HfSelLcToK0sP, "AOD", "HFSELLCK0SP", //!
 namespace hf_sel_candidate_b0
 {
 DECLARE_SOA_COLUMN(IsSelB0ToDPi, isSelB0ToDPi, int); //!
+DECLARE_SOA_COLUMN(MlProbB0ToDPi, mlProbB0ToDPi, std::vector<float>); //!
 } // namespace hf_sel_candidate_b0
 
 DECLARE_SOA_TABLE(HfSelB0ToDPi, "AOD", "HFSELB0", //!
                   hf_sel_candidate_b0::IsSelB0ToDPi);
+
+DECLARE_SOA_TABLE(HfMlB0ToDPi, "AOD", "HFMLB0", //!
+                  hf_sel_candidate_b0::MlProbB0ToDPi);
 
 namespace hf_sel_candidate_bs
 {
