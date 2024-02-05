@@ -67,15 +67,15 @@ struct qaLamMomResolution {
   std::array<float, 3> momPionRecErr;
   float sigma1PtProtonIU = -1.0f, sigma1PtPionIU = -1.0f;
   // daughter DCA
-  std::array<float, 2> DCAProtonRec; // 0: xy, 1: z
-  std::array<float, 2> DCAPionRec; // 0: xy, 1: z
+  std::array<float, 2> DCAProtonRec;    // 0: xy, 1: z
+  std::array<float, 2> DCAPionRec;      // 0: xy, 1: z
   std::array<float, 2> DCAProtonRecErr; // 0: xy, 1: z
-  std::array<float, 2> DCAPionRecErr; // 0: xy, 1: z
+  std::array<float, 2> DCAPionRecErr;   // 0: xy, 1: z
   // MC info
   std::array<float, 3> momProtonGen;
   std::array<float, 3> momPionGen;
   std::array<float, 2> DCAProtonGen; // 0: xy, 1: z
-  std::array<float, 2> DCAPionGen; // 0: xy, 1: z
+  std::array<float, 2> DCAPionGen;   // 0: xy, 1: z
 
   void init(InitContext const&)
   {
@@ -88,25 +88,25 @@ struct qaLamMomResolution {
   void fillTable(TCollision const& collision)
   {
     lamdaughters(collision.globalIndex(),
-                massLambda, radiusLambda, ptLambda,
-                chargeProton, chargePion,
-                etaProton, etaPion,
-                tpcNClsProton, tpcNClsPion,
-                momProtonRec[0], momProtonRec[1], momProtonRec[2],
-                momProtonRecErr[0], momProtonRecErr[1], momProtonRecErr[2],
-                momPionRec[0], momPionRec[1], momPionRec[2],
-                momPionRecErr[0], momPionRecErr[1], momPionRecErr[2],
-                momProtonRecIU[0], momProtonRecIU[1], momProtonRecIU[2],
-                momProtonRecIUErr[0], momProtonRecIUErr[1], momProtonRecIUErr[2],
-                momPionRecIU[0], momPionRecIU[1], momPionRecIU[2],
-                momPionRecIUErr[0], momPionRecIUErr[1], momPionRecIUErr[2],
-                momProtonGen[0], momProtonGen[1], momProtonGen[2],
-                momPionGen[0], momPionGen[1], momPionGen[2],
-                sigma1PtProtonIU, sigma1PtPionIU,
-                DCAProtonRec[0], DCAProtonRec[1],
-                DCAProtonRecErr[0], DCAProtonRecErr[1],
-                DCAPionRec[0], DCAPionRec[1],
-                DCAPionRecErr[0], DCAPionRecErr[1]);
+                 massLambda, radiusLambda, ptLambda,
+                 chargeProton, chargePion,
+                 etaProton, etaPion,
+                 tpcNClsProton, tpcNClsPion,
+                 momProtonRec[0], momProtonRec[1], momProtonRec[2],
+                 momProtonRecErr[0], momProtonRecErr[1], momProtonRecErr[2],
+                 momPionRec[0], momPionRec[1], momPionRec[2],
+                 momPionRecErr[0], momPionRecErr[1], momPionRecErr[2],
+                 momProtonRecIU[0], momProtonRecIU[1], momProtonRecIU[2],
+                 momProtonRecIUErr[0], momProtonRecIUErr[1], momProtonRecIUErr[2],
+                 momPionRecIU[0], momPionRecIU[1], momPionRecIU[2],
+                 momPionRecIUErr[0], momPionRecIUErr[1], momPionRecIUErr[2],
+                 momProtonGen[0], momProtonGen[1], momProtonGen[2],
+                 momPionGen[0], momPionGen[1], momPionGen[2],
+                 sigma1PtProtonIU, sigma1PtPionIU,
+                 DCAProtonRec[0], DCAProtonRec[1],
+                 DCAProtonRecErr[0], DCAProtonRecErr[1],
+                 DCAPionRec[0], DCAPionRec[1],
+                 DCAPionRecErr[0], DCAPionRecErr[1]);
   }
 
   template <typename TProton, typename TPion>
@@ -155,11 +155,11 @@ struct qaLamMomResolution {
     tpcNClsPion = pionTrackIU.tpcNClsFound();
   }
 
-  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, 
-                V0DatasLabeled const& V0Datas, 
-                aod::McParticles const& mcparticles, 
-                MyTracks const&)
-  { 
+  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
+                 V0DatasLabeled const& V0Datas,
+                 aod::McParticles const& mcparticles,
+                 MyTracks const&)
+  {
 
     // event selection
     if (collSelection && !collision.sel8()) {
@@ -271,8 +271,8 @@ struct qaLamMomResolution {
             }
           }
         } // end Anti-Lambda
-      } // end MC
-    } // end V0 loop
+      }   // end MC
+    }     // end V0 loop
   }
   PROCESS_SWITCH(qaLamMomResolution, processMC, "Process MC", true);
 };

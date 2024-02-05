@@ -134,8 +134,7 @@ DECLARE_SOA_TABLE(LamDaughters, "AOD", "LAMDAUGHTERS",
                   qaLamMomResolution::DCAxyPion,
                   qaLamMomResolution::DCAzPion,
                   qaLamMomResolution::DCAxyPionErr,
-                  qaLamMomResolution::DCAzPionErr
-                  );
+                  qaLamMomResolution::DCAzPionErr);
 } // namespace o2::aod
 
 #endif // QALAMMOMRESOLUTION_H_

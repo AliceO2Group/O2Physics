@@ -169,8 +169,8 @@ DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t); //! type of V0. 0: built solely for
 // Saved from finding: covariance matrix of parent track (on request)
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
 DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
-DECLARE_SOA_COLUMN(CovMatPosDau, covmatposdau, float[21]); //! covariance matrix elements positive daughter track
-DECLARE_SOA_COLUMN(CovMatNegDau, covmatnegdau, float[21]); //! covariance matrix elements negative daughter track
+DECLARE_SOA_COLUMN(CovMatPosDau, covmatposdau, float[21]);    //! covariance matrix elements positive daughter track
+DECLARE_SOA_COLUMN(CovMatNegDau, covmatnegdau, float[21]);    //! covariance matrix elements negative daughter track
 
 // Saved from KF particle fit for specic table
 DECLARE_SOA_COLUMN(KFV0Chi2, kfV0Chi2, float); //!
