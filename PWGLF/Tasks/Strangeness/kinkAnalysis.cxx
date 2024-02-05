@@ -161,7 +161,7 @@ struct kinkAnalysis {
 
   float mMother, mChargedDaughter, mNeutralDaughter;
 
-  using CompleteTracks = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
+  using CompleteTracks = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullTr>;
   using CompleteCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
   struct TrackCand {
@@ -403,9 +403,7 @@ struct kinkAnalysis {
     TrackCand trForpool;
 
     std::array<std::vector<TrackCand>, 4> pools; // pools of positive and negative seeds sorted in min VtxID
-    cfgNsigmaTPCdaughter
-      std::vector<uint8_t>
-        selected(tracks.size(), 0u);
+      std::vector<uint8_t> selected(tracks.size(), 0u);
     std::vector<uint64_t> globalBCvector;
 
     int index{0};
@@ -806,13 +804,11 @@ struct kinkAnalysis {
                 histos.fill(HIST("hHypMassPt"), mass, sigmaPt);
 
                 histos.fill(HIST("hNSigmaTrVsPt"), sigmaPt, trackDgh.tpcNSigmaTr());
-              }
-
               if (isDaughter)
                 histos.fill(HIST("hHypMassMC"), mass);
             }
 
-            if ((chargeM == -1) && (chargeD == -1) || (chargeM == 1) && (chargeD == 1)) {
+            if (((chargeM == -1) && (chargeD == -1)) || ((chargeM == 1) && (chargeD == 1))) {
               if (cfgIsMC) {
                 histos.fill(HIST("hcodes"), motherPdg, daughterPdg);
               }
