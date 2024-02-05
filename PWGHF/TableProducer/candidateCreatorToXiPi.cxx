@@ -150,8 +150,8 @@ struct HfCandidateCreatorToXiPi {
       hCascadesCounter->Fill(0);
       int v0index = cascAodElement.v0Id();
       if(!cascAodElement.has_cascData()) continue;
-      hCascadesCounter->Fill(1);
       auto casc = cascAodElement.cascData_as<MyCascTable>();
+      hCascadesCounter->Fill(1);
       auto trackXiDauCharged = casc.bachelor_as<TracksWCovDca>(); // pion <- xi track
       auto trackV0Dau0 = casc.posTrack_as<TracksWCovDca>();       // V0 positive daughter track
       auto trackV0Dau1 = casc.negTrack_as<TracksWCovDca>();       // V0 negative daughter track
