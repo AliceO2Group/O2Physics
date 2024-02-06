@@ -8,7 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef PWGCF_DATAMODEL_IDENTIFIEDBFFILTERED_H_
+#ifndef PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_IDENTIFIEDBFFILTERED_H_
 #define PWGCF_DATAMODEL_IDENTIFIEDBFFILTERED_H_
 
 #include "Framework/ASoA.h"
@@ -112,4 +112,4 @@ DECLARE_SOA_TABLE(IdentifiedBfCFGenTracksInfo, "AOD", "SCANDGENTRCKINF", //! The
 } // namespace aod
 } // namespace o2
 
-#endif // PWGCF_DATAMODEL_IDENTIFIEDBFFILTERED_H_
+#endif  // PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_IDENTIFIEDBFFILTERED_H_
