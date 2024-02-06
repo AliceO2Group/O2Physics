@@ -426,9 +426,19 @@ struct Pi0EtaToGammaGammaMC {
                     continue;
                   }
                   auto g1mc = mcparticles.iteratorAt(photonid1);
-                  pi0id = FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -11, 11, 111, mcparticles);
-                  etaid = FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -11, 11, 221, mcparticles);
 
+                  if (cut2.IsPhotonConversionSelected()) {                                                 // v0photon + photon conversion on ITSib stored in dielectron table. pi0 -> gamma gamma
+                    int photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles); // photon conversion stored in dielectron table
+                    if (photonid2 < 0) {
+                      continue;
+                    }
+                    auto g2mc = mcparticles.iteratorAt(photonid2);
+                    pi0id = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 111, mcparticles);
+                    etaid = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 221, mcparticles);
+                  } else { // pi0/eta -> ee gamma, dalitz decay
+                    pi0id = FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -11, 11, 111, mcparticles);
+                    etaid = FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -11, 11, 221, mcparticles);
+                  }
                 } else if constexpr (pairtype == PairType::kPCMDalitzMuMu) { // check 4 legs
                   auto pos1 = g1.template posTrack_as<MyMCV0Legs>();
                   auto ele1 = g1.template negTrack_as<MyMCV0Legs>();

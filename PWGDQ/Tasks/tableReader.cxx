@@ -845,7 +845,7 @@ struct AnalysisSameEventPairing {
                 Form("PairsBarrelSEPM_%s_%s", objArray->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName()),
                 Form("PairsBarrelSEPP_%s_%s", objArray->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName()),
                 Form("PairsBarrelSEMM_%s_%s", objArray->At(icut)->GetName(), objArrayPair->At(iPairCut)->GetName())};
-              histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+              histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[0].Data(), names[1].Data(), names[2].Data(), names[0].Data(), names[1].Data(), names[2].Data());
               fTrackHistNames.push_back(names);
             } // end loop (pair cuts)
           }   // end if (pair cuts)
@@ -864,7 +864,7 @@ struct AnalysisSameEventPairing {
             Form("PairsMuonSEPM_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonSEPP_%s", objArray->At(icut)->GetName()),
             Form("PairsMuonSEMM_%s", objArray->At(icut)->GetName())};
-          histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+          histNames += Form("%s;%s;%s;%s_unambiguous;%s_unambiguous;%s_unambiguous;", names[0].Data(), names[1].Data(), names[2].Data(), names[0].Data(), names[1].Data(), names[2].Data());
           fMuonHistNames.push_back(names);
 
           TString cutNamesStr = fConfigPairCuts.value;
@@ -1066,11 +1066,20 @@ struct AnalysisSameEventPairing {
         if (twoTrackFilter & (uint32_t(1) << icut)) {
           if (t1.sign() * t2.sign() < 0) {
             fHistMan->FillHistClass(histNames[iCut][0].Data(), VarManager::fgValues);
+            if (!(t1.isAmbiguous() || t2.isAmbiguous())) {
+              fHistMan->FillHistClass(Form("%s_unambiguous", histNames[iCut][0].Data()), VarManager::fgValues);
+            }
           } else {
             if (t1.sign() > 0) {
               fHistMan->FillHistClass(histNames[iCut][1].Data(), VarManager::fgValues);
+              if (!(t1.isAmbiguous() || t2.isAmbiguous())) {
+                fHistMan->FillHistClass(Form("%s_unambiguous", histNames[iCut][1].Data()), VarManager::fgValues);
+              }
             } else {
               fHistMan->FillHistClass(histNames[iCut][2].Data(), VarManager::fgValues);
+              if (!(t1.isAmbiguous() || t2.isAmbiguous())) {
+                fHistMan->FillHistClass(Form("%s_unambiguous", histNames[iCut][2].Data()), VarManager::fgValues);
+              }
             }
           }
           iCut++;
@@ -1080,11 +1089,20 @@ struct AnalysisSameEventPairing {
               continue;
             if (t1.sign() * t2.sign() < 0) {
               fHistMan->FillHistClass(histNames[iCut][0].Data(), VarManager::fgValues);
+              if (!(t1.isAmbiguous() || t2.isAmbiguous())) {
+                fHistMan->FillHistClass(Form("%s_unambiguous", histNames[iCut][0].Data()), VarManager::fgValues);
+              }
             } else {
               if (t1.sign() > 0) {
                 fHistMan->FillHistClass(histNames[iCut][1].Data(), VarManager::fgValues);
+                if (!(t1.isAmbiguous() || t2.isAmbiguous())) {
+                  fHistMan->FillHistClass(Form("%s_unambiguous", histNames[iCut][1].Data()), VarManager::fgValues);
+                }
               } else {
                 fHistMan->FillHistClass(histNames[iCut][2].Data(), VarManager::fgValues);
+                if (!(t1.isAmbiguous() || t2.isAmbiguous())) {
+                  fHistMan->FillHistClass(Form("%s_unambiguous", histNames[iCut][2].Data()), VarManager::fgValues);
+                }
               }
             }
           }      // end loop (pair cuts)
@@ -1360,10 +1378,10 @@ struct AnalysisDileptonHadron {
     // TODO: Create separate histogram directories for each selection used in the creation of the dileptons
     // TODO: Implement possibly multiple selections for the associated track ?
     if (context.mOptions.get<bool>("processSkimmed")) {
-      DefineHistograms(fHistMan, "DileptonsSelected;DileptonHadronInvMass;DileptonHadronCorrelation", fConfigAddDileptonHadHistogram); // define all histograms
+      DefineHistograms(fHistMan, "DileptonsSelected;DileptonHadronInvMass;DileptonHadronCorrelationSE", fConfigAddDileptonHadHistogram); // define all histograms
     }
     if (context.mOptions.get<bool>("processMixedEvent")) {
-      DefineHistograms(fHistMan, "DileptonHadronInvMassME", fConfigAddDileptonHadHistogram); // define all histograms
+      DefineHistograms(fHistMan, "DileptonHadronInvMassME;DileptonHadronCorrelationME", fConfigAddDileptonHadHistogram); // define all histograms
     }
 
     VarManager::SetUseVars(fHistMan->GetUsedVars());
@@ -1466,7 +1484,7 @@ struct AnalysisDileptonHadron {
         // VarManager::FillDileptonHadron(dilepton, hadron, fValuesHadron);
         VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, hadron, fValuesHadron);
         fHistMan->FillHistClass("DileptonHadronInvMass", fValuesHadron);
-        fHistMan->FillHistClass("DileptonHadronCorrelation", fValuesHadron);
+        fHistMan->FillHistClass("DileptonHadronCorrelationSE", fValuesHadron);
         // table to be written out for ML analysis
         BmesonsTable(fValuesHadron[VarManager::kPairMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz], fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle], fValuesHadron[VarManager::kVertexingChi2PCA]);
       }
@@ -1505,6 +1523,7 @@ struct AnalysisDileptonHadron {
 
           VarManager::FillDileptonHadron(dilepton, track, VarManager::fgValues);
           fHistMan->FillHistClass("DileptonHadronInvMassME", VarManager::fgValues);
+          fHistMan->FillHistClass("DileptonHadronCorrelationME", VarManager::fgValues);
         } // end for (track)
       }   // end for (dilepton)
 

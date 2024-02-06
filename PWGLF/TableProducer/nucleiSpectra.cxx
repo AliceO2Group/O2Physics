@@ -225,19 +225,24 @@ struct nucleiSpectra {
   int mRunNumber = 0;
   float mBz = 0.f;
 
-  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = nabs(aod::track::eta) < cfgCutEta && aod::track::tpcInnerParam > cfgCutTpcMom;
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime>>;
 
   // Collisions with chentrality
-  using CollWithCent = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>::iterator;
+  using CollWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>::iterator;
 
   // Flow analysis
-  using CollWithQvec = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>::iterator;
+  using CollWithQvec = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>::iterator;
 
   HistogramRegistry spectra{"spectra", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   o2::pid::tof::Beta<TrackCandidates::iterator> responseBeta;
+
+  template <class collision_t>
+  bool eventSelection(collision_t& collision)
+  {
+    return collision.sel8() && collision.posZ() > -cfgCutVertex && collision.posZ() < cfgCutVertex;
+  }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
@@ -365,10 +370,6 @@ struct nucleiSpectra {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
-    // collision process loop
-    if (!collision.sel8()) {
-      return;
-    }
     spectra.fill(HIST("hRecVtxZData"), collision.posZ());
 
     const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
@@ -518,9 +519,12 @@ struct nucleiSpectra {
     nuclei::hGloTOFtracks[1]->Fill(nGloTracks[1], nTOFTracks[1]);
   }
 
-  void processData(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
+  void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
     nuclei::candidates.clear();
+    if (!eventSelection(collision)) {
+      return;
+    }
     fillDataInfo(collision, tracks);
     for (auto& c : nuclei::candidates) {
       nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, c.selCollIndex);
@@ -531,6 +535,9 @@ struct nucleiSpectra {
   void processDataFlow(CollWithQvec const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
     nuclei::candidates.clear();
+    if (!eventSelection(collision)) {
+      return;
+    }
     fillDataInfo(collision, tracks);
     for (auto& c : nuclei::candidates) {
       nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, c.selCollIndex);
@@ -539,10 +546,15 @@ struct nucleiSpectra {
   PROCESS_SWITCH(nucleiSpectra, processDataFlow, "Data analysis with flow", false);
 
   Preslice<TrackCandidates> tracksPerCollisions = aod::track::collisionId;
-  void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>> const& collisions, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
+  void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, TrackCandidates const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
   {
     nuclei::candidates.clear();
+    std::vector<bool> goodCollisions(mcCollisions.size(), false);
     for (auto& collision : collisions) {
+      if (!eventSelection(collision)) {
+        continue;
+      }
+      goodCollisions[collision.mcCollisionId()] = true;
       const auto& slicedTracks = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
       fillDataInfo(collision, slicedTracks);
     }
@@ -562,7 +574,7 @@ struct nucleiSpectra {
         c.flags |= kIsSecondaryFromMaterial;
       }
 
-      nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode());
+      nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()]);
       for (int iS{0}; iS < nuclei::species; ++iS) {
         if (std::abs(particle.pdgCode()) == nuclei::codes[iS]) {
           nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt * nuclei::charges[iS]), 1. - std::abs(c.pt * nuclei::charges[iS]) / particle.pt());
@@ -591,7 +603,7 @@ struct nucleiSpectra {
         }
 
         if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
-          nucleiTableMC(999., 999., 999., 0., 0., 999., 999., 999., -1, -1, -1, flags, 0, 0, 0, 0, 0, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode());
+          nucleiTableMC(999., 999., 999., 0., 0., 999., 999., 999., -1, -1, -1, flags, 0, 0, 0, 0, 0, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()]);
         }
         break;
       }
