@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include "PWGCF/TwoParticleCorrelations/TableProducer/identifiedBfFilter.h"
 
 #include <cmath>
 
@@ -36,7 +37,6 @@
 #include <TH3.h>
 #include <TProfile3D.h>
 
-#include "PWGCF/TwoParticleCorrelations/TableProducer/identifiedBfFilter.h"
 
 using namespace o2;
 using namespace o2::framework;
