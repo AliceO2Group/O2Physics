@@ -126,7 +126,8 @@ DECLARE_SOA_TABLE(HfCandDsLites, "AOD", "HFCANDDSLITE",
                   full::AbsCos3PiK,
                   hf_cand::Chi2PCA,
                   hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec)
+                  hf_cand_3prong::OriginMcRec,
+                  hf_cand_3prong::FlagMcDecayChanRec)
 
 DECLARE_SOA_TABLE(HfCandDsFulls, "AOD", "HFCANDDSFULL",
                   collision::BCId,
@@ -195,7 +196,8 @@ DECLARE_SOA_TABLE(HfCandDsFulls, "AOD", "HFCANDDSFULL",
                   full::AbsCos3PiK,
                   hf_cand::Chi2PCA,
                   hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec);
+                  hf_cand_3prong::OriginMcRec,
+                  hf_cand_3prong::FlagMcDecayChanRec);
 
 DECLARE_SOA_TABLE(HfCandDsFullEvs, "AOD", "HFCANDDSFULLEV",
                   collision::BCId,
@@ -223,7 +225,9 @@ struct HfTreeCreatorDsToKKPi {
   Produces<o2::aod::HfCandDsFullPs> rowCandidateFullParticles;
   Produces<o2::aod::HfCandDsLites> rowCandidateLite;
 
-  Configurable<int> decayChannel{"decayChannel", 1, "Switch between decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
+  Configurable<int> decayChannelDs{"decayChannelDs", 1, "Switch between decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
+  Configurable<int> decayChannelDplusMC{"decayChannelDplusMC", 1, "Switch between decay channels for MC Dplus: 1 for Dplus->PhiPi->KKpi, 2 for Dplus->K0*K->KKPi"};
+  Configurable<bool> FillDplusMC{"fillDplusMC", false, "Switch to fill Dplus MC information"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 1, "Selection flag for Ds"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   // parameters for production of training samples
@@ -240,12 +244,12 @@ struct HfTreeCreatorDsToKKPi {
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPiExt, aod::TracksPidKaExt>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanGen == decayChannel;
+  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && (aod::hf_cand_3prong::flagMcDecayChanGen == decayChannelDs || (FillDplusMC && aod::hf_cand_3prong::flagMcDecayChanGen == (decayChannelDplusMC + 2))); //Do not store Dplus MC if FillDplusMC is false
 
   Partition<CandDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
   Partition<CandDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
 
-  Partition<CandDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
+  Partition<CandDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && (aod::hf_cand_3prong::flagMcDecayChanRec == decayChannelDs || (FillDplusMC && aod::hf_cand_3prong::flagMcDecayChanRec == (decayChannelDplusMC + 2 ))); //Do not store Dplus MC if FillDplusMC is false
   Partition<CandDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi));
 
   void init(InitContext const&)
@@ -274,9 +278,23 @@ struct HfTreeCreatorDsToKKPi {
   {
     int8_t flagMc = 0;
     int8_t originMc = 0;
+    int8_t channelMc = 0;
+    float yCand = 0;
+    float eCand = 0;
+    float ctCand = 0;
     if constexpr (doMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
+      channelMc = candidate.flagMcDecayChanRec();
+      if (FillDplusMC && candidate.flagMcDecayChanRec() == (decayChannelDplusMC + 2)) {
+        yCand = hfHelper.yDplus(candidate);
+        eCand = hfHelper.eDplus(candidate);
+        ctCand = hfHelper.ctDplus(candidate);
+      } else {
+        yCand = hfHelper.yDs(candidate);
+        eCand = hfHelper.eDs(candidate);
+        ctCand = hfHelper.ctDs(candidate);
+      }
     }
 
     float invMassDs = 0;
@@ -328,7 +346,7 @@ struct HfTreeCreatorDsToKKPi {
         candidate.pt(),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yDs(candidate),
+        yCand,
         candidate.decayLength(),
         candidate.decayLengthXY(),
         candidate.decayLengthNormalised(),
@@ -341,7 +359,8 @@ struct HfTreeCreatorDsToKKPi {
         absCos3PiKDs,
         candidate.chi2PCA(),
         flagMc,
-        originMc);
+        originMc,
+        channelMc);
     } else {
       rowCandidateFull(
         candidate.collision().bcId(),
@@ -393,11 +412,11 @@ struct HfTreeCreatorDsToKKPi {
         invMassDs,
         candidate.pt(),
         candidate.p(),
-        hfHelper.ctDs(candidate),
+        ctCand,
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yDs(candidate),
-        hfHelper.eDs(candidate),
+        yCand,
+        eCand,
         candidate.decayLength(),
         candidate.decayLengthXY(),
         candidate.decayLengthNormalised(),
@@ -410,7 +429,8 @@ struct HfTreeCreatorDsToKKPi {
         absCos3PiKDs,
         candidate.chi2PCA(),
         flagMc,
-        originMc);
+        originMc,
+        channelMc);
     }
   }
 

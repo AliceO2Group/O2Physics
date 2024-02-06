@@ -315,9 +315,30 @@ struct HfCandidateCreator3ProngExpressions {
               arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
             }
             if ((arrPDGDaugh[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[0])) {
-              channel = DecayChannelDs::PhiPi;
+              channel = DecayChannelDToKKPi::DsToPhiPi;
             } else if ((arrPDGDaugh[0] == arrPDGResonantDsKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDsKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[0])) {
-              channel = DecayChannelDs::K0starK;
+              channel = DecayChannelDToKKPi::DsToK0starK;
+            }
+          }
+        }
+        else {  // Check for D± → K± K∓ π±
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+          if (indexRec > -1) {
+            flag = sign * (1 << DecayType::DsToKKPi);
+            if (arrayDaughters[0].has_mcParticle()) {
+              swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
+            }
+            RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrDaughIndex, std::array{0}, 1);
+            if (arrDaughIndex.size() == 2) {
+              for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
+                auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
+                arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
+              }
+              if ((arrPDGDaugh[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[0])) {
+                channel = DecayChannelDToKKPi::DplusToPhiPi;
+              } else if ((arrPDGDaugh[0] == arrPDGResonantDsKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDsKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[0])) {
+                channel = DecayChannelDToKKPi::DplusToK0starK;
+              }
             }
           }
         }
@@ -390,9 +411,24 @@ struct HfCandidateCreator3ProngExpressions {
               arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
             }
             if ((arrPDGDaugh[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[0])) {
-              channel = DecayChannelDs::PhiPi;
+              channel = DecayChannelDToKKPi::DsToPhiPi;
             } else if ((arrPDGDaugh[0] == arrPDGResonantDsKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDsKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[0])) {
-              channel = DecayChannelDs::K0starK;
+              channel = DecayChannelDToKKPi::DsToK0starK;
+            }
+          }
+        }
+        else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {  // Check for D± → K± K∓ π±
+          flag = sign * (1 << DecayType::DsToKKPi);
+          RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
+          if (arrDaughIndex.size() == 2) {
+            for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
+              auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
+              arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
+            }
+            if ((arrPDGDaugh[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[0])) {
+              channel = DecayChannelDToKKPi::DplusToPhiPi;
+            } else if ((arrPDGDaugh[0] == arrPDGResonantDsKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDsKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[0])) {
+              channel = DecayChannelDToKKPi::DplusToK0starK;
             }
           }
         }
