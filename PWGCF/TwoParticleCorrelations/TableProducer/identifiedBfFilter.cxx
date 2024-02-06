@@ -444,10 +444,10 @@ void IdentifiedBfFilter::processGenerated(CollisionObject const& mccollision, Pa
 
 template <typename CollisionsGroup, typename AllCollisions>
 void IdentifiedBfFilter::processGeneratorLevel(aod::McCollision const& mccollision,
-                                         CollisionsGroup const& collisions,
-                                         aod::McParticles const& mcparticles,
-                                         AllCollisions const& allcollisions,
-                                         float defaultcent)
+                                               CollisionsGroup const& collisions,
+                                               aod::McParticles const& mcparticles,
+                                               AllCollisions const& allcollisions,
+                                               float defaultcent)
 {
   using namespace identifiedbffilter;
 
@@ -477,25 +477,25 @@ void IdentifiedBfFilter::processGeneratorLevel(aod::McCollision const& mccollisi
 }
 
 void IdentifiedBfFilter::processWithCentGeneratorLevel(aod::McCollision const& mccollision,
-                                                 soa::SmallGroups<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>> const& collisions,
-                                                 aod::McParticles const& mcparticles,
-                                                 aod::CollisionsEvSelCent const& allcollisions)
+                                                       soa::SmallGroups<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>> const& collisions,
+                                                       aod::McParticles const& mcparticles,
+                                                       aod::CollisionsEvSelCent const& allcollisions)
 {
   processGeneratorLevel(mccollision, collisions, mcparticles, allcollisions, 50.0);
 }
 
 void IdentifiedBfFilter::processWithRun2CentGeneratorLevel(aod::McCollision const& mccollision,
-                                                     soa::SmallGroups<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>> const& collisions,
-                                                     aod::McParticles const& mcparticles,
-                                                     aod::CollisionsEvSelRun2Cent const& allcollisions)
+                                                           soa::SmallGroups<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>> const& collisions,
+                                                           aod::McParticles const& mcparticles,
+                                                           aod::CollisionsEvSelRun2Cent const& allcollisions)
 {
   processGeneratorLevel(mccollision, collisions, mcparticles, allcollisions, 50.0);
 }
 
 void IdentifiedBfFilter::processWithoutCentGeneratorLevel(aod::McCollision const& mccollision,
-                                                    soa::SmallGroups<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>> const& collisions,
-                                                    aod::McParticles const& mcparticles,
-                                                    aod::CollisionsEvSel const& allcollisions)
+                                                          soa::SmallGroups<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>> const& collisions,
+                                                          aod::McParticles const& mcparticles,
+                                                          aod::CollisionsEvSel const& allcollisions)
 {
   processGeneratorLevel(mccollision, collisions, mcparticles, allcollisions, 50.0);
 }
@@ -1296,9 +1296,9 @@ void IdentifiedBfFilterTracks::fillParticleHistosAfterSelection(ParticleObject c
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{adaptAnalysisTask<IdentifiedBfFilter>(cfgc,
-                                                        SetDefaultProcesses{
-                                                          {{"processWithoutCent", true},
-                                                           {"processWithoutCentMC", true}}}),
+                                                              SetDefaultProcesses{
+                                                                {{"processWithoutCent", true},
+                                                                 {"processWithoutCentMC", true}}}),
                         adaptAnalysisTask<IdentifiedBfFilterTracks>(cfgc)};
   return workflow;
 }

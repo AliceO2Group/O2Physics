@@ -23,7 +23,7 @@ namespace identifiedbffilter
 {
 DECLARE_SOA_COLUMN(IdentifiedBfCFCollisionAccepted, collisionaccepted, uint8_t); //! If the collision/event has been accepted or not
 DECLARE_SOA_COLUMN(IdentifiedBfCFCollisionCentMult, centmult, float);            //! The centrality/multiplicity pecentile
-DECLARE_SOA_DYNAMIC_COLUMN(IsCollisionAccepted,                            //! Is the collision/event accepted
+DECLARE_SOA_DYNAMIC_COLUMN(IsCollisionAccepted,                                  //! Is the collision/event accepted
                            iscollisionaccepted,
                            [](uint8_t _collisionaccepted) -> uint8_t { return _collisionaccepted; });
 DECLARE_SOA_DYNAMIC_COLUMN(IsGenCollisionAccepted, //! Is the generated collision/event accepted
