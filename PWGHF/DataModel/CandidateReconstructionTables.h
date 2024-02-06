@@ -771,8 +771,8 @@ enum DecayType { DplusToPiKPi = 0,
 enum DecayChannelDToKKPi {
   DsToPhiPi = 1,
   DsToK0starK,
-  DplusToPhiPi, // used to describe D+ in MC production for Ds analysis
-  DplusToK0starK  // used to describe D+ in MC production for Ds analysis
+  DplusToPhiPi,  // used to describe D+ in MC production for Ds analysis
+  DplusToK0starK // used to describe D+ in MC production for Ds analysis
 };
 
 } // namespace hf_cand_3prong

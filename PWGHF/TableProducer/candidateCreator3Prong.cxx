@@ -320,8 +320,7 @@ struct HfCandidateCreator3ProngExpressions {
               channel = DecayChannelDToKKPi::DsToK0starK;
             }
           }
-        }
-        else {  // Check for D± → K± K∓ π±
+        } else { // Check for D± → K± K∓ π±
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
           if (indexRec > -1) {
             flag = sign * (1 << DecayType::DsToKKPi);
@@ -416,8 +415,7 @@ struct HfCandidateCreator3ProngExpressions {
               channel = DecayChannelDToKKPi::DsToK0starK;
             }
           }
-        }
-        else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {  // Check for D± → K± K∓ π±
+        } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) { // Check for D± → K± K∓ π±
           flag = sign * (1 << DecayType::DsToKKPi);
           RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
           if (arrDaughIndex.size() == 2) {
