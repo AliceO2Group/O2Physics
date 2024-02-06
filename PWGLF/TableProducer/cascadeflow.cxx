@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief Task to create derived data
-///
+/// \brief Task to create derived data for cascade flow analyses
+/// \authors: Chiara De Martin (chiara.de.martin@cern.ch), Maximiliano Puccio (maximiliano.puccio@cern.ch)
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -24,10 +24,12 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "TRandom3.h"
+#include "Framework/ASoAHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using std::array;
 
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;  
 
@@ -45,12 +47,28 @@ static const std::vector<std::string> speciesNames{"Xi", "Omega"};
 
 struct cascadeFlow {
 
+  template <typename TCascade>
+  bool IsCascAccepted(TCascade casc)
+  {
+    if (casc.pt() > 0)
+      return false;
+
+    return true;
+  }
+
+  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
   // Tables to produce
   Produces<aod::CascTraining> trainingSample;
 
   Configurable<double> sideBandStart{"sideBandStart", 5, "Start of the sideband region in number of sigmas"};
   Configurable<double> sideBandEnd{"sideBandEnd", 7, "End of the sideband region in number of sigmas"};
   Configurable<double> downsample{"downsample", 1., "Downsample training output tree"};
+  Configurable<bool> doNTPCSigmaCut{"doNTPCSigmaCut", 1, "doNtpcSigmaCut"};
+  Configurable<float> nsigmatpcPr{"nsigmatpcPr", 3, "nsigmatpcPr"};
+  Configurable<float> nsigmatpcPi{"nsigmatpcPi", 3, "nsigmatpcPi"};
+  Configurable<float> mintpccrrows{"mintpccrrows", 3, "mintpccrrows"};
+
   Configurable<LabeledArray<double>> parSigmaMass{
     "parSigmaMass",
     {cascadev2::massSigmaParameters[0], 4, 2,
@@ -87,8 +105,19 @@ struct cascadeFlow {
         pdgCode); 
   }
 
+
+  void init(InitContext const&){
+    ConfigurableAxis vertexZ{"vertexZ", {20, -10, 10}, "vertex axis for histograms"};
+    histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {vertexZ});
+    histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
+    histos.add("hEventSelection", "hEventSelection", kTH1F, {{4, 0, 4}});
+    histos.add("hCandidate", "hCandidate", HistType::kTH1D, {{22, -0.5, 21.5}});
+  }
+
   void processTrainingBackground(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&) {
     
+    int counter = 0;
+
     if (!coll.sel8() || std::abs(coll.posZ()) > 10.) {
       return;
     }
@@ -109,11 +138,54 @@ struct cascadeFlow {
       }
 
       /// Add some minimal cuts for single track variables (min number of TPC clusters)
+      auto negExtra = casc.negTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>>();
+      auto posExtra = casc.posTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>>();
+      auto bachExtra = casc.bachTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>>();
+
+      if (doNTPCSigmaCut) {
+        if (casc.sign() < 0) {
+          if (TMath::Abs(posExtra.tpcNSigmaPr()) > nsigmatpcPr || TMath::Abs(negExtra.tpcNSigmaPi()) > nsigmatpcPi)
+            continue;
+	  histos.fill(HIST("hCandidate"), ++counter);
+        } else if (casc.sign() > 0) {
+          if (TMath::Abs(posExtra.tpcNSigmaPi()) > nsigmatpcPi || TMath::Abs(negExtra.tpcNSigmaPr()) > nsigmatpcPr)
+            continue;
+          histos.fill(HIST("hCandidate"), ++counter);
+        }
+      } else
+        ++counter;
+
+      if (posExtra.tpcCrossedRows() < mintpccrrows || negExtra.tpcCrossedRows() < mintpccrrows || bachExtra.tpcCrossedRows() < mintpccrrows)
+        continue;
+      histos.fill(HIST("hCandidate"), ++counter);
+      
       fillTrainingTable(coll, casc, 0); 
     }
   }
+
+  
+  void processTrainingSignal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascMCCores, aod::CascExtras, aod::CascBBs> const& Cascades, soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs> const&)  {
+    
+    if (!coll.sel8() || std::abs(coll.posZ()) > 10.) {
+      return;
+    }
+
+    for (auto& casc : Cascades) {
+      int pdgCode{casc.pdgCode()};
+      if (!(std::abs(pdgCode) == 3312 && std::abs(casc.pdgCodeV0()) == 3122 && std::abs(casc.pdgCodeBachelor() == 211)) //Xi
+	  && !(std::abs(pdgCode) == 3334 && std::abs(casc.pdgCodeV0()) == 3122 && std::abs(casc.pdgCodeBachelor() == 321))) //Omega
+	  continue;
+      
+      
+      IsCascAccepted(casc);
+      //PDG cascades 
+      fillTrainingTable(coll, casc, pdgCode); 
+    }
+  }
+  
   
   PROCESS_SWITCH(cascadeFlow, processTrainingBackground, "Process to create the training dataset for the background", true);
+  PROCESS_SWITCH(cascadeFlow, processTrainingSignal, "Process to create the training dataset for the signal", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
