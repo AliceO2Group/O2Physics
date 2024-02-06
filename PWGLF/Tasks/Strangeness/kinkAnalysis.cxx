@@ -783,8 +783,9 @@ struct kinkAnalysis {
               if (particleName != Hypertriton) {
                 if (theta * radToDeg < 0.5)
                   continue;
-              } else if (theta * radToDeg < 0.2)
+              } else if (theta * radToDeg < 0.2) {
                 continue;
+              }
 
               if ((qT < qTlower) || (qT > qTupper))
                 continue;
@@ -823,12 +824,9 @@ struct kinkAnalysis {
                   } else if ((motherPdg == particlePdgCode || motherPdg == -3222) && (daughterPdg != -211)) {
                     histos.fill(HIST("hptMtrue"), sigmaPt, PionTr.getPt());
                     histos.fill(HIST("hPtMinusRecMcTrthM"), mass, sigmaPt);
-                    //} else if ((abs(motherPdg) == abs(particlePdgCode)) && particleName == Hypertriton) {
                   } else if ((motherPdg == particlePdgCode || motherPdg == -1010010030) && (daughterPdg == -1000010030 || daughterPdg == 1000010030)) {
                     histos.fill(HIST("hpRes"), sigmaPt, (mcMotherPt - sigmaPt) / mcMotherPt);
-                  }
-
-                  else { // if ((motherPdg != particlePdgCode)&&(daughterPdg!=-211)) {
+                  } else {
                     histos.fill(HIST("hptMDelse"), sigmaPt, PionTr.getPt());
                     histos.fill(HIST("hPtMinusRecMcTrthelse"), mass, sigmaPt);
                   }
