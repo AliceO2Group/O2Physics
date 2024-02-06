@@ -65,18 +65,18 @@ struct TriggerCorrelationsTask {
   aod::EMCALClusterDefinition clusterDef = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinition.value);
   Filter clusterDefinitionSelection = o2::aod::jcluster::definition == static_cast<int>(clusterDef);
 
-  void processTriggeredCorrelations(aod::JCollision const& collision,
+  void processTriggeredCorrelations(JetCollision const& collision,
                                     soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jetsCharged,
                                     soa::Join<aod::FullJets, aod::FullJetConstituents> const& jetsFull,
-                                    soa::Filtered<aod::JClusters> const& clusters,
-                                    aod::JTracks const& tracks)
+                                    soa::Filtered<JetClusters> const& clusters,
+                                    JetTracks const& tracks)
   {
 
     registry.fill(HIST("h_collision_trigger_events"), 0.5); // all events
     if (collision.posZ() < vertexZCut) {
       registry.fill(HIST("h_collision_trigger_events"), 1.5); // all events with z vertex cut
     }
-    if (JetDerivedDataUtilities::selectCollision(collision, JetDerivedDataUtilities::JCollisionSel::sel8)) {
+    if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8)) {
       registry.fill(HIST("h_collision_trigger_events"), 2.5); // events with sel8()
     }
     if (collision.alias_bit(triggerAliases::kTVXinEMC)) {
@@ -86,7 +86,7 @@ struct TriggerCorrelationsTask {
     float jetsChargedLeadingPt = -1.0;
     float jetsFullLeadingPt = -1.0;
     float gammaLeadingPt = -1.0;
-    if (JetDerivedDataUtilities::selectCollision(collision, JetDerivedDataUtilities::JCollisionSel::sel8)) {
+    if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::sel8)) {
       if (doChargedJetTrigger) {
         for (auto& jetCharged : jetsCharged) {
           if (jetCharged.r() == round(jetsChargedR * 100.0f)) {

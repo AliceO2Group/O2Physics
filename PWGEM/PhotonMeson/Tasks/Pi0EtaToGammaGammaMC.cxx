@@ -140,7 +140,7 @@ struct Pi0EtaToGammaGammaMC {
     }     // end of cut1 loop
   }
 
-  static constexpr std::string_view pairnames[8] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PCMDalitzEE", "PCMDalitzMuMu", "PHOSEMC"};
+  static constexpr std::string_view pairnames[9] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PCMDalitzEE", "PCMDalitzMuMu", "PHOSEMC", "DalitzEEDalitzEE"};
   static constexpr std::string_view parnames[3] = {"Gamma", "Pi0", "Eta"};
   void addhistograms()
   {
@@ -426,9 +426,19 @@ struct Pi0EtaToGammaGammaMC {
                     continue;
                   }
                   auto g1mc = mcparticles.iteratorAt(photonid1);
-                  pi0id = FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -11, 11, 111, mcparticles);
-                  etaid = FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -11, 11, 221, mcparticles);
 
+                  if (cut2.IsPhotonConversionSelected()) {                                                 // v0photon + photon conversion on ITSib stored in dielectron table. pi0 -> gamma gamma
+                    int photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles); // photon conversion stored in dielectron table
+                    if (photonid2 < 0) {
+                      continue;
+                    }
+                    auto g2mc = mcparticles.iteratorAt(photonid2);
+                    pi0id = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 111, mcparticles);
+                    etaid = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 221, mcparticles);
+                  } else { // pi0/eta -> ee gamma, dalitz decay
+                    pi0id = FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -11, 11, 111, mcparticles);
+                    etaid = FindCommonMotherFrom3Prongs(g1mc, pos2mc, ele2mc, 22, -11, 11, 221, mcparticles);
+                  }
                 } else if constexpr (pairtype == PairType::kPCMDalitzMuMu) { // check 4 legs
                   auto pos1 = g1.template posTrack_as<MyMCV0Legs>();
                   auto ele1 = g1.template negTrack_as<MyMCV0Legs>();
@@ -507,9 +517,12 @@ struct Pi0EtaToGammaGammaMC {
 
   void processPHOSEMC(MyCollisions const& collisions) {}
 
+  Filter collisionFilter = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
+  using filteredMyCollisions = soa::Filtered<MyCollisions>;
+
   PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
   PresliceUnsorted<MyCollisions> rec_perMcCollision = aod::emmceventlabel::emreducedmceventId;
-  void processGen(MyCollisions const& collisions, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
+  void processGen(filteredMyCollisions const& collisions, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
@@ -520,7 +533,6 @@ struct Pi0EtaToGammaGammaMC {
     }
 
     for (auto& collision : collisions) {
-
       auto mccollision = collision.emreducedmcevent();
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_before"))->Fill(mccollision.posZ());
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(1.0); // all
@@ -551,8 +563,7 @@ struct Pi0EtaToGammaGammaMC {
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPt_Pi0"))->Fill(mctrack.pt());
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hY_Pi0"))->Fill(mctrack.y());
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPhi_Pi0"))->Fill(mctrack.phi());
-        }
-        if (abs(pdg) == 221 && IsPhysicalPrimary(mctrack.emreducedmcevent(), mctrack, mcparticles)) {
+        } else if (abs(pdg) == 221 && IsPhysicalPrimary(mctrack.emreducedmcevent(), mctrack, mcparticles)) {
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPt_Eta"))->Fill(mctrack.pt());
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hY_Eta"))->Fill(mctrack.y());
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPhi_Eta"))->Fill(mctrack.phi());

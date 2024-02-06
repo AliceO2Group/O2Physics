@@ -112,4 +112,8 @@ if(FastJet_FOUND)
                         SOURCES phiInJets.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-lund-reclustering
+                        SOURCES jetLundReclustering.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib
+                        COMPONENT_NAME Analysis)
 endif()

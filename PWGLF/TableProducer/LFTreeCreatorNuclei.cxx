@@ -207,12 +207,14 @@ struct LfTreeCreatorNuclei {
           tableCandidateMC(particle.pdgCode(),
                            particle.isPhysicalPrimary(),
                            particle.producedByGenerator(),
+                           particle.getProcess(),
                            particle.px(),
                            particle.py(),
                            particle.pz());
+          // if(particle.pdgCode() == 1000010020) LOG(info)<<"[TC]Deuteron PDGcode ===="<<particle.pdgCode();
           continue;
         }
-        tableCandidateMC(0, -1, -1, 0, 0, 0);
+        tableCandidateMC(0, -1, -1, 0, 0, 0, 0);
       }
     }
   }
@@ -233,7 +235,7 @@ struct LfTreeCreatorNuclei {
         continue;
       hEvents.fill(HIST("eventSelection"), 2);
       const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
-      if (tracksInCollision.size() == 0)
+      if (doSkim && tracksInCollision.size() == 0)
         continue;
       hEvents.fill(HIST("eventSelection"), 3);
       if (doSkim && (trackSelType.value == 3) && !checkQuality<false>(collision, tracksInCollision))
@@ -253,6 +255,10 @@ struct LfTreeCreatorNuclei {
       if (useEvsel && !collision.sel8()) {
         continue;
       }
+      hEvents.fill(HIST("eventSelection"), 1);
+      if (collision.posZ() >= cfgHighCutVertex && collision.posZ() <= cfgLowCutVertex)
+        continue;
+      hEvents.fill(HIST("eventSelection"), 2);
       const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
       fillForOneEvent<true>(collision, tracksInCollision);
     }

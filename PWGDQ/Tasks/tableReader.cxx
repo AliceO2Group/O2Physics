@@ -1052,6 +1052,7 @@ struct AnalysisSameEventPairing {
                         -999., -999., -999., -999.,
                         t1.isAmbiguous(), t2.isAmbiguous(),
                         VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3],
+                        VarManager::fgValues[VarManager::kR2EP], VarManager::fgValues[VarManager::kR2SP], VarManager::fgValues[VarManager::kCentFT0C],
                         VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi]);
         }
       }
@@ -1246,31 +1247,43 @@ struct AnalysisFwdTrackPid {
 
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
 
+  Configurable<float> fConfigMaxDCA{"cfgMaxDCA", 0.5f, "Manually set maximum DCA of the track"};
+
   void init(o2::framework::InitContext& context)
   {
   }
 
   // Template function to pair mft tracks and muon tracks
-  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename Muons, typename MftTracks>
+  template <bool TMatchedOnly, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename Muons, typename MftTracks>
   void runFwdTrackPid(TEvent const& event, Muons const& muons, MftTracks const& mftTracks)
   {
     fwdPidAllList.reserve(1);
     for (const auto& muon : muons) {
-      if (muon.has_matchMFTTrack() && muon.trackType() == 0) {
-        LOGP(info, "{} - {}", muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT());
+      if (muon.has_matchMFTTrack() && muon.trackType() == 0 && TMath::Abs(muon.fwdDcaX()) < fConfigMaxDCA && TMath::Abs(muon.fwdDcaY()) < fConfigMaxDCA) {
         auto mftTrack = muon.template matchMFTTrack_as<MyMftTracks>();
-        fwdPidAllList(muon.trackType(), event.posX(), event.posY(), event.posZ(), event.numContrib(), muon.pt(), muon.eta(), muon.phi(), mftTrack.mftClusterSizesAndTrackFlags(), muon.fwdDcaX(), muon.fwdDcaY(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT());
+        fwdPidAllList(muon.trackType(), event.posX(), event.posY(), event.posZ(), event.numContrib(), muon.pt(), muon.eta(), muon.phi(), muon.sign(), mftTrack.mftClusterSizesAndTrackFlags(), muon.fwdDcaX(), muon.fwdDcaY(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT());
       }
     }
-    for (const auto& mftTrack : mftTracks) {
-      fwdPidAllList(4, event.posX(), event.posY(), event.posZ(), event.numContrib(), mftTrack.pt(), mftTrack.eta(), mftTrack.phi(), mftTrack.mftClusterSizesAndTrackFlags(), mftTrack.fwdDcaX(), mftTrack.fwdDcaY(), -999, -999);
+    if constexpr (TMatchedOnly == false) {
+      for (const auto& mftTrack : mftTracks) {
+        if (TMath::Abs(mftTrack.fwdDcaX()) < fConfigMaxDCA && TMath::Abs(mftTrack.fwdDcaY()) < fConfigMaxDCA) {
+          fwdPidAllList(4, event.posX(), event.posY(), event.posZ(), event.numContrib(), mftTrack.pt(), mftTrack.eta(), mftTrack.phi(), mftTrack.sign(), mftTrack.mftClusterSizesAndTrackFlags(), mftTrack.fwdDcaX(), mftTrack.fwdDcaY(), -999, -999);
+        }
+      }
     }
   }
 
   void processFwdPidMatchedSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, MyMuonTracks const& muons, MyMftTracks const& mftTracks)
   {
     if (muons.size() > 0 && mftTracks.size() > 0) {
-      runFwdTrackPid<gkEventFillMap, gkMuonFillMap>(event, muons, mftTracks);
+      runFwdTrackPid<false, gkEventFillMap, gkMuonFillMap>(event, muons, mftTracks);
+    }
+  }
+
+  void processFwdPidMatchedOnlySkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, MyMuonTracks const& muons, MyMftTracks const& mftTracks)
+  {
+    if (muons.size() > 0) {
+      runFwdTrackPid<true, gkEventFillMap, gkMuonFillMap>(event, muons, mftTracks);
     }
   }
 
@@ -1279,7 +1292,8 @@ struct AnalysisFwdTrackPid {
     // do nothing
   }
 
-  PROCESS_SWITCH(AnalysisFwdTrackPid, processFwdPidMatchedSkimmed, "Run MFT - muon track pairing", false);
+  PROCESS_SWITCH(AnalysisFwdTrackPid, processFwdPidMatchedSkimmed, "Run MFT - muon track pairing filling tree with MFT and global tracks", false);
+  PROCESS_SWITCH(AnalysisFwdTrackPid, processFwdPidMatchedOnlySkimmed, "Run MFT - muon track pairing filling tree with global tracks only", false);
   PROCESS_SWITCH(AnalysisFwdTrackPid, processDummy, "Dummy function", false);
 };
 
@@ -1304,8 +1318,8 @@ struct AnalysisDileptonHadron {
   // comment: add list of subgroups (must define subgroups under )
   Configurable<std::string> fConfigAddDileptonHadHistogram{"cfgAddDileptonHadHistogram", "", "Comma separated list of histograms"};
   Configurable<int> fConfigMixingDepth{"cfgMixingDepth", 5, "Event mixing pool depth"};
-  Configurable<float> fConfigDileptonLowMass{"cfgDileptonLowMass", 2.8, "Low mass cut for the dileptons used in analysis"};
-  Configurable<float> fConfigDileptonHighMass{"cfgDileptonHighMass", 3.2, "High mass cut for the dileptons used in analysis"};
+  Configurable<float> fConfigDileptonLowMass{"cfgDileptonLowMass", 0.0, "Low mass cut for the dileptons used in analysis"};
+  Configurable<float> fConfigDileptonHighMass{"cfgDileptonHighMass", 5.0, "High mass cut for the dileptons used in analysis"};
   Configurable<float> fConfigDileptonpTCut{"cfgDileptonpTCut", 0.0, "pT cut for dileptons used in the triplet vertexing"};
   Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
   Configurable<bool> fUseRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
@@ -1346,10 +1360,10 @@ struct AnalysisDileptonHadron {
     // TODO: Create separate histogram directories for each selection used in the creation of the dileptons
     // TODO: Implement possibly multiple selections for the associated track ?
     if (context.mOptions.get<bool>("processSkimmed")) {
-      DefineHistograms(fHistMan, "DileptonsSelected;DileptonHadronInvMass;DileptonHadronCorrelation", fConfigAddDileptonHadHistogram); // define all histograms
+      DefineHistograms(fHistMan, "DileptonsSelected;DileptonHadronInvMass;DileptonHadronCorrelationSE", fConfigAddDileptonHadHistogram); // define all histograms
     }
     if (context.mOptions.get<bool>("processMixedEvent")) {
-      DefineHistograms(fHistMan, "DileptonHadronInvMassME", fConfigAddDileptonHadHistogram); // define all histograms
+      DefineHistograms(fHistMan, "DileptonHadronInvMassME;DileptonHadronCorrelationME", fConfigAddDileptonHadHistogram); // define all histograms
     }
 
     VarManager::SetUseVars(fHistMan->GetUsedVars());
@@ -1449,10 +1463,10 @@ struct AnalysisDileptonHadron {
           continue;
         }
 
-        VarManager::FillDileptonHadron(dilepton, hadron, fValuesHadron);
+        // VarManager::FillDileptonHadron(dilepton, hadron, fValuesHadron);
         VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, hadron, fValuesHadron);
         fHistMan->FillHistClass("DileptonHadronInvMass", fValuesHadron);
-        fHistMan->FillHistClass("DileptonHadronCorrelation", fValuesHadron);
+        fHistMan->FillHistClass("DileptonHadronCorrelationSE", fValuesHadron);
         // table to be written out for ML analysis
         BmesonsTable(fValuesHadron[VarManager::kPairMass], fValuesHadron[VarManager::kPairPt], fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz], fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle], fValuesHadron[VarManager::kVertexingChi2PCA]);
       }
@@ -1491,6 +1505,7 @@ struct AnalysisDileptonHadron {
 
           VarManager::FillDileptonHadron(dilepton, track, VarManager::fgValues);
           fHistMan->FillHistClass("DileptonHadronInvMassME", VarManager::fgValues);
+          fHistMan->FillHistClass("DileptonHadronCorrelationME", VarManager::fgValues);
         } // end for (track)
       }   // end for (dilepton)
 
@@ -1573,7 +1588,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurab
     }
 
     if (classStr.Contains("DileptonHadronCorrelation")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-correlation");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-array-correlation");
     }
   } // end loop over histogram classes
 }

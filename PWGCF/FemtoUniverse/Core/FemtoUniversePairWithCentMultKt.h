@@ -34,15 +34,19 @@ class PairWithCentMultKt
   /// @param kstarbins
   /// @param centmultbins
   template <typename t1>
-  void init(HistogramRegistry* registry, t1& kstarbins, t1& centmultbins, t1& ktbins, bool processKT)
+  void init(HistogramRegistry* registry, t1& kstarbins, t1& centmultbins, t1& ktbins, bool processKT, bool process3D)
   {
     PairWithCentMultKtRegistry = registry;
     AxisSpec kstarAxis = {kstarbins, "#it{k*} (GeV/#it{c})"};
+    AxisSpec kOutAxis = {kstarbins, "#it{q}_{out} (GeV/#it{c})"};
+    AxisSpec kSideAxis = {kstarbins, "#it{q}_{side} (GeV/#it{c})"};
+    AxisSpec kLongAxis = {kstarbins, "#it{q}_{long} (GeV/#it{c})"};
     CentMultBins = centmultbins;
     KtBins = ktbins;
     KtBins.erase(KtBins.begin());
     CentMultBins.erase(CentMultBins.begin());
     UseKt = processKT;
+    Use3D = process3D;
 
     for (int i = 0; i < static_cast<int>(CentMultBins.size() - 1); i++) {
       int lowBin = static_cast<int>((CentMultBins[i]));
@@ -50,9 +54,12 @@ class PairWithCentMultKt
       std::string HistTitle = "mult_" + std::to_string(lowBin) + "-" + std::to_string(highBin);
       std::string HistSuffix1 = static_cast<std::string>(HistSuffix[i]);
       std::string HistSuffix2 = static_cast<std::string>(HistSuffix[i + 1]);
+      std::cout << "HistSuffix1 " << HistSuffix1 << " HistSuffix2 " << HistSuffix2 << std::endl;
       std::string HistFolderMult = "mult_" + HistSuffix1 + "_" + HistSuffix2;
       std::string HistName = HistFolderMult + "/kstar";
+      std::string HistName3D = HistFolderMult + "/q3D";
       PairWithCentMultKtRegistry->add(HistName.c_str(), HistTitle.c_str(), HistType::kTH1F, {kstarAxis});
+      PairWithCentMultKtRegistry->add(HistName3D.c_str(), HistTitle.c_str(), HistType::kTH3F, {kOutAxis, kSideAxis, kLongAxis});
       if (UseKt) {
         for (int i = 0; i < static_cast<int>(KtBins.size() - 1); i++) {
           std::string kt_bin1_string = std::to_string(KtBins[i]);
@@ -65,11 +72,29 @@ class PairWithCentMultKt
           std::string HistSuffix1Kt = static_cast<std::string>(HistSuffix[i]);
           std::string HistSuffix2Kt = static_cast<std::string>(HistSuffix[i + 1]);
           std::string HistNameKt = HistFolderMult + "/kstar_kt_" + HistSuffix1Kt + "_" + HistSuffix2Kt;
+          std::cout << "HistNameKt " << HistNameKt << std::endl;
           PairWithCentMultKtRegistry->add(HistNameKt.c_str(), HistTitleKt.c_str(), HistType::kTH1F, {kstarAxis});
+        }
+      }
+      if (Use3D) {
+        for (int i = 0; i < static_cast<int>(KtBins.size() - 1); i++) {
+          std::string kt_bin1_string = std::to_string(KtBins[i]);
+          std::replace(kt_bin1_string.begin(), kt_bin1_string.end(), '.', '_');
+          std::string kt_bin2_string = std::to_string(KtBins[i + 1]);
+          std::replace(kt_bin2_string.begin(), kt_bin2_string.end(), '.', '_');
+          kt_bin1_string.resize(4);
+          kt_bin2_string.resize(4);
+          std::string HistTitleKt = "kt_" + kt_bin1_string + "-" + kt_bin2_string;
+          std::string HistSuffix1Kt = static_cast<std::string>(HistSuffix[i]);
+          std::string HistSuffix2Kt = static_cast<std::string>(HistSuffix[i + 1]);
+          std::string HistNameKt = HistFolderMult + "/q3D_kt_" + HistSuffix1Kt + "_" + HistSuffix2Kt;
+          std::cout << "HistNameKt " << HistNameKt << std::endl;
+          PairWithCentMultKtRegistry->add(HistNameKt.c_str(), HistTitleKt.c_str(), HistType::kTH3F, {kOutAxis, kSideAxis, kLongAxis});
         }
       }
     }
     PairWithCentMultKtRegistry->add("Beyond_Max", "Beyond_Max", HistType::kTH1F, {kstarAxis});
+    PairWithCentMultKtRegistry->add("Beyond_Max_3D", "Beyond_Max_3D", HistType::kTH3F, {kOutAxis, kSideAxis, kLongAxis});
   }
 
   /// @brief
@@ -169,11 +194,100 @@ class PairWithCentMultKt
     }
   }
 
+  /// @brief
+  /// @tparam t1
+  /// @param qout_value
+  /// @param qside_value
+  /// @param qlong_value
+  /// @param cent_mult_value
+  template <typename t1>
+  void fill_3D(t1 qout_value, t1 qside_value, t1 qlong_value, t1 cent_mult_value, t1 kt_value)
+  {
+
+    if (cent_mult_value > CentMultBins[CentMultBins.size() - 1] || cent_mult_value < CentMultBins[0]) {
+      PairWithCentMultKtRegistry->fill(HIST("Beyond_Max_3D"), qout_value, qside_value, qlong_value);
+    } else if (cent_mult_value <= CentMultBins[1]) {
+      PairWithCentMultKtRegistry->fill(HIST("mult_0_1/q3D"), qout_value, qside_value, qlong_value);
+      if (Use3D) {
+        auto histMultFolder = HIST("mult_0_1/");
+        fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
+      }
+    } else if (cent_mult_value <= CentMultBins[2]) {
+      // PairWithCentMultKtRegistry->fill(HIST("mult_1_2/q3D"), qout_value, qside_value, qlong_value);
+      if (Use3D) {
+        auto histMultFolder = HIST("mult_1_2/");
+        fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
+      }
+    } else if (cent_mult_value <= CentMultBins[3]) {
+      // PairWithCentMultKtRegistry->fill(HIST("mult_2_3/q3D"), qout_value, qside_value, qlong_value);
+      if (Use3D) {
+        auto histMultFolder = HIST("mult_2_3/");
+        fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
+      }
+    } else if (cent_mult_value <= CentMultBins[4]) {
+      // PairWithCentMultKtRegistry->fill(HIST("mult_3_4/q3D"), qout_value, qside_value, qlong_value);
+      if (Use3D) {
+        auto histMultFolder = HIST("mult_3_4/");
+        fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
+      }
+    } else if (cent_mult_value <= CentMultBins[5]) {
+      // PairWithCentMultKtRegistry->fill(HIST("mult_4_5/q3D"), qout_value, qside_value, qlong_value);
+      if (Use3D) {
+        auto histMultFolder = HIST("mult_4_5/");
+        fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
+      }
+    } else if (cent_mult_value <= CentMultBins[6]) {
+      // PairWithCentMultKtRegistry->fill(HIST("mult_5_6/q3D"), qout_value, qside_value, qlong_value);
+      if (Use3D) {
+        auto histMultFolder = HIST("mult_5_6/");
+        fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
+      }
+    } else if (cent_mult_value <= CentMultBins[7]) {
+      // PairWithCentMultKtRegistry->fill(HIST("mult_6_7/q3D"), qout_value, qside_value, qlong_value);
+      if (Use3D) {
+        auto histMultFolder = HIST("mult_6_7/");
+        fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
+      }
+    } else if (cent_mult_value <= CentMultBins[8]) {
+      // PairWithCentMultKtRegistry->fill(HIST("mult_7_8/q3D"), qout_value, qside_value, qlong_value);
+      if (Use3D) {
+        auto histMultFolder = HIST("mult_7_8/");
+        fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
+      }
+    } else if (cent_mult_value <= CentMultBins[9]) {
+      // PairWithCentMultKtRegistry->fill(HIST("mult_8_9/q3D"), qout_value, qside_value, qlong_value);
+      if (Use3D) {
+        auto histMultFolder = HIST("mult_8_9/");
+        fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
+      }
+    }
+  }
+
+  /// @brief
+  /// @tparam t1
+  /// @tparam t2
+  /// @param qout_value
+  /// @param qside_value
+  /// @param qlong_value
+  /// @param folder
+  template <typename t1, typename t2>
+  void fill_kT_3d(t1 qout_value, t1 qside_value, t1 qlong_value, t1 kt_value, t2 folder)
+  {
+    if (kt_value <= KtBins[1]) {
+      PairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_0_1"), qout_value, qside_value, qlong_value);
+    } else if (kt_value <= KtBins[2]) {
+      PairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_1_2"), qout_value, qside_value, qlong_value);
+    } else if (kt_value <= KtBins[3]) {
+      PairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_2_3"), qout_value, qside_value, qlong_value);
+    }
+  }
+
  protected:
   HistogramRegistry* PairWithCentMultKtRegistry = nullptr;
   std::vector<double> CentMultBins;
   std::vector<double> KtBins;
   bool UseKt = false;
+  bool Use3D = false;
   static constexpr std::string_view HistSuffix[10] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
 };
 } // namespace o2::analysis::femtoUniverse

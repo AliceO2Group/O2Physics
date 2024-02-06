@@ -323,7 +323,7 @@ class ExpTimes
   /// Gets the number of sigmas with respect the expected time
   /// \param parameters Detector response parameters
   /// \param track Track of interest
-  static float GetSeparation(const TOFResoParamsV2& parameters, const TrackType& track) { return GetSeparation(parameters, track, track.tofEvTime(), track.tofEvTimeErr()); }
+  static float GetSeparation(const TOFResoParamsV2& parameters, const TrackType& track) { return GetSeparation(parameters, track, track.tofEvTime(), GetExpectedSigma(parameters, track)); }
 };
 
 /// \brief Class to convert the trackTime to the tofSignal used for PID

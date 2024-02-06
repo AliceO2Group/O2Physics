@@ -370,7 +370,7 @@ struct HfDataCreatorDplusPiReduced {
             // Printf("Checking D- → π- K+ π-");
             indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD, Pdg::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
             if (indexRec > -1) {
-              flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
+              flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
             } else {
               debug = 1;
               LOGF(debug, "B0 decays in the expected final state but the condition on the intermediate state is not fulfilled");
@@ -382,6 +382,43 @@ struct HfDataCreatorDplusPiReduced {
               motherPt = particleMother.pt();
             }
           }
+          // B0 → Ds- π+ → (K- K+ π-) π+
+          if (!flag) {
+            indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersB0, Pdg::kB0, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
+            if (indexRec > -1) {
+              // Ds- → K- K+ π-
+              indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+              if (indexRec > -1) {
+                flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi);
+              }
+            }
+          }
+          // Partly reconstructed decays, i.e. the 4 prongs have a common b-hadron ancestor
+          // convention: final state particles are prong0,1,2,3
+          if (!flag) {
+            auto particleProng0 = arrayDaughtersB0[0].mcParticle();
+            auto particleProng1 = arrayDaughtersB0[1].mcParticle();
+            auto particleProng2 = arrayDaughtersB0[2].mcParticle();
+            auto particleProng3 = arrayDaughtersB0[3].mcParticle();
+            // b-hadron hypothesis
+            std::array<int, 3> bHadronMotherHypos = {Pdg::kB0, Pdg::kBS, Pdg::kLambdaB0};
+
+            for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
+              int index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
+              int index1Mother = RecoDecay::getMother(particlesMc, particleProng1, bHadronMotherHypo, true);
+              int index2Mother = RecoDecay::getMother(particlesMc, particleProng2, bHadronMotherHypo, true);
+              int index3Mother = RecoDecay::getMother(particlesMc, particleProng3, bHadronMotherHypo, true);
+
+              // look for common b-hadron ancestor
+              if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
+                if (index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
+                  flag = BIT(hf_cand_b0::DecayTypeMc::PartlyRecoDecay);
+                  break;
+                }
+              }
+            }
+          }
+
           rowHfDPiMcRecReduced(indexHfCand3Prong, selectedTracksPion[trackPion.globalIndex()], flag, debug, motherPt);
         }
         fillHfCand3Prong = true;

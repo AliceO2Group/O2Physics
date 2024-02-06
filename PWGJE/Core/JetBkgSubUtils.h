@@ -49,16 +49,18 @@ enum class BkgSubMode { none = 0,
 
 class JetBkgSubUtils
 {
-
  public:
   // Default contructor
   JetBkgSubUtils() = default;
 
   JetBkgSubUtils(float jetBkgR_out, float bkgEtaMin_out = -0.8, float bkgEtaMax_out = 0.8,
-                 float bkgPhiMin_out = 0., float bkgPhiMax_out = 2 * M_PI, float constSubAlpha_out = 1., float constSubRMax_out = 0.6, fastjet::GhostedAreaSpec ghostAreaSpec_out = fastjet::GhostedAreaSpec(), int nHardReject = 2);
+                 float bkgPhiMin_out = 0., float bkgPhiMax_out = 2 * M_PI, float constSubAlpha_out = 1., float constSubRMax_out = 0.6, int nHardReject_out = 2, fastjet::GhostedAreaSpec ghostAreaSpec_out = fastjet::GhostedAreaSpec());
 
   // Default destructor
   ~JetBkgSubUtils() = default;
+
+  /// @brief Setting the selectors after the input values have been initialised
+  void initialise();
 
   /// @brief Setting the jet algorithm and the recombination scheme
   void setJetAlgorithmAndScheme(fastjet::JetAlgorithm algorithmBkg_out, fastjet::RecombinationScheme recombSchemeBkg_out)
@@ -84,21 +86,21 @@ class JetBkgSubUtils
   /// @param rhoParam the underlying evvent density vs pT (to be set)
   /// @param rhoParam the underlying evvent density vs jet mass (to be set)
   /// @return jet, background subtracted jet
-  fastjet::PseudoJet doRhoAreaSub(fastjet::PseudoJet& jet, double& rhoParam, double& rhoMParam);
+  fastjet::PseudoJet doRhoAreaSub(fastjet::PseudoJet& jet, double rhoParam, double rhoMParam);
 
   /// @brief method that subtracts the background from the input particles using the event-wise cosntituent subtractor
   /// @param inputParticles (all the tracks/clusters/particles in the event)
   /// @param rhoParam the underlying evvent density vs pT (to be set)
   /// @param rhoParam the underlying evvent density vs jet mass (to be set)
   /// @return inputParticles, a vector of background subtracted input particles
-  std::vector<fastjet::PseudoJet> doEventConstSub(std::vector<fastjet::PseudoJet>& inputParticles, double& rhoParam, double& rhoMParam);
+  std::vector<fastjet::PseudoJet> doEventConstSub(std::vector<fastjet::PseudoJet>& inputParticles, double rhoParam, double rhoMParam);
 
   /// @brief method that subtracts the background from jets using the jet-wise constituent subtractor
   /// @param jets (all jets in the event)
   /// @param rhoParam the underlying evvent density vs pT (to be set)
   /// @param rhoParam the underlying evvent density vs jet mass (to be set)
   /// @return jets, a vector of background subtracted jets
-  std::vector<fastjet::PseudoJet> doJetConstSub(std::vector<fastjet::PseudoJet>& jets, double& rhoParam, double& rhoMParam);
+  std::vector<fastjet::PseudoJet> doJetConstSub(std::vector<fastjet::PseudoJet>& jets, double rhoParam, double rhoMParam);
 
   // Setters
   void setJetBkgR(float jetbkgR_out) { jetBkgR = jetbkgR_out; }
@@ -119,7 +121,6 @@ class JetBkgSubUtils
   }
   void setMaxEtaEvent(float etaMaxEvent) { maxEtaEvent = etaMaxEvent; }
   void setDoRhoMassSub(bool doMSub_out = true) { doRhoMassSub = doMSub_out; }
-  void setRemoveHFCandidate(bool removecandidate = true) { removeHFCand = removecandidate; }
   void setGhostAreaSpec(fastjet::GhostedAreaSpec ghostAreaSpec_out) { ghostAreaSpec = ghostAreaSpec_out; }
   void setJetDefinition(fastjet::JetDefinition jetdefbkg_out) { jetDefBkg = jetdefbkg_out; }
   void setAreaDefinition(fastjet::AreaDefinition areaDefBkg_out) { areaDefBkg = areaDefBkg_out; }
@@ -135,7 +136,6 @@ class JetBkgSubUtils
   float getConstSubAlpha() const { return constSubAlpha; }
   float getConstSubRMax() const { return constSubRMax; }
   float getDoRhoMassSub() const { return doRhoMassSub; }
-  float getRemoveHFCandidate() const { return removeHFCand; }
   fastjet::GhostedAreaSpec getGhostAreaSpec() const { return ghostAreaSpec; }
   fastjet::JetDefinition getJetDefinition() const { return jetDefBkg; }
   fastjet::AreaDefinition getAreaDefinition() const { return areaDefBkg; }
@@ -148,13 +148,13 @@ class JetBkgSubUtils
   float jetBkgR = 0.2;
   float bkgEtaMin = -0.9;
   float bkgEtaMax = 0.9;
-  float bkgPhiMin = -99.0;
-  float bkgPhiMax = 99.0;
+  float bkgPhiMin = 0.0;
+  float bkgPhiMax = 2.0 * M_PI;
   float constSubAlpha = 1.0;
-  float constSubRMax = 0.6;
+  float constSubRMax = 0.24;
   float maxEtaEvent = 0.9;
+  int nHardReject = 2;
   bool doRhoMassSub = false; /// flag whether to do jet mass subtraction with the const sub
-  bool removeHFCand = false; /// flag whether to remove the HF candidate from the list of particles
 
   fastjet::GhostedAreaSpec ghostAreaSpec = fastjet::GhostedAreaSpec();
   fastjet::JetAlgorithm algorithmBkg = fastjet::kt_algorithm;
@@ -162,7 +162,6 @@ class JetBkgSubUtils
   fastjet::JetDefinition jetDefBkg = fastjet::JetDefinition(algorithmBkg, jetBkgR, recombSchemeBkg, fastjet::Best);
   fastjet::AreaDefinition areaDefBkg = fastjet::AreaDefinition(fastjet::active_area_explicit_ghosts, ghostAreaSpec);
   fastjet::Selector selRho = fastjet::Selector();
-  fastjet::Selector selRemoveHFCand = !FastJetUtilities::SelectorIsHFCand();
 
 }; // class JetBkgSubUtils
 

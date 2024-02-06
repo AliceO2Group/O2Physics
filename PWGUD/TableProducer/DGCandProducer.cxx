@@ -11,7 +11,6 @@
 //
 // \brief Saves relevant information of DG candidates
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
-// \since  20.05.2022
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -36,6 +35,7 @@ struct DGCandProducer {
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
   Produces<aod::UDCollsLabels> outputCollsLabels;
   Produces<aod::UDZdcs> outputZdcs;
+  Produces<aod::UDZdcsReduced> outputZdcsReduced;
   Produces<aod::UDTracks> outputTracks;
   Produces<aod::UDTracksCov> outputTracksCov;
   Produces<aod::UDTracksDCA> outputTracksDCA;
@@ -108,7 +108,7 @@ struct DGCandProducer {
                     track.tofNSigmaKa(),
                     track.tofNSigmaPr());
     outputTracksExtra(track.tpcInnerParam(),
-                      track.itsClusterMap(),
+                      track.itsClusterSizes(),
                       track.tpcNClsFindable(),
                       track.tpcNClsFindableMinusFound(),
                       track.tpcNClsFindableMinusCrossedRows(),
@@ -129,6 +129,67 @@ struct DGCandProducer {
     outputTracksLabel(track.globalIndex());
   }
 
+  template <typename TBC>
+  void fillFIThistograms(TBC const& bc)
+  {
+    std::array<bool, 5> triggers{{true, !udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits()),
+                                  udhelpers::TVX(bc), udhelpers::TSC(bc), udhelpers::TCE(bc)}};
+    if (!triggers[1]) {
+      LOGF(info, "NoTOR trigger");
+    }
+    if (bc.has_foundFV0()) {
+      auto fv0 = bc.foundFV0();
+      auto ampA = udhelpers::FV0AmplitudeA(fv0);
+      registry.get<TH2>(HIST("reco/fv0"))->Fill(ampA, 0);
+      registry.get<TH2>(HIST("reco/fv0"))->Fill(ampA, triggers[1] ? 1 : 5);
+      registry.get<TH2>(HIST("reco/fv0"))->Fill(ampA, triggers[2] ? 2 : 6);
+      registry.get<TH2>(HIST("reco/fv0"))->Fill(ampA, triggers[3] ? 3 : 7);
+      registry.get<TH2>(HIST("reco/fv0"))->Fill(ampA, triggers[4] ? 4 : 8);
+
+      if (!triggers[1]) {
+        LOGF(info, "  fv0: %f", ampA);
+      }
+    }
+    if (bc.has_foundFT0()) {
+      auto ft0 = bc.foundFT0();
+      auto ampA = udhelpers::FT0AmplitudeA(ft0);
+      auto ampC = udhelpers::FT0AmplitudeC(ft0);
+      registry.get<TH2>(HIST("reco/ft0A"))->Fill(ampA, 0);
+      registry.get<TH2>(HIST("reco/ft0C"))->Fill(ampC, 0);
+      registry.get<TH2>(HIST("reco/ft0A"))->Fill(ampA, triggers[1] ? 1 : 5);
+      registry.get<TH2>(HIST("reco/ft0C"))->Fill(ampC, triggers[1] ? 1 : 5);
+      registry.get<TH2>(HIST("reco/ft0A"))->Fill(ampA, triggers[2] ? 2 : 6);
+      registry.get<TH2>(HIST("reco/ft0C"))->Fill(ampC, triggers[2] ? 2 : 6);
+      registry.get<TH2>(HIST("reco/ft0A"))->Fill(ampA, triggers[3] ? 3 : 7);
+      registry.get<TH2>(HIST("reco/ft0C"))->Fill(ampC, triggers[3] ? 3 : 7);
+      registry.get<TH2>(HIST("reco/ft0A"))->Fill(ampA, triggers[4] ? 4 : 8);
+      registry.get<TH2>(HIST("reco/ft0C"))->Fill(ampC, triggers[4] ? 4 : 8);
+
+      if (!triggers[1]) {
+        LOGF(info, "  ft0: %f %f", ampA, ampC);
+      }
+    }
+    if (bc.has_foundFDD()) {
+      auto fdd = bc.foundFDD();
+      auto ampA = udhelpers::FDDAmplitudeA(fdd);
+      auto ampC = udhelpers::FDDAmplitudeC(fdd);
+      registry.get<TH2>(HIST("reco/fddA"))->Fill(ampA, 0);
+      registry.get<TH2>(HIST("reco/fddC"))->Fill(ampC, 0);
+      registry.get<TH2>(HIST("reco/fddA"))->Fill(ampA, triggers[1] ? 1 : 5);
+      registry.get<TH2>(HIST("reco/fddC"))->Fill(ampC, triggers[1] ? 1 : 5);
+      registry.get<TH2>(HIST("reco/fddA"))->Fill(ampA, triggers[2] ? 2 : 6);
+      registry.get<TH2>(HIST("reco/fddC"))->Fill(ampC, triggers[2] ? 2 : 6);
+      registry.get<TH2>(HIST("reco/fddA"))->Fill(ampA, triggers[3] ? 3 : 7);
+      registry.get<TH2>(HIST("reco/fddC"))->Fill(ampC, triggers[3] ? 3 : 7);
+      registry.get<TH2>(HIST("reco/fddA"))->Fill(ampA, triggers[4] ? 4 : 8);
+      registry.get<TH2>(HIST("reco/fddC"))->Fill(ampC, triggers[4] ? 4 : 8);
+
+      if (!triggers[1]) {
+        LOGF(info, "  fdd: %f %f", ampA, ampC);
+      }
+    }
+  }
+
   void init(InitContext&)
   {
     diffCuts = (DGCutparHolder)DGCuts;
@@ -139,6 +200,18 @@ struct DGCandProducer {
     registry.add("reco/TPCsignal1", "2 prong events, TPC signal versus p_{T} of particle 1", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
     registry.add("reco/TPCsignal2", "2 prong events, TPC signal versus p_{T} of particle 2", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
     registry.add("reco/sig1VsSig2TPC", "2 prong events, TPC signal versus TPC signal", {HistType::kTH2F, {{100, 0., 100.}, {100, 0., 100.}}});
+
+    // FIT amplitudes
+    //   0: unconditional
+    //   1: TOR              5: no TOR
+    //   2: TVX              6: no TVX
+    //   3: TSC              7: no TSC
+    //   4: TCE              8: no TCE
+    registry.add("reco/fv0", "FV0 amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
+    registry.add("reco/ft0A", "FT0A amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
+    registry.add("reco/ft0C", "FT0C amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
+    registry.add("reco/fddA", "FDDA amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
+    registry.add("reco/fddC", "FDDC amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
   }
 
   // process function for real data
@@ -152,6 +225,12 @@ struct DGCandProducer {
     }
     auto bc = collision.foundBC_as<BCs>();
     LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
+
+    // fill FIT histograms
+    fillFIThistograms(bc);
+
+    // fill FIT histograms
+    fillFIThistograms(bc);
 
     // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
@@ -205,6 +284,12 @@ struct DGCandProducer {
         auto times = std::vector(zdc.time().begin(), zdc.time().end());
         auto chTs = std::vector(zdc.channelT().begin(), zdc.channelT().end());
         outputZdcs(outputCollisions.lastIndex(), enes, chEs, amps, times, chTs);
+
+        float timeZNA = zdc.timeZNA();
+        float timeZNC = zdc.timeZNC();
+        float eComZNA = zdc.energyCommonZNA();
+        float eComZNC = zdc.energyCommonZNC();
+        outputZdcsReduced(outputCollisions.lastIndex(), timeZNA, timeZNC, eComZNA, eComZNC);
       }
 
       // produce TPC signal histograms for 2-track events
@@ -420,6 +505,10 @@ struct McDGCandProducer {
     LOGF(info, "Number of McCollisions %d", mccols.size());
     LOGF(info, "Number of DG candidates %d", dgcands.size());
     LOGF(info, "Number of UD tracks %d", udtracks.size());
+    if (dgcands.size() <= 0) {
+      LOGF(info, "No DG candidates to save!");
+      return;
+    }
 
     // use a hash table to keep track of the McCollisions which have been added to the UDMcCollision table
     // {McCollisionId : udMcCollisionId}

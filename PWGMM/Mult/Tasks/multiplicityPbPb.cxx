@@ -68,6 +68,7 @@ struct multiplicityPbPb {
     histos.add("etaHistogram", "; ", kTH1F, {axisEta});
     histos.add("MCGENetaHistogram", "; ", kTH1F, {axisEta});
     histos.add("ptHistogram", "; ", kTH1F, {axisPt});
+    histos.add("MCGENptHistogram", "; ", kTH1F, {axisPt});
     //
     histos.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
     histos.add("MCGENeventCounter", "eventCounter", kTH1F, {axisCounter});
@@ -76,9 +77,11 @@ struct multiplicityPbPb {
     histos.add("DCAz", "; DCA_{z} (cm)", kTH1F, {axisDCAz});
     // do not know how:
     histos.add("Multiplicity", "; tracks; events", kTH1F, {axisNtrk});
+    histos.add("MCGENMultiplicity", "; tracks; events", kTH1F, {axisNtrk});
 
     histos.add("PhiTracks", "; #phi; tracks", kTH1F, {axisPhi});
     histos.add("ZvtxEvents", "; Z_{vtx} (cm); events", kTH1F, {axisZvtx});
+    histos.add("MCGENZvtxEvents", "; Z_{vtx} (cm); events", kTH1F, {axisZvtx});
 
     histos.add("EtaZvtxTracks", "; #eta; Z_{vtx} (cm); tracks", kTH2F, {axisEta, axisZvtx});
     histos.add("NtrkZvtxEvents", "; N_{trk}; Z_{vtx} (cm); events", kTH2F, {axisNtrk, axisZvtx});
@@ -87,6 +90,7 @@ struct multiplicityPbPb {
     histos.add("MCGENNtrkZvtxEvents", "; N_{trk}; Z_{vtx} (cm); events", kTH2F, {axisNtrk, axisZvtx});
 
     histos.add("PhiEtaTracks", "; #phi; #eta; tracks", kTH2F, {axisPhi, axisEta});
+    histos.add("MCGENPhiEtaTracks", "; #phi; #eta; tracks", kTH2F, {axisPhi, axisEta});
   }
 
   // void process(aod::Collision const& collision, soa::Filtered<myCompleteTracks> const& tracks, aod::McParticles const&)
@@ -131,14 +135,20 @@ struct multiplicityPbPb {
     int MCparticleCounter = 0;
 
     histos.fill(HIST("MCGENeventCounter"), 0.5);
+    histos.fill(HIST("MCGENZvtxEvents"), mcCollision.posZ());
 
     for (auto& mcParticle : mcParticles) {
       ++MCparticleCounter;
       if (mcParticle.isPhysicalPrimary()) {
         histos.fill(HIST("MCGENetaHistogram"), mcParticle.eta());
+        histos.fill(HIST("MCGENptHistogram"), mcParticle.pt());
+
         histos.fill(HIST("MCGENEtaZvtxTracks"), mcParticle.eta(), mcCollision.posZ());
+        histos.fill(HIST("MCGENPhiEtaTracks"), mcParticle.phi(), mcParticle.eta());
       }
     }
+    histos.fill(HIST("MCGENMultiplicity"), MCparticleCounter);
+
     histos.fill(HIST("MCGENNtrkZvtxEvents"), MCparticleCounter, mcCollision.posZ());
   }
   PROCESS_SWITCH(multiplicityPbPb, processMCGEN, "process for GEN MC data", true);

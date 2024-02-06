@@ -64,6 +64,8 @@ struct singleTrackSelector {
   Configurable<float> _dcaXY{"dcaXY", 1000.f, "Maximum dca of track in xy"};
   Configurable<float> _dcaZ{"dcaZ", 1000.f, "Maximum dca of track in xy"};
   Configurable<float> _maxTofChi2{"maxTofChi2", 10.f, "Maximum TOF Chi2 value -> to remove mismatched tracks"};
+  Configurable<float> _vertexZ{"VertexZ", 15.0, "abs vertexZ value limit"};
+  Configurable<std::pair<float, float>> _centCut{"centCut", std::pair<float, float>{0.f, 100.f}, "[min., max.] centrality range to keep events within"};
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidEvTimeFlags, aod::TracksDCA,
                          aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa,
@@ -83,7 +85,7 @@ struct singleTrackSelector {
   Filter eventFilter = (applyEvSel.node() == 0) ||
                        ((applyEvSel.node() == 1) && (aod::evsel::sel7 == true)) ||
                        ((applyEvSel.node() == 2) && (aod::evsel::sel8 == true));
-  Filter vertexFilter = ((o2::aod::collision::posZ < 15.f) && (o2::aod::collision::posZ > -15.f));
+  Filter vertexFilter = nabs(o2::aod::collision::posZ) < _vertexZ;
   Filter trackFilter = ((o2::aod::track::itsChi2NCl <= 36.f) && (o2::aod::track::itsChi2NCl >= 0.f) && (o2::aod::track::tpcChi2NCl >= 0.f) && (o2::aod::track::tpcChi2NCl <= 4.f));
 
   Filter pFilter = o2::aod::track::p > _min_P&& o2::aod::track::p < _max_P;
@@ -195,12 +197,14 @@ struct singleTrackSelector {
 
           if constexpr (isMC) {
             int origin = -1;
-            if (track.mcParticle().isPhysicalPrimary())
-              origin = 0;
-            if (!track.mcParticle().isPhysicalPrimary() && track.mcParticle().producedByGenerator())
-              origin = 1;
-            if (!track.mcParticle().isPhysicalPrimary() && !track.mcParticle().producedByGenerator())
-              origin = 2;
+            if (track.mcParticle().isPhysicalPrimary()) {
+              origin = 0; // primary
+            } else {
+              if (track.mcParticle().getProcess() == 4)
+                origin = 1; // weak
+              else
+                origin = 2; // material
+            }
 
             if (origin == -1)
               LOGF(fatal, "Could not define the origin (primary/weak decay/material) of the track!!!");
@@ -211,7 +215,6 @@ struct singleTrackSelector {
                        track.mcParticle().eta(),
                        track.mcParticle().phi());
           }
-
           break; // break the loop with particlesToKeep after the 'if' condition is satisfied -- don't want double entries
         }
     }
@@ -222,29 +225,33 @@ struct singleTrackSelector {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
-    int multValue = -1;
+    float centValue = collision.centRun2V0M();
+    if (centValue >= _centCut.value.first && centValue <= _centCut.value.second) {
 
-    switch (multTableToUse) {
-      case 0:
-        multValue = collision.multTPC();
-        break;
-      case 1:
-        multValue = collision.multNTracksPV();
-        break;
-      case 2:
-        multValue = collision.multNTracksPVeta1();
-        break;
-      default:
-        LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
-        break;
+      int multValue = -1;
+
+      switch (multTableToUse) {
+        case 0:
+          multValue = collision.multTPC();
+          break;
+        case 1:
+          multValue = collision.multNTracksPV();
+          break;
+        case 2:
+          multValue = collision.multNTracksPVeta1();
+          break;
+        default:
+          LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
+          break;
+      }
+
+      tableRowColl(multValue,
+                   centValue,
+                   collision.posZ(),
+                   d_bz);
+
+      fillTrackTables<false>(tracks);
     }
-
-    tableRowColl(multValue,
-                 collision.centRun2V0M(),
-                 collision.posZ(),
-                 d_bz);
-
-    fillTrackTables<false>(tracks);
   }
   PROCESS_SWITCH(singleTrackSelector, processDataRun2, "process data Run2", false);
 
@@ -254,7 +261,6 @@ struct singleTrackSelector {
     initCCDB(bc);
 
     float centValue = -100.0f;
-    int multValue = -1;
 
     switch (centTableToUse) {
       case 0:
@@ -279,28 +285,31 @@ struct singleTrackSelector {
         LOGF(fatal, "Invalid flag for cent./mult.perc. estimator has been choosen. Please check.");
         break;
     }
+    if (centValue >= _centCut.value.first && centValue <= _centCut.value.second) {
+      int multValue = -1;
 
-    switch (multTableToUse) {
-      case 0:
-        multValue = collision.multTPC();
-        break;
-      case 1:
-        multValue = collision.multNTracksPV();
-        break;
-      case 2:
-        multValue = collision.multNTracksPVeta1();
-        break;
-      default:
-        LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
-        break;
+      switch (multTableToUse) {
+        case 0:
+          multValue = collision.multTPC();
+          break;
+        case 1:
+          multValue = collision.multNTracksPV();
+          break;
+        case 2:
+          multValue = collision.multNTracksPVeta1();
+          break;
+        default:
+          LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
+          break;
+      }
+
+      tableRowColl(multValue,
+                   centValue,
+                   collision.posZ(),
+                   d_bz);
+
+      fillTrackTables<false>(tracks);
     }
-
-    tableRowColl(multValue,
-                 centValue,
-                 collision.posZ(),
-                 d_bz);
-
-    fillTrackTables<false>(tracks);
   }
   PROCESS_SWITCH(singleTrackSelector, processDataRun3, "process data Run3", true);
 
@@ -309,29 +318,32 @@ struct singleTrackSelector {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
-    int multValue = -1;
+    float centValue = collision.centRun2V0M();
+    if (centValue >= _centCut.value.first && centValue <= _centCut.value.second) {
+      int multValue = -1;
 
-    switch (multTableToUse) {
-      case 0:
-        multValue = collision.multTPC();
-        break;
-      case 1:
-        multValue = collision.multNTracksPV();
-        break;
-      case 2:
-        multValue = collision.multNTracksPVeta1();
-        break;
-      default:
-        LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
-        break;
+      switch (multTableToUse) {
+        case 0:
+          multValue = collision.multTPC();
+          break;
+        case 1:
+          multValue = collision.multNTracksPV();
+          break;
+        case 2:
+          multValue = collision.multNTracksPVeta1();
+          break;
+        default:
+          LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
+          break;
+      }
+
+      tableRowColl(multValue,
+                   centValue,
+                   collision.posZ(),
+                   d_bz);
+
+      fillTrackTables<true>(tracks);
     }
-
-    tableRowColl(multValue,
-                 collision.centRun2V0M(),
-                 collision.posZ(),
-                 d_bz);
-
-    fillTrackTables<true>(tracks);
   }
   PROCESS_SWITCH(singleTrackSelector, processMCRun2, "process MC Run2", false);
 
@@ -341,7 +353,6 @@ struct singleTrackSelector {
     initCCDB(bc);
 
     float centValue = -100.0f;
-    int multValue = -1;
 
     switch (centTableToUse) {
       case 0:
@@ -367,27 +378,31 @@ struct singleTrackSelector {
         break;
     }
 
-    switch (multTableToUse) {
-      case 0:
-        multValue = collision.multTPC();
-        break;
-      case 1:
-        multValue = collision.multNTracksPV();
-        break;
-      case 2:
-        multValue = collision.multNTracksPVeta1();
-        break;
-      default:
-        LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
-        break;
+    if (centValue >= _centCut.value.first && centValue <= _centCut.value.second) {
+      int multValue = -1;
+
+      switch (multTableToUse) {
+        case 0:
+          multValue = collision.multTPC();
+          break;
+        case 1:
+          multValue = collision.multNTracksPV();
+          break;
+        case 2:
+          multValue = collision.multNTracksPVeta1();
+          break;
+        default:
+          LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
+          break;
+      }
+
+      tableRowColl(multValue,
+                   centValue,
+                   collision.posZ(),
+                   d_bz);
+
+      fillTrackTables<true>(tracks);
     }
-
-    tableRowColl(multValue,
-                 centValue,
-                 collision.posZ(),
-                 d_bz);
-
-    fillTrackTables<true>(tracks);
   }
   PROCESS_SWITCH(singleTrackSelector, processMCRun3, "process MC Run3", false);
 };
