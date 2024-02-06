@@ -8,8 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_IDENTIFIEDBFFILTERED_H_
-#define PWGCF_TWOPARTICLECORRELATIONS_DATAMODEL_IDENTIFIEDBFFILTERED_H_
+
+#ifndef PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_IDENTIFIEDBFFILTER_H_
+#define PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_IDENTIFIEDBFFILTER_H_
 
 #include <vector>
 #include <string>
