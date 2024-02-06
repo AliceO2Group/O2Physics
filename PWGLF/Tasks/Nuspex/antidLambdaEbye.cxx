@@ -342,6 +342,9 @@ struct antidLambdaEbye {
     if (!collision.sel7())
       return;
 
+    if (!collision.alias_bit(kINT7))
+      return;
+
     if (std::abs(collision.posZ()) > zVtxMax)
       return;
 
