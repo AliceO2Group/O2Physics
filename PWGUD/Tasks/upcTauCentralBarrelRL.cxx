@@ -496,6 +496,7 @@ struct UpcTauCentralBarrelRL {
         }
       }
       countPVGT++;
+      if (track.hasTOF()) countTOFtracks++;
       int hypothesisID = testPIDhypothesis(track);
       if (hypothesisID == P_ELECTRON || hypothesisID == P_MUON || hypothesisID == P_PION) {
         countPVGTselected++;
