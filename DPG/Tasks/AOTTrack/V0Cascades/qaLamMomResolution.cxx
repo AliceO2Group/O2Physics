@@ -32,7 +32,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using V0DatasLabeled = soa::Join<aod::V0Datas, aod::V0Covs, aod::McV0Labels>;
+using V0DatasLabeled = soa::Join<aod::V0Datas, aod::V0Covs, aod::V0DauCovs, aod::McV0Labels>;
 using MyTracks = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::McTrackLabels>;
 
 struct qaLamMomResolution {
@@ -198,9 +198,9 @@ struct qaLamMomResolution {
               momProtonRec[0] = v0data.pxpos();
               momProtonRec[1] = v0data.pypos();
               momProtonRec[2] = v0data.pzpos();
-              momProtonRecErr[0] = sqrt(v0data.covmatposdau()[9]);
-              momProtonRecErr[1] = sqrt(v0data.covmatposdau()[14]);
-              momProtonRecErr[2] = sqrt(v0data.covmatposdau()[20]);
+              momProtonRecErr[0] = sqrt(v0data.covMatPosDau()[9]);
+              momProtonRecErr[1] = sqrt(v0data.covMatPosDau()[14]);
+              momProtonRecErr[2] = sqrt(v0data.covMatPosDau()[20]);
               momProtonGen[0] = MCproton.px();
               momProtonGen[1] = MCproton.py();
               momProtonGen[2] = MCproton.pz();
@@ -208,9 +208,9 @@ struct qaLamMomResolution {
               momPionRec[0] = v0data.pxneg();
               momPionRec[1] = v0data.pyneg();
               momPionRec[2] = v0data.pzneg();
-              momPionRecErr[0] = sqrt(v0data.covmatnegdau()[9]);
-              momPionRecErr[1] = sqrt(v0data.covmatnegdau()[14]);
-              momPionRecErr[2] = sqrt(v0data.covmatnegdau()[20]);
+              momPionRecErr[0] = sqrt(v0data.covMatNegDau()[9]);
+              momPionRecErr[1] = sqrt(v0data.covMatNegDau()[14]);
+              momPionRecErr[2] = sqrt(v0data.covMatNegDau()[20]);
               momPionGen[0] = MCpion.px();
               momPionGen[1] = MCpion.py();
               momPionGen[2] = MCpion.pz();
@@ -246,9 +246,9 @@ struct qaLamMomResolution {
               momProtonRec[0] = v0data.pxneg();
               momProtonRec[1] = v0data.pyneg();
               momProtonRec[2] = v0data.pzneg();
-              momProtonRecErr[0] = sqrt(v0data.covmatnegdau()[9]);
-              momProtonRecErr[1] = sqrt(v0data.covmatnegdau()[14]);
-              momProtonRecErr[2] = sqrt(v0data.covmatnegdau()[20]);
+              momProtonRecErr[0] = sqrt(v0data.covMatNegDau()[9]);
+              momProtonRecErr[1] = sqrt(v0data.covMatNegDau()[14]);
+              momProtonRecErr[2] = sqrt(v0data.covMatNegDau()[20]);
               momProtonGen[0] = MCproton.px();
               momProtonGen[1] = MCproton.py();
               momProtonGen[2] = MCproton.pz();
@@ -256,9 +256,9 @@ struct qaLamMomResolution {
               momPionRec[0] = v0data.pxpos();
               momPionRec[1] = v0data.pypos();
               momPionRec[2] = v0data.pzpos();
-              momPionRecErr[0] = sqrt(v0data.covmatposdau()[9]);
-              momPionRecErr[1] = sqrt(v0data.covmatposdau()[14]);
-              momPionRecErr[2] = sqrt(v0data.covmatposdau()[20]);
+              momPionRecErr[0] = sqrt(v0data.covMatPosDau()[9]);
+              momPionRecErr[1] = sqrt(v0data.covMatPosDau()[14]);
+              momPionRecErr[2] = sqrt(v0data.covMatPosDau()[20]);
               momPionGen[0] = MCpion.px();
               momPionGen[1] = MCpion.py();
               momPionGen[2] = MCpion.pz();
