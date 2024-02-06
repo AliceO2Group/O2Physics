@@ -11,6 +11,7 @@
 #include "PWGCF/TwoParticleCorrelations/TableProducer/identifiedBfFilter.h"
 
 #include <cmath>
+#include <algorithm>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -25,7 +26,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Framework/runDataProcessing.h"
-#include <algorithm>
 #include <TROOT.h>
 #include <TDatabasePDG.h>
 #include <TParameter.h>
