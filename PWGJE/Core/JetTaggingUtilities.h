@@ -34,7 +34,6 @@ enum JetTaggingSpecies {
   lightflavour = 3,
   lightquark = 4,
   gluon = 5,
-  numberOfSpecies = 6
 };
 
 namespace jettaggingutilities
