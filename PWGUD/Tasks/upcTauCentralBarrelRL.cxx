@@ -460,6 +460,7 @@ struct UpcTauCentralBarrelRL {
     int countPVGTpions = 0;
     int countPVGTothers = 0;
     int countPVGTpionsSelection = 0;
+    int countTOFtracks = 0;
     std::vector<int> vecPVidx;
     // Loop over tracks with selections
     for (auto& track : reconstructedBarrelTracks) {
