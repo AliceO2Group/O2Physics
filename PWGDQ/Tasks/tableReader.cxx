@@ -1259,8 +1259,11 @@ struct AnalysisFwdTrackPid {
   {
     fwdPidAllList.reserve(1);
     for (const auto& muon : muons) {
+      int refIndex = 0;
       if (muon.has_matchMFTTrack() && muon.trackType() == 0 && TMath::Abs(muon.fwdDcaX()) < fConfigMaxDCA && TMath::Abs(muon.fwdDcaY()) < fConfigMaxDCA) {
-        auto mftTrack = muon.template matchMFTTrack_as<MyMftTracks>();
+        // Setting reference index, matchMFTTrackId does not start from zero but from the lowest globalIndex
+        refIndex = mftTracks.iteratorAt(0).globalIndex();
+        auto mftTrack = mftTracks.iteratorAt(muon.matchMFTTrackId() - refIndex);
         fwdPidAllList(muon.trackType(), event.posX(), event.posY(), event.posZ(), event.numContrib(), muon.pt(), muon.eta(), muon.phi(), muon.sign(), mftTrack.mftClusterSizesAndTrackFlags(), muon.fwdDcaX(), muon.fwdDcaY(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT());
       }
     }

@@ -322,7 +322,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh3, midBoardCh3, //!
 DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh4, midBoardCh4, //!
                            [](uint32_t midBoards) -> int { return static_cast<int>((midBoards >> 24) & 0xFF); });
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(MCHTrack, matchMCHTrack, int, "RTMuons_MatchMCHTrack");
-DECLARE_SOA_INDEX_COLUMN(ReducedMFTTrack, matchMFTTrack); //! matching index pointing to the ReducedMFTTrack table if filled
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(MFTTrack, matchMFTTrack, int, "RTMuons_MatchMFTTrack");
 } // namespace reducedmuon
 
 // Muon track kinematics
@@ -338,7 +338,7 @@ DECLARE_SOA_TABLE(ReducedMuons, "AOD", "RTMUON", //!
 DECLARE_SOA_TABLE(ReducedMuonsExtra, "AOD", "RTMUONEXTRA", //!
                   fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
                   fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
-                  fwdtrack::MatchScoreMCHMFT, reducedmuon::MCHTrackId, reducedmuon::ReducedMFTTrackId,
+                  fwdtrack::MatchScoreMCHMFT, reducedmuon::MCHTrackId, reducedmuon::MFTTrackId,
                   fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards, fwdtrack::TrackType,
                   reducedmuon::FwdDcaX, reducedmuon::FwdDcaY,
                   fwdtrack::TrackTime, fwdtrack::TrackTimeRes);
