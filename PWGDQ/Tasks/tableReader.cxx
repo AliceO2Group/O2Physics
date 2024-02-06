@@ -1481,8 +1481,8 @@ struct AnalysisDileptonHadron {
           continue;
         }
 
-        // VarManager::FillDileptonHadron(dilepton, hadron, fValuesHadron);
-        VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, hadron, fValuesHadron);
+        VarManager::FillDileptonHadron(dilepton, hadron, fValuesHadron);
+        //VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, hadron, fValuesHadron);
         fHistMan->FillHistClass("DileptonHadronInvMass", fValuesHadron);
         fHistMan->FillHistClass("DileptonHadronCorrelationSE", fValuesHadron);
         // table to be written out for ML analysis
