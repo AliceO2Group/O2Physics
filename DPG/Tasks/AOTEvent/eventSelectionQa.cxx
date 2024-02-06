@@ -38,6 +38,7 @@ struct EventSelectionQaTask {
   Configurable<int> nOrbitsConf{"nOrbits", 10000, "number of orbits"};
   Configurable<int> refBC{"refBC", 1238, "reference bc"};
   Configurable<bool> isLowFlux{"isLowFlux", 1, "1 - low flux (pp, pPb), 0 - high flux (PbPb)"};
+  Configurable<bool> flagMonitorBcInTF{"flagMonitorBcInTF", 0, "0 - no, 1 - yes"};
 
   uint64_t minGlobalBC = 0;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -262,9 +263,12 @@ struct EventSelectionQaTask {
     histos.add("hMultT0MVsNcontribAcc", "", kTH2F, {axisMultT0M, axisNcontrib}); // before ITS RO Frame border cut
     histos.add("hMultT0MVsNcontribCut", "", kTH2F, {axisMultT0M, axisNcontrib}); // after ITS RO Frame border cut
 
-    AxisSpec axisBCinTF{128 * nBCsPerOrbit + 1 + 10, -0.5, 128 * nBCsPerOrbit + 0.5 + 10, "bc in TF"};
-    histos.add("hNcontribVsBcInTF", ";bc in TF; n vertex contributors", kTH1D, {axisBCinTF});
-    histos.add("hNcontribAfterCutsVsBcInTF", ";bc in TF; n vertex contributors", kTH1D, {axisBCinTF});
+    if( flagMonitorBcInTF )
+    {
+      AxisSpec axisBCinTF{128 * nBCsPerOrbit + 1 + 10, -0.5, 128 * nBCsPerOrbit + 0.5 + 10, "bc in TF"};
+      histos.add("hNcontribVsBcInTF", ";bc in TF; n vertex contributors", kTH1D, {axisBCinTF});
+      histos.add("hNcontribAfterCutsVsBcInTF", ";bc in TF; n vertex contributors", kTH1D, {axisBCinTF});
+    }
 
     // MC histograms
     histos.add("hGlobalBcColMC", "", kTH1F, {axisGlobalBCs});
@@ -990,9 +994,12 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hNcontribCol"), nContributors);
 
       // monitor nContributors vs bc in timeframe:
-      int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
-      histos.fill(HIST("hNcontribVsBcInTF"), bcInTF, nContributors);
-      histos.fill(HIST("hNcontribAfterCutsVsBcInTF"), bcInTF, nContributorsAfterEtaTPCCuts);
+      if( flagMonitorBcInTF )
+      {
+        int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
+        histos.fill(HIST("hNcontribVsBcInTF"), bcInTF, nContributors);
+        histos.fill(HIST("hNcontribAfterCutsVsBcInTF"), bcInTF, nContributorsAfterEtaTPCCuts);
+      }
 
       const auto& foundBC = col.foundBC_as<BCsRun3>();
 
