@@ -64,21 +64,12 @@ struct FullJetSpectraTask {
   Configurable<float> jetPhiMax{"jetPhiMax", 7., "maximum jet phi"};
 
   //Track configurables
-<<<<<<< HEAD:PWGJE/Tasks/fulljetspectratask.cxx
   Configurable<float> trackpTMin{"trackpTMin", 0., "minimum track pT"};
   Configurable<float> trackpTMax{"trackpTMax", 200., "maximum track pT"};
   Configurable<float> trackEtaMin{"trackEtaMin", -1.0, "minimum track eta"};
   Configurable<float> trackEtaMax{"trackEtaMax", 1.0,"maximum track eta"};
   Configurable<float> trackPhiMin{"trackPhiMin", 0., "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 7., "maximum track phi"};
-=======
-  Configurable<float> trackpTMin{"jetpTMin", 0., "minimum track pT"};
-  Configurable<float> trackpTMax{"jetpTMax", 200., "maximum track pT"};
-  Configurable<float> trackEtaMin{"jetEtaMin", -1.0, "minimum track eta"};
-  Configurable<float> trackEtaMax{"jetEtaMax", 1.0,"maximum track eta"};
-  Configurable<float> trackPhiMin{"jetPhiMin", 0., "minimum track phi"};
-  Configurable<float> trackPhiMax{"jetPhiMax", 7., "maximum track phi"};
->>>>>>> a4a2ebdb (removed the extra decimal point):PWGJE/Tasks/FullJetSpectraTask.cxx
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
