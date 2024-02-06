@@ -41,7 +41,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
-using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
+using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
 using CollisionsFullWithFlow = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::QvectorFT0As, aod::QvectorFT0Cs, aod::QvectorFT0Ms, aod::QvectorFV0As>;
 
 namespace
@@ -51,6 +51,10 @@ static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3",
 static const std::vector<std::string> particleNames{"He3"};
 std::shared_ptr<TH1> hEvents;
 std::shared_ptr<TH1> hZvtx;
+std::shared_ptr<TH1> hCentFT0A;
+std::shared_ptr<TH1> hCentFT0C;
+std::shared_ptr<TH1> hCentFT0M;
+std::shared_ptr<TH1> hCentFV0A;
 std::shared_ptr<TH2> hNsigma3HeSel;
 std::shared_ptr<TH2> hDeDx3HeSel;
 std::shared_ptr<TH2> hDeDxTot;
@@ -147,6 +151,7 @@ struct hyperRecoTask {
   ConfigurableAxis dedxBins{"dedxBins", {1000, 0.f, 1000.f}, "Binning for dE/dx"};
   ConfigurableAxis nSigmaBins{"nSigmaBins", {200, -5.f, 5.f}, "Binning for n sigma"};
   ConfigurableAxis zVtxBins{"zVtxBins", {100, -20.f, 20.f}, "Binning for n sigma"};
+  ConfigurableAxis centBins{"centBins", {100, 0.f, 100.f}, "Binning for centrality"};
 
   // std vector of candidates
   std::vector<hyperCandidate> hyperCandidates;
@@ -186,6 +191,7 @@ struct hyperRecoTask {
     const AxisSpec dedxAxis{dedxBins, "d#it{E}/d#it{x}"};
     const AxisSpec nSigma3HeAxis{nSigmaBins, "n_{#sigma}({}^{3}He)"};
     const AxisSpec zVtxAxis{zVtxBins, "z_{vtx} (cm)"};
+    const AxisSpec centAxis{centBins, "Centrality"};
 
     hNsigma3HeSel = qaRegistry.add<TH2>("hNsigma3HeSel", "; p_{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}He)", HistType::kTH2F, {rigidityAxis, nSigma3HeAxis});
     hDeDx3HeSel = qaRegistry.add<TH2>("hDeDx3HeSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dedxAxis});
@@ -206,6 +212,10 @@ struct hyperRecoTask {
       hIsMatterGenTwoBody->GetXaxis()->SetBinLabel(2, "Antimatter");
     }
     hZvtx = qaRegistry.add<TH1>("hZvtx", ";z_{vtx} (cm); ", HistType::kTH1D, {{100, -20, 20}});
+    hCentFT0A = qaRegistry.add<TH1>("hCentFT0A", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
+    hCentFT0C = qaRegistry.add<TH1>("hCentFT0C", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
+    hCentFT0M = qaRegistry.add<TH1>("hCentFT0M", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
+    hCentFV0A = qaRegistry.add<TH1>("hCentFV0A", ";Centrality; ", HistType::kTH1D, {{100, 0, 100}});
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -457,6 +467,10 @@ struct hyperRecoTask {
 
       hEvents->Fill(2.);
       hZvtx->Fill(collision.posZ());
+      hCentFT0A->Fill(collision.centFT0A());
+      hCentFT0C->Fill(collision.centFT0C());
+      hCentFT0M->Fill(collision.centFT0M());
+      hCentFV0A->Fill(collision.centFV0A());
 
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
@@ -500,6 +514,10 @@ struct hyperRecoTask {
 
       hEvents->Fill(2.);
       hZvtx->Fill(collision.posZ());
+      hCentFT0A->Fill(collision.centFT0A());
+      hCentFT0C->Fill(collision.centFT0C());
+      hCentFT0M->Fill(collision.centFT0M());
+      hCentFV0A->Fill(collision.centFV0A());
 
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
@@ -544,6 +562,10 @@ struct hyperRecoTask {
         continue;
       hEvents->Fill(2.);
       hZvtx->Fill(collision.posZ());
+      hCentFT0A->Fill(collision.centFT0A());
+      hCentFT0C->Fill(collision.centFT0C());
+      hCentFT0M->Fill(collision.centFT0M());
+      hCentFV0A->Fill(collision.centFV0A());
 
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
