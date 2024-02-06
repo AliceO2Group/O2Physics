@@ -15,6 +15,8 @@
 #include <memory>
 #include <vector>
 
+#include "Common/DataModel/EventSelection.h"
+#include "DataFormatsPHOS/Cell.h"
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -34,12 +36,20 @@
 /// - Amplitude distribution
 /// - Time distribution
 /// - Count rate in 2D representation
-struct phosCellQA {
 
-  o2::framework::Configurable<double> mMinCellAmplitude{"minCellAmplitude", 0., "Minimum cell amplitude for histograms."};
-  o2::framework::Configurable<double> mMinCellTimeMain{"minCellTimeMain", -50, "Min. cell time of main bunch selection"};
-  o2::framework::Configurable<double> mMaxCellTimeMain{"maxCellTimeMain", 100, "Max. cell time of main bunch selection"};
-  o2::framework::Configurable<int> mVetoBCID{"vetoBCID", -1, "BC ID to be excluded"};
+using namespace o2;
+using namespace o2::aod::evsel;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
+
+struct phosCellQA {
+  ConfigurableAxis amplitudeAxisLarge{"amplitude", {1000, 0., 100.}, "Amplutude (GeV)"};
+  ConfigurableAxis timeAxisLarge{"celltime", {1000, -1500.e-9, 3500.e-9}, "cell time (ns)"};
+  Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
+  Configurable<double> mMinCellAmplitude{"minCellAmplitude", 0., "Minimum cell amplitude for histograms."};
+  Configurable<double> mMinCellTimeMain{"minCellTimeMain", -50, "Min. cell time of main bunch selection"};
+  Configurable<double> mMaxCellTimeMain{"maxCellTimeMain", 100, "Max. cell time of main bunch selection"};
+  Configurable<int> mVetoBCID{"vetoBCID", -1, "BC ID to be excluded"};
 
   o2::framework::HistogramRegistry mHistManager{"phosCallQAHistograms"};
 
@@ -53,9 +63,9 @@ struct phosCellQA {
     const o2Axis
       cellXAxis{64, 0., 64, "x", ""},
       cellZAxis{56, 0., 56, "z", ""},
-      amplitudeAxisLarge{1000, 0., 1000., "amplitude", "Amplutude (GeV)"},
-      timeAxisLarge{1000, -1500.e-9, 3500.e-9, "celltime", "cell time (ns)"},
       bcAxis{3501, -0.5, 3500.5};
+
+    mHistManager.add("eventsTrig", "Number of trigger events", HistType::kTH1F, {{2, 0., 2.}});
     mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
     mHistManager.add("eventsSelected", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
     mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", o2HistType::kTH1F, {bcAxis});
@@ -76,8 +86,10 @@ struct phosCellQA {
     LOG(info) << "Cell monitor task configured ...";
   }
 
+  using BCsWithBcSels = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+
   /// \brief Process PHOS data
-  void process(o2::aod::Calos const& cells, o2::aod::BCs const& bcs)
+  void process(o2::aod::Calos const& cells, BCsWithBcSels const& bcs)
   {
     LOG(debug) << "Processing next event";
     for (const auto& bc : bcs) {
@@ -100,6 +112,11 @@ struct phosCellQA {
         continue;
       mHistManager.fill(HIST("cellBCSelected"), cellIR.bc);
       //       mHistManager.fill(HIST("cellAmplitude"), cell.amplitude(), cell.cellNumber());
+
+      if (!cell.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
+        continue;
+      mHistManager.fill(HIST("eventsTrig"), 1.);
+
       if (cell.amplitude() < mMinCellAmplitude)
         continue;
       char relid[3];
