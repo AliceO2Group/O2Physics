@@ -169,6 +169,8 @@ DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t); //! type of V0. 0: built solely for
 // Saved from finding: covariance matrix of parent track (on request)
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
 DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
+DECLARE_SOA_COLUMN(CovMatPosDau, covmatposdau, float[21]);    //! covariance matrix elements positive daughter track
+DECLARE_SOA_COLUMN(CovMatNegDau, covmatnegdau, float[21]);    //! covariance matrix elements negative daughter track
 
 // Saved from KF particle fit for specic table
 DECLARE_SOA_COLUMN(KFV0Chi2, kfV0Chi2, float); //!
@@ -417,7 +419,7 @@ DECLARE_SOA_TABLE(V0TraPosAtDCAs, "AOD", "V0TRAPOSATDCAs", //! positions of trac
                   v0data::XNegAtDCA, v0data::YNegAtDCA, v0data::ZNegAtDCA);
 
 DECLARE_SOA_TABLE_FULL(V0Covs, "V0Covs", "AOD", "V0COVS", //! V0 covariance matrices
-                       v0data::PositionCovMat, v0data::MomentumCovMat, o2::soa::Marker<1>);
+                       v0data::PositionCovMat, v0data::MomentumCovMat, v0data::CovMatPosDau, v0data::CovMatNegDau, o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(V0fCIndices, "AOD", "V0FCINDEX", //! index table when using AO2Ds
                   o2::soa::Index<>, v0data::PosTrackId, v0data::NegTrackId, v0data::CollisionId, v0data::V0Id, o2::soa::Marker<2>);

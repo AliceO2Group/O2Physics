@@ -974,6 +974,8 @@ struct lambdakzeroBuilder {
         positionCovariance[4] = covVtxV(2, 1);
         positionCovariance[5] = covVtxV(2, 2);
         // store momentum covariance matrix
+        float covariancePosTrack[21];
+        float covarianceNegTrack[21];
         std::array<float, 21> covTpositive = {0.};
         std::array<float, 21> covTnegative = {0.};
         // std::array<float, 6> momentumCovariance;
@@ -984,10 +986,14 @@ struct lambdakzeroBuilder {
         for (int i = 0; i < 6; i++) {
           momentumCovariance[i] = covTpositive[MomInd[i]] + covTnegative[MomInd[i]];
         }
+        for (int i = 0; i < 21; i++) {
+          covariancePosTrack[i] = covTpositive[i];
+          covarianceNegTrack[i] = covTnegative[i];
+        }
         if (V0.v0Type() > 0) {
           if (V0.v0Type() > 1 && !storePhotonCandidates)
             continue;
-          v0covs(positionCovariance, momentumCovariance);
+          v0covs(positionCovariance, momentumCovariance, covariancePosTrack, covarianceNegTrack);
         } else {
           v0fccovs(positionCovariance, momentumCovariance);
         }
