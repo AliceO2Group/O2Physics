@@ -34,7 +34,7 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/Core/JetFinder.h"
-//#include "PWGJE/Core/FastJetUtilitites.h"
+// #include "PWGJE/Core/FastJetUtilitites.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
 
@@ -51,30 +51,30 @@ struct FullJetSpectraTask {
 
   HistogramRegistry registry;
 
-  //Event configurables
+  // Event configurables
   Configurable<float> VertexZCut{"VertexZCut", 10.0f, "Accepted z-vertex range"};
 
-  //Jet configurables
+  // Jet configurables
   Configurable<double> JetRadii{"JetRadii", 0.4, "jet resolution parameters"};
   Configurable<float> jetpTMin{"jetpTMin", 0., "minimum jet pT"};
   Configurable<float> jetpTMax{"jetpTMax", 350., "maximum jet pT"};
   Configurable<float> jetEtaMin{"jetEtaMin", -1.0, "minimum jet eta"};
-  Configurable<float> jetEtaMax{"jetEtaMax", 1.0,"maximum jet eta"};
+  Configurable<float> jetEtaMax{"jetEtaMax", 1.0, "maximum jet eta"};
   Configurable<float> jetPhiMin{"jetPhiMin", 0., "minimum jet phi"};
   Configurable<float> jetPhiMax{"jetPhiMax", 7., "maximum jet phi"};
 
-  //Track configurables
+  // Track configurables
   Configurable<float> trackpTMin{"trackpTMin", 0., "minimum track pT"};
   Configurable<float> trackpTMax{"trackpTMax", 200., "maximum track pT"};
   Configurable<float> trackEtaMin{"trackEtaMin", -1.0, "minimum track eta"};
-  Configurable<float> trackEtaMax{"trackEtaMax", 1.0,"maximum track eta"};
+  Configurable<float> trackEtaMax{"trackEtaMax", 1.0, "maximum track eta"};
   Configurable<float> trackPhiMin{"trackPhiMin", 0., "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 7., "maximum track phi"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<std::string> particleSelections{"particleSelections", "PhysicalPrimary", "set particle selections"};
 
-  //Cluster configurables
+  // Cluster configurables
   Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
   Configurable<float> clusterEtaMin{"clusterEtaMin", -0.7, "minimum cluster eta"};
   Configurable<float> clusterEtaMax{"clusterEtaMax", 0.7, "maximum cluster eta"};
@@ -95,32 +95,31 @@ struct FullJetSpectraTask {
     eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
     particleSelection = static_cast<std::string>(particleSelections);
 
-  //JetTrack QA histograms
-  if (doprocessTracks)  {
-  registry.add("h_collisions", "event status; event status;entries", {HistType::kTH1F, {{4, 0., 4.0}}});
-  registry.add("h_track_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0., 350.}}});
-  registry.add("h_track_eta", "track #eta;#eta_{track};entries", {HistType::kTH1F, {{100, -1., 1.}}});
-  registry.add("h_track_phi", "track #varphi;#varphi_{track};entries", {HistType::kTH1F, {{160, 0., 7.}}});
+    // JetTrack QA histograms
+    if (doprocessTracks) {
+      registry.add("h_collisions", "event status; event status;entries", {HistType::kTH1F, {{4, 0., 4.0}}});
+      registry.add("h_track_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0., 350.}}});
+      registry.add("h_track_eta", "track #eta;#eta_{track};entries", {HistType::kTH1F, {{100, -1., 1.}}});
+      registry.add("h_track_phi", "track #varphi;#varphi_{track};entries", {HistType::kTH1F, {{160, 0., 7.}}});
 
-  //Cluster QA histograms
-  registry.add("h_cluster_pt", "cluster pT;#it{p}_{T_cluster} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
-  registry.add("h_cluster_eta", "cluster #eta;#eta_{cluster};entries", {HistType::kTH1F, {{100, -1., 1.}}});
-  registry.add("h_cluster_phi", "cluster #varphi;#varphi_{cluster};entries", {HistType::kTH1F, {{160, 0., 7.}}});
-  registry.add("h_cluster_energy", "cluster #varphi;#varphi_{cluster};entries", {HistType::kTH1F, {{160, 0., 7.}}});
-  }
+      // Cluster QA histograms
+      registry.add("h_cluster_pt", "cluster pT;#it{p}_{T_cluster} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
+      registry.add("h_cluster_eta", "cluster #eta;#eta_{cluster};entries", {HistType::kTH1F, {{100, -1., 1.}}});
+      registry.add("h_cluster_phi", "cluster #varphi;#varphi_{cluster};entries", {HistType::kTH1F, {{160, 0., 7.}}});
+      registry.add("h_cluster_energy", "cluster #varphi;#varphi_{cluster};entries", {HistType::kTH1F, {{160, 0., 7.}}});
+    }
 
-  //Jet QA histograms
-  if (doprocessJetsData)  {
-  registry.add("h_full_jet_pt", "jet pT;#it{p}_{T_jet} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0., 350.}}});
-  registry.add("h_full_jet_eta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1., 1.}}});
-  registry.add("h_full_jet_phi", "jet #varphi;#varphi_{jet};entries", {HistType::kTH1F, {{160, 0., 7.}}});
-  }
-}//init
+    // Jet QA histograms
+    if (doprocessJetsData) {
+      registry.add("h_full_jet_pt", "jet pT;#it{p}_{T_jet} (GeV/#it{c});entries", {HistType::kTH1F, {{350, 0., 350.}}});
+      registry.add("h_full_jet_eta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1., 1.}}});
+      registry.add("h_full_jet_phi", "jet #varphi;#varphi_{jet};entries", {HistType::kTH1F, {{160, 0., 7.}}});
+    }
+  } // init
 
   using JetTableDataJoined = soa::Join<JetTableData, JetConstituentTableData>;
 
-
-  //Applying some cuts(filters) on collisions, tracks, clusters
+  // Applying some cuts(filters) on collisions, tracks, clusters
   Filter eventCuts = (nabs(aod::jcollision::posZ) < VertexZCut);
   Filter trackCuts = (aod::jtrack::pt >= trackpTMin && aod::jtrack::pt < trackpTMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax && aod::jtrack::phi >= trackPhiMin && aod::jtrack::phi <= trackPhiMax);
   aod::EMCALClusterDefinition clusterDefinition = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
@@ -129,7 +128,7 @@ struct FullJetSpectraTask {
   template <typename T>
   void fillJetHistograms(T const& jet, float weight = 1.0)
   {
-    if(jet.r() == round(JetRadii * 100.0)) {
+    if (jet.r() == round(JetRadii * 100.0)) {
       registry.fill(HIST("h_full_jet_pt"), jet.pt(), weight);
       registry.fill(HIST("h_full_jet_eta"), jet.eta(), weight);
       registry.fill(HIST("h_full_jet_phi"), jet.phi(), weight);
@@ -140,14 +139,14 @@ struct FullJetSpectraTask {
   void fillTrackHistograms(T const& tracks, U const& clusters, float weight = 1.0)
   {
     for (auto const& track : tracks) {
-      if (!jetderiveddatautilities::selectTrack(track, trackSelection)){
+      if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
       }
       registry.fill(HIST("h_track_pt"), track.pt(), weight);
       registry.fill(HIST("h_track_eta"), track.eta(), weight);
       registry.fill(HIST("h_track_phi"), track.phi(), weight);
     }
-    for(auto const& cluster : clusters) {
+    for (auto const& cluster : clusters) {
       double clusterpt = cluster.energy() / std::cosh(cluster.eta());
       registry.fill(HIST("h_cluster_pt"), clusterpt, weight);
       registry.fill(HIST("h_cluster_eta"), cluster.eta(), weight);
@@ -163,11 +162,11 @@ struct FullJetSpectraTask {
 
   void processJetsData(soa::Filtered<JetCollisions>::iterator const& collision, JetTableDataJoined const& jets, JetTracks const& tracks, JetClusters const& clusters)
   {
-    for (auto const& jet : jets)  {
-      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)){
+    for (auto const& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
-    fillJetHistograms(jet);
+      fillJetHistograms(jet);
     }
   }
   PROCESS_SWITCH(FullJetSpectraTask, processJetsData, "Full Jets Data", false);
@@ -175,7 +174,7 @@ struct FullJetSpectraTask {
   void processTracks(JetCollision const& collision, soa::Filtered<JetTracks> const& tracks, soa::Filtered<JetClusters> const& clusters)
   {
     registry.fill(HIST("h_collisions"), 0.5);
-    if(!jetderiveddatautilities::eventEMCAL(collision)) {
+    if (!jetderiveddatautilities::eventEMCAL(collision)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
