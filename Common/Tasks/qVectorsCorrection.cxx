@@ -148,7 +148,9 @@ struct qVectorsCorrection {
     histosQA.add("Centrality_0-5/histEvtPlRefBTwist", "", {HistType::kTH1F, {axisEvtPl}});
     histosQA.add("Centrality_0-5/histEvtPlRefBFinal", "", {HistType::kTH1F, {axisEvtPl}});
 
-    histosQA.add("Centrality_0-5/histEvtPlResolution", "", {HistType::kTH1F, {axisEvtPl}});
+    histosQA.add("Centrality_0-5/histEvtPlRes_SigRefA", "", {HistType::kTH1F, {axisEvtPl}});
+    histosQA.add("Centrality_0-5/histEvtPlRes_SigRefB", "", {HistType::kTH1F, {axisEvtPl}});
+    histosQA.add("Centrality_0-5/histEvtPlRes_RefARefB", "", {HistType::kTH1F, {axisEvtPl}});
 
     for (int iBin = 1; iBin < 8; iBin++) {
       histosQA.addClone("Centrality_0-5/", qV::centClasses[iBin].data());
@@ -199,10 +201,9 @@ struct qVectorsCorrection {
     }
 
     if (vec.qvecAmp()[DetId] > 1e-8 && vec.qvecAmp()[RefAId] > 1e-8 && vec.qvecAmp()[RefBId] > 1e-8) {
-      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlResolution"), helperEP.GetResolution(
-                                                                                 helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4 + 3], vec.qvecIm()[RefAId * 4 + 3], cfgnMod),
-                                                                                 helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4 + 3], vec.qvecIm()[RefBId * 4 + 3], cfgnMod),
-                                                                                 helperEP.GetEventPlane(vec.qvecRe()[DetId * 4 + 3], vec.qvecIm()[DetId * 4 + 3], cfgnMod), cfgnMod));
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlRes_SigRefA"), helperEP.GetResolution(helperEP.GetEventPlane(vec.qvecRe()[DetId * 4 + 3], vec.qvecIm()[DetId * 4 + 3], cfgnMod), helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4 + 3], vec.qvecIm()[RefAId * 4 + 3], cfgnMod), cfgnMod));
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlRes_SigRefB"), helperEP.GetEventPlane(helperEP.GetEventPlane(vec.qvecRe()[DetId * 4 + 3], vec.qvecIm()[DetId * 4 + 3], cfgnMod), helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4 + 3], vec.qvecIm()[RefBId * 4 + 3], cfgnMod), cfgnMod));
+      histosQA.fill(HIST(qV::centClasses[cBin]) + HIST("histEvtPlRes_RefARefB"), helperEP.GetEventPlane(helperEP.GetEventPlane(vec.qvecRe()[RefAId * 4 + 3], vec.qvecIm()[RefAId * 4 + 3], cfgnMod), helperEP.GetEventPlane(vec.qvecRe()[RefBId * 4 + 3], vec.qvecIm()[RefBId * 4 + 3], cfgnMod), cfgnMod));
     }
   }
 

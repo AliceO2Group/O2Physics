@@ -94,6 +94,7 @@ struct derivedCascadeAnalysis {
 
   Configurable<bool> doPtDepCosPaCut{"doPtDepCosPaCut", false, "Enable pt dependent cos PA cut"};
   Configurable<bool> doPtDepCascRadiusCut{"doPtDepCascRadiusCut", false, "Enable pt dependent cascade radius cut"};
+  Configurable<bool> doPtDepV0RadiusCut{"doPtDepV0RadiusCut", false, "Enable pt dependent V0 radius cut"};
   Configurable<bool> doPtDepV0CosPaCut{"doPtDepV0CosPaCut", false, "Enable pt dependent cos PA cut of the V0 daughter"};
   Configurable<bool> doPtDepDCAcascDauCut{"doPtDepDCAcascDauCut", false, "Enable pt dependent DCA cascade daughter cut"};
   Configurable<bool> doDCAdauToPVCut{"doDCAdauToPVCut", true, "Enable cut DCA daughter track to PV"};
@@ -112,12 +113,13 @@ struct derivedCascadeAnalysis {
   Configurable<float> cosPApar1{"cosPApar1", -0.068957, "linear par for pt dep cosPA cut"};
   Configurable<float> cosPApar2{"cosPApar2", 0.004934, "quadratic par for pt dep cosPA cut"};
 
-  Configurable<float> cosPAV0par0{"cosPAV0par0", 0.246642, "const par for pt dep V0cosPA cut"};
-  Configurable<float> cosPAV0par1{"cosPAV0par1", -0.056284, "linear par for pt dep V0cosPA cut"};
-  Configurable<float> cosPAV0par2{"cosPAV0par2", 0.00339345, "quadratic par for pt dep V0cosPA cut"};
+  Configurable<float> cosPAV0par{"cosPAV0par", 0.162740, "par for pt dep V0cosPA cut"};
 
   Configurable<float> parCascRadius0{"parCascRadius0", 1.216159, "const par for pt dep radius cut"};
   Configurable<float> parCascRadius1{"parCascRadius1", 0.064462, "linear par for pt dep radius cut"};
+
+  Configurable<float> parV0Radius0{"parV0Radius0", 2.136381, "const par for pt dep V0 radius cut"};
+  Configurable<float> parV0Radius1{"parV0Radius1", 0.437074, "linear par for pt dep V0 radius cut"};
 
   Configurable<float> dcaCacsDauPar{"dcaCacsDauPar", 0.404424, " par for pt dep DCA cascade daughter cut"};
 
@@ -243,8 +245,18 @@ struct derivedCascadeAnalysis {
 
     if (isMC) {
       histos.addClone("PtDepCutStudy/", "PtDepCutStudyMCTruth/");
-      histos.add("hNegativeCascadePtForEfficiency", "hNegativeCascadePtForEfficiency", HistType::kTH2F, {axisPt, {101, 0, 101}});
-      histos.add("hPositiveCascadePtForEfficiency", "hPositiveCascadePtForEfficiency", {HistType::kTH2F, {axisPt, {101, 0, 101}}});
+      histos.add("hNegativeCascadePtForEfficiency", "hNegativeCascadePtForEfficiency", HistType::kTH3F, {axisPt, axisXiMass, {101, 0, 101}});
+      histos.add("hPositiveCascadePtForEfficiency", "hPositiveCascadePtForEfficiency", {HistType::kTH3F, {axisPt, axisXiMass, {101, 0, 101}}});
+      if (!isXi) {
+        histos.get<TH3>(HIST("hNegativeCascadePtForEfficiency"))->GetYaxis()->Set(200, 1.572f, 1.772f);
+        histos.get<TH3>(HIST("hPositiveCascadePtForEfficiency"))->GetYaxis()->Set(200, 1.572f, 1.772f);
+      }
+
+      histos.add("h2dNVerticesVsCentrality", "h2dNVerticesVsCentrality", HistType::kTH2F, {{101, 0, 101}, {20, -0.5, 19.5}});
+      histos.add("hGenNegativeXi", "hGenNegativeXi", HistType::kTH2F, {{101, 0, 101}, axisPt});
+      histos.add("hGenPositiveXi", "hGenPositiveXi", HistType::kTH2F, {{101, 0, 101}, axisPt});
+      histos.add("hGenNegativeOmega", "hGenNegativeOmega", HistType::kTH2F, {{101, 0, 101}, axisPt});
+      histos.add("hGenPositiveOmega", "hGenPositiveOmega", HistType::kTH2F, {{101, 0, 101}, axisPt});
     }
   }
   template <typename TCascade>
@@ -256,7 +268,7 @@ struct derivedCascadeAnalysis {
       if (isCascPa)
         ptdepCut = cosPApar0 + cosPApar1 * casc.pt() + cosPApar2 * TMath::Power(casc.pt(), 2);
       else
-        ptdepCut = cosPAV0par0 + cosPAV0par1 * casc.pt() + cosPAV0par2 * TMath::Power(casc.pt(), 2);
+        ptdepCut = cosPAV0par / casc.pt();
       if (ptdepCut > 0.3 && casc.pt() < 0.5)
         ptdepCut = 0.3;
       if (ptdepCut < 0.012 || casc.pt() > 7)
@@ -350,7 +362,11 @@ struct derivedCascadeAnalysis {
       counter += 2;
 
     if (doV0RadiusCut) {
-      if (casc.v0radius() < minV0Radius)
+      if (doPtDepV0RadiusCut) {
+        float cut = parV0Radius0 + casc.pt() * parV0Radius1;
+        if (casc.v0radius() < cut)
+          return false;
+      } else if (casc.v0radius() < minV0Radius)
         return false;
       histos.fill(HIST("hCandidate"), ++counter);
       if (casc.v0radius() > maxV0Radius)
@@ -576,9 +592,9 @@ struct derivedCascadeAnalysis {
       }
     }
   }
-  void processCascadesMCrec(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascMCCores> const& Cascades, soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs> const&)
+  void processCascadesMCrec(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascMCCores, aod::CascExtras, aod::CascBBs> const& Cascades, soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs> const&)
   {
-    if (!IsEventAccepted(coll, true))
+    if (!IsEventAccepted(coll, coll.sel8()))
       return;
 
     for (auto& casc : Cascades) {
@@ -751,6 +767,8 @@ struct derivedCascadeAnalysis {
             }
             if (!doProperLifeTimeCut && doPtDepCutStudy)
               histos.fill(HIST("PtDepCutStudyMCTruth/hNegativeCascadeProperLifeTime"), casc.pt(), invmass, ctau);
+            if ((isXi && casc.pdgCodeV0() == 3122 && casc.pdgCodePositive() == 2212 && casc.pdgCodeNegative() == -211 && casc.pdgCodeBachelor() == -211) || (!isXi && casc.pdgCodeV0() == 3122 && casc.pdgCodePositive() == 2212 && casc.pdgCodeNegative() == -211 && casc.pdgCodeBachelor() == -321))
+              histos.fill(HIST("hNegativeCascadePtForEfficiency"), casc.pt(), invmass, coll.centFT0C());
           }
         }
       } else {
@@ -804,14 +822,46 @@ struct derivedCascadeAnalysis {
             }
             if (!doProperLifeTimeCut && doPtDepCutStudy)
               histos.fill(HIST("PtDepCutStudyMCTruth/hPositiveCascadeProperLifeTime"), casc.pt(), invmass, ctau);
+            if ((isXi && casc.pdgCodeV0() == -3122 && casc.pdgCodePositive() == 211 && casc.pdgCodeNegative() == -2212 && casc.pdgCodeBachelor() == 211) || (!isXi && casc.pdgCodeV0() == -3122 && casc.pdgCodePositive() == 211 && casc.pdgCodeNegative() == -2212 && casc.pdgCodeBachelor() == 321))
+              histos.fill(HIST("hPositiveCascadePtForEfficiency"), casc.pt(), invmass, coll.centFT0C());
           }
         }
       }
     }
   }
 
+  void processReconstructedSimulation(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>> const& collisions, aod::McParticles const& mcParticles)
+  {
+    // this process function also checks if a given collision was reconstructed and checks explicitly for splitting, etc
+
+    // identify best-of collision
+    int biggestNContribs = -1;
+    float bestCentrality = 100.5;
+    for (auto& collision : collisions) {
+      if (biggestNContribs < collision.numContrib()) {
+        biggestNContribs = collision.numContrib();
+        bestCentrality = collision.centFT0C();
+      }
+    }
+    histos.fill(HIST("h2dNVerticesVsCentrality"), bestCentrality, collisions.size());
+
+    for (auto& mcp : mcParticles) {
+      if (TMath::Abs(mcp.y()) < 0.5 && mcp.isPhysicalPrimary()) {
+        if (mcp.pdgCode() == 3312)
+          histos.fill(HIST("hGenNegativeXi"), bestCentrality, mcp.pt());
+        if (mcp.pdgCode() == -3312)
+          histos.fill(HIST("hGenPositiveXi"), bestCentrality, mcp.pt());
+        if (mcp.pdgCode() == 3334)
+          histos.fill(HIST("hGenNegativeOmega"), bestCentrality, mcp.pt());
+        if (mcp.pdgCode() == -3334)
+          histos.fill(HIST("hGenPositiveOmega"), bestCentrality, mcp.pt());
+      }
+    }
+  }
+
   PROCESS_SWITCH(derivedCascadeAnalysis, processCascades, "cascade analysis, run3 data ", true);
   PROCESS_SWITCH(derivedCascadeAnalysis, processCascadesMCrec, "cascade analysis, run3 rec MC", false);
+  PROCESS_SWITCH(derivedCascadeAnalysis, processReconstructedSimulation, "cascade analysis, run3 gen MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

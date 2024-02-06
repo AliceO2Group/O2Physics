@@ -48,6 +48,7 @@ struct TauTau13topo {
   // cut selection configurables
   Configurable<float> zvertexcut{"Zvertexcut", 15., "Z vertex cut"};
   Configurable<float> trkEtacut{"TrkEtacut", 1.5, "max track eta cut"};
+  Configurable<bool> sameSign{"sameSign", {}, "Switch: same(true) or opposite(false) sign"};
   Configurable<float> ptTotcut{"PtTotcut", 0.15, "min pt of all 4 tracks cut"};
   Configurable<float> minAnglecut{"minAnglecut", 0.05, "min angle between tracks cut"};
   Configurable<float> minNsigmaElcut{"minNsigmaElcut", -2., "min Nsigma for Electrons cut"};
@@ -275,7 +276,8 @@ struct TauTau13topo {
     registry.get<TH1>(HIST("control/cut") + HIST(histoname[mode]) + HIST("/h13EtaSum"))->Fill(pi3etasum);
   }
 
-  int TrackCheck(auto track)
+  template <typename T>
+  int TrackCheck(T track)
   {
     // 1
     if (track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF())
@@ -402,11 +404,20 @@ struct TauTau13topo {
     registry.get<TH1>(HIST("global/hEventEff"))->Fill(3., 1.);
 
     // skip events with net charge != 0
-    if (dgcand.netCharge() != 0) {
-      if (verbose) {
-        LOGF(info, "<tautau13topo> Candidate rejected: Net charge is %d", dgcand.netCharge());
+    if (!sameSign) { // opposite sign is signal
+      if (dgcand.netCharge() != 0) {
+        if (verbose) {
+          LOGF(info, "<tautau13topo> Candidate rejected: Net charge is %d, while should be 0", dgcand.netCharge());
+        }
+        return;
       }
-      return;
+    } else { // same sign is background
+      if (dgcand.netCharge() == 0) {
+        if (verbose) {
+          LOGF(info, "<tautau13topo> Candidate rejected: Net charge is %d, while should be not 0", dgcand.netCharge());
+        }
+        return;
+      }
     }
     registry.get<TH1>(HIST("global/hEventEff"))->Fill(4., 1.);
 
