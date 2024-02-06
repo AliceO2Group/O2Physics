@@ -156,7 +156,7 @@ struct UpcTauCentralBarrelRL {
     const AxisSpec axisEta{50, -1.2, 1.2};
     const AxisSpec axisRap{50, -1.2, 1.2};
     const AxisSpec axisAcoplanarity{32, 0.0, o2::constants::math::PI};
-    const AxisSpec axisAvgITSclsSizes{100,0.,10.};
+    const AxisSpec axisAvgITSclsSizes{500,0.,10.};
 
     histos.add("Tracks/raw/hTrackZ", ";Track z-vertex (cm);Number of events (-)", HistType::kTH1D, {axisZvtx});
     histos.add("Tracks/raw/hTrackP", ";Track #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMom});
