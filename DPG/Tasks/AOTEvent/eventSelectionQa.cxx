@@ -263,7 +263,7 @@ struct EventSelectionQaTask {
     histos.add("hMultT0MVsNcontribAcc", "", kTH2F, {axisMultT0M, axisNcontrib}); // before ITS RO Frame border cut
     histos.add("hMultT0MVsNcontribCut", "", kTH2F, {axisMultT0M, axisNcontrib}); // after ITS RO Frame border cut
 
-    if( flagMonitorBcInTF ) {
+    if(flagMonitorBcInTF ) {
       AxisSpec axisBCinTF{128 * nBCsPerOrbit + 1 + 10, -0.5, 128 * nBCsPerOrbit + 0.5 + 10, "bc in TF"};
       histos.add("hNcontribVsBcInTF", ";bc in TF; n vertex contributors", kTH1F, {axisBCinTF});
       histos.add("hNcontribAfterCutsVsBcInTF", ";bc in TF; n vertex contributors", kTH1F, {axisBCinTF});
@@ -993,7 +993,7 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hNcontribCol"), nContributors);
 
       // monitor nContributors vs bc in timeframe:
-      if( flagMonitorBcInTF ) {
+      if(flagMonitorBcInTF ) {
         int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
         histos.fill(HIST("hNcontribVsBcInTF"), bcInTF, nContributors);
         histos.fill(HIST("hNcontribAfterCutsVsBcInTF"), bcInTF, nContributorsAfterEtaTPCCuts);
