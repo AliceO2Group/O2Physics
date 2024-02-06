@@ -13,6 +13,7 @@
 /// \author everyone
 
 #include <cmath>
+#include <iostream>
 
 #include "Math/Vector4D.h"
 #include "Common/Core/CollisionAssociation.h"
@@ -46,7 +47,6 @@
 
 #include "ReconstructionDataFormats/Track.h"
 
-#include <iostream>
 using namespace std;
 
 using namespace o2;
