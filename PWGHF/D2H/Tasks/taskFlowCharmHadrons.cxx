@@ -379,7 +379,7 @@ struct HfTaskFlowCharmHadrons {
   void processResolution(CollsWithQvecs::iterator const& collision)
   {
 
-    if (!collision.sel8() || collision.posZ() > zVtxMax) {
+    if (!collision.sel8() || std::abs(collision.posZ()) > zVtxMax) {
       return;
     }
 
