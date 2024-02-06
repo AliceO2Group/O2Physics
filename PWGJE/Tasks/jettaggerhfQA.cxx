@@ -394,4 +394,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   */
   return WorkflowSpec{tasks};
 }
-
