@@ -178,29 +178,31 @@ double calculateAcoplanarity(double phi_trk1, double phi_trk2)
 template <typename T>
 float getAvgITSClSize(T const& track)
 {
-    float sum = 0.0;
-    for (int iL = 0; iL < 6; iL++) {
-        sum += (track.itsClusterSizes() >> (iL * 4)) & 0xf;
-    }
-    return sum / track.itsNCls();
+  float sum = 0.0;
+  for (int iL = 0; iL < 6; iL++) {
+    sum += (track.itsClusterSizes() >> (iL * 4)) & 0xf;
+  }
+  return sum / track.itsNCls();
 }
 
 template <typename T>
-float getCosLambda(T const& track){
-    // lambda is track inclination
-    // tan(lambda) = track.tgl()
-    // track.pz() = track.pt() * track.tgl
-    float lambda = std::atan(track.pz()/track.pt());
-    return std::cos(lambda);
+float getCosLambda(T const& track)
+{
+  // lambda is track inclination
+  // tan(lambda) = track.tgl()
+  // track.pz() = track.pt() * track.tgl
+  float lambda = std::atan(track.pz() / track.pt());
+  return std::cos(lambda);
 }
 
 template <typename T>
-bool passITSAvgClsSizesLowMomCut(T const& track, double itscut = 3.5, double ptcut = 0.7){
-    if (getAvgITSClSize(track)*getCosLambda(track) < itscut && track.pt() < ptcut) {
-        return false;
-    } else {
-        return true;
-    }
+bool passITSAvgClsSizesLowMomCut(T const& track, double itscut = 3.5, double ptcut = 0.7)
+{
+  if (getAvgITSClSize(track) * getCosLambda(track) < itscut && track.pt() < ptcut) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
-#endif //PWGUD_CORE_UPCTAUCENTRALBARRELHELPERRL_H_
+#endif // PWGUD_CORE_UPCTAUCENTRALBARRELHELPERRL_H_
