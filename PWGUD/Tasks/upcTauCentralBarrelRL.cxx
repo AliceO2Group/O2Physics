@@ -466,6 +466,7 @@ struct UpcTauCentralBarrelRL {
     for (auto& track : reconstructedBarrelTracks) {
       if (track.isPVContributor() != 1)
         continue;
+      countPVGT++;
       float trkPx = track.px();
       float trkPy = track.py();
       float trkPz = track.pz();
@@ -496,7 +497,6 @@ struct UpcTauCentralBarrelRL {
           printMediumMessage("Track has no charge");
         }
       }
-      countPVGT++;
       if (track.hasTOF()) countTOFtracks++;
       int hypothesisID = testPIDhypothesis(track);
       if (hypothesisID == P_ELECTRON || hypothesisID == P_MUON || hypothesisID == P_PION) {
@@ -604,22 +604,22 @@ struct UpcTauCentralBarrelRL {
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPhi"))->Fill(daug[0].Phi(), daug[1].Phi());
       histos.get<TH2>(HIST("EventTwoTracks/hDaughtersRapidity"))->Fill(daug[0].Rapidity(), daug[1].Rapidity());
-        if (motherOfPions.Pt() < 0.2) {
-          histos.get<TH1>(HIST("EventTwoTracks/hInvariantMassWideAllPionMassPtCut"))->Fill(motherOfPions.M());
-          if (passAvgITSclsSizesCut) {
-            histos.get<TH1>(HIST("EventTwoTracks/hInvariantMassWideAllPionMassPtCutITScut"))->Fill(motherOfPions.M());
-          }
-        }
-        if (countTOFtracks == 2) {
-          histos.get<TH1>(HIST("EventTwoTracks/hInvariantMassWideAllPionMassTOF"))->Fill(motherOfPions.M());
-        }
+      if (motherOfPions.Pt() < 0.2) {
+        histos.get<TH1>(HIST("EventTwoTracks/hInvariantMassWideAllPionMassPtCut"))->Fill(motherOfPions.M());
         if (passAvgITSclsSizesCut) {
-          histos.get<TH1>(HIST("EventTwoTracks/hInvariantMassWideAllPionMassITScut"))->Fill(motherOfPions.M());
+          histos.get<TH1>(HIST("EventTwoTracks/hInvariantMassWideAllPionMassPtCutITScut"))->Fill(motherOfPions.M());
         }
-        histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPvsITSclusterSize"))->Fill(getAvgITSClSize(trkDaug1),trkDaug1.sign()*daug[0].P());
-        histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPvsITSclusterSize"))->Fill(getAvgITSClSize(trkDaug2),trkDaug2.sign()*daug[1].P());
-        histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPvsITSclusterSizeXcos"))->Fill(getAvgITSClSize(trkDaug1)*getCosLambda(trkDaug1),trkDaug1.sign()*daug[0].P());
-        histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPvsITSclusterSizeXcos"))->Fill(getAvgITSClSize(trkDaug2)*getCosLambda(trkDaug2),trkDaug2.sign()*daug[1].P());
+      }
+      if (countTOFtracks == 2) {
+        histos.get<TH1>(HIST("EventTwoTracks/hInvariantMassWideAllPionMassTOF"))->Fill(motherOfPions.M());
+      }
+      if (passAvgITSclsSizesCut) {
+        histos.get<TH1>(HIST("EventTwoTracks/hInvariantMassWideAllPionMassITScut"))->Fill(motherOfPions.M());
+      }
+      histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPvsITSclusterSize"))->Fill(getAvgITSClSize(trkDaug1),trkDaug1.sign()*daug[0].P());
+      histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPvsITSclusterSize"))->Fill(getAvgITSClSize(trkDaug2),trkDaug2.sign()*daug[1].P());
+      histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPvsITSclusterSizeXcos"))->Fill(getAvgITSClSize(trkDaug1)*getCosLambda(trkDaug1),trkDaug1.sign()*daug[0].P());
+      histos.get<TH2>(HIST("EventTwoTracks/hDaughtersPvsITSclusterSizeXcos"))->Fill(getAvgITSClSize(trkDaug2)*getCosLambda(trkDaug2),trkDaug2.sign()*daug[1].P());
 
       // ee, mm, em, pp, ep, mp, pppp, eppp, mppp, pppppp
       if (countPVGTelectrons == 2) {
