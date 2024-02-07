@@ -124,8 +124,9 @@ DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::TPCcrossedRows,
                   NucleiTableNS::ITSclsMap,
                   NucleiTableNS::TPCnCls,
-                  NucleiTableNS::ITSclusterSizes,
-                  NucleiTableNS::NucleiFlowCollId)
+                  NucleiTableNS::ITSclusterSizes);
+
+DECLARE_SOA_TABLE(NucleiCollId, "AOD", "NUCLEICOLLID", NucleiTableNS::NucleiFlowCollId);
 
 DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::Pt,

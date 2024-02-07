@@ -37,7 +37,6 @@
 #include "Math/GenVector/Boost.h"
 
 #include "Framework/DataTypes.h"
-// #include "MCHTracking/TrackExtrap.h"
 #include "TGeoGlobalMagField.h"
 #include "Field/MagneticField.h"
 #include "ReconstructionDataFormats/Track.h"
@@ -46,6 +45,8 @@
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "ReconstructionDataFormats/DCA.h"
+#include "DetectorsBase/Propagator.h"
+#include "Common/Core/trackUtilities.h"
 
 #include "Math/SMatrix.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
@@ -340,7 +341,6 @@ class VarManager : public TObject
     kMuonC1Pt2Phi,
     kMuonC1Pt2Tgl,
     kMuonC1Pt21Pt2,
-    kNMuonTrackVariables,
     kMuonTrackType,
     kMuonDCAx,
     kMuonDCAy,
@@ -349,6 +349,7 @@ class VarManager : public TObject
     kMftNClusters,
     kMftClusterSize,
     kMftMeanClusterSize,
+    kNMuonTrackVariables,
 
     // MC particle variables
     kMCPdgCode,
@@ -416,7 +417,6 @@ class VarManager : public TObject
     kPsi2C,
     kCos2DeltaPhi,
     kCos3DeltaPhi,
-    kNPairVariables,
     kDeltaPtotTracks,
     kVertexingLxyOverErr,
     kVertexingLzOverErr,
@@ -432,6 +432,7 @@ class VarManager : public TObject
     kKFChi2OverNDFGeo,
     kKFNContributorsPV,
     kKFCosPA,
+    kNPairVariables,
 
     // Candidate-track correlation variables
     kPairMass,
@@ -629,6 +630,8 @@ class VarManager : public TObject
   static void FillEvent(T const& event, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillTrack(T const& track, float* values = nullptr);
+  template <uint32_t fillMap, typename T, typename C>
+  static void FillTrackCollision(T const& track, C const& collision, float* values = nullptr);
   template <typename U, typename T>
   static void FillTrackMC(const U& mcStack, T const& track, float* values = nullptr);
   template <uint32_t fillMap, typename T1, typename T2, typename C>
@@ -726,7 +729,7 @@ class VarManager : public TObject
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
 
-  ClassDef(VarManager, 2)
+  ClassDefNV(VarManager, 3)
 };
 
 template <typename T, typename U, typename V>
@@ -856,8 +859,10 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
   if (!values) {
     values = fgValues;
   }
-  if constexpr ((fillMap & MuonCov) > 0) {
+
+  if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
     o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muon, collision);
+
     values[kPt] = propmuon.getPt();
     values[kX] = propmuon.getX();
     values[kY] = propmuon.getY();
@@ -979,14 +984,14 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kVtxZ] = event.posZ();
     values[kVtxNcontrib] = event.numContrib();
     if (fgUsedVars[kIsSel8]) {
-      values[kIsSel8] = (event.tag() & (uint64_t(1) << o2::aod::evsel::kIsTriggerTVX)) > 0;
+      values[kIsSel8] = (event.selection_bit(o2::aod::evsel::kIsTriggerTVX) > 0);
     }
     if (fgUsedVars[kIsDoubleGap]) {
-      values[kIsDoubleGap] = (event.tag() & (uint64_t(1) << (56 + kDoubleGap))) > 0;
+      values[kIsDoubleGap] = (event.tag_bit(56 + kDoubleGap) > 0);
     }
     if (fgUsedVars[kIsSingleGap] || fgUsedVars[kIsSingleGapA] || fgUsedVars[kIsSingleGapC]) {
-      values[kIsSingleGapA] = (event.tag() & (uint64_t(1) << (56 + kSingleGapA))) > 0;
-      values[kIsSingleGapC] = (event.tag() & (uint64_t(1) << (56 + kSingleGapC))) > 0;
+      values[kIsSingleGapA] = (event.tag_bit(56 + kSingleGapA) > 0);
+      values[kIsSingleGapC] = (event.tag_bit(56 + kSingleGapC) > 0);
       values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
     }
   }
@@ -997,37 +1002,37 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kCentVZERO] = event.centRun2V0M();
     values[kCentFT0C] = event.centFT0C();
     if (fgUsedVars[kIsINT7]) {
-      values[kIsINT7] = (event.triggerAlias() & (uint32_t(1) << kINT7)) > 0;
+      values[kIsINT7] = (event.alias_bit(kINT7) > 0);
     }
     if (fgUsedVars[kIsEMC7]) {
-      values[kIsEMC7] = (event.triggerAlias() & (uint32_t(1) << kEMC7)) > 0;
+      values[kIsEMC7] = (event.alias_bit(kEMC7) > 0);
     }
     if (fgUsedVars[kIsINT7inMUON]) {
-      values[kIsINT7inMUON] = (event.triggerAlias() & (uint32_t(1) << kINT7inMUON)) > 0;
+      values[kIsINT7inMUON] = (event.alias_bit(kINT7inMUON) > 0);
     }
     if (fgUsedVars[kIsMuonSingleLowPt7]) {
-      values[kIsMuonSingleLowPt7] = (event.triggerAlias() & (uint32_t(1) << kMuonSingleLowPt7)) > 0;
+      values[kIsMuonSingleLowPt7] = (event.alias_bit(kMuonSingleLowPt7) > 0);
     }
     if (fgUsedVars[kIsMuonSingleHighPt7]) {
-      values[kIsMuonSingleHighPt7] = (event.triggerAlias() & (uint32_t(1) << kMuonSingleHighPt7)) > 0;
+      values[kIsMuonSingleHighPt7] = (event.alias_bit(kMuonSingleHighPt7) > 0);
     }
     if (fgUsedVars[kIsMuonUnlikeLowPt7]) {
-      values[kIsMuonUnlikeLowPt7] = (event.triggerAlias() & (uint32_t(1) << kMuonUnlikeLowPt7)) > 0;
+      values[kIsMuonUnlikeLowPt7] = (event.alias_bit(kMuonUnlikeLowPt7) > 0);
     }
     if (fgUsedVars[kIsMuonLikeLowPt7]) {
-      values[kIsMuonLikeLowPt7] = (event.triggerAlias() & (uint32_t(1) << kMuonLikeLowPt7)) > 0;
+      values[kIsMuonLikeLowPt7] = (event.alias_bit(kMuonLikeLowPt7) > 0);
     }
     if (fgUsedVars[kIsCUP8]) {
-      values[kIsCUP8] = (event.triggerAlias() & (uint32_t(1) << kCUP8)) > 0;
+      values[kIsCUP8] = (event.alias_bit(kCUP8) > 0);
     }
     if (fgUsedVars[kIsCUP9]) {
-      values[kIsCUP9] = (event.triggerAlias() & (uint32_t(1) << kCUP9)) > 0;
+      values[kIsCUP9] = (event.alias_bit(kCUP9) > 0);
     }
     if (fgUsedVars[kIsMUP10]) {
-      values[kIsMUP10] = (event.triggerAlias() & (uint32_t(1) << kMUP10)) > 0;
+      values[kIsMUP10] = (event.alias_bit(kMUP10) > 0);
     }
     if (fgUsedVars[kIsMUP11]) {
-      values[kIsMUP11] = (event.triggerAlias() & (uint32_t(1) << kMUP11)) > 0;
+      values[kIsMUP11] = (event.alias_bit(kMUP11) > 0);
     }
   }
 
@@ -1150,20 +1155,20 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kCharge] = track.sign();
 
     if constexpr ((fillMap & ReducedTrack) > 0 && !((fillMap & Pair) > 0)) {
-      values[kIsGlobalTrack] = track.filteringFlags() & (uint64_t(1) << 0);
-      values[kIsGlobalTrackSDD] = track.filteringFlags() & (uint64_t(1) << 1);
+      values[kIsGlobalTrack] = track.filteringFlags_bit(0);
+      values[kIsGlobalTrackSDD] = track.filteringFlags_bit(1);
       values[kIsAmbiguous] = track.isAmbiguous();
 
-      values[kIsLegFromGamma] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 2));
-      values[kIsLegFromK0S] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 3));
-      values[kIsLegFromLambda] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 4));
-      values[kIsLegFromAntiLambda] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 5));
-      values[kIsLegFromOmega] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << 6));
+      values[kIsLegFromGamma] = track.filteringFlags_bit(2);
+      values[kIsLegFromK0S] = track.filteringFlags_bit(3);
+      values[kIsLegFromLambda] = track.filteringFlags_bit(4);
+      values[kIsLegFromAntiLambda] = track.filteringFlags_bit(5);
+      values[kIsLegFromOmega] = track.filteringFlags_bit(6);
 
       values[kIsProtonFromLambdaAndAntiLambda] = static_cast<bool>((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
 
       for (int i = 0; i < 8; i++) {
-        values[kIsDalitzLeg + i] = static_cast<bool>(track.filteringFlags() & (uint64_t(1) << (7 + i)));
+        values[kIsDalitzLeg + i] = track.filteringFlags_bit(7 + i);
       }
     }
   }
@@ -1488,6 +1493,32 @@ void VarManager::FillTrack(T const& track, float* values)
 
   // Derived quantities which can be computed based on already filled variables
   FillTrackDerived(values);
+}
+
+template <uint32_t fillMap, typename T, typename C>
+void VarManager::FillTrackCollision(T const& track, C const& collision, float* values)
+{
+
+  if (!values) {
+    values = fgValues;
+  }
+  if constexpr ((fillMap & ReducedTrackBarrel) > 0 || (fillMap & TrackDCA) > 0) {
+    auto trackPar = getTrackPar(track);
+    std::array<float, 2> dca{1e10f, 1e10f};
+    trackPar.propagateParamToDCA({collision.posX(), collision.posY(), collision.posZ()}, fgMagField, &dca);
+
+    values[kTrackDCAxy] = dca[0];
+    values[kTrackDCAz] = dca[1];
+
+    if constexpr ((fillMap & ReducedTrackBarrelCov) > 0 || (fillMap & TrackCov) > 0) {
+      if (fgUsedVars[kTrackDCAsigXY]) {
+        values[kTrackDCAsigXY] = dca[0] / std::sqrt(track.cYY());
+      }
+      if (fgUsedVars[kTrackDCAsigZ]) {
+        values[kTrackDCAsigZ] = dca[1] / std::sqrt(track.cZZ());
+      }
+    }
+  }
 }
 
 template <typename U, typename T>
@@ -2122,14 +2153,14 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
           float xyz[3] = {0, 0, 0};
           KFGeoTwoProng.GetFieldValue(xyz, B);
           // TODO: find better soluton to handle cases where KF outputs negative variances
-          float covXX = 0.1;
+          /*float covXX = 0.1;
           float covYY = 0.1;
           if (KFGeoTwoProng.GetCovariance(0, 0) > 0) {
             covXX = KFGeoTwoProng.GetCovariance(0, 0);
           }
           if (KFGeoTwoProng.GetCovariance(1, 1) > 0) {
             covYY = KFGeoTwoProng.GetCovariance(0, 0);
-          }
+          }*/
           pars1.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, B[2], x2x01);
           pars2.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, B[2], x2x02);
           v1 = {pars1.getPt(), pars1.getEta(), pars1.getPhi(), m1};

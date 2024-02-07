@@ -110,8 +110,6 @@ void HistogramManager::AddHistClass(const char* histClass)
   fMainList->Add(hList);
   std::list<std::vector<int>> varList;
   fVariablesMap[histClass] = varList;
-  cout << "Adding histogram class " << histClass << endl;
-  cout << "Variable map size :: " << fVariablesMap.size() << endl;
 }
 
 //_________________________________________________________________
@@ -181,8 +179,6 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   varVector.push_back(varT); // variable used for profiling in case of TProfile3D
   std::list varList = fVariablesMap[histClass];
   varList.push_back(varVector);
-  cout << "Adding histogram " << hname << endl;
-  cout << "size of array :: " << varList.size() << endl;
   fVariablesMap[histClass] = varList;
 
   // create and configure histograms according to required options
@@ -380,8 +376,6 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   varVector.push_back(varT); // variable used for profiling in case of TProfile3D
   std::list varList = fVariablesMap[histClass];
   varList.push_back(varVector);
-  cout << "Adding histogram " << hname << endl;
-  cout << "size of array :: " << varList.size() << endl;
   fVariablesMap[histClass] = varList;
 
   TH1* h = nullptr;
@@ -548,8 +542,6 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   }
   std::list varList = fVariablesMap[histClass];
   varList.push_back(varVector);
-  cout << "Adding histogram " << hname << endl;
-  cout << "size of array :: " << varList.size() << endl;
   fVariablesMap[histClass] = varList;
 
   uint32_t nbins = 1;
@@ -627,8 +619,6 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   }
   std::list varList = fVariablesMap[histClass];
   varList.push_back(varVector);
-  cout << "Adding histogram " << hname << endl;
-  cout << "size of array :: " << varList.size() << endl;
   fVariablesMap[histClass] = varList;
 
   // get the min and max for each axis
