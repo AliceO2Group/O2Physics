@@ -139,8 +139,8 @@ struct TableMaker {
   Produces<ReducedMuonsExtra> muonExtra;
   Produces<ReducedMuonsCov> muonCov;
   Produces<ReducedMuonsInfo> muonInfo;
-  Produces<ReducedMFTTracks> trackMFT;
-  Produces<ReducedMFTTracksExtra> trackMFTExtra;
+  Produces<ReducedMFTs> trackMFT;
+  Produces<ReducedMFTsExtra> trackMFTExtra;
 
   OutputObj<THashList> fOutputList{"output"}; //! the histogram manager output list
   OutputObj<TList> fStatsList{"Statistics"};  //! skimming statistics
@@ -372,17 +372,15 @@ struct TableMaker {
           VarManager::SetupMuonMagField();
         }
       }
-
       fCurrentRun = bc.runNumber();
     }
 
-    // get the trigger aliases
-    uint32_t triggerAliases = collision.alias_raw();
-
     // store the selection decisions
-    uint64_t tag = collision.selection_raw();
-    if (collision.sel7()) {
-      tag |= (uint64_t(1) << evsel::kNsel); //! SEL7 stored at position kNsel in the tag bit map
+    uint64_t tag = 0;
+    // store some more information in the tag
+    // if the BC found by event selection does not coincide with the collision.bc()
+    if (collision.foundBC().globalIndex() != collision.bc().globalIndex()) {
+      tag |= (uint64_t(1) << 0);
     }
     // Put the 8 first bits of the event filter in the last 8 bits of the tag
     if constexpr ((TEventFillMap & VarManager::ObjTypes::EventFilter) > 0) {
@@ -401,6 +399,7 @@ struct TableMaker {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
     }
 
+    uint32_t triggerAliases = collision.alias_raw();
     // fill stats information, before selections
     for (int i = 0; i < kNaliases; i++) {
       if (triggerAliases & (uint32_t(1) << i)) {
@@ -426,20 +425,20 @@ struct TableMaker {
     // create the event tables
     event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
     if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0 && (TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
-      eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
+      eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
                     collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
                     collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(),
                     collision.centFT0C());
     } else if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0) {
-      eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
+      eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
                     collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
                     collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(),
                     -1);
     } else if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
-      eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
+      eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
                     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, collision.centFT0C());
     } else {
-      eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+      eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
     }
     eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 
@@ -539,7 +538,8 @@ struct TableMaker {
 
         // create the track tables
         trackBasic(event.lastIndex(), trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), isAmbiguous);
-        trackBarrel(track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
+        trackBarrel(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
+                    track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
                     track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
                     track.tpcNClsShared(), track.tpcChi2NCl(),
                     track.trdChi2(), track.trdPattern(), track.tofChi2(),
@@ -548,8 +548,7 @@ struct TableMaker {
                     track.detectorMap());
         trackBarrelInfo(track.collisionId(), collision.posX(), collision.posY(), collision.posZ());
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
-          trackBarrelCov(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
-                         track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
+          trackBarrelCov(track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
                          track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
                          track.c1PtY(), track.c1PtZ(), track.c1PtSnp(), track.c1PtTgl(), track.c1Pt21Pt2());
         }
@@ -557,7 +556,7 @@ struct TableMaker {
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackPID)) {
           float nSigmaEl = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaEl_Corr] : track.tpcNSigmaEl());
           float nSigmaPi = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPi_Corr] : track.tpcNSigmaPi());
-          float nSigmaKa = ((fConfigComputeTPCpostCalib & fConfigComputeTPCpostCalibKaon) ? VarManager::fgValues[VarManager::kTPCnSigmaKa_Corr] : track.tpcNSigmaKa());
+          float nSigmaKa = ((fConfigComputeTPCpostCalib && fConfigComputeTPCpostCalibKaon) ? VarManager::fgValues[VarManager::kTPCnSigmaKa_Corr] : track.tpcNSigmaKa());
           float nSigmaPr = (fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPr_Corr] : track.tpcNSigmaPr());
           trackBarrelPID(track.tpcSignal(),
                          nSigmaEl, track.tpcNSigmaMu(), nSigmaPi, nSigmaKa, nSigmaPr,
@@ -626,6 +625,9 @@ struct TableMaker {
       for (auto& muon : tracksMuon) {
         trackFilteringTag = uint64_t(0);
         VarManager::FillTrack<TMuonFillMap>(muon);
+        if (fPropMuon) {
+          VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
+        }
 
         if (muon.index() > idxPrev + 1) { // checks if some muons are filtered even before the skimming function
           nDel += muon.index() - (idxPrev + 1);
@@ -726,10 +728,10 @@ struct TableMaker {
           }
         }
 
-        muonBasic(event.lastIndex(), trackFilteringTag, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], muon.sign(), isAmbiguous);
+        muonBasic(event.lastIndex(), newMatchIndex.find(muon.index())->second, newMFTMatchIndex.find(muon.index())->second, trackFilteringTag, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], muon.sign(), isAmbiguous);
         muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
                   muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
-                  muon.matchScoreMCHMFT(), newMatchIndex.find(muon.index())->second, newMFTMatchIndex.find(muon.index())->second, muon.mchBitMap(), muon.midBitMap(),
+                  muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
                   muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY(),
                   muon.trackTime(), muon.trackTimeRes());
         muonInfo(muon.collisionId(), collision.posX(), collision.posY(), collision.posZ());
@@ -781,13 +783,17 @@ struct TableMaker {
 
     // get the trigger aliases
     uint32_t triggerAliases = collision.alias_raw();
-
     // store the selection decisions
-    uint64_t tag = collision.selection_raw();
-    if (collision.sel7()) {
-      tag |= (uint64_t(1) << evsel::kNsel); //! SEL7 stored at position kNsel in the tag bit map
+    uint64_t tag = 0;
+    // store some more information in the tag
+    // if the BC found by event selection does not coincide with the collision.bc()
+    if (collision.foundBC().globalIndex() != collision.bc().globalIndex()) {
+      tag |= (uint64_t(1) << 0);
     }
-    // TODO: Add the event level decisions from the filtering task into the tag
+    // Put the 8 first bits of the event filter in the last 8 bits of the tag
+    if constexpr ((TEventFillMap & VarManager::ObjTypes::EventFilter) > 0) {
+      tag |= (collision.eventFilter() << 56);
+    }
 
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
     // TODO: These variables cannot be filled in the VarManager for the moment as long as BCsWithTimestamps are used.
@@ -826,20 +832,20 @@ struct TableMaker {
     // create the event tables
     event(tag, bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
     if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0 && (TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
-      eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
+      eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
                     collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
                     collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(),
                     collision.centFT0C());
     } else if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionMult) > 0) {
-      eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
+      eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
                     collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
                     collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(),
                     -1);
     } else if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0) {
-      eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO],
+      eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO],
                     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, collision.centFT0C());
     } else {
-      eventExtended(bc.globalBC(), bc.triggerMask(), bc.timestamp(), triggerAliases, VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+      eventExtended(bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(), VarManager::fgValues[VarManager::kCentVZERO], -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
     }
     eventVtxCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 
@@ -1056,10 +1062,10 @@ struct TableMaker {
           }
         }
 
-        muonBasic(event.lastIndex(), trackFilteringTag, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], muon.sign(), isAmbiguous);
+        muonBasic(event.lastIndex(), newMatchIndex.find(muon.index())->second, -1, trackFilteringTag, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], muon.sign(), isAmbiguous);
         muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
                   muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
-                  muon.matchScoreMCHMFT(), newMatchIndex.find(muon.index())->second, -1, muon.mchBitMap(), muon.midBitMap(),
+                  muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
                   muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY(),
                   muon.trackTime(), muon.trackTimeRes());
         muonInfo(muon.collisionId(), collision.posX(), collision.posY(), collision.posZ());
