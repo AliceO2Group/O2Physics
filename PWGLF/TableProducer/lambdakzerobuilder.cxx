@@ -62,6 +62,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
+#include "TableHelper.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -94,6 +95,7 @@ struct lambdakzeroBuilder {
   Produces<aod::StoredV0Cores> v0cores;
   Produces<aod::V0TrackXs> v0trackXs;
   Produces<aod::V0Covs> v0covs;                 // covariances
+  Produces<aod::V0DauCovs> v0daucovs;           // covariances of daughter tracks
   Produces<aod::V0TraPosAtDCAs> v0dauPositions; // auxiliary debug information
 
   Produces<aod::V0fCIndices> v0fcindices;
@@ -105,6 +107,7 @@ struct lambdakzeroBuilder {
 
   // Configurables related to table creation
   Configurable<int> createV0CovMats{"createV0CovMats", -1, {"Produces V0 cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
+  Configurable<int> createV0DauCovMats{"createV0DauCovMats", -1, {"Produces V0 cov matrices for daughter tracks. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> createV0PosAtDCAs{"createV0PosAtDCAs", 0, {"Produces V0 track positions at minima. 0: don't, 1: yes. Default: no (0)"}};
 
   Configurable<bool> storePhotonCandidates{"storePhotonCandidates", false, "store photon candidates (yes/no)"};
@@ -498,6 +501,7 @@ struct lambdakzeroBuilder {
             LOGF(info, "Device named %s has subscribed to V0Covs table! Enabling.", device.name);
             createV0CovMats.value = 1;
           }
+          enableFlagIfTableRequired(context, "V0DauCovs", createV0DauCovMats);
         }
       }
       LOGF(info, "Self-configuration finished! Decided on selections:");
@@ -524,6 +528,9 @@ struct lambdakzeroBuilder {
     }
     if (createV0CovMats > 0) {
       LOGF(info, " ---+*> Will produce V0 cov mat table");
+    }
+    if (createV0DauCovMats > 0) {
+      LOGF(info, " ---+*> Will produce V0 cov mat table for decay daughters");
     }
     //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
@@ -973,7 +980,6 @@ struct lambdakzeroBuilder {
         positionCovariance[3] = covVtxV(2, 0);
         positionCovariance[4] = covVtxV(2, 1);
         positionCovariance[5] = covVtxV(2, 2);
-        // store momentum covariance matrix
         std::array<float, 21> covTpositive = {0.};
         std::array<float, 21> covTnegative = {0.};
         // std::array<float, 6> momentumCovariance;
@@ -988,6 +994,16 @@ struct lambdakzeroBuilder {
           if (V0.v0Type() > 1 && !storePhotonCandidates)
             continue;
           v0covs(positionCovariance, momentumCovariance);
+          if (createV0DauCovMats) {
+            // store momentum covariance matrix
+            float covariancePosTrack[21];
+            float covarianceNegTrack[21];
+            for (int i = 0; i < 21; i++) {
+              covariancePosTrack[i] = covTpositive[i];
+              covarianceNegTrack[i] = covTnegative[i];
+            }
+            v0daucovs(covariancePosTrack, covarianceNegTrack);
+          }
         } else {
           v0fccovs(positionCovariance, momentumCovariance);
         }
