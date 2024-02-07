@@ -95,7 +95,7 @@ using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBa
 using MyBarrelTracksSelected = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts>;
 
 // using MyPairCandidatesSelected = soa::Join<aod::Dileptons, aod::DileptonsExtra>;
-using MyPairCandidatesSelected = aod::Dileptons;
+using MyPairCandidatesSelected = aod::Dielectrons;
 using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsInfo>;
 using MyMuonTracksSelected = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsInfo, aod::MuonTrackCuts>;
 using MyMuonTracksWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsInfo, aod::ReducedMuonsCov>;
