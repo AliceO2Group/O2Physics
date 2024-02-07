@@ -2153,14 +2153,14 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
           float xyz[3] = {0, 0, 0};
           KFGeoTwoProng.GetFieldValue(xyz, B);
           // TODO: find better soluton to handle cases where KF outputs negative variances
-          float covXX = 0.1;
+          /*float covXX = 0.1;
           float covYY = 0.1;
           if (KFGeoTwoProng.GetCovariance(0, 0) > 0) {
             covXX = KFGeoTwoProng.GetCovariance(0, 0);
           }
           if (KFGeoTwoProng.GetCovariance(1, 1) > 0) {
             covYY = KFGeoTwoProng.GetCovariance(0, 0);
-          }
+          }*/
           pars1.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, B[2], x2x01);
           pars2.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, B[2], x2x02);
           v1 = {pars1.getPt(), pars1.getEta(), pars1.getPhi(), m1};
