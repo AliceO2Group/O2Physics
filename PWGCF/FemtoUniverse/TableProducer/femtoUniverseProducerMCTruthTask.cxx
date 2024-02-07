@@ -47,7 +47,7 @@ using namespace o2::framework::expressions;
 namespace o2::aod
 {
 
-using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::McCollisionLabels>::iterator;
+using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
 
 } // namespace o2::aod
 
