@@ -60,9 +60,9 @@ struct TagAndProbe {
 
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
   Configurable<std::string> fConfigTagPCMCut{"cfgTagPCMCuts", "tag_track", "Tag PCM photon cut. 1 per wagon"};
-  Configurable<std::string> fConfigTagPHOSCut{"cfgTagPHOSCuts", "tag", "Tag PHOS photon cuts. 1 per wagon"};
-  Configurable<std::string> fConfigTagEMCCut{"cfgTagEMCCuts", "tag", "Tag EMCal photon cuts. 1 per wagon"};
-  Configurable<std::string> fConfigProbePCMCuts{"cfgProbePCMCuts", "analysis,analysis_wo_mee,qc,qc_w_mee", "Comma separated list of V0 photon cuts"};
+  Configurable<std::string> fConfigTagPHOSCut{"cfgTagPHOSCuts", "test03", "Tag PHOS photon cuts. 1 per wagon"};
+  Configurable<std::string> fConfigTagEMCCut{"cfgTagEMCCuts", "standard", "Tag EMCal photon cuts. 1 per wagon"};
+  Configurable<std::string> fConfigProbePCMCuts{"cfgProbePCMCuts", "analysis,qc", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigProbePHOSCuts{"cfgProbePHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
   Configurable<std::string> fConfigProbeEMCCuts{"cfgProbeEMCCuts", "standard", "Comma separated list of EMCal photon cuts"};
   Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle"};
@@ -256,8 +256,8 @@ struct TagAndProbe {
       reinterpret_cast<TH1F*>(list_ev_pair->FindObject("hCollisionCounter"))->Fill(4.0); // |Zvtx| < 10 cm
       o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev_pair, "", collision);
 
-      auto photons1_coll = photons1.sliceBy(perCollision1, collision.collisionId());
-      auto photons2_coll = photons2.sliceBy(perCollision2, collision.collisionId());
+      auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
+      auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
 
       for (auto& g1 : photons1_coll) {
 
@@ -334,11 +334,11 @@ struct TagAndProbe {
     // LOGF(info, "Number of collisions after filtering: %d", collisions.size());
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ndepth, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
 
-      // LOGF(info, "Mixed event collisionId: (%d, %d) , ngpcm: (%d, %d), ngphos: (%d, %d), ngemc: (%d, %d)",
-      //     collision1.collisionId(), collision2.collisionId(), collision1.ngpcm(), collision2.ngpcm(), collision1.ngphos(), collision2.ngphos(), collision1.ngemc(), collision2.ngemc());
+      // LOGF(info, "Mixed event globalIndex: (%d, %d) , ngpcm: (%d, %d), ngphos: (%d, %d), ngemc: (%d, %d)",
+      //     collision1.globalIndex(), collision2.globalIndex(), collision1.ngpcm(), collision2.ngpcm(), collision1.ngphos(), collision2.ngphos(), collision1.ngemc(), collision2.ngemc());
 
-      auto photons_coll1 = photons1.sliceBy(perCollision1, collision1.collisionId());
-      auto photons_coll2 = photons2.sliceBy(perCollision2, collision2.collisionId());
+      auto photons_coll1 = photons1.sliceBy(perCollision1, collision1.globalIndex());
+      auto photons_coll2 = photons2.sliceBy(perCollision2, collision2.globalIndex());
       // LOGF(info, "collision1: posZ = %f, numContrib = %d , sel8 = %d | collision2: posZ = %f, numContrib = %d , sel8 = %d",
       //     collision1.posZ(), collision1.numContrib(), collision1.sel8(), collision2.posZ(), collision2.numContrib(), collision2.sel8());
 
@@ -357,7 +357,7 @@ struct TagAndProbe {
           }
         }
         for (auto& g2 : photons_coll2) {
-          // LOGF(info, "Mixed event photon pair: (%d, %d) from events (%d, %d), photon event: (%d, %d)", g1.index(), g2.index(), collision1.index(), collision2.index(), g1.collisionId(), g2.collisionId());
+          // LOGF(info, "Mixed event photon pair: (%d, %d) from events (%d, %d), photon event: (%d, %d)", g1.index(), g2.index(), collision1.index(), collision2.index(), g1.globalIndex(), g2.globalIndex());
 
           for (auto& paircut : paircuts) {
             if (!paircut.IsSelected(g1, g2)) {

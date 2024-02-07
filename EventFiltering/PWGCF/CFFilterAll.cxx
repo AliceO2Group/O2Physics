@@ -139,6 +139,8 @@ static const float MomCorLimits[2][nMomCorCuts] =
 static const float PIDForTrackingTable[2][nTracks]{
   {-1, 0.75},
   {-1, 1.2}};
+static const float ITSCutsTable[1][nTracks] = {
+  {1, 1}};
 
 static const float triggerSwitches[1][nAllTriggers]{
   {1, 1, 1, 1, 1, 1}};
@@ -298,13 +300,13 @@ struct CFFilter {
     "ConfTrkTPCsClsMax",
     160,
     "Maximum number of shared TPC clusters"};
-  Configurable<float> ConfTrkITSnclsMin{
+  Configurable<LabeledArray<float>> ConfTrkITSnclsMin{
     "ConfTrkITSnclsMin",
-    0,
+    {CFTrigger::ITSCutsTable[0], 1, CFTrigger::nTracks, std::vector<std::string>{"Cut"}, CFTrigger::SpeciesName},
     "Minimum number of ITS clusters"};
-  Configurable<float> ConfTrkITSnclsIbMin{
-    "ConfTrkITSnclsIbMin",
-    0,
+  Configurable<LabeledArray<float>> ConfTrkITSnclsIBMin{
+    "ConfTrkITSnclsIBMin",
+    {CFTrigger::ITSCutsTable[0], 1, CFTrigger::nTracks, std::vector<std::string>{"Cut"}, CFTrigger::SpeciesName},
     "Minimum number of ITS clusters in the inner barrel"};
   Configurable<float> ConfTrkDCAxyMax{
     "ConfTrkDCAxyMax",
@@ -898,10 +900,10 @@ struct CFFilter {
     if (tpcNClsS > ConfTrkTPCsClsMax) {
       return false;
     }
-    if (itsNCls < ConfTrkITSnclsMin) {
+    if (itsNCls < ConfTrkITSnclsMin->get(static_cast<uint>(0), partSpecies)) {
       return false;
     }
-    if (itsNClsIB < ConfTrkITSnclsIbMin) {
+    if (itsNClsIB < ConfTrkITSnclsIBMin->get(static_cast<uint>(0), partSpecies)) {
       return false;
     }
     if (std::abs(dcaXY) > ConfTrkDCAxyMax) {
@@ -929,12 +931,19 @@ struct CFFilter {
     return true;
   }
 
-  template <typename T>
-  bool isSelectedV0Daughter(T const& track, float charge, CFTrigger::V0Daughters species, double nSigmaTPCDaug[2])
+  template <typename T, typename V>
+  bool isSelectedV0Daughter(T const& track, V const& v0, float charge, CFTrigger::V0Daughters species, double nSigmaTPCDaug[2])
   {
-    const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
-    const auto dcaXY = track.dcaXY();
+    float eta = -1;
+    float dca = -1;
+    if (charge > 0) {
+      eta = v0.positiveeta();
+      dca = v0.dcapostopv();
+    } else if (charge < 0) {
+      eta = v0.negativeeta();
+      dca = v0.dcanegtopv();
+    }
     const auto sign = track.sign();
     double nSigmaTPC = -999.f;
 
@@ -950,7 +959,7 @@ struct CFFilter {
     if (tpcNClsF < ConfDaughTPCnclsMin) {
       return false;
     }
-    if (std::abs(dcaXY) < ConfDaughDCAMin) {
+    if (std::abs(dca) < ConfDaughDCAMin) {
       return false;
     }
 
@@ -1143,18 +1152,18 @@ struct CFFilter {
       }
     }
     if (charge > 0) {
-      if (!isSelectedV0Daughter(posTrack, 1, CFTrigger::kDaughProton, nSigmaTPCPos)) {
+      if (!isSelectedV0Daughter(posTrack, v0, 1, CFTrigger::kDaughProton, nSigmaTPCPos)) {
         return false;
       }
-      if (!isSelectedV0Daughter(negTrack, -1, CFTrigger::kDaughPion, nSigmaTPCNeg)) {
+      if (!isSelectedV0Daughter(negTrack, v0, -1, CFTrigger::kDaughPion, nSigmaTPCNeg)) {
         return false;
       }
     }
     if (charge < 0) {
-      if (!isSelectedV0Daughter(posTrack, 1, CFTrigger::kDaughPion, nSigmaTPCPos)) {
+      if (!isSelectedV0Daughter(posTrack, v0, 1, CFTrigger::kDaughPion, nSigmaTPCPos)) {
         return false;
       }
-      if (!isSelectedV0Daughter(negTrack, -1, CFTrigger::kDaughProton, nSigmaTPCNeg)) {
+      if (!isSelectedV0Daughter(negTrack, v0, -1, CFTrigger::kDaughProton, nSigmaTPCNeg)) {
         return false;
       }
     }

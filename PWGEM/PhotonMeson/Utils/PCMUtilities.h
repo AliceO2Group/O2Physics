@@ -59,8 +59,8 @@ void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrackNeg, f
   o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformation = getTrackParCov(lTrackPos); // first get an object that stores Track information (positive)
   o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformation = getTrackParCov(lTrackNeg); // first get an object that stores Track information (negative)
 
-  trackPosInformation.setPID(o2::track::PID::Electron);
-  trackNegInformation.setPID(o2::track::PID::Electron);
+  // trackPosInformation.setPID(o2::track::PID::Electron);
+  // trackNegInformation.setPID(o2::track::PID::Electron);
 
   o2::track::TrackAuxPar helixPos(trackPosInformation, bz); // This object is a descendant of a CircleXY and stores cirlce information with respect to the magnetic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (positive)
   o2::track::TrackAuxPar helixNeg(trackNegInformation, bz); // This object is a descendant of a CircleXY and stores cirlce information with respect to the magnetic field. This object uses functions and information of the o2::track::TrackParametrizationWithError<TrackPrecision> object (negative)
@@ -71,18 +71,18 @@ void Vtx_recalculation(o2::base::Propagator* prop, T1 lTrackPos, T2 lTrackNeg, f
   // I am unsure about the Z calculation but this is how it is done in AliPhysics as far as I understand
   o2::track::TrackParametrizationWithError<TrackPrecision> trackPosInformationCopy = o2::track::TrackParametrizationWithError<TrackPrecision>(trackPosInformation);
   o2::track::TrackParametrizationWithError<TrackPrecision> trackNegInformationCopy = o2::track::TrackParametrizationWithError<TrackPrecision>(trackNegInformation);
-  trackPosInformationCopy.setPID(o2::track::PID::Electron);
-  trackNegInformationCopy.setPID(o2::track::PID::Electron);
+  // trackPosInformationCopy.setPID(o2::track::PID::Electron);
+  // trackNegInformationCopy.setPID(o2::track::PID::Electron);
 
   // I think this calculation gets the closest point on the track to the conversion point
   // This alpha is a different alpha than the usual alpha and I think it is the angle between X axis and conversion point
-  Double_t alphaPos = TMath::Pi() + TMath::ATan2(-(xyz[1] - helixPos.yC), -(xyz[0] - helixPos.xC));
-  Double_t alphaNeg = TMath::Pi() + TMath::ATan2(-(xyz[1] - helixNeg.yC), -(xyz[0] - helixNeg.xC));
+  float alphaPos = TMath::Pi() + TMath::ATan2(-(xyz[1] - helixPos.yC), -(xyz[0] - helixPos.xC));
+  float alphaNeg = TMath::Pi() + TMath::ATan2(-(xyz[1] - helixNeg.yC), -(xyz[0] - helixNeg.xC));
 
-  Double_t vertexXPos = helixPos.xC + helixPos.rC * TMath::Cos(alphaPos);
-  Double_t vertexYPos = helixPos.yC + helixPos.rC * TMath::Sin(alphaPos);
-  Double_t vertexXNeg = helixNeg.xC + helixNeg.rC * TMath::Cos(alphaNeg);
-  Double_t vertexYNeg = helixNeg.yC + helixNeg.rC * TMath::Sin(alphaNeg);
+  float vertexXPos = helixPos.xC + helixPos.rC * TMath::Cos(alphaPos);
+  float vertexYPos = helixPos.yC + helixPos.rC * TMath::Sin(alphaPos);
+  float vertexXNeg = helixNeg.xC + helixNeg.rC * TMath::Cos(alphaNeg);
+  float vertexYNeg = helixNeg.yC + helixNeg.rC * TMath::Sin(alphaNeg);
 
   TVector2 vertexPos(vertexXPos, vertexYPos);
   TVector2 vertexNeg(vertexXNeg, vertexYNeg);
@@ -173,7 +173,18 @@ float getPhivPair(float pxpos, float pypos, float pzpos, float pxneg, float pyne
   float wy = uz * vx - ux * vz;
   // by construction, (wx,wy,wz) must be a unit vector. Measure angle between (wx,wy,wz) and (ax,ay,0).
   // The angle between them should be small if the pair is conversion. This function then returns values close to pi!
-  return TMath::ACos(wx * ax + wy * ay); // phiv in [0,pi] //cosPhiV = wx * ax + wy * ay;
+  auto clipToPM1 = [](float x) { return x < -1.f ? -1.f : (x > 1.f ? 1.f : x); };
+
+  // if(!std::isfinite(std::acos(wx * ax + wy * ay))){
+  //   LOGF(info, "pos_x_ele[0] = %f, pos_x_ele[1] = %f, pos_x_ele[2] = %f", pos_x_ele[0], pos_x_ele[1], pos_x_ele[2]);
+  //   LOGF(info, "ux = %f, uy = %f, uz = %f", ux, uy, uz);
+  //   LOGF(info, "ax = %f, ay = %f", ax, ay);
+  //   LOGF(info, "wx = %f, wy = %f", wx, wy);
+  //   LOGF(info, "wx * ax + wy * ay = %f", wx * ax + wy * ay);
+  //   LOGF(info, "std::acos(wx * ax + wy * ay) = %f", std::acos(clipToPM1(wx * ax + wy * ay)));
+  // }
+
+  return std::acos(clipToPM1(wx * ax + wy * ay)); // phiv in [0,pi] //cosPhiV = wx * ax + wy * ay;
 }
 //_______________________________________________________________________
 float getPsiPair(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
@@ -192,6 +203,14 @@ float getPsiPair(float pxpos, float pypos, float pzpos, float pxneg, float pyneg
   float thetaNeg = std::atan2(RecoDecay::sqrtSumOfSquares(pxneg, pyneg), pzneg);
   float argsin = (thetaNeg - thetaPos) / std::acos(clipToPM1(argcos));
   return std::asin(clipToPM1(argsin));
+}
+//_______________________________________________________________________
+float getOpeningAngle(float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg)
+{
+  auto clipToPM1 = [](float x) { return x < -1.f ? -1.f : (x > 1.f ? 1.f : x); };
+  float ptot2 = RecoDecay::p2(pxpos, pypos, pzpos) * RecoDecay::p2(pxneg, pyneg, pzneg);
+  float argcos = RecoDecay::dotProd(std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}) / std::sqrt(ptot2);
+  return std::acos(clipToPM1(argcos));
 }
 //_______________________________________________________________________
 #endif // PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_

@@ -50,6 +50,9 @@ struct tpcPidQa {
   static constexpr std::string_view hnsigma_pt[Np] = {"nsigma/pt/El", "nsigma/pt/Mu", "nsigma/pt/Pi",
                                                       "nsigma/pt/Ka", "nsigma/pt/Pr", "nsigma/pt/De",
                                                       "nsigma/pt/Tr", "nsigma/pt/He", "nsigma/pt/Al"};
+  static constexpr std::string_view hnsigma_p_eta_Ncl[Np] = {"nsigma/sparsePinEtaNcl/El", "nsigma/sparsePinEtaNcl/Mu", "nsigma/sparsePinEtaNcl/Pi",
+                                                             "nsigma/sparsePinEtaNcl/Ka", "nsigma/sparsePinEtaNcl/Pr", "nsigma/sparsePinEtaNcl/De",
+                                                             "nsigma/sparsePinEtaNcl/Tr", "nsigma/sparsePinEtaNcl/He", "nsigma/sparsePinEtaNcl/Al"};
 
   // With TOF
   static constexpr std::string_view hexpected_wTOF[Np] = {"wTOF/expected/El", "wTOF/expected/Mu", "wTOF/expected/Pi",
@@ -76,6 +79,9 @@ struct tpcPidQa {
   static constexpr std::string_view hsignal_wTOF[Np] = {"wTOF/signal/El", "wTOF/signal/Mu", "wTOF/signal/Pi",
                                                         "wTOF/signal/Ka", "wTOF/signal/Pr", "wTOF/signal/De",
                                                         "wTOF/signal/Tr", "wTOF/signal/He", "wTOF/signal/Al"};
+  static constexpr std::string_view hnsigma_p_eta_Ncl_wTOF[Np] = {"wTOF/nsigma/sparsePinEtaNcl/El", "wTOF/nsigma/sparsePinEtaNcl/Mu", "wTOF/nsigma/sparsePinEtaNcl/Pi",
+                                                                  "wTOF/nsigma/sparsePinEtaNcl/Ka", "wTOF/nsigma/sparsePinEtaNcl/Pr", "wTOF/nsigma/sparsePinEtaNcl/De",
+                                                                  "wTOF/nsigma/sparsePinEtaNcl/Tr", "wTOF/nsigma/sparsePinEtaNcl/He", "wTOF/nsigma/sparsePinEtaNcl/Al"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -96,6 +102,8 @@ struct tpcPidQa {
   Configurable<bool> splitSignalPerCharge{"splitSignalPerCharge", true, "Split the signal per charge (reduces memory footprint if off)"};
   Configurable<bool> enableDeDxPlot{"enableDeDxPlot", true, "Enables the dEdx plot (reduces memory footprint if off)"};
   Configurable<int16_t> minTPCNcls{"minTPCNcls", 0, "Minimum number or TPC Clusters for tracks"};
+  ConfigurableAxis tpcNclsBins{"tpcNclsBins", {16, 0, 160}, "Bining in number of cluster in TPC"};
+  Configurable<bool> fillTHnSparses{"fillTHnSparses", false, "Flag to fill multidimensional histograms for nsigma vs pt, eta, Ncls"};
 
   template <o2::track::PID::ID id>
   void initPerParticle(const AxisSpec& pAxis,
@@ -175,6 +183,14 @@ struct tpcPidQa {
     const AxisSpec expSigmaAxis{expSigmaBins, Form("Exp_{#sigma}^{TPC}(%s)", pT[id])};
     histos.add(hexpsigma[id].data(), "", kTH2F, {pAxis, expSigmaAxis});
 
+    const AxisSpec etaAxis{etaBins, "#it{#eta}"};
+    const AxisSpec tpcnclsAxis{tpcNclsBins, "TPC #cls"};
+
+    HistogramConfigSpec particleSparseHists{HistType::kTHnSparseF, {pAxis, etaAxis, nSigmaAxis, tpcnclsAxis}};
+    if (fillTHnSparses) {
+      histos.add(hnsigma_p_eta_Ncl[id].data(), axisTitle, particleSparseHists);
+    }
+
     if (!enableTOFHistos) { // Returning if the plots with TOF are not requested
       return;
     }
@@ -185,6 +201,12 @@ struct tpcPidQa {
     histos.add(hdelta_pt_neg_wTOF[id].data(), "With TOF Negative", kTH2F, {ptAxis, deltaAxis});
     histos.add(hexpsigma_wTOF[id].data(), "With TOF", kTH2F, {pAxis, expSigmaAxis});
     histos.add(hnsigma_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {pAxis, nSigmaAxis});
+
+    HistogramConfigSpec particleSparseHists_wTOF{HistType::kTHnSparseF, {pAxis, etaAxis, nSigmaAxis, tpcnclsAxis}};
+    if (fillTHnSparses) {
+      histos.add(hnsigma_p_eta_Ncl_wTOF[id].data(), Form("With TOF %s", axisTitle), particleSparseHists_wTOF);
+    }
+
     if (splitSignalPerCharge) {
       histos.add(hnsigma_pt_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH3F, {ptAxis, nSigmaAxis, chargeAxis});
       histos.add(hsignal_wTOF[id].data(), "With TOF", kTH3F, {pAxis, dedxAxis, chargeAxis});
@@ -386,6 +408,11 @@ struct tpcPidQa {
         // Fill histograms
         histos.fill(HIST(hexpected[id]), t.tpcInnerParam(), t.tpcSignal() - diff);
         histos.fill(HIST(hdelta[id]), t.tpcInnerParam(), diff);
+
+        if (fillTHnSparses) {
+          histos.fill(HIST(hnsigma_p_eta_Ncl[id]), t.p(), t.eta(), nsigma, t.tpcNClsFindable());
+        }
+
         if (splitSignalPerCharge) {
           histos.fill(HIST(hdelta_pt[id]), t.pt(), diff, t.sign());
         } else {
@@ -404,6 +431,9 @@ struct tpcPidQa {
         const auto& nsigmatof = o2::aod::pidutils::tofNSigma<id>(t);
         if (std::abs(nsigmatof) < 3.f) {
           histos.fill(HIST(hnsigma_wTOF[id]), t.p(), nsigma);
+          if (fillTHnSparses) {
+            histos.fill(HIST(hnsigma_p_eta_Ncl_wTOF[id]), t.p(), t.eta(), nsigma, t.tpcNClsFindable());
+          }
           if (splitSignalPerCharge) {
             histos.fill(HIST(hnsigma_pt_wTOF[id]), t.pt(), nsigma, t.sign());
             histos.fill(HIST(hsignal_wTOF[id]), t.tpcInnerParam(), t.tpcSignal(), t.sign());

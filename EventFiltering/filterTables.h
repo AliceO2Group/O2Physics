@@ -21,7 +21,7 @@ namespace o2::aod
 {
 namespace filtering
 {
-DECLARE_SOA_COLUMN(He, hasHe, bool); //!
+DECLARE_SOA_COLUMN(He, hasHe, bool);             //!
 DECLARE_SOA_COLUMN(H3L3Body, hasH3L3Body, bool); //! hypertriton 3body
 
 // diffraction
@@ -35,6 +35,9 @@ DECLARE_SOA_COLUMN(SingleMuLow, hasSingleMuLow, bool);   //! single muon with lo
 DECLARE_SOA_COLUMN(SingleMuHigh, hasSingleMuHigh, bool); //! single muon with high pT trigger
 DECLARE_SOA_COLUMN(DiElectron, hasDiElectron, bool);     //! dielectron trigger
 DECLARE_SOA_COLUMN(DiMuon, hasDiMuon, bool);             //! dimuon trigger with low pT on muons
+// EM dielectrons
+DECLARE_SOA_COLUMN(LMeeIMR, hasLMeeIMR, bool); //! dielectron trigger for intermediate mass region
+DECLARE_SOA_COLUMN(LMeeHMR, hasLMeeHMR, bool); //! dielectron trigger for high mass region
 
 // heavy flavours
 DECLARE_SOA_COLUMN(HfHighPt2P, hasHfHighPt2P, bool);                 //! high-pT 2-prong charm hadron
@@ -105,10 +108,15 @@ DECLARE_SOA_COLUMN(HighFt0cFv0Flat, hasHighFt0cFv0Flat, bool); //! isotropic eve
 DECLARE_SOA_COLUMN(LeadingPtTrack, hasLeadingPtTrack, bool);   //! event contains leading track
 
 // photons
-DECLARE_SOA_COLUMN(PHOSPhoton, hasPHOSPhoton, bool);     //! PHOS single photons
-DECLARE_SOA_COLUMN(PHOSElectron, hasPHOSElectron, bool); //! PHOS single electron
-DECLARE_SOA_COLUMN(PHOSPair, hasPHOSpair, bool);         //! PHOS photon pair
-DECLARE_SOA_COLUMN(PHOSnbar, hasPHOSnbar, bool);         //! PHOS antineutrons
+DECLARE_SOA_COLUMN(PHOSPhoton, hasPHOSPhoton, bool); //! PHOS single photons
+DECLARE_SOA_COLUMN(PHOSnbar, hasPHOSnbar, bool);     //! PHOS antineutrons
+// DECLARE_SOA_COLUMN(PHOSElectron, hasPHOSElectron, bool);       //! PHOS single electron
+// DECLARE_SOA_COLUMN(PHOSPair, hasPHOSpair, bool);               //! PHOS photon pair
+DECLARE_SOA_COLUMN(PCMHighPtPhoton, hasPCMHighPtPhoton, bool); //! PCM high pT photon
+// DECLARE_SOA_COLUMN(PCMMatCalib, hasPCMMatCalib, bool);         //! PCM material budget calibration
+// DECLARE_SOA_COLUMN(PCMEtaDalitz, hasPCMEtaDalitz, bool);       //! PCM eta -> ee gamma
+// DECLARE_SOA_COLUMN(PCMEtaGG, hasPCMEtaGG, bool);               //! PCM eta -> ee gamma
+DECLARE_SOA_COLUMN(PCMandEE, hasPCMandEE, bool); //! PCM and ee
 } // namespace filtering
 
 namespace decision
@@ -147,7 +155,7 @@ using DiffractionBCFilter = DiffractionBCFilters::iterator;
 
 // Dileptons & Quarkonia
 DECLARE_SOA_TABLE(DqFilters, "AOD", "DqFilters", //!
-                  filtering::SingleE, filtering::DiElectron, filtering::SingleMuLow, filtering::SingleMuHigh, filtering::DiMuon);
+                  filtering::SingleE, filtering::LMeeIMR, filtering::LMeeHMR, filtering::DiElectron, filtering::SingleMuLow, filtering::SingleMuHigh, filtering::DiMuon);
 using DqFilter = DqFilters::iterator;
 
 // heavy flavours
@@ -190,10 +198,10 @@ DECLARE_SOA_TABLE(MultFilters, "AOD", "MultFilters", //!
 using MultFilter = MultFilters::iterator;
 
 // photons
-DECLARE_SOA_TABLE(PhotFilters, "AOD", "PhotFilters", //!
-                  filtering::PHOSPhoton, filtering::PHOSElectron, filtering::PHOSPair, filtering::PHOSnbar);
+DECLARE_SOA_TABLE(PhotonFilters, "AOD", "PhotonFilters", //!
+                  filtering::PHOSPhoton, filtering::PHOSnbar, filtering::PCMHighPtPhoton, filtering::PCMandEE);
 
-using PhotFilter = PhotFilters::iterator;
+using PhotonFilter = PhotonFilters::iterator;
 
 // cefp decision
 DECLARE_SOA_TABLE(CefpDecisions, "AOD", "CefpDecision", //!
@@ -207,10 +215,10 @@ using BCRange = BCRanges::iterator;
 
 /// List of the available filters, the description of their tables and the name of the tasks
 constexpr int NumberOfFilters{11};
-constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "FullJetFilters", "StrangenessFilters", "MultFilters", "PhotFilters", "F1ProtonFilters"};
-constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "FullJetFilters", "LFStrgFilters", "MultFilters", "PhotFilters", "F1ProtonFilters"};
-constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp-with-association", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-fje-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter", "o2-analysis-em-filter", "o2-analysis-lf-f1proton-filter"};
-constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, JetFilters, FullJetFilters, StrangenessFilters, MultFilters, PhotFilters, F1ProtonFilters> FiltersPack;
+constexpr std::array<char[32], NumberOfFilters> AvailableFilters{"NucleiFilters", "DiffractionFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "FullJetFilters", "StrangenessFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters"};
+constexpr std::array<char[16], NumberOfFilters> FilterDescriptions{"NucleiFilters", "DiffFilters", "DqFilters", "HfFilters", "CFFilters", "JetFilters", "FullJetFilters", "LFStrgFilters", "MultFilters", "PhotonFilters", "F1ProtonFilters"};
+constexpr std::array<char[128], NumberOfFilters> FilteringTaskNames{"o2-analysis-nuclei-filter", "o2-analysis-diffraction-filter", "o2-analysis-dq-filter-pp-with-association", "o2-analysis-hf-filter", "o2-analysis-cf-filter", "o2-analysis-je-filter", "o2-analysis-fje-filter", "o2-analysis-lf-strangeness-filter", "o2-analysis-mult-filter", "o2-analysis-em-photon-filter", "o2-analysis-lf-f1proton-filter"};
+constexpr o2::framework::pack<NucleiFilters, DiffractionFilters, DqFilters, HfFilters, CFFilters, JetFilters, FullJetFilters, StrangenessFilters, MultFilters, PhotonFilters, F1ProtonFilters> FiltersPack;
 static_assert(o2::framework::pack_size(FiltersPack) == NumberOfFilters);
 
 template <typename T, typename C>

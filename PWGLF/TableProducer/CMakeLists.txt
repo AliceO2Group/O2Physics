@@ -9,6 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+add_subdirectory(QC)
+
 # General purpose
 o2physics_add_dpl_workflow(tpcpid
                     SOURCES lfTPCPID.cxx
@@ -79,6 +81,22 @@ o2physics_add_dpl_workflow(hstrangecorrelationfilter
 o2physics_add_dpl_workflow(st-coll-ids
                     SOURCES stCollIds.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strange-tree-creator
+                    SOURCES LFStrangeTreeCreator.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+# strange derived - spawners
+o2physics_add_dpl_workflow(lambdakzerospawner
+                    SOURCES lambdakzerospawner.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascadespawner
+                    SOURCES cascadespawner.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 # Nuclei

@@ -60,14 +60,10 @@ const double ptDAxisMin = 0.;
 const double ptDAxisMax = 36.;
 
 // definition of ME variables
-std::vector<double> zBins{VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0};
-std::vector<double> multBins{VARIABLE_WIDTH, 0., 200., 500.0, 5000.};
-std::vector<double> multBinsMcGen{VARIABLE_WIDTH, 0., 20., 50.0, 500.}; // In MCGen multiplicity is defined by counting primaries
 using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
-BinningType corrBinning{{zBins, multBins}, true};
 
 // Code to select a Dmeson in a collision
-struct HfDplusSelection {
+struct HfCorrelatorDplusHadronsDplusSelection {
   Produces<aod::DmesonSelection> dplusSel;
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
@@ -100,7 +96,7 @@ struct HfDplusSelection {
     }
     dplusSel(isDplusFound);
   }
-  PROCESS_SWITCH(HfDplusSelection, processDplusSelectionData, "Process Dplus Selection Data", false);
+  PROCESS_SWITCH(HfCorrelatorDplusHadronsDplusSelection, processDplusSelectionData, "Process Dplus Selection Data", false);
 
   void processDplusSelectionMcRec(aod::Collision const& collision,
                                   soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec> const& candidates)
@@ -125,7 +121,7 @@ struct HfDplusSelection {
     }
     dplusSel(isDplusFound);
   }
-  PROCESS_SWITCH(HfDplusSelection, processDplusSelectionMcRec, "Process Dplus Selection MCRec", false);
+  PROCESS_SWITCH(HfCorrelatorDplusHadronsDplusSelection, processDplusSelectionMcRec, "Process Dplus Selection MCRec", false);
 
   void processDplusSelectionMcGen(aod::McCollision const& mcCollision,
                                   aod::McParticles const& mcParticles)
@@ -147,13 +143,15 @@ struct HfDplusSelection {
     }
     dplusSel(isDplusFound);
   }
-  PROCESS_SWITCH(HfDplusSelection, processDplusSelectionMcGen, "Process Dplus Selection MCGen", false);
+  PROCESS_SWITCH(HfCorrelatorDplusHadronsDplusSelection, processDplusSelectionMcGen, "Process Dplus Selection MCGen", false);
 };
 
 /// Dplus-Hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
 struct HfCorrelatorDplusHadrons {
   Produces<aod::DplusHadronPair> entryDplusHadronPair;
   Produces<aod::DplusHadronRecoInfo> entryDplusHadronRecoInfo;
+  Produces<aod::Dplus> entryDplus;
+  Produces<aod::Hadron> entryHadron;
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
   Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
@@ -168,9 +166,13 @@ struct HfCorrelatorDplusHadrons {
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson}, "Efficiency values for Dplus meson"};
+  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis binsMultiplicityMc{"binsMultiplicityMc", {VARIABLE_WIDTH, 0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - MC multiplicity"}; // In MCGen multiplicity is defined by counting tracks
 
   HfHelper hfHelper;
   SliceCache cache;
+  BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
 
   // Event Mixing for the Data Mode
   using MySelCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>>;
@@ -233,13 +235,17 @@ struct HfCorrelatorDplusHadrons {
     registry.add("hMassDplusMCRecSig", "Dplus signal candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassDplusMCRecBkg", "Dplus background candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hcountDplustriggersMCGen", "Dplus trigger particles - MC gen;;N of trigger Dplus", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    corrBinning = {{binsZVtx, binsMultiplicity}, true};
   }
 
   /// Dplus-hadron correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
                    aod::TracksWDca const& tracks,
-                   soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates)
+                   soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi> const& candidates, aod::BCsWithTimestamps const&)
   {
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int gCollisionId = collision.globalIndex();
+    int64_t timeStamp = bc.timestamp();
     if (selectedDplusCandidates.size() > 0) {
       int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFV0M()));
       int nTracks = 0;
@@ -263,7 +269,7 @@ struct HfCorrelatorDplusHadrons {
       registry.fill(HIST("hMultiplicity"), nTracks);
 
       auto selectedDplusCandidatesGrouped = selectedDplusCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-
+      int cntDplus = 0;
       for (const auto& candidate1 : selectedDplusCandidatesGrouped) {
         if (yCandMax >= 0. && std::abs(hfHelper.yDplus(candidate1)) > yCandMax) {
           continue;
@@ -294,6 +300,7 @@ struct HfCorrelatorDplusHadrons {
         registry.fill(HIST("hY"), hfHelper.yDplus(candidate1));
         registry.fill(HIST("hSelectionStatus"), candidate1.isSelDplusToPiKPi());
         registry.fill(HIST("hDplusBin"), poolBin);
+        entryDplus(candidate1.phi(), candidate1.eta(), candidate1.pt(), hfHelper.invMassDplusToPiKPi(candidate1), poolBin, gCollisionId, timeStamp);
         // Dplus-Hadron correlation dedicated section
         // if the candidate is a Dplus, search for Hadrons and evaluate correlations
         for (const auto& track : tracks) {
@@ -315,8 +322,11 @@ struct HfCorrelatorDplusHadrons {
                                candidate1.pt(),
                                track.pt(), poolBin);
           entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate1), 0);
+          if (cntDplus == 0)
+            entryHadron(track.phi(), track.eta(), track.pt(), poolBin, gCollisionId, timeStamp);
         } // Hadron Tracks loop
-      }   // end outer Dplus loop
+        cntDplus++;
+      } // end outer Dplus loop
       registry.fill(HIST("hZvtx"), collision.posZ());
       registry.fill(HIST("hMultV0M"), collision.multFV0M());
     }
@@ -438,7 +448,7 @@ struct HfCorrelatorDplusHadrons {
       return nTracks;
     };
     using BinningTypeMCGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
-    BinningTypeMCGen corrBinningMcGen{{getTracksSize}, {zBins, multBinsMcGen}, true};
+    BinningTypeMCGen corrBinningMcGen{{getTracksSize}, {binsZVtx, binsMultiplicityMc}, true};
 
     // MC gen level
     for (const auto& particle1 : mcParticles) {
@@ -560,7 +570,7 @@ struct HfCorrelatorDplusHadrons {
     };
 
     using BinningTypeMcGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
-    BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {zBins, multBins}, true};
+    BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {binsZVtx, binsMultiplicityMc}, true};
 
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
     Pair<McCollisionsSel, McParticlesSel, McParticlesSel, BinningTypeMcGen> pairMcGen{corrBinningMcGen, 5, -1, collisions, tracksTuple, &cache};
@@ -598,6 +608,6 @@ struct HfCorrelatorDplusHadrons {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfDplusSelection>(cfgc),
+  return WorkflowSpec{adaptAnalysisTask<HfCorrelatorDplusHadronsDplusSelection>(cfgc),
                       adaptAnalysisTask<HfCorrelatorDplusHadrons>(cfgc)};
 }

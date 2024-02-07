@@ -62,7 +62,7 @@ enum ParticleType {
 };
 
 static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "MCTruthTracks", "V0", "V0Child", "Cascade", "CascadeBachelor", "Phi", "PhiChild", "D0", "D0Child"}; //! Naming of the different particle types
-static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hPDGvspT", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy", "/hInvMass", "/hDCAxy"};
+static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hPDGvspT", "/hCPA", "/hDCAxy", "/hCPA", "/hDCAxy", "/hInvMass", "/hDCAxy", "/hInvMass", "/hDCAxy"};
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
