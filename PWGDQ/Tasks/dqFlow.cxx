@@ -85,6 +85,7 @@ struct DQEventQvector {
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill QA histograms"};
+  Configurable<bool> fConfigFlow{"cfgFlow", true, "If true, fill Flow histograms"};
   Configurable<float> fConfigCutPtMin{"cfgCutPtMin", 0.2f, "Minimal pT for tracks"};
   Configurable<float> fConfigCutPtMax{"cfgCutPtMax", 12.0f, "Maximal pT for tracks"};
   Configurable<float> fConfigCutEtaMin{"cfgCutEtaMin", -0.8f, "Eta min range for tracks"};

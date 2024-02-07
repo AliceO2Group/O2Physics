@@ -55,18 +55,18 @@ namespace o2::aod
 {
 
 using FemtoFullCollision =
-  soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator;
+  soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>::iterator;
 using FemtoFullCollisionCentRun2 =
-  soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator;
+  soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentFT0Cs>::iterator;
 using FemtoFullCollisionCentRun3 =
   soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator;
-using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
+using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks =
   soa::Join<aod::FullTracks, aod::TracksDCA, aod::TOFSignal, aod::pidTPCEl, aod::TrackSelection,
             aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
-            aod::pidTPCDe, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
+            aod::pidTPCDe, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
+            aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
 
 // using FilteredFullV0s = soa::Filtered<aod::V0Datas>; /// predefined Join
 // table for o2::aod::V0s = soa::Join<o2::aod::TransientV0s, o2::aod::StoredV0s>
@@ -160,7 +160,7 @@ struct femtoUniverseProducerTask {
   Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{FemtoUniverseTrackSelection::getSelectionName(femtoUniverseTrackSelection::kPIDnSigmaMax, "ConfTrk"), std::vector<float>{3.5f, 3.f, 2.5f}, FemtoUniverseTrackSelection::getSelectionHelper(femtoUniverseTrackSelection::kPIDnSigmaMax, "Track selection: ")};
   Configurable<float> ConfTrkPIDnSigmaOffsetTPC{"ConfTrkPIDnSigmaOffsetTPC", 0., "Offset for TPC nSigma because of bad calibration"};
   Configurable<float> ConfTrkPIDnSigmaOffsetTOF{"ConfTrkPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
-  Configurable<std::vector<int>> ConfTrkPIDspecies{"ConfTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
+  Configurable<std::vector<int>> ConfTrkPIDspecies{"ConfTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID (Pion=2, Kaon=3, Proton=4, Deuteron=5)"};
   // Numbers from ~/alice/O2/DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h //static constexpr ID Pion = 2; static constexpr ID Kaon = 3; static constexpr ID Proton = 4; static constexpr ID Deuteron = 5;
   Configurable<float> ConfTOFpTmin{"ConfTOFpTmin", 500, "TOF pT min"};
 
@@ -242,8 +242,7 @@ struct femtoUniverseProducerTask {
 
   // D0/D0bar mesons
   struct : o2::framework::ConfigurableGroup {
-    Configurable<float> ConfD0D0barCandMaxY{"ConfD0D0barCandMaxY", 4.0, "max. cand. rapidity"};
-    Configurable<float> ConfD0D0barMinPt{"ConfD0D0barMinPt", 0., "min. cand. pT"};
+    Configurable<float> ConfD0D0barCandMaxY{"ConfD0D0barCandMaxY", -1., "max. cand. rapidity"};
   } ConfD0Selection;
 
   HfHelper hfHelper;
@@ -319,7 +318,7 @@ struct femtoUniverseProducerTask {
            "Please choose one.");
     }
 
-    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
+    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3, ConfCentFT0Min, ConfCentFT0Max);
     colCuts.init(&qaRegistry);
 
     trackCuts.setSelection(ConfTrkCharge, femtoUniverseTrackSelection::kSign, femtoUniverseSelection::kEqual);
@@ -451,9 +450,9 @@ struct femtoUniverseProducerTask {
                        particle.dcaXY(), particle.dcaZ(), particle.tpcSignal(),
                        particle.tpcNSigmaStoreEl(), particle.tpcNSigmaStorePi(),
                        particle.tpcNSigmaStoreKa(), particle.tpcNSigmaStorePr(),
-                       particle.tpcNSigmaStoreDe(), particle.tofNSigmaEl(),
-                       particle.tofNSigmaPi(), particle.tofNSigmaKa(),
-                       particle.tofNSigmaPr(), particle.tofNSigmaDe(),
+                       particle.tpcNSigmaStoreDe(), particle.tofNSigmaStoreEl(),
+                       particle.tofNSigmaStorePi(), particle.tofNSigmaStoreKa(),
+                       particle.tofNSigmaStorePr(), particle.tofNSigmaStoreDe(),
                        -999., -999., -999., -999., -999., -999.);
     } else if constexpr (isPhiOrD0) {
       outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
@@ -619,11 +618,9 @@ struct femtoUniverseProducerTask {
         continue;
       }
 
-      if (!(ConfIsActivateV0 || ConfIsActivatePhi)) {
-        if (track.pt() > ConfTOFpTmin) {
-          if (!track.hasTOF()) {
-            continue;
-          }
+      if (track.pt() > ConfTOFpTmin) {
+        if (!track.hasTOF()) {
+          continue;
         }
       }
 
@@ -749,7 +746,6 @@ struct femtoUniverseProducerTask {
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     double invMassD0 = 0.0;
     double invMassD0bar = 0.0;
-    // phiCuts.fillQA<aod::femtouniverseparticle::ParticleType::kPhi, aod::femtouniverseparticle::ParticleType::kPhiChild>(col, p1, p1, p2, ConfPhiChildOne.ConfPDGCodePartOne, ConfPhiChildTwo.ConfPDGCodePartTwo); ///\todo fill QA also for daughters
 
     for (auto const& hfCand : hfCands) {
 
@@ -758,10 +754,6 @@ struct femtoUniverseProducerTask {
       }
 
       if (ConfD0Selection.ConfD0D0barCandMaxY >= 0. && std::abs(hfHelper.yD0(hfCand)) > ConfD0Selection.ConfD0D0barCandMaxY) {
-        continue;
-      }
-
-      if (hfCand.pt() > ConfD0Selection.ConfD0D0barMinPt) {
         continue;
       }
 
@@ -1166,7 +1158,7 @@ struct femtoUniverseProducerTask {
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackCentRun2Data, "Provide experimental data for Run 2 with centrality for track track", false);
 
   void
-    processTrackCentRun3Data(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>::iterator const& col,
+    processTrackCentRun3Data(aod::FemtoFullCollisionCentRun3 const& col,
                              aod::BCsWithTimestamps const&,
                              aod::FemtoFullTracks const& tracks)
   {

@@ -83,6 +83,11 @@ o2physics_add_dpl_workflow(st-coll-ids
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(strange-tree-creator
+                    SOURCES LFStrangeTreeCreator.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 # strange derived - spawners
 o2physics_add_dpl_workflow(lambdakzerospawner
                     SOURCES lambdakzerospawner.cxx

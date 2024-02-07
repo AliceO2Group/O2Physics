@@ -271,7 +271,10 @@ DECLARE_SOA_COLUMN(Pt, pt, float);   //!
 DECLARE_SOA_COLUMN(Eta, eta, float); //!
 DECLARE_SOA_COLUMN(Phi, phi, float); //!
 DECLARE_SOA_COLUMN(Sign, sign, int); //!
+DECLARE_SOA_COLUMN(FwdDcaX, fwdDcaX, float);                                              //!
+DECLARE_SOA_COLUMN(FwdDcaY, fwdDcaY, float);                                              //!
 DECLARE_SOA_COLUMN(MftClusterSizesAndTrackFlags, mftClusterSizesAndTrackFlags, uint64_t); //!
+DECLARE_SOA_COLUMN(MftNClusters, mftNClusters, int);                                      //!
 } // namespace reducedmft
 
 // MFT track kinematics
@@ -281,7 +284,8 @@ DECLARE_SOA_TABLE(ReducedMFTTracks, "AOD", "RMFTTR", //!
 
 // MFT tracks extra info (cluster size, sign)
 DECLARE_SOA_TABLE(ReducedMFTTracksExtra, "AOD", "RMFTTREXTRA", //!
-                  reducedmft::MftClusterSizesAndTrackFlags, reducedmft::Sign);
+                  reducedmft::MftClusterSizesAndTrackFlags, reducedmft::Sign,
+                  reducedmft::FwdDcaX, reducedmft::FwdDcaY, reducedmft::MftNClusters);
 
 // iterator
 using ReducedMFTTrack = ReducedMFTTracks::iterator;
@@ -318,7 +322,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh3, midBoardCh3, //!
 DECLARE_SOA_DYNAMIC_COLUMN(MIDBoardCh4, midBoardCh4, //!
                            [](uint32_t midBoards) -> int { return static_cast<int>((midBoards >> 24) & 0xFF); });
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(MCHTrack, matchMCHTrack, int, "RTMuons_MatchMCHTrack");
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(ReducedMFTTrack, matchMFTTrack, int, "RTMuons_MatchMFTTrack"); //!  matching index pointing to the ReducedMFTTrack table if filled
+DECLARE_SOA_INDEX_COLUMN(ReducedMFTTrack, matchMFTTrack); //! matching index pointing to the ReducedMFTTrack table if filled
 } // namespace reducedmuon
 
 // Muon track kinematics
@@ -458,6 +462,9 @@ DECLARE_SOA_COLUMN(U2Q2, u2q2, float);                 //! Scalar product betwee
 DECLARE_SOA_COLUMN(U3Q3, u3q3, float);                 //! Scalar product between unitary vector with event flow vector (harmonic 3)
 DECLARE_SOA_COLUMN(Cos2DeltaPhi, cos2deltaphi, float); //! Cosinus term using event plane angle (harmonic 2)
 DECLARE_SOA_COLUMN(Cos3DeltaPhi, cos3deltaphi, float); //! Cosinus term using event plane angle (harmonic 3)
+DECLARE_SOA_COLUMN(R2SP, r2sp, float);                 //! Event plane resolution for SP method
+DECLARE_SOA_COLUMN(R2EP, r2ep, float);                 //! Event plane resolution for EP method
+DECLARE_SOA_COLUMN(CentFT0C, centft0c, float);         //! Centrality information from FT0C
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);     //!
 // DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
@@ -523,6 +530,9 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   dilepton_track_index::IsAmbig1, dilepton_track_index::IsAmbig2,
                   reducedpair::U2Q2,
                   reducedpair::U3Q3,
+                  reducedpair::R2EP,
+                  reducedpair::R2SP,
+                  reducedpair::CentFT0C,
                   reducedpair::Cos2DeltaPhi,
                   reducedpair::Cos3DeltaPhi);
 
@@ -531,6 +541,23 @@ using DileptonExtra = DileptonsExtra::iterator;
 using DileptonFlow = DileptonsFlow::iterator;
 using DileptonInfo = DileptonsInfo::iterator;
 using DimuonAll = DimuonsAll::iterator;
+
+// mft PID reduced data model
+namespace fwdpid
+{
+DECLARE_SOA_COLUMN(Pt, pt, float);   //!
+DECLARE_SOA_COLUMN(Eta, eta, float); //!
+DECLARE_SOA_COLUMN(Phi, phi, float); //!
+DECLARE_SOA_COLUMN(Sign, sign, int); //!
+} // namespace fwdpid
+
+DECLARE_SOA_TABLE(FwdPidsAll, "AOD", "RTFWDPIDALL", //!
+                  fwdtrack::TrackType, collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
+                  fwdpid::Pt, fwdpid::Eta, fwdpid::Phi, fwdpid::Sign,
+                  reducedmft::MftClusterSizesAndTrackFlags,
+                  reducedmft::FwdDcaX, reducedmft::FwdDcaY, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT);
+
+using FwdPidAll = FwdPidsAll::iterator;
 
 // candidate information
 namespace dileptonTrackCandidate

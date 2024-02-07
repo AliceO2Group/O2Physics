@@ -179,7 +179,7 @@ struct phiInJets {
     JEhistos.add("hMCRec_hUSS_OUTSIDE_1D_2_3", "hMCRec_hUSS_OUTSIDE_1D_2_3", kTH1F, {MinvAxis});
 
     // EVENT SELECTION
-    eventSelection = JetDerivedDataUtilities::initialiseEventSelection(static_cast<std::string>(cfgeventSelections));
+    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(cfgeventSelections));
 
   } // end of init
 
@@ -382,7 +382,7 @@ struct phiInJets {
     }
     JEhistos.fill(HIST("nEvents"), 0.5);
 
-    if (!JetDerivedDataUtilities::selectCollision(collision, eventSelection))
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
       return;
     if(fabs(collision.posZ())>10)
       return;

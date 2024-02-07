@@ -258,6 +258,7 @@ class VarManager : public TObject
     kITSncls,
     kITSchi2,
     kITSlayerHit,
+    kITSmeanClsSize,
     kIsTPCrefit,
     kTPCncls,
     kITSClusterMap,
@@ -410,6 +411,9 @@ class VarManager : public TObject
     kDCATrackVtxProd,
     kU2Q2,
     kU3Q3,
+    kPsi2A,
+    kPsi2B,
+    kPsi2C,
     kCos2DeltaPhi,
     kCos3DeltaPhi,
     kNPairVariables,
@@ -617,6 +621,8 @@ class VarManager : public TObject
     return (1.0 / harm) * TMath::ATan(qnya / qnxa);
   };
 
+  template <typename T, typename C>
+  static o2::dataformats::GlobalFwdTrack PropagateMuon(const T& muon, const C& collision);
   template <uint32_t fillMap, typename T, typename C>
   static void FillPropagateMuon(const T& muon, const C& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T>
@@ -625,6 +631,8 @@ class VarManager : public TObject
   static void FillTrack(T const& track, float* values = nullptr);
   template <typename U, typename T>
   static void FillTrackMC(const U& mcStack, T const& track, float* values = nullptr);
+  template <uint32_t fillMap, typename T1, typename T2, typename C>
+  static void FillPairPropagateMuon(T1 const& muon1, T2 const& muon2, const C& collision, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename T1, typename T2>
   static void FillPair(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
@@ -805,6 +813,43 @@ KFPVertex VarManager::createKFPVertexFromCollision(const T& collision)
   return kfpVertex;
 }
 
+template <typename T, typename C>
+o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C& collision)
+{
+  double chi2 = muon.chi2();
+  SMatrix5 tpars(muon.x(), muon.y(), muon.phi(), muon.tgl(), muon.signed1Pt());
+  std::vector<double> v1{muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(),
+                         muon.cPhiPhi(), muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(),
+                         muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
+  SMatrix55 tcovs(v1.begin(), v1.end());
+  o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
+  o2::dataformats::GlobalFwdTrack propmuon;
+  if (static_cast<int>(muon.trackType()) > 2) {
+    o2::dataformats::GlobalFwdTrack track;
+    track.setParameters(tpars);
+    track.setZ(fwdtrack.getZ());
+    track.setCovariances(tcovs);
+    auto mchTrack = mMatching.FwdtoMCH(track);
+    o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
+    auto proptrack = mMatching.MCHtoFwd(mchTrack);
+    propmuon.setParameters(proptrack.getParameters());
+    propmuon.setZ(proptrack.getZ());
+    propmuon.setCovariances(proptrack.getCovariances());
+
+  } else if (static_cast<int>(muon.trackType()) < 2) {
+    double centerMFT[3] = {0, 0, -61.4};
+    o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
+    auto Bz = field->getBz(centerMFT); // Get field at centre of MFT
+    auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), collision.posX(), collision.posY(), collision.posZ());
+    auto x2x0 = static_cast<float>(geoMan.meanX2X0);
+    fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);
+    propmuon.setParameters(fwdtrack.getParameters());
+    propmuon.setZ(fwdtrack.getZ());
+    propmuon.setCovariances(fwdtrack.getCovariances());
+  }
+  return propmuon;
+}
+
 template <uint32_t fillMap, typename T, typename C>
 void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* values)
 {
@@ -812,37 +857,7 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
     values = fgValues;
   }
   if constexpr ((fillMap & MuonCov) > 0) {
-    double chi2 = muon.chi2();
-    SMatrix5 tpars(muon.x(), muon.y(), muon.phi(), muon.tgl(), muon.signed1Pt());
-    std::vector<double> v1{muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(),
-                           muon.cPhiPhi(), muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(),
-                           muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
-    SMatrix55 tcovs(v1.begin(), v1.end());
-    o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
-    o2::dataformats::GlobalFwdTrack propmuon;
-    if (static_cast<int>(muon.trackType()) > 2) {
-      o2::dataformats::GlobalFwdTrack track;
-      track.setParameters(tpars);
-      track.setZ(fwdtrack.getZ());
-      track.setCovariances(tcovs);
-      auto mchTrack = mMatching.FwdtoMCH(track);
-      o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
-      auto proptrack = mMatching.MCHtoFwd(mchTrack);
-      propmuon.setParameters(proptrack.getParameters());
-      propmuon.setZ(proptrack.getZ());
-      propmuon.setCovariances(proptrack.getCovariances());
-
-    } else if (static_cast<int>(muon.trackType()) < 2) {
-      double centerMFT[3] = {0, 0, -61.4};
-      o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
-      auto Bz = field->getBz(centerMFT); // Get field at centre of MFT
-      auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), collision.posX(), collision.posY(), collision.posZ());
-      auto x2x0 = static_cast<float>(geoMan.meanX2X0);
-      fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);
-      propmuon.setParameters(fwdtrack.getParameters());
-      propmuon.setZ(fwdtrack.getZ());
-      propmuon.setCovariances(fwdtrack.getCovariances());
-    }
+    o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muon, collision);
     values[kPt] = propmuon.getPt();
     values[kX] = propmuon.getX();
     values[kY] = propmuon.getY();
@@ -1050,6 +1065,9 @@ void VarManager::FillEvent(T const& event, float* values)
     if (event.q3y0b() * event.q3y0c() != 0.0) {
       values[kR3EP] = TMath::Cos(3 * (getEventPlane(3, event.q3x0b(), event.q3y0b()) - getEventPlane(3, event.q3x0c(), event.q3y0c())));
     }
+    values[kPsi2A] = getEventPlane(2, event.q2x0a(), event.q2y0a());
+    values[kPsi2B] = getEventPlane(2, event.q2x0b(), event.q2y0b());
+    values[kPsi2C] = getEventPlane(2, event.q2x0c(), event.q2y0c());
   }
 
   if constexpr ((fillMap & CollisionMC) > 0) {
@@ -1218,6 +1236,17 @@ void VarManager::FillTrack(T const& track, float* values)
     if constexpr ((fillMap & TrackExtra) > 0) {
       if (fgUsedVars[kITSncls]) {
         values[kITSncls] = track.itsNCls(); // dynamic column
+      }
+      if (fgUsedVars[kITSmeanClsSize]) {
+        values[kITSmeanClsSize] = 0.0;
+        uint32_t clsizeflag = track.itsClusterSizes();
+        float mcls = 0.;
+        for (unsigned int layer = 0; layer < 7; layer++) {
+          mcls += (clsizeflag >> (layer * 4)) & 0xF;
+        }
+        if (track.itsNCls() > 0) {
+          values[kITSmeanClsSize] = mcls / track.itsNCls();
+        }
       }
     }
     if constexpr ((fillMap & ReducedTrackBarrel) > 0) {
@@ -1489,6 +1518,31 @@ void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
   }
 
   FillTrackDerived(values);
+}
+
+template <uint32_t fillMap, typename T1, typename T2, typename C>
+void VarManager::FillPairPropagateMuon(T1 const& muon1, T2 const& muon2, const C& collision, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+  o2::dataformats::GlobalFwdTrack propmuon1 = PropagateMuon(muon1, collision);
+  o2::dataformats::GlobalFwdTrack propmuon2 = PropagateMuon(muon2, collision);
+
+  float m = o2::constants::physics::MassMuon;
+
+  ROOT::Math::PtEtaPhiMVector v1(propmuon1.getPt(), propmuon1.getEta(), propmuon1.getPhi(), m);
+  ROOT::Math::PtEtaPhiMVector v2(propmuon2.getPt(), propmuon2.getEta(), propmuon2.getPhi(), m);
+  ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+  values[kMass] = v12.M();
+  values[kPt] = v12.Pt();
+  values[kEta] = v12.Eta();
+  values[kPhi] = v12.Phi();
+  values[kRap] = -v12.Rapidity();
+
+  double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
+  double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
+  values[kDeltaPtotTracks] = Ptot1 - Ptot2;
 }
 
 template <int pairType, uint32_t fillMap, typename T1, typename T2>
@@ -1992,7 +2046,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
           values[kVertexingLxyz] = 1.e-8f;
         values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
         values[kVertexingTauxy] = KFGeoTwoProng.GetPseudoProperDecayTime(KFPV, KFGeoTwoProng.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
-        values[kVertexingTauz] = dzPair2PV * KFGeoTwoProng.GetMass() / (TMath::Abs(KFGeoTwoProng.GetPz()) * o2::constants::physics::LightSpeedCm2NS);
+        values[kVertexingTauz] = -1 * dzPair2PV * KFGeoTwoProng.GetMass() / (TMath::Abs(KFGeoTwoProng.GetPz()) * o2::constants::physics::LightSpeedCm2NS);
         values[kVertexingTauxyErr] = values[kVertexingLxyErr] * KFGeoTwoProng.GetMass() / (KFGeoTwoProng.GetPt() * o2::constants::physics::LightSpeedCm2NS);
         values[kVertexingTauzErr] = values[kVertexingLzErr] * KFGeoTwoProng.GetMass() / (TMath::Abs(KFGeoTwoProng.GetPz()) * o2::constants::physics::LightSpeedCm2NS);
         values[kCosPointingAngle] = (std::sqrt(dxPair2PV * dxPair2PV) * v12.Px() +
@@ -2035,7 +2089,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       if (fgUsedVars[kKFDCAxyzBetweenProngs])
         values[kKFDCAxyzBetweenProngs] = trk0KF.GetDistanceFromParticle(trk1KF);
       if (fgUsedVars[kKFDCAxyBetweenProngs])
-        values[kKFDCAxyBetweenProngs] = trk0KF.GetDistanceFromParticle(trk1KF);
+        values[kKFDCAxyBetweenProngs] = trk0KF.GetDistanceFromParticleXY(trk1KF);
 
       if (fgUsedVars[kKFTracksDCAxyzMax]) {
         values[kKFTracksDCAxyzMax] = values[kKFTrack0DCAxyz] > values[kKFTrack1DCAxyz] ? values[kKFTrack0DCAxyz] : values[kKFTrack1DCAxyz];
@@ -2067,6 +2121,15 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
           float B[3];
           float xyz[3] = {0, 0, 0};
           KFGeoTwoProng.GetFieldValue(xyz, B);
+          // TODO: find better soluton to handle cases where KF outputs negative variances
+          float covXX = 0.1;
+          float covYY = 0.1;
+          if (KFGeoTwoProng.GetCovariance(0, 0) > 0) {
+            covXX = KFGeoTwoProng.GetCovariance(0, 0);
+          }
+          if (KFGeoTwoProng.GetCovariance(1, 1) > 0) {
+            covYY = KFGeoTwoProng.GetCovariance(0, 0);
+          }
           pars1.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, B[2], x2x01);
           pars2.propagateToVtxhelixWithMCS(KFGeoTwoProng.GetZ(), {KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY()}, {KFGeoTwoProng.GetCovariance(0, 0), KFGeoTwoProng.GetCovariance(1, 1)}, B[2], x2x02);
           v1 = {pars1.getPt(), pars1.getEta(), pars1.getPhi(), m1};
@@ -2078,7 +2141,7 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
           values[kPhi] = v12.Phi();
           values[kRap] = -v12.Rapidity();
           values[kVertexingTauxy] = KFGeoTwoProng.GetPseudoProperDecayTime(KFPV, v12.M()) / (o2::constants::physics::LightSpeedCm2NS);
-          values[kVertexingTauz] = dzPair2PV * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
+          values[kVertexingTauz] = -1 * dzPair2PV * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
           values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.Pt() * o2::constants::physics::LightSpeedCm2NS);
           values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
 
@@ -2287,48 +2350,51 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
     KFParticle lepton1KF;
     KFParticle lepton2KF;
     KFParticle hadronKF;
-    KFParticle KFGeoThreeProngBarrel;
+    KFParticle KFGeoTwoLeptons;
+    KFParticle KFGeoThreeProng;
 
     if constexpr ((candidateType == kBtoJpsiEEK) && trackHasCov) {
       KFPTrack kfpTrack0 = createKFPTrackFromTrack(lepton1);
-      lepton1KF = KFParticle(kfpTrack0, 11 * lepton1.sign());
+      lepton1KF = KFParticle(kfpTrack0, -11 * lepton1.sign());
       KFPTrack kfpTrack1 = createKFPTrackFromTrack(lepton2);
-      lepton2KF = KFParticle(kfpTrack1, 11 * lepton2.sign());
+      lepton2KF = KFParticle(kfpTrack1, -11 * lepton2.sign());
       KFPTrack kfpTrack2 = createKFPTrackFromTrack(track);
       hadronKF = KFParticle(kfpTrack2, 321 * track.sign()); // kaon mass
 
-      KFGeoThreeProngBarrel.SetConstructMethod(2);
-      KFGeoThreeProngBarrel.AddDaughter(lepton1KF);
-      KFGeoThreeProngBarrel.AddDaughter(lepton2KF);
+      KFGeoTwoLeptons.SetConstructMethod(2);
+      KFGeoTwoLeptons.AddDaughter(lepton1KF);
+      KFGeoTwoLeptons.AddDaughter(lepton2KF);
 
       if (fgUsedVars[kPairMassDau] || fgUsedVars[kPairPtDau]) {
-        values[VarManager::kPairMassDau] = KFGeoThreeProngBarrel.GetMass();
-        values[VarManager::kPairPtDau] = KFGeoThreeProngBarrel.GetPt();
+        values[VarManager::kPairMassDau] = KFGeoTwoLeptons.GetMass();
+        values[VarManager::kPairPtDau] = KFGeoTwoLeptons.GetPt();
       }
 
       // Quantities between 3rd prong and candidate
       if (fgUsedVars[kKFDCAxyzBetweenProngs])
-        values[kKFDCAxyzBetweenProngs] = KFGeoThreeProngBarrel.GetDistanceFromParticle(hadronKF);
+        values[kKFDCAxyzBetweenProngs] = KFGeoTwoLeptons.GetDistanceFromParticle(hadronKF);
 
-      KFGeoThreeProngBarrel.AddDaughter(hadronKF); // third prong
+      KFGeoThreeProng.SetConstructMethod(2);
+      KFGeoThreeProng.AddDaughter(KFGeoTwoLeptons);
+      KFGeoThreeProng.AddDaughter(hadronKF);
 
       if (fgUsedVars[kKFMass])
-        values[kKFMass] = KFGeoThreeProngBarrel.GetMass();
+        values[kKFMass] = KFGeoThreeProng.GetMass();
 
       if constexpr (eventHasVtxCov) {
         KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
         KFParticle KFPV(kfpVertex);
-        double dxTriplet3PV = KFGeoThreeProngBarrel.GetX() - KFPV.GetX();
-        double dyTriplet3PV = KFGeoThreeProngBarrel.GetY() - KFPV.GetY();
-        double dzTriplet3PV = KFGeoThreeProngBarrel.GetZ() - KFPV.GetZ();
+        double dxTriplet3PV = KFGeoThreeProng.GetX() - KFPV.GetX();
+        double dyTriplet3PV = KFGeoThreeProng.GetY() - KFPV.GetY();
+        double dzTriplet3PV = KFGeoThreeProng.GetZ() - KFPV.GetZ();
 
         if (fgUsedVars[kVertexingLxy] || fgUsedVars[kVertexingLz] || fgUsedVars[kVertexingLxyz] || fgUsedVars[kVertexingLxyErr] || fgUsedVars[kVertexingLzErr] || fgUsedVars[kVertexingTauxy] || fgUsedVars[kVertexingLxyOverErr] || fgUsedVars[kVertexingLzOverErr] || fgUsedVars[kVertexingLxyzOverErr] || fgUsedVars[kCosPointingAngle]) {
           values[kVertexingLxy] = std::sqrt(dxTriplet3PV * dxTriplet3PV + dyTriplet3PV * dyTriplet3PV);
           values[kVertexingLz] = std::sqrt(dzTriplet3PV * dzTriplet3PV);
           values[kVertexingLxyz] = std::sqrt(dxTriplet3PV * dxTriplet3PV + dyTriplet3PV * dyTriplet3PV + dzTriplet3PV * dzTriplet3PV);
-          values[kVertexingLxyErr] = (KFPV.GetCovariance(0) + KFGeoThreeProngBarrel.GetCovariance(0)) * dxTriplet3PV * dxTriplet3PV + (KFPV.GetCovariance(2) + KFGeoThreeProngBarrel.GetCovariance(2)) * dyTriplet3PV * dyTriplet3PV + 2 * ((KFPV.GetCovariance(1) + KFGeoThreeProngBarrel.GetCovariance(1)) * dxTriplet3PV * dyTriplet3PV);
-          values[kVertexingLzErr] = (KFPV.GetCovariance(5) + KFGeoThreeProngBarrel.GetCovariance(5)) * dzTriplet3PV * dzTriplet3PV;
-          values[kVertexingLxyzErr] = (KFPV.GetCovariance(0) + KFGeoThreeProngBarrel.GetCovariance(0)) * dxTriplet3PV * dxTriplet3PV + (KFPV.GetCovariance(2) + KFGeoThreeProngBarrel.GetCovariance(2)) * dyTriplet3PV * dyTriplet3PV + (KFPV.GetCovariance(5) + KFGeoThreeProngBarrel.GetCovariance(5)) * dzTriplet3PV * dzTriplet3PV + 2 * ((KFPV.GetCovariance(1) + KFGeoThreeProngBarrel.GetCovariance(1)) * dxTriplet3PV * dyTriplet3PV + (KFPV.GetCovariance(3) + KFGeoThreeProngBarrel.GetCovariance(3)) * dxTriplet3PV * dzTriplet3PV + (KFPV.GetCovariance(4) + KFGeoThreeProngBarrel.GetCovariance(4)) * dyTriplet3PV * dzTriplet3PV);
+          values[kVertexingLxyErr] = (KFPV.GetCovariance(0) + KFGeoThreeProng.GetCovariance(0)) * dxTriplet3PV * dxTriplet3PV + (KFPV.GetCovariance(2) + KFGeoThreeProng.GetCovariance(2)) * dyTriplet3PV * dyTriplet3PV + 2 * ((KFPV.GetCovariance(1) + KFGeoThreeProng.GetCovariance(1)) * dxTriplet3PV * dyTriplet3PV);
+          values[kVertexingLzErr] = (KFPV.GetCovariance(5) + KFGeoThreeProng.GetCovariance(5)) * dzTriplet3PV * dzTriplet3PV;
+          values[kVertexingLxyzErr] = (KFPV.GetCovariance(0) + KFGeoThreeProng.GetCovariance(0)) * dxTriplet3PV * dxTriplet3PV + (KFPV.GetCovariance(2) + KFGeoThreeProng.GetCovariance(2)) * dyTriplet3PV * dyTriplet3PV + (KFPV.GetCovariance(5) + KFGeoThreeProng.GetCovariance(5)) * dzTriplet3PV * dzTriplet3PV + 2 * ((KFPV.GetCovariance(1) + KFGeoThreeProng.GetCovariance(1)) * dxTriplet3PV * dyTriplet3PV + (KFPV.GetCovariance(3) + KFGeoThreeProng.GetCovariance(3)) * dxTriplet3PV * dzTriplet3PV + (KFPV.GetCovariance(4) + KFGeoThreeProng.GetCovariance(4)) * dyTriplet3PV * dzTriplet3PV);
           if (fabs(values[kVertexingLxy]) < 1.e-8f)
             values[kVertexingLxy] = 1.e-8f;
           values[kVertexingLxyErr] = values[kVertexingLxyErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyErr]) / values[kVertexingLxy];
@@ -2340,27 +2406,27 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
           values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
 
           if (fgUsedVars[kVertexingTauxy])
-            values[kVertexingTauxy] = KFGeoThreeProngBarrel.GetPseudoProperDecayTime(KFPV, KFGeoThreeProngBarrel.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
+            values[kVertexingTauxy] = KFGeoThreeProng.GetPseudoProperDecayTime(KFPV, KFGeoThreeProng.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
           if (fgUsedVars[kVertexingTauxyErr])
-            values[kVertexingTauxyErr] = values[kVertexingLxyErr] * KFGeoThreeProngBarrel.GetMass() / (KFGeoThreeProngBarrel.GetPt() * o2::constants::physics::LightSpeedCm2NS);
+            values[kVertexingTauxyErr] = values[kVertexingLxyErr] * KFGeoThreeProng.GetMass() / (KFGeoThreeProng.GetPt() * o2::constants::physics::LightSpeedCm2NS);
 
           if (fgUsedVars[kCosPointingAngle])
-            values[VarManager::kCosPointingAngle] = (dxTriplet3PV * KFGeoThreeProngBarrel.GetPx() +
-                                                     dyTriplet3PV * KFGeoThreeProngBarrel.GetPy() +
-                                                     dzTriplet3PV * KFGeoThreeProngBarrel.GetPz()) /
-                                                    (KFGeoThreeProngBarrel.GetP() * values[VarManager::kVertexingLxyz]);
+            values[VarManager::kCosPointingAngle] = (dxTriplet3PV * KFGeoThreeProng.GetPx() +
+                                                     dyTriplet3PV * KFGeoThreeProng.GetPy() +
+                                                     dzTriplet3PV * KFGeoThreeProng.GetPz()) /
+                                                    (KFGeoThreeProng.GetP() * values[VarManager::kVertexingLxyz]);
         } // end calculate vertex variables
 
         // As defined in Run 2 (projected onto momentum)
         if (fgUsedVars[kVertexingLxyProjected] || fgUsedVars[kVertexingLxyzProjected] || fgUsedVars[kVertexingLzProjected]) {
-          values[kVertexingLzProjected] = (dzTriplet3PV * KFGeoThreeProngBarrel.GetPz()) / TMath::Sqrt(KFGeoThreeProngBarrel.GetPz() * KFGeoThreeProngBarrel.GetPz());
-          values[kVertexingLxyProjected] = (dxTriplet3PV * KFGeoThreeProngBarrel.GetPx()) + (dyTriplet3PV * KFGeoThreeProngBarrel.GetPy());
-          values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((KFGeoThreeProngBarrel.GetPx() * KFGeoThreeProngBarrel.GetPx()) + (KFGeoThreeProngBarrel.GetPy() * KFGeoThreeProngBarrel.GetPy()));
-          values[kVertexingLxyzProjected] = (dxTriplet3PV * KFGeoThreeProngBarrel.GetPx()) + (dyTriplet3PV * KFGeoThreeProngBarrel.GetPy()) + (dzTriplet3PV * KFGeoThreeProngBarrel.GetPz());
-          values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((KFGeoThreeProngBarrel.GetPx() * KFGeoThreeProngBarrel.GetPx()) + (KFGeoThreeProngBarrel.GetPy() * KFGeoThreeProngBarrel.GetPy()) + (KFGeoThreeProngBarrel.GetPz() * KFGeoThreeProngBarrel.GetPz()));
-          values[kVertexingTauxyProjected] = (values[kVertexingLxyProjected] * KFGeoThreeProngBarrel.GetMass()) / (KFGeoThreeProngBarrel.GetP());
+          values[kVertexingLzProjected] = (dzTriplet3PV * KFGeoThreeProng.GetPz()) / TMath::Sqrt(KFGeoThreeProng.GetPz() * KFGeoThreeProng.GetPz());
+          values[kVertexingLxyProjected] = (dxTriplet3PV * KFGeoThreeProng.GetPx()) + (dyTriplet3PV * KFGeoThreeProng.GetPy());
+          values[kVertexingLxyProjected] = values[kVertexingLxyProjected] / TMath::Sqrt((KFGeoThreeProng.GetPx() * KFGeoThreeProng.GetPx()) + (KFGeoThreeProng.GetPy() * KFGeoThreeProng.GetPy()));
+          values[kVertexingLxyzProjected] = (dxTriplet3PV * KFGeoThreeProng.GetPx()) + (dyTriplet3PV * KFGeoThreeProng.GetPy()) + (dzTriplet3PV * KFGeoThreeProng.GetPz());
+          values[kVertexingLxyzProjected] = values[kVertexingLxyzProjected] / TMath::Sqrt((KFGeoThreeProng.GetPx() * KFGeoThreeProng.GetPx()) + (KFGeoThreeProng.GetPy() * KFGeoThreeProng.GetPy()) + (KFGeoThreeProng.GetPz() * KFGeoThreeProng.GetPz()));
+          values[kVertexingTauxyProjected] = (values[kVertexingLxyProjected] * KFGeoThreeProng.GetMass()) / (KFGeoThreeProng.GetP());
           values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
-          values[kVertexingTauzProjected] = (values[kVertexingLzProjected] * KFGeoThreeProngBarrel.GetMass()) / KFGeoThreeProngBarrel.GetP();
+          values[kVertexingTauzProjected] = (values[kVertexingLzProjected] * KFGeoThreeProng.GetMass()) / KFGeoThreeProng.GetP();
         } // end Run 2 quantities
       }   // end eventHasVtxCov
     }     // end (candidateType == kBtoJpsiEEK) && trackHasCov
@@ -2393,6 +2459,7 @@ void VarManager::FillQVectorFromGFW(C const& collision, A const& compA2, A const
 
   // TODO: provide different computations for R
   // Compute the R factor using the 2 sub-events technique for second and third harmonic
+  // Compute event planes
   auto Psi2B = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
   auto Psi3B = getEventPlane(3, values[kQ3X0B], values[kQ3Y0B]);
   auto Psi2C = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
@@ -2405,6 +2472,9 @@ void VarManager::FillQVectorFromGFW(C const& collision, A const& compA2, A const
   if (values[kQ3Y0B] * values[kQ3Y0C] != 0.0) {
     values[kR3EP] = TMath::Cos(3 * (Psi3B - Psi3C));
   }
+  values[kPsi2A] = getEventPlane(2, values[kQ2X0A], values[kQ2Y0A]);
+  values[kPsi2B] = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
+  values[kPsi2C] = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
 }
 
 template <int pairType, typename T1, typename T2>
@@ -2448,6 +2518,9 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kU3Q3] = -999.;
     values[kCos2DeltaPhi] = -999.;
     values[kCos3DeltaPhi] = -999.;
+    values[kPsi2A] = -999.;
+    values[kPsi2B] = -999.;
+    values[kPsi2C] = -999.;
   }
 }
 
@@ -2458,7 +2531,7 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     values = fgValues;
   }
 
-  if (fgUsedVars[kPairMass] || fgUsedVars[kPairPt] || fgUsedVars[kPairEta] || fgUsedVars[kPairPhi]) {
+  if (fgUsedVars[kPairMass] || fgUsedVars[kPairPt] || fgUsedVars[kPairEta] || fgUsedVars[kPairPhi] || fgUsedVars[kPairMassDau] || fgUsedVars[kPairPtDau]) {
     ROOT::Math::PtEtaPhiMVector v1(dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.mass());
     ROOT::Math::PtEtaPhiMVector v2(hadron.pt(), hadron.eta(), hadron.phi(), hadronMass);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
@@ -2467,6 +2540,7 @@ void VarManager::FillDileptonHadron(T1 const& dilepton, T2 const& hadron, float*
     values[kPairEta] = v12.Eta();
     values[kPairPhi] = v12.Phi();
     values[kPairMassDau] = dilepton.mass();
+    values[kPairPtDau] = dilepton.pt();
     values[kMassDau] = hadronMass;
   }
   if (fgUsedVars[kDeltaPhi]) {

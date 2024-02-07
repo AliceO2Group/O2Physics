@@ -39,7 +39,7 @@ void BookBaseList()
                                     Form("fTaskName = %s", tc.fTaskName.Data()));
 
   fBasePro->GetXaxis()->SetBinLabel(eRunNumber,
-                                    Form("tc.fRunNumber = %s", tc.fRunNumber.Data()));
+                                    Form("fRunNumber = %s", tc.fRunNumber.Data()));
 
   fBasePro->GetXaxis()->SetBinLabel(eVerbose, "fVerbose");
   fBasePro->Fill(eVerbose - 0.5, (Int_t)tc.fVerbose);
@@ -57,7 +57,7 @@ void BookBaseList()
   fBasePro->Fill(eProcessRemainingEvents - 0.5, (Int_t)tc.fProcessRemainingEvents);
 
   fBasePro->GetXaxis()->SetBinLabel(eWhatToProcess,
-                                    Form("tc.WhatToProcess = %s", tc.fWhatToProcess.Data()));
+                                    Form("WhatToProcess = %s", tc.fWhatToProcess.Data()));
 
   fBasePro->GetXaxis()->SetBinLabel(eRandomSeed, "fRandomSeed");
   fBasePro->Fill(eRandomSeed - 0.5, (Int_t)tc.fRandomSeed);
@@ -125,6 +125,10 @@ void DefaultConfiguration()
   //    Remember #2: If names of Configurables in the json file are not
   //    identical to the internal definitions in MuPa-Configurables.h, the
   //    settings in json file are silently ignored.
+
+  // c) Scientific notation is NOT supported in json file. E.g. if you have
+  //            "cSelectedTracks_max": "1e3",
+  //    that setting and ALL other ones in json are silently ignored.
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
@@ -220,6 +224,10 @@ void DefaultBooking()
   ceh_a.fBookEventHistograms[eNumberOfEvents] = kTRUE;
   ceh_a.fBookEventHistograms[eTotalMultiplicity] = kTRUE;
   ceh_a.fBookEventHistograms[eSelectedTracks] = kTRUE;
+  ceh_a.fBookEventHistograms[eMultFV0M] = kTRUE;
+  ceh_a.fBookEventHistograms[eMultFT0M] = kTRUE;
+  ceh_a.fBookEventHistograms[eMultTPC] = kTRUE;
+  ceh_a.fBookEventHistograms[eMultNTracksPV] = kTRUE;
   ceh_a.fBookEventHistograms[eCentrality] = kTRUE;
   ceh_a.fBookEventHistograms[eVertex_x] = kTRUE;
   ceh_a.fBookEventHistograms[eVertex_y] = kTRUE;
@@ -273,10 +281,26 @@ void DefaultBinning()
   ceh_a.fEventHistogramsBins[eSelectedTracks][0] = 10000;
   ceh_a.fEventHistogramsBins[eSelectedTracks][1] = 0.;
   ceh_a.fEventHistogramsBins[eSelectedTracks][2] = 10000.;
+  // ... TBI 20240120
+  ceh_a.fEventHistogramsBins[eMultFV0M][0] = 10000;
+  ceh_a.fEventHistogramsBins[eMultFV0M][1] = 0.;
+  ceh_a.fEventHistogramsBins[eMultFV0M][2] = 10000.;
+  // ... TBI 20240120
+  ceh_a.fEventHistogramsBins[eMultFT0M][0] = 10000;
+  ceh_a.fEventHistogramsBins[eMultFT0M][1] = 0.;
+  ceh_a.fEventHistogramsBins[eMultFT0M][2] = 10000.;
+  // ... TBI 20240120
+  ceh_a.fEventHistogramsBins[eMultTPC][0] = 10000;
+  ceh_a.fEventHistogramsBins[eMultTPC][1] = 0.;
+  ceh_a.fEventHistogramsBins[eMultTPC][2] = 10000.;
+  // ... TBI 20240120
+  ceh_a.fEventHistogramsBins[eMultNTracksPV][0] = 10000;
+  ceh_a.fEventHistogramsBins[eMultNTracksPV][1] = 0.;
+  ceh_a.fEventHistogramsBins[eMultNTracksPV][2] = 10000.;
   // task->SetEventHistogramsBins("Centrality",100,0.,100.);
-  ceh_a.fEventHistogramsBins[eCentrality][0] = 100;
+  ceh_a.fEventHistogramsBins[eCentrality][0] = 110; // intentionally, because if centrality is not determined, it's set to 105.0 at the moment
   ceh_a.fEventHistogramsBins[eCentrality][1] = 0.;
-  ceh_a.fEventHistogramsBins[eCentrality][2] = 100.;
+  ceh_a.fEventHistogramsBins[eCentrality][2] = 110.;
   // task->SetEventHistogramsBins("Vertex_x",1000,-20.,20.);
   ceh_a.fEventHistogramsBins[eVertex_x][0] = 1000;
   ceh_a.fEventHistogramsBins[eVertex_x][1] = -20.;
@@ -623,7 +647,7 @@ void BookEventHistograms()
 
   // b) Book specific control event histograms:
   TString stype[eEventHistograms_N] = {
-    "NumberOfEvents", "TotalMultiplicity", "SelectedTracks",
+    "NumberOfEvents", "TotalMultiplicity", "SelectedTracks", "MultFV0M", "MultFT0M", "MultTPC", "MultNTracksPV",
     "Centrality", "Vertex_x", "Vertex_y",
     "Vertex_z", "NContributors", "ImpactParameter"}; // keep in sync. with enum eEventHistograms
   TString srs[2] = {"rec", "sim"};
@@ -1010,7 +1034,7 @@ void BookTest0Histograms()
 
   // a) Book the profile holding flags;
   // b) Book placeholder and make sure all labels are stored in the placeholder;
-  // c) Retreive labels from placeholder;
+  // c) Retrieve labels from placeholder;
   // d) Book what needs to be booked;
   // e) Few quick insanity checks on booking.
 
@@ -1036,7 +1060,7 @@ void BookTest0Histograms()
     fTest0List->Add(fTest0LabelsPlaceholder);
   }
 
-  // c) Retreive labels from placeholder:
+  // c) Retrieve labels from placeholder:
   if (!(this->RetrieveCorrelationsLabels())) {
     LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
          __PRETTY_FUNCTION__, __LINE__);
@@ -1221,7 +1245,7 @@ void ResetEventByEventQuantities()
   fSelectedTracks = 0;
   fCentrality = 0;
 
-  // c) Q-vectors:
+  // b) Q-vectors:
   if (fCalculateQvector) {
     ResetQ(); // generic Q-vector
     for (Int_t h = 0; h < gMaxHarmonic * gMaxCorrelator + 1; h++) {
@@ -1232,7 +1256,7 @@ void ResetEventByEventQuantities()
     }
   } // if(fCalculateQvector)
 
-  // d) Reset ebe containers for nested loops:
+  // c) Reset ebe containers for nested loops:
   if (fCalculateNestedLoops || fCalculateCustomNestedLoop) {
     if (nl_a.ftaNestedLoops[0]) {
       nl_a.ftaNestedLoops[0]->Reset();
@@ -1246,7 +1270,13 @@ void ResetEventByEventQuantities()
 
   } // if(fCalculateNestedLoops||fCalculateCustomNestedLoop)
 
-  // ... TBI 20220809 port the rest ...
+  // d) Fisher-Yates algorithm:
+  if (tc.fUseFisherYates) {
+    delete tc.fRandomIndices;
+    tc.fRandomIndices = NULL;
+  }
+
+  // ... TBI 20240117 port the rest ...
 
 } // void ResetEventByEventQuantities()
 
@@ -1370,6 +1400,11 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
     ceh_a.fEventHistograms[eNContributors][eRec][ba]->Fill(collision.numContrib());
     ceh_a.fEventHistograms[eTotalMultiplicity][eRec][ba]->Fill(tracks.size()); // TBI 20231106 check and validate further
     ceh_a.fEventHistograms[eSelectedTracks][eRec][ba]->Fill(fSelectedTracks);  // TBI 20240108 this one makes sense only for eAfter
+    ceh_a.fEventHistograms[eMultFT0M][eRec][ba]->Fill(collision.multFT0M());
+    ceh_a.fEventHistograms[eMultFV0M][eRec][ba]->Fill(collision.multFV0M());
+    ceh_a.fEventHistograms[eMultTPC][eRec][ba]->Fill(collision.multTPC());
+    ceh_a.fEventHistograms[eMultNTracksPV][eRec][ba]->Fill(collision.multNTracksPV());
+    ceh_a.fEventHistograms[eCentrality][eRec][ba]->Fill(fCentrality); // TBI 20240120 for the time being, I fill only default centrality
 
     // ... and corresponding MC truth simulated ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
     if constexpr (rs == eRecAndSim) {
@@ -1383,6 +1418,8 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
       ceh_a.fEventHistograms[eVertex_z][eSim][ba]->Fill(collision.mcCollision().posZ());
       // ceh_a.fEventHistograms[eTotalMultiplicity][eSim][ba]->Fill(tracks.size()); // TBI 20231106 check how to get corresponding MC truth info, and validate further
       // ceh_a.fEventHistograms[eSelectedTracks][eSim][ba]->Fill(fSelectedTracks); // TBI 20240108 this one makes sense only for eAfter + re-think if I really need it here
+      // TBI 20240120 eMultFT0M, ..., eMultNTracksPV are not needed here
+      // ceh_a.fEventHistograms[eCentrality][eSim][ba]->Fill(fCentrality); // TBI 20240120 this case is still not supported in DetermineCentrality()
     } // if constexpr (rs == eRecAndSim) {
   }   // if constexpr (rs == eRec || rs == eRecAndSim) {
 
@@ -1390,7 +1427,7 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
   if constexpr (rs == eSim) {
     ceh_a.fEventHistograms[eImpactParameter][eSim][ba]->Fill(collision.impactParameter()); // yes, because in this branch 'collision' is always aod::McCollision
     ceh_a.fEventHistograms[eSelectedTracks][eSim][ba]->Fill(fSelectedTracks);              // TBI 20240108 this one makes sense only for eAfter
-
+    // ceh_a.fEventHistograms[eCentrality][eSim][ba]->Fill(fCentrality); // TBI 20240120 this case is still not supported in DetermineCentrality()
     // ceh_a.fEventHistograms[eTotalMultiplicity][eSim][ba]->Fill(tracks.size()); // TBI 20231030 check further how to use the same thing for 'sim'
   } // if constexpr (rs == eSim) {
 
@@ -2930,7 +2967,8 @@ void StoreLabelsInPlaceholder()
   // a) Initialize all counters;
   // b) Fetch TObjArray with labels from an external file;
   // c) Book the placeholder fTest0LabelsPlaceholder for all labels;
-  // d) Finally, store the labels from external source into placeholder.
+  // d) Finally, store the labels from external source into placeholder;
+  // e) Insantity check on labels.
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
@@ -2984,6 +3022,19 @@ void StoreLabelsInPlaceholder()
     // cout<<TString(line).Data()<<endl;
     // cout<<oa->GetEntries()<<endl;
   } // for(Int_t e=0; e<nLabels; e++)
+
+  // e) Insantity check on labels:
+  //    Here I am merely checking that harmonic larget than gMaxHarmonic was not requested.
+  for (Int_t b = 1; b <= fTest0LabelsPlaceholder->GetXaxis()->GetNbins(); b++) {
+    TObjArray* temp = TString(fTest0LabelsPlaceholder->GetXaxis()->GetBinLabel(b)).Tokenize(" ");
+    for (Int_t h = 0; h < temp->GetEntries(); h++) {
+      if (TMath::Abs(TString(temp->At(h)->GetName()).Atoi()) > gMaxHarmonic) {
+        LOGF(info, "\033[1;31m bin = %d, label = %s, gMaxHarmonic = %d\033[0m", b, fTest0LabelsPlaceholder->GetXaxis()->GetBinLabel(b), (Int_t)gMaxHarmonic);
+        LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+      }          // if(TString(temp->At(h)->GetName()).Atoi() > gMaxHarmonic) {
+    }            // for(Int_t h = 0; h < temp->GetEntries(); h++) {
+    delete temp; // yes, otherwise it's a memory leak
+  }              // for(Int_t b = 1; b <= fTest0LabelsPlaceholder->GetXaxis()->GetNbins(); b++) {
 
 } // void StoreLabelsInPlaceholder()
 
@@ -3412,17 +3463,65 @@ Double_t CalculateCustomNestedLoop(TArrayI* harmonics)
 
 //============================================================
 
-void DetermineCentrality()
+template <eRecSim rs, typename T>
+void DetermineCentrality(T const& collision)
 {
   // Determine collision centrality.
+
+  // a) For real data, determine centrality from default centrality estimator;
+  // b) For simulated data, determine centrality directly from impact parameter.
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__); // just a bare function name
+  }
+
+  // a) For real data, determine centrality from default centrality estimator:
+  if constexpr (rs == eRec || rs == eRecAndSim) {
+    // fCentrality = gRandom->Uniform(0.,100.);  // collision.centFT0M(); // TBI 20240120 not ready yet, estimators are specific for Run 1,2,3 data processing ...
+    fCentrality = collision.centFT0M(); // TBI 20240120 not ready yet, estimators are specific for Run 1,2,3 data processing ...
+    // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
+  }
+
+  // b) For simulated data, determine centrality directly from impact parameter:
+  if constexpr (rs == eSim) {
+    fCentrality = -44.; // TBI 20240120 add support eventualy
+  }                     // if constexpr (rs == eSim) {
+
+  // TBI 20240120 remove this printout eventually:
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m fCentrality = %f\033[0m", fCentrality);
+  }
+
+} // template <eRecSim rs, typename T> void DetermineCentrality(T const& collision)
+
+//============================================================
+
+void RandomIndices(Int_t nTracks)
+{
+  // Randomize indices using Fisher-Yates algorithm.
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
-  fCentrality = gRandom->Uniform(0., 100.); // TBI 20240116 not finalized yet, just added infrastructure
+  if (nTracks < 1) {
+    return;
+  }
 
-} // void DetermineCentrality()
+  // Fisher-Yates algorithm:
+  tc.fRandomIndices = new TArrayI(nTracks);
+  tc.fRandomIndices->Reset(); // just in case there is some random garbage in memory at init
+  for (Int_t i = 0; i < nTracks; i++) {
+    tc.fRandomIndices->AddAt(i, i);
+  }
+  for (Int_t i = nTracks - 1; i >= 1; i--) {
+    Int_t j = gRandom->Integer(i + 1);
+    Int_t temp = tc.fRandomIndices->GetAt(j);
+    tc.fRandomIndices->AddAt(tc.fRandomIndices->GetAt(i), j);
+    tc.fRandomIndices->AddAt(temp, i);
+  } // end of for(Int_t i=nTracks-1;i>=1;i--)
+
+} // void RandomIndices(Int_t nTracks)
 
 //============================================================
 
@@ -3473,8 +3572,8 @@ void Steer(T1 const& collision, T2 const& tracks)
   // *) Do all thingies before starting to process data from this collision (e.g. count number of events, fetch the run number, etc.):
   Preprocess(collision);
 
-  // *) Determine collision centrality: // TBI 20240116 not finalized yet, just added infrastructure
-  DetermineCentrality();
+  // *) Determine collision centrality:
+  DetermineCentrality<rs>(collision);
 
   // *) Fill event histograms before event cuts:
   FillEventHistograms<rs>(collision, tracks, eBefore);
@@ -3531,7 +3630,28 @@ void MainLoopOverParticles(T const& tracks)
   Double_t wToPowerP = 1.;       // weight raised to power p
   fSelectedTracks = 0;           // reset number of selected tracks
 
-  for (auto& track : tracks) {
+  // *) If random access of tracks from collection is requested, use Fisher-Yates algorithm to generate random indices:
+  if (tc.fUseFisherYates) {
+    if (tc.fRandomIndices) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+    }
+    this->RandomIndices(tracks.size());
+    if (!tc.fRandomIndices) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+    }
+  }
+
+  // *) Main loop over particles:
+  // for (auto& track : tracks) { // default standard way of looping of tracks
+  auto track = tracks.iteratorAt(0); // set the type and scope from one instance
+  for (int64_t i = 0; i < tracks.size(); i++) {
+
+    // *) Access track sequentially from collection of tracks (default), or randomly using Fisher-Yates algorithm:
+    if (!tc.fUseFisherYates) {
+      track = tracks.iteratorAt(i);
+    } else {
+      track = tracks.iteratorAt((int64_t)tc.fRandomIndices->GetAt(i));
+    }
 
     // *) Fill particle histograms before particle cuts:
     FillParticleHistograms<rs>(track, eBefore);
@@ -3601,7 +3721,18 @@ void MainLoopOverParticles(T const& tracks)
       break;
     }
 
+    // *) Break the loop if fixed number of particles is taken randomly from each event (use always in combination with tc.fUseFisherYates = kTRUE):
+    if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && tc.fFixedNumberOfRandomlySelectedTracks == fSelectedTracks) {
+      LOGF(info, "\033[1;32mBreaking the loop over particles, since requested fixed number of %d particles was reached\033[0m", tc.fFixedNumberOfRandomlySelectedTracks);
+      break;
+    }
+
   } // for (auto& track : tracks)
+
+  // *) Insanity check on fixed number of randomly selected tracks:
+  if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && tc.fFixedNumberOfRandomlySelectedTracks < fSelectedTracks) {
+    LOGF(fatal, "\033[1;31mIn this event there are too few particles (fSelectedTracks = %d), and requested number of fixed number randomly selected tracks %d couldn't be reached\033[0m", fSelectedTracks, tc.fFixedNumberOfRandomlySelectedTracks);
+  }
 
 } // template <eRecSim rs, typename T> void MainLoopOverParticles(T const& tracks) {
 

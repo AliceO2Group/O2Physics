@@ -248,9 +248,12 @@ struct hypertriton3bodyBuilder {
       }
 
       std::array<float, 3> p0 = {0.}, p1 = {0.}, p2{0.};
-      Track0.getPxPyPzGlo(p0);
-      Track1.getPxPyPzGlo(p1);
-      Track2.getPxPyPzGlo(p2);
+      const auto& propagatedTrack0 = fitter3body.getTrack(0);
+      const auto& propagatedTrack1 = fitter3body.getTrack(1);
+      const auto& propagatedTrack2 = fitter3body.getTrack(2);
+      propagatedTrack0.getPxPyPzGlo(p0);
+      propagatedTrack1.getPxPyPzGlo(p1);
+      propagatedTrack2.getPxPyPzGlo(p2);
       std::array<float, 3> p3B = {p0[0] + p1[0] + p2[0], p0[1] + p1[1] + p2[1], p0[2] + p1[2] + p2[2]};
 
       if (fitter3body.getChi2AtPCACandidate() > dcavtxdau) {

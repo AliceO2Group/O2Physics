@@ -63,15 +63,16 @@ static const std::vector<std::string> labelsPtTrack{};
 static const std::vector<std::string> labelsCutVarTrack = {"min_dcaxytoprimary", "max_dcaxytoprimary"};
 } // namespace hf_cuts_single_track
 
-namespace hf_presel_proton_pid
+namespace hf_presel_pid
 {
 // default values for the PID cuts for protons in the track-index-skim-creator
-constexpr float cutsProtonPid[3][6] = {{0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
-                                       {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
-                                       {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f}};
-static const std::vector<std::string> labelsCutsProtonPid = {"minPtTpc", "maxPtTpc", "nSigmaMaxTpc", "minPtTof", "maxPtTof", "nSigmaMaxTof"};
-static const std::vector<std::string> labelsRowsProtonPid = {"LcToPKPi", "XicToPKPi", "LcToPK0S"};
-} // namespace hf_presel_proton_pid
+constexpr float cutsPid[4][6] = {{0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                 {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                 {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f},
+                                 {0.f, 1000.f, 5.f, 0.f, 1000.f, 5.f}};
+static const std::vector<std::string> labelsCutsPid = {"minPtTpc", "maxPtTpc", "nSigmaMaxTpc", "minPtTof", "maxPtTof", "nSigmaMaxTof"};
+static const std::vector<std::string> labelsRowsPid = {"ProtonInLcToPKPi", "ProtonInXicToPKPi", "ProtonInLcToPK0S", "KaonIn3Prongs"};
+} // namespace hf_presel_pid
 
 namespace hf_cuts_bdt_multiclass
 {
@@ -356,11 +357,13 @@ static const std::vector<std::string> labelsCutVar = {"m", "DCA", "cos theta*", 
 
 namespace hf_cuts_dstar_to_d0_pi
 {
-static constexpr int nBinsPt = 23;
+static constexpr int nBinsPt = 25;
 static constexpr int nCutVars = 8;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
 constexpr double binsPt[nBinsPt + 1] = {
+  0.,
+  0.5,
   1.0,
   1.5,
   2.0,
@@ -411,35 +414,39 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 19",
   "pT bin 20",
   "pT bin 21",
-  "pT bin 22"};
+  "pT bin 22",
+  "pT bin 23",
+  "pT bin 24"};
 
 // column label
 static const std::vector<std::string> labelsCutVar = {"ptSoftPiMin", "ptSoftPiMax", "d0SoftPi", "d0SoftPiNormalised", "deltaMInvDstar", "chi2PCA", "d0Prong0Normalised", "d0Prong1Normalised"};
 
 // default values for the cuts
-constexpr double cuts[nBinsPt][nCutVars] = {{0.05, 0.3, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 0.3, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 0.4, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 0.4, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 0.6, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 0.6, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 0.6, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0},
-                                            {0.05, 100, 0.1, 0.0, 0.2, 300.0, 0.0, 0.0}};
+constexpr double cuts[nBinsPt][nCutVars] = {{0.05, 0.2, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 0.2, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 0.3, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 0.3, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 0.4, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 0.4, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 0.6, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 0.6, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 0.6, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0},
+                                            {0.05, 100, 0.1, 1000.0, 0.2, 300.0, 0.0, 0.0}};
 } // namespace hf_cuts_dstar_to_d0_pi
 
 namespace hf_cuts_lc_to_p_k_pi

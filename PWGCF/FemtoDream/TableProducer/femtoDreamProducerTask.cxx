@@ -48,6 +48,7 @@ namespace o2::aod
 using FemtoFullCollision =
   soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
+using FemtoFullCollision_noCent_MC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks =
   soa::Join<aod::FullTracks, aod::TracksDCA,
@@ -79,7 +80,6 @@ struct femtoDreamProducerTask {
 
   Configurable<bool> ConfIsDebug{"ConfIsDebug", true, "Enable Debug tables"};
   Configurable<bool> ConfIsRun3{"ConfIsRun3", false, "Running on Run3 or pilot"};
-  Configurable<bool> ConfIsUseMultiplicityPercentile{"ConfIsUseMultiplicityPercentile", true, "Use multiplicity percentile (ccdb object for MC may be missing)"};
   Configurable<bool> ConfIsForceGRP{"ConfIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
   /// Event cuts
@@ -153,12 +153,12 @@ struct femtoDreamProducerTask {
 
   void init(InitContext&)
   {
-    if (doprocessData == false && doprocessMC == false) {
+    if (doprocessData == false && doprocessMC == false && doprocessMC_noCentrality == false) {
       LOGF(fatal, "Neither processData nor processMC enabled. Please choose one.");
     }
-    if (doprocessData == true && doprocessMC == true) {
+    if ((doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMC_noCentrality == true) || (doprocessMC == true && doprocessMC_noCentrality == true)) {
       LOGF(fatal,
-           "Cannot enable processData and processMC at the same time. "
+           "Cannot enable more than one process switch at the same time. "
            "Please choose one.");
     }
 
@@ -343,7 +343,7 @@ struct femtoDreamProducerTask {
     }
   }
 
-  template <bool isMC, typename V0Type, typename TrackType, typename CollisionType>
+  template <bool isMC, bool useCentrality, typename V0Type, typename TrackType, typename CollisionType>
   void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
   {
     const auto vtxZ = col.posZ();
@@ -351,7 +351,7 @@ struct femtoDreamProducerTask {
     float mult = 0;
     int multNtr = 0;
     if (ConfIsRun3) {
-      if (ConfIsUseMultiplicityPercentile) {
+      if constexpr (useCentrality) {
         mult = col.centFT0M();
       } else {
         mult = 0;
@@ -365,7 +365,7 @@ struct femtoDreamProducerTask {
       multNtr = col.multTPC();
     }
 
-    colCuts.fillQA(col);
+    colCuts.fillQA(col, mult);
 
     // check whether the basic event selection criteria are fulfilled
     // that included checking if there is at least on usable track or V0
@@ -513,7 +513,7 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0<false>(col, tracks, fullV0s);
+    fillCollisionsAndTracksAndV0<false, true>(col, tracks, fullV0s);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData,
                  "Provide experimental data", true);
@@ -528,9 +528,23 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0<true>(col, tracks, fullV0s);
+    fillCollisionsAndTracksAndV0<true, true>(col, tracks, fullV0s);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC, "Provide MC data", false);
+
+  void processMC_noCentrality(aod::FemtoFullCollision_noCent_MC const& col,
+                              aod::BCsWithTimestamps const&,
+                              soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                              aod::McCollisions const& mcCollisions,
+                              aod::McParticles const& mcParticles,
+                              soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
+  {
+    // get magnetic field for run
+    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisionsAndTracksAndV0<true, false>(col, tracks, fullV0s);
+  }
+  PROCESS_SWITCH(femtoDreamProducerTask, processMC_noCentrality, "Provide MC data without requiring a centrality calibration", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -74,6 +74,8 @@ struct qVectorsTable {
   Configurable<int> cfgCentEsti{"cfgCentEsti",
                                 2, "Centrality estimator (Run3): 0 = FT0M, 1 = FT0A, 2 = FT0C, 3 = FV0A"};
 
+  Configurable<int> cfgCCDBConst{"cfgCCDBConst", 1, "Using constants in CCDB, 1 = CCDB, 2= Configurable"};
+
   // LOKI: We have here all centrality estimators for Run 3 (except FDDM and NTPV),
   // but the Q-vectors are calculated only for some of them.
   // FIXME: 6 correction factors for each centrality and 8 centrality intervals are hard-coded.
@@ -147,30 +149,93 @@ struct qVectorsTable {
       LOGF(fatal, "Could not get the alignment parameters for FV0.");
     }
 
-    if (cfgFT0CCorr->size() < 48) {
-      LOGF(fatal, "No proper correction factor assigned for FT0C");
+    if (cfgCCDBConst == 1) {
+      if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0C", cfgCcdbParam.nolaterthan.value))->empty()) {
+        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0C", cfgCcdbParam.nolaterthan.value)));
+      } else {
+        if (cfgFT0CCorr->size() < 48) {
+          LOGF(fatal, "No proper correction factor assigned for FT0C");
+        } else {
+          cfgCorr.push_back(cfgFT0CCorr);
+        }
+      }
+
+      if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0A", cfgCcdbParam.nolaterthan.value))->empty()) {
+        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0A", cfgCcdbParam.nolaterthan.value)));
+      } else {
+        if (cfgFT0ACorr->size() < 48) {
+          LOGF(fatal, "No proper correction factor assigned for FT0A");
+        } else {
+          cfgCorr.push_back(cfgFT0ACorr);
+        }
+      }
+
+      if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0M", cfgCcdbParam.nolaterthan.value))->empty()) {
+        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0M", cfgCcdbParam.nolaterthan.value)));
+      } else {
+        if (cfgFT0MCorr->size() < 48) {
+          LOGF(fatal, "No proper correction factor assigned for FT0M");
+        } else {
+          cfgCorr.push_back(cfgFT0MCorr);
+        }
+      }
+
+      if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0C", cfgCcdbParam.nolaterthan.value))->empty()) {
+        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/FT0C", cfgCcdbParam.nolaterthan.value)));
+      } else {
+        if (cfgFV0ACorr->size() < 48) {
+          LOGF(fatal, "No proper correction factor assigned for FV0A");
+        } else {
+          cfgCorr.push_back(cfgFV0ACorr);
+        }
+      } // no FV0A
+
+      if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/BPos", cfgCcdbParam.nolaterthan.value))->empty()) {
+        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/BPos", cfgCcdbParam.nolaterthan.value)));
+      } else {
+        if (cfgBPosCorr->size() < 48) {
+          LOGF(fatal, "No proper correction factor assigned for BPos");
+        } else {
+          cfgCorr.push_back(cfgBPosCorr);
+        }
+      }
+
+      if (!(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/BNeg", cfgCcdbParam.nolaterthan.value))->empty()) {
+        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>("Analysis/EventPlane/QVecCorrections/BNeg", cfgCcdbParam.nolaterthan.value)));
+      } else {
+        if (cfgBNegCorr->size() < 48) {
+          LOGF(fatal, "No proper correction factor assigned for BNeg");
+        } else {
+          cfgCorr.push_back(cfgBNegCorr);
+        }
+      }
+    } else if (cfgCCDBConst == 2) {
+      if (cfgFT0CCorr->size() < 48) {
+        LOGF(fatal, "No proper correction factor assigned for FT0C");
+      }
+      if (cfgFT0ACorr->size() < 48) {
+        LOGF(fatal, "No proper correction factor assigned for FT0A");
+      }
+      if (cfgFT0MCorr->size() < 48) {
+        LOGF(fatal, "No proper correction factor assigned for FT0M");
+      }
+      if (cfgFV0ACorr->size() < 48) {
+        LOGF(fatal, "No proper correction factor assigned for FV0A");
+      }
+      if (cfgBPosCorr->size() < 48) {
+        LOGF(fatal, "No proper correction factor assigned for positive TPC tracks");
+      }
+      if (cfgBNegCorr->size() < 48) {
+        LOGF(fatal, "No proper correction factor assigned for negative TPC tracks");
+      } // will be replaced with method that call constants from CCDB
+
+      cfgCorr.push_back(cfgFT0CCorr);
+      cfgCorr.push_back(cfgFT0ACorr);
+      cfgCorr.push_back(cfgFT0MCorr);
+      cfgCorr.push_back(cfgFV0ACorr);
+      cfgCorr.push_back(cfgBPosCorr);
+      cfgCorr.push_back(cfgBNegCorr);
     }
-    if (cfgFT0ACorr->size() < 48) {
-      LOGF(fatal, "No proper correction factor assigned for FT0A");
-    }
-    if (cfgFT0MCorr->size() < 48) {
-      LOGF(fatal, "No proper correction factor assigned for FT0M");
-    }
-    if (cfgFV0ACorr->size() < 48) {
-      LOGF(fatal, "No proper correction factor assigned for FV0A");
-    }
-    if (cfgBPosCorr->size() < 48) {
-      LOGF(fatal, "No proper correction factor assigned for positive TPC tracks");
-    }
-    if (cfgBNegCorr->size() < 48) {
-      LOGF(fatal, "No proper correction factor assigned for negative TPC tracks");
-    } // will be replaced with method that call constants from CCDB
-    cfgCorr.push_back(cfgFT0CCorr);
-    cfgCorr.push_back(cfgFT0ACorr);
-    cfgCorr.push_back(cfgFT0MCorr);
-    cfgCorr.push_back(cfgFV0ACorr);
-    cfgCorr.push_back(cfgBPosCorr);
-    cfgCorr.push_back(cfgBNegCorr);
 
     /*  // Debug printing.
       printf("Offset for FT0A: x = %.3f y = %.3f\n", (*offsetFT0)[0].getX(), (*offsetFT0)[0].getY());

@@ -13,7 +13,7 @@
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_GLOBALCONSTANTS_H_
 
 const Int_t gMaxCorrelator = 12;
-const Int_t gMaxHarmonic = 6;
+const Int_t gMaxHarmonic = 9;
 const Int_t gMaxIndex = 300; // per order, used only in Test0
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_GLOBALCONSTANTS_H_

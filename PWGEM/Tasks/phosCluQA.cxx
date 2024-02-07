@@ -15,6 +15,7 @@
 #include <memory>
 #include <vector>
 #include "Common/DataModel/CaloClusters.h"
+#include "Common/DataModel/EventSelection.h"
 
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
@@ -40,21 +41,33 @@
 /// - Count rate in 2D representation
 
 using namespace o2;
+using namespace o2::aod::evsel;
 using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 using mcClusters = soa::Join<aod::CaloClusters, aod::PHOSCluLabels>;
 using mcAmpClusters = soa::Join<aod::CaloAmbiguousClusters, aod::PHOSAmbCluLabels>;
 
 struct phosCluQA {
 
-  o2::framework::Configurable<double> mMinCluE{"minCluE", 0.3, "Minimum cluster energy for histograms."};
-  o2::framework::Configurable<double> mCpvMinE{"cpvMinE", 200, "Min CPV amplitude"};
+  ConfigurableAxis amplitudeAxisLarge{"amplitude", {1000, 0., 100.}, "Amplutude (GeV)"};
+  ConfigurableAxis timeAxisLarge{"celltime", {1000, -1500.e-9, 3500.e-9}, "cell time (ns)"};
+  ConfigurableAxis mggAxis{"mgg", {250, 0., 1.}, "m_{#gamma#gamma} (GeV/c^{2})"};
+  Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
+  Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
+  Configurable<int> mEvSelTrigAmb{"mEvSelTrigAmb", kTVXinPHOS, "Select events (for ambigious clusters) with this trigger"};
+  Configurable<double> mMinCluE{"minCluE", 0.3, "Minimum cluster energy for histograms."};
+  Configurable<double> mCpvMinE{"cpvMinE", 200, "Min CPV amplitude"};
 
   o2::framework::HistogramRegistry mHistManager{"phosCluQAHistograms"};
-
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  std::unique_ptr<o2::phos::Geometry> geomPHOS;
+
   bool fillBCmap = true;
+  std::array<TH2*, 25> hRe, hMi, hReAmb, hMiAmb;
+  std::array<TH2*, 4> hCluMul, hCluMulAmb, hCluETime, hCluETimeAmb;
+  std::array<TH1*, 4> hCluSp, hCluSpAmb;
 
   /// \brief Create output histograms
   void init(o2::framework::InitContext const&)
@@ -64,10 +77,7 @@ struct phosCluQA {
     LOG(info) << "Initializing PHOS Cluster QA monitor task ...";
 
     const o2Axis
-      amplitudeAxisLarge{1000, 0., 10., "amplitude", "Amplutude (GeV)"},
-      timeAxisLarge{1000, -1500.e-9, 3500.e-9, "celltime", "cell time (ns)"},
       multAxis{100, 0., 100.},
-      mggAxis{250, 0., 1.},
       bcAxis{3501, -0.5, 3500.5},
       zAxis{56, -63., 63., "z", "z (cm)"},
       phiAxis{64, -72., 72., "x", "x (cm)"},
@@ -95,6 +105,7 @@ struct phosCluQA {
     h3->GetXaxis()->SetBinLabel(2, "CPV w/o PHOS");
     h3->GetXaxis()->SetBinLabel(3, "PHOS w/o CPV");
 
+    mHistManager.add("eventsTrig", "Number of trigger events", HistType::kTH1F, {{2, 0., 2.}});
     mHistManager.add("CPVSp", "CPV spectrum", o2HistType::kTH2F, {{200, 0., 10000}, {3, 2., 5.}});
     mHistManager.add("CPVOcc", "CPV occupancy", o2HistType::kTH3F, {{128, -72., 72.}, {56, -63., 63.}, {3, 2., 5.}});
 
@@ -106,19 +117,25 @@ struct phosCluQA {
     }
 
     for (int i = 1; i < 5; ++i) {
-      mHistManager.add(Form("cluSpM%d", i), Form("Cluster spectrum for module %d", i),
-                       o2HistType::kTH1F, {amplitudeAxisLarge});
-      mHistManager.add(Form("cluMultM%d", i), Form("Cluster multiplicity for module %d", i),
-                       o2HistType::kTH2F, {amplitudeAxisLarge, multAxis});
-      mHistManager.add(Form("cluETimeM%d", i), Form("Correlation between cell amplitude and time in module %d", i),
-                       o2HistType::kTH2F, {timeAxisLarge, amplitudeAxisLarge});
+      hCluSp[i - 1] = (std::get<std::shared_ptr<TH1>>(mHistManager.add(Form("cluSpM%d", i), Form("Cluster spectrum for module %d", i),
+                                                                       o2HistType::kTH1F, {amplitudeAxisLarge})))
+                        .get();
+      hCluMul[i - 1] = (std::get<std::shared_ptr<TH2>>(mHistManager.add(Form("cluMultM%d", i), Form("Cluster multiplicity for module %d", i),
+                                                                        o2HistType::kTH2F, {amplitudeAxisLarge, multAxis})))
+                         .get();
+      hCluETime[i - 1] = (std::get<std::shared_ptr<TH2>>(mHistManager.add(Form("cluETimeM%d", i), Form("Correlation between cell amplitude and time in module %d", i),
+                                                                          o2HistType::kTH2F, {timeAxisLarge, amplitudeAxisLarge})))
+                           .get();
 
-      mHistManager.add(Form("ambcluSpM%d", i), Form("Amb.ev. cluster spectrum for module %d", i),
-                       o2HistType::kTH1F, {amplitudeAxisLarge});
-      mHistManager.add(Form("ambcluMultM%d", i), Form("Amb. ev. cluster multiplicity for module %d", i),
-                       o2HistType::kTH2F, {amplitudeAxisLarge, multAxis});
-      mHistManager.add(Form("ambcluETimeM%d", i), Form("Amb. ev. Correlation between cell amplitude and time in module %d", i),
-                       o2HistType::kTH2F, {timeAxisLarge, amplitudeAxisLarge});
+      hCluSpAmb[i - 1] = (std::get<std::shared_ptr<TH1>>(mHistManager.add(Form("ambcluSpM%d", i), Form("Cluster spectrum for module %d", i),
+                                                                          o2HistType::kTH1F, {amplitudeAxisLarge})))
+                           .get();
+      hCluMulAmb[i - 1] = (std::get<std::shared_ptr<TH2>>(mHistManager.add(Form("ambcluMultM%d", i), Form("Cluster multiplicity for module %d", i),
+                                                                           o2HistType::kTH2F, {amplitudeAxisLarge, multAxis})))
+                            .get();
+      hCluETimeAmb[i - 1] = (std::get<std::shared_ptr<TH2>>(mHistManager.add(Form("ambcluETimeM%d", i), Form("Correlation between cell amplitude and time in module %d", i),
+                                                                             o2HistType::kTH2F, {timeAxisLarge, amplitudeAxisLarge})))
+                              .get();
     }
     mHistManager.add("cluOcc", "Cluster occupancy ", o2HistType::kTH3F, {phiAxis, zAxis, modAxis});
     mHistManager.add("cluE", "Cluster energy", o2HistType::kTH3F, {phiAxis, zAxis, modAxis});
@@ -126,75 +143,47 @@ struct phosCluQA {
     mHistManager.add("ambcluE", "Cluster energy", o2HistType::kTH3F, {phiAxis, zAxis, modAxis});
     for (int i = 1; i < 5; ++i) {
       for (int j = i; j < 5; ++j) {
-        mHistManager.add(Form("mggReM%d%d", i, j), Form("inv mass for module %d%d", i, j),
-                         o2HistType::kTH2F, {mggAxis, amplitudeAxisLarge});
-        mHistManager.add(Form("mggMiM%d%d", i, j), Form("inv mass for module %d%d", i, j),
-                         o2HistType::kTH2F, {mggAxis, amplitudeAxisLarge});
-        mHistManager.add(Form("ambmggReM%d%d", i, j), Form("inv mass for module %d%d", i, j),
-                         o2HistType::kTH2F, {mggAxis, amplitudeAxisLarge});
-        mHistManager.add(Form("ambmggMiM%d%d", i, j), Form("inv mass for module %d%d", i, j),
-                         o2HistType::kTH2F, {mggAxis, amplitudeAxisLarge});
+        hRe[5 * (i - 1) + j - 1] = (std::get<std::shared_ptr<TH2>>(mHistManager.add(Form("mggReM%d%d", i, j), Form("inv mass for module %d%d", i, j),
+                                                                                    o2HistType::kTH2F, {mggAxis, amplitudeAxisLarge})))
+                                     .get();
+        hMi[5 * (i - 1) + j - 1] = (std::get<std::shared_ptr<TH2>>(mHistManager.add(Form("mggMiM%d%d", i, j), Form("inv mass for module %d%d", i, j),
+                                                                                    o2HistType::kTH2F, {mggAxis, amplitudeAxisLarge})))
+                                     .get();
+        hReAmb[5 * (i - 1) + j - 1] = (std::get<std::shared_ptr<TH2>>(mHistManager.add(Form("ambmggReM%d%d", i, j), Form("inv mass for module %d%d", i, j),
+                                                                                       o2HistType::kTH2F, {mggAxis, amplitudeAxisLarge})))
+                                        .get();
+        hMiAmb[5 * (i - 1) + j - 1] = (std::get<std::shared_ptr<TH2>>(mHistManager.add(Form("ambmggMiM%d%d", i, j), Form("inv mass for module %d%d", i, j),
+                                                                                       o2HistType::kTH2F, {mggAxis, amplitudeAxisLarge})))
+                                        .get();
       }
     }
+    if (isMC) {
+      mHistManager.add("cluNprim", "Number of primaries", HistType::kTH2F, {{100, 0., 10., "E_{rec}", "E_{rec} (GeV)"}, {10, 0., 10., "N_{prim}", "N_{prim}"}});
+      mHistManager.add("cluEdep", "Deposited energy", HistType::kTH2F, {{100, 0., 10., "E_{rec}", "E_{rec} (GeV)"}, {20, 0., 2., "E_{dep}/E_{rec}", "E_{dep}/E_{rec}"}});
+      mHistManager.add("cluEdepN", "Deposited energy vs iparent", HistType::kTH2F, {{10, 0., 10., "i_{parent}", "i_{parent}"}, {20, 0., 2., "E_{dep}/E_{rec}", "E_{dep}/E_{rec}"}});
+      mHistManager.add("mcEdepAll", "Erec vs true E", HistType::kTH2F, {{100, 0., 10., "E_{rec}", "E_{rec} (GeV)"}, {100, 0., 10., "E_{true}", "E_{true} (GeV)"}});
+      mHistManager.add("mcEdepGamma", "Erec vs true E", HistType::kTH2F, {{100, 0., 10., "E_{rec}", "E_{rec} (GeV)"}, {100, 0., 10., "E_{true}", "E_{true} (GeV)"}});
+      mHistManager.add("cluDxe", "dx vs E", HistType::kTH2F, {{100, 0., 10., "E_{rec}", "E_{rec} (GeV)"}, {100, -50., 50., "x_{rec}-x_{true}", "x_{rec}-x_{true} (cm)"}});
+      mHistManager.add("cluDze", "dz vs E", HistType::kTH2F, {{100, 0., 10., "E_{rec}", "E_{rec} (GeV)"}, {100, -50., 50., "z_{rec}-z_{true}", "z_{rec}-z_{true} (cm)"}});
+    }
+
     ccdb->setURL(o2::base::NameConf::getCCDBServer());
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+    geomPHOS = std::make_unique<o2::phos::Geometry>("PHOS");
   }
 
+  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+  using BCsWithBcSels = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+
   /// \brief Process PHOS data
-  void process(o2::aod::BCs const& bcs,
-               o2::aod::Collisions const& colls,
-               o2::aod::CaloClusters const& clusters,
-               o2::aod::CaloAmbiguousClusters const& ambclusters,
-               o2::aod::CPVClusters const& cpvs)
+  void processData(BCsWithBcSels const& bcs,
+                   SelCollisions const& colls,
+                   o2::aod::CaloClusters const& clusters,
+                   o2::aod::CaloAmbiguousClusters const& ambclusters,
+                   o2::aod::CPVClusters const& cpvs)
   {
-    // Filll BC map
-    if (fillBCmap && bcs.begin() != bcs.end()) {
-      auto rl = ccdb->getRunDuration(bcs.begin().runNumber());
-      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", rl.first);
-      constexpr int nBCsPerOrbit = 3564;
-      std::bitset<nBCsPerOrbit> beamPatternA = grplhcif->getBunchFilling().getBeamPattern(0);
-      std::bitset<nBCsPerOrbit> beamPatternC = grplhcif->getBunchFilling().getBeamPattern(1);
-      std::bitset<nBCsPerOrbit> bcPatternA = beamPatternA & ~beamPatternC;
-      std::bitset<nBCsPerOrbit> bcPatternC = ~beamPatternA & beamPatternC;
-      std::bitset<nBCsPerOrbit> bcPatternB = beamPatternA & beamPatternC;
-      for (int i = 0; i < nBCsPerOrbit; i++) {
-        if (bcPatternB[i])
-          mHistManager.fill(HIST("BCB"), i);
-        if (bcPatternA[i])
-          mHistManager.fill(HIST("BCA"), i);
-        if (bcPatternC[i])
-          mHistManager.fill(HIST("BCC"), i);
-      }
-      fillBCmap = false;
-    }
-
-    // If several collisions appear in BC, choose one with largers number of contributors
-    std::map<int64_t, int> colMap;
-    for (auto cl : colls) {
-      auto colbc = colMap.find(cl.bc().globalBC());
-      if (colbc == colMap.end()) { // single collision per BC
-        colMap[cl.bc().globalBC()] = 1;
-      } else { // not unique collision per BC
-        colbc->second++;
-      }
-    }
-    for (const auto& bc : bcs) {
-      o2::InteractionRecord eventIR;
-      eventIR.setFromLong(bc.globalBC());
-      mHistManager.fill(HIST("bcAll"), 1);
-      auto colbc = colMap.find(bc.globalBC());
-
-      if (colbc == colMap.end()) { // no Collision
-        mHistManager.fill(HIST("bcAll"), 2);
-      } else {
-        if (colbc->second == 1) {
-          mHistManager.fill(HIST("bcAll"), 3);
-        } else {
-          mHistManager.fill(HIST("bcAll"), 4);
-        }
-      }
-    }
+    FillQCHistos(bcs, colls);
 
     std::map<uint64_t, int> ncpvClu;
     for (const auto& cpvclu : cpvs) {
@@ -330,26 +319,13 @@ struct phosCluQA {
       ir.setFromLong(clu.collision().bc().globalBC());
       mHistManager.fill(HIST("cluBCAll"), ir.bc);
 
-      if (clu.mod() == 1) {
-        mHistManager.fill(HIST("cluSpM1"), clu.e());
-        mHistManager.fill(HIST("cluMultM1"), clu.e(), clu.ncell());
-        mHistManager.fill(HIST("cluETimeM1"), clu.time(), clu.e());
-      }
-      if (clu.mod() == 2) {
-        mHistManager.fill(HIST("cluSpM2"), clu.e());
-        mHistManager.fill(HIST("cluMultM2"), clu.e(), clu.ncell());
-        mHistManager.fill(HIST("cluETimeM2"), clu.time(), clu.e());
-      }
-      if (clu.mod() == 3) {
-        mHistManager.fill(HIST("cluSpM3"), clu.e());
-        mHistManager.fill(HIST("cluMultM3"), clu.e(), clu.ncell());
-        mHistManager.fill(HIST("cluETimeM3"), clu.time(), clu.e());
-      }
-      if (clu.mod() == 4) {
-        mHistManager.fill(HIST("cluSpM4"), clu.e());
-        mHistManager.fill(HIST("cluMultM4"), clu.e(), clu.ncell());
-        mHistManager.fill(HIST("cluETimeM4"), clu.time(), clu.e());
-      }
+      if (!clu.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
+        continue;
+      mHistManager.fill(HIST("eventsTrig"), 1.);
+
+      hCluSp[clu.mod() - 1]->Fill(clu.e());
+      hCluMul[clu.mod() - 1]->Fill(clu.e(), clu.ncell());
+      hCluETime[clu.mod() - 1]->Fill(clu.time(), clu.e());
       if (clu.e() > mMinCluE) {
         mHistManager.fill(HIST("cluOcc"), clu.x(), clu.z(), clu.mod());
         mHistManager.fill(HIST("cluE"), clu.x(), clu.z(), clu.mod(), clu.e());
@@ -359,26 +335,14 @@ struct phosCluQA {
       ir.setFromLong(clu.bc().globalBC());
       mHistManager.fill(HIST("ambcluBCAll"), ir.bc);
 
-      if (clu.mod() == 1) {
-        mHistManager.fill(HIST("ambcluSpM1"), clu.e());
-        mHistManager.fill(HIST("ambcluMultM1"), clu.e(), clu.ncell());
-        mHistManager.fill(HIST("ambcluETimeM1"), clu.time(), clu.e());
-      }
-      if (clu.mod() == 2) {
-        mHistManager.fill(HIST("ambcluSpM2"), clu.e());
-        mHistManager.fill(HIST("ambcluMultM2"), clu.e(), clu.ncell());
-        mHistManager.fill(HIST("ambcluETimeM2"), clu.time(), clu.e());
-      }
-      if (clu.mod() == 3) {
-        mHistManager.fill(HIST("ambcluSpM3"), clu.e());
-        mHistManager.fill(HIST("ambcluMultM3"), clu.e(), clu.ncell());
-        mHistManager.fill(HIST("ambcluETimeM3"), clu.time(), clu.e());
-      }
-      if (clu.mod() == 4) {
-        mHistManager.fill(HIST("ambcluSpM4"), clu.e());
-        mHistManager.fill(HIST("ambcluMultM4"), clu.e(), clu.ncell());
-        mHistManager.fill(HIST("ambcluETimeM4"), clu.time(), clu.e());
-      }
+      if (!clu.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrigAmb))
+        continue;
+      mHistManager.fill(HIST("eventsTrigAmb"), 1.);
+
+      hCluSpAmb[clu.mod() - 1]->Fill(clu.e());
+      hCluMulAmb[clu.mod() - 1]->Fill(clu.e(), clu.ncell());
+      hCluETimeAmb[clu.mod() - 1]->Fill(clu.time(), clu.e());
+
       if (clu.e() > mMinCluE) {
         mHistManager.fill(HIST("ambcluOcc"), clu.x(), clu.z(), clu.mod());
         mHistManager.fill(HIST("ambcluE"), clu.x(), clu.z(), clu.mod(), clu.e());
@@ -398,68 +362,18 @@ struct phosCluQA {
         double pt = sqrt(pow(clu1.px() + clu2.px(), 2) +
                          pow(clu1.py() + clu2.py(), 2));
         if (clu1.collision() == clu2.collision()) { // Real
-          if (clu1.mod() == 1 && clu2.mod() == 1) {
-            mHistManager.fill(HIST("mggReM11"), m, pt);
-          }
-          if (clu1.mod() == 2 && clu2.mod() == 2) {
-            mHistManager.fill(HIST("mggReM22"), m, pt);
-          }
-          if (clu1.mod() == 3 && clu2.mod() == 3) {
-            mHistManager.fill(HIST("mggReM33"), m, pt);
-          }
-          if (clu1.mod() == 4 && clu2.mod() == 4) {
-            mHistManager.fill(HIST("mggReM44"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 2) || (clu1.mod() == 2 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("mggReM12"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("mggReM13"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("mggReM14"), m, pt);
-          }
-          if ((clu1.mod() == 2 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 2)) {
-            mHistManager.fill(HIST("mggReM23"), m, pt);
-          }
-          if ((clu1.mod() == 2 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 2)) {
-            mHistManager.fill(HIST("mggReM24"), m, pt);
-          }
-          if ((clu1.mod() == 3 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 3)) {
-            mHistManager.fill(HIST("mggReM34"), m, pt);
+          if (clu1.mod() < clu2.mod()) {
+            hRe[5 * (clu1.mod() - 1) + clu2.mod() - 1]->Fill(m, pt);
+          } else {
+            hRe[5 * (clu2.mod() - 1) + clu1.mod() - 1]->Fill(m, pt);
           }
         } else { // Mixed
+          if (clu1.mod() < clu2.mod()) {
+            hMi[5 * (clu1.mod() - 1) + clu2.mod() - 1]->Fill(m, pt);
+          } else {
+            hMi[5 * (clu2.mod() - 1) + clu1.mod() - 1]->Fill(m, pt);
+          }
           --nMix;
-          if (clu1.mod() == 1 && clu2.mod() == 1) {
-            mHistManager.fill(HIST("mggMiM11"), m, pt);
-          }
-          if (clu1.mod() == 2 && clu2.mod() == 2) {
-            mHistManager.fill(HIST("mggMiM22"), m, pt);
-          }
-          if (clu1.mod() == 3 && clu2.mod() == 3) {
-            mHistManager.fill(HIST("mggMiM33"), m, pt);
-          }
-          if (clu1.mod() == 4 && clu2.mod() == 4) {
-            mHistManager.fill(HIST("mggMiM44"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 2) || (clu1.mod() == 2 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("mggMiM12"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("mggMiM13"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("mggMiM14"), m, pt);
-          }
-          if ((clu1.mod() == 2 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 2)) {
-            mHistManager.fill(HIST("mggMiM23"), m, pt);
-          }
-          if ((clu1.mod() == 2 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 2)) {
-            mHistManager.fill(HIST("mggMiM24"), m, pt);
-          }
-          if ((clu1.mod() == 3 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 3)) {
-            mHistManager.fill(HIST("mggMiM34"), m, pt);
-          }
         }
       }
     }
@@ -477,128 +391,32 @@ struct phosCluQA {
         double pt = sqrt(pow(clu1.px() + clu2.px(), 2) +
                          pow(clu1.py() + clu2.py(), 2));
         if (clu1.bc() == clu2.bc()) { // Real
-          if (clu1.mod() == 1 && clu2.mod() == 1) {
-            mHistManager.fill(HIST("ambmggReM11"), m, pt);
-          }
-          if (clu1.mod() == 2 && clu2.mod() == 2) {
-            mHistManager.fill(HIST("ambmggReM22"), m, pt);
-          }
-          if (clu1.mod() == 3 && clu2.mod() == 3) {
-            mHistManager.fill(HIST("ambmggReM33"), m, pt);
-          }
-          if (clu1.mod() == 4 && clu2.mod() == 4) {
-            mHistManager.fill(HIST("ambmggReM44"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 2) || (clu1.mod() == 2 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("ambmggReM12"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("ambmggReM13"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("ambmggReM14"), m, pt);
-          }
-          if ((clu1.mod() == 2 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 2)) {
-            mHistManager.fill(HIST("ambmggReM23"), m, pt);
-          }
-          if ((clu1.mod() == 2 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 2)) {
-            mHistManager.fill(HIST("ambmggReM24"), m, pt);
-          }
-          if ((clu1.mod() == 3 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 3)) {
-            mHistManager.fill(HIST("ambmggReM34"), m, pt);
+          if (clu1.mod() < clu2.mod()) {
+            hReAmb[5 * (clu1.mod() - 1) + clu2.mod() - 1]->Fill(m, pt);
+          } else {
+            hReAmb[5 * (clu2.mod() - 1) + clu1.mod() - 1]->Fill(m, pt);
           }
         } else { // Mixed
+          if (clu1.mod() < clu2.mod()) {
+            hMiAmb[5 * (clu1.mod() - 1) + clu2.mod() - 1]->Fill(m, pt);
+          } else {
+            hMiAmb[5 * (clu2.mod() - 1) + clu1.mod() - 1]->Fill(m, pt);
+          }
           --nMix;
-          if (clu1.mod() == 1 && clu2.mod() == 1) {
-            mHistManager.fill(HIST("ambmggMiM11"), m, pt);
-          }
-          if (clu1.mod() == 2 && clu2.mod() == 2) {
-            mHistManager.fill(HIST("ambmggMiM22"), m, pt);
-          }
-          if (clu1.mod() == 3 && clu2.mod() == 3) {
-            mHistManager.fill(HIST("ambmggMiM33"), m, pt);
-          }
-          if (clu1.mod() == 4 && clu2.mod() == 4) {
-            mHistManager.fill(HIST("ambmggMiM44"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 2) || (clu1.mod() == 2 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("ambmggMiM12"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("ambmggMiM13"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("ambmggMiM14"), m, pt);
-          }
-          if ((clu1.mod() == 2 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 2)) {
-            mHistManager.fill(HIST("ambmggMiM23"), m, pt);
-          }
-          if ((clu1.mod() == 2 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 2)) {
-            mHistManager.fill(HIST("ambmggMiM24"), m, pt);
-          }
-          if ((clu1.mod() == 3 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 3)) {
-            mHistManager.fill(HIST("ambmggMiM34"), m, pt);
-          }
         }
       }
     }
   }
-  PROCESS_SWITCH(phosCluQA, process, "Process real data", true);
+  PROCESS_SWITCH(phosCluQA, processData, "Process real data", true);
 
-  void processMC(o2::aod::BCs const& bcs,
-                 o2::aod::Collisions const& colls,
+  void processMC(BCsWithBcSels const& bcs,
+                 SelCollisions const& colls,
                  aod::McParticles const& mcParticles,
                  mcClusters const& clusters,
                  mcAmpClusters const& ambclusters,
                  o2::aod::CPVClusters const& cpvs)
   {
-    // Filll BC map
-    if (fillBCmap && bcs.begin() != bcs.end()) {
-      auto rl = ccdb->getRunDuration(bcs.begin().runNumber());
-      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", rl.first);
-      constexpr int nBCsPerOrbit = 3564;
-      std::bitset<nBCsPerOrbit> beamPatternA = grplhcif->getBunchFilling().getBeamPattern(0);
-      std::bitset<nBCsPerOrbit> beamPatternC = grplhcif->getBunchFilling().getBeamPattern(1);
-      std::bitset<nBCsPerOrbit> bcPatternA = beamPatternA & ~beamPatternC;
-      std::bitset<nBCsPerOrbit> bcPatternC = ~beamPatternA & beamPatternC;
-      std::bitset<nBCsPerOrbit> bcPatternB = beamPatternA & beamPatternC;
-      for (int i = 0; i < nBCsPerOrbit; i++) {
-        if (bcPatternB[i])
-          mHistManager.fill(HIST("BCB"), i);
-        if (bcPatternA[i])
-          mHistManager.fill(HIST("BCA"), i);
-        if (bcPatternC[i])
-          mHistManager.fill(HIST("BCC"), i);
-      }
-      fillBCmap = false;
-    }
-
-    // If several collisions appear in BC, choose one with largers number of contributors
-    std::map<int64_t, int> colMap;
-    for (auto cl : colls) {
-      auto colbc = colMap.find(cl.bc().globalBC());
-      if (colbc == colMap.end()) { // single collision per BC
-        colMap[cl.bc().globalBC()] = 1;
-      } else { // not unique collision per BC
-        colbc->second++;
-      }
-    }
-    for (const auto& bc : bcs) {
-      o2::InteractionRecord eventIR;
-      eventIR.setFromLong(bc.globalBC());
-      mHistManager.fill(HIST("bcAll"), 1);
-      auto colbc = colMap.find(bc.globalBC());
-
-      if (colbc == colMap.end()) { // no Collision
-        mHistManager.fill(HIST("bcAll"), 2);
-      } else {
-        if (colbc->second == 1) {
-          mHistManager.fill(HIST("bcAll"), 3);
-        } else {
-          mHistManager.fill(HIST("bcAll"), 4);
-        }
-      }
-    }
+    FillQCHistos(bcs, colls);
 
     std::map<uint64_t, int> ncpvClu;
     for (const auto& cpvclu : cpvs) {
@@ -734,67 +552,61 @@ struct phosCluQA {
       ir.setFromLong(clu.collision().bc().globalBC());
       mHistManager.fill(HIST("cluBCAll"), ir.bc);
 
-      //  auto mcList = clu.labels(); //const std::vector<int>
-      //  auto mcEdep = clu.amplitides() ; //const std::vector<float>&
-      //  // bool isPhoton = false;
-      //  float edep=0.;
-      //  if(mcList.size()){
-      //    auto mp = mcParticles.iteratorAt(mcList[0]);
-      //    int pdg = mp.pdgCode();
-      //    edep = mcEdep[0];
-      // LOG(info) << "indx="<< mcList[0]<< " Edp=" << edep << " pdg=" << pdg;
+      if (!clu.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
+        continue;
+      mHistManager.fill(HIST("eventsTrig"), 1.);
 
-      //  }
-
-      if (clu.mod() == 1) {
-        mHistManager.fill(HIST("cluSpM1"), clu.e());
-        mHistManager.fill(HIST("cluMultM1"), clu.e(), clu.ncell());
-        mHistManager.fill(HIST("cluETimeM1"), clu.time(), clu.e());
-      }
-      if (clu.mod() == 2) {
-        mHistManager.fill(HIST("cluSpM2"), clu.e());
-        mHistManager.fill(HIST("cluMultM2"), clu.e(), clu.ncell());
-        mHistManager.fill(HIST("cluETimeM2"), clu.time(), clu.e());
-      }
-      if (clu.mod() == 3) {
-        mHistManager.fill(HIST("cluSpM3"), clu.e());
-        mHistManager.fill(HIST("cluMultM3"), clu.e(), clu.ncell());
-        mHistManager.fill(HIST("cluETimeM3"), clu.time(), clu.e());
-      }
-      if (clu.mod() == 4) {
-        mHistManager.fill(HIST("cluSpM4"), clu.e());
-        mHistManager.fill(HIST("cluMultM4"), clu.e(), clu.ncell());
-        mHistManager.fill(HIST("cluETimeM4"), clu.time(), clu.e());
-      }
+      hCluSp[clu.mod() - 1]->Fill(clu.e());
+      hCluMul[clu.mod() - 1]->Fill(clu.e(), clu.ncell());
+      hCluETime[clu.mod() - 1]->Fill(clu.time(), clu.e());
       if (clu.e() > mMinCluE) {
         mHistManager.fill(HIST("cluOcc"), clu.x(), clu.z(), clu.mod());
         mHistManager.fill(HIST("cluE"), clu.x(), clu.z(), clu.mod(), clu.e());
+      }
+
+      // MC energy, position resolution etc
+      auto mcList = clu.labels();     // const std::vector<int>
+      auto mcEdep = clu.amplitides(); // const std::vector<float>&
+      mHistManager.fill(HIST("cluNprim"), clu.e(), mcList.size());
+      for (size_t iii = 0; iii < mcList.size(); iii++) {
+        mHistManager.fill(HIST("cluEdep"), clu.e(), mcEdep[iii] / clu.e());
+        mHistManager.fill(HIST("cluEdepN"), static_cast<float>(iii), mcEdep[iii] / clu.e());
+      }
+
+      if (mcList.size() > 0) {
+        float mce = mcParticles.iteratorAt(mcList[0]).e();
+        mHistManager.fill(HIST("mcEdepAll"), clu.e(), mce);
+        if (mcParticles.iteratorAt(mcList[0]).pdgCode() == 22) {
+          mHistManager.fill(HIST("mcEdepGamma"), clu.e(), mce);
+          // if photon from veretx, compare position resolution
+          if (pow(mcParticles.iteratorAt(mcList[0]).vx(), 2) + pow(mcParticles.iteratorAt(mcList[0]).vy(), 2) < 1.) {
+            // calculate impact position on PHOS
+            TVector3 vtx(mcParticles.iteratorAt(mcList[0]).vx(), mcParticles.iteratorAt(mcList[0]).vy(), mcParticles.iteratorAt(mcList[0]).vz());
+            TVector3 p(mcParticles.iteratorAt(mcList[0]).px(), mcParticles.iteratorAt(mcList[0]).py(), mcParticles.iteratorAt(mcList[0]).pz());
+            int16_t mod;
+            float x, z;
+            if (geomPHOS->impactOnPHOS(vtx, p, mod, z, x)) { // photon should hit PHOS
+              if (mod == clu.mod()) {
+                mHistManager.fill(HIST("cluDxe"), clu.e(), clu.x() - x);
+                mHistManager.fill(HIST("cluDze"), clu.e(), clu.z() - z);
+              }
+            }
+          }
+        }
       }
     }
     for (const auto& clu : ambclusters) {
       ir.setFromLong(clu.bc().globalBC());
       mHistManager.fill(HIST("ambcluBCAll"), ir.bc);
 
-      if (clu.mod() == 1) {
-        mHistManager.fill(HIST("ambcluSpM1"), clu.e());
-        mHistManager.fill(HIST("ambcluMultM1"), clu.e(), clu.ncell());
-        mHistManager.fill(HIST("ambcluETimeM1"), clu.time(), clu.e());
-      }
-      if (clu.mod() == 2) {
-        mHistManager.fill(HIST("ambcluSpM2"), clu.e());
-        mHistManager.fill(HIST("ambcluMultM2"), clu.e(), clu.ncell());
-        mHistManager.fill(HIST("ambcluETimeM2"), clu.time(), clu.e());
-      }
-      if (clu.mod() == 3) {
-        mHistManager.fill(HIST("ambcluSpM3"), clu.e());
-        mHistManager.fill(HIST("ambcluMultM3"), clu.e(), clu.ncell());
-        mHistManager.fill(HIST("ambcluETimeM3"), clu.time(), clu.e());
-      }
-      if (clu.mod() == 4) {
-        mHistManager.fill(HIST("ambcluSpM4"), clu.e());
-        mHistManager.fill(HIST("ambcluMultM4"), clu.e(), clu.ncell());
-        mHistManager.fill(HIST("ambcluETimeM4"), clu.time(), clu.e());
-      }
+      if (!clu.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrigAmb))
+        continue;
+      mHistManager.fill(HIST("eventsTrigAmb"), 1.);
+
+      hCluSpAmb[clu.mod() - 1]->Fill(clu.e());
+      hCluMulAmb[clu.mod() - 1]->Fill(clu.e(), clu.ncell());
+      hCluETimeAmb[clu.mod() - 1]->Fill(clu.time(), clu.e());
+
       if (clu.e() > mMinCluE) {
         mHistManager.fill(HIST("ambcluOcc"), clu.x(), clu.z(), clu.mod());
         mHistManager.fill(HIST("ambcluE"), clu.x(), clu.z(), clu.mod(), clu.e());
@@ -814,68 +626,18 @@ struct phosCluQA {
         double pt = sqrt(pow(clu1.px() + clu2.px(), 2) +
                          pow(clu1.py() + clu2.py(), 2));
         if (clu1.collision() == clu2.collision()) { // Real
-          if (clu1.mod() == 1 && clu2.mod() == 1) {
-            mHistManager.fill(HIST("mggReM11"), m, pt);
-          }
-          if (clu1.mod() == 2 && clu2.mod() == 2) {
-            mHistManager.fill(HIST("mggReM22"), m, pt);
-          }
-          if (clu1.mod() == 3 && clu2.mod() == 3) {
-            mHistManager.fill(HIST("mggReM33"), m, pt);
-          }
-          if (clu1.mod() == 4 && clu2.mod() == 4) {
-            mHistManager.fill(HIST("mggReM44"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 2) || (clu1.mod() == 2 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("mggReM12"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("mggReM13"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("mggReM14"), m, pt);
-          }
-          if ((clu1.mod() == 2 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 2)) {
-            mHistManager.fill(HIST("mggReM23"), m, pt);
-          }
-          if ((clu1.mod() == 2 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 2)) {
-            mHistManager.fill(HIST("mggReM24"), m, pt);
-          }
-          if ((clu1.mod() == 3 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 3)) {
-            mHistManager.fill(HIST("mggReM34"), m, pt);
+          if (clu1.mod() < clu2.mod()) {
+            hRe[5 * (clu1.mod() - 1) + clu2.mod() - 1]->Fill(m, pt);
+          } else {
+            hRe[5 * (clu2.mod() - 1) + clu1.mod() - 1]->Fill(m, pt);
           }
         } else { // Mixed
+          if (clu1.mod() < clu2.mod()) {
+            hMi[5 * (clu1.mod() - 1) + clu2.mod() - 1]->Fill(m, pt);
+          } else {
+            hMi[5 * (clu2.mod() - 1) + clu1.mod() - 1]->Fill(m, pt);
+          }
           --nMix;
-          if (clu1.mod() == 1 && clu2.mod() == 1) {
-            mHistManager.fill(HIST("mggMiM11"), m, pt);
-          }
-          if (clu1.mod() == 2 && clu2.mod() == 2) {
-            mHistManager.fill(HIST("mggMiM22"), m, pt);
-          }
-          if (clu1.mod() == 3 && clu2.mod() == 3) {
-            mHistManager.fill(HIST("mggMiM33"), m, pt);
-          }
-          if (clu1.mod() == 4 && clu2.mod() == 4) {
-            mHistManager.fill(HIST("mggMiM44"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 2) || (clu1.mod() == 2 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("mggMiM12"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("mggMiM13"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("mggMiM14"), m, pt);
-          }
-          if ((clu1.mod() == 2 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 2)) {
-            mHistManager.fill(HIST("mggMiM23"), m, pt);
-          }
-          if ((clu1.mod() == 2 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 2)) {
-            mHistManager.fill(HIST("mggMiM24"), m, pt);
-          }
-          if ((clu1.mod() == 3 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 3)) {
-            mHistManager.fill(HIST("mggMiM34"), m, pt);
-          }
         }
       }
     }
@@ -893,73 +655,77 @@ struct phosCluQA {
         double pt = sqrt(pow(clu1.px() + clu2.px(), 2) +
                          pow(clu1.py() + clu2.py(), 2));
         if (clu1.bc() == clu2.bc()) { // Real
-          if (clu1.mod() == 1 && clu2.mod() == 1) {
-            mHistManager.fill(HIST("ambmggReM11"), m, pt);
-          }
-          if (clu1.mod() == 2 && clu2.mod() == 2) {
-            mHistManager.fill(HIST("ambmggReM22"), m, pt);
-          }
-          if (clu1.mod() == 3 && clu2.mod() == 3) {
-            mHistManager.fill(HIST("ambmggReM33"), m, pt);
-          }
-          if (clu1.mod() == 4 && clu2.mod() == 4) {
-            mHistManager.fill(HIST("ambmggReM44"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 2) || (clu1.mod() == 2 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("ambmggReM12"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("ambmggReM13"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("ambmggReM14"), m, pt);
-          }
-          if ((clu1.mod() == 2 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 2)) {
-            mHistManager.fill(HIST("ambmggReM23"), m, pt);
-          }
-          if ((clu1.mod() == 2 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 2)) {
-            mHistManager.fill(HIST("ambmggReM24"), m, pt);
-          }
-          if ((clu1.mod() == 3 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 3)) {
-            mHistManager.fill(HIST("ambmggReM34"), m, pt);
+          if (clu1.mod() < clu2.mod()) {
+            hReAmb[5 * (clu1.mod() - 1) + clu2.mod() - 1]->Fill(m, pt);
+          } else {
+            hReAmb[5 * (clu2.mod() - 1) + clu1.mod() - 1]->Fill(m, pt);
           }
         } else { // Mixed
+          if (clu1.mod() < clu2.mod()) {
+            hMiAmb[5 * (clu1.mod() - 1) + clu2.mod() - 1]->Fill(m, pt);
+          } else {
+            hMiAmb[5 * (clu2.mod() - 1) + clu1.mod() - 1]->Fill(m, pt);
+          }
           --nMix;
-          if (clu1.mod() == 1 && clu2.mod() == 1) {
-            mHistManager.fill(HIST("ambmggMiM11"), m, pt);
-          }
-          if (clu1.mod() == 2 && clu2.mod() == 2) {
-            mHistManager.fill(HIST("ambmggMiM22"), m, pt);
-          }
-          if (clu1.mod() == 3 && clu2.mod() == 3) {
-            mHistManager.fill(HIST("ambmggMiM33"), m, pt);
-          }
-          if (clu1.mod() == 4 && clu2.mod() == 4) {
-            mHistManager.fill(HIST("ambmggMiM44"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 2) || (clu1.mod() == 2 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("ambmggMiM12"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("ambmggMiM13"), m, pt);
-          }
-          if ((clu1.mod() == 1 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 1)) {
-            mHistManager.fill(HIST("ambmggMiM14"), m, pt);
-          }
-          if ((clu1.mod() == 2 && clu2.mod() == 3) || (clu1.mod() == 3 && clu2.mod() == 2)) {
-            mHistManager.fill(HIST("ambmggMiM23"), m, pt);
-          }
-          if ((clu1.mod() == 2 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 2)) {
-            mHistManager.fill(HIST("ambmggMiM24"), m, pt);
-          }
-          if ((clu1.mod() == 3 && clu2.mod() == 4) || (clu1.mod() == 4 && clu2.mod() == 3)) {
-            mHistManager.fill(HIST("ambmggMiM34"), m, pt);
-          }
         }
       }
     }
   }
   PROCESS_SWITCH(phosCluQA, processMC, "Process MC data", false);
+
+  void FillQCHistos(BCsWithBcSels const& bcs,
+                    SelCollisions const& colls)
+  {
+    // Filll BC map
+    if (fillBCmap && bcs.begin() != bcs.end()) {
+      auto rl = ccdb->getRunDuration(bcs.begin().runNumber());
+      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", rl.first);
+      constexpr int nBCsPerOrbit = 3564;
+      std::bitset<nBCsPerOrbit> beamPatternA = grplhcif->getBunchFilling().getBeamPattern(0);
+      std::bitset<nBCsPerOrbit> beamPatternC = grplhcif->getBunchFilling().getBeamPattern(1);
+      std::bitset<nBCsPerOrbit> bcPatternA = beamPatternA & ~beamPatternC;
+      std::bitset<nBCsPerOrbit> bcPatternC = ~beamPatternA & beamPatternC;
+      std::bitset<nBCsPerOrbit> bcPatternB = beamPatternA & beamPatternC;
+      for (int i = 0; i < nBCsPerOrbit; i++) {
+        if (bcPatternB[i])
+          mHistManager.fill(HIST("BCB"), i);
+        if (bcPatternA[i])
+          mHistManager.fill(HIST("BCA"), i);
+        if (bcPatternC[i])
+          mHistManager.fill(HIST("BCC"), i);
+      }
+      fillBCmap = false;
+    }
+
+    // If several collisions appear in BC, choose one with largers number of contributors
+    std::map<int64_t, int> colMap;
+    for (auto cl : colls) {
+      auto colbc = colMap.find(cl.bc().globalBC());
+      if (colbc == colMap.end()) { // single collision per BC
+        colMap[cl.bc().globalBC()] = 1;
+      } else { // not unique collision per BC
+        colbc->second++;
+      }
+    }
+    for (const auto& bc : bcs) {
+      o2::InteractionRecord eventIR;
+      eventIR.setFromLong(bc.globalBC());
+      mHistManager.fill(HIST("bcAll"), 1);
+      auto colbc = colMap.find(bc.globalBC());
+
+      if (colbc == colMap.end()) { // no Collision
+        mHistManager.fill(HIST("bcAll"), 2);
+      } else {
+        if (colbc->second == 1) {
+          mHistManager.fill(HIST("bcAll"), 3);
+        } else {
+          mHistManager.fill(HIST("bcAll"), 4);
+        }
+      }
+    }
+
+    // Fill histograms to see energy resolution, position resolution
+  }
 };
 
 o2::framework::WorkflowSpec defineDataProcessing(o2::framework::ConfigContext const& cfgc)

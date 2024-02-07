@@ -50,14 +50,17 @@ struct femtoDreamDebugTrack {
   ConfigurableAxis ConfDummy{"ConfDummy", {1, 0, 1}, "Dummy axis for inv mass"};
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-
-  Partition<FemtoFullParticles> partsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ncheckbit(aod::femtodreamparticle::cut, ConfTrk1_CutBit) &&
-                                           ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk1_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCTOFBit));
-
+  Partition<FemtoFullParticles> partsOne =
+    (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+    ncheckbit(aod::femtodreamparticle::cut, ConfTrk1_CutBit) &&
+    ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk1_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCTOFBit));
   Preslice<FemtoFullParticles> perColReco = aod::femtodreamparticle::fdCollisionId;
 
   using FemtoFullParticlesMC = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
-  Partition<FemtoFullParticlesMC> partsOneMC = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ncheckbit(aod::femtodreamparticle::cut, ConfTrk1_CutBit);
+  Partition<FemtoFullParticlesMC> partsOneMC =
+    (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
+    ncheckbit(aod::femtodreamparticle::cut, ConfTrk1_CutBit) &&
+    ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk1_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCTOFBit));
   Preslice<FemtoFullParticlesMC> perColGen = aod::femtodreamparticle::fdCollisionId;
 
   /// Histogramming for Event
