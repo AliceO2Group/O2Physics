@@ -33,7 +33,7 @@ enum JetTaggingSpecies {
   beauty = 2,
   lightflavour = 3,
   lightquark = 4,
-  gluon = 5,
+  gluon = 5
 };
 
 namespace jettaggingutilities
@@ -306,6 +306,7 @@ void calculateDcaXYZ(float& dcaXYZ, float& sigmaDcaXYZ2, float dcaXY, float dcaZ
   float dFdz = 2 * dcaZ / dcaXYZ;
   sigmaDcaXYZ2 = std::abs(cYY * dFdxy * dFdxy + cZZ * dFdz * dFdz + 2 * cZY * dFdxy * dFdz);
 }
+
 }; // namespace jettaggingutilities
 
 #endif // PWGJE_CORE_JETTAGGINGUTILITIES_H_
