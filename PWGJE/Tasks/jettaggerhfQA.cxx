@@ -153,8 +153,8 @@ struct JetTaggerHFQA {
     }
   }
 
-  //Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
-  //Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut);
+  // Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
+  // Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut);
 
   using JetTagTracksData = soa::Join<aod::JTracks, aod::JTrackPIs>;
   using JetTagTracksMCD = soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs>;
