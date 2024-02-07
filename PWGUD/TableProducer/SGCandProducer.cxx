@@ -35,7 +35,7 @@ struct SGCandProducer {
 
   // data tables
   Produces<aod::SGCollisions> outputSGCollisions;
-//  Produces<aod::ZDCCollisions> outputZDCCollisions;
+  //  Produces<aod::ZDCCollisions> outputZDCCollisions;
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
   Produces<aod::UDCollsLabels> outputCollsLabels;
@@ -59,7 +59,7 @@ struct SGCandProducer {
   // data inputs
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using CC = CCs::iterator;
-//  using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+  //  using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BCs = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BC = BCs::iterator;
   using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
@@ -149,7 +149,7 @@ struct SGCandProducer {
 
   // process function for real data
   void process(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
-               //aod::Zdcs_000& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+               // aod::Zdcs_000& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
                aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
     LOGF(debug, "<SGCandProducer>  collision %d", collision.globalIndex());
@@ -177,9 +177,9 @@ struct SGCandProducer {
       // fill FITInfo
       upchelpers::FITInfo fitInfo{};
       udhelpers::getFITinfo(fitInfo, bc.globalBC(), bcs, ft0s, fv0as, fdds);
-    //  upchelpers::ZDCInfo zdcInfo{};
-      //udhelpers::getZDCinfo(zdcInfo, bc.globalBC(), bcs, zdcs);
-      //udhelpers::getZDCinfo(zdcInfo, bc.globalBC(), zdcs);
+      //  upchelpers::ZDCInfo zdcInfo{};
+      // udhelpers::getZDCinfo(zdcInfo, bc.globalBC(), bcs, zdcs);
+      // udhelpers::getZDCinfo(zdcInfo, bc.globalBC(), zdcs);
 
       // update SG candidates tables
       auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
@@ -209,24 +209,24 @@ struct SGCandProducer {
       }
 
       // fill UDZdcs
-      //outputZDCCollisions(zdcInfo.timeZNA,zdcInfo.timeZNC,zdcInfo.multZNA,zdcInfo.multZNC);
+      // outputZDCCollisions(zdcInfo.timeZNA,zdcInfo.timeZNC,zdcInfo.multZNA,zdcInfo.multZNC);
       std::map<uint64_t, int32_t> mapGlobalBcWithZdc{};
       auto globalBC = bc.globalBC();
       for (const auto& zdc : zdcs) {
-      //auto globalBC = zdc.bc_as<o2::aod::BCs>().globalBC();
-      //auto bc = zdc.bc_as<o2::aod::BCs>().globalBC();
+        // auto globalBC = zdc.bc_as<o2::aod::BCs>().globalBC();
+        // auto bc = zdc.bc_as<o2::aod::BCs>().globalBC();
         if (std::abs(zdc.timeZNA()) > 2.f && std::abs(zdc.timeZNC()) > 2.f)
           continue;
-        //mapGlobalBcWithZdc[bc.globalBC()] = zdc.globalIndex();
+        // mapGlobalBcWithZdc[bc.globalBC()] = zdc.globalIndex();
         mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
-        //mapGlobalBcWithZdc[bc] = zdc.globalIndex();
+        // mapGlobalBcWithZdc[bc] = zdc.globalIndex();
       }
       int candID = 0;
       auto nZdcs = mapGlobalBcWithZdc.size();
       if (nZdcs > 0) {
-        //auto itZDC = mapGlobalBcWithZdc.find(bc.globalBC());
+        // auto itZDC = mapGlobalBcWithZdc.find(bc.globalBC());
         auto itZDC = mapGlobalBcWithZdc.find(globalBC);
-        //auto itZDC = mapGlobalBcWithZdc.find(bc);
+        // auto itZDC = mapGlobalBcWithZdc.find(bc);
         if (itZDC != mapGlobalBcWithZdc.end()) {
           const auto& zdc = zdcs.iteratorAt(itZDC->second);
           float timeZNA = zdc.timeZNA();
