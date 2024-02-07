@@ -337,7 +337,7 @@ struct kfStrangenessStudy {
   void getCascMCdata(TCollision const& collision, TCascData const& cascdata, TFullTracksIU const&, TMCParticle const& mcparticles)
   {
     if (cascdata.has_mcParticle() && cascdata.mcParticleId() > -1 && cascdata.mcParticleId() <= mcparticles.size()) {
-      auto MCcascade = cascdata.template mcParticle_as<TMCParticle>();
+      auto MCcascade = cascdata.mcParticle();
 
       if (MCcascade.has_daughters()) {
         LOG(info) << "MC cascade has daughters, getting MC info.";
