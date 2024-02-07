@@ -153,16 +153,16 @@ struct JetTaggerHFQA {
     }
   }
 
-  Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
-  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut);
+  //Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
+  //Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut);
 
   using JetTagTracksData = soa::Join<aod::JTracks, aod::JTrackPIs>;
   using JetTagTracksMCD = soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs>;
   using OriTracksData = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection>;
   using OriTracksMCD = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::McTrackLabels>;
 
-  template <typename T, typename U, typename V>
-  void fillHistogramIPsData(T const& collision, U const& jets, V const& tracks)
+  template <typename T, typename U, typename V, typename W>
+  void fillHistogramIPsData(T const& collision, U const& jets)
   {
     for (auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -237,8 +237,8 @@ struct JetTaggerHFQA {
     }
   }
 
-  template <typename T, typename U, typename V>
-  void fillHistogramIPsMCD(T const& collision, U const& mcdjets, V const& tracks)
+  template <typename T, typename U, typename V, typename W>
+  void fillHistogramIPsMCD(T const& collision, U const& mcdjets)
   {
     int numberOfJetFlavourSpecies = 6;
     for (auto& mcdjet : mcdjets) {
@@ -354,17 +354,17 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processDummy, "Dummy process", true);
 
-  void processIPsData(soa::Join<aod::JCollisions, aod::JCollisionPIs>::iterator const& jcollision, aod::Collisions&, JetTagTableData const& jets, JetTracks const& jtracks, OriTracksData const& tracks)
+  void processIPsData(soa::Join<aod::JCollisions, aod::JCollisionPIs>::iterator const& jcollision, aod::Collisions&, JetTagTableData const& jets, JetTagTracksData const& jtracks, OriTracksData const& tracks)
   {
     auto oricoll = jcollision.template collision_as<aod::Collisions>();
-    fillHistogramIPsData<aod::Collision, JetTagTableData, OriTracksData>(oricoll, jets, tracks);
+    fillHistogramIPsData<aod::Collision, JetTagTableData, JetTagTracksData, OriTracksData>(oricoll, jets);
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsData, "Fill impact parameter inpormation for data jets", false);
 
-  void processIPsMCD(soa::Join<aod::JCollisions, aod::JCollisionPIs>::iterator const& jcollision, aod::Collisions&, JetTagTableMCD const& mcdjets, JetTracksMCD const& jtracks, OriTracksMCD const& tracks, JetParticles&)
+  void processIPsMCD(soa::Join<aod::JCollisions, aod::JCollisionPIs>::iterator const& jcollision, aod::Collisions&, JetTagTableMCD const& mcdjets, JetTagTracksMCD const& jtracks, OriTracksMCD const& tracks, JetParticles&)
   {
     auto oricoll = jcollision.template collision_as<aod::Collisions>();
-    fillHistogramIPsMCD<aod::Collision, JetTagTableMCD, OriTracksMCD>(oricoll, mcdjets, tracks);
+    fillHistogramIPsMCD<aod::Collision, JetTagTableMCD, JetTagTracksMCD, OriTracksMCD>(oricoll, mcdjets);
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsMCD, "Fill impact parameter inpormation for mcd jets", false);
 };
@@ -382,15 +382,15 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   tasks.emplace_back(
     adaptAnalysisTask<JetTaggerQACharged>(cfgc,
-                                          SetDefaultProcesses{}, TaskName{"jet-taggerhf-tc-charged"}));
+                                          SetDefaultProcesses{}, TaskName{"jet-taggerhf-qa-charged"}));
   /*
   tasks.emplace_back(
     adaptAnalysisTask<JetTaggerQAFull>(cfgc,
-                                         SetDefaultProcesses{}, TaskName{"jet-taggerhf-tc-full"}));
+                                         SetDefaultProcesses{}, TaskName{"jet-taggerhf-qa-full"}));
 
     tasks.emplace_back(
       adaptAnalysisTask<JetTaggerQANeutral>(cfgc,
-                                                  SetDefaultProcesses{}, TaskName{"jet-taggerhf-tc-neutral"}));
+                                                  SetDefaultProcesses{}, TaskName{"jet-taggerhf-qa-neutral"}));
   */
   return WorkflowSpec{tasks};
 }
