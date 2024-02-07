@@ -506,20 +506,22 @@ struct TreeCreatorElectronML {
         // store all mother relation
         std::vector<int> mothers_id;
         std::vector<int> mothers_pdg;
-        int motherid = mctrack.mothersIds()[0]; // first mother index
-        while (motherid > -1) {
-          if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
-            auto mp = mctracks.iteratorAt(motherid);
-            mothers_id.emplace_back(motherid);
-            mothers_pdg.emplace_back(mp.pdgCode());
+        if (mctrack.has_mothers()) {
+          int motherid = mctrack.mothersIds()[0]; // first mother index
+          while (motherid > -1) {
+            if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mctracks.iteratorAt(motherid);
+              mothers_id.emplace_back(motherid);
+              mothers_pdg.emplace_back(mp.pdgCode());
 
-            if (mp.has_mothers()) {
-              motherid = mp.mothersIds()[0];
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0];
+              } else {
+                motherid = -999;
+              }
             } else {
-              motherid = -999;
+              LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
             }
-          } else {
-            LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
           }
         }
 
@@ -589,20 +591,22 @@ struct TreeCreatorElectronML {
           // store all mother relation
           std::vector<int> mothers_id;
           std::vector<int> mothers_pdg;
-          int motherid = mctrack.mothersIds()[0]; // first mother index
-          while (motherid > -1) {
-            if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
-              auto mp = mctracks.iteratorAt(motherid);
-              mothers_id.emplace_back(motherid);
-              mothers_pdg.emplace_back(mp.pdgCode());
+          if (mctrack.has_mothers()) {
+            int motherid = mctrack.mothersIds()[0]; // first mother index
+            while (motherid > -1) {
+              if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
+                auto mp = mctracks.iteratorAt(motherid);
+                mothers_id.emplace_back(motherid);
+                mothers_pdg.emplace_back(mp.pdgCode());
 
-              if (mp.has_mothers()) {
-                motherid = mp.mothersIds()[0];
+                if (mp.has_mothers()) {
+                  motherid = mp.mothersIds()[0];
+                } else {
+                  motherid = -999;
+                }
               } else {
-                motherid = -999;
+                LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
               }
-            } else {
-              LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
             }
           }
 
