@@ -630,6 +630,7 @@ struct hyperRecoTask {
         continue;
       }
       hyperCandidate hypCand;
+      hypCand.pdgCode = mcPart.pdgCode();
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
       for (int i = 0; i < 3; i++) {
         hypCand.gDecVtx[i] = secVtx[i] - primVtx[i];
@@ -639,7 +640,6 @@ struct hyperRecoTask {
       hypCand.posTrackID = -1;
       hypCand.negTrackID = -1;
       hypCand.isSignal = true;
-      hypCand.pdgCode = mcPart.pdgCode();
       outputMCTable(-1, -1, -1,
                     0,
                     -1, -1, -1,
