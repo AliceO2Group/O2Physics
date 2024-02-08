@@ -14,8 +14,8 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
-#ifndef O2_ANALYSIS_TRACKUTILITIES_H_
-#define O2_ANALYSIS_TRACKUTILITIES_H_
+#ifndef COMMON_CORE_TRACKUTILITIES_H_
+#define COMMON_CORE_TRACKUTILITIES_H_ 
 
 #include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/Vertex.h"
@@ -147,4 +147,4 @@ float getDcaXYZ(T const& track, float* sigmaDcaXYZ2 = nullptr)
   return dcaXYZ;
 }
 
-#endif // O2_ANALYSIS_TRACKUTILITIES_H_
+#endif // COMMON_CORE_TRACKUTILITIES_H_
