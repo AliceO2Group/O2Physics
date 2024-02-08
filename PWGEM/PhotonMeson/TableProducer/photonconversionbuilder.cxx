@@ -87,6 +87,7 @@ struct PhotonConversionBuilder {
   Configurable<float> dcanegtopv{"dcanegtopv", 0.1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", 0.1, "DCA Pos To PV"};
   Configurable<float> min_pt_leg{"min_pt_leg", 0.04, "min pT for v0 legs at SV"};
+  Configurable<float> max_mean_its_cluster_size{"max_mean_its_cluster_size", 4.f, "max. <ITS cluster size> x cos(lambda) for ITSonly tracks"}; // this is to suppress random combination for V0s with ITSonly tracks. default 3 + 1 for skimming.
   Configurable<float> maxX{"maxX", 83.1, "max X for track IU"};
 
   // v0 cuts
@@ -265,6 +266,21 @@ struct PhotonConversionBuilder {
       bool its_ob_only = hits_ib <= its_ib_Requirement.first;
       if (!its_ob_only) {
         return false;
+      }
+
+      if (isITSonlyTrack(track)) {
+        uint32_t itsClusterSizes = track.itsClusterSizes();
+        int total_cluster_size = 0, nl = 0;
+        for (unsigned int layer = 0; layer < 7; layer++) {
+          int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
+          if (cluster_size_per_layer > 0) {
+            nl++;
+          }
+          total_cluster_size += cluster_size_per_layer;
+        }
+        if (static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())) > max_mean_its_cluster_size) {
+          return false;
+        }
       }
     }
 
