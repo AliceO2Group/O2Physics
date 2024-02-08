@@ -420,38 +420,50 @@ struct UpcTauCentralBarrelRL {
 
   } // end run
 
-
   template <typename T>
   bool isGlobalTrackReinstallment(T const& track)
   {
     // kInAcceptance copy
-    if (track.pt() < cutMyGTptMin || track.pt() > cutMyGTptMax) return false;
-    if (eta(track.px(),track.py(),track.pz()) < cutMyGTetaMin || eta(track.px(),track.py(),track.pz()) > cutMyGTetaMax) return false;
+    if (track.pt() < cutMyGTptMin || track.pt() > cutMyGTptMax)
+      return false;
+    if (eta(track.px(), track.py(), track.pz()) < cutMyGTetaMin || eta(track.px(), track.py(), track.pz()) > cutMyGTetaMax)
+      return false;
     // kPrimaryTracks
     // GoldenChi2 cut is only for Run 2
-    if (track.dcaZ() > cutMyGTdcaZmax) return false;
+    if (track.dcaZ() > cutMyGTdcaZmax)
+      return false;
     if (cutMyGTdcaXYusePt) {
       float maxDCA = 0.0105f + 0.0350f / pow(track.pt(), 1.1f); // ? not sure yet if will be used
-      if (track.dcaXY() > maxDCA) return false;
+      if (track.dcaXY() > maxDCA)
+        return false;
     } else {
-      if (track.dcaXY() > cutMyGTdcaXYmax) return false;
+      if (track.dcaXY() > cutMyGTdcaXYmax)
+        return false;
     }
     // kQualityTrack
     // TrackType is always 1 as per definition of processed Run3 AO2Ds
     // ITS
-    if (!track.hasITS()) return false;// ITS refit
-    if (track.itsNCls() < cutMyGTitsNClsMin) return false;
-    if (track.itsChi2NCl() > cutMyGTitsChi2NclMax) return false;
-    //if (!FulfillsITSHitRequirements(track.itsClusterSizes())) return false; <---- to complicated to implement now
-    // TPC
-    if (!track.hasTPC()) return false;// TPC refit
-    if (track.tpcNClsFindable() - track.tpcNClsFindableMinusFound() < cutMyGTtpcNClsMin) return false;// tpcNClsFound()
-    if (track.tpcNClsCrossedRows() < cutMyGTtpcNClsCrossedRowsMin) return false;
-    if ((track.tpcNClsCrossedRows()/track.tpcNClsFindable()) < cutMyGTtpcNClsCrossedRowsOverNClsMin) return false;
-    if (track.tpcChi2NCl() > cutMyGTtpcChi2NclMax) return false;// TPC chi2
+    if (!track.hasITS())
+      return false; // ITS refit
+    if (track.itsNCls() < cutMyGTitsNClsMin)
+      return false;
+    if (track.itsChi2NCl() > cutMyGTitsChi2NclMax)
+      return false;
+    // if (!FulfillsITSHitRequirements(track.itsClusterSizes())) return false; <---- to complicated to implement now
+    //  TPC
+    if (!track.hasTPC())
+      return false; // TPC refit
+    if (track.tpcNClsFindable() - track.tpcNClsFindableMinusFound() < cutMyGTtpcNClsMin)
+      return false; // tpcNClsFound()
+    if (track.tpcNClsCrossedRows() < cutMyGTtpcNClsCrossedRowsMin)
+      return false;
+    if ((track.tpcNClsCrossedRows() / track.tpcNClsFindable()) < cutMyGTtpcNClsCrossedRowsOverNClsMin)
+      return false;
+    if (track.tpcChi2NCl() > cutMyGTtpcChi2NclMax)
+      return false; // TPC chi2
 
     return true;
-    }
+  }
 
   template <typename C, typename Ts>
   void fillHistograms(C reconstructedCollision, Ts reconstructedBarrelTracks)
