@@ -361,7 +361,7 @@ struct HfTaskDs {
     // MC gen.
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
-        if (particle.flagMcDecayChanGen() == decayChannelDs || (FillDplusMc && particle.flagMcDecayChanGen() == (decayChannelDplusMc + offsetDplusDecayChannel))){
+        if (particle.flagMcDecayChanGen() == decayChannelDs || (FillDplusMc && particle.flagMcDecayChanGen() == (decayChannelDplusMc + offsetDplusDecayChannel))) {
           auto pt = particle.pt();
           auto y = 0;
           if (particle.flagMcDecayChanGen() == decayChannelDs) {
