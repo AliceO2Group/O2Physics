@@ -23,16 +23,15 @@
 #include "Framework/runDataProcessing.h"
 
 // O2Physics headers
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/CCDB/EventSelectionParams.h"
-#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
-#include "PWGUD/DataModel/UDTables.h"
-
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
+#include "PWGUD/DataModel/UDTables.h"
 
 // ROOT headers
 #include "TLorentzVector.h"
@@ -132,6 +131,22 @@ struct UpcTauCentralBarrelRL {
   Configurable<int> whichGapSide{"whichGapSide", 2, {"0 for side A, 1 for side C, 2 for both sides"}};
   Configurable<float> cutAvgITSclusterSize{"cutAvgITSclusterSize", 3.5, {"specific study"}};
   Configurable<float> cutPtAvgITSclusterSize{"cutPtAvgITSclusterSize", 0.7, {"specific study"}};
+  Configurable<bool> cutMyGlobalTracksOnly{"cutGlobalTracksOnly", false, {"Applies cut on here defined global tracks"}};
+  Configurable<float> cutAvgITSclusterSize{"cutAvgITSclusterSize", 3.5, {"specific study"}};
+  Configurable<float> cutPtAvgITSclusterSize{"cutPtAvgITSclusterSize", 0.7, {"specific study"}};
+  Configurable<float> cutMyGTptMin{"cutMyGTptMin", 0.1f, {"MyGlobalTrack cut"}};
+  Configurable<float> cutMyGTptMax{"cutMyGTptMax", 1e10f, {"MyGlobalTrack cut"}};
+  Configurable<float> cutMyGTetaMin{"cutMyGTetaMin", -0.8, {"MyGlobalTrack cut"}};
+  Configurable<float> cutMyGTetaMax{"cutMyGTetaMax", 0.8, {"MyGlobalTrack cut"}};
+  Configurable<float> cutMyGTdcaZmax{"cutMyGTdcaZmax", 2.f, {"MyGlobalTrack cut"}};
+  Configurable<float> cutMyGTdcaXYmax{"cutMyGTdcaXYmax", 1e10f, {"MyGlobalTrack cut"}};
+  Configurable<bool> cutMyGTdcaXYusePt{"cutMyGTdcaXYusePt", false, {"MyGlobalTrack cut"}};
+  Configurable<int> cutMyGTitsNClsMin{"cutMyGTitsNClsMin", 1, {"MyGlobalTrack cut"}};
+  Configurable<float> cutMyGTitsChi2NclMax{"cutMyGTitsChi2NclMax", 36.f, {"MyGlobalTrack cut"}};
+  Configurable<int> cutMyGTtpcNClsMin{"cutMyGTtpcNClsMin", 1, {"MyGlobalTrack cut"}};
+  Configurable<int> cutMyGTtpcNClsCrossedRowsMin{"cutMyGTtpcNClsCrossedRows", 70, {"MyGlobalTrack cut"}};
+  Configurable<float> cutMyGTtpcNClsCrossedRowsOverNClsMin{"cutMyGTtpcNClsCrossedRowsOverNClsMin", 0.8f, {"MyGlobalTrack cut"}};
+  Configurable<float> cutMyGTtpcChi2NclMax{"cutMyGTtpcChi2NclMax", 4.f, {"MyGlobalTrack cut"}};
 
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
   using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
@@ -405,7 +420,38 @@ struct UpcTauCentralBarrelRL {
 
   } // end run
 
-  // process
+
+  template <typename T>
+  bool isGlobalTrackReinstallment(T const& track)
+  {
+    // kInAcceptance copy
+    if (track.pt() < cutMyGTptMin || track.pt() > cutMyGTptMax) return false;
+    if (eta(track.px(),track.py(),track.pz()) < cutMyGTetaMin || eta(track.px(),track.py(),track.pz()) > cutMyGTetaMax) return false;
+    // kPrimaryTracks
+    // GoldenChi2 cut is only for Run 2
+    if (track.dcaZ() > cutMyGTdcaZmax) return false;
+    if (cutMyGTdcaXYusePt) {
+      float maxDCA = 0.0105f + 0.0350f / pow(track.pt(), 1.1f); // ? not sure yet if will be used
+      if (track.dcaXY() > maxDCA) return false;
+    } else {
+      if (track.dcaXY() > cutMyGTdcaXYmax) return false;
+    }
+    // kQualityTrack
+    // TrackType is always 1 as per definition of processed Run3 AO2Ds
+    // ITS
+    if (!track.hasITS()) return false;// ITS refit
+    if (track.itsNCls() < cutMyGTitsNClsMin) return false;
+    if (track.itsChi2NCl() > cutMyGTitsChi2NclMax) return false;
+    //if (!FulfillsITSHitRequirements(track.itsClusterSizes())) return false; <---- to complicated to implement now
+    // TPC
+    if (!track.hasTPC()) return false;// TPC refit
+    if (track.tpcNClsFindable() - track.tpcNClsFindableMinusFound() < cutMyGTtpcNClsMin) return false;// tpcNClsFound()
+    if (track.tpcNClsCrossedRows() < cutMyGTtpcNClsCrossedRowsMin) return false;
+    if ((track.tpcNClsCrossedRows()/track.tpcNClsFindable()) < cutMyGTtpcNClsCrossedRowsOverNClsMin) return false;
+    if (track.tpcChi2NCl() > cutMyGTtpcChi2NclMax) return false;// TPC chi2
+
+    return true;
+    }
 
   template <typename C, typename Ts>
   void fillHistograms(C reconstructedCollision, Ts reconstructedBarrelTracks)
@@ -466,6 +512,10 @@ struct UpcTauCentralBarrelRL {
     for (auto& track : reconstructedBarrelTracks) {
       if (track.isPVContributor() != 1)
         continue;
+      if (cutMyGlobalTracksOnly) {
+        if (isGlobalTrackReinstallment(track) != 1)
+          continue;
+      }
       countPVGT++;
       float trkPx = track.px();
       float trkPy = track.py();
