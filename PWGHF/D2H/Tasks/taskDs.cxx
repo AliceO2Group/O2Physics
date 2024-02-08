@@ -33,8 +33,8 @@ using namespace o2::framework::expressions;
 /// Ds± analysis task
 struct HfTaskDs {
   Configurable<int> decayChannelDs{"decayChannelDs", 1, "Switch between decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
-  Configurable<int> decayChannelDplusMC{"decayChannelDplusMC", 1, "Switch between decay channels for MC Dplus: 1 for Dplus->PhiPi->KKpi, 2 for Dplus->K0*K->KKPi"};
-  Configurable<bool> FillDplusMC{"fillDplusMC", false, "Switch to fill Dplus MC information"};
+  Configurable<int> decayChannelDplusMc{"decayChannelDplusMc", 1, "Switch between decay channels for MC Dplus: 1 for Dplus->PhiPi->KKpi, 2 for Dplus->K0*K->KKPi"};
+  Configurable<bool> FillDplusMc{"fillDplusMc", false, "Switch to fill Dplus MC information"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
@@ -46,12 +46,14 @@ struct HfTaskDs {
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
   using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
+  int offsetDplusDecayChannel = aod::hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi - aod::hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi; // Offset between Dplus and Ds to use the same decay channel. See aod::hf_cand_3prong::DecayChannelDToKKPi
+
   Filter filterDsFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0);
 
   Partition<CandDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
   Partition<CandDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
 
-  Partition<CandDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && (aod::hf_cand_3prong::flagMcDecayChanRec == decayChannelDs || (FillDplusMC && aod::hf_cand_3prong::flagMcDecayChanRec == (decayChannelDplusMC + 2)));
+  Partition<CandDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && (aod::hf_cand_3prong::flagMcDecayChanRec == decayChannelDs || (FillDplusMc && aod::hf_cand_3prong::flagMcDecayChanRec == (decayChannelDplusMc + offsetDplusDecayChannel)));
   Partition<CandDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi));
 
   HistogramRegistry registry{
@@ -326,7 +328,7 @@ struct HfTaskDs {
         if (candidate.isCandidateSwapped() == 1) { // 1 corresponds to PiKK
           fillHistoMCRec(candidate, candidate.isSelDsToPiKK(), false);
         }
-      } else if (FillDplusMC) {
+      } else if (FillDplusMc) {
         if (yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax) {
           continue;
         }
@@ -359,12 +361,12 @@ struct HfTaskDs {
     // MC gen.
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
-        if (particle.flagMcDecayChanGen() == decayChannelDs || (FillDplusMC && particle.flagMcDecayChanGen() == (decayChannelDplusMC + 2))) {
+        if (particle.flagMcDecayChanGen() == decayChannelDs || (FillDplusMc && particle.flagMcDecayChanGen() == (decayChannelDplusMc + offsetDplusDecayChannel))){
           auto pt = particle.pt();
           auto y = 0;
           if (particle.flagMcDecayChanGen() == decayChannelDs) {
             y = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDS);
-          } else if (FillDplusMC) {
+          } else if (FillDplusMc) {
             y = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDPlus);
           }
           if (yCandGenMax >= 0. && std::abs(y) > yCandGenMax) {
@@ -383,7 +385,7 @@ struct HfTaskDs {
               registry.fill(HIST("hPtGenDsNonPrompt"), pt);
               registry.fill(HIST("hPtVsYGenDsNonPrompt"), pt, y);
             }
-          } else if (FillDplusMC) {
+          } else if (FillDplusMc) {
             registry.fill(HIST("hPtGenDplus"), pt);
             registry.fill(HIST("hPtVsYGenDplus"), pt, y);
             registry.fill(HIST("hEtaGenDplus"), particle.eta());
