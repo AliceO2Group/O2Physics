@@ -270,7 +270,7 @@ struct antidLambdaEbye {
 
       if (track.pt() <= antidPtTof || (track.pt() > antidPtTof && hasTof && std::abs(mass - o2::constants::physics::MassDeuteron) < tofMassMax)) {
         histos.fill(HIST("tpcNsigmaGlo"), track.pt(), nSigmaTPC);
-        tempHistos.fill(HIST("tempAntid"), track.eta(), track.pt());
+        tempHistos.fill(HIST("tempAntid"), std::abs(track.eta()), track.pt());
       }
     }
 
@@ -300,9 +300,9 @@ struct antidLambdaEbye {
       histos.fill(HIST("dcaNegPv"), v0.dcanegtopv());
 
       if (matter) {
-        tempHistos.fill(HIST("tempLambda"), v0.eta(), v0.pt());
+        tempHistos.fill(HIST("tempLambda"), std::abs(v0.eta()), v0.pt());
       } else {
-        tempHistos.fill(HIST("tempAntiLambda"), v0.eta(), v0.pt());
+        tempHistos.fill(HIST("tempAntiLambda"), std::abs(v0.eta()), v0.pt());
       }
 
       trkId.emplace_back(pos.globalIndex());
