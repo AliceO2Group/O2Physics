@@ -823,7 +823,7 @@ struct kinkAnalysis {
                   } else if ((motherPdg == particlePdgCode || motherPdg == -3222) && (daughterPdg != -211)) {
                     histos.fill(HIST("hptMtrue"), sigmaPt, PionTr.getPt());
                     histos.fill(HIST("hPtMinusRecMcTrthM"), mass, sigmaPt);
-                  } else if (motherPdg == -1010010030 && daughterPdg == -1000010030 ) {
+                  } else if (motherPdg == -1010010030 && daughterPdg == -1000010030) {
                     histos.fill(HIST("hpRes"), sigmaPt, (mcMotherPt - sigmaPt) / mcMotherPt);
                   } else {
                     histos.fill(HIST("hptMDelse"), sigmaPt, PionTr.getPt());
@@ -836,7 +836,7 @@ struct kinkAnalysis {
                 if (cfgIsMC) {
                   if (motherPdg == particlePdgCode)
                     histos.fill(HIST("hPtPlusRecMcTrth"), mass, sigmaPt);
-                  else if (motherPdg == 1010010030 && daughterPdg == 1000010030 )
+                  else if (motherPdg == 1010010030 && daughterPdg == 1000010030)
                     histos.fill(HIST("hpRes"), sigmaPt, (mcMotherPt - sigmaPt) / mcMotherPt);
                 }
                 histos.fill(HIST("hMassPlusPt"), mass, sigmaPt);
