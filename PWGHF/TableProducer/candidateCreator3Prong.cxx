@@ -320,7 +320,7 @@ struct HfCandidateCreator3ProngExpressions {
               channel = DecayChannelDToKKPi::DsToK0starK;
             }
           }
-        } else {  // D± → K± K∓ π±
+        } else { // D± → K± K∓ π±
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
           if (indexRec > -1) {
             flag = sign * (1 << DecayType::DsToKKPi); // INFO: DecaType::DsToKKPi is used to flag Ds± → K± K∓ π± and D± → K± K∓ π±
@@ -415,8 +415,8 @@ struct HfCandidateCreator3ProngExpressions {
               channel = DecayChannelDToKKPi::DsToK0starK;
             }
           }
-        } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {  // D± → K± K∓ π±
-          flag = sign * (1 << DecayType::DsToKKPi); // INFO: DecaType::DsToKKPi is used to flag Ds± → K± K∓ π± and D± → K± K∓ π±
+        } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) { // D± → K± K∓ π±
+          flag = sign * (1 << DecayType::DsToKKPi);                                                                                         // INFO: DecaType::DsToKKPi is used to flag Ds± → K± K∓ π± and D± → K± K∓ π±
           RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
