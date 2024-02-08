@@ -840,8 +840,7 @@ struct kinkAnalysis {
                     histos.fill(HIST("hpRes"), sigmaPt, (mcMotherPt - sigmaPt) / mcMotherPt);
                 }
                 histos.fill(HIST("hMassPlusPt"), mass, sigmaPt);
-               }
-              
+              }
 
               if ((chargeM == -1) && (chargeD == 1)) {
                 histos.fill(HIST("hBackgroundNegPosPt"), mass, sigmaPt);
