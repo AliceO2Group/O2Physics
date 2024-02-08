@@ -47,28 +47,42 @@ static const std::vector<std::string> speciesNames{"Xi", "Omega"};
 
 struct cascadeFlow {
 
-  template <typename TCascade>
-  bool IsCascAccepted(TCascade casc)
+  Configurable<double> sideBandStart{"sideBandStart", 5, "Start of the sideband region in number of sigmas"};
+  Configurable<double> sideBandEnd{"sideBandEnd", 7, "End of the sideband region in number of sigmas"};
+  Configurable<double> downsample{"downsample", 1., "Downsample training output tree"};
+  Configurable<bool> doNTPCSigmaCut{"doNTPCSigmaCut", 1, "doNtpcSigmaCut"};
+  Configurable<float> nsigmatpcPr{"nsigmatpcPr", 5, "nsigmatpcPr"};
+  Configurable<float> nsigmatpcPi{"nsigmatpcPi", 5, "nsigmatpcPi"};
+  Configurable<float> mintpccrrows{"mintpccrrows", 3, "mintpccrrows"};
+  
+  template <typename TCascade, typename TDaughter>
+  bool IsCascAccepted(TCascade casc, TDaughter negExtra, TDaughter posExtra, TDaughter bachExtra, Int_t counter) //loose cuts on topological selections of cascades
   {
-    if (casc.pt() > 0)
+    
+    //TPC cuts as those implemented for the training of the signal
+    if (doNTPCSigmaCut) { 
+      if (casc.sign() < 0) { 
+	if (TMath::Abs(posExtra.tpcNSigmaPr()) > nsigmatpcPr || TMath::Abs(negExtra.tpcNSigmaPi()) > nsigmatpcPi)
+	  return false;
+      } else if (casc.sign() > 0) {
+	if (TMath::Abs(posExtra.tpcNSigmaPi()) > nsigmatpcPi || TMath::Abs(negExtra.tpcNSigmaPr()) > nsigmatpcPr)
+	  return false;
+      }
+    } 
+    counter++;
+
+    if (posExtra.tpcCrossedRows() < mintpccrrows || negExtra.tpcCrossedRows() < mintpccrrows || bachExtra.tpcCrossedRows() < mintpccrrows) 
       return false;
 
+    counter++;
     return true;
   }
+  
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Tables to produce
   Produces<aod::CascTraining> trainingSample;
-
-  Configurable<double> sideBandStart{"sideBandStart", 5, "Start of the sideband region in number of sigmas"};
-  Configurable<double> sideBandEnd{"sideBandEnd", 7, "End of the sideband region in number of sigmas"};
-  Configurable<double> downsample{"downsample", 1., "Downsample training output tree"};
-  Configurable<bool> doNTPCSigmaCut{"doNTPCSigmaCut", 1, "doNtpcSigmaCut"};
-  Configurable<float> nsigmatpcPr{"nsigmatpcPr", 3, "nsigmatpcPr"};
-  Configurable<float> nsigmatpcPi{"nsigmatpcPi", 3, "nsigmatpcPi"};
-  Configurable<float> mintpccrrows{"mintpccrrows", 3, "mintpccrrows"};
-
   Configurable<LabeledArray<double>> parSigmaMass{
     "parSigmaMass",
     {cascadev2::massSigmaParameters[0], 4, 2,
@@ -112,6 +126,7 @@ struct cascadeFlow {
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
     histos.add("hEventSelection", "hEventSelection", kTH1F, {{4, 0, 4}});
     histos.add("hCandidate", "hCandidate", HistType::kTH1D, {{22, -0.5, 21.5}});
+    histos.add("hCascadeSignal", "hCascadeSignal", HistType::kTH1D, {{6, -0.5, 5.5}});
   }
 
   void processTrainingBackground(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&) {
@@ -176,8 +191,14 @@ struct cascadeFlow {
 	  && !(std::abs(pdgCode) == 3334 && std::abs(casc.pdgCodeV0()) == 3122 && std::abs(casc.pdgCodeBachelor() == 321))) //Omega
 	  continue;
       
-      
-      IsCascAccepted(casc);
+      auto negExtra = casc.negTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>>();
+      auto posExtra = casc.posTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>>();
+      auto bachExtra = casc.bachTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>>();
+
+      int counter = 0;
+      IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
+      histos.fill(HIST("hCascadeSignal"), counter);
+
       //PDG cascades 
       fillTrainingTable(coll, casc, pdgCode); 
     }
