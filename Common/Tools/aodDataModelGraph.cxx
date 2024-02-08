@@ -137,19 +137,20 @@ void displayOriginals(pack<Ts...>)
 template <typename C>
 void printColumn(char const* fg, char const* bg)
 {
-    fmt::printf("<TR><TD color='%s' bgcolor='%s'>%s</TD></TR>", fg, bg, C::columnLabel());
+  fmt::printf("<TR><TD color='%s' bgcolor='%s'>%s</TD></TR>", fg, bg, C::columnLabel());
 }
 
 template <typename... C>
 int displayPersistentColumns(pack<C...>, const char* fg, const char* bg)
 {
   int n = 0;
-  ([&](){
+  ([&]() {
     if constexpr (o2::soa::is_persistent_v<C> && !o2::soa::is_index_column_v<C>) {
       printColumn<C>(fg, bg);
       ++n;
     }
-  }(), ...);
+  }(),
+   ...);
   if (n > 0) {
     fmt::printf("%s", "\n");
   }
@@ -160,12 +161,13 @@ template <typename... C>
 int displayDynamicColumns(pack<C...>, const char* fg, const char* bg)
 {
   int n = 0;
-  ([&](){
+  ([&]() {
     if constexpr (!o2::soa::is_persistent_v<C>) {
       printColumn<C>(fg, bg);
       ++n;
     }
-  }(), ...);
+  }(),
+   ...);
   if (n > 0) {
     fmt::printf("%s", "\n");
   }
@@ -175,11 +177,12 @@ int displayDynamicColumns(pack<C...>, const char* fg, const char* bg)
 template <typename... C>
 void displayIndexColumns(pack<C...>, char const* fg, char const* bg)
 {
-  ([&](){
+  ([&]() {
     if constexpr (o2::soa::is_index_column_v<C>) {
       printColumn<C>(fg, bg);
     }
-  }(), ...);
+  }(),
+   ...);
   fmt::printf("%s", "\n");
 }
 
@@ -201,11 +204,12 @@ void printIndex()
 template <typename T, typename... C>
 void dumpIndex(pack<C...>)
 {
-  ([&](){
+  ([&]() {
     if constexpr (o2::soa::is_index_column_v<C>) {
       printIndex<C, T>();
     }
-  }(), ...);
+  }(),
+   ...);
   fmt::printf("%s", "\n");
 }
 

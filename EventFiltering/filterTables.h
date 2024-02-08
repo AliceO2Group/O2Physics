@@ -230,11 +230,12 @@ void addColumnToMap(std::unordered_map<std::string, std::unordered_map<std::stri
 template <typename T, typename... C>
 void addColumnsToMap(o2::framework::pack<C...>, std::unordered_map<std::string, std::unordered_map<std::string, float>>& map)
 {
-  ([&](){
-    if constexpr(soa::is_persistent_v<C>) {
+  ([&]() {
+    if constexpr (soa::is_persistent_v<C>) {
       addColumnToMap<T, C>(map);
     }
-  }(), ...);
+  }(),
+   ...);
 }
 
 template <typename... T>
@@ -247,11 +248,12 @@ template <typename... C>
 static std::vector<std::string> ColumnsNames(o2::framework::pack<C...>)
 {
   std::vector<std::string> result;
-  ([&](){
+  ([&]() {
     if constexpr (soa::is_persistent_v<C>) {
       result.push_back(C::columnLabel());
     }
-  }(),...);
+  }(),
+   ...);
   return result;
 }
 
@@ -259,11 +261,12 @@ template <typename... C>
 unsigned int NumberOfColumns(o2::framework::pack<C...>)
 {
   unsigned int result = 0;
-  ([&](){
+  ([&]() {
     if constexpr (soa::is_persistent_v<C>) {
       ++result;
     }
-  }(), ...);
+  }(),
+   ...);
   return result;
 }
 
