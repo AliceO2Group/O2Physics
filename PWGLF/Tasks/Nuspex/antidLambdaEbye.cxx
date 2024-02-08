@@ -16,6 +16,9 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
@@ -38,7 +41,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCDe, aod::pidTPCPr, aod::pidTPCPi, aod::TOFSignal, aod::TOFEvTime>;
+using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCDe, aod::pidTPCPr, aod::pidTPCPi, aod::TOFSignal, aod::TOFEvTime>;
 
 namespace
 {
@@ -50,7 +53,6 @@ static const std::vector<std::string> pidHypotheses{"Electron", "Muon", "Pion", 
 } // namespace
 
 struct antidLambdaEbye {
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::pid::tof::Beta<TracksFull::iterator> responseBeta;
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
@@ -74,15 +76,6 @@ struct antidLambdaEbye {
   ConfigurableAxis tpcAxis{"tpcAxis", {4.e2, 0.f, 4.e3f}, "tpc signal axis binning"};
   ConfigurableAxis tofAxis{"tofAxis", {1.e3, 0.f, 1.f}, "tof signal axis binning"};
   ConfigurableAxis trackingPidAxis{"trackingPidAxis", {static_cast<double>(pidHypotheses.size()), 0, static_cast<double>(pidHypotheses.size())}, "tracking pid hypothesis binning"};
-
-  // CCDB options
-  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<std::string> pidPath{"pidPath", "", "Path to the PID response object"};
 
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
@@ -109,9 +102,6 @@ struct antidLambdaEbye {
   Configurable<double> v0setting_cospa{"v0setting_cospa", 0.98, "V0 CosPA"};
   Configurable<float> v0setting_radius{"v0setting_radius", 0.5f, "v0radius"};
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.005f, "maximum deviation from PDG mass"};
-
-  int mRunNumber;
-  float d_bz;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -156,13 +146,6 @@ struct antidLambdaEbye {
 
   void init(o2::framework::InitContext&)
   {
-    ccdb->setURL(ccdburl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false);
-
-    mRunNumber = 0;
-    d_bz = 0;
 
     histos.add<TH1>("zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
 
@@ -213,75 +196,22 @@ struct antidLambdaEbye {
     }
   }
 
-  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  void fillEvent(TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s, float const& centrality, float const& multiplicity = 0)
   {
-    if (mRunNumber == bc.runNumber()) {
-      return;
-    }
-    auto run3grp_timestamp = bc.timestamp();
-
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (grpo) {
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      if (d_bz_input < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        d_bz = grpo->getNominalL3Field();
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-      } else {
-        d_bz = d_bz_input;
-      }
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      o2::base::Propagator::initFieldFromGRP(grpmag);
-      if (d_bz_input < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-      } else {
-        d_bz = d_bz_input;
-      }
-    }
-    mRunNumber = bc.runNumber();
-  }
-
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& collision, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s, aod::BCsWithTimestamps const&)
-  {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
-
-    if (!collision.sel8())
-      return;
-
-    if (std::abs(collision.posZ()) > zVtxMax)
-      return;
-
-    const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
-
-    histos.fill(HIST("zVtx"), collision.posZ());
-
     double q1antid{0.}, q2antid{0.};
     for (const auto& track : tracks) {
       if (!selectAntid(track)) {
         continue;
       }
 
-      auto trackParCov = getTrackParCov(track);
-      gpu::gpustd::array<float, 2> dcaInfo;
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(collVtx, trackParCov, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfo);
-
-      float dcaXYZ = dcaInfo[0];
-      if (std::abs(dcaXYZ) > antidDcaCut) {
+      if (std::hypot(track.dcaXY(), track.dcaZ()) > antidDcaCut) {
         continue;
       }
 
       histos.fill(HIST("tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
-      histos.fill(HIST("tpcSignal_glo"), trackParCov.getP(), track.tpcSignal(), track.pidForTracking());
+      histos.fill(HIST("tpcSignal_glo"), track.p(), track.tpcSignal(), track.pidForTracking());
 
-      if (trackParCov.getPt() < antidPtMin || trackParCov.getPt() > antidPtMax) {
+      if (track.pt() < antidPtMin || track.pt() > antidPtMax) {
         continue;
       }
 
@@ -298,15 +228,15 @@ struct antidLambdaEbye {
         continue;
       }
       histos.fill(HIST("tpcNsigma"), track.tpcInnerParam(), nSigmaTPC);
-      histos.fill(HIST("momCorr"), trackParCov.getP(), track.tpcInnerParam() - trackParCov.getP(), track.pidForTracking());
+      histos.fill(HIST("momCorr"), track.p(), track.tpcInnerParam() - track.p(), track.pidForTracking());
       // check contamination
       if (track.tpcInnerParam() < tpcInnerParamMax) {
         histos.fill(HIST("tpcSignalBkg"), track.tpcInnerParam(), track.tpcSignal());
-        histos.fill(HIST("tpcSignalBkg_glo"), trackParCov.getP(), track.tpcSignal(), track.pidForTracking());
+        histos.fill(HIST("tpcSignalBkg_glo"), track.p(), track.tpcSignal(), track.pidForTracking());
       }
 
-      if (trackParCov.getPt() > antidPtTof && hasTof) {
-        histos.fill(HIST("tofSignal_glo"), trackParCov.getP(), beta);
+      if (track.pt() > antidPtTof && hasTof) {
+        histos.fill(HIST("tofSignal_glo"), track.p(), beta);
         histos.fill(HIST("tofSignal"), track.tpcInnerParam(), beta);
       }
 
@@ -314,17 +244,17 @@ struct antidLambdaEbye {
       if (track.tpcInnerParam() < tpcInnerParamMax) {
         continue;
       }
-      if (trackParCov.getPt() > antidPtTof && !track.hasTOF()) {
+      if (track.pt() > antidPtTof && !track.hasTOF()) {
         continue;
       }
-      histos.fill(HIST("tofMassFull"), trackParCov.getPt(), mass);
-      if (trackParCov.getPt() > antidPtTof && track.tofChi2() > 3) {
+      histos.fill(HIST("tofMassFull"), track.pt(), mass);
+      if (track.pt() > antidPtTof && track.tofChi2() > 3) {
         continue;
       }
-      histos.fill(HIST("tofMass"), trackParCov.getPt(), mass);
+      histos.fill(HIST("tofMass"), track.pt(), mass);
 
-      if (trackParCov.getPt() <= antidPtTof || (trackParCov.getPt() > antidPtTof && hasTof && std::abs(mass - o2::constants::physics::MassDeuteron) < tofMassMax)) {
-        histos.fill(HIST("tpcNsigmaGlo"), trackParCov.getPt(), nSigmaTPC);
+      if (track.pt() <= antidPtTof || (track.pt() > antidPtTof && hasTof && std::abs(mass - o2::constants::physics::MassDeuteron) < tofMassMax)) {
+        histos.fill(HIST("tpcNsigmaGlo"), track.pt(), nSigmaTPC);
         q1antid += 1.; // TODO: correct for efficiency
         q2antid += 1.;
       }
@@ -343,7 +273,7 @@ struct antidLambdaEbye {
 
       auto pos = v0.template posTrack_as<TracksFull>();
       auto neg = v0.template negTrack_as<TracksFull>();
-      if (std::abs(pos.eta()) > etaMax || std::abs(pos.eta()) > etaMax) {
+      if (std::abs(pos.eta()) > etaMax || std::abs(neg.eta()) > etaMax) {
         continue;
       }
 
@@ -374,24 +304,55 @@ struct antidLambdaEbye {
       return;
     }
 
-    histos.fill(HIST("nEv"), collision.centFT0C());
+    histos.fill(HIST("nEv"), centrality);
 
-    histos.fill(HIST("q1antid"), collision.centFT0C(), q1antid);
-    histos.fill(HIST("q1sqantid"), collision.centFT0C(), std::pow(q1antid, 2));
-    histos.fill(HIST("q2antid"), collision.centFT0C(), q2antid);
+    histos.fill(HIST("q1antid"), centrality, q1antid);
+    histos.fill(HIST("q1sqantid"), centrality, std::pow(q1antid, 2));
+    histos.fill(HIST("q2antid"), centrality, q2antid);
 
-    histos.fill(HIST("q1L"), collision.centFT0C(), q1L);
-    histos.fill(HIST("q1sqL"), collision.centFT0C(), std::pow(q1L, 2));
-    histos.fill(HIST("q2L"), collision.centFT0C(), q2L);
+    histos.fill(HIST("q1L"), centrality, q1L);
+    histos.fill(HIST("q1sqL"), centrality, std::pow(q1L, 2));
+    histos.fill(HIST("q2L"), centrality, q2L);
 
-    histos.fill(HIST("q1antiL"), collision.centFT0C(), q1antiL);
-    histos.fill(HIST("q1sqantiL"), collision.centFT0C(), std::pow(q1antiL, 2));
-    histos.fill(HIST("q2antiL"), collision.centFT0C(), q2antiL);
+    histos.fill(HIST("q1antiL"), centrality, q1antiL);
+    histos.fill(HIST("q1sqantiL"), centrality, std::pow(q1antiL, 2));
+    histos.fill(HIST("q2antiL"), centrality, q2antiL);
 
-    histos.fill(HIST("q11LantiL"), collision.centFT0C(), q1L * q1antiL);
-    histos.fill(HIST("q11Lantid"), collision.centFT0C(), q1L * q1antid);
-    histos.fill(HIST("q11antiLantid"), collision.centFT0C(), q1antiL * q1antid);
+    histos.fill(HIST("q11LantiL"), centrality, q1L * q1antiL);
+    histos.fill(HIST("q11Lantid"), centrality, q1L * q1antid);
+    histos.fill(HIST("q11antiLantid"), centrality, q1antiL * q1antid);
   }
+
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& collision, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s)
+  {
+    if (!collision.sel8())
+      return;
+
+    if (std::abs(collision.posZ()) > zVtxMax)
+      return;
+
+    histos.fill(HIST("zVtx"), collision.posZ());
+    auto centrality = collision.centFT0C();
+    fillEvent(tracks, V0s, centrality);
+  }
+  PROCESS_SWITCH(antidLambdaEbye, processRun3, "process (Run 3)", false);
+
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::FV0Mults, aod::CentRun2V0Ms>::iterator const& collision, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s)
+  {
+    if (!collision.sel7())
+      return;
+
+    if (!collision.alias_bit(kINT7))
+      return;
+
+    if (std::abs(collision.posZ()) > zVtxMax)
+      return;
+
+    histos.fill(HIST("zVtx"), collision.posZ());
+    auto centrality = collision.centRun2V0M();
+    fillEvent(tracks, V0s, centrality);
+  }
+  PROCESS_SWITCH(antidLambdaEbye, processRun2, "process (Run 2)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -353,8 +353,8 @@ struct AnalysisTrackSelection {
 };
 
 struct AnalysisSameEventPairing {
-  Produces<aod::Dileptons> dileptonList;
-  Produces<aod::DileptonsExtra> dileptonExtraList;
+  Produces<aod::Dielectrons> dileptonList;
+  Produces<aod::DielectronsExtra> dileptonExtraList;
   OutputObj<THashList> fOutputList{"output"};
   Filter filterEventSelected = aod::emanalysisflags::isEventSelected == 1;
   Filter filterBarrelTrackSelected = aod::emanalysisflags::isBarrelSelected > 0;

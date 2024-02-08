@@ -175,6 +175,7 @@ struct nucleiSpectra {
 
   Produces<o2::aod::NucleiTable> nucleiTable;
   Produces<o2::aod::NucleiTableMC> nucleiTableMC;
+  Produces<o2::aod::NucleiCollId> nucleiCollisionIndex;
   Produces<o2::aod::NucleiFlowColls> nucleiFlowTable;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -527,7 +528,7 @@ struct nucleiSpectra {
     }
     fillDataInfo(collision, tracks);
     for (auto& c : nuclei::candidates) {
-      nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, c.selCollIndex);
+      nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS);
     }
   }
   PROCESS_SWITCH(nucleiSpectra, processData, "Data analysis", true);
@@ -540,7 +541,8 @@ struct nucleiSpectra {
     }
     fillDataInfo(collision, tracks);
     for (auto& c : nuclei::candidates) {
-      nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, c.selCollIndex);
+      nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS);
+      nucleiCollisionIndex(c.selCollIndex);
     }
   }
   PROCESS_SWITCH(nucleiSpectra, processDataFlow, "Data analysis with flow", false);
