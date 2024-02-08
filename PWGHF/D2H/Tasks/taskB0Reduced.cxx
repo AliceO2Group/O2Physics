@@ -105,6 +105,8 @@ struct HfTaskB0Reduced {
   Configurable<bool> fillBackground{"fillBackground", false, "Flag to enable filling of background histograms/sparses/tree (only MC)"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
+  // MC checks
+  Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "Flag to enable DecayType histogram"};
 
   HfHelper hfHelper;
 
@@ -235,7 +237,20 @@ struct HfTaskB0Reduced {
           registry.add("hCospDRecBg", "B^{0} candidates (unmatched);#it{p}_{T}(D^{#minus}) (GeV/#it{c});D^{#minus} candidate cos(#vartheta_{P});entries", {HistType::kTH2F, {axisPtDminus, axisCosp}});
           registry.add("hCospXyDRecBg", "B^{0} candidates (unmatched);#it{p}_{T}(D^{#minus}) (GeV/#it{c});D^{#minus} candidate cos(#vartheta_{P}^{XY});entries", {HistType::kTH2F, {axisPtDminus, axisCosp}});
         }
-
+        // MC checks
+        if (checkDecayTypeMc) {
+          constexpr uint8_t kNBinsDecayTypeMc = hf_cand_b0::DecayTypeMc::NDecayTypeMc;
+          TString labels[kNBinsDecayTypeMc];
+          labels[hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi] = "B^{0} #rightarrow (D^{#minus} #rightarrow #pi^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
+          labels[hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi] = "B^{0} #rightarrow (D^{#minus}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#minus}) #pi^{#plus}";
+          labels[hf_cand_b0::DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
+          labels[hf_cand_b0::DecayTypeMc::OtherDecay] = "Other decays";
+          static const AxisSpec axisDecayType = {kNBinsDecayTypeMc, 0.5, kNBinsDecayTypeMc + 0.5, ""};
+          registry.add("hDecayTypeMc", "DecayType", {HistType::kTH3F, {axisDecayType, axisMassB0, axisPtB0}});
+          for (uint8_t iBin = 0; iBin < kNBinsDecayTypeMc; ++iBin) {
+            registry.get<TH3>(HIST("hDecayTypeMc"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin]);
+          }
+        }
         // ML scores of D- daughter
         if (doprocessMcWithDmesMl) {
           // signal
@@ -290,7 +305,7 @@ struct HfTaskB0Reduced {
     auto ptCandB0 = candidate.pt();
     auto invMassB0 = hfHelper.invMassB0ToDPi(candidate);
     auto candD = candidate.template prong0_as<aod::HfRed3Prongs>();
-    auto ptD = RecoDecay::pt(candD.px(), candD.py());
+    auto ptD = candidate.ptProng0();
     auto invMassD = candD.invMass();
     std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
     std::array<float, 3> posSvD{candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex()};
@@ -302,7 +317,7 @@ struct HfTaskB0Reduced {
 
     if (fillHistograms) {
       registry.fill(HIST("hMass"), ptCandB0, invMassB0);
-      registry.fill(HIST("hPtProng0"), ptCandB0, candidate.ptProng0());
+      registry.fill(HIST("hPtProng0"), ptCandB0, ptD);
       registry.fill(HIST("hPtProng1"), ptCandB0, candidate.ptProng1());
       registry.fill(HIST("hImpParProd"), ptCandB0, candidate.impactParameterProduct());
       registry.fill(HIST("hDecLength"), ptCandB0, candidate.decayLength());
@@ -392,7 +407,7 @@ struct HfTaskB0Reduced {
     auto ptCandB0 = candidate.pt();
     auto invMassB0 = hfHelper.invMassB0ToDPi(candidate);
     auto candD = candidate.template prong0_as<aod::HfRed3Prongs>();
-    auto ptD = RecoDecay::pt(candD.px(), candD.py());
+    auto ptD = candidate.ptProng0();
     auto invMassD = candD.invMass();
     std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
     std::array<float, 3> posSvD{candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex()};
@@ -406,8 +421,8 @@ struct HfTaskB0Reduced {
     bool isSignal = TESTBIT(std::abs(flagMcMatchRec), hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
     if (fillHistograms) {
       if (isSignal) {
-        registry.fill(HIST("hMassRecSig"), ptCandB0, hfHelper.invMassB0ToDPi(candidate));
-        registry.fill(HIST("hPtProng0RecSig"), ptCandB0, candidate.ptProng0());
+        registry.fill(HIST("hMassRecSig"), ptCandB0, invMassB0);
+        registry.fill(HIST("hPtProng0RecSig"), ptCandB0, ptD);
         registry.fill(HIST("hPtProng1RecSig"), ptCandB0, candidate.ptProng1());
         registry.fill(HIST("hImpParProdRecSig"), ptCandB0, candidate.impactParameterProduct());
         registry.fill(HIST("hDecLengthRecSig"), ptCandB0, candidate.decayLength());
@@ -424,14 +439,17 @@ struct HfTaskB0Reduced {
         registry.fill(HIST("hDecLengthXyDRecSig"), ptD, decLenXyD);
         registry.fill(HIST("hCospDRecSig"), ptD, cospD);
         registry.fill(HIST("hCospXyDRecSig"), ptD, cospXyD);
+        if (checkDecayTypeMc) {
+          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi, invMassB0, ptCandB0);
+        }
         if constexpr (withDmesMl) {
           registry.fill(HIST("hMlScoreBkgDRecSig"), ptD, candidate.prong0MlScoreBkg());
           registry.fill(HIST("hMlScorePromptDRecSig"), ptD, candidate.prong0MlScorePrompt());
           registry.fill(HIST("hMlScoreNonPromptDRecSig"), ptD, candidate.prong0MlScoreNonprompt());
         }
       } else if (fillBackground) {
-        registry.fill(HIST("hMassRecBg"), ptCandB0, hfHelper.invMassB0ToDPi(candidate));
-        registry.fill(HIST("hPtProng0RecBg"), ptCandB0, candidate.ptProng0());
+        registry.fill(HIST("hMassRecBg"), ptCandB0, invMassB0);
+        registry.fill(HIST("hPtProng0RecBg"), ptCandB0, ptD);
         registry.fill(HIST("hPtProng1RecBg"), ptCandB0, candidate.ptProng1());
         registry.fill(HIST("hImpParProdRecBg"), ptCandB0, candidate.impactParameterProduct());
         registry.fill(HIST("hDecLengthRecBg"), ptCandB0, candidate.decayLength());
@@ -452,6 +470,14 @@ struct HfTaskB0Reduced {
           registry.fill(HIST("hMlScoreBkgDRecBg"), ptD, candidate.prong0MlScoreBkg());
           registry.fill(HIST("hMlScorePromptDRecBg"), ptD, candidate.prong0MlScorePrompt());
           registry.fill(HIST("hMlScoreNonPromptDRecBg"), ptD, candidate.prong0MlScoreNonprompt());
+        }
+      } else if (checkDecayTypeMc) {
+        if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi)) { // B0 → Ds- π+ → (K- K+ π-) π+
+          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi, invMassB0, ptCandB0);
+        } else if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
+          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::PartlyRecoDecay, invMassB0, ptCandB0);
+        } else {
+          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_b0::DecayTypeMc::OtherDecay, invMassB0, ptCandB0);
         }
       }
     }

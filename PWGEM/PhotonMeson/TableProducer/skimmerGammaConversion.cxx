@@ -190,7 +190,7 @@ struct skimmerGammaConversion {
            theTrack.tpcChi2NCl(), theTrack.tpcInnerParam(), theTrack.tpcSignal(),
            theTrack.tpcNSigmaEl(), theTrack.tpcNSigmaPi(),
            theTrack.itsClusterSizes(), theTrack.itsChi2NCl(), theTrack.detectorMap(),
-           theTrack.x(), theTrack.y(), theTrack.z(), theTrack.tgl(), theTrack.signed1Pt());
+           theTrack.x(), theTrack.y(), theTrack.z(), theTrack.tgl());
   }
 
   void fillV0RecalculatedTable(recalculatedVertexParameters recalculatedVertex)

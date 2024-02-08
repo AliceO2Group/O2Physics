@@ -45,6 +45,9 @@ using namespace o2::framework::expressions;
 
 struct phosPi0 {
 
+  ConfigurableAxis amplitudeAxisLarge{"amplitude", {1000, 0., 100.}, "Amplutude (GeV)"};
+  ConfigurableAxis mggAxis{"mgg", {250, 0., 1.}, "m_{#gamma#gamma} (GeV/c^{2})"};
+  ConfigurableAxis timeAxisLarge{"celltime", {500, -1500.e-9, 3500.e-9}, "cell time (ns)"};
   Configurable<float> mMinCluE{"mMinCluE", 0.3, "Minimum cluster energy for analysis"};
   Configurable<float> mMinCluTime{"minCluTime", -50.e-9, "Min. cluster time"};
   Configurable<float> mMaxCluTime{"mMinCluTime", 100.e-9, "Max. cluster time"};
@@ -77,10 +80,7 @@ struct phosPi0 {
       zAxis{56, -63., 63., "z", "z (cm)"},
       phiAxis{64, -72., 72., "x", "x (cm)"},
       modAxis{4, 1., 5., "module", "Module"},
-      amplitudeAxisLarge{100, 0., 20., "amplitude", "Amplutude (GeV)"},
-      timeAxisLarge{500, -1500.e-9, 3500.e-9, "celltime", "cell time (ns)"},
       multAxis{100, 0., 100.},
-      mggAxis{250, 0., 1., "mgg", "m_{#gamma#gamma} (GeV/c^{2})"},
       vertexAxis{100, -20., 20., "z", "z (cm)"},
       modCombAxis{10, 0., 10.},
       centAxis{10, 0., 10.},
