@@ -836,7 +836,7 @@ struct kinkAnalysis {
                 if (cfgIsMC) {
                   if (motherPdg == particlePdgCode)
                     histos.fill(HIST("hPtPlusRecMcTrth"), mass, sigmaPt);
-                  else if (motherPdg == 1010010030 && daughterPdg == 1000010030)
+                  if (motherPdg == 1010010030 && daughterPdg == 1000010030)
                     histos.fill(HIST("hpRes"), sigmaPt, (mcMotherPt - sigmaPt) / mcMotherPt);
                 }
                 histos.fill(HIST("hMassPlusPt"), mass, sigmaPt);
