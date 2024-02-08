@@ -15,7 +15,7 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
 #ifndef COMMON_CORE_TRACKUTILITIES_H_
-#define COMMON_CORE_TRACKUTILITIES_H_ 
+#define COMMON_CORE_TRACKUTILITIES_H_
 
 #include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/Vertex.h"
