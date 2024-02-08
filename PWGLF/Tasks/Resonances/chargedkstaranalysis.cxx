@@ -205,15 +205,15 @@ struct chargedkstaranalysis {
   bool selectionTrack(const T& candidate)
   {
     if (iscustomDCAcut &&
-        (!candidate.isGlobalTrack() || !candidate.isPVContributor() ||
-         candidate.itsNCls() < cfgITScluster)) {
+        !(candidate.isGlobalTrack() || candidate.isPVContributor() ||
+          candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
     if (ismanualDCAcut &&
-        (!candidate.isGlobalTrackWoDCA() || !candidate.isPVContributor() ||
-         std::abs(candidate.dcaXY()) > cfgCutDCAxy ||
-         std::abs(candidate.dcaZ()) > cfgCutDCAz ||
-         candidate.itsNCls() < cfgITScluster)) {
+        !(candidate.isGlobalTrackWoDCA() || candidate.isPVContributor() ||
+          std::abs(candidate.dcaXY()) < cfgCutDCAxy ||
+          std::abs(candidate.dcaZ()) < cfgCutDCAz ||
+          candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
     return true;
