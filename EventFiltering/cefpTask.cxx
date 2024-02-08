@@ -204,7 +204,7 @@ static const float defaultDownscaling[128][1]{
 #define FILTER_CONFIGURABLE(_TYPE_)                                                                                                                                              \
   Configurable<LabeledArray<float>> cfg##_TYPE_                                                                                                                                  \
   {                                                                                                                                                                              \
-#_TYPE_, {defaultDownscaling[0], NumberOfColumns < _TYPE_>(), 1, ColumnsNames(typename _TYPE_::iterator::persistent_columns_t{}), downscalingName }, #_TYPE_ " downscalings" \
+#_TYPE_, {defaultDownscaling[0], NumberOfColumns(typename _TYPE_::table_t::columns{}), 1, ColumnsNames(typename _TYPE_::table_t::columns{}), downscalingName }, #_TYPE_ " downscalings" \
   }
 
 } // namespace
