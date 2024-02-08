@@ -217,13 +217,18 @@ struct CorrelationTask {
     }
   }
 
+  template <class T>
+  using hasInvMass = decltype(std::declval<T&>().invMass());
+
   template <typename TCollision, typename TTracks1, typename TTracks2>
   void fillQA(const TCollision& collision, float multiplicity, const TTracks1& tracks1, const TTracks2& tracks2)
   {
     for (auto& track1 : tracks1) {
-      if constexpr (std::is_same<TTracks1, aod::CF2ProngTracks>::value) {
-        if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track1.decay())) == 0u)
-          continue;
+      if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value) {
+        if constexpr (std::experimental::is_detected<hasDecay, typename TTracks1::iterator>::value) {
+          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track1.decay())) == 0u)
+            continue;
+        }
         registry.fill(HIST("invMass"), track1.invMass());
       }
       registry.fill(HIST("yieldsTrigger"), multiplicity, track1.pt(), track1.eta());
@@ -262,6 +267,12 @@ struct CorrelationTask {
 
   template <class T>
   using hasSign = decltype(std::declval<T&>().sign());
+  template <class T>
+  using hasDecay = decltype(std::declval<T&>().decay());
+  template <class T>
+  using hasProng0Id = decltype(std::declval<T&>().cfTrackProng0Id());
+  template <class T>
+  using hasProng1Id = decltype(std::declval<T&>().cfTrackProng1Id());
 
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks1, typename TTracks2>
   void fillCorrelations(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight)
@@ -286,12 +297,12 @@ struct CorrelationTask {
         }
       }
 
-      if constexpr (std::is_same<TTracks1, aod::CF2ProngTracks>::value) {
+      if constexpr (std::experimental::is_detected<hasDecay, typename TTracks1::iterator>::value) {
         if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track1.decay())) == 0u)
           continue;
       }
 
-      if constexpr (std::experimental::is_detected<hasSign, TTracks1>::value) {
+      if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value) {
         if (cfgTriggerCharge != 0 && cfgTriggerCharge * track1.sign() < 0) {
           continue;
         }
@@ -313,8 +324,12 @@ struct CorrelationTask {
             continue;
           }
         }
-        if constexpr (std::is_same<TTracks1, aod::CF2ProngTracks>::value) {
-          if (track2.globalIndex() == track1.cfTrackProng0Id() || track2.globalIndex() == track1.cfTrackProng1Id()) // do not correlate daughter tracks of the same event
+        if constexpr (std::experimental::is_detected<hasProng0Id, typename TTracks1::iterator>::value) {
+          if (track2.globalIndex() == track1.cfTrackProng0Id()) // do not correlate daughter tracks of the same event
+            continue;
+        }
+        if constexpr (std::experimental::is_detected<hasProng1Id, typename TTracks1::iterator>::value) {
+          if (track2.globalIndex() == track1.cfTrackProng1Id()) // do not correlate daughter tracks of the same event
             continue;
         }
 
@@ -332,7 +347,7 @@ struct CorrelationTask {
           continue;
         }
 
-        if constexpr (std::experimental::is_detected<hasSign, TTracks1>::value) {
+        if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value) {
           if (cfgPairCharge != 0 && cfgPairCharge * track1.sign() * track2.sign() < 0) {
             continue;
           }
