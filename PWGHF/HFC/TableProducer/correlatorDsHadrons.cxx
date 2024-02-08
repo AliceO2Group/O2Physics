@@ -59,6 +59,7 @@ AxisSpec axisPtProng2 = {180, 0., 36., "#it{p}_{T} prong2 (GeV/#it{c})"};
 AxisSpec axisPtHadron = {11, 0., 11., "#it{p}_{T} Hadron (GeV/#it{c})"};
 AxisSpec axisMultiplicity = {1000, 0., 10000., "Multiplicity"};
 AxisSpec axisPoolBin = {9, 0., 9., "PoolBin"};
+AxisSpec axisPosZ = {40, -10., 10., "z-vertex position"};
 
 // binning type
 std::vector<double> zBins{VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0};
@@ -182,6 +183,16 @@ struct HfCorrelatorDsHadrons {
   HfHelper hfHelper;
   SliceCache cache;
 
+  enum CandidateStep { kCandidateStepMcGen = 0,
+                       kCandidateStepMcReco,
+                       kCandidateNSteps };
+
+  enum AssocTrackStep { kTrackableAll = 0,
+                        kAssocTrackStepRecoPrimaries,
+                        kAssocTrackStepRecoAll,
+                        kAssocTrackStepFake,
+                        kAssocTrackNSteps };
+
   using SelCollisionsWithDs = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>>;      // collisionFilter applied
   using SelCollisionsWithDsMc = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection>>;              // collisionFilter applied
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;                           // flagDsFilter applied
@@ -259,6 +270,14 @@ struct HfCorrelatorDsHadrons {
     registry.add("hMassDsMCRecSig", "Ds signal candidates - MC Reco", {HistType::kTH2F, {{axisMassD}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassDsMCRecBkg", "Ds background candidates - MC Reco", {HistType::kTH2F, {{axisMassD}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCountDstriggersMCGen", "Ds trigger particles - MC Gen", {HistType::kTH2F, {{1, -0.5, 0.5, "number of Ds triggers"}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+
+    auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPtD, axisMultiplicity, {RecoDecay::OriginType::NonPrompt + 1, RecoDecay::OriginType::None - 0.5, RecoDecay::OriginType::NonPrompt + 0.5}}, kCandidateNSteps});
+    hCandidates->GetAxis(0)->SetTitle("#it{p}_{T} (GeV/#it{c})");
+    hCandidates->GetAxis(2)->SetTitle("Charm hadron origin");
+
+    auto hAssocTracks = registry.add<StepTHn>("hAssocTracks", "Associated tracks at different steps", {HistType::kStepTHnF, {axisEta, axisPtHadron, axisMultiplicity, axisPosZ}, kAssocTrackNSteps});
+    hAssocTracks->GetAxis(0)->SetTitle("#eta");
+    hAssocTracks->GetAxis(1)->SetTitle("#it{p}_{T} (GeV/#it{c})");
   }
 
   /// Fill histograms of quantities independent from the daugther-mass hypothesis for data
@@ -549,83 +568,40 @@ struct HfCorrelatorDsHadrons {
   }
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcRec, "Process MC Reco mode", false);
 
-  /// Ds-Hadron correlation - for calculating efficiencies using MC reco-level analysis
-  void processMcEfficiencies(CandDsMcReco const& candidates,
-                             CandDsMcGen const& mcParticles,
+    /// Ds-Hadron correlation - for calculating efficiencies using MC reco-level analysis
+  void processMcEfficiencies(soa::Join<aod::Collisions, aod::Mults> const& collisions,
+                             CandDsMcReco const& candidates,
                              MyTracksData const& tracksData,
+                             aod::McCollisions const& mcCollisions,
+                             CandDsMcGen const& mcParticles,
                              aod::TracksWMc const&)
   {
-    // MC rec.
-    for (const auto& candidate : candidates) {
-      if (yCandMax >= 0. && std::abs(hfHelper.yDs(candidate)) > yCandMax) {
-        continue;
-      }
-      if (ptCandMin >= 0. && candidate.pt() < ptCandMin) {
-        continue;
-      }
-      if (candidate.pt() > ptCandMax) {
-        continue;
-      }
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
-        auto prong0McPart = candidate.prong0_as<aod::TracksWMc>().mcParticle_as<CandDsMcGen>();
-        // DsToKKPi and DsToPiKK division
-        if ((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) {
-          fillHistoMcRecSig(candidate, 0.);
-          registry.fill(HIST("hSelectionStatusMcRec"), candidate.isSelDsToKKPi());
-        } else if ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs)) {
-          fillHistoMcRecSig(candidate, 0.);
-          registry.fill(HIST("hSelectionStatusMcRec"), candidate.isSelDsToPiKK());
-        }
-      } else {
-        fillHistoMcRecBkg(candidate);
-      }
-    }
+     auto multiplicity = mcCollisions.multiplicity();
+     auto posZ = mcCollisions.posZ();
 
-    // MC reco level for particles associated reconstruction's efficiency
-    for (const auto& track : tracksData) {
-      if (std::abs(track.eta()) > etaTrackMax) {
-        continue;
-      }
-      if (track.pt() < ptTrackMin) {
-        continue;
-      }
-      // Remove secondary tracks
-      if (std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
-        continue;
-      }
-      registry.fill(HIST("hPtParticleAssocMcRec"), track.pt());
-    }
+     // Reco loop
+     for (auto& collision : collisions) {
+       auto groupedCandidates = CandDsMcReco -> sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+       //= candidates.sliceBy(aod::hf_cand::collisionId, collision.globalIndex());
+       auto groupedTracks = MyTracksData -> sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+      //tracksData.sliceBy(aod::track::CollisionId, collision.globalIndex());
+      /*if (cfgVerbosity > 0) {
+        LOGF(info, "  Reconstructed collision at vtx-z = %f", collision.posZ());
+        LOGF(info, "  which has %d tracks", groupedTracks.size());
+      }*/
 
-    // MC gen level for Ds meson reconstruction's efficiency
-    for (const auto& particle : mcParticles) {
-      // check if the particle is Ds
-      if (std::abs(particle.pdgCode()) != Pdg::kDS) {
-        continue;
-      }
-      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
-        double yD = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, MassDS);
-        if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
-          continue;
+      for (auto& track : groupedTracks) {
+        if (track.has_cfMCParticle()) {
+          const auto& mcParticle = track.cfMCParticle();
+          if (mcParticle.isPhysicalPrimary()) {
+            hAssocTracks->Fill(kAssocTrackStepRecoPrimaries, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
+          }
+          hAssocTracks->Fill(kAssocTrackStepRecoAll, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
+        } else {
+          // fake track
+          hAssocTracks->Fill(kAssocTrackStepFake, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
         }
-        if (ptCandMin >= 0. && particle.pt() < ptCandMin) {
-          continue;
-        }
-        fillHistoMcGen(particle, yD);
       }
-    }
-
-    // MC gen level for particles associated reconstruction's efficiency
-    for (const auto& particleAssoc : mcParticles) {
-      if (std::abs(particleAssoc.eta()) > etaTrackMax) {
-        continue;
-      }
-      if (particleAssoc.pt() < ptTrackMin) {
-        continue;
-      }
-      if ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particleAssoc.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton)) {
-        continue;
-      }
-      registry.fill(HIST("hPtParticleAssocMcGen"), particleAssoc.pt());
     }
   }
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcEfficiencies, "Process MC for calculating efficiencies", false);
