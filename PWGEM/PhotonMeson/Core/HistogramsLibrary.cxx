@@ -63,7 +63,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hNclsITS", "number of ITS clusters", 8, -0.5, 7.5));
     list->Add(new TH1F("hChi2ITS", "chi2/number of ITS clusters", 100, 0, 10));
     list->Add(new TH1F("hITSClusterMap", "ITS cluster map", 128, -0.5, 127.5));
-    list->Add(new TH1F("hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", 160, 0, 16));
+    list->Add(new TH1F("hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", 32, 0, 16));
     list->Add(new TH2F("hXY", "X vs. Y;X (cm);Y (cm)", 100, 0, 100, 100, -50, 50));
     list->Add(new TH2F("hZX", "Z vs. X;Z (cm);X (cm)", 200, -100, 100, 100, 0, 100));
     list->Add(new TH2F("hZY", "Z vs. Y;Z (cm);Y (cm)", 200, -100, 100, 100, -50, 50));
@@ -312,7 +312,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hNclsITS", "number of ITS clusters", 8, -0.5, 7.5));
     list->Add(new TH1F("hChi2ITS", "chi2/number of ITS clusters", 100, 0, 10));
     list->Add(new TH1F("hITSClusterMap", "ITS cluster map", 128, -0.5, 127.5));
-    list->Add(new TH1F("hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", 160, 0, 16));
+    list->Add(new TH1F("hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", 32, 0, 16));
     if (TString(subGroup).Contains("mc")) {
       list->Add(new TH2F("hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", 1000, 0, maxP, 400, -1.0f, 1.0f));
       list->Add(new TH2F("hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", 1000, 0, maxP, 400, -1.0f, 1.0f));
