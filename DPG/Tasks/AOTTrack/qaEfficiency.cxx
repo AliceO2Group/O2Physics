@@ -1522,7 +1522,7 @@ struct QaEfficiency {
           }
         }
         if (hasFakeHit) {
-            return false;
+          return false;
         }
       }
       if constexpr (doFillHisto) {
