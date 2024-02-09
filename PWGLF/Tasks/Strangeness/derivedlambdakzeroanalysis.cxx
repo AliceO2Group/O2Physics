@@ -96,6 +96,7 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> doQA{"doQA", true, "do topological variable QA histograms"};
   Configurable<float> qaMinPt{"qaMinPt", 0.0f, "minimum pT for QA plots"};
   Configurable<float> qaMaxPt{"qaMaxPt", 0.0f, "maximum pT for QA plots"};
+  Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
 
   // for MC
   Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
@@ -108,6 +109,8 @@ struct derivedlambdakzeroanalysis {
   ConfigurableAxis axisK0Mass{"axisK0Mass", {200, 0.4f, 0.6f}, ""};
   ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, ""};
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, "Centrality"};
+
+  ConfigurableAxis axisRawCentrality{"axisRawCentrality", {VARIABLE_WIDTH, 0.000f, 52.320f, 75.400f, 95.719f, 115.364f, 135.211f, 155.791f, 177.504f, 200.686f, 225.641f, 252.645f, 281.906f, 313.850f, 348.302f, 385.732f, 426.307f, 470.146f, 517.555f, 568.899f, 624.177f, 684.021f, 748.734f, 818.078f, 892.577f, 973.087f, 1058.789f, 1150.915f, 1249.319f, 1354.279f, 1465.979f, 1584.790f, 1710.778f, 1844.863f, 1985.746f, 2134.643f, 2291.610f, 2456.943f, 2630.653f, 2813.959f, 3006.631f, 3207.229f, 3417.641f, 3637.318f, 3865.785f, 4104.997f, 4354.938f, 4615.786f, 4885.335f, 5166.555f, 5458.021f, 5762.584f, 6077.881f, 6406.834f, 6746.435f, 7097.958f, 7462.579f, 7839.165f, 8231.629f, 8635.640f, 9052.000f, 9484.268f, 9929.111f, 10389.350f, 10862.059f, 11352.185f, 11856.823f, 12380.371f, 12920.401f, 13476.971f, 14053.087f, 14646.190f, 15258.426f, 15890.617f, 16544.433f, 17218.024f, 17913.465f, 18631.374f, 19374.983f, 20136.700f, 20927.783f, 21746.796f, 22590.880f, 23465.734f, 24372.274f, 25314.351f, 26290.488f, 27300.899f, 28347.512f, 29436.133f, 30567.840f, 31746.818f, 32982.664f, 34276.329f, 35624.859f, 37042.588f, 38546.609f, 40139.742f, 41837.980f, 43679.429f, 45892.130f, 400000.000f}, "raw centrality signal"}; // for QA
 
   // topological variable QA axes
   ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {20, 0.0f, 1.0f}, "DCA (cm)"};
@@ -198,6 +201,14 @@ struct derivedlambdakzeroanalysis {
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
+
+    // for QA and test purposes
+    auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
+
+    for(int ii=1; ii<101; ii++){ 
+      float value = 100.5f-static_cast<float>(ii);
+      hRawCentrality->SetBinContent(ii, value);
+    }
 
     // histograms versus mass
     if (analyseK0Short)
@@ -342,22 +353,22 @@ struct derivedlambdakzeroanalysis {
     return (bitmap & mask) == mask;
   }
 
-  template <typename TV0, typename TCollision>
-  void analyseCandidate(TV0 v0, TCollision collision, uint32_t selMap)
+  template <typename TV0>
+  void analyseCandidate(TV0 v0, float centrality, uint32_t selMap)
   // precalculate this information so that a check is one mask operation, not many
   {
     // __________________________________________
     // main analysis
     if (verifyMask(selMap, maskSelectionK0Short) && analyseK0Short) {
       histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), v0.alpha(), v0.qtarm()); // cross-check
-      histos.fill(HIST("h3dMassK0Short"), collision.centFT0C(), v0.pt(), v0.mK0Short());
+      histos.fill(HIST("h3dMassK0Short"), centrality, v0.pt(), v0.mK0Short());
       histos.fill(HIST("hMassK0Short"), v0.mK0Short());
     }
     if (verifyMask(selMap, maskSelectionLambda) && analyseLambda) {
-      histos.fill(HIST("h3dMassLambda"), collision.centFT0C(), v0.pt(), v0.mLambda());
+      histos.fill(HIST("h3dMassLambda"), centrality, v0.pt(), v0.mLambda());
     }
     if (verifyMask(selMap, maskSelectionAntiLambda) && analyseAntiLambda) {
-      histos.fill(HIST("h3dMassAntiLambda"), collision.centFT0C(), v0.pt(), v0.mAntiLambda());
+      histos.fill(HIST("h3dMassAntiLambda"), centrality, v0.pt(), v0.mAntiLambda());
     }
 
     // __________________________________________
@@ -365,47 +376,47 @@ struct derivedlambdakzeroanalysis {
     if (doQA) {
       if (analyseK0Short) {
         if (verifyMask(selMap, maskTopoNoV0Radius | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dV0Radius"), collision.centFT0C(), v0.pt(), v0.mK0Short(), v0.v0radius());
+          histos.fill(HIST("K0Short/h4dV0Radius"), centrality, v0.pt(), v0.mK0Short(), v0.v0radius());
         if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dPosDCAToPV"), collision.centFT0C(), v0.pt(), v0.mK0Short(), TMath::Abs(v0.dcapostopv()));
+          histos.fill(HIST("K0Short/h4dPosDCAToPV"), centrality, v0.pt(), v0.mK0Short(), TMath::Abs(v0.dcapostopv()));
         if (verifyMask(selMap, maskTopoNoDCANegToPV | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dNegDCAToPV"), collision.centFT0C(), v0.pt(), v0.mK0Short(), TMath::Abs(v0.dcanegtopv()));
+          histos.fill(HIST("K0Short/h4dNegDCAToPV"), centrality, v0.pt(), v0.mK0Short(), TMath::Abs(v0.dcanegtopv()));
         if (verifyMask(selMap, maskTopoNoCosPA | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dPointingAngle"), collision.centFT0C(), v0.pt(), v0.mK0Short(), TMath::ACos(v0.v0cosPA()));
+          histos.fill(HIST("K0Short/h4dPointingAngle"), centrality, v0.pt(), v0.mK0Short(), TMath::ACos(v0.v0cosPA()));
         if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dDCADaughters"), collision.centFT0C(), v0.pt(), v0.mK0Short(), v0.dcaV0daughters());
+          histos.fill(HIST("K0Short/h4dDCADaughters"), centrality, v0.pt(), v0.mK0Short(), v0.dcaV0daughters());
       }
 
       if (analyseLambda) {
         if (verifyMask(selMap, maskTopoNoV0Radius | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dV0Radius"), collision.centFT0C(), v0.pt(), v0.mLambda(), v0.v0radius());
+          histos.fill(HIST("Lambda/h4dV0Radius"), centrality, v0.pt(), v0.mLambda(), v0.v0radius());
         if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dPosDCAToPV"), collision.centFT0C(), v0.pt(), v0.mLambda(), TMath::Abs(v0.dcapostopv()));
+          histos.fill(HIST("Lambda/h4dPosDCAToPV"), centrality, v0.pt(), v0.mLambda(), TMath::Abs(v0.dcapostopv()));
         if (verifyMask(selMap, maskTopoNoDCANegToPV | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dNegDCAToPV"), collision.centFT0C(), v0.pt(), v0.mLambda(), TMath::Abs(v0.dcanegtopv()));
+          histos.fill(HIST("Lambda/h4dNegDCAToPV"), centrality, v0.pt(), v0.mLambda(), TMath::Abs(v0.dcanegtopv()));
         if (verifyMask(selMap, maskTopoNoCosPA | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dPointingAngle"), collision.centFT0C(), v0.pt(), v0.mLambda(), TMath::ACos(v0.v0cosPA()));
+          histos.fill(HIST("Lambda/h4dPointingAngle"), centrality, v0.pt(), v0.mLambda(), TMath::ACos(v0.v0cosPA()));
         if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dDCADaughters"), collision.centFT0C(), v0.pt(), v0.mLambda(), v0.dcaV0daughters());
+          histos.fill(HIST("Lambda/h4dDCADaughters"), centrality, v0.pt(), v0.mLambda(), v0.dcaV0daughters());
       }
       if (analyseAntiLambda) {
         if (verifyMask(selMap, maskTopoNoV0Radius | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dV0Radius"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), v0.v0radius());
+          histos.fill(HIST("AntiLambda/h4dV0Radius"), centrality, v0.pt(), v0.mAntiLambda(), v0.v0radius());
         if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dPosDCAToPV"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), TMath::Abs(v0.dcapostopv()));
+          histos.fill(HIST("AntiLambda/h4dPosDCAToPV"), centrality, v0.pt(), v0.mAntiLambda(), TMath::Abs(v0.dcapostopv()));
         if (verifyMask(selMap, maskTopoNoDCANegToPV | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dNegDCAToPV"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), TMath::Abs(v0.dcanegtopv()));
+          histos.fill(HIST("AntiLambda/h4dNegDCAToPV"), centrality, v0.pt(), v0.mAntiLambda(), TMath::Abs(v0.dcanegtopv()));
         if (verifyMask(selMap, maskTopoNoCosPA | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dPointingAngle"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), TMath::ACos(v0.v0cosPA()));
+          histos.fill(HIST("AntiLambda/h4dPointingAngle"), centrality, v0.pt(), v0.mAntiLambda(), TMath::ACos(v0.v0cosPA()));
         if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dDCADaughters"), collision.centFT0C(), v0.pt(), v0.mAntiLambda(), v0.dcaV0daughters());
+          histos.fill(HIST("AntiLambda/h4dDCADaughters"), centrality, v0.pt(), v0.mAntiLambda(), v0.dcaV0daughters());
       }
     } // end systematics / qa
   }
 
   // ______________________________________________________
   // Real data processing - no MC subscription
-  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& collision, v0Candidates const& fullV0s, dauTracks const&)
+  void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels>::iterator const& collision, v0Candidates const& fullV0s, dauTracks const&)
   {
     histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
     if (!collision.sel8()) {
@@ -417,7 +428,14 @@ struct derivedlambdakzeroanalysis {
       return;
     }
     histos.fill(HIST("hEventSelection"), 2 /* vertex-Z selected */);
-    histos.fill(HIST("hEventCentrality"), collision.centFT0C());
+
+    float centrality = collision.centFT0C(); 
+    if( qaCentrality ){
+      auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
+      centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(collision.multFT0C()));
+    }
+
+    histos.fill(HIST("hEventCentrality"), centrality);
 
     // __________________________________________
     // perform main analysis
@@ -433,13 +451,13 @@ struct derivedlambdakzeroanalysis {
       // consider for histograms for all species
       selMap = selMap | (1 << selConsiderK0Short) | (1 << selConsiderLambda) | (1 << selConsiderAntiLambda);
 
-      analyseCandidate(v0, collision, selMap);
+      analyseCandidate(v0, centrality, selMap);
     } // end v0 loop
   }
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&)
   {
     histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
     if (!collision.sel8()) {
@@ -451,7 +469,14 @@ struct derivedlambdakzeroanalysis {
       return;
     }
     histos.fill(HIST("hEventSelection"), 2 /* vertex-Z selected */);
-    histos.fill(HIST("hEventCentrality"), collision.centFT0C());
+
+    float centrality = collision.centFT0C(); 
+    if( qaCentrality ){
+      auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
+      centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(collision.multFT0C()));
+    }
+
+    histos.fill(HIST("hEventCentrality"), centrality);
 
     // __________________________________________
     // perform main analysis
@@ -471,7 +496,7 @@ struct derivedlambdakzeroanalysis {
         selMap = selMap | (1 << selConsiderK0Short) | (1 << selConsiderLambda) | (1 << selConsiderAntiLambda);
       }
 
-      analyseCandidate(v0, collision, selMap);
+      analyseCandidate(v0, centrality, selMap);
     } // end v0 loop
   }
 
