@@ -309,7 +309,9 @@ struct HfCandidateCreator3ProngExpressions {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
         }
         if (indexRec > -1) {
-          flag = sign * (1 << DecayType::DsToKKPi); // INFO: DecayType::DsToKKPi is used to flag Ds± → K± K∓ π± and D± → K± K∓ π±
+          // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
+          // TODO: move to different and explicit flags
+          flag = sign * (1 << DecayType::DsToKKPi);
           if (arrayDaughters[0].has_mcParticle()) {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
@@ -388,9 +390,13 @@ struct HfCandidateCreator3ProngExpressions {
       if (flag == 0) {
         bool isDplus = false;
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-          flag = sign * (1 << DecayType::DsToKKPi); // INFO: DecaType::DsToKKPi is used to flag Ds± → K± K∓ π± and D± → K± K∓ π±
+          // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
+          // TODO: move to different and explicit flags
+          flag = sign * (1 << DecayType::DsToKKPi);
         } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-          flag = sign * (1 << DecayType::DsToKKPi); // INFO: DecaType::DsToKKPi is used to flag Ds± → K± K∓ π± and D± → K± K∓ π±
+          // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
+          // TODO: move to different and explicit flags
+          flag = sign * (1 << DecayType::DsToKKPi);
           isDplus = true;
         }
         if (flag != 0) {
