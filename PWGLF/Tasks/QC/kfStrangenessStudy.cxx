@@ -333,8 +333,8 @@ struct kfStrangenessStudy {
     }
   }
 
-  template <typename TCollision, typename TCascData, typename TFullTracksIU, typename TMCParticle>
-  void getCascMCdata(TCollision const& collision, TCascData const& cascdata, TFullTracksIU const&, TMCParticle const& mcparticles)
+  template <typename TCollision, typename TCascData, typename TFullTracksIU>
+  void getCascMCdata(TCollision const& collision, TCascData const& cascdata, TFullTracksIU const&, aod::McParticles const& mcparticles)
   {
     if (cascdata.has_mcParticle() && cascdata.mcParticleId() > -1 && cascdata.mcParticleId() <= mcparticles.size()) {
       auto MCcascade = cascdata.mcParticle();
@@ -343,7 +343,7 @@ struct kfStrangenessStudy {
         LOG(info) << "MC cascade has daughters, getting MC info.";
         LOG(info) << "MCcascade.has_daughters() = " << MCcascade.has_daughters();
         // get MC V0
-        for (auto const& MCv0 : MCcascade.template daughters_as<TMCParticle>()) {
+        for (auto const& MCv0 : MCcascade.template daughters_as<aod::McParticles>()) {
           LOG(info) << "Entered loop over daughters.";
           if (abs(MCv0.pdgCode()) == 3122 && MCv0.has_daughters()) {
             LOG(info) << "Daughter is a Lambda and has daughters.";
@@ -357,11 +357,11 @@ struct kfStrangenessStudy {
             vtxGen[2] = MCv0.vz();
             // V0
             ptGenV0 = MCv0.pt();
-            vtxGenV0[0] = MCv0.template daughters_as<TMCParticle>().begin().vx(); // MC V0 vertex
-            vtxGenV0[1] = MCv0.template daughters_as<TMCParticle>().begin().vy();
-            vtxGenV0[2] = MCv0.template daughters_as<TMCParticle>().begin().vz();
+            vtxGenV0[0] = MCv0.template daughters_as<aod::McParticles>().begin().vx(); // MC V0 vertex
+            vtxGenV0[1] = MCv0.template daughters_as<aod::McParticles>().begin().vy();
+            vtxGenV0[2] = MCv0.template daughters_as<aod::McParticles>().begin().vz();
             // daughters
-            for (auto& d : MCv0.template daughters_as<TMCParticle>()) {
+            for (auto& d : MCv0.template daughters_as<aod::McParticles>()) {
               LOG(info) << "Entered V0 daughter loop.";
               if (abs(d.pdgCode()) == 2212) {
                 LOG(info) << "V0 daughter is a proton.";
@@ -662,7 +662,7 @@ struct kfStrangenessStudy {
                 CascDataLabeled const& CascDatas, 
                 KFCascDataLabeled const& KFCascDatas, 
                 FullTracksIU const& TracksIU, 
-                aod::McParticles const& particlesMC,
+                aod::McParticles const& mcParticles,
                 aod::BCsWithTimestamps const&)
   {
     /// magnetic field from CCDB
@@ -729,19 +729,19 @@ struct kfStrangenessStudy {
         LOG(info) << "Both fitters were successful!";
         recocase = 1;
         auto cascdata = cascade.cascData_as<CascDataLabeled>();
-        getCascMCdata(collision, cascdata, TracksIU, particlesMC);
+        getCascMCdata(collision, cascdata, TracksIU, mcParticles);
       }
       if (cascade.has_kfCascData() && !cascade.has_cascData()) {
         LOG(info) << "Only KF was successful!";
         recocase = 2;
         auto cascdata = cascade.kfCascData_as<KFCascDataLabeled>();
-        getCascMCdata(collision, cascdata, TracksIU, particlesMC);
+        getCascMCdata(collision, cascdata, TracksIU, mcParticles);
       }
       if (!cascade.has_kfCascData() && cascade.has_cascData()) {
         LOG(info) << "Only DCA fitter was successful!";
         recocase = 3;
         auto cascdata = cascade.cascData_as<CascDataLabeled>();
-        getCascMCdata(collision, cascdata, TracksIU, particlesMC);
+        getCascMCdata(collision, cascdata, TracksIU, mcParticles);
       }
 
     } // end cascade loop

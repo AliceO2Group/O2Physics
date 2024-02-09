@@ -1287,10 +1287,10 @@ struct cascadeBuilder {
     negTrackParCov.getCovXYZPxPyPzGlo(cvneg);
     cascadecandidate.v0momposerr[0] = sqrt(cvpos[9]);
     cascadecandidate.v0momposerr[1] = sqrt(cvpos[14]);
-    cascadecandidate.v0momposerr[2] = sqrt(cvpos[21]);
+    cascadecandidate.v0momposerr[2] = sqrt(cvpos[20]);
     cascadecandidate.v0momnegerr[0] = sqrt(cvneg[9]);
     cascadecandidate.v0momnegerr[1] = sqrt(cvneg[14]);
-    cascadecandidate.v0momnegerr[2] = sqrt(cvneg[21]);
+    cascadecandidate.v0momnegerr[2] = sqrt(cvneg[20]);
 
     // Daughter track position at vertex
     posTrackParCov.getXYZGlo(cascadecandidate.v0postrack);
