@@ -94,7 +94,8 @@ struct derivedlambdakzeroanalysis {
   // PID (TPC)
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
 
-  Configurable<bool> doQA{"doQA", true, "do topological variable QA histograms"};
+  Configurable<bool> doCompleteQA{"doCompleteQA", false, "do topological variable QA histograms"};
+  Configurable<bool> doPlainQA{"doPlainQA", true, "do simple 1D QA of candidates"};
   Configurable<float> qaMinPt{"qaMinPt", 0.0f, "minimum pT for QA plots"};
   Configurable<float> qaMaxPt{"qaMaxPt", 0.0f, "maximum pT for QA plots"};
   Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
@@ -123,6 +124,10 @@ struct derivedlambdakzeroanalysis {
   // AP plot axes
   ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
   ConfigurableAxis axisAPQt{"axisAPQt", {220, 0.0f, 0.5f}, "V0 AP alpha"};
+
+  // Track quality axes
+  ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
+  ConfigurableAxis axisITSclus{"axisITSclus", {7, 0.0f, 7.0f}, "N ITS Clusters"};
 
   enum species { spK0Short = 0,
                  spLambda,
@@ -240,7 +245,7 @@ struct derivedlambdakzeroanalysis {
     histos.add("hMassK0Short", "hMassK0Short", kTH1F, {axisK0Mass});
 
     // QA histograms if requested
-    if (doQA) {
+    if (doCompleteQA) {
       // initialize for K0short...
       if (analyseK0Short) {
         histos.add("K0Short/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAtoPV});
@@ -264,9 +269,50 @@ struct derivedlambdakzeroanalysis {
         histos.add("AntiLambda/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisV0Radius});
       }
 
+      if (doPlainQA) {
+        if (analyseK0Short) {
+          histos.add("K0Short/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
+          histos.add("K0Short/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axisDCAtoPV});
+          histos.add("K0Short/hDCADaughters", "hDCADaughters", kTH1F, {axisDCAdau});
+          histos.add("K0Short/hPointingAngle", "hPointingAngle", kTH1F, {axisPointingAngle});
+          histos.add("K0Short/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
+          histos.add("K0Short/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+          histos.add("K0Short/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+        }
+        if (analyseLambda) {
+          histos.add("Lambda/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
+          histos.add("Lambda/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axisDCAtoPV});
+          histos.add("Lambda/hDCADaughters", "hDCADaughters", kTH1F, {axisDCAdau});
+          histos.add("Lambda/hPointingAngle", "hPointingAngle", kTH1F, {axisPointingAngle});
+          histos.add("Lambda/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
+          histos.add("Lambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+          histos.add("Lambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+        }
+        if (analyseAntiLambda) {
+          histos.add("AntiLambda/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
+          histos.add("AntiLambda/hNegDCAToPV", "hNegDCAToPV", kTH1F, {axisDCAtoPV});
+          histos.add("AntiLambda/hDCADaughters", "hDCADaughters", kTH1F, {axisDCAdau});
+          histos.add("AntiLambda/hPointingAngle", "hPointingAngle", kTH1F, {axisPointingAngle});
+          histos.add("AntiLambda/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
+          histos.add("AntiLambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+          histos.add("AntiLambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+        }
+      }
+
       // Check if doing the right thing in AP space please
       histos.add("GeneralQA/h2dArmenterosAll", "h2dArmenterosAll", kTH2F, {axisAPAlpha, axisAPQt});
       histos.add("GeneralQA/h2dArmenterosSelected", "h2dArmenterosSelected", kTH2F, {axisAPAlpha, axisAPQt});
+
+      // base QA for all candidates
+      if (doPlainQA) {
+        histos.add("hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
+        histos.add("hNegDCAToPV", "hNegDCAToPV", kTH1F, {axisDCAtoPV});
+        histos.add("hDCADaughters", "hDCADaughters", kTH1F, {axisDCAdau});
+        histos.add("hPointingAngle", "hPointingAngle", kTH1F, {axisPointingAngle});
+        histos.add("hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
+        histos.add("h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+        histos.add("h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+      }
     }
   }
 
@@ -381,23 +427,65 @@ struct derivedlambdakzeroanalysis {
   void analyseCandidate(TV0 v0, float centrality, uint32_t selMap)
   // precalculate this information so that a check is one mask operation, not many
   {
+    auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
+    auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
+
+    // __________________________________________
+    // fill with no selection if plain QA requested
+    if (doPlainQA) {
+      histos.fill(HIST("hPosDCAToPV"), v0.dcapostopv());
+      histos.fill(HIST("hNegDCAToPV"), v0.dcanegtopv());
+      histos.fill(HIST("hDCADaughters"), v0.dcaV0daughters());
+      histos.fill(HIST("hPointingAngle"), TMath::ACos(v0.v0cosPA()));
+      histos.fill(HIST("hV0Radius"), v0.v0radius());
+      histos.fill(HIST("h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
+      histos.fill(HIST("h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
+    }
+
     // __________________________________________
     // main analysis
     if (verifyMask(selMap, maskSelectionK0Short) && analyseK0Short) {
       histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), v0.alpha(), v0.qtarm()); // cross-check
       histos.fill(HIST("h3dMassK0Short"), centrality, v0.pt(), v0.mK0Short());
       histos.fill(HIST("hMassK0Short"), v0.mK0Short());
+      if (doPlainQA) {
+        histos.fill(HIST("K0Short/hPosDCAToPV"), v0.dcapostopv());
+        histos.fill(HIST("K0Short/hNegDCAToPV"), v0.dcanegtopv());
+        histos.fill(HIST("K0Short/hDCADaughters"), v0.dcaV0daughters());
+        histos.fill(HIST("K0Short/hPointingAngle"), TMath::ACos(v0.v0cosPA()));
+        histos.fill(HIST("K0Short/hV0Radius"), v0.v0radius());
+        histos.fill(HIST("K0Short/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
+        histos.fill(HIST("K0Short/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
+      }
     }
     if (verifyMask(selMap, maskSelectionLambda) && analyseLambda) {
       histos.fill(HIST("h3dMassLambda"), centrality, v0.pt(), v0.mLambda());
+      if (doPlainQA) {
+        histos.fill(HIST("Lambda/hPosDCAToPV"), v0.dcapostopv());
+        histos.fill(HIST("Lambda/hNegDCAToPV"), v0.dcanegtopv());
+        histos.fill(HIST("Lambda/hDCADaughters"), v0.dcaV0daughters());
+        histos.fill(HIST("Lambda/hPointingAngle"), TMath::ACos(v0.v0cosPA()));
+        histos.fill(HIST("Lambda/hV0Radius"), v0.v0radius());
+        histos.fill(HIST("Lambda/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
+        histos.fill(HIST("Lambda/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
+      }
     }
     if (verifyMask(selMap, maskSelectionAntiLambda) && analyseAntiLambda) {
       histos.fill(HIST("h3dMassAntiLambda"), centrality, v0.pt(), v0.mAntiLambda());
+      if (doPlainQA) {
+        histos.fill(HIST("AntiLambda/hPosDCAToPV"), v0.dcapostopv());
+        histos.fill(HIST("AntiLambda/hNegDCAToPV"), v0.dcanegtopv());
+        histos.fill(HIST("AntiLambda/hDCADaughters"), v0.dcaV0daughters());
+        histos.fill(HIST("AntiLambda/hPointingAngle"), TMath::ACos(v0.v0cosPA()));
+        histos.fill(HIST("AntiLambda/hV0Radius"), v0.v0radius());
+        histos.fill(HIST("AntiLambda/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
+        histos.fill(HIST("AntiLambda/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
+      }
     }
 
     // __________________________________________
     // do systematics / qa plots
-    if (doQA) {
+    if (doCompleteQA) {
       if (analyseK0Short) {
         if (verifyMask(selMap, maskTopoNoV0Radius | maskK0ShortSpecific))
           histos.fill(HIST("K0Short/h4dV0Radius"), centrality, v0.pt(), v0.mK0Short(), v0.v0radius());
