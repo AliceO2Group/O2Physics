@@ -341,12 +341,12 @@ struct kfStrangenessStudy {
 
       if (MCcascade.has_daughters()) {
         LOG(info) << "MC cascade has daughters, getting MC info.";
-        LOG(info) << "MCcascade.has_daughters() = " << MCcascade.has_daughters();
+        LOG(debug) << "MCcascade.has_daughters() = " << MCcascade.has_daughters();
         // get MC V0
         for (auto const& MCv0 : MCcascade.template daughters_as<aod::McParticles>()) {
-          LOG(info) << "Entered loop over daughters.";
+          LOG(debug) << "Entered loop over daughters.";
           if (abs(MCv0.pdgCode()) == 3122 && MCv0.has_daughters()) {
-            LOG(info) << "Daughter is a Lambda and has daughters.";
+            LOG(debug) << "Daughter is a Lambda and has daughters.";
             // cascade
             ptGen = MCcascade.pt();
             prodVtxGen[0] = MCcascade.vx();
@@ -362,14 +362,14 @@ struct kfStrangenessStudy {
             vtxGenV0[2] = MCv0.template daughters_as<aod::McParticles>().begin().vz();
             // daughters
             for (auto& d : MCv0.template daughters_as<aod::McParticles>()) {
-              LOG(info) << "Entered V0 daughter loop.";
+              LOG(debug) << "Entered V0 daughter loop.";
               if (abs(d.pdgCode()) == 2212) {
-                LOG(info) << "V0 daughter is a proton.";
+                LOG(debug) << "V0 daughter is a proton.";
                 momProtonGen[0] = d.px();
                 momProtonGen[1] = d.py();
                 momProtonGen[2] = d.pz();
               } else if (abs(d.pdgCode()) == 211) {
-                LOG(info) << "V0 daughter is a pion.";
+                LOG(debug) << "V0 daughter is a pion.";
                 momPionGen[0] = d.px();
                 momPionGen[1] = d.py();
                 momPionGen[2] = d.pz();
