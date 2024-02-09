@@ -180,6 +180,12 @@ class VarManager : public TObject
     kMCEventTime,
     kMCEventWeight,
     kMCEventImpParam,
+    kQ1X0A, // q-vector (e.g. from TPC) with x component (harmonic 1 and power 0), sub-event A
+    kQ1Y0A, // q-vector (e.g. from TPC) with y component (harmonic 1 and power 0), sub-event A
+    kQ1X0B,
+    kQ1Y0B,
+    kQ1X0C,
+    kQ1Y0C,
     kQ2X0A, // q-vector (e.g. from TPC) with x component (harmonic 2 and power 0), sub-event A
     kQ2Y0A, // q-vector (e.g. from TPC) with y component (harmonic 2 and power 0), sub-event A
     kQ2X0B,
@@ -189,12 +195,18 @@ class VarManager : public TObject
     kMultA, // Multiplicity of the sub-event A
     kMultB,
     kMultC,
-    kQ3X0A, // q-vector (e.g. from TPC) with x component (harmonic 2 and power 0), sub-event A
-    kQ3Y0A, // q-vector (e.g. from TPC) with y component (harmonic 2 and power 0), sub-event A
+    kQ3X0A, // q-vector (e.g. from TPC) with x component (harmonic 3 and power 0), sub-event A
+    kQ3Y0A, // q-vector (e.g. from TPC) with y component (harmonic 3 and power 0), sub-event A
     kQ3X0B,
     kQ3Y0B,
     kQ3X0C,
     kQ3Y0C,
+    kQ4X0A, // q-vector (e.g. from TPC) with x component (harmonic 4 and power 0), sub-event A
+    kQ4Y0A, // q-vector (e.g. from TPC) with y component (harmonic 4 and power 0), sub-event A
+    kQ4X0B,
+    kQ4Y0B,
+    kQ4X0C,
+    kQ4Y0C,
     kR2SP,
     kR3SP,
     kR2EP,
@@ -655,7 +667,7 @@ class VarManager : public TObject
   template <int partTypeCharmHad, typename DQ, typename HF, typename H, typename T>
   static void FillDileptonCharmHadron(DQ const& dilepton, HF const& charmHadron, H hfHelper, T& bdtScoreCharmHad, float* values = nullptr);
   template <typename C, typename A>
-  static void FillQVectorFromGFW(C const& collision, A const& compA2, A const& compB2, A const& compC2, A const& compA3, A const& compB3, A const& compC3, float normA = 1.0, float normB = 1.0, float normC = 1.0, float* values = nullptr);
+  static void FillQVectorFromGFW(C const& collision, A const& compA1, A const& compB1, A const& compC1, A const& compA2, A const& compB2, A const& compC2, A const& compA3, A const& compB3, A const& compC3, A const& compA4, A const& compB4, A const& compC4, float normA = 1.0, float normB = 1.0, float normC = 1.0, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
   static void FillPairVn(T1 const& t1, T2 const& t2, float* values = nullptr);
 
@@ -1047,6 +1059,12 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   if constexpr ((fillMap & ReducedEventQvector) > 0) {
+    values[kQ1X0A] = event.q1x0a();
+    values[kQ1Y0A] = event.q1y0a();
+    values[kQ1X0B] = event.q1x0b();
+    values[kQ1Y0B] = event.q1y0b();
+    values[kQ1X0C] = event.q1x0c();
+    values[kQ1Y0C] = event.q1y0c();
     values[kQ2X0A] = event.q2x0a();
     values[kQ2Y0A] = event.q2y0a();
     values[kQ2X0B] = event.q2x0b();
@@ -1062,6 +1080,12 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kQ3Y0B] = event.q3y0b();
     values[kQ3X0C] = event.q3x0c();
     values[kQ3Y0C] = event.q3y0c();
+    values[kQ4X0A] = event.q4x0a();
+    values[kQ4Y0A] = event.q4y0a();
+    values[kQ4X0B] = event.q4x0b();
+    values[kQ4Y0B] = event.q4y0b();
+    values[kQ4X0C] = event.q4x0c();
+    values[kQ4Y0C] = event.q4y0c();
     values[kR2SP] = (event.q2x0b() * event.q2x0c() + event.q2y0b() * event.q2y0c());
     values[kR3SP] = (event.q3x0b() * event.q3x0c() + event.q3y0b() * event.q3y0c());
     if (event.q2y0b() * event.q2y0c() != 0.0) {
@@ -2465,13 +2489,19 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
 }
 
 template <typename C, typename A>
-void VarManager::FillQVectorFromGFW(C const& collision, A const& compA2, A const& compB2, A const& compC2, A const& compA3, A const& compB3, A const& compC3, float normA, float normB, float normC, float* values)
+void VarManager::FillQVectorFromGFW(C const& collision, A const& compA1, A const& compB1, A const& compC1, A const& compA2, A const& compB2, A const& compC2, A const& compA3, A const& compB3, A const& compC3, A const& compA4, A const& compB4, A const& compC4, float normA, float normB, float normC, float* values)
 {
   if (!values) {
     values = fgValues;
   }
 
-  // Fill Qn vectors from generic flow framework for different eta gap A, B, C (n=2,3)
+  // Fill Qn vectors from generic flow framework for different eta gap A, B, C (n=1,2,3,4)
+  values[kQ1X0A] = compA1.real() / normA;
+  values[kQ1Y0A] = compA1.imag() / normA;
+  values[kQ1X0B] = compB1.real() / normB;
+  values[kQ1Y0B] = compB1.imag() / normB;
+  values[kQ1X0C] = compC1.real() / normC;
+  values[kQ1Y0C] = compC1.imag() / normC;
   values[kQ2X0A] = compA2.real() / normA;
   values[kQ2Y0A] = compA2.imag() / normA;
   values[kQ2X0B] = compB2.real() / normB;
@@ -2484,6 +2514,12 @@ void VarManager::FillQVectorFromGFW(C const& collision, A const& compA2, A const
   values[kQ3Y0B] = compB3.imag() / normB;
   values[kQ3X0C] = compC3.real() / normC;
   values[kQ3Y0C] = compC3.imag() / normC;
+  values[kQ4X0A] = compA4.real() / normA;
+  values[kQ4Y0A] = compA4.imag() / normA;
+  values[kQ4X0B] = compB4.real() / normB;
+  values[kQ4Y0B] = compB4.imag() / normB;
+  values[kQ4X0C] = compC4.real() / normC;
+  values[kQ4Y0C] = compC4.imag() / normC;
   values[kMultA] = normA;
   values[kMultB] = normB;
   values[kMultC] = normC;

@@ -170,6 +170,12 @@ void V0PhotonCut::SetChi2PerClusterITS(float min, float max)
   mMaxChi2PerClusterITS = max;
   LOG(info) << "V0 Photon Cut, set chi2 per cluster ITS range: " << mMinChi2PerClusterITS << " - " << mMaxChi2PerClusterITS;
 }
+void V0PhotonCut::SetMeanClusterSizeITS(float min, float max)
+{
+  mMinMeanClusterSizeITS = min;
+  mMaxMeanClusterSizeITS = max;
+  LOG(info) << "V0 Photon Cut, set mean cluster size ITS range: " << mMinMeanClusterSizeITS << " - " << mMaxMeanClusterSizeITS;
+}
 
 void V0PhotonCut::SetIsWithinBeamPipe(bool flag)
 {

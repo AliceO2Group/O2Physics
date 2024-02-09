@@ -484,7 +484,8 @@ struct TableMaker {
       uint64_t tag = 0;
       // store some more information in the tag
       // if the BC found by event selection does not coincide with the collision.bc()
-      if (collision.foundBC().globalIndex() != bc.globalIndex()) {
+      auto bcEvSel = collision.template foundBC_as<BCsWithTimestamps>();
+      if (bcEvSel.globalIndex() != bc.globalIndex()) {
         tag |= (uint64_t(1) << 0);
       }
       // Put the 8 first bits of the event filter in the last 8 bits of the tag
