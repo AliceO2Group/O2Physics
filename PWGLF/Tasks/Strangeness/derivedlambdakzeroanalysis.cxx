@@ -231,9 +231,9 @@ struct derivedlambdakzeroanalysis {
     if (analyseAntiLambda)
       histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
 
-    if (analyseLambda && calculateFeeddownMatrix && doprocessMonteCarlo )
+    if (analyseLambda && calculateFeeddownMatrix && doprocessMonteCarlo)
       histos.add("h3dLambdaFeeddown", "h3dLambdaFeeddown", kTH3F, {axisCentrality, axisPt, axisPtXi});
-    if (analyseAntiLambda && calculateFeeddownMatrix && doprocessMonteCarlo )
+    if (analyseAntiLambda && calculateFeeddownMatrix && doprocessMonteCarlo)
       histos.add("h3dAntiLambdaFeeddown", "h3dAntiLambdaFeeddown", kTH3F, {axisCentrality, axisPt, axisPtXi});
 
     // demo // fast
@@ -356,17 +356,17 @@ struct derivedlambdakzeroanalysis {
 
     if (v0.pdgCode() == 310 && v0.pdgCodePositive() == 211 && v0.pdgCodeNegative() == -211) {
       bitset(bitMap, selConsiderK0Short);
-      if(v0.isPhysicalPrimary())
+      if (v0.isPhysicalPrimary())
         bitset(bitMap, selPhysPrimK0Short);
     }
     if (v0.pdgCode() == 3122 && v0.pdgCodePositive() == 2212 && v0.pdgCodeNegative() == -211) {
       bitset(bitMap, selConsiderLambda);
-      if(v0.isPhysicalPrimary())
+      if (v0.isPhysicalPrimary())
         bitset(bitMap, selPhysPrimLambda);
     }
     if (v0.pdgCode() == -3122 && v0.pdgCodePositive() == 211 && v0.pdgCodeNegative() == -2212) {
       bitset(bitMap, selConsiderAntiLambda);
-      if(v0.isPhysicalPrimary())
+      if (v0.isPhysicalPrimary())
         bitset(bitMap, selPhysPrimAntiLambda);
     }
     return bitMap;
@@ -443,22 +443,22 @@ struct derivedlambdakzeroanalysis {
   // fill feeddown matrix for Lambdas or AntiLambdas
   // fixme: a potential improvement would be to consider mass windows for the l/al
   {
-    if(!v0.has_motherMCPart())
+    if (!v0.has_motherMCPart())
       return; // does not have mother particle in record, skip
 
-    auto v0mother = v0.motherMCPart(); 
+    auto v0mother = v0.motherMCPart();
     float rapidityXi = RecoDecay::y(std::array{v0mother.px(), v0mother.py(), v0mother.pz()}, o2::constants::physics::MassXiMinus);
-    if(fabs(rapidityXi)>0.5f) 
+    if (fabs(rapidityXi) > 0.5f)
       return; // not a valid mother rapidity (PDG selection is later)
 
     // __________________________________________
     if (verifyMask(selMap, secondaryMaskSelectionLambda) && analyseLambda) {
-      if( v0mother.pdgCode() == 3312 && v0mother.isPhysicalPrimary() )
-        histos.fill(HIST("h3dLambdaFeeddown"), centrality, v0.pt(), std::hypot(v0mother.px(),v0mother.py()));
+      if (v0mother.pdgCode() == 3312 && v0mother.isPhysicalPrimary())
+        histos.fill(HIST("h3dLambdaFeeddown"), centrality, v0.pt(), std::hypot(v0mother.px(), v0mother.py()));
     }
     if (verifyMask(selMap, secondaryMaskSelectionAntiLambda) && analyseAntiLambda) {
-      if( v0mother.pdgCode() == -3312 && v0mother.isPhysicalPrimary() )
-        histos.fill(HIST("h3dAntiLambdaFeeddown"), centrality, v0.pt(), std::hypot(v0mother.px(),v0mother.py()));
+      if (v0mother.pdgCode() == -3312 && v0mother.isPhysicalPrimary())
+        histos.fill(HIST("h3dAntiLambdaFeeddown"), centrality, v0.pt(), std::hypot(v0mother.px(), v0mother.py()));
     }
   }
 
@@ -538,12 +538,12 @@ struct derivedlambdakzeroanalysis {
       uint32_t selMap = computeReconstructionBitmap(v0, collision);
       selMap = selMap | computeMCAssociation(v0);
 
-      // feeddown matrix always with association 
-      if( calculateFeeddownMatrix)
-        fillFeeddownMatrix( v0, centrality, selMap ); 
+      // feeddown matrix always with association
+      if (calculateFeeddownMatrix)
+        fillFeeddownMatrix(v0, centrality, selMap);
 
       // consider only associated candidates if asked to do so, disregard association
-      if( !doMCAssociation ){
+      if (!doMCAssociation) {
         selMap = selMap | (1 << selConsiderK0Short) | (1 << selConsiderLambda) | (1 << selConsiderAntiLambda);
         selMap = selMap | (1 << selPhysPrimK0Short) | (1 << selPhysPrimLambda) | (1 << selPhysPrimAntiLambda);
       }
