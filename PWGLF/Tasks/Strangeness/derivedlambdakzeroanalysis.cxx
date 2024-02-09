@@ -56,7 +56,7 @@ using std::array;
 
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
-using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras>;
+using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras, aod::V0MCMothers>;
 
 // simple checkers
 #define bitset(var, nbit) ((var) |= (1 << (nbit)))
@@ -69,6 +69,7 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> analyseK0Short{"analyseK0Short", true, "process K0Short-like candidates"};
   Configurable<bool> analyseLambda{"analyseLambda", true, "process Lambda-like candidates"};
   Configurable<bool> analyseAntiLambda{"analyseAntiLambda", true, "process AntiLambda-like candidates"};
+  Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "fill feeddown matrix if MC"};
 
   // Selection criteria: acceptance
   Configurable<float> rapidityCut{"rapidityCut", 0.5, "rapidity"};
@@ -105,6 +106,7 @@ struct derivedlambdakzeroanalysis {
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
 
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
+  ConfigurableAxis axisPtXi{"axisPtXi", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for feeddown from Xi"};
   ConfigurableAxis axisPtCoarse{"axisPtCoarse", {VARIABLE_WIDTH, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 10.0f, 15.0f}, "pt axis for QA"};
   ConfigurableAxis axisK0Mass{"axisK0Mass", {200, 0.4f, 0.6f}, ""};
   ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, ""};
@@ -143,9 +145,12 @@ struct derivedlambdakzeroanalysis {
                    selNegGoodTPCTrack,
                    selPosItsOnly,
                    selNegItsOnly,
-                   selConsiderK0Short,   // for mc tagging
-                   selConsiderLambda,    // for mc tagging
-                   selConsiderAntiLambda // for mc tagging
+                   selConsiderK0Short,    // for mc tagging
+                   selConsiderLambda,     // for mc tagging
+                   selConsiderAntiLambda, // for mc tagging
+                   selPhysPrimK0Short,    // for mc tagging
+                   selPhysPrimLambda,     // for mc tagging
+                   selPhysPrimAntiLambda  // for mc tagging
   };
 
   uint32_t maskTopological;
@@ -163,6 +168,9 @@ struct derivedlambdakzeroanalysis {
   uint32_t maskSelectionK0Short;
   uint32_t maskSelectionLambda;
   uint32_t maskSelectionAntiLambda;
+
+  uint32_t secondaryMaskSelectionLambda;
+  uint32_t secondaryMaskSelectionAntiLambda;
 
   void init(InitContext const&)
   {
@@ -190,9 +198,14 @@ struct derivedlambdakzeroanalysis {
     maskLambdaSpecific = (1 << selLambdaRapidity) | (1 << selLambdaTPC) | (1 << selLambdaCTau) | (1 << selConsiderLambda);
     maskAntiLambdaSpecific = (1 << selLambdaRapidity) | (1 << selAntiLambdaTPC) | (1 << selLambdaCTau) | (1 << selConsiderAntiLambda);
 
-    maskSelectionK0Short = maskTopological | maskTrackTypes | maskK0ShortSpecific;
-    maskSelectionLambda = maskTopological | maskTrackTypes | maskLambdaSpecific;
-    maskSelectionAntiLambda = maskTopological | maskTrackTypes | maskAntiLambdaSpecific;
+    // Primary particle selection, central to analysis
+    maskSelectionK0Short = maskTopological | maskTrackTypes | maskK0ShortSpecific | (1 << selPhysPrimK0Short);
+    maskSelectionLambda = maskTopological | maskTrackTypes | maskLambdaSpecific | (1 << selPhysPrimLambda);
+    maskSelectionAntiLambda = maskTopological | maskTrackTypes | maskAntiLambdaSpecific | (1 << selPhysPrimAntiLambda);
+
+    // No primary requirement for feeddown matrix
+    secondaryMaskSelectionLambda = maskTopological | maskTrackTypes | maskLambdaSpecific;
+    secondaryMaskSelectionAntiLambda = maskTopological | maskTrackTypes | maskAntiLambdaSpecific;
 
     // Event Counters
     histos.add("hEventSelection", "hEventSelection", kTH1F, {{3, -0.5f, +2.5f}});
@@ -217,6 +230,11 @@ struct derivedlambdakzeroanalysis {
       histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
     if (analyseAntiLambda)
       histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+
+    if (analyseLambda && calculateFeeddownMatrix && doprocessMonteCarlo )
+      histos.add("h3dLambdaFeeddown", "h3dLambdaFeeddown", kTH3F, {axisCentrality, axisPt, axisPtXi});
+    if (analyseAntiLambda && calculateFeeddownMatrix && doprocessMonteCarlo )
+      histos.add("h3dAntiLambdaFeeddown", "h3dAntiLambdaFeeddown", kTH3F, {axisCentrality, axisPt, axisPtXi});
 
     // demo // fast
     histos.add("hMassK0Short", "hMassK0Short", kTH1F, {axisK0Mass});
@@ -336,14 +354,20 @@ struct derivedlambdakzeroanalysis {
     uint32_t bitMap = 0;
     // check for specific particle species
 
-    if (v0.pdgCode() == 310 && v0.pdgCodePositive() == 211 && v0.pdgCodeNegative() == -211 && v0.isPhysicalPrimary()) {
+    if (v0.pdgCode() == 310 && v0.pdgCodePositive() == 211 && v0.pdgCodeNegative() == -211) {
       bitset(bitMap, selConsiderK0Short);
+      if(v0.isPhysicalPrimary())
+        bitset(bitMap, selPhysPrimK0Short);
     }
-    if (v0.pdgCode() == 3122 && v0.pdgCodePositive() == 2212 && v0.pdgCodeNegative() == -211 && v0.isPhysicalPrimary()) {
+    if (v0.pdgCode() == 3122 && v0.pdgCodePositive() == 2212 && v0.pdgCodeNegative() == -211) {
       bitset(bitMap, selConsiderLambda);
+      if(v0.isPhysicalPrimary())
+        bitset(bitMap, selPhysPrimLambda);
     }
-    if (v0.pdgCode() == -3122 && v0.pdgCodePositive() == 211 && v0.pdgCodeNegative() == -2212 && v0.isPhysicalPrimary()) {
+    if (v0.pdgCode() == -3122 && v0.pdgCodePositive() == 211 && v0.pdgCodeNegative() == -2212) {
       bitset(bitMap, selConsiderAntiLambda);
+      if(v0.isPhysicalPrimary())
+        bitset(bitMap, selPhysPrimAntiLambda);
     }
     return bitMap;
   }
@@ -414,6 +438,30 @@ struct derivedlambdakzeroanalysis {
     } // end systematics / qa
   }
 
+  template <typename TV0>
+  void fillFeeddownMatrix(TV0 v0, float centrality, uint32_t selMap)
+  // fill feeddown matrix for Lambdas or AntiLambdas
+  // fixme: a potential improvement would be to consider mass windows for the l/al
+  {
+    if(!v0.has_motherMCPart())
+      return; // does not have mother particle in record, skip
+
+    auto v0mother = v0.motherMCPart(); 
+    float rapidityXi = RecoDecay::y(std::array{v0mother.px(), v0mother.py(), v0mother.pz()}, o2::constants::physics::MassXiMinus);
+    if(fabs(rapidityXi)>0.5f) 
+      return; // not a valid mother rapidity (PDG selection is later)
+
+    // __________________________________________
+    if (verifyMask(selMap, secondaryMaskSelectionLambda) && analyseLambda) {
+      if( v0mother.pdgCode() == 3312 && v0mother.isPhysicalPrimary() )
+        histos.fill(HIST("h3dLambdaFeeddown"), centrality, v0.pt(), std::hypot(v0mother.px(),v0mother.py()));
+    }
+    if (verifyMask(selMap, secondaryMaskSelectionAntiLambda) && analyseAntiLambda) {
+      if( v0mother.pdgCode() == -3312 && v0mother.isPhysicalPrimary() )
+        histos.fill(HIST("h3dAntiLambdaFeeddown"), centrality, v0.pt(), std::hypot(v0mother.px(),v0mother.py()));
+    }
+  }
+
   // ______________________________________________________
   // Real data processing - no MC subscription
   void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels>::iterator const& collision, v0Candidates const& fullV0s, dauTracks const&)
@@ -457,7 +505,7 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&, aod::MotherMCParts const&)
   {
     histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
     if (!collision.sel8()) {
@@ -488,12 +536,16 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
 
       uint32_t selMap = computeReconstructionBitmap(v0, collision);
+      selMap = selMap | computeMCAssociation(v0);
 
-      // consider only associated candidates if asked to do so
-      if (doMCAssociation) {
-        selMap = selMap | computeMCAssociation(v0);
-      } else {
+      // feeddown matrix always with association 
+      if( calculateFeeddownMatrix)
+        fillFeeddownMatrix( v0, centrality, selMap ); 
+
+      // consider only associated candidates if asked to do so, disregard association
+      if( !doMCAssociation ){
         selMap = selMap | (1 << selConsiderK0Short) | (1 << selConsiderLambda) | (1 << selConsiderAntiLambda);
+        selMap = selMap | (1 << selPhysPrimK0Short) | (1 << selPhysPrimLambda) | (1 << selPhysPrimAntiLambda);
       }
 
       analyseCandidate(v0, centrality, selMap);
