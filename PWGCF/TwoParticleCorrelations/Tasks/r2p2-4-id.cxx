@@ -230,8 +230,9 @@ struct FillFlagsTable {
               break;
           }
         }
-      } else
+      } else {
         binNpid = -1;
+      }
       ftable(binNpid);
     }
     for (auto track : gentracks) {
@@ -290,7 +291,7 @@ struct r2p24id {
 
   void init(InitContext const&)
   {
-    iftrack2 = (((int8_t)pid_particle1 != (int8_t)pid_particle2) && ((bool)ifpid)) || ((bool)iftrackpartition); // denotes whether the partiton1 is different from partition2
+    iftrack2 = (((int8_t)pid_particle1 != (int8_t)pid_particle2) && (static_cast<bool>(ifpid))) || (static_cast<bool>(iftrackpartition)); // denotes whether the partiton1 is different from partition2
     //-----Defining Histograms---------------------------------------------------
     const AxisSpec phi{36, 0, 2.0 * constants::math::PI, "phi"}, eta{24, -0.8, 0.8, "eta"}, etaphi1{864, 0, 864, "etaphi1"}, etaphi2{864, 0, 864, "etaphi2"};
     histos.add("h1d_n1_phi", "#phi distribution Particle", kTH1D, {phi});
