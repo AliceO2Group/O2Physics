@@ -309,7 +309,7 @@ struct HfCandidateCreator3ProngExpressions {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
         }
         if (indexRec > -1) {
-          flag = sign * (1 << DecayType::DsToKKPi); // INFO: DecaType::DsToKKPi is used to flag Ds± → K± K∓ π± and D± → K± K∓ π±
+          flag = sign * (1 << DecayType::DsToKKPi); // INFO: DecayType::DsToKKPi is used to flag Ds± → K± K∓ π± and D± → K± K∓ π±
           if (arrayDaughters[0].has_mcParticle()) {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
@@ -319,14 +319,10 @@ struct HfCandidateCreator3ProngExpressions {
               auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
               arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
             }
-            if (!isDplus && ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0]))) {
-              channel = DecayChannelDToKKPi::DsToPhiPi;
-            } else if (!isDplus && ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0]))) {
-              channel = DecayChannelDToKKPi::DsToK0starK;
-            } else if (isDplus && ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0]))) {
-              channel = DecayChannelDToKKPi::DplusToPhiPi;
-            } else if (isDplus && ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0]))) {
-              channel = DecayChannelDToKKPi::DplusToK0starK;
+            if ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0])) {
+              channel = isDplus ? DecayChannelDToKKPi::DplusToPhiPi : DecayChannelDToKKPi::DsToPhiPi;
+            } else if ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0])) {
+              channel = isDplus ? DecayChannelDToKKPi::DplusToK0starK : DecayChannelDToKKPi::DsToK0starK;
             }
           }
         }
@@ -404,14 +400,10 @@ struct HfCandidateCreator3ProngExpressions {
               auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
               arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
             }
-            if (!isDplus && ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0]))) {
-              channel = DecayChannelDToKKPi::DsToPhiPi;
-            } else if (!isDplus && ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0]))) {
-              channel = DecayChannelDToKKPi::DsToK0starK;
-            } else if (isDplus && ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0]))) {
-              channel = DecayChannelDToKKPi::DplusToPhiPi;
-            } else if (isDplus && ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0]))) {
-              channel = DecayChannelDToKKPi::DplusToK0starK;
+            if ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0])) {
+              channel = isDplus ? DecayChannelDToKKPi::DplusToPhiPi : DecayChannelDToKKPi::DsToPhiPi;
+            } else if ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0])) {
+              channel = isDplus ? channel = DecayChannelDToKKPi::DplusToK0starK : DecayChannelDToKKPi::DsToK0starK;
             }
           }
         }
