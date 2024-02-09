@@ -730,7 +730,7 @@ struct TableMaker {
         muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
                   muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
                   muon.matchScoreMCHMFT(), newMatchIndex.find(muon.index())->second, newMFTMatchIndex.find(muon.index())->second, muon.mchBitMap(), muon.midBitMap(),
-                  muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY(),
+                  muon.midBoards(), muon.trackType(), VarManager::fgValues[VarManager::kMuonDCAx], VarManager::fgValues[VarManager::kMuonDCAy],
                   muon.trackTime(), muon.trackTimeRes());
         muonInfo(muon.collisionId(), collision.posX(), collision.posY(), collision.posZ());
         if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
@@ -1060,7 +1060,7 @@ struct TableMaker {
         muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
                   muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
                   muon.matchScoreMCHMFT(), newMatchIndex.find(muon.index())->second, -1, muon.mchBitMap(), muon.midBitMap(),
-                  muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY(),
+                  muon.midBoards(), muon.trackType(), VarManager::fgValues[VarManager::kMuonDCAx], VarManager::fgValues[VarManager::kMuonDCAy],
                   muon.trackTime(), muon.trackTimeRes());
         muonInfo(muon.collisionId(), collision.posX(), collision.posY(), collision.posZ());
         if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
