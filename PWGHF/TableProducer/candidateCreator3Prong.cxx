@@ -281,8 +281,8 @@ struct HfCandidateCreator3ProngExpressions {
     std::array<int, 2> arrPDGResonant1 = {kProton, 313};       // Λc± → p± K*
     std::array<int, 2> arrPDGResonant2 = {2224, kKPlus};       // Λc± → Δ(1232)±± K∓
     std::array<int, 2> arrPDGResonant3 = {3124, kPiPlus};      // Λc± → Λ(1520) π±
-    std::array<int, 2> arrPDGResonantDsPhiPi = {333, kPiPlus}; // Ds± → Phi π±
-    std::array<int, 2> arrPDGResonantDsKstarK = {313, kKPlus}; // Ds± → K*(892)0bar K±
+    std::array<int, 2> arrPDGResonantDPhiPi = {333, kPiPlus};  // Ds± → Phi π± and D± → Phi π±
+    std::array<int, 2> arrPDGResonantDKstarK = {313, kKPlus};  // Ds± → K*(892)0bar K± and D± → K*(892)0bar K±
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
@@ -300,11 +300,16 @@ struct HfCandidateCreator3ProngExpressions {
         flag = sign * (1 << DecayType::DplusToPiKPi);
       }
 
-      // Ds± → K± K∓ π±
+      // Ds± → K± K∓ π± and D± → K± K∓ π±
       if (flag == 0) {
+        bool isDplus = false;
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+        if (indexRec == -1) {
+          isDplus = true;
+          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+        }
         if (indexRec > -1) {
-          flag = sign * (1 << DecayType::DsToKKPi);
+          flag = sign * (1 << DecayType::DsToKKPi); // INFO: DecaType::DsToKKPi is used to flag Ds± → K± K∓ π± and D± → K± K∓ π±
           if (arrayDaughters[0].has_mcParticle()) {
             swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
           }
@@ -314,30 +319,14 @@ struct HfCandidateCreator3ProngExpressions {
               auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
               arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
             }
-            if ((arrPDGDaugh[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[0])) {
+            if (!isDplus && ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0]))) {
               channel = DecayChannelDToKKPi::DsToPhiPi;
-            } else if ((arrPDGDaugh[0] == arrPDGResonantDsKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDsKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[0])) {
+            } else if (!isDplus && ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0]))) {
               channel = DecayChannelDToKKPi::DsToK0starK;
-            }
-          }
-        } else { // D± → K± K∓ π±
-          indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
-          if (indexRec > -1) {
-            flag = sign * (1 << DecayType::DsToKKPi); // INFO: DecaType::DsToKKPi is used to flag Ds± → K± K∓ π± and D± → K± K∓ π±
-            if (arrayDaughters[0].has_mcParticle()) {
-              swapping = int8_t(std::abs(arrayDaughters[0].mcParticle().pdgCode()) == kPiPlus);
-            }
-            RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrDaughIndex, std::array{0}, 1);
-            if (arrDaughIndex.size() == 2) {
-              for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
-                auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
-                arrPDGDaugh[iProng] = std::abs(daughI.pdgCode());
-              }
-              if ((arrPDGDaugh[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[0])) {
+            } else if (isDplus && ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0]))) {
                 channel = DecayChannelDToKKPi::DplusToPhiPi;
-              } else if ((arrPDGDaugh[0] == arrPDGResonantDsKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDsKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[0])) {
-                channel = DecayChannelDToKKPi::DplusToK0starK;
-              }
+            } else if (isDplus && ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0]))) {
+              channel = DecayChannelDToKKPi::DplusToK0starK;
             }
           }
         }
@@ -399,33 +388,29 @@ struct HfCandidateCreator3ProngExpressions {
         flag = sign * (1 << DecayType::DplusToPiKPi);
       }
 
-      // Ds± → K± K∓ π±
+      // Ds± → K± K∓ π± and D± → K± K∓ π±
       if (flag == 0) {
+        bool isDplus = false;
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-          flag = sign * (1 << DecayType::DsToKKPi);
-          RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
-          if (arrDaughIndex.size() == 2) {
-            for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
-              auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
-              arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
-            }
-            if ((arrPDGDaugh[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[0])) {
-              channel = DecayChannelDToKKPi::DsToPhiPi;
-            } else if ((arrPDGDaugh[0] == arrPDGResonantDsKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDsKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[0])) {
-              channel = DecayChannelDToKKPi::DsToK0starK;
-            }
-          }
-        } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) { // D± → K± K∓ π±
           flag = sign * (1 << DecayType::DsToKKPi);                                                                                         // INFO: DecaType::DsToKKPi is used to flag Ds± → K± K∓ π± and D± → K± K∓ π±
+        } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+          flag = sign * (1 << DecayType::DsToKKPi);                                                                                         // INFO: DecaType::DsToKKPi is used to flag Ds± → K± K∓ π± and D± → K± K∓ π±
+          isDplus = true;
+        }
+        if (flag != 0) {
           RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{0}, 1);
           if (arrDaughIndex.size() == 2) {
             for (auto jProng = 0u; jProng < arrDaughIndex.size(); ++jProng) {
               auto daughJ = mcParticles.rawIteratorAt(arrDaughIndex[jProng]);
               arrPDGDaugh[jProng] = std::abs(daughJ.pdgCode());
             }
-            if ((arrPDGDaugh[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDsPhiPi[0])) {
+            if (!isDplus && ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0]))) {
+              channel = DecayChannelDToKKPi::DsToPhiPi;
+            } else if (!isDplus && ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0]))) {
+              channel = DecayChannelDToKKPi::DsToK0starK;
+            } else if (isDplus && ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0]))) {
               channel = DecayChannelDToKKPi::DplusToPhiPi;
-            } else if ((arrPDGDaugh[0] == arrPDGResonantDsKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDsKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDsKstarK[0])) {
+            } else if (isDplus && ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0]))) {
               channel = DecayChannelDToKKPi::DplusToK0starK;
             }
           }
