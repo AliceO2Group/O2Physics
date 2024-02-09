@@ -1522,7 +1522,7 @@ struct QaEfficiency {
           }
         }
         if (hasFakeHit) {
-          return false;
+            return false;
         }
       }
       if constexpr (doFillHisto) {
@@ -1640,18 +1640,25 @@ struct QaEfficiency {
     switch (globalTrackSelection) {
       case 0:
         isTrackSelectedAfteAll = true;
+        break;
       case 1:
         isTrackSelectedAfteAll = track.isGlobalTrack();
+        break;
       case 2:
         isTrackSelectedAfteAll = track.isGlobalTrackWoPtEta();
+        break;
       case 3:
         isTrackSelectedAfteAll = track.isGlobalTrackWoDCA();
+        break;
       case 4:
         isTrackSelectedAfteAll = track.isQualityTrack();
+        break;
       case 5:
         isTrackSelectedAfteAll = track.isInAcceptanceTrack();
+        break;
       case 6:
         isTrackSelectedAfteAll = customTrackCuts.IsSelected(track);
+        break;
       default:
         LOG(fatal) << "Can't interpret track asked selection " << globalTrackSelection;
     }
