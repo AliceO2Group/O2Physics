@@ -188,8 +188,8 @@ struct strangederivedbuilder {
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
 
-    for(int ii=1; ii<101; ii++){ 
-      float value = 100.5f-static_cast<float>(ii);
+    for (int ii = 1; ii < 101; ii++) {
+      float value = 100.5f - static_cast<float>(ii);
       hRawCentrality->SetBinContent(ii, value);
     }
   }
@@ -226,12 +226,12 @@ struct strangederivedbuilder {
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
 
-      float centrality = collision.centFT0C(); 
-      if( qaCentrality ){
+      float centrality = collision.centFT0C();
+      if (qaCentrality) {
         auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
         centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(collision.multFT0C()));
       }
-      
+
       auto V0Table_thisColl = V0s.sliceBy(V0perCollision, collIdx);
       auto CascTable_thisColl = Cascades.sliceBy(CascperCollision, collIdx);
       auto KFCascTable_thisColl = KFCascades.sliceBy(KFCascperCollision, collIdx);
@@ -517,7 +517,7 @@ struct strangederivedbuilder {
       if (biggestNContribs < collision.numContrib()) {
         biggestNContribs = collision.numContrib();
         bestCentrality = collision.centFT0C();
-        if( qaCentrality ){
+        if (qaCentrality) {
           auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
           bestCentrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(collision.multFT0C()));
         }

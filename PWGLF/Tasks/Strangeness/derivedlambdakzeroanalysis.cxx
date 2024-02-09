@@ -205,8 +205,8 @@ struct derivedlambdakzeroanalysis {
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
 
-    for(int ii=1; ii<101; ii++){ 
-      float value = 100.5f-static_cast<float>(ii);
+    for (int ii = 1; ii < 101; ii++) {
+      float value = 100.5f - static_cast<float>(ii);
       hRawCentrality->SetBinContent(ii, value);
     }
 
@@ -429,8 +429,8 @@ struct derivedlambdakzeroanalysis {
     }
     histos.fill(HIST("hEventSelection"), 2 /* vertex-Z selected */);
 
-    float centrality = collision.centFT0C(); 
-    if( qaCentrality ){
+    float centrality = collision.centFT0C();
+    if (qaCentrality) {
       auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
       centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(collision.multFT0C()));
     }
@@ -470,8 +470,8 @@ struct derivedlambdakzeroanalysis {
     }
     histos.fill(HIST("hEventSelection"), 2 /* vertex-Z selected */);
 
-    float centrality = collision.centFT0C(); 
-    if( qaCentrality ){
+    float centrality = collision.centFT0C();
+    if (qaCentrality) {
       auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
       centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(collision.multFT0C()));
     }
