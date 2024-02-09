@@ -52,6 +52,8 @@
 
 #include "PWGLF/DataModel/LFSlimNucleiTables.h"
 
+#include "TRandom3.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -117,6 +119,12 @@ constexpr int TreeConfigDefault[5][2]{
   {0, 0},
   {0, 0},
   {0, 0}};
+constexpr double DownscalingDefault[5][1]{
+  {1.},
+  {1.},
+  {1.},
+  {1.},
+  {1.}};
 // constexpr bool storeTreesDefault[5]{false, false, false, false, false};
 constexpr int species{5};
 constexpr int codes[5]{2212, 1000010020, 1000010030, 1000020030, 1000020040};
@@ -128,6 +136,7 @@ static const std::vector<std::string> names{"proton", "deuteron", "triton", "He3
 static const std::vector<std::string> treeConfigNames{"Filter trees", "Use TOF selection"};
 static const std::vector<std::string> nSigmaConfigName{"nsigma_min", "nsigma_max"};
 static const std::vector<std::string> nDCAConfigName{"max DCAxy", "max DCAz"};
+static const std::vector<std::string> DownscalingConfigName{"Fraction of kept candidates"};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> binnedVariableNames{"DCAxy", "DCAz", "TPCnsigma", "TOFnsigma", "TOFmass"};
 static const std::vector<std::string> chargeLabelNames{"Positive", "Negative"};
@@ -194,6 +203,7 @@ struct nucleiSpectra {
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {nuclei::betheBlochDefault[0], 5, 6, nuclei::names, nuclei::betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgNsigmaTPC{"cfgNsigmaTPC", {nuclei::nSigmaTPCdefault[0], 5, 2, nuclei::names, nuclei::nSigmaConfigName}, "TPC nsigma selection for light nuclei"};
   Configurable<LabeledArray<double>> cfgDCAcut{"cfgDCAcut", {nuclei::DCAcutDefault[0], 5, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and DCAz for light nuclei"};
+  Configurable<LabeledArray<double>> cfgDownscaling{"cfgDownscaling", {nuclei::DownscalingDefault[0], 5, 1, nuclei::names, nuclei::DownscalingConfigName}, "Fraction of kept candidates for light nuclei"};
   Configurable<LabeledArray<int>> cfgTreeConfig{"cfgTreeConfig", {nuclei::TreeConfigDefault[0], 5, 2, nuclei::names, nuclei::treeConfigNames}, "Filtered trees configuration"};
 
   ConfigurableAxis cfgDCAxyBinsProtons{"cfgDCAxyBinsProtons", {1500, -1.5f, 1.5f}, "DCAxy binning for Protons"};
@@ -370,6 +380,7 @@ struct nucleiSpectra {
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
+    gRandom->SetSeed(bc.timestamp());
 
     spectra.fill(HIST("hRecVtxZData"), collision.posZ());
 
@@ -479,6 +490,9 @@ struct nucleiSpectra {
 
         if (cfgTreeConfig->get(iS, 0u) && selectedTPC[iS]) {
           if (cfgTreeConfig->get(iS, 1u) && !selectedTOF) {
+            continue;
+          }
+          if (cfgDownscaling->get(iS) < 1. && gRandom->Rndm() > cfgDownscaling->get(iS)) {
             continue;
           }
           flag |= BIT(iS);

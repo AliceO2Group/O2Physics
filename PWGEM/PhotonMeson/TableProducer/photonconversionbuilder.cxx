@@ -679,13 +679,17 @@ struct PhotonConversionBuilder {
     stored_v0Ids.shrink_to_fit();
   } // end of build
 
-  void processRec(MyCollisions const& collisions, aod::V0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  //! type of V0. 0: built solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1 or 3.
+  Filter v0Filter = o2::aod::v0::v0Type > (uint8_t)0;
+  using filteredV0s = soa::Filtered<aod::V0s>;
+
+  void processRec(MyCollisions const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     build<false>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec, "process reconstructed info for data", true);
 
-  void processMC(MyCollisionsMC const& collisions, aod::V0s const& v0s, MyTracksIUMC const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processMC(MyCollisionsMC const& collisions, filteredV0s const& v0s, MyTracksIUMC const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     build<true>(collisions, v0s, tracks, bcs);
   }
