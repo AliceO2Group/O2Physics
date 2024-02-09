@@ -278,11 +278,11 @@ struct HfCandidateCreator3ProngExpressions {
     int8_t channel = 0;
     std::vector<int> arrDaughIndex;
     std::array<int, 2> arrPDGDaugh;
-    std::array<int, 2> arrPDGResonant1 = {kProton, 313};       // Λc± → p± K*
-    std::array<int, 2> arrPDGResonant2 = {2224, kKPlus};       // Λc± → Δ(1232)±± K∓
-    std::array<int, 2> arrPDGResonant3 = {3124, kPiPlus};      // Λc± → Λ(1520) π±
-    std::array<int, 2> arrPDGResonantDPhiPi = {333, kPiPlus};  // Ds± → Phi π± and D± → Phi π±
-    std::array<int, 2> arrPDGResonantDKstarK = {313, kKPlus};  // Ds± → K*(892)0bar K± and D± → K*(892)0bar K±
+    std::array<int, 2> arrPDGResonant1 = {kProton, 313};      // Λc± → p± K*
+    std::array<int, 2> arrPDGResonant2 = {2224, kKPlus};      // Λc± → Δ(1232)±± K∓
+    std::array<int, 2> arrPDGResonant3 = {3124, kPiPlus};     // Λc± → Λ(1520) π±
+    std::array<int, 2> arrPDGResonantDPhiPi = {333, kPiPlus}; // Ds± → Phi π± and D± → Phi π±
+    std::array<int, 2> arrPDGResonantDKstarK = {313, kKPlus}; // Ds± → K*(892)0bar K± and D± → K*(892)0bar K±
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
@@ -324,7 +324,7 @@ struct HfCandidateCreator3ProngExpressions {
             } else if (!isDplus && ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0]))) {
               channel = DecayChannelDToKKPi::DsToK0starK;
             } else if (isDplus && ((arrPDGDaugh[0] == arrPDGResonantDPhiPi[0] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[1]) || (arrPDGDaugh[0] == arrPDGResonantDPhiPi[1] && arrPDGDaugh[1] == arrPDGResonantDPhiPi[0]))) {
-                channel = DecayChannelDToKKPi::DplusToPhiPi;
+              channel = DecayChannelDToKKPi::DplusToPhiPi;
             } else if (isDplus && ((arrPDGDaugh[0] == arrPDGResonantDKstarK[0] && arrPDGDaugh[1] == arrPDGResonantDKstarK[1]) || (arrPDGDaugh[0] == arrPDGResonantDKstarK[1] && arrPDGDaugh[1] == arrPDGResonantDKstarK[0]))) {
               channel = DecayChannelDToKKPi::DplusToK0starK;
             }
@@ -392,9 +392,9 @@ struct HfCandidateCreator3ProngExpressions {
       if (flag == 0) {
         bool isDplus = false;
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-          flag = sign * (1 << DecayType::DsToKKPi);                                                                                         // INFO: DecaType::DsToKKPi is used to flag Ds± → K± K∓ π± and D± → K± K∓ π±
+          flag = sign * (1 << DecayType::DsToKKPi); // INFO: DecaType::DsToKKPi is used to flag Ds± → K± K∓ π± and D± → K± K∓ π±
         } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-          flag = sign * (1 << DecayType::DsToKKPi);                                                                                         // INFO: DecaType::DsToKKPi is used to flag Ds± → K± K∓ π± and D± → K± K∓ π±
+          flag = sign * (1 << DecayType::DsToKKPi); // INFO: DecaType::DsToKKPi is used to flag Ds± → K± K∓ π± and D± → K± K∓ π±
           isDplus = true;
         }
         if (flag != 0) {
