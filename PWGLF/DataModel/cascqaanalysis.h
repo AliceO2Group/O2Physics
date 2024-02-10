@@ -129,6 +129,10 @@ DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
                   mycascades::IsINELgt0<mycascades::EventSelFilterBitMask>,
                   mycascades::IsINELgt1<mycascades::EventSelFilterBitMask>);
 
+DECLARE_SOA_TABLE(CascTraining, "AOD", "CascTraining", o2::soa::Index<>,
+                  mycascades::MultFT0M, mycascades::Sign, mycascades::Pt, mycascades::Eta, mycascades::MassXi, mycascades::MassOmega, mycascades::MassLambdaDau, mycascades::CascRadius, mycascades::V0Radius, mycascades::CascCosPA, mycascades::V0CosPA, mycascades::DCAPosToPV, mycascades::DCANegToPV,
+                  mycascades::DCABachToPV, mycascades::DCACascDaughters, mycascades::DCAV0Daughters, mycascades::DCAV0ToPV, mycascades::BachBaryonCosPA, mycascades::BachBaryonDCAxyToPV, mycascades::McPdgCode);
+
 namespace myMCcascades
 {
 
