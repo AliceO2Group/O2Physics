@@ -14,6 +14,7 @@
 ///
 /// \author Panos Christakoglou <panos.christakoglou@cern.ch>, Nikhef
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -66,7 +67,7 @@ struct HfCandidateSelectorLbToLcPi {
     }
 
     //Λb0 mass cut
-    if (std::abs(hfHelper.invMassLbToLcPi(hfCandLb) - o2::analysis::pdg::MassLambdaB0) > cuts->get(pTBin, "m")) {
+    if (std::abs(hfHelper.invMassLbToLcPi(hfCandLb) - o2::constants::physics::MassLambdaB0) > cuts->get(pTBin, "m")) {
       // LOGF(debug, "Lb topol selection failed at mass diff check");
       return false;
     }
@@ -83,7 +84,7 @@ struct HfCandidateSelectorLbToLcPi {
 
     // Lc mass
     // if (trackPi.sign() < 0) {
-    // if (std::abs(hfHelper.invMassLcToPKPi(hfCandLc) - o2::analysis::pdg::MassLambdaCPlus) > cuts->get(pTBin, "DeltaMLc")) {
+    // if (std::abs(hfHelper.invMassLcToPKPi(hfCandLc) - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "DeltaMLc")) {
     // return false;
     // }
     // }

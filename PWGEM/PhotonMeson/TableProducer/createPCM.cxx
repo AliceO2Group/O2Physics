@@ -48,13 +48,17 @@ using FullTrackExtIU = FullTracksExtIU::iterator;
 struct createPCM {
   SliceCache cache;
   Preslice<aod::TracksIU> perCol = o2::aod::track::collisionId;
-  Produces<aod::StoredV0Datas> v0data;
+  Produces<aod::V0Indices> v0indices;
+  Produces<aod::StoredV0Cores> v0cores;
+  Produces<aod::V0TrackXs> v0trackXs;
 
   // Basic checks
   HistogramRegistry registry{
     "createPCM",
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{5, 0.5f, 5.5f}}}},
+      {"hV0xy", "hV0xy;X (cm);Y(cm)", {HistType::kTH2F, {{400, -100, +100}, {400, -100, +100}}}},
+      {"hV0xy_recalculated", "hV0xy_recalculated;X (cm);Y(cm)", {HistType::kTH2F, {{400, -100, +100}, {400, -100, +100}}}},
     },
   };
 
@@ -300,14 +304,20 @@ struct createPCM {
       if (v0radius < v0Rmin || v0Rmax < v0radius) {
         return;
       }
-      v0data(pos.globalIndex(), ele.globalIndex(), collision.globalIndex(), -1,
-             fitter.getTrack(0).getX(), fitter.getTrack(1).getX(),
-             svpos[0], svpos[1], svpos[2],
-             pvec0[0], pvec0[1], pvec0[2],
-             pvec1[0], pvec1[1], pvec1[2],
-             v0dca, pos.dcaXY(), ele.dcaXY(),
-             v0CosinePA, dcaV0toPV);
 
+      registry.fill(HIST("hV0xy"), svpos[0], svpos[1]); // this should have worst resolution
+      float xyz_tmp[3] = {0.f, 0.f, 0.f};
+      Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz_tmp, matCorr);
+      registry.fill(HIST("hV0xy_recalculated"), xyz_tmp[0], xyz_tmp[1]); // this should have good resolution
+
+      // populates the various tables that comprise V0Datas
+      v0indices(pos.globalIndex(), ele.globalIndex(), collision.globalIndex(), -1);
+      v0trackXs(fitter.getTrack(0).getX(), fitter.getTrack(1).getX());
+      v0cores(svpos[0], svpos[1], svpos[2],
+              pvec0[0], pvec0[1], pvec0[2],
+              pvec1[0], pvec1[1], pvec1[2],
+              v0dca, pos.dcaXY(), ele.dcaXY(),
+              v0CosinePA, dcaV0toPV, 3); // v0 type: photon-exclusive
     } else {
       // LOGF(info, "storing: collision.globalIndex() = %d , pos.globalIndex() = %d , ele.globalIndex() = %d, cospa = %f", collision.globalIndex(), pos.globalIndex(), ele.globalIndex(), v0CosinePA);
       pca_map[std::make_tuple(pos.globalIndex(), ele.globalIndex(), collision.globalIndex())] = v0dca;
@@ -546,7 +556,7 @@ struct createPCM {
 
 // Extends the v0data table with expression columns
 struct v0Initializer {
-  Spawns<aod::V0Datas> v0datas;
+  Spawns<aod::V0Cores> v0cores;
   void init(InitContext const&) {}
 };
 

@@ -16,6 +16,7 @@
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Common/DataModel/Centrality.h"
 
 #ifndef PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
 #define PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
@@ -40,12 +41,72 @@ DECLARE_SOA_COLUMN(TPCfindableCls, tpcFindableCls, uint8_t);
 DECLARE_SOA_COLUMN(TPCcrossedRows, tpcCrossedRows, uint8_t);
 DECLARE_SOA_COLUMN(ITSclsMap, itsClsMap, uint8_t);
 DECLARE_SOA_COLUMN(TPCnCls, tpcNCls, uint8_t);
+DECLARE_SOA_COLUMN(ITSclusterSizes, itsClusterSizes, uint32_t);
 DECLARE_SOA_COLUMN(gPt, genPt, float);
 DECLARE_SOA_COLUMN(gEta, genEta, float);
 DECLARE_SOA_COLUMN(gPhi, genPhi, float);
 DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
+DECLARE_SOA_COLUMN(SurvivedEventSelection, survivedEventSelection, bool);
 
 } // namespace NucleiTableNS
+namespace NucleiFlowTableNS
+{
+DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
+DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);
+DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
+DECLARE_SOA_COLUMN(XQvecFV0A, xQvecFV0A, float);
+DECLARE_SOA_COLUMN(YQvecFV0A, yQvecFV0A, float);
+DECLARE_SOA_COLUMN(AmplQvecFV0A, amplQvecFV0A, float);
+DECLARE_SOA_COLUMN(XQvecFT0M, xQvecFT0M, float);
+DECLARE_SOA_COLUMN(YQvecFT0M, yQvecFT0M, float);
+DECLARE_SOA_COLUMN(AmplQvecFT0M, amplQvecFT0M, float);
+DECLARE_SOA_COLUMN(XQvecFT0A, xQvecFT0A, float);
+DECLARE_SOA_COLUMN(YQvecFT0A, yQvecFT0A, float);
+DECLARE_SOA_COLUMN(AmplQvecFT0A, amplQvecFT0A, float);
+DECLARE_SOA_COLUMN(XQvecFT0C, xQvecFT0C, float);
+DECLARE_SOA_COLUMN(YQvecFT0C, yQvecFT0C, float);
+DECLARE_SOA_COLUMN(AmplQvecFT0C, amplQvecFT0C, float);
+DECLARE_SOA_COLUMN(XQvecTPCpos, xQvecTPCpos, float);
+DECLARE_SOA_COLUMN(YQvecTPCpos, yQvecTPCpos, float);
+DECLARE_SOA_COLUMN(AmplQvecTPCpos, amplQvecTPCpos, float);
+DECLARE_SOA_COLUMN(XQvecTPCneg, xQvecTPCneg, float);
+DECLARE_SOA_COLUMN(YQvecTPCneg, yQvecTPCneg, float);
+DECLARE_SOA_COLUMN(AmplQvecTPCneg, amplQvecTPCneg, float);
+} // namespace NucleiFlowTableNS
+
+DECLARE_SOA_TABLE(NucleiFlowColls, "AOD", "NUCLEIFLOWCOLL",
+                  o2::soa::Index<>,
+                  NucleiFlowTableNS::CentFV0A,
+                  NucleiFlowTableNS::CentFT0M,
+                  NucleiFlowTableNS::CentFT0A,
+                  NucleiFlowTableNS::CentFT0C,
+                  NucleiFlowTableNS::XQvecFV0A,
+                  NucleiFlowTableNS::YQvecFV0A,
+                  NucleiFlowTableNS::AmplQvecFV0A,
+                  NucleiFlowTableNS::XQvecFT0M,
+                  NucleiFlowTableNS::YQvecFT0M,
+                  NucleiFlowTableNS::AmplQvecFT0M,
+                  NucleiFlowTableNS::XQvecFT0A,
+                  NucleiFlowTableNS::YQvecFT0A,
+                  NucleiFlowTableNS::AmplQvecFT0A,
+                  NucleiFlowTableNS::XQvecFT0C,
+                  NucleiFlowTableNS::YQvecFT0C,
+                  NucleiFlowTableNS::AmplQvecFT0C,
+                  NucleiFlowTableNS::XQvecTPCpos,
+                  NucleiFlowTableNS::YQvecTPCpos,
+                  NucleiFlowTableNS::AmplQvecTPCpos,
+                  NucleiFlowTableNS::XQvecTPCneg,
+                  NucleiFlowTableNS::YQvecTPCneg,
+                  NucleiFlowTableNS::AmplQvecTPCneg)
+
+using NucleiFlowColl = NucleiFlowColls::iterator;
+
+namespace NucleiTableNS
+{
+DECLARE_SOA_INDEX_COLUMN(NucleiFlowColl, nucleiFlowColl);
+}
+
 DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::Pt,
                   NucleiTableNS::Eta,
@@ -62,7 +123,10 @@ DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::TPCfindableCls,
                   NucleiTableNS::TPCcrossedRows,
                   NucleiTableNS::ITSclsMap,
-                  NucleiTableNS::TPCnCls)
+                  NucleiTableNS::TPCnCls,
+                  NucleiTableNS::ITSclusterSizes);
+
+DECLARE_SOA_TABLE(NucleiCollId, "AOD", "NUCLEICOLLID", NucleiTableNS::NucleiFlowCollId);
 
 DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::Pt,
@@ -81,10 +145,12 @@ DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::TPCcrossedRows,
                   NucleiTableNS::ITSclsMap,
                   NucleiTableNS::TPCnCls,
+                  NucleiTableNS::ITSclusterSizes,
                   NucleiTableNS::gPt,
                   NucleiTableNS::gEta,
                   NucleiTableNS::gPhi,
-                  NucleiTableNS::PDGcode)
+                  NucleiTableNS::PDGcode,
+                  NucleiTableNS::SurvivedEventSelection)
 
 } // namespace o2::aod
 

@@ -16,6 +16,7 @@
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, Politecnico and INFN Torino
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -146,7 +147,7 @@ struct HfTaskDplus {
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong0_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), pdg::Code::kDPlus, true);
+        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong0_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), o2::constants::physics::Pdg::kDPlus, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         auto ptRec = candidate.pt();
@@ -196,7 +197,7 @@ struct HfTaskDplus {
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) {
         auto ptGen = particle.pt();
-        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassDPlus);
+        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDPlus);
         if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
           continue;
         }

@@ -17,6 +17,7 @@
 ///
 /// \author Jinjoo Seo <jin.joo.seo@cern.ch>, Inha University
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -269,7 +270,7 @@ struct HfTreeCreatorXiccToPKPiPi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassXiCCPlusPlus),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassXiCCPlusPlus),
           particle.flagMcMatchGen(),
           particle.originMcGen());
       }

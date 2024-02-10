@@ -14,6 +14,7 @@
 ///
 /// \author Gian Michele Innocenti <gian.michele.innocenti@cern.ch>, CERN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -81,7 +82,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
     }
 
     // check candidate mass is within a defined mass window
-    if (std::abs(hfHelper.invMassXiccToXicPi(hfCandXicc) - o2::analysis::pdg::MassXiCCPlusPlus) > cuts->get(pTBin, "m")) {
+    if (std::abs(hfHelper.invMassXiccToXicPi(hfCandXicc) - o2::constants::physics::MassXiCCPlusPlus) > cuts->get(pTBin, "m")) {
       return false;
     }
 

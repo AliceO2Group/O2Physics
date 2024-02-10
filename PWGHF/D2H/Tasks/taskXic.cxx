@@ -19,6 +19,7 @@
 /// \author Himanshu Sharma <himanshu.sharma@cern.ch>, University and INFN Padova
 /// \author Cristina Terrevoli <cristina.terrevoli@cern.ch>, INFN Bari
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
@@ -371,7 +372,7 @@ struct HfTaskXic {
     // MC gen.
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::XicToPKPi) {
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassXiCPlus);
+        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassXiCPlus);
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }

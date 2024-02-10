@@ -66,6 +66,9 @@ struct vertexQA {
   Configurable<double> nSigmaR{"nSigmaR", 1000., "Number of sigmas for transverse displacement of vertices"};
   Configurable<double> nSigmaT{"nSigmaT", 1000., "Number of sigmas for time of vertices"};
   Configurable<double> maxTime{"maxTime", 100000., "Maximum time difference between split vertices in ns"};
+  Configurable<double> minTimeDiff{"minTimeDiff", 14000., "Minimum time difference (ITS Rof peak)"};
+  Configurable<double> maxTimeDiff{"maxTimeDiff", 15500., "Maximum time difference (ITS Rof peak)"};
+  Configurable<double> minNcontrib{"minNcontrib", 500., "Minimum number of contributors (duplicate vertices)"};
 
   ConfigurableAxis xVtxAxis{"xVtxBins", {100, -0.1f, 0.1f}, "Binning for the vertex x (y) in cm"};
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
@@ -85,6 +88,8 @@ struct vertexQA {
   ConfigurableAxis nContribDiffAxis{"nContribDiffBins", {1000, -5000, 5000}, "Binning for the difference in number of contributors to PV"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  std::deque<BCcoll> colls;
 
   void init(InitContext const&)
   {
@@ -113,9 +118,10 @@ struct vertexQA {
     histos.add<TH2>("zDistVsTDistVtxTimeSeriesHistogram", ";#Delta#it{t}_{vtx} (ns);#Delta#it{z}_{vtx} (cm)", HistType::kTH2F, {tDiffVtxAxisExtend, zDiffVtxAxis2});
     histos.add<TH2>("nContribTwoVtxTimeSeriesHistogram", ";#it{N}_{contrib}^{1};#it{N}_{contrib}^{2}", HistType::kTH2F, {nContribAxis, nContribAxis});
     histos.add<TH2>("nContribVsTDistTimeSeriesHistogram", ";#Delta#it{t}_{vtx} (ns);#Delta#it{N}_{contrib}", HistType::kTH2F, {tDiffVtxAxisExtendSigned, nContribDiffAxis});
-  }
 
-  std::deque<BCcoll> colls;
+    histos.add<TH2>("nContribITSRofTimeSeriesHistogram", ";#it{N}_{contrib}^{1};#it{N}_{contrib}^{2}", HistType::kTH2F, {nContribAxis, nContribAxis});
+    histos.add<TH1>("tDiffDuplicateTimeSeriesHistogram", ";#Delta#it{t}_{vtx} (ns);Entries", HistType::kTH1F, {tDiffVtxAxisExtend});
+  }
 
   void process(aod::BC const& bc, aod::Collisions const& collisions)
   {
@@ -153,10 +159,52 @@ struct vertexQA {
       histos.fill(HIST("zVtxHistogram"), posZ);
       histos.fill(HIST("tVtxHistogram"), posT);
 
-      colls.emplace_back(bc, collision);
+      auto compareCollisions = [&](BCcoll other) {
+        auto coll2 = std::get<aod::Collision>(other);
+        double testZ = std::abs(collision.posZ() - coll2.posZ()) / std::sqrt(collision.covZZ() + coll2.covZZ());
+        double distR = std::hypot(collision.posX() - coll2.posX(), collision.posY() - coll2.posY());
+        double drdxCol = (collision.posX() - coll2.posX()) / distR;
+        double drdxOther = -(collision.posX() - coll2.posX()) / distR;
+        double drdyCol = (collision.posY() - coll2.posY()) / distR;
+        double drdyOther = -(collision.posY() - coll2.posY()) / distR;
+        double covR = std::pow(drdxCol, 2) * collision.covXX() + std::pow(drdxOther, 2) * coll2.covXX() + std::pow(drdyCol, 2) * collision.covYY() + std::pow(drdxOther, 2) * coll2.covYY() + 2 * drdxCol * drdyCol * collision.covXY() + 2 * drdxOther * drdyOther * coll2.covXY();
+        double testR = distR / std::sqrt(covR);
+        double deltaT = deltaTimeColl(BCcoll{bc, collision}, other);
+        double testT = std::abs(deltaT) / std::sqrt(std::pow(collision.collisionTimeRes(), 2) + std::pow(coll2.collisionTimeRes(), 2));
+        return (testT < nSigmaT && testZ < nSigmaZ && testR < nSigmaR && std::abs(deltaT) < maxTime);
+      };
+
+      if (colls.size() > 0) {
+        auto id = std::find_if(colls.begin(), colls.end(), compareCollisions);
+        if (id != colls.end()) {
+          auto coll2 = std::get<aod::Collision>(*id);
+          double deltaT = deltaTimeColl(BCcoll{bc, collision}, *id);
+          // Keep into account that we have "past" collisions in the queue
+          histos.fill(HIST("zDistVtxTimeSeriesHistogram"), collision.posZ() - coll2.posZ());
+          histos.fill(HIST("tDistVtxTimeSeriesHistogram"), std::abs(deltaT));
+          histos.fill(HIST("tCollTwoVtxTimeSeriesHistogram"), coll2.collisionTime(), collision.collisionTime());
+          histos.fill(HIST("zDistVsTDistVtxTimeSeriesHistogram"), std::abs(deltaT), collision.posZ() - coll2.posZ());
+          histos.fill(HIST("nContribTwoVtxTimeSeriesHistogram"), coll2.numContrib(), collision.numContrib());
+          histos.fill(HIST("nContribVsTDistTimeSeriesHistogram"), deltaT, collision.numContrib() - coll2.numContrib());
+          histos.fill(HIST("nVtxTimeSeriesHistogram"), 2);
+          if (std::abs(deltaT) > minTimeDiff && std::abs(deltaT) < maxTimeDiff) {
+            histos.fill(HIST("nContribITSRofTimeSeriesHistogram"), coll2.numContrib(), collision.numContrib());
+          }
+          if (std::abs(collision.numContrib() - coll2.numContrib()) < 3 * std::sqrt(collision.numContrib() + coll2.numContrib()) && collision.numContrib() > minNcontrib && coll2.numContrib() > minNcontrib) {
+            histos.fill(HIST("tDiffDuplicateTimeSeriesHistogram"), std::abs(deltaT));
+          }
+          colls.erase(id);
+        } else {
+          colls.emplace_back(bc, collision);
+        }
+      } else {
+        colls.emplace_back(bc, collision);
+      }
     }
 
-    if (collSize == 2) {
+    histos.fill(HIST("nVtxHistogram"), collSize);
+
+    if (collSize >= 2) {
       histos.fill(HIST("xDistVtxHistogram"), collPosX[0] - collPosX[1]);
       histos.fill(HIST("yDistVtxHistogram"), collPosY[0] - collPosY[1]);
       histos.fill(HIST("xyDistVtxHistogram"), std::hypot(collPosX[0] - collPosX[1], collPosY[0] - collPosY[1]));
@@ -177,41 +225,6 @@ struct vertexQA {
       }
     }
 
-    auto compareCollisions = [&](BCcoll other) {
-      auto coll1 = std::get<aod::Collision>(colls.front());
-      auto coll2 = std::get<aod::Collision>(other);
-      double testZ = std::abs(coll1.posZ() - coll2.posZ()) / std::sqrt(coll1.covZZ() + coll2.covZZ());
-      double distR = std::hypot(coll1.posX() - coll2.posX(), coll1.posY() - coll2.posY());
-      double drdxCol = (coll1.posX() - coll2.posX()) / distR;
-      double drdxOther = -(coll1.posX() - coll2.posX()) / distR;
-      double drdyCol = (coll1.posY() - coll2.posY()) / distR;
-      double drdyOther = -(coll1.posY() - coll2.posY()) / distR;
-      double covR = std::pow(drdxCol, 2) * coll1.covXX() + std::pow(drdxOther, 2) * coll2.covXX() + std::pow(drdyCol, 2) * coll1.covYY() + std::pow(drdxOther, 2) * coll2.covYY() + 2 * drdxCol * drdyCol * coll1.covXY() + 2 * drdxOther * drdyOther * coll2.covXY();
-      double testR = distR / std::sqrt(covR);
-      double deltaT = deltaTimeColl(colls.front(), other);
-      double testT = std::abs(deltaT) / std::sqrt(std::pow(coll1.collisionTimeRes(), 2) + std::pow(coll2.collisionTimeRes(), 2));
-      return (testT < nSigmaT && testZ < nSigmaZ && testR < nSigmaR && std::abs(deltaT) < maxTime);
-    };
-
-    if (colls.size() > 1) {
-      auto id = std::find_if(colls.begin() + 1, colls.end(), compareCollisions);
-      if (id != colls.end()) {
-        auto coll1 = std::get<aod::Collision>(colls.front());
-        auto coll2 = std::get<aod::Collision>(*id);
-        double deltaT = deltaTimeColl(colls.front(), *id);
-        histos.fill(HIST("zDistVtxTimeSeriesHistogram"), coll2.posZ() - coll1.posZ());
-        histos.fill(HIST("tDistVtxTimeSeriesHistogram"), std::abs(deltaT));
-        histos.fill(HIST("tCollTwoVtxTimeSeriesHistogram"), coll1.collisionTime(), coll2.collisionTime());
-        histos.fill(HIST("zDistVsTDistVtxTimeSeriesHistogram"), std::abs(deltaT), coll2.posZ() - coll1.posZ());
-        histos.fill(HIST("nContribTwoVtxTimeSeriesHistogram"), coll1.numContrib(), coll2.numContrib());
-        histos.fill(HIST("nContribVsTDistTimeSeriesHistogram"), -deltaT, coll2.numContrib() - coll1.numContrib());
-        histos.fill(HIST("nVtxTimeSeriesHistogram"), 2);
-        colls.erase(id);
-        colls.pop_front();
-      }
-    }
-
-    histos.fill(HIST("nVtxHistogram"), collSize);
     if (collSize > storeTree) {
       for (int i{0}; i < collSize; ++i) {
         vtxQAtable(bc.globalBC(), collPosX[i], collPosY[i], collPosZ[i], collCovXX[i], collCovXY[i], collCovYY[i], collCovZZ[i], collPosT[i], collResT[i], collContribs[i]);

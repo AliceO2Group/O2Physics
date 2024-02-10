@@ -12,7 +12,9 @@
 /// \file candidateCreatorToXiPi.cxx
 /// \brief Reconstruction of Omegac0 and Xic0 -> xi pi candidates
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
+
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DCAFitter/DCAFitterN.h"
@@ -38,19 +40,19 @@
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 using namespace o2;
+using namespace o2::track;
 using namespace o2::analysis;
-// using namespace o2::analysis::pdg;
 using namespace o2::aod;
 using namespace o2::aod::cascdata;
 using namespace o2::aod::v0data;
+using namespace o2::aod::hf_track_index;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // Reconstruction of omegac0 and xic0 candidates
 struct HfCandidateCreatorToXiPi {
   Produces<aod::HfCandToXiPi> rowCandidate;
-
-  Configurable<bool> doPvRefit{"doPvRefit", false, "set to true if you do PV refit in trackIndexSkimCreator.cxx"};
 
   Configurable<bool> propagateToPCA{"propagateToPCA", false, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
@@ -71,31 +73,23 @@ struct HfCandidateCreatorToXiPi {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  // cascade invariant mass cuts
-  Configurable<bool> doCascadeInvMassCut{"doCascadeInvMassCut", false, "Use invariant mass cut to select cascade candidates"};
-  Configurable<double> sigmaInvMassCascade{"sigmaInvMassCascade", 0.0025, "Invariant mass cut for cascade (sigma)"};
-  Configurable<int> nSigmaInvMassCut{"nSigmaInvMassCut", 4, "Number of sigma for invariant mass cut"};
-
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   int runNumber;
 
-  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using MyTracks = soa::Join<aod::TracksWCovDca, aod::HfPvRefitTrack>;
-  using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
   using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; // to use strangeness tracking, use aod::TraCascDatas instead of aod::CascDatas
+  using CascadesLinked = soa::Join<Cascades, CascDataLink>;
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
+  using MySkimIdx = soa::Filtered<aod::HfCascLf2Prongs>;
 
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0); // filter to use only HF selected collisions
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng >= 4);
-
-  Preslice<MyTracks> tracksPerCollision = aod::track::collisionId;                                  // needed for PV refit
-  Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
-  Preslice<MyCascTable> cascadesPerCollision = aod::cascdata::collisionId;
+  Filter filterSelectIndexes = (aod::hf_track_index::hfflag > static_cast<uint8_t>(0));
 
   OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.2, 3.1)};
+  OutputObj<TH1F> hFitterStatus{TH1F("hFitterStatus", "Charm DCAFitter status;status;entries", 3, -0.5, 2.5)};                     // 0 --> vertex(es) found, 1 --> exception found, 2 --> no vertex found (but no exception)
+  OutputObj<TH1F> hCandidateCounter{TH1F("hCandidateCounter", "Candidate counter wrt derived data;status;entries", 4, -0.5, 3.5)}; // 0 --> candidates in derived data table, 1 --> candidates passing testbit selection, 2 --> candidates passing fitter step 3 --> candidates filled in new table
+  OutputObj<TH1F> hCascadesCounter{TH1F("hCascadesCounter", "Cascades counter wrt derived data;status;entries", 2, -0.5, 1.5)};    // 0 --> cascades in derived data table (and stored in AOD table), 1 --> cascades in derived data table and also accessible in cascData table
 
   void init(InitContext const&)
   {
@@ -106,20 +100,18 @@ struct HfCandidateCreatorToXiPi {
     runNumber = 0;
   }
 
-  void process(SelectedCollisions const& collisions,
-               aod::BCsWithTimestamps const& bcWithTimeStamps,
-               MyTracks const& tracks,
-               FilteredHfTrackAssocSel const& trackIndices,
-               MyCascTable const& cascades,
-               MyV0Table const&,
-               aod::V0sLinked const&)
+  void process(aod::Collisions const&,
+               aod::BCsWithTimestamps const&,
+               TracksWCovDca const&,
+               MyCascTable const&, CascadesLinked const&,
+               MySkimIdx const& candidates)
   {
 
-    double massPionFromPDG = o2::analysis::pdg::MassPiPlus;    // pdg code 211
-    double massLambdaFromPDG = o2::analysis::pdg::MassLambda0; // pdg code 3122
-    double massXiFromPDG = o2::analysis::pdg::MassXiMinus;     // pdg code 3312
-    double massOmegacFromPDG = o2::analysis::pdg::MassOmegaC0; // pdg code 4332
-    double massXicFromPDG = o2::analysis::pdg::MassXiCZero;    // pdg code 4132
+    double massPionFromPDG = MassPiPlus;    // pdg code 211
+    double massLambdaFromPDG = MassLambda0; // pdg code 3122
+    double massXiFromPDG = MassXiMinus;     // pdg code 3312
+    double massOmegacFromPDG = MassOmegaC0; // pdg code 4332
+    double massXicFromPDG = MassXiC0;       // pdg code 4132
 
     // 2-prong vertex fitter to build the omegac/xic vertex
     o2::vertexing::DCAFitterN<2> df;
@@ -133,7 +125,17 @@ struct HfCandidateCreatorToXiPi {
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
 
-    for (const auto& collision : collisions) {
+    for (const auto& cand : candidates) {
+
+      hCandidateCounter->Fill(0);
+
+      if (!TESTBIT(cand.hfflag(), aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi)) {
+        continue;
+      }
+
+      hCandidateCounter->Fill(1);
+
+      auto collision = cand.collision_as<aod::Collisions>();
 
       // set the magnetic field from CCDB
       auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
@@ -143,263 +145,193 @@ struct HfCandidateCreatorToXiPi {
       df.setBz(magneticField);
       df.setRefitWithMatCorr(refitWithMatCorr);
 
-      // loop over cascades reconstructed by cascadebuilder.cxx
-      auto thisCollId = collision.globalIndex();
-      auto groupedCascades = cascades.sliceBy(cascadesPerCollision, thisCollId);
+      auto trackPion = cand.prong0_as<TracksWCovDca>();
+      auto cascAodElement = cand.cascade_as<aod::CascadesLinked>();
+      hCascadesCounter->Fill(0);
+      int v0index = cascAodElement.v0Id();
+      if (!cascAodElement.has_cascData())
+        continue;
+      auto casc = cascAodElement.cascData_as<MyCascTable>();
+      hCascadesCounter->Fill(1);
+      auto trackXiDauCharged = casc.bachelor_as<TracksWCovDca>(); // pion <- xi track
+      auto trackV0Dau0 = casc.posTrack_as<TracksWCovDca>();       // V0 positive daughter track
+      auto trackV0Dau1 = casc.negTrack_as<TracksWCovDca>();       // V0 negative daughter track
 
-      for (const auto& casc : groupedCascades) {
+      //-------------------------- V0 info---------------------------
+      // pseudorapidity
+      double pseudorapV0Dau0 = trackV0Dau0.eta();
+      double pseudorapV0Dau1 = trackV0Dau1.eta();
 
-        //----------------accessing particles in the decay chain-------------
-        // cascade daughter - charged particle
-        // int indexTrackXiDauCharged = casc.bachelorId();     // pion <- xi index from cascade table (not used)
-        auto trackXiDauCharged = casc.bachelor_as<MyTracks>(); // pion <- xi track from MyTracks table
-        // cascade daughter - V0
-        if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) { // check that V0 data are stored
-          continue;
-        }
-        auto v0 = casc.v0_as<aod::V0sLinked>();
-        auto v0Element = v0.v0Data_as<MyV0Table>(); // V0 element from LF table containing V0 info
-        // V0 positive daughter
-        auto trackV0Dau0 = v0Element.posTrack_as<MyTracks>(); // p <- V0 track (positive track) from MyTracks table
-        // V0 negative daughter
-        auto trackV0Dau1 = v0Element.negTrack_as<MyTracks>(); // pion <- V0 track (negative track) from MyTracks table
+      // info from LF table
+      std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()};
+      std::array<float, 3> vertexV0 = {casc.xlambda(), casc.ylambda(), casc.zlambda()};
+      std::array<float, 3> pVecV0Dau0 = {casc.pxpos(), casc.pypos(), casc.pzpos()};
+      std::array<float, 3> pVecV0Dau1 = {casc.pxneg(), casc.pyneg(), casc.pzneg()};
 
-        // check that particles come from the same collision
-        if (rejDiffCollTrack) {
-          if (trackV0Dau0.collisionId() != trackV0Dau1.collisionId()) {
-            continue;
-          }
-          if (trackXiDauCharged.collisionId() != trackV0Dau0.collisionId()) {
-            continue;
-          }
-        }
+      //-------------------reconstruct cascade track------------------
+      // pseudorapidity
+      double pseudorapPiFromCas = trackXiDauCharged.eta();
 
-        // use invariant mass cut to select cascades candidates
-        if (doCascadeInvMassCut) {
-          if (std::abs(casc.mXi() - massXiFromPDG) > (nSigmaInvMassCut * sigmaInvMassCascade)) {
-            continue;
-          }
-        }
+      // info from LF table
+      std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
+      std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
+      std::array<float, 21> covCasc = {0.};
+      constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+      for (int i = 0; i < 6; i++) {
+        covCasc[MomInd[i]] = casc.momentumCovMat()[i];
+        covCasc[i] = casc.positionCovMat()[i];
+      }
+      // create cascade track
+      o2::track::TrackParCov trackCasc;
+      if (trackXiDauCharged.sign() > 0) {
+        trackCasc = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, 1, true);
+      } else if (trackXiDauCharged.sign() < 0) {
+        trackCasc = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, -1, true);
+      } else {
+        continue;
+      }
+      trackCasc.setAbsCharge(1);
+      trackCasc.setPID(o2::track::PID::XiMinus);
 
-        //-------------------------- V0 info---------------------------
-        // pseudorapidity
-        double pseudorapV0PosDau = trackV0Dau0.eta();
-        double pseudorapV0NegDau = trackV0Dau1.eta();
+      std::array<float, 3> pVecPionFromCasc = {casc.pxbach(), casc.pybach(), casc.pzbach()};
 
-        // pion & p <- V0 tracks
-        auto trackParCovV0Dau0 = getTrackParCov(trackV0Dau0);
-        auto trackParCovV0Dau1 = getTrackParCov(trackV0Dau1);
+      //------------reconstruct charm baryon decay vtx---------------
+      auto trackParVarPi = getTrackParCov(trackPion); // charm bachelor pion track to be processed with DCAFitter
 
-        // info from LF table
-        std::array<float, 3> pVecV0 = {casc.pxlambda(), casc.pylambda(), casc.pzlambda()}; // pVec stands for vector containing the 3-momentum components
-        std::array<float, 3> vertexV0 = {casc.xlambda(), casc.ylambda(), casc.zlambda()};
-        std::array<float, 3> pVecV0Dau0 = {casc.pxpos(), casc.pypos(), casc.pzpos()};
-        std::array<float, 3> pVecV0Dau1 = {casc.pxneg(), casc.pyneg(), casc.pzneg()};
+      // reconstruct charm baryon with DCAFitter
+      int nVtxFromFitterCharmBaryon = 0;
+      try {
+        nVtxFromFitterCharmBaryon = df.process(trackCasc, trackParVarPi);
+      } catch (...) {
+        LOG(error) << "Exception caught in charm DCA fitter process call!";
+        hFitterStatus->Fill(1);
+        continue;
+      }
+      if (nVtxFromFitterCharmBaryon == 0) {
+        hFitterStatus->Fill(2);
+        continue;
+      }
+      hFitterStatus->Fill(0);
+      hCandidateCounter->Fill(2);
+      auto vertexCharmBaryonFromFitter = df.getPCACandidate();
+      std::array<float, 3> pVecCascAsD;
+      std::array<float, 3> pVecPionFromCharmBaryon;
+      df.propagateTracksToVertex();
+      if (!df.isPropagateTracksToVertexDone()) {
+        continue;
+      }
+      df.getTrack(0).getPxPyPzGlo(pVecCascAsD);
+      df.getTrack(1).getPxPyPzGlo(pVecPionFromCharmBaryon);
+      std::array<float, 3> pVecCharmBaryon = {pVecCascAsD[0] + pVecPionFromCharmBaryon[0], pVecCascAsD[1] + pVecPionFromCharmBaryon[1], pVecCascAsD[2] + pVecPionFromCharmBaryon[2]};
 
-        //-----------------------------reconstruct cascade track-----------------------------
-        // pseudorapidity
-        double pseudorapPiFromCas = trackXiDauCharged.eta();
+      std::array<float, 3> coordVtxCharmBaryon = df.getPCACandidatePos();
+      std::array<float, 6> covVtxCharmBaryon = df.calcPCACovMatrixFlat();
 
-        // pion <- casc track to be processed with DCAfitter
-        auto trackParCovXiDauCharged = getTrackParCov(trackXiDauCharged);
+      // pseudorapidity
+      double pseudorapPiFromCharmBaryon = trackPion.eta();
 
-        // info from LF table
-        std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
-        std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
-        std::array<float, 21> covCasc = {0.};
-        constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-        for (int i = 0; i < 6; i++) {
-          covCasc[MomInd[i]] = casc.momentumCovMat()[i];
-          covCasc[i] = casc.positionCovMat()[i];
-        }
-        // create cascade track
-        o2::track::TrackParCov trackCasc;
-        if (trackXiDauCharged.sign() > 0) {
-          trackCasc = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, 1, true);
-        } else if (trackXiDauCharged.sign() < 0) {
-          trackCasc = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, -1, true);
-        } else {
-          continue;
-        }
-        trackCasc.setAbsCharge(1);
-        trackCasc.setPID(o2::track::PID::XiMinus);
+      // DCAxy (computed with propagateToDCABxByBz method)
+      float dcaxyV0Dau0 = trackV0Dau0.dcaXY();
+      float dcaxyV0Dau1 = trackV0Dau1.dcaXY();
+      float dcaxyPiFromCasc = trackXiDauCharged.dcaXY();
 
-        std::array<float, 3> pVecPionFromCasc = {casc.pxbach(), casc.pybach(), casc.pzbach()};
+      // DCAz (computed with propagateToDCABxByBz method)
+      float dcazV0Dau0 = trackV0Dau0.dcaZ();
+      float dcazV0Dau1 = trackV0Dau1.dcaZ();
+      float dcazPiFromCasc = trackXiDauCharged.dcaZ();
 
-        //-------------------combining cascade and pion tracks--------------------------
-        auto groupedTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-        for (const auto& trackIndexPion : groupedTrackIndices) {
+      // primary vertex of the collision
+      auto primaryVertex = getPrimaryVertex(collision); // get the associated covariance matrix with auto covMatrixPV = primaryVertex.getCov();
+      std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
 
-          auto trackPion = trackIndexPion.track_as<MyTracks>();
+      // impact parameters
+      o2::dataformats::DCA impactParameterCasc;
+      o2::dataformats::DCA impactParameterPiFromCharmBaryon;
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackCasc, 2.f, matCorr, &impactParameterCasc);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParVarPi, 2.f, matCorr, &impactParameterPiFromCharmBaryon);
+      float impactParPiFromCharmBaryonXY = impactParameterPiFromCharmBaryon.getY();
+      float impactParPiFromCharmBaryonZ = impactParameterPiFromCharmBaryon.getZ();
 
-          if ((rejDiffCollTrack) && (trackXiDauCharged.collisionId() != trackPion.collisionId())) {
-            continue;
-          }
+      // invariant mass under the hypothesis of particles ID corresponding to the decay chain
+      double mLambda = casc.mLambda(); // from LF table, V0 mass under lambda hypothesis
+      double mCasc = casc.mXi();
+      const std::array<double, 2> arrMassCharmBaryon = {massXiFromPDG, massPionFromPDG};
+      double mCharmBaryon = RecoDecay::m(std::array{pVecCascAsD, pVecPionFromCharmBaryon}, arrMassCharmBaryon);
 
-          // ask for opposite sign daughters (charm baryon daughters)
-          if (trackPion.sign() * trackXiDauCharged.sign() >= 0) {
-            continue;
-          }
+      // computing cosPA
+      double cpaV0 = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+      double cpaCharmBaryon = RecoDecay::cpa(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
+      double cpaCasc = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
+      double cpaxyV0 = RecoDecay::cpaXY(pvCoord, vertexV0, pVecV0);
+      double cpaxyCharmBaryon = RecoDecay::cpaXY(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
+      double cpaxyCasc = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
 
-          // check not to take the same particle twice in the decay chain
-          if (trackPion.globalIndex() == trackXiDauCharged.globalIndex() || trackPion.globalIndex() == trackV0Dau0.globalIndex() || trackPion.globalIndex() == trackV0Dau1.globalIndex()) {
-            continue;
-          }
+      // computing decay length and ctau
+      double decLenCharmBaryon = RecoDecay::distance(pvCoord, coordVtxCharmBaryon);
+      double decLenCascade = RecoDecay::distance(coordVtxCharmBaryon, vertexCasc);
+      double decLenV0 = RecoDecay::distance(vertexCasc, vertexV0);
 
-          // pseudorapidity
-          double pseudorapPiFromCharmBaryon = trackPion.eta();
+      double phiCharmBaryon, thetaCharmBaryon;
+      getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, coordVtxCharmBaryon, phiCharmBaryon, thetaCharmBaryon);
+      auto errorDecayLengthCharmBaryon = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiCharmBaryon, thetaCharmBaryon) + getRotatedCovMatrixXX(covVtxCharmBaryon, phiCharmBaryon, thetaCharmBaryon));
+      auto errorDecayLengthXYCharmBaryon = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiCharmBaryon, 0.) + getRotatedCovMatrixXX(covVtxCharmBaryon, phiCharmBaryon, 0.));
 
-          // charm bachelor pion track to be processed with DCAFitter
-          auto trackParVarPi = getTrackParCov(trackPion);
+      double ctOmegac = RecoDecay::ct(pVecCharmBaryon, decLenCharmBaryon, massOmegacFromPDG);
+      double ctXic = RecoDecay::ct(pVecCharmBaryon, decLenCharmBaryon, massXicFromPDG);
+      double ctCascade = RecoDecay::ct(pVecCasc, decLenCascade, massXiFromPDG);
+      double ctV0 = RecoDecay::ct(pVecV0, decLenV0, massLambdaFromPDG);
 
-          // reconstruct charm baryon with DCAFitter
-          int nVtxFromFitterCharmBaryon = df.process(trackCasc, trackParVarPi);
-          if (nVtxFromFitterCharmBaryon == 0) {
-            continue;
-          }
-          auto vertexCharmBaryonFromFitter = df.getPCACandidate();
-          auto chi2PCACharmBaryon = df.getChi2AtPCACandidate();
-          std::array<float, 3> pVecCascAsD;
-          std::array<float, 3> pVecPionFromCharmBaryon;
-          df.propagateTracksToVertex();
-          if (!df.isPropagateTracksToVertexDone()) {
-            continue;
-          }
-          df.getTrack(0).getPxPyPzGlo(pVecCascAsD);
-          df.getTrack(1).getPxPyPzGlo(pVecPionFromCharmBaryon);
-          std::array<float, 3> pVecCharmBaryon = {pVecCascAsD[0] + pVecPionFromCharmBaryon[0], pVecCascAsD[1] + pVecPionFromCharmBaryon[1], pVecCascAsD[2] + pVecPionFromCharmBaryon[2]};
+      // computing eta
+      double pseudorapCharmBaryon = RecoDecay::eta(pVecCharmBaryon);
+      double pseudorapCascade = RecoDecay::eta(pVecCasc);
+      double pseudorapV0 = RecoDecay::eta(pVecV0);
 
-          std::array<float, 3> coordVtxCharmBaryon = df.getPCACandidatePos();
-          std::array<float, 6> covVtxCharmBaryon = df.calcPCACovMatrixFlat();
+      // DCA between daughters
+      float dcaCascDau = casc.dcacascdaughters();
+      float dcaV0Dau = casc.dcaV0daughters();
+      float dcaCharmBaryonDau = std::sqrt(df.getChi2AtPCACandidate());
 
-          // DCAxy (computed with propagateToDCABxByBz method)
-          float dcaxyV0Dau0 = trackV0Dau0.dcaXY();
-          float dcaxyV0Dau1 = trackV0Dau1.dcaXY();
-          float dcaxyPiFromCasc = trackXiDauCharged.dcaXY();
+      // set hfFlag
+      int hfFlag = 1 << aod::hf_cand_toxipi::DecayType::DecayToXiPi;
 
-          // DCAz (computed with propagateToDCABxByBz method)
-          float dcazV0Dau0 = trackV0Dau0.dcaZ();
-          float dcazV0Dau1 = trackV0Dau1.dcaZ();
-          float dcazPiFromCasc = trackXiDauCharged.dcaZ();
+      // fill test histograms
+      hInvMassCharmBaryon->Fill(mCharmBaryon);
+      hCandidateCounter->Fill(3);
 
-          // primary vertex of the collision
-          auto primaryVertex = getPrimaryVertex(collision); // get the associated covariance matrix with auto covMatrixPV = primaryVertex.getCov();
-          std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
+      // fill the table
+      rowCandidate(collision.globalIndex(),
+                   pvCoord[0], pvCoord[1], pvCoord[2],
+                   vertexCharmBaryonFromFitter[0], vertexCharmBaryonFromFitter[1], vertexCharmBaryonFromFitter[2],
+                   vertexCasc[0], vertexCasc[1], vertexCasc[2],
+                   vertexV0[0], vertexV0[1], vertexV0[2],
+                   trackXiDauCharged.sign(),
+                   covVtxCharmBaryon[0], covVtxCharmBaryon[1], covVtxCharmBaryon[2], covVtxCharmBaryon[3], covVtxCharmBaryon[4], covVtxCharmBaryon[5],
+                   pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],
+                   pVecCasc[0], pVecCasc[1], pVecCasc[2],
+                   pVecPionFromCharmBaryon[0], pVecPionFromCharmBaryon[1], pVecPionFromCharmBaryon[2],
+                   pVecV0[0], pVecV0[1], pVecV0[2],
+                   pVecPionFromCasc[0], pVecPionFromCasc[1], pVecPionFromCasc[2],
+                   pVecV0Dau0[0], pVecV0Dau0[1], pVecV0Dau0[2],
+                   pVecV0Dau1[0], pVecV0Dau1[1], pVecV0Dau1[2],
+                   impactParameterCasc.getY(), impactParPiFromCharmBaryonXY,
+                   impactParameterCasc.getZ(), impactParPiFromCharmBaryonZ,
+                   std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterPiFromCharmBaryon.getSigmaY2()),
+                   v0index, casc.posTrackId(), casc.negTrackId(),
+                   casc.cascadeId(), trackPion.globalIndex(), casc.bachelorId(),
+                   mLambda, mCasc, mCharmBaryon,
+                   cpaV0, cpaCharmBaryon, cpaCasc, cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
+                   ctOmegac, ctCascade, ctV0, ctXic,
+                   pseudorapV0Dau0, pseudorapV0Dau1, pseudorapPiFromCas, pseudorapPiFromCharmBaryon,
+                   pseudorapCharmBaryon, pseudorapCascade, pseudorapV0,
+                   dcaxyV0Dau0, dcaxyV0Dau1, dcaxyPiFromCasc,
+                   dcazV0Dau0, dcazV0Dau1, dcazPiFromCasc,
+                   dcaCascDau, dcaV0Dau, dcaCharmBaryonDau,
+                   decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon,
+                   hfFlag);
 
-          if (doPvRefit && ((trackPion.pvRefitSigmaX2() != 1e10f) || (trackPion.pvRefitSigmaY2() != 1e10f) || (trackPion.pvRefitSigmaZ2() != 1e10f))) { // if I asked for PV refit in trackIndexSkimCreator.cxx
-            pvCoord[0] = trackPion.pvRefitX();
-            pvCoord[1] = trackPion.pvRefitY();
-            pvCoord[2] = trackPion.pvRefitZ();
-
-            // o2::dataformats::VertexBase Pvtx;
-            primaryVertex.setX(trackPion.pvRefitX());
-            primaryVertex.setY(trackPion.pvRefitY());
-            primaryVertex.setZ(trackPion.pvRefitZ());
-            primaryVertex.setCov(trackPion.pvRefitSigmaX2(), trackPion.pvRefitSigmaXY(), trackPion.pvRefitSigmaY2(), trackPion.pvRefitSigmaXZ(), trackPion.pvRefitSigmaYZ(), trackPion.pvRefitSigmaZ2());
-
-            o2::dataformats::DCA impactParameterV0Dau0;
-            o2::dataformats::DCA impactParameterV0Dau1;
-            o2::dataformats::DCA impactParameterPiFromCasc;
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovV0Dau0, 2.f, matCorr, &impactParameterV0Dau0);
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovV0Dau1, 2.f, matCorr, &impactParameterV0Dau1);
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovXiDauCharged, 2.f, matCorr, &impactParameterPiFromCasc);
-            dcaxyV0Dau0 = impactParameterV0Dau0.getY();
-            dcaxyV0Dau1 = impactParameterV0Dau1.getY();
-            dcaxyPiFromCasc = impactParameterPiFromCasc.getY();
-            dcazV0Dau0 = impactParameterV0Dau0.getZ();
-            dcazV0Dau1 = impactParameterV0Dau1.getZ();
-            dcazPiFromCasc = impactParameterPiFromCasc.getZ();
-          }
-
-          // impact parameters
-          o2::dataformats::DCA impactParameterCasc;
-          o2::dataformats::DCA impactParameterPiFromCharmBaryon;
-          o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackCasc, 2.f, matCorr, &impactParameterCasc);
-          o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParVarPi, 2.f, matCorr, &impactParameterPiFromCharmBaryon);
-          float impactParPiFromCharmBaryonXY = impactParameterPiFromCharmBaryon.getY();
-          float impactParPiFromCharmBaryonZ = impactParameterPiFromCharmBaryon.getZ();
-
-          // invariant mass under the hypothesis of particles ID corresponding to the decay chain
-          double mLambda = casc.mLambda(); // from LF table, V0 mass under lambda hypothesis
-          double mCasc = casc.mXi();
-          const std::array<double, 2> arrMassCharmBaryon = {massXiFromPDG, massPionFromPDG};
-          double mCharmBaryon = RecoDecay::m(std::array{pVecCascAsD, pVecPionFromCharmBaryon}, arrMassCharmBaryon);
-
-          // computing cosPA
-          double cpaV0 = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
-          double cpaCharmBaryon = RecoDecay::cpa(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
-          double cpaCasc = RecoDecay::cpa(coordVtxCharmBaryon, vertexCasc, pVecCasc);
-          double cpaxyV0 = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
-          double cpaxyCharmBaryon = RecoDecay::cpaXY(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
-          double cpaxyCasc = RecoDecay::cpaXY(coordVtxCharmBaryon, vertexCasc, pVecCasc);
-
-          // computing decay length and ctau
-          double decLenCharmBaryon = RecoDecay::distance(pvCoord, coordVtxCharmBaryon);
-          double decLenCascade = RecoDecay::distance(coordVtxCharmBaryon, vertexCasc);
-          double decLenV0 = RecoDecay::distance(vertexCasc, vertexV0);
-
-          double phiCharmBaryon, thetaCharmBaryon;
-          getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, coordVtxCharmBaryon, phiCharmBaryon, thetaCharmBaryon);
-          auto errorDecayLengthCharmBaryon = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiCharmBaryon, thetaCharmBaryon) + getRotatedCovMatrixXX(covVtxCharmBaryon, phiCharmBaryon, thetaCharmBaryon));
-          auto errorDecayLengthXYCharmBaryon = std::sqrt(getRotatedCovMatrixXX(primaryVertex.getCov(), phiCharmBaryon, 0.) + getRotatedCovMatrixXX(covVtxCharmBaryon, phiCharmBaryon, 0.));
-
-          double ctOmegac = RecoDecay::ct(pVecCharmBaryon, decLenCharmBaryon, massOmegacFromPDG);
-          double ctXic = RecoDecay::ct(pVecCharmBaryon, decLenCharmBaryon, massXicFromPDG);
-          double ctCascade = RecoDecay::ct(pVecCasc, decLenCascade, massXiFromPDG);
-          double ctV0 = RecoDecay::ct(pVecV0, decLenV0, massLambdaFromPDG);
-
-          // computing eta
-          double pseudorapCharmBaryon = RecoDecay::eta(pVecCharmBaryon);
-          double pseudorapCascade = RecoDecay::eta(pVecCasc);
-          double pseudorapV0 = RecoDecay::eta(pVecV0);
-
-          // DCA between daughters
-          float dcaCascDau = casc.dcacascdaughters();
-          float dcaV0Dau = casc.dcaV0daughters();
-          float dcaCharmBaryonDau = std::sqrt(df.getChi2AtPCACandidate());
-
-          // set hfFlag
-          int hfFlag = 1 << aod::hf_cand_toxipi::DecayType::DecayToXiPi;
-
-          // fill test histograms
-          hInvMassCharmBaryon->Fill(mCharmBaryon);
-
-          // fill the table
-          rowCandidate(collision.globalIndex(),
-                       pvCoord[0], pvCoord[1], pvCoord[2],
-                       vertexCharmBaryonFromFitter[0], vertexCharmBaryonFromFitter[1], vertexCharmBaryonFromFitter[2],
-                       vertexCasc[0], vertexCasc[1], vertexCasc[2],
-                       vertexV0[0], vertexV0[1], vertexV0[2],
-                       trackXiDauCharged.sign(),
-                       chi2PCACharmBaryon, covVtxCharmBaryon[0], covVtxCharmBaryon[1], covVtxCharmBaryon[2], covVtxCharmBaryon[3], covVtxCharmBaryon[4], covVtxCharmBaryon[5],
-                       pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],
-                       pVecCasc[0], pVecCasc[1], pVecCasc[2],
-                       pVecPionFromCharmBaryon[0], pVecPionFromCharmBaryon[1], pVecPionFromCharmBaryon[2],
-                       pVecV0[0], pVecV0[1], pVecV0[2],
-                       pVecPionFromCasc[0], pVecPionFromCasc[1], pVecPionFromCasc[2],
-                       pVecV0Dau0[0], pVecV0Dau0[1], pVecV0Dau0[2],
-                       pVecV0Dau1[0], pVecV0Dau1[1], pVecV0Dau1[2],
-                       impactParameterCasc.getY(), impactParPiFromCharmBaryonXY,
-                       impactParameterCasc.getZ(), impactParPiFromCharmBaryonZ,
-                       std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterPiFromCharmBaryon.getSigmaY2()),
-                       v0Element.globalIndex(), v0Element.posTrackId(), v0Element.negTrackId(),
-                       casc.globalIndex(), trackPion.globalIndex(), trackXiDauCharged.globalIndex(),
-                       mLambda, mCasc, mCharmBaryon,
-                       cpaV0, cpaCharmBaryon, cpaCasc, cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
-                       ctOmegac, ctCascade, ctV0, ctXic,
-                       pseudorapV0PosDau, pseudorapV0NegDau, pseudorapPiFromCas, pseudorapPiFromCharmBaryon,
-                       pseudorapCharmBaryon, pseudorapCascade, pseudorapV0,
-                       dcaxyV0Dau0, dcaxyV0Dau1, dcaxyPiFromCasc,
-                       dcazV0Dau0, dcazV0Dau1, dcazPiFromCasc,
-                       dcaCascDau, dcaV0Dau, dcaCharmBaryonDau,
-                       decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon,
-                       hfFlag);
-
-        } // loop over pions
-      }   // loop over cascades
-    }     // close loop collisions
-  }       // end of process
-};        // end of struct
+    } // loop over LF Cascade-bachelor candidates
+  }   // end of process
+};    // end of struct
 
 /// Performs MC matching.
 struct HfCandidateCreatorToXiPiMc {
@@ -421,27 +353,29 @@ struct HfCandidateCreatorToXiPiMc {
                  aod::TracksWMc const& tracks,
                  aod::McParticles const& mcParticles)
   {
+    float ptCharmBaryonGen = -999.;
     int indexRec = -1;
+    int indexRecCharmBaryon = -1;
     int8_t sign = -9;
-    int8_t flag = -9;
-    // int8_t origin = 0; //to be used for prompt/non prompt
+    int8_t flag = 0;
+    int8_t origin = 0; // to be used for prompt/non prompt
     int8_t debug = 0;
     int8_t debugGenCharmBar = 0;
     int8_t debugGenXi = 0;
     int8_t debugGenLambda = 0;
 
-    int pdgCodeOmegac0 = pdg::Code::kOmegaC0; // 4332
-    int pdgCodeXic0 = pdg::Code::kXiCZero;    // 4132
-    int pdgCodeXiMinus = kXiMinus;            // 3312
-    int pdgCodeLambda = kLambda0;             // 3122
-    int pdgCodePiPlus = kPiPlus;              // 211
-    int pdgCodePiMinus = kPiMinus;            // -211
-    int pdgCodeProton = kProton;              // 2212
+    int pdgCodeOmegac0 = Pdg::kOmegaC0; // 4332
+    int pdgCodeXic0 = Pdg::kXiC0;       // 4132
+    int pdgCodeXiMinus = kXiMinus;      // 3312
+    int pdgCodeLambda = kLambda0;       // 3122
+    int pdgCodePiPlus = kPiPlus;        // 211
+    int pdgCodePiMinus = kPiMinus;      // -211
+    int pdgCodeProton = kProton;        // 2212
 
     // Match reconstructed candidates.
     for (const auto& candidate : candidates) {
       flag = 0;
-      // origin = 0;
+      origin = RecoDecay::OriginType::None;
       debug = 0;
       auto arrayDaughters = std::array{candidate.piFromCharmBaryon_as<aod::TracksWMc>(), // pi <- charm baryon
                                        candidate.bachelor_as<aod::TracksWMc>(),          // pi <- cascade
@@ -457,6 +391,7 @@ struct HfCandidateCreatorToXiPiMc {
       if (matchOmegacMc) {
         // Omegac → pi pi pi p
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeOmegac0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
+        indexRecCharmBaryon = indexRec;
         if (indexRec == -1) {
           debug = 1;
         }
@@ -477,11 +412,18 @@ struct HfCandidateCreatorToXiPiMc {
             }
           }
         }
+
+        // Check whether the charm baryon is non-prompt (from a b quark).
+        if (flag != 0) {
+          auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
+        }
       }
       // Xic matching
       if (matchXicMc) {
         // Xic → pi pi pi p
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdgCodeXic0, std::array{pdgCodePiPlus, pdgCodePiMinus, pdgCodeProton, pdgCodePiMinus}, true, &sign, 3);
+        indexRecCharmBaryon = indexRec;
         if (indexRec == -1) {
           debug = 1;
         }
@@ -502,27 +444,35 @@ struct HfCandidateCreatorToXiPiMc {
             }
           }
         }
+
+        // Check whether the charm baryon is non-prompt (from a b quark).
+        if (flag != 0) {
+          auto particle = mcParticles.rawIteratorAt(indexRecCharmBaryon);
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
+        }
       }
 
       if (debug == 2 || debug == 3) {
         LOGF(info, "WARNING: Charm baryon decays in the expected final state but the condition on the intermediate states are not fulfilled");
       }
-      rowMCMatchRec(flag, debug);
+      rowMCMatchRec(flag, debug, origin);
 
     } // close loop over candidates
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      flag = -9;
+      ptCharmBaryonGen = -999.;
+      flag = 0;
       sign = -9;
       debugGenCharmBar = 0;
       debugGenXi = 0;
       debugGenLambda = 0;
-      // origin = 0;
+      origin = RecoDecay::OriginType::None;
       if (matchOmegacMc) {
         //  Omegac → Xi pi
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
           debugGenCharmBar = 1;
+          ptCharmBaryonGen = particle.pt();
           // Xi -> Lambda pi
           auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
           if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
@@ -535,11 +485,16 @@ struct HfCandidateCreatorToXiPiMc {
             }
           }
         }
+        // Check whether the charm baryon is non-prompt (from a b quark)
+        if (flag != 0) {
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
+        }
       }
       if (matchXicMc) {
         //  Xic → Xi pi
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
           debugGenCharmBar = 1;
+          ptCharmBaryonGen = particle.pt();
           // Xi- -> Lambda pi
           auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
           if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
@@ -552,10 +507,13 @@ struct HfCandidateCreatorToXiPiMc {
             }
           }
         }
+        // Check whether the charm baryon is non-prompt (from a b quark)
+        if (flag != 0) {
+          origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
+        }
       }
 
-      // rowMCMatchGen(flag, origin);
-      rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda);
+      rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda, ptCharmBaryonGen, origin);
     }
   } // close process
   PROCESS_SWITCH(HfCandidateCreatorToXiPiMc, processMc, "Process MC", false);

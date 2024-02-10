@@ -15,6 +15,7 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
 // O2
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
@@ -109,8 +110,8 @@ struct HfCandidateCreator2Prong {
       // fill histograms
       // calculate invariant masses
       auto arrayMomenta = std::array{pVec0, pVec1};
-      massPiK = RecoDecay::m(arrayMomenta, std::array{o2::analysis::pdg::MassPiPlus, o2::analysis::pdg::MassKPlus});
-      massKPi = RecoDecay::m(arrayMomenta, std::array{o2::analysis::pdg::MassKPlus, o2::analysis::pdg::MassPiPlus});
+      massPiK = RecoDecay::m(arrayMomenta, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus});
+      massKPi = RecoDecay::m(arrayMomenta, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
       hMass->Fill(massPiK);
       // hMass->Fill(massKPi);
     }
@@ -183,11 +184,11 @@ struct HfCandidateSelectorD0 {
   {
     // invariant-mass cut
     if (trackPion.sign() > 0) {
-      if (std::abs(hfHelper.invMassD0ToPiK(candidate) - o2::analysis::pdg::MassD0) > massWindow) {
+      if (std::abs(hfHelper.invMassD0ToPiK(candidate) - o2::constants::physics::MassD0) > massWindow) {
         return false;
       }
     } else {
-      if (std::abs(hfHelper.invMassD0barToKPi(candidate) - o2::analysis::pdg::MassD0) > massWindow) {
+      if (std::abs(hfHelper.invMassD0barToKPi(candidate) - o2::constants::physics::MassD0) > massWindow) {
         return false;
       }
     }

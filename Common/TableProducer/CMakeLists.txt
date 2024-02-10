@@ -51,6 +51,11 @@ o2physics_add_dpl_workflow(weak-decay-indices
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(v0converter
+                    SOURCES v0converter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(ft0-corrected-table
                     SOURCES ft0CorrectedTable.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -73,6 +78,11 @@ o2physics_add_dpl_workflow(mc-converter
 
 o2physics_add_dpl_workflow(tracks-extra-converter
                     SOURCES tracksExtraConverter.cxx
+                    PUBLIC_LINK_LIBRARIES
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(mft-tracks-converter
+                    SOURCES mftTracksConverter.cxx
                     PUBLIC_LINK_LIBRARIES
                     COMPONENT_NAME Analysis)
 

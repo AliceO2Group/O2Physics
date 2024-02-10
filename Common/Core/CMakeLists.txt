@@ -16,12 +16,14 @@ o2physics_add_library(AnalysisCore
                        CollisionAssociation.cxx
                        TrackSelectionDefaults.cxx
                        EventPlaneHelper.cxx
+                       TableHelper.cxx
                PUBLIC_LINK_LIBRARIES O2::Framework O2::DataFormatsParameters ROOT::EG O2::CCDB ROOT::Physics O2::FT0Base O2::FV0Base)
 
 o2physics_target_root_dictionary(AnalysisCore
               HEADERS   TrackSelection.h
                         TrackSelectionDefaults.h
                         OrbitRange.h
+                        TableHelper.h
                         EventPlaneHelper.h
                         PID/ParamBase.h
                         PID/DetectorResponse.h

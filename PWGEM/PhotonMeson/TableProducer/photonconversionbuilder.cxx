@@ -29,7 +29,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "DCAFitter/DCAFitterN.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
@@ -76,30 +75,43 @@ struct PhotonConversionBuilder {
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
-  Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
 
-  Configurable<float> dcanegtopv{"dcanegtopv", 0.1, "DCA Neg To PV"};
-  Configurable<float> dcapostopv{"dcapostopv", 0.1, "DCA Pos To PV"};
-  Configurable<float> min_v0cospa{"min_v0cospa", 0.99, "V0 CosPA"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
-  Configurable<float> max_dcav0dau{"max_dcav0dau", 1.5, "max distance btween 2 legs"};
-  Configurable<float> min_v0radius{"min_v0radius", 1.0, "min v0 radius"};
-  Configurable<float> margin_r{"margin_r", 3.0, "margin for r cut in cm"};
-  Configurable<float> margin_z{"margin_z", 7.0, "margin for z cut in cm"};
-
-  Configurable<float> max_alpha_ap{"max_alpha_ap", 0.95, "max alpha for AP cut"};
-  Configurable<float> max_qt_ap{"max_qt_ap", 0.02, "max qT for AP cut"};
-  Configurable<float> min_pt_leg{"min_pt_leg", 0.05, "min pT for v0 legs at SV"};
-  Configurable<float> min_pt_v0{"min_pt_v0", 0.05, "min pT for v0 photons at SV"};
-  Configurable<float> max_pt_v0_itsonly{"max_pt_v0_itsonly", 0.3, "max pT for v0 photons wth 2 ITSonly tracks at SV"};
-  Configurable<float> max_eta_v0{"max_eta_v0", 0.9, "max eta for v0 photons at SV"};
+  // single track cuts
+  Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 10, "min ncluster tpc"};
   Configurable<int> mincrossedrows{"mincrossedrows", 10, "min crossed rows"};
-  Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
-  Configurable<float> maxchi2its{"maxchi2its", 5.0, "max chi2/NclsITS"};
+  Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max chi2/NclsTPC"}; // default 4.0 + 1.0
+  Configurable<float> maxchi2its{"maxchi2its", 6.0, "max chi2/NclsITS"}; // default 5.0 + 1.0
   Configurable<float> maxpt_itsonly{"maxpt_itsonly", 0.15, "max pT for ITSonly tracks at SV"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 4.0, "max. TPC n sigma for electron"};
+  Configurable<float> dcanegtopv{"dcanegtopv", 0.1, "DCA Neg To PV"};
+  Configurable<float> dcapostopv{"dcapostopv", 0.1, "DCA Pos To PV"};
+  Configurable<float> min_pt_leg{"min_pt_leg", 0.04, "min pT for v0 legs at SV"};
+  Configurable<float> max_mean_its_cluster_size{"max_mean_its_cluster_size", 4.f, "max. <ITS cluster size> x cos(lambda) for ITSonly tracks"}; // this is to suppress random combination for V0s with ITSonly tracks. default 3 + 1 for skimming.
+  Configurable<float> maxX{"maxX", 83.1, "max X for track IU"};
+
+  // v0 cuts
+  Configurable<float> min_v0cospa_tpconly{"min_v0cospa_tpconly", 0.99, "min V0 CosPA to V0s with TPConly tracks"}; // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> min_v0cospa_its{"min_v0cospa_its", 0.99, "min V0 CosPA to V0s with ITs hits"};               // double -> N.B. dcos(x)/dx = 0 at x=0)
+  Configurable<float> max_dcav0dau_tpconly{"max_dcav0dau_tpconly", 3.0, "max distance btween 2 legs to V0s with TPConly tracks"};
+  Configurable<float> max_dcav0dau_its{"max_dcav0dau_its", 0.5, "max distance btween 2 legs to V0s with ITS hits"};
+  Configurable<float> max_dcav0dau_itsibss{"max_dcav0dau_itsibss", 1.0, "max distance btween 2 legs to V0s with ITS hits on ITSib SS"};
+  Configurable<float> max_dcav0dau_tpc_inner_fc{"max_dcav0dau_tpc_inner_fc", 1.5, "max distance btween 2 legs to V0s with ITS hits on TPC inner FC"};
+  Configurable<float> min_v0radius{"min_v0radius", 1.0, "min v0 radius"};
+  Configurable<float> margin_r_its{"margin_r_its", 3.0, "margin for r cut in cm"};
+  Configurable<float> margin_r_tpconly{"margin_r_tpconly", 7.0, "margin for r cut in cm"};
+  Configurable<float> margin_z{"margin_z", 7.0, "margin for z cut in cm"};
+  Configurable<float> max_alpha_ap{"max_alpha_ap", 0.95, "max alpha for AP cut"};
+  Configurable<float> max_qt_ap{"max_qt_ap", 0.01, "max qT for AP cut"};
+  Configurable<float> min_pt_v0{"min_pt_v0", 0.05, "min pT for v0 photons at PV"};
+  Configurable<float> max_pt_v0_itsonly{"max_pt_v0_itsonly", 0.3, "max pT for v0 photons wth 2 ITSonly tracks at PV"};
+  Configurable<float> max_eta_v0{"max_eta_v0", 0.9, "max eta for v0 photons at PV"};
   Configurable<float> kfMassConstrain{"kfMassConstrain", -1.f, "mass constrain for the KFParticle mother particle"};
+  Configurable<float> max_r_req_its{"max_r_req_its", 16.0, "max Rxy for V0 with ITS hits"};
+  Configurable<float> min_r_tpconly{"min_r_tpconly", 36.0, "min Rxy for V0 with TPConly tracks"};
+  Configurable<float> max_r_itsmft_ss{"max_r_itsmft_ss", 66.0, "max Rxy for ITS/MFT SS"};
+  Configurable<float> max_dcatopv_xy_v0{"max_dcatopv_xy_v0", +1e+10, "max. DCAxy to PV for V0"};
+  Configurable<float> max_dcatopv_z_v0{"max_dcatopv_z_v0", +1e+10, "max. DCAz to PV for V0"};
 
   int mRunNumber;
   float d_bz;
@@ -109,9 +121,6 @@ struct PhotonConversionBuilder {
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
-  //// Define o2 fitter, 2-prong, active memory (no need to redefine per event)
-  // o2::vertexing::DCAFitterN<2> fitter;
-
   HistogramRegistry registry{
     "registry",
     {
@@ -120,16 +129,17 @@ struct PhotonConversionBuilder {
       {"V0/hConversionPointXY", "conversion point in XY;X (cm);Y (cm)", {HistType::kTH2F, {{400, -100.0f, 100.0f}, {400, -100.f, 100.f}}}},
       {"V0/hConversionPointRZ", "conversion point in RZ;Z (cm);R_{xy} (cm)", {HistType::kTH2F, {{200, -100.0f, 100.0f}, {200, 0.f, 100.f}}}},
       {"V0/hPt", "pT of V0 at PV;p_{T,#gamma} (GeV/c)", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
-      {"V0/hEtaPhi", "#eta vs. #varphi of V0 at PV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, TMath::TwoPi()}, {400, -2, +2}}}},
+      {"V0/hEtaPhi", "#eta vs. #varphi of V0 at PV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, 2 * M_PI}, {400, -2, +2}}}},
       {"V0/hCosPA", "cosine of pointing angle;cosine of pointing angle", {HistType::kTH1F, {{100, 0.9f, 1.f}}}},
+      {"V0/hCosPA_Rxy", "cosine of pointing angle;r_{xy} (cm);cosine of pointing angle", {HistType::kTH2F, {{200, 0, 100}, {100, 0.9f, 1.f}}}},
+      {"V0/hCosPAXY_Rxy", "cosine of pointing angle;r_{xy} (cm);cosine of pointing angle", {HistType::kTH2F, {{200, 0, 100}, {100, 0.9f, 1.f}}}},
+      {"V0/hCosPARZ_Rxy", "cosine of pointing angle;r_{xy} (cm);cosine of pointing angle", {HistType::kTH2F, {{200, 0, 100}, {100, 0.9f, 1.f}}}},
       {"V0/hPCA", "distance between 2 legs at SV;PCA (cm)", {HistType::kTH1F, {{500, 0.0f, 5.f}}}},
+      {"V0/hPCA_Rxy", "distance between 2 legs at SV;R_{xy} (cm);PCA (cm)", {HistType::kTH2F, {{200, 0, 100}, {500, 0.0f, 5.f}}}},
       {"V0/hDCAxyz", "DCA to PV;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -5.f, +5.f}, {200, -5.f, +5.f}}}},
-      {"V0/hMee_SVPV", "mee at PV and SV;m_{ee} at PV (GeV/c^{2});m_{ee} at SV (GeV/c^{2})", {HistType::kTH2F, {{100, 0.0f, 0.1f}, {100, 0, 0.1f}}}},
       {"V0/hMeeSV_Rxy", "mee at SV vs. R_{xy};R_{xy} (cm);m_{ee} at SV (GeV/c^{2})", {HistType::kTH2F, {{200, 0.0f, 100.f}, {100, 0, 0.1f}}}},
-      {"V0/hMeePV_Rxy", "mee at PV vs. R_{xy};R_{xy} (cm);m_{ee} at PV (GeV/c^{2})", {HistType::kTH2F, {{200, 0.0f, 100.f}, {100, 0, 0.1f}}}},
-      {"V0/hPtDiff", "V0 KF pt leg sum vs. gamma pt;p_{T,#gamma} (GeV/c);p_{T,ee} (GeV/c)", {HistType::kTH2F, {{1000, 0.0f, 10.f}, {1000, 0, 10}}}},
       {"V0Leg/hPt", "pT of leg at SV;p_{T,e} (GeV/c)", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
-      {"V0Leg/hEtaPhi", "#eta vs. #varphi of leg at SV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, TMath::TwoPi()}, {400, -2, +2}}}},
+      {"V0Leg/hEtaPhi", "#eta vs. #varphi of leg at SV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, 2 * M_PI}, {400, -2, +2}}}},
       {"V0Leg/hDCAxyz", "DCA xy vs. z to PV;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -10.f, +10.f}}}},
       {"V0Leg/hdEdx_Pin", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200, 0.f, 200.f}}}},
       {"V0Leg/hTPCNsigmaEl", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5.f, +5.f}}}},
@@ -158,21 +168,10 @@ struct PhotonConversionBuilder {
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     }
 
-    //// initialize O2 2-prong fitter (only once)
-    // fitter.setPropagateToPCA(true);
-    // fitter.setMaxR(200.);
-    // fitter.setMinParamChange(1e-3);
-    // fitter.setMinRelChi2Change(0.9);
-    // fitter.setMaxDZIni(1e9);
-    // fitter.setMaxChi2(1e9);
-    // fitter.setUseAbsDCA(d_UseAbsDCA);
-    // fitter.setWeightedFinalPCA(d_UseWeightedPCA);
-
     if (useMatCorrType == 1)
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
     if (useMatCorrType == 2)
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-    // fitter.setMatCorrType(matCorr);
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -184,7 +183,6 @@ struct PhotonConversionBuilder {
     // In case override, don't proceed, please - no CCDB access required
     if (d_bz_input > -990) {
       d_bz = d_bz_input;
-      // fitter.setBz(d_bz);
       o2::parameters::GRPMagField grpmag;
       if (fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
@@ -215,8 +213,6 @@ struct PhotonConversionBuilder {
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
     mRunNumber = bc.runNumber();
-    // Set magnetic field value once known
-    // fitter.setBz(d_bz);
 
     if (useMatCorrType == 2) {
       // setMatLUT only after magfield has been initalized (setMatLUT has implicit and problematic init field call if not)
@@ -237,11 +233,22 @@ struct PhotonConversionBuilder {
       }
     }
 
+    if (track.x() > maxX) {
+      return false;
+    }
+
     if (!track.hasITS() && !track.hasTPC()) {
       return false;
     }
 
+    if (track.hasITS() && !track.hasTPC() && (track.hasTRD() || track.hasTOF())) { // remove unrealistic track. this should not happen.
+      return false;
+    }
+
     if (track.hasTPC()) {
+      if (track.tpcNClsFound() < min_ncluster_tpc) {
+        return false;
+      }
       if (track.tpcNClsCrossedRows() < mincrossedrows || track.tpcChi2NCl() > maxchi2tpc) {
         return false;
       }
@@ -255,18 +262,64 @@ struct PhotonConversionBuilder {
         return false;
       }
 
-      if (abs(track.z() / track.x() - track.tgl()) > 0.4) {
-        return false;
-      }
-
       auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
       bool its_ob_only = hits_ib <= its_ib_Requirement.first;
       if (!its_ob_only) {
         return false;
       }
+
+      if (isITSonlyTrack(track)) {
+        uint32_t itsClusterSizes = track.itsClusterSizes();
+        int total_cluster_size = 0, nl = 0;
+        for (unsigned int layer = 0; layer < 7; layer++) {
+          int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
+          if (cluster_size_per_layer > 0) {
+            nl++;
+          }
+          total_cluster_size += cluster_size_per_layer;
+        }
+        if (static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())) > max_mean_its_cluster_size) {
+          return false;
+        }
+      }
     }
 
     return true;
+  }
+
+  float cospaXY_KF(KFParticle kfp, KFParticle PV)
+  {
+    float lx = kfp.GetX() - PV.GetX(); // flight length X
+    float ly = kfp.GetY() - PV.GetY(); // flight length Y
+
+    float px = kfp.GetPx();
+    float py = kfp.GetPy();
+    float cospaXY = RecoDecay::dotProd(std::array{lx, ly}, std::array{px, py}) / (RecoDecay::sqrtSumOfSquares(lx, ly) * RecoDecay::sqrtSumOfSquares(px, py));
+    if (cospaXY < -1.) {
+      return -1.;
+    } else if (cospaXY > 1.) {
+      return 1.;
+    }
+    return cospaXY;
+  }
+
+  float cospaRZ_KF(KFParticle kfp, KFParticle PV)
+  {
+    float lx = kfp.GetX() - PV.GetX();              // flight length X
+    float ly = kfp.GetY() - PV.GetY();              // flight length Y
+    float lz = kfp.GetZ() - PV.GetZ();              // flight length Z
+    float lt = RecoDecay::sqrtSumOfSquares(lx, ly); // flight length R, i.e. transverse plane.
+
+    float pt = RecoDecay::sqrtSumOfSquares(kfp.GetPx(), kfp.GetPy());
+    float pz = kfp.GetPz();
+
+    float cospaRZ = RecoDecay::dotProd(std::array{lt, lz}, std::array{pt, pz}) / (RecoDecay::sqrtSumOfSquares(lt, lz) * RecoDecay::sqrtSumOfSquares(pt, pz));
+    if (cospaRZ < -1.) {
+      return -1.;
+    } else if (cospaRZ > 1.) {
+      return 1.;
+    }
+    return cospaRZ;
   }
 
   template <typename TTrack, typename TKFParticle>
@@ -277,8 +330,8 @@ struct PhotonConversionBuilder {
            track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
            track.tpcChi2NCl(), track.tpcInnerParam(), track.tpcSignal(),
            track.tpcNSigmaEl(), track.tpcNSigmaPi(),
-           track.itsClusterMap(), track.itsChi2NCl(), track.detectorMap(),
-           track.x(), track.y(), track.z(), track.tgl(), track.signed1Pt());
+           track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(),
+           track.x(), track.y(), track.z(), track.tgl());
   }
 
   template <bool isMC, class TCollision, class TTrack, typename TV0>
@@ -297,6 +350,13 @@ struct PhotonConversionBuilder {
       return;
     }
 
+    if (isITSonlyTrack(pos) && !ele.hasITS()) {
+      return;
+    }
+    if (isITSonlyTrack(ele) && !pos.hasITS()) {
+      return;
+    }
+
     if (!checkV0leg<isMC>(pos) || !checkV0leg<isMC>(ele)) {
       return;
     }
@@ -305,14 +365,12 @@ struct PhotonConversionBuilder {
     // Calculate DCA with respect to the collision associated to the v0, not individual tracks
     gpu::gpustd::array<float, 2> dcaInfo;
 
-    auto pTrack = getTrackParCov(pos);
-    pTrack.setPID(o2::track::PID::Electron);
+    auto pTrack = getTrackPar(pos);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, pTrack, 2.f, matCorr, &dcaInfo);
     auto posdcaXY = dcaInfo[0];
     auto posdcaZ = dcaInfo[1];
 
-    auto nTrack = getTrackParCov(ele);
-    nTrack.setPID(o2::track::PID::Electron);
+    auto nTrack = getTrackPar(ele);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, nTrack, 2.f, matCorr, &dcaInfo);
     auto eledcaXY = dcaInfo[0];
     auto eledcaZ = dcaInfo[1];
@@ -324,8 +382,11 @@ struct PhotonConversionBuilder {
     float xyz[3] = {0.f, 0.f, 0.f};
     Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz, matCorr);
     float rxy_tmp = RecoDecay::sqrtSumOfSquares(xyz[0], xyz[1]);
-    if (rxy_tmp > std::min(pos.x(), ele.x()) + margin_r * 2.f) {
+    if (rxy_tmp > maxX + margin_r_tpconly) {
       return;
+    }
+    if (rxy_tmp < abs(xyz[2]) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
+      return; // RZ line cut
     }
 
     KFPTrack kfp_track_pos = createKFPTrackFromTrack(pos);
@@ -348,22 +409,67 @@ struct PhotonConversionBuilder {
     gammaKF_DecayVtx.TransportToPoint(xyz);
 
     float cospa_kf = cpaFromKF(gammaKF_DecayVtx, KFPV);
-    if (cospa_kf < min_v0cospa) {
-      return;
+    if (!ele.hasITS() && !pos.hasITS()) {
+      if (cospa_kf < min_v0cospa_tpconly) {
+        return;
+      }
+    } else {
+      if (cospa_kf < min_v0cospa_its) {
+        return;
+      }
     }
 
     float rxy = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY());
-    if (rxy > std::min(pos.x(), ele.x()) + margin_r || rxy < min_v0radius) {
+    if (rxy < min_v0radius) {
       return;
     }
 
+    if (pos.hasITS() && ele.hasITS()) {
+      if (rxy > std::min(pos.x(), ele.x()) + margin_r_its) {
+        return;
+      }
+    } else if (!pos.hasITS() && ele.hasITS()) {
+      if (rxy > std::min(83.f, ele.x()) + margin_r_its) {
+        return;
+      }
+    } else if (pos.hasITS() && !ele.hasITS()) {
+      if (rxy > std::min(pos.x(), 83.f) + margin_r_its) {
+        return;
+      }
+    } else if (!pos.hasITS() && !ele.hasITS()) {
+      if (rxy > std::min(83.f, 83.f) + margin_r_tpconly) {
+        return;
+      }
+    }
+
+    if (rxy > maxX + margin_r_tpconly) {
+      return;
+    }
     if (rxy < abs(gammaKF_DecayVtx.GetZ()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
       return; // RZ line cut
     }
 
-    float v0pt = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy());
-    float v0eta = RecoDecay::eta(std::array{gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz()});
-    float v0phi = RecoDecay::phi(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy()) > 0.f ? RecoDecay::phi(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy()) : RecoDecay::phi(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy()) + TMath::TwoPi();
+    if ((!pos.hasITS() || !ele.hasITS()) && rxy < max_r_req_its) { // conversion points smaller than max_r_req_its have to be detected with ITS hits.
+      return;
+    }
+
+    if ((!pos.hasITS() && !ele.hasITS()) && rxy < min_r_tpconly) { // TPConly tracks can detect conversion points larger than min_r_tpconly.
+      return;
+    }
+
+    // Apply a topological constraint of the gamma to the PV. Parameters will be given at the primary vertex.
+    KFParticle gammaKF_PV = gammaKF;
+    gammaKF_PV.SetProductionVertex(KFPV);
+    float v0pt = RecoDecay::sqrtSumOfSquares(gammaKF_PV.GetPx(), gammaKF_PV.GetPy());
+    float v0eta = RecoDecay::eta(std::array{gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz()});
+    float v0phi = RecoDecay::phi(gammaKF_PV.GetPx(), gammaKF_PV.GetPy()) > 0.f ? RecoDecay::phi(gammaKF_PV.GetPx(), gammaKF_PV.GetPy()) : RecoDecay::phi(gammaKF_PV.GetPx(), gammaKF_PV.GetPy()) + TMath::TwoPi();
+
+    // KFParticle gammaKF_DecayVtx2 = gammaKF;
+    // gammaKF_DecayVtx2.SetProductionVertex(KFPV);
+    // gammaKF_DecayVtx2.TransportToPoint(xyz);
+    // LOGF(info, "gammaKF_PV.GetPx() = %f, gammaKF_DecayVtx.GetPx() = %f, gammaKF_DecayVtx2.GetPx() = %f", gammaKF_PV.GetPx(), gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx2.GetPx());
+    // LOGF(info, "gammaKF_PV.GetPy() = %f, gammaKF_DecayVtx.GetPy() = %f, gammaKF_DecayVtx2.GetPy() = %f", gammaKF_PV.GetPy(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx2.GetPy());
+    // LOGF(info, "gammaKF_PV.GetPz() = %f, gammaKF_DecayVtx.GetPz() = %f, gammaKF_DecayVtx2.GetPz() = %f", gammaKF_PV.GetPz(), gammaKF_DecayVtx.GetPz(), gammaKF_DecayVtx2.GetPz());
 
     if (fabs(v0eta) > max_eta_v0 || v0pt < min_pt_v0) {
       return;
@@ -377,16 +483,32 @@ struct PhotonConversionBuilder {
     KFParticle kfp_ele_DecayVtx = kfp_ele;  // Don't set Primary Vertex
     kfp_pos_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
     kfp_ele_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
-    float ptee = RecoDecay::sqrtSumOfSquares(kfp_pos_DecayVtx.GetPx() + kfp_ele_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy() + kfp_ele_DecayVtx.GetPy());
-
-    KFParticle kfp_pos_PV = kfp_pos_DecayVtx;
-    KFParticle kfp_ele_PV = kfp_ele_DecayVtx;
-    kfp_pos_PV.SetProductionVertex(KFPV);
-    kfp_ele_PV.SetProductionVertex(KFPV);
 
     float pca_kf = kfp_pos_DecayVtx.GetDistanceFromParticle(kfp_ele_DecayVtx);
-    if (pca_kf > max_dcav0dau) {
-      return;
+    if (!ele.hasITS() && !pos.hasITS()) {
+      if (max_r_itsmft_ss < rxy && rxy < maxX + margin_r_tpconly) {
+        if (pca_kf > max_dcav0dau_tpc_inner_fc) {
+          return;
+        }
+      } else {
+        if (pca_kf > max_dcav0dau_tpconly) {
+          return;
+        }
+      }
+    } else {
+      if (rxy < max_r_req_its) {
+        if (pca_kf > max_dcav0dau_itsibss) {
+          return;
+        }
+      } else if (rxy < min_r_tpconly) {
+        if (pca_kf > max_dcav0dau_its) {
+          return;
+        }
+      } else {
+        if (pca_kf > max_dcav0dau_tpconly) {
+          return;
+        }
+      }
     }
 
     float pos_pt = RecoDecay::sqrtSumOfSquares(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy());
@@ -395,18 +517,24 @@ struct PhotonConversionBuilder {
       return;
     }
 
-    if (isITSonlyTrack(pos)) {
-      float legpt = RecoDecay::sqrtSumOfSquares(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy());
-      if (legpt > maxpt_itsonly) {
-        return;
-      }
+    if (isITSonlyTrack(pos) && pos_pt > maxpt_itsonly) {
+      return;
     }
 
-    if (isITSonlyTrack(ele)) {
-      float legpt = RecoDecay::sqrtSumOfSquares(kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy());
-      if (legpt > maxpt_itsonly) {
-        return;
-      }
+    if (isITSonlyTrack(ele) && ele_pt > maxpt_itsonly) {
+      return;
+    }
+
+    // calculate DCAxy,z to PV
+    float v0mom = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz());
+    float length = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetX() - collision.posX(), gammaKF_DecayVtx.GetY() - collision.posY(), gammaKF_DecayVtx.GetZ() - collision.posZ());
+    float dca_x_v0_to_pv = (gammaKF_DecayVtx.GetX() - gammaKF_DecayVtx.GetPx() * cospa_kf * length / v0mom) - collision.posX();
+    float dca_y_v0_to_pv = (gammaKF_DecayVtx.GetY() - gammaKF_DecayVtx.GetPy() * cospa_kf * length / v0mom) - collision.posY();
+    float dca_z_v0_to_pv = (gammaKF_DecayVtx.GetZ() - gammaKF_DecayVtx.GetPz() * cospa_kf * length / v0mom) - collision.posZ();
+    float sign_tmp = dca_x_v0_to_pv * dca_y_v0_to_pv > 0 ? +1.f : -1.f;
+    float dca_xy_v0_to_pv = RecoDecay::sqrtSumOfSquares(dca_x_v0_to_pv, dca_y_v0_to_pv) * sign_tmp;
+    if (abs(dca_xy_v0_to_pv) > max_dcatopv_xy_v0 || abs(dca_z_v0_to_pv) > max_dcatopv_z_v0) {
+      return;
     }
 
     float alpha = v0_alpha(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz());
@@ -424,18 +552,16 @@ struct PhotonConversionBuilder {
       registry.fill(HIST("V0/hPt"), v0pt);
       registry.fill(HIST("V0/hEtaPhi"), v0phi, v0eta);
       registry.fill(HIST("V0/hCosPA"), cospa_kf);
+      registry.fill(HIST("V0/hCosPA_Rxy"), rxy, cospa_kf);
       registry.fill(HIST("V0/hPCA"), pca_kf);
-      registry.fill(HIST("V0/hPtDiff"), v0pt, ptee);
-
-      // calculate DCAxy,z to PV
-      float v0mom = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz());
-      float length = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetX() - collision.posX(), gammaKF_DecayVtx.GetY() - collision.posY(), gammaKF_DecayVtx.GetZ() - collision.posZ());
-      float dca_x_v0_to_pv = (gammaKF_DecayVtx.GetX() - gammaKF_DecayVtx.GetPx() * cospa_kf * length / v0mom) - collision.posX();
-      float dca_y_v0_to_pv = (gammaKF_DecayVtx.GetY() - gammaKF_DecayVtx.GetPy() * cospa_kf * length / v0mom) - collision.posY();
-      float dca_z_v0_to_pv = (gammaKF_DecayVtx.GetZ() - gammaKF_DecayVtx.GetPz() * cospa_kf * length / v0mom) - collision.posZ();
-      float sign_tmp = dca_y_v0_to_pv > 0 ? +1 : -1;
-      float dca_xy_v0_to_pv = RecoDecay::sqrtSumOfSquares(dca_x_v0_to_pv, dca_y_v0_to_pv) * sign_tmp;
+      registry.fill(HIST("V0/hPCA_Rxy"), rxy, pca_kf);
       registry.fill(HIST("V0/hDCAxyz"), dca_xy_v0_to_pv, dca_z_v0_to_pv);
+
+      float cospaXY_kf = cospaXY_KF(gammaKF_DecayVtx, KFPV);
+      float cospaRZ_kf = cospaRZ_KF(gammaKF_DecayVtx, KFPV);
+      // LOGF(info, "cospa_kf = %f, cospaXY_kf = %f, cospaRZ_kf = %f", cospa_kf, cospaXY_kf, cospaRZ_kf);
+      registry.fill(HIST("V0/hCosPAXY_Rxy"), rxy, cospaXY_kf);
+      registry.fill(HIST("V0/hCosPARZ_Rxy"), rxy, cospaRZ_kf);
 
       float chi2kf = gammaKF_DecayVtx.GetChi2() / gammaKF_DecayVtx.GetNDF();
 
@@ -453,21 +579,15 @@ struct PhotonConversionBuilder {
       registry.fill(HIST("V0Leg/hDCAxyz"), posdcaXY, posdcaZ);
       registry.fill(HIST("V0Leg/hDCAxyz"), eledcaXY, eledcaZ);
 
-      ROOT::Math::PxPyPzMVector vpos_pv(kfp_pos_PV.GetPx(), kfp_pos_PV.GetPy(), kfp_pos_PV.GetPz(), o2::constants::physics::MassElectron);
-      ROOT::Math::PxPyPzMVector vele_pv(kfp_ele_PV.GetPx(), kfp_ele_PV.GetPy(), kfp_ele_PV.GetPz(), o2::constants::physics::MassElectron);
-      ROOT::Math::PxPyPzMVector v0_pv = vpos_pv + vele_pv;
-
       ROOT::Math::PxPyPzMVector vpos_sv(kfp_pos_DecayVtx.GetPx(), kfp_pos_DecayVtx.GetPy(), kfp_pos_DecayVtx.GetPz(), o2::constants::physics::MassElectron);
       ROOT::Math::PxPyPzMVector vele_sv(kfp_ele_DecayVtx.GetPx(), kfp_ele_DecayVtx.GetPy(), kfp_ele_DecayVtx.GetPz(), o2::constants::physics::MassElectron);
       ROOT::Math::PxPyPzMVector v0_sv = vpos_sv + vele_sv;
-      registry.fill(HIST("V0/hMee_SVPV"), v0_pv.M(), v0_sv.M());
       registry.fill(HIST("V0/hMeeSV_Rxy"), rxy, v0_sv.M());
-      registry.fill(HIST("V0/hMeePV_Rxy"), rxy, v0_pv.M());
 
       v0photonskf(collision.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                   gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
-                  gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz(),
-                  v0_sv.M(), v0_pv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
+                  gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz(),
+                  v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
                   cospa_kf, pca_kf, alpha, qt, chi2kf);
 
       fFuncTableV0Recalculated(xyz[0], xyz[1], xyz[2]);
@@ -559,13 +679,17 @@ struct PhotonConversionBuilder {
     stored_v0Ids.shrink_to_fit();
   } // end of build
 
-  void processRec(MyCollisions const& collisions, aod::V0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  //! type of V0. 0: built solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1 or 3.
+  Filter v0Filter = o2::aod::v0::v0Type > (uint8_t)0;
+  using filteredV0s = soa::Filtered<aod::V0s>;
+
+  void processRec(MyCollisions const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     build<false>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec, "process reconstructed info for data", true);
 
-  void processMC(MyCollisionsMC const& collisions, aod::V0s const& v0s, MyTracksIUMC const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processMC(MyCollisionsMC const& collisions, filteredV0s const& v0s, MyTracksIUMC const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     build<true>(collisions, v0s, tracks, bcs);
   }

@@ -79,6 +79,10 @@ struct MultiplicityTableTaskIndexed {
   Configurable<LabeledArray<int>> enabledTables{"enabledTables",
                                                 {defaultParameters[0], nTables, nParameters, tableNames, parameterNames},
                                                 "Produce tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
+
+  Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
+  Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Calibration", "The CCDB path for centrality/multiplicity information"};
+
   int mRunNumber;
   bool lCalibLoaded;
   TList* lCalibObjects;
@@ -138,7 +142,7 @@ struct MultiplicityTableTaskIndexed {
     hVtxZFDDC = nullptr;
     hVtxZNTracks = nullptr;
 
-    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false); // don't fatal, please - exception is caught explicitly (as it should)
@@ -198,7 +202,7 @@ struct MultiplicityTableTaskIndexed {
     tableFV0(multFV0A, multFV0C);
     tableFT0(multFT0A, multFT0C);
     tableFDD(multFDDA, multFDDC);
-    tableZDC(multZNA, multZNC);
+    tableZDC(multZNA, multZNC, 0.0f, 0.0f, 0.0f, 0.0f);
     tableTracklet(multTracklets);
     tableTpc(multTPC);
     tablePv(multNContribs, multNContribsEta1, multNContribsEtaHalf);
@@ -266,6 +270,10 @@ struct MultiplicityTableTaskIndexed {
     float multFDDC = 0.f;
     float multZNA = -1.f;
     float multZNC = -1.f;
+    float multZEM1 = -1.f;
+    float multZEM2 = -1.f;
+    float multZPA = -1.f;
+    float multZPC = -1.f;
     int multNContribs = 0;
 
     float multZeqFV0A = 0.f;
@@ -284,7 +292,7 @@ struct MultiplicityTableTaskIndexed {
       if (doVertexZeq > 0) {
         if (bc.runNumber() != mRunNumber) {
           mRunNumber = bc.runNumber(); // mark this run as at least tried
-          lCalibObjects = ccdb->getForTimeStamp<TList>("Centrality/Calibration", bc.timestamp());
+          lCalibObjects = ccdb->getForTimeStamp<TList>(ccdbPath, bc.timestamp());
           if (lCalibObjects) {
             hVtxZFV0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFV0A"));
             hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
@@ -368,14 +376,26 @@ struct MultiplicityTableTaskIndexed {
           {
             multZNA = -1.f;
             multZNC = -1.f;
+            multZEM1 = -1.f;
+            multZEM2 = -1.f;
+            multZPA = -1.f;
+            multZPC = -1.f;
             if (bc.has_zdc()) {
               multZNA = bc.zdc().amplitudeZNA();
               multZNC = bc.zdc().amplitudeZNC();
+              multZEM1 = bc.zdc().amplitudeZEM1();
+              multZEM2 = bc.zdc().amplitudeZEM2();
+              multZPA = bc.zdc().amplitudeZPA();
+              multZPC = bc.zdc().amplitudeZPC();
             } else {
               multZNA = -999.f;
               multZNC = -999.f;
+              multZEM1 = -999.f;
+              multZEM2 = -999.f;
+              multZPA = -999.f;
+              multZPC = -999.f;
             }
-            tableZDC(multZNA, multZNC);
+            tableZDC(multZNA, multZNC, multZEM1, multZEM2, multZPA, multZPC);
             LOGF(debug, "multZNA=%6.0f multZNC=%6.0f", multZNA, multZNC);
           } break;
           case kTrackletMults: // Tracklets (only Run2) nothing to do (to be removed!)

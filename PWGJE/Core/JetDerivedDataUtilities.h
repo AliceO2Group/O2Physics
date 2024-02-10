@@ -22,7 +22,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "PWGJE/Core/JetFinder.h"
 
-namespace JetDerivedDataUtilities
+namespace jetderiveddatautilities
 {
 
 enum JCollisionSel {
@@ -273,14 +273,21 @@ uint8_t setTrackSelectionBit(T const& track)
   return bit;
 }
 
+uint8_t setSingleTrackSelectionBit(int trackSelection)
+{
+  uint8_t bit = 0;
+  if (trackSelection != -1) {
+    SETBIT(bit, trackSelection);
+  }
+  return bit;
+}
+
 template <typename T>
 float trackEnergy(T const& track, float mass = JetFinder::mPion)
 {
   return std::sqrt((track.p() * track.p()) + (mass * mass));
 }
 
-} // namespace JetDerivedDataUtilities
-
-// namespace JetDerivedDataUtilities
+} // namespace jetderiveddatautilities
 
 #endif // PWGJE_CORE_JETDERIVEDDATAUTILITIES_H_

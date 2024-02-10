@@ -155,6 +155,8 @@ struct femtoUniversePairTaskTrackTrackMC {
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
   Configurable<float> ConfCPRdeltaPhiMax{"ConfCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaPhiCut{"ConfCPRdeltaPhiCut", 0.0, "Delta Phi cut for Close Pair Rejection"};
+  Configurable<float> ConfCPRdeltaEtaCut{"ConfCPRdeltaEtaCut", 0.0, "Delta Eta cut for Close Pair Rejection"};
   Configurable<int> ConfPhiBins{"ConfPhiBins", 29, "Number of phi bins in deta dphi"};
   Configurable<int> ConfEtaBins{"ConfEtaBins", 29, "Number of eta bins in deta dphi"};
 
@@ -384,7 +386,7 @@ struct femtoUniversePairTaskTrackTrackMC {
 
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRPlotPerRadii.value);
     }
 
     vPIDPartOne = trackonefilter.ConfPIDPartOne.value;

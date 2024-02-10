@@ -36,10 +36,10 @@
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/MixingLibrary.h"
-#include "PWGCF/GenericFramework/GFW.h"
-#include "PWGCF/GenericFramework/GFWCumulant.h"
-#include "PWGCF/GenericFramework/FlowContainer.h"
-#include "PWGCF/GenericFramework/GFWWeights.h"
+#include "PWGCF/GenericFramework/Core/GFW.h"
+#include "PWGCF/GenericFramework/Core/GFWCumulant.h"
+#include "PWGCF/GenericFramework/Core/FlowContainer.h"
+#include "PWGCF/GenericFramework/Core/GFWWeights.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -85,6 +85,7 @@ struct DQEventQvector {
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill QA histograms"};
+  Configurable<bool> fConfigFlow{"cfgFlow", true, "If true, fill Flow histograms"};
   Configurable<float> fConfigCutPtMin{"cfgCutPtMin", 0.2f, "Minimal pT for tracks"};
   Configurable<float> fConfigCutPtMax{"cfgCutPtMax", 12.0f, "Maximal pT for tracks"};
   Configurable<float> fConfigCutEtaMin{"cfgCutEtaMin", -0.8f, "Eta min range for tracks"};
@@ -280,12 +281,18 @@ struct DQEventQvector {
     uint8_t nentriesN = 0.0;
     uint8_t nentriesP = 0.0;
     uint8_t nentriesFull = 0.0;
+    complex<double> Q1vecN;
+    complex<double> Q1vecP;
+    complex<double> Q1vecFull;
     complex<double> Q2vecN;
     complex<double> Q2vecP;
     complex<double> Q2vecFull;
     complex<double> Q3vecN;
     complex<double> Q3vecP;
     complex<double> Q3vecFull;
+    complex<double> Q4vecN;
+    complex<double> Q4vecP;
+    complex<double> Q4vecFull;
 
     if (fGFW && (tracks1.size() > 0)) {
       // Obtain the GFWCumulant where Q is calculated (index=region, with different eta gaps)
@@ -299,16 +306,22 @@ struct DQEventQvector {
       nentriesFull = gfwCumFull.GetN();
 
       // Get the Q vector for selected harmonic, power (for minPt=0)
+      Q1vecN = gfwCumN.Vec(1, fConfigNPow);
+      Q1vecP = gfwCumP.Vec(1, fConfigNPow);
+      Q1vecFull = gfwCumFull.Vec(1, fConfigNPow);
       Q2vecN = gfwCumN.Vec(2, fConfigNPow);
       Q2vecP = gfwCumP.Vec(2, fConfigNPow);
       Q2vecFull = gfwCumFull.Vec(2, fConfigNPow);
       Q3vecN = gfwCumN.Vec(3, fConfigNPow);
       Q3vecP = gfwCumP.Vec(3, fConfigNPow);
       Q3vecFull = gfwCumFull.Vec(3, fConfigNPow);
+      Q4vecN = gfwCumN.Vec(4, fConfigNPow);
+      Q4vecP = gfwCumP.Vec(4, fConfigNPow);
+      Q4vecFull = gfwCumFull.Vec(4, fConfigNPow);
     }
 
     // Fill the VarManager::fgValues with the Q vector quantities
-    VarManager::FillQVectorFromGFW(collision, Q2vecFull, Q2vecN, Q2vecP, Q3vecFull, Q3vecN, Q3vecP, nentriesFull, nentriesN, nentriesP);
+    VarManager::FillQVectorFromGFW(collision, Q1vecFull, Q1vecN, Q1vecP, Q2vecFull, Q2vecN, Q2vecP, Q3vecFull, Q3vecN, Q3vecP, Q4vecFull, Q4vecN, Q4vecP, nentriesFull, nentriesN, nentriesP);
 
     if (fConfigQA) {
       if ((tracks1.size() > 0) && (nentriesFull * nentriesN * nentriesP != 0.0)) {
@@ -321,7 +334,7 @@ struct DQEventQvector {
 
     // Fill the tree for the reduced event table with Q vector quantities
     if (fEventCut->IsSelected(VarManager::fgValues)) {
-      eventQvector(VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kQ3X0A], VarManager::fgValues[VarManager::kQ3Y0A], VarManager::fgValues[VarManager::kQ3X0B], VarManager::fgValues[VarManager::kQ3Y0B], VarManager::fgValues[VarManager::kQ3X0C], VarManager::fgValues[VarManager::kQ3Y0C]);
+      eventQvector(VarManager::fgValues[VarManager::kQ1X0A], VarManager::fgValues[VarManager::kQ1Y0A], VarManager::fgValues[VarManager::kQ1X0B], VarManager::fgValues[VarManager::kQ1Y0B], VarManager::fgValues[VarManager::kQ1X0C], VarManager::fgValues[VarManager::kQ1Y0C], VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kQ3X0A], VarManager::fgValues[VarManager::kQ3Y0A], VarManager::fgValues[VarManager::kQ3X0B], VarManager::fgValues[VarManager::kQ3Y0B], VarManager::fgValues[VarManager::kQ3X0C], VarManager::fgValues[VarManager::kQ3Y0C], VarManager::fgValues[VarManager::kQ4X0A], VarManager::fgValues[VarManager::kQ4Y0A], VarManager::fgValues[VarManager::kQ4X0B], VarManager::fgValues[VarManager::kQ4Y0B], VarManager::fgValues[VarManager::kQ4X0C], VarManager::fgValues[VarManager::kQ4Y0C]);
     }
   }
 

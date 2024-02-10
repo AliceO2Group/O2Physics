@@ -15,6 +15,7 @@
 ///
 /// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
@@ -206,7 +207,7 @@ struct HfTaskBs {
       int flagMcMatchRecBs = std::abs(candidate.flagMcMatchRec());
 
       if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi)) {
-        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBsMcGen>>(), pdg::Code::kBS, true);
+        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBsMcGen>>(), o2::constants::physics::Pdg::kBS, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
 
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
@@ -267,7 +268,7 @@ struct HfTaskBs {
       if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi)) {
 
         auto ptParticle = particle.pt();
-        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassBS);
+        auto yParticle = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassBS);
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
           continue;
         }

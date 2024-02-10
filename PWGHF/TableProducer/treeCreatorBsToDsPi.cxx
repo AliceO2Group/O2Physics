@@ -16,6 +16,7 @@
 /// \note Adapted from treeCreatorB0T0DPi.cxx
 /// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -356,7 +357,7 @@ struct HfTreeCreatorBsToDsPi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassBS),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassBS),
           particle.flagMcMatchGen());
       }
     }

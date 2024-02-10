@@ -15,11 +15,11 @@
 
 #include <TLorentzVector.h>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFResonanceTables.h"
-#include "PWGHF/Core/PDG.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -58,7 +58,7 @@ struct resonances_tutorial {
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0., 1., 5., 10., 30., 50., 70., 100., 110.}, "Mixing bins - multiplicity"};
 
   // variables
-  double massKa = o2::analysis::pdg::MassKPlus;
+  double massKa = o2::constants::physics::MassKPlus;
 
   // Initialize the ananlysis task
   void init(o2::framework::InitContext&)
@@ -123,7 +123,7 @@ struct resonances_tutorial {
   template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
   {
-    auto multiplicity = collision.multV0M();
+    auto multiplicity = collision.cent();
     for (auto track1 : dTracks1) { // loop over all dTracks1
       if (!trackCut(track1) || !selectionPID(track1)) {
         continue; // track selection and PID selection
@@ -182,14 +182,14 @@ struct resonances_tutorial {
   {
     // Fill the event counter
     histos.fill(HIST("hVertexZ"), collision.posZ());
-    histos.fill(HIST("hMultiplicityPercent"), collision.multV0M());
+    histos.fill(HIST("hMultiplicityPercent"), collision.cent());
 
     fillHistograms<false, false>(collision, resotracks, resotracks); // Fill histograms, no MC, no mixing
   }
   PROCESS_SWITCH(resonances_tutorial, process, "Process event for data", true); // Basic processing
 
   // Processing Event Mixing
-  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::MultV0M>;
+  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
   void processME(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks)
   {
     auto tracksTuple = std::make_tuple(resotracks);

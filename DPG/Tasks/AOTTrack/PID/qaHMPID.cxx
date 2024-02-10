@@ -33,41 +33,43 @@ struct pidHmpidQa {
   void init(o2::framework::InitContext&)
   {
     AxisSpec momAxis{nBinsP, minP, maxP};
-    histos.add("qa/signalvsP", ";#it{p} (GeV/#it{c});Cherenkov angle (rad)", kTH2F, {momAxis, {1000, 0, 1}});
-    histos.add("distance/selected", ";HMPID distance", kTH1F, {{100, 0, 20}});
-    histos.add("distance/nonselected", ";HMPID distance", kTH1F, {{100, 0, 20}});
-    histos.add("qmip/selected", ";HMPID mip charge (ADC)", kTH1F, {{100, 0, 4000}});
-    histos.add("qmip/nonselected", ";HMPID mip charge (ADC)", kTH1F, {{100, 0, 4000}});
-    histos.add("nphotons/selected", ";HMPID number of detected photons", kTH1F, {{100, 0, 1000}});
-    histos.add("nphotons/nonselected", ";HMPID number of detected photons", kTH1F, {{100, 0, 1000}});
+    histos.add("hmpidSignal", "hmpidSignal", kTH1F, {{300, 0, 3000}});
+    histos.add("hmpidXTrack", "hmpidXTrack", kTH1F, {{300, 0, 3000}});
+    histos.add("hmpidYTrack", "hmpidYTrack", kTH1F, {{300, 0, 3000}});
+    histos.add("hmpidXMip", "hmpidXMip", kTH1F, {{300, 0, 3000}});
+    histos.add("hmpidYMip", "hmpidYMip", kTH1F, {{300, 0, 3000}});
+    histos.add("hmpidNPhotons", "hmpidNPhotons", kTH1F, {{300, 0, 3000}});
+    histos.add("hmpidQMip", "hmpidQMip", kTH1F, {{300, 200, 3200}});
+    histos.add("hmpidClusSize", "hmpidClusSize", kTH1F, {{300, 0, 3000}});
+    histos.add("hmpidMom", "hmpidMom", kTH1F, {{300, 0, 3000}});
+    histos.add("hmpidPhotsCharge", "hmpidPhotsCharge", kTH2F, {{300, 0, 3000}, {300, 0, 3000}});
   }
 
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
-  void process(const TrackCandidates& tracks,
-               const aod::HMPIDs& hmpids,
+  void process(const aod::HMPIDs& hmpids,
+               const TrackCandidates& tracks,
                const aod::Collisions& colls)
   {
     for (const auto& t : hmpids) {
-
       if (t.track_as<TrackCandidates>().isGlobalTrack() != (uint8_t) true) {
         continue;
       }
       if (abs(t.track_as<TrackCandidates>().dcaXY()) > maxDCA) {
         continue;
       }
-      histos.fill(HIST("distance/nonselected"), t.hmpidDistance());
-      histos.fill(HIST("qmip/nonselected"), t.hmpidQMip());
-      histos.fill(HIST("nphotons/nonselected"), t.hmpidNPhotons());
-      if (t.hmpidDistance() > maxDistance) {
-        continue;
+
+      histos.fill(HIST("hmpidSignal"), t.hmpidSignal());
+      histos.fill(HIST("hmpidXTrack"), t.hmpidXTrack());
+      histos.fill(HIST("hmpidYTrack"), t.hmpidYTrack());
+      histos.fill(HIST("hmpidXMip"), t.hmpidXMip());
+      histos.fill(HIST("hmpidYMip"), t.hmpidYMip());
+      histos.fill(HIST("hmpidNPhotons"), t.hmpidNPhotons());
+      histos.fill(HIST("hmpidQMip"), t.hmpidQMip());
+      histos.fill(HIST("hmpidClusSize"), t.hmpidClusSize());
+      histos.fill(HIST("hmpidMom"), t.hmpidMom());
+      for (int i = 0; i < 10; i++) {
+        histos.fill(HIST("hmpidPhotsCharge"), t.hmpidMom(), i);
       }
-      if (t.hmpidQMip() < minCharge) {
-        continue;
-      }
-      histos.fill(HIST("distance/selected"), t.hmpidDistance());
-      histos.fill(HIST("qmip/selected"), t.hmpidQMip());
-      histos.fill(HIST("nphotons/selected"), t.hmpidNPhotons());
-      histos.fill(HIST("qa/signalvsP"), t.track_as<TrackCandidates>().p(), t.hmpidSignal());
     }
   }
 };

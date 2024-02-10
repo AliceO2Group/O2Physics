@@ -15,6 +15,7 @@
 ///
 /// \author Alessandro De Falco <alessandro.de.falco@ca.infn.it>, Cagliari University
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/DCA.h"
@@ -30,6 +31,7 @@
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -79,7 +81,7 @@ struct HfCandidateCreatorChic {
 
   void init(InitContext const&)
   {
-    massJpsi = o2::analysis::pdg::MassJPsi;
+    massJpsi = MassJPsi;
   }
 
   void process(aod::Collision const& collision,
@@ -243,19 +245,19 @@ struct HfCandidateCreatorChicMc {
       auto arrayJpsiDaughters = std::array{daughterPosJpsi, daughterNegJpsi};
 
       // chi_c → J/ψ gamma
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayJpsiDaughters, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayJpsiDaughters, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
       if (indexRec > -1) {
         hMassJpsiToMuMuMatched->Fill(hfHelper.invMassJpsiToMuMu(candidate.prong0()));
 
-        int indexMother = RecoDecay::getMother(mcParticles, mcParticles.rawIteratorAt(indexRec), pdg::Code::kChiC1);
-        int indexMotherGamma = RecoDecay::getMother(mcParticles, mcParticles.rawIteratorAt(candidate.prong1().mcparticleId()), pdg::Code::kChiC1);
+        int indexMother = RecoDecay::getMother(mcParticles, mcParticles.rawIteratorAt(indexRec), Pdg::kChiC1);
+        int indexMotherGamma = RecoDecay::getMother(mcParticles, mcParticles.rawIteratorAt(candidate.prong1().mcparticleId()), Pdg::kChiC1);
         if (indexMother > -1 && indexMotherGamma == indexMother && candidate.prong1().mcparticle().pdgCode() == kGamma) {
           auto particleMother = mcParticles.rawIteratorAt(indexMother);
           hEphotonMatched->Fill(candidate.prong1().e());
           hMassEMatched->Fill(sqrt(candidate.prong1().px() * candidate.prong1().px() + candidate.prong1().py() * candidate.prong1().py() + candidate.prong1().pz() * candidate.prong1().pz()));
           if (particleMother.has_daughters()) {
             std::vector<int> arrAllDaughtersIndex;
-            RecoDecay::getDaughters(particleMother, &arrAllDaughtersIndex, std::array{static_cast<int>(kGamma), static_cast<int>(pdg::Code::kJPsi)}, 1);
+            RecoDecay::getDaughters(particleMother, &arrAllDaughtersIndex, std::array{static_cast<int>(kGamma), static_cast<int>(Pdg::kJPsi)}, 1);
             if (arrAllDaughtersIndex.size() == 2) {
               flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
               hMassChicToJpsiToMuMuGammaMatched->Fill(hfHelper.invMassChicToJpsiGamma(candidate));
@@ -277,17 +279,17 @@ struct HfCandidateCreatorChicMc {
       channel = 0;
 
       // chi_c → J/ψ gamma
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kChiC1, std::array{static_cast<int>(pdg::Code::kJPsi), static_cast<int>(kGamma)}, true)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kChiC1, std::array{static_cast<int>(Pdg::kJPsi), static_cast<int>(kGamma)}, true)) {
         // Match J/psi --> e+e-
         std::vector<int> arrDaughter;
-        RecoDecay::getDaughters(particle, &arrDaughter, std::array{static_cast<int>(pdg::Code::kJPsi)}, 1);
+        RecoDecay::getDaughters(particle, &arrDaughter, std::array{static_cast<int>(Pdg::kJPsi)}, 1);
         auto jpsiCandMC = mcParticles.rawIteratorAt(arrDaughter[0]);
-        if (RecoDecay::isMatchedMCGen(mcParticles, jpsiCandMC, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, jpsiCandMC, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true)) {
           flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToEEGamma;
         }
 
         if (flag == 0) {
-          if (RecoDecay::isMatchedMCGen(mcParticles, jpsiCandMC, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, jpsiCandMC, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
             flag = 1 << hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma;
           }
         }

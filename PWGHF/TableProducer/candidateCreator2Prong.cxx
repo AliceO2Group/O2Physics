@@ -28,6 +28,7 @@
 
 #include <TPDGCode.h>
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -42,6 +43,7 @@
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod::hf_cand_2prong;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 
 /// Reconstruction of heavy-flavour 2-prong decay candidates
@@ -105,8 +107,8 @@ struct HfCandidateCreator2Prong {
       hVertexerType->Fill(aod::hf_cand::VertexerType::KfParticle);
     }
 
-    massPi = o2::analysis::pdg::MassPiPlus;
-    massK = o2::analysis::pdg::MassKPlus;
+    massPi = MassPiPlus;
+    massK = MassKPlus;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -212,8 +214,17 @@ struct HfCandidateCreator2Prong {
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
+      auto indexCollision = collision.globalIndex();
+      uint8_t nProngsContributorsPV = 0;
+      if (indexCollision == track0.collisionId() && track0.isPVContributor()) {
+        nProngsContributorsPV += 1;
+      }
+      if (indexCollision == track1.collisionId() && track1.isPVContributor()) {
+        nProngsContributorsPV += 1;
+      }
+
       // fill candidate table rows
-      rowCandidateBase(collision.globalIndex(),
+      rowCandidateBase(indexCollision,
                        primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
                        errorDecayLength, errorDecayLengthXY,
@@ -222,7 +233,7 @@ struct HfCandidateCreator2Prong {
                        pvec1[0], pvec1[1], pvec1[2],
                        impactParameter0.getY(), impactParameter1.getY(),
                        std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
-                       rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(),
+                       rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(), nProngsContributorsPV,
                        rowTrackIndexProng2.hfflag());
 
       // fill histograms
@@ -336,8 +347,17 @@ struct HfCandidateCreator2Prong {
         topolChi2PerNdfD0 = kfCandD0Topol2PV.GetChi2() / kfCandD0Topol2PV.GetNDF();
       }
 
+      auto indexCollision = collision.globalIndex();
+      uint8_t nProngsContributorsPV = 0;
+      if (indexCollision == track0.collisionId() && track0.isPVContributor()) {
+        nProngsContributorsPV += 1;
+      }
+      if (indexCollision == track1.collisionId() && track1.isPVContributor()) {
+        nProngsContributorsPV += 1;
+      }
+
       // fill candidate table rows
-      rowCandidateBase(collision.globalIndex(),
+      rowCandidateBase(indexCollision,
                        KFPV.GetX(), KFPV.GetY(), KFPV.GetZ(),
                        kfCandD0.GetX(), kfCandD0.GetY(), kfCandD0.GetZ(),
                        errorDecayLength, errorDecayLengthXY,   // TODO: much different from the DCAFitterN one
@@ -346,7 +366,7 @@ struct HfCandidateCreator2Prong {
                        kfNegKaon.GetPx(), kfNegKaon.GetPy(), kfNegKaon.GetPz(),
                        impactParameter0XY, impactParameter1XY,
                        errImpactParameter0XY, errImpactParameter1XY,
-                       rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(),
+                       rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(), nProngsContributorsPV,
                        rowTrackIndexProng2.hfflag());
       rowCandidateKF(topolChi2PerNdfD0,
                      massD0, massD0bar);
@@ -361,7 +381,7 @@ struct HfCandidateCreator2Prong {
 
   void processPvRefitWithDCAFitterN(aod::Collisions const& collisions,
                                     soa::Join<aod::Hf2Prongs, aod::HfPvRefit2Prong> const& rowsTrackIndexProng2,
-                                    aod::TracksWCov const& tracks,
+                                    aod::TracksWCovExtra const& tracks,
                                     aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreator2ProngWithDCAFitterN<true>(collisions, rowsTrackIndexProng2, tracks, bcWithTimeStamps);
@@ -371,7 +391,7 @@ struct HfCandidateCreator2Prong {
 
   void processNoPvRefitWithDCAFitterN(aod::Collisions const& collisions,
                                       aod::Hf2Prongs const& rowsTrackIndexProng2,
-                                      aod::TracksWCov const& tracks,
+                                      aod::TracksWCovExtra const& tracks,
                                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreator2ProngWithDCAFitterN<false>(collisions, rowsTrackIndexProng2, tracks, bcWithTimeStamps);
@@ -381,7 +401,7 @@ struct HfCandidateCreator2Prong {
 
   void processPvRefitWithKFParticle(aod::Collisions const& collisions,
                                     soa::Join<aod::Hf2Prongs, aod::HfPvRefit2Prong> const& rowsTrackIndexProng2,
-                                    soa::Join<aod::TracksWCov, aod::TracksExtra> const& tracks,
+                                    aod::TracksWCovExtra const& tracks,
                                     aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreator2ProngWithKFParticle<true>(collisions, rowsTrackIndexProng2, tracks, bcWithTimeStamps);
@@ -390,7 +410,7 @@ struct HfCandidateCreator2Prong {
 
   void processNoPvRefitWithKFParticle(aod::Collisions const& collisions,
                                       aod::Hf2Prongs const& rowsTrackIndexProng2,
-                                      soa::Join<aod::TracksWCov, aod::TracksExtra> const& tracks,
+                                      aod::TracksWCovExtra const& tracks,
                                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     runCreator2ProngWithKFParticle<false>(collisions, rowsTrackIndexProng2, tracks, bcWithTimeStamps);
@@ -425,14 +445,14 @@ struct HfCandidateCreator2ProngExpressions {
       auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>()};
 
       // D0(bar) → π± K∓
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
+      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
       if (indexRec > -1) {
         flag = sign * (1 << DecayType::D0ToPiK);
       }
 
       // J/ψ → e+ e−
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true);
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToEE;
         }
@@ -440,7 +460,7 @@ struct HfCandidateCreator2ProngExpressions {
 
       // J/ψ → μ+ μ−
       if (flag == 0) {
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
         if (indexRec > -1) {
           flag = 1 << DecayType::JpsiToMuMu;
         }
@@ -461,20 +481,20 @@ struct HfCandidateCreator2ProngExpressions {
       origin = 0;
 
       // D0(bar) → π± K∓
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
+      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
         flag = sign * (1 << DecayType::D0ToPiK);
       }
 
       // J/ψ → e+ e−
       if (flag == 0) {
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kJPsi, std::array{+kElectron, -kElectron}, true)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true)) {
           flag = 1 << DecayType::JpsiToEE;
         }
       }
 
       // J/ψ → μ+ μ−
       if (flag == 0) {
-        if (RecoDecay::isMatchedMCGen(mcParticles, particle, pdg::Code::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true)) {
           flag = 1 << DecayType::JpsiToMuMu;
         }
       }

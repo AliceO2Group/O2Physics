@@ -14,6 +14,7 @@
 ///
 /// \author Fabio Colamaria <fabio.colamaria@ba.infn.it>, INFN Bari
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -28,6 +29,7 @@
 
 using namespace o2;
 using namespace o2::analysis;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -397,10 +399,10 @@ struct HfCorrelatorD0D0barBarrelFullPid {
     // MC gen level
     for (const auto& particle1 : mcParticles) {
       // check if the particle is D0 or D0bar (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
-      if (std::abs(particle1.pdgCode()) != pdg::Code::kD0) {
+      if (std::abs(particle1.pdgCode()) != Pdg::kD0) {
         continue;
       }
-      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, o2::analysis::pdg::MassD0);
+      double yD = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, MassD0);
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -415,15 +417,15 @@ struct HfCorrelatorD0D0barBarrelFullPid {
 
       // D-Dbar correlation dedicated section
       // if it's a D0 particle, search for D0bar and evaluate correlations
-      if (particle1.pdgCode() != pdg::Code::kD0) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
+      if (particle1.pdgCode() != Pdg::kD0) { // just checking the particle PDG, not the decay channel (differently from Reco: you have a BR factor btw such levels!)
         continue;
       }
       registry.fill(HIST("hCountD0triggersMCGen"), 0, particle1.pt()); // to count trigger D0 (for normalisation)
       for (const auto& particle2 : mcParticles) {
-        if (particle2.pdgCode() != pdg::Code::kD0Bar) { // check that inner particle is D0bar
+        if (particle2.pdgCode() != Pdg::kD0Bar) { // check that inner particle is D0bar
           continue;
         }
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle2.px(), particle2.py(), particle2.pz()}, o2::analysis::pdg::MassD0Bar)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle2.px(), particle2.py(), particle2.pz()}, MassD0Bar)) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && particle2.pt() < ptCandMin) {
@@ -498,7 +500,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         continue;
       }
       counterCCbarBeforeEtasel++; // count c or cbar (before kinematic selection)
-      double yC = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, o2::analysis::pdg::MassCharm);
+      double yC = RecoDecay::y(std::array{particle1.px(), particle1.py(), particle1.pz()}, MassCharm);
       if (yCandMax >= 0. && std::abs(yC) > yCandMax) {
         continue;
       }
@@ -522,7 +524,7 @@ struct HfCorrelatorD0D0barBarrelFullPid {
         if (particle2.pdgCode() != PDG_t::kCharmBar) { // check that inner particle is a cbar
           continue;
         }
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle2.px(), particle2.py(), particle2.pz()}, o2::analysis::pdg::MassCharmBar)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle2.px(), particle2.py(), particle2.pz()}, MassCharmBar)) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && particle2.pt() < ptCandMin) {

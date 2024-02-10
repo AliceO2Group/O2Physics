@@ -74,12 +74,14 @@ static const std::vector<std::string> labelsPtTrack{
 
 struct taskMuonMchTrkEfficiency {
 
+  Configurable<int> muonSelType{"muonSelType", 4, "Selected muon track type"}; /// Muon track type to be selected if value >=0 (no selection by default)
+
   Configurable<double> ptMuonMin{"ptMin", 0., "Lower bound of pT"};       /// Muon minimum pt to be studied
   Configurable<double> etaMuonMin{"etaMin", 2.5, "Lower bound of |eta|"}; /// Muon minimum |eta| to be studied
   Configurable<double> etaMuonMax{"etaMax", 4.0, "Upper bound of |eta|"}; /// Muon maximum |eta| to be studied
 
   Configurable<std::vector<double>> binsMuonPt{"binsPt", std::vector<double>{muon_trk_eff_bins::vecBinsPt}, "pT bin limits"}; /// Pt intervals for the histograms
-  Configurable<int> nEtaBins{"nEtaBins", 8, "Number of Eta bins"};                                                            /// Number of eta bins for output histograms
+  Configurable<int> nEtaBins{"nEtaBins", 12, "Number of Eta bins"};                                                           /// Number of eta bins for output histograms
   Configurable<int> nPhiBins{"nPhiBins", 6, "Number of Phi bins"};                                                            /// Number of phi bins for output histograms
 
   using muonFull = soa::Join<aod::MchTrkEffBase, aod::MchTrkEffGen>;
@@ -98,11 +100,11 @@ struct taskMuonMchTrkEfficiency {
     // define axes to be used
     // and the correspondent histograms
     auto vbins = (std::vector<double>)binsMuonPt;
-    const AxisSpec axisEta{nEtaBins, 2.3, 4.2, "|#eta|"};
+    const AxisSpec axisEta{nEtaBins, etaMuonMin, etaMuonMax, "|#eta|"};
     const AxisSpec axisPt{vbins, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisPhi{nPhiBins, -3.14, 3.14, "#varphi"};
 
-    const AxisSpec axisEtaGen{nEtaBins, 2.5, 4., "|#eta| Gen"};
+    const AxisSpec axisEtaGen{nEtaBins, etaMuonMin, etaMuonMax, "|#eta| Gen"};
     const AxisSpec axisPtGen{vbins, "#it{p}_{T} (GeV/#it{c}) Gen"};
     const AxisSpec axisPhiGen{nPhiBins, -3.14, 3.14, "#varphi Gen"};
     const AxisSpec axismchBitmap{1031, -0.5, 1030.5, "mchBitmap"};
@@ -219,7 +221,14 @@ struct taskMuonMchTrkEfficiency {
   void processReco(aod::MchTrkEffBase const& mchtrkeffbases)
   {
     for (auto& mchtrkeffbase : mchtrkeffbases) {
-      if (IsInKinematics(mchtrkeffbase.eta(), mchtrkeffbase.pt()))
+      bool isSel = true;
+      if (!IsInKinematics(mchtrkeffbase.eta(), mchtrkeffbase.pt()))
+        isSel = false;
+      if (muonSelType >= 0) {
+        if (mchtrkeffbase.trackType() != muonSelType)
+          isSel = false;
+      }
+      if (isSel)
         FillHistos(mchtrkeffbase.eta(), mchtrkeffbase.pt(), mchtrkeffbase.phi(), mchtrkeffbase.mchBitMap());
     }
   }
@@ -233,7 +242,7 @@ struct taskMuonMchTrkEfficiency {
         FillHistosMC(mchtrkeffbase.eta(), mchtrkeffbase.pt(), mchtrkeffbase.phi(), mchtrkeffbase.mchBitMap(), mchtrkeffbase.etaGen(), mchtrkeffbase.ptGen(), mchtrkeffbase.phiGen());
     }
   }
-  PROCESS_SWITCH(taskMuonMchTrkEfficiency, processSim, "process reconstructed information", false);
+  PROCESS_SWITCH(taskMuonMchTrkEfficiency, processSim, "process simulated information", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

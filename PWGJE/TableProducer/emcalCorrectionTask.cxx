@@ -29,6 +29,7 @@
 #include "DetectorsBase/GeometryManager.h"
 
 #include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/DataModel/EMCALMatchedCollisions.h"
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -58,6 +59,7 @@ struct EmcalCorrectionTask {
   Produces<o2::aod::EMCALClusterCells> clustercells; // cells belonging to given cluster
   Produces<o2::aod::EMCALAmbiguousClusterCells> clustercellsambiguous;
   Produces<o2::aod::EMCALMatchedTracks> matchedTracks;
+  Produces<o2::aod::EMCALMatchedCollisions> emcalcollisionmatch;
 
   // Preslices
   Preslice<myGlobTracks> perCollision = o2::aod::track::collisionId;
@@ -75,6 +77,8 @@ struct EmcalCorrectionTask {
   Configurable<std::string> nonlinearityFunction{"nonlinearityFunction", "DATA_TestbeamFinal", "Nonlinearity correction at cluster level"};
   Configurable<bool> disableNonLin{"disableNonLin", false, "Disable NonLin correction if set to true"};
   Configurable<bool> hasShaperCorrection{"hasShaperCorrection", true, "Apply correction for shaper saturation"};
+  Configurable<int> applyCellAbsScale{"applyCellAbsScale", 0, "Enable absolute cell energy scale to correct for energy loss in material in front of EMCal"};
+  Configurable<std::vector<float>> vCellAbsScaleFactor{"cellAbsScaleFactor", {1.f}, "values for absolute cell energy calibration. Different values correspond to different regions or SM types of EMCal"};
   Configurable<float> logWeight{"logWeight", 4.5, "logarithmic weight for the cluster center of gravity calculation"};
   Configurable<float> exoticCellFraction{"exoticCellFraction", 0.97, "Good cell if fraction < 1-ecross/ecell"};
   Configurable<float> exoticCellDiffTime{"exoticCellDiffTime", 1.e6, "If time of candidate to exotic and close cell is larger than exoticCellDiffTime (in ns), it must be noisy, set amp to 0"};
@@ -218,6 +222,7 @@ struct EmcalCorrectionTask {
 
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
+    std::unordered_map<uint64_t, int> numberCollsInBC; // Number of collisions mapped to the global BC index of all BCs
     for (auto bc : bcs) {
       LOG(debug) << "Next BC";
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
@@ -226,6 +231,8 @@ struct EmcalCorrectionTask {
       // Get the collisions matched to the BC using foundBCId of the collision
       auto collisionsInFoundBC = collisions.sliceBy(collisionsPerFoundBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(cellsPerFoundBC, bc.globalIndex());
+
+      numberCollsInBC.insert(std::pair<uint64_t, int>(bc.globalIndex(), collisionsInFoundBC.size()));
 
       if (!cellsInBC.size()) {
         LOG(debug) << "No cells found for BC";
@@ -240,6 +247,9 @@ struct EmcalCorrectionTask {
         auto amplitude = cell.amplitude();
         if (static_cast<bool>(hasShaperCorrection)) {
           amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
+        }
+        if (applyCellAbsScale) {
+          amplitude *= GetAbsCellScale(cell.cellNumber());
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
@@ -302,6 +312,18 @@ struct EmcalCorrectionTask {
       LOG(debug) << "Done with process BC.";
       nBCsProcessed++;
     } // end of bc loop
+
+    // Loop through all collisions and fill emcalcollisionmatch with a boolean stating, whether the collision was ambiguous (not the only collision in its BC)
+    for (const auto& collision : collisions) {
+      auto globalbcid = collision.foundBC_as<bcEvSels>().globalIndex();
+      auto found = numberCollsInBC.find(globalbcid);
+      if (found != numberCollsInBC.end()) {
+        emcalcollisionmatch(collision.globalIndex(), found->second != 1);
+      } else {
+        LOG(warning) << "BC not found in map of number of collisions.";
+      }
+    } // end of collision loop
+
     LOG(detail) << "Processed " << nBCsProcessed << " BCs with " << nCellsProcessed << " cells";
   }
   PROCESS_SWITCH(EmcalCorrectionTask, processFull, "run full analysis", true);
@@ -331,7 +353,7 @@ struct EmcalCorrectionTask {
       std::vector<o2::emcal::Cell> cellsBC;
       std::vector<int64_t> cellIndicesBC;
       for (auto& cell : cellsInBC) {
-        mHistManager.fill(HIST("hContributors"), cell.mcParticle().size());
+        mHistManager.fill(HIST("hContributors"), cell.mcParticle_as<aod::StoredMcParticles_001>().size());
         auto cellParticles = cell.mcParticle_as<aod::StoredMcParticles_001>();
         for (auto& cellparticle : cellParticles) {
           mHistManager.fill(HIST("hMCParticleEnergy"), cellparticle.e());
@@ -561,8 +583,7 @@ struct EmcalCorrectionTask {
       mHistManager.fill(HIST("hClusterE"), cluster.E());
       mHistManager.fill(HIST("hClusterEtaPhi"), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()));
       if (IndexMapPair && trackGlobalIndex) {
-        for (unsigned int iTrack = 0;
-             iTrack < std::get<0>(*IndexMapPair)[iCluster].size(); iTrack++) {
+        for (unsigned int iTrack = 0; iTrack < std::get<0>(*IndexMapPair)[iCluster].size(); iTrack++) {
           if (std::get<0>(*IndexMapPair)[iCluster][iTrack] >= 0) {
             LOG(debug) << "Found track " << (*trackGlobalIndex)[std::get<0>(*IndexMapPair)[iCluster][iTrack]] << " in cluster " << cluster.getID();
             matchedTracks(clusters.lastIndex(), (*trackGlobalIndex)[std::get<0>(*IndexMapPair)[iCluster][iTrack]]);
@@ -647,7 +668,7 @@ struct EmcalCorrectionTask {
       clusterEta.emplace_back(pos.Eta());
     }
     IndexMapPair =
-      JetUtilities::MatchClustersAndTracks(clusterPhi, clusterEta,
+      jetutilities::MatchClustersAndTracks(clusterPhi, clusterEta,
                                            trackPhi, trackEta,
                                            maxMatchingDistance, 20);
   }
@@ -713,6 +734,23 @@ struct EmcalCorrectionTask {
       res = mClusterizers.at(0)->getGeometry()->GlobalRowColFromIndex(cell.getTower());
       // NOTE: Reversed column and row because it's more natural for presentation.
       mHistManager.fill(HIST("hCellRowCol"), std::get<1>(res), std::get<0>(res));
+    }
+  }
+
+  float GetAbsCellScale(const int cellID)
+  {
+    // Apply cell scale based on SM types (Full, Half (not used), EMC 1/3, DCal, DCal 1/3)
+    // Same as in Run2 data
+    if (applyCellAbsScale == 1) {
+      int iSM = mClusterizers.at(0)->getGeometry()->GetSuperModuleNumber(cellID);
+      return vCellAbsScaleFactor.value[mClusterizers.at(0)->getGeometry()->GetSMType(iSM)];
+
+      // Apply cell scale based on columns to accoutn for material of TRD structures
+    } else if (applyCellAbsScale == 2) {
+      auto res = mClusterizers.at(0)->getGeometry()->GlobalRowColFromIndex(cellID);
+      return vCellAbsScaleFactor.value[std::get<1>(res)];
+    } else {
+      return 1.f;
     }
   }
 };

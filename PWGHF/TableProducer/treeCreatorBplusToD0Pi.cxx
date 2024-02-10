@@ -17,6 +17,7 @@
 ///
 /// \author Antonio Palasciano <antonio.palasciano@ba.infn.it>, Università & INFN, Bari
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -324,7 +325,7 @@ struct HfTreeCreatorBplusToD0Pi {
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassBPlus),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassBPlus),
           particle.flagMcMatchGen(),
           particle.globalIndex());
       }

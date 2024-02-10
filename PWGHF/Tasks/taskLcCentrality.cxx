@@ -16,6 +16,7 @@
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch>, University and INFN SALERNO
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 
@@ -161,7 +162,7 @@ struct HfTaskLcCentralityMc {
       }
       if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong0_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), pdg::Code::kLambdaCPlus, true);
+        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong0_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>(), o2::constants::physics::Pdg::kLambdaCPlus, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         auto ptRec = candidate.pt();
@@ -182,7 +183,7 @@ struct HfTaskLcCentralityMc {
     // MC gen.
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassLambdaCPlus)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassLambdaCPlus)) > yCandMax) {
           continue;
         }
         auto ptGen = particle.pt();

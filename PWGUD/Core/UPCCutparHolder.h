@@ -72,8 +72,8 @@ class UPCCutparHolder
       fITSNClusHigh{ITSNClusHigh},
       fITSChi2Low{ITSChi2Low},
       fITSChi2High{ITSChi2High},
-      fTPCNClusCRLow{TPCNClusCRLow},
-      fTPCNClusCRHigh{TPCNClusCRHigh},
+      fTPCNClsLow{TPCNClusCRLow},
+      fTPCNClsHigh{TPCNClusCRHigh},
       fTPCChi2Low{TPCChi2Low},
       fTPCChi2High{TPCChi2High},
       fCheckMaxDcaXY{checkMaxDcaXY},
@@ -107,8 +107,8 @@ class UPCCutparHolder
   void setITSNClusHigh(int ITSNClusHigh);
   void setITSChi2Low(float ITSChi2Low);
   void setITSChi2High(float ITSChi2High);
-  void setTPCNClusCRLow(int TPCNClusCRLow);
-  void setTPCNClusCRHigh(int TPCNClusCRHigh);
+  void setTPCNClsLow(int TPCNClusCRLow);
+  void setTPCNClsHigh(int TPCNClusCRHigh);
   void setTPCChi2Low(float TPCChi2Low);
   void setTPCChi2High(float TPCChi2High);
   void setCheckMaxDcaXY(bool checkMaxDcaXY);
@@ -142,8 +142,8 @@ class UPCCutparHolder
   int getITSNClusHigh() const;
   float getITSChi2Low() const;
   float getITSChi2High() const;
-  int getTPCNClusCRLow() const;
-  int getTPCNClusCRHigh() const;
+  int getTPCNClsLow() const;
+  int getTPCNClsHigh() const;
   float getTPCChi2Low() const;
   float getTPCChi2High() const;
   bool getCheckMaxDcaXY() const;
@@ -195,10 +195,10 @@ class UPCCutparHolder
   float fITSChi2Low{0.};  // Minimal Chi2 in ITS per cluster
   float fITSChi2High{5.}; // Maximal Chi2 in ITS per cluster
   // quality: TPC
-  int fTPCNClusCRLow{70};   // Minimal number of TPC clusters (crossed rows)
-  int fTPCNClusCRHigh{161}; // Maximal number of TPC clusters (crossed rows)
-  float fTPCChi2Low{0.};    // Minimal Chi2 in TPC per cluster
-  float fTPCChi2High{4.};   // Maximal Chi2 in TPC per cluster
+  int fTPCNClsLow{60};    // Minimal number of TPC clusters
+  int fTPCNClsHigh{161};  // Maximal number of TPC clusters
+  float fTPCChi2Low{0.};  // Minimal Chi2 in TPC per cluster
+  float fTPCChi2High{4.}; // Maximal Chi2 in TPC per cluster
   // quality: DCA
   bool fCheckMaxDcaXY{true}; // Apply cut on maximal DCA_xy
   float fDcaZLow{-3.};       // Minimal DCA_z for barrel tracks
@@ -209,8 +209,8 @@ class UPCCutparHolder
   bool fProduceITSITS{false}; // Produce candidates using only ITS-TPC tracks as well
 
   // tracks from collisions: consider only tracks from collisions with N tracks less or equal than fMaxNContrib
-  int fMaxNContrib{2}; // Central barrel: consider tracks from collisions with N contributors <= maxNContrib
-  int fAmbigSwitch{0}; // Central barrel: 0 -- loop over all tracks, 1 -- loop only over tracks with vertices
+  int fMaxNContrib{999999}; // Central barrel: consider tracks from collisions with N contributors <= maxNContrib
+  int fAmbigSwitch{0};      // Central barrel: 0 -- loop over all tracks, 1 -- loop only over tracks with vertices
 
   ClassDefNV(UPCCutparHolder, 1);
 };

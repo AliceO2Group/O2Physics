@@ -55,8 +55,8 @@ o2physics_add_dpl_workflow(pid-tpc-qa-mc
                            COMPONENT_NAME Analysis)
 
 ## HMPID
-#o2physics_add_dpl_workflow(pid-hmpid-qa
-#                           SOURCES qaHMPID.cxx
-#                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-#                           COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(pid-hmpid-qa
+                           SOURCES qaHMPID.cxx
+                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
 

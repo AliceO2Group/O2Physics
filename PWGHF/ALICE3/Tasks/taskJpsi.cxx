@@ -16,6 +16,7 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Biao Zhang <biao.zhang@cern.ch>, CCNU
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 
@@ -236,7 +237,7 @@ struct HfTaskJpsiMc {
       }
       if (candidate.flagMcMatchRec() == 1 << decayMode) {
         // Get the corresponding MC particle.
-        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong0_as<aod::TracksWMc>().mcParticle_as<McParticlesHf>(), pdg::Code::kJPsi, true);
+        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong0_as<aod::TracksWMc>().mcParticle_as<McParticlesHf>(), o2::constants::physics::Pdg::kJPsi, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
         registry.fill(HIST("hPtGenSig"), particleMother.pt()); // gen. level pT
         registry.fill(HIST("hPtRecSig"), candidate.pt());      // rec. level pT
@@ -255,7 +256,7 @@ struct HfTaskJpsiMc {
         registry.fill(HIST("hChi2PCASig"), candidate.chi2PCA(), candidate.pt());
         registry.fill(HIST("hCtSig"), hfHelper.ctJpsi(candidate), candidate.pt());
         registry.fill(HIST("hYSig"), hfHelper.yJpsi(candidate), candidate.pt());
-        registry.fill(HIST("hYGenSig"), RecoDecay::y(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, o2::analysis::pdg::MassJPsi), particleMother.pt());
+        registry.fill(HIST("hYGenSig"), RecoDecay::y(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, o2::constants::physics::MassJPsi), particleMother.pt());
 
       } else {
         registry.fill(HIST("hPtRecBg"), candidate.pt());
@@ -279,12 +280,12 @@ struct HfTaskJpsiMc {
     // MC gen.
     for (const auto& particle : mcParticles) {
       if (particle.flagMcMatchGen() == 1 << decayMode) {
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassJPsi)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassJPsi)) > yCandMax) {
           continue;
         }
         registry.fill(HIST("hPtGen"), particle.pt());
         registry.fill(HIST("hEtaGen"), particle.eta());
-        registry.fill(HIST("hYGen"), RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::analysis::pdg::MassJPsi), particle.pt());
+        registry.fill(HIST("hYGen"), RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassJPsi), particle.pt());
         // registry.fill(HIST("hPtGenProng0"), particle.daughter0_as<McParticlesHf>().pt(), particle.pt());
         // registry.fill(HIST("hPtGenProng1"), particle.daughter1_as<McParticlesHf>().pt(), particle.pt());
       }
