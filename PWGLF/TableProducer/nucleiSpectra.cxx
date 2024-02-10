@@ -340,9 +340,9 @@ struct nucleiSpectra {
       }
     }
     if (doprocessDataFlow) {
-      spectra.add("hScalarProductFT0AvsFT0C", "", HistType::kTH2F, {ft0Aft0CspAxis, centAxis});
-      spectra.add("hScalarProductFV0AvsFT0C", "", HistType::kTH2F, {fv0Aft0CspAxis, centAxis});
-      spectra.add("hScalarProductFV0AvsFT0A", "", HistType::kTH2F, {fv0Aft0AspAxis, centAxis});
+      spectra.add("hScalarProductFT0AvsFT0C", "", HistType::kTH2F, {centAxis, ft0Aft0CspAxis});
+      spectra.add("hScalarProductFV0AvsFT0C", "", HistType::kTH2F, {centAxis, fv0Aft0CspAxis});
+      spectra.add("hScalarProductFV0AvsFT0A", "", HistType::kTH2F, {centAxis, fv0Aft0AspAxis});
     }
 
     for (int iS{0}; iS < nuclei::species; ++iS) {
@@ -390,9 +390,9 @@ struct nucleiSpectra {
 
     if constexpr (std::is_same<Tcoll, CollWithQvec>::value) {
       if (doprocessDataFlow) {
-        spectra.fill(HIST("hScalarProductFT0AvsFT0C"), collision.qvecFT0ARe() * collision.qvecFT0CRe() + collision.qvecFT0AIm() * collision.qvecFT0CIm(), centrality);
-        spectra.fill(HIST("hScalarProductFV0AvsFT0C"), collision.qvecFV0ARe() * collision.qvecFT0CRe() + collision.qvecFV0AIm() * collision.qvecFT0CIm(), centrality);
-        spectra.fill(HIST("hScalarProductFV0AvsFT0A"), collision.qvecFT0ARe() * collision.qvecFV0ARe() + collision.qvecFT0AIm() * collision.qvecFV0AIm(), centrality);
+        spectra.fill(HIST("hScalarProductFT0AvsFT0C"), centrality, collision.qvecFT0ARe() * collision.qvecFT0CRe() + collision.qvecFT0AIm() * collision.qvecFT0CIm());
+        spectra.fill(HIST("hScalarProductFV0AvsFT0C"), centrality, collision.qvecFV0ARe() * collision.qvecFT0CRe() + collision.qvecFV0AIm() * collision.qvecFT0CIm());
+        spectra.fill(HIST("hScalarProductFV0AvsFT0A"), centrality, collision.qvecFT0ARe() * collision.qvecFV0ARe() + collision.qvecFT0AIm() * collision.qvecFV0AIm());
       }
     }
 
