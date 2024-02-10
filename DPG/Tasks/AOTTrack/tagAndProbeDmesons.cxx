@@ -42,6 +42,7 @@ enum TagChannels : uint8_t {
   DsOrDplusToKKPi,
   DstarPlusToDzeroPi,
   DstarMinusToDzeroBarPi,
+  DstarToDzeroToKK,
   NTagChannels
 };
 
@@ -123,6 +124,7 @@ struct TagTwoProngDisplacedVertices {
   SliceCache cache;
 
   Configurable<bool> applyTofPid{"applyTofPid", true, "flag to enable TOF PID selection"};
+  Configurable<bool> studyDzeroReflections{"studyDzeroReflections", false, "flag to study Dzero reflections"};
   Configurable<float> trackNumSigmaTof{"trackNumSigmaTof", 3.f, "number of sigma for TOF PID compatibility"};
   Configurable<float> trackNumSigmaTpc{"trackNumSigmaTpc", 3.f, "number of sigma for TOF PID compatibility"};
   Configurable<float> trackDcaXyMin{"trackDcaXyMin", 0.002f, "minimum DCAxy for tracks with pT < 2 GeV/c"};
@@ -131,10 +133,12 @@ struct TagTwoProngDisplacedVertices {
   Configurable<std::vector<float>> binsPtPiPiFromDplus{"binsPtPiPiFromDplus", std::vector<float>{aod::tagandprobe::vecBinsPt}, "pT bin limits for pipi pairs from D+ decays"};
   Configurable<std::vector<float>> binsKaKaFromDsOrDplus{"binsKaKaFromDsOrDplus", std::vector<float>{aod::tagandprobe::vecBinsPt}, "pT bin limits for KK pairs from Ds or D+ decays"};
   Configurable<std::vector<float>> binsPtDzeroFromDstar{"binsPtDzeroFromDstar", std::vector<float>{aod::tagandprobe::vecBinsPt}, "pT bin limits for Kpi pairs from D0 <- D*+ decays"};
+  Configurable<std::vector<float>> binsPtDzeroKaKaFromDstar{"binsPtDzeroKaKaFromDstar", std::vector<float>{aod::tagandprobe::vecBinsPt}, "pT bin limits for KK pairs from D0 <- D*+ decays"};
 
   Configurable<LabeledArray<float>> cutsPiPiFromDplus{"cutsPiPiFromDplus", {aod::tagandprobe::cuts[0], aod::tagandprobe::nBinsPt, aod::tagandprobe::nCutVars, aod::tagandprobe::labelsPt, aod::tagandprobe::labelsCutVar}, "Selections for pipi pairs from D+ decays"};
   Configurable<LabeledArray<float>> cutsKaKaFromDsOrDplus{"cutsKaKaFromDsOrDplus", {aod::tagandprobe::cuts[0], aod::tagandprobe::nBinsPt, aod::tagandprobe::nCutVars, aod::tagandprobe::labelsPt, aod::tagandprobe::labelsCutVar}, "Selections for KK pairs from Ds or D+ decays"};
   Configurable<LabeledArray<float>> cutsDzeroFromDstar{"cutsDzeroFromDstar", {aod::tagandprobe::cutsDzero[0], aod::tagandprobe::nBinsPt, aod::tagandprobe::nCutVarsDzero, aod::tagandprobe::labelsPt, aod::tagandprobe::labelsCutVarDzero}, "Selections for Kpi pairs from D0 <- D*+ decays"};
+  Configurable<LabeledArray<float>> cutsDzeroKaKaFromDstar{"cutsDzeroKaKaFromDstar", {aod::tagandprobe::cutsDzero[0], aod::tagandprobe::nBinsPt, aod::tagandprobe::nCutVarsDzero, aod::tagandprobe::labelsPt, aod::tagandprobe::labelsCutVarDzero}, "Selections for Kpi pairs from D0 <- D*+ decays"};
 
   using TracksWithSelAndDca = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksDCA, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>;
   using CollisionsWithEvSel = soa::Join<aod::Collisions, aod::EvSels>;
@@ -160,7 +164,8 @@ struct TagTwoProngDisplacedVertices {
   std::array<std::array<double, 2>, aod::tagandprobe::TagChannels::NTagChannels> masses = {std::array{constants::physics::MassPionCharged, constants::physics::MassPionCharged},
                                                                                            std::array{constants::physics::MassKaonCharged, constants::physics::MassKaonCharged},
                                                                                            std::array{constants::physics::MassPionCharged, constants::physics::MassKaonCharged},
-                                                                                           std::array{constants::physics::MassKaonCharged, constants::physics::MassPionCharged}};
+                                                                                           std::array{constants::physics::MassKaonCharged, constants::physics::MassPionCharged},
+                                                                                           std::array{constants::physics::MassKaonCharged, constants::physics::MassKaonCharged}};
 
   std::array<LabeledArray<float>, aod::tagandprobe::TagChannels::NTagChannels> topologicalCuts{};
   std::array<std::vector<float>, aod::tagandprobe::TagChannels::NTagChannels> ptBinsForTopologicalCuts{};
@@ -184,11 +189,12 @@ struct TagTwoProngDisplacedVertices {
     vertexer.setMinRelChi2Change(0.9f);
     vertexer.setUseAbsDCA(false);
 
-    topologicalCuts = {cutsPiPiFromDplus, cutsKaKaFromDsOrDplus, cutsDzeroFromDstar, cutsDzeroFromDstar};
-    ptBinsForTopologicalCuts = {binsPtPiPiFromDplus, binsKaKaFromDsOrDplus, binsPtDzeroFromDstar, binsPtDzeroFromDstar};
+    topologicalCuts = {cutsPiPiFromDplus, cutsKaKaFromDsOrDplus, cutsDzeroFromDstar, cutsDzeroFromDstar, cutsDzeroKaKaFromDstar};
+    ptBinsForTopologicalCuts = {binsPtPiPiFromDplus, binsKaKaFromDsOrDplus, binsPtDzeroFromDstar, binsPtDzeroFromDstar, binsPtDzeroKaKaFromDstar};
 
     const AxisSpec axisPt{250, 0.f, 50.f};
     const AxisSpec axisMassPiPi{250, 0.f, 2.5f};
+    const AxisSpec axisReflFlag{3, 0.5f, 3.5f};
     const AxisSpec axisMassKaKa{200, constants::physics::MassPhi - 0.05f, constants::physics::MassPhi + 0.05f};
     const AxisSpec axisMassKaPi{400, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f};
 
@@ -199,7 +205,14 @@ struct TagTwoProngDisplacedVertices {
       registry.add<TH2>("hMassKaKaVsPt", ";#it{p}_{T}(KK) (GeV/#it{c}); #it{M}(KK) (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMassKaKa});
     }
     if (doprocessKaPiFromDstar) {
-      registry.add<TH2>("hMassKaPiVsPt", ";#it{p}_{T}(K#pi) (GeV/#it{c}); #it{M}(K#pi) (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMassKaPi});
+      if (!studyDzeroReflections) {
+        registry.add<TH2>("hMassKaPiVsPt", ";#it{p}_{T}(K#pi) (GeV/#it{c}); #it{M}(K#pi) (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMassKaPi});
+      } else {
+        registry.add<THn>("hMassKaPiVsPt", ";#it{p}_{T}(K#pi) (GeV/#it{c}); #it{M}(K#pi) (GeV/#it{c}^{2}); #it{M}(#piK) (GeV/#it{c}^{2}); ReflFag", HistType::kTHnF, {axisPt, axisMassKaPi, axisMassKaPi, axisReflFlag});
+      }
+    }
+    if (doprocessKaKaFromDzero) {
+      registry.add<TH2>("hMassDzeroKaKaVsPt", ";#it{p}_{T}(K#pi) (GeV/#it{c}); #it{M}(K#pi) (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMassKaPi});
     }
   }
 
@@ -270,6 +283,11 @@ struct TagTwoProngDisplacedVertices {
           return true;
         }
       }
+      case aod::tagandprobe::TagChannels::DstarToDzeroToKK: {
+        if (std::abs(track.tofNSigmaKa()) < trackNumSigmaTof) {
+          return true;
+        }
+      }
     }
     return false;
   }
@@ -314,7 +332,7 @@ struct TagTwoProngDisplacedVertices {
     }
 
     // only for D0 meson
-    if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) {
+    if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi || channel == aod::tagandprobe::TagChannels::DstarToDzeroToKK) {
       if (trackDcaXy[0] * trackDcaXy[1] > topologicalCuts[channel].get(ptBin, 6u)) {
         return false;
       }
@@ -439,11 +457,47 @@ struct TagTwoProngDisplacedVertices {
           registry.fill(HIST("hMassKaKaVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
           tagKaKaTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex());
         } else if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi) {
-          registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
+          if (!studyDzeroReflections) {
+            registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
+          } else {
+            float invMassrefl{0.f};
+            int isDzero = 1;
+            if (std::abs(trackPos.tpcNSigmaKa()) < trackNumSigmaTpc && (std::abs(trackNeg.tpcNSigmaPi()) < trackNumSigmaTpc)) {
+              isDzero = 3;
+              if (applyTofPid) {
+                if (!isSelectedPidTof(trackNeg, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) || !isSelectedPidTof(trackPos, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi))
+                  isDzero = 1;
+              }
+            }
+            if (isDzero == 3) {
+              auto arrMomentum = std::array{pVecTrackNeg, pVecTrackPos};
+              invMassrefl = std::sqrt(RecoDecay::m2(arrMomentum, masses[channel]));
+            }
+            registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2), invMassrefl, isDzero);
+          }
           tagPiKaTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex());
         } else if (channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) {
-          registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
+          if (!studyDzeroReflections) {
+            registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
+          } else {
+            float invMassrefl{0.f};
+            int isDzero = 2;
+            if (std::abs(trackNeg.tpcNSigmaKa()) < trackNumSigmaTpc && (std::abs(trackPos.tpcNSigmaPi()) < trackNumSigmaTpc)) {
+              isDzero = 3;
+              if (applyTofPid) {
+                if (!isSelectedPidTof(trackNeg, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi) || !isSelectedPidTof(trackPos, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi))
+                  isDzero = 2;
+              }
+            }
+            if (isDzero == 3) {
+              auto arrMomentum = std::array{pVecTrackNeg, pVecTrackPos};
+              invMassrefl = std::sqrt(RecoDecay::m2(arrMomentum, masses[channel]));
+            }
+            registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2), invMassrefl, isDzero);
+          }
           tagKaPiTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex());
+        } else if (channel == aod::tagandprobe::TagChannels::DstarToDzeroToKK) {
+          registry.fill(HIST("hMassDzeroKaKaVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
         }
       }
     }
@@ -497,6 +551,29 @@ struct TagTwoProngDisplacedVertices {
   }
   PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaKaFromDsOrDplus, "Process KK combinatorial to tag kaon pairs from Ds+/D+ decays", false);
 
+  void processKaKaFromDzero(CollisionsFiltered::iterator const& collision,
+                            TracksWithSelAndDcaFiltered const& tracks,
+                            aod::BCsWithTimestamps const&)
+  {
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    float bz{0};
+    if (runNumber != bc.runNumber()) {
+      parameters::GRPMagField* grpo = ccdb->getForTimeStamp<parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
+      if (grpo != nullptr) {
+        base::Propagator::initFieldFromGRP(grpo);
+        bz = base::Propagator::Instance()->getNominalBz();
+      } else {
+        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+      }
+      runNumber = bc.runNumber();
+    }
+
+    auto groupPositive = positiveKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto groupNegative = negativeKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    computeCombinatorialOppositeCharge(collision, groupPositive, groupNegative, aod::tagandprobe::TagChannels::DstarToDzeroToKK, bz);
+  }
+  PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaKaFromDzero, "Process KK combinatorial to tag kaon pairs from Dzero decays", false);
+
   void processKaPiFromDstar(CollisionsFiltered::iterator const& collision,
                             TracksWithSelAndDcaFiltered const& tracks,
                             aod::BCsWithTimestamps const&)
@@ -538,7 +615,8 @@ struct ProbeThirdTrack {
   std::array<std::array<double, 3>, aod::tagandprobe::TagChannels::NTagChannels> masses = {std::array{constants::physics::MassPionCharged, constants::physics::MassPionCharged, constants::physics::MassKaonCharged},
                                                                                            std::array{constants::physics::MassKaonCharged, constants::physics::MassKaonCharged, constants::physics::MassPionCharged},
                                                                                            std::array{constants::physics::MassPionCharged, constants::physics::MassKaonCharged, constants::physics::MassPionCharged},
-                                                                                           std::array{constants::physics::MassKaonCharged, constants::physics::MassPionCharged, constants::physics::MassPionCharged}};
+                                                                                           std::array{constants::physics::MassKaonCharged, constants::physics::MassPionCharged, constants::physics::MassPionCharged},
+                                                                                           std::array{constants::physics::MassKaonCharged, constants::physics::MassKaonCharged, constants::physics::MassPionCharged}};
 
   std::array<TrackSelection, aod::tagandprobe::TrackTypes::NTrackTypes> trackSelector{}; // define the track selectors
 
@@ -594,11 +672,11 @@ struct ProbeThirdTrack {
     const AxisSpec axisNumCrossRowTpc{51, 49.5f, 100.5f};
     const AxisSpec axisTpcChi2PerClus{8, 2.f, 10.f};
     const AxisSpec axisNumCluIts{5, 2.5f, 7.5f};
-    std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMass = {AxisSpec{225, 1.65f, 2.10f}, AxisSpec{225, 1.65f, 2.10f}, AxisSpec{350, 0.135f, 0.17f}, AxisSpec{350, 0.135f, 0.17f}};
-    std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMassTag = {AxisSpec{125, 0.f, 2.5f}, AxisSpec{100, constants::physics::MassPhi - 0.05f, constants::physics::MassPhi + 0.05f}, AxisSpec{200, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}, AxisSpec{200, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}};
+    std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMass = {AxisSpec{225, 1.65f, 2.10f}, AxisSpec{225, 1.65f, 2.10f}, AxisSpec{350, 0.135f, 0.17f}, AxisSpec{350, 0.135f, 0.17f}, AxisSpec{350, 0.135f, 0.17f}};
+    std::array<AxisSpec, aod::tagandprobe::TagChannels::NTagChannels> axisMassTag = {AxisSpec{125, 0.f, 2.5f}, AxisSpec{100, constants::physics::MassPhi - 0.05f, constants::physics::MassPhi + 0.05f}, AxisSpec{200, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}, AxisSpec{200, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}, AxisSpec{200, constants::physics::MassD0 - 0.2f, constants::physics::MassD0 + 0.2f}};
 
     std::string trackTypes[aod::tagandprobe::TrackTypes::NTrackTypes] = {"ItsTpc", "ItsTpcNoIb", "Tpc", "Its"};
-    std::string tagChannels[aod::tagandprobe::TagChannels::NTagChannels] = {"DplusToKPiPi", "DsOrDplusToKKPi", "DstarPlusToDzeroPi", "DstarMinusToDzeroBarPi"};
+    std::string tagChannels[aod::tagandprobe::TagChannels::NTagChannels] = {"DplusToKPiPi", "DsOrDplusToKKPi", "DstarPlusToDzeroPi", "DstarMinusToDzeroBarPi", "DstarChargedToDzeroToKK"};
 
     for (int iChannel{0}; iChannel < aod::tagandprobe::TagChannels::NTagChannels; ++iChannel) {
       for (int iTrackType{0}; iTrackType < aod::tagandprobe::TrackTypes::NTrackTypes; ++iTrackType) {
