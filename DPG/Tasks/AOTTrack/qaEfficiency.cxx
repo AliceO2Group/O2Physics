@@ -68,6 +68,7 @@ struct QaEfficiency {
   Configurable<bool> noFakesHits{"noFakesHits", false, "Flag to reject tracks that have fake hits"};
   Configurable<bool> skipEventsWithoutTPCTracks{"skipEventsWithoutTPCTracks", false, "Flag to reject events that have no tracks reconstructed in the TPC"};
   Configurable<float> maxProdRadius{"maxProdRadius", 9999.f, "Maximum production radius of the particle under study"};
+  Configurable<float> nsigmaTPCDe{"nsigmaTPCDe", 3.f, "Value of the Nsigma TPC cut for deuterons PID"};
   // Charge selection
   Configurable<bool> doPositivePDG{"doPositivePDG", false, "Flag to fill histograms for positive PDG codes."};
   Configurable<bool> doNegativePDG{"doNegativePDG", false, "Flag to fill histograms for negative PDG codes."};
@@ -820,8 +821,12 @@ struct QaEfficiency {
 
   void initData(const AxisSpec& axisSel)
   {
-    if (!doprocessData) {
+    if (!doprocessData && !doprocessDataWithPID) {
       return;
+    }
+
+    if (doprocessData == true && doprocessDataWithPID == true) {
+      LOG(fatal) << "Can't enable processData and doprocessDataWithPID in the same time, pick one!";
     }
 
     auto h = histos.add<TH1>("Data/trackSelection", "Track Selection", kTH1F, {axisSel});
@@ -1932,7 +1937,7 @@ struct QaEfficiency {
       if (!isTrackSelected<false>(track, HIST("Data/trackSelection"))) {
         continue;
       }
-      if (abs(track.tpcNSigmaDe()) > 3.f) {
+      if (abs(track.tpcNSigmaDe()) > nsigmaTPCDe) {
         continue;
       }
       histos.fill(HIST("Data/trackLength"), track.length());
@@ -2043,7 +2048,7 @@ struct QaEfficiency {
       }
     }
   }
-  PROCESS_SWITCH(QaEfficiency, processHmpid, "process HMPID matching", true);
+  PROCESS_SWITCH(QaEfficiency, processHmpid, "process HMPID matching", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
