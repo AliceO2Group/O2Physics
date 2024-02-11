@@ -109,7 +109,7 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   {
 
     eventHisto.init(&qaRegistry);
-    trackHistoSelectedParts.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfPDGCodePart);
+    trackHistoSelectedParts.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTBins, ConfDummy, ConfDummy, ConfTempFitVarBins, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfPDGCodePart);
 
     ThreeBodyQARegistry.add("TripletTaskQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     ThreeBodyQARegistry.add("TripletTaskQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
@@ -176,7 +176,7 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   {
     /// Histogramming same event
     for (auto& part : groupSelectedParts) {
-      trackHistoSelectedParts.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt);
+      trackHistoSelectedParts.fillQA<isMC, false>(part, multCol, aod::femtodreamparticle::kPt);
     }
 
     /// Now build the combinations
