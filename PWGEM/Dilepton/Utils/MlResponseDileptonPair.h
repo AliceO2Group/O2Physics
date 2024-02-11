@@ -27,9 +27,9 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_DILEPTON_PAIR(FEATURE)                               \
-  {                                                                   \
-  #FEATURE, static_cast<uint8_t>(InputFeaturesDileptonPair::FEATURE)  \
+#define FILL_MAP_DILEPTON_PAIR(FEATURE)                                  \
+  {                                                                      \
+#FEATURE, static_cast < uint8_t>(InputFeaturesDileptonPair::FEATURE) \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
