@@ -666,7 +666,7 @@ struct DptDptFilterTracks {
     template <typename ParticleObject>
     int8_t whichTruthSpecies(ParticleObject part)
     {
-      int pdgcode = abs(part.pdgCode());
+      int pdgcode = std::abs(part.pdgCode());
       /* let's first check the exclusion from the analysis */
       for (uint8_t ix = 0; ix < configexclude.size(); ++ix) {
         if (pdgcode == pdgcodes[speciesexclude[ix]]) {
