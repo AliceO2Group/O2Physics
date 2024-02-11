@@ -208,7 +208,7 @@ struct tpcPidQa {
     histos.add(hexpsigma_wTOF[id].data(), "With TOF", kTH2F, {pAxis, expSigmaAxis});
     histos.add(hnsigma_wTOF[id].data(), Form("With TOF %s", axisTitle), kTH2F, {pAxis, nSigmaAxis});
 
-    HistogramConfigSpec particleSparseHists_wTOF{HistType::kTHnSparseF, {binsPForSparse, binsEtaForSparse, binsnSigmaForSparse, tpcnclsAxis}};
+    HistogramConfigSpec particleSparseHists_wTOF{HistType::kTHnSparseF, {sparseMomentumAxis, sparseEtaAxis, sparseNSigmaAxis, tpcnclsAxis}};
     if (fillTHnSparses) {
       histos.add(hnsigma_p_eta_Ncl_wTOF[id].data(), Form("With TOF %s", axisTitle), particleSparseHists_wTOF);
     }
