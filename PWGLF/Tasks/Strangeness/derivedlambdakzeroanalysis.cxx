@@ -129,10 +129,6 @@ struct derivedlambdakzeroanalysis {
   ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
   ConfigurableAxis axisITSclus{"axisITSclus", {7, 0.0f, 7.0f}, "N ITS Clusters"};
 
-  enum species { spK0Short = 0,
-                 spLambda,
-                 spAntiLambda };
-
   enum selection { selCosPA = 0,
                    selRadius,
                    selDCANegToPV,
@@ -140,9 +136,10 @@ struct derivedlambdakzeroanalysis {
                    selDCAV0Dau,
                    selK0ShortRapidity,
                    selLambdaRapidity,
-                   selK0ShortTPC,
-                   selLambdaTPC,
-                   selAntiLambdaTPC,
+                   selTPCPIDPositivePion,
+                   selTPCPIDNegativePion,
+                   selTPCPIDPositiveProton,
+                   selTPCPIDNegativeProton,
                    selK0ShortCTau,
                    selLambdaCTau,
                    selK0ShortArmenteros,
@@ -164,7 +161,7 @@ struct derivedlambdakzeroanalysis {
   uint32_t maskTopoNoDCAPosToPV;
   uint32_t maskTopoNoCosPA;
   uint32_t maskTopoNoDCAV0Dau;
-  uint32_t maskTrackTypes;
+  uint32_t maskTrackProperties;
 
   uint32_t maskK0ShortSpecific;
   uint32_t maskLambdaSpecific;
@@ -187,30 +184,40 @@ struct derivedlambdakzeroanalysis {
     maskTopoNoCosPA = (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau);
     maskTopoNoDCAV0Dau = (1 << selCosPA) | (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV);
 
-    maskTrackTypes = 0;
+    maskK0ShortSpecific = (1 << selK0ShortRapidity) | (1 << selK0ShortCTau) | (1 << selK0ShortArmenteros) | (1 << selConsiderK0Short);
+    maskLambdaSpecific = (1 << selLambdaRapidity) | (1 << selLambdaCTau) | (1 << selConsiderLambda);
+    maskAntiLambdaSpecific = (1 << selLambdaRapidity) | (1 << selLambdaCTau) | (1 << selConsiderAntiLambda);
+
+    // ask for specific TPC PID selections
+
+    maskTrackProperties = 0;
     if (requirePosITSonly) {
-      maskTrackTypes = (1 << selPosItsOnly);
+      maskTrackProperties = (1 << selPosItsOnly);
     } else {
-      maskTrackTypes = (1 << selPosGoodTPCTrack);
+      maskTrackProperties = (1 << selPosGoodTPCTrack);
+      // TPC signal is available: ask for positive track PID
+      maskK0ShortSpecific = maskK0ShortSpecific | (1 << selTPCPIDPositivePion);
+      maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDPositiveProton);
+      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (1 << selTPCPIDPositivePion);
     }
     if (requireNegITSonly) {
-      maskTrackTypes = (1 << selNegItsOnly);
+      maskTrackProperties = (1 << selNegItsOnly);
     } else {
-      maskTrackTypes = (1 << selNegGoodTPCTrack);
+      maskTrackProperties = (1 << selNegGoodTPCTrack);
+      // TPC signal is available: ask for negative track PID
+      maskK0ShortSpecific = maskK0ShortSpecific | (1 << selTPCPIDNegativePion);
+      maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDNegativeProton);
+      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (1 << selTPCPIDNegativePion);
     }
 
-    maskK0ShortSpecific = (1 << selK0ShortRapidity) | (1 << selK0ShortTPC) | (1 << selK0ShortCTau) | (1 << selK0ShortArmenteros) | (1 << selConsiderK0Short);
-    maskLambdaSpecific = (1 << selLambdaRapidity) | (1 << selLambdaTPC) | (1 << selLambdaCTau) | (1 << selConsiderLambda);
-    maskAntiLambdaSpecific = (1 << selLambdaRapidity) | (1 << selAntiLambdaTPC) | (1 << selLambdaCTau) | (1 << selConsiderAntiLambda);
-
     // Primary particle selection, central to analysis
-    maskSelectionK0Short = maskTopological | maskTrackTypes | maskK0ShortSpecific | (1 << selPhysPrimK0Short);
-    maskSelectionLambda = maskTopological | maskTrackTypes | maskLambdaSpecific | (1 << selPhysPrimLambda);
-    maskSelectionAntiLambda = maskTopological | maskTrackTypes | maskAntiLambdaSpecific | (1 << selPhysPrimAntiLambda);
+    maskSelectionK0Short = maskTopological | maskTrackProperties | maskK0ShortSpecific | (1 << selPhysPrimK0Short);
+    maskSelectionLambda = maskTopological | maskTrackProperties | maskLambdaSpecific | (1 << selPhysPrimLambda);
+    maskSelectionAntiLambda = maskTopological | maskTrackProperties | maskAntiLambdaSpecific | (1 << selPhysPrimAntiLambda);
 
     // No primary requirement for feeddown matrix
-    secondaryMaskSelectionLambda = maskTopological | maskTrackTypes | maskLambdaSpecific;
-    secondaryMaskSelectionAntiLambda = maskTopological | maskTrackTypes | maskAntiLambdaSpecific;
+    secondaryMaskSelectionLambda = maskTopological | maskTrackProperties | maskLambdaSpecific;
+    secondaryMaskSelectionAntiLambda = maskTopological | maskTrackProperties | maskAntiLambdaSpecific;
 
     // Event Counters
     histos.add("hEventSelection", "hEventSelection", kTH1F, {{3, -0.5f, +2.5f}});
@@ -314,24 +321,6 @@ struct derivedlambdakzeroanalysis {
     histos.add("GeneralQA/h2dArmenterosSelected", "h2dArmenterosSelected", kTH2F, {axisAPAlpha, axisAPQt});
   }
 
-  template <typename TV0>
-  bool compatibleTPC(TV0 v0, int sp)
-  {
-    float pidPos = TMath::Abs(v0.template posTrackExtra_as<dauTracks>().tpcNSigmaPi());
-    float pidNeg = TMath::Abs(v0.template negTrackExtra_as<dauTracks>().tpcNSigmaPi());
-
-    if (sp == spLambda)
-      pidPos = TMath::Abs(v0.template posTrackExtra_as<dauTracks>().tpcNSigmaPr());
-    if (sp == spAntiLambda)
-      pidNeg = TMath::Abs(v0.template negTrackExtra_as<dauTracks>().tpcNSigmaPr());
-
-    if (pidPos < TpcPidNsigmaCut && pidNeg < TpcPidNsigmaCut)
-      return true;
-
-    // if not, then not
-    return false;
-  }
-
   template <typename TV0, typename TCollision>
   uint32_t computeReconstructionBitmap(TV0 v0, TCollision collision)
   // precalculate this information so that a check is one mask operation, not many
@@ -355,22 +344,24 @@ struct derivedlambdakzeroanalysis {
     if (TMath::Abs(v0.yK0Short()) < rapidityCut)
       bitset(bitMap, selK0ShortRapidity);
 
-    // TPC PID
-    if (compatibleTPC(v0, spK0Short))
-      bitset(bitMap, selK0ShortTPC);
-    if (compatibleTPC(v0, spLambda))
-      bitset(bitMap, selLambdaTPC);
-    if (compatibleTPC(v0, spAntiLambda))
-      bitset(bitMap, selAntiLambdaTPC);
-
     auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
     auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
 
-    // TPC quality
+    // TPC quality flags
     if (posTrackExtra.tpcCrossedRows() >= minTPCrows)
       bitset(bitMap, selPosGoodTPCTrack);
     if (negTrackExtra.tpcCrossedRows() >= minTPCrows)
       bitset(bitMap, selNegGoodTPCTrack);
+
+    // TPC PID
+    if (fabs(posTrackExtra.tpcNSigmaPi()) < TpcPidNsigmaCut)
+      bitset(bitMap, selTPCPIDPositivePion);
+    if (fabs(posTrackExtra.tpcNSigmaPr()) < TpcPidNsigmaCut)
+      bitset(bitMap, selTPCPIDPositiveProton);
+    if (fabs(negTrackExtra.tpcNSigmaPi()) < TpcPidNsigmaCut)
+      bitset(bitMap, selTPCPIDNegativePion);
+    if (fabs(negTrackExtra.tpcNSigmaPr()) < TpcPidNsigmaCut)
+      bitset(bitMap, selTPCPIDNegativeProton);
 
     // ITS only tag
     if (posTrackExtra.tpcCrossedRows() < 1)
