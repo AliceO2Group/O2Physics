@@ -137,7 +137,7 @@ struct DileptonMlSingleTrack {
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{dilepton_ml_cuts_single_track::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{dilepton_ml_cuts_single_track::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {dilepton_ml_cuts_single_track::cuts[0], dilepton_ml_cuts_single_track::nBinsPt, dilepton_ml_cuts_single_track::nCutScores, dilepton_ml_cuts_single_track::labelsPt, dilepton_ml_cuts_single_track::labelsCutScore}, "ML selections per pT bin"};
-  Configurable<int> nClassesMl{"nClassesMl", (int)dilepton_ml_cuts_single_track::nCutScores, "Number of classes in ML model"};
+  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(dilepton_ml_cuts_single_track::nCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -263,7 +263,7 @@ struct DileptonMlPair {
   Configurable<std::vector<double>> binsMMl{"binsMMl", std::vector<double>{dilepton_ml_cuts_pair::vecBinsM}, "Mass bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{dilepton_ml_cuts_pair::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {dilepton_ml_cuts_pair::cuts[0], dilepton_ml_cuts_pair::nBinsM, dilepton_ml_cuts_pair::nCutScores, dilepton_ml_cuts_pair::labelsM, dilepton_ml_cuts_pair::labelsCutScore}, "ML selections per pT bin"};
-  Configurable<int8_t> nClassesMl{"nClassesMl", dilepton_ml_cuts_pair::nCutScores, "Number of classes in ML model"};
+  Configurable<int8_t> nClassesMl{"nClassesMl", static_cast<int>(dilepton_ml_cuts_pair::nCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
