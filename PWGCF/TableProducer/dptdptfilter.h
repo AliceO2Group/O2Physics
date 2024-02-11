@@ -350,7 +350,7 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
     case kPbPbRun3:
       switch (fTriggerSelection) {
         case kMB:
-          if (collision.sel8()) {
+          if (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
             trigsel = true;
           }
           break;
