@@ -96,10 +96,10 @@ struct tpcPidQa {
   ConfigurableAxis expSigmaBins{"expSigmaBins", {200, 0.f, 200.f}, "Binning in expected Sigma"};
   ConfigurableAxis nSigmaBins{"nSigmaBins", {401, -10.025f, 10.025f}, "Binning in NSigma"};
   ConfigurableAxis dEdxBins{"dEdxBins", {5000, 0.f, 5000.f}, "Binning in dE/dx"};
-  //Axes for optional THnSparse
-  ConfigurableAxis binsPForSparse{"binsPForSparse", {200,0.f,20.f}, "Binning in momentum for optional THnSparse"};
-  ConfigurableAxis binsEtaForSparse{"binsEtaForSparse", {50,-1.f,1.f}, "Binning in eta for optional THnSparse"};
-  ConfigurableAxis binsnSigmaForSparse{"binsnSigmaForSparse", {101,-7.575,7.575}, "Binning in nsigma for optional THnSparse"};
+  // Axes for optional THnSparse
+  ConfigurableAxis binsPForSparse{"binsPForSparse", {200, 0.f, 20.f}, "Binning in momentum for optional THnSparse"};
+  ConfigurableAxis binsEtaForSparse{"binsEtaForSparse", {50, -1.f, 1.f}, "Binning in eta for optional THnSparse"};
+  ConfigurableAxis binsnSigmaForSparse{"binsnSigmaForSparse", {101, -7.575, 7.575}, "Binning in nsigma for optional THnSparse"};
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply event selection cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<bool> applyRapidityCut{"applyRapidityCut", false, "Flag to apply rapidity cut"};
