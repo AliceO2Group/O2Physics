@@ -189,8 +189,10 @@ struct tpcPidQa {
 
     const AxisSpec etaAxis{etaBins, "#it{#eta}"};
     const AxisSpec tpcnclsAxis{tpcNclsBins, "TPC #cls"};
-
-    HistogramConfigSpec particleSparseHists{HistType::kTHnSparseF, {binsPForSparse, binsEtaForSparse, binsnSigmaForSparse, tpcnclsAxis}};
+    const AxisSpec sparseMomentumAxis{binsPForSparse, "#it{p} (GeV/#it{c})"};
+    const AxisSpec sparseEtaAxis{binsEtaForSparse, "#eta"};
+    const AxisSpec sparseNSigmaAxis{binsnSigmaForSparse, "#n_{#sigma}^{TPC}"};
+    HistogramConfigSpec particleSparseHists{HistType::kTHnSparseF, {sparseMomentumAxis, sparseEtaAxis, sparseNSigmaAxis, tpcnclsAxis}};
     if (fillTHnSparses) {
       histos.add(hnsigma_p_eta_Ncl[id].data(), axisTitle, particleSparseHists);
     }
