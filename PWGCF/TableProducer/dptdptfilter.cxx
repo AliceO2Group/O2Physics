@@ -1373,7 +1373,7 @@ inline int8_t DptDptFilterTracks::selectParticle(ParticleObject const& particle,
     if (AcceptParticle(particle, mccollision)) {
       /* the particle has been accepted */
       /* let's identify the particle */
-      int8_t sp = identifyParticle(particle);
+      sp = identifyParticle(particle);
       if (!(sp < 0)) {
         /* fill the species  histograms */
         fillParticleHistosAfterSelection(particle, mccollision, charge, sp);
