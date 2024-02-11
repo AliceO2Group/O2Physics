@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <cmath>
+#include <algorithm>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -534,16 +535,16 @@ struct DptDptFilterTracks {
     static const std::vector<std::string> spnames;
     static const std::vector<std::string> sptitles;
     static const std::vector<std::string> spfnames;
-    static const std::string hadname;
-    static const std::string hadtitle;
-    static const std::string hadfname;
+    static const char hadname[];
+    static const char hadtitle[];
+    static const char hadfname[];
     uint getNSpecies() { return config.size(); }
     const std::string& getSpeciesName(uint8_t ix) { return spnames[species[ix]]; }
     const std::string& getSpeciesTitle(uint8_t ix) { return sptitles[species[ix]]; }
     const std::string& getSpeciesFName(uint8_t ix) { return spfnames[species[ix]]; }
-    const std::string& getHadName() { return hadname; }
-    const std::string& getHadTitle() { return hadtitle; }
-    const std::string& getHadFName() { return hadfname; }
+    static const char* getHadName() { return hadname; }
+    static const char* getHadTitle() { return hadtitle; }
+    static const char* getHadFName() { return hadfname; }
     void Add(uint8_t sp, const o2::analysis::TrackSelectionPIDCfg* cfg)
     {
       config.push_back(cfg);
@@ -850,23 +851,23 @@ struct DptDptFilterTracks {
         trkMultNeg.reserve(n);
       };
       auto createHistos = [&](uint ix, auto name, auto title) {
-        fhPA[ix] = new TH1F(TString::Format("fHistPA_%s", name.c_str()).Data(),
-                            TString::Format("#it{p} distribution for reconstructed %s;#it{p} (GeV/#it{c});d#it{N}/d#it{p} (#it{c}/GeV)", title.c_str()).Data(),
+        fhPA[ix] = new TH1F(TString::Format("fHistPA_%s", name).Data(),
+                            TString::Format("#it{p} distribution for reconstructed %s;#it{p} (GeV/#it{c});d#it{N}/d#it{p} (#it{c}/GeV)", title).Data(),
                             ptbins, ptlow, ptup);
-        fhPtA[ix] = new TH1F(TString::Format("fHistPtA_%s", name.c_str()),
-                             TString::Format("#it{p}_{T} distribution for reconstructed %s;#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{P}_{T} (#it{c}/GeV)", title.c_str()).Data(),
+        fhPtA[ix] = new TH1F(TString::Format("fHistPtA_%s", name).Data(),
+                             TString::Format("#it{p}_{T} distribution for reconstructed %s;#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{P}_{T} (#it{c}/GeV)", title).Data(),
                              ptbins, ptlow, ptup);
-        fhPtPosA[ix] = new TH1F(TString::Format("fHistPtPosA_%s", name.c_str()),
-                                TString::Format("#it{p}_{T} distribution for reconstructed  %s^{#plus};#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T} (#it{c}/GeV)", title.c_str()).Data(),
+        fhPtPosA[ix] = new TH1F(TString::Format("fHistPtPosA_%s", name).Data(),
+                                TString::Format("#it{p}_{T} distribution for reconstructed  %s^{#plus};#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T} (#it{c}/GeV)", title).Data(),
                                 ptbins, ptlow, ptup);
-        fhPtNegA[ix] = new TH1F(TString::Format("fHistPtNegA_%s", name.c_str()),
-                                TString::Format("#it{p}_{T} distribution for reconstructed  %s^{#minus};#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T} (#it{c}/GeV)", title.c_str()).Data(),
+        fhPtNegA[ix] = new TH1F(TString::Format("fHistPtNegA_%s", name).Data(),
+                                TString::Format("#it{p}_{T} distribution for reconstructed  %s^{#minus};#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T} (#it{c}/GeV)", title).Data(),
                                 ptbins, ptlow, ptup);
-        fhNPosNegA[ix] = new TH2F(TString::Format("fhNPosNegA_%s", name.c_str()).Data(),
-                                  TString::Format("#it{N}(%s^{#plus}) #it{N}(%s^{#minus}) distribution for reconstructed;#it{N}(%s^{#plus});#it{N}(%s^{#minus})", title.c_str(), title.c_str(), title.c_str(), title.c_str()).Data(),
+        fhNPosNegA[ix] = new TH2F(TString::Format("fhNPosNegA_%s", name).Data(),
+                                  TString::Format("#it{N}(%s^{#plus}) #it{N}(%s^{#minus}) distribution for reconstructed;#it{N}(%s^{#plus});#it{N}(%s^{#minus})", title, title, title, title).Data(),
                                   40, -0.5, 39.5, 40, -0.5, 39.5);
-        fhDeltaNA[ix] = new TH1F(TString::Format("fhDeltaNA_%s", name.c_str()).Data(),
-                                 TString::Format("#it{N}(%s^{#plus}) #minus #it{N}(%s^{#minus}) distribution for reconstructed;#it{N}(%s^{#plus}) #minus #it{N}(%s^{#minus})", title.c_str(), title.c_str(), title.c_str(), title.c_str()).Data(),
+        fhDeltaNA[ix] = new TH1F(TString::Format("fhDeltaNA_%s", name).Data(),
+                                 TString::Format("#it{N}(%s^{#plus}) #minus #it{N}(%s^{#minus}) distribution for reconstructed;#it{N}(%s^{#plus}) #minus #it{N}(%s^{#minus})", title, title, title, title).Data(),
                                  79, -39.5, 39.5);
         trkMultPos[ix] = 0;
         trkMultNeg[ix] = 0;
@@ -881,7 +882,7 @@ struct DptDptFilterTracks {
         LOGF(info, "Identified analysis with %d species", nspecies);
         for (uint sp = 0; sp < nspecies; ++sp) {
           LOGF(info, "Adding species %s", pidselector.getSpeciesFName(sp));
-          createHistos(sp, pidselector.getSpeciesFName(sp), pidselector.getSpeciesTitle(sp));
+          createHistos(sp, pidselector.getSpeciesFName(sp).c_str(), pidselector.getSpeciesTitle(sp).c_str());
         }
       }
 
@@ -948,23 +949,23 @@ struct DptDptFilterTracks {
         partMultNeg.reserve(n);
       };
       auto createTruthHistos = [&](uint ix, auto name, auto title) {
-        fhTruePA[ix] = new TH1F(TString::Format("fTrueHistPA_%s", name.c_str()).Data(),
-                                TString::Format("#it{p} distribution %s (truth);#it{p} (GeV/#it{c});d#it{N}/d#it{p} (#it{c}/GeV)", title.c_str()).Data(),
+        fhTruePA[ix] = new TH1F(TString::Format("fTrueHistPA_%s", name).Data(),
+                                TString::Format("#it{p} distribution %s (truth);#it{p} (GeV/#it{c});d#it{N}/d#it{p} (#it{c}/GeV)", title).Data(),
                                 ptbins, ptlow, ptup);
-        fhTruePtA[ix] = new TH1F(TString::Format("fTrueHistPtA_%s", name.c_str()).Data(),
-                                 TString::Format("#it{p}_{T} distribution %s (truth);#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T} (#it{c}/GeV)", title.c_str()).Data(),
+        fhTruePtA[ix] = new TH1F(TString::Format("fTrueHistPtA_%s", name).Data(),
+                                 TString::Format("#it{p}_{T} distribution %s (truth);#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T} (#it{c}/GeV)", title).Data(),
                                  ptbins, ptlow, ptup);
-        fhTruePtPosA[ix] = new TH1F(TString::Format("fTrueHistPtPosA_%s", name.c_str()).Data(),
-                                    TString::Format("#it{p}_{T} distribution %s^{#plus} (truth);#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T} (#it{c}/GeV)", title.c_str()).Data(),
+        fhTruePtPosA[ix] = new TH1F(TString::Format("fTrueHistPtPosA_%s", name).Data(),
+                                    TString::Format("#it{p}_{T} distribution %s^{#plus} (truth);#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T} (#it{c}/GeV)", title).Data(),
                                     ptbins, ptlow, ptup);
-        fhTruePtNegA[ix] = new TH1F(TString::Format("fTrueHistPtNegA_%s", name.c_str()).Data(),
-                                    TString::Format("#it{p}_{T} distribution %s^{#minus} (truth);#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T} (#it{c}/GeV)", title.c_str()).Data(),
+        fhTruePtNegA[ix] = new TH1F(TString::Format("fTrueHistPtNegA_%s", name).Data(),
+                                    TString::Format("#it{p}_{T} distribution %s^{#minus} (truth);#it{p}_{T} (GeV/#it{c});d#it{N}/d#it{p}_{T} (#it{c}/GeV)", title).Data(),
                                     ptbins, ptlow, ptup);
-        fhTrueNPosNegA[ix] = new TH2F(TString::Format("fhTrueNPosNegA_%s", name.c_str()).Data(),
-                                      TString::Format("#it{N}(%s^{#plus}) #it{N}(%s^{#minus}) distribution (truth);#it{N}(%s^{#plus});#it{N}(%s^{#minus})", title.c_str(), title.c_str(), title.c_str(), title.c_str()).Data(),
+        fhTrueNPosNegA[ix] = new TH2F(TString::Format("fhTrueNPosNegA_%s", name).Data(),
+                                      TString::Format("#it{N}(%s^{#plus}) #it{N}(%s^{#minus}) distribution (truth);#it{N}(%s^{#plus});#it{N}(%s^{#minus})", title, title, title, title).Data(),
                                       40, -0.5, 39.5, 40, -0.5, 39.5);
-        fhTrueDeltaNA[ix] = new TH1F(TString::Format("fhTrueDeltaNA_%s", name.c_str()).Data(),
-                                     TString::Format("#it{N}(%s^{#plus}) #minus #it{N}(%s^{#minus}) distribution (truth);#it{N}(%s^{#plus}) #minus #it{N}(%s^{#minus})", title.c_str(), title.c_str(), title.c_str(), title.c_str()).Data(),
+        fhTrueDeltaNA[ix] = new TH1F(TString::Format("fhTrueDeltaNA_%s", name).Data(),
+                                     TString::Format("#it{N}(%s^{#plus}) #minus #it{N}(%s^{#minus}) distribution (truth);#it{N}(%s^{#plus}) #minus #it{N}(%s^{#minus})", title, title, title, title).Data(),
                                      79, -39.5, 39.5);
         partMultPos[ix] = 0;
         partMultNeg[ix] = 0;
@@ -976,7 +977,7 @@ struct DptDptFilterTracks {
       } else {
         reserveTruthHistos(nspecies);
         for (uint sp = 0; sp < nspecies; ++sp) {
-          createTruthHistos(sp, pidselector.getSpeciesFName(sp), pidselector.getSpeciesTitle(sp));
+          createTruthHistos(sp, pidselector.getSpeciesFName(sp).c_str(), pidselector.getSpeciesTitle(sp).c_str());
         }
       }
 
@@ -1193,9 +1194,9 @@ const std::vector<int> DptDptFilterTracks::PIDSpeciesSelection::pdgcodes = {11, 
 const std::vector<std::string> DptDptFilterTracks::PIDSpeciesSelection::spnames = {"e", "mu", "pi", "ka", "p"};
 const std::vector<std::string> DptDptFilterTracks::PIDSpeciesSelection::sptitles = {"e", "#mu", "#pi", "K", "p"};
 const std::vector<std::string> DptDptFilterTracks::PIDSpeciesSelection::spfnames = {"E", "Mu", "Pi", "Ka", "Pr"};
-const std::string DptDptFilterTracks::PIDSpeciesSelection::hadname = "h";
-const std::string DptDptFilterTracks::PIDSpeciesSelection::hadtitle = "h";
-const std::string DptDptFilterTracks::PIDSpeciesSelection::hadfname = "Ha";
+const char DptDptFilterTracks::PIDSpeciesSelection::hadname[] = "h";
+const char DptDptFilterTracks::PIDSpeciesSelection::hadtitle[] = "h";
+const char DptDptFilterTracks::PIDSpeciesSelection::hadfname[] = "Ha";
 
 template <typename TrackObject>
 int8_t DptDptFilterTracks::trackIdentification(TrackObject const& track)

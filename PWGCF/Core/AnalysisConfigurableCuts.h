@@ -8,9 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef ANALYSIS_CONFIGURABLE_CUTS_CLASSES_H
-#define ANALYSIS_CONFIGURABLE_CUTS_CLASSES_H
+#ifndef PWGCF_CORE_ANALYSISCONFIGURABLECUTS_H_
+#define PWGCF_CORE_ANALYSISCONFIGURABLECUTS_H_
 
+#include <string>
 #include <Rtypes.h>
 #include <TObject.h>
 #include <TNamed.h>
@@ -121,4 +122,4 @@ class SimpleInclusiveCut : public TNamed
 
 } // namespace analysis
 } // namespace o2
-#endif // ANALYSIS_CONFIGURABLE_CUTS_CLASSES_H
+#endif // PWGCF_CORE_ANALYSISCONFIGURABLECUTS_H_
