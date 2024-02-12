@@ -67,12 +67,12 @@ struct HfTaskSingleMuonSource {
 
   double pDcaMin = 324.0; // p*DCA maximum value for small Rabs
   double pDcaMax = 594.0; // p*DCA maximum value for large Rabs
-  double rAbsMin = 17.6; // R at absorber end minimum value
-  double rAbsMax = 89.5; // R at absorber end maximum value
-  double rAbsMid = 26.5; // R at absorber end split point for different p*DCA selections
-  double etaLow = -3.6; // low edge of eta acceptance
-  double etaUp = -2.5;  // up edge of eta acceptance
-  double edgeZ = 10.0;  // edge of event position Z
+  double rAbsMin = 17.6;  // R at absorber end minimum value
+  double rAbsMax = 89.5;  // R at absorber end maximum value
+  double rAbsMid = 26.5;  // R at absorber end split point for different p*DCA selections
+  double etaLow = -3.6;   // low edge of eta acceptance
+  double etaUp = -2.5;    // up edge of eta acceptance
+  double edgeZ = 10.0;    // edge of event position Z
 
   HistogramRegistry registry{
     "registry",
