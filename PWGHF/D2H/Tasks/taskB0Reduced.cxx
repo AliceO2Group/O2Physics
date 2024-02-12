@@ -57,8 +57,7 @@ DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);   //!
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                                         //! Cosine pointing angle of candidate
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                     //! Cosine pointing angle of candidate in transverse plane
 DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);       //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
-DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);                           //! ML score for background class
-DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);                     //! ML score for prompt class
+DECLARE_SOA_COLUMN(MlScoreSig, mlScoreSig, float);                           //! ML score for signal class
 } // namespace hf_cand_b0_lite
 
 DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with some B0 properties
@@ -78,8 +77,7 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_b0_reduced::Prong0MlScoreBkg,
                   hf_cand_b0_reduced::Prong0MlScorePrompt,
                   hf_cand_b0_reduced::Prong0MlScoreNonprompt,
-                  hf_cand_b0_lite::MlScoreBkg,
-                  hf_cand_b0_lite::MlScorePrompt,
+                  hf_cand_b0_lite::MlScoreSig,
                   hf_sel_candidate_b0::IsSelB0ToDPi,
                   hf_cand_b0_lite::M,
                   hf_cand_b0_lite::Pt,
@@ -180,8 +178,7 @@ struct HfTaskB0Reduced {
 
         // ML scores of B0 candidate
         if (doprocessDataWithB0Ml) {
-          registry.add("hMlScoreBkgB0", "B^{0} candidates;#it{p}_{T}(B^{0}) (GeV/#it{c});prong0, B^{0} ML background score;entries", {HistType::kTH2F, {axisPtB0, axisMlScore}});
-          registry.add("hMlScorePromptB0", "B^{0} candidates;#it{p}_{T}(B^{0}) (GeV/#it{c});prong0, B^{0} ML prompt score;entries", {HistType::kTH2F, {axisPtB0, axisMlScore}});
+          registry.add("hMlScoreSigB0", "B^{0} candidates;#it{p}_{T}(B^{0}) (GeV/#it{c});prong0, B^{0} ML signal score;entries", {HistType::kTH2F, {axisPtB0, axisMlScore}});
         }
       }
       if (fillSparses) {
@@ -275,11 +272,9 @@ struct HfTaskB0Reduced {
         // ML scores of B0 candidate
         if (doprocessMcWithB0Ml) {
           // signal
-          registry.add("hMlScoreBkgB0RecSig", "B^{0} candidates (matched);#it{p}_{T}(B^{0}) (GeV/#it{c});prong0, B^{0} ML background score;entries", {HistType::kTH2F, {axisPtB0, axisMlScore}});
-          registry.add("hMlScorePromptB0RecSig", "B^{0} candidates (matched);#it{p}_{T}(B^{0}) (GeV/#it{c});prong0, B^{0} ML prompt score;entries", {HistType::kTH2F, {axisPtB0, axisMlScore}});
+          registry.add("hMlScoreSigB0RecSig", "B^{0} candidates (matched);#it{p}_{T}(B^{0}) (GeV/#it{c});prong0, B^{0} ML signal score;entries", {HistType::kTH2F, {axisPtB0, axisMlScore}});
           // background
-          registry.add("hMlScoreBkgB0RecBg", "B^{0} candidates (unmatched);#it{p}_{T}(B^{0}) (GeV/#it{c});prong0, B^{0} ML background score;entries", {HistType::kTH2F, {axisPtB0, axisMlScore}});
-          registry.add("hMlScorePromptB0RecBg", "B^{0} candidates (unmatched);#it{p}_{T}(B^{0}) (GeV/#it{c});prong0, B^{0} ML prompt score;entries", {HistType::kTH2F, {axisPtB0, axisMlScore}});
+          registry.add("hMlScoreSigB0RecBg", "B^{0} candidates (unmatched);#it{p}_{T}(B^{0}) (GeV/#it{c});prong0, B^{0} ML signal score;entries", {HistType::kTH2F, {axisPtB0, axisMlScore}});
         }
       }
       if (fillSparses) {
@@ -373,8 +368,7 @@ struct HfTaskB0Reduced {
             registry.fill(HIST("hMlScoreNonPromptDRecSig"), ptD, candidate.prong0MlScoreNonprompt());
           }
           if constexpr (withB0Ml) {
-            registry.fill(HIST("hMlScoreBkgB0RecSig"), ptCandB0, candidate.mlProbB0ToDPi()[0]);
-            registry.fill(HIST("hMlScorePromptB0RecSig"), ptCandB0, candidate.mlProbB0ToDPi()[1]);
+            registry.fill(HIST("hMlScoreSigB0RecSig"), ptCandB0, candidate.mlProbB0ToDPi());
           }
         } else if (fillBackground) {
           registry.fill(HIST("hMassRecBg"), ptCandB0, hfHelper.invMassB0ToDPi(candidate));
@@ -401,8 +395,7 @@ struct HfTaskB0Reduced {
             registry.fill(HIST("hMlScoreNonPromptDRecBg"), ptD, candidate.prong0MlScoreNonprompt());
           }
           if constexpr (withB0Ml) {
-            registry.fill(HIST("hMlScoreBkgB0RecBg"), ptCandB0, candidate.mlProbB0ToDPi()[0]);
-            registry.fill(HIST("hMlScorePromptB0RecBg"), ptCandB0, candidate.mlProbB0ToDPi()[1]);
+            registry.fill(HIST("hMlScoreSigB0RecBg"), ptCandB0, candidate.mlProbB0ToDPi());
           }
         } else if (checkDecayTypeMc) {
           if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi)) { // B0 → Ds- π+ → (K- K+ π-) π+
@@ -439,8 +432,7 @@ struct HfTaskB0Reduced {
           registry.fill(HIST("hMlScoreNonPromptD"), ptD, candidate.prong0MlScoreNonprompt());
         }
         if constexpr (withB0Ml) {
-          registry.fill(HIST("hMlScoreBkgB0"), ptCandB0, candidate.mlProbB0ToDPi()[0]);
-          registry.fill(HIST("hMlScorePromptB0"), ptCandB0, candidate.mlProbB0ToDPi()[1]);
+          registry.fill(HIST("hMlScoreSigB0"), ptCandB0, candidate.mlProbB0ToDPi());
         }
       }
     }
@@ -473,16 +465,14 @@ struct HfTaskB0Reduced {
         float prong0MlScoreBkg = -1.;
         float prong0MlScorePrompt = -1.;
         float prong0MlScoreNonprompt = -1.;
-        float candidateMlScoreBkg = -1;
-        float candidateMlScorePrompt = -1;
+        float candidateMlScoreSig = -1;
         if constexpr (withDmesMl) {
           prong0MlScoreBkg = candidate.prong0MlScoreBkg();
           prong0MlScorePrompt = candidate.prong0MlScorePrompt();
           prong0MlScoreNonprompt = candidate.prong0MlScoreNonprompt();
         }
         if constexpr (withB0Ml) {
-          candidateMlScoreBkg = candidate.mlProbB0ToDPi()[0];
-          candidateMlScorePrompt = candidate.mlProbB0ToDPi()[1];
+          candidateMlScoreSig = candidate.mlProbB0ToDPi();
         }
         auto prong1 = candidate.template prong1_as<TracksPion>();
 
@@ -508,8 +498,7 @@ struct HfTaskB0Reduced {
           prong0MlScoreBkg,
           prong0MlScorePrompt,
           prong0MlScoreNonprompt,
-          candidateMlScoreBkg,
-          candidateMlScorePrompt,
+          candidateMlScoreSig,
           candidate.isSelB0ToDPi(),
           invMassB0,
           ptCandB0,

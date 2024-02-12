@@ -25,9 +25,9 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_B0(FEATURE)                                      \
-  {                                                               \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesB0ToDPi::FEATURE) \
+#define FILL_MAP_B0(FEATURE)                                        \
+  {                                                                 \
+#FEATURE, static_cast < uint8_t>(InputFeaturesB0ToDPi::FEATURE) \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)

@@ -237,8 +237,8 @@ DECLARE_SOA_TABLE(HfSelLcToK0sP, "AOD", "HFSELLCK0SP", //!
 
 namespace hf_sel_candidate_b0
 {
-DECLARE_SOA_COLUMN(IsSelB0ToDPi, isSelB0ToDPi, int);                  //!
-DECLARE_SOA_COLUMN(MlProbB0ToDPi, mlProbB0ToDPi, std::vector<float>); //!
+DECLARE_SOA_COLUMN(IsSelB0ToDPi, isSelB0ToDPi, int);     //! selection flag on B0 candidate
+DECLARE_SOA_COLUMN(MlProbB0ToDPi, mlProbB0ToDPi, float); //! ML score of B0 candidate for signal class
 } // namespace hf_sel_candidate_b0
 
 DECLARE_SOA_TABLE(HfSelB0ToDPi, "AOD", "HFSELB0", //!
