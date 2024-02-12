@@ -47,8 +47,9 @@ DECLARE_SOA_TABLE(dileptonMlScorePair, "AOD", "DILEPMLSCOREP", //!
                   dileptonMlSelection::MlScorePair);
 } // namespace o2::aod
 
-using MySkimmedTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelCov>;
-using MyTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA,
+using MySkimmedTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov>;
+using MySkimmedTracksWithPID = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelCov>;
+using MyTracksWithPID = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA,
                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                            aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 
@@ -236,19 +237,19 @@ struct DileptonMlSingleTrack {
     }
   }
 
-  void processSkimmedSingleTrack(MySkimmedTracks const& tracks)
+  void processSkimmedSingleTrack(MySkimmedTracksWithPID const& tracks)
   {
     runSingleTracks(tracks);
   }
   PROCESS_SWITCH(DileptonMlSingleTrack, processSkimmedSingleTrack, "Apply ML selection on skimmed output on single tracks", true);
 
-  void processAO2DSingleTrack(MyTracks const& tracks)
+  void processAO2DSingleTrack(MyTracksWithPID const& tracks)
   {
     runSingleTracks(tracks);
   }
   PROCESS_SWITCH(DileptonMlSingleTrack, processAO2DSingleTrack, "Apply ML selection on skimmed output on single tracks", false);
 
-  void processDummy(DileptonsExtra const&)
+  void processDummy(DielectronsExtra const&)
   {
     // dummy
   }
@@ -304,15 +305,14 @@ struct DileptonMlPair {
     }
   }
 
-  void processPair(DileptonsExtra const& dileptons, MySkimmedTracks const& tracks)
+  void processPair(DielectronsExtra const& dielectrons, MySkimmedTracks const&)
   {
     // dummy value for magentic field. ToDo: take it from ccdb!
     float d_bz = 1.;
     mlResponse.setBz(d_bz);
-    auto track = tracks.begin();
-    for (const auto& dilepton : dileptons) {
-      const auto& track1 = track + dilepton.index0Id();
-      const auto& track2 = track + dilepton.index1Id();
+    for (const auto& dielectron : dielectrons) {
+      const auto& track1 = dielectron.index0_as<MySkimmedTracks>();
+      const auto& track2 = dielectron.index1_as<MySkimmedTracks>();
       if (track1.sign() == track2.sign()) {
         continue;
       }
@@ -336,7 +336,7 @@ struct DileptonMlPair {
   }
   PROCESS_SWITCH(DileptonMlPair, processPair, "Apply ML selection at pair level", false);
 
-  void processDummyAO2D(MyTracks const&)
+  void processDummyAO2D(MyTracksWithPID const&)
   {
     // dummy
   }
