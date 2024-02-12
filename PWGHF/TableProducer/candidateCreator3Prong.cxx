@@ -57,6 +57,8 @@ struct HfCandidateCreator3Prong {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  // 3-prong vertex fitter
+  o2::vertexing::DCAFitterN<3> df;
 
   int runNumber{0};
   float toMicrometers = 10000.; // from cm to µm
@@ -82,6 +84,15 @@ struct HfCandidateCreator3Prong {
     if (doprocessPvRefit && doprocessNoPvRefit) {
       LOGP(fatal, "Only one process function between processPvRefit and processNoPvRefit can be enabled at a time.");
     }
+    // Configure DCAFitterN
+    // df.setBz(bz);
+    df.setPropagateToPCA(propagateToPCA);
+    df.setMaxR(maxR);
+    df.setMaxDZIni(maxDZIni);
+    df.setMinParamChange(minParamChange);
+    df.setMinRelChi2Change(minRelChi2Change);
+    df.setUseAbsDCA(useAbsDCA);
+    df.setWeightedFinalPCA(useWeightedFinalPCA);
 
     massPi = MassPiPlus;
     massK = MassKPlus;
@@ -98,17 +109,6 @@ struct HfCandidateCreator3Prong {
                         aod::TracksWCovExtra const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    // 3-prong vertex fitter
-    o2::vertexing::DCAFitterN<3> df;
-    // df.setBz(bz);
-    df.setPropagateToPCA(propagateToPCA);
-    df.setMaxR(maxR);
-    df.setMaxDZIni(maxDZIni);
-    df.setMinParamChange(minParamChange);
-    df.setMinRelChi2Change(minRelChi2Change);
-    df.setUseAbsDCA(useAbsDCA);
-    df.setWeightedFinalPCA(useWeightedFinalPCA);
-
     // loop over triplets of track indices
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
       auto track0 = rowTrackIndexProng3.template prong0_as<aod::TracksWCovExtra>();
@@ -242,7 +242,6 @@ struct HfCandidateCreator3Prong {
   {
     runCreator3Prong<true>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
   }
-
   PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefit, "Run candidate creator with PV refit", false);
 
   void processNoPvRefit(aod::Collisions const& collisions,
@@ -252,7 +251,6 @@ struct HfCandidateCreator3Prong {
   {
     runCreator3Prong(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
   }
-
   PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefit, "Run candidate creator without PV refit", true);
 };
 
