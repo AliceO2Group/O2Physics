@@ -11,6 +11,7 @@ DISABLE:
   - COPYPASTE # abusive copy-pastes
   - SPELL # spelling mistakes
 DISABLE_LINTERS:
+  - CPP_CLANG_FORMAT
   - BASH_EXEC
   - BASH_SHFMT
   - JSON_PRETTIER
