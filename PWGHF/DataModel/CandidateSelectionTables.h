@@ -237,7 +237,7 @@ DECLARE_SOA_TABLE(HfSelLcToK0sP, "AOD", "HFSELLCK0SP", //!
 
 namespace hf_sel_candidate_b0
 {
-DECLARE_SOA_COLUMN(IsSelB0ToDPi, isSelB0ToDPi, int); //!
+DECLARE_SOA_COLUMN(IsSelB0ToDPi, isSelB0ToDPi, int);                  //!
 DECLARE_SOA_COLUMN(MlProbB0ToDPi, mlProbB0ToDPi, std::vector<float>); //!
 } // namespace hf_sel_candidate_b0
 
