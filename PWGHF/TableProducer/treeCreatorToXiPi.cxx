@@ -182,7 +182,7 @@ struct HfTreeCreatorToXiPi {
   }
 
   template <typename T>
-  void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc)
+  void fillCandidate(const T& candidate, bool IsPionGlbTrkWoDca, int8_t flagMc, int8_t debugMc, int8_t originMc)
   {
     rowCandidateFull(
       candidate.xPv(),
@@ -267,7 +267,7 @@ struct HfTreeCreatorToXiPi {
       candidate.impactParCascXY() / candidate.errImpactParCascXY(),
       candidate.impactParPiFromCharmBaryonXY() / candidate.errImpactParPiFromCharmBaryonXY(),
       candidate.decLenCharmBaryon() / candidate.errorDecayLengthCharmBaryon(),
-      candidate.isPionGlbTrkWoDca(),
+      IsPionGlbTrkWoDca,
       candidate.statusPidLambda(),
       candidate.statusPidCascade(),
       candidate.statusPidCharmBaryon(),
@@ -290,13 +290,18 @@ struct HfTreeCreatorToXiPi {
       originMc);
   }
 
-  void processData(aod::Collisions const& collisions,
+  void processData(aod::Collisions const& collisions, aod::TrackSelection const&,
                    soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate(candidate, -7, -7, RecoDecay::OriginType::None);
+
+      // check if pion track satisfies globalTrackWoDca selections
+      auto trackPionSelInfo = candidate.PiFromCharmBaryon_as<aod::TrackSelection>();
+      bool isPiGlbTrkWoDca = trackPionSelInfo.isGlobalTrackWoDCA();
+
+      fillCandidate(candidate, isPiGlbTrkWoDca, -7, -7, RecoDecay::OriginType::None);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processData, "Process data", true);
@@ -307,7 +312,12 @@ struct HfTreeCreatorToXiPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec());
+
+      // check if pion track satisfies globalTrackWoDca selections
+      auto trackPionSelInfo = candidate.PiFromCharmBaryon_as<aod::TrackSelection>();
+      bool isPiGlbTrkWoDca = trackPionSelInfo.isGlobalTrackWoDCA();
+
+      fillCandidate(candidate, isPiGlbTrkWoDca, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec());
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMc, "Process MC", false);

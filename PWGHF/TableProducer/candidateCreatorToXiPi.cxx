@@ -103,7 +103,6 @@ struct HfCandidateCreatorToXiPi {
   void process(aod::Collisions const&,
                aod::BCsWithTimestamps const&,
                TracksWCovDca const&,
-               aod::TrackSelection const&,
                MyCascTable const&, CascadesLinked const&,
                MySkimIdx const& candidates)
   {
@@ -295,10 +294,6 @@ struct HfCandidateCreatorToXiPi {
       // set hfFlag
       int hfFlag = 1 << aod::hf_cand_toxipi::DecayType::DecayToXiPi;
 
-      // check if pion track satisfies globalTrackWoDca selections
-      auto trackPionSelInfo = cand.prong0_as<aod::TrackSelection>();
-      bool isGlbTrkWoDca = trackPionSelInfo.isGlobalTrackWoDCA();
-
       // fill test histograms
       hInvMassCharmBaryon->Fill(mCharmBaryon);
       hCandidateCounter->Fill(3);
@@ -332,7 +327,7 @@ struct HfCandidateCreatorToXiPi {
                    dcazV0Dau0, dcazV0Dau1, dcazPiFromCasc,
                    dcaCascDau, dcaV0Dau, dcaCharmBaryonDau,
                    decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon,
-                   hfFlag, isGlbTrkWoDca);
+                   hfFlag);
 
     } // loop over LF Cascade-bachelor candidates
   }   // end of process
