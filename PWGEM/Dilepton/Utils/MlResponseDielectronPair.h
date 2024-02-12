@@ -28,7 +28,7 @@
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
 #define FILL_MAP_DIELECTRON_PAIR(FEATURE)                                  \
-  {                                                                      \
+  {                                                                        \
 #FEATURE, static_cast < uint8_t>(InputFeaturesDielectronPair::FEATURE) \
   }
 
@@ -38,8 +38,8 @@
 // by calling the corresponding GETTER from pair fourmomentum v12
 #define CHECK_AND_FILL_VEC_DIELECTRON_PAIR(FEATURE, GETTER)          \
   case static_cast<uint8_t>(InputFeaturesDielectronPair::FEATURE): { \
-    inputFeatures.emplace_back(v12.GETTER());                      \
-    break;                                                         \
+    inputFeatures.emplace_back(v12.GETTER());                        \
+    break;                                                           \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
@@ -48,8 +48,8 @@
 // by calling the corresponding FUNCTION on the tracks t1 and t2
 #define CHECK_AND_FILL_VEC_DIELECTRON_PAIR_FUNC(FEATURE, FUNCTION)   \
   case static_cast<uint8_t>(InputFeaturesDielectronPair::FEATURE): { \
-    inputFeatures.emplace_back(FUNCTION(t1, t2));                  \
-    break;                                                         \
+    inputFeatures.emplace_back(FUNCTION(t1, t2));                    \
+    break;                                                           \
   }
 
 namespace o2::analysis

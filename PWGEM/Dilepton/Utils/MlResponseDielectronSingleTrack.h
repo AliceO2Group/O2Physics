@@ -27,7 +27,7 @@
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
 #define FILL_MAP_DIELECTRON_SINGLE_TRACK(FEATURE)                                 \
-  {                                                                             \
+  {                                                                               \
 #FEATURE, static_cast < uint8_t>(InputFeaturesDielectronSingleTrack::FEATURE) \
   }
 
@@ -37,8 +37,8 @@
 // by calling the corresponding GETTER=FEATURE from track
 #define CHECK_AND_FILL_VEC_DIELECTRON_SINGLE_TRACK(GETTER)                 \
   case static_cast<uint8_t>(InputFeaturesDielectronSingleTrack::GETTER): { \
-    inputFeatures.emplace_back(track.GETTER());                          \
-    break;                                                               \
+    inputFeatures.emplace_back(track.GETTER());                            \
+    break;                                                                 \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
@@ -47,8 +47,8 @@
 // by calling the corresponding GETTER form track and applying a sqrt
 #define CHECK_AND_FILL_VEC_DIELECTRON_SINGLE_TRACK_SQRT(FEATURE, GETTER)    \
   case static_cast<uint8_t>(InputFeaturesDielectronSingleTrack::FEATURE): { \
-    inputFeatures.emplace_back(sqrt(track.GETTER()));                     \
-    break;                                                                \
+    inputFeatures.emplace_back(sqrt(track.GETTER()));                       \
+    break;                                                                  \
   }
 
 namespace o2::analysis
