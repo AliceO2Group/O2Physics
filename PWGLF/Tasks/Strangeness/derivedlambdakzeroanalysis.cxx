@@ -192,18 +192,18 @@ struct derivedlambdakzeroanalysis {
 
     maskTrackProperties = 0;
     if (requirePosITSonly) {
-      maskTrackProperties = (1 << selPosItsOnly);
+      maskTrackProperties = maskTrackProperties | (1 << selPosItsOnly);
     } else {
-      maskTrackProperties = (1 << selPosGoodTPCTrack);
+      maskTrackProperties = maskTrackProperties | (1 << selPosGoodTPCTrack);
       // TPC signal is available: ask for positive track PID
       maskK0ShortSpecific = maskK0ShortSpecific | (1 << selTPCPIDPositivePion);
       maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDPositiveProton);
       maskAntiLambdaSpecific = maskAntiLambdaSpecific | (1 << selTPCPIDPositivePion);
     }
     if (requireNegITSonly) {
-      maskTrackProperties = (1 << selNegItsOnly);
+      maskTrackProperties = maskTrackProperties | (1 << selNegItsOnly);
     } else {
-      maskTrackProperties = (1 << selNegGoodTPCTrack);
+      maskTrackProperties = maskTrackProperties | (1 << selNegGoodTPCTrack);
       // TPC signal is available: ask for negative track PID
       maskK0ShortSpecific = maskK0ShortSpecific | (1 << selTPCPIDNegativePion);
       maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDNegativeProton);
