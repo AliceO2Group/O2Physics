@@ -486,22 +486,22 @@ DECLARE_SOA_BITMAP_COLUMN(FilterMap, filterMap, 32);                     //!
 DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);                    //!
 DECLARE_SOA_COLUMN(Tauz, tauz, float);                                   //! Longitudinal pseudo-proper time of lepton pair (in ns)
 DECLARE_SOA_COLUMN(TauzErr, tauzErr, float);                             //! Error on longitudinal pseudo-proper time of lepton pair (in ns)
-DECLARE_SOA_COLUMN(VertexPz, vertexPz, float);                 //! Longitudinal projection of impulsion 
-DECLARE_SOA_COLUMN(SVertex, sVertex, float);                   //! Secondary vertex of lepton pair 
-DECLARE_SOA_COLUMN(Tauxy, tauxy, float);                       //! Transverse pseudo-proper time of lepton pair (in ns)
-DECLARE_SOA_COLUMN(TauxyErr, tauxyErr, float);                 //! Error on transverse pseudo-proper time of lepton pair (in ns)
-DECLARE_SOA_COLUMN(Lz, lz, float);                             //! Longitudinal projection of decay length
-DECLARE_SOA_COLUMN(Lxy, lxy, float);                           //! Transverse projection of decay length
-DECLARE_SOA_COLUMN(Chi2pca, chi2pca, float);                   //! Chi2 for PCA of the dilepton
-DECLARE_SOA_COLUMN(CosPointingAngle, cosPointingAngle, float); //! Cosine of the pointing angle
-DECLARE_SOA_COLUMN(U2Q2, u2q2, float);                         //! Scalar product between unitary vector with event flow vector (harmonic 2)
-DECLARE_SOA_COLUMN(U3Q3, u3q3, float);                         //! Scalar product between unitary vector with event flow vector (harmonic 3)
-DECLARE_SOA_COLUMN(Cos2DeltaPhi, cos2deltaphi, float);         //! Cosinus term using event plane angle (harmonic 2)
-DECLARE_SOA_COLUMN(Cos3DeltaPhi, cos3deltaphi, float);         //! Cosinus term using event plane angle (harmonic 3)
-DECLARE_SOA_COLUMN(R2SP, r2sp, float);                         //! Event plane resolution for SP method
-DECLARE_SOA_COLUMN(R2EP, r2ep, float);                         //! Event plane resolution for EP method
-DECLARE_SOA_COLUMN(CentFT0C, centft0c, float);                 //! Centrality information from FT0C
-DECLARE_SOA_COLUMN(CollisionId, collisionId, int);             //!
+DECLARE_SOA_COLUMN(VertexPz, vertexPz, float);                           //! Longitudinal projection of impulsion
+DECLARE_SOA_COLUMN(SVertex, sVertex, float);                             //! Secondary vertex of lepton pair
+DECLARE_SOA_COLUMN(Tauxy, tauxy, float);                                 //! Transverse pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(TauxyErr, tauxyErr, float);                           //! Error on transverse pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(Lz, lz, float);                                       //! Longitudinal projection of decay length
+DECLARE_SOA_COLUMN(Lxy, lxy, float);                                     //! Transverse projection of decay length
+DECLARE_SOA_COLUMN(Chi2pca, chi2pca, float);                             //! Chi2 for PCA of the dilepton
+DECLARE_SOA_COLUMN(CosPointingAngle, cosPointingAngle, float);           //! Cosine of the pointing angle
+DECLARE_SOA_COLUMN(U2Q2, u2q2, float);                                   //! Scalar product between unitary vector with event flow vector (harmonic 2)
+DECLARE_SOA_COLUMN(U3Q3, u3q3, float);                                   //! Scalar product between unitary vector with event flow vector (harmonic 3)
+DECLARE_SOA_COLUMN(Cos2DeltaPhi, cos2deltaphi, float);                   //! Cosinus term using event plane angle (harmonic 2)
+DECLARE_SOA_COLUMN(Cos3DeltaPhi, cos3deltaphi, float);                   //! Cosinus term using event plane angle (harmonic 3)
+DECLARE_SOA_COLUMN(R2SP, r2sp, float);                                   //! Event plane resolution for SP method
+DECLARE_SOA_COLUMN(R2EP, r2ep, float);                                   //! Event plane resolution for EP method
+DECLARE_SOA_COLUMN(CentFT0C, centft0c, float);                           //! Centrality information from FT0C
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                       //!
 // DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
