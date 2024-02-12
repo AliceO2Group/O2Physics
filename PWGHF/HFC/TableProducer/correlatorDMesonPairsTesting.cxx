@@ -413,7 +413,7 @@ struct HfCorrelatorDMesonPairsTesting {
     float massDCand1 = hfHelper.invMassD0ToPiK(candidate1);
     float massDbarCand1 = hfHelper.invMassD0barToKPi(candidate1);
     float massDCand2 = hfHelper.invMassD0ToPiK(candidate2);
-    float massDbarCand2 = hfHelper.invMassD0barToKPi(candidate1);
+    float massDbarCand2 = hfHelper.invMassD0barToKPi(candidate2);
     if (isDCand1 && isDCand2) {
       SETBIT(pairType, DD);
       registry.fill(HIST("hSelectionStatus"), 14);
