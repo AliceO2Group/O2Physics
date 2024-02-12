@@ -182,7 +182,7 @@ struct HfTreeCreatorToXiPi {
   }
 
   template <typename T>
-  void fillCandidate(const T& candidate, bool IsPionGlbTrkWoDca, int8_t flagMc, int8_t debugMc, int8_t originMc)
+  void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc)
   {
     rowCandidateFull(
       candidate.xPv(),
