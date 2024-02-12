@@ -174,9 +174,9 @@ struct femtoDreamPairTaskTrackTrack {
   void init(InitContext& context)
   {
     eventHisto.init(&qaRegistry);
-    trackHistoPartOne.init(&qaRegistry, ConfBinTrackpT, ConfBinTempFitVar, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk1_PDGCode);
+    trackHistoPartOne.init(&qaRegistry, ConfOptDummy, ConfOptDummy, ConfBinTrackpT, ConfOptDummy, ConfOptDummy, ConfBinTempFitVar, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk1_PDGCode);
     if (!ConfOptSameSpecies) {
-      trackHistoPartTwo.init(&qaRegistry, ConfBinTrackpT, ConfBinTempFitVar, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk2_PDGCode);
+      trackHistoPartTwo.init(&qaRegistry, ConfOptDummy, ConfOptDummy, ConfBinTrackpT, ConfOptDummy, ConfOptDummy, ConfBinTempFitVar, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk2_PDGCode);
     }
 
     sameEventCont.init(&resultRegistry,
@@ -257,12 +257,12 @@ struct femtoDreamPairTaskTrackTrack {
   void doSameEvent(PartitionType SliceTrk1, PartitionType SliceTrk2, PartType parts, Collision col)
   {
     for (auto& part : SliceTrk1) {
-      trackHistoPartOne.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt);
+      trackHistoPartOne.fillQA<isMC, false>(part, col, aod::femtodreamparticle::kPt);
     }
 
     if (!ConfOptSameSpecies.value) {
       for (auto& part : SliceTrk2) {
-        trackHistoPartTwo.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt);
+        trackHistoPartTwo.fillQA<isMC, false>(part, col, aod::femtodreamparticle::kPt);
       }
     }
 

@@ -186,10 +186,10 @@ struct femtoDreamPairTaskTrackV0 {
     // void init(HistogramRegistry* registry,
     //    T& MomentumBins, T& tempFitVarBins, T& NsigmaTPCBins, T& NsigmaTOFBins, T& NsigmaTPCTOFBins, T& InvMassBins,
     //    bool isMC, int pdgCode, bool isDebug = false)
-    trackHistoPartOne.init(&qaRegistry, ConfBinpTTrack, ConfBinTempFitVarTrack, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk1_PDGCode);
-    trackHistoPartTwo.init(&qaRegistry, ConfBinpTV0, ConfBinTempFitVarV0, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfBinInvMass, ConfOptIsMC, ConfV02_PDGCode);
-    posChildHistos.init(&qaRegistry, ConfBinpTV0Child, ConfBinTempFitVarV0Child, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, false, false);
-    negChildHistos.init(&qaRegistry, ConfBinpTV0Child, ConfBinTempFitVarV0Child, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, false, false);
+    trackHistoPartOne.init(&qaRegistry, ConfOptDummy, ConfOptDummy, ConfBinpTTrack, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarTrack, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk1_PDGCode);
+    trackHistoPartTwo.init(&qaRegistry, ConfOptDummy, ConfOptDummy, ConfBinpTV0, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarV0, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfBinInvMass, ConfOptIsMC, ConfV02_PDGCode);
+    posChildHistos.init(&qaRegistry, ConfOptDummy, ConfOptDummy, ConfBinpTV0Child, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarV0Child, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, false, 0);
+    negChildHistos.init(&qaRegistry, ConfOptDummy, ConfOptDummy, ConfBinpTV0Child, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarV0Child, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, false, 0);
 
     sameEventCont.init(&resultRegistry,
                        ConfBinkstar, ConfBinpT, ConfBinkT, ConfBinmT, ConfMixingBinMult, ConfMixingBinMultPercentile,
@@ -261,7 +261,7 @@ struct femtoDreamPairTaskTrackV0 {
   {
     /// Histogramming same event
     for (auto& part : SliceTrk1) {
-      trackHistoPartOne.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt);
+      trackHistoPartOne.fillQA<isMC, false>(part, col, aod::femtodreamparticle::kPt);
     }
     for (auto& v0 : SliceV02) {
       const auto& posChild = parts.iteratorAt(v0.index() - 2);
@@ -277,9 +277,9 @@ struct femtoDreamPairTaskTrackV0 {
           ((posChild.pidcut() & ConfV02_ChildPos_TPCBit) == ConfV02_ChildPos_TPCBit) &&
           ((negChild.cut() & ConfV02_ChildNeg_CutBit) == ConfV02_ChildNeg_CutBit) &&
           ((negChild.pidcut() & ConfV02_ChildNeg_TPCBit) == ConfV02_ChildNeg_TPCBit)) {
-        trackHistoPartTwo.fillQA<isMC, false>(v0, aod::femtodreamparticle::kPt);
-        posChildHistos.fillQA<false, false>(posChild, aod::femtodreamparticle::kPt);
-        negChildHistos.fillQA<false, false>(negChild, aod::femtodreamparticle::kPt);
+        trackHistoPartTwo.fillQA<isMC, false>(v0, col, aod::femtodreamparticle::kPt);
+        posChildHistos.fillQA<false, false>(posChild, col, aod::femtodreamparticle::kPt);
+        negChildHistos.fillQA<false, false>(negChild, col, aod::femtodreamparticle::kPt);
       }
     }
     /// Now build particle combinations
