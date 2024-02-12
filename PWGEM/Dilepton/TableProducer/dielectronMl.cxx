@@ -50,8 +50,8 @@ DECLARE_SOA_TABLE(dielectronMlScorePair, "AOD", "DIELEMLSCOREP", //!
 using MySkimmedTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov>;
 using MySkimmedTracksWithPID = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelCov>;
 using MyTracksWithPID = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA,
-                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                           aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 
 // define some default values for single track analysis
 namespace dielectron_ml_cuts_single_track
@@ -76,7 +76,7 @@ static const std::vector<std::string> modelPaths = {
   ""};
 
 // default values for the cut directions
-constexpr int cutDir[nCutScores] = {CutGreater, CutSmaller};
+constexpr int cutDir[nCutScores] = {CutSmaller, CutGreater};
 auto vecCutDir = std::vector<int>{cutDir, cutDir + nCutScores};
 
 // default values for the cuts
@@ -88,7 +88,7 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 0"};
 
 // column labels
-static const std::vector<std::string> labelsCutScore = {"signal", "background"};
+static const std::vector<std::string> labelsCutScore = {"Signal", "Background"};
 } // namespace dielectron_ml_cuts_single_track
 
 // define some default values for pair analysis
@@ -102,7 +102,7 @@ enum CutDirection {
 };
 
 static constexpr int nBinsM = 1;
-static constexpr int nCutScores = 3;
+static constexpr int nCutScores = 2;
 // default values for the mass bin edges, offset by 1 from the bin numbers in cuts array
 constexpr double binsM[nBinsM + 1] = {
   0.,
@@ -114,20 +114,19 @@ static const std::vector<std::string> modelPaths = {
   ""};
 
 // default values for the cut directions
-constexpr int cutDir[nCutScores] = {CutGreater, CutSmaller, CutSmaller};
+constexpr int cutDir[nCutScores] = {CutSmaller, CutGreater};
 auto vecCutDir = std::vector<int>{cutDir, cutDir + nCutScores};
 
 // default values for the cuts
 constexpr double cuts[nBinsM][nCutScores] = {
-  {0.5, 0.3, 0.3},
-};
+  {0.5, 0.5}};
 
 // row labels
 static const std::vector<std::string> labelsM = {
   "mass bin 0"};
 
 // column labels
-static const std::vector<std::string> labelsCutScore = {"signal", "conversion", "HF"};
+static const std::vector<std::string> labelsCutScore = {"Signal", "Background"};
 } // namespace dielectron_ml_cuts_pair
 
 struct DielectronMlSingleTrack {
@@ -177,8 +176,8 @@ struct DielectronMlSingleTrack {
       AxisSpec axisScore = {100, 0, 1, "score"};
       AxisSpec axisBinsPt = {binsPtMl, "#it{p}_{T} (GeV/#it{c})"};
       for (int classMl = 0; classMl < nClassesMl; classMl++) {
-        hModelScore.push_back(registry.add<TH1>(Form("hMlScoreClass%d", classMl), "Model score distribution;Model score;counts", HistType::kTH1F, {axisScore}));
-        hModelScoreVsPt.push_back(registry.add<TH2>(Form("hMlScoreClass%dVsPt", classMl), "Model score distribution;Model score;counts", HistType::kTH2F, {axisScore, axisBinsPt}));
+        hModelScore.push_back(registry.add<TH1>("hMlScore" + TString(cutsMl->getLabelsCols()[classMl]), "Model score distribution;Model score;counts", HistType::kTH1F, {axisScore}));
+        hModelScoreVsPt.push_back(registry.add<TH2>("hMlScore" + TString(cutsMl->getLabelsCols()[classMl]) + "VsPt", "Model score distribution;Model score;counts", HistType::kTH2F, {axisScore, axisBinsPt}));
       }
     }
   }
@@ -299,8 +298,8 @@ struct DielectronMlPair {
       AxisSpec axisScore = {100, 0, 1, "score"};
       AxisSpec axisBinsM = {binsMMl, "#it{M} (GeV/#it{c^{2}})"};
       for (int classMl = 0; classMl < nClassesMl; classMl++) {
-        hModelScore.push_back(registry.add<TH1>(Form("hMlScoreClass%d", classMl), "Model score distribution;Model score;counts", HistType::kTH1F, {axisScore}));
-        hModelScoreVsM.push_back(registry.add<TH2>(Form("hMlScoreClass%dVsM", classMl), "Model score distribution;Model score;counts", HistType::kTH2F, {axisScore, axisBinsM}));
+        hModelScore.push_back(registry.add<TH1>("hMlScore" + TString(cutsMl->getLabelsCols()[classMl]), "Model score distribution;Model score;counts", HistType::kTH1F, {axisScore}));
+        hModelScoreVsM.push_back(registry.add<TH2>("hMlScore" + TString(cutsMl->getLabelsCols()[classMl]) + "VsM", "Model score distribution;Model score;counts", HistType::kTH2F, {axisScore, axisBinsM}));
       }
     }
   }
