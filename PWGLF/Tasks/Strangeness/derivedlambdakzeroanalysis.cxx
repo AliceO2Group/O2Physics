@@ -22,10 +22,10 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <Math/Vector4D.h>
 #include <cmath>
 #include <array>
 #include <cstdlib>
-#include <Math/Vector4D.h>
 
 #include <TFile.h>
 #include <TH2F.h>
