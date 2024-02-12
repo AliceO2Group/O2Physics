@@ -187,7 +187,7 @@ struct HfCorrelatorDsHadrons {
                        kCandidateStepMcReco,
                        kCandidateNSteps };
 
-  enum AssocTrackStep { kTrackableAll = 0,
+  enum AssocTrackStep { kAssocTrackStepMcGen = 0,
                         kAssocTrackStepRecoPrimaries,
                         kAssocTrackStepRecoAll,
                         kAssocTrackStepFake,
@@ -199,12 +199,15 @@ struct HfCorrelatorDsHadrons {
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>; // flagDsFilter applied
   using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;                                      // flagDsFilter applied
   using MyTracksData = soa::Filtered<aod::TracksWDca>;                                                          // trackFilter applied
+  using TracksWithMc = soa::Filtered<soa::Join<aod::TracksWDca, o2::aod::McTrackLabels>>;
 
   Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
   Filter flagDsFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::DsToKKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs);
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
 
-  Preslice<aod::HfCand3Prong> perCol = aod::hf_cand::collisionId;
+  Preslice<aod::HfCand3Prong> perCandCol = aod::hf_cand::collisionId;
+  Preslice<MyTracksData> perTrackCol = aod::hf_cand::collisionId;
+  Preslice<aod::McParticles> perTrackColMc = aod::mcparticle::mcCollisionId;
 
   HistogramRegistry registry{
     "registry",
@@ -568,43 +571,78 @@ struct HfCorrelatorDsHadrons {
   }
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcRec, "Process MC Reco mode", false);
 
-    /// Ds-Hadron correlation - for calculating efficiencies using MC reco-level analysis
+  /// Ds-Hadron correlation - for calculating efficiencies using MC reco-level analysis
   void processMcEfficiencies(soa::Join<aod::Collisions, aod::Mults> const& collisions,
                              CandDsMcReco const& candidates,
-                             MyTracksData const& tracksData,
+                             TracksWithMc const& tracksData,
                              aod::McCollisions const& mcCollisions,
                              CandDsMcGen const& mcParticles,
                              aod::TracksWMc const&)
   {
-     auto multiplicity = mcCollisions.multiplicity();
-     auto posZ = mcCollisions.posZ();
+    auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
+    auto hAssocTracks = registry.get<StepTHn>(HIST("hAssocTracks"));
+    
+    /// Gen loop
+    for (auto& collision : mcCollisions) {
+      auto groupedTracksMc = mcParticles.sliceBy(perTrackColMc, collision.globalIndex());
 
-     // Reco loop
-     for (auto& collision : collisions) {
-       auto groupedCandidates = CandDsMcReco -> sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-       //= candidates.sliceBy(aod::hf_cand::collisionId, collision.globalIndex());
-       auto groupedTracks = MyTracksData -> sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-      //tracksData.sliceBy(aod::track::CollisionId, collision.globalIndex());
-      /*if (cfgVerbosity > 0) {
-        LOGF(info, "  Reconstructed collision at vtx-z = %f", collision.posZ());
-        LOGF(info, "  which has %d tracks", groupedTracks.size());
-      }*/
+      auto multiplicity = groupedTracksMc.size();
+      auto posZ = collision.posZ();
 
-      for (auto& track : groupedTracks) {
-        if (track.has_cfMCParticle()) {
-          const auto& mcParticle = track.cfMCParticle();
-          if (mcParticle.isPhysicalPrimary()) {
-            hAssocTracks->Fill(kAssocTrackStepRecoPrimaries, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
-          }
-          hAssocTracks->Fill(kAssocTrackStepRecoAll, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
-        } else {
-          // fake track
-          hAssocTracks->Fill(kAssocTrackStepFake, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
+      // generated candidates loop
+      for (auto& mcParticle : groupedTracksMc) {
+        if (std::abs(mcParticle.pdgCode()) == Pdg::kDS) {
+          hCandidates->Fill(kCandidateStepMcGen, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
+          //if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
+        
+        }
+      }
+
+      // generated tracks loop
+      for (auto& mcParticle : groupedTracksMc) {
+        if (mcParticle.isPhysicalPrimary() && ((std::abs(mcParticle.pdgCode()) == kElectron) || (std::abs(mcParticle.pdgCode()) == kMuonMinus) || (std::abs(mcParticle.pdgCode()) == kPiPlus) || (std::abs(mcParticle.pdgCode()) == kKPlus) || (std::abs(mcParticle.pdgCode()) == kProton))) {
+          hAssocTracks->Fill(kAssocTrackStepMcGen, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
         }
       }
     }
-  }
-  PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcEfficiencies, "Process MC for calculating efficiencies", false);
+
+    /// Reco loop
+    for (auto& collision : collisions) {
+      auto groupedCandidates = candidates.sliceBy(perCandCol, collision.globalIndex());
+      auto groupedTracks = tracksData.sliceBy(perTrackCol, collision.globalIndex());
+
+      auto multiplicity = groupedTracks.size();
+      auto posZ = collision.posZ();
+     
+     // recontructed candidates loop
+     for (auto& candidate : groupedCandidates) {
+       if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
+        auto prong0McPart = candidate.prong0_as<aod::TracksWMc>().mcParticle_as<CandDsMcGen>();
+        // DsToKKPi and DsToPiKK division
+        if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
+          hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicity, candidate.originMcRec());
+        }
+      }//else {
+      // fillHistoMcRecBkg(candidate);
+      //}
+     }
+
+     // recontructed tracks loop
+     for (auto& track : groupedTracks) {
+       if (track.has_mcParticle()) {
+         const auto& mcParticle = track.mcParticle();
+         if (mcParticle.isPhysicalPrimary()) {
+           hAssocTracks->Fill(kAssocTrackStepRecoPrimaries, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
+         }
+         hAssocTracks->Fill(kAssocTrackStepRecoAll, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
+       } else {
+         // fake track
+         hAssocTracks->Fill(kAssocTrackStepFake, track.eta(), track.pt(), multiplicity, posZ);
+       }
+     }
+   }
+ }
+ PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcEfficiencies, "Process MC for calculating efficiencies", false);
 
   /// Ds-Hadron correlation pair builder - for MC gen-level analysis (no filter/selection, only true signal)
   void processMcGen(SelCollisionsWithDsMc::iterator const& mcCollision,
