@@ -57,7 +57,7 @@ struct lfmatchingqa {
   ConfigurableAxis momAxisFine{"momAxisFine", {2.e3, -5.f, 5.f}, "momentum axis binning"};
   ConfigurableAxis momResAxis{"momResAxis", {1.e2, -2.f, 2.f}, "momentum resolution binning"};
   ConfigurableAxis tpcAxis{"tpcAxis", {4e2, 0.f, 1.e3f}, "tpc signal axis binning"};
-  ConfigurableAxis tpcAxisFine{"tpcAxis", {4e3, 0.f, 4.e3f}, "tpc signal axis binning"};
+  ConfigurableAxis tpcAxisFine{"tpcAxisFine", {4e3, 0.f, 4.e3f}, "tpc signal axis binning"};
 
   ConfigurableAxis dcaAxis{"dcaAxis", {50, -0.1f, 0.1f}, "dca axis binning"};
   ConfigurableAxis itsClusSizeAxis{"itsClusSizeAxis", {120, 1, 15}, "its cluster size axis binning"};
