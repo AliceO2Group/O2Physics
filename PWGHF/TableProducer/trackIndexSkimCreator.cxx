@@ -410,6 +410,13 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   std::array<TrackSelectorPr, ChannelsProtonPid::NChannelsProtonPid> selectorProton;
   TrackSelectorKa selectorKaon;
 
+  Preslice<TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
+
+  Partition<TracksWithSelAndDca> pvContributors = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
+  Partition<TracksWithSelAndDcaAndPidTpc> pvContributorsWithPidTpc = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
+  Partition<TracksWithSelAndDcaAndPidTof> pvContributorsWithPidTof = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
+  Partition<TracksWithSelAndDcaAndPidTpcTof> pvContributorsWithPidTpcTof = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
+
   // QA of PV refit
   ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
   ConfigurableAxis axisPvRefitDeltaY{"axisPvRefitDeltaY", {1000, -0.5f, 0.5f}, "DeltaY binning PV refit"};
@@ -1104,12 +1111,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     }
   }
 
-  Preslice<TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  Partition<TracksWithSelAndDca> pvContributors = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
-  Partition<TracksWithSelAndDcaAndPidTpc> pvContributorsWithPidTpc = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
-  Partition<TracksWithSelAndDcaAndPidTof> pvContributorsWithPidTof = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
-  Partition<TracksWithSelAndDcaAndPidTpcTof> pvContributorsWithPidTpcTof = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
-
   void processNoPid(aod::Collisions const& collisions,
                     TrackAssoc const& trackIndices,
                     TracksWithSelAndDca const& tracks,
@@ -1139,7 +1140,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
-
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelTracks, processNoPid, "Process without PID selections", true);
 
   void processProtonPidTpc(aod::Collisions const& collisions,
@@ -1171,7 +1171,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
-
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelTracks, processProtonPidTpc, "Process with proton TPC PID selection", false);
 
   void processProtonPidTof(aod::Collisions const& collisions,
@@ -1203,7 +1202,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
-
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelTracks, processProtonPidTof, "Process with proton TOF PID selection", false);
 
   void processProtonPidTpcOrTof(aod::Collisions const& collisions,
@@ -1235,7 +1233,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
-
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelTracks, processProtonPidTpcOrTof, "Process with proton PID selection (TPC or TOF logic)", false);
 
   void processProtonPidTpcAndTof(aod::Collisions const& collisions,
@@ -1267,7 +1264,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
-
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelTracks, processProtonPidTpcAndTof, "Process with proton PID selection (TPC and TOF logic)", false);
 };
 
@@ -2989,11 +2985,11 @@ struct HfTrackIndexSkimCreatorCascades {
   double massPi{0.};
   double massLc{0.};
 
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandV0bachelor))) != 0u && (applyProtonPid == false || (aod::hf_sel_track::isIdentifiedPid & static_cast<uint32_t>(BIT(ChannelsProtonPid::LcToPK0S))) != 0u);
-
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
+
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
+  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandV0bachelor))) != 0u && (applyProtonPid == false || (aod::hf_sel_track::isIdentifiedPid & static_cast<uint32_t>(BIT(ChannelsProtonPid::LcToPK0S))) != 0u);
 
   Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::V0Datas> v0sPerCollision = aod::v0data::collisionId;
@@ -3193,7 +3189,6 @@ struct HfTrackIndexSkimCreatorCascades {
       }   // loop over tracks
     }     // loop over collisions
   }       // processCascades
-
   PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processCascades, "Skim HF -> V0 cascades", false);
 };
 
@@ -3270,6 +3265,18 @@ struct HfTrackIndexSkimCreatorLfCascades {
   double massXi{0.};
   double massOmega{0.};
   double massLambda{0.};
+
+  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
+  using SelectedHfTrackAssoc = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
+  using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
+  using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
+
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
+  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandCascadeBachelor))) != 0u;
+
+  Preslice<aod::TracksWCovDca> tracksPerCollision = aod::track::collisionId;                     // needed for PV refit
+  Preslice<SelectedHfTrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
+  Preslice<CascFull> cascadesPerCollision = aod::cascdata::collisionId;
 
   // histograms
   HistogramRegistry registry{"registry"};
@@ -3349,18 +3356,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
       registry.add("hFitterStatusXi3Prong", "Charm DCAFitter status (xi hyp. - 3prong);status;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}});       // 0 --> successful call of DCAFitter 1 --> exception found by DCAFitter
     }
   }
-
-  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using SelectedHfTrackAssoc = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
-  using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
-  using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
-
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandCascadeBachelor))) != 0u;
-
-  Preslice<aod::TracksWCovDca> tracksPerCollision = aod::track::collisionId;                     // needed for PV refit
-  Preslice<SelectedHfTrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
-  Preslice<CascFull> cascadesPerCollision = aod::cascdata::collisionId;
 
   /// Single-cascade cuts
   template <typename TCascade>
