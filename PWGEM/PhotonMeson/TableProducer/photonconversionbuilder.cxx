@@ -87,7 +87,7 @@ struct PhotonConversionBuilder {
   Configurable<float> dcanegtopv{"dcanegtopv", 0.1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", 0.1, "DCA Pos To PV"};
   Configurable<float> min_pt_leg{"min_pt_leg", 0.04, "min pT for v0 legs at SV"};
-  Configurable<float> max_mean_its_cluster_size{"max_mean_its_cluster_size", 4.f, "max. <ITS cluster size> x cos(lambda) for ITSonly tracks"}; // this is to suppress random combination for V0s with ITSonly tracks. default 3 + 1 for skimming.
+  Configurable<float> max_mean_its_cluster_size{"max_mean_its_cluster_size", 16.f, "max. <ITS cluster size> x cos(lambda) for ITSonly tracks"}; // this is to suppress random combination for V0s with ITSonly tracks. default 3 + 1 for skimming.
   Configurable<float> maxX{"maxX", 83.1, "max X for track IU"};
 
   // v0 cuts
