@@ -50,7 +50,7 @@ DECLARE_SOA_INDEX_COLUMN(LfNuclEvent, lfNuclEvent);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * cosh(eta); });
 DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(Sign, sign, int16);
+DECLARE_SOA_COLUMN(Sign, sign, int16_t);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);
 DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,
