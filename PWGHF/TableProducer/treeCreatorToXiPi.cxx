@@ -296,12 +296,7 @@ struct HfTreeCreatorToXiPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-
-      // check if pion track satisfies globalTrackWoDca selections
-      auto trackPionSelInfo = candidate.PiFromCharmBaryon_as<aod::TrackSelection>();
-      bool isPiGlbTrkWoDca = trackPionSelInfo.isGlobalTrackWoDCA();
-
-      fillCandidate(candidate, isPiGlbTrkWoDca, -7, -7, RecoDecay::OriginType::None);
+      fillCandidate(candidate, -7, -7, RecoDecay::OriginType::None);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processData, "Process data", true);
