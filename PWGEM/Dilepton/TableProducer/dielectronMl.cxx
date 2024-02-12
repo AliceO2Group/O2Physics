@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-/// \file dileptonMLTest.cxx
-/// \task for testing ML application for dilepton analyses
+/// \file dielectronMl.cxx
+/// \task for testing ML application for dielectron analyses
 /// \author Daniel Samitz, <daniel.samitz@cern.ch>, SMI Vienna
 ///         Elisa Meninno, <elisa.meninno@cern.ch>, SMI Vienna
 
@@ -18,8 +18,8 @@
 #include "Framework/runDataProcessing.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGEM/Dilepton/Utils/MlResponseDileptonSingleTrack.h"
-#include "PWGEM/Dilepton/Utils/MlResponseDileptonPair.h"
+#include "PWGEM/Dilepton/Utils/MlResponseDielectronSingleTrack.h"
+#include "PWGEM/Dilepton/Utils/MlResponseDielectronPair.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -29,22 +29,22 @@ using namespace o2::aod;
 namespace o2::aod
 {
 
-namespace dileptonMlSelection
+namespace dielectronMlSelection
 {
 DECLARE_SOA_COLUMN(IsSelMlSingleTrack, isSelMlSingleTrack, bool);
 DECLARE_SOA_COLUMN(IsSelMlPair, isSelMlPair, bool);
 DECLARE_SOA_COLUMN(MlScoreSingleTrack, mlScoreSingleTrack, std::vector<float>);
 DECLARE_SOA_COLUMN(MlScorePair, mlScorePair, std::vector<float>);
-} // namespace dileptonMlSelection
+} // namespace dielectronMlSelection
 
-DECLARE_SOA_TABLE(dileptonMlSelectionSingleTrack, "AOD", "DILEPMLSELST", //!
-                  dileptonMlSelection::IsSelMlSingleTrack);
-DECLARE_SOA_TABLE(dileptonMlScoreSingleTrack, "AOD", "DILEPMLSCOREST", //!
-                  dileptonMlSelection::MlScoreSingleTrack);
-DECLARE_SOA_TABLE(dileptonMlSelectionPair, "AOD", "DILEPMLSELP", //!
-                  dileptonMlSelection::IsSelMlPair);
-DECLARE_SOA_TABLE(dileptonMlScorePair, "AOD", "DILEPMLSCOREP", //!
-                  dileptonMlSelection::MlScorePair);
+DECLARE_SOA_TABLE(dielectronMlSelectionSingleTrack, "AOD", "DIELEMLSELST", //!
+                  dielectronMlSelection::IsSelMlSingleTrack);
+DECLARE_SOA_TABLE(dielectronMlScoreSingleTrack, "AOD", "DIELEMLSCOREST", //!
+                  dielectronMlSelection::MlScoreSingleTrack);
+DECLARE_SOA_TABLE(dielectronMlSelectionPair, "AOD", "DIELEMLSELP", //!
+                  dielectronMlSelection::IsSelMlPair);
+DECLARE_SOA_TABLE(dielectronMlScorePair, "AOD", "DIELEMLSCOREP", //!
+                  dielectronMlSelection::MlScorePair);
 } // namespace o2::aod
 
 using MySkimmedTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov>;
@@ -54,7 +54,7 @@ using MyTracksWithPID = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra,
                            aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 
 // define some default values for single track analysis
-namespace dilepton_ml_cuts_single_track
+namespace dielectron_ml_cuts_single_track
 {
 // direction of the cut
 enum CutDirection {
@@ -89,10 +89,10 @@ static const std::vector<std::string> labelsPt = {
 
 // column labels
 static const std::vector<std::string> labelsCutScore = {"signal", "background"};
-} // namespace dilepton_ml_cuts_single_track
+} // namespace dielectron_ml_cuts_single_track
 
 // define some default values for pair analysis
-namespace dilepton_ml_cuts_pair
+namespace dielectron_ml_cuts_pair
 {
 // direction of the cut
 enum CutDirection {
@@ -128,17 +128,17 @@ static const std::vector<std::string> labelsM = {
 
 // column labels
 static const std::vector<std::string> labelsCutScore = {"signal", "conversion", "HF"};
-} // namespace dilepton_ml_cuts_pair
+} // namespace dielectron_ml_cuts_pair
 
-struct DileptonMlSingleTrack {
-  Produces<aod::dileptonMlSelectionSingleTrack> singleTrackSelection;
-  Produces<aod::dileptonMlScoreSingleTrack> singleTrackScore;
+struct DielectronMlSingleTrack {
+  Produces<aod::dielectronMlSelectionSingleTrack> singleTrackSelection;
+  Produces<aod::dielectronMlScoreSingleTrack> singleTrackScore;
 
   // ML inference
-  Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{dilepton_ml_cuts_single_track::vecBinsPt}, "pT bin limits for ML application"};
-  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{dilepton_ml_cuts_single_track::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {dilepton_ml_cuts_single_track::cuts[0], dilepton_ml_cuts_single_track::nBinsPt, dilepton_ml_cuts_single_track::nCutScores, dilepton_ml_cuts_single_track::labelsPt, dilepton_ml_cuts_single_track::labelsCutScore}, "ML selections per pT bin"};
-  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(dilepton_ml_cuts_single_track::nCutScores), "Number of classes in ML model"};
+  Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{dielectron_ml_cuts_single_track::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{dielectron_ml_cuts_single_track::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {dielectron_ml_cuts_single_track::cuts[0], dielectron_ml_cuts_single_track::nBinsPt, dielectron_ml_cuts_single_track::nCutScores, dielectron_ml_cuts_single_track::labelsPt, dielectron_ml_cuts_single_track::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(dielectron_ml_cuts_single_track::nCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -153,7 +153,7 @@ struct DileptonMlSingleTrack {
   // table output
   Configurable<bool> fillScoreTable{"fillScoreTable", false, "fill table with scores from ML model"};
 
-  o2::analysis::MlResponseDileptonSingleTrack<float> mlResponse;
+  o2::analysis::MlResponseDielectronSingleTrack<float> mlResponse;
   o2::ccdb::CcdbApi ccdbApi;
   std::vector<std::shared_ptr<TH1>> hModelScore;
   std::vector<std::shared_ptr<TH2>> hModelScoreVsPt;
@@ -241,30 +241,30 @@ struct DileptonMlSingleTrack {
   {
     runSingleTracks(tracks);
   }
-  PROCESS_SWITCH(DileptonMlSingleTrack, processSkimmedSingleTrack, "Apply ML selection on skimmed output on single tracks", true);
+  PROCESS_SWITCH(DielectronMlSingleTrack, processSkimmedSingleTrack, "Apply ML selection on skimmed output on single tracks", true);
 
   void processAO2DSingleTrack(MyTracksWithPID const& tracks)
   {
     runSingleTracks(tracks);
   }
-  PROCESS_SWITCH(DileptonMlSingleTrack, processAO2DSingleTrack, "Apply ML selection on skimmed output on single tracks", false);
+  PROCESS_SWITCH(DielectronMlSingleTrack, processAO2DSingleTrack, "Apply ML selection on skimmed output on single tracks", false);
 
   void processDummy(DielectronsExtra const&)
   {
     // dummy
   }
-  PROCESS_SWITCH(DileptonMlSingleTrack, processDummy, "Dummy", false);
+  PROCESS_SWITCH(DielectronMlSingleTrack, processDummy, "Dummy", false);
 };
 
-struct DileptonMlPair {
-  Produces<aod::dileptonMlSelectionPair> pairSelection;
-  Produces<aod::dileptonMlScorePair> pairScore;
+struct DielectronMlPair {
+  Produces<aod::dielectronMlSelectionPair> pairSelection;
+  Produces<aod::dielectronMlScorePair> pairScore;
 
   // ML inference
-  Configurable<std::vector<double>> binsMMl{"binsMMl", std::vector<double>{dilepton_ml_cuts_pair::vecBinsM}, "Mass bin limits for ML application"};
-  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{dilepton_ml_cuts_pair::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {dilepton_ml_cuts_pair::cuts[0], dilepton_ml_cuts_pair::nBinsM, dilepton_ml_cuts_pair::nCutScores, dilepton_ml_cuts_pair::labelsM, dilepton_ml_cuts_pair::labelsCutScore}, "ML selections per pT bin"};
-  Configurable<int8_t> nClassesMl{"nClassesMl", static_cast<int>(dilepton_ml_cuts_pair::nCutScores), "Number of classes in ML model"};
+  Configurable<std::vector<double>> binsMMl{"binsMMl", std::vector<double>{dielectron_ml_cuts_pair::vecBinsM}, "Mass bin limits for ML application"};
+  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{dielectron_ml_cuts_pair::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {dielectron_ml_cuts_pair::cuts[0], dielectron_ml_cuts_pair::nBinsM, dielectron_ml_cuts_pair::nCutScores, dielectron_ml_cuts_pair::labelsM, dielectron_ml_cuts_pair::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int8_t> nClassesMl{"nClassesMl", static_cast<int>(dielectron_ml_cuts_pair::nCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -275,7 +275,7 @@ struct DileptonMlPair {
   // table output
   Configurable<bool> fillScoreTable{"fillScoreTable", false, "fill table with scores from ML model"};
 
-  o2::analysis::MlResponseDileptonPair<float> mlResponse;
+  o2::analysis::MlResponseDielectronPair<float> mlResponse;
   o2::ccdb::CcdbApi ccdbApi;
   std::vector<std::shared_ptr<TH1>> hModelScore;
   std::vector<std::shared_ptr<TH2>> hModelScoreVsM;
@@ -334,24 +334,24 @@ struct DileptonMlPair {
       }
     }
   }
-  PROCESS_SWITCH(DileptonMlPair, processPair, "Apply ML selection at pair level", false);
+  PROCESS_SWITCH(DielectronMlPair, processPair, "Apply ML selection at pair level", false);
 
   void processDummyAO2D(MyTracksWithPID const&)
   {
     // dummy
   }
-  PROCESS_SWITCH(DileptonMlPair, processDummyAO2D, "Dummy", false);
+  PROCESS_SWITCH(DielectronMlPair, processDummyAO2D, "Dummy", false);
 
   void processDummySkimmed(MySkimmedTracks const&)
   {
     // dummy
   }
-  PROCESS_SWITCH(DileptonMlPair, processDummySkimmed, "Dummy", true);
+  PROCESS_SWITCH(DielectronMlPair, processDummySkimmed, "Dummy", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<DileptonMlSingleTrack>(cfgc),
-    adaptAnalysisTask<DileptonMlPair>(cfgc)};
+    adaptAnalysisTask<DielectronMlSingleTrack>(cfgc),
+    adaptAnalysisTask<DielectronMlPair>(cfgc)};
 }

@@ -10,12 +10,12 @@
 // or submit itself to any jurisdiction.
 
 /// \file MlResponseDiletponPair.h
-/// \brief Class to compute the ML response for dilepton analyses at the pair level
+/// \brief Class to compute the ML response for dielectron analyses at the pair level
 /// \author Daniel Samitz <daniel.samitz@cern.ch>, SMI Vienna
 ///         Elisa Meninno, <elisa.meninno@cern.ch>, SMI Vienna
 
-#ifndef PWGEM_DILEPTON_UTILS_MLRESPONSEDILEPTONPAIR_H_
-#define PWGEM_DILEPTON_UTILS_MLRESPONSEDILEPTONPAIR_H_
+#ifndef PWGEM_DILEPTON_UTILS_MLRESPONSEDIELECTRONPAIR_H_
+#define PWGEM_DILEPTON_UTILS_MLRESPONSEDIELECTRONPAIR_H_
 
 #include <map>
 #include <string>
@@ -27,17 +27,17 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_DILEPTON_PAIR(FEATURE)                                  \
+#define FILL_MAP_DIELECTRON_PAIR(FEATURE)                                  \
   {                                                                      \
-#FEATURE, static_cast < uint8_t>(InputFeaturesDileptonPair::FEATURE) \
+#FEATURE, static_cast < uint8_t>(InputFeaturesDielectronPair::FEATURE) \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER from pair fourmomentum v12
-#define CHECK_AND_FILL_VEC_DILEPTON_PAIR(FEATURE, GETTER)          \
-  case static_cast<uint8_t>(InputFeaturesDileptonPair::FEATURE): { \
+#define CHECK_AND_FILL_VEC_DIELECTRON_PAIR(FEATURE, GETTER)          \
+  case static_cast<uint8_t>(InputFeaturesDielectronPair::FEATURE): { \
     inputFeatures.emplace_back(v12.GETTER());                      \
     break;                                                         \
   }
@@ -46,8 +46,8 @@
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding FUNCTION on the tracks t1 and t2
-#define CHECK_AND_FILL_VEC_DILEPTON_PAIR_FUNC(FEATURE, FUNCTION)   \
-  case static_cast<uint8_t>(InputFeaturesDileptonPair::FEATURE): { \
+#define CHECK_AND_FILL_VEC_DIELECTRON_PAIR_FUNC(FEATURE, FUNCTION)   \
+  case static_cast<uint8_t>(InputFeaturesDielectronPair::FEATURE): { \
     inputFeatures.emplace_back(FUNCTION(t1, t2));                  \
     break;                                                         \
   }
@@ -55,7 +55,7 @@
 namespace o2::analysis
 {
 // possible input features for ML
-enum class InputFeaturesDileptonPair : uint8_t {
+enum class InputFeaturesDielectronPair : uint8_t {
   m,
   pt,
   eta,
@@ -66,13 +66,13 @@ enum class InputFeaturesDileptonPair : uint8_t {
 };
 
 template <typename TypeOutputScore = float>
-class MlResponseDileptonPair : public MlResponse<TypeOutputScore>
+class MlResponseDielectronPair : public MlResponse<TypeOutputScore>
 {
  public:
   /// Default constructor
-  MlResponseDileptonPair() = default;
+  MlResponseDielectronPair() = default;
   /// Default destructor
-  virtual ~MlResponseDileptonPair() = default;
+  virtual ~MlResponseDielectronPair() = default;
 
   template <typename T>
   float pair_dca_xy(T const& t1, T const& t2)
@@ -194,13 +194,13 @@ class MlResponseDileptonPair : public MlResponse<TypeOutputScore>
 
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       switch (idx) {
-        CHECK_AND_FILL_VEC_DILEPTON_PAIR(m, M);
-        CHECK_AND_FILL_VEC_DILEPTON_PAIR(pt, Pt);
-        CHECK_AND_FILL_VEC_DILEPTON_PAIR(eta, Eta);
-        CHECK_AND_FILL_VEC_DILEPTON_PAIR(phi, Phi);
-        CHECK_AND_FILL_VEC_DILEPTON_PAIR_FUNC(phiv, get_phiv);
-        CHECK_AND_FILL_VEC_DILEPTON_PAIR_FUNC(pairDcaXY, pair_dca_xy);
-        CHECK_AND_FILL_VEC_DILEPTON_PAIR_FUNC(pairDcaZ, pair_dca_z);
+        CHECK_AND_FILL_VEC_DIELECTRON_PAIR(m, M);
+        CHECK_AND_FILL_VEC_DIELECTRON_PAIR(pt, Pt);
+        CHECK_AND_FILL_VEC_DIELECTRON_PAIR(eta, Eta);
+        CHECK_AND_FILL_VEC_DIELECTRON_PAIR(phi, Phi);
+        CHECK_AND_FILL_VEC_DIELECTRON_PAIR_FUNC(phiv, get_phiv);
+        CHECK_AND_FILL_VEC_DIELECTRON_PAIR_FUNC(pairDcaXY, pair_dca_xy);
+        CHECK_AND_FILL_VEC_DIELECTRON_PAIR_FUNC(pairDcaZ, pair_dca_z);
       }
     }
 
@@ -217,13 +217,13 @@ class MlResponseDileptonPair : public MlResponse<TypeOutputScore>
   void setAvailableInputFeatures()
   {
     MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
-      FILL_MAP_DILEPTON_PAIR(m),
-      FILL_MAP_DILEPTON_PAIR(pt),
-      FILL_MAP_DILEPTON_PAIR(eta),
-      FILL_MAP_DILEPTON_PAIR(phi),
-      FILL_MAP_DILEPTON_PAIR(phiv),
-      FILL_MAP_DILEPTON_PAIR(pairDcaXY),
-      FILL_MAP_DILEPTON_PAIR(pairDcaZ)};
+      FILL_MAP_DIELECTRON_PAIR(m),
+      FILL_MAP_DIELECTRON_PAIR(pt),
+      FILL_MAP_DIELECTRON_PAIR(eta),
+      FILL_MAP_DIELECTRON_PAIR(phi),
+      FILL_MAP_DIELECTRON_PAIR(phiv),
+      FILL_MAP_DIELECTRON_PAIR(pairDcaXY),
+      FILL_MAP_DIELECTRON_PAIR(pairDcaZ)};
   }
 
   float d_bz = 0.;
@@ -231,8 +231,8 @@ class MlResponseDileptonPair : public MlResponse<TypeOutputScore>
 
 } // namespace o2::analysis
 
-#undef FILL_MAP_DILEPTON_PAIR
-#undef CHECK_AND_FILL_VEC_DILEPTON_PAIR
-#undef CHECK_AND_FILL_VEC_DILEPTON_PAIR_FUNC
+#undef FILL_MAP_DIELECTRON_PAIR
+#undef CHECK_AND_FILL_VEC_DIELECTRON_PAIR
+#undef CHECK_AND_FILL_VEC_DIELECTRON_PAIR_FUNC
 
-#endif // PWGEM_DILEPTON_UTILS_MLRESPONSEDILEPTONPAIR_H_
+#endif // PWGEM_DILEPTON_UTILS_MLRESPONSEDIELECTRONPAIR_H_
