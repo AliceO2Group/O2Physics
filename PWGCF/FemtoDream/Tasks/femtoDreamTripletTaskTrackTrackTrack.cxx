@@ -51,6 +51,7 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   /// Particle selection part
 
   /// Table for both particles
+  Configurable<float> ConfTracksInMixedEvent{"ConfTracksInMixedEvent", 1, "Number of tracks of interest, contained in the mixed event sample: 1 - only events with at least one track of interest are used in mixing; ...; 3 - only events with at least three track of interest are used in mixing. Max value is 3"};
   Configurable<float> ConfMaxpT{"ConfMaxpT", 4.05f, "Maximum transverse momentum of the particles"};
   Configurable<float> ConfPIDthrMom{"ConfPIDthrMom", 1.f, "Momentum threshold from which TPC and TOF are required for PID"};
   Configurable<o2::aod::femtodreamparticle::cutContainerType> ConfTPCPIDBit{"ConfTPCPIDBit", 16, "PID TPC bit from cutCulator "};
@@ -224,7 +225,13 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   /// \param parts subscribe to the femtoDreamParticleTable
   void processSameEventMasked(MaskedCollision& col, o2::aod::FDParticles& parts)
   {
-    if ((col.bitmaskTrackOne() & MaskBit) != MaskBit)
+    if (ConfTracksInMixedEvent < 1 || ConfTracksInMixedEvent > 3)
+      LOG(fatal) << "ConfTracksInMixedEvent must be between 1 and 3!";
+    if (ConfTracksInMixedEvent == 1 && (col.bitmaskTrackOne() & MaskBit) != MaskBit)
+      return;
+    if (ConfTracksInMixedEvent == 2 && (col.bitmaskTrackTwo() & MaskBit) != MaskBit)
+      return;
+    if (ConfTracksInMixedEvent == 3 && (col.bitmaskTrackThree() & MaskBit) != MaskBit)
       return;
     fillCollision(col);
     auto thegroupSelectedParts = SelectedParts->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
@@ -254,7 +261,13 @@ struct femtoDreamTripletTaskTrackTrackTrack {
                                 soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
                                 o2::aod::FDMCParticles&)
   {
-    if ((col.bitmaskTrackOne() & MaskBit) != MaskBit)
+    if (ConfTracksInMixedEvent < 1 || ConfTracksInMixedEvent > 3)
+      LOG(fatal) << "ConfTracksInMixedEvent must be between 1 and 3!";
+    if (ConfTracksInMixedEvent == 1 && (col.bitmaskTrackOne() & MaskBit) != MaskBit)
+      return;
+    if (ConfTracksInMixedEvent == 2 && (col.bitmaskTrackTwo() & MaskBit) != MaskBit)
+      return;
+    if (ConfTracksInMixedEvent == 3 && (col.bitmaskTrackThree() & MaskBit) != MaskBit)
       return;
     fillCollision(col);
     auto thegroupSelectedParts = SelectedPartsMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
@@ -325,7 +338,9 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   /// @param parts subscribe to the femtoDreamParticleTable
   void processMixedEventMasked(MaskedCollisions& cols, o2::aod::FDParticles& parts)
   {
-    Partition<MaskedCollisions> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & MaskBit) == MaskBit;
+    Partition<MaskedCollisions> PartitionMaskedCol1 = (ConfTracksInMixedEvent == 1 && (aod::femtodreamcollision::bitmaskTrackOne & MaskBit) == MaskBit) ||
+                                                      (ConfTracksInMixedEvent == 2 && (aod::femtodreamcollision::bitmaskTrackTwo & MaskBit) == MaskBit) ||
+                                                      (ConfTracksInMixedEvent == 3 && (aod::femtodreamcollision::bitmaskTrackThree & MaskBit) == MaskBit);
     PartitionMaskedCol1.bindTable(cols);
 
     for (auto& [collision1, collision2, collision3] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, PartitionMaskedCol1, PartitionMaskedCol1, PartitionMaskedCol1)) {
@@ -387,7 +402,9 @@ struct femtoDreamTripletTaskTrackTrackTrack {
                                  soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
                                  o2::aod::FDMCParticles&)
   {
-    Partition<MaskedCollisions> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & MaskBit) == MaskBit;
+    Partition<MaskedCollisions> PartitionMaskedCol1 = (ConfTracksInMixedEvent == 1 && (aod::femtodreamcollision::bitmaskTrackOne & MaskBit) == MaskBit) ||
+                                                      (ConfTracksInMixedEvent == 2 && (aod::femtodreamcollision::bitmaskTrackTwo & MaskBit) == MaskBit) ||
+                                                      (ConfTracksInMixedEvent == 3 && (aod::femtodreamcollision::bitmaskTrackThree & MaskBit) == MaskBit);
     PartitionMaskedCol1.bindTable(cols);
 
     for (auto& [collision1, collision2, collision3] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, PartitionMaskedCol1, PartitionMaskedCol1, PartitionMaskedCol1)) {
