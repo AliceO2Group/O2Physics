@@ -438,6 +438,10 @@ struct HfTaskB0Reduced {
           registry.fill(HIST("hMlScorePromptD"), ptD, candidate.prong0MlScorePrompt());
           registry.fill(HIST("hMlScoreNonPromptD"), ptD, candidate.prong0MlScoreNonprompt());
         }
+        if constexpr (withB0Ml) {
+          registry.fill(HIST("hMlScoreBkgB0"), ptCandB0, candidate.mlProbB0ToDPi()[0]);
+          registry.fill(HIST("hMlScorePromptB0"), ptCandB0, candidate.mlProbB0ToDPi()[1]);
+        }
       }
     }
     if (fillSparses) {
