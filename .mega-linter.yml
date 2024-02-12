@@ -11,16 +11,16 @@ DISABLE:
   - COPYPASTE # abusive copy-pastes
   - SPELL # spelling mistakes
 DISABLE_LINTERS:
-  - CPP_CLANG_FORMAT
   - BASH_EXEC
   - BASH_SHFMT
+  - CPP_CLANG_FORMAT
   - JSON_PRETTIER
-  - YAML_V8R
-  - YAML_PRETTIER
   - REPOSITORY_DEVSKIM
   - REPOSITORY_KICS
   - REPOSITORY_SECRETLINT
   - REPOSITORY_TRIVY
+  - YAML_PRETTIER
+  - YAML_V8R
 DISABLE_ERRORS_LINTERS: # If errors are found by these linters, they will be considered as non blocking.
   - PYTHON_BANDIT # The bandit check is overly broad and complains about subprocess usage.
 SHOW_ELAPSED_TIME: true
