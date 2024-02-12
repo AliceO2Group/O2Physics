@@ -81,6 +81,10 @@ enum kDetector {
   kTPCpos = 4,
   kTPCneg = 5
 };
+
+std::shared_ptr<TH3> hSpFT0AvsNsigmaHe3VsPtvsCent;
+std::shared_ptr<TH3> hSpFT0CvsNsigmaHe3VsPtvsCent;
+std::shared_ptr<TH3> hSpFV0AvsNsigmaHe3VsPtvsCent;
 } // namespace flow
 
 struct nucleiFlow {
@@ -93,7 +97,7 @@ struct nucleiFlow {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   ConfigurableAxis nSigmaBins{"nSigmaBins", {200, -5.f, 5.f}, "Binning for n sigma"};
-  ConfigurableAxis centBins{"centBins", {111, -0.5f, 110.5f}, "Binning for centrality"};
+  ConfigurableAxis centBins{"centBins", {111, 0.f, 111.f}, "Binning for centrality"};
   ConfigurableAxis ptBins{"ptBins", {50, 0.f, 5.f}, "Binning for pt"};
   ConfigurableAxis spBins{"spBins", {100, -1.f, 1.f}, "Binning for scalar product"};
 
@@ -207,9 +211,9 @@ struct nucleiFlow {
 
   void init(o2::framework::InitContext&)
   {
-    const AxisSpec nSigmaTPCHe3Axis{nSigmaBins, "n{#sigma}_{TPC}({}^{3}He)"};
+    const AxisSpec nSigmaTPCHe3Axis{nSigmaBins, "n#sigma_{TPC}({}^{3}He)"};
     const AxisSpec ptAxis{ptBins, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec centAxis{centBins, "centrality(%)"};
+    const AxisSpec centAxis{centBins, "centrality (%)"};
     const AxisSpec FT0AspAxis{spBins, "#hat{u}_{2} #upoint #vec{Q}_{2}^{FT0A}"};
     const AxisSpec FT0CspAxis{spBins, "#hat{u}_{2} #upoint #vec{Q}_{2}^{FT0C}"};
     const AxisSpec FV0AspAxis{spBins, "#hat{u}_{2} #upoint #vec{Q}_{2}^{FV0A}"};
@@ -219,9 +223,11 @@ struct nucleiFlow {
     histos.add("hCentFT0A", "FT0A", HistType::kTH1F, {centAxis});
     histos.add("hCentFT0C", "FT0C", HistType::kTH1F, {centAxis});
 
-    histos.add("hSpFT0AvsNsigmaHe3VsPtvsCent", "", HistType::kTHnSparseF, {FT0AspAxis, nSigmaTPCHe3Axis, ptAxis, centAxis});
-    histos.add("hSpFT0CvsNsigmaHe3VsPtvsCent", "", HistType::kTHnSparseF, {FT0CspAxis, nSigmaTPCHe3Axis, ptAxis, centAxis});
-    histos.add("hSpFV0AvsNsigmaHe3VsPtvsCent", "", HistType::kTHnSparseF, {FV0AspAxis, nSigmaTPCHe3Axis, ptAxis, centAxis});
+    flow::hSpFT0AvsNsigmaHe3VsPtvsCent = histos.add<TH3>("hSpFT0AvsNsigmaHe3VsPtvsCent", ";n#sigma_{TPC}({}^{3}He); #it{p}_{T} (GeV/#it{c}); centrality (%); #hat{u}_{2} #upoint #vec{Q}_{2}^{FT0A}", HistType::kTH3F, {nSigmaTPCHe3Axis, ptAxis, centAxis});
+    flow::hSpFT0CvsNsigmaHe3VsPtvsCent = histos.add<TH3>("hSpFT0CvsNsigmaHe3VsPtvsCent", ";n#sigma_{TPC}({}^{3}He); #it{p}_{T} (GeV/#it{c}); centrality (%); #hat{u}_{2} #upoint #vec{Q}_{2}^{FT0A}", HistType::kTH3F, {nSigmaTPCHe3Axis, ptAxis, centAxis});
+    flow::hSpFV0AvsNsigmaHe3VsPtvsCent = histos.add<TH3>("hSpFV0AvsNsigmaHe3VsPtvsCent", ";n#sigma_{TPC}({}^{3}He); #it{p}_{T} (GeV/#it{c}); centrality (%); #hat{u}_{2} #upoint #vec{Q}_{2}^{FT0A}", HistType::kTH3F, {nSigmaTPCHe3Axis, ptAxis, centAxis});
+
+    histos.add("hNsigmaHe3VsPtvsCent", "", HistType::kTHnSparseF, {nSigmaTPCHe3Axis, ptAxis, centAxis});
   }
 
   void process(aod::NucleiFlowColl const& coll, TracksWithFlowCollID const& tracks)
@@ -272,9 +278,10 @@ struct nucleiFlow {
       float pt = track.pt();
 
       // Fill relevant histograms
-      histos.fill(HIST("hSpFT0AvsNsigmaHe3VsPtvsCent"), spFT0A, nSigmaTPC, pt, ref_cent);
-      histos.fill(HIST("hSpFT0CvsNsigmaHe3VsPtvsCent"), spFT0C, nSigmaTPC, pt, ref_cent);
-      histos.fill(HIST("hSpFV0AvsNsigmaHe3VsPtvsCent"), spFV0A, nSigmaTPC, pt, ref_cent);
+      histos.fill(HIST("hNsigmaHe3VsPtvsCent"), nSigmaTPC, pt, ref_cent);
+      flow::hSpFT0AvsNsigmaHe3VsPtvsCent->Fill(nSigmaTPC, pt, ref_cent, spFT0A);
+      flow::hSpFT0CvsNsigmaHe3VsPtvsCent->Fill(nSigmaTPC, pt, ref_cent, spFT0C);
+      flow::hSpFV0AvsNsigmaHe3VsPtvsCent->Fill(nSigmaTPC, pt, ref_cent, spFV0A);
     }
   }
 };
