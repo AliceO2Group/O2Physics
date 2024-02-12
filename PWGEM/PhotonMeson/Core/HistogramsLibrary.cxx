@@ -463,6 +463,9 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
         list->Add(new TH1F(Form("hPt_%s", parnames[i].data()), Form("%s pT;p_{T} (GeV/c)", parnames[i].data()), 2000, 0.0f, 20));
         list->Add(new TH1F(Form("hY_%s", parnames[i].data()), Form("%s y;rapidity y", parnames[i].data()), 40, -2.0f, 2.0f));
         list->Add(new TH1F(Form("hPhi_%s", parnames[i].data()), Form("%s #varphi;#varphi (rad.)", parnames[i].data()), 180, 0, 2 * M_PI));
+        list->Add(new TH1F(Form("hPt_%s_Acc", parnames[i].data()), Form("%s pT;p_{T} (GeV/c)", parnames[i].data()), 2000, 0.0f, 20));          // in pair acceptance
+        list->Add(new TH1F(Form("hY_%s_Acc", parnames[i].data()), Form("%s y;rapidity y", parnames[i].data()), 40, -2.0f, 2.0f));              // in pair acceptance
+        list->Add(new TH1F(Form("hPhi_%s_Acc", parnames[i].data()), Form("%s #varphi;#varphi (rad.)", parnames[i].data()), 180, 0, 2 * M_PI)); // in pair acceptance
       }
     }
     if (TString(subGroup) == "dielectron") {
