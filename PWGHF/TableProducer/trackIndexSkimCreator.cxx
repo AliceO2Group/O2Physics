@@ -2977,7 +2977,7 @@ struct HfTrackIndexSkimCreatorCascades {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
-  o2::vertexing::DCAFitterN<2> fitter; // 2-prong vertex fitter
+  o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
@@ -3016,14 +3016,14 @@ struct HfTrackIndexSkimCreatorCascades {
     massPi = o2::constants::physics::MassPiPlus;
     massLc = o2::constants::physics::MassLambdaCPlus;
 
-    fitter.setPropagateToPCA(propagateToPCA);
-    fitter.setMaxR(maxR);
-    fitter.setMinParamChange(minParamChange);
-    fitter.setMinRelChi2Change(minRelChi2Change);
-    // fitter.setMaxDZIni(1e9); // used in cascadeproducer.cxx, but not for the 2 prongs
-    // fitter.setMaxChi2(1e9);  // used in cascadeproducer.cxx, but not for the 2 prongs
-    fitter.setUseAbsDCA(useAbsDCA);
-    fitter.setWeightedFinalPCA(useWeightedFinalPCA);
+    df2.setPropagateToPCA(propagateToPCA);
+    df2.setMaxR(maxR);
+    df2.setMinParamChange(minParamChange);
+    df2.setMinRelChi2Change(minRelChi2Change);
+    // df2.setMaxDZIni(1e9); // used in cascadeproducer.cxx, but not for the 2 prongs
+    // df2.setMaxChi2(1e9);  // used in cascadeproducer.cxx, but not for the 2 prongs
+    df2.setUseAbsDCA(useAbsDCA);
+    df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -3055,7 +3055,7 @@ struct HfTrackIndexSkimCreatorCascades {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
       initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
-      fitter.setBz(o2::base::Propagator::Instance()->getNominalBz());
+      df2.setBz(o2::base::Propagator::Instance()->getNominalBz());
 
       // fist we loop over the bachelor candidate
 
@@ -3152,7 +3152,7 @@ struct HfTrackIndexSkimCreatorCascades {
           // now we find the DCA between the V0 and the bachelor, for the cascade
           int nCand2 = 0;
           try {
-            nCand2 = fitter.process(trackV0, trackBach);
+            nCand2 = df2.process(trackV0, trackBach);
           } catch (...) {
             continue;
           }
@@ -3160,9 +3160,9 @@ struct HfTrackIndexSkimCreatorCascades {
           if (nCand2 == 0) {
             continue;
           }
-          fitter.propagateTracksToVertex();        // propagate the bach and V0 to the Lc vertex
-          fitter.getTrack(0).getPxPyPzGlo(pVecV0); // take the momentum at the Lc vertex
-          fitter.getTrack(1).getPxPyPzGlo(pVecBach);
+          df2.propagateTracksToVertex();        // propagate the bach and V0 to the Lc vertex
+          df2.getTrack(0).getPxPyPzGlo(pVecV0); // take the momentum at the Lc vertex
+          df2.getTrack(1).getPxPyPzGlo(pVecBach);
 
           // cascade candidate pT cut
           auto ptCascCand = RecoDecay::pt(pVecBach, pVecV0);
@@ -3175,7 +3175,7 @@ struct HfTrackIndexSkimCreatorCascades {
           mass2K0sP = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{massP, massK0s});
 
           std::array<float, 3> posCasc = {0., 0., 0.};
-          const auto& cascVtx = fitter.getPCACandidate();
+          const auto& cascVtx = df2.getPCACandidate();
           for (int i = 0; i < 3; i++) {
             posCasc[i] = cascVtx[i];
           }
