@@ -71,6 +71,8 @@ struct HfCandidateCreator2Prong {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  // 2-prong vertex fitter
+  o2::vertexing::DCAFitterN<2> df;
 
   int runNumber{0};
   float toMicrometers = 10000.; // from cm to µm
@@ -102,6 +104,15 @@ struct HfCandidateCreator2Prong {
     }
     if (std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) == 1) {
       hVertexerType->Fill(aod::hf_cand::VertexerType::DCAFitter);
+      // Configure DCAFitterN
+      // df.setBz(bz);
+      df.setPropagateToPCA(propagateToPCA);
+      df.setMaxR(maxR);
+      df.setMaxDZIni(maxDZIni);
+      df.setMinParamChange(minParamChange);
+      df.setMinRelChi2Change(minRelChi2Change);
+      df.setUseAbsDCA(useAbsDCA);
+      df.setWeightedFinalPCA(useWeightedFinalPCA);
     }
     if (std::accumulate(doprocessKF.begin(), doprocessKF.end(), 0) == 1) {
       hVertexerType->Fill(aod::hf_cand::VertexerType::KfParticle);
@@ -122,17 +133,6 @@ struct HfCandidateCreator2Prong {
                                       TTracks const& tracks,
                                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    // 2-prong vertex fitter
-    o2::vertexing::DCAFitterN<2> df;
-    // df.setBz(bz);
-    df.setPropagateToPCA(propagateToPCA);
-    df.setMaxR(maxR);
-    df.setMaxDZIni(maxDZIni);
-    df.setMinParamChange(minParamChange);
-    df.setMinRelChi2Change(minRelChi2Change);
-    df.setUseAbsDCA(useAbsDCA);
-    df.setWeightedFinalPCA(useWeightedFinalPCA);
-
     // loop over pairs of track indices
     for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
       auto track0 = rowTrackIndexProng2.template prong0_as<TTracks>();
