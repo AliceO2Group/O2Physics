@@ -307,12 +307,7 @@ struct HfTreeCreatorToXiPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-
-      // check if pion track satisfies globalTrackWoDca selections
-      auto trackPionSelInfo = candidate.PiFromCharmBaryon_as<aod::TrackSelection>();
-      bool isPiGlbTrkWoDca = trackPionSelInfo.isGlobalTrackWoDCA();
-
-      fillCandidate(candidate, isPiGlbTrkWoDca, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec());
+      fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec());
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMc, "Process MC", false);
