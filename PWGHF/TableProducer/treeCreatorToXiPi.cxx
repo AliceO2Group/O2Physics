@@ -267,7 +267,7 @@ struct HfTreeCreatorToXiPi {
       candidate.impactParCascXY() / candidate.errImpactParCascXY(),
       candidate.impactParPiFromCharmBaryonXY() / candidate.errImpactParPiFromCharmBaryonXY(),
       candidate.decLenCharmBaryon() / candidate.errorDecayLengthCharmBaryon(),
-      IsPionGlbTrkWoDca,
+      candidate.template piFromCharmBaryon_as<aod::TrackSelection>().isGlobalTrackWoDCA(),
       candidate.statusPidLambda(),
       candidate.statusPidCascade(),
       candidate.statusPidCharmBaryon(),
