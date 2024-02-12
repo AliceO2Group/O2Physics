@@ -73,10 +73,10 @@ struct HfCandidateCreatorToXiPi {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter to build the omegac/xic vertex
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-
   int runNumber;
 
   using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; // to use strangeness tracking, use aod::TraCascDatas instead of aod::CascDatas
@@ -93,6 +93,17 @@ struct HfCandidateCreatorToXiPi {
 
   void init(InitContext const&)
   {
+    df.setPropagateToPCA(propagateToPCA);
+    df.setMaxR(maxR);
+    df.setMaxDZIni(maxDZIni);
+    df.setMaxDXYIni(maxDXYIni);
+    df.setMinParamChange(minParamChange);
+    df.setMinRelChi2Change(minRelChi2Change);
+    df.setMaxChi2(maxChi2);
+    df.setUseAbsDCA(useAbsDCA);
+    df.setWeightedFinalPCA(useWeightedFinalPCA);
+    df.setRefitWithMatCorr(refitWithMatCorr);
+
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -106,24 +117,11 @@ struct HfCandidateCreatorToXiPi {
                MyCascTable const&, CascadesLinked const&,
                MySkimIdx const& candidates)
   {
-
     double massPionFromPDG = MassPiPlus;    // pdg code 211
     double massLambdaFromPDG = MassLambda0; // pdg code 3122
     double massXiFromPDG = MassXiMinus;     // pdg code 3312
     double massOmegacFromPDG = MassOmegaC0; // pdg code 4332
     double massXicFromPDG = MassXiC0;       // pdg code 4132
-
-    // 2-prong vertex fitter to build the omegac/xic vertex
-    o2::vertexing::DCAFitterN<2> df;
-    df.setPropagateToPCA(propagateToPCA);
-    df.setMaxR(maxR);
-    df.setMaxDZIni(maxDZIni);
-    df.setMaxDXYIni(maxDXYIni);
-    df.setMinParamChange(minParamChange);
-    df.setMinRelChi2Change(minRelChi2Change);
-    df.setMaxChi2(maxChi2);
-    df.setUseAbsDCA(useAbsDCA);
-    df.setWeightedFinalPCA(useWeightedFinalPCA);
 
     for (const auto& cand : candidates) {
 
@@ -141,9 +139,7 @@ struct HfCandidateCreatorToXiPi {
       auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
       initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
       auto magneticField = o2::base::Propagator::Instance()->getNominalBz(); // z component
-
       df.setBz(magneticField);
-      df.setRefitWithMatCorr(refitWithMatCorr);
 
       auto trackPion = cand.prong0_as<TracksWCovDca>();
       auto cascAodElement = cand.cascade_as<aod::CascadesLinked>();
