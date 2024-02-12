@@ -35,6 +35,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using namespace o2::aod::pwgem::mcutil;
 using std::array;
 
 using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNee, aod::EMReducedMCEventLabels>;

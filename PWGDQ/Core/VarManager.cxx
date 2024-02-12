@@ -526,6 +526,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingTauxy] = "ns";
   fgVariableNames[kVertexingTauzErr] = "Pair pseudo-proper Tauz err.";
   fgVariableUnits[kVertexingTauzErr] = "ns";
+  fgVariableNames[kVertexingPz] = "Pz Pair";
+  fgVariableUnits[kVertexingPz] = "GeV/c";
+  fgVariableNames[kVertexingSV] = "Secondary Vertexing z";
+  fgVariableUnits[kVertexingSV] = "cm";
   fgVariableNames[kVertexingTauxyErr] = "Pair pseudo-proper Tauxy err.";
   fgVariableUnits[kVertexingTauxyErr] = "ns";
   fgVariableNames[kVertexingProcCode] = "DCAFitterN<2> processing code";
