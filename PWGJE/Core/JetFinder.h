@@ -50,71 +50,40 @@ class JetFinder
 
   static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(211)->Mass(); //can be removed when pion mass becomes default for unidentified tracks
 
-  float phiMin;
-  float phiMax;
-  float etaMin;
-  float etaMax;
+  float phiMin = 0.0;
+  float phiMax = 2.0 * M_PI;
+  float etaMin = -0.9;
+  float etaMax = 0.9;
 
-  float jetR;
-  float jetPtMin;
-  float jetPtMax;
-  float jetPhiMin;
-  float jetPhiMax;
-  float jetEtaMin;
-  float jetEtaMax;
-  bool jetEtaDefault;
+  float jetR = 0.4;
+  float jetPtMin = 0.0;
+  float jetPtMax = 1000.0;
+  float jetPhiMin = phiMin;
+  float jetPhiMax = phiMax;
+  float jetEtaMin = -99.0;
+  float jetEtaMax = 99.0;
+  bool jetEtaDefault = false;
 
-  float ghostEtaMin;
-  float ghostEtaMax;
-  float ghostArea;
-  int ghostRepeatN;
-  double ghostktMean;
-  float gridScatter;
-  float ktScatter;
+  float ghostEtaMin = etaMin;
+  float ghostEtaMax = etaMax;
+  float ghostArea = 0.005;
+  int ghostRepeatN = 1;
+  double ghostktMean = 1e-100; // is float precise enough?
+  float gridScatter = 1.0;
+  float ktScatter = 0.1;
 
-  bool isReclustering;
-  bool isTriggering;
+  bool isReclustering = false;
+  bool isTriggering = false;
 
-  fastjet::JetAlgorithm algorithm;
-  fastjet::RecombinationScheme recombScheme;
-  fastjet::Strategy strategy;
-  fastjet::AreaType areaType;
-  fastjet::GhostedAreaSpec ghostAreaSpec;
-  fastjet::JetDefinition jetDef;
-  fastjet::AreaDefinition areaDef;
-  fastjet::Selector selJets;
-  fastjet::Selector selGhosts;
-
-  /// Default constructor
-  explicit JetFinder(float eta_Min = -0.9, float eta_Max = 0.9, float phi_Min = 0.0, float phi_Max = 2.0 * M_PI) : phiMin(phi_Min),
-                                                                                                                   phiMax(phi_Max),
-                                                                                                                   etaMin(eta_Min),
-                                                                                                                   etaMax(eta_Max),
-                                                                                                                   jetR(0.4),
-                                                                                                                   jetPtMin(0.0),
-                                                                                                                   jetPtMax(1000.0),
-                                                                                                                   jetPhiMin(phi_Min),
-                                                                                                                   jetPhiMax(phi_Max),
-                                                                                                                   jetEtaMin(-99.0),
-                                                                                                                   jetEtaMax(99.0),
-                                                                                                                   jetEtaDefault(false),
-                                                                                                                   ghostEtaMin(eta_Min),
-                                                                                                                   ghostEtaMax(eta_Max),
-                                                                                                                   ghostArea(0.005),
-                                                                                                                   ghostRepeatN(1),
-                                                                                                                   ghostktMean(1e-100), // is float precise enough?
-                                                                                                                   gridScatter(1.0),
-                                                                                                                   ktScatter(0.1),
-                                                                                                                   isReclustering(false),
-                                                                                                                   isTriggering(false),
-                                                                                                                   algorithm(fastjet::antikt_algorithm),
-                                                                                                                   recombScheme(fastjet::E_scheme),
-                                                                                                                   strategy(fastjet::Best),
-                                                                                                                   areaType(fastjet::active_area)
-  {
-
-    // default constructor
-  }
+  fastjet::JetAlgorithm algorithm = fastjet::antikt_algorithm;
+  fastjet::RecombinationScheme recombScheme = fastjet::E_scheme;
+  fastjet::Strategy strategy = fastjet::Best;
+  fastjet::AreaType areaType = fastjet::active_area;
+  fastjet::GhostedAreaSpec ghostAreaSpec = {};
+  fastjet::JetDefinition jetDef = {};
+  fastjet::AreaDefinition areaDef = {};
+  fastjet::Selector selJets = {};
+  fastjet::Selector selGhosts = {};
 
   /// Default destructor
   ~JetFinder() = default;
