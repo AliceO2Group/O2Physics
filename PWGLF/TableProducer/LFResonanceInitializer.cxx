@@ -158,9 +158,9 @@ struct reso2initializer {
 
   EventPlaneHelper helperEP;
 
-  int EvtPlRefAId = static_cast<int>(cfgEvtPl/10000);
-  int EvtPlRefBId = static_cast<int>((cfgEvtPl - EvtPlRefAId*10000)/100);
-  int EvtPlDetId = cfgEvtPl - EvtPlRefAId*10000 - EvtPlRefBId*100;
+  int EvtPlRefAId = static_cast<int>(cfgEvtPl / 10000);
+  int EvtPlRefBId = static_cast<int>((cfgEvtPl - EvtPlRefAId * 10000) / 100);
+  int EvtPlDetId = cfgEvtPl - EvtPlRefAId * 10000 - EvtPlRefBId * 100;
 
   // MC Resonance parent filter
   Partition<aod::McParticles> selectedMCParticles = (nabs(aod::mcparticle::pdgCode) == 313)        // K*
@@ -446,7 +446,7 @@ struct reso2initializer {
     float returnValue = -999.0;
     if (ResoEvents.qvecAmp()[a] < 1e-8 || ResoEvents.qvecAmp()[b] < 1e-8)
       return returnValue;
-    returnValue = helperEP.GetResolution( helperEP.GetEventPlane(ResoEvents.qvecRe()[a * 4 + 3], ResoEvents.qvecIm()[a * 4 + 3], 2), helperEP.GetEventPlane(ResoEvents.qvecRe()[b * 4 + 3], ResoEvents.qvecIm()[b * 4 + 3], 2), 2);
+    returnValue = helperEP.GetResolution(helperEP.GetEventPlane(ResoEvents.qvecRe()[a * 4 + 3], ResoEvents.qvecIm()[a * 4 + 3], 2), helperEP.GetEventPlane(ResoEvents.qvecRe()[b * 4 + 3], ResoEvents.qvecIm()[b * 4 + 3], 2), 2);
     return returnValue;
   }
 
