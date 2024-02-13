@@ -78,3 +78,13 @@ o2physics_add_dpl_workflow(chargedkstaranalysis
     SOURCES chargedkstaranalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambda1520-pbpb
+    SOURCES lambda1520_PbPb.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(kshortkshort
+    SOURCES KshortKshort.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

@@ -48,7 +48,7 @@ class FemtoDreamParticleHisto
   /// \param tempFitVarpTAxis axis object for the pT axis in the pT vs. tempFitVar plots
   /// \param tempFitVarAxis axis object for the tempFitVar axis
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
-  void init_base(std::string folderName, std::string tempFitVarAxisTitle, T& tempFitVarMomentumAxis, T& tempFitVarAxis, T& InvMassAxis)
+  void init_base(std::string folderName, std::string tempFitVarAxisTitle, T& pTAxis, T& tempFitVarAxis, T& InvMassAxis)
   {
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[mc]).c_str();
     /// Histograms of the kinematic properties
@@ -58,20 +58,20 @@ class FemtoDreamParticleHisto
 
     /// particle specific histogramms for the TempFitVar column in FemtoDreamParticles
     if constexpr (o2::aod::femtodreamMCparticle::MCType::kRecon == mc) {
-      mHistogramRegistry->add((folderName + folderSuffix + static_cast<std::string>(o2::aod::femtodreamparticle::TempFitVarName[mParticleType])).c_str(), ("; #it{p}_{T} (GeV/#it{c}); " + tempFitVarAxisTitle).c_str(), kTH2F, {{tempFitVarMomentumAxis}, {tempFitVarAxis}});
+      mHistogramRegistry->add((folderName + folderSuffix + static_cast<std::string>(o2::aod::femtodreamparticle::TempFitVarName[mParticleType])).c_str(), ("; #it{p}_{T} (GeV/#it{c}); " + tempFitVarAxisTitle).c_str(), kTH2F, {{pTAxis}, {tempFitVarAxis}});
     }
     if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0 && mc == o2::aod::femtodreamMCparticle::MCType::kRecon) {
       mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassLambda").c_str(), "; M_{#Lambda}; Entries", kTH1F, {InvMassAxis});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hpTInvMassLambda").c_str(), "; p_{T} (GeV/#it{c{}); M_{#Lambda}", kTH2F, {tempFitVarMomentumAxis, InvMassAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hpTInvMassLambda").c_str(), "; p_{T} (GeV/#it{c{}); M_{#Lambda}", kTH2F, {pTAxis, InvMassAxis});
       mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassAntiLambda").c_str(), "; M_{#bar{#Lambda}}; Entries", kTH1F, {InvMassAxis});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hpTInvMassAntiLambda").c_str(), "; M_{#bar{#Lambda}}; Entries", kTH2F, {tempFitVarMomentumAxis, InvMassAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hpTInvMassAntiLambda").c_str(), "; M_{#bar{#Lambda}}; Entries", kTH2F, {pTAxis, InvMassAxis});
       mHistogramRegistry->add((folderName + folderSuffix + "/hInvMassLambdaAntiLambda").c_str(), "; M_{#Lambda}; M_{#bar{#Lambda}}", kTH2F, {InvMassAxis, InvMassAxis});
     }
   }
 
   // comment
   template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
-  void init_debug(std::string folderName, T& tempFitVarMomentumAxis, T& NsigmaTPCAxis, T& NsigmaTOFAxis, T& NsigmaTPCTOFAxis)
+  void init_debug(std::string folderName, T& multAxis, T& multPercentileAxis, T& pTAxis, T& etaAxis, T& phiAxis, T& tempFitVarAxis, T& dcaZAxis, T& NsigmaTPCAxis, T& NsigmaTOFAxis, T& NsigmaTPCTOFAxis, T& TPCclustersAxis, bool correlatedPlots)
   {
 
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[mc]).c_str();
@@ -92,24 +92,27 @@ class FemtoDreamParticleHisto
       mHistogramRegistry->add((folderName + folderSuffix + "/hTPCfoundVsShared").c_str(), ";TPC found clusters ; TPC shared clusters;", kTH2F, {{163, -0.5, 162.5}, {163, -0.5, 162.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hITSclusters").c_str(), "; ITS clusters; Entries", kTH1F, {{10, -0.5, 9.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hITSclustersIB").c_str(), "; ITS clusters in IB; Entries", kTH1F, {{10, -0.5, 9.5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hDCAz").c_str(), "; #it{p} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {tempFitVarMomentumAxis, {500, -5, 5}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/hDCA").c_str(), "; #it{p} (GeV/#it{c}); DCA (cm)", kTH2F, {tempFitVarMomentumAxis, {300, 0., 1.5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hDCAz").c_str(), "; #it{p} (GeV/#it{c}); DCA_{z} (cm)", kTH2F, {pTAxis, {500, -5, 5}});
+      mHistogramRegistry->add((folderName + folderSuffix + "/hDCA").c_str(), "; #it{p} (GeV/#it{c}); DCA (cm)", kTH2F, {pTAxis, {300, 0., 1.5}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hTPCdEdX").c_str(), "; #it{p} (GeV/#it{c}); TPC Signal", kTH2F, {{100, 0, 10}, {1000, 0, 1000}});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_el").c_str(), "n#sigma_{TPC}^{e}", kTH2F, {tempFitVarMomentumAxis, NsigmaTPCAxis});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_pi").c_str(), "n#sigma_{TPC}^{#pi}", kTH2F, {tempFitVarMomentumAxis, NsigmaTPCAxis});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_K").c_str(), "n#sigma_{TPC}^{K}", kTH2F, {tempFitVarMomentumAxis, NsigmaTPCAxis});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_p").c_str(), "n#sigma_{TPC}^{p}", kTH2F, {tempFitVarMomentumAxis, NsigmaTPCAxis});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_d").c_str(), "n#sigma_{TPC}^{d}", kTH2F, {tempFitVarMomentumAxis, NsigmaTPCAxis});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_el").c_str(), "n#sigma_{TOF}^{e}", kTH2F, {tempFitVarMomentumAxis, NsigmaTOFAxis});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_pi").c_str(), "n#sigma_{TOF}^{#pi}", kTH2F, {tempFitVarMomentumAxis, NsigmaTOFAxis});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_K").c_str(), "n#sigma_{TOF}^{K}", kTH2F, {tempFitVarMomentumAxis, NsigmaTOFAxis});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_p").c_str(), "n#sigma_{TOF}^{p}", kTH2F, {tempFitVarMomentumAxis, NsigmaTOFAxis});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_d").c_str(), "n#sigma_{TOF}^{d}", kTH2F, {tempFitVarMomentumAxis, NsigmaTOFAxis});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_el").c_str(), "n#sigma_{comb}^{e}", kTH2F, {tempFitVarMomentumAxis, NsigmaTPCTOFAxis});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_pi").c_str(), "n#sigma_{comb}^{#pi}", kTH2F, {tempFitVarMomentumAxis, NsigmaTPCTOFAxis});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_K").c_str(), "n#sigma_{comb}^{K}", kTH2F, {tempFitVarMomentumAxis, NsigmaTPCTOFAxis});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_p").c_str(), "n#sigma_{comb}^{p}", kTH2F, {tempFitVarMomentumAxis, NsigmaTPCTOFAxis});
-      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_d").c_str(), "n#sigma_{comb}^{d}", kTH2F, {tempFitVarMomentumAxis, NsigmaTPCTOFAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_el").c_str(), "n#sigma_{TPC}^{e}", kTH2F, {pTAxis, NsigmaTPCAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_pi").c_str(), "n#sigma_{TPC}^{#pi}", kTH2F, {pTAxis, NsigmaTPCAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_K").c_str(), "n#sigma_{TPC}^{K}", kTH2F, {pTAxis, NsigmaTPCAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_p").c_str(), "n#sigma_{TPC}^{p}", kTH2F, {pTAxis, NsigmaTPCAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTPC_d").c_str(), "n#sigma_{TPC}^{d}", kTH2F, {pTAxis, NsigmaTPCAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_el").c_str(), "n#sigma_{TOF}^{e}", kTH2F, {pTAxis, NsigmaTOFAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_pi").c_str(), "n#sigma_{TOF}^{#pi}", kTH2F, {pTAxis, NsigmaTOFAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_K").c_str(), "n#sigma_{TOF}^{K}", kTH2F, {pTAxis, NsigmaTOFAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_p").c_str(), "n#sigma_{TOF}^{p}", kTH2F, {pTAxis, NsigmaTOFAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaTOF_d").c_str(), "n#sigma_{TOF}^{d}", kTH2F, {pTAxis, NsigmaTOFAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_el").c_str(), "n#sigma_{comb}^{e}", kTH2F, {pTAxis, NsigmaTPCTOFAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_pi").c_str(), "n#sigma_{comb}^{#pi}", kTH2F, {pTAxis, NsigmaTPCTOFAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_K").c_str(), "n#sigma_{comb}^{K}", kTH2F, {pTAxis, NsigmaTPCTOFAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_p").c_str(), "n#sigma_{comb}^{p}", kTH2F, {pTAxis, NsigmaTPCTOFAxis});
+      mHistogramRegistry->add((folderName + folderSuffix + "/nSigmaComb_d").c_str(), "n#sigma_{comb}^{d}", kTH2F, {pTAxis, NsigmaTPCTOFAxis});
+      if (correlatedPlots) {
+        mHistogramRegistry->add((folderName + folderSuffix + "/HighDcorrelator").c_str(), "", kTHnSparseF, {multAxis, multPercentileAxis, pTAxis, etaAxis, phiAxis, tempFitVarAxis, tempFitVarAxis, NsigmaTPCAxis, NsigmaTOFAxis, TPCclustersAxis});
+      }
     } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0) {
       mHistogramRegistry->add((folderName + folderSuffix + "/hDaughDCA").c_str(), "; DCA^{daugh} (cm); Entries", kTH1F, {{1000, 0, 10}});
       mHistogramRegistry->add((folderName + folderSuffix + "/hTransRadius").c_str(), "; #it{r}_{xy} (cm); Entries", kTH1F, {{1500, 0, 150}});
@@ -170,7 +173,7 @@ class FemtoDreamParticleHisto
   /// \param tempFitVarBins binning of the tempFitVar (DCA_xy in case of tracks, CPA in case of V0s, etc.)
   /// \param isMC add Monte Carlo truth histograms to the output file
   template <typename T>
-  void init(HistogramRegistry* registry, T& MomentumBins, T& tempFitVarBins, T& NsigmaTPCBins, T& NsigmaTOFBins, T& NsigmaTPCTOFBins, T& InvMassBins, bool isMC, int pdgCode, bool isDebug = false)
+  void init(HistogramRegistry* registry, T& MultBins, T& PercentileBins, T& pTBins, T& etaBins, T& phiBins, T& tempFitVarBins, T& NsigmaTPCBins, T& NsigmaTOFBins, T& NsigmaTPCTOFBins, T& TPCclustersBins, T& InvMassBins, bool isMC, int pdgCode, bool isDebug = false, bool correlatedPlots = false)
   {
     mPDG = pdgCode;
     if (registry) {
@@ -190,23 +193,29 @@ class FemtoDreamParticleHisto
         LOG(fatal) << "FemtoDreamParticleHisto: Histogramming for requested object not defined - quitting!";
       }
 
-      framework::AxisSpec tempFitVarMomentumAxis = {MomentumBins, "p (#it{GeV/c})"};
+      framework::AxisSpec multAxis = {MultBins, " Multiplicity"};
+      framework::AxisSpec multPercentileAxis = {PercentileBins, "Multiplicity Percentile (%)"};
+      framework::AxisSpec pTAxis = {pTBins, "#it{p}_{T} (GeV/#it{c})"};
+      framework::AxisSpec etaAxis = {etaBins, "#eta"};
+      framework::AxisSpec phiAxis = {phiBins, "#phi"};
       framework::AxisSpec tempFitVarAxis = {tempFitVarBins, tempFitVarAxisTitle};
+      framework::AxisSpec dcaZAxis = {tempFitVarBins, "DCA_{z} (cm)"};
       framework::AxisSpec NsigmaTPCAxis = {NsigmaTPCBins, "n#sigma_{TPC}"};
       framework::AxisSpec NsigmaTOFAxis = {NsigmaTOFBins, "n#sigma_{TOF}"};
       framework::AxisSpec NsigmaTPCTOFAxis = {NsigmaTPCTOFBins, "n#sigma_{TPC+TOF}"};
+      framework::AxisSpec TPCclustersAxis = {TPCclustersBins, "TPC found clusters"};
       framework::AxisSpec InvMassAxis = {InvMassBins, "M_{inv} (GeV/#it{c}^{2})"};
 
       std::string folderName = (static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]).c_str() + static_cast<std::string>(mFolderSuffix[mFolderSuffixType])).c_str();
 
       // Fill here the actual histogramms by calling init_base and init_MC
-      init_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(folderName, tempFitVarAxisTitle, tempFitVarMomentumAxis, tempFitVarAxis, InvMassAxis);
+      init_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(folderName, tempFitVarAxisTitle, pTAxis, tempFitVarAxis, InvMassAxis);
       if (isDebug) {
-        init_debug<o2::aod::femtodreamMCparticle::MCType::kRecon>(folderName, tempFitVarMomentumAxis, NsigmaTPCAxis, NsigmaTOFAxis, NsigmaTPCTOFAxis);
+        init_debug<o2::aod::femtodreamMCparticle::MCType::kRecon>(folderName, multAxis, multPercentileAxis, pTAxis, etaAxis, phiAxis, tempFitVarAxis, dcaZAxis, NsigmaTPCAxis, NsigmaTOFAxis, NsigmaTPCTOFAxis, TPCclustersAxis, correlatedPlots);
       }
       if (isMC) {
-        init_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(folderName, tempFitVarAxisTitle, tempFitVarMomentumAxis, tempFitVarAxis, InvMassAxis);
-        init_MC(folderName, tempFitVarAxisTitle, tempFitVarMomentumAxis, tempFitVarAxis);
+        init_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(folderName, tempFitVarAxisTitle, pTAxis, tempFitVarAxis, InvMassAxis);
+        init_MC(folderName, tempFitVarAxisTitle, pTAxis, tempFitVarAxis);
       }
     }
   }
@@ -236,8 +245,8 @@ class FemtoDreamParticleHisto
     }
   }
 
-  template <o2::aod::femtodreamMCparticle::MCType mc, typename T>
-  void fillQA_debug(T const& part, aod::femtodreamparticle::MomentumType MomentumType)
+  template <o2::aod::femtodreamMCparticle::MCType mc, typename Tpart, typename Tcoll>
+  void fillQA_debug(Tpart const& part, Tcoll const& col, aod::femtodreamparticle::MomentumType MomentumType, bool correlatedPlots)
   {
     float momentum;
     switch (MomentumType) {
@@ -252,7 +261,7 @@ class FemtoDreamParticleHisto
         momentum = part.tpcInnerParam();
         break;
       default:
-        LOG(warn) << "MomentumType " << MomentumType << " no implemented. Use pT of the Track for debug Histograms.";
+        LOG(warn) << "MomentumType " << MomentumType << " not implemented. Use pT of the Track for debug Histograms.";
         momentum = part.pt();
     }
 
@@ -291,6 +300,48 @@ class FemtoDreamParticleHisto
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/nSigmaComb_K"), momentum, std::sqrt(part.tpcNSigmaKa() * part.tpcNSigmaKa() + part.tofNSigmaKa() * part.tofNSigmaKa()));
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/nSigmaComb_p"), momentum, std::sqrt(part.tpcNSigmaPr() * part.tpcNSigmaPr() + part.tofNSigmaPr() * part.tofNSigmaPr()));
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/nSigmaComb_d"), momentum, std::sqrt(part.tpcNSigmaDe() * part.tpcNSigmaDe() + part.tofNSigmaDe() * part.tofNSigmaDe()));
+
+      if (correlatedPlots) {
+
+        float pidTPC = 0.;
+        float pidTOF = 0.;
+
+        switch (abs(mPDG)) {
+          case 11:
+            pidTPC = part.tpcNSigmaEl();
+            pidTOF = part.tofNSigmaEl();
+            break;
+          case 211:
+            pidTPC = part.tpcNSigmaPi();
+            pidTOF = part.tofNSigmaPi();
+            break;
+          case 321:
+            pidTPC = part.tpcNSigmaKa();
+            pidTOF = part.tofNSigmaKa();
+            break;
+          case 2212:
+            pidTPC = part.tpcNSigmaPr();
+            pidTOF = part.tofNSigmaPr();
+            break;
+          case 1000010020:
+            pidTPC = part.tpcNSigmaDe();
+            pidTOF = part.tofNSigmaDe();
+            break;
+          default:
+            LOG(warn) << "PDG code " << mPDG << " not supported. No PID information will be used.";
+        }
+
+        mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/HighDcorrelator"), col.multNtr(),
+                                 col.multV0M(),
+                                 momentum,
+                                 part.eta(),
+                                 part.phi(),
+                                 part.dcaXY(),
+                                 part.dcaZ(),
+                                 pidTPC,
+                                 pidTOF,
+                                 part.tpcNClsFound());
+      }
     } else if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0) {
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hDaughDCA"), part.daughDCA());
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/hTransRadius"), part.transRadius());
@@ -384,14 +435,14 @@ class FemtoDreamParticleHisto
   /// \tparam T particle type
   /// \tparam isMC fills the additional histograms for Monte Carlo truth
   /// \param part particle for which the histograms should be filled
-  template <bool isMC, bool isDebug, typename T>
-  void fillQA(T const& part, aod::femtodreamparticle::MomentumType MomemtumType)
+  template <bool isMC, bool isDebug, typename Tpart, typename Tcoll>
+  void fillQA(Tpart const& part, Tcoll const& coll, aod::femtodreamparticle::MomentumType MomemtumType, bool correlatedPlots = false)
   {
     std::string tempFitVarName;
     if (mHistogramRegistry) {
       fillQA_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(part);
       if constexpr (isDebug) {
-        fillQA_debug<o2::aod::femtodreamMCparticle::MCType::kRecon>(part, MomemtumType);
+        fillQA_debug<o2::aod::femtodreamMCparticle::MCType::kRecon>(part, coll, MomemtumType, correlatedPlots);
       }
       if constexpr (isMC) {
         if (part.has_fdMCParticle()) {

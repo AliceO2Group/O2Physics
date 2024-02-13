@@ -77,6 +77,8 @@ struct EmcalCorrectionTask {
   Configurable<std::string> nonlinearityFunction{"nonlinearityFunction", "DATA_TestbeamFinal", "Nonlinearity correction at cluster level"};
   Configurable<bool> disableNonLin{"disableNonLin", false, "Disable NonLin correction if set to true"};
   Configurable<bool> hasShaperCorrection{"hasShaperCorrection", true, "Apply correction for shaper saturation"};
+  Configurable<int> applyCellAbsScale{"applyCellAbsScale", 0, "Enable absolute cell energy scale to correct for energy loss in material in front of EMCal"};
+  Configurable<std::vector<float>> vCellAbsScaleFactor{"cellAbsScaleFactor", {1.f}, "values for absolute cell energy calibration. Different values correspond to different regions or SM types of EMCal"};
   Configurable<float> logWeight{"logWeight", 4.5, "logarithmic weight for the cluster center of gravity calculation"};
   Configurable<float> exoticCellFraction{"exoticCellFraction", 0.97, "Good cell if fraction < 1-ecross/ecell"};
   Configurable<float> exoticCellDiffTime{"exoticCellDiffTime", 1.e6, "If time of candidate to exotic and close cell is larger than exoticCellDiffTime (in ns), it must be noisy, set amp to 0"};
@@ -246,6 +248,9 @@ struct EmcalCorrectionTask {
         if (static_cast<bool>(hasShaperCorrection)) {
           amplitude = o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(amplitude);
         }
+        if (applyCellAbsScale) {
+          amplitude *= GetAbsCellScale(cell.cellNumber());
+        }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
                              cell.time(),
@@ -348,7 +353,7 @@ struct EmcalCorrectionTask {
       std::vector<o2::emcal::Cell> cellsBC;
       std::vector<int64_t> cellIndicesBC;
       for (auto& cell : cellsInBC) {
-        mHistManager.fill(HIST("hContributors"), cell.mcParticle().size());
+        mHistManager.fill(HIST("hContributors"), cell.mcParticle_as<aod::StoredMcParticles_001>().size());
         auto cellParticles = cell.mcParticle_as<aod::StoredMcParticles_001>();
         for (auto& cellparticle : cellParticles) {
           mHistManager.fill(HIST("hMCParticleEnergy"), cellparticle.e());
@@ -729,6 +734,23 @@ struct EmcalCorrectionTask {
       res = mClusterizers.at(0)->getGeometry()->GlobalRowColFromIndex(cell.getTower());
       // NOTE: Reversed column and row because it's more natural for presentation.
       mHistManager.fill(HIST("hCellRowCol"), std::get<1>(res), std::get<0>(res));
+    }
+  }
+
+  float GetAbsCellScale(const int cellID)
+  {
+    // Apply cell scale based on SM types (Full, Half (not used), EMC 1/3, DCal, DCal 1/3)
+    // Same as in Run2 data
+    if (applyCellAbsScale == 1) {
+      int iSM = mClusterizers.at(0)->getGeometry()->GetSuperModuleNumber(cellID);
+      return vCellAbsScaleFactor.value[mClusterizers.at(0)->getGeometry()->GetSMType(iSM)];
+
+      // Apply cell scale based on columns to accoutn for material of TRD structures
+    } else if (applyCellAbsScale == 2) {
+      auto res = mClusterizers.at(0)->getGeometry()->GlobalRowColFromIndex(cellID);
+      return vCellAbsScaleFactor.value[std::get<1>(res)];
+    } else {
+      return 1.f;
     }
   }
 };

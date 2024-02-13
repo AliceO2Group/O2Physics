@@ -92,7 +92,6 @@ DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
-                  full::CollisionId,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -142,8 +141,10 @@ DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
                   full::Y,
                   full::FlagMc,
                   full::OriginMcRec,
-                  full::IsCandidateSwapped,
-                  full::CandidateId);
+                  full::IsCandidateSwapped);
+
+DECLARE_SOA_TABLE(HfCollIdLCLite, "AOD", "HFCOLLIDLCLITE",
+                  full::CollisionId);
 
 DECLARE_SOA_TABLE(HfCandLcFulls, "AOD", "HFCANDLCFULL",
                   full::CollisionId,
@@ -248,11 +249,16 @@ DECLARE_SOA_TABLE(HfCandLcFullPs, "AOD", "HFCANDLCFULLP",
 struct HfTreeCreatorLcToPKPi {
   Produces<o2::aod::HfCandLcFulls> rowCandidateFull;
   Produces<o2::aod::HfCandLcLites> rowCandidateLite;
+  Produces<o2::aod::HfCollIdLCLite> rowCollisionId;
   Produces<o2::aod::HfCandLcFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandLcFullPs> rowCandidateFullParticles;
 
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
+  Configurable<bool> fillCollIdTable{"fillCollIdTable", false, "Fill a single-column table with collision index"};
+  Configurable<bool> keepOnlySignalMc{"keepOnlySignalMc", false, "Fill MC tree only with signal candidates"};
+  Configurable<bool> keepOnlyBkg{"keepOnlyBkg", false, "Fill MC tree only with background candidates"};
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
+  Configurable<float> downSampleBkgPtMax{"downSampleBkgPtMax", 100.f, "Max. pt for background downsampling"};
 
   HfHelper hfHelper;
 
@@ -294,10 +300,15 @@ struct HfTreeCreatorLcToPKPi {
     } else {
       rowCandidateFull.reserve(candidates.size());
     }
+    if (fillCollIdTable) {
+      /// save also candidate collision indices
+      rowCollisionId.reserve(candidates.size());
+    }
     for (const auto& candidate : candidates) {
       auto trackPos1 = candidate.prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.prong2_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
+      bool isMcCandidateSignal = std::abs(candidate.flagMcMatchRec()) == (1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi);
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float FunctionInvMass,
@@ -305,10 +316,9 @@ struct HfTreeCreatorLcToPKPi {
                            float FunctionY,
                            float FunctionE) {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
-        if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
+        if (FunctionSelection >= 1 && (/*keep all*/ (!keepOnlySignalMc && !keepOnlyBkg) || /*keep only signal*/ (keepOnlySignalMc && isMcCandidateSignal) || /*keep only background and downsample it*/ (keepOnlyBkg && !isMcCandidateSignal && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))))) {
           if (fillCandidateLiteTable) {
             rowCandidateLite(
-              candidate.collisionId(),
               candidate.posX(),
               candidate.posY(),
               candidate.posZ(),
@@ -358,8 +368,14 @@ struct HfTreeCreatorLcToPKPi {
               FunctionY,
               candidate.flagMcMatchRec(),
               candidate.originMcRec(),
-              candidate.isCandidateSwapped(),
-              candidate.globalIndex());
+              candidate.isCandidateSwapped());
+            // candidate.globalIndex());
+
+            if (fillCollIdTable) {
+              /// save also candidate collision indices
+              rowCollisionId(candidate.collisionId());
+            }
+
           } else {
             rowCandidateFull(
               candidate.collisionId(),
@@ -488,6 +504,10 @@ struct HfTreeCreatorLcToPKPi {
     } else {
       rowCandidateFull.reserve(candidates.size());
     }
+    if (fillCollIdTable) {
+      /// save also candidate collision indices
+      rowCollisionId.reserve(candidates.size());
+    }
     for (const auto& candidate : candidates) {
       auto trackPos1 = candidate.prong0_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
@@ -499,10 +519,9 @@ struct HfTreeCreatorLcToPKPi {
                            float FunctionY,
                            float FunctionE) {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
-        if (FunctionSelection >= 1 && pseudoRndm < downSampleBkgFactor) {
+        if (FunctionSelection >= 1 && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
           if (fillCandidateLiteTable) {
             rowCandidateLite(
-              candidate.collisionId(),
               candidate.posX(),
               candidate.posY(),
               candidate.posZ(),
@@ -552,8 +571,14 @@ struct HfTreeCreatorLcToPKPi {
               FunctionY,
               0.,
               0.,
-              0.,
-              candidate.globalIndex());
+              0.);
+            // candidate.globalIndex());
+
+            if (fillCollIdTable) {
+              /// save also candidate collision indices
+              rowCollisionId(candidate.collisionId());
+            }
+
           } else {
             rowCandidateFull(
               candidate.collisionId(),

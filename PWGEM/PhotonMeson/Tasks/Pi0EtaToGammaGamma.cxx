@@ -71,9 +71,9 @@ struct Pi0EtaToGammaGamma {
   Configurable<std::string> CentEstimator{"CentEstimator", "FT0M", "centrality estimator"};
 
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
-  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of V0 photon cuts"};
+  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "qc,nocut", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_0_120_tpchadrejortofreq_lowB,mee_120_500_tpchadrejortofreq_lowB,mee_0_500_tpchadrejortofreq_lowB", "Comma separated list of Dalitz ee cuts"};
-  Configurable<std::string> fConfigDalitzMuMuCuts{"cfgDalitzMuMuCuts", "mee_0_500_lowB", "Comma separated list of Dalitz mumu cuts"};
+  Configurable<std::string> fConfigDalitzMuMuCuts{"cfgDalitzMuMuCuts", "mmumu_0_500_lowB", "Comma separated list of Dalitz mumu cuts"};
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
   Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "nocut,asym08", "Comma separated list of pair cuts"};
 
@@ -169,7 +169,7 @@ struct Pi0EtaToGammaGamma {
     }     // end of cut1 loop
   }
 
-  static constexpr std::string_view pairnames[8] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PCMDalitzEE", "PCMDalitzMuMu", "PHOSEMC"};
+  static constexpr std::string_view pairnames[9] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PCMDalitzEE", "PCMDalitzMuMu", "PHOSEMC", "DalitzEEDalitzEE"};
   void addhistograms()
   {
     fMainList->SetOwner(true);

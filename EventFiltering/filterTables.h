@@ -35,6 +35,9 @@ DECLARE_SOA_COLUMN(SingleMuLow, hasSingleMuLow, bool);   //! single muon with lo
 DECLARE_SOA_COLUMN(SingleMuHigh, hasSingleMuHigh, bool); //! single muon with high pT trigger
 DECLARE_SOA_COLUMN(DiElectron, hasDiElectron, bool);     //! dielectron trigger
 DECLARE_SOA_COLUMN(DiMuon, hasDiMuon, bool);             //! dimuon trigger with low pT on muons
+// EM dielectrons
+DECLARE_SOA_COLUMN(LMeeIMR, hasLMeeIMR, bool); //! dielectron trigger for intermediate mass region
+DECLARE_SOA_COLUMN(LMeeHMR, hasLMeeHMR, bool); //! dielectron trigger for high mass region
 
 // heavy flavours
 DECLARE_SOA_COLUMN(HfHighPt2P, hasHfHighPt2P, bool);                 //! high-pT 2-prong charm hadron
@@ -113,7 +116,7 @@ DECLARE_SOA_COLUMN(PCMHighPtPhoton, hasPCMHighPtPhoton, bool); //! PCM high pT p
 // DECLARE_SOA_COLUMN(PCMMatCalib, hasPCMMatCalib, bool);         //! PCM material budget calibration
 // DECLARE_SOA_COLUMN(PCMEtaDalitz, hasPCMEtaDalitz, bool);       //! PCM eta -> ee gamma
 // DECLARE_SOA_COLUMN(PCMEtaGG, hasPCMEtaGG, bool);               //! PCM eta -> ee gamma
-// DECLARE_SOA_COLUMN(PCMandEE, hasPCMandEE, bool);               //! PCM and ee
+DECLARE_SOA_COLUMN(PCMandEE, hasPCMandEE, bool); //! PCM and ee
 } // namespace filtering
 
 namespace decision
@@ -152,7 +155,7 @@ using DiffractionBCFilter = DiffractionBCFilters::iterator;
 
 // Dileptons & Quarkonia
 DECLARE_SOA_TABLE(DqFilters, "AOD", "DqFilters", //!
-                  filtering::SingleE, filtering::DiElectron, filtering::SingleMuLow, filtering::SingleMuHigh, filtering::DiMuon);
+                  filtering::SingleE, filtering::LMeeIMR, filtering::LMeeHMR, filtering::DiElectron, filtering::SingleMuLow, filtering::SingleMuHigh, filtering::DiMuon);
 using DqFilter = DqFilters::iterator;
 
 // heavy flavours
@@ -196,7 +199,7 @@ using MultFilter = MultFilters::iterator;
 
 // photons
 DECLARE_SOA_TABLE(PhotonFilters, "AOD", "PhotonFilters", //!
-                  filtering::PHOSPhoton, filtering::PHOSnbar, filtering::PCMHighPtPhoton);
+                  filtering::PHOSPhoton, filtering::PHOSnbar, filtering::PCMHighPtPhoton, filtering::PCMandEE);
 
 using PhotonFilter = PhotonFilters::iterator;
 

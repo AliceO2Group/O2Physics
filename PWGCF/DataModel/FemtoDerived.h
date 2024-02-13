@@ -27,6 +27,14 @@ namespace o2::aod
 /// FemtoDreamCollision
 namespace femtodreamcollision
 {
+// Define different methods for the event mixing
+enum CollisionBinning {
+  kMult,               //! Bin collision in number of charged tracks for mixing
+  kMultPercentile,     //! Bin collision in multiplicity percentile for mixing
+  kMultMultPercentile, //! Bin collision in number of charged tracks and multiplicity percentile for mixing
+  kNCollisionBinning
+};
+
 DECLARE_SOA_COLUMN(MultV0M, multV0M, float);       //! V0M multiplicity
 DECLARE_SOA_COLUMN(MultNtr, multNtr, int);         //! multiplicity of charged tracks as defined in the producer
 DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
@@ -37,6 +45,8 @@ using BitMaskType = uint32_t; //! Definition of the data type for the collision 
 DECLARE_SOA_COLUMN(BitMaskTrackOne, bitmaskTrackOne, BitMaskType);     //! Bit for track one
 DECLARE_SOA_COLUMN(BitMaskTrackTwo, bitmaskTrackTwo, BitMaskType);     //! Bit for track two
 DECLARE_SOA_COLUMN(BitMaskTrackThree, bitmaskTrackThree, BitMaskType); //! Bit for track three
+
+DECLARE_SOA_COLUMN(Downsample, downsample, bool); //! Flag for downsampling
 } // namespace femtodreamcollision
 
 DECLARE_SOA_TABLE(FDCollisions, "AOD", "FDCOLLISION",
@@ -52,6 +62,9 @@ DECLARE_SOA_TABLE(FDColMasks, "AOD", "FDCOLMASK",
                   femtodreamcollision::BitMaskTrackOne,
                   femtodreamcollision::BitMaskTrackTwo,
                   femtodreamcollision::BitMaskTrackThree);
+
+DECLARE_SOA_TABLE(FDDownSample, "AOD", "FDDOWNSAMPLE",
+                  femtodreamcollision::Downsample);
 
 /// FemtoDreamTrack
 namespace femtodreamparticle

@@ -89,6 +89,7 @@ struct HfCandidateCreatorToXiPi {
   OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.2, 3.1)};
   OutputObj<TH1F> hFitterStatus{TH1F("hFitterStatus", "Charm DCAFitter status;status;entries", 3, -0.5, 2.5)};                     // 0 --> vertex(es) found, 1 --> exception found, 2 --> no vertex found (but no exception)
   OutputObj<TH1F> hCandidateCounter{TH1F("hCandidateCounter", "Candidate counter wrt derived data;status;entries", 4, -0.5, 3.5)}; // 0 --> candidates in derived data table, 1 --> candidates passing testbit selection, 2 --> candidates passing fitter step 3 --> candidates filled in new table
+  OutputObj<TH1F> hCascadesCounter{TH1F("hCascadesCounter", "Cascades counter wrt derived data;status;entries", 2, -0.5, 1.5)};    // 0 --> cascades in derived data table (and stored in AOD table), 1 --> cascades in derived data table and also accessible in cascData table
 
   void init(InitContext const&)
   {
@@ -146,8 +147,12 @@ struct HfCandidateCreatorToXiPi {
 
       auto trackPion = cand.prong0_as<TracksWCovDca>();
       auto cascAodElement = cand.cascade_as<aod::CascadesLinked>();
+      hCascadesCounter->Fill(0);
       int v0index = cascAodElement.v0Id();
+      if (!cascAodElement.has_cascData())
+        continue;
       auto casc = cascAodElement.cascData_as<MyCascTable>();
+      hCascadesCounter->Fill(1);
       auto trackXiDauCharged = casc.bachelor_as<TracksWCovDca>(); // pion <- xi track
       auto trackV0Dau0 = casc.posTrack_as<TracksWCovDca>();       // V0 positive daughter track
       auto trackV0Dau1 = casc.negTrack_as<TracksWCovDca>();       // V0 negative daughter track
@@ -209,7 +214,6 @@ struct HfCandidateCreatorToXiPi {
       hFitterStatus->Fill(0);
       hCandidateCounter->Fill(2);
       auto vertexCharmBaryonFromFitter = df.getPCACandidate();
-      auto chi2PCACharmBaryon = df.getChi2AtPCACandidate();
       std::array<float, 3> pVecCascAsD;
       std::array<float, 3> pVecPionFromCharmBaryon;
       df.propagateTracksToVertex();
@@ -255,12 +259,12 @@ struct HfCandidateCreatorToXiPi {
       double mCharmBaryon = RecoDecay::m(std::array{pVecCascAsD, pVecPionFromCharmBaryon}, arrMassCharmBaryon);
 
       // computing cosPA
-      double cpaV0 = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
+      double cpaV0 = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
       double cpaCharmBaryon = RecoDecay::cpa(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
-      double cpaCasc = RecoDecay::cpa(coordVtxCharmBaryon, vertexCasc, pVecCasc);
-      double cpaxyV0 = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
+      double cpaCasc = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
+      double cpaxyV0 = RecoDecay::cpaXY(pvCoord, vertexV0, pVecV0);
       double cpaxyCharmBaryon = RecoDecay::cpaXY(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
-      double cpaxyCasc = RecoDecay::cpaXY(coordVtxCharmBaryon, vertexCasc, pVecCasc);
+      double cpaxyCasc = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
 
       // computing decay length and ctau
       double decLenCharmBaryon = RecoDecay::distance(pvCoord, coordVtxCharmBaryon);
@@ -301,7 +305,7 @@ struct HfCandidateCreatorToXiPi {
                    vertexCasc[0], vertexCasc[1], vertexCasc[2],
                    vertexV0[0], vertexV0[1], vertexV0[2],
                    trackXiDauCharged.sign(),
-                   chi2PCACharmBaryon, covVtxCharmBaryon[0], covVtxCharmBaryon[1], covVtxCharmBaryon[2], covVtxCharmBaryon[3], covVtxCharmBaryon[4], covVtxCharmBaryon[5],
+                   covVtxCharmBaryon[0], covVtxCharmBaryon[1], covVtxCharmBaryon[2], covVtxCharmBaryon[3], covVtxCharmBaryon[4], covVtxCharmBaryon[5],
                    pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],
                    pVecCasc[0], pVecCasc[1], pVecCasc[2],
                    pVecPionFromCharmBaryon[0], pVecPionFromCharmBaryon[1], pVecPionFromCharmBaryon[2],

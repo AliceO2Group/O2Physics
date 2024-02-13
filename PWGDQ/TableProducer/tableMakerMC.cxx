@@ -371,12 +371,12 @@ struct TableMakerMC {
             o2::base::Propagator::initFieldFromGRP(grpmagrun2);
           }
         } else {
-          if (fPropMuon) {
-            VarManager::SetupMuonMagField();
-          }
           grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
           if (grpmag != nullptr) {
             o2::base::Propagator::initFieldFromGRP(grpmag);
+          }
+          if (fPropMuon) {
+            VarManager::SetupMuonMagField();
           }
         }
         fCurrentRun = bc.runNumber();
@@ -607,7 +607,8 @@ struct TableMakerMC {
           }
 
           trackBasic(event.lastIndex(), trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), isAmbiguous);
-          trackBarrel(track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
+          trackBarrel(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
+                      track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
                       track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
                       track.tpcNClsShared(), track.tpcChi2NCl(),
                       track.trdChi2(), track.trdPattern(), track.tofChi2(),
@@ -623,8 +624,7 @@ struct TableMakerMC {
                          track.trdSignal());
           trackBarrelLabels(fNewLabels.find(mctrack.index())->second, track.mcMask(), mcflags);
           if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
-            trackBarrelCov(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
-                           track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
+            trackBarrelCov(track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
                            track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
                            track.c1PtY(), track.c1PtZ(), track.c1PtSnp(), track.c1PtTgl(), track.c1Pt21Pt2());
           }
@@ -785,10 +785,10 @@ struct TableMakerMC {
             }
           }
 
-          muonBasic(event.lastIndex(), trackFilteringTag, muon.pt(), muon.eta(), muon.phi(), muon.sign(), isAmbiguous);
+          muonBasic(event.lastIndex(), newMatchIndex.find(muon.index())->second, -1, trackFilteringTag, muon.pt(), muon.eta(), muon.phi(), muon.sign(), isAmbiguous);
           muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
                     muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
-                    muon.matchScoreMCHMFT(), newMatchIndex.find(muon.index())->second, -1, muon.mchBitMap(), muon.midBitMap(),
+                    muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
                     muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY(),
                     muon.trackTime(), muon.trackTimeRes());
           if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {

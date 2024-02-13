@@ -72,14 +72,12 @@ struct derivedCascadeAnalysis {
   Configurable<float> dcaBaryonToPV{"dcaBaryonToPV", 0.05, "DCA of baryon doughter track To PV"};
   Configurable<float> dcaMesonToPV{"dcaMesonToPV", 0.1, "DCA of meson doughter track To PV"};
   Configurable<float> dcaBachToPV{"dcaBachToPV", 0.04, "DCA Bach To PV"};
-  Configurable<float> casCosPaPtParameter{"casCosPaPtParameter", 0.341715, "Parameter for pt dependent cos PA cut"};
   Configurable<double> casccospa{"casccospa", 0.97, "Casc CosPA"};
-  Configurable<float> v0CosPaPtParameter{"v0CosPaPtParameter", 0.341715, "Parameter for pt dependent cos PA cut of the V0 daughter"};
   Configurable<double> v0cospa{"v0cospa", 0.97, "V0 CosPA"};
-  Configurable<float> dcacascdau{"dcacascdau", 1.3, "DCA Casc Daughters"};
+  Configurable<float> dcacascdau{"dcacascdau", 1., "DCA Casc Daughters"};
   Configurable<float> dcav0dau{"dcav0dau", 1.5, "DCA V0 Daughters"};
   Configurable<float> dcaV0ToPV{"dcaV0ToPV", 0.06, "DCA V0 To PV"};
-  Configurable<float> minRadius{"minRadius", 0.6f, "minRadius"};
+  Configurable<float> minRadius{"minRadius", 1.4f, "minRadius"};
   Configurable<float> maxRadius{"maxRadius", 100.0f, "maxRadius"};
   Configurable<float> minV0Radius{"minV0Radius", 1.2f, "V0 transverse decay radius, minimum"};
   Configurable<float> maxV0Radius{"maxV0Radius", 100.0f, "V0 transverse decay radius, maximum"};
@@ -91,11 +89,14 @@ struct derivedCascadeAnalysis {
   Configurable<int> mintpccrrows{"mintpccrrows", 50, "min N TPC crossed rows"};
   Configurable<int> dooobrej{"dooobrej", 0, "OOB rejection: 0 no selection, 1 = ITS||TOF, 2 = TOF only for pT > ptthrtof"};
   Configurable<float> ptthrtof{"ptthrtof", 2, "Pt threshold for applying only tof oob rejection"};
-  Configurable<float> proplifetime{"proplifetime", 6, "ctau/<ctau>"};
+  Configurable<float> proplifetime{"proplifetime", 3, "ctau/<ctau>"};
   Configurable<float> rejcomp{"rejcomp", 0.008, "Competing Cascade rejection"};
 
   Configurable<bool> doPtDepCosPaCut{"doPtDepCosPaCut", false, "Enable pt dependent cos PA cut"};
+  Configurable<bool> doPtDepCascRadiusCut{"doPtDepCascRadiusCut", false, "Enable pt dependent cascade radius cut"};
+  Configurable<bool> doPtDepV0RadiusCut{"doPtDepV0RadiusCut", false, "Enable pt dependent V0 radius cut"};
   Configurable<bool> doPtDepV0CosPaCut{"doPtDepV0CosPaCut", false, "Enable pt dependent cos PA cut of the V0 daughter"};
+  Configurable<bool> doPtDepDCAcascDauCut{"doPtDepDCAcascDauCut", false, "Enable pt dependent DCA cascade daughter cut"};
   Configurable<bool> doDCAdauToPVCut{"doDCAdauToPVCut", true, "Enable cut DCA daughter track to PV"};
   Configurable<bool> doCascadeCosPaCut{"doCascadeCosPaCut", true, "Enable cos PA cut"};
   Configurable<bool> doV0CosPaCut{"doV0CosPaCut", true, "Enable cos PA cut for the V0 daughter"};
@@ -108,6 +109,20 @@ struct derivedCascadeAnalysis {
   Configurable<bool> doBachelorBaryonCut{"doBachelorBaryonCut", true, "Enable Bachelor-Baryon cut "};
   Configurable<bool> doProperLifeTimeCut{"doProperLifeTimeCut", true, "Enable proper life-time cut "};
 
+  Configurable<float> cosPApar0{"cosPApar0", 0.247403, "const par for pt dep cosPA cut"};
+  Configurable<float> cosPApar1{"cosPApar1", -0.068957, "linear par for pt dep cosPA cut"};
+  Configurable<float> cosPApar2{"cosPApar2", 0.004934, "quadratic par for pt dep cosPA cut"};
+
+  Configurable<float> cosPAV0par{"cosPAV0par", 0.162740, "par for pt dep V0cosPA cut"};
+
+  Configurable<float> parCascRadius0{"parCascRadius0", 1.216159, "const par for pt dep radius cut"};
+  Configurable<float> parCascRadius1{"parCascRadius1", 0.064462, "linear par for pt dep radius cut"};
+
+  Configurable<float> parV0Radius0{"parV0Radius0", 2.136381, "const par for pt dep V0 radius cut"};
+  Configurable<float> parV0Radius1{"parV0Radius1", 0.437074, "linear par for pt dep V0 radius cut"};
+
+  Configurable<float> dcaCacsDauPar{"dcaCacsDauPar", 0.404424, " par for pt dep DCA cascade daughter cut"};
+
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
   void init(InitContext const&)
@@ -116,7 +131,7 @@ struct derivedCascadeAnalysis {
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
     histos.add("hEventSelection", "hEventSelection", kTH1F, {{4, 0, 4}});
 
-    histos.add("hCandidate", "hCandidate", HistType::kTH1F, {{22, -0.5, 21.5}});
+    histos.add("hCandidate", "hCandidate", HistType::kTH1D, {{22, -0.5, 21.5}});
 
     TString CutLabel[22] = {"All", "MassWin", "y", "DCACascDau", "DCAV0Dau", "rCasc", "rCascMax", "rV0", "rV0Max", "LambdaMass", "Bach-baryon", "V0CosPA", "CompDecayMass", "DCADauToPV", "EtaDau", "CascCosPA", "DCAV0ToPV", "nSigmaTPCV0Dau", "NTPCrows", "OOBRej", "nSigmaTPCbachelor", "ctau"};
     for (Int_t i = 1; i <= histos.get<TH1>(HIST("hCandidate"))->GetNbinsX(); i++) {
@@ -186,8 +201,8 @@ struct derivedCascadeAnalysis {
     }
 
     if (doPtDepCutStudy && !doDCACascadeDauCut) {
-      histos.add("PtDepCutStudy/hNegativeDCACascDaughters", "hNegativeDCACascDaughters", HistType::kTH3F, {axisPt, axisXiMass, {50, 0, 5}});
-      histos.add("PtDepCutStudy/hPositiveDCACascDaughters", "hPositiveDCACascDaughters", {HistType::kTH3F, {axisPt, axisXiMass, {50, 0, 5}}});
+      histos.add("PtDepCutStudy/hNegativeDCACascDaughters", "hNegativeDCACascDaughters", {HistType::kTH3F, {axisPt, axisXiMass, {20, 0, 1}}});
+      histos.add("PtDepCutStudy/hPositiveDCACascDaughters", "hPositiveDCACascDaughters", {HistType::kTH3F, {axisPt, axisXiMass, {20, 0, 1}}});
       if (!isXi) {
         histos.get<TH3>(HIST("PtDepCutStudy/hPositiveDCACascDaughters"))->GetYaxis()->Set(200, 1.572f, 1.772f);
         histos.get<TH3>(HIST("PtDepCutStudy/hNegativeDCACascDaughters"))->GetYaxis()->Set(200, 1.572f, 1.772f);
@@ -228,29 +243,52 @@ struct derivedCascadeAnalysis {
       }
     }
 
-    if (isMC)
+    if (isMC) {
       histos.addClone("PtDepCutStudy/", "PtDepCutStudyMCTruth/");
+      histos.add("hNegativeCascadePtForEfficiency", "hNegativeCascadePtForEfficiency", HistType::kTH3F, {axisPt, axisXiMass, {101, 0, 101}});
+      histos.add("hPositiveCascadePtForEfficiency", "hPositiveCascadePtForEfficiency", {HistType::kTH3F, {axisPt, axisXiMass, {101, 0, 101}}});
+      if (!isXi) {
+        histos.get<TH3>(HIST("hNegativeCascadePtForEfficiency"))->GetYaxis()->Set(200, 1.572f, 1.772f);
+        histos.get<TH3>(HIST("hPositiveCascadePtForEfficiency"))->GetYaxis()->Set(200, 1.572f, 1.772f);
+      }
+
+      histos.add("h2dNVerticesVsCentrality", "h2dNVerticesVsCentrality", HistType::kTH2F, {{101, 0, 101}, {20, -0.5, 19.5}});
+      histos.add("hGenNegativeXi", "hGenNegativeXi", HistType::kTH2F, {{101, 0, 101}, axisPt});
+      histos.add("hGenPositiveXi", "hGenPositiveXi", HistType::kTH2F, {{101, 0, 101}, axisPt});
+      histos.add("hGenNegativeOmega", "hGenNegativeOmega", HistType::kTH2F, {{101, 0, 101}, axisPt});
+      histos.add("hGenPositiveOmega", "hGenPositiveOmega", HistType::kTH2F, {{101, 0, 101}, axisPt});
+    }
   }
   template <typename TCascade>
-  bool IsCosPAAccepted(TCascade casc, float x, float y, float z)
+  bool IsCosPAAccepted(TCascade casc, float x, float y, float z, bool ptdepcut, bool isCascPa)
   {
 
-    if (doPtDepV0CosPaCut) {
-      double ptdepCut = v0CosPaPtParameter / casc.pt();
-      if (ptdepCut > 0.3 || casc.pt() < 0.5)
+    if (ptdepcut) {
+      double ptdepCut;
+      if (isCascPa)
+        ptdepCut = cosPApar0 + cosPApar1 * casc.pt() + cosPApar2 * TMath::Power(casc.pt(), 2);
+      else
+        ptdepCut = cosPAV0par / casc.pt();
+      if (ptdepCut > 0.3 && casc.pt() < 0.5)
         ptdepCut = 0.3;
-      if (casc.casccosPA(x, y, z) < TMath::Cos(ptdepCut))
+      if (ptdepCut < 0.012 || casc.pt() > 7)
+        ptdepCut = 0.012;
+      if (isCascPa && casc.casccosPA(x, y, z) < TMath::Cos(ptdepCut))
         return false;
-    } else if (casc.casccosPA(x, y, z) < v0cospa)
+      if (!isCascPa && casc.v0cosPA(x, y, z) < TMath::Cos(ptdepCut))
+        return false;
+    } else if (isCascPa && casc.casccosPA(x, y, z) < casccospa)
+      return false;
+    else if (!isCascPa && casc.v0cosPA(x, y, z) < v0cospa)
       return false;
 
     return true;
   }
   template <typename TCollision>
-  bool IsEventAccepted(TCollision coll)
+  bool IsEventAccepted(TCollision coll, bool sel)
   {
     histos.fill(HIST("hEventSelection"), 0.5 /* all collisions */);
-    if (!coll.sel8()) {
+    if (!sel) {
       return false;
     }
     histos.fill(HIST("hEventSelection"), 1.5 /* collisions  after sel*/);
@@ -269,19 +307,21 @@ struct derivedCascadeAnalysis {
   }
 
   template <typename TCascade>
-  bool IsCascadeCandidateAccepted(TCascade casc, int counter)
+  bool IsCascadeCandidateAccepted(TCascade casc, int counter, float centrality)
   {
 
     if (isXi) {
-      if (TMath::Abs(casc.mXi() - pdgDB->Mass(3312)) > masswin)
+      if (TMath::Abs(casc.mXi() - pdgDB->Mass(3312)) > masswin) {
         return false;
+      }
       histos.fill(HIST("hCandidate"), ++counter);
       if (TMath::Abs(casc.yXi()) > rapCut)
         return false;
       histos.fill(HIST("hCandidate"), ++counter);
     } else {
-      if (TMath::Abs(casc.mOmega() - pdgDB->Mass(3334)) > masswin)
+      if (TMath::Abs(casc.mOmega() - pdgDB->Mass(3334)) > masswin) {
         return false;
+      }
       histos.fill(HIST("hCandidate"), ++counter);
       if (TMath::Abs(casc.yOmega()) > rapCut)
         return false;
@@ -289,7 +329,11 @@ struct derivedCascadeAnalysis {
     }
 
     if (doDCACascadeDauCut) {
-      if (casc.dcacascdaughters() > dcacascdau)
+      if (doPtDepDCAcascDauCut) {
+        float ptDepCut = dcaCacsDauPar / casc.pt();
+        if (casc.dcacascdaughters() > ptDepCut)
+          return false;
+      } else if (casc.dcacascdaughters() > dcacascdau)
         return false;
       histos.fill(HIST("hCandidate"), ++counter);
     } else
@@ -303,7 +347,11 @@ struct derivedCascadeAnalysis {
       ++counter;
 
     if (doCascadeRadiusCut) {
-      if (casc.cascradius() < minRadius)
+      if (doPtDepCascRadiusCut) {
+        double ptdepminRadius = parCascRadius0 + parCascRadius1 * casc.pt();
+        if (casc.cascradius() < ptdepminRadius)
+          return false;
+      } else if (casc.cascradius() < minRadius)
         return false;
       histos.fill(HIST("hCandidate"), ++counter);
 
@@ -314,7 +362,11 @@ struct derivedCascadeAnalysis {
       counter += 2;
 
     if (doV0RadiusCut) {
-      if (casc.v0radius() < minV0Radius)
+      if (doPtDepV0RadiusCut) {
+        float cut = parV0Radius0 + casc.pt() * parV0Radius1;
+        if (casc.v0radius() < cut)
+          return false;
+      } else if (casc.v0radius() < minV0Radius)
         return false;
       histos.fill(HIST("hCandidate"), ++counter);
       if (casc.v0radius() > maxV0Radius)
@@ -336,7 +388,7 @@ struct derivedCascadeAnalysis {
       ++counter;
 
     if (doV0CosPaCut) {
-      if (!IsCosPAAccepted(casc, casc.x(), casc.y(), casc.z()))
+      if (!IsCosPAAccepted(casc, casc.x(), casc.y(), casc.z(), doPtDepV0CosPaCut, false))
         return false;
       histos.fill(HIST("hCandidate"), ++counter);
     } else
@@ -369,7 +421,7 @@ struct derivedCascadeAnalysis {
   void processCascades(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs> const&)
   {
 
-    if (!IsEventAccepted(coll))
+    if (!IsEventAccepted(coll, coll.sel8()))
       return;
 
     for (auto& casc : Cascades) {
@@ -390,7 +442,7 @@ struct derivedCascadeAnalysis {
         histos.fill(HIST("InvMassBefSel/hPositiveCascade"), casc.pt(), invmass, coll.centFT0C());
       }
 
-      if (!IsCascadeCandidateAccepted(casc, counter))
+      if (!IsCascadeCandidateAccepted(casc, counter, coll.centFT0C()))
         continue;
       counter += 13;
 
@@ -406,7 +458,7 @@ struct derivedCascadeAnalysis {
       histos.fill(HIST("hCandidate"), ++counter);
 
       if (doCascadeCosPaCut) {
-        if (!IsCosPAAccepted(casc, coll.posX(), coll.posY(), coll.posZ()))
+        if (!IsCosPAAccepted(casc, coll.posX(), coll.posY(), coll.posZ(), doPtDepCosPaCut, true))
           continue;
         histos.fill(HIST("hCandidate"), ++counter);
       } else
@@ -502,7 +554,7 @@ struct derivedCascadeAnalysis {
         if (!doDCACascadeDauCut && doPtDepCutStudy)
           histos.fill(HIST("PtDepCutStudy/hNegativeDCACascDaughters"), casc.pt(), invmass, casc.dcacascdaughters());
         if (!doV0CosPaCut && doPtDepCutStudy)
-          histos.fill(HIST("PtDepCutStudy/hNegativeV0pa"), casc.pt(), invmass, TMath::ACos(casc.casccosPA(casc.x(), casc.y(), casc.z())));
+          histos.fill(HIST("PtDepCutStudy/hNegativeV0pa"), casc.pt(), invmass, TMath::ACos(casc.v0cosPA(casc.x(), casc.y(), casc.z())));
         if (!doCascadeCosPaCut && doPtDepCutStudy)
           histos.fill(HIST("PtDepCutStudy/hNegativeCascPA"), casc.pt(), invmass, TMath::ACos(casc.casccosPA(coll.posX(), coll.posY(), coll.posZ())));
         if (!doDCAdauToPVCut && doPtDepCutStudy) {
@@ -527,7 +579,7 @@ struct derivedCascadeAnalysis {
         if (!doDCACascadeDauCut && doPtDepCutStudy)
           histos.fill(HIST("PtDepCutStudy/hPositiveDCACascDaughters"), casc.pt(), invmass, casc.dcacascdaughters());
         if (!doV0CosPaCut && doPtDepCutStudy)
-          histos.fill(HIST("PtDepCutStudy/hPositiveV0pa"), casc.pt(), invmass, TMath::ACos(casc.casccosPA(casc.x(), casc.y(), casc.z())));
+          histos.fill(HIST("PtDepCutStudy/hPositiveV0pa"), casc.pt(), invmass, TMath::ACos(casc.v0cosPA(casc.x(), casc.y(), casc.z())));
         if (!doCascadeCosPaCut && doPtDepCutStudy)
           histos.fill(HIST("PtDepCutStudy/hPositiveCascPA"), casc.pt(), invmass, TMath::ACos(casc.casccosPA(coll.posX(), coll.posY(), coll.posZ())));
         if (!doDCAdauToPVCut && doPtDepCutStudy) {
@@ -540,9 +592,9 @@ struct derivedCascadeAnalysis {
       }
     }
   }
-  void processCascadesMCrec(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascMCCores> const& Cascades, soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs> const&, aod::MotherMCParts const&)
+  void processCascadesMCrec(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascMCCores, aod::CascExtras, aod::CascBBs> const& Cascades, soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs> const&)
   {
-    if (!IsEventAccepted(coll))
+    if (!IsEventAccepted(coll, coll.sel8()))
       return;
 
     for (auto& casc : Cascades) {
@@ -564,7 +616,7 @@ struct derivedCascadeAnalysis {
           histos.fill(HIST("InvMassBefSel/hPositiveCascade"), casc.pt(), casc.mOmega(), coll.centFT0C());
       }
 
-      if (!IsCascadeCandidateAccepted(casc, counter))
+      if (!IsCascadeCandidateAccepted(casc, counter, coll.centFT0C()))
         continue;
       counter += 13;
 
@@ -580,7 +632,7 @@ struct derivedCascadeAnalysis {
       histos.fill(HIST("hCandidate"), ++counter);
 
       if (doCascadeCosPaCut) {
-        if (!IsCosPAAccepted(casc, coll.posX(), coll.posY(), coll.posZ()))
+        if (!IsCosPAAccepted(casc, coll.posX(), coll.posY(), coll.posZ(), doPtDepCosPaCut, true))
           continue;
         histos.fill(HIST("hCandidate"), ++counter);
       } else
@@ -679,7 +731,7 @@ struct derivedCascadeAnalysis {
         if (!doDCACascadeDauCut && doPtDepCutStudy)
           histos.fill(HIST("PtDepCutStudy/hNegativeDCACascDaughters"), casc.pt(), invmass, casc.dcacascdaughters());
         if (!doV0CosPaCut && doPtDepCutStudy)
-          histos.fill(HIST("PtDepCutStudy/hNegativeV0pa"), casc.pt(), invmass, TMath::ACos(casc.casccosPA(casc.x(), casc.y(), casc.z())));
+          histos.fill(HIST("PtDepCutStudy/hNegativeV0pa"), casc.pt(), invmass, TMath::ACos(casc.v0cosPA(casc.x(), casc.y(), casc.z())));
         if (!doCascadeCosPaCut && doPtDepCutStudy)
           histos.fill(HIST("PtDepCutStudy/hNegativeCascPA"), casc.pt(), invmass, TMath::ACos(casc.casccosPA(coll.posX(), coll.posY(), coll.posZ())));
         if (!doDCAdauToPVCut && doPtDepCutStudy) {
@@ -705,7 +757,7 @@ struct derivedCascadeAnalysis {
             if (!doDCACascadeDauCut && doPtDepCutStudy)
               histos.fill(HIST("PtDepCutStudyMCTruth/hNegativeDCACascDaughters"), casc.pt(), invmass, casc.dcacascdaughters());
             if (!doV0CosPaCut && doPtDepCutStudy)
-              histos.fill(HIST("PtDepCutStudyMCTruth/hNegativeV0pa"), casc.pt(), invmass, TMath::ACos(casc.casccosPA(casc.x(), casc.y(), casc.z())));
+              histos.fill(HIST("PtDepCutStudyMCTruth/hNegativeV0pa"), casc.pt(), invmass, TMath::ACos(casc.v0cosPA(casc.x(), casc.y(), casc.z())));
             if (!doCascadeCosPaCut && doPtDepCutStudy)
               histos.fill(HIST("PtDepCutStudyMCTruth/hNegativeCascPA"), casc.pt(), invmass, TMath::ACos(casc.casccosPA(coll.posX(), coll.posY(), coll.posZ())));
             if (!doDCAdauToPVCut && doPtDepCutStudy) {
@@ -715,6 +767,8 @@ struct derivedCascadeAnalysis {
             }
             if (!doProperLifeTimeCut && doPtDepCutStudy)
               histos.fill(HIST("PtDepCutStudyMCTruth/hNegativeCascadeProperLifeTime"), casc.pt(), invmass, ctau);
+            if ((isXi && casc.pdgCodeV0() == 3122 && casc.pdgCodePositive() == 2212 && casc.pdgCodeNegative() == -211 && casc.pdgCodeBachelor() == -211) || (!isXi && casc.pdgCodeV0() == 3122 && casc.pdgCodePositive() == 2212 && casc.pdgCodeNegative() == -211 && casc.pdgCodeBachelor() == -321))
+              histos.fill(HIST("hNegativeCascadePtForEfficiency"), casc.pt(), invmass, coll.centFT0C());
           }
         }
       } else {
@@ -732,7 +786,7 @@ struct derivedCascadeAnalysis {
         if (!doDCACascadeDauCut && doPtDepCutStudy)
           histos.fill(HIST("PtDepCutStudy/hPositiveDCACascDaughters"), casc.pt(), invmass, casc.dcacascdaughters());
         if (!doV0CosPaCut && doPtDepCutStudy)
-          histos.fill(HIST("PtDepCutStudy/hPositiveV0pa"), casc.pt(), invmass, TMath::ACos(casc.casccosPA(casc.x(), casc.y(), casc.z())));
+          histos.fill(HIST("PtDepCutStudy/hPositiveV0pa"), casc.pt(), invmass, TMath::ACos(casc.v0cosPA(casc.x(), casc.y(), casc.z())));
         if (!doCascadeCosPaCut && doPtDepCutStudy)
           histos.fill(HIST("PtDepCutStudy/hPositiveCascPA"), casc.pt(), invmass, TMath::ACos(casc.casccosPA(coll.posX(), coll.posY(), coll.posZ())));
         if (!doDCAdauToPVCut && doPtDepCutStudy) {
@@ -758,7 +812,7 @@ struct derivedCascadeAnalysis {
             if (!doDCACascadeDauCut && doPtDepCutStudy)
               histos.fill(HIST("PtDepCutStudyMCTruth/hPositiveDCACascDaughters"), casc.pt(), invmass, casc.dcacascdaughters());
             if (!doV0CosPaCut && doPtDepCutStudy)
-              histos.fill(HIST("PtDepCutStudyMCTruth/hPositiveV0pa"), casc.pt(), invmass, TMath::ACos(casc.casccosPA(casc.x(), casc.y(), casc.z())));
+              histos.fill(HIST("PtDepCutStudyMCTruth/hPositiveV0pa"), casc.pt(), invmass, TMath::ACos(casc.v0cosPA(casc.x(), casc.y(), casc.z())));
             if (!doCascadeCosPaCut && doPtDepCutStudy)
               histos.fill(HIST("PtDepCutStudyMCTruth/hPositiveCascPA"), casc.pt(), invmass, TMath::ACos(casc.casccosPA(coll.posX(), coll.posY(), coll.posZ())));
             if (!doDCAdauToPVCut && doPtDepCutStudy) {
@@ -768,14 +822,46 @@ struct derivedCascadeAnalysis {
             }
             if (!doProperLifeTimeCut && doPtDepCutStudy)
               histos.fill(HIST("PtDepCutStudyMCTruth/hPositiveCascadeProperLifeTime"), casc.pt(), invmass, ctau);
+            if ((isXi && casc.pdgCodeV0() == -3122 && casc.pdgCodePositive() == 211 && casc.pdgCodeNegative() == -2212 && casc.pdgCodeBachelor() == 211) || (!isXi && casc.pdgCodeV0() == -3122 && casc.pdgCodePositive() == 211 && casc.pdgCodeNegative() == -2212 && casc.pdgCodeBachelor() == 321))
+              histos.fill(HIST("hPositiveCascadePtForEfficiency"), casc.pt(), invmass, coll.centFT0C());
           }
         }
       }
     }
   }
 
+  void processReconstructedSimulation(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>> const& collisions, aod::McParticles const& mcParticles)
+  {
+    // this process function also checks if a given collision was reconstructed and checks explicitly for splitting, etc
+
+    // identify best-of collision
+    int biggestNContribs = -1;
+    float bestCentrality = 100.5;
+    for (auto& collision : collisions) {
+      if (biggestNContribs < collision.numContrib()) {
+        biggestNContribs = collision.numContrib();
+        bestCentrality = collision.centFT0C();
+      }
+    }
+    histos.fill(HIST("h2dNVerticesVsCentrality"), bestCentrality, collisions.size());
+
+    for (auto& mcp : mcParticles) {
+      if (TMath::Abs(mcp.y()) < 0.5 && mcp.isPhysicalPrimary()) {
+        if (mcp.pdgCode() == 3312)
+          histos.fill(HIST("hGenNegativeXi"), bestCentrality, mcp.pt());
+        if (mcp.pdgCode() == -3312)
+          histos.fill(HIST("hGenPositiveXi"), bestCentrality, mcp.pt());
+        if (mcp.pdgCode() == 3334)
+          histos.fill(HIST("hGenNegativeOmega"), bestCentrality, mcp.pt());
+        if (mcp.pdgCode() == -3334)
+          histos.fill(HIST("hGenPositiveOmega"), bestCentrality, mcp.pt());
+      }
+    }
+  }
+
   PROCESS_SWITCH(derivedCascadeAnalysis, processCascades, "cascade analysis, run3 data ", true);
   PROCESS_SWITCH(derivedCascadeAnalysis, processCascadesMCrec, "cascade analysis, run3 rec MC", false);
+  PROCESS_SWITCH(derivedCascadeAnalysis, processReconstructedSimulation, "cascade analysis, run3 gen MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

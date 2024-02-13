@@ -34,24 +34,30 @@ namespace o2::aod
 namespace full
 {
 // Decay daughters
-DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);     //! Transverse momentum of prong0 (GeV/c)
-DECLARE_SOA_COLUMN(PProng0, pProng0, float);       //! Momentum of prong0 (GeV/c)
-DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);     //! Transverse momentum of prong1 (GeV/c)
-DECLARE_SOA_COLUMN(PProng1, pProng1, float);       //! Momentum of prong1 (in GeV/c)
-DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);     //! Transverse momentum of prong2 (GeV/c)
-DECLARE_SOA_COLUMN(PProng2, pProng2, float);       //! Momentum of prong2 (GeV/c)
-DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float); //! TPC Nsigma separation for prong0 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float); //! TPC Nsigma separation for prong0 with kaon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float); //! TOF Nsigma separation for prong0 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float); //! TOF Nsigma separation for prong0 with kaon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float); //! TPC Nsigma separation for prong1 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float); //! TPC Nsigma separation for prong1 with kaon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float); //! TOF Nsigma separation for prong1 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float); //! TOF Nsigma separation for prong1 with kaon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float); //! TPC Nsigma separation for prong2 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTpcKa2, nSigTpcKa2, float); //! TPC Nsigma separation for prong2 with kaon mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float); //! TOF Nsigma separation for prong2 with pion mass hypothesis
-DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float); //! TOF Nsigma separation for prong2 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);           //! Transverse momentum of prong0 (GeV/c)
+DECLARE_SOA_COLUMN(PProng0, pProng0, float);             //! Momentum of prong0 (GeV/c)
+DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);           //! Transverse momentum of prong1 (GeV/c)
+DECLARE_SOA_COLUMN(PProng1, pProng1, float);             //! Momentum of prong1 (in GeV/c)
+DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);           //! Transverse momentum of prong2 (GeV/c)
+DECLARE_SOA_COLUMN(PProng2, pProng2, float);             //! Momentum of prong2 (GeV/c)
+DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);       //! TPC Nsigma separation for prong0 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);       //! TPC Nsigma separation for prong0 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float);       //! TOF Nsigma separation for prong0 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);       //! TOF Nsigma separation for prong0 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofPi0, nSigTpcTofPi0, float); //! TPC and TOF combined Nsigma separation for prong0 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofKa0, nSigTpcTofKa0, float); //! TPC and TOF combined Nsigma separation for prong0 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);       //! TPC Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float);       //! TPC Nsigma separation for prong1 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);       //! TOF Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);       //! TOF Nsigma separation for prong1 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofPi1, nSigTpcTofPi1, float); //! TPC and TOF combined Nsigma separation for prong1 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofKa1, nSigTpcTofKa1, float); //! TPC and TOF combined Nsigma separation for prong1 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float);       //! TPC Nsigma separation for prong2 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcKa2, nSigTpcKa2, float);       //! TPC Nsigma separation for prong2 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float);       //! TOF Nsigma separation for prong2 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float);       //! TOF Nsigma separation for prong2 with kaon mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofPi2, nSigTpcTofPi2, float); //! TPC and TOF combined Nsigma separation for prong2 with pion mass hypothesis
+DECLARE_SOA_COLUMN(NSigTpcTofKa2, nSigTpcTofKa2, float); //! TPC and TOF combined Nsigma separation for prong2 with kaon mass hypothesis
 // Candidate
 DECLARE_SOA_COLUMN(M, m, float);                                             //! Invariant mass of candidate (GeV/c2)
 DECLARE_SOA_COLUMN(Pt, pt, float);                                           //! Transverse momentum of candidate (GeV/c)
@@ -87,14 +93,20 @@ DECLARE_SOA_TABLE(HfCandDsLites, "AOD", "HFCANDDSLITE",
                   full::NSigTpcKa0,
                   full::NSigTofPi0,
                   full::NSigTofKa0,
+                  full::NSigTpcTofPi0,
+                  full::NSigTpcTofKa0,
                   full::NSigTpcPi1,
                   full::NSigTpcKa1,
                   full::NSigTofPi1,
                   full::NSigTofKa1,
+                  full::NSigTpcTofPi1,
+                  full::NSigTpcTofKa1,
                   full::NSigTpcPi2,
                   full::NSigTpcKa2,
                   full::NSigTofPi2,
                   full::NSigTofKa2,
+                  full::NSigTpcTofPi2,
+                  full::NSigTpcTofKa2,
                   hf_sel_candidate_ds::IsSelDsToKKPi,
                   hf_sel_candidate_ds::IsSelDsToPiKK,
                   full::M,
@@ -114,7 +126,8 @@ DECLARE_SOA_TABLE(HfCandDsLites, "AOD", "HFCANDDSLITE",
                   full::AbsCos3PiK,
                   hf_cand::Chi2PCA,
                   hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec)
+                  hf_cand_3prong::OriginMcRec,
+                  hf_cand_3prong::FlagMcDecayChanRec)
 
 DECLARE_SOA_TABLE(HfCandDsFulls, "AOD", "HFCANDDSFULL",
                   collision::BCId,
@@ -144,14 +157,20 @@ DECLARE_SOA_TABLE(HfCandDsFulls, "AOD", "HFCANDDSFULL",
                   full::NSigTpcKa0,
                   full::NSigTofPi0,
                   full::NSigTofKa0,
+                  full::NSigTpcTofPi0,
+                  full::NSigTpcTofKa0,
                   full::NSigTpcPi1,
                   full::NSigTpcKa1,
                   full::NSigTofPi1,
                   full::NSigTofKa1,
+                  full::NSigTpcTofPi1,
+                  full::NSigTpcTofKa1,
                   full::NSigTpcPi2,
                   full::NSigTpcKa2,
                   full::NSigTofPi2,
                   full::NSigTofKa2,
+                  full::NSigTpcTofPi2,
+                  full::NSigTpcTofKa2,
                   hf_sel_candidate_ds::IsSelDsToKKPi,
                   hf_sel_candidate_ds::IsSelDsToPiKK,
                   hf_cand::XSecondaryVertex,
@@ -177,7 +196,8 @@ DECLARE_SOA_TABLE(HfCandDsFulls, "AOD", "HFCANDDSFULL",
                   full::AbsCos3PiK,
                   hf_cand::Chi2PCA,
                   hf_cand_3prong::FlagMcMatchRec,
-                  hf_cand_3prong::OriginMcRec);
+                  hf_cand_3prong::OriginMcRec,
+                  hf_cand_3prong::FlagMcDecayChanRec);
 
 DECLARE_SOA_TABLE(HfCandDsFullEvs, "AOD", "HFCANDDSFULLEV",
                   collision::BCId,
@@ -205,7 +225,8 @@ struct HfTreeCreatorDsToKKPi {
   Produces<o2::aod::HfCandDsFullPs> rowCandidateFullParticles;
   Produces<o2::aod::HfCandDsLites> rowCandidateLite;
 
-  Configurable<int> decayChannel{"decayChannel", 1, "Switch between decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
+  Configurable<int> decayChannel{"decayChannel", 1, "Switch between decay channels: 1 for Ds/Dplus->PhiPi->KKpi, 2 for Ds/Dplus->K0*K->KKPi"};
+  Configurable<bool> fillDplusMc{"fillDplusMc", false, "Switch to fill Dplus MC information"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 1, "Selection flag for Ds"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   // parameters for production of training samples
@@ -219,15 +240,17 @@ struct HfTreeCreatorDsToKKPi {
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;
   using CandDsMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPiExt, aod::TracksPidKaExt>;
+
+  int offsetDplusDecayChannel = aod::hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi - aod::hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi; // Offset between Dplus and Ds to use the same decay channel. See aod::hf_cand_3prong::DecayChannelDToKKPi
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanGen == decayChannel;
+  Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && (aod::hf_cand_3prong::flagMcDecayChanGen == decayChannel || (fillDplusMc && aod::hf_cand_3prong::flagMcDecayChanGen == (decayChannel + offsetDplusDecayChannel))); // Do not store Dplus MC if fillDplusMc is false
 
   Partition<CandDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
   Partition<CandDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
 
-  Partition<CandDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
+  Partition<CandDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && (aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel || (fillDplusMc && aod::hf_cand_3prong::flagMcDecayChanRec == (decayChannel + offsetDplusDecayChannel))); // Do not store Dplus MC if fillDplusMc is false
   Partition<CandDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi));
 
   void init(InitContext const&)
@@ -256,9 +279,23 @@ struct HfTreeCreatorDsToKKPi {
   {
     int8_t flagMc = 0;
     int8_t originMc = 0;
+    int8_t channelMc = 0;
+    float yCand = 0;
+    float eCand = 0;
+    float ctCand = 0;
     if constexpr (doMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
+      channelMc = candidate.flagMcDecayChanRec();
+      if (fillDplusMc && candidate.flagMcDecayChanRec() == (decayChannel + offsetDplusDecayChannel)) {
+        yCand = hfHelper.yDplus(candidate);
+        eCand = hfHelper.eDplus(candidate);
+        ctCand = hfHelper.ctDplus(candidate);
+      } else {
+        yCand = hfHelper.yDs(candidate);
+        eCand = hfHelper.eDs(candidate);
+        ctCand = hfHelper.ctDs(candidate);
+      }
     }
 
     float invMassDs = 0;
@@ -290,21 +327,27 @@ struct HfTreeCreatorDsToKKPi {
         prong0.tpcNSigmaKa(),
         prong0.tofNSigmaPi(),
         prong0.tofNSigmaKa(),
+        prong0.tpcTofNSigmaPi(),
+        prong0.tpcTofNSigmaKa(),
         prong1.tpcNSigmaPi(),
         prong1.tpcNSigmaKa(),
         prong1.tofNSigmaPi(),
         prong1.tofNSigmaKa(),
+        prong1.tpcTofNSigmaPi(),
+        prong1.tpcTofNSigmaKa(),
         prong2.tpcNSigmaPi(),
         prong2.tpcNSigmaKa(),
         prong2.tofNSigmaPi(),
         prong2.tofNSigmaKa(),
+        prong2.tpcTofNSigmaPi(),
+        prong2.tpcTofNSigmaKa(),
         candidate.isSelDsToKKPi(),
         candidate.isSelDsToPiKK(),
         invMassDs,
         candidate.pt(),
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yDs(candidate),
+        yCand,
         candidate.decayLength(),
         candidate.decayLengthXY(),
         candidate.decayLengthNormalised(),
@@ -317,7 +360,8 @@ struct HfTreeCreatorDsToKKPi {
         absCos3PiKDs,
         candidate.chi2PCA(),
         flagMc,
-        originMc);
+        originMc,
+        channelMc);
     } else {
       rowCandidateFull(
         candidate.collision().bcId(),
@@ -347,14 +391,20 @@ struct HfTreeCreatorDsToKKPi {
         prong0.tpcNSigmaKa(),
         prong0.tofNSigmaPi(),
         prong0.tofNSigmaKa(),
+        prong0.tpcTofNSigmaPi(),
+        prong0.tpcTofNSigmaKa(),
         prong1.tpcNSigmaPi(),
         prong1.tpcNSigmaKa(),
         prong1.tofNSigmaPi(),
         prong1.tofNSigmaKa(),
+        prong1.tpcTofNSigmaPi(),
+        prong1.tpcTofNSigmaKa(),
         prong2.tpcNSigmaPi(),
         prong2.tpcNSigmaKa(),
         prong2.tofNSigmaPi(),
         prong2.tofNSigmaKa(),
+        prong2.tpcTofNSigmaPi(),
+        prong2.tpcTofNSigmaKa(),
         candidate.isSelDsToKKPi(),
         candidate.isSelDsToPiKK(),
         candidate.xSecondaryVertex(),
@@ -363,11 +413,11 @@ struct HfTreeCreatorDsToKKPi {
         invMassDs,
         candidate.pt(),
         candidate.p(),
-        hfHelper.ctDs(candidate),
+        ctCand,
         candidate.eta(),
         candidate.phi(),
-        hfHelper.yDs(candidate),
-        hfHelper.eDs(candidate),
+        yCand,
+        eCand,
         candidate.decayLength(),
         candidate.decayLengthXY(),
         candidate.decayLengthNormalised(),
@@ -380,7 +430,8 @@ struct HfTreeCreatorDsToKKPi {
         absCos3PiKDs,
         candidate.chi2PCA(),
         flagMc,
-        originMc);
+        originMc,
+        channelMc);
     }
   }
 

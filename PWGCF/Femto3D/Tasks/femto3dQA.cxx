@@ -144,7 +144,7 @@ struct QAHistograms {
     }
 
     for (auto& track : tracks) {
-      if (abs(track.singleCollSel().posZ()) > _vertexZ)
+      if (abs(track.template singleCollSel_as<ColsType>().posZ()) > _vertexZ)
         continue;
       if ((track.tpcNClsShared()) > _tpcNClsShared || (track.itsNCls()) < _itsNCls)
         continue;

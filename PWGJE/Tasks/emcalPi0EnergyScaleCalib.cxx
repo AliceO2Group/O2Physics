@@ -53,19 +53,24 @@ using collisionEvSelIt = o2::aod::Collision;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
 using selectedCluster = o2::soa::Filtered<o2::aod::EMCALCluster>;
 
-// Columns behind the TRD support structure to investigate the scaling factor seperately for this region
-constexpr std::array<int, 20> TRDColumns{5, 6, 7, 8, 9, 34, 35, 36, 37, 38, 59, 60, 61, 62, 63, 87, 88, 89, 90, 91};
-
 // Returns a boolean on whether a given EMCal column is behind the TRD support structure
 bool IsBehindTRD(int col)
 {
+  // Columns behind the TRD support structure to investigate the scaling factor seperately for this region
+  static constexpr std::array<int, 16> TRDColumns{7, 8, 9, 10, 34, 35, 36, 37, 58, 59, 60, 61, 85, 86, 87, 88}; // Observed in calibration ratios
   return std::find(std::begin(TRDColumns), std::end(TRDColumns), col) != std::end(TRDColumns);
 }
 
 // Returns a boolean on whether a given EMCal row is on the border of a given supermodule
-bool IsAtBorder(int row, bool smallmodule)
+bool IsAtRowBorder(int row, bool smallmodule)
 {
   return (row == 0 || (smallmodule && row == 7) || (!smallmodule && row == 23));
+}
+
+// Returns a boolean on whether a given EMCal col is on the border of a given supermodule
+bool IsAtColBorder(int col)
+{
+  return (col == 0 || col == 47 || col == 48 || col == 95);
 }
 
 // Return one of nine acceptance categories and set the second and third parameter to the global row and column
@@ -103,7 +108,7 @@ int GetAcceptanceCategory(int cellid, int& globalrow, int& globalcol, int& super
     supermodulecategory = 0;
     if (IsBehindTRD(col)) {
       return 1; // EMCalbehindTRD
-    } else if (IsAtBorder(row, false)) {
+    } else if (IsAtRowBorder(row, false)) {
       return 2; // EMCalBorder
     } else {
       return 3; // EMCalInside
@@ -112,7 +117,7 @@ int GetAcceptanceCategory(int cellid, int& globalrow, int& globalcol, int& super
     supermodulecategory = 1;
     if (IsBehindTRD(col)) {
       return 4; // DCalbehindTRD
-    } else if (IsAtBorder(row, false)) {
+    } else if (IsAtRowBorder(row, false)) {
       return 5; // DCalBorder
     } else {
       return 6; // DCalInside
@@ -121,7 +126,7 @@ int GetAcceptanceCategory(int cellid, int& globalrow, int& globalcol, int& super
     supermodulecategory = 2;
     if (IsBehindTRD(col)) {
       return 7; // OneThirdbehindTRD
-    } else if (IsAtBorder(row, true)) {
+    } else if (IsAtRowBorder(row, true)) {
       return 8; // OneThirdBorder
     } else {
       return 9; // OneThirdInside
@@ -198,6 +203,7 @@ struct Pi0EnergyScaleCalibTask {
   Configurable<float> mMinOpenAngleCut{"OpeningAngleCut", 0.0202, "apply min opening angle cut"};
   Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
   Configurable<bool> mRequireBothPhotonsFromAcceptance{"RequireBothPhotonsFromAcceptance", 0, "Require both photons to be from the same acceptance category"};
+  Configurable<int> mAcceptanceRestrictionType{"AcceptanceRestrictionType", 0, "0: No restriction, 1: Ignore behind TRD, 2: Only Behind TRD, 3: Only EMCal, 4: OnlyDCal, 5: Remove clusters on edges"};
 
   ConfigurableAxis pTBinning{"pTBinning", {200, 0.0f, 20.0f}, "Binning used along pT axis for inv mass histograms"};
   ConfigurableAxis invmassBinning{"invmassBinning", {200, 0.0f, 0.4f}, "Binning used for inv mass axis in inv mass - pT histograms"};
@@ -257,6 +263,8 @@ struct Pi0EnergyScaleCalibTask {
     mHistManager.add("clusterNCells", "Number of cells in cluster", o2HistType::kTH1I, {{50, 0, 50, "#it{N}_{cells}"}});
     mHistManager.add("clusterDistanceToBadChannel", "Distance to bad channel", o2HistType::kTH1F, {{100, 0, 100, "#it{d}"}});
 
+    mHistManager.add("invMassVsPt", "invariant mass and pT of meson candidates", o2HistType::kTH2F, {invmassBinning, pTBinning});
+    mHistManager.add("invMassVsPtBackground", "invariant mass and pT of meson candidates", o2HistType::kTH2F, {invmassBinning, pTBinning});
     mHistManager.add("invMassVsPtVsAcc", "invariant mass and pT of meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, AccCategoryAxis});
     mHistManager.add("invMassVsPtVsAccBackground", "invariant mass and pT of background meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, AccCategoryAxis});
     mHistManager.add("invMassVsPtVsRow", "invariant mass and pT of meson candidates", o2HistType::kTH3F, {invmassBinning, pTBinning, RowAxis});
@@ -333,7 +341,7 @@ struct Pi0EnergyScaleCalibTask {
 
       int cellid = GetLeadingCellID(cluster, cells);
 
-      if (ClusterRejectedByCut(cluster)) {
+      if (ClusterRejectedByCut(cluster, cellid)) {
         continue;
       }
 
@@ -367,7 +375,7 @@ struct Pi0EnergyScaleCalibTask {
 
   /// \brief Return a boolean that states, whether a cluster should be rejected by the applied cluster cuts
   template <typename Cluster>
-  bool ClusterRejectedByCut(Cluster const& cluster)
+  bool ClusterRejectedByCut(Cluster const& cluster, int cellid)
   {
     // apply basic cluster cuts
     if (cluster.energy() < mMinEnergyCut) {
@@ -389,6 +397,41 @@ struct Pi0EnergyScaleCalibTask {
       LOG(debug) << "Cluster rejected because of time cut";
       return true;
     }
+
+    int row, col, supermodulecategory = 0;
+    GetAcceptanceCategory(cellid, row, col, supermodulecategory);
+    switch (mAcceptanceRestrictionType) {
+      case 0:
+        break;
+      case 1: // Not behind TRD
+        if (IsBehindTRD(col)) {
+          return true;
+        }
+        break;
+      case 2: // Only behind TRD
+        if (!IsBehindTRD(col)) {
+          return true;
+        }
+        break;
+      case 3: // Only EMCal
+        if (supermodulecategory != 0) {
+          return true;
+        }
+        break;
+      case 4: // Only DCal
+        if (supermodulecategory != 1) {
+          return true;
+        }
+        break;
+      case 5: // Remove clusters at SM edges
+        if (IsAtRowBorder(row, supermodulecategory == 2) || IsAtColBorder(col)) {
+          return true;
+        }
+        break;
+      default:
+        break;
+    }
+
     return false;
   }
 
@@ -404,6 +447,7 @@ struct Pi0EnergyScaleCalibTask {
       for (unsigned int ig2 = ig1 + 1; ig2 < mPhotons.size(); ++ig2) {
         Meson meson(mPhotons[ig1], mPhotons[ig2]); // build meson from photons
         if (meson.getOpeningAngle() > mMinOpenAngleCut) {
+          mHistManager.fill(HIST("invMassVsPt"), meson.getMass(), meson.getPt());
           mHistManager.fill(HIST("invMassVsPtVsAcc"), meson.getMass(), meson.getPt(), 0.);
           if (mPhotons[ig1].supermodulecategory == mPhotons[ig2].supermodulecategory)
             mHistManager.fill(HIST("invMassVsPtVsSMCat"), meson.getMass(), meson.getPt(), mPhotons[ig1].supermodulecategory);
@@ -461,6 +505,7 @@ struct Pi0EnergyScaleCalibTask {
 
       // Fill histograms
       if (mesonRotated1.getOpeningAngle() > mMinOpenAngleCut) {
+        mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated1.getMass(), mesonRotated1.getPt());
         mHistManager.fill(HIST("invMassVsPtVsAccBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), 0);
         if (mPhotons[ig3].supermodulecategory == rotPhoton1.supermodulecategory)
           mHistManager.fill(HIST("invMassVsPtVsSMCatBackground"), mesonRotated1.getMass(), mesonRotated1.getPt(), mPhotons[ig3].supermodulecategory);
@@ -476,6 +521,7 @@ struct Pi0EnergyScaleCalibTask {
         }
       }
       if (mesonRotated2.getOpeningAngle() > mMinOpenAngleCut) {
+        mHistManager.fill(HIST("invMassVsPtBackground"), mesonRotated2.getMass(), mesonRotated2.getPt());
         mHistManager.fill(HIST("invMassVsPtVsAccBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), 0);
         if (mPhotons[ig3].supermodulecategory == rotPhoton2.supermodulecategory)
           mHistManager.fill(HIST("invMassVsPtVsSMCatBackground"), mesonRotated2.getMass(), mesonRotated2.getPt(), mPhotons[ig3].supermodulecategory);
