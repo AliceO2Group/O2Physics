@@ -193,6 +193,7 @@ struct TagTwoProngDisplacedVertices {
     ptBinsForTopologicalCuts = {binsPtPiPiFromDplus, binsKaKaFromDsOrDplus, binsPtDzeroFromDstar, binsPtDzeroFromDstar, binsPtDzeroKaKaFromDstar};
 
     const AxisSpec axisPt{250, 0.f, 50.f};
+    const AxisSpec axisPtDzeroRefl{{0.f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 10.0f, 12.0f, 14.0f, 16.0f, 18.0f, 20.0f, 24.0f, 30.0f, 40.0f}};
     const AxisSpec axisMassPiPi{250, 0.f, 2.5f};
     const AxisSpec axisReflFlag{3, 0.5f, 3.5f};
     const AxisSpec axisMassKaKa{200, constants::physics::MassPhi - 0.05f, constants::physics::MassPhi + 0.05f};
@@ -208,7 +209,7 @@ struct TagTwoProngDisplacedVertices {
       if (!studyDzeroReflections) {
         registry.add<TH2>("hMassKaPiVsPt", ";#it{p}_{T}(K#pi) (GeV/#it{c}); #it{M}(K#pi) (GeV/#it{c}^{2})", HistType::kTH2D, {axisPt, axisMassKaPi});
       } else {
-        registry.add<THn>("hMassKaPiVsPt", ";#it{p}_{T}(K#pi) (GeV/#it{c}); #it{M}(K#pi) (GeV/#it{c}^{2}); #it{M}(#piK) (GeV/#it{c}^{2}); ReflFag", HistType::kTHnF, {axisPt, axisMassKaPi, axisMassKaPi, axisReflFlag});
+        registry.add<THnSparse>("hMassKaPiVsPt", ";#it{p}_{T}(K#pi) (GeV/#it{c}); #it{M}(K#pi) (GeV/#it{c}^{2}); #it{M}(#piK) (GeV/#it{c}^{2}); ReflFag", HistType::kTHnSparseF, {axisPtDzeroRefl, axisMassKaPi, axisMassKaPi, axisReflFlag});
       }
     }
     if (doprocessKaKaFromDzero) {
