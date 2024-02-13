@@ -447,8 +447,8 @@ struct phiInJets {
     JEhistos.fill(HIST("nEvents_MCRec"), 0.5);
     if (fabs(collision.posZ()) > 10)
       return;
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) 
-      return;    
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
+      return;
     JEhistos.fill(HIST("nEvents_MCRec"), 1.5);
 
     // Track Eff
@@ -679,7 +679,7 @@ struct phiInJets {
   {
     if (fabs(collision.posZ()) > 10)
       return;
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) 
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
       return;
 
     std::vector<double> mcd_pt{};
