@@ -1527,8 +1527,8 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
         histos.fill(HIST("Tracks/Kine/resoEta"), track.eta() - particle.eta(), track.eta());
         histos.fill(HIST("Tracks/Kine/resoPhi"), track.phi() - particle.phi(), track.phi());
         // split eta range
-        if (eta > 0) { // positive eta
-          histos.fill(HIST("Tracks/Kine/resoPtEtaPlus"), track.pt() - particle.pt(), track.pt()); //
+        if (eta > 0) {                                                                                     // positive eta
+          histos.fill(HIST("Tracks/Kine/resoPtEtaPlus"), track.pt() - particle.pt(), track.pt());          //
           histos.fill(HIST("Tracks/Kine/resoPtVsptmcEtaPlus"), track.pt() - particle.pt(), particle.pt()); //
           histos.fill(HIST("Tracks/Kine/pullInvPtVsInvPtmcEtaPlus"), (std::abs(track.signed1Pt()) - 1.f / particle.pt()) / std::sqrt(track.c1Pt21Pt2()), 1.f / particle.pt());
           if (particle.pt() > 0.f) {
@@ -1544,7 +1544,6 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
           }
           histos.fill(HIST("Tracks/Kine/resoInvPtVsPtEtaMinus"), track.signed1Pt() - 1.f / particle.pt(), particle.pt());
         }
-
       }
     }
 
