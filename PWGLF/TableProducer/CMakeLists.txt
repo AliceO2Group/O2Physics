@@ -10,6 +10,7 @@
 # or submit itself to any jurisdiction.
 
 add_subdirectory(QC)
+add_subdirectory(converters)
 
 # General purpose
 o2physics_add_dpl_workflow(tpcpid
