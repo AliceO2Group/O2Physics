@@ -34,8 +34,8 @@ DECLARE_SOA_TABLE(StraCents, "AOD", "STRACENTS", //! centrality percentiles
 DECLARE_SOA_TABLE(StraRawCents_000, "AOD", "STRARAWCENTS", //! debug information
                   mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, mult::MultNTracksPVeta1);
 DECLARE_SOA_TABLE_VERSIONED(StraRawCents_001, "AOD", "STRARAWCENTS", 1, //! debug information
-                  mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, mult::MultNTracksPVeta1,
-                  mult::MultZNA, mult::MultZNC, mult::MultZEM1, mult::MultZEM2, mult::MultZPA, mult::MultZPC);
+                            mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, mult::MultNTracksPVeta1,
+                            mult::MultZNA, mult::MultZNC, mult::MultZEM1, mult::MultZEM2, mult::MultZPA, mult::MultZPC);
 DECLARE_SOA_TABLE(StraEvSels, "AOD", "STRAEVSELS", //! event selection: sel8
                   evsel::Sel8);
 DECLARE_SOA_TABLE(StraFT0AQVs, "AOD", "STRAFT0AQVS", //! t0a Qvec
