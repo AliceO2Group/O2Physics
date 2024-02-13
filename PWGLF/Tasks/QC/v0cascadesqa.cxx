@@ -50,10 +50,6 @@ struct v0cascadesQA {
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
   Configurable<bool> doextraanalysis{"doextraanalysis", 0, "Add extra histograms"};
 
-  // configurable selections
-  Configurable<float> d_etaMin{"d_etaMin", 0, "minimum V0 eta"};
-  Configurable<float> d_etaMax{"d_etaMax", 0.8, "maximum V0 eta"};
-
   // configurable binning of histograms
   ConfigurableAxis binPt{"binPt", {100, 0.0f, 10.0f}, ""};
   ConfigurableAxis binPtsmall{"binPtsmall", {50, 0.0f, 10.0f}, ""};
@@ -85,8 +81,6 @@ struct v0cascadesQA {
   ConfigurableAxis binRadiussmall{"binRadiussmall", {30, 0.0f, 30.0f}, ""};
   ConfigurableAxis binITSMapDaughters{"binITSMapDaughters", {8, -0.5f, 7.5f}, ""};
   ConfigurableAxis binInvMassCasc{"binInvMassCasc", {1000, 0.f, 1.0f}, ""};
-
-  // Filter V0FilterEta = (o2::aod::v0data::eta < d_etaMax && o2::aod::v0data::eta >= d_etaMin);
 
   int dauEtaFlag = 0;
 
