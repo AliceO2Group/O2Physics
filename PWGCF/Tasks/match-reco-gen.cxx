@@ -303,9 +303,9 @@ struct CheckGeneratorLevelVsDetectorLevel {
           histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecomrphi"), track1.phi(), particle.phi());
           histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("genrecomrpt"), track1.pt(), particle.pt());
           if (particle.mcCollisionId() != colls.iteratorAt(track1.collisionId()).mcCollisionId()) {
-            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("matchcollidmr"), kDONTMATCH + 0.5f);
+            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("matchcollidmr"), static_cast<float>(kDONTMATCH) + 0.5f);
           } else {
-            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("matchcollidmr"), kMATCH + 0.5f);
+            histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("matchcollidmr"), static_cast<float>(kMATCH) + 0.5f);
           }
         }
       } else if (nrec > 0) {
@@ -330,9 +330,9 @@ struct CheckGeneratorLevelVsDetectorLevel {
             LOGF(info, "        associated to track with index %d and label %d assigned to collision %d, with associated MC collision %d",
                  track.globalIndex(), ixpart, track.collisionId(), colls.iteratorAt(track.collisionId()).mcCollisionId());
           }
-          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("matchcollid"), kDONTMATCH + 0.5f);
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("matchcollid"), static_cast<float>(kDONTMATCH) + 0.5f);
         } else {
-          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("matchcollid"), kMATCH + 0.5f);
+          histos.fill(HIST(dir[ba]) + HIST(colldir[collsign]) + HIST("matchcollid"), static_cast<float>(kMATCH) + 0.5f);
         }
       }
     }
@@ -436,16 +436,11 @@ struct CheckGeneratorLevelVsDetectorLevel {
           float centormult = -100.0f;
           if (IsEvtSelected(coll, centormult)) {
             /* TODO: AcceptTrack does not consider PID */
-            int pid = AcceptTrack(track);
-            if ((pid == 0) || (pid == 1)) {
+            if (AcceptTrack(track)) {
               /* the track has been accepted */
               nreco++;
               LOGF(MATCHRECGENLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.template mcParticle_as<aod::McParticles>().mcCollisionId());
               mclabelpos[kPOSITIVE][label].push_back(recix);
-            } else {
-              if (pid > 1) {
-                LOGF(fatal, "Task not prepared for PID");
-              }
             }
           }
         }

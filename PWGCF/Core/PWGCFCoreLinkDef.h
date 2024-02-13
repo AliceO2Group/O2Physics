@@ -8,6 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#ifndef PWGCF_CORE_PWGCFCORELINKDEF_H_
+#define PWGCF_CORE_PWGCFCORELINKDEF_H_
 
 #pragma link off all globals;
 #pragma link off all classes;
@@ -17,5 +19,7 @@
 #pragma link C++ class o2::analysis::DptDptBinningCuts + ;
 #pragma link C++ class o2::analysis::CheckRangeCfg + ;
 #pragma link C++ class o2::analysis::TrackSelectionCfg + ;
+#pragma link C++ class o2::analysis::TrackSelectionPIDCfg + ;
 #pragma link C++ class o2::analysis::SimpleInclusiveCut + ;
 #pragma link C++ class CorrelationContainer + ;
+#endif // PWGCF_CORE_PWGCFCORELINKDEF_H_

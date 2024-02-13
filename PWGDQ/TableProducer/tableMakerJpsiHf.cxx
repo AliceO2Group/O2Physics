@@ -38,8 +38,8 @@ using namespace o2::aod::hf_cand_2prong;
 
 // Declarations of various short names
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
-using MyDileptonCandidatesSelected = soa::Join<aod::Dileptons, aod::DileptonsInfo>;
-using MyDileptonCandidatesSelectedWithDca = soa::Join<aod::Dileptons, aod::DileptonsExtra, aod::DileptonsInfo>;
+using MyDileptonCandidatesSelected = soa::Join<aod::Dimuons, aod::DileptonsInfo>;
+using MyDileptonCandidatesSelectedWithDca = soa::Join<aod::Dimuons, aod::DimuonsExtra, aod::DileptonsInfo>;
 using MyD0CandidatesSelected = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
 using MyD0CandidatesSelectedWithBdt = soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>;
 

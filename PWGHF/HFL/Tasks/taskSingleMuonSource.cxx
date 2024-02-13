@@ -62,12 +62,17 @@ DECLARE_SOA_TABLE(HfMuonSource, "AOD", "MUONSOURCE", muon_source::Pt, muon_sourc
 struct HfTaskSingleMuonSource {
   Produces<aod::HfMuonSource> singleMuonSource;
 
-  Configurable<bool> applyMcMask{"applyMcMask", true, "Flag of apply the mcMask selection"};
+  Configurable<int> mcMaskSelection{"mcMaskSelection", 0, "McMask for correct match, valid values are 0 and 128"};
   Configurable<int> trackType{"trackType", 0, "Muon track type, validated values are 0, 1, 2, 3 and 4"};
 
-  double etaLow = -3.6; // low edge of eta acceptance
-  double etaUp = -2.5;  // up edge of eta acceptance
-  double edgeZ = 10.0;  // edge of event position Z
+  double pDcaMin = 324.0; // p*DCA maximum value for small Rabs
+  double pDcaMax = 594.0; // p*DCA maximum value for large Rabs
+  double rAbsMin = 17.6;  // R at absorber end minimum value
+  double rAbsMax = 89.5;  // R at absorber end maximum value
+  double rAbsMid = 26.5;  // R at absorber end split point for different p*DCA selections
+  double etaLow = -3.6;   // low edge of eta acceptance
+  double etaUp = -2.5;    // up edge of eta acceptance
+  double edgeZ = 10.0;    // edge of event position Z
 
   HistogramRegistry registry{
     "registry",
@@ -285,14 +290,25 @@ struct HfTaskSingleMuonSource {
       if (muon.trackType() != trackType) {
         continue;
       }
-      if (applyMcMask && (muon.mcMask() != 0)) {
+      if (muon.mcMask() != mcMaskSelection) {
         continue;
       }
-      const auto eta(muon.eta());
+      const auto eta(muon.eta()), pDca(muon.pDca()), rAbs(muon.rAtAbsorberEnd());
       if ((eta >= etaUp) || (eta < etaLow)) {
         continue;
       }
-
+      if ((rAbs >= rAbsMax) || (rAbs < rAbsMin)) {
+        continue;
+      }
+      if ((rAbs < rAbsMid) && (pDca >= pDcaMin)) {
+        continue;
+      }
+      if ((rAbs >= rAbsMid) && (pDca >= pDcaMax)) {
+        continue;
+      }
+      if ((muon.chi2() >= 1e6) || (muon.chi2() < 0)) {
+        continue;
+      }
       fillHistograms(muon);
     } // loop over muons
   }

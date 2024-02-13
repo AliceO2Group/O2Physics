@@ -10,12 +10,16 @@
 // or submit itself to any jurisdiction.
 
 #include <vector>
+#include <random>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
@@ -38,11 +42,10 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCDe, aod::pidTPCPr, aod::pidTPCPi, aod::TOFSignal, aod::TOFEvTime>;
+using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCDe, aod::pidTPCPr, aod::pidTPCPi, aod::TOFSignal, aod::TOFEvTime>;
 
 namespace
 {
-// constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 constexpr double betheBlochDefault[1][6]{{-136.71, 0.441, 0.2269, 1.347, 0.8035, 0.09}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleNamesBB{"d"};
@@ -50,23 +53,31 @@ static const std::vector<std::string> pidHypotheses{"Electron", "Muon", "Pion", 
 } // namespace
 
 struct antidLambdaEbye {
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::pid::tof::Beta<TracksFull::iterator> responseBeta;
+  std::mt19937 gen32;
+
+  int nSubsamples;
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
+  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 1, 6, particleNamesBB, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
+
+  ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
+  ConfigurableAxis subsampleAxis{"subsampleAxis", {30, 0, 30}, "binning of the subsample axis"};
+  ConfigurableAxis deltaEtaAxis{"deltaEtaAxis", {4, 0, 0.8}, "binning of the delta eta axis"};
+  ConfigurableAxis ptAntidAxis{"ptAntidAxis", {VARIABLE_WIDTH, 0.7f, 0.8f, 0.9f, 1.0f, 1.2f, 1.4f, 1.6f, 1.8f}, "binning of the antideuteron pT axis (GeV/c)"};
+  ConfigurableAxis ptLambdaAxis{"ptLambdaAxis", {VARIABLE_WIDTH, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f}, "binning of the (anti)lambda pT axis (GeV/c)"};
 
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
-  ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.03f, o2::constants::physics::MassLambda0 + 0.03f}, "binning for the lambda invariant-mass"};
-  ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
 
+  // binning of (anti)lambda QA histograms
+  ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.03f, o2::constants::physics::MassLambda0 + 0.03f}, "binning for the lambda invariant-mass"};
   ConfigurableAxis cosPaAxis{"cosPaAxis", {1e3, 0.95f, 1.00f}, "binning for the cosPa axis"};
   ConfigurableAxis radiusAxis{"radiusAxis", {1e3, 0.f, 100.f}, "binning for the radius axis"};
   ConfigurableAxis dcaV0daughAxis{"dcaV0daughAxis", {2e2, 0.f, 2.f}, "binning for the dca of V0 daughters"};
   ConfigurableAxis dcaDaughPvAxis{"dcaDaughPvAxis", {1e3, -10.f, 10.f}, "binning for the dca of positive daughter to PV"};
 
-  Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 1, 6, particleNamesBB, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for He3"};
+  // binning of deuteron QA histograms
   ConfigurableAxis tpcNsigmaAxis{"tpcNsigmaAxis", {100, -5.f, 5.f}, "tpc nsigma axis"};
-  // ConfigurableAxis tofNsigmaAxis{"tofNsigmaAxis", {100, -5.f, 5.f}, "tof nsigma axis"};
   ConfigurableAxis tofMassAxis{"tofMassAxis", {1000, 0., 3.f}, "tof mass axis"};
   ConfigurableAxis momAxis{"momAxis", {60., 0.f, 3.f}, "momentum axis binning"};
   ConfigurableAxis momAxisFine{"momAxisFine", {5.e2, 0.f, 5.f}, "momentum axis binning"};
@@ -74,15 +85,6 @@ struct antidLambdaEbye {
   ConfigurableAxis tpcAxis{"tpcAxis", {4.e2, 0.f, 4.e3f}, "tpc signal axis binning"};
   ConfigurableAxis tofAxis{"tofAxis", {1.e3, 0.f, 1.f}, "tof signal axis binning"};
   ConfigurableAxis trackingPidAxis{"trackingPidAxis", {static_cast<double>(pidHypotheses.size()), 0, static_cast<double>(pidHypotheses.size())}, "tracking pid hypothesis binning"};
-
-  // CCDB options
-  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<std::string> pidPath{"pidPath", "", "Path to the PID response object"};
 
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
@@ -110,10 +112,12 @@ struct antidLambdaEbye {
   Configurable<float> v0setting_radius{"v0setting_radius", 0.5f, "v0radius"};
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.005f, "maximum deviation from PDG mass"};
 
-  int mRunNumber;
-  float d_bz;
-
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry tempHistos{"tempHistos", {}, OutputObjHandlingPolicy::TransientObject};
+
+  std::shared_ptr<TH2> tempAntid;
+  std::shared_ptr<TH2> tempAntiLambda;
+  std::shared_ptr<TH2> tempLambda;
 
   Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv &&
                         nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
@@ -156,33 +160,27 @@ struct antidLambdaEbye {
 
   void init(o2::framework::InitContext&)
   {
-    ccdb->setURL(ccdburl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false);
 
-    mRunNumber = 0;
-    d_bz = 0;
+    uint32_t randomSeed = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    gen32.seed(randomSeed);
 
     histos.add<TH1>("zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
 
-    histos.add<TH1>("nEv", ";Centrality (%);Entries", {HistType::kTH1D}, {centAxis});
+    auto hNev = histos.add<THnSparse>("nEv", ";Subsample;Centrality (%);", {HistType::kTHnSparseD}, {subsampleAxis, centAxis});
+    nSubsamples = hNev->GetAxis(0)->GetNbins();
 
-    histos.add<TH1>("q1antid", ";Centrality (%);#it{q}_{1}(#bar{d})", {HistType::kTH1D}, {centAxis});
-    histos.add<TH1>("q1sqantid", ";Centrality (%);#it{q}_{1}^{2}(#bar{d})", {HistType::kTH1D}, {centAxis});
-    histos.add<TH1>("q2antid", ";Centrality (%);#it{q}_{2}(#bar{d})", {HistType::kTH1D}, {centAxis});
+    histos.add<THnSparse>("nAntid", ";Subsample;Centrality (%);#Delta#eta;#it{p}_{T}(#bar{d}) (GeV/#it{c});", {HistType::kTHnSparseD}, {subsampleAxis, centAxis, deltaEtaAxis, ptAntidAxis});
+    histos.add<THnSparse>("nSqAntid", ";Subsample;Centrality (%);#Delta#eta;#it{p}_{T}(#bar{d}) (GeV/#it{c});", {HistType::kTHnSparseD}, {subsampleAxis, centAxis, deltaEtaAxis, ptAntidAxis});
 
-    histos.add<TH1>("q1antiL", ";Centrality (%);#it{q}_{1}(#bar{#Lambda})", {HistType::kTH1D}, {centAxis});
-    histos.add<TH1>("q1sqantiL", ";Centrality (%);#it{q}_{1}^{2}(#bar{#Lambda})", {HistType::kTH1D}, {centAxis});
-    histos.add<TH1>("q2antiL", ";Centrality (%);#it{q}_{2}(#bar{#Lambda})", {HistType::kTH1D}, {centAxis});
+    histos.add<THnSparse>("nAntiL", ";Subsample;Centrality (%);#Delta#eta;#it{p}_{T}(#bar{#Lambda}) (GeV/#it{c});", {HistType::kTHnSparseD}, {subsampleAxis, centAxis, deltaEtaAxis, ptLambdaAxis});
+    histos.add<THnSparse>("nSqAntiL", ";Subsample;Centrality (%);#Delta#eta;#it{p}_{T}(#bar{#Lambda}) (GeV/#it{c});", {HistType::kTHnSparseD}, {subsampleAxis, centAxis, deltaEtaAxis, ptLambdaAxis});
 
-    histos.add<TH1>("q1L", ";Centrality (%);#it{q}_{1}(#Lambda)", {HistType::kTH1D}, {centAxis});
-    histos.add<TH1>("q1sqL", ";Centrality (%);#it{q}_{1}^{2}(#Lambda)", {HistType::kTH1D}, {centAxis});
-    histos.add<TH1>("q2L", ";Centrality (%);#it{q}_{2}(#Lambda)", {HistType::kTH1D}, {centAxis});
+    histos.add<THnSparse>("nL", ";Subsample;Centrality (%);#Delta#eta;#it{p}_{T}(#Lambda) (GeV/#it{c});", {HistType::kTHnSparseD}, {subsampleAxis, centAxis, deltaEtaAxis, ptLambdaAxis});
+    histos.add<THnSparse>("nSqL", ";Subsample;Centrality (%);#Delta#eta;#it{p}_{T}(#Lambda) (GeV/#it{c});", {HistType::kTHnSparseD}, {subsampleAxis, centAxis, deltaEtaAxis, ptLambdaAxis});
 
-    histos.add<TH1>("q11LantiL", ";Centrality (%);#it{q}_{11}(#Lambda, #bar{#Lambda})", {HistType::kTH1D}, {centAxis});
-    histos.add<TH1>("q11Lantid", ";Centrality (%);#it{q}_{11}(#Lambda, #bar{d})", {HistType::kTH1D}, {centAxis});
-    histos.add<TH1>("q11antiLantid", ";Centrality (%);#it{q}_{11}(#bar{#Lambda}, #bar{d})", {HistType::kTH1D}, {centAxis});
+    histos.add<THnSparse>("nLantiL", ";Subsample;Centrality (%);#Delta#eta;#it{p}_{T}(#Lambda) (GeV/#it{c});#it{p}_{T}(#bar{#Lambda}) (GeV/#it{c});", {HistType::kTHnSparseD}, {subsampleAxis, centAxis, deltaEtaAxis, ptLambdaAxis, ptLambdaAxis});
+    histos.add<THnSparse>("nLantid", ";Subsample;Centrality (%);#Delta#eta;#it{p}_{T}(#Lambda) (GeV/#it{c});#it{p}_{T}(#bar{d}) (GeV/#it{c});", {HistType::kTHnSparseD}, {subsampleAxis, centAxis, deltaEtaAxis, ptLambdaAxis, ptAntidAxis});
+    histos.add<THnSparse>("nAntiLantid", ";Subsample;Centrality (%);#Delta#eta;#it{p}_{T}(#bar{#Lambda}) (GeV/#it{c});#it{p}_{T}(#bar{d}) (GeV/#it{c});", {HistType::kTHnSparseD}, {subsampleAxis, centAxis, deltaEtaAxis, ptLambdaAxis, ptAntidAxis});
 
     // v0 QA
     histos.add<TH1>("massLambda", ";#it{M}(p + #pi^{-}) (GeV/#it{c}^{2});Entries", {HistType::kTH1F, {massLambdaAxis}});
@@ -193,95 +191,47 @@ struct antidLambdaEbye {
     histos.add<TH1>("dcaNegPv", ";dcaNegPv;Entries", {HistType::kTH1F}, {dcaDaughPvAxis});
 
     // antid QA
-    histos.add<TH2>("tpcNsigma", ";#it{p}_{TPC} (GeV/#it{c});tpcNsigma", {HistType::kTH2F}, {momAxis, tpcNsigmaAxis});
-    histos.add<TH2>("tpcNsigmaGlo", ";#it{p}_{T} (GeV/#it{c});tpcNsigma", {HistType::kTH2F}, {momAxis, tpcNsigmaAxis});
-    // histos.add<TH2>("tofNsigma", ";#it{p}_{glo};tofNsigma;Entries", {HistType::kTH2F}, {momAxis, tofNsigmaAxis});
+    histos.add<TH2>("tpcNsigma", ";#it{p}_{TPC} (GeV/#it{c});n#sigma_{TPC} (a.u.)", {HistType::kTH2F}, {momAxis, tpcNsigmaAxis});
+    histos.add<TH2>("tpcNsigmaGlo", ";#it{p}_{T} (GeV/#it{c});n#sigma_{TPC} (a.u.)", {HistType::kTH2F}, {momAxis, tpcNsigmaAxis});
     histos.add<TH2>("tofMass", ";#it{p}_{glo} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", {HistType::kTH2F}, {momAxis, tofMassAxis});
-    histos.add<TH2>("tofMassFull", ";#it{p}_{glo} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", {HistType::kTH2F}, {momAxis, tofMassAxis});
     auto hmomCorr = histos.add<TH3>("momCorr", ";#it{p}_{glo} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c});", {HistType::kTH3F}, {momAxisFine, momResAxis, trackingPidAxis});
-    histos.add<TH2>("tpcSignal", ";#it{p}_{TPC} (GeV/#it{c});TPC signal (a.u.)", {HistType::kTH2F}, {momAxisFine, tpcAxis});
-    histos.add<TH2>("tpcSignalBkg", ";#it{p}_{TPC} (GeV/#it{c});TPC signal (a.u.)", {HistType::kTH2F}, {momAxisFine, tpcAxis});
-    auto htpcSignal_glo = histos.add<TH3>("tpcSignal_glo", ";#it{p}_{glo} (GeV/#it{c});TPC signal (a.u.);", {HistType::kTH3F}, {momAxisFine, tpcAxis, trackingPidAxis});
-    auto htpcSignalBkg_glo = histos.add<TH3>("tpcSignalBkg_glo", ";#it{p}_{glo} (GeV/#it{c});TPC signal (a.u.);", {HistType::kTH3F}, {momAxisFine, tpcAxis, trackingPidAxis});
-    histos.add<TH2>("tofSignal", ";#it{p}_{TPC} (GeV/#it{c});TOF signal (a.u.)", {HistType::kTH2F}, {momAxisFine, tofAxis});
-    histos.add<TH2>("tofSignal_glo", ";#it{p}_{T} (GeV/#it{c});TOF signal (a.u.)", {HistType::kTH2F}, {momAxisFine, tofAxis});
+    histos.add<TH2>("tpcSignal", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", {HistType::kTH2F}, {momAxisFine, tpcAxis});
+    histos.add<TH2>("tpcSignalBkg", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", {HistType::kTH2F}, {momAxisFine, tpcAxis});
+    histos.add<TH2>("tpcSignal_glo", ";#it{p}_{glo} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.);", {HistType::kTH2F}, {momAxisFine, tpcAxis});
+    histos.add<TH2>("tofSignal", ";#it{p}_{TPC} (GeV/#it{c});#beta_{TOF}", {HistType::kTH2F}, {momAxisFine, tofAxis});
+    histos.add<TH2>("tofSignal_glo", ";#it{p}_{T} (GeV/#it{c});#beta_{TOF}", {HistType::kTH2F}, {momAxisFine, tofAxis});
 
     for (int i{1}; i < hmomCorr->GetNbinsZ() + 1; ++i) {
       hmomCorr->GetZaxis()->SetBinLabel(i, pidHypotheses[i - 1].data());
-      htpcSignal_glo->GetZaxis()->SetBinLabel(i, pidHypotheses[i - 1].data());
-      htpcSignalBkg_glo->GetZaxis()->SetBinLabel(i, pidHypotheses[i - 1].data());
     }
+
+    // temporary histograms
+    tempAntid = tempHistos.add<TH2>("tempAntid", ";#Delta#eta;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2D}, {deltaEtaAxis, ptAntidAxis});
+    tempLambda = tempHistos.add<TH2>("tempLambda", ";#Delta#eta;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2D}, {deltaEtaAxis, ptLambdaAxis});
+    tempAntiLambda = tempHistos.add<TH2>("tempAntiLambda", ";#Delta#eta;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2D}, {deltaEtaAxis, ptLambdaAxis});
   }
 
-  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  void fillEvent(TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s, float const& centrality)
   {
-    if (mRunNumber == bc.runNumber()) {
-      return;
-    }
-    auto run3grp_timestamp = bc.timestamp();
+    tempAntid->Reset();
+    tempLambda->Reset();
+    tempAntiLambda->Reset();
+    auto rnd = static_cast<float>(gen32()) / static_cast<float>(gen32.max());
+    auto subsample = static_cast<int>(rnd * nSubsamples);
 
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (grpo) {
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      if (d_bz_input < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        d_bz = grpo->getNominalL3Field();
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-      } else {
-        d_bz = d_bz_input;
-      }
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      o2::base::Propagator::initFieldFromGRP(grpmag);
-      if (d_bz_input < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-      } else {
-        d_bz = d_bz_input;
-      }
-    }
-    mRunNumber = bc.runNumber();
-  }
-
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& collision, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s, aod::BCsWithTimestamps const&)
-  {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
-
-    if (!collision.sel8())
-      return;
-
-    if (std::abs(collision.posZ()) > zVtxMax)
-      return;
-
-    const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
-
-    histos.fill(HIST("zVtx"), collision.posZ());
-
-    double q1antid{0.}, q2antid{0.};
     for (const auto& track : tracks) {
       if (!selectAntid(track)) {
         continue;
       }
 
-      auto trackParCov = getTrackParCov(track);
-      gpu::gpustd::array<float, 2> dcaInfo;
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(collVtx, trackParCov, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfo);
-
-      float dcaXYZ = dcaInfo[0];
-      if (std::abs(dcaXYZ) > antidDcaCut) {
+      if (std::hypot(track.dcaXY(), track.dcaZ()) > antidDcaCut) {
         continue;
       }
 
       histos.fill(HIST("tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
-      histos.fill(HIST("tpcSignal_glo"), trackParCov.getP(), track.tpcSignal(), track.pidForTracking());
+      histos.fill(HIST("tpcSignal_glo"), track.p(), track.tpcSignal());
 
-      if (trackParCov.getPt() < antidPtMin || trackParCov.getPt() > antidPtMax) {
+      if (track.pt() < antidPtMin || track.pt() > antidPtMax) {
         continue;
       }
 
@@ -298,15 +248,14 @@ struct antidLambdaEbye {
         continue;
       }
       histos.fill(HIST("tpcNsigma"), track.tpcInnerParam(), nSigmaTPC);
-      histos.fill(HIST("momCorr"), trackParCov.getP(), track.tpcInnerParam() - trackParCov.getP(), track.pidForTracking());
+      histos.fill(HIST("momCorr"), track.p(), track.tpcInnerParam() - track.p(), track.pidForTracking());
       // check contamination
       if (track.tpcInnerParam() < tpcInnerParamMax) {
         histos.fill(HIST("tpcSignalBkg"), track.tpcInnerParam(), track.tpcSignal());
-        histos.fill(HIST("tpcSignalBkg_glo"), trackParCov.getP(), track.tpcSignal(), track.pidForTracking());
       }
 
-      if (trackParCov.getPt() > antidPtTof && hasTof) {
-        histos.fill(HIST("tofSignal_glo"), trackParCov.getP(), beta);
+      if (track.pt() > antidPtTof && hasTof) {
+        histos.fill(HIST("tofSignal_glo"), track.p(), beta);
         histos.fill(HIST("tofSignal"), track.tpcInnerParam(), beta);
       }
 
@@ -314,23 +263,17 @@ struct antidLambdaEbye {
       if (track.tpcInnerParam() < tpcInnerParamMax) {
         continue;
       }
-      if (trackParCov.getPt() > antidPtTof && !track.hasTOF()) {
+      if (track.pt() > antidPtTof && !hasTof) {
         continue;
       }
-      histos.fill(HIST("tofMassFull"), trackParCov.getPt(), mass);
-      if (trackParCov.getPt() > antidPtTof && track.tofChi2() > 3) {
-        continue;
-      }
-      histos.fill(HIST("tofMass"), trackParCov.getPt(), mass);
+      histos.fill(HIST("tofMass"), track.pt(), mass);
 
-      if (trackParCov.getPt() <= antidPtTof || (trackParCov.getPt() > antidPtTof && hasTof && std::abs(mass - o2::constants::physics::MassDeuteron) < tofMassMax)) {
-        histos.fill(HIST("tpcNsigmaGlo"), trackParCov.getPt(), nSigmaTPC);
-        q1antid += 1.; // TODO: correct for efficiency
-        q2antid += 1.;
+      if (track.pt() <= antidPtTof || (track.pt() > antidPtTof && hasTof && std::abs(mass - o2::constants::physics::MassDeuteron) < tofMassMax)) {
+        histos.fill(HIST("tpcNsigmaGlo"), track.pt(), nSigmaTPC);
+        tempHistos.fill(HIST("tempAntid"), std::abs(track.eta()), track.pt());
       }
     }
 
-    double q1L{0.}, q2L{0.}, q1antiL{0.}, q2antiL{0.};
     std::vector<int64_t> trkId;
     for (const auto& v0 : V0s) {
       if (v0.pt() < lambdaPtMin || v0.pt() > lambdaPtMax) {
@@ -343,7 +286,7 @@ struct antidLambdaEbye {
 
       auto pos = v0.template posTrack_as<TracksFull>();
       auto neg = v0.template negTrack_as<TracksFull>();
-      if (std::abs(pos.eta()) > etaMax || std::abs(pos.eta()) > etaMax) {
+      if (std::abs(pos.eta()) > etaMax || std::abs(neg.eta()) > etaMax) {
         continue;
       }
 
@@ -357,11 +300,9 @@ struct antidLambdaEbye {
       histos.fill(HIST("dcaNegPv"), v0.dcanegtopv());
 
       if (matter) {
-        q1L += 1.; // TODO: correct for efficiency
-        q2L += 1.;
+        tempHistos.fill(HIST("tempLambda"), std::abs(v0.eta()), v0.pt());
       } else {
-        q1antiL += 1.; // TODO: correct for efficiency
-        q2antiL += 1.;
+        tempHistos.fill(HIST("tempAntiLambda"), std::abs(v0.eta()), v0.pt());
       }
 
       trkId.emplace_back(pos.globalIndex());
@@ -374,24 +315,78 @@ struct antidLambdaEbye {
       return;
     }
 
-    histos.fill(HIST("nEv"), collision.centFT0C());
+    histos.fill(HIST("nEv"), subsample, centrality);
 
-    histos.fill(HIST("q1antid"), collision.centFT0C(), q1antid);
-    histos.fill(HIST("q1sqantid"), collision.centFT0C(), std::pow(q1antid, 2));
-    histos.fill(HIST("q2antid"), collision.centFT0C(), q2antid);
+    for (int iEta{1}; iEta < tempAntid->GetNbinsX() + 1; ++iEta) {
+      for (int iPtAntid{1}; iPtAntid < tempAntid->GetNbinsY() + 1; ++iPtAntid) {
+        for (int iPtL{1}; iPtL < tempLambda->GetNbinsY() + 1; ++iPtL) {
+          for (int iPtAntiL{1}; iPtAntiL < tempAntiLambda->GetNbinsY() + 1; ++iPtAntiL) {
 
-    histos.fill(HIST("q1L"), collision.centFT0C(), q1L);
-    histos.fill(HIST("q1sqL"), collision.centFT0C(), std::pow(q1L, 2));
-    histos.fill(HIST("q2L"), collision.centFT0C(), q2L);
+            auto eta = tempAntid->GetXaxis()->GetBinCenter(iEta);
+            auto antidPt = tempAntid->GetYaxis()->GetBinCenter(iPtAntid);
+            auto lPt = tempLambda->GetYaxis()->GetBinCenter(iPtL);
+            auto antilPt = tempAntiLambda->GetYaxis()->GetBinCenter(iPtAntiL);
+            auto antidNum = tempAntid->Integral(1, iEta, iPtAntid, iPtAntid);
+            auto lNum = tempLambda->Integral(1, iEta, iPtL, iPtL);
+            auto antilNum = tempAntiLambda->Integral(1, iEta, iPtAntiL, iPtAntiL);
 
-    histos.fill(HIST("q1antiL"), collision.centFT0C(), q1antiL);
-    histos.fill(HIST("q1sqantiL"), collision.centFT0C(), std::pow(q1antiL, 2));
-    histos.fill(HIST("q2antiL"), collision.centFT0C(), q2antiL);
-
-    histos.fill(HIST("q11LantiL"), collision.centFT0C(), q1L * q1antiL);
-    histos.fill(HIST("q11Lantid"), collision.centFT0C(), q1L * q1antid);
-    histos.fill(HIST("q11antiLantid"), collision.centFT0C(), q1antiL * q1antid);
+            if (iPtL == 1) {
+              histos.fill(HIST("nAntiLantid"), subsample, centrality, eta, antilPt, antidPt, antilNum * antidNum);
+              if (iPtAntiL == 1) {
+                histos.fill(HIST("nAntid"), subsample, centrality, eta, antidPt, antidNum);
+                histos.fill(HIST("nSqAntid"), subsample, centrality, eta, antidPt, std::pow(antidNum, 2));
+              }
+            }
+            if (iPtAntiL == 1) {
+              histos.fill(HIST("nLantid"), subsample, centrality, eta, lPt, antidPt, lNum * antidNum);
+              if (iPtAntid == 1) {
+                histos.fill(HIST("nL"), subsample, centrality, eta, lPt, lNum);
+                histos.fill(HIST("nSqL"), subsample, centrality, eta, lPt, std::pow(lNum, 2));
+              }
+            }
+            if (iPtAntid == 1) {
+              histos.fill(HIST("nLantiL"), subsample, centrality, eta, lPt, antilPt, lNum * antilNum);
+              if (iPtL == 1) {
+                histos.fill(HIST("nAntiL"), subsample, centrality, eta, antilPt, antilNum);
+                histos.fill(HIST("nSqAntiL"), subsample, centrality, eta, antilPt, std::pow(antilNum, 2));
+              }
+            }
+          }
+        }
+      }
+    }
   }
+
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& collision, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s)
+  {
+    if (!collision.sel8())
+      return;
+
+    if (std::abs(collision.posZ()) > zVtxMax)
+      return;
+
+    histos.fill(HIST("zVtx"), collision.posZ());
+    auto centrality = collision.centFT0C();
+    fillEvent(tracks, V0s, centrality);
+  }
+  PROCESS_SWITCH(antidLambdaEbye, processRun3, "process (Run 3)", false);
+
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::FV0Mults, aod::CentRun2V0Ms>::iterator const& collision, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s)
+  {
+    if (!collision.sel7())
+      return;
+
+    if (!collision.alias_bit(kINT7))
+      return;
+
+    if (std::abs(collision.posZ()) > zVtxMax)
+      return;
+
+    histos.fill(HIST("zVtx"), collision.posZ());
+    auto centrality = collision.centRun2V0M();
+    fillEvent(tracks, V0s, centrality);
+  }
+  PROCESS_SWITCH(antidLambdaEbye, processRun2, "process (Run 2)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

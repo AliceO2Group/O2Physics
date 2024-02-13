@@ -766,11 +766,13 @@ enum DecayType { DplusToPiKPi = 0,
                  XicToPKPi,
                  N3ProngDecays }; // always keep N3ProngDecays at the end
 
-// Ds± → K± K∓ π±
+// Ds± → K± K∓ π± or D± → K± K∓ π±
 
-enum DecayChannelDs {
-  PhiPi = 1,
-  K0starK
+enum DecayChannelDToKKPi {
+  DsToPhiPi = 1,
+  DsToK0starK,
+  DplusToPhiPi,  // used to describe D+ in MC production for Ds analysis
+  DplusToK0starK // used to describe D+ in MC production for Ds analysis
 };
 
 } // namespace hf_cand_3prong

@@ -12,6 +12,7 @@
 // Task to produce a table joinable to the jet tables for hf jet tagging
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
+/// \author Hanseo Park <hanseo.park@cern.ch>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -34,9 +35,10 @@ struct JetTaggerHFTask {
   Produces<JetTaggingTableData> taggingTableData;
   Produces<JetTaggingTableMCD> taggingTableMCD;
 
-  Configurable<bool> doAlgorithm1{"doAlgorithm1", false, "fill table for algoithm 1"};
-  Configurable<bool> doAlgorithm2{"doAlgorithm2", false, "fill table for algoithm 2"};
-  Configurable<bool> doAlgorithm3{"doAlgorithm3", false, "fill table for algoithm 3"};
+  Configurable<bool> doWShower{"doWShower", false, "find jet origin included gluon spliting"}; // true:: remove gluon spliting
+  Configurable<bool> doTC{"doTC", false, "fill table for track counting algorithm"};
+  Configurable<bool> doSV{"doSV", false, "fill table for secondary vertex algorithm"};
+  Configurable<bool> doML{"doML", false, "fill table for machine learning"};
   Configurable<float> maxDeltaR{"maxDeltaR", 0.25, "maximum distance of jet axis from flavour initiating parton"};
 
   void processDummy(JetCollisions const& collision)
@@ -51,9 +53,9 @@ struct JetTaggerHFTask {
       int algorithm1 = jet.globalIndex(); // This needs to be changed. It is only done because O2Physics compilation breaks if jet is unused
       int algorithm2 = 0;
       int algorithm3 = 0;
-      // if (doAlgorithm1) algorithm1 = jettaggingutilities::Algorithm1((mcdjet, tracks);
-      // if (doAlgorithm2) algorithm2 = jettaggingutilities::Algorithm2((mcdjet, tracks);
-      // if (doAlgorithm3) algorithm3 = jettaggingutilities::Algorithm3((mcdjet, tracks);
+      // if (doTC) algorithm1 = jettaggingutilities::Algorithm1((mcdjet, tracks);
+      // if (doSV) algorithm2 = jettaggingutilities::Algorithm2((mcdjet, tracks);
+      // if (doML) algorithm3 = jettaggingutilities::Algorithm3((mcdjet, tracks);
       taggingTableData(0, algorithm1, algorithm2, algorithm3);
     }
   }
@@ -62,14 +64,18 @@ struct JetTaggerHFTask {
   void processMCD(JetCollision const& collision, JetTableMCD const& mcdjets, JetTracksMCD const& tracks, JetParticles const& particles)
   {
     for (auto& mcdjet : mcdjets) {
-
-      int origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, tracks, particles, maxDeltaR);
+      typename JetTracksMCD::iterator hftrack;
+      int origin = 0;
+      if (!doWShower)
+        origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, tracks, particles, maxDeltaR);
+      else
+        origin = jettaggingutilities::jetTrackFromHFShower(mcdjet, tracks, particles, hftrack);
       int algorithm1 = 0;
       int algorithm2 = 0;
       int algorithm3 = 0;
-      // if (doAlgorithm1) algorithm1 = jettaggingutilities::Algorithm1((mcdjet, tracks);
-      // if (doAlgorithm2) algorithm2 = jettaggingutilities::Algorithm2((mcdjet, tracks);
-      // if (doAlgorithm3) algorithm3 = jettaggingutilities::Algorithm3((mcdjet, tracks);
+      // if (doTC) algorithm1 = jettaggingutilities::Algorithm1((mcdjet, tracks);
+      // if (doSV) algorithm2 = jettaggingutilities::Algorithm2((mcdjet, tracks);
+      // if (doML) algorithm3 = jettaggingutilities::Algorithm3((mcdjet, tracks);
       taggingTableMCD(origin, algorithm1, algorithm2, algorithm3);
     }
   }
