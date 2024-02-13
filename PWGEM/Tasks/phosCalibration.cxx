@@ -18,6 +18,7 @@
 #include "TGrid.h"
 #include "TLorentzVector.h"
 
+#include "Common/DataModel/EventSelection.h"
 #include "DataFormatsPHOS/Cell.h"
 #include "DataFormatsPHOS/Cluster.h"
 #include "DataFormatsPHOS/TriggerRecord.h"
@@ -38,7 +39,9 @@
 #include "CommonDataFormat/InteractionRecord.h"
 
 using namespace o2;
+using namespace o2::aod::evsel;
 using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 /// \struct PHOS Calibration
 /// \brief Collectes hitograms to evaluate L1pahse, time and energy calibration, non-linearity and check
@@ -67,16 +70,25 @@ struct phosCalibration {
     bool fBad;
   };
 
+  ConfigurableAxis timeAxis{"t", {200, -50.e-9, 150.e-9}, "t (s)"};
+  ConfigurableAxis timeAxisLarge{"celltime", {1000, -1500.e-9, 3500.e-9}, "cell time (ns)"};
+  ConfigurableAxis timeAxisRunStart{"timeRunStart", {50000, 0., 50000.}, "Time from start of the run (s)"};
+  ConfigurableAxis amplitudeAxisLarge{"amplitude", {1000, 0., 100.}, "Amplutude (GeV)"};
+  ConfigurableAxis mggAxis{"mgg", {250, 0., 1.}, "m_{#gamma#gamma} (GeV/c^{2})"};
+  Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
   Configurable<double> mMinCellAmplitude{"minCellAmplitude", 0.3, "Minimum cell amplitude for histograms."};
   Configurable<double> mCellTimeMinE{"minCellTimeAmp", 100, "Minimum cell amplitude for time histograms (ADC)"};
   Configurable<double> mMinCellTimeMain{"minCellTimeMain", -50.e-9, "Min. cell time of main bunch selection"};
   Configurable<double> mMaxCellTimeMain{"maxCellTimeMain", 100.e-9, "Max. cell time of main bunch selection"};
   Configurable<int> mMixedEvents{"mixedEvents", 10, "number of events to mix"};
   Configurable<bool> mSkipL1phase{"skipL1phase", false, "do not correct L1 phase from CCDB"};
-  Configurable<std::string> mBadMapPath{"badmapPath", "alien:///alice/cern.ch/user/p/prsnko/Calib/BadMap/snapshot.root", "path to BadMap snapshot"};
-  Configurable<std::string> mCalibPath{"calibPath", "alien:///alice/cern.ch/user/p/prsnko/Calib/CalibParams/snapshot.root", "path to Calibration snapshot"};
+  Configurable<std::string> rctPath{"rct-path", "RCT/Info/RunInformation", "path to the ccdb RCT objects for the SOR timestamps"};
+  Configurable<std::string> mBadMapPath{"badmapPath", "PHS/Calib/BadMap", "path to BadMap snapshot"};
+  Configurable<std::string> mCalibPath{"calibPath", "PHS/Calib/CalibParams", "path to Calibration snapshot"};
+  Configurable<std::string> mL1PhasePath{"L1phasePath", "PHS/Calib/L1phase", "path to L1phase snapshot"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi ccdb_api;
 
   HistogramRegistry mHistManager{"phosCallQAHistograms"};
 
@@ -90,10 +102,6 @@ struct phosCalibration {
   std::vector<photon> event;
   int mL1 = 0;
 
-  // calibration will be set on first processing
-  std::unique_ptr<const o2::phos::BadChannelsMap> badMap;   // = ccdb->get<o2::phos::BadChannelsMap>("PHS/Calib/BadMap");
-  std::unique_ptr<const o2::phos::CalibParams> calibParams; // = ccdb->get<o2::phos::CalibParams>("PHS/Calib/CalibParams");
-
   /// \brief Create output histograms
   void init(o2::framework::InitContext const&)
   {
@@ -102,18 +110,15 @@ struct phosCalibration {
     const AxisSpec
       bcAxis{4, 0., 4., "bc%4"},
       modAxis{4, 1., 5., "module", "Module"},
-      timeAxis{200, -50.e-9, 150.e-9, "t (s)"},
       timeDdlAxis{200, -200.e-9, 400.e-9, "t (s)"},
-      timeAxisLarge{1000, -1500.e-9, 3500.e-9, "celltime", "cell time (ns)"},
       ddlAxis{14, 0., 14., "ddl"},
       cellXAxis{64, 0., 64, "x", ""},
       cellZAxis{56, 0., 56, "z", ""},
-      absIdAxis{12544, 1793, 14336, "absId", "absId"},
-      amplitudeAxisLarge{200, 0., 40., "amplitude", "Amplutude (GeV)"},
-      mggAxis{200, 0., 0.5, "m_{#gamma#gamma} (GeV/c^{2})"};
+      absIdAxis{12544, 1793, 14336, "absId", "absId"};
 
     // Number of events
     mHistManager.add("eventsAll", "Number of events", HistType::kTH1F, {{2, 0., 2.}});
+    mHistManager.add("eventsTrig", "Number of trigger events", HistType::kTH1F, {{2, 0., 2.}});
 
     // Cells
     mHistManager.add("cellOcc", "Cell occupancy per module", HistType::kTH3F, {modAxis, cellXAxis, cellZAxis});
@@ -121,6 +126,7 @@ struct phosCalibration {
     mHistManager.add("cellTimeHG", "Time per cell, High Gain", HistType::kTH2F, {absIdAxis, timeAxis});
     mHistManager.add("cellTimeLG", "Time per cell, Low Gain", HistType::kTH2F, {absIdAxis, timeAxis});
     mHistManager.add("timeDDL", "time vs bc for DDL", HistType::kTH3F, {timeDdlAxis, bcAxis, ddlAxis});
+    mHistManager.add("cellTimeFromRunStart", "time in cells vs time from start of the run", HistType::kTH3F, {absIdAxis, timeAxis, timeAxisRunStart});
 
     // Clusters
     mHistManager.add("hSoftClu", "Soft clu occupancy per module", HistType::kTH3F, {modAxis, cellXAxis, cellZAxis});
@@ -137,13 +143,16 @@ struct phosCalibration {
     ccdb->setURL(o2::base::NameConf::getCCDBServer());
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+    ccdb_api.init(o2::base::NameConf::getCCDBServer());
 
     geom = o2::phos::Geometry::GetInstance("Run3");
     LOG(info) << "Calibration configured ...";
   }
 
+  using BCsWithBcSels = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+
   /// \brief Process PHOS data
-  void process(o2::aod::BCsWithTimestamps const& bcs,
+  void process(BCsWithBcSels const& bcs,
                o2::aod::Calos const& cells,
                o2::aod::CaloTriggers const& ctrs)
   {
@@ -151,7 +160,10 @@ struct phosCalibration {
     // clusterize
     // Fill clusters histograms
 
-    if (bcs.begin() == bcs.end()) {
+    int64_t timestamp = 0;
+    if (bcs.begin() != bcs.end()) {
+      timestamp = bcs.begin().timestamp(); // timestamp for CCDB object retrieval
+    } else {
       return;
     }
 
@@ -160,30 +172,22 @@ struct phosCalibration {
       clusterizer->initialize();
     }
 
-    if (!badMap) {
-      LOG(info) << "Reading BadMap from: " << mBadMapPath.value;
-      TFile* fBadMap = TFile::Open(mBadMapPath.value.data());
-      if (fBadMap == nullptr) { // probably, TGrid not connected yet?
-        TGrid::Connect("alien");
-        fBadMap = TFile::Open(mBadMapPath.value.data());
-      }
-      o2::phos::BadChannelsMap* bm1 = (o2::phos::BadChannelsMap*)fBadMap->Get("ccdb_object");
-      badMap.reset(bm1);
-      fBadMap->Close();
-      clusterizer->setBadMap(badMap.get());
-      LOG(info) << "Read bad map";
+    const o2::phos::BadChannelsMap* badMap = ccdb->getForTimeStamp<o2::phos::BadChannelsMap>(mBadMapPath, timestamp);
+    const o2::phos::CalibParams* calibParams = ccdb->getForTimeStamp<o2::phos::CalibParams>(mCalibPath, timestamp);
+
+    if (badMap) {
+      clusterizer->setBadMap(badMap);
+    } else {
+      LOG(fatal) << "Can not get PHOS Bad Map";
     }
-    if (!calibParams) {
-      LOG(info) << "Reading Calibration from: " << mCalibPath.value;
-      TFile* fCalib = TFile::Open(mCalibPath.value.data());
-      o2::phos::CalibParams* calib1 = (o2::phos::CalibParams*)fCalib->Get("ccdb_object");
-      calibParams.reset(calib1);
-      fCalib->Close();
-      clusterizer->setCalibration(calibParams.get());
-      LOG(info) << "Read calibration";
+    if (calibParams) {
+      clusterizer->setCalibration(calibParams);
+    } else {
+      LOG(fatal) << "Can not get PHOS calibration";
     }
+
     if (!mSkipL1phase && mL1 == 0) { // should be read, but not read yet
-      const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>("PHS/Calib/L1phase", bcs.begin().timestamp());
+      const std::vector<int>* vec = ccdb->getForTimeStamp<std::vector<int>>(mL1PhasePath, timestamp);
       if (vec) {
         clusterizer->setL1phase((*vec)[0]);
         mL1 = (*vec)[0];
@@ -208,19 +212,23 @@ struct phosCalibration {
         continue;
       }
       if (phosCellTRs.size() == 0) { // first cell, first TrigRec
-        ir.setFromLong(c.bc_as<aod::BCsWithTimestamps>().globalBC());
+        ir.setFromLong(c.bc_as<BCsWithBcSels>().globalBC());
         phosCellTRs.emplace_back(ir, 0, 0); // BC,first cell, ncells
       }
-      if (static_cast<uint64_t>(phosCellTRs.back().getBCData().toLong()) != c.bc_as<aod::BCsWithTimestamps>().globalBC()) { // switch to new BC
+      if (static_cast<uint64_t>(phosCellTRs.back().getBCData().toLong()) != c.bc_as<BCsWithBcSels>().globalBC()) { // switch to new BC
         // switch to another BC: set size and create next TriRec
         phosCellTRs.back().setNumberOfObjects(phosCells.size() - phosCellTRs.back().getFirstEntry());
         // Next event/trig rec.
-        ir.setFromLong(c.bc_as<aod::BCsWithTimestamps>().globalBC());
+        ir.setFromLong(c.bc_as<BCsWithBcSels>().globalBC());
         phosCellTRs.emplace_back(ir, phosCells.size(), 0);
         mHistManager.fill(HIST("eventsAll"), 1.);
       }
       phosCells.emplace_back(c.cellNumber(), c.amplitude(), c.time(),
                              static_cast<o2::phos::ChannelType_t>(c.cellType()));
+
+      if (!c.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
+        continue;
+      mHistManager.fill(HIST("eventsTrig"), 1.);
 
       // Fill calibraiton histos
       if (c.amplitude() < mMinCellAmplitude)
@@ -231,7 +239,7 @@ struct phosCalibration {
       mHistManager.fill(HIST("cellAmp"), relid[0], relid[1], relid[2], c.amplitude());
 
       int ddl = (relid[0] - 1) * 4 + (relid[1] - 1) / 16 - 2;
-      uint64_t bc = c.bc_as<aod::BCsWithTimestamps>().globalBC();
+      uint64_t bc = c.bc_as<BCsWithBcSels>().globalBC();
       float tcorr = c.time();
       if (c.cellType() == o2::phos::HIGH_GAIN) {
         tcorr -= calibParams->getHGTimeCalib(c.cellNumber());
@@ -247,8 +255,18 @@ struct phosCalibration {
         }
         tcorr -= shift * 25.e-9;
       }
+
+      int runNumber = c.bc_as<BCsWithBcSels>().runNumber();
+      std::map<std::string, std::string> metadata, headers;
+      const std::string run_path = Form("%s/%i", rctPath.value.data(), runNumber);
+      headers = ccdb_api.retrieveHeaders(run_path, metadata, -1);
+      if (headers.count("SOR") == 0)
+        LOGF(fatal, "Cannot find start-of-run timestamp for run number in path '%s'.", run_path.data());
+      int64_t sorTimestamp = atol(headers["SOR"].c_str()); // timestamp of the SOR in ms
+
       if (c.amplitude() > mCellTimeMinE) {
         mHistManager.fill(HIST("timeDDL"), tcorr, bc % 4, ddl);
+        mHistManager.fill(HIST("cellTimeFromRunStart"), c.cellNumber(), tcorr, (timestamp - sorTimestamp) / 1000.);
         if (c.cellType() == o2::phos::HIGH_GAIN) {
           mHistManager.fill(HIST("cellTimeHG"), c.cellNumber(), tcorr);
         } else {

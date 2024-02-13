@@ -33,25 +33,30 @@ def do_dca_smearing(input_df, n_prongs=None):
 
     Parameters
     -----------------
-    - df: pandas dataframe containing all candidates with fFlagOrigin column
+    - input_df: pandas dataframe containing all candidates with fFlagOrigin column
     - n_prongs: option to 2 prongs or 3 prongs
 
     Outputs
     -----------------
-    - df: New dataframe with the smeared DCA columns
+    - input_df: New dataframe with the smeared DCA columns
     """
 
-    print("Start to do the smearing")
+    print(f"Start to do the smearing for {n_prongs} prong")
     # Open the input files
-    file_names = ["sigmaDcaXY_LHC22q_pass2_LHCC.root", "sigmaDcaZ_LHC22q_pass2_LHCC.root"]
-    input_files = [TFile.Open(name) for name in file_names]
+    file_names_data = ["New_DCA_smear/results_dcaXY_LHC22m_pass4_run523308.root",
+                       "New_DCA_smear/results_dcaZ_LHC22m_pass4_run523308.root"]
+    file_names_mc = ["New_DCA_smear/output_DCAxy_all.root",
+                     "New_DCA_smear/output_DCAz_all.root"]
+    input_files_data = [TFile.Open(name) for name in file_names_data]
+    input_files_mc = [TFile.Open(name) for name in file_names_mc]
+    input_files_mean = [TFile.Open(name) for name in file_names_data]
 
     # Extract DCA resolution histograms
-    dca_reso_data, dca_reso_mc = {}, {}
+    dca_reso_data, dca_reso_mc, dca_reso_data_meanshift = {}, {}, {}
     for i, par in enumerate(["XY", "Z"]):
-        g_dca = input_files[i].Get("can")
-        dca_reso_data[par] = g_dca.GetPrimitive(f"tge_DCA_res_withPVrefit_all_DATA")
-        dca_reso_mc[par] = g_dca.GetPrimitive(f"tge_DCA_res_withPVrefit_all_MC")
+        dca_reso_data[par] = input_files_data[i].Get("tge_DCA_res_withoutPVrefit_all")
+        dca_reso_mc[par] = input_files_mc[i].Get("tge_DCA_res_withoutPVrefit_all")
+        dca_reso_data_meanshift[par] = input_files_mean[i].Get("tge_DCA_res_withoutPVrefit_all")
 
     # Add smeared DCA columns to the dataframe
     smear_cols = ["XY1", "XY2", "Z1", "Z2"]
@@ -60,15 +65,29 @@ def do_dca_smearing(input_df, n_prongs=None):
     for col in smear_cols:
         dca_col = f"fDCAPrim{col}"
         pt_col = f"fPT{col[-1]}"
-        input_df[f"{dca_col}_SMEAR"] = [
-            gRandom.Gaus(dca, np.sqrt(
-                dca_reso_data[col[:-1]].Eval(pt)**2 - dca_reso_mc[col[:-1]].Eval(pt)**2) * 1e-4)
-            for dca, pt in zip(input_df[dca_col], input_df[pt_col])
-        ]
+
+        smear_values = []
+        for dca, pt in zip(input_df[dca_col], input_df[pt_col]):
+            if pt < 7:
+                dca_reso_data_mean_shift = dca_reso_data_meanshift[col[:-1]].Eval(pt) * 1e-4
+                dca_reso_data_val = dca_reso_data[col[:-1]].Eval(pt)
+                dca_reso_mc_val = dca_reso_mc[col[:-1]].Eval(pt)
+            else:
+                dca_reso_data_mean_shift = dca_reso_data_meanshift[col[:-1]].Eval(7) * 1e-4
+                dca_reso_data_val = dca_reso_data[col[:-1]].Eval(7)
+                dca_reso_mc_val = dca_reso_mc[col[:-1]].Eval(7)
+
+            smear_value = gRandom.Gaus(dca + dca_reso_data_mean_shift,
+                                       np.sqrt(dca_reso_data_val**2 - dca_reso_mc_val**2) * 1e-4)
+            smear_values.append(smear_value)
+
+        input_df[f"{dca_col}_SMEAR"] = smear_values
 
     # Close the input files
-    for file in input_files:
-        file.Close()
+    for file_data, file_mc, file_mean in zip(input_files_data, input_files_mc, input_files_mean):
+        file_data.Close()
+        file_mc.Close()
+        file_mean.Close()
 
     # Make a figure comparing the DCA variables before and after smearing
     num_cols = len(smear_cols)
@@ -79,15 +98,18 @@ def do_dca_smearing(input_df, n_prongs=None):
     for i, col in enumerate(smear_cols):
         dca_col = f"fDCAPrim{col}"
         smear_col = f"{dca_col}_SMEAR"
-        axs[i].hist(input_df[dca_col], bins=100, alpha=0.5, label="Before Smearing")
-        axs[i].hist(input_df[smear_col], bins=100, alpha=0.5, label="After Smearing")
+        axs[i].hist(input_df[dca_col], bins=500, alpha=0.5, label="Before Smearing")
+        axs[i].hist(input_df[smear_col], bins=500, alpha=0.3, label="After Smearing")
         axs[i].set_xlabel(col)
-        axs[i].set_xlim(-1, 1)
+        axs[i].set_xlim(-0.05, 0.05)
+        axs[i].set_ylim(10e2, None)
         axs[i].set_yscale('log')
         axs[i].legend()
 
     plt.tight_layout()
     fig.savefig(f"dca_comparison_{n_prongs}prong.png")
+    plt.close(fig)
+
     return input_df
 
 
@@ -97,7 +119,7 @@ def divide_df_for_origin(input_df, cols_to_remove=None, channel=None):
 
     Parameters
     -----------------
-    - df: pandas dataframe containing all candidates with fFlagOrigin column
+    - input_df: pandas dataframe containing all candidates with fFlagOrigin column
     - cols_to_remove: columns to be removed from output dataframes
     - channel: integer corresponding a specific fChannel for signal
 

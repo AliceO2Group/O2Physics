@@ -38,6 +38,7 @@
 #include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/PairCut.h"
 #include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
@@ -48,21 +49,35 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using namespace o2::aod::photonpair;
 
-using MyV0Photons = soa::Join<aod::V0Photons, aod::V0RecalculationAndKF>;
+using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNgPCM>;
+using MyCollision = MyCollisions::iterator;
+
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
+
+using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
+using MyDalitzEE = MyDalitzEEs::iterator;
+
+using MyPrimaryElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMReducedEventIds, aod::EMPrimaryElectronsPrefilterBit>;
+using MyPrimaryElectron = MyPrimaryElectrons::iterator;
 
 struct PhotonHBT {
 
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of V0 photon cuts"};
+  Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_all_tpchadrejortofreq_prompt", "Comma separated list of DalitzEE cuts"};
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
   Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "nocut", "Comma separated list of pair cuts"};
+  Configurable<bool> fConfigDo3D{"cfgDo3D", false, "Flag to analyze 3D BE correlation"}; // it is very heavy.
+  Configurable<float> maxY_dielectron{"maxY_dielectron", 0.9, "maximum rapidity for dielectron"};
 
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputPair{"Pair"}; // 2-photon pair
   THashList* fMainList = new THashList();
 
   std::vector<V0PhotonCut> fPCMCuts;
+  std::vector<DalitzEECut> fDalitzEECuts;
   std::vector<PHOSPhotonCut> fPHOSCuts;
   std::vector<PairCut> fPairCuts;
 
@@ -72,6 +87,12 @@ struct PhotonHBT {
     if (context.mOptions.get<bool>("processPCMPCM")) {
       fPairNames.push_back("PCMPCM");
     }
+    if (context.mOptions.get<bool>("processPCMDalitzEE")) {
+      fPairNames.push_back("PCMDalitzEE");
+    }
+    if (context.mOptions.get<bool>("processDalitzEEDalitzEE")) {
+      fPairNames.push_back("DalitzEEDalitzEE");
+    }
     if (context.mOptions.get<bool>("processPHOSPHOS")) {
       fPairNames.push_back("PHOSPHOS");
     }
@@ -80,6 +101,7 @@ struct PhotonHBT {
     }
 
     DefinePCMCuts();
+    DefineDalitzEECuts();
     DefinePHOSCuts();
     DefinePairCuts();
     addhistograms();
@@ -96,8 +118,9 @@ struct PhotonHBT {
         std::string cutname1 = cut1.GetName();
         std::string cutname2 = cut2.GetName();
 
-        if ((pairname == "PCMPCM" || pairname == "PHOSPHOS" || pairname == "EMCEMC") && (cutname1 != cutname2))
+        if ((pairname == "PCMPCM" || pairname == "PHOSPHOS" || pairname == "EMCEMC" || pairname == "DalitzEEDalitzEE") && (cutname1 != cutname2)) {
           continue;
+        }
 
         THashList* list_pair_subsys = reinterpret_cast<THashList*>(list_pair->FindObject(pairname.data()));
         std::string photon_cut_name = cutname1 + "_" + cutname2;
@@ -108,13 +131,17 @@ struct PhotonHBT {
           std::string pair_cut_name = cut3.GetName();
           o2::aod::emphotonhistograms::AddHistClass(list_pair_subsys_photoncut, pair_cut_name.data());
           THashList* list_pair_subsys_paircut = reinterpret_cast<THashList*>(list_pair_subsys_photoncut->FindObject(pair_cut_name.data()));
-          o2::aod::emphotonhistograms::DefineHistograms(list_pair_subsys_paircut, "photon_hbt");
+          if (fConfigDo3D) {
+            o2::aod::emphotonhistograms::DefineHistograms(list_pair_subsys_paircut, "photon_hbt", "3d");
+          } else {
+            o2::aod::emphotonhistograms::DefineHistograms(list_pair_subsys_paircut, "photon_hbt", "1d");
+          }
         } // end of pair cut3 loop
       }   // end of cut2 loop
     }     // end of cut1 loop
   }
 
-  static constexpr std::string_view pairnames[6] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PHOSEMC"};
+  static constexpr std::string_view pairnames[9] = {"PCMPCM", "PHOSPHOS", "EMCEMC", "PCMPHOS", "PCMEMC", "PCMDalitzEE", "PCMDalitzMuMu", "PHOSEMC", "DalitzEEDalitzEE"};
   void addhistograms()
   {
     fMainList->SetOwner(true);
@@ -139,6 +166,12 @@ struct PhotonHBT {
       if (pairname == "PCMPCM") {
         add_pair_histograms(list_pair, pairname, fPCMCuts, fPCMCuts, fPairCuts);
       }
+      if (pairname == "PCMDalitzEE") {
+        add_pair_histograms(list_pair, pairname, fPCMCuts, fDalitzEECuts, fPairCuts);
+      }
+      if (pairname == "DalitzEEDalitzEE") {
+        add_pair_histograms(list_pair, pairname, fDalitzEECuts, fDalitzEECuts, fPairCuts);
+      }
       if (pairname == "PHOSPHOS") {
         add_pair_histograms(list_pair, pairname, fPHOSCuts, fPHOSCuts, fPairCuts);
       }
@@ -162,6 +195,21 @@ struct PhotonHBT {
     }
     LOGF(info, "Number of PCM cuts = %d", fPCMCuts.size());
   }
+
+  void DefineDalitzEECuts()
+  {
+    TString cutNamesStr = fConfigDalitzEECuts.value;
+    if (!cutNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        const char* cutname = objArray->At(icut)->GetName();
+        LOGF(info, "add cut : %s", cutname);
+        fDalitzEECuts.push_back(*dalitzeecuts::GetCut(cutname));
+      }
+    }
+    LOGF(info, "Number of DalitzEE cuts = %d", fDalitzEECuts.size());
+  }
+
   void DefinePHOSCuts()
   {
     TString cutNamesStr = fConfigPHOSCuts.value;
@@ -196,6 +244,10 @@ struct PhotonHBT {
     bool is_selected_pair = false;
     if constexpr (pairtype == PairType::kPCMPCM) {
       is_selected_pair = o2::aod::photonpair::IsSelectedPair<aod::V0Legs, aod::V0Legs>(g1, g2, cut1, cut2);
+    } else if constexpr (pairtype == PairType::kPCMDalitzEE) {
+      is_selected_pair = o2::aod::photonpair::IsSelectedPair<aod::V0Legs, MyPrimaryElectrons>(g1, g2, cut1, cut2);
+    } else if constexpr (pairtype == PairType::kDalitzEEDalitzEE) {
+      is_selected_pair = o2::aod::photonpair::IsSelectedPair<MyPrimaryElectrons, MyPrimaryElectrons>(g1, g2, cut1, cut2);
     } else if constexpr (pairtype == PairType::kPHOSPHOS) {
       is_selected_pair = o2::aod::photonpair::IsSelectedPair<int, int>(g1, g2, cut1, cut2); // dummy, because track matching is not ready.
     } else if constexpr (pairtype == PairType::kPCMPHOS) {
@@ -206,8 +258,8 @@ struct PhotonHBT {
     return is_selected_pair;
   }
 
-  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TPairCuts, typename TLegs>
-  void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TPairCuts const& paircuts, TLegs const& legs)
+  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TPairCuts, typename TLegs, typename TEMPrimaryElectrons>
+  void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TPairCuts const& paircuts, TLegs const& legs, TEMPrimaryElectrons const& emprimaryelectrons)
   {
     THashList* list_ev_pair = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data()));
     THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
@@ -237,10 +289,13 @@ struct PhotonHBT {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hCollisionCounter"))->Fill(4.0); // |Zvtx| < 10 cm
       o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev_pair, "", collision);
 
-      auto photons1_coll = photons1.sliceBy(perCollision1, collision.collisionId());
-      auto photons2_coll = photons2.sliceBy(perCollision2, collision.collisionId());
+      auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
+      auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
+      // LOGF(info, "photons1_coll.size() = %d, photons2_coll.size() = %d", photons1_coll.size(), photons2_coll.size());
 
-      if constexpr (pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) {
+      double values_1d[4] = {0.f};
+      double values_3d[8] = {0.f};
+      if constexpr (pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC || pairtype == PairType::kDalitzEEDalitzEE) {
         for (auto& cut : cuts1) {
           for (auto& paircut : paircuts) {
             for (auto& [g1, g2] : combinations(CombinationsStrictlyUpperIndexPolicy(photons1_coll, photons2_coll))) {
@@ -248,22 +303,72 @@ struct PhotonHBT {
                 continue;
               }
 
-              // longitudinally co-moving system (LCMS)
+              values_1d[0] = 0.0, values_1d[1] = 0.0;
+              values_3d[0] = 0.0, values_3d[1] = 0.0;
+              // center-of-mass system (CMS)
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+              if constexpr (pairtype == PairType::kDalitzEEDalitzEE) {
+                auto pos1 = g1.template posTrack_as<TEMPrimaryElectrons>();
+                auto ele1 = g1.template negTrack_as<TEMPrimaryElectrons>();
+                auto pos2 = g2.template posTrack_as<TEMPrimaryElectrons>();
+                auto ele2 = g2.template negTrack_as<TEMPrimaryElectrons>();
+                if (pos1.trackId() == pos2.trackId() || ele1.trackId() == ele2.trackId()) {
+                  continue;
+                }
+                v1.SetM(g1.mass());
+                v2.SetM(g2.mass());
+                values_1d[0] = g1.mass();
+                values_1d[1] = g2.mass();
+                values_3d[0] = g1.mass();
+                values_3d[1] = g2.mass();
+              }
+
               ROOT::Math::PtEtaPhiMVector q12 = v1 - v2;
               ROOT::Math::PtEtaPhiMVector k12 = 0.5 * (v1 + v2);
               float qinv = -q12.M();
               float kt = k12.Pt();
-              ROOT::Math::XYZVector q_3d = q12.Vect();               // 3D q vector
-              ROOT::Math::XYZVector uv_out = k12.Vect() / k12.P();   // unit vector for out
-              ROOT::Math::XYZVector uv_long(0, 0, 1);                // unit vector for long, beam axis
-              ROOT::Math::XYZVector uv_side = uv_out.Cross(uv_long); // unit vector for side
-              float qout = q_3d.Dot(uv_out);
-              float qlong = q_3d.Dot(uv_long);
-              float qside = q_3d.Dot(uv_side);
-              double values[5] = {qinv, qlong, qout, qside, kt};
-              reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_same"))->Fill(values);
+
+              values_1d[2] = kt;
+              values_1d[3] = qinv;
+
+              if (fConfigDo3D) {
+                // float qt = q12.Pt();
+                float qlong_cms = q12.Pz();
+
+                ROOT::Math::XYZVector q_3d = q12.Vect();                                   // 3D q vector
+                ROOT::Math::XYZVector uv_out(k12.Px() / k12.Pt(), k12.Py() / k12.Pt(), 0); // unit vector for out. i.e. parallel to kt
+                ROOT::Math::XYZVector uv_long(0, 0, 1);                                    // unit vector for long, beam axis
+                ROOT::Math::XYZVector uv_side = uv_out.Cross(uv_long);                     // unit vector for side
+                float qout_cms = q_3d.Dot(uv_out);
+                float qside_cms = q_3d.Dot(uv_side);
+
+                // longitudinally co-moving system (LCMS)
+                ROOT::Math::PxPyPzEVector v1_cartesian(v1.Px(), v1.Py(), v1.Pz(), v1.E());
+                ROOT::Math::PxPyPzEVector v2_cartesian(v2.Px(), v2.Py(), v2.Pz(), v2.E());
+                ROOT::Math::PxPyPzEVector q12_cartesian = v1_cartesian - v2_cartesian;
+                float beta_z = (v1 + v2).Pz() / (v1 + v2).E();
+                ROOT::Math::Boost bst_z(0, 0, -beta_z); // Boost supports only PxPyPzEVector
+                ROOT::Math::PxPyPzEVector q12_lcms = bst_z(q12_cartesian);
+                float qlong_lcms = q12_lcms.Pz();
+
+                // ROOT::Math::PxPyPzEVector v1_lcms_cartesian = bst_z(v1_cartesian);
+                // ROOT::Math::PxPyPzEVector v2_lcms_cartesian = bst_z(v2_cartesian);
+                // ROOT::Math::PxPyPzEVector q12_lcms_cartesian = bst_z(q12_cartesian);
+                // LOGF(info, "q12.Pz() = %f, q12_cartesian.Pz() = %f",q12.Pz(), q12_cartesian.Pz());
+                // LOGF(info, "v1.Pz() = %f, v2.Pz() = %f",v1.Pz(), v2.Pz());
+                // LOGF(info, "v1_lcms_cartesian.Pz() = %f, v2_lcms_cartesian.Pz() = %f",v1_lcms_cartesian.Pz(), v2_lcms_cartesian.Pz());
+                // LOGF(info, "q12_lcms_cartesian.Pz() = %f", q12_lcms_cartesian.Pz());
+                values_3d[2] = kt;
+                values_3d[3] = qinv;
+                values_3d[4] = qlong_cms;
+                values_3d[5] = qout_cms;
+                values_3d[6] = qside_cms;
+                values_3d[7] = qlong_lcms;
+                reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_same"))->Fill(values_3d);
+              } else {
+                reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_same"))->Fill(values_1d);
+              }
             }  // end of combination
           }    // end of pair cut loop
         }      // end of cut loop
@@ -285,21 +390,54 @@ struct PhotonHBT {
                     continue;
                   }
                 }
+
+                values_1d[0] = 0.0, values_1d[1] = 0.0;
+                values_3d[0] = 0.0, values_3d[1] = 0.0;
+                // center-of-mass system (CMS)
                 ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
                 ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+                if constexpr (pairtype == PairType::kPCMDalitzEE) {
+                  v2.SetM(g2.mass());
+                  values_1d[1] = g2.mass();
+                  values_3d[1] = g2.mass();
+                }
                 ROOT::Math::PtEtaPhiMVector q12 = v1 - v2;
                 ROOT::Math::PtEtaPhiMVector k12 = 0.5 * (v1 + v2);
                 float qinv = -q12.M();
                 float kt = k12.Pt();
-                ROOT::Math::XYZVector q_3d = q12.Vect();               // 3D q vector
-                ROOT::Math::XYZVector uv_out = k12.Vect() / k12.P();   // unit vector for out
-                ROOT::Math::XYZVector uv_long(0, 0, 1);                // unit vector for long, beam axis
-                ROOT::Math::XYZVector uv_side = uv_out.Cross(uv_long); // unit vector for side
-                float qout = q_3d.Dot(uv_out);
-                float qlong = q_3d.Dot(uv_long);
-                float qside = q_3d.Dot(uv_side);
-                double values[5] = {qinv, qlong, qout, qside, kt};
-                reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_same"))->Fill(values);
+
+                values_1d[2] = kt;
+                values_1d[3] = qinv;
+
+                if (fConfigDo3D) {
+                  // float qt = q12.Pt();
+                  float qlong_cms = q12.Pz();
+
+                  ROOT::Math::XYZVector q_3d = q12.Vect();                                   // 3D q vector
+                  ROOT::Math::XYZVector uv_out(k12.Px() / k12.Pt(), k12.Py() / k12.Pt(), 0); // unit vector for out. i.e. parallel to kt
+                  ROOT::Math::XYZVector uv_long(0, 0, 1);                                    // unit vector for long, beam axis
+                  ROOT::Math::XYZVector uv_side = uv_out.Cross(uv_long);                     // unit vector for side
+                  float qout_cms = q_3d.Dot(uv_out);
+                  float qside_cms = q_3d.Dot(uv_side);
+
+                  // longitudinally co-moving system (LCMS)
+                  ROOT::Math::PxPyPzEVector v1_cartesian(v1.Px(), v1.Py(), v1.Pz(), v1.E());
+                  ROOT::Math::PxPyPzEVector v2_cartesian(v2.Px(), v2.Py(), v2.Pz(), v2.E());
+                  ROOT::Math::PxPyPzEVector q12_cartesian = v1_cartesian - v2_cartesian;
+                  float beta_z = (v1 + v2).Pz() / (v1 + v2).E();
+                  ROOT::Math::Boost bst_z(0, 0, -beta_z); // Boost supports only PxPyPzEVector
+                  ROOT::Math::PxPyPzEVector q12_lcms = bst_z(q12_cartesian);
+                  float qlong_lcms = q12_lcms.Pz();
+                  values_3d[2] = kt;
+                  values_3d[3] = qinv;
+                  values_3d[4] = qlong_cms;
+                  values_3d[5] = qout_cms;
+                  values_3d[6] = qside_cms;
+                  values_3d[7] = qlong_lcms;
+                  reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_same"))->Fill(values_3d);
+                } else {
+                  reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_same"))->Fill(values_1d);
+                }
               } // end of combination
             }   // end of pair cut loop
           }     // end of cut2 loop
@@ -314,27 +452,29 @@ struct PhotonHBT {
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
   BinningType colBinning{{ConfVtxBins, ConfMultBins}, true};
 
-  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TPairCuts, typename TLegs>
-  void MixedEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TPairCuts const& paircuts, TLegs const& legs)
+  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TPairCuts, typename TLegs, typename TEMPrimaryElectrons>
+  void MixedEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TPairCuts const& paircuts, TLegs const& legs, TEMPrimaryElectrons const& emprimaryelectrons)
   {
     THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
     // LOGF(info, "Number of collisions after filtering: %d", collisions.size());
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ndepth, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
-      // LOGF(info, "Mixed event collisionId: (%d, %d) , counter = %d, ngpcm: (%d, %d), ngphos: (%d, %d), ngemc: (%d, %d)",
-      //     collision1.collisionId(), collision2.collisionId(), nev, collision1.ngpcm(), collision2.ngpcm(), collision1.ngphos(), collision2.ngphos(), collision1.ngemc(), collision2.ngemc());
+      // LOGF(info, "Mixed event globalIndex: (%d, %d) , counter = %d, ngpcm: (%d, %d), ngphos: (%d, %d), ngemc: (%d, %d)",
+      //     collision1.globalIndex(), collision2.globalIndex(), nev, collision1.ngpcm(), collision2.ngpcm(), collision1.ngphos(), collision2.ngphos(), collision1.ngemc(), collision2.ngemc());
 
-      auto photons_coll1 = photons1.sliceBy(perCollision1, collision1.collisionId());
-      auto photons_coll2 = photons2.sliceBy(perCollision2, collision2.collisionId());
+      auto photons_coll1 = photons1.sliceBy(perCollision1, collision1.globalIndex());
+      auto photons_coll2 = photons2.sliceBy(perCollision2, collision2.globalIndex());
       // LOGF(info, "collision1: posZ = %f, numContrib = %d , sel8 = %d | collision2: posZ = %f, numContrib = %d , sel8 = %d",
       //     collision1.posZ(), collision1.numContrib(), collision1.sel8(), collision2.posZ(), collision2.numContrib(), collision2.sel8());
 
+      double values_1d[4] = {0.f};
+      double values_3d[8] = {0.f};
       for (auto& cut1 : cuts1) {
         for (auto& cut2 : cuts2) {
           for (auto& paircut : paircuts) {
             for (auto& [g1, g2] : combinations(soa::CombinationsFullIndexPolicy(photons_coll1, photons_coll2))) {
-              // LOGF(info, "Mixed event photon pair: (%d, %d) from events (%d, %d), photon event: (%d, %d)", g1.index(), g2.index(), collision1.index(), collision2.index(), g1.collisionId(), g2.collisionId());
+              // LOGF(info, "Mixed event photon pair: (%d, %d) from events (%d, %d), photon event: (%d, %d)", g1.index(), g2.index(), collision1.index(), collision2.index(), g1.globalIndex(), g2.globalIndex());
 
-              if ((pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC) && (TString(cut1.GetName()) != TString(cut2.GetName()))) {
+              if ((pairtype == PairType::kPCMPCM || pairtype == PairType::kPHOSPHOS || pairtype == PairType::kEMCEMC || pairtype == PairType::kDalitzEEDalitzEE) && (TString(cut1.GetName()) != TString(cut2.GetName()))) {
                 continue;
               }
               if (!IsSelectedPair<pairtype>(g1, g2, cut1, cut2)) {
@@ -343,21 +483,61 @@ struct PhotonHBT {
               if (!paircut.IsSelected(g1, g2)) {
                 continue;
               }
+
+              // center-of-mass system (CMS)
+              values_1d[0] = 0.0, values_1d[1] = 0.0;
+              values_3d[0] = 0.0, values_3d[1] = 0.0;
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+              if constexpr (pairtype == PairType::kPCMDalitzEE) {
+                v2.SetM(g2.mass());
+                values_1d[1] = g2.mass();
+                values_3d[1] = g2.mass();
+              } else if constexpr (pairtype == PairType::kDalitzEEDalitzEE) {
+                v1.SetM(g1.mass());
+                v2.SetM(g2.mass());
+                values_1d[0] = g1.mass();
+                values_1d[1] = g2.mass();
+                values_3d[0] = g1.mass();
+                values_3d[1] = g2.mass();
+              }
               ROOT::Math::PtEtaPhiMVector q12 = v1 - v2;
               ROOT::Math::PtEtaPhiMVector k12 = 0.5 * (v1 + v2);
               float qinv = -q12.M();
               float kt = k12.Pt();
-              ROOT::Math::XYZVector q_3d = q12.Vect();               // 3D q vector
-              ROOT::Math::XYZVector uv_out = k12.Vect() / k12.P();   // unit vector for out
-              ROOT::Math::XYZVector uv_long(0, 0, 1);                // unit vector for long, beam axis
-              ROOT::Math::XYZVector uv_side = uv_out.Cross(uv_long); // unit vector for side
-              float qout = q_3d.Dot(uv_out);
-              float qlong = q_3d.Dot(uv_long);
-              float qside = q_3d.Dot(uv_side);
-              double values[5] = {qinv, qlong, qout, qside, kt};
-              reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_mix"))->Fill(values);
+              values_1d[2] = kt;
+              values_1d[3] = qinv;
+
+              if (fConfigDo3D) {
+                // float qt = q12.Pt();
+                float qlong_cms = q12.Pz();
+
+                ROOT::Math::XYZVector q_3d = q12.Vect();                                   // 3D q vector
+                ROOT::Math::XYZVector uv_out(k12.Px() / k12.Pt(), k12.Py() / k12.Pt(), 0); // unit vector for out. i.e. parallel to kt
+                ROOT::Math::XYZVector uv_long(0, 0, 1);                                    // unit vector for long, beam axis
+                ROOT::Math::XYZVector uv_side = uv_out.Cross(uv_long);                     // unit vector for side
+                float qout_cms = q_3d.Dot(uv_out);
+                float qside_cms = q_3d.Dot(uv_side);
+
+                // longitudinally co-moving system (LCMS)
+                ROOT::Math::PxPyPzEVector v1_cartesian(v1.Px(), v1.Py(), v1.Pz(), v1.E());
+                ROOT::Math::PxPyPzEVector v2_cartesian(v2.Px(), v2.Py(), v2.Pz(), v2.E());
+                ROOT::Math::PxPyPzEVector q12_cartesian = v1_cartesian - v2_cartesian;
+                float beta_z = (v1 + v2).Pz() / (v1 + v2).E();
+                ROOT::Math::Boost bst_z(0, 0, -beta_z); // Boost supports only PxPyPzEVector
+                ROOT::Math::PxPyPzEVector q12_lcms = bst_z(q12_cartesian);
+                float qlong_lcms = q12_lcms.Pz();
+
+                values_3d[2] = kt;
+                values_3d[3] = qinv;
+                values_3d[4] = qlong_cms;
+                values_3d[5] = qout_cms;
+                values_3d[6] = qside_cms;
+                values_3d[7] = qlong_lcms;
+                reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_mix"))->Fill(values_3d);
+              } else {
+                reinterpret_cast<THnSparseF*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hs_q_mix"))->Fill(values_1d);
+              }
 
             } // end of different photon combinations
           }   // end of pair cut loop
@@ -366,34 +546,52 @@ struct PhotonHBT {
     }         // end of different collision combinations
   }
 
-  Preslice<MyV0Photons> perCollision_pcm = aod::v0photon::collisionId;
+  Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::emreducedeventId;
+  Preslice<MyDalitzEEs> perCollision_dalitzee = aod::dalitzee::emreducedeventId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
 
+  Filter eeFilter = o2::aod::dalitzee::sign == 0 && nabs(o2::aod::dalitzee::rapidity) < maxY_dielectron; // analyze only uls
+  using filteredMyDalitzEEs = soa::Filtered<MyDalitzEEs>;
+
   Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
-  Filter collisionFilter_subsys = (o2::aod::emreducedevent::ngpcm >= 1) || (o2::aod::emreducedevent::ngphos >= 1);
-  using MyFilteredCollisions = soa::Filtered<aod::EMReducedEvents>;
+  Filter collisionFilter_subsys = (o2::aod::emreducedevent::ngpcm >= 1);
+  using MyFilteredCollisions = soa::Filtered<MyCollisions>;
 
-  void processPCMPCM(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs)
+  void processPCMPCM(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs)
   {
-    SameEventPairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, fPairCuts, legs);
-    MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, fPairCuts, legs);
+    SameEventPairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, fPairCuts, legs, nullptr);
+    MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, fPairCuts, legs, nullptr);
   }
 
-  void processPHOSPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, aod::PHOSClusters const& phosclusters)
+  void processPCMDalitzEE(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs, filteredMyDalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons)
   {
-    SameEventPairing<PairType::kPHOSPHOS>(collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fPHOSCuts, fPHOSCuts, fPairCuts, nullptr);
-    MixedEventPairing<PairType::kPHOSPHOS>(filtered_collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fPHOSCuts, fPHOSCuts, fPairCuts, nullptr);
+    SameEventPairing<PairType::kPCMDalitzEE>(collisions, v0photons, dielectrons, perCollision_pcm, perCollision_dalitzee, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimaryelectrons);
+    MixedEventPairing<PairType::kPCMDalitzEE>(filtered_collisions, v0photons, dielectrons, perCollision_pcm, perCollision_dalitzee, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimaryelectrons);
   }
 
-  void processPCMPHOS(aod::EMReducedEvents const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::PHOSClusters const& phosclusters, aod::V0Legs const& legs)
+  void processDalitzEEDalitzEE(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, filteredMyDalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons)
   {
-    SameEventPairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision_pcm, perCollision_phos, fPCMCuts, fPHOSCuts, fPairCuts, legs);
-    MixedEventPairing<PairType::kPCMPHOS>(filtered_collisions, v0photons, phosclusters, perCollision_pcm, perCollision_phos, fPCMCuts, fPHOSCuts, fPairCuts, legs);
+    SameEventPairing<PairType::kDalitzEEDalitzEE>(collisions, dielectrons, dielectrons, perCollision_dalitzee, perCollision_dalitzee, fDalitzEECuts, fDalitzEECuts, fPairCuts, nullptr, emprimaryelectrons);
+    MixedEventPairing<PairType::kDalitzEEDalitzEE>(filtered_collisions, dielectrons, dielectrons, perCollision_dalitzee, perCollision_dalitzee, fDalitzEECuts, fDalitzEECuts, fPairCuts, nullptr, emprimaryelectrons);
   }
 
-  void processDummy(aod::EMReducedEvents::iterator const& collision) {}
+  void processPHOSPHOS(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, aod::PHOSClusters const& phosclusters)
+  {
+    SameEventPairing<PairType::kPHOSPHOS>(collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fPHOSCuts, fPHOSCuts, fPairCuts, nullptr, nullptr);
+    MixedEventPairing<PairType::kPHOSPHOS>(filtered_collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fPHOSCuts, fPHOSCuts, fPairCuts, nullptr, nullptr);
+  }
+
+  void processPCMPHOS(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::PHOSClusters const& phosclusters, aod::V0Legs const& legs)
+  {
+    SameEventPairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision_pcm, perCollision_phos, fPCMCuts, fPHOSCuts, fPairCuts, legs, nullptr);
+    MixedEventPairing<PairType::kPCMPHOS>(filtered_collisions, v0photons, phosclusters, perCollision_pcm, perCollision_phos, fPCMCuts, fPHOSCuts, fPairCuts, legs, nullptr);
+  }
+
+  void processDummy(MyCollisions::iterator const& collision) {}
 
   PROCESS_SWITCH(PhotonHBT, processPCMPCM, "pairing PCM-PCM", false);
+  PROCESS_SWITCH(PhotonHBT, processPCMDalitzEE, "pairing PCM-DalitzEE", false);
+  PROCESS_SWITCH(PhotonHBT, processDalitzEEDalitzEE, "pairing DalitzEE-DalitzEE", false);
   PROCESS_SWITCH(PhotonHBT, processPHOSPHOS, "pairing PHOS-PHOS", false);
   PROCESS_SWITCH(PhotonHBT, processPCMPHOS, "pairing PCM-PHOS", false);
   PROCESS_SWITCH(PhotonHBT, processDummy, "Dummy function", true);

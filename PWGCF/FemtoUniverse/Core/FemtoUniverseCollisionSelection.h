@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -12,14 +12,14 @@
 /// \file FemtoUniverseCollisionSelection.h
 /// \brief FemtoUniverseCollisionSelection - event selection within the o2femtouniverse framework
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
-/// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
+/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@pw.edu.pl
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_
 
 #include <string>
 #include <iostream>
-
 #include "Common/CCDB/TriggerAliases.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
@@ -39,10 +39,14 @@ class FemtoUniverseCollisionSelection
 
   /// Pass the selection criteria to the class
   /// \param zvtxMax Maximal value of the z-vertex
-  /// \param checkTrigger whether or not to check for the trigger alias
+  /// \param checkTrigger Whether or not to check for the trigger alias
   /// \param trig Requested trigger alias
-  /// \param checkOffline whether or not to check for offline selection criteria
-  void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool checkRun3)
+  /// \param checkOffline Whether or not to check for offline selection criteria
+  /// \param checkRun3 To check for the Run3 data
+  /// \param centmin Minimum value of centrality selection
+  /// \param centmax Maximum value of centrality selection
+  void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool checkRun3, float centmin, float centmax)
+  // void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool checkRun3)
   {
     mCutsSet = true;
     mZvtxMax = zvtxMax;
@@ -50,6 +54,8 @@ class FemtoUniverseCollisionSelection
     mTrigger = static_cast<triggerAliases>(trig);
     mCheckOffline = checkOffline;
     mCheckIsRun3 = checkRun3;
+    mCentMin = centmin;
+    mCentMax = centmax;
   }
 
   /// Initializes histograms for the task
@@ -61,14 +67,23 @@ class FemtoUniverseCollisionSelection
     }
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", kTH1F, {{300, -12.5, 12.5}});
-    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{600, 0, 600}});
-    mHistogramRegistry->add("Event/MultT0M", "; vMultT0M; Entries", kTH1F, {{600, 0, 600}});
+    mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{16384, 0, 32768}});
+    mHistogramRegistry->add("Event/MultT0M", "; vMultT0M; Entries", kTH1F, {{4096, 0, 8192}});
+    mHistogramRegistry->add("Event/MultNTracksPV", "; vMultNTracksPV; Entries", kTH1F, {{120, 0, 120}});
+    mHistogramRegistry->add("Event/MultNTracklets", "; vMultNTrackslets; Entries", kTH1F, {{300, 0, 300}});
+    mHistogramRegistry->add("Event/MultTPC", "; vMultTPC; Entries", kTH1I, {{600, 0, 600}});
   }
 
   /// Print some debug information
   void printCuts()
   {
-    LOGF(info, "Debug information for FemtoUniverseCollisionSelection \n Max. z-vertex: %f \n Check trigger: %B \n Trigger: %i \n Check offline: %B ", mZvtxMax, mCheckTrigger, mTrigger, mCheckOffline);
+    LOG(info) << "Debug information for FemtoUniverseCollisionSelection";
+    LOG(info) << "Max. z-vertex: " << mZvtxMax;
+    LOG(info) << "Check trigger: " << mCheckTrigger;
+    LOG(info) << "Trigger: " << mTrigger;
+    LOG(info) << " Check offline: " << mCheckOffline;
+    LOG(info) << " Minimum Centrality: " << mCentMin;
+    LOG(info) << " Maximum Centrality: " << mCentMax;
   }
 
   /// Check whether the collisions fulfills the specified selections
@@ -81,17 +96,30 @@ class FemtoUniverseCollisionSelection
     if (std::abs(col.posZ()) > mZvtxMax) {
       return false;
     }
-    if (mCheckIsRun3) {
-      if (mCheckOffline && !col.sel8()) {
-        return false;
-      }
-    } else {
-      if (mCheckTrigger && !col.alias_bit(mTrigger)) {
-        return false;
-      }
-      if (mCheckOffline && !col.sel7()) {
-        return false;
-      }
+    if (mCheckTrigger && !col.alias_bit(mTrigger)) {
+      return false;
+    }
+    if (mCheckOffline && !col.sel7()) {
+      return false;
+    }
+    return true;
+  }
+
+  /// Check whether the collisions fulfills the specified selections for Run3
+  /// \tparam T type of the collision
+  /// \param col Collision
+  /// \return whether or not the collisions fulfills the specified selections
+  template <typename T>
+  bool isSelectedRun3(T const& col)
+  {
+    if (std::abs(col.posZ()) > mZvtxMax) {
+      return false;
+    }
+    if (mCheckOffline && !col.sel8()) {
+      return false;
+    }
+    if ((col.centFT0C() < mCentMin) || (col.centFT0C() > mCentMax)) {
+      return false;
     }
     return true;
   }
@@ -104,8 +132,15 @@ class FemtoUniverseCollisionSelection
   {
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST("Event/zvtxhist"), col.posZ());
-      mHistogramRegistry->fill(HIST("Event/MultV0M"), col.multFV0M());
       mHistogramRegistry->fill(HIST("Event/MultT0M"), col.multFT0M());
+      mHistogramRegistry->fill(HIST("Event/MultNTracksPV"), col.multNTracksPV());
+      mHistogramRegistry->fill(HIST("Event/MultNTracklets"), col.multTracklets());
+      mHistogramRegistry->fill(HIST("Event/MultTPC"), col.multTPC());
+      if (mCheckIsRun3) {
+        mHistogramRegistry->fill(HIST("Event/MultV0M"), col.multFV0M());
+      } else {
+        mHistogramRegistry->fill(HIST("Event/MultV0M"), 0.5 * (col.multFV0M())); // in AliPhysics, the VOM was defined by (V0A + V0C)/2.
+      }
     }
   }
 
@@ -132,6 +167,8 @@ class FemtoUniverseCollisionSelection
   bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
   triggerAliases mTrigger = kINT7;                 ///< Trigger to check for
   float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
+  float mCentMin = 0.0;                            ///< Minimum centrality value
+  float mCentMax = 100.0;                          ///< Maximum centrality value
 };
 } // namespace o2::analysis::femtoUniverse
 

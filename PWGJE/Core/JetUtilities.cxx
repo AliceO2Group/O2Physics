@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// jet finder task
+// jet utilities
 //
 // Author: Nima Zardoshti
 #include "PWGJE/Core/JetUtilities.h"

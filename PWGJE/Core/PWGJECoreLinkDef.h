@@ -17,7 +17,9 @@
 #pragma link off all functions;
 
 #pragma link C++ class JetFinder + ;
-#pragma link C++ namespace JetUtilities + ;
-#pragma link C++ namespace FastJetUtilities + ;
+#pragma link C++ class JetBkgSubUtils + ;
+#pragma link C++ namespace jetutilities + ;
+#pragma link C++ namespace fastjetutilities + ;
+#pragma link C++ namespace jettaggingutilities + ;
 
 #endif // PWGJE_CORE_PWGJECORELINKDEF_H_

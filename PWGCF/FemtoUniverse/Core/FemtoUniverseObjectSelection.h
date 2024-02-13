@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -12,18 +12,21 @@
 /// \file FemtoUniverseObjectSelection.h
 /// \brief FemtoUniverseObjectSelection - Parent class of all selections
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
+/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEOBJECTSELECTION_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEOBJECTSELECTION_H_
 
 #include <algorithm>
-#include <vector>
 #include <string>
+#include <vector>
 
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/HistogramRegistry.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
+using namespace o2;
 using namespace o2::framework;
 
 namespace o2::analysis
@@ -49,6 +52,7 @@ class FemtoUniverseObjectSelection
   void fillSelectionHistogram()
   {
     int nBins = mSelections.size();
+    LOGF(info, "%s", (static_cast<std::string>(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + "/cuthist").c_str());
     mHistogramRegistry->add((static_cast<std::string>(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + "/cuthist").c_str(), "; Cut; Value", kTH1F, {{nBins, 0, static_cast<double>(nBins)}});
     auto hist = mHistogramRegistry->get<TH1>(HIST(o2::aod::femtouniverseparticle::ParticleTypeName[part]) + HIST("/cuthist"));
     for (size_t i = 0; i < mSelections.size(); ++i) {
@@ -95,7 +99,7 @@ class FemtoUniverseObjectSelection
     }
 
     /// Then, the sorted selections are added to the overall container of cuts
-    for (const auto& sel : sels) {
+    for (auto& sel : sels) {
       mSelections.push_back(sel);
     }
   }

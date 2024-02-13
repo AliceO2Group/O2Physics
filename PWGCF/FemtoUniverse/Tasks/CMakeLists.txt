@@ -9,4 +9,70 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+o2physics_add_dpl_workflow(femtouniverse-pair-track-track
+          SOURCES femtoUniversePairTaskTrackTrack.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femtouniverse-pair-track-track-mc-truth
+          SOURCES femtoUniversePairTaskTrackTrackMcTruth.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femtouniverse-pair-track-track-extended
+          SOURCES femtoUniversePairTaskTrackTrackExtended.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femtouniverse-pair-track-track-mult-kt-extended
+          SOURCES femtoUniversePairTaskTrackTrackMultKtExtended.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femtouniverse-pair-track-track-threedrelmom-mult-kt-extended
+          SOURCES femtoUniversePairTaskTrackTrack3DMultKtExtended.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femtouniverse-debug-track
+          SOURCES femtoUniverseDebugTrack.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femtouniverse-pair-track-v0-extended
+          SOURCES femtoUniversePairTaskTrackV0Extended.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femtouniverse-pair-track-d0
+          SOURCES femtoUniversePairTaskTrackD0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femtouniverse-pair-track-phi
+          SOURCES femtoUniversePairTaskTrackPhi.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femtouniverse-debug-v0
+          SOURCES femtoUniverseDebugV0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femtouniverse-hash
+          SOURCES femtoUniverseHashTask.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femtouniverse-pair-track-track-m-c
+          SOURCES femtoUniversePairTaskTrackTrackMC.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_executable(femtouniverse-cutculator
+          SOURCES femtoUniverseCutCulator.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+
 

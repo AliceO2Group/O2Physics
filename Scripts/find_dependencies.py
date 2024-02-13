@@ -31,6 +31,7 @@ and optionally visualised graphically in a figure.
 
 import argparse
 import glob
+import hashlib
 import json
 import os
 import subprocess as sp  # nosec B404
@@ -104,9 +105,7 @@ def get_outputs(specs_wf: dict, device=""):
     for dev in specs_wf:
         if device and dev["name"] != device:
             continue
-        list_outputs += [
-            i["description"] for i in dev["outputs"] if i["origin"] == "AOD"
-        ]
+        list_outputs += [i["description"] for i in dev["outputs"] if i["origin"] == "AOD"]
     return list(dict.fromkeys(list_outputs))  # Remove duplicities
 
 
@@ -141,9 +140,7 @@ def get_table_producers(table: str, dic_wf_all: dict, case_sensitive=False):
     for wf, dic_wf in dic_wf_all.items():
         # Loop over devices
         for dev in dic_wf:
-            outputs = [
-                o if case_sensitive else o.lower() for o in dic_wf[dev]["outputs"]
-            ]
+            outputs = [o if case_sensitive else o.lower() for o in dic_wf[dev]["outputs"]]
             if table in outputs:
                 list_producers.append(wf)
     return list(dict.fromkeys(list_producers))  # Remove duplicities
@@ -207,9 +204,7 @@ def get_tree_for_workflow(
     return dic_wf_tree
 
 
-def get_tree_for_table(
-    tab: str, dic_wf_all: dict, dic_wf_tree=None, case_sensitive=False, levels_max=0
-):
+def get_tree_for_table(tab: str, dic_wf_all: dict, dic_wf_tree=None, case_sensitive=False, levels_max=0):
     """Get the dependency tree of tables and workflows needed to produce this table."""
     if dic_wf_tree is None:
         dic_wf_tree = {}
@@ -219,9 +214,7 @@ def get_tree_for_table(
         if levels_max != 0:  # Search for more dependencies only if needed.
             print("\nWorkflow dependency tree:\n")
             for p in producers:
-                get_tree_for_workflow(
-                    p, dic_wf_all, dic_wf_tree, case_sensitive, 0, levels_max
-                )
+                get_tree_for_workflow(p, dic_wf_all, dic_wf_tree, case_sensitive, 0, levels_max)
     else:
         print("No producers found")
     return dic_wf_tree
@@ -309,9 +302,7 @@ def main():
             #     return
             # print(producers)
             # print_workflows(dic_wf_all_simple, producers)
-            get_tree_for_table(
-                table, dic_wf_all_simple, dic_deps, case_sensitive, n_levels
-            )
+            get_tree_for_table(table, dic_wf_all_simple, dic_deps, case_sensitive, n_levels)
 
     # Find workflow dependencies
     if workflows:
@@ -320,9 +311,7 @@ def main():
             if not workflow:
                 msg_fatal("Bad workflow")
             # print_workflows(dic_wf_all_simple, [workflow])
-            get_tree_for_workflow(
-                workflow, dic_wf_all_simple, dic_deps, case_sensitive, 0, n_levels
-            )
+            get_tree_for_workflow(workflow, dic_wf_all_simple, dic_deps, case_sensitive, 0, n_levels)
 
     # Print the tree dictionary with dependencies
     # print("\nTree\n")
@@ -330,9 +319,10 @@ def main():
 
     # Produce topology graph.
     if graph_suffix and dic_deps:
-        basename = "_".join(
-            (tables if tables else []) + (workflows if workflows else [])
-        )
+        basename = "_".join((tables if tables else []) + (workflows if workflows else []))
+        # Set a short file name when the full name would be longer than 255 characters.
+        if len(basename) > 251:
+            basename = "o2_dependencies_" + hashlib.sha1(basename.encode(), usedforsecurity=False).hexdigest()
         ext_graph = graph_suffix
         path_file_dot = basename + ".gv"
         path_file_graph = basename + "." + ext_graph

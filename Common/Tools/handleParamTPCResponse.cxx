@@ -17,6 +17,7 @@
 #include <array>
 #include <fstream>
 #include <sstream>
+#include <boost/algorithm/string.hpp>
 #include "TFile.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "handleParamBase.h"
@@ -29,6 +30,10 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     "ccdb-path,c", bpo::value<std::string>()->default_value("Analysis/PID/TPC"), "CCDB path for storage/retrieval")(
     "objname,n", bpo::value<std::string>()->default_value("Response"), "Object name to be stored in file")(
     "inobjname", bpo::value<std::string>()->default_value("Response"), "Object name to be read from file in 'push' mode")(
+    "recopass", bpo::value<std::string>()->default_value(""), "Reconstruction pass name")(
+    "period", bpo::value<std::string>()->default_value(""), "Period name")(
+    "jiraticket", bpo::value<std::string>()->default_value(""), "JIRA ticket")(
+    "comment", bpo::value<std::string>()->default_value(""), "Comment for metadata")(
     "bb0", bpo::value<float>()->default_value(0.03209809958934784f), "Bethe-Bloch parameter 0")(
     "bb1", bpo::value<float>()->default_value(19.9768009185791f), "Bethe-Bloch parameter 1")(
     "bb2", bpo::value<float>()->default_value(2.5266601063857674e-16f), "Bethe-Bloch parameter 2")(
@@ -81,6 +86,10 @@ int main(int argc, char* argv[])
   const std::string inFilename = arguments["read-from-file"].as<std::string>();
   const std::string objname = arguments["objname"].as<std::string>();
   const std::string inobjname = arguments["inobjname"].as<std::string>();
+  const std::string recopass = arguments["recopass"].as<std::string>();
+  const std::string periodname = arguments["period"].as<std::string>();
+  const std::string jiraticket = arguments["jiraticket"].as<std::string>();
+  const std::string comment = arguments["comment"].as<std::string>();
 
   const float bb0 = arguments["bb0"].as<float>();
   const float bb1 = arguments["bb1"].as<float>();
@@ -147,10 +156,9 @@ int main(int argc, char* argv[])
     LOG(info) << "Reading existing TPCPIDResponse object " << objname << " from " << inFilename << ":";
     tpc->PrintAll();
     return 0;
-  }
 
-  else if (optMode.compare("write") == 0 || optMode.compare("push") == 0) // Create new object to write to local file or push to CCDB
-  {
+  } else if (optMode.compare("write") == 0 || optMode.compare("push") == 0) { // Create new object to write to local file or push to CCDB
+
     if (!inFilename.empty()) { // Read from existing file to push to CCDB
       LOG(info) << "Reading from existing file to write to CCDB:";
       TFile fin(inFilename.data(), "READ");
@@ -158,11 +166,13 @@ int main(int argc, char* argv[])
         LOG(error) << "Input file " << inFilename << " could not be read";
         return 1;
       }
+
       tpc = fin.Get<Response>(inobjname.c_str());
       if (!tpc) {
         LOG(error) << "Object with name " << objname << " could not be found in file " << inFilename;
         return 1;
       }
+
       tpc->PrintAll();
     } else { // Create new object if file not specified
       LOG(info) << "Creating new TPCPIDResponse object with defined parameters:";
@@ -178,6 +188,7 @@ int main(int argc, char* argv[])
       tpc->SetUseDefaultResolutionParam(useDefaultParam);
       tpc->PrintAll();
     }
+
     if (optMode.compare("write") == 0) {
       if (outFilename.empty()) {
         LOG(error) << "'write' mode specified, but no output filename. Quitting";
@@ -199,20 +210,76 @@ int main(int argc, char* argv[])
 
     if (optMode.compare("push") == 0) {
       LOG(info) << "Attempting to push object to CCDB";
-
       std::map<std::string, std::string> metadata;
+
+      // Sanity check: Request confirmation if any of recoPass, period name, comment, jira not specified
+      int missingPass = 0, missingPeriod = 0, missingComment = 0, missingJira = 0;
+      if (recopass.empty()) {
+        missingPass = 1;
+      } else {
+        metadata["RecoPassName"] = recopass;
+      }
+
+      if (periodname.empty()) {
+        missingPeriod = 1;
+      } else {
+        metadata["LPMProductionTag"] = periodname;
+      }
+
+      if (comment.empty()) {
+        missingComment = 1;
+      } else {
+        metadata["Comment"] = comment;
+      }
+      if (jiraticket.empty()) {
+        missingJira = 1;
+      } else {
+        metadata["JIRA"] = jiraticket;
+      }
+
+      if (missingPass || missingPeriod || missingComment || missingJira) {
+        LOG(info) << "WARNING: Attempting to push an object with missing metadata elements:";
+        if (missingPass)
+          LOG(info) << "\t- Pass name";
+        if (missingPeriod)
+          LOG(info) << "\t- Period name";
+        if (missingComment)
+          LOG(info) << "\t- Comment";
+        if (missingJira)
+          LOG(info) << "\t- JIRA ticket";
+
+        // Request interactive confirmation to upload
+        LOG(info) << "Continue with object upload anyway? (Y/n)";
+        std::string confirm;
+        std::cin >> confirm;
+        if (boost::iequals(confirm.substr(0, 1), "y")) {
+          LOG(info) << "Continuing with object upload";
+        } else {
+          LOG(info) << "Aborting upload";
+          return 1;
+        }
+      }
+
+      // Fill metadata map for start/end run number
       if (minRunNumber != 0) {
         metadata["min-runnumber"] = Form("%i", minRunNumber);
         metadata["max-runnumber"] = Form("%i", maxRunNumber);
       }
+
       storeOnCCDB(pathCCDB + "/" + objname, metadata, validityStart, validityStop, tpc);
     }
-  }
+  } else if (optMode.compare("pull") == 0) { // pull existing from CCDB; write out to file if requested
+    LOG(info) << "Attempting to pull object from CCDB (" << urlCCDB << "): " << pathCCDB << "/" << objname << (recopass.empty() ? "" : "/recoPass=" + recopass);
+    std::map<std::string, std::string> metadata;
+    if (!recopass.empty()) {
+      metadata["RecoPassName"] = recopass;
+    }
 
-  else if (optMode.compare("pull") == 0) { // pull existing from CCDB; write out to file if requested
-    LOG(info) << "Attempting to pull object from CCDB (" << urlCCDB << "): " << pathCCDB << "/" << objname;
-    tpc = retrieveFromCCDB<Response>(pathCCDB + "/" + objname, ccdbTimestamp);
-
+    tpc = retrieveFromCCDB<Response>(pathCCDB + "/" + objname, ccdbTimestamp, metadata);
+    if (!tpc) {
+      LOG(error) << "No CCDB object found with requested parameters";
+      return 1;
+    }
     tpc->PrintAll();
 
     if (!outFilename.empty()) {
@@ -228,9 +295,7 @@ int main(int argc, char* argv[])
       LOG(info) << "File successfully written";
     }
     return 0;
-  }
-
-  else {
+  } else {
     LOG(error) << "Invalid mode specified! (must be 'read', 'write', 'pull' or 'push')";
     return 1;
   }

@@ -124,7 +124,7 @@ struct pidQaWithV0s {
   template <typename T1, typename C>
   bool acceptV0s(const T1& v0, const C& collision) // Apply general selections on V0
   {
-    float cospa = v0.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+    float cospa = v0.v0cosPA();
     fillHistogram("beforeselections/cospa", cospa);
     fillHistogram("beforeselections/decayradius", v0.v0radius());
     if (cospa < v0cospa) {

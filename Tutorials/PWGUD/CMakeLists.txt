@@ -23,3 +23,18 @@ o2physics_add_dpl_workflow(udtutorial-02b
                            SOURCES UDTutorial_02b.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(udtutorial-03a
+                           SOURCES UDTutorial_03a.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(udtutorial-03b
+                           SOURCES UDTutorial_03b.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(udtutorial-04
+                           SOURCES UDTutorial_04.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)

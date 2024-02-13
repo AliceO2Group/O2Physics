@@ -144,6 +144,6 @@ struct skimmerGammaCalo {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<skimmerGammaCalo>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<skimmerGammaCalo>(cfgc, TaskName{"skimmer-gamma-calo"})};
   return workflow;
 }

@@ -19,11 +19,6 @@
 #ifndef DPG_TASKS_TOF_TOFSKIMSTABLECREATOR_H_
 #define DPG_TASKS_TOF_TOFSKIMSTABLECREATOR_H_
 
-using namespace o2;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-using namespace o2::track;
-
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/FT0Corrected.h"
@@ -61,7 +56,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,                   //! Flag to check i
 
 DECLARE_SOA_TABLE(SkimmedTOFColl, "AOD", "SKIMMEDTOFCOL", //! Table of the skimmed TOF data format. One entry per collision.
                   o2::soa::Index<>,
-                  tofskims::CollisionId,
                   pidtofevtime::EvTimeTOF,
                   pidtofevtime::EvTimeTOFErr,
                   pidtofevtime::EvTimeTOFMult,

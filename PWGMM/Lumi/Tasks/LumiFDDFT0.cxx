@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+// author: akhuntia@cern.ch
 
 #include <array>
 #include <cmath>
@@ -45,6 +46,7 @@
 #include "CCDB/CcdbApi.h"
 #include "DataFormatsCalibration/MeanVertexObject.h"
 
+using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
@@ -91,10 +93,25 @@ DECLARE_SOA_TABLE(EventInfo, "AOD", "EventInfo", full::TimeStamp, full::VertexX,
                   full::isFT0, full::TCMTriggerFT0,
                   full::TimeAFT0, full::TimeCFT0,
                   full::ChargeAFT0, full::ChargeCFT0);
+
+DECLARE_SOA_TABLE(EventInfoFDD, "AOD", "EventInfoFDD",
+                  full::TimeStamp, full::GlobalBC,
+                  full::TCMTriggerFDD, full::TimeAFDD,
+                  full::TimeCFDD, full::ChargeAFDD,
+                  full::ChargeCFDD);
+
+DECLARE_SOA_TABLE(EventInfoFT0, "AOD", "EventInfoFT0",
+                  full::TimeStamp, full::GlobalBC,
+                  full::TCMTriggerFT0, full::TimeAFT0,
+                  full::TimeCFT0, full::ChargeAFT0,
+                  full::ChargeCFT0);
+
 } // namespace o2::aod
 
 struct LumiFDDFT0 {
   Produces<o2::aod::EventInfo> rowEventInfo;
+  Produces<o2::aod::EventInfoFDD> rowEventInfofdd;
+  Produces<o2::aod::EventInfoFT0> rowEventInfoft0;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   const char* ccdbpath_grp = "GLO/Config/GRPMagField";
   const char* ccdburl = "http://alice-ccdb.cern.ch";
@@ -122,10 +139,21 @@ struct LumiFDDFT0 {
       {"vertexy_Refitted_vertexy", "", {HistType::kTH2F, {{1000, -1, 1, "y"}, {1000, -1, 1, "ry"}}}}    //
     }};
 
+  HistogramRegistry histoslite{
+    "histoslite",
+    {
+      {"BCFDD", "", {HistType::kTH1F, {{nBCsPerOrbit + 1, -0.5f, nBCsPerOrbit + 0.5f, "x"}}}}, //
+      {"BCFT0", "", {HistType::kTH1F, {{nBCsPerOrbit + 1, -0.5f, nBCsPerOrbit + 0.5f, "x"}}}}, //
+    }};
+
   bool doPVrefit = true;
 
   void init(InitContext&)
   {
+    if (doprocessLite == true && doprocessFull == true) {
+      LOG(fatal) << "Select one process function from  processLite and processFull";
+    }
+
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -134,9 +162,9 @@ struct LumiFDDFT0 {
     mRunNumber = 0;
   }
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::FDDs const& fdds, aod::FT0s const& ft0s, aod::BCsWithTimestamps const&,
-               o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov,
-                             o2::aod::TracksExtra> const& unfiltered_tracks)
+  void processFull(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::FDDs const& fdds, aod::FT0s const& ft0s, aod::BCsWithTimestamps const&,
+                   o2::soa::Join<o2::aod::Tracks, o2::aod::TracksCov,
+                                 o2::aod::TracksExtra> const& unfiltered_tracks)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     Long64_t relTS = bc.timestamp() - fttimestamp;
@@ -279,7 +307,68 @@ struct LumiFDDFT0 {
       histos.fill(HIST("vertexy_Refitted_vertexy"), collision.posY(), refitY);
     }
     // need selections
-  }
+  };
+  PROCESS_SWITCH(LumiFDDFT0, processFull, "Process FDD", true);
+
+  void processLite(aod::FDDs const& fdds, aod::FT0s const& ft0s, aod::BCsWithTimestamps const&)
+  {
+
+    // Scan over the FDD table and store charge and time along with globalBC
+    for (auto& fdd : fdds) {
+      auto bc = fdd.bc_as<BCsWithTimestamps>();
+      if (!bc.timestamp())
+        continue;
+      if (mRunNumber != bc.runNumber()) {
+        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbpath_grp, bc.timestamp());
+        if (grpo != nullptr) {
+          o2::base::Propagator::initFieldFromGRP(grpo);
+          std::cout << "run " << bc.runNumber() << std::endl;
+        } else {
+          LOGF(fatal,
+               "GRP object is not available in CCDB for run=%d at timestamp=%llu",
+               bc.runNumber(), bc.timestamp());
+        }
+        mRunNumber = bc.runNumber();
+      }
+      // get the relative ts and globalBC, which will help to sync FDD and FT0 data
+      Long64_t relTS = bc.timestamp() - fttimestamp;
+      Long64_t globalBC = bc.globalBC();
+      int localBC = globalBC % nBCsPerOrbit;
+      histoslite.fill(HIST("BCFDD"), localBC);
+
+      double chargeaFDD = 0.;
+      double chargecFDD = 0.;
+
+      for (auto amplitude : fdd.chargeA()) {
+        chargeaFDD += amplitude;
+      }
+      for (auto amplitude : fdd.chargeC()) {
+        chargecFDD += amplitude;
+      }
+      rowEventInfofdd(relTS, globalBC, fdd.triggerMask(), fdd.timeA(), fdd.timeC(), chargeaFDD, chargecFDD);
+    } // end of fdd table
+
+    // Scan over the FT0 table and store charge and time along with globalBC
+    for (auto& ft0 : ft0s) {
+      auto bc = ft0.bc_as<BCsWithTimestamps>();
+      if (!bc.timestamp())
+        continue;
+      Long64_t relTS = bc.timestamp() - fttimestamp;
+      Long64_t globalBC = bc.globalBC();
+      int localBC = globalBC % nBCsPerOrbit;
+      histoslite.fill(HIST("BCFT0"), localBC);
+      double chargeaFT0 = 0.;
+      double chargecFT0 = 0.;
+      for (auto amplitude : ft0.amplitudeA()) {
+        chargeaFT0 += amplitude;
+      }
+      for (auto amplitude : ft0.amplitudeC()) {
+        chargecFT0 += amplitude;
+      }
+      rowEventInfoft0(relTS, globalBC, ft0.triggerMask(), ft0.timeA(), ft0.timeC(), chargeaFT0, chargecFT0);
+    } // end of ft0 table
+  };
+  PROCESS_SWITCH(LumiFDDFT0, processLite, "Process FDD and FT0 info", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

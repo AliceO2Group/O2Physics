@@ -328,7 +328,7 @@ bool FemtoWorldV0Selection::isSelectedMinimal(C const& col, V const& v0, T const
   const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};
   const float tranRad = v0.v0radius();
   const float dcaDaughv0 = v0.dcaV0daughters();
-  const float cpav0 = v0.v0cosPA(col.posX(), col.posY(), col.posZ());
+  const float cpav0 = v0.v0cosPA();
 
   const float invMassLambda = v0.mLambda();
   const float invMassAntiLambda = v0.mAntiLambda();
@@ -400,7 +400,7 @@ void FemtoWorldV0Selection::fillLambdaQA(C const& col, V const& v0, T const& pos
   const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};
   const float tranRad = v0.v0radius();
   const float dcaDaughv0 = v0.dcaV0daughters();
-  const float cpav0 = v0.v0cosPA(col.posX(), col.posY(), col.posZ());
+  const float cpav0 = v0.v0cosPA();
 
   const float invMassLambda = v0.mLambda();
 
@@ -476,7 +476,7 @@ std::array<cutContainerType, 5> FemtoWorldV0Selection::getCutContainer(C const& 
   const auto pT = v0.pt();
   const auto tranRad = v0.v0radius();
   const auto dcaDaughv0 = v0.dcaV0daughters();
-  const auto cpav0 = v0.v0cosPA(col.posX(), col.posY(), col.posZ());
+  const auto cpav0 = v0.v0cosPA();
   const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};
 
   float observable = 0.;
@@ -531,8 +531,8 @@ void FemtoWorldV0Selection::fillQA(C const& col, V const& v0, T const& posTrack,
     mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[part]) + HIST("/hDecayVtxX"), v0.x());
     mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[part]) + HIST("/hDecayVtxY"), v0.y());
     mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[part]) + HIST("/hDecayVtxZ"), v0.z());
-    mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[part]) + HIST("/hCPA"), v0.v0cosPA(col.posX(), col.posY(), col.posZ()));
-    mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[part]) + HIST("/hCPAvsPt"), v0.pt(), v0.v0cosPA(col.posX(), col.posY(), col.posZ()));
+    mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[part]) + HIST("/hCPA"), v0.v0cosPA());
+    mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[part]) + HIST("/hCPAvsPt"), v0.pt(), v0.v0cosPA());
     mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[part]) + HIST("/hInvMassLambda"), v0.mLambda());
     mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[part]) + HIST("/hInvMassAntiLambda"), v0.mAntiLambda());
     mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[part]) + HIST("/hInvMassLambdaAntiLambda"), v0.mLambda(), v0.mAntiLambda());

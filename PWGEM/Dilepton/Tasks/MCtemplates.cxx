@@ -9,9 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
+// Contact: florian.eisenhut@cern.ch
 //
-// Analysis task for processing O2::DQ MC skimmed AODs
+// Analysis task to generate Monte Carlo templates of different heavy-flavour dielectron sources
 //
 #include <iostream>
 #include <vector>
@@ -32,6 +32,7 @@
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/MCSignal.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using std::cout;
 using std::endl;
@@ -46,25 +47,48 @@ using namespace o2::aod;
 namespace o2::aod
 {
 
-namespace dqanalysisflags
+namespace emanalysisflags
 {
+DECLARE_SOA_COLUMN(IsMCEventSelected, isMCEventSelected, int);
 DECLARE_SOA_COLUMN(IsEventSelected, isEventSelected, int);
 DECLARE_SOA_COLUMN(IsBarrelSelected, isBarrelSelected, int);
-} // namespace dqanalysisflags
+} // namespace emanalysisflags
 
-DECLARE_SOA_TABLE(EventCuts, "AOD", "EVENTCUTS", dqanalysisflags::IsEventSelected);
-DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "BARRELTRACKCUTS", dqanalysisflags::IsBarrelSelected);
+DECLARE_SOA_TABLE(EventMCCuts, "AOD", "EVENTMCCUTS", emanalysisflags::IsMCEventSelected);
+DECLARE_SOA_TABLE(EventCuts, "AOD", "EVENTCUTS", emanalysisflags::IsEventSelected);
+DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "BARRELTRACKCUTS", emanalysisflags::IsBarrelSelected);
 } // namespace o2::aod
 
+// No skimming: works for events and single tracks
+using MyEventsAOD = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+using MyEventsSelectedAOD = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::EventCuts>;
+// using MyMCEventsSelectedAOD = soa::Join<aod::McCollisions, aod::EventMCCuts>;
+using MyBarrelTracksAOD = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
+                                    aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                    aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                    aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                    aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
+                                    aod::McTrackLabels>;
+using MyBarrelTracksSelectedAOD = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection,
+                                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                            aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                            aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
+                                            aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta,
+                                            aod::BarrelTrackCuts, aod::McTrackLabels>;
+// using MyMCTrackAOD = soa::Join<aod::McParticles, aod::SmearedTracks>;
+
+constexpr static uint32_t gkEventFillMapAOD = VarManager::ObjTypes::Collision;
+constexpr static uint32_t gkMCEventFillMapAOD = VarManager::ObjTypes::CollisionMC;
+constexpr static uint32_t gkTrackFillMapAOD = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackCov | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
+constexpr static uint32_t gkParticleMCFillMapAOD = VarManager::ObjTypes::ParticleMC;
+
+// Skimmed data
 // using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMC>;
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedMCEventLabels>;
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::ReducedMCEventLabels>;
-// TODO: make secondary vertexing optional
-using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedMCEventLabels>;
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedMCEventLabels>;
 
 using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
-using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::ReducedTracksBarrelLabels>;
 using MyBarrelTracksSelected = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::ReducedTracksBarrelLabels>;
 using MyBarrelTracksSelectedWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::ReducedTracksBarrelLabels>;
 
@@ -135,13 +159,25 @@ struct AnalysisEventSelection {
   {
     runSelection<gkEventFillMap, gkMCEventFillMap>(event, mcEvents);
   }
+
+  void processAOD(MyEventsAOD::iterator const& event, aod::McCollisions const& mcEvents)
+  {
+    runSelection<gkEventFillMapAOD, gkMCEventFillMapAOD>(event, mcEvents);
+  }
+
   void processDummy(MyEvents&)
+  {
+    // do nothing
+  }
+  void processDummyAOD(MyEventsAOD&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmed, "Run event selection on DQ skimmed events", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processAOD, "Run event selection without skimming", false);
   PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy process function", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processDummyAOD, "Dummy process function", false);
 };
 
 struct AnalysisTrackSelection {
@@ -165,7 +201,7 @@ struct AnalysisTrackSelection {
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        fTrackCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
+        fTrackCuts.emplace_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -180,7 +216,7 @@ struct AnalysisTrackSelection {
         if (sig->GetNProngs() != 1) { // NOTE: only 1 prong signals
           continue;
         }
-        fMCSignals.push_back(*sig);
+        fMCSignals.emplace_back(*sig);
       }
     }
 
@@ -189,16 +225,16 @@ struct AnalysisTrackSelection {
     TString histClasses = "TrackBarrel_BeforeCuts;";
     for (auto& cut : fTrackCuts) {
       TString nameStr = Form("TrackBarrel_%s", cut.GetName());
-      fHistNamesReco.push_back(nameStr);
+      fHistNamesReco.emplace_back(nameStr);
       histClasses += Form("%s;", nameStr.Data());
       std::vector<TString> mcnames;
       for (auto& sig : fMCSignals) {
         TString nameStr2 = Form("TrackBarrel_%s_%s", cut.GetName(), sig.GetName());
         printf("Adding my histogram class %s\n", nameStr2.Data());
-        mcnames.push_back(nameStr2);
+        mcnames.emplace_back(nameStr2);
         histClasses += Form("%s;", nameStr2.Data());
       }
-      fHistNamesMCMatched.push_back(mcnames);
+      fHistNamesMCMatched.emplace_back(mcnames);
     }
 
     if (fConfigQA) {
@@ -267,12 +303,12 @@ struct AnalysisTrackSelection {
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
-          if ((*sig).CheckSignal(false, tracksMC, track.reducedMCTrack())) {
+          if ((*sig).CheckSignal(true, track.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
-          if ((*sig).CheckSignal(false, tracksMC, track.template mcParticle_as<aod::McParticles_001>())) {
+          if ((*sig).CheckSignal(true, track.template mcParticle_as<aod::McParticles_001>())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
@@ -296,25 +332,38 @@ struct AnalysisTrackSelection {
   {
     runSelection<gkEventFillMap, gkMCEventFillMap, gkTrackFillMap, gkParticleMCFillMap>(event, tracks, eventsMC, tracksMC);
   }
+  void processAOD(MyEventsSelectedAOD::iterator const& event, MyBarrelTracksAOD const& tracks, aod::McCollisions const& eventsMC, aod::McParticles const& tracksMC)
+  {
+    runSelection<gkEventFillMapAOD, gkMCEventFillMapAOD, gkTrackFillMapAOD, gkParticleMCFillMapAOD>(event, tracks, eventsMC, tracksMC);
+  }
+
   void processDummy(MyEvents&)
+  {
+    // do nothing
+  }
+  void processDummyAOD(MyEventsAOD&)
   {
     // do nothing
   }
 
   PROCESS_SWITCH(AnalysisTrackSelection, processSkimmed, "Run barrel track selection on DQ skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processAOD, "Run barrel track selection without skimming", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy process function", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processDummyAOD, "Dummy process function", false);
 };
 
 struct AnalysisSameEventPairing {
-  Produces<aod::Dileptons> dileptonList;
-  Produces<aod::DileptonsExtra> dileptonExtraList;
+  Produces<aod::Dielectrons> dileptonList;
+  Produces<aod::DielectronsExtra> dileptonExtraList;
   OutputObj<THashList> fOutputList{"output"};
-  Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
-  Filter filterBarrelTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
+  Filter filterEventSelected = aod::emanalysisflags::isEventSelected == 1;
+  Filter filterBarrelTrackSelected = aod::emanalysisflags::isBarrelSelected > 0;
   Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMCRecSignals{"cfgBarrelMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
   Configurable<std::string> fConfigMCGenSignals{"cfgBarrelMCGenSignals", "", "Comma separated list of MC signals (generated)"};
   Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
+  Configurable<bool> fPropToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
+  Configurable<bool> fConfigDoSecVtxProp{"cfgDoSecVtxProp", false, "Propagate tracks to secondary vertex"};
   // TODO: here we specify signals, however signal decisions are precomputed and stored in mcReducedFlags
   // TODO: The tasks based on skimmed MC could/should rely ideally just on these flags
   // TODO:   special AnalysisCuts to be prepared in this direction
@@ -322,7 +371,7 @@ struct AnalysisSameEventPairing {
 
   HistogramManager* fHistMan;
   std::vector<std::vector<TString>> fBarrelHistNames;
-  std::vector<std::vector<TString>> fBarrelHistNamesMCmatched;
+  std::vector<std::vector<std::vector<TString>>> fBarrelHistNamesMCmatched;
   std::vector<MCSignal> fRecMCSignals;
   std::vector<MCSignal> fGenMCSignals;
 
@@ -350,7 +399,7 @@ struct AnalysisSameEventPairing {
         if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required
           continue;
         }
-        fRecMCSignals.push_back(*sig);
+        fRecMCSignals.emplace_back(*sig);
       }
     }
 
@@ -364,16 +413,19 @@ struct AnalysisSameEventPairing {
             Form("PairsBarrelSEPP_%s", objArray->At(icut)->GetName()),
             Form("PairsBarrelSEMM_%s", objArray->At(icut)->GetName())};
           histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
-          fBarrelHistNames.push_back(names);
-          std::vector<TString> mcSigClasses;
+          fBarrelHistNames.emplace_back(names);
+          std::vector<std::vector<TString>> mcSigClasses;
           if (!sigNamesStr.IsNull()) {
             for (auto& sig : fRecMCSignals) {
-              TString histName = Form("PairsBarrelSEPM_%s_%s", objArray->At(icut)->GetName(), sig.GetName());
-              histNames += Form("%s;", histName.Data());
-              mcSigClasses.push_back(histName);
+              std::vector<TString> names = {
+                Form("PairsBarrelSEPM_%s_%s", objArray->At(icut)->GetName(), sig.GetName()),
+                Form("PairsBarrelSEPP_%s_%s", objArray->At(icut)->GetName(), sig.GetName()),
+                Form("PairsBarrelSEMM_%s_%s", objArray->At(icut)->GetName(), sig.GetName())};
+              histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
+              mcSigClasses.emplace_back(names);
             } // end loop over MC signals
           }
-          fBarrelHistNamesMCmatched.push_back(mcSigClasses);
+          fBarrelHistNamesMCmatched.emplace_back(mcSigClasses);
         } // end loop over cuts
       }   // end if(cutNames.IsNull())
     }     // end if processBarrel
@@ -386,10 +438,10 @@ struct AnalysisSameEventPairing {
       MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(objGenSigArray->At(isig)->GetName());
       if (sig) {
         if (sig->GetNProngs() == 1) { // NOTE: 1-prong signals required
-          fGenMCSignals.push_back(*sig);
+          fGenMCSignals.emplace_back(*sig);
           histNames += Form("MCTruthGen_%s;", sig->GetName()); // TODO: Add these names to a std::vector to avoid using Form in the process function
         } else if (sig->GetNProngs() == 2) {                   // NOTE: 2-prong signals required
-          fGenMCSignals.push_back(*sig);
+          fGenMCSignals.emplace_back(*sig);
           histNames += Form("MCTruthGenPair_%s;", sig->GetName());
         }
       }
@@ -403,13 +455,13 @@ struct AnalysisSameEventPairing {
     VarManager::SetupTwoProngFwdDCAFitter(5.0f, true, 200.0f, 1.0e-3f, 0.9f, true);
   }
 
-  template <int TPairType, uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks1, typename TTracks2, typename TEventsMC, typename TTracksMC>
-  void runPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
+  template <int TPairType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks1, typename TTracks2>
+  void runPairing(TEvent const& event, TTracks1 const& tracks1, TTracks2 const& tracks2)
   {
     // establish the right histogram classes to be filled depending on TPairType (ee,mumu,emu)
     unsigned int ncuts = fBarrelHistNames.size();
     std::vector<std::vector<TString>> histNames = fBarrelHistNames;
-    std::vector<std::vector<TString>> histNamesMCmatched = fBarrelHistNamesMCmatched;
+    std::vector<std::vector<std::vector<TString>>> histNamesMCmatched = fBarrelHistNamesMCmatched;
 
     // Loop over two track combinations
     uint8_t twoTrackFilter = 0;
@@ -426,22 +478,18 @@ struct AnalysisSameEventPairing {
         continue;
       }
       VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
-      // secondary vertexing is not implemented for e-mu pairs so we need to hide this function from the e-mu analysis for now
-      if constexpr (TPairType == VarManager::kDecayToEE) {
-        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, VarManager::fgValues);
-      }
 
       // run MC matching for this pair
       uint32_t mcDecision = 0;
       int isig = 0;
       for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) { // for skimmed DQ model
-          if ((*sig).CheckSignal(false, tracksMC, t1.reducedMCTrack(), t2.reducedMCTrack())) {
+          if ((*sig).CheckSignal(true, t1.reducedMCTrack(), t2.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) { // for Framework data model
-          if ((*sig).CheckSignal(false, tracksMC, t1.template mcParticle_as<aod::McParticles_001>(), t2.template mcParticle_as<aod::McParticles_001>())) {
+          if ((*sig).CheckSignal(true, t1.template mcParticle_as<aod::McParticles_001>(), t2.template mcParticle_as<aod::McParticles_001>())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
@@ -459,14 +507,24 @@ struct AnalysisSameEventPairing {
             fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
             for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
               if (mcDecision & (uint32_t(1) << isig)) {
-                fHistMan->FillHistClass(histNamesMCmatched[icut][isig].Data(), VarManager::fgValues);
+                fHistMan->FillHistClass(histNamesMCmatched[icut][isig][0].Data(), VarManager::fgValues);
               }
             }
           } else {
             if (t1.sign() > 0) {
               fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
+              for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
+                if (mcDecision & (uint32_t(1) << isig)) {
+                  fHistMan->FillHistClass(histNamesMCmatched[icut][isig][1].Data(), VarManager::fgValues);
+                }
+              }
             } else {
               fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
+              for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {
+                if (mcDecision & (uint32_t(1) << isig)) {
+                  fHistMan->FillHistClass(histNamesMCmatched[icut][isig][2].Data(), VarManager::fgValues);
+                }
+              }
             }
           }
         }
@@ -489,7 +547,14 @@ struct AnalysisSameEventPairing {
         if (sig.GetNProngs() != 1) { // NOTE: 1-prong signals required
           continue;
         }
-        if (sig.CheckSignal(false, groupedMCTracks, mctrack)) {
+        bool checked = false;
+        if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
+          auto mctrack_raw = groupedMCTracks.rawIteratorAt(mctrack.globalIndex());
+          checked = sig.CheckSignal(true, mctrack_raw);
+        } else {
+          checked = sig.CheckSignal(true, mctrack);
+        }
+        if (checked) {
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig.GetName()), VarManager::fgValues);
         }
       }
@@ -501,7 +566,15 @@ struct AnalysisSameEventPairing {
         continue;
       }
       for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
-        if (sig.CheckSignal(false, groupedMCTracks, t1, t2)) {
+        bool checked = false;
+        if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
+          auto t1_raw = groupedMCTracks.rawIteratorAt(t1.globalIndex());
+          auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
+          checked = sig.CheckSignal(true, t1_raw, t2_raw);
+        } else {
+          checked = sig.CheckSignal(true, t1, t2);
+        }
+        if (checked) {
           VarManager::FillPairMC(t1, t2);
           fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig.GetName()), VarManager::fgValues);
         }
@@ -509,18 +582,21 @@ struct AnalysisSameEventPairing {
     } // end of true pairing loop
   }   // end runMCGen
 
+  // skimmed
   PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
+  // non skimmed
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
   void processDecayToEESkimmed(soa::Filtered<MyEventsSelected>::iterator const& event,
                                soa::Filtered<MyBarrelTracksSelected> const& tracks,
-                               ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+                               ReducedMCTracks const& tracksMC)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event);
     VarManager::FillEvent<gkMCEventFillMap>(event.reducedMCevent());
 
-    runPairing<VarManager::kDecayToEE, gkEventFillMap, gkMCEventFillMap, gkTrackFillMap>(event, tracks, tracks, eventsMC, tracksMC);
+    runPairing<VarManager::kDecayToEE, gkEventFillMap, gkTrackFillMap>(event, tracks, tracks);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
     runMCGen(groupedMCTracks);
@@ -528,15 +604,30 @@ struct AnalysisSameEventPairing {
 
   void processDecayToEEVertexingSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event,
                                         soa::Filtered<MyBarrelTracksSelectedWithCov> const& tracks,
-                                        ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+                                        ReducedMCTracks const& tracksMC)
   {
     // Reset the fValues array
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMapWithCov>(event);
     VarManager::FillEvent<gkMCEventFillMap>(event.reducedMCevent());
 
-    runPairing<VarManager::kDecayToEE, gkEventFillMapWithCov, gkMCEventFillMap, gkTrackFillMapWithCov>(event, tracks, tracks, eventsMC, tracksMC);
+    runPairing<VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(event, tracks, tracks);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
+    groupedMCTracks.bindInternalIndicesTo(&tracksMC);
+    runMCGen(groupedMCTracks);
+  }
+
+  void processDecayToEEAOD(soa::Filtered<MyEventsSelectedAOD>::iterator const& event,
+                           soa::Filtered<MyBarrelTracksSelectedAOD> const& tracks,
+                           aod::McParticles const& tracksMC)
+  {
+    // Reset the fValues array
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillEvent<gkEventFillMapAOD>(event);
+    VarManager::FillEvent<gkMCEventFillMapAOD>(event.mcCollision());
+
+    runPairing<VarManager::kDecayToEE, gkEventFillMapAOD, gkTrackFillMapAOD>(event, tracks, tracks);
+    auto groupedMCTracks = tracksMC.sliceBy(perMcCollision, event.mcCollision().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
     runMCGen(groupedMCTracks);
   }
@@ -545,10 +636,16 @@ struct AnalysisSameEventPairing {
   {
     // do nothing
   }
+  void processDummyAOD(MyEventsAOD&)
+  {
+    // do nothing
+  }
 
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmed, "Run barrel barrel pairing on DQ skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEEVertexingSkimmed, "Run barrel barrel pairing on DQ skimmed tracks including vertexing", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEEAOD, "Run barrel barrel pairing on non skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy process function", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processDummyAOD, "Dummy process function", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -598,9 +695,6 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurab
 
     if (classStr.Contains("MCTruthGenPair")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth_pair");
-      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Pt", "MC generator p_{T} distribution", false, 200, 0.0, 20.0, VarManager::kMCPt);
-      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Eta", "MC generator #eta distribution", false, 500, -5.0, 5.0, VarManager::kMCEta);
-      histMan->AddHistogram(objArray->At(iclass)->GetName(), "Phi", "MC generator #varphi distribution", false, 500, -6.3, 6.3, VarManager::kMCPhi);
     }
     if (classStr.Contains("MCTruthGen")) {
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "mctruth");

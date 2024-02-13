@@ -68,21 +68,18 @@ using MyCollision = MyCollisions::iterator;
 
 namespace mytrack
 {
-DECLARE_SOA_INDEX_COLUMN(MyCollision, mycollision);              //!
-DECLARE_SOA_COLUMN(Sign, sign, int);                             //!
-DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int);             //!
-DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, int); //!
-DECLARE_SOA_COLUMN(DCAresXY, dcaresXY, float);                   //!
-DECLARE_SOA_COLUMN(DCAresZ, dcaresZ, float);                     //!
-DECLARE_SOA_COLUMN(MCPt, mcpt, float);                           //!
-DECLARE_SOA_COLUMN(MCEta, mceta, float);                         //!
-DECLARE_SOA_COLUMN(MCPhi, mcphi, float);                         //!
-DECLARE_SOA_COLUMN(MCVx, mcvx, float);                           //!
-DECLARE_SOA_COLUMN(MCVy, mcvy, float);                           //!
-DECLARE_SOA_COLUMN(MCVz, mcvz, float);                           //!
-DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);  //!
-DECLARE_SOA_COLUMN(MotherPdgCode, motherpdgCode, int);           //!
-DECLARE_SOA_COLUMN(GrandMotherPdgCode, grandmotherpdgCode, int); //!
+DECLARE_SOA_INDEX_COLUMN(MyCollision, mycollision);                   //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                                  //!
+DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, int);                  //!
+DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, int);      //!
+DECLARE_SOA_COLUMN(DCAresXY, dcaresXY, float);                        //!
+DECLARE_SOA_COLUMN(DCAresZ, dcaresZ, float);                          //!
+DECLARE_SOA_COLUMN(MCVx, mcvx, float);                                //!
+DECLARE_SOA_COLUMN(MCVy, mcvy, float);                                //!
+DECLARE_SOA_COLUMN(MCVz, mcvz, float);                                //!
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);       //!
+DECLARE_SOA_COLUMN(MotherIds, motherIds, std::vector<int>);           //! eta values of the matched tracks
+DECLARE_SOA_COLUMN(MotherPdgCodes, motherpdgCodes, std::vector<int>); //! eta values of the matched tracks
 } // namespace mytrack
 
 // reconstructed track information
@@ -90,21 +87,13 @@ DECLARE_SOA_TABLE(MyTracks, "AOD", "MYTRACK", //!
                   o2::soa::Index<>, mytrack::MyCollisionId, mytrack::Sign,
                   track::Pt, track::Eta, track::Phi,
                   track::DcaXY, track::DcaZ, mytrack::DCAresXY, mytrack::DCAresZ,
-                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows,
-                  mytrack::TPCNClsFound, mytrack::TPCNClsCrossedRows,
+                  track::TPCNClsFindable, mytrack::TPCNClsFound, mytrack::TPCNClsCrossedRows,
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
                   pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
-                  track::ITSClusterMap, track::ITSChi2NCl, track::DetectorMap,
-                  mytrack::MCPt, mytrack::MCEta, mytrack::MCPhi,
+                  track::ITSClusterMap, track::ITSChi2NCl,
                   mytrack::MCVx, mytrack::MCVy, mytrack::MCVz,
-                  mcparticle::PdgCode, mytrack::IsPhysicalPrimary, mytrack::MotherPdgCode, mytrack::GrandMotherPdgCode,
-                  // dynamic column
-                  track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
-                  track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
-                  track::ITSNCls<track::ITSClusterMap>,
-                  track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>,
-                  track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>);
+                  mcparticle::PdgCode, mytrack::IsPhysicalPrimary, mytrack::MotherIds, mytrack::MotherPdgCodes);
 
 // iterators
 using MyTrack = MyTracks::iterator;
@@ -123,16 +112,17 @@ DECLARE_SOA_COLUMN(PhiV, phiv, float);           //!
 DECLARE_SOA_COLUMN(PairDCAxy, pairDCAxy, float); //!
 DECLARE_SOA_COLUMN(PairDCAz, pairDCAz, float);   //!
 
-DECLARE_SOA_COLUMN(IsSM, isSM, bool);        //!
-DECLARE_SOA_COLUMN(IsHF, isHF, int);         //!
-DECLARE_SOA_COLUMN(PairType, pairtype, int); //!
+DECLARE_SOA_COLUMN(IsSM, isSM, bool);         //!
+DECLARE_SOA_COLUMN(IsHF, isHF, int);          //!
+DECLARE_SOA_COLUMN(PairType, pairtype, int);  //!
+DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool); //!
 } // namespace mypair
 
 // reconstructed track information
 DECLARE_SOA_TABLE(MyPairs, "AOD", "MYPAIR", //!
                   o2::soa::Index<>, mypair::MyCollisionId, mypair::PosTrackId, mypair::NegTrackId,
                   mypair::M, mypair::Pt, mypair::Eta, mypair::Phi, mypair::PhiV, mypair::PairDCAxy, mypair::PairDCAz,
-                  mypair::IsSM, mypair::IsHF, mypair::PairType,
+                  mypair::IsSM, mypair::IsHF, mypair::PairType, mypair::IsPrompt,
                   mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz,
 
@@ -362,117 +352,125 @@ struct TreeCreatorElectronML {
   }
 
   template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
-  int IsHFULS(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcparticles)
+  int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcparticles)
   {
     // in total, 4 cases for ULS pairs
     // 0. prompt c->e+ and cbar->e-
     // 1. b->e- and bbar->e+ (different b and bbar)
     // 2. b->c->e+ and bbar->cbar->e- (different b and bbar)
     // 3. b->c->e+ and b->e- (1 same b (or bbar))
-    if (!p1.has_mothers())
+    if (!p1.has_mothers() || !p2.has_mothers()) {
       return EM_HFeeType::kUndef;
-    if (!p2.has_mothers())
-      return EM_HFeeType::kUndef;
-
-    int motherid_p1 = p1.mothersIds()[0];
-    int motherid_p2 = p2.mothersIds()[0];
-    if (motherid_p1 == motherid_p2) { // different mother
-      return EM_HFeeType::kUndef;     // this never happens in correlated HF->ee decays
     }
 
-    auto mother_p1 = mcparticles.iteratorAt(motherid_p1);
-    auto mother_p2 = mcparticles.iteratorAt(motherid_p2);
-    int mother1_pdg = mother_p1.pdgCode();
-    int mother2_pdg = mother_p2.pdgCode();
-
-    if (((500 < abs(mother1_pdg) && abs(mother1_pdg) < 599) || (5000 < abs(mother1_pdg) && abs(mother1_pdg) < 5999)) && ((500 < abs(mother2_pdg) && abs(mother2_pdg) < 599) || (5000 < abs(mother2_pdg) && abs(mother2_pdg) < 5999))) {
-      return EM_HFeeType::kBe_Be; // bb->ee, decay type = 2
+    if (p1.mothersIds()[0] == p2.mothersIds()[0]) { // same mother
+      return EM_HFeeType::kUndef;                   // this never happens in correlated HF->ee decays
     }
 
-    if (mother_p1.has_mothers() && mother_p2.has_mothers()) { // search for decay type 1,3,4
-      int grand_motherid_p1 = mother_p1.mothersIds()[0];
-      int grand_motherid_p2 = mother_p2.mothersIds()[0];
-      auto grand_mother_p1 = mcparticles.iteratorAt(grand_motherid_p1);
-      auto grand_mother_p2 = mcparticles.iteratorAt(grand_motherid_p2);
-      int grand_mother1_pdg = grand_mother_p1.pdgCode();
-      int grand_mother2_pdg = grand_mother_p2.pdgCode();
+    // store all mother1 relation
+    std::vector<int> mothers_id1;
+    std::vector<int> mothers_pdg1;
+    int motherid1 = p1.mothersIds()[0]; // first mother index
+    while (motherid1 > -1) {
+      if (motherid1 < mcparticles.size()) { // protect against bad mother indices. why is this needed?
+        auto mp = mcparticles.iteratorAt(motherid1);
+        mothers_id1.emplace_back(motherid1);
+        mothers_pdg1.emplace_back(mp.pdgCode());
 
-      if (((400 < abs(mother1_pdg) && abs(mother1_pdg) < 499) || (4000 < abs(mother1_pdg) && abs(mother1_pdg) < 4999)) && ((400 < abs(mother2_pdg) && abs(mother2_pdg) < 499) || (4000 < abs(mother2_pdg) && abs(mother2_pdg) < 4999))) { // mother is charm
-
-        if (((500 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 599) || (5000 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 5999)) && ((500 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 599) || (5000 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 5999))) { // grand mother is beauty
-          return kBCe_BCe;                                                                                                                                                                                                                                                                  // b->c->e and b->c->e, decay type = 1
+        if (mp.has_mothers()) {
+          motherid1 = mp.mothersIds()[0];
         } else {
-          return kCe_Ce; // prompt cc->ee, decay type = 0
+          motherid1 = -999;
+        }
+      } else {
+        LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid1, mcparticles.size());
+      }
+    }
+
+    // store all mother2 relation
+    std::vector<int> mothers_id2;
+    std::vector<int> mothers_pdg2;
+    int motherid2 = p2.mothersIds()[0]; // first mother index
+    while (motherid2 > -1) {
+      if (motherid2 < mcparticles.size()) { // protect against bad mother indices. why is this needed?
+        auto mp = mcparticles.iteratorAt(motherid2);
+        mothers_id2.emplace_back(motherid2);
+        mothers_pdg2.emplace_back(mp.pdgCode());
+
+        if (mp.has_mothers()) {
+          motherid2 = mp.mothersIds()[0];
+        } else {
+          motherid2 = -999;
+        }
+      } else {
+        LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid2, mcparticles.size());
+      }
+    }
+
+    if (std::to_string(mothers_pdg1[0]).find("5") != std::string::npos && std::to_string(mothers_pdg2[0]).find("5") != std::string::npos) {
+      return EM_HFeeType::kBe_Be; // bb->ee, decay type = 2
+      // this is easy. first mother is b hadron for both leg.
+    }
+
+    if (std::to_string(mothers_pdg1[0]).find("4") != std::string::npos && std::to_string(mothers_pdg2[0]).find("4") != std::string::npos) {
+      // mother is c hadron. next, check c is prompt or non-prompt.
+
+      bool is_c_from_b1 = false;
+      for (unsigned int i1 = 1; i1 < mothers_pdg1.size(); i1++) {
+        if (std::to_string(mothers_pdg1[i1]).find("5") != std::string::npos) {
+          is_c_from_b1 = true;
+          break;
+        }
+      }
+      bool is_c_from_b2 = false;
+      for (unsigned int i2 = 1; i2 < mothers_pdg2.size(); i2++) {
+        if (std::to_string(mothers_pdg2[i2]).find("5") != std::string::npos) {
+          is_c_from_b2 = true;
+          break;
         }
       }
 
-      if (motherid_p1 == grand_motherid_p2 || grand_motherid_p1 == motherid_p2) {
-        if (
-          (((500 < abs(mother1_pdg) && abs(mother1_pdg) < 599) || (5000 < abs(mother1_pdg) && abs(mother1_pdg) < 5999)) && ((500 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 599) || (5000 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 5999))) ||
-          (((500 < abs(mother2_pdg) && abs(mother2_pdg) < 599) || (5000 < abs(mother2_pdg) && abs(mother2_pdg) < 5999)) && ((500 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 599) || (5000 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 5999)))) {
-          return EM_HFeeType::kBCe_Be_SameB; // b->c->e and c->e, decay type = 3
-        }
+      if (!is_c_from_b1 && !is_c_from_b2) {
+        return EM_HFeeType::kCe_Ce; // prompt cc->ee, decay type = 0
+      } else if (is_c_from_b1 && is_c_from_b2) {
+        return EM_HFeeType::kBCe_BCe; // b->c->e and b->c->e, decay type = 1
+      } else {
+        for (auto& mid1 : mothers_id1) {
+          for (auto& mid2 : mothers_id2) {
+            if (mid1 == mid2) {
+              return EM_HFeeType::kBCe_Be_SameB; // b->c->e and c->e, decay type = 3. this should happen only in ULS.
+            }
+          }                                // end of mother id 2
+        }                                  // end of mother id 1
+        return EM_HFeeType::kBCe_Be_DiffB; // b->c->e and c->e, decay type = 4. this should happen only in LS. But, this may happen, when ele/pos is reconstructed as pos/ele wrongly. and create LS pair
       }
     }
-    return EM_HFeeType::kUndef;
-  }
-
-  template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
-  int IsHFLS(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcparticles)
-  {
-    // in total, 1 case for LS pairs
-    // 4. b->c->e+ and bbar->e+
-    if (!p1.has_mothers())
-      return EM_HFeeType::kUndef;
-    if (!p2.has_mothers())
-      return EM_HFeeType::kUndef;
-
-    int motherid_p1 = p1.mothersIds()[0];
-    int motherid_p2 = p2.mothersIds()[0];
-    if (motherid_p1 == motherid_p2) { // different mother
-      return EM_HFeeType::kUndef;     // this never happens in correlated HF->ee decays
-    }
-
-    auto mother_p1 = mcparticles.iteratorAt(motherid_p1);
-    auto mother_p2 = mcparticles.iteratorAt(motherid_p2);
-    int mother1_pdg = mother_p1.pdgCode();
-    int mother2_pdg = mother_p2.pdgCode();
-
-    if (mother_p1.has_mothers() && mother_p2.has_mothers()) { // search for decay type 4
-      int grand_motherid_p1 = mother_p1.mothersIds()[0];
-      int grand_motherid_p2 = mother_p2.mothersIds()[0];
-      auto grand_mother_p1 = mcparticles.iteratorAt(grand_motherid_p1);
-      auto grand_mother_p2 = mcparticles.iteratorAt(grand_motherid_p2);
-      int grand_mother1_pdg = grand_mother_p1.pdgCode();
-      int grand_mother2_pdg = grand_mother_p2.pdgCode();
-
-      if (motherid_p1 != grand_motherid_p2 && grand_motherid_p1 != motherid_p2) { // different mother and grand mother
-        if (
-          (((500 < abs(mother1_pdg) && abs(mother1_pdg) < 599) || (5000 < abs(mother1_pdg) && abs(mother1_pdg) < 5999)) && ((500 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 599) || (5000 < abs(grand_mother2_pdg) && abs(grand_mother2_pdg) < 5999))) ||
-          (((500 < abs(mother2_pdg) && abs(mother2_pdg) < 599) || (5000 < abs(mother2_pdg) && abs(mother2_pdg) < 5999)) && ((500 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 599) || (5000 < abs(grand_mother1_pdg) && abs(grand_mother1_pdg) < 5999)))) {
-          return EM_HFeeType::kBCe_Be_DiffB; // b->c->e and c->e, decay type = 4
-        }
-      }
-    }
+    mothers_id1.shrink_to_fit();
+    mothers_pdg1.shrink_to_fit();
+    mothers_id2.shrink_to_fit();
+    mothers_pdg2.shrink_to_fit();
     return EM_HFeeType::kUndef;
   }
 
   template <typename TTrack>
   bool IsSelected(TTrack const& track)
   {
-    if (track.tpcNClsCrossedRows() < mincrossedrows) {
-      return false;
-    }
     if (!track.hasITS()) {
       return false;
     }
     if (!track.hasTPC()) {
       return false;
     }
+    if (track.tpcNClsCrossedRows() < mincrossedrows) {
+      return false;
+    }
+    if (track.itsChi2NCl() < -1) { // if tracks are not reconstructed properly, chi2/ITSncls is set to -999;
+      return false;
+    }
     return true;
   }
 
-  Filter trackFilter = nabs(o2::aod::track::eta) < maxeta && o2::aod::track::tpcChi2NCl < maxchi2tpc && nabs(o2::aod::track::dcaXY) < 3.f;
+  Filter trackFilter = nabs(o2::aod::track::eta) < maxeta && o2::aod::track::tpcChi2NCl < maxchi2tpc && nabs(o2::aod::track::dcaXY) < 1.f && nabs(o2::aod::track::dcaZ) < 1.f;
   using MyFilteredTracksMC = soa::Filtered<FullTracksExtMC>;
   Preslice<MyFilteredTracksMC> perCollision = aod::track::collisionId;
 
@@ -496,33 +494,47 @@ struct TreeCreatorElectronML {
       auto tracks_coll = tracks.sliceBy(perCollision, collision.globalIndex());
       for (auto& track : tracks_coll) {
 
-        if (track.tpcNClsCrossedRows() < mincrossedrows) {
+        if (!IsSelected(track)) {
           continue;
         }
-        int mother_pdg = 0;
-        int grand_mother_pdg = 0;
-        auto mcparticle = track.mcParticle_as<aod::McParticles>();
 
-        if (mcparticle.has_mothers()) {
-          auto mother = mcparticle.mothers_as<aod::McParticles>().front(); // first mother
-          mother_pdg = mother.pdgCode();
-          if (mother.has_mothers()) {
-            auto grand_mother = mother.mothers_as<aod::McParticles>().front(); // first mother of mother
-            grand_mother_pdg = grand_mother.pdgCode();
+        if (!track.has_mcParticle()) {
+          continue; // If no MC particle is found, skip the track
+        }
+        auto mctrack = track.mcParticle_as<aod::McParticles>();
+
+        // store all mother relation
+        std::vector<int> mothers_id;
+        std::vector<int> mothers_pdg;
+        int motherid = mctrack.mothersIds()[0]; // first mother index
+        while (motherid > -1) {
+          if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
+            auto mp = mctracks.iteratorAt(motherid);
+            mothers_id.emplace_back(motherid);
+            mothers_pdg.emplace_back(mp.pdgCode());
+
+            if (mp.has_mothers()) {
+              motherid = mp.mothersIds()[0];
+            } else {
+              motherid = -999;
+            }
+          } else {
+            LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
           }
         }
 
         mytrack(mycollision.lastIndex(),
                 track.sign(), track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()),
-                track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
-                track.tpcNClsFound(), track.tpcNClsCrossedRows(),
+                track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
                 track.tpcChi2NCl(), track.tpcInnerParam(),
                 track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                 track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                track.itsClusterMap(), track.itsChi2NCl(), track.detectorMap(),
-                mcparticle.pt(), mcparticle.eta(), mcparticle.phi(),
-                mcparticle.vx(), mcparticle.vy(), mcparticle.vz(),
-                mcparticle.pdgCode(), mcparticle.isPhysicalPrimary(), mother_pdg, grand_mother_pdg);
+                track.itsClusterMap(), track.itsChi2NCl(),
+                mctrack.vx(), mctrack.vy(), mctrack.vz(),
+                mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
+
+        mothers_id.shrink_to_fit();
+        mothers_pdg.shrink_to_fit();
 
       } // end of track loop
     }   // end of collision loop
@@ -574,29 +586,38 @@ struct TreeCreatorElectronML {
         if (!(fNewLabels.find(track.globalIndex()) != fNewLabels.end())) {
           fNewLabels[track.globalIndex()] = fCounter;
 
-          int mother_pdg = 0;
-          int grand_mother_pdg = 0;
-          if (mctrack.has_mothers()) {
-            auto mother = mctrack.mothers_as<aod::McParticles>().front(); // first mother
-            mother_pdg = mother.pdgCode();
-            if (mother.has_mothers()) {
-              auto grand_mother = mother.mothers_as<aod::McParticles>().front(); // first mother of mother
-              grand_mother_pdg = grand_mother.pdgCode();
+          // store all mother relation
+          std::vector<int> mothers_id;
+          std::vector<int> mothers_pdg;
+          int motherid = mctrack.mothersIds()[0]; // first mother index
+          while (motherid > -1) {
+            if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mctracks.iteratorAt(motherid);
+              mothers_id.emplace_back(motherid);
+              mothers_pdg.emplace_back(mp.pdgCode());
+
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0];
+              } else {
+                motherid = -999;
+              }
+            } else {
+              LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
             }
           }
 
           mytrack(mycollision.lastIndex(),
                   track.sign(), track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()),
-                  track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
-                  track.tpcNClsFound(), track.tpcNClsCrossedRows(),
+                  track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
                   track.tpcChi2NCl(), track.tpcInnerParam(),
                   track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                   track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                  track.itsClusterMap(), track.itsChi2NCl(), track.detectorMap(),
-                  mctrack.pt(), mctrack.eta(), mctrack.phi(),
+                  track.itsClusterMap(), track.itsChi2NCl(),
                   mctrack.vx(), mctrack.vy(), mctrack.vz(),
-                  mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mother_pdg, grand_mother_pdg);
+                  mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
 
+          mothers_id.shrink_to_fit();
+          mothers_pdg.shrink_to_fit();
           fCounter++;
         }
 
@@ -631,26 +652,47 @@ struct TreeCreatorElectronML {
         if (common_mother_id > 0) {
           isSM = true;
         }
-
-        int isHF = IsHFULS(mcpos, mcele, mctracks); // if isHF == true, pdgCode is set to 0, because this pair is correlated HF ee pair decayed from different 2 mothers. Check pdg code of legs.
+        int isHF = IsHF(mcpos, mcele, mctracks); // if isHF == true, pdgCode is set to 0, because this pair is correlated HF ee pair decayed from different 2 mothers. Check pdg code of legs.
 
         if (isSM) {
           auto mcpair = mctracks.iteratorAt(common_mother_id);
+          bool is_prompt = true; // only relevant for prompt jpsi
+
+          int motherid_pair = mcpair.mothersIds()[0]; // first mother index
+          while (motherid_pair > -1) {
+            if (motherid_pair < mctracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mctracks.iteratorAt(motherid_pair);
+
+              if (std::to_string(mp.pdgCode()).find("5") != std::string::npos) {
+                is_prompt = false;
+                break;
+              }
+
+              if (mp.has_mothers()) {
+                motherid_pair = mp.mothersIds()[0];
+              } else {
+                motherid_pair = -999;
+              }
+            } else {
+              LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid_pair, mctracks.size());
+            }
+          }
+
           mypair(mycollision.lastIndex(), fNewLabels[pos.globalIndex()], fNewLabels[ele.globalIndex()],
                  v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
-                 isSM, isHF, EM_EEPairType::kULS, mcpair.pdgCode(), mcpair.statusCode(), mcpair.flags(),
+                 isSM, isHF, EM_EEPairType::kULS, is_prompt, mcpair.pdgCode(), mcpair.statusCode(), mcpair.flags(),
                  mcpair.vx(), mcpair.vy(), mcpair.vz());
           // LOGF(info, "mcpair.pdgCode() = %d", mcpair.pdgCode());
         } else if (isHF > -1) {
           // isSM and isHF are not satisfied at the same time.
           mypair(mycollision.lastIndex(), fNewLabels[pos.globalIndex()], fNewLabels[ele.globalIndex()],
                  v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
-                 isSM, isHF, EM_EEPairType::kULS, 0, 0, 0,
+                 isSM, isHF, EM_EEPairType::kULS, false, 0, 0, 0,
                  0, 0, 0);
         } else { // this is combinatorial bkg
           mypair(mycollision.lastIndex(), fNewLabels[pos.globalIndex()], fNewLabels[ele.globalIndex()],
                  v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
-                 isSM, isHF, EM_EEPairType::kULS, 0, 0, 0,
+                 isSM, isHF, EM_EEPairType::kULS, false, 0, 0, 0,
                  0, 0, 0);
         }
 
@@ -681,17 +723,17 @@ struct TreeCreatorElectronML {
         float pair_dca_z = sqrt((pow(pos2.dcaZ() / sqrt(pos2.cZZ()), 2) + pow(pos1.dcaZ() / sqrt(pos1.cZZ()), 2)) / 2.);
 
         bool isSM = false;
-        int isHF = IsHFLS(mcpos1, mcpos2, mctracks);
-        if (isHF > -1) {
+        int isHF = IsHF(mcpos1, mcpos2, mctracks);
+        if (isHF != EM_HFeeType::kUndef) {
           // isSM and isHF are not satisfied at the same time.
           mypair(mycollision.lastIndex(), fNewLabels[pos1.globalIndex()], fNewLabels[pos2.globalIndex()],
                  v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
-                 isSM, isHF, EM_EEPairType::kLSpp, 0, 0, 0,
+                 isSM, isHF, EM_EEPairType::kLSpp, false, 0, 0, 0,
                  0, 0, 0);
         } else { // this is combinatorial bkg
           mypair(mycollision.lastIndex(), fNewLabels[pos1.globalIndex()], fNewLabels[pos2.globalIndex()],
                  v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
-                 isSM, isHF, EM_EEPairType::kLSpp, 0, 0, 0,
+                 isSM, isHF, EM_EEPairType::kLSpp, false, 0, 0, 0,
                  0, 0, 0);
         }
 
@@ -721,17 +763,17 @@ struct TreeCreatorElectronML {
         float pair_dca_z = sqrt((pow(ele2.dcaZ() / sqrt(ele2.cZZ()), 2) + pow(ele1.dcaZ() / sqrt(ele1.cZZ()), 2)) / 2.);
 
         bool isSM = false;
-        int isHF = IsHFLS(mcele1, mcele2, mctracks);
-        if (isHF > -1) {
+        int isHF = IsHF(mcele1, mcele2, mctracks);
+        if (isHF != EM_HFeeType::kUndef) {
           // isSM and isHF are not satisfied at the same time.
           mypair(mycollision.lastIndex(), fNewLabels[ele1.globalIndex()], fNewLabels[ele2.globalIndex()],
                  v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
-                 isSM, isHF, EM_EEPairType::kLSnn, 0, 0, 0,
+                 isSM, isHF, EM_EEPairType::kLSnn, false, 0, 0, 0,
                  0, 0, 0);
         } else { // this is combinatorial bkg
           mypair(mycollision.lastIndex(), fNewLabels[ele1.globalIndex()], fNewLabels[ele2.globalIndex()],
                  v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
-                 isSM, isHF, EM_EEPairType::kLSnn, 0, 0, 0,
+                 isSM, isHF, EM_EEPairType::kLSnn, false, 0, 0, 0,
                  0, 0, 0);
         }
 

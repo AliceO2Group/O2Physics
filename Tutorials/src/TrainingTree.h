@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef TRAININGTREE_H
-#define TRAININGTREE_H
+#ifndef TUTORIALS_SRC_TRAININGTREE_H_
+#define TUTORIALS_SRC_TRAININGTREE_H_
 #include "Framework/AnalysisDataModel.h"
 
 /// Definition of output table to store the flat tree for re-weighting model
@@ -37,4 +37,21 @@ DECLARE_SOA_TABLE(TrainingTree, "AOD", "TRTR", o2::soa::Index<>,
                   vars::FMV0);
 } // namespace o2::aod
 
-#endif // TRAININGTREE_H
+namespace o2::analysis
+{
+template <typename Tracks>
+auto meanPt(Tracks const& tracks)
+{
+  auto apt = 0.f;
+  auto npt = 0;
+  for (auto& track : tracks) {
+    if (isfinite(track.pt()) && (std::abs(track.pt()) > 1e-3)) {
+      ++npt;
+      apt += track.pt();
+    }
+  }
+  return apt / static_cast<float>(npt);
+}
+} // namespace o2::analysis
+
+#endif // TUTORIALS_SRC_TRAININGTREE_H_

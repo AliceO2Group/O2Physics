@@ -28,7 +28,7 @@ using namespace o2::framework::expressions;
 using namespace o2::track;
 
 /// Task to produce the TPC QA plots
-struct pidTPCTaskQAMC {
+struct pidTpcQaMc {
   SliceCache cache;
 
   static constexpr int Np = 9;
@@ -273,32 +273,40 @@ struct pidTPCTaskQAMC {
     const AxisSpec nSigmaAxis{binsNsigma, Form("N_{#sigma}^{TPC}(%s)", pT[massID])};
 
     // Particle info
-    histos.add(hparticlept[mcID].data(), "", kTH1F, {pAxis});
-    histos.add(hparticlep[mcID].data(), "", kTH1F, {pAxis});
-    histos.add(hparticleeta[mcID].data(), "", kTH1F, {pAxis});
-
+    if constexpr (mcID == massID) {
+      histos.add(hparticlept[mcID].data(), "", kTH1F, {pAxis});
+      histos.add(hparticlep[mcID].data(), "", kTH1F, {pAxis});
+      histos.add(hparticleeta[mcID].data(), "", kTH1F, {pAxis});
+    }
     // Track info
-    histos.add(htrackpt[mcID].data(), "", kTH1F, {pAxis});
-    histos.add(htrackp[mcID].data(), "", kTH1F, {pAxis});
-    histos.add(htracketa[mcID].data(), "", kTH1F, {pAxis});
-    histos.add(htracklength[mcID].data(), "", kTH1F, {pAxis});
-
+    if constexpr (mcID == massID) {
+      histos.add(htrackpt[mcID].data(), "", kTH1F, {pAxis});
+      histos.add(htrackp[mcID].data(), "", kTH1F, {pAxis});
+      histos.add(htracketa[mcID].data(), "", kTH1F, {pAxis});
+      histos.add(htracklength[mcID].data(), "", kTH1F, {pAxis});
+    }
     // NSigma
-    histos.add(hnsigma[mcID].data(), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
+    if constexpr (mcID == massID) {
+      histos.add(hnsigma[mcID].data(), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
+    }
     histos.add(hnsigmaMC[mcID * Np + massID].data(), Form("True %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
     if (!checkPrimaries) {
       return;
     }
-    histos.add(hnsigmaprm[mcID].data(), Form("Primary %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmastr[mcID].data(), Form("Secondary %s from decay", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmamat[mcID].data(), Form("Secondary %s from material", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+    if constexpr (mcID == massID) {
+      histos.add(hnsigmaprm[mcID].data(), Form("Primary %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+      histos.add(hnsigmastr[mcID].data(), Form("Secondary %s from decay", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+      histos.add(hnsigmamat[mcID].data(), Form("Secondary %s from material", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+    }
     histos.add(hnsigmaMCprm[mcID * Np + massID].data(), Form("True Primary %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
     histos.add(hnsigmaMCstr[mcID * Np + massID].data(), Form("True Secondary %s from decay", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
     histos.add(hnsigmaMCmat[mcID * Np + massID].data(), Form("True Secondary %s from material", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
 
-    histos.add(hsignalMCprm[mcID].data(), Form("Primary %s", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
-    histos.add(hsignalMCstr[mcID].data(), Form("Secondary %s from decay", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
-    histos.add(hsignalMCmat[mcID].data(), Form("Secondary %s from material", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
+    if constexpr (mcID == massID) {
+      histos.add(hsignalMCprm[mcID].data(), Form("Primary %s", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
+      histos.add(hsignalMCstr[mcID].data(), Form("Secondary %s from decay", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
+      histos.add(hsignalMCmat[mcID].data(), Form("Secondary %s from material", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
+    }
   }
 
   void init(o2::framework::InitContext&)
@@ -579,4 +587,4 @@ struct pidTPCTaskQAMC {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<pidTPCTaskQAMC>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<pidTpcQaMc>(cfgc)}; }

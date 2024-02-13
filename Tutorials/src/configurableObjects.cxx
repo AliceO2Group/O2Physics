@@ -14,10 +14,11 @@
 /// \author
 /// \since
 
+#include <sstream>
+
 #include "configurableCut.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include <sstream>
 
 using namespace o2;
 using namespace o2::framework;
@@ -55,6 +56,8 @@ auto printMatrix(Array2D<T> const& m)
 
 static constexpr float defaultm[3][4] = {{1.1, 1.2, 1.3, 1.4}, {2.1, 2.2, 2.3, 2.4}, {3.1, 3.2, 3.3, 3.4}};
 static LabeledArray<float> la{&defaultm[0][0], 3, 4, {"r 1", "r 2", "r 3"}, {"c 1", "c 2", "c 3", "c 4"}};
+const std::string defaultmS[3][4] = {{"One.One", "One.Two", "One.Three", "One.Four"}, {"Two.One", "Two.Two", "Two.Three", "Two.Four"}, {"Three.One", "Three.Two", "Three.Three", "Three.Four"}};
+static LabeledArray<std::string> laS{&defaultmS[0][0], 3, 4, {"rS 1", "rS 2", "rS 3"}, {"cS 1", "cS 2", "cS 3", "cS 4"}};
 
 struct ConfigurableObjectDemo {
   // Simple type configurables
@@ -71,7 +74,8 @@ struct ConfigurableObjectDemo {
   Configurable<std::vector<float>> farray{"farray", {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1}, "generic float array"};
   Configurable<std::vector<double>> darray{"darray", {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1}, "generic double array"};
   Configurable<Array2D<float>> vmatrix{"matrix", {&defaultm[0][0], 3, 4}, "generic matrix"};
-  Configurable<LabeledArray<float>> vla{"vla", {defaultm[0], 3, 4, {"r 1", "r 2", "r 3"}, {"c 1", "c 2", "c 3", "c 4"}}, "labeled array"};
+  Configurable<LabeledArray<float>> vla{"vla", {defaultm[0], 3, 4, {"r 1", "r 2", "r 3"}, {"c 1", "c 2", "c 3", "c 4"}}, "labeled array with float content"};
+  Configurable<LabeledArray<std::string>> vlaS{"vlaS", {defaultmS[0], 3, 4, {"rS 1", "rS 2", "rS 3"}, {"cS 1", "cS 2", "cS 3", "cS 4"}}, "labeled array with string content"};
 
   // Configurables can be grouped into `ConfigurableGroup`s.
   // Their names must be unique.
@@ -93,7 +97,8 @@ struct ConfigurableObjectDemo {
     auto fvec = (std::vector<float>)farray;
     LOGF(info, "Float array: %s", printArray(fvec).c_str());
     LOGF(info, "Matrix: %s", printMatrix((Array2D<float>)vmatrix));
-    LOGF(info, "Labeled:\n %s\n %s\n %s", printArray(vla->getLabelsRows()), printArray(vla->getLabelsCols()), printMatrix(vla->getData()));
+    LOGF(info, "Labeled float array:\n %s\n %s\n %s", printArray(vla->getLabelsRows()), printArray(vla->getLabelsCols()), printMatrix(vla->getData()));
+    LOGF(info, "Labeled std::string array:\n %s\n %s\n %s", printArray(vlaS->getLabelsRows()), printArray(vlaS->getLabelsCols()), printMatrix(vlaS->getData()));
   };
 
   void process(aod::Collision const&, aod::Tracks const& tracks)

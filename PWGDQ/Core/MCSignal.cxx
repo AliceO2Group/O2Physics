@@ -11,6 +11,9 @@
 
 #include "PWGDQ/Core/MCSignal.h"
 
+using std::cout;
+using std::endl;
+
 ClassImp(MCSignal);
 
 //________________________________________________________________________________________________

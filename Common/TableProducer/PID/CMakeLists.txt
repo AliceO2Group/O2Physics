@@ -50,11 +50,6 @@ o2physics_add_dpl_workflow(pid-tpc-full
 
 # HMPID
 
-o2physics_add_dpl_workflow(pid-hmpid-qa
-                    SOURCES qaHMPID.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 # BAYES
 
 o2physics_add_dpl_workflow(pid-bayes

@@ -29,6 +29,8 @@
 #include "multCalibrator.h"
 #include "multMCCalibrator.h"
 
+using namespace std;
+
 multMCCalibrator::multMCCalibrator() : TNamed(),
                                        fDataInputFileName("AnalysisResults.root"),
                                        fSimInputFileName("AnalysisResultsMC.root"),

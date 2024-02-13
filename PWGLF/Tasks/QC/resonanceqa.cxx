@@ -44,7 +44,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/Core/RecoDecay.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/TrackSelection.h"
 #include "Framework/ASoAHelpers.h"
 
@@ -124,8 +124,8 @@ struct resonanceqa {
       histos.add("h1LambdastarRec", "Lambdastar meson Rec", kTH1F, {{100, 0.0f, 10.0f}});
     }
   }
-  double massPi = RecoDecay::getMassPDG(kPiPlus);
-  double massKa = RecoDecay::getMassPDG(kKPlus);
+  double massPi = o2::constants::physics::MassPiPlus;
+  double massKa = o2::constants::physics::MassKPlus;
   double massPr = 0.938272088f;
   double rapidity;
   double genMass, recMass, resolution;
@@ -258,12 +258,12 @@ struct resonanceqa {
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
-  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::TPCMults>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                   aod::pidTPCFullPi, aod::pidTOFFullPi,
                                                   aod::pidTPCFullKa, aod::pidTOFFullKa,
                                                   aod::pidTPCFullPr, aod::pidTOFFullPr>>;
-  using EventCandidatesMC = soa::Join<aod::Collisions, aod::Mults, aod::McCollisionLabels>;
+  using EventCandidatesMC = soa::Join<aod::Collisions, aod::TPCMults, aod::McCollisionLabels>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                     aod::pidTPCFullPi, aod::pidTOFFullPi,
                                                     aod::pidTPCFullKa, aod::pidTOFFullKa,

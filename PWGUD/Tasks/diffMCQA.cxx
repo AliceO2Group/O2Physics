@@ -71,9 +71,12 @@ struct DiffMCQA {
     // add histograms for the different process functions
     if (context.mOptions.get<bool>("processMCTruth")) {
       registry.add("MCTruth/Stat", "Simulated event type; event type; Entries", {HistType::kTH1F, {{4, 0.5, 4.5}}});
+      registry.add("MCTruth/recCols", "Number of reconstructed collisions; Number of reconstructed collisions; Entries", {HistType::kTH1F, {{31, -0.5, 30.5}}});
     }
 
     if (context.mOptions.get<bool>("processMain")) {
+      registry.add("all/mcCols", "Has MC truth collision; Has MC truth collision; Entries", {HistType::kTH1F, {{2, -0.5, 1.5}}});
+
       // non diffractive events
       registry.add("nonDiff/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{20, -0.5, 19.5}}});
       registry.add("nonDiff/cleanFIT", "Statistics of collisions with empty FIT; Multiple of collision time resolution; FIT status; Collisions", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}});
@@ -93,8 +96,8 @@ struct DiffMCQA {
       registry.add("nonDiff/dEdxTPCDG", "DG: TPC signal versus signed track momentum; Signed track momentum [GeV/c]; TPC signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}});
       registry.add("nonDiff/dEdxTOFDG", "DG: TOF signal versus signed track momentum; Signed track momentum [GeV/c]; TOF signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}});
       registry.add("nonDiff/netChargeDG", "DG: Net charge; Net charge; DG collisions", {HistType::kTH1F, {{21, -10.5, 10.5}}});
-      registry.add("nonDiff/IVMptSysDG", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}});
-      registry.add("nonDiff/IVMptTrkDG", "DG: Invariant mass versus p_{T, tracks}; Invarian mass [GeV/c^2]; p_{T, tracks} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}});
+      registry.add("nonDiff/IVMptSysDG", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 2.5}, {350, 0., 3.5}}});
+      registry.add("nonDiff/IVMptTrkDG", "DG: Invariant mass versus p_{T, tracks}; Invarian mass [GeV/c^2]; p_{T, tracks} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 2.5}, {350, 0., 3.5}}});
       // PYTHIA8 diffractive events
       registry.add("MBRDiff/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{20, -0.5, 19.5}}});
       registry.add("MBRDiff/cleanFIT", "Statistics of collisions with empty FIT; Multiple of collision time resolution; FIT status; Collisions", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}});
@@ -114,8 +117,8 @@ struct DiffMCQA {
       registry.add("MBRDiff/dEdxTPCDG", "DG: TPC signal versus signed track momentum; Signed track momentum [GeV/c]; TPC signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}});
       registry.add("MBRDiff/dEdxTOFDG", "DG: TOF signal versus signed track momentum; Signed track momentum [GeV/c]; TOF signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}});
       registry.add("MBRDiff/netChargeDG", "DG: Net charge; Net charge; DG collisions", {HistType::kTH1F, {{21, -10.5, 10.5}}});
-      registry.add("MBRDiff/IVMptSysDG", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}});
-      registry.add("MBRDiff/IVMptTrkDG", "DG: Invariant mass versus p_{T, tracks}; Invarian mass [GeV/c^2]; p_{T, tracks} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}});
+      registry.add("MBRDiff/IVMptSysDG", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 2.5}, {350, 0., 3.5}}});
+      registry.add("MBRDiff/IVMptTrkDG", "DG: Invariant mass versus p_{T, tracks}; Invarian mass [GeV/c^2]; p_{T, tracks} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 2.5}, {350, 0., 3.5}}});
       // GRANIITTI diffractive events
       registry.add("Diff/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{20, -0.5, 19.5}}});
       registry.add("Diff/cleanFIT", "Statistics of collisions with empty FIT; Multiple of collision time resolution; FIT status; Collisions", {HistType::kTH2F, {{10, -0.5, 9.5}, {2, -0.5, 1.5}}});
@@ -135,8 +138,8 @@ struct DiffMCQA {
       registry.add("Diff/dEdxTPCDG", "DG: TPC signal versus signed track momentum; Signed track momentum [GeV/c]; TPC signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {3000, 0., 30000.}}});
       registry.add("Diff/dEdxTOFDG", "DG: TOF signal versus signed track momentum; Signed track momentum [GeV/c]; TOF signal; Tracks", {HistType::kTH2F, {{100, 0., 5.0}, {1000, 0., 500000.}}});
       registry.add("Diff/netChargeDG", "DG: Net charge; Net charge; DG collisions", {HistType::kTH1F, {{21, -10.5, 10.5}}});
-      registry.add("Diff/IVMptSysDG", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}});
-      registry.add("Diff/IVMptTrkDG", "DG: Invariant mass versus p_{T, tracks}; Invarian mass [GeV/c^2]; p_{T, tracks} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 5.}, {350, 0., 3.5}}});
+      registry.add("Diff/IVMptSysDG", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 2.5}, {350, 0., 3.5}}});
+      registry.add("Diff/IVMptTrkDG", "DG: Invariant mass versus p_{T, tracks}; Invarian mass [GeV/c^2]; p_{T, tracks} [GeV/c]; DG collisions", {HistType::kTH2F, {{100, 0., 2.5}, {350, 0., 3.5}}});
     }
 
     if (context.mOptions.get<bool>("processFV0")) {
@@ -207,32 +210,33 @@ struct DiffMCQA {
     LOGF(info, "<DiffMCQA> Size of abcrs %i and afbcrs %i", abcrs.size(), afbcrs.size());
   }
 
-  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<aod::McParticles> partPerMcCollision = aod::mcparticle::mcCollisionId;
 
   // ...............................................................................................................
-  void processMCTruth(CCs const& collisions, aod::McCollisions const& mccollisions, aod::McParticles const& McParts)
+  void processMCTruth(aod::McCollision const& mccollision, soa::SmallGroups<CCs> const& collisions, aod::McParticles const& McParts)
   {
-    LOGF(info, "Number of mc collisions %d collisions %d", mccollisions.size(), collisions.size());
+    LOGF(info, "Number of collisions %d", collisions.size());
+    LOGF(info, "Number of McParts %d", McParts.size());
 
     // is this a central diffractive event?
     // by default it is assumed to be a MB event
     bool isPythiaDiff = false;
     bool isGraniittiDiff = false;
-    for (auto mccol : mccollisions) {
-      registry.get<TH1>(HIST("MCTruth/Stat"))->Fill(1., 1.);
-      auto MCPartSlice = McParts.sliceBy(perMcCollision, mccol.globalIndex());
-      isPythiaDiff = udhelpers::isPythiaCDE(MCPartSlice);
-      isGraniittiDiff = udhelpers::isGraniittiCDE(MCPartSlice);
-      if (isPythiaDiff) {
-        registry.get<TH1>(HIST("MCTruth/Stat"))->Fill(3., 1.);
-      } else if (isGraniittiDiff) {
-        registry.get<TH1>(HIST("MCTruth/Stat"))->Fill(4., 1.);
-      } else {
-        registry.get<TH1>(HIST("MCTruth/Stat"))->Fill(2., 1.);
-      }
+    registry.get<TH1>(HIST("MCTruth/Stat"))->Fill(1., 1.);
+    isPythiaDiff = udhelpers::isPythiaCDE(McParts);
+    isGraniittiDiff = udhelpers::isGraniittiCDE(McParts);
+    if (isPythiaDiff) {
+      registry.get<TH1>(HIST("MCTruth/Stat"))->Fill(3., 1.);
+    } else if (isGraniittiDiff) {
+      registry.get<TH1>(HIST("MCTruth/Stat"))->Fill(4., 1.);
+    } else {
+      registry.get<TH1>(HIST("MCTruth/Stat"))->Fill(2., 1.);
     }
+
+    // number of reconstructed collision
+    registry.get<TH1>(HIST("MCTruth/recCols"))->Fill(collisions.size(), 1.);
   }
-  PROCESS_SWITCH(DiffMCQA, processMCTruth, "Process NC truth", true);
+  PROCESS_SWITCH(DiffMCQA, processMCTruth, "Process MC truth", true);
 
   // ...............................................................................................................
   void processMain(CC const& collision, BCs const& bct0s,
@@ -249,10 +253,14 @@ struct DiffMCQA {
     bool isPythiaDiff = false;
     bool isGraniittiDiff = false;
     if (collision.has_mcCollision()) {
+      registry.get<TH1>(HIST("all/mcCols"))->Fill(1., 1.);
+
       auto MCCol = collision.mcCollision();
-      auto MCPartSlice = McParts.sliceBy(perMcCollision, MCCol.globalIndex());
+      auto MCPartSlice = McParts.sliceBy(partPerMcCollision, MCCol.globalIndex());
       isPythiaDiff = udhelpers::isPythiaCDE(MCPartSlice);
       isGraniittiDiff = udhelpers::isGraniittiCDE(MCPartSlice);
+    } else {
+      registry.get<TH1>(HIST("all/mcCols"))->Fill(0., 1.);
     }
 
     // global tracks
@@ -284,18 +292,18 @@ struct DiffMCQA {
     }
 
     // test influence of BCrange width
-    for (int NDtcoll = 0; NDtcoll < 10; NDtcoll++) {
-      auto bcSlice = udhelpers::MCcompatibleBCs(collision, NDtcoll, bct0s, 0);
+    for (int minBcs = 0; minBcs < 10; minBcs++) {
+      auto bcSlice = udhelpers::MCcompatibleBCs(collision, 0, bct0s, minBcs);
       isDGcandidate = true;
       for (auto& bc : bcSlice) {
-        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits());
+        isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits());
       }
       if (isPythiaDiff) {
-        registry.get<TH2>(HIST("MBRDiff/cleanFIT"))->Fill(NDtcoll, isDGcandidate * 1.);
+        registry.get<TH2>(HIST("MBRDiff/cleanFIT"))->Fill(minBcs, isDGcandidate * 1.);
       } else if (isGraniittiDiff) {
-        registry.get<TH2>(HIST("Diff/cleanFIT"))->Fill(NDtcoll, isDGcandidate * 1.);
+        registry.get<TH2>(HIST("Diff/cleanFIT"))->Fill(minBcs, isDGcandidate * 1.);
       } else {
-        registry.get<TH2>(HIST("nonDiff/cleanFIT"))->Fill(NDtcoll, isDGcandidate * 1.);
+        registry.get<TH2>(HIST("nonDiff/cleanFIT"))->Fill(minBcs, isDGcandidate * 1.);
       }
     }
 
@@ -367,13 +375,13 @@ struct DiffMCQA {
     // no FIT signal in bcSlice / collision
     if (doCleanFITBC) {
       for (auto const& bc : bcSlice) {
-        if (!udhelpers::cleanFIT(bc, diffCuts.FITAmpLimits())) {
+        if (!udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
           isDGcandidate = false;
           break;
         }
       }
     } else {
-      if (!udhelpers::cleanFITCollision(collision, diffCuts.FITAmpLimits())) {
+      if (!udhelpers::cleanFITCollision(collision, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
         isDGcandidate = false;
       }
     }

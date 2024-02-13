@@ -17,6 +17,7 @@
 
 #include <string>
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/PairCut.h"
@@ -27,6 +28,10 @@ namespace pcmcuts
 {
 V0PhotonCut* GetCut(const char* cutName);
 } // namespace pcmcuts
+namespace dalitzeecuts
+{
+DalitzEECut* GetCut(const char* cutName);
+} // namespace dalitzeecuts
 
 namespace phoscuts
 {

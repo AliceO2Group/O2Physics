@@ -23,6 +23,7 @@
 #include "Framework/ASoA.h"
 #include "Framework/HistogramRegistry.h"
 
+#include "DataFormatsEMCAL/Constants.h"
 #include "EMCALBase/Geometry.h"
 #include "EMCALCalib/BadChannelMap.h"
 #include "CommonDataFormat/InteractionRecord.h"
@@ -94,7 +95,9 @@ struct CellMonitor {
     mHistManager.add("cellMasking", "Monitoring for masked cells", o2HistType::kTH1F, {cellAxis});
     mHistManager.add("cellFrequency", "Frequency of cell firing", o2HistType::kTH1F, {cellAxis});
     mHistManager.add("cellAmplitude", "Energy distribution per cell", o2HistType::kTH2F, {amplitudeAxis, cellAxis});
-    mHistManager.add("cellAmplitudeCut", "Energy distribution per cell", o2HistType::kTH2F, {amplitudeAxis, cellAxis});
+    mHistManager.add("cellAmplitudeHG", "Energy distribution per cell high gain", o2HistType::kTH2F, {amplitudeAxis, cellAxis});
+    mHistManager.add("cellAmplitudeLG", "Energy distribution per cell low gain", o2HistType::kTH2F, {amplitudeAxis, cellAxis});
+    mHistManager.add("cellAmplitudeCut", "Energy distribution per cell cut", o2HistType::kTH2F, {amplitudeAxis, cellAxis});
     mHistManager.add("cellTime", "Time distribution per cell", o2HistType::kTH2F, {timeAxisLarge, cellAxis});
     mHistManager.add("cellTimeMain", "Time distribution per cell for the main bunch", o2HistType::kTH2F, {timeAxisMainBunch, cellAxis});
     mHistManager.add("cellAmplitudeBC", "Cell amplitude vs. bunch crossing ID", o2HistType::kTH2F, {bcAxis, amplitudeAxis});
@@ -169,6 +172,12 @@ struct CellMonitor {
       mHistManager.fill(HIST("cellBCAll"), cellIR.bc);
       mHistManager.fill(HIST("cellBCSelected"), cellIR.bc);
       mHistManager.fill(HIST("cellAmplitude"), cell.amplitude(), cell.cellNumber());
+      if (cell.cellType() == o2::emcal::channelTypeToInt(o2::emcal::ChannelType_t::HIGH_GAIN)) {
+        mHistManager.fill(HIST("cellAmplitudeHG"), cell.amplitude(), cell.cellNumber());
+      } else if (cell.cellType() == o2::emcal::channelTypeToInt(o2::emcal::ChannelType_t::LOW_GAIN)) {
+        mHistManager.fill(HIST("cellAmplitudeLG"), cell.amplitude(), cell.cellNumber());
+      }
+
       if (cell.amplitude() < mMinCellAmplitude)
         continue;
       mHistManager.fill(HIST("cellAmplitudeCut"), cell.amplitude(), cell.cellNumber());

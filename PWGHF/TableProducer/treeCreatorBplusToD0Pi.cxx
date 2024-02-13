@@ -17,18 +17,17 @@
 ///
 /// \author Antonio Palasciano <antonio.palasciano@ba.infn.it>, Università & INFN, Bari
 
-#include "Framework/runDataProcessing.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_cand_bplus;
 
 namespace o2::aod
 {
@@ -94,11 +93,13 @@ DECLARE_SOA_COLUMN(NSigmaTPCTrk1Pi, nSigmaTPCTrk1Pi, float);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
-DECLARE_SOA_COLUMN(GlobalIndex, globalIndex, int);
+DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCandBplus, "_0");
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 } // namespace full
 
 // put the arguments into the table
-DECLARE_SOA_TABLE(HfCandBplusFull, "AOD", "HFCANDBPFull",
+DECLARE_SOA_TABLE(HfCandBpFulls, "AOD", "HFCANDBPFULL",
                   full::RSecondaryVertex,
                   full::PtProng0,
                   full::PProng0,
@@ -160,9 +161,9 @@ DECLARE_SOA_TABLE(HfCandBplusFull, "AOD", "HFCANDBPFull",
                   full::NSigmaTOFTrk1Ka,
                   full::NSigmaTPCTrk1Pi,
                   full::NSigmaTPCTrk1Ka,
-                  full::GlobalIndex);
+                  full::CandidateId);
 
-DECLARE_SOA_TABLE(HfCandBplusFullEvents, "AOD", "HFCANDBPFullE",
+DECLARE_SOA_TABLE(HfCandBpFullEvs, "AOD", "HFCANDBPFULLEV",
                   collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
@@ -171,40 +172,45 @@ DECLARE_SOA_TABLE(HfCandBplusFullEvents, "AOD", "HFCANDBPFullE",
                   full::IsEventReject,
                   full::RunNumber);
 
-DECLARE_SOA_TABLE(HfCandBplusFullParticles, "AOD", "HFCANDBPFullP",
+DECLARE_SOA_TABLE(HfCandBpFullPs, "AOD", "HFCANDBPFULLP",
                   collision::BCId,
+                  full::McCollisionId,
                   full::Pt,
                   full::Eta,
                   full::Phi,
                   full::Y,
                   full::MCflag,
-                  full::GlobalIndex);
+                  full::McParticleId);
 
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
 struct HfTreeCreatorBplusToD0Pi {
-  Produces<o2::aod::HfCandBplusFull> rowCandidateFull;
-  Produces<o2::aod::HfCandBplusFullEvents> rowCandidateFullEvents;
-  Produces<o2::aod::HfCandBplusFullParticles> rowCandidateFullParticles;
+  Produces<o2::aod::HfCandBpFulls> rowCandidateFull;
+  Produces<o2::aod::HfCandBpFullEvs> rowCandidateFullEvents;
+  Produces<o2::aod::HfCandBpFullPs> rowCandidateFullParticles;
 
   Configurable<int> isSignal{"isSignal", 1, "save only MC matched candidates"};
+
+  HfHelper hfHelper;
+
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
 
   void init(InitContext const&)
   {
   }
 
   void process(aod::Collisions const& collisions,
-               aod::McCollisions const& mccollisions,
+               aod::McCollisions const&,
                soa::Join<aod::HfCandBplus, aod::HfCandBplusMcRec, aod::HfSelBplusToD0Pi> const& candidates,
-               soa::Join<aod::McParticles_000, aod::HfCandBplusMcGen> const& particles,
-               aod::BigTracksPID const& tracks,
+               soa::Join<aod::McParticles, aod::HfCandBplusMcGen> const& particles,
+               TracksWPid const&,
                aod::HfCand2Prong const&)
   {
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       rowCandidateFullEvents(
         collision.bcId(),
         collision.numContrib(),
@@ -217,23 +223,23 @@ struct HfTreeCreatorBplusToD0Pi {
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       auto fillTable = [&](int CandFlag,
                            // int FunctionSelection,
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY) {
         auto d0Cand = candidate.prong0();
-        auto piCand = candidate.prong1_as<aod::BigTracksPID>();
+        auto piCand = candidate.prong1_as<TracksWPid>();
         // adding D0 daughters to the table
-        auto d0Daughter0 = d0Cand.prong0_as<aod::BigTracksPID>();
-        auto d0Daughter1 = d0Cand.prong1_as<aod::BigTracksPID>();
+        auto d0Daughter0 = d0Cand.prong0_as<TracksWPid>();
+        auto d0Daughter1 = d0Cand.prong1_as<TracksWPid>();
 
         auto invMassD0 = 0.;
         if (piCand.sign() > 0) {
-          invMassD0 = o2::aod::hf_cand_2prong::invMassD0barToKPi(d0Cand);
+          invMassD0 = hfHelper.invMassD0barToKPi(d0Cand);
         } else if (piCand.sign() < 0) {
-          invMassD0 = o2::aod::hf_cand_2prong::invMassD0ToPiK(d0Cand);
+          invMassD0 = hfHelper.invMassD0ToPiK(d0Cand);
         }
 
         // if (FunctionSelection >= 1) {
@@ -279,7 +285,7 @@ struct HfTreeCreatorBplusToD0Pi {
             invMassD0,
             d0Cand.ptProng0(),
             d0Cand.ptProng1(),
-            o2::aod::hf_cand_2prong::yD0(d0Cand),
+            hfHelper.yD0(d0Cand),
             d0Cand.eta(),
             d0Cand.cpa(),
             d0Cand.cpaXY(),
@@ -305,20 +311,21 @@ struct HfTreeCreatorBplusToD0Pi {
         }
       };
 
-      // fillTable(0, candidate.isSelBplusToD0Pi(), invMassBplusToD0Pi(candidate), ctBplus(candidate), yBplus(candidate));
-      fillTable(0, invMassBplusToD0Pi(candidate), ctBplus(candidate), yBplus(candidate));
+      // fillTable(0, candidate.isSelBplusToD0Pi(), hfHelper.invMassBplusToD0Pi(candidate), hfHelper.ctBplus(candidate), hfHelper.yBplus(candidate));
+      fillTable(0, hfHelper.invMassBplusToD0Pi(candidate), hfHelper.ctBplus(candidate), hfHelper.yBplus(candidate));
     }
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
-    for (auto& particle : particles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << DecayType::BplusToD0Pi) {
+    for (const auto& particle : particles) {
+      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_bplus::DecayType::BplusToD0Pi) {
         rowCandidateFullParticles(
           particle.mcCollision().bcId(),
+          particle.mcCollisionId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
-          RecoDecay::y(array{particle.px(), particle.py(), particle.pz()}, RecoDecay::getMassPDG(particle.pdgCode())),
+          RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassBPlus),
           particle.flagMcMatchGen(),
           particle.globalIndex());
       }

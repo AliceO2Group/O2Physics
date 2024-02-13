@@ -68,7 +68,6 @@ struct qaKFParticleLc {
   Configurable<bool> isRun3{"isRun3", true, "Is Run3 dataset"};
   Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
-  Configurable<std::string> ccdbPathGeo{"ccdbPathGeo", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -194,9 +193,6 @@ struct qaKFParticleLc {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    if (!o2::base::GeometryManager::isGeometryLoaded()) {
-      ccdb->get<TGeoManager>(ccdbPathGeo);
-    }
     runNumber = 0;
   } /// End init
 
@@ -205,11 +201,11 @@ struct qaKFParticleLc {
   bool isSelectedTracks(const T& track1, const T& track2, const T& track3)
   {
     /// DCA XY of the daughter tracks to the primaty vertex
-    if ((track1.dcaXY() > d_dcaXYTrackPV) || (track2.dcaXY() > d_dcaXYTrackPV) || (track3.dcaXY() > d_dcaXYTrackPV)) {
+    if ((fabs(track1.dcaXY()) > d_dcaXYTrackPV) || (fabs(track2.dcaXY()) > d_dcaXYTrackPV) || (fabs(track3.dcaXY()) > d_dcaXYTrackPV)) {
       return false;
     }
     /// DCA Z of the daughter tracks to the primaty vertex
-    if ((track1.dcaZ() > d_dcaZTrackPV) || (track2.dcaZ() > d_dcaZTrackPV) || (track3.dcaZ() > d_dcaZTrackPV)) {
+    if ((fabs(track1.dcaZ()) > d_dcaZTrackPV) || (fabs(track2.dcaZ()) > d_dcaZTrackPV) || (fabs(track3.dcaZ()) > d_dcaZTrackPV)) {
       return false;
     }
     /// reject if the tracks with sum of charge != 1

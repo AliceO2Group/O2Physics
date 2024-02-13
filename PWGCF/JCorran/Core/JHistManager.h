@@ -425,7 +425,7 @@ class JTH1DerivedPlayer
       JERROR("Exceed Dimension");
     }
     if (OutOf(i, 0, fCMD->SizeOf(fLevel) - 1)) {
-      JERROR("wrong Index %d of %dth in %s", i, fLevel, fCMD->GetName());
+      JERROR("wrong Index %d of %dth in %s", i, fLevel, fCMD->GetName().Data());
     }
     fCMD->SetIndex(i, fLevel++);
     return *this;

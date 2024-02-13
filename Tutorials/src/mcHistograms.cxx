@@ -42,7 +42,7 @@ struct VertexDistribution {
 // Simple analysis of PhysicalPrimary particles
 struct PhysicalPrimaryCharge {
   OutputObj<TH1F> charge{TH1F("charge_prim", "charge_prim", 100, -5, 5)};
-  Service<O2DatabasePDG> pdgDB;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   void process(aod::McParticles const& mcParticles)
   {
@@ -50,7 +50,7 @@ struct PhysicalPrimaryCharge {
       if (!particle.isPhysicalPrimary()) {
         continue;
       }
-      auto pdgParticle = pdgDB->GetParticle(particle.pdgCode());
+      auto pdgParticle = pdg->GetParticle(particle.pdgCode());
       if (!pdgParticle) {
         continue;
       }
@@ -117,6 +117,10 @@ struct AccessMcTruth {
                aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
   {
     // access MC truth information with mcCollision() and mcParticle() methods
+    if (!collision.has_mcCollision()) {
+      LOGF(warning, "No MC collision for this collision, skip...");
+      return;
+    }
     if (reduceOutput < 2) {
       LOGF(info, "vtx-z (data) = %f | vtx-z (MC) = %f", collision.posZ(), collision.mcCollision().posZ());
     }
@@ -146,7 +150,7 @@ struct AccessMcTruth {
   }
 };
 
-// Loop over MCColisions and get corresponding collisions (there can be more than one)
+// Loop over MCCollisions and get corresponding collisions (there can be more than one)
 // For each of them get the corresponding tracks
 // Note the use of "SmallGroups" template, that allows to handle both Run 2, where
 // we have exactly 1-to-1 correspondence between collisions and mc collisions, and

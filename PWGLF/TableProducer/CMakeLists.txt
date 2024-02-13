@@ -9,6 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+add_subdirectory(QC)
+
 # General purpose
 o2physics_add_dpl_workflow(tpcpid
                     SOURCES lfTPCPID.cxx
@@ -21,8 +23,8 @@ o2physics_add_dpl_workflow(lambdakzerobuilder
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lambdakzerolabelbuilder
-                    SOURCES lambdakzerolabelbuilder.cxx
+o2physics_add_dpl_workflow(lambdakzeromcbuilder
+                    SOURCES lambdakzeromcbuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -36,13 +38,18 @@ o2physics_add_dpl_workflow(lambdakzeromcfinder
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(cascadebuilder
-                    SOURCES cascadebuilder.cxx
-                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
+o2physics_add_dpl_workflow(lambdakzeropid
+                    SOURCES lambdakzeropid.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(cascadelabelbuilder
-                    SOURCES cascadelabelbuilder.cxx
+o2physics_add_dpl_workflow(cascadebuilder
+                    SOURCES cascadebuilder.cxx
+                    PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascademcbuilder
+                    SOURCES cascademcbuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -56,6 +63,16 @@ o2physics_add_dpl_workflow(cascademcfinder
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(cascadepid
+                    SOURCES cascadepid.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strangederivedbuilder
+                    SOURCES strangederivedbuilder.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(hstrangecorrelationfilter
                     SOURCES hStrangeCorrelationFilter.cxx
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
@@ -64,6 +81,22 @@ o2physics_add_dpl_workflow(hstrangecorrelationfilter
 o2physics_add_dpl_workflow(st-coll-ids
                     SOURCES stCollIds.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strange-tree-creator
+                    SOURCES LFStrangeTreeCreator.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+# strange derived - spawners
+o2physics_add_dpl_workflow(lambdakzerospawner
+                    SOURCES lambdakzerospawner.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascadespawner
+                    SOURCES cascadespawner.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 # Nuclei
@@ -75,6 +108,11 @@ o2physics_add_dpl_workflow(nucleustreecreator
 o2physics_add_dpl_workflow(nuclei-spectra
                     SOURCES nucleiSpectra.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lithium4analysis
+                    SOURCES lithium4analysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 # Hypernuclei
@@ -93,6 +131,16 @@ o2physics_add_dpl_workflow(threebodymcfinder
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(hypertriton3bodybuilder
+                    SOURCES hypertriton3bodybuilder.cxx
+                    PUBLIC_LINK_LIBRARIES  O2::DCAFitter O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hypertriton3bodyfinder
+                    SOURCES hypertriton3bodyfinder.cxx
+                    PUBLIC_LINK_LIBRARIES  O2::DCAFitter O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 # Resonances
 o2physics_add_dpl_workflow(reso2initializer
                     SOURCES LFResonanceInitializer.cxx
@@ -109,7 +157,28 @@ o2physics_add_dpl_workflow(filterf1proton
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(f1protonreducedtable
+                    SOURCES f1protonreducedtable.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(v0qaanalysis
                     SOURCES v0qaanalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascqaanalysis
+                    SOURCES cascqaanalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascadeflow
+                    SOURCES cascadeflow.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+# Spectra
+o2physics_add_dpl_workflow(spectra-derived
+                    SOURCES spectraDerivedMaker.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

@@ -38,12 +38,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-using namespace o2::aod::hf_cand;
-using namespace o2::aod::hf_correlation_d_dbar;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_d0_to_pi_k;
-using namespace o2::constants::math;
-
 namespace
 {
 static constexpr int nPart = 2;                                                                         // number of particle types (for us it will be proton and phi)
@@ -71,12 +65,12 @@ struct femtoWorldPairTaskTrackD0 {
   Configurable<float> ConfNsigmaTPCPion{"ConfNsigmaTPCPion", 3.0, "TPC Pion Sigma for momentum < 0.5"};
   /// Table for both particles
   Configurable<LabeledArray<float>> cfgCutTable{"cfgCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
-  Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
+  // Configurable<int> cfgNspecies{"ccfgNspecies", 4, "Number of particle spieces with PID info"};
 
   /// Particle 1 (track)
-  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};                                 // proton (2212)
-  Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
-  Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.5, "Lower limit for Pt for the first particle"};                      // change according to wrzesa cuts
+  Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 211, "Particle 1 - PDG code"}; // pion+ (211), proton (2212)
+  // Configurable<std::vector<int>> ConfPIDPartOne{"ConfPIDPartOne", std::vector<int>{2}, "Particle 1 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
+  Configurable<float> cfgPtLowPart1{"cfgPtLowPart1", 0.5, "Lower limit for Pt for the first particle"}; // change according to wrzesa cuts
   Configurable<float> cfgPtHighPart1{"cfgPtHighPart1", 1.5, "Higher limit for Pt for the first particle"};
   Configurable<float> cfgEtaLowPart1{"cfgEtaLowPart1", -0.8, "Lower limit for Eta for the first particle"};
   Configurable<float> cfgEtaHighPart1{"cfgEtaHighPart1", 0.8, "Higher limit for Eta for the first particle"};
@@ -99,36 +93,23 @@ struct femtoWorldPairTaskTrackD0 {
   /// Histogramming for particle 1
   FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kTrack, 0> trackHistoPartOne;
 
-  /// Particle 2 (Phi)
-  Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 333, "Particle 1 - PDG code"}; // phi meson (333)
-  Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 338, "Particle 2 - Selection bit"};
+  /// Particle 2 (D0/D0bar)
+  Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 421, "Particle 1 - PDG code"}; // phi meson (333)
+  Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 421, "Particle 2 - Selection bit"};
   Configurable<float> cfgPtLowPart2{"cfgPtLowPart2", 0.14, "Lower limit for Pt for the second particle"};
   Configurable<float> cfgPtHighPart2{"cfgPtHighPart2", 5.0, "Higher limit for Pt for the second particle"};
   Configurable<float> cfgEtaLowPart2{"cfgEtaLowPart2", -0.8, "Lower limit for Eta for the second particle"};
   Configurable<float> cfgEtaHighPart2{"cfgEtaHighPart2", 0.8, "Higher limit for Eta for the second particle"};
 
-  /// Partition for particle 2
-  Partition<aod::FemtoWorldParticles> partsTwo = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kPhi)) && (aod::femtoworldparticle::pt < cfgPtHighPart2) && (aod::femtoworldparticle::pt > cfgPtLowPart2) // pT cuts
-                                                 && (aod::femtoworldparticle::eta < cfgEtaHighPart2) && (aod::femtoworldparticle::eta > cfgEtaLowPart2);                                                                                        // Eta cuts
-
-  /// Histogramming for particle 2
-  FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kPhi, 0> trackHistoPartTwo;
-
-  // Partition for particle 3 (Phi daughters (K+ K-))
-  Partition<aod::FemtoWorldParticles> partsThree = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kPhiChild));
-
-  /// Histogramming for particle 3
-  FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kPhiChild, 0> trackHistoPartThree;
-
   // Partition for D0/D0bar mesons
   Partition<aod::FemtoWorldParticles> partsD0D0barMesons = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kD0D0bar));
   Partition<aod::FemtoWorldParticles> partsD0D0barDaughters = (aod::femtoworldparticle::partType == uint8_t(aod::femtoworldparticle::ParticleType::kD0D0barChild));
 
+  // HIstogramin for particle 2
+  // FemtoWorldParticleHisto<aod::femtoworldparticle::ParticleType::kD0D0bar, 0> trackHistoPartThree;
+
   /// Histogramming for Event
   FemtoWorldEventHisto eventHisto;
-
-  /// The configurables need to be passed to an std::vector
-  std::vector<int> vPIDPartOne;
 
   /// Correlation part
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 150.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
@@ -145,8 +126,8 @@ struct femtoWorldPairTaskTrackD0 {
 
   FemtoWorldContainer<femtoWorldContainer::EventType::same, femtoWorldContainer::Observable::kstar> sameEventCont;
   FemtoWorldContainer<femtoWorldContainer::EventType::mixed, femtoWorldContainer::Observable::kstar> mixedEventCont;
-  FemtoWorldPairCleaner<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::ParticleType::kPhi> pairCleaner;
-  FemtoWorldDetaDphiStar<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::ParticleType::kPhi> pairCloseRejection;
+  FemtoWorldPairCleaner<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::ParticleType::kD0D0bar> pairCleaner;
+  FemtoWorldDetaDphiStar<aod::femtoworldparticle::ParticleType::kTrack, aod::femtoworldparticle::ParticleType::kD0D0bar> pairCloseRejection;
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -171,11 +152,7 @@ struct femtoWorldPairTaskTrackD0 {
                               {"hbetaDaughters", "; p (GeV/#it{c}); TOF #beta", {HistType::kTH2F, {{300, 0., 15.}, {200, 0., 2.}}}},
                               {"hdEdxDaughters", "; p (GeV/#it{c}); TPC dE/dx (KeV/cm)", {HistType::kTH2F, {{300, 0., 15.}, {500, 0., 500.}}}},
                               {"hDCAxyDaughters", "; #it{DCA}_{xy} (cm); counts", {HistType::kTH1F, {{140, 0., 0.14}}}},
-                              {"hDCAzDaughters", "; #it{DCA}_{z} (cm); counts", {HistType::kTH1F, {{140, 0., 0.14}}}},
-                              {"hMassD0check", ";#it{M}(K#pi) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {{300, 1.75, 2.05}}}},
-                              {"hPtD0check", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{300, 0., 15.}}}},
-                              {"hMassD0barcheck", ";#it{M}(K#pi) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {{300, 1.75, 2.05}}}},
-                              {"hPtD0barcheck", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{300, 0., 15.}}}}}};
+                              {"hDCAzDaughters", "; #it{DCA}_{z} (cm); counts", {HistType::kTH1F, {{140, 0., 0.14}}}}}};
 
   // PID for protons
   bool IsProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
@@ -278,8 +255,7 @@ struct femtoWorldPairTaskTrackD0 {
   {
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry);
-    trackHistoPartTwo.init(&qaRegistry);
-    trackHistoPartThree.init(&qaRegistry);
+    // trackHistoPartThree.init(&qaRegistry);
 
     sameEventCont.init(&resultRegistry, CfgkstarBins, CfgMultBins, CfgkTBins, CfgmTBins, ConfPhiBins, ConfEtaBins, ConfMInvBins);
     sameEventCont.setPDGCodes(ConfPDGCodePartOne, ConfPDGCodePartTwo);
@@ -289,8 +265,6 @@ struct femtoWorldPairTaskTrackD0 {
     if (ConfIsCPR) {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, 0.01, 0.01, ConfCPRPlotPerRadii); /// \todo add config for Δη and ΔΦ cut values
     }
-
-    vPIDPartOne = ConfPIDPartOne;
   }
 
   void processD0mesons(o2::aod::FemtoWorldCollision& col, o2::aod::FemtoWorldParticles& parts)
@@ -300,7 +274,7 @@ struct femtoWorldPairTaskTrackD0 {
 
     for (auto& d0d0bar : groupPartsD0D0bar) {
       if (d0d0bar.flagD0() == 1) {
-        registry.fill(HIST("hInvMassD0"), d0d0bar.mass());
+        registry.fill(HIST("hInvMassD0"), d0d0bar.massD0());
         registry.fill(HIST("hMomentumD0"), d0d0bar.p());
         registry.fill(HIST("hPtD0"), d0d0bar.pt());
         registry.fill(HIST("hPhiD0"), d0d0bar.phi());
@@ -308,7 +282,7 @@ struct femtoWorldPairTaskTrackD0 {
         registry.fill(HIST("hDecayLengthD0"), d0d0bar.decayLength());
       }
       if (d0d0bar.flagD0bar() == 1) {
-        registry.fill(HIST("hInvMassD0bar"), d0d0bar.mass());
+        registry.fill(HIST("hInvMassD0bar"), d0d0bar.massD0bar());
         registry.fill(HIST("hMomentumD0bar"), d0d0bar.p());
         registry.fill(HIST("hPtD0bar"), d0d0bar.pt());
         registry.fill(HIST("hPhiD0bar"), d0d0bar.phi());
@@ -347,8 +321,7 @@ struct femtoWorldPairTaskTrackD0 {
   {
     // const auto& magFieldTesla = col.magField();
     auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
-    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
-    auto groupPartsThree = partsThree->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
+    auto groupPartsD0D0bar = partsD0D0barMesons->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, col.globalIndex(), cache);
 
     const int multCol = col.multV0M();
     eventHisto.fillQA(col);
@@ -360,31 +333,15 @@ struct femtoWorldPairTaskTrackD0 {
       }
       trackHistoPartOne.fillQA(part);
     }
-    for (auto& part : groupPartsTwo) {
-      trackHistoPartTwo.fillQAMult(part, multCol);
-    }
-    for (auto& part : groupPartsThree) {
+    /*for (auto& part : groupPartsD0D0bar) {
       trackHistoPartThree.fillQA(part);
-    }
+    }*/
 
     /// Now build the combinations
-    for (auto& [p1, p2] : combinations(groupPartsOne, groupPartsTwo)) {
+    for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsD0D0bar))) {
       if (!(IsParticleNSigma(p1.p(), p1.tpcNSigmaPr(), p1.tofNSigmaPr(), p1.tpcNSigmaPi(), p1.tofNSigmaPi(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) {
         continue;
       }
-      // TODO: Include pairCloseRejection and pairCleaner
-      /*
-      if (ConfIsCPR) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
-          continue;
-        }
-      }
-      */
-      // track cleaning
-      /*if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-        continue;
-      }*/
-
       sameEventCont.setPair(p1, p2, multCol);
     }
   }
@@ -401,8 +358,7 @@ struct femtoWorldPairTaskTrackD0 {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
 
       auto groupPartsOne = partsOne->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision1.globalIndex(), cache);
-      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex(), cache);
-      auto groupPartsThree = partsThree->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex(), cache);
+      auto groupPartsD0D0bar = partsD0D0barMesons->sliceByCached(aod::femtoworldparticle::femtoWorldCollisionId, collision2.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
@@ -410,18 +366,10 @@ struct femtoWorldPairTaskTrackD0 {
       if (magFieldTesla1 != magFieldTesla2) {
         continue;
       }
-
-      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsD0D0bar))) {
         if (!(IsParticleNSigma(p1.p(), p1.tpcNSigmaPr(), p1.tofNSigmaPr(), p1.tpcNSigmaPi(), p1.tofNSigmaPi(), p1.tpcNSigmaKa(), p1.tofNSigmaKa()))) {
           continue;
         }
-        // TODO: Include pairCloseRejection and pairCleaner
-        /*
-        if (ConfIsCPR) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1)) {
-            continue;
-          }
-        }*/
         mixedEventCont.setPair(p1, p2, collision1.multV0M());
       }
     }

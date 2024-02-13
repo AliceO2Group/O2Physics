@@ -9,54 +9,62 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateSelectorOmegac.cxx
-/// \brief Omegac → Xi Pi selection task
-/// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University & GSI
+/// \file candidateSelectorToXiPi.cxx
+/// \brief Xic0 and Omegac0 → Xi Pi selection task
+/// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 
-#include "Common/Core/TrackSelectorPID.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/RecoDecay.h"
-#include "Framework/runDataProcessing.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectorPID.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
-using namespace o2::analysis::pdg;
-using namespace o2::aod::hf_cand_toxipi;
-using namespace o2::aod::hf_sel_toxipi;
 
-/// Struct for applying Omegac selection cuts
+enum pidInfoStored {
+  kPiFromLam = 0,
+  kPrFromLam,
+  kPiFromCasc,
+  kPiFromCharm
+};
+
+/// Struct for applying Omegac0/Xic0 selection cuts
 struct HfCandidateSelectorToXiPi {
   Produces<aod::HfSelToXiPi> hfSelToXiPi;
 
   // LF analysis selections
-  // zPV -> can be already set in HFeventselection -> 10 cm
-  // sel8 -> can be already set in HFeventselection -> true
-  Configurable<double> radiusCascMin{"radiusCascMin", 0.5, "Min cascade radius"};
-  Configurable<double> radiusV0Min{"radiusV0Min", 2, "Min V0 radius"};
-  Configurable<double> cosPAV0Min{"cosPAV0Min", 0.95, "Min valueCosPA V0"};
-  Configurable<double> cosPACascMin{"cosPACascMin", 0.95, "Min value CosPA cascade"};
-  Configurable<double> dcaCascDauMax{"dcaCascDauMax", 5.0, "Max DCA cascade daughters"};
-  Configurable<double> dcaV0DauMax{"dcaV0DauMax", 5.0, "Max DCA V0 daughters"};
-
-  Configurable<double> dcaOmegacDauMax{"dcaOmegacDauMax", 5.0, "Max DCA omegac daughters"};
+  Configurable<double> radiusCascMin{"radiusCascMin", 0.6, "Min cascade radius"};
+  Configurable<double> radiusV0Min{"radiusV0Min", 1.2, "Min V0 radius"};
+  Configurable<double> cosPAV0Min{"cosPAV0Min", 0.97, "Min valueCosPA V0"};
+  Configurable<double> cosPACascMin{"cosPACascMin", 0.97, "Min value CosPA cascade"};
+  Configurable<double> dcaCascDauMax{"dcaCascDauMax", 1.0, "Max DCA cascade daughters"};
+  Configurable<double> dcaV0DauMax{"dcaV0DauMax", 1.0, "Max DCA V0 daughters"};
+  Configurable<float> dcaBachToPvMin{"dcaBachToPvMin", 0.04, "DCA Bach To PV"};
+  Configurable<float> dcaNegToPvMin{"dcaNegToPvMin", 0.06, "DCA Neg To PV"};
+  Configurable<float> dcaPosToPvMin{"dcaPosToPvMin", 0.06, "DCA Pos To PV"};
+  Configurable<float> v0MassWindow{"v0MassWindow", 0.01, "V0 mass window"};
+  Configurable<float> cascadeMassWindow{"cascadeMassWindow", 0.01, "Cascade mass window"};
 
   // limit charm baryon invariant mass spectrum
-  Configurable<double> invMassOmegacMin{"invMassOmegacMin", 2.0, "Lower limit invariant mass spectrum charm baryon"}; // 2.4 Omegac0 only
-  Configurable<double> invMassOmegacMax{"invMassOmegacMax", 3.1, "Upper limit invariant mass spectrum charm baryon"};
+  Configurable<double> invMassCharmBaryonMin{"invMassCharmBaryonMin", 2.0, "Lower limit invariant mass spectrum charm baryon"}; // 2.4 Omegac0 only
+  Configurable<double> invMassCharmBaryonMax{"invMassCharmBaryonMax", 3.1, "Upper limit invariant mass spectrum charm baryon"};
 
   // kinematic selections
-  Configurable<double> etaTrackMax{"etaTrackMax", 0.8, "Max absolute value of eta"};
+  Configurable<double> etaTrackCharmBachMax{"etaTrackCharmBachMax", 0.8, "Max absolute value of eta for charm baryon bachelor"};
+  Configurable<double> etaTrackLFDauMax{"etaTrackLFDauMax", 1.0, "Max absolute value of eta for V0 and cascade daughters"};
   Configurable<double> ptPiFromCascMin{"ptPiFromCascMin", 0.15, "Min pT pi <- casc"};
-  Configurable<double> ptPiFromOmeMin{"ptPiFromOmeMin", 0.2, "Min pT pi <- omegac"};
+  Configurable<double> ptPiFromCharmBaryonMin{"ptPiFromCharmBaryonMin", 0.2, "Min pT pi <- charm baryon"};
 
-  Configurable<double> impactParameterXYPriPiMin{"impactParameterXYPriPiMin", 0., "Min dcaxy primary pi track to PV"};
-  Configurable<double> impactParameterXYPriPiMax{"impactParameterXYPriPiMax", 10., "Max dcaxy primary pi track to PV"};
-  Configurable<double> impactParameterZPriPiMin{"impactParameterZPriPiMin", 0., "Min dcaz primary pi track to PV"};
-  Configurable<double> impactParameterZPriPiMax{"impactParameterZPriPiMax", 10., "Max dcaz primary pi track to PV"};
+  Configurable<double> impactParameterXYPiFromCharmBaryonMin{"impactParameterXYPiFromCharmBaryonMin", 0., "Min dcaxy pi from charm baryon track to PV"};
+  Configurable<double> impactParameterXYPiFromCharmBaryonMax{"impactParameterXYPiFromCharmBaryonMax", 10., "Max dcaxy pi from charm baryon track to PV"};
+  Configurable<double> impactParameterZPiFromCharmBaryonMin{"impactParameterZPiFromCharmBaryonMin", 0., "Min dcaz pi from charm baryon track to PV"};
+  Configurable<double> impactParameterZPiFromCharmBaryonMax{"impactParameterZPiFromCharmBaryonMax", 10., "Max dcaz pi from charm baryon track to PV"};
 
   Configurable<double> impactParameterXYCascMin{"impactParameterXYCascMin", 0., "Min dcaxy cascade track to PV"};
   Configurable<double> impactParameterXYCascMax{"impactParameterXYCascMax", 10., "Max dcaxy cascade track to PV"};
@@ -66,122 +74,122 @@ struct HfCandidateSelectorToXiPi {
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
 
+  Configurable<double> dcaCharmBaryonDauMax{"dcaCharmBaryonDauMax", 2.0, "Max DCA charm baryon daughters"};
+
   // PID options
-  Configurable<bool> usePidTpcOnly{"usePidTpcOnly", true, "Perform PID using only TPC"};
-  Configurable<bool> usePidTpcTofCombined{"usePidTpcTofCombined", false, "Perform PID using TPC & TOF"};
+  Configurable<bool> usePidTpcOnly{"usePidTpcOnly", false, "Perform PID using only TPC"};
+  Configurable<bool> usePidTpcTofCombined{"usePidTpcTofCombined", true, "Perform PID using TPC & TOF"};
 
   // PID - TPC selections
-  Configurable<double> ptPiPidTpcMin{"ptPiPidTpcMin", 0.15, "Lower bound of track pT for TPC PID for pion selection"};
-  Configurable<double> ptPiPidTpcMax{"ptPiPidTpcMax", 5., "Upper bound of track pT for TPC PID for pion selection"};
+  Configurable<double> ptPiPidTpcMin{"ptPiPidTpcMin", -1, "Lower bound of track pT for TPC PID for pion selection"};
+  Configurable<double> ptPiPidTpcMax{"ptPiPidTpcMax", 9999.9, "Upper bound of track pT for TPC PID for pion selection"};
   Configurable<double> nSigmaTpcPiMax{"nSigmaTpcPiMax", 3., "Nsigma cut on TPC only for pion selection"};
-  Configurable<double> nSigmaTpcCombinedPiMax{"nSigmaTpcCombinedPiMax", 5., "Nsigma cut on TPC combined with TOF for pion selection"};
+  Configurable<double> nSigmaTpcCombinedPiMax{"nSigmaTpcCombinedPiMax", 0., "Nsigma cut on TPC combined with TOF for pion selection"};
 
-  Configurable<double> ptPrPidTpcMin{"ptPrPidTpcMin", 0.15, "Lower bound of track pT for TPC PID for proton selection"};
-  Configurable<double> ptPrPidTpcMax{"ptPrPidTpcMax", 5., "Upper bound of track pT for TPC PID for proton selection"};
+  Configurable<double> ptPrPidTpcMin{"ptPrPidTpcMin", -1, "Lower bound of track pT for TPC PID for proton selection"};
+  Configurable<double> ptPrPidTpcMax{"ptPrPidTpcMax", 9999.9, "Upper bound of track pT for TPC PID for proton selection"};
   Configurable<double> nSigmaTpcPrMax{"nSigmaTpcPrMax", 3., "Nsigma cut on TPC only for proton selection"};
-  Configurable<double> nSigmaTpcCombinedPrMax{"nSigmaTpcCombinedPrMax", 5., "Nsigma cut on TPC combined with TOF for proton selection"};
+  Configurable<double> nSigmaTpcCombinedPrMax{"nSigmaTpcCombinedPrMax", 0., "Nsigma cut on TPC combined with TOF for proton selection"};
 
   // PID - TOF selections
-  Configurable<double> ptPiPidTofMin{"ptPiPidTofMin", 0.15, "Lower bound of track pT for TOF PID for pion selection"};
-  Configurable<double> ptPiPidTofMax{"ptPiPidTofMax", 5., "Upper bound of track pT for TOF PID for pion selection"};
+  Configurable<double> ptPiPidTofMin{"ptPiPidTofMin", -1, "Lower bound of track pT for TOF PID for pion selection"};
+  Configurable<double> ptPiPidTofMax{"ptPiPidTofMax", 9999.9, "Upper bound of track pT for TOF PID for pion selection"};
   Configurable<double> nSigmaTofPiMax{"nSigmaTofPiMax", 3., "Nsigma cut on TOF only for pion selection"};
-  Configurable<double> nSigmaTofCombinedPiMax{"nSigmaTofCombinedPiMax", 5., "Nsigma cut on TOF combined with TPC for pion selection"};
+  Configurable<double> nSigmaTofCombinedPiMax{"nSigmaTofCombinedPiMax", 0., "Nsigma cut on TOF combined with TPC for pion selection"};
 
-  Configurable<double> ptPrPidTofMin{"ptPrPidTofMin", 0.15, "Lower bound of track pT for TOF PID for proton selection"};
-  Configurable<double> ptPrPidTofMax{"ptPrPidTofMax", 5., "Upper bound of track pT for TOF PID for proton selection"};
+  Configurable<double> ptPrPidTofMin{"ptPrPidTofMin", -1, "Lower bound of track pT for TOF PID for proton selection"};
+  Configurable<double> ptPrPidTofMax{"ptPrPidTofMax", 9999.9, "Upper bound of track pT for TOF PID for proton selection"};
   Configurable<double> nSigmaTofPrMax{"nSigmaTofPrMax", 3., "Nsigma cut on TOF only for proton selection"};
-  Configurable<double> nSigmaTofCombinedPrMax{"nSigmaTofCombinedPrMax", 5., "Nsigma cut on TOF combined with TPC for proton selection"};
-
-  // invariant mass cuts
-  Configurable<double> sigmaInvMassLambda{"sigmaInvMassLambda", 0.0025, "Invariant mass cut for lambda (sigma)"};
-  Configurable<double> sigmaInvMassCascade{"sigmaInvMassCascade", 0.0025, "Invariant mass cut for cascade (sigma)"};
-  Configurable<int> nSigmaInvMassCut{"nSigmaInvMassCut", 4, "Number of sigma for invariant mass cut"};
+  Configurable<double> nSigmaTofCombinedPrMax{"nSigmaTofCombinedPrMax", 0., "Nsigma cut on TOF combined with TPC for proton selection"};
 
   // detector clusters selections
   Configurable<int> nClustersTpcMin{"nClustersTpcMin", 70, "Minimum number of TPC clusters requirement"};
   Configurable<int> nTpcCrossedRowsMin{"nTpcCrossedRowsMin", 70, "Minimum number of TPC crossed rows requirement"};
   Configurable<double> tpcCrossedRowsOverFindableClustersRatioMin{"tpcCrossedRowsOverFindableClustersRatioMin", 0.8, "Minimum ratio TPC crossed rows over findable clusters requirement"};
-  Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pi <- Omegac"};
-  Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- Omegac"};
+  Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pi <- charm baryon"};
+  Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- charm baryon"};
 
-  using MyTrackInfo = aod::BigTracksPIDExtended;
+  TrackSelectorPi selectorPion;
+  TrackSelectorPr selectorProton;
 
-  OutputObj<TH1F> hxVertexOmegac{TH1F("hxVertexOmegac", "x Omegac vertex;xVtx;entries", 500, -10, 10)};
-  OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
-  OutputObj<TH1F> hCTauOmegac{TH1F("hCTauOmegac", "Omegac ctau;ctau;entries", 500, 0., 10.)};
-  OutputObj<TH1F> hCTauXic{TH1F("hCTauXic", "Xic ctau;ctau;entries", 500, 0., 10.)};
-  OutputObj<TH1F> hNEventsSaved{TH1F("hNEventsSaved", "Events with a charmed baryon candidate;Events source;N. events", 3, 0, 3)};
-  // bin1 -> number of events taking collisionId from cascade, bin2 -> number of events taking collisionId from primary pion, bin3 -> number of times collId cascade id different from collId primary pi
+  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidPr>;
 
-  // temporary histo for debugging (to be removed after test on hyperloop)
-  OutputObj<TH1F> hSelPID{TH1F("hSelPID", "hSelPID;status;entries", 12, 0., 12.)};
-  OutputObj<TH1F> hTest{TH1F("hTest", "Test status consecutive;status;entries", 12, 0., 12.)};
-  // for QA of the selections (bin 0 -> candidates that did not pass the selection, bin 1 -> candidates that passed the selection)
-  OutputObj<TH1F> hSelSignDec{TH1F("hSelSignDec", "hSelSignDec;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelEtaPosV0Dau{TH1F("hSelEtaPosV0Dau", "hSelEtaPosV0Dau;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelEtaNegV0Dau{TH1F("hSelEtaNegV0Dau", "hSelEtaNegV0Dau;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelEtaPiFromCasc{TH1F("hSelEtaPiFromCasc", "hSelEtaPiFromCasc;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelEtaPiFromOme{TH1F("hSelEtaPiFromOme", "hSelEtaPiFromOme;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelRadCasc{TH1F("hSelRadCasc", "hSelRadCasc;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelRadV0{TH1F("hSelRadV0", "hSelRadV0;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelCosPACasc{TH1F("hSelCosPACasc", "hSelCosPACasc;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelCosPAV0{TH1F("hSelCosPAV0", "hSelCosPAV0;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelDCACascDau{TH1F("hSelDCACascDau", "hSelDCACascDau;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelDCAV0Dau{TH1F("hSelDCAV0Dau", "hSelDCAV0Dau;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelDCAOmeDau{TH1F("hSelDCAOmeDau", "hSelDCAOmeDau;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelDCAXYPrimPi{TH1F("hSelDCAXYPrimPi", "hSelDCAXYPrimPi;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelDCAZPrimPi{TH1F("hSelDCAZPrimPi", "hSelDCAZPrimPi;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelDCAXYCasc{TH1F("hSelDCAXYCasc", "hSelDCAXYCasc;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelDCAZCasc{TH1F("hSelDCAZCasc", "hSelDCAZCasc;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelPtPiFromCasc{TH1F("hSelPtPiFromCasc", "hSelPtPiFromCasc;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelPtPiFromOme{TH1F("hSelPtPiFromOme", "hSelPtPiFromOme;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelNClsTPCPiFromOme{TH1F("hSelNClsTPCPiFromOme", "hSelNClsTPCPiFromOme;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelNClsTPCPiFromLam{TH1F("hSelNClsTPCPiFromLam", "hSelNClsTPCPiFromLam;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelNClsTPCPrFromLam{TH1F("hSelNClsTPCPrFromLam", "hSelNClsTPCPrFromLam;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelNClsTPCPiFromCasc{TH1F("hSelNClsTPCPiFromCasc", "hSelNClsTPCPiFromCasc;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelNCrossRowsTPCPiFromOme{TH1F("hSelNCrossRowsTPCPiFromOme", "hSelNCrossRowsTPCPiFromOme;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelNCrossRowsTPCPiFromLam{TH1F("hSelNCrossRowsTPCPiFromLam", "hSelNCrossRowsTPCPiFromLam;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelNCrossRowsTPCPrFromLam{TH1F("hSelNCrossRowsTPCPrFromLam", "hSelNCrossRowsTPCPrFromLam;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelNCrossRowsTPCPiFromCasc{TH1F("hSelNCrossRowsTPCPiFromCasc", "hSelNCrossRowsTPCPiFromCasc;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelCrossRowsOverFindClsTPCAllTracks{TH1F("hSelCrossRowsOverFindClsTPCAllTracks", "hSelCrossRowsOverFindClsTPCAllTracks;status;entries", 10, 0., 10.)};
-  OutputObj<TH1F> hSelNClsITSPiFromOme{TH1F("hSelNClsITSPiFromOme", "hSelNClsITSPiFromOme;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelNClsITSInnerPiFromOme{TH1F("hSelNClsITSInnerPiFromOme", "hSelNClsITSInnerPiFromOme;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelMassLam{TH1F("hSelMassLam", "hSelMassLam;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelMassCasc{TH1F("hSelMassCasc", "hSelMassCasc;status;entries", 5, 0., 5.)};
-  OutputObj<TH1F> hSelMassOme{TH1F("hSelMassOme", "hSelMassOme;status;entries", 5, 0., 5.)};
+  HistogramRegistry registry{"registry"}; // for QA of selections
 
-  void process(aod::HfCandToXiPi const& candidates, MyTrackInfo const&)
+  OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.2, 3.1)};
+
+  void init(InitContext const&)
   {
-    TrackSelectorPID selectorPion(kPiPlus);
-    selectorPion.setRangePtTPC(ptPiPidTpcMin, ptPiPidTpcMax);
-    selectorPion.setRangeNSigmaTPC(-nSigmaTpcPiMax, nSigmaTpcPiMax);
-    selectorPion.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedPiMax, nSigmaTpcCombinedPiMax);
-    selectorPion.setRangePtTOF(ptPiPidTofMin, ptPiPidTofMax);
-    selectorPion.setRangeNSigmaTOF(-nSigmaTofPiMax, nSigmaTofPiMax);
-    selectorPion.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedPiMax, nSigmaTofCombinedPiMax);
+    selectorPion.setRangePtTpc(ptPiPidTpcMin, ptPiPidTpcMax);
+    selectorPion.setRangeNSigmaTpc(-nSigmaTpcPiMax, nSigmaTpcPiMax);
+    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedPiMax, nSigmaTpcCombinedPiMax);
+    selectorPion.setRangePtTof(ptPiPidTofMin, ptPiPidTofMax);
+    selectorPion.setRangeNSigmaTof(-nSigmaTofPiMax, nSigmaTofPiMax);
+    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedPiMax, nSigmaTofCombinedPiMax);
 
-    TrackSelectorPID selectorProton(kProton);
-    selectorProton.setRangePtTPC(ptPrPidTpcMin, ptPrPidTpcMax);
-    selectorProton.setRangeNSigmaTPC(-nSigmaTpcPrMax, nSigmaTpcPrMax);
-    selectorProton.setRangeNSigmaTPCCondTOF(-nSigmaTpcCombinedPrMax, nSigmaTpcCombinedPrMax);
-    selectorProton.setRangePtTOF(ptPrPidTofMin, ptPrPidTofMax);
-    selectorProton.setRangeNSigmaTOF(-nSigmaTofPrMax, nSigmaTofPrMax);
-    selectorProton.setRangeNSigmaTOFCondTPC(-nSigmaTofCombinedPrMax, nSigmaTofCombinedPrMax);
+    selectorProton.setRangePtTpc(ptPrPidTpcMin, ptPrPidTpcMax);
+    selectorProton.setRangeNSigmaTpc(-nSigmaTpcPrMax, nSigmaTpcPrMax);
+    selectorProton.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedPrMax, nSigmaTpcCombinedPrMax);
+    selectorProton.setRangePtTof(ptPrPidTofMin, ptPrPidTofMax);
+    selectorProton.setRangeNSigmaTof(-nSigmaTofPrMax, nSigmaTofPrMax);
+    selectorProton.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedPrMax, nSigmaTofCombinedPrMax);
 
-    double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0);
-    double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);
+    registry.add("hSelPID", "hSelPID;status;entries", {HistType::kTH1F, {{12, 0., 12.}}});
+    registry.add("hStatusCheck", "Check consecutive selections status;status;entries", {HistType::kTH1F, {{12, 0., 12.}}});
 
-    int collId = -999;
+    // for QA of the selections (bin 0 -> candidates that did not pass the selection, bin 1 -> candidates that passed the selection)
+    registry.add("hSelSignDec", "hSelSignDec;status;entries", {HistType::kTH1F, {{3, 0., 3.}}});
+    registry.add("hSelEtaPosV0Dau", "hSelEtaPosV0Dau;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelEtaNegV0Dau", "hSelEtaNegV0Dau;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelEtaPiFromCasc", "hSelEtaPiFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelEtaPiFromCharm", "hSelEtaPiFromCharm;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelRadCasc", "hSelRadCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelRadV0", "hSelRadV0;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelCosPACasc", "hSelCosPACasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelCosPAV0", "hSelCosPAV0;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelDCACascDau", "hSelDCACascDau;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelDCAV0Dau", "hSelDCAV0Dau;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelDCACharmDau", "hSelDCACharmDau;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelDCAXYPrimPi", "hSelDCAXYPrimPi;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelDCAZPrimPi", "hSelDCAZPrimPi;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelDCAXYCasc", "hSelDCAXYCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelDCAZCasc", "hSelDCAZCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelPtPiFromCasc", "hSelPtPiFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelPtPiFromCharm", "hSelPtPiFromCharm;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNClsTPCPiFromCharm", "hSelNClsTPCPiFromCharm;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNClsTPCPiFromLam", "hSelNClsTPCPiFromLam;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNClsTPCPrFromLam", "hSelNClsTPCPrFromLam;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNClsTPCPiFromCasc", "hSelNClsTPCPiFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNCrossRowsTPCPiFromCharm", "hSelNCrossRowsTPCPiFromCharm;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNCrossRowsTPCPiFromLam", "hSelNCrossRowsTPCPiFromLam;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNCrossRowsTPCPrFromLam", "hSelNCrossRowsTPCPrFromLam;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNCrossRowsTPCPiFromCasc", "hSelNCrossRowsTPCPiFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelCrossRowsOverFindClsTPCAllTracks", "hSelCrossRowsOverFindClsTPCAllTracks;status;entries", {HistType::kTH1F, {{10, 0., 10.}}});
+    registry.add("hSelNClsITSPiFromCharm", "hSelNClsITSPiFromCharm;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelNClsITSInnerPiFromCharm", "hSelNClsITSInnerPiFromCharm;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelMassLam", "hSelMassLam;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelMassCasc", "hSelMassCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelMassCharmBaryon", "hSelMassCharmBaryon;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelDcaXYToPvV0Daughters", "hSelDcaXYToPvV0Daughters;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+    registry.add("hSelDcaXYToPvPiFromCasc", "hSelDcaXYToPvPiFromCasc;status;entries", {HistType::kTH1F, {{5, 0., 5.}}});
+  }
 
-    // looping over omegac candidates
-    for (auto const& candidate : candidates) {
+  void process(aod::HfCandToXiPi const& candidates,
+               TracksSel const&)
+  {
+
+    double massLambdaFromPDG = o2::constants::physics::MassLambda0;
+    double massXiFromPDG = o2::constants::physics::MassXiMinus;
+
+    // looping over charm baryon candidates
+    for (const auto& candidate : candidates) {
 
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 
-      auto trackV0PosDau = candidate.posTrack_as<MyTrackInfo>();    // positive V0 daughter
-      auto trackV0NegDau = candidate.negTrack_as<MyTrackInfo>();    // negative V0 daughter
-      auto trackPiFromCasc = candidate.bachelor_as<MyTrackInfo>();  // pion <- cascade
-      auto trackPiFromOmeg = candidate.primaryPi_as<MyTrackInfo>(); // pion <- omegac
+      auto trackV0PosDau = candidate.posTrack_as<TracksSel>();    // positive V0 daughter
+      auto trackV0NegDau = candidate.negTrack_as<TracksSel>();    // negative V0 daughter
+      auto trackPiFromCasc = candidate.bachelor_as<TracksSel>();  // pion <- cascade
+      auto trackPiFromCharm = candidate.piFromCharmBaryon_as<TracksSel>(); // pion <- charm baryon
 
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;
@@ -191,369 +199,409 @@ struct HfCandidateSelectorToXiPi {
       if (signDecay > 0) {
         trackPiFromLam = trackV0PosDau;
         trackPrFromLam = trackV0NegDau;
-        hSelSignDec->Fill(1);
-      } else if (signDecay == 0) {
-        resultSelections = false;
-        hSelSignDec->Fill(0);
-      } else {
-        hSelSignDec->Fill(1);
+        registry.fill(HIST("hSelSignDec"), 1); // anti-particle decay
+      } else if (signDecay < 0) {
+        registry.fill(HIST("hSelSignDec"), 0); // particle decay
       }
 
       // eta selection
       double etaV0PosDau = candidate.etaV0PosDau();
       double etaV0NegDau = candidate.etaV0NegDau();
       double etaPiFromCasc = candidate.etaPiFromCasc();
-      double etaPiFromOme = candidate.etaPiFromOme();
-      if (std::abs(etaV0PosDau) > etaTrackMax) {
+      double etaPiFromCharmBaryon = candidate.etaPiFromCharmBaryon();
+      if (std::abs(etaV0PosDau) > etaTrackLFDauMax) {
         resultSelections = false;
-        hSelEtaPosV0Dau->Fill(0);
+        registry.fill(HIST("hSelEtaPosV0Dau"), 0);
       } else {
-        hSelEtaPosV0Dau->Fill(1);
+        registry.fill(HIST("hSelEtaPosV0Dau"), 1);
       }
-      if (std::abs(etaV0NegDau) > etaTrackMax) {
+      if (std::abs(etaV0NegDau) > etaTrackLFDauMax) {
         resultSelections = false;
-        hSelEtaNegV0Dau->Fill(0);
+        registry.fill(HIST("hSelEtaNegV0Dau"), 0);
       } else {
-        hSelEtaNegV0Dau->Fill(1);
+        registry.fill(HIST("hSelEtaNegV0Dau"), 1);
       }
-      if (std::abs(etaPiFromCasc) > etaTrackMax) {
+      if (std::abs(etaPiFromCasc) > etaTrackLFDauMax) {
         resultSelections = false;
-        hSelEtaPiFromCasc->Fill(0);
+        registry.fill(HIST("hSelEtaPiFromCasc"), 0);
       } else {
-        hSelEtaPiFromCasc->Fill(1);
+        registry.fill(HIST("hSelEtaPiFromCasc"), 1);
       }
-      if (std::abs(etaPiFromOme) > etaTrackMax) {
+      if (std::abs(etaPiFromCharmBaryon) > etaTrackCharmBachMax) {
         resultSelections = false;
-        hSelEtaPiFromOme->Fill(0);
+        registry.fill(HIST("hSelEtaPiFromCharm"), 0);
       } else {
-        hSelEtaPiFromOme->Fill(1);
+        registry.fill(HIST("hSelEtaPiFromCharm"), 1);
       }
 
       // minimum radius cut (LFcut)
       if (RecoDecay::sqrtSumOfSquares(candidate.xDecayVtxCascade(), candidate.yDecayVtxCascade()) < radiusCascMin) {
         resultSelections = false;
-        hSelRadCasc->Fill(0);
+        registry.fill(HIST("hSelRadCasc"), 0);
       } else {
-        hSelRadCasc->Fill(1);
+        registry.fill(HIST("hSelRadCasc"), 1);
       }
       if (RecoDecay::sqrtSumOfSquares(candidate.xDecayVtxV0(), candidate.yDecayVtxV0()) < radiusV0Min) {
         resultSelections = false;
-        hSelRadV0->Fill(0);
+        registry.fill(HIST("hSelRadV0"), 0);
       } else {
-        hSelRadV0->Fill(1);
+        registry.fill(HIST("hSelRadV0"), 1);
       }
+
       // cosPA (LFcut)
       if (candidate.cosPACasc() < cosPACascMin) {
         resultSelections = false;
-        hSelCosPACasc->Fill(0);
+        registry.fill(HIST("hSelCosPACasc"), 0);
       } else {
-        hSelCosPACasc->Fill(1);
+        registry.fill(HIST("hSelCosPACasc"), 1);
       }
       if (candidate.cosPAV0() < cosPAV0Min) {
         resultSelections = false;
-        hSelCosPAV0->Fill(0);
+        registry.fill(HIST("hSelCosPAV0"), 0);
       } else {
-        hSelCosPAV0->Fill(1);
+        registry.fill(HIST("hSelCosPAV0"), 1);
       }
+
       // cascade and v0 daughters dca cut (LF cut)
       if (candidate.dcaCascDau() > dcaCascDauMax) {
         resultSelections = false;
-        hSelDCACascDau->Fill(0);
+        registry.fill(HIST("hSelDCACascDau"), 0);
       } else {
-        hSelDCACascDau->Fill(1);
+        registry.fill(HIST("hSelDCACascDau"), 1);
       }
+
       if (candidate.dcaV0Dau() > dcaV0DauMax) {
         resultSelections = false;
-        hSelDCAV0Dau->Fill(0);
+        registry.fill(HIST("hSelDCAV0Dau"), 0);
       } else {
-        hSelDCAV0Dau->Fill(1);
+        registry.fill(HIST("hSelDCAV0Dau"), 1);
       }
 
-      // dca omegac daughters cut
-      if (candidate.dcaOmegacDau() > dcaOmegacDauMax) {
+      // dca charm baryon daughters cut
+      if (candidate.dcaCharmBaryonDau() > dcaCharmBaryonDauMax) {
         resultSelections = false;
-        hSelDCAOmeDau->Fill(0);
+        registry.fill(HIST("hSelDCACharmDau"), 0);
       } else {
-        hSelDCAOmeDau->Fill(1);
+        registry.fill(HIST("hSelDCACharmDau"), 1);
       }
 
-      // cut on primary pion dcaXY and dcaZ
-      if ((candidate.impactParPrimaryPiXY() < impactParameterXYPriPiMin) || (candidate.impactParPrimaryPiXY() > impactParameterXYPriPiMax)) {
+      // dcaXY v0 daughters to PV cut
+      if (candidate.dcaXYToPvV0Dau0() < dcaPosToPvMin || candidate.dcaXYToPvV0Dau1() < dcaNegToPvMin) {
         resultSelections = false;
-        hSelDCAXYPrimPi->Fill(0);
+        registry.fill(HIST("hSelDcaXYToPvV0Daughters"), 0);
       } else {
-        hSelDCAXYPrimPi->Fill(1);
+        registry.fill(HIST("hSelDcaXYToPvV0Daughters"), 1);
       }
-      if ((candidate.impactParPrimaryPiZ() < impactParameterZPriPiMin) || (candidate.impactParPrimaryPiZ() > impactParameterZPriPiMax)) {
+
+      // dcaXY pi <-- cascade to PV cut
+      if (candidate.dcaXYToPvCascDau() < dcaBachToPvMin) {
         resultSelections = false;
-        hSelDCAZPrimPi->Fill(0);
+        registry.fill(HIST("hSelDcaXYToPvPiFromCasc"), 0);
       } else {
-        hSelDCAZPrimPi->Fill(1);
+        registry.fill(HIST("hSelDcaXYToPvPiFromCasc"), 1);
+      }
+
+      // cut on charm bachelor pion dcaXY and dcaZ
+      if ((std::abs(candidate.impactParPiFromCharmBaryonXY()) < impactParameterXYPiFromCharmBaryonMin) || (std::abs(candidate.impactParPiFromCharmBaryonXY()) > impactParameterXYPiFromCharmBaryonMax)) {
+        resultSelections = false;
+        registry.fill(HIST("hSelDCAXYPrimPi"), 0);
+      } else {
+        registry.fill(HIST("hSelDCAXYPrimPi"), 1);
+      }
+      if ((std::abs(candidate.impactParPiFromCharmBaryonZ()) < impactParameterZPiFromCharmBaryonMin) || (std::abs(candidate.impactParPiFromCharmBaryonZ()) > impactParameterZPiFromCharmBaryonMax)) {
+        resultSelections = false;
+        registry.fill(HIST("hSelDCAZPrimPi"), 0);
+      } else {
+        registry.fill(HIST("hSelDCAZPrimPi"), 1);
       }
 
       // cut on cascade dcaXY and dcaZ
       if ((std::abs(candidate.impactParCascXY()) < impactParameterXYCascMin) || (std::abs(candidate.impactParCascXY()) > impactParameterXYCascMax)) {
         resultSelections = false;
-        hSelDCAXYCasc->Fill(0);
+        registry.fill(HIST("hSelDCAXYCasc"), 0);
       } else {
-        hSelDCAXYCasc->Fill(1);
+        registry.fill(HIST("hSelDCAXYCasc"), 1);
       }
       if ((std::abs(candidate.impactParCascZ()) < impactParameterZCascMin) || (std::abs(candidate.impactParCascZ()) > impactParameterZCascMax)) {
         resultSelections = false;
-        hSelDCAZCasc->Fill(0);
+        registry.fill(HIST("hSelDCAZCasc"), 0);
       } else {
-        hSelDCAZCasc->Fill(1);
+        registry.fill(HIST("hSelDCAZCasc"), 1);
       }
 
       // pT selections
       double ptPiFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxPiFromCasc(), candidate.pyPiFromCasc());
-      double ptPiFromOme = RecoDecay::sqrtSumOfSquares(candidate.pxPrimaryPi(), candidate.pyPrimaryPi());
+      double ptPiFromCharmBaryon = RecoDecay::sqrtSumOfSquares(candidate.pxPiFromCharmBaryon(), candidate.pyPiFromCharmBaryon());
       if (std::abs(ptPiFromCasc) < ptPiFromCascMin) {
         resultSelections = false;
-        hSelPtPiFromCasc->Fill(0);
+        registry.fill(HIST("hSelPtPiFromCasc"), 0);
       } else {
-        hSelPtPiFromCasc->Fill(1);
+        registry.fill(HIST("hSelPtPiFromCasc"), 1);
       }
-      if (std::abs(ptPiFromOme) < ptPiFromOmeMin) {
+      if (std::abs(ptPiFromCharmBaryon) < ptPiFromCharmBaryonMin) {
         resultSelections = false;
-        hSelPtPiFromOme->Fill(0);
+        registry.fill(HIST("hSelPtPiFromCharm"), 0);
       } else {
-        hSelPtPiFromOme->Fill(1);
+        registry.fill(HIST("hSelPtPiFromCharm"), 1);
       }
 
       //  TPC clusters selections
-      if (trackPiFromOmeg.tpcNClsFound() < nClustersTpcMin) {
+      if (trackPiFromCharm.tpcNClsFound() < nClustersTpcMin) {
         resultSelections = false;
-        hSelNClsTPCPiFromOme->Fill(0);
+        registry.fill(HIST("hSelNClsTPCPiFromCharm"), 0);
       } else {
-        hSelNClsTPCPiFromOme->Fill(1);
+        registry.fill(HIST("hSelNClsTPCPiFromCharm"), 1);
       }
       if (trackPiFromLam.tpcNClsFound() < nClustersTpcMin) {
         resultSelections = false;
-        hSelNClsTPCPiFromLam->Fill(0);
+        registry.fill(HIST("hSelNClsTPCPiFromLam"), 0);
       } else {
-        hSelNClsTPCPiFromLam->Fill(1);
+        registry.fill(HIST("hSelNClsTPCPiFromLam"), 1);
       }
       if (trackPrFromLam.tpcNClsFound() < nClustersTpcMin) {
         resultSelections = false;
-        hSelNClsTPCPrFromLam->Fill(0);
+        registry.fill(HIST("hSelNClsTPCPrFromLam"), 0);
       } else {
-        hSelNClsTPCPrFromLam->Fill(1);
+        registry.fill(HIST("hSelNClsTPCPrFromLam"), 1);
       }
       if (trackPiFromCasc.tpcNClsFound() < nClustersTpcMin) {
         resultSelections = false;
-        hSelNClsTPCPiFromCasc->Fill(0);
+        registry.fill(HIST("hSelNClsTPCPiFromCasc"), 0);
       } else {
-        hSelNClsTPCPiFromCasc->Fill(1);
+        registry.fill(HIST("hSelNClsTPCPiFromCasc"), 1);
       }
 
       // TPC crossed rows selection
-      if (trackPiFromOmeg.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
+      if (trackPiFromCharm.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
         resultSelections = false;
-        hSelNCrossRowsTPCPiFromOme->Fill(0);
+        registry.fill(HIST("hSelNCrossRowsTPCPiFromCharm"), 0);
       } else {
-        hSelNCrossRowsTPCPiFromOme->Fill(1);
+        registry.fill(HIST("hSelNCrossRowsTPCPiFromCharm"), 1);
       }
       if (trackPiFromLam.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
         resultSelections = false;
-        hSelNCrossRowsTPCPiFromLam->Fill(0);
+        registry.fill(HIST("hSelNCrossRowsTPCPiFromLam"), 0);
       } else {
-        hSelNCrossRowsTPCPiFromLam->Fill(1);
+        registry.fill(HIST("hSelNCrossRowsTPCPiFromLam"), 1);
       }
       if (trackPrFromLam.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
         resultSelections = false;
-        hSelNCrossRowsTPCPrFromLam->Fill(0);
+        registry.fill(HIST("hSelNCrossRowsTPCPrFromLam"), 0);
       } else {
-        hSelNCrossRowsTPCPrFromLam->Fill(1);
+        registry.fill(HIST("hSelNCrossRowsTPCPrFromLam"), 1);
       }
       if (trackPiFromCasc.tpcNClsCrossedRows() < nTpcCrossedRowsMin) {
         resultSelections = false;
-        hSelNCrossRowsTPCPiFromCasc->Fill(0);
+        registry.fill(HIST("hSelNCrossRowsTPCPiFromCasc"), 0);
       } else {
-        hSelNCrossRowsTPCPiFromCasc->Fill(1);
+        registry.fill(HIST("hSelNCrossRowsTPCPiFromCasc"), 1);
       }
 
-      // further TPC selectiion
-      if (trackPiFromOmeg.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
+      // further TPC selection
+      if (trackPiFromCharm.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
         resultSelections = false;
-        hSelCrossRowsOverFindClsTPCAllTracks->Fill(0);
+        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 0);
       } else {
-        hSelCrossRowsOverFindClsTPCAllTracks->Fill(1);
+        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 1);
       }
       if (trackPiFromCasc.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
         resultSelections = false;
-        hSelCrossRowsOverFindClsTPCAllTracks->Fill(2);
+        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 2);
       } else {
-        hSelCrossRowsOverFindClsTPCAllTracks->Fill(3);
+        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 3);
       }
       if (trackPiFromLam.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
         resultSelections = false;
-        hSelCrossRowsOverFindClsTPCAllTracks->Fill(4);
+        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 4);
       } else {
-        hSelCrossRowsOverFindClsTPCAllTracks->Fill(5);
+        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 5);
       }
       if (trackPrFromLam.tpcCrossedRowsOverFindableCls() < tpcCrossedRowsOverFindableClustersRatioMin) {
         resultSelections = false;
-        hSelCrossRowsOverFindClsTPCAllTracks->Fill(6);
+        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 6);
       } else {
-        hSelCrossRowsOverFindClsTPCAllTracks->Fill(7);
+        registry.fill(HIST("hSelCrossRowsOverFindClsTPCAllTracks"), 7);
       }
 
       //  ITS clusters selection
-      if (trackPiFromOmeg.itsNCls() < nClustersItsMin) {
+      if (trackPiFromCharm.itsNCls() < nClustersItsMin) {
         resultSelections = false;
-        hSelNClsITSPiFromOme->Fill(0);
+        registry.fill(HIST("hSelNClsITSPiFromCharm"), 0);
       } else {
-        hSelNClsITSPiFromOme->Fill(1);
+        registry.fill(HIST("hSelNClsITSPiFromCharm"), 1);
       }
-      if (trackPiFromOmeg.itsNClsInnerBarrel() < nClustersItsInnBarrMin) {
+      if (trackPiFromCharm.itsNClsInnerBarrel() < nClustersItsInnBarrMin) {
         resultSelections = false;
-        hSelNClsITSInnerPiFromOme->Fill(0);
+        registry.fill(HIST("hSelNClsITSInnerPiFromCharm"), 0);
       } else {
-        hSelNClsITSInnerPiFromOme->Fill(1);
+        registry.fill(HIST("hSelNClsITSInnerPiFromCharm"), 1);
       }
 
       // track-level PID selection
-      int pidProton = -999;
-      int pidPiFromLam = -999;
-      int pidPiFromCasc = -999;
-      int pidPiFromOme = -999;
-      if (usePidTpcOnly == usePidTpcTofCombined) {
-        LOGF(fatal, "Check the PID configurables, usePidTpcOnly and usePidTpcTofCombined can't have the same value");
-      }
-      if (usePidTpcOnly) {
-        pidProton = selectorProton.getStatusTrackPIDTPC(trackPrFromLam);
-        pidPiFromLam = selectorPion.getStatusTrackPIDTPC(trackPiFromLam);
-        pidPiFromCasc = selectorPion.getStatusTrackPIDTPC(trackPiFromCasc);
-        pidPiFromOme = selectorPion.getStatusTrackPIDTPC(trackPiFromOmeg);
-      } else if (usePidTpcTofCombined) {
-        pidProton = selectorProton.getStatusTrackPIDTpcAndTof(trackPrFromLam);
-        pidPiFromLam = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromLam);
-        pidPiFromCasc = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromCasc);
-        pidPiFromOme = selectorPion.getStatusTrackPIDTpcAndTof(trackPiFromOmeg);
-      }
+
+      // for TrackSelectorPID
+      int statusPidPrFromLam = -999;
+      int statusPidPiFromLam = -999;
+      int statusPidPiFromCasc = -999;
+      int statusPidPiFromCharmBaryon = -999;
 
       bool statusPidLambda = false;
       bool statusPidCascade = false;
-      bool statusPidOmegac = false;
+      bool statusPidCharmBaryon = false;
 
-      if (pidProton == TrackSelectorPID::Status::PIDAccepted && pidPiFromLam == TrackSelectorPID::Status::PIDAccepted) {
+      int infoTpcStored = 0;
+      int infoTofStored = 0;
+
+      if (usePidTpcOnly == usePidTpcTofCombined) {
+        LOGF(fatal, "Check the PID configurables, usePidTpcOnly and usePidTpcTofCombined can't have the same value");
+      }
+
+      if (trackPiFromLam.hasTPC()) {
+        SETBIT(infoTpcStored, kPiFromLam);
+      }
+      if (trackPrFromLam.hasTPC()) {
+        SETBIT(infoTpcStored, kPrFromLam);
+      }
+      if (trackPiFromCasc.hasTPC()) {
+        SETBIT(infoTpcStored, kPiFromCasc);
+      }
+      if (trackPiFromCharm.hasTPC()) {
+        SETBIT(infoTpcStored, kPiFromCharm);
+      }
+      if (trackPiFromLam.hasTOF()) {
+        SETBIT(infoTofStored, kPiFromLam);
+      }
+      if (trackPrFromLam.hasTOF()) {
+        SETBIT(infoTofStored, kPrFromLam);
+      }
+      if (trackPiFromCasc.hasTOF()) {
+        SETBIT(infoTofStored, kPiFromCasc);
+      }
+      if (trackPiFromCharm.hasTOF()) {
+        SETBIT(infoTofStored, kPiFromCharm);
+      }
+
+      if (usePidTpcOnly) {
+        statusPidPrFromLam = selectorProton.statusTpc(trackPrFromLam);
+        statusPidPiFromLam = selectorPion.statusTpc(trackPiFromLam);
+        statusPidPiFromCasc = selectorPion.statusTpc(trackPiFromCasc);
+        statusPidPiFromCharmBaryon = selectorPion.statusTpc(trackPiFromCharm);
+      } else if (usePidTpcTofCombined) {
+        statusPidPrFromLam = selectorProton.statusTpcOrTof(trackPrFromLam);
+        statusPidPiFromLam = selectorPion.statusTpcOrTof(trackPiFromLam);
+        statusPidPiFromCasc = selectorPion.statusTpcOrTof(trackPiFromCasc);
+        statusPidPiFromCharmBaryon = selectorPion.statusTpcOrTof(trackPiFromCharm);
+      }
+
+      if (statusPidPrFromLam == TrackSelectorPID::Accepted && statusPidPiFromLam == TrackSelectorPID::Accepted) {
         statusPidLambda = true;
         if (resultSelections) {
-          hTest->Fill(0.5);
+          registry.fill(HIST("hStatusCheck"), 0.5);
         }
       }
 
-      if (pidProton == TrackSelectorPID::Status::PIDAccepted && pidPiFromLam == TrackSelectorPID::Status::PIDAccepted && pidPiFromCasc == TrackSelectorPID::Status::PIDAccepted) {
+      if (statusPidPrFromLam == TrackSelectorPID::Accepted && statusPidPiFromLam == TrackSelectorPID::Accepted && statusPidPiFromCasc == TrackSelectorPID::Accepted) {
         statusPidCascade = true;
         if (resultSelections) {
-          hTest->Fill(1.5);
+          registry.fill(HIST("hStatusCheck"), 1.5);
         }
       }
 
-      if (pidProton == TrackSelectorPID::Status::PIDAccepted && pidPiFromLam == TrackSelectorPID::Status::PIDAccepted && pidPiFromCasc == TrackSelectorPID::Status::PIDAccepted && pidPiFromOme == TrackSelectorPID::Status::PIDAccepted) {
-        statusPidOmegac = true;
+      if (statusPidPrFromLam == TrackSelectorPID::Accepted && statusPidPiFromLam == TrackSelectorPID::Accepted && statusPidPiFromCasc == TrackSelectorPID::Accepted && statusPidPiFromCharmBaryon == TrackSelectorPID::Accepted) {
+        statusPidCharmBaryon = true;
         if (resultSelections) {
-          hTest->Fill(2.5);
+          registry.fill(HIST("hStatusCheck"), 2.5);
         }
       }
 
       // invariant mass cuts
       bool statusInvMassLambda = false;
       bool statusInvMassCascade = false;
-      bool statusInvMassOmegac = false;
+      bool statusInvMassCharmBaryon = false;
 
       double invMassLambda = candidate.invMassLambda();
       double invMassCascade = candidate.invMassCascade();
-      double invMassOmegac = candidate.invMassOmegac();
+      double invMassCharmBaryon = candidate.invMassCharmBaryon();
 
-      if (std::abs(invMassLambda - massLambdaFromPDG) < (nSigmaInvMassCut * sigmaInvMassLambda)) {
+      if (std::abs(invMassLambda - massLambdaFromPDG) < v0MassWindow) {
         statusInvMassLambda = true;
-        hSelMassLam->Fill(1);
-        if (statusPidLambda && statusPidCascade && statusPidOmegac && resultSelections) {
-          hTest->Fill(3.5);
+        registry.fill(HIST("hSelMassLam"), 1);
+        if (statusPidLambda && statusPidCascade && statusPidCharmBaryon && resultSelections) {
+          registry.fill(HIST("hStatusCheck"), 3.5);
         }
       } else {
-        hSelMassLam->Fill(0);
+        registry.fill(HIST("hSelMassLam"), 0);
       }
 
-      if (std::abs(invMassCascade - massXiFromPDG) < (nSigmaInvMassCut * sigmaInvMassCascade)) {
+      if (std::abs(invMassCascade - massXiFromPDG) < cascadeMassWindow) {
         statusInvMassCascade = true;
-        hSelMassCasc->Fill(1);
-        if (statusPidLambda && statusPidCascade && statusPidOmegac && statusInvMassLambda && resultSelections) {
-          hTest->Fill(4.5);
+        registry.fill(HIST("hSelMassCasc"), 1);
+        if (statusPidLambda && statusPidCascade && statusPidCharmBaryon && statusInvMassLambda && resultSelections) {
+          registry.fill(HIST("hStatusCheck"), 4.5);
         }
       } else {
-        hSelMassCasc->Fill(0);
+        registry.fill(HIST("hSelMassCasc"), 0);
       }
 
-      if ((invMassOmegac >= invMassOmegacMin) && (invMassOmegac <= invMassOmegacMax)) {
-        statusInvMassOmegac = true;
-        hSelMassOme->Fill(1);
-        if (statusPidLambda && statusPidCascade && statusPidOmegac && statusInvMassLambda && statusInvMassCascade && resultSelections) {
-          hTest->Fill(5.5);
+      if ((invMassCharmBaryon >= invMassCharmBaryonMin) && (invMassCharmBaryon <= invMassCharmBaryonMax)) {
+        statusInvMassCharmBaryon = true;
+        registry.fill(HIST("hSelMassCharmBaryon"), 1);
+        if (statusPidLambda && statusPidCascade && statusPidCharmBaryon && statusInvMassLambda && statusInvMassCascade && resultSelections) {
+          registry.fill(HIST("hStatusCheck"), 5.5);
         }
       } else {
-        hSelMassOme->Fill(0);
+        registry.fill(HIST("hSelMassCharmBaryon"), 0);
       }
 
-      hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidOmegac, statusInvMassLambda, statusInvMassCascade, statusInvMassOmegac, resultSelections,
-                  trackPiFromOmeg.tpcNSigmaPi(), trackPiFromCasc.tpcNSigmaPi(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
-                  trackPiFromOmeg.tofNSigmaPi(), trackPiFromCasc.tofNSigmaPi(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
+      hfSelToXiPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
+                  trackPiFromCharm.tpcNSigmaPi(), trackPiFromCasc.tpcNSigmaPi(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
+                  trackPiFromCharm.tofNSigmaPi(), trackPiFromCasc.tofNSigmaPi(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
 
       if (resultSelections) {
         if (!statusPidLambda) {
-          hSelPID->Fill(0.5);
+          registry.fill(HIST("hSelPID"), 0.5);
         }
         if (statusPidLambda) {
-          hSelPID->Fill(1.5);
+          registry.fill(HIST("hSelPID"), 1.5);
         }
         if (!statusPidCascade) {
-          hSelPID->Fill(2.5);
+          registry.fill(HIST("hSelPID"), 2.5);
         }
         if (statusPidCascade) {
-          hSelPID->Fill(3.5);
+          registry.fill(HIST("hSelPID"), 3.5);
         }
-        if (!statusPidOmegac) {
-          hSelPID->Fill(4.5);
+        if (!statusPidCharmBaryon) {
+          registry.fill(HIST("hSelPID"), 4.5);
         }
-        if (statusPidOmegac) {
-          hSelPID->Fill(5.5);
+        if (statusPidCharmBaryon) {
+          registry.fill(HIST("hSelPID"), 5.5);
         }
         if (!statusInvMassLambda) {
-          hSelPID->Fill(6.5);
+          registry.fill(HIST("hSelPID"), 6.5);
         }
         if (statusInvMassLambda) {
-          hSelPID->Fill(7.5);
+          registry.fill(HIST("hSelPID"), 7.5);
         }
         if (!statusInvMassCascade) {
-          hSelPID->Fill(8.5);
+          registry.fill(HIST("hSelPID"), 8.5);
         }
         if (statusInvMassCascade) {
-          hSelPID->Fill(9.5);
+          registry.fill(HIST("hSelPID"), 9.5);
         }
-        if (!statusInvMassOmegac) {
-          hSelPID->Fill(10.5);
+        if (!statusInvMassCharmBaryon) {
+          registry.fill(HIST("hSelPID"), 10.5);
         }
-        if (statusInvMassOmegac) {
-          hSelPID->Fill(11.5);
+        if (statusInvMassCharmBaryon) {
+          registry.fill(HIST("hSelPID"), 11.5);
         }
       }
 
-      if (statusPidLambda && statusPidCascade && statusPidOmegac && statusInvMassLambda && statusInvMassCascade && statusInvMassOmegac && resultSelections) {
-        hxVertexOmegac->Fill(candidate.xDecayVtxOmegac());
-        hInvMassOmegac->Fill(invMassOmegac);
-        hCTauOmegac->Fill(candidate.ctauOmegac());
-        hCTauXic->Fill(candidate.ctauXic());
-
-        if (candidate.collisionId() != collId) {
-          hNEventsSaved->Fill(0.5);
-          collId = trackPiFromCasc.collisionId();
-        }
+      if (statusPidLambda && statusPidCascade && statusPidCharmBaryon && statusInvMassLambda && statusInvMassCascade && statusInvMassCharmBaryon && resultSelections) {
+        hInvMassCharmBaryon->Fill(invMassCharmBaryon);
       }
     }
-  }
-};
+  } // end process
+};  // end struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

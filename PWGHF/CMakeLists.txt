@@ -13,6 +13,7 @@
 # add_subdirectory(DataModel)
 add_subdirectory(TableProducer)
 add_subdirectory(Tasks)
+add_subdirectory(ALICE3)
 add_subdirectory(D2H)
 add_subdirectory(HFC)
 add_subdirectory(HFJ)

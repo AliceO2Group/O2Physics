@@ -88,9 +88,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(PtPion, ptPion, //! pT of prong 0 (identified as prot
 DECLARE_SOA_DYNAMIC_COLUMN(DecayRadius, decayRadius, //! decay radius (2D, centered at zero)
                            [](float x, float y) -> float { return RecoDecay::sqrtSumOfSquares(x, y); });
 DECLARE_SOA_DYNAMIC_COLUMN(M, m, //! mass under hyperhelium-4 hypo
-                           [](float pxp0, float pyp0, float pzp0, float pxp1, float pyp1, float pzp1, float pxp2, float pyp2, float pzp2) -> float { return RecoDecay::m(array{array{pxp0, pyp0, pzp0}, array{pxp1, pyp1, pzp1}, array{pxp2, pyp2, pzp2}}, array{o2::constants::physics::MassHelium3, o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged}); });
+                           [](float pxp0, float pyp0, float pzp0, float pxp1, float pyp1, float pzp1, float pxp2, float pyp2, float pzp2) -> float { return RecoDecay::m(std::array{std::array{pxp0, pyp0, pzp0}, std::array{pxp1, pyp1, pzp1}, std::array{pxp2, pyp2, pzp2}}, std::array{o2::constants::physics::MassHelium3, o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged}); });
 DECLARE_SOA_DYNAMIC_COLUMN(YHyHe4, yHyHe4, //! y -> FIXME add Hyperhelium4 mass to physics constants
-                           [](float Px, float Py, float Pz) -> float { return RecoDecay::y(array{Px, Py, Pz}, 3.929); });
+                           [](float Px, float Py, float Pz) -> float { return RecoDecay::y(std::array{Px, Py, Pz}, 3.929); });
 
 // Standard expression columns - note correct momentum for the He3 daughter
 DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //! px

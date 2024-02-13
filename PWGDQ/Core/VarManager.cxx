@@ -8,11 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
+#include <cmath>
 #include "PWGDQ/Core/VarManager.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
-#include <cmath>
+using std::cout;
+using std::endl;
+using namespace o2::constants::physics;
 
 ClassImp(VarManager);
 
@@ -20,14 +22,18 @@ TString VarManager::fgVariableNames[VarManager::kNVars] = {""};
 TString VarManager::fgVariableUnits[VarManager::kNVars] = {""};
 bool VarManager::fgUsedVars[VarManager::kNVars] = {false};
 bool VarManager::fgUsedKF = false;
+float VarManager::fgMagField = 0.5;
 float VarManager::fgValues[VarManager::kNVars] = {0.0f};
 std::map<int, int> VarManager::fgRunMap;
 TString VarManager::fgRunStr = "";
 std::vector<int> VarManager::fgRunList = {0};
+float VarManager::fgCenterOfMassEnergy = 13600;         // GeV
+float VarManager::fgMassofCollidingParticle = 9.382720; // GeV
 o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
 o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
+o2::globaltracking::MatchGlobalFwd VarManager::mMatching;
 std::map<VarManager::CalibObjects, TObject*> VarManager::fgCalibs;
 bool VarManager::fgRunTPCPostCalibration[4] = {false, false, false, false};
 
@@ -155,7 +161,32 @@ void VarManager::SetRunlist(TString period)
     SetRunNumbers(LHC22t);
   }
 }
+//__________________________________________________________________
+void VarManager::SetDummyRunlist(int InitRunnumber)
+{
+  //
+  // runlist for the different periods
+  fgRunList.clear();
+  fgRunList.push_back(InitRunnumber);
+  fgRunList.push_back(InitRunnumber + 100);
+}
 
+//__________________________________________________________________
+int VarManager::GetDummyFirst()
+{
+  //
+  // Get the fist index of the vector of run numbers
+  //
+  return fgRunList[0];
+}
+//__________________________________________________________________
+int VarManager::GetDummyLast()
+{
+  //
+  // Get the last index of the vector of run numbers
+  //
+  return fgRunList[fgRunList.size() - 1];
+}
 //_________________________________________________________________
 float VarManager::GetRunIndex(double Runnumber)
 {
@@ -166,6 +197,22 @@ float VarManager::GetRunIndex(double Runnumber)
   auto runIndex = std::find(fgRunList.begin(), fgRunList.end(), runNumber);
   float index = std::distance(fgRunList.begin(), runIndex);
   return index;
+}
+//__________________________________________________________________
+void VarManager::SetCollisionSystem(TString system, float energy)
+{
+  //
+  // Set the collision system and the center of mass energy
+  //
+  fgCenterOfMassEnergy = energy;
+
+  if (system.Contains("PbPb")) {
+    fgMassofCollidingParticle = MassProton * 208;
+  }
+  if (system.Contains("pp")) {
+    fgMassofCollidingParticle = MassProton;
+  }
+  // TO Do: add more systems
 }
 
 //__________________________________________________________________
@@ -304,6 +351,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCharge] = "";
   fgVariableNames[kPin] = "p_{IN}";
   fgVariableUnits[kPin] = "GeV/c";
+  fgVariableNames[kSignedPin] = "p_{IN} x charge";
+  fgVariableUnits[kSignedPin] = "GeV/c";
   fgVariableNames[kTOFExpMom] = "TOF expected momentum";
   fgVariableUnits[kTOFExpMom] = "GeV/c";
   fgVariableNames[kTrackTime] = "Track time wrt collision().bc()";
@@ -329,6 +378,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kITSchi2] = "";
   fgVariableNames[kITSlayerHit] = "ITS layer";
   fgVariableUnits[kITSlayerHit] = "";
+  fgVariableNames[kITSmeanClsSize] = "ITS mean Cls Size";
+  fgVariableUnits[kITSmeanClsSize] = "";
   fgVariableNames[kTPCncls] = "TPC #cls";
   fgVariableUnits[kTPCncls] = "";
   fgVariableNames[kTPCnclsCR] = "TPC #cls crossed rows";
@@ -389,6 +440,12 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kIsLegFromOmega] = "";
   fgVariableNames[kMuonNClusters] = "muon n-clusters";
   fgVariableUnits[kMuonNClusters] = "";
+  fgVariableNames[kMftNClusters] = "MFT n-clusters";
+  fgVariableUnits[kMftNClusters] = "";
+  fgVariableNames[kMftClusterSize] = "MFT cluster size";
+  fgVariableUnits[kMftClusterSize] = "";
+  fgVariableNames[kMftMeanClusterSize] = "<MFT cluster size>";
+  fgVariableUnits[kMftMeanClusterSize] = "";
   fgVariableNames[kMuonRAtAbsorberEnd] = "R at the end of the absorber";
   fgVariableUnits[kMuonRAtAbsorberEnd] = "cm";
   fgVariableNames[kMuonPDca] = "p x dca";
@@ -469,6 +526,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingTauxy] = "ns";
   fgVariableNames[kVertexingTauzErr] = "Pair pseudo-proper Tauz err.";
   fgVariableUnits[kVertexingTauzErr] = "ns";
+  fgVariableNames[kVertexingPz] = "Pz Pair";
+  fgVariableUnits[kVertexingPz] = "GeV/c";
+  fgVariableNames[kVertexingSV] = "Secondary Vertexing z";
+  fgVariableUnits[kVertexingSV] = "cm";
   fgVariableNames[kVertexingTauxyErr] = "Pair pseudo-proper Tauxy err.";
   fgVariableUnits[kVertexingTauxyErr] = "ns";
   fgVariableNames[kVertexingProcCode] = "DCAFitterN<2> processing code";
@@ -503,6 +564,18 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kKFCosPA] = "";
   fgVariableNames[kKFNContributorsPV] = "Real Number of Trks to PV";
   fgVariableUnits[kKFNContributorsPV] = "";
+  fgVariableNames[kQ1X0A] = "Q_{1,x}^{A} ";
+  fgVariableUnits[kQ1X0A] = "";
+  fgVariableNames[kQ1Y0A] = "Q_{1,y}^{A} ";
+  fgVariableUnits[kQ1Y0A] = "";
+  fgVariableNames[kQ1X0B] = "Q_{1,x}^{B} ";
+  fgVariableUnits[kQ1X0B] = "";
+  fgVariableNames[kQ1Y0B] = "Q_{1,y}^{B} ";
+  fgVariableUnits[kQ1Y0B] = "";
+  fgVariableNames[kQ1X0C] = "Q_{1,x}^{C} ";
+  fgVariableUnits[kQ1X0C] = "";
+  fgVariableNames[kQ1Y0C] = "Q_{1,y}^{C} ";
+  fgVariableUnits[kQ1Y0C] = "";
   fgVariableNames[kQ2X0A] = "Q_{2,x}^{A} ";
   fgVariableUnits[kQ2X0A] = "";
   fgVariableNames[kQ2Y0A] = "Q_{2,y}^{A} ";
@@ -533,6 +606,18 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kQ3X0C] = "";
   fgVariableNames[kQ3Y0C] = "Q_{3,y}^{C} ";
   fgVariableUnits[kQ3Y0C] = "";
+  fgVariableNames[kQ4X0A] = "Q_{1,x}^{A} ";
+  fgVariableUnits[kQ4X0A] = "";
+  fgVariableNames[kQ4Y0A] = "Q_{1,y}^{A} ";
+  fgVariableUnits[kQ4Y0A] = "";
+  fgVariableNames[kQ4X0B] = "Q_{1,x}^{B} ";
+  fgVariableUnits[kQ4X0B] = "";
+  fgVariableNames[kQ4Y0B] = "Q_{1,y}^{B} ";
+  fgVariableUnits[kQ4Y0B] = "";
+  fgVariableNames[kQ4X0C] = "Q_{1,x}^{C} ";
+  fgVariableUnits[kQ4X0C] = "";
+  fgVariableNames[kQ4Y0C] = "Q_{1,y}^{C} ";
+  fgVariableUnits[kQ4Y0C] = "";
   fgVariableNames[kU2Q2] = "u_{2}Q_{2}^{A} ";
   fgVariableUnits[kU2Q2] = "";
   fgVariableNames[kU3Q3] = "u_{3}Q_{3}^{A} ";
@@ -541,6 +626,12 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCos2DeltaPhi] = "";
   fgVariableNames[kCos3DeltaPhi] = "cos 3(#varphi-#Psi_{3}^{A}) ";
   fgVariableUnits[kCos3DeltaPhi] = "";
+  fgVariableNames[kPsi2A] = "#Psi_{2}^{A} ";
+  fgVariableUnits[kPsi2A] = "";
+  fgVariableNames[kPsi2B] = "#Psi_{2}^{B} ";
+  fgVariableUnits[kPsi2B] = "";
+  fgVariableNames[kPsi2C] = "#Psi_{2}^{C} ";
+  fgVariableUnits[kPsi2C] = "";
   fgVariableNames[kR2SP] = "R_{2}^{SP} ";
   fgVariableUnits[kR2SP] = "";
   fgVariableNames[kR3SP] = "R_{3}^{SP} ";
@@ -551,6 +642,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kR3EP] = "";
   fgVariableNames[kPairMass] = "mass";
   fgVariableUnits[kPairMass] = "GeV/c2";
+  fgVariableNames[kPairMassDau] = "mass dilepton";
+  fgVariableUnits[kPairMassDau] = "GeV/c2";
+  fgVariableNames[kMassDau] = "mass HF";
+  fgVariableUnits[kMassDau] = "GeV/c2";
   fgVariableNames[kPairPt] = "p_{T}";
   fgVariableUnits[kPairPt] = "GeV/c";
   fgVariableNames[kPairEta] = "#eta";
@@ -567,10 +662,18 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kDeltaPhiSym] = "rad.";
   fgVariableNames[kCosThetaHE] = "cos#it{#theta}";
   fgVariableUnits[kCosThetaHE] = "";
+  fgVariableNames[kPhiHE] = "#varphi_{HE}";
+  fgVariableUnits[kPhiHE] = "rad.";
+  fgVariableNames[kCosThetaCS] = "cos#it{#theta}_{CS}";
+  fgVariableUnits[kCosThetaCS] = "";
+  fgVariableNames[kPhiCS] = "#varphi_{CS}";
+  fgVariableUnits[kPhiCS] = "rad.";
   fgVariableNames[kPsiPair] = "#Psi_{pair}";
   fgVariableUnits[kPsiPair] = "rad.";
   fgVariableNames[kDeltaPhiPair] = "#Delta#phi";
   fgVariableUnits[kDeltaPhiPair] = "rad.";
+  fgVariableNames[kOpeningAngle] = "Opening angle";
+  fgVariableUnits[kOpeningAngle] = "rad.";
   fgVariableNames[kQuadDCAabsXY] = "DCA_{xy}^{quad}";
   fgVariableUnits[kQuadDCAabsXY] = "cm";
   fgVariableNames[kQuadDCAsigXY] = "DCA_{xy}^{quad}";
@@ -591,4 +694,20 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTrackDCAresZ] = "cm";
   fgVariableNames[kBitMapIndex] = " ";
   fgVariableUnits[kBitMapIndex] = "";
+  fgVariableNames[kMassCharmHadron] = "mass (charm hadron)";
+  fgVariableUnits[kMassCharmHadron] = "GeV/c2";
+  fgVariableNames[kPtCharmHadron] = "p_{T} (charm hadron)";
+  fgVariableUnits[kPtCharmHadron] = "GeV/c";
+  fgVariableNames[kRapCharmHadron] = "y (charm hadron)";
+  fgVariableUnits[kRapCharmHadron] = " ";
+  fgVariableNames[kPhiCharmHadron] = "#varphi (charm hadron)";
+  fgVariableUnits[kPhiCharmHadron] = "rad.";
+  fgVariableNames[kBdtCharmHadron] = "BDT score (charm hadron)";
+  fgVariableUnits[kBdtCharmHadron] = " ";
+  fgVariableNames[kIsDoubleGap] = "is double gap event";
+  fgVariableUnits[kIsDoubleGap] = "";
+  fgVariableNames[kIsSingleGapA] = "is single gap event side A";
+  fgVariableUnits[kIsSingleGapA] = "";
+  fgVariableNames[kIsSingleGapC] = "is single gap event side C";
+  fgVariableUnits[kIsSingleGapC] = "";
 }

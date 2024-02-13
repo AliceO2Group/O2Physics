@@ -14,11 +14,12 @@
 /// \brief Task to estimate HF->mu in the forward direction and use DCA observable to separate b-> mu, c-> mu.
 /// \author Shreyasi Acharya <shreyasi.acharya@cern.ch>, LPC, France
 
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
+
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -27,7 +28,7 @@ using namespace o2::framework::expressions;
 struct HfTaskMuonCharmBeautySeparation {
   HistogramRegistry registry{"registry"};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
     AxisSpec trackTypeAxis = {6, -0.5, 5.5, "Track Type"};
     AxisSpec ptRecoAxis = {1500, 0, 15, "#it{p}_{T}_{Reco}"};
@@ -50,7 +51,8 @@ struct HfTaskMuonCharmBeautySeparation {
     registry.add("hForwardMultiplicity", "Multiplicity in forward direction", {HistType::kTH1F, {{20, 0, 20}}});
   }
 
-  void process(aod::Collisions::iterator const& collision, soa::Join<aod::FwdTracks, aod::FwdTracksDCA> const& tracks)
+  void process(aod::Collisions::iterator const& collision,
+               soa::Join<aod::FwdTracks, aod::FwdTracksDCA> const& tracks)
   {
     auto pt = 0.;
     auto dcax = 0.;
@@ -63,7 +65,7 @@ struct HfTaskMuonCharmBeautySeparation {
 
     registry.fill(HIST("hZvtx"), zvtx);
 
-    for (auto const& muon : tracks) {
+    for (const auto& muon : tracks) {
       registry.fill(HIST("hTrackType"), muon.trackType());
       if (muon.has_collision()) {
         if (muon.trackType() == 0) {

@@ -19,24 +19,23 @@
 
 #ifndef PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
 #define PWGHF_D2H_MACROS_HFINVMASSFITTER_H_
-#include <string>
 
+#include <string> // std::string
+
+#include <RooWorkspace.h>
+#include <TCanvas.h>
+#include <TCanvas.h>
+#include <TDatabasePDG.h>
+#include <TF1.h>
+#include <TFitResult.h>
 #include <TH1.h>
 #include <TH1F.h>
-#include <TF1.h>
-#include <TMath.h>
-#include <TVirtualFitter.h>
-#include <TDatabasePDG.h>
-#include <TCanvas.h>
-#include <TStyle.h>
-#include <TPaveText.h>
-#include <TCanvas.h>
-#include <TFitResult.h>
-#include <RooWorkspace.h>
 #include <TNamed.h>
+#include <TPaveText.h>
+#include <TStyle.h>
+#include <TVirtualFitter.h>
 
 using namespace RooFit;
-using namespace std;
 
 class TF1;
 class TH1F;

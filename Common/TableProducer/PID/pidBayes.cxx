@@ -238,13 +238,13 @@ struct bayesPid {
       Response[kTOF].LoadParam(DetectorResponse::kSigma, ccdb->getForTimeStamp<Parametrization>(path, timestamp.value));
     }
     if (fnameTPC != "") { // Loading the parametrization from file
-      LOGP(info, "Loading TPC response from file {}", fnameTPC);
+      LOGP(info, "Loading TPC response from file {}", fnameTPC.Data());
       try {
         std::unique_ptr<TFile> f(TFile::Open(fnameTPC, "READ"));
         f->GetObject("Response", responseTPCptr);
         responseTPC.SetParameters(responseTPCptr);
       } catch (...) {
-        LOGP(info, "Loading the TPC PID Response from file {} failed!", fnameTPC);
+        LOGP(info, "Loading the TPC PID Response from file {} failed!", fnameTPC.Data());
       }
     } else {
       const std::string pathTPC = ccdbPathTPC.value;

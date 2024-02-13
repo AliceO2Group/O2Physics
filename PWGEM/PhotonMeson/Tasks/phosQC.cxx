@@ -41,6 +41,9 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using std::array;
 
+using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent>;
+using MyCollision = MyCollisions::iterator;
+
 struct phosQC {
 
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03,test05", "Comma separated list of phos photon cuts"};
@@ -101,7 +104,7 @@ struct phosQC {
   }
 
   Filter collisionFilter = o2::aod::emreducedevent::isPHOSCPVreadout == true;
-  using MyFilteredCollisions = soa::Filtered<aod::EMReducedEvents>;
+  using MyFilteredCollisions = soa::Filtered<MyCollisions>;
   Preslice<aod::PHOSClusters> perCollision = aod::skimmedcluster::collisionId;
 
   void processQC(MyFilteredCollisions const& collisions, aod::PHOSClusters const& clusters)

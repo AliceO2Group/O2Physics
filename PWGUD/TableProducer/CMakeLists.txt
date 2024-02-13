@@ -14,6 +14,11 @@ o2physics_add_dpl_workflow(dgcand-producer
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(sgcand-producer
+                           SOURCES SGCandProducer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::SGCutParHolder
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(dgbccand-producer
                            SOURCES DGBCCandProducer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
@@ -23,3 +28,8 @@ o2physics_add_dpl_workflow(upccand-producer
                            SOURCES UPCCandidateProducer.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::UPCCutparHolder
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(fwdtrack-propagation
+        SOURCES fwdTrackPropagation.cxx
+        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::GlobalTracking
+        COMPONENT_NAME Analysis)

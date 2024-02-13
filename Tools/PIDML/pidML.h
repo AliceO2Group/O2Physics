@@ -8,10 +8,17 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file pidML.h
+/// \brief Data model for PID ML training.
+///
+/// \author Maja Kabus <mkabus@cern.ch>
+
+#ifndef TOOLS_PIDML_PIDML_H_
+#define TOOLS_PIDML_PIDML_H_
+
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
-
-using namespace o2;
 
 namespace o2::aod
 {
@@ -36,7 +43,7 @@ DECLARE_SOA_COLUMN(TPCExpSignalDiffKa, tpcExpSignalDiffKa, float); //! Differenc
 DECLARE_SOA_COLUMN(TOFExpSignalDiffPr, tofExpSignalDiffPr, float); //! Difference between signal and expected for proton
 DECLARE_SOA_COLUMN(TPCExpSignalDiffPr, tpcExpSignalDiffPr, float); //! Difference between signal and expected for proton
 } // namespace pidtracks
-DECLARE_SOA_TABLE(PidTracksRealMl, "AOD", "PIDTRACKSREALML", //! Real tracks for prediction and domain adaptation
+DECLARE_SOA_TABLE(PidTracksDataMl, "AOD", "PIDTRACKSDATAML", //! Data tracks for prediction and domain adaptation
                   aod::track::TPCSignal,
                   aod::track::TRDSignal, aod::track::TRDPattern,
                   aod::pidtofsignal::TOFSignal,
@@ -55,7 +62,7 @@ DECLARE_SOA_TABLE(PidTracksRealMl, "AOD", "PIDTRACKSREALML", //! Real tracks for
                   aod::track::TPCNClsShared,
                   aod::track::DcaXY,
                   aod::track::DcaZ);
-DECLARE_SOA_TABLE(PidTracksReal, "AOD", "PIDTRACKSREAL", //! Real tracks for comparative analysis
+DECLARE_SOA_TABLE(PidTracksData, "AOD", "PIDTRACKSDATA", //! Data tracks for comparative analysis
                   aod::cent::CentRun2V0M,
                   aod::mult::MultFV0A, aod::mult::MultFV0C, pidtracks::MultFV0M,
                   aod::mult::MultFT0A, aod::mult::MultFT0C, pidtracks::MultFT0M,
@@ -191,3 +198,4 @@ DECLARE_SOA_TABLE(PidTracksMc, "AOD", "PIDTRACKSMC", //! MC tracks for comparati
                   aod::mcparticle::PdgCode,
                   pidtracks::IsPhysicalPrimary);
 } // namespace o2::aod
+#endif // TOOLS_PIDML_PIDML_H_

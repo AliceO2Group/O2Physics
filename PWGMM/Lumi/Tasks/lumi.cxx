@@ -77,6 +77,7 @@ DECLARE_SOA_TABLE(EventInfo, "AOD", "EventInfo", full::TimeStamp, full::VertexX,
                   full::VertexChi2, full::NContrib);
 } // namespace o2::aod
 
+using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 

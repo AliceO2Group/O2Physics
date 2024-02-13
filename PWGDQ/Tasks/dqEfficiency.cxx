@@ -22,7 +22,6 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "PWGDQ/Core/HistogramManager.h"
@@ -32,12 +31,8 @@
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/MCSignal.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
-#include "DataFormatsParameters/GRPObject.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include "Field/MagneticField.h"
-#include "TGeoGlobalMagField.h"
-#include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 
 using std::cout;
@@ -281,12 +276,12 @@ struct AnalysisTrackSelection {
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrack) > 0) {
-          if ((*sig).CheckSignal(false, tracksMC, track.reducedMCTrack())) {
+          if ((*sig).CheckSignal(false, track.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
         if constexpr ((TTrackFillMap & VarManager::ObjTypes::Track) > 0) {
-          if ((*sig).CheckSignal(false, tracksMC, track.template mcParticle_as<aod::McParticles_001>())) {
+          if ((*sig).CheckSignal(false, track.template mcParticle_as<aod::McParticles_001>())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
@@ -445,12 +440,12 @@ struct AnalysisMuonSelection {
       int isig = 0;
       for (auto sig = fMCSignals.begin(); sig != fMCSignals.end(); sig++, isig++) {
         if constexpr ((TMuonFillMap & VarManager::ObjTypes::ReducedMuon) > 0) {
-          if ((*sig).CheckSignal(false, muonsMC, muon.reducedMCTrack())) {
+          if ((*sig).CheckSignal(false, muon.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
         if constexpr ((TMuonFillMap & VarManager::ObjTypes::Muon) > 0) {
-          if ((*sig).CheckSignal(false, muonsMC, muon.template mcParticle_as<aod::McParticles_001>())) {
+          if ((*sig).CheckSignal(false, muon.template mcParticle_as<aod::McParticles_001>())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
@@ -484,8 +479,10 @@ struct AnalysisMuonSelection {
 };
 
 struct AnalysisSameEventPairing {
-  Produces<aod::Dileptons> dileptonList;
-  Produces<aod::DileptonsExtra> dileptonExtraList;
+  Produces<aod::Dielectrons> dielectronList;
+  Produces<aod::Dimuons> dimuonList;
+  Produces<aod::DielectronsExtra> dielectronExtraList;
+  Produces<aod::DimuonsExtra> dimuonExtraList;
   Produces<aod::DimuonsAll> dimuonAllList;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   float mMagField = 0.0;
@@ -510,6 +507,7 @@ struct AnalysisSameEventPairing {
   Configurable<bool> fUseAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
   Configurable<bool> fPropToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
   Configurable<bool> fCorrFullGeo{"cfgCorrFullGeo", false, "Use full geometry to correct for MCS effects in track propagation"};
+  Configurable<bool> fNoCorr{"cfgNoCorrFwdProp", false, "Do not correct for MCS effects in track propagation"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
@@ -536,7 +534,9 @@ struct AnalysisSameEventPairing {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    if (fCorrFullGeo) {
+    if (fNoCorr) {
+      VarManager::SetupFwdDCAFitterNoCorr();
+    } else if (fCorrFullGeo) {
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
         ccdb->get<TGeoManager>(geoPath);
       }
@@ -731,8 +731,10 @@ struct AnalysisSameEventPairing {
     uint8_t twoTrackFilter = 0;
     uint32_t dileptonFilterMap = 0;
     uint32_t dileptonMcDecision = 0;
-    dileptonList.reserve(1);
-    dileptonExtraList.reserve(1);
+    dielectronList.reserve(1);
+    dimuonList.reserve(1);
+    dielectronExtraList.reserve(1);
+    dimuonExtraList.reserve(1);
     if (fConfigFlatTables.value) {
       dimuonAllList.reserve(1);
     }
@@ -753,7 +755,7 @@ struct AnalysisSameEventPairing {
       VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
       // secondary vertexing is not implemented for e-mu pairs so we need to hide this function from the e-mu analysis for now
       if constexpr ((TPairType == VarManager::kDecayToEE) || (TPairType == VarManager::kDecayToMuMu)) {
-        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, VarManager::fgValues);
+        VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fPropToPCA, VarManager::fgValues);
       }
 
       // run MC matching for this pair
@@ -761,12 +763,12 @@ struct AnalysisSameEventPairing {
       int isig = 0;
       for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
         if constexpr (TTrackFillMap & VarManager::ObjTypes::ReducedTrack || TTrackFillMap & VarManager::ObjTypes::ReducedMuon) { // for skimmed DQ model
-          if ((*sig).CheckSignal(false, tracksMC, t1.reducedMCTrack(), t2.reducedMCTrack())) {
+          if ((*sig).CheckSignal(false, t1.reducedMCTrack(), t2.reducedMCTrack())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
         if constexpr (TTrackFillMap & VarManager::ObjTypes::Track || TTrackFillMap & VarManager::ObjTypes::Muon) { // for Framework data model
-          if ((*sig).CheckSignal(false, tracksMC, t1.template mcParticle_as<aod::McParticles_001>(), t2.template mcParticle_as<aod::McParticles_001>())) {
+          if ((*sig).CheckSignal(false, t1.template mcParticle_as<aod::McParticles_001>(), t2.template mcParticle_as<aod::McParticles_001>())) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
@@ -774,13 +776,41 @@ struct AnalysisSameEventPairing {
 
       dileptonFilterMap = twoTrackFilter;
       dileptonMcDecision = mcDecision;
-      dileptonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision);
-      dileptonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
+
+      if constexpr (TPairType == VarManager::kDecayToEE) {
+        dielectronList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision);
+        dielectronExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
+      }
+      if constexpr (TPairType == VarManager::kDecayToMuMu) {
+        dimuonList(event, VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision);
+        dimuonExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
+      }
 
       constexpr bool muonHasCov = ((TTrackFillMap & VarManager::ObjTypes::MuonCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedMuonCov) > 0);
       if constexpr ((TPairType == VarManager::kDecayToMuMu) && muonHasCov) {
         if (fConfigFlatTables.value) {
-          dimuonAllList(event.posX(), event.posY(), event.posZ(), event.numContrib(), t1.fwdDcaX(), t1.fwdDcaY(), t2.fwdDcaX(), t2.fwdDcaY(), event.reducedMCevent().mcPosX(), event.reducedMCevent().mcPosY(), event.reducedMCevent().mcPosZ(), VarManager::fgValues[VarManager::kMass], dileptonMcDecision, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr], VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr], t1.pt(), t1.eta(), t1.phi(), t1.sign(), t2.pt(), t2.eta(), t2.phi(), t2.sign(), t1.mcMask(), t2.mcMask(), t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(), t1.chi2MatchMCHMFT(), t2.chi2MatchMCHMFT(), t1.chi2(), t2.chi2(), t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(), t1.reducedMCTrack().e(), t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(), t2.reducedMCTrack().e(), t1.reducedMCTrack().vx(), t1.reducedMCTrack().vy(), t1.reducedMCTrack().vz(), t1.reducedMCTrack().vt(), t2.reducedMCTrack().vx(), t2.reducedMCTrack().vy(), t2.reducedMCTrack().vz(), t2.reducedMCTrack().vt(), t1.isAmbiguous(), t2.isAmbiguous());
+          dimuonAllList(event.posX(), event.posY(), event.posZ(), event.numContrib(),
+                        event.reducedMCevent().mcPosX(), event.reducedMCevent().mcPosY(), event.reducedMCevent().mcPosZ(),
+                        VarManager::fgValues[VarManager::kMass],
+                        dileptonMcDecision,
+                        VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), VarManager::fgValues[VarManager::kVertexingChi2PCA],
+                        VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingTauzErr],
+                        VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr],
+                        VarManager::fgValues[VarManager::kCosPointingAngle],
+                        VarManager::fgValues[VarManager::kPt1], VarManager::fgValues[VarManager::kEta1], VarManager::fgValues[VarManager::kPhi1], t1.sign(),
+                        VarManager::fgValues[VarManager::kPt2], VarManager::fgValues[VarManager::kEta2], VarManager::fgValues[VarManager::kPhi2], t2.sign(),
+                        t1.fwdDcaX(), t1.fwdDcaY(), t2.fwdDcaX(), t2.fwdDcaY(),
+                        t1.mcMask(), t2.mcMask(),
+                        t1.chi2MatchMCHMID(), t2.chi2MatchMCHMID(),
+                        t1.chi2MatchMCHMFT(), t2.chi2MatchMCHMFT(),
+                        t1.chi2(), t2.chi2(),
+                        t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(), t1.reducedMCTrack().e(),
+                        t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(), t2.reducedMCTrack().e(),
+                        t1.reducedMCTrack().vx(), t1.reducedMCTrack().vy(), t1.reducedMCTrack().vz(), t1.reducedMCTrack().vt(),
+                        t2.reducedMCTrack().vx(), t2.reducedMCTrack().vy(), t2.reducedMCTrack().vz(), t2.reducedMCTrack().vt(),
+                        t1.isAmbiguous(), t2.isAmbiguous(), -999., -999., -999., -999., -999., -999., -999.,
+                        VarManager::fgValues[VarManager::kVertexingPz],
+                        VarManager::fgValues[VarManager::kVertexingSV]);
         }
       }
 
@@ -807,7 +837,7 @@ struct AnalysisSameEventPairing {
   }   // end runPairing
 
   template <typename TTracksMC>
-  void runMCGen(TTracksMC const& groupedMCTracks)
+  void runMCGen(TTracksMC& groupedMCTracks)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // group all the MC tracks which belong to the MC event corresponding to the current reconstructed event
@@ -821,7 +851,14 @@ struct AnalysisSameEventPairing {
         if (sig.GetNProngs() != 1) { // NOTE: 1-prong signals required
           continue;
         }
-        if (sig.CheckSignal(false, groupedMCTracks, mctrack)) {
+        bool checked = false;
+        if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
+          auto mctrack_raw = groupedMCTracks.rawIteratorAt(mctrack.globalIndex());
+          checked = sig.CheckSignal(false, mctrack_raw);
+        } else {
+          checked = sig.CheckSignal(false, mctrack);
+        }
+        if (checked) {
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig.GetName()), VarManager::fgValues);
         }
       }
@@ -833,7 +870,15 @@ struct AnalysisSameEventPairing {
         continue;
       }
       for (auto& [t1, t2] : combinations(groupedMCTracks, groupedMCTracks)) {
-        if (sig.CheckSignal(false, groupedMCTracks, t1, t2)) {
+        bool checked = false;
+        if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
+          auto t1_raw = groupedMCTracks.rawIteratorAt(t1.globalIndex());
+          auto t2_raw = groupedMCTracks.rawIteratorAt(t2.globalIndex());
+          checked = sig.CheckSignal(false, t1_raw, t2_raw);
+        } else {
+          checked = sig.CheckSignal(false, t1, t2);
+        }
+        if (checked) {
           VarManager::FillPairMC(t1, t2);
           fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig.GetName()), VarManager::fgValues);
         }
@@ -1038,8 +1083,8 @@ struct AnalysisDileptonTrack {
   }
 
   // Template function to run pair - track combinations
-  template <int TCandidateType, uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename TEventsMC, typename TTracksMC>
-  void runDileptonTrack(TEvent const& event, TTracks const& tracks, soa::Join<aod::Dileptons, aod::DileptonsExtra> const& dileptons, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
+  template <int TCandidateType, uint32_t TEventFillMap, uint32_t TEventMCFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename TDileptons, typename TEventsMC, typename TTracksMC>
+  void runDileptonTrack(TEvent const& event, TTracks const& tracks, TDileptons const& dileptons, TEventsMC const& eventsMC, TTracksMC const& tracksMC)
   {
     VarManager::ResetValues(0, VarManager::kNVars, fValuesTrack);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
@@ -1049,14 +1094,23 @@ struct AnalysisDileptonTrack {
     // Set the global index offset to find the proper lepton
     // TO DO: remove it once the issue with lepton index is solved
     int indexOffset = -999;
+    std::vector<int> trackGlobalIndexes;
+
+    if (dileptons.size() > 0) {
+      for (auto track : tracks) {
+        trackGlobalIndexes.push_back(track.globalIndex());
+        // std::cout << track.index() << " " << track.globalIndex() << std::endl;
+      }
+    }
     for (auto dilepton : dileptons) {
 
       int indexLepton1 = dilepton.index0Id();
       int indexLepton2 = dilepton.index1Id();
 
       if (indexOffset == -999) {
-        indexOffset = indexLepton1;
+        indexOffset = trackGlobalIndexes.at(0);
       }
+      trackGlobalIndexes.clear();
 
       auto lepton1 = tracks.iteratorAt(indexLepton1 - indexOffset);
       auto lepton2 = tracks.iteratorAt(indexLepton2 - indexOffset);
@@ -1082,7 +1136,7 @@ struct AnalysisDileptonTrack {
       int isig = 0;
       for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
         if constexpr (TTrackFillMap & VarManager::ObjTypes::ReducedTrack || TTrackFillMap & VarManager::ObjTypes::ReducedMuon) { // for skimmed DQ model
-          if ((*sig).CheckSignal(false, tracksMC, lepton1MC, lepton2MC)) {
+          if ((*sig).CheckSignal(false, lepton1MC, lepton2MC)) {
             mcDecision |= (uint32_t(1) << isig);
           }
         }
@@ -1114,7 +1168,7 @@ struct AnalysisDileptonTrack {
         isig = 0;
         for (auto sig = fRecMCSignals.begin(); sig != fRecMCSignals.end(); sig++, isig++) {
           if constexpr (TTrackFillMap & VarManager::ObjTypes::ReducedTrack || TTrackFillMap & VarManager::ObjTypes::ReducedMuon || TTrackFillMap & VarManager::ObjTypes::ReducedMuon) { // for skimmed DQ model
-            if ((*sig).CheckSignal(false, tracksMC, lepton1MC, lepton2MC, trackMC)) {
+            if ((*sig).CheckSignal(false, lepton1MC, lepton2MC, trackMC)) {
               mcDecision |= (uint32_t(1) << isig);
             }
           }
@@ -1148,7 +1202,14 @@ struct AnalysisDileptonTrack {
         if (sig.GetNProngs() != 1) { // NOTE: 1-prong signals required
           continue;
         }
-        if (sig.CheckSignal(false, groupedMCTracks, mctrack)) {
+        bool checked = false;
+        if constexpr (soa::is_soa_filtered_v<TTracksMC>) {
+          auto mctrack_raw = groupedMCTracks.rawIteratorAt(mctrack.globalIndex());
+          checked = sig.CheckSignal(false, mctrack_raw);
+        } else {
+          checked = sig.CheckSignal(false, mctrack);
+        }
+        if (checked) {
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig.GetName()), VarManager::fgValues);
         }
       }
@@ -1158,14 +1219,14 @@ struct AnalysisDileptonTrack {
   // Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
   PresliceUnsorted<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
 
-  void processDimuonMuonSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyMuonTracksSelectedWithCov const& tracks, soa::Join<aod::Dileptons, aod::DileptonsExtra> const& dileptons, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+  void processDimuonMuonSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyMuonTracksSelectedWithCov const& tracks, soa::Join<aod::Dimuons, aod::DimuonsExtra> const& dileptons, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
     runDileptonTrack<VarManager::kBcToThreeMuons, gkEventFillMapWithCov, gkMCEventFillMap, gkMuonFillMapWithCov>(event, tracks, dileptons, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
     runMCGen(groupedMCTracks);
   }
-  void processDielectronKaonSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelectedWithCov const& tracks, soa::Join<aod::Dileptons, aod::DileptonsExtra> const& dileptons, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
+  void processDielectronKaonSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, MyBarrelTracksSelectedWithCov const& tracks, soa::Join<aod::Dielectrons, aod::DielectronsExtra> const& dileptons, ReducedMCEvents const& eventsMC, ReducedMCTracks const& tracksMC)
   {
     runDileptonTrack<VarManager::kBtoJpsiEEK, gkEventFillMapWithCov, gkMCEventFillMap, gkTrackFillMapWithCov>(event, tracks, dileptons, eventsMC, tracksMC);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
@@ -1209,19 +1270,22 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
       dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "trigger,cent,mc");
     }
 
-    if (classStr.Contains("Track")) {
+    if (classStr.Contains("Track") && !classStr.Contains("Pairs")) {
       if (classStr.Contains("Barrel")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "its,tpcpid,dca,tofpid,mc");
       }
-    }
-
-    if (classStr.Contains("Muon")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "muon");
+      if (classStr.Contains("Muon")) {
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "muon");
+      }
     }
 
     if (classStr.Contains("Pairs")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_barrel", "vertexing-barrel");
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair_dimuon", "vertexing-forward");
+      if (classStr.Contains("Barrel")) {
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "barrel,vertexing-barrel");
+      }
+      if (classStr.Contains("Muon")) {
+        dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "dimuon,vertexing-forward");
+      }
     }
 
     if (classStr.Contains("MCTruthGenPair")) {

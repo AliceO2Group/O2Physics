@@ -24,9 +24,13 @@ using std::string;
 
 void createDefaultAliases(map<int, TString>& mAliases)
 {
+  mAliases[kEMC7] = "CTVXEMC-B-NOPF-EMC";
+  mAliases[kDMC7] = "CTVXDMC-B-NOPF-EMC";
   mAliases[kTVXinTRD] = "CMTVX-B-NOPF-TRD,minbias_TVX";
   mAliases[kTVXinEMC] = "C0TVX-B-NOPF-EMC,minbias_TVX_L0";
   mAliases[kTVXinPHOS] = "C0TVX-B-NOPF-PHSCPV,minbias_TVX_L0";
+  mAliases[kTVXinHMP] = "C0TVX-B-NOPF-HMP,minbias_TVX_L0";
+  mAliases[kPHOS] = "CTVXPH0-B-NOPF-PHSCPV,mb_PH0_TVX";
 }
 
 void upload_trigger_aliases_run3()
@@ -47,7 +51,7 @@ void upload_trigger_aliases_run3()
   map<string, string> metadata, metadataRCT, header;
 
   // read list of runs from text file
-  std::ifstream f("runs_2023.txt");
+  std::ifstream f("runs_run3.txt");
   std::vector<int> runs;
   int r = 0;
   while (f >> r) {
@@ -90,7 +94,7 @@ void upload_trigger_aliases_run3()
     }
 
     std::vector<o2::ctp::CTPClass> classes = ctpcfg->getCTPClasses();
-    // ctpcfg->printConfigString();
+    ctpcfg->printConfigString();
     // create trigger aliases
     TriggerAliases* aliases = new TriggerAliases();
     for (auto& al : mAliases) {
@@ -116,6 +120,9 @@ void upload_trigger_aliases_run3()
             continue;
           }
           if (aliasId == kTVXinPHOS && cluster != "PHSCPV") { // workaround for configs with ambiguous class names
+            continue;
+          }
+          if (aliasId == kTVXinHMP && cluster != "HMP") { // workaround for configs with ambiguous class names
             continue;
           }
           LOGP(debug, " class index = {}, name = {}, cluster = {}", classId, cl.name, cl.cluster->name);

@@ -29,8 +29,8 @@ namespace o2
 {
 namespace aod
 {
-using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
-using CollisionEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>::iterator;
+using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>;
+using CollisionEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>::iterator;
 using CollisionsEvSelRun2Cent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>;
 using CollisionEvSelRun2Cent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>::iterator;
 using CollisionsEvSel = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
@@ -77,6 +77,7 @@ enum CentMultEstimatorType {
   kFT0M,               ///< FT0M centrality/multiplicity estimator Run 3
   kFT0A,               ///< FT0A centrality/multiplicity estimator Run 3
   kFT0C,               ///< FT0C centrality/multiplicity estimator Run 3
+  kNTPV,               ///< NTPV centrality/multiplicity estimator Run 3
   knCentMultEstimators ///< number of centrality/mutiplicity estimator
 };
 
@@ -256,12 +257,51 @@ inline CentMultEstimatorType getCentMultEstimator(std::string const& datastr)
     return kFT0A;
   } else if (datastr == "FT0C") {
     return kFT0C;
+  } else if (datastr == "NTPV") {
+    return kNTPV;
   } else if (datastr == "NOCM") {
     return kNOCM;
   } else {
     LOGF(fatal, "Centrality/Multiplicity estimator %s not supported yet", datastr.c_str());
   }
   return kNOCM;
+}
+
+inline std::string getCentMultEstimatorName(CentMultEstimatorType est)
+{
+  switch (est) {
+    case kV0M:
+      return "V0M";
+      break;
+    case kCL0:
+      return "CL0";
+      break;
+    case kCL1:
+      return "CL1";
+      break;
+    case kFV0A:
+      return "FV0A";
+      break;
+    case kFT0M:
+      return "FT0M";
+      break;
+    case kFT0A:
+      return "FT0A";
+      break;
+    case kFT0C:
+      return "FT0C";
+      break;
+    case kNTPV:
+      return "NTPV";
+      break;
+    case kNOCM:
+      return "NOCM";
+      break;
+    default:
+      LOGF(fatal, "Centrality/Multiplicity estimator %d not supported yet", (int)est);
+      return "WRONG";
+      break;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -310,7 +350,7 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
     case kPbPbRun3:
       switch (fTriggerSelection) {
         case kMB:
-          if (collision.sel8()) {
+          if (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
             trigsel = true;
           }
           break;
@@ -390,84 +430,107 @@ inline bool triggerSelection<aod::McCollision>(aod::McCollision const&)
 
 /// \brief Extract the collision multiplicity from the event selection information
 template <typename CollisionObject>
-inline float extractMultiplicity(CollisionObject const& collision)
+inline float extractMultiplicity(CollisionObject const& collision, CentMultEstimatorType est)
 {
-  float mult = 0.0;
-  switch (fSystem) {
-    case kpp:
-    case kpPb:
-    case kPbp:
-    case kPbPb:
-    case kXeXe:
-      /* for the time being let's extract V0M */
-      mult = collision.multFV0M();
+  switch (est) {
+    case kV0M:
+      return collision.multFV0M();
       break;
-    case kppRun3:
-    case kPbPbRun3:
-      /* for the time being let's extract T0M */
-      mult = collision.multFT0M();
+    case kCL0:
+      return collision.multTracklets();
+      break;
+    case kCL1:
+      return collision.multTracklets();
+      break;
+    case kFV0A:
+      return collision.multFV0A();
+      break;
+    case kFT0M:
+      return collision.multFT0M();
+      break;
+    case kFT0A:
+      return collision.multFT0A();
+      break;
+    case kFT0C:
+      return collision.multFT0M();
+      break;
+    case kNTPV:
+      return collision.multNTracksPV();
+      break;
+    case kNOCM:
+      return collision.multFT0M();
       break;
     default:
+      LOGF(fatal, "Centrality/Multiplicity estimator %d not supported yet", (int)est);
+      return collision.multFT0M();
       break;
   }
-  return mult;
 }
 
 //////////////////////////////////////////////////////////////////////////////////
 /// Centrality selection
 //////////////////////////////////////////////////////////////////////////////////
 
-/// \brief Centrality selection when there is centrality/multiplicity information
+/// \brief Centrality/multiplicity percentile
 template <typename CollisionObject>
-inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
+float getCentMultPercentile(CollisionObject collision)
 {
-  auto getPercentile = [&centmult](auto mult) {
-    if (mult < 100 && 0 < mult) {
-      centmult = mult;
-      return true;
-    }
-    return false;
-  };
-  bool centmultsel = false;
   if constexpr (framework::has_type_v<aod::cent::CentRun2V0M, typename CollisionObject::all_columns> ||
                 framework::has_type_v<aod::cent::CentRun2CL0, typename CollisionObject::all_columns> ||
                 framework::has_type_v<aod::cent::CentRun2CL1, typename CollisionObject::all_columns>) {
     switch (fCentMultEstimator) {
       case kV0M:
-        centmultsel = getPercentile(collision.centRun2V0M());
+        return collision.centRun2V0M();
         break;
       case kCL0:
-        centmultsel = getPercentile(collision.centRun2CL0());
+        return collision.centRun2CL0();
         break;
       case kCL1:
-        centmultsel = getPercentile(collision.centRun2CL1());
+        return collision.centRun2CL1();
         break;
       default:
+        return 105.0;
         break;
     }
   }
   if constexpr (framework::has_type_v<aod::cent::CentFV0A, typename CollisionObject::all_columns> ||
                 framework::has_type_v<aod::cent::CentFT0M, typename CollisionObject::all_columns> ||
                 framework::has_type_v<aod::cent::CentFT0A, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns>) {
+                framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentNTPV, typename CollisionObject::all_columns>) {
     switch (fCentMultEstimator) {
       case kFV0A:
-        centmultsel = getPercentile(collision.centFV0A());
+        return collision.centFV0A();
         break;
       case kFT0M:
-        centmultsel = getPercentile(collision.centFT0M());
+        return collision.centFT0M();
         break;
       case kFT0A:
-        centmultsel = getPercentile(collision.centFT0A());
+        return collision.centFT0A();
         break;
       case kFT0C:
-        centmultsel = getPercentile(collision.centFT0C());
+        return collision.centFT0C();
+        break;
+      case kNTPV:
+        return collision.centNTPV();
         break;
       default:
+        return 105.0;
         break;
     }
   }
-  return centmultsel;
+}
+
+/// \brief Centrality selection when there is centrality/multiplicity information
+template <typename CollisionObject>
+inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
+{
+  float mult = getCentMultPercentile(collision);
+  if (mult < 100 && 0 < mult) {
+    centmult = mult;
+    return true;
+  }
+  return false;
 }
 
 /// \brief Centrality selection when there is not centrality/multiplicity information
@@ -596,33 +659,23 @@ inline bool matchTrackType(TrackObject const& track)
 
 /// \brief Accepts or not the passed track
 /// \param track the track of interest
-/// \return the internal track id, -1 if not accepted
-/// TODO: the PID implementation
-/// For the time being we keep the convention
-/// - positive track pid even
-/// - negative track pid odd
-/// - charged hadron 0/1
+/// \return true if the track is accepted, otherwise false
 template <typename TrackObject>
-inline int8_t AcceptTrack(TrackObject const& track)
+inline bool AcceptTrack(TrackObject const& track)
 {
   /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
     if (track.mcParticleId() < 0) {
-      return -1;
+      return false;
     }
   }
 
   if (matchTrackType(track)) {
     if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
-      if (track.sign() > 0) {
-        return 0;
-      }
-      if (track.sign() < 0) {
-        return 1;
-      }
+      return true;
     }
   }
-  return -1;
+  return false;
 }
 
 template <typename ParticleObject, typename MCCollisionObject>
@@ -641,14 +694,9 @@ void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
 
 /// \brief Accepts or not the passed generated particle
 /// \param track the particle of interest
-/// \return the internal particle id, -1 if not accepted
-/// TODO: the PID implementation
-/// For the time being we keep the convention
-/// - positive particle pid even
-/// - negative particle pid odd
-/// - charged hadron 0/1
+/// \return `true` if the particle is accepted, `false` otherwise
 template <typename ParticleObject, typename MCCollisionObject>
-inline int8_t AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision)
+inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision)
 {
   float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
 
@@ -670,23 +718,18 @@ inline int8_t AcceptParticle(ParticleObject& particle, MCCollisionObject const& 
 
           exploreMothers(particle, collision);
         }
-        return -1;
+        return false;
       }
     }
     if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
-      if (charge > 0) {
-        return 0;
-      }
-      if (charge < 0) {
-        return 1;
-      }
+      return (charge != 0) ? true : false;
     }
   } else {
     if ((particle.mcCollisionId() == 0) && traceCollId0) {
       LOGF(info, "Particle %d NOT passed isPhysicalPrimary", particle.globalIndex());
     }
   }
-  return -1;
+  return false;
 }
 
 } // namespace dptdptfilter

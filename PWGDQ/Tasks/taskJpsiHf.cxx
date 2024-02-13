@@ -8,280 +8,150 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-//
-// Contact: luca.micheletti@to.infn.it, INFN
-//
-#include <iostream>
-#include <vector>
-#include <algorithm>
-#include <TH1F.h>
-#include <TH3F.h>
-#include <THashList.h>
-#include <TList.h>
-#include <TString.h>
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/runDataProcessing.h"
+
+/// \file taskJPsiHf.cxx
+/// \brief Task for the analysis of J/psi - open HF associate production
+/// \author Luca Micheletti <luca.micheletti@to.infn.it>, INFN
+/// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
+
+#include <string>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 
+#include "Common/Core/RecoDecay.h"
+
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-
+#include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/Core/HistogramManager.h"
-#include "PWGDQ/Core/MixingHandler.h"
-#include "PWGDQ/Core/AnalysisCut.h"
-#include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/HistogramsLibrary.h"
-#include "PWGDQ/Core/CutsLibrary.h"
-#include "PWGDQ/Core/MixingLibrary.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Field/MagneticField.h"
-#include "TGeoGlobalMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-
-using std::cout;
-using std::endl;
-using std::string;
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::hf_cand_2prong;
-using namespace o2::analysis::hf_cuts_d0_to_pi_k;
 using namespace o2::aod;
 
-// Some definitions
-namespace o2::aod
+// pT differential BDT cuts
+namespace bdtcuts
 {
-
-namespace dqanalysisflags
-{
-// TODO: the barrel amd muon selection columns are bit maps so unsigned types should be used, however, for now this is not supported in Filter expressions
-// TODO: For now in the tasks we just statically convert from unsigned int to int, which should be fine as long as we do
-//      not use a large number of bits (>=30)
-DECLARE_SOA_COLUMN(MixingHash, mixingHash, int);
-DECLARE_SOA_COLUMN(IsEventSelected, isEventSelected, int);
-DECLARE_SOA_COLUMN(IsBarrelSelected, isBarrelSelected, int);
-DECLARE_SOA_COLUMN(IsMuonSelected, isMuonSelected, int);
-DECLARE_SOA_COLUMN(IsBarrelSelectedPrefilter, isBarrelSelectedPrefilter, int);
-DECLARE_SOA_COLUMN(IsPrefilterVetoed, isPrefilterVetoed, int);
-} // namespace dqanalysisflags
-
-DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);
-DECLARE_SOA_TABLE(MixingHashes, "AOD", "DQANAMIXHASH", dqanalysisflags::MixingHash);
-DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "DQANATRKCUTS", dqanalysisflags::IsBarrelSelected, dqanalysisflags::IsBarrelSelectedPrefilter);
-DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);
-DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsPrefilterVetoed);
-} // namespace o2::aod
+static constexpr int nBinsPt = 14;
+constexpr float binsPt[nBinsPt + 1] = {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 10.0f, 12.0f, 16.0f, 24.0f, 36.0f, 1000.0f};
+constexpr float bdtCuts[nBinsPt][3] = {{1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}, {1., 0., 0.}};
+static const std::vector<std::string> labelsPt{};
+static const std::vector<std::string> labelsCutsBdt = {"BDT background", "BDT prompt", "BDT nonprompt"};
+} // namespace bdtcuts
 
 // Declarations of various short names
-using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
-using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts>;
-using MyEventsHashSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes>;
-using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
-using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
-using MyEventsVtxCovSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector>;
-using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
-using MyEventsHashSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes, aod::ReducedEventsQvector>;
+using MyRedEvents = aod::RedJpDmColls;
+using MyRedPairCandidatesSelected = aod::RedJpDmDileptons;
+using MyRedD0CandidatesSelected = soa::Join<aod::RedJpDmDmesons, aod::RedJpDmD0Masss, aod::RedJpDmDmesBdts>;
 
-using MyBarrelTracks = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID>;
-using MyBarrelTracksWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID>;
-using MyBarrelTracksSelected = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts>;
-using MyBarrelTracksSelectedWithPrefilter = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts, aod::Prefilter>;
-using MyBarrelTracksSelectedWithCov = soa::Join<aod::ReducedTracks, aod::ReducedTracksBarrel, aod::ReducedTracksBarrelCov, aod::ReducedTracksBarrelPID, aod::BarrelTrackCuts>;
-using MyPairCandidatesSelected = soa::Join<aod::Dileptons, aod::DileptonsExtra>;
-using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra>;
-using MyMuonTracksSelected = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::MuonTrackCuts>;
-using MyMuonTracksWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov>;
-using MyMuonTracksSelectedWithCov = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra, aod::ReducedMuonsCov, aod::MuonTrackCuts>;
-using MyD0CandidatesSelected = soa::Join<aod::HfCand2Prong, aod::HfSelD0>;
-
-// bit maps used for the Fill functions of the VarManager
-constexpr static uint32_t gkEventFillMapWithCov = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov;
-
-// Global function used to define needed histogram classes
-void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar); // defines histograms for all tasks
-
-struct taskJpsiHf {
+struct taskJPsiHf {
   //
-  // This task combines dilepton candidates with a heavy flavors and could be used for example
+  // This task combines dilepton candidates with a open charm hadron
   //
 
-  OutputObj<THashList> fOutputList{"output"};
-  // TODO: For now this is only used to determine the position in the filter bit map for the hadron cut
-  Configurable<string> fConfigTrackCuts{"cfgLeptonCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
-  // comment: add list of subgroups (must define subgroups under )
-  Configurable<std::string> fConfigAddDileptonHadHistogram{"cfgAddDileptonHadHistogram", "", "Comma separated list of histograms"};
+  // Produce derived tables
+  Produces<RedDleptDmesAll> redDileptDimesAll;
 
-  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
-  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
-  Configurable<int> selectionFlagHf{"selectionFlagHf", 1, "Selection Flag for HF flagged candidates"};
-  Configurable<int> selectionTopol{"selectionTopol", 1, "Selection Flag for topologically selected candidates"};
-  Configurable<int> selectionCand{"selectionCand", 1, "Selection Flag for conj. topol. selected candidates"};
-  Configurable<int> selectionPid{"selectionPid", 1, "Selection Flag for reco PID candidates"};
-  Configurable<bool> configDebug{"configDebug", false, "If true, fill D0 - J/psi histograms separately"};
+  // HF configurables
+  Configurable<float> massHfCandMin{"massHfCandMin", 1.5f, "minimum HF mass"};
+  Configurable<float> massHfCandMax{"massHfCandMax", 2.1f, "maximum HF mass"};
+  Configurable<std::vector<float>> binsPtDmesForBdt{"binsPtDmesForBdt", std::vector<float>{bdtcuts::binsPt, bdtcuts::binsPt + bdtcuts::nBinsPt + 1}, "pT bin limits for BDT cuts"};
+  Configurable<LabeledArray<float>> cutsDmesBdt{"cutsDmesBdt", {bdtcuts::bdtCuts[0], bdtcuts::nBinsPt, 3, bdtcuts::labelsPt, bdtcuts::labelsCutsBdt}, "D-meson BDT selections per pT bin"};
 
-  Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
-  Filter dileptonFilter = aod::reducedpair::mass > 2.5f && aod::reducedpair::mass < 3.5f && aod::reducedpair::sign == 0;
-  Filter dmesonFilter = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar > selectionFlagD0bar;
+  // DQ configurables
+  Configurable<float> massDileptonCandMin{"massDileptonCandMin", 1.f, "minimum dilepton mass"};
+  Configurable<float> massDileptonCandMax{"massDileptonCandMax", 5.f, "maximum dilepton mass"};
 
-  constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
-  constexpr static uint32_t fgDmesonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair;   // fill map
-
-  Preslice<MyD0CandidatesSelected> perCollision = aod::track::collisionId;
-
-  // use two values array to avoid mixing up the quantities
-  float* fValuesDilepton;
-  float* fValuesHadron;
-  float* fValuesDmeson;
-  HistogramManager* fHistMan;
-
-  // NOTE: the barrel track filter is shared between the filters for dilepton electron candidates (first n-bits)
-  //       and the associated hadrons (n+1 bit) --> see the barrel track selection task
-  //      The current condition should be replaced when bitwise operators will become available in Filter expressions
-
-  int fNHadronCutBit;
+  // histogram for normalisation
+  std::shared_ptr<TH1> hCollisions;
+  HistogramRegistry registry{"registry"};
 
   void init(o2::framework::InitContext& context)
   {
-    fValuesDilepton = new float[VarManager::kNVars];
-    fValuesHadron = new float[VarManager::kNVars];
-    fValuesDmeson = new float[VarManager::kNVars];
-    VarManager::SetDefaultVarNames();
-    fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
-    fHistMan->SetUseDefaultVariableNames(kTRUE);
-    fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
-
-    // TODO: Create separate histogram directories for each selection used in the creation of the dileptons
-    // TODO: Implement possibly multiple selections for the associated track ?
-    if (context.mOptions.get<bool>("processSkimmedJpsiD0")) {
-      DefineHistograms(fHistMan, "DimuonsSelected;DmesonsSelected;DileptonHadronInvMass", fConfigAddDileptonHadHistogram); // define all histograms
-      VarManager::SetUseVars(fHistMan->GetUsedVars());
-      fOutputList.setObject(fHistMan->GetMainHistogramList());
-    }
-
-    TString configCutNamesStr = fConfigTrackCuts.value;
-    if (!configCutNamesStr.IsNull()) {
-      std::unique_ptr<TObjArray> objArray(configCutNamesStr.Tokenize(","));
-      fNHadronCutBit = objArray->GetEntries() - 1;
-    } else {
-      fNHadronCutBit = 0;
-    }
+    hCollisions = registry.add<TH1>("hCollisions", ";;entries", HistType::kTH1F, {{2, -0.5, 1.5}});
+    hCollisions->GetXaxis()->SetBinLabel(1, "all collisions");
+    hCollisions->GetXaxis()->SetBinLabel(2, "collisions with pairs");
   }
 
   // Template function to run pair - hadron combinations
-  template <uint32_t TEventFillMap, typename TEvent, typename TDqTrack, typename THfTrack>
+  // TODO: generalise to all charm-hadron species
+  template <typename TEvent, typename TDqTrack, typename THfTrack>
   void runDileptonDmeson(TEvent const& event, TDqTrack const& dileptons, THfTrack const& dmesons)
   {
-    VarManager::ResetValues(0, VarManager::kNVars, fValuesDilepton);
-    VarManager::ResetValues(0, VarManager::kNVars, fValuesDmeson);
-    VarManager::FillEvent<TEventFillMap>(event, fValuesDilepton);
-    VarManager::FillEvent<TEventFillMap>(event, fValuesDmeson);
+    float ptDilepton = -999;
+    float ptDmeson = -999;
+    float rapDilepton = -999;
+    float rapDmeson = -999;
+    float phiDilepton = -999;
+    float phiDmeson = -999;
+    float deltaRap = -999;
+    float deltaPhi = -999;
 
-    // std::cout << "---> Event global index: " << event.globalIndex() << std::endl;
+    for (auto& dilepton : dileptons) {
+      ptDilepton = RecoDecay::pt(dilepton.px(), dilepton.py());
+      rapDilepton = RecoDecay::y(std::array{dilepton.px(), dilepton.py(), dilepton.pz()}, dilepton.mass());
+      phiDilepton = RecoDecay::phi(dilepton.px(), dilepton.py());
 
-    // loop over D mesons
-    for (auto& dmeson : dmesons) {
-      // std::cout << "------> D meson collision index: " << dmeson.collisionId() << std::endl;
-      if (!(dmeson.hfflag() & 1 << DecayType::D0ToPiK)) {
-        continue;
-      }
-      if (yCandMax >= 0. && std::abs(yD0(dmeson)) > yCandMax) {
-        continue;
-      }
-
-      if (dmeson.isSelD0() >= selectionFlagD0) {
-        VarManager::FillHadron(dmeson, fValuesDmeson, invMassD0ToPiK(dmeson));
-        fHistMan->FillHistClass("DmesonsSelected", fValuesDmeson);
-      }
-
-      if (dmeson.isSelD0bar() >= selectionFlagD0bar) {
-        VarManager::FillHadron(dmeson, fValuesDmeson, invMassD0barToKPi(dmeson));
-        fHistMan->FillHistClass("DmesonsSelected", fValuesDmeson);
-      }
-    }
-
-    // loop over dileptons
-    for (auto dilepton : dileptons) {
-      // std::cout << "------> Dilepton collision index: " << dilepton.reducedeventId() << std::endl;
-      // Check that the dilepton has zero charge
-      if (dilepton.sign() != 0) {
-        continue;
-      }
-
-      VarManager::FillTrack<fgDileptonFillMap>(dilepton, fValuesDilepton);
-      fHistMan->FillHistClass("DimuonsSelected", fValuesDilepton);
-
-      // loop over D mesons
       for (auto& dmeson : dmesons) {
-        if (dmeson.isSelD0() >= selectionFlagD0) {
-          VarManager::FillDileptonHadron(dilepton, dmeson, fValuesDmeson, invMassD0ToPiK(dmeson));
-          fHistMan->FillHistClass("DileptonHadronInvMass", fValuesDmeson);
+        ptDmeson = RecoDecay::pt(dmeson.px(), dmeson.py());
+        phiDmeson = RecoDecay::phi(dmeson.px(), dmeson.py());
+        deltaPhi = RecoDecay::constrainAngle(phiDilepton - phiDmeson, -o2::constants::math::PIHalf);
+
+        auto ptBinDmesForBdt = findBin(binsPtDmesForBdt, ptDmeson);
+        if (ptBinDmesForBdt == -1) {
+          continue;
         }
-        if (dmeson.isSelD0bar() >= selectionFlagD0bar) {
-          VarManager::FillDileptonHadron(dilepton, dmeson, fValuesDmeson, invMassD0barToKPi(dmeson));
-          fHistMan->FillHistClass("DileptonHadronInvMass", fValuesDmeson);
+
+        if (dmeson.massD0() > 0) {
+          rapDmeson = RecoDecay::y(std::array{dmeson.px(), dmeson.py(), dmeson.pz()}, dmeson.massD0());
+          deltaRap = rapDilepton - rapDmeson;
+          auto bdtBkg = dmeson.bdtBkgMassHypo0();
+          auto bdtPrompt = dmeson.bdtPromptMassHypo0();
+          auto bdtNonPrompt = dmeson.bdtNonpromptMassHypo0();
+          if ((dilepton.mass() > massDileptonCandMin && dilepton.mass() < massDileptonCandMax) && (dmeson.massD0() > massHfCandMin && dmeson.massD0() < massHfCandMax && bdtBkg < cutsDmesBdt->get(ptBinDmesForBdt, "BDT background") && bdtPrompt > cutsDmesBdt->get(ptBinDmesForBdt, "BDT prompt") && bdtNonPrompt > cutsDmesBdt->get(ptBinDmesForBdt, "BDT nonprompt"))) {
+            redDileptDimesAll(dilepton.mass(), dmeson.massD0(), ptDilepton, ptDmeson, rapDilepton, rapDmeson, phiDilepton, phiDmeson, deltaRap, deltaPhi, bdtBkg, bdtPrompt, bdtNonPrompt);
+          }
+        }
+        if (dmeson.massD0bar() > 0) {
+          rapDmeson = RecoDecay::y(std::array{dmeson.px(), dmeson.py(), dmeson.pz()}, dmeson.massD0bar());
+          deltaRap = rapDilepton - rapDmeson;
+          auto bdtBkg = dmeson.bdtBkgMassHypo1();
+          auto bdtPrompt = dmeson.bdtPromptMassHypo1();
+          auto bdtNonPrompt = dmeson.bdtNonpromptMassHypo1();
+          if ((dilepton.mass() > massDileptonCandMin && dilepton.mass() < massDileptonCandMax) && (dmeson.massD0() > massHfCandMin && dmeson.massD0() < massHfCandMax && bdtBkg < cutsDmesBdt->get(ptBinDmesForBdt, "BDT background") && bdtPrompt > cutsDmesBdt->get(ptBinDmesForBdt, "BDT prompt") && bdtNonPrompt > cutsDmesBdt->get(ptBinDmesForBdt, "BDT nonprompt"))) {
+            redDileptDimesAll(dilepton.mass(), dmeson.massD0bar(), ptDilepton, ptDmeson, rapDilepton, rapDmeson, phiDilepton, phiDmeson, deltaRap, deltaPhi, bdtBkg, bdtPrompt, bdtNonPrompt);
+          }
         }
       }
     }
   }
 
-  void processSkimmedJpsiD0(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyPairCandidatesSelected> const& dileptons, soa::Filtered<MyD0CandidatesSelected> const& dmesons)
+  void processRedJspiD0(MyRedEvents::iterator const& event, MyRedPairCandidatesSelected const& dileptons, MyRedD0CandidatesSelected const& dmesons)
   {
-    if (configDebug) {
-      auto groupedDmesonCandidates = dmesons.sliceBy(perCollision, event.globalIndex());
-      runDileptonDmeson<gkEventFillMapWithCov>(event, dileptons, groupedDmesonCandidates);
-    }
-    if (dileptons.size() > 0 && !configDebug) {
-      auto groupedDmesonCandidates = dmesons.sliceBy(perCollision, event.globalIndex());
-      runDileptonDmeson<gkEventFillMapWithCov>(event, dileptons, groupedDmesonCandidates);
-    }
-  }
-  void processDummy(MyEvents&)
-  {
-    // do nothing
+    // Fill the column of collisions with pairs
+    hCollisions->Fill(1.f);
+    runDileptonDmeson(event, dileptons, dmesons);
   }
 
-  PROCESS_SWITCH(taskJpsiHf, processSkimmedJpsiD0, "Run dilepton-D meson pairing, using skimmed data", false);
-  PROCESS_SWITCH(taskJpsiHf, processDummy, "Dummy function", false);
+  void processNormCounter(RedJpDmColCounts const& normCounters)
+  {
+    // Fill the column with all collisions
+    for (const auto& normCounter : normCounters) {
+      hCollisions->Fill(0.f, static_cast<float>(normCounter.numColls()));
+    }
+  }
+
+  PROCESS_SWITCH(taskJPsiHf, processRedJspiD0, "Process J/psi - D0", true);
+  PROCESS_SWITCH(taskJPsiHf, processNormCounter, "Process normalization counter", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<taskJpsiHf>(cfgc)};
-}
-
-void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurable<std::string> configVar)
-{
-  //
-  // Define here the histograms for all the classes required in analysis.
-  //  The histogram classes are provided in the histClasses string, separated by semicolon ";"
-  //  The histogram classes and their components histograms are defined below depending on the name of the histogram class
-  //
-  std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
-  for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
-    TString classStr = objArray->At(iclass)->GetName();
-    histMan->AddHistClass(classStr.Data());
-
-    TString histName = configVar.value;
-    // NOTE: The level of detail for histogramming can be controlled via configurables
-
-    if (classStr.Contains("DimuonsSelected")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "pair", "dimuon");
-    }
-
-    if (classStr.Contains("DmesonsSelected")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "dmeson");
-    }
-
-    if (classStr.Contains("DileptonHadronInvMass")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-hadron-mass");
-    }
-  } // end loop over histogram classes
+  return WorkflowSpec{adaptAnalysisTask<taskJPsiHf>(cfgc)};
 }

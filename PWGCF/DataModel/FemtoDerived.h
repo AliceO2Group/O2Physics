@@ -27,11 +27,26 @@ namespace o2::aod
 /// FemtoDreamCollision
 namespace femtodreamcollision
 {
+// Define different methods for the event mixing
+enum CollisionBinning {
+  kMult,               //! Bin collision in number of charged tracks for mixing
+  kMultPercentile,     //! Bin collision in multiplicity percentile for mixing
+  kMultMultPercentile, //! Bin collision in number of charged tracks and multiplicity percentile for mixing
+  kNCollisionBinning
+};
+
 DECLARE_SOA_COLUMN(MultV0M, multV0M, float);       //! V0M multiplicity
 DECLARE_SOA_COLUMN(MultNtr, multNtr, int);         //! multiplicity of charged tracks as defined in the producer
 DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
 DECLARE_SOA_COLUMN(MagField, magField, float);     //! Magnetic field of the event
 
+using BitMaskType = uint32_t; //! Definition of the data type for the collision masks
+
+DECLARE_SOA_COLUMN(BitMaskTrackOne, bitmaskTrackOne, BitMaskType);     //! Bit for track one
+DECLARE_SOA_COLUMN(BitMaskTrackTwo, bitmaskTrackTwo, BitMaskType);     //! Bit for track two
+DECLARE_SOA_COLUMN(BitMaskTrackThree, bitmaskTrackThree, BitMaskType); //! Bit for track three
+
+DECLARE_SOA_COLUMN(Downsample, downsample, bool); //! Flag for downsampling
 } // namespace femtodreamcollision
 
 DECLARE_SOA_TABLE(FDCollisions, "AOD", "FDCOLLISION",
@@ -42,6 +57,14 @@ DECLARE_SOA_TABLE(FDCollisions, "AOD", "FDCOLLISION",
                   femtodreamcollision::Sphericity,
                   femtodreamcollision::MagField);
 using FDCollision = FDCollisions::iterator;
+
+DECLARE_SOA_TABLE(FDColMasks, "AOD", "FDCOLMASK",
+                  femtodreamcollision::BitMaskTrackOne,
+                  femtodreamcollision::BitMaskTrackTwo,
+                  femtodreamcollision::BitMaskTrackThree);
+
+DECLARE_SOA_TABLE(FDDownSample, "AOD", "FDDOWNSAMPLE",
+                  femtodreamcollision::Downsample);
 
 /// FemtoDreamTrack
 namespace femtodreamparticle
@@ -54,6 +77,12 @@ enum ParticleType {
   kCascade,         //! Cascade
   kCascadeBachelor, //! Bachelor track of a cascade
   kNParticleTypes   //! Number of particle types
+};
+
+enum MomentumType {
+  kPt,    //! transverse momentum
+  kPreco, //! reconstructed/propagated momentum at the vertex
+  kPtpc   //! momentum at the inner wall of the TPC (useful for PID plots)
 };
 
 static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeBachelor"}; //! Naming of the different particle types
@@ -112,14 +141,24 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFind
                            [](uint8_t tpcNClsFindable, uint8_t tpcNClsCrossedRows) -> float {
                              return (float)tpcNClsCrossedRows / (float)tpcNClsFindable;
                            });
+DECLARE_SOA_COLUMN(TPCNSigmaEl, tpcNSigmaEl, float); //! Nsigma separation with the TPC detector for electron
+DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float); //! Nsigma separation with the TPC detector for pion
+DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float); //! Nsigma separation with the TPC detector for kaon
+DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float); //! Nsigma separation with the TPC detector for proton
+DECLARE_SOA_COLUMN(TPCNSigmaDe, tpcNSigmaDe, float); //! Nsigma separation with the TPC detector for deuteron
+DECLARE_SOA_COLUMN(TOFNSigmaEl, tofNSigmaEl, float); //! Nsigma separation with the TPC detector for electron
+DECLARE_SOA_COLUMN(TOFNSigmaPi, tofNSigmaPi, float); //! Nsigma separation with the TPC detector for pion
+DECLARE_SOA_COLUMN(TOFNSigmaKa, tofNSigmaKa, float); //! Nsigma separation with the TPC detector for kaon
+DECLARE_SOA_COLUMN(TOFNSigmaPr, tofNSigmaPr, float); //! Nsigma separation with the TPC detector for proton
+DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float); //! Nsigma separation with the TPC detector for deuteron
 DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);       //! DCA between daughters
 DECLARE_SOA_COLUMN(TransRadius, transRadius, float); //! Transverse radius of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);     //! X position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);     //! Y position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! Z position of the decay vertex
 DECLARE_SOA_COLUMN(MKaon, mKaon, float);             //! The invariant mass of V0 candidate, assuming kaon
-
 } // namespace femtodreamparticle
+
 DECLARE_SOA_TABLE(FDParticles, "AOD", "FDPARTICLE",
                   o2::soa::Index<>,
                   femtodreamparticle::FDCollisionId,
@@ -152,33 +191,23 @@ DECLARE_SOA_TABLE(FDExtParticles, "AOD", "FDEXTPARTICLE",
                   track::DcaXY,
                   track::DcaZ,
                   track::TPCSignal,
-                  pidtpc_tiny::TPCNSigmaStoreEl,
-                  pidtpc_tiny::TPCNSigmaStorePi,
-                  pidtpc_tiny::TPCNSigmaStoreKa,
-                  pidtpc_tiny::TPCNSigmaStorePr,
-                  pidtpc_tiny::TPCNSigmaStoreDe,
-                  pidtof_tiny::TOFNSigmaStoreEl,
-                  pidtof_tiny::TOFNSigmaStorePi,
-                  pidtof_tiny::TOFNSigmaStoreKa,
-                  pidtof_tiny::TOFNSigmaStorePr,
-                  pidtof_tiny::TOFNSigmaStoreDe,
+                  femtodreamparticle::TPCNSigmaEl,
+                  femtodreamparticle::TPCNSigmaPi,
+                  femtodreamparticle::TPCNSigmaKa,
+                  femtodreamparticle::TPCNSigmaPr,
+                  femtodreamparticle::TPCNSigmaDe,
+                  femtodreamparticle::TOFNSigmaEl,
+                  femtodreamparticle::TOFNSigmaPi,
+                  femtodreamparticle::TOFNSigmaKa,
+                  femtodreamparticle::TOFNSigmaPr,
+                  femtodreamparticle::TOFNSigmaDe,
                   femtodreamparticle::DaughDCA,
                   femtodreamparticle::TransRadius,
                   femtodreamparticle::DecayVtxX,
                   femtodreamparticle::DecayVtxY,
                   femtodreamparticle::DecayVtxZ,
                   femtodreamparticle::MKaon,
-                  femtodreamparticle::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, femtodreamparticle::TPCNClsCrossedRows>,
-                  pidtpc_tiny::TPCNSigmaEl<pidtpc_tiny::TPCNSigmaStoreEl>,
-                  pidtpc_tiny::TPCNSigmaPi<pidtpc_tiny::TPCNSigmaStorePi>,
-                  pidtpc_tiny::TPCNSigmaKa<pidtpc_tiny::TPCNSigmaStoreKa>,
-                  pidtpc_tiny::TPCNSigmaPr<pidtpc_tiny::TPCNSigmaStorePr>,
-                  pidtpc_tiny::TPCNSigmaDe<pidtpc_tiny::TPCNSigmaStoreDe>,
-                  pidtof_tiny::TOFNSigmaEl<pidtof_tiny::TOFNSigmaStoreEl>,
-                  pidtof_tiny::TOFNSigmaPi<pidtof_tiny::TOFNSigmaStorePi>,
-                  pidtof_tiny::TOFNSigmaKa<pidtof_tiny::TOFNSigmaStoreKa>,
-                  pidtof_tiny::TOFNSigmaPr<pidtof_tiny::TOFNSigmaStorePr>,
-                  pidtof_tiny::TOFNSigmaDe<pidtof_tiny::TOFNSigmaStoreDe>);
+                  femtodreamparticle::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, femtodreamparticle::TPCNClsCrossedRows>)
 using FDFullParticle = FDExtParticles::iterator;
 
 /// FemtoDreamTrackMC
@@ -186,25 +215,25 @@ namespace femtodreamMCparticle
 {
 /// Distinuishes the different particle origins
 enum ParticleOriginMCTruth {
-  kPrimary,           //! Primary track or V0
-  kDaughter,          //! Particle from a decay
-  kMaterial,          //! Particle from a material
-  kNotPrimary,        //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
-  kFake,              //! particle, that has NOT the PDG code of the current analysed particle
-  kDaughterLambda,    //! Daughter from a Lambda decay
-  kDaughterSigmaplus, //! Daughter from a Sigma^plus decay
+  kPrimary,                    //! Primary track or V0
+  kSecondary,                  //! Particle from a decay
+  kMaterial,                   //! Particle from a material
+  kNotPrimary,                 //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
+  kFake,                       //! particle, that has NOT the PDG code of the current analysed particle
+  kSecondaryDaughterLambda,    //! Daughter from a Lambda decay
+  kSecondaryDaughterSigmaplus, //! Daughter from a Sigma^plus decay
   kNOriginMCTruthTypes
 };
 
 //! Naming of the different OriginMCTruth types
 static constexpr std::string_view ParticleOriginMCTruthName[kNOriginMCTruthTypes] = {
   "_Primary",
-  "_Daughter",
+  "_Secondary",
   "_Material",
   "_NotPrimary",
   "_Fake",
-  "_DaughterLambda",
-  "DaughterSigmaPlus"};
+  "_SecondaryDaughterLambda",
+  "_SecondaryDaughterSigmaPlus"};
 
 /// Distinguished between reconstructed and truth
 enum MCType {

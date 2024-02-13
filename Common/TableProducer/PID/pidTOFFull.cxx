@@ -55,12 +55,15 @@ struct tofPidFull {
   // Detector response parameters
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> paramFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
-  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> parametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
-  Configurable<std::string> passName{"passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
+  Configurable<bool> inheritFromBaseTask{"inheritFromBaseTask", true, "Flag to iherit all common configurables from the TOF base task"};
+  // CCDB configuration (inherited from TOF base task)
+  Configurable<std::string> url{"ccdb-url", "", "url of the ccdb repository"};
   Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
-
+  // TOF Calib configuration (inherited from TOF base task)
+  Configurable<std::string> paramFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
+  Configurable<std::string> parametrizationPath{"parametrizationPath", "", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
+  Configurable<std::string> passName{"passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
+  Configurable<std::string> timeShiftCCDBPath{"timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"};
   Configurable<bool> loadResponseFromCCDB{"loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
   Configurable<bool> enableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
   Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
@@ -74,6 +77,35 @@ struct tofPidFull {
   int mLastCollisionId = -1;          // Last collision ID analysed
   void init(o2::framework::InitContext& initContext)
   {
+    if (inheritFromBaseTask.value) { // Inheriting from base task
+      if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-url", url.value, true)) {
+        LOG(fatal) << "Could not get ccdb-url from tof-signal task";
+      }
+      if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-timestamp", timestamp.value, true)) {
+        LOG(fatal) << "Could not get ccdb-timestamp from tof-signal task";
+      }
+      if (!getTaskOptionValue(initContext, "tof-event-time", "paramFileName", paramFileName.value, true)) {
+        LOG(fatal) << "Could not get paramFileName from tof-event-time task";
+      }
+      if (!getTaskOptionValue(initContext, "tof-event-time", "parametrizationPath", parametrizationPath.value, true)) {
+        LOG(fatal) << "Could not get parametrizationPath from tof-event-time task";
+      }
+      if (!getTaskOptionValue(initContext, "tof-event-time", "passName", passName.value, true)) {
+        LOG(fatal) << "Could not get passName from tof-event-time task";
+      }
+      if (!getTaskOptionValue(initContext, "tof-signal", "timeShiftCCDBPath", timeShiftCCDBPath.value, true)) {
+        LOG(fatal) << "Could not get timeShiftCCDBPath from tof-signal task";
+      }
+      if (!getTaskOptionValue(initContext, "tof-event-time", "loadResponseFromCCDB", loadResponseFromCCDB.value, true)) {
+        LOG(fatal) << "Could not get loadResponseFromCCDB from tof-event-time task";
+      }
+      if (!getTaskOptionValue(initContext, "tof-event-time", "enableTimeDependentResponse", enableTimeDependentResponse.value, true)) {
+        LOG(fatal) << "Could not get enableTimeDependentResponse from tof-event-time task";
+      }
+      if (!getTaskOptionValue(initContext, "tof-event-time", "fatalOnPassNotAvailable", fatalOnPassNotAvailable.value, true)) {
+        LOG(fatal) << "Could not get fatalOnPassNotAvailable from tof-event-time task";
+      }
+    }
     if (doprocessWSlice == true && doprocessWoSlice == true) {
       LOGF(fatal, "Cannot enable processWoSlice and processWSlice at the same time. Please choose one.");
     }
@@ -135,18 +167,27 @@ struct tofPidFull {
       LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << timestamp.value;
       o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value);
       paramCollection->print();
-      if (!paramCollection->retrieveParameters(mRespParamsV2, passName.value)) {
+      if (!paramCollection->retrieveParameters(mRespParamsV2, passName.value)) { // Attempt at loading the parameters with the pass defined
         if (fatalOnPassNotAvailable) {
           LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
         } else {
           LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
         }
-      } else {
+      } else { // Pass is available, load non standard parameters
         mRespParamsV2.setShiftParameters(paramCollection->getPars(passName.value));
         mRespParamsV2.printShiftParameters();
       }
     }
     mRespParamsV2.print();
+    if (timeShiftCCDBPath.value != "") {
+      if (timeShiftCCDBPath.value.find(".root") != std::string::npos) {
+        mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Pos", true);
+        mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Neg", false);
+      } else {
+        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/pos", timeShiftCCDBPath.value.c_str()), timestamp.value), true);
+        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/neg", timeShiftCCDBPath.value.c_str()), timestamp.value), false);
+      }
+    }
   }
 
   // Reserves an empty table for the given particle ID with size of the given track table
@@ -244,8 +285,8 @@ struct tofPidFull {
       reserveTable(pidId, tracks.size());
     }
 
-    int lastCollisionId = -1; // Last collision ID analysed
-    float resolution = 1.f;
+    int lastCollisionId = -1;          // Last collision ID analysed
+    float resolution = 1.f;            // Last resolution assigned
     for (auto const& track : tracks) { // Loop on all tracks
       if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
         for (auto const& pidId : mEnabledParticles) {
@@ -349,7 +390,7 @@ struct tofPidFull {
     for (auto const& pidId : mEnabledParticles) {
       reserveTable(pidId, tracks.size());
     }
-    float resolution = 1.f;
+    float resolution = 1.f;            // Last resolution assigned
     for (auto const& track : tracks) { // Loop on all tracks
       if (!track.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
         for (auto const& pidId : mEnabledParticles) {

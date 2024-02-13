@@ -265,7 +265,7 @@ struct femtoWorldProducerTaskV0Only {
           outputParts(outputCollision.lastIndex(), v0.negativept(), v0.negativeeta(), v0.negativephi(), aod::femtoworldparticle::ParticleType::kV0Child, cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegCuts), cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kNegPID), 0., childIDs, 0, 0);
           const int rowOfNegTrack = outputParts.lastIndex();
           int indexChildID[2] = {rowOfPosTrack, rowOfNegTrack};
-          outputParts(outputCollision.lastIndex(), v0.pt(), v0.eta(), v0.phi(), aod::femtoworldparticle::ParticleType::kV0, cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0), 0, v0.v0cosPA(col.posX(), col.posY(), col.posZ()), indexChildID, v0.mLambda(), v0.mAntiLambda());
+          outputParts(outputCollision.lastIndex(), v0.pt(), v0.eta(), v0.phi(), aod::femtoworldparticle::ParticleType::kV0, cutContainerV0.at(femtoWorldV0Selection::V0ContainerPosition::kV0), 0, v0.v0cosPA(), indexChildID, v0.mLambda(), v0.mAntiLambda());
           if (ConfDebugOutput) {
             outputDebugParts(postrack.sign(),
                              (uint8_t)postrack.tpcNClsFound(),

@@ -28,7 +28,7 @@ using namespace o2::framework::expressions;
 using namespace o2::track;
 
 /// Task to produce the TOF QA plots
-struct pidTOFTaskQAMC {
+struct pidTofQaMc {
   SliceCache cache;
 
   static constexpr int Np = 9;
@@ -206,16 +206,16 @@ struct pidTOFTaskQAMC {
   Configurable<int> doHe{"doHe", 0, "Process helium3"};
   Configurable<int> doAl{"doAl", 0, "Process alpha"};
   ConfigurableAxis binsPt{"binsPt", {2000, 0.f, 20.f}, "Binning of the pT axis"};
-  ConfigurableAxis binsNsigma{"binsNsigma", {2000, -30.f, 30.f}, "Binning of the NSigma axis"};
+  ConfigurableAxis binsNsigma{"binsNsigma", {2000, -50.f, 50.f}, "Binning of the NSigma axis"};
   ConfigurableAxis binsSignal{"binsSignal", {6000, 0, 2000}, "Binning of the TPC signal axis"};
   ConfigurableAxis binsLength{"binsLength", {1000, 0, 3000}, "Binning of the Length axis"};
   ConfigurableAxis binsEta{"binsEta", {100, -4, 4}, "Binning of the Eta axis"};
   Configurable<float> minEta{"minEta", -0.8, "Minimum eta in range"};
   Configurable<float> maxEta{"maxEta", 0.8, "Maximum eta in range"};
   Configurable<int> nMinNumberOfContributors{"nMinNumberOfContributors", 2, "Minimum required number of contributors to the vertex"};
-  Configurable<int> logAxis{"logAxis", 1, "Flag to use a logarithmic pT axis, in this case the pT limits are the expontents"};
+  Configurable<int> logAxis{"logAxis", 0, "Flag to use a logarithmic pT axis, in this case the pT limits are the expontents"}; // TODO: support log axis
 
-  template <uint8_t mcID, uint8_t massID>
+  template <uint8_t mcID>
   void addParticleHistos(const AxisSpec& ptAxis, const AxisSpec& pAxis, const AxisSpec& signalAxis)
   {
     switch (mcID) {
@@ -270,7 +270,7 @@ struct pidTOFTaskQAMC {
 
     const AxisSpec lengthAxis{binsLength, "Track length (cm)"};
     const AxisSpec etaAxis{binsEta, "#it{#eta}"};
-    const AxisSpec nSigmaAxis{binsNsigma, Form("N_{#sigma}^{TOF}(%s)", pT[massID])};
+    const AxisSpec nSigmaAxis{binsNsigma, Form("N_{#sigma}^{TOF}(%s)", pT[mcID])};
 
     // Particle info
     histos.add(hparticlept[mcID].data(), "", kTH1F, {pAxis});
@@ -285,20 +285,82 @@ struct pidTOFTaskQAMC {
 
     // NSigma
     histos.add(hnsigma[mcID].data(), pT[mcID], HistType::kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmaMC[mcID * Np + massID].data(), Form("True %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+    histos.add(hsignalMC[mcID].data(), pT[mcID], HistType::kTH2F, {pAxis, signalAxis});
+
     if (!checkPrimaries) {
       return;
     }
+
     histos.add(hnsigmaprm[mcID].data(), Form("Primary %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
     histos.add(hnsigmastr[mcID].data(), Form("Secondary %s from decay", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
     histos.add(hnsigmamat[mcID].data(), Form("Secondary %s from material", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmaMCprm[mcID * Np + massID].data(), Form("True Primary %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmaMCstr[mcID * Np + massID].data(), Form("True Secondary %s from decay", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
-    histos.add(hnsigmaMCmat[mcID * Np + massID].data(), Form("True Secondary %s from material", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
 
     histos.add(hsignalMCprm[mcID].data(), Form("Primary %s", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
     histos.add(hsignalMCstr[mcID].data(), Form("Secondary %s from decay", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
     histos.add(hsignalMCmat[mcID].data(), Form("Secondary %s from material", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
+  }
+
+  template <uint8_t mcID, uint8_t massID>
+  void addParticleMCHistos(const AxisSpec& ptAxis, const AxisSpec& pAxis, const AxisSpec& signalAxis)
+  {
+    switch (mcID) {
+      case 0:
+        if (!doEl) {
+          return;
+        }
+        break;
+      case 1:
+        if (!doMu) {
+          return;
+        }
+        break;
+      case 2:
+        if (!doPi) {
+          return;
+        }
+        break;
+      case 3:
+        if (!doKa) {
+          return;
+        }
+        break;
+      case 4:
+        if (!doPr) {
+          return;
+        }
+        break;
+      case 5:
+        if (!doDe) {
+          return;
+        }
+        break;
+      case 6:
+        if (!doTr) {
+          return;
+        }
+        break;
+      case 7:
+        if (!doHe) {
+          return;
+        }
+        break;
+      case 8:
+        if (!doAl) {
+          return;
+        }
+        break;
+      default:
+        LOG(fatal) << "Can't interpret index";
+    }
+
+    const AxisSpec nSigmaAxis{binsNsigma, Form("N_{#sigma}^{TOF}(%s)", pT[massID])};
+
+    histos.add(hnsigmaMC[mcID * Np + massID].data(), Form("True %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+    if (checkPrimaries) {
+      histos.add(hnsigmaMCprm[mcID * Np + massID].data(), Form("True Primary %s", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+      histos.add(hnsigmaMCstr[mcID * Np + massID].data(), Form("True Secondary %s from decay", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+      histos.add(hnsigmaMCmat[mcID * Np + massID].data(), Form("True Secondary %s from material", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
+    }
   }
 
   void init(o2::framework::InitContext&)
@@ -317,15 +379,21 @@ struct pidTOFTaskQAMC {
 
     static_for<0, 8>([&](auto i) {
       static_for<0, 8>([&](auto j) {
-        addParticleHistos<i, j>(ptAxis, pAxis, betaAxis);
+        addParticleMCHistos<i, j>(ptAxis, pAxis, betaAxis);
       });
+      addParticleHistos<i>(ptAxis, pAxis, betaAxis);
     });
 
     histos.add("event/tofbeta", "All", HistType::kTH2F, {pAxis, betaAxis});
     if (checkPrimaries) {
       histos.add("event/tofbetaPrm", "Primaries", HistType::kTH2F, {pAxis, betaAxis});
-      histos.add("event/tofbetaSec", "Secondaries", HistType::kTH2F, {pAxis, betaAxis});
+      // histos.add("event/tofbetaSec", "Secondaries", HistType::kTH2F, {pAxis, betaAxis});
+      histos.add("event/tofbetaStr", "Secondaries from weak decays", HistType::kTH2F, {pAxis, betaAxis});
+      histos.add("event/tofbetaMat", "Secondaries from material", HistType::kTH2F, {pAxis, betaAxis});
     }
+    // Print output histograms statistics
+    LOG(info) << "Size of the histograms in qaPIDTOFMC";
+    histos.print();
   }
 
   template <uint8_t mcID, typename T>
@@ -408,7 +476,6 @@ struct pidTOFTaskQAMC {
   template <uint8_t mcID, typename T, typename TT>
   void fillTrackInfoForPdg(const T& track, const TT& particle)
   {
-
     switch (mcID) {
       case 0:
         if (!doEl) {
@@ -504,18 +571,105 @@ struct pidTOFTaskQAMC {
 
     // PID info
     histos.fill(HIST(hsignalMC[mcID]), track.p(), track.beta());
-    histos.fill(HIST(hnsigmaMC[mcID]), track.pt(), nsigma);
-    if (!particle.isPhysicalPrimary()) {
-      if (particle.getProcess() == 4) {
-        histos.fill(HIST(hsignalMCstr[mcID]), track.p(), track.beta());
-        histos.fill(HIST(hnsigmaMCstr[mcID]), track.pt(), nsigma);
+    if (checkPrimaries) {
+      if (!particle.isPhysicalPrimary()) {
+        if (particle.getProcess() == 4) {
+          histos.fill(HIST(hsignalMCstr[mcID]), track.p(), track.beta());
+        } else {
+          histos.fill(HIST(hsignalMCmat[mcID]), track.p(), track.beta());
+        }
       } else {
-        histos.fill(HIST(hsignalMCmat[mcID]), track.p(), track.beta());
-        histos.fill(HIST(hnsigmaMCmat[mcID]), track.pt(), nsigma);
+        histos.fill(HIST(hsignalMCprm[mcID]), track.p(), track.beta());
       }
-    } else {
-      histos.fill(HIST(hsignalMCprm[mcID]), track.p(), track.beta());
-      histos.fill(HIST(hnsigmaMCprm[mcID]), track.pt(), nsigma);
+    }
+  }
+
+  template <uint8_t mcID, uint8_t massID, typename T, typename TT>
+  void fillPIDInfoForPdg(const T& track, const TT& particle)
+  {
+    switch (mcID) {
+      case 0:
+        if (!doEl) {
+          return;
+        }
+        break;
+      case 1:
+        if (!doMu) {
+          return;
+        }
+        break;
+      case 2:
+        if (!doPi) {
+          return;
+        }
+        break;
+      case 3:
+        if (!doKa) {
+          return;
+        }
+        break;
+      case 4:
+        if (!doPr) {
+          return;
+        }
+        break;
+      case 5:
+        if (!doDe) {
+          return;
+        }
+        break;
+      case 6:
+        if (!doTr) {
+          return;
+        }
+        break;
+      case 7:
+        if (!doHe) {
+          return;
+        }
+        break;
+      case 8:
+        if (!doAl) {
+          return;
+        }
+        break;
+      default:
+        LOG(fatal) << "Can't interpret index";
+    }
+
+    switch (pdgSign.value) {
+      case 0:
+        if (abs(particle.pdgCode()) != PDGs[mcID]) {
+          return;
+        }
+        break;
+      case 1:
+        if (particle.pdgCode() != PDGs[mcID]) {
+          return;
+        }
+        break;
+      case 2:
+        if (particle.pdgCode() != -PDGs[mcID]) {
+          return;
+        }
+        break;
+      default:
+        LOG(fatal) << "Can't interpret pdgSign";
+    }
+
+    const float nsigmaMassID = o2::aod::pidutils::tofNSigma<massID>(track);
+
+    histos.fill(HIST(hnsigmaMC[mcID * Np + massID]), track.pt(), nsigmaMassID);
+    if (checkPrimaries) {
+      if (!particle.isPhysicalPrimary()) {
+        if (particle.getProcess() == 4) {
+          histos.fill(HIST(hnsigmaMCstr[mcID * Np + massID]), track.pt(), nsigmaMassID);
+        } else {
+          histos.fill(HIST(hnsigmaMCmat[mcID * Np + massID]), track.pt(), nsigmaMassID);
+        }
+      } else {
+        histos.fill(HIST(hnsigmaMCprm[mcID * Np + massID]), track.pt(), nsigmaMassID);
+      }
     }
   }
 
@@ -568,25 +722,31 @@ struct pidTOFTaskQAMC {
 
         const auto& particle = t.mcParticle();
 
-        if (!particle.isPhysicalPrimary()) {
-          if (particle.getProcess() == 4) {
-            histos.fill(HIST("event/tpcsignalStr"), t.tpcInnerParam(), t.tpcSignal());
+        if (checkPrimaries) {
+          if (!particle.isPhysicalPrimary()) {
+            // histos.fill(HIST("event/tofbetaSec"), t.p(), t.beta());
+            if (particle.getProcess() == 4) {
+              histos.fill(HIST("event/tofbetaStr"), t.tpcInnerParam(), t.tpcSignal());
+            } else {
+              histos.fill(HIST("event/tofbetaMat"), t.tpcInnerParam(), t.tpcSignal());
+            }
           } else {
-            histos.fill(HIST("event/tpcsignalMat"), t.tpcInnerParam(), t.tpcSignal());
+            histos.fill(HIST("event/tofbetaPrm"), t.p(), t.beta());
           }
-        } else {
-          histos.fill(HIST("event/tpcsignalPrm"), t.tpcInnerParam(), t.tpcSignal());
         }
 
         // Fill with PDG codes
         static_for<0, 8>([&](auto i) {
+          static_for<0, 8>([&](auto j) {
+            fillPIDInfoForPdg<i, j>(t, particle);
+          });
           fillTrackInfoForPdg<i>(t, particle);
         });
-      }
+      } // track loop
       histos.fill(HIST("event/T0"), nTracksWithTOF, collisionTime_ps);
       histos.fill(HIST("event/vertexz"), collision.posZ());
-    }
-  }
+    } // collision loop
+  }   // process()
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<pidTOFTaskQAMC>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<pidTofQaMc>(cfgc)}; }

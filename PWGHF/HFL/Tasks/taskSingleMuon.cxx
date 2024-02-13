@@ -10,137 +10,68 @@
 // or submit itself to any jurisdiction.
 
 /// \file taskSingleMuon.cxx
-/// \brief Task derived from the DQ framework and used to extract the observables on single muons needed for the HF-muon analysis.
+/// \brief Task used to extract the observables on single muons needed for the HF-muon analysis.
 /// \author Maolin Zhang <maolin.zhang@cern.ch>, CCNU
 
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/AnalysisCut.h"
-#include "PWGDQ/Core/CutsLibrary.h"
-#include "PWGDQ/Core/HistogramManager.h"
-#include "PWGDQ/Core/HistogramsLibrary.h"
-#include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
-namespace dq_analysis_flags
-{
-DECLARE_SOA_COLUMN(IsEventSelected, isEventSelected, int);
-}
-DECLARE_SOA_TABLE(EventCuts, "AOD", "EVENTCUTS", dq_analysis_flags::IsEventSelected);
+namespace ambiguous_mft
+{ // for MA2T
+DECLARE_SOA_INDEX_COLUMN(MFTTrack, track);
+DECLARE_SOA_INDEX_COLUMN(AmbiguousMFTTrack, ambMftTrack);
+} // namespace ambiguous_mft
+
+DECLARE_SOA_INDEX_TABLE_USER(MA2T, MFTTracks, "MA2T", ambiguous_mft::MFTTrackId, ambiguous_mft::AmbiguousMFTTrackId);
 } // namespace o2::aod
 
-using MyCollisions = o2::soa::Join<aod::Collisions, aod::EvSels>;
-using MyMcCollisions = o2::soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
-using MyEventsSelected = o2::soa::Join<aod::Collisions, aod::EvSels, o2::aod::EventCuts>;
-using MyMcEventsSelected = o2::soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, o2::aod::EventCuts>;
-using MyMuons = o2::soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
-using MyMcMuons = o2::soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
+using MyMcMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
+using MFTTracksExtra = soa::Join<aod::MFTTracks, aod::MA2T>; // MFT track + index of ambiguous track
 
-constexpr static uint32_t gMuonFillMap(VarManager::ObjTypes::Muon);
-constexpr static uint32_t gEventFillMap(VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision);
-constexpr static uint32_t gTrackMCFillMap(VarManager::ObjTypes::ParticleMC);
+struct HfTaskSingleMuonSelectionAmbiguousMftIndexBuilder {
+  // build the index table MA2T
+  Builds<aod::MA2T> idx;
 
-/// Defines the histograms for classes required in analysis.
-void defineHistograms(HistogramManager*, TString);
-
-struct HfTaskSingleMuonEventSelection {
-  Produces<aod::EventCuts> eventSel;
-
-  Configurable<bool> applySoftwareTrigger{"applySoftwareTrigger", false, "whether to apply the software trigger"};
-  Configurable<int> softwareTrigger{"softwareTrigger", VarManager::kIsMuonSingleLowPt7, "software trigger flag"};
-  Configurable<bool> applyCutZVtx{"applyCutZVtx", false, "whether to apply the VtxZ cut"};
-  Configurable<float> zVtxMin{"zVtxMin", -10., "min. z of primary vertex [cm]"};
-  Configurable<float> zVtxMax{"zVtxMax", 10., "max. z of primary vertex [cm]"};
-
-  float* values;
-  AnalysisCompositeCut* eventCut;
-  HistogramManager* histMan;
-
-  OutputObj<THashList> outputList{"output"};
-
-  void init(o2::framework::InitContext&)
-  {
-    VarManager::SetDefaultVarNames();
-    values = new float[VarManager::kNVars];
-    eventCut = new AnalysisCompositeCut("event selection", "Event Selection", true);
-
-    AnalysisCut cut;
-    if (applyCutZVtx)
-      cut.AddCut(VarManager::kVtxZ, zVtxMin, zVtxMax, false);
-    if (applySoftwareTrigger)
-      cut.AddCut(softwareTrigger, 0.5, 1.5, false);
-    eventCut->AddCut(&cut);
-
-    histMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
-    histMan->SetUseDefaultVariableNames(kTRUE);
-    histMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
-
-    defineHistograms(histMan, "EventBeforeCuts;EventAfterCuts;");
-    VarManager::SetUseVars(histMan->GetUsedVars());
-    outputList.setObject(histMan->GetMainHistogramList());
-  }
-
-  template <uint32_t TEventFillMap, typename TEvent>
-  void runEventSel(TEvent const& event, aod::BCs const& bcs)
-  {
-    // select events
-    if (event.sel8()) {
-      VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
-      VarManager::FillEvent<TEventFillMap>(event, values);
-      histMan->FillHistClass("EventBeforeCuts", values);
-
-      if (eventCut->IsSelected(values)) {
-        histMan->FillHistClass("EventAfterCuts", values);
-        eventSel(1);
-      } else {
-        eventSel(0);
-      }
-    } else {
-      eventSel(0);
-    }
-  }
-
-  void processEvent(MyCollisions::iterator const& event, aod::BCs const& bcs)
-  {
-    runEventSel<gEventFillMap>(event, bcs);
-  }
-  PROCESS_SWITCH(HfTaskSingleMuonEventSelection, processEvent, "run event selection with real data", true);
-
-  void processEventMc(MyMcCollisions::iterator const& event, aod::BCs const& bcs)
-  {
-    runEventSel<gEventFillMap>(event, bcs);
-  }
-  PROCESS_SWITCH(HfTaskSingleMuonEventSelection, processEventMc, "run event selection with MC data", false);
-
-  void processNoEventSelection(MyCollisions::iterator const& event, aod::BCs const& bcs)
-  {
-    VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
-    VarManager::FillEvent<gEventFillMap>(event, values);
-    eventSel(1);
-  }
-  PROCESS_SWITCH(HfTaskSingleMuonEventSelection, processNoEventSelection, "skip the event selection", false);
+  void init(InitContext const&) {}
+  // Additionnal methods provided:
+  // mfttrack.has_ambMftTrack()
+  // mfttrack.ambMftTrack()
 };
 
-struct HfTaskSingleMuonSelection {
-  Configurable<std::string> muonCuts{"muonCuts", "muonQualityCuts", "muon selection"};
-  Configurable<bool> fillLiteHist{"fillLiteHist", true, "fill lite version muon histograms"};
+struct HfTaskSingleMuon {
+  Configurable<uint8_t> trkType{"trkType", 0, "Muon track type, valid values are 0, 1, 2, 3 and 4"};
+  Configurable<uint8_t> mcMaskSelection{"mcMaskSelection", 0, "McMask for correct match, valid values are 0 and 128"};
+  Configurable<float> etaMin{"etaMin", -3.6, "eta minimum value"};
+  Configurable<float> etaMax{"etaMax", -2.5, "eta maximum value"};
+  Configurable<float> pDcaMin{"pDcaMin", 324., "p*DCA maximum value for small Rabs"};
+  Configurable<float> pDcaMax{"pDcaMax", 594., "p*DCA maximum value for large Rabs"};
+  Configurable<float> rAbsMin{"rAbsMin", 17.6, "R at absorber end minimum value"};
+  Configurable<float> rAbsMax{"rAbsMax", 89.5, "R at absorber end maximum value"};
+  Configurable<float> rAbsMid{"rAbsMid", 26.5, "R at absorber end split point for different p*DCA selections"};
+  Configurable<float> zVtx{"zVtx", 10., "Z edge of primary vertex [cm]"};
   Configurable<bool> fillMcHist{"fillMcHist", false, "fill MC-related muon histograms"};
+  Configurable<bool> reduceAmbMft{"reduceAmbMft", false, "reduce ambiguous MFT tracks"};
+  Configurable<bool> reduceOrphMft{"reduceOrphMft", true, "reduce orphan MFT tracks"};
 
-  float* values;
-  AnalysisCompositeCut* trackCut;
+  Filter posZfilter = nabs(aod::collision::posZ) < zVtx;
+  Filter mcMaskFilter = aod::mcfwdtracklabel::mcMask == mcMaskSelection;
 
   o2::framework::HistogramRegistry registry{
     "registry",
@@ -149,249 +80,187 @@ struct HfTaskSingleMuonSelection {
     true,
     true};
 
-  void init(o2::framework::InitContext&)
+  void init(InitContext&)
   {
-    AxisSpec axispT{200, 0., 200., "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisEta{500, -5., 5., "#eta"};
-    AxisSpec axisDCA{500, 0., 5., "DCA (cm)"};
-    AxisSpec axisSign{5, -2.5, 2.5, "Charge"};
-    AxisSpec axisP{500, 0., 500., "p (GeV/#it{c})"};
-    AxisSpec axisVtxZ{400, -20., 20., "Vertex Z (cm)"};
-
-    AxisSpec axisTrkType{5, -0.5, 4.5, "TrackType"};
-    AxisSpec axisMCmask{200, -0.5, 199.5, "mcMask"};
+    AxisSpec axisPt{200, 0., 200., "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec axisEta{250, -5., 0., "#it{#eta}"};
+    AxisSpec axisDCA{500, 0., 5., "#it{DCA}_{xy} (cm)"};
     AxisSpec axisChi2MatchMCHMFT{100, 0., 100., "MCH-MFT matching #chi^{2}"};
-    // kinematics for MC
-    AxisSpec axispTGen{200, 0., 200., "#it{p}_{T} Truth (GeV/#it{c})"};
-    AxisSpec axisEtaGen{500, -5., 5., "#eta_{Truth}"};
-    AxisSpec axisPGen{500, 0., 500., "p_{Truth} (GeV/#it{c})"};
-    AxisSpec axispTDif{200, -2., 2., "#it{p}_{T} diff (GeV/#it{c})"};
-    AxisSpec axisEtaDif{200, -2., 2., "#eta diff"};
-    AxisSpec axisPDif{200, -2., 2., "p diff (GeV/#it{c})"};
+    AxisSpec axisSign{5, -2.5, 2.5, "Charge"};
+    AxisSpec axisPDca{100000, 0, 100000, "#it{p} #times DCA (GeV/#it{c} * cm)"};
+    AxisSpec axisVtxZ{80, -20., 20., "#it{z}_{vtx} (cm)"};
+    AxisSpec axisDCAx{1000, -5., 5., "#it{DCA}_{x or y} (cm)"};
+    AxisSpec axisPtDif{200, -2., 2., "#it{p}_{T} diff (GeV/#it{c})"};
+    AxisSpec axisEtaDif{200, -2., 2., "#it{#eta} diff"};
+    AxisSpec axisDeltaPt{60, -30, 30, "#Delta #it{p}_{T} (GeV/#it{c})"};
 
-    HistogramConfigSpec hTHnMu{HistType::kTHnSparseD, {axispT, axisEta, axisDCA, axisSign, axisP, axisVtxZ, axisTrkType, axisChi2MatchMCHMFT, axisMCmask}, 9};
-    HistogramConfigSpec hTHnPt{HistType::kTHnSparseD, {axispT, axispTGen, axispTDif, axisTrkType}, 4};
-    HistogramConfigSpec hTHnEta{HistType::kTHnSparseD, {axisEta, axisEtaGen, axisEtaDif, axisTrkType}, 4};
-    HistogramConfigSpec hTHnP{HistType::kTHnSparseD, {axisP, axisPGen, axisPDif, axisTrkType}, 4};
-    HistogramConfigSpec hTHnMuLite{HistType::kTHnSparseD, {axispT, axisEta, axisDCA, axisTrkType, axisChi2MatchMCHMFT, axisMCmask}, 6};
+    HistogramConfigSpec hTHnMu{HistType::kTHnSparseF, {axisPt, axisEta, axisDCA, axisPDca, axisSign, axisChi2MatchMCHMFT}, 6};
+    HistogramConfigSpec h2PtMc{HistType::kTH2F, {axisPt, axisPtDif}};
+    HistogramConfigSpec h2EtaMc{HistType::kTH2F, {axisEta, axisEtaDif}};
+    HistogramConfigSpec h2DCA{HistType::kTH2F, {axisDCAx, axisDCAx}};
+    HistogramConfigSpec h3DeltaPt{HistType::kTH3F, {axisPt, axisEta, axisDeltaPt}};
+    HistogramConfigSpec hVtxZ{HistType::kTH1F, {axisVtxZ}};
 
-    if (fillLiteHist) {
-      registry.add("hMuLiteBeforeCuts", "", hTHnMuLite);
-      registry.add("hMuLiteAfterCuts", "", hTHnMuLite);
-    } else {
-      registry.add("hMuBeforeCuts", "", hTHnMu);
-      registry.add("hMuAfterCuts", "", hTHnMu);
-    }
+    registry.add("hMuBeforeCuts", "", hTHnMu);
+    registry.add("hMuAfterCuts", "", hTHnMu);
+    registry.add("h3DeltaPtBeforeCuts", "", h3DeltaPt);
+    registry.add("h3DeltaPtAfterCuts", "", h3DeltaPt);
+    registry.add("h2DCA", "", h2DCA);
+    registry.add("hVtxZ", "", hVtxZ);
     if (fillMcHist) {
-      registry.add("hPtBeforeCuts", "", hTHnPt);
-      registry.add("hPtAfterCuts", "", hTHnPt);
-      registry.add("hEtaBeforeCuts", "", hTHnEta);
-      registry.add("hEtaAfterCuts", "", hTHnEta);
-      registry.add("hPBeforeCuts", "", hTHnP);
-      registry.add("hPAfterCuts", "", hTHnP);
+      registry.add("h2PtMcBeforeCuts", "", h2PtMc);
+      registry.add("h2PtMcAfterCuts", "", h2PtMc);
+      registry.add("h2EtaMcBeforeCuts", "", h2EtaMc);
+      registry.add("h2EtaMcAfterCuts", "", h2EtaMc);
     }
-
-    VarManager::SetDefaultVarNames();
-    values = new float[VarManager::kNVars];
-
-    trackCut = new AnalysisCompositeCut(true);
-    TString selectStr = muonCuts.value;
-    trackCut->AddCut(dqcuts::GetAnalysisCut(selectStr.Data()));
-    VarManager::SetUseVars(AnalysisCut::fgUsedVars);
   }
 
-  template <uint32_t TEventFillMap, uint32_t TMuonFillMap, typename TEvent, typename TMuons>
-  void runMuonSel(TEvent const& event, aod::BCs const& bcs, TMuons const& tracks)
+  template <typename TCollision, typename TMFT, typename TMuons>
+  void runMuonSel(TCollision const& collision, TMFT const& tracksMFT, TMuons const& muons)
   {
-    // select muons in data
-    if (event.isEventSelected() == 0) {
+    if (!collision.sel8()) {
       return;
     }
+    registry.fill(HIST("hVtxZ"), collision.posZ());
 
-    VarManager::ResetValues(0, VarManager::kNMuonTrackVariables, values);
-    VarManager::FillEvent<gEventFillMap>(event, values);
-
-    // loop over muon tracks
-    for (auto const& track : tracks) {
-      VarManager::FillTrack<TMuonFillMap>(track, values);
-
-      // compute DCAXY
-      // Same for MC
-      const auto dcaXY(std::sqrt(values[VarManager::kMuonDCAx] * values[VarManager::kMuonDCAx] + values[VarManager::kMuonDCAy] * values[VarManager::kMuonDCAy]));
-
-      if (fillLiteHist) {
-        // Before Muon Cuts
-        registry.fill(HIST("hMuLiteBeforeCuts"),
-                      values[VarManager::kPt],
-                      values[VarManager::kEta], dcaXY,
-                      values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT], 0);
-        // After Muon Cuts
-        if (trackCut->IsSelected(values)) {
-          registry.fill(HIST("hMuLiteAfterCuts"),
-                        values[VarManager::kPt],
-                        values[VarManager::kEta], dcaXY,
-                        values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT], 0);
-        }
-      } else {
-        // Before Muon Cuts
-        registry.fill(HIST("hMuBeforeCuts"),
-                      values[VarManager::kPt],
-                      values[VarManager::kEta], dcaXY,
-                      values[VarManager::kCharge], track.p(),
-                      values[VarManager::kVtxZ],
-                      values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT], 0);
-        // After Muon Cuts
-        if (trackCut->IsSelected(values)) {
-          registry.fill(HIST("hMuAfterCuts"),
-                        values[VarManager::kPt],
-                        values[VarManager::kEta], dcaXY,
-                        values[VarManager::kCharge], track.p(),
-                        values[VarManager::kVtxZ],
-                        values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT], 0);
-        }
-      }
-    } // end loop over muon tracks
-  }
-
-  template <uint32_t TEventFillMap, uint32_t TMuonFillMap, uint32_t TTrackMCFillMap, typename TEvent, typename TMuons, typename TMC>
-  void runMuonSelMc(TEvent const& event, aod::BCs const& bcs, TMuons const& tracks, TMC const& mc)
-  {
-    // select muons in MC
-    if (event.isEventSelected() == 0) {
-      return;
-    }
-
-    VarManager::ResetValues(0, VarManager::kNMuonTrackVariables, values);
-    VarManager::FillEvent<gEventFillMap>(event, values);
-
-    // loop over muon tracks
-    for (auto const& track : tracks) {
-      VarManager::FillTrack<TMuonFillMap>(track, values);
-
-      if (!track.has_mcParticle()) {
+    for (const auto& muon : muons) {
+      if (muon.trackType() != trkType) {
         continue;
       }
-      auto mcParticle = track.mcParticle();
+      const auto eta(muon.eta()), pDca(muon.pDca()), rAbs(muon.rAtAbsorberEnd());
+      const auto dcaXY(RecoDecay::sqrtSumOfSquares(muon.fwdDcaX(), muon.fwdDcaY()));
+      const auto pt(muon.pt());
+      const auto charge(muon.sign());
+      const auto chi2(muon.chi2MatchMCHMFT());
 
-      VarManager::FillTrack<TTrackMCFillMap>(mcParticle, values);
-
-      // compute DCAXY
-      const auto dcaXY(std::sqrt(values[VarManager::kMuonDCAx] * values[VarManager::kMuonDCAx] + values[VarManager::kMuonDCAy] * values[VarManager::kMuonDCAy]));
-
-      if (fillLiteHist) {
-        // Before Muon Cuts
-        registry.fill(HIST("hMuLiteBeforeCuts"),
-                      values[VarManager::kPt],
-                      values[VarManager::kEta], dcaXY,
-                      values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT],
-                      track.mcMask());
-        if (fillMcHist) {
-          registry.fill(HIST("hPtBeforeCuts"),
-                        values[VarManager::kPt], values[VarManager::kMCPt], values[VarManager::kMCPt] - values[VarManager::kPt], values[VarManager::kMuonTrackType]);
-          registry.fill(HIST("hEtaBeforeCuts"),
-                        values[VarManager::kEta], values[VarManager::kMCEta], values[VarManager::kMCEta] - values[VarManager::kEta], values[VarManager::kMuonTrackType]);
-          registry.fill(HIST("hPBeforeCuts"),
-                        values[VarManager::kP], values[VarManager::kMCPt] * std::cosh(values[VarManager::kMCEta]), values[VarManager::kMCPt] * std::cosh(values[VarManager::kMCEta]) - values[VarManager::kP], values[VarManager::kMuonTrackType]);
+      if (muon.has_matchMFTTrack()) {
+        auto trkMFT = muon.template matchMFTTrack_as<MFTTracksExtra>();
+        if (reduceAmbMft && trkMFT.has_ambMftTrack()) {
+          continue;
         }
-        // After Muon Cuts
-        if (trackCut->IsSelected(values)) {
-          registry.fill(HIST("hMuLiteAfterCuts"),
-                        values[VarManager::kPt],
-                        values[VarManager::kEta], dcaXY,
-                        values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT],
-                        track.mcMask());
-          if (fillMcHist) {
-            registry.fill(HIST("hPtAfterCuts"),
-                          values[VarManager::kPt], values[VarManager::kMCPt], values[VarManager::kMCPt] - values[VarManager::kPt], values[VarManager::kMuonTrackType]);
-            registry.fill(HIST("hEtaAfterCuts"),
-                          values[VarManager::kEta], values[VarManager::kMCEta], values[VarManager::kMCEta] - values[VarManager::kEta], values[VarManager::kMuonTrackType]);
-            registry.fill(HIST("hPAfterCuts"),
-                          values[VarManager::kP], values[VarManager::kMCPt] * std::cosh(values[VarManager::kMCEta]), values[VarManager::kMCPt] * std::cosh(values[VarManager::kMCEta]) - values[VarManager::kP], values[VarManager::kMuonTrackType]);
-          }
-        }
-      } else {
-        // Before Muon Cuts
-        registry.fill(HIST("hMuBeforeCuts"),
-                      values[VarManager::kPt],
-                      values[VarManager::kEta], dcaXY,
-                      values[VarManager::kCharge], track.p(),
-                      values[VarManager::kVtxZ],
-                      values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT],
-                      track.mcMask());
-        if (fillMcHist) {
-          registry.fill(HIST("hPtBeforeCuts"),
-                        values[VarManager::kPt], values[VarManager::kMCPt], values[VarManager::kMCPt] - values[VarManager::kPt], values[VarManager::kMuonTrackType]);
-          registry.fill(HIST("hEtaBeforeCuts"),
-                        values[VarManager::kEta], values[VarManager::kMCEta], values[VarManager::kMCEta] - values[VarManager::kEta], values[VarManager::kMuonTrackType]);
-          registry.fill(HIST("hPBeforeCuts"),
-                        values[VarManager::kP], values[VarManager::kMCPt] * std::cosh(values[VarManager::kMCEta]), values[VarManager::kMCPt] * std::cosh(values[VarManager::kMCEta]) - values[VarManager::kP], values[VarManager::kMuonTrackType]);
-        }
-        // After Muon Cuts
-        if (trackCut->IsSelected(values)) {
-          registry.fill(HIST("hMuAfterCuts"),
-                        values[VarManager::kPt],
-                        values[VarManager::kEta], dcaXY,
-                        values[VarManager::kCharge], track.p(),
-                        values[VarManager::kVtxZ],
-                        values[VarManager::kMuonTrackType], values[VarManager::kMuonChi2MatchMCHMFT],
-                        track.mcMask());
-          if (fillMcHist) {
-            registry.fill(HIST("hPtAfterCuts"),
-                          values[VarManager::kPt], values[VarManager::kMCPt], values[VarManager::kMCPt] - values[VarManager::kPt], values[VarManager::kMuonTrackType]);
-            registry.fill(HIST("hEtaAfterCuts"),
-                          values[VarManager::kEta], values[VarManager::kMCEta], values[VarManager::kMCEta] - values[VarManager::kEta], values[VarManager::kMuonTrackType]);
-            registry.fill(HIST("hPAfterCuts"),
-                          values[VarManager::kP], values[VarManager::kMCPt] * std::cosh(values[VarManager::kMCEta]), values[VarManager::kMCPt] * std::cosh(values[VarManager::kMCEta]) - values[VarManager::kP], values[VarManager::kMuonTrackType]);
-          }
+        if (reduceOrphMft && (!reduceAmbMft) && trkMFT.has_ambMftTrack()) {
+          continue;
         }
       }
-    } // end loop over muon tracks
+      // histograms before the acceptance cuts
+      registry.fill(HIST("hMuBeforeCuts"), pt, eta, dcaXY, pDca, charge, chi2);
+      if (muon.has_matchMCHTrack()) {
+        auto muonType3 = muon.template matchMCHTrack_as<MyMuons>();
+        registry.fill(HIST("h3DeltaPtBeforeCuts"), pt, eta, muonType3.pt() - pt);
+      }
+      // standard muon acceptance cuts
+      if ((eta >= etaMax) || (eta < etaMin)) {
+        continue;
+      }
+      if ((rAbs >= rAbsMax) || (rAbs < rAbsMin)) {
+        continue;
+      }
+      if ((rAbs < rAbsMid) && (pDca >= pDcaMin)) {
+        continue;
+      }
+      if ((rAbs >= rAbsMid) && (pDca >= pDcaMax)) {
+        continue;
+      }
+      if ((muon.chi2() >= 1e6) || (muon.chi2() < 0)) {
+        continue;
+      }
+      // histograms after acceptance cuts
+      registry.fill(HIST("hMuAfterCuts"), pt, eta, dcaXY, pDca, charge, chi2);
+      registry.fill(HIST("h2DCA"), muon.fwdDcaX(), muon.fwdDcaY());
+      if (muon.has_matchMCHTrack()) {
+        auto muonType3 = muon.template matchMCHTrack_as<MyMuons>();
+        registry.fill(HIST("h3DeltaPtAfterCuts"), pt, eta, muonType3.pt() - pt);
+      }
+    }
   }
 
-  void processDummy(MyEventsSelected&)
+  template <typename TCollision, typename TMFT, typename TMuons, typename TMC>
+  void runMuonSelMc(TCollision const& collision, TMFT const& tracksMFT, TMuons const& muons, TMC const& mc)
   {
-    // do nothing
+    if (!collision.sel8()) {
+      return;
+    }
+    registry.fill(HIST("hVtxZ"), collision.posZ());
+
+    for (const auto& muon : muons) {
+      if (muon.trackType() != trkType) {
+        continue;
+      }
+      const auto eta(muon.eta()), pDca(muon.pDca());
+      const auto dcaXY(RecoDecay::sqrtSumOfSquares(muon.fwdDcaX(), muon.fwdDcaY()));
+      const auto pt(muon.pt());
+      const auto charge(muon.sign());
+      const auto chi2(muon.chi2MatchMCHMFT());
+
+      if (muon.has_matchMFTTrack()) {
+        auto trkMFT = muon.template matchMFTTrack_as<MFTTracksExtra>();
+        if (reduceAmbMft && trkMFT.has_ambMftTrack()) {
+          continue;
+        }
+        if (reduceOrphMft && (!reduceAmbMft) && trkMFT.has_ambMftTrack()) {
+          continue;
+        }
+      }
+      // histograms before the acceptance cuts
+      registry.fill(HIST("hMuBeforeCuts"), pt, eta, dcaXY, pDca, charge, chi2);
+      if (muon.has_matchMCHTrack()) {
+        auto muonType3 = muon.template matchMCHTrack_as<MyMcMuons>();
+        registry.fill(HIST("h3DeltaPtBeforeCuts"), pt, eta, muonType3.pt() - pt);
+      }
+      if (fillMcHist) {
+        if (muon.has_mcParticle()) {
+          auto mcMuon = muon.mcParticle();
+          registry.fill(HIST("h2PtMcBeforeCuts"), mcMuon.pt(), mcMuon.pt() - pt);
+          registry.fill(HIST("h2EtaMcBeforeCuts"), mcMuon.eta(), mcMuon.eta() - eta);
+        }
+      }
+
+      // standard muon acceptance cuts
+      if ((eta >= etaMax) || (eta < etaMin)) {
+        continue;
+      }
+      if ((muon.chi2() >= 1e6) || (muon.chi2() < 0)) {
+        continue;
+      }
+      // histograms after acceptance cuts
+      registry.fill(HIST("hMuAfterCuts"), pt, eta, dcaXY, pDca, charge, chi2);
+      registry.fill(HIST("h2DCA"), muon.fwdDcaX(), muon.fwdDcaY());
+      if (muon.has_matchMCHTrack()) {
+        auto muonType3 = muon.template matchMCHTrack_as<MyMcMuons>();
+        registry.fill(HIST("h3DeltaPtAfterCuts"), pt, eta, muonType3.pt() - pt);
+      }
+      if (fillMcHist) {
+        if (muon.has_mcParticle()) {
+          auto mcMuon = muon.mcParticle();
+          registry.fill(HIST("h2PtMcAfterCuts"), mcMuon.pt(), mcMuon.pt() - pt);
+          registry.fill(HIST("h2EtaMcAfterCuts"), mcMuon.eta(), mcMuon.eta() - eta);
+        }
+      }
+    }
   }
 
-  void processMuon(MyEventsSelected::iterator const& event, aod::BCs const& bcs,
-                   MyMuons const& tracks)
+  void processMuon(soa::Filtered<MyCollisions>::iterator const& collision,
+                   MFTTracksExtra const& tracksMFT,
+                   MyMuons const& muons)
   {
-    runMuonSel<gEventFillMap, gMuonFillMap>(event, bcs, tracks);
+    runMuonSel(collision, tracksMFT, muons);
   }
-
-  void processMuonMc(MyMcEventsSelected::iterator const& event, aod::BCs const& bcs,
-                     MyMcMuons const& tracks, aod::McParticles const& mc)
+  void processMuonMc(soa::Filtered<MyCollisions>::iterator const& collision,
+                     MFTTracksExtra const& tracksMFT,
+                     soa::Filtered<MyMcMuons> const& muons,
+                     aod::McParticles const& mc)
   {
-    runMuonSelMc<gEventFillMap, gMuonFillMap, gTrackMCFillMap>(event, bcs, tracks, mc);
+    runMuonSelMc(collision, tracksMFT, muons, mc);
   }
 
-  PROCESS_SWITCH(HfTaskSingleMuonSelection, processDummy, "do nothing", false);
-  PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuon, "run muon selection with real data", false);
-  PROCESS_SWITCH(HfTaskSingleMuonSelection, processMuonMc, "run muon selection with MC data", false);
+  PROCESS_SWITCH(HfTaskSingleMuon, processMuon, "run muon selection with real data", true);
+  PROCESS_SWITCH(HfTaskSingleMuon, processMuonMc, "run muon selection with MC data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfTaskSingleMuonEventSelection>(cfgc),
-    adaptAnalysisTask<HfTaskSingleMuonSelection>(cfgc),
+    adaptAnalysisTask<HfTaskSingleMuonSelectionAmbiguousMftIndexBuilder>(cfgc),
+    adaptAnalysisTask<HfTaskSingleMuon>(cfgc),
   };
-}
-
-void defineHistograms(HistogramManager* histMan, TString histClasses)
-{
-  //
-  // Define here the histograms for all the classes required in analysis.
-  //  The histogram classes are provided in the histClasses string, separated by semicolon ";"
-  //  The histogram classes and their components histograms are defined below depending on the name of the histogram class
-  //
-  std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
-
-  for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
-    TString classStr = objArray->At(iclass)->GetName();
-    histMan->AddHistClass(classStr.Data());
-
-    if (classStr.Contains("Event"))
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "event", "trigger,all");
-  }
 }

@@ -11,12 +11,17 @@
 
 if(FastJet_FOUND)
 o2physics_add_library(PWGJECore
-               SOURCES  JetFinder.cxx
+               SOURCES  FastJetUtilities.cxx
+                        JetFinder.cxx
+                        JetBkgSubUtils.cxx
                PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib)
 
 o2physics_target_root_dictionary(PWGJECore
               HEADERS JetFinder.h
                       JetUtilities.h
                       FastJetUtilities.h
+                      JetTaggingUtilities.h
+                      JetBkgSubUtils.h
+                      JetDerivedDataUtilities.h
               LINKDEF PWGJECoreLinkDef.h)
 endif()

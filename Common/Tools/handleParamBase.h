@@ -16,6 +16,11 @@
 /// \brief  Header file with utilities for handling PID parametrization on CCDB
 ///
 
+#ifndef COMMON_TOOLS_HANDLEPARAMBASE_H_
+#define COMMON_TOOLS_HANDLEPARAMBASE_H_
+
+#include <map>
+#include <string>
 #include "CCDB/CcdbApi.h"
 #include <boost/program_options.hpp>
 #include "Framework/Logger.h"
@@ -27,19 +32,19 @@ bpo::variables_map arguments;             // Command line arguments
 o2::ccdb::CcdbApi api;                    // Global CCDB api
 unsigned int minRunNumber = 0;            // Starting run validity
 unsigned int maxRunNumber = minRunNumber; // Ending run validity
-long ccdbTimestamp = 0;                   // Timestamp used for the retrieval
-long validityStart = 0;                   // Initial validity for the object
-long validityStop = 0;                    // End validity for the object
+int64_t ccdbTimestamp = 0;                // Timestamp used for the retrieval
+int64_t validityStart = 0;                // Initial validity for the object
+int64_t validityStop = 0;                 // End validity for the object
 
 std::string timeStampToHReadble(time_t rawtime)
 {
   if (rawtime < 0) {
     return std::string(" latest");
   }
-  struct tm* dt;
+  struct tm* dt = new tm();
   char buffer[30];
   rawtime /= 1000;
-  dt = localtime(&rawtime);
+  localtime_r(&rawtime, dt);
   strftime(buffer, sizeof(buffer), "%H:%M %d-%m %Y", dt);
   return std::string(buffer);
 }
@@ -61,9 +66,9 @@ void setStandardOpt(bpo::options_description& options)
     "dryrun,D", bpo::value<int>()->default_value(1), "Dryrun mode")(
     "url,u", bpo::value<std::string>()->default_value("http://alice-ccdb.cern.ch"), "URL of the CCDB database e.g. http://ccdb-test.cern.ch:8080 or http://alice-ccdb.cern.ch")(
     "rct-path", bpo::value<std::string>()->default_value("RCT/Info/RunInformation"), "path to the ccdb RCT objects for the SOR/EOR timestamps")(
-    "start,s", bpo::value<long>()->default_value(0), "Start timestamp of object validity. If 0 and min-runnumber != 0 it will be set to the run SOR")(
-    "stop,S", bpo::value<long>()->default_value(0), "Stop timestamp of object validity. If 0 and max-runnumber != 0 it will be set to the run EOR")(
-    "timestamp,T", bpo::value<long>()->default_value(-1), "Timestamp of the object to retrieve, used in alternative to the run number")(
+    "start,s", bpo::value<int64_t>()->default_value(0), "Start timestamp of object validity. If 0 and min-runnumber != 0 it will be set to the run SOR")(
+    "stop,S", bpo::value<int64_t>()->default_value(0), "Stop timestamp of object validity. If 0 and max-runnumber != 0 it will be set to the run EOR")(
+    "timestamp,T", bpo::value<int64_t>()->default_value(-1), "Timestamp of the object to retrieve, used in alternative to the run number")(
     "min-runnumber,r", bpo::value<unsigned int>()->default_value(0), "Starting run number validity (included) corresponding to the parametrization")(
     "max-runnumber,R", bpo::value<unsigned int>()->default_value(0), "Ending run number validity (included) corresponding to the parametrization. If not specified coincides with min-runnumber")(
     "delete-previous,delete_previous,d", bpo::value<int>()->default_value(0), "Flag to delete previous versions of converter objects in the CCDB before uploading the new one so as to avoid proliferation on CCDB")(
@@ -75,9 +80,10 @@ void setStandardOpt(bpo::options_description& options)
 
 template <typename T>
 T* retrieveFromCCDB(const std::string path,
-                    const long timestamp)
+                    const int64_t timestamp,
+                    std::map<std::string, std::string> metadata)
 {
-  std::map<std::string, std::string> metadata, headers;
+  std::map<std::string, std::string> headers;
   LOG(info) << "Object " << path << " for timestamp " << timestamp << " -> " << timeStampToHReadble(timestamp);
   headers = api.retrieveHeaders(path, metadata, timestamp);
   LOG(info) << headers.size() << " HEADERS:";
@@ -93,10 +99,18 @@ T* retrieveFromCCDB(const std::string path,
 }
 
 template <typename T>
+T* retrieveFromCCDB(const std::string path,
+                    const int64_t timestamp)
+{
+  std::map<std::string, std::string> metadata;
+  return retrieveFromCCDB<T>(path, timestamp, metadata);
+}
+
+template <typename T>
 void storeOnCCDB(const std::string& path,
                  const std::map<std::string, std::string>& metadata,
-                 const long& start,
-                 const long& stop,
+                 const int64_t& start,
+                 const int64_t& stop,
                  const T* obj)
 {
   const auto dryrun = arguments["dryrun"].as<int>();
@@ -111,13 +125,13 @@ void storeOnCCDB(const std::string& path,
   }
 }
 
-void setupTimestamps(long& timestamp,
-                     long& start,
-                     long& stop)
+void setupTimestamps(int64_t& timestamp,
+                     int64_t& start,
+                     int64_t& stop)
 {
-  ccdbTimestamp = arguments["timestamp"].as<long>();
-  validityStart = arguments["start"].as<long>();
-  validityStop = arguments["stop"].as<long>();
+  ccdbTimestamp = arguments["timestamp"].as<int64_t>();
+  validityStart = arguments["start"].as<int64_t>();
+  validityStop = arguments["stop"].as<int64_t>();
   minRunNumber = arguments["min-runnumber"].as<unsigned int>();
   auto mrun = arguments["max-runnumber"].as<unsigned int>();
   maxRunNumber = mrun > 0 ? mrun : minRunNumber;
@@ -125,7 +139,7 @@ void setupTimestamps(long& timestamp,
     LOG(fatal) << "Cannot have `min-runnumber` " << minRunNumber << " > `max-runnumber`" << maxRunNumber;
   }
 
-  auto getSOREOR = [&](const unsigned int runnumber, long& sor, long& eor) {
+  auto getSOREOR = [&](const unsigned int runnumber, int64_t& sor, int64_t& eor) {
     std::map<std::string, std::string> metadata, headers;
     const auto rct_path = arguments["rct-path"].as<std::string>();
     const std::string run_path = Form("%s/%i", rct_path.data(), runnumber);
@@ -144,7 +158,7 @@ void setupTimestamps(long& timestamp,
   };
 
   if (minRunNumber != 0) {
-    long SOR = 0, EOR = 0;
+    int64_t SOR = 0, EOR = 0;
     getSOREOR(minRunNumber, SOR, EOR);
     timestamp = SOR; // timestamp of the SOR in ms
     LOG(info) << "Setting timestamp of object from run number " << minRunNumber << ": " << validityStart << " -> " << timeStampToHReadble(validityStart);
@@ -167,3 +181,5 @@ void setupTimestamps(long& timestamp,
     validityStop = 4108971600000;
   }
 }
+
+#endif // COMMON_TOOLS_HANDLEPARAMBASE_H_

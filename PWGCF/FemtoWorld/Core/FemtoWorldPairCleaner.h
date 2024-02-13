@@ -14,8 +14,8 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de, Laura Serksnyte <laura.serksnyte@cern.ch>, TU München
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOWORLDPAIRCLEANER_H_
-#define FEMTOWORLDPAIRCLEANER_H_
+#ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPAIRCLEANER_H_
+#define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPAIRCLEANER_H_
 
 #include "PWGCF/FemtoWorld/DataModel/FemtoWorldDerived.h"
 #include "Framework/HistogramRegistry.h"
@@ -79,9 +79,9 @@ class FemtoWorldPairCleaner
       return false;
     } else if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kPhi) {
       return true;
-    }
-
-    else {
+    } else if constexpr (mPartOneType == o2::aod::femtoworldparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtoworldparticle::ParticleType::kD0D0bar) {
+      return true;
+    } else {
       LOG(fatal) << "FemtoWorldPairCleaner: Combination of objects not defined - quitting!";
       return false;
     }
@@ -94,4 +94,4 @@ class FemtoWorldPairCleaner
 };
 } // namespace o2::analysis::femtoWorld
 
-#endif /* FEMTOWORLDPAIRCLEANER_H_ */
+#endif // PWGCF_FEMTOWORLD_CORE_FEMTOWORLDPAIRCLEANER_H_

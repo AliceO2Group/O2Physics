@@ -17,15 +17,16 @@
 /// \author Xinye Peng  <xinye.peng@cern.ch>
 /// \author Biao Zhang <biao.zhang@cern.ch>
 
-#include "RooRealVar.h"
-#include "RooDataSet.h"
-#include "RooWorkspace.h"
-#include "RooAddPdf.h"
-#include "RooExtendPdf.h"
-#include "RooPlot.h"
-#include "RooHist.h"
-#include "RooDataHist.h"
 #include "HFInvMassFitter.h"
+
+#include <RooRealVar.h>
+#include <RooDataSet.h>
+#include <RooWorkspace.h>
+#include <RooAddPdf.h>
+#include <RooExtendPdf.h>
+#include <RooPlot.h>
+#include <RooHist.h>
+#include <RooDataHist.h>
 
 using namespace RooFit;
 using namespace std;

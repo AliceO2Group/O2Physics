@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2PHYSICS_UPCHELPERS_H
-#define O2PHYSICS_UPCHELPERS_H
+#ifndef PWGUD_CORE_UPCHELPERS_H_
+#define PWGUD_CORE_UPCHELPERS_H_
 
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
@@ -29,7 +29,8 @@ using ForwardTracks = o2::soa::Join<o2::aod::FwdTracks, o2::aod::FwdTracksCov>;
 
 using BarrelTracks = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA,
                                    o2::aod::pidTPCFullEl, o2::aod::pidTPCFullMu, o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
-                                   o2::aod::TOFSignal, o2::aod::pidTOFFullEl, o2::aod::pidTOFFullMu, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
+                                   o2::aod::TOFSignal, o2::aod::pidTOFbeta,
+                                   o2::aod::pidTOFFullEl, o2::aod::pidTOFFullMu, o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
 
 // namespace with helpers for UPC track skimming and candidate production
 namespace upchelpers
@@ -58,6 +59,7 @@ enum BarrelSels {
   kBarrelSelTPCChi2,
   kBarrelSelDCAXY,
   kBarrelSelDCAZ,
+  kAmbiguous,
   kNBarrelSels
 };
 
@@ -86,10 +88,15 @@ struct FITInfo {
   int32_t BGFDDApf = 0;
   int32_t BBFDDCpf = 0;
   int32_t BGFDDCpf = 0;
+  int32_t distClosestBcTOR = 999;
+  int32_t distClosestBcTSC = 999;
+  int32_t distClosestBcTVX = 999;
+  int32_t distClosestBcV0A = 999;
+  int32_t distClosestBcT0A = 999;
 };
 
-template <typename TSelectorsArray>
-void applyFwdCuts(UPCCutparHolder& upcCuts, const ForwardTracks::iterator& track, TSelectorsArray& fwdSelectors)
+template <typename T, typename TSelectorsArray>
+void applyFwdCuts(UPCCutparHolder& upcCuts, const T& track, TSelectorsArray& fwdSelectors)
 {
   fwdSelectors[kFwdSelPt] = track.pt() > upcCuts.getFwdPtLow() && track.pt() < upcCuts.getFwdPtHigh();                                                     // check pt
   fwdSelectors[kFwdSelEta] = track.eta() > upcCuts.getFwdEtaLow() && track.eta() < upcCuts.getFwdEtaHigh();                                                // check pseudorapidity
@@ -98,9 +105,12 @@ void applyFwdCuts(UPCCutparHolder& upcCuts, const ForwardTracks::iterator& track
   fwdSelectors[kFwdSelChi2] = track.chi2() > upcCuts.getFwdChi2Low() && track.chi2() < upcCuts.getFwdChi2High();                                           // check chi2
 }
 
-template <typename TSelectorsArray>
-void applyBarrelCuts(UPCCutparHolder& upcCuts, const BarrelTracks::iterator& track, TSelectorsArray& barrelSelectors)
+template <typename T, typename TSelectorsArray>
+void applyBarrelCuts(UPCCutparHolder& upcCuts, const T& track, TSelectorsArray& barrelSelectors)
 {
+  barrelSelectors[kAmbiguous] = true;
+  if (upcCuts.getAmbigSwitch())
+    barrelSelectors[kAmbiguous] = track.isPVContributor();
   barrelSelectors[kBarrelSelHasTOF] = true;
   if (upcCuts.getRequireTOF())
     barrelSelectors[kBarrelSelHasTOF] = track.hasTOF();                                                           // require TOF match if needed
@@ -112,7 +122,7 @@ void applyBarrelCuts(UPCCutparHolder& upcCuts, const BarrelTracks::iterator& tra
   barrelSelectors[kBarrelSelITSChi2] = track.itsChi2NCl() > upcCuts.getITSChi2Low() && track.itsChi2NCl() < upcCuts.getITSChi2High();
 
   // check TPC cuts
-  barrelSelectors[kBarrelSelTPCNCls] = track.tpcNClsCrossedRows() > static_cast<int16_t>(upcCuts.getTPCNClusCRLow()) && track.tpcNClsCrossedRows() < static_cast<int16_t>(upcCuts.getTPCNClusCRHigh());
+  barrelSelectors[kBarrelSelTPCNCls] = track.tpcNClsFound() > static_cast<int16_t>(upcCuts.getTPCNClsLow()) && track.tpcNClsFound() < static_cast<int16_t>(upcCuts.getTPCNClsHigh());
   barrelSelectors[kBarrelSelTPCChi2] = track.tpcChi2NCl() > upcCuts.getTPCChi2Low() && track.tpcChi2NCl() < upcCuts.getTPCChi2High();
 
   // check DCA
@@ -129,4 +139,4 @@ void applyBarrelCuts(UPCCutparHolder& upcCuts, const BarrelTracks::iterator& tra
 
 } // namespace upchelpers
 
-#endif // O2PHYSICS_UPCHELPERS_H
+#endif // PWGUD_CORE_UPCHELPERS_H_
