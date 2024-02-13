@@ -12,6 +12,10 @@
 #ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_CONFIGURABLES_H_
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_CONFIGURABLES_H_
 
+// ...
+#include <vector>
+#include <string>
+
 // Task configuration:
 Configurable<string> cfTaskName{
   "cfTaskName", "Default task name",

@@ -12,6 +12,9 @@
 #ifndef PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_MEMBERFUNCTIONS_H_
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_MEMBERFUNCTIONS_H_
 
+// ...
+#include <vector>
+
 //============================================================
 
 void BookBaseList()
