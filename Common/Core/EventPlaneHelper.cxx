@@ -206,8 +206,5 @@ float EventPlaneHelper::GetEventPlane(const float qx, const float qy, int nmode)
 
 float EventPlaneHelper::GetResolution(const float RefA, const float RefB, int nmode)
 {
-  if (std::cos((RefA - RefB) * nmode) > 0) {
-    return std::sqrt(std::cos((RefA - RefB) * nmode));
-  }
-  return -999.;
+  return std::cos((RefA - RefB) * nmode);
 }

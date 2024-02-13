@@ -55,12 +55,12 @@ namespace o2::aod
 {
 
 using FemtoFullCollision =
-  soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>::iterator;
+  soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator;
 using FemtoFullCollisionCentRun2 =
-  soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentFT0Cs>::iterator;
+  soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator;
 using FemtoFullCollisionCentRun3 =
   soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator;
-using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::McCollisionLabels>::iterator;
+using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks =
   soa::Join<aod::FullTracks, aod::TracksDCA, aod::TOFSignal, aod::pidTPCEl, aod::TrackSelection,
@@ -594,7 +594,7 @@ struct femtoUniverseProducerTask {
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any
     // particle candidates for such collisions
-    if (!colCuts.isSelected(col)) {
+    if (!colCuts.isSelectedRun3(col)) {
       if (ConfIsTrigger) {
         outputCollision(vtxZ, cent, multNtr, spher, mMagField); //////
       }

@@ -259,12 +259,12 @@ struct HfCandidateCreatorToXiPi {
       double mCharmBaryon = RecoDecay::m(std::array{pVecCascAsD, pVecPionFromCharmBaryon}, arrMassCharmBaryon);
 
       // computing cosPA
-      double cpaV0 = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
+      double cpaV0 = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
       double cpaCharmBaryon = RecoDecay::cpa(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
-      double cpaCasc = RecoDecay::cpa(coordVtxCharmBaryon, vertexCasc, pVecCasc);
-      double cpaxyV0 = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
+      double cpaCasc = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
+      double cpaxyV0 = RecoDecay::cpaXY(pvCoord, vertexV0, pVecV0);
       double cpaxyCharmBaryon = RecoDecay::cpaXY(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
-      double cpaxyCasc = RecoDecay::cpaXY(coordVtxCharmBaryon, vertexCasc, pVecCasc);
+      double cpaxyCasc = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
 
       // computing decay length and ctau
       double decLenCharmBaryon = RecoDecay::distance(pvCoord, coordVtxCharmBaryon);

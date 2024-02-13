@@ -42,6 +42,8 @@ using namespace o2::framework::expressions;
 using std::array;
 using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
+using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
+
 using CollisionsFullWithFlow = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::QvectorFT0As, aod::QvectorFT0Cs, aod::QvectorFT0Ms, aod::QvectorFV0As>;
 
 namespace
@@ -97,10 +99,11 @@ struct hyperCandidate {
   uint32_t clusterSizeITSHe3 = 0u;
   uint32_t clusterSizeITSPi = 0u;
   bool isMatter = false;
-  bool isSignal = false; // true MC signal
-  bool isReco = false;   // true if the candidate is actually reconstructed
-  int pdgCode = 0;       // PDG code of the hypernucleus
-  uint8_t flags = 0u;    // flags for dughter particles
+  bool isSignal = false;        // true MC signal
+  bool isReco = false;          // true if the candidate is actually reconstructed
+  bool survEvSelection = false; // true if the corresponding event passed the event selection
+  int pdgCode = 0;              // PDG code of the hypernucleus
+  uint8_t flags = 0u;           // flags for dughter particles
 };
 
 struct hyperRecoTask {
@@ -157,6 +160,8 @@ struct hyperRecoTask {
   std::vector<hyperCandidate> hyperCandidates;
   // vector to keep track of MC mothers already filled
   std::vector<unsigned int> filledMothers;
+  // vector to keep track of the collisions passing the event selection in the MC
+  std::vector<bool> isGoodCollision;
 
   Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
 
@@ -439,6 +444,7 @@ struct hyperRecoTask {
               }
               hypCand.isSignal = true;
               hypCand.pdgCode = posMother.pdgCode();
+              hypCand.survEvSelection = isGoodCollision[posMother.mcCollisionId()];
               filledMothers.push_back(posMother.globalIndex());
             }
           }
@@ -545,9 +551,10 @@ struct hyperRecoTask {
   }
   PROCESS_SWITCH(hyperRecoTask, processDataWithFlow, "Data analysis with flow", false);
 
-  void processMC(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
+  void processMC(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
     filledMothers.clear();
+    isGoodCollision.resize(mcCollisions.size(), false);
 
     for (const auto& collision : collisions) {
       hyperCandidates.clear();
@@ -555,17 +562,21 @@ struct hyperRecoTask {
       initCCDB(bc);
 
       hEvents->Fill(0.);
-      if (!collision.sel8())
+      if (!collision.sel8()) {
         continue;
+      }
       hEvents->Fill(1.);
-      if (std::abs(collision.posZ()) > 10.f)
+      if (std::abs(collision.posZ()) > 10.f) {
         continue;
+      }
       hEvents->Fill(2.);
       hZvtx->Fill(collision.posZ());
       hCentFT0A->Fill(collision.centFT0A());
       hCentFT0C->Fill(collision.centFT0C());
       hCentFT0M->Fill(collision.centFT0M());
       hCentFV0A->Fill(collision.centFV0A());
+
+      isGoodCollision[collision.mcCollisionId()] = true;
 
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
@@ -589,7 +600,7 @@ struct hyperRecoTask {
                       hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
                       hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags,
                       chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
-                      hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal);
+                      hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal, hypCand.survEvSelection);
       }
     }
 
@@ -630,6 +641,8 @@ struct hyperRecoTask {
         continue;
       }
       hyperCandidate hypCand;
+      hypCand.pdgCode = mcPart.pdgCode();
+      hypCand.survEvSelection = isGoodCollision[mcPart.mcCollisionId()];
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
       for (int i = 0; i < 3; i++) {
         hypCand.gDecVtx[i] = secVtx[i] - primVtx[i];
@@ -639,7 +652,6 @@ struct hyperRecoTask {
       hypCand.posTrackID = -1;
       hypCand.negTrackID = -1;
       hypCand.isSignal = true;
-      hypCand.pdgCode = mcPart.pdgCode();
       outputMCTable(-1, -1, -1,
                     0,
                     -1, -1, -1,
@@ -651,7 +663,7 @@ struct hyperRecoTask {
                     -1, -1, -1, -1,
                     -1, -1, -1,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
-                    hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal);
+                    hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2], hypCand.isReco, hypCand.isSignal, hypCand.survEvSelection);
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processMC, "MC analysis", false);

@@ -103,6 +103,9 @@ struct nucleiFlow {
   /// \brief bethe-bloch parameters
   Configurable<LabeledArray<float>> cfgBetheBlochParams{"cfgBetheBlochParams", {nuclei_spectra::betheBlochDefault[0], 5, 6, nuclei_spectra::names, nuclei_spectra::betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
 
+  // Selected nuclei tracks with the ID of the collision
+  using TracksWithFlowCollID = soa::Join<aod::NucleiTable, aod::NucleiCollId>;
+
   EventPlaneHelper epHelper;
 
   /// \brief Get n-sigma TPC
@@ -221,7 +224,7 @@ struct nucleiFlow {
     histos.add("hSpFV0AvsNsigmaHe3VsPtvsCent", "", HistType::kTHnSparseF, {FV0AspAxis, nSigmaTPCHe3Axis, ptAxis, centAxis});
   }
 
-  void process(aod::NucleiFlowColl const& coll, aod::NucleiTable const& tracks)
+  void process(aod::NucleiFlowColl const& coll, TracksWithFlowCollID const& tracks)
   {
     histos.fill(HIST("hCentFV0A"), coll.centFV0A());
     histos.fill(HIST("hCentFT0M"), coll.centFT0M());
