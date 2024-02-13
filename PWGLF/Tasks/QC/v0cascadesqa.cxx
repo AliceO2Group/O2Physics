@@ -16,6 +16,8 @@
 /// \author Chiara De Martin (chiara.de.martin@cern.ch)
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
 
+#include <cmath>
+// #include <cstdlib>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -30,8 +32,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
-#include <cmath>
-// #include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -76,7 +76,7 @@ struct v0cascadesQA {
   ConfigurableAxis binResponseProtonFromLambda{"binResponseProtonFromLambda", {200, -20.f, 20.f}, ""};
   ConfigurableAxis binEtaFlag{"binEtaFlag", {3, -1.5f, 1.5f}, ""};
   ConfigurableAxis binEta{"binEta", {100, -1.0f, 1.0f}, ""};
-  ConfigurableAxis binPhi{"binPhi", {(int)TMath::Pi() * 10 / 2, 0.0f, 2. * TMath::Pi()}, ""};
+  ConfigurableAxis binPhi{"binPhi", {static_cast<int>(TMath::Pi()) * 10 / 2, 0.0f, 2. * static_cast<int>(TMath::Pi())}, ""};
   ConfigurableAxis binRadius{"binRadius", {100, 0.0f, 50.0f}, ""};
   ConfigurableAxis binRadiussmall{"binRadiussmall", {30, 0.0f, 30.0f}, ""};
   ConfigurableAxis binITSMapDaughters{"binITSMapDaughters", {8, -0.5f, 7.5f}, ""};
