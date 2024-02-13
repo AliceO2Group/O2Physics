@@ -10,6 +10,8 @@
 // or submit itself to any jurisdiction.
 
 #include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DataFormatsParameters/GRPMagField.h>
 #include <algorithm>
 #include <numeric>
 #include <vector>
@@ -25,8 +27,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
-#include <DataFormatsParameters/GRPObject.h>
-#include <DataFormatsParameters/GRPMagField.h>
 
 #include "GFWPowerArray.h"
 #include "GFW.h"
