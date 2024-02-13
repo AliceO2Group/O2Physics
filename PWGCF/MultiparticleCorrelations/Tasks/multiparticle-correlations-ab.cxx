@@ -19,12 +19,6 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 
-#include <functional>
-#include <algorithm>
-#include <vector>
-#include <vector>
-#include <string>
-
 using namespace o2;
 using namespace o2::framework;
 

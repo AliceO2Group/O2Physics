@@ -261,19 +261,19 @@ void DefaultBooking()
     LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookEventHistograms, and number of entries in enum eEventHistograms \n \033[0m", __PRETTY_FUNCTION__, __LINE__);
   }
 
-  eh.fBookEventHistograms[eNumberOfEvents] = (bool)lBookEventHistograms[eNumberOfEvents];
-  eh.fBookEventHistograms[eTotalMultiplicity] = (bool)lBookEventHistograms[eTotalMultiplicity];
-  eh.fBookEventHistograms[eSelectedTracks] = (bool)lBookEventHistograms[eSelectedTracks];
-  eh.fBookEventHistograms[eMultFV0M] = (bool)lBookEventHistograms[eMultFV0M];
-  eh.fBookEventHistograms[eMultFT0M] = (bool)lBookEventHistograms[eMultFT0M];
-  eh.fBookEventHistograms[eMultTPC] = (bool)lBookEventHistograms[eMultTPC];
-  eh.fBookEventHistograms[eMultNTracksPV] = (bool)lBookEventHistograms[eMultNTracksPV];
-  eh.fBookEventHistograms[eCentrality] = (bool)lBookEventHistograms[eCentrality];
-  eh.fBookEventHistograms[eVertex_x] = (bool)lBookEventHistograms[eVertex_x];
-  eh.fBookEventHistograms[eVertex_y] = (bool)lBookEventHistograms[eVertex_y];
-  eh.fBookEventHistograms[eVertex_z] = (bool)lBookEventHistograms[eVertex_z];
-  eh.fBookEventHistograms[eNContributors] = (bool)lBookEventHistograms[eNContributors];
-  eh.fBookEventHistograms[eImpactParameter] = (bool)lBookEventHistograms[eImpactParameter];
+  eh.fBookEventHistograms[eNumberOfEvents] = static_cast<bool>(lBookEventHistograms[eNumberOfEvents]);
+  eh.fBookEventHistograms[eTotalMultiplicity] = static_cast<bool>(lBookEventHistograms[eTotalMultiplicity]);
+  eh.fBookEventHistograms[eSelectedTracks] = static_cast<bool>(lBookEventHistograms[eSelectedTracks]);
+  eh.fBookEventHistograms[eMultFV0M] = static_cast<bool>(lBookEventHistograms[eMultFV0M]);
+  eh.fBookEventHistograms[eMultFT0M] = static_cast<bool>(lBookEventHistograms[eMultFT0M]);
+  eh.fBookEventHistograms[eMultTPC] = static_cast<bool>(lBookEventHistograms[eMultTPC]);
+  eh.fBookEventHistograms[eMultNTracksPV] = static_cast<bool>(lBookEventHistograms[eMultNTracksPV]);
+  eh.fBookEventHistograms[eCentrality] = static_cast<bool>(lBookEventHistograms[eCentrality]);
+  eh.fBookEventHistograms[eVertex_x] = static_cast<bool>(lBookEventHistograms[eVertex_x]);
+  eh.fBookEventHistograms[eVertex_y] = static_cast<bool>(lBookEventHistograms[eVertex_y]);
+  eh.fBookEventHistograms[eVertex_z] = static_cast<bool>(lBookEventHistograms[eVertex_z]);
+  eh.fBookEventHistograms[eNContributors] = static_cast<bool>(lBookEventHistograms[eNContributors]);
+  eh.fBookEventHistograms[eImpactParameter] = static_cast<bool>(lBookEventHistograms[eImpactParameter]);
 
   // b) Particle histograms:
   // By default all particle histograms are booked. If you do not want particular particle histogram to be booked,
@@ -284,12 +284,12 @@ void DefaultBooking()
     LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookParticleHistograms, and number of entries in enum eParticleHistograms \n \033[0m", __PRETTY_FUNCTION__, __LINE__);
   }
 
-  ph.fBookParticleHistograms[ePhi] = (bool)lBookParticleHistograms[ePhi];
-  ph.fBookParticleHistograms[ePt] = (bool)lBookParticleHistograms[ePt];
-  ph.fBookParticleHistograms[eEta] = (bool)lBookParticleHistograms[eEta];
-  ph.fBookParticleHistograms[etpcNClsCrossedRows] = (bool)lBookParticleHistograms[etpcNClsCrossedRows];
-  ph.fBookParticleHistograms[eDCA_xy] = (bool)lBookParticleHistograms[eDCA_xy];
-  ph.fBookParticleHistograms[eDCA_z] = (bool)lBookParticleHistograms[eDCA_z];
+  ph.fBookParticleHistograms[ePhi] = static_cast<bool>(lBookParticleHistograms[ePhi]);
+  ph.fBookParticleHistograms[ePt] = static_cast<bool>(lBookParticleHistograms[ePt]);
+  ph.fBookParticleHistograms[eEta] = static_cast<bool>(lBookParticleHistograms[eEta]);
+  ph.fBookParticleHistograms[etpcNClsCrossedRows] = static_cast<bool>(lBookParticleHistograms[etpcNClsCrossedRows]);
+  ph.fBookParticleHistograms[eDCA_xy] = static_cast<bool>(lBookParticleHistograms[eDCA_xy]);
+  ph.fBookParticleHistograms[eDCA_z] = static_cast<bool>(lBookParticleHistograms[eDCA_z]);
 
   // c) QA:
   // ...
