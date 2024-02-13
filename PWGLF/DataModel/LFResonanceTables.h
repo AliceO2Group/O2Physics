@@ -35,7 +35,7 @@ namespace resocollision
 DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality (Multiplicity) percentile (Default: FT0M)
 DECLARE_SOA_COLUMN(Mult, mult, int);               //! FT0 multiplicity
 DECLARE_SOA_COLUMN(Spherocity, spherocity, float); //! Spherocity of the event
-DECLARE_SOA_COLUMN(EvtPl, evtPl, float); //! Second harmonic event plane
+DECLARE_SOA_COLUMN(EvtPl, evtPl, float);           //! Second harmonic event plane
 DECLARE_SOA_COLUMN(EvtPlResAB, evtPlResAB, float); //! Second harmonic event plane resolution of A-B sub events
 DECLARE_SOA_COLUMN(EvtPlResAC, evtPlResAC, float); //! Second harmonic event plane resolution of A-C sub events
 DECLARE_SOA_COLUMN(EvtPlResBC, evtPlResBC, float); //! Second harmonic event plane resolution of B-C sub events
