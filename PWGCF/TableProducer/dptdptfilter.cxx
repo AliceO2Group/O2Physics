@@ -1437,12 +1437,12 @@ void DptDptFilterTracks::fillParticleHistosAfterSelection(ParticleObject const& 
                             (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
   if (traceDCAOutliers.mDoIt && (traceDCAOutliers.mLowValue < dcaxy) && (dcaxy < traceDCAOutliers.mUpValue)) {
     LOGF(info, "DCAxy outlier: Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
-          particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
+         particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
     LOGF(info, "               With status %d and flags %0X", particle.statusCode(), particle.flags());
   }
 
   fhTrueDCAxyA->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                  (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
+                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
   fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
   fhTruePA[sp]->Fill(particle.p());
   fhTruePtA[sp]->Fill(particle.pt());
