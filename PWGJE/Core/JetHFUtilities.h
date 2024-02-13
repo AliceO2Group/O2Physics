@@ -286,7 +286,7 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
  * @param tracks the track table
  */
 template <typename T, typename U, typename V>
-bool isDaughterTrack(T& track, U& candidate, V& tracks)
+bool isDaughterTrack(T& track, U& candidate, V const& tracks)
 {
 
   if constexpr (isD0Candidate<U>()) {
@@ -319,7 +319,7 @@ bool isDaughterTrack(T& track, U& candidate, V& tracks)
  * @param globalIndex global index of potnetial daughter particle
  */
 template <typename T>
-bool isDaughterParticle(T const& particle, int globalIndex)
+bool isDaughterParticle(T& particle, int globalIndex)
 {
   for (auto daughter : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
     if (daughter.globalIndex() == globalIndex) {
