@@ -269,7 +269,7 @@ class V0PhotonCut : public TNamed
         return v0.eta() >= mMinV0Eta && v0.eta() <= mMaxV0Eta;
 
       case V0PhotonCuts::kMee:
-        return true;
+        return v0.mGamma() < mMaxQt * 2.f;
 
       case V0PhotonCuts::kAP:
         return pow(v0.alpha() / mMaxAlpha, 2) + pow(v0.qtarm() / mMaxQt, 2) < 1.0;
@@ -280,8 +280,17 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kPhiV:
         return true;
 
-      case V0PhotonCuts::kRxy:
-        return v0.v0radius() >= mMinRxy && v0.v0radius() <= mMaxRxy;
+      case V0PhotonCuts::kRxy: {
+        if (v0.v0radius() < mMinRxy || mMaxRxy < v0.v0radius()) {
+          return false;
+        }
+        if (mRejectITSib) {
+          if (v0.v0radius() < 4.f || v0.pca() < -0.05 * v0.v0radius() + 0.3) {
+            return false;
+          }
+        }
+        return true;
+      }
 
       case V0PhotonCuts::kCosPA:
         return v0.cospa() >= mMinCosPA;
@@ -304,7 +313,7 @@ class V0PhotonCut : public TNamed
         float z = v0.vz();      // cm, measured secondary vertex of gamma->ee
 
         float rxy = sqrt(x * x + y * y);
-        if (rxy < 7.0 || 15.0 < rxy) {
+        if (rxy < 7.0 || 14.0 < rxy) {
           return false;
         }
 
@@ -447,6 +456,7 @@ class V0PhotonCut : public TNamed
   void SetMaxMeePsiPairDep(std::function<float(float)> psiDepCut);
   void SetOnWwireIB(bool flag = false);
   void SetOnWwireOB(bool flag = false);
+  void RejectITSib(bool flag = false);
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
@@ -493,6 +503,7 @@ class V0PhotonCut : public TNamed
   std::function<float(float)> mMaxMeePsiPairDep{}; // max mee as a function of psipair
   bool mIsOnWwireIB{false};
   bool mIsOnWwireOB{false};
+  bool mRejectITSib{false};
 
   // pid cuts
   float mMinTPCNsigmaEl{-5}, mMaxTPCNsigmaEl{+5};
