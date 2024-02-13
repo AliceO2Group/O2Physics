@@ -9,9 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <vector>
-#include <string>
-
 // O2:
 #include <CCDB/BasicCCDBManager.h>
 #include "Framework/runDataProcessing.h"
