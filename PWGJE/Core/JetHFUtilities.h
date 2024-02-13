@@ -318,14 +318,14 @@ bool isDaughterTrack(T& track, U& candidate, V& tracks)
  * @param candidate mother hf particle that is being checked
  * @param globalIndex global index of potnetial daughter particle
  */
-template <typename T, typename U>
-bool isDaughterParticle(T const& particle, U const& particles, int globalIndex)
+template <typename T>
+bool isDaughterParticle(T const& particle, int globalIndex)
 {
-  for (auto daughter : particle.template daughters_as<U>()) {
+  for (auto daughter : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
     if (daughter.globalIndex() == globalIndex) {
       return true;
     }
-    if (isDaughterParticle(daughter, particles, globalIndex)) {
+    if (isDaughterParticle(daughter, globalIndex)) {
       return true;
     }
   }

@@ -68,13 +68,13 @@ struct JetFinderHFTask {
 
   // cluster level configurables
   Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
-  Configurable<float> clusterEtaMin{"clusterEtaMin", -0.7, "minimum cluster eta"}; // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
-  Configurable<float> clusterEtaMax{"clusterEtaMax", 0.7, "maximum cluster eta"};  // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
-  Configurable<float> clusterPhiMin{"clusterPhiMin", -999, "minimum cluster phi"};
-  Configurable<float> clusterPhiMax{"clusterPhiMax", 999, "maximum cluster phi"};
+  Configurable<float> clusterEtaMin{"clusterEtaMin", -0.71, "minimum cluster eta"}; // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
+  Configurable<float> clusterEtaMax{"clusterEtaMax", 0.71, "maximum cluster eta"};  // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
+  Configurable<float> clusterPhiMin{"clusterPhiMin", 1.39, "minimum cluster phi"};
+  Configurable<float> clusterPhiMax{"clusterPhiMax", 3.27, "maximum cluster phi"};
   Configurable<float> clusterEnergyMin{"clusterEnergyMin", 0.5, "minimum cluster energy in EMCAL (GeV)"};
-  Configurable<float> clusterTimeMin{"clusterTimeMin", -999., "minimum Cluster time (ns)"};
-  Configurable<float> clusterTimeMax{"clusterTimeMax", 999., "maximum Cluster time (ns)"};
+  Configurable<float> clusterTimeMin{"clusterTimeMin", -25., "minimum Cluster time (ns)"};
+  Configurable<float> clusterTimeMax{"clusterTimeMax", 25., "maximum Cluster time (ns)"};
   Configurable<bool> clusterRejectExotics{"clusterRejectExotics", true, "Reject exotic clusters"};
 
   // HF candidate level configurables
@@ -97,6 +97,7 @@ struct JetFinderHFTask {
   Configurable<int> jetRecombScheme{"jetRecombScheme", 0, "jet recombination scheme. 0 = E-scheme, 1 = pT-scheme, 2 = pT2-scheme"};
   Configurable<float> jetGhostArea{"jetGhostArea", 0.005, "jet ghost area"};
   Configurable<int> ghostRepeat{"ghostRepeat", 1, "set to 0 to gain speed if you dont need area calculation"};
+  Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
 
   Service<o2::framework::O2DatabasePDG> pdgDatabase;
   int trackSelection = -1;
@@ -164,7 +165,7 @@ struct JetFinderHFTask {
       }
     }
     jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, collision, jetsTableInput, constituentsTableInput, true);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, true);
   }
 
   // function that generalically processes gen level events
@@ -180,7 +181,7 @@ struct JetFinderHFTask {
       return;
     }
     jetfindingutilities::analyseParticles(inputParticles, particleSelection, jetTypeParticleLevel, particles, pdgDatabase, std::optional{candidate});
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, true);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, true);
   }
 
   void processDummy(JetCollisions const& collisions)
