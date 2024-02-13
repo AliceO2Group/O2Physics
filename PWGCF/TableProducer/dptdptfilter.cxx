@@ -1341,18 +1341,15 @@ void DptDptFilterTracks::fillTrackHistosBeforeSelection(TrackObject const& track
 template <typename TrackObject>
 void DptDptFilterTracks::fillTrackHistosAfterSelection(TrackObject const& track, int8_t sp)
 {
-  /* the charged species should have been called first so avoid double counting */
-  if (sp == kDptDptCharged) {
-    fhEtaA->Fill(track.eta());
-    fhPhiA->Fill(track.phi());
-    fhDCAxyA->Fill(track.dcaXY());
-    fhDCAzA->Fill(track.dcaZ());
-    if (track.dcaXY() < 1.0) {
-      fhFineDCAxyA->Fill(track.dcaXY());
-    }
-    if (track.dcaZ() < 1.0) {
-      fhFineDCAzA->Fill(track.dcaZ());
-    }
+  fhEtaA->Fill(track.eta());
+  fhPhiA->Fill(track.phi());
+  fhDCAxyA->Fill(track.dcaXY());
+  fhDCAzA->Fill(track.dcaZ());
+  if (track.dcaXY() < 1.0) {
+    fhFineDCAxyA->Fill(track.dcaXY());
+  }
+  if (track.dcaZ() < 1.0) {
+    fhFineDCAzA->Fill(track.dcaZ());
   }
   fhPA[sp]->Fill(track.p());
   fhPtA[sp]->Fill(track.pt());
@@ -1434,22 +1431,19 @@ void DptDptFilterTracks::fillParticleHistosBeforeSelection(ParticleObject const&
 template <typename ParticleObject, typename MCCollisionObject>
 void DptDptFilterTracks::fillParticleHistosAfterSelection(ParticleObject const& particle, MCCollisionObject const& collision, float charge, int8_t sp)
 {
-  /* the charged species should have been called first so avoid double counting */
-  if (sp == kDptDptCharged) {
-    fhTrueEtaA->Fill(particle.eta());
-    fhTruePhiA->Fill(particle.phi());
-    float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                              (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
-    if (traceDCAOutliers.mDoIt && (traceDCAOutliers.mLowValue < dcaxy) && (dcaxy < traceDCAOutliers.mUpValue)) {
-      LOGF(info, "DCAxy outlier: Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
-           particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
-      LOGF(info, "               With status %d and flags %0X", particle.statusCode(), particle.flags());
-    }
-
-    fhTrueDCAxyA->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                   (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
-    fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
+  fhTrueEtaA->Fill(particle.eta());
+  fhTruePhiA->Fill(particle.phi());
+  float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                            (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
+  if (traceDCAOutliers.mDoIt && (traceDCAOutliers.mLowValue < dcaxy) && (dcaxy < traceDCAOutliers.mUpValue)) {
+    LOGF(info, "DCAxy outlier: Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
+          particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
+    LOGF(info, "               With status %d and flags %0X", particle.statusCode(), particle.flags());
   }
+
+  fhTrueDCAxyA->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                                  (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
+  fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
   fhTruePA[sp]->Fill(particle.p());
   fhTruePtA[sp]->Fill(particle.pt());
   if (charge > 0) {
