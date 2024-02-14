@@ -79,7 +79,6 @@ class JetFinder
   fastjet::RecombinationScheme recombScheme = fastjet::E_scheme;
   fastjet::Strategy strategy = fastjet::Best;
   fastjet::AreaType areaType = fastjet::active_area;
-
   fastjet::GhostedAreaSpec ghostAreaSpec;
   fastjet::JetDefinition jetDef;
   fastjet::AreaDefinition areaDef;
