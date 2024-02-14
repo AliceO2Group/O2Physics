@@ -16,6 +16,7 @@
 
 #include <vector>
 #include <array>
+#include <random>
 #include "Math/Vector4D.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/runDataProcessing.h"
@@ -113,6 +114,7 @@ struct TreeCreatorElectronMLDDA {
   // for V0s
   Configurable<float> minv0cospa{"minv0cospa", 0.997, "minimum V0 CosPA"};
   Configurable<float> maxdcav0dau{"maxdcav0dau", 0.5, "max distance between V0 Daughters"};
+  Configurable<float> downscaling_pion{"downscaling_pion", 0.05, "down scaling factor to store pion"};
 
   // for phiv vs. mee
   Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -4.0, "min. TPC n sigma for electron inclusion"};
@@ -128,6 +130,9 @@ struct TreeCreatorElectronMLDDA {
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   o2::vertexing::DCAFitterN<2> fitter;
+
+  std::mt19937 engine;
+  std::uniform_real_distribution<float> dist01;
 
   void init(InitContext& context)
   {
@@ -167,6 +172,10 @@ struct TreeCreatorElectronMLDDA {
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     }
     fitter.setMatCorrType(matCorr);
+
+    std::random_device seed_gen;
+    engine = std::mt19937(seed_gen());
+    dist01 = std::uniform_real_distribution<float>(0.0f, 1.0f);
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -385,23 +394,28 @@ struct TreeCreatorElectronMLDDA {
         } else if (v0id == EM_V0_Label::kK0S && (abs(pos.tpcNSigmaPi()) < 5.f && abs(neg.tpcNSigmaPi()) < 5.f)) {
           registry.fill(HIST("hMassK0Short"), mK0Short);
           if (abs(mK0Short - 0.497) < 0.01) {
-            fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion));
-            fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion));
+            if (dist01(engine) < downscaling_pion) {
+              fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion));
+              fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion));
+            }
           }
         } else if (v0id == EM_V0_Label::kLambda && (abs(pos.tpcNSigmaPr()) < 5.f && abs(neg.tpcNSigmaPi()) < 5.f)) {
           registry.fill(HIST("hMassLambda"), mLambda);
           if (abs(mLambda - 1.115) < 0.005) {
             fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kProton));
-            fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion));
+            if (dist01(engine) < downscaling_pion) {
+              fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion));
+            }
           }
         } else if (v0id == EM_V0_Label::kAntiLambda && (abs(pos.tpcNSigmaPi()) < 5.f && abs(neg.tpcNSigmaPr()) < 5.f)) {
           registry.fill(HIST("hMassAntiLambda"), mAntiLambda);
           if (abs(mAntiLambda - 1.115) < 0.005) {
-            fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion));
+            if (dist01(engine) < downscaling_pion) {
+              fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion));
+            }
             fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kProton));
           }
         }
-
       } // end of v0 loop
 
       // extra statistics for electrons tagged by photon conversions
