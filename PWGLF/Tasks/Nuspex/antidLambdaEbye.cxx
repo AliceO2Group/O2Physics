@@ -395,7 +395,7 @@ struct antidLambdaEbye {
     std::sort(trkId.begin(), trkId.end());
     if (std::adjacent_find(trkId.begin(), trkId.end()) != trkId.end()) {
       candidateV0s.clear();
-      
+
       CandidateV0 candV0;
       candV0.pt = -999.f;
       candV0.eta = -999.f;
