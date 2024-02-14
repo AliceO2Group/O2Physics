@@ -51,6 +51,18 @@ constexpr double betheBlochDefault[1][6]{{-136.71, 0.441, 0.2269, 1.347, 0.8035,
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleNamesBB{"d"};
 static const std::vector<std::string> pidHypotheses{"Electron", "Muon", "Pion", "Kaon", "Proton", "Deuteron", "Triton", "He3", "Alpha", "Pion0", "Photon", "K0", "Lambda", "HyperTriton", "Hyperhydrog4", "XiMinus", "OmegaMinus"};
+std::shared_ptr<TH2> tempAntid;
+std::shared_ptr<TH2> tempAntiLambda;
+std::shared_ptr<TH2> tempLambda;
+std::shared_ptr<THnSparse> nAntid;
+std::shared_ptr<THnSparse> nAntiL;
+std::shared_ptr<THnSparse> nL;
+std::shared_ptr<THnSparse> nSqAntid;
+std::shared_ptr<THnSparse> nSqAntiL;
+std::shared_ptr<THnSparse> nSqL;
+std::shared_ptr<THnSparse> nLantiL;
+std::shared_ptr<THnSparse> nLantid;
+std::shared_ptr<THnSparse> nAntiLantid;
 } // namespace
 
 struct CandidateV0 {
@@ -130,12 +142,6 @@ struct antidLambdaEbye {
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry tempHistos{"tempHistos", {}, OutputObjHandlingPolicy::TransientObject};
-
-  std::shared_ptr<TH2> tempAntid;
-  std::shared_ptr<TH2> tempAntiLambda;
-  std::shared_ptr<TH2> tempLambda;
-
-  std::shared_ptr<THnSparse> nAntid, nAntiL, nL, nSqAntid, nSqAntiL, nSqL, nLantiL, nLantid, nAntiLantid;
 
   Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv &&
                         nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
