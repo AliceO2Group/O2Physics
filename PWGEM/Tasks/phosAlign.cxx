@@ -19,7 +19,6 @@
 #include "Common/DataModel/CaloClusters.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -204,7 +203,7 @@ struct phosAlign {
           electron = false;
         }
       }
-      trackMatchPoints[regionIndex].emplace_back(trackX, trackZ, track.p(), electron, bool(track.sign() > 0));
+      trackMatchPoints[regionIndex].emplace_back(trackX, trackZ, track.p(), electron, static_cast<bool>(track.sign() > 0));
     }
 
     for (const auto& clu : clusters) {
