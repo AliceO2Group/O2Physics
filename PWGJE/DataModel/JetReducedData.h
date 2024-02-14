@@ -94,10 +94,10 @@ DECLARE_SOA_TABLE(StoredJCollisionPIs, "AOD1", "JCollisionPIs",
                   jcollision::CollisionId,
                   o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE(JChTrigSels, "AOD", "JChrgTrigSels",
+DECLARE_SOA_TABLE(JChTrigSels, "AOD", "JChTrigSels",
                   jcollision::ChargedTriggerSel);
 
-DECLARE_SOA_TABLE(StoredJChTrigSels, "AOD1", "JChargTrigSels",
+DECLARE_SOA_TABLE(StoredJChTrigSels, "AOD1", "JChTrigSels",
                   jcollision::ChargedTriggerSel,
                   o2::soa::Marker<1>);
 

@@ -89,6 +89,7 @@ struct nucleiFlow {
   Configurable<int> cfgHarmonic{"cfgHarmonic", 2, "cfgHarmonic number"};
   Configurable<int> cfgQvecDetector{"cfgQvecDetector", 0, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5)"};
   Configurable<int> cfgSpecies{"cfgSpecies", 3, "Species under study (proton: 0, deuteron: 1, triton: 2, helion: 3, alpha: 4)"};
+  Configurable<int> cfgItsClusSizeCut{"cfgItsClusSizeCut", 4, "Cut on the average ITS cluster size."};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -127,6 +128,25 @@ struct nucleiFlow {
                                                   cfgBetheBlochParams->get(iSpecies, 4u));
     float resolutionTPC{expTPCSignal * cfgBetheBlochParams->get(iSpecies, 5u)};
     return static_cast<float>((candidate.tpcSignal() - expTPCSignal) / resolutionTPC);
+  }
+
+  /// @brief Get average ITS cluster size
+  /// @tparam T type for the track
+  /// @param track
+  /// @return average cluster size in ITS
+  template <class T>
+  float getITSClSize(T const& track)
+  {
+    float sum{0.f};
+    int nClus = 0;
+    for (int iL{0}; iL < 6; ++iL) {
+      auto size = (track.itsClusterSizes() >> (iL * 4)) & 0xf;
+      if (size > 0) {
+        nClus++;
+        sum += size;
+      }
+    }
+    return sum / nClus;
   }
 
   /// \brief Get the centrality with the selected detector
@@ -207,7 +227,7 @@ struct nucleiFlow {
 
   void init(o2::framework::InitContext&)
   {
-    const AxisSpec nSigmaTPCHe3Axis{nSigmaBins, "n{#sigma}_{TPC}({}^{3}He)"};
+    const AxisSpec nSigmaTPCHe3Axis{nSigmaBins, "n#sigma_{TPC}({}^{3}He)"};
     const AxisSpec ptAxis{ptBins, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec centAxis{centBins, "centrality(%)"};
     const AxisSpec FT0AspAxis{spBins, "#hat{u}_{2} #upoint #vec{Q}_{2}^{FT0A}"};
@@ -256,6 +276,9 @@ struct nucleiFlow {
     // float evtPlFV0A = epHelper.GetEventPlane(xQvecFV0A, yQvecFV0A, cfgHarmonic);
 
     for (auto track : tracks) {
+
+      if (getITSClSize(track) < cfgItsClusSizeCut)
+        continue;
 
       // Get candidate vector
       float xCandVec = TMath::Cos(cfgHarmonic * track.phi());

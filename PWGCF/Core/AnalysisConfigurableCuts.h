@@ -8,9 +8,10 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef ANALYSIS_CONFIGURABLE_CUTS_CLASSES_H
-#define ANALYSIS_CONFIGURABLE_CUTS_CLASSES_H
+#ifndef PWGCF_CORE_ANALYSISCONFIGURABLECUTS_H_
+#define PWGCF_CORE_ANALYSISCONFIGURABLECUTS_H_
 
+#include <string>
 #include <Rtypes.h>
 #include <TObject.h>
 #include <TNamed.h>
@@ -84,6 +85,25 @@ class TrackSelectionCfg
   ClassDefNV(TrackSelectionCfg, 1);
 };
 
+/// \brief Simple class to configure a selection based on PID
+/// The nsigmas information is for closeness to the line of interest
+/// and for separation to the other lines
+class TrackSelectionPIDCfg
+{
+ public:
+  bool mUseIt = false;
+  float mMinNSigmasTPC[5] = {-3.0, -3.0, -3.0, -3.0, -3.0}; ///< nsigmas TPC lower limit for e, mu, pi, Ka, and p
+  float mMaxNSigmasTPC[5] = {3.0, 3.0, 3.0, 3.0, 3.0};      ///< nsigmas TPC upper limit for e, mu, pi, Ka, and p
+  float mPThreshold = 0.0;                                  ///< momentum threshold for considering TOF information
+  bool mRequireTOF = true;                                  ///< require or not the presence of TOF when the momentum threshold is passed
+  float mMinNSigmasTOF[5] = {-3.0, -3.0, -3.0, -3.0, -3.0}; ///< nsigmas TOF lower limit for e, mu, pi, Ka, and p
+  float mMaxNSigmasTOF[5] = {3.0, 3.0, 3.0, 3.0, 3.0};      ///< nsigmas TOF upper limit for e, mu, pi, Ka, and p
+  bool m2Dcut = true;                                       ///< use an elliptic cut using TPC and TOF nsigmas
+  bool mExclude = false;                                    ///< should the identified track be excluded for analysis?
+ private:
+  ClassDefNV(TrackSelectionPIDCfg, 1);
+};
+
 class SimpleInclusiveCut : public TNamed
 {
  public:
@@ -102,4 +122,4 @@ class SimpleInclusiveCut : public TNamed
 
 } // namespace analysis
 } // namespace o2
-#endif // ANALYSIS_CONFIGURABLE_CUTS_CLASSES_H
+#endif // PWGCF_CORE_ANALYSISCONFIGURABLECUTS_H_

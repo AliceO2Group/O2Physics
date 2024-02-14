@@ -415,11 +415,11 @@ struct kinkAnalysis {
       } else {
         for (const auto& ambTrack : ambiTracks) {
           if (ambTrack.trackId() == track.globalIndex()) {
-            if (!ambTrack.has_bc() || ambTrack.bc().size() == 0) {
+            if (!ambTrack.has_bc() || ambTrack.bc_as<aod::BCsWithTimestamps>().size() == 0) {
               globalBCvector.push_back(-1);
               break;
             }
-            globalBCvector.push_back(ambTrack.bc().begin().globalBC());
+            globalBCvector.push_back(ambTrack.bc_as<aod::BCsWithTimestamps>().begin().globalBC());
             break;
           }
         }

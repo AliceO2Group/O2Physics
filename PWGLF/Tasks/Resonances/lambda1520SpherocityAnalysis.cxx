@@ -10,9 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file lambda1520_spherocity_analysis.cxx
-/// \brief Produce Spherocity table.
-///        Invariant Mass Reconstruction of Lambda(1520) Resonance.
-///
+/// \brief Invariant Mass Reconstruction of Lambda(1520) Resonance
 /// \author Yash Patley <yash.patley@cern.ch>
 
 #include <TLorentzVector.h>
@@ -49,10 +47,14 @@ struct lambdaAnalysis {
   Configurable<float> cEtaCut{"cEtaCut", 0.8, "Pseudorapidity cut"};
   Configurable<float> cDcaz{"cDcazMin", 1., "Minimum DCAz"};
   Configurable<float> cDcaxy{"cDcaxyMin", 0.1, "Minimum DCAxy"};
-  Configurable<bool> cKinCuts{"cKinCuts", false, "Kinematic Cuts for p-K pair opening angle"};
   Configurable<bool> cPrimaryTrack{"cPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cGlobalWoDCATrack{"cGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
   Configurable<bool> cPVContributor{"cPVContributor", true, "PV contributor track selection"};           // PV Contriuibutor
+
+  // Kinematics cuts
+  Configurable<bool> cKinCuts{"cKinCuts", true, "Kinematic Cuts for p-K pair opening angle"};
+  Configurable<std::vector<float>> cKinCutsPt{"cKinCutsPt", {0.0, 0.8, 1.2, 1.6, 2.0, 9999999999.}, "p_{T} of L* for kinematic cuts"};
+  Configurable<std::vector<float>> cKinCutsAlpha{"cKinCutsAlpha", {3.0, 1.8, 1.4, 1.0, 0.8}, "Opening angle of p-K of L*"};
 
   // PID Selections
   Configurable<bool> cUseOnlyTOFTrackPr{"cUseOnlyTOFTrackPr", false, "Use only TOF track for PID selection"}; // Use only TOF track for Proton PID selection
@@ -70,8 +72,8 @@ struct lambdaAnalysis {
   Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 4.0, "TPC nSigma cut for Kaon"};              // TPC
   Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"};              // TOF
   Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", 3.0, "Combined nSigma cut for Kaon"}; // Combined
-  Configurable<std::vector<float>> kaonTPCPIDp{"kaonTPCPIDp", {0.15, 0.3, 0.35, 0.40}, "p dependent TPC cuts kaons"};
-  Configurable<std::vector<float>> kaonTPCPIDcut{"kaonTPCPIDcut", {5., 4., 3.}, "TPC nsigma cuts kaons"};
+  Configurable<std::vector<float>> kaonTPCPIDp{"kaonTPCPIDp", {0.15, 0.3, 0.35, 0.40, 0.54}, "p dependent TPC cuts kaons"};
+  Configurable<std::vector<float>> kaonTPCPIDcut{"kaonTPCPIDcut", {5., 4., 3., 2.}, "TPC nsigma cuts kaons"};
   // Event Mixing.
   Configurable<bool> cMixSph{"cMixSph", true, "Include Sph Bins to be mixed"};
   Configurable<int> cNumMixEv{"cNumMixEv", 20, "Number of Events to be mixed"};
@@ -92,6 +94,7 @@ struct lambdaAnalysis {
     const AxisSpec axisP_pid(600, 0., 6., "p (GeV/c)");
     const AxisSpec axisPt_pid(600, 0., 6., "p_{T} (GeV/c)");
     const AxisSpec axisPt(nBinsPt, 0., 10., "p_{T} (GeV/c)");
+    const AxisSpec axisAlpha(200, 0 - 0.15, 2 * TMath::Pi() + 0.15, "#alpha");
     const AxisSpec axisEta(40, -1, 1, "#eta");
     const AxisSpec axisPhi(128, -0.05, 6.35, "#phi (rad)");
     const AxisSpec axisDCAz(500, -0.5, 0.5, {"DCA_{z} (cm)"});
@@ -117,28 +120,28 @@ struct lambdaAnalysis {
     histos.add("QAbefore/Kaon/h2d_ka_nsigma_tof_vs_tpc", "n#sigma^{TPC} vs n#sigma^{TOF} Kaons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
 
     // QA After
-    histos.add("QAafter/Proton/h1d_pr_pt", "p_{T}-spectra Protons", kTH1F, {axisPt_pid});
-    histos.add("QAafter/Proton/h2d_pr_dca_z", "dca_{z} Protons", kTH2F, {axisPt_pid, axisDCAz});
-    histos.add("QAafter/Proton/h2d_pr_dca_xy", "dca_{xy} Protons", kTH2F, {axisPt_pid, axisDCAxy});
+    histos.add("QAafter/Proton/h2d_pr_dca_z", "Protons", kTH2F, {axisPt_pid, axisDCAz});
+    histos.add("QAafter/Proton/h2d_pr_dca_xy", "Protons", kTH2F, {axisPt_pid, axisDCAxy});
     histos.add("QAafter/Proton/h2d_pr_dEdx_p", "TPC Signal Protons", kTH2F, {axisP_pid, axisdEdx});
-    histos.add("QAafter/Proton/h2d_pr_nsigma_tpc_pt", " Protons", kTH2F, {axisPt_pid, axisTPCNsigma});
-    histos.add("QAafter/Proton/h2d_pr_nsigma_tpc_p", " Protons", kTH2F, {axisP_pid, axisTPCNsigma});
-    histos.add("QAafter/Proton/h2d_pr_nsigma_tof_pt", " Protons", kTH2F, {axisPt_pid, axisTOFNsigma});
-    histos.add("QAafter/Proton/h2d_pr_nsigma_tof_p", " Protons", kTH2F, {axisP_pid, axisTOFNsigma});
+    histos.add("QAafter/Proton/h2d_pr_nsigma_tpc_pt", "Protons", kTH2F, {axisPt_pid, axisTPCNsigma});
+    histos.add("QAafter/Proton/h2d_pr_nsigma_tpc_p", "Protons", kTH2F, {axisP_pid, axisTPCNsigma});
+    histos.add("QAafter/Proton/h2d_pr_nsigma_tof_pt", "Protons", kTH2F, {axisPt_pid, axisTOFNsigma});
+    histos.add("QAafter/Proton/h2d_pr_nsigma_tof_p", "Protons", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAafter/Proton/h2d_pr_nsigma_tof_vs_tpc", "n#sigma(TOF) vs n#sigma(TPC) Protons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
-    histos.add("QAafter/Kaon/h1d_ka_pt", "p_{T}-spectra Kaons", kTH1F, {axisPt_pid});
-    histos.add("QAafter/Kaon/h2d_ka_dca_z", "dca_{z} Kaons", kTH2F, {axisPt_pid, axisDCAz});
-    histos.add("QAafter/Kaon/h2d_ka_dca_xy", "dca_{xy} Kaons", kTH2F, {axisPt_pid, axisDCAxy});
+    histos.add("QAafter/Kaon/h2d_ka_dca_z", "Kaons", kTH2F, {axisPt_pid, axisDCAz});
+    histos.add("QAafter/Kaon/h2d_ka_dca_xy", "Kaons", kTH2F, {axisPt_pid, axisDCAxy});
     histos.add("QAafter/Kaon/h2d_ka_dEdx_p", "TPC Signal Kaon", kTH2F, {axisP_pid, axisdEdx});
-    histos.add("QAafter/Kaon/h2d_ka_nsigma_tpc_pt", " Kaons", kTH2F, {axisPt_pid, axisTPCNsigma});
-    histos.add("QAafter/Kaon/h2d_ka_nsigma_tpc_p", " Kaons", kTH2F, {axisP_pid, axisTPCNsigma});
-    histos.add("QAafter/Kaon/h2d_ka_nsigma_tof_pt", " Kaons", kTH2F, {axisPt_pid, axisTOFNsigma});
-    histos.add("QAafter/Kaon/h2d_ka_nsigma_tof_p", " Kaons", kTH2F, {axisP_pid, axisTOFNsigma});
+    histos.add("QAafter/Kaon/h2d_ka_nsigma_tpc_pt", "Kaons", kTH2F, {axisPt_pid, axisTPCNsigma});
+    histos.add("QAafter/Kaon/h2d_ka_nsigma_tpc_p", "Kaons", kTH2F, {axisP_pid, axisTPCNsigma});
+    histos.add("QAafter/Kaon/h2d_ka_nsigma_tof_pt", "Kaons", kTH2F, {axisPt_pid, axisTOFNsigma});
+    histos.add("QAafter/Kaon/h2d_ka_nsigma_tof_p", "Kaons", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAafter/Kaon/h2d_ka_nsigma_tof_vs_tpc", "n#sigma(TOF) vs n#sigma(TPC) Kaons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
 
     // QA checks for protons and kaons
     histos.add("QAChecks/h1d_pr_pt", "p_{T}-spectra Protons", kTH1F, {axisPt_pid});
     histos.add("QAChecks/h1d_ka_pt", "p_{T}-spectra Kaons", kTH1F, {axisPt_pid});
+    histos.add("QAChecks/h2d_lstar_alpha_vs_pt", "#alpha_{oa} vs p_{T} Before Cuts", kTH2F, {axisPt, axisAlpha});
+    histos.add("QAChecks/h2d_sel_kincuts_lstar_alpha_vs_pt", "#alpha_{oa} vs p_{T} After Cuts", kTH2F, {axisPt, axisAlpha});
 
     // Analysis
     // Lambda Invariant Mass
@@ -324,6 +327,30 @@ struct lambdaAnalysis {
     return false;
   }
 
+  // kinematic cuts method
+  template <typename trackType, typename T>
+  bool kinCuts(trackType trkPr, trackType trkKa, T p, float& alpha)
+  {
+    // initialize
+    std::vector<float> kinCutsPt = static_cast<std::vector<float>>(cKinCutsPt);
+    std::vector<float> kinCutsAlpha = static_cast<std::vector<float>>(cKinCutsAlpha);
+    int kinCutsSize = static_cast<int>(kinCutsAlpha.size());
+
+    TVector3 v1(trkPr.px(), trkPr.py(), trkPr.pz());
+    TVector3 v2(trkKa.px(), trkKa.py(), trkKa.pz());
+    alpha = v1.Angle(v2);
+
+    histos.fill(HIST("QAChecks/h2d_lstar_alpha_vs_pt"), p.Pt(), alpha);
+
+    for (int i = 0; i < kinCutsSize; ++i) {
+      if ((p.Pt() > kinCutsPt[i] && p.Pt() <= kinCutsPt[i + 1]) && (alpha > kinCutsAlpha[i])) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   template <bool mix, bool mc, typename trackType>
   void fillDataHistos(trackType const& trk1, trackType const& trk2, float const& sph, float const& mult)
   {
@@ -368,7 +395,6 @@ struct lambdaAnalysis {
       // Fill QA after track selection.
       if constexpr (!mix) {
         // Proton
-        histos.fill(HIST("QAafter/Proton/h1d_pr_pt"), trkPr.pt());
         histos.fill(HIST("QAafter/Proton/h2d_pr_dca_z"), trkPr.pt(), trkPr.dcaZ());
         histos.fill(HIST("QAafter/Proton/h2d_pr_dca_xy"), trkPr.pt(), trkPr.dcaXY());
         histos.fill(HIST("QAafter/Proton/h2d_pr_dEdx_p"), p_ptot, trkPr.tpcSignal());
@@ -380,7 +406,6 @@ struct lambdaAnalysis {
           histos.fill(HIST("QAafter/Proton/h2d_pr_nsigma_tof_vs_tpc"), trkPr.tpcNSigmaPr(), trkPr.tofNSigmaPr());
         }
         // Kaon
-        histos.fill(HIST("QAafter/Kaon/h1d_ka_pt"), trkKa.pt());
         histos.fill(HIST("QAafter/Kaon/h2d_ka_dca_z"), trkKa.pt(), trkKa.dcaZ());
         histos.fill(HIST("QAafter/Kaon/h2d_ka_dca_xy"), trkKa.pt(), trkKa.dcaXY());
         histos.fill(HIST("QAafter/Kaon/h2d_ka_dEdx_p"), k_ptot, trkKa.tpcSignal());
@@ -403,11 +428,12 @@ struct lambdaAnalysis {
 
       // Apply kinematic cuts.
       if (cKinCuts) {
-        TVector3 v1(trkPr.px(), trkPr.py(), trkPr.pz());
-        TVector3 v2(trkKa.px(), trkKa.py(), trkKa.pz());
-        float alpha = v1.Angle(v2);
-        if (alpha > 1.4 && alpha < 2.4)
+        float alpha = 0;
+        bool kinCutFlag = kinCuts(trkPr, trkKa, p, alpha);
+        if (!kinCutFlag) {
           continue;
+        }
+        histos.fill(HIST("QAChecks/h2d_sel_kincuts_lstar_alpha_vs_pt"), p.Pt(), alpha);
       }
 
       // Fill Invariant Mass Histograms.

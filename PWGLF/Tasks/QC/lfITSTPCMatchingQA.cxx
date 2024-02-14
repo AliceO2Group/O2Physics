@@ -55,9 +55,11 @@ struct lfmatchingqa {
   ConfigurableAxis tpcNsigmaAxis{"tpcNsigmaAxis", {100, -4.f, 4.f}, "tpc nsigma axis"};
   ConfigurableAxis momAxis{"momAxis", {60., -3.f, 3.f}, "momentum axis binning"};
   ConfigurableAxis momAxisFine{"momAxisFine", {2.e3, -5.f, 5.f}, "momentum axis binning"};
-  ConfigurableAxis momResAxis{"momResAxis", {2.e2, -2.f, 2.f}, "momentum resolution binning"};
-  ConfigurableAxis tpcAxis{"tpcAxis", {4e3, 0.f, 4.e3f}, "tpc signal axis binning"};
-  ConfigurableAxis dcaAxis{"dcaAxis", {100, -0.1f, 0.1f}, "dca axis binning"};
+  ConfigurableAxis momResAxis{"momResAxis", {1.e2, -2.f, 2.f}, "momentum resolution binning"};
+  ConfigurableAxis tpcAxis{"tpcAxis", {4e2, 0.f, 1.e3f}, "tpc signal axis binning"};
+  ConfigurableAxis tpcAxisFine{"tpcAxisFine", {4e3, 0.f, 4.e3f}, "tpc signal axis binning"};
+
+  ConfigurableAxis dcaAxis{"dcaAxis", {50, -0.1f, 0.1f}, "dca axis binning"};
   ConfigurableAxis itsClusSizeAxis{"itsClusSizeAxis", {120, 1, 15}, "its cluster size axis binning"};
   ConfigurableAxis trackingPidAxis{"trackingPidAxis", {static_cast<double>(pidHypotheses.size()), 0, static_cast<double>(pidHypotheses.size())}, "tracking pid hypothesis binning"};
 
@@ -139,7 +141,7 @@ struct lfmatchingqa {
   void init(o2::framework::InitContext&)
   {
     histos.add<TH1>("zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
-    histos.add<TH2>("tpcSignal", ";#it{p}_{TPC} (GeV/#it{c});TPC signal (a.u.)", {HistType::kTH2F}, {momAxisFine, tpcAxis});
+    histos.add<TH2>("tpcSignal", ";#it{p}_{TPC} (GeV/#it{c});TPC signal (a.u.)", {HistType::kTH2F}, {momAxisFine, tpcAxisFine});
 
     // use a THnSparse for all the information
     auto thnPi = histos.add("thnPi", ";#it{p}_{TPC} (GeV/#it{c}); #it{p}_{GLO} (GeV/#it{c}); #it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c}); DCA_{xy} (cm); <ITS Cluster size> x cos(#lambda); TPC signal (a.u.); n#sigma_{TPC} (pi); PID hypothesis; MC PDG code; MC Gen P (GeV/c)",

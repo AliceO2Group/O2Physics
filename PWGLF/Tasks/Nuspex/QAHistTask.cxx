@@ -43,6 +43,7 @@ struct QAHistTask {
 
   // Data
   HistogramRegistry QA_reg{"data_all_species", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry QA_species{"data_species", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry QA_species_pos{"data_positive", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry QA_species_neg{"data_negative", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry MC_truth_reg{"MC_particles", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -124,7 +125,10 @@ struct QAHistTask {
     QA_reg.add("histTrackLength", "Track length", HistType::kTH1F, {{350, 0., 700., "length (cm)"}});
     QA_reg.add("histDcaVsPID", "DCA XY vs PID hypothesis", HistType::kTH2F, {{1000, -2.0, 2.0, "dca XY"}, {10, 0.0, 10.0, "PID ID"}});
     QA_reg.add("histDcaZVsPID", "DCA Z vs PID hypothesis", HistType::kTH2F, {{1000, -2.0, 2.0, "dca Z"}, {10, 0.0, 10.0, "PID ID"}});
-    QA_reg.add("histpTCorralation", "global pT vs ITS-TPC pT", HistType::kTH2F, {ptAxis_short, ptAxisITS_TPC});
+    QA_reg.add("histpTCorralation", "TPC-glo pT vs glo pT", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
+
+    // QA choosen species (all charges)
+    QA_species.add("histpTCorralation", "TPC-glo pT vs glo pT", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
 
     // QA choosen species (positive)
     QA_species_pos.add("histTpcSignalData", Form("Specific energy loss (%s)", species.c_str()), HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
@@ -152,7 +156,7 @@ struct QAHistTask {
     QA_species_pos.add("histEta", Form("Pseudorapidity with centrality cut (%s)", species.c_str()), HistType::kTH1F, {etaAxis});
     QA_species_pos.add("histEta_cent", Form("Pseudorapidity vs Centrality (%s)", species.c_str()), HistType::kTH2F, {centralityAxis_extended, etaAxis});
     QA_species_pos.add("histTrackLength", Form("Track length (%s)", species.c_str()), HistType::kTH1F, {{350, 0., 700., "length (cm)"}});
-    QA_species_pos.add("histpTCorralation", "global pT vs ITS-TPC pT", HistType::kTH2F, {ptAxis_short, ptAxisITS_TPC});
+    QA_species_pos.add("histpTCorralation", "TPC-glo pT vs glo pT", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
 
     // QA choosen species (negative)
     QA_species_neg.add("histTpcSignalData", Form("Specific energy loss (anti-%s)", species.c_str()), HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
@@ -180,7 +184,7 @@ struct QAHistTask {
     QA_species_neg.add("histEta", Form("Pseudorapidity with centrality cut (%s)", species.c_str()), HistType::kTH1F, {etaAxis});
     QA_species_neg.add("histEta_cent", Form("Pseudorapidity vs Centrality (%s)", species.c_str()), HistType::kTH2F, {centralityAxis_extended, etaAxis});
     QA_species_neg.add("histTrackLength", Form("Track length (%s)", species.c_str()), HistType::kTH1F, {{350, 0., 700., "length (cm)"}});
-    QA_species_neg.add("histpTCorralation", "global pT vs ITS-TPC pT", HistType::kTH2F, {ptAxis_short, ptAxisITS_TPC});
+    QA_species_neg.add("histpTCorralation", "TPC-glo pT vs glo pT", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
 
     // MC truth
     MC_truth_reg.add("histPhi", "#phi", HistType::kTH2F, {{100, 0., 2. * TMath::Pi()}, PDGBINNING});
@@ -214,7 +218,8 @@ struct QAHistTask {
     MC_recon_reg.add("histChi2TOF", "chi^2 TOF vs Pt", HistType::kTH3F, {ptAxis, {75, 0.0, 15.0, "chi^2"}, PDGBINNING});
     MC_recon_reg.add("histTrackLength", "Track length", HistType::kTH2F, {{350, 0., 700., "length (cm)"}, PDGBINNING});
     MC_recon_reg.add("histTPCFractionSharedCls", "Fraction of shared TPC clusters", HistType::kTH2F, {{100, -2.0, 2.0, "Shared Cls"}, PDGBINNING});
-    MC_recon_reg.add("histpTCorralation", "global pT vs ITS-TPC pT", HistType::kTH2F, {ptAxis_short, ptAxisITS_TPC});
+    MC_recon_reg.add("histpTCorralation", "TPC-glo pT vs glo pT", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
+    MC_recon_reg.add("histpTCorralation_PDG", "TPC-glo pT vs glo pT", HistType::kTH3F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}, PDGBINNING});
 
     // MC diff (truth - reconstructed)
     MC_recon_diff_reg.add("histPhiDiff", "MC t", HistType::kTH2F, {ptAxis_diff, PDGBINNING});
@@ -282,7 +287,7 @@ struct QAHistTask {
 
       QA_reg.fill(HIST("histDcaVsPID"), track.dcaXY(), track.pidForTracking());
       QA_reg.fill(HIST("histDcaZVsPID"), track.dcaZ(), track.pidForTracking());
-      QA_reg.fill(HIST("histpTCorralation"), track.pt(), track.tpcInnerParam());
+      QA_reg.fill(HIST("histpTCorralation"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt());
 
       float nSigmaSpecies = 999.0;
 
@@ -401,6 +406,9 @@ struct QAHistTask {
 
       // fill QA histograms
       if (TMath::Abs(nSigmaSpecies) < nsigmacut) {
+
+        QA_species.fill(HIST("histpTCorralation"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt());
+
         if (track.sign() > 0) {
           QA_species_pos.fill(HIST("histDcaVsPtData"), track.pt(), track.dcaXY());
           QA_species_pos.fill(HIST("histDcaZVsPtData"), track.pt(), track.dcaZ());
@@ -423,7 +431,7 @@ struct QAHistTask {
           QA_species_pos.fill(HIST("histTPCCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
           QA_species_pos.fill(HIST("histTPCFoundOverFindable"), track.tpcFoundOverFindableCls());
           QA_species_pos.fill(HIST("histTPCFractionSharedCls"), track.tpcFractionSharedCls());
-          QA_species_pos.fill(HIST("histpTCorralation"), track.pt(), track.tpcInnerParam());
+          QA_species_pos.fill(HIST("histpTCorralation"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt());
 
           if (track.hasTOF()) {
 
@@ -468,7 +476,7 @@ struct QAHistTask {
           QA_species_neg.fill(HIST("histTPCCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
           QA_species_neg.fill(HIST("histTPCFoundOverFindable"), track.tpcFoundOverFindableCls());
           QA_species_neg.fill(HIST("histTPCFractionSharedCls"), track.tpcFractionSharedCls());
-          QA_species_neg.fill(HIST("histpTCorralation"), track.pt(), track.tpcInnerParam());
+          QA_species_neg.fill(HIST("histpTCorralation"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt());
 
           if (track.hasTOF()) {
 
@@ -595,7 +603,8 @@ struct QAHistTask {
       MC_recon_reg.fill(HIST("histChi2TOF"), track.pt(), track.tofChi2(), pdgbin);
       MC_recon_reg.fill(HIST("histTrackLength"), track.length(), pdgbin);
       MC_recon_reg.fill(HIST("histTPCFractionSharedCls"), track.tpcFractionSharedCls(), pdgbin);
-      MC_recon_reg.fill(HIST("histpTCorralation"), track.pt(), track.tpcInnerParam());
+      MC_recon_reg.fill(HIST("histpTCorralation"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt());
+      MC_recon_reg.fill(HIST("histpTCorralation_PDG"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt(), pdgbin);
 
       if (track.hasTOF()) {
         Float_t TOFmass2 = ((track.mass()) * (track.mass()));

@@ -144,6 +144,7 @@ struct strangederivedbuilder {
   Configurable<bool> fillRawFT0A{"fillRawFT0A", false, "Fill raw FT0A information for debug"};
   Configurable<bool> fillRawFT0C{"fillRawFT0C", true, "Fill raw FT0C information for debug"};
   Configurable<bool> fillRawFV0A{"fillRawFV0A", false, "Fill raw FV0A information for debug"};
+  Configurable<bool> fillRawZDC{"fillRawZDC", false, "Fill raw ZDC information for debug"};
   Configurable<bool> fillRawNTracksEta1{"fillRawNTracksEta1", true, "Fill raw NTracks |eta|<1 information for debug"};
 
   Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
@@ -194,7 +195,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels> const& collisions, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels> const& collisions, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
@@ -209,11 +210,17 @@ struct strangederivedbuilder {
         auto bc = collision.bc_as<aod::BCsWithTimestamps>();
         strangeStamps(bc.runNumber(), bc.timestamp());
 
-        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1) {
+        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC) {
           strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
                           collision.multFT0A() * static_cast<float>(fillRawFV0A),
-                          collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1));
+                          collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
+                          collision.multZNA() * static_cast<float>(fillRawZDC),
+                          collision.multZNC() * static_cast<float>(fillRawZDC),
+                          collision.multZEM1() * static_cast<float>(fillRawZDC),
+                          collision.multZEM2() * static_cast<float>(fillRawZDC),
+                          collision.multZPA() * static_cast<float>(fillRawZDC),
+                          collision.multZPC() * static_cast<float>(fillRawZDC));
         }
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
@@ -221,7 +228,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&)
+  void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
@@ -249,11 +256,17 @@ struct strangederivedbuilder {
         auto bc = collision.bc_as<aod::BCsWithTimestamps>();
         strangeStamps(bc.runNumber(), bc.timestamp());
 
-        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1) {
+        if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC) {
           strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
                           collision.multFT0A() * static_cast<float>(fillRawFV0A),
-                          collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1));
+                          collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
+                          collision.multZNA() * static_cast<float>(fillRawZDC),
+                          collision.multZNC() * static_cast<float>(fillRawZDC),
+                          collision.multZEM1() * static_cast<float>(fillRawZDC),
+                          collision.multZEM2() * static_cast<float>(fillRawZDC),
+                          collision.multZPA() * static_cast<float>(fillRawZDC),
+                          collision.multZPC() * static_cast<float>(fillRawZDC));
         }
       }
       for (int i = 0; i < V0Table_thisColl.size(); i++)
