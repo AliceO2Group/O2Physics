@@ -441,89 +441,89 @@ struct PolarisationRho {
 
       if (costheta > -1. && costheta < -0.7) {
         registry.fill(HIST("hMassCosTheta_0"), p.M());
-      };
+      }
       if (costheta > -0.7 && costheta < -0.55) {
         registry.fill(HIST("hMassCosTheta_1"), p.M());
-      };
+      }
       if (costheta > -0.55 && costheta < -0.45) {
         registry.fill(HIST("hMassCosTheta_2"), p.M());
-      };
+      }
       if (costheta > -0.45 && costheta < -0.35) {
         registry.fill(HIST("hMassCosTheta_3"), p.M());
-      };
+      }
       if (costheta > -0.35 && costheta < -0.25) {
         registry.fill(HIST("hMassCosTheta_4"), p.M());
-      };
+      }
       if (costheta > -0.25 && costheta < -0.15) {
         registry.fill(HIST("hMassCosTheta_5"), p.M());
-      };
+      }
       if (costheta > -0.15 && costheta < -0.05) {
         registry.fill(HIST("hMassCosTheta_6"), p.M());
-      };
+      }
       if (costheta > -0.05 && costheta < 0.) {
         registry.fill(HIST("hMassCosTheta_7"), p.M());
-      };
+      }
       if (costheta > 0. && costheta < 0.05) {
         registry.fill(HIST("hMassCosTheta_8"), p.M());
-      };
+      }
       if (costheta > 0.05 && costheta < 0.15) {
         registry.fill(HIST("hMassCosTheta_9"), p.M());
-      };
+      }
       if (costheta > 0.15 && costheta < 0.25) {
         registry.fill(HIST("hMassCosTheta_10"), p.M());
-      };
+      }
       if (costheta > 0.25 && costheta < 0.35) {
         registry.fill(HIST("hMassCosTheta_11"), p.M());
-      };
+      }
       if (costheta > 0.35 && costheta < 0.45) {
         registry.fill(HIST("hMassCosTheta_12"), p.M());
-      };
+      }
       if (costheta > 0.45 && costheta < 0.55) {
         registry.fill(HIST("hMassCosTheta_13"), p.M());
-      };
+      }
       if (costheta > 0.55 && costheta < 0.7) {
         registry.fill(HIST("hMassCosTheta_14"), p.M());
-      };
+      }
       if (costheta > 0.7 && costheta < 1.) {
         registry.fill(HIST("hMassCosTheta_15"), p.M());
-      };
+      }
 
       if (phihel > 2. * TMath::Pi() / 12. * 0. && phihel < 2. * TMath::Pi() / 12. * 1.) {
         registry.fill(HIST("hMassPhi_0"), p.M());
-      };
+      }
       if (phihel > 2. * TMath::Pi() / 12. * 1. && phihel < 2. * TMath::Pi() / 12. * 2.) {
         registry.fill(HIST("hMassPhi_1"), p.M());
-      };
+      }
       if (phihel > 2. * TMath::Pi() / 12. * 2. && phihel < 2. * TMath::Pi() / 12. * 3.) {
         registry.fill(HIST("hMassPhi_2"), p.M());
-      };
+      }
       if (phihel > 2. * TMath::Pi() / 12. * 3. && phihel < 2. * TMath::Pi() / 12. * 4.) {
         registry.fill(HIST("hMassPhi_3"), p.M());
-      };
+      }
       if (phihel > 2. * TMath::Pi() / 12. * 4. && phihel < 2. * TMath::Pi() / 12. * 5.) {
         registry.fill(HIST("hMassPhi_4"), p.M());
-      };
+      }
       if (phihel > 2. * TMath::Pi() / 12. * 5. && phihel < 2. * TMath::Pi() / 12. * 6.) {
         registry.fill(HIST("hMassPhi_5"), p.M());
-      };
+      }
       if (phihel > 2. * TMath::Pi() / 12. * 6. && phihel < 2. * TMath::Pi() / 12. * 7.) {
         registry.fill(HIST("hMassPhi_6"), p.M());
-      };
+      }
       if (phihel > 2. * TMath::Pi() / 12. * 7. && phihel < 2. * TMath::Pi() / 12. * 8.) {
         registry.fill(HIST("hMassPhi_7"), p.M());
-      };
+      }
       if (phihel > 2. * TMath::Pi() / 12. * 8. && phihel < 2. * TMath::Pi() / 12. * 9.) {
         registry.fill(HIST("hMassPhi_8"), p.M());
-      };
+      }
       if (phihel > 2. * TMath::Pi() / 12. * 9. && phihel < 2. * TMath::Pi() / 12. * 10.) {
         registry.fill(HIST("hMassPhi_9"), p.M());
-      };
+      }
       if (phihel > 2. * TMath::Pi() / 12. * 10. && phihel < 2. * TMath::Pi() / 12. * 11.) {
         registry.fill(HIST("hMassPhi_10"), p.M());
-      };
+      }
       if (phihel > 2. * TMath::Pi() / 12. * 11. && phihel < 2. * TMath::Pi() / 12. * 12.) {
         registry.fill(HIST("hMassPhi_11"), p.M());
-      };
+      }
     }
 
   } // end of process
