@@ -96,7 +96,7 @@ struct f0980analysis {
     AxisSpec pTqaAxis = {200, 0, 20};
     AxisSpec phiqaAxis = {72, 0., 2.0 * constants::math::PI};
     AxisSpec EPAxis = {10, 0, constants::math::PI};
-	AxisSpec EPqaAxis = {200, -constants::math::PI, constants::math::PI};
+    AxisSpec EPqaAxis = {200, -constants::math::PI, constants::math::PI};
     AxisSpec EPresAxis = {200, -2, 2};
 
     histos.add("hInvMass_f0980_US", "unlike invariant mass",
