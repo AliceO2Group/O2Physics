@@ -341,7 +341,11 @@ struct antidLambdaEbye {
       if (track.pt() <= antidPtTof || (track.pt() > antidPtTof && hasTof && std::abs(mass - o2::constants::physics::MassDeuteron) < tofMassMax)) {
         histos.fill(HIST("tpcNsigmaGlo"), track.pt(), nSigmaTPC);
         tempHistos.fill(HIST("tempAntid"), std::abs(track.eta()), track.pt());
-        candidateAntids.emplace_back(track.pt(), track.eta(), track.globalIndex());
+        CandidateAntid candAntid;
+        candAntid.pt = track.pt();
+        candAntid.eta = track.eta();
+        candAntid.gloablIndex = track.globalIndex();
+        candidateAntids.push_back(candAntid);
       }
     }
 
@@ -379,14 +383,25 @@ struct antidLambdaEbye {
       trkId.emplace_back(pos.globalIndex());
       trkId.emplace_back(neg.globalIndex());
 
-      candidateV0s.emplace_back(v0.pt(), v0.eta(), pos.globalIndex(), neg.globalIndex());
+      CandidateV0 candV0;
+      candV0.pt = v0.pt();
+      candV0.eta = v0.eta();
+      candV0.globalIndexPos = pos.globalIndex();
+      candV0.globalIndexNeg = neg.globalIndex();
+      candidateV0s.push_back(candV0);
     }
 
     // reject events having multiple v0s from same tracks (TODO: also across collisions?)
     std::sort(trkId.begin(), trkId.end());
     if (std::adjacent_find(trkId.begin(), trkId.end()) != trkId.end()) {
       candidateV0s.clear();
-      candidateV0s.emplace_back(-999.f, -999.f, -999, -999);
+      
+      CandidateV0 candV0;
+      candV0.pt = -999.f;
+      candV0.eta = -999.f;
+      candV0.globalIndexPos = -999;
+      candV0.globalIndexNeg = -999;
+      candidateV0s.push_back(candV0);
       return;
     }
 
