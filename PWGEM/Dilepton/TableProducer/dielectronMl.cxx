@@ -218,6 +218,11 @@ struct DielectronMlSingleTrack {
   {
     for (const auto& track : tracks) {
       if (!applyPreSelectionCuts(track)) {
+        singleTrackSelection(false);
+        if (fillScoreTable) {
+          std::vector<float> outputMl(nClassesMl, -1);
+          singleTrackScore(outputMl);
+        }
         continue;
       }
       auto pt = track.pt();
