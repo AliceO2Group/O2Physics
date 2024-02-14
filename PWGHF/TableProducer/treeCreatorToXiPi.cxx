@@ -177,11 +177,13 @@ struct HfTreeCreatorToXiPi {
 
   Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
 
+  using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection>;
+
   void init(InitContext const&)
   {
   }
 
-  template <typename T>
+  template <class TMyTracks, typename T>
   void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc)
   {
     rowCandidateFull(
@@ -267,7 +269,7 @@ struct HfTreeCreatorToXiPi {
       candidate.impactParCascXY() / candidate.errImpactParCascXY(),
       candidate.impactParPiFromCharmBaryonXY() / candidate.errImpactParPiFromCharmBaryonXY(),
       candidate.decLenCharmBaryon() / candidate.errorDecayLengthCharmBaryon(),
-      candidate.template piFromCharmBaryon_as<aod::TrackSelection>().isGlobalTrackWoDCA(),
+      candidate.template piFromCharmBaryon_as<TMyTracks>().isGlobalTrackWoDCA(),
       candidate.statusPidLambda(),
       candidate.statusPidCascade(),
       candidate.statusPidCharmBaryon(),
@@ -290,24 +292,24 @@ struct HfTreeCreatorToXiPi {
       originMc);
   }
 
-  void processData(aod::Collisions const& collisions, aod::TrackSelection const&,
+  void processData(aod::Collisions const& collisions, MyTrackTable const&,
                    soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate(candidate, -7, -7, RecoDecay::OriginType::None);
+      fillCandidate<MyTrackTable>(candidate, -7, -7, RecoDecay::OriginType::None);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processData, "Process data", true);
 
-  void processMc(aod::Collisions const& collisions,
+  void processMc(aod::Collisions const& collisions, MyTrackTable const&,
                  soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec());
+      fillCandidate<MyTrackTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec());
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMc, "Process MC", false);
