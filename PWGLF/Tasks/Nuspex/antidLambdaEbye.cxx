@@ -344,7 +344,7 @@ struct antidLambdaEbye {
         CandidateAntid candAntid;
         candAntid.pt = track.pt();
         candAntid.eta = track.eta();
-        candAntid.gloablIndex = track.globalIndex();
+        candAntid.globalIndex = track.globalIndex();
         candidateAntids.push_back(candAntid);
       }
     }
