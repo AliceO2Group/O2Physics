@@ -61,7 +61,7 @@ struct FlowPbPbTask {
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   // Corrections
   TH1D* mEfficiency = nullptr;
@@ -328,7 +328,7 @@ struct FlowPbPbTask {
     correctionsLoaded = true;
   }
 
-  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, const float& phi, const float& eta, const float& pt, const float& vtxz)
+  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, float phi, float eta, float pt, float vtxz)
   {
     float eff = 1.;
     if (mEfficiency)
@@ -370,38 +370,35 @@ struct FlowPbPbTask {
     double sum_ptSquare_wSquare_WithinGap08 = 0., sum_pt_wSquare_WithinGap08 = 0.;
 
     for (auto& track : tracks) {
-      double pt = track.pt();
-      double eta = track.eta();
-      double phi = track.phi();
       if (cfgOutputNUAWeights)
-        fWeights->Fill(phi, eta, vtxz, pt, cent, 0);
-      if (!setCurrentParticleWeights(weff, wacc, phi, eta, pt, vtxz))
+        fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+      if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
         continue;
-      bool WithinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
-      bool WithinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within RF pT range
-      bool WithinEtaGap08 = (eta >= -0.4) && (eta <= 0.4);
+      bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
+      bool WithinPtRef = (cfgCutPtMin < track.pt()) && (track.pt() < cfgCutPtMax);       // within RF pT range
+      bool WithinEtaGap08 = (track.eta() >= -0.4) && (track.eta() <= 0.4);
       if (WithinPtRef) {
-        registry.fill(HIST("hPhi"), phi);
+        registry.fill(HIST("hPhi"), track.phi());
         registry.fill(HIST("hEta"), track.eta());
-        registry.fill(HIST("hPt"), pt);
+        registry.fill(HIST("hPt"), track.pt());
         weffEvent += weff;
         waccEvent += wacc;
-        ptSum += weff * pt;
+        ptSum += weff * track.pt();
         TrackNum++;
         if (WithinEtaGap08) {
-          ptSum_Gap08 += weff * pt;
-          sum_pt_wSquare_WithinGap08 += weff * weff * pt;
-          sum_ptSquare_wSquare_WithinGap08 += weff * weff * pt * pt;
+          ptSum_Gap08 += weff * track.pt();
+          sum_pt_wSquare_WithinGap08 += weff * weff * track.pt();
+          sum_ptSquare_wSquare_WithinGap08 += weff * weff * track.pt() * track.pt();
           weffEvent_WithinGap08 += weff;
           weffEventSquare_WithinGap08 += weff * weff;
         }
       }
       if (WithinPtRef)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 1);
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
       if (WithinPtPOI)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 2);
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 2);
       if (WithinPtPOI && WithinPtRef)
-        fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, phi, wacc * weff, 4);
+        fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 4);
     }
 
     double WeffEvent_diff_WithGap08 = weffEvent_WithinGap08 * weffEvent_WithinGap08 - weffEventSquare_WithinGap08;

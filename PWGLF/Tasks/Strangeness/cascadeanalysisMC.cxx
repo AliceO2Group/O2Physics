@@ -103,9 +103,9 @@ struct cascadeGenerated {
         continue;
       if (particle.pdgCode() == 3312)
         registry.fill(HIST("hPtXiMinus"), particle.pt());
-      if (particle.pdgCode() == 3334)
-        registry.fill(HIST("hPtXiPlus"), particle.pt());
       if (particle.pdgCode() == -3312)
+        registry.fill(HIST("hPtXiPlus"), particle.pt());
+      if (particle.pdgCode() == 3334)
         registry.fill(HIST("hPtOmegaMinus"), particle.pt());
       if (particle.pdgCode() == -3334)
         registry.fill(HIST("hPtOmegaPlus"), particle.pt());

@@ -53,10 +53,20 @@ struct CreateEMEvent {
     hEventCounter->GetXaxis()->SetBinLabel(2, "sel8");
   }
 
+  PresliceUnsorted<MyCollisions> preslice_collisions_per_bc = o2::aod::collision::bcId;
+  std::unordered_map<uint64_t, int> map_ncolls_per_bc;
+
   //! Please don't skip any event!
   template <bool isMC, EMEventType eventype, typename TEvents>
-  void skimEvent(TEvents const& collisions, aod::BCs const&)
+  void skimEvent(TEvents const& collisions, aod::BCs const& bcs)
   {
+    // first count the number of collisions per bc
+    for (auto& bc : bcs) {
+      auto collisions_per_bc = collisions.sliceBy(preslice_collisions_per_bc, bc.globalIndex());
+      map_ncolls_per_bc[bc.globalIndex()] = collisions_per_bc.size();
+      // LOGF(info, "bc.globalIndex() = %d , collisions_per_bc.size() = %d", bc.globalIndex(), collisions_per_bc.size());
+    }
+
     for (auto& collision : collisions) {
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {
@@ -64,9 +74,9 @@ struct CreateEMEvent {
         }
       }
 
+      // LOGF(info, "collision.bc().globalIndex() = %d, ncolls_per_bc = %d", collision.bc().globalIndex(), map_ncolls_per_bc[collision.bc().globalIndex()]);
       registry.fill(HIST("hEventCounter"), 1);
 
-      // auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       bool is_phoscpv_readout = collision.alias_bit(kTVXinPHOS);
       bool is_emc_readout = collision.alias_bit(kTVXinEMC);
 
@@ -76,7 +86,7 @@ struct CreateEMEvent {
 
       uint64_t tag = collision.selection_raw();
       event(collision.globalIndex(), tag, collision.bc().runNumber(), collision.bc().triggerMask(), collision.sel8(),
-            is_phoscpv_readout, is_emc_readout,
+            is_phoscpv_readout, is_emc_readout, map_ncolls_per_bc[collision.bc().globalIndex()],
             collision.posX(), collision.posY(), collision.posZ(),
             collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
 
@@ -93,7 +103,8 @@ struct CreateEMEvent {
         event_cent(105.f, 105.f, 105.f, 105.f);
       }
     } // end of collision loop
-  }   // end of skimEvent
+    map_ncolls_per_bc.clear();
+  } // end of skimEvent
 
   void processEvent(MyCollisions const& collisions, aod::BCs const& bcs)
   {

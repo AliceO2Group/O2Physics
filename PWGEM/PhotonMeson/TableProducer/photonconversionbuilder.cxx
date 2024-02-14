@@ -87,7 +87,7 @@ struct PhotonConversionBuilder {
   Configurable<float> dcanegtopv{"dcanegtopv", 0.1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", 0.1, "DCA Pos To PV"};
   Configurable<float> min_pt_leg{"min_pt_leg", 0.04, "min pT for v0 legs at SV"};
-  Configurable<float> max_mean_its_cluster_size{"max_mean_its_cluster_size", 4.f, "max. <ITS cluster size> x cos(lambda) for ITSonly tracks"}; // this is to suppress random combination for V0s with ITSonly tracks. default 3 + 1 for skimming.
+  Configurable<float> max_mean_its_cluster_size{"max_mean_its_cluster_size", 16.f, "max. <ITS cluster size> x cos(lambda) for ITSonly tracks"}; // this is to suppress random combination for V0s with ITSonly tracks. default 3 + 1 for skimming.
   Configurable<float> maxX{"maxX", 83.1, "max X for track IU"};
 
   // v0 cuts
@@ -485,7 +485,7 @@ struct PhotonConversionBuilder {
     kfp_ele_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
 
     float pca_kf = kfp_pos_DecayVtx.GetDistanceFromParticle(kfp_ele_DecayVtx);
-    if (!ele.hasITS() && !pos.hasITS()) {
+    if (!ele.hasITS() && !pos.hasITS()) { // V0s with TPConly-TPConly
       if (max_r_itsmft_ss < rxy && rxy < maxX + margin_r_tpconly) {
         if (pca_kf > max_dcav0dau_tpc_inner_fc) {
           return;
@@ -495,17 +495,13 @@ struct PhotonConversionBuilder {
           return;
         }
       }
-    } else {
+    } else { // V0s with ITS hits
       if (rxy < max_r_req_its) {
         if (pca_kf > max_dcav0dau_itsibss) {
           return;
         }
-      } else if (rxy < min_r_tpconly) {
-        if (pca_kf > max_dcav0dau_its) {
-          return;
-        }
       } else {
-        if (pca_kf > max_dcav0dau_tpconly) {
+        if (pca_kf > max_dcav0dau_its) {
           return;
         }
       }
@@ -679,13 +675,17 @@ struct PhotonConversionBuilder {
     stored_v0Ids.shrink_to_fit();
   } // end of build
 
-  void processRec(MyCollisions const& collisions, aod::V0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  //! type of V0. 0: built solely for cascades (does not pass standard V0 cuts), 1: standard 2, 3: photon-like with TPC-only use. Regular analysis should always use type 1 or 3.
+  Filter v0Filter = o2::aod::v0::v0Type > (uint8_t)0;
+  using filteredV0s = soa::Filtered<aod::V0s>;
+
+  void processRec(MyCollisions const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     build<false>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec, "process reconstructed info for data", true);
 
-  void processMC(MyCollisionsMC const& collisions, aod::V0s const& v0s, MyTracksIUMC const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processMC(MyCollisionsMC const& collisions, filteredV0s const& v0s, MyTracksIUMC const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     build<true>(collisions, v0s, tracks, bcs);
   }
