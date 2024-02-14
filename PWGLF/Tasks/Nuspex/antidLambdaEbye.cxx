@@ -510,7 +510,7 @@ struct antidLambdaEbye {
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
       V0Table_thisCollision.bindExternalIndices(&tracks);
 
-      //fillMC(tracks, V0s, centrality);
+      // fillMC(tracks, V0s, centrality);
       fillMcEvent(TrackTable_thisCollision, V0Table_thisCollision, centrality, mcParticles, mcLab);
       if (candidateV0s.size() == 1 && candidateV0s[0].pt < -998.f && candidateV0s[0].eta < -998.f && candidateV0s[0].globalIndexPos == -999 && candidateV0s[0].globalIndexPos == -999) {
         goodCollisions[collision.mcCollisionId()].first = false;
@@ -529,7 +529,8 @@ struct antidLambdaEbye {
       auto pdgCode = mcPart.pdgCode();
 
       if (std::abs(pdgCode) == 3122) {
-        if (!mcPart.has_mothers()) continue;
+        if (!mcPart.has_mothers())
+          continue;
         bool foundPr = false;
         for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
           if (std::abs(mcDaught.pdgCode()) == 2212) {
@@ -548,7 +549,8 @@ struct antidLambdaEbye {
           histos.fill(HIST("genAntiL"), centrality, genPt, std::abs(genEta));
         }
       } else if (std::abs(pdgCode) == o2::constants::physics::kDeuteron) {
-        if (!mcPart.isPhysicalPrimary()) continue;
+        if (!mcPart.isPhysicalPrimary())
+          continue;
         std::cout << pdgCode << std::endl;
         auto genPt = std::hypot(mcPart.px(), mcPart.py());
         if (pdgCode > 0) {
