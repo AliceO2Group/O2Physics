@@ -68,13 +68,13 @@ struct JetFinderHFTask {
 
   // cluster level configurables
   Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
-  Configurable<float> clusterEtaMin{"clusterEtaMin", -0.7, "minimum cluster eta"}; // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
-  Configurable<float> clusterEtaMax{"clusterEtaMax", 0.7, "maximum cluster eta"};  // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
-  Configurable<float> clusterPhiMin{"clusterPhiMin", -999, "minimum cluster phi"};
-  Configurable<float> clusterPhiMax{"clusterPhiMax", 999, "maximum cluster phi"};
+  Configurable<float> clusterEtaMin{"clusterEtaMin", -0.71, "minimum cluster eta"}; // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
+  Configurable<float> clusterEtaMax{"clusterEtaMax", 0.71, "maximum cluster eta"};  // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
+  Configurable<float> clusterPhiMin{"clusterPhiMin", 1.39, "minimum cluster phi"};
+  Configurable<float> clusterPhiMax{"clusterPhiMax", 3.27, "maximum cluster phi"};
   Configurable<float> clusterEnergyMin{"clusterEnergyMin", 0.5, "minimum cluster energy in EMCAL (GeV)"};
-  Configurable<float> clusterTimeMin{"clusterTimeMin", -999., "minimum Cluster time (ns)"};
-  Configurable<float> clusterTimeMax{"clusterTimeMax", 999., "maximum Cluster time (ns)"};
+  Configurable<float> clusterTimeMin{"clusterTimeMin", -25., "minimum Cluster time (ns)"};
+  Configurable<float> clusterTimeMax{"clusterTimeMax", 25., "maximum Cluster time (ns)"};
   Configurable<bool> clusterRejectExotics{"clusterRejectExotics", true, "Reject exotic clusters"};
 
   // HF candidate level configurables
@@ -97,6 +97,7 @@ struct JetFinderHFTask {
   Configurable<int> jetRecombScheme{"jetRecombScheme", 0, "jet recombination scheme. 0 = E-scheme, 1 = pT-scheme, 2 = pT2-scheme"};
   Configurable<float> jetGhostArea{"jetGhostArea", 0.005, "jet ghost area"};
   Configurable<int> ghostRepeat{"ghostRepeat", 1, "set to 0 to gain speed if you dont need area calculation"};
+  Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
 
   Service<o2::framework::O2DatabasePDG> pdgDatabase;
   int trackSelection = -1;
@@ -144,7 +145,7 @@ struct JetFinderHFTask {
   PresliceOptional<soa::Filtered<JetTracksSubTable>> perBplusCandidate = aod::bkgbplus::candidateId;
 
   // function that generalically processes Data and reco level events
-  template <typename T, typename U, typename V, typename M, typename N, typename O>
+  template <bool isEvtWiseSub, typename T, typename U, typename V, typename M, typename N, typename O>
   void analyseCharged(T const& collision, U const& tracks, V const& candidate, M& jetsTableInput, N& constituentsTableInput, O& originalTracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
@@ -163,8 +164,12 @@ struct JetFinderHFTask {
         return;
       }
     }
-    jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, collision, jetsTableInput, constituentsTableInput, true);
+    if constexpr (isEvtWiseSub) {
+      jetfindingutilities::analyseTracks<U, typename U::iterator>(inputParticles, tracks, trackSelection);
+    } else {
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
+    }
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, true);
   }
 
   // function that generalically processes gen level events
@@ -180,7 +185,7 @@ struct JetFinderHFTask {
       return;
     }
     jetfindingutilities::analyseParticles(inputParticles, particleSelection, jetTypeParticleLevel, particles, pdgDatabase, std::optional{candidate});
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable, true);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, true);
   }
 
   void processDummy(JetCollisions const& collisions)
@@ -191,7 +196,7 @@ struct JetFinderHFTask {
   void processChargedJetsData(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<JetTracks> const& tracks, CandidateTableData const& candidates)
   {
     for (typename CandidateTableData::iterator const& candidate : candidates) { // why can the type not be auto?  try const auto
-      analyseCharged(collision, tracks, candidate, jetsTable, constituentsTable, tracks);
+      analyseCharged<false>(collision, tracks, candidate, jetsTable, constituentsTable, tracks);
     }
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedJetsData, "charged hf jet finding on data", false);
@@ -199,7 +204,7 @@ struct JetFinderHFTask {
   void processChargedEvtWiseSubJetsData(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<JetTracksSubTable> const& tracks, CandidateTableData const& candidates)
   {
     for (typename CandidateTableData::iterator const& candidate : candidates) {
-      analyseCharged(collision, jethfutilities::slicedPerCandidate(tracks, candidate, perD0Candidate, perLcCandidate, perBplusCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, tracks);
+      analyseCharged<true>(collision, jethfutilities::slicedPerCandidate(tracks, candidate, perD0Candidate, perLcCandidate, perBplusCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, tracks);
     }
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedEvtWiseSubJetsData, "charged hf jet finding on data with event-wise constituent subtraction", false);
@@ -207,7 +212,7 @@ struct JetFinderHFTask {
   void processChargedJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<JetTracks> const& tracks, CandidateTableMCD const& candidates)
   {
     for (typename CandidateTableMCD::iterator const& candidate : candidates) {
-      analyseCharged(collision, tracks, candidate, jetsTable, constituentsTable, tracks);
+      analyseCharged<false>(collision, tracks, candidate, jetsTable, constituentsTable, tracks);
     }
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedJetsMCD, "charged hf jet finding on MC detector level", false);
@@ -215,7 +220,7 @@ struct JetFinderHFTask {
   void processChargedEvtWiseSubJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<JetTracksSubTable> const& tracks, CandidateTableMCD const& candidates)
   {
     for (typename CandidateTableMCD::iterator const& candidate : candidates) {
-      analyseCharged(collision, jethfutilities::slicedPerCandidate(tracks, candidate, perD0Candidate, perLcCandidate, perBplusCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, tracks);
+      analyseCharged<true>(collision, jethfutilities::slicedPerCandidate(tracks, candidate, perD0Candidate, perLcCandidate, perBplusCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, tracks);
     }
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedEvtWiseSubJetsMCD, "charged hf jet finding on MC detector level with event-wise constituent subtraction", false);

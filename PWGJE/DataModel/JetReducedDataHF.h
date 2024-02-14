@@ -28,8 +28,8 @@ namespace o2::aod
 namespace jd0indices
 {
 DECLARE_SOA_INDEX_COLUMN(JCollision, collision);
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, JTracks, "_0"); //! Index to first prong
-DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, JTracks, "_1"); //! Index to second prong
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, JTracks, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, JTracks, "_1");
 DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 } // namespace jd0indices

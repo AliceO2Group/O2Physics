@@ -50,27 +50,27 @@ class JetFinder
 
   static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(211)->Mass(); //can be removed when pion mass becomes default for unidentified tracks
 
-  float phiMin = 0.0;
-  float phiMax = 2.0 * M_PI;
-  float etaMin = -0.9;
-  float etaMax = 0.9;
+  float phiMin = 0.;
+  float phiMax = 2. * M_PI;
+  float etaMin = -.9;
+  float etaMax = .9;
 
-  float jetR = 0.4;
-  float jetPtMin = 0.0;
-  float jetPtMax = 1000.0;
+  float jetR = .4;
+  float jetPtMin = 0.;
+  float jetPtMax = 1000.;
   float jetPhiMin = phiMin;
   float jetPhiMax = phiMax;
-  float jetEtaMin = -99.0;
-  float jetEtaMax = 99.0;
+  float jetEtaMin = -99.;
+  float jetEtaMax = 99.;
   bool jetEtaDefault = false;
 
   float ghostEtaMin = etaMin;
   float ghostEtaMax = etaMax;
-  float ghostArea = 0.005;
+  float ghostArea = .005;
   int ghostRepeatN = 1;
-  double ghostktMean = 1e-100; // is float precise enough?
-  float gridScatter = 1.0;
-  float ktScatter = 0.1;
+  double ghostktMean = 1.e-100;
+  float gridScatter = 1.;
+  float ktScatter = .1;
 
   bool isReclustering = false;
   bool isTriggering = false;
@@ -79,14 +79,12 @@ class JetFinder
   fastjet::RecombinationScheme recombScheme = fastjet::E_scheme;
   fastjet::Strategy strategy = fastjet::Best;
   fastjet::AreaType areaType = fastjet::active_area;
-  fastjet::GhostedAreaSpec ghostAreaSpec = {};
-  fastjet::JetDefinition jetDef = {};
-  fastjet::AreaDefinition areaDef = {};
-  fastjet::Selector selJets = {};
-  fastjet::Selector selGhosts = {};
 
-  /// Default destructor
-  ~JetFinder() = default;
+  fastjet::GhostedAreaSpec ghostAreaSpec;
+  fastjet::JetDefinition jetDef;
+  fastjet::AreaDefinition areaDef;
+  fastjet::Selector selJets;
+  fastjet::Selector selGhosts;
 
   /// Sets the jet finding parameters
   void setParams();

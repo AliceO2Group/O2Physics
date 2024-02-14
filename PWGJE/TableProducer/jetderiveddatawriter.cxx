@@ -34,6 +34,7 @@ using namespace o2::framework::expressions;
 struct JetDerivedDataWriter {
 
   Configurable<float> chargedJetPtMin{"chargedJetPtMin", 0.0, "Minimum charged jet pt to accept event"};
+  Configurable<float> chargedEventWiseSubtractedJetPtMin{"chargedEventWiseSubtractedJetPtMin", 0.0, "Minimum charged event-wise subtracted jet pt to accept event"};
   Configurable<float> chargedMCPJetPtMin{"chargedMCPJetPtMin", 0.0, "Minimum charged mcp jet pt to accept event"};
   Configurable<float> neutralJetPtMin{"neutralJetPtMin", 0.0, "Minimum charged jet pt to accept event"};
   Configurable<float> fullJetPtMin{"fullJetPtMin", 0.0, "Minimum full jet pt to accept event"};
@@ -109,6 +110,8 @@ struct JetDerivedDataWriter {
     float jetPtMin = 0.0;
     if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedJets> || std::is_same_v<std::decay_t<T>, aod::ChargedMCDetectorLevelJets>) {
       jetPtMin = chargedJetPtMin;
+    } else if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedEventWiseSubtractedJets>) {
+      jetPtMin = chargedEventWiseSubtractedJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedMCParticleLevelJets>) {
       jetPtMin = chargedMCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::NeutralJets>) {
@@ -139,6 +142,7 @@ struct JetDerivedDataWriter {
   PROCESS_SWITCH(JetDerivedDataWriter, processCollisions, "setup the writing for data and MCD", true);
   PROCESS_SWITCH(JetDerivedDataWriter, processMcCollisions, "setup the writing for MCP", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::ChargedJets>, processChargedJets, "process charged jets", true);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::ChargedEventWiseSubtractedJets>, processChargedEventWiseSubtractedJets, "process charged event-wise subtracted jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::ChargedMCDetectorLevelJets>, processChargedMCDJets, "process charged mcd jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::ChargedMCParticleLevelJets>, processChargedMCPJets, "process charged mcp jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::NeutralJets>, processNeutralJets, "process neutral jets", false);
@@ -146,11 +150,11 @@ struct JetDerivedDataWriter {
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::D0ChargedJets>, processD0ChargedJets, "process D0 charged jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::LcChargedJets>, processLcChargedJets, "process Lc charged jets", false);
 
-  void processDummy(aod::JDummys const& Dummys)
+  void processDummyTable(aod::JDummys const& Dummys)
   {
     storedJDummysTable(1);
   }
-  PROCESS_SWITCH(JetDerivedDataWriter, processDummy, "write out dummy output table", true);
+  PROCESS_SWITCH(JetDerivedDataWriter, processDummyTable, "write out dummy output table", true);
 
   void processData(soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JChTrigSels, aod::JFullTrigSels>::iterator const& collision, soa::Join<aod::JBCs, aod::JBCPIs> const& bcs, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks> const& clusters, aod::HfD0CollBases const& D0Collisions, CandidatesD0Data const& D0s)
   {
@@ -232,7 +236,7 @@ struct JetDerivedDataWriter {
   }
   // process switch for output writing must be last
   // to run after all jet selections
-  PROCESS_SWITCH(JetDerivedDataWriter, processData, "write out data output tables", true);
+  PROCESS_SWITCH(JetDerivedDataWriter, processData, "write out data output tables", false);
 
   void processMC(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JChTrigSels, aod::JFullTrigSels, aod::JMcCollisionLbs> const& collisions, soa::Join<aod::JBCs, aod::JBCPIs> const& bcs, soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks> const& clusters, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles, aod::HfD0CollBases const& D0Collisions, CandidatesD0MCD const& D0s, soa::Join<aod::HfD0PBases, aod::JD0PIds> const& D0Particles)
   {

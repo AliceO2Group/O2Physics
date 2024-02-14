@@ -532,43 +532,61 @@ struct DptDptFilterTracks {
 
   struct PIDSpeciesSelection {
     static const std::vector<int> pdgcodes;
-    static const std::vector<std::string> spnames;
-    static const std::vector<std::string> sptitles;
-    static const std::vector<std::string> spfnames;
+    static const std::vector<std::string_view> spnames;
+    static const std::vector<std::string_view> sptitles;
+    static const std::vector<std::string_view> spfnames;
     static const char hadname[];
     static const char hadtitle[];
     static const char hadfname[];
     uint getNSpecies() { return config.size(); }
-    const std::string& getSpeciesName(uint8_t ix) { return spnames[species[ix]]; }
-    const std::string& getSpeciesTitle(uint8_t ix) { return sptitles[species[ix]]; }
-    const std::string& getSpeciesFName(uint8_t ix) { return spfnames[species[ix]]; }
+    const char* getSpeciesName(uint8_t ix) { return spnames[species[ix]].data(); }
+    const char* getSpeciesTitle(uint8_t ix) { return sptitles[species[ix]].data(); }
+    const char* getSpeciesFName(uint8_t ix) { return spfnames[species[ix]].data(); }
     static const char* getHadName() { return hadname; }
     static const char* getHadTitle() { return hadtitle; }
     static const char* getHadFName() { return hadfname; }
-    void Add(uint8_t sp, const o2::analysis::TrackSelectionPIDCfg* cfg)
+    void Add(uint8_t sp, const o2::analysis::TrackSelectionPIDCfg* incfg)
     {
+      o2::analysis::TrackSelectionPIDCfg* cfg = new o2::analysis::TrackSelectionPIDCfg(*incfg);
       config.push_back(cfg);
       species.push_back(sp);
+
+      auto last = config[config.size() - 1];
+      uint8_t lastsp = species[config.size() - 1];
+      LOGF(info, "Inserted species %d with", lastsp);
+      LOGF(info, "  minTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMinNSigmasTPC[0], last->mMinNSigmasTPC[1], last->mMinNSigmasTPC[2], last->mMinNSigmasTPC[3], last->mMinNSigmasTPC[4]);
+      LOGF(info, "  maxTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTPC[0], last->mMaxNSigmasTPC[1], last->mMaxNSigmasTPC[2], last->mMaxNSigmasTPC[3], last->mMaxNSigmasTPC[4]);
+      LOGF(info, "  minTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMinNSigmasTOF[0], last->mMinNSigmasTOF[1], last->mMinNSigmasTOF[2], last->mMinNSigmasTOF[3], last->mMinNSigmasTOF[4]);
+      LOGF(info, "  maxTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTOF[0], last->mMaxNSigmasTOF[1], last->mMaxNSigmasTOF[2], last->mMaxNSigmasTOF[3], last->mMaxNSigmasTOF[4]);
     }
-    void AddExclude(uint8_t sp, const o2::analysis::TrackSelectionPIDCfg* cfg)
+    void AddExclude(uint8_t sp, const o2::analysis::TrackSelectionPIDCfg* incfg)
     {
+      o2::analysis::TrackSelectionPIDCfg* cfg = new o2::analysis::TrackSelectionPIDCfg(*incfg);
       configexclude.push_back(cfg);
       speciesexclude.push_back(sp);
+      auto last = configexclude[configexclude.size() - 1];
+      uint8_t lastsp = speciesexclude[configexclude.size() - 1];
+
+      LOGF(info, "Inserted species %d for exclusion with", lastsp);
+      LOGF(info, "  minTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMinNSigmasTPC[0], last->mMinNSigmasTPC[1], last->mMinNSigmasTPC[2], last->mMinNSigmasTPC[3], last->mMinNSigmasTPC[4]);
+      LOGF(info, "  maxTPC nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTPC[0], last->mMaxNSigmasTPC[1], last->mMaxNSigmasTPC[2], last->mMaxNSigmasTPC[3], last->mMaxNSigmasTPC[4]);
+      LOGF(info, "  minTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMinNSigmasTOF[0], last->mMinNSigmasTOF[1], last->mMinNSigmasTOF[2], last->mMinNSigmasTOF[3], last->mMinNSigmasTOF[4]);
+      LOGF(info, "  maxTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTOF[0], last->mMaxNSigmasTOF[1], last->mMaxNSigmasTOF[2], last->mMaxNSigmasTOF[3], last->mMaxNSigmasTOF[4]);
     }
     template <typename TrackObject>
     int8_t whichSpecies(TrackObject const& track)
     {
-      static std::vector<float> tpcnsigmas = {track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
-      static std::vector<float> tofnsigmas = {track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
+      std::vector<float> tpcnsigmas = {track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
+      std::vector<float> tofnsigmas = {track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
 
-      auto closeTo = [](auto values, auto mindet, auto maxdet, uint8_t sp) {
+      auto closeTo = [](auto& values, auto& mindet, auto& maxdet, uint8_t sp) {
         if (mindet[sp] <= values[sp] && values[sp] < maxdet[sp]) {
           return true;
         } else {
           return false;
         }
       };
-      auto awayFrom = [](auto values, auto mindet, auto maxdet, uint8_t sp) {
+      auto awayFrom = [](auto& values, auto& mindet, auto& maxdet, uint8_t sp) {
         for (int ix = 0; ix < 5; ix++) {
           if (ix != sp) {
             if (mindet[ix] <= values[ix] && values[ix] < maxdet[ix]) {
@@ -580,86 +598,82 @@ struct DptDptFilterTracks {
         }
         return true;
       };
-      auto closeToTPC = [&](auto config, uint8_t sp) {
+      auto closeToTPC = [&](auto& config, uint8_t sp) {
         return closeTo(tpcnsigmas, config->mMinNSigmasTPC, config->mMaxNSigmasTPC, sp);
       };
-      auto awayFromTPC = [&](auto config, uint8_t sp) {
+      auto awayFromTPC = [&](auto& config, uint8_t sp) {
         return awayFrom(tpcnsigmas, config->mMinNSigmasTPC, config->mMaxNSigmasTPC, sp);
       };
-      auto closeToTPCTOF = [&](auto config, uint8_t sp) {
-        float a = (config->mMaxNSigmasTPC[sp] - config->mMinNSigmasTPC[sp]) / 2.0;
-        float b = (config->mMaxNSigmasTOF[sp] - config->mMinNSigmasTOF[sp]) / 2.0;
-        float oa = (config->mMaxNSigmasTPC[sp] + config->mMinNSigmasTPC[sp]) / 2.0;
-        float ob = (config->mMaxNSigmasTOF[sp] + config->mMinNSigmasTOF[sp]) / 2.0;
-        float vtpc = tpcnsigmas[sp] - oa;
-        float vtof = tofnsigmas[sp] - ob;
-        return (vtpc * vtpc / a / a + vtof * vtof / b / b < 1);
+      auto closeToTOF = [&](auto& config, uint8_t sp) {
+        return closeTo(tofnsigmas, config->mMinNSigmasTOF, config->mMaxNSigmasTOF, sp);
       };
-      auto closeToTOF = [&](auto config, uint8_t sp) {
-        if (!track.hasTOF()) {
-          if (config->mRequireTOF) {
-            return false;
-          } else {
-            return true;
-          }
+      auto closeToTPCTOF = [&](auto& config, uint8_t sp) {
+        if (config->m2Dcut) {
+          float a = (config->mMaxNSigmasTPC[sp] - config->mMinNSigmasTPC[sp]) / 2.0;
+          float b = (config->mMaxNSigmasTOF[sp] - config->mMinNSigmasTOF[sp]) / 2.0;
+          float oa = (config->mMaxNSigmasTPC[sp] + config->mMinNSigmasTPC[sp]) / 2.0;
+          float ob = (config->mMaxNSigmasTOF[sp] + config->mMinNSigmasTOF[sp]) / 2.0;
+          float vtpc = tpcnsigmas[sp] - oa;
+          float vtof = tofnsigmas[sp] - ob;
+          return ((vtpc * vtpc / a / a + vtof * vtof / b / b) < 1);
         } else {
-          if (config->m2Dcut) {
-            return closeToTPCTOF(config, sp);
-          } else {
-            return closeTo(tofnsigmas, config->mMinNSigmasTOF, config->mMaxNSigmasTOF, sp);
-          }
+          return closeToTPC(config, sp) && closeToTOF(config, sp);
         }
       };
-      auto awayFromTOF = [&](auto config, uint8_t sp) {
-        /* if we are here is because the track has TOF */
-        if (config->m2Dcut) {
-          for (uint8_t ix = 0; ix < 5; ++ix) {
-            if (ix != sp) {
-              if (closeToTPCTOF(config, ix)) {
-                return false;
-              }
-            } else {
-              continue;
+      auto awayFromTPCTOF = [&](auto& config, uint8_t sp) {
+        for (uint8_t ix = 0; ix < 5; ++ix) {
+          if (ix != sp) {
+            if (closeToTPCTOF(config, ix)) {
+              return false;
+            }
+          } else {
+            continue;
+          }
+        }
+        return true;
+      };
+      auto aboveThreshold = [&](auto& config) {
+        return ((config->mPThreshold > 0.0) && (config->mPThreshold < track.p()));
+      };
+      auto isA = [&](auto& config, uint8_t sp) {
+        if (aboveThreshold(config)) {
+          if (track.hasTOF()) {
+            return closeToTPCTOF(config, sp) && awayFromTPCTOF(config, sp);
+          } else {
+            if (config->mRequireTOF) {
+              return false;
             }
           }
-          return true;
-        } else {
-          return awayFrom(tofnsigmas, config->mMinNSigmasTOF, config->mMaxNSigmasTOF, sp);
         }
-      };
-      auto aboveThreshold = [&](auto config) {
-        return ((config->mPThreshold > 0.0) && (config->mPThreshold < track.p()));
+        /* we are here                                                */
+        /* - below the threshold                                      */
+        /* - above the threshold without TOF and without requiring it */
+        /* so we check only the TPC information                       */
+        return closeToTPC(config, sp) && awayFromTPC(config, sp);
       };
 
       /* let's first check the exclusion from the analysis */
       for (uint8_t ix = 0; ix < configexclude.size(); ++ix) {
-        if (closeToTPC(configexclude[ix], speciesexclude[ix]) && awayFromTPC(configexclude[ix], speciesexclude[ix])) {
-          if (aboveThreshold(configexclude[ix])) {
-            if (closeToTOF(configexclude[ix], speciesexclude[ix]) && awayFromTOF(configexclude[ix], speciesexclude[ix])) {
-              return -ix;
-            }
-          }
+        if (isA(configexclude[ix], speciesexclude[ix])) {
+          return -ix;
         }
       }
       /* we don't exclude it so check which species if any required */
       if (config.size() > 0) {
         int8_t id = -127;
         for (uint8_t ix = 0; ix < config.size(); ++ix) {
-          if (closeToTPC(config[ix], species[ix]) && awayFromTPC(config[ix], species[ix])) {
-            if (aboveThreshold(config[ix])) {
-              if (closeToTOF(config[ix], species[ix]) && awayFromTOF(config[ix], species[ix])) {
-                if (id < 0) {
-                  id = ix;
-                } else {
-                  /* already identified once */
-                  return -127;
-                }
-              }
+          if (isA(config[ix], species[ix])) {
+            if (id < 0) {
+              id = ix;
+            } else {
+              /* already identified once */
+              return -127;
             }
           }
         }
         return id;
       } else {
+        /* charged hadron */
         return 0;
       }
     }
@@ -788,14 +802,14 @@ struct DptDptFilterTracks {
     }
 
     /* configure the PID selection */
-    auto insertInPIDselector = [&](auto cfg, int sp) {
+    auto insertInPIDselector = [&](auto cfg, uint sp) {
       if (cfg.value.mUseIt) {
         if (cfg.value.mExclude) {
-          LOGF(info, "Incorporating species: %s to PID selection for exclusion", pidselector.getSpeciesName(sp));
           pidselector.AddExclude(sp, &(cfg.value));
+          LOGF(info, "Incorporated species: %s to PID selection for exclusion", pidselector.spnames[sp].data());
         } else {
-          LOGF(info, "Incorporating species: %s to PID selection", pidselector.getSpeciesName(sp));
           pidselector.Add(sp, &(cfg.value));
+          LOGF(info, "Incorporated species: %s to PID selection", pidselector.spnames[sp].data());
         }
       }
     };
@@ -882,7 +896,7 @@ struct DptDptFilterTracks {
         LOGF(info, "Identified analysis with %d species", nspecies);
         for (uint sp = 0; sp < nspecies; ++sp) {
           LOGF(info, "Adding species %s", pidselector.getSpeciesFName(sp));
-          createHistos(sp, pidselector.getSpeciesFName(sp).c_str(), pidselector.getSpeciesTitle(sp).c_str());
+          createHistos(sp, pidselector.getSpeciesFName(sp), pidselector.getSpeciesTitle(sp));
         }
       }
 
@@ -977,7 +991,7 @@ struct DptDptFilterTracks {
       } else {
         reserveTruthHistos(nspecies);
         for (uint sp = 0; sp < nspecies; ++sp) {
-          createTruthHistos(sp, pidselector.getSpeciesFName(sp).c_str(), pidselector.getSpeciesTitle(sp).c_str());
+          createTruthHistos(sp, pidselector.getSpeciesFName(sp), pidselector.getSpeciesTitle(sp));
         }
       }
 
@@ -1147,13 +1161,13 @@ struct DptDptFilterTracks {
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithPIDAmbiguous, "Not stored derived data track filtering with ambiguous tracks check", false)
 
-  void filterDetectorLevelWithPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevel const& tracks)
+  void filterDetectorLevelWithPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevel const& tracks, aod::McParticles const&)
   {
     filterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithPID, "Not stored derived data detector level track filtering", false)
 
-  void filterDetectorLevelWithPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevelAmbiguous const& tracks)
+  void filterDetectorLevelWithPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevelAmbiguous const& tracks, aod::McParticles const&)
   {
     filterTracks(collisions, tracks);
   }
@@ -1171,13 +1185,13 @@ struct DptDptFilterTracks {
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithoutPIDAmbiguous, "Track filtering without PID information with ambiguous tracks check", false)
 
-  void filterDetectorLevelWithoutPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracksDetLevel const& tracks)
+  void filterDetectorLevelWithoutPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracksDetLevel const& tracks, aod::McParticles const&)
   {
     filterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithoutPID, "Detector level track filtering without PID information", false)
 
-  void filterDetectorLevelWithoutPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracksDetLevelAmbiguous const& tracks)
+  void filterDetectorLevelWithoutPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracksDetLevelAmbiguous const& tracks, aod::McParticles const&)
   {
     filterTracks(collisions, tracks);
   }
@@ -1191,9 +1205,9 @@ struct DptDptFilterTracks {
 };
 
 const std::vector<int> DptDptFilterTracks::PIDSpeciesSelection::pdgcodes = {11, 13, 211, 321, 2212};
-const std::vector<std::string> DptDptFilterTracks::PIDSpeciesSelection::spnames = {"e", "mu", "pi", "ka", "p"};
-const std::vector<std::string> DptDptFilterTracks::PIDSpeciesSelection::sptitles = {"e", "#mu", "#pi", "K", "p"};
-const std::vector<std::string> DptDptFilterTracks::PIDSpeciesSelection::spfnames = {"E", "Mu", "Pi", "Ka", "Pr"};
+const std::vector<std::string_view> DptDptFilterTracks::PIDSpeciesSelection::spnames = {"e", "mu", "pi", "ka", "p"};
+const std::vector<std::string_view> DptDptFilterTracks::PIDSpeciesSelection::sptitles = {"e", "#mu", "#pi", "K", "p"};
+const std::vector<std::string_view> DptDptFilterTracks::PIDSpeciesSelection::spfnames = {"E", "Mu", "Pi", "Ka", "Pr"};
 const char DptDptFilterTracks::PIDSpeciesSelection::hadname[] = "h";
 const char DptDptFilterTracks::PIDSpeciesSelection::hadtitle[] = "h";
 const char DptDptFilterTracks::PIDSpeciesSelection::hadfname[] = "Ha";
@@ -1327,18 +1341,15 @@ void DptDptFilterTracks::fillTrackHistosBeforeSelection(TrackObject const& track
 template <typename TrackObject>
 void DptDptFilterTracks::fillTrackHistosAfterSelection(TrackObject const& track, int8_t sp)
 {
-  /* the charged species should have been called first so avoid double counting */
-  if (sp == kDptDptCharged) {
-    fhEtaA->Fill(track.eta());
-    fhPhiA->Fill(track.phi());
-    fhDCAxyA->Fill(track.dcaXY());
-    fhDCAzA->Fill(track.dcaZ());
-    if (track.dcaXY() < 1.0) {
-      fhFineDCAxyA->Fill(track.dcaXY());
-    }
-    if (track.dcaZ() < 1.0) {
-      fhFineDCAzA->Fill(track.dcaZ());
-    }
+  fhEtaA->Fill(track.eta());
+  fhPhiA->Fill(track.phi());
+  fhDCAxyA->Fill(track.dcaXY());
+  fhDCAzA->Fill(track.dcaZ());
+  if (track.dcaXY() < 1.0) {
+    fhFineDCAxyA->Fill(track.dcaXY());
+  }
+  if (track.dcaZ() < 1.0) {
+    fhFineDCAzA->Fill(track.dcaZ());
   }
   fhPA[sp]->Fill(track.p());
   fhPtA[sp]->Fill(track.pt());
@@ -1420,22 +1431,19 @@ void DptDptFilterTracks::fillParticleHistosBeforeSelection(ParticleObject const&
 template <typename ParticleObject, typename MCCollisionObject>
 void DptDptFilterTracks::fillParticleHistosAfterSelection(ParticleObject const& particle, MCCollisionObject const& collision, float charge, int8_t sp)
 {
-  /* the charged species should have been called first so avoid double counting */
-  if (sp == kDptDptCharged) {
-    fhTrueEtaA->Fill(particle.eta());
-    fhTruePhiA->Fill(particle.phi());
-    float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                              (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
-    if (traceDCAOutliers.mDoIt && (traceDCAOutliers.mLowValue < dcaxy) && (dcaxy < traceDCAOutliers.mUpValue)) {
-      LOGF(info, "DCAxy outlier: Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
-           particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
-      LOGF(info, "               With status %d and flags %0X", particle.statusCode(), particle.flags());
-    }
-
-    fhTrueDCAxyA->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                   (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
-    fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
+  fhTrueEtaA->Fill(particle.eta());
+  fhTruePhiA->Fill(particle.phi());
+  float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                            (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
+  if (traceDCAOutliers.mDoIt && (traceDCAOutliers.mLowValue < dcaxy) && (dcaxy < traceDCAOutliers.mUpValue)) {
+    LOGF(info, "DCAxy outlier: Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
+         particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
+    LOGF(info, "               With status %d and flags %0X", particle.statusCode(), particle.flags());
   }
+
+  fhTrueDCAxyA->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
+  fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
   fhTruePA[sp]->Fill(particle.p());
   fhTruePtA[sp]->Fill(particle.pt());
   if (charge > 0) {
