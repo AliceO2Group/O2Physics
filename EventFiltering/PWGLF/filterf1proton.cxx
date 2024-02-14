@@ -71,12 +71,16 @@ struct filterf1proton {
   Configurable<bool> ConfRejectNotPropagatedTracks{"ConfRejectNotPropagatedTracks", false, "True: reject not propagated tracks"};
   Configurable<float> ConfPIDCutsTPCF1Proton{"ConfPIDCutsTPCF1Proton", 2, "Particle PID selections using TPC"};
   Configurable<float> ConfPIDCutsTOFF1Proton{"ConfPIDCutsTOFF1Proton", 2, "Particle PID selections using TOF"};
+  Configurable<float> ConfPIDCutsTPCProton{"ConfPIDCutsTPCProton", 3, "Proton PID selections using TPC"};
+  Configurable<float> ConfPIDCutsTOFProton{"ConfPIDCutsTOFProton", 3, "Proton PID selections using TOF"};
   Configurable<int> strategyPIDPion{"strategyPIDPion", 0, "PID strategy Pion"};
   Configurable<int> strategyPIDKaon{"strategyPIDKaon", 0, "PID strategy Kaon"};
   Configurable<int> strategyPIDProton{"strategyPIDProton", 1, "PID strategy Proton"};
   Configurable<double> pionMomentumPID{"pionMomentumPID", 0.5, "pi momentum range for TPC PID selection"};
   Configurable<double> kaonMomentumPID{"kaonMomentumPID", 0.45, "ka momentum range for TPC PID selection"};
   Configurable<double> protonMomentumPID{"protonMomentumPID", 0.75, "pr momentum range for TPC PID selection"};
+  Configurable<bool> ConfFakeProton{"ConfFakeProton", true, "Check fake proton"};
+  Configurable<double> ConfFakeProtonCut{"ConfFakeProtonCut", 0.2, "Momentum correlation cut to remove fake proton"};
 
   // Configs for track cut
   Configurable<float> ConfPtCutsF1Proton{"ConfPtCutsF1Proton", 0.1, "Particle Momentum selections"};
@@ -136,6 +140,7 @@ struct filterf1proton {
                                              {"hDCAz", "hDCAz", {HistType::kTH1F, {{100, -5.0f, 5.0f}}}},
                                              {"hPhi", "hPhi", {HistType::kTH1F, {{70, 0.0f, 7.0f}}}},
                                              {"hEta", "hEta", {HistType::kTH1F, {{20, -1.0f, 1.0f}}}},
+                                             {"hMommentumCorr", "hMommentumCorr", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -2.0f, 2.0f}}}},
                                              {"hNsigmaPtpionTPC", "hNsigmaPtpionTPC", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtpionTOF", "hNsigmaPtpionTOF", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
                                              {"hNsigmaPtkaonTPC", "hNsigmaPtkaonTPC", {HistType::kTH2F, {{200, -10.0f, 10.0f}, {100, 0.0f, 10.0f}}}},
@@ -162,6 +167,17 @@ struct filterf1proton {
       return false;
     }
     return true;
+  }
+
+  template <typename T>
+  bool isFakeProton(T const& track)
+  {
+    const auto pglobal = track.p();
+    const auto ptpc = track.tpcInnerParam();
+    if (std::abs(pglobal - ptpc) > ConfFakeProtonCut) {
+      return true;
+    }
+    return false;
   }
 
   template <typename T>
@@ -281,9 +297,9 @@ struct filterf1proton {
           return true;
         }
       } else if (particle == 2) {
-        if (std::abs(candidate.p()) < protonMomentumPID && std::abs(updatensigma) < ConfPIDCutsTPCF1Proton) {
+        if (std::abs(candidate.p()) < protonMomentumPID && std::abs(updatensigma) < ConfPIDCutsTPCProton) {
           return true;
-        } else if (std::abs(candidate.p()) >= protonMomentumPID && candidate.hasTOF() && std::abs(updatensigma) < ConfPIDCutsTPCF1Proton && std::abs(candidate.tofNSigmaPr()) < ConfPIDCutsTOFF1Proton) {
+        } else if (std::abs(candidate.p()) >= protonMomentumPID && candidate.hasTOF() && std::abs(updatensigma) < ConfPIDCutsTPCProton && std::abs(candidate.tofNSigmaPr()) < ConfPIDCutsTOFProton) {
           return true;
         }
       }
@@ -293,11 +309,17 @@ struct filterf1proton {
           return true;
         } else if (particle == 1 && std::abs(updatensigma) < ConfPIDCutsTPCF1Proton && std::abs(candidate.tofNSigmaKa()) < ConfPIDCutsTOFF1Proton) {
           return true;
-        } else if (particle == 2 && std::abs(updatensigma) < ConfPIDCutsTPCF1Proton && std::abs(candidate.tofNSigmaPr()) < ConfPIDCutsTOFF1Proton) {
+        } else if (particle == 2 && std::abs(updatensigma) < ConfPIDCutsTPCProton && std::abs(candidate.tofNSigmaPr()) < ConfPIDCutsTOFProton) {
           return true;
         }
-      } else if (std::abs(updatensigma) < ConfPIDCutsTPCF1Proton) {
-        return true;
+      } else if (!candidate.hasTOF()) {
+        if (particle == 0 && std::abs(updatensigma) < ConfPIDCutsTPCF1Proton) {
+          return true;
+        } else if (particle == 1 && std::abs(updatensigma) < ConfPIDCutsTPCF1Proton) {
+          return true;
+        } else if (particle == 2 && std::abs(updatensigma) < ConfPIDCutsTPCProton) {
+          return true;
+        }
       }
     }
     return false;
@@ -520,9 +542,12 @@ struct filterf1proton {
 
         if ((track.pt() < cMaxProtonPt && track.sign() > 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaP[2])) || (track.pt() < cMaxProtonPt && track.sign() < 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaN[2]))) {
           ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massPr);
-          protons.push_back(temp);
-          ProtonIndex.push_back(track.globalIndex());
-          ProtonCharge.push_back(track.sign());
+          qaRegistry.fill(HIST("hMommentumCorr"), track.p() / track.sign(), track.p() - track.tpcInnerParam());
+          if (ConfFakeProton && !isFakeProton(track)) {
+            protons.push_back(temp);
+            ProtonIndex.push_back(track.globalIndex());
+            ProtonCharge.push_back(track.sign());
+          }
           if (track.sign() > 0) {
             qaRegistry.fill(HIST("hNsigmaPtprotonTPC"), nTPCSigmaP[2], track.pt());
           }
