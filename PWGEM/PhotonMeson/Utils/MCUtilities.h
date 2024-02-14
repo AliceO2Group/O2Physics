@@ -15,9 +15,13 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_MCUTILITIES_H_
 #define PWGEM_PHOTONMESON_UTILS_MCUTILITIES_H_
 
+#include <vector>
+#include <algorithm>
 #include "Framework/AnalysisTask.h"
 
 //_______________________________________________________________________
+namespace o2::aod::pwgem::mcutil
+{
 template <typename TCollision, typename TTrack, typename TMCs>
 bool IsPhysicalPrimary(TCollision const& mccollision, TTrack const& mctrack, TMCs const& mcTracks)
 {
@@ -50,6 +54,11 @@ bool IsPhysicalPrimary(TCollision const& mccollision, TTrack const& mctrack, TMC
         }
         if (mp.has_mothers()) {
           motherid = mp.mothersIds()[0]; // first mother index
+          auto mp_tmp = mcTracks.iteratorAt(motherid);
+          int pdg_mother_tmp = mp_tmp.pdgCode();
+          if (pdg_mother_tmp == pdg_mother) { // strange protection. mother of 111 is 111. observed in LHC23k6d on 25.January.2024
+            return false;
+          }
         } else {
           motherid = -999;
         }
@@ -241,5 +250,48 @@ int FindCommonMotherFrom3Prongs(TMCParticle1 const& p1, TMCParticle2 const& p2, 
     return -1;
   return motherid1;
 }
+//_______________________________________________________________________
+template <typename TMCParticle, typename TMCParticles, typename TTargetPDGs>
+bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticles, TTargetPDGs const& target_pdgs, const float ymin, const float ymax, const float phimin, const float phimax)
+{
+  if (mcparticle.y() < ymin || ymax < mcparticle.y()) {
+    return false; // mother rapidity is out of acceptance
+  }
+  if (mcparticle.phi() < phimin || phimax < mcparticle.phi()) {
+    return false; // mother rapidity is out of acceptance
+  }
+  auto daughtersIds = mcparticle.daughtersIds(); // always size = 2. first and last index. one should run loop from the first index to the last index.
+  if (daughtersIds[0] < 0 || daughtersIds[1] < 0) {
+    return false;
+  }
+
+  if (daughtersIds[1] - daughtersIds[0] + 1 != static_cast<int>(target_pdgs.size())) {
+    return false;
+  }
+  std::vector<int> pdgs;
+  pdgs.reserve(target_pdgs.size());
+  for (int idau = daughtersIds[0]; idau <= daughtersIds[1]; idau++) {
+    auto daughter = mcparticles.iteratorAt(idau);
+    pdgs.emplace_back(daughter.pdgCode());
+
+    if (daughter.eta() < ymin || ymax < daughter.eta()) {
+      return false;
+    }
+    if (daughter.phi() < phimin || phimax < daughter.phi()) {
+      return false;
+    }
+  } // end of daughter loop
+
+  sort(pdgs.begin(), pdgs.end());
+  bool is_equal = std::equal(pdgs.cbegin(), pdgs.cend(), target_pdgs.cbegin());
+  pdgs.clear();
+  pdgs.shrink_to_fit();
+  if (!is_equal) {
+    return false; // garantee daughter is in acceptance.
+  }
+  return true;
+}
+} // namespace o2::aod::pwgem::mcutil
+//_______________________________________________________________________
 //_______________________________________________________________________
 #endif // PWGEM_PHOTONMESON_UTILS_MCUTILITIES_H_

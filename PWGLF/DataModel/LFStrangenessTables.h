@@ -16,6 +16,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Qvectors.h"
 
@@ -30,19 +31,27 @@ DECLARE_SOA_TABLE(StraCollisions, "AOD", "STRACOLLISION", //! basic collision pr
 DECLARE_SOA_TABLE(StraCents, "AOD", "STRACENTS", //! centrality percentiles
                   cent::CentFT0M, cent::CentFT0A,
                   cent::CentFT0C, cent::CentFV0A);
+DECLARE_SOA_TABLE(StraRawCents_000, "AOD", "STRARAWCENTS", //! debug information
+                  mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, mult::MultNTracksPVeta1);
+DECLARE_SOA_TABLE_VERSIONED(StraRawCents_001, "AOD", "STRARAWCENTS", 1, //! debug information
+                            mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, mult::MultNTracksPVeta1,
+                            mult::MultZNA, mult::MultZNC, mult::MultZEM1, mult::MultZEM2, mult::MultZPA, mult::MultZPC);
 DECLARE_SOA_TABLE(StraEvSels, "AOD", "STRAEVSELS", //! event selection: sel8
                   evsel::Sel8);
-DECLARE_SOA_TABLE(StraEPs, "AOD", "STRAEPS", //! centrality percentiles
-                  qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A,
-                  qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::SumAmplFT0C,
-                  qvec::QvecFT0MRe, qvec::QvecFT0MIm, qvec::SumAmplFT0M,
+DECLARE_SOA_TABLE(StraFT0AQVs, "AOD", "STRAFT0AQVS", //! t0a Qvec
+                  qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A);
+DECLARE_SOA_TABLE(StraFT0CQVs, "AOD", "STRAFT0CQVS", //! t0c Qvec
+                  qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::SumAmplFT0C);
+DECLARE_SOA_TABLE(StraFT0MQVs, "AOD", "STRAFT0MQVS", //! t0m Qvec
+                  qvec::QvecFT0MRe, qvec::QvecFT0MIm, qvec::SumAmplFT0M);
+DECLARE_SOA_TABLE(StraFV0AQVs, "AOD", "STRAFV0AQVS", //! v0a Qvec
                   qvec::QvecFV0ARe, qvec::QvecFV0AIm, qvec::SumAmplFV0A);
 DECLARE_SOA_TABLE(StraStamps, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
                   bc::RunNumber, timestamp::Timestamp);
 
+using StraRawCents = StraRawCents_001;
 using StraCollision = StraCollisions::iterator;
 using StraCent = StraCents::iterator;
-using StraEP = StraEPs::iterator;
 
 namespace dautrack
 {
@@ -143,6 +152,14 @@ DECLARE_SOA_COLUMN(X, x, float);         //! decay position X
 DECLARE_SOA_COLUMN(Y, y, float);         //! decay position Y
 DECLARE_SOA_COLUMN(Z, z, float);         //! decay position Z
 
+// decay daughter positions for refit studies (specific purpose)
+DECLARE_SOA_COLUMN(XPosAtDCA, xPosAtDCA, float); //! decay position X
+DECLARE_SOA_COLUMN(YPosAtDCA, yPosAtDCA, float); //! decay position Y
+DECLARE_SOA_COLUMN(ZPosAtDCA, zPosAtDCA, float); //! decay position Z
+DECLARE_SOA_COLUMN(XNegAtDCA, xNegAtDCA, float); //! decay position X
+DECLARE_SOA_COLUMN(YNegAtDCA, yNegAtDCA, float); //! decay position Y
+DECLARE_SOA_COLUMN(ZNegAtDCA, zNegAtDCA, float); //! decay position Z
+
 // Saved from finding: DCAs
 DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0daughters, float); //! DCA between V0 daughters
 DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);         //! DCA positive prong to PV
@@ -156,6 +173,8 @@ DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t); //! type of V0. 0: built solely for
 // Saved from finding: covariance matrix of parent track (on request)
 DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
 DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
+DECLARE_SOA_COLUMN(CovMatPosDau, covMatPosDau, float[21]);    //! covariance matrix elements positive daughter track
+DECLARE_SOA_COLUMN(CovMatNegDau, covMatNegDau, float[21]);    //! covariance matrix elements negative daughter track
 
 // Saved from KF particle fit for specic table
 DECLARE_SOA_COLUMN(KFV0Chi2, kfV0Chi2, float); //!
@@ -399,8 +418,15 @@ DECLARE_SOA_TABLE_FULL(StoredV0Cores, "V0Cores", "AOD", "V0CORE", //! core infor
 DECLARE_SOA_EXTENDED_TABLE_USER(V0Cores, StoredV0Cores, "V0COREEXT",                                                  //!
                                 v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta); // the table name has here to be the one with EXT which is not nice and under study
 
+DECLARE_SOA_TABLE(V0TraPosAtDCAs, "AOD", "V0TRAPOSATDCAs", //! positions of tracks at their DCA for debug
+                  v0data::XPosAtDCA, v0data::YPosAtDCA, v0data::ZPosAtDCA,
+                  v0data::XNegAtDCA, v0data::YNegAtDCA, v0data::ZNegAtDCA);
+
 DECLARE_SOA_TABLE_FULL(V0Covs, "V0Covs", "AOD", "V0COVS", //! V0 covariance matrices
                        v0data::PositionCovMat, v0data::MomentumCovMat, o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE_FULL(V0DauCovs, "V0DauCovs", "AOD", "V0DAUCOVS", //! V0 covariance matrices of the dauther tracks
+                       v0data::CovMatPosDau, v0data::CovMatNegDau, o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(V0fCIndices, "AOD", "V0FCINDEX", //! index table when using AO2Ds
                   o2::soa::Index<>, v0data::PosTrackId, v0data::NegTrackId, v0data::CollisionId, v0data::V0Id, o2::soa::Marker<2>);
@@ -481,10 +507,10 @@ using V0MCData = V0MCDatas::iterator;
 // definitions of indices for interlink tables
 namespace v0data
 {
-DECLARE_SOA_INDEX_COLUMN(V0Data, v0Data); //! Index to V0Data entry
+DECLARE_SOA_INDEX_COLUMN(V0Data, v0Data);                         //! Index to V0Data entry
 DECLARE_SOA_INDEX_COLUMN(V0fCData, v0fCData);                     //! Index to V0Data entry
 DECLARE_SOA_INDEX_COLUMN_FULL(V0MC, v0MC, int, V0MCCores, "_MC"); //!
-}
+} // namespace v0data
 
 DECLARE_SOA_TABLE(V0DataLink, "AOD", "V0DATALINK", //! Joinable table with V0s which links to V0Data which is not produced for all entries
                   o2::soa::Index<>, v0data::V0DataId, v0data::V0fCDataId);
@@ -982,10 +1008,10 @@ using CascDataExt = CascDatas;
 
 namespace cascdata
 {
-DECLARE_SOA_INDEX_COLUMN(CascData, cascData); //! Index to CascData entry
-DECLARE_SOA_INDEX_COLUMN(KFCascData, kfCascData); //! Index to CascData entry
+DECLARE_SOA_INDEX_COLUMN(CascData, cascData);       //! Index to CascData entry
+DECLARE_SOA_INDEX_COLUMN(KFCascData, kfCascData);   //! Index to CascData entry
 DECLARE_SOA_INDEX_COLUMN(TraCascData, traCascData); //! Index to CascData entry
-}
+} // namespace cascdata
 
 DECLARE_SOA_TABLE(CascDataLink, "AOD", "CASCDATALINK", //! Joinable table with Cascades which links to CascData which is not produced for all entries
                   cascdata::CascDataId);
@@ -1029,7 +1055,7 @@ DECLARE_SOA_TABLE(CascTags, "AOD", "CASCTAGS",
 // Definition of labels for V0s
 namespace mcv0label
 {
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for V0
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);                                               //! MC particle for V0
 DECLARE_SOA_INDEX_COLUMN_FULL(McMotherParticle, mcMotherParticle, int, McParticles, "_Mother"); //!
 } // namespace mcv0label
 
@@ -1050,9 +1076,9 @@ using McFullV0Label = McFullV0Labels::iterator;
 // Definition of labels for cascades
 namespace mccasclabel
 {
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Cascade
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);                                               //! MC particle for Cascade
 DECLARE_SOA_INDEX_COLUMN_FULL(McMotherParticle, mcMotherParticle, int, McParticles, "_Mother"); //!
-DECLARE_SOA_COLUMN(IsBachBaryonCandidate, isBachBaryonCandidate, bool); //! will this be built or not?
+DECLARE_SOA_COLUMN(IsBachBaryonCandidate, isBachBaryonCandidate, bool);                         //! will this be built or not?
 } // namespace mccasclabel
 
 DECLARE_SOA_TABLE(McCascLabels, "AOD", "MCCASCLABEL", //! Table joinable with CascData containing the MC labels

@@ -29,6 +29,7 @@
 
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetBkgSubUtils.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/Jet.h"
 
@@ -40,12 +41,14 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-static const std::vector<std::string> highPtObjectsNames = {"JetChLowPt", "JetChHighPt"};
+static const std::vector<std::string> highPtObjectsNames = {"JetChLowPt", "JetChHighPt", "MBEventsWithin10cm", "AllMBEvents"};
 
 struct jetFilter {
   enum { kJetChLowPt = 0,
          kJetChHighPt = 1,
-         kHighPtObjects };
+         kHighPtObjects = 2,
+         kAllMBEvents = 3,
+         kAllObjects };
 
   Produces<aod::JetFilters> tags;
 
@@ -99,7 +102,7 @@ struct jetFilter {
                  {40, -1.0, 1.0, "#eta"}});
 
     AxisSpec jetRadiiAxis = {cfgJetRadii, "AKT jet resolution parameters"};
-    const AxisSpec axisPt{1000, 0., +1000., "#it{p}_{T,jet} (GeV/#it{c})"};
+    const AxisSpec axisPt{1020, -20., +1000., "#it{p}_{T,jet} (GeV/#it{c})"};
     const AxisSpec axisEta{100, -1., +1., "#eta"};
     const AxisSpec axisPhi{100, 0., TMath::TwoPi(), "#varphi"};
 
@@ -112,15 +115,21 @@ struct jetFilter {
     spectra.add("hPtAKTJetsInclusive", "#it{p}_{T} of AKT charged jets in |#eta| < 0.9 - #it{R};",
                 {HistType::kTH2F, {jetRadiiAxis, axisPt}});
 
+    spectra.add("hPtAKTJetsInclusiveBgSubtr", "#it{p}_{T} of AKT charged jets in |#eta| < 0.9 - #it{R};",
+                {HistType::kTH2F, {jetRadiiAxis, axisPt}});
+
     spectra.add("hEtaAKTJetsInclusive", "#eta of AKT charged jets with #it{p}_{T} > 10 GeV in |#eta| < 0.9 - #it{R};",
                 {HistType::kTH2F, {jetRadiiAxis, axisEta}});
 
     spectra.add("hPhiAKTJetsInclusive", "#varphi of AKT charged jets with #it{p}_{T} > 10 GeV in |#eta| < 0.9 - #it{R};",
                 {HistType::kTH2F, {jetRadiiAxis, axisPhi}});
 
+    spectra.add("hRho", "Underlying event density #rho", HistType::kTH1F,
+                {{200, 0., +20., "#rho (GeV/#it{c})"}});
+
     auto scalers{std::get<std::shared_ptr<TH1>>(spectra.add(
       "fProcessedEvents", ";;Number of filtered events", HistType::kTH1F,
-      {{kHighPtObjects, -0.5, kHighPtObjects - 0.5}}))};
+      {{kAllObjects, -0.5, kAllObjects - 0.5}}))};
     for (uint32_t iS{1}; iS <= highPtObjectsNames.size(); ++iS) {
       scalers->GetXaxis()->SetBinLabel(iS, highPtObjectsNames[iS - 1].data());
     }
@@ -132,21 +141,27 @@ struct jetFilter {
   // Filter jetRadiusSelection = o2::aod::jet::r == nround(cfgJetR.node() * 100.0f);
   // FK//using filteredJets = o2::soa::Filtered<o2::aod::ChargedJets>;
 
-  // FK//void process(aod::JCollision const& collision, filteredJets const& jets)
-  void process(aod::JCollision const& collision, o2::aod::ChargedJets const& jets) // FK//
+  // void process(aod::JCollision const& collision, o2::aod::ChargedJets const& jets)
+  void process(soa::Join<JetCollisions, aod::BkgChargedRhos>::iterator const& collision, o2::aod::ChargedJets const& jets) // FK//
   {
     // collision process loop
     bool keepEvent[kHighPtObjects]{false};
     spectra.fill(HIST("fCollZpos"), collision.posZ());
+    spectra.fill(HIST("fProcessedEvents"), kAllMBEvents); // all minimum bias events
 
     // FILL SPECTRA OF INCLUSIVE JETS IN FIDUCIAL VOLUME
     if (TMath::Abs(collision.posZ()) < cfgZvtx) {
+      spectra.fill(HIST("fProcessedEvents"), kHighPtObjects); // minimum bias events |z_vtx|<10 cm
+      spectra.fill(HIST("hRho"), collision.rho());
+
       for (const auto& jet : jets) { // jets are ordered by pT
         for (unsigned int ir = 0; ir < jetIntR.size(); ir++) {
           if (jet.r() == jetIntR[ir]) {
             if (TMath::Abs(jet.eta()) < jetRFidVolume[ir]) {
               float jetr = (jet.r() / 100. + 1e-5);
               spectra.fill(HIST("hPtAKTJetsInclusive"), jetr, jet.pt());
+              spectra.fill(HIST("hPtAKTJetsInclusiveBgSubtr"), jetr, jet.pt() - (collision.rho() * jet.area()));
+
               if (jet.pt() > 10.) {
                 spectra.fill(HIST("hEtaAKTJetsInclusive"), jetr, jet.eta());
                 spectra.fill(HIST("hPhiAKTJetsInclusive"), jetr, jet.phi());

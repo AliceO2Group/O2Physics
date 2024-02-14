@@ -21,6 +21,7 @@
 #include "Common/Core/TrackSelectorPID.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/HfMlResponseB0ToDPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -33,11 +34,12 @@ using namespace o2::analysis;
 
 struct HfCandidateSelectorB0ToDPiReduced {
   Produces<aod::HfSelB0ToDPi> hfSelB0ToDPiCandidate; // table defined in CandidateSelectionTables.h
+  Produces<aod::HfMlB0ToDPi> hfMlB0ToDPiCandidate;   // table defined in CandidateSelectionTables.h
 
   Configurable<float> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<float> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
   // Enable PID
-  Configurable<bool> usePid{"usePid", true, "Switch for PID selection at track level"};
+  Configurable<int> usePionPid{"usePionPid", 1, "Switch for PID selection for the bachelor pion (0: none, 1: TPC or TOF, 2: TPC and TOF)"};
   Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::NotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<float> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
@@ -57,18 +59,33 @@ struct HfCandidateSelectorB0ToDPiReduced {
   Configurable<LabeledArray<double>> cutsDmesMl{"cutsDmesMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsDmesCutScore}, "D-meson ML cuts per pT bin"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
-
-  // check if selectionFlagD (defined in dataCreatorDplusPiReduced.cxx) and usePid configurables are in sync
-  bool selectionFlagDAndUsePidInSync = true;
+  // B0 ML inference
+  Configurable<bool> applyB0Ml{"applyB0Ml", false, "Flag to apply ML selections"};
+  Configurable<std::vector<double>> binsPtB0Ml{"binsPtB0Ml", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<int>> cutDirB0Ml{"cutDirB0Ml", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsB0Ml{"cutsB0Ml", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int8_t> nClassesB0Ml{"nClassesB0Ml", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+  // CCDB configuration
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"path_ccdb/BDT_B0/"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_B0ToDPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   // variable that will store the value of selectionFlagD (defined in dataCreatorDplusPiReduced.cxx)
   int mySelectionFlagD = -1;
 
-  HfHelper hfHelper;
-  TrackSelectorPi selectorPion;
+  o2::analysis::HfMlResponseB0ToDPi<float> hfMlResponse;
+  float outputMlNotPreselected = -1.;
+  std::vector<float> outputMl = {};
+  o2::ccdb::CcdbApi ccdbApi;
 
-  HistogramRegistry registry{"registry"};
+  TrackSelectorPi selectorPion;
+  HfHelper hfHelper;
 
   using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
+
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext const& initContext)
   {
@@ -77,7 +94,11 @@ struct HfCandidateSelectorB0ToDPiReduced {
       LOGP(fatal, "Only one process function for data should be enabled at a time.");
     }
 
-    if (usePid) {
+    if (usePionPid < 0 || usePionPid > 2) {
+      LOGP(fatal, "Invalid PID option in configurable, please set 0 (no PID), 1 (TPC or TOF), or 2 (TPC and TOF)");
+    }
+
+    if (usePionPid) {
       selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
       selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
       selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
@@ -99,6 +120,18 @@ struct HfCandidateSelectorB0ToDPiReduced {
         registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
     }
+
+    if (applyB0Ml) {
+      hfMlResponse.configure(binsPtB0Ml, cutsB0Ml, cutDirB0Ml, nClassesB0Ml);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        hfMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      hfMlResponse.init();
+    }
   }
 
   /// Main function to perform B0 candidate creation
@@ -114,15 +147,6 @@ struct HfCandidateSelectorB0ToDPiReduced {
     // get DplusPi creator configurable
     for (const auto& config : configs) {
       mySelectionFlagD = config.mySelectionFlagD();
-
-      if (usePid && !TESTBIT(mySelectionFlagD, SelectionStep::RecoPID)) {
-        selectionFlagDAndUsePidInSync = false;
-        LOG(warning) << "PID selections required on B0 daughters (usePid=true) but no PID selections on D candidates were required a priori (selectionFlagD<7). Set selectionFlagD=7 in hf-candidate-creator-b0";
-      }
-      if (!usePid && TESTBIT(mySelectionFlagD, SelectionStep::RecoPID)) {
-        selectionFlagDAndUsePidInSync = false;
-        LOG(warning) << "No PID selections required on B0 daughters (usePid=false) but PID selections on D candidates were required a priori (selectionFlagD=7). Set selectionFlagD<7 in hf-candidate-creator-b0";
-      }
     }
 
     for (const auto& hfCandB0 : hfCandsB0) {
@@ -132,6 +156,9 @@ struct HfCandidateSelectorB0ToDPiReduced {
       // check if flagged as B0 → D π
       if (!TESTBIT(hfCandB0.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
         hfSelB0ToDPiCandidate(statusB0ToDPi);
+        if (applyB0Ml) {
+          hfMlB0ToDPiCandidate(outputMlNotPreselected);
+        }
         if (activateQA) {
           registry.fill(HIST("hSelections"), 1, ptCandB0);
         }
@@ -146,6 +173,9 @@ struct HfCandidateSelectorB0ToDPiReduced {
       // topological cuts
       if (!hfHelper.selectionB0ToDPiTopol(hfCandB0, cuts, binsPt)) {
         hfSelB0ToDPiCandidate(statusB0ToDPi);
+        if (applyB0Ml) {
+          hfMlB0ToDPiCandidate(outputMlNotPreselected);
+        }
         // LOGF(info, "B0 candidate selection failed at topology selection");
         continue;
       }
@@ -153,6 +183,9 @@ struct HfCandidateSelectorB0ToDPiReduced {
       if constexpr (withDmesMl) { // we include it in the topological selections
         if (!hfHelper.selectionDmesMlScoresForB(hfCandB0, cutsDmesMl, binsPtDmesMl)) {
           hfSelB0ToDPiCandidate(statusB0ToDPi);
+          if (applyB0Ml) {
+            hfMlB0ToDPiCandidate(outputMlNotPreselected);
+          }
           // LOGF(info, "B0 candidate selection failed at D-meson ML selection");
           continue;
         }
@@ -163,18 +196,21 @@ struct HfCandidateSelectorB0ToDPiReduced {
         registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoTopol, ptCandB0);
       }
 
-      // checking if selectionFlagD and usePid are in sync
-      if (!selectionFlagDAndUsePidInSync) {
-        hfSelB0ToDPiCandidate(statusB0ToDPi);
-        continue;
-      }
       // track-level PID selection
-      if (usePid) {
-        auto trackPi = hfCandB0.template prong1_as<TracksPion>();
-        int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
+      auto trackPi = hfCandB0.template prong1_as<TracksPion>();
+      if (usePionPid) {
+        int pidTrackPi{TrackSelectorPID::Status::NotApplicable};
+        if (usePionPid == 1) {
+          pidTrackPi = selectorPion.statusTpcOrTof(trackPi);
+        } else {
+          pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
+        }
         if (!hfHelper.selectionB0ToDPiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B0 candidate selection failed at PID selection");
           hfSelB0ToDPiCandidate(statusB0ToDPi);
+          if (applyB0Ml) {
+            hfMlB0ToDPiCandidate(outputMlNotPreselected);
+          }
           continue;
         }
         SETBIT(statusB0ToDPi, SelectionStep::RecoPID); // RecoPID = 2 --> statusB0ToDPi = 7
@@ -182,6 +218,23 @@ struct HfCandidateSelectorB0ToDPiReduced {
           registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoPID, ptCandB0);
         }
       }
+
+      if (applyB0Ml) {
+        // B0 ML selections
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<withDmesMl>(hfCandB0, trackPi);
+        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandB0, outputMl);
+        hfMlB0ToDPiCandidate(outputMl[1]); // storing ML score for signal class
+
+        if (!isSelectedMl) {
+          hfSelB0ToDPiCandidate(statusB0ToDPi);
+          continue;
+        }
+        SETBIT(statusB0ToDPi, SelectionStep::RecoMl); // RecoML = 3 --> statusB0ToDPi = 15 if usePionPid, 11 otherwise
+        if (activateQA) {
+          registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoMl, ptCandB0);
+        }
+      }
+
       hfSelB0ToDPiCandidate(statusB0ToDPi);
       // LOGF(info, "B0 candidate selection passed all selections");
     }
