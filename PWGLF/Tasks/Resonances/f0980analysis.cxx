@@ -124,7 +124,6 @@ struct f0980analysis {
     histos.add("QA/LTpt", "", {HistType::kTH3F, {pTqaAxis, centAxis, phiqaAxis}});
     histos.add("QA/EPhist", "", {HistType::kTH2F, {centAxis, EPqaAxis}});
 
-
     if (doprocessMCLight) {
       histos.add("MCL/hpT_f0980_GEN", "generated f0 signals", HistType::kTH1F,
                  {pTqaAxis});
@@ -231,7 +230,7 @@ struct f0980analysis {
         continue;
 
       relPhi = TVector2::Phi_0_2pi(Reco.Phi() - collision.evtPl());
-      if (relPhi>constants::math::PI) {
+      if (relPhi > constants::math::PI) {
         relPhi -= constants::math::PI;
       }
 
