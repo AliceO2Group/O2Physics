@@ -21,6 +21,19 @@
 //    romain.schotter@cern.ch
 //    david.dobrigkeit.chinellato@cern.ch
 //
+
+#include <Math/Vector4D.h>
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
+#include <TFile.h>
+#include <TH2F.h>
+#include <TProfile.h>
+#include <TLorentzVector.h>
+#include <TPDGCode.h>
+#include <TDatabasePDG.h>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -36,18 +49,6 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
-
-#include <TFile.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <TLorentzVector.h>
-#include <Math/Vector4D.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include "Framework/ASoAHelpers.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -192,22 +193,22 @@ struct derivedlambdakzeroanalysis {
 
     maskTrackProperties = 0;
     if (requirePosITSonly) {
-      maskTrackProperties = (1 << selPosItsOnly);
+      maskTrackProperties = maskTrackProperties | (1 << selPosItsOnly);
     } else {
-      maskTrackProperties = (1 << selPosGoodTPCTrack);
+      maskTrackProperties = maskTrackProperties | (1 << selPosGoodTPCTrack);
       // TPC signal is available: ask for positive track PID
       maskK0ShortSpecific = maskK0ShortSpecific | (1 << selTPCPIDPositivePion);
       maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDPositiveProton);
       maskAntiLambdaSpecific = maskAntiLambdaSpecific | (1 << selTPCPIDPositivePion);
     }
     if (requireNegITSonly) {
-      maskTrackProperties = (1 << selNegItsOnly);
+      maskTrackProperties = maskTrackProperties | (1 << selNegItsOnly);
     } else {
-      maskTrackProperties = (1 << selNegGoodTPCTrack);
+      maskTrackProperties = maskTrackProperties | (1 << selNegGoodTPCTrack);
       // TPC signal is available: ask for negative track PID
       maskK0ShortSpecific = maskK0ShortSpecific | (1 << selTPCPIDNegativePion);
-      maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDNegativeProton);
-      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (1 << selTPCPIDNegativePion);
+      maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDNegativePion);
+      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (1 << selTPCPIDNegativeProton);
     }
 
     // Primary particle selection, central to analysis

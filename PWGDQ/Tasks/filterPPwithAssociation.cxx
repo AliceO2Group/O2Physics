@@ -733,6 +733,7 @@ struct DQFilterPPTask {
       }
     }
 
+    // check which selection should use like sign (LS) (--/++) muon track pairs
     pairingLS = 0; // reset the decisions for muons
     TString musonLSstr = fConfigFilterLsMuonsPairs.value;
     std::unique_ptr<TObjArray> objArrayMuonLS(musonLSstr.Tokenize(","));

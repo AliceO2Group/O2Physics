@@ -142,7 +142,7 @@ struct hJetAnalysis {
         if (is_sig_col) {
           registry.fill(HIST("hSignalPtDPhi"), jet.pt(), dphi);
           registry.fill(HIST("hSignalPt"), jet.pt());
-          registry.fill(HIST("hJetSignalConstituentMultiplicity"), jet.pt(), dphi, jet.tracks().size());
+          registry.fill(HIST("hJetSignalConstituentMultiplicity"), jet.pt(), dphi, jet.tracksIds().size());
           for (auto& constituent : jet.template tracks_as<U>()) {
             if (constituent.pt() > leadingPT) {
               leadingPT = constituent.pt();
@@ -154,7 +154,7 @@ struct hJetAnalysis {
         if (!is_sig_col) {
           registry.fill(HIST("hReferencePtDPhi"), jet.pt(), dphi);
           registry.fill(HIST("hReferencePt"), jet.pt());
-          registry.fill(HIST("hJetReferenceConstituentMultiplicity"), jet.pt(), dphi, jet.tracks().size());
+          registry.fill(HIST("hJetReferenceConstituentMultiplicity"), jet.pt(), dphi, jet.tracksIds().size());
           for (auto& constituent : jet.template tracks_as<U>()) {
             if (constituent.pt() > leadingPT) {
               leadingPT = constituent.pt();

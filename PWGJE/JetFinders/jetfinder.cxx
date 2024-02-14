@@ -48,13 +48,13 @@ struct JetFinderTask {
 
   // cluster level configurables
   Configurable<std::string> clusterDefinitionS{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
-  Configurable<float> clusterEtaMin{"clusterEtaMin", -0.7, "minimum cluster eta"}; // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
-  Configurable<float> clusterEtaMax{"clusterEtaMax", 0.7, "maximum cluster eta"};  // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
-  Configurable<float> clusterPhiMin{"clusterPhiMin", -999, "minimum cluster phi"};
-  Configurable<float> clusterPhiMax{"clusterPhiMax", 999, "maximum cluster phi"};
+  Configurable<float> clusterEtaMin{"clusterEtaMin", -0.71, "minimum cluster eta"}; // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
+  Configurable<float> clusterEtaMax{"clusterEtaMax", 0.71, "maximum cluster eta"};  // For ECMAL: |eta| < 0.7, phi = 1.40 - 3.26
+  Configurable<float> clusterPhiMin{"clusterPhiMin", 1.39, "minimum cluster phi"};
+  Configurable<float> clusterPhiMax{"clusterPhiMax", 3.27, "maximum cluster phi"};
   Configurable<float> clusterEnergyMin{"clusterEnergyMin", 0.5, "minimum cluster energy in EMCAL (GeV)"};
-  Configurable<float> clusterTimeMin{"clusterTimeMin", -999., "minimum Cluster time (ns)"};
-  Configurable<float> clusterTimeMax{"clusterTimeMax", 999., "maximum Cluster time (ns)"};
+  Configurable<float> clusterTimeMin{"clusterTimeMin", -25., "minimum Cluster time (ns)"};
+  Configurable<float> clusterTimeMax{"clusterTimeMax", 25., "maximum Cluster time (ns)"};
   Configurable<bool> clusterRejectExotics{"clusterRejectExotics", true, "Reject exotic clusters"};
 
   // jet level configurables
@@ -68,6 +68,7 @@ struct JetFinderTask {
   Configurable<float> jetGhostArea{"jetGhostArea", 0.005, "jet ghost area"};
   Configurable<int> ghostRepeat{"ghostRepeat", 1, "set to 0 to gain speed if you dont need area calculation"};
   Configurable<bool> DoTriggering{"DoTriggering", false, "used for the charged jet trigger to remove the eta constraint on the jet axis"};
+  Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
 
   Service<o2::framework::O2DatabasePDG> pdgDatabase;
   int trackSelection = -1;
@@ -109,12 +110,6 @@ struct JetFinderTask {
   Filter partCuts = (aod::jmcparticle::pt >= trackPtMin && aod::jmcparticle::pt < trackPtMax && aod::jmcparticle::eta > trackEtaMin && aod::jmcparticle::eta < trackEtaMax);
   Filter clusterFilter = (aod::jcluster::definition == static_cast<int>(clusterDefinition) && aod::jcluster::eta > clusterEtaMin && aod::jcluster::eta < clusterEtaMax && aod::jcluster::phi >= clusterPhiMin && aod::jcluster::phi <= clusterPhiMax && aod::jcluster::energy >= clusterEnergyMin && aod::jcluster::time > clusterTimeMin && aod::jcluster::time < clusterTimeMax && (clusterRejectExotics && aod::jcluster::isExotic != true));
 
-  void processDummy(JetCollisions const& collisions)
-  {
-  }
-
-  PROCESS_SWITCH(JetFinderTask, processDummy, "Dummy process function turned on by default", true);
-
   void processChargedJets(soa::Filtered<JetCollisions>::iterator const& collision,
                           soa::Filtered<JetTracks> const& tracks)
   {
@@ -123,7 +118,7 @@ struct JetFinderTask {
     }
     inputParticles.clear();
     jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection);
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
   }
 
   PROCESS_SWITCH(JetFinderTask, processChargedJets, "Data and reco level jet finding for charged jets", false);
@@ -136,7 +131,7 @@ struct JetFinderTask {
     }
     inputParticles.clear();
     jetfindingutilities::analyseTracks<soa::Filtered<JetTracksSub>, soa::Filtered<JetTracksSub>::iterator>(inputParticles, tracks, trackSelection);
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, collision, jetsEvtWiseSubTable, constituentsEvtWiseSubTable);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsEvtWiseSubTable, constituentsEvtWiseSubTable);
   }
 
   PROCESS_SWITCH(JetFinderTask, processChargedEvtWiseSubJets, "Data and reco level jet finding for charged jets with event-wise constituent subtraction", false);
@@ -149,7 +144,7 @@ struct JetFinderTask {
     }
     inputParticles.clear();
     jetfindingutilities::analyseClusters(inputParticles, &clusters);
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
   }
   PROCESS_SWITCH(JetFinderTask, processNeutralJets, "Data and reco level jet finding for neutral jets", false);
 
@@ -163,7 +158,7 @@ struct JetFinderTask {
     inputParticles.clear();
     jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection);
     jetfindingutilities::analyseClusters(inputParticles, &clusters);
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
   }
   PROCESS_SWITCH(JetFinderTask, processFullJets, "Data and reco level jet finding for full and neutral jets", false);
 
@@ -172,7 +167,7 @@ struct JetFinderTask {
     // TODO: MC event selection?
     inputParticles.clear();
     jetfindingutilities::analyseParticles<soa::Filtered<JetParticles>, soa::Filtered<JetParticles>::iterator>(inputParticles, particleSelection, 1, particles, pdgDatabase);
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelChargedJets, "Particle level charged jet finding", false);
 
@@ -181,7 +176,7 @@ struct JetFinderTask {
     // TODO: MC event selection?
     inputParticles.clear();
     jetfindingutilities::analyseParticles<soa::Filtered<JetParticles>, soa::Filtered<JetParticles>::iterator>(inputParticles, particleSelection, 2, particles, pdgDatabase);
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelNeutralJets, "Particle level neutral jet finding", false);
 
@@ -190,62 +185,8 @@ struct JetFinderTask {
     // TODO: MC event selection?
     inputParticles.clear();
     jetfindingutilities::analyseParticles<soa::Filtered<JetParticles>, soa::Filtered<JetParticles>::iterator>(inputParticles, particleSelection, 0, particles, pdgDatabase);
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, collision, jetsTable, constituentsTable);
+    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable);
   }
 
   PROCESS_SWITCH(JetFinderTask, processParticleLevelFullJets, "Particle level full jet finding", false);
 };
-
-using JetFinderDataCharged = JetFinderTask<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents>;
-using JetFinderDataFull = JetFinderTask<aod::FullJets, aod::FullJetConstituents, aod::FullEventWiseSubtractedJets, aod::FullEventWiseSubtractedJetConstituents>;
-using JetFinderDataNeutral = JetFinderTask<aod::NeutralJets, aod::NeutralJetConstituents, aod::NeutralEventWiseSubtractedJets, aod::NeutralEventWiseSubtractedJetConstituents>;
-using JetFinderMCDetectorLevelCharged = JetFinderTask<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelEventWiseSubtractedJets, aod::ChargedMCDetectorLevelEventWiseSubtractedJetConstituents>;
-using JetFinderMCDetectorLevelFull = JetFinderTask<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents, aod::FullMCDetectorLevelEventWiseSubtractedJets, aod::FullMCDetectorLevelEventWiseSubtractedJetConstituents>;
-using JetFinderMCDetectorLevelNeutral = JetFinderTask<aod::NeutralMCDetectorLevelJets, aod::NeutralMCDetectorLevelJetConstituents, aod::NeutralMCDetectorLevelEventWiseSubtractedJets, aod::NeutralMCDetectorLevelEventWiseSubtractedJetConstituents>;
-using JetFinderMCParticleLevelCharged = JetFinderTask<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelEventWiseSubtractedJets, aod::ChargedMCParticleLevelEventWiseSubtractedJetConstituents>;
-using JetFinderMCParticleLevelFull = JetFinderTask<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents, aod::FullMCParticleLevelEventWiseSubtractedJets, aod::FullMCParticleLevelEventWiseSubtractedJetConstituents>;
-using JetFinderMCParticleLevelNeutral = JetFinderTask<aod::NeutralMCParticleLevelJets, aod::NeutralMCParticleLevelJetConstituents, aod::NeutralMCParticleLevelEventWiseSubtractedJets, aod::NeutralMCParticleLevelEventWiseSubtractedJetConstituents>;
-
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-
-  std::vector<o2::framework::DataProcessorSpec> tasks;
-
-  tasks.emplace_back(
-    adaptAnalysisTask<JetFinderDataCharged>(cfgc,
-                                            SetDefaultProcesses{}, TaskName{"jet-finder-data-charged"}));
-
-  tasks.emplace_back(
-    adaptAnalysisTask<JetFinderDataFull>(cfgc,
-                                         SetDefaultProcesses{}, TaskName{"jet-finder-data-full"}));
-
-  tasks.emplace_back(
-    adaptAnalysisTask<JetFinderDataNeutral>(cfgc,
-                                            SetDefaultProcesses{}, TaskName{"jet-finder-data-neutral"}));
-
-  tasks.emplace_back(
-    adaptAnalysisTask<JetFinderMCDetectorLevelCharged>(cfgc,
-                                                       SetDefaultProcesses{}, TaskName{"jet-finder-mcd-charged"}));
-
-  tasks.emplace_back(
-    adaptAnalysisTask<JetFinderMCDetectorLevelFull>(cfgc,
-                                                    SetDefaultProcesses{}, TaskName{"jet-finder-mcd-full"}));
-
-  tasks.emplace_back(
-    adaptAnalysisTask<JetFinderMCDetectorLevelNeutral>(cfgc,
-                                                       SetDefaultProcesses{}, TaskName{"jet-finder-mcd-neutral"}));
-
-  tasks.emplace_back(
-    adaptAnalysisTask<JetFinderMCParticleLevelCharged>(cfgc,
-                                                       SetDefaultProcesses{}, TaskName{"jet-finder-mcp-charged"}));
-
-  tasks.emplace_back(
-    adaptAnalysisTask<JetFinderMCParticleLevelFull>(cfgc,
-                                                    SetDefaultProcesses{}, TaskName{"jet-finder-mcp-full"}));
-
-  tasks.emplace_back(
-    adaptAnalysisTask<JetFinderMCParticleLevelNeutral>(cfgc,
-                                                       SetDefaultProcesses{}, TaskName{"jet-finder-mcp-neutral"}));
-
-  return WorkflowSpec{tasks};
-}

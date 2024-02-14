@@ -47,8 +47,7 @@ int CheckSameSize(const std::vector<T>& first, const std::vector<Args>&... rest)
 class GFWBinningCuts
 {
  public:
-  GFWBinningCuts(int vtxzbins_ = 40, float vtxzmin_ = -10., float vtxzmax_ = 10, int etabins_ = 16, float etamin_ = -0.8, float etamax_ = 0.8,
-                 int phibins_ = 72, int nchbins_ = 300, float nchmin_ = 0.5, float nchmax_ = 3000.5,
+  GFWBinningCuts(int vtxzbins_ = 40, int etabins_ = 16, int phibins_ = 72, int nchbins_ = 300, float nchmin_ = 0, float nchmax_ = 3000,
                  float ptpoimin_ = 0.2, float ptpoimax_ = 10., float ptrefmin_ = 0.2, float ptrefmax_ = 3.,
                  std::vector<double> ptbinning_ = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55,
                                                    0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95,
@@ -58,23 +57,19 @@ class GFWBinningCuts
                                                      21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0,
                                                      40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0,
                                                      60.0, 61.0, 62.0, 63.0, 64.0, 65.0, 66.0, 67.0, 68.0, 69.0, 70.0, 71.0, 72.0, 73.0, 74.0, 75.0, 76.0, 77.0, 78.0, 79.0,
-                                                     80.0, 81.0, 82.0, 83.0, 84.0, 85.0, 86.0, 87.0, 88.0, 89.0, 90.0}) : mVtxZbins{vtxzbins_}, mVtxZmin{vtxzmin_}, mVtxZmax{vtxzmax_}, mEtabins{etabins_}, mEtamin{etamin_}, mEtamax{etamax_}, mPhibins{phibins_}, mNchbins{nchbins_}, mNchmin{nchmin_}, mNchmax{nchmax_}, mPTpoimin{ptpoimin_}, mPTpoimax{ptpoimax_}, mPTrefmin{ptrefmin_}, mPTrefmax{ptrefmax_}, mPTbinning{std::move(ptbinning_)}, mCentbinning{std::move(centbinning_)} {};
+                                                     80.0, 81.0, 82.0, 83.0, 84.0, 85.0, 86.0, 87.0, 88.0, 89.0, 90.0}) : mVtxZbins{vtxzbins_}, mEtabins{etabins_}, mPhibins{phibins_}, mNchbins{nchbins_}, mNchmin{nchmin_}, mNchmax{nchmax_}, mPTpoimin{ptpoimin_}, mPTpoimax{ptpoimax_}, mPTrefmin{ptrefmin_}, mPTrefmax{ptrefmax_}, mPTbinning{std::move(ptbinning_)}, mCentbinning{std::move(centbinning_)} {};
 
   auto Print() const
   {
-    LOGF(info, "Vz: %d, %.1f, %.1f | Eta: %d, %.1f, %.1f | Phi: %d | Pt POI: %.2f, %.2f | Pt Ref: %.2f, %.2f | Nch: %d, %.1f, %.1f", mVtxZbins, mVtxZmin, mVtxZmax, mEtabins, mEtamin, mEtamax, mPhibins, mPTpoimin, mPTpoimax, mPTrefmin, mPTrefmax, mNchbins, mNchmin, mNchmax);
+    LOGF(info, "Vz: %d | Eta: %d | Phi: %d | Pt POI: %.2f, %.2f | Pt Ref: %.2f, %.2f | Nch: %d, %.1f, %.1f", mVtxZbins, mEtabins, mPhibins, mPTpoimin, mPTpoimax, mPTrefmin, mPTrefmax, mNchbins, mNchmin, mNchmax);
     return;
   }
 
-  void SetVtxZBinning(int vtxbins, float vtxmin, float vtxmax)
+  void SetVtxZBinning(int vtxbins)
   {
     mVtxZbins = vtxbins;
-    mVtxZmin = vtxmin;
-    mVtxZmax = vtxmax;
   }
   const auto& GetVtxZbins() const { return mVtxZbins; }
-  const auto& GetVtxZmin() const { return mVtxZmin; }
-  const auto& GetVtxZmax() const { return mVtxZmax; }
 
   void SetPtPOI(float ptpoimin, float ptpoimax)
   {
@@ -87,15 +82,11 @@ class GFWBinningCuts
   void SetPtBinning(std::vector<double> ptbinning_) { mPTbinning = std::move(ptbinning_); }
   const auto& GetPtBinning() const { return mPTbinning; }
 
-  void SetEtaBinning(int etabins, float etamin, float etamax)
+  void SetEtaBinning(int etabins)
   {
     mEtabins = etabins;
-    mEtamin = etamin;
-    mEtamax = etamax;
   }
   const auto& GetEtaBins() const { return mEtabins; }
-  const auto& GetEtaMin() const { return mEtamin; }
-  const auto& GetEtaMax() const { return mEtamax; }
 
   void SetPhiBins(int phibins) { mPhibins = phibins; }
   const auto& GetPhiBins() const { return mPhibins; }
@@ -126,11 +117,7 @@ class GFWBinningCuts
 
  private:
   int mVtxZbins;
-  float mVtxZmin;
-  float mVtxZmax;
   int mEtabins;
-  float mEtamin;
-  float mEtamax;
   int mPhibins;
   int mNchbins;
   float mNchmin;

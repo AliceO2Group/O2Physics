@@ -486,6 +486,8 @@ DECLARE_SOA_BITMAP_COLUMN(FilterMap, filterMap, 32);                     //!
 DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);                    //!
 DECLARE_SOA_COLUMN(Tauz, tauz, float);                                   //! Longitudinal pseudo-proper time of lepton pair (in ns)
 DECLARE_SOA_COLUMN(TauzErr, tauzErr, float);                             //! Error on longitudinal pseudo-proper time of lepton pair (in ns)
+DECLARE_SOA_COLUMN(VertexPz, vertexPz, float);                           //! Longitudinal projection of impulsion
+DECLARE_SOA_COLUMN(SVertex, sVertex, float);                             //! Secondary vertex of lepton pair
 DECLARE_SOA_COLUMN(Tauxy, tauxy, float);                                 //! Transverse pseudo-proper time of lepton pair (in ns)
 DECLARE_SOA_COLUMN(TauxyErr, tauxyErr, float);                           //! Error on transverse pseudo-proper time of lepton pair (in ns)
 DECLARE_SOA_COLUMN(Lz, lz, float);                                       //! Longitudinal projection of decay length
@@ -582,7 +584,9 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   reducedpair::R2SP,
                   reducedpair::CentFT0C,
                   reducedpair::Cos2DeltaPhi,
-                  reducedpair::Cos3DeltaPhi);
+                  reducedpair::Cos3DeltaPhi,
+                  reducedpair::VertexPz,
+                  reducedpair::SVertex);
 
 using Dielectron = Dielectrons::iterator;
 using Dimuon = Dimuons::iterator;

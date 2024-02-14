@@ -96,6 +96,11 @@ void V0PhotonCut::SetOnWwireOB(bool flag)
   mIsOnWwireOB = flag;
   LOG(info) << "V0 Photon Cut, select photon on Tungsten wire OB: " << mIsOnWwireOB;
 }
+void V0PhotonCut::RejectITSib(bool flag)
+{
+  mRejectITSib = flag;
+  LOG(info) << "V0 Photon Cut, reject photon on ITSib: " << mRejectITSib;
+}
 void V0PhotonCut::SetTPCNsigmaElRange(float min, float max)
 {
   mMinTPCNsigmaEl = min;

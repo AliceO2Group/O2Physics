@@ -485,7 +485,7 @@ struct PhotonConversionBuilder {
     kfp_ele_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
 
     float pca_kf = kfp_pos_DecayVtx.GetDistanceFromParticle(kfp_ele_DecayVtx);
-    if (!ele.hasITS() && !pos.hasITS()) {
+    if (!ele.hasITS() && !pos.hasITS()) { // V0s with TPConly-TPConly
       if (max_r_itsmft_ss < rxy && rxy < maxX + margin_r_tpconly) {
         if (pca_kf > max_dcav0dau_tpc_inner_fc) {
           return;
@@ -495,17 +495,13 @@ struct PhotonConversionBuilder {
           return;
         }
       }
-    } else {
+    } else { // V0s with ITS hits
       if (rxy < max_r_req_its) {
         if (pca_kf > max_dcav0dau_itsibss) {
           return;
         }
-      } else if (rxy < min_r_tpconly) {
-        if (pca_kf > max_dcav0dau_its) {
-          return;
-        }
       } else {
-        if (pca_kf > max_dcav0dau_tpconly) {
+        if (pca_kf > max_dcav0dau_its) {
           return;
         }
       }
