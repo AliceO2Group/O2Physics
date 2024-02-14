@@ -47,7 +47,7 @@ using namespace o2::aod::track;
 AxisSpec PtAxis = {1001, -0.005, 10.005};
 AxisSpec DeltaZAxis = {61, -6.1, 6.1};
 AxisSpec ZAxis = {301, -30.1, 30.1};
-AxisSpec PhiAxis = {600, 0, 2 * M_PI};
+AxisSpec PhiAxis = {629, 0, 2 * M_PI, "Rad", "phi axis"};
 AxisSpec EtaAxis = {18, -4.6, -1.};
 AxisSpec DCAxyAxis = {100, -1, 10};
 AxisSpec CentAxis = {{0, 10, 20, 30, 40, 50, 60, 70, 80, 100}};
@@ -81,6 +81,9 @@ struct PseudorapidityDensityMFT {
 
   Configurable<bool> useZDiffCut{"useZDiffCut", true, "use Z difference cut"};
   Configurable<float> maxZDiff{"maxZDiff", 1.0f, "max allowed Z difference for reconstruced collisions (cm)"};
+
+  Configurable<float> cfgPhiCut{"cfgPhiCut", 0.1f, "Cut on azimuthal angle of MFT tracks"};
+
   //-----need access to CCDB to get the reweighting histogram
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> path{"ccdb-path", "Users/s/sherrman/My/Object", "base path to the ccdb object"};
@@ -188,6 +191,22 @@ struct PseudorapidityDensityMFT {
       registry.add({"Tracks/Centrality/Control/ReassignedTracksPhiEta", "; #varphi; #eta; centrality", {HistType::kTH3F, {PhiAxis, EtaAxis, CentAxis}}});
       registry.add({"Tracks/Centrality/Control/ReassignedVertexCorr", "; Z_{vtx}^{orig} (cm); Z_{vtx}^{re} (cm); centrality", {HistType::kTH3F, {ZAxis, ZAxis, CentAxis}}});
     }
+
+    if (doprocessGenCent) {
+      registry.add({"Events/Centrality/EventEfficiency", ";status;centrality;events", {HistType::kTH2F, {{2, 0.5, 2.5}, CentAxis}}});
+      auto heff = registry.get<TH2>(HIST("Events/Centrality/EventEfficiency"));
+      auto *x = heff->GetXaxis();
+      x->SetBinLabel(1, "Generated");
+      x->SetBinLabel(2, "Selected");
+
+      registry.add("Events/Centrality/CentPercentileMCGen", "CentPercentileMCGen", kTH1D, {CentAxis}, false);
+      registry.add({"Events/Centrality/NtrkZvtxGen", "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTH3F, {MultAxis, ZAxis, CentAxis}}});
+      registry.add({"Events/Centrality/NtrkZvtxGen_t", "; N_{trk}; Z_{vtx} (cm); centrality", {HistType::kTH3F, {MultAxis, ZAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/EtaZvtxRec", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTH3F, {EtaAxis, ZAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/EtaZvtxGen_t", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTH3F, {EtaAxis, ZAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/EtaZvtxGen", "; #eta; Z_{vtx} (cm); centrality", {HistType::kTH3F, {EtaAxis, ZAxis, CentAxis}}});
+      registry.add({"Tracks/Centrality/PhiEtaGen", "; #varphi; #eta; centrality", {HistType::kTH3F, {PhiAxis, EtaAxis, CentAxis}}});
+    }
   }
 
   using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
@@ -264,13 +283,18 @@ struct PseudorapidityDensityMFT {
 
       if (tracks.size() > 0) {
         for (auto& track : tracks) {
+
+          float phi = track.phi();
+          o2::math_utils::bringTo02Pi(phi);
+
+          if( (phi<cfgPhiCut) || ((phi>M_PI-cfgPhiCut) && (phi<M_PI+cfgPhiCut)) || (phi>2.*M_PI-cfgPhiCut) || (phi>((M_PI/2.-0.1)*M_PI)-cfgPhiCut)&&(phi<((M_PI/2.-0.1)*M_PI)+cfgPhiCut) )
+            continue;
+
           registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
           if (midtracks.size() > 0) // INEL>0
           {
             registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.eta(), z);
           }
-          float phi = track.phi();
-          o2::math_utils::bringTo02Pi(phi);
           registry.fill(HIST("TracksPhiEta"), phi, track.eta());
           registry.fill(HIST("TracksPtEta"), track.pt(), track.eta());
           if ((track.eta() < -2.0f) && (track.eta() > -3.9f)) {
@@ -364,8 +388,12 @@ struct PseudorapidityDensityMFT {
 
       for (auto& track : tracks) {
 
-        float phi = track.phi();
-        o2::math_utils::bringTo02Pi(phi);
+          float phi = track.phi();
+          o2::math_utils::bringTo02Pi(phi);
+
+          if( (phi<cfgPhiCut) || ((phi>M_PI-cfgPhiCut) && (phi<M_PI+cfgPhiCut)) || (phi>2.*M_PI-cfgPhiCut) || (phi>((M_PI/2.-0.1)*M_PI)-cfgPhiCut)&&(phi<((M_PI/2.-0.1)*M_PI)+cfgPhiCut) )
+            continue;
+
         registry.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), z, c);
         registry.fill(HIST("Tracks/Centrality/PhiEta"), phi, track.eta(), c);
       }
@@ -493,6 +521,68 @@ struct PseudorapidityDensityMFT {
   }
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processGen, "Process generator-level info", false);
+
+  void processGenCent(aod::McCollisions::iterator const& mcCollision,
+                      o2::soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::McCollisionLabels>> const& collisions,
+                      Particles const& particles,
+                      MFTTracksLabeled const& tracks)
+  {
+
+    LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(), collisions.size());
+
+    for (auto& collision : collisions) {
+      auto c = collision.centFT0C();
+      registry.fill(HIST("Events/Centrality/EventEfficiency"), 1., c);
+
+//       auto perCollisionMCSample = particles.sliceBy(perMcCol, mcCollision.globalIndex());
+      auto perCollisionMCSample = mcSample->sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+
+      auto nCharged = 0;
+      for (auto& particle : perCollisionMCSample) {
+        auto p = pdg->GetParticle(particle.pdgCode());
+        auto charge = 0;
+        if (p != nullptr) {
+          charge = static_cast<int>(p->Charge());
+        }
+        if (std::abs(charge) < 3.) {
+          continue;
+        }
+        nCharged++;
+      }
+      registry.fill(HIST("Events/Centrality/NtrkZvtxGen_t"), nCharged, mcCollision.posZ(), c);
+//
+      bool atLeastOne = false;
+      if (!useEvSel || (useEvSel && collision.sel8())) {
+        registry.fill(HIST("Events/Centrality/EventEfficiency"), 2., c);
+        registry.fill(HIST("Events/Centrality/CentPercentileMCGen"), c);
+        atLeastOne = true;
+
+        auto perCollisionSample = sample->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
+        registry.fill(HIST("Events/Centrality/NtrkZvtxGen"), perCollisionSample.size(), collision.posZ(), c);
+      }
+
+      for (auto& particle : particles) {
+        auto p = pdg->GetParticle(particle.pdgCode());
+        auto charge = 0;
+        if (p != nullptr) {
+          charge = static_cast<int>(p->Charge());
+        }
+        if (std::abs(charge) < 3.) {
+          continue;
+        }
+        registry.fill(HIST("Tracks/Centrality/EtaZvtxGen_t"), particle.eta(), mcCollision.posZ(), c);
+
+        if(atLeastOne){
+          registry.fill(HIST("Tracks/Centrality/EtaZvtxGen"), particle.eta(), mcCollision.posZ(), c);
+          float phi = particle.phi();
+          o2::math_utils::bringTo02Pi(phi);
+          registry.fill(HIST("Tracks/Centrality/PhiEtaGen"), phi, particle.eta(), c);
+        }
+      }
+    }
+  }
+
+  PROCESS_SWITCH(PseudorapidityDensityMFT, processGenCent, "Process generator-level info in centrality bins", false);
 
   void processGenPt(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, MFTTracksLabeled const& tracks, aod::McParticles const&)
   {
