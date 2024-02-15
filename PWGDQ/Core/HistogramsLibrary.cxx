@@ -664,6 +664,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "TauzErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingTauzErr);
         hm->AddHistogram(histClass, "VtxingProcCode", "", false, 10, 0.0, 10.0, VarManager::kVertexingProcCode);
         hm->AddHistogram(histClass, "VtxingChi2PCA", "", false, 100, 0.0, 10.0, VarManager::kVertexingChi2PCA);
+        hm->AddHistogram(histClass, "Pz", "", false, 200, 0.0, 100.0, VarManager::kVertexingPz);
+        hm->AddHistogram(histClass, "Secondary_Vertexing_z", "", false, 200, -10.0, 10.0, VarManager::kVertexingSV);
+        hm->AddHistogram(histClass, "Primary_Vertexing_z", "", false, 200, -10.0, 10.0, VarManager::kVtxZ);
       }
       if (subGroupStr.Contains("pbpb")) {
         hm->AddHistogram(histClass, "Mass_CentVZERO", "", false, 750, 0.0, 15.0, VarManager::kMass, 100, 0., 100., VarManager::kCentVZERO);

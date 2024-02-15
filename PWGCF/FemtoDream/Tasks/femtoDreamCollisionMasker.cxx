@@ -12,6 +12,7 @@
 /// \file femtoDreamCollisionMasker.cxx
 /// \brief Tasks creates bitmasks for femtodream collisions
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
+/// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 
 #include <cstdint>
 #include <vector>
@@ -256,32 +257,63 @@ struct femoDreamCollisionMasker {
     }
   }
 
-  // make bitmask for a track for three body task
-  template <typename T, typename R>
-  void MaskForTrack_ThreeBody(T& BitSet, CollisionMasks::Parts P, R& track)
+  // Make bitmask for a track for three body task
+  // This function ALWAYS checks Track P; if howManyTracksToSetInMask is set to more than 1, it also checks how many
+  // tracks there are which pass Track P selection and accordingly sets the bits in the mask for Tracks P+1 or both P+1 and P+2
+  template <typename T>
+  void MaskForTrack_ThreeBody(T& BitSet, CollisionMasks::Parts P, FDCollision const& col, FDParticles const& parts, int howManyTracksToSetInMask)
   {
-    if (track.partType() != static_cast<uint8_t>(femtodreamparticle::kTrack)) {
-      return;
+    if (howManyTracksToSetInMask == 2) {
+      if (P == 2) {
+        LOG(fatal) << "You are checking third particle out of three but asking to set two new bits, not possible!";
+      }
+    }
+    if (howManyTracksToSetInMask == 3) {
+      if (P >= 1) {
+        LOG(fatal) << "You are checking second or third particle out of three but asking to set three new bits, not possible!";
+      }
     }
     for (size_t index = 0; index < TrackCutBits.at(P).size(); index++) {
-      // check filter cuts
-      if (track.pt() > FilterPtMax.at(P).at(index)) {
-        // if they are not passed, skip the particle
-        continue;
-      }
-      // set the bit at the index of the selection equal to one if the track passes all selections
-      // check track cuts
-      if ((track.cut() & TrackCutBits.at(P).at(index)) == TrackCutBits.at(P).at(index)) {
-        // check pid cuts
-        if (track.p() <= TrackPIDThreshold.at(P).at(index)) {
-          if ((track.pidcut() & TrackPIDTPCBits.at(P).at(index)) == TrackPIDTPCBits.at(P).at(index)) {
-            BitSet.at(P).set(index);
-          }
-        } else {
-          if ((track.pidcut() & TrackPIDTPCTOFBits.at(P).at(index)) == TrackPIDTPCTOFBits.at(P).at(index)) {
-            BitSet.at(P).set(index);
+      int countTracksWhichPassSelection = 0;
+      for (auto const& track : parts) {
+        if (track.partType() != static_cast<uint8_t>(femtodreamparticle::kTrack)) {
+          continue;
+        }
+        // check filter cuts
+        if (track.pt() > FilterPtMax.at(P).at(index)) {
+          // if they are not passed, skip the particle
+          continue;
+        }
+        // set the bit at the index of the selection equal to one if the track passes all selections
+        // check track cuts
+        if ((track.cut() & TrackCutBits.at(P).at(index)) == TrackCutBits.at(P).at(index)) {
+          // check pid cuts
+          if (track.p() <= TrackPIDThreshold.at(P).at(index)) {
+            if ((track.pidcut() & TrackPIDTPCBits.at(P).at(index)) == TrackPIDTPCBits.at(P).at(index)) {
+              countTracksWhichPassSelection = countTracksWhichPassSelection + 1;
+            }
+          } else {
+            if ((track.pidcut() & TrackPIDTPCTOFBits.at(P).at(index)) == TrackPIDTPCTOFBits.at(P).at(index)) {
+              countTracksWhichPassSelection = countTracksWhichPassSelection + 1;
+            }
           }
         }
+      }
+      if (countTracksWhichPassSelection >= 1)
+        BitSet.at(P).set(index);
+      if (howManyTracksToSetInMask == 2) {
+        if (countTracksWhichPassSelection >= 2) {
+          if (P == CollisionMasks::kPartOne)
+            BitSet.at(CollisionMasks::kPartTwo).set(index);
+          if (P == CollisionMasks::kPartTwo)
+            BitSet.at(CollisionMasks::kPartThree).set(index);
+        }
+      }
+      if (howManyTracksToSetInMask == 3) {
+        if (countTracksWhichPassSelection >= 2)
+          BitSet.at(CollisionMasks::kPartTwo).set(index);
+        if (countTracksWhichPassSelection >= 3)
+          BitSet.at(CollisionMasks::kPartThree).set(index);
       }
     }
   }
@@ -342,17 +374,14 @@ struct femoDreamCollisionMasker {
           MaskForTrack(Mask, CollisionMasks::kPartOne, part);
           MaskForV0(Mask, CollisionMasks::kPartTwo, part, parts);
         }
-        // TODO: add all supported pair/triplet tasks
         break;
       case CollisionMasks::kTrackTrackTrack:
         // triplet-track-track-track task
-        // create mask track
-        for (auto const& part : parts) {
-          // currently three-body task can be run only for three identical tracks, only one part needs to be checked
-          MaskForTrack_ThreeBody(Mask, CollisionMasks::kPartOne, part);
-        }
-        // TODO: add all supported pair/triplet tasks
+        // create mask for all identical tracks, here TrackOne means there is at least on track of interest
+        // TrackTwo means at least two tracks and TrackThree means at least three tracks
+        MaskForTrack_ThreeBody(Mask, CollisionMasks::kPartOne, col, parts, 3);
         break;
+      // TODO: add all supported pair/triplet tasks
       default:
         LOG(fatal) << "No femtodream pair task found!";
     }

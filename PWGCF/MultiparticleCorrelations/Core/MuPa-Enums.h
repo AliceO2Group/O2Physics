@@ -13,23 +13,30 @@
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_
 
 enum eConfiguration {
-  eTaskName = 1, // here I start from 1 exceptionally, because this enum's are used as bin contents, and ROOT starts counting bins from 1
+  eTaskName = 1, // here I start from 1 exceptionally, because these enums are used as bin contents, and ROOT starts counting bins from 1
   eRunNumber,
+  eDryRun,
   eVerbose,
   eVerboseForEachParticle,
   eDoAdditionalInsanityChecks,
   eUseCCDB,
-  eProcessRemainingEvents,
   eWhatToProcess,
   eRandomSeed,
   eUseFisherYates,
   eFixedNumberOfRandomlySelectedTracks,
+  eUseStopwatch,
   eConfiguration_N
 };
 
 enum eRecSim { eRec = 0,
-               eSim = 1,
-               eRecAndSim = 2 }; // TBI 20231021 find a better name?
+               eSim,
+               eRecAndSim,
+               eRec_Run2, // converted Run 2 data
+               eSim_Run2,
+               eRecAndSim_Run2,
+               eRec_Run1, // converted Run 1 data
+               eSim_Run1,
+               eRecAndSim_Run1 };
 
 enum eBeforeAfter { eBefore = 0,
                     eAfter = 1 };
@@ -45,6 +52,12 @@ enum eWeights { wPHI = 0,
                 wETA = 2,
                 eWeights_N };
 
+enum eDiffWeights {
+  wPHIPT = 0,
+  wPHIETA,
+  eDiffWeights_N
+};
+
 enum eEventHistograms {
   eNumberOfEvents = 0,
   eTotalMultiplicity,
@@ -57,7 +70,7 @@ enum eEventHistograms {
   eVertex_x,
   eVertex_y,
   eVertex_z,
-  eNContributors, // Number of tracks used for the vertex
+  eNContributors, // number of tracks used for the vertex
   eImpactParameter,
   eEventHistograms_N
 };
@@ -69,16 +82,28 @@ enum eParticleHistograms {
   etpcNClsCrossedRows, // from aod::TracksExtra
   eDCA_xy,             // from aod::TracksDCA
   eDCA_z,
+  ePDG,
   eParticleHistograms_N
 };
 
 enum eAsFunctionOf {
   AFO_INTEGRATED = 0,
-  AFO_MULTIPLICITY = 1,
-  AFO_CENTRALITY = 2,
+  AFO_MULTIPLICITY = 1, // vs. default multiplicity, which is (at the moment) fSelectedTracks, i.e. number of tracks in Q-vector
+  AFO_CENTRALITY = 2,   // vs. default centrality estimator, see how it's calculated in DetermineCentrality(...)
   AFO_PT = 3,
   AFO_ETA = 4,
   eAsFunctionOf_N
 }; // prefix is needed, to avoid conflict with enum eKinematics
 
+enum eqvectorKine { // Here "kine" originally meant "kinematic", i.e. vs. pt or vs. eta, now it's general.
+  PTq = 0,
+  ETAq,
+  eqvectorKine_N
+};
+
+enum eTimer {
+  eGlobal = 0,
+  eLocal,
+  eTimer_N
+};
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_

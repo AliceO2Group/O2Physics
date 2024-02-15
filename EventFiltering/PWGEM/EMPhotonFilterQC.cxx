@@ -54,33 +54,54 @@ struct EMPhotonFilterQC {
 
     registry.add<TH1>("PCM_HighPt/hPt", "pT of PCM photon;p_{T,#gamma} (GeV/c)", kTH1F, {{200, 0, 20}});
     registry.add<TH2>("PCM_HighPt/hEtaPhi", "#eta vs. #varphi of PCM photon", kTH2F, {{72, 0, TMath::TwoPi()}, {40, -2, +2}});
+    registry.add<TH2>("PCM_HighPt/hMeegvsPtg", "meeg vs. pTg;m_{ee#gamma} (GeV/c^{2});p_{T,#gamma} (GeV/c)", kTH2F, {{200, 0, 0.8}, {200, 0, 20}});
     registry.add<TH2>("PCM_EE/hMeePt", "mass ee;m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {{400, 0.f, 4.f}, {100, 0, 10}});
     registry.add<TH2>("PCM_EE/hMeePhiV", "mass ee;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0.f, TMath::Pi()}, {100, 0, 0.1}});
     registry.add<TH2>("PCM_EE/hTPCdEdx", "n sigma TPC el vs. pin;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0.f, 10.f}, {100, -5, 5}});
     registry.add<TH2>("PCM_EE/hMeegPt", "mass ee#gamma;m_{ee#gamma} (GeV/c^{2});p_{T,ee#gamma} (GeV/c)", kTH2F, {{400, 0.f, 0.8f}, {100, 0, 10}});
   }
 
-  Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
+  // Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   Preslice<aod::DalitzEEs> perCollision_ee = aod::dalitzee::collisionId;
-  void processPCM(MyCollisions const& collisions, aod::V0PhotonsKF const& v0photons, aod::V0Legs const&, aod::DalitzEEs const& dielectrons, aod::EMPrimaryElectrons const&)
+  Preslice<aod::EMSwtInfosPCM> perCollision_swt_pcm = aod::pwgem::photon::swtinfo::collisionId;
+  Preslice<aod::EMSwtInfosPair> perCollision_swt_pair = aod::pwgem::photon::swtinfo::collisionId;
+  std::vector<uint64_t> stored_dielectronIds;
+  std::vector<uint64_t> stored_trackIds;
+
+  void processPCM(MyCollisions const& collisions, aod::V0PhotonsKF const& v0photons, aod::V0Legs const&, aod::DalitzEEs const& dielectrons, aod::EMPrimaryElectrons const&, aod::EMSwtInfosPCM const& swt_pcm, aod::EMSwtInfosPair const& swt_pair)
   {
+    stored_dielectronIds.reserve(swt_pair.size());
+    stored_trackIds.reserve(swt_pair.size() * 2);
+
     for (auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
       if (collision.sel8() && abs(collision.posZ()) < 10.f) {
         registry.fill(HIST("hEventCounter"), 2);
       }
-      auto v0photons_coll = v0photons.sliceBy(perCollision_pcm, collision.globalIndex());
+      // auto v0photons_coll = v0photons.sliceBy(perCollision_pcm, collision.globalIndex());
       auto dielectrons_coll = dielectrons.sliceBy(perCollision_ee, collision.globalIndex());
+      auto triggers_pcm_coll = swt_pcm.sliceBy(perCollision_swt_pcm, collision.globalIndex());
+      auto triggers_eeg_coll = swt_pair.sliceBy(perCollision_swt_pair, collision.globalIndex());
 
       if (collision.hasPCMHighPtPhoton()) {
         registry.fill(HIST("hEventCounter"), 3);
         if (collision.sel8() && abs(collision.posZ()) < 10.f) {
           registry.fill(HIST("hEventCounter"), 4);
         }
-        for (auto& v0photon : v0photons_coll) {
+
+        for (auto& trigger_pcm_id : triggers_pcm_coll) {
+          auto v0photon = trigger_pcm_id.template triggerV0PhotonHighPt_as<aod::V0PhotonsKF>();
           registry.fill(HIST("PCM_HighPt/hPt"), v0photon.pt());
           registry.fill(HIST("PCM_HighPt/hEtaPhi"), v0photon.phi(), v0photon.eta());
         } // end of v0 photon loop
+
+        for (auto& [trigger_pcm_id, g2] : combinations(CombinationsFullIndexPolicy(triggers_pcm_coll, dielectrons_coll))) {
+          auto g1 = trigger_pcm_id.template triggerV0PhotonHighPt_as<aod::V0PhotonsKF>();
+          ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+          ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          registry.fill(HIST("PCM_HighPt/hMeegvsPtg"), v12.M(), v1.Pt());
+        } // end of eeg pair loop for high pT
       }
 
       if (collision.hasPCMandEE()) {
@@ -89,23 +110,36 @@ struct EMPhotonFilterQC {
           registry.fill(HIST("hEventCounter"), 6);
         }
 
-        for (auto& dielectron : dielectrons_coll) {
-          registry.fill(HIST("PCM_EE/hMeePt"), dielectron.mass(), dielectron.pt());
-          registry.fill(HIST("PCM_EE/hMeePhiV"), dielectron.phiv(), dielectron.mass());
+        for (auto& trigger_eeg_id : triggers_eeg_coll) {
+          auto v0photon = trigger_eeg_id.template triggerV0PhotonPair_as<aod::V0PhotonsKF>();
+          auto dielectron = trigger_eeg_id.template triggerDielectronPair_as<aod::DalitzEEs>();
           auto pos_pv = dielectron.template posTrack_as<aod::EMPrimaryElectrons>();
           auto ele_pv = dielectron.template negTrack_as<aod::EMPrimaryElectrons>();
-          registry.fill(HIST("PCM_EE/hTPCdEdx"), pos_pv.tpcInnerParam(), pos_pv.tpcNSigmaEl());
-          registry.fill(HIST("PCM_EE/hTPCdEdx"), ele_pv.tpcInnerParam(), ele_pv.tpcNSigmaEl());
-        }
-        for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(v0photons_coll, dielectrons_coll))) {
-          ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-          ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
+
+          if (std::find(stored_trackIds.begin(), stored_trackIds.end(), pos_pv.globalIndex()) == stored_trackIds.end()) {
+            registry.fill(HIST("PCM_EE/hTPCdEdx"), pos_pv.tpcInnerParam(), pos_pv.tpcNSigmaEl());
+            stored_trackIds.emplace_back(pos_pv.globalIndex());
+          }
+          if (std::find(stored_trackIds.begin(), stored_trackIds.end(), ele_pv.globalIndex()) == stored_trackIds.end()) {
+            registry.fill(HIST("PCM_EE/hTPCdEdx"), ele_pv.tpcInnerParam(), ele_pv.tpcNSigmaEl());
+            stored_trackIds.emplace_back(ele_pv.globalIndex());
+          }
+          if (std::find(stored_dielectronIds.begin(), stored_dielectronIds.end(), dielectron.globalIndex()) == stored_dielectronIds.end()) {
+            registry.fill(HIST("PCM_EE/hMeePt"), dielectron.mass(), dielectron.pt());
+            registry.fill(HIST("PCM_EE/hMeePhiV"), dielectron.phiv(), dielectron.mass());
+            stored_dielectronIds.emplace_back(dielectron.globalIndex());
+          }
+          ROOT::Math::PtEtaPhiMVector v1(v0photon.pt(), v0photon.eta(), v0photon.phi(), 0.);
+          ROOT::Math::PtEtaPhiMVector v2(dielectron.pt(), dielectron.eta(), dielectron.phi(), dielectron.mass());
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
           registry.fill(HIST("PCM_EE/hMeegPt"), v12.M(), v12.Pt());
-        } // end of dielectron-photon pair loop
+        } // end of eeg pair loop
       }
-
     } // end of collision loop
+    stored_trackIds.clear();
+    stored_trackIds.shrink_to_fit();
+    stored_dielectronIds.clear();
+    stored_dielectronIds.shrink_to_fit();
   }
 
   void processPHOS(MyCollisions const& collisions) {}

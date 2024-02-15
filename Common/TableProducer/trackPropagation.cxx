@@ -63,7 +63,6 @@ struct TrackPropagation {
   OutputObj<TH1D> trackTunedTracks{TH1D("trackTunedTracks", "", 1, 0.5, 1.5), OutputObjHandlingPolicy::AnalysisObject};
 
   using TracksIUWithMc = soa::Join<aod::StoredTracksIU, aod::McTrackLabels, aod::TracksCovIU>;
-  using TracksIU = soa::Join<aod::StoredTracksIU, aod::TracksCovIU>;
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -259,9 +258,9 @@ struct TrackPropagation {
   }
   PROCESS_SWITCH(TrackPropagation, processCovarianceMc, "Process with covariance on MC", false);
 
-  void processCovariance(TracksIU const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
+  void processCovariance(soa::Join<aod::StoredTracksIU, aod::TracksCovIU> const& tracks, aod::Collisions const& collisions, aod::BCsWithTimestamps const& bcs)
   {
-    fillTrackTables</*TTrack*/ TracksIU, /*Particle*/ TracksIU, /*isMc = */ false, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, tracks, collisions, bcs);
+    fillTrackTables</*TTrack*/ soa::Join<aod::StoredTracksIU, aod::TracksCovIU>, /*Particle*/ soa::Join<aod::StoredTracksIU, aod::TracksCovIU>, /*isMc = */ false, /*fillCovMat =*/true, /*useTrkPid =*/false>(tracks, tracks, collisions, bcs);
   }
   PROCESS_SWITCH(TrackPropagation, processCovariance, "Process with covariance", false);
   // ------------------------

@@ -104,7 +104,7 @@ DECLARE_SOA_INDEX_COLUMN(MyCollision, mycollision);                       //!
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, MyTracks, "_Pos"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, MyTracks, "_Neg"); //!
 
-DECLARE_SOA_COLUMN(M, m, float);                 //!
+DECLARE_SOA_COLUMN(Mass, mass, float);           //!
 DECLARE_SOA_COLUMN(Pt, pt, float);               //!
 DECLARE_SOA_COLUMN(Eta, eta, float);             //!
 DECLARE_SOA_COLUMN(Phi, phi, float);             //!
@@ -121,7 +121,7 @@ DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool); //!
 // reconstructed track information
 DECLARE_SOA_TABLE(MyPairs, "AOD", "MYPAIR", //!
                   o2::soa::Index<>, mypair::MyCollisionId, mypair::PosTrackId, mypair::NegTrackId,
-                  mypair::M, mypair::Pt, mypair::Eta, mypair::Phi, mypair::PhiV, mypair::PairDCAxy, mypair::PairDCAz,
+                  mypair::Mass, mypair::Pt, mypair::Eta, mypair::Phi, mypair::PhiV, mypair::PairDCAxy, mypair::PairDCAz,
                   mypair::IsSM, mypair::IsHF, mypair::PairType, mypair::IsPrompt,
                   mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz,
@@ -506,20 +506,22 @@ struct TreeCreatorElectronML {
         // store all mother relation
         std::vector<int> mothers_id;
         std::vector<int> mothers_pdg;
-        int motherid = mctrack.mothersIds()[0]; // first mother index
-        while (motherid > -1) {
-          if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
-            auto mp = mctracks.iteratorAt(motherid);
-            mothers_id.emplace_back(motherid);
-            mothers_pdg.emplace_back(mp.pdgCode());
+        if (mctrack.has_mothers()) {
+          int motherid = mctrack.mothersIds()[0]; // first mother index
+          while (motherid > -1) {
+            if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mctracks.iteratorAt(motherid);
+              mothers_id.emplace_back(motherid);
+              mothers_pdg.emplace_back(mp.pdgCode());
 
-            if (mp.has_mothers()) {
-              motherid = mp.mothersIds()[0];
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0];
+              } else {
+                motherid = -999;
+              }
             } else {
-              motherid = -999;
+              LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
             }
-          } else {
-            LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
           }
         }
 
@@ -589,20 +591,22 @@ struct TreeCreatorElectronML {
           // store all mother relation
           std::vector<int> mothers_id;
           std::vector<int> mothers_pdg;
-          int motherid = mctrack.mothersIds()[0]; // first mother index
-          while (motherid > -1) {
-            if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
-              auto mp = mctracks.iteratorAt(motherid);
-              mothers_id.emplace_back(motherid);
-              mothers_pdg.emplace_back(mp.pdgCode());
+          if (mctrack.has_mothers()) {
+            int motherid = mctrack.mothersIds()[0]; // first mother index
+            while (motherid > -1) {
+              if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
+                auto mp = mctracks.iteratorAt(motherid);
+                mothers_id.emplace_back(motherid);
+                mothers_pdg.emplace_back(mp.pdgCode());
 
-              if (mp.has_mothers()) {
-                motherid = mp.mothersIds()[0];
+                if (mp.has_mothers()) {
+                  motherid = mp.mothersIds()[0];
+                } else {
+                  motherid = -999;
+                }
               } else {
-                motherid = -999;
+                LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
               }
-            } else {
-              LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
             }
           }
 

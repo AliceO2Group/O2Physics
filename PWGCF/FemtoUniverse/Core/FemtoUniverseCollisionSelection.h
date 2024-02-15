@@ -96,20 +96,30 @@ class FemtoUniverseCollisionSelection
     if (std::abs(col.posZ()) > mZvtxMax) {
       return false;
     }
-    if (mCheckIsRun3) {
-      if (mCheckOffline && !col.sel8()) {
-        return false;
-      }
-      if ((col.centFT0C() < mCentMin) || (col.centFT0C() > mCentMax)) {
-        return false;
-      }
-    } else {
-      if (mCheckTrigger && !col.alias_bit(mTrigger)) {
-        return false;
-      }
-      if (mCheckOffline && !col.sel7()) {
-        return false;
-      }
+    if (mCheckTrigger && !col.alias_bit(mTrigger)) {
+      return false;
+    }
+    if (mCheckOffline && !col.sel7()) {
+      return false;
+    }
+    return true;
+  }
+
+  /// Check whether the collisions fulfills the specified selections for Run3
+  /// \tparam T type of the collision
+  /// \param col Collision
+  /// \return whether or not the collisions fulfills the specified selections
+  template <typename T>
+  bool isSelectedRun3(T const& col)
+  {
+    if (std::abs(col.posZ()) > mZvtxMax) {
+      return false;
+    }
+    if (mCheckOffline && !col.sel8()) {
+      return false;
+    }
+    if ((col.centFT0C() < mCentMin) || (col.centFT0C() > mCentMax)) {
+      return false;
     }
     return true;
   }

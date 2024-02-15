@@ -84,3 +84,5 @@ endif()
 
 set_root_pcm_dependencies()
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ClangBuildAnalyzer.ini.in
+               ${CMAKE_CURRENT_BINARY_DIR}/ClangBuildAnalyzer.ini @ONLY)

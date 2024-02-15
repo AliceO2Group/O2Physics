@@ -29,6 +29,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
+using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
+
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 using MyCollisions_Cent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
 
@@ -53,20 +55,31 @@ struct CreateEMEvent {
     hEventCounter->GetXaxis()->SetBinLabel(2, "sel8");
   }
 
+  PresliceUnsorted<MyCollisions> preslice_collisions_per_bc = o2::aod::evsel::foundBCId;
+  std::unordered_map<uint64_t, int> map_ncolls_per_bc;
+
   //! Please don't skip any event!
-  template <bool isMC, EMEventType eventype, typename TEvents>
-  void skimEvent(TEvents const& collisions, aod::BCs const&)
+  template <bool isMC, EMEventType eventype, typename TCollisions, typename TBCs>
+  void skimEvent(TCollisions const& collisions, TBCs const& bcs)
   {
+    // first count the number of collisions per bc
+    for (auto& bc : bcs) {
+      auto collisions_per_bc = collisions.sliceBy(preslice_collisions_per_bc, bc.globalIndex());
+      map_ncolls_per_bc[bc.globalIndex()] = collisions_per_bc.size();
+      // LOGF(info, "bc-loop | bc.globalIndex() = %d , collisions_per_bc.size() = %d", bc.globalIndex(), collisions_per_bc.size());
+    }
+
     for (auto& collision : collisions) {
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {
           continue;
         }
       }
+      auto bc = collision.template foundBC_as<TBCs>();
 
+      // LOGF(info, "collision-loop | bc.globalIndex() = %d, ncolls_per_bc = %d", bc.globalIndex(), map_ncolls_per_bc[bc.globalIndex()]);
       registry.fill(HIST("hEventCounter"), 1);
 
-      // auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       bool is_phoscpv_readout = collision.alias_bit(kTVXinPHOS);
       bool is_emc_readout = collision.alias_bit(kTVXinEMC);
 
@@ -75,8 +88,8 @@ struct CreateEMEvent {
       }
 
       uint64_t tag = collision.selection_raw();
-      event(collision.globalIndex(), tag, collision.bc().runNumber(), collision.bc().triggerMask(), collision.sel8(),
-            is_phoscpv_readout, is_emc_readout,
+      event(collision.globalIndex(), tag, bc.runNumber(), bc.triggerMask(), collision.sel8(),
+            is_phoscpv_readout, is_emc_readout, map_ncolls_per_bc[bc.globalIndex()],
             collision.posX(), collision.posY(), collision.posZ(),
             collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
 
@@ -93,27 +106,28 @@ struct CreateEMEvent {
         event_cent(105.f, 105.f, 105.f, 105.f);
       }
     } // end of collision loop
-  }   // end of skimEvent
+    map_ncolls_per_bc.clear();
+  } // end of skimEvent
 
-  void processEvent(MyCollisions const& collisions, aod::BCs const& bcs)
+  void processEvent(MyCollisions const& collisions, MyBCs const& bcs)
   {
     skimEvent<false, EMEventType::kEvent>(collisions, bcs);
   }
   PROCESS_SWITCH(CreateEMEvent, processEvent, "process event info", false);
 
-  void processEventMC(MyCollisionsMC const& collisions, aod::BCs const& bcs)
+  void processEventMC(MyCollisionsMC const& collisions, MyBCs const& bcs)
   {
     skimEvent<true, EMEventType::kEvent>(collisions, bcs);
   }
   PROCESS_SWITCH(CreateEMEvent, processEventMC, "process event info", false);
 
-  void processEvent_Cent(MyCollisions_Cent const& collisions, aod::BCs const& bcs)
+  void processEvent_Cent(MyCollisions_Cent const& collisions, MyBCs const& bcs)
   {
     skimEvent<false, EMEventType::kEvent_Cent>(collisions, bcs);
   }
   PROCESS_SWITCH(CreateEMEvent, processEvent_Cent, "process event info", false);
 
-  void processEventMC_Cent(MyCollisionsMC_Cent const& collisions, aod::BCs const& bcs)
+  void processEventMC_Cent(MyCollisionsMC_Cent const& collisions, MyBCs const& bcs)
   {
     skimEvent<true, EMEventType::kEvent_Cent>(collisions, bcs);
   }

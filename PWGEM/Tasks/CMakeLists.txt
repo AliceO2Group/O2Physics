@@ -33,3 +33,8 @@ o2physics_add_dpl_workflow(phoscalib
                     SOURCES phosCalibration.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::PHOSBase O2::PHOSReconstruction
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(phosalign
+                    SOURCES phosAlign.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DetectorsBase O2Physics::AnalysisCore O2::PHOSBase O2::PHOSReconstruction
+                    COMPONENT_NAME Analysis)

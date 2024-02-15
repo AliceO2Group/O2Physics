@@ -353,7 +353,7 @@ struct EmcalCorrectionTask {
       std::vector<o2::emcal::Cell> cellsBC;
       std::vector<int64_t> cellIndicesBC;
       for (auto& cell : cellsInBC) {
-        mHistManager.fill(HIST("hContributors"), cell.mcParticle().size());
+        mHistManager.fill(HIST("hContributors"), cell.mcParticle_as<aod::StoredMcParticles_001>().size());
         auto cellParticles = cell.mcParticle_as<aod::StoredMcParticles_001>();
         for (auto& cellparticle : cellParticles) {
           mHistManager.fill(HIST("hMCParticleEnergy"), cellparticle.e());
