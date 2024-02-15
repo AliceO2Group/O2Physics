@@ -58,8 +58,8 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 
 namespace o2::aod
 {
-  DECLARE_SOA_COLUMN(DeDxMc, tuneDeDxOnData, float);
-  DECLARE_SOA_TABLE(TuneDeDxOnData, "AOD", "TUNEDEDXONDATA", DeDxMc);
+DECLARE_SOA_COLUMN(DeDxMc, tuneDeDxOnData, float);
+DECLARE_SOA_TABLE(TuneDeDxOnData, "AOD", "TUNEDEDXONDATA", DeDxMc);
 } // namespace o2::aod
 
 /// Task to produce the response table
@@ -221,99 +221,100 @@ struct tpcPidFull {
   Partition<Trks> notTPCStandaloneTracks = (aod::track::tpcNClsFindable > (uint8_t)0) && ((aod::track::itsClusterSizes > (uint32_t)0) || (aod::track::trdPattern > (uint8_t)0) || (aod::track::tofExpMom > 0.f && aod::track::tofChi2 > 0.f)); // To count number of tracks for use in NN array
   Partition<Trks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
 
-  template<typename C, typename T>
-  std::vector<float> createNetworkPrediction(C const& collisions, T const& tracks, const size_t size){
+  template <typename C, typename T>
+  std::vector<float> createNetworkPrediction(C const& collisions, T const& tracks, const size_t size)
+  {
 
     std::vector<float> network_prediction;
 
-      auto start_network_total = std::chrono::high_resolution_clock::now();
-      if (autofetchNetworks) {
-        auto bc = collisions.iteratorAt(0).template bc_as<aod::BCsWithTimestamps>();
-        // Initialise correct TPC response object before NN setup (for NCl normalisation)
-        if (useCCDBParam && ccdbTimestamp.value == 0 && !ccdb->isCachedObjectValid(ccdbPath.value, bc.timestamp())) { // Updating parametrisation only if the initial timestamp is 0
-          if (recoPass.value == "") {
-            LOGP(info, "Retrieving latest TPC response object for timestamp {}:", bc.timestamp());
-          } else {
-            LOGP(info, "Retrieving TPC Response for timestamp {} and recoPass {}:", bc.timestamp(), recoPass.value);
-          }
-          response = ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata);
+    auto start_network_total = std::chrono::high_resolution_clock::now();
+    if (autofetchNetworks) {
+      auto bc = collisions.iteratorAt(0).template bc_as<aod::BCsWithTimestamps>();
+      // Initialise correct TPC response object before NN setup (for NCl normalisation)
+      if (useCCDBParam && ccdbTimestamp.value == 0 && !ccdb->isCachedObjectValid(ccdbPath.value, bc.timestamp())) { // Updating parametrisation only if the initial timestamp is 0
+        if (recoPass.value == "") {
+          LOGP(info, "Retrieving latest TPC response object for timestamp {}:", bc.timestamp());
+        } else {
+          LOGP(info, "Retrieving TPC Response for timestamp {} and recoPass {}:", bc.timestamp(), recoPass.value);
+        }
+        response = ccdb->getSpecific<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp(), metadata);
+        if (!response) {
+          LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", recoPass.value);
+          response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
           if (!response) {
-            LOGP(warning, "!! Could not find a valid TPC response object for specific pass name {}! Falling back to latest uploaded object.", recoPass.value);
-            response = ccdb->getForTimeStamp<o2::pid::tpc::Response>(ccdbPath.value, bc.timestamp());
-            if (!response) {
-              LOGP(fatal, "Could not find ANY TPC response object for the timestamp {}!", bc.timestamp());
-            }
-          }
-          response->PrintAll();
-        }
-
-        if (bc.timestamp() < network.getValidityFrom() || bc.timestamp() > network.getValidityUntil()) { // fetches network only if the runnumbers change
-          LOG(info) << "Fetching network for timestamp: " << bc.timestamp();
-          bool retrieveSuccess = ccdbApi.retrieveBlob(networkPathCCDB.value, ".", metadata, bc.timestamp(), false, networkPathLocally.value);
-          headers = ccdbApi.retrieveHeaders(networkPathCCDB.value, metadata, bc.timestamp());
-          if (retrieveSuccess) {
-            network.initModel(networkPathLocally.value, enableNetworkOptimizations.value, networkSetNumThreads.value, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0));
-            std::vector<float> dummyInput(network.getNumInputNodes(), 1.);
-            network.evalModel(dummyInput);
-          } else {
-            LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
+            LOGP(fatal, "Could not find ANY TPC response object for the timestamp {}!", bc.timestamp());
           }
         }
+        response->PrintAll();
       }
 
-      // Defining some network parameters
-      int input_dimensions = network.getNumInputNodes();
-      int output_dimensions = network.getNumOutputNodes();
-      const uint64_t track_prop_size = input_dimensions * size;
-      const uint64_t prediction_size = output_dimensions * size;
+      if (bc.timestamp() < network.getValidityFrom() || bc.timestamp() > network.getValidityUntil()) { // fetches network only if the runnumbers change
+        LOG(info) << "Fetching network for timestamp: " << bc.timestamp();
+        bool retrieveSuccess = ccdbApi.retrieveBlob(networkPathCCDB.value, ".", metadata, bc.timestamp(), false, networkPathLocally.value);
+        headers = ccdbApi.retrieveHeaders(networkPathCCDB.value, metadata, bc.timestamp());
+        if (retrieveSuccess) {
+          network.initModel(networkPathLocally.value, enableNetworkOptimizations.value, networkSetNumThreads.value, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0));
+          std::vector<float> dummyInput(network.getNumInputNodes(), 1.);
+          network.evalModel(dummyInput);
+        } else {
+          LOG(fatal) << "Error encountered while fetching/loading the network from CCDB! Maybe the network doesn't exist yet for this runnumber/timestamp?";
+        }
+      }
+    }
 
-      network_prediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
-      const float nNclNormalization = response->GetNClNormalization();
-      float duration_network = 0;
+    // Defining some network parameters
+    int input_dimensions = network.getNumInputNodes();
+    int output_dimensions = network.getNumOutputNodes();
+    const uint64_t track_prop_size = input_dimensions * size;
+    const uint64_t prediction_size = output_dimensions * size;
 
-      std::vector<float> track_properties(track_prop_size);
-      uint64_t counter_track_props = 0;
-      int loop_counter = 0;
+    network_prediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
+    const float nNclNormalization = response->GetNClNormalization();
+    float duration_network = 0;
 
-      // Filling a std::vector<float> to be evaluated by the network
-      // Evaluation on single tracks brings huge overhead: Thus evaluation is done on one large vector
-      for (int i = 0; i < 9; i++) { // Loop over particle number for which network correction is used
-        for (auto const& trk : tracks) {
-          if (!trk.hasTPC()) {
+    std::vector<float> track_properties(track_prop_size);
+    uint64_t counter_track_props = 0;
+    int loop_counter = 0;
+
+    // Filling a std::vector<float> to be evaluated by the network
+    // Evaluation on single tracks brings huge overhead: Thus evaluation is done on one large vector
+    for (int i = 0; i < 9; i++) { // Loop over particle number for which network correction is used
+      for (auto const& trk : tracks) {
+        if (!trk.hasTPC()) {
+          continue;
+        }
+        if (skipTPCOnly) {
+          if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
             continue;
           }
-          if (skipTPCOnly) {
-            if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
-              continue;
-            }
-          }
-          track_properties[counter_track_props] = trk.tpcInnerParam();
-          track_properties[counter_track_props + 1] = trk.tgl();
-          track_properties[counter_track_props + 2] = trk.signed1Pt();
-          track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
-          track_properties[counter_track_props + 4] = collisions.iteratorAt(trk.collisionId()).multTPC() / 11000.;
-          track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
-          counter_track_props += input_dimensions;
         }
-
-        auto start_network_eval = std::chrono::high_resolution_clock::now();
-        float* output_network = network.evalModel(track_properties);
-        auto stop_network_eval = std::chrono::high_resolution_clock::now();
-        duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
-        for (uint64_t i = 0; i < prediction_size; i += output_dimensions) {
-          for (int j = 0; j < output_dimensions; j++) {
-            network_prediction[i + j + prediction_size * loop_counter] = output_network[i + j];
-          }
-        }
-
-        counter_track_props = 0;
-        loop_counter += 1;
+        track_properties[counter_track_props] = trk.tpcInnerParam();
+        track_properties[counter_track_props + 1] = trk.tgl();
+        track_properties[counter_track_props + 2] = trk.signed1Pt();
+        track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
+        track_properties[counter_track_props + 4] = collisions.iteratorAt(trk.collisionId()).multTPC() / 11000.;
+        track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
+        counter_track_props += input_dimensions;
       }
-      track_properties.clear();
 
-      auto stop_network_total = std::chrono::high_resolution_clock::now();
-      LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval ONNX): " << duration_network / (size * 9) << "ns ; Total time (eval ONNX): " << duration_network / 1000000000 << " s";
-      LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / (size * 9) << "ns ; Total time (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / 1000000000 << " s";
+      auto start_network_eval = std::chrono::high_resolution_clock::now();
+      float* output_network = network.evalModel(track_properties);
+      auto stop_network_eval = std::chrono::high_resolution_clock::now();
+      duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
+      for (uint64_t i = 0; i < prediction_size; i += output_dimensions) {
+        for (int j = 0; j < output_dimensions; j++) {
+          network_prediction[i + j + prediction_size * loop_counter] = output_network[i + j];
+        }
+      }
+
+      counter_track_props = 0;
+      loop_counter += 1;
+    }
+    track_properties.clear();
+
+    auto stop_network_total = std::chrono::high_resolution_clock::now();
+    LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval ONNX): " << duration_network / (size * 9) << "ns ; Total time (eval ONNX): " << duration_network / 1000000000 << " s";
+    LOG(debug) << "Neural Network for the TPC PID response correction: Time per track (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / (size * 9) << "ns ; Total time (eval + overhead): " << std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_total - start_network_total).count() / 1000000000 << " s";
 
     return network_prediction;
   }
@@ -329,7 +330,7 @@ struct tpcPidFull {
       }
       table.reserve(outTable_size);
     };
-    
+
     // Prepare memory for enabled tables
     reserveTable(pidEl, tablePIDEl);
     reserveTable(pidMu, tablePIDMu);
@@ -344,7 +345,7 @@ struct tpcPidFull {
     const uint64_t tracksForNet_size = (skipTPCOnly) ? notTPCStandaloneTracks.size() : tracksWithTPC.size();
     std::vector<float> network_prediction;
 
-    if(useNetworkCorrection){
+    if (useNetworkCorrection) {
       network_prediction = createNetworkPrediction(collisions, tracks, tracksForNet_size);
     }
 
@@ -372,11 +373,11 @@ struct tpcPidFull {
         }
       }
       // Check and fill enabled tables
-      auto makeTable = [&trk, &collisions, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flag, auto& table, const o2::track::PID::ID pid) {
+      auto makeTablePid = [&trk, &collisions, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flag, auto& table, const o2::track::PID::ID pid) {
         if (flag != 1) {
           return;
         } else {
-          
+
           if (!trk.hasTPC()) {
             table(-999.f, -999.f);
             return;
@@ -394,52 +395,53 @@ struct tpcPidFull {
             return;
           }
 
-            if(useNetworkCorrection){
-              // Here comes the application of the network. The output-dimensions of the network dtermine the application: 1: mean, 2: sigma, 3: sigma asymmetric
-              // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
-              if (network.getNumOutputNodes() == 1) {
-                table(expSigma,
-                      (trk.tpcSignal() - network_prediction[count_tracks + tracksForNet_size * pid] * expSignal) / expSigma);
-              } else if (network.getNumOutputNodes() == 2) {
-                table((network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) * expSignal,
-                      (trk.tpcSignal() / expSignal - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]));
-              } else if (network.getNumOutputNodes() == 3) {
-                if (trk.tpcSignal() / expSignal >= network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) {
-                  table((network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) * expSignal,
-                        (trk.tpcSignal() / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]));
-                } else {
-                  table((network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]) * expSignal,
-                        (trk.tpcSignal() / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]));
-                }
+          if (useNetworkCorrection) {
+            // Here comes the application of the network. The output-dimensions of the network dtermine the application: 1: mean, 2: sigma, 3: sigma asymmetric
+            // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
+            if (network.getNumOutputNodes() == 1) {
+              table(expSigma,
+                    (trk.tpcSignal() - network_prediction[count_tracks + tracksForNet_size * pid] * expSignal) / expSigma);
+            } else if (network.getNumOutputNodes() == 2) {
+              table((network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) * expSignal,
+                    (trk.tpcSignal() / expSignal - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]));
+            } else if (network.getNumOutputNodes() == 3) {
+              if (trk.tpcSignal() / expSignal >= network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) {
+                table((network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) * expSignal,
+                      (trk.tpcSignal() / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]));
               } else {
-                LOGF(fatal, "Network output-dimensions incompatible!");
+                table((network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]) * expSignal,
+                      (trk.tpcSignal() / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]));
               }
             } else {
-              table(expSigma,
-                    response->GetNumberOfSigma(collisions.iteratorAt(trk.collisionId()), trk, pid));
+              LOGF(fatal, "Network output-dimensions incompatible!");
             }
+          } else {
+            table(expSigma,
+                  response->GetNumberOfSigma(collisions.iteratorAt(trk.collisionId()), trk, pid));
+          }
         }
       };
 
-      makeTable(pidEl.value, tablePIDEl, o2::track::PID::Electron);
-      makeTable(pidMu.value, tablePIDMu, o2::track::PID::Muon);
-      makeTable(pidPi.value, tablePIDPi, o2::track::PID::Pion);
-      makeTable(pidKa.value, tablePIDKa, o2::track::PID::Kaon);
-      makeTable(pidPr.value, tablePIDPr, o2::track::PID::Proton);
-      makeTable(pidDe.value, tablePIDDe, o2::track::PID::Deuteron);
-      makeTable(pidTr.value, tablePIDTr, o2::track::PID::Triton);
-      makeTable(pidHe.value, tablePIDHe, o2::track::PID::Helium3);
-      makeTable(pidAl.value, tablePIDAl, o2::track::PID::Alpha);
+      makeTablePid(pidEl.value, tablePIDEl, o2::track::PID::Electron);
+      makeTablePid(pidMu.value, tablePIDMu, o2::track::PID::Muon);
+      makeTablePid(pidPi.value, tablePIDPi, o2::track::PID::Pion);
+      makeTablePid(pidKa.value, tablePIDKa, o2::track::PID::Kaon);
+      makeTablePid(pidPr.value, tablePIDPr, o2::track::PID::Proton);
+      makeTablePid(pidDe.value, tablePIDDe, o2::track::PID::Deuteron);
+      makeTablePid(pidTr.value, tablePIDTr, o2::track::PID::Triton);
+      makeTablePid(pidHe.value, tablePIDHe, o2::track::PID::Helium3);
+      makeTablePid(pidAl.value, tablePIDAl, o2::track::PID::Alpha);
 
       if (trk.hasTPC() && (!skipTPCOnly || trk.hasITS() || trk.hasTRD() || trk.hasTOF())) {
         count_tracks++; // Increment network track counter only if track has TPC, and (not skipping TPConly) or (is not TPConly)
       }
     }
   }
-  
+
   PROCESS_SWITCH(tpcPidFull, processStandard, "Creating PID tables for real data", !(bool)mcTuneDeDxOnData.value);
 
-  void processMc(CollMC const& collisionsMc, TrksMC const& tracksMc, aod::BCsWithTimestamps const&){
+  void processMc(CollMC const& collisionsMc, TrksMC const& tracksMc, aod::BCsWithTimestamps const&)
+  {
 
     auto converter = o2::delphes::TrackSmearer(); // converter for pdgCode -> PID mass
     const uint64_t outTable_size = tracksMc.size();
@@ -450,7 +452,7 @@ struct tpcPidFull {
       }
       table.reserve(outTable_size);
     };
-    
+
     // Prepare memory for enabled tables
     reserveTable(pidEl, tablePIDEl);
     reserveTable(pidMu, tablePIDMu);
@@ -466,7 +468,7 @@ struct tpcPidFull {
     const uint64_t tracksForNet_size = (skipTPCOnly) ? notTPCStandaloneTracks.size() : tracksWithTPC.size();
     std::vector<float> network_prediction;
 
-    if(useNetworkCorrection){
+    if (useNetworkCorrection) {
       network_prediction = createNetworkPrediction(collisionsMc, tracksMc, tracksForNet_size);
     }
 
@@ -499,7 +501,7 @@ struct tpcPidFull {
         if (flag != 1) {
           return;
         } else {
-          
+
           if (!trk.hasTPC()) {
             table(-999.f, -999.f);
             return;
@@ -518,7 +520,7 @@ struct tpcPidFull {
             return;
           }
 
-          if(useNetworkCorrection){
+          if (useNetworkCorrection) {
             // Here comes the application of the network. The output-dimensions of the network dtermine the application: 1: mean, 2: sigma, 3: sigma asymmetric
             // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
             if (network.getNumOutputNodes() == 1) {
@@ -559,7 +561,7 @@ struct tpcPidFull {
         if (flag != 1) {
           return;
         } else {
-          
+
           if (!trk.hasTPC()) {
             table(-999.f);
             return;
@@ -578,12 +580,12 @@ struct tpcPidFull {
             return;
           }
 
-          if(useNetworkCorrection){
+          if (useNetworkCorrection) {
             auto mean = network_prediction[2 * (count_tracks + tracksForNet_size * pid)] * expSignal; // Absolute mean, i.e. the mean dE/dx value of the data in that slice, not the mean of the NSigma distribution
             auto sigma = (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) * expSignal;
-            table(gRandom->Gaus(mean,sigma));
+            table(gRandom->Gaus(mean, sigma));
           } else {
-            table(gRandom->Gaus(expSignal, expSigma)); 
+            table(gRandom->Gaus(expSignal, expSigma));
           }
         }
       };
