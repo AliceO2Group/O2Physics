@@ -413,7 +413,7 @@ struct HfDataCreatorDplusPiReduced {
             // b-hadron hypothesis
             std::array<int, 3> bHadronMotherHypos = {Pdg::kB0, Pdg::kBS, Pdg::kLambdaB0};
             // c-hadron hypothesis
-            std::array<int, 3> cHadronMotherHypos = {Pdg::kDPlus, Pdg::kDS, 413}; // 413: D*
+            std::array<int, 3> cHadronMotherHypos = {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar};
 
             for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
               int index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
@@ -433,9 +433,13 @@ struct HfDataCreatorDplusPiReduced {
                   pdgCodeProng3 = particleProng1.pdgCode();
                   // look for common c-hadron mother among prongs 0, 1 and 2
                   for (const auto& cHadronMotherHypo : cHadronMotherHypos) {
-                    int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, 1);
-                    int index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, 1);
-                    int index2CharmMother = RecoDecay::getMother(particlesMc, particleProng2, cHadronMotherHypo, true, &sign, 1);
+                    int8_t depthMax = 1;
+                    if (cHadronMotherHypo == Pdg::kDStar) {
+                      depthMax = 2;
+                    }
+                    int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
+                    int index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, depthMax);
+                    int index2CharmMother = RecoDecay::getMother(particlesMc, particleProng2, cHadronMotherHypo, true, &sign, depthMax);
                     if (index0CharmMother > -1 && index1CharmMother > -1 && index2CharmMother > -1) {
                       if (index0CharmMother == index1CharmMother && index1CharmMother == index2CharmMother) {
                         pdgCodeCharmMother = particlesMc.rawIteratorAt(index0CharmMother).pdgCode();
