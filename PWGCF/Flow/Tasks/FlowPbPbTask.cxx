@@ -106,8 +106,10 @@ struct FlowPbPbTask {
 
     // Add some output objects to the histogram registry
     registry.add("hPhi", "", {HistType::kTH1D, {axisPhi}});
+    registry.add("hPhiWeighted", "", {HistType::kTH1D, {axisPhi}});
     registry.add("hEta", "", {HistType::kTH1D, {axisEta}});
     registry.add("hPt", "", {HistType::kTH1D, {axisPtHist}});
+    registry.add("hPtRef", "", {HistType::kTH1D, {axisPtHist}});
     registry.add("hVtxZ", "", {HistType::kTH1D, {axisVertex}});
     registry.add("hMult", "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
@@ -377,10 +379,12 @@ struct FlowPbPbTask {
       bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
       bool WithinPtRef = (cfgCutPtMin < track.pt()) && (track.pt() < cfgCutPtMax);       // within RF pT range
       bool WithinEtaGap08 = (track.eta() >= -0.4) && (track.eta() <= 0.4);
+      registry.fill(HIST("hPt"), track.pt());
       if (WithinPtRef) {
         registry.fill(HIST("hPhi"), track.phi());
+        registry.fill(HIST("hPhiWeighted"), track.phi(), wacc);
         registry.fill(HIST("hEta"), track.eta());
-        registry.fill(HIST("hPt"), track.pt());
+        registry.fill(HIST("hPtRef"), track.pt());
         weffEvent += weff;
         waccEvent += wacc;
         ptSum += weff * track.pt();
