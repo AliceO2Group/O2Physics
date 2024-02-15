@@ -131,7 +131,7 @@ struct UpcTauCentralBarrelRL {
   Configurable<int> whichGapSide{"whichGapSide", 2, {"0 for side A, 1 for side C, 2 for both sides"}};
   Configurable<float> cutAvgITSclusterSize{"cutAvgITSclusterSize", 3.5, {"specific study"}};
   Configurable<float> cutPtAvgITSclusterSize{"cutPtAvgITSclusterSize", 0.7, {"specific study"}};
-  Configurable<bool> cutMyGlobalTracksOnly{"cutGlobalTracksOnly", false, {"Applies cut on here defined global tracks"}};
+  Configurable<bool> cutMyGlobalTracksOnly{"cutMyGlobalTracksOnly", false, {"Applies cut on here defined global tracks"}};
   Configurable<float> cutMyGTptMin{"cutMyGTptMin", 0.1f, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTptMax{"cutMyGTptMax", 1e10f, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTetaMin{"cutMyGTetaMin", -0.8, {"MyGlobalTrack cut"}};
