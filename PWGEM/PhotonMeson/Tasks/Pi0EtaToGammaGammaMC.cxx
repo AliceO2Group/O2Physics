@@ -550,7 +550,7 @@ struct Pi0EtaToGammaGammaMC {
       if ((pairtype == kPHOSPHOS || pairtype == kPCMPHOS) && !collision.isPHOSCPVreadout()) {
         continue; // I don't know why this is necessary in simulation.
       }
-      if ((pairtype == kEMCEMC || pairtype == kPCMEMC) && !collision.isEMCreadout()) {
+      if ((pairtype == kEMCEMC || pairtype == kPCMEMC) && (!collision.isEMCreadout() || collision.ncollsPerBC() != 1)) {
         continue; // I don't know why this is necessary in simulation.
       }
 
