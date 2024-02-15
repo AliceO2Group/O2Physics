@@ -191,7 +191,6 @@ struct PureMcMultiplicityCounter {
 
   PROCESS_SWITCH(PureMcMultiplicityCounter, processReco, "Process smeared tracks", false);
 
-
   template <typename C>
   void fillMcResponse(C const& collision, int Np, int Ntrk)
   {
