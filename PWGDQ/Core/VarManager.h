@@ -633,7 +633,7 @@ class VarManager : public TObject
   static auto getEventPlane(int harm, float qnxa, float qnya)
   {
     // Compute event plane angle from qn vector components for the sub-event A
-    return (1.0 / harm) * TMath::ATan2(qnya , qnxa);
+    return (1.0 / harm) * TMath::ATan2(qnya, qnxa);
   };
 
   template <typename T, typename C>
