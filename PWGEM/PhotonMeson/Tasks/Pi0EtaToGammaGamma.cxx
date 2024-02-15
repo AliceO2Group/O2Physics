@@ -372,7 +372,7 @@ struct Pi0EtaToGammaGamma {
       if ((pairtype == PairType::kPHOSPHOS || pairtype == PairType::kPCMPHOS) && !collision.isPHOSCPVreadout()) {
         continue;
       }
-      if ((pairtype == PairType::kEMCEMC || pairtype == PairType::kPCMEMC) && !collision.isEMCreadout()) {
+      if ((pairtype == PairType::kEMCEMC || pairtype == PairType::kPCMEMC) && (!collision.isEMCreadout() || collision.ncollsPerBC() != 1)) {
         continue;
       }
 

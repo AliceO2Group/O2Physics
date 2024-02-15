@@ -263,8 +263,14 @@ struct HfCandidateCreatorB0ReducedExpressions {
   Spawns<aod::HfCandB0Ext> rowCandidateB0;
   Spawns<aod::HfRedTracksExt> rowTracksExt;
   Produces<aod::HfMcRecRedB0s> rowB0McRec;
+  Produces<aod::HfMcCheckB0s> rowB0McCheck;
 
-  void processMc(HfMcRecRedDpPis const& rowsDPiMcRec, HfRedB0Prongs const& candsB0)
+  /// Fill candidate information at MC reconstruction level
+  /// \param checkDecayTypeMc
+  /// \param rowsDPiMcRec MC reco information on DPi pairs
+  /// \param candsB0 prong global indices of B0 candidates
+  template <bool checkDecayTypeMc, typename McRec>
+  void fillB0McRec(McRec const& rowsDPiMcRec, HfRedB0Prongs const& candsB0)
   {
     for (const auto& candB0 : candsB0) {
       bool filledMcInfo{false};
@@ -274,14 +280,36 @@ struct HfCandidateCreatorB0ReducedExpressions {
         }
         rowB0McRec(rowDPiMcRec.flagMcMatchRec(), rowDPiMcRec.debugMcRec(), rowDPiMcRec.ptMother());
         filledMcInfo = true;
+        if constexpr (checkDecayTypeMc) {
+          rowB0McCheck(rowDPiMcRec.pdgCodeBeautyMother(),
+                       rowDPiMcRec.pdgCodeCharmMother(),
+                       rowDPiMcRec.pdgCodeProng0(),
+                       rowDPiMcRec.pdgCodeProng1(),
+                       rowDPiMcRec.pdgCodeProng2(),
+                       rowDPiMcRec.pdgCodeProng3());
+        }
         break;
       }
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D-Pi creator
         rowB0McRec(0, -1, -1.f);
+        if constexpr (checkDecayTypeMc) {
+          rowB0McCheck(-1, -1, -1, -1, -1, -1);
+        }
       }
     }
   }
+
+  void processMc(HfMcRecRedDpPis const& rowsDPiMcRec, HfRedB0Prongs const& candsB0)
+  {
+    fillB0McRec<false>(rowsDPiMcRec, candsB0);
+  }
   PROCESS_SWITCH(HfCandidateCreatorB0ReducedExpressions, processMc, "Process MC", false);
+
+  void processMcWithDecayTypeCheck(soa::Join<HfMcRecRedDpPis, HfMcCheckDpPis> const& rowsDPiMcRec, HfRedB0Prongs const& candsB0)
+  {
+    fillB0McRec<true>(rowsDPiMcRec, candsB0);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorB0ReducedExpressions, processMcWithDecayTypeCheck, "Process MC with decay type checks", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

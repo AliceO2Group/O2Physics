@@ -39,6 +39,7 @@ AxisSpec RapidityAxis = {102, -10.2, 10.2, "Y"};                         // Rapi
 AxisSpec ScaleAxis = {121, -0.5, 120.5, "Event scale (GeV)"};            // Event scale
 AxisSpec MPIAxis = {51, -0.5, 50.5, "N_{MPI}"};                          // N_{MPI}
 AxisSpec ProcAxis = {21, 89.5, 110.5};                                   // Process flag
+AxisSpec SpeciesAxis = {5, 0.5, 5.5};                                    // Particle species
 
 // event selection/efficiency binning
 enum struct EvSelBins : int {
