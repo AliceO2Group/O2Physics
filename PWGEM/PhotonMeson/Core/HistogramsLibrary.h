@@ -142,6 +142,26 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH2F*>(list->FindObject("hEvsM20"))->Fill(obj.e(), obj.m20());
     reinterpret_cast<TH1F*>(list->FindObject("hDistToBC"))->Fill(obj.distanceToBadChannel());
     reinterpret_cast<TH2F*>(list->FindObject(Form("hClusterXZM%d", obj.mod())))->Fill(obj.cellx(), obj.cellz());
+  } else if constexpr (htype == EMHistType::kEMCCluster) {
+    if (TString(subGroup) == "2D") {
+      reinterpret_cast<TH2F*>(list->FindObject("hNCell"))->Fill(obj.nCells(), obj.e());
+      reinterpret_cast<TH2F*>(list->FindObject("hM02"))->Fill(obj.m02(), obj.e());
+      reinterpret_cast<TH2F*>(list->FindObject("hM20"))->Fill(obj.m20(), obj.e());
+      reinterpret_cast<TH2F*>(list->FindObject("hTime"))->Fill(obj.time(), obj.e());
+      reinterpret_cast<TH2F*>(list->FindObject("hDistToBC"))->Fill(obj.distanceToBadChannel(), obj.e());
+    } else {
+      reinterpret_cast<TH1F*>(list->FindObject("hNCell"))->Fill(obj.nCells());
+      reinterpret_cast<TH1F*>(list->FindObject("hM02"))->Fill(obj.m02());
+      reinterpret_cast<TH1F*>(list->FindObject("hM20"))->Fill(obj.m20());
+      reinterpret_cast<TH1F*>(list->FindObject("hTime"))->Fill(obj.time());
+      reinterpret_cast<TH1F*>(list->FindObject("hDistToBC"))->Fill(obj.distanceToBadChannel());
+    }
+    reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Fill(obj.pt());
+    reinterpret_cast<TH1F*>(list->FindObject("hE"))->Fill(obj.e());
+    reinterpret_cast<TH2F*>(list->FindObject("hEtaPhi"))->Fill(obj.phi(), obj.eta());
+    for (int itrack = 0; itrack < obj.tracketa().size(); itrack++) { // Fill TrackEtaPhi histogram with delta phi and delta eta of all tracks saved in the vectors in skimmerGammaCalo.cxx
+      reinterpret_cast<TH2F*>(list->FindObject("hTrackEtaPhi"))->Fill(obj.trackphi()[itrack] - obj.phi(), obj.tracketa()[itrack] - obj.eta());
+    }
   }
 }
 } // namespace emphotonhistograms
