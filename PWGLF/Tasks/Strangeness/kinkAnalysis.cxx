@@ -731,7 +731,7 @@ struct kinkAnalysis {
               neutronPabs = sqrt(pow((sigmaPDC[2] - pionPDC[2]), 2) + pow((sigmaPDC[1] - pionPDC[1]), 2) + pow((sigmaPDC[0] - pionPDC[0]), 2));
               neutronM = sqrt((sigmaE - pionE) * (sigmaE - pionE) - neutronPabs * neutronPabs);
 
-              if(cfgMassCheck){
+              if(cfgMassCheck) {
                 if (abs(neutronM - mNeutralDaughter) / mNeutralDaughter > 0.1)
                   continue;
               }
