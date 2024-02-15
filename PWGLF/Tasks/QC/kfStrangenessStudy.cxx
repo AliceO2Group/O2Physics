@@ -120,6 +120,10 @@ struct kfStrangenessStudy {
   // counter and checks
   int recocase = 0;
 
+  o2::dataformats::VertexBase mV0vtx;
+  o2::dataformats::DCA mPosDcaInfoCov;
+  o2::dataformats::DCA mNegDcaInfoCov;
+
   void init(InitContext const&)
   {
     /// CCDB
@@ -398,32 +402,30 @@ struct kfStrangenessStudy {
             o2::track::TrackParCov posTrackParCov = getTrackParCov(posTrack);
             o2::track::TrackParCov negTrackParCov = getTrackParCov(negTrack);
             // propagate to V0 MC vertex
-            o2::base::Propagator::Instance()->propagateToDCABxByBz({vtxGenV0[0], vtxGenV0[1], vtxGenV0[2]}, posTrackParCov, 2.f, matCorr);
-            o2::base::Propagator::Instance()->propagateToDCABxByBz({vtxGenV0[0], vtxGenV0[1], vtxGenV0[2]}, negTrackParCov, 2.f, matCorr);
+            mV0vtx.setPos({vtxGenV0[0], vtxGenV0[1], vtxGenV0[2]});
+            o2::base::Propagator::Instance()->propagateToDCABxByBz(mV0vtx, posTrackParCov, 2.f, matCorr, &mPosDcaInfoCov);
+            o2::base::Propagator::Instance()->propagateToDCABxByBz(mV0vtx, negTrackParCov, 2.f, matCorr, &mNegDcaInfoCov);
+
             // get new daughter track position and uncertainties
-            std::array<float, 3> protonxyz, pionxyz;
-            std::array<float, 21> protoncv, pioncv;
             if (charge == -1) {
-              posTrackParCov.getXYZGlo(protonxyz);
-              negTrackParCov.getXYZGlo(pionxyz);
-              posTrackParCov.getCovXYZPxPyPzGlo(protoncv);
-              negTrackParCov.getCovXYZPxPyPzGlo(pioncv);
+              posProtonRec[1] = mPosDcaInfoCov.getY();
+              posProtonRec[2] = mPosDcaInfoCov.getZ();
+              posProtonRecErr[1] = sqrt(mPosDcaInfoCov.getSigmaY2());
+              posProtonRecErr[2] = sqrt(mPosDcaInfoCov.getSigmaZ2());
+              posPionRec[1] = mNegDcaInfoCov.getY();
+              posPionRec[2] = mNegDcaInfoCov.getZ();
+              posPionRecErr[1] = sqrt(mNegDcaInfoCov.getSigmaY2());
+              posPionRecErr[2] = sqrt(mNegDcaInfoCov.getSigmaZ2());
             } else if (charge == +1) {
-              negTrackParCov.getXYZGlo(protonxyz);
-              posTrackParCov.getXYZGlo(pionxyz);
-              posTrackParCov.getCovXYZPxPyPzGlo(pioncv);
-              negTrackParCov.getCovXYZPxPyPzGlo(protoncv);
+              posProtonRec[1] = mNegDcaInfoCov.getY();
+              posProtonRec[2] = mNegDcaInfoCov.getZ();
+              posProtonRecErr[1] = sqrt(mNegDcaInfoCov.getSigmaY2());
+              posProtonRecErr[2] = sqrt(mNegDcaInfoCov.getSigmaZ2());
+              posPionRec[1] = mPosDcaInfoCov.getY();
+              posPionRec[2] = mPosDcaInfoCov.getZ();
+              posPionRecErr[1] = sqrt(mPosDcaInfoCov.getSigmaY2());
+              posPionRecErr[2] = sqrt(mPosDcaInfoCov.getSigmaZ2());
             }
-            for (int i = 0; i < 3; i++) {
-              posProtonRec[i] = protonxyz[i];
-              posPionRec[i] = pionxyz[i];
-            }
-            posProtonRecErr[0] = sqrt(protoncv[0]);
-            posProtonRecErr[1] = sqrt(protoncv[2]);
-            posProtonRecErr[2] = sqrt(protoncv[5]);
-            posPionRecErr[0] = sqrt(pioncv[0]);
-            posPionRecErr[1] = sqrt(pioncv[2]);
-            posPionRecErr[2] = sqrt(pioncv[5]);
             
             // fill cascade table
             fillCascMCTable(collision);
