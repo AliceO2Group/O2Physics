@@ -96,6 +96,11 @@ void V0PhotonCut::SetOnWwireOB(bool flag)
   mIsOnWwireOB = flag;
   LOG(info) << "V0 Photon Cut, select photon on Tungsten wire OB: " << mIsOnWwireOB;
 }
+void V0PhotonCut::RejectITSib(bool flag)
+{
+  mRejectITSib = flag;
+  LOG(info) << "V0 Photon Cut, reject photon on ITSib: " << mRejectITSib;
+}
 void V0PhotonCut::SetTPCNsigmaElRange(float min, float max)
 {
   mMinTPCNsigmaEl = min;
@@ -169,6 +174,12 @@ void V0PhotonCut::SetChi2PerClusterITS(float min, float max)
   mMinChi2PerClusterITS = min;
   mMaxChi2PerClusterITS = max;
   LOG(info) << "V0 Photon Cut, set chi2 per cluster ITS range: " << mMinChi2PerClusterITS << " - " << mMaxChi2PerClusterITS;
+}
+void V0PhotonCut::SetMeanClusterSizeITS(float min, float max)
+{
+  mMinMeanClusterSizeITS = min;
+  mMaxMeanClusterSizeITS = max;
+  LOG(info) << "V0 Photon Cut, set mean cluster size ITS range: " << mMinMeanClusterSizeITS << " - " << mMaxMeanClusterSizeITS;
 }
 
 void V0PhotonCut::SetIsWithinBeamPipe(bool flag)

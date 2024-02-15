@@ -48,12 +48,10 @@ namespace o2::aod
 
 using FemtoFullCollision = soa::Join<aod::Collisions,
                                      aod::EvSels,
-                                     aod::Mults,
-                                     aod::CentFT0Cs>::iterator;
+                                     aod::Mults>::iterator;
 using FemtoFullCollisionMC = soa::Join<aod::Collisions,
                                        aod::EvSels,
                                        aod::Mults,
-                                       aod::CentFT0Cs,
                                        aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks = soa::Join<aod::FullTracks, aod::TracksDCA,

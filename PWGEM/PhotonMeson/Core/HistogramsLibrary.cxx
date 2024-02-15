@@ -49,7 +49,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
   }
   if (TString(histClass) == "V0Leg") {
     list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
-    list->Add(new TH1F("hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", 400, -20, 20));
+    list->Add(new TH1F("hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", 1000, -50, 50));
     list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 40, -2.0f, 2.0f));
     list->Add(new TH2F("hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", 200, -50.0f, 50.0f, 200, -50.0f, 50.0f));
     list->Add(new TH1F("hNclsTPC", "number of TPC clusters", 161, -0.5, 160.5));
@@ -63,7 +63,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hNclsITS", "number of ITS clusters", 8, -0.5, 7.5));
     list->Add(new TH1F("hChi2ITS", "chi2/number of ITS clusters", 100, 0, 10));
     list->Add(new TH1F("hITSClusterMap", "ITS cluster map", 128, -0.5, 127.5));
-    list->Add(new TH1F("hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", 160, 0, 16));
+    list->Add(new TH1F("hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", 32, 0, 16));
     list->Add(new TH2F("hXY", "X vs. Y;X (cm);Y (cm)", 100, 0, 100, 100, -50, 50));
     list->Add(new TH2F("hZX", "Z vs. X;Z (cm);X (cm)", 200, -100, 100, 100, 0, 100));
     list->Add(new TH2F("hZY", "Z vs. Y;Z (cm);Y (cm)", 200, -100, 100, 100, -50, 50));
@@ -312,7 +312,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hNclsITS", "number of ITS clusters", 8, -0.5, 7.5));
     list->Add(new TH1F("hChi2ITS", "chi2/number of ITS clusters", 100, 0, 10));
     list->Add(new TH1F("hITSClusterMap", "ITS cluster map", 128, -0.5, 127.5));
-    list->Add(new TH1F("hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", 160, 0, 16));
+    list->Add(new TH1F("hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", 32, 0, 16));
     if (TString(subGroup).Contains("mc")) {
       list->Add(new TH2F("hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", 1000, 0, maxP, 400, -1.0f, 1.0f));
       list->Add(new TH2F("hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", 1000, 0, maxP, 400, -1.0f, 1.0f));
@@ -321,11 +321,10 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
   }
 
   if (TString(histClass) == "Cluster") {
-    list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
-    list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 400, -2.0f, 2.0f));
-    list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
-
     if (TString(subGroup) == "PHOS") {
+      list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
+      list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 400, -2.0f, 2.0f));
+      list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
       list->Add(new TH2F("hEvsNcell", "E_{cluster} vs. N_{cell};E_{cluster} (GeV);N_{cell}", 200, 0, 20, 51, -0.5, 50.5f));
       list->Add(new TH2F("hEvsM02", "E_{cluster} vs. M02;E_{cluster} (GeV);M02 (cm)", 200, 0, 20, 100, 0, 10));
       list->Add(new TH2F("hEvsM20", "E_{cluster} vs. M20;E_{cluster} (GeV);M20 (cm)", 200, 0, 20, 100, 0, 10));
@@ -335,6 +334,37 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       for (int i = 1; i <= nmod; i++) {
         list->Add(new TH2F(Form("hClusterXZM%d", i), Form("cluster (X,Z) on M%d;X;Z", i), 64, 0.5, 64.5, 56, 0.5, 56.5));
       } // end of module loop
+    }
+    if (TString(subGroup).Contains("EMC")) {
+      list->Add(new TH1F("hPt", "Transverse momenta of clusters;#it{p}_{T} (GeV/c);#it{N}_{cluster}", 1000, 0.0f, 20));
+      list->Add(new TH1F("hE", "E_{cluster};#it{E}_{cluster} (GeV);#it{N}_{cluster}", 500, 0, 50));
+      list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision;#it{N}_{#gamma} per collision;#it{N}_{collisions}", 101, -0.5f, 100.5f));
+      list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 200, -1.0f, 1.0f));
+      list->Add(new TH2F("hTrackEtaPhi", "d#eta vs. d#varphi of matched tracks;d#varphi (rad.);d#eta", 100, -0.5, 0.5, 100, -0.5, 0.5));
+      if (TString(subGroup).Contains("2D")) { // Check if 2D QA histograms were selected in em-qc task
+        list->Add(new TH2F("hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{E}_{cluster} (GeV)", 51, -0.5, 50.5, 200, 0, 20));
+        list->Add(new TH2F("hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{E}_{cluster} (GeV)", 500, 0, 5, 200, 0, 20));
+        list->Add(new TH2F("hM20", "Short ellipse axis;#it{M}_{20} (cm);#it{E}_{cluster} (GeV)", 250, 0, 2.5, 200, 0, 20));
+        list->Add(new TH2F("hTime", "Cluster time;#it{t}_{cls} (ns);#it{E}_{cluster} (GeV)", 100, -250, 250, 200, 0, 20));
+        list->Add(new TH2F("hCellTime", "Cell time;#it{t}_{cell} (ns);#it{E}_{cluster} (GeV)", 100, -250, 250, 200, 0, 20));
+        list->Add(new TH2F("hDistToBC", "distance to bad channel;#it{d};#it{E}_{cluster} (GeV)", 100, 0, 1500, 200, 0, 20));
+      } else {
+        list->Add(new TH1F("hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{N}_{cluster}", 51, -0.5, 50.5));
+        list->Add(new TH1F("hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{N}_{cluster}", 500, 0, 5));
+        list->Add(new TH1F("hM20", "Short ellipse axis;#it{M}_{20} (cm);#it{N}_{cluster}", 250, 0, 2.5));
+        list->Add(new TH1F("hTime", "Cluster time;#it{t}_{cls} (ns);#it{N}_{cluster}", 500, -250, 250));
+        list->Add(new TH1F("hCellTime", "Cluster time;#it{t}_{cell} (ns);#it{N}_{cluster}", 500, -250, 250));
+        list->Add(new TH1F("hDistToBC", "distance to bad channel;#it{d};#it{N}_{cluster}", 100, 0, 1500));
+      }
+      list->Add(new TH2F("hClusterQualityCuts", "Energy at which clusters are removed by a given cut;;#it{E} (GeV)", 8, -0.5, 7.5, 500, 0, 50));
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(1, "In");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(2, "Energy");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(3, "NCell");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(4, "M02");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(5, "Timing");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(6, "Track matching");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(7, "Exotic");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(8, "Out");
     }
   }
 
@@ -463,6 +493,9 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
         list->Add(new TH1F(Form("hPt_%s", parnames[i].data()), Form("%s pT;p_{T} (GeV/c)", parnames[i].data()), 2000, 0.0f, 20));
         list->Add(new TH1F(Form("hY_%s", parnames[i].data()), Form("%s y;rapidity y", parnames[i].data()), 40, -2.0f, 2.0f));
         list->Add(new TH1F(Form("hPhi_%s", parnames[i].data()), Form("%s #varphi;#varphi (rad.)", parnames[i].data()), 180, 0, 2 * M_PI));
+        list->Add(new TH1F(Form("hPt_%s_Acc", parnames[i].data()), Form("%s pT;p_{T} (GeV/c)", parnames[i].data()), 2000, 0.0f, 20));          // in pair acceptance
+        list->Add(new TH1F(Form("hY_%s_Acc", parnames[i].data()), Form("%s y;rapidity y", parnames[i].data()), 40, -2.0f, 2.0f));              // in pair acceptance
+        list->Add(new TH1F(Form("hPhi_%s_Acc", parnames[i].data()), Form("%s #varphi;#varphi (rad.)", parnames[i].data()), 180, 0, 2 * M_PI)); // in pair acceptance
       }
     }
     if (TString(subGroup) == "dielectron") {

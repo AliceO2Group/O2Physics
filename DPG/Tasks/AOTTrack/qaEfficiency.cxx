@@ -27,6 +27,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "PWGLF/DataModel/LFParticleIdentification.h"
 
 // ROOT includes
 #include "TPDGCode.h"
@@ -67,6 +68,7 @@ struct QaEfficiency {
   Configurable<bool> noFakesHits{"noFakesHits", false, "Flag to reject tracks that have fake hits"};
   Configurable<bool> skipEventsWithoutTPCTracks{"skipEventsWithoutTPCTracks", false, "Flag to reject events that have no tracks reconstructed in the TPC"};
   Configurable<float> maxProdRadius{"maxProdRadius", 9999.f, "Maximum production radius of the particle under study"};
+  Configurable<float> nsigmaTPCDe{"nsigmaTPCDe", 3.f, "Value of the Nsigma TPC cut for deuterons PID"};
   // Charge selection
   Configurable<bool> doPositivePDG{"doPositivePDG", false, "Flag to fill histograms for positive PDG codes."};
   Configurable<bool> doNegativePDG{"doNegativePDG", false, "Flag to fill histograms for negative PDG codes."};
@@ -819,8 +821,12 @@ struct QaEfficiency {
 
   void initData(const AxisSpec& axisSel)
   {
-    if (!doprocessData) {
+    if (!doprocessData && !doprocessDataWithPID) {
       return;
+    }
+
+    if (doprocessData == true && doprocessDataWithPID == true) {
+      LOG(fatal) << "Can't enable processData and doprocessDataWithPID in the same time, pick one!";
     }
 
     auto h = histos.add<TH1>("Data/trackSelection", "Track Selection", kTH1F, {axisSel});
@@ -1578,7 +1584,7 @@ struct QaEfficiency {
       if constexpr (doFillHisto) {
         histos.fill(countingHisto, trkCutIdxPassedDcaZMax);
       }
-      if (std::abs(track.passedDCAz()) < minDcaZ) {
+      if (std::abs(track.dcaZ()) < minDcaZ) {
         return false;
       }
       if constexpr (doFillHisto) {
@@ -1635,30 +1641,40 @@ struct QaEfficiency {
         histos.fill(countingHisto, trkCutIdxPassedTOFPartial);
       }
     }
-
+    bool isTrackSelectedAfteAll = false;
     switch (globalTrackSelection) {
       case 0:
-        return true;
+        isTrackSelectedAfteAll = true;
+        break;
       case 1:
-        return track.isGlobalTrack();
+        isTrackSelectedAfteAll = track.isGlobalTrack();
+        break;
       case 2:
-        return track.isGlobalTrackWoPtEta();
+        isTrackSelectedAfteAll = track.isGlobalTrackWoPtEta();
+        break;
       case 3:
-        return track.isGlobalTrackWoDCA();
+        isTrackSelectedAfteAll = track.isGlobalTrackWoDCA();
+        break;
       case 4:
-        return track.isQualityTrack();
+        isTrackSelectedAfteAll = track.isQualityTrack();
+        break;
       case 5:
-        return track.isInAcceptanceTrack();
+        isTrackSelectedAfteAll = track.isInAcceptanceTrack();
+        break;
       case 6:
-        return customTrackCuts.IsSelected(track);
+        isTrackSelectedAfteAll = customTrackCuts.IsSelected(track);
+        break;
       default:
         LOG(fatal) << "Can't interpret track asked selection " << globalTrackSelection;
+    }
+    if (!isTrackSelectedAfteAll) {
+      return false;
     }
     if constexpr (doFillHisto) {
       histos.fill(countingHisto, trkCutIdxPassedGlobal);
     }
 
-    return false;
+    return true;
   }
 
   // MC process
@@ -1909,6 +1925,99 @@ struct QaEfficiency {
   }
   PROCESS_SWITCH(QaEfficiency, processData, "process data", true);
 
+  void processDataWithPID(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
+                          o2::soa::Join<TrackCandidates, o2::aod::pidTPCLfFullDe> const& tracks)
+  {
+
+    if (!isCollisionSelected<false>(collision)) {
+      return;
+    }
+
+    for (const auto& track : tracks) {
+      if (!isTrackSelected<false>(track, HIST("Data/trackSelection"))) {
+        continue;
+      }
+      if (abs(track.tpcNSigmaDe()) > nsigmaTPCDe) {
+        continue;
+      }
+      histos.fill(HIST("Data/trackLength"), track.length());
+
+      if (passedITS) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/its"), track.pt());
+          histos.fill(HIST("Data/pos/eta/its"), track.eta());
+          histos.fill(HIST("Data/pos/phi/its"), track.phi());
+          histos.fill(HIST("Data/pos/etaphi/its"), track.eta(), track.phi());
+        } else {
+          histos.fill(HIST("Data/neg/pt/its"), track.pt());
+          histos.fill(HIST("Data/neg/eta/its"), track.eta());
+          histos.fill(HIST("Data/neg/phi/its"), track.phi());
+          histos.fill(HIST("Data/neg/etaphi/its"), track.eta(), track.phi());
+        }
+      }
+
+      if (passedTPC) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/tpc"), track.pt());
+          histos.fill(HIST("Data/pos/eta/tpc"), track.eta());
+          histos.fill(HIST("Data/pos/phi/tpc"), track.phi());
+          histos.fill(HIST("Data/pos/etaphi/tpc"), track.eta(), track.phi());
+        } else {
+          histos.fill(HIST("Data/neg/pt/tpc"), track.pt());
+          histos.fill(HIST("Data/neg/eta/tpc"), track.eta());
+          histos.fill(HIST("Data/neg/phi/tpc"), track.phi());
+          histos.fill(HIST("Data/neg/etaphi/tpc"), track.eta(), track.phi());
+        }
+      }
+
+      if (passedITS && passedTPC) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/its_tpc"), track.pt());
+          histos.fill(HIST("Data/pos/eta/its_tpc"), track.eta());
+          histos.fill(HIST("Data/pos/phi/its_tpc"), track.phi());
+          histos.fill(HIST("Data/pos/etaphi/its_tpc"), track.eta(), track.phi());
+        } else {
+          histos.fill(HIST("Data/neg/pt/its_tpc"), track.pt());
+          histos.fill(HIST("Data/neg/eta/its_tpc"), track.eta());
+          histos.fill(HIST("Data/neg/phi/its_tpc"), track.phi());
+          histos.fill(HIST("Data/neg/etaphi/its_tpc"), track.eta(), track.phi());
+        }
+      }
+
+      if (passedITS && passedTPC && passedTOF) {
+        if (track.sign() > 0) {
+          histos.fill(HIST("Data/pos/pt/its_tpc_tof"), track.pt());
+          histos.fill(HIST("Data/pos/eta/its_tpc_tof"), track.eta());
+          histos.fill(HIST("Data/pos/phi/its_tpc_tof"), track.phi());
+          histos.fill(HIST("Data/pos/etaphi/its_tpc_tof"), track.eta(), track.phi());
+        } else {
+          histos.fill(HIST("Data/neg/pt/its_tpc_tof"), track.pt());
+          histos.fill(HIST("Data/neg/eta/its_tpc_tof"), track.eta());
+          histos.fill(HIST("Data/neg/phi/its_tpc_tof"), track.phi());
+          histos.fill(HIST("Data/neg/etaphi/its_tpc_tof"), track.eta(), track.phi());
+        }
+      }
+
+      if (makeEff) {
+        if (passedITS) {
+          effITSTPCMatchingVsPt->Fill(passedTPC, track.pt());
+        }
+        if (passedTPC) {
+          effTPCITSMatchingVsPt->Fill(passedITS, track.pt());
+        }
+        if (passedITS && passedTPC) {
+          effTPCTOFMatchingVsPt->Fill(passedTOF, track.pt());
+          effTPCTOFMatchingVsP->Fill(passedTOF, track.p());
+          effTPCTOFMatchingVsEta->Fill(passedTOF, track.eta());
+          effTPCTOFMatchingVsPhi->Fill(passedTOF, track.phi());
+          effTPCTOFMatchingVsPtVsEta->Fill(passedTOF, track.pt(), track.eta());
+          effTPCTOFMatchingVsPtVsPhi->Fill(passedTOF, track.pt(), track.phi());
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(QaEfficiency, processDataWithPID, "process data with PID", false);
+
   void processHmpid(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision,
                     TrackCandidates const& tracks,
                     o2::aod::HMPIDs const& hmpids)
@@ -1939,7 +2048,7 @@ struct QaEfficiency {
       }
     }
   }
-  PROCESS_SWITCH(QaEfficiency, processHmpid, "process HMPID matching", true);
+  PROCESS_SWITCH(QaEfficiency, processHmpid, "process HMPID matching", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

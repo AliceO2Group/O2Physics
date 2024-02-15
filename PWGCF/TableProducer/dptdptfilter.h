@@ -350,7 +350,7 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
     case kPbPbRun3:
       switch (fTriggerSelection) {
         case kMB:
-          if (collision.sel8()) {
+          if (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
             trigsel = true;
           }
           break;
@@ -659,33 +659,23 @@ inline bool matchTrackType(TrackObject const& track)
 
 /// \brief Accepts or not the passed track
 /// \param track the track of interest
-/// \return the internal track id, -1 if not accepted
-/// TODO: the PID implementation
-/// For the time being we keep the convention
-/// - positive track pid even
-/// - negative track pid odd
-/// - charged hadron 0/1
+/// \return true if the track is accepted, otherwise false
 template <typename TrackObject>
-inline int8_t AcceptTrack(TrackObject const& track)
+inline bool AcceptTrack(TrackObject const& track)
 {
   /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
     if (track.mcParticleId() < 0) {
-      return -1;
+      return false;
     }
   }
 
   if (matchTrackType(track)) {
     if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
-      if (track.sign() > 0) {
-        return 0;
-      }
-      if (track.sign() < 0) {
-        return 1;
-      }
+      return true;
     }
   }
-  return -1;
+  return false;
 }
 
 template <typename ParticleObject, typename MCCollisionObject>
@@ -704,14 +694,9 @@ void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
 
 /// \brief Accepts or not the passed generated particle
 /// \param track the particle of interest
-/// \return the internal particle id, -1 if not accepted
-/// TODO: the PID implementation
-/// For the time being we keep the convention
-/// - positive particle pid even
-/// - negative particle pid odd
-/// - charged hadron 0/1
+/// \return `true` if the particle is accepted, `false` otherwise
 template <typename ParticleObject, typename MCCollisionObject>
-inline int8_t AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision)
+inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision)
 {
   float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
 
@@ -733,23 +718,18 @@ inline int8_t AcceptParticle(ParticleObject& particle, MCCollisionObject const& 
 
           exploreMothers(particle, collision);
         }
-        return -1;
+        return false;
       }
     }
     if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
-      if (charge > 0) {
-        return 0;
-      }
-      if (charge < 0) {
-        return 1;
-      }
+      return (charge != 0) ? true : false;
     }
   } else {
     if ((particle.mcCollisionId() == 0) && traceCollId0) {
       LOGF(info, "Particle %d NOT passed isPhysicalPrimary", particle.globalIndex());
     }
   }
-  return -1;
+  return false;
 }
 
 } // namespace dptdptfilter

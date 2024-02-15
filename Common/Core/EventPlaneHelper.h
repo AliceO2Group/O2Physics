@@ -93,7 +93,7 @@ class EventPlaneHelper
   float GetEventPlane(const float qx, const float qy, int nmode = 2);
 
   // Method to calculate the resolution R2 for the provided profile.
-  float GetResolution(const float RefA, const float RefB, const float sig, int nmode = 2);
+  float GetResolution(const float RefA, const float RefB, int nmode = 2);
 
  private:
   double mOffsetFT0AX = 0.;     // X-coordinate of the offset of FT0-A.

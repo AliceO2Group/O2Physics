@@ -54,6 +54,8 @@ struct EMPhotonFilter {
   };
 
   Produces<aod::PhotonFilters> tags;
+  Produces<aod::EMSwtInfosPCM> swtinfo_pcm;
+  Produces<aod::EMSwtInfosPair> swtinfo_pair;
 
   Configurable<float> ePhot{"ePhot", 2.2, "Minimal photon energy (GeV)"};
   Configurable<float> eEl{"eEl", 1., "Minimal electron energy (GeV)"};
@@ -196,8 +198,7 @@ struct EMPhotonFilter {
           }
           if (v0photon.pt() > min_pt_pcm_photon) {
             keepEvent[kPCM_HighPtPhoton] = true;
-            mHistManager.fill(HIST("hEventCounter"), 12);
-            break;
+            swtinfo_pcm(collision.globalIndex(), v0photon.globalIndex());
           }
         } // end of single v0 photon loop
 
@@ -225,11 +226,16 @@ struct EMPhotonFilter {
           ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
           if (min_meeg < v12.M() && v12.M() < max_meeg) {
             keepEvent[kPCM_EE] = true;
-            mHistManager.fill(HIST("hEventCounter"), 13);
-            break;
+            swtinfo_pair(collision.globalIndex(), g1.globalIndex(), g2.globalIndex());
           }
         } // end of photon + dielectron pair loop
 
+        if (keepEvent[kPCM_HighPtPhoton] == true) {
+          mHistManager.fill(HIST("hEventCounter"), 12);
+        }
+        if (keepEvent[kPCM_EE] == true) {
+          mHistManager.fill(HIST("hEventCounter"), 13);
+        }
       } // end of PCM decision
 
       if constexpr (static_cast<bool>(system & EM_Filter_PhotonType::kPHOS)) {
