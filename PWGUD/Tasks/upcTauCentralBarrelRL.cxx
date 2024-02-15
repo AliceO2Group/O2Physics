@@ -142,7 +142,7 @@ struct UpcTauCentralBarrelRL {
   Configurable<int> cutMyGTitsNClsMin{"cutMyGTitsNClsMin", 1, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTitsChi2NclMax{"cutMyGTitsChi2NclMax", 36.f, {"MyGlobalTrack cut"}};
   Configurable<int> cutMyGTtpcNClsMin{"cutMyGTtpcNClsMin", 1, {"MyGlobalTrack cut"}};
-  Configurable<int> cutMyGTtpcNClsCrossedRowsMin{"cutMyGTtpcNClsCrossedRows", 70, {"MyGlobalTrack cut"}};
+  Configurable<int> cutMyGTtpcNClsCrossedRowsMin{"cutMyGTtpcNClsCrossedRowsMin", 70, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTtpcNClsCrossedRowsOverNClsMin{"cutMyGTtpcNClsCrossedRowsOverNClsMin", 0.8f, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTtpcChi2NclMax{"cutMyGTtpcChi2NclMax", 4.f, {"MyGlobalTrack cut"}};
 
