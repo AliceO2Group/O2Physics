@@ -119,6 +119,7 @@ struct kinkAnalysis {
   Configurable<float> zDiff{"zDiff", 20., "mother-daughter z diff"};
   Configurable<float> phiDiff{"phiDiff", 100., "mother-daughter phi diff"};
   Configurable<bool> cfgIsMC{"cfgIsMC", true, "data or MC"};
+  Configurable<bool> cfgMassCheck{"cfgMassCheck", false, "check if the reconstructed neutral mass is within 0.1 of the PDG mass"};
 
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::dataformats::MeanVertexObject* mVtx = nullptr;
@@ -730,8 +731,10 @@ struct kinkAnalysis {
               neutronPabs = sqrt(pow((sigmaPDC[2] - pionPDC[2]), 2) + pow((sigmaPDC[1] - pionPDC[1]), 2) + pow((sigmaPDC[0] - pionPDC[0]), 2));
               neutronM = sqrt((sigmaE - pionE) * (sigmaE - pionE) - neutronPabs * neutronPabs);
 
-              if (abs(neutronM - mNeutralDaughter) / mNeutralDaughter > 0.1)
-                continue;
+              if (cfgMassCheck) {
+                if (abs(neutronM - mNeutralDaughter) / mNeutralDaughter > 0.1)
+                  continue;
+              }
 
               if ((particleName == SigmaMinus) || (particleName == SigmaPlusToPi)) {
                 if ((theta * radToDeg > (angleCutFunction(particleName, sigmaPabsDC))) && (sigmaPabsDC > 1.6))
