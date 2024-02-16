@@ -91,7 +91,8 @@ struct phosAlign {
       axisPi0m{500, 0., 1., "m_{#gamma#gamma} (GeV/c^{2})", "m_{#gamma#gamma} (GeV/c^{2})"},
       axisModComb{10, 0., 10.},
       axisEpEclu{400, 0., 4., "E_{clu} (GeV)", "E_{clu} (GeV)"},
-      axisEpP{400, 0., 4., "p_{tr} (GeV/c)", "p_{tr} (GeV/c)"},
+      axisEp{400, 0., 4., "E/p", "E_{clu}/p_{tr}"},
+      axisP{400, 0., 4., "p_{tr} (GeV/c)", "p_{tr} (GeV/c)"},
       axisModes{4, 1., 5., "module", "module"},
       axisX{150, -75., 75., "x (cm)", "x (cm)"},
       axisdX{100, -20., 20., "x_{tr}-x_{clu} (cm)", "x_{tr}-x_{clu} (cm)"},
@@ -103,10 +104,10 @@ struct phosAlign {
     // mHistManager.add("mggReDisp", "inv mass", HistType::kTH3F, {axisPi0m, axisPi0Pt, axisModComb});
     // mHistManager.add("mggMiDisp", "inv mass", HistType::kTH3F, {axisPi0m, axisPi0Pt, axisModComb});
 
-    mHistManager.add("hEpAll", "E/p ratio, all tracks", HistType::kTH3F, {axisEpEclu, axisEpP, axisModes});
-    mHistManager.add("hEpEl", "E/p ratio, electrons", HistType::kTH3F, {axisEpEclu, axisEpP, axisModes});
-    mHistManager.add("hEpAllDisp", "E/p ratio, all tracks", HistType::kTH3F, {axisEpEclu, axisEpP, axisModes});
-    mHistManager.add("hEpElDisp", "E/p ratio, electrons", HistType::kTH3F, {axisEpEclu, axisEpP, axisModes});
+    mHistManager.add("hEpAll", "E/p ratio, all tracks", HistType::kTH3F, {axisEpEclu, axisEp, axisModes});
+    mHistManager.add("hEpEl", "E/p ratio, electrons", HistType::kTH3F, {axisEpEclu, axisEp, axisModes});
+    mHistManager.add("hEpAllDisp", "E/p ratio, all tracks", HistType::kTH3F, {axisEpEclu, axisEp, axisModes});
+    mHistManager.add("hEpElDisp", "E/p ratio, electrons", HistType::kTH3F, {axisEpEclu, axisEp, axisModes});
     // if(isMC){
     //   mHistManager.add("hMCEpAll", "E/p ratio, all tracks", HistType::kTH3F, {axisEpEclu, axisEpP, axisModes});
     //   mHistManager.add("hMCEpEl", "E/p ratio, electrons", HistType::kTH3F, {axisEpEclu, axisEpP, axisModes});
@@ -121,6 +122,8 @@ struct phosAlign {
     mHistManager.add("hdXvsX_minus", "dx(x), neg tracks", HistType::kTH3F, {axisdX, axisX, axisModes});
     mHistManager.add("hdZvsZEl", "dz(z), el tracks", HistType::kTH3F, {axisdZ, axisZ, axisModes});
     mHistManager.add("hdXvsXEl", "dx(x), el tracks", HistType::kTH3F, {axisdX, axisX, axisModes});
+    mHistManager.add("hdXdZE", "dx,dz,E_{clu}", HistType::kTH3F, {axisdX, axisdX, axisEpEclu});
+    mHistManager.add("hdXdZp", "dx,dz,p_{tr}", HistType::kTH3F, {axisdX, axisdX, axisP});
 
     // mHistManager.add("hdXvsXvsEElM1", "dz(z), el tracks", HistType::kTH3F, {axisdX, axisX, axisEpEclu});
     // mHistManager.add("hdXvsXvsEElM2", "dz(z), el tracks", HistType::kTH3F, {axisdX, axisX, axisEpEclu});
@@ -277,6 +280,8 @@ struct phosAlign {
         }
         mHistManager.fill(HIST("hdZvsZ"), dz, posZ, module);
         mHistManager.fill(HIST("hdXvsX"), dx, posX, module);
+        mHistManager.fill(HIST("hdXdZE"), dx, dz, clu.e());
+        mHistManager.fill(HIST("hdXdZp"), dx, dz, trackMom);
         if (posCh) {
           mHistManager.fill(HIST("hdZvsZ_plus"), dz, posZ, module);
           mHistManager.fill(HIST("hdXvsX_plus"), dx, posX, module);
@@ -334,21 +339,23 @@ struct phosAlign {
     if (module > 4) {
       module = 4;
     }
+
     // eta,phi was calculated at EMCAL radius.
     // Extrapolate to PHOS assuming zeroB and current vertex
     // get PHOS radius
-    double posL[3] = {0., 0., 0.}; // local position at the center of module
+    constexpr float shiftY = -1.26; // Depth-optimized
+    double posL[3] = {470. * sin(trackPhi - phiMin - dphi * (module - 0.5)),
+                      470. * sinh(trackEta) + zvtx,
+                      shiftY}; // local position at the center of module
     double posG[3] = {0};
     geomPHOS->getAlignmentMatrix(module)->LocalToMaster(posL, posG);
-    double rPHOS = sqrt(posG[0] * posG[0] + posG[1] * posG[2]);
-    const double r = 440.; // track propagated to this radius
-
-    posG[0] = r * cos(trackPhi);
-    posG[1] = r * sin(trackPhi);
-    posG[2] = zvtx + (r * sinh(trackEta) - zvtx) * rPHOS / r;
+    double rPHOS = sqrt(posG[0] * posG[0] + posG[1] * posG[1]);
+    posG[0] = rPHOS * cos(trackPhi);
+    posG[1] = rPHOS * sin(trackPhi);
+    posG[2] = rPHOS * sinh(trackEta) + zvtx;
     geomPHOS->getAlignmentMatrix(module)->MasterToLocal(posG, posL);
     trackX = posL[0];
-    trackZ = posL[2];
+    trackZ = posL[1];
     return true;
   }
 
