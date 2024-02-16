@@ -405,7 +405,7 @@ struct FlowPbPbTask {
       return 0;
     if (multTrk > fMultCutHigh->Eval(centrality))
       return 0;
-    
+
     return 1;
   }
 
