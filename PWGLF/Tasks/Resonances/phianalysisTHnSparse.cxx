@@ -23,7 +23,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/PID.h"
-#include "RsnOutput.h"
+#include "PWGLF/Utils/rsnOutput.h"
 #include "TDatabasePDG.h"
 
 using namespace o2;
@@ -40,17 +40,17 @@ struct phianalysisTHnSparse {
   Configurable<int> refresh{"print-refresh", 0, "Freqency of print event information."};
   Configurable<int> refresh_index{"print-refresh-index", 0, "Freqency of print event information index."};
   Configurable<bool> ignorezeroevent{"ignore-zero-event", true, "Flag if zero event is skipped"};
-  Configurable<float> tpcnSigmaPos{"tpcnSigmaPos", 3.0f, "TPC NSigma cut of the positive particle."};
-  Configurable<float> tpcnSigmaNeg{"tpcnSigmaNeg", 3.0f, "TPC NSigma cut of the negative particle."};
-  Configurable<int> dautherPos{"dautherPos", 3, "Particle type of the positive dauther according to ReconstructionDataFormats/PID.h (Default = Kaon)"};
-  Configurable<int> dautherNeg{"dautherNeg", 3, "Particle type of the negative dauther according to ReconstructionDataFormats/PID.h (Default = Kaon)"};
+  Configurable<float> tpcnSigmaPos{"tpc-ns-pos", 3.0f, "TPC NSigma cut of the positive particle."};
+  Configurable<float> tpcnSigmaNeg{"tpc-ns-neg", 3.0f, "TPC NSigma cut of the negative particle."};
+  Configurable<int> dautherPos{"dauther-type-pos", 3, "Particle type of the positive dauther according to ReconstructionDataFormats/PID.h (Default = Kaon)"};
+  Configurable<int> dautherNeg{"dauther-type-neg", 3, "Particle type of the negative dauther according to ReconstructionDataFormats/PID.h (Default = Kaon)"};
   Configurable<float> zVertexCut{"zvertex-cut", 10.0f, "Z vertex range."};
   Configurable<float> rapidityCut{"rapidity-max", 0.5, "Rapidity cut."};
   Configurable<int> motherPDG{"mother-pdg", 333, "PDG code of mother particle."};
-  Configurable<int> dautherPosPDG{"dautherPos-pdg", 321, "PDG code of positive dauther particle."};
-  Configurable<int> dautherNegPDG{"dautherNeg-pdg", -321, "PDG code of negative dauther particle."};
+  Configurable<int> dautherPosPDG{"dauther-pdg-pos", 321, "PDG code of positive dauther particle."};
+  Configurable<int> dautherNegPDG{"dauther-pdg-neg", 321, "PDG code of negative dauther particle."};
 
-  Configurable<std::vector<std::string>> sparseAxes{"sparseAxes", std::vector<std::string>{o2::analysis::RsnPariAxis::names}, "Axes."};
+  Configurable<std::vector<std::string>> sparseAxes{"sparse-axes", std::vector<std::string>{o2::analysis::rsn::PariAxis::names}, "Axes."};
 
   ConfigurableAxis invaxis{"invAxis", {130, 0.97, 1.1}, "Invariant mass axis binning."};
   ConfigurableAxis ptaxis{"ptAxis", {20, 0., 20.}, "Pt axis binning."};
@@ -71,10 +71,10 @@ struct phianalysisTHnSparse {
   AxisSpec nsigmatrackaxisPos = {nsigmaaxisPos, fmt::format("nSigma of positive particle ({})", massPos), "ns1"};
   AxisSpec nsigmatrackaxisNeg = {nsigmaaxisNeg, fmt::format("nSigma of negative particle ({})", massNeg), "ns2"};
 
-  // All axes has to have same order as defined enum o2::analysis::RsnPairAxisType (name from AxisSpec is taken to compare in RsnOutput::init())
+  // All axes has to have same order as defined enum o2::analysis::rsn::PairAxisType (name from AxisSpec is taken to compare in o2::analysis::rsn::Output::init())
   std::vector<AxisSpec> allAxes = {invAxis, ptAxis, mAxis, nsigmatrackaxisPos, nsigmatrackaxisNeg, yAxis};
   HistogramRegistry registry{"registry"};
-  o2::analysis::RsnOutput* rsnOutput = nullptr;
+  o2::analysis::rsn::Output* rsnOutput = nullptr;
 
   Service<o2::framework::O2DatabasePDG> pdg;
   float multiplicity;
@@ -102,9 +102,9 @@ struct phianalysisTHnSparse {
 
   void init(o2::framework::InitContext&)
   {
-    pointPair = new double[static_cast<int>(RsnPairAxisType::unknown)];
-    pointEvent = new double[static_cast<int>(RsnEventType::all)];
-    rsnOutput = new o2::analysis::RsnOutputSparse();
+    pointPair = new double[static_cast<int>(o2::analysis::rsn::PairAxisType::unknown)];
+    pointEvent = new double[static_cast<int>(o2::analysis::rsn::EventType::all)];
+    rsnOutput = new o2::analysis::rsn::OutputSparse();
     rsnOutput->init(sparseAxes, allAxes, produceTrue, &registry);
   }
 
@@ -150,7 +150,7 @@ struct phianalysisTHnSparse {
       return;
 
     pointEvent[0] = collision.posZ();
-    rsnOutput->fill(o2::analysis::RsnEventType::zvertex, pointEvent);
+    rsnOutput->fill(o2::analysis::rsn::EventType::zvertex, pointEvent);
 
     for (auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(posDauthers, negDauthers))) {
 
@@ -166,12 +166,12 @@ struct phianalysisTHnSparse {
       if (verboselevel > 1)
         LOGF(info, "Unlike-sign: d1=%ld , d2=%ld , mother=%f", track1.globalIndex(), track2.globalIndex(), mother.Mag());
 
-      pointPair[static_cast<int>(RsnPairAxisType::im)] = mother.Mag();
-      pointPair[static_cast<int>(RsnPairAxisType::pt)] = mother.Pt();
-      pointPair[static_cast<int>(RsnPairAxisType::mu)] = multiplicity;
-      pointPair[static_cast<int>(RsnPairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
-      pointPair[static_cast<int>(RsnPairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
-      pointPair[static_cast<int>(RsnPairAxisType::y)] = mother.Rapidity();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::im)] = mother.Mag();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::pt)] = mother.Pt();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu)] = multiplicity;
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
 
       rsnOutput->fillUnlike(pointPair);
     }
@@ -189,12 +189,12 @@ struct phianalysisTHnSparse {
       if (verboselevel > 1)
         LOGF(info, "Like-sign positive: d1=%ld , d2=%ld , mother=%f", track1.globalIndex(), track2.globalIndex(), mother.Mag());
 
-      pointPair[static_cast<int>(RsnPairAxisType::im)] = mother.Mag();
-      pointPair[static_cast<int>(RsnPairAxisType::pt)] = mother.Pt();
-      pointPair[static_cast<int>(RsnPairAxisType::mu)] = multiplicity;
-      pointPair[static_cast<int>(RsnPairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
-      pointPair[static_cast<int>(RsnPairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
-      pointPair[static_cast<int>(RsnPairAxisType::y)] = mother.Rapidity();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::im)] = mother.Mag();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::pt)] = mother.Pt();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu)] = multiplicity;
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
 
       rsnOutput->fillLikepp(pointPair);
     }
@@ -212,12 +212,12 @@ struct phianalysisTHnSparse {
       if (verboselevel > 1)
         LOGF(info, "Like-sign negative: d1=%ld , d2=%ld , mother=%f", track1.globalIndex(), track2.globalIndex(), mother.Mag());
 
-      pointPair[static_cast<int>(RsnPairAxisType::im)] = mother.Mag();
-      pointPair[static_cast<int>(RsnPairAxisType::pt)] = mother.Pt();
-      pointPair[static_cast<int>(RsnPairAxisType::mu)] = multiplicity;
-      pointPair[static_cast<int>(RsnPairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
-      pointPair[static_cast<int>(RsnPairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
-      pointPair[static_cast<int>(RsnPairAxisType::y)] = mother.Rapidity();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::im)] = mother.Mag();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::pt)] = mother.Pt();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu)] = multiplicity;
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
 
       rsnOutput->fillLikemm(pointPair);
     }
@@ -293,12 +293,12 @@ struct phianalysisTHnSparse {
           if (!selectedPair(mother, mctrack1, mctrack2))
             continue;
 
-          pointPair[static_cast<int>(RsnPairAxisType::im)] = mother.Mag();
-          pointPair[static_cast<int>(RsnPairAxisType::pt)] = mother.Pt();
-          pointPair[static_cast<int>(RsnPairAxisType::mu)] = multiplicity;
-          pointPair[static_cast<int>(RsnPairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
-          pointPair[static_cast<int>(RsnPairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
-          pointPair[static_cast<int>(RsnPairAxisType::y)] = mother.Rapidity();
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::im)] = mother.Mag();
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::pt)] = mother.Pt();
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu)] = multiplicity;
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
 
           rsnOutput->fillUnliketrue(pointPair);
         }
@@ -339,7 +339,7 @@ struct phianalysisTHnSparse {
           if (dau.pdgCode() == dautherPosPDG) {
             daup = true;
             d1.SetXYZM(dau.px(), dau.py(), dau.pz(), massPos);
-          } else if (dau.pdgCode() == dautherNegPDG) {
+          } else if (dau.pdgCode() == -dautherNegPDG) {
             daun = true;
             d2.SetXYZM(dau.px(), dau.py(), dau.pz(), massNeg);
           }
@@ -349,12 +349,12 @@ struct phianalysisTHnSparse {
 
         mother = d1 + d2;
 
-        pointPair[static_cast<int>(RsnPairAxisType::im)] = mother.Mag();
-        pointPair[static_cast<int>(RsnPairAxisType::pt)] = mother.Pt();
-        pointPair[static_cast<int>(RsnPairAxisType::mu)] = multiplicityMC;
-        pointPair[static_cast<int>(RsnPairAxisType::ns1)] = std::abs(tpcnSigmaPos / 2.0);
-        pointPair[static_cast<int>(RsnPairAxisType::ns2)] = std::abs(tpcnSigmaNeg / 2.0);
-        pointPair[static_cast<int>(RsnPairAxisType::y)] = mother.Rapidity();
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::im)] = mother.Mag();
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::pt)] = mother.Pt();
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu)] = multiplicityMC;
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(tpcnSigmaPos / 2.0);
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(tpcnSigmaNeg / 2.0);
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
 
         rsnOutput->fillUnlikegen(pointPair);
 

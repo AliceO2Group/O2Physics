@@ -8,20 +8,21 @@ using namespace o2::framework;
 
 namespace o2::analysis
 {
-
-enum class RsnEventType {
+namespace rsn
+{
+enum class EventType {
   zvertex,
   all
 };
 
-enum class RsnTrackType {
+enum class TrackType {
   px,
   py,
   pz,
   all
 };
 
-enum class RsnPairType {
+enum class PairType {
   unlike,
   likepp,
   likemm,
@@ -30,7 +31,7 @@ enum class RsnPairType {
   all
 };
 
-enum class RsnPairAxisType {
+enum class PairAxisType {
   im = 0,
   pt = 1,
   mu = 2,
@@ -39,14 +40,14 @@ enum class RsnPairAxisType {
   y = 5,
   unknown
 };
-namespace RsnPariAxis
+namespace PariAxis
 {
 std::vector<std::string> names{"im", "pt", "mu", "ns1", "ns2", "y"};
 }
-class RsnOutput
+class Output
 {
  public:
-  virtual ~RsnOutput() = default;
+  virtual ~Output() = default;
 
   virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, bool produceTrue = false, HistogramRegistry* registry = nullptr)
   {
@@ -55,19 +56,19 @@ class RsnOutput
       mHistogramRegistry = new HistogramRegistry("registry");
 
     // check if all axes are added in correct order
-    for (int i = 0; i < static_cast<int>(RsnPairAxisType::unknown); i++) {
+    for (int i = 0; i < static_cast<int>(PairAxisType::unknown); i++) {
       auto aname = *std::move(allAxes[i].name);
       LOGF(debug, "Check axis '%s' %d", aname.c_str(), i);
-      if (aname.compare(RsnPariAxis::names[static_cast<int>(i)])) {
-        LOGF(fatal, "RsnOutput::Error: Order in allAxes is not correct !!! Expected axis '%s' and has '%s'.", aname.c_str(), RsnPariAxis::names[static_cast<int>(i)]);
+      if (aname.compare(PariAxis::names[static_cast<int>(i)])) {
+        LOGF(fatal, "rsn::Output::Error: Order in allAxes is not correct !!! Expected axis '%s' and has '%s'.", aname.c_str(), PariAxis::names[static_cast<int>(i)]);
       }
     }
 
-    RsnPairAxisType currentType;
+    PairAxisType currentType;
     for (auto& c : sparseAxes) {
       currentType = type(c);
-      if (currentType >= RsnPairAxisType::unknown) {
-        LOGF(warning, "Found unknown axis (RsnPairAxisType = %d)!!! Skipping ...", static_cast<int>(currentType));
+      if (currentType >= PairAxisType::unknown) {
+        LOGF(warning, "Found unknown axis (rsn::PairAxisType = %d)!!! Skipping ...", static_cast<int>(currentType));
         continue;
       }
       LOGF(info, "Adding axis '%s' to all pair histograms", c.c_str());
@@ -93,17 +94,17 @@ class RsnOutput
     mHistogramRegistry->get<THnSparse>(h)->Fill(mFillPoint);
   }
 
-  virtual void fill(RsnEventType t, double* point)
+  virtual void fill(EventType t, double* point)
   {
-    LOGF(warning, "Abstract method : 'virtual void RsnOutput::fill(RsnEventType t, double* point)' !!! Please implement it first.");
+    LOGF(warning, "Abstract method : 'virtual void rsn::Output::fill(EventType t, double* point)' !!! Please implement it first.");
   };
-  virtual void fill(RsnTrackType t, double* point)
+  virtual void fill(TrackType t, double* point)
   {
-    LOGF(warning, "Abstract method : 'virtual void RsnOutput::fill(RsnTrackType t, double* point)' !!! Please implement it first.");
+    LOGF(warning, "Abstract method : 'virtual void rsn::Output::fill(TrackType t, double* point)' !!! Please implement it first.");
   };
-  virtual void fill(RsnPairType t, double* point)
+  virtual void fill(PairType t, double* point)
   {
-    LOGF(warning, "Abstract method : 'virtual void RsnOutput::fill(RsnPairType t, double* point)' !!! Please implement it first.");
+    LOGF(warning, "Abstract method : 'virtual void rsn::Output::fill(PairType t, double* point)' !!! Please implement it first.");
   };
 
   virtual void fillUnlike(double* point) = 0;
@@ -111,25 +112,25 @@ class RsnOutput
   virtual void fillLikemm(double* point) = 0;
   virtual void fillUnliketrue(double* point) = 0;
   virtual void fillUnlikegen(double* point) = 0;
- 
-  RsnPairAxisType type(std::string name)
+
+  PairAxisType type(std::string name)
   {
-    auto it = std::find(RsnPariAxis::names.begin(), RsnPariAxis::names.end(), name);
-    if (it == RsnPariAxis::names.end()) {
-      return RsnPairAxisType::unknown;
+    auto it = std::find(PariAxis::names.begin(), PariAxis::names.end(), name);
+    if (it == PariAxis::names.end()) {
+      return PairAxisType::unknown;
     }
-    return static_cast<RsnPairAxisType>(std::distance(RsnPariAxis::names.begin(), it));
+    return static_cast<PairAxisType>(std::distance(PariAxis::names.begin(), it));
   }
 
-  std::string name(RsnPairAxisType type)
+  std::string name(PairAxisType type)
   {
-    return RsnPariAxis::names[(static_cast<int>(type))];
+    return PariAxis::names[(static_cast<int>(type))];
   }
 
-  AxisSpec axis(std::vector<AxisSpec> const& allAxes, RsnPairAxisType type)
+  AxisSpec axis(std::vector<AxisSpec> const& allAxes, PairAxisType type)
   {
     const AxisSpec unknownAxis = {1, 0., 1., "unknown axis", "unknown"};
-    if (type == RsnPairAxisType::unknown)
+    if (type == PairAxisType::unknown)
       return unknownAxis;
     return allAxes[static_cast<int>(type)];
   }
@@ -138,16 +139,16 @@ class RsnOutput
   HistogramRegistry* mHistogramRegistry = nullptr;
   HistogramConfigSpec* mPairHisto = nullptr;
   std::vector<AxisSpec> mCurrentAxes;
-  std::vector<RsnPairAxisType> mCurrentAxisTypes;
+  std::vector<PairAxisType> mCurrentAxisTypes;
   double* mFillPoint = nullptr;
 };
 
-class RsnOutputSparse : public RsnOutput
+class OutputSparse : public Output
 {
  public:
   virtual void init(std::vector<std::string> const& sparseAxes, std::vector<AxisSpec> const& allAxes, bool produceTrue = false, HistogramRegistry* registry = nullptr)
   {
-    RsnOutput::init(sparseAxes, allAxes, produceTrue, registry);
+    Output::init(sparseAxes, allAxes, produceTrue, registry);
     mHistogramRegistry->add("hVz", "; vtx_{z} (cm); Entries", kTH1F, {{40, -20., 20.}});
 
     mHistogramRegistry->add("unlike", "Unlike", *mPairHisto);
@@ -155,16 +156,16 @@ class RsnOutputSparse : public RsnOutput
     mHistogramRegistry->add("likepp", "Like PP", *mPairHisto);
     mHistogramRegistry->add("likemm", "Like MM", *mPairHisto);
     if (produceTrue) {
-      mHistogramRegistry->add("unlikeTrue", "Unlike True", *mPairHisto);
-      mHistogramRegistry->add("unlikeGen", "Unlike Gen", *mPairHisto);
+      mHistogramRegistry->add("unliketrue", "Unlike True", *mPairHisto);
+      mHistogramRegistry->add("unlikegen", "Unlike Gen", *mPairHisto);
     }
   }
 
   virtual void
-    fill(RsnEventType t, double* point)
+    fill(EventType t, double* point)
   {
     switch (t) {
-      case RsnEventType::zvertex:
+      case EventType::zvertex:
         mHistogramRegistry->fill(HIST("hVz"), point[0]);
         break;
       default:
@@ -172,22 +173,22 @@ class RsnOutputSparse : public RsnOutput
     }
   }
 
-  virtual void fill(RsnPairType t, double* point)
+  virtual void fill(PairType t, double* point)
   {
     switch (t) {
-      case RsnPairType::unlike:
+      case PairType::unlike:
         fillUnlike(point);
         break;
-      case RsnPairType::likepp:
+      case PairType::likepp:
         fillLikepp(point);
         break;
-      case RsnPairType::likemm:
+      case PairType::likemm:
         fillLikemm(point);
         break;
-      case RsnPairType::unliketrue:
+      case PairType::unliketrue:
         fillUnliketrue(point);
         break;
-      case RsnPairType::unlikegen:
+      case PairType::unlikegen:
         fillUnlikegen(point);
         break;
       default:
@@ -220,6 +221,7 @@ class RsnOutputSparse : public RsnOutput
     fillSparse(HIST("unlikegen"), point);
   }
 };
+} // namespace rsn
 } // namespace o2::analysis
 
 #endif
