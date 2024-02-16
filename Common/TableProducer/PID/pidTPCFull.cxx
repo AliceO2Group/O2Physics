@@ -21,6 +21,7 @@
 
 // ROOT includes
 #include "TFile.h"
+#include "TRandom.h"
 #include "TSystem.h"
 
 // O2 includes
@@ -32,13 +33,9 @@
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "ALICE3/Core/DelphesO2TrackSmearer.h"
 #include "TableHelper.h"
 #include "Tools/ML/model.h"
 #include "pidTPCBase.h"
-
-// ROOT includes
-#include "TRandom.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -55,12 +52,6 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 }
 
 #include "Framework/runDataProcessing.h"
-
-namespace o2::aod
-{
-DECLARE_SOA_COLUMN(DeDxMc, tuneDeDxOnData, float);
-DECLARE_SOA_TABLE(TuneDeDxOnData, "AOD", "TUNEDEDXONDATA", DeDxMc);
-} // namespace o2::aod
 
 /// Task to produce the response table
 struct tpcPidFull {
@@ -80,7 +71,7 @@ struct tpcPidFull {
   Produces<o2::aod::pidTPCFullTr> tablePIDTr;
   Produces<o2::aod::pidTPCFullHe> tablePIDHe;
   Produces<o2::aod::pidTPCFullAl> tablePIDAl;
-  Produces<o2::aod::TuneDeDxOnData> tableTuneOnData;
+  Produces<o2::aod::mcTPCTuneOnData> tableTuneOnData;
 
   // TPC PID Response
   o2::pid::tpc::Response* response;
@@ -107,7 +98,7 @@ struct tpcPidFull {
   Configurable<bool> enableNetworkOptimizations{"enableNetworkOptimizations", 1, "(bool) If the neural network correction is used, this enables GraphOptimizationLevel::ORT_ENABLE_EXTENDED in the ONNX session"};
   Configurable<int> networkSetNumThreads{"networkSetNumThreads", 0, "Especially important for running on a SLURM cluster. Sets the number of threads used for execution."};
   // Configuration flags to include and exclude particle hypotheses
-  Configurable<int> mcTuneDeDxOnData{"mcTuneDeDxOnData", -1, "Creates a new table called TuneDeDxOnData with one element per track. It is a random sampled dE/dx value from the dE/dx distribution of the real data for which the calibration was made."};
+  Configurable<int> mcTuneTPCOnData{"mcTuneTPCOnData", 0, "Creates a new table called mcTPCTuneOnData with one element per track. It is a random sampled dE/dx value from the dE/dx distribution of the real data for which the calibration was made."};
   Configurable<int> pidEl{"pid-el", -1, {"Produce PID information for the Electron mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidMu{"pid-mu", -1, {"Produce PID information for the Muon mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidPi{"pid-pi", -1, {"Produce PID information for the Pion mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
@@ -117,9 +108,36 @@ struct tpcPidFull {
   Configurable<int> pidTr{"pid-tr", -1, {"Produce PID information for the Triton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidHe{"pid-he", -1, {"Produce PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidAl{"pid-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> enableTuneOnDataTable{"enableTuneOnDataTable", -1, {"Produce tuned dE/dx signal table for MC to be used as raw signal in other tasks (default -1, 'only if needed'"}};
 
-  // Paramatrization configuration
+  // Parametrization configuration
   bool useCCDBParam = false;
+
+  int getPIDIndex(int pdgCode)
+  {
+    switch (abs(pdgCode)) {
+      case 11:
+        return o2::track::PID::Electron;
+      case 13:
+        return o2::track::PID::Muon;
+      case 211:
+        return o2::track::PID::Pion;
+      case 321:
+        return o2::track::PID::Kaon;
+      case 2212:
+        return o2::track::PID::Proton;
+      case 1000010020:
+        return o2::track::PID::Deuteron;
+      case 1000010030:
+        return o2::track::PID::Triton;
+      case 1000020030:
+        return o2::track::PID::Helium3;
+      case 1000020040:
+        return o2::track::PID::Alpha;
+      default: // treat as pion if not any of the above
+        return o2::track::PID::Pion;
+    }
+  }
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -137,6 +155,7 @@ struct tpcPidFull {
     enableFlag("Tr", pidTr);
     enableFlag("He", pidHe);
     enableFlag("Al", pidAl);
+    enableFlagIfTableRequired(initContext, "mcTPCTuneOnData", enableTuneOnDataTable);
 
     // Initialise metadata object for CCDB calls
     if (recoPass.value == "") {
@@ -183,8 +202,9 @@ struct tpcPidFull {
 
     /// Neural network init for TPC PID
 
-    if (useNetworkCorrection) {
-
+    if (!useNetworkCorrection) {
+      return;
+    } else {
       /// CCDB and auto-fetching
       ccdbApi.init(url);
       if (!autofetchNetworks) {
@@ -213,8 +233,6 @@ struct tpcPidFull {
       } else {
         return;
       }
-    } else {
-      return;
     }
   }
 
@@ -377,7 +395,6 @@ struct tpcPidFull {
         if (flag != 1) {
           return;
         } else {
-
           if (!trk.hasTPC()) {
             table(-999.f, -999.f);
             return;
@@ -438,12 +455,11 @@ struct tpcPidFull {
     }
   }
 
-  PROCESS_SWITCH(tpcPidFull, processStandard, "Creating PID tables for real data", !(bool)mcTuneDeDxOnData.value);
+  PROCESS_SWITCH(tpcPidFull, processStandard, "Creating PID tables without MC TuneOnData", !(bool)mcTuneTPCOnData.value);
 
-  void processMc(CollMC const& collisionsMc, TrksMC const& tracksMc, aod::BCsWithTimestamps const&)
+  void processMcTuneOnData(CollMC const& collisionsMc, TrksMC const& tracksMc, aod::BCsWithTimestamps const&)
   {
 
-    auto converter = o2::delphes::TrackSmearer(); // converter for pdgCode -> PID mass
     const uint64_t outTable_size = tracksMc.size();
 
     auto reserveTable = [&outTable_size](const Configurable<int>& flag, auto& table) {
@@ -463,7 +479,7 @@ struct tpcPidFull {
     reserveTable(pidTr, tablePIDTr);
     reserveTable(pidHe, tablePIDHe);
     reserveTable(pidAl, tablePIDAl);
-    reserveTable(mcTuneDeDxOnData, tableTuneOnData);
+    reserveTable(enableTuneOnDataTable, tableTuneOnData); // Only produce the table of tuned dE/dx if the signal is requested by another task
 
     const uint64_t tracksForNet_size = (skipTPCOnly) ? notTPCStandaloneTracks.size() : tracksWithTPC.size();
     std::vector<float> network_prediction;
@@ -496,53 +512,88 @@ struct tpcPidFull {
         }
       }
 
-      // Check and fill enabled tables
-      auto makeTablePid = [&trk, &collisionsMc, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flag, auto& table, const o2::track::PID::ID pid) {
+      // Perform TuneOnData sampling for MC dE/dx
+      float mcTunedTPCSignal = 0.;
+      if (!trk.hasTPC()) {
+        mcTunedTPCSignal = -999.f;
+      } else {
+        if (skipTPCOnly) {
+          if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
+            mcTunedTPCSignal = -999.f;
+          }
+        }
+        int pid = getPIDIndex(trk.mcParticle().pdgCode());
+
+        auto expSignal = response->GetExpectedSignal(trk, pid);
+        auto expSigma = response->GetExpectedSigma(collisionsMc.iteratorAt(trk.collisionId()), trk, pid);
+        if (expSignal < 0. || expSigma < 0.) { // if expectation invalid then give undefined signal
+          mcTunedTPCSignal = -999.f;
+        }
+
+        if (useNetworkCorrection) {
+          auto mean = network_prediction[2 * (count_tracks + tracksForNet_size * pid)] * expSignal; // Absolute mean, i.e. the mean dE/dx value of the data in that slice, not the mean of the NSigma distribution
+          auto sigma = (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) * expSignal;
+          if (mean < 0.f || sigma < 0.f) {
+            mcTunedTPCSignal = -999.f;
+          } else {
+            mcTunedTPCSignal = gRandom->Gaus(mean, sigma);
+          }
+        } else {
+          mcTunedTPCSignal = gRandom->Gaus(expSignal, expSigma);
+        }
+      }
+      if (enableTuneOnDataTable.value == 1) {
+        tableTuneOnData(mcTunedTPCSignal);
+      }
+
+      // Check and fill enabled nsigma tables
+      auto makeTablePid = [&trk, &collisionsMc, &network_prediction, &count_tracks, &tracksForNet_size, &mcTunedTPCSignal, this](const int flag, auto& table, const o2::track::PID::ID pid) {
         if (flag != 1) {
           return;
-        } else {
+        }
 
-          if (!trk.hasTPC()) {
+        if (!trk.hasTPC() || mcTunedTPCSignal < 0.f) {
+          table(-999.f, -999.f);
+          return;
+        }
+        if (skipTPCOnly) {
+          if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
             table(-999.f, -999.f);
             return;
           }
-          if (skipTPCOnly) {
-            if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
-              table(-999.f, -999.f);
-              return;
-            }
-          }
+        }
+        auto expSignal = response->GetExpectedSignal(trk, pid);
+        auto expSigma = response->GetExpectedSigma(collisionsMc.iteratorAt(trk.collisionId()), trk, pid);
+        if (expSignal < 0. || expSigma < 0.) { // skip if expected signal invalid
+          table(-999.f, -999.f);
+          return;
+        }
 
-          auto expSignal = response->GetExpectedSignal(trk, pid);
-          auto expSigma = response->GetExpectedSigma(collisionsMc.iteratorAt(trk.collisionId()), trk, pid);
-          if (expSignal < 0. || expSigma < 0.) { // skip if expected signal invalid
-            table(-999.f, -999.f);
-            return;
-          }
-
-          if (useNetworkCorrection) {
-            // Here comes the application of the network. The output-dimensions of the network dtermine the application: 1: mean, 2: sigma, 3: sigma asymmetric
-            // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
-            if (network.getNumOutputNodes() == 1) {
-              table(expSigma,
-                    (trk.tpcSignal() - network_prediction[count_tracks + tracksForNet_size * pid] * expSignal) / expSigma);
-            } else if (network.getNumOutputNodes() == 2) {
-              table((network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) * expSignal,
-                    (trk.tpcSignal() / expSignal - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]));
-            } else if (network.getNumOutputNodes() == 3) {
-              if (trk.tpcSignal() / expSignal >= network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) {
-                table((network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) * expSignal,
-                      (trk.tpcSignal() / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]));
-              } else {
-                table((network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]) * expSignal,
-                      (trk.tpcSignal() / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]));
-              }
+        if (useNetworkCorrection) {
+          // Here comes the application of the network. The output-dimensions of the network dtermine the application: 1: mean, 2: sigma, 3: sigma asymmetric
+          // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
+          if (network.getNumOutputNodes() == 1) {
+            table(expSigma,
+                  (mcTunedTPCSignal - network_prediction[count_tracks + tracksForNet_size * pid] * expSignal) / expSigma);
+          } else if (network.getNumOutputNodes() == 2) {
+            table((network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) * expSignal,
+                  (mcTunedTPCSignal / expSignal - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]));
+          } else if (network.getNumOutputNodes() == 3) {
+            if (mcTunedTPCSignal / expSignal >= network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) {
+              table((network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) * expSignal,
+                    (mcTunedTPCSignal / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]));
             } else {
-              LOGF(fatal, "Network output-dimensions incompatible!");
+              table((network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]) * expSignal,
+                    (mcTunedTPCSignal / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]));
             }
-          } else {
-            table(expSigma, response->GetNumberOfSigma(collisionsMc.iteratorAt(trk.collisionId()), trk, pid));
           }
+
+          else {
+            LOGF(fatal, "Network output-dimensions incompatible!");
+          }
+
+        } else {
+          table(expSigma, response->GetNumberOfSigma(collisionsMc.iteratorAt(trk.collisionId()), trk, pid));
         }
       };
 
@@ -556,50 +607,13 @@ struct tpcPidFull {
       makeTablePid(pidHe.value, tablePIDHe, o2::track::PID::Helium3);
       makeTablePid(pidAl.value, tablePIDAl, o2::track::PID::Alpha);
 
-      // Check and fill enabled tables
-      auto makeTableMc = [&trk, &collisionsMc, &network_prediction, &count_tracks, &tracksForNet_size, this](const int flag, auto& table, const o2::track::PID::ID pid) {
-        if (flag != 1) {
-          return;
-        } else {
-
-          if (!trk.hasTPC()) {
-            table(-999.f);
-            return;
-          }
-          if (skipTPCOnly) {
-            if (!trk.hasITS() && !trk.hasTRD() && !trk.hasTOF()) {
-              table(-999.f);
-              return;
-            }
-          }
-
-          auto expSignal = response->GetExpectedSignal(trk, pid);
-          auto expSigma = response->GetExpectedSigma(collisionsMc.iteratorAt(trk.collisionId()), trk, pid);
-          if (expSignal < 0. || expSigma < 0.) { // skip if expected signal invalid
-            table(-999.f);
-            return;
-          }
-
-          if (useNetworkCorrection) {
-            auto mean = network_prediction[2 * (count_tracks + tracksForNet_size * pid)] * expSignal; // Absolute mean, i.e. the mean dE/dx value of the data in that slice, not the mean of the NSigma distribution
-            auto sigma = (network_prediction[2 * (count_tracks + tracksForNet_size * pid) + 1] - network_prediction[2 * (count_tracks + tracksForNet_size * pid)]) * expSignal;
-            table(gRandom->Gaus(mean, sigma));
-          } else {
-            table(gRandom->Gaus(expSignal, expSigma));
-          }
-        }
-      };
-
-      // For the MC tracks
-      makeTableMc(mcTuneDeDxOnData.value, tableTuneOnData, converter.getIndexPDG(trk.mcParticle().pdgCode()));
-
       if (trk.hasTPC() && (!skipTPCOnly || trk.hasITS() || trk.hasTRD() || trk.hasTOF())) {
         count_tracks++; // Increment network track counter only if track has TPC, and (not skipping TPConly) or (is not TPConly)
       }
     }
   }
 
-  PROCESS_SWITCH(tpcPidFull, processMc, "Creating PID tables for MC identity", (bool)mcTuneDeDxOnData.value);
+  PROCESS_SWITCH(tpcPidFull, processMcTuneOnData, "Creating PID tables with MC TuneOnData", (bool)mcTuneTPCOnData.value);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tpcPidFull>(cfgc)}; }
