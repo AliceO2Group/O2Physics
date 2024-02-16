@@ -92,6 +92,7 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_b0_lite::PtGen);
 
 DECLARE_SOA_TABLE(HfRedB0McCheck, "AOD", "HFREDB0MCCHECK", //! Table with MC decay type check
+                  hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_b0_lite::MProng0,
                   hf_cand_b0_lite::PtProng0,
                   hf_cand_b0_lite::M,
@@ -526,24 +527,23 @@ struct HfTaskB0Reduced {
           ptMother);
       }
       if constexpr (withDecayTypeCheck) {
-        if (TESTBIT(flagMcMatchRec, hf_cand_b0::DecayTypeMc::PartlyRecoDecay)) {
-          float candidateMlScoreSig = -1;
-          if constexpr (withB0Ml) {
-            candidateMlScoreSig = candidate.mlProbB0ToDPi();
-          }
-          hfRedB0McCheck(
-            invMassD,
-            ptD,
-            invMassB0,
-            ptCandB0,
-            candidateMlScoreSig,
-            candidate.pdgCodeBeautyMother(),
-            candidate.pdgCodeCharmMother(),
-            candidate.pdgCodeProng0(),
-            candidate.pdgCodeProng1(),
-            candidate.pdgCodeProng2(),
-            candidate.pdgCodeProng3());
+        float candidateMlScoreSig = -1;
+        if constexpr (withB0Ml) {
+          candidateMlScoreSig = candidate.mlProbB0ToDPi();
         }
+        hfRedB0McCheck(
+          flagMcMatchRec,
+          invMassD,
+          ptD,
+          invMassB0,
+          ptCandB0,
+          candidateMlScoreSig,
+          candidate.pdgCodeBeautyMother(),
+          candidate.pdgCodeCharmMother(),
+          candidate.pdgCodeProng0(),
+          candidate.pdgCodeProng1(),
+          candidate.pdgCodeProng2(),
+          candidate.pdgCodeProng3());
       }
     }
   }

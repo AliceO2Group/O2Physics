@@ -633,7 +633,7 @@ class VarManager : public TObject
   static auto getEventPlane(int harm, float qnxa, float qnya)
   {
     // Compute event plane angle from qn vector components for the sub-event A
-    return (1.0 / harm) * TMath::ATan(qnya / qnxa);
+    return (1.0 / harm) * TMath::ATan2(qnya, qnxa);
   };
 
   template <typename T, typename C>
@@ -884,6 +884,8 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
     values[kEta] = propmuon.getEta();
     values[kTgl] = propmuon.getTgl();
     values[kPhi] = propmuon.getPhi();
+    values[kMuonDCAx] = (propmuon.getX() - collision.posX());
+    values[kMuonDCAy] = (propmuon.getY() - collision.posY());
 
     SMatrix55 cov = propmuon.getCovariances();
     values[kMuonCXX] = cov(0, 0);
