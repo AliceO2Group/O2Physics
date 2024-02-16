@@ -805,10 +805,11 @@ struct kinkAnalysis {
 
               mass = sqrt((neutronE + pionE) * (neutronE + pionE) - sigmaPabsDC * sigmaPabsDC);
 
-              if (isDaughter) histos.fill(HIST("hDCAdaughterMC"), kinkdcaXY);
+              if (isDaughter)
+                histos.fill(HIST("hDCAdaughterMC"), kinkdcaXY);
 
               if (particleName == Hypertriton) {
-                if(trackDgh.tpcNSigmaTr() > 4 || trackDgh.tpcNSigmaTr() < -2)
+                if (trackDgh.tpcNSigmaTr() > 4 || trackDgh.tpcNSigmaTr() < -2)
                   continue;
 
                 histos.fill(HIST("tpcClusterTriton"), trackDgh.tpcNClsFound());
