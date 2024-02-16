@@ -113,3 +113,10 @@ o2physics_add_dpl_workflow(nuclei-flow
     SOURCES nucleiFlow.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(qc-spectra-tpc
+    SOURCES QCspectraTPC.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)    
+
+    
