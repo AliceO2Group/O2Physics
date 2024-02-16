@@ -172,7 +172,6 @@ inline float Response::GetNumberOfSigmaMCTuned(const CollisionType& collision, c
   return ((mcTunedTPCSignal - GetExpectedSignal(trk, id)) / GetExpectedSigma(collision, trk, id));
 }
 
-
 /// Gets the deviation between the actual signal and the expected signal
 template <typename TrackType>
 inline float Response::GetSignalDelta(const TrackType& trk, const o2::track::PID::ID id) const
