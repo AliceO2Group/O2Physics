@@ -343,7 +343,7 @@ struct kinkAnalysis {
     histos.add("hNSigmaTrVsPt", "hNSigmaTrVsPt", kTH2F, {axisPtHyp, {100, -5, 5, "nSigmaTPC"}});
     histos.add("hpRes", "hpRes", kTH2F, {axisPtHyp, {100, -0.5, 0.5, "p_{T} Res"}});
     histos.add("hDCAdaughterMC", "hDCAdaughterMC", kTH1F, {axisDCAdaugh});
-    histos.add("tpcClusterTriton", "tpcClusterTriton", kTH1F, {{100, 0, 100, "TPC clusters"}});
+    histos.add("tpcClusterTriton", "tpcClusterTriton", kTH1F, {{100, 0, 300, "TPC clusters"}});
 
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(cfgLUTpath));
     ft2.setMaxChi2(5);
@@ -810,10 +810,10 @@ struct kinkAnalysis {
               if (particleName == Hypertriton) {
                 if(trackDgh.tpcNSigmaTr() > 4 || trackDgh.tpcNSigmaTr() < -2)
                   continue;
-                if (trackDgh.tpcNClsFound() < 90)
-                  continue;
 
                 histos.fill(HIST("tpcClusterTriton"), trackDgh.tpcNClsFound());
+                if (trackDgh.tpcNClsFound() < 90)
+                  continue;
               }
 
               if (particleName == Hypertriton) {
