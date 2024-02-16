@@ -93,7 +93,6 @@ struct qVectorsTable {
 
   ConfigurableAxis cfgaxisFITamp{"cfgaxisFITamp", {1000, 0, 10000}, ""};
 
-
   // Table.
   Produces<aod::Qvectors> qVector;
   Produces<aod::QvectorFT0Cs> qVectorFT0C;
@@ -252,11 +251,11 @@ struct qVectorsTable {
 
     AxisSpec axisPt = {40, 0.0, 4.0};
     AxisSpec axisEta = {32, -0.8, 0.8};
-    AxisSpec axisPhi = {32, 0, 2.0*TMath::Pi()};
+    AxisSpec axisPhi = {32, 0, 2.0 * TMath::Pi()};
     AxisSpec axixCent = {20, 0, 100};
 
     AxisSpec axisFITamp{cfgaxisFITamp, "FIT amp"};
-    AxisSpec axisChID = {220,0,220};
+    AxisSpec axisChID = {220, 0, 220};
 
     histosQA.add("ChTracks", "", {HistType::kTHnSparseF, {axisPt, axisEta, axisPhi, axixCent}});
     histosQA.add("FITAmp", "", {HistType::kTH2F, {axisFITamp, axisChID}});
