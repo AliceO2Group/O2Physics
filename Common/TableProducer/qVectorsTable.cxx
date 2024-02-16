@@ -251,8 +251,11 @@ struct qVectorsTable {
     AxisSpec axisEta = {32, -0.8, 0.8};
     AxisSpec axisPhi = {32, -TMath::Pi(), TMath::Pi()};
     AxisSpec axixCent = {20, 0, 100};
+    AxisSpec axisFITamp = {1000,0,10000};
+    AxisSpec axisChID = {220,0,220};
 
     histosQA.add("ChTracks", "", {HistType::kTHnSparseF, {axisPt, axisEta, axisPhi, axixCent}});
+    histosQA.add("FITAmp", "", {HistType::kTH2F, {axisFITamp, axisChID}});
   }
 
   template <typename TrackType>
@@ -323,6 +326,7 @@ struct qVectorsTable {
         // Get first the corresponding amplitude.
         float ampl = ft0.amplitudeA()[iChA];
 
+        histosQA.fill(HIST("FITAmp"), ampl, iChA);
         // Update the Q-vector and sum of amplitudes using the helper function.
         // LOKI: Note this assumes nHarmo = 2!! Likely generalise in the future.
         helperEP.SumQvectors(0, iChA, ampl, cfgnMod, QvecDet, sumAmplFT0A);
@@ -348,6 +352,9 @@ struct qVectorsTable {
         // iChC ranging from 0 to max 112. We need to add 96 (= max channels in FT0-A)
         // to ensure a proper channel number in FT0 as a whole.
         float ampl = ft0.amplitudeC()[iChC];
+
+        histosQA.fill(HIST("FITAmp"), ampl, iChC);
+
         helperEP.SumQvectors(0, iChC + 96, ampl, cfgnMod, QvecDet, sumAmplFT0C);
         helperEP.SumQvectors(0, iChC + 96, ampl, cfgnMod, QvecFT0M, sumAmplFT0M);
       }
