@@ -26,6 +26,31 @@ using namespace o2::analysis;
 namespace o2::aod
 {
 
+// Defines derived extension data inside jets for tagging
+namespace jtracktag
+{
+  DECLARE_SOA_COLUMN(DcaXYZ, dcaXYZ, float);
+  DECLARE_SOA_COLUMN(SigmaDcaXYZ2, sigmaDcaXYZ2, float);
+} // namespace jtracktag 
+
+DECLARE_SOA_TABLE(JTracksTag, "AOD", "JTracksTag",
+    track::X,
+    track::Y,
+    track::Z,
+    track::Alpha,
+    track::Snp,
+    track::Tgl,
+    track::Signed1Pt,
+    track::DcaXY,
+    track::DcaZ,
+    jtracktag::DcaXYZ,
+    track::SigmaDcaXY2,
+    track::SigmaDcaZ2,
+    jtracktag::SigmaDcaXYZ2);
+
+using JTrackTag = JTracksTag::iterator;
+
+
 // Defines the jet substrcuture table definition
 #define JETTAGGING_TABLE_DEF(_jet_type_, _name_, _description_) \
   namespace _name_##tagging                                     \

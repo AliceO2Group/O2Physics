@@ -82,6 +82,27 @@ struct JetTaggerHFTask {
   PROCESS_SWITCH(JetTaggerHFTask, processMCD, "Fill tagging decision for mcd jets", false);
 };
 
+struct JetTaggerHFExtTask {
+  
+  Produces<aod::JTracksTag> jTracksTagTable;
+
+  void init(InitContext const&)
+  {
+  }
+
+  void processTracks(soa::Join<aod::Tracks, aod::TracksCov, aod::TrackSelection, aod::TracksDCA, aod::TracksDCACov>::iterator const& track)
+  {
+    float dcaXYZ = 0;
+    float sigmaDcaXYZ2 = 0;
+
+    jettaggingutilities::calculateDcaXYZ(dcaXYZ, sigmaDcaXYZ2, track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(), track.sigmaDcaXY2(), track.sigmaDcaZ2());
+    jTracksTagTable(track.x(), track.y(), track.z(), track.alpha(), track.snp(), track.tgl(), track.signed1Pt(), track.dcaXY(), track.dcaZ(), dcaXYZ, track.sigmaDcaXY2(), track.sigmaDcaZ2(), sigmaDcaXYZ2);
+  }
+  PROCESS_SWITCH(JetTaggerHFExtTask, processTracks, "produces derived track table for tagging", true);
+
+};
+
+
 using JetTaggerChargedJets = JetTaggerHFTask<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::ChargedJetTags, aod::ChargedMCDetectorLevelJetTags>;
 using JetTaggerFullJets = JetTaggerHFTask<soa::Join<aod::FullJets, aod::FullJetConstituents>, soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents>, aod::FullJetTags, aod::FullMCDetectorLevelJetTags>;
 // using JetTaggerNeutralJets = JetTaggerHFTask<soa::Join<aod::NeutralJets, aod::NeutralJetConstituents>,soa::Join<aod::NeutralMCDetectorLevelJets, aod::NeutralMCDetectorLevelJetConstituents>, aod::NeutralJetTags, aod::NeutralMCDetectorLevelJetTags>;
@@ -90,6 +111,10 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
 
   std::vector<o2::framework::DataProcessorSpec> tasks;
+
+  tasks.emplace_back(
+    adaptAnalysisTask<JetTaggerHFExtTask>(cfgc,
+                                            SetDefaultProcesses{}, TaskName{"jet-taggerhf-extension"}));
 
   tasks.emplace_back(
     adaptAnalysisTask<JetTaggerChargedJets>(cfgc,

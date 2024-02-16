@@ -342,9 +342,9 @@ struct JetTaggerHFQA {
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][1], jetflavour);
       }
       if (TracksImpXY[jetflavour].size() > 2) { // N3
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][2], jetflavour);
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N2"), mcdjet.pt(), TracksSignImpZSig[jetflavour][2], jetflavour);
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][2], jetflavour);
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N3"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][2], jetflavour);
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N3"), mcdjet.pt(), TracksSignImpZSig[jetflavour][2], jetflavour);
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N3"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][2], jetflavour);
       }
     }
   }
@@ -361,10 +361,10 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsData, "Fill impact parameter inpormation for data jets", false);
 
-  void processIPsMCD(soa::Join<aod::JCollisions, aod::JCollisionPIs>::iterator const& jcollision, aod::Collisions&, JetTagTableMCD const& mcdjets, JetTagTracksMCD const& jtracks, OriTracksMCD const& tracks, JetParticles&)
+  void processIPsMCD(JetCollision const& jcollision, aod::Collisions&, JetTagTableMCD const& mcdjets, JetTagTracksMCD const& jtracks, OriTracksMCD const& tracks, JetParticles&)
   {
-    auto oricoll = jcollision.template collision_as<aod::Collisions>();
-    fillHistogramIPsMCD<aod::Collision, JetTagTableMCD, JetTagTracksMCD, OriTracksMCD>(oricoll, mcdjets);
+    //auto oricoll = jcollision.template collision_as<aod::Collisions>();
+    fillHistogramIPsMCD<JetCollision, JetTagTableMCD, JetTagTracksMCD, OriTracksMCD>(jcollision, mcdjets);
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsMCD, "Fill impact parameter inpormation for mcd jets", false);
 };
