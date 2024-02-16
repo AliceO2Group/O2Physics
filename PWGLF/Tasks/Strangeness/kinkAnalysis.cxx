@@ -345,7 +345,6 @@ struct kinkAnalysis {
     histos.add("hDCAdaughterMC", "hDCAdaughterMC", kTH1F, {axisDCAdaugh});
     histos.add("tpcClusterTriton", "tpcClusterTriton", kTH1F, {{100, 0, 100, "TPC clusters"}});
 
-
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(cfgLUTpath));
     ft2.setMaxChi2(5);
     ft2.setUseAbsDCA(true);
