@@ -541,7 +541,6 @@ struct tpcPid {
       }
       tableTuneOnData(mcTunedTPCSignal);
 
-
       // Check and fill enabled nsigma tables
       auto makeTablePid = [&trk, &collisionsMc, &network_prediction, &count_tracks, &tracksForNet_size, &mcTunedTPCSignal, this](const int flag, auto& table, const o2::track::PID::ID pid) {
         if (flag != 1) {

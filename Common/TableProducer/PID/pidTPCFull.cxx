@@ -107,7 +107,7 @@ struct tpcPidFull {
   Configurable<int> pidTr{"pid-tr", -1, {"Produce PID information for the Triton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidHe{"pid-he", -1, {"Produce PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidAl{"pid-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
- // Configurable<int> enableTuneOnDataTable{"enableTuneOnDataTable", -1, {"Produce tuned dE/dx signal table for MC to be used as raw signal in other tasks (default -1, 'only if needed'"}};
+  // Configurable<int> enableTuneOnDataTable{"enableTuneOnDataTable", -1, {"Produce tuned dE/dx signal table for MC to be used as raw signal in other tasks (default -1, 'only if needed'"}};
 
   // Parametrization configuration
   bool useCCDBParam = false;
@@ -154,7 +154,7 @@ struct tpcPidFull {
     enableFlag("Tr", pidTr);
     enableFlag("He", pidHe);
     enableFlag("Al", pidAl);
-   // enableFlagIfTableRequired(initContext, "mcTPCTuneOnData", enableTuneOnDataTable);
+    // enableFlagIfTableRequired(initContext, "mcTPCTuneOnData", enableTuneOnDataTable);
 
     // Initialise metadata object for CCDB calls
     if (recoPass.value == "") {
@@ -456,7 +456,6 @@ struct tpcPidFull {
 
   PROCESS_SWITCH(tpcPidFull, processStandard, "Creating PID tables without MC TuneOnData", true);
 
-
   Partition<TrksMC> mcnotTPCStandaloneTracks = (aod::track::tpcNClsFindable > (uint8_t)0) && ((aod::track::itsClusterSizes > (uint32_t)0) || (aod::track::trdPattern > (uint8_t)0) || (aod::track::tofExpMom > 0.f && aod::track::tofChi2 > 0.f)); // To count number of tracks for use in NN array
   Partition<TrksMC> mctracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
 
@@ -483,7 +482,7 @@ struct tpcPidFull {
     reserveTable(pidHe, tablePIDHe);
     reserveTable(pidAl, tablePIDAl);
     tableTuneOnData.reserve(outTable_size);
-    //reserveTable(enableTuneOnDataTable, tableTuneOnData); // Only produce the table of tuned dE/dx if the signal is requested by another task
+    // reserveTable(enableTuneOnDataTable, tableTuneOnData); // Only produce the table of tuned dE/dx if the signal is requested by another task
 
     const uint64_t tracksForNet_size = (skipTPCOnly) ? mcnotTPCStandaloneTracks.size() : mctracksWithTPC.size();
     std::vector<float> network_prediction;
@@ -547,7 +546,6 @@ struct tpcPidFull {
         }
       }
       tableTuneOnData(mcTunedTPCSignal);
- 
 
       // Check and fill enabled nsigma tables
       auto makeTablePid = [&trk, &collisionsMc, &network_prediction, &count_tracks, &tracksForNet_size, &mcTunedTPCSignal, this](const int flag, auto& table, const o2::track::PID::ID pid) {
