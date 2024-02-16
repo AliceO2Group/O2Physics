@@ -22,6 +22,7 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include "GFWPowerArray.h"
 #include "GFW.h"
@@ -31,6 +32,7 @@
 #include "TList.h"
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <TF1.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -47,6 +49,8 @@ struct FlowPbPbTask {
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 3.0f, "Maximal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
+  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
@@ -95,8 +99,17 @@ struct FlowPbPbTask {
     kCount_ExtraProfile
   };
 
-  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
+  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;
+
+  // Additional Event selection cuts - Copy from flowGenericFramework.cxx
+  TF1* fPhiCutLow = nullptr;
+  TF1* fPhiCutHigh = nullptr;
+  TF1* fMultPVCutLow = nullptr;
+  TF1* fMultPVCutHigh = nullptr;
+  TF1* fMultCutLow = nullptr;
+  TF1* fMultCutHigh = nullptr;
+  TF1* fMultMultPVCut = nullptr;
 
   void init(InitContext const&)
   {
@@ -113,6 +126,8 @@ struct FlowPbPbTask {
     registry.add("hVtxZ", "", {HistType::kTH1D, {axisVertex}});
     registry.add("hMult", "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
+    registry.add("hChi2prTPCcls", "", {HistType::kTH1D, {{100, 0., 5.}}});
+    registry.add("hnTPCClu", "", {HistType::kTH1D, {{100, 40, 180}}});
     registry.add("hMeanPt", "", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("hMeanPtWithinGap08", "", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("c22_gap08_Weff", "", {HistType::kTProfile, {axisMultiplicity}});
@@ -231,6 +246,23 @@ struct FlowPbPbTask {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {4 2} refP10 {-4 -2}", "Ch10Gap4242", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {2 2} refP10 {-2 -2}", "Ch10Gap24", kFALSE));
     fGFW->CreateRegions();
+
+    if (cfgUseAdditionalEventCut) {
+      fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
+      fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
+      fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
+      fMultPVCutHigh->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
+
+      fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+      fMultCutLow->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
+      fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+      fMultCutHigh->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
+    }
+
+    if (cfgUseAdditionalTrackCut) {
+      fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
+      fPhiCutHigh = new TF1("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
+    }
   }
 
   template <char... chars>
@@ -347,6 +379,36 @@ struct FlowPbPbTask {
     return true;
   }
 
+  template <typename TCollision>
+  bool eventSelected(TCollision collision, const int& multTrk, const float& centrality)
+  {
+    if (collision.alias_bit(kTVXinTRD)) {
+      // TRD triggered
+      return 0;
+    }
+    float vtxz = -999;
+    if (collision.numContrib() > 1) {
+      vtxz = collision.posZ();
+      float zRes = TMath::Sqrt(collision.covZZ());
+      if (zRes > 0.25 && collision.numContrib() < 20)
+        vtxz = -999;
+    }
+    auto multNTracksPV = collision.multNTracksPV();
+
+    if (abs(vtxz) > cfgCutVertex)
+      return 0;
+    if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+      return 0;
+    if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+      return 0;
+    if (multTrk < fMultCutLow->Eval(centrality))
+      return 0;
+    if (multTrk > fMultCutHigh->Eval(centrality))
+      return 0;
+
+    return 1;
+  }
+
   void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
   {
     if (!collision.sel8())
@@ -362,6 +424,8 @@ struct FlowPbPbTask {
     fGFW->Clear();
     const auto cent = collision.centFT0C();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent))
+      return;
     loadCorrections(bc.timestamp());
 
     float weff = 1, wacc = 1;
@@ -385,6 +449,8 @@ struct FlowPbPbTask {
         registry.fill(HIST("hPhiWeighted"), track.phi(), wacc);
         registry.fill(HIST("hEta"), track.eta());
         registry.fill(HIST("hPtRef"), track.pt());
+        registry.fill(HIST("hChi2prTPCcls"), track.tpcChi2NCl());
+        registry.fill(HIST("hnTPCClu"), track.tpcNClsFound());
         weffEvent += weff;
         waccEvent += wacc;
         ptSum += weff * track.pt();
