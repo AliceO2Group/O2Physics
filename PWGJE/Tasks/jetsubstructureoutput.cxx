@@ -39,18 +39,18 @@ using namespace o2::framework::expressions;
 
 struct JetSubstructureOutputTask {
 
-  Produces<aod::ChargedJetCollisionOutputs> collisionOutputTableData;
-  Produces<aod::ChargedJetOutputs> jetOutputTableData;
-  Produces<aod::ChargedJetSubstructureOutputs> jetSubstructureOutputTableData;
-  Produces<aod::ChargedEventWiseSubtractedJetCollisionOutputs> collisionOutputTableDataSub;
-  Produces<aod::ChargedEventWiseSubtractedJetOutputs> jetOutputTableDataSub;
-  Produces<aod::ChargedEventWiseSubtractedJetSubstructureOutputs> jetSubstructureOutputTableDataSub;
-  Produces<aod::ChargedMCDetectorLevelJetCollisionOutputs> collisionOutputTableMCD;
-  Produces<aod::ChargedMCDetectorLevelJetOutputs> jetOutputTableMCD;
-  Produces<aod::ChargedMCDetectorLevelJetSubstructureOutputs> jetSubstructureOutputTableMCD;
-  Produces<aod::ChargedMCParticleLevelJetCollisionOutputs> collisionOutputTableMCP;
-  Produces<aod::ChargedMCParticleLevelJetOutputs> jetOutputTableMCP;
-  Produces<aod::ChargedMCParticleLevelJetSubstructureOutputs> jetSubstructureOutputTableMCP;
+  Produces<aod::CJetCOs> collisionOutputTableData;
+  Produces<aod::CJetOs> jetOutputTableData;
+  Produces<aod::CJetSSOs> jetSubstructureOutputTableData;
+  Produces<aod::CEWSJetCOs> collisionOutputTableDataSub;
+  Produces<aod::CEWSJetOs> jetOutputTableDataSub;
+  Produces<aod::CEWSJetSSOs> jetSubstructureOutputTableDataSub;
+  Produces<aod::CMCDJetCOs> collisionOutputTableMCD;
+  Produces<aod::CMCDJetOs> jetOutputTableMCD;
+  Produces<aod::CMCDJetSSOs> jetSubstructureOutputTableMCD;
+  Produces<aod::CMCPJetCOs> collisionOutputTableMCP;
+  Produces<aod::CMCPJetOs> jetOutputTableMCP;
+  Produces<aod::CMCPJetSSOs> jetSubstructureOutputTableMCP;
 
   Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT cut"};
   Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.4}, "jet resolution parameters"};
@@ -130,7 +130,7 @@ struct JetSubstructureOutputTask {
   PROCESS_SWITCH(JetSubstructureOutputTask, processDummy, "Dummy process function turned on by default", true);
 
   void processOutputData(JetCollision const& collision,
-                         soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures>> const& jets,
+                         soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::CJetSSs>> const& jets,
                          JetTracks const& tracks)
   {
     analyseCharged<false>(collision, jets, jets, collisionOutputTableData, jetOutputTableData, jetSubstructureOutputTableData);
@@ -138,8 +138,8 @@ struct JetSubstructureOutputTask {
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutputData, "jet substructure output Data", false);
 
   void processOutputDataSub(JetCollision const& collision,
-                            soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetSubstructures, aod::ChargedJetsMatchedToChargedEventWiseSubtractedJets>> const& jets,
-                            soa::Filtered<soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents, aod::ChargedEventWiseSubtractedJetSubstructures, aod::ChargedEventWiseSubtractedJetsMatchedToChargedJets>> const& jetsSub,
+                            soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::CJetSSs, aod::ChargedJetsMatchedToChargedEventWiseSubtractedJets>> const& jets,
+                            soa::Filtered<soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents, aod::CEWSJetSSs, aod::ChargedEventWiseSubtractedJetsMatchedToChargedJets>> const& jetsSub,
                             JetTracks const& tracks)
   {
     analyseCharged<true>(collision, jets, jetsSub, collisionOutputTableData, jetOutputTableData, jetSubstructureOutputTableData);
@@ -148,7 +148,7 @@ struct JetSubstructureOutputTask {
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutputDataSub, "jet substructure output event-wise subtracted Data", false);
 
   void processOutputMCD(JetCollision const& collision,
-                        soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetSubstructures, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& jets,
+                        soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::CMCDJetSSs, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& jets,
                         aod::ChargedMCParticleLevelJets const& jetsTag,
                         JetTracks const& tracks)
   {
@@ -157,7 +157,7 @@ struct JetSubstructureOutputTask {
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutputMCD, "jet substructure output MCD", false);
 
   void processOutputMCP(JetMcCollision const& collision,
-                        soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetSubstructures, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& jets,
+                        soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::CMCPJetSSs, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& jets,
                         aod::ChargedMCDetectorLevelJets const& jetsTag,
                         JetParticles const& particles)
   {
