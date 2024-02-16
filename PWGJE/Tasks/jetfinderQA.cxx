@@ -893,7 +893,7 @@ struct JetFinderQATask {
     float dEtaLeadingJet = jets.iteratorAt(0).eta() - randomConeEta;
 
     bool jetWasInCone = false;
-    while (TMath::Sqrt(dEtaLeadingJet * dEtaLeadingJet + dPhiLeadingJet * dPhiLeadingJet) < 2 * randomConeR) {
+    while (TMath::Sqrt(dEtaLeadingJet * dEtaLeadingJet + dPhiLeadingJet * dPhiLeadingJet) < jet.r() / 100.0 + randomConeR) {
       jetWasInCone = true;
       randomConeEta = rand.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
       randomConePhi = rand.Uniform(0.0, 2 * M_PI);
