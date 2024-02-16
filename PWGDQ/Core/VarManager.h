@@ -884,6 +884,8 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
     values[kEta] = propmuon.getEta();
     values[kTgl] = propmuon.getTgl();
     values[kPhi] = propmuon.getPhi();
+    values[kMuonDCAx] = (propmuon.getX() - collision.posX());
+    values[kMuonDCAy] = (propmuon.getY() - collision.posY());
 
     SMatrix55 cov = propmuon.getCovariances();
     values[kMuonCXX] = cov(0, 0);
