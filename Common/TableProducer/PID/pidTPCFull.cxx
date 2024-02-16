@@ -587,9 +587,7 @@ struct tpcPidFull {
               table((network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]) * expSignal,
                     (mcTunedTPCSignal / expSignal - network_prediction[3 * (count_tracks + tracksForNet_size * pid)]) / (network_prediction[3 * (count_tracks + tracksForNet_size * pid)] - network_prediction[3 * (count_tracks + tracksForNet_size * pid) + 2]));
             }
-          }
-
-          else {
+          } else {
             LOGF(fatal, "Network output-dimensions incompatible!");
           }
 
