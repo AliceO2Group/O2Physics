@@ -90,7 +90,6 @@ DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
-DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCandDstLites, "AOD", "HFCANDDSTLITE",
