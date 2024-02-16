@@ -91,6 +91,9 @@ struct qVectorsTable {
   Configurable<float> cfgMaxPtOnTPC{"cfgMaxPtOnTPC", 5., "maximum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
   Configurable<int> cfgnMod{"cfgnMod", 2, "Modulation of interest"};
 
+  ConfigurableAxis cfgaxisFITamp{"cfgaxisFITamp", {1000, 0, 10000}, ""};
+
+
   // Table.
   Produces<aod::Qvectors> qVector;
   Produces<aod::QvectorFT0Cs> qVectorFT0C;
@@ -249,9 +252,10 @@ struct qVectorsTable {
 
     AxisSpec axisPt = {40, 0.0, 4.0};
     AxisSpec axisEta = {32, -0.8, 0.8};
-    AxisSpec axisPhi = {32, -TMath::Pi(), TMath::Pi()};
+    AxisSpec axisPhi = {32, 0, 2.0*TMath::Pi()};
     AxisSpec axixCent = {20, 0, 100};
-    AxisSpec axisFITamp = {1000,0,10000};
+
+    AxisSpec axisFITamp{cfgaxisFITamp, "FIT amp"};
     AxisSpec axisChID = {220,0,220};
 
     histosQA.add("ChTracks", "", {HistType::kTHnSparseF, {axisPt, axisEta, axisPhi, axixCent}});
