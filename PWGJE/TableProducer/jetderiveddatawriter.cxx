@@ -156,7 +156,7 @@ struct JetDerivedDataWriter {
   {
     std::map<int32_t, int32_t> trackMapping;
 
-    if (collisionFlag[collision.globalIndex()] || !collisionFlag[collision.globalIndex()]) {
+    if (collisionFlag[collision.globalIndex()]) {
       if (saveBCsTable) {
         auto bc = collision.bc_as<soa::Join<aod::JBCs, aod::JBCPIs>>();
         if (std::find(bcIndicies.begin(), bcIndicies.end(), bc.globalIndex()) == bcIndicies.end()) {
