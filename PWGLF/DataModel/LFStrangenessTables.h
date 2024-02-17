@@ -197,6 +197,12 @@ DECLARE_SOA_COLUMN(PyNegMC, pyNegMC, float);                    //! V0 positive 
 DECLARE_SOA_COLUMN(PzNegMC, pzNegMC, float);                    //! V0 positive daughter pz (GeV/c)
 
 //______________________________________________________
+// Binned content for generated particles: derived data
+DECLARE_SOA_COLUMN(GeneratedK0Short, generatedK0Short, std::vector<uint32_t>);       //! K0Short binned generated data
+DECLARE_SOA_COLUMN(GeneratedLambda, generatedLambda, std::vector<uint32_t>);         //! Lambda binned generated data
+DECLARE_SOA_COLUMN(GeneratedAntiLambda, generatedAntiLambda, std::vector<uint32_t>);  //! AntiLambda binned generated data
+
+//______________________________________________________
 // EXPRESSION COLUMNS
 DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //! V0 px
                               float, 1.f * aod::v0data::pxpos + 1.f * aod::v0data::pxneg);
@@ -491,6 +497,10 @@ DECLARE_SOA_TABLE(V0MCCores, "AOD", "V0MCCORE", //! MC properties of the V0 for 
                   v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
                   v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
 
+DECLARE_SOA_TABLE(GeK0Short, "AOD", "GeK0Short", v0data::GeneratedK0Short);
+DECLARE_SOA_TABLE(GeLambda, "AOD", "GeLambda", v0data::GeneratedLambda);
+DECLARE_SOA_TABLE(GeAntiLambda, "AOD", "GeAntiLambda", v0data::GeneratedAntiLambda);
+
 DECLARE_SOA_TABLE(V0MCMothers, "AOD", "V0MCMOTHER", //! optional table for MC mothers
                   o2::soa::Index<>, v0data::MotherMCPartId);
 
@@ -686,6 +696,13 @@ DECLARE_SOA_COLUMN(PzBachMC, pzBachMC, float);                  //! cascade bach
 DECLARE_SOA_COLUMN(PxMC, pxMC, float);                          //! cascade px (GeV/c)
 DECLARE_SOA_COLUMN(PyMC, pyMC, float);                          //! cascade py (GeV/c)
 DECLARE_SOA_COLUMN(PzMC, pzMC, float);                          //! cascade pz (GeV/c)
+
+//______________________________________________________
+// generated binned data
+DECLARE_SOA_COLUMN(GeneratedXiMinus, generatedXiMinus, std::vector<uint32_t>);       //! XiMinus binned generated data
+DECLARE_SOA_COLUMN(GeneratedXiPlus, generatedXiPlus, std::vector<uint32_t>);         //! XiPlus binned generated data
+DECLARE_SOA_COLUMN(GeneratedOmegaMinus, generatedOmegaMinus, std::vector<uint32_t>); //! OmegaMinus binned generated data
+DECLARE_SOA_COLUMN(GeneratedOmegaPlus, generatedOmegaPlus, std::vector<uint32_t>);   //! OmegaPlus binned generated data
 
 //______________________________________________________
 // DERIVED
@@ -937,6 +954,11 @@ DECLARE_SOA_TABLE(CascMCCores, "AOD", "CASCMCCORE", //! bachelor-baryon correlat
                   cascdata::PxNegMC, cascdata::PyNegMC, cascdata::PzNegMC,
                   cascdata::PxBachMC, cascdata::PyBachMC, cascdata::PzBachMC,
                   cascdata::PxMC, cascdata::PyMC, cascdata::PzMC);
+
+DECLARE_SOA_TABLE(GeXiMinus, "AOD", "GeXiMinus", cascdata::GeneratedXiMinus);
+DECLARE_SOA_TABLE(GeXiPlus, "AOD", "GeXiPlus", cascdata::GeneratedXiPlus);
+DECLARE_SOA_TABLE(GeOmegaMinus, "AOD", "GeOmegaMinus", cascdata::GeneratedOmegaMinus);
+DECLARE_SOA_TABLE(GeOmegaPlus, "AOD", "GeOmegaPlus", cascdata::GeneratedOmegaPlus);
 
 DECLARE_SOA_TABLE(CascMCMothers, "AOD", "CASCMCMOTHER", //! optional table for MC mothers
                   o2::soa::Index<>, cascdata::MotherMCPartId);
