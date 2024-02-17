@@ -213,7 +213,7 @@ struct strangederivedbuilder {
       hRawCentrality->SetBinContent(ii, value);
     }
 
-    if(doprocessBinnedGenerated){
+    if (doprocessBinnedGenerated) {
       // reserve space for generated vectors if that process enabled
       auto hBinFinder = histos.get<TH1>(HIST("h2dGenK0Short"));
       genK0Short.resize(hBinFinder->GetNcells(), 0);
@@ -616,7 +616,7 @@ struct strangederivedbuilder {
       auto mcParticles = mcParticlesEntireTable.sliceBy(mcParticlePerMcCollision, mcCollIndex);
       for (auto& mcp : mcParticles) {
         if (TMath::Abs(mcp.y()) < 0.5 && mcp.isPhysicalPrimary()) {
-          auto binNumber = hBinFinder->FindBin(bestCentrality, mcp.pt()); // caution: pack 
+          auto binNumber = hBinFinder->FindBin(bestCentrality, mcp.pt()); // caution: pack
           if (mcp.pdgCode() == 310)
             genK0Short[binNumber]++;
           if (mcp.pdgCode() == 3122)

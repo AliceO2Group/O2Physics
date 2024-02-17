@@ -322,7 +322,7 @@ struct derivedlambdakzeroanalysis {
     histos.add("GeneralQA/h2dArmenterosSelected", "h2dArmenterosSelected", kTH2F, {axisAPAlpha, axisAPQt});
 
     // Creation of histograms: MC generated
-    if(doprocessBinnedGenerated){
+    if (doprocessBinnedGenerated) {
       histos.add("h2dGenK0Short", "h2dGenK0Short", kTH2D, {axisCentrality, axisPt});
       histos.add("h2dGenLambda", "h2dGenLambda", kTH2D, {axisCentrality, axisPt});
       histos.add("h2dGenAntiLambda", "h2dGenAntiLambda", kTH2D, {axisCentrality, axisPt});
@@ -642,7 +642,7 @@ struct derivedlambdakzeroanalysis {
     } // end v0 loop
   }
 
-    // ______________________________________________________
+  // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
   void processBinnedGenerated(
     aod::GeK0Short const& geK0Short, aod::GeLambda const& geLambda, aod::GeAntiLambda const& geAntiLambda,
@@ -657,38 +657,38 @@ struct derivedlambdakzeroanalysis {
     auto hOmegaMinus = histos.get<TH1>(HIST("h2dGenOmegaMinus"));
     auto hOmegaPlus = histos.get<TH1>(HIST("h2dGenOmegaPlus"));
     for (auto& gVec : geK0Short) {
-      for(uint32_t iv=0; iv<gVec.size(); iv++){
-        hK0Short->SetBinContent(iv, hK0Short->GetBinContent(iv)+gVec.generatedK0Short()[iv]);
+      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+        hK0Short->SetBinContent(iv, hK0Short->GetBinContent(iv) + gVec.generatedK0Short()[iv]);
       }
     }
     for (auto& gVec : geLambda) {
-      for(uint32_t iv=0; iv<gVec.size(); iv++){
-        hLambda->SetBinContent(iv, hLambda->GetBinContent(iv)+gVec.generatedLambda()[iv]);
+      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+        hLambda->SetBinContent(iv, hLambda->GetBinContent(iv) + gVec.generatedLambda()[iv]);
       }
     }
     for (auto& gVec : geAntiLambda) {
-      for(uint32_t iv=0; iv<gVec.size(); iv++){
-        hAntiLambda->SetBinContent(iv, hAntiLambda->GetBinContent(iv)+gVec.generatedAntiLambda()[iv]);
+      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+        hAntiLambda->SetBinContent(iv, hAntiLambda->GetBinContent(iv) + gVec.generatedAntiLambda()[iv]);
       }
     }
     for (auto& gVec : geXiMinus) {
-      for(uint32_t iv=0; iv<gVec.size(); iv++){
-        hXiMinus->SetBinContent(iv, hXiMinus->GetBinContent(iv)+gVec.generatedXiMinus()[iv]);
+      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+        hXiMinus->SetBinContent(iv, hXiMinus->GetBinContent(iv) + gVec.generatedXiMinus()[iv]);
       }
     }
     for (auto& gVec : geXiPlus) {
-      for(uint32_t iv=0; iv<gVec.size(); iv++){
-        hXiPlus->SetBinContent(iv, hXiPlus->GetBinContent(iv)+gVec.generatedXiPlus()[iv]);
+      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+        hXiPlus->SetBinContent(iv, hXiPlus->GetBinContent(iv) + gVec.generatedXiPlus()[iv]);
       }
     }
     for (auto& gVec : geOmegaMinus) {
-      for(uint32_t iv=0; iv<gVec.size(); iv++){
-        hOmegaMinus->SetBinContent(iv, hOmegaMinus->GetBinContent(iv)+gVec.generatedOmegaMinus()[iv]);
+      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+        hOmegaMinus->SetBinContent(iv, hOmegaMinus->GetBinContent(iv) + gVec.generatedOmegaMinus()[iv]);
       }
     }
     for (auto& gVec : geOmegaPlus) {
-      for(uint32_t iv=0; iv<gVec.size(); iv++){
-        hOmegaPlus->SetBinContent(iv, hOmegaPlus->GetBinContent(iv)+gVec.generatedOmegaPlus()[iv]);
+      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+        hOmegaPlus->SetBinContent(iv, hOmegaPlus->GetBinContent(iv) + gVec.generatedOmegaPlus()[iv]);
       }
     }
   }

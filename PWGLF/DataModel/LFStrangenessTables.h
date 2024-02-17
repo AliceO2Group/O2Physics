@@ -200,7 +200,7 @@ DECLARE_SOA_COLUMN(PzNegMC, pzNegMC, float);                    //! V0 positive 
 // Binned content for generated particles: derived data
 DECLARE_SOA_COLUMN(GeneratedK0Short, generatedK0Short, std::vector<uint32_t>);       //! K0Short binned generated data
 DECLARE_SOA_COLUMN(GeneratedLambda, generatedLambda, std::vector<uint32_t>);         //! Lambda binned generated data
-DECLARE_SOA_COLUMN(GeneratedAntiLambda, generatedAntiLambda, std::vector<uint32_t>);  //! AntiLambda binned generated data
+DECLARE_SOA_COLUMN(GeneratedAntiLambda, generatedAntiLambda, std::vector<uint32_t>); //! AntiLambda binned generated data
 
 //______________________________________________________
 // EXPRESSION COLUMNS
