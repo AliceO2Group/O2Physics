@@ -663,9 +663,9 @@ struct TreeCreatorElectronMLDDA {
           }
 
           registry.fill(HIST("hMKK"), v12.M(), v2.Pt());
-          // if (abs(v12.M() - 1.019) < 0.003) {
-          //   fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon));
-          // }
+          if (abs(v12.M() - 1.019) < 0.003) {
+            fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon));
+          }
         } // end of K- loop
       }   // end of K+ loop
 
@@ -689,9 +689,9 @@ struct TreeCreatorElectronMLDDA {
           }
 
           registry.fill(HIST("hMKK"), v12.M(), v2.Pt());
-          // if (abs(v12.M() - 1.019) < 0.003) {
-          //   fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon));
-          // }
+          if (abs(v12.M() - 1.019) < 0.003) {
+            fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon));
+          }
         } // end of K+ loop
       }   // end of K- loop
 
@@ -884,9 +884,9 @@ struct TreeCreatorElectronMLDDA {
           registry.fill(HIST("Cascade/hMassPt_Omega"), mOmega, pt);
           registry.fill(HIST("Cascade/hRxy_Omega"), mOmega, casc_rxy);
           registry.fill(HIST("Cascade/hCTau_Omega"), mOmega, ctauOmega);
-          if (abs(mOmega - 1.672) < 0.005) { // select Omega candidates
-            fillTrackTable(collision, bachelor, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon));
-          }
+          // if (abs(mOmega - 1.672) < 0.005) { // select Omega candidates
+          //   fillTrackTable(collision, bachelor, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon));
+          // }
         }
 
       } // end of cascade loop
