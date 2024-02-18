@@ -141,7 +141,8 @@ float getDcaXYZ(T const& track, float* sigmaDcaXYZ2 = nullptr)
   float dcaXY = track.dcaXY();
   float dcaZ = track.dcaZ();
   float dcaXYZ = std::sqrt(dcaXY * dcaXY + dcaZ * dcaZ);
-  if (dcaXYZ < 1e-10) dcaXYZ = 1e-10; // Protection against division by zero
+  if (dcaXYZ < 1e-10)
+    dcaXYZ = 1e-10; // Protection against division by zero
   if (sigmaDcaXYZ2) {
     float dFdxy = 2 * dcaXY / dcaXYZ;
     float dFdz = 2 * dcaZ / dcaXYZ;
