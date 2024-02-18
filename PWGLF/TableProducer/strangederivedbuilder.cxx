@@ -603,7 +603,7 @@ struct strangederivedbuilder {
       auto mcParticles = mcParticlesEntireTable.sliceBy(mcParticlePerMcCollision, mcCollIndex);
       for (auto& mcp : mcParticles) {
         if (TMath::Abs(mcp.y()) < 0.5 && mcp.isPhysicalPrimary()) {
-          auto binNumber = hBinFinder->FindBin(mcCollision.bestCollisionCentFT0C(), mcp.pt()); // caution: pack 
+          auto binNumber = hBinFinder->FindBin(mcCollision.bestCollisionCentFT0C(), mcp.pt()); // caution: pack
           if (mcp.pdgCode() == 310)
             genK0Short[binNumber]++;
           if (mcp.pdgCode() == 3122)
