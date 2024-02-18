@@ -130,17 +130,18 @@ void getPxPyPz(T const& trackPars, U& pVec)
   pVec[2] = pt * trackPars.getTgl();
 }
 
-/// Calculates DCA xyz and if uncertainty is required, return its value by pointer
-/// To use this function, use the o2::aod::TracksWCovDca table
-/// \parma track are the track parametersd which are included dca information
-/// \param sigmaDcaXYZ2 is impact parameter sigma^2 in XYZ of the track to the primary vertex
-/// \return dcaXYZ is impact parameter in XYZ of the track to the primary vertex
+/// Calculates DCA XYZ of a track w.r.t. the primary vertex and its uncertainty if required.
+/// \param track  track from a table containing `o2::aod::TracksCov, o2::aod::TracksDCA`.
+/// \param sigmaDcaXYZ2  pointer to the sigma^2 of the impact parameter in XYZ to be calculated
+/// \return impact parameter in XYZ of the track w.r.t the primary vertex
+
 template <typename T>
 float getDcaXYZ(T const& track, float* sigmaDcaXYZ2 = nullptr)
 {
   float dcaXY = track.dcaXY();
   float dcaZ = track.dcaZ();
   float dcaXYZ = std::sqrt(dcaXY * dcaXY + dcaZ * dcaZ);
+  if (dcaXYZ < 1e-10) dcaXYZ = 1e-10; // Protection against division by zero
   if (sigmaDcaXYZ2) {
     float dFdxy = 2 * dcaXY / dcaXYZ;
     float dFdz = 2 * dcaZ / dcaXYZ;
