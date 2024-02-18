@@ -217,7 +217,8 @@ struct strangederivedbuilder {
 
     if (doprocessBinnedGenerated) {
       // reserve space for generated vectors if that process enabled
-      auto hBinFinder = histos.get<TH1>(HIST("h2dGenK0Short"));
+      LOGF(info, "Binned generated processing enabled. Initialising...");
+      auto hBinFinder = histos.get<TH2>(HIST("h2dGenK0Short"));
       genK0Short.resize(hBinFinder->GetNcells(), 0);
       genLambda.resize(hBinFinder->GetNcells(), 0);
       genAntiLambda.resize(hBinFinder->GetNcells(), 0);
@@ -225,6 +226,7 @@ struct strangederivedbuilder {
       genXiPlus.resize(hBinFinder->GetNcells(), 0);
       genOmegaMinus.resize(hBinFinder->GetNcells(), 0);
       genOmegaPlus.resize(hBinFinder->GetNcells(), 0);
+      LOGF(info, "Binned generated processing: init done.");
     }
   }
 
@@ -598,7 +600,7 @@ struct strangederivedbuilder {
       const uint64_t mcCollIndex = mcCollision.globalIndex();
 
       // use one of the generated histograms as the bin finder
-      auto hBinFinder = histos.get<TH1>(HIST("h2dGenK0Short"));
+      auto hBinFinder = histos.get<TH2>(HIST("h2dGenK0Short"));
 
       auto mcParticles = mcParticlesEntireTable.sliceBy(mcParticlePerMcCollision, mcCollIndex);
       for (auto& mcp : mcParticles) {

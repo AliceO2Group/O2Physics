@@ -649,13 +649,13 @@ struct derivedlambdakzeroanalysis {
     aod::GeXiMinus const& geXiMinus, aod::GeXiPlus const& geXiPlus,
     aod::GeOmegaMinus const& geOmegaMinus, aod::GeOmegaPlus const& geOmegaPlus)
   {
-    auto hK0Short = histos.get<TH1>(HIST("h2dGenK0Short"));
-    auto hLambda = histos.get<TH1>(HIST("h2dGenLambda"));
-    auto hAntiLambda = histos.get<TH1>(HIST("h2dGenAntiLambda"));
-    auto hXiMinus = histos.get<TH1>(HIST("h2dGenXiMinus"));
-    auto hXiPlus = histos.get<TH1>(HIST("h2dGenXiPlus"));
-    auto hOmegaMinus = histos.get<TH1>(HIST("h2dGenOmegaMinus"));
-    auto hOmegaPlus = histos.get<TH1>(HIST("h2dGenOmegaPlus"));
+    auto hK0Short = histos.get<TH2>(HIST("h2dGenK0Short"));
+    auto hLambda = histos.get<TH2>(HIST("h2dGenLambda"));
+    auto hAntiLambda = histos.get<TH2>(HIST("h2dGenAntiLambda"));
+    auto hXiMinus = histos.get<TH2>(HIST("h2dGenXiMinus"));
+    auto hXiPlus = histos.get<TH2>(HIST("h2dGenXiPlus"));
+    auto hOmegaMinus = histos.get<TH2>(HIST("h2dGenOmegaMinus"));
+    auto hOmegaPlus = histos.get<TH2>(HIST("h2dGenOmegaPlus"));
     for (auto& gVec : geK0Short) {
       for (uint32_t iv = 0; iv < gVec.size(); iv++) {
         hK0Short->SetBinContent(iv, hK0Short->GetBinContent(iv) + gVec.generatedK0Short()[iv]);
