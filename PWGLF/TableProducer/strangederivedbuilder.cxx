@@ -46,6 +46,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Framework/StaticFor.h"
+#include "Common/DataModel/McCollisionExtra.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -62,6 +63,8 @@ using FullCollisions = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::C
 #define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
 struct strangederivedbuilder {
+  SliceCache cache;
+
   //__________________________________________________
   // fundamental building blocks of derived data
   Produces<aod::StraCollision> strangeColl;      // characterises collisions
@@ -166,7 +169,6 @@ struct strangederivedbuilder {
   Preslice<aod::CascDatas> CascperCollision = o2::aod::cascdata::collisionId;
   Preslice<aod::KFCascDatas> KFCascperCollision = o2::aod::cascdata::collisionId;
   Preslice<aod::TraCascDatas> TraCascperCollision = o2::aod::cascdata::collisionId;
-  Preslice<FullCollisions> perMcCollision = o2::aod::mccollisionlabel::mcCollisionId;
   Preslice<aod::McParticles> mcParticlePerMcCollision = o2::aod::mcparticle::mcCollisionId;
 
   std::vector<uint32_t> genK0Short;
@@ -580,7 +582,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processBinnedGenerated(aod::McCollisions const& mcCollisions, FullCollisions const& collisionsEntireTable, aod::McParticles const& mcParticlesEntireTable)
+  void processBinnedGenerated(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, aod::McParticles const& mcParticlesEntireTable)
   {
     // set to zero
     std::fill(genK0Short.begin(), genK0Short.end(), 0);
@@ -594,21 +596,6 @@ struct strangederivedbuilder {
     // this process function also checks if a given collision was reconstructed and checks explicitly for splitting, etc
     for (auto& mcCollision : mcCollisions) {
       const uint64_t mcCollIndex = mcCollision.globalIndex();
-      auto collisions = collisionsEntireTable.sliceBy(perMcCollision, mcCollIndex);
-
-      // identify best-of collision
-      int biggestNContribs = -1;
-      float bestCentrality = 100.5;
-      for (auto& collision : collisions) {
-        if (biggestNContribs < collision.numContrib()) {
-          biggestNContribs = collision.numContrib();
-          bestCentrality = collision.centFT0C();
-          if (qaCentrality) {
-            auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
-            bestCentrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(collision.multFT0C()));
-          }
-        }
-      }
 
       // use one of the generated histograms as the bin finder
       auto hBinFinder = histos.get<TH1>(HIST("h2dGenK0Short"));
@@ -616,7 +603,7 @@ struct strangederivedbuilder {
       auto mcParticles = mcParticlesEntireTable.sliceBy(mcParticlePerMcCollision, mcCollIndex);
       for (auto& mcp : mcParticles) {
         if (TMath::Abs(mcp.y()) < 0.5 && mcp.isPhysicalPrimary()) {
-          auto binNumber = hBinFinder->FindBin(bestCentrality, mcp.pt()); // caution: pack
+          auto binNumber = hBinFinder->FindBin(mcCollision.bestCollisionCentFT0C(), mcp.pt()); // caution: pack 
           if (mcp.pdgCode() == 310)
             genK0Short[binNumber]++;
           if (mcp.pdgCode() == 3122)
