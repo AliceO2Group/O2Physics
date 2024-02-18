@@ -46,7 +46,7 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe, aod::pidTOFFullDe>;
-using MCLabeledFullTracksExtIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
+using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
 struct hypertriton3bodyQa {
   // Basic checks
@@ -509,7 +509,7 @@ struct hypertriton3bodyAnalysis {
 
   //------------------------------------------------------------------
   // process mc analysis
-  void processMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, aod::McParticles const& particlesMC, MCLabeledFullTracksExtIU const& tracks)
+  void processMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, aod::McParticles const& particlesMC, MCLabeledTracksIU const& tracks)
   {
     GetGeneratedH3LInfo(particlesMC);
 
@@ -533,9 +533,9 @@ struct hypertriton3bodyAnalysis {
         float lPt = -1;
         double MClifetime = -1;
         bool isTrueCand = false;
-        auto track0 = vtx.track0_as<MCLabeledFullTracksExtIU>();
-        auto track1 = vtx.track1_as<MCLabeledFullTracksExtIU>();
-        auto track2 = vtx.track2_as<MCLabeledFullTracksExtIU>();
+        auto track0 = vtx.track0_as<MCLabeledTracksIU>();
+        auto track1 = vtx.track1_as<MCLabeledTracksIU>();
+        auto track2 = vtx.track2_as<MCLabeledTracksIU>();
         if (track0.has_mcParticle() && track1.has_mcParticle() && track2.has_mcParticle()) {
           auto lMCTrack0 = track0.mcParticle_as<aod::McParticles>();
           auto lMCTrack1 = track1.mcParticle_as<aod::McParticles>();
@@ -560,7 +560,7 @@ struct hypertriton3bodyAnalysis {
           }
         }
 
-        CandidateAnalysis<MCLabeledFullTracksExtIU>(collision, vtx, if_hasvtx, isTrueCand, MClifetime, lPt);
+        CandidateAnalysis<MCLabeledTracksIU>(collision, vtx, if_hasvtx, isTrueCand, MClifetime, lPt);
       }
 
       if (if_hasvtx)
@@ -581,6 +581,8 @@ struct hypertriton3bodyLabelCheck {
       {"hMassTrueH3L", "hMassTrueH3L", {HistType::kTH1F, {{80, 2.96f, 3.04f}}}},
       {"hMassTrueH3LMatter", "hMassTrueH3LMatter", {HistType::kTH1F, {{80, 2.96f, 3.04f}}}},
       {"hMassTrueH3LAntiMatter", "hMassTrueH3LAntiMatter", {HistType::kTH1F, {{80, 2.96f, 3.04f}}}},
+      {"hPIDCounter", "hPIDCounter", {HistType::kTH1F, {{6, 0.0f, 6.0f}}}},
+      {"hHypertritonCounter", "hHypertritonCounter", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
     },
   };
 
@@ -589,10 +591,21 @@ struct hypertriton3bodyLabelCheck {
     registry.get<TH1>(HIST("hLabeledVtxCounter"))->GetXaxis()->SetBinLabel(1, "Readin");
     registry.get<TH1>(HIST("hLabeledVtxCounter"))->GetXaxis()->SetBinLabel(2, "TrueMCH3L");
     registry.get<TH1>(HIST("hLabeledVtxCounter"))->GetXaxis()->SetBinLabel(3, "Nonrepetitive");
+    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(1, "H3L Proton PID > 5");
+    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(2, "H3L Pion PID > 5");
+    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(3, "H3L Deuteron PID > 5");
+    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(4, "#bar{H3L} Proton PID > 5");
+    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(5, "#bar{H3L} Pion PID > 5");
+    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(6, "#bar{H3L} Deuteron PID > 5");
+    registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(1, "H3L");
+    registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(2, "H3L daughters pass PID");
+    registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(3, "#bar{H3L}");
+    registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(4, "#bar{H3L} daughters pass PID");
   }
 
-  Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
-  Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
+  Configurable<bool> event_sel8_selection{"event_sel8_selection", false, "event selection count post sel8 cut"};
+  Configurable<bool> event_posZ_selection{"event_posZ_selection", false, "event selection count post poZ cut"};
+  Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
   {
@@ -600,7 +613,7 @@ struct hypertriton3bodyLabelCheck {
   }
   PROCESS_SWITCH(hypertriton3bodyLabelCheck, process, "Donot check MC label tables", true);
 
-  void processCheckLabel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::Vtx3BodyDatas, aod::McVtx3BodyLabels> const& vtx3bodydatas, MCLabeledFullTracksExtIU const& tracks, aod::McParticles const& particlesMC)
+  void processCheckLabel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::Vtx3BodyDatas, aod::McVtx3BodyLabels> const& vtx3bodydatas, MCLabeledTracksIU const& tracks, aod::McParticles const& particlesMC)
   {
     if (event_sel8_selection && !collision.sel8()) {
       return;
@@ -615,8 +628,12 @@ struct hypertriton3bodyLabelCheck {
       registry.fill(HIST("hLabeledVtxCounter"), 0.5);
       if (vtx.mcParticleId() != -1) {
         auto mcparticle = vtx.mcParticle_as<aod::McParticles>();
+        auto lTrack0 = vtx.track0_as<MCLabeledTracksIU>();
+        auto lTrack1 = vtx.track1_as<MCLabeledTracksIU>();
+        auto lTrack2 = vtx.track2_as<MCLabeledTracksIU>();
         if (mcparticle.pdgCode() == 1010010030) {
           registry.fill(HIST("hLabeledVtxCounter"), 1.5);
+          registry.fill(HIST("hHypertritonCounter"), 0.5);
           registry.fill(HIST("hMassTrueH3L"), vtx.mHypertriton());
           registry.fill(HIST("hMassTrueH3LMatter"), vtx.mHypertriton());
           auto p = std::find(set_mothertrack.begin(), set_mothertrack.end(), mcparticle.globalIndex());
@@ -624,14 +641,39 @@ struct hypertriton3bodyLabelCheck {
             set_mothertrack.push_back(mcparticle.globalIndex());
             registry.fill(HIST("hLabeledVtxCounter"), 2.5);
           }
+          if (TMath::Abs(lTrack0.tpcNSigmaPr()) > TpcPidNsigmaCut) {
+            registry.fill(HIST("hPIDCounter"), 0.5);
+          }
+          if (TMath::Abs(lTrack1.tpcNSigmaPi()) > TpcPidNsigmaCut) {
+            registry.fill(HIST("hPIDCounter"), 1.5);
+          }
+          if (TMath::Abs(lTrack2.tpcNSigmaDe()) > TpcPidNsigmaCut) {
+            registry.fill(HIST("hPIDCounter"), 2.5);
+          }
+          if (TMath::Abs(lTrack0.tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(lTrack1.tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(lTrack2.tpcNSigmaDe()) < TpcPidNsigmaCut) {
+            registry.fill(HIST("hHypertritonCounter"), 1.5);
+          }
         } else if (mcparticle.pdgCode() == -1010010030) {
           registry.fill(HIST("hLabeledVtxCounter"), 1.5);
+          registry.fill(HIST("hHypertritonCounter"), 2.5);
           registry.fill(HIST("hMassTrueH3L"), vtx.mAntiHypertriton());
           registry.fill(HIST("hMassTrueH3LAntiMatter"), vtx.mAntiHypertriton());
           auto p = std::find(set_mothertrack.begin(), set_mothertrack.end(), mcparticle.globalIndex());
           if (p == set_mothertrack.end()) {
             set_mothertrack.push_back(mcparticle.globalIndex());
             registry.fill(HIST("hLabeledVtxCounter"), 2.5);
+          }
+          if (TMath::Abs(lTrack0.tpcNSigmaPi()) > TpcPidNsigmaCut) {
+            registry.fill(HIST("hPIDCounter"), 4.5);
+          }
+          if (TMath::Abs(lTrack1.tpcNSigmaPr()) > TpcPidNsigmaCut) {
+            registry.fill(HIST("hPIDCounter"), 3.5);
+          }
+          if (TMath::Abs(lTrack2.tpcNSigmaDe()) > TpcPidNsigmaCut) {
+            registry.fill(HIST("hPIDCounter"), 5.5);
+          }
+          if (TMath::Abs(lTrack0.tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(lTrack1.tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(lTrack2.tpcNSigmaDe()) < TpcPidNsigmaCut) {
+            registry.fill(HIST("hHypertritonCounter"), 3.5);
           }
         }
       }

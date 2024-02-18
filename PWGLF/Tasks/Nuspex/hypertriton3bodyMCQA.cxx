@@ -42,7 +42,7 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe, aod::pidTOFFullDe>;
-using MCLabeledFullTracksExtIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
+using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
 template <class TMCTrackTo, typename TMCParticle>
 bool is3bodyDecayedH3L(TMCParticle const& particle)
@@ -220,7 +220,7 @@ struct hypertriton3bodyTrackMcinfo {
     }
   };
 
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::McParticles const& particlesMC, MCLabeledFullTracksExtIU const& tracks)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::McParticles const& particlesMC, MCLabeledTracksIU const& tracks)
   {
 
     registry.fill(HIST("hEventCounter"), 0.5);
