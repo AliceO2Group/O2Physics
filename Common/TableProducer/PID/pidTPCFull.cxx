@@ -107,7 +107,7 @@ struct tpcPidFull {
   Configurable<int> pidTr{"pid-tr", -1, {"Produce PID information for the Triton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidHe{"pid-he", -1, {"Produce PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidAl{"pid-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
-  // Configurable<int> enableTuneOnDataTable{"enableTuneOnDataTable", -1, {"Produce tuned dE/dx signal table for MC to be used as raw signal in other tasks (default -1, 'only if needed'"}};
+  Configurable<int> enableTuneOnDataTable{"enableTuneOnDataTable", -1, {"Produce tuned dE/dx signal table for MC to be used as raw signal in other tasks (default -1, 'only if needed'"}};
 
   // Parametrization configuration
   bool useCCDBParam = false;
@@ -140,6 +140,10 @@ struct tpcPidFull {
 
   void init(o2::framework::InitContext& initContext)
   {
+    // Protection for process flags
+    if ((doprocessStandard && doprocessMcTuneOnData) || (!doprocessStandard && !doprocessMcTuneOnData)) {
+      LOG(fatal) << "pid-tpc-full must have only one of the options 'processStandard' OR 'processMcTuneOnData' enabled. Please check your configuration.";
+    }
     response = new o2::pid::tpc::Response();
     // Checking the tables are requested in the workflow and enabling them
     auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
@@ -154,7 +158,9 @@ struct tpcPidFull {
     enableFlag("Tr", pidTr);
     enableFlag("He", pidHe);
     enableFlag("Al", pidAl);
-    // enableFlagIfTableRequired(initContext, "mcTPCTuneOnData", enableTuneOnDataTable);
+    if (doprocessMcTuneOnData) {
+      enableFlagIfTableRequired(initContext, "mcTPCTuneOnData", enableTuneOnDataTable);
+    }
 
     // Initialise metadata object for CCDB calls
     if (recoPass.value == "") {

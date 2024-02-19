@@ -140,6 +140,11 @@ struct tpcPid {
 
   void init(o2::framework::InitContext& initContext)
   {
+    // Protection for process flags
+    if ((doprocessStandard && doprocessMcTuneOnData) || (!doprocessStandard && !doprocessMcTuneOnData)) {
+      LOG(fatal) << "pid-tpc must have only one of the options 'processStandard' OR 'processMcTuneOnData' enabled. Please check your configuration.";
+    }
+
     response = new o2::pid::tpc::Response();
     // Checking the tables are requested in the workflow and enabling them
     auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
@@ -154,7 +159,9 @@ struct tpcPid {
     enableFlag("Tr", pidTr);
     enableFlag("He", pidHe);
     enableFlag("Al", pidAl);
-    enableFlagIfTableRequired(initContext, "mcTPCTuneOnData", enableTuneOnDataTable);
+    if (doprocessMcTuneOnData) {
+      enableFlagIfTableRequired(initContext, "mcTPCTuneOnData", enableTuneOnDataTable);
+    }
 
     // Initialise metadata object for CCDB calls
     if (recoPass.value == "") {
