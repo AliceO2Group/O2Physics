@@ -60,6 +60,9 @@
 #include "KFParticleBase.h"
 #include "KFVertex.h"
 
+using std::cout;
+using std::endl;
+
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 using Vec3D = ROOT::Math::SVector<double, 3>;
@@ -215,6 +218,16 @@ class VarManager : public TObject
     kIsSingleGapA, // Rapidity gap on side A
     kIsSingleGapC, // Rapidity gap on side C
     kIsSingleGap,  // Rapidity gap on either side
+    kTwoEvPosZ1,   // vtx-z for collision 1 in two events correlations
+    kTwoEvPosZ2,   // vtx-z for collision 2 in two events correlations
+    kTwoEvPosR1,   // vtx-R for collision 1 in two events correlations
+    kTwoEvPosR2,
+    kTwoEvPVcontrib1, // n-contributors for collision 1 in two events correlations
+    kTwoEvPVcontrib2,
+    kTwoEvDeltaZ,     // distance in z between collisions
+    kTwoEvDeltaX,     // distance in x between collisions
+    kTwoEvDeltaY,     // distance in y between collisions
+    kTwoEvDeltaR,     // distance in (x,y) plane between collisions
     kNEventWiseVariables,
 
     // Basic track/muon/pair wise variables
@@ -327,6 +340,8 @@ class VarManager : public TObject
     kIsLegFromOmega,
     kIsProtonFromLambdaAndAntiLambda,
     kIsDalitzLeg, // Up to 8 dalitz selections
+    kBarrelNAssocsInBunch,       // number of in bunch collision associations 
+    kBarrelNAssocsOutOfBunch,    // number of out of bunch collision associations
     kNBarrelTrackVariables = kIsDalitzLeg + 8,
 
     // Muon track variables
@@ -642,6 +657,8 @@ class VarManager : public TObject
   static void FillPropagateMuon(const T& muon, const C& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
+  template <typename T>
+  static void FillTwoEvents(T const& event1, T const& event2, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillTrack(T const& track, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
@@ -852,14 +869,14 @@ o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C
     propmuon.setParameters(proptrack.getParameters());
     propmuon.setZ(proptrack.getZ());
     propmuon.setCovariances(proptrack.getCovariances());
-
   } else if (static_cast<int>(muon.trackType()) < 2) {
-    double centerMFT[3] = {0, 0, -61.4};
+    /*double centerMFT[3] = {0, 0, -61.4};
     o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     auto Bz = field->getBz(centerMFT); // Get field at centre of MFT
+    //auto Bz = fgMagField;
     auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), collision.posX(), collision.posY(), collision.posZ());
     auto x2x0 = static_cast<float>(geoMan.meanX2X0);
-    fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);
+    fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);*/
     propmuon.setParameters(fwdtrack.getParameters());
     propmuon.setZ(fwdtrack.getZ());
     propmuon.setCovariances(fwdtrack.getCovariances());
@@ -873,7 +890,6 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
   if (!values) {
     values = fgValues;
   }
-
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
     o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muon, collision);
 
@@ -1131,6 +1147,33 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   FillEventDerived(values);
+}
+
+template <typename T>
+void VarManager::FillTwoEvents(T const& ev1, T const& ev2, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  values[kTwoEvPosZ1] = ev1.posZ();
+  values[kTwoEvPosZ2] = ev2.posZ();
+  values[kTwoEvPosR1] = std::sqrt(ev1.posX()*ev1.posX()+ev1.posY()*ev1.posY());
+  values[kTwoEvPosR2] = std::sqrt(ev2.posX()*ev2.posX()+ev2.posY()*ev2.posY());
+  values[kTwoEvPVcontrib1] = ev1.numContrib();
+  values[kTwoEvPVcontrib2] = ev2.numContrib();
+  if (ev1.numContrib() < ev2.numContrib()) {
+    values[kTwoEvPosZ1] = ev2.posZ();
+    values[kTwoEvPosZ2] = ev1.posZ();
+    values[kTwoEvPVcontrib1] = ev2.numContrib();
+    values[kTwoEvPVcontrib2] = ev1.numContrib();
+    values[kTwoEvPosR1] = std::sqrt(ev2.posX()*ev2.posX()+ev2.posY()*ev2.posY());;
+    values[kTwoEvPosR2] = std::sqrt(ev1.posX()*ev1.posX()+ev1.posY()*ev1.posY());
+  }
+  values[kTwoEvDeltaZ] = ev1.posZ() - ev2.posZ();
+  values[kTwoEvDeltaX] = ev1.posX() - ev2.posX();
+  values[kTwoEvDeltaY] = ev1.posY() - ev2.posY();
+  values[kTwoEvDeltaR] = std::sqrt(values[kTwoEvDeltaX]*values[kTwoEvDeltaX] + values[kTwoEvDeltaY]*values[kTwoEvDeltaY]);
 }
 
 template <uint32_t fillMap, typename T>
