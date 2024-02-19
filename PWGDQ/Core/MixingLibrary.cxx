@@ -15,7 +15,6 @@
 
 void o2::aod::dqmixing::SetUpMixing(MixingHandler* mh, const char* mixingVarible)
 {
-
   std::string nameStr = mixingVarible;
   if (!nameStr.compare("Centrality1")) {
     std::vector<float> fCentLimsHashing = {0.0f, 20.0f, 40.0f, 60.0f, 90.0f};
