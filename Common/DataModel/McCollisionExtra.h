@@ -23,9 +23,10 @@ namespace mccollisionprop
 {
 DECLARE_SOA_COLUMN(NumRecoCollision, numRecoCollision, int);     //! stores N times this PV was recoed
 DECLARE_SOA_COLUMN(BestCollisionIndex, bestCollisionIndex, int); //! stores N times this PV was recoed
+DECLARE_SOA_COLUMN(BestCollisionCentFT0C, bestCollisionCentFT0C, float); //! stores N times this PV was recoed
 } // namespace mccollisionprop
 DECLARE_SOA_TABLE(McCollsExtra, "AOD", "MCCOLLSEXTRA",
-                  mccollisionprop::NumRecoCollision, mccollisionprop::BestCollisionIndex);
+                  mccollisionprop::NumRecoCollision, mccollisionprop::BestCollisionIndex, mccollisionprop::BestCollisionCentFT0C);
 } // namespace o2::aod
 
 #endif // COMMON_DATAMODEL_MCCOLLISIONEXTRA_H_
