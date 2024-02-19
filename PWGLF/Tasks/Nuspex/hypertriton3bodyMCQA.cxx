@@ -168,12 +168,14 @@ struct hypertriton3bodyTrackMcinfo {
       {"hDauDeuteronTPCVsPt", "hDauDeuteronTPCVsPt", {HistType::kTH2F, {{80, 0.0f, 8.0f, "#it{p}_{T} (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
       {"hDauDeuteronTOFNSigmaVsP", "hDauDeuteronTOFNSigmaVsP", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {200, -100.0f, 100.0f, "TOF n#sigma"}}}},
       {"hDauDeuteronTOFNSigmaVsPHasTOF", "hDauDeuteronTOFNSigmaVsPHasTOF", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {200, -100.0f, 100.0f, "TOF n#sigma"}}}},
+      {"hDeuteronTOFMatchCounter", "hDeuteronTOFMatchCounter", {HistType::kTH1F, {{8, 0.0f, 8.0f}}}},
 
       {"hTPCBB", "hTPCBB", {HistType::kTH2F, {{120, -8.0f, 8.0f, "p/z(GeV/c)"}, {100, 0.0f, 1000.0f, "TPCSignal"}}}},
 
       {"hPairedH3LDaughers", "hPairedH3LDaughers", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
       {"hPairedH3LDaughersInvMass", "hPairedH3LDaughersInvMass", {HistType::kTH1F, {{300, 2.9f, 3.2f}}}},
       {"hDuplicatedH3LDaughers", "hDuplicatedH3LDaughers", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
+      {"hTestCounter", "hTestCounter", {HistType::kTH1F, {{20, 0.0f, 20.0f}}}},
     },
   };
 
@@ -186,6 +188,14 @@ struct hypertriton3bodyTrackMcinfo {
     registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(5, "McisProton");
     registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(6, "McisPion");
     registry.get<TH1>(HIST("hParticleCount"))->GetXaxis()->SetBinLabel(7, "McisDeuteron");
+
+    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(1, "All track");
+    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(2, "hasMC");
+    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(3, "hasMC&TPC&TOF");
+    for (int i=0; i<16; i++){
+      registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(i+4, Form("Bit %d", i));
+    }
+    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(20, "hasMC&TPC&TOF&(!Bit15)");
 
     TString TrackCounterbinLabel[6] = {"hasMom", "FromHypertriton", "TPCNcls", "Eta", "Pt", "TPCPID"};
     for (int i{0}; i < 6; i++) {
@@ -245,8 +255,21 @@ struct hypertriton3bodyTrackMcinfo {
       registry.fill(HIST("hTrackNsigmaProton"), track.tpcNSigmaPr());
       registry.fill(HIST("hTrackNsigmaPion"), track.tpcNSigmaPi());
 
+      registry.fill(HIST("hTestCounter"), 0.5);
+      for (int i = 0; i < 16; i++) {
+        if (track.mcMask() & 1 << i) { // Bit ON means mismatch
+          registry.fill(HIST("hTestCounter"), i + 3.5);
+        }
+      }
       if (!track.has_mcParticle()) {
         continue;
+      }
+      registry.fill(HIST("hTestCounter"), 1.5);
+      if (track.hasTOF() && track.hasTPC()) {
+        registry.fill(HIST("hTestCounter"), 2.5);
+        if (!(track.mcMask() & 1 << 15)) { // Bit ON means mismatch
+          registry.fill(HIST("hTestCounter"), 19.5);
+        }
       }
       registry.fill(HIST("hParticleCount"), 1.5);
       auto mcparticle = track.mcParticle_as<aod::McParticles>();
@@ -418,7 +441,7 @@ struct hypertriton3bodyTrackMcinfo {
               continue;
             }
             registry.fill(HIST("hDeuteronCount"), 5.5);
-            if (track.hasTOF()) {
+            if (!track.hasTOF()) {
               continue;
             }
             registry.fill(HIST("hDeuteronCount"), 6.5);
@@ -435,6 +458,16 @@ struct hypertriton3bodyTrackMcinfo {
         registry.fill(HIST("hDeuteronEta"), track.eta());
         registry.fill(HIST("hDeuteronMcRapidity"), mcparticle.y());
         registry.fill(HIST("hDeuteronTPCBB"), track.p() * track.sign(), track.tpcSignal());
+        registry.fill(HIST("hDeuteronTOFMatchCounter"), 0.5);
+        if (!(track.mcMask() & 1 << 15)) {
+          registry.fill(HIST("hDeuteronTOFMatchCounter"), 1.5);
+          if (track.hasTPC() && track.hasTOF()) {
+            registry.fill(HIST("hDeuteronTOFMatchCounter"), 2.5);
+            if (!(track.mcMask() & 1 << 11)) { // Bit ON means mismatch
+              registry.fill(HIST("hDeuteronTOFMatchCounter"), 3.5);
+            }
+          }
+        }
       }
       ++itrack;
     }
