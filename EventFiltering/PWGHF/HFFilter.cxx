@@ -564,6 +564,7 @@ struct HfFilter { // Main struct for HF triggers
               if (TESTBIT(selV0, kPhoton)) {
                 auto trackParGamma = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
                 trackParGamma.setPID(o2::track::PID::Photon);
+                trackParGamma.setAbsCharge(0);
                 o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParGamma, 2.f, matCorr, &dcaInfo);
                 getPxPyPz(trackParGamma, pVecV0);
                 float massDStarCand{-1.}, massDStarBarCand{999.};
@@ -597,6 +598,7 @@ struct HfFilter { // Main struct for HF triggers
 
                 auto trackParK0 = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
                 trackParK0.setPID(o2::track::PID::K0);
+                trackParK0.setAbsCharge(0);
                 o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0, 2.f, matCorr, &dcaInfo);
                 getPxPyPz(trackParK0, pVecV0);
 
