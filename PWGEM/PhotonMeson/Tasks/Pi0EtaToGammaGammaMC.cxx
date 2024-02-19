@@ -610,7 +610,10 @@ struct Pi0EtaToGammaGammaMC {
     runGenInfo<PairType::kPCMPCM>(collisions, mccollisions, mcparticles);
   }
   void processPHOSPHOS(MyCollisions const& collisions) {}
-  void processEMCEMC(MyCollisions const& collisions) {}
+  void processEMCEMC(MyCollisions const& collisions, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
+  {
+    runGenInfo<PairType::kEMCEMC>(collisions, mccollisions, mcparticles);
+  }
   void processPCMPHOS(MyCollisions const& collisions) {}
   void processPCMEMC(MyCollisions const& collisions) {}
 
