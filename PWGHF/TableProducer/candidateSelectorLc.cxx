@@ -365,17 +365,12 @@ struct HfCandidateSelectorLc {
         continue;
       }
 
-      if ((pidLcToPKPi == -1 || pidLcToPKPi == 1) && (pidBayesLcToPKPi == -1 || pidBayesLcToPKPi == 1) && topolLcToPKPi) {
-        statusLcToPKPi = 1; // identified as LcToPKPi
-      }
-      if ((pidLcToPiKP == -1 || pidLcToPiKP == 1) && (pidBayesLcToPiKP == -1 || pidBayesLcToPiKP == 1) && topolLcToPiKP) {
-        statusLcToPiKP = 1; // identified as LcToPiKP
-      }
-
+      bool isSelectedMlLcToPKPi = true;
+      bool isSelectedMlLcToPiKP = true;
       if (applyMl) {
         // ML selections
-        bool isSelectedMlLcToPKPi = false;
-        bool isSelectedMlLcToPiKP = false;
+        isSelectedMlLcToPKPi = false;
+        isSelectedMlLcToPiKP = false;
 
         if ((pidLcToPKPi == -1 || pidLcToPKPi == 1) && (pidBayesLcToPKPi == -1 || pidBayesLcToPKPi == 1) && topolLcToPKPi) {
           std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
@@ -396,6 +391,13 @@ struct HfCandidateSelectorLc {
         if (activateQA) {
           registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoMl, candidate.pt());
         }
+      }
+
+      if ((pidLcToPKPi == -1 || pidLcToPKPi == 1) && (pidBayesLcToPKPi == -1 || pidBayesLcToPKPi == 1) && isSelectedMlLcToPKPi && topolLcToPKPi) {
+        statusLcToPKPi = 1; // identified as LcToPKPi
+      }
+      if ((pidLcToPiKP == -1 || pidLcToPiKP == 1) && (pidBayesLcToPiKP == -1 || pidBayesLcToPiKP == 1) && isSelectedMlLcToPiKP && topolLcToPiKP) {
+        statusLcToPiKP = 1; // identified as LcToPiKP
       }
 
       hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
