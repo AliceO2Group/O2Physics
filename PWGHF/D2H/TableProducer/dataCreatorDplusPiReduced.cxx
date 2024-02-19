@@ -429,8 +429,8 @@ struct HfDataCreatorDplusPiReduced {
                   pdgCodeCharmMother = 1;
                   pdgCodeProng0 = particleProng0.pdgCode();
                   pdgCodeProng1 = particleProng1.pdgCode();
-                  pdgCodeProng2 = particleProng1.pdgCode();
-                  pdgCodeProng3 = particleProng1.pdgCode();
+                  pdgCodeProng2 = particleProng2.pdgCode();
+                  pdgCodeProng3 = particleProng3.pdgCode();
                   // look for common c-hadron mother among prongs 0, 1 and 2
                   for (const auto& cHadronMotherHypo : cHadronMotherHypos) {
                     int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, 2);
