@@ -173,7 +173,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "IsSingleGapA", "Is single gap on side A", false, 2, -0.5, 1.5, VarManager::kIsSingleGapA);
       hm->AddHistogram(histClass, "IsSingleGapC", "Is single gap on side C", false, 2, -0.5, 1.5, VarManager::kIsSingleGapC);
     }
-  }  // end "event"
+  } // end "event"
 
   if (groupStr.CompareTo("two-collisions") == 0) {
     hm->AddHistogram(histClass, "DeltaZ", "z_{1} - z_{2}", false, 400, -20., 20., VarManager::kTwoEvDeltaZ);

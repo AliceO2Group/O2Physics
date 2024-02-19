@@ -344,7 +344,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableNames[kTwoEvPVcontrib1] = "n.contrib 1";
   fgVariableUnits[kTwoEvPVcontrib1] = "";
   fgVariableNames[kTwoEvPVcontrib2] = "n.contrib 2";
-  fgVariableUnits[kTwoEvPVcontrib2] = "";  
+  fgVariableUnits[kTwoEvPVcontrib2] = "";
   fgVariableNames[kPt] = "p_{T}";
   fgVariableUnits[kPt] = "GeV/c";
   fgVariableNames[kInvPt] = "1/p_{T}";

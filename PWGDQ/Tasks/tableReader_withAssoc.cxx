@@ -78,7 +78,7 @@ DECLARE_SOA_COLUMN(Chi2Bcandidate, chi2Bcandidate, float);
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);           //!  joinable to ReducedEvents
 DECLARE_SOA_TABLE(MixingHashes, "AOD", "DQANAMIXHASH", dqanalysisflags::MixingHash);            //!  joinable to ReducedEvents
 DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "DQANATRKCUTS", dqanalysisflags::IsBarrelSelected);   //!  joinable to ReducedTracksAssoc
-DECLARE_SOA_TABLE(BarrelAmbiguities, "AOD", "DQBARRELAMB", dqanalysisflags::BarrelAmbiguityInBunch, dqanalysisflags::BarrelAmbiguityOutOfBunch);   //!  joinable to ReducedBarrelTracks
+DECLARE_SOA_TABLE(BarrelAmbiguities, "AOD", "DQBARRELAMB", dqanalysisflags::BarrelAmbiguityInBunch, dqanalysisflags::BarrelAmbiguityOutOfBunch); //!  joinable to ReducedBarrelTracks
 DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);      //!  joinable to ReducedMuonsAssoc
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsBarrelSelectedPrefilter); //!  joinable to ReducedTracksAssoc
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate);
@@ -147,8 +147,8 @@ struct AnalysisEventSelection {
   MixingHandler* fMixHandler = nullptr;
   AnalysisCompositeCut* fEventCut;
 
-  std::map<int64_t,bool> fSelMap;                     // key: reduced event global index, value: event selection decision
-  std::map<uint64_t,std::vector<int64_t>> fBCCollMap; // key: global BC, value: vector of reduced event global indices
+  std::map<int64_t, bool> fSelMap;                     // key: reduced event global index, value: event selection decision
+  std::map<uint64_t, std::vector<int64_t>> fBCCollMap; // key: global BC, value: vector of reduced event global indices
 
   void init(o2::framework::InitContext&)
   {
@@ -217,15 +217,16 @@ struct AnalysisEventSelection {
   }
 
   template <uint32_t TEventFillMap, typename TEvents>
-  void publishSelections(TEvents const& events) {
-    
-    std::map<int64_t, bool> collisionSplittingMap;   // key: event global index, value: whether pileup event is a possible splitting
+  void publishSelections(TEvents const& events)
+  {
+
+    std::map<int64_t, bool> collisionSplittingMap; // key: event global index, value: whether pileup event is a possible splitting
 
     // Reset the fValues array and fill event observables
     VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
     // loop over the BC map, find BCs with more than one collision and compute 2-event correlation quantities
     for (auto& [bc, evIndices] : fBCCollMap) {
-      if (evIndices.size()<2) {
+      if (evIndices.size() < 2) {
         continue;
       }
       for (auto ev1Idx = evIndices.begin(); ev1Idx != evIndices.end(); ++ev1Idx) {
@@ -239,7 +240,7 @@ struct AnalysisEventSelection {
           }
           auto ev2 = events.rawIteratorAt(*ev2Idx);
           VarManager::FillTwoEvents(ev1, ev2);
-          if (TMath::Abs(VarManager::fgValues[VarManager::kTwoEvDeltaZ]) < 1.0) {   // this is a possible collision split
+          if (TMath::Abs(VarManager::fgValues[VarManager::kTwoEvDeltaZ]) < 1.0) { // this is a possible collision split
             collisionSplittingMap[*ev1Idx] = true;
             collisionSplittingMap[*ev2Idx] = true;
           }
@@ -252,14 +253,14 @@ struct AnalysisEventSelection {
     uint32_t evSel = 0;
     for (auto& event : events) {
       evSel = 0;
-      if (fSelMap[event.globalIndex()]) {     // event passed the user cuts
+      if (fSelMap[event.globalIndex()]) { // event passed the user cuts
         evSel |= (uint32_t(1) << 0);
       }
       std::vector<int64_t> sameBunchEvents = fBCCollMap[event.globalBC()];
-      if (sameBunchEvents.size()>1) {         // event with in-bunch pileup
+      if (sameBunchEvents.size() > 1) { // event with in-bunch pileup
         evSel |= (uint32_t(1) << 1);
       }
-      if (collisionSplittingMap.find(event.globalIndex()) != collisionSplittingMap.end()) {     // event with possible fake in-bunch pileup (collision splitting)
+      if (collisionSplittingMap.find(event.globalIndex()) != collisionSplittingMap.end()) { // event with possible fake in-bunch pileup (collision splitting)
         evSel |= (uint32_t(1) << 2);
       }
       eventSel(evSel);
@@ -306,8 +307,8 @@ struct AnalysisTrackSelection {
 
   int fCurrentRun; // current run (needed to detect run changes for loading CCDB parameters)
 
-  std::map<int64_t, std::vector<int64_t>> fNAssocsInBunch;     // key: track global index, value: vector of global index for events associated in-bunch (events that have in-bunch pileup or splitting)
-  std::map<int64_t, std::vector<int64_t>> fNAssocsOutOfBunch;  // key: track global index, value: vector of global index for events associated out-of-bunch (events that have no in-bunch pileup)
+  std::map<int64_t, std::vector<int64_t>> fNAssocsInBunch;    // key: track global index, value: vector of global index for events associated in-bunch (events that have in-bunch pileup or splitting)
+  std::map<int64_t, std::vector<int64_t>> fNAssocsOutOfBunch; // key: track global index, value: vector of global index for events associated out-of-bunch (events that have no in-bunch pileup)
 
   void init(o2::framework::InitContext&)
   {
@@ -438,7 +439,7 @@ struct AnalysisTrackSelection {
 
     // QA the collision-track associations
     for (auto& [trackIdx, evIndices] : fNAssocsInBunch) {
-      if (evIndices.size()==1) {
+      if (evIndices.size() == 1) {
         continue;
       }
       auto track = tracks.rawIteratorAt(trackIdx);
@@ -446,10 +447,10 @@ struct AnalysisTrackSelection {
       VarManager::FillTrack<TTrackFillMap>(track);
       VarManager::fgValues[VarManager::kBarrelNAssocsInBunch] = float(evIndices.size());
       fHistMan->FillHistClass("TrackBarrel_AmbiguityInBunch", VarManager::fgValues);
-    }  // end loop over in-bunch ambiguous tracks
+    } // end loop over in-bunch ambiguous tracks
 
     for (auto& [trackIdx, evIndices] : fNAssocsOutOfBunch) {
-      if (evIndices.size()==1) {
+      if (evIndices.size() == 1) {
         continue;
       }
       auto track = tracks.rawIteratorAt(trackIdx);
@@ -457,7 +458,7 @@ struct AnalysisTrackSelection {
       VarManager::FillTrack<TTrackFillMap>(track);
       VarManager::fgValues[VarManager::kBarrelNAssocsOutOfBunch] = float(evIndices.size());
       fHistMan->FillHistClass("TrackBarrel_AmbiguityOutOfBunch", VarManager::fgValues);
-    }  // end loop over out-of-bunch ambiguous tracks
+    } // end loop over out-of-bunch ambiguous tracks
 
     // publish the ambiguity table
     for (auto& track : tracks) {
@@ -1111,7 +1112,7 @@ struct AnalysisSameEventPairing {
       VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
 
       auto groupedAssocs = assocs.sliceBy(preslice, event.globalIndex());
-      if (groupedAssocs.size()==0) {
+      if (groupedAssocs.size() == 0) {
         continue;
       }
 
@@ -1141,12 +1142,12 @@ struct AnalysisSameEventPairing {
           if (t2.barrelAmbiguityOutOfBunch() > 1) {
             twoTrackFilter |= (uint32_t(1) << 31);
           }
-          
+
           VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
           if constexpr (TTwoProngFitter) {
             VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fConfigPropToPCA);
           }
-          if constexpr (eventHasQvector) {  
+          if constexpr (eventHasQvector) {
             VarManager::FillPairVn<TPairType>(t1, t2);
           }
 
@@ -1188,7 +1189,7 @@ struct AnalysisSameEventPairing {
             dileptonInfoList(t1.collisionId(), event.posX(), event.posY(), event.posZ());
           }
 
-          if constexpr (TTwoProngFitter) {  
+          if constexpr (TTwoProngFitter) {
             dimuonsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauz], VarManager::fgValues[VarManager::kVertexingLz], VarManager::fgValues[VarManager::kVertexingLxy]);
             if (fConfigFlatTables.value) {
               dimuonAllList(event.posX(), event.posY(), event.posZ(), event.numContrib(),
@@ -1238,27 +1239,27 @@ struct AnalysisSameEventPairing {
             if (sign1 * sign2 < 0) {
               fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
               if (isAmbiInBunch) {
-                fHistMan->FillHistClass(histNames[icut][3+histIdxOffset].Data(), VarManager::fgValues);
+                fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset].Data(), VarManager::fgValues);
               }
               if (isAmbiOutOfBunch) {
-                fHistMan->FillHistClass(histNames[icut][3+histIdxOffset+3].Data(), VarManager::fgValues);
+                fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset + 3].Data(), VarManager::fgValues);
               }
             } else {
               if (sign1 > 0) {
                 fHistMan->FillHistClass(histNames[icut][1].Data(), VarManager::fgValues);
                 if (isAmbiInBunch) {
-                  fHistMan->FillHistClass(histNames[icut][4+histIdxOffset].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset].Data(), VarManager::fgValues);
                 }
                 if (isAmbiOutOfBunch) {
-                  fHistMan->FillHistClass(histNames[icut][4+histIdxOffset+3].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset + 3].Data(), VarManager::fgValues);
                 }
               } else {
                 fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
                 if (isAmbiInBunch) {
-                  fHistMan->FillHistClass(histNames[icut][5+histIdxOffset].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset].Data(), VarManager::fgValues);
                 }
                 if (isAmbiOutOfBunch) {
-                  fHistMan->FillHistClass(histNames[icut][5+histIdxOffset+3].Data(), VarManager::fgValues);
+                  fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset + 3].Data(), VarManager::fgValues);
                 }
               }
             }
@@ -1279,7 +1280,7 @@ struct AnalysisSameEventPairing {
           }
         } // end loop (cuts)
       }   // end loop over pairs of track associations
-    }  // end loop over events
+    }     // end loop over events
   }
 
   template <int TPairType, uint32_t TEventFillMap, typename TAssoc1, typename TAssoc2, typename TTracks1, typename TTracks2>
@@ -1563,7 +1564,7 @@ struct AnalysisDileptonTrack {
 
   // TODO: The filter expressions seem to always use the default value of configurables, not the values from the actual configuration file
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == uint32_t(1);
-  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonpTCut && aod::reducedpair::mass > fConfigDileptonLowMass && aod::reducedpair::mass < fConfigDileptonHighMass && aod::reducedpair::sign == 0;
+  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonpTCut&& aod::reducedpair::mass > fConfigDileptonLowMass&& aod::reducedpair::mass < fConfigDileptonHighMass&& aod::reducedpair::sign == 0;
   Filter filterBarrel = aod::dqanalysisflags::isBarrelSelected > uint32_t(0);
   Filter filterMuon = aod::dqanalysisflags::isMuonSelected > uint32_t(0);
 

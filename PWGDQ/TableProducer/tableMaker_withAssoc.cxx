@@ -773,7 +773,7 @@ struct TableMaker {
   }   // end skimMuons
 
   // Produce standard barrel + muon tables with event filter (typically for pp and p-Pb) ------------------------------------------------------
-  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, uint32_t TMFTFillMap, typename TEvents, typename TTracks, 
+  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, uint32_t TMFTFillMap, typename TEvents, typename TTracks,
             typename TMuons, typename TMFTTracks, typename TTrackAssoc, typename TFwdTrackAssoc, typename TMFTTrackAssoc>
   void fullSkimming(TEvents const& collisions, BCsWithTimestamps const& bcs,
                     TTracks const& tracksBarrel, TMuons const& muons, TMFTTracks const& mftTracks,

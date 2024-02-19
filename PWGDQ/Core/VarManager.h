@@ -224,10 +224,10 @@ class VarManager : public TObject
     kTwoEvPosR2,
     kTwoEvPVcontrib1, // n-contributors for collision 1 in two events correlations
     kTwoEvPVcontrib2,
-    kTwoEvDeltaZ,     // distance in z between collisions
-    kTwoEvDeltaX,     // distance in x between collisions
-    kTwoEvDeltaY,     // distance in y between collisions
-    kTwoEvDeltaR,     // distance in (x,y) plane between collisions
+    kTwoEvDeltaZ, // distance in z between collisions
+    kTwoEvDeltaX, // distance in x between collisions
+    kTwoEvDeltaY, // distance in y between collisions
+    kTwoEvDeltaR, // distance in (x,y) plane between collisions
     kNEventWiseVariables,
 
     // Basic track/muon/pair wise variables
@@ -339,9 +339,9 @@ class VarManager : public TObject
     kIsLegFromAntiLambda,
     kIsLegFromOmega,
     kIsProtonFromLambdaAndAntiLambda,
-    kIsDalitzLeg, // Up to 8 dalitz selections
-    kBarrelNAssocsInBunch,       // number of in bunch collision associations 
-    kBarrelNAssocsOutOfBunch,    // number of out of bunch collision associations
+    kIsDalitzLeg,             // Up to 8 dalitz selections
+    kBarrelNAssocsInBunch,    // number of in bunch collision associations
+    kBarrelNAssocsOutOfBunch, // number of out of bunch collision associations
     kNBarrelTrackVariables = kIsDalitzLeg + 8,
 
     // Muon track variables
@@ -1158,8 +1158,8 @@ void VarManager::FillTwoEvents(T const& ev1, T const& ev2, float* values)
 
   values[kTwoEvPosZ1] = ev1.posZ();
   values[kTwoEvPosZ2] = ev2.posZ();
-  values[kTwoEvPosR1] = std::sqrt(ev1.posX()*ev1.posX()+ev1.posY()*ev1.posY());
-  values[kTwoEvPosR2] = std::sqrt(ev2.posX()*ev2.posX()+ev2.posY()*ev2.posY());
+  values[kTwoEvPosR1] = std::sqrt(ev1.posX() * ev1.posX() + ev1.posY() * ev1.posY());
+  values[kTwoEvPosR2] = std::sqrt(ev2.posX() * ev2.posX() + ev2.posY() * ev2.posY());
   values[kTwoEvPVcontrib1] = ev1.numContrib();
   values[kTwoEvPVcontrib2] = ev2.numContrib();
   if (ev1.numContrib() < ev2.numContrib()) {
@@ -1167,13 +1167,14 @@ void VarManager::FillTwoEvents(T const& ev1, T const& ev2, float* values)
     values[kTwoEvPosZ2] = ev1.posZ();
     values[kTwoEvPVcontrib1] = ev2.numContrib();
     values[kTwoEvPVcontrib2] = ev1.numContrib();
-    values[kTwoEvPosR1] = std::sqrt(ev2.posX()*ev2.posX()+ev2.posY()*ev2.posY());;
-    values[kTwoEvPosR2] = std::sqrt(ev1.posX()*ev1.posX()+ev1.posY()*ev1.posY());
+    values[kTwoEvPosR1] = std::sqrt(ev2.posX() * ev2.posX() + ev2.posY() * ev2.posY());
+    ;
+    values[kTwoEvPosR2] = std::sqrt(ev1.posX() * ev1.posX() + ev1.posY() * ev1.posY());
   }
   values[kTwoEvDeltaZ] = ev1.posZ() - ev2.posZ();
   values[kTwoEvDeltaX] = ev1.posX() - ev2.posX();
   values[kTwoEvDeltaY] = ev1.posY() - ev2.posY();
-  values[kTwoEvDeltaR] = std::sqrt(values[kTwoEvDeltaX]*values[kTwoEvDeltaX] + values[kTwoEvDeltaY]*values[kTwoEvDeltaY]);
+  values[kTwoEvDeltaR] = std::sqrt(values[kTwoEvDeltaX] * values[kTwoEvDeltaX] + values[kTwoEvDeltaY] * values[kTwoEvDeltaY]);
 }
 
 template <uint32_t fillMap, typename T>
