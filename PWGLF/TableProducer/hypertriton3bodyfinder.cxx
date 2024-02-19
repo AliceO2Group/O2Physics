@@ -54,25 +54,25 @@ bool is3bodyDecayedH3L(TMCParticle const& particle)
   if (particle.pdgCode() != 1010010030 && particle.pdgCode() != -1010010030) {
     return false;
   }
-  bool haveProton = false, havePion = false, haveDeuteron = false;
-  bool haveAntiProton = false, haveAntiPion = false, haveAntiDeuteron = false;
+  bool haveProton = false, havePionPlus = false, haveDeuteron = false;
+  bool haveAntiProton = false, havePionMinus = false, haveAntiDeuteron = false;
   for (auto& mcparticleDaughter : particle.template daughters_as<aod::McParticles>()) {
     if (mcparticleDaughter.pdgCode() == 2212)
       haveProton = true;
     if (mcparticleDaughter.pdgCode() == -2212)
       haveAntiProton = true;
     if (mcparticleDaughter.pdgCode() == 211)
-      havePion = true;
+      havePionPlus = true;
     if (mcparticleDaughter.pdgCode() == -211)
-      haveAntiPion = true;
+      havePionMinus = true;
     if (mcparticleDaughter.pdgCode() == 1000010020)
       haveDeuteron = true;
     if (mcparticleDaughter.pdgCode() == -1000010020)
       haveAntiDeuteron = true;
   }
-  if (haveProton && haveAntiPion && haveDeuteron && particle.pdgCode() == 1010010030) {
+  if (haveProton && havePionMinus && haveDeuteron && particle.pdgCode() == 1010010030) {
     return true;
-  } else if (haveAntiProton && havePion && haveAntiDeuteron && particle.pdgCode() == -1010010030) {
+  } else if (haveAntiProton && havePionPlus && haveAntiDeuteron && particle.pdgCode() == -1010010030) {
     return true;
   }
   return false;

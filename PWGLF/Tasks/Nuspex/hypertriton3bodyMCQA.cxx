@@ -166,8 +166,8 @@ struct hypertriton3bodyTrackMcinfo {
       {"hDauDeuteronPt", "hDauDeuteronPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hDauDeuteronMcPt", "hDauDeuteronMcPt", {HistType::kTH1F, {{200, 0.0f, 10.0f}}}},
       {"hDauDeuteronTPCVsPt", "hDauDeuteronTPCVsPt", {HistType::kTH2F, {{80, 0.0f, 8.0f, "#it{p}_{T} (GeV/c)"}, {240, -6.0f, 6.0f, "TPC n#sigma"}}}},
-      {"hDauDeuteronTOFNSigmaVsP", "hDauDeuteronTOFNSigmaVsP", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {200, -100.0f, 100.0f, "TPC n#sigma"}}}},
-      {"hDauDeuteronTOFNSigmaVsPifhasTOF", "hDauDeuteronTOFNSigmaVsPifhasTOF", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {200, -100.0f, 100.0f, "TPC n#sigma"}}}},
+      {"hDauDeuteronTOFNSigmaVsP", "hDauDeuteronTOFNSigmaVsP", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {200, -100.0f, 100.0f, "TOF n#sigma"}}}},
+      {"hDauDeuteronTOFNSigmaVsPHasTOF", "hDauDeuteronTOFNSigmaVsPHasTOF", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {200, -100.0f, 100.0f, "TOF n#sigma"}}}},
 
       {"hTPCBB", "hTPCBB", {HistType::kTH2F, {{120, -8.0f, 8.0f, "p/z(GeV/c)"}, {100, 0.0f, 1000.0f, "TPCSignal"}}}},
 
@@ -400,7 +400,7 @@ struct hypertriton3bodyTrackMcinfo {
             registry.fill(HIST("hDauDeuteronTPCVsPt"), track.pt(), track.tpcNSigmaDe());
             registry.fill(HIST("hDauDeuteronTOFNSigmaVsP"), track.sign() * track.p(), track.tofNSigmaDe());
             if (track.hasTOF()) {
-              registry.fill(HIST("hDauDeuteronTOFNSigmaVsPifhasTOF"), track.sign() * track.p(), track.tofNSigmaDe());
+              registry.fill(HIST("hDauDeuteronTOFNSigmaVsPHasTOF"), track.sign() * track.p(), track.tofNSigmaDe());
             }
             if (track.tpcNClsCrossedRows() < 70) {
               continue;
