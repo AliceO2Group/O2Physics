@@ -153,6 +153,8 @@ struct UpcTauCentralBarrelRL {
   // init
   void init(InitContext&)
   {
+	  thisSetRequireHitsInITSLayers(1, {0, 1, 2});
+
     if (verboseInfo)
       printLargeMessage("INIT METHOD");
     countCollisions = 0;
@@ -418,8 +420,30 @@ struct UpcTauCentralBarrelRL {
 
   } // end run
 
+	std::vector<std::pair<int8_t, std::set<uint8_t>>> cutMyRequiredITSHits{};
+
+	void thisSetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers)
+	{
+		// layer 0 corresponds to the the innermost ITS layer
+		cutMyRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers));
+	}
+
+	bool isFulfillsITSHitRequirementsReinstatement(uint8_t itsClusterMap) const
+	{
+    constexpr uint8_t bit = 1;
+    for (auto& itsRequirement : cutMyRequiredITSHits) {
+      auto hits = std::count_if(itsRequirement.second.begin(), itsRequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (bit << requiredLayer); });
+      if ((itsRequirement.first == -1) && (hits > 0)) {
+        return false; // no hits were required in specified layers
+      } else if (hits < itsRequirement.first) {
+        return false; // not enough hits found in specified layers
+      }
+    }
+    return true;
+	}
+
   template <typename T>
-  bool isGlobalTrackReinstallment(T const& track)
+  bool isGlobalTrackReinstatement(T const& track)
   {
     // kInAcceptance copy
     if (track.pt() < cutMyGTptMin || track.pt() > cutMyGTptMax)
@@ -447,7 +471,8 @@ struct UpcTauCentralBarrelRL {
       return false;
     if (track.itsChi2NCl() > cutMyGTitsChi2NclMax)
       return false;
-    // if (!FulfillsITSHitRequirements(track.itsClusterSizes())) return false; <---- to complicated to implement now
+		if (!isFulfillsITSHitRequirementsReinstatement(track.itsClusterMap()))
+			return false;
     //  TPC
     if (!track.hasTPC())
       return false; // TPC refit
@@ -523,7 +548,7 @@ struct UpcTauCentralBarrelRL {
       if (track.isPVContributor() != 1)
         continue;
       if (cutMyGlobalTracksOnly) {
-        if (isGlobalTrackReinstallment(track) != 1)
+        if (isGlobalTrackReinstatement(track) != 1)
           continue;
       }
       countPVGT++;
