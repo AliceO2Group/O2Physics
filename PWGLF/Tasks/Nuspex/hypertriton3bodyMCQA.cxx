@@ -175,7 +175,7 @@ struct hypertriton3bodyTrackMcinfo {
       {"hPairedH3LDaughers", "hPairedH3LDaughers", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
       {"hPairedH3LDaughersInvMass", "hPairedH3LDaughersInvMass", {HistType::kTH1F, {{300, 2.9f, 3.2f}}}},
       {"hDuplicatedH3LDaughers", "hDuplicatedH3LDaughers", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
-      {"hTestCounter", "hTestCounter", {HistType::kTH1F, {{20, 0.0f, 20.0f}}}},
+      {"hTestCounter", "hTestCounter", {HistType::kTH1F, {{21, 0.0f, 21.0f}}}},
     },
   };
 
@@ -192,10 +192,11 @@ struct hypertriton3bodyTrackMcinfo {
     registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(1, "All track");
     registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(2, "hasMC");
     registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(3, "hasMC&TPC&TOF");
-    for (int i=0; i<16; i++){
-      registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(i+4, Form("Bit %d", i));
+    for (int i = 0; i < 16; i++) {
+      registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(i + 4, Form("Bit %d", i));
     }
     registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(20, "hasMC&TPC&TOF&(!Bit15)");
+    registry.get<TH1>(HIST("hTestCounter"))->GetXaxis()->SetBinLabel(21, "hasMC&TPC&TOF&(!Bit11)");
 
     TString TrackCounterbinLabel[6] = {"hasMom", "FromHypertriton", "TPCNcls", "Eta", "Pt", "TPCPID"};
     for (int i{0}; i < 6; i++) {
@@ -269,6 +270,9 @@ struct hypertriton3bodyTrackMcinfo {
         registry.fill(HIST("hTestCounter"), 2.5);
         if (!(track.mcMask() & 1 << 15)) { // Bit ON means mismatch
           registry.fill(HIST("hTestCounter"), 19.5);
+        }
+        if (!(track.mcMask() & 1 << 11)) { // Bit ON means mismatch
+          registry.fill(HIST("hTestCounter"), 20.5);
         }
       }
       registry.fill(HIST("hParticleCount"), 1.5);
