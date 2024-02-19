@@ -511,8 +511,8 @@ struct FlowPbPbTask {
     double ptSum = 0., ptSum_Gap08 = 0.;
     double weffEvent_WithinGap08 = 0., weffEventSquare_WithinGap08 = 0.;
     double sum_ptSquare_wSquare_WithinGap08 = 0., sum_pt_wSquare_WithinGap08 = 0.;
-    int Magnetfield=0;
-    if (cfgUseAdditionalTrackCut){
+    int Magnetfield = 0;
+    if (cfgUseAdditionalTrackCut) {
       // magnet field dependence cut
       Magnetfield = getMagneticField(bc.timestamp());
     }
