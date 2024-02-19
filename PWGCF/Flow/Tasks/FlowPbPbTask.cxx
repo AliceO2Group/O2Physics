@@ -100,7 +100,7 @@ struct FlowPbPbTask {
   };
 
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;
+  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
   // Additional Event selection cuts - Copy from flowGenericFramework.cxx
   TF1* fPhiCutLow = nullptr;
@@ -118,6 +118,11 @@ struct FlowPbPbTask {
     ccdb->setCreatedNotAfter(nolaterthan.value);
 
     // Add some output objects to the histogram registry
+    registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{4, 0, 4}}});
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1,"Filtered event");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2,"after sel8");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3,"after additional event cut");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4,"after correction loads");
     registry.add("hPhi", "", {HistType::kTH1D, {axisPhi}});
     registry.add("hPhiWeighted", "", {HistType::kTH1D, {axisPhi}});
     registry.add("hEta", "", {HistType::kTH1D, {axisEta}});
@@ -128,6 +133,9 @@ struct FlowPbPbTask {
     registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
     registry.add("hChi2prTPCcls", "", {HistType::kTH1D, {{100, 0., 5.}}});
     registry.add("hnTPCClu", "", {HistType::kTH1D, {{100, 40, 180}}});
+    registry.add("hnTPCCrossedRow", "", {HistType::kTH1D, {{100, 40, 180}}});
+    registry.add("hDCAz", "", {HistType::kTH1D, {{100, -3, 3}}});
+    registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{50,-1,1},{50,0,10}}});
     registry.add("hMeanPt", "", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("hMeanPtWithinGap08", "", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("c22_gap08_Weff", "", {HistType::kTProfile, {axisMultiplicity}});
@@ -411,8 +419,10 @@ struct FlowPbPbTask {
 
   void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
   {
+    registry.fill(HIST("hEventCount"), 0.5);
     if (!collision.sel8())
       return;
+    registry.fill(HIST("hEventCount"), 1.5);
     int Ntot = tracks.size();
     if (Ntot < 1)
       return;
@@ -426,7 +436,9 @@ struct FlowPbPbTask {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent))
       return;
+    registry.fill(HIST("hEventCount"), 2.5);
     loadCorrections(bc.timestamp());
+    registry.fill(HIST("hEventCount"), 3.5);
 
     float weff = 1, wacc = 1;
     double weffEvent = 0, waccEvent = 0;
@@ -451,6 +463,9 @@ struct FlowPbPbTask {
         registry.fill(HIST("hPtRef"), track.pt());
         registry.fill(HIST("hChi2prTPCcls"), track.tpcChi2NCl());
         registry.fill(HIST("hnTPCClu"), track.tpcNClsFound());
+        registry.fill(HIST("hnTPCCrossedRow"), track.tpcNClsCrossedRows());
+        registry.fill(HIST("hDCAz"), track.dcaZ());
+        registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
         weffEvent += weff;
         waccEvent += wacc;
         ptSum += weff * track.pt();
