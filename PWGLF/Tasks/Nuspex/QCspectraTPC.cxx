@@ -30,7 +30,7 @@
 
 
 using std::cout;
-using std::endl;
+
 using std::flush;
 
 #include <fstream>
@@ -55,8 +55,6 @@ using std::flush;
 #include "TH1F.h"
 #include "TH2F.h"
 #include "TH3F.h"
-
-#include <vector>
 #include "TLorentzVector.h"
 
 #include <iostream>
@@ -68,17 +66,6 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using std::array;
 using namespace o2::track;
-
-namespace o2::aod
-{
-    namespace hash
-    {
-        DECLARE_SOA_COLUMN(Bin, bin, int);
-    } // namespace hash
-
-    DECLARE_SOA_TABLE(Hashes, "AOD", "HASH", hash::Bin);
-}
-
 double eta2y(double pt, double m, double eta)
 {
     double mt = sqrt(m * m + pt * pt);
