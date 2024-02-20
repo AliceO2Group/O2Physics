@@ -482,11 +482,11 @@ struct hypertriton3bodyFinder {
 
   //------------------------------------------------------------------
   // Check the info of good tracks
-  template <class TTrackTo, typename TGoodTrackTable>
+  template <class TTrackClass, typename TGoodTrackTable>
   void CheckGoodTracks(TGoodTrackTable const& dGoodtracks, aod::McParticles const& particlesMC)
   {
     for (auto& goodtrackid : dGoodtracks) {
-      auto goodtrack = goodtrackid.template goodTrack_as<TTrackTo>();
+      auto goodtrack = goodtrackid.template goodTrack_as<TTrackClass>();
       if (!goodtrack.has_mcParticle()) {
         continue;
       }
@@ -515,7 +515,7 @@ struct hypertriton3bodyFinder {
   o2::dataformats::VertexBase mMeanVertex{{0., 0., 0.}, {0.1 * 0.1, 0., 0.1 * 0.1, 0., 0., 6. * 6.}};
   //------------------------------------------------------------------
   // Virtual Lambda V0 finder
-  template <class TTrackTo, typename TCollisionTable, typename TTrackTable>
+  template <class TTrackClass, typename TCollisionTable, typename TTrackTable>
   bool DecayV0Finder(TCollisionTable const& dCollision, TTrackTable const& dPtrack, TTrackTable const& dNtrack, float& rv0, bool isTrue3bodyV0 = false)
   {
     if (dPtrack.collisionId() != dNtrack.collisionId()) {
@@ -604,7 +604,7 @@ struct hypertriton3bodyFinder {
   }
   //------------------------------------------------------------------
   // 3body decay vertex finder
-  template <class TTrackTo, typename TCollisionTable, typename TTrackTable>
+  template <class TTrackClass, typename TCollisionTable, typename TTrackTable>
   void Decay3bodyFinder(TCollisionTable const& dCollision, TTrackTable const& dPtrack, TTrackTable const& dNtrack, TTrackTable const& dBachtrack, float const& rv0, bool isTrue3bodyVtx = false)
   {
     if (dPtrack.collisionId() != dBachtrack.collisionId()) {
@@ -715,22 +715,22 @@ struct hypertriton3bodyFinder {
   }
   //------------------------------------------------------------------
   // 3body decay finder for a collsion
-  template <class TTrackTo, typename TCollisionTable, typename TPosTrackTable, typename TNegTrackTable, typename TGoodTrackTable>
+  template <class TTrackClass, typename TCollisionTable, typename TPosTrackTable, typename TNegTrackTable, typename TGoodTrackTable>
   void DecayFinder(TCollisionTable const& dCollision, TPosTrackTable const& dPtracks, TNegTrackTable const& dNtracks, TGoodTrackTable const& dGoodtracks)
   {
     for (auto& t0id : dPtracks) { // FIXME: turn into combination(...)
-      auto t0 = t0id.template goodTrack_as<TTrackTo>();
+      auto t0 = t0id.template goodTrack_as<TTrackClass>();
 
       for (auto& t1id : dNtracks) {
-        auto t1 = t1id.template goodTrack_as<TTrackTo>();
+        auto t1 = t1id.template goodTrack_as<TTrackClass>();
         float rv0;
-        if (!DecayV0Finder<TTrackTo>(dCollision, t0, t1, rv0)) {
+        if (!DecayV0Finder<TTrackClass>(dCollision, t0, t1, rv0)) {
           continue;
         }
 
         for (auto& t2id : dGoodtracks) {
-          auto t2 = t2id.template goodTrack_as<TTrackTo>();
-          Decay3bodyFinder<TTrackTo>(dCollision, t0, t1, t2, rv0);
+          auto t2 = t2id.template goodTrack_as<TTrackClass>();
+          Decay3bodyFinder<TTrackClass>(dCollision, t0, t1, t2, rv0);
         }
       }
     }
@@ -739,13 +739,13 @@ struct hypertriton3bodyFinder {
   }
   //------------------------------------------------------------------
   // MC 3body decay vertex finder
-  template <class TTrackTo, typename TCollisionTable, typename TPosTrackTable, typename TNegTrackTable, typename TGoodTrackTable>
+  template <class TTrackClass, typename TCollisionTable, typename TPosTrackTable, typename TNegTrackTable, typename TGoodTrackTable>
   void DecayFinderMC(TCollisionTable const& dCollision, TPosTrackTable const& dPtracks, TNegTrackTable const& dNtracks, TGoodTrackTable const& dGoodtracks)
   {
     for (auto& t0id : dPtracks) { // FIXME: turn into combination(...)
-      auto t0 = t0id.template goodTrack_as<TTrackTo>();
+      auto t0 = t0id.template goodTrack_as<TTrackClass>();
       for (auto& t1id : dNtracks) {
-        auto t1 = t1id.template goodTrack_as<TTrackTo>();
+        auto t1 = t1id.template goodTrack_as<TTrackClass>();
         if (t0.collisionId() != t1.collisionId()) {
           continue;
         }
@@ -768,12 +768,12 @@ struct hypertriton3bodyFinder {
         }
 
         float rv0;
-        if (!DecayV0Finder<TTrackTo>(dCollision, t0, t1, rv0, isTrue3bodyV0)) {
+        if (!DecayV0Finder<TTrackClass>(dCollision, t0, t1, rv0, isTrue3bodyV0)) {
           continue;
         }
 
         for (auto& t2id : dGoodtracks) {
-          auto t2 = t2id.template goodTrack_as<TTrackTo>();
+          auto t2 = t2id.template goodTrack_as<TTrackClass>();
 
           bool isTrue3bodyVtx = false;
           if (t0.has_mcParticle() && t1.has_mcParticle() && t2.has_mcParticle()) {
@@ -795,7 +795,7 @@ struct hypertriton3bodyFinder {
             }
           }
 
-          Decay3bodyFinder<TTrackTo>(dCollision, t0, t1, t2, rv0, isTrue3bodyVtx);
+          Decay3bodyFinder<TTrackClass>(dCollision, t0, t1, t2, rv0, isTrue3bodyVtx);
         }
       }
     }
@@ -804,13 +804,13 @@ struct hypertriton3bodyFinder {
   }
   //------------------------------------------------------------------
   // MC virtual lambda check
-  template <class TTrackTo, typename TCollisionTable, typename TV0DataTable>
+  template <class TTrackClass, typename TCollisionTable, typename TV0DataTable>
   void VirtualLambdaCheck(TCollisionTable const& dCollision, TV0DataTable const& fullV0s, int bin)
   {
     for (auto& v0 : fullV0s) {
       statisticsRegistry.virtLambdastats[bin]++;
-      auto postrack = v0.template posTrack_as<TTrackTo>();
-      auto negtrack = v0.template negTrack_as<TTrackTo>();
+      auto postrack = v0.template posTrack_as<TTrackClass>();
+      auto negtrack = v0.template negTrack_as<TTrackClass>();
       if (postrack.has_mcParticle() && negtrack.has_mcParticle()) {
         auto postrackmc = postrack.template mcParticle_as<aod::McParticles>();
         auto negtrackmc = negtrack.template mcParticle_as<aod::McParticles>();

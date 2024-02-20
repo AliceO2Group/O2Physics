@@ -290,15 +290,15 @@ struct hypertriton3bodyAnalysis {
   Preslice<aod::Vtx3BodyDatas> perCollisionVtx3BodyDatas = o2::aod::vtx3body::collisionId;
   //------------------------------------------------------------------
   // Analysis process for a single candidate
-  template <class TTrackTo, typename TCollisionTable, typename TCandTable>
+  template <class TTrackClass, typename TCollisionTable, typename TCandTable>
   void CandidateAnalysis(TCollisionTable const& dCollision, TCandTable const& candData, bool& if_hasvtx, bool isTrueCand = false, double MClifetime = -1, double lPt = -1)
   {
 
     FillCandCounter(kCandAll, isTrueCand);
 
-    auto track0 = candData.template track0_as<TTrackTo>();
-    auto track1 = candData.template track1_as<TTrackTo>();
-    auto track2 = candData.template track2_as<TTrackTo>();
+    auto track0 = candData.template track0_as<TTrackClass>();
+    auto track1 = candData.template track1_as<TTrackClass>();
+    auto track2 = candData.template track2_as<TTrackClass>();
 
     auto& trackProton = (track2.sign() > 0) ? track0 : track1;
     auto& trackPion = (track2.sign() > 0) ? track1 : track0;
