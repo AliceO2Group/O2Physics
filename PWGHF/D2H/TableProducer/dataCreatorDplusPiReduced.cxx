@@ -429,17 +429,13 @@ struct HfDataCreatorDplusPiReduced {
                   pdgCodeCharmMother = 1;
                   pdgCodeProng0 = particleProng0.pdgCode();
                   pdgCodeProng1 = particleProng1.pdgCode();
-                  pdgCodeProng2 = particleProng1.pdgCode();
-                  pdgCodeProng3 = particleProng1.pdgCode();
+                  pdgCodeProng2 = particleProng2.pdgCode();
+                  pdgCodeProng3 = particleProng3.pdgCode();
                   // look for common c-hadron mother among prongs 0, 1 and 2
                   for (const auto& cHadronMotherHypo : cHadronMotherHypos) {
-                    int8_t depthMax = 1;
-                    if (cHadronMotherHypo == Pdg::kDStar) {
-                      depthMax = 2;
-                    }
-                    int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
-                    int index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, depthMax);
-                    int index2CharmMother = RecoDecay::getMother(particlesMc, particleProng2, cHadronMotherHypo, true, &sign, depthMax);
+                    int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, 2);
+                    int index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, 2);
+                    int index2CharmMother = RecoDecay::getMother(particlesMc, particleProng2, cHadronMotherHypo, true, &sign, 2);
                     if (index0CharmMother > -1 && index1CharmMother > -1 && index2CharmMother > -1) {
                       if (index0CharmMother == index1CharmMother && index1CharmMother == index2CharmMother) {
                         pdgCodeCharmMother = particlesMc.rawIteratorAt(index0CharmMother).pdgCode();

@@ -207,8 +207,8 @@ struct derivedlambdakzeroanalysis {
       maskTrackProperties = maskTrackProperties | (1 << selNegGoodTPCTrack);
       // TPC signal is available: ask for negative track PID
       maskK0ShortSpecific = maskK0ShortSpecific | (1 << selTPCPIDNegativePion);
-      maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDNegativePion);
-      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (1 << selTPCPIDNegativeProton);
+      maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDNegativeProton);
+      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (1 << selTPCPIDNegativePion);
     }
 
     // Primary particle selection, central to analysis
@@ -320,6 +320,17 @@ struct derivedlambdakzeroanalysis {
     // Check if doing the right thing in AP space please
     histos.add("GeneralQA/h2dArmenterosAll", "h2dArmenterosAll", kTH2F, {axisAPAlpha, axisAPQt});
     histos.add("GeneralQA/h2dArmenterosSelected", "h2dArmenterosSelected", kTH2F, {axisAPAlpha, axisAPQt});
+
+    // Creation of histograms: MC generated
+    if (doprocessBinnedGenerated) {
+      histos.add("h2dGenK0Short", "h2dGenK0Short", kTH2D, {axisCentrality, axisPt});
+      histos.add("h2dGenLambda", "h2dGenLambda", kTH2D, {axisCentrality, axisPt});
+      histos.add("h2dGenAntiLambda", "h2dGenAntiLambda", kTH2D, {axisCentrality, axisPt});
+      histos.add("h2dGenXiMinus", "h2dGenXiMinus", kTH2D, {axisCentrality, axisPt});
+      histos.add("h2dGenXiPlus", "h2dGenXiPlus", kTH2D, {axisCentrality, axisPt});
+      histos.add("h2dGenOmegaMinus", "h2dGenOmegaMinus", kTH2D, {axisCentrality, axisPt});
+      histos.add("h2dGenOmegaPlus", "h2dGenOmegaPlus", kTH2D, {axisCentrality, axisPt});
+    }
   }
 
   template <typename TV0, typename TCollision>
@@ -631,8 +642,60 @@ struct derivedlambdakzeroanalysis {
     } // end v0 loop
   }
 
+  // ______________________________________________________
+  // Simulated processing (subscribes to MC information too)
+  void processBinnedGenerated(
+    aod::GeK0Short const& geK0Short, aod::GeLambda const& geLambda, aod::GeAntiLambda const& geAntiLambda,
+    aod::GeXiMinus const& geXiMinus, aod::GeXiPlus const& geXiPlus,
+    aod::GeOmegaMinus const& geOmegaMinus, aod::GeOmegaPlus const& geOmegaPlus)
+  {
+    auto hK0Short = histos.get<TH2>(HIST("h2dGenK0Short"));
+    auto hLambda = histos.get<TH2>(HIST("h2dGenLambda"));
+    auto hAntiLambda = histos.get<TH2>(HIST("h2dGenAntiLambda"));
+    auto hXiMinus = histos.get<TH2>(HIST("h2dGenXiMinus"));
+    auto hXiPlus = histos.get<TH2>(HIST("h2dGenXiPlus"));
+    auto hOmegaMinus = histos.get<TH2>(HIST("h2dGenOmegaMinus"));
+    auto hOmegaPlus = histos.get<TH2>(HIST("h2dGenOmegaPlus"));
+    for (auto& gVec : geK0Short) {
+      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+        hK0Short->SetBinContent(iv, hK0Short->GetBinContent(iv) + gVec.generatedK0Short()[iv]);
+      }
+    }
+    for (auto& gVec : geLambda) {
+      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+        hLambda->SetBinContent(iv, hLambda->GetBinContent(iv) + gVec.generatedLambda()[iv]);
+      }
+    }
+    for (auto& gVec : geAntiLambda) {
+      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+        hAntiLambda->SetBinContent(iv, hAntiLambda->GetBinContent(iv) + gVec.generatedAntiLambda()[iv]);
+      }
+    }
+    for (auto& gVec : geXiMinus) {
+      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+        hXiMinus->SetBinContent(iv, hXiMinus->GetBinContent(iv) + gVec.generatedXiMinus()[iv]);
+      }
+    }
+    for (auto& gVec : geXiPlus) {
+      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+        hXiPlus->SetBinContent(iv, hXiPlus->GetBinContent(iv) + gVec.generatedXiPlus()[iv]);
+      }
+    }
+    for (auto& gVec : geOmegaMinus) {
+      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+        hOmegaMinus->SetBinContent(iv, hOmegaMinus->GetBinContent(iv) + gVec.generatedOmegaMinus()[iv]);
+      }
+    }
+    for (auto& gVec : geOmegaPlus) {
+      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+        hOmegaPlus->SetBinContent(iv, hOmegaPlus->GetBinContent(iv) + gVec.generatedOmegaPlus()[iv]);
+      }
+    }
+  }
+
   PROCESS_SWITCH(derivedlambdakzeroanalysis, processRealData, "process as if real data", true);
   PROCESS_SWITCH(derivedlambdakzeroanalysis, processMonteCarlo, "process as if MC", false);
+  PROCESS_SWITCH(derivedlambdakzeroanalysis, processBinnedGenerated, "process MC generated", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

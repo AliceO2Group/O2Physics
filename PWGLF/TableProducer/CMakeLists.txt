@@ -17,6 +17,10 @@ o2physics_add_dpl_workflow(tpcpid
                     SOURCES lfTPCPID.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(zdcsp
+                    SOURCES zdcSP.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 
 # Strangeness
 o2physics_add_dpl_workflow(lambdakzerobuilder
