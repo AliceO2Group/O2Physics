@@ -62,20 +62,20 @@ bool fullDerivedData = false; /* produce full derived data for its external stor
 
 /// \enum MatchRecoGenSpecies
 /// \brief The species considered by the matching test
-enum MatchRecoGenSpecies {
-  kIdBfCharged = 0, ///< charged particle/track
-  kIdBfElectron,    ///< electron
-  kIdBfMuon,        ///< muon
-  kIdBfPion,        ///< pion
-  kIdBfKaon,        ///< kaon
-  kIdBfProton,      ///< proton
-  kIdBfNoOfSpecies, ///< the number of considered species
-  kWrongSpecies = -1
-};
+//enum MatchRecoGenSpecies {
+//  kIdBfCharged = 0, ///< charged particle/track
+//  kIdBfElectron = 1,    ///< electron
+//  kIdBfMuon = 3,        ///< muon
+//  kIdBfPion = 5,        ///< pion
+//  kIdBfKaon = 7,        ///< kaon
+//  kIdBfProton = 9,      ///< proton
+//  kIdBfNoOfSpecies = 6, ///< the number of considered species
+//  kWrongSpecies = -1
+//};
 
-const char* speciesName[kIdBfNoOfSpecies] = {"h", "e", "mu", "pi", "ka", "p"};
+//const char* speciesName[kIdBfNoOfSpecies] = {"h", "e", "mu", "pi", "ka", "p"};
 
-const char* speciesTitle[kIdBfNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"};
+//const char* speciesTitle[kIdBfNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"};
 
 //============================================================================================
 // The IdentifiedBfFilter histogram objects
@@ -773,6 +773,8 @@ struct IdentifiedBfFilterTracks {
   template <typename TrackObject>
   MatchRecoGenSpecies trackIdentification(TrackObject const& track);
   template <typename TrackObject>
+  int8_t AcceptTrack(TrackObject const& track);
+  template <typename TrackObject>
   int8_t selectTrack(TrackObject const& track);
   template <typename CollisionObjects, typename TrackObject>
   int8_t selectTrackAmbiguousCheck(CollisionObjects const& collisions, TrackObject const& track);
@@ -1143,6 +1145,53 @@ int8_t IdentifiedBfFilterTracks::selectTrack(TrackObject const& track)
     }
   }
   return pid;
+}
+
+/// \brief Accepts or not the passed track
+/// \param track the track of interest
+/// \return the internal track id, -1 if not accepted
+/// TODO: the PID implementation
+/// For the time being we keep the convention
+/// - positive track pid even
+/// - negative track pid odd
+/// - charged hadron 0/1
+template <typename TrackObject>
+inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
+{
+  /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
+  if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
+    if (track.mcParticleId() < 0) {
+      return -1;
+    }
+  }
+
+  if (matchTrackType(track)) {
+    if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
+
+      MatchRecoGenSpecies sp = trackIdentification(track);
+      if (sp == kWrongSpecies){
+        return -1;
+      }
+      if (sp == kIdBfCharged){
+        if (track.sign() > 0) {
+          return 0;
+        }
+        if (track.sign() < 0) {
+          return 1;
+        }
+      }
+
+      if (sp > 0){
+        if (track.sign() > 0) {
+          return sp ;
+        }
+        if (track.sign() < 0) {
+          return sp+1;
+        }
+      }
+    }
+  }
+  return -1;
 }
 
 template <typename CollisionObjects, typename TrackObject>
