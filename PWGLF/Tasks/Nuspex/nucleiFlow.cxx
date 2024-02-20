@@ -89,6 +89,10 @@ struct nucleiFlow {
   Configurable<int> cfgHarmonic{"cfgHarmonic", 2, "cfgHarmonic number"};
   Configurable<int> cfgQvecDetector{"cfgQvecDetector", 0, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5)"};
   Configurable<int> cfgSpecies{"cfgSpecies", 3, "Species under study (proton: 0, deuteron: 1, triton: 2, helion: 3, alpha: 4)"};
+
+  Configurable<float> cfgNclusTPCcut{"cfgNclusTPCcut", 70, "Minimum number of TPC clusters"};
+  Configurable<float> cfgDCAxyCut{"cfgDCAxyCut", 0.1, "Cut on DCAxy (cm)"};
+  Configurable<float> cfgDCAzCut{"cfgDCAzCut", 1, "Cut on DCAz (cm)"};
   Configurable<int> cfgItsClusSizeCut{"cfgItsClusSizeCut", 4, "Cut on the average ITS cluster size."};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -147,6 +151,24 @@ struct nucleiFlow {
       }
     }
     return sum / nClus;
+  }
+
+  /// @brief Get average ITS cluster size
+  /// @tparam T type for the track
+  /// @param track
+  /// @return true if the candidates passes all the selections
+  template <class T>
+  bool selectTrack(T const& track)
+  {
+    if (track.tpcNCls() < cfgNclusTPCcut)
+      return false;
+    if (track.dcaxy() > cfgDCAxyCut)
+      return false;
+    if (track.dcaz() > cfgDCAzCut)
+      return false;
+    if (getITSClSize(track) < cfgItsClusSizeCut)
+      return false;
+    return true;
   }
 
   /// \brief Get the centrality with the selected detector
@@ -277,7 +299,7 @@ struct nucleiFlow {
 
     for (auto track : tracks) {
 
-      if (getITSClSize(track) < cfgItsClusSizeCut)
+      if (!selectTrack(track))
         continue;
 
       // Get candidate vector
@@ -292,7 +314,7 @@ struct nucleiFlow {
       // Get candidate info
       int iCharge = (track.flags() & nuclei_spectra::CandBits::kPositive) ? 0 : 1;
       float nSigmaTPC = getNSigmaTPC(track, cfgSpecies, iCharge);
-      float pt = track.pt();
+      float pt = track.pt() * nuclei_spectra::charges[cfgSpecies];
 
       // Fill relevant histograms
       histos.fill(HIST("hSpFT0AvsNsigmaHe3VsPtvsCent"), spFT0A, nSigmaTPC, pt, ref_cent);

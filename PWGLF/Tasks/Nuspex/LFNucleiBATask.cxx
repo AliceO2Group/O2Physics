@@ -3289,6 +3289,7 @@ struct LFNucleiBATask {
         bool isItsPassed = false;
         bool isTpcPassed = false;
         bool isGoodHit = false;
+        bool hasFakeHit = false;
 
         // PID
         int pdgCode = 0;
@@ -3309,6 +3310,25 @@ struct LFNucleiBATask {
           isProdByGen = track.mcParticle().producedByGenerator();
           isWeakDecay = track.mcParticle().getProcess() == 4;
           pdgCode = track.mcParticle().pdgCode();
+          isItsPassed = track.passedITSNCls() &&
+                        track.passedITSChi2NDF() &&
+                        track.passedITSRefit() &&
+                        track.passedITSHits() &&
+                        track.hasITS();
+          isTpcPassed = track.passedTPCNCls() &&
+                        track.passedTPCCrossedRows() &&
+                        track.passedTPCCrossedRowsOverNCls() &&
+                        track.passedTPCChi2NDF() &&
+                        track.passedTPCRefit() &&
+                        track.hasTPC();
+
+          for (int i = 0; i < 10; i++) { // From ITS to TPC
+            if (track.mcMask() & 1 << i) {
+              hasFakeHit = true;
+              break;
+            }
+          }
+          isGoodHit = !hasFakeHit;
         }
         switch (pdgCode) {
           case PDGProton:
@@ -3823,7 +3843,7 @@ struct LFNucleiBATask {
   }
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFV0As>;
-  using TrackCandidates0 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
+  using TrackCandidates0 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension,
                                      aod::pidTOFbeta, aod::TOFSignal, aod::pidEvTimeFlags,
                                      aod::pidTPCFullPi, aod::pidTOFFullPi,
                                      aod::pidTPCFullKa, aod::pidTOFFullKa,

@@ -230,25 +230,44 @@ void addColumnToMap(std::unordered_map<std::string, std::unordered_map<std::stri
 template <typename T, typename... C>
 void addColumnsToMap(o2::framework::pack<C...>, std::unordered_map<std::string, std::unordered_map<std::string, float>>& map)
 {
-  (addColumnToMap<T, C>(map), ...);
+  ([&]() {
+    if constexpr (soa::is_persistent_v<C>) {
+      addColumnToMap<T, C>(map);
+    }
+  }(),
+   ...);
 }
 
 template <typename... T>
 void FillFiltersMap(o2::framework::pack<T...>, std::unordered_map<std::string, std::unordered_map<std::string, float>>& map)
 {
-  (addColumnsToMap<T>(typename T::iterator::persistent_columns_t{}, map), ...);
+  (addColumnsToMap<T>(typename T::table_t::columns{}, map), ...);
 }
 
 template <typename... C>
 static std::vector<std::string> ColumnsNames(o2::framework::pack<C...>)
 {
-  return {C::columnLabel()...};
+  std::vector<std::string> result;
+  ([&]() {
+    if constexpr (soa::is_persistent_v<C>) {
+      result.push_back(C::columnLabel());
+    }
+  }(),
+   ...);
+  return result;
 }
 
-template <typename T>
-unsigned int NumberOfColumns()
+template <typename... C>
+unsigned int NumberOfColumns(o2::framework::pack<C...>)
 {
-  return o2::framework::pack_size(typename T::iterator::persistent_columns_t{});
+  unsigned int result = 0;
+  ([&]() {
+    if constexpr (soa::is_persistent_v<C>) {
+      ++result;
+    }
+  }(),
+   ...);
+  return result;
 }
 
 } // namespace o2::aod

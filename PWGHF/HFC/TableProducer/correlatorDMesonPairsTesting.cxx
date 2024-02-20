@@ -313,7 +313,7 @@ struct HfCorrelatorDMesonPairsTesting {
   /// Fill counters for D0 and D0bar
   /// \param selectedD0Candidates contains all D0 candidates
   template <typename T>
-  void GetCountersPerEvent(const T& selectedD0Candidates, const bool& selectSignalRegionOnly)
+  void GetCountersPerEvent(const T& selectedD0Candidates)
   {
     int nDevent = 0, nDbarevent = 0, nDDbarevent = 0, nDorDbarevent = 0;
     for (const auto& candidate : selectedD0Candidates) {
@@ -454,7 +454,7 @@ struct HfCorrelatorDMesonPairsTesting {
       AnalysePid(candidate);
     }
     auto selectedD0CandidatesGrouped = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    GetCountersPerEvent(selectedD0CandidatesGrouped, selectSignalRegionOnly);
+    GetCountersPerEvent(selectedD0CandidatesGrouped);
     // protection against empty tables to be sliced
     if (selectedD0Candidates.size() <= 1) {
       return;
@@ -506,7 +506,7 @@ struct HfCorrelatorDMesonPairsTesting {
       AnalysePid(candidate);
     }
     auto selectedD0CandidatesGroupedMc = selectedD0CandidatesMc->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    GetCountersPerEvent(selectedD0CandidatesGroupedMc, selectSignalRegionOnly);
+    GetCountersPerEvent(selectedD0CandidatesGroupedMc);
     // protection against empty tables to be sliced
     if (selectedD0CandidatesMc.size() <= 1) {
       return;
