@@ -47,7 +47,7 @@ struct HfTaskDs {
   Configurable<bool> fillDplusMc{"fillDplusMc", true, "Switch to fill Dplus MC information"};
   Configurable<int> centDetector{"centDetector", 2, "Detector for multiplicity estimation (FT0A: 0, FT0C: 1, FT0M: 2, FV0A: 3, FDDM:4, NTracksPV: 5)"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
-  Configurable<std::vector<int>> classMl{"classMl", {0, 2, 3}, "Indexes of BDT scores to be stored. Three indexes max."};
+  Configurable<std::vector<int>> classMl{"classMl", {0, 2, 3}, "Indexes of ML scores to be stored. Three indexes max."};
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
@@ -77,12 +77,12 @@ struct HfTaskDs {
   Partition<CandDsMcReco> selectedDsToPiKKCandMc = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
   Partition<CandDsMcRecoWithMl> selectedDsToPiKKCandWithMlMc = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
 
-  // MC, no ML
+  // Matched MC, no ML
   Partition<CandDsMcReco> reconstructedCandDsSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
   Partition<CandDsMcReco> reconstructedCandDplusSig = fillDplusMc && nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == (decayChannel + offsetDplusDecayChannel);
   Partition<CandDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi));
 
-  // MC, with ML
+  // Matched MC, with ML
   Partition<CandDsMcRecoWithMl> reconstructedCandDsSigWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
   Partition<CandDsMcRecoWithMl> reconstructedCandDplusSigWithMl = fillDplusMc && nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == (decayChannel + offsetDplusDecayChannel);
   Partition<CandDsMcRecoWithMl> reconstructedCandBkgWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi));
@@ -104,8 +104,8 @@ struct HfTaskDs {
 
   void init(InitContext&)
   {
-    std::array<int, 8> processes = {doprocessDataWoMlWithCent, doprocessDataWoMlWoCent, doprocessDataWithMlWithCent, doprocessDataWithMlWoCent,
-                                    doprocessMcWoMlWithCent, doprocessMcWoMlWoCent, doprocessMcWithMlWithCent, doprocessMcWithMlWoCent};
+    std::array<int, 8> processes = {doprocessDataWithCent, doprocessData, doprocessDataWithMlAndCent, doprocessDataWithMl,
+                                    doprocessMcWithCent, doprocessMc, doprocessMcWithMlAndCent, doprocessMcWithMl};
     const int nProcesses = std::accumulate(processes.begin(), processes.end(), 0);
     if (nProcesses > 1) {
       LOGP(fatal, "Only one process function should be enabled at a time, please check your configuration");
@@ -120,17 +120,17 @@ struct HfTaskDs {
     AxisSpec ptbins = {vbins, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ybins = {100, -5., 5, "#it{y}"};
     AxisSpec massbins = {600, 1.67, 2.27, "inv. mass (KK#pi) (GeV/#it{c}^{2})"};
-    AxisSpec BDTbins = {100, 0., 1., "BDT output"};
+    AxisSpec MLbins = {100, 0., 1., "ML output"};
     AxisSpec centralitybins = {100, 0., 100., "Centrality"};
 
-    if (doprocessDataWoMlWithCent || doprocessMcWoMlWithCent) {
+    if (doprocessDataWithCent || doprocessMcWithCent) {
       registry.add("hSparseMass", "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins});
-    } else if (doprocessDataWithMlWithCent || doprocessMcWithMlWithCent) {
-      registry.add("hSparseMass", "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins, BDTbins, BDTbins, BDTbins});
-    } else if (doprocessDataWoMlWoCent || doprocessMcWoMlWoCent) {
+    } else if (doprocessDataWithMlAndCent || doprocessMcWithMlAndCent) {
+      registry.add("hSparseMass", "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins, MLbins, MLbins, MLbins});
+    } else if (doprocessData || doprocessMc) {
       registry.add("hSparseMass", "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins});
-    } else if (doprocessDataWithMlWoCent || doprocessMcWithMlWoCent) {
-      registry.add("hSparseMass", "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, BDTbins, BDTbins, BDTbins});
+    } else if (doprocessDataWithMl || doprocessMcWithMl) {
+      registry.add("hSparseMass", "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, MLbins, MLbins, MLbins});
     }
     registry.add("hEta", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCt", "3-prong candidates;proper lifetime (D_{s}^{#pm}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 100}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -256,10 +256,8 @@ struct HfTaskDs {
     auto pt = candidate.pt();
     if constexpr (useMl) {
       std::vector<float> outputMl = {-999., -999., -999.};
-      if (candidate.mlProbDsToKKPi().size() > 0) {
-        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) { // TODO: add checks for classMl size
-          outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
-        }
+      for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) { // TODO: add checks for classMl size
+        outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
       }
       if constexpr (fillCent) {
         registry.fill(HIST("hSparseMass"), hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentrality(candidate), outputMl[0], outputMl[1], outputMl[2]);
@@ -288,10 +286,8 @@ struct HfTaskDs {
     auto pt = candidate.pt();
     if constexpr (useMl) {
       std::vector<float> outputMl = {-999., -999., -999.};
-      if (candidate.mlProbDsToKKPi().size() > 0) {
-        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) { // TODO: add checks for classMl size
-          outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
-        }
+      for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) { // TODO: add checks for classMl size
+        outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
       }
       if constexpr (fillCent) {
         registry.fill(HIST("hSparseMass"), hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentrality(candidate), outputMl[0], outputMl[1], outputMl[2]);
@@ -405,7 +401,7 @@ struct HfTaskDs {
   /// Fill MC histograms
   /// \param candidate is candidate
   /// \param mcParticles are particles with MC information
-  /// \param isDplus is true if the candidate is a Dplus
+  /// \param isDplus true to fill Dplus->KKPi candidates
   template <typename T1>
   void fillHistogramsForMcCandidate(const T1& candidate, const CandDsMcGen& mcParticles, bool isDplus)
   {
@@ -546,39 +542,39 @@ struct HfTaskDs {
     }
   }
 
-  void processDataWoMlWithCent(CollisionsWithCent const&,
+  void processDataWithCent(CollisionsWithCent const&,
                                CandDsData const& candidates)
   {
     runDataAnalysis<finalState::KKPi, false, true>(selectedDsToKKPiCandData);
     runDataAnalysis<finalState::PiKK, false, true>(selectedDsToPiKKCandData);
   }
-  PROCESS_SWITCH(HfTaskDs, processDataWoMlWithCent, "Process data w/o ML information on Ds, with information on centrality", false);
+  PROCESS_SWITCH(HfTaskDs, processDataWithCent, "Process data w/o ML information on Ds, with information on centrality", false);
 
-  void processDataWoMlWoCent(aod::Collisions const&,
+  void processData(aod::Collisions const&,
                              CandDsData const& candidates)
   {
     runDataAnalysis<finalState::KKPi, false, false>(selectedDsToKKPiCandData);
     runDataAnalysis<finalState::PiKK, false, false>(selectedDsToPiKKCandData);
   }
-  PROCESS_SWITCH(HfTaskDs, processDataWoMlWoCent, "Process data w/o ML information on Ds, w/o information on centrality", true);
+  PROCESS_SWITCH(HfTaskDs, processData, "Process data w/o ML information on Ds, w/o information on centrality", true);
 
-  void processDataWithMlWithCent(CollisionsWithCent const&,
+  void processDataWithMlAndCent(CollisionsWithCent const&,
                                  CandDsDataWithMl const& candidates)
   {
     runDataAnalysis<finalState::KKPi, true, true>(selectedDsToKKPiCandWithMlData);
     runDataAnalysis<finalState::PiKK, true, true>(selectedDsToPiKKCandWithMlData);
   }
-  PROCESS_SWITCH(HfTaskDs, processDataWithMlWithCent, "Process data with ML information on Ds, with information on centrality", false);
+  PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCent, "Process data with ML information on Ds, with information on centrality", false);
 
-  void processDataWithMlWoCent(aod::Collisions const&,
+  void processDataWithMl(aod::Collisions const&,
                                CandDsDataWithMl const& candidates)
   {
     runDataAnalysis<finalState::KKPi, true, false>(selectedDsToKKPiCandWithMlData);
     runDataAnalysis<finalState::PiKK, true, false>(selectedDsToPiKKCandWithMlData);
   }
-  PROCESS_SWITCH(HfTaskDs, processDataWithMlWoCent, "Process data with ML information on Ds, w/o information on centrality", false);
+  PROCESS_SWITCH(HfTaskDs, processDataWithMl, "Process data with ML information on Ds, w/o information on centrality", false);
 
-  void processMcWoMlWithCent(CollisionsWithCent const&,
+  void processMcWithCent(CollisionsWithCent const&,
                              CandDsMcReco const& candidates,
                              CandDsMcGen const& mcParticles,
                              aod::TracksWMc const&)
@@ -587,9 +583,9 @@ struct HfTaskDs {
     runDataAnalysis<finalState::KKPi, false, true>(selectedDsToKKPiCandMc);
     runDataAnalysis<finalState::PiKK, false, true>(selectedDsToPiKKCandMc);
   }
-  PROCESS_SWITCH(HfTaskDs, processMcWoMlWithCent, "Process MC w/o ML information on Ds, with information on centrality", false);
+  PROCESS_SWITCH(HfTaskDs, processMcWithCent, "Process MC w/o ML information on Ds, with information on centrality", false);
 
-  void processMcWoMlWoCent(aod::Collisions const&,
+  void processMc(aod::Collisions const&,
                            CandDsMcReco const& candidates,
                            CandDsMcGen const& mcParticles,
                            aod::TracksWMc const&)
@@ -598,9 +594,9 @@ struct HfTaskDs {
     runDataAnalysis<finalState::KKPi, false, false>(selectedDsToKKPiCandMc);
     runDataAnalysis<finalState::PiKK, false, false>(selectedDsToPiKKCandMc);
   }
-  PROCESS_SWITCH(HfTaskDs, processMcWoMlWoCent, "Process MC w/o ML information on Ds, w/o information on centrality", false);
+  PROCESS_SWITCH(HfTaskDs, processMc, "Process MC w/o ML information on Ds, w/o information on centrality", false);
 
-  void processMcWithMlWithCent(CollisionsWithCent const&,
+  void processMcWithMlAndCent(CollisionsWithCent const&,
                                CandDsMcRecoWithMl const& candidates,
                                CandDsMcGen const& mcParticles,
                                aod::TracksWMc const&)
@@ -609,9 +605,9 @@ struct HfTaskDs {
     runDataAnalysis<finalState::KKPi, true, true>(selectedDsToKKPiCandWithMlMc);
     runDataAnalysis<finalState::PiKK, true, true>(selectedDsToPiKKCandWithMlMc);
   }
-  PROCESS_SWITCH(HfTaskDs, processMcWithMlWithCent, "Process MC with ML information on Ds, with information on centrality", false);
+  PROCESS_SWITCH(HfTaskDs, processMcWithMlAndCent, "Process MC with ML information on Ds, with information on centrality", false);
 
-  void processMcWithMlWoCent(aod::Collisions const&,
+  void processMcWithMl(aod::Collisions const&,
                              CandDsMcRecoWithMl const& candidates,
                              CandDsMcGen const& mcParticles,
                              aod::TracksWMc const&)
@@ -620,7 +616,7 @@ struct HfTaskDs {
     runDataAnalysis<finalState::KKPi, true, false>(selectedDsToKKPiCandWithMlMc);
     runDataAnalysis<finalState::PiKK, true, false>(selectedDsToPiKKCandWithMlMc);
   }
-  PROCESS_SWITCH(HfTaskDs, processMcWithMlWoCent, "Process MC with ML information on Ds, w/o information on centrality", false);
+  PROCESS_SWITCH(HfTaskDs, processMcWithMl, "Process MC with ML information on Ds, w/o information on centrality", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
