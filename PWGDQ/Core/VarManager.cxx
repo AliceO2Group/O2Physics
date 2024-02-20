@@ -622,6 +622,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kU3Q3] = "";
   fgVariableNames[kCORR2REF] = "<2> ";
   fgVariableUnits[kCORR2REF] = "";
+  fgVariableNames[kCORR2POI] = " <2'> ";
+  fgVariableUnits[kCORR2POI] = "";
   fgVariableNames[kCos2DeltaPhi] = "cos 2(#varphi-#Psi_{2}^{A}) ";
   fgVariableUnits[kCos2DeltaPhi] = "";
   fgVariableNames[kCos3DeltaPhi] = "cos 3(#varphi-#Psi_{3}^{A}) ";

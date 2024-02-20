@@ -426,6 +426,7 @@ class VarManager : public TObject
     kU2Q2,
     kU3Q3,
     kCORR2REF,
+    kCORR2POI,
     kPsi2A,
     kPsi2B,
     kPsi2C,
@@ -2578,6 +2579,7 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
 
 
   values[kCORR2REF] =  (values[kQ2X0A]* values[kQ2X0A] + values[kQ2Y0A]* values[kQ2Y0A] -  values[kMultA])/(values[kMultA]*(values[kMultA]-1));
+  values[kCORR2POI] =  (values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] *std::sin(2 * v12.Phi()))/(values[kMultA]* values[kMultDimuons]);
 
   // TODO: provide different computations for vn
   // Compute the scalar product UQ using Q-vector from A, for second and third harmonic
