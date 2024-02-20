@@ -39,7 +39,7 @@ enum centEstimator { FT0A = 0,
                      FV0A,
                      FDDM,
                      NTracksPV,
-                     kNMaxCentEstimators};
+                     kNMaxCentEstimators };
 
 /// Ds± analysis task
 struct HfTaskDs {
@@ -70,7 +70,7 @@ struct HfTaskDs {
   Partition<CandDsDataWithMl> selectedDsToKKPiCandWithMlData = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
   Partition<CandDsData> selectedDsToPiKKCandData = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
   Partition<CandDsDataWithMl> selectedDsToPiKKCandWithMlData = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
-  
+
   // MC
   Partition<CandDsMcReco> selectedDsToKKPiCandMc = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
   Partition<CandDsMcRecoWithMl> selectedDsToKKPiCandWithMlMc = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
@@ -212,7 +212,7 @@ struct HfTaskDs {
         return candidate.template collision_as<CollisionsWithCent>().template centFDDM();
       case centEstimator::NTracksPV:
         return candidate.template collision_as<CollisionsWithCent>().template centNTPV();
-      default:  // In case of invalid configuration use FT0M
+      default: // In case of invalid configuration use FT0M
         return candidate.template collision_as<CollisionsWithCent>().template centFT0M();
     }
   }
@@ -257,7 +257,7 @@ struct HfTaskDs {
     if constexpr (useMl) {
       std::vector<float> outputMl = {-999., -999., -999.};
       if (candidate.mlProbDsToKKPi().size() > 0) {
-        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) { //TODO: add checks for classMl size
+        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) { // TODO: add checks for classMl size
           outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
         }
       }
@@ -289,7 +289,7 @@ struct HfTaskDs {
     if constexpr (useMl) {
       std::vector<float> outputMl = {-999., -999., -999.};
       if (candidate.mlProbDsToKKPi().size() > 0) {
-        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) { //TODO: add checks for classMl size
+        for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) { // TODO: add checks for classMl size
           outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
         }
       }
@@ -407,32 +407,33 @@ struct HfTaskDs {
   /// \param mcParticles are particles with MC information
   /// \param isDplus is true if the candidate is a Dplus
   template <typename T1>
-  void fillHistogramsForMcCandidate(const T1& candidate, const CandDsMcGen& mcParticles, bool isDplus) {
+  void fillHistogramsForMcCandidate(const T1& candidate, const CandDsMcGen& mcParticles, bool isDplus)
+  {
 
-    auto indexMother = RecoDecay::getMother(mcParticles, 
-                                            candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>(), 
+    auto indexMother = RecoDecay::getMother(mcParticles,
+                                            candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>(),
                                             isDplus ? o2::constants::physics::Pdg::kDPlus : o2::constants::physics::Pdg::kDS, true);
 
     if (indexMother != -1) {
-        if (yCandRecoMax >= 0. && std::abs(isDplus ? hfHelper.yDplus(candidate) : hfHelper.yDs(candidate)) > yCandRecoMax) {
-            return;
-        }
+      if (yCandRecoMax >= 0. && std::abs(isDplus ? hfHelper.yDplus(candidate) : hfHelper.yDs(candidate)) > yCandRecoMax) {
+        return;
+      }
 
-        auto particleMother = mcParticles.iteratorAt(indexMother);
-        if (isDplus) {
-          registry.fill(HIST("hPtGenSigDplus"), particleMother.pt()); // gen. level pT
-        } else {
-          registry.fill(HIST("hPtGenSigDs"), particleMother.pt()); // gen. level pT
-        }
-        // KKPi
-        if (candidate.isCandidateSwapped() == 0) { // 0 corresponds to KKPi
-            fillHistoMCRec(candidate, candidate.isSelDsToKKPi(), isDplus);
-        }
+      auto particleMother = mcParticles.iteratorAt(indexMother);
+      if (isDplus) {
+        registry.fill(HIST("hPtGenSigDplus"), particleMother.pt()); // gen. level pT
+      } else {
+        registry.fill(HIST("hPtGenSigDs"), particleMother.pt()); // gen. level pT
+      }
+      // KKPi
+      if (candidate.isCandidateSwapped() == 0) { // 0 corresponds to KKPi
+        fillHistoMCRec(candidate, candidate.isSelDsToKKPi(), isDplus);
+      }
 
-        // PiKK
-        if (candidate.isCandidateSwapped() == 1) { // 1 corresponds to PiKK
-            fillHistoMCRec(candidate, candidate.isSelDsToPiKK(), isDplus);
-        }
+      // PiKK
+      if (candidate.isCandidateSwapped() == 1) { // 1 corresponds to PiKK
+        fillHistoMCRec(candidate, candidate.isSelDsToPiKK(), isDplus);
+      }
     }
   }
 
@@ -444,9 +445,9 @@ struct HfTaskDs {
         continue;
       }
       fillHisto(candidate);
-      if constexpr (decayChannel == finalState::KKPi) {  // KKPi
+      if constexpr (decayChannel == finalState::KKPi) { // KKPi
         fillHistoKKPi<useMl, fillCent>(candidate);
-      } else if constexpr (decayChannel == finalState::PiKK) {  // PiKK
+      } else if constexpr (decayChannel == finalState::PiKK) { // PiKK
         fillHistoPiKK<useMl, fillCent>(candidate);
       }
     }
@@ -462,7 +463,7 @@ struct HfTaskDs {
       // Ds
       for (const auto& candidate : reconstructedCandDsSigWithMl)
         fillHistogramsForMcCandidate(candidate, mcParticles, false);
-      //Dplus
+      // Dplus
       for (const auto& candidate : reconstructedCandDplusSigWithMl)
         fillHistogramsForMcCandidate(candidate, mcParticles, true);
       // Bkg
@@ -480,9 +481,9 @@ struct HfTaskDs {
       for (const auto& candidate : reconstructedCandDsSig)
         fillHistogramsForMcCandidate(candidate, mcParticles, false);
 
-      //Dplus
+      // Dplus
       for (const auto& candidate : reconstructedCandDplusSig)
-          fillHistogramsForMcCandidate(candidate, mcParticles, true);
+        fillHistogramsForMcCandidate(candidate, mcParticles, true);
 
       // Bkg
       for (const auto& candidate : reconstructedCandBkg) {
@@ -546,7 +547,7 @@ struct HfTaskDs {
   }
 
   void processDataWoMlWithCent(CollisionsWithCent const&,
-                       CandDsData const& candidates)
+                               CandDsData const& candidates)
   {
     runDataAnalysis<finalState::KKPi, false, true>(selectedDsToKKPiCandData);
     runDataAnalysis<finalState::PiKK, false, true>(selectedDsToPiKKCandData);
@@ -554,7 +555,7 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processDataWoMlWithCent, "Process data w/o ML information on Ds, with information on centrality", false);
 
   void processDataWoMlWoCent(aod::Collisions const&,
-                       CandDsData const& candidates)
+                             CandDsData const& candidates)
   {
     runDataAnalysis<finalState::KKPi, false, false>(selectedDsToKKPiCandData);
     runDataAnalysis<finalState::PiKK, false, false>(selectedDsToPiKKCandData);
@@ -562,7 +563,7 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processDataWoMlWoCent, "Process data w/o ML information on Ds, w/o information on centrality", true);
 
   void processDataWithMlWithCent(CollisionsWithCent const&,
-                         CandDsDataWithMl const& candidates)
+                                 CandDsDataWithMl const& candidates)
   {
     runDataAnalysis<finalState::KKPi, true, true>(selectedDsToKKPiCandWithMlData);
     runDataAnalysis<finalState::PiKK, true, true>(selectedDsToPiKKCandWithMlData);
@@ -570,7 +571,7 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processDataWithMlWithCent, "Process data with ML information on Ds, with information on centrality", false);
 
   void processDataWithMlWoCent(aod::Collisions const&,
-                         CandDsDataWithMl const& candidates)
+                               CandDsDataWithMl const& candidates)
   {
     runDataAnalysis<finalState::KKPi, true, false>(selectedDsToKKPiCandWithMlData);
     runDataAnalysis<finalState::PiKK, true, false>(selectedDsToPiKKCandWithMlData);
@@ -578,9 +579,9 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processDataWithMlWoCent, "Process data with ML information on Ds, w/o information on centrality", false);
 
   void processMcWoMlWithCent(CollisionsWithCent const&,
-                     CandDsMcReco const& candidates,
-                     CandDsMcGen const& mcParticles,
-                     aod::TracksWMc const&)
+                             CandDsMcReco const& candidates,
+                             CandDsMcGen const& mcParticles,
+                             aod::TracksWMc const&)
   {
     runMcAnalysis<false>(candidates, mcParticles);
     runDataAnalysis<finalState::KKPi, false, true>(selectedDsToKKPiCandMc);
@@ -589,9 +590,9 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processMcWoMlWithCent, "Process MC w/o ML information on Ds, with information on centrality", false);
 
   void processMcWoMlWoCent(aod::Collisions const&,
-                     CandDsMcReco const& candidates,
-                     CandDsMcGen const& mcParticles,
-                     aod::TracksWMc const&)
+                           CandDsMcReco const& candidates,
+                           CandDsMcGen const& mcParticles,
+                           aod::TracksWMc const&)
   {
     runMcAnalysis<false>(candidates, mcParticles);
     runDataAnalysis<finalState::KKPi, false, false>(selectedDsToKKPiCandMc);
@@ -600,9 +601,9 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processMcWoMlWoCent, "Process MC w/o ML information on Ds, w/o information on centrality", false);
 
   void processMcWithMlWithCent(CollisionsWithCent const&,
-                       CandDsMcRecoWithMl const& candidates,
-                       CandDsMcGen const& mcParticles,
-                       aod::TracksWMc const&)
+                               CandDsMcRecoWithMl const& candidates,
+                               CandDsMcGen const& mcParticles,
+                               aod::TracksWMc const&)
   {
     runMcAnalysis<true>(candidates, mcParticles);
     runDataAnalysis<finalState::KKPi, true, true>(selectedDsToKKPiCandWithMlMc);
@@ -611,9 +612,9 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processMcWithMlWithCent, "Process MC with ML information on Ds, with information on centrality", false);
 
   void processMcWithMlWoCent(aod::Collisions const&,
-                       CandDsMcRecoWithMl const& candidates,
-                       CandDsMcGen const& mcParticles,
-                       aod::TracksWMc const&)
+                             CandDsMcRecoWithMl const& candidates,
+                             CandDsMcGen const& mcParticles,
+                             aod::TracksWMc const&)
   {
     runMcAnalysis<true>(candidates, mcParticles);
     runDataAnalysis<finalState::KKPi, true, false>(selectedDsToKKPiCandWithMlMc);
