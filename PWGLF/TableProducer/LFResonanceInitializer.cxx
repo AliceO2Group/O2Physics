@@ -87,7 +87,7 @@ struct reso2initializer {
   Configurable<bool> ConfIsRun3{"ConfIsRun3", true, "Running on Pilot beam"}; // Choose if running on converted data or pilot beam
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> ConfFillQA{"ConfFillQA", false, "Fill QA histograms"};
-  Configurable<bool> ConfBypassCCDB{"ConfBypassCCDB", false, "Bypass loading CCDB part to save CPU time and memory"}; // will be affected to b_z value.
+  Configurable<bool> ConfBypassCCDB{"ConfBypassCCDB", true, "Bypass loading CCDB part to save CPU time and memory"}; // will be affected to b_z value.
 
   // Track filter from tpcSkimsTableCreator
   Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
@@ -108,7 +108,7 @@ struct reso2initializer {
   Configurable<std::string> cfgMultName{"cfgMultName", "FT0M", "The name of multiplicity estimator"};
 
   // Qvector configuration
-  Configurable<bool> ConfBypassQvec{"ConfBypassQvec", false, "Bypass for qvector task"};
+  Configurable<bool> ConfBypassQvec{"ConfBypassQvec", true, "Bypass for qvector task"};
   Configurable<int> cfgEvtPl{"cfgEvtPl", 50601, "Configuration of three subsystems for the event plane and its resolution, 10000*RefA + 100*RefB + S, where FT0C:1, FT0A:2, FT0M:3, FV0A:4, BPos:5, BNeg:6"};
 
   // Pre-selection cuts
@@ -971,7 +971,7 @@ struct reso2initializer {
 
     fillTracks<false>(collision, tracks);
   }
-  PROCESS_SWITCH(reso2initializer, processTrackEPData, "Process for data and ep ana", ConfBypassQvec);
+  PROCESS_SWITCH(reso2initializer, processTrackEPData, "Process for data and ep ana", false);
 
   PresliceUnsorted<ResoEventsMC> perMcCol = aod::mccollisionlabel::mcCollisionId;
   void processMCGenCount(aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, ResoEventsMC const& mcCols)
