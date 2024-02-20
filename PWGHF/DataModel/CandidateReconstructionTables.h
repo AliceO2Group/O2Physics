@@ -1347,8 +1347,10 @@ DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
 DECLARE_SOA_COLUMN(DcaPi0Pi1, dcaPi0Pi1, float);
 DECLARE_SOA_COLUMN(DcaPi0Xi, dcaPi0Xi, float);
 DECLARE_SOA_COLUMN(DcaPi1Xi, dcaPi1Xi, float);
-DECLARE_SOA_COLUMN(CosPAXi, cosPAXi, float);
-DECLARE_SOA_COLUMN(CosPALambda, cosPALambda, float);
+DECLARE_SOA_COLUMN(CosPaXi, cosPaXi, float);
+DECLARE_SOA_COLUMN(CosPaXYXi, cosPaXYXi, float);
+DECLARE_SOA_COLUMN(CosPaLambda, cosPaLambda, float);
+DECLARE_SOA_COLUMN(CosPaXYLambda, cosPaXYLambda, float);
 DECLARE_SOA_COLUMN(InvMassXicPlus, invMassXicPlus, double);
 DECLARE_SOA_COLUMN(InvMassCascade, invMassCascade, double);
 DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, double);
@@ -1357,11 +1359,9 @@ DECLARE_SOA_COLUMN(EtaPi1FromXicPlus, etaPi1FromXicPlus, double);
 DECLARE_SOA_COLUMN(EtaPi2FromXicPlus, etaPi2FromXicPlus, double);
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
-DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
-DECLARE_SOA_COLUMN(DebugGenCharmBar, debugGenCharmBar, int8_t);
-DECLARE_SOA_COLUMN(DebugGenXi, debugGenXi, int8_t);
-DECLARE_SOA_COLUMN(DebugGenLambda, debugGenLambda, int8_t);
+DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
+DECLARE_SOA_COLUMN(DebugMcGen, debugMcGen, int8_t);
 DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
 DECLARE_SOA_COLUMN(OriginGen, originGen, int8_t);
 // mapping of decay types
@@ -1385,14 +1385,11 @@ DECLARE_SOA_TABLE(HfCandXicPlBase, "AOD", "HFCANDXICPLBASE",
                   hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ImpactParameter2,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, hf_cand::ErrorImpactParameter2,
-                  hf_cand_xicplustoxipipi::DcaPi0Pi1, hf_cand_xicplustoxipipi::DcaPi0Xi, hf_cand_xicplustoxipipi::DcaPi1Xi,
                   hf_track_index::HFflag,
                   // cascade specific columns
                   hf_cand_xicplustoxipipi::XDecayVtxXi, hf_cand_xicplustoxipipi::YDecayVtxXi, hf_cand_xicplustoxipipi::ZDecayVtxXi,
                   hf_cand_xicplustoxipipi::XDecayVtxLambda, hf_cand_xicplustoxipipi::YDecayVtxLambda, hf_cand_xicplustoxipipi::ZDecayVtxLambda,
-                  /*hf_cand_xicplustoxipipi::XErrDecayVtxXi, hf_cand_xicplustoxipipi::YErrDecayVtxXi, hf_cand_xicplustoxipipi::ZErrDecayVtxXi,
-                  hf_cand_xicplustoxipipi::XErrDecayVtxLambda, hf_cand_xicplustoxipipi::YErrDecayVtxLambda, hf_cand_xicplustoxipipi::ZErrDecayVtxLambda,*/
-                  /*cascdata::CascCosPA, cascdata::V0CosPA,*/
+                  hf_cand_xicplustoxipipi::CosPaXi, hf_cand_xicplustoxipipi::CosPaXYXi, hf_cand_xicplustoxipipi::CosPaLambda, hf_cand_xicplustoxipipi::CosPaXYLambda,
                   /* dynamic columns */
                   hf_cand::RSecondaryVertex<hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex>,
                   hf_cand::DecayLength<collision::PosX, collision::PosY, collision::PosZ, hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex>,
@@ -1429,7 +1426,8 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCandXicPlExt, HfCandXicPlBase, "HFCANDXICPLEXT
 using HfCandXicPlus = HfCandXicPlExt;
 
 DECLARE_SOA_TABLE(HfCandXicPlusKF, "AOD", "HFCANDXICPLUSKF",
-                  cascdata::KFV0Chi2, cascdata::KFCascadeChi2);
+                  cascdata::KFV0Chi2, cascdata::KFCascadeChi2,
+                  hf_cand_xicplustoxipipi::DcaPi0Pi1, hf_cand_xicplustoxipipi::DcaPi0Xi, hf_cand_xicplustoxipipi::DcaPi1Xi);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfXicPlusMcRec, "AOD", "HFXICPLUSMCREC", //!
@@ -1439,7 +1437,9 @@ DECLARE_SOA_TABLE(HfXicPlusMcRec, "AOD", "HFXICPLUSMCREC", //!
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfXicPlusMcGen, "AOD", "HFXICPLUSMCGEN", //!
-                  hf_cand_xicplustoxipipi::FlagMcMatchGen, hf_cand_xicplustoxipipi::DebugGenCharmBar, hf_cand_xicplustoxipipi::DebugGenXi, hf_cand_xicplustoxipipi::DebugGenLambda, hf_cand_xicplustoxipipi::OriginGen);
+                  hf_cand_xicplustoxipipi::FlagMcMatchGen,
+                  hf_cand_xicplustoxipipi::DebugMcGen,
+                  hf_cand_xicplustoxipipi::OriginGen);
 
 // specific chic candidate properties
 namespace hf_cand_chic
