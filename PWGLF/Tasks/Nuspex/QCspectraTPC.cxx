@@ -27,38 +27,6 @@
 
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
-
-
-using std::cout;
-
-using std::flush;
-
-#include <fstream>
-#include <TString.h>
-#include <TH1D.h>
-#include <TProfile.h>
-#include <TRandom.h>
-#include <TProfile2D.h>
-#include <TGraphErrors.h>
-#include <TFile.h>
-#include <THashList.h>
-#include <TDatabasePDG.h>
-#include "THnSparse.h"
-#include "TVector2.h"
-#include "TVector3.h"
-#include "THnBase.h"
-#include "TChain.h"
-#include "TMath.h"
-#include "TTree.h"
-#include "TH1I.h"
-#include "THnSparse.h"
-#include "TH1F.h"
-#include "TH2F.h"
-#include "TH3F.h"
-#include "TLorentzVector.h"
-
-#include <iostream>
-#include <TList.h>
 using namespace o2;
 using namespace o2::framework;
 using namespace std;
