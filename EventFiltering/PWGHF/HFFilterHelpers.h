@@ -277,9 +277,10 @@ class HfFilterHelper
     mDeltaMassK0s = deltaMassK0s;
     mDeltaMassLambda = deltaMassLambda;
   }
-  void setXiSelections(float minPtXiBachelor, float deltaMassXi, float deltaMassLambda, float cosPaXi, float cosPaLambdaFromXi, float maxDcaxyXi, float nSigma)
+  void setXiSelections(float minPtXiBachelor, float minPtXi, float deltaMassXi, float deltaMassLambda, float cosPaXi, float cosPaLambdaFromXi, float maxDcaxyXi, float nSigma)
   {
     mMinPtXiBachelor = minPtXiBachelor;
+    mMinPtXi = minPtXi;
     mDeltaMassXi = deltaMassXi;
     mDeltaMassLambdaFromXi = deltaMassLambda;
     mCosPaXi = cosPaXi;
