@@ -764,7 +764,7 @@ struct DptDptCorrelationsTask {
         poinames.push_back(std::string(tokens->At(isp)->GetName()));
         tnames.push_back(std::string(TString::Format("%sP", tokens->At(isp)->GetName()).Data()));
         tnames.push_back(std::string(TString::Format("%sM", tokens->At(isp)->GetName()).Data()));
-        LOGF(info, "Incorporated species %s to the analysis", poinames[isp].c_str());
+        LOGF(info, "Incorporated species name %s to the analysis", poinames[isp].c_str());
       }
       delete tokens;
       uint ntracknames = tnames.size();
@@ -772,7 +772,7 @@ struct DptDptCorrelationsTask {
         trackPairsNames.push_back(std::vector<std::string>());
         for (uint jsp = 0; jsp < ntracknames; ++jsp) {
           trackPairsNames[isp].push_back(tnames[isp] + tnames[jsp]);
-          LOGF(info, "Incorporated the pair %s", (tnames[isp] + tnames[jsp]).c_str());
+          LOGF(info, "Incorporated the pair name %s", (tnames[isp] + tnames[jsp]).c_str());
         }
       }
 

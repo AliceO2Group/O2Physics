@@ -78,7 +78,7 @@ struct JetDerivedDataProducerTask {
 
   void processCollisions(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
   {
-    jCollisionsTable(collision.posZ(), -1.0, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw());
+    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw());
     jCollisionsParentIndexTable(collision.globalIndex());
     jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
@@ -86,7 +86,7 @@ struct JetDerivedDataProducerTask {
 
   void processCollisionsWithCentrality(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& collision)
   {
-    jCollisionsTable(collision.posZ(), collision.centFT0C(), jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw());
+    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.centFT0C(), jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw());
     jCollisionsParentIndexTable(collision.globalIndex());
     jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
@@ -105,14 +105,14 @@ struct JetDerivedDataProducerTask {
 
   void processMcCollisions(aod::McCollision const& McCollision)
   {
-    jMcCollisionsTable(McCollision.posZ(), McCollision.weight());
+    jMcCollisionsTable(McCollision.posX(), McCollision.posY(), McCollision.posZ(), McCollision.weight());
     jMcCollisionsParentIndexTable(McCollision.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisions, "produces derived MC collision table", false);
 
   void processTracks(soa::Join<aod::Tracks, aod::TrackSelection>::iterator const& track)
   {
-    jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::trackEnergy(track), track.sign(), jetderiveddatautilities::setTrackSelectionBit(track));
+    jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::trackEnergy(track), static_cast<int8_t>(track.sign()), jetderiveddatautilities::setTrackSelectionBit(track));
     jTracksParentIndexTable(track.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processTracks, "produces derived track table", true);

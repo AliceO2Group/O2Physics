@@ -103,12 +103,14 @@ struct perfK0sResolution {
 
   Configurable<float> v0lifetime{"v0lifetime", 3., "n ctau"};
   Configurable<float> nSigTPC{"nSigTPC", 10., "nSigTPC"};
+  Configurable<int> itsIbSelectionPos{"itsIbSelectionPos", 0, "Flag for the ITS IB selection on positive daughters: -1 no ITS IB, 0 no selection, 1 ITS IB"};
+  Configurable<int> itsIbSelectionNeg{"itsIbSelectionNeg", 0, "Flag for the ITS IB IB selection on negative daughters: -1 no ITS IB, 0 no selection, 1 ITS IB"};
   Configurable<int> trdSelectionPos{"trdSelectionPos", 0, "Flag for the TRD selection on positive daughters: -1 no TRD, 0 no selection, 1 TRD"};
   Configurable<int> trdSelectionNeg{"trdSelectionNeg", 0, "Flag for the TRD selection on negative daughters: -1 no TRD, 0 no selection, 1 TRD"};
   Configurable<int> tofSelectionPos{"tofSelectionPos", 0, "Flag for the TOF selection on positive daughters: -1 no TOF, 0 no selection, 1 TOF"};
   Configurable<int> tofSelectionNeg{"tofSelectionNeg", 0, "Flag for the TOF selection on negative daughters: -1 no TOF, 0 no selection, 1 TOF"};
-
   Configurable<bool> useMultidimHisto{"useMultidimHisto", false, "use multidimentional histograms"};
+  Configurable<bool> computeInvMassFromDaughters{"computeInvMassFromDaughters", false, "Compute the invariant mass from the daughters"};
 
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -129,6 +131,42 @@ struct perfK0sResolution {
     }
 
     // Apply selections on V0 daughters
+    // ITS selection
+    switch (itsIbSelectionPos) {
+      case -1:
+        if (ptrack.itsNClsInnerBarrel() > 0) {
+          return false;
+        }
+        break;
+      case 0:
+        break;
+      case 1:
+        if (!ptrack.itsNClsInnerBarrel() < 1) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid ITS selection for positive daughter";
+        break;
+    }
+    switch (itsIbSelectionNeg) {
+      case -1:
+        if (ntrack.itsNClsInnerBarrel() > 0) {
+          return false;
+        }
+        break;
+      case 0:
+        break;
+      case 1:
+        if (!ntrack.itsNClsInnerBarrel() < 1) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid ITS selection for negative daughter";
+        break;
+    }
+    // TPC selection
     if (!ntrack.hasTPC() || !ptrack.hasTPC()) {
       return false;
     }
@@ -218,7 +256,9 @@ struct perfK0sResolution {
   Filter eventFilter = (eventSelection && o2::aod::evsel::sel8 == true);
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
 
-  void processData(soa::Filtered<SelectedCollisions>::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, PIDTracks const& tracks)
+  void processData(soa::Filtered<SelectedCollisions>::iterator const& collision,
+                   soa::Filtered<aod::V0Datas> const& fullV0s,
+                   PIDTracks const& tracks)
   {
     for (auto& v0 : fullV0s) {
       const auto& posTrack = v0.posTrack_as<PIDTracks>();
@@ -226,11 +266,18 @@ struct perfK0sResolution {
       if (!acceptV0(v0, negTrack, posTrack, collision))
         continue;
 
-      rK0sResolution.fill(HIST("h2_masspT"), v0.mK0Short(), v0.pt());
-      rK0sResolution.fill(HIST("h2_masseta"), v0.mK0Short(), v0.eta());
-      rK0sResolution.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
+      float mass = v0.mK0Short();
+      if (computeInvMassFromDaughters) {
+        mass = RecoDecay::m(std::array{std::array{posTrack.px(), posTrack.py(), posTrack.pz()},
+                                       std::array{negTrack.px(), negTrack.py(), negTrack.pz()}},
+                            std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
+      }
+
+      rK0sResolution.fill(HIST("h2_masspT"), mass, v0.pt());
+      rK0sResolution.fill(HIST("h2_masseta"), mass, v0.eta());
+      rK0sResolution.fill(HIST("h2_massphi"), mass, v0.phi());
       if (useMultidimHisto) {
-        rK0sResolution.fill(HIST("thn_mass"), v0.mK0Short(), v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta());
+        rK0sResolution.fill(HIST("thn_mass"), mass, v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta());
       }
     }
   }
@@ -253,6 +300,12 @@ struct perfK0sResolution {
       if (posTrack.mcParticle().pdgCode() != 211 || negTrack.mcParticle().pdgCode() != -211) {
         continue;
       }
+      float mass = v0.mK0Short();
+      if (computeInvMassFromDaughters) {
+        mass = RecoDecay::m(std::array{std::array{posTrack.px(), posTrack.py(), posTrack.pz()},
+                                       std::array{negTrack.px(), negTrack.py(), negTrack.pz()}},
+                            std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
+      }
       const bool isTrueK0s = (v0.has_mcParticle() && v0.mcParticle().pdgCode() == 310);
       rK0sDauResolution.fill(HIST("h2_genPtPosPtRes"), (v0.positivept() - posTrack.mcParticle().pt()) / posTrack.mcParticle().pt(), posTrack.mcParticle().pt());
       rK0sDauResolution.fill(HIST("h2_genPxPosPxRes"), (v0.pxpos() - posTrack.mcParticle().px()) / posTrack.mcParticle().px(), posTrack.mcParticle().px());
@@ -264,13 +317,13 @@ struct perfK0sResolution {
       rK0sDauResolution.fill(HIST("h2_genPyNegPyRes"), (v0.pyneg() - negTrack.mcParticle().py()) / negTrack.mcParticle().py(), negTrack.mcParticle().py());
       rK0sDauResolution.fill(HIST("h2_genPzNegPzRes"), (v0.pzneg() - negTrack.mcParticle().pz()) / negTrack.mcParticle().pz(), negTrack.mcParticle().pz());
 
-      rK0sDauResolution.fill(HIST("h2_massPosPtRes"), v0.mK0Short(), v0.positivept() - posTrack.mcParticle().pt());
-      rK0sDauResolution.fill(HIST("h2_massNegPtRes"), v0.mK0Short(), v0.negativept() - negTrack.mcParticle().pt());
-      rK0sResolution.fill(HIST("h2_masspT"), v0.mK0Short(), v0.pt());
-      rK0sResolution.fill(HIST("h2_masseta"), v0.mK0Short(), v0.eta());
-      rK0sResolution.fill(HIST("h2_massphi"), v0.mK0Short(), v0.phi());
+      rK0sDauResolution.fill(HIST("h2_massPosPtRes"), mass, v0.positivept() - posTrack.mcParticle().pt());
+      rK0sDauResolution.fill(HIST("h2_massNegPtRes"), mass, v0.negativept() - negTrack.mcParticle().pt());
+      rK0sResolution.fill(HIST("h2_masspT"), mass, v0.pt());
+      rK0sResolution.fill(HIST("h2_masseta"), mass, v0.eta());
+      rK0sResolution.fill(HIST("h2_massphi"), mass, v0.phi());
       if (useMultidimHisto) {
-        rK0sResolution.fill(HIST("thn_mass"), v0.mK0Short(), v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta(),
+        rK0sResolution.fill(HIST("thn_mass"), mass, v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta(),
                             1. / v0.positivept() - 1. / posTrack.mcParticle().pt(),
                             1. / v0.negativept() - 1. / negTrack.mcParticle().pt(),
                             isTrueK0s);

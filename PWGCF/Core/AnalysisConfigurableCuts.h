@@ -97,9 +97,9 @@ class TrackSelectionPIDCfg
   float mPThreshold = 0.0;                                  ///< momentum threshold for considering TOF information
   bool mRequireTOF = true;                                  ///< require or not the presence of TOF when the momentum threshold is passed
   float mMinNSigmasTOF[5] = {-3.0, -3.0, -3.0, -3.0, -3.0}; ///< nsigmas TOF lower limit for e, mu, pi, Ka, and p
-  float mMaxNSigmasTOF[5] = {-3.0, -3.0, 3.0, 3.0, 3.0};    ///< nsigmas TOF upper limit for e, mu, pi, Ka, and p
+  float mMaxNSigmasTOF[5] = {3.0, 3.0, 3.0, 3.0, 3.0};      ///< nsigmas TOF upper limit for e, mu, pi, Ka, and p
   bool m2Dcut = true;                                       ///< use an elliptic cut using TPC and TOF nsigmas
-  int mExclude = false;                                     ///< should the identified track be excluded for analysis?
+  bool mExclude = false;                                    ///< should the identified track be excluded for analysis?
  private:
   ClassDefNV(TrackSelectionPIDCfg, 1);
 };

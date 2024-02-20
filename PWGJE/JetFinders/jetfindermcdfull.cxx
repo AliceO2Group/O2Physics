@@ -9,21 +9,21 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// jet finder d0 mcd charged task
+// jet finder mcd full task
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGJE/TableProducer/jetfinderhf.cxx"
+#include "PWGJE/JetFinders/jetfinder.cxx"
 
-using JetFinderD0MCDetectorLevelCharged = JetFinderHFTask<CandidatesD0Data, CandidatesD0MCD, CandidatesD0MCP, JetTracksSubD0, aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0ChargedMCDetectorLevelEventWiseSubtractedJets, aod::D0ChargedMCDetectorLevelEventWiseSubtractedJetConstituents>;
+using JetFinderMCDetectorLevelFull = JetFinderTask<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents, aod::FullMCDetectorLevelEventWiseSubtractedJets, aod::FullMCDetectorLevelEventWiseSubtractedJetConstituents>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   std::vector<o2::framework::DataProcessorSpec> tasks;
 
-  tasks.emplace_back(adaptAnalysisTask<JetFinderD0MCDetectorLevelCharged>(cfgc,
-                                                                          SetDefaultProcesses{},
-                                                                          TaskName{"jet-finder-d0-mcd-charged"}));
+  tasks.emplace_back(
+    adaptAnalysisTask<JetFinderMCDetectorLevelFull>(cfgc,
+                                                    SetDefaultProcesses{{{"processFullJets", true}}}, TaskName{"jet-finder-mcd-full"}));
 
   return WorkflowSpec{tasks};
 }

@@ -90,6 +90,11 @@ struct nucleiFlow {
   Configurable<int> cfgQvecDetector{"cfgQvecDetector", 0, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5)"};
   Configurable<int> cfgSpecies{"cfgSpecies", 3, "Species under study (proton: 0, deuteron: 1, triton: 2, helion: 3, alpha: 4)"};
 
+  Configurable<float> cfgNclusTPCcut{"cfgNclusTPCcut", 70, "Minimum number of TPC clusters"};
+  Configurable<float> cfgDCAxyCut{"cfgDCAxyCut", 0.1, "Cut on DCAxy (cm)"};
+  Configurable<float> cfgDCAzCut{"cfgDCAzCut", 1, "Cut on DCAz (cm)"};
+  Configurable<int> cfgItsClusSizeCut{"cfgItsClusSizeCut", 4, "Cut on the average ITS cluster size."};
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   ConfigurableAxis nSigmaBins{"nSigmaBins", {200, -5.f, 5.f}, "Binning for n sigma"};
@@ -127,6 +132,43 @@ struct nucleiFlow {
                                                   cfgBetheBlochParams->get(iSpecies, 4u));
     float resolutionTPC{expTPCSignal * cfgBetheBlochParams->get(iSpecies, 5u)};
     return static_cast<float>((candidate.tpcSignal() - expTPCSignal) / resolutionTPC);
+  }
+
+  /// @brief Get average ITS cluster size
+  /// @tparam T type for the track
+  /// @param track
+  /// @return average cluster size in ITS
+  template <class T>
+  float getITSClSize(T const& track)
+  {
+    float sum{0.f};
+    int nClus = 0;
+    for (int iL{0}; iL < 6; ++iL) {
+      auto size = (track.itsClusterSizes() >> (iL * 4)) & 0xf;
+      if (size > 0) {
+        nClus++;
+        sum += size;
+      }
+    }
+    return sum / nClus;
+  }
+
+  /// @brief Get average ITS cluster size
+  /// @tparam T type for the track
+  /// @param track
+  /// @return true if the candidates passes all the selections
+  template <class T>
+  bool selectTrack(T const& track)
+  {
+    if (track.tpcNCls() < cfgNclusTPCcut)
+      return false;
+    if (track.dcaxy() > cfgDCAxyCut)
+      return false;
+    if (track.dcaz() > cfgDCAzCut)
+      return false;
+    if (getITSClSize(track) < cfgItsClusSizeCut)
+      return false;
+    return true;
   }
 
   /// \brief Get the centrality with the selected detector
@@ -207,7 +249,7 @@ struct nucleiFlow {
 
   void init(o2::framework::InitContext&)
   {
-    const AxisSpec nSigmaTPCHe3Axis{nSigmaBins, "n{#sigma}_{TPC}({}^{3}He)"};
+    const AxisSpec nSigmaTPCHe3Axis{nSigmaBins, "n#sigma_{TPC}({}^{3}He)"};
     const AxisSpec ptAxis{ptBins, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec centAxis{centBins, "centrality(%)"};
     const AxisSpec FT0AspAxis{spBins, "#hat{u}_{2} #upoint #vec{Q}_{2}^{FT0A}"};
@@ -257,6 +299,9 @@ struct nucleiFlow {
 
     for (auto track : tracks) {
 
+      if (!selectTrack(track))
+        continue;
+
       // Get candidate vector
       float xCandVec = TMath::Cos(cfgHarmonic * track.phi());
       float yCandVec = TMath::Sin(cfgHarmonic * track.phi());
@@ -269,7 +314,7 @@ struct nucleiFlow {
       // Get candidate info
       int iCharge = (track.flags() & nuclei_spectra::CandBits::kPositive) ? 0 : 1;
       float nSigmaTPC = getNSigmaTPC(track, cfgSpecies, iCharge);
-      float pt = track.pt();
+      float pt = track.pt() * nuclei_spectra::charges[cfgSpecies];
 
       // Fill relevant histograms
       histos.fill(HIST("hSpFT0AvsNsigmaHe3VsPtvsCent"), spFT0A, nSigmaTPC, pt, ref_cent);
