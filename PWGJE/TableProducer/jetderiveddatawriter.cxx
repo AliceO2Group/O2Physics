@@ -16,6 +16,7 @@
 /// \author Jochen Klein <jochen.klein@cern.ch>
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
+#include <MathUtils/Utils.h>
 #include <algorithm>
 
 #include "Framework/AnalysisTask.h"
@@ -181,7 +182,10 @@ struct JetDerivedDataWriter {
       storedJFullTriggerSelsTable(collision.fullTriggerSel());
 
       for (const auto& track : tracks) {
-        storedJTracksTable(storedJCollisionsTable.lastIndex(), track.pt(), track.eta(), track.phi(), track.energy(), track.sign(), track.trackSel());
+        if (track.trackSel() == 0) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept
+          continue;
+        }
+        storedJTracksTable(storedJCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(track.pt()), o2::math_utils::detail::truncateFloatFraction(track.eta()), o2::math_utils::detail::truncateFloatFraction(track.phi()), o2::math_utils::detail::truncateFloatFraction(track.energy()), track.sign(), track.trackSel());
         storedJTracksParentIndexTable(track.trackId());
         trackMapping.insert(std::make_pair(track.globalIndex(), storedJTracksTable.lastIndex()));
       }
@@ -288,7 +292,7 @@ struct JetDerivedDataWriter {
               i++;
             }
           }
-          storedJMcParticlesTable(storedJMcCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId);
+          storedJMcParticlesTable(storedJMcCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(particle.pt()), o2::math_utils::detail::truncateFloatFraction(particle.eta()), o2::math_utils::detail::truncateFloatFraction(particle.phi()), o2::math_utils::detail::truncateFloatFraction(particle.y()), o2::math_utils::detail::truncateFloatFraction(particle.e()), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId);
           storedJParticlesParentIndexTable(particle.mcParticleId());
         }
 
@@ -350,7 +354,10 @@ struct JetDerivedDataWriter {
 
           const auto tracksPerCollision = tracks.sliceBy(TracksPerCollision, collision.globalIndex());
           for (const auto& track : tracksPerCollision) {
-            storedJTracksTable(storedJCollisionsTable.lastIndex(), track.pt(), track.eta(), track.phi(), track.energy(), track.sign(), track.trackSel());
+            if (track.trackSel() == 0) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept
+              continue;
+            }
+            storedJTracksTable(storedJCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(track.pt()), o2::math_utils::detail::truncateFloatFraction(track.eta()), o2::math_utils::detail::truncateFloatFraction(track.phi()), o2::math_utils::detail::truncateFloatFraction(track.energy()), track.sign(), track.trackSel());
             storedJTracksParentIndexTable(track.trackId());
 
             if (track.has_mcParticle()) {
@@ -461,7 +468,7 @@ struct JetDerivedDataWriter {
               i++;
             }
           }
-          storedJMcParticlesTable(storedJMcCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId);
+          storedJMcParticlesTable(storedJMcCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(particle.pt()), o2::math_utils::detail::truncateFloatFraction(particle.eta()), o2::math_utils::detail::truncateFloatFraction(particle.phi()), o2::math_utils::detail::truncateFloatFraction(particle.y()), o2::math_utils::detail::truncateFloatFraction(particle.e()), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId);
           storedJParticlesParentIndexTable(particle.mcParticleId());
         }
 

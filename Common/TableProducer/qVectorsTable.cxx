@@ -356,7 +356,7 @@ struct qVectorsTable {
         // to ensure a proper channel number in FT0 as a whole.
         float ampl = ft0.amplitudeC()[iChC];
 
-        histosQA.fill(HIST("FITAmp"), ampl, iChC);
+        histosQA.fill(HIST("FITAmp"), ampl, iChC + 96);
 
         helperEP.SumQvectors(0, iChC + 96, ampl, cfgnMod, QvecDet, sumAmplFT0C);
         helperEP.SumQvectors(0, iChC + 96, ampl, cfgnMod, QvecFT0M, sumAmplFT0M);
