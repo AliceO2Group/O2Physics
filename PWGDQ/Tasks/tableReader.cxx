@@ -756,6 +756,7 @@ struct AnalysisSameEventPairing {
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
   Configurable<bool> fConfigFlatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
+  Configurable<bool> fConfigMultDimuons{"cfgMultDimuons", false, "Multiplicity for Unlike Dimuons"};
   Configurable<bool> fConfigUseKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
   Configurable<bool> fUseRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
   Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
@@ -993,6 +994,24 @@ struct AnalysisSameEventPairing {
     if (fConfigFlatTables.value) {
       dimuonAllList.reserve(1);
     }
+
+    if (fConfigMultDimuons.value) {
+
+      uint32_t mult_dimuons = 0;
+
+      for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
+        if constexpr (TPairType == VarManager::kDecayToMuMu) {
+          twoTrackFilter = uint32_t(t1.isMuonSelected()) & uint32_t(t2.isMuonSelected()) & fTwoMuonFilterMask;
+        }
+
+        if (twoTrackFilter && (t1.sign() != t2.sign())) {
+          mult_dimuons++;
+        }
+      }
+
+      VarManager::fgValues[VarManager::kMultDimuons] = mult_dimuons;
+    }
+
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
       if constexpr (TPairType == VarManager::kDecayToEE || TPairType == VarManager::kDecayToPiPi) {
         twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected()) & fTwoTrackFilterMask;

@@ -309,6 +309,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMultZNC] = "";
   fgVariableNames[kMultTracklets] = "Multiplicity Tracklets";
   fgVariableUnits[kMultTracklets] = "";
+  fgVariableNames[kMultDimuons] = "Multiplicity Dimuons Unlike Sign";
+  fgVariableUnits[kMultDimuons] = "";
   fgVariableNames[kCentFT0C] = "Centrality FT0C";
   fgVariableUnits[kCentFT0C] = "%";
   fgVariableNames[kMCEventGeneratorId] = "MC Generator ID";

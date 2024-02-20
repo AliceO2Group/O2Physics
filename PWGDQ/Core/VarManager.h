@@ -173,6 +173,7 @@ class VarManager : public TObject
     kMultZNA,
     kMultZNC,
     kMultTracklets,
+    kMultDimuons,
     kMCEventGeneratorId,
     kMCVtxX,
     kMCVtxY,
