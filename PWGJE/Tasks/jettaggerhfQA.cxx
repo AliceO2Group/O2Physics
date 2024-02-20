@@ -64,6 +64,8 @@ struct JetTaggerHFQA {
   ConfigurableAxis binImpactParameterXYZ{"binImpactParameterXYZ", {2001, -1000.5f, 1000.5f}, ""};
   ConfigurableAxis binImpactParameterXYZSignificance{"binImpactParameterXYZSignificance", {2001, -100.5f, 100.5f}, ""};
   ConfigurableAxis binNumOrder{"binNumOrder", {6, 0.5, 6.5}, ""};
+  ConfigurableAxis binJetProbability{"binJetProbability", {100, 0.f, 1.f}, ""};
+  ConfigurableAxis binJetProbabilityLog{"binJetProbabilityLog", {100, 0.f, 10.f}, ""};
 
   // Axis
   AxisSpec jetFlavourAxis = {binJetFlavour, "Jet flavour"};
@@ -79,6 +81,8 @@ struct JetTaggerHFQA {
   AxisSpec impactParameterXYZAxis = {binImpactParameterXYZ, "IP_{XYZ} [#mum]"};
   AxisSpec impactParameterXYZSignificanceAxis = {binImpactParameterXYZSignificance, "IPs_{XYZ}"};
   AxisSpec numOrderAxis = {binNumOrder, "N_{order}"};
+  AxisSpec JetProbabilityAxis = {binJetProbability, "JP"};
+  AxisSpec JetProbabilityLogAxis = {binJetProbabilityLog, "-Log(JP)"};
 
   int numberOfJetFlavourSpecies = 6;
 
@@ -155,6 +159,10 @@ struct JetTaggerHFQA {
       registry.add("h3_sign_impact_parameter_xy_significance_tc_flavour", "", {HistType::kTH3F, {{impactParameterXYSignificanceAxis}, {numOrderAxis}, {jetFlavourAxis}}});
       registry.add("h3_sign_impact_parameter_z_significance_tc_flavour", "", {HistType::kTH3F, {{impactParameterZSignificanceAxis}, {numOrderAxis}, {jetFlavourAxis}}});
       registry.add("h3_sign_impact_parameter_xyz_significance_tc_flavour", "", {HistType::kTH3F, {{impactParameterXYZSignificanceAxis}, {numOrderAxis}, {jetFlavourAxis}}});
+    }
+    if (doprocessJP) {
+      registry.add("h3_jet_pt_JP_flavour", "jet pt jet probability flavour", {HistType::kTH3F, {{jetPtAxis}, {JetProbabilityAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_neg_log_JP_flavour", "jet pt jet probability flavour", {HistType::kTH3F, {{jetPtAxis}, {JetProbabilityLogAxis}, {jetFlavourAxis}}});
     }
   }
 
@@ -383,6 +391,18 @@ struct JetTaggerHFQA {
     }
   }
 
+  template <typename T, typename U>
+  void fillHistogramJP(T const& collision, U const& mcdjets)
+  {
+    for (auto& mcdjet : mcdjets) {
+      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      registry.fill(HIST("h3_jet_pt_JP_flavour"), mcdjet.pt(), mcdjet.jetProb(), mcdjet.origin());
+      registry.fill(HIST("h3_jet_pt_neg_log_JP_flavour"), mcdjet.pt(), -1 * TMath::Log(mcdjet.jetProb()), mcdjet.origin());
+    }
+  }
+
   void processDummy(aod::Collision const& collision, aod::Tracks const& tracks)
   {
   }
@@ -399,6 +419,12 @@ struct JetTaggerHFQA {
     fillHistogramIPsMCD(jcollision, mcdjets, jtracks);
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsMCD, "Fill impact parameter inpormation for mcd jets", false);
+
+  void processJP(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableMCD const& mcdjets, JetTagTracksMCD const& jtracks)
+  {
+    fillHistogramJP(jcollision, mcdjets);
+  }
+  PROCESS_SWITCH(JetTaggerHFQA, processJP, "Fill jet probability imformation for mcd jets", false);
 };
 
 using JetTaggerQAChargedDataJets = soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetTags>;

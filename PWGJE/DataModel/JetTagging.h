@@ -29,38 +29,37 @@ namespace o2::aod
 // Defines derived extension data inside jets for tagging
 namespace jtracktag
 {
-  DECLARE_SOA_COLUMN(DcaXYZ, dcaXYZ, float);
-  DECLARE_SOA_COLUMN(SigmaDcaXYZ2, sigmaDcaXYZ2, float);
-} // namespace jtracktag 
+DECLARE_SOA_COLUMN(DcaXYZ, dcaXYZ, float);
+DECLARE_SOA_COLUMN(SigmaDcaXYZ2, sigmaDcaXYZ2, float);
+} // namespace jtracktag
 
 DECLARE_SOA_TABLE(JTracksTag, "AOD", "JTracksTag",
-    track::X,
-    track::Y,
-    track::Z,
-    track::Alpha,
-    track::Snp,
-    track::Tgl,
-    track::Signed1Pt,
-    track::DcaXY,
-    track::DcaZ,
-    jtracktag::DcaXYZ,
-    track::SigmaDcaXY2,
-    track::SigmaDcaZ2,
-    jtracktag::SigmaDcaXYZ2);
+                  track::X,
+                  track::Y,
+                  track::Z,
+                  track::Alpha,
+                  track::Snp,
+                  track::Tgl,
+                  track::Signed1Pt,
+                  track::DcaXY,
+                  track::DcaZ,
+                  jtracktag::DcaXYZ,
+                  track::SigmaDcaXY2,
+                  track::SigmaDcaZ2,
+                  jtracktag::SigmaDcaXYZ2);
 
 using JTrackTag = JTracksTag::iterator;
-
 
 // Defines the jet substrcuture table definition
 #define JETTAGGING_TABLE_DEF(_jet_type_, _name_, _description_) \
   namespace _name_##tagging                                     \
   {                                                             \
     DECLARE_SOA_COLUMN(Origin, origin, int);                    \
-    DECLARE_SOA_COLUMN(Algorithm1, algorithm1, int);            \
+    DECLARE_SOA_COLUMN(JetProb, jetProb, float);                \
     DECLARE_SOA_COLUMN(Algorithm2, algorithm2, int);            \
     DECLARE_SOA_COLUMN(Algorithm3, algorithm3, int);            \
   }                                                             \
-  DECLARE_SOA_TABLE(_jet_type_##Tags, "AOD", _description_ "Tags", _name_##tagging::Origin, _name_##tagging::Algorithm1, _name_##tagging::Algorithm2, _name_##tagging::Algorithm3);
+  DECLARE_SOA_TABLE(_jet_type_##Tags, "AOD", _description_ "Tags", _name_##tagging::Origin, _name_##tagging::JetProb, _name_##tagging::Algorithm2, _name_##tagging::Algorithm3);
 
 #define JETTAGGING_TABLES_DEF(_jet_type_, _description_)                                                    \
   JETTAGGING_TABLE_DEF(_jet_type_##Jet, _jet_type_##jet, _description_)                                     \
