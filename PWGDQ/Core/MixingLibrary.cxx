@@ -10,7 +10,6 @@
 // or submit itself to any jurisdiction.
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
-//
 #include "PWGDQ/Core/MixingLibrary.h"
 
 void o2::aod::dqmixing::SetUpMixing(MixingHandler* mh, const char* mixingVarible)
