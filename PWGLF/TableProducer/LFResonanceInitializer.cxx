@@ -952,10 +952,9 @@ struct reso2initializer {
   }
   PROCESS_SWITCH(reso2initializer, processTrackData, "Process for data", true);
 
-
   void processTrackEPData(soa::Filtered<soa::Join<ResoEvents, aod::Qvectors>>::iterator const& collision,
-                        soa::Filtered<ResoTracks> const& tracks,
-                        aod::BCsWithTimestamps const&)
+                          soa::Filtered<ResoTracks> const& tracks,
+                          aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
@@ -973,8 +972,6 @@ struct reso2initializer {
     fillTracks<false>(collision, tracks);
   }
   PROCESS_SWITCH(reso2initializer, processTrackEPData, "Process for data and ep ana", ConfBypassQvec);
-
-
 
   PresliceUnsorted<ResoEventsMC> perMcCol = aod::mccollisionlabel::mcCollisionId;
   void processMCGenCount(aod::McCollisions const& mccollisions, aod::McParticles const& mcParticles, ResoEventsMC const& mcCols)
