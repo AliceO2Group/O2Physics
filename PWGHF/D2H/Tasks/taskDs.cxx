@@ -201,19 +201,19 @@ struct HfTaskDs {
   {
     switch (centDetector) {
       case centEstimator::FT0A:
-        return candidate.template collision_as<CollisionsWithCent>().template centFT0A();
+        return candidate.template collision_as<CollisionsWithCent>().centFT0A();
       case centEstimator::FT0C:
-        return candidate.template collision_as<CollisionsWithCent>().template centFT0C();
+        return candidate.template collision_as<CollisionsWithCent>().centFT0C();
       case centEstimator::FT0M:
-        return candidate.template collision_as<CollisionsWithCent>().template centFT0M();
+        return candidate.template collision_as<CollisionsWithCent>().centFT0M();
       case centEstimator::FV0A:
-        return candidate.template collision_as<CollisionsWithCent>().template centFV0A();
+        return candidate.template collision_as<CollisionsWithCent>().centFV0A();
       case centEstimator::FDDM:
-        return candidate.template collision_as<CollisionsWithCent>().template centFDDM();
+        return candidate.template collision_as<CollisionsWithCent>().centFDDM();
       case centEstimator::NTracksPV:
-        return candidate.template collision_as<CollisionsWithCent>().template centNTPV();
+        return candidate.template collision_as<CollisionsWithCent>().centNTPV();
       default: // In case of invalid configuration use FT0M
-        return candidate.template collision_as<CollisionsWithCent>().template centFT0M();
+        return candidate.template collision_as<CollisionsWithCent>().centFT0M();
     }
   }
 
