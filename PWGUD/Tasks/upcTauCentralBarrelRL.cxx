@@ -129,20 +129,21 @@ struct UpcTauCentralBarrelRL {
   Configurable<bool> verboseInfo{"verboseInfo", true, {"Print general info to terminal; default it true."}};
   Configurable<bool> verboseDebug{"verboseDebug", false, {"Print debug info to terminal; default it false."}};
   Configurable<int> whichGapSide{"whichGapSide", 2, {"0 for side A, 1 for side C, 2 for both sides"}};
-  Configurable<float> cutAvgITSclusterSize{"cutAvgITSclusterSize", 3.5, {"specific study"}};
-  Configurable<float> cutPtAvgITSclusterSize{"cutPtAvgITSclusterSize", 0.7, {"specific study"}};
-  Configurable<bool> cutMyGlobalTracksOnly{"cutGlobalTracksOnly", false, {"Applies cut on here defined global tracks"}};
+  Configurable<float> cutAvgITSclusterSize{"cutAvgITSclusterSize", 2.05f, {"specific study"}};
+  Configurable<float> cutPtAvgITSclusterSize{"cutPtAvgITSclusterSize", 0.7f, {"specific study"}};
+  Configurable<bool> cutMyGlobalTracksOnly{"cutMyGlobalTracksOnly", false, {"Applies cut on here defined global tracks"}};
   Configurable<float> cutMyGTptMin{"cutMyGTptMin", 0.1f, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTptMax{"cutMyGTptMax", 1e10f, {"MyGlobalTrack cut"}};
-  Configurable<float> cutMyGTetaMin{"cutMyGTetaMin", -0.8, {"MyGlobalTrack cut"}};
-  Configurable<float> cutMyGTetaMax{"cutMyGTetaMax", 0.8, {"MyGlobalTrack cut"}};
+  Configurable<float> cutMyGTetaMin{"cutMyGTetaMin", -0.8f, {"MyGlobalTrack cut"}};
+  Configurable<float> cutMyGTetaMax{"cutMyGTetaMax", 0.8f, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTdcaZmax{"cutMyGTdcaZmax", 2.f, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTdcaXYmax{"cutMyGTdcaXYmax", 1e10f, {"MyGlobalTrack cut"}};
   Configurable<bool> cutMyGTdcaXYusePt{"cutMyGTdcaXYusePt", false, {"MyGlobalTrack cut"}};
   Configurable<int> cutMyGTitsNClsMin{"cutMyGTitsNClsMin", 1, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTitsChi2NclMax{"cutMyGTitsChi2NclMax", 36.f, {"MyGlobalTrack cut"}};
+	Configurable<int> cutMyGTitsHitsRule{"cutMyGTitsHitsRule", 0, {"MyGlobalTrack cut"}};
   Configurable<int> cutMyGTtpcNClsMin{"cutMyGTtpcNClsMin", 1, {"MyGlobalTrack cut"}};
-  Configurable<int> cutMyGTtpcNClsCrossedRowsMin{"cutMyGTtpcNClsCrossedRows", 70, {"MyGlobalTrack cut"}};
+  Configurable<int> cutMyGTtpcNClsCrossedRowsMin{"cutMyGTtpcNClsCrossedRowsMin", 70, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTtpcNClsCrossedRowsOverNClsMin{"cutMyGTtpcNClsCrossedRowsOverNClsMin", 0.8f, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTtpcChi2NclMax{"cutMyGTtpcChi2NclMax", 4.f, {"MyGlobalTrack cut"}};
 
@@ -153,6 +154,8 @@ struct UpcTauCentralBarrelRL {
   // init
   void init(InitContext&)
   {
+	  mySetITShitsRule(cutMyGTitsHitsRule);
+
     if (verboseInfo)
       printLargeMessage("INIT METHOD");
     countCollisions = 0;
@@ -418,8 +421,50 @@ struct UpcTauCentralBarrelRL {
 
   } // end run
 
+	std::vector<std::pair<int8_t, std::set<uint8_t>>> cutMyRequiredITSHits{};
+
+	void mySetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers)
+	{
+		// layer 0 corresponds to the the innermost ITS layer
+		cutMyRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers));
+	}
+
+	void mySetITShitsRule(int matching){
+		switch (matching) {
+			case 0: //Run3ITSibAny
+				mySetRequireHitsInITSLayers(1, {0, 1, 2});
+				break;
+			case 1: //Run3ITSibTwo
+				mySetRequireHitsInITSLayers(2, {0, 1, 2});
+				break;
+			case 2: //Run3ITSallAny
+				mySetRequireHitsInITSLayers(1, {0, 1, 2, 3, 4, 5, 6});
+				break;
+			case 3: //Run3ITSall7Layers
+				mySetRequireHitsInITSLayers(7, {0, 1, 2, 3, 4, 5, 6});
+				break;
+			default:
+				LOG(fatal) << "You chose wrong ITS matching";
+				break;
+		}
+	}
+
+	bool isFulfillsITSHitRequirementsReinstatement(uint8_t itsClusterMap) const
+	{
+    constexpr uint8_t bit = 1;
+    for (auto& itsRequirement : cutMyRequiredITSHits) {
+      auto hits = std::count_if(itsRequirement.second.begin(), itsRequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (bit << requiredLayer); });
+      if ((itsRequirement.first == -1) && (hits > 0)) {
+        return false; // no hits were required in specified layers
+      } else if (hits < itsRequirement.first) {
+        return false; // not enough hits found in specified layers
+      }
+    }
+    return true;
+	}
+
   template <typename T>
-  bool isGlobalTrackReinstallment(T const& track)
+  bool isGlobalTrackReinstatement(T const& track)
   {
     // kInAcceptance copy
     if (track.pt() < cutMyGTptMin || track.pt() > cutMyGTptMax)
@@ -447,7 +492,8 @@ struct UpcTauCentralBarrelRL {
       return false;
     if (track.itsChi2NCl() > cutMyGTitsChi2NclMax)
       return false;
-    // if (!FulfillsITSHitRequirements(track.itsClusterSizes())) return false; <---- to complicated to implement now
+		if (!isFulfillsITSHitRequirementsReinstatement(track.itsClusterMap()))
+			return false;
     //  TPC
     if (!track.hasTPC())
       return false; // TPC refit
@@ -523,7 +569,7 @@ struct UpcTauCentralBarrelRL {
       if (track.isPVContributor() != 1)
         continue;
       if (cutMyGlobalTracksOnly) {
-        if (isGlobalTrackReinstallment(track) != 1)
+        if (isGlobalTrackReinstatement(track) != 1)
           continue;
       }
       countPVGT++;
