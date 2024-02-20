@@ -206,7 +206,7 @@ struct HfCorrelatorDsHadrons {
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
 
   Preslice<aod::HfCand3Prong> perCandCol = aod::hf_cand::collisionId;
-  Preslice<MyTracksData> perTrackCol = aod::hf_cand::collisionId;
+  Preslice<MyTracksData> perTrackCol = aod::track::collisionId;
   Preslice<aod::McParticles> perTrackColMc = aod::mcparticle::mcCollisionId;
 
   HistogramRegistry registry{
@@ -575,6 +575,7 @@ struct HfCorrelatorDsHadrons {
   void processMcEfficiencies(soa::Join<aod::Collisions, aod::Mults> const& collisions,
                              CandDsMcReco const& candidates,
                              TracksWithMc const& tracksData,
+                             aod::Tracks const& totalTracks,
                              aod::McCollisions const& mcCollisions,
                              CandDsMcGen const& mcParticles,
                              aod::TracksWMc const&)
@@ -610,21 +611,27 @@ struct HfCorrelatorDsHadrons {
     for (auto& collision : collisions) {
       auto groupedCandidates = candidates.sliceBy(perCandCol, collision.globalIndex());
       auto groupedTracks = tracksData.sliceBy(perTrackCol, collision.globalIndex());
+      auto groupedTotalTracks = totalTracks.sliceBy(perTrackCol, collision.globalIndex());
 
-      auto multiplicity = groupedTracks.size();
+      auto multiplicity = groupedTotalTracks.size();
       auto posZ = collision.posZ();
+      int nTracks = 0;
+      float px;
+      for (auto& track : groupedTotalTracks) {
+        px = track.px();
+        nTracks++;
+      }
+      if (nTracks != multiplicity) LOGF(info, "Number of tracks in loop: %d is not equal to size of the table %d", nTracks, multiplicity);
      
      // recontructed candidates loop
      for (auto& candidate : groupedCandidates) {
        if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
-        auto prong0McPart = candidate.prong0_as<aod::TracksWMc>().mcParticle_as<CandDsMcGen>();
-        // DsToKKPi and DsToPiKK division
-        if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
-          hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicity, candidate.originMcRec());
-        }
-      }//else {
-      // fillHistoMcRecBkg(candidate);
-      //}
+         auto prong0McPart = candidate.prong0_as<aod::TracksWMc>().mcParticle();
+         // DsToKKPi and DsToPiKK division
+         if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
+           hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicity, candidate.originMcRec());
+         }
+       }      
      }
 
      // recontructed tracks loop
