@@ -398,11 +398,9 @@ struct HfTaskFlowCharmHadrons {
     float yQVecBNeg = collision.qvecBNegIm();
 
     registry.fill(HIST("spReso/hSpResoFT0cFT0a"), centrality, xQVecFT0c * xQVecFT0a + yQVecFT0c * yQVecFT0a);
-    registry.fill(HIST("spReso/hSpResoFT0cFT0m"), centrality, xQVecFT0c * xQVecFT0m + yQVecFT0c * yQVecFT0m);
     registry.fill(HIST("spReso/hSpResoFT0cFV0m"), centrality, xQVecFT0c * xQVecFV0a + yQVecFT0c * yQVecFV0a);
     registry.fill(HIST("spReso/hSpResoFT0cTPCpos"), centrality, xQVecFT0c * xQVecBPos + yQVecFT0c * yQVecBPos);
     registry.fill(HIST("spReso/hSpResoFT0cTPCneg"), centrality, xQVecFT0c * xQVecBNeg + yQVecFT0c * yQVecBNeg);
-    registry.fill(HIST("spReso/hSpResoFT0aFT0m"), centrality, xQVecFT0a * xQVecFT0m + yQVecFT0a * yQVecFT0m);
     registry.fill(HIST("spReso/hSpResoFT0aFV0m"), centrality, xQVecFT0a * xQVecFV0a + yQVecFT0a * yQVecFV0a);
     registry.fill(HIST("spReso/hSpResoFT0aTPCpos"), centrality, xQVecFT0a * xQVecBPos + yQVecFT0a * yQVecBPos);
     registry.fill(HIST("spReso/hSpResoFT0aTPCneg"), centrality, xQVecFT0a * xQVecBNeg + yQVecFT0a * yQVecBNeg);
@@ -411,6 +409,7 @@ struct HfTaskFlowCharmHadrons {
     registry.fill(HIST("spReso/hSpResoFT0mTPCneg"), centrality, xQVecFT0m * xQVecBNeg + yQVecFT0m * yQVecBNeg);
     registry.fill(HIST("spReso/hSpResoFV0mTPCpos"), centrality, xQVecFV0a * xQVecBPos + yQVecFV0a * yQVecBPos);
     registry.fill(HIST("spReso/hSpResoFV0mTPCneg"), centrality, xQVecFV0a * xQVecBNeg + yQVecFV0a * yQVecBNeg);
+    registry.fill(HIST("spReso/hSpResoTPCposTPCneg"), centrality, xQVecBPos * xQVecBNeg + yQVecBPos * yQVecBNeg);
 
     if (saveEpResoHisto) {
       float epFT0a = epHelper.GetEventPlane(xQVecFT0a, yQVecFT0a, harmonic);
@@ -421,11 +420,9 @@ struct HfTaskFlowCharmHadrons {
       float epBNegs = epHelper.GetEventPlane(xQVecBNeg, yQVecBNeg, harmonic);
 
       registry.fill(HIST("epReso/hEpResoFT0cFT0a"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epFT0a)));
-      registry.fill(HIST("epReso/hEpResoFT0cFT0m"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epFT0m)));
       registry.fill(HIST("epReso/hEpResoFT0cFV0m"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epFV0a)));
       registry.fill(HIST("epReso/hEpResoFT0cTPCpos"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epBPoss)));
       registry.fill(HIST("epReso/hEpResoFT0cTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epBNegs)));
-      registry.fill(HIST("epReso/hEpResoFT0aFT0m"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0a, epFT0m)));
       registry.fill(HIST("epReso/hEpResoFT0aFV0m"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0a, epFV0a)));
       registry.fill(HIST("epReso/hEpResoFT0aTPCpos"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0a, epBPoss)));
       registry.fill(HIST("epReso/hEpResoFT0aTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0a, epBNegs)));
@@ -434,6 +431,7 @@ struct HfTaskFlowCharmHadrons {
       registry.fill(HIST("epReso/hEpResoFT0mTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0m, epBNegs)));
       registry.fill(HIST("epReso/hEpResoFV0mTPCpos"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFV0a, epBPoss)));
       registry.fill(HIST("epReso/hEpResoFV0mTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFV0a, epBNegs)));
+      registry.fill(HIST("epReso/hEpResoTPCposTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epBPoss, epBNegs)));
     }
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processResolution, "Process resolution", false);
