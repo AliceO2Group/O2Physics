@@ -370,7 +370,38 @@ DECLARE_SOA_TABLE(HfCandBpConfigs, "AOD", "HFCANDBPCONFIG", //! Table with confi
                   hf_cand_bplus_config::MySelectionFlagD0,
                   hf_cand_bplus_config::MySelectionFlagD0bar,
                   hf_cand_bplus_config::MyInvMassWindowD0Pi);
-} // namespace aod
+
+//Charm resonances analysis
+namespace hf_reso_cand_reduced
+{
+DECLARE_SOA_COLUMN(InvMass, invMass, float);      //! Invariant mass of V0/D candidate in GeV/c2
+DECLARE_SOA_COLUMN(Px, px, float);                //! Momentum of V0/D candidate in GeV/c          
+DECLARE_SOA_COLUMN(Py, py, float);
+DECLARE_SOA_COLUMN(Pz, pz, float);
+} // namespace hf_reso_cand_reduced
+
+DECLARE_SOA_TABLE(HfRedVzeros, "AOD", "HFREDVZERO", //! Table with V0 candidate information for resonances reduced workflow
+                  o2::soa::Index<>,
+                  hf_track_index_reduced::Prong0Id, hf_track_index_reduced::Prong1Id,
+                  hf_track_index_reduced::HfRedCollisionId,
+                  hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
+                  hf_reso_cand_reduced::InvMass,
+                  hf_reso_cand_reduced::Px,
+                  hf_reso_cand_reduced::Py,
+                  hf_reso_cand_reduced::Pz);
+
+DECLARE_SOA_TABLE(HfRedD, "AOD", "HFREDD", //! Table with D+/D* candidate information for resonances reduced workflow
+                  o2::soa::Index<>,
+                  hf_track_index_reduced::Prong0Id, hf_track_index_reduced::Prong1Id, hf_track_index_reduced::Prong2Id,
+                  hf_track_index_reduced::HfRedCollisionId,
+                  hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
+                  hf_reso_cand_reduced::InvMass,
+                  hf_reso_cand_reduced::Px,
+                  hf_reso_cand_reduced::Py,
+                  hf_reso_cand_reduced::Pz);
+                  } // namespace aod
+
+
 
 namespace soa
 {
