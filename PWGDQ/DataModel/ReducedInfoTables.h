@@ -498,6 +498,7 @@ DECLARE_SOA_COLUMN(Cos2DeltaPhi, cos2deltaphi, float);                   //! Cos
 DECLARE_SOA_COLUMN(Cos3DeltaPhi, cos3deltaphi, float);                   //! Cosinus term using event plane angle (harmonic 3)
 DECLARE_SOA_COLUMN(R2SP, r2sp, float);                                   //! Event plane resolution for SP method
 DECLARE_SOA_COLUMN(R2EP, r2ep, float);                                   //! Event plane resolution for EP method
+DECLARE_SOA_COLUMN(CORR2REF, corr2ref, float);
 DECLARE_SOA_COLUMN(CentFT0C, centft0c, float);                           //! Centrality information from FT0C
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                       //!
 // DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
@@ -582,7 +583,8 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   reducedpair::R2SP,
                   reducedpair::CentFT0C,
                   reducedpair::Cos2DeltaPhi,
-                  reducedpair::Cos3DeltaPhi);
+                  reducedpair::Cos3DeltaPhi,
+                  reducedpair::CORR2REF);
 
 using Dielectron = Dielectrons::iterator;
 using Dimuon = Dimuons::iterator;
