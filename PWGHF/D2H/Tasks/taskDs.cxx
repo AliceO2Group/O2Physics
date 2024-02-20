@@ -543,7 +543,7 @@ struct HfTaskDs {
   }
 
   void processDataWithCent(CollisionsWithCent const&,
-                               CandDsData const& candidates)
+                           CandDsData const& candidates)
   {
     runDataAnalysis<finalState::KKPi, false, true>(selectedDsToKKPiCandData);
     runDataAnalysis<finalState::PiKK, false, true>(selectedDsToPiKKCandData);
@@ -551,7 +551,7 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processDataWithCent, "Process data w/o ML information on Ds, with information on centrality", false);
 
   void processData(aod::Collisions const&,
-                             CandDsData const& candidates)
+                   CandDsData const& candidates)
   {
     runDataAnalysis<finalState::KKPi, false, false>(selectedDsToKKPiCandData);
     runDataAnalysis<finalState::PiKK, false, false>(selectedDsToPiKKCandData);
@@ -559,7 +559,7 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processData, "Process data w/o ML information on Ds, w/o information on centrality", true);
 
   void processDataWithMlAndCent(CollisionsWithCent const&,
-                                 CandDsDataWithMl const& candidates)
+                                CandDsDataWithMl const& candidates)
   {
     runDataAnalysis<finalState::KKPi, true, true>(selectedDsToKKPiCandWithMlData);
     runDataAnalysis<finalState::PiKK, true, true>(selectedDsToPiKKCandWithMlData);
@@ -567,7 +567,7 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processDataWithMlAndCent, "Process data with ML information on Ds, with information on centrality", false);
 
   void processDataWithMl(aod::Collisions const&,
-                               CandDsDataWithMl const& candidates)
+                         CandDsDataWithMl const& candidates)
   {
     runDataAnalysis<finalState::KKPi, true, false>(selectedDsToKKPiCandWithMlData);
     runDataAnalysis<finalState::PiKK, true, false>(selectedDsToPiKKCandWithMlData);
@@ -575,9 +575,9 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processDataWithMl, "Process data with ML information on Ds, w/o information on centrality", false);
 
   void processMcWithCent(CollisionsWithCent const&,
-                             CandDsMcReco const& candidates,
-                             CandDsMcGen const& mcParticles,
-                             aod::TracksWMc const&)
+                         CandDsMcReco const& candidates,
+                         CandDsMcGen const& mcParticles,
+                         aod::TracksWMc const&)
   {
     runMcAnalysis<false>(candidates, mcParticles);
     runDataAnalysis<finalState::KKPi, false, true>(selectedDsToKKPiCandMc);
@@ -586,9 +586,9 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processMcWithCent, "Process MC w/o ML information on Ds, with information on centrality", false);
 
   void processMc(aod::Collisions const&,
-                           CandDsMcReco const& candidates,
-                           CandDsMcGen const& mcParticles,
-                           aod::TracksWMc const&)
+                 CandDsMcReco const& candidates,
+                 CandDsMcGen const& mcParticles,
+                 aod::TracksWMc const&)
   {
     runMcAnalysis<false>(candidates, mcParticles);
     runDataAnalysis<finalState::KKPi, false, false>(selectedDsToKKPiCandMc);
@@ -597,9 +597,9 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processMc, "Process MC w/o ML information on Ds, w/o information on centrality", false);
 
   void processMcWithMlAndCent(CollisionsWithCent const&,
-                               CandDsMcRecoWithMl const& candidates,
-                               CandDsMcGen const& mcParticles,
-                               aod::TracksWMc const&)
+                              CandDsMcRecoWithMl const& candidates,
+                              CandDsMcGen const& mcParticles,
+                              aod::TracksWMc const&)
   {
     runMcAnalysis<true>(candidates, mcParticles);
     runDataAnalysis<finalState::KKPi, true, true>(selectedDsToKKPiCandWithMlMc);
@@ -608,9 +608,9 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processMcWithMlAndCent, "Process MC with ML information on Ds, with information on centrality", false);
 
   void processMcWithMl(aod::Collisions const&,
-                             CandDsMcRecoWithMl const& candidates,
-                             CandDsMcGen const& mcParticles,
-                             aod::TracksWMc const&)
+                       CandDsMcRecoWithMl const& candidates,
+                       CandDsMcGen const& mcParticles,
+                       aod::TracksWMc const&)
   {
     runMcAnalysis<true>(candidates, mcParticles);
     runDataAnalysis<finalState::KKPi, true, false>(selectedDsToKKPiCandWithMlMc);
