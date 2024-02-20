@@ -101,11 +101,9 @@ struct HfTaskFlowCharmHadrons {
       registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisCosNPhi, thnAxisCosDeltaPhi, thnAxisScalarProd});
     }
     registry.add("spReso/hSpResoFT0cFT0a", "hSpResoFT0cFT0a; centrality; Q_{FT0c} #bullet Q_{FT0a}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-    registry.add("spReso/hSpResoFT0cFT0m", "hSpResoFT0cFT0m; centrality; Q_{FT0c} #bullet Q_{FT0m}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
     registry.add("spReso/hSpResoFT0cFV0m", "hSpResoFT0cFV0m; centrality; Q_{FT0c} #bullet Q_{FV0m}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
     registry.add("spReso/hSpResoFT0cTPCpos", "hSpResoFT0cTPCpos; centrality; Q_{FT0c} #bullet Q_{TPCpos}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
     registry.add("spReso/hSpResoFT0cTPCneg", "hSpResoFT0cTPCneg; centrality; Q_{FT0c} #bullet Q_{TPCneg}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
-    registry.add("spReso/hSpResoFT0aFT0m", "hSpResoFT0aFT0m; centrality; Q_{FT0a} #bullet Q_{FT0m}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
     registry.add("spReso/hSpResoFT0aFV0m", "hSpResoFT0aFV0m; centrality; Q_{FT0a} #bullet Q_{FV0m}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
     registry.add("spReso/hSpResoFT0aTPCpos", "hSpResoFT0aTPCpos; centrality; Q_{FT0a} #bullet Q_{TPCpos}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
     registry.add("spReso/hSpResoFT0aTPCneg", "hSpResoFT0aTPCneg; centrality; Q_{FT0a} #bullet Q_{TPCneg}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
@@ -114,14 +112,13 @@ struct HfTaskFlowCharmHadrons {
     registry.add("spReso/hSpResoFT0mTPCneg", "hSpResoFT0mTPCneg; centrality; Q_{FT0m} #bullet Q_{TPCneg}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
     registry.add("spReso/hSpResoFV0mTPCpos", "hSpResoFV0mTPCpos; centrality; Q_{FV0m} #bullet Q_{TPCpos}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
     registry.add("spReso/hSpResoFV0mTPCneg", "hSpResoFV0mTPCneg; centrality; Q_{FV0m} #bullet Q_{TPCneg}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
+    registry.add("spReso/hSpResoTPCposTPCneg", "hSpResoTPCposTPCneg; centrality; Q_{TPCpos} #bullet Q_{TPCneg}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
 
     if (saveEpResoHisto) {
       registry.add("epReso/hEpResoFT0cFT0a", "hEpResoFT0cFT0a; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
-      registry.add("epReso/hEpResoFT0cFT0m", "hEpResoFT0cFT0m; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
       registry.add("epReso/hEpResoFT0cFV0m", "hEpResoFT0cFV0m; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
       registry.add("epReso/hEpResoFT0cTPCpos", "hEpResoFT0cTPCpos; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
       registry.add("epReso/hEpResoFT0cTPCneg", "hEpResoFT0cTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
-      registry.add("epReso/hEpResoFT0aFT0m", "hEpResoFT0aFT0m; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
       registry.add("epReso/hEpResoFT0aFV0m", "hEpResoFT0aFV0m; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
       registry.add("epReso/hEpResoFT0aTPCpos", "hEpResoFT0aTPCpos; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
       registry.add("epReso/hEpResoFT0aTPCneg", "hEpResoFT0aTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
@@ -130,6 +127,7 @@ struct HfTaskFlowCharmHadrons {
       registry.add("epReso/hEpResoFT0mTPCneg", "hEpResoFT0mTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
       registry.add("epReso/hEpResoFV0mTPCpos", "hEpResoFV0mTPCpos; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
       registry.add("epReso/hEpResoFV0mTPCneg", "hEpResoFV0mTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
+      registry.add("epReso/hEpResoTPCposTPCneg", "hEpResoTPCposTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTH2F, {thnAxisCent, thnAxisCosNPhi}});
     }
   }; // end init
 
