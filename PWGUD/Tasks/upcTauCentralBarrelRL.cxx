@@ -141,6 +141,7 @@ struct UpcTauCentralBarrelRL {
   Configurable<bool> cutMyGTdcaXYusePt{"cutMyGTdcaXYusePt", false, {"MyGlobalTrack cut"}};
   Configurable<int> cutMyGTitsNClsMin{"cutMyGTitsNClsMin", 1, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTitsChi2NclMax{"cutMyGTitsChi2NclMax", 36.f, {"MyGlobalTrack cut"}};
+	Configurable<int> cutMyGTitsHitsRule{"cutMyGTitsHitsRule", 0, {"MyGlobalTrack cut"}};
   Configurable<int> cutMyGTtpcNClsMin{"cutMyGTtpcNClsMin", 1, {"MyGlobalTrack cut"}};
   Configurable<int> cutMyGTtpcNClsCrossedRowsMin{"cutMyGTtpcNClsCrossedRowsMin", 70, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTtpcNClsCrossedRowsOverNClsMin{"cutMyGTtpcNClsCrossedRowsOverNClsMin", 0.8f, {"MyGlobalTrack cut"}};
@@ -153,7 +154,7 @@ struct UpcTauCentralBarrelRL {
   // init
   void init(InitContext&)
   {
-	  thisSetRequireHitsInITSLayers(1, {0, 1, 2});
+	  mySetITShitsRule(cutMyGTitsHitsRule);
 
     if (verboseInfo)
       printLargeMessage("INIT METHOD");
@@ -422,10 +423,30 @@ struct UpcTauCentralBarrelRL {
 
 	std::vector<std::pair<int8_t, std::set<uint8_t>>> cutMyRequiredITSHits{};
 
-	void thisSetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers)
+	void mySetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers)
 	{
 		// layer 0 corresponds to the the innermost ITS layer
 		cutMyRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers));
+	}
+
+	void mySetITShitsRule(int matching){
+		switch (matching) {
+			case 0: //Run3ITSibAny
+				mySetRequireHitsInITSLayers(1, {0, 1, 2});
+				break;
+			case 1: //Run3ITSibTwo
+				mySetRequireHitsInITSLayers(2, {0, 1, 2});
+				break;
+			case 2: //Run3ITSallAny
+				mySetRequireHitsInITSLayers(1, {0, 1, 2, 3, 4, 5, 6});
+				break;
+			case 3: //Run3ITSall7Layers
+				mySetRequireHitsInITSLayers(7, {0, 1, 2, 3, 4, 5, 6});
+				break;
+			default:
+				LOG(fatal) << "You chose wrong ITS matching";
+				break;
+		}
 	}
 
 	bool isFulfillsITSHitRequirementsReinstatement(uint8_t itsClusterMap) const
