@@ -961,6 +961,12 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
 template <typename Casc, typename T, typename Coll>
 inline bool HfFilterHelper::isSelectedCascade(const Casc& casc, const std::array<T, 3>& dauTracks, const Coll& collision)
 {
+
+  // Xi min pT
+  if (casc.pt() < mMinPtXi) {
+    return false;
+  }
+
   // eta of daughters
   if (std::fabs(dauTracks[0].eta()) > 1. || std::fabs(dauTracks[1].eta()) > 1. || std::fabs(dauTracks[2].eta()) > 1.) { // cut all V0 daughters with |eta| > 1.
     return false;
@@ -992,12 +998,7 @@ inline bool HfFilterHelper::isSelectedCascade(const Casc& casc, const std::array
   }
 
   // Xi bachelor min pT
-  if (dauTracks[0].pt() < mMinPtXi) {
-    return false;
-  }
-
-  // Xi bachelor min pT
-  if (casc.pt() < mMinPtXiBachelor) {
+  if (dauTracks[0].pt() < mMinPtXiBachelor) {
     return false;
   }
 
