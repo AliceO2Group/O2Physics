@@ -217,7 +217,7 @@ struct strangederivedbuilder {
 
     if (doprocessBinnedGenerated) {
       // reserve space for generated vectors if that process enabled
-      LOGF(info, "Binned generated processing enabled. Initialising...");
+      LOGF(info, "Binned generated processing enabled. Initialising with %i elements...", hBinFinder->GetNcells());
       auto hBinFinder = histos.get<TH2>(HIST("h2dGenK0Short"));
       genK0Short.resize(hBinFinder->GetNcells(), 0);
       genLambda.resize(hBinFinder->GetNcells(), 0);
@@ -588,8 +588,8 @@ struct strangederivedbuilder {
   {
     // set to zero
     std::fill(genK0Short.begin(), genK0Short.end(), 0);
-    std::fill(genLambda.begin(), genK0Short.end(), 0);
-    std::fill(genAntiLambda.begin(), genK0Short.end(), 0);
+    std::fill(genLambda.begin(), genLambda.end(), 0);
+    std::fill(genAntiLambda.begin(), genAntiLambda.end(), 0);
     std::fill(genXiMinus.begin(), genXiMinus.end(), 0);
     std::fill(genXiPlus.begin(), genXiPlus.end(), 0);
     std::fill(genOmegaMinus.begin(), genOmegaMinus.end(), 0);
