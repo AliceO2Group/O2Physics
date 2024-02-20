@@ -217,8 +217,8 @@ struct strangederivedbuilder {
 
     if (doprocessBinnedGenerated) {
       // reserve space for generated vectors if that process enabled
-      LOGF(info, "Binned generated processing enabled. Initialising with %i elements...", hBinFinder->GetNcells());
       auto hBinFinder = histos.get<TH2>(HIST("h2dGenK0Short"));
+      LOGF(info, "Binned generated processing enabled. Initialising with %i elements...", hBinFinder->GetNcells());
       genK0Short.resize(hBinFinder->GetNcells(), 0);
       genLambda.resize(hBinFinder->GetNcells(), 0);
       genAntiLambda.resize(hBinFinder->GetNcells(), 0);
