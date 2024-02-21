@@ -9,15 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// Nuclei spectra analysis task
+// Flow Qc analysis task
 // ========================
 //
-// Executable + dependencies:
+// Executable + dependencies to run in local (+ maybe some conveters):
 //
 // Data (run3):
-// o2-analysis-lf-nuclei-spectra, o2-analysis-timestamp
-// o2-analysis-pid-tof-base, o2-analysis-multiplicity-table, o2-analysis-event-selection
-// (to add flow: o2-analysis-qvector-table, o2-analysis-centrality-table)
+// o2-analysis-timestamp, o2-analysis-event-selection, o2-analysis-centrality-table,
+// o2-analysis-multiplicity-table, o2-analysis-ft0-corrected-table, o2-analysis-track-propagation,
+// o2-analysis-trackselection, o2-analysis-qvector-table, o2-analysis-lf-flow-qc
 
 #include <cmath>
 
