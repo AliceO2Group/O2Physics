@@ -54,6 +54,7 @@
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod;
+using namespace o2::aod::hf_collision_centrality;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -77,16 +78,6 @@ enum EventRejection {
   Chi2,
   Centrality,
   NEventRejection
-};
-
-// event rejection types
-enum CentralityEstimator {
-  None = 0,
-  FT0A,
-  FT0C,
-  FT0M,
-  FV0A,
-  NCentralityEstimators
 };
 
 // enum for proton PID strategy (only proton for baryons)
