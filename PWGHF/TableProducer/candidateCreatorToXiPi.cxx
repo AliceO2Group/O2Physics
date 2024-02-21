@@ -414,7 +414,6 @@ struct HfCandidateCreatorToXiPiMc {
             if (indexRec > -1) {
               flag = sign * (1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi);
               collisionMatched = candidate.collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
-
             }
           }
         }
@@ -448,7 +447,6 @@ struct HfCandidateCreatorToXiPiMc {
             if (indexRec > -1) {
               flag = sign * (1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi);
               collisionMatched = candidate.collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
-
             }
           }
         }
