@@ -352,7 +352,6 @@ struct qVectorsTable {
         // LOKI: Note this assumes nHarmo = 2!! Likely generalise in the future.
         helperEP.SumQvectors(0, iChA, ampl / RelGainConst[iChA], cfgnMod, QvecDet, sumAmplFT0A);
         helperEP.SumQvectors(0, iChA, ampl / RelGainConst[iChA], cfgnMod, QvecFT0M, sumAmplFT0M);
-
       } // Go to the next channel iChA.
 
       // Set the Qvectors for FT0A with the normalised Q-vector values if the sum of
