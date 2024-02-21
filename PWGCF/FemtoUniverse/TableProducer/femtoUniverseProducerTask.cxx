@@ -746,6 +746,7 @@ struct femtoUniverseProducerTask {
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     double invMassD0 = 0.0;
     double invMassD0bar = 0.0;
+    bool isD0D0bar = false;
 
     for (auto const& hfCand : hfCands) {
 
@@ -757,7 +758,8 @@ struct femtoUniverseProducerTask {
         continue;
       }
 
-      int postrackID = hfCand.globalIndex();
+      //int postrackID = hfCand.prong0().globalIndex();
+      int postrackID = hfCand.prong0Id(); // Index to first prong
       int rowInPrimaryTrackTablePos = -1;
       rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
       childIDs[0] = rowInPrimaryTrackTablePos;
@@ -768,74 +770,81 @@ struct femtoUniverseProducerTask {
       if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 0) {
         invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
         invMassD0bar = -hfHelper.invMassD0barToKPi(hfCand);
+        isD0D0bar = true;
       } else if (hfCand.isSelD0() == 0 && hfCand.isSelD0bar() == 1) {
         invMassD0 = -hfHelper.invMassD0ToPiK(hfCand);
         invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
+        isD0D0bar = true;
       } else if (hfCand.isSelD0() == 1 && hfCand.isSelD0bar() == 1) {
         invMassD0 = hfHelper.invMassD0ToPiK(hfCand);
         invMassD0bar = hfHelper.invMassD0barToKPi(hfCand);
+        isD0D0bar = true;
       } else {
         invMassD0 = 0.0;
         invMassD0bar = 0.0;
+        isD0D0bar = false;
       }
 
-      outputParts(outputCollision.lastIndex(),
-                  hfCand.ptProng0(),
-                  -999, // eta
-                  -999, // phi
-                  aod::femtouniverseparticle::ParticleType::kD0Child,
-                  -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kPosCuts),
-                  -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kPosPID),
-                  -999,
-                  childIDs,
-                  0,  // D0 mass
-                  0); // D0bar mass
-      const int rowOfPosTrack = outputParts.lastIndex();
-      /*if constexpr (isMC) {
-        fillMCParticle(tracks, o2::aod::femtouniverseparticle::ParticleType::kDmesonChild);
-      }*/
-      int negtrackID = hfCand.prong1().globalIndex();
-      int rowInPrimaryTrackTableNeg = -1;
-      rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
-      childIDs[0] = 0;
-      childIDs[1] = rowInPrimaryTrackTableNeg;
-
-      outputParts(outputCollision.lastIndex(),
-                  hfCand.ptProng1(),
-                  -999, // eta
-                  -999, // phi
-                  aod::femtouniverseparticle::ParticleType::kD0Child,
-                  -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegCuts),
-                  -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegPID),
-                  -999,
-                  childIDs,
-                  0,
-                  0);
-      const int rowOfNegTrack = outputParts.lastIndex();
-      /*if constexpr (isMC) {
-      fillMCParticle(p2, o2::aod::femtouniverseparticle::ParticleType::kDmesonChild);
-      }*/
-      std::vector<int> indexChildID = {rowOfPosTrack, rowOfNegTrack};
-
-      outputParts(outputCollision.lastIndex(),
-                  hfCand.pt(),
-                  hfCand.eta(),
-                  hfCand.phi(),
-                  aod::femtouniverseparticle::ParticleType::kD0,
-                  -999, // cut, cutContainerType
-                  -999, // PID, cutContainerType
-                  -999,
-                  indexChildID,
-                  invMassD0,     // D0 mass (mLambda)
-                  invMassD0bar); // D0bar mass (mAntiLambda)
-
-      if (ConfIsDebug) {
-        fillDebugParticle<false, true>(postrack); // QA for positive daughter
-        fillDebugParticle<false, true>(negtrack); // QA for negative daughter
-        fillDebugParticle<false, true>(hfCand);   // QA for D0/D0bar
-      }
-      if constexpr (isMC) {
-        fillMCParticle(hfCand, o2::aod::femtouniverseparticle::ParticleType::kD0);
+      if(isD0D0bar){
+        outputParts(outputCollision.lastIndex(),
+                    hfCand.ptProng0(),
+                    RecoDecay::eta(std::array{hfCand.pxProng0(), hfCand.pyProng0(), hfCand.pzProng0()}), // eta
+                    RecoDecay::phi(hfCand.pxProng0(), hfCand.pyProng0()), // phi
+                    aod::femtouniverseparticle::ParticleType::kD0Child,
+                    -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kPosCuts),
+                    -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kPosPID),
+                    -999,
+                    childIDs,
+                    0,  // D0 mass
+                    0); // D0bar mass
+        const int rowOfPosTrack = outputParts.lastIndex();
+        /*if constexpr (isMC) {
+          fillMCParticle(tracks, o2::aod::femtouniverseparticle::ParticleType::kDmesonChild);
+        }*/
+        //int negtrackID = hfCand.prong1().globalIndex();
+        int negtrackID = hfCand.prong1Id();
+        int rowInPrimaryTrackTableNeg = -1;
+        rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
+        childIDs[0] = 0;
+        childIDs[1] = rowInPrimaryTrackTableNeg;
+        
+        outputParts(outputCollision.lastIndex(),
+                    hfCand.ptProng1(),
+                    RecoDecay::eta(std::array{hfCand.pxProng1(), hfCand.pyProng1(), hfCand.pzProng1()}), // eta
+                    RecoDecay::phi(hfCand.pxProng1(), hfCand.pyProng1()), // phi
+                    aod::femtouniverseparticle::ParticleType::kD0Child,
+                    -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegCuts),
+                    -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegPID),
+                    -999,
+                    childIDs,
+                    0,
+                    0);
+        const int rowOfNegTrack = outputParts.lastIndex();
+        /*if constexpr (isMC) {
+        fillMCParticle(p2, o2::aod::femtouniverseparticle::ParticleType::kDmesonChild);
+        }*/
+        std::vector<int> indexChildID = {rowOfPosTrack, rowOfNegTrack};
+        
+        outputParts(outputCollision.lastIndex(),
+                    hfCand.pt(),
+                    hfCand.eta(),
+                    hfCand.phi(),
+                    aod::femtouniverseparticle::ParticleType::kD0,
+                    -999, // cut, cutContainerType
+                    -999, // PID, cutContainerType
+                    -999,
+                    indexChildID,
+                    invMassD0,     // D0 mass (mLambda)
+                    invMassD0bar); // D0bar mass (mAntiLambda)
+        
+        if (ConfIsDebug) {
+          fillDebugParticle<false, true>(postrack); // QA for positive daughter
+          fillDebugParticle<false, true>(negtrack); // QA for negative daughter
+          fillDebugParticle<false, true>(hfCand);   // QA for D0/D0bar
+        }
+        if constexpr (isMC) {
+          fillMCParticle(hfCand, o2::aod::femtouniverseparticle::ParticleType::kD0);
+        }
       }
     }
   }
