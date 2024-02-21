@@ -148,16 +148,12 @@ struct HfCandidateCreator2Prong {
       auto collision = rowTrackIndexProng2.template collision_as<Coll>();
       float centrality = -1.;
       if constexpr (centEstimator != CentralityEstimator::None) {
-        if constexpr (centEstimator == CentralityEstimator::FT0A) {
-          centrality = collision.centFT0A();
-        } else if constexpr (centEstimator == CentralityEstimator::FT0C) {
+        if constexpr (centEstimator == CentralityEstimator::FT0C) {
           centrality = collision.centFT0C();
         } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
           centrality = collision.centFT0M();
-        } else if constexpr (centEstimator == CentralityEstimator::FV0A) {
-          centrality = collision.centFV0A();
         } else {
-          LOGP(fatal, "Centrality estimator not set!");
+          LOGP(fatal, "Centrality estimator different from FT0C and FT0M, fix it!");
         }
         if (centrality < centralityMin || centrality > centralityMax) {
           continue;
