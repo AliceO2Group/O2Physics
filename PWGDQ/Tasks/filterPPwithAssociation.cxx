@@ -198,6 +198,8 @@ struct DQBarrelTrackSelection {
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
+  Preslice<aod::TrackAssoc> barrelTrackIndicesPerCollision = aod::track_association::collisionId;
+
   std::vector<AnalysisCompositeCut> fTrackCuts;
   std::vector<TString> fCutHistNames;
 
@@ -247,8 +249,8 @@ struct DQBarrelTrackSelection {
   }
 
   // Templated function instantianed for all of the process functions
-  template <uint32_t TTrackFillMap, typename TTracks>
-  void runTrackSelection(aod::BCsWithTimestamps const& bcs, TTracks const& tracksBarrel)
+  template <uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename AssocTracks>
+  void runTrackSelection(TEvent const& collision, aod::BCsWithTimestamps const& bcs, TTracks const& tracksBarrel, AssocTracks const& trackAssocs)
   {
     auto bc = bcs.begin(); // check just the first bc to get the run number
     if (fCurrentRun != bc.runNumber()) {
@@ -268,10 +270,14 @@ struct DQBarrelTrackSelection {
     trackSel.reserve(tracksBarrel.size());
 
     VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
-    for (auto& track : tracksBarrel) {
+    for (auto& trackAssoc : trackAssocs) {
       filterMap = uint32_t(0);
 
+      auto track = trackAssoc.template track_as<TTracks>();
+
       VarManager::FillTrack<TTrackFillMap>(track);
+      // compute quantities which depend on the associated collision, such as DCA
+      VarManager::FillTrackCollision<TTrackFillMap>(track, collision);
       if (fConfigQA) {
         fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
       }
@@ -288,9 +294,12 @@ struct DQBarrelTrackSelection {
     } // end loop over tracks
   }
 
-  void processSelection(aod::BCsWithTimestamps const& bcs, MyBarrelTracks const& tracks)
+  void processSelection(Collisions const& collisions, aod::BCsWithTimestamps const& bcs, MyBarrelTracks const& tracks, aod::TrackAssoc const& trackAssocs)
   {
-    runTrackSelection<gkTrackFillMap>(bcs, tracks);
+    for (auto& collision : collisions) {
+      auto trackIdsThisCollision = trackAssocs.sliceBy(barrelTrackIndicesPerCollision, collision.globalIndex());
+      runTrackSelection<gkTrackFillMap>(collision, bcs, tracks, trackIdsThisCollision);
+    }
   }
 
   void processDummy(MyBarrelTracks&)
