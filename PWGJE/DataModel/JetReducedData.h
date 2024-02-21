@@ -63,6 +63,7 @@ DECLARE_SOA_INDEX_COLUMN(JBC, bc);
 DECLARE_SOA_COLUMN(PosX, posX, float);
 DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
+DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
 DECLARE_SOA_COLUMN(EventSel, eventSel, uint8_t);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
@@ -75,6 +76,7 @@ DECLARE_SOA_TABLE(JCollisions, "AOD", "JCOLLISION",
                   jcollision::PosX,
                   jcollision::PosY,
                   jcollision::PosZ,
+                  jcollision::Multiplicity,
                   jcollision::Centrality,
                   jcollision::EventSel,
                   jcollision::Alias);
@@ -86,6 +88,7 @@ DECLARE_SOA_TABLE(StoredJCollisions, "AOD1", "JCOLLISION",
                   jcollision::PosX,
                   jcollision::PosY,
                   jcollision::PosZ,
+                  jcollision::Multiplicity,
                   jcollision::Centrality,
                   jcollision::EventSel,
                   jcollision::Alias,
@@ -185,7 +188,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz,
 DECLARE_SOA_DYNAMIC_COLUMN(P, p,
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,
-                           [](uint8_t trackSel) -> int { if ((trackSel >> 0) & 1){ return 1;} else{return -1;} });
+                           [](uint8_t trackSel) -> int { if (trackSel & (1<<0)){ return 1;} else{return -1;} });
 } // namespace jtrack
 
 DECLARE_SOA_TABLE(JTracks, "AOD", "JTRACK",

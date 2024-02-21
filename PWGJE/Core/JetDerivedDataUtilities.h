@@ -36,8 +36,7 @@ bool selectCollision(T const& collision, int eventSelection = -1)
   if (eventSelection == -1) {
     return true;
   }
-
-  return (collision.eventSel() >> eventSelection) & 1;
+  return (collision.eventSel() & (1 << eventSelection));
 }
 
 int initialiseEventSelection(std::string eventSelection)
@@ -92,7 +91,7 @@ bool selectChargedTrigger(T const& collision, int triggerSelection)
   if (triggerSelection == -1) {
     return true;
   }
-  return (collision.chargedTriggerSel() >> triggerSelection) & 1;
+  return (collision.chargedTriggerSel() & (1 << triggerSelection));
 }
 
 int initialiseChargedTriggerSelection(std::string triggerSelection)
@@ -142,7 +141,7 @@ bool selectFullTrigger(T const& collision, int triggerSelection)
   if (triggerSelection == -1) {
     return true;
   }
-  return (collision.fullTriggerSel() >> triggerSelection) & 1;
+  return (collision.fullTriggerSel() & (1 << triggerSelection));
 }
 
 int initialiseFullTriggerSelection(std::string triggerSelection)
@@ -240,7 +239,7 @@ bool selectTrack(T const& track, int trackSelection)
   if (trackSelection == -1) {
     return true;
   }
-  return (track.trackSel() >> trackSelection) & 1;
+  return (track.trackSel() & (1 << trackSelection));
 }
 
 int initialiseTrackSelection(std::string trackSelection)
