@@ -787,7 +787,7 @@ void processKaKaFromDsOrDplusMc(CollisionsFiltered::iterator const& collision,
         base::Propagator::initFieldFromGRP(grpo);
         bz = base::Propagator::Instance()->getNominalBz();
       } else {
-        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu",bc.runNumber(),bc.timestamp());
+        LOGF(fatal, "GRP object is not available in CCDB fogit r run=%d at timestamp=%llu",bc.runNumber(),bc.timestamp());
       }
       runNumber = bc.runNumber();
     }
