@@ -175,7 +175,6 @@ DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Energy, energy, float);
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);
 DECLARE_SOA_COLUMN(TrackSel, trackSel, uint8_t);
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -185,6 +184,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz,
                            [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p,
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,
+                           [](uint8_t trackSel) -> int { if ((trackSel >> 0) & 1){ return 1;} else{return -1;} });
 } // namespace jtrack
 
 DECLARE_SOA_TABLE(JTracks, "AOD", "JTRACK",
@@ -194,12 +195,12 @@ DECLARE_SOA_TABLE(JTracks, "AOD", "JTRACK",
                   jtrack::Eta,
                   jtrack::Phi,
                   jtrack::Energy,
-                  jtrack::Sign,
                   jtrack::TrackSel,
                   jtrack::Px<jtrack::Pt, jtrack::Phi>,
                   jtrack::Py<jtrack::Pt, jtrack::Phi>,
                   jtrack::Pz<jtrack::Pt, jtrack::Eta>,
-                  jtrack::P<jtrack::Pt, jtrack::Eta>);
+                  jtrack::P<jtrack::Pt, jtrack::Eta>,
+                  jtrack::Sign<jtrack::TrackSel>);
 
 using JTrack = JTracks::iterator;
 
@@ -210,12 +211,12 @@ DECLARE_SOA_TABLE(StoredJTracks, "AOD1", "JTRACK",
                   jtrack::Eta,
                   jtrack::Phi,
                   jtrack::Energy,
-                  jtrack::Sign,
                   jtrack::TrackSel,
                   jtrack::Px<jtrack::Pt, jtrack::Phi>,
                   jtrack::Py<jtrack::Pt, jtrack::Phi>,
                   jtrack::Pz<jtrack::Pt, jtrack::Eta>,
                   jtrack::P<jtrack::Pt, jtrack::Eta>,
+                  jtrack::Sign<jtrack::TrackSel>,
                   o2::soa::Marker<1>);
 
 using StoredJTrack = StoredJTracks::iterator;

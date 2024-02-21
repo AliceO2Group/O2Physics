@@ -185,7 +185,7 @@ struct JetDerivedDataWriter {
         if (track.trackSel() == 0) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept
           continue;
         }
-        storedJTracksTable(storedJCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(track.pt()), o2::math_utils::detail::truncateFloatFraction(track.eta()), o2::math_utils::detail::truncateFloatFraction(track.phi()), o2::math_utils::detail::truncateFloatFraction(track.energy()), track.sign(), track.trackSel());
+        storedJTracksTable(storedJCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(track.pt()), o2::math_utils::detail::truncateFloatFraction(track.eta()), o2::math_utils::detail::truncateFloatFraction(track.phi()), o2::math_utils::detail::truncateFloatFraction(track.energy()), track.trackSel());
         storedJTracksParentIndexTable(track.trackId());
         trackMapping.insert(std::make_pair(track.globalIndex(), storedJTracksTable.lastIndex()));
       }
@@ -357,7 +357,7 @@ struct JetDerivedDataWriter {
             if (track.trackSel() == 0) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept
               continue;
             }
-            storedJTracksTable(storedJCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(track.pt()), o2::math_utils::detail::truncateFloatFraction(track.eta()), o2::math_utils::detail::truncateFloatFraction(track.phi()), o2::math_utils::detail::truncateFloatFraction(track.energy()), track.sign(), track.trackSel());
+            storedJTracksTable(storedJCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(track.pt()), o2::math_utils::detail::truncateFloatFraction(track.eta()), o2::math_utils::detail::truncateFloatFraction(track.phi()), o2::math_utils::detail::truncateFloatFraction(track.energy()), track.trackSel());
             storedJTracksParentIndexTable(track.trackId());
 
             if (track.has_mcParticle()) {

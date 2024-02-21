@@ -219,9 +219,10 @@ uint8_t setFullTriggerSelectionBit(T const& collision)
 }
 
 enum JTrackSel {
-  globalTrack = 0,
-  qualityTrack = 1,
-  hybridTrack = 2
+  trackSign = 0, // warning : this number is hardcoded in the sign coloumn in the JTracks table so should not be changed without changing it there too
+  globalTrack = 1,
+  qualityTrack = 2,
+  hybridTrack = 3
 };
 
 template <typename T>
@@ -260,6 +261,9 @@ uint8_t setTrackSelectionBit(T const& track)
 
   uint8_t bit = 0;
 
+  if (track.sign() == 1) {
+    SETBIT(bit, JTrackSel::trackSign);
+  }
   if (track.isGlobalTrackWoPtEta()) {
     SETBIT(bit, JTrackSel::globalTrack);
   }
