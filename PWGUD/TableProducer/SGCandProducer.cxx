@@ -188,7 +188,6 @@ struct SGCandProducer {
 
       // update SG candidates tables
       auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
-      
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(),
                        collision.numContrib(), udhelpers::netCharge<true>(tracks),
@@ -207,9 +206,7 @@ struct SGCandProducer {
       // update SGTracks tables
       for (auto& track : tracks) {
         updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
-      }
-
-      
+      }      
       // update SGFwdTracks tables
       for (auto& fwdtrack : fwdtracks) {
         updateUDFwdTrackTables(fwdtrack, bc.globalBC());
