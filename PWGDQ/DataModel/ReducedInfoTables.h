@@ -500,6 +500,11 @@ DECLARE_SOA_COLUMN(R2SP, r2sp, float);                                   //! Eve
 DECLARE_SOA_COLUMN(R2EP, r2ep, float);                                   //! Event plane resolution for EP method
 DECLARE_SOA_COLUMN(CORR2REF, corr2ref, float);                           //! REF FLOW CORRELATOR <2>
 DECLARE_SOA_COLUMN(CORR2POI, corr2poi, float);                           //! POI FLOW CORRELATOR <2'>
+DECLARE_SOA_COLUMN(CORR4REF, corr4ref, float);                           //! REF FLOW CORRELATOR <4>
+DECLARE_SOA_COLUMN(CORR4POI, corr4poi, float);                           //! POI FLOW CORRELATOR <4'>
+DECLARE_SOA_COLUMN(C4REF, c4ref, float);                                 //! REF FLOW CUMULANT (harmonic 4)
+DECLARE_SOA_COLUMN(C4POI, c4poi, float);                                 //! POI FLOW CUMULANT (harmonic 4)
+DECLARE_SOA_COLUMN(V4, v4, float);                                       //! V2{4} Elliptic Flow doing 4-particle correlations
 DECLARE_SOA_COLUMN(CentFT0C, centft0c, float);                           //! Centrality information from FT0C
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                       //!
 // DECLARE_SOA_INDEX_COLUMN(ReducedMuon, reducedmuon2); //!
@@ -585,7 +590,8 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   reducedpair::CentFT0C,
                   reducedpair::Cos2DeltaPhi,
                   reducedpair::Cos3DeltaPhi,
-                  reducedpair::CORR2REF, reducedpair::CORR2POI);
+                  reducedpair::CORR2REF, reducedpair::CORR2POI,
+                  reducedpair::CORR4REF, reducedpair::CORR4POI, reducedpair::C4REF, reducedpair::C4POI, reducedpair::V4);
 
 using Dielectron = Dielectrons::iterator;
 using Dimuon = Dimuons::iterator;
