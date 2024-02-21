@@ -758,7 +758,7 @@ struct femtoUniverseProducerTask {
         continue;
       }
 
-      //int postrackID = hfCand.prong0().globalIndex();
+      // int postrackID = hfCand.prong0().globalIndex();
       int postrackID = hfCand.prong0Id(); // Index to first prong
       int rowInPrimaryTrackTablePos = -1;
       rowInPrimaryTrackTablePos = getRowDaughters(postrackID, tmpIDtrack);
@@ -785,11 +785,11 @@ struct femtoUniverseProducerTask {
         isD0D0bar = false;
       }
 
-      if(isD0D0bar){
+      if (isD0D0bar) {
         outputParts(outputCollision.lastIndex(),
                     hfCand.ptProng0(),
                     RecoDecay::eta(std::array{hfCand.pxProng0(), hfCand.pyProng0(), hfCand.pzProng0()}), // eta
-                    RecoDecay::phi(hfCand.pxProng0(), hfCand.pyProng0()), // phi
+                    RecoDecay::phi(hfCand.pxProng0(), hfCand.pyProng0()),                                // phi
                     aod::femtouniverseparticle::ParticleType::kD0Child,
                     -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kPosCuts),
                     -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kPosPID),
@@ -801,17 +801,17 @@ struct femtoUniverseProducerTask {
         /*if constexpr (isMC) {
           fillMCParticle(tracks, o2::aod::femtouniverseparticle::ParticleType::kDmesonChild);
         }*/
-        //int negtrackID = hfCand.prong1().globalIndex();
+        // int negtrackID = hfCand.prong1().globalIndex();
         int negtrackID = hfCand.prong1Id();
         int rowInPrimaryTrackTableNeg = -1;
         rowInPrimaryTrackTableNeg = getRowDaughters(negtrackID, tmpIDtrack);
         childIDs[0] = 0;
         childIDs[1] = rowInPrimaryTrackTableNeg;
-        
+
         outputParts(outputCollision.lastIndex(),
                     hfCand.ptProng1(),
                     RecoDecay::eta(std::array{hfCand.pxProng1(), hfCand.pyProng1(), hfCand.pzProng1()}), // eta
-                    RecoDecay::phi(hfCand.pxProng1(), hfCand.pyProng1()), // phi
+                    RecoDecay::phi(hfCand.pxProng1(), hfCand.pyProng1()),                                // phi
                     aod::femtouniverseparticle::ParticleType::kD0Child,
                     -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegCuts),
                     -999, // cutContainerV0.at(femtoUniverseV0Selection::V0ContainerPosition::kNegPID),
@@ -824,7 +824,7 @@ struct femtoUniverseProducerTask {
         fillMCParticle(p2, o2::aod::femtouniverseparticle::ParticleType::kDmesonChild);
         }*/
         std::vector<int> indexChildID = {rowOfPosTrack, rowOfNegTrack};
-        
+
         outputParts(outputCollision.lastIndex(),
                     hfCand.pt(),
                     hfCand.eta(),
@@ -836,7 +836,7 @@ struct femtoUniverseProducerTask {
                     indexChildID,
                     invMassD0,     // D0 mass (mLambda)
                     invMassD0bar); // D0bar mass (mAntiLambda)
-        
+
         if (ConfIsDebug) {
           fillDebugParticle<false, true>(postrack); // QA for positive daughter
           fillDebugParticle<false, true>(negtrack); // QA for negative daughter
