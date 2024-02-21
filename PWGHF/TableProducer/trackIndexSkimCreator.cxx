@@ -3433,7 +3433,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
     uint8_t hfFlag = 0;
     bool isGoogForXi2Prong = true;
     bool isGoogForOmega2Prong = true;
-    bool isGoogForXi3Prong = true;
 
     for (const auto& collision : collisions) {
 
@@ -3549,7 +3548,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
             registry.fill(HIST("hFitterStatusXi2Prong"), 0);
           }
 
-          if (isGoogForXi2Prong && nVtxFrom2ProngFitterXiHyp > 0) {
+          if (nVtxFrom2ProngFitterXiHyp > 0) {
 
             df2.propagateTracksToVertex();
 
@@ -3589,7 +3588,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
             registry.fill(HIST("hFitterStatusOmega2Prong"), 0);
           }
 
-          if (isGoogForOmega2Prong && nVtxFrom2ProngFitterOmegaHyp > 0) {
+          if (nVtxFrom2ProngFitterOmegaHyp > 0) {
 
             df2.propagateTracksToVertex();
 
@@ -3631,7 +3630,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
             for (auto trackIdPion2 = trackIdPion1 + 1; trackIdPion2 != groupedBachTrackIndices.end(); ++trackIdPion2) {
 
               hfFlag = 0;
-              isGoogForXi3Prong = true;
 
               if (!TESTBIT(trackIdPion2.isSelProng(), CandidateType::CandCascadeBachelor)) {
                 continue;
@@ -3664,13 +3662,13 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 if (fillHistograms) {
                   registry.fill(HIST("hFitterStatusXi3Prong"), 1);
                 }
-                isGoogForXi3Prong = false;
+                continue;
               }
-              if (isGoogForXi3Prong && fillHistograms) {
+              if (fillHistograms) {
                 registry.fill(HIST("hFitterStatusXi3Prong"), 0);
               }
 
-              if (isGoogForXi3Prong && nVtxFrom3ProngFitterXiHyp > 0) {
+              if (nVtxFrom3ProngFitterXiHyp > 0) {
 
                 df3.propagateTracksToVertex();
 
