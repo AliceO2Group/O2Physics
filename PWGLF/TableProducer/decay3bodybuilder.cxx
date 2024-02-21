@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// Builder task for hypertriton 3-body decay reconstruction
+// Builder task for 3-body decay reconstruction (p + pion + bachelor)
 // author: yuanzhe.wang@cern.ch
 
 #include <cmath>
@@ -46,7 +46,7 @@ using std::array;
 using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
 using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
-struct hypertriton3bodyBuilder {
+struct decay3bodyBuilder {
 
   Produces<aod::StoredVtx3BodyDatas> vtx3bodydata;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -72,11 +72,13 @@ struct hypertriton3bodyBuilder {
     },
   };
 
+  // hypothesis
+  Configurable<int> bachelorcharge{"bachelorcharge", 1, "charge of the bachelor track"};
   // Selection criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
   Configurable<float> minCosPA3body{"minCosPA3body", 0.9, "minCosPA3body"};
-  Configurable<float> dcavtxdau{"dcavtxdau", 2.0, "DCA Vtx Daughters"};
+  Configurable<float> dcavtxdau{"dcavtxdau", 1.0, "DCA Vtx Daughters"};
 
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   // CCDB options
@@ -189,22 +191,20 @@ struct hypertriton3bodyBuilder {
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
   }
+
   //------------------------------------------------------------------
-
-  void process(aod::Collision const& collision, FullTracksExtIU const& tracks, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  // 3body candidate builder
+  template <class TTrackClass, typename TCollisionTable, typename TTrackTable>
+  void buildVtx3BodyDataTable(TCollisionTable const& collision, TTrackTable const& tracks, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
   {
-
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
-    registry.fill(HIST("hEventCounter"), 0.5);
 
     for (auto& vtx3body : decay3bodys) {
 
       registry.fill(HIST("hVtx3BodyCounter"), kVtxAll);
 
-      auto t0 = vtx3body.track0_as<FullTracksExtIU>();
-      auto t1 = vtx3body.track1_as<FullTracksExtIU>();
-      auto t2 = vtx3body.track2_as<FullTracksExtIU>();
+      auto t0 = vtx3body.template track0_as<TTrackClass>();
+      auto t1 = vtx3body.template track1_as<TTrackClass>();
+      auto t2 = vtx3body.template track2_as<TTrackClass>();
       if (t0.collisionId() != t1.collisionId() || t0.collisionId() != t2.collisionId()) {
         continue;
       }
@@ -252,6 +252,9 @@ struct hypertriton3bodyBuilder {
       propagatedTrack0.getPxPyPzGlo(p0);
       propagatedTrack1.getPxPyPzGlo(p1);
       propagatedTrack2.getPxPyPzGlo(p2);
+      for (int i = 0; i < 3; i++) {
+        p2[i] *= bachelorcharge;
+      }
       std::array<float, 3> p3B = {p0[0] + p1[0] + p2[0], p0[1] + p1[1] + p2[1], p0[2] + p1[2] + p2[2]};
 
       if (fitter3body.getChi2AtPCACandidate() > dcavtxdau) {
@@ -273,9 +276,19 @@ struct hypertriton3bodyBuilder {
         Track0dcaXY, Track1dcaXY, Track2dcaXY);
     }
   }
+
+  //------------------------------------------------------------------
+  void process(aod::Collision const& collision, FullTracksExtIU const& tracks, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  {
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+    registry.fill(HIST("hEventCounter"), 0.5);
+
+    buildVtx3BodyDataTable<FullTracksExtIU>(collision, tracks, decay3bodys, bachelorcharge);
+  }
 };
 
-struct hypertriton3bodyDataLinkBuilder {
+struct decay3bodyDataLinkBuilder {
   Produces<aod::Decay3BodyDataLink> vtxdataLink;
 
   void init(InitContext const&) {}
@@ -295,7 +308,7 @@ struct hypertriton3bodyDataLinkBuilder {
   }
 };
 
-struct hypertriton3bodyLabelBuilder {
+struct decay3bodyLabelBuilder {
 
   Produces<aod::McVtx3BodyLabels> vtxlabels;
   Produces<aod::McFullVtx3BodyLabels> vtxfulllabels;
@@ -317,7 +330,7 @@ struct hypertriton3bodyLabelBuilder {
   void init(InitContext const&)
   {
     registry.get<TH1>(HIST("hLabelCounter"))->GetXaxis()->SetBinLabel(1, "Total");
-    registry.get<TH1>(HIST("hLabelCounter"))->GetXaxis()->SetBinLabel(2, "Same MotherParticle");
+    registry.get<TH1>(HIST("hLabelCounter"))->GetXaxis()->SetBinLabel(2, "Have Same MotherTrack");
     registry.get<TH1>(HIST("hLabelCounter"))->GetXaxis()->SetBinLabel(3, "True H3L");
   }
 
@@ -327,7 +340,7 @@ struct hypertriton3bodyLabelBuilder {
   {
     // dummy process function - should not be required in the future
   }
-  PROCESS_SWITCH(hypertriton3bodyLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
+  PROCESS_SWITCH(decay3bodyLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
 
   void processBuildLabels(aod::Decay3BodysLinked const& decay3bodys, aod::Vtx3BodyDatas const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const& particlesMC)
   {
@@ -372,8 +385,8 @@ struct hypertriton3bodyLabelBuilder {
               lGlobalIndex = lMother1.globalIndex();
               lPt = lMother1.pt();
               lPDG = lMother1.pdgCode();
-              MClifetime = RecoDecay::sqrtSumOfSquares(lMCTrack2.vx() - lMother2.vx(), lMCTrack2.vy() - lMother2.vy(), lMCTrack2.vz() - lMother2.vz()) * o2::constants::physics::MassHyperTriton / lMother2.p();
-              is3bodyDecay = true; // vtxs with the same mother
+              MClifetime = RecoDecay::sqrtSumOfSquares(lMCTrack2.vx() - lMother2.vx(), lMCTrack2.vy() - lMother2.vy(), lMCTrack2.vz() - lMother2.vz()) * o2::constants::physics::MassHyperTriton / lMother2.p(); // only for hypertriton
+              is3bodyDecay = true;                                                                                                                                                                               // vtxs with the same mother
             }
           }
         }
@@ -384,8 +397,7 @@ struct hypertriton3bodyLabelBuilder {
       }
       registry.fill(HIST("hLabelCounter"), 1.5);
 
-      // Intended for cross-checks only
-      // N.B. no rapidity cut!
+      // Intended for hypertriton cross-checks only
       if (lPDG == 1010010030 && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == 1000010020) {
         lLabel = lGlobalIndex;
         double hypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
@@ -403,9 +415,9 @@ struct hypertriton3bodyLabelBuilder {
         registry.fill(HIST("hAntiHypertritonMCMass"), antiHypertritonMCMass);
       }
 
-      // Construct label table, only true hypertriton and true daughters with a specified order is labeled
-      // for matter: track0->p, track1->pi, track2->d
-      // for antimatter: track0->pi, track1->p, track2->d
+      // Construct label table, only vtx which corresponds to true mother and true daughters with a specified order is labeled
+      // for matter: track0->p, track1->pi, track2->bachelor
+      // for antimatter: track0->pi, track1->p, track2->bachelor
       vtxfulllabels(lLabel);
       if (decay3body.vtx3BodyDataId() != -1) {
         lIndices[decay3body.vtx3BodyDataId()] = lLabel;
@@ -415,10 +427,10 @@ struct hypertriton3bodyLabelBuilder {
       vtxlabels(lIndices[ii]);
     }
   }
-  PROCESS_SWITCH(hypertriton3bodyLabelBuilder, processBuildLabels, "Produce MC label tables", false);
+  PROCESS_SWITCH(decay3bodyLabelBuilder, processBuildLabels, "Produce MC label tables", false);
 };
 
-struct hypertriton3bodyInitializer {
+struct decay3bodyInitializer {
   Spawns<aod::Vtx3BodyDatas> vtx3bodydatas;
   void init(InitContext const&) {}
 };
@@ -426,9 +438,9 @@ struct hypertriton3bodyInitializer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<hypertriton3bodyBuilder>(cfgc),
-    adaptAnalysisTask<hypertriton3bodyDataLinkBuilder>(cfgc),
-    adaptAnalysisTask<hypertriton3bodyLabelBuilder>(cfgc),
-    adaptAnalysisTask<hypertriton3bodyInitializer>(cfgc),
+    adaptAnalysisTask<decay3bodyBuilder>(cfgc),
+    adaptAnalysisTask<decay3bodyDataLinkBuilder>(cfgc),
+    adaptAnalysisTask<decay3bodyLabelBuilder>(cfgc),
+    adaptAnalysisTask<decay3bodyInitializer>(cfgc),
   };
 }
