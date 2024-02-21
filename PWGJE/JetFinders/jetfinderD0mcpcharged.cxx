@@ -13,7 +13,7 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGJE/TableProducer/jetfinderhf.cxx"
+#include "PWGJE/JetFinders/jetfinderhf.cxx"
 
 using JetFinderD0MCParticleLevelCharged = JetFinderHFTask<CandidatesD0Data, CandidatesD0MCD, CandidatesD0MCP, JetTracksSubD0, aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0ChargedMCParticleLevelEventWiseSubtractedJets, aod::D0ChargedMCParticleLevelEventWiseSubtractedJetConstituents>;
 
@@ -22,7 +22,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   std::vector<o2::framework::DataProcessorSpec> tasks;
 
   tasks.emplace_back(adaptAnalysisTask<JetFinderD0MCParticleLevelCharged>(cfgc,
-                                                                          SetDefaultProcesses{},
+                                                                          SetDefaultProcesses{{{"processChargedJetsMCP", true}}},
                                                                           TaskName{"jet-finder-d0-mcp-charged"}));
 
   return WorkflowSpec{tasks};

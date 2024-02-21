@@ -87,7 +87,7 @@ struct PhotonConversionBuilder {
   Configurable<float> dcanegtopv{"dcanegtopv", 0.1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", 0.1, "DCA Pos To PV"};
   Configurable<float> min_pt_leg{"min_pt_leg", 0.04, "min pT for v0 legs at SV"};
-  Configurable<float> max_mean_its_cluster_size{"max_mean_its_cluster_size", 4.f, "max. <ITS cluster size> x cos(lambda) for ITSonly tracks"}; // this is to suppress random combination for V0s with ITSonly tracks. default 3 + 1 for skimming.
+  Configurable<float> max_mean_its_cluster_size{"max_mean_its_cluster_size", 16.f, "max. <ITS cluster size> x cos(lambda) for ITSonly tracks"}; // this is to suppress random combination for V0s with ITSonly tracks. default 3 + 1 for skimming.
   Configurable<float> maxX{"maxX", 83.1, "max X for track IU"};
 
   // v0 cuts
@@ -99,7 +99,8 @@ struct PhotonConversionBuilder {
   Configurable<float> max_dcav0dau_tpc_inner_fc{"max_dcav0dau_tpc_inner_fc", 1.5, "max distance btween 2 legs to V0s with ITS hits on TPC inner FC"};
   Configurable<float> min_v0radius{"min_v0radius", 1.0, "min v0 radius"};
   Configurable<float> margin_r_its{"margin_r_its", 3.0, "margin for r cut in cm"};
-  Configurable<float> margin_r_tpconly{"margin_r_tpconly", 7.0, "margin for r cut in cm"};
+  Configurable<float> margin_r_tpc{"margin_r_tpc", 7.0, "margin for r cut in cm"};
+  Configurable<float> margin_r_itstpc_tpc{"margin_r_itstpc_tpc", 7.0, "margin for r cut in cm"};
   Configurable<float> margin_z{"margin_z", 7.0, "margin for z cut in cm"};
   Configurable<float> max_alpha_ap{"max_alpha_ap", 0.95, "max alpha for AP cut"};
   Configurable<float> max_qt_ap{"max_qt_ap", 0.01, "max qT for AP cut"};
@@ -138,6 +139,11 @@ struct PhotonConversionBuilder {
       {"V0/hPCA_Rxy", "distance between 2 legs at SV;R_{xy} (cm);PCA (cm)", {HistType::kTH2F, {{200, 0, 100}, {500, 0.0f, 5.f}}}},
       {"V0/hDCAxyz", "DCA to PV;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -5.f, +5.f}, {200, -5.f, +5.f}}}},
       {"V0/hMeeSV_Rxy", "mee at SV vs. R_{xy};R_{xy} (cm);m_{ee} at SV (GeV/c^{2})", {HistType::kTH2F, {{200, 0.0f, 100.f}, {100, 0, 0.1f}}}},
+      {"V0/hRxy_minX_ITSonly_ITSonly", "min trackiu X vs. R_{xy};trackiu X (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{100, 0.0f, 100.f}, {100, -50.0, 50.0f}}}},
+      {"V0/hRxy_minX_ITSTPC_ITSTPC", "min trackiu X vs. R_{xy};trackiu X (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{100, 0.0f, 100.f}, {100, -50.0, 50.0f}}}},
+      {"V0/hRxy_minX_ITSTPC_ITSonly", "min trackiu X vs. R_{xy};trackiu X (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{100, 0.0f, 100.f}, {100, -50.0, 50.0f}}}},
+      {"V0/hRxy_minX_ITSTPC_TPC", "min trackiu X vs. R_{xy};trackiu X (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{100, 0.0f, 100.f}, {100, -50.0, 50.0f}}}},
+      {"V0/hRxy_minX_TPC_TPC", "min trackiu X vs. R_{xy};trackiu X (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{100, 0.0f, 100.f}, {100, -50.0, 50.0f}}}},
       {"V0Leg/hPt", "pT of leg at SV;p_{T,e} (GeV/c)", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
       {"V0Leg/hEtaPhi", "#eta vs. #varphi of leg at SV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, 2 * M_PI}, {400, -2, +2}}}},
       {"V0Leg/hDCAxyz", "DCA xy vs. z to PV;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -10.f, +10.f}}}},
@@ -382,7 +388,7 @@ struct PhotonConversionBuilder {
     float xyz[3] = {0.f, 0.f, 0.f};
     Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz, matCorr);
     float rxy_tmp = RecoDecay::sqrtSumOfSquares(xyz[0], xyz[1]);
-    if (rxy_tmp > maxX + margin_r_tpconly) {
+    if (rxy_tmp > maxX + margin_r_tpc) {
       return;
     }
     if (rxy_tmp < abs(xyz[2]) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
@@ -420,33 +426,48 @@ struct PhotonConversionBuilder {
     }
 
     float rxy = RecoDecay::sqrtSumOfSquares(gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY());
-    if (rxy < min_v0radius) {
-      return;
-    }
-
-    if (pos.hasITS() && ele.hasITS()) {
-      if (rxy > std::min(pos.x(), ele.x()) + margin_r_its) {
-        return;
-      }
-    } else if (!pos.hasITS() && ele.hasITS()) {
-      if (rxy > std::min(83.f, ele.x()) + margin_r_its) {
-        return;
-      }
-    } else if (pos.hasITS() && !ele.hasITS()) {
-      if (rxy > std::min(pos.x(), 83.f) + margin_r_its) {
-        return;
-      }
-    } else if (!pos.hasITS() && !ele.hasITS()) {
-      if (rxy > std::min(83.f, 83.f) + margin_r_tpconly) {
-        return;
-      }
-    }
-
-    if (rxy > maxX + margin_r_tpconly) {
+    if (rxy > maxX + margin_r_tpc) {
       return;
     }
     if (rxy < abs(gammaKF_DecayVtx.GetZ()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
       return; // RZ line cut
+    }
+    if (rxy < min_v0radius) {
+      return;
+    }
+
+    if (!filltable) {
+      if (isITSTPCTrack(pos) && isITSTPCTrack(ele)) {
+        registry.fill(HIST("V0/hRxy_minX_ITSTPC_ITSTPC"), std::min(pos.x(), ele.x()), std::min(pos.x(), ele.x()) - rxy); // trackiu.x() - rxy should be positive
+      } else if (isITSonlyTrack(pos) && isITSonlyTrack(ele)) {
+        registry.fill(HIST("V0/hRxy_minX_ITSonly_ITSonly"), std::min(pos.x(), ele.x()), std::min(pos.x(), ele.x()) - rxy); // trackiu.x() - rxy should be positive
+      } else if ((isITSTPCTrack(pos) && isITSonlyTrack(ele)) || (isITSTPCTrack(ele) && isITSonlyTrack(pos))) {
+        registry.fill(HIST("V0/hRxy_minX_ITSTPC_ITSonly"), std::min(pos.x(), ele.x()), std::min(pos.x(), ele.x()) - rxy); // trackiu.x() - rxy should be positive
+      } else if (isITSTPCTrack(pos) && !ele.hasITS()) {
+        registry.fill(HIST("V0/hRxy_minX_ITSTPC_TPC"), std::min(pos.x(), 83.f), std::min(pos.x(), 83.f) - rxy); // trackiu.x() - rxy should be positive
+      } else if (isITSTPCTrack(ele) && !pos.hasITS()) {
+        registry.fill(HIST("V0/hRxy_minX_ITSTPC_TPC"), std::min(ele.x(), 83.f), std::min(ele.x(), 83.f) - rxy); // trackiu.x() - rxy should be positive
+      } else {
+        registry.fill(HIST("V0/hRxy_minX_TPC_TPC"), std::min(83.f, 83.f), std::min(83.f, 83.f) - rxy); // trackiu.x() - rxy should be positive
+      }
+    }
+
+    if (pos.hasITS() && ele.hasITS()) { // ITSonly-ITSonly, ITSTPC-ITSTPC, ITSTPC-ITSonly
+      if (rxy > std::min(pos.x(), ele.x()) + margin_r_its) {
+        return;
+      }
+    } else if (!pos.hasITS() && ele.hasITS()) { // ITSTPC-TPC
+      if (rxy > std::min(83.f, ele.x()) + margin_r_itstpc_tpc) {
+        return;
+      }
+    } else if (pos.hasITS() && !ele.hasITS()) { // ITSTPC-TPC
+      if (rxy > std::min(pos.x(), 83.f) + margin_r_itstpc_tpc) {
+        return;
+      }
+    } else if (!pos.hasITS() && !ele.hasITS()) { // TPC-TPC
+      if (rxy > std::min(83.f, 83.f) + margin_r_tpc) {
+        return;
+      }
     }
 
     if ((!pos.hasITS() || !ele.hasITS()) && rxy < max_r_req_its) { // conversion points smaller than max_r_req_its have to be detected with ITS hits.
@@ -485,8 +506,8 @@ struct PhotonConversionBuilder {
     kfp_ele_DecayVtx.TransportToPoint(xyz); // Don't set Primary Vertex
 
     float pca_kf = kfp_pos_DecayVtx.GetDistanceFromParticle(kfp_ele_DecayVtx);
-    if (!ele.hasITS() && !pos.hasITS()) {
-      if (max_r_itsmft_ss < rxy && rxy < maxX + margin_r_tpconly) {
+    if (!ele.hasITS() && !pos.hasITS()) { // V0s with TPConly-TPConly
+      if (max_r_itsmft_ss < rxy && rxy < maxX + margin_r_tpc) {
         if (pca_kf > max_dcav0dau_tpc_inner_fc) {
           return;
         }
@@ -495,17 +516,13 @@ struct PhotonConversionBuilder {
           return;
         }
       }
-    } else {
+    } else { // V0s with ITS hits
       if (rxy < max_r_req_its) {
         if (pca_kf > max_dcav0dau_itsibss) {
           return;
         }
-      } else if (rxy < min_r_tpconly) {
-        if (pca_kf > max_dcav0dau_its) {
-          return;
-        }
       } else {
-        if (pca_kf > max_dcav0dau_tpconly) {
+        if (pca_kf > max_dcav0dau_its) {
           return;
         }
       }

@@ -43,6 +43,7 @@ DECLARE_SOA_COLUMN(NmumuLSpp, nmumulspp, int);
 DECLARE_SOA_COLUMN(NmumuLSmm, nmumulsmm, int);
 DECLARE_SOA_COLUMN(IsPHOSCPVReadout, isPHOSCPVreadout, bool);
 DECLARE_SOA_COLUMN(IsEMCReadout, isEMCreadout, bool);
+DECLARE_SOA_COLUMN(NcollsPerBC, ncollsPerBC, int);
 DECLARE_SOA_COLUMN(Bz, bz, float);                       //! kG
 DECLARE_SOA_COLUMN(Q2xTPCPosEta, q2xtpcposeta, float);   //! Qx for 2nd harmonics in TPC positive eta region
 DECLARE_SOA_COLUMN(Q2yTPCPosEta, q2ytpcposeta, float);   //! Qy for 2nd harmonics in TPC positive eta region
@@ -71,7 +72,7 @@ DECLARE_SOA_COLUMN(Q3yFV0A, q3yfv0a, float);             //! Qy for 3rd harmonic
 } // namespace emreducedevent
 DECLARE_SOA_TABLE(EMReducedEvents, "AOD", "EMREDUCEDEVENT", //!   Main event information table
                   o2::soa::Index<>, emreducedevent::CollisionId, emreducedevent::Tag, bc::RunNumber, bc::TriggerMask, evsel::Sel8,
-                  emreducedevent::IsPHOSCPVReadout, emreducedevent::IsEMCReadout,
+                  emreducedevent::IsPHOSCPVReadout, emreducedevent::IsEMCReadout, emreducedevent::NcollsPerBC,
                   collision::PosX, collision::PosY, collision::PosZ,
                   collision::NumContrib, collision::CollisionTime, collision::CollisionTimeRes);
 using EMReducedEvent = EMReducedEvents::iterator;
@@ -592,6 +593,30 @@ using DalitzMuMu = DalitzMuMus::iterator;
 DECLARE_SOA_TABLE(DalitzMuMuEMReducedEventIds, "AOD", "MUMUEMEVENTID", dalitzmumu::EMReducedEventId); // To be joined with DalitzMuMus table at analysis level.
 // iterators
 using DalitzMuMuEMReducedEventId = DalitzMuMuEMReducedEventIds::iterator;
+
+namespace pwgem::photon::swtinfo
+{
+DECLARE_SOA_INDEX_COLUMN(EMReducedEvent, emreducedevent);                                                                //!
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                                                                       //!
+DECLARE_SOA_INDEX_COLUMN_FULL(TriggerV0PhotonHighPt, triggerV0PhotonHighPt, int, V0PhotonsKF, "_TriggerV0PhotonHighPt"); //! high pT PCM trigger is fired by this v0 photon
+DECLARE_SOA_INDEX_COLUMN_FULL(TriggerV0PhotonPair, triggerV0PhotonPair, int, V0PhotonsKF, "_TriggerV0PhotonPair");       //! PCM+EE trigger is fired by this v0 photon and dielectron
+DECLARE_SOA_INDEX_COLUMN_FULL(TriggerDielectronPair, triggerDielectronPair, int, DalitzEEs, "_TriggerDielectronPair");   //! PCM+EE trigger is fired by this v0 photon and dielectron
+} // namespace pwgem::photon::swtinfo
+DECLARE_SOA_TABLE(EMSwtInfosPCM, "AOD", "SWTINFOPCM", //!
+                  o2::soa::Index<>, pwgem::photon::swtinfo::CollisionId, pwgem::photon::swtinfo::TriggerV0PhotonHighPtId);
+using EMSwtInfoPCM = EMSwtInfosPCM::iterator;
+
+DECLARE_SOA_TABLE(EMSwtInfoPCMEMReducedEventIds, "AOD", "SWTPCMEVENTID", pwgem::photon::swtinfo::EMReducedEventId, o2::soa::Marker<1>); // To be joined with EMSwtInfosPCM table at analysis level.
+// iterators
+using EMSwtInfoPCMEMReducedEventId = EMSwtInfoPCMEMReducedEventIds::iterator;
+
+DECLARE_SOA_TABLE(EMSwtInfosPair, "AOD", "SWTINFOPAIR", //!
+                  o2::soa::Index<>, pwgem::photon::swtinfo::CollisionId, pwgem::photon::swtinfo::TriggerV0PhotonPairId, pwgem::photon::swtinfo::TriggerDielectronPairId);
+using EMSwtInfoPair = EMSwtInfosPair::iterator;
+
+DECLARE_SOA_TABLE(EMSwtInfoPairEMReducedEventIds, "AOD", "SWTPAIREVENTID", pwgem::photon::swtinfo::EMReducedEventId, o2::soa::Marker<2>); // To be joined with EMSwtInfosPair table at analysis level.
+// iterators
+using EMSwtInfoPairEMReducedEventId = EMSwtInfoPairEMReducedEventIds::iterator;
 
 namespace MCTracksTrue
 {

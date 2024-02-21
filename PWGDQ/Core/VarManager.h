@@ -60,6 +60,9 @@
 #include "KFParticleBase.h"
 #include "KFVertex.h"
 
+using std::cout;
+using std::endl;
+
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 using Vec3D = ROOT::Math::SVector<double, 3>;
@@ -216,6 +219,16 @@ class VarManager : public TObject
     kIsSingleGapA, // Rapidity gap on side A
     kIsSingleGapC, // Rapidity gap on side C
     kIsSingleGap,  // Rapidity gap on either side
+    kTwoEvPosZ1,   // vtx-z for collision 1 in two events correlations
+    kTwoEvPosZ2,   // vtx-z for collision 2 in two events correlations
+    kTwoEvPosR1,   // vtx-R for collision 1 in two events correlations
+    kTwoEvPosR2,
+    kTwoEvPVcontrib1, // n-contributors for collision 1 in two events correlations
+    kTwoEvPVcontrib2,
+    kTwoEvDeltaZ, // distance in z between collisions
+    kTwoEvDeltaX, // distance in x between collisions
+    kTwoEvDeltaY, // distance in y between collisions
+    kTwoEvDeltaR, // distance in (x,y) plane between collisions
     kNEventWiseVariables,
 
     // Basic track/muon/pair wise variables
@@ -327,7 +340,9 @@ class VarManager : public TObject
     kIsLegFromAntiLambda,
     kIsLegFromOmega,
     kIsProtonFromLambdaAndAntiLambda,
-    kIsDalitzLeg, // Up to 8 dalitz selections
+    kIsDalitzLeg,             // Up to 8 dalitz selections
+    kBarrelNAssocsInBunch,    // number of in bunch collision associations
+    kBarrelNAssocsOutOfBunch, // number of out of bunch collision associations
     kNBarrelTrackVariables = kIsDalitzLeg + 8,
 
     // Muon track variables
@@ -404,6 +419,8 @@ class VarManager : public TObject
     kVertexingTauxyProjectedNs,
     kVertexingTauz,
     kVertexingTauzErr,
+    kVertexingPz,
+    kVertexingSV,
     kVertexingProcCode,
     kVertexingChi2PCA,
     kCosThetaHE,
@@ -639,7 +656,7 @@ class VarManager : public TObject
   static auto getEventPlane(int harm, float qnxa, float qnya)
   {
     // Compute event plane angle from qn vector components for the sub-event A
-    return (1.0 / harm) * TMath::ATan(qnya / qnxa);
+    return (1.0 / harm) * TMath::ATan2(qnya, qnxa);
   };
 
   template <typename T, typename C>
@@ -648,6 +665,8 @@ class VarManager : public TObject
   static void FillPropagateMuon(const T& muon, const C& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillEvent(T const& event, float* values = nullptr);
+  template <typename T>
+  static void FillTwoEvents(T const& event1, T const& event2, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillTrack(T const& track, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
@@ -858,7 +877,6 @@ o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C
     propmuon.setParameters(proptrack.getParameters());
     propmuon.setZ(proptrack.getZ());
     propmuon.setCovariances(proptrack.getCovariances());
-
   } else if (static_cast<int>(muon.trackType()) < 2) {
     double centerMFT[3] = {0, 0, -61.4};
     o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
@@ -879,7 +897,6 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
   if (!values) {
     values = fgValues;
   }
-
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
     o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muon, collision);
 
@@ -890,6 +907,8 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
     values[kEta] = propmuon.getEta();
     values[kTgl] = propmuon.getTgl();
     values[kPhi] = propmuon.getPhi();
+    values[kMuonDCAx] = (propmuon.getX() - collision.posX());
+    values[kMuonDCAy] = (propmuon.getY() - collision.posY());
 
     SMatrix55 cov = propmuon.getCovariances();
     values[kMuonCXX] = cov(0, 0);
@@ -1135,6 +1154,34 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   FillEventDerived(values);
+}
+
+template <typename T>
+void VarManager::FillTwoEvents(T const& ev1, T const& ev2, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  values[kTwoEvPosZ1] = ev1.posZ();
+  values[kTwoEvPosZ2] = ev2.posZ();
+  values[kTwoEvPosR1] = std::sqrt(ev1.posX() * ev1.posX() + ev1.posY() * ev1.posY());
+  values[kTwoEvPosR2] = std::sqrt(ev2.posX() * ev2.posX() + ev2.posY() * ev2.posY());
+  values[kTwoEvPVcontrib1] = ev1.numContrib();
+  values[kTwoEvPVcontrib2] = ev2.numContrib();
+  if (ev1.numContrib() < ev2.numContrib()) {
+    values[kTwoEvPosZ1] = ev2.posZ();
+    values[kTwoEvPosZ2] = ev1.posZ();
+    values[kTwoEvPVcontrib1] = ev2.numContrib();
+    values[kTwoEvPVcontrib2] = ev1.numContrib();
+    values[kTwoEvPosR1] = std::sqrt(ev2.posX() * ev2.posX() + ev2.posY() * ev2.posY());
+    ;
+    values[kTwoEvPosR2] = std::sqrt(ev1.posX() * ev1.posX() + ev1.posY() * ev1.posY());
+  }
+  values[kTwoEvDeltaZ] = ev1.posZ() - ev2.posZ();
+  values[kTwoEvDeltaX] = ev1.posX() - ev2.posX();
+  values[kTwoEvDeltaY] = ev1.posY() - ev2.posY();
+  values[kTwoEvDeltaR] = std::sqrt(values[kTwoEvDeltaX] * values[kTwoEvDeltaX] + values[kTwoEvDeltaY] * values[kTwoEvDeltaY]);
 }
 
 template <uint32_t fillMap, typename T>
@@ -1973,6 +2020,8 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       values[kVertexingTauz] = -999.;
       values[kVertexingTauxyErr] = -999.;
       values[kVertexingTauzErr] = -999.;
+      values[kVertexingPz] = -999.;
+      values[kVertexingSV] = -999.;
       return;
     }
 
@@ -2039,6 +2088,9 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
 
       values[kVertexingTauz] = (collision.posZ() - secondaryVertex[2]) * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxy] = values[kVertexingLxy] * v12.M() / (v12.P() * o2::constants::physics::LightSpeedCm2NS);
+
+      values[kVertexingPz] = TMath::Abs(v12.Pz());
+      values[kVertexingSV] = secondaryVertex[2];
 
       values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.P() * o2::constants::physics::LightSpeedCm2NS);
@@ -2110,6 +2162,8 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
         values[kVertexingLxyzErr] = values[kVertexingLxyzErr] < 0. ? 1.e8f : std::sqrt(values[kVertexingLxyzErr]) / values[kVertexingLxyz];
         values[kVertexingTauxy] = KFGeoTwoProng.GetPseudoProperDecayTime(KFPV, KFGeoTwoProng.GetMass()) / (o2::constants::physics::LightSpeedCm2NS);
         values[kVertexingTauz] = -1 * dzPair2PV * KFGeoTwoProng.GetMass() / (TMath::Abs(KFGeoTwoProng.GetPz()) * o2::constants::physics::LightSpeedCm2NS);
+        values[kVertexingPz] = TMath::Abs(KFGeoTwoProng.GetPz());
+        values[kVertexingSV] = KFGeoTwoProng.GetZ();
         values[kVertexingTauxyErr] = values[kVertexingLxyErr] * KFGeoTwoProng.GetMass() / (KFGeoTwoProng.GetPt() * o2::constants::physics::LightSpeedCm2NS);
         values[kVertexingTauzErr] = values[kVertexingLzErr] * KFGeoTwoProng.GetMass() / (TMath::Abs(KFGeoTwoProng.GetPz()) * o2::constants::physics::LightSpeedCm2NS);
         values[kCosPointingAngle] = (std::sqrt(dxPair2PV * dxPair2PV) * v12.Px() +
@@ -2207,6 +2261,8 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
           values[kVertexingTauz] = -1 * dzPair2PV * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
           values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v12.M() / (v12.Pt() * o2::constants::physics::LightSpeedCm2NS);
           values[kVertexingTauzErr] = values[kVertexingLzErr] * v12.M() / (TMath::Abs(v12.Pz()) * o2::constants::physics::LightSpeedCm2NS);
+          values[kVertexingPz] = TMath::Abs(v12.Pz());
+          values[kVertexingSV] = KFGeoTwoProng.GetZ();
 
           values[kPt1] = pars1.getPt();
           values[kEta1] = pars1.getEta();
@@ -2337,6 +2393,8 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       values[VarManager::kVertexingTauz] = -999.;
       values[VarManager::kVertexingTauxyErr] = -999.;
       values[VarManager::kVertexingTauzErr] = -999.;
+      values[VarManager::kVertexingPz] = -999.;
+      values[VarManager::kVertexingSV] = -999.;
       return;
     }
 
@@ -2387,6 +2445,9 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
 
       values[kVertexingTauz] = (collision.posZ() - secondaryVertex[2]) * v123.M() / (TMath::Abs(v123.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxy] = values[kVertexingLxy] * v123.M() / (v123.P() * o2::constants::physics::LightSpeedCm2NS);
+
+      values[kVertexingPz] = TMath::Abs(v123.Pz());
+      values[kVertexingSV] = secondaryVertex[2];
 
       values[kVertexingTauzErr] = values[kVertexingLzErr] * v123.M() / (TMath::Abs(v123.Pz()) * o2::constants::physics::LightSpeedCm2NS);
       values[kVertexingTauxyErr] = values[kVertexingLxyErr] * v123.M() / (v123.P() * o2::constants::physics::LightSpeedCm2NS);

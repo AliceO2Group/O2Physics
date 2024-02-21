@@ -22,7 +22,7 @@ o2physics_add_dpl_workflow(jet-deriveddata-trigger-producer
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-                    o2physics_add_dpl_workflow(jet-deriveddata-producer-dummy
+o2physics_add_dpl_workflow(jet-deriveddata-producer-dummy
                     SOURCES jetderiveddataproducerdummy.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
@@ -30,26 +30,6 @@ o2physics_add_dpl_workflow(jet-deriveddata-trigger-producer
 o2physics_add_dpl_workflow(jet-deriveddata-writer
                     SOURCES jetderiveddatawriter.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(jet-finder
-                    SOURCES jetfinder.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(jet-finder-d0-data-charged
-                    SOURCES jetfinderD0DataCharged.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(jet-finder-d0-mcd-charged
-                    SOURCES jetfinderD0MCDCharged.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(jet-finder-d0-mcp-charged
-                    SOURCES jetfinderD0MCPCharged.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-matching-mc

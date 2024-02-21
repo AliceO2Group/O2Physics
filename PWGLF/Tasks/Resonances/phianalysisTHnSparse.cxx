@@ -12,21 +12,22 @@
 /// \author Veronika Barbasova (veronika.barbasova@cern.ch)
 /// \since October 12, 2023
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include <TLorentzVector.h>
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/PID.h"
+#include "PWGLF/Utils/rsnOutput.h"
 #include "TDatabasePDG.h"
-#include <TLorentzVector.h>
 
 using namespace o2;
+using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -38,74 +39,73 @@ struct phianalysisTHnSparse {
   Configurable<int> verboselevel{"verbose-level", 0, "Verbose level"};
   Configurable<int> refresh{"print-refresh", 0, "Freqency of print event information."};
   Configurable<int> refresh_index{"print-refresh-index", 0, "Freqency of print event information index."};
-  Configurable<float> tpcnSigma1{"tpcnSigma1", 3.0f, "TPC NSigma cut of the first particle."};
   Configurable<bool> ignorezeroevent{"ignore-zero-event", true, "Flag if zero event is skipped"};
-  Configurable<float> tpcnSigma2{"tpcnSigma2", 3.0f, "TPC NSigma cut of the second particle."};
-  Configurable<int> dauther1{"dauther1", 3, "Particle type of the first dauther according to ReconstructionDataFormats/PID.h (Default = Kaon)"};
-  Configurable<int> dauther2{"dauther2", 3, "Particle type of the second dauther according to ReconstructionDataFormats/PID.h (Default = Kaon)"};
-  Configurable<float> zVertex{"zvertex", 10.0f, "Z vertex range."};
+  Configurable<float> tpcnSigmaPos{"tpc-ns-pos", 3.0f, "TPC NSigma cut of the positive particle."};
+  Configurable<float> tpcnSigmaNeg{"tpc-ns-neg", 3.0f, "TPC NSigma cut of the negative particle."};
+  Configurable<int> dautherPos{"dauther-type-pos", 3, "Particle type of the positive dauther according to ReconstructionDataFormats/PID.h (Default = Kaon)"};
+  Configurable<int> dautherNeg{"dauther-type-neg", 3, "Particle type of the negative dauther according to ReconstructionDataFormats/PID.h (Default = Kaon)"};
+  Configurable<float> zVertexCut{"zvertex-cut", 10.0f, "Z vertex range."};
   Configurable<float> rapidityCut{"rapidity-max", 0.5, "Rapidity cut."};
+  Configurable<int> motherPDG{"mother-pdg", 333, "PDG code of mother particle."};
+  Configurable<int> dautherPosPDG{"dauther-pdg-pos", 321, "PDG code of positive dauther particle."};
+  Configurable<int> dautherNegPDG{"dauther-pdg-neg", 321, "PDG code of negative dauther particle."};
+
+  Configurable<std::vector<std::string>> sparseAxes{"sparse-axes", std::vector<std::string>{o2::analysis::rsn::PariAxis::names}, "Axes."};
 
   ConfigurableAxis invaxis{"invAxis", {130, 0.97, 1.1}, "Invariant mass axis binning."};
   ConfigurableAxis ptaxis{"ptAxis", {20, 0., 20.}, "Pt axis binning."};
   ConfigurableAxis posZ{"posZ", {40, -20., 20.}, "Z vertex position axis binning."};
   ConfigurableAxis multiplicityaxis{"multiplicityAxis", {50, 0., 5000.}, "Multiplicity axis binning."};
   ConfigurableAxis rapidityaxis{"rapidityAxis", {10., -1.0 * rapidityCut, rapidityCut}, "Rapidity axis binning."};
-  ConfigurableAxis nsigmatrackaxis{"nsigmatrackaxis", {300, -15., 15.}, "NSigma axis binning."};
-  ConfigurableAxis nsigmaaxis1{"nsigmaAxis1", {1, 0., tpcnSigma1}, "NSigma axis binning in THnSparse."};
-  ConfigurableAxis nsigmaaxis2{"nsigmaAxis2", {1, 0., tpcnSigma2}, "NSigma axis binning in THnSparse."};
-
-  HistogramRegistry registry{"registry",
-                             {
-                               {"hVz", "Z Vertex", {HistType::kTH1F, {posZ}}},
-                             }};
+  ConfigurableAxis nsigmaaxisPos{"nsigmaAxisPos", {1, 0., tpcnSigmaPos}, "NSigma of positive particle axis binning in THnSparse."};
+  ConfigurableAxis nsigmaaxisNeg{"nsigmaAxisNeg", {1, 0., tpcnSigmaNeg}, "NSigma of negative particle axis binning in THnSparse."};
 
   // defined in DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h
-  float mass1 = o2::track::PID::getMass(dauther1);
-  float mass2 = o2::track::PID::getMass(dauther2);
+  float massPos = o2::track::PID::getMass(dautherPos);
+  float massNeg = o2::track::PID::getMass(dautherNeg);
+
+  AxisSpec invAxis = {invaxis, "Inv. mass (GeV/c^{2})", "im"};
+  AxisSpec ptAxis = {ptaxis, "p_{T} (GeV/c)", "pt"};
+  AxisSpec mAxis = {multiplicityaxis, "N", "mu"};
+  AxisSpec yAxis = {rapidityaxis, "y", "y"};
+  AxisSpec nsigmatrackaxisPos = {nsigmaaxisPos, fmt::format("nSigma of positive particle ({})", massPos), "ns1"};
+  AxisSpec nsigmatrackaxisNeg = {nsigmaaxisNeg, fmt::format("nSigma of negative particle ({})", massNeg), "ns2"};
+
+  // All axes has to have same order as defined enum o2::analysis::rsn::PairAxisType (name from AxisSpec is taken to compare in o2::analysis::rsn::Output::init())
+  std::vector<AxisSpec> allAxes = {invAxis, ptAxis, mAxis, nsigmatrackaxisPos, nsigmatrackaxisNeg, yAxis};
+  HistogramRegistry registry{"registry"};
+  o2::analysis::rsn::Output* rsnOutput = nullptr;
 
   Service<o2::framework::O2DatabasePDG> pdg;
-
   float multiplicity;
   float multiplicityMC;
   int n = 0;
+  double* pointPair = nullptr;
+  double* pointEvent = nullptr;
+  TLorentzVector d1, d2, mother;
 
   Filter eventFilter = (o2::aod::evsel::sel8 == true);
-  Filter vtxFilter = (nabs(o2::aod::collision::posZ) < zVertex);
+  Filter vtxFilter = (nabs(o2::aod::collision::posZ) < zVertexCut);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
-
   using EventCandidate = EventCandidates::iterator;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullKa>;
 
   using EventCandidatesMC = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>>;
   using TrackCandidatesMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullKa, aod::McTrackLabels>;
 
-  Partition<TrackCandidates> positive = (aod::track::signed1Pt > 0.0f) && (nabs(o2::aod::pidtpc::tpcNSigmaKa) < tpcnSigma1);
-  Partition<TrackCandidates> negative = (aod::track::signed1Pt < 0.0f) && (nabs(o2::aod::pidtpc::tpcNSigmaKa) < tpcnSigma2);
+  Partition<TrackCandidates> positive = (aod::track::signed1Pt > 0.0f) && (nabs(o2::aod::pidtpc::tpcNSigmaKa) < tpcnSigmaPos);
+  Partition<TrackCandidates> negative = (aod::track::signed1Pt < 0.0f) && (nabs(o2::aod::pidtpc::tpcNSigmaKa) < tpcnSigmaNeg);
 
-  Partition<TrackCandidatesMC> positiveMC = (aod::track::signed1Pt > 0.0f) && (nabs(o2::aod::pidtpc::tpcNSigmaKa) < tpcnSigma1);
-  Partition<TrackCandidatesMC> negativeMC = (aod::track::signed1Pt < 0.0f) && (nabs(o2::aod::pidtpc::tpcNSigmaKa) < tpcnSigma2);
-
-  TLorentzVector d1, d2, mother;
+  Partition<TrackCandidatesMC> positiveMC = (aod::track::signed1Pt > 0.0f) && (nabs(o2::aod::pidtpc::tpcNSigmaKa) < tpcnSigmaPos);
+  Partition<TrackCandidatesMC> negativeMC = (aod::track::signed1Pt < 0.0f) && (nabs(o2::aod::pidtpc::tpcNSigmaKa) < tpcnSigmaNeg);
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec invAxis = {invaxis, "Inv. mass (GeV/c^{2})", "im"};
-    AxisSpec ptAxis = {ptaxis, "p_{T} (GeV/c)", "pt"};
-    AxisSpec mAxis = {multiplicityaxis, "N", "m"};
-    AxisSpec yAxis = {rapidityaxis, "y", "y"};
-    AxisSpec nsigmatrackaxis1 = {nsigmaaxis1, fmt::format("nSigma particle 1({})", mass1), "ns1"};
-    AxisSpec nsigmatrackaxis2 = {nsigmaaxis1, fmt::format("nSigma particle 2({})", mass2), "ns2"};
-    HistogramConfigSpec pairHisto({HistType::kTHnSparseF, {invAxis, ptAxis, mAxis, nsigmatrackaxis1, nsigmatrackaxis2, yAxis}});
-
-    registry.add("unlikepm", "Unlike PM", pairHisto);
-    registry.add("likepp", "Like PP", pairHisto);
-    registry.add("likemm", "Like MM", pairHisto);
-    if (produceTrue) {
-      registry.add("unlikepmTrue", "Unlike True PM", pairHisto);
-      registry.add("unlikepmGen", "Unlike Gen PM", pairHisto);
-    }
+    pointPair = new double[static_cast<int>(o2::analysis::rsn::PairAxisType::unknown)];
+    pointEvent = new double[static_cast<int>(o2::analysis::rsn::EventType::all)];
+    rsnOutput = new o2::analysis::rsn::OutputSparse();
+    rsnOutput->init(sparseAxes, allAxes, produceTrue, &registry);
   }
 
   template <typename T>
@@ -119,13 +119,12 @@ struct phianalysisTHnSparse {
   template <typename T>
   bool selectedPair(TLorentzVector& mother, const T& track1, const T& track2)
   {
-    d1.SetXYZM(track1.px(), track1.py(), track1.pz(), mass1);
-    d2.SetXYZM(track2.px(), track2.py(), track2.pz(), mass2);
+    d1.SetXYZM(track1.px(), track1.py(), track1.pz(), massPos);
+    d2.SetXYZM(track2.px(), track2.py(), track2.pz(), massNeg);
     mother = d1 + d2;
 
     if (std::abs(mother.Rapidity()) > 0.5)
       return false;
-
     return true;
   }
 
@@ -138,7 +137,6 @@ struct phianalysisTHnSparse {
       if (verboselevel > 0)
         LOGF(info, "BAD pos=%lld neg=%lld, Z vertex position: %f [cm], %d, mult:%f.0", posDauthers.size(), negDauthers.size(), collision.posZ(),
              collision.globalIndex(), multiplicity);
-
       return;
     }
 
@@ -148,13 +146,16 @@ struct phianalysisTHnSparse {
       LOGF(info, "pos=%lld neg=%lld, Z vertex position: %f [cm], %d, mult:%f.0", posDauthers.size(), negDauthers.size(), collision.posZ(),
            collision.globalIndex(), multiplicity);
 
-    if (std::abs(collision.posZ()) > zVertex)
+    if (std::abs(collision.posZ()) > zVertexCut)
       return;
-    registry.fill(HIST("hVz"), collision.posZ());
 
-    for (auto& [track1, track2] : combinations(o2::soa::CombinationsUpperIndexPolicy(posDauthers, negDauthers))) {
+    pointEvent[0] = collision.posZ();
+    rsnOutput->fill(o2::analysis::rsn::EventType::zvertex, pointEvent);
+
+    for (auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(posDauthers, negDauthers))) {
 
       if (!selectedTrack(track1))
+
         continue;
       if (!selectedTrack(track2))
         continue;
@@ -165,7 +166,14 @@ struct phianalysisTHnSparse {
       if (verboselevel > 1)
         LOGF(info, "Unlike-sign: d1=%ld , d2=%ld , mother=%f", track1.globalIndex(), track2.globalIndex(), mother.Mag());
 
-      registry.fill(HIST("unlikepm"), mother.Mag(), mother.Pt(), multiplicity, std::abs(track1.tpcNSigmaKa()), std::abs(track2.tpcNSigmaKa()), mother.Rapidity());
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::im)] = mother.Mag();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::pt)] = mother.Pt();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu)] = multiplicity;
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
+
+      rsnOutput->fillUnlike(pointPair);
     }
 
     for (auto& [track1, track2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(posDauthers, posDauthers))) {
@@ -181,7 +189,14 @@ struct phianalysisTHnSparse {
       if (verboselevel > 1)
         LOGF(info, "Like-sign positive: d1=%ld , d2=%ld , mother=%f", track1.globalIndex(), track2.globalIndex(), mother.Mag());
 
-      registry.fill(HIST("likepp"), mother.Mag(), mother.Pt(), multiplicity, std::abs(track1.tpcNSigmaKa()), std::abs(track2.tpcNSigmaKa()), mother.Rapidity());
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::im)] = mother.Mag();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::pt)] = mother.Pt();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu)] = multiplicity;
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
+
+      rsnOutput->fillLikepp(pointPair);
     }
 
     for (auto& [track1, track2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(negDauthers, negDauthers))) {
@@ -197,7 +212,14 @@ struct phianalysisTHnSparse {
       if (verboselevel > 1)
         LOGF(info, "Like-sign negative: d1=%ld , d2=%ld , mother=%f", track1.globalIndex(), track2.globalIndex(), mother.Mag());
 
-      registry.fill(HIST("likemm"), mother.Mag(), mother.Pt(), multiplicity, std::abs(track1.tpcNSigmaKa()), std::abs(track2.tpcNSigmaKa()), mother.Rapidity());
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::im)] = mother.Mag();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::pt)] = mother.Pt();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu)] = multiplicity;
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
+
+      rsnOutput->fillLikemm(pointPair);
     }
   }
 
@@ -216,7 +238,7 @@ struct phianalysisTHnSparse {
       return;
     }
 
-    if (std::abs(collision.posZ()) > zVertex)
+    if (std::abs(collision.posZ()) > zVertexCut)
       return;
 
     multiplicityMC = collision.multFT0A() + collision.multFT0C();
@@ -244,7 +266,7 @@ struct phianalysisTHnSparse {
       int track1PDG = std::abs(mctrack1.pdgCode());
       int track2PDG = std::abs(mctrack2.pdgCode());
 
-      if (!(track1PDG == 321 && track2PDG == 321)) {
+      if (!(track1PDG == dautherPosPDG && track2PDG == dautherNegPDG)) {
         continue;
       }
       for (auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
@@ -261,7 +283,7 @@ struct phianalysisTHnSparse {
           if (std::abs(mothertrack2.y()) > rapidityCut)
             continue;
 
-          if (std::abs(mothertrack1.pdgCode()) != 333)
+          if (std::abs(mothertrack1.pdgCode()) != motherPDG)
             continue;
 
           n++;
@@ -270,7 +292,15 @@ struct phianalysisTHnSparse {
 
           if (!selectedPair(mother, mctrack1, mctrack2))
             continue;
-          registry.fill(HIST("unlikepmTrue"), mother.Mag(), mother.Pt(), multiplicityMC, std::abs(track1.tpcNSigmaKa()), std::abs(track2.tpcNSigmaKa()), mother.Rapidity());
+
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::im)] = mother.Mag();
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::pt)] = mother.Pt();
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu)] = multiplicity;
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
+
+          rsnOutput->fillUnliketrue(pointPair);
         }
       }
     }
@@ -285,7 +315,7 @@ struct phianalysisTHnSparse {
     if (!produceTrue)
       return;
 
-    if (std::abs(mcCollision.posZ()) > zVertex)
+    if (std::abs(mcCollision.posZ()) > zVertexCut)
       return;
 
     int nuberofPhi = 0;
@@ -294,7 +324,7 @@ struct phianalysisTHnSparse {
       if (std::abs(particle.y()) > rapidityCut)
         continue;
 
-      if (particle.pdgCode() == 333) {
+      if (particle.pdgCode() == motherPDG) {
         auto daughters = particle.daughters_as<aod::McParticles>();
         if (daughters.size() != 2)
           continue;
@@ -306,12 +336,12 @@ struct phianalysisTHnSparse {
           if (!dau.isPhysicalPrimary())
             continue;
 
-          if (dau.pdgCode() == +321) {
+          if (dau.pdgCode() == dautherPosPDG) {
             daup = true;
-            d1.SetXYZM(dau.px(), dau.py(), dau.pz(), mass1);
-          } else if (dau.pdgCode() == -321) {
+            d1.SetXYZM(dau.px(), dau.py(), dau.pz(), massPos);
+          } else if (dau.pdgCode() == -dautherNegPDG) {
             daun = true;
-            d2.SetXYZM(dau.px(), dau.py(), dau.pz(), mass2);
+            d2.SetXYZM(dau.px(), dau.py(), dau.pz(), massNeg);
           }
         }
         if (!daup && !daun)
@@ -319,7 +349,14 @@ struct phianalysisTHnSparse {
 
         mother = d1 + d2;
 
-        registry.fill(HIST("unlikepmGen"), mother.Mag(), mother.Pt(), multiplicityMC, tpcnSigma1 / 2.0, tpcnSigma2 / 2.0, mother.Rapidity());
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::im)] = mother.Mag();
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::pt)] = mother.Pt();
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu)] = multiplicityMC;
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(tpcnSigmaPos / 2.0);
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(tpcnSigmaNeg / 2.0);
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
+
+        rsnOutput->fillUnlikegen(pointPair);
 
         nuberofPhi++;
         numberofEntries++;

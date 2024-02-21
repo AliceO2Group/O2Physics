@@ -1082,7 +1082,8 @@ struct AnalysisSameEventPairing {
                         VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3],
                         VarManager::fgValues[VarManager::kR2EP], VarManager::fgValues[VarManager::kR2SP], VarManager::fgValues[VarManager::kCentFT0C],
                         VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR2POI],
-                        VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kC4REF], VarManager::fgValues[VarManager::kC4POI], VarManager::fgValues[VarManager::kV4]);
+                        VarManager::fgValues[VarManager::kCORR4REF], VarManager::fgValues[VarManager::kCORR4POI], VarManager::fgValues[VarManager::kC4REF], VarManager::fgValues[VarManager::kC4POI], VarManager::fgValues[VarManager::kV4], VarManager::fgValues[VarManager::kVertexingPz],
+                        VarManager::fgValues[VarManager::kVertexingSV]);
         }
       }
 
@@ -1377,7 +1378,7 @@ struct AnalysisDileptonHadron {
   Produces<aod::BmesonCandidates> BmesonsTable;
 
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == 1;
-  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonpTCut.value&& aod::reducedpair::mass > fConfigDileptonLowMass.value&& aod::reducedpair::mass < fConfigDileptonHighMass.value&& aod::reducedpair::sign == 0;
+  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonpTCut&& aod::reducedpair::mass > fConfigDileptonLowMass&& aod::reducedpair::mass < fConfigDileptonHighMass&& aod::reducedpair::sign == 0;
   Filter filterBarrelTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
 
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map

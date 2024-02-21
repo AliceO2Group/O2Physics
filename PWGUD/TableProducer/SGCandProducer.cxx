@@ -221,7 +221,6 @@ struct SGCandProducer {
         mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
         // mapGlobalBcWithZdc[bc] = zdc.globalIndex();
       }
-      int candID = 0;
       auto nZdcs = mapGlobalBcWithZdc.size();
       if (nZdcs > 0) {
         // auto itZDC = mapGlobalBcWithZdc.find(bc.globalBC());
@@ -233,10 +232,9 @@ struct SGCandProducer {
           float timeZNC = zdc.timeZNC();
           float eComZNA = zdc.energyCommonZNA();
           float eComZNC = zdc.energyCommonZNC();
-          udZdcsReduced(candID, timeZNA, timeZNC, eComZNA, eComZNC);
+          udZdcsReduced(outputCollisions.lastIndex(), timeZNA, timeZNC, eComZNA, eComZNC);
         }
       }
-      candID++;
       // produce TPC signal histograms for 2-track events
       LOGF(debug, "SG candidate: number of PV tracks %d", collision.numContrib());
       if (collision.numContrib() == 2) {

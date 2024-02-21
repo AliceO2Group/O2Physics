@@ -105,7 +105,8 @@ struct phosCluQA {
     h3->GetXaxis()->SetBinLabel(2, "CPV w/o PHOS");
     h3->GetXaxis()->SetBinLabel(3, "PHOS w/o CPV");
 
-    mHistManager.add("eventsTrig", "Number of trigger events", HistType::kTH1F, {{2, 0., 2.}});
+    mHistManager.add("cluTrig", "Number of clusters passed trigger", HistType::kTH1F, {{2, 0., 2.}});
+    mHistManager.add("cluTrigAmb", "Number of ambiguous clusters passed trigger", HistType::kTH1F, {{2, 0., 2.}});
     mHistManager.add("CPVSp", "CPV spectrum", o2HistType::kTH2F, {{200, 0., 10000}, {3, 2., 5.}});
     mHistManager.add("CPVOcc", "CPV occupancy", o2HistType::kTH3F, {{128, -72., 72.}, {56, -63., 63.}, {3, 2., 5.}});
 
@@ -321,7 +322,7 @@ struct phosCluQA {
 
       if (!clu.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
         continue;
-      mHistManager.fill(HIST("eventsTrig"), 1.);
+      mHistManager.fill(HIST("cluTrig"), 1.);
 
       hCluSp[clu.mod() - 1]->Fill(clu.e());
       hCluMul[clu.mod() - 1]->Fill(clu.e(), clu.ncell());
@@ -337,7 +338,7 @@ struct phosCluQA {
 
       if (!clu.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrigAmb))
         continue;
-      mHistManager.fill(HIST("eventsTrigAmb"), 1.);
+      mHistManager.fill(HIST("cluTrigAmb"), 1.);
 
       hCluSpAmb[clu.mod() - 1]->Fill(clu.e());
       hCluMulAmb[clu.mod() - 1]->Fill(clu.e(), clu.ncell());
@@ -554,7 +555,7 @@ struct phosCluQA {
 
       if (!clu.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
         continue;
-      mHistManager.fill(HIST("eventsTrig"), 1.);
+      mHistManager.fill(HIST("cluTrig"), 1.);
 
       hCluSp[clu.mod() - 1]->Fill(clu.e());
       hCluMul[clu.mod() - 1]->Fill(clu.e(), clu.ncell());
@@ -601,7 +602,7 @@ struct phosCluQA {
 
       if (!clu.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrigAmb))
         continue;
-      mHistManager.fill(HIST("eventsTrigAmb"), 1.);
+      mHistManager.fill(HIST("cluTrigAmb"), 1.);
 
       hCluSpAmb[clu.mod() - 1]->Fill(clu.e());
       hCluMulAmb[clu.mod() - 1]->Fill(clu.e(), clu.ncell());

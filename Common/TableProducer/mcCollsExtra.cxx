@@ -49,10 +49,12 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
+using FullCollisions = soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::FT0Mults>;
+
 struct mcCollisionExtra {
   Produces<aod::McCollsExtra> mcCollsExtra;
 
-  void process(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions)
+  void processNoCentrality(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions)
   {
     int biggestNContribs = -1;
     int bestCollisionIndex = -1;
@@ -62,8 +64,24 @@ struct mcCollisionExtra {
         bestCollisionIndex = collision.globalIndex();
       }
     }
-    mcCollsExtra(collisions.size(), bestCollisionIndex);
+    mcCollsExtra(collisions.size(), bestCollisionIndex, 0.0f);
   }
+  void processWithCentrality(aod::McCollision const& mcCollision, soa::SmallGroups<FullCollisions> const& collisions)
+  {
+    int biggestNContribs = -1;
+    int bestCollisionIndex = -1;
+    float bestCollisionCentFT0C = 100.5f;
+    for (auto& collision : collisions) {
+      if (biggestNContribs < collision.numContrib()) {
+        biggestNContribs = collision.numContrib();
+        bestCollisionIndex = collision.globalIndex();
+      }
+    }
+    mcCollsExtra(collisions.size(), bestCollisionIndex, bestCollisionCentFT0C);
+  }
+
+  PROCESS_SWITCH(mcCollisionExtra, processNoCentrality, "process as if real data", false);
+  PROCESS_SWITCH(mcCollisionExtra, processWithCentrality, "process as if real data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
