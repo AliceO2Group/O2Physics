@@ -317,6 +317,7 @@ void calculateDcaXYZ(float& dcaXYZ, float& sigmaDcaXYZ2, float dcaXY, float dcaZ
  * @param jetflavour An identifier for the jet flavour (e.g., 1 for c-jet, 2 for b-jet, 3 for light-flavour jet),
  *                   used to select the appropriate parameter set for the resolution function.
  */
+// TODO: The fitting function obtained with fewer events locally. We will change to parameters with higher statistics in the future
 template <typename T = float>
 TF1* getResolutionFunction(T const& jetflavour)
 {

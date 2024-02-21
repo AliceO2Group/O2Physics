@@ -44,8 +44,8 @@ struct JetTaggerHFTask {
   Configurable<bool> doSV{"doSV", false, "fill table for secondary vertex algorithm"};
   Configurable<float> maxDeltaR{"maxDeltaR", 0.25, "maximum distance of jet axis from flavour initiating parton"};
 
-  using JetTagTracksData = soa::Join<aod::JTracks, aod::JTracksTag>;
-  using JetTagTracksMCD = soa::Join<aod::JTracks, aod::JTracksTag, aod::JMcTrackLbs>;
+  using JetTagTracksData = soa::Join<JetTracks, aod::JTracksTag>;
+  using JetTagTracksMCD = soa::Join<JetTracks, aod::JTracksTag, aod::JMcTrackLbs>;
 
   void processDummy(JetCollisions const& collision)
   {
@@ -56,10 +56,13 @@ struct JetTaggerHFTask {
   {
     for (auto& jet : jets) {
 
-      float jetProb = jet.pt(); // This needs to be changed. It is only done because O2Physics compilation breaks if jet is unused
+      float jetProb = 0;
       int algorithm2 = 0;
       int algorithm3 = 0;
-      // if (doTC) algorithm1 = jettaggingutilities::Algorithm1((mcdjet, tracks);
+      TF1* fSignImpXYSig = jettaggingutilities::getResolutionFunction(0);
+      if (doTC) {
+        jetProb = jettaggingutilities::getJetProbability(fSignImpXYSig, collision, jet, tracks);
+      }
       // if (doSV) algorithm2 = jettaggingutilities::Algorithm2((mcdjet, tracks);
       taggingTableData(0, jetProb, algorithm2, algorithm3);
     }
