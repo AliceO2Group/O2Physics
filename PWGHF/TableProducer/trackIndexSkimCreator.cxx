@@ -3360,10 +3360,10 @@ struct HfTrackIndexSkimCreatorLfCascades {
         casc.casccosPA(pvx, pvy, pvz) > cascCosPA &&
         casc.dcacascdaughters() < dcaCascDau &&
         casc.dcaV0daughters() < dcaV0Dau &&
-        casc.dcanegtopv() > dcaNegToPv &&
-        casc.dcapostopv() > dcaPosToPv &&
-        casc.dcabachtopv() > dcaBachToPv &&
-        casc.dcav0topv(pvx, pvy, pvz) > dcaV0ToPv &&
+        std::abs(casc.dcanegtopv()) > dcaNegToPv &&
+        std::abs(casc.dcapostopv()) > dcaPosToPv &&
+        std::abs(casc.dcabachtopv()) > dcaBachToPv &&
+        std::abs(casc.dcav0topv(pvx, pvy, pvz)) > dcaV0ToPv &&
         casc.v0radius() > v0TransvRadius &&
         casc.cascradius() > cascTransvRadius &&
         std::abs(casc.mLambda() - massLambda) < v0MassWindow) {
