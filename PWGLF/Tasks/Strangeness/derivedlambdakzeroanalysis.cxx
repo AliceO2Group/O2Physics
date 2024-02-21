@@ -207,8 +207,8 @@ struct derivedlambdakzeroanalysis {
       maskTrackProperties = maskTrackProperties | (1 << selNegGoodTPCTrack);
       // TPC signal is available: ask for negative track PID
       maskK0ShortSpecific = maskK0ShortSpecific | (1 << selTPCPIDNegativePion);
-      maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDNegativeProton);
-      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (1 << selTPCPIDNegativePion);
+      maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDNegativePion);
+      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (1 << selTPCPIDNegativeProton);
     }
 
     // Primary particle selection, central to analysis
