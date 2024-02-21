@@ -345,13 +345,14 @@ struct qVectorsTable {
       for (std::size_t iChA = 0; iChA < ft0.channelA().size(); iChA++) {
         // Get first the corresponding amplitude.
         float ampl = ft0.amplitudeA()[iChA];
+        int FT0AchId = ft0.channelA()[iChA];
 
-        histosQA.fill(HIST("FITAmp"), ampl, iChA);
-        histosQA.fill(HIST("FITAmpCor"), ampl / RelGainConst[iChA], iChA);
+        histosQA.fill(HIST("FITAmp"), ampl, FT0AchId);
+        histosQA.fill(HIST("FITAmpCor"), ampl / RelGainConst[FT0AchId], FT0AchId);
         // Update the Q-vector and sum of amplitudes using the helper function.
         // LOKI: Note this assumes nHarmo = 2!! Likely generalise in the future.
-        helperEP.SumQvectors(0, iChA, ampl / RelGainConst[iChA], cfgnMod, QvecDet, sumAmplFT0A);
-        helperEP.SumQvectors(0, iChA, ampl / RelGainConst[iChA], cfgnMod, QvecFT0M, sumAmplFT0M);
+        helperEP.SumQvectors(0, FT0AchId, ampl / RelGainConst[FT0AchId], cfgnMod, QvecDet, sumAmplFT0A);
+        helperEP.SumQvectors(0, FT0AchId, ampl / RelGainConst[FT0AchId], cfgnMod, QvecFT0M, sumAmplFT0M);
       } // Go to the next channel iChA.
 
       // Set the Qvectors for FT0A with the normalised Q-vector values if the sum of
@@ -373,12 +374,13 @@ struct qVectorsTable {
         // iChC ranging from 0 to max 112. We need to add 96 (= max channels in FT0-A)
         // to ensure a proper channel number in FT0 as a whole.
         float ampl = ft0.amplitudeC()[iChC];
+        int FT0CchId = ft0.channelC()[iChA];
 
-        histosQA.fill(HIST("FITAmp"), ampl, iChC + 96);
-        histosQA.fill(HIST("FITAmpCor"), ampl / RelGainConst[iChC + 96], iChC + 96);
+        histosQA.fill(HIST("FITAmp"), ampl, FT0CchId);
+        histosQA.fill(HIST("FITAmpCor"), ampl / RelGainConst[FT0CchId], FT0CchId);
 
-        helperEP.SumQvectors(0, iChC + 96, ampl / RelGainConst[iChC + 96], cfgnMod, QvecDet, sumAmplFT0C);
-        helperEP.SumQvectors(0, iChC + 96, ampl / RelGainConst[iChC + 96], cfgnMod, QvecFT0M, sumAmplFT0M);
+        helperEP.SumQvectors(0, FT0CchId, ampl / RelGainConst[FT0CchId], cfgnMod, QvecDet, sumAmplFT0C);
+        helperEP.SumQvectors(0, FT0CchId, ampl / RelGainConst[FT0CchId], cfgnMod, QvecFT0M, sumAmplFT0M);
       }
 
       if (sumAmplFT0C > 1e-8) {
