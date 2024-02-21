@@ -130,15 +130,18 @@ struct flowQC {
     const AxisSpec QxAxis{cfgQvecBins, "Q_{x}"};
     const AxisSpec QyAxis{cfgQvecBins, "Q_{y}"};
 
-    const AxisSpec phiAxis{cfgPhiBins, "#phi"};
+    const AxisSpec psiAxis{cfgPhiBins, "#psi"};
 
-    const AxisSpec deltaPhiFT0cFT0a{cfgDeltaPhiBins, "#phi_{FT0C} - #phi_{FT0A}"};
-    const AxisSpec deltaPhiFV0aFT0a{cfgDeltaPhiBins, "#phi_{FV0A} - #phi_{FT0A}"};
-    const AxisSpec deltaPhiFV0aFT0c{cfgDeltaPhiBins, "#phi_{FV0A} - #phi_{FT0C}"};
+    const AxisSpec deltaPsiFT0cFT0a{cfgDeltaPhiBins, "#psi_{FT0C} - #psi_{FT0A}"};
+    const AxisSpec deltaPsiFV0aFT0a{cfgDeltaPhiBins, "#psi_{FV0A} - #psi_{FT0A}"};
+    const AxisSpec deltaPsiFV0aFT0c{cfgDeltaPhiBins, "#psi_{FV0A} - #psi_{FT0C}"};
 
     const AxisSpec ft0Aft0CspAxis{cfgQvecBins, "#vec{Q}_{2}^{FT0A} #upoint #vec{Q}_{2}^{FT0C}"};
     const AxisSpec fv0Aft0CspAxis{cfgQvecBins, "#vec{Q}_{2}^{FV0A} #upoint #vec{Q}_{2}^{FT0C}"};
     const AxisSpec fv0Aft0AspAxis{cfgQvecBins, "#vec{Q}_{2}^{FV0A} #upoint #vec{Q}_{2}^{FT0A}"};
+
+    // z vertex histogram
+    flow.add("hRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
 
     // Centrality histograms
     flow.add("hCentFT0C", "", HistType::kTH1F, {centAxis});
@@ -152,14 +155,14 @@ struct flowQC {
     flow.add("hQxQyFV0A", "", HistType::kTH3F, {centAxis, QxAxis, QyAxis});
 
     // Q-vector azimuthal angles
-    flow.add("hPhiFT0C", "", HistType::kTH2F, {centAxis, phiAxis});
-    flow.add("hPhiFT0A", "", HistType::kTH2F, {centAxis, phiAxis});
-    flow.add("hPhiFV0A", "", HistType::kTH2F, {centAxis, phiAxis});
+    flow.add("hPsiFT0C", "", HistType::kTH2F, {centAxis, psiAxis});
+    flow.add("hPsiFT0A", "", HistType::kTH2F, {centAxis, psiAxis});
+    flow.add("hPsiFV0A", "", HistType::kTH2F, {centAxis, psiAxis});
 
     // Q-vector azimuthal-angle differences
-    flow.add("hDeltaPhiFT0CFT0A", "", HistType::kTH2F, {centAxis, deltaPhiFT0cFT0a});
-    flow.add("hDeltaPhiFV0AFT0A", "", HistType::kTH2F, {centAxis, deltaPhiFV0aFT0a});
-    flow.add("hDeltaPhiFV0AFT0C", "", HistType::kTH2F, {centAxis, deltaPhiFV0aFT0c});
+    flow.add("hDeltaPsiFT0CFT0A", "", HistType::kTH2F, {centAxis, deltaPsiFT0cFT0a});
+    flow.add("hDeltaPsiFV0AFT0A", "", HistType::kTH2F, {centAxis, deltaPsiFV0aFT0a});
+    flow.add("hDeltaPsiFV0AFT0C", "", HistType::kTH2F, {centAxis, deltaPsiFV0aFT0c});
 
     // Scalar-product histograms
     flow.add("hScalarProductFT0AvsFT0C", "", HistType::kTH2F, {centAxis, ft0Aft0CspAxis});
@@ -184,7 +187,7 @@ struct flowQC {
     }
   }
 
-  void process(CollWithQvec const& collision)
+  void process(CollWithQvec const& collision, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
@@ -194,36 +197,36 @@ struct flowQC {
 
     const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
 
-    flow.fill(HIST("CentFT0C"), collision.centFT0C());
-    flow.fill(HIST("CentFT0A"), collision.centFT0A());
-    flow.fill(HIST("CentFT0M"), collision.centFT0M());
-    flow.fill(HIST("CentFV0A"), collision.centFV0A());
+    flow.fill(HIST("hCentFT0C"), collision.centFT0C());
+    flow.fill(HIST("hCentFT0A"), collision.centFT0A());
+    flow.fill(HIST("hCentFT0M"), collision.centFT0M());
+    flow.fill(HIST("hCentFV0A"), collision.centFV0A());
 
     float centrality = getCentrality(collision);
 
     float QxFT0C = collision.qvecFT0CRe();
     float QyFT0C = collision.qvecFT0CIm();
-    float phiFT0C = std::atan2(QyFT0C, QxFT0C);
+    float psiFT0C = std::atan2(QyFT0C, QxFT0C);
 
     float QxFT0A = collision.qvecFT0ARe();
     float QyFT0A = collision.qvecFT0AIm();
-    float phiFT0A = std::atan2(QyFT0A, QxFT0A);
+    float psiFT0A = std::atan2(QyFT0A, QxFT0A);
 
     float QxFV0A = collision.qvecFV0ARe();
     float QyFV0A = collision.qvecFV0AIm();
-    float phiFV0A = std::atan2(QyFV0A, QxFV0A);
+    float psiFV0A = std::atan2(QyFV0A, QxFV0A);
 
     flow.fill(HIST("hQxQyFT0C"), centrality, QxFT0C, QyFT0C);
     flow.fill(HIST("hQxQyFT0A"), centrality, QxFT0A, QyFT0A);
     flow.fill(HIST("hQxQyFV0A"), centrality, QxFV0A, QyFV0A);
 
-    flow.fill(HIST("hPhiFT0C"), centrality, phiFT0C);
-    flow.fill(HIST("hPhiFT0A"), centrality, phiFT0A);
-    flow.fill(HIST("hPhiFV0A"), centrality, phiFV0A);
+    flow.fill(HIST("hPsiFT0C"), centrality, psiFT0C);
+    flow.fill(HIST("hPsiFT0A"), centrality, psiFT0A);
+    flow.fill(HIST("hPsiFV0A"), centrality, psiFV0A);
 
-    flow.fill(HIST("hDeltaPhiFT0CFT0A"), centrality, phiFT0C - phiFT0A);
-    flow.fill(HIST("hDeltaPhiFV0AFT0A"), centrality, phiFV0A - phiFT0A);
-    flow.fill(HIST("hDeltaPhiFV0AFT0C"), centrality, phiFV0A - phiFT0C);
+    flow.fill(HIST("hDeltaPsiFT0CFT0A"), centrality, psiFT0C - psiFT0A);
+    flow.fill(HIST("hDeltaPsiFV0AFT0A"), centrality, psiFV0A - psiFT0A);
+    flow.fill(HIST("hDeltaPsiFV0AFT0C"), centrality, psiFV0A - psiFT0C);
 
     flow.fill(HIST("hScalarProductFT0AvsFT0C"), centrality, QxFT0A * QxFT0C + QyFT0A * QyFT0C);
     flow.fill(HIST("hScalarProductFV0AvsFT0C"), centrality, QxFV0A * QxFT0C + QyFV0A * QyFT0C);
