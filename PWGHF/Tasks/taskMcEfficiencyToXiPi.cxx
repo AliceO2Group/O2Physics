@@ -50,22 +50,22 @@ struct HfTaskMcEfficiencyToXiPi {
   Service<o2::framework::O2DatabasePDG> pdg;
   HfHelper hfHelper;
 
-  enum HFStep { kHFStepMC = 0,         
-                kHFStepMcInRapidity,    
-                kHFStepAcceptance,          
-                kHFStepTrackable,           
-                kHFStepAcceptanceTrackable, 
-                kHFStepItsTpcTrackableCuts, 
-                kHFStepItsTrackableCuts,    
-                kHFStepTracked,             
-                kHFStepTrackedCuts,         
-                kHFStepTrackedSelected,      
+  enum HFStep { kHFStepMC = 0,
+                kHFStepMcInRapidity,
+                kHFStepAcceptance,
+                kHFStepTrackable,
+                kHFStepAcceptanceTrackable,
+                kHFStepItsTpcTrackableCuts,
+                kHFStepItsTrackableCuts,
+                kHFStepTracked,
+                kHFStepTrackedCuts,
+                kHFStepTrackedSelected,
                 kHFNSteps };
 
-  enum TrackableStep { kTrackableAll = 0, 
-                       kTrackableITS,     
-                       kTrackableTPC,     
-                       kTrackableITSTPC,  
+  enum TrackableStep { kTrackableAll = 0,
+                       kTrackableITS,
+                       kTrackableTPC,
+                       kTrackableITSTPC,
                        kNTrackableSteps };
 
   using TracksWithSelectionMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>;
@@ -93,13 +93,13 @@ struct HfTaskMcEfficiencyToXiPi {
     bool checkGlbTrk = track.isGlobalTrackWoDCA();
     bool checkNClsTpc = false;
     bool checkNClsIts = false;
-    if(track.tpcNClsFound() > nClustersTpcMin){
+    if (track.tpcNClsFound() > nClustersTpcMin) {
       checkNClsTpc = true;
     }
-    if(track.itsNCls() > nClustersItsMin){
+    if (track.itsNCls() > nClustersItsMin) {
       checkNClsIts = true;
     }
-    if(checkGlbTrk && checkNClsTpc && checkNClsIts){
+    if (checkGlbTrk && checkNClsTpc && checkNClsIts) {
       return true;
     } else {
       return false;
@@ -111,16 +111,15 @@ struct HfTaskMcEfficiencyToXiPi {
   {
     bool checkItsTrk = track.isQualityTrackITS();
     bool checkNClsIts = false;
-    if(track.itsNCls() > nClustersItsMin){
+    if (track.itsNCls() > nClustersItsMin) {
       checkNClsIts = true;
     }
-    if(checkItsTrk && checkNClsIts){
+    if (checkItsTrk && checkNClsIts) {
       return true;
     } else {
       return false;
     }
   }
-
 
   // candidates -> join candidateCreator, candidateCreator McRec and candidateSelector tables
   template <typename T1>
@@ -135,9 +134,9 @@ struct HfTaskMcEfficiencyToXiPi {
     double pt = 0.0;
 
     int decayFlag = 0;
-    if(pdgCode == Pdg::kXiC0){
+    if (pdgCode == Pdg::kXiC0) {
       decayFlag = 4;
-    } else if (pdgCode == Pdg::kOmegaC0){
+    } else if (pdgCode == Pdg::kOmegaC0) {
       decayFlag = 2;
     } else {
       LOGP(fatal, "Not implemented for PDG code: ", pdgCode);
@@ -146,7 +145,7 @@ struct HfTaskMcEfficiencyToXiPi {
     for (const auto& candidate : candidates) {
 
       // only take into account matched decays
-      if(candidate.flagMcMatchRec() != decayFlag){
+      if (candidate.flagMcMatchRec() != decayFlag) {
         continue;
       }
 
@@ -158,7 +157,6 @@ struct HfTaskMcEfficiencyToXiPi {
       // all candidates (candidateCreator)
       hCandidates->Fill(kHFStepTracked, pt, mass, candidate.collisionMatched(), candidate.originRec());
 
-
       // check xi-pi candidate passed candidate selector cuts (except PID)
       if (candidate.resultSelections() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
         hCandidates->Fill(kHFStepTrackedCuts, pt, mass, candidate.collisionMatched(), candidate.originRec());
@@ -168,7 +166,6 @@ struct HfTaskMcEfficiencyToXiPi {
         continue;
       }
 
-
       // check xi-pi candidate passed candidate selector cuts (PID included)
       if (candidate.statusPidCharmBaryon()) {
         hCandidates->Fill(kHFStepTrackedSelected, pt, mass, candidate.collisionMatched(), candidate.originRec());
@@ -177,11 +174,8 @@ struct HfTaskMcEfficiencyToXiPi {
       if (!selectedPid) {
         continue;
       }
-
     }
   }
-
-
 
   // candidates -> join candidateCreator, candidateCreator McRec and candidateSelector tables
   // genParticles -> join aod::McParticles and candidateCreator McGen tables
@@ -217,201 +211,200 @@ struct HfTaskMcEfficiencyToXiPi {
         }
       }
     }
-    
-      auto mass = pdg->Mass(pdgCode);
 
-      int decayFlagGen = 0;
-      if(pdgCode == Pdg::kXiC0){
-        decayFlagGen = 4;
-      } else if (pdgCode == Pdg::kOmegaC0){
-        decayFlagGen = 2;
-      } else {
-        LOGP(fatal, "Not implemented for PDG code: ", pdgCode);
+    auto mass = pdg->Mass(pdgCode);
+
+    int decayFlagGen = 0;
+    if (pdgCode == Pdg::kXiC0) {
+      decayFlagGen = 4;
+    } else if (pdgCode == Pdg::kOmegaC0) {
+      decayFlagGen = 2;
+    } else {
+      LOGP(fatal, "Not implemented for PDG code: ", pdgCode);
+    }
+
+    for (const auto& mcParticle : genParticles) {
+
+      // check if I am treating the desired charm baryon
+      if (mcParticle.pdgCode() != pdgCode) {
+        continue;
+      }
+      /// check if the charm baryon devays to the desired channel
+      if (mcParticle.flagMcMatchGen() != decayFlagGen) {
+        continue;
       }
 
-      for (const auto& mcParticle : genParticles) {
+      // all candidates
+      hCandidates->Fill(kHFStepMC, mcParticle.pt(), mass, true, mcParticle.originGen()); // set matchedCollision to true by default at gen level
 
-        // check if I am treating the desired charm baryon
-        if (mcParticle.pdgCode() != pdgCode) {
-          continue;
-        }
-        /// check if the charm baryon devays to the desired channel
-        if(mcParticle.flagMcMatchGen() != decayFlagGen){
-          continue;
-        }
+      // candidates with charm baryon within eta range
+      if (std::abs(mcParticle.y()) < rapidityCharmBaryonMax) {
+        hCandidates->Fill(kHFStepMcInRapidity, mcParticle.pt(), mass, true, mcParticle.originGen());
+      }
 
-        // all candidates
-        hCandidates->Fill(kHFStepMC, mcParticle.pt(), mass, true, mcParticle.originGen()); // set matchedCollision to true by default at gen level
+      // exclude cases with undesired decays
+      if (mcParticle.daughtersIds().size() != 2) {
+        LOGP(fatal, "Invalid numbers of daughters for charm baryon {}: {}", mcParticle.globalIndex(), mcParticle.daughtersIds().size());
+      }
+      auto cascId = mcParticle.daughtersIds()[0];
+      auto pionId = mcParticle.daughtersIds()[1];
+      if (cascId < 0 || pionId < 0) {
+        continue;
+      }
+      auto cascade = genParticles.rawIteratorAt(mcParticle.daughtersIds().front());
+      auto pion = genParticles.rawIteratorAt(mcParticle.daughtersIds().back());
+      if (std::abs(cascade.pdgCode()) != kXiMinus && std::abs(cascade.pdgCode()) == kPiPlus) {
+        auto save = cascade;
+        cascade = pion;
+        pion = save;
+        auto saveIdxCharmBaryon = cascId;
+        cascId = pionId;
+        pionId = saveIdxCharmBaryon;
+      } else if (std::abs(cascade.pdgCode()) == kXiMinus && std::abs(pion.pdgCode()) == kPiPlus) {
+        LOGF(info, "Correct assignment of charm baryon daughters IDs - gen level");
+      } else {
+        LOGP(fatal, "Invalid charm baryon daughters PDG codes");
+      }
 
-        // candidates with charm baryon within eta range
-        if (std::abs(mcParticle.y()) < rapidityCharmBaryonMax) {
-          hCandidates->Fill(kHFStepMcInRapidity, mcParticle.pt(), mass, true, mcParticle.originGen());
-        }
+      // check pion <-- charm baryon pt and eta
+      bool inAcceptance = true;
+      if (std::abs(pion.eta()) > mcPionFromCharmBaryonAcceptanceEta || pion.pt() < mcPionFromCharmBaryonAcceptancePt) {
+        inAcceptance = false;
+      }
 
-        // exclude cases with undesired decays
-        if (mcParticle.daughtersIds().size() != 2) {
-          LOGP(fatal, "Invalid numbers of daughters for charm baryon {}: {}", mcParticle.globalIndex(), mcParticle.daughtersIds().size());
-        }
-        auto cascId = mcParticle.daughtersIds()[0];
-        auto pionId = mcParticle.daughtersIds()[1];
-        if (cascId < 0 || pionId < 0) {
-          continue;
-        }
-        auto cascade = genParticles.rawIteratorAt(mcParticle.daughtersIds().front());
-        auto pion = genParticles.rawIteratorAt(mcParticle.daughtersIds().back()); 
-        if(std::abs(cascade.pdgCode()) != kXiMinus && std::abs(cascade.pdgCode()) == kPiPlus){ 
-          auto save = cascade;
-          cascade = pion;
-          pion = save;
-          auto saveIdxCharmBaryon = cascId;
-          cascId = pionId;
-          pionId = saveIdxCharmBaryon;
-        } else if(std::abs(cascade.pdgCode()) == kXiMinus && std::abs(pion.pdgCode()) == kPiPlus){
-          LOGF(info, "Correct assignment of charm baryon daughters IDs - gen level");
-        } else {
-          LOGP(fatal, "Invalid charm baryon daughters PDG codes");
-        }
+      // check LF daughters pt (pion<--cascade) and eta
+      // first create cascade daughters objects
+      if (cascade.daughtersIds().size() != 2) {
+        LOGP(fatal, "Invalid numbers of daughters for cascade {}: {}", cascade.globalIndex(), cascade.daughtersIds().size());
+      }
+      auto lambdaId = cascade.daughtersIds()[0];
+      auto pionFromCascadeId = cascade.daughtersIds()[1];
+      if (lambdaId < 0 || pionFromCascadeId < 0) {
+        continue;
+      }
+      auto lambda = genParticles.rawIteratorAt(cascade.daughtersIds().front());
+      auto pionFromCascade = genParticles.rawIteratorAt(cascade.daughtersIds().back());
+      if (std::abs(lambda.pdgCode()) != kLambda0 && std::abs(lambda.pdgCode()) == kPiPlus) {
+        auto saveCasc = lambda;
+        lambda = pionFromCascade;
+        pionFromCascade = saveCasc;
+        auto saveIdxCasc = lambdaId;
+        lambdaId = pionFromCascadeId;
+        pionFromCascadeId = saveIdxCasc;
+      } else if (std::abs(lambda.pdgCode()) == kLambda0 && std::abs(pionFromCascade.pdgCode()) == kPiPlus) {
+        LOGF(info, "Correct assignment of cascade daughters IDs - gen level");
+      } else {
+        LOGP(fatal, "Invalid cascade daughters PDG codes");
+      }
+      // then create lambda daughters objects
+      if (lambda.daughtersIds().size() != 2) {
+        LOGP(fatal, "Invalid numbers of daughters for lambda {}: {}", lambda.globalIndex(), lambda.daughtersIds().size());
+      }
+      auto protonId = lambda.daughtersIds()[0];
+      auto pionFromLambdaId = lambda.daughtersIds()[1];
+      if (protonId < 0 || pionFromLambdaId < 0) {
+        continue;
+      }
+      auto proton = genParticles.rawIteratorAt(lambda.daughtersIds().front());
+      auto pionFromLambda = genParticles.rawIteratorAt(lambda.daughtersIds().back());
+      if (std::abs(proton.pdgCode()) != kProton && std::abs(proton.pdgCode()) == kPiPlus) {
+        auto saveLambda = proton;
+        proton = pionFromLambda;
+        pionFromLambda = saveLambda;
+        auto saveIdxLambda = protonId;
+        protonId = pionFromLambdaId;
+        pionFromLambdaId = saveIdxLambda;
+      } else if (std::abs(proton.pdgCode()) == kProton && std::abs(pionFromLambda.pdgCode()) == kPiPlus) {
+        LOGF(info, "Correct assignment of lambda daughters IDs - gen level");
+      } else {
+        LOGP(fatal, "Invalid lambda daughters PDG codes");
+      }
+      // check on pt and eta
+      if (std::abs(pionFromCascade.eta()) > mcLfAcceptanceEta || std::abs(pionFromLambda.eta()) > mcLfAcceptanceEta || std::abs(proton.eta()) > mcLfAcceptanceEta) {
+        inAcceptance = false;
+      }
+      if (pionFromCascade.pt() < mcPionFromCascadeAcceptancePt) {
+        inAcceptance = false;
+      }
+      // final state candidates pass eta and pt selection
+      if (inAcceptance) {
+        hCandidates->Fill(kHFStepAcceptance, mcParticle.pt(), mass, true, mcParticle.originGen());
+      }
 
-        // check pion <-- charm baryon pt and eta
-        bool inAcceptance = true;
-        if(std::abs(pion.eta()) > mcPionFromCharmBaryonAcceptanceEta || pion.pt() < mcPionFromCharmBaryonAcceptancePt){
-          inAcceptance = false;
-        }
-
-        //check LF daughters pt (pion<--cascade) and eta
-        //first create cascade daughters objects
-        if (cascade.daughtersIds().size() != 2) {
-          LOGP(fatal, "Invalid numbers of daughters for cascade {}: {}", cascade.globalIndex(), cascade.daughtersIds().size());
-        }
-        auto lambdaId = cascade.daughtersIds()[0];
-        auto pionFromCascadeId = cascade.daughtersIds()[1];
-        if (lambdaId < 0 || pionFromCascadeId < 0) {
-          continue;
-        }
-        auto lambda = genParticles.rawIteratorAt(cascade.daughtersIds().front());
-        auto pionFromCascade = genParticles.rawIteratorAt(cascade.daughtersIds().back()); 
-        if(std::abs(lambda.pdgCode()) != kLambda0 && std::abs(lambda.pdgCode()) == kPiPlus){ 
-          auto saveCasc = lambda;
-          lambda = pionFromCascade;
-          pionFromCascade = saveCasc;
-          auto saveIdxCasc = lambdaId;
-          lambdaId = pionFromCascadeId;
-          pionFromCascadeId = saveIdxCasc;
-        } else if(std::abs(lambda.pdgCode()) == kLambda0 && std::abs(pionFromCascade.pdgCode()) == kPiPlus){
-          LOGF(info, "Correct assignment of cascade daughters IDs - gen level");
-        } else {
-          LOGP(fatal, "Invalid cascade daughters PDG codes");
-        }
-        //then create lambda daughters objects
-        if (lambda.daughtersIds().size() != 2) {
-          LOGP(fatal, "Invalid numbers of daughters for lambda {}: {}", lambda.globalIndex(), lambda.daughtersIds().size());
-        }
-        auto protonId = lambda.daughtersIds()[0];
-        auto pionFromLambdaId = lambda.daughtersIds()[1];
-        if (protonId < 0 || pionFromLambdaId < 0) {
-          continue;
-        }
-        auto proton = genParticles.rawIteratorAt(lambda.daughtersIds().front());
-        auto pionFromLambda = genParticles.rawIteratorAt(lambda.daughtersIds().back()); 
-        if(std::abs(proton.pdgCode()) != kProton && std::abs(proton.pdgCode()) == kPiPlus){ 
-          auto saveLambda = proton;
-          proton = pionFromLambda;
-          pionFromLambda = saveLambda;
-          auto saveIdxLambda = protonId;
-          protonId = pionFromLambdaId;
-          pionFromLambdaId = saveIdxLambda;
-        } else if(std::abs(proton.pdgCode()) == kProton && std::abs(pionFromLambda.pdgCode()) == kPiPlus){
-          LOGF(info, "Correct assignment of lambda daughters IDs - gen level");
-        } else {
-          LOGP(fatal, "Invalid lambda daughters PDG codes");
-        }
-        //check on pt and eta
-        if(std::abs(pionFromCascade.eta()) > mcLfAcceptanceEta || std::abs(pionFromLambda.eta()) > mcLfAcceptanceEta || std::abs(proton.eta()) > mcLfAcceptanceEta){
-          inAcceptance = false;
-        }
-        if(pionFromCascade.pt() < mcPionFromCascadeAcceptancePt){
-          inAcceptance = false;
-        }
-         // final state candidates pass eta and pt selection
+      if (tracked[pionId] && tracked[pionFromCascadeId] && tracked[pionFromLambdaId] && tracked[protonId]) {
+        // final state candidates have a mc particleID != 0
+        hCandidates->Fill(kHFStepTrackable, mcParticle.pt(), mass, true, mcParticle.originGen());
         if (inAcceptance) {
-          hCandidates->Fill(kHFStepAcceptance, mcParticle.pt(), mass, true, mcParticle.originGen());
+          hCandidates->Fill(kHFStepAcceptanceTrackable, mcParticle.pt(), mass, true, mcParticle.originGen());
+        } else {
+          LOGF(info, "Candidate {} not in acceptance but tracked.", mcParticle.globalIndex());
+          LOGF(info, "MC cascade: pt={} eta={}", cascade.pt(), cascade.eta());
+          LOGF(info, "MC pion<--charm baryon: pt={} eta={}", pion.pt(), pion.eta());
         }
 
-        if (tracked[pionId] && tracked[pionFromCascadeId] && tracked[pionFromLambdaId] && tracked[protonId]) {
-          // final state candidates have a mc particleID != 0
-          hCandidates->Fill(kHFStepTrackable, mcParticle.pt(), mass, true, mcParticle.originGen());
-          if (inAcceptance) {
-            hCandidates->Fill(kHFStepAcceptanceTrackable, mcParticle.pt(), mass, true, mcParticle.originGen());
-          } else {
-            LOGF(info, "Candidate {} not in acceptance but tracked.", mcParticle.globalIndex());
-            LOGF(info, "MC cascade: pt={} eta={}", cascade.pt(), cascade.eta());
-            LOGF(info, "MC pion<--charm baryon: pt={} eta={}", pion.pt(), pion.eta());
-          }
-
-            // final state daughters info
-            // pion <- charm baryon
-            hTrackablePtEta->Fill(kTrackableAll, pion.pt(), pion.eta());
-            if (hasITS[pion.globalIndex()]) {
-              hTrackablePtEta->Fill(kTrackableITS, pion.pt(), pion.eta());
-            }
-            if (hasTPC[pion.globalIndex()]) {
-              hTrackablePtEta->Fill(kTrackableTPC, pion.pt(), pion.eta());
-            }
-            if (hasITS[pion.globalIndex()] && hasTPC[pion.globalIndex()]) {
-              hTrackablePtEta->Fill(kTrackableITSTPC, pion.pt(), pion.eta());
-            }
-            // pion <- cascade
-            hTrackablePtEta->Fill(kTrackableAll, pionFromCascade.pt(), pionFromCascade.eta());
-            if (hasITS[pionFromCascade.globalIndex()]) {
-              hTrackablePtEta->Fill(kTrackableITS, pionFromCascade.pt(), pionFromCascade.eta());
-            }
-            if (hasTPC[pionFromCascade.globalIndex()]) {
-              hTrackablePtEta->Fill(kTrackableTPC, pionFromCascade.pt(), pionFromCascade.eta());
-            }
-            if (hasITS[pionFromCascade.globalIndex()] && hasTPC[pionFromCascade.globalIndex()]) {
-              hTrackablePtEta->Fill(kTrackableITSTPC, pionFromCascade.pt(), pionFromCascade.eta());
-            }
-            // pion <- lambda
-            hTrackablePtEta->Fill(kTrackableAll, pionFromLambda.pt(), pionFromLambda.eta());
-            if (hasITS[pionFromLambda.globalIndex()]) {
-              hTrackablePtEta->Fill(kTrackableITS, pionFromLambda.pt(), pionFromLambda.eta());
-            }
-            if (hasTPC[pionFromLambda.globalIndex()]) {
-              hTrackablePtEta->Fill(kTrackableTPC, pionFromLambda.pt(), pionFromLambda.eta());
-            }
-            if (hasITS[pionFromLambda.globalIndex()] && hasTPC[pionFromLambda.globalIndex()]) {
-              hTrackablePtEta->Fill(kTrackableITSTPC, pionFromLambda.pt(), pionFromLambda.eta());
-            }
-            // proton <- lambda
-            hTrackablePtEta->Fill(kTrackableAll, proton.pt(), proton.eta());
-            if (hasITS[proton.globalIndex()]) {
-              hTrackablePtEta->Fill(kTrackableITS, proton.pt(), proton.eta());
-            }
-            if (hasTPC[proton.globalIndex()]) {
-              hTrackablePtEta->Fill(kTrackableTPC, proton.pt(), proton.eta());
-            }
-            if (hasITS[proton.globalIndex()] && hasTPC[proton.globalIndex()]) {
-              hTrackablePtEta->Fill(kTrackableITSTPC, proton.pt(), proton.eta());
-            }        
-          } // close tracked if
-
-        // with pion track cuts (see checkTrackGlbTrk and checkTrkItsTrk)
-        if (selectedIts[pionId]) {
-          hCandidates->Fill(kHFStepItsTrackableCuts, mcParticle.pt(), mass, true, mcParticle.originGen());
-          if (!inAcceptance) {
-            LOGP(info, "Candidate {} has daughters not in acceptance but pion <-- charm tracked and selected (its only)", mcParticle.globalIndex());
-          }
+        // final state daughters info
+        // pion <- charm baryon
+        hTrackablePtEta->Fill(kTrackableAll, pion.pt(), pion.eta());
+        if (hasITS[pion.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableITS, pion.pt(), pion.eta());
         }
-        if (selectedItsTpc[pionId]) {
-          hCandidates->Fill(kHFStepItsTpcTrackableCuts, mcParticle.pt(), mass, true, mcParticle.originGen());
-          if (!inAcceptance) {
-            LOGP(info, "Candidate {} has daughters not in acceptance but pion <-- charm tracked and selected (its & tpc)", mcParticle.globalIndex());
-          }
+        if (hasTPC[pion.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableTPC, pion.pt(), pion.eta());
         }
+        if (hasITS[pion.globalIndex()] && hasTPC[pion.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableITSTPC, pion.pt(), pion.eta());
+        }
+        // pion <- cascade
+        hTrackablePtEta->Fill(kTrackableAll, pionFromCascade.pt(), pionFromCascade.eta());
+        if (hasITS[pionFromCascade.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableITS, pionFromCascade.pt(), pionFromCascade.eta());
+        }
+        if (hasTPC[pionFromCascade.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableTPC, pionFromCascade.pt(), pionFromCascade.eta());
+        }
+        if (hasITS[pionFromCascade.globalIndex()] && hasTPC[pionFromCascade.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableITSTPC, pionFromCascade.pt(), pionFromCascade.eta());
+        }
+        // pion <- lambda
+        hTrackablePtEta->Fill(kTrackableAll, pionFromLambda.pt(), pionFromLambda.eta());
+        if (hasITS[pionFromLambda.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableITS, pionFromLambda.pt(), pionFromLambda.eta());
+        }
+        if (hasTPC[pionFromLambda.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableTPC, pionFromLambda.pt(), pionFromLambda.eta());
+        }
+        if (hasITS[pionFromLambda.globalIndex()] && hasTPC[pionFromLambda.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableITSTPC, pionFromLambda.pt(), pionFromLambda.eta());
+        }
+        // proton <- lambda
+        hTrackablePtEta->Fill(kTrackableAll, proton.pt(), proton.eta());
+        if (hasITS[proton.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableITS, proton.pt(), proton.eta());
+        }
+        if (hasTPC[proton.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableTPC, proton.pt(), proton.eta());
+        }
+        if (hasITS[proton.globalIndex()] && hasTPC[proton.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableITSTPC, proton.pt(), proton.eta());
+        }
+      } // close tracked if
 
-      } // close loop mcParticles
-    } // close candidateMcLoop
+      // with pion track cuts (see checkTrackGlbTrk and checkTrkItsTrk)
+      if (selectedIts[pionId]) {
+        hCandidates->Fill(kHFStepItsTrackableCuts, mcParticle.pt(), mass, true, mcParticle.originGen());
+        if (!inAcceptance) {
+          LOGP(info, "Candidate {} has daughters not in acceptance but pion <-- charm tracked and selected (its only)", mcParticle.globalIndex());
+        }
+      }
+      if (selectedItsTpc[pionId]) {
+        hCandidates->Fill(kHFStepItsTpcTrackableCuts, mcParticle.pt(), mass, true, mcParticle.originGen());
+        if (!inAcceptance) {
+          LOGP(info, "Candidate {} has daughters not in acceptance but pion <-- charm tracked and selected (its & tpc)", mcParticle.globalIndex());
+        }
+      }
 
+    } // close loop mcParticles
+  }   // close candidateMcLoop
 
   // process functions
   void processXic0(candidateInfo const& candidates,
@@ -423,7 +416,6 @@ struct HfTaskMcEfficiencyToXiPi {
     candidateFullLoop(candidates, genParticles, tracks, colls, pdgCode);
   }
   PROCESS_SWITCH(HfTaskMcEfficiencyToXiPi, processXic0, "Process MC for Xic0 signal", true);
-
 
   void processOmegac0(candidateInfo const& candidates,
                       genLevelInfo const& genParticles,
