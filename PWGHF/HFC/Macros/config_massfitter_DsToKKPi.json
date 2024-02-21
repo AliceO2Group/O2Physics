@@ -1,148 +1,148 @@
 {
-  "Particle": "Ds",
-  "_Particles": [
-    "Dplus",
-    "Ds",
-    "LcToPKPi",
-    "LcToPK0s",
-    "Dstar"
-  ],
-  "EnableRefl": false,
-  "FixSigma": [
-    0
-  ],
-  "SigmaFile": "",
-  "_SigmaFile": "fix sigma from file",
-  "FixSigmaManual": [
-  ],
-  "_FixSigmaManual": "fix sigma mannually",
-  "FixMean": [
-    0
-  ],
-  "MeanFile": "",
-  "_MeanFile": "fix mean from file",
-  "PtMin": [
-    2.0,
-    4.0,
-    6.0,
-    8.0,
-    12.0
-  ],
-  "PtMax": [
-    4.0,
-    6.0,
-    8.0,
-    12.0,
-    24.0
-  ],
-  "MassMin": [
-    1.75,
-    1.75,
-    1.75,
-    1.75,
-    1.75
-  ],
-  "MassMax": [
-    2.1,
-    2.1,
-    2.1,
-    2.1,
-    2.1
-  ],
-  "Rebin": [
-    3,
-    3,
-    3,
-    3,
-    3
-  ],
-  "InclSecPeak": [
-    1
-  ],
-  "SigmaSecPeak": [
-    0.012,
-    0.012,
-    0.012,
-    0.012,
-    0.012
-  ],
-  "SigmaMultSecPeak": [
-  ],
-  "SigmaFileSecPeak": "",
-  "SigmaMultFactorSecPeak": 1.0,
-  "FixSigmaToFirstPeak": false,
-  "UseLikelihood": true,
-  "_UseLikelihood": [
-    "true: likelihood fit",
-    "false: chi2 fit"
-  ],
-  "BkgFunc": [
-    2,
-    2,
-    2,
-    2,
-    2
-  ],
-  "_BkgFuncs": [
-    "0 for Expo",
-    "1 for Poly1",
-    "2 for Poly2",
-    "3 for Pow",
-    "4 for PowEx",
-    "5 for NoBkg",
-    "6 for Poly3",
-    "7 for Poly4"
-  ],
-  "SgnFunc": [
-    0,
-    0,
-    0,
-    0,
-    0
-  ],
-  "_SgnFuncs": [
-    "0 for SingleGaus",
-    "1 for DoubleGaus",
-    "2 for DoubleGausSigmaRatioPar"
-  ],
-  "BoundMean": false,
-  "_BoundMean": [
-    "false: Do not set limits on mean range",
-    "true: the mean is set to be between MassMin[i] and MassMax[i]"
-  ],
-  "FixSigmaRatio": false,
-  "SigmaRatioFile": "",
-  "SigmaMultFactorUnc": "",
-  "_SigmaMultFactorUnc": [
-    "MinusUnc",
-    "PlusUnc"
-  ],
-  "MinSidebandLeft": [
-    1.75,
-    1.75,
-    1.75,
-    1.75,
-    1.75
-  ],
-  "MaxSidebandLeft": [
-    1.8,
-    1.8,
-    1.8,
-    1.8,
-    1.8
-  ],
-  "MinSidebandRight": [
-    2.05,
-    2.05,
-    2.05,
-    2.05,
-    2.05
-  ],
-  "MaxSidebandRight": [
-    2.1,
-    2.1,
-    2.1,
-    2.1,
-    2.1
-  ]
+    "Particle": "Ds",
+    "_Particles": [
+        "Dplus",
+        "Ds",
+        "LcToPKPi",
+        "LcToPK0s",
+        "Dstar"
+    ],
+    "EnableRefl": false,
+    "FixSigma": [
+        0
+    ],
+    "SigmaFile": "",
+    "_SigmaFile": "fix sigma from file",
+    "FixSigmaManual": [
+    ],
+    "_FixSigmaManual": "fix sigma mannually",
+    "FixMean": [
+        0
+    ],
+    "MeanFile": "",
+    "_MeanFile": "fix mean from file",
+    "PtMin": [
+        2.0,
+        4.0,
+        6.0,
+        8.0,
+        12.0
+    ],
+    "PtMax": [
+        4.0,
+        6.0,
+        8.0,
+        12.0,
+        24.0
+    ],
+    "MassMin": [
+        1.75,
+        1.75,
+        1.75,
+        1.75,
+        1.75
+    ],
+    "MassMax": [
+        2.1,
+        2.1,
+        2.1,
+        2.1,
+        2.1
+    ],
+    "Rebin": [
+        3,
+        3,
+        3,
+        3,
+        3
+    ],
+    "InclSecPeak": [
+        1
+    ],
+    "SigmaSecPeak": [
+        0.012,
+        0.012,
+        0.012,
+        0.012,
+        0.012
+    ],
+    "SigmaMultSecPeak": [
+    ],
+    "SigmaFileSecPeak": "",
+    "SigmaMultFactorSecPeak": 1.0,
+    "FixSigmaToFirstPeak": false,
+    "UseLikelihood": true,
+    "_UseLikelihood": [
+        "true: likelihood fit",
+        "false: chi2 fit"
+    ],
+    "BkgFunc": [
+        2,
+        2,
+        2,
+        2,
+        2
+    ],
+    "_BkgFuncs": [
+        "0 for Expo",
+        "1 for Poly1",
+        "2 for Poly2",
+        "3 for Pow",
+        "4 for PowEx",
+        "5 for NoBkg",
+        "6 for Poly3",
+        "7 for Poly4"
+    ],
+    "SgnFunc": [
+        0,
+        0,
+        0,
+        0,
+        0
+    ],
+    "_SgnFuncs": [
+        "0 for SingleGaus",
+        "1 for DoubleGaus",
+        "2 for DoubleGausSigmaRatioPar"
+    ],
+    "BoundMean": false,
+    "_BoundMean": [
+        "false: Do not set limits on mean range",
+        "true: the mean is set to be between MassMin[i] and MassMax[i]"
+    ],
+    "FixSigmaRatio": false,
+    "SigmaRatioFile": "",
+    "SigmaMultFactorUnc": "",
+    "_SigmaMultFactorUnc": [
+        "MinusUnc",
+        "PlusUnc"
+    ],
+    "MinSidebandLeft": [
+        1.75,
+        1.75,
+        1.75,
+        1.75,
+        1.75
+    ],
+    "MaxSidebandLeft": [
+        1.8,
+        1.8,
+        1.8,
+        1.8,
+        1.8
+    ],
+    "MinSidebandRight": [
+        2.05,
+        2.05,
+        2.05,
+        2.05,
+        2.05
+    ],
+    "MaxSidebandRight": [
+        2.1,
+        2.1,
+        2.1,
+        2.1,
+        2.1
+    ]
 }
