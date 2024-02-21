@@ -105,8 +105,11 @@ struct HfCandidateCreatorDstar {
   /// @brief This function initializes the ccdb setting, vertex fitter and runs function MatLayerCylSet::rectifyPtrFromFile(..args..)
   void init(InitContext const&)
   {
-    if (doprocessPvRefit && doprocessNoPvRefit) { //............Warning! remove this if any of this function is removed
-      LOGP(fatal, "Only one process function between processPvRefit and processNoPvRefit can be enabled at a time.");
+    std::array<bool, 6> processes = {doprocessPvRefit, doprocessNoPvRefit,
+                                     doprocessPvRefitCentFT0C, doprocessNoPvRefitCentFT0C,
+                                     doprocessPvRefitCentFT0M, doprocessNoPvRefitCentFT0M};
+    if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
+      LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
     // LOG(info) << "Init Function Invoked";
     ccdb->setURL(ccdbUrl);
