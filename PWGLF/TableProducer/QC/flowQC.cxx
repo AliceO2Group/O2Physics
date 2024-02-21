@@ -125,6 +125,11 @@ struct flowQC {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
+    const AxisSpec centFT0aAxis{cfgCentralityBins, "FT0A percentile"};
+    const AxisSpec centFT0cAxis{cfgCentralityBins, "FT0C percentile"};
+    const AxisSpec centFT0mAxis{cfgCentralityBins, "FT0M percentile"};
+    const AxisSpec centFV0aAxis{cfgCentralityBins, "FV0A percentile"};
+
     const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", (std::string)centDetectorNames[cfgCentralityEstimator])};
 
     const AxisSpec QxAxis{cfgQvecBins, "Q_{x}"};
@@ -144,10 +149,10 @@ struct flowQC {
     flow.add("hRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
 
     // Centrality histograms
-    flow.add("hCentFT0C", "", HistType::kTH1F, {centAxis});
-    flow.add("hCentFT0A", "", HistType::kTH1F, {centAxis});
-    flow.add("hCentFT0M", "", HistType::kTH1F, {centAxis});
-    flow.add("hCentFV0A", "", HistType::kTH1F, {centAxis});
+    flow.add("hCentFT0C", "", HistType::kTH1F, {centFT0cAxis});
+    flow.add("hCentFT0A", "", HistType::kTH1F, {centFT0aAxis});
+    flow.add("hCentFT0M", "", HistType::kTH1F, {centFT0mAxis});
+    flow.add("hCentFV0A", "", HistType::kTH1F, {centFV0aAxis});
 
     // Q-vector histograms
     flow.add("hQxQyFT0C", "", HistType::kTH3F, {centAxis, QxAxis, QyAxis});
