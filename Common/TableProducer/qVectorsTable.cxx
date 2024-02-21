@@ -248,7 +248,7 @@ struct qVectorsTable {
         RelGainConst.push_back(1.);
       }
     } else if (cfgGainCor == 1) {
-// TODO
+      // TODO
     } else if (cfgGainCor == 2) {
       for (int i = 0; i < cfgFT0RelGain->size(); i++) {
         RelGainConst.push_back(cfgFT0RelGain->at(i));
