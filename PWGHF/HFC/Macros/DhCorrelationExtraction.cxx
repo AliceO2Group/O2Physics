@@ -371,9 +371,9 @@ Bool_t DhCorrelationExtraction::ReadInputInvMass()
   std::cout << "===================== " << std::endl;
   std::cout << "Read inputs inv. mass" << std::endl;
   std::cout << "TFile Mass    = " << fFileNameMass << std::endl;
-  std::cout << "Histo Sgn Yield	   = " << fMassHistoNameSgn << std::endl;
-  std::cout << "Histo Bkg Yield	   = " << fMassHistoNameBkg << std::endl;
-  std::cout << "Histo SBs Yield	   = " << fMassHistoNameSBs << std::endl;
+  std::cout << "Histo Sgn Yield    = " << fMassHistoNameSgn << std::endl;
+  std::cout << "Histo Bkg Yield    = " << fMassHistoNameBkg << std::endl;
+  std::cout << "Histo SBs Yield    = " << fMassHistoNameSBs << std::endl;
   std::cout << "===================== " << std::endl;
   std::cout << " " << std::endl;
 
