@@ -870,13 +870,12 @@ o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C
     propmuon.setZ(proptrack.getZ());
     propmuon.setCovariances(proptrack.getCovariances());
   } else if (static_cast<int>(muon.trackType()) < 2) {
-    /*double centerMFT[3] = {0, 0, -61.4};
+    double centerMFT[3] = {0, 0, -61.4};
     o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     auto Bz = field->getBz(centerMFT); // Get field at centre of MFT
-    //auto Bz = fgMagField;
     auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), collision.posX(), collision.posY(), collision.posZ());
     auto x2x0 = static_cast<float>(geoMan.meanX2X0);
-    fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);*/
+    fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);
     propmuon.setParameters(fwdtrack.getParameters());
     propmuon.setZ(fwdtrack.getZ());
     propmuon.setCovariances(fwdtrack.getCovariances());
