@@ -34,10 +34,23 @@ using namespace o2::aod::hf_cand_3prong;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 
+// event rejection types
+enum CentralityEstimator {
+  None = 0,
+  FT0A,
+  FT0C,
+  FT0M,
+  FV0A,
+  NCentralityEstimators
+};
+
 /// Reconstruction of heavy-flavour 3-prong decay candidates
 struct HfCandidateCreator3Prong {
   Produces<aod::HfCand3ProngBase> rowCandidateBase;
 
+  // centrality
+  Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
+  Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
   // vertexing
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
@@ -92,12 +105,15 @@ struct HfCandidateCreator3Prong {
     runNumber = 0;
   }
 
-  template <bool doPvRefit = false, typename Cand>
-  void runCreator3Prong(aod::Collisions const& collisions,
+  template <bool doPvRefit = false, int centEstimator = 0, typename Coll, typename Cand>
+  void runCreator3Prong(Coll const& collisions,
                         Cand const& rowsTrackIndexProng3,
                         aod::TracksWCovExtra const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
+
+
+
     // 3-prong vertex fitter
     o2::vertexing::DCAFitterN<3> df;
     // df.setBz(bz);
@@ -111,13 +127,33 @@ struct HfCandidateCreator3Prong {
 
     // loop over triplets of track indices
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
+
+      // reject candidates in collisions outside the centrality range
+      auto collision = rowTrackIndexProng3.template collision_as<Coll>();
+      float centrality = -1.;
+      if constexpr (centEstimator != CentralityEstimator::None) {
+        if constexpr (centEstimator == CentralityEstimator::FT0A) {
+          centrality = collision.centFT0A();
+        } else if constexpr (centEstimator == CentralityEstimator::FT0C) {
+          centrality = collision.centFT0C();
+        } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
+          centrality = collision.centFT0M();
+        } else if constexpr (centEstimator == CentralityEstimator::FV0A) {
+          centrality = collision.centFV0A();
+        } else {
+          LOGP(fatal, "Centrality estimator not set!");
+        }
+        if (centrality < centralityMin || centrality > centralityMax) {
+          continue;
+        }
+      }
+
       auto track0 = rowTrackIndexProng3.template prong0_as<aod::TracksWCovExtra>();
       auto track1 = rowTrackIndexProng3.template prong1_as<aod::TracksWCovExtra>();
       auto track2 = rowTrackIndexProng3.template prong2_as<aod::TracksWCovExtra>();
       auto trackParVar0 = getTrackParCov(track0);
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
-      auto collision = rowTrackIndexProng3.collision();
 
       /// Set the magnetic field from ccdb.
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
@@ -235,25 +271,137 @@ struct HfCandidateCreator3Prong {
     }
   }
 
+
+  ///////////////////////////////////
+  ///                             ///
+  ///   No centrality selection   ///
+  ///                             ///
+  ///////////////////////////////////
+
+  /// @brief process function w/ PV refit and w/o centrality selections
   void processPvRefit(aod::Collisions const& collisions,
                       soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
                       aod::TracksWCovExtra const& tracks,
                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreator3Prong<true>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+    runCreator3Prong</*doPvRefit*/ true, CentralityEstimator::None>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
   }
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefit, "Run candidate creator with PV refit and w/o centrality selections", false);
 
-  PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefit, "Run candidate creator with PV refit", false);
-
+  /// @brief process function w/o PV refit and w/o centrality selections
   void processNoPvRefit(aod::Collisions const& collisions,
                         aod::Hf3Prongs const& rowsTrackIndexProng3,
                         aod::TracksWCovExtra const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreator3Prong(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+    runCreator3Prong</*doPvRefit*/ false, CentralityEstimator::None>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
   }
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefit, "Run candidate creator without PV refit and w/o centrality selections", true);
 
-  PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefit, "Run candidate creator without PV refit", true);
+  /////////////////////////////////////////////
+  ///                                       ///
+  ///   with centrality selection on FT0A   ///
+  ///                                       ///
+  /////////////////////////////////////////////
+
+  /// @brief process function w/ PV refit and w/ centrality selection on FT0A
+  void processPvRefitCentFT0A(soa::Join<aod::Collisions, aod::CentFT0As> const& collisions,
+                      soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
+                      aod::TracksWCovExtra const& tracks,
+                      aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreator3Prong</*doPvRefit*/ true, CentralityEstimator::FT0A>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+  }
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefitCentFT0A, "Run candidate creator with PV refit and w/ centrality selection on FT0A", false);
+
+  /// @brief process function w/o PV refit and  w/ centrality selection on FT0A
+  void processNoPvRefitCentFT0A(soa::Join<aod::Collisions, aod::CentFT0As> const& collisions,
+                        aod::Hf3Prongs const& rowsTrackIndexProng3,
+                        aod::TracksWCovExtra const& tracks,
+                        aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreator3Prong</*doPvRefit*/ false, CentralityEstimator::FT0A>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+  }
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefitCentFT0A, "Run candidate creator without PV refit and  w/ centrality selection on FT0A", false);
+
+  /////////////////////////////////////////////
+  ///                                       ///
+  ///   with centrality selection on FT0C   ///
+  ///                                       ///
+  /////////////////////////////////////////////
+
+  /// @brief process function w/ PV refit and w/ centrality selection on FT0C
+  void processPvRefitCentFT0C(soa::Join<aod::Collisions, aod::CentFT0Cs> const& collisions,
+                      soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
+                      aod::TracksWCovExtra const& tracks,
+                      aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreator3Prong</*doPvRefit*/ true, CentralityEstimator::FT0C>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+  }
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefitCentFT0C, "Run candidate creator with PV refit and w/ centrality selection on FT0C", false);
+
+  /// @brief process function w/o PV refit and  w/ centrality selection on FT0C
+  void processNoPvRefitCentFT0C(soa::Join<aod::Collisions, aod::CentFT0Cs> const& collisions,
+                        aod::Hf3Prongs const& rowsTrackIndexProng3,
+                        aod::TracksWCovExtra const& tracks,
+                        aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreator3Prong</*doPvRefit*/ false, CentralityEstimator::FT0C>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+  }
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefitCentFT0C, "Run candidate creator without PV refit and  w/ centrality selection on FT0C", false);
+
+  /////////////////////////////////////////////
+  ///                                       ///
+  ///   with centrality selection on FT0M   ///
+  ///                                       ///
+  /////////////////////////////////////////////
+
+  /// @brief process function w/ PV refit and w/ centrality selection on FT0M
+  void processPvRefitCentFT0M(soa::Join<aod::Collisions, aod::CentFT0Ms> const& collisions,
+                      soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
+                      aod::TracksWCovExtra const& tracks,
+                      aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreator3Prong</*doPvRefit*/ true, CentralityEstimator::FT0M>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+  }
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefitCentFT0M, "Run candidate creator with PV refit and w/ centrality selection on FT0M", false);
+
+  /// @brief process function w/o PV refit and  w/ centrality selection on FT0M
+  void processNoPvRefitCentFT0M(soa::Join<aod::Collisions, aod::CentFT0Ms> const& collisions,
+                        aod::Hf3Prongs const& rowsTrackIndexProng3,
+                        aod::TracksWCovExtra const& tracks,
+                        aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreator3Prong</*doPvRefit*/ false, CentralityEstimator::FT0M>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+  }
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefitCentFT0M, "Run candidate creator without PV refit and  w/ centrality selection on FT0M", false);
+
+  /////////////////////////////////////////////
+  ///                                       ///
+  ///   with centrality selection on FV0A   ///
+  ///                                       ///
+  /////////////////////////////////////////////
+
+  /// @brief process function w/ PV refit and w/ centrality selection on FV0A
+  void processPvRefitCentFV0A(soa::Join<aod::Collisions, aod::CentFV0As> const& collisions,
+                      soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
+                      aod::TracksWCovExtra const& tracks,
+                      aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreator3Prong</*doPvRefit*/ true, CentralityEstimator::FV0A>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+  }
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefitCentFV0A, "Run candidate creator with PV refit and w/ centrality selection on FV0A", false);
+
+  /// @brief process function w/o PV refit and  w/ centrality selection on FV0A
+  void processNoPvRefitCentFV0A(soa::Join<aod::Collisions, aod::CentFV0As> const& collisions,
+                        aod::Hf3Prongs const& rowsTrackIndexProng3,
+                        aod::TracksWCovExtra const& tracks,
+                        aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreator3Prong</*doPvRefit*/ false, CentralityEstimator::FV0A>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+  }
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefitCentFV0A, "Run candidate creator without PV refit and  w/ centrality selection on FV0A", false);
+
 };
 
 /// Extends the base table with expression columns.
