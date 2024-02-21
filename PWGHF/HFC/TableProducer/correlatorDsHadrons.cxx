@@ -626,11 +626,13 @@ struct HfCorrelatorDsHadrons {
      // recontructed candidates loop
      for (auto& candidate : groupedCandidates) {
        if (std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
-         auto prong0McPart = candidate.prong0_as<aod::TracksWMc>().mcParticle();
+         auto trackPos = candidate.prong0_as<aod::TracksWMc>();
+         auto trackPosMc = trackPos.mcParticle();
+         /*auto prong0McPart = candidate.prong0_as<aod::TracksWMc>().mcParticle();
          // DsToKKPi and DsToPiKK division
          if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
            hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicity, candidate.originMcRec());
-         }
+         }*/
        }      
      }
 
