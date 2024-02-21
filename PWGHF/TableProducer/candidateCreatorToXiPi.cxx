@@ -351,7 +351,8 @@ struct HfCandidateCreatorToXiPiMc {
 
   void processMc(aod::HfCandToXiPi const& candidates,
                  aod::TracksWMc const& tracks,
-                 aod::McParticles const& mcParticles)
+                 aod::McParticles const& mcParticles,
+                 aod::McCollisionLabels const&)
   {
     float ptCharmBaryonGen = -999.;
     int indexRec = -1;
@@ -363,6 +364,7 @@ struct HfCandidateCreatorToXiPiMc {
     int8_t debugGenCharmBar = 0;
     int8_t debugGenXi = 0;
     int8_t debugGenLambda = 0;
+    bool collisionMatched = false;
 
     int pdgCodeOmegac0 = Pdg::kOmegaC0; // 4332
     int pdgCodeXic0 = Pdg::kXiC0;       // 4132
@@ -377,6 +379,8 @@ struct HfCandidateCreatorToXiPiMc {
       flag = 0;
       origin = RecoDecay::OriginType::None;
       debug = 0;
+      collisionMatched = false;
+
       auto arrayDaughters = std::array{candidate.piFromCharmBaryon_as<aod::TracksWMc>(), // pi <- charm baryon
                                        candidate.bachelor_as<aod::TracksWMc>(),          // pi <- cascade
                                        candidate.posTrack_as<aod::TracksWMc>(),          // p <- lambda
@@ -409,6 +413,8 @@ struct HfCandidateCreatorToXiPiMc {
             }
             if (indexRec > -1) {
               flag = sign * (1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi);
+              collisionMatched = candidate.collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
+
             }
           }
         }
@@ -441,6 +447,8 @@ struct HfCandidateCreatorToXiPiMc {
             }
             if (indexRec > -1) {
               flag = sign * (1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi);
+              collisionMatched = candidate.collision_as<aod::McCollisionLabels>().mcCollisionId() == mcParticles.iteratorAt(indexRecCharmBaryon).mcCollisionId();
+
             }
           }
         }
@@ -455,7 +463,7 @@ struct HfCandidateCreatorToXiPiMc {
       if (debug == 2 || debug == 3) {
         LOGF(info, "WARNING: Charm baryon decays in the expected final state but the condition on the intermediate states are not fulfilled");
       }
-      rowMCMatchRec(flag, debug, origin);
+      rowMCMatchRec(flag, debug, origin, collisionMatched);
 
     } // close loop over candidates
 
