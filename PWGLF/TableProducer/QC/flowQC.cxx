@@ -53,12 +53,27 @@ using namespace o2::constants::physics;
 namespace
 {
 enum centDetectors {
-  kFV0A = 0,
-  kFT0M = 1,
-  kFT0A = 2,
-  kFT0C = 3
+  kCentFV0A = 0,
+  kCentFT0M = 1,
+  kCentFT0A = 2,
+  kCentFT0C = 3
 };
 static const std::vector<std::string> centDetectorNames{"FV0A", "FT0M", "FT0A", "FT0C"};
+
+enum qVecDetectors {
+  kFT0C = 0,
+  kFT0A,
+  kFV0A,
+  kBpos,
+  kBneg,
+  kNqVecDetectors
+};
+static const std::vector<std::string> qVecDetectorNames{"FT0C", "FT0A", "FV0A", "Bpos", "Bneg"};
+
+std::shared_ptr<TH3> hQxQy[kNqVecDetectors];
+std::shared_ptr<TH2> hPsi[kNqVecDetectors];
+std::shared_ptr<TH2> hDeltaPsi[kNqVecDetectors][kNqVecDetectors];
+std::shared_ptr<TH2> hScalarProduct[kNqVecDetectors][kNqVecDetectors];
 } // namespace
 
 struct flowQC {
@@ -137,14 +152,6 @@ struct flowQC {
 
     const AxisSpec psiAxis{cfgPhiBins, "#psi"};
 
-    const AxisSpec deltaPsiFT0cFT0a{cfgDeltaPhiBins, "#psi_{FT0C} - #psi_{FT0A}"};
-    const AxisSpec deltaPsiFV0aFT0a{cfgDeltaPhiBins, "#psi_{FV0A} - #psi_{FT0A}"};
-    const AxisSpec deltaPsiFV0aFT0c{cfgDeltaPhiBins, "#psi_{FV0A} - #psi_{FT0C}"};
-
-    const AxisSpec ft0Aft0CspAxis{cfgQvecBins, "#vec{Q}_{2}^{FT0A} #upoint #vec{Q}_{2}^{FT0C}"};
-    const AxisSpec fv0Aft0CspAxis{cfgQvecBins, "#vec{Q}_{2}^{FV0A} #upoint #vec{Q}_{2}^{FT0C}"};
-    const AxisSpec fv0Aft0AspAxis{cfgQvecBins, "#vec{Q}_{2}^{FV0A} #upoint #vec{Q}_{2}^{FT0A}"};
-
     // z vertex histogram
     flow.add("hRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
 
@@ -154,37 +161,30 @@ struct flowQC {
     flow.add("hCentFT0M", "", HistType::kTH1F, {centFT0mAxis});
     flow.add("hCentFV0A", "", HistType::kTH1F, {centFV0aAxis});
 
-    // Q-vector histograms
-    flow.add("hQxQyFT0C", "", HistType::kTH3F, {centAxis, QxAxis, QyAxis});
-    flow.add("hQxQyFT0A", "", HistType::kTH3F, {centAxis, QxAxis, QyAxis});
-    flow.add("hQxQyFV0A", "", HistType::kTH3F, {centAxis, QxAxis, QyAxis});
+    for (int iQvecDet = 0; iQvecDet < qVecDetectors::kNqVecDetectors; iQvecDet++) {
+      hQxQy[iQvecDet] = flow.add<TH3>(Form("hQxQy_%s", qVecDetectorNames[iQvecDet].c_str()), "", HistType::kTH3F, {centAxis, QxAxis, QyAxis});
+      hPsi[iQvecDet] = flow.add<TH2>(Form("hPsi_%s", qVecDetectorNames[iQvecDet].c_str()), "", HistType::kTH2F, {centAxis, psiAxis});
+      for (int jQvecDet = iQvecDet + 1; jQvecDet < qVecDetectors::kNqVecDetectors; jQvecDet++) {
+        // Q-vector azimuthal-angle differences
+        hDeltaPsi[iQvecDet][jQvecDet] = flow.add<TH2>(Form("hDeltaPsi_%s_%s", qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str()), "", HistType::kTH2F, {centAxis, {cfgDeltaPhiBins, Form("#psi_{%s} - #psi_{%s}", qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str())}});
+        // Scalar-product histograms
+        auto spLabel = Form("#frac{#vec{Q}_{2}^{%s} #upoint #vec{Q}_{2}^{%s}}{||#vec{Q}_{2}^{%s}|| ||#vec{Q}_{2}^{%s}||}", qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str(), qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str());
 
-    // Q-vector azimuthal angles
-    flow.add("hPsiFT0C", "", HistType::kTH2F, {centAxis, psiAxis});
-    flow.add("hPsiFT0A", "", HistType::kTH2F, {centAxis, psiAxis});
-    flow.add("hPsiFV0A", "", HistType::kTH2F, {centAxis, psiAxis});
-
-    // Q-vector azimuthal-angle differences
-    flow.add("hDeltaPsiFT0CFT0A", "", HistType::kTH2F, {centAxis, deltaPsiFT0cFT0a});
-    flow.add("hDeltaPsiFV0AFT0A", "", HistType::kTH2F, {centAxis, deltaPsiFV0aFT0a});
-    flow.add("hDeltaPsiFV0AFT0C", "", HistType::kTH2F, {centAxis, deltaPsiFV0aFT0c});
-
-    // Scalar-product histograms
-    flow.add("hScalarProductFT0AvsFT0C", "", HistType::kTH2F, {centAxis, ft0Aft0CspAxis});
-    flow.add("hScalarProductFV0AvsFT0C", "", HistType::kTH2F, {centAxis, fv0Aft0CspAxis});
-    flow.add("hScalarProductFV0AvsFT0A", "", HistType::kTH2F, {centAxis, fv0Aft0AspAxis});
+        hScalarProduct[iQvecDet][jQvecDet] = flow.add<TH2>(Form("hScalarProduct_%s_%s", qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str()), "", HistType::kTH2F, {centAxis, {cfgQvecBins, spLabel}});
+      }
+    }
   }
 
   template <typename Tcoll>
   float getCentrality(Tcoll const& collision)
   {
-    if (cfgCentralityEstimator == centDetectors::kFV0A) {
+    if (cfgCentralityEstimator == centDetectors::kCentFV0A) {
       return collision.centFV0A();
-    } else if (cfgCentralityEstimator == centDetectors::kFT0M) {
+    } else if (cfgCentralityEstimator == centDetectors::kCentFT0M) {
       return collision.centFT0M();
-    } else if (cfgCentralityEstimator == centDetectors::kFT0A) {
+    } else if (cfgCentralityEstimator == centDetectors::kCentFT0A) {
       return collision.centFT0A();
-    } else if (cfgCentralityEstimator == centDetectors::kFT0C) {
+    } else if (cfgCentralityEstimator == centDetectors::kCentFT0C) {
       return collision.centFT0C();
     } else {
       LOG(warning) << "Centrality estimator not valid. Possible values: (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3). Centrality set to 1.";
@@ -211,31 +211,47 @@ struct flowQC {
 
     float QxFT0C = collision.qvecFT0CRe();
     float QyFT0C = collision.qvecFT0CIm();
+    float QmodFT0C = std::hypot(QxFT0C, QyFT0C);
     float psiFT0C = std::atan2(QyFT0C, QxFT0C);
 
     float QxFT0A = collision.qvecFT0ARe();
     float QyFT0A = collision.qvecFT0AIm();
+    float QmodFT0A = std::hypot(QxFT0A, QyFT0A);
     float psiFT0A = std::atan2(QyFT0A, QxFT0A);
 
     float QxFV0A = collision.qvecFV0ARe();
     float QyFV0A = collision.qvecFV0AIm();
+    float QmodFV0A = std::hypot(QxFV0A, QyFV0A);
     float psiFV0A = std::atan2(QyFV0A, QxFV0A);
 
-    flow.fill(HIST("hQxQyFT0C"), centrality, QxFT0C, QyFT0C);
-    flow.fill(HIST("hQxQyFT0A"), centrality, QxFT0A, QyFT0A);
-    flow.fill(HIST("hQxQyFV0A"), centrality, QxFV0A, QyFV0A);
+    float QxBpos = collision.qvecBPosRe();
+    float QyBpos = collision.qvecBPosIm();
+    float QmodBpos = std::hypot(QxBpos, QyBpos);
+    float psiBpos = std::atan2(QyBpos, QxBpos);
 
-    flow.fill(HIST("hPsiFT0C"), centrality, psiFT0C);
-    flow.fill(HIST("hPsiFT0A"), centrality, psiFT0A);
-    flow.fill(HIST("hPsiFV0A"), centrality, psiFV0A);
+    float QxBneg = collision.qvecBNegRe();
+    float QyBneg = collision.qvecBNegIm();
+    float QmodBneg = std::hypot(QxBneg, QyBneg);
+    float psiBneg = std::atan2(QyBneg, QxBneg);
 
-    flow.fill(HIST("hDeltaPsiFT0CFT0A"), centrality, psiFT0C - psiFT0A);
-    flow.fill(HIST("hDeltaPsiFV0AFT0A"), centrality, psiFV0A - psiFT0A);
-    flow.fill(HIST("hDeltaPsiFV0AFT0C"), centrality, psiFV0A - psiFT0C);
+    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qx = {QxFT0C, QxFT0A, QxFV0A, QxBpos, QxBneg};
+    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qy = {QyFT0C, QyFT0A, QyFV0A, QyBpos, QyBneg};
+    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qmod = {QmodFT0C, QmodFT0A, QmodFV0A, QmodBpos, QmodBneg};
+    std::array<float, qVecDetectors::kNqVecDetectors> vec_Qpsi = {psiFT0C, psiFT0A, psiFV0A, psiBpos, psiBneg};
 
-    flow.fill(HIST("hScalarProductFT0AvsFT0C"), centrality, QxFT0A * QxFT0C + QyFT0A * QyFT0C);
-    flow.fill(HIST("hScalarProductFV0AvsFT0C"), centrality, QxFV0A * QxFT0C + QyFV0A * QyFT0C);
-    flow.fill(HIST("hScalarProductFV0AvsFT0A"), centrality, QxFT0A * QxFV0A + QyFT0A * QyFV0A);
+    for (int iQvecDet = 0; iQvecDet < qVecDetectors::kNqVecDetectors; iQvecDet++) {
+      hQxQy[iQvecDet]->Fill(centrality, vec_Qx[iQvecDet], vec_Qy[iQvecDet]);
+      hPsi[iQvecDet]->Fill(centrality, vec_Qpsi[iQvecDet]);
+      for (int jQvecDet = iQvecDet + 1; jQvecDet < qVecDetectors::kNqVecDetectors; jQvecDet++) {
+        // Q-vector azimuthal-angle differences
+        hDeltaPsi[iQvecDet][jQvecDet]->Fill(centrality, vec_Qpsi[iQvecDet]);
+        // Scalar-product histograms
+        auto getNormSP = [&](int iDet1, int iDet2) {
+          return (vec_Qx[iDet1] * vec_Qx[iDet2] + vec_Qy[iDet1] * vec_Qy[iDet2]) / (vec_Qmod[iDet1] * vec_Qmod[iDet2]);
+        };
+        hScalarProduct[iQvecDet][jQvecDet]->Fill(centrality, getNormSP(iQvecDet, jQvecDet));
+      }
+    }
   }
 };
 
