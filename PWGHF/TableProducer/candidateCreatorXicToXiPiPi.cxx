@@ -44,14 +44,14 @@
 
 using namespace o2;
 using namespace o2::analysis;
-using namespace o2::aod::hf_cand_xicplustoxipipi;
+using namespace o2::aod::hf_cand_xictoxipipi;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 
 /// Reconstruction of heavy-flavour 3-prong decay candidates
-struct HfCandidateCreatorXicPlus {
-  Produces<aod::HfCandXicPlBase> rowCandidateBase;
-  Produces<aod::HfCandXicPlusKF> rowCandidateKF;
+struct HfCandidateCreatorXic {
+  Produces<aod::HfCandXicBase> rowCandidateBase;
+  Produces<aod::HfCandXicKF> rowCandidateKF;
 
   // vertexing
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions"};
@@ -227,7 +227,7 @@ struct HfCandidateCreatorXicPlus {
       }
 
       // set hfFlag
-      int hfFlag = BIT(aod::hf_cand_xicplustoxipipi::DecayType::XicPlusToXiPiPi);
+      int hfFlag = BIT(aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
 
       // get SV properties
       const auto& secondaryVertex = df.getPCACandidate();
@@ -287,7 +287,7 @@ struct HfCandidateCreatorXicPlus {
       double cpaXi = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
       double cpaXYXi = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
 
-      // get invariant mass (unused?)
+      // get invariant mass
       auto arrayMomenta = std::array{pVecXi, pVecPi0, pVecPi1};
       massXiPiPi = RecoDecay::m(std::move(arrayMomenta), std::array{massXiMinusFromPdg, massPionFromPdg, massPionFromPdg});
 
@@ -330,7 +330,7 @@ struct HfCandidateCreatorXicPlus {
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
                        covMatrixSV[0], covMatrixSV[2], covMatrixSV[5],
                        errorDecayLength, errorDecayLengthXY,
-                       chi2SV,
+                       chi2SV, massXiPiPi,
                        pVecXi[0], pVecXi[1], pVecXi[2],
                        pVecPi0[0], pVecPi0[1], pVecPi0[2],
                        pVecPi1[0], pVecPi1[1], pVecPi1[2],
@@ -413,7 +413,7 @@ struct HfCandidateCreatorXicPlus {
       }
       // create KFParticle
       KFParticle kfXi;
-      kfXi.Create(parPosMom, casc.kfTrackCovMat(), casc.sign(), casc.m(1));
+      kfXi.Create(parPosMom, casc.kfTrackCovMat(), casc.sign(), casc.m(1)); // casc.m(1): 1 for Lambda mass hypothesis
 
       // create XicPlus as KFParticle object
       KFParticle kfXicPlus;
@@ -426,8 +426,13 @@ struct HfCandidateCreatorXicPlus {
       }
       auto covMatrixXicPlus = kfXicPlus.CovarianceMatrix();
 
+      // transport daughter particles to XicPlus decay vertex
+      kfPion0.TransportToParticle(kfXicPlus);
+      kfPion1.TransportToParticle(kfXicPlus);
+      kfXi.TransportToParticle(kfXicPlus);
+
       // set hfFlag
-      int hfFlag = BIT(aod::hf_cand_xicplustoxipipi::DecayType::XicPlusToXiPiPi);
+      int hfFlag = BIT(aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
 
       // get impact parameters of XicPlus daughters
       float impactParameter0XY = 0., errImpactParameter0XY = 0.;
@@ -478,7 +483,7 @@ struct HfCandidateCreatorXicPlus {
                        kfXicPlus.GetX(), kfXicPlus.GetY(), kfXicPlus.GetZ(),
                        kfXicPlus.GetErrX(), kfXicPlus.GetErrY(), kfXicPlus.GetErrZ(),
                        kfXicPlus.GetErrDecayLength(), kfXicPlus.GetErrDecayLengthXY(),
-                       kfXicPlus.GetChi2(),
+                       kfXicPlus.GetChi2(), kfXicPlus.GetMass(),
                        kfXi.GetPx(), kfXi.GetPy(), kfXi.GetPz(),
                        kfPion0.GetPx(), kfPion0.GetPy(), kfPion0.GetPz(),
                        kfPion1.GetPx(), kfPion1.GetPy(), kfPion1.GetPz(),
@@ -502,7 +507,7 @@ struct HfCandidateCreatorXicPlus {
   {
     runCreatorXicPlusWithDcaFitter<true>(collisions, rowsTrackIndexXicPlus, cascs, tracks, bcWithTimeStamps);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXicPlus, processPvRefitWithDCAFitterN, "Run candidate creator with PV refit", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic, processPvRefitWithDCAFitterN, "Run candidate creator with PV refit", false);
 
   void processNoPvRefitWithDCAFitterN(aod::Collisions const& collisions,
                                       aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
@@ -512,7 +517,7 @@ struct HfCandidateCreatorXicPlus {
   {
     runCreatorXicPlusWithDcaFitter<false>(collisions, rowsTrackIndexXicPlus, cascs, tracks, bcWithTimeStamps);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXicPlus, processNoPvRefitWithDCAFitterN, "Run candidate creator without PV refit", true);
+  PROCESS_SWITCH(HfCandidateCreatorXic, processNoPvRefitWithDCAFitterN, "Run candidate creator without PV refit", true);
 
   void processPvRefitWithKFParticle(aod::Collisions const& collisions,
                                     soa::Join<aod::HfCascLf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexXicPlus,
@@ -522,7 +527,7 @@ struct HfCandidateCreatorXicPlus {
   {
     runCreatorXicPlusWithKFParticle<true>(collisions, rowsTrackIndexXicPlus, cascs, tracks, bcWithTimeStamps);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXicPlus, processPvRefitWithKFParticle, "Run candidate creator with PV refit", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic, processPvRefitWithKFParticle, "Run candidate creator with PV refit", false);
 
   void processNoPvRefitWithKFParticle(aod::Collisions const& collisions,
                                       aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
@@ -532,19 +537,19 @@ struct HfCandidateCreatorXicPlus {
   {
     runCreatorXicPlusWithKFParticle<false>(collisions, rowsTrackIndexXicPlus, cascs, tracks, bcWithTimeStamps);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXicPlus, processNoPvRefitWithKFParticle, "Run candidate creator without PV refit", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic, processNoPvRefitWithKFParticle, "Run candidate creator without PV refit", false);
 }; // struct
 
 /// Performs MC matching.
-struct HfCandidateCreatorXicPlusMc {
-  Produces<aod::HfXicPlusMcRec> rowMcMatchRec;
-  Produces<aod::HfXicPlusMcGen> rowMcMatchGen;
+struct HfCandidateCreatorXicMc {
+  Produces<aod::HfCandXicMcRec> rowMcMatchRec;
+  Produces<aod::HfCandXicMcGen> rowMcMatchGen;
 
   Configurable<bool> matchXicPlusMc{"matchXicPlusMc", true, "Do MC matching for XicPlus"};
 
   void init(InitContext const&) {}
 
-  void processMc(aod::HfCandXicPlus const& candidates,
+  void processMc(aod::HfCandXic const& candidates,
                  aod::TracksWMc const& tracks,
                  aod::McParticles const& mcParticles)
   {
@@ -600,7 +605,7 @@ struct HfCandidateCreatorXicPlusMc {
             debug = 3;
           }
           if (indexRec > -1) {
-            flag = sign * (1 << aod::hf_cand_xicplustoxipipi::DecayType::XicPlusToXiPiPi);
+            flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
           }
         }
       }
@@ -632,7 +637,7 @@ struct HfCandidateCreatorXicPlusMc {
           auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
           if (RecoDecay::isMatchedMCGen(mcParticles, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
             debugGen = 3;
-            flag = sign * (1 << aod::hf_cand_xicplustoxipipi::DecayType::XicPlusToXiPiPi);
+            flag = sign * (1 << aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
           }
         }
       }
@@ -645,12 +650,12 @@ struct HfCandidateCreatorXicPlusMc {
       rowMcMatchGen(flag, debugGen, origin);
     } // close loop over generated particles
   } // close process
-  PROCESS_SWITCH(HfCandidateCreatorXicPlusMc, processMc, "Process MC", false);
+  PROCESS_SWITCH(HfCandidateCreatorXicMc, processMc, "Process MC", false);
 }; // close struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateCreatorXicPlus>(cfgc),
-    adaptAnalysisTask<HfCandidateCreatorXicPlusMc>(cfgc)};
+    adaptAnalysisTask<HfCandidateCreatorXic>(cfgc),
+    adaptAnalysisTask<HfCandidateCreatorXicMc>(cfgc)};
 }

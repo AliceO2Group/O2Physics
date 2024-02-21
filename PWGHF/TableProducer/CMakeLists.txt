@@ -80,8 +80,8 @@ o2physics_add_dpl_workflow(candidate-creator-xic0-omegac0
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(candidate-creator-xicplus-to-xi-pi-pi
-                    SOURCES candidateCreatorXicPlusToXiPiPi.cxx
+o2physics_add_dpl_workflow(candidate-creator-xic-to-xi-pi-pi
+                    SOURCES candidateCreatorXicToXiPiPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
@@ -164,6 +164,11 @@ o2physics_add_dpl_workflow(candidate-selector-to-xi-pi
 
 o2physics_add_dpl_workflow(candidate-selector-xic-to-p-k-pi
                     SOURCES candidateSelectorXicToPKPi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(candidate-selector-xic-to-xi-pi-pi
+                    SOURCES candidateSelectorXicToXiPiPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
