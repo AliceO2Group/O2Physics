@@ -403,28 +403,28 @@ struct kfStrangenessStudy {
             o2::track::TrackParCov negTrackParCov = getTrackParCov(negTrack);
             // propagate to V0 MC vertex
             mV0vtx.setPos({vtxGenV0[0], vtxGenV0[1], vtxGenV0[2]});
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(mV0vtx, posTrackParCov, 2.f, matCorr, &mPosDcaInfoCov);
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(mV0vtx, negTrackParCov, 2.f, matCorr, &mNegDcaInfoCov);
+            o2::base::Propagator::Instance()->propagateToDCABxByBz(mV0vtx, posTrackParCov, 2.f, matCorr);
+            o2::base::Propagator::Instance()->propagateToDCABxByBz(mV0vtx, negTrackParCov, 2.f, matCorr);
 
             // get new daughter track position and uncertainties
             if (charge == -1) {
-              posProtonRec[1] = mPosDcaInfoCov.getY();
-              posProtonRec[2] = mPosDcaInfoCov.getZ();
-              posProtonRecErr[1] = sqrt(mPosDcaInfoCov.getSigmaY2());
-              posProtonRecErr[2] = sqrt(mPosDcaInfoCov.getSigmaZ2());
-              posPionRec[1] = mNegDcaInfoCov.getY();
-              posPionRec[2] = mNegDcaInfoCov.getZ();
-              posPionRecErr[1] = sqrt(mNegDcaInfoCov.getSigmaY2());
-              posPionRecErr[2] = sqrt(mNegDcaInfoCov.getSigmaZ2());
+              posProtonRec[1] = posTrackParCov.getY();
+              posProtonRec[2] = posTrackParCov.getZ();
+              posProtonRecErr[1] = sqrt(posTrackParCov.getSigmaY2());
+              posProtonRecErr[2] = sqrt(posTrackParCov.getSigmaZ2());
+              posPionRec[1] = negTrackParCov.getY();
+              posPionRec[2] = negTrackParCov.getZ();
+              posPionRecErr[1] = sqrt(negTrackParCov.getSigmaY2());
+              posPionRecErr[2] = sqrt(negTrackParCov.getSigmaZ2());
             } else if (charge == +1) {
-              posProtonRec[1] = mNegDcaInfoCov.getY();
-              posProtonRec[2] = mNegDcaInfoCov.getZ();
-              posProtonRecErr[1] = sqrt(mNegDcaInfoCov.getSigmaY2());
-              posProtonRecErr[2] = sqrt(mNegDcaInfoCov.getSigmaZ2());
-              posPionRec[1] = mPosDcaInfoCov.getY();
-              posPionRec[2] = mPosDcaInfoCov.getZ();
-              posPionRecErr[1] = sqrt(mPosDcaInfoCov.getSigmaY2());
-              posPionRecErr[2] = sqrt(mPosDcaInfoCov.getSigmaZ2());
+              posProtonRec[1] = negTrackParCov.getY();
+              posProtonRec[2] = negTrackParCov.getZ();
+              posProtonRecErr[1] = sqrt(negTrackParCov.getSigmaY2());
+              posProtonRecErr[2] = sqrt(negTrackParCov.getSigmaZ2());
+              posPionRec[1] = posTrackParCov.getY();
+              posPionRec[2] = posTrackParCov.getZ();
+              posPionRecErr[1] = sqrt(posTrackParCov.getSigmaY2());
+              posPionRecErr[2] = sqrt(posTrackParCov.getSigmaZ2());
             }
             
             // fill cascade table
