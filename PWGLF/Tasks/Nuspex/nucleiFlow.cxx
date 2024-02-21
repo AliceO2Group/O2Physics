@@ -314,7 +314,7 @@ struct nucleiFlow {
       // Get candidate info
       int iCharge = (track.flags() & nuclei_spectra::CandBits::kPositive) ? 0 : 1;
       float nSigmaTPC = getNSigmaTPC(track, cfgSpecies, iCharge);
-      float pt = track.pt();
+      float pt = track.pt() * nuclei_spectra::charges[cfgSpecies];
 
       // Fill relevant histograms
       histos.fill(HIST("hSpFT0AvsNsigmaHe3VsPtvsCent"), spFT0A, nSigmaTPC, pt, ref_cent);

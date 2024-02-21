@@ -81,7 +81,15 @@ struct TreeCreatorElectronMLDDA {
       {"hMassLambda", "V0 mass Lambda", {HistType::kTH1F, {{100, 1.05, 1.15}}}},
       {"hMassAntiLambda", "V0 mass AntiLambda", {HistType::kTH1F, {{100, 1.05, 1.15}}}},
       {"hMvsPhiV", "mee vs. phiv", {HistType::kTH2F, {{72, 0, M_PI}, {100, 0, 0.1}}}},
-      {"Cascade/hAP", "Armenteros Podolanski", {HistType::kTH2F, {{200, -1.f, +1.f}, {250, 0, 0.25}}}},
+      {"hMKPi", "misidentified K*0(892);m_{K#pi} (GeV/c^{2})", {HistType::kTH1F, {{200, 0.7, 1.1}}}},
+      {"hMKK", "mKK vs. pTK;m_{KK} (GeV/c^{2});p_{T,K} (GeV/c)", {HistType::kTH2F, {{100, 0.98, 1.08}, {100, 0, 10}}}},
+      {"Cascade/hAP", "Armenteros Podolanski for cascade", {HistType::kTH2F, {{200, -1.f, +1.f}, {250, 0, 0.25}}}},
+      {"Cascade/hAP_V0", "Armenteros Podolanski for #Lambda and #bar{#Lambda}", {HistType::kTH2F, {{200, -1.f, +1.f}, {250, 0, 0.25}}}},
+      {"Cascade/hRxy", "R_{xy} of cascade vs. in-V0;R_{xy} of V0 (cm);R_{xy} of cascade (cm)", {HistType::kTH2F, {{200, 0, 20.f}, {200, 0, 20.f}}}},
+      {"Cascade/hRxy_Xi", "R_{xy} of cascade vs. mass;m_{#Lambda#pi};R_{xy} (cm)", {HistType::kTH2F, {{200, 1.2, 1.4}, {200, 0, 20.f}}}},
+      {"Cascade/hRxy_Omega", "R_{xy} of cascade vs. mass;m_{#LambdaK};R_{xy} (cm)", {HistType::kTH2F, {{200, 1.6, 1.8}, {200, 0, 20.f}}}},
+      {"Cascade/hCTau_Xi", "c#tau vs. mass;m_{#Lambda#pi};c#tau (cm)", {HistType::kTH2F, {{200, 1.2, 1.4}, {200, 0, 20.f}}}},
+      {"Cascade/hCTau_Omega", "c#tau vs. mass;m_{#LambdaK};c#tau (cm)", {HistType::kTH2F, {{200, 1.6, 1.8}, {200, 0, 20.f}}}},
       {"Cascade/hV0CosPA", "V0 cosine of pointing angle", {HistType::kTH1F, {{100, 0.9, 1.f}}}},
       {"Cascade/hV0PCA", "V0 distance between 2 legs", {HistType::kTH1F, {{200, 0.f, 2.f}}}},
       {"Cascade/hCosPA", "cascade cosine of pointing angle", {HistType::kTH1F, {{100, 0.9, 1.f}}}},
@@ -90,6 +98,8 @@ struct TreeCreatorElectronMLDDA {
       {"Cascade/hMassAntiLambda", "V0 mass AntiLambda in cascade", {HistType::kTH1F, {{100, 1.05, 1.15}}}},
       {"Cascade/hMassXi", "cascade mass #Xi", {HistType::kTH1F, {{200, 1.2, 1.4}}}},
       {"Cascade/hMassOmega", "cascade mass #Omega", {HistType::kTH1F, {{200, 1.6, 1.8}}}},
+      {"Cascade/hMassPt_Xi", "cascade mass #Xi", {HistType::kTH2F, {{200, 1.2, 1.4}, {100, 0, 10}}}},
+      {"Cascade/hMassPt_Omega", "cascade mass #Omega", {HistType::kTH2F, {{200, 1.6, 1.8}, {100, 0, 10}}}},
     },
   };
 
@@ -123,13 +133,25 @@ struct TreeCreatorElectronMLDDA {
   Configurable<float> downscaling_pion{"downscaling_pion", 0.1, "down scaling factor to store pion"};
 
   // for cascade
-  Configurable<float> minv0cospa_casc{"minv0cospa_casc", 0.99, "minimum V0 CosPA in cascade"};
+  Configurable<float> minv0cospa_casc{"minv0cospa_casc", 0.97, "minimum V0 CosPA in cascade"};
   Configurable<float> maxdcav0dau_casc{"maxdcav0dau_casc", 0.2, "max distance between V0 Daughters in cascade"};
   Configurable<float> min_casc_cospa{"min_casc_cospa", 0.99, "minimum cascade CosPA"};
   Configurable<float> max_casc_dcadau{"max_casc_dcadau", 0.4, "max distance between bachelor and V0"};
+  Configurable<float> min_v0rxy_in_cascade{"min_v0rxy_in_cascade", 1.2, "minimum V0 rxy in cascade"};
+  Configurable<float> min_cascade_rxy{"min_cascade_rxy", 0.5, "minimum V0 rxy in cascade"};
+  Configurable<float> max_dcav0topv_casc{"max_dcav0topv_casc", 0.04, "max 3D dca from V0 in cascade to PV"};
+
+  // for pion
+  Configurable<float> maxTPCNsigmaPi{"maxTPCNsigmaPi", 4.0, "max. TPC n sigma for pion inclusion"};
+  Configurable<float> maxTOFNsigmaPi{"maxTOFNsigmaPi", 4.0, "max. TOF n sigma for pion inclusion"};
 
   // for kaon
   Configurable<float> maxTPCNsigmaKa{"maxTPCNsigmaKa", 4.0, "max. TPC n sigma for kaon inclusion"};
+  Configurable<float> maxTOFNsigmaKa{"maxTOFNsigmaKa", 4.0, "max. TOF n sigma for kaon inclusion"};
+
+  // for proton
+  Configurable<float> maxTPCNsigmaPr{"maxTPCNsigmaPr", 4.0, "max. TPC n sigma for proton inclusion"};
+  Configurable<float> maxTOFNsigmaPr{"maxTOFNsigmaPr", 4.0, "max. TOF n sigma for proton inclusion"};
 
   // for phiv vs. mee
   Configurable<float> minpt{"minpt", 0.05, "min pt for global tracks"};
@@ -138,6 +160,7 @@ struct TreeCreatorElectronMLDDA {
   Configurable<float> maxdcaZ{"maxdcaZ", 0.5, "max. DCA in Z"};
   Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -4.0, "min. TPC n sigma for electron inclusion"};
   Configurable<float> maxTPCNsigmaEl{"maxTPCNsigmaEl", 4.0, "max. TPC n sigma for electron inclusion"};
+  Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 4.0, "max. TOF n sigma for electron inclusion"};
   Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
   Configurable<float> intercept{"intercept", -0.0380, "intercept for m vs. phiv"};
   Configurable<float> max_mee_pi0{"max_mee_pi0", -1, "max mee to tag ee from pi0"};
@@ -247,6 +270,11 @@ struct TreeCreatorElectronMLDDA {
     }
   }
 
+  float CalculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
+  {
+    return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
+  }
+
   EM_V0_Label checkV0(const float alpha, const float qt)
   {
     // Gamma cuts
@@ -292,6 +320,10 @@ struct TreeCreatorElectronMLDDA {
   template <typename TTrack>
   bool IsSelected(TTrack const& track)
   {
+    if (abs(track.eta()) > maxeta || track.pt() < minpt) {
+      return false;
+    }
+
     if (!track.hasITS() || !track.hasTPC()) {
       return false;
     }
@@ -309,7 +341,95 @@ struct TreeCreatorElectronMLDDA {
     if (track.tpcChi2NCl() > maxchi2tpc) {
       return false;
     }
+    if (track.tpcCrossedRowsOverFindableCls() < 0.8) {
+      return false;
+    }
     return true;
+  }
+
+  template <typename TTrack>
+  bool IsSelectedTag(TTrack const& track)
+  {
+    if (abs(track.eta()) > maxeta || track.pt() < minpt) {
+      return false;
+    }
+
+    if (!track.hasITS() || !track.hasTPC()) {
+      return false;
+    }
+
+    if (abs(track.dcaXY()) > 0.1 || abs(track.dcaZ()) > 0.1) {
+      return false;
+    }
+
+    if (track.itsNCls() < 5) {
+      return false;
+    }
+    if (track.itsChi2NCl() > 5.f) {
+      return false;
+    }
+
+    if (track.tpcNClsFound() < 100) {
+      return false;
+    }
+    if (track.tpcChi2NCl() > 4.f) {
+      return false;
+    }
+    if (track.tpcCrossedRowsOverFindableCls() < 0.8) {
+      return false;
+    }
+    return true;
+  }
+
+  template <typename TTrack>
+  bool IsElectron(TTrack const& track)
+  {
+    return (minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < maxTPCNsigmaEl) && (abs(track.tofNSigmaEl()) < maxTOFNsigmaEl || track.beta() < 0.f);
+  }
+
+  template <typename TTrack>
+  bool IsPion(TTrack const& track)
+  {
+    return abs(track.tpcNSigmaPi()) < maxTPCNsigmaPi && (abs(track.tofNSigmaPi()) < maxTOFNsigmaPi || track.beta() < 0.f);
+  }
+
+  template <typename TTrack>
+  bool IsKaon(TTrack const& track)
+  {
+    return abs(track.tpcNSigmaKa()) < maxTPCNsigmaKa && (abs(track.tofNSigmaKa()) < maxTOFNsigmaKa || track.beta() < 0.f);
+    // return abs(track.tpcNSigmaKa()) < maxTPCNsigmaKa;
+  }
+
+  template <typename TTrack>
+  bool IsProton(TTrack const& track)
+  {
+    return abs(track.tpcNSigmaPr()) < maxTPCNsigmaPr && (abs(track.tofNSigmaPr()) < maxTOFNsigmaPr || track.beta() < 0.f);
+  }
+
+  template <typename TTrack>
+  bool IsKaonTag(TTrack const& track)
+  {
+    if (track.tpcInnerParam() < 0.4) {
+      return abs(track.tpcNSigmaKa()) < 2.f;
+    } else {
+      return abs(track.tpcNSigmaKa()) < 2.f && abs(track.tofNSigmaKa()) < 2.f;
+    }
+  }
+
+  template <typename TTrack>
+  bool IsPionTag(TTrack const& track)
+  {
+    return abs(track.tpcNSigmaPi()) < 2.f && abs(track.tofNSigmaPi()) < 2.f;
+  }
+
+  template <typename TTrack>
+  bool IsProtonTag(TTrack const& track)
+  {
+    if (track.tpcInnerParam() < 0.8) {
+      return abs(track.tpcNSigmaPr()) < 2.f;
+    } else {
+      return abs(track.tpcNSigmaPr()) < 2.f && abs(track.tofNSigmaPr()) < 2.f;
+    }
   }
 
   template <typename TCollision, typename TTrack>
@@ -337,13 +457,15 @@ struct TreeCreatorElectronMLDDA {
 
   // Don't apply filter to tracks, because posTrack_as<>, negTrack_as<> is used.
   Preslice<MyTracks> perCollision_track = o2::aod::track::collisionId;
-  Partition<MyTracks> posTracks = o2::aod::track::signed1Pt > 0.f && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& nabs(o2::aod::track::dcaXY) < maxdcaXY&& nabs(o2::aod::track::dcaZ) < maxdcaZ&& ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC) == true && minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl && ((0.95f < o2::aod::pidtofbeta::beta && o2::aod::pidtofbeta::beta < 1.05f) || o2::aod::pidtofbeta::beta < 0.f);
-  Partition<MyTracks> negTracks = o2::aod::track::signed1Pt < 0.f && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& nabs(o2::aod::track::dcaXY) < maxdcaXY&& nabs(o2::aod::track::dcaZ) < maxdcaZ&& ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC) == true && minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl && ((0.95f < o2::aod::pidtofbeta::beta && o2::aod::pidtofbeta::beta < 1.05f) || o2::aod::pidtofbeta::beta < 0.f);
+  Partition<MyTracks> posTracks = o2::aod::track::signed1Pt > 0.f && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& nabs(o2::aod::track::dcaXY) < maxdcaXY&& nabs(o2::aod::track::dcaZ) < maxdcaZ&& ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC) == true && ((minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl) || nabs(o2::aod::pidtpc::tpcNSigmaKa) < maxTPCNsigmaKa);
+  Partition<MyTracks> negTracks = o2::aod::track::signed1Pt < 0.f && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& nabs(o2::aod::track::dcaXY) < maxdcaXY&& nabs(o2::aod::track::dcaZ) < maxdcaZ&& ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::TPC) == true && ((minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl) || nabs(o2::aod::pidtpc::tpcNSigmaKa) < maxTPCNsigmaKa);
   std::vector<uint64_t> stored_trackIds;
+  std::vector<uint64_t> misidentified_pion_trackIds;
 
   void processPID(filteredMyCollisions const& collisions, aod::BCsWithTimestamps const&, aod::V0s const& v0s, aod::Cascades const& cascades, MyTracks const& tracks)
   {
     stored_trackIds.reserve(tracks.size());
+    misidentified_pion_trackIds.reserve(tracks.size());
     for (auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1.0); // all
 
@@ -408,7 +530,7 @@ struct TreeCreatorElectronMLDDA {
         float mAntiLambda = RecoDecay::m(std::array{std::array{pvec0[0], pvec0[1], pvec0[2]}, std::array{pvec1[0], pvec1[1], pvec1[2]}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
 
         EM_V0_Label v0id = checkV0(alpha, qt);
-        if (v0id == EM_V0_Label::kGamma && (abs(pos.tpcNSigmaEl()) < 5.f && abs(neg.tpcNSigmaEl()) < 5.f)) {
+        if (v0id == EM_V0_Label::kGamma && (IsElectron(pos) && IsElectron(neg))) {
           registry.fill(HIST("hMassGamma"), mGamma);
           registry.fill(HIST("hXY_Gamma"), svpos[0], svpos[1]);
           float rxy = std::sqrt(std::pow(svpos[0], 2) + std::pow(svpos[1], 2));
@@ -417,7 +539,7 @@ struct TreeCreatorElectronMLDDA {
             fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron));
             fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron));
           }
-        } else if (v0id == EM_V0_Label::kK0S && (abs(pos.tpcNSigmaPi()) < 5.f && abs(neg.tpcNSigmaPi()) < 5.f)) {
+        } else if (v0id == EM_V0_Label::kK0S && (IsPion(pos) && IsPion(neg))) {
           registry.fill(HIST("hMassK0Short"), mK0Short);
           if (abs(mK0Short - 0.497) < 0.01) {
             if (dist01(engine) < downscaling_pion) {
@@ -425,7 +547,7 @@ struct TreeCreatorElectronMLDDA {
               fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion));
             }
           }
-        } else if (v0id == EM_V0_Label::kLambda && (abs(pos.tpcNSigmaPr()) < 5.f && abs(neg.tpcNSigmaPi()) < 5.f)) {
+        } else if (v0id == EM_V0_Label::kLambda && (IsProton(pos) && IsPion(neg))) {
           registry.fill(HIST("hMassLambda"), mLambda);
           if (abs(mLambda - 1.115) < 0.005) {
             fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kProton));
@@ -433,7 +555,7 @@ struct TreeCreatorElectronMLDDA {
               fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion));
             }
           }
-        } else if (v0id == EM_V0_Label::kAntiLambda && (abs(pos.tpcNSigmaPi()) < 5.f && abs(neg.tpcNSigmaPr()) < 5.f)) {
+        } else if (v0id == EM_V0_Label::kAntiLambda && (IsPion(pos) && IsProton(neg))) {
           registry.fill(HIST("hMassAntiLambda"), mAntiLambda);
           if (abs(mAntiLambda - 1.115) < 0.005) {
             if (dist01(engine) < downscaling_pion) {
@@ -449,6 +571,10 @@ struct TreeCreatorElectronMLDDA {
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       for (auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) {
         if (!IsSelected(pos) || !IsSelected(ele)) {
+          continue;
+        }
+
+        if (!IsElectron(pos) || !IsElectron(ele)) {
           continue;
         }
 
@@ -468,6 +594,107 @@ struct TreeCreatorElectronMLDDA {
         }
       } // end of ULS pair loop
 
+      // for K*0(892) -> K+ pi- with tag and probe
+      for (auto& pos : posTracks_per_coll) {
+        if (!IsSelectedTag(pos) || !IsKaonTag(pos)) {
+          continue;
+        }
+        for (auto& neg : negTracks_per_coll) {
+          if (neg.globalIndex() == pos.globalIndex()) {
+            continue; // this should not happen.
+          }
+          if (!IsSelected(neg) || !IsKaon(neg)) {
+            continue;
+          }
+          ROOT::Math::PtEtaPhiMVector v1(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassKaonCharged);
+          ROOT::Math::PtEtaPhiMVector v2(neg.pt(), neg.eta(), neg.phi(), o2::constants::physics::MassPionCharged); // pion misidentified as K
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          registry.fill(HIST("hMKPi"), v12.M());
+          if (abs(v12.M() - 0.892) < 0.04) {
+            if (std::find(misidentified_pion_trackIds.begin(), misidentified_pion_trackIds.end(), neg.globalIndex()) == misidentified_pion_trackIds.end()) {
+              misidentified_pion_trackIds.emplace_back(neg.globalIndex());
+            }
+          }
+        } // end of K- loop
+      }   // end of pi+ loop
+
+      // for K*0(892) bar -> K- pi+ with tag and probe
+      for (auto& neg : negTracks_per_coll) {
+        if (!IsSelectedTag(neg) || !IsKaonTag(neg)) {
+          continue;
+        }
+        for (auto& pos : posTracks_per_coll) {
+          if (pos.globalIndex() == neg.globalIndex()) {
+            continue; // this should not happen.
+          }
+          if (!IsSelected(pos) || !IsKaon(pos)) {
+            continue;
+          }
+          ROOT::Math::PtEtaPhiMVector v1(neg.pt(), neg.eta(), neg.phi(), o2::constants::physics::MassKaonCharged);
+          ROOT::Math::PtEtaPhiMVector v2(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassPionCharged); // pion misidentified as K
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+          registry.fill(HIST("hMKPi"), v12.M());
+          if (abs(v12.M() - 0.892) < 0.04) {
+            if (std::find(misidentified_pion_trackIds.begin(), misidentified_pion_trackIds.end(), pos.globalIndex()) == misidentified_pion_trackIds.end()) {
+              misidentified_pion_trackIds.emplace_back(pos.globalIndex());
+            }
+          }
+        } // end of K+ loop
+      }   // end of K- loop
+
+      // for phi->KK with tag and probe
+      for (auto& pos : posTracks_per_coll) {
+        if (!IsSelectedTag(pos) || !IsKaonTag(pos)) {
+          continue;
+        }
+        for (auto& neg : negTracks_per_coll) {
+          if (neg.globalIndex() == pos.globalIndex()) {
+            continue; // this should not happen.
+          }
+          if (!IsSelected(neg) || !IsKaon(neg)) {
+            continue;
+          }
+          ROOT::Math::PtEtaPhiMVector v1(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassKaonCharged);
+          ROOT::Math::PtEtaPhiMVector v2(neg.pt(), neg.eta(), neg.phi(), o2::constants::physics::MassKaonCharged);
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
+          if (std::find(misidentified_pion_trackIds.begin(), misidentified_pion_trackIds.end(), neg.globalIndex()) != misidentified_pion_trackIds.end()) {
+            continue;
+          }
+
+          registry.fill(HIST("hMKK"), v12.M(), v2.Pt());
+          if (abs(v12.M() - 1.019) < 0.003) {
+            fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon));
+          }
+        } // end of K- loop
+      }   // end of K+ loop
+
+      for (auto& neg : negTracks_per_coll) {
+        if (!IsSelectedTag(neg) || !IsKaonTag(neg)) {
+          continue;
+        }
+        for (auto& pos : posTracks_per_coll) {
+          if (pos.globalIndex() == neg.globalIndex()) {
+            continue; // this should not happen.
+          }
+          if (!IsSelected(pos) || !IsKaon(pos)) {
+            continue;
+          }
+          ROOT::Math::PtEtaPhiMVector v1(neg.pt(), neg.eta(), neg.phi(), o2::constants::physics::MassKaonCharged);
+          ROOT::Math::PtEtaPhiMVector v2(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassKaonCharged);
+          ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
+          if (std::find(misidentified_pion_trackIds.begin(), misidentified_pion_trackIds.end(), pos.globalIndex()) != misidentified_pion_trackIds.end()) {
+            continue;
+          }
+
+          registry.fill(HIST("hMKK"), v12.M(), v2.Pt());
+          if (abs(v12.M() - 1.019) < 0.003) {
+            fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon));
+          }
+        } // end of K+ loop
+      }   // end of K- loop
+
       auto cascades_coll = cascades.sliceBy(perCollision_cascade, collision.globalIndex());
       for (auto& cascade : cascades_coll) {
         // Track casting
@@ -483,12 +710,21 @@ struct TreeCreatorElectronMLDDA {
           continue;
         }
 
+        //// bachelor DCA track to PV
+        //// Calculate DCA with respect to the collision associated to the V0, not individual tracks
+        // gpu::gpustd::array<float, 2> dcaInfo;
+        // auto bachTrackPar = getTrackPar(bachelor);
+        // o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+        // if (abs(dcaInfo[0]) < 0.04) {
+        //   continue;
+        // }
+
         if (bachelor.sign() < 0) { // omega -> L + K- -> p + pi- + K-
           if (abs(pos.tpcNSigmaPr()) > 3.f || abs(neg.tpcNSigmaPi()) > 3.f) {
             continue;
           }
         } else { // omegabar -> Lbar + K+ -> pbar + pi+ + K+
-          if (abs(neg.tpcNSigmaPr()) > 3.f || abs(pos.tpcNSigmaPi()) > 3.f) {
+          if (abs(pos.tpcNSigmaPi()) > 3.f || abs(neg.tpcNSigmaPr()) > 3.f) {
             continue;
           }
         }
@@ -513,6 +749,15 @@ struct TreeCreatorElectronMLDDA {
           continue;
         }
         std::array<float, 3> pvxyz{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
+        float v0_rxy = std::sqrt(std::pow(svpos[0], 2) + std::pow(svpos[1], 2));
+        if (v0_rxy < min_v0rxy_in_cascade) {
+          continue;
+        }
+
+        float dcav0topv = CalculateDCAStraightToPV(svpos[0], svpos[1], svpos[2], pvxyz[0], pvxyz[1], pvxyz[2], collision.posX(), collision.posY(), collision.posZ());
+        if (dcav0topv < max_dcav0topv_casc) {
+          continue;
+        }
 
         float mLambda = RecoDecay::m(std::array{std::array{pvec0[0], pvec0[1], pvec0[2]}, std::array{pvec1[0], pvec1[1], pvec1[2]}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
         float mAntiLambda = RecoDecay::m(std::array{std::array{pvec0[0], pvec0[1], pvec0[2]}, std::array{pvec1[0], pvec1[1], pvec1[2]}}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
@@ -537,7 +782,13 @@ struct TreeCreatorElectronMLDDA {
         }
         float alpha = v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]);
         float qt = v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]);
-        registry.fill(HIST("Cascade/hAP"), alpha, qt);
+        registry.fill(HIST("Cascade/hAP_V0"), alpha, qt);
+        if (bachelor.sign() < 0 && alpha < 0.4) { // Lambda
+          continue;
+        }
+        if (bachelor.sign() > 0 && -0.4 < alpha) { // AntiLambda
+          continue;
+        }
 
         // after V0 is found.
         pTrack = fitter.getTrack(0);
@@ -585,10 +836,20 @@ struct TreeCreatorElectronMLDDA {
           continue;
         }
         std::array<float, 3> pvxyz_casc{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]};
+        float casc_rxy = std::sqrt(std::pow(svpos[0], 2) + std::pow(svpos[1], 2));
+        if (casc_rxy < min_cascade_rxy) {
+          continue;
+        }
+
         float casc_dca = std::sqrt(fitter.getChi2AtPCACandidate()); // distance between bachelor and V0.
         float casc_cpa = RecoDecay::cpa(pVtx, svpos, pvxyz_casc);
         registry.fill(HIST("Cascade/hPCA"), casc_dca);
         registry.fill(HIST("Cascade/hCosPA"), casc_cpa);
+        registry.fill(HIST("Cascade/hRxy"), v0_rxy, casc_rxy);
+
+        alpha = v0_alpha(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]);
+        qt = v0_qt(pvec0[0], pvec0[1], pvec0[2], pvec1[0], pvec1[1], pvec1[2]);
+        registry.fill(HIST("Cascade/hAP"), alpha, qt);
 
         if (casc_dca > max_casc_dcadau) {
           continue;
@@ -597,22 +858,35 @@ struct TreeCreatorElectronMLDDA {
           continue;
         }
 
+        float length = std::sqrt(std::pow(svpos[0] - collision.posX(), 2) + std::pow(svpos[1] - collision.posY(), 2) + std::pow(svpos[2] - collision.posZ(), 2));
+        float mom = RecoDecay::sqrtSumOfSquares(pvxyz_casc[0], pvxyz_casc[1], pvxyz_casc[2]);
+        float ctauXi = length / mom * o2::constants::physics::MassXiMinus;
+        float ctauOmega = length / mom * o2::constants::physics::MassOmegaMinus;
+        float pt = RecoDecay::sqrtSumOfSquares(pvxyz_casc[0], pvxyz_casc[1]);
+
         // after DCAFitter
         lV0Track = fitter.getTrack(0);
         lBachelorTrack = fitter.getTrack(1);
-        float mXi = RecoDecay::m(std::array{std::array{pvec0[0], pvec0[1], pvec0[2]}, std::array{pvec1[0], pvec1[1], pvec1[2]}}, std::array{o2::constants::physics::MassLambda, o2::constants::physics::MassPionCharged});
-        float mOmega = RecoDecay::m(std::array{std::array{pvec0[0], pvec0[1], pvec0[2]}, std::array{pvec1[0], pvec1[1], pvec1[2]}}, std::array{o2::constants::physics::MassLambda, o2::constants::physics::MassKaonCharged});
-        registry.fill(HIST("Cascade/hMassXi"), mXi);
+        float mXi = RecoDecay::m(std::array{std::array{pvec0[0], pvec0[1], pvec0[2]}, std::array{pvec1[0], pvec1[1], pvec1[2]}}, std::array{o2::constants::physics::MassLambda, o2::constants::physics::MassPionCharged});    // ctau = 4.91 cm
+        float mOmega = RecoDecay::m(std::array{std::array{pvec0[0], pvec0[1], pvec0[2]}, std::array{pvec1[0], pvec1[1], pvec1[2]}}, std::array{o2::constants::physics::MassLambda, o2::constants::physics::MassKaonCharged}); // ctau 2.46 cm
 
-        if (abs(mXi - 1.321) > 0.01) { // reject Xi candidates
-          registry.fill(HIST("Cascade/hMassOmega"), mOmega);
-          if (abs(mOmega - 1.672) < 0.005 && abs(bachelor.tpcNSigmaKa()) < maxTPCNsigmaKa) { // select Omega candidates
-            fillTrackTable(collision, bachelor, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon));
-          }
+        if (IsPion(bachelor)) {
+          registry.fill(HIST("Cascade/hMassXi"), mXi);
+          registry.fill(HIST("Cascade/hMassPt_Xi"), mXi, pt);
+          registry.fill(HIST("Cascade/hRxy_Xi"), mXi, casc_rxy);
+          registry.fill(HIST("Cascade/hCTau_Xi"), mXi, ctauXi);
+          // if (abs(mXi - 1.321) < 0.005) { // select Xi candidates
+          //   fillTrackTable(collision, bachelor, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion));
+          // }
         }
-
-        if (abs(mXi - 1.321) < 0.005 && abs(bachelor.tpcNSigmaPi()) < 4.f) { // select Xi candidates
-          fillTrackTable(collision, bachelor, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion));
+        if (abs(mXi - 1.321) > 0.01 && IsKaon(bachelor)) { // reject Xi candidates
+          registry.fill(HIST("Cascade/hMassOmega"), mOmega);
+          registry.fill(HIST("Cascade/hMassPt_Omega"), mOmega, pt);
+          registry.fill(HIST("Cascade/hRxy_Omega"), mOmega, casc_rxy);
+          registry.fill(HIST("Cascade/hCTau_Omega"), mOmega, ctauOmega);
+          // if (abs(mOmega - 1.672) < 0.005) { // select Omega candidates
+          //   fillTrackTable(collision, bachelor, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon));
+          // }
         }
 
       } // end of cascade loop
@@ -620,6 +894,8 @@ struct TreeCreatorElectronMLDDA {
     } // end of collision loop
     stored_trackIds.clear();
     stored_trackIds.shrink_to_fit();
+    misidentified_pion_trackIds.clear();
+    misidentified_pion_trackIds.shrink_to_fit();
   } // end of process
   PROCESS_SWITCH(TreeCreatorElectronMLDDA, processPID, "produce ML input for single track level", false);
 

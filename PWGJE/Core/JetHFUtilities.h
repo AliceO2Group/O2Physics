@@ -332,24 +332,6 @@ bool isDaughterParticle(const T& particle, int globalIndex)
   return false;
 }
 
-template <typename T, typename U>
-bool isDaughterParticleNew(T& particle, int globalIndex, U& particles)
-{
-  auto daughterIds = particle.daughtersIds();
-  for (auto daughterId = daughterIds[0]; daughterId <= daughterIds[1]; daughterId++) {
-    if (daughterId < 0)
-      continue;
-    auto daughter = particles.iteratorAt(daughterId - particles.offset());
-    if (daughter.globalIndex() == globalIndex) {
-      return true;
-    }
-    if (isDaughterParticleNew(daughter, globalIndex, particles)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 /**
  * returns a slice of the table depending on the index of the candidate
  *
