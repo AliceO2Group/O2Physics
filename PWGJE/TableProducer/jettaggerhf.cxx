@@ -78,10 +78,10 @@ struct JetTaggerHFTask {
       float jetProb = 0;
       int algorithm2 = 0;
       int algorithm3 = 0;
-      // TF1* fSignImpXYSig = jettaggingutilities::getResolutionFunction(origin);
-      //      if (doTC) {
-      //        jetProb = jettaggingutilities::getJetProbability(fSignImpXYSig, collision, mcdjet, tracks);
-      //      }
+      TF1* fSignImpXYSig = jettaggingutilities::getResolutionFunction(origin);
+      if (doTC) {
+        jetProb = jettaggingutilities::getJetProbability(fSignImpXYSig, collision, mcdjet, tracks);
+      }
       // if (doSV) algorithm2 = jettaggingutilities::Algorithm2((mcdjet, tracks);
       taggingTableMCD(origin, jetProb, algorithm2, algorithm3);
     }
