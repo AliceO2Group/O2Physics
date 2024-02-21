@@ -374,7 +374,7 @@ struct qVectorsTable {
         // iChC ranging from 0 to max 112. We need to add 96 (= max channels in FT0-A)
         // to ensure a proper channel number in FT0 as a whole.
         float ampl = ft0.amplitudeC()[iChC];
-        int FT0CchId = ft0.channelC()[iChA];
+        int FT0CchId = ft0.channelC()[iChC];
 
         histosQA.fill(HIST("FITAmp"), ampl, FT0CchId);
         histosQA.fill(HIST("FITAmpCor"), ampl / RelGainConst[FT0CchId], FT0CchId);
