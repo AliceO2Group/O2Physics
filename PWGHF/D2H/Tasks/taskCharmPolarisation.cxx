@@ -82,7 +82,7 @@ struct TaskPolarisationCharmHadrons {
   // ConfigurableAxis configThnAxisCent{"configThnAxisCent", {102, -1., 101.}, "centrality (%)"};
 
   Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
-  Filter filterSelectLcToPKPiCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPKPi);
+  Filter filterSelectLcToPKPiCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi) || (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPKPi);
 
   HfHelper hfHelper;
   HistogramRegistry registry{"registry", {}};
