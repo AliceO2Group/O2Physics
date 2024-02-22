@@ -43,8 +43,6 @@ namespace analysis
 namespace identifiedbffilter
 {
 
-
-
 /// \enum MatchRecoGenSpecies
 /// \brief The species considered by the matching test
 enum MatchRecoGenSpecies {
@@ -58,41 +56,38 @@ enum MatchRecoGenSpecies {
   kWrongSpecies = -1
 };
 
-
-
-
 /// \enum SpeciesPairMatch
 /// \brief The species pair considered by the matching test
-enum SpeciesPairMatch{
-  kIdBfElectronElectron, ///<Electron-Electron,Electron-Positron
-  kIdBfElectronMuon, ///<Electron-Muon
-  kIdBfElectronPion, ///<Electron-Pion
-  kIdBfElectronKaon, ///<Electron-Kaon
-  kIdBfElectronProton, ///<Electron-Proton
-  kIdBfMuonMuon, ///<Muon-Muon
-  kIdBfMuonPion, ///<Muon-Pion
-  kIdBfMuonKaon, ///<Muon-Kaon
-  kIdBfMuonProton, ///<Muon-Proton
-  kIdBfPionPion, ///<Pion-Pion
-  kIdBfPionKaon, ///<Pion-Kaon
-  kIdBfPionProton, ///<Pion-Proton
-  kIdBfKaonKaon, ///<Kaon-Kaon
-  kIdBfKaonProton, ///<Kaon-Proton
-  kIdBfProtonProton ///<Proton-Proton
+enum SpeciesPairMatch {
+  kIdBfElectronElectron, ///< Electron-Electron,Electron-Positron
+  kIdBfElectronMuon,     ///< Electron-Muon
+  kIdBfElectronPion,     ///< Electron-Pion
+  kIdBfElectronKaon,     ///< Electron-Kaon
+  kIdBfElectronProton,   ///< Electron-Proton
+  kIdBfMuonMuon,         ///< Muon-Muon
+  kIdBfMuonPion,         ///< Muon-Pion
+  kIdBfMuonKaon,         ///< Muon-Kaon
+  kIdBfMuonProton,       ///< Muon-Proton
+  kIdBfPionPion,         ///< Pion-Pion
+  kIdBfPionKaon,         ///< Pion-Kaon
+  kIdBfPionProton,       ///< Pion-Proton
+  kIdBfKaonKaon,         ///< Kaon-Kaon
+  kIdBfKaonProton,       ///< Kaon-Proton
+  kIdBfProtonProton      ///< Proton-Proton
 };
 
 const char* speciesName[kIdBfNoOfSpecies] = {"h", "e", "mu", "pi", "ka", "p"};
 
 const char* speciesTitle[kIdBfNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"};
 
-const int   speciesChargeValue1[kIdBfNoOfSpecies] = {
-                                                    0, //<Unidentified hadron
-                                                    2, //< electron
-                                                    4, //< muon
-                                                    6, //< pion
-                                                    8, //< Kaon
-                                                    10 //< proton
-                                                    };
+const int speciesChargeValue1[kIdBfNoOfSpecies] = {
+  0, //<Unidentified hadron
+  2, //< electron
+  4, //< muon
+  6, //< pion
+  8, //< Kaon
+  10 //< proton
+};
 
 /// \enum SystemType
 /// \brief The type of the system under analysis
