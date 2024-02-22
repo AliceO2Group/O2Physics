@@ -114,7 +114,6 @@ struct HfCandidateCreatorCascade {
                          aod::TracksWCov const&,
                          aod::BCsWithTimestamps const&)
   {
-
     // loop over pairs of track indices
     for (const auto& casc : rowsTrackIndexCasc) {
 

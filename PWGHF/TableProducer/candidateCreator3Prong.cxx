@@ -116,7 +116,6 @@ struct HfCandidateCreator3Prong {
                         aod::TracksWCovExtra const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-
     // loop over triplets of track indices
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
 
