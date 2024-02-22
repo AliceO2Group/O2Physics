@@ -163,7 +163,7 @@ struct multiplicityPbPb {
 
         if (std::abs(mcParticle.eta()) < 0.1)
           ++MCparticleCounter_01;
-        if (std::abs(mcParticle.eta()) < 0.1 && mcCollision.posZ() < 10)
+        if (std::abs(mcParticle.eta()) < 0.1 && std::abs(mcCollision.posZ()) < 10)
           ++MCparticleCounter_01_10;
       }
     }
