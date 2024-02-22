@@ -76,7 +76,7 @@ struct multiplicityPbPb {
 
     histos.add("DCAxy", "; DCA_{xy} (cm)", kTH1F, {axisDCAxy});
     histos.add("DCAz", "; DCA_{z} (cm)", kTH1F, {axisDCAz});
-  
+
     histos.add("Multiplicity", "; tracks; events", kTH1F, {axisNtrk});
     histos.add("MCGENMultiplicity", "; tracks; events", kTH1F, {axisNtrk});
 
