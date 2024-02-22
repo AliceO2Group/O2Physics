@@ -1119,7 +1119,7 @@ int8_t IdentifiedBfFilterTracks::selectTrack(TrackObject const& track)
   if (!(pid < 0)) {
     /* the track has been accepted */
     /* let's identify it */
-    MatchRecoGenSpecies sp = trackIdentification(track);
+    //MatchRecoGenSpecies sp = trackIdentification(track);
       if (pid>1) {
         /* fill the charged histograms */
         fillTrackHistosAfterSelection(track, kIdBfCharged);
@@ -1168,7 +1168,7 @@ inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
       if (!(sp < 0)){
         fillTrackHistosAfterSelection(track, sp); //<Fill accepted track histo with PID
         if (track.sign() > 0) {
-          trkMultPos[sp]++ //<< Update Particle Multiplicity
+          trkMultPos[sp]++; //<< Update Particle Multiplicity
           return speciesChargeValue1[sp] ;
         }
         if (track.sign() < 0) {
