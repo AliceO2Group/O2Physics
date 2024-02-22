@@ -547,7 +547,7 @@ struct antidLambdaEbye {
                 continue;
               if (std::abs(posMother.pdgCode()) != 3122)
                 continue;
-              if (!posMother.isPhysicalPrimary() || !posMother.has_mothers())
+              if (!posMother.isPhysicalPrimary())
                 continue;
 
               if (posMother.pdgCode() > 0) {
@@ -586,7 +586,7 @@ struct antidLambdaEbye {
 
         auto pdgCode = mcPart.pdgCode();
         if (std::abs(pdgCode) == 3122) {
-          if (!mcPart.isPhysicalPrimary() || !mcPart.has_mothers())
+          if (!mcPart.isPhysicalPrimary())
             continue;
           bool foundPr = false;
           for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
