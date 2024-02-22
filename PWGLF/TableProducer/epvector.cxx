@@ -92,11 +92,11 @@ struct epvector {
   void init(o2::framework::InitContext&)
   {
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
-    AxisSpec multiplicity = {5000, -500, 500, "TPC Multiplicity"};
+    AxisSpec multiplicity = {10000, -500, 500, "TPC Multiplicity"};
     AxisSpec amplitudeFT0 = {2000, 0, 2000, "FT0 amplitude"};
     AxisSpec channelFT0Axis = {220, 0.0, 220.0, "FT0 channel"};
-    AxisSpec qxFT0Axis = {1000, -50.0, 50.0, "Qx"};
-    AxisSpec qyFT0Axis = {1000, -50.0, 50.0, "Qy"};
+    AxisSpec qxFT0Axis = {10000, -500.0, 500.0, "Qx"};
+    AxisSpec qyFT0Axis = {10000, -500.0, 500.0, "Qy"};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec vzAxis = {400, -20, 20, "vz"};
     AxisSpec resAxis = {400, -2, 2, "vz"};
