@@ -689,8 +689,8 @@ class VarManager : public TObject
   static void FillTrack(T const& track, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
   static void FillTrackCollision(T const& track, C const& collision, float* values = nullptr);
-  template <uint32_t fillMap, typename T, typename C, typename M>
-  static void FillTrackCollisionMatCorr(T const& track, C const& collision, M const& materialCorr, float* values = nullptr);
+  template <uint32_t fillMap, typename T, typename C, typename M, typename P>
+  static void FillTrackCollisionMatCorr(T const& track, C const& collision, M const& materialCorr, P const& propagator, float* values = nullptr);
   template <typename U, typename T>
   static void FillTrackMC(const U& mcStack, T const& track, float* values = nullptr);
   template <uint32_t fillMap, typename T1, typename T2, typename C>
@@ -1654,8 +1654,8 @@ void VarManager::FillTrackCollision(T const& track, C const& collision, float* v
   }
 }
 
-template <uint32_t fillMap, typename T, typename C, typename M>
-void VarManager::FillTrackCollisionMatCorr(T const& track, C const& collision, M const& materialCorr, float* values)
+template <uint32_t fillMap, typename T, typename C, typename M, typename P>
+void VarManager::FillTrackCollisionMatCorr(T const& track, C const& collision, M const& materialCorr, P const& propagator, float* values)
 {
   if (!values) {
     values = fgValues;
