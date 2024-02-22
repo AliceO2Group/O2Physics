@@ -715,8 +715,11 @@ struct antidLambdaEbye {
   {
     std::vector<std::pair<bool, float>> goodCollisions(mcCollisions.size(), std::make_pair(false, -999.));
     for (auto& collision : collisions) {
-      if (!collision.sel8())
+      if (!collision.sel7())
         continue;
+
+      if (!collision.alias_bit(kINT7))
+      return;
 
       if (std::abs(collision.posZ()) > zVtxMax)
         continue;
