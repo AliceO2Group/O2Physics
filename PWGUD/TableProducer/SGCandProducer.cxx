@@ -158,11 +158,16 @@ struct SGCandProducer {
       return;
     }
     auto bc = collision.foundBC_as<BCs>();
-    LOGF(debug, "<SGCandProducer>  BC id %d", bc.globalBC());
+    //    LOGF(info, "<SGCandProducer>  BC id %d", bc.globalBC());
+    //    uint64_t globalBC = bc.globalBC();
+    float timeZNA = -999;
+    float timeZNC = -999;
+    float eComZNA = -999;
+    float eComZNC = -999;
 
     // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
-    LOGF(debug, "<SGCandProducer>  Size of bcRange %d", bcRange.size());
+    //    LOGF(info, "<SGCandProducer>  Size of bcRange %d", bcRange.size());
 
     // apply SG selection
     //    auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, tracks, fwdtracks);
@@ -202,38 +207,21 @@ struct SGCandProducer {
       for (auto& track : tracks) {
         updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
       }
-
       // update SGFwdTracks tables
       for (auto& fwdtrack : fwdtracks) {
         updateUDFwdTrackTables(fwdtrack, bc.globalBC());
       }
-
-      // fill UDZdcs
-      // outputZDCCollisions(zdcInfo.timeZNA,zdcInfo.timeZNC,zdcInfo.multZNA,zdcInfo.multZNC);
-      std::map<uint64_t, int32_t> mapGlobalBcWithZdc{};
-      auto globalBC = bc.globalBC();
-      for (const auto& zdc : zdcs) {
-        // auto globalBC = zdc.bc_as<o2::aod::BCs>().globalBC();
-        // auto bc = zdc.bc_as<o2::aod::BCs>().globalBC();
-        if (std::abs(zdc.timeZNA()) > 2.f && std::abs(zdc.timeZNC()) > 2.f)
-          continue;
-        // mapGlobalBcWithZdc[bc.globalBC()] = zdc.globalIndex();
-        mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
-        // mapGlobalBcWithZdc[bc] = zdc.globalIndex();
-      }
-      auto nZdcs = mapGlobalBcWithZdc.size();
-      if (nZdcs > 0) {
-        // auto itZDC = mapGlobalBcWithZdc.find(bc.globalBC());
-        auto itZDC = mapGlobalBcWithZdc.find(globalBC);
-        // auto itZDC = mapGlobalBcWithZdc.find(bc);
-        if (itZDC != mapGlobalBcWithZdc.end()) {
-          const auto& zdc = zdcs.iteratorAt(itZDC->second);
-          float timeZNA = zdc.timeZNA();
-          float timeZNC = zdc.timeZNC();
-          float eComZNA = zdc.energyCommonZNA();
-          float eComZNC = zdc.energyCommonZNC();
-          udZdcsReduced(outputCollisions.lastIndex(), timeZNA, timeZNC, eComZNA, eComZNC);
-        }
+      //    LOGF(info, "<SGCandProducer>  Collision id %i", outputCollisions.lastIndex());
+      if (bc.has_zdc()) {
+        auto zdc = bc.zdc();
+        timeZNA = zdc.timeZNA();
+        timeZNC = zdc.timeZNC();
+        eComZNA = zdc.energyCommonZNA();
+        eComZNC = zdc.energyCommonZNC();
+        udZdcsReduced(outputCollisions.lastIndex(), timeZNA, timeZNC, eComZNA, eComZNC);
+        //    LOGF(info, "<ZDC info>  %i   %d    %f   %f   %f   %f", outputCollisions.lastIndex(), bc.globalBC(), timeZNA, timeZNC, eComZNA, eComZNC);
+      } else {
+        udZdcsReduced(outputCollisions.lastIndex(), -999, -999, -999, -999);
       }
       // produce TPC signal histograms for 2-track events
       LOGF(debug, "SG candidate: number of PV tracks %d", collision.numContrib());

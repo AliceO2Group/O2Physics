@@ -82,9 +82,16 @@ enum class InputFeaturesDsToKKPi : uint8_t {
   ptProng0,
   ptProng1,
   ptProng2,
+  impactParameterXY,
   impactParameterXY0,
   impactParameterXY1,
   impactParameterXY2,
+  nSigTpcPi0,
+  nSigTpcPi1,
+  nSigTpcPi2,
+  nSigTpcKa0,
+  nSigTpcKa1,
+  nSigTpcKa2,
   nSigTpcTofPi0,
   nSigTpcTofPi1,
   nSigTpcTofPi2,
@@ -132,9 +139,17 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_DS(ptProng0);
         CHECK_AND_FILL_VEC_DS(ptProng1);
         CHECK_AND_FILL_VEC_DS(ptProng2);
+        CHECK_AND_FILL_VEC_DS(impactParameterXY);
         CHECK_AND_FILL_VEC_DS_FULL(candidate, impactParameterXY0, impactParameter0);
         CHECK_AND_FILL_VEC_DS_FULL(candidate, impactParameterXY1, impactParameter1);
         CHECK_AND_FILL_VEC_DS_FULL(candidate, impactParameterXY2, impactParameter2);
+        // TPC PID variables
+        CHECK_AND_FILL_VEC_DS_FULL(prong0, nSigTpcPi0, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_DS_FULL(prong1, nSigTpcPi1, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_DS_FULL(prong2, nSigTpcPi2, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_DS_FULL(prong0, nSigTpcKa0, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_DS_FULL(prong1, nSigTpcKa1, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_DS_FULL(prong2, nSigTpcKa2, tpcNSigmaKa);
         // Combined PID variables
         CHECK_AND_FILL_VEC_DS_FULL(prong0, nSigTpcTofPi0, tpcTofNSigmaPi);
         CHECK_AND_FILL_VEC_DS_FULL(prong1, nSigTpcTofPi1, tpcTofNSigmaPi);
@@ -168,9 +183,17 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_DS(ptProng0),
       FILL_MAP_DS(ptProng1),
       FILL_MAP_DS(ptProng2),
+      FILL_MAP_DS(impactParameterXY),
       FILL_MAP_DS(impactParameterXY0),
       FILL_MAP_DS(impactParameterXY1),
       FILL_MAP_DS(impactParameterXY2),
+      // TPC PID variables
+      FILL_MAP_DS(nSigTpcPi0),
+      FILL_MAP_DS(nSigTpcPi1),
+      FILL_MAP_DS(nSigTpcPi2),
+      FILL_MAP_DS(nSigTpcKa0),
+      FILL_MAP_DS(nSigTpcKa1),
+      FILL_MAP_DS(nSigTpcKa2),
       // Combined PID variables
       FILL_MAP_DS(nSigTpcTofPi0),
       FILL_MAP_DS(nSigTpcTofPi1),
