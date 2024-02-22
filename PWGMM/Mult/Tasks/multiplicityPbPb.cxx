@@ -132,7 +132,7 @@ struct multiplicityPbPb {
       histos.fill(HIST("PhiEtaTracks"), track.phi(), track.eta());
 
       if(track.eta()<0.1) ++trackCounter_01;
-      if(track.eta()<0.1 && collision.posZ()<10) ++trackCounter_01_10;
+      if(abs(track.eta())<0.1 && collision.posZ()<10) ++trackCounter_01_10;
     }
 
     histos.fill(HIST("Multiplicity"), trackCounter);
@@ -145,6 +145,8 @@ struct multiplicityPbPb {
   void processMCGEN(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
     int MCparticleCounter = 0;
+    int MCparticleCounter_01 = 0;
+    int MCparticleCounter_01_10 = 0;
 
     histos.fill(HIST("MCGENeventCounter"), 0.5);
     histos.fill(HIST("MCGENZvtxEvents"), mcCollision.posZ());
@@ -157,9 +159,14 @@ struct multiplicityPbPb {
 
         histos.fill(HIST("MCGENEtaZvtxTracks"), mcParticle.eta(), mcCollision.posZ());
         histos.fill(HIST("MCGENPhiEtaTracks"), mcParticle.phi(), mcParticle.eta());
+
+        if(mcParticle.eta()<0.1) ++MCparticleCounter_01;
+        if(abs(mcParticle.eta())<0.1 && mcCollision.posZ()<10) ++MCparticleCounter_01_10;
       }
     }
     histos.fill(HIST("MCGENMultiplicity"), MCparticleCounter);
+    histos.fill(HIST("MCGENMultiplicity_01"), MCparticleCounter_01);
+    histos.fill(HIST("MCGENMultiplicity_01_10"), MCparticleCounter_01_10);
 
     histos.fill(HIST("MCGENNtrkZvtxEvents"), MCparticleCounter, mcCollision.posZ());
   }
