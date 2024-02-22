@@ -69,9 +69,6 @@ struct hypertriton3bodyQa {
       {"hDeuteronTPCNcls", "hDeuteronTPCNcls", {HistType::kTH1F, {{300, 0, 300, "TPC cluster"}}}},
       {"hDCAVtxDau", "hDCAVtxDau", {HistType::kTH1F, {{1000, 0.0f, 10.0f, "cm^{2}"}}}},
       {"hVtxPt", "hVtxPt", {HistType::kTH1F, {{200, 0.0f, 10.0f, "p_{T}"}}}},
-      {"hTrack0Pt", "hTrack0Pt", {HistType::kTH1F, {{200, 0.0f, 10.0f, "p_{T}"}}}},
-      {"hTrack1Pt", "hTrack1Pt", {HistType::kTH1F, {{200, 0.0f, 10.0f, "p_{T}"}}}},
-      {"hTrack2Pt", "hTrack2Pt", {HistType::kTH1F, {{200, 0.0f, 10.0f, "p_{T}"}}}},
       {"hTOFPIDDeuteron", "hTOFPIDDeuteron", {HistType::kTH1F, {{2000, -100.0f, 100.0f}}}},
       {"hDeuTOFNsigma", "Deuteron TOF Nsigma distribution", {HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {2000, -100, 100, "TOF n#sigma"}}}},
       {"hDeuTOFNsigmaWithTPC", "Deuteron TOF Nsigma distribution", {HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {1000, -100, 100, "TOF n#sigma"}}}},
@@ -94,9 +91,6 @@ struct hypertriton3bodyQa {
       registry.fill(HIST("hVtxCosPA"), vtx.vtxcosPA(collision.posX(), collision.posY(), collision.posZ()));
       registry.fill(HIST("hDCAVtxDau"), vtx.dcaVtxdaughters());
       registry.fill(HIST("hVtxPt"), vtx.pt());
-      registry.fill(HIST("hTrack0Pt"), vtx.track0pt());
-      registry.fill(HIST("hTrack1Pt"), vtx.track1pt());
-      registry.fill(HIST("hTrack2Pt"), vtx.track2pt());
       registry.fill(HIST("hMassHypertriton"), vtx.mHypertriton());
       registry.fill(HIST("hMassAntiHypertriton"), vtx.mAntiHypertriton());
       registry.fill(HIST("hTOFPIDDeuteron"), track2.tofNSigmaDe());
