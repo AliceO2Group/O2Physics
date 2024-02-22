@@ -321,11 +321,10 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
   }
 
   if (TString(histClass) == "Cluster") {
-    list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
-    list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 400, -2.0f, 2.0f));
-    list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
-
     if (TString(subGroup) == "PHOS") {
+      list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
+      list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 400, -2.0f, 2.0f));
+      list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
       list->Add(new TH2F("hEvsNcell", "E_{cluster} vs. N_{cell};E_{cluster} (GeV);N_{cell}", 200, 0, 20, 51, -0.5, 50.5f));
       list->Add(new TH2F("hEvsM02", "E_{cluster} vs. M02;E_{cluster} (GeV);M02 (cm)", 200, 0, 20, 100, 0, 10));
       list->Add(new TH2F("hEvsM20", "E_{cluster} vs. M20;E_{cluster} (GeV);M20 (cm)", 200, 0, 20, 100, 0, 10));
@@ -335,6 +334,37 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       for (int i = 1; i <= nmod; i++) {
         list->Add(new TH2F(Form("hClusterXZM%d", i), Form("cluster (X,Z) on M%d;X;Z", i), 64, 0.5, 64.5, 56, 0.5, 56.5));
       } // end of module loop
+    }
+    if (TString(subGroup).Contains("EMC")) {
+      list->Add(new TH1F("hPt", "Transverse momenta of clusters;#it{p}_{T} (GeV/c);#it{N}_{cluster}", 1000, 0.0f, 20));
+      list->Add(new TH1F("hE", "E_{cluster};#it{E}_{cluster} (GeV);#it{N}_{cluster}", 500, 0, 50));
+      list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision;#it{N}_{#gamma} per collision;#it{N}_{collisions}", 101, -0.5f, 100.5f));
+      list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 200, -1.0f, 1.0f));
+      list->Add(new TH2F("hTrackEtaPhi", "d#eta vs. d#varphi of matched tracks;d#varphi (rad.);d#eta", 100, -0.5, 0.5, 100, -0.5, 0.5));
+      if (TString(subGroup).Contains("2D")) { // Check if 2D QA histograms were selected in em-qc task
+        list->Add(new TH2F("hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{E}_{cluster} (GeV)", 51, -0.5, 50.5, 200, 0, 20));
+        list->Add(new TH2F("hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{E}_{cluster} (GeV)", 500, 0, 5, 200, 0, 20));
+        list->Add(new TH2F("hM20", "Short ellipse axis;#it{M}_{20} (cm);#it{E}_{cluster} (GeV)", 250, 0, 2.5, 200, 0, 20));
+        list->Add(new TH2F("hTime", "Cluster time;#it{t}_{cls} (ns);#it{E}_{cluster} (GeV)", 100, -250, 250, 200, 0, 20));
+        list->Add(new TH2F("hCellTime", "Cell time;#it{t}_{cell} (ns);#it{E}_{cluster} (GeV)", 100, -250, 250, 200, 0, 20));
+        list->Add(new TH2F("hDistToBC", "distance to bad channel;#it{d};#it{E}_{cluster} (GeV)", 100, 0, 1500, 200, 0, 20));
+      } else {
+        list->Add(new TH1F("hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{N}_{cluster}", 51, -0.5, 50.5));
+        list->Add(new TH1F("hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{N}_{cluster}", 500, 0, 5));
+        list->Add(new TH1F("hM20", "Short ellipse axis;#it{M}_{20} (cm);#it{N}_{cluster}", 250, 0, 2.5));
+        list->Add(new TH1F("hTime", "Cluster time;#it{t}_{cls} (ns);#it{N}_{cluster}", 500, -250, 250));
+        list->Add(new TH1F("hCellTime", "Cluster time;#it{t}_{cell} (ns);#it{N}_{cluster}", 500, -250, 250));
+        list->Add(new TH1F("hDistToBC", "distance to bad channel;#it{d};#it{N}_{cluster}", 100, 0, 1500));
+      }
+      list->Add(new TH2F("hClusterQualityCuts", "Energy at which clusters are removed by a given cut;;#it{E} (GeV)", 8, -0.5, 7.5, 500, 0, 50));
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(1, "In");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(2, "Energy");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(3, "NCell");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(4, "M02");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(5, "Timing");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(6, "Track matching");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(7, "Exotic");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(8, "Out");
     }
   }
 

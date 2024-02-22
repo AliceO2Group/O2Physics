@@ -163,7 +163,7 @@ struct HfTaskDstarToD0Pi {
       auto invD0Bar = candDstar.invMassD0Bar();
 
       auto signDstar = candDstar.signSoftPi();
-      if (signDstar) {
+      if (signDstar > 0) {
         registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invDstar - invD0), candDstar.pt());
         registry.fill(HIST("Yield/hInvMassD0"), invD0, candDstar.ptD0());
         registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (invDstar - invD0));
@@ -171,7 +171,7 @@ struct HfTaskDstarToD0Pi {
         // filling pt of two pronges of D0
         registry.fill(HIST("QA/hPtProng0D0"), candDstar.ptProng0());
         registry.fill(HIST("QA/hPtProng1D0"), candDstar.ptProng1());
-      } else if (signDstar) {
+      } else if (signDstar < 0) {
         registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invAntiDstar - invD0Bar), candDstar.pt());
         registry.fill(HIST("Yield/hInvMassD0"), invD0Bar, candDstar.ptD0());
         registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (invAntiDstar - invD0Bar));

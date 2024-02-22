@@ -193,6 +193,7 @@ struct JetFinderFullQATask {
       registry.add("h_track_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
       registry.add("h_track_eta", "track #eta;#eta_{track};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
       registry.add("h_track_phi", "track #varphi;#varphi_{track};entries", {HistType::kTH1F, {{160, -1.0, 7.}}});
+      registry.add("h_track_energy", "track energy;Energy GeV ;entries", {HistType::kTH1F, {{100, 0.0, 100.0}}});
       registry.add("h_cluster_pt", "cluster pT;#it{p}_{T,cluster} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
       registry.add("h_cluster_eta", "cluster #eta;#eta_{cluster};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
       registry.add("h_cluster_phi", "cluster #varphi;#varphi_{cluster};entries", {HistType::kTH1F, {{160, -1.0, 7.}}});
@@ -416,6 +417,7 @@ struct JetFinderFullQATask {
       registry.fill(HIST("h_track_pt"), track.pt(), weight);
       registry.fill(HIST("h_track_eta"), track.eta(), weight);
       registry.fill(HIST("h_track_phi"), track.phi(), weight);
+      registry.fill(HIST("h_track_energy"), track.energy(), weight);
     }
     for (auto const& cluster : clusters) {
       double clusterpt = cluster.energy() / std::cosh(cluster.eta());

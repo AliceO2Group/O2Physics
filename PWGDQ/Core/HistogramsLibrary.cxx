@@ -50,9 +50,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
     }
     if (subGroupStr.Contains("vtx")) {
-      hm->AddHistogram(histClass, "VtxX", "Vtx X", false, 100, -0.5, 0.5, VarManager::kVtxX);
-      hm->AddHistogram(histClass, "VtxY", "Vtx Y", false, 100, -0.5, 0.5, VarManager::kVtxY);
-      hm->AddHistogram(histClass, "VtxYVtxX", "Vtx Y vs Vtx X", false, 50, -0.5, 0.5, VarManager::kVtxX, 50, -0.5, 0.5, VarManager::kVtxY);
+      hm->AddHistogram(histClass, "VtxX", "Vtx X", false, 200, -0.1, 0.1, VarManager::kVtxX);
+      hm->AddHistogram(histClass, "VtxY", "Vtx Y", false, 200, -0.1, 0.1, VarManager::kVtxY);
+      hm->AddHistogram(histClass, "VtxYVtxX", "Vtx Y vs Vtx X", false, 100, -0.1, 0.1, VarManager::kVtxX, 100, -0.1, 0.1, VarManager::kVtxY);
     }
     if (subGroupStr.Contains("vtxpp")) {
       hm->AddHistogram(histClass, "VtxNContrib", "Vtx n contributors", false, 100, 0.0, 100.0, VarManager::kVtxNcontrib);
@@ -173,6 +173,17 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "IsSingleGapA", "Is single gap on side A", false, 2, -0.5, 1.5, VarManager::kIsSingleGapA);
       hm->AddHistogram(histClass, "IsSingleGapC", "Is single gap on side C", false, 2, -0.5, 1.5, VarManager::kIsSingleGapC);
     }
+  } // end "event"
+
+  if (groupStr.CompareTo("two-collisions") == 0) {
+    hm->AddHistogram(histClass, "DeltaZ", "z_{1} - z_{2}", false, 400, -20., 20., VarManager::kTwoEvDeltaZ);
+    hm->AddHistogram(histClass, "DeltaZ_Z1", "z_{1} - z_{2} vs z_{1}", false, 24, -12., 12., VarManager::kTwoEvPosZ1, 300, -15., 15., VarManager::kTwoEvDeltaZ);
+    hm->AddHistogram(histClass, "DeltaR", "r_{1} - r_{2}", false, 200, -0.1, 0.1, VarManager::kTwoEvDeltaR);
+    hm->AddHistogram(histClass, "DeltaX", "x_{1} - x_{2}", false, 200, -0.1, 0.1, VarManager::kTwoEvDeltaX);
+    hm->AddHistogram(histClass, "DeltaY", "y_{1} - y_{2}", false, 200, -0.1, 0.1, VarManager::kTwoEvDeltaY);
+    hm->AddHistogram(histClass, "Z1vsZ2", "z_{1} vs z_{2}", false, 120, -12.0, 12.0, VarManager::kTwoEvPosZ1, 120, -12.0, 12.0, VarManager::kTwoEvPosZ2);
+    hm->AddHistogram(histClass, "R1vsR2", "r_{1} vs r_{2}", false, 100, -0.1, 0.1, VarManager::kTwoEvPosR1, 100, -0.1, 0.1, VarManager::kTwoEvPosR2);
+    hm->AddHistogram(histClass, "NContrib1vs2", "n.contrib 1 vs 2", false, 100, 0.0, 100.0, VarManager::kTwoEvPVcontrib1, 100, 0.0, 100.0, VarManager::kTwoEvPVcontrib2);
   }
 
   if (groupStr.Contains("track")) {
@@ -503,6 +514,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Mass", "", false, 500, 0.0, 5.0, VarManager::kMass);
       hm->AddHistogram(histClass, "Rapidity", "", false, 400, -4.0, 4.0, VarManager::kRap);
     }
+    if (subGroupStr.Contains("ambiguity")) {
+      hm->AddHistogram(histClass, "AmbiguityInBunch", "in bunch collision ambiguity", false, 10, 0., 10., VarManager::kBarrelNAssocsInBunch);
+      hm->AddHistogram(histClass, "AmbiguityInBunch_pt", "in bunch collision ambiguity vs p_{T}", false, 50, 0.0, 10.0, VarManager::kPt, 10, 0., 10., VarManager::kBarrelNAssocsInBunch);
+      hm->AddHistogram(histClass, "AmbiguityOutOfBunch", "out of bunch collision ambiguity", false, 10, 0., 10., VarManager::kBarrelNAssocsOutOfBunch);
+      hm->AddHistogram(histClass, "AmbiguityOutOfBunch_pt", "out of bunch collision ambiguity vs p_{T}", false, 50, 0.0, 10.0, VarManager::kPt, 10, 0., 10., VarManager::kBarrelNAssocsOutOfBunch);
+    }
   }
   if (groupStr.Contains("mctruth_pair")) {
     hm->AddHistogram(histClass, "Mass_Pt", "", false, 500, 0.0, 5.0, VarManager::kMass, 200, 0.0, 20.0, VarManager::kPt);
@@ -642,18 +659,26 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       if (subGroupStr.Contains("dimuon-polarization")) {
         int varspTHE[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaHE, VarManager::kPhiHE};
         int varspTCS[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaCS, VarManager::kPhiCS};
-        int varsMulHE[4] = {VarManager::kMass, VarManager::kMultFV0A, VarManager::kCosThetaHE, VarManager::kPhiHE};
-        int varsMulCS[4] = {VarManager::kMass, VarManager::kMultFV0A, VarManager::kCosThetaCS, VarManager::kPhiCS};
+        int varsFV0AMulHE[4] = {VarManager::kMass, VarManager::kMultFV0A, VarManager::kCosThetaHE, VarManager::kPhiHE};
+        int varsFV0AMulCS[4] = {VarManager::kMass, VarManager::kMultFV0A, VarManager::kCosThetaCS, VarManager::kPhiCS};
+        int varsFT0CMulHE[4] = {VarManager::kMass, VarManager::kMultFT0C, VarManager::kCosThetaHE, VarManager::kPhiHE};
+        int varsFT0CMulCS[4] = {VarManager::kMass, VarManager::kMultFT0C, VarManager::kCosThetaCS, VarManager::kPhiCS};
+        int varsTPCMulHE[4] = {VarManager::kMass, VarManager::kMultTPC, VarManager::kCosThetaHE, VarManager::kPhiHE};
+        int varsTPCMulCS[4] = {VarManager::kMass, VarManager::kMultTPC, VarManager::kCosThetaCS, VarManager::kPhiCS};
         int binspT[4] = {100, 20, 20, 20};
-        int binsMul[4] = {100, 10, 20, 20};
+        int binsMul[4] = {100, 50, 20, 20};
         double xminpT[4] = {1., 0., -1., -3.14};
         double xmaxpT[4] = {5., 20., 1., +3.14};
         double xminMul[4] = {1., 0., -1., -3.14};
-        double xmaxMul[4] = {5., 1000., 1., +3.14};
+        double xmaxMul[4] = {5., 5000., 1., +3.14};
         hm->AddHistogram(histClass, "Mass_Pt_cosThetaHE_phiHE", "", 4, varspTHE, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
         hm->AddHistogram(histClass, "Mass_Pt_cosThetaCS_phiCS", "", 4, varspTCS, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_V0AMul_cosThetaHE_phiHE", "", 4, varsMulHE, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_V0AMul_cosThetaCS_phiCS", "", 4, varsMulCS, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_MultFV0A_cosThetaHE_phiHE", "", 4, varsFV0AMulHE, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_MultFV0A_cosThetaCS_phiCS", "", 4, varsFV0AMulCS, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_MultFT0C_cosThetaHE_phiHE", "", 4, varsFT0CMulHE, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_MultFT0C_cosThetaCS_phiCS", "", 4, varsFT0CMulCS, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_MultTPC_cosThetaHE_phiHE", "", 4, varsTPCMulHE, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_MultTPC_cosThetaCS_phiCS", "", 4, varsTPCMulCS, binsMul, xminMul, xmaxMul, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("vertexing-forward")) {
         hm->AddHistogram(histClass, "Lxyz", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyz);

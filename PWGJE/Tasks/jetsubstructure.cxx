@@ -40,10 +40,10 @@ using namespace o2::framework::expressions;
 #include "Framework/runDataProcessing.h"
 
 struct JetSubstructureTask {
-  Produces<aod::ChargedJetSubstructures> jetSubstructureDataTable;
-  Produces<aod::ChargedMCDetectorLevelJetSubstructures> jetSubstructureMCDTable;
-  Produces<aod::ChargedMCParticleLevelJetSubstructures> jetSubstructureMCPTable;
-  Produces<aod::ChargedEventWiseSubtractedJetSubstructures> jetSubstructureDataSubTable;
+  Produces<aod::CJetSSs> jetSubstructureDataTable;
+  Produces<aod::CMCDJetSSs> jetSubstructureMCDTable;
+  Produces<aod::CMCPJetSSs> jetSubstructureMCPTable;
+  Produces<aod::CEWSJetSSs> jetSubstructureDataSubTable;
 
   Configurable<float> zCut{"zCut", 0.1, "soft drop z cut"};
   Configurable<float> beta{"beta", 0.0, "soft drop beta"};

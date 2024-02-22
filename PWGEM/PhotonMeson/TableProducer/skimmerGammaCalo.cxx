@@ -79,7 +79,7 @@ struct skimmerGammaCalo {
         continue;
       }
       // M02 cut
-      if (emccluster.m02() > maxM02 || emccluster.m02() < minM02) {
+      if (emccluster.nCells() > 1 && (emccluster.m02() > maxM02 || emccluster.m02() < minM02)) {
         historeg.fill(HIST("hCaloClusterFilter"), 2);
         continue;
       }

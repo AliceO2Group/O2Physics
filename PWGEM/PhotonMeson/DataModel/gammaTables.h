@@ -594,6 +594,30 @@ DECLARE_SOA_TABLE(DalitzMuMuEMReducedEventIds, "AOD", "MUMUEMEVENTID", dalitzmum
 // iterators
 using DalitzMuMuEMReducedEventId = DalitzMuMuEMReducedEventIds::iterator;
 
+namespace pwgem::photon::swtinfo
+{
+DECLARE_SOA_INDEX_COLUMN(EMReducedEvent, emreducedevent);                                                                //!
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                                                                       //!
+DECLARE_SOA_INDEX_COLUMN_FULL(TriggerV0PhotonHighPt, triggerV0PhotonHighPt, int, V0PhotonsKF, "_TriggerV0PhotonHighPt"); //! high pT PCM trigger is fired by this v0 photon
+DECLARE_SOA_INDEX_COLUMN_FULL(TriggerV0PhotonPair, triggerV0PhotonPair, int, V0PhotonsKF, "_TriggerV0PhotonPair");       //! PCM+EE trigger is fired by this v0 photon and dielectron
+DECLARE_SOA_INDEX_COLUMN_FULL(TriggerDielectronPair, triggerDielectronPair, int, DalitzEEs, "_TriggerDielectronPair");   //! PCM+EE trigger is fired by this v0 photon and dielectron
+} // namespace pwgem::photon::swtinfo
+DECLARE_SOA_TABLE(EMSwtInfosPCM, "AOD", "SWTINFOPCM", //!
+                  o2::soa::Index<>, pwgem::photon::swtinfo::CollisionId, pwgem::photon::swtinfo::TriggerV0PhotonHighPtId);
+using EMSwtInfoPCM = EMSwtInfosPCM::iterator;
+
+DECLARE_SOA_TABLE(EMSwtInfoPCMEMReducedEventIds, "AOD", "SWTPCMEVENTID", pwgem::photon::swtinfo::EMReducedEventId, o2::soa::Marker<1>); // To be joined with EMSwtInfosPCM table at analysis level.
+// iterators
+using EMSwtInfoPCMEMReducedEventId = EMSwtInfoPCMEMReducedEventIds::iterator;
+
+DECLARE_SOA_TABLE(EMSwtInfosPair, "AOD", "SWTINFOPAIR", //!
+                  o2::soa::Index<>, pwgem::photon::swtinfo::CollisionId, pwgem::photon::swtinfo::TriggerV0PhotonPairId, pwgem::photon::swtinfo::TriggerDielectronPairId);
+using EMSwtInfoPair = EMSwtInfosPair::iterator;
+
+DECLARE_SOA_TABLE(EMSwtInfoPairEMReducedEventIds, "AOD", "SWTPAIREVENTID", pwgem::photon::swtinfo::EMReducedEventId, o2::soa::Marker<2>); // To be joined with EMSwtInfosPair table at analysis level.
+// iterators
+using EMSwtInfoPairEMReducedEventId = EMSwtInfoPairEMReducedEventIds::iterator;
+
 namespace MCTracksTrue
 {
 DECLARE_SOA_COLUMN(SameMother, sameMother, bool); // Do the tracks have the same mother particle?

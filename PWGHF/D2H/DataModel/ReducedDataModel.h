@@ -248,6 +248,13 @@ DECLARE_SOA_COLUMN(EtaProng0, etaProng0, float); //! Pseudorapidity of the track
 DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);   //! Transverse momentum of the track's prong1 in GeV/c
 DECLARE_SOA_COLUMN(YProng1, yProng1, float);     //! Rapidity of the track's prong1
 DECLARE_SOA_COLUMN(EtaProng1, etaProng1, float); //! Pseudorapidity of the track's prong1
+
+DECLARE_SOA_COLUMN(PdgCodeBeautyMother, pdgCodeBeautyMother, int); //! Pdg code of beauty mother
+DECLARE_SOA_COLUMN(PdgCodeCharmMother, pdgCodeCharmMother, int);   //! Pdg code of charm mother
+DECLARE_SOA_COLUMN(PdgCodeProng0, pdgCodeProng0, int);             //! Pdg code of prong0
+DECLARE_SOA_COLUMN(PdgCodeProng1, pdgCodeProng1, int);             //! Pdg code of prong1
+DECLARE_SOA_COLUMN(PdgCodeProng2, pdgCodeProng2, int);             //! Pdg code of prong2
+DECLARE_SOA_COLUMN(PdgCodeProng3, pdgCodeProng3, int);             //! Pdg code of prong3
 } // namespace hf_b0_mc
 
 // table with results of reconstruction level MC matching
@@ -258,11 +265,31 @@ DECLARE_SOA_TABLE(HfMcRecRedDpPis, "AOD", "HFMCRECREDDPPI", //! Table with recon
                   hf_cand_b0::DebugMcRec,
                   hf_b0_mc::PtMother);
 
+// try with extended table ?
+// DECLARE_SOA_EXTENDED_TABLE_USER(ExTable, Tracks, "EXTABLE",
+DECLARE_SOA_TABLE(HfMcCheckDpPis, "AOD", "HFMCCHECKDPPI", //! Table with reconstructed MC information on DPi(<-B0) pairs for MC checks in reduced workflow
+                  hf_b0_mc::PdgCodeBeautyMother,
+                  hf_b0_mc::PdgCodeCharmMother,
+                  hf_b0_mc::PdgCodeProng0,
+                  hf_b0_mc::PdgCodeProng1,
+                  hf_b0_mc::PdgCodeProng2,
+                  hf_b0_mc::PdgCodeProng3,
+                  o2::soa::Marker<1>);
+
 // Table with same size as HFCANDB0
 DECLARE_SOA_TABLE(HfMcRecRedB0s, "AOD", "HFMCRECREDB0", //! Reconstruction-level MC information on B0 candidates for reduced workflow
                   hf_cand_b0::FlagMcMatchRec,
                   hf_cand_b0::DebugMcRec,
                   hf_b0_mc::PtMother);
+
+DECLARE_SOA_TABLE(HfMcCheckB0s, "AOD", "HFMCCHECKB0", //! Table with reconstructed MC information on B0 candidates for MC checks in reduced workflow
+                  hf_b0_mc::PdgCodeBeautyMother,
+                  hf_b0_mc::PdgCodeCharmMother,
+                  hf_b0_mc::PdgCodeProng0,
+                  hf_b0_mc::PdgCodeProng1,
+                  hf_b0_mc::PdgCodeProng2,
+                  hf_b0_mc::PdgCodeProng3,
+                  o2::soa::Marker<2>);
 
 DECLARE_SOA_TABLE(HfMcGenRedB0s, "AOD", "HFMCGENREDB0", //! Generation-level MC information on B0 candidates for reduced workflow
                   hf_cand_b0::FlagMcMatchGen,
