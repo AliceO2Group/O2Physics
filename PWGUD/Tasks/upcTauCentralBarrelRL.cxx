@@ -514,7 +514,7 @@ struct UpcTauCentralBarrelRL {
     //  TPC
     if (cutMyHasTPC && !track.hasTPC())
       return false; // TPC refit
-    if ((float)track.tpcNClsFindable() - (float)track.tpcNClsFindableMinusFound() < cutMyGTtpcNClsMin)
+    if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < cutMyGTtpcNClsMin)
       return false; // tpcNClsFound()
     if (track.tpcNClsCrossedRows() < cutMyGTtpcNClsCrossedRowsMin)
       return false;
@@ -554,7 +554,7 @@ struct UpcTauCentralBarrelRL {
 	    histos.get<TH1>(HIST("Tracks/raw/TPC/tpcNClsFindable"))->Fill(track.tpcNClsFindable());
 	    histos.get<TH1>(HIST("Tracks/raw/TPC/tpcNClsFound"))->Fill(track.tpcNClsFindable() - track.tpcNClsFindableMinusFound());
 	    histos.get<TH1>(HIST("Tracks/raw/TPC/tpcCrossedRows"))->Fill(track.tpcNClsCrossedRows());
-	    histos.get<TH1>(HIST("Tracks/raw/TPC/tpcCrossedRowsOverFindableCls"))->Fill(((float)track.tpcNClsCrossedRows() / (float)track.tpcNClsFindable()));
+	    histos.get<TH1>(HIST("Tracks/raw/TPC/tpcCrossedRowsOverFindableCls"))->Fill((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())));
 	    histos.get<TH1>(HIST("Tracks/raw/TPC/tpcChi2NCl"))->Fill(track.tpcChi2NCl());
       histosPID.get<TH2>(HIST("Tracks/raw/PID/hTPCsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tpcSignal());
       histosPID.get<TH2>(HIST("Tracks/raw/PID/hTPCsignalVsPt"))->Fill(track.pt(), track.tpcSignal());
@@ -611,7 +611,7 @@ struct UpcTauCentralBarrelRL {
 	    histos.get<TH1>(HIST("Tracks/GoodTrack/TPC/tpcNClsFindable"))->Fill(track.tpcNClsFindable());
 	    histos.get<TH1>(HIST("Tracks/GoodTrack/TPC/tpcNClsFound"))->Fill(track.tpcNClsFindable() - track.tpcNClsFindableMinusFound());
 	    histos.get<TH1>(HIST("Tracks/GoodTrack/TPC/tpcCrossedRows"))->Fill(track.tpcNClsCrossedRows());
-	    histos.get<TH1>(HIST("Tracks/GoodTrack/TPC/tpcCrossedRowsOverFindableCls"))->Fill(((float)track.tpcNClsCrossedRows() / (float)track.tpcNClsFindable()));
+	    histos.get<TH1>(HIST("Tracks/GoodTrack/TPC/tpcCrossedRowsOverFindableCls"))->Fill((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())));
 	    histos.get<TH1>(HIST("Tracks/GoodTrack/TPC/tpcChi2NCl"))->Fill(track.tpcChi2NCl());
       histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/hTPCsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tpcSignal());
       histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/hTPCsignalVsPt"))->Fill(track.pt(), track.tpcSignal());
