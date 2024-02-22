@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-// This code does QA based on a saved derived dataset using the 
-// tables provided by multiplicityTable. 
+// This code does QA based on a saved derived dataset using the
+// tables provided by multiplicityTable.
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
