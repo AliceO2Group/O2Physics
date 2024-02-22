@@ -128,19 +128,19 @@ class VarManager : public TObject
   };
 
   enum BarrelTrackFilteringBits {
-    kIsConversionLeg = 0,           // electron from conversions
-    kIsK0sLeg,                      // pion from K0s
-    kIsLambdaLeg,                   // proton or pion from Lambda
-    kIsALambdaLeg,                  // proton or pion from anti-Lambda  
-    kIsOmegaLeg,                    // kaon from Omega baryon decay
-    kDalitzBits = 5,                // first bit for Dalitz tagged tracks 
-    kBarrelUserCutsBits = 13,       // first bit for user track cuts
-    kIsTPCPostcalibrated = 63       // tracks were postcalibrated for the TPC PID
+    kIsConversionLeg = 0,     // electron from conversions
+    kIsK0sLeg,                // pion from K0s
+    kIsLambdaLeg,             // proton or pion from Lambda
+    kIsALambdaLeg,            // proton or pion from anti-Lambda
+    kIsOmegaLeg,              // kaon from Omega baryon decay
+    kDalitzBits = 5,          // first bit for Dalitz tagged tracks
+    kBarrelUserCutsBits = 13, // first bit for user track cuts
+    kIsTPCPostcalibrated = 63 // tracks were postcalibrated for the TPC PID
   };
 
   enum MuonTrackFilteringBits {
-    kMuonUserCutsBits = 0,        // first bit for user muon cuts
-    kMuonIsPropagated = 7         // whether the muon was propagated already
+    kMuonUserCutsBits = 0, // first bit for user muon cuts
+    kMuonIsPropagated = 7  // whether the muon was propagated already
   };
 
  public:
@@ -916,7 +916,7 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
   }
 
   if constexpr ((fillMap & ReducedMuonCov) > 0) {
-    if (muon.filteringFlags() & (uint8_t(1) << VarManager::kMuonIsPropagated)) {  // the muon is already propagated, so nothing to do
+    if (muon.filteringFlags() & (uint8_t(1) << VarManager::kMuonIsPropagated)) { // the muon is already propagated, so nothing to do
       return;
     }
   }
@@ -1258,8 +1258,8 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kCharge] = track.sign();
 
     if constexpr ((fillMap & ReducedTrack) > 0 && !((fillMap & Pair) > 0)) {
-      //values[kIsGlobalTrack] = track.filteringFlags_bit(0);
-      //values[kIsGlobalTrackSDD] = track.filteringFlags_bit(1);
+      // values[kIsGlobalTrack] = track.filteringFlags_bit(0);
+      // values[kIsGlobalTrackSDD] = track.filteringFlags_bit(1);
       values[kIsAmbiguous] = track.isAmbiguous();
 
       values[kIsLegFromGamma] = track.filteringFlags_bit(VarManager::kIsConversionLeg);

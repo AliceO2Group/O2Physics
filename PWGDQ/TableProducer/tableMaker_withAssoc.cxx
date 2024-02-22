@@ -210,7 +210,7 @@ struct TableMaker {
   std::map<uint32_t, uint32_t> fTrackIndexMap;            // key: old track global index, value: new track global index
   std::map<uint32_t, uint32_t> fFwdTrackIndexMap;         // key: fwd-track global index, value: new fwd-track global index
   std::map<uint32_t, uint32_t> fFwdTrackIndexMapReversed; // key: new fwd-track global index, value: fwd-track global index
-  std::map<uint32_t, uint8_t> fFwdTrackFilterMap;        // key: fwd-track global index, value: fwd-track filter map
+  std::map<uint32_t, uint8_t> fFwdTrackFilterMap;         // key: fwd-track global index, value: fwd-track filter map
   std::map<uint32_t, uint32_t> fMftIndexMap;              // key: MFT tracklet global index, value: new MFT tracklet global index
 
   // FIXME: For now, the skimming is done using the Common track-collision association task, which does not allow to use

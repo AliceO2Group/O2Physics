@@ -540,7 +540,7 @@ struct TableMaker {
 
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackPID)) {
           if (fConfigComputeTPCpostCalib) {
-            trackFilteringTag |= (uint64_t(1) << VarManager::kIsTPCPostcalibrated);    // store the info on whether TPC pid is skimmed as postcalibrated
+            trackFilteringTag |= (uint64_t(1) << VarManager::kIsTPCPostcalibrated); // store the info on whether TPC pid is skimmed as postcalibrated
           }
         }
 
@@ -702,7 +702,7 @@ struct TableMaker {
         // store the cut decisions
         trackFilteringTag = trackTempFilterMap; // BIT0-7:  user selection cuts
         if (fPropMuon) {
-          trackFilteringTag |= (uint8_t(1) << VarManager::kMuonIsPropagated);  // store the info on whether the muon is propagated or not
+          trackFilteringTag |= (uint8_t(1) << VarManager::kMuonIsPropagated); // store the info on whether the muon is propagated or not
         }
 
         // update the matching MCH/MFT index
