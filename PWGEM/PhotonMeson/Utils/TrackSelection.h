@@ -212,7 +212,7 @@ inline bool isTPConly_ITSonly(TTrack const& track0, TTrack const& track1)
  * @param mc2 MCParticle 1
  * @return true if the mother particle is the expected type and the same for both
  */
-template <typename T, PDG_t motherType>
+template <PDG_t motherType, typename T>
 inline bool checkMCParticles(T const& mc1, T const& mc2)
 {
   if (abs(mc1.pdgCode()) != kElectron || abs(mc2.pdgCode()) != kElectron) {
