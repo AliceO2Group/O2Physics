@@ -130,9 +130,9 @@ struct multiplicityPbPb {
       histos.fill(HIST("EtaZvtxTracks"), track.eta(), collision.posZ());
       histos.fill(HIST("PhiEtaTracks"), track.phi(), track.eta());
 
-      if (track.eta() < 0.1)
+      if (std::abs(track.eta()) < 0.1)
         ++trackCounter_01;
-      if (abs(track.eta()) < 0.1 && collision.posZ() < 10)
+      if (std::abs(track.eta()) < 0.1 && collision.posZ() < 10)
         ++trackCounter_01_10;
     }
 
@@ -161,9 +161,9 @@ struct multiplicityPbPb {
         histos.fill(HIST("MCGENEtaZvtxTracks"), mcParticle.eta(), mcCollision.posZ());
         histos.fill(HIST("MCGENPhiEtaTracks"), mcParticle.phi(), mcParticle.eta());
 
-        if (mcParticle.eta() < 0.1)
+        if (std::abs(mcParticle.eta()) < 0.1)
           ++MCparticleCounter_01;
-        if (abs(mcParticle.eta()) < 0.1 && mcCollision.posZ() < 10)
+        if (std::abs(mcParticle.eta()) < 0.1 && mcCollision.posZ() < 10)
           ++MCparticleCounter_01_10;
       }
     }
