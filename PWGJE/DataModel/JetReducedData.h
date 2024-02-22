@@ -20,6 +20,7 @@
 #include <cmath>
 #include "Framework/AnalysisDataModel.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 
 namespace o2::aod
 {
@@ -177,7 +178,6 @@ DECLARE_SOA_INDEX_COLUMN(Track, track);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(Energy, energy, float);
 DECLARE_SOA_COLUMN(TrackSel, trackSel, uint8_t);
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -187,8 +187,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz,
                            [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p,
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy,
+                           [](float pt, float eta) -> float { return std::sqrt((pt * std::cosh(eta) * pt * std::cosh(eta)) + (jetderiveddatautilities::mPion * jetderiveddatautilities::mPion)); });
 DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,
-                           [](uint8_t trackSel) -> int { if (trackSel & (1<<0)){ return 1;} else{return -1;} });
+                           [](uint8_t trackSel) -> int { if (trackSel & (1 << jetderiveddatautilities::JTrackSel::trackSign)){ return 1;} else{return -1;} });
 } // namespace jtrack
 
 DECLARE_SOA_TABLE(JTracks, "AOD", "JTRACK",
@@ -197,12 +199,12 @@ DECLARE_SOA_TABLE(JTracks, "AOD", "JTRACK",
                   jtrack::Pt,
                   jtrack::Eta,
                   jtrack::Phi,
-                  jtrack::Energy,
                   jtrack::TrackSel,
                   jtrack::Px<jtrack::Pt, jtrack::Phi>,
                   jtrack::Py<jtrack::Pt, jtrack::Phi>,
                   jtrack::Pz<jtrack::Pt, jtrack::Eta>,
                   jtrack::P<jtrack::Pt, jtrack::Eta>,
+                  jtrack::Energy<jtrack::Pt, jtrack::Eta>,
                   jtrack::Sign<jtrack::TrackSel>);
 
 using JTrack = JTracks::iterator;
@@ -213,12 +215,12 @@ DECLARE_SOA_TABLE(StoredJTracks, "AOD1", "JTRACK",
                   jtrack::Pt,
                   jtrack::Eta,
                   jtrack::Phi,
-                  jtrack::Energy,
                   jtrack::TrackSel,
                   jtrack::Px<jtrack::Pt, jtrack::Phi>,
                   jtrack::Py<jtrack::Pt, jtrack::Phi>,
                   jtrack::Pz<jtrack::Pt, jtrack::Eta>,
                   jtrack::P<jtrack::Pt, jtrack::Eta>,
+                  jtrack::Energy<jtrack::Pt, jtrack::Eta>,
                   jtrack::Sign<jtrack::TrackSel>,
                   o2::soa::Marker<1>);
 
