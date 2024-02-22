@@ -73,7 +73,7 @@ struct k892pmanalysis {
   Configurable<double> cV0MaxDaughDCA{"cV0MaxDaughDCA", 1.0, "V0 daughter DCA Maximum"};
   // Resonance selection
   // Configurable<double> cMaxResRapidity{"cMaxResRapidity", 0.5, "Maximum pseudo-rapidity value of reconstructed K*(892)pm resonance"};
-  // Event mixing
+  //Event mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0., 1., 5., 10., 30., 50., 70., 100., 110.}, "Mixing bins - multiplicity"};
@@ -106,7 +106,7 @@ struct k892pmanalysis {
     histos.add("QAbefore/trkpT_k0s", "pT distribution of k0short track candidates", kTH1F, {ptAxisQA});
     histos.add("QAafter/trkpT_pi", "pT distribution of pion track candidates", kTH1F, {ptAxisQA});
     histos.add("QAafter/trkpT_k0s", "pT distribution of k0short track candidates", kTH1F, {ptAxisQA});
-    // Good tracks and V0 counts QA
+    //Good tracks and V0 counts QA
     histos.add("QAafter/hGoodTracksV0s", "Number of good track and V0 passed", kTH1F, {goodTrackCountAxis});
     // Mass vs Pt vs Multiplicity 3-dimensional histogram
     histos.add("k892pmMassPtMult3d", "Charged K*(892) mass vs pT vs V0 multiplicity distribution", kTH3F, {invMassAxis, ptAxis, centAxis});
@@ -123,9 +123,9 @@ struct k892pmanalysis {
     }
 
     if (doprocessMCTrue) {
-      // DEBUG HISTOGRAMS
+      //DEBUG HISTOGRAMS
       histos.add("hK892pmCounter", "Generated MC resonances", kTH1F, {k892pmCountAxis});
-      // histos.add("hDaughterCounter", "Generated MC resonance daughters", kTH1F, {daughterCountAxis});
+      //histos.add("hDaughterCounter", "Generated MC resonance daughters", kTH1F, {daughterCountAxis});
     }
     // Print output histograms statistics
     LOG(info) << "Size of the histograms in spectraTOF";
@@ -288,12 +288,12 @@ struct k892pmanalysis {
           // K*(892)pm 3d mass, pt, multiplicity histogram
           histos.fill(HIST("k892pmMassPtMult3d"), lResonance.M(), lResonance.Pt(), multiplicity);
           if constexpr (IsMC) {
-            // LOG(INFO) << "track PDG:\t" << trk.pdgCode() << "\tV0 PDG:\t" << v0.pdgCode();
+            //LOG(INFO) << "track PDG:\t" << trk.pdgCode() << "\tV0 PDG:\t" << v0.pdgCode();
             if (abs(trk.pdgCode()) != 211 || abs(v0.pdgCode()) != 310) // Skip to next iteration if daughters are not charged pion + K0s/AntiK0s
               continue;
             if (trk.motherPDG() != v0.motherPDG())
               continue;
-            // LOG(INFO) << "track PDG:\t" << trk.pdgCode() << "\tV0 PDG:\t" << v0.pdgCode();
+            //LOG(INFO) << "track PDG:\t" << trk.pdgCode() << "\tV0 PDG:\t" << v0.pdgCode();
             if (trk.motherPDG() != 323)
               continue;
             histos.fill(HIST("k892pmPtRec"), lResonance.Pt());
@@ -335,7 +335,7 @@ struct k892pmanalysis {
         continue;
       bool pass1 = false;
       bool pass2 = false;
-      // Sanity check: looking for K*0 resonances for sanity check
+      //Sanity check: looking for K*0 resonances for sanity check
       if (abs(part.pdgCode()) == 323) {
         LOG(INFO) << "Found charged K*: " << part.pdgCode() << ". Daughters' PDG are " << part.daughterPDG1() << " and " << part.daughterPDG2();
       }
@@ -359,7 +359,7 @@ struct k892pmanalysis {
         histos.fill(HIST("hDaughterCounter"), 1.5);
       if (abs(part.daughterPDG1()) == 211 && abs(part.daughterPDG2()) == 310)
         histos.fill(HIST("hDaughterCounter"), 2.5);*/
-      // if (!pass1 || !pass2) // Go on only if we have both decay products, else skip to next iteration
+      //if (!pass1 || !pass2) // Go on only if we have both decay products, else skip to next iteration
       if (!pass1 && !pass2) // Go on only if we have both decay products, else skip to next iteration
         continue;
       histos.fill(HIST("k892pmPtGen"), part.pt());
@@ -371,8 +371,8 @@ struct k892pmanalysis {
   using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollision::Cent>;
   void processMELight(o2::aod::ResoCollisions& collisions, aod::ResoTracks const& resotracks, aod::ResoV0s const& resov0s)
   {
-    auto tracksV0sTuple = std::make_tuple(resotracks, resov0s);
-    // auto V0sTuple = std::make_tuple(resov0s);
+    auto tracksV0sTuple = std::make_tuple(resotracks,resov0s);
+    //auto V0sTuple = std::make_tuple(resov0s);
     BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
     Pair<aod::ResoCollisions, aod::ResoTracks, aod::ResoV0s, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksV0sTuple, &cache}; // -1 is the number of the bin to skip
     int bin;
@@ -382,7 +382,7 @@ struct k892pmanalysis {
     for (auto& [collision1, resotracks1, collision2, resov0s2] : pairs) {
       bin = colBinning.getBin({collision1.posZ(), collision1.cent()});
       LOG(INFO) << "PosZ = " << collision1.posZ() << "\tCent = " << collision1.cent() << "\t; Bin: " << bin;
-      LOG(INFO) << "Collision 1 global index: " << collision1.globalIndex() << "\tCollision 2 global index: " << collision2.globalIndex();
+      LOG(INFO) << "Collision 1 global index: " << collision1.globalIndex() << "\tCollision 2 global index: "<< collision2.globalIndex();
       fillHistograms<false, true>(collision1, resotracks1, resov0s2);
     }
   };
