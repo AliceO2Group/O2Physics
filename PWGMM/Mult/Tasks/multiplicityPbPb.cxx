@@ -132,7 +132,7 @@ struct multiplicityPbPb {
 
       if (std::abs(track.eta()) < 0.1)
         ++trackCounter_01;
-      if (std::abs(track.eta()) < 0.1 && collision.posZ() < 10)
+      if (std::abs(track.eta()) < 0.1 && std::abs(collision.posZ()) < 10)
         ++trackCounter_01_10;
     }
 
