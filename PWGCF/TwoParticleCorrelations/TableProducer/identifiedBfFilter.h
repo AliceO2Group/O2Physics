@@ -92,7 +92,7 @@ const int   speciesChargeValue1[kIdBfNoOfSpecies] = {
                                                     6, //< pion
                                                     8, //< Kaon
                                                     10 //< proton
-                                                    }
+                                                    };
 
 /// \enum SystemType
 /// \brief The type of the system under analysis

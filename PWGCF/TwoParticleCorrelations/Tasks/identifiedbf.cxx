@@ -603,8 +603,8 @@ struct IdentifiedBfCorrelationsTask {
             /* we don't want the Sumw2 structure being created here */
             bool defSumw2 = TH1::GetDefaultSumw2();
             TH1::SetDefaultSumw2(false);
-            const char* pname = chargePairsNames[i][j].c_str();
-            const char* spname = speciesPairNames[i][j].c_str();
+            //const char* pname = chargePairsNames[i][j].c_str();
+            const char* pname = speciesPairNames[i][j].c_str();
             fhN2_vsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),
                                              deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
             fhN2cont_vsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12cont_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),

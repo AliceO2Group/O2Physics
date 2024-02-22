@@ -1112,37 +1112,28 @@ int8_t IdentifiedBfFilterTracks::selectTrack(TrackObject const& track)
   using namespace identifiedbffilter;
 
   /* before track selection */
-  fillTrackHistosBeforeSelection(track);
+  //fillTrackHistosBeforeSelection(track);
 
   /* track selection */
   int8_t pid = AcceptTrack(track);
   if (!(pid < 0)) {
     /* the track has been accepted */
     /* let's identify it */
-    /* TODO: probably this needs to go inside AcceptTrack */
     MatchRecoGenSpecies sp = trackIdentification(track);
-    if (sp != kWrongSpecies) {
-      if (sp != kIdBfCharged) {
+      if (pid>1) {
         /* fill the charged histograms */
         fillTrackHistosAfterSelection(track, kIdBfCharged);
         /* update charged multiplicities */
-        if (pid % 2 == 0) {
+        /*if (pid % 2 == 0) {
           trkMultPos[kIdBfCharged]++;
         }
         if (pid % 2 == 1) {
           trkMultNeg[kIdBfCharged]++;
-        }
+        }*/
       }
       /* fill the species histograms */
-      fillTrackHistosAfterSelection(track, sp);
+      //fillTrackHistosAfterSelection(track, sp);
       /* update species multiplicities */
-      if (pid % 2 == 0) {
-        trkMultPos[sp]++;
-      }
-      if (pid % 2 == 1) {
-        trkMultNeg[sp]++;
-      }
-    }
   }
   return pid;
 }
@@ -1158,6 +1149,8 @@ int8_t IdentifiedBfFilterTracks::selectTrack(TrackObject const& track)
 template <typename TrackObject>
 inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
 {
+    fillTrackHistosBeforeSelection(track); // <Fill "before selection" histo
+
   /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
     if (track.mcParticleId() < 0) {
@@ -1172,21 +1165,15 @@ inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
       if (sp == kWrongSpecies){
         return -1;
       }
-      if (sp == kIdBfCharged){
+      if (!(sp < 0)){
+        fillTrackHistosAfterSelection(track, sp); //<Fill accepted track histo with PID
         if (track.sign() > 0) {
-          return 0;
+          trkMultPos[sp]++ //<< Update Particle Multiplicity
+          return speciesChargeValue1[sp] ;
         }
         if (track.sign() < 0) {
-          return 1;
-        }
-      }
-
-      if (sp > 0){
-        if (track.sign() > 0) {
-          return sp ;
-        }
-        if (track.sign() < 0) {
-          return sp+1;
+          trkMultNeg[sp]++; //<< Update Particle Multiplicity
+          return speciesChargeValue1[sp]+1;
         }
       }
     }
