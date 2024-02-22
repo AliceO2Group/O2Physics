@@ -92,7 +92,8 @@ struct epvector {
   void init(o2::framework::InitContext&)
   {
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
-    AxisSpec multiplicity = {12000, -300, 300, "Multiplicity"};
+    AxisSpec multiplicity = {5000, -500, 500, "TPC Multiplicity"};
+    AxisSpec amplitudeFT0 = {2000, 0, 2000, "FT0 amplitude"};
     AxisSpec channelFT0Axis = {220, 0.0, 220.0, "FT0 channel"};
     AxisSpec qxFT0Axis = {1000, -50.0, 50.0, "Qx"};
     AxisSpec qyFT0Axis = {1000, -50.0, 50.0, "Qy"};
@@ -108,7 +109,7 @@ struct epvector {
     histos.add("QyFT0A", "QyFT0A", kTH2F, {centAxis, qyFT0Axis});
     histos.add("PsiFT0C", "PsiFT0C", kTH2F, {centAxis, phiAxis});
     histos.add("PsiFT0A", "PsiFT0A", kTH2F, {centAxis, phiAxis});
-    histos.add("FT0Amp", "FT0Amp", kTH2F, {channelFT0Axis, multiplicity});
+    histos.add("FT0Amp", "FT0Amp", kTH2F, {channelFT0Axis, amplitudeFT0});
     histos.add("QxTPC", "QxTPC", kTH2F, {centAxis, multiplicity});
     histos.add("QyTPC", "QyTPC", kTH2F, {centAxis, multiplicity});
     histos.add("PsiTPC", "PsiTPC", kTH2F, {centAxis, phiAxis});
