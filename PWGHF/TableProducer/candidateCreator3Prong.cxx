@@ -83,6 +83,9 @@ struct HfCandidateCreator3Prong {
     if (doprocessPvRefit && doprocessNoPvRefit) {
       LOGP(fatal, "Only one process function between processPvRefit and processNoPvRefit can be enabled at a time.");
     }
+    massPi = MassPiPlus;
+    massK = MassKPlus;
+
     // Configure DCAFitterN
     // df.setBz(bz);
     df.setPropagateToPCA(propagateToPCA);
@@ -93,8 +96,6 @@ struct HfCandidateCreator3Prong {
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
 
-    massPi = MassPiPlus;
-    massK = MassKPlus;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();

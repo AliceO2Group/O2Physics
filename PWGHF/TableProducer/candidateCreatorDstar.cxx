@@ -104,15 +104,10 @@ struct HfCandidateCreatorDstar {
       LOGP(fatal, "Only one process function between processPvRefit and processNoPvRefit can be enabled at a time.");
     }
     // LOG(info) << "Init Function Invoked";
-    ccdb->setURL(ccdbUrl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking(); // set the flag to check object validity before CCDB query
-    // LOG(info) << "Retriving ccdb object";
-    auto rectification = ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut); // retrieve an object of type T from CCDB as stored under path; will use the timestamp member
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(rectification);
-    // LOG(info) << "Successfully Retrived";
-    runNumber = 0;
-    bz = 0;
+
+    massPi = MassPiPlus;
+    massK = MassKPlus;
+    massD0 = MassD0;
 
     df.setPropagateToPCA(propagateToPCA);
     df.setMaxR(maxR);
@@ -122,9 +117,15 @@ struct HfCandidateCreatorDstar {
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
 
-    massPi = MassPiPlus;
-    massK = MassKPlus;
-    massD0 = MassD0;
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking(); // set the flag to check object validity before CCDB query
+    // LOG(info) << "Retriving ccdb object";
+    auto rectification = ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut); // retrieve an object of type T from CCDB as stored under path; will use the timestamp member
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(rectification);
+    // LOG(info) << "Successfully Retrived";
+    runNumber = 0;
+    bz = 0;
   }
 
   /// @brief function for secondary vertex reconstruction and candidate creator

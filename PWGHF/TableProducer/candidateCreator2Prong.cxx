@@ -101,6 +101,10 @@ struct HfCandidateCreator2Prong {
     if ((std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) + std::accumulate(doprocessKF.begin(), doprocessKF.end(), 0)) != 1) {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
+
+    massPi = MassPiPlus;
+    massK = MassKPlus;
+
     if (std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) == 1) {
       hVertexerType->Fill(aod::hf_cand::VertexerType::DCAFitter);
       // Configure DCAFitterN
@@ -117,8 +121,6 @@ struct HfCandidateCreator2Prong {
       hVertexerType->Fill(aod::hf_cand::VertexerType::KfParticle);
     }
 
-    massPi = MassPiPlus;
-    massK = MassKPlus;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
