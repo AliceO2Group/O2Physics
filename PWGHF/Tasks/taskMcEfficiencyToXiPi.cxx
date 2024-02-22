@@ -44,22 +44,22 @@ struct HfTaskMcEfficiencyToXiPi {
   ConfigurableAxis axisPt{"axisPt", {200, 0, 20}, "pT axis"};
   ConfigurableAxis axisMass{"axisMass", {900, 2.1, 3}, "m_inv axis"};
 
-  enum HFStep { kHFStepMC = 0,                    // all generated mothers          
-                kHFStepMcInRapidity,              // MC mother in rapidity |y| < rapidityCharmBaryonMax=0.5
-                kHFStepAcceptance,                // MC mother where all final state candidates pass eta and pt selection
-                kHFStepTrackable,                 // MC mother where all final state candidates have a reconstructed track
-                kHFStepAcceptanceTrackable,       // MC mother where all final state candidates have a reconstructed track and pass eta and pt selection
-                kHFStepItsTpcTrackableCuts,       // MC mother where charm bachelor passes isGlobalTrkWoDca selection
-                kHFStepItsTrackableCuts,          // MC mother where charm bachelor passes isITSQualityTrack selection
-                kHFStepTracked,                   // signal candidates which have been found by candidateCreator for the desired decay channel
-                kHFStepTrackedCuts,               // signal candidates which have been found and pass the candidateSelector cuts but PID
-                kHFStepTrackedSelected,           // signal candidates which pass the selector and pass the candidateSelector cuts including PID 
+  enum HFStep { kHFStepMC = 0,              // all generated mothers
+                kHFStepMcInRapidity,        // MC mother in rapidity |y| < rapidityCharmBaryonMax=0.5
+                kHFStepAcceptance,          // MC mother where all final state candidates pass eta and pt selection
+                kHFStepTrackable,           // MC mother where all final state candidates have a reconstructed track
+                kHFStepAcceptanceTrackable, // MC mother where all final state candidates have a reconstructed track and pass eta and pt selection
+                kHFStepItsTpcTrackableCuts, // MC mother where charm bachelor passes isGlobalTrkWoDca selection
+                kHFStepItsTrackableCuts,    // MC mother where charm bachelor passes isITSQualityTrack selection
+                kHFStepTracked,             // signal candidates which have been found by candidateCreator for the desired decay channel
+                kHFStepTrackedCuts,         // signal candidates which have been found and pass the candidateSelector cuts but PID
+                kHFStepTrackedSelected,     // signal candidates which pass the selector and pass the candidateSelector cuts including PID
                 kHFNSteps };
 
-  enum TrackableStep { kTrackableAll = 0,         // all tracks
-                       kTrackableITS,             // track contains ITS information
-                       kTrackableTPC,             // track contains TPC information
-                       kTrackableITSTPC,          // track contains ITS and TPC information
+  enum TrackableStep { kTrackableAll = 0, // all tracks
+                       kTrackableITS,     // track contains ITS information
+                       kTrackableTPC,     // track contains TPC information
+                       kTrackableITSTPC,  // track contains ITS and TPC information
                        kNTrackableSteps };
 
   using TracksWithSelectionMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TrackSelection>;
@@ -88,7 +88,7 @@ struct HfTaskMcEfficiencyToXiPi {
   template <typename T>
   inline bool checkTrackGlbTrk(T const& track)
   {
-    if(track.isGlobalTrackWoDCA() && track.tpcNClsFound() > nClustersTpcMin && track.itsNCls() > nClustersItsMin){
+    if (track.isGlobalTrackWoDCA() && track.tpcNClsFound() > nClustersTpcMin && track.itsNCls() > nClustersItsMin) {
       return true;
     } else {
       return false;
@@ -98,7 +98,7 @@ struct HfTaskMcEfficiencyToXiPi {
   template <typename T>
   inline bool checkTrackItsTrk(T const& track)
   {
-    if(track.isQualityTrackITS() && track.itsNCls() > nClustersItsMin){
+    if (track.isQualityTrackITS() && track.itsNCls() > nClustersItsMin) {
       return true;
     } else {
       return false;
