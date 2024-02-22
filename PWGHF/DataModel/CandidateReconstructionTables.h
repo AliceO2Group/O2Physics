@@ -1352,6 +1352,7 @@ DECLARE_SOA_COLUMN(CosPaXYXi, cosPaXYXi, float);
 DECLARE_SOA_COLUMN(CosPaLambda, cosPaLambda, float);
 DECLARE_SOA_COLUMN(CosPaXYLambda, cosPaXYLambda, float);
 DECLARE_SOA_COLUMN(InvMassXic, invMassXic, double);
+DECLARE_SOA_COLUMN(Sign, sign, double);
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
@@ -1374,7 +1375,7 @@ DECLARE_SOA_TABLE(HfCandXicBase, "AOD", "HFCANDXICBASE",
                   hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
                   hf_cand_xictoxipipi::XSvErr, hf_cand_xictoxipipi::YSvErr, hf_cand_xictoxipipi::ZSvErr,
                   hf_cand::ErrorDecayLength, hf_cand::ErrorDecayLengthXY,
-                  hf_cand::Chi2PCA, hf_cand_xictoxipipi::InvMassXic,
+                  hf_cand::Chi2PCA, hf_cand_xictoxipipi::InvMassXic, hf_cand_xictoxipipi::Sign,
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2,

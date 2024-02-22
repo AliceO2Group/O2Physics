@@ -74,20 +74,29 @@ struct HfCandidateSelectorXicToXiPiPi {
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
+  TrackSelectorPr selectorProton;
 
-  using TracksPidWithSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TrackSelection>;
+  using TracksPidWithSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TrackSelection>;
 
   HistogramRegistry registry{"registry"};
 
   void init(InitContext& initContext)
   {
     if (usePid) {
+      // pion
       selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
       selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
       selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
       selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
       selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
       selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
+      // proton
+      selectorProton.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
+      selectorProton.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+      selectorProton.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
+      selectorProton.setRangePtTof(ptPidTofMin, ptPidTofMax);
+      selectorProton.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+      selectorProton.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     }
 
     if (activateQA) {
@@ -182,26 +191,22 @@ struct HfCandidateSelectorXicToXiPiPi {
   }
 
   /// Apply PID selection
-  /// \param pidTrackPi0 PID status of trackPi0 (prong1 of Xic candidate)
-  /// \param pidTrackPi1 PID status of trackPi1 (prong2 of Xic candidate)
+  /// \param pidTrackPi0   PID status of trackPi0 (prong1 of Xic candidate)
+  /// \param pidTrackPi1   PID status of trackPi1 (prong2 of Xic candidate)
+  /// \param pidTrackPr    PID status of trackPr (positive daughter of V0 candidate)
+  /// \param pidTrackPiLam PID status of trackPiLam (negative daughter of V0 candidate)
+  /// \param pidTrackPiXi  PID status of trackPiXi (Bachelor of cascade candidate)
   /// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
   /// \return true if prong1 and prong 2 of Xic candidate pass all selections
-  template <typename T1 = int, typename T2 = int, typename T3 = bool>
-  bool selectionPid(const T1& pidTrackPi0, const T2& pidTrackPi1, const T3& acceptPIDNotApplicable)
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6 = bool>
+  bool selectionPid(const T1& pidTrackPi0, const T2& pidTrackPi1, const T3& pidTrackPr, const T4& pidTrackPiLam, const T5& pidTrackPiXi, const T6& acceptPIDNotApplicable)
   {
-    if (!acceptPIDNotApplicable && pidTrackPi0 != TrackSelectorPID::Accepted) {
+    if (!acceptPIDNotApplicable && pidTrackPi0 != TrackSelectorPID::Accepted && pidTrackPi1 != TrackSelectorPID::Accepted && pidTrackPr != TrackSelectorPID::Accepted && pidTrackPiLam != TrackSelectorPID::Accepted && pidTrackPiXi == TrackSelectorPID::Rejected) {
       return false;
     }
-    if (acceptPIDNotApplicable && pidTrackPi0 == TrackSelectorPID::Rejected) {
+    if (acceptPIDNotApplicable && pidTrackPi0 == TrackSelectorPID::Rejected && pidTrackPi1 == TrackSelectorPID::Rejected && pidTrackPr == TrackSelectorPID::Rejected && pidTrackPiLam == TrackSelectorPID::Rejected && pidTrackPiXi == TrackSelectorPID::Rejected) {
       return false;
     }
-    if (!acceptPIDNotApplicable && pidTrackPi1 != TrackSelectorPID::Accepted) {
-      return false;
-    }
-    if (acceptPIDNotApplicable && pidTrackPi1 == TrackSelectorPID::Rejected) {
-      return false;
-    }
-
     return true;
   }
 
@@ -245,9 +250,23 @@ struct HfCandidateSelectorXicToXiPiPi {
       if (usePid) {
         auto trackPi0 = hfCandXic.pi0_as<TracksPidWithSel>();
         auto trackPi1 = hfCandXic.pi1_as<TracksPidWithSel>();
+        auto trackV0PosDau = hfCandXic.posTrack_as<TracksPidWithSel>();
+        auto trackV0NegDau = hfCandXic.negTrack_as<TracksPidWithSel>();
+        auto trackPiFromXi = hfCandXic.bachelor_as<TracksPidWithSel>();
+        // assign proton and pion hypothesis to V0 daughters
+        auto trackPr = trackV0PosDau;
+        auto trackPiFromLam = trackV0NegDau;
+        if (hfCandXic.sign() < 0) {
+          trackPr = trackV0NegDau;
+          trackPiFromLam = trackV0PosDau;
+        }
+        // PID info
         int pidTrackPi0 = selectorPion.statusTpcAndTof(trackPi0);
         int pidTrackPi1 = selectorPion.statusTpcAndTof(trackPi1);
-        if (!selectionPid(pidTrackPi0, pidTrackPi1, acceptPIDNotApplicable.value)) {
+        int pidTrackPr = selectorProton.statusTpcAndTof(trackPr);
+        int pidTrackPiLam = selectorPion.statusTpcAndTof(trackPiFromLam);
+        int pidTrackPiXi = selectorPion.statusTpcAndTof(trackPiFromXi);
+        if (!selectionPid(pidTrackPi0, pidTrackPi1, pidTrackPr, pidTrackPiLam, pidTrackPiXi, acceptPIDNotApplicable.value)) {
           hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
           if (applyMl) {
             hfMlXicToXiPiPiCandidate(outputMl);
