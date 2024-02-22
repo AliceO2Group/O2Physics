@@ -27,6 +27,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+
 struct multiplicityPbPb {
 
   // Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
@@ -75,13 +76,21 @@ struct multiplicityPbPb {
 
     histos.add("DCAxy", "; DCA_{xy} (cm)", kTH1F, {axisDCAxy});
     histos.add("DCAz", "; DCA_{z} (cm)", kTH1F, {axisDCAz});
-    // do not know how:
+  
     histos.add("Multiplicity", "; tracks; events", kTH1F, {axisNtrk});
     histos.add("MCGENMultiplicity", "; tracks; events", kTH1F, {axisNtrk});
 
+    histos.add("Multiplicity_01", "; tracks; events", kTH1F, {axisNtrk}); // |eta|<0.1
+    histos.add("Multiplicity_01_10", "; tracks; events", kTH1F, {axisNtrk}); // |eta|<0.1, |Zvtx|<10 cm
+    histos.add("MCGENMultiplicity_01", "; tracks; events", kTH1F, {axisNtrk}); // |eta|<0.1
+    histos.add("MCGENMultiplicity_01_10", "; tracks; events", kTH1F, {axisNtrk}); // |eta|<0.1, |Zvtx|<10 cm
+
     histos.add("PhiTracks", "; #phi; tracks", kTH1F, {axisPhi});
+
     histos.add("ZvtxEvents", "; Z_{vtx} (cm); events", kTH1F, {axisZvtx});
+    histos.add("ZvtxEvents_01", "; Z_{vtx} (cm); events", kTH1F, {axisZvtx}); // |eta|<0.1
     histos.add("MCGENZvtxEvents", "; Z_{vtx} (cm); events", kTH1F, {axisZvtx});
+    histos.add("MCGENZvtxEvents_01", "; Z_{vtx} (cm); events", kTH1F, {axisZvtx}); // |eta|<0.1
 
     histos.add("EtaZvtxTracks", "; #eta; Z_{vtx} (cm); tracks", kTH2F, {axisEta, axisZvtx});
     histos.add("NtrkZvtxEvents", "; N_{trk}; Z_{vtx} (cm); events", kTH2F, {axisNtrk, axisZvtx});
@@ -101,12 +110,10 @@ struct multiplicityPbPb {
     }
 
     int trackCounter = 0;
-
-    // auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
+    int trackCounter_01 = 0;
+    int trackCounter_01_10 = 0;
 
     histos.fill(HIST("eventCounter"), 0.5);
-
-    // histos.fill(HIST("Multiplicity"), groupedTracks.size());
 
     histos.fill(HIST("ZvtxEvents"), collision.posZ());
 
@@ -123,9 +130,14 @@ struct multiplicityPbPb {
 
       histos.fill(HIST("EtaZvtxTracks"), track.eta(), collision.posZ());
       histos.fill(HIST("PhiEtaTracks"), track.phi(), track.eta());
+
+      if(track.eta()<0.1) ++trackCounter_01;
+      if(track.eta()<0.1 && collision.posZ()<10) ++trackCounter_01_10;
     }
 
     histos.fill(HIST("Multiplicity"), trackCounter);
+    histos.fill(HIST("Multiplicity_01"), trackCounter_01);
+    histos.fill(HIST("Multiplicity_01_10"), trackCounter_01_10);
 
     histos.fill(HIST("NtrkZvtxEvents"), trackCounter, collision.posZ());
   }
