@@ -689,7 +689,7 @@ class VarManager : public TObject
   static void FillTrack(T const& track, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
   static void FillTrackCollision(T const& track, C const& collision, float* values = nullptr);
-  template <uint32_t fillMap, typename T, typename C,typename M>
+  template <uint32_t fillMap, typename T, typename C, typename M>
   static void FillTrackCollisionMatCorr(T const& track, C const& collision, M const& materialCorr, float* values = nullptr);
   template <typename U, typename T>
   static void FillTrackMC(const U& mcStack, T const& track, float* values = nullptr);
@@ -1667,8 +1667,6 @@ void VarManager::FillTrackCollisionMatCorr(T const& track, C const& collision, M
     // trackPar.propagateParamToDCA({collision.posX(), collision.posY(), collision.posZ()}, fgMagField, &dca);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, materialCorr, &dca);
     getPxPyPz(trackPar, pVec);
-    cout << __LINE__ << " COUT LINE::VarManager track.pt() = " << track.pt() << endl;
-    cout << __LINE__ << " COUT LINE::VarManager trackPar.getPt() = " << trackPar.getPt() << endl << endl;
 
     values[kTrackDCAxy] = dca[0];
     values[kTrackDCAz] = dca[1];
