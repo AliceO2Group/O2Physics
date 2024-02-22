@@ -166,7 +166,7 @@ struct MultiplicityCounter {
 
     if (doprocessGenAmbiguous || doprocessGen || doprocessGenAmbiguousEx || doprocessGenEx) {
       std::string effLabels{" ; N_{gen}; Z_{vtx} (cm)"};
-      std::vector<AxisSpec> effAxes{MultAxis, ZAxis} ;
+      std::vector<AxisSpec> effAxes{MultAxis, ZAxis};
       if ((doprocessGenAmbiguousEx || doprocessGenEx) && useProcId) {
         effLabels += " ; process ID";
         effAxes.push_back(ProcAxis);
