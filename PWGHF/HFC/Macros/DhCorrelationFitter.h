@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file DhCorrelationFitter.h
-/// \brief class for for performing the fit of azimuthal correlations
+/// \brief Class to perform the azimuthal correlation fit
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 /// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>
 

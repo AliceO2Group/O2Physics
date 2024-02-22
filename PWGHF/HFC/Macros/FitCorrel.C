@@ -9,19 +9,25 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file DhCorrelationExtraction.cxx
-/// \brief class for D-h correlation extraction
+/// \file FitCorrel.C
+/// \brief Macro to perform the azimuthal correlation fit
+/// \usage .L DhCorrelationFitter.cxx+
+/// \usage .x FitCorrel.C("config-file-name")
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 /// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>
 
-#include "DhCorrelationFitter.h"
-#include <TROOT.h>
-#include <TStyle.h>
 #include "Riostream.h"
+#include <TROOT.h>
+#include <TF1.h>
+#include <TH1D.h>
+#include <TMath.h>
+#include <TPaveText.h>
+#include <TSystem.h>
+#include <TStyle.h>
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
+#include "DhCorrelationFitter.h"
 
-using namespace std;
 using namespace rapidjson;
 
 template <typename ValueType>
@@ -168,9 +174,9 @@ void FitCorrel(TString cfgFileName = "config_CorrAnalysis.json")
 
 void SetTH1HistoStyle(TH1D*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle,
                       Style_t markerStyle, Color_t markerColor, Double_t markerSize,
-                      Color_t lineColor, Int_t lineWidth, Float_t hTitleXaxisOffset = 1., Float_t hTitleYaxisOffset = 1.,
-                      Float_t hTitleXaxisSize = 0.060, Float_t hTitleYaxisSize = 0.060, Float_t hLabelXaxisSize = 0.060, Float_t hLabelYaxisSize = 0.060,
-                      Bool_t centerXaxisTitle = false, Bool_t centerYaxisTitle = false)
+                      Color_t lineColor, Int_t lineWidth, Float_t hTitleXaxisOffset, Float_t hTitleYaxisOffset,
+                      Float_t hTitleXaxisSize, Float_t hTitleYaxisSize, Float_t hLabelXaxisSize, Float_t hLabelYaxisSize,
+                      Bool_t centerXaxisTitle, Bool_t centerYaxisTitle)
 {
 
   histo->SetTitle(hTitle.Data());

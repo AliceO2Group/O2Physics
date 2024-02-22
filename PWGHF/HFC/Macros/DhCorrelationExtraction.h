@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file DhCorrelationExtraction.h
-/// \brief class for D-h correlation extraction
+/// \brief Class for D-h correlation extraction
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 /// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>
 

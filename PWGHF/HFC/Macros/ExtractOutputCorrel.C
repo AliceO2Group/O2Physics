@@ -9,19 +9,20 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file DhCorrelationExtraction.cxx
-/// \brief class for D-h correlation extraction
+/// \file ExtractOutputCorrel.C
+/// \brief Macro to perform the correlation extraction
+/// \usage .L DhCorrelationExtraction.cxx+
+/// \usage .x ExtractOutputCorrel.C("config-file-name")
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 /// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>
 
-#include "DhCorrelationExtraction.h"
+#include "Riostream.h"
 #include <TROOT.h>
 #include <TStyle.h>
-#include "Riostream.h"
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
+#include "DhCorrelationExtraction.h"
 
-using namespace std;
 using namespace rapidjson;
 
 template <typename ValueType>

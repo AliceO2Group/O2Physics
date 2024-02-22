@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# \brief Bash script to run the azimuthal correlation analysis
+# \usage ./AnalysisExecution.sh
+
 # Create the output directory
 OUTDIR="Output_AnalysisExecution"
 if [ ! -d "$OUTDIR" ]; then
