@@ -62,20 +62,20 @@ bool fullDerivedData = false; /* produce full derived data for its external stor
 
 /// \enum MatchRecoGenSpecies
 /// \brief The species considered by the matching test
-//enum MatchRecoGenSpecies {
-//  kIdBfCharged = 0, ///< charged particle/track
-//  kIdBfElectron = 1,    ///< electron
-//  kIdBfMuon = 3,        ///< muon
-//  kIdBfPion = 5,        ///< pion
-//  kIdBfKaon = 7,        ///< kaon
-//  kIdBfProton = 9,      ///< proton
-//  kIdBfNoOfSpecies = 6, ///< the number of considered species
-//  kWrongSpecies = -1
-//};
+// enum MatchRecoGenSpecies {
+//   kIdBfCharged = 0, ///< charged particle/track
+//   kIdBfElectron = 1,    ///< electron
+//   kIdBfMuon = 3,        ///< muon
+//   kIdBfPion = 5,        ///< pion
+//   kIdBfKaon = 7,        ///< kaon
+//   kIdBfProton = 9,      ///< proton
+//   kIdBfNoOfSpecies = 6, ///< the number of considered species
+//   kWrongSpecies = -1
+// };
 
-//const char* speciesName[kIdBfNoOfSpecies] = {"h", "e", "mu", "pi", "ka", "p"};
+// const char* speciesName[kIdBfNoOfSpecies] = {"h", "e", "mu", "pi", "ka", "p"};
 
-//const char* speciesTitle[kIdBfNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"};
+// const char* speciesTitle[kIdBfNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"};
 
 //============================================================================================
 // The IdentifiedBfFilter histogram objects
@@ -1112,28 +1112,28 @@ int8_t IdentifiedBfFilterTracks::selectTrack(TrackObject const& track)
   using namespace identifiedbffilter;
 
   /* before track selection */
-  //fillTrackHistosBeforeSelection(track);
+  // fillTrackHistosBeforeSelection(track);
 
   /* track selection */
   int8_t pid = AcceptTrack(track);
   if (!(pid < 0)) {
     /* the track has been accepted */
     /* let's identify it */
-    //MatchRecoGenSpecies sp = trackIdentification(track);
-      if (pid>1) {
-        /* fill the charged histograms */
-        fillTrackHistosAfterSelection(track, kIdBfCharged);
-        /* update charged multiplicities */
-        /*if (pid % 2 == 0) {
-          trkMultPos[kIdBfCharged]++;
-        }
-        if (pid % 2 == 1) {
-          trkMultNeg[kIdBfCharged]++;
-        }*/
+    // MatchRecoGenSpecies sp = trackIdentification(track);
+    if (pid > 1) {
+      /* fill the charged histograms */
+      fillTrackHistosAfterSelection(track, kIdBfCharged);
+      /* update charged multiplicities */
+      /*if (pid % 2 == 0) {
+        trkMultPos[kIdBfCharged]++;
       }
+      if (pid % 2 == 1) {
+        trkMultNeg[kIdBfCharged]++;
+      }*/
+    }
       /* fill the species histograms */
-      //fillTrackHistosAfterSelection(track, sp);
-      /* update species multiplicities */
+    // fillTrackHistosAfterSelection(track, sp);
+    /* update species multiplicities */
   }
   return pid;
 }
@@ -1149,7 +1149,7 @@ int8_t IdentifiedBfFilterTracks::selectTrack(TrackObject const& track)
 template <typename TrackObject>
 inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
 {
-    fillTrackHistosBeforeSelection(track); // <Fill "before selection" histo
+  fillTrackHistosBeforeSelection(track); // <Fill "before selection" histo
 
   /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
@@ -1162,18 +1162,18 @@ inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
     if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
 
       MatchRecoGenSpecies sp = trackIdentification(track);
-      if (sp == kWrongSpecies){
+      if (sp == kWrongSpecies) {
         return -1;
       }
-      if (!(sp < 0)){
+      if (!(sp < 0)) {
         fillTrackHistosAfterSelection(track, sp); //<Fill accepted track histo with PID
         if (track.sign() > 0) {
           trkMultPos[sp]++; //<< Update Particle Multiplicity
-          return speciesChargeValue1[sp] ;
+          return speciesChargeValue1[sp];
         }
         if (track.sign() < 0) {
           trkMultNeg[sp]++; //<< Update Particle Multiplicity
-          return speciesChargeValue1[sp]+1;
+          return speciesChargeValue1[sp] + 1;
         }
       }
     }
