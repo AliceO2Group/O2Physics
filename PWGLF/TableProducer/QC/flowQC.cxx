@@ -71,9 +71,11 @@ enum qVecDetectors {
 static const std::vector<std::string> qVecDetectorNames{"FT0C", "FT0A", "FV0A", "Bpos", "Bneg"};
 
 std::shared_ptr<TH3> hQxQy[kNqVecDetectors];
+std::shared_ptr<TH3> hNormQxQy[kNqVecDetectors];
 std::shared_ptr<TH2> hPsi[kNqVecDetectors];
 std::shared_ptr<TH2> hDeltaPsi[kNqVecDetectors][kNqVecDetectors];
 std::shared_ptr<TH2> hScalarProduct[kNqVecDetectors][kNqVecDetectors];
+std::shared_ptr<TH2> hNormalisedScalarProduct[kNqVecDetectors][kNqVecDetectors];
 } // namespace
 
 struct flowQC {
@@ -147,8 +149,11 @@ struct flowQC {
 
     const AxisSpec centAxis{cfgCentralityBins, fmt::format("{} percentile", (std::string)centDetectorNames[cfgCentralityEstimator])};
 
-    const AxisSpec QxAxis{cfgQvecBins, "Q_{x}"};
-    const AxisSpec QyAxis{cfgQvecBins, "Q_{y}"};
+    const AxisSpec QxAxis{cfgQvecBins, "Q_{2,x}"};
+    const AxisSpec QyAxis{cfgQvecBins, "Q_{2,y}"};
+
+    const AxisSpec NormQxAxis{cfgQvecBins, "#frac{Q_{2,x}}{||#vec{Q_{2}}||}"};
+    const AxisSpec NormQyAxis{cfgQvecBins, "#frac{Q_{2,y}}{||#vec{Q_{2}}||}"};
 
     const AxisSpec psiAxis{cfgPhiBins, "#psi"};
 
@@ -163,14 +168,22 @@ struct flowQC {
 
     for (int iQvecDet = 0; iQvecDet < qVecDetectors::kNqVecDetectors; iQvecDet++) {
       hQxQy[iQvecDet] = flow.add<TH3>(Form("hQxQy_%s", qVecDetectorNames[iQvecDet].c_str()), "", HistType::kTH3F, {centAxis, QxAxis, QyAxis});
+      hNormQxQy[iQvecDet] = flow.add<TH3>(Form("hNormQxQy_%s", qVecDetectorNames[iQvecDet].c_str()), "", HistType::kTH3F, {centAxis, NormQxAxis, NormQyAxis});
       hPsi[iQvecDet] = flow.add<TH2>(Form("hPsi_%s", qVecDetectorNames[iQvecDet].c_str()), "", HistType::kTH2F, {centAxis, psiAxis});
       for (int jQvecDet = iQvecDet + 1; jQvecDet < qVecDetectors::kNqVecDetectors; jQvecDet++) {
+
         // Q-vector azimuthal-angle differences
         hDeltaPsi[iQvecDet][jQvecDet] = flow.add<TH2>(Form("hDeltaPsi_%s_%s", qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str()), "", HistType::kTH2F, {centAxis, {cfgDeltaPhiBins, Form("#psi_{%s} - #psi_{%s}", qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str())}});
+
         // Scalar-product histograms
-        auto spLabel = Form("#frac{#vec{Q}_{2}^{%s} #upoint #vec{Q}_{2}^{%s}}{||#vec{Q}_{2}^{%s}|| ||#vec{Q}_{2}^{%s}||}", qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str(), qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str());
+        auto spLabel = Form("#vec{Q}_{2}^{%s} #upoint #vec{Q}_{2}^{%s}", qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str());
 
         hScalarProduct[iQvecDet][jQvecDet] = flow.add<TH2>(Form("hScalarProduct_%s_%s", qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str()), "", HistType::kTH2F, {centAxis, {cfgQvecBins, spLabel}});
+
+        // Normalised scalar-product histograms
+        auto normSpLabel = Form("#frac{#vec{Q}_{2}^{%s} #upoint #vec{Q}_{2}^{%s}}{||#vec{Q}_{2}^{%s}|| ||#vec{Q}_{2}^{%s}||}", qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str(), qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str());
+
+        hNormalisedScalarProduct[iQvecDet][jQvecDet] = flow.add<TH2>(Form("hNormalisedScalarProduct_%s_%s", qVecDetectorNames[iQvecDet].c_str(), qVecDetectorNames[jQvecDet].c_str()), "", HistType::kTH2F, {centAxis, {cfgQvecBins, normSpLabel}});
       }
     }
   }
@@ -241,15 +254,21 @@ struct flowQC {
 
     for (int iQvecDet = 0; iQvecDet < qVecDetectors::kNqVecDetectors; iQvecDet++) {
       hQxQy[iQvecDet]->Fill(centrality, vec_Qx[iQvecDet], vec_Qy[iQvecDet]);
+      hNormQxQy[iQvecDet]->Fill(centrality, vec_Qx[iQvecDet] / vec_Qmod[iQvecDet], vec_Qy[iQvecDet] / vec_Qmod[iQvecDet]);
       hPsi[iQvecDet]->Fill(centrality, vec_Qpsi[iQvecDet]);
       for (int jQvecDet = iQvecDet + 1; jQvecDet < qVecDetectors::kNqVecDetectors; jQvecDet++) {
         // Q-vector azimuthal-angle differences
         hDeltaPsi[iQvecDet][jQvecDet]->Fill(centrality, vec_Qpsi[iQvecDet]);
         // Scalar-product histograms
-        auto getNormSP = [&](int iDet1, int iDet2) {
-          return (vec_Qx[iDet1] * vec_Qx[iDet2] + vec_Qy[iDet1] * vec_Qy[iDet2]) / (vec_Qmod[iDet1] * vec_Qmod[iDet2]);
+        auto getSP = [&](int iDet1, int iDet2) {
+          return vec_Qx[iDet1] * vec_Qx[iDet2] + vec_Qy[iDet1] * vec_Qy[iDet2];
         };
-        hScalarProduct[iQvecDet][jQvecDet]->Fill(centrality, getNormSP(iQvecDet, jQvecDet));
+        hScalarProduct[iQvecDet][jQvecDet]->Fill(centrality, getSP(iQvecDet, jQvecDet));
+        // Normalised scalar-product histograms
+        auto getNormSP = [&](int iDet1, int iDet2) {
+          return getSP(iDet1, iDet2) / (vec_Qmod[iDet1] * vec_Qmod[iDet2]);
+        };
+        hNormalisedScalarProduct[iQvecDet][jQvecDet]->Fill(centrality, getNormSP(iQvecDet, jQvecDet));
       }
     }
   }
