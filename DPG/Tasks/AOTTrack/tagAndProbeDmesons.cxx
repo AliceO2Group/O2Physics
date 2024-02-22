@@ -260,7 +260,7 @@ struct TagTwoProngDisplacedVertices {
     if (value >= binsPt->back()) {
       return -1;
     }
-    return std::distance(binsPt->begin(),std::upper_bound(binsPt->begin(),binsPt->end(),value)) - 1;
+    return std::distance(binsPt->begin(), std::upper_bound(binsPt->begin() ,binsPt->end(),value)) - 1;
   }
 
 
@@ -340,7 +340,7 @@ struct TagTwoProngDisplacedVertices {
         ///  K∓π± for D0 from D±* → D0π± decays 
         else{
           for (auto pdgGrandMother : pdgDecayMothers) {
-            auto grandMotherId = RecoDecay::getMother(particlesMc,particleMother,pdgGrandMother,true);
+            auto grandMotherId = RecoDecay::getMother(particlesMc, particleMother, pdgGrandMother, true);
             auto particleGrandMother = particlesMc.rawIteratorAt(grandMotherId);
             if (grandMotherId != -1) {
               auto daughters = particleGrandMother.template daughters_as<aod::McParticles>();
@@ -401,15 +401,15 @@ struct TagTwoProngDisplacedVertices {
   {
       auto covMatrixPV = primVtx.getCov();
       float phi, theta;
-      std::array<float, 3> pvCoord = {primVtx.getX(),primVtx.getY(),primVtx.getZ()};
+      std::array<float, 3> pvCoord = {primVtx.getX(), primVtx.getY(), primVtx.getZ()};
       getPointDirection(pvCoord, secVtx, phi, theta);
 
-      auto decLen = RecoDecay::distance(pvCoord,secVtx);
-      auto errorDecLen = std::sqrt(getRotatedCovMatrixXX(covMatrixPV,phi,theta) + getRotatedCovMatrixXX(covMatrixSecVtx,phi,theta));
-      auto errorDecLenXy = std::sqrt(getRotatedCovMatrixXX(covMatrixPV,phi,0.f) + getRotatedCovMatrixXX(covMatrixSecVtx,phi,0.f));
-      auto decLenXy = RecoDecay::distanceXY(pvCoord,secVtx);
-      auto cpa = RecoDecay::cpa(pvCoord,secVtx,pVec);
-      auto cpaXy = RecoDecay::cpaXY(pvCoord,secVtx,pVec);
+      auto decLen = RecoDecay::distance(pvCoord, secVtx);
+      auto errorDecLen = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSecVtx, phi, theta));
+      auto errorDecLenXy = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.f) + getRotatedCovMatrixXX(covMatrixSecVtx, phi, 0.f));
+      auto decLenXy = RecoDecay::distanceXY(pvCoord, secVtx);
+      auto cpa = RecoDecay::cpa(pvCoord, secVtx, pVec);
+      auto cpaXy = RecoDecay::cpaXY(pvCoord, secVtx, pVec);
       auto normDecLen = decLen / errorDecLen;
       auto normDecLenXy = decLenXy / errorDecLenXy;
       auto tagsPt = RecoDecay::pt(pVec);
@@ -418,9 +418,9 @@ struct TagTwoProngDisplacedVertices {
       int isSignal = -1;         //default value for data
 
       if constexpr (doMc) {
-        isSignal = getTagOrigin(firstTrack,secondTrack,particlesMc,channel,pdgDecayMothers);
+        isSignal = getTagOrigin(firstTrack, secondTrack, particlesMc, channel, pdgDecayMothers);
       }
-      tagVarsTable(tagsPt,invMass,decLen,decLenXy,normDecLen,normDecLenXy,trackDcaXy[0] * trackDcaXy[1],cpa,cpaXy,isSignal);
+      tagVarsTable(tagsPt, invMass, decLen, decLenXy, normDecLen, normDecLenXy, trackDcaXy[0] * trackDcaXy[1], cpa, cpaXy, isSignal);
   } 
 
   template <typename TTrack>
@@ -470,42 +470,42 @@ struct TagTwoProngDisplacedVertices {
                           const uint8_t channel,
                           const int& ptBin)
   {
-    std::array<float, 3> pvCoord = {primVtx.getX(),primVtx.getY(),primVtx.getZ()};
-    auto decLen = RecoDecay::distance(pvCoord,secVtx);
-    if (decLen < topologicalCuts[channel].get(ptBin,2u)) {
+    std::array<float, 3> pvCoord = {primVtx.getX(), primVtx.getY(), primVtx.getZ()};
+    auto decLen = RecoDecay::distance(pvCoord, secVtx);
+    if (decLen < topologicalCuts[channel].get(ptBin, 2u)) {
       return false;
     }
 
     auto covMatrixPV = primVtx.getCov();
 
-    auto decLenXy = RecoDecay::distanceXY(pvCoord,secVtx);
-    if (decLenXy < topologicalCuts[channel].get(ptBin,3u)) {
+    auto decLenXy = RecoDecay::distanceXY(pvCoord, secVtx);
+    if (decLenXy < topologicalCuts[channel].get(ptBin, 3u)) {
       return false;
     }
 
     float phi, theta;
-    getPointDirection(pvCoord,secVtx,phi,theta);
-    auto errorDecLen = std::sqrt(getRotatedCovMatrixXX(covMatrixPV,phi,theta) + getRotatedCovMatrixXX(covMatrixSecVtx,phi,theta));
+    getPointDirection(pvCoord, secVtx, phi, theta);
+    auto errorDecLen = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSecVtx, phi, theta));
     if (decLen / errorDecLen < topologicalCuts[channel].get(ptBin, 4u)) {
       return false;
     }
 
-    auto errorDecLenXy = std::sqrt(getRotatedCovMatrixXX(covMatrixPV,phi,0.f) + getRotatedCovMatrixXX(covMatrixSecVtx,phi,0.f));
-    if (decLenXy / errorDecLenXy < topologicalCuts[channel].get(ptBin,5u)) {
+    auto errorDecLenXy = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.f) + getRotatedCovMatrixXX(covMatrixSecVtx, phi, 0.f));
+    if (decLenXy / errorDecLenXy < topologicalCuts[channel].get(ptBin, 5u)) {
       return false;
     }
 
     // only for D0 meson
     if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi || channel == aod::tagandprobe::TagChannels::DstarToDzeroToKK) {
-      if (trackDcaXy[0] * trackDcaXy[1] > topologicalCuts[channel].get(ptBin,6u)) {
+      if (trackDcaXy[0] * trackDcaXy[1] > topologicalCuts[channel].get(ptBin, 6u)) {
         return false;
       }
-      auto cpa = RecoDecay::cpa(pvCoord,secVtx,pVec);
-      if (cpa < topologicalCuts[channel].get(ptBin,7u)) {
+      auto cpa = RecoDecay::cpa(pvCoord, secVtx, pVec);
+      if (cpa < topologicalCuts[channel].get(ptBin, 7u)) {
         return false;
       }
-      auto cpaXy = RecoDecay::cpaXY(pvCoord,secVtx,pVec);
-      if (cpaXy < topologicalCuts[channel].get(ptBin,8u)) {
+      auto cpaXy = RecoDecay::cpaXY(pvCoord, secVtx, pVec);
+      if (cpaXy < topologicalCuts[channel].get(ptBin, 8u)) {
         return false;
       }
     }
@@ -523,7 +523,7 @@ struct TagTwoProngDisplacedVertices {
   {
     for (auto trackFirst = tracks.begin(); trackFirst != tracks.end(); ++trackFirst) {
 
-      if (applyTofPid && !isSelectedPidTof(trackFirst,channel)) {
+      if (applyTofPid && !isSelectedPidTof(trackFirst, channel)) {
         continue;
       }
 
@@ -534,14 +534,14 @@ struct TagTwoProngDisplacedVertices {
         }
 
         float invMass2{0.f};
-        std::array<float, 3> pVecTrackFirst{trackFirst.px(),trackFirst.py(),trackFirst.pz()};
-        std::array<float, 3> pVecTrackSecond{trackSecond.px(),trackSecond.py(),trackSecond.pz()};
+        std::array<float, 3> pVecTrackFirst{trackFirst.px(),trackFirst.py(), trackFirst.pz()};
+        std::array<float, 3> pVecTrackSecond{trackSecond.px(), trackSecond.py(), trackSecond.pz()};
 
         auto pVec = RecoDecay::pVec(pVecTrackFirst,pVecTrackSecond);
         auto ptBin = findBin(&ptBinsForTopologicalCuts[channel],RecoDecay::pt(pVec));
         if (ptBin == -1 ) continue;
 
-        if (!isSelectedInvariantMass(pVecTrackFirst,pVecTrackSecond,channel,invMass2,ptBin)) {
+        if (!isSelectedInvariantMass(pVecTrackFirst, pVecTrackSecond, channel, invMass2, ptBin)) {
           continue;
         }
 
@@ -550,7 +550,7 @@ struct TagTwoProngDisplacedVertices {
 
         int nVertices{0};
         try {
-          nVertices = vertexer.process(trackParCovFirst,trackParCovSecond);
+          nVertices = vertexer.process(trackParCovFirst, trackParCovSecond);
         } catch (...) {
           LOG(error) << "Exception caught in DCA fitter process call!";
           continue;
@@ -562,17 +562,17 @@ struct TagTwoProngDisplacedVertices {
         auto primVtx = getPrimaryVertex(collision);
         const auto& secVtx = vertexer.getPCACandidate();
         const auto& covMatrixPCA = vertexer.calcPCACovMatrixFlat();
-        std::array<float,2> trackDcaXy{trackFirst.dcaXY(),trackSecond.dcaXY()};
+        std::array<float,2> trackDcaXy{trackFirst.dcaXY(), trackSecond.dcaXY()};
         if (fillTagTable) {
-          getTagInfo<doMc>(primVtx,secVtx,covMatrixPCA,pVec,trackDcaXy,channel,trackFirst,trackSecond,invMass2,pdgDecayMothers,particlesMc);
+          getTagInfo<doMc>(primVtx, secVtx, covMatrixPCA, pVec, trackDcaXy, channel, trackFirst, trackSecond, invMass2, pdgDecayMothers, particlesMc);
           continue;
         }
         else {
-          if (!isSelectedTopology(primVtx,secVtx,covMatrixPCA,pVec,trackDcaXy,channel,ptBin)) {
+          if (!isSelectedTopology(primVtx, secVtx, covMatrixPCA, pVec, trackDcaXy, channel, ptBin)) {
             continue;
           }
-          registry.fill(HIST("hMassPiPiVsPt"),RecoDecay::pt(pVec),std::sqrt(invMass2)); // only channel with same sign tracks for the moment
-          tagPiPiTable(trackFirst.collisionId(),trackFirst.globalIndex(),trackSecond.globalIndex());
+          registry.fill(HIST("hMassPiPiVsPt"),RecoDecay::pt(pVec), std::sqrt(invMass2)); // only channel with same sign tracks for the moment
+          tagPiPiTable(trackFirst.collisionId(), trackFirst.globalIndex(), trackSecond.globalIndex());
         }
       }
     }
@@ -590,25 +590,25 @@ struct TagTwoProngDisplacedVertices {
   {
     for (const auto& trackPos : tracksPos) {
 
-      if (applyTofPid && !isSelectedPidTof(trackPos,channel)) {
+      if (applyTofPid && !isSelectedPidTof(trackPos, channel)) {
         continue;
       }
 
       for (const auto& trackNeg : tracksNeg) {
 
-        if (applyTofPid && !isSelectedPidTof(trackNeg,channel)) {
+        if (applyTofPid && !isSelectedPidTof(trackNeg, channel)) {
           continue;
         }
 
         float invMass2{0.f};
-        std::array<float,3> pVecTrackPos{trackPos.px(),trackPos.py(),trackPos.pz()};
-        std::array<float,3> pVecTrackNeg{trackNeg.px(),trackNeg.py(),trackNeg.pz()};
+        std::array<float, 3> pVecTrackPos{trackPos.px(), trackPos.py(), trackPos.pz()};
+        std::array<float, 3> pVecTrackNeg{trackNeg.px(), trackNeg.py(), trackNeg.pz()};
 
-        auto pVec = RecoDecay::pVec(pVecTrackPos,pVecTrackNeg);
-        auto ptBin = findBin(&ptBinsForTopologicalCuts[channel],RecoDecay::pt(pVec));
+        auto pVec = RecoDecay::pVec(pVecTrackPos, pVecTrackNeg);
+        auto ptBin = findBin(&ptBinsForTopologicalCuts[channel], RecoDecay::pt(pVec));
         if (ptBin == -1) continue;
 
-        if (!isSelectedInvariantMass(pVecTrackPos,pVecTrackNeg,channel,invMass2,ptBin)) {
+        if (!isSelectedInvariantMass(pVecTrackPos, pVecTrackNeg, channel, invMass2, ptBin)) {
           continue;
         }
 
@@ -617,7 +617,7 @@ struct TagTwoProngDisplacedVertices {
 
         int nVertices{0};
         try {
-          nVertices = vertexer.process(trackParCovPos,trackParCovNeg);
+          nVertices = vertexer.process(trackParCovPos, trackParCovNeg);
         } catch (...) {
           LOG(error) << "Exception caught in DCA fitter process call!";
           continue;
@@ -629,60 +629,60 @@ struct TagTwoProngDisplacedVertices {
         auto primVtx = getPrimaryVertex(collision);
         const auto& secVtx = vertexer.getPCACandidate();
         const auto& covMatrixPCA = vertexer.calcPCACovMatrixFlat();
-        std::array<float,2> trackDcaXy{trackPos.dcaXY(),trackNeg.dcaXY()};
+        std::array<float,2> trackDcaXy{trackPos.dcaXY(), trackNeg.dcaXY()};
         if (fillTagTable) {
-          getTagInfo<doMc>(primVtx,secVtx,covMatrixPCA,pVec,trackDcaXy,channel,trackPos,trackNeg,invMass2,pdgDecayMothers,particlesMc);
+          getTagInfo<doMc>(primVtx, secVtx, covMatrixPCA, pVec, trackDcaXy, channel, trackPos, trackNeg, invMass2, pdgDecayMothers, particlesMc);
           continue;
         }
         else {
-          if (!isSelectedTopology(primVtx,secVtx,covMatrixPCA,pVec,trackDcaXy,channel,ptBin)) {
+          if (!isSelectedTopology(primVtx, secVtx, covMatrixPCA, pVec, trackDcaXy, channel, ptBin)) {
             continue;
           }
         if (channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi) {
-          registry.fill(HIST("hMassKaKaVsPt"),RecoDecay::pt(pVec),std::sqrt(invMass2));
-          tagKaKaTable(trackPos.collisionId(),trackPos.globalIndex(),trackNeg.globalIndex());
+          registry.fill(HIST("hMassKaKaVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
+          tagKaKaTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex());
         } else if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi) {
           if (!studyDzeroReflections) {
-            registry.fill(HIST("hMassKaPiVsPt"),RecoDecay::pt(pVec),std::sqrt(invMass2));
+            registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
           } else {
             float invMassrefl{0.f};
             int isDzero = 1;
             if (std::abs(trackPos.tpcNSigmaKa()) < trackNumSigmaTpc && (std::abs(trackNeg.tpcNSigmaPi()) < trackNumSigmaTpc)) {
               isDzero = 3;
               if (applyTofPid) {
-                if (!isSelectedPidTof(trackNeg,aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) || !isSelectedPidTof(trackPos,aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi))
+                if (!isSelectedPidTof(trackNeg, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) || !isSelectedPidTof(trackPos, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi))
                   isDzero = 1;
               }
             }
             if (isDzero == 3) {
-              auto arrMomentum = std::array{pVecTrackNeg,pVecTrackPos};
-              invMassrefl = std::sqrt(RecoDecay::m2(arrMomentum,masses[channel]));
+              auto arrMomentum = std::array{pVecTrackNeg, pVecTrackPos};
+              invMassrefl = std::sqrt(RecoDecay::m2(arrMomentum, masses[channel]));
             }
-            registry.fill(HIST("hMassKaPiVsPt"),RecoDecay::pt(pVec),std::sqrt(invMass2),invMassrefl,isDzero);
+            registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2), invMassrefl, isDzero);
           }
-          tagPiKaTable(trackPos.collisionId(),trackPos.globalIndex(),trackNeg.globalIndex());
+          tagPiKaTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex());
         } else if (channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) {
           if (!studyDzeroReflections) {
-            registry.fill(HIST("hMassKaPiVsPt"),RecoDecay::pt(pVec),std::sqrt(invMass2));
+            registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
           } else {
             float invMassrefl{0.f};
             int isDzero = 2;
             if (std::abs(trackNeg.tpcNSigmaKa()) < trackNumSigmaTpc && (std::abs(trackPos.tpcNSigmaPi()) < trackNumSigmaTpc)) {
               isDzero = 3;
               if (applyTofPid) {
-                if (!isSelectedPidTof(trackNeg,aod::tagandprobe::TagChannels::DstarPlusToDzeroPi) || !isSelectedPidTof(trackPos,aod::tagandprobe::TagChannels::DstarPlusToDzeroPi))
+                if (!isSelectedPidTof(trackNeg, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi) || !isSelectedPidTof(trackPos, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi))
                   isDzero = 2;
               }
             }
             if (isDzero == 3) {
               auto arrMomentum = std::array{pVecTrackNeg, pVecTrackPos};
-              invMassrefl = std::sqrt(RecoDecay::m2(arrMomentum,masses[channel]));
+              invMassrefl = std::sqrt(RecoDecay::m2(arrMomentum, masses[channel]));
             }
-            registry.fill(HIST("hMassKaPiVsPt"),RecoDecay::pt(pVec),std::sqrt(invMass2),invMassrefl,isDzero);
+            registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2), invMassrefl,isDzero);
           }
-          tagKaPiTable(trackPos.collisionId(),trackPos.globalIndex(),trackNeg.globalIndex());
+          tagKaPiTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex());
         } else if (channel == aod::tagandprobe::TagChannels::DstarToDzeroToKK) {
-          registry.fill(HIST("hMassDzeroKaKaVsPt"),RecoDecay::pt(pVec),std::sqrt(invMass2));
+          registry.fill(HIST("hMassDzeroKaKaVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
         }
         }
       }
@@ -698,24 +698,24 @@ struct TagTwoProngDisplacedVertices {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     float bz{0};
     if (runNumber != bc.runNumber()) {
-      parameters::GRPMagField* grpo = ccdb->getForTimeStamp<parameters::GRPMagField>("GLO/Config/GRPMagField",bc.timestamp());
+      parameters::GRPMagField* grpo = ccdb->getForTimeStamp<parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
       if (grpo != nullptr) {
         base::Propagator::initFieldFromGRP(grpo);
         bz = base::Propagator::Instance()->getNominalBz();
       } else {
-        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu",bc.runNumber(),bc.timestamp());
+        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
       runNumber = bc.runNumber();
     }
 
     std::vector<int> pdgDecayMothers;
-    pdgMothersDecayChannel(pdgDecayMothers,aod::tagandprobe::TagChannels::DplusToKPiPi);
+    pdgMothersDecayChannel(pdgDecayMothers, aod::tagandprobe::TagChannels::DplusToKPiPi);
 
-    auto groupPositive = positivePionsMc->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    computeCombinatorialSameCharge<true>(collision,groupPositive,aod::tagandprobe::TagChannels::DplusToKPiPi,bz,pdgDecayMothers,particlesMc);
+    auto groupPositive = positivePionsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    computeCombinatorialSameCharge<true>(collision, groupPositive, aod::tagandprobe::TagChannels::DplusToKPiPi, bz, pdgDecayMothers, particlesMc);
     
-    auto groupNegative = negativePionsMc->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    computeCombinatorialSameCharge<true>(collision, groupNegative,aod::tagandprobe::TagChannels::DplusToKPiPi,bz,pdgDecayMothers,particlesMc);
+    auto groupNegative = negativePionsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    computeCombinatorialSameCharge<true>(collision, groupNegative, aod::tagandprobe::TagChannels::DplusToKPiPi, bz, pdgDecayMothers, particlesMc);
   }
   PROCESS_SWITCH(TagTwoProngDisplacedVertices, processPiPiFromDplusMc, "Process pipi combinatorial to tag pion pairs from D+ decays Mc", false);
 
@@ -726,26 +726,26 @@ struct TagTwoProngDisplacedVertices {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     float bz{0};
     if (runNumber != bc.runNumber()) {
-      parameters::GRPMagField* grpo = ccdb->getForTimeStamp<parameters::GRPMagField>("GLO/Config/GRPMagField",bc.timestamp());
+      parameters::GRPMagField* grpo = ccdb->getForTimeStamp<parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
       if (grpo != nullptr) {
         base::Propagator::initFieldFromGRP(grpo);
         bz = base::Propagator::Instance()->getNominalBz();
       } else {
-        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu",bc.runNumber(),bc.timestamp());
+        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
       runNumber = bc.runNumber();
     }
     
     std::vector<int> pdgDecayMothers;
-    pdgMothersDecayChannel(pdgDecayMothers,aod::tagandprobe::TagChannels::DplusToKPiPi);
+    pdgMothersDecayChannel(pdgDecayMothers, aod::tagandprobe::TagChannels::DplusToKPiPi);
 
-    auto groupPositive = positivePions->sliceByCached(aod::track::collisionId, collision.globalIndex(),cache);
-    computeCombinatorialSameCharge<false>(collision,groupPositive,aod::tagandprobe::TagChannels::DplusToKPiPi,bz,pdgDecayMothers,tracks);
+    auto groupPositive = positivePions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    computeCombinatorialSameCharge<false>(collision, groupPositive, aod::tagandprobe::TagChannels::DplusToKPiPi, bz, pdgDecayMothers, tracks);
 
-    auto groupNegative = negativePions->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    computeCombinatorialSameCharge<false>(collision,groupNegative,aod::tagandprobe::TagChannels::DplusToKPiPi,bz,pdgDecayMothers,tracks);
+    auto groupNegative = negativePions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    computeCombinatorialSameCharge<false>(collision, groupNegative, aod::tagandprobe::TagChannels::DplusToKPiPi, bz, pdgDecayMothers, tracks);
   }
-  PROCESS_SWITCH(TagTwoProngDisplacedVertices,processPiPiFromDplus,"Process pipi combinatorial to tag pion pairs from D+ decays",false);
+  PROCESS_SWITCH(TagTwoProngDisplacedVertices, processPiPiFromDplus, "Process pipi combinatorial to tag pion pairs from D+ decays", false);
 
 void processKaKaFromDsOrDplusMc(CollisionsFiltered::iterator const& collision,
                                 TracksWithSelAndDcaMcFiltered const& tracks,
@@ -756,24 +756,24 @@ void processKaKaFromDsOrDplusMc(CollisionsFiltered::iterator const& collision,
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     float bz{0};
     if (runNumber != bc.runNumber()) {
-      parameters::GRPMagField* grpo = ccdb->getForTimeStamp<parameters::GRPMagField>("GLO/Config/GRPMagField",bc.timestamp());
+      parameters::GRPMagField* grpo = ccdb->getForTimeStamp<parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
       if (grpo != nullptr) {
         base::Propagator::initFieldFromGRP(grpo);
         bz = base::Propagator::Instance()->getNominalBz();
       } else {
-        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu",bc.runNumber(),bc.timestamp());
+        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
       runNumber = bc.runNumber();
     }
 
     std::vector<int> pdgDecayMothers;
-    pdgMothersDecayChannel(pdgDecayMothers,aod::tagandprobe::TagChannels::DsOrDplusToKKPi);
+    pdgMothersDecayChannel(pdgDecayMothers, aod::tagandprobe::TagChannels::DsOrDplusToKKPi);
 
-    auto groupPositive = positiveKaonsMc->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    auto groupNegative = negativeKaonsMc->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    computeCombinatorialOppositeCharge<true>(collision,groupPositive,groupNegative,aod::tagandprobe::TagChannels::DsOrDplusToKKPi,bz,pdgDecayMothers,particlesMc);
+    auto groupPositive = positiveKaonsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto groupNegative = negativeKaonsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    computeCombinatorialOppositeCharge<true>(collision, groupPositive, groupNegative, aod::tagandprobe::TagChannels::DsOrDplusToKKPi, bz, pdgDecayMothers, particlesMc);
   }
-  PROCESS_SWITCH(TagTwoProngDisplacedVertices,processKaKaFromDsOrDplusMc,"Process KK combinatorial to tag kaon pairs from Ds+/D+ decays Mc",false);
+  PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaKaFromDsOrDplusMc, "Process KK combinatorial to tag kaon pairs from Ds+/D+ decays Mc", false);
 
   void processKaKaFromDsOrDplus(CollisionsFiltered::iterator const& collision,
                                 TracksWithSelAndDcaFiltered const& tracks,
@@ -782,24 +782,24 @@ void processKaKaFromDsOrDplusMc(CollisionsFiltered::iterator const& collision,
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     float bz{0};
     if (runNumber != bc.runNumber()) {
-      parameters::GRPMagField* grpo = ccdb->getForTimeStamp<parameters::GRPMagField>("GLO/Config/GRPMagField",bc.timestamp());
+      parameters::GRPMagField* grpo = ccdb->getForTimeStamp<parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
       if (grpo != nullptr) {
         base::Propagator::initFieldFromGRP(grpo);
         bz = base::Propagator::Instance()->getNominalBz();
       } else {
-        LOGF(fatal, "GRP object is not available in CCDB fogit r run=%d at timestamp=%llu",bc.runNumber(),bc.timestamp());
+        LOGF(fatal, "GRP object is not available in CCDB fogit r run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
       runNumber = bc.runNumber();
     }
 
     std::vector<int> pdgDecayMothers;
-    pdgMothersDecayChannel(pdgDecayMothers,aod::tagandprobe::TagChannels::DsOrDplusToKKPi);
+    pdgMothersDecayChannel(pdgDecayMothers, aod::tagandprobe::TagChannels::DsOrDplusToKKPi);
 
-    auto groupPositive = positiveKaons->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    auto groupNegative = negativeKaons->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    computeCombinatorialOppositeCharge<false>(collision,groupPositive,groupNegative,aod::tagandprobe::TagChannels::DsOrDplusToKKPi,bz,pdgDecayMothers,tracks);
+    auto groupPositive = positiveKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto groupNegative = negativeKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    computeCombinatorialOppositeCharge<false>(collision, groupPositive, groupNegative, aod::tagandprobe::TagChannels::DsOrDplusToKKPi, bz, pdgDecayMothers, tracks);
   }
-  PROCESS_SWITCH(TagTwoProngDisplacedVertices,processKaKaFromDsOrDplus,"Process KK combinatorial to tag kaon pairs from Ds+/D+ decays",false);
+  PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaKaFromDsOrDplus, "Process KK combinatorial to tag kaon pairs from Ds+/D+ decays", false);
 
   void processKaKaFromDzero(CollisionsFiltered::iterator const& collision,
                             TracksWithSelAndDcaFiltered const& tracks,
@@ -808,24 +808,24 @@ void processKaKaFromDsOrDplusMc(CollisionsFiltered::iterator const& collision,
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     float bz{0};
     if (runNumber != bc.runNumber()) {
-      parameters::GRPMagField* grpo = ccdb->getForTimeStamp<parameters::GRPMagField>("GLO/Config/GRPMagField",bc.timestamp());
+      parameters::GRPMagField* grpo = ccdb->getForTimeStamp<parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
       if (grpo != nullptr) {
         base::Propagator::initFieldFromGRP(grpo);
         bz = base::Propagator::Instance()->getNominalBz();
       } else {
-        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu",bc.runNumber(),bc.timestamp());
+        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
       runNumber = bc.runNumber();
     }
 
     std::vector<int> pdgDecayMothers;
-    pdgMothersDecayChannel(pdgDecayMothers,aod::tagandprobe::TagChannels::DstarToDzeroToKK);
+    pdgMothersDecayChannel(pdgDecayMothers, aod::tagandprobe::TagChannels::DstarToDzeroToKK);
 
-    auto groupPositive = positiveKaons->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    auto groupNegative = negativeKaons->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    computeCombinatorialOppositeCharge<false>(collision,groupPositive,groupNegative,aod::tagandprobe::TagChannels::DstarToDzeroToKK,bz,pdgDecayMothers,tracks);
+    auto groupPositive = positiveKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto groupNegative = negativeKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    computeCombinatorialOppositeCharge<false>(collision, groupPositive, groupNegative, aod::tagandprobe::TagChannels::DstarToDzeroToKK, bz, pdgDecayMothers, tracks);
   }
-  PROCESS_SWITCH(TagTwoProngDisplacedVertices,processKaKaFromDzero,"Process KK combinatorial to tag kaon pairs from Dzero decays",false);
+  PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaKaFromDzero, "Process KK combinatorial to tag kaon pairs from Dzero decays", false);
 
   void processKaPiFromDstar(CollisionsFiltered::iterator const& collision,
                             TracksWithSelAndDcaFiltered const& tracks,
@@ -834,12 +834,12 @@ void processKaKaFromDsOrDplusMc(CollisionsFiltered::iterator const& collision,
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     float bz{0};
     if (runNumber != bc.runNumber()) {
-      parameters::GRPMagField* grpo = ccdb->getForTimeStamp<parameters::GRPMagField>("GLO/Config/GRPMagField",bc.timestamp());
+      parameters::GRPMagField* grpo = ccdb->getForTimeStamp<parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
       if (grpo != nullptr) {
         base::Propagator::initFieldFromGRP(grpo);
         bz = base::Propagator::Instance()->getNominalBz();
       } else {
-        LOGF(fatal,"GRP object is not available in CCDB for run=%d at timestamp=%llu",bc.runNumber(),bc.timestamp());
+        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
       runNumber = bc.runNumber();
     }
@@ -847,14 +847,14 @@ void processKaKaFromDsOrDplusMc(CollisionsFiltered::iterator const& collision,
     std::vector<int> pdgDecayMothers;
     pdgMothersDecayChannel(pdgDecayMothers,aod::tagandprobe::TagChannels::DstarPlusToDzeroPi);
 
-    auto groupPionPositive = positivePions->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    auto groupPionNegative = negativePions->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    auto groupKaonPositive = positiveKaons->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    auto groupKaonNegative = negativeKaons->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    computeCombinatorialOppositeCharge<false>(collision,groupPionPositive,groupKaonNegative,aod::tagandprobe::TagChannels::DstarPlusToDzeroPi,bz,pdgDecayMothers,tracks);
-    computeCombinatorialOppositeCharge<false>(collision,groupKaonPositive,groupPionNegative,aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi,bz,pdgDecayMothers,tracks);
+    auto groupPionPositive = positivePions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto groupPionNegative = negativePions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto groupKaonPositive = positiveKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto groupKaonNegative = negativeKaons->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    computeCombinatorialOppositeCharge<false>(collision, groupPionPositive, groupKaonNegative, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi, bz, pdgDecayMothers, tracks);
+    computeCombinatorialOppositeCharge<false>(collision, groupKaonPositive, groupPionNegative, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi, bz, pdgDecayMothers, tracks);
   }
-  PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaPiFromDstar,"Process Kpi combinatorial to tag D0 from D*+ decays",false);
+  PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaPiFromDstar, "Process Kpi combinatorial to tag D0 from D*+ decays", false);
 
   void processKaPiFromDstarMc(CollisionsFiltered::iterator const& collision,
                             TracksWithSelAndDcaMcFiltered const& tracks,
@@ -865,12 +865,12 @@ void processKaKaFromDsOrDplusMc(CollisionsFiltered::iterator const& collision,
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     float bz{0};
     if (runNumber != bc.runNumber()) {
-      parameters::GRPMagField* grpo = ccdb->getForTimeStamp<parameters::GRPMagField>("GLO/Config/GRPMagField",bc.timestamp());
+      parameters::GRPMagField* grpo = ccdb->getForTimeStamp<parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
       if (grpo != nullptr) {
         base::Propagator::initFieldFromGRP(grpo);
         bz = base::Propagator::Instance()->getNominalBz();
       } else {
-        LOGF(fatal,"GRP object is not available in CCDB for run=%d at timestamp=%llu",bc.runNumber(),bc.timestamp());
+        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
       runNumber = bc.runNumber();
     }
@@ -878,14 +878,14 @@ void processKaKaFromDsOrDplusMc(CollisionsFiltered::iterator const& collision,
     std::vector<int> pdgDecayMothers;
     pdgMothersDecayChannel(pdgDecayMothers,aod::tagandprobe::TagChannels::DstarPlusToDzeroPi);
 
-    auto groupPionPositive = positivePionsMc->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    auto groupPionNegative = negativePionsMc->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    auto groupKaonPositive = positiveKaonsMc->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    auto groupKaonNegative = negativeKaonsMc->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache);
-    computeCombinatorialOppositeCharge<true>(collision,groupPionPositive,groupKaonNegative,aod::tagandprobe::TagChannels::DstarPlusToDzeroPi,bz,pdgDecayMothers,particlesMc);
-    computeCombinatorialOppositeCharge<true>(collision,groupKaonPositive,groupPionNegative,aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi,bz,pdgDecayMothers,particlesMc);
+    auto groupPionPositive = positivePionsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto groupPionNegative = negativePionsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto groupKaonPositive = positiveKaonsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    auto groupKaonNegative = negativeKaonsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+    computeCombinatorialOppositeCharge<true>(collision, groupPionPositive, groupKaonNegative, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi, bz, pdgDecayMothers, particlesMc);
+    computeCombinatorialOppositeCharge<true>(collision, groupKaonPositive, groupPionNegative, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi, bz, pdgDecayMothers, particlesMc);
   }
-  PROCESS_SWITCH(TagTwoProngDisplacedVertices,processKaPiFromDstarMc,"Process Kpi combinatorial to tag D0 from D*+ decays",false);
+  PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaPiFromDstarMc, "Process Kpi combinatorial to tag D0 from D*+ decays", false);
 };
 
 /// Probe third track reconstruction efficiency with different selections
