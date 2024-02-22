@@ -314,8 +314,8 @@ struct femtoDreamProducerTask {
     }
   }
 
-  template <typename ParticleType>
-  void fillMCParticle(ParticleType const& particle, o2::aod::femtodreamparticle::ParticleType fdparttype)
+  template <typename CollisionType, typename ParticleType>
+  void fillMCParticle(CollisionType const& col, ParticleType const& particle, o2::aod::femtodreamparticle::ParticleType fdparttype)
   {
     if (particle.has_mcParticle()) {
       // get corresponding MC particle and its info
@@ -325,12 +325,16 @@ struct femtoDreamProducerTask {
       auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
 
       if (abs(pdgCode) == abs(ConfTrkPDGCode.value)) {
-        if (particleMC.isPhysicalPrimary()) {
+        if (col.has_mcCollision() && (particleMC.mcCollisionId() != col.mcCollisionId())){
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kWrongCollision;
+        } else if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
         } else if (motherparticleMC.producedByGenerator()) {
           particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
-        } else {
+        } else if (!particleMC.producedByGenerator() || !col.has_mcCollision()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
+        } else {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kElse;
         }
       } else {
         particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
@@ -412,7 +416,7 @@ struct femtoDreamProducerTask {
       }
 
       if constexpr (isMC) {
-        fillMCParticle(track, o2::aod::femtodreamparticle::ParticleType::kTrack);
+        fillMCParticle(col, track, o2::aod::femtodreamparticle::ParticleType::kTrack);
       }
     }
 
@@ -458,7 +462,7 @@ struct femtoDreamProducerTask {
                     0);
         const int rowOfPosTrack = outputParts.lastIndex();
         if constexpr (isMC) {
-          fillMCParticle(postrack, o2::aod::femtodreamparticle::ParticleType::kV0Child);
+          fillMCParticle(col, postrack, o2::aod::femtodreamparticle::ParticleType::kV0Child);
         }
         int negtrackID = v0.negTrackId();
         int rowInPrimaryTrackTableNeg = -1;
@@ -478,7 +482,7 @@ struct femtoDreamProducerTask {
                     0);
         const int rowOfNegTrack = outputParts.lastIndex();
         if constexpr (isMC) {
-          fillMCParticle(negtrack, o2::aod::femtodreamparticle::ParticleType::kV0Child);
+          fillMCParticle(col, negtrack, o2::aod::femtodreamparticle::ParticleType::kV0Child);
         }
         std::vector<int> indexChildID = {rowOfPosTrack, rowOfNegTrack};
         outputParts(outputCollision.lastIndex(),
@@ -498,7 +502,7 @@ struct femtoDreamProducerTask {
           fillDebugParticle<false>(v0);      // QA for v0
         }
         if constexpr (isMC) {
-          fillMCParticle(v0, o2::aod::femtodreamparticle::ParticleType::kV0);
+          fillMCParticle(col, v0, o2::aod::femtodreamparticle::ParticleType::kV0);
         }
       }
     }
