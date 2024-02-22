@@ -547,7 +547,7 @@ struct antidLambdaEbye {
                 continue;
               if (std::abs(posMother.pdgCode()) != 3122)
                 continue;
-              if (!posMother.has_mothers())
+              if (!posMother.isPhysicalPrimary() || !posMother.has_mothers())
                 continue;
 
               if (posMother.pdgCode() > 0) {
