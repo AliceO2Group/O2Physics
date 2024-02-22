@@ -721,7 +721,7 @@ inline bool matchTrackType(TrackObject const& track)
 /* template <typename TrackObject>
 inline int8_t AcceptTrack(TrackObject const& track)
 {
-  // TODO: incorporate a mask in the scanned tracks table for the rejecting track reason 
+  // TODO: incorporate a mask in the scanned tracks table for the rejecting track reason
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
     if (track.mcParticleId() < 0) {
       return -1;
