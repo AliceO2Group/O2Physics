@@ -19,7 +19,7 @@
 
 #include <string>
 
-#include "Common/DataModel/EventSelection.h"
+#include "Common/CCDB/TriggerAliases.h"
 #include "PWGJE/Core/JetFinder.h"
 
 namespace jetderiveddatautilities
