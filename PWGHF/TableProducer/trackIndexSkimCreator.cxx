@@ -54,6 +54,7 @@
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod;
+using namespace o2::aod::hf_collision_centrality;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -77,16 +78,6 @@ enum EventRejection {
   Chi2,
   Centrality,
   NEventRejection
-};
-
-// event rejection types
-enum CentralityEstimator {
-  None = 0,
-  FT0A,
-  FT0C,
-  FT0M,
-  FV0A,
-  NCentralityEstimators
 };
 
 // enum for proton PID strategy (only proton for baryons)
@@ -3366,10 +3357,10 @@ struct HfTrackIndexSkimCreatorLfCascades {
         casc.casccosPA(pvx, pvy, pvz) > cascCosPA &&
         casc.dcacascdaughters() < dcaCascDau &&
         casc.dcaV0daughters() < dcaV0Dau &&
-        casc.dcanegtopv() > dcaNegToPv &&
-        casc.dcapostopv() > dcaPosToPv &&
-        casc.dcabachtopv() > dcaBachToPv &&
-        casc.dcav0topv(pvx, pvy, pvz) > dcaV0ToPv &&
+        std::abs(casc.dcanegtopv()) > dcaNegToPv &&
+        std::abs(casc.dcapostopv()) > dcaPosToPv &&
+        std::abs(casc.dcabachtopv()) > dcaBachToPv &&
+        std::abs(casc.dcav0topv(pvx, pvy, pvz)) > dcaV0ToPv &&
         casc.v0radius() > v0TransvRadius &&
         casc.cascradius() > cascTransvRadius &&
         std::abs(casc.mLambda() - massLambda) < v0MassWindow) {
@@ -3416,6 +3407,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
                          V0Full const&)
   {
     uint8_t hfFlag = 0;
+    bool isGoogForXi2Prong = true;
+    bool isGoogForOmega2Prong = true;
 
     for (const auto& collision : collisions) {
 
@@ -3495,6 +3488,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
         for (auto trackIdPion1 = groupedBachTrackIndices.begin(); trackIdPion1 != groupedBachTrackIndices.end(); ++trackIdPion1) {
 
           hfFlag = 0;
+          isGoogForXi2Prong = true;
+          isGoogForOmega2Prong = true;
 
           auto trackPion1 = trackIdPion1.track_as<aod::TracksWCovDca>();
 
@@ -3523,9 +3518,9 @@ struct HfTrackIndexSkimCreatorLfCascades {
             if (fillHistograms) {
               registry.fill(HIST("hFitterStatusXi2Prong"), 1);
             }
-            continue;
+            isGoogForXi2Prong = false;
           }
-          if (fillHistograms) {
+          if (isGoogForXi2Prong && fillHistograms) {
             registry.fill(HIST("hFitterStatusXi2Prong"), 0);
           }
 
@@ -3563,9 +3558,9 @@ struct HfTrackIndexSkimCreatorLfCascades {
             if (fillHistograms) {
               registry.fill(HIST("hFitterStatusOmega2Prong"), 1);
             }
-            continue;
+            isGoogForOmega2Prong = false;
           }
-          if (fillHistograms) {
+          if (isGoogForOmega2Prong && fillHistograms) {
             registry.fill(HIST("hFitterStatusOmega2Prong"), 0);
           }
 
