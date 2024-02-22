@@ -136,12 +136,12 @@ class VarManager : public TObject
     kDalitzBits = 5,                // first bit for Dalitz tagged tracks 
     kBarrelUserCutsBits = 13,       // first bit for user track cuts
     kIsTPCPostcalibrated = 63       // tracks were postcalibrated for the TPC PID
-  }
+  };
 
   enum MuonTrackFilteringBits {
     kMuonUserCutsBits = 0,        // first bit for user muon cuts
     kMuonIsPropagated = 7         // whether the muon was propagated already
-  }
+  };
 
  public:
   enum Variables {
@@ -359,7 +359,7 @@ class VarManager : public TObject
     kIsDalitzLeg,             // Up to 8 dalitz selections
     kBarrelNAssocsInBunch,    // number of in bunch collision associations
     kBarrelNAssocsOutOfBunch, // number of out of bunch collision associations
-    kNBarrelTrackVariables = kIsDalitzLeg + 8,
+    kNBarrelTrackVariables,
 
     // Muon track variables
     kMuonNClusters,
@@ -784,12 +784,13 @@ class VarManager : public TObject
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
 
-  ClassDefNV(VarManager, 3)
+  ClassDef(VarManager, 3);
 };
 
 template <typename T, typename U, typename V>
 auto VarManager::getRotatedCovMatrixXX(const T& matrix, U phi, V theta)
 {
+  //
   auto cp = std::cos(phi);
   auto sp = std::sin(phi);
   auto ct = std::cos(theta);
