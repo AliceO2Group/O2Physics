@@ -63,7 +63,7 @@ struct mcCollisionExtra {
   Configurable<bool> pdgCodeAbsolute{"pdgCodeAbsolute", true, "if true, accept +/- pdgCodeOfInterest"};
   Configurable<float> poiEtaWindow{"poiEtaWindow", 0.8, "PDG code requirement within this eta window"};
 
-    // For manual sliceBy
+  // For manual sliceBy
   Preslice<aod::McParticle> perMcCollision = aod::mcparticle::mcCollisionId;
 
   template <typename T>
@@ -109,11 +109,11 @@ struct mcCollisionExtra {
       bool PoIpresent = false;
       auto mcParticles = mcParticlesUngrouped.sliceBy(perMcCollision, mcCollision.globalIndex());
       for (auto& mcParticle : mcParticles) {
-        if( std::abs(mcParticle.eta())<poiEtaWindow){
-          if(mcParticle.pdgCode() == pdgCodeOfInterest){
+        if (std::abs(mcParticle.eta()) < poiEtaWindow) {
+          if (mcParticle.pdgCode() == pdgCodeOfInterest) {
             PoIpresent = true;
           }
-          if(mcParticle.pdgCode() == -pdgCodeOfInterest && pdgCodeAbsolute){
+          if (mcParticle.pdgCode() == -pdgCodeOfInterest && pdgCodeAbsolute) {
             PoIpresent = true;
           }
         }
@@ -125,26 +125,25 @@ struct mcCollisionExtra {
     auto sortedIndices = sort_indices(mcCollisionTimes);
     for (auto& collision : collisions) {
       uint16_t forwardHistory = 0, backwardHistory = 0;
-      if(!collision.has_mcCollision()) {
+      if (!collision.has_mcCollision()) {
         mcCollContexts(forwardHistory, backwardHistory);
         continue;
       }
-      auto mcCollision = collision.mcCollision(); 
+      auto mcCollision = collision.mcCollision();
       auto iter = std::find(sortedIndices.begin(), sortedIndices.end(), mcCollision.index());
-      if (iter != sortedIndices.end())  
-      { 
-        int index = iter - sortedIndices.begin(); 
-        for(int iMcColl=index+1; iMcColl<index+17;iMcColl++){
-          if(iMcColl>=sortedIndices.size())
+      if (iter != sortedIndices.end()) {
+        int index = iter - sortedIndices.begin();
+        for (int iMcColl = index + 1; iMcColl < index + 17; iMcColl++) {
+          if (iMcColl >= sortedIndices.size())
             continue;
-          if(mcCollisionHasPoI[sortedIndices[iMcColl]]) 
-            bitset(forwardHistory,iMcColl-index-1);
+          if (mcCollisionHasPoI[sortedIndices[iMcColl]])
+            bitset(forwardHistory, iMcColl - index - 1);
         }
-        for(int iMcColl=index-1; iMcColl>index-17;iMcColl--){
-          if(iMcColl<=0)
+        for (int iMcColl = index - 1; iMcColl > index - 17; iMcColl--) {
+          if (iMcColl <= 0)
             continue;
-          if(mcCollisionHasPoI[sortedIndices[iMcColl]]) 
-            bitset(backwardHistory,index+1-iMcColl);
+          if (mcCollisionHasPoI[sortedIndices[iMcColl]])
+            bitset(backwardHistory, index + 1 - iMcColl);
         }
       }
       mcCollContexts(forwardHistory, backwardHistory);
