@@ -325,7 +325,7 @@ struct femtoDreamProducerTask {
       auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
 
       if (abs(pdgCode) == abs(ConfTrkPDGCode.value)) {
-        if (col.has_mcCollision() && (particleMC.mcCollisionId() != col.mcCollisionId())){
+        if (col.has_mcCollision() && (particleMC.mcCollisionId() != col.mcCollisionId())) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kWrongCollision;
         } else if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
