@@ -105,6 +105,7 @@ using MyBarrelTracksSelected = soa::Join<aod::Tracks, aod::TracksExtra, aod::Tra
                                          aod::pidTOFFullEl, aod::pidTOFFullPi,
                                          aod::pidTOFFullKa, aod::pidTOFFullPr,
                                          aod::DQBarrelTrackCuts>;
+using MyBarrelTracksAssocSelected = soa::Join<TrackAssoc, aod::DQBarrelTrackCuts>; // As the kinelatic values must be re-computed for the tracks everytime it is associated to a collision, the selection is done not on the tracks, but on the track-collision association
 
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::FwdTracksDCA>;
 using MyMuonsAssocSelected = soa::Join<FwdTrackAssoc, aod::DQMuonsCuts>; // As the kinelatic values must be re-computed for the muons tracks everytime it is associated to a collision, the selection is done not on the muon, but on the muon-collision association
@@ -191,6 +192,7 @@ struct DQBarrelTrackSelection {
 
   Configurable<std::string> fConfigCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
+  Configurable<bool> fPropTrack{"cfgPropTrack", false, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
   Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
@@ -255,6 +257,8 @@ struct DQBarrelTrackSelection {
     auto bc = bcs.begin(); // check just the first bc to get the run number
     if (fCurrentRun != bc.runNumber()) {
       fCurrentRun = bc.runNumber();
+      o2::parameters::GRPMagField* grpo = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
+      o2::base::Propagator::initFieldFromGRP(grpo);
       if (fConfigComputeTPCpostCalib) {
         auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
         VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
@@ -265,6 +269,10 @@ struct DQBarrelTrackSelection {
         VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
       }
     }
+
+    // material correction for track propagation
+    // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
     uint32_t filterMap = uint32_t(0);
     trackSel.reserve(tracksBarrel.size());
@@ -277,7 +285,9 @@ struct DQBarrelTrackSelection {
 
       VarManager::FillTrack<TTrackFillMap>(track);
       // compute quantities which depend on the associated collision, such as DCA
-      VarManager::FillTrackCollision<TTrackFillMap>(track, collision);
+      if (fPropTrack) {
+        VarManager::FillTrackCollisionMatCorr<TTrackFillMap>(track, collision, noMatCorr);
+      }
       if (fConfigQA) {
         fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
       }
