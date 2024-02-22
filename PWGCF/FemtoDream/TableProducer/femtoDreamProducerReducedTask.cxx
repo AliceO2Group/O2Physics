@@ -200,7 +200,7 @@ struct femtoDreamProducerReducedTask {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
         } else if (motherparticleMC.producedByGenerator()) {
           particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
-        } else if (!particleMC.producedByGenerator() || !col.has_mcCollision()) {
+        } else if (!particleMC.producedByGenerator()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
         } else {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kElse;
