@@ -397,7 +397,7 @@ struct antidLambdaEbye {
           continue;
         }
 
-        if (iP) {  // deuteron
+        if (iP) { // deuteron
           histos.fill(HIST("QA/tpcNsigma"), track.tpcInnerParam(), nSigmaTPC);
           histos.fill(HIST("QA/momCorr"), track.p(), track.tpcInnerParam() - track.p(), track.pidForTracking());
           // check contamination
