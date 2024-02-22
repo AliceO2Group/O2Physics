@@ -228,6 +228,7 @@ struct HfCandidateCreatorXic {
 
       // set hfFlag
       int hfFlag = BIT(aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
+      int signXicPlus = casc.sign() < 0 ? +1 : -1;
 
       // get SV properties
       const auto& secondaryVertex = df.getPCACandidate();
@@ -330,7 +331,7 @@ struct HfCandidateCreatorXic {
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
                        covMatrixSV[0], covMatrixSV[2], covMatrixSV[5],
                        errorDecayLength, errorDecayLengthXY,
-                       chi2SV, massXiPiPi,
+                       chi2SV, massXiPiPi, signXicPlus,
                        pVecXi[0], pVecXi[1], pVecXi[2],
                        pVecPi0[0], pVecPi0[1], pVecPi0[2],
                        pVecPi1[0], pVecPi1[1], pVecPi1[2],
@@ -433,6 +434,7 @@ struct HfCandidateCreatorXic {
 
       // set hfFlag
       int hfFlag = BIT(aod::hf_cand_xictoxipipi::DecayType::XicToXiPiPi);
+      int signXicPlus = casc.sign() < 0 ? +1 : -1;
 
       // get impact parameters of XicPlus daughters
       float impactParameter0XY = 0., errImpactParameter0XY = 0.;
@@ -483,7 +485,7 @@ struct HfCandidateCreatorXic {
                        kfXicPlus.GetX(), kfXicPlus.GetY(), kfXicPlus.GetZ(),
                        kfXicPlus.GetErrX(), kfXicPlus.GetErrY(), kfXicPlus.GetErrZ(),
                        kfXicPlus.GetErrDecayLength(), kfXicPlus.GetErrDecayLengthXY(),
-                       kfXicPlus.GetChi2(), kfXicPlus.GetMass(),
+                       kfXicPlus.GetChi2(), kfXicPlus.GetMass(), signXicPlus,
                        kfXi.GetPx(), kfXi.GetPy(), kfXi.GetPz(),
                        kfPion0.GetPx(), kfPion0.GetPy(), kfPion0.GetPz(),
                        kfPion1.GetPx(), kfPion1.GetPy(), kfPion1.GetPz(),
