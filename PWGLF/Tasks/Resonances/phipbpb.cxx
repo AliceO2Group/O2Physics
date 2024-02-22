@@ -49,7 +49,6 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -62,13 +61,12 @@ struct phipbpb {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdg;
 
-    // CCDB options
+  // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  
 
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -89,32 +87,31 @@ struct phipbpb {
   Configurable<double> cfgEvtSelpar1{"cfgEvtSelpar1", 0.0, "Event selection par1"};
   Configurable<double> cfgEvtSelpar2{"cfgEvtSelpar2", 0.0, "Event selection par2"};
   Configurable<double> cfgEvtSelpar3{"cfgEvtSelpar3", 0.0, "Event selection par3"};
-  
+
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   Filter PIDcutFilter = nabs(aod::pidtpc::tpcNSigmaKa) < nsigmaCutTPC;
-  
+
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::EPCallibrationTables>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa>>;
-  
+
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::McTrackLabels>>;
 
-  
   SliceCache cache;
   Partition<TrackCandidates> posTracks = aod::track::signed1Pt > cfgCutCharge;
   Partition<TrackCandidates> negTracks = aod::track::signed1Pt < cfgCutCharge;
-  
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(o2::framework::InitContext&)
   {
-    histos.add("hFTOMvsTPC", "Mult correlation FT0M vs. TPC", kTH2F, {{600, -0.5f, 59999.5f},{60, -0.5f, 5999.5f}});
-    histos.add("hFTOCvsTPC", "Mult correlation FT0C vs. TPC", kTH2F, {{600, -0.5f, 59999.5f},{60, -0.5f, 5999.5f}});
-    histos.add("hFTOAvsTPC", "Mult correlation FT0A vs. TPC", kTH2F, {{600, -0.5f, 59999.5f},{60, -0.5f, 5999.5f}});
-    histos.add("hFTOMvsTPCSelected", "Mult correlation FT0M vs. TPC after selection", kTH2F, {{600, -0.5f, 59999.5f},{60, -0.5f, 5999.5f}});
-    histos.add("hFTOCvsTPCSelected", "Mult correlation FT0C vs. TPC after selection", kTH2F, {{600, -0.5f, 59999.5f},{60, -0.5f, 5999.5f}});
-    histos.add("hFTOAvsTPCSelected", "Mult correlation FT0A vs. TPC after selection", kTH2F, {{600, -0.5f, 59999.5f},{60, -0.5f, 5999.5f}});
+    histos.add("hFTOMvsTPC", "Mult correlation FT0M vs. TPC", kTH2F, {{600, -0.5f, 59999.5f}, {60, -0.5f, 5999.5f}});
+    histos.add("hFTOCvsTPC", "Mult correlation FT0C vs. TPC", kTH2F, {{600, -0.5f, 59999.5f}, {60, -0.5f, 5999.5f}});
+    histos.add("hFTOAvsTPC", "Mult correlation FT0A vs. TPC", kTH2F, {{600, -0.5f, 59999.5f}, {60, -0.5f, 5999.5f}});
+    histos.add("hFTOMvsTPCSelected", "Mult correlation FT0M vs. TPC after selection", kTH2F, {{600, -0.5f, 59999.5f}, {60, -0.5f, 5999.5f}});
+    histos.add("hFTOCvsTPCSelected", "Mult correlation FT0C vs. TPC after selection", kTH2F, {{600, -0.5f, 59999.5f}, {60, -0.5f, 5999.5f}});
+    histos.add("hFTOAvsTPCSelected", "Mult correlation FT0A vs. TPC after selection", kTH2F, {{600, -0.5f, 59999.5f}, {60, -0.5f, 5999.5f}});
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{201, -0.5, 200.5}});
     histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
     histos.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
@@ -128,7 +125,7 @@ struct phipbpb {
   }
 
   double massKa = o2::constants::physics::MassKPlus;
-    
+
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
@@ -177,7 +174,7 @@ struct phipbpb {
     if (!collision.sel8()) {
       return;
     }
-    if(!collision.triggereventep()) {
+    if (!collision.triggereventep()) {
       return;
     }
     auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -187,20 +184,20 @@ struct phipbpb {
     auto multFT0C = collision.multFT0C();
     auto multFT0A = collision.multFT0A();
     auto multTPC = collision.multTPC();
-    histos.fill(HIST("hFTOMvsTPC"), multFT0M,multTPC);
-    histos.fill(HIST("hFTOCvsTPC"), multFT0C,multTPC);
-    histos.fill(HIST("hFTOCvsTPC"), multFT0A,multTPC);
+    histos.fill(HIST("hFTOMvsTPC"), multFT0M, multTPC);
+    histos.fill(HIST("hFTOCvsTPC"), multFT0C, multTPC);
+    histos.fill(HIST("hFTOCvsTPC"), multFT0A, multTPC);
     if (cfgRemoveOutlier) {
-      if ((multTPC > (cfgEvtSelpar0*multFT0C+cfgEvtSelpar1)) || (multTPC < (cfgEvtSelpar2*multFT0C+cfgEvtSelpar3))) {
-	return;
+      if ((multTPC > (cfgEvtSelpar0 * multFT0C + cfgEvtSelpar1)) || (multTPC < (cfgEvtSelpar2 * multFT0C + cfgEvtSelpar3))) {
+        return;
       }
     }
-    histos.fill(HIST("hPsiFT0C"), centrality,collision.psiFT0C());
+    histos.fill(HIST("hPsiFT0C"), centrality, collision.psiFT0C());
     histos.fill(HIST("hCentrality"), centrality);
     histos.fill(HIST("hVtxZ"), collision.posZ());
-    histos.fill(HIST("hFTOMvsTPCSelected"), multFT0M,multTPC);
-    histos.fill(HIST("hFTOCvsTPCSelected"), multFT0C,multTPC);
-    histos.fill(HIST("hFTOCvsTPCSelected"), multFT0A,multTPC);
+    histos.fill(HIST("hFTOMvsTPCSelected"), multFT0M, multTPC);
+    histos.fill(HIST("hFTOCvsTPCSelected"), multFT0C, multTPC);
+    histos.fill(HIST("hFTOCvsTPCSelected"), multFT0A, multTPC);
     for (auto track1 : posThisColl) {
       if (!selectionTrack(track1) || !selectionPID(track1)) {
         continue;
@@ -212,9 +209,9 @@ struct phipbpb {
       histos.fill(HIST("hNsigmaKaonTOF"), track1.tofNSigmaKa());
       auto track1ID = track1.globalIndex();
       for (auto track2 : negThisColl) {
-	if (!selectionTrack(track2) || !selectionPID(track2)) {
-	  continue;
-	}
+        if (!selectionTrack(track2) || !selectionPID(track2)) {
+          continue;
+        }
         auto track2ID = track2.globalIndex();
         if (track2ID == track1ID) {
           continue;
@@ -222,10 +219,10 @@ struct phipbpb {
         if (!selectionPair(track1, track2)) {
           continue;
         }
-	KaonPlus.SetXYZM(track1.px(),track1.py(),track1.pz(),massKa);
-	KaonMinus.SetXYZM(track2.px(),track2.py(),track2.pz(),massKa);
-	PhiMother = KaonPlus + KaonMinus;
-	histos.fill(HIST("h3PhiInvMassSame"),centrality,PhiMother.Pt(),PhiMother.M());
+        KaonPlus.SetXYZM(track1.px(), track1.py(), track1.pz(), massKa);
+        KaonMinus.SetXYZM(track2.px(), track2.py(), track2.pz(), massKa);
+        PhiMother = KaonPlus + KaonMinus;
+        histos.fill(HIST("h3PhiInvMassSame"), centrality, PhiMother.Pt(), PhiMother.M());
       }
     }
   }
@@ -235,7 +232,7 @@ struct phipbpb {
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
     for (auto const& [collision1, collision2] : o2::soa::selfCombinations(binningOnPositions, cfgNoMixedEvents, -1, collisions, collisions)) {
       if (!collision1.sel8() || !collision2.sel8()) {
-	continue;
+        continue;
       }
       auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
       auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
@@ -247,29 +244,29 @@ struct phipbpb {
       auto multTPC2 = collision2.multTPC();
 
       if (cfgRemoveOutlier) {
-	if ((multTPC1 > (cfgEvtSelpar0*multFT0C1+cfgEvtSelpar1)) || (multTPC1 < (cfgEvtSelpar2*multFT0C1+cfgEvtSelpar3))) {
-	  continue;
-	}
-	if ((multTPC2 > (cfgEvtSelpar0*multFT0C2+cfgEvtSelpar1)) || (multTPC2 < (cfgEvtSelpar2*multFT0C2+cfgEvtSelpar3))) {
-	  continue;
-	}
+        if ((multTPC1 > (cfgEvtSelpar0 * multFT0C1 + cfgEvtSelpar1)) || (multTPC1 < (cfgEvtSelpar2 * multFT0C1 + cfgEvtSelpar3))) {
+          continue;
+        }
+        if ((multTPC2 > (cfgEvtSelpar0 * multFT0C2 + cfgEvtSelpar1)) || (multTPC2 < (cfgEvtSelpar2 * multFT0C2 + cfgEvtSelpar3))) {
+          continue;
+        }
       }
-      
+
       for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posThisColl, negThisColl))) {
-	if (!selectionTrack(track1) || !selectionPID(track1)) {
-	  continue;
-	}
-	if (!selectionTrack(track2) || !selectionPID(track2)) {
+        if (!selectionTrack(track1) || !selectionPID(track1)) {
           continue;
         }
-	if (!selectionPair(track1, track2)) {
+        if (!selectionTrack(track2) || !selectionPID(track2)) {
           continue;
         }
-        KaonPlus.SetXYZM(track1.px(),track1.py(),track1.pz(),massKa);
-        KaonMinus.SetXYZM(track2.px(),track2.py(),track2.pz(),massKa);
+        if (!selectionPair(track1, track2)) {
+          continue;
+        }
+        KaonPlus.SetXYZM(track1.px(), track1.py(), track1.pz(), massKa);
+        KaonMinus.SetXYZM(track2.px(), track2.py(), track2.pz(), massKa);
         PhiMother = KaonPlus + KaonMinus;
-        histos.fill(HIST("h3PhiInvMassMixed"),centrality1,PhiMother.Pt(),PhiMother.M());
-      } 
+        histos.fill(HIST("h3PhiInvMassMixed"), centrality1, PhiMother.Pt(), PhiMother.M());
+      }
     }
   }
   PROCESS_SWITCH(phipbpb, processMixedEvent, "Process Mixed event", false);

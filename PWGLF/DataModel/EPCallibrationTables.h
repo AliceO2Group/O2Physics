@@ -27,22 +27,22 @@ namespace o2::aod
 {
 namespace epcallibrationtable
 {
-  DECLARE_SOA_COLUMN(TriggerEventEP, triggereventep, bool);
-  DECLARE_SOA_COLUMN(Cent, cent, float);
-  DECLARE_SOA_COLUMN(PsiFT0C, psiFT0C, float);
-  DECLARE_SOA_COLUMN(PsiFT0A, psiFT0A, float);
-  DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);
-  DECLARE_SOA_COLUMN(PsiTPCL, psiTPCL, float);
-  DECLARE_SOA_COLUMN(PsiTPCR, psiTPCR, float);
+DECLARE_SOA_COLUMN(TriggerEventEP, triggereventep, bool);
+DECLARE_SOA_COLUMN(Cent, cent, float);
+DECLARE_SOA_COLUMN(PsiFT0C, psiFT0C, float);
+DECLARE_SOA_COLUMN(PsiFT0A, psiFT0A, float);
+DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);
+DECLARE_SOA_COLUMN(PsiTPCL, psiTPCL, float);
+DECLARE_SOA_COLUMN(PsiTPCR, psiTPCR, float);
 } // namespace epcallibrationtable
 DECLARE_SOA_TABLE(EPCallibrationTables, "AOD", "EPCALLCOLS",
                   epcallibrationtable::TriggerEventEP,
-		  epcallibrationtable::Cent,
-		  epcallibrationtable::PsiFT0C,
-		  epcallibrationtable::PsiFT0A,
-		  epcallibrationtable::PsiTPC,
-		  epcallibrationtable::PsiTPCL,
-		  epcallibrationtable::PsiTPCR);
+                  epcallibrationtable::Cent,
+                  epcallibrationtable::PsiFT0C,
+                  epcallibrationtable::PsiFT0A,
+                  epcallibrationtable::PsiTPC,
+                  epcallibrationtable::PsiTPCL,
+                  epcallibrationtable::PsiTPCR);
 using EPCallibrationTable = EPCallibrationTables::iterator;
 } // namespace o2::aod
 #endif // PWGLF_DATAMODEL_EPCALLIBRATIONTABLES_H_
