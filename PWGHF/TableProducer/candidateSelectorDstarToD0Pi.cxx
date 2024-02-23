@@ -368,6 +368,6 @@ struct HfCandidateSelectorDstarToD0Pi {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorDstarToD0PiExpressions>(cfg),
+    adaptAnalysisTask<HfCandidateSelectorDstarToD0PiExpressions>(cfgc),
     adaptAnalysisTask<HfCandidateSelectorDstarToD0Pi>(cfgc)};
 }
