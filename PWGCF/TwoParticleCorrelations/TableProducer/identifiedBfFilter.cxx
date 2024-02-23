@@ -1095,7 +1095,6 @@ int8_t IdentifiedBfFilterTracks::selectTrack(TrackObject const& track)
   using namespace identifiedbffilter;
 
   /* before track selection */
-  // fillTrackHistosBeforeSelection(track);
 
   /* track selection */
   int8_t pid = AcceptTrack(track);
