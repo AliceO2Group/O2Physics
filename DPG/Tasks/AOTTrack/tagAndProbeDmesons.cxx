@@ -145,7 +145,7 @@ struct TagTwoProngDisplacedVertices {
   Produces<aod::PiKaFromDzTags> tagPiKaTable;
   Produces<aod::TagTopoVariables> tagVarsTable;
   SliceCache cache;
-  Configurable<bool> fillTagTable{"fillTagTable", true, "flag to fill tag table with topological variables"};
+  Configurable<bool> fillTagTable{"fillTagTable", false, "flag to fill tag table with topological variables"};
   Configurable<bool> applyTofPid{"applyTofPid", true, "flag to enable TOF PID selection"};
   Configurable<bool> studyDzeroReflections{"studyDzeroReflections", false, "flag to study Dzero reflections"};
   Configurable<float> trackNumSigmaTof{"trackNumSigmaTof", 3.f, "number of sigma for TOF PID compatibility"};
@@ -307,10 +307,10 @@ struct TagTwoProngDisplacedVertices {
     }
 
     if (!firsTrack.has_mcParticle() || !secondTrack.has_mcParticle()) {
-      return -999;
+      return 0;
     } else {
-      auto firstMcTrack = firsTrack.template mcParticle_as<aod::McParticles>();
-      auto secondMcTrack = secondTrack.template mcParticle_as<aod::McParticles>();
+      auto firstMcTrack = firsTrack.template mcParticle_as<P>();
+      auto secondMcTrack = secondTrack.template mcParticle_as<P>();
       auto firstTrackMotherId = RecoDecay::getMother(particlesMc, firstMcTrack, pdgTagMother, true);
       auto secondTrackMotherId = RecoDecay::getMother(particlesMc, secondMcTrack, pdgTagMother, true);
 
@@ -320,7 +320,7 @@ struct TagTwoProngDisplacedVertices {
         /// π±π± for D± → K∓π±π± decays
         if (channel == aod::tagandprobe::TagChannels::DplusToKPiPi) {
           auto particleMother = particlesMc.rawIteratorAt(firstTrackMotherId);
-          auto daughters = particleMother.template daughters_as<aod::McParticles>();
+          auto daughters = particleMother.template daughters_as<P>();
           // Check if the probe is within the mother's particle daughters
           for (auto& daughter : daughters) {
             if (std::abs(daughter.pdgCode()) == pdgProbeParticle) {
@@ -334,9 +334,9 @@ struct TagTwoProngDisplacedVertices {
         else {
           for (auto pdgGrandMother : pdgDecayMothers) {
             auto grandMotherId = RecoDecay::getMother(particlesMc, particleMother, pdgGrandMother, true);
-            auto particleGrandMother = particlesMc.rawIteratorAt(grandMotherId);
             if (grandMotherId != -1) {
-              auto daughters = particleGrandMother.template daughters_as<aod::McParticles>();
+              auto particleGrandMother = particlesMc.rawIteratorAt(grandMotherId);
+              auto daughters = particleGrandMother.template daughters_as<P>();
               // Check if the probe is within the GrandMother's particle daughters
               for (auto& daughter : daughters) {
                 if (std::abs(daughter.pdgCode()) == pdgProbeParticle) {
@@ -531,8 +531,9 @@ struct TagTwoProngDisplacedVertices {
 
         auto pVec = RecoDecay::pVec(pVecTrackFirst, pVecTrackSecond);
         auto ptBin = findBin(&ptBinsForTopologicalCuts[channel], RecoDecay::pt(pVec));
-        if (ptBin == -1)
+        if (ptBin == -1){
           continue;
+        }
 
         if (!isSelectedInvariantMass(pVecTrackFirst, pVecTrackSecond, channel, invMass2, ptBin)) {
           continue;
@@ -558,7 +559,6 @@ struct TagTwoProngDisplacedVertices {
         std::array<float, 2> trackDcaXy{trackFirst.dcaXY(), trackSecond.dcaXY()};
         if (fillTagTable) {
           getTagInfo<doMc>(primVtx, secVtx, covMatrixPCA, pVec, trackDcaXy, channel, trackFirst, trackSecond, invMass2, pdgDecayMothers, particlesMc);
-          continue;
         } else {
           if (!isSelectedTopology(primVtx, secVtx, covMatrixPCA, pVec, trackDcaXy, channel, ptBin)) {
             continue;
@@ -597,8 +597,9 @@ struct TagTwoProngDisplacedVertices {
 
         auto pVec = RecoDecay::pVec(pVecTrackPos, pVecTrackNeg);
         auto ptBin = findBin(&ptBinsForTopologicalCuts[channel], RecoDecay::pt(pVec));
-        if (ptBin == -1)
+        if (ptBin == -1){
           continue;
+        }
 
         if (!isSelectedInvariantMass(pVecTrackPos, pVecTrackNeg, channel, invMass2, ptBin)) {
           continue;
@@ -624,7 +625,6 @@ struct TagTwoProngDisplacedVertices {
         std::array<float, 2> trackDcaXy{trackPos.dcaXY(), trackNeg.dcaXY()};
         if (fillTagTable) {
           getTagInfo<doMc>(primVtx, secVtx, covMatrixPCA, pVec, trackDcaXy, channel, trackPos, trackNeg, invMass2, pdgDecayMothers, particlesMc);
-          continue;
         } else {
           if (!isSelectedTopology(primVtx, secVtx, covMatrixPCA, pVec, trackDcaXy, channel, ptBin)) {
             continue;
