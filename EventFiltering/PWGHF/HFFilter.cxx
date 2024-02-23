@@ -626,7 +626,7 @@ struct HfFilter { // Main struct for HF triggers
 
                   int isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackBachelor, trackParBachelor, dcaBachelor, -1);
                   if (TESTBIT(isTrackSelected, kSoftPion) && ((TESTBIT(selD0, 0) && trackBachelor.sign() < 0) || (TESTBIT(selD0, 1) && trackBachelor.sign() > 0))) {
-                    std::array<float, 2> massDausD0{massPi, massKa};
+                    std::array<float, 2> c{massPi, massKa};
                     auto massD0dau = massD0Cand;
                     if (trackBachelor.sign() < 0) {
                       massDausD0[0] = massKa;
@@ -875,6 +875,63 @@ struct HfFilter { // Main struct for HF triggers
             }
           } // end femto selection
 
+          // SigmaC++ K- trigger
+          if(is3Prong[2]>0) { // we need a candidate Lc->pKpi
+
+            std::array<float, 3> massDausLcPKPi{massProton, massKa, massPi};
+            std::array<float, 3> massDausLcPiKP{massPi, massKa, massProton};
+            float massLcPKPi = RecoDecay::m(pVec3Prong, massDausLcPKPi);
+            float massLcPiKP = RecoDecay::m(pVec3Prong, massDausLcPiKP);
+            if(!helper.isSelectedLcInMassRangeSigmaC(massLcPKPi, massLcPiKP)) {
+              /// Lc outside the allowed mass range
+              continue;
+            }
+
+            // we first look to SigmaC++
+            for (const auto& trackSoftPiId : trackIdsThisCollision) { // start loop over tracks (soft pi)
+
+              // soft pion candidates
+              auto trackSoftPi = trackSoftPiId.track_as<BigTracksPID>();
+
+              // check the candidate SigmaC++ charge 
+              std::array<int, 4> charges = {trackFirst.sign(), trackSecond.sign(), trackThird.sign(), trackSoftPi.sign()};
+              if( std::abs(std::accumulate(charges.begin(), charges.end(), 0)) != 2) {
+                continue;
+              }
+
+              // exclude tracks already used to build the 3-prong candidate
+              auto globalIndexSoftPi = trackSoftPi.globalIndex();
+              if (cand3Prong.prong0Id() == trackFirst.globalIndex() || cand3Prong.prong0Id() == trackSecond.globalIndex() || cand3Prong.prong0Id() == trackThird.globalIndex()) {
+                // do not consider as candidate soft pion a track already used to build the current 3-prong candidate
+                continue;
+              }
+
+              // select soft pion candidates
+              auto trackParSoftPi = getTrackPar(trackSoftPi);
+              o2::gpu::gpustd::array<float, 2> dcaSoftPi{trackSoftPi.dcaXY(), trackSoftPi.dcaZ()};
+              std::array<float, 3> pVecSoftPi = {trackSoftPi.px(), trackSoftPi.py(), trackSoftPi.pz()};
+              if (trackSoftPi.collisionId() != thisCollId) {
+                o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParSoftPi, 2.f, noMatCorr, &dcaSoftPi);
+                getPxPyPz(trackParSoftPi, pVecSoftPi);
+              }
+              int isSoftPionSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackSoftPi, trackParSoftPi, dcaSoftPi, kSigmaCppKminus);
+              if (TESTBIT(isSoftPionSelected, kSoftPionForSigmaC) /*&& (TESTBIT(is3Prong[2], 0) || TESTBIT(is3Prong[2], 1))*/) {
+
+                // check the mass of the SigmaC++ candidate
+                std::array<float, 4> pVecDausSigmaC{pVecFirst, pVecSecond, pVecThird, pVecSoftPi};
+                std::array<float, 4> massDausSigmaCToLcPKPi{massProton, massKa, massPi, massPi};
+                std::array<float, 4> massDausSigmaCToLcPiKP{massPi, massKa, massProton, massPi};
+                float massSigmaCToLcPKPi = RecoDecay::m(pVecDausSigmaC, massDausSigmaCToLcPKPi):
+                float massSigmaCToLcPiKP = RecoDecay::m(pVecDausSigmaC, massDausSigmaCToLcPiKP):
+                if(!helper.isSelectedSigmaCInDeltaMassRange(massSigmaCToLcPKPi-massLcPKPi, massSigmaCToLcPiKP-massLcPiKP)) {
+
+                  /// let's build a candidate SigmaC++K- and keep it if it is in the correct mass range
+                  /// TODO (check the charge first)
+                }
+
+              } // end SigmaC++ candidate
+            } // end loop over tracks (soft pi)
+          } // end candidate Lc->pKpi
         } // end loop over tracks
 
         // 3-prong with V0 (Ds gamma, D+ K0S, D+ Lambda)
