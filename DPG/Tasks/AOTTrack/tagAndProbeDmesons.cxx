@@ -46,7 +46,6 @@ enum TagChannels : uint8_t {
   NTagChannels
 };
 
-
 enum TrackTypes : uint8_t {
   GlobalWoDca = 0,
   GlobalWoDcaWoItsIb,
@@ -260,9 +259,8 @@ struct TagTwoProngDisplacedVertices {
     if (value >= binsPt->back()) {
       return -1;
     }
-    return std::distance(binsPt->begin(), std::upper_bound(binsPt->begin() ,binsPt->end(),value)) - 1;
+    return std::distance(binsPt->begin(), std::upper_bound(binsPt->begin(), binsPt->end(), value)) - 1;
   }
-
 
   /// Fill a vector with the Mothers pdg codes
   /// \param pdgMother vector with the pdg codes
@@ -279,7 +277,6 @@ struct TagTwoProngDisplacedVertices {
       pdgDecayMothers.push_back(constants::physics::Pdg::kDStar);
     }
   }
-
 
   /// Check if the given tag tracks belong to a D meson
   /// \param firstTrack candidate
@@ -357,7 +354,6 @@ struct TagTwoProngDisplacedVertices {
     }
     return 0;
   }
-
 
   template <typename Pvec>
   bool isSelectedInvariantMass(const Pvec& pVecTrackFirst,
@@ -461,7 +457,7 @@ struct TagTwoProngDisplacedVertices {
     return false;
   }
 
-  template <typename PV,typename SV,typename CovMatSV,typename PVec>
+  template <typename PV, typename SV, typename CovMatSV, typename PVec>
   bool isSelectedTopology(const PV& primVtx,
                           const SV& secVtx,
                           const CovMatSV& covMatrixSecVtx,
@@ -513,7 +509,7 @@ struct TagTwoProngDisplacedVertices {
     return true;
   }
 
-  template <bool doMc,typename CCollision,typename TTracks,typename P>
+  template <bool doMc, typename CCollision, typename TTracks, typename P>
   void computeCombinatorialSameCharge(CCollision const& collision,
                                       TTracks const& tracks, // pool of tracks
                                       const uint8_t channel,
@@ -527,18 +523,18 @@ struct TagTwoProngDisplacedVertices {
         continue;
       }
 
-      for (auto trackSecond = trackFirst + 1;trackSecond != tracks.end();++trackSecond) {
+      for (auto trackSecond = trackFirst + 1; trackSecond != tracks.end(); ++trackSecond) {
 
         if (applyTofPid && !isSelectedPidTof(trackSecond, channel)) {
           continue;
         }
 
         float invMass2{0.f};
-        std::array<float, 3> pVecTrackFirst{trackFirst.px(),trackFirst.py(), trackFirst.pz()};
+        std::array<float, 3> pVecTrackFirst{trackFirst.px(), trackFirst.py(), trackFirst.pz()};
         std::array<float, 3> pVecTrackSecond{trackSecond.px(), trackSecond.py(), trackSecond.pz()};
 
-        auto pVec = RecoDecay::pVec(pVecTrackFirst,pVecTrackSecond);
-        auto ptBin = findBin(&ptBinsForTopologicalCuts[channel],RecoDecay::pt(pVec));
+        auto pVec = RecoDecay::pVec(pVecTrackFirst, pVecTrackSecond);
+        auto ptBin = findBin(&ptBinsForTopologicalCuts[channel], RecoDecay::pt(pVec));
         if (ptBin == -1 ) continue;
 
         if (!isSelectedInvariantMass(pVecTrackFirst, pVecTrackSecond, channel, invMass2, ptBin)) {
@@ -578,15 +574,14 @@ struct TagTwoProngDisplacedVertices {
     }
   }
 
-  template <bool doMc,typename CCollision,typename TTracks,typename P>
+  template <bool doMc, typename CCollision, typename TTracks, typename P>
   void computeCombinatorialOppositeCharge(CCollision const& collision,
                                           TTracks const& tracksPos,
                                           TTracks const& tracksNeg,
                                           const uint8_t channel,
                                           float& bz,
                                           std::vector<int>& pdgDecayMothers,
-                                          P const& particlesMc
-                                          )
+                                          P const& particlesMc)
   {
     for (const auto& trackPos : tracksPos) {
 
@@ -678,7 +673,7 @@ struct TagTwoProngDisplacedVertices {
               auto arrMomentum = std::array{pVecTrackNeg, pVecTrackPos};
               invMassrefl = std::sqrt(RecoDecay::m2(arrMomentum, masses[channel]));
             }
-            registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2), invMassrefl,isDzero);
+            registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2), invMassrefl, isDzero);
           }
           tagKaPiTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex());
         } else if (channel == aod::tagandprobe::TagChannels::DstarToDzeroToKK) {
@@ -787,7 +782,7 @@ void processKaKaFromDsOrDplusMc(CollisionsFiltered::iterator const& collision,
         base::Propagator::initFieldFromGRP(grpo);
         bz = base::Propagator::Instance()->getNominalBz();
       } else {
-        LOGF(fatal, "GRP object is not available in CCDB fogit r run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        LOGF(fatal, "GRP object is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }
       runNumber = bc.runNumber();
     }
