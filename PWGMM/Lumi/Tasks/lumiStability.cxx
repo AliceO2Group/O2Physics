@@ -107,14 +107,12 @@ struct lumiStabilityTask {
       bool isCoinA = checkAnyCoincidence(channelA);
       bool isCoinC = checkAnyCoincidence(channelC);
 
-
       if (vertex) {
         histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
         if (isCoinA && isCoinC) {
           histos.fill(HIST("FDD/bcVertexTriggerCoincidence"), localBC);
         }
       } // vertex true
-
 
       if (scentral) {
         histos.fill(HIST("FDD/bcSCentralTrigger"), localBC);
