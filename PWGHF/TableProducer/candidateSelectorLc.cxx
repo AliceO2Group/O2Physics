@@ -15,6 +15,7 @@
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch>, University and INFN SALERNO
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>, CERN
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
+/// \author Grazia Luparello  <grazia.luparello@cern.ch>, INFN Trieste
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
@@ -23,6 +24,7 @@
 #include "Common/Core/TrackSelectorPID.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/HfMlResponseLcToPKPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -31,9 +33,17 @@ using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
 
+/// Struct to extend TracksPid tables
+struct HfCandidateSelectorLcExpressions {
+  Spawns<aod::TracksPidPrExt> rowTracksPidFullPr;
+  Spawns<aod::TracksPidKaExt> rowTracksPidFullKa;
+  Spawns<aod::TracksPidPiExt> rowTracksPidFullPi;
+};
+
 /// Struct for applying Lc selection cuts
 struct HfCandidateSelectorLc {
   Produces<aod::HfSelLc> hfSelLcCandidate;
+  Produces<aod::HfMlLcToPKPi> hfMlLcToPKPiCandidate;
 
   Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
@@ -57,15 +67,36 @@ struct HfCandidateSelectorLc {
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::cuts[0], hf_cuts_lc_to_p_k_pi::nBinsPt, hf_cuts_lc_to_p_k_pi::nCutVars, hf_cuts_lc_to_p_k_pi::labelsPt, hf_cuts_lc_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
+  // QA switch
+  Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
+  // ML inference
+  Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
+  Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
+  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+  // CCDB configuration
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTLc"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_LcToPKPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   HfHelper hfHelper;
+  o2::analysis::HfMlResponseLcToPKPi<float> hfMlResponse;
+  std::vector<float> outputMlLcToPKPi = {};
+  std::vector<float> outputMlLcToPiKP = {};
+  o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
   TrackSelectorPr selectorProton;
 
   using TracksSel = soa::Join<aod::TracksWExtra,
-                              aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr,
+                              aod::TracksPidPiExt, aod::TracksPidKaExt, aod::TracksPidPrExt,
                               aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
+
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
@@ -78,6 +109,33 @@ struct HfCandidateSelectorLc {
     selectorPion.setRangePtBayes(ptPidBayesMin, ptPidBayesMax);
     selectorKaon = selectorPion;
     selectorProton = selectorPion;
+
+    if (activateQA) {
+      constexpr int kNBinsSelections = 1 + aod::SelectionStep::NSelectionSteps;
+      std::string labels[kNBinsSelections];
+      labels[0] = "No selection";
+      labels[1 + aod::SelectionStep::RecoSkims] = "Skims selection";
+      labels[1 + aod::SelectionStep::RecoTopol] = "Skims & Topological selections";
+      labels[1 + aod::SelectionStep::RecoPID] = "Skims & Topological & PID selections";
+      labels[1 + aod::SelectionStep::RecoMl] = "ML selection";
+      static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
+      registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+      for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
+        registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+      }
+    }
+
+    if (applyMl) {
+      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        hfMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      hfMlResponse.init();
+    }
   }
 
   /// Conjugate-independent topological cuts
@@ -154,13 +212,28 @@ struct HfCandidateSelectorLc {
     // looping over 3-prong candidates
     for (const auto& candidate : candidates) {
 
-      // final selection flag: 0 - rejected, 1 - accepted
+      // final selection flag
       auto statusLcToPKPi = 0;
       auto statusLcToPiKP = 0;
 
+      outputMlLcToPKPi.clear();
+      outputMlLcToPiKP.clear();
+
+      auto ptCand = candidate.pt();
+
       if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
+        if (applyMl) {
+          hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
+        }
+        if (activateQA) {
+          registry.fill(HIST("hSelections"), 1, ptCand);
+        }
         continue;
+      }
+
+      if (activateQA) {
+        registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoSkims, ptCand);
       }
 
       auto trackPos1 = candidate.prong0_as<TracksSel>(); // positive daughter (negative for the antiparticles)
@@ -172,6 +245,9 @@ struct HfCandidateSelectorLc {
       // conjugate-independent topological selection
       if (!selectionTopol(candidate)) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
+        if (applyMl) {
+          hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
+        }
         continue;
       }
 
@@ -182,7 +258,14 @@ struct HfCandidateSelectorLc {
 
       if (!topolLcToPKPi && !topolLcToPiKP) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
+        if (applyMl) {
+          hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
+        }
         continue;
+      }
+
+      if (activateQA) {
+        registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoTopol, candidate.pt());
       }
 
       auto pidLcToPKPi = -1;
@@ -268,7 +351,13 @@ struct HfCandidateSelectorLc {
 
       if (pidLcToPKPi == 0 && pidLcToPiKP == 0) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
+        if (applyMl) {
+          hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
+        }
         continue;
+      }
+      if (activateQA) {
+        registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoPID, candidate.pt());
       }
 
       if (pidBayesLcToPKPi == 0 && pidBayesLcToPiKP == 0) {
@@ -276,10 +365,38 @@ struct HfCandidateSelectorLc {
         continue;
       }
 
-      if ((pidLcToPKPi == -1 || pidLcToPKPi == 1) && (pidBayesLcToPKPi == -1 || pidBayesLcToPKPi == 1) && topolLcToPKPi) {
+      bool isSelectedMlLcToPKPi = true;
+      bool isSelectedMlLcToPiKP = true;
+      if (applyMl) {
+        // ML selections
+        isSelectedMlLcToPKPi = false;
+        isSelectedMlLcToPiKP = false;
+
+        if ((pidLcToPKPi == -1 || pidLcToPKPi == 1) && (pidBayesLcToPKPi == -1 || pidBayesLcToPKPi == 1) && topolLcToPKPi) {
+          std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
+          isSelectedMlLcToPKPi = hfMlResponse.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlLcToPKPi);
+        }
+        if ((pidLcToPiKP == -1 || pidLcToPiKP == 1) && (pidBayesLcToPiKP == -1 || pidBayesLcToPiKP == 1) && topolLcToPiKP) {
+          std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
+          isSelectedMlLcToPiKP = hfMlResponse.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlLcToPiKP);
+        }
+
+        hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
+
+        if (!isSelectedMlLcToPKPi && !isSelectedMlLcToPiKP) {
+          hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
+          continue;
+        }
+
+        if (activateQA) {
+          registry.fill(HIST("hSelections"), 2 + aod::SelectionStep::RecoMl, candidate.pt());
+        }
+      }
+
+      if ((pidLcToPKPi == -1 || pidLcToPKPi == 1) && (pidBayesLcToPKPi == -1 || pidBayesLcToPKPi == 1) && isSelectedMlLcToPKPi && topolLcToPKPi) {
         statusLcToPKPi = 1; // identified as LcToPKPi
       }
-      if ((pidLcToPiKP == -1 || pidLcToPiKP == 1) && (pidBayesLcToPiKP == -1 || pidBayesLcToPiKP == 1) && topolLcToPiKP) {
+      if ((pidLcToPiKP == -1 || pidLcToPiKP == 1) && (pidBayesLcToPiKP == -1 || pidBayesLcToPiKP == 1) && isSelectedMlLcToPiKP && topolLcToPiKP) {
         statusLcToPiKP = 1; // identified as LcToPiKP
       }
 
@@ -291,5 +408,6 @@ struct HfCandidateSelectorLc {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
+    adaptAnalysisTask<HfCandidateSelectorLcExpressions>(cfgc),
     adaptAnalysisTask<HfCandidateSelectorLc>(cfgc)};
 }

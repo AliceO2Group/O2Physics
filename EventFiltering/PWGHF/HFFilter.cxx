@@ -85,9 +85,10 @@ struct HfFilter { // Main struct for HF triggers
   // parameters for V0 + charm triggers
   Configurable<LabeledArray<float>> cutsGammaK0sLambda{"cutsGammaK0sLambda", {cutsV0s[0], 1, 6, labelsEmpty, labelsColumnsV0s}, "Selections for V0s (gamma, K0s, Lambda) for D+V0 triggers"};
   Configurable<LabeledArray<float>> maxDeltaMassCharmReso{"maxDeltaMassCharmReso", {cutsMassCharmReso[0], 1, 6, labelsEmpty, labelsColumnsDeltaMasseCharmReso}, "maximum invariant-mass delta for charm hadron resonances in GeV/c2"};
+  Configurable<bool> keepAlsoWrongDplusLambdaPairs{"keepAlsoWrongDplusLambdaPairs", true, "flat go keep also wrong sign D+Lambda pairs"};
 
   // parameters for charm baryons to Xi bachelor
-  Configurable<LabeledArray<float>> cutsXiCascades{"cutsXiCascades", {cutsCascades[0], 1, 7, labelsEmpty, labelsColumnsCascades}, "Selections for cascades (Xi) for Xi+bachelor triggers"};
+  Configurable<LabeledArray<float>> cutsXiCascades{"cutsXiCascades", {cutsCascades[0], 1, 8, labelsEmpty, labelsColumnsCascades}, "Selections for cascades (Xi) for Xi+bachelor triggers"};
   Configurable<LabeledArray<float>> cutsXiBachelor{"cutsXiBachelor", {cutsCharmBaryons[0], 1, 4, labelsEmpty, labelsColumnsCharmBaryons}, "Selections for charm baryons (Xi+Pi and Xi+Ka)"};
   Configurable<LabeledArray<double>> cutsTrackCharmBaryonBachelor{"cutsTrackCharmBaryonBachelor", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for charm-baryon bachelor candidates"};
 
@@ -105,6 +106,8 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<LabeledArray<double>> thresholdBDTScoreLcToPiKP{"thresholdBDTScoreLcToPiKP", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Lc+ candidates"};
   Configurable<std::string> onnxFileXicToPiKPConf{"onnxFileXicToPiKPConf", "", "ONNX file for ML model for Xic+ candidates"};
   Configurable<LabeledArray<double>> thresholdBDTScoreXicToPiKP{"thresholdBDTScoreXicToPiKP", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for BDT output scores of Xic+ candidates"};
+
+  Configurable<bool> acceptBdtBkgOnly{"acceptBdtBkgOnly", true, "Enable / disable selection based on BDT bkg score only"};
 
   // CCDB configuration
   o2::ccdb::CcdbApi ccdbApi;
@@ -140,7 +143,7 @@ struct HfFilter { // Main struct for HF triggers
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmHighPt{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hCharmProtonKstarDistr{};
   std::array<std::shared_ptr<TH2>, kNBeautyParticles> hMassVsPtB{};
-  std::array<std::shared_ptr<TH2>, kNCharmParticles + 8> hMassVsPtC{}; // +6 for resonances (D*+, D*0, Ds*+, Ds1+, Ds2*+, Xic*) +2 for charm baryons (Xi+Pi, Xi+Ka)
+  std::array<std::shared_ptr<TH2>, kNCharmParticles + 9> hMassVsPtC{}; // +6 for resonances (D*+, D*0, Ds*+, Ds1+, Ds2*+, Xic* right sign, Xic* wrong sign) +2 for charm baryons (Xi+Pi, Xi+Ka)
   std::shared_ptr<TH2> hProtonTPCPID, hProtonTOFPID;
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScoreBkg{};
   std::array<std::shared_ptr<TH1>, kNCharmParticles> hBDTScorePrompt{};
@@ -185,7 +188,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setNsigmaKaonCutsFor3Prongs(nSigmaPidCuts->get(0u, 2u), nSigmaPidCuts->get(1u, 2u));
     helper.setDeltaMassCharmHadForBeauty(deltaMassBeauty->get(0u, kNBeautyParticles));
     helper.setV0Selections(cutsGammaK0sLambda->get(0u, 0u), cutsGammaK0sLambda->get(0u, 1u), cutsGammaK0sLambda->get(0u, 2u), cutsGammaK0sLambda->get(0u, 3u), cutsGammaK0sLambda->get(0u, 4u), cutsGammaK0sLambda->get(0u, 5u));
-    helper.setXiSelections(cutsXiCascades->get(0u, 0u), cutsXiCascades->get(0u, 1u), cutsXiCascades->get(0u, 2u), cutsXiCascades->get(0u, 3u), cutsXiCascades->get(0u, 4u), cutsXiCascades->get(0u, 5u), cutsXiCascades->get(0u, 6u));
+    helper.setXiSelections(cutsXiCascades->get(0u, 0u), cutsXiCascades->get(0u, 1u), cutsXiCascades->get(0u, 2u), cutsXiCascades->get(0u, 3u), cutsXiCascades->get(0u, 4u), cutsXiCascades->get(0u, 5u), cutsXiCascades->get(0u, 6u), cutsXiCascades->get(0u, 7u));
     helper.setNsigmaPiCutsForCharmBaryonBachelor(nSigmaPidCuts->get(0u, 4u), nSigmaPidCuts->get(1u, 4u));
     helper.setTpcPidCalibrationOption(setTPCCalib);
 
@@ -214,9 +217,10 @@ struct HfFilter { // Main struct for HF triggers
       hMassVsPtC[kNCharmParticles + 3] = registry.add<TH2>("fMassVsPtDs1Plus", "#Delta#it{M} vs. #it{p}_{T} distribution of triggered Ds1Plus candidates;#it{p}_{T} (GeV/#it{c});#Delta#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2F, {ptAxis, massAxisC[kNCharmParticles + 3]});
       hMassVsPtC[kNCharmParticles + 4] = registry.add<TH2>("fMassVsPtDs2StarPlus", "#Delta#it{M} vs. #it{p}_{T} distribution of triggered Ds2StarPlus candidates;#it{p}_{T} (GeV/#Delta#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2F, {ptAxis, massAxisC[kNCharmParticles + 4]});
       hMassVsPtC[kNCharmParticles + 5] = registry.add<TH2>("fMassVsPtXicStar", "#Delta#it{M} vs. #it{p}_{T} distribution of triggered XicStar candidates;#it{p}_{T} (GeV/#it{c});#Delta#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2F, {ptAxis, massAxisC[kNCharmParticles + 5]});
+      hMassVsPtC[kNCharmParticles + 6] = registry.add<TH2>("fMassVsPtXicStarWrongSign", "#Delta#it{M} vs. #it{p}_{T} distribution of triggered opposite-sign XicStar candidates;#it{p}_{T} (GeV/#it{c});#Delta#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2F, {ptAxis, massAxisC[kNCharmParticles + 6]});
       // charm baryons to LF cascades
-      hMassVsPtC[kNCharmParticles + 6] = registry.add<TH2>("fMassVsPtCharmBaryonToXiPi", "#it{M} vs. #it{p}_{T} distribution of triggered #Xi+#pi candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2F, {ptAxis, massAxisC[kNCharmParticles + 6]});
-      hMassVsPtC[kNCharmParticles + 7] = registry.add<TH2>("fMassVsPtCharmBaryonToXiKa", "#it{M} vs. #it{p}_{T} distribution of triggered #Xi+K candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2F, {ptAxis, massAxisC[kNCharmParticles + 7]});
+      hMassVsPtC[kNCharmParticles + 7] = registry.add<TH2>("fMassVsPtCharmBaryonToXiPi", "#it{M} vs. #it{p}_{T} distribution of triggered #Xi+#pi candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2F, {ptAxis, massAxisC[kNCharmParticles + 7]});
+      hMassVsPtC[kNCharmParticles + 8] = registry.add<TH2>("fMassVsPtCharmBaryonToXiKa", "#it{M} vs. #it{p}_{T} distribution of triggered #Xi+K candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", HistType::kTH2F, {ptAxis, massAxisC[kNCharmParticles + 8]});
       for (int iBeautyPart{0}; iBeautyPart < kNBeautyParticles; ++iBeautyPart) {
         hMassVsPtB[iBeautyPart] = registry.add<TH2>(Form("fMassVsPt%s", beautyParticleNames[iBeautyPart].data()), Form("#it{M} vs. #it{p}_{T} distribution of triggered %s candidates;#it{p}_{T} (GeV/#it{c});#it{M} (GeV/#it{c}^{2});counts", beautyParticleNames[iBeautyPart].data()), HistType::kTH2F, {ptAxis, massAxisB[iBeautyPart]});
       }
@@ -411,9 +415,9 @@ struct HfFilter { // Main struct for HF triggers
             hBDTScoreNonPrompt[kD0]->Fill(scoresToFill[2]);
           }
 
-          isSignalTagged = TESTBIT(tagBDT, RecoDecay::OriginType::None);
           isCharmTagged = TESTBIT(tagBDT, RecoDecay::OriginType::Prompt);
           isBeautyTagged = TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt);
+          isSignalTagged = acceptBdtBkgOnly ? TESTBIT(tagBDT, RecoDecay::OriginType::None) : (isCharmTagged || isBeautyTagged);
         }
 
         if (!isSignalTagged) {
@@ -555,11 +559,14 @@ struct HfFilter { // Main struct for HF triggers
               // propagate to PV
               gpu::gpustd::array<float, 2> dcaInfo;
               std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
-              auto trackParV0 = o2::track::TrackPar(std::array{v0.x(), v0.y(), v0.z()}, pVecV0, 0, true);
-              trackParV0.setPID(o2::track::PID::Kaon);
-              o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParV0, 2.f, matCorr, &dcaInfo);
-              getPxPyPz(trackParV0, pVecV0);
+              std::array<float, 3> pVecV0Orig = {v0.px(), v0.py(), v0.pz()};
+              std::array<float, 3> posVecV0 = {v0.x(), v0.y(), v0.z()};
               if (TESTBIT(selV0, kPhoton)) {
+                auto trackParGamma = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
+                trackParGamma.setPID(o2::track::PID::Photon);
+                trackParGamma.setAbsCharge(0);
+                o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParGamma, 2.f, matCorr, &dcaInfo);
+                getPxPyPz(trackParGamma, pVecV0);
                 float massDStarCand{-1.}, massDStarBarCand{999.};
                 float massDiffDstar{-1.}, massDiffDstarBar{999.};
                 if (TESTBIT(selD0, 0)) {
@@ -588,6 +595,12 @@ struct HfFilter { // Main struct for HF triggers
                 }
               }
               if (!keepEvent[kV0Charm2P] && TESTBIT(selV0, kK0S)) {
+
+                auto trackParK0 = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
+                trackParK0.setPID(o2::track::PID::K0);
+                trackParK0.setAbsCharge(0);
+                o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0, 2.f, matCorr, &dcaInfo);
+                getPxPyPz(trackParK0, pVecV0);
 
                 // we first look for a D*+
                 for (const auto& trackBachelorId : trackIdsThisCollision) { // start loop over tracks
@@ -734,9 +747,9 @@ struct HfFilter { // Main struct for HF triggers
               LOG(error) << "Error running model inference for " << charmParticleNames[iCharmPart + 1].data() << ": Unexpected input data type.";
             }
 
-            isSignalTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::None);
             isCharmTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::Prompt);
             isBeautyTagged[iCharmPart] = TESTBIT(tagBDT, RecoDecay::OriginType::NonPrompt);
+            isSignalTagged[iCharmPart] = acceptBdtBkgOnly ? TESTBIT(tagBDT, RecoDecay::OriginType::None) : (isCharmTagged[iCharmPart] || isBeautyTagged[iCharmPart]);
 
             if (activateQA > 1) {
               hBDTScoreBkg[iCharmPart + 1]->Fill(scoresToFill[iCharmPart][0]);
@@ -873,13 +886,16 @@ struct HfFilter { // Main struct for HF triggers
             if (selV0 > 0) {
               // propagate to PV
               gpu::gpustd::array<float, 2> dcaInfo;
+              std::array<float, 3> pVecV0Orig = {v0.px(), v0.py(), v0.pz()};
               std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
-              auto trackParV0 = o2::track::TrackPar(std::array{v0.x(), v0.y(), v0.z()}, pVecV0, 0, true);
-              trackParV0.setPID(o2::track::PID::Kaon);
-              o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParV0, 2.f, matCorr, &dcaInfo);
-              getPxPyPz(trackParV0, pVecV0);
+              std::array<float, 3> posVecV0 = {v0.x(), v0.y(), v0.z()};
 
               if (!keepEvent[kV0Charm3P] && (isGoodDsToKKPi || isGoodDsToPiKK) && TESTBIT(selV0, kPhoton)) {
+                auto trackParGamma = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
+                trackParGamma.setAbsCharge(0);
+                trackParGamma.setPID(o2::track::PID::Photon);
+                o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParGamma, 2.f, matCorr, &dcaInfo);
+                getPxPyPz(trackParGamma, pVecV0);
                 float massDsStarToKKPiCand{-1.}, massDsStarToPiKKCand{999.};
                 float massDiffDsStarToKKPi{-1.}, massDiffDsStarToPiKK{999.};
                 if (isGoodDsToKKPi) {
@@ -909,6 +925,11 @@ struct HfFilter { // Main struct for HF triggers
               }
               if (!keepEvent[kV0Charm3P] && isGoodDPlus) {
                 if (TESTBIT(selV0, kK0S)) { // Ds2*
+                  auto trackParK0S = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
+                  trackParK0S.setAbsCharge(0);
+                  trackParK0S.setPID(o2::track::PID::K0);
+                  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0S, 2.f, matCorr, &dcaInfo);
+                  getPxPyPz(trackParK0S, pVecV0);
                   auto massDsStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massPi, massKa, massPi, massK0S});
                   auto massDiffDsStar = massDsStarCand - massDPlusCand;
                   if (massDiffDsStar < maxDeltaMassCharmReso->get(0u, 4u)) {
@@ -920,16 +941,28 @@ struct HfFilter { // Main struct for HF triggers
                     keepEvent[kV0Charm3P] = true;
                   }
                 }
-                if ((TESTBIT(selV0, kLambda) && sign3Prong > 0) || (TESTBIT(selV0, kAntiLambda) && sign3Prong < 0)) { // Xic(3055) and Xic(3080)
+                if (TESTBIT(selV0, kLambda) || TESTBIT(selV0, kAntiLambda)) { // Xic(3055) and Xic(3080) --> since it occupies only a small bandwidth, we might want to keep also wrong sign pairs
+                  auto trackParLambda = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
+                  trackParLambda.setAbsCharge(0);
+                  trackParLambda.setPID(o2::track::PID::Lambda);
+                  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParLambda, 2.f, matCorr, &dcaInfo);
+                  getPxPyPz(trackParLambda, pVecV0);
                   auto massXicStarCand = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecV0}, std::array{massPi, massKa, massPi, massLambda});
                   auto massDiffXicStar = massXicStarCand - massDPlusCand;
+                  bool isRightSign = ((TESTBIT(selV0, kLambda) && sign3Prong > 0) || (TESTBIT(selV0, kAntiLambda) && sign3Prong < 0));
                   if (massDiffXicStar < maxDeltaMassCharmReso->get(0u, 5u)) {
                     if (activateQA) {
                       auto pVecReso3Prong = RecoDecay::pVec(pVec3Prong, pVecV0);
                       auto ptCand = RecoDecay::pt(pVecReso3Prong);
-                      hMassVsPtC[kNCharmParticles + 5]->Fill(ptCand, massDiffXicStar);
+                      if (isRightSign) {
+                        hMassVsPtC[kNCharmParticles + 5]->Fill(ptCand, massDiffXicStar);
+                      } else {
+                        hMassVsPtC[kNCharmParticles + 6]->Fill(ptCand, massDiffXicStar);
+                      }
                     }
-                    keepEvent[kV0Charm3P] = true;
+                    if (isRightSign || keepAlsoWrongDplusLambdaPairs) {
+                      keepEvent[kV0Charm3P] = true;
+                    }
                   }
                 }
               }
@@ -994,7 +1027,7 @@ struct HfFilter { // Main struct for HF triggers
               if (ptCharmBaryon > cutsXiBachelor->get(0u, 0u) && massXiPi >= cutsXiBachelor->get(0u, 2u) && massXiPi <= 2.8f) {
                 keepEvent[kCharmBarToXiBach] = true;
                 if (activateQA) {
-                  hMassVsPtC[kNCharmParticles + 6]->Fill(ptCharmBaryon, massXiPi);
+                  hMassVsPtC[kNCharmParticles + 7]->Fill(ptCharmBaryon, massXiPi);
                 }
               }
             }
@@ -1003,7 +1036,7 @@ struct HfFilter { // Main struct for HF triggers
               if (ptCharmBaryon > cutsXiBachelor->get(0u, 1u) && massXiKa >= cutsXiBachelor->get(0u, 3u) && massXiKa <= 2.8f) {
                 keepEvent[kCharmBarToXiBach] = true;
                 if (activateQA) {
-                  hMassVsPtC[kNCharmParticles + 7]->Fill(ptCharmBaryon, massXiKa);
+                  hMassVsPtC[kNCharmParticles + 8]->Fill(ptCharmBaryon, massXiKa);
                 }
               }
             }

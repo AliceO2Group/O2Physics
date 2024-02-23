@@ -27,6 +27,7 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/Core/RecoDecay.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 
@@ -58,6 +59,8 @@ struct JetDerivedDataProducerTask {
   Produces<aod::JClusters> jClustersTable;
   Produces<aod::JClusterPIs> jClustersParentIndexTable;
   Produces<aod::JClusterTracks> jClustersMatchedTracksTable;
+  Produces<aod::JD0Ids> jD0IdsTable;
+  Produces<aod::JD0PIds> jD0ParticleIdsTable;
 
   Preslice<aod::EMCALClusterCells> perClusterCells = aod::emcalclustercell::emcalclusterId;
   Preslice<aod::EMCALMatchedTracks> perClusterTracks = aod::emcalclustercell::emcalclusterId;
@@ -66,20 +69,28 @@ struct JetDerivedDataProducerTask {
   {
   }
 
-  void processBunchCossings(soa::Join<aod::BCs, aod::Timestamps>::iterator const& bc)
+  void processBunchCrossings(soa::Join<aod::BCs, aod::Timestamps>::iterator const& bc)
   {
     jBCsTable(bc.runNumber(), bc.globalBC(), bc.timestamp());
     jBCParentIndexTable(bc.globalIndex());
   }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processBunchCossings, "produces derived bunch crossing table", false);
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processBunchCrossings, "produces derived bunch crossing table", false);
 
-  void processCollisions(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::CentFT0Cs>::iterator const& collision)
   {
-    jCollisionsTable(collision.posZ(), JetDerivedDataUtilities::setEventSelectionBit(collision), collision.alias_raw());
+    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multFT0C(), collision.centFT0C(), jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw()); // note change multFT0C to multFT0M when problems with multFT0A are fixed
     jCollisionsParentIndexTable(collision.globalIndex());
     jCollisionsBunchCrossingIndexTable(collision.bcId());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisions, "produces derived collision tables", true);
+
+  void processCollisionsWithoutCentralityAndMultiplicity(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
+  {
+    jCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), -1.0, -1.0, jetderiveddatautilities::setEventSelectionBit(collision), collision.alias_raw());
+    jCollisionsParentIndexTable(collision.globalIndex());
+    jCollisionsBunchCrossingIndexTable(collision.bcId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processCollisionsWithoutCentralityAndMultiplicity, "produces derived collision tables without centrality or multiplicity", false);
 
   void processMcCollisionLabels(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collision)
   {
@@ -94,14 +105,14 @@ struct JetDerivedDataProducerTask {
 
   void processMcCollisions(aod::McCollision const& McCollision)
   {
-    jMcCollisionsTable(McCollision.posZ(), McCollision.weight());
+    jMcCollisionsTable(McCollision.posX(), McCollision.posY(), McCollision.posZ(), McCollision.weight());
     jMcCollisionsParentIndexTable(McCollision.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processMcCollisions, "produces derived MC collision table", false);
 
   void processTracks(soa::Join<aod::Tracks, aod::TrackSelection>::iterator const& track)
   {
-    jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), JetDerivedDataUtilities::trackEnergy(track), track.sign(), JetDerivedDataUtilities::setTrackSelectionBit(track));
+    jTracksTable(track.collisionId(), track.pt(), track.eta(), track.phi(), jetderiveddatautilities::setTrackSelectionBit(track));
     jTracksParentIndexTable(track.globalIndex());
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processTracks, "produces derived track table", true);
@@ -179,6 +190,18 @@ struct JetDerivedDataProducerTask {
     }
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processClusters, "produces derived cluster tables", false);
+
+  void processD0(aod::HfD0Ids::iterator const& D0, soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::Tracks const& tracks)
+  {
+    jD0IdsTable(D0.collisionId(), D0.prong0Id(), D0.prong1Id());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processD0, "produces derived bunch crossing table for D0 candidates", false);
+
+  void processD0MC(aod::HfD0PIds::iterator const& D0, aod::McCollisions const& mcCollisions, aod::McParticles const& particles)
+  {
+    jD0ParticleIdsTable(D0.mcCollisionId(), D0.mcParticleId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processD0MC, "produces derived bunch crossing table for D0 particles", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

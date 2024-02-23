@@ -140,6 +140,11 @@ DECLARE_SOA_COLUMN(DBcTVX, dBcTVX, int32_t); //! distance to closest TVX
 DECLARE_SOA_COLUMN(DBcV0A, dBcV0A, int32_t); //! distance to closest V0A
 DECLARE_SOA_COLUMN(DBcT0A, dBcT0A, int32_t); //! distance to closest T0A
 
+DECLARE_SOA_COLUMN(AmplitudesT0A, amplitudesT0A, std::vector<float>); //! total T0A amplitudes in neighbouring BCs
+DECLARE_SOA_COLUMN(AmplitudesV0A, amplitudesV0A, std::vector<float>); //! total V0A amplitudes in neighbouring BCs
+DECLARE_SOA_COLUMN(AmpRelBCsT0A, ampRelBCsT0A, std::vector<int8_t>);  //! glob. BC w.r.t. candidate BC, size = size of amplitudes
+DECLARE_SOA_COLUMN(AmpRelBCsV0A, ampRelBCsV0A, std::vector<int8_t>);  //! glob. BC w.r.t. candidate BC, size = size of amplitudes
+
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 
 DECLARE_SOA_INDEX_COLUMN(UDMcCollision, udMcCollision);
@@ -181,12 +186,21 @@ DECLARE_SOA_TABLE(UDCollisionsSels, "AOD", "UDCOLLISIONSEL",
                   udcollision::BBFV0A<udcollision::BBFV0APF>, udcollision::BGFV0A<udcollision::BGFV0APF>,
                   udcollision::BBFDDA<udcollision::BBFDDAPF>, udcollision::BBFDDC<udcollision::BBFDDCPF>, udcollision::BGFDDA<udcollision::BGFDDAPF>, udcollision::BGFDDC<udcollision::BGFDDCPF>);
 
-DECLARE_SOA_TABLE(UDCollisionsSelsExtra, "AOD", "UDCOLSELEXTRA",
+// central barrel-specific selections
+DECLARE_SOA_TABLE(UDCollisionsSelsCent, "AOD", "UDCOLSELCNT",
                   udcollision::DBcTOR,
                   udcollision::DBcTSC,
                   udcollision::DBcTVX,
+                  udcollision::DBcV0A);
+
+// forward-specific selections
+DECLARE_SOA_TABLE(UDCollisionsSelsFwd, "AOD", "UDCOLSELFWD",
                   udcollision::DBcV0A,
-                  udcollision::DBcT0A);
+                  udcollision::DBcT0A,
+                  udcollision::AmplitudesT0A,
+                  udcollision::AmpRelBCsT0A,
+                  udcollision::AmplitudesV0A,
+                  udcollision::AmpRelBCsV0A);
 
 DECLARE_SOA_TABLE(UDCollsLabels, "AOD", "UDCOLLSLABEL",
                   udcollision::CollisionId);
@@ -197,7 +211,8 @@ DECLARE_SOA_TABLE(UDMcCollsLabels, "AOD", "UDMCCOLLSLABEL",
 using UDCollision = UDCollisions::iterator;
 using SGCollision = SGCollisions::iterator;
 using UDCollisionsSel = UDCollisionsSels::iterator;
-using UDCollisionsSelExtra = UDCollisionsSelsExtra::iterator;
+using UDCollisionsSelCent = UDCollisionsSelsCent::iterator;
+using UDCollisionsSelFwd = UDCollisionsSelsFwd::iterator;
 using UDCollsLabel = UDCollsLabels::iterator;
 using UDMcCollsLabel = UDMcCollsLabels::iterator;
 
@@ -251,7 +266,7 @@ DECLARE_SOA_TABLE(UDTracksPID, "AOD", "UDTRACKPID",
 
 DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
                   track::TPCInnerParam,
-                  track::ITSClusterMap,
+                  track::ITSClusterSizes,
                   track::TPCNClsFindable,
                   track::TPCNClsFindableMinusFound,
                   track::TPCNClsFindableMinusCrossedRows,
@@ -271,7 +286,7 @@ DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
                   track::HasTPC<udtrack::DetectorMap>,
                   track::HasTRD<udtrack::DetectorMap>,
                   track::HasTOF<udtrack::DetectorMap>,
-                  track::ITSNCls<track::ITSClusterMap>,
+                  track::v001::ITSNCls<track::ITSClusterSizes>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>);
 
 DECLARE_SOA_TABLE(UDTracksDCA, "AOD", "UDTRACKDCA",
@@ -353,6 +368,31 @@ DECLARE_SOA_TABLE(UDFwdTracksExtra, "AOD", "UDFWDTRACKEXTRA",
 using UDFwdTrack = UDFwdTracks::iterator;
 using UDFwdTrackExtra = UDFwdTracksExtra::iterator;
 
+DECLARE_SOA_TABLE(UDFwdTracksProp, "AOD", "UDFWDTRACKPROP",
+                  o2::soa::Index<>, fwdtrack::CollisionId, fwdtrack::TrackType,
+                  fwdtrack::X, fwdtrack::Y, fwdtrack::Z, fwdtrack::Phi, fwdtrack::Tgl,
+                  fwdtrack::Signed1Pt,
+                  fwdtrack::Px<fwdtrack::Pt, fwdtrack::Phi>,
+                  fwdtrack::Py<fwdtrack::Pt, fwdtrack::Phi>,
+                  fwdtrack::Pz<fwdtrack::Pt, fwdtrack::Tgl>,
+                  fwdtrack::Sign<fwdtrack::Signed1Pt>,
+                  fwdtrack::Eta,
+                  fwdtrack::Pt,
+                  fwdtrack::P,
+                  fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
+                  fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
+                  fwdtrack::MatchScoreMCHMFT, fwdtrack::MFTTrackId, fwdtrack::MCHTrackId,
+                  fwdtrack::MCHBitMap, fwdtrack::MIDBoards, fwdtrack::MIDBitMap,
+                  fwdtrack::TrackTime, fwdtrack::TrackTimeRes);
+
+DECLARE_SOA_TABLE(UDFwdTracksCovProp, "AOD", "UDFWDTRKCOVPROP",
+                  fwdtrack::SigmaX, fwdtrack::SigmaY, fwdtrack::SigmaTgl, fwdtrack::SigmaPhi, fwdtrack::Sigma1Pt,
+                  fwdtrack::RhoXY, fwdtrack::RhoPhiY, fwdtrack::RhoPhiX, fwdtrack::RhoTglX, fwdtrack::RhoTglY,
+                  fwdtrack::RhoTglPhi, fwdtrack::Rho1PtX, fwdtrack::Rho1PtY, fwdtrack::Rho1PtPhi, fwdtrack::Rho1PtTgl);
+
+using UDFwdTrackProp = UDFwdTracksProp::iterator;
+using UDFwdTrackCovProp = UDFwdTracksCovProp::iterator;
+
 namespace udmcfwdtracklabel
 {
 DECLARE_SOA_INDEX_COLUMN(UDMcParticle, udMcParticle);
@@ -373,6 +413,11 @@ DECLARE_SOA_COLUMN(ChannelE, channelE, std::vector<uint8_t>); //! Channel IDs wh
 DECLARE_SOA_COLUMN(Amplitude, amplitude, std::vector<float>); //! Amplitudes of non-zero channels. The channel IDs are given in ChannelT (at the same index)
 DECLARE_SOA_COLUMN(Time, time, std::vector<float>);           //! Times of non-zero channels. The channel IDs are given in ChannelT (at the same index)
 DECLARE_SOA_COLUMN(ChannelT, channelT, std::vector<uint8_t>); //! Channel IDs which had non-zero amplitudes. There are at maximum 26 channels.
+
+DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
+DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
+DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
+DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
 } // namespace udzdc
 
 DECLARE_SOA_TABLE(UDZdcs, "AOD", "UDZDC", //! ZDC information
@@ -406,6 +451,16 @@ DECLARE_SOA_TABLE(UDZdcs, "AOD", "UDZDC", //! ZDC information
                   zdc::DyAmplitudeZPC<udzdc::ChannelT, udzdc::Amplitude>);
 
 using UDZdc = UDZdcs::iterator;
+
+// reduced ZDC table
+DECLARE_SOA_TABLE(UDZdcsReduced, "AOD", "UDZDCREDUCE",
+                  udzdc::UDCollisionId,
+                  udzdc::TimeZNA,
+                  udzdc::TimeZNC,
+                  udzdc::EnergyCommonZNA,
+                  udzdc::EnergyCommonZNC);
+
+using UDZdcReduced = UDZdcsReduced::iterator;
 
 } // namespace o2::aod
 

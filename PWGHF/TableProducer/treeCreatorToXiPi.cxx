@@ -44,7 +44,6 @@ DECLARE_SOA_COLUMN(XDecayVtxV0, xDecayVtxV0, float);
 DECLARE_SOA_COLUMN(YDecayVtxV0, yDecayVtxV0, float);
 DECLARE_SOA_COLUMN(ZDecayVtxV0, zDecayVtxV0, float);
 DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t); // sign of pi <- xi
-DECLARE_SOA_COLUMN(Chi2PCACharmBaryon, chi2PCACharmBaryon, float);
 DECLARE_SOA_COLUMN(CovVtxCharmBaryonXX, covVtxCharmBaryonXX, float);
 DECLARE_SOA_COLUMN(CovVtxCharmBaryonYY, covVtxCharmBaryonYY, float);
 DECLARE_SOA_COLUMN(CovVtxCharmBaryonZZ, covVtxCharmBaryonZZ, float);
@@ -109,6 +108,10 @@ DECLARE_SOA_COLUMN(DecLenCascade, decLenCascade, double);
 DECLARE_SOA_COLUMN(DecLenV0, decLenV0, double);
 DECLARE_SOA_COLUMN(ErrorDecayLengthCharmBaryon, errorDecayLengthCharmBaryon, float);
 DECLARE_SOA_COLUMN(ErrorDecayLengthXYCharmBaryon, errorDecayLengthXYCharmBaryon, float);
+DECLARE_SOA_COLUMN(NormImpParCascade, normImpParCascade, double);
+DECLARE_SOA_COLUMN(NormImpParPiFromCharmBar, normImpParPiFromCharmBar, double);
+DECLARE_SOA_COLUMN(NormDecayLenCharmBar, normDecayLenCharmBar, double);
+DECLARE_SOA_COLUMN(IsPionGlbTrkWoDca, isPionGlbTrkWoDca, bool);
 // from creator - MC
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
@@ -135,11 +138,11 @@ DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
-                  full::XPv, full::YPv, full::ZPv, collision::NumContrib,
+                  full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
                   full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
-                  full::SignDecay, full::Chi2PCACharmBaryon,
+                  full::SignDecay,
                   full::CovVtxCharmBaryonXX, full::CovVtxCharmBaryonYY, full::CovVtxCharmBaryonZZ,
                   full::PxCharmBaryon, full::PyCharmBaryon, full::PzCharmBaryon,
                   full::PxCasc, full::PyCasc, full::PzCasc,
@@ -160,6 +163,7 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::DcaZToPvV0Dau0, full::DcaZToPvV0Dau1, full::DcaZToPvCascDau,
                   full::DcaCascDau, full::DcaV0Dau, full::DcaCharmBaryonDau,
                   full::DecLenCharmBaryon, full::DecLenCascade, full::DecLenV0, full::ErrorDecayLengthCharmBaryon, full::ErrorDecayLengthXYCharmBaryon,
+                  full::NormImpParCascade, full::NormImpParPiFromCharmBar, full::NormDecayLenCharmBar, full::IsPionGlbTrkWoDca,
                   full::StatusPidLambda, full::StatusPidCascade, full::StatusPidCharmBaryon,
                   full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassCharmBaryon, full::ResultSelections, full::PidTpcInfoStored, full::PidTofInfoStored,
                   full::TpcNSigmaPiFromCharmBaryon, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
@@ -173,11 +177,13 @@ struct HfTreeCreatorToXiPi {
 
   Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
 
+  using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection>;
+
   void init(InitContext const&)
   {
   }
 
-  template <typename T>
+  template <class TMyTracks, typename T>
   void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc)
   {
     rowCandidateFull(
@@ -185,6 +191,7 @@ struct HfTreeCreatorToXiPi {
       candidate.yPv(),
       candidate.zPv(),
       candidate.collision().numContrib(),
+      candidate.collision().chi2(),
       candidate.xDecayVtxCharmBaryon(),
       candidate.yDecayVtxCharmBaryon(),
       candidate.zDecayVtxCharmBaryon(),
@@ -195,7 +202,6 @@ struct HfTreeCreatorToXiPi {
       candidate.yDecayVtxV0(),
       candidate.zDecayVtxV0(),
       candidate.signDecay(),
-      candidate.chi2PCACharmBaryon(),
       candidate.covVtxCharmBaryon0(),
       candidate.covVtxCharmBaryon3(),
       candidate.covVtxCharmBaryon5(),
@@ -260,6 +266,10 @@ struct HfTreeCreatorToXiPi {
       candidate.decLenV0(),
       candidate.errorDecayLengthCharmBaryon(),
       candidate.errorDecayLengthXYCharmBaryon(),
+      candidate.impactParCascXY() / candidate.errImpactParCascXY(),
+      candidate.impactParPiFromCharmBaryonXY() / candidate.errImpactParPiFromCharmBaryonXY(),
+      candidate.decLenCharmBaryon() / candidate.errorDecayLengthCharmBaryon(),
+      candidate.template piFromCharmBaryon_as<TMyTracks>().isGlobalTrackWoDCA(),
       candidate.statusPidLambda(),
       candidate.statusPidCascade(),
       candidate.statusPidCharmBaryon(),
@@ -282,24 +292,24 @@ struct HfTreeCreatorToXiPi {
       originMc);
   }
 
-  void processData(aod::Collisions const& collisions,
+  void processData(aod::Collisions const& collisions, MyTrackTable const&,
                    soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate(candidate, -7, -7, RecoDecay::OriginType::None);
+      fillCandidate<MyTrackTable>(candidate, -7, -7, RecoDecay::OriginType::None);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processData, "Process data", true);
 
-  void processMc(aod::Collisions const& collisions,
+  void processMc(aod::Collisions const& collisions, MyTrackTable const&,
                  soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec());
+      fillCandidate<MyTrackTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec());
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMc, "Process MC", false);

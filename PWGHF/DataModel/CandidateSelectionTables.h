@@ -153,11 +153,15 @@ DECLARE_SOA_TABLE(HfSelDstarToD0Pi, "AOD", "HFSELDSTAR", //! Table stores inform
 
 namespace hf_sel_candidate_lc
 {
-DECLARE_SOA_COLUMN(IsSelLcToPKPi, isSelLcToPKPi, int); //!
-DECLARE_SOA_COLUMN(IsSelLcToPiKP, isSelLcToPiKP, int); //!
+DECLARE_SOA_COLUMN(IsSelLcToPKPi, isSelLcToPKPi, int);                  //!
+DECLARE_SOA_COLUMN(IsSelLcToPiKP, isSelLcToPiKP, int);                  //!
+DECLARE_SOA_COLUMN(MlProbLcToPKPi, mlProbLcToPKPi, std::vector<float>); //!
+DECLARE_SOA_COLUMN(MlProbLcToPiKP, mlProbLcToPiKP, std::vector<float>); //!
 } // namespace hf_sel_candidate_lc
 DECLARE_SOA_TABLE(HfSelLc, "AOD", "HFSELLC", //!
                   hf_sel_candidate_lc::IsSelLcToPKPi, hf_sel_candidate_lc::IsSelLcToPiKP);
+DECLARE_SOA_TABLE(HfMlLcToPKPi, "AOD", "HFMLLc", //!
+                  hf_sel_candidate_lc::MlProbLcToPKPi, hf_sel_candidate_lc::MlProbLcToPiKP);
 
 namespace hf_sel_candidate_lc_alice3
 {
@@ -233,11 +237,15 @@ DECLARE_SOA_TABLE(HfSelLcToK0sP, "AOD", "HFSELLCK0SP", //!
 
 namespace hf_sel_candidate_b0
 {
-DECLARE_SOA_COLUMN(IsSelB0ToDPi, isSelB0ToDPi, int); //!
+DECLARE_SOA_COLUMN(IsSelB0ToDPi, isSelB0ToDPi, int);     //! selection flag on B0 candidate
+DECLARE_SOA_COLUMN(MlProbB0ToDPi, mlProbB0ToDPi, float); //! ML score of B0 candidate for signal class
 } // namespace hf_sel_candidate_b0
 
 DECLARE_SOA_TABLE(HfSelB0ToDPi, "AOD", "HFSELB0", //!
                   hf_sel_candidate_b0::IsSelB0ToDPi);
+
+DECLARE_SOA_TABLE(HfMlB0ToDPi, "AOD", "HFMLB0", //!
+                  hf_sel_candidate_b0::MlProbB0ToDPi);
 
 namespace hf_sel_candidate_bs
 {

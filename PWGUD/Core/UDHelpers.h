@@ -295,28 +295,32 @@ bool hasGoodPID(DGCutparHolder diffCuts, TC track)
 }
 
 // -----------------------------------------------------------------------------
-float FV0AmplitudeA(aod::FV0A&& fv0)
+template <typename TFV0>
+float FV0AmplitudeA(TFV0 fv0)
 {
   const auto& ampsA = fv0.amplitude();
   return std::accumulate(ampsA.begin(), ampsA.end(), 0.f);
 }
 
 // -----------------------------------------------------------------------------
-float FT0AmplitudeA(aod::FT0&& ft0)
+template <typename TFT0>
+float FT0AmplitudeA(TFT0 ft0)
 {
   const auto& ampsA = ft0.amplitudeA();
   return std::accumulate(ampsA.begin(), ampsA.end(), 0.f);
 }
 
 // -----------------------------------------------------------------------------
-float FT0AmplitudeC(aod::FT0&& ft0)
+template <typename TFT0>
+float FT0AmplitudeC(TFT0 ft0)
 {
   const auto& ampsC = ft0.amplitudeC();
   return std::accumulate(ampsC.begin(), ampsC.end(), 0.f);
 }
 
 // -----------------------------------------------------------------------------
-float FDDAmplitudeA(aod::FDD&& fdd)
+template <typename TFDD>
+float FDDAmplitudeA(TFDD fdd)
 {
   float totAmplitude = 0;
   for (auto amp : fdd.chargeA()) {
@@ -327,7 +331,8 @@ float FDDAmplitudeA(aod::FDD&& fdd)
 }
 
 // -----------------------------------------------------------------------------
-float FDDAmplitudeC(aod::FDD&& fdd)
+template <typename TFDD>
+float FDDAmplitudeC(TFDD fdd)
 {
   float totAmplitude = 0;
   for (auto amp : fdd.chargeC()) {
@@ -510,9 +515,37 @@ bool TCE(T& bc)
 template <typename T>
 bool TOR(T& bc, float maxFITtime, std::vector<float> lims)
 {
-  auto torA = !cleanFT0A(bc, maxFITtime, lims);
-  auto torC = !cleanFT0C(bc, maxFITtime, lims);
+  auto torA = !cleanFT0A(bc, maxFITtime, lims[1]);
+  auto torC = !cleanFT0C(bc, maxFITtime, lims[2]);
   return torA || torC;
+}
+
+// -----------------------------------------------------------------------------
+// returns true if veto is active
+// return false if veto is not active
+template <typename T>
+bool FITveto(T const& bc, DGCutparHolder const& diffCuts)
+{
+  // return if FIT veto is found in bc
+  // Double Gap (DG) condition
+  // 4 types of vetoes:
+  //  0 TVX
+  //  1 TSC
+  //  2 TCE
+  //  3 TOR
+  if (diffCuts.withTVX()) {
+    return TVX(bc);
+  }
+  if (diffCuts.withTSC()) {
+    return TSC(bc);
+  }
+  if (diffCuts.withTCE()) {
+    return TCE(bc);
+  }
+  if (diffCuts.withTOR()) {
+    return !cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits());
+  }
+  return false;
 }
 
 // -----------------------------------------------------------------------------

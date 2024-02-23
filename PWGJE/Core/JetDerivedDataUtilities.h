@@ -18,12 +18,12 @@
 #define PWGJE_CORE_JETDERIVEDDATAUTILITIES_H_
 
 #include <string>
+#include "Common/CCDB/TriggerAliases.h"
 
-#include "Common/DataModel/EventSelection.h"
-#include "PWGJE/Core/JetFinder.h"
-
-namespace JetDerivedDataUtilities
+namespace jetderiveddatautilities
 {
+
+static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(211)->Mass(); //can be removed when pion mass becomes default for unidentified tracks
 
 enum JCollisionSel {
   sel8 = 0,
@@ -36,8 +36,7 @@ bool selectCollision(T const& collision, int eventSelection = -1)
   if (eventSelection == -1) {
     return true;
   }
-
-  return (collision.eventSel() >> eventSelection) & 1;
+  return (collision.eventSel() & (1 << eventSelection));
 }
 
 int initialiseEventSelection(std::string eventSelection)
@@ -92,7 +91,7 @@ bool selectChargedTrigger(T const& collision, int triggerSelection)
   if (triggerSelection == -1) {
     return true;
   }
-  return (collision.chargedTriggerSel() >> triggerSelection) & 1;
+  return (collision.chargedTriggerSel() & (1 << triggerSelection));
 }
 
 int initialiseChargedTriggerSelection(std::string triggerSelection)
@@ -142,7 +141,7 @@ bool selectFullTrigger(T const& collision, int triggerSelection)
   if (triggerSelection == -1) {
     return true;
   }
-  return (collision.fullTriggerSel() >> triggerSelection) & 1;
+  return (collision.fullTriggerSel() & (1 << triggerSelection));
 }
 
 int initialiseFullTriggerSelection(std::string triggerSelection)
@@ -219,9 +218,10 @@ uint8_t setFullTriggerSelectionBit(T const& collision)
 }
 
 enum JTrackSel {
-  globalTrack = 0,
-  qualityTrack = 1,
-  hybridTrack = 2
+  trackSign = 0, // warning : this number is hardcoded in the sign coloumn in the JTracks table so should not be changed without changing it there too
+  globalTrack = 1,
+  qualityTrack = 2,
+  hybridTrack = 3
 };
 
 template <typename T>
@@ -239,7 +239,7 @@ bool selectTrack(T const& track, int trackSelection)
   if (trackSelection == -1) {
     return true;
   }
-  return (track.trackSel() >> trackSelection) & 1;
+  return (track.trackSel() & (1 << trackSelection));
 }
 
 int initialiseTrackSelection(std::string trackSelection)
@@ -260,6 +260,9 @@ uint8_t setTrackSelectionBit(T const& track)
 
   uint8_t bit = 0;
 
+  if (track.sign() == 1) {
+    SETBIT(bit, JTrackSel::trackSign);
+  }
   if (track.isGlobalTrackWoPtEta()) {
     SETBIT(bit, JTrackSel::globalTrack);
   }
@@ -273,14 +276,21 @@ uint8_t setTrackSelectionBit(T const& track)
   return bit;
 }
 
+uint8_t setSingleTrackSelectionBit(int trackSelection)
+{
+  uint8_t bit = 0;
+  if (trackSelection != -1) {
+    SETBIT(bit, trackSelection);
+  }
+  return bit;
+}
+
 template <typename T>
-float trackEnergy(T const& track, float mass = JetFinder::mPion)
+float trackEnergy(T const& track, float mass = mPion)
 {
   return std::sqrt((track.p() * track.p()) + (mass * mass));
 }
 
-} // namespace JetDerivedDataUtilities
-
-// namespace JetDerivedDataUtilities
+} // namespace jetderiveddatautilities
 
 #endif // PWGJE_CORE_JETDERIVEDDATAUTILITIES_H_

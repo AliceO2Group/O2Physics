@@ -13,3 +13,17 @@ o2physics_add_dpl_workflow(twopartcorr
                            SOURCES twoParticleCorrelations.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::TwoPartCorrCore
                            COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(r2p24id
+                           SOURCES r2p2-4-id.cxx
+                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(identifiedbf
+                           SOURCES identifiedbf.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(identifiedbf-filter-qa
+                           SOURCES identifiedbfqa.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                           COMPONENT_NAME Analysis)

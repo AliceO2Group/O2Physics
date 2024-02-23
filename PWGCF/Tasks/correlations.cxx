@@ -8,11 +8,18 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include <experimental/type_traits>
+
+#include <TH1F.h>
+#include <cmath>
+#include <TDirectory.h>
+#include <THn.h>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/StepTHn.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
@@ -26,11 +33,6 @@
 #include "PWGCF/Core/PairCuts.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
-
-#include <TH1F.h>
-#include <cmath>
-#include <TDirectory.h>
-#include <THn.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -78,6 +80,8 @@ struct CorrelationTask {
 
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 1, "Verbosity level (0 = major, 1 = per collision)")
 
+  O2_DEFINE_CONFIGURABLE(cfgDecayParticleMask, int, 0, "Selection bitmask for the decay particles: 0 = no selection")
+
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -2, 2}, "delta eta axis for histograms"};
@@ -102,9 +106,14 @@ struct CorrelationTask {
   Filter cfMCCollisionFilter = nabs(aod::mccollision::posZ) < cfgCutVertex;
   Filter cfMCParticleFilter = (nabs(aod::cfmcparticle::eta) < cfgCutEta) && (aod::cfmcparticle::pt > cfgCutPt) && (aod::cfmcparticle::sign != 0);
 
+  // HF filters
+  Filter track2pFilter = (nabs(aod::cf2prongtrack::eta) < cfgCutEta) && (aod::cf2prongtrack::pt > cfgCutPt);
+
   // Output definitions
   OutputObj<CorrelationContainer> same{"sameEvent"};
   OutputObj<CorrelationContainer> mixed{"mixedEvent"};
+
+  std::vector<float> efficiencyAssociatedCache;
 
   struct Config {
     bool mPairCuts = false;
@@ -128,6 +137,11 @@ struct CorrelationTask {
   {
     registry.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
+    if (doprocessSame2ProngDerived || doprocessMixed2ProngDerived) {
+      registry.add("yieldsTrigger", "multiplicity/centrality vs pT vs eta (triggers)", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
+      registry.add("etaphiTrigger", "multiplicity/centrality vs eta vs phi (triggers)", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
+      registry.add("invMass", "2-prong invariant mass (GeV)", {HistType::kTH1F, {{100, 0, 3, "Mass"}}});
+    }
 
     const int maxMixBin = AxisSpec(axisMultiplicity).getNbins() * AxisSpec(axisVertex).getNbins();
     registry.add("eventcount_same", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
@@ -165,13 +179,15 @@ struct CorrelationTask {
     same->setTrackEtaCut(cfgCutEta);
     mixed->setTrackEtaCut(cfgCutEta);
 
+    efficiencyAssociatedCache.reserve(512);
+
     // o2-ccdb-upload -p Users/jgrosseo/correlations/LHC15o -f /tmp/correction_2011_global.root -k correction
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now); // TODO must become global parameter from the train creation time
   }
 
@@ -193,12 +209,32 @@ struct CorrelationTask {
   }
 
   template <typename TCollision, typename TTracks>
-  void fillQA(TCollision collision, float multiplicity, TTracks tracks)
+  void fillQA(const TCollision& collision, float multiplicity, const TTracks& tracks)
   {
     for (auto& track1 : tracks) {
       registry.fill(HIST("yields"), multiplicity, track1.pt(), track1.eta());
       registry.fill(HIST("etaphi"), multiplicity, track1.eta(), track1.phi());
     }
+  }
+
+  template <class T>
+  using hasInvMass = decltype(std::declval<T&>().invMass());
+
+  template <typename TCollision, typename TTracks1, typename TTracks2>
+  void fillQA(const TCollision& collision, float multiplicity, const TTracks1& tracks1, const TTracks2& tracks2)
+  {
+    for (auto& track1 : tracks1) {
+      if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value) {
+        if constexpr (std::experimental::is_detected<hasDecay, typename TTracks1::iterator>::value) {
+          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track1.decay())) == 0u)
+            continue;
+        }
+        registry.fill(HIST("invMass"), track1.invMass());
+      }
+      registry.fill(HIST("yieldsTrigger"), multiplicity, track1.pt(), track1.eta());
+      registry.fill(HIST("etaphiTrigger"), multiplicity, track1.eta(), track1.phi());
+    }
+    fillQA(collision, multiplicity, tracks2);
   }
 
   template <typename TTarget, typename TCollision>
@@ -229,17 +265,25 @@ struct CorrelationTask {
     return true;
   }
 
-  template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks>
-  void fillCorrelations(TTarget target, TTracks& tracks1, TTracks& tracks2, float multiplicity, float posZ, int magField, float eventWeight)
+  template <class T>
+  using hasSign = decltype(std::declval<T&>().sign());
+  template <class T>
+  using hasDecay = decltype(std::declval<T&>().decay());
+  template <class T>
+  using hasProng0Id = decltype(std::declval<T&>().cfTrackProng0Id());
+  template <class T>
+  using hasProng1Id = decltype(std::declval<T&>().cfTrackProng1Id());
+
+  template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks1, typename TTracks2>
+  void fillCorrelations(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight)
   {
     // Cache efficiency for particles (too many FindBin lookups)
-    float* efficiencyAssociated = nullptr;
     if constexpr (step == CorrelationContainer::kCFStepCorrected) {
       if (cfg.mEfficiencyAssociated) {
-        efficiencyAssociated = new float[tracks2.size()];
-        int i = 0;
+        efficiencyAssociatedCache.clear();
+        efficiencyAssociatedCache.reserve(tracks2.size());
         for (auto& track : tracks2) {
-          efficiencyAssociated[i++] = getEfficiencyCorrection(cfg.mEfficiencyAssociated, track.eta(), track.pt(), multiplicity, posZ);
+          efficiencyAssociatedCache.push_back(getEfficiencyCorrection(cfg.mEfficiencyAssociated, track.eta(), track.pt(), multiplicity, posZ));
         }
       }
     }
@@ -253,8 +297,15 @@ struct CorrelationTask {
         }
       }
 
-      if (cfgTriggerCharge != 0 && cfgTriggerCharge * track1.sign() < 0) {
-        continue;
+      if constexpr (std::experimental::is_detected<hasDecay, typename TTracks1::iterator>::value) {
+        if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track1.decay())) == 0u)
+          continue;
+      }
+
+      if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value) {
+        if (cfgTriggerCharge != 0 && cfgTriggerCharge * track1.sign() < 0) {
+          continue;
+        }
       }
 
       float triggerWeight = eventWeight;
@@ -267,9 +318,19 @@ struct CorrelationTask {
       target->getTriggerHist()->Fill(step, track1.pt(), multiplicity, posZ, triggerWeight);
 
       for (auto& track2 : tracks2) {
-        if (track1.globalIndex() == track2.globalIndex()) {
-          // LOGF(info, "Track identical: %f | %f | %f || %f | %f | %f", track1.eta(), track1.phi(), track1.pt(),  track2.eta(), track2.phi(), track2.pt());
-          continue;
+        if constexpr (std::is_same<TTracks1, TTracks2>::value) {
+          if (track1.globalIndex() == track2.globalIndex()) {
+            // LOGF(info, "Track identical: %f | %f | %f || %f | %f | %f", track1.eta(), track1.phi(), track1.pt(),  track2.eta(), track2.phi(), track2.pt());
+            continue;
+          }
+        }
+        if constexpr (std::experimental::is_detected<hasProng0Id, typename TTracks1::iterator>::value) {
+          if (track2.globalIndex() == track1.cfTrackProng0Id()) // do not correlate daughter tracks of the same event
+            continue;
+        }
+        if constexpr (std::experimental::is_detected<hasProng1Id, typename TTracks1::iterator>::value) {
+          if (track2.globalIndex() == track1.cfTrackProng1Id()) // do not correlate daughter tracks of the same event
+            continue;
         }
 
         if constexpr (step <= CorrelationContainer::kCFStepTracked) {
@@ -285,24 +346,29 @@ struct CorrelationTask {
         if (cfgAssociatedCharge != 0 && cfgAssociatedCharge * track2.sign() < 0) {
           continue;
         }
-        if (cfgPairCharge != 0 && cfgPairCharge * track1.sign() * track2.sign() < 0) {
-          continue;
-        }
 
-        if constexpr (step >= CorrelationContainer::kCFStepReconstructed) {
-          if (cfg.mPairCuts && mPairCuts.conversionCuts(track1, track2)) {
+        if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value) {
+          if (cfgPairCharge != 0 && cfgPairCharge * track1.sign() * track2.sign() < 0) {
             continue;
           }
+        }
 
-          if (cfgTwoTrackCut > 0 && mPairCuts.twoTrackCut(track1, track2, magField)) {
-            continue;
+        if constexpr (std::is_same<TTracks1, TTracks2>::value) {
+          if constexpr (step >= CorrelationContainer::kCFStepReconstructed) {
+            if (cfg.mPairCuts && mPairCuts.conversionCuts(track1, track2)) {
+              continue;
+            }
+
+            if (cfgTwoTrackCut > 0 && mPairCuts.twoTrackCut(track1, track2, magField)) {
+              continue;
+            }
           }
         }
 
         float associatedWeight = triggerWeight;
         if constexpr (step == CorrelationContainer::kCFStepCorrected) {
           if (cfg.mEfficiencyAssociated) {
-            associatedWeight *= efficiencyAssociated[track2.filteredIndex()];
+            associatedWeight *= efficiencyAssociatedCache[track2.filteredIndex()];
           }
         }
 
@@ -318,8 +384,6 @@ struct CorrelationTask {
                                     track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, associatedWeight);
       }
     }
-
-    delete[] efficiencyAssociated;
   }
 
   void loadEfficiency(uint64_t timestamp)
@@ -405,6 +469,29 @@ struct CorrelationTask {
   }
   PROCESS_SWITCH(CorrelationTask, processSameDerived, "Process same event on derived data", false);
 
+  void processSame2ProngDerived(derivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
+  {
+    if (cfgVerbosity > 0) {
+      LOGF(info, "processSame2ProngDerived: Tracks for collision: %d | 2-prong candidates: %d | Vertex: %.1f | Multiplicity/Centrality: %.1f", tracks.size(), p2tracks.size(), collision.posZ(), collision.multiplicity());
+    }
+    loadEfficiency(collision.timestamp());
+
+    const auto multiplicity = collision.multiplicity();
+
+    int bin = configurableBinningDerived.getBin({collision.posZ(), collision.multiplicity()});
+    registry.fill(HIST("eventcount_same"), bin);
+    fillQA(collision, multiplicity, p2tracks, tracks);
+
+    same->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, p2tracks, tracks, multiplicity, collision.posZ(), 0, 1.0f);
+
+    if (cfg.mEfficiencyAssociated || cfg.mEfficiencyTrigger) {
+      same->fillEvent(multiplicity, CorrelationContainer::kCFStepCorrected);
+      fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, p2tracks, tracks, multiplicity, collision.posZ(), 0, 1.0f);
+    }
+  }
+  PROCESS_SWITCH(CorrelationTask, processSame2ProngDerived, "Process same event on derived data", false);
+
   using BinningTypeAOD = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M>;
   void processMixedAOD(aodCollisions& collisions, aodTracks const& tracks, aod::BCsWithTimestamps const&)
   {
@@ -489,6 +576,44 @@ struct CorrelationTask {
     }
   }
   PROCESS_SWITCH(CorrelationTask, processMixedDerived, "Process mixed events on derived data", false);
+
+  void processMixed2ProngDerived(derivedCollisions& collisions, derivedTracks const& tracks, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
+  {
+    // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
+    auto tracksTuple = std::make_tuple(p2tracks, tracks);
+    Pair<derivedCollisions, soa::Filtered<aod::CF2ProngTracks>, derivedTracks, BinningTypeDerived> pairs{configurableBinningDerived, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+
+    for (auto it = pairs.begin(); it != pairs.end(); it++) {
+      auto& [collision1, tracks1, collision2, tracks2] = *it;
+      int bin = configurableBinningDerived.getBin({collision1.posZ(), collision1.multiplicity()});
+      float eventWeight = 1.0f / it.currentWindowNeighbours();
+      int field = 0;
+      if (cfgTwoTrackCut > 0) {
+        field = getMagneticField(collision1.timestamp());
+      }
+
+      if (cfgVerbosity > 0) {
+        LOGF(info, "processMixed2ProngDerived: Mixed collisions bin: %d pair: [%d, %d] %d (%.3f, %.3f), %d (%.3f, %.3f)", bin, it.isNewWindow(), it.currentWindowNeighbours(), collision1.globalIndex(), collision1.posZ(), collision1.multiplicity(), collision2.globalIndex(), collision2.posZ(), collision2.multiplicity());
+      }
+
+      if (it.isNewWindow()) {
+        loadEfficiency(collision1.timestamp());
+
+        mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepReconstructed);
+      }
+
+      registry.fill(HIST("eventcount_mixed"), bin);
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight);
+
+      if (cfg.mEfficiencyAssociated || cfg.mEfficiencyTrigger) {
+        if (it.isNewWindow()) {
+          mixed->fillEvent(collision1.multiplicity(), CorrelationContainer::kCFStepCorrected);
+        }
+        fillCorrelations<CorrelationContainer::kCFStepCorrected>(mixed, tracks1, tracks2, collision1.multiplicity(), collision1.posZ(), field, eventWeight);
+      }
+    }
+  }
+  PROCESS_SWITCH(CorrelationTask, processMixed2ProngDerived, "Process mixed events on derived data", false);
 
   // Version with combinations
   /*void processWithCombinations(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<aod::Tracks> const& tracks)

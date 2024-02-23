@@ -29,6 +29,11 @@ o2physics_add_dpl_workflow(correlator-d-meson-pairs
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(correlator-d-meson-pairs-testing
+                    SOURCES correlatorDMesonPairsTesting.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(correlator-dplus-dminus
                     SOURCES correlatorDplusDminus.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

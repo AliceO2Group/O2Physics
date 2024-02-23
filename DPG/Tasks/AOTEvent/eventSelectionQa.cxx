@@ -38,6 +38,7 @@ struct EventSelectionQaTask {
   Configurable<int> nOrbitsConf{"nOrbits", 10000, "number of orbits"};
   Configurable<int> refBC{"refBC", 1238, "reference bc"};
   Configurable<bool> isLowFlux{"isLowFlux", 1, "1 - low flux (pp, pPb), 0 - high flux (PbPb)"};
+  Configurable<bool> flagMonitorBcInTF{"flagMonitorBcInTF", 1, "0 - no, 1 - yes"};
 
   uint64_t minGlobalBC = 0;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -47,6 +48,8 @@ struct EventSelectionQaTask {
   int lastRunNumber = -1;
   int nOrbits = nOrbitsConf;
   double minOrbit = minOrbitConf;
+  int64_t bcSOR = -1;     // global bc of the start of the first orbit
+  int64_t nBCsPerTF = -1; // duration of TF in bcs, should be 128*3564 or 32*3564
   std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternA;
   std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternC;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA;
@@ -259,6 +262,12 @@ struct EventSelectionQaTask {
 
     histos.add("hMultT0MVsNcontribAcc", "", kTH2F, {axisMultT0M, axisNcontrib}); // before ITS RO Frame border cut
     histos.add("hMultT0MVsNcontribCut", "", kTH2F, {axisMultT0M, axisNcontrib}); // after ITS RO Frame border cut
+
+    if (flagMonitorBcInTF) {
+      AxisSpec axisBCinTF{128 * nBCsPerOrbit + 1 + 10, -0.5, 128 * nBCsPerOrbit + 0.5 + 10, "bc in TF"};
+      histos.add("hNcontribVsBcInTF", ";bc in TF; n vertex contributors", kTH1F, {axisBCinTF});
+      histos.add("hNcontribAfterCutsVsBcInTF", ";bc in TF; n vertex contributors", kTH1F, {axisBCinTF});
+    }
 
     // MC histograms
     histos.add("hGlobalBcColMC", "", kTH1F, {axisGlobalBCs});
@@ -494,6 +503,7 @@ struct EventSelectionQaTask {
     aod::FDDs const& fdds)
   {
     int runNumber = bcs.iteratorAt(0).runNumber();
+    uint32_t nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023
     if (runNumber != lastRunNumber) {
       lastRunNumber = runNumber; // do it only once
       int64_t tsSOR = 0;
@@ -528,21 +538,21 @@ struct EventSelectionQaTask {
         LOGP(info, "tsOrbitReset={} us", tsOrbitReset);
 
         // access TF duration, start-of-run and end-of-run timestamps from ECS GRP
-        // std::map<std::string, std::string> metadata;
-        // metadata["runNumber"] = Form("%d", runNumber);
-        // auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
-        // uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF
-        // tsSOR = grpecs->getTimeStart();                 // ms
-        // tsEOR = grpecs->getTimeEnd();                   // ms
+        std::map<std::string, std::string> metadata;
+        metadata["runNumber"] = Form("%d", runNumber);
+        auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
+        nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF
+        tsSOR = grpecs->getTimeStart();        // ms
+        tsEOR = grpecs->getTimeEnd();          // ms
 
         // Temporary workaround for 22q (due to ZDC bc shifts)
-        o2::ccdb::CcdbApi ccdb_api;
-        ccdb_api.init("http://alice-ccdb.cern.ch");
-        std::map<string, string> metadataRCT, headers;
-        headers = ccdb_api.retrieveHeaders(Form("RCT/Info/RunInformation/%i", runNumber), metadataRCT, -1);
-        tsSOR = atol(headers["SOR"].c_str());
-        tsEOR = atol(headers["EOR"].c_str());
-        uint32_t nOrbitsPerTF = 128;
+        // o2::ccdb::CcdbApi ccdb_api;
+        // ccdb_api.init("http://alice-ccdb.cern.ch");
+        // std::map<string, string> metadataRCT, headers;
+        // headers = ccdb_api.retrieveHeaders(Form("RCT/Info/RunInformation/%i", runNumber), metadataRCT, -1);
+        // tsSOR = atol(headers["SOR"].c_str());
+        // tsEOR = atol(headers["EOR"].c_str());
+        // uint32_t nOrbitsPerTF = 128;
         LOGP(info, "nOrbitsPerTF={} tsSOR={} ms tsEOR={} ms", nOrbitsPerTF, tsSOR, tsEOR);
 
         // calculate SOR and EOR orbits
@@ -550,17 +560,22 @@ struct EventSelectionQaTask {
         int64_t orbitEOR = (tsEOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
 
         // adjust to the nearest TF edge
-        orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF - 1;
-        orbitEOR = orbitEOR / nOrbitsPerTF * nOrbitsPerTF - 1;
+        orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF; // was with - 1;
+        orbitEOR = orbitEOR / nOrbitsPerTF * nOrbitsPerTF; // was with - 1;
 
         // set nOrbits and minOrbit used for orbit-axis binning
         nOrbits = orbitEOR - orbitSOR;
         minOrbit = orbitSOR;
+
+        // first bc of the first orbit (should coincide with TF start)
+        bcSOR = orbitSOR * nBCsPerOrbit;
+        // duration of TF in bcs
+        nBCsPerTF = nOrbitsPerTF * nBCsPerOrbit;
       }
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
       // otherwise default minOrbit and nOrbits will be used
-      const AxisSpec axisOrbits{nOrbits / 128, 0., static_cast<double>(nOrbits), ""};
+      const AxisSpec axisOrbits{nOrbits / static_cast<int>(nOrbitsPerTF) /*128*/, 0., static_cast<double>(nOrbits), ""};
       histos.add("hOrbitAll", "", kTH1F, {axisOrbits});
       histos.add("hOrbitCol", "", kTH1F, {axisOrbits});
       histos.add("hOrbitAcc", "", kTH1F, {axisOrbits});
@@ -798,7 +813,7 @@ struct EventSelectionQaTask {
     for (const auto& track : tracks) {
       auto mapAmbTrIdsIt = mapAmbTrIds.find(track.globalIndex());
       int ambTrId = mapAmbTrIdsIt == mapAmbTrIds.end() ? -1 : mapAmbTrIdsIt->second;
-      int indexBc = ambTrId < 0 ? track.collision_as<ColEvSels>().bc_as<BCsRun3>().globalIndex() : ambTracks.iteratorAt(ambTrId).bc().begin().globalIndex();
+      int indexBc = ambTrId < 0 ? track.collision_as<ColEvSels>().bc_as<BCsRun3>().globalIndex() : ambTracks.iteratorAt(ambTrId).bc_as<BCsRun3>().begin().globalIndex();
       auto bc = bcs.iteratorAt(indexBc);
       int64_t globalBC = bc.globalBC() + floor(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
 
@@ -946,11 +961,17 @@ struct EventSelectionQaTask {
         }
       }
 
+      int nContributorsAfterEtaTPCCuts = 0;
+
       // fill track time histograms
       for (auto& track : tracksGrouped) {
         if (!track.isPVContributor()) {
           continue;
         }
+
+        if (fabs(track.eta()) < 0.8 && track.tpcNClsFound() > 80 && track.tpcNClsCrossedRows() > 100)
+          nContributorsAfterEtaTPCCuts++;
+
         if (track.hasTOF())
           continue;
         if (track.hasTRD())
@@ -970,6 +991,13 @@ struct EventSelectionQaTask {
       }
 
       histos.fill(HIST("hNcontribCol"), nContributors);
+
+      // monitor nContributors vs bc in timeframe:
+      if (flagMonitorBcInTF) {
+        int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
+        histos.fill(HIST("hNcontribVsBcInTF"), bcInTF, nContributors);
+        histos.fill(HIST("hNcontribAfterCutsVsBcInTF"), bcInTF, nContributorsAfterEtaTPCCuts);
+      }
 
       const auto& foundBC = col.foundBC_as<BCsRun3>();
 

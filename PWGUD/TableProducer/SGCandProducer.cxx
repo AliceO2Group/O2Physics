@@ -9,6 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "Framework/AnalysisDataModel.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/EventSelection.h"
+#include "CommonConstants/LHCConstants.h"
+#include "DataFormatsFIT/Triggers.h"
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGUD/DataModel/UDTables.h"
@@ -29,10 +35,12 @@ struct SGCandProducer {
 
   // data tables
   Produces<aod::SGCollisions> outputSGCollisions;
+  //  Produces<aod::ZDCCollisions> outputZDCCollisions;
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
   Produces<aod::UDCollsLabels> outputCollsLabels;
   Produces<aod::UDZdcs> outputZdcs;
+  Produces<o2::aod::UDZdcsReduced> udZdcsReduced;
   Produces<aod::UDTracks> outputTracks;
   Produces<aod::UDTracksCov> outputTracksCov;
   Produces<aod::UDTracksDCA> outputTracksDCA;
@@ -51,7 +59,8 @@ struct SGCandProducer {
   // data inputs
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using CC = CCs::iterator;
-  using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+  //  using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+  using BCs = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BC = BCs::iterator;
   using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -140,6 +149,7 @@ struct SGCandProducer {
 
   // process function for real data
   void process(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
+               // aod::Zdcs_000& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
                aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
     LOGF(debug, "<SGCandProducer>  collision %d", collision.globalIndex());
@@ -148,11 +158,16 @@ struct SGCandProducer {
       return;
     }
     auto bc = collision.foundBC_as<BCs>();
-    LOGF(debug, "<SGCandProducer>  BC id %d", bc.globalBC());
+    //    LOGF(info, "<SGCandProducer>  BC id %d", bc.globalBC());
+    //    uint64_t globalBC = bc.globalBC();
+    float timeZNA = -999;
+    float timeZNC = -999;
+    float eComZNA = -999;
+    float eComZNC = -999;
 
     // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
-    LOGF(debug, "<SGCandProducer>  Size of bcRange %d", bcRange.size());
+    //    LOGF(info, "<SGCandProducer>  Size of bcRange %d", bcRange.size());
 
     // apply SG selection
     //    auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, tracks, fwdtracks);
@@ -167,6 +182,9 @@ struct SGCandProducer {
       // fill FITInfo
       upchelpers::FITInfo fitInfo{};
       udhelpers::getFITinfo(fitInfo, bc.globalBC(), bcs, ft0s, fv0as, fdds);
+      //  upchelpers::ZDCInfo zdcInfo{};
+      // udhelpers::getZDCinfo(zdcInfo, bc.globalBC(), bcs, zdcs);
+      // udhelpers::getZDCinfo(zdcInfo, bc.globalBC(), zdcs);
 
       // update SG candidates tables
       auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
@@ -189,23 +207,22 @@ struct SGCandProducer {
       for (auto& track : tracks) {
         updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
       }
-
       // update SGFwdTracks tables
       for (auto& fwdtrack : fwdtracks) {
         updateUDFwdTrackTables(fwdtrack, bc.globalBC());
       }
-
-      // fill UDZdcs
+      //    LOGF(info, "<SGCandProducer>  Collision id %i", outputCollisions.lastIndex());
       if (bc.has_zdc()) {
         auto zdc = bc.zdc();
-        auto enes = std::vector(zdc.energy().begin(), zdc.energy().end());
-        auto chEs = std::vector(zdc.channelE().begin(), zdc.channelE().end());
-        auto amps = std::vector(zdc.amplitude().begin(), zdc.amplitude().end());
-        auto times = std::vector(zdc.time().begin(), zdc.time().end());
-        auto chTs = std::vector(zdc.channelT().begin(), zdc.channelT().end());
-        outputZdcs(outputCollisions.lastIndex(), enes, chEs, amps, times, chTs);
+        timeZNA = zdc.timeZNA();
+        timeZNC = zdc.timeZNC();
+        eComZNA = zdc.energyCommonZNA();
+        eComZNC = zdc.energyCommonZNC();
+        udZdcsReduced(outputCollisions.lastIndex(), timeZNA, timeZNC, eComZNA, eComZNC);
+        //    LOGF(info, "<ZDC info>  %i   %d    %f   %f   %f   %f", outputCollisions.lastIndex(), bc.globalBC(), timeZNA, timeZNC, eComZNA, eComZNC);
+      } else {
+        udZdcsReduced(outputCollisions.lastIndex(), -999, -999, -999, -999);
       }
-
       // produce TPC signal histograms for 2-track events
       LOGF(debug, "SG candidate: number of PV tracks %d", collision.numContrib());
       if (collision.numContrib() == 2) {

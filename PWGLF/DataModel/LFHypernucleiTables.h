@@ -24,111 +24,110 @@ namespace o2::aod
 {
 namespace hyperrec
 {
-DECLARE_SOA_COLUMN(IsMatter, isMatter, bool);                       // bool: true for matter
-DECLARE_SOA_COLUMN(CentralityFT0A, centralityFT0A, float);          // centrality with FT0A estimator
-DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float);          // centrality with FT0C estimator
-DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float);          // centrality with FT0M estimator
-DECLARE_SOA_COLUMN(PtHe3, ptHe3, float);                            // Pt of the He daughter
-DECLARE_SOA_COLUMN(PhiHe3, phiHe3, float);                          // Phi of the He daughter
-DECLARE_SOA_COLUMN(EtaHe3, etaHe3, float);                          // Eta of the He daughter
-DECLARE_SOA_COLUMN(PtPi, ptPi, float);                              // Pt of the Pi daughter
-DECLARE_SOA_COLUMN(PhiPi, phiPi, float);                            // Phi of the Pi daughter
-DECLARE_SOA_COLUMN(EtaPi, etaPi, float);                            // Eta of the Pi daughter
-DECLARE_SOA_COLUMN(XPrimVtx, xPrimVtx, float);                      // Decay vertex of the candidate (x direction)
-DECLARE_SOA_COLUMN(YPrimVtx, yPrimVtx, float);                      // Decay vertex of the candidate (y direction)
-DECLARE_SOA_COLUMN(ZPrimVtx, zPrimVtx, float);                      // Decay vertex of the candidate (z direction)
-DECLARE_SOA_COLUMN(XDecVtx, xDecVtx, float);                        // Decay vertex of the candidate (x direction)
-DECLARE_SOA_COLUMN(YDecVtx, yDecVtx, float);                        // Decay vertex of the candidate (y direction)
-DECLARE_SOA_COLUMN(ZDecVtx, zDecVtx, float);                        // Decay vertex of the candidate (z direction)
-DECLARE_SOA_COLUMN(MassH3L, massH3L, float);                        // Squared mass w/ hypertriton mass hypo
-DECLARE_SOA_COLUMN(MassH4L, massH4L, float);                        // Squared mass w/ H4L mass hypo
-DECLARE_SOA_COLUMN(DcaV0Daug, dcaV0Daug, float);                    // DCA between daughters
-DECLARE_SOA_COLUMN(CosPA, cosPA, double);                           // Cosine of the pointing angle
-DECLARE_SOA_COLUMN(NSigmaHe, nSigmaHe, float);                      // Number of sigmas of the He daughter
-DECLARE_SOA_COLUMN(NTPCclusHe, nTPCclusHe, uint8_t);                // Number of TPC clusters of the He daughter
-DECLARE_SOA_COLUMN(NTPCclusPi, nTPCclusPi, uint8_t);                // Number of TPC clusters of the Pi daughter
-DECLARE_SOA_COLUMN(TPCsignalHe, tpcSignalHe, uint16_t);             // TPC signal of the He daughter
-DECLARE_SOA_COLUMN(TPCsignalPi, tpcSignalPi, uint16_t);             // TPC signal of the Pi daughter
-DECLARE_SOA_COLUMN(Flags, flags, uint8_t);                          // Flags for PID in tracking (bits [0, 3] for negative daughter, [4,7] for positive daughter)
-DECLARE_SOA_COLUMN(TPCmomHe, tpcMomHe, float);                      // TPC momentum of the He daughter
-DECLARE_SOA_COLUMN(TPCmomPi, tpcMomPi, float);                      // TPC momentum of the Pi daughter
-DECLARE_SOA_COLUMN(ITSclusterSizesHe, itsClusterSizesHe, uint32_t); // ITS cluster size of the He daughter
-DECLARE_SOA_COLUMN(ITSclusterSizesPi, itsClusterSizesPi, uint32_t); // ITS cluster size of the Pi daughter
-DECLARE_SOA_COLUMN(DcaHe, dcaHe, float);                            // DCA between He daughter and V0
-DECLARE_SOA_COLUMN(DcaPi, dcaPi, float);                            // DCA between pi daughter and V0
-DECLARE_SOA_COLUMN(GenPt, genPt, float);                            // Pt of the hypertriton
-DECLARE_SOA_COLUMN(GenPhi, genPhi, float);                          // Phi of the hypertriton
-DECLARE_SOA_COLUMN(GenEta, genEta, float);                          // Eta of the hypertriton
-DECLARE_SOA_COLUMN(GenPtHe3, genPtHe3, float);                      // Pt of the He daughter (to be used for the recalibration)
-DECLARE_SOA_COLUMN(GenXDecVtx, genXDecVtx, float);                  // Decay vertex of the candidate (x direction)
-DECLARE_SOA_COLUMN(GenYDecVtx, genYDecVtx, float);                  // Decay vertex of the candidate (y direction)
-DECLARE_SOA_COLUMN(GenZDecVtx, genZDecVtx, float);                  // Decay vertex of the candidate (z direction)
-DECLARE_SOA_COLUMN(IsReco, isReco, bool);                           // bool: true for reco
-DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                       // bool: true for signal
+DECLARE_SOA_COLUMN(CentralityFT0A, centralityFT0A, float); // centrality with FT0A estimator
+DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float); // centrality with FT0C estimator
+DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float); // centrality with FT0M estimator
+DECLARE_SOA_COLUMN(QVecXFT0A, qVecXFT0A, float);           // Q vector x component with FT0A estimator
+DECLARE_SOA_COLUMN(QVecYFT0A, qVecYFT0A, float);           // Q vector y component with FT0A estimator
+DECLARE_SOA_COLUMN(QVecAmpFT0A, qVecAmpFT0A, float);       // Q vector amplitude with FT0A estimator
+DECLARE_SOA_COLUMN(QVecXFT0C, qVecXFT0C, float);           // Q vector x component with FT0C estimator
+DECLARE_SOA_COLUMN(QVecYFT0C, qVecYFT0C, float);           // Q vector y component with FT0C estimator
+DECLARE_SOA_COLUMN(QVecAmpFT0C, qVecAmpFT0C, float);       // Q vector amplitude with FT0C estimator
+DECLARE_SOA_COLUMN(QVecXFT0M, qVecXFT0M, float);           // Q vector x component with FT0M estimator
+DECLARE_SOA_COLUMN(QVecYFT0M, qVecYFT0M, float);           // Q vector y component with FT0M estimator
+DECLARE_SOA_COLUMN(QVecAmpFT0M, qVecAmpFT0M, float);       // Q vector amplitude with FT0M estimator
+DECLARE_SOA_COLUMN(QVecXFV0A, qVecXFV0A, float);           // Q vector x component with FV0A estimator
+DECLARE_SOA_COLUMN(QVecYFV0A, qVecYFV0A, float);           // Q vector y component with FV0A estimator
+DECLARE_SOA_COLUMN(QVecAmpFV0A, qVecAmpFV0A, float);       // Q vector amplitude with FV0A estimator
+
+DECLARE_SOA_COLUMN(IsMatter, isMatter, bool);                             // bool: true for matter
+DECLARE_SOA_COLUMN(PtHe3, ptHe3, float);                                  // Pt of the He daughter
+DECLARE_SOA_COLUMN(PhiHe3, phiHe3, float);                                // Phi of the He daughter
+DECLARE_SOA_COLUMN(EtaHe3, etaHe3, float);                                // Eta of the He daughter
+DECLARE_SOA_COLUMN(PtPi, ptPi, float);                                    // Pt of the Pi daughter
+DECLARE_SOA_COLUMN(PhiPi, phiPi, float);                                  // Phi of the Pi daughter
+DECLARE_SOA_COLUMN(EtaPi, etaPi, float);                                  // Eta of the Pi daughter
+DECLARE_SOA_COLUMN(XPrimVtx, xPrimVtx, float);                            // Decay vertex of the candidate (x direction)
+DECLARE_SOA_COLUMN(YPrimVtx, yPrimVtx, float);                            // Decay vertex of the candidate (y direction)
+DECLARE_SOA_COLUMN(ZPrimVtx, zPrimVtx, float);                            // Decay vertex of the candidate (z direction)
+DECLARE_SOA_COLUMN(XDecVtx, xDecVtx, float);                              // Decay vertex of the candidate (x direction)
+DECLARE_SOA_COLUMN(YDecVtx, yDecVtx, float);                              // Decay vertex of the candidate (y direction)
+DECLARE_SOA_COLUMN(ZDecVtx, zDecVtx, float);                              // Decay vertex of the candidate (z direction)
+DECLARE_SOA_COLUMN(MassH3L, massH3L, float);                              // Squared mass w/ hypertriton mass hypo
+DECLARE_SOA_COLUMN(MassH4L, massH4L, float);                              // Squared mass w/ H4L mass hypo
+DECLARE_SOA_COLUMN(DcaV0Daug, dcaV0Daug, float);                          // DCA between daughters
+DECLARE_SOA_COLUMN(CosPA, cosPA, double);                                 // Cosine of the pointing angle
+DECLARE_SOA_COLUMN(NSigmaHe, nSigmaHe, float);                            // Number of sigmas of the He daughter
+DECLARE_SOA_COLUMN(NTPCclusHe, nTPCclusHe, uint8_t);                      // Number of TPC clusters of the He daughter
+DECLARE_SOA_COLUMN(NTPCclusPi, nTPCclusPi, uint8_t);                      // Number of TPC clusters of the Pi daughter
+DECLARE_SOA_COLUMN(TPCsignalHe, tpcSignalHe, uint16_t);                   // TPC signal of the He daughter
+DECLARE_SOA_COLUMN(TPCsignalPi, tpcSignalPi, uint16_t);                   // TPC signal of the Pi daughter
+DECLARE_SOA_COLUMN(Flags, flags, uint8_t);                                // Flags for PID in tracking (bits [0, 3] for negative daughter, [4,7] for positive daughter)
+DECLARE_SOA_COLUMN(TPCmomHe, tpcMomHe, float);                            // TPC momentum of the He daughter
+DECLARE_SOA_COLUMN(TPCmomPi, tpcMomPi, float);                            // TPC momentum of the Pi daughter
+DECLARE_SOA_COLUMN(ITSclusterSizesHe, itsClusterSizesHe, uint32_t);       // ITS cluster size of the He daughter
+DECLARE_SOA_COLUMN(ITSclusterSizesPi, itsClusterSizesPi, uint32_t);       // ITS cluster size of the Pi daughter
+DECLARE_SOA_COLUMN(DcaHe, dcaHe, float);                                  // DCA between He daughter and V0
+DECLARE_SOA_COLUMN(DcaPi, dcaPi, float);                                  // DCA between pi daughter and V0
+DECLARE_SOA_COLUMN(GenPt, genPt, float);                                  // Pt of the hypertriton
+DECLARE_SOA_COLUMN(GenPhi, genPhi, float);                                // Phi of the hypertriton
+DECLARE_SOA_COLUMN(GenEta, genEta, float);                                // Eta of the hypertriton
+DECLARE_SOA_COLUMN(GenPtHe3, genPtHe3, float);                            // Pt of the He daughter (to be used for the recalibration)
+DECLARE_SOA_COLUMN(GenXDecVtx, genXDecVtx, float);                        // Decay vertex of the candidate (x direction)
+DECLARE_SOA_COLUMN(GenYDecVtx, genYDecVtx, float);                        // Decay vertex of the candidate (y direction)
+DECLARE_SOA_COLUMN(GenZDecVtx, genZDecVtx, float);                        // Decay vertex of the candidate (z direction)
+DECLARE_SOA_COLUMN(IsReco, isReco, bool);                                 // bool: true for reco
+DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                             // bool: true for signal
+DECLARE_SOA_COLUMN(SurvivedEventSelection, survivedEventSelection, bool); // bool: true for survived event selection
 } // namespace hyperrec
 
-DECLARE_SOA_TABLE(DataHypCands, "AOD", "DATAHYPCANDS",
+DECLARE_SOA_TABLE(DataHypCands, "AOD", "HYPCANDS",
                   o2::soa::Index<>,
+                  hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
+
                   hyperrec::IsMatter,
-                  hyperrec::CentralityFT0A,
-                  hyperrec::CentralityFT0C,
-                  hyperrec::CentralityFT0M,
-                  hyperrec::PtHe3,
-                  hyperrec::PhiHe3,
-                  hyperrec::EtaHe3,
-                  hyperrec::PtPi,
-                  hyperrec::PhiPi,
-                  hyperrec::EtaPi,
-                  hyperrec::XPrimVtx,
-                  hyperrec::YPrimVtx,
-                  hyperrec::ZPrimVtx,
-                  hyperrec::XDecVtx,
-                  hyperrec::YDecVtx,
-                  hyperrec::ZDecVtx,
-                  hyperrec::DcaV0Daug,
-                  hyperrec::DcaHe,
-                  hyperrec::DcaPi,
-                  hyperrec::NSigmaHe,
-                  hyperrec::NTPCclusHe,
-                  hyperrec::NTPCclusPi,
-                  hyperrec::TPCmomHe,
-                  hyperrec::TPCmomPi,
-                  hyperrec::TPCsignalHe,
-                  hyperrec::TPCsignalPi,
-                  hyperrec::ITSclusterSizesHe,
-                  hyperrec::ITSclusterSizesPi,
+                  hyperrec::PtHe3, hyperrec::PhiHe3, hyperrec::EtaHe3,
+                  hyperrec::PtPi, hyperrec::PhiPi, hyperrec::EtaPi,
+                  hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
+                  hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
+                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi,
+                  hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi,
+                  hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
+                  hyperrec::Flags);
+
+DECLARE_SOA_TABLE(DataHypCandsFlow, "AOD", "HYPCANDSFLOW",
+                  o2::soa::Index<>,
+                  hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::QVecXFT0A, hyperrec::QVecYFT0A, hyperrec::QVecAmpFT0A,
+                  hyperrec::QVecXFT0C, hyperrec::QVecYFT0C, hyperrec::QVecAmpFT0C,
+                  hyperrec::QVecXFT0M, hyperrec::QVecYFT0M, hyperrec::QVecAmpFT0M,
+                  hyperrec::QVecXFV0A, hyperrec::QVecYFV0A, hyperrec::QVecAmpFV0A,
+                  hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
+
+                  hyperrec::IsMatter,
+                  hyperrec::PtHe3, hyperrec::PhiHe3, hyperrec::EtaHe3,
+                  hyperrec::PtPi, hyperrec::PhiPi, hyperrec::EtaPi,
+                  hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
+                  hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
+                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi,
+                  hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi,
+                  hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
                   hyperrec::Flags);
 
 DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   o2::soa::Index<>,
+                  hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
+                  hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
+
                   hyperrec::IsMatter,
-                  hyperrec::CentralityFT0A,
-                  hyperrec::CentralityFT0C,
-                  hyperrec::CentralityFT0M,
-                  hyperrec::PtHe3,
-                  hyperrec::PhiHe3,
-                  hyperrec::EtaHe3,
-                  hyperrec::PtPi,
-                  hyperrec::PhiPi,
-                  hyperrec::EtaPi,
-                  hyperrec::XPrimVtx,
-                  hyperrec::YPrimVtx,
-                  hyperrec::ZPrimVtx,
-                  hyperrec::XDecVtx,
-                  hyperrec::YDecVtx,
-                  hyperrec::ZDecVtx,
-                  hyperrec::DcaV0Daug,
-                  hyperrec::DcaHe,
-                  hyperrec::DcaPi,
-                  hyperrec::NSigmaHe,
-                  hyperrec::NTPCclusHe,
-                  hyperrec::NTPCclusPi,
-                  hyperrec::TPCmomHe,
-                  hyperrec::TPCmomPi,
-                  hyperrec::TPCsignalHe,
-                  hyperrec::TPCsignalPi,
-                  hyperrec::ITSclusterSizesHe,
-                  hyperrec::ITSclusterSizesPi,
+                  hyperrec::PtHe3, hyperrec::PhiHe3, hyperrec::EtaHe3,
+                  hyperrec::PtPi, hyperrec::PhiPi, hyperrec::EtaPi,
+                  hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
+                  hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
+                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi,
+                  hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi,
+                  hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
                   hyperrec::Flags,
                   hyperrec::GenPt,
                   hyperrec::GenPhi,
@@ -138,9 +137,11 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::GenYDecVtx,
                   hyperrec::GenZDecVtx,
                   hyperrec::IsReco,
-                  hyperrec::IsSignal);
+                  hyperrec::IsSignal,
+                  hyperrec::SurvivedEventSelection);
 
 using DataHypCand = DataHypCands::iterator;
+using DataHypCandFlow = DataHypCandsFlow::iterator;
 using MCHypCand = MCHypCands::iterator;
 
 } // namespace o2::aod

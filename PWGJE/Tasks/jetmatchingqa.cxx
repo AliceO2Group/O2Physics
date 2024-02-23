@@ -76,7 +76,12 @@ struct JetMatchingQA {
   {
   }
 
-  void processMCD(aod::JCollision const& collision, aod::JMcParticles const& mcParticles, soa::Join<aod::JTracks, aod::JMcTrackLbs> const& tracks,
+  void processDummy(JetMcCollisions const& mcCollisions)
+  {
+  }
+  PROCESS_SWITCH(JetMatchingQA, processDummy, "Dummy process", true);
+
+  void processMCD(JetCollision const& collision, JetParticles const& mcParticles, JetTracksMCD const& tracks,
                   BaseJetCollection const& djets, TagJetCollection const& pjets)
   {
     for (const auto& djet : djets) {
@@ -89,8 +94,6 @@ struct JetMatchingQA {
 
       // HF matching QA
       for (auto& pjet : djet.template matchedJetCand_as<TagJetCollection>()) {
-        LOGF(info, "djet %d (pt of %g GeV/c) is HF-matched to %d (pt of %g GeV/c)",
-             djet.globalIndex(), djet.pt(), pjet.globalIndex(), pjet.pt());
         registry.fill(HIST("h_jet_match_hf_pt"), pjet.pt(), djet.pt());
         const auto dphi = -TMath::Pi() + fmod(2 * TMath::Pi() + fmod(djet.phi() - pjet.phi() + TMath::Pi(), 2 * TMath::Pi()), 2 * TMath::Pi());
         registry.fill(HIST("h_jet_match_hf_deta_dphi"), dphi, djet.eta() - pjet.eta());
@@ -102,13 +105,13 @@ struct JetMatchingQA {
         registry.fill(HIST("h_jet_match_hf_Nconst"), pjet.tracksIds().size(), djet.tracksIds().size());
 
         double pjet_pt_lead = 0.;
-        for (auto& mcparticle : pjet.template tracks_as<aod::JMcParticles>()) {
+        for (auto& mcparticle : pjet.template tracks_as<JetParticles>()) {
           if (mcparticle.pt() > pjet_pt_lead) {
             pjet_pt_lead = mcparticle.pt();
           }
         }
         double djet_pt_lead = 0.;
-        for (auto& track : djet.template tracks_as<soa::Join<aod::JTracks, aod::JMcTrackLbs>>()) {
+        for (auto& track : djet.template tracks_as<JetTracksMCD>()) {
           if (track.pt() > djet_pt_lead) {
             djet_pt_lead = track.pt();
           }
@@ -118,8 +121,6 @@ struct JetMatchingQA {
 
       // geo matching QA
       for (auto& pjet : djet.template matchedJetGeo_as<TagJetCollection>()) {
-        LOGF(info, "djet %d (pt of %g GeV/c) is geo-matched to %d (pt of %g GeV/c)",
-             djet.globalIndex(), djet.pt(), pjet.globalIndex(), pjet.pt());
         registry.fill(HIST("h_jet_match_geo_pt"), pjet.pt(), djet.pt());
         const auto dphi = -TMath::Pi() + fmod(2 * TMath::Pi() + fmod(djet.phi() - pjet.phi() + TMath::Pi(), 2 * TMath::Pi()), 2 * TMath::Pi());
         registry.fill(HIST("h_jet_match_geo_deta_dphi"), dphi, djet.eta() - pjet.eta());
@@ -131,13 +132,13 @@ struct JetMatchingQA {
         registry.fill(HIST("h_jet_match_geo_Nconst"), pjet.tracksIds().size(), djet.tracksIds().size());
 
         double pjet_pt_lead = 0.;
-        for (auto& mcparticle : pjet.template tracks_as<aod::JMcParticles>()) {
+        for (auto& mcparticle : pjet.template tracks_as<JetParticles>()) {
           if (mcparticle.pt() > pjet_pt_lead) {
             pjet_pt_lead = mcparticle.pt();
           }
         }
         double djet_pt_lead = 0.;
-        for (auto& track : djet.template tracks_as<soa::Join<aod::JTracks, aod::JMcTrackLbs>>()) {
+        for (auto& track : djet.template tracks_as<JetTracksMCD>()) {
           if (track.pt() > djet_pt_lead) {
             djet_pt_lead = track.pt();
           }
@@ -147,8 +148,6 @@ struct JetMatchingQA {
 
       // pT matching QA
       for (auto& pjet : djet.template matchedJetPt_as<TagJetCollection>()) {
-        LOGF(info, "djet %d (pt of %g GeV/c) is pt-matched to %d (pt of %g GeV/c)",
-             djet.globalIndex(), djet.pt(), pjet.globalIndex(), pjet.pt());
         registry.fill(HIST("h_jet_match_pt_pt"), pjet.pt(), djet.pt());
         const auto dphi = -TMath::Pi() + fmod(2 * TMath::Pi() + fmod(djet.phi() - pjet.phi() + TMath::Pi(), 2 * TMath::Pi()), 2 * TMath::Pi());
         registry.fill(HIST("h_jet_match_pt_deta_dphi"), dphi, djet.eta() - pjet.eta());
@@ -160,13 +159,13 @@ struct JetMatchingQA {
         registry.fill(HIST("h_jet_match_pt_Nconst"), pjet.tracksIds().size(), djet.tracksIds().size());
 
         double pjet_pt_lead = 0.;
-        for (auto& mcparticle : pjet.template tracks_as<aod::JMcParticles>()) {
+        for (auto& mcparticle : pjet.template tracks_as<JetParticles>()) {
           if (mcparticle.pt() > pjet_pt_lead) {
             pjet_pt_lead = mcparticle.pt();
           }
         }
         double djet_pt_lead = 0.;
-        for (auto& track : djet.template tracks_as<soa::Join<aod::JTracks, aod::JMcTrackLbs>>()) {
+        for (auto& track : djet.template tracks_as<JetTracksMCD>()) {
           if (track.pt() > djet_pt_lead) {
             djet_pt_lead = track.pt();
           }
@@ -177,7 +176,7 @@ struct JetMatchingQA {
   }
   PROCESS_SWITCH(JetMatchingQA, processMCD, "QA on detector-level jets", true);
 
-  void processMCP(aod::JMcCollision const& collision,
+  void processMCP(JetMcCollision const& collision,
                   TagJetCollection const& pjets, BaseJetCollection const& djets)
   {
     for (const auto& pjet : pjets) {
@@ -187,29 +186,9 @@ struct JetMatchingQA {
         registry.fill(HIST("h_jet_gen_eta"), pjet.eta());
         registry.fill(HIST("h_jet_gen_ntracks"), pjet.tracksIds().size() + 1); // adding HF candidate
       }
-
-      for (auto& djet : pjet.template matchedJetCand_as<BaseJetCollection>()) {
-        LOGF(info, "pjet %d (pt of %g GeV/c) is HF-matched to %d (pt of %g GeV/c)",
-             pjet.globalIndex(), pjet.pt(), djet.globalIndex(), djet.pt());
-      }
-
-      for (auto& djet : pjet.template matchedJetGeo_as<BaseJetCollection>()) {
-        LOGF(info, "pjet %d (pt of %g GeV/c) is geo-matched to %d (pt of %g GeV/c)",
-             pjet.globalIndex(), pjet.pt(), djet.globalIndex(), djet.pt());
-      }
-
-      for (auto& djet : pjet.template matchedJetPt_as<BaseJetCollection>()) {
-        LOGF(info, "pjet %d (pt of %g GeV/c) is pT-matched to %d (pt of %g GeV/c)",
-             pjet.globalIndex(), pjet.pt(), djet.globalIndex(), djet.pt());
-      }
     }
   }
   PROCESS_SWITCH(JetMatchingQA, processMCP, "QA on generator-level jets", true);
-
-  void processDummy(aod::JMcCollision const& mcCollision)
-  {
-  }
-  PROCESS_SWITCH(JetMatchingQA, processDummy, "Dummy process", true);
 };
 
 using ChargedDetectorLevelJets = soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>;
