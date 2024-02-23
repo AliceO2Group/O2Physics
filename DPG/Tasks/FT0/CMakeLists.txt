@@ -9,12 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(AOTTrack)
-add_subdirectory(AOTEvent)
-add_subdirectory(TPC)
-add_subdirectory(TOF)
-add_subdirectory(FV0)
-add_subdirectory(FDD)
-add_subdirectory(MFT)
-add_subdirectory(Monitor)
-add_subdirectory(FT0)
+o2physics_add_dpl_workflow(ft0-task
+                    SOURCES ft0AnalysisTask.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::DataModel O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
