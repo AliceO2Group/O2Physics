@@ -1665,7 +1665,7 @@ void VarManager::FillTrackCollisionMatCorr(T const& track, C const& collision, M
     std::array<float, 2> dca{1e10f, 1e10f};
     std::array<float, 3> pVec = {track.px(), track.py(), track.pz()};
     // trackPar.propagateParamToDCA({collision.posX(), collision.posY(), collision.posZ()}, fgMagField, &dca);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, materialCorr, &dca);
+    propagator->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, materialCorr, &dca);
     getPxPyPz(trackPar, pVec);
 
     values[kTrackDCAxy] = dca[0];

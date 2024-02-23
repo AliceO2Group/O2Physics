@@ -284,7 +284,7 @@ struct DQBarrelTrackSelection {
 
       VarManager::FillTrack<TTrackFillMap>(track);
       // compute quantities which depend on the associated collision, such as DCA
-      if (fPropTrack) {
+      if (fPropTrack && (track.collisionId() != collision.globalIndex())) {
         VarManager::FillTrackCollisionMatCorr<TTrackFillMap>(track, collision, noMatCorr, o2::base::Propagator::Instance());
       }
       if (fConfigQA) {
