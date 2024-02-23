@@ -328,7 +328,6 @@ struct lambdaAnalysis_pb {
       if (!selTracks(trkPr) || !selTracks(trkKa))
         continue;
 
-      continue;
       auto _pxPr = trkPr.px();
       auto _pyPr = trkPr.py();
       auto _pzPr = trkPr.pz();
