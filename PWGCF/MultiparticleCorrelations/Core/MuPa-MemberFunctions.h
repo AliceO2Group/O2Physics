@@ -3249,7 +3249,7 @@ void SetDiffWeightsHist(TH1D* const hist, const char* variable, Int_t bin)
 
   // Finally:
   hist->SetDirectory(0);
-  pw.fDiffWeightsHist[ppe][bin] = (TH1D*)hist->Clone();
+  pw.fDiffWeightsHist[ppe][bin] = reinterpret_cast<TH1D*>(hist->Clone());
 
   if (!pw.fDiffWeightsHist[ppe][bin]) {
     LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m",
