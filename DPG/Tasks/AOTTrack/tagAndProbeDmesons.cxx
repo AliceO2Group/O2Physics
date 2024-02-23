@@ -327,11 +327,9 @@ struct TagTwoProngDisplacedVertices {
               return 1;
             }
           }
-        }
-
-        ///  K∓K± for φ from Ds± or D± → φπ± decays
-        ///  K∓π± for D0 from D±* → D0π± decays
-        else {
+        } else {
+          ///  K∓K± for φ from Ds± or D± → φπ± decays
+          ///  K∓π± for D0 from D±* → D0π± decays
           for (auto pdgGrandMother : pdgDecayMothers) {
             auto grandMotherId = RecoDecay::getMother(particlesMc, particleMother, pdgGrandMother, true);
             if (grandMotherId != -1) {
