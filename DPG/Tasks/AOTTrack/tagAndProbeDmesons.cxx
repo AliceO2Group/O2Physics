@@ -85,8 +85,8 @@ DECLARE_SOA_INDEX_COLUMN(Collision, collision);                   //! Collision 
 DECLARE_SOA_INDEX_COLUMN_FULL(Track0, track0, int, Tracks, "_0"); //! Index to first track
 DECLARE_SOA_INDEX_COLUMN_FULL(Track1, track1, int, Tracks, "_1"); //! Index to second track
 // Topological variables
-DECLARE_SOA_COLUMN(TagsPt, tagsPt, float);                             //! Tag's pT
-DECLARE_SOA_COLUMN(TagsInvMass, tagsInvMass2, float);                       //! Tag's invMass
+DECLARE_SOA_COLUMN(TagsPt, tagsPt, float);                                   //! Tag's pT
+DECLARE_SOA_COLUMN(TagsInvMass, tagsInvMass2, float);                        //! Tag's invMass
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                         //! Decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);                     //! Transverse decay length of candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);     //! Normalised decay length of candidate
@@ -145,7 +145,7 @@ struct TagTwoProngDisplacedVertices {
   Produces<aod::PiKaFromDzTags> tagPiKaTable;
   Produces<aod::TagTopoVariables> tagVarsTable;
   SliceCache cache;
-  Configurable<bool> fillTagTable{"fillTagTable",true, "flag to fill tag table with topological variables"};
+  Configurable<bool> fillTagTable{"fillTagTable", true, "flag to fill tag table with topological variables"};
   Configurable<bool> applyTofPid{"applyTofPid", true, "flag to enable TOF PID selection"};
   Configurable<bool> studyDzeroReflections{"studyDzeroReflections", false, "flag to study Dzero reflections"};
   Configurable<float> trackNumSigmaTof{"trackNumSigmaTof", 3.f, "number of sigma for TOF PID compatibility"};
@@ -264,16 +264,15 @@ struct TagTwoProngDisplacedVertices {
 
   /// Fill a vector with the Mothers pdg codes
   /// \param pdgMother vector with the pdg codes
-  /// \param channel decay channel 
-  void pdgMothersDecayChannel(std::vector<int> & pdgDecayMothers,const uint8_t channel){
-    if(channel == aod::tagandprobe::TagChannels::DplusToKPiPi){
+  /// \param channel decay channel
+  void pdgMothersDecayChannel(std::vector<int>& pdgDecayMothers, const uint8_t channel)
+  {
+    if (channel == aod::tagandprobe::TagChannels::DplusToKPiPi) {
       pdgDecayMothers.push_back(constants::physics::Pdg::kDPlus);
-    }
-    else if (channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi){
+    } else if (channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi) {
       pdgDecayMothers.push_back(constants::physics::Pdg::kDPlus);
       pdgDecayMothers.push_back(constants::physics::Pdg::kDS);
-    }
-    else if(channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi){
+    } else if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi || channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) {
       pdgDecayMothers.push_back(constants::physics::Pdg::kDStar);
     }
   }
@@ -283,36 +282,33 @@ struct TagTwoProngDisplacedVertices {
   /// \param SecondTrack candidate
   /// \param particlesMc McParticles table
   /// \param channel decay channel
-  /// \return 1 if the TagParticles belong to the chosen D meson 
+  /// \return 1 if the TagParticles belong to the chosen D meson
   ///                 AND the D meson has the correct probe as one of its daughters;
   ///                 0 al the other cases.
-  template<typename P, typename T>
+  template <typename P, typename T>
   int getTagOrigin(T const& firsTrack,
-                    T const& secondTrack,
-                    P const& particlesMc,
-                    const uint8_t channel,
-                    std::vector<int>& pdgDecayMothers) 
+                   T const& secondTrack,
+                   P const& particlesMc,
+                   const uint8_t channel,
+                   std::vector<int>& pdgDecayMothers)
   {
     auto pdgTagMother = 0;
     int pdgProbeParticle = -1;
-    
+
     if (channel == aod::tagandprobe::TagChannels::DplusToKPiPi) {
       pdgTagMother = constants::physics::Pdg::kDPlus;
-      pdgProbeParticle = 321; //Ka
-    }
-    else if (channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi) {
+      pdgProbeParticle = 321; // Ka
+    } else if (channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi) {
       pdgTagMother = constants::physics::Pdg::kPhi;
-      pdgProbeParticle = 211;  //Pi
-    }
-    else {
+      pdgProbeParticle = 211; // Pi
+    } else {
       pdgTagMother = constants::physics::Pdg::kD0;
-      pdgProbeParticle = 211; //Pi
+      pdgProbeParticle = 211; // Pi
     }
 
     if (!firsTrack.has_mcParticle() || !secondTrack.has_mcParticle()) {
       return -999;
-    }
-    else {
+    } else {
       auto firstMcTrack = firsTrack.template mcParticle_as<aod::McParticles>();
       auto secondMcTrack = secondTrack.template mcParticle_as<aod::McParticles>();
       auto firstTrackMotherId = RecoDecay::getMother(particlesMc, firstMcTrack, pdgTagMother, true);
@@ -322,28 +318,28 @@ struct TagTwoProngDisplacedVertices {
         auto particleMother = particlesMc.rawIteratorAt(firstTrackMotherId);
 
         /// π±π± for D± → K∓π±π± decays
-        if(channel == aod::tagandprobe::TagChannels::DplusToKPiPi){
+        if (channel == aod::tagandprobe::TagChannels::DplusToKPiPi) {
           auto particleMother = particlesMc.rawIteratorAt(firstTrackMotherId);
-          auto daughters =  particleMother.template daughters_as<aod::McParticles>();
-          //Check if the probe is within the mother's particle daughters
-          for(auto& daughter: daughters){
-            if (std::abs(daughter.pdgCode()) == pdgProbeParticle){
+          auto daughters = particleMother.template daughters_as<aod::McParticles>();
+          // Check if the probe is within the mother's particle daughters
+          for (auto& daughter : daughters) {
+            if (std::abs(daughter.pdgCode()) == pdgProbeParticle) {
               return 1;
             }
           }
         }
 
         ///  K∓K± for φ from Ds± or D± → φπ± decays
-        ///  K∓π± for D0 from D±* → D0π± decays 
-        else{
+        ///  K∓π± for D0 from D±* → D0π± decays
+        else {
           for (auto pdgGrandMother : pdgDecayMothers) {
             auto grandMotherId = RecoDecay::getMother(particlesMc, particleMother, pdgGrandMother, true);
             auto particleGrandMother = particlesMc.rawIteratorAt(grandMotherId);
             if (grandMotherId != -1) {
               auto daughters = particleGrandMother.template daughters_as<aod::McParticles>();
-              //Check if the probe is within the GrandMother's particle daughters
-              for(auto& daughter: daughters){
-                if (std::abs(daughter.pdgCode()) == pdgProbeParticle){
+              // Check if the probe is within the GrandMother's particle daughters
+              for (auto& daughter : daughters) {
+                if (std::abs(daughter.pdgCode()) == pdgProbeParticle) {
                   return 1;
                 }
               }
@@ -374,7 +370,7 @@ struct TagTwoProngDisplacedVertices {
   }
 
   /// Calculate all the topology variables and store them in the Topology table
-  /// \param doMc 1 for the Mc and 0 for the data  
+  /// \param doMc 1 for the Mc and 0 for the data
   /// \param primVtx  primary vertex
   /// \param secVtx  secondary vertex
   /// \param trackDcaXy array with the Tags' TrackDCAXY
@@ -382,42 +378,42 @@ struct TagTwoProngDisplacedVertices {
   /// \param firstTrack candidate
   /// \param SecondTrack candidate
   /// \param particlesMc McParticle table
-  template <bool doMc,typename PV,typename SV,typename CovMatSV,typename PVec,typename T,typename P>
-  void getTagInfo (const PV& primVtx,
-                   const SV& secVtx,
-                   const CovMatSV& covMatrixSecVtx,
-                   const PVec& pVec,
-                   std::array<float, 2>& trackDcaXy,
-                   const uint8_t channel,
-                   const T& firstTrack,
-                   const T& secondTrack,
-                   float& invMass2,
-                   std::vector<int>& pdgDecayMothers,
-                   const P& particlesMc)
+  template <bool doMc, typename PV, typename SV, typename CovMatSV, typename PVec, typename T, typename P>
+  void getTagInfo(const PV& primVtx,
+                  const SV& secVtx,
+                  const CovMatSV& covMatrixSecVtx,
+                  const PVec& pVec,
+                  std::array<float, 2>& trackDcaXy,
+                  const uint8_t channel,
+                  const T& firstTrack,
+                  const T& secondTrack,
+                  float& invMass2,
+                  std::vector<int>& pdgDecayMothers,
+                  const P& particlesMc)
   {
-      auto covMatrixPV = primVtx.getCov();
-      float phi, theta;
-      std::array<float, 3> pvCoord = {primVtx.getX(), primVtx.getY(), primVtx.getZ()};
-      getPointDirection(pvCoord, secVtx, phi, theta);
+    auto covMatrixPV = primVtx.getCov();
+    float phi, theta;
+    std::array<float, 3> pvCoord = {primVtx.getX(), primVtx.getY(), primVtx.getZ()};
+    getPointDirection(pvCoord, secVtx, phi, theta);
 
-      auto decLen = RecoDecay::distance(pvCoord, secVtx);
-      auto errorDecLen = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSecVtx, phi, theta));
-      auto errorDecLenXy = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.f) + getRotatedCovMatrixXX(covMatrixSecVtx, phi, 0.f));
-      auto decLenXy = RecoDecay::distanceXY(pvCoord, secVtx);
-      auto cpa = RecoDecay::cpa(pvCoord, secVtx, pVec);
-      auto cpaXy = RecoDecay::cpaXY(pvCoord, secVtx, pVec);
-      auto normDecLen = decLen / errorDecLen;
-      auto normDecLenXy = decLenXy / errorDecLenXy;
-      auto tagsPt = RecoDecay::pt(pVec);
-      auto invMass = std::sqrt(invMass2);
+    auto decLen = RecoDecay::distance(pvCoord, secVtx);
+    auto errorDecLen = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSecVtx, phi, theta));
+    auto errorDecLenXy = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.f) + getRotatedCovMatrixXX(covMatrixSecVtx, phi, 0.f));
+    auto decLenXy = RecoDecay::distanceXY(pvCoord, secVtx);
+    auto cpa = RecoDecay::cpa(pvCoord, secVtx, pVec);
+    auto cpaXy = RecoDecay::cpaXY(pvCoord, secVtx, pVec);
+    auto normDecLen = decLen / errorDecLen;
+    auto normDecLenXy = decLenXy / errorDecLenXy;
+    auto tagsPt = RecoDecay::pt(pVec);
+    auto invMass = std::sqrt(invMass2);
 
-      int isSignal = -1;         //default value for data
+    int isSignal = -1; // default value for data
 
-      if constexpr (doMc) {
-        isSignal = getTagOrigin(firstTrack, secondTrack, particlesMc, channel, pdgDecayMothers);
-      }
-      tagVarsTable(tagsPt, invMass, decLen, decLenXy, normDecLen, normDecLenXy, trackDcaXy[0] * trackDcaXy[1], cpa, cpaXy, isSignal);
-  } 
+    if constexpr (doMc) {
+      isSignal = getTagOrigin(firstTrack, secondTrack, particlesMc, channel, pdgDecayMothers);
+    }
+    tagVarsTable(tagsPt, invMass, decLen, decLenXy, normDecLen, normDecLenXy, trackDcaXy[0] * trackDcaXy[1], cpa, cpaXy, isSignal);
+  }
 
   template <typename TTrack>
   bool isSelectedPidTof(const TTrack& track,
@@ -535,7 +531,8 @@ struct TagTwoProngDisplacedVertices {
 
         auto pVec = RecoDecay::pVec(pVecTrackFirst, pVecTrackSecond);
         auto ptBin = findBin(&ptBinsForTopologicalCuts[channel], RecoDecay::pt(pVec));
-        if (ptBin == -1 ) continue;
+        if (ptBin == -1)
+          continue;
 
         if (!isSelectedInvariantMass(pVecTrackFirst, pVecTrackSecond, channel, invMass2, ptBin)) {
           continue;
@@ -558,16 +555,15 @@ struct TagTwoProngDisplacedVertices {
         auto primVtx = getPrimaryVertex(collision);
         const auto& secVtx = vertexer.getPCACandidate();
         const auto& covMatrixPCA = vertexer.calcPCACovMatrixFlat();
-        std::array<float,2> trackDcaXy{trackFirst.dcaXY(), trackSecond.dcaXY()};
+        std::array<float, 2> trackDcaXy{trackFirst.dcaXY(), trackSecond.dcaXY()};
         if (fillTagTable) {
           getTagInfo<doMc>(primVtx, secVtx, covMatrixPCA, pVec, trackDcaXy, channel, trackFirst, trackSecond, invMass2, pdgDecayMothers, particlesMc);
           continue;
-        }
-        else {
+        } else {
           if (!isSelectedTopology(primVtx, secVtx, covMatrixPCA, pVec, trackDcaXy, channel, ptBin)) {
             continue;
           }
-          registry.fill(HIST("hMassPiPiVsPt"),RecoDecay::pt(pVec), std::sqrt(invMass2)); // only channel with same sign tracks for the moment
+          registry.fill(HIST("hMassPiPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2)); // only channel with same sign tracks for the moment
           tagPiPiTable(trackFirst.collisionId(), trackFirst.globalIndex(), trackSecond.globalIndex());
         }
       }
@@ -601,7 +597,8 @@ struct TagTwoProngDisplacedVertices {
 
         auto pVec = RecoDecay::pVec(pVecTrackPos, pVecTrackNeg);
         auto ptBin = findBin(&ptBinsForTopologicalCuts[channel], RecoDecay::pt(pVec));
-        if (ptBin == -1) continue;
+        if (ptBin == -1)
+          continue;
 
         if (!isSelectedInvariantMass(pVecTrackPos, pVecTrackNeg, channel, invMass2, ptBin)) {
           continue;
@@ -624,71 +621,69 @@ struct TagTwoProngDisplacedVertices {
         auto primVtx = getPrimaryVertex(collision);
         const auto& secVtx = vertexer.getPCACandidate();
         const auto& covMatrixPCA = vertexer.calcPCACovMatrixFlat();
-        std::array<float,2> trackDcaXy{trackPos.dcaXY(), trackNeg.dcaXY()};
+        std::array<float, 2> trackDcaXy{trackPos.dcaXY(), trackNeg.dcaXY()};
         if (fillTagTable) {
           getTagInfo<doMc>(primVtx, secVtx, covMatrixPCA, pVec, trackDcaXy, channel, trackPos, trackNeg, invMass2, pdgDecayMothers, particlesMc);
           continue;
-        }
-        else {
+        } else {
           if (!isSelectedTopology(primVtx, secVtx, covMatrixPCA, pVec, trackDcaXy, channel, ptBin)) {
             continue;
           }
-        if (channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi) {
-          registry.fill(HIST("hMassKaKaVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
-          tagKaKaTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex());
-        } else if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi) {
-          if (!studyDzeroReflections) {
-            registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
-          } else {
-            float invMassrefl{0.f};
-            int isDzero = 1;
-            if (std::abs(trackPos.tpcNSigmaKa()) < trackNumSigmaTpc && (std::abs(trackNeg.tpcNSigmaPi()) < trackNumSigmaTpc)) {
-              isDzero = 3;
-              if (applyTofPid) {
-                if (!isSelectedPidTof(trackNeg, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) || !isSelectedPidTof(trackPos, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi))
-                  isDzero = 1;
+          if (channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi) {
+            registry.fill(HIST("hMassKaKaVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
+            tagKaKaTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex());
+          } else if (channel == aod::tagandprobe::TagChannels::DstarPlusToDzeroPi) {
+            if (!studyDzeroReflections) {
+              registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
+            } else {
+              float invMassrefl{0.f};
+              int isDzero = 1;
+              if (std::abs(trackPos.tpcNSigmaKa()) < trackNumSigmaTpc && (std::abs(trackNeg.tpcNSigmaPi()) < trackNumSigmaTpc)) {
+                isDzero = 3;
+                if (applyTofPid) {
+                  if (!isSelectedPidTof(trackNeg, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) || !isSelectedPidTof(trackPos, aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi))
+                    isDzero = 1;
+                }
               }
-            }
-            if (isDzero == 3) {
-              auto arrMomentum = std::array{pVecTrackNeg, pVecTrackPos};
-              invMassrefl = std::sqrt(RecoDecay::m2(arrMomentum, masses[channel]));
-            }
-            registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2), invMassrefl, isDzero);
-          }
-          tagPiKaTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex());
-        } else if (channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) {
-          if (!studyDzeroReflections) {
-            registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
-          } else {
-            float invMassrefl{0.f};
-            int isDzero = 2;
-            if (std::abs(trackNeg.tpcNSigmaKa()) < trackNumSigmaTpc && (std::abs(trackPos.tpcNSigmaPi()) < trackNumSigmaTpc)) {
-              isDzero = 3;
-              if (applyTofPid) {
-                if (!isSelectedPidTof(trackNeg, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi) || !isSelectedPidTof(trackPos, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi))
-                  isDzero = 2;
+              if (isDzero == 3) {
+                auto arrMomentum = std::array{pVecTrackNeg, pVecTrackPos};
+                invMassrefl = std::sqrt(RecoDecay::m2(arrMomentum, masses[channel]));
               }
+              registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2), invMassrefl, isDzero);
             }
-            if (isDzero == 3) {
-              auto arrMomentum = std::array{pVecTrackNeg, pVecTrackPos};
-              invMassrefl = std::sqrt(RecoDecay::m2(arrMomentum, masses[channel]));
+            tagPiKaTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex());
+          } else if (channel == aod::tagandprobe::TagChannels::DstarMinusToDzeroBarPi) {
+            if (!studyDzeroReflections) {
+              registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
+            } else {
+              float invMassrefl{0.f};
+              int isDzero = 2;
+              if (std::abs(trackNeg.tpcNSigmaKa()) < trackNumSigmaTpc && (std::abs(trackPos.tpcNSigmaPi()) < trackNumSigmaTpc)) {
+                isDzero = 3;
+                if (applyTofPid) {
+                  if (!isSelectedPidTof(trackNeg, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi) || !isSelectedPidTof(trackPos, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi))
+                    isDzero = 2;
+                }
+              }
+              if (isDzero == 3) {
+                auto arrMomentum = std::array{pVecTrackNeg, pVecTrackPos};
+                invMassrefl = std::sqrt(RecoDecay::m2(arrMomentum, masses[channel]));
+              }
+              registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2), invMassrefl, isDzero);
             }
-            registry.fill(HIST("hMassKaPiVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2), invMassrefl, isDzero);
+            tagKaPiTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex());
+          } else if (channel == aod::tagandprobe::TagChannels::DstarToDzeroToKK) {
+            registry.fill(HIST("hMassDzeroKaKaVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
           }
-          tagKaPiTable(trackPos.collisionId(), trackPos.globalIndex(), trackNeg.globalIndex());
-        } else if (channel == aod::tagandprobe::TagChannels::DstarToDzeroToKK) {
-          registry.fill(HIST("hMassDzeroKaKaVsPt"), RecoDecay::pt(pVec), std::sqrt(invMass2));
-        }
         }
       }
     }
   }
 
   void processPiPiFromDplusMc(CollisionsFiltered::iterator const& collision,
-                               TracksWithSelAndDcaMcFiltered const& tracks,
-                               aod::BCsWithTimestamps const&,
-                               aod::McParticles const& particlesMc
-                              )
+                              TracksWithSelAndDcaMcFiltered const& tracks,
+                              aod::BCsWithTimestamps const&,
+                              aod::McParticles const& particlesMc)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     float bz{0};
@@ -708,7 +703,7 @@ struct TagTwoProngDisplacedVertices {
 
     auto groupPositive = positivePionsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     computeCombinatorialSameCharge<true>(collision, groupPositive, aod::tagandprobe::TagChannels::DplusToKPiPi, bz, pdgDecayMothers, particlesMc);
-    
+
     auto groupNegative = negativePionsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     computeCombinatorialSameCharge<true>(collision, groupNegative, aod::tagandprobe::TagChannels::DplusToKPiPi, bz, pdgDecayMothers, particlesMc);
   }
@@ -730,7 +725,7 @@ struct TagTwoProngDisplacedVertices {
       }
       runNumber = bc.runNumber();
     }
-    
+
     std::vector<int> pdgDecayMothers;
     pdgMothersDecayChannel(pdgDecayMothers, aod::tagandprobe::TagChannels::DplusToKPiPi);
 
@@ -742,11 +737,10 @@ struct TagTwoProngDisplacedVertices {
   }
   PROCESS_SWITCH(TagTwoProngDisplacedVertices, processPiPiFromDplus, "Process pipi combinatorial to tag pion pairs from D+ decays", false);
 
-void processKaKaFromDsOrDplusMc(CollisionsFiltered::iterator const& collision,
-                                TracksWithSelAndDcaMcFiltered const& tracks,
-                                aod::BCsWithTimestamps const&,
-                                aod::McParticles const& particlesMc
-                                )
+  void processKaKaFromDsOrDplusMc(CollisionsFiltered::iterator const& collision,
+                                  TracksWithSelAndDcaMcFiltered const& tracks,
+                                  aod::BCsWithTimestamps const&,
+                                  aod::McParticles const& particlesMc)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     float bz{0};
@@ -840,7 +834,7 @@ void processKaKaFromDsOrDplusMc(CollisionsFiltered::iterator const& collision,
     }
 
     std::vector<int> pdgDecayMothers;
-    pdgMothersDecayChannel(pdgDecayMothers,aod::tagandprobe::TagChannels::DstarPlusToDzeroPi);
+    pdgMothersDecayChannel(pdgDecayMothers, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi);
 
     auto groupPionPositive = positivePions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto groupPionNegative = negativePions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -852,10 +846,9 @@ void processKaKaFromDsOrDplusMc(CollisionsFiltered::iterator const& collision,
   PROCESS_SWITCH(TagTwoProngDisplacedVertices, processKaPiFromDstar, "Process Kpi combinatorial to tag D0 from D*+ decays", false);
 
   void processKaPiFromDstarMc(CollisionsFiltered::iterator const& collision,
-                            TracksWithSelAndDcaMcFiltered const& tracks,
-                            aod::BCsWithTimestamps const&,
-                            aod::McParticles const& particlesMc
-                            )
+                              TracksWithSelAndDcaMcFiltered const& tracks,
+                              aod::BCsWithTimestamps const&,
+                              aod::McParticles const& particlesMc)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     float bz{0};
@@ -869,9 +862,9 @@ void processKaKaFromDsOrDplusMc(CollisionsFiltered::iterator const& collision,
       }
       runNumber = bc.runNumber();
     }
-    
+
     std::vector<int> pdgDecayMothers;
-    pdgMothersDecayChannel(pdgDecayMothers,aod::tagandprobe::TagChannels::DstarPlusToDzeroPi);
+    pdgMothersDecayChannel(pdgDecayMothers, aod::tagandprobe::TagChannels::DstarPlusToDzeroPi);
 
     auto groupPionPositive = positivePionsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto groupPionNegative = negativePionsMc->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
