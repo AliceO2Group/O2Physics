@@ -15,7 +15,6 @@
 #include <string>
 
 #include "CCDB/BasicCCDBManager.h"
-#include "Framework/AnalysisHelpers.h"
 
 namespace o2
 {
@@ -35,14 +34,14 @@ class ctpRateFetcher
 {
  public:
   ctpRateFetcher() = default;
-  double fetch(framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber, std::string sourceName);
+  double fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName);
 
  private:
-  void getCTPconfig(framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber);
-  void getCTPscalers(framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber);
-  void getLHCIFdata(framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber);
-  double fetchCTPratesInputs(framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber, int input);
-  double fetchCTPratesClasses(framework::Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber, std::string className, int inputType = 1);
+  void getCTPconfig(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber);
+  void getCTPscalers(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber);
+  void getLHCIFdata(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber);
+  double fetchCTPratesInputs(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, int input);
+  double fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string className, int inputType = 1);
   double pileUpCorrection(double rate);
 
   int mRunNumber = -1;

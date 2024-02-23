@@ -317,7 +317,7 @@ struct phosPi0 {
         double pt = sqrt(pow(clu.px() + clu2.px(), 2) +
                          pow(clu.py() + clu2.py(), 2));
         int modComb = ModuleCombination(clu.mod(), clu2.mod());
-        if (clu.collision() == clu2.collision()) { // Real
+        if (clu.collision_as<SelCollisions>() == clu2.collision_as<SelCollisions>()) { // Real
           mHistManager.fill(HIST("mggRe"), m, pt, modComb);
           if (clu.trackdist() > 2. && clu2.trackdist() > 2.) {
             mHistManager.fill(HIST("mggReCPV"), m, pt, modComb);

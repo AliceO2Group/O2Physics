@@ -53,8 +53,9 @@ struct lambdaAnalysis {
 
   // Kinematics cuts
   Configurable<bool> cKinCuts{"cKinCuts", true, "Kinematic Cuts for p-K pair opening angle"};
-  Configurable<std::vector<float>> cKinCutsPt{"cKinCutsPt", {0.0, 0.8, 1.2, 1.6, 2.0, 9999999999.}, "p_{T} of L* for kinematic cuts"};
-  Configurable<std::vector<float>> cKinCutsAlpha{"cKinCutsAlpha", {3.0, 1.8, 1.4, 1.0, 0.8}, "Opening angle of p-K of L*"};
+  Configurable<std::vector<float>> cKinCutsPt{"cKinCutsPt", {0.0, 0.4, 0.6, 0.8, 1.0, 1.4, 1.8, 2.2, 2.6, 3.0, 4.0, 5.0, 6.0, 1e10}, "p_{T} of L* for kinematic cuts"};
+  Configurable<std::vector<float>> cKinLowerCutsAlpha{"cKinLowerCutsAlpha", {1.5, 1.0, 0.5, 0.3, 0.2, 0.15, 0.1, 0.08, 0.07, 0.06, 0.04, 0.02}, "Lower cut on Opening angle of p-K of L*"};
+  Configurable<std::vector<float>> cKinUpperCutsAlpha{"cKinUpperCutsAlpha", {3.0, 2.0, 1.5, 1.4, 1.0, 0.8, 0.6, 0.5, 0.45, 0.35, 0.3, 0.25, 0.2}, "Upper cut on Opening angle of p-K of L*"};
 
   // PID Selections
   Configurable<bool> cUseOnlyTOFTrackPr{"cUseOnlyTOFTrackPr", false, "Use only TOF track for PID selection"}; // Use only TOF track for Proton PID selection
@@ -333,17 +334,16 @@ struct lambdaAnalysis {
   {
     // initialize
     std::vector<float> kinCutsPt = static_cast<std::vector<float>>(cKinCutsPt);
-    std::vector<float> kinCutsAlpha = static_cast<std::vector<float>>(cKinCutsAlpha);
-    int kinCutsSize = static_cast<int>(kinCutsAlpha.size());
+    std::vector<float> kinLowerCutsAlpha = static_cast<std::vector<float>>(cKinLowerCutsAlpha);
+    std::vector<float> kinUpperCutsAlpha = static_cast<std::vector<float>>(cKinUpperCutsAlpha);
+    int kinCutsSize = static_cast<int>(kinUpperCutsAlpha.size());
 
     TVector3 v1(trkPr.px(), trkPr.py(), trkPr.pz());
     TVector3 v2(trkKa.px(), trkKa.py(), trkKa.pz());
     alpha = v1.Angle(v2);
 
-    histos.fill(HIST("QAChecks/h2d_lstar_alpha_vs_pt"), p.Pt(), alpha);
-
     for (int i = 0; i < kinCutsSize; ++i) {
-      if ((p.Pt() > kinCutsPt[i] && p.Pt() <= kinCutsPt[i + 1]) && (alpha > kinCutsAlpha[i])) {
+      if ((p.Pt() > kinCutsPt[i] && p.Pt() <= kinCutsPt[i + 1]) && (alpha < kinLowerCutsAlpha[i] || alpha > kinUpperCutsAlpha[i])) {
         return false;
       }
     }
@@ -426,18 +426,24 @@ struct lambdaAnalysis {
       if (std::abs(p.Rapidity()) > 0.5)
         continue;
 
-      // Apply kinematic cuts.
+      // Get the opening angle b/w proton and kaon and kinematic cut flag.
+      float alpha = 0;
+      bool kinCutFlag{true};
       if (cKinCuts) {
-        float alpha = 0;
-        bool kinCutFlag = kinCuts(trkPr, trkKa, p, alpha);
-        if (!kinCutFlag) {
-          continue;
+        kinCutFlag = kinCuts(trkPr, trkKa, p, alpha);
+        if constexpr (!mix && !mc) {
+          histos.fill(HIST("QAChecks/h2d_lstar_alpha_vs_pt"), p.Pt(), alpha);
         }
-        histos.fill(HIST("QAChecks/h2d_sel_kincuts_lstar_alpha_vs_pt"), p.Pt(), alpha);
+      }
+
+      // apply kincuts
+      if (cKinCuts && !kinCutFlag) {
+        continue;
       }
 
       // Fill Invariant Mass Histograms.
       if constexpr (!mix && !mc) {
+        histos.fill(HIST("QAChecks/h2d_sel_kincuts_lstar_alpha_vs_pt"), p.Pt(), alpha);
         if (trkPr.sign() * trkKa.sign() < 0) {
           histos.fill(HIST("Analysis/h1d_lstar_invm_US"), p.M());
           histos.fill(HIST("Analysis/h4d_lstar_invm_US"), p.M(), p.Pt(), sph, mult);

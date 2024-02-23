@@ -22,10 +22,7 @@
 
 namespace o2
 {
-
-using framework::Service;
-
-double ctpRateFetcher::fetch(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber, std::string sourceName)
+double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName)
 {
   if (sourceName.find("ZNC") != std::string::npos) {
     if (runNumber < 544448) {
@@ -48,7 +45,7 @@ double ctpRateFetcher::fetch(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t
   return -1.;
 }
 
-double ctpRateFetcher::fetchCTPratesClasses(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber, std::string className, int inputType)
+double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string className, int inputType)
 {
   getCTPscalers(ccdb, timeStamp, runNumber);
   getCTPconfig(ccdb, timeStamp, runNumber);
@@ -71,7 +68,7 @@ double ctpRateFetcher::fetchCTPratesClasses(Service<o2::ccdb::BasicCCDBManager>&
   return pileUpCorrection(rate.second);
 }
 
-double ctpRateFetcher::fetchCTPratesInputs(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber, int input)
+double ctpRateFetcher::fetchCTPratesInputs(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, int input)
 {
   getCTPscalers(ccdb, timeStamp, runNumber);
   getLHCIFdata(ccdb, timeStamp, runNumber);
@@ -85,7 +82,7 @@ double ctpRateFetcher::fetchCTPratesInputs(Service<o2::ccdb::BasicCCDBManager>& 
   }
 }
 
-void ctpRateFetcher::getCTPscalers(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber)
+void ctpRateFetcher::getCTPscalers(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber)
 {
   if (runNumber == mRunNumber && mScalers != nullptr) {
     return;
@@ -99,7 +96,7 @@ void ctpRateFetcher::getCTPscalers(Service<o2::ccdb::BasicCCDBManager>& ccdb, ui
   mScalers->convertRawToO2();
 }
 
-void ctpRateFetcher::getLHCIFdata(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber)
+void ctpRateFetcher::getLHCIFdata(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber)
 {
   if (runNumber == mRunNumber && mLHCIFdata != nullptr) {
     return;
@@ -111,7 +108,7 @@ void ctpRateFetcher::getLHCIFdata(Service<o2::ccdb::BasicCCDBManager>& ccdb, uin
   }
 }
 
-void ctpRateFetcher::getCTPconfig(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber)
+void ctpRateFetcher::getCTPconfig(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber)
 {
   if (runNumber == mRunNumber && mConfig != nullptr) {
     return;

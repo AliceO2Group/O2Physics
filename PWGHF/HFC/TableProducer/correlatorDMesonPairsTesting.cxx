@@ -66,6 +66,8 @@ struct HfCorrelatorDMesonPairsTesting {
   Configurable<float> yCandMax{"yCandMax", 0.8, "maxmum |y| of D0 candidates"};
   Configurable<float> ptCandMin{"ptCandMin", -1., "minimum pT of D0 candidates"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots"};
+  Configurable<bool> selectSignalRegionOnly{"selectSignalRegionOnly", false, "only use events close to PDG peak"};
+  Configurable<float> massCut{"massCut", 0.05, "Maximum deviation from PDG peak allowed for signal region"};
 
   HfHelper hfHelper;
 
@@ -316,6 +318,11 @@ struct HfCorrelatorDMesonPairsTesting {
     int nDevent = 0, nDbarevent = 0, nDDbarevent = 0, nDorDbarevent = 0;
     for (const auto& candidate : selectedD0Candidates) {
       // Get counters per event
+      bool isSignalD0 = std::abs(hfHelper.invMassD0ToPiK(candidate) - MassD0) < massCut;
+      bool isSignalD0bar = std::abs(hfHelper.invMassD0barToKPi(candidate) - MassD0Bar) < massCut;
+      if (selectSignalRegionOnly && !(isSignalD0 || isSignalD0bar)) {
+        continue;
+      }
       auto candidateType1 = assignCandidateTypeD0(candidate); // Candidate type attribution
       registry.fill(HIST("hPtCand"), candidate.pt());
       if (abs(hfHelper.yD0(candidate)) > yCandMax) {
@@ -406,7 +413,7 @@ struct HfCorrelatorDMesonPairsTesting {
     float massDCand1 = hfHelper.invMassD0ToPiK(candidate1);
     float massDbarCand1 = hfHelper.invMassD0barToKPi(candidate1);
     float massDCand2 = hfHelper.invMassD0ToPiK(candidate2);
-    float massDbarCand2 = hfHelper.invMassD0barToKPi(candidate1);
+    float massDbarCand2 = hfHelper.invMassD0barToKPi(candidate2);
     if (isDCand1 && isDCand2) {
       SETBIT(pairType, DD);
       registry.fill(HIST("hSelectionStatus"), 14);
@@ -459,6 +466,11 @@ struct HfCorrelatorDMesonPairsTesting {
       if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
+      bool isSignalD0Cand1 = std::abs(hfHelper.invMassD0ToPiK(candidate1) - MassD0) < massCut;
+      bool isSignalD0barCand1 = std::abs(hfHelper.invMassD0barToKPi(candidate1) - MassD0Bar) < massCut;
+      if (selectSignalRegionOnly && !(isSignalD0Cand1 || isSignalD0barCand1)) {
+        continue;
+      }
 
       auto candidateType1 = assignCandidateTypeD0(candidate1); // Candidate type attribution
       bool isDCand1 = isD(candidateType1);
@@ -469,6 +481,11 @@ struct HfCorrelatorDMesonPairsTesting {
           continue;
         }
         if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
+          continue;
+        }
+        bool isSignalD0Cand2 = std::abs(hfHelper.invMassD0ToPiK(candidate2) - MassD0) < massCut;
+        bool isSignalD0barCand2 = std::abs(hfHelper.invMassD0barToKPi(candidate2) - MassD0Bar) < massCut;
+        if (selectSignalRegionOnly && !(isSignalD0Cand2 || isSignalD0barCand2)) {
           continue;
         }
         auto candidateType2 = assignCandidateTypeD0(candidate2); // Candidate type attribution
@@ -501,6 +518,11 @@ struct HfCorrelatorDMesonPairsTesting {
       if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
+      bool isSignalD0Cand1 = std::abs(hfHelper.invMassD0ToPiK(candidate1) - MassD0) < massCut;
+      bool isSignalD0barCand1 = std::abs(hfHelper.invMassD0barToKPi(candidate1) - MassD0Bar) < massCut;
+      if (selectSignalRegionOnly && !(isSignalD0Cand1 || isSignalD0barCand1)) {
+        continue;
+      }
 
       auto candidateType1 = assignCandidateTypeD0(candidate1); // Candidate type attribution
 
@@ -526,6 +548,11 @@ struct HfCorrelatorDMesonPairsTesting {
           continue;
         }
         if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
+          continue;
+        }
+        bool isSignalD0Cand2 = std::abs(hfHelper.invMassD0ToPiK(candidate2) - MassD0) < massCut;
+        bool isSignalD0barCand2 = std::abs(hfHelper.invMassD0barToKPi(candidate2) - MassD0Bar) < massCut;
+        if (selectSignalRegionOnly && !(isSignalD0Cand2 || isSignalD0barCand2)) {
           continue;
         }
         auto candidateType2 = assignCandidateTypeD0(candidate2); // Candidate type attribution

@@ -97,6 +97,8 @@ struct phosCellQA {
       eventIR.setFromLong(bc.globalBC());
       mHistManager.fill(HIST("eventsAll"), 1);
       mHistManager.fill(HIST("eventBCAll"), eventIR.bc);
+      // if (!cell.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
+      //   mHistManager.fill(HIST("eventsTrig"), 1.);
       if (mVetoBCID >= 0 && eventIR.bc == mVetoBCID)
         continue;
       mHistManager.fill(HIST("eventsSelected"), 1);
@@ -115,7 +117,7 @@ struct phosCellQA {
 
       if (!cell.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
         continue;
-      mHistManager.fill(HIST("eventsTrig"), 1.);
+      mHistManager.fill(HIST("cellTrig"), 1.);
 
       if (cell.amplitude() < mMinCellAmplitude)
         continue;

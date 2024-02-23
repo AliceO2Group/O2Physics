@@ -173,6 +173,7 @@ struct TaskPolarisationCharmHadrons {
           pxDau = candidate.pxProng0();
           pyDau = candidate.pyProng0();
           pzDau = candidate.pzProng0();
+          invMassCharmHad = hfHelper.invMassLcToPKPi(candidate);
           invMassCharmHadForSparse = hfHelper.invMassLcToPKPi(candidate);
           if constexpr (withMl) {
             if (candidate.mlProbLcToPKPi().size() == 3) {
@@ -188,6 +189,7 @@ struct TaskPolarisationCharmHadrons {
           pxDau = candidate.pxProng2();
           pyDau = candidate.pyProng2();
           pzDau = candidate.pzProng2();
+          invMassCharmHad = hfHelper.invMassLcToPiKP(candidate);
           invMassCharmHadForSparse = hfHelper.invMassLcToPiKP(candidate);
           if constexpr (withMl) {
             if (candidate.mlProbLcToPiKP().size() == 3) {
@@ -198,9 +200,12 @@ struct TaskPolarisationCharmHadrons {
               outputMl[2] = candidate.mlProbLcToPiKP()[2];
             }
           }
+        } else {
+          // NB: no need to check cases in which candidate.isSelLcToPKPi() and candidate.isSelLcToPiKP() are both false, because they are rejected already by the Filter
+          // ... but we need to put this protections here!
+          // Otherwise, a candidate selected as pKpi only has invMassCharmHad==0 when iMass == charm_polarisation::MassHyposLcToPKPi::PiKP and viceversa
+          continue;
         }
-
-        // NB: no need to check cases in which candidate.isSelLcToPKPi() and candidate.isSelLcToPiKP() are both false, because they are rejected already by the Filter
 
         // hypothesis-independent variables
         pxCharmHad = candidate.px();

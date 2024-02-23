@@ -319,7 +319,7 @@ bool isDaughterTrack(T& track, U& candidate, V const& tracks)
  * @param globalIndex global index of potnetial daughter particle
  */
 template <typename T>
-bool isDaughterParticle(T& particle, int globalIndex)
+bool isDaughterParticle(const T& particle, int globalIndex)
 {
   for (auto daughter : particle.template daughters_as<typename std::decay_t<T>::parent_t>()) {
     if (daughter.globalIndex() == globalIndex) {
