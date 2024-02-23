@@ -2169,6 +2169,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairMass1_3")) {
+    cut->AddCut(GetAnalysisCut("pairMass1_3"));
+    return cut;
+  }
+
   if (!nameStr.compare("pairMass1_5to3_5")) {
     cut->AddCut(GetAnalysisCut("pairMass1_5to3_5"));
     return cut;
