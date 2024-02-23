@@ -531,7 +531,7 @@ struct TagTwoProngDisplacedVertices {
 
         auto pVec = RecoDecay::pVec(pVecTrackFirst, pVecTrackSecond);
         auto ptBin = findBin(&ptBinsForTopologicalCuts[channel], RecoDecay::pt(pVec));
-        if (ptBin == -1){
+        if (ptBin == -1) {
           continue;
         }
 
@@ -597,7 +597,7 @@ struct TagTwoProngDisplacedVertices {
 
         auto pVec = RecoDecay::pVec(pVecTrackPos, pVecTrackNeg);
         auto ptBin = findBin(&ptBinsForTopologicalCuts[channel], RecoDecay::pt(pVec));
-        if (ptBin == -1){
+        if (ptBin == -1) {
           continue;
         }
 
