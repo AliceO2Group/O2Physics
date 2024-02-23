@@ -60,23 +60,6 @@ using IdBfFullTracksPIDDetLevelAmbiguous = soa::Join<IdBfFullTracksDetLevelAmbig
 
 bool fullDerivedData = false; /* produce full derived data for its external storage */
 
-/// \enum MatchRecoGenSpecies
-/// \brief The species considered by the matching test
-// enum MatchRecoGenSpecies {
-//   kIdBfCharged = 0, ///< charged particle/track
-//   kIdBfElectron = 1,    ///< electron
-//   kIdBfMuon = 3,        ///< muon
-//   kIdBfPion = 5,        ///< pion
-//   kIdBfKaon = 7,        ///< kaon
-//   kIdBfProton = 9,      ///< proton
-//   kIdBfNoOfSpecies = 6, ///< the number of considered species
-//   kWrongSpecies = -1
-// };
-
-// const char* speciesName[kIdBfNoOfSpecies] = {"h", "e", "mu", "pi", "ka", "p"};
-
-// const char* speciesTitle[kIdBfNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"};
-
 //============================================================================================
 // The IdentifiedBfFilter histogram objects
 // TODO: consider registering in the histogram registry
@@ -151,7 +134,7 @@ int trkMultPos[kIdBfNoOfSpecies];  // multiplicity of positive tracks
 int trkMultNeg[kIdBfNoOfSpecies];  // multiplicity of negative tracks
 int partMultPos[kIdBfNoOfSpecies]; // multiplicity of positive particles
 int partMultNeg[kIdBfNoOfSpecies]; // multiplicity of negative particles
-} // namespace o2::analysis::identifiedbffilter
+} 
 
 using namespace identifiedbffilter;
 
@@ -1119,21 +1102,12 @@ int8_t IdentifiedBfFilterTracks::selectTrack(TrackObject const& track)
   if (!(pid < 0)) {
     /* the track has been accepted */
     /* let's identify it */
-    // MatchRecoGenSpecies sp = trackIdentification(track);
     if (pid > 1) {
       /* fill the charged histograms */
       fillTrackHistosAfterSelection(track, kIdBfCharged);
-      /* update charged multiplicities */
-      /*if (pid % 2 == 0) {
-        trkMultPos[kIdBfCharged]++;
-      }
-      if (pid % 2 == 1) {
-        trkMultNeg[kIdBfCharged]++;
-      }*/
+
     }
-      /* fill the species histograms */
-    // fillTrackHistosAfterSelection(track, sp);
-    /* update species multiplicities */
+
   }
   return pid;
 }
