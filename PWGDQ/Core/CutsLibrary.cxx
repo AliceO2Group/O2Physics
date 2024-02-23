@@ -4313,6 +4313,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairMass1_3")) {
+    cut->AddCut(VarManager::kMass, 1.3, 1000.0);
+    return cut;
+  }
+
   if (!nameStr.compare("pairMass1_5to3_5")) {
     cut->AddCut(VarManager::kMass, 1.5, 3.5);
     return cut;
