@@ -70,6 +70,8 @@ enum HfTriggers {
   kV0Charm2P,
   kV0Charm3P,
   kCharmBarToXiBach,
+  kSigmaCppKminus,
+  kSigmaC0K0s,
   kNtriggersHF
 };
 
@@ -98,7 +100,8 @@ enum bachelorTrackSelection {
   kForBeauty,
   kSoftPionForBeauty,
   kPionForCharmBaryon,
-  kKaonForCharmBaryon
+  kKaonForCharmBaryon,
+  kSoftPionForSigmaC
 };
 
 enum PIDSpecies {
@@ -244,6 +247,15 @@ class HfFilterHelper
     mPtMinSoftPionForDstar = minPt;
     mPtMaxSoftPionForDstar = maxPt;
   }
+  void setPtMinsoftPiSigmaC(float minPt)
+  {
+    mPtMinSoftPionForSigmaC = minPt;
+  }
+  void setDeltaMassRangeSigmaC(float minDeltaMass, float maxDeltaMass)
+  {
+    mDeltaMassMinSigmaC = minDeltaMass;
+    mDeltaMassMaxSigmaC = maxDeltaMass;
+  }
   void setPtLimitsCharmBaryonBachelor(float minPt, float maxPt)
   {
     mPtMinCharmBaryonBachelor = minPt;
@@ -268,6 +280,7 @@ class HfFilterHelper
     mNSigmaTofPiKaCutForDzero = nSigmaTof;
   }
   void setDeltaMassCharmHadForBeauty(float delta) { mDeltaMassCharmHadForBeauty = delta; }
+  void setDeltaMassLcForSigmaC(float delta) {mDeltaMassLcForSigmaC = delta;}
   void setV0Selections(float minGammaCosPa, float minK0sLambdaCosPa, float minK0sLambdaRadius, float nSigmaPrFromLambda, float deltaMassK0s, float deltaMassLambda)
   {
     mMinGammaCosinePa = minGammaCosPa;
@@ -366,6 +379,7 @@ class HfFilterHelper
   o2::framework::LabeledArray<double> mCutsSingleTrackBeauty3Prong{};        // dca selections for the 3-prong b-hadron pion daughter
   o2::framework::LabeledArray<double> mCutsSingleTrackBeauty4Prong{};        // dca selections for the 4-prong b-hadron pion daughter
   float mPtMinSoftPionForDstar{0.1};                                         // minimum pt for the D*+ soft pion
+  float mPtMinSoftPionForSigmaC{0.1};                                        // minimum pt for the Σ0,++ soft pion
   float mPtMinBeautyBachelor{0.5};                                           // minimum pt for the b-hadron pion daughter
   float mPtMinProtonForFemto{0.8};                                           // minimum pt for the proton for femto
   float mPtMinCharmBaryonBachelor{0.5};                                      // minimum pt for the bachelor pion from Xic/Omegac decays
@@ -382,6 +396,9 @@ class HfFilterHelper
   float mNSigmaTpcPiKaCutForDzero{3.};                                       // maximum Nsigma TPC for pions/kaons in D0 decays
   float mNSigmaTofPiKaCutForDzero{3.};                                       // maximum Nsigma TOF for pions/kaons in D0 decays
   float mDeltaMassCharmHadForBeauty{0.04};                                   // delta mass cut for charm hadrons in B and charm excited decays
+  float mDeltaMassLcForSigmaC{0.04};                                         // delta mass cut for Lc candidates to build SigmaC0, ++ candidates
+  float mDeltaMassMinSigmaC{0.155};                                          // minimum delta mass M(pKpipi)-M(pKpi) of SigmaC0,++ candidates
+  float mDeltaMassMaxSigmaC{0.18};                                           // minimum delta mass M(pKpipi)-M(pKpi) of SigmaC0,++ candidates
   float mMinGammaCosinePa{0.85};                                             // minimum cosp for gammas
   float mMinK0sLambdaCosinePa{0.97};                                         // minimum cosp for K0S and Lambda in charm excited decays
   float mMinK0sLambdaRadius{0.5};                                            // minimum radius for K0S and Lambda in charm excited decays
@@ -427,7 +444,9 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T track, 
     return kRejected;
   }
 
-  if (pT < mPtMinSoftPionForDstar) { // soft pion min pT cut should be less stringent than usual tracks
+  // D*+ soft pion pt cut
+  // Disable this cut if SigmaC triggers are considered
+  if (pT < mPtMinSoftPionForDstar && whichTrigger != kSigmaCppKminus && whichTrigger != kSigmaC0K0s ) { // soft pion min pT cut should be less stringent than usual tracks
     return kRejected;
   }
 
@@ -437,6 +456,18 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T track, 
 
   if (std::fabs(dca[1]) > 2.f) {
     return kRejected;
+  }
+
+  if (whichTrigger == kSigmaCppKminus || whichTrigger == kSigmaC0K0s) {
+
+    // SigmaC0,++ soft pion pt cut
+    if( pT < mPtMinSoftPionForSigmaC ) {
+      return kRejected;
+    }
+    
+    // We do not need any further selection for SigmaC soft-pi
+    // The current track is a good SigmaC soft-pi candidate
+    return kSoftPionForSigmaC;
   }
 
   if (pT > mPtMaxSoftPionForDstar) {
@@ -764,6 +795,32 @@ inline int8_t HfFilterHelper::isSelectedLcInMassRange(const T& pTrackSameChargeF
     }
   }
 
+  return retValue;
+}
+
+/// Mass selection of Lc candidates to build SigmaC candidates
+/// \param massPKPi is the inv. mass calculated assuming p-K-pi daughters
+/// \param massPiKP is the inv. mass calculated assuming pi-K-p daughters
+inline int8_t HfFilterHelper::isSelectedLcInMassRangeSigmaC(const float& massPKPi, const float& massPiKP) {
+  int8_t retValue = 0;
+  if( std::fabs(massPKPi - massLc) < mDeltaMassLcForSigmaC ) {
+    retValue |= BIT(0);
+  }
+  if( std::fabs(massPiKP - massLc) < mDeltaMassLcForSigmaC ) {
+    retValue |= BIT(1);
+  }
+  return retValue;
+}
+
+/// Delta mass selection on SigmaC candidates
+inline int8_t HfFilterHelper::isSelectedSigmaCInDeltaMassRange(const float& deltaMassPKPi, const float& deltaMassPiKP) {
+  int8_t retValue = 0;
+  if( deltaMassPKPi < mDeltaMassMinSigmaC ) {
+    retValue |= BIT(0);
+  }
+  if( deltaMassPiKP < mDeltaMassMaxSigmaC ) {
+    retValue |= BIT(1);
+  }
   return retValue;
 }
 
