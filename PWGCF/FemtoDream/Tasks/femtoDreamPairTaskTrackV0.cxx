@@ -154,7 +154,7 @@ struct femtoDreamPairTaskTrackV0 {
   ConfigurableAxis ConfBinkstar{"ConfBinkstar", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis ConfBinkT{"ConfBinkT", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis ConfBinmT{"ConfBinmT", {225, 0., 7.5}, "binning mT"};
-  ConfigurableAxis ConfmultPlottingBins{"ConfmultPlottingBins", {1, 0, 1}, "multiplicity Binning"};
+  ConfigurableAxis ConfBinmultTempFit{"ConfBinmultTempFit", {1, 0, 1}, "multiplicity Binning for the TempFitVar plot"};
 
   ConfigurableAxis ConfBin4Dkstar{"ConfBin4Dkstar", {1500, 0., 6.}, "binning kstar for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
   ConfigurableAxis ConfBin4DmT{"ConfBin4DmT", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
@@ -187,10 +187,10 @@ struct femtoDreamPairTaskTrackV0 {
     // void init(HistogramRegistry* registry,
     //    T& MomentumBins, T& tempFitVarBins, T& NsigmaTPCBins, T& NsigmaTOFBins, T& NsigmaTPCTOFBins, T& InvMassBins,
     //    bool isMC, int pdgCode, bool isDebug = false)
-    trackHistoPartOne.init(&qaRegistry, ConfmultPlottingBins, ConfOptDummy, ConfBinpTTrack, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarTrack, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk1_PDGCode);
-    trackHistoPartTwo.init(&qaRegistry, ConfmultPlottingBins, ConfOptDummy, ConfBinpTV0, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarV0, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfBinInvMass, ConfOptIsMC, ConfV02_PDGCode);
-    posChildHistos.init(&qaRegistry, ConfmultPlottingBins, ConfOptDummy, ConfBinpTV0Child, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarV0Child, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, false, 0);
-    negChildHistos.init(&qaRegistry, ConfmultPlottingBins, ConfOptDummy, ConfBinpTV0Child, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarV0Child, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, false, 0);
+    trackHistoPartOne.init(&qaRegistry, ConfBinmultTempFit, ConfOptDummy, ConfBinpTTrack, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarTrack, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk1_PDGCode);
+    trackHistoPartTwo.init(&qaRegistry, ConfBinmultTempFit, ConfOptDummy, ConfBinpTV0, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarV0, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfBinInvMass, ConfOptIsMC, ConfV02_PDGCode);
+    posChildHistos.init(&qaRegistry, ConfBinmultTempFit, ConfOptDummy, ConfBinpTV0Child, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarV0Child, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, false, 0);
+    negChildHistos.init(&qaRegistry, ConfBinmultTempFit, ConfOptDummy, ConfBinpTV0Child, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarV0Child, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, false, 0);
 
     sameEventCont.init(&resultRegistry,
                        ConfBinkstar, ConfBinpT, ConfBinkT, ConfBinmT, ConfMixingBinMult, ConfMixingBinMultPercentile,
