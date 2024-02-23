@@ -23,7 +23,7 @@ using namespace o2;
 using namespace o2::framework;
 
 // *) Run 3:
-using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Ms>; // TBI 20240120 add support for other centrality estimators, why aod::Cents doesn't work?
+using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
 using CollisionRec = soa::Join<aod::Collisions, EventSelection>::iterator;
 using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection>::iterator;
 using CollisionSim = aod::McCollision; // TBI 20240120 add support for centrality also for this case
@@ -63,6 +63,8 @@ using namespace std;
 #include "PWGCF/MultiparticleCorrelations/Core/MuPa-GlobalConstants.h"
 
 // *) These are intended flags for PROCESS_SWITCH, at the moment I have to pass to PROCESS_SWITCH(  ) only literals 'true' or 'false' as the last arguments.
+//    Remember to keep at least one of them below "true" by default, so that I can process something with default settings.
+
 //    TBI 20240129 I set now PROCESS_SWITCH via JSON, using special flags "processRec", "processRecSim", and "processSim". But still I need this info before 'process*' is called,
 //                to decide which histograms are booked. Therefore I keep my own configurable cfWhatToProcess, for the time being...
 bool gProcessRec = false; // by default, it's Run 3
@@ -74,6 +76,12 @@ bool gProcessSim_Run2 = false;
 bool gProcessRec_Run1 = false;
 bool gProcessRecSim_Run1 = false;
 bool gProcessSim_Run1 = false;
+bool gProcessTest = false; // minimum subscription to the tables, for testing purposes
+
+// Generic flags, calculated and set from individual flags above in WhatToProcess(), AFTER process switch was taken into account from configurables!
+bool gGenericRec = false;    // generic "Rec" case, eTest is treated for the time being as "Rec"
+bool gGenericRecSim = false; // generic "RecSim" case
+bool gGenericSim = false;    // generic "Sim" case
 
 // *) Main task:
 struct MultiparticleCorrelationsAB // this name is used in lower-case format to name the TDirectoryFile in AnalysisResults.root
@@ -115,11 +123,11 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     DefaultBinning();
     DefaultCuts(); // Remark: has to be called after DefaultBinning(), since some default cuts are defined through default binning, to ease bookeeping
 
+    // *) Set what to process - only rec, both rec and sim, only sim:
+    WhatToProcess(); // yes, this can be called here, after calling all Default* member functions above, because this has an effect only on Book* members functions, and the ones called afterward
+
     // *) Insanity checks:
     InsanityChecks();
-
-    // *) Set what to process - only rec, both rec and sim, only sim:
-    WhatToProcess(); // yes, this can be called here, after calling all Default* member functions above, because this has an effect only on Book* members functions
 
     // *) Book random generator:
     delete gRandom;
@@ -132,7 +140,9 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     BookAndNestAllLists();
     BookResultsHistograms(); // yes, this one has to be booked first, because it defines the commong binning for other groups of histograms
     BookEventHistograms();
+    BookEventCutsHistograms();
     BookParticleHistograms();
+    BookParticleCutsHistograms();
     BookQvectorHistograms();
     BookCorrelationsHistograms();
     BookWeightsHistograms();
@@ -162,6 +172,8 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // H) Process both converted reconstructed and corresponding MC truth simulated Run 1 data;
   // I) Process only converted simulated Run 1 data.
 
+  // For testing purposes I have processTest(...)
+  // J) Process data with minimum subscription to the tables.
   // -------------------------------------------
 
   // A) Process only reconstructed data:
@@ -178,7 +190,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
   } // void processRec(...)
 
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec, "process only reconstructed data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec, "process only reconstructed data", true); // yes, keep always one process switch "true", so that I have default running version
 
   // -------------------------------------------
 
@@ -269,6 +281,23 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
 
   // I) Process only converted simulated Run 1 data.
   // ...
+
+  // -------------------------------------------
+
+  // J) Process data with minimum subscription to the tables, for testing purposes:
+  void processTest(aod::Collision const& collision, aod::BCs const&, aod::Tracks const& tracks)
+  {
+    // *) Use configurable 'cfWhatToProcess' and set this flag correctly:
+    if (!gProcessTest) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+    }
+
+    // *) Steer all analysis steps:
+    Steer<eTest>(collision, tracks);
+
+  } // void processTest(...)
+
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processTest, "test processing", false);
 
 }; // struct MultiparticleCorrelationsAB
 
