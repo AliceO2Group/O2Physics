@@ -151,7 +151,7 @@ void ExtractOutputCorrel(TString cfgFileName = "config_CorrAnalysis.json")
     plotter->GetSignalAndBackgroundForNorm(binsPtCandIntervals[iBinPtCand], binsPtCandIntervals[iBinPtCand + 1]);
     for (int iBinPtHad = 0; iBinPtHad < nBinsPtHad; iBinPtHad++) {
       plotter->ExtractCorrelations(binsPtCandIntervals[iBinPtCand], binsPtCandIntervals[iBinPtCand + 1], binsPtHadIntervals[iBinPtHad], binsPtHadIntervals[iBinPtHad + 1], CodeNameAnalysis);
-      hCorrectedCorrel[iBinPtCand][iBinPtHad] = (TH1D*)plotter->GetCorrectedCorrHisto();
+      hCorrectedCorrel[iBinPtCand][iBinPtHad] = reinterpret_cast<TH1D*>(plotter->GetCorrectedCorrHisto());
     }
   }
 

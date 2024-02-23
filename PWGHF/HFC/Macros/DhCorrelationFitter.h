@@ -14,8 +14,8 @@
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 /// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>
 
-#ifndef DHCORRELATIONFITTER_H_
-#define DHCORRELATIONFITTER_H_
+#ifndef PWGHF_HFC_MACROS_DHCORRELATIONFITTER_H_
+#define PWGHF_HFC_MACROS_DHCORRELATIONFITTER_H_
 
 #include <TFile.h>
 #include <TH1F.h>
@@ -126,4 +126,4 @@ class DhCorrelationFitter
   Double_t* fExtParsUppBounds; // Fit parameters upper bounds
 };
 
-#endif // DHCORRELATIONFITTER_H_
+#endif // PWGHF_HFC_MACROS_DHCORRELATIONFITTER_H_

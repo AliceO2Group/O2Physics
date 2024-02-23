@@ -124,9 +124,9 @@ void FitCorrel(TString cfgFileName = "config_CorrAnalysis.json")
   // extract TH1D and prepare fit
   for (int iBinPtCand = 0; iBinPtCand < nBinsPtCand; iBinPtCand++) {
     for (int iBinPtHad = 0; iBinPtHad < nBinsPtHad; iBinPtHad++) {
-      hCorrPhi[iBinPtCand][iBinPtHad] = (TH1D*)inFile->Get(Form("hCorrectedCorr_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f", binsPtCandIntervals[iBinPtCand], binsPtCandIntervals[iBinPtCand + 1], binsPtHadIntervals[iBinPtHad], binsPtHadIntervals[iBinPtHad + 1]));
+      hCorrPhi[iBinPtCand][iBinPtHad] = reinterpret_cast<TH1D*>(inFile->Get(Form("hCorrectedCorr_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f", binsPtCandIntervals[iBinPtCand], binsPtCandIntervals[iBinPtCand + 1], binsPtHadIntervals[iBinPtHad], binsPtHadIntervals[iBinPtHad + 1])));
 
-      corrFitter[iBinPtHad][iBinPtCand] = new DhCorrelationFitter((TH1F*)hCorrPhi[iBinPtCand][iBinPtHad], fMin, fMax);
+      corrFitter[iBinPtHad][iBinPtCand] = new DhCorrelationFitter(reinterpret_cast<TH1F*>(hCorrPhi[iBinPtCand][iBinPtHad], fMin, fMax));
       corrFitter[iBinPtHad][iBinPtCand]->SetHistoIsReflected(refl);
       corrFitter[iBinPtHad][iBinPtCand]->SetFuncType(static_cast<DhCorrelationFitter::FunctionType>(fitFunc));
       corrFitter[iBinPtHad][iBinPtCand]->SetFixBaseline(fixBase);

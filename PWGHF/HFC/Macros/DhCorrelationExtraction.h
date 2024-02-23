@@ -14,8 +14,8 @@
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 /// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>
 
-#ifndef DHCORRELATIONEXTRACTION_H_
-#define DHCORRELATIONEXTRACTION_H_
+#ifndef PWGHF_HFC_MACROS_DHCORRELATIONEXTRACTION_H_
+#define PWGHF_HFC_MACROS_DHCORRELATIONEXTRACTION_H_
 
 #include <iostream>
 #include "TObject.h"
@@ -140,4 +140,4 @@ class DhCorrelationExtraction : public TObject
   Bool_t fRebin2Dhisto;           // Flag to rebin the 2D correlation plots
 };
 
-#endif // DHCORRELATIONEXTRACTION_H_
+#endif // PWGHF_HFC_MACROS_DHCORRELATIONEXTRACTION_H_

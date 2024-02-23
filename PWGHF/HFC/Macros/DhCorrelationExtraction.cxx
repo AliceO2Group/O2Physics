@@ -97,14 +97,15 @@ Bool_t DhCorrelationExtraction::SetDmesonSpecie(DmesonSpecie k)
   if (k < 0 || k > 3) {
     printf("[ERROR] D meson specie not correctly set!\n");
     return kFALSE;
-  } else if (k == 0)
+  } else if (k == 0) {
     fDmesonLabel = "Dzero";
-  else if (k == 1)
+  } else if (k == 1) {
     fDmesonLabel = "Dplus";
-  else if (k == 2)
+  } else if (k == 2) {
     fDmesonLabel = "Ds";
-  else
+  } else {
     fDmesonLabel = "Dstar";
+  }
 
   fDmesonSpecies = k;
   return kTRUE;
@@ -201,11 +202,11 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t PtCandMin, Double_t
     NormalizeMEplot(hME_Sideb[iPool], hME_Sideb_SoftPi[iPool]);
 
     // Apply Event Mixing Correction
-    hCorr_Sign[iPool] = (TH2D*)hSE_Sign[iPool]->Clone(Form("hCorr_Sign_Pool%d", iPool));
+    hCorr_Sign[iPool] = reinterpret_cast<TH2D*>(hSE_Sign[iPool]->Clone(Form("hCorr_Sign_Pool%d", iPool)));
     hCorr_Sign[iPool]->Sumw2();
     hCorr_Sign[iPool]->Divide(hME_Sign[iPool]);
 
-    hCorr_Sideb[iPool] = (TH2D*)hSE_Sideb[iPool]->Clone(Form("hCorr_Sideb_Pool%d", iPool));
+    hCorr_Sideb[iPool] = reinterpret_cast<TH2D*>(hSE_Sideb[iPool]->Clone(Form("hCorr_Sideb_Pool%d", iPool)));
     hCorr_Sideb[iPool]->Sumw2();
     hCorr_Sideb[iPool]->Divide(hME_Sideb[iPool]);
 
@@ -250,8 +251,8 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t PtCandMin, Double_t
 
     // Pools integration
     if (iPool == 0) {
-      h2D_Sign = (TH2D*)hCorr_Sign[0]->Clone("h2D_Sign");
-      h2D_Sideb = (TH2D*)hCorr_Sideb[0]->Clone("h2D_Sideb");
+      h2D_Sign = reinterpret_cast<TH2D*>(hCorr_Sign[0]->Clone("h2D_Sign"));
+      h2D_Sideb = reinterpret_cast<TH2D*>(hCorr_Sideb[0]->Clone("h2D_Sideb"));
       h2D_Sign->Sumw2();
       h2D_Sideb->Sumw2();
     } else {
@@ -276,7 +277,7 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t PtCandMin, Double_t
 
   // Bkg subtraction (2D plot)
   TCanvas* c2D_Sub = new TCanvas(Form("c2D_Subtr_IntPools_PtHAd%.0fto%.0f", PtHadMin, PtHadMax), Form("c2D_%s_Subtr_IntPools_PtAssoc%.0fto%.0f", fDmesonLabel.Data(), PtHadMin, PtHadMax), 100, 100, 1500, 800);
-  h2D_Subtr = (TH2D*)h2D_Sign->Clone("h2D_Subtr");
+  h2D_Subtr = reinterpret_cast<TH2D*>(h2D_Sign->Clone("h2D_Subtr"));
   h2D_Subtr->Sumw2();
   h2D_Subtr->Add(h2D_Sideb, -1);
   h2D_Subtr->SetEntries(h2D_Sign->GetEntries() - h2D_Sideb->GetEntries());
@@ -286,15 +287,15 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t PtCandMin, Double_t
   c2D_Sub->SaveAs(Form("Output_CorrelationExtraction_%s_Root/h2D_%s_Subtr_Canvas_PtCand%.0fto%.0f_PoolInt_PtAssoc%.0fto%.0f.root", codeName.Data(), fDmesonLabel.Data(), PtCandMin, PtCandMax, PtHadMin, PtHadMax));
 
   // 1D projection
-  h1D_Sign = (TH1D*)h2D_Sign->ProjectionY("h1D_Sign"); // projection on deltaPhi axis
-  h1D_Sideb = (TH1D*)h2D_Sideb->ProjectionY("h1D_Sideb");
+  h1D_Sign = reinterpret_cast<TH1D*>(h2D_Sign->ProjectionY("h1D_Sign")); // projection on deltaPhi axis
+  h1D_Sideb = reinterpret_cast<TH1D*>(h2D_Sideb->ProjectionY("h1D_Sideb"));
   h1D_Sign->SetTitle("Signal region correlations");
   h1D_Sideb->SetTitle("Sidebands correlations");
   h1D_Sign->Scale(1. / h1D_Sign->GetXaxis()->GetBinWidth(1));
   h1D_Sideb->Scale(1. / h1D_Sideb->GetXaxis()->GetBinWidth(1));
 
   // Bkg subtraction (1D plot)
-  h1D_Subtr = (TH1D*)h1D_Sign->Clone("h1D_Subtr");
+  h1D_Subtr = reinterpret_cast<TH1D*>(h1D_Sign->Clone("h1D_Subtr"));
   h1D_Subtr->Sumw2();
   h1D_Subtr->Add(h1D_Sideb, -1);
   h1D_Subtr->SetEntries(h1D_Sign->GetEntries() - h1D_Sideb->GetEntries());
@@ -313,12 +314,12 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t PtCandMin, Double_t
   c1D->SaveAs(Form("Output_CorrelationExtraction_%s_Root/h1D_%s_Canvas_PtCand%.0fto%.0f_PoolInt_PtAssoc%.0fto%.0f.root", codeName.Data(), fDmesonLabel.Data(), PtCandMin, PtCandMax, PtHadMin, PtHadMax));
 
   // Apply normalization to number of triggers
-  h1D_SubtrNorm = (TH1D*)h1D_Subtr->Clone("h1D_SubtrNorm");
+  h1D_SubtrNorm = reinterpret_cast<TH1D*>(h1D_Subtr->Clone("h1D_SubtrNorm"));
   h1D_SubtrNorm->Sumw2();
   h1D_SubtrNorm->Scale(1. / fSgnYieldNorm);
   h1D_SubtrNorm->SetTitle("Signal region after sideb. subt. corr. - Normalized to # of triggers");
 
-  fCorrectedCorrHisto = (TH1D*)h1D_SubtrNorm->Clone(Form("hCorrectedCorr_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f", PtCandMin, PtCandMax, PtHadMin, PtHadMax));
+  fCorrectedCorrHisto = reinterpret_cast<TH1D*>(h1D_SubtrNorm->Clone(Form("hCorrectedCorr_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f", PtCandMin, PtCandMax, PtHadMin, PtHadMax)));
 
   // Draw 1D plots (Signal region, normalized)
   TCanvas* cFinal = new TCanvas(Form("cFinal_%.0fto%.0f", PtHadMin, PtHadMax), Form("cFinal_%s_IntPools_PtAssoc%.0fto%.0f", fDmesonLabel.Data(), PtHadMin, PtHadMax), 100, 100, 1200, 700);
@@ -344,8 +345,8 @@ Bool_t DhCorrelationExtraction::ReadInputSEandME()
     return kFALSE;
   }
 
-  fDirSE = (TDirectoryFile*)fFileSE->Get(fDirNameSE.Data());
-  fDirME = (TDirectoryFile*)fFileME->Get(fDirNameME.Data());
+  fDirSE = reinterpret_cast<TDirectoryFile*>(fFileSE->Get(fDirNameSE.Data()));
+  fDirME = reinterpret_cast<TDirectoryFile*>(fFileME->Get(fDirNameME.Data()));
 
   std::cout << "===================== " << std::endl;
   std::cout << "Read inputs SE and ME" << std::endl;
@@ -389,15 +390,15 @@ TH2D* DhCorrelationExtraction::GetCorrelHisto(Int_t SEorME, Int_t SorSB, Int_t p
 
   if (SEorME == kSE) { // Same Event
     if (SorSB == kSign) {
-      hSparse = (THnSparseD*)fDirSE->Get(fSECorrelSignalRegionName.Data());
+      hSparse = reinterpret_cast<THnSparseD*>(fDirSE->Get(fSECorrelSignalRegionName.Data()));
     } else {
-      hSparse = (THnSparseD*)fDirSE->Get(fSECorrelSidebandsName.Data());
+      hSparse = reinterpret_cast<THnSparseD*>(fDirSE->Get(fSECorrelSidebandsName.Data()));
     }
   } else { // Mixed Event
     if (SorSB == kSign) {
-      hSparse = (THnSparseD*)fDirME->Get(fMECorrelSignalRegionName.Data());
+      hSparse = reinterpret_cast<THnSparseD*>(fDirME->Get(fMECorrelSignalRegionName.Data()));
     } else {
-      hSparse = (THnSparseD*)fDirME->Get(fMECorrelSidebandsName.Data());
+      hSparse = reinterpret_cast<THnSparseD*>(fDirME->Get(fMECorrelSidebandsName.Data()));
     }
   }
   Int_t binExtPtCandMin = (Int_t)hSparse->GetAxis(2)->FindBin(PtCandMin + 0.01); // axis2: ptCand, the 0.01 to avoid bin edges!
@@ -427,8 +428,8 @@ TH2D* DhCorrelationExtraction::GetCorrelHisto(Int_t SEorME, Int_t SorSB, Int_t p
   hSparse->GetAxis(3)->SetRange(binExtPtHadMin, binExtPtHadMax);   // axis3: ptHad
   // hSparse -> GetAxis(4) -> SetRange(binExtPoolMin, binExtPoolMax); // axis4: pool bin
 
-  h2D = (TH2D*)hSparse->Projection(0, 1); // axis0: deltaPhi, axis1: deltaEta
-  if (SEorME == kSE) {                    // Same Event
+  h2D = reinterpret_cast<TH2D*>(hSparse->Projection(0, 1)); // axis0: deltaPhi, axis1: deltaEta
+  if (SEorME == kSE) {                                      // Same Event
     if (SorSB == kSign) {
       h2D->SetName(Form("hCorr_SE_Sig_2D_PtCandBin%d_PtHadBin%d_iPool%d", binExtPtCandMin, binExtPtHadMin, pool));
     } else {
@@ -449,9 +450,9 @@ void DhCorrelationExtraction::GetSignalAndBackgroundForNorm(Double_t PtCandMin, 
 {
 
   // using results obtained from HFInvariantMassFitter.cxx class
-  TH1F* hMassFitSgnYield = (TH1F*)fFileMass->Get(fMassHistoNameSgn.Data());
-  TH1F* hMassFitBkgYield = (TH1F*)fFileMass->Get(fMassHistoNameBkg.Data());
-  TH1F* hMassFitSBsYield = (TH1F*)fFileMass->Get(fMassHistoNameSBs.Data());
+  TH1F* hMassFitSgnYield = reinterpret_cast<TH1F*>(fFileMass->Get(fMassHistoNameSgn.Data()));
+  TH1F* hMassFitBkgYield = reinterpret_cast<TH1F*>(fFileMass->Get(fMassHistoNameBkg.Data()));
+  TH1F* hMassFitSBsYield = reinterpret_cast<TH1F*>(fFileMass->Get(fMassHistoNameSBs.Data()));
 
   Int_t PtCandBin = hMassFitSgnYield->FindBin(PtCandMin + 0.01);
   if (PtCandBin != hMassFitSgnYield->FindBin(PtCandMax - 0.01))
