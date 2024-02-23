@@ -48,7 +48,7 @@ struct lumiStabilityTask {
     histos.add("FDD/bcCentralTriggerCoincidence", "central trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisFDDTriggger});
     histos.add("FDD/bcVCTrigger", "vertex and central trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisFDDTriggger});
     histos.add("FDD/bcVCTriggerCoincidence", "vertex and central trigger per BC (FDD) with coincidences;BC in FDD; counts", kTH1F, {axisFDDTriggger});
-    
+
     histos.add("FT0/bcVertexTrigger", "vertex trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisFT0Triggger});
     histos.add("FT0/bcSCentralTrigger", "Scentral trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisFT0Triggger});
     histos.add("FT0/bcVSCTrigger", "vertex and Scentral trigger per BC (FT0);BC in FT0; counts", kTH1F, {axisFT0Triggger});
@@ -65,10 +65,10 @@ struct lumiStabilityTask {
 
   bool checkAnyCoincidence(const std::vector<int>& channels)
   {
-    std::map<int, int> channelPairs = {{0,4},{1,5},{2,6},{4,7}};
-    for(const auto& pair: channelPairs){
-      if(std::find(channels.begin(), channels.end(), pair.first) != channels.end() &&
-         std::find(channels.begin(), channels.end(), pair.second) != channels.end()){
+    std::map<int, int> channelPairs = {{0, 4}, {1, 5}, {2, 6}, {4, 7}};
+    for (const auto& pair : channelPairs) {
+      if (std::find(channels.begin(), channels.end(), pair.first) != channels.end() &&
+          std::find(channels.begin(), channels.end(), pair.second) != channels.end()) {
         return true;
       }
     }
@@ -79,8 +79,7 @@ struct lumiStabilityTask {
   {
     for (auto const& fdd : fdds) {
       auto bc = fdd.bc_as<BCsWithTimestamps>();
-      if (bc.timestamp()==false)
-      {
+      if (bc.timestamp() == false) {
         continue;
       }
 
@@ -96,11 +95,11 @@ struct lumiStabilityTask {
       auto SideC = fdd.chargeC();
       std::vector<int> channelA;
       std::vector<int> channelC;
-      for(auto i=0; i<8; i++){
-        if(SideA[i]>0){
+      for (auto i = 0; i < 8; i++) {
+        if (SideA[i] > 0) {
           channelA.push_back(i);
         }
-        if(SideC[i]>0){
+        if (SideC[i] > 0) {
           channelC.push_back(i);
         }
       }
@@ -111,45 +110,44 @@ struct lumiStabilityTask {
 
       if (vertex) {
         histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
-        if(isCoinA && isCoinC){
+        if (isCoinA && isCoinC) {
           histos.fill(HIST("FDD/bcVertexTriggerCoincidence"), localBC);
         }
       } // vertex true
 
 
-      if(scentral){
+      if (scentral) {
         histos.fill(HIST("FDD/bcSCentralTrigger"), localBC);
-        if(isCoinA && isCoinC){
+        if (isCoinA && isCoinC) {
           histos.fill(HIST("FDD/bcSCentralTriggerCoincidence"), localBC);
         }
       } // central true
 
-      if(vertex && scentral){
+      if (vertex && scentral) {
         histos.fill(HIST("FDD/bcVSCTrigger"), localBC);
-        if(isCoinA && isCoinC){
+        if (isCoinA && isCoinC) {
           histos.fill(HIST("FDD/bcVSCTriggerCoincidence"), localBC);
         }
-      } //vertex and scentral true
+      } // vertex and scentral true
 
-      if(central){
+      if (central) {
         histos.fill(HIST("FDD/bcCentralTrigger"), localBC);
-        if(isCoinA && isCoinC){
+        if (isCoinA && isCoinC) {
           histos.fill(HIST("FDD/bcCentralTriggerCoincidence"), localBC);
         }
       }
 
-      if(vertex && central){
+      if (vertex && central) {
         histos.fill(HIST("FDD/bcVCTrigger"), localBC);
-        if(isCoinA && isCoinC){
+        if (isCoinA && isCoinC) {
           histos.fill(HIST("FDD/bcVCTriggerCoincidence"), localBC);
         }
-      } //vertex and scentral true
+      } // vertex and scentral true
     }   // loop over FDD events
 
     for (auto const& ft0 : ft0s) {
       auto bc = ft0.bc_as<BCsWithTimestamps>();
-      if (bc.timestamp()==false)
-      {
+      if (bc.timestamp() == false) {
         continue;
       }
 
@@ -166,33 +164,32 @@ struct lumiStabilityTask {
       bool sCentral = fT0Triggers[o2::fdd::Triggers::bitSCen];
       bool central = fT0Triggers[o2::fdd::Triggers::bitCen];
 
-      if(sCentral){
+      if (sCentral) {
         histos.fill(HIST("FT0/bcSCentralTrigger"), localBC);
-        if(vertex){
+        if (vertex) {
           histos.fill(HIST("FT0/bcVSCTrigger"), localBC);
         }
-      } //scentral true
+      } // scentral true
 
-      if(central){
+      if (central) {
         histos.fill(HIST("FT0/bcCentralTrigger"), localBC);
-        if(sCentral){
+        if (sCentral) {
           histos.fill(HIST("FT0/bcSCentralCentralTrigger"), localBC);
         }
-        if(vertex){
+        if (vertex) {
           histos.fill(HIST("FT0/bcVCTrigger"), localBC);
         }
       }
-    }   // loop over FT0 events
-  }     // end processFDDFT0
+    } // loop over FT0 events
+  }   // end processFDDFT0
 
   PROCESS_SWITCH(lumiStabilityTask, processFDDFT0, "Process FDD and FT0 to lumi stability analysis", true);
 
   void processV0(aod::FV0As const& fv0s, aod::BCsWithTimestamps const&)
   {
-    for(auto const& fv0: fv0s){
+    for (auto const& fv0 : fv0s) {
       auto bc = fv0.bc_as<BCsWithTimestamps>();
-      if (bc.timestamp()==false)
-      {
+      if (bc.timestamp() == false) {
         continue;
       }
 
@@ -205,26 +202,26 @@ struct lumiStabilityTask {
       bool aSCen = fv0Triggers[o2::fdd::Triggers::bitTrgNchan];
       bool aCen = fv0Triggers[o2::fdd::Triggers::bitTrgCharge];
 
-      if(aOut){
+      if (aOut) {
         histos.fill(HIST("FV0/bcOutTrigger"), localBC);
       }
 
-      if(aIn){
+      if (aIn) {
         histos.fill(HIST("FV0/bcInTrigger"), localBC);
       }
 
-      if(aSCen){
+      if (aSCen) {
         histos.fill(HIST("FV0/bcSCenTrigger"), localBC);
       }
 
-      if(aCen){
+      if (aCen) {
         histos.fill(HIST("FV0/bcCenTrigger"), localBC);
-        if(aSCen){
+        if (aSCen) {
           histos.fill(HIST("FV0/bcSCenCenTrigger"), localBC);
         }
       }
-    } //loop over V0 events
-  }  //end processV0
+    } // loop over V0 events
+  }   // end processV0
 
   PROCESS_SWITCH(lumiStabilityTask, processV0, "Process V0 to lumi stability analysis", true);
 };
