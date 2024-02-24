@@ -75,8 +75,26 @@ DECLARE_SOA_COLUMN(YQvecTPCneg, yQvecTPCneg, float);
 DECLARE_SOA_COLUMN(AmplQvecTPCneg, amplQvecTPCneg, float);
 } // namespace NucleiFlowTableNS
 
-DECLARE_SOA_TABLE(NucleiFlowColls, "AOD", "NUCLEIFLOWCOLL",
-                  o2::soa::Index<>,
+DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
+                  NucleiTableNS::Pt,
+                  NucleiTableNS::Eta,
+                  NucleiTableNS::Phi,
+                  NucleiTableNS::TPCInnerParam,
+                  NucleiTableNS::Beta,
+                  NucleiTableNS::Zvertex,
+                  NucleiTableNS::DCAxy,
+                  NucleiTableNS::DCAz,
+                  NucleiTableNS::TPCsignal,
+                  NucleiTableNS::ITSchi2,
+                  NucleiTableNS::TPCchi2,
+                  NucleiTableNS::Flags,
+                  NucleiTableNS::TPCfindableCls,
+                  NucleiTableNS::TPCcrossedRows,
+                  NucleiTableNS::ITSclsMap,
+                  NucleiTableNS::TPCnCls,
+                  NucleiTableNS::ITSclusterSizes);
+
+DECLARE_SOA_TABLE(NucleiTableFlow, "AOD", "NUCLEITABLEFLOW",
                   NucleiFlowTableNS::CentFV0A,
                   NucleiFlowTableNS::CentFT0M,
                   NucleiFlowTableNS::CentFT0A,
@@ -98,35 +116,7 @@ DECLARE_SOA_TABLE(NucleiFlowColls, "AOD", "NUCLEIFLOWCOLL",
                   NucleiFlowTableNS::AmplQvecTPCpos,
                   NucleiFlowTableNS::XQvecTPCneg,
                   NucleiFlowTableNS::YQvecTPCneg,
-                  NucleiFlowTableNS::AmplQvecTPCneg)
-
-using NucleiFlowColl = NucleiFlowColls::iterator;
-
-namespace NucleiTableNS
-{
-DECLARE_SOA_INDEX_COLUMN(NucleiFlowColl, nucleiFlowColl);
-}
-
-DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
-                  NucleiTableNS::Pt,
-                  NucleiTableNS::Eta,
-                  NucleiTableNS::Phi,
-                  NucleiTableNS::TPCInnerParam,
-                  NucleiTableNS::Beta,
-                  NucleiTableNS::Zvertex,
-                  NucleiTableNS::DCAxy,
-                  NucleiTableNS::DCAz,
-                  NucleiTableNS::TPCsignal,
-                  NucleiTableNS::ITSchi2,
-                  NucleiTableNS::TPCchi2,
-                  NucleiTableNS::Flags,
-                  NucleiTableNS::TPCfindableCls,
-                  NucleiTableNS::TPCcrossedRows,
-                  NucleiTableNS::ITSclsMap,
-                  NucleiTableNS::TPCnCls,
-                  NucleiTableNS::ITSclusterSizes);
-
-DECLARE_SOA_TABLE(NucleiCollId, "AOD", "NUCLEICOLLID", NucleiTableNS::NucleiFlowCollId);
+                  NucleiFlowTableNS::AmplQvecTPCneg);
 
 DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::Pt,
