@@ -151,7 +151,6 @@ struct lambdakzeroBuilder {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
-  Configurable<bool> isRun2{"isRun2", true, "skip grpo query"};
 
   // round some V0 core variables up to a certain level of precision if requested
   // useful to keep derived data sizes under control
@@ -577,7 +576,7 @@ struct lambdakzeroBuilder {
     auto timestamp = bc.timestamp();
     o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
-    if (isRun2) {
+    if (doprocessRun2) {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp);
       if (!grpo) {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpPath << " of object GRPObject for timestamp " << timestamp;
