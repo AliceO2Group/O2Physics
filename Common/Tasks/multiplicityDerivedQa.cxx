@@ -68,7 +68,7 @@ struct MultiplicityDerivedQa {
     histos.add("multiplicityQa/hRawFDD", "Raw FDD", kTH1D, {axisMultFDD});
     histos.add("multiplicityQa/hRawNTracksPV", "Raw NTracks", kTH1D, {axisMultNTracks});
 
-    // ZDC information 
+    // ZDC information
     histos.add("multiplicityQa/hRawZNA", "Raw ZNA", kTH1D, {axisMultZNA});
     histos.add("multiplicityQa/hRawZNC", "Raw ZNC", kTH1D, {axisMultZNC});
     histos.add("multiplicityQa/hRawZEM1", "Raw ZEM1", kTH1D, {axisMultZEM1});
