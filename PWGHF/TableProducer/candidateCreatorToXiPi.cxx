@@ -517,7 +517,7 @@ struct HfCandidateCreatorToXiPiMc {
         }
       }
 
-      rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda, ptCharmBaryonGen, etaCharmBaryon, origin);
+      rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda, ptCharmBaryonGen, etaCharmBaryonGen, origin);
     }
   } // close process
   PROCESS_SWITCH(HfCandidateCreatorToXiPiMc, processMc, "Process MC", false);
