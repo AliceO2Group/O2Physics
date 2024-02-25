@@ -311,8 +311,7 @@ struct phipbpb {
         auto SA = (2.0 * cosinephidaughterstarminuspsi * cosinephidaughterstarminuspsi) - 1.0;
         auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
         auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
-        auto phimother = TMath::ATan2(PhiMesonMother.Y(), PhiMesonMother.X());
-        auto phiminuspsi = GetPhiInRange(phimother - psiFT0C);
+        auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
         histos.fill(HIST("hSparseV2SASameEvent"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, cosThetaStarIP, phiminuspsi, v2, SA, centrality);
       }
@@ -375,8 +374,7 @@ struct phipbpb {
         auto SA = (2.0 * cosinephidaughterstarminuspsi * cosinephidaughterstarminuspsi) - 1.0;
         auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
         auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
-        auto phimother = TMath::ATan2(PhiMesonMother.Y(), PhiMesonMother.X());
-        auto phiminuspsi = GetPhiInRange(phimother - psiFT0C);
+        auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
         histos.fill(HIST("hSparseV2SAMixedEvent"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, cosThetaStarIP, phiminuspsi, v2, SA, centrality);
       }
