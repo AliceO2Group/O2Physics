@@ -22,10 +22,14 @@
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
-#include <Math/Vector4D.h>
 #include <cmath>
 #include <array>
 #include <cstdlib>
+
+#include "TRandom3.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "Math/GenVector/Boost.h"
 
 #include "PWGLF/DataModel/EPCallibrationTables.h"
 #include "Framework/runDataProcessing.h"
@@ -80,12 +84,21 @@ struct phipbpb {
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 1, "Number of mixed events per event"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
+  Configurable<bool> ispTdepPID{"ispTdepPID", true, "pT dependent PID"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
   Configurable<bool> cfgRemoveOutlier{"Removeoutlier", false, "Additional Event Selection"};
   Configurable<double> cfgEvtSelpar0{"cfgEvtSelpar0", 0.0, "Event selection par0"};
   Configurable<double> cfgEvtSelpar1{"cfgEvtSelpar1", 0.0, "Event selection par1"};
   Configurable<double> cfgEvtSelpar2{"cfgEvtSelpar2", 0.0, "Event selection par2"};
   Configurable<double> cfgEvtSelpar3{"cfgEvtSelpar3", 0.0, "Event selection par3"};
+
+  ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {120, 0.98, 1.1}, "#it{M} (GeV/#it{c}^{2})"};
+  ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.0, 10.}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis configThnAxisCosThetaStar{"configThnAxisCosThetaStar", {10, 0.0, 1.}, "cos(#vartheta)"};
+  ConfigurableAxis configThnAxisCentrality{"configThnAxisCentrality", {8, 0., 80}, "Centrality"};
+  ConfigurableAxis configThnAxisPhiminusPsi{"configThnAxisPhiminusPsi", {6, 0.0, TMath::Pi()}, "#phi - #psi"};
+  ConfigurableAxis configThnAxisV2{"configThnAxisV2", {200, -1, 1}, "V2"};
+  ConfigurableAxis configThnAxisSA{"configThnAxisSA", {200, -1, 1}, "SA"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
@@ -105,6 +118,15 @@ struct phipbpb {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(o2::framework::InitContext&)
   {
+    const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisPt{configThnAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec thnAxisCosThetaStarOP{configThnAxisCosThetaStar, "cos(#vartheta_{OP})"};
+    const AxisSpec thnAxisCosThetaStarIP{configThnAxisCosThetaStar, "cos(#vartheta_{IP})"};
+    const AxisSpec thnAxisPhiminusPsi{configThnAxisPhiminusPsi, "#phi - #psi"};
+    const AxisSpec thnAxisCentrality{configThnAxisCentrality, "Centrality (%)"};
+    const AxisSpec thnAxisV2{configThnAxisV2, "V2"};
+    const AxisSpec thnAxisSA{configThnAxisSA, "SA"};
+
     histos.add("hFTOMvsTPC", "Mult correlation FT0M vs. TPC", kTH2F, {{600, -0.5f, 59999.5f}, {60, -0.5f, 5999.5f}});
     histos.add("hFTOCvsTPC", "Mult correlation FT0C vs. TPC", kTH2F, {{600, -0.5f, 59999.5f}, {60, -0.5f, 5999.5f}});
     histos.add("hFTOAvsTPC", "Mult correlation FT0A vs. TPC", kTH2F, {{600, -0.5f, 59999.5f}, {60, -0.5f, 5999.5f}});
@@ -119,8 +141,9 @@ struct phipbpb {
     histos.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH1F, {{200, -10.0f, 10.0f}});
     histos.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH1F, {{200, -10.0f, 10.0f}});
     histos.add("hPsiFT0C", "Psi FT0C", kTH2F, {{111, -0.5, 110.5}, {160, -4.0f, 4.0f}});
-    histos.add("h3PhiInvMassSame", "Invariant mass of Phi meson Unlike Sign Same Event", kTH3F, {{111, -0.5, 110.5}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
-    histos.add("h3PhiInvMassMixed", "Invariant mass of Phi meson Unlike Sign Mix Event", kTH3F, {{111, -0.5, 110.5}, {200, 0.0f, 20.0f}, {200, 0.9, 1.1}});
+
+    histos.add("hSparseV2SASameEvent", "THn for V2 and SA in Same Event", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisCosThetaStarIP, thnAxisPhiminusPsi, thnAxisV2, thnAxisSA, thnAxisCentrality});
+    histos.add("hSparseV2SAMixedEvent", "THn for V2 and SA in Mixed Event", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisCosThetaStarIP, thnAxisPhiminusPsi, thnAxisV2, thnAxisSA, thnAxisCentrality});
   }
 
   double massKa = o2::constants::physics::MassKPlus;
@@ -134,8 +157,22 @@ struct phipbpb {
     return true;
   }
   template <typename T>
+  bool selectionPIDpTdependent(const T& candidate)
+  {
+    if (candidate.pt() < 0.5 && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+      return true;
+    }
+    if (candidate.pt() >= 0.5 && candidate.hasTOF() && ((candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) + (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa())) < (nsigmaCutCombined * nsigmaCutCombined)) {
+      return true;
+    }
+    return false;
+  }
+  template <typename T>
   bool selectionPID(const T& candidate)
   {
+    if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+      return true;
+    }
     if (candidate.hasTOF() && ((candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) + (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa())) < (nsigmaCutCombined * nsigmaCutCombined)) {
       return true;
     }
@@ -158,13 +195,38 @@ struct phipbpb {
     }
     return true;
   }
+  double GetPhiInRange(double phi)
+  {
+    double result = phi;
+    while (result < 0) {
+      result = result + 2. * TMath::Pi() / 2;
+    }
+    while (result > 2. * TMath::Pi() / 2) {
+      result = result - 2. * TMath::Pi() / 2;
+    }
+    return result;
+  }
+
+  double GetDeltaPsiSubInRange(double psi1, double psi2)
+  {
+    double delta = psi1 - psi2;
+    if (TMath::Abs(delta) > TMath::Pi() / 2) {
+      if (delta > 0.)
+        delta -= 2. * TMath::Pi() / 2;
+      else
+        delta += 2. * TMath::Pi() / 2;
+    }
+    return delta;
+  }
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin"};
+  ConfigurableAxis axisEPAngle{"axisEPAngle", {6, -TMath::Pi() / 2, TMath::Pi() / 2}, "event plane angle"};
 
-  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  TLorentzVector PhiMother, KaonPlus, KaonMinus;
+  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, aod::epcallibrationtable::PsiFT0C>;
+  ROOT::Math::PxPyPzMVector PhiMesonMother, KaonPlus, KaonMinus, fourVecDauCM;
+  ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm;
+
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
     // auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
@@ -183,6 +245,7 @@ struct phipbpb {
     auto multFT0C = collision.multFT0C();
     auto multFT0A = collision.multFT0A();
     auto multTPC = collision.multTPC();
+    auto psiFT0C = collision.psiFT0C();
     histos.fill(HIST("hFTOMvsTPC"), multFT0M, multTPC);
     histos.fill(HIST("hFTOCvsTPC"), multFT0C, multTPC);
     histos.fill(HIST("hFTOCvsTPC"), multFT0A, multTPC);
@@ -191,14 +254,22 @@ struct phipbpb {
         return;
       }
     }
-    histos.fill(HIST("hPsiFT0C"), centrality, collision.psiFT0C());
+    histos.fill(HIST("hPsiFT0C"), centrality, psiFT0C);
     histos.fill(HIST("hCentrality"), centrality);
     histos.fill(HIST("hVtxZ"), collision.posZ());
     histos.fill(HIST("hFTOMvsTPCSelected"), multFT0M, multTPC);
     histos.fill(HIST("hFTOCvsTPCSelected"), multFT0C, multTPC);
     histos.fill(HIST("hFTOCvsTPCSelected"), multFT0A, multTPC);
     for (auto track1 : posThisColl) {
-      if (!selectionTrack(track1) || !selectionPID(track1)) {
+      // track selection
+      if (!selectionTrack(track1)) {
+        continue;
+      }
+      // PID check
+      if (ispTdepPID && !selectionPIDpTdependent(track1)) {
+        continue;
+      }
+      if (!ispTdepPID && !selectionPID(track1)) {
         continue;
       }
       histos.fill(HIST("hEta"), track1.eta());
@@ -208,7 +279,15 @@ struct phipbpb {
       histos.fill(HIST("hNsigmaKaonTOF"), track1.tofNSigmaKa());
       auto track1ID = track1.globalIndex();
       for (auto track2 : negThisColl) {
-        if (!selectionTrack(track2) || !selectionPID(track2)) {
+        // track selection
+        if (!selectionTrack(track2)) {
+          continue;
+        }
+        // PID check
+        if (ispTdepPID && !selectionPIDpTdependent(track2)) {
+          continue;
+        }
+        if (!ispTdepPID && !selectionPID(track2)) {
           continue;
         }
         auto track2ID = track2.globalIndex();
@@ -218,25 +297,41 @@ struct phipbpb {
         if (!selectionPair(track1, track2)) {
           continue;
         }
-        KaonPlus.SetXYZM(track1.px(), track1.py(), track1.pz(), massKa);
-        KaonMinus.SetXYZM(track2.px(), track2.py(), track2.pz(), massKa);
-        PhiMother = KaonPlus + KaonMinus;
-        histos.fill(HIST("h3PhiInvMassSame"), centrality, PhiMother.Pt(), PhiMother.M());
+        KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+        KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+        PhiMesonMother = KaonPlus + KaonMinus;
+        ROOT::Math::Boost boost{PhiMesonMother.BoostToCM()};
+        fourVecDauCM = boost(KaonMinus);
+        threeVecDauCM = fourVecDauCM.Vect();
+        threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
+        eventplaneVec = ROOT::Math::XYZVector(std::cos(2.0 * psiFT0C), std::sin(2.0 * psiFT0C), 0);
+        eventplaneVecNorm = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0C), -std::cos(2.0 * psiFT0C), 0);
+
+        auto cosinephidaughterstarminuspsi = eventplaneVec.Dot(threeVecDauCMXY) / std::sqrt(threeVecDauCMXY.Mag2()) / std::sqrt(eventplaneVec.Mag2());
+        auto SA = (2.0 * cosinephidaughterstarminuspsi * cosinephidaughterstarminuspsi) - 1.0;
+        auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
+        auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
+        auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
+        auto v2 = TMath::Cos(2.0 * phiminuspsi);
+        histos.fill(HIST("hSparseV2SASameEvent"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, cosThetaStarIP, phiminuspsi, v2, SA, centrality);
       }
     }
   }
   PROCESS_SWITCH(phipbpb, processSameEvent, "Process Same event", true);
   void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
   {
-    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
+    BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
     for (auto const& [collision1, collision2] : o2::soa::selfCombinations(binningOnPositions, cfgNoMixedEvents, -1, collisions, collisions)) {
       if (!collision1.sel8() || !collision2.sel8()) {
         continue;
       }
+      if (!collision1.triggereventep() || !collision2.triggereventep()) {
+        return;
+      }
       auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
       auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
-
-      auto centrality1 = collision1.centFT0C();
+      auto centrality = collision1.centFT0C();
+      auto psiFT0C = collision1.psiFT0C();
       auto multFT0C1 = collision1.multFT0C();
       auto multTPC1 = collision1.multTPC();
       auto multFT0C2 = collision2.multFT0C();
@@ -250,25 +345,42 @@ struct phipbpb {
           continue;
         }
       }
-
       for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posThisColl, negThisColl))) {
-        if (!selectionTrack(track1) || !selectionPID(track1)) {
+        // track selection
+        if (!selectionTrack(track1) || !selectionTrack(track2)) {
           continue;
         }
-        if (!selectionTrack(track2) || !selectionPID(track2)) {
+        // PID check
+        if ((ispTdepPID && !selectionPIDpTdependent(track1)) || (ispTdepPID && !selectionPIDpTdependent(track2))) {
+          continue;
+        }
+        if ((!ispTdepPID && !selectionPID(track1)) || (!ispTdepPID && !selectionPID(track2))) {
           continue;
         }
         if (!selectionPair(track1, track2)) {
           continue;
         }
-        KaonPlus.SetXYZM(track1.px(), track1.py(), track1.pz(), massKa);
-        KaonMinus.SetXYZM(track2.px(), track2.py(), track2.pz(), massKa);
-        PhiMother = KaonPlus + KaonMinus;
-        histos.fill(HIST("h3PhiInvMassMixed"), centrality1, PhiMother.Pt(), PhiMother.M());
+        KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+        KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+        PhiMesonMother = KaonPlus + KaonMinus;
+        ROOT::Math::Boost boost{PhiMesonMother.BoostToCM()};
+        fourVecDauCM = boost(KaonMinus);
+        threeVecDauCM = fourVecDauCM.Vect();
+        threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
+        eventplaneVec = ROOT::Math::XYZVector(std::cos(2.0 * psiFT0C), std::sin(2.0 * psiFT0C), 0);
+        eventplaneVecNorm = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0C), -std::cos(2.0 * psiFT0C), 0);
+
+        auto cosinephidaughterstarminuspsi = eventplaneVec.Dot(threeVecDauCMXY) / std::sqrt(threeVecDauCMXY.Mag2()) / std::sqrt(eventplaneVec.Mag2());
+        auto SA = (2.0 * cosinephidaughterstarminuspsi * cosinephidaughterstarminuspsi) - 1.0;
+        auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
+        auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
+        auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
+        auto v2 = TMath::Cos(2.0 * phiminuspsi);
+        histos.fill(HIST("hSparseV2SAMixedEvent"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, cosThetaStarIP, phiminuspsi, v2, SA, centrality);
       }
     }
   }
-  PROCESS_SWITCH(phipbpb, processMixedEvent, "Process Mixed event", false);
+  PROCESS_SWITCH(phipbpb, processMixedEvent, "Process Mixed event", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
