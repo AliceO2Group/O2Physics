@@ -81,6 +81,7 @@ struct TreeCreatorElectronMLDDA {
       {"hMassLambda", "V0 mass Lambda", {HistType::kTH1F, {{100, 1.05, 1.15}}}},
       {"hMassAntiLambda", "V0 mass AntiLambda", {HistType::kTH1F, {{100, 1.05, 1.15}}}},
       {"hMvsPhiV", "mee vs. phiv", {HistType::kTH2F, {{72, 0, M_PI}, {100, 0, 0.1}}}},
+      {"hMvsPhiV_primary", "mee vs. phiv for primary e candidate", {HistType::kTH2F, {{72, 0, M_PI}, {100, 0, 0.1}}}},
       {"hMKK", "mKK vs. pTK;m_{KK} (GeV/c^{2});p_{T,K} (GeV/c)", {HistType::kTH2F, {{100, 0.98, 1.08}, {100, 0, 10}}}},
       {"hMKK_pair", "mKK vs. pTKK;m_{KK} (GeV/c^{2});p_{T,KK} (GeV/c)", {HistType::kTH2F, {{100, 0.98, 1.08}, {100, 0, 10}}}},
 
@@ -146,7 +147,7 @@ struct TreeCreatorElectronMLDDA {
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
 
   // TPC-related variables
-  Configurable<int> mincrossedrows{"mincrossedrows", 80, "min. crossed rows"};
+  Configurable<int> mincrossedrows{"mincrossedrows", 40, "min. crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
 
   // ITS-related variables
@@ -157,7 +158,7 @@ struct TreeCreatorElectronMLDDA {
   Configurable<float> max_mee_pcm{"max_mee_pcm", 0.02, "max mee to v0 photon"};
   Configurable<float> minv0cospa{"minv0cospa", 0.997, "minimum V0 CosPA"};
   Configurable<float> maxdcav0dau{"maxdcav0dau", 0.2, "max distance between V0 Daughters"};
-  // Configurable<float> maxdcaxytopv_leg{"maxdcaxytopv_leg", -1, "max dcaxy to pv for v0 leg"};
+  Configurable<float> mindcaxytopv_v0leg{"mindcaxytopv_v0leg", -1, "max dcaxy to pv for v0 leg"}; // 0.05 cm
   Configurable<float> downscaling_pion{"downscaling_pion", 0.1, "down scaling factor to store pion"};
 
   // for pion
@@ -183,7 +184,7 @@ struct TreeCreatorElectronMLDDA {
   Configurable<float> maxTOFNsigmaEl{"maxTOFNsigmaEl", 3.0, "max. TOF n sigma for electron inclusion"};
   Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
   Configurable<float> intercept{"intercept", -0.0380, "intercept for m vs. phiv"};
-  Configurable<float> max_mee_pi0{"max_mee_pi0", -1, "max mee to tag ee from pi0"};
+  Configurable<float> max_mee_pi0{"max_mee_pi0", -1, "max mee to tag ee from pi0"}; // 0.04 GeV/c2
 
   // for cascade
   Configurable<float> minv0cospa_casc{"minv0cospa_casc", 0.97, "minimum V0 CosPA in cascade"};
@@ -193,6 +194,8 @@ struct TreeCreatorElectronMLDDA {
   Configurable<float> min_v0rxy_in_cascade{"min_v0rxy_in_cascade", 1.2, "minimum V0 rxy in cascade"};
   Configurable<float> min_cascade_rxy{"min_cascade_rxy", 0.5, "minimum V0 rxy in cascade"};
   Configurable<float> min_dcav0topv_casc{"min_dcav0topv_casc", 0.04, "min 3D dca from V0 in cascade to PV"};
+  Configurable<float> mindcaxytopv_v0leg_casc{"mindcaxytopv_v0leg_casc", -1, "max dcaxy to pv for v0 leg in cascade"}; // 0.03 cm
+  Configurable<float> mindcaxytopv_bach_casc{"mindcaxytopv_bach_casc", -1, "max dcaxy to pv for bachelor in cascade"}; // 0.03 cm
 
   int mRunNumber;
   float d_bz;
@@ -526,20 +529,20 @@ struct TreeCreatorElectronMLDDA {
           continue;
         }
 
-        //// Calculate DCA with respect to the collision associated to the V0, not individual tracks
-        // gpu::gpustd::array<float, 2> dcaInfo_pos;
-        // auto pTrackPar = getTrackPar(pos);
-        // o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, pTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo_pos);
-        // if (abs(dcaInfo_pos[0]) < maxdcaxytopv_leg) {
-        //   continue;
-        // }
+        // Calculate DCA with respect to the collision associated to the V0, not individual tracks
+        gpu::gpustd::array<float, 2> dcaInfo_pos;
+        auto pTrackPar = getTrackPar(pos);
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, pTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo_pos);
+        if (abs(dcaInfo_pos[0]) < mindcaxytopv_v0leg) {
+          continue;
+        }
 
-        // gpu::gpustd::array<float, 2> dcaInfo_neg;
-        // auto nTrackPar = getTrackPar(neg);
-        // o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, nTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo_neg);
-        // if (abs(dcaInfo_neg[0]) < maxdcaxytopv_leg) {
-        //   continue;
-        // }
+        gpu::gpustd::array<float, 2> dcaInfo_neg;
+        auto nTrackPar = getTrackPar(neg);
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, nTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo_neg);
+        if (abs(dcaInfo_neg[0]) < mindcaxytopv_v0leg) {
+          continue;
+        }
 
         // reconstruct V0s
         auto pTrack = getTrackParCov(pos); // positive
@@ -750,14 +753,32 @@ struct TreeCreatorElectronMLDDA {
           continue;
         }
 
-        //// bachelor DCA track to PV
-        //// Calculate DCA with respect to the collision associated to the V0, not individual tracks
-        // gpu::gpustd::array<float, 2> dcaInfo;
-        // auto bachTrackPar = getTrackPar(bachelor);
-        // o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
-        // if (abs(dcaInfo[0]) < 0.04) {
-        //   continue;
-        // }
+        if (v0.v0Type() != 0 && v0.v0Type() != 1) {
+          continue;
+        }
+
+        // Calculate DCA with respect to the collision associated to the V0, not individual tracks
+        gpu::gpustd::array<float, 2> dcaInfo_pos;
+        auto pTrackPar = getTrackPar(pos);
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, pTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo_pos);
+        if (abs(dcaInfo_pos[0]) < mindcaxytopv_v0leg) {
+          continue;
+        }
+
+        gpu::gpustd::array<float, 2> dcaInfo_neg;
+        auto nTrackPar = getTrackPar(neg);
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, nTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo_neg);
+        if (abs(dcaInfo_neg[0]) < mindcaxytopv_v0leg) {
+          continue;
+        }
+
+        // Calculate DCA with respect to the collision associated to the Cascade, not individual tracks
+        gpu::gpustd::array<float, 2> dcaInfo_bach;
+        auto bachTrackPar = getTrackPar(bachelor);
+        o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo_bach);
+        if (abs(dcaInfo_bach[0]) < mindcaxytopv_bach_casc) {
+          continue;
+        }
 
         if (bachelor.sign() < 0) { // omega -> L + K- -> p + pi- + K-
           if (abs(pos.tpcNSigmaPr()) > 3.f || abs(neg.tpcNSigmaPi()) > 3.f) {
@@ -972,7 +993,6 @@ struct TreeCreatorElectronMLDDA {
           fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
           stored_secondary_electronIds.emplace_back(pos.globalIndex());
         }
-
       } // end of pairing loop
 
       for (auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(positrons_per_coll, electrons_per_coll))) { // electron is probe, positron is tag.
@@ -1005,10 +1025,16 @@ struct TreeCreatorElectronMLDDA {
           continue;
         }
 
+        if (std::find(stored_secondary_electronIds.begin(), stored_secondary_electronIds.end(), pos.globalIndex()) != stored_secondary_electronIds.end()) {
+          continue; // apply pre-filter to reject secondary electrons
+        }
+
         ROOT::Math::PtEtaPhiMVector v1(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v2(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-        if (v12.M() < max_mee_pi0 && std::find(stored_secondary_electronIds.begin(), stored_secondary_electronIds.end(), pos.globalIndex()) == stored_secondary_electronIds.end()) { // e from pi0 dalitz decay is found.
+        float phiv = getPhivPair(pos.px(), pos.py(), pos.pz(), ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
+        registry.fill(HIST("hMvsPhiV_primary"), phiv, v12.M());
+        if (v12.M() < max_mee_pi0) { // e from pi0 dalitz decay is found.
           fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary));
         }
       } // end of pairing loop
@@ -1022,10 +1048,16 @@ struct TreeCreatorElectronMLDDA {
           continue;
         }
 
+        if (std::find(stored_secondary_electronIds.begin(), stored_secondary_electronIds.end(), ele.globalIndex()) != stored_secondary_electronIds.end()) {
+          continue; // apply pre-filter to reject secondary electrons
+        }
+
         ROOT::Math::PtEtaPhiMVector v1(ele.pt(), ele.eta(), ele.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v2(pos.pt(), pos.eta(), pos.phi(), o2::constants::physics::MassElectron);
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-        if (v12.M() < max_mee_pi0 && std::find(stored_secondary_electronIds.begin(), stored_secondary_electronIds.end(), ele.globalIndex()) == stored_secondary_electronIds.end()) { // e from pi0 dalitz decay is found.
+        float phiv = getPhivPair(pos.px(), pos.py(), pos.pz(), ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
+        registry.fill(HIST("hMvsPhiV_primary"), phiv, v12.M());
+        if (v12.M() < max_mee_pi0) { // e from pi0 dalitz decay is found.
           fillTrackTable(collision, ele, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary));
         }
       } // end of pairing loop
