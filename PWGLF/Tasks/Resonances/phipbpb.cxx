@@ -221,7 +221,7 @@ struct phipbpb {
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
-  ConfigurableAxis axisEPAngle{"axisEPAngle", {9, -TMath::Pi() / 2, TMath::Pi() / 2}, "event plane angle"};
+  ConfigurableAxis axisEPAngle{"axisEPAngle", {6, -TMath::Pi() / 2, TMath::Pi() / 2}, "event plane angle"};
 
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, aod::epcallibrationtable::PsiFT0C>;
   ROOT::Math::PxPyPzMVector PhiMesonMother, KaonPlus, KaonMinus, fourVecDauCM;
