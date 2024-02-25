@@ -591,7 +591,7 @@ struct lambdakzeroBuilder {
     }
     // Fetch magnetic field from ccdb for current collision
     d_bz = o2::base::Propagator::Instance()->getNominalBz();
-    LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kZG";
+    LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kG";
     mVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
