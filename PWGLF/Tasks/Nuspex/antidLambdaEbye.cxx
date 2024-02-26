@@ -85,6 +85,13 @@ std::array<std::shared_ptr<TH3>, kNpart> recTracks;
 std::array<std::shared_ptr<TH3>, kNpart> recAntiTracks;
 std::array<std::shared_ptr<TH3>, kNpart> genTracks;
 std::array<std::shared_ptr<TH3>, kNpart> genAntiTracks;
+std::array<std::shared_ptr<TH2>, kNpart> tpcNsigma;
+std::array<std::shared_ptr<TH2>, kNpart> tpcNsigmaGlo;
+std::array<std::shared_ptr<TH2>, kNpart> tofMass;
+std::array<std::shared_ptr<TH3>, kNpart> momCorr;
+std::array<std::shared_ptr<TH2>, kNpart> tpcSignalBkg;
+std::array<std::shared_ptr<TH2>, kNpart> tofSignal;
+std::array<std::shared_ptr<TH2>, kNpart> tofSignal_glo;
 } // namespace
 
 struct CandidateV0 {
@@ -304,18 +311,28 @@ struct antidLambdaEbye {
     histos.add<TH1>("QA/dcaPosPv", ";dcaPosPv;Entries", HistType::kTH1F, {dcaDaughPvAxis});
     histos.add<TH1>("QA/dcaNegPv", ";dcaNegPv;Entries", HistType::kTH1F, {dcaDaughPvAxis});
 
-    // antid QA
-    histos.add<TH2>("QA/tpcNsigma", ";#it{p}_{TPC} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcNsigmaAxis});
-    histos.add<TH2>("QA/tpcNsigmaGlo", ";#it{p}_{T} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcNsigmaAxis});
-    histos.add<TH2>("QA/tofMass", ";#it{p}_{glo} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", HistType::kTH2F, {momAxis, tofMassAxis});
-    auto hmomCorr = histos.add<TH3>("QA/momCorr", ";#it{p}_{glo} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c});", HistType::kTH3F, {momAxisFine, momResAxis, trackingPidAxis});
+    // antid and antip QA
     histos.add<TH2>("QA/tpcSignal", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", HistType::kTH2F, {momAxisFine, tpcAxis});
-    histos.add<TH2>("QA/tpcSignalBkg", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", HistType::kTH2F, {momAxisFine, tpcAxis});
     histos.add<TH2>("QA/tpcSignal_glo", ";#it{p}_{glo} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.);", HistType::kTH2F, {momAxisFine, tpcAxis});
-    histos.add<TH2>("QA/tofSignal", ";#it{p}_{TPC} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
-    histos.add<TH2>("QA/tofSignal_glo", ";#it{p}_{T} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
 
-    if (doprocessMcRun3) {
+    tpcNsigma.at(0) = histos.add<TH2>("QA/tpcNsigma_p", ";#it{p}_{TPC} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcNsigmaAxis});
+    tpcNsigmaGlo.at(0) = histos.add<TH2>("QA/tpcNsigmaGlo_p", ";#it{p}_{T} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcNsigmaAxis});
+    tofMass.at(0) = histos.add<TH2>("QA/tofMass_p", ";#it{p}_{glo} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", HistType::kTH2F, {momAxis, tofMassAxis});
+    momCorr.at(0) = histos.add<TH3>("QA/momCorr_p", ";#it{p}_{glo} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c});", HistType::kTH3F, {momAxisFine, momResAxis, trackingPidAxis});
+    tpcSignalBkg.at(0) = histos.add<TH2>("QA/tpcSignalBkg_p", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", HistType::kTH2F, {momAxisFine, tpcAxis});
+    tofSignal.at(0) = histos.add<TH2>("QA/tofSignal_p", ";#it{p}_{TPC} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
+    tofSignal_glo.at(0) = histos.add<TH2>("QA/tofSignal_glo_p", ";#it{p}_{T} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
+
+    tpcNsigma.at(1) = histos.add<TH2>("QA/tpcNsigma_d", ";#it{p}_{TPC} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcNsigmaAxis});
+    tpcNsigmaGlo.at(1) = histos.add<TH2>("QA/tpcNsigmaGlo_d", ";#it{p}_{T} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcNsigmaAxis});
+    tofMass.at(1) = histos.add<TH2>("QA/tofMass_d", ";#it{p}_{glo} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", HistType::kTH2F, {momAxis, tofMassAxis});
+    momCorr.at(1) = histos.add<TH3>("QA/momCorr_d", ";#it{p}_{glo} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c});", HistType::kTH3F, {momAxisFine, momResAxis, trackingPidAxis});
+    tpcSignalBkg.at(1) = histos.add<TH2>("QA/tpcSignalBkg_d", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", HistType::kTH2F, {momAxisFine, tpcAxis});
+    tofSignal.at(1) = histos.add<TH2>("QA/tofSignal_d", ";#it{p}_{TPC} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
+    tofSignal_glo.at(1) = histos.add<TH2>("QA/tofSignal_glo_d", ";#it{p}_{T} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
+
+    // mc histograms
+    if (doprocessMcRun3 || doprocessMcRun2) {
       histos.add<TH3>("recL", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptLambdaAxis, deltaEtaAxis});
       histos.add<TH3>("recAntiL", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptLambdaAxis, deltaEtaAxis});
       recTracks.at(0) = histos.add<TH3>("recP", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntipAxis, deltaEtaAxis});
@@ -330,8 +347,10 @@ struct antidLambdaEbye {
       genAntiTracks.at(1) = histos.add<TH3>("genAntid", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntidAxis, deltaEtaAxis});
     }
 
-    for (int i{1}; i < hmomCorr->GetNbinsZ() + 1; ++i) {
-      hmomCorr->GetZaxis()->SetBinLabel(i, pidHypotheses[i - 1].data());
+    for (int i{1}; i < momCorr[0]->GetNbinsZ() + 1; ++i) {
+      for (int iP {0}; iP < kNpart; ++iP) {
+        momCorr[iP]->GetZaxis()->SetBinLabel(i, pidHypotheses[i - 1].data());
+      }
     }
 
     // temporary histograms
@@ -397,18 +416,17 @@ struct antidLambdaEbye {
           continue;
         }
 
-        if (iP) { // deuteron
-          histos.fill(HIST("QA/tpcNsigma"), track.tpcInnerParam(), nSigmaTPC);
-          histos.fill(HIST("QA/momCorr"), track.p(), track.tpcInnerParam() - track.p(), track.pidForTracking());
-          // check contamination
-          if (track.tpcInnerParam() < tpcInnerParamMax[iP]) {
-            histos.fill(HIST("QA/tpcSignalBkg"), track.tpcInnerParam(), track.tpcSignal());
-          }
+        // qa
+        tpcNsigma[iP]->Fill(track.tpcInnerParam(), nSigmaTPC);
+        momCorr[iP]->Fill(track.p(), track.tpcInnerParam() - track.p(), track.pidForTracking());
+        // check contamination
+        if (track.tpcInnerParam() < tpcInnerParamMax[iP]) {
+          tpcSignalBkg[iP]->Fill(track.tpcInnerParam(), track.tpcSignal());
+        }
 
-          if (track.pt() > ptTof[iP] && hasTof) {
-            histos.fill(HIST("QA/tofSignal_glo"), track.p(), beta);
-            histos.fill(HIST("QA/tofSignal"), track.tpcInnerParam(), beta);
-          }
+        if (track.pt() > ptTof[iP] && hasTof) {
+          tofSignal_glo[iP]->Fill(track.p(), beta);
+          tofSignal[iP]->Fill(track.tpcInnerParam(), beta);
         }
 
         // temporary cut to reject fake matches
@@ -420,10 +438,9 @@ struct antidLambdaEbye {
         }
 
         if (track.pt() <= ptTof[iP] || (track.pt() > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < tofMassMax[iP])) {
-          if (iP) {
-            histos.fill(HIST("QA/tpcNsigmaGlo"), track.pt(), nSigmaTPC);
-            histos.fill(HIST("QA/tofMass"), track.pt(), mass);
-          }
+          tpcNsigmaGlo[iP]->Fill(track.pt(), nSigmaTPC);
+          tofMass[iP]->Fill(track.pt(), mass);
+
           tempTracks.at(iP)->Fill(std::abs(track.eta()), track.pt());
           CandidateTrack candTrack;
           candTrack.pt = track.pt();
