@@ -57,8 +57,8 @@ double massPi = TDatabasePDG::Instance()->GetParticle(211)->Mass();
 double massKa = TDatabasePDG::Instance()->GetParticle(321)->Mass();
 double massPr = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
 
-// struct IdentifiedMeanPtFluctuations {
-struct MeanpTFluct {
+
+struct IdentifiedMeanPtFluctuations {
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -543,6 +543,6 @@ struct MeanpTFluct {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<MeanpTFluct>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<IdentifiedMeanPtFluctuations>(cfgc)};
   return workflow;
 }
