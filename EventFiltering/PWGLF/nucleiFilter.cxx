@@ -238,7 +238,7 @@ struct nucleiFilter {
         }
       }
       if (std::abs(track0.tpcNSigmaPi()) < TpcPidNsigmaCut && std::abs(track1.tpcNSigmaPr()) < TpcPidNsigmaCut && std::abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mAntiHypertriton() > h3LMassLowerlimit && vtx.mAntiHypertriton() < h3LMassUpperlimit) {
-        if (track0.tpcNClsFound() >= mintpcNClspion && track1.tpcFound() >= mintpcNClsproton && track2.tpcNClsFound() >= mintpcNClsdeuteron) {
+        if (track0.tpcNClsFound() >= mintpcNClspion && track1.tpcNClsFound() >= mintpcNClsproton && track2.tpcNClsFound() >= mintpcNClsdeuteron) {
           if (std::abs(vtx.dcatrack0topv()) > dcapiontopv) {
             keepEvent[3] = true;
             qaHists.fill(HIST("fH3LMassVsPt"), vtx.pt(), vtx.mAntiHypertriton());
