@@ -35,9 +35,6 @@ Configurable<bool> cfDoAdditionalInsanityChecks{
 Configurable<bool> cfUseCCDB{
   "cfUseCCDB", true,
   "access personal files from CCDB or from home dir in AliEn"};
-Configurable<string> cfWhatToProcess{
-  "cfWhatToProcess", "Rec",
-  "Rec = process only reconstructed, Sim = process only simulated, RecSim = process both reconstructed and simulated. For converted Run 1 and Run 2 data, append still either _Run2 or _Run1"};
 Configurable<unsigned int> cfRandomSeed{
   "cfRandomSeed", 0,
   "0 = random seed is guaranteed to be unique in space and time"};
@@ -105,6 +102,9 @@ Configurable<string> cfTrigger{
   "set here some supported trigger (kINT7, ...) "};
 Configurable<bool> cfUseSel7{"cfUseSel7", false, "use for Run 2 data and MC (see official doc)"};
 Configurable<bool> cfUseSel8{"cfUseSel8", false, "use for Run 3 data and MC (see official doc)"};
+Configurable<string> cfCentralityEstimator{
+  "cfCentralityEstimator", "some supported centrality estimator",
+  "set here some supported centrality estimator (CentFT0M, CentFV0A, CentNTPV, ... for Run 3, CentRun2V0M, CentRun2SPDTracklets, ..., for Run 2) "};
 
 Configurable<int> cNumberOfEvents_min{
   "cNumberOfEvents_min", -1,

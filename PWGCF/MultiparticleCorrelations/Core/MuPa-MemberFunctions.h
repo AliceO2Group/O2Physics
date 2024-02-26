@@ -59,8 +59,8 @@ void BookBaseList()
   fBasePro->GetXaxis()->SetBinLabel(eUseCCDB, "fUseCCDB");
   fBasePro->Fill(eUseCCDB - 0.5, (Int_t)tc.fUseCCDB);
 
-  fBasePro->GetXaxis()->SetBinLabel(eWhatToProcess,
-                                    Form("WhatToProcess = %s", tc.fWhatToProcess.Data()));
+  fBasePro->GetXaxis()->SetBinLabel(eWhichProcess,
+                                    Form("WhichProcess = %s", tc.fWhichProcess.Data()));
 
   fBasePro->GetXaxis()->SetBinLabel(eRandomSeed, "fRandomSeed");
   fBasePro->Fill(eRandomSeed - 0.5, (Int_t)tc.fRandomSeed);
@@ -77,65 +77,6 @@ void BookBaseList()
   fBaseList->Add(fBasePro);
 
 } // void BookBaseList()
-
-//============================================================
-
-void WhatToProcess()
-{
-  // Set here what to process: only rec, both rec and sim, only sim.
-  // Use in combination with configurable cfWhatToProcess.
-  // TBI 20231017 I call this function, but it still has no desired effect, until I can call PROCESS_SWITCH(  ) by passing a variable, instead only literals 'true' or 'false', as it is now
-
-  // a) Specific flags;
-  // b) Insanity check on indovidual flags;
-  // c) Generic flags.
-
-  if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
-  }
-
-  // a) Specific flags:
-  if (tc.fWhatToProcess.EqualTo("Rec")) {
-    gProcessRec = true;
-  } else if (tc.fWhatToProcess.EqualTo("RecSim")) {
-    gProcessRecSim = true;
-  } else if (tc.fWhatToProcess.EqualTo("Sim")) {
-    gProcessSim = true;
-  } else if (tc.fWhatToProcess.EqualTo("Rec_Run2")) {
-    gProcessRec_Run2 = true;
-  } else if (tc.fWhatToProcess.EqualTo("RecSim_Run2")) {
-    gProcessRecSim_Run2 = true;
-  } else if (tc.fWhatToProcess.EqualTo("Sim_Run2")) {
-    gProcessSim_Run2 = true;
-  } else if (tc.fWhatToProcess.EqualTo("Rec_Run1")) {
-    gProcessRec_Run1 = true;
-  } else if (tc.fWhatToProcess.EqualTo("RecSim_Run1")) {
-    gProcessRecSim_Run1 = true;
-  } else if (tc.fWhatToProcess.EqualTo("Sim_Run1")) {
-    gProcessSim_Run1 = true;
-  } else if (tc.fWhatToProcess.EqualTo("test", TString::kIgnoreCase)) {
-    gProcessTest = true;
-  } else {
-    LOGF(info, "\033[1;32m This option is not supported! tc.fWhatToProcess = %s \033[0m", tc.fWhatToProcess.Data());
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
-  }
-
-  // b) Insanity check on indovidual flags:
-  // Make sure that only one of these flags is set to kTRUE.
-  // This is needed, becase these flags are used in PROCESS_SWITCH,
-  // and if 2 or more are kTRUE, then corresponding process function
-  // is executed over ALL data, then another process(...) function, etc.
-  if ((Int_t)gProcessRec + (Int_t)gProcessRecSim + (Int_t)gProcessSim + (Int_t)gProcessRec_Run2 + (Int_t)gProcessRecSim_Run2 + (Int_t)gProcessSim_Run2 + (Int_t)gProcessRec_Run1 + (Int_t)gProcessRecSim_Run1 + (Int_t)gProcessSim_Run1 > 1) {
-    LOGF(info, "\033[1;32m Only one flag can be kTRUE: gProcessRec = %d, gProcessRecSim = %d, gProcessSim = %d, gProcessRec_Run2 = %d, gProcessRecSim_Run2 = %d, gProcessSim_Run2 = %d, gProcessRec_Run1 = %d, gProcessRecSim_Run1 = %d, gProcessSim_Run1 = %d \033[0m", (Int_t)gProcessRec, (Int_t)gProcessRecSim, (Int_t)gProcessSim, (Int_t)gProcessRec_Run2, (Int_t)gProcessRecSim_Run2, (Int_t)gProcessSim_Run2, (Int_t)gProcessRec_Run1, (Int_t)gProcessRecSim_Run1, (Int_t)gProcessSim_Run1);
-    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
-  }
-
-  // c) Generic flags:
-  gGenericRec = gProcessRec || gProcessRec_Run2 || gProcessRec_Run1 || gProcessTest; // generic "Rec" case, eTest is treated for the time being as "Rec"
-  gGenericRecSim = gProcessRecSim || gProcessRecSim_Run2 || gProcessRecSim_Run1;     // generic "RecSim" case
-  gGenericSim = gProcessSim || gProcessSim_Run2 || gProcessSim_Run1;                 // generic "Sim" case
-
-} // WhatToProcess()
 
 //============================================================
 
@@ -161,6 +102,8 @@ void DefaultConfiguration()
   //            "cSelectedTracks_max": "1e3",
   //    that setting and ALL other ones in json are silently ignored.
 
+  // d) There are also implicit variables like "doprocessSomeProcessName" within a PROCESS_SWITCH clause. For them, I do not need an entry in Configurables
+
   // Configurable<string> cfTaskName{ ... }
   tc.fTaskName = TString(cfTaskName);
 
@@ -183,8 +126,60 @@ void DefaultConfiguration()
   // Configurable<bool> cfUseCCDB{ ... }
   tc.fUseCCDB = cfUseCCDB;
 
-  // Configurable<string> cfWhatToProcess{ ... )
-  tc.fWhatToProcess = TString(cfWhatToProcess);
+  // Set automatically what to process, from an implicit variable "doprocessSomeProcessName" within a PROCESS_SWITCH clause:
+  // Remark: As of 20240224, I have abandoned Configurable<string> cfWhatToProcess{ ... ), which is now obsolete
+  tc.fProcessRec = doprocessRec;
+  tc.fProcessRecSim = doprocessRecSim;
+  tc.fProcessSim = doprocessSim;
+  tc.fProcessRec_Run2 = doprocessRec_Run2;
+  tc.fProcessRecSim_Run2 = doprocessRecSim_Run2;
+  tc.fProcessSim_Run2 = doprocessSim_Run2;
+  tc.fProcessRec_Run1 = doprocessRec_Run1;
+  tc.fProcessRecSim_Run1 = doprocessRecSim_Run1;
+  tc.fProcessSim_Run1 = doprocessSim_Run1;
+  tc.fProcessTest = doprocessTest;
+
+  // Temporarary bailout protection against cases which are not implemented/validated yet:
+  if (tc.fProcessSim) {
+    LOGF(fatal, "in function \033[1;31m%s at line %d - processSim(...) is not implemented/validated yet \033[0m", __PRETTY_FUNCTION__, __LINE__);
+  }
+  if (tc.fProcessSim_Run2) {
+    LOGF(fatal, "in function \033[1;31m%s at line %d - processSim_Run2(...) is not implemented/validated yet \033[0m", __PRETTY_FUNCTION__, __LINE__);
+  }
+  if (tc.fProcessRecSim_Run1) {
+    LOGF(fatal, "in function \033[1;31m%s at line %d - processRecSim_Run1(...) is not implemented/validated yet \033[0m", __PRETTY_FUNCTION__, __LINE__);
+  }
+  if (tc.fProcessSim_Run1) {
+    LOGF(fatal, "in function \033[1;31m%s at line %d - processSim_Run1(...) is not implemented/validated yet \033[0m", __PRETTY_FUNCTION__, __LINE__);
+  }
+
+  // Set automatically generic flags, from above individual flags:
+  tc.fGenericRec = tc.fProcessRec || tc.fProcessRec_Run2 || tc.fProcessRec_Run1 || tc.fProcessTest;
+  tc.fGenericRecSim = tc.fProcessRecSim || tc.fProcessRecSim_Run2 || tc.fProcessRecSim_Run1;
+  tc.fGenericSim = tc.fProcessSim || tc.fProcessSim_Run2 || tc.fProcessSim_Run1;
+
+  // Set automatically tc.fWhichProcess from above individual flags:
+  if (tc.fProcessRec) {
+    tc.fWhichProcess = "ProcessRec";
+  } else if (tc.fProcessRecSim) {
+    tc.fWhichProcess = "ProcessRecSim";
+  } else if (tc.fProcessSim) {
+    tc.fWhichProcess = "ProcessSim";
+  } else if (tc.fProcessRec_Run2) {
+    tc.fWhichProcess = "ProcessRec_Run2";
+  } else if (tc.fProcessRecSim_Run2) {
+    tc.fWhichProcess = "ProcessRecSim_Run2";
+  } else if (tc.fProcessSim_Run2) {
+    tc.fWhichProcess = "ProcessSim_Run2";
+  } else if (tc.fProcessRec_Run1) {
+    tc.fWhichProcess = "ProcessRec_Run1";
+  } else if (tc.fProcessRecSim_Run1) {
+    tc.fWhichProcess = "ProcessRecSim_Run1";
+  } else if (tc.fProcessSim_Run1) {
+    tc.fWhichProcess = "ProcessSim_Run1";
+  } else if (tc.fProcessTest) {
+    tc.fWhichProcess = "ProcessTest";
+  }
 
   // Configurable<unsigned int> cfRandomSeed{ ... )
   tc.fRandomSeed = cfRandomSeed;
@@ -205,7 +200,8 @@ void DefaultConfiguration()
   ec.fUseSel7 = cfUseSel7;
   // Configurable<bool> cfUseSel8{ ... }
   ec.fUseSel8 = cfUseSel8;
-
+  // Configurable<string> cfCentralityEstimator{ ... )
+  ec.fCentralityEstimator = cfCentralityEstimator;
   // ...
 
   // Configurable<bool> cfCalculateQvectors{ ... }
@@ -621,44 +617,72 @@ void InsanityChecks()
 {
   // Do insanity checks on configuration, booking, binning and cuts.
 
-  // *) Insanity checks on configuration;
-  // *) Insanity checks on event cuts;
-  // *) Insanity checks on booking;
-  // *) Insanity checks on binning;
-  // *) Insanity checks on cuts.
+  // a) Insanity checks on configuration;
+  // b) Insanity checks on event cuts;
+  // c) Insanity checks on booking;
+  // d) Insanity checks on binning;
+  // e) Insanity checks on cuts.
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
   }
 
-  // *) Insanity checks on configuration:
+  // a) Insanity checks on configuration:
+
+  // *) Insanity check on individual flags: Make sure that only one process is set to kTRUE.
+  //    If 2 or more are kTRUE, then corresponding process function is executed over ALL data, then another process(...) function, etc.
+  //    Re-think this if it's possible to run different process(...)'s concurently over the same data.
+  if ((Int_t)tc.fProcessRec + (Int_t)tc.fProcessRecSim + (Int_t)tc.fProcessSim + (Int_t)tc.fProcessRec_Run2 + (Int_t)tc.fProcessRecSim_Run2 + (Int_t)tc.fProcessSim_Run2 + (Int_t)tc.fProcessRec_Run1 + (Int_t)tc.fProcessRecSim_Run1 + (Int_t)tc.fProcessSim_Run1 > 1) {
+    LOGF(info, "\033[1;31m Only one flag can be kTRUE: tc.fProcessRec = %d, tc.fProcessRecSim = %d, tc.fProcessSim = %d, tc.fProcessRec_Run2 = %d, tc.fProcessRecSim_Run2 = %d, tc.fProcessSim_Run2 = %d, tc.fProcessRec_Run1 = %d, tc.fProcessRecSim_Run1 = %d, tc.fProcessSim_Run1 = %d \033[0m", (Int_t)tc.fProcessRec, (Int_t)tc.fProcessRecSim, (Int_t)tc.fProcessSim, (Int_t)tc.fProcessRec_Run2, (Int_t)tc.fProcessRecSim_Run2, (Int_t)tc.fProcessSim_Run2, (Int_t)tc.fProcessRec_Run1, (Int_t)tc.fProcessRecSim_Run1, (Int_t)tc.fProcessSim_Run1);
+    LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+  }
+
+  // *) Seed for random number generator must be non-negative integer:
   if (tc.fRandomSeed < 0) {
     LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
   }
 
   // *) Insanity checks on event cuts:
-  if (gProcessRec_Run2 || gProcessRec_Run1) { // From documentation: Bypass this check if you analyse MC or continuous Run3 data.
-    if (!(ec.fTrigger.EqualTo("kINT7"))) {    // TBI 20240223 expand this list with other supported triggers eventually in this category (see if(...) above)
-      LOGF(fatal, "in function \033[1;31m%s at line %d : trigger %s is not internally supported yet. Add it to the list of supported triggers, if you really want to use that one.\033[0m", __PRETTY_FUNCTION__, __LINE__, ec.fTrigger.Data());
+  if (tc.fProcessRec_Run2 || tc.fProcessRec_Run1) { // From documentation: Bypass this check if you analyse MC or continuous Run3 data.
+    if (!(ec.fTrigger.EqualTo("kINT7"))) {          // TBI 20240223 expand this list with other supported triggers eventually in this category (see if(...) above)
+      LOGF(info, "in function \033[1;32m%s at line %d : trigger \"%s\" is not internally supported yet. Add it to the list of supported triggers, if you really want to use that one.\033[0m", __PRETTY_FUNCTION__, __LINE__, ec.fTrigger.Data());
+      ec.fUseTrigger = kFALSE;
     } else {
-      ec.fUseTrigger = kTRUE; // I am analyzing converted Run 1 or Run 2 data, and the trigger is supported, so let's use it
+      ec.fUseTrigger = kTRUE; // I am analyzing converted Run 1 or Run 2 real data (not MC!), and the trigger is supported, so let's use it
     }
   }
 
   if (ec.fUseSel7) { // from doc: for Run 2 data and MC
-    if (!(gProcessRec_Run2 || gProcessRecSim_Run2 || gProcessSim_Run2 || gProcessRec_Run1 || gProcessRecSim_Run1 || gProcessSim_Run1)) {
+    if (!(tc.fProcessRec_Run2 || tc.fProcessRecSim_Run2 || tc.fProcessSim_Run2 || tc.fProcessRec_Run1 || tc.fProcessRecSim_Run1 || tc.fProcessSim_Run1)) {
       LOGF(fatal, "in function \033[1;31m%s at line %d use fUseSel7 for Run 2 data and MC\033[0m", __PRETTY_FUNCTION__, __LINE__);
     }
   }
 
   if (ec.fUseSel8) { // from doc: for Run 3 data and MC
-    if (!(gProcessRec || gProcessRecSim || gProcessSim)) {
+    if (!(tc.fProcessRec || tc.fProcessRecSim || tc.fProcessSim)) {
       LOGF(fatal, "in function \033[1;31m%s at line %d use fUseSel8 for Run 3 data and MC\033[0m", __PRETTY_FUNCTION__, __LINE__);
     }
   }
 
   if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && !tc.fUseFisherYates) {
     LOGF(fatal, "in function \033[1;31m%s at line %d\033[0m", __PRETTY_FUNCTION__, __LINE__);
+  }
+
+  if (tc.fProcessRec || tc.fProcessRecSim || tc.fProcessSim) {
+    // Supported centrality estimators for Run 3 are enlisted here:
+    if (!(ec.fCentralityEstimator.EqualTo("centFT0M", TString::kIgnoreCase) ||
+          ec.fCentralityEstimator.EqualTo("centFV0A", TString::kIgnoreCase) ||
+          ec.fCentralityEstimator.EqualTo("centNTPV", TString::kIgnoreCase))) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %d is not supported yet for Run 3 analysis. \033[0m", __PRETTY_FUNCTION__, __LINE__, ec.fCentralityEstimator.Data());
+    }
+  }
+
+  if (tc.fProcessRec_Run2 || tc.fProcessRecSim_Run2 || tc.fProcessSim_Run2 || tc.fProcessRec_Run1 || tc.fProcessRecSim_Run1 || tc.fProcessSim_Run1) {
+    // Supported centrality estimators for Run 3 are enlisted here:
+    if (!(ec.fCentralityEstimator.EqualTo("centRun2V0M", TString::kIgnoreCase) ||
+          ec.fCentralityEstimator.EqualTo("centRun2SPDTracklets", TString::kIgnoreCase))) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %d is not supported yet for converted Run 2 and Run 1 analysis. \033[0m", __PRETTY_FUNCTION__, __LINE__, ec.fCentralityEstimator.Data());
+    }
   }
 
   // *) Insanity checks on booking:
@@ -801,8 +825,8 @@ void BookEventHistograms()
     for (Int_t rs = 0; rs < 2; rs++) // reco/sim
     {
       // If I am analyzing only reconstructed data, do not book histos for simulated, and vice versa.
-      // TBI 20240223 gProcessTest is treated as gProcessRec, for the time being
-      if ((gGenericRec && rs == eSim) || (gGenericSim && rs == eRec)) {
+      // TBI 20240223 tc.fProcessTest is treated as tc.fProcessRec, for the time being
+      if ((tc.fGenericRec && rs == eSim) || (tc.fGenericSim && rs == eRec)) {
         continue;
       }
 
@@ -851,6 +875,7 @@ void BookEventCutsHistograms()
   ec.fEventCutsPro->Fill(eUseSel7 - 0.5, (Int_t)ec.fUseSel7);
   ec.fEventCutsPro->GetXaxis()->SetBinLabel(eUseSel8, "fUseSel8");
   ec.fEventCutsPro->Fill(eUseSel8 - 0.5, (Int_t)ec.fUseSel8);
+  ec.fEventCutsPro->GetXaxis()->SetBinLabel(eCentralityEstimator, Form("fCentralityEstimator = %s", ec.fCentralityEstimator.Data()));
 
   ec.fEventCutsList->Add(ec.fEventCutsPro);
 
@@ -897,7 +922,7 @@ void BookParticleHistograms()
     }
     for (Int_t rs = 0; rs < 2; rs++) // reco/sim
     {
-      if ((gGenericRec && rs == eSim) || (gGenericSim && rs == eRec)) {
+      if ((tc.fGenericRec && rs == eSim) || (tc.fGenericSim && rs == eRec)) {
         continue; // if I am analyzing only reconstructed data, do not book histos for simulated, and vice versa.
       }
       for (Int_t ba = 0; ba < 2; ba++) // before/after cuts
@@ -1540,6 +1565,10 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
     if (ec.fUseTrigger) {
       if (ec.fTrigger.EqualTo("kINT7")) {
         if (!collision.alias_bit(kINT7)) {
+          if (tc.fVerbose) {
+            LOGF(info, "\033[1;31m%s collision.alias_bit(kINT7)\033[0m", __FUNCTION__);                                   // just a bare function name
+            LOGF(info, "\033[1;31m%s Bypass this check if you analyse MC or continuous Run3 data.\033[0m", __FUNCTION__); // just a bare function name
+          }
           return kFALSE;
         }
       }
@@ -1551,6 +1580,9 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
   if constexpr (rs == eRec_Run2 || rs == eRec_Run1) { // TBI 20240223 use the line above, after I join aod::Collisions with aod::EvSels also for RecSim and Sim cases for Run 2 and Run 1
     if (ec.fUseSel7) {                                // from doc: for Run 2 data and MC
       if (!collision.sel7()) {
+        if (tc.fVerbose) {
+          LOGF(info, "\033[1;31m%s collision.sel7()\033[0m", __FUNCTION__); // just a bare function name
+        }
         return kFALSE;
       }
     }
@@ -1559,6 +1591,9 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
   if constexpr (rs == eRec || rs == eRecAndSim) { // TBI 20240223 use the line above, after I join aod::Collisions with aod::EvSels also for Sim case for Run 3
     if (ec.fUseSel8) {                            // from doc: for Run 3 data and MC
       if (!collision.sel8()) {
+        if (tc.fVerbose) {
+          LOGF(info, "\033[1;31m%s collision.sel8()\033[0m", __FUNCTION__); // just a bare function name
+        }
         return kFALSE;
       }
     }
@@ -1576,11 +1611,14 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
       return kFALSE;
     }
     //   *) SelectedTracks: => cut directly in void process( ... )
-    //   *) Centrality: TBI
-    //  if ((  TBI   < eh.fEventCuts[eCentrality][eMin]) || (  TBI   >
-    //  eh.fEventCuts[eCentrality][eMax])) {
-    //    return kFALSE;
-    //  }
+
+    //   *) Centrtality:
+    if ((ebye.fCentrality < eh.fEventCuts[eCentrality][eMin]) || (ebye.fCentrality > eh.fEventCuts[eCentrality][eMax])) {
+      if (tc.fVerbose) {
+        LOGF(info, "\033[1;31m%s eCentrality\033[0m", __FUNCTION__); // just a bare function name
+      }
+      return kFALSE;
+    }
     //   *) Vertex_x:
     if ((collision.posX() < eh.fEventCuts[eVertex_x][eMin]) ||
         (collision.posX() > eh.fEventCuts[eVertex_x][eMax])) {
@@ -1665,10 +1703,12 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks)
     }
 
     //   *) Centrality:
-    //  if ((  TBI   < eh.fEventCuts[eCentrality][eMin]) || (  TBI   >
-    //  eh.fEventCuts[eCentrality][eMax])) {
-    //    return kFALSE;
-    //  }
+    if ((ebye.fCentrality < eh.fEventCuts[eCentrality][eMin]) || (ebye.fCentrality > eh.fEventCuts[eCentrality][eMax])) {
+      if (tc.fVerbose) {
+        LOGF(info, "\033[1;31m%s eCentrality\033[0m", __FUNCTION__); // just a bare function name
+      }
+      return kFALSE;
+    }
   } // if constexpr (rs == eTest) {
 
   return kTRUE;
@@ -1708,7 +1748,7 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
     !eh.fEventHistograms[eSelectedTracks][eRec][ba] ? true : eh.fEventHistograms[eSelectedTracks][eRec][ba]->Fill(ebye.fSelectedTracks); // TBI 20240108 this one makes sense only for eAfter
     !eh.fEventHistograms[eMultTPC][eRec][ba] ? true : eh.fEventHistograms[eMultTPC][eRec][ba]->Fill(collision.multTPC());
     !eh.fEventHistograms[eMultNTracksPV][eRec][ba] ? true : eh.fEventHistograms[eMultNTracksPV][eRec][ba]->Fill(collision.multNTracksPV());
-    !eh.fEventHistograms[eCentrality][eRec][ba] ? true : eh.fEventHistograms[eCentrality][eRec][ba]->Fill(ebye.fCentrality); // TBI 20240120 for the time being, I fill only default centrality
+    !eh.fEventHistograms[eCentrality][eRec][ba] ? true : eh.fEventHistograms[eCentrality][eRec][ba]->Fill(ebye.fCentrality);
 
     // ... and corresponding MC truth simulated (common to Run 3, Run 2 and Run 1) ( see https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/mcHistograms.cxx ):
     if constexpr (rs == eRecAndSim) {
@@ -1815,6 +1855,60 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
 //============================================================
 
 template <eRecSim rs, typename T>
+Bool_t ValidTrack(T const& track)
+{
+  // Before I start applying any particle tracks, check if this is a valid track.
+  // For instance, Run 2 or Run 1 tracklets are NOT valid tracks, as they carry no pt information, and in this function they are filtered out.
+
+  // See enum TrackTypeEnum in O2/Framework/Core/include/Framework/DataTypes.h for further info.
+
+  // a) Validity checks for tracks in Run 3;
+  // b) Validity checks for tracks in Run 2 and 1.
+
+  if (tc.fVerboseForEachParticle) {
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+  }
+
+  // a) Validity checks for tracks in Run 3;
+  // *) Ensure that I am taking into account propagated tracks (and not e.g. track evaluated at innermost update):
+  if constexpr (rs == eRec || rs == eRecAndSim) {
+    if (!(track.trackType() == o2::aod::track::TrackTypeEnum::Track)) {
+      return kFALSE;
+    }
+  }
+
+  // b) Validity checks for tracks in Run 2 and 1:
+  // *) Ensure that tracklets (no pt information) are skipped:
+  // if constexpr (rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1) {
+  if constexpr (rs == eRec_Run2 || rs == eRec_Run1) { // TBI 20240226 the check below is crashing for eRecAndSim_Run2 , disabling that case here temporarily. Use eventually the above line
+    if (!(track.trackType() == o2::aod::track::TrackTypeEnum::Run2Track)) {
+      return kFALSE;
+    }
+  }
+
+  // *) Temporary here, until I cover also these cases:
+  if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
+    LOGF(fatal, "in function \033[1;31m%s at line %d : add support for TrackTypeEnum here also for cases eSim, eSim_Run2 and eSim_Run1\033[0m", __PRETTY_FUNCTION__, __LINE__);
+  }
+
+  // *) In case there are still some pathological cases with one of kine variable being "nan", treat 'em here:
+  // TBI 20240228 disable eventually this check, or add a flag to switch it on/off
+  if constexpr (rs == eRec || rs == eRecAndSim || rs == eRec_Run2 || rs == eRecAndSim_Run2 || rs == eRec_Run1 || rs == eRecAndSim_Run1) {
+    if (isnan(track.phi()) || isnan(track.pt()) || isnan(track.eta())) {
+      LOGF(error, "\033[1;33m%s nan hit, skipping this track \033[0m", __PRETTY_FUNCTION__);
+      LOGF(error, "dPhi = %f\ndPt = %f\ndEta = %f\ntrackType() = %d", track.phi(), track.pt(), track.eta(), static_cast<int>(track.trackType())); // TBI 20240226 check if I need this cast here
+      return kFALSE;
+    }
+  }
+
+  // *) All checks above survived, then it's a valid track:
+  return kTRUE;
+
+} // template <typename T> Bool_t ValidTrack(T const& track)
+
+//============================================================
+
+template <eRecSim rs, typename T>
 Bool_t ParticleCuts(T const& track)
 {
   // Particles cuts.
@@ -1889,13 +1983,6 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba)
 
   if (tc.fVerboseForEachParticle) {
     LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__);
-  }
-
-  // *) Temporary protection against nan values: TBI 20240216 remove eventually, to reduce overhead, or introduce boolean to swith it on/off
-  if (isnan(track.phi()) || isnan(track.pt()) || isnan(track.eta())) {
-    LOGF(error, "\033[1;33m%s nan hit, skipping this track \033[0m", __PRETTY_FUNCTION__);
-    LOGF(error, "dPhi = %f\ndPt = %f\ndEta = %f", track.phi(), track.pt(), track.eta());
-    return;
   }
 
   // a) Fill reconstructed ...:
@@ -4049,10 +4136,10 @@ Bool_t MaxNumberOfEvents()
   Bool_t reachedMaxNumberOfEvents = kFALSE;
 
   // *) Determine from which histogram the relevant info will be taken:
-  Int_t rs = -44;                      // reconstructed or simulated
-  if (gGenericRec || gGenericRecSim) { // yes, for gGenericRecSim I take info from Rec part
+  Int_t rs = -44;                            // reconstructed or simulated
+  if (tc.fGenericRec || tc.fGenericRecSim) { // yes, for tc.fGenericRecSim I take info from Rec part
     rs = eRec;
-  } else if (gGenericSim) {
+  } else if (tc.fGenericSim) {
     rs = eSim;
   } else {
     LOGF(fatal, "in function \033[1;31m%s at line %d, not a single flag gProcess* is true \033[0m", __PRETTY_FUNCTION__, __LINE__);
@@ -4296,9 +4383,16 @@ void DetermineCentrality(T const& collision)
 
   // a) For real data, determine centrality from default centrality estimator:
   if constexpr (rs == eRec || rs == eRecAndSim) {
-    // ebye.fCentrality = gRandom->Uniform(0.,100.);  // collision.centFT0M(); // TBI 20240120 not ready yet, estimators are specific for Run 1,2,3 data processing ...
-    ebye.fCentrality = collision.centFT0M(); // TBI 20240120 not ready yet, estimators are specific for Run 1,2,3 data processing ...
-                                             // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
+    if (ec.fCentralityEstimator.EqualTo("centFT0M", TString::kIgnoreCase)) {
+      ebye.fCentrality = collision.centFT0M();
+    } else if (ec.fCentralityEstimator.EqualTo("CentFV0A", TString::kIgnoreCase)) {
+      ebye.fCentrality = collision.centFV0A();
+    } else if (ec.fCentralityEstimator.EqualTo("CentNTPV", TString::kIgnoreCase)) {
+      ebye.fCentrality = collision.centNTPV();
+    } else {
+      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %d is not supported yet. \033[0m", __PRETTY_FUNCTION__, __LINE__, ec.fCentralityEstimator.Data());
+    }
+    // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
   }
 
   // b) For simulated data, determine centrality directly from impact parameter:
@@ -4308,7 +4402,13 @@ void DetermineCentrality(T const& collision)
 
   // c) Same as a), just for converted Run 2 data:
   if constexpr (rs == eRec_Run2 || rs == eRecAndSim_Run2) {
-    ebye.fCentrality = collision.centRun2V0M();
+    if (ec.fCentralityEstimator.EqualTo("centRun2V0M", TString::kIgnoreCase)) {
+      ebye.fCentrality = collision.centRun2V0M();
+    } else if (ec.fCentralityEstimator.EqualTo("CentRun2SPDTracklets", TString::kIgnoreCase)) {
+      ebye.fCentrality = collision.centRun2SPDTracklets();
+    } else {
+      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %d is not supported yet. \033[0m", __PRETTY_FUNCTION__, __LINE__, ec.fCentralityEstimator.Data());
+    }
     // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
   }
 
@@ -4319,8 +4419,14 @@ void DetermineCentrality(T const& collision)
 
   // e) Same as a), just for converted Run 1 data:
   if constexpr (rs == eRec_Run1 || rs == eRecAndSim_Run1) {
-    ebye.fCentrality = -44.; // TBI 20240204 there is no centrality info in LHC10h and LHC11h converted data at the moment
-                             // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
+    if (ec.fCentralityEstimator.EqualTo("centRun2V0M", TString::kIgnoreCase)) {
+      // ebye.fCentrality = collision.centRun2V0M(); // TBI 20240224 enable when I add support for RecAndSim_Run1
+    } else if (ec.fCentralityEstimator.EqualTo("CentRun2SPDTracklets", TString::kIgnoreCase)) {
+      // ebye.fCentrality = collision.centRun2SPDTracklets(); // TBI 20240224 enable when I add support for RecAndSim_Run1
+    } else {
+      LOGF(fatal, "in function \033[1;31m%s at line %d. centrality estimator = %d is not supported yet. \033[0m", __PRETTY_FUNCTION__, __LINE__, ec.fCentralityEstimator.Data());
+    }
+    // TBI 20240120 I could also here access also corresponding simulated centrality from impact parameter, if available through collision.has_mcCollision()
   }
 
   // f) Same as b), just for converted Run 1 data:
@@ -4566,13 +4672,13 @@ void Steer(T1 const& collision, T2 const& tracks)
   // The order of function calls obviously matters.
 
   if (tc.fDryRun) {
-    LOGF(info, "\033[1;32m%s => This is a dry run, bailing out immediately\033[0m", __FUNCTION__);
+    LOGF(info, "\033[1;32m%s => This is a dry run, bailing out immediately from Steer(...)\033[0m", __FUNCTION__);
     return;
   }
 
   if (tc.fVerbose) {
     // LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__); // full function signature (including arguments, etc.), too verbose here...
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__); // just a bare function name
+    LOGF(info, "\033[1;32m%s starting ...\033[0m", __FUNCTION__); // just a bare function name
   }
 
   // *) Global timestamp:
@@ -4589,6 +4695,15 @@ void Steer(T1 const& collision, T2 const& tracks)
 
   // *) Fill event histograms before event cuts:
   FillEventHistograms<rs>(collision, tracks, eBefore);
+
+  // *) Print info on the current event number (total, before cuts):
+  if (tc.fVerbose) {
+    if (eh.fEventHistograms[eNumberOfEvents][eRec][eBefore]) {
+      LOGF(info, "\033[1;32m%s : processing event %d\033[0m", __FUNCTION__, (Int_t)eh.fEventHistograms[eNumberOfEvents][eRec][eBefore]->GetBinContent(1));
+    } else if (eh.fEventHistograms[eNumberOfEvents][eSim][eBefore]) {
+      LOGF(info, "\033[1;32m%s : processing event %d\033[0m", __FUNCTION__, (Int_t)eh.fEventHistograms[eNumberOfEvents][eSim][eBefore]->GetBinContent(1));
+    }
+  }
 
   // *) Event cuts:
   if (!EventCuts<rs>(collision, tracks)) {
@@ -4616,6 +4731,15 @@ void Steer(T1 const& collision, T2 const& tracks)
   // *) Reset event-by-event quantities:
   ResetEventByEventQuantities();
 
+  // *) Print info on the current event number after cuts:
+  if (tc.fVerbose) {
+    if (eh.fEventHistograms[eNumberOfEvents][eRec][eBefore]) {
+      LOGF(info, "\033[1;32m%s : this event passed all cuts %d/%d\033[0m", __FUNCTION__, (Int_t)eh.fEventHistograms[eNumberOfEvents][eRec][eAfter]->GetBinContent(1), (Int_t)eh.fEventHistograms[eNumberOfEvents][eRec][eBefore]->GetBinContent(1));
+    } else if (eh.fEventHistograms[eNumberOfEvents][eSim][eBefore]) {
+      LOGF(info, "\033[1;32m%s : this event passed all cuts %d/%d\033[0m", __FUNCTION__, (Int_t)eh.fEventHistograms[eNumberOfEvents][eSim][eAfter]->GetBinContent(1), (Int_t)eh.fEventHistograms[eNumberOfEvents][eSim][eBefore]->GetBinContent(1));
+    }
+  }
+
   // *) Global timestamp:
   if (tc.fUseStopwatch) {
     LOGF(info, "\033[1;32m\n\n=> Global timer: Steer ends ... %.6f\n\n\033[0m", tc.fTimer[eGlobal]->RealTime());
@@ -4632,13 +4756,15 @@ void MainLoopOverParticles(T const& tracks)
   // This is the main loop over particles, in which Q-vectors and particle histograms are filled, particle cuts applied, etc.
 
   // Remark #1:
-  // *) To process only 'rec', set gProcessRec = true via configurable "cfWhatToProcess".
-  // *) To process both 'rec' and 'sim', set gProcessRecSim = true via configurable "cfWhatToProcess".
-  // *) To process only 'sim', set gProcessSim = true via configurable "cfWhatToProcess".
+  // *) To process only reconstructed Run 3, use processRec(...), i.e. set field "processRec": "true" in json config
+  // *) To process both reconstructed and simulated Run 3, use processRecSim(...), i.e. set field "processRecSim": "true" in json config
+  // *) To process only simulated Run 3, use processSim(...), i.e. set field "processSim": "true" in json config
+
   // Remark #2:
-  // *) To process Run 1 and Run 2 converted data, use in the same spirit gProcessRec_Run2 or gProcessRec_Run1, etc.
+  // *) To process Run 1 and Run 2 converted data, use in the same spirit e.g. processRec_Run2(...), i.e. set field "processRec_Run2": "true" in json config
+
   // Remark #3:
-  // *) There is also cfWhatToProcess = "test" option, to process data with minimum subscription to the tables.
+  // *) There is also processTest(...), to process data with minimum subscription to the tables. To use it, set field "processTest": "true" in json config
 
   if (tc.fVerbose) {
     // LOGF(info, "\033[1;32m%s\033[0m", __PRETTY_FUNCTION__); // full function signature (including arguments, etc.), too verbose here...
@@ -4675,6 +4801,11 @@ void MainLoopOverParticles(T const& tracks)
   auto track = tracks.iteratorAt(0); // set the type and scope from one instance
   for (int64_t i = 0; i < tracks.size(); i++) {
 
+    // *) Skip track objects which are not valid tracks (e.g. Run 2 and 1 tracklets, etc.):
+    if (!ValidTrack<rs>(track)) {
+      continue;
+    }
+
     // *) Access track sequentially from collection of tracks (default), or randomly using Fisher-Yates algorithm:
     if (!tc.fUseFisherYates) {
       track = tracks.iteratorAt(i);
@@ -4698,13 +4829,6 @@ void MainLoopOverParticles(T const& tracks)
     dPhi = track.phi();
     dPt = track.pt();
     dEta = track.eta();
-
-    // *) Temporary protection against nan values: TBI 20240216 remove eventually, to reduce overhead, or introduce boolean to swith it on/off
-    if (isnan(dPhi) || isnan(dPt) || isnan(dEta)) {
-      LOGF(error, "\033[1;33m%s nan hit, skipping this track \033[0m", __PRETTY_FUNCTION__);
-      LOGF(error, "dPhi = %f\ndPt = %f\ndEta = %f", dPhi, dPt, dEta);
-      continue;
-    }
 
     // Particle weights:
     if (pw.fUseWeights[wPHI]) {

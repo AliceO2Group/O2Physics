@@ -505,7 +505,7 @@ struct MultiplicityCounter {
           inclusiveRegistry.fill(HIST(DCAZPt), otrack.pt(), track.bestDCAZ());
         }
       }
-      if (otrack.collisionId() != track.bestCollisionId()) {
+      if (otrack.has_collision() && otrack.collisionId() != track.bestCollisionId()) {
         usedTracksIdsDF.emplace_back(track.trackId());
         if constexpr (fillHistos) {
           if constexpr (hasRecoCent<C>()) {
