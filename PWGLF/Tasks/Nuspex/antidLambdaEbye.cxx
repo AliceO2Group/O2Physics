@@ -172,6 +172,7 @@ struct antidLambdaEbye {
   Configurable<float> antipNsigmaTofCut{"antipNsigmaTofCut", 4.f, "TOF PID cut"};
   Configurable<float> antipTpcInnerParamMax{"antipTpcInnerParamMax", 0.6f, "(temporary) tpc inner param cut"};
   Configurable<float> antipTofMassMax{"antipTofMassMax", 0.3f, "(temporary) tof mass cut"};
+  Configurable<float> tofMassMaxQA{"tofMassMaxQA", 0.6f, "(temporary) tof mass cut (for QA histograms)"};
 
   Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1, "DCA V0 Daughters"};
   Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1f, "DCA Pos To PV"};
@@ -179,6 +180,7 @@ struct antidLambdaEbye {
   Configurable<double> v0setting_cospa{"v0setting_cospa", 0.98, "V0 CosPA"};
   Configurable<float> v0setting_radius{"v0setting_radius", 0.5f, "v0radius"};
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.005f, "maximum deviation from PDG mass"};
+  Configurable<float> lambdaMassCutQA{"lambdaMassCutQA", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
 
   std::array<float, kNpart> ptMin;
   std::array<float, kNpart> ptTof;
@@ -205,10 +207,6 @@ struct antidLambdaEbye {
     if (std::abs(v0.eta()) > etaMax ||
         v0.v0cosPA() < v0setting_cospa ||
         v0.v0radius() < v0setting_radius) {
-      return false;
-    }
-    auto mLambda = v0.alpha() > 0 ? v0.mLambda() : v0.mAntiLambda();
-    if (std::abs(mLambda - o2::constants::physics::MassLambda0) > lambdaMassCut) {
       return false;
     }
     return true;
@@ -412,6 +410,13 @@ struct antidLambdaEbye {
         float mass{track.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f)};
         bool hasTof = track.hasTOF() && track.tofChi2() < 3;
 
+        if (track.pt() <= ptTof[iP] || (track.pt() > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < tofMassMaxQA)) { // for QA histograms
+          tpcNsigmaGlo[iP]->Fill(track.pt(), nSigmaTPC);
+          if (std::abs(nSigmaTPC) < nSigmaTpcCut[iP]) {
+            tofMass[iP]->Fill(track.pt(), mass);
+          }
+        }
+
         if (std::abs(nSigmaTPC) > nSigmaTpcCut[iP]) {
           continue;
         }
@@ -438,9 +443,6 @@ struct antidLambdaEbye {
         }
 
         if (track.pt() <= ptTof[iP] || (track.pt() > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < tofMassMax[iP])) {
-          tpcNsigmaGlo[iP]->Fill(track.pt(), nSigmaTPC);
-          tofMass[iP]->Fill(track.pt(), mass);
-
           tempTracks[iP]->Fill(std::abs(track.eta()), track.pt());
           CandidateTrack candTrack;
           candTrack.pt = track.pt();
@@ -469,12 +471,20 @@ struct antidLambdaEbye {
 
       bool matter = v0.alpha() > 0;
 
+      auto mLambda = v0.alpha() > 0 ? v0.mLambda() : v0.mAntiLambda();
+      if (std::abs(mLambda - o2::constants::physics::MassLambda0) > lambdaMassCutQA) { // for QA histograms
+        continue;
+      }
       histos.fill(HIST("QA/massLambda"), matter ? v0.mLambda() : v0.mAntiLambda());
       histos.fill(HIST("QA/cosPa"), v0.v0cosPA());
       histos.fill(HIST("QA/radius"), v0.v0radius());
       histos.fill(HIST("QA/dcaV0daugh"), v0.dcaV0daughters());
       histos.fill(HIST("QA/dcaPosPv"), v0.dcapostopv());
       histos.fill(HIST("QA/dcaNegPv"), v0.dcanegtopv());
+
+      if (std::abs(mLambda - o2::constants::physics::MassLambda0) > lambdaMassCut) {
+        continue;
+      }
 
       if (matter) {
         tempHistos.fill(HIST("tempLambda"), std::abs(v0.eta()), v0.pt());
