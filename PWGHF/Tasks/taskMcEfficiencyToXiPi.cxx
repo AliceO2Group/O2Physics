@@ -99,7 +99,7 @@ struct HfTaskMcEfficiencyToXiPi {
 
   // candidates -> join candidateCreator, candidateCreator McRec and candidateSelector tables
   template <typename T1>
-  void candidateLoop(T1 const& candidates, int pdgCode)
+  void candidateRecLoop(T1 const& candidates, int pdgCode)
   {
     auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
 
@@ -159,7 +159,7 @@ struct HfTaskMcEfficiencyToXiPi {
   void candidateFullLoop(T1 const& candidates, T2 const& genParticles, TracksWithSelectionMC const& tracks, aod::McCollisionLabels const& colls, int pdgCode)
   {
     // fill hCandidates histogram
-    candidateLoop(candidates, pdgCode);
+    candidateRecLoop(candidates, pdgCode);
 
     auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
     auto hTrackablePtEta = registry.get<StepTHn>(HIST("hTrackablePtEta"));
