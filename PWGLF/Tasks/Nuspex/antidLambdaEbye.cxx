@@ -182,6 +182,9 @@ struct antidLambdaEbye {
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.005f, "maximum deviation from PDG mass"};
   Configurable<float> lambdaMassCutQA{"lambdaMassCutQA", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
 
+  Configurable<float> antidItsClsSizeCut{"antidItsClsSizeCut", 2.f, "cluster size cut for antideuterons"};
+  Configurable<float> antidPtItsClsSizeCut{"antidPtItsClsSizeCut", 1.f, "pt for cluster size cut for antideuterons"};
+
   std::array<float, kNpart> ptMin;
   std::array<float, kNpart> ptTof;
   std::array<float, kNpart> ptMax;
@@ -227,6 +230,16 @@ struct antidLambdaEbye {
       return false;
     }
     return true;
+  }
+
+  template <class T>
+  float getITSClSize(T const& track)
+  {
+    float sum{0.f};
+    for (int iL{0}; iL < 6; ++iL) {
+      sum += (track.itsClusterSizes() >> (iL * 4)) & 0xf;
+    }
+    return sum / track.itsNCls();
   }
 
   void fillHistoN(std::shared_ptr<THnSparse> hFull, std::shared_ptr<TH2> const& hTmp, int const subsample, int const centrality)
@@ -398,6 +411,11 @@ struct antidLambdaEbye {
 
       for (int iP{0}; iP < kNpart; ++iP) {
         if (track.pt() < ptMin[iP] || track.pt() > ptMax[iP]) {
+          continue;
+        }
+
+        float cosL = 1 / std::sqrt(1.f + track.tgl() * track.tgl());
+        if (iP && getITSClSize(track) * cosL > antidItsClsSizeCut && track.pt() > antidPtItsClsSizeCut) {
           continue;
         }
 
