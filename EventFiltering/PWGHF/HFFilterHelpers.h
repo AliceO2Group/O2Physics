@@ -156,6 +156,8 @@ constexpr float massB0 = o2::constants::physics::MassB0;
 constexpr float massBs = o2::constants::physics::MassBS;
 constexpr float massLb = o2::constants::physics::MassLambdaB0;
 constexpr float massXib = o2::constants::physics::MassXiB0;
+constexpr float massSigmaCPlusPlus = o2::constants::physics::MassSigmaCPlusPlus;
+constexpr float massSigmaC0 = o2::constants::physics::MassSigmaC0;
 
 static const o2::framework::AxisSpec ptAxis{50, 0.f, 50.f};
 static const o2::framework::AxisSpec pAxis{50, 0.f, 10.f};
@@ -166,7 +168,7 @@ static const o2::framework::AxisSpec alphaAxis{100, -1.f, 1.f};
 static const o2::framework::AxisSpec qtAxis{100, 0.f, 0.25f};
 static const o2::framework::AxisSpec bdtAxis{100, 0.f, 1.f};
 static const o2::framework::AxisSpec phiAxis{36, 0., o2::constants::math::TwoPI};
-static const std::array<o2::framework::AxisSpec, kNCharmParticles + 9> massAxisC = {o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.75f, 2.15f}, o2::framework::AxisSpec{100, 2.05f, 2.45f}, o2::framework::AxisSpec{100, 2.25f, 2.65f}, o2::framework::AxisSpec{100, 0.139f, 0.159f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}};
+static const std::array<o2::framework::AxisSpec, kNCharmParticles + 13> massAxisC = {o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.75f, 2.15f}, o2::framework::AxisSpec{100, 2.05f, 2.45f}, o2::framework::AxisSpec{100, 2.25f, 2.65f}, o2::framework::AxisSpec{100, 0.139f, 0.159f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}, o2::framework::AxisSpec{240, 0.14f, 0.2f}, o2::framework::AxisSpec{240, 0.14f, 0.2f}, o2::framework::AxisSpec{330, 2.92, 3.25}, o2::framework::AxisSpec{330, 2.92, 3.25}};
 static const std::array<o2::framework::AxisSpec, kNBeautyParticles> massAxisB = {o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 5.0f, 6.2f}, o2::framework::AxisSpec{240, 5.0f, 6.2f}};
 
 // default values for configurables
@@ -280,7 +282,6 @@ class HfFilterHelper
     mNSigmaTofPiKaCutForDzero = nSigmaTof;
   }
   void setDeltaMassCharmHadForBeauty(float delta) { mDeltaMassCharmHadForBeauty = delta; }
-  void setDeltaMassLcForSigmaC(float delta) { mDeltaMassLcForSigmaC = delta; }
   void setV0Selections(float minGammaCosPa, float minK0sLambdaCosPa, float minK0sLambdaRadius, float nSigmaPrFromLambda, float deltaMassK0s, float deltaMassLambda)
   {
     mMinGammaCosinePa = minGammaCosPa;
@@ -331,6 +332,8 @@ class HfFilterHelper
   int8_t isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD, int8_t isSelected, const int& activateQA, H2 hMassVsPt);
   template <typename T, typename H2>
   int8_t isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptLc, const int8_t isSelected, const int& activateQA, H2 hMassVsPt);
+  template <typename T, typename H2>
+  int8_t isSelectedSigmaCInDeltaMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const T& pTrackSoftPi, const float ptSigmaC, const int8_t isSelectedLc, H2 hMassVsPt, const int& activateQA);
   template <typename T, typename H2>
   int8_t isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic, const int8_t isSelected, const int& activateQA, H2 hMassVsPt);
   template <typename V0, typename Coll, typename T, typename H2>
@@ -396,9 +399,8 @@ class HfFilterHelper
   float mNSigmaTpcPiKaCutForDzero{3.};                                       // maximum Nsigma TPC for pions/kaons in D0 decays
   float mNSigmaTofPiKaCutForDzero{3.};                                       // maximum Nsigma TOF for pions/kaons in D0 decays
   float mDeltaMassCharmHadForBeauty{0.04};                                   // delta mass cut for charm hadrons in B and charm excited decays
-  float mDeltaMassLcForSigmaC{0.04};                                         // delta mass cut for Lc candidates to build SigmaC0, ++ candidates
   float mDeltaMassMinSigmaC{0.155};                                          // minimum delta mass M(pKpipi)-M(pKpi) of SigmaC0,++ candidates
-  float mDeltaMassMaxSigmaC{0.18};                                           // minimum delta mass M(pKpipi)-M(pKpi) of SigmaC0,++ candidates
+  float mDeltaMassMaxSigmaC{0.18};                                           // maximum delta mass M(pKpipi)-M(pKpi) of SigmaC0,++ candidates
   float mMinGammaCosinePa{0.85};                                             // minimum cosp for gammas
   float mMinK0sLambdaCosinePa{0.97};                                         // minimum cosp for K0S and Lambda in charm excited decays
   float mMinK0sLambdaRadius{0.5};                                            // minimum radius for K0S and Lambda in charm excited decays
@@ -798,31 +800,41 @@ inline int8_t HfFilterHelper::isSelectedLcInMassRange(const T& pTrackSameChargeF
   return retValue;
 }
 
-/// Mass selection of Lc candidates to build SigmaC candidates
-/// \param massPKPi is the inv. mass calculated assuming p-K-pi daughters
-/// \param massPiKP is the inv. mass calculated assuming pi-K-p daughters
-inline int8_t HfFilterHelper::isSelectedLcInMassRangeSigmaC(const float& massPKPi, const float& massPiKP)
-{
-  int8_t retValue = 0;
-  if (std::fabs(massPKPi - massLc) < mDeltaMassLcForSigmaC) {
-    retValue |= BIT(0);
-  }
-  if (std::fabs(massPiKP - massLc) < mDeltaMassLcForSigmaC) {
-    retValue |= BIT(1);
-  }
-  return retValue;
-}
-
 /// Delta mass selection on SigmaC candidates
-inline int8_t HfFilterHelper::isSelectedSigmaCInDeltaMassRange(const float& deltaMassPKPi, const float& deltaMassPiKP)
+template <typename T, typename H2>
+inline int8_t HfFilterHelper::isSelectedSigmaCInDeltaMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const T& pTrackSoftPi, const float ptSigmaC, const int8_t isSelectedLc, H2 hMassVsPt, const int& activateQA)
 {
   int8_t retValue = 0;
-  if (deltaMassPKPi < mDeltaMassMinSigmaC) {
-    retValue |= BIT(0);
+  if (TESTBIT(isSelectedLc, 0)) {
+    /// Lc->pKpi case
+    auto invMassLcToPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massKa, massPi});
+    std::array<float, 4> massDausSigmaCToLcPKPi{massProton, massKa, massPi, massPi};
+    float invMassSigmaCToLcPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond, pTrackSoftPi}, massDausSigmaCToLcPKPi);
+    float deltaMassPKPi = invMassSigmaCToLcPKPi - invMassLcToPKPi;
+    if (mDeltaMassMinSigmaC < deltaMassPKPi && deltaMassPKPi < mDeltaMassMaxSigmaC) {
+      retValue |= BIT(0);
+      /// QA plot
+      if(activateQA) {
+        hMassVsPt->Fill(ptSigmaC, deltaMassPKPi);
+      }
+    }
   }
-  if (deltaMassPiKP < mDeltaMassMaxSigmaC) {
-    retValue |= BIT(1);
+  if (TESTBIT(isSelectedLc, 1)) {
+    /// Lc->piKp case
+    auto invMassLcToPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massPi, massKa, massProton});
+    std::array<float, 4> massDausSigmaCToLcPiKP{massPi, massKa, massProton, massPi};
+    float invMassSigmaCToLcPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond, pTrackSoftPi}, massDausSigmaCToLcPiKP);
+    float deltaMassPiKP = invMassSigmaCToLcPiKP - invMassLcToPiKP;
+    if (mDeltaMassMinSigmaC < deltaMassPiKP && deltaMassPiKP < mDeltaMassMaxSigmaC) {
+      retValue |= BIT(1);
+      /// QA plot
+      if(activateQA) {
+        hMassVsPt->Fill(ptSigmaC, deltaMassPiKP);
+      }
+    }
   }
+  /// TODO: add QA plot
+
   return retValue;
 }
 
