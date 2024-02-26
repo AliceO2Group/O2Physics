@@ -9,9 +9,9 @@ void efficiency_and_purity() {
   const TString myfile[] = {"AnalysisResults.root"};
   const TString label[] = {"ML"};
   const char *histGenName = "ml-model-gen-hists/hPtMCPositive";
-  const char *histRecoName = "ml-model-gen-hists/hPtMLPositive";
-  const char *histTPosRecoName = "ml-model-gen-hists/hPtMLTruePositive";
-  const char *histFPosRecoName = "ml-model-gen-hists/hPtMLFalsePositive";
+  const char *histGenTrackedName = "ml-model-gen-hists/hPtMCTracked";
+  const char *histIdenName = "ml-model-gen-hists/hPtMLPositive";
+  const char *histTPosIdenName = "ml-model-gen-hists/hPtMLTruePositive";
   const int filesCount = sizeof(myfile)/sizeof(myfile[0]);
 
   TCanvas *canvas = new TCanvas("canvas", "canvas");
@@ -26,40 +26,41 @@ void efficiency_and_purity() {
     }
     
     TH1F *pHistGen = (TH1F *)f->Get(histGenName);
-    TH1F *pHistReco = (TH1F *)f->Get(histRecoName);
-    TH1F *pHistTPos = (TH1F *)f->Get(histTPosRecoName);
+    TH1F *pHistTracked = (TH1F *)f->Get(histGenTrackedName);
+    TH1F *pHistIden = (TH1F *)f->Get(histIdenName);
+    TH1F *pHistTPosIden = (TH1F *)f->Get(histTPosIdenName);
 
-    TH1F *phrecoTrackEff = (TH1F *)pHistReco->Clone();
-    phrecoTrackEff->Sumw2();
-    phrecoTrackEff->Divide(pHistGen);
+    TH1F *phFullTrackEff = (TH1F *)pHistTPosIden->Clone();
+    phFullTrackEff->Sumw2();
+    phFullTrackEff->Divide(pHistGen);
 
-    TH1F *phfullTrackEff = (TH1F *)pHistTPos->Clone();
-    phfullTrackEff->Sumw2();
-    phfullTrackEff->Divide(pHistGen);
+    TH1F *phPidTrackEff = (TH1F *)pHistTPosIden->Clone();
+    phPidTrackEff->Sumw2();
+    phPidTrackEff->Divide(pHistTracked);
 
-    TH1F *phpidTrackEff = (TH1F *)pHistTPos->Clone();
-    phpidTrackEff->Sumw2();
-    phpidTrackEff->Divide(pHistReco);
+    TH1F *phReconstructionTrackEff = (TH1F *)pHistTracked->Clone();
+    phReconstructionTrackEff->Sumw2();
+    phReconstructionTrackEff->Divide(pHistGen);
 
-    TH1F *hPurity = (TH1F *)pHistTPos->Clone();
-    pHistReco->Sumw2();
-    hPurity->Divide(pHistReco);
+    TH1F *hPurity = (TH1F *)pHistTPosIden->Clone();
+    pHistIden->Sumw2();
+    hPurity->Divide(pHistIden);
     hPurity->Sumw2();
     pleg->AddEntry(hPurity, "Purity");
 
     if (i == 0) {
-      pleg->AddEntry(phrecoTrackEff, "Reco eff.");
-      pleg->AddEntry(phfullTrackEff, "Full eff.");
-      pleg->AddEntry(phpidTrackEff, "PID eff.");
+      pleg->AddEntry(phReconstructionTrackEff, "Reco eff.");
+      pleg->AddEntry(phFullTrackEff, "Full eff.");
+      pleg->AddEntry(phPidTrackEff, "PID eff.");
     }
 
     canvas->cd(i*2 + 1);
 
     TString effTitle = Form("Efficiency %s", label[i].Data());
 
-    eap_draw_hist(phrecoTrackEff, 20, 2, effTitle, 3.1, 2.5);
-    eap_draw_hist(phfullTrackEff, 21, 3, effTitle, 3.1, 2.5);
-    eap_draw_hist(phpidTrackEff, 22, 4, effTitle, 3.1, 2.5);
+    eap_draw_hist(phReconstructionTrackEff, 20, 2, effTitle, 3.1, 2.5);
+    eap_draw_hist(phFullTrackEff, 21, 3, effTitle, 3.1, 2.5);
+    eap_draw_hist(phPidTrackEff, 22, 4, effTitle, 3.1, 2.5);
    
     canvas->cd(i*2 + 2);
 

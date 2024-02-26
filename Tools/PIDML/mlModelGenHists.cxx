@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file mlModelGenHists
-/// \brief Generate momentum TH1Fs for accepted particles by ML model and for MC particles.
+/// \brief Generate momentum TH1Fs for accepted mcParticles by ML model and for MC mcParticles.
 ///
 /// \author Michał Olędzki <mioledzk@cern.ch>
 /// \author Marek Mytkowski <mmytkows@cern.ch>
@@ -39,7 +39,7 @@ using namespace o2::framework::expressions;
 //   {
 //     DECLARE_SOA_INDEX_COLUMN(Track, track);       //! Track index
 //     DECLARE_SOA_COLUMN(Pid, pid, int);            //! Pid to be tested by the model
-//     DECLARE_SOA_COLUMN(Accepted, accepted, bool); //! Whether the model accepted particle to be of given kind
+//     DECLARE_SOA_COLUMN(Accepted, accepted, bool); //! Whether the model accepted mcPart to be of given kind
 //   } // namespace mlpidresult
 //   DECLARE_SOA_TABLE(MlPidResults, "AOD", "MLPIDRESULTS", o2::soa::Index<>, mlpidresult::TrackId, mlpidresult::Pid, mlpidresult::Accepted);
 // } // namespace o2::aod
@@ -50,7 +50,7 @@ struct MlModelGenHists {
   PidONNXModel pidModel; // One instance per model, e.g., one per each pid to predict
   Configurable<uint32_t> cfgDetector{"detector", kTPCTOFTRD, "What detectors to use: 0: TPC only, 1: TPC + TOF, 2: TPC + TOF + TRD"};
   Configurable<int> cfgPid{"pid", 211, "PID to predict"};
-  Configurable<double> cfgCertainty{"certainty", 0.5, "Min certainty of the model to accept given particle to be of given kind"};
+  Configurable<double> cfgCertainty{"certainty", 0.5, "Min certainty of the model to accept given mcPart to be of given kind"};
 
   Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
   Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
@@ -86,16 +86,23 @@ struct MlModelGenHists {
     const AxisSpec axisPt{50, 0, 3.1, "pt"};
 
     histos.add("hPtMCPositive", "hPtMCPositive", kTH1F, {axisPt});
+    histos.add("hPtMCTracked", "hPtMCTracked", kTH1F, {axisPt});
     histos.add("hPtMLPositive", "hPtMLPositive", kTH1F, {axisPt});
     histos.add("hPtMLTruePositive", "hPtMLTruePositive", kTH1F, {axisPt});
   }
 
-  void process(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const&)
+  void process(aod::Collisions const& collisions, BigTracks const& tracks, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles)
   {
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
       uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
       pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, timestamp, cfgPid.value, static_cast<PidMLDetector>(cfgDetector.value), cfgCertainty.value);
+    }
+
+    for (auto& mcPart : mcParticles) {
+      if(mcPart.isPhysicalPrimary() && mcPart.pdgCode() == pidModel.mPid) {
+        histos.fill(HIST("hPtMCPositive"), mcPart.pt());
+      }
     }
 
     for (auto& track : tracks) {
@@ -107,14 +114,14 @@ struct MlModelGenHists {
               track.collisionId(), track.index(), accepted, track.p(), track.x(), track.y(), track.z());
 
           if(mcPart.pdgCode() == pidModel.mPid) {
-            histos.fill(HIST("hPtMCPositive"), track.pt());
+            histos.fill(HIST("hPtMCTracked"), mcPart.pt());
           }
-          
+
           if(accepted) {
             if(mcPart.pdgCode() == pidModel.mPid) {
-              histos.fill(HIST("hPtMLTruePositive"), track.pt());
+              histos.fill(HIST("hPtMLTruePositive"), mcPart.pt());
             }
-            histos.fill(HIST("hPtMLPositive"), track.pt());
+            histos.fill(HIST("hPtMLPositive"), mcPart.pt());
           }
         }
       }

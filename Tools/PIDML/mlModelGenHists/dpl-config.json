@@ -10,7 +10,13 @@
         "aod-file": "AO2D.root"
     },
     "internal-dpl-aod-spawner": "",
-    "fdd-converter": "",
+    "collision-converter": {
+        "doNotSwap": "false",
+        "debug": "false",
+        "nbins": "1",
+        "tolerance": "0.00100000005"
+    },
+    "bc-converter": "",
     "timestamp-task": {
         "verbose": "false",
         "rct-path": "RCT\/Info\/RunInformation",
@@ -18,8 +24,9 @@
         "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
         "isRun2MC": "true"
     },
-    "internal-dpl-aod-index-builder": "",
     "tracks-extra-converter": "",
+    "zdc-converter": "",
+    "internal-dpl-aod-index-builder": "",
     "tracks-extra-spawner": "",
     "multiplicity-table": {
         "doVertexZeq": "1",
@@ -76,6 +83,19 @@
         "processRun2": "true",
         "processRun3": "false"
     },
+    "pid-multiplicity": {
+        "processIU": "false",
+        "processStandard": "true"
+    },
+    "tof-signal": {
+        "processRun3": "false",
+        "processRun2": "true"
+    },
+    "track-extension": {
+        "compatibilityIU": "false",
+        "processRun2": "true",
+        "processRun3": "false"
+    },
     "tpc-pid-full": {
         "param-file": "",
         "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
@@ -98,14 +118,6 @@
         "pid-tr": "-1",
         "pid-he": "-1",
         "pid-al": "-1"
-    },
-    "tof-signal": {
-        "processRun3": "false",
-        "processRun2": "true"
-    },
-    "track-extension":  {
-        "processRun3": "false",
-        "processRun2": "true"
     },
     "tof-event-time": {
         "minMomentum": "0.5",
@@ -208,7 +220,7 @@
     "ml-model-gen-hists": {
         "detector": "2",
         "pid": "211",
-        "certainty": "0.7",
+        "certainty": "0.69999999999999996",
         "ccdb-path": "Users\/m\/mkabus\/PIDML",
         "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
         "useCCDB": "true",
@@ -217,5 +229,6 @@
         "timestamp": "1524176895000"
     },
     "internal-dpl-aod-writer": "",
+    "internal-dpl-aod-global-analysis-file-sink": "",
     "internal-dpl-injected-dummy-sink": ""
 }
