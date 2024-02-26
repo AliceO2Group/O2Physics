@@ -879,6 +879,20 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("lmee_Run3_TPCelectron")) {
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+    cut->AddCut(GetAnalysisCut("lmee_pp_502TeV_TPCloosenopkrej"));
+  }
+
+  if (!nameStr.compare("lmee_Run3_TOFelectron")) {
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+    cut->AddCut(GetAnalysisCut("tof_electron"));
+  }
+
   std::vector<TString> vecTypetrack;
   vecTypetrack.emplace_back("");          // default TightGlobalTrackRun3
   vecTypetrack.emplace_back("_7ITSncls"); // default TightGlobalTrackRun3 but with 7 ITS clusters
