@@ -88,21 +88,13 @@ struct HfTaskMcEfficiencyToXiPi {
   template <typename T>
   inline bool checkTrackGlbTrk(T const& track)
   {
-    if (track.isGlobalTrackWoDCA() && track.tpcNClsFound() > nClustersTpcMin && track.itsNCls() > nClustersItsMin) {
-      return true;
-    } else {
-      return false;
-    }
+    return (track.isGlobalTrackWoDCA() && track.tpcNClsFound() > nClustersTpcMin && track.itsNCls() > nClustersItsMin);
   }
 
   template <typename T>
   inline bool checkTrackItsTrk(T const& track)
   {
-    if (track.isQualityTrackITS() && track.itsNCls() > nClustersItsMin) {
-      return true;
-    } else {
-      return false;
-    }
+    return (track.isQualityTrackITS() && track.itsNCls() > nClustersItsMin);
   }
 
   // candidates -> join candidateCreator, candidateCreator McRec and candidateSelector tables
