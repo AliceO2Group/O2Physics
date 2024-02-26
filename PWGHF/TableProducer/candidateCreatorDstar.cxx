@@ -68,8 +68,7 @@ struct HfCandidateCreatorDstar {
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb; // From utilsBfieldCCDB.h
-  o2::base::MatLayerCylSet* lut;            // From MatLayercylSet.h
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   // D0-prong vertex fitter
   o2::vertexing::DCAFitterN<2> df;
   int runNumber;
@@ -115,10 +114,6 @@ struct HfCandidateCreatorDstar {
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking(); // set the flag to check object validity before CCDB query
-    // LOG(info) << "Retriving ccdb object";
-    auto rectification = ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut); // retrieve an object of type T from CCDB as stored under path; will use the timestamp member
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(rectification);
-    // LOG(info) << "Successfully Retrived";
     runNumber = 0;
     bz = 0;
 
@@ -129,6 +124,7 @@ struct HfCandidateCreatorDstar {
     df.setMinRelChi2Change(minRelChi2Change);
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
+    df.setMatCorrType(noMatCorr);
 
     massPi = MassPiPlus;
     massK = MassKPlus;
@@ -195,9 +191,14 @@ struct HfCandidateCreatorDstar {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
         // LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
-        initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2); // Sets up the grp object for magnetic field (w/o matCorr for propagation)
+        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
+        if (grpo == nullptr) {
+          LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
+        o2::base::Propagator::initFieldFromGRP(grpo);
         bz = o2::base::Propagator::Instance()->getNominalBz();
         // LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
+        runNumber = bc.runNumber();
       }
       df.setBz(bz);
 
