@@ -97,48 +97,63 @@ struct FwdTrackPropagation {
     propFwdTracksCov.reserve(fwdTracks.size());
 
     for (const auto& t : fwdTracks) {
-      std::array<float, 3> vtx = {0.f, 0.f, 0.f};
-      std::array<float, 2> vtxCov = {0.f, 0.f};
-      if (t.has_collision()) {
-        auto col = cols.iteratorAt(t.collisionId());
-        vtx[0] = col.posX();
-        vtx[1] = col.posY();
-        vtx[2] = col.posZ();
-        vtxCov[0] = col.covXX();
-        vtxCov[1] = col.covYY();
+      if (t.z() < -90.f) {
+        std::array<float, 3> vtx = {0.f, 0.f, 0.f};
+        std::array<float, 2> vtxCov = {0.f, 0.f};
+        if (t.has_collision()) {
+          auto col = cols.iteratorAt(t.collisionId());
+          vtx[0] = col.posX();
+          vtx[1] = col.posY();
+          vtx[2] = col.posZ();
+          vtxCov[0] = col.covXX();
+          vtxCov[1] = col.covYY();
+        }
+        auto pft = propagateFwdToVtx(t, vtx, vtxCov);
+        propFwdTracks(t.collisionId(), t.trackType(),
+                      pft.getX(), pft.getY(), pft.getZ(), pft.getPhi(), pft.getTgl(), pft.getInvQPt(),
+                      pft.getEta(), pft.getPt(), pft.getP(),
+                      t.nClusters(), t.pDca(), t.rAtAbsorberEnd(),
+                      pft.getTrackChi2(), t.chi2MatchMCHMID(), t.chi2MatchMCHMFT(),
+                      t.matchScoreMCHMFT(), t.matchMFTTrackId(), t.matchMCHTrackId(),
+                      t.mchBitMap(), t.midBoards(), t.midBitMap(),
+                      t.trackTime(), t.trackTimeRes());
+        // debug
+        // LOGP(info, "track {}, before: {} {} {} {} {} {}", t.globalIndex(), t.x(), t.y(), t.z(), t.phi(), t.tgl(), t.signed1Pt());
+        // LOGP(info, "track {}, after: {} {} {} {} {} {}", t.globalIndex(), pft.getX(), pft.getY(), pft.getZ(), pft.getPhi(), pft.getTgl(), pft.getInvQPt());
+        SMatrix55 cov = pft.getCovariances();
+        float sigX = TMath::Sqrt(cov(0, 0));
+        float sigY = TMath::Sqrt(cov(1, 1));
+        float sigPhi = TMath::Sqrt(cov(2, 2));
+        float sigTgl = TMath::Sqrt(cov(3, 3));
+        float sig1Pt = TMath::Sqrt(cov(4, 4));
+        auto rhoXY = static_cast<Char_t>(128. * cov(0, 1) / (sigX * sigY));
+        auto rhoPhiX = static_cast<Char_t>(128. * cov(0, 2) / (sigPhi * sigX));
+        auto rhoPhiY = static_cast<Char_t>(128. * cov(1, 2) / (sigPhi * sigY));
+        auto rhoTglX = static_cast<Char_t>(128. * cov(0, 3) / (sigTgl * sigX));
+        auto rhoTglY = static_cast<Char_t>(128. * cov(1, 3) / (sigTgl * sigY));
+        auto rhoTglPhi = static_cast<Char_t>(128. * cov(2, 3) / (sigTgl * sigPhi));
+        auto rho1PtX = static_cast<Char_t>(128. * cov(0, 4) / (sig1Pt * sigX));
+        auto rho1PtY = static_cast<Char_t>(128. * cov(1, 4) / (sig1Pt * sigY));
+        auto rho1PtPhi = static_cast<Char_t>(128. * cov(2, 4) / (sig1Pt * sigPhi));
+        auto rho1PtTgl = static_cast<Char_t>(128. * cov(3, 4) / (sig1Pt * sigTgl));
+        propFwdTracksCov(sigX, sigY, sigTgl, sigPhi, sig1Pt,
+                         rhoXY, rhoPhiX, rhoPhiY, rhoTglX,
+                         rhoTglY, rhoTglPhi, rho1PtX, rho1PtY,
+                         rho1PtPhi, rho1PtTgl);
+      } else {
+        propFwdTracks(t.collisionId(), t.trackType(),
+                      t.x(), t.y(), t.z(), t.phi(), t.tgl(), t.signed1Pt(),
+                      t.eta(), t.pt(), t.p(),
+                      t.nClusters(), t.pDca(), t.rAtAbsorberEnd(),
+                      t.chi2(), t.chi2MatchMCHMID(), t.chi2MatchMCHMFT(),
+                      t.matchScoreMCHMFT(), t.matchMFTTrackId(), t.matchMCHTrackId(),
+                      t.mchBitMap(), t.midBoards(), t.midBitMap(),
+                      t.trackTime(), t.trackTimeRes());
+        propFwdTracksCov(t.sigmaX(), t.sigmaY(), t.sigmaTgl(), t.sigmaPhi(), t.sigma1Pt(),
+                         t.rhoXY(), t.rhoPhiX(), t.rhoPhiY(), t.rhoTglX(),
+                         t.rhoTglY(), t.rhoTglPhi(), t.rho1PtX(), t.rho1PtY(),
+                         t.rho1PtPhi(), t.rho1PtTgl());
       }
-      auto pft = propagateFwdToVtx(t, vtx, vtxCov);
-      propFwdTracks(t.collisionId(), t.trackType(),
-                    pft.getX(), pft.getY(), pft.getZ(), pft.getPhi(), pft.getTgl(), pft.getInvQPt(),
-                    pft.getEta(), pft.getPt(), pft.getP(),
-                    t.nClusters(), t.pDca(), t.rAtAbsorberEnd(),
-                    pft.getTrackChi2(), t.chi2MatchMCHMID(), t.chi2MatchMCHMFT(),
-                    t.matchScoreMCHMFT(), t.matchMFTTrackId(), t.matchMCHTrackId(),
-                    t.mchBitMap(), t.midBoards(), t.midBitMap(),
-                    t.trackTime(), t.trackTimeRes());
-      // debug
-      // LOGP(info, "track {}, before: {} {} {} {} {} {}", t.globalIndex(), t.x(), t.y(), t.z(), t.phi(), t.tgl(), t.signed1Pt());
-      // LOGP(info, "track {}, after: {} {} {} {} {} {}", t.globalIndex(), pft.getX(), pft.getY(), pft.getZ(), pft.getPhi(), pft.getTgl(), pft.getInvQPt());
-      SMatrix55 cov = pft.getCovariances();
-      float sigX = TMath::Sqrt(cov(0, 0));
-      float sigY = TMath::Sqrt(cov(1, 1));
-      float sigPhi = TMath::Sqrt(cov(2, 2));
-      float sigTgl = TMath::Sqrt(cov(3, 3));
-      float sig1Pt = TMath::Sqrt(cov(4, 4));
-      auto rhoXY = static_cast<Char_t>(128. * cov(0, 1) / (sigX * sigY));
-      auto rhoPhiX = static_cast<Char_t>(128. * cov(0, 2) / (sigPhi * sigX));
-      auto rhoPhiY = static_cast<Char_t>(128. * cov(1, 2) / (sigPhi * sigY));
-      auto rhoTglX = static_cast<Char_t>(128. * cov(0, 3) / (sigTgl * sigX));
-      auto rhoTglY = static_cast<Char_t>(128. * cov(1, 3) / (sigTgl * sigY));
-      auto rhoTglPhi = static_cast<Char_t>(128. * cov(2, 3) / (sigTgl * sigPhi));
-      auto rho1PtX = static_cast<Char_t>(128. * cov(0, 4) / (sig1Pt * sigX));
-      auto rho1PtY = static_cast<Char_t>(128. * cov(1, 4) / (sig1Pt * sigY));
-      auto rho1PtPhi = static_cast<Char_t>(128. * cov(2, 4) / (sig1Pt * sigPhi));
-      auto rho1PtTgl = static_cast<Char_t>(128. * cov(3, 4) / (sig1Pt * sigTgl));
-      propFwdTracksCov(sigX, sigY, sigTgl, sigPhi, sig1Pt,
-                       rhoXY, rhoPhiX, rhoPhiY, rhoTglX,
-                       rhoTglY, rhoTglPhi, rho1PtX, rho1PtY,
-                       rho1PtPhi, rho1PtTgl);
     }
   }
 };

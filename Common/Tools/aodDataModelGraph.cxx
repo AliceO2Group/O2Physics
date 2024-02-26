@@ -9,7 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 #include <fmt/printf.h>
-#include <map>
 #include "Framework/AnalysisDataModel.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -67,21 +66,21 @@ enum StyleType : int {
   BLUE = 3,
 };
 
-static std::vector<std::pair<std::string, StyleType>> tableStyles = {
-  {"HfTrackIndexProng", StyleType::BLUE},
-  {"HfCandProng", StyleType::BLUE},
-  {"pidResp", StyleType::GREEN},
-  {"Mults", StyleType::GREEN},
-  {"CentRun2V0Ms", StyleType::GREEN},
-  {"Timestamps", StyleType::GREEN},
-  {"Jet", StyleType::BLUE},
-  {"Mc", StyleType::RED},
-  {"V0Datas", StyleType::GREEN},
-  {"CascData", StyleType::GREEN},
-  {"TrackSelection", StyleType::GREEN},
-  {"TracksDCA", StyleType::GREEN},
-  {"Transient", StyleType::GREEN},
-  {"Extension", StyleType::GREEN},
+static std::array<std::pair<std::string, StyleType>, 14> tableStyles = {
+  std::make_pair("HfTrackIndexProng", StyleType::BLUE),
+  std::make_pair("HfCandProng", StyleType::BLUE),
+  std::make_pair("pidResp", StyleType::GREEN),
+  std::make_pair("Mults", StyleType::GREEN),
+  std::make_pair("CentRun2V0Ms", StyleType::GREEN),
+  std::make_pair("Timestamps", StyleType::GREEN),
+  std::make_pair("Jet", StyleType::BLUE),
+  std::make_pair("Mc", StyleType::RED),
+  std::make_pair("V0Datas", StyleType::GREEN),
+  std::make_pair("CascData", StyleType::GREEN),
+  std::make_pair("TrackSelection", StyleType::GREEN),
+  std::make_pair("TracksDCA", StyleType::GREEN),
+  std::make_pair("Transient", StyleType::GREEN),
+  std::make_pair("Extension", StyleType::GREEN),
 };
 
 template <typename T>
@@ -138,30 +137,52 @@ void displayOriginals(pack<Ts...>)
 template <typename C>
 void printColumn(char const* fg, char const* bg)
 {
-  if constexpr (!is_index_column_v<C>) {
-    fmt::printf("<TR><TD color='%s' bgcolor='%s'>%s</TD></TR>", fg, bg, C::columnLabel());
-  }
-}
-
-template <typename C>
-void printIndexColumn(char const* fg, char const* bg)
-{
-  if constexpr (is_index_column_v<C>) {
-    fmt::printf("<TR><TD color='%s' bgcolor='%s'>%s</TD></TR>", fg, bg, C::columnLabel());
-  }
+  fmt::printf("<TR><TD color='%s' bgcolor='%s'>%s</TD></TR>", fg, bg, C::columnLabel());
 }
 
 template <typename... C>
-void displayColumns(pack<C...>, const char* fg, const char* bg)
+int displayPersistentColumns(pack<C...>, const char* fg, const char* bg)
 {
-  (printColumn<C>(fg, bg), ...);
-  fmt::printf("%s", "\n");
+  int n = 0;
+  ([&]() {
+    if constexpr (o2::soa::is_persistent_v<C> && !o2::soa::is_index_column_v<C>) {
+      printColumn<C>(fg, bg);
+      ++n;
+    }
+  }(),
+   ...);
+  if (n > 0) {
+    fmt::printf("%s", "\n");
+  }
+  return n;
+}
+
+template <typename... C>
+int displayDynamicColumns(pack<C...>, const char* fg, const char* bg)
+{
+  int n = 0;
+  ([&]() {
+    if constexpr (!o2::soa::is_persistent_v<C>) {
+      printColumn<C>(fg, bg);
+      ++n;
+    }
+  }(),
+   ...);
+  if (n > 0) {
+    fmt::printf("%s", "\n");
+  }
+  return n;
 }
 
 template <typename... C>
 void displayIndexColumns(pack<C...>, char const* fg, char const* bg)
 {
-  (printIndexColumn<C>(fg, bg), ...);
+  ([&]() {
+    if constexpr (o2::soa::is_index_column_v<C>) {
+      printColumn<C>(fg, bg);
+    }
+  }(),
+   ...);
   fmt::printf("%s", "\n");
 }
 
@@ -183,7 +204,12 @@ void printIndex()
 template <typename T, typename... C>
 void dumpIndex(pack<C...>)
 {
-  (printIndex<C, T>(), ...);
+  ([&]() {
+    if constexpr (o2::soa::is_index_column_v<C>) {
+      printIndex<C, T>();
+    }
+  }(),
+   ...);
   fmt::printf("%s", "\n");
 }
 
@@ -195,19 +221,15 @@ void displayTable()
   fmt::printf(R"(%s[color="%s" cellpadding="0" fillcolor="%s" fontcolor="%s" label = <
 <TABLE cellpadding='2' cellspacing='0' cellborder='0' ><TH cellpadding='0' bgcolor="black"><TD bgcolor="%s"><font color="%s">%s</font></TD></TH>)",
               label, style.color, style.background, style.fontcolor, style.headerbgcolor, style.headerfontcolor, label);
-  if (pack_size(typename T::iterator::persistent_columns_t{}) -
-        pack_size(typename T::iterator::external_index_columns_t{}) >
-      0) {
-    displayColumns(typename T::iterator::persistent_columns_t{}, style.color, style.background);
+  if (displayPersistentColumns(typename T::table_t::columns{}, style.color, style.background) > 0) {
     fmt::printf("%s", "HR");
   }
-  if (pack_size(typename T::iterator::dynamic_columns_t{})) {
-    displayColumns(typename T::iterator::dynamic_columns_t{}, style.methodcolor, style.methodbgcolor);
+  if (displayDynamicColumns(typename T::table_t::columns{}, style.methodcolor, style.methodbgcolor) > 0) {
     fmt::printf("%s", "HR");
   }
-  displayIndexColumns(typename T::iterator::external_index_columns_t{}, style.indexcolor, style.indexbgcolor);
+  displayIndexColumns(typename T::table_t::columns{}, style.indexcolor, style.indexbgcolor);
   fmt::printf("%s", "</TABLE>\n>]\n");
-  dumpIndex<T>(typename T::iterator::external_index_columns_t{});
+  dumpIndex<T>(typename T::table_t::columns{});
 }
 
 template <typename T>

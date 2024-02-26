@@ -33,6 +33,12 @@ using namespace o2::constants::physics;
 using namespace o2::analysis;
 using namespace o2::framework;
 
+/// Struct to extend TracksPid tables
+struct HfCandidateSelectorDstarToD0PiExpressions {
+  Spawns<aod::TracksPidPiExt> rowTracksPidFullPi;
+  Spawns<aod::TracksPidKaExt> rowTracksPidFullKa;
+};
+
 // Struct to applying Dstar selection cuts
 struct HfCandidateSelectorDstarToD0Pi {
   Produces<aod::HfSelDstarToD0Pi> hfSelDstarCandidate;
@@ -137,7 +143,7 @@ struct HfCandidateSelectorDstarToD0Pi {
     if (candidate.chi2PCAD0() > cutsDstar->get(binPt, "chi2PCA")) {
       return false;
     }
-    if (candidate.impactParameterXYD0() > cutsD0->get(binPt, "DCA")) {
+    if (std::abs(candidate.impactParameterXYD0()) > cutsD0->get(binPt, "DCA")) {
       return false;
     }
     // d0Prong0Normalised,1
@@ -287,19 +293,19 @@ struct HfCandidateSelectorDstarToD0Pi {
   {
     // LOG(info) << "selector called";
     for (const auto& candDstar : rowsDstarCand) {
-      // final selection flag: 0 - rejected, 1 - accepted
-      int statusDstar = 0, statusD0Flag = 0, statusTopol = 0, statusCand = 0, statusPID = 0;
+      // final selection flag: false - rejected, true - accepted
+      bool statusDstar = false, statusD0Flag = false, statusTopol = false, statusCand = false, statusPID = false;
 
-      if (!(candDstar.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+      if (!TESTBIT(candDstar.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         hfSelDstarCandidate(statusDstar, statusD0Flag, statusTopol, statusCand, statusPID);
         continue;
       }
-      statusD0Flag = 1;
+      statusD0Flag = true;
       if (!selectionDstar(candDstar)) {
         hfSelDstarCandidate(statusDstar, statusD0Flag, statusTopol, statusCand, statusPID);
         continue;
       }
-      statusTopol = 1;
+      statusTopol = true;
       // implement filter bit 4 cut - should be done before this task at the track selection level
       // need to add special cuts (additional cuts on decay length and d0 norm)
 
@@ -309,7 +315,7 @@ struct HfCandidateSelectorDstarToD0Pi {
         hfSelDstarCandidate(statusDstar, statusD0Flag, statusTopol, statusCand, statusPID);
         continue;
       }
-      statusCand = 1;
+      statusCand = true;
 
       // track-level PID selection
       int pidTrackPosKaon = -1;
@@ -350,10 +356,10 @@ struct HfCandidateSelectorDstarToD0Pi {
       }
 
       if ((pidDstar == -1 || pidDstar == 1) && topoDstar) {
-        statusDstar = 1; // identified as dstar
+        statusDstar = true; // identified as dstar
       }
 
-      statusPID = 1;
+      statusPID = true;
       hfSelDstarCandidate(statusDstar, statusD0Flag, statusTopol, statusCand, statusPID);
     }
   }
@@ -362,5 +368,6 @@ struct HfCandidateSelectorDstarToD0Pi {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
+    adaptAnalysisTask<HfCandidateSelectorDstarToD0PiExpressions>(cfgc),
     adaptAnalysisTask<HfCandidateSelectorDstarToD0Pi>(cfgc)};
 }

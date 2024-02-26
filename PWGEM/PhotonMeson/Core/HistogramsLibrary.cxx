@@ -49,8 +49,8 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
   }
   if (TString(histClass) == "V0Leg") {
     list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
-    list->Add(new TH1F("hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", 400, -20, 20));
-    list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f));
+    list->Add(new TH1F("hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", 1000, -50, 50));
+    list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 40, -2.0f, 2.0f));
     list->Add(new TH2F("hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", 200, -50.0f, 50.0f, 200, -50.0f, 50.0f));
     list->Add(new TH1F("hNclsTPC", "number of TPC clusters", 161, -0.5, 160.5));
     list->Add(new TH1F("hNcrTPC", "number of TPC crossed rows", 161, -0.5, 160.5));
@@ -63,24 +63,27 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hNclsITS", "number of ITS clusters", 8, -0.5, 7.5));
     list->Add(new TH1F("hChi2ITS", "chi2/number of ITS clusters", 100, 0, 10));
     list->Add(new TH1F("hITSClusterMap", "ITS cluster map", 128, -0.5, 127.5));
+    list->Add(new TH1F("hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", 32, 0, 16));
     list->Add(new TH2F("hXY", "X vs. Y;X (cm);Y (cm)", 100, 0, 100, 100, -50, 50));
     list->Add(new TH2F("hZX", "Z vs. X;Z (cm);X (cm)", 200, -100, 100, 100, 0, 100));
     list->Add(new TH2F("hZY", "Z vs. Y;Z (cm);Y (cm)", 200, -100, 100, 100, -50, 50));
-    list->Add(new TH2F("hDCAxyZ", "DCAxy vs. Z;Z (cm);DCA_{xy} (cm)", 200, -100, +100, 100, -50, 50));
-    list->Add(new TH2F("hXZ_tgl", "correlation of tgl vs. z/x;tgl;z/x - tgl", 300, -1.5, 1.5, 300, -1.5, 1.5));
     if (TString(subGroup) == "mc") {
       list->Add(new TH2F("hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", 1000, 0, 10, 400, -1.0f, 1.0f));
       list->Add(new TH2F("hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", 1000, 0, 10, 400, -1.0f, 1.0f));
       list->Add(new TH2F("hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", 1000, 0, 10, 400, -1.0f, 1.0f));
+      list->Add(new TH2F("hEtaRec_DeltaPtOverPtGen", "electron p_{T} resolution;#eta^{rec} of conversion point;(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", 400, -2, +2, 400, -1.0f, 1.0f));
+      list->Add(new TH2F("hEtaRec_DeltaEta", "electron #eta resolution;#eta^{rec} of conversion point;#eta^{rec} - #eta^{gen}", 400, -2, +2, 400, -1.0f, 1.0f));
+      list->Add(new TH2F("hEtaRec_DeltaPhi", "electron #varphi resolution;#eta^{rec} of conversion point;#varphi^{rec} - #varphi^{gen} (rad.)", 400, -2, +2, 400, -1.0f, 1.0f));
     }
   }
   if (TString(histClass) == "V0") {
     list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 2000, 0.0f, 20));
-    list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f));
+    list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 40, -2.0f, 2.0f));
     list->Add(new TH2F("hRadius", "V0Radius; radius in Z (cm);radius in XY (cm)", 200, -100, 100, 200, 0.0f, 100.0f));
-    list->Add(new TH1F("hCosPA", "V0CosPA;cosine pointing angle", 100, 0.99f, 1.0f));
-    list->Add(new TH1F("hPCA", "distance between 2 legs;PCA (cm)", 200, 0.0f, 2.0f));
-    list->Add(new TH2F("hPCA_Rxy", "distance between 2 legs vs. R_{xy};R_{xy} (cm);PCA (cm)", 200, 0.f, 100.f, 200, 0.0f, 2.0f));
+    list->Add(new TH1F("hCosPA", "V0CosPA;cosine pointing angle", 100, 0.9f, 1.0f));
+    list->Add(new TH2F("hCosPA_Rxy", "cos PA vs. R_{xy};R_{xy} (cm);cosine pointing angle", 200, 0.f, 100.f, 100, 0.9f, 1.0f));
+    list->Add(new TH1F("hPCA", "distance between 2 legs;PCA (cm)", 500, 0.0f, 5.0f));
+    list->Add(new TH2F("hPCA_Rxy", "distance between 2 legs vs. R_{xy};R_{xy} (cm);PCA (cm)", 200, 0.f, 100.f, 500, 0.0f, 5.0f));
     list->Add(new TH2F("hDCAxyz", "DCA to PV;DCA_{xy} (cm);DCA_{z} (cm)", 200, -5.f, +5.f, 200, -5.f, +5.f));
     list->Add(new TH2F("hAPplot", "AP plot;#alpha;q_{T} (GeV/c)", 200, -1.0f, +1.0f, 250, 0.0f, 0.25f));
     list->Add(new TH2F("hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
@@ -93,23 +96,23 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
 
     if (TString(subGroup) == "mc") {
-      list->Add(new TH1F("hPt_Photon_Candidate", "pT of photon candidate;p_{T} (GeV/c)", 2000, 0.0f, 20));                                                   // for denominator of purity
-      list->Add(new TH2F("hEtaPhi_Photon_Candidate", "#eta vs. #varphi of photon candidate ;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f)); // for denominator of purity
+      list->Add(new TH1F("hPt_Photon_Candidate", "pT of photon candidate;p_{T} (GeV/c)", 2000, 0.0f, 20));                                             // for denominator of purity
+      list->Add(new TH2F("hEtaPhi_Photon_Candidate", "#eta vs. #varphi of photon candidate ;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 40, -2.0f, 2.0f)); // for denominator of purity
 
-      list->Add(new TH1F("hPt_Photon_Primary", "pT;p_{T} (GeV/c)", 2000, 0.0f, 20));                                                  // for MC efficiency
-      list->Add(new TH2F("hEtaPhi_Photon_Primary", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f)); // for MC efficiency
+      list->Add(new TH1F("hPt_Photon_Primary", "pT;p_{T} (GeV/c)", 2000, 0.0f, 20));                                            // for MC efficiency
+      list->Add(new TH2F("hEtaPhi_Photon_Primary", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 40, -2.0f, 2.0f)); // for MC efficiency
       list->Add(new TH2F("hXY_Photon_Primary", "X vs. Y of photon rec.;X (cm);Y (cm)", 400, -100.0f, +100, 400, -100, +100));
       list->Add(new TH2F("hXY_Photon_Primary_MC", "X vs. Y of photon gen.;X (cm);Y (cm)", 400, -100.0f, +100, 400, -100, +100));
       list->Add(new TH2F("hRZ_Photon_Primary", "R vs. Z of photon rec.;Z (cm);R_{xy} (cm)", 200, -100.0f, +100, 100, 0, 100));
       list->Add(new TH2F("hRZ_Photon_Primary_MC", "R vs. Z of photon gen;Z (cm);R_{xy} (cm)", 200, -100.0f, +100, 100, 0, 100));
 
-      list->Add(new TH1F("hPt_Photon_FromWD", "pT;p_{T} (GeV/c)", 2000, 0.0f, 20));                                                  // for MC feed down correction
-      list->Add(new TH2F("hEtaPhi_Photon_FromWD", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f)); // for MC feed down correction
+      list->Add(new TH1F("hPt_Photon_FromWD", "pT;p_{T} (GeV/c)", 2000, 0.0f, 20));                                            // for MC feed down correction
+      list->Add(new TH2F("hEtaPhi_Photon_FromWD", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 40, -2.0f, 2.0f)); // for MC feed down correction
 
       list->Add(new TH2F("hRZ_Photon_hs", "R vs. Z of photon from hadronic shower in materials;Z (cm);R_{xy} (cm)", 200, -100.0f, +100, 100, 0, 100));
       list->Add(new TH1F("hPt_Photon_hs", "pT of photon from hadronic shower in materials;p_{T} (GeV/c)", 1000, 0.0f, 10));
       list->Add(new TH1F("hEta_Photon_hs", "rapidity of photon from hadronic shower in materials;y", 40, -2.0f, 2.0f));
-      list->Add(new TH1F("hPhi_Photon_hs", "#varphi of photon from hadronic shower in materials;#varphi (rad.);", 180, 0, TMath::TwoPi()));
+      list->Add(new TH1F("hPhi_Photon_hs", "#varphi of photon from hadronic shower in materials;#varphi (rad.);", 72, 0, 2 * M_PI));
 
       list->Add(new TH2F("hConvPoint_diffX", "conversion point diff X MC;X_{MC} (cm);X_{rec} - X_{MC} (cm)", 200, -100, +100, 100, -50.0f, 50.0f));
       list->Add(new TH2F("hConvPoint_diffY", "conversion point diff Y MC;Y_{MC} (cm);Y_{rec} - Y_{MC} (cm)", 200, -100, +100, 100, -50.0f, 50.0f));
@@ -118,6 +121,9 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       list->Add(new TH2F("hPtGen_DeltaPtOverPtGen", "photon p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", 1000, 0, 10, 400, -1.0f, 1.0f));
       list->Add(new TH2F("hPtGen_DeltaEta", "photon #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", 1000, 0, 10, 400, -1.0f, 1.0f));
       list->Add(new TH2F("hPtGen_DeltaPhi", "photon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", 1000, 0, 10, 400, -1.0f, 1.0f));
+      list->Add(new TH2F("hEtaRec_DeltaPtOverPtGen", "photon p_{T} resolution;#eta^{rec} of conversion point;(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", 400, -2, +2, 400, -1.0f, 1.0f));
+      list->Add(new TH2F("hEtaRec_DeltaEta", "photon #eta resolution;#eta^{rec} of conversion point;#eta^{rec} - #eta^{gen}", 400, -2, +2, 400, -1.0f, 1.0f));
+      list->Add(new TH2F("hEtaRec_DeltaPhi", "photon #varphi resolution;#eta^{rec} of conversion point;#varphi^{rec} - #varphi^{gen} (rad.)", 400, -2, +2, 400, -1.0f, 1.0f));
     } // end of mc
   }   // end of V0
 
@@ -129,8 +135,17 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     THnSparseF* hs_dilepton_lspp_dca_same = nullptr;
     THnSparseF* hs_dilepton_lsmm_dca_same = nullptr;
 
+    const int ndca = 27;
+    double dca[ndca] = {0.f};
+    for (int i = 0; i < 20; i++) {
+      dca[i] = 0.1 * i;
+    }
+    for (int i = 20; i < ndca; i++) {
+      dca[i] = 0.5 * (i - 20) + 2.0;
+    }
+
     if (TString(histClass).Contains("EE")) {
-      const int nm = 162;
+      const int nm = 167;
       double mee[nm] = {0.f};
       for (int i = 0; i < 110; i++) {
         mee[i] = 0.01 * (i - 0) + 0.0; // every 0.01 GeV/c2 up to 1.1 GeV/c2
@@ -155,50 +170,58 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       }
 
       const int ndim = 4; // m, pt, dca, phiv
-      const int nbins[ndim] = {nm - 1, npt - 1, 50, 32};
+      const int nbins[ndim] = {nm - 1, npt - 1, ndca - 1, 18};
       const double xmin[ndim] = {0.0, 0.0, 0.0, 0.0};
-      const double xmax[ndim] = {3.5, 10.0, 5.0, 3.2};
+      const double xmax[ndim] = {4.0, 10.0, 5.0, M_PI};
 
       hs_dilepton_uls_same = new THnSparseF("hs_dilepton_uls_same", "hs_dilepton_uls;m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c);DCA_{ee}^{3D} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
       hs_dilepton_uls_same->SetBinEdges(0, mee);
       hs_dilepton_uls_same->SetBinEdges(1, pt);
+      hs_dilepton_uls_same->SetBinEdges(2, dca);
       hs_dilepton_uls_same->Sumw2();
       list->Add(hs_dilepton_uls_same);
 
       hs_dilepton_lspp_same = new THnSparseF("hs_dilepton_lspp_same", "hs_dilepton_lspp;m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c);DCA_{ee}^{3D} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
       hs_dilepton_lspp_same->SetBinEdges(0, mee);
       hs_dilepton_lspp_same->SetBinEdges(1, pt);
+      hs_dilepton_lspp_same->SetBinEdges(2, dca);
       hs_dilepton_lspp_same->Sumw2();
       list->Add(hs_dilepton_lspp_same);
 
       hs_dilepton_lsmm_same = new THnSparseF("hs_dilepton_lsmm_same", "hs_dilepton_lsmm;m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c);DCA_{ee}^{3D} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
       hs_dilepton_lsmm_same->SetBinEdges(0, mee);
       hs_dilepton_lsmm_same->SetBinEdges(1, pt);
+      hs_dilepton_lsmm_same->SetBinEdges(2, dca);
       hs_dilepton_lsmm_same->Sumw2();
       list->Add(hs_dilepton_lsmm_same);
 
-      const int ndim_dca = 4; // mee, dca1, dca2
-      const int nbins_dca[ndim_dca] = {nm - 1, 50, 50, 50};
-      const double xmin_dca[ndim_dca] = {0.0, 0.0, 0.0, 0.0};
-      const double xmax_dca[ndim_dca] = {3.5, 5.0, 5.0, 5.0};
-
-      hs_dilepton_uls_dca_same = new THnSparseF("hs_dilepton_uls_dca_same", "hs_dilepton_uls_dca;m_{ee} (GeV/c^{2});DCA_{e^{+}}^{3D} (#sigma);DCA_{e^{-}}^{3D} (#sigma);DCA_{ee}^{3D} (#sigma);", ndim_dca, nbins_dca, xmin_dca, xmax_dca);
-      hs_dilepton_uls_dca_same->SetBinEdges(0, mee);
-      hs_dilepton_uls_dca_same->Sumw2();
-      list->Add(hs_dilepton_uls_dca_same);
-
-      hs_dilepton_lspp_dca_same = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_lspp_dca_same"));
-      hs_dilepton_lsmm_dca_same = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_lsmm_dca_same"));
-      list->Add(hs_dilepton_lspp_dca_same);
-      list->Add(hs_dilepton_lsmm_dca_same);
-
-      if (TString(subGroup) == "mix") {
+      if (TString(subGroup).Contains("mix")) {
         THnSparseF* hs_dilepton_uls_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_same->Clone("hs_dilepton_uls_mix"));
         THnSparseF* hs_dilepton_lspp_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lspp_same->Clone("hs_dilepton_lspp_mix"));
         THnSparseF* hs_dilepton_lsmm_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lsmm_same->Clone("hs_dilepton_lsmm_mix"));
         list->Add(hs_dilepton_uls_mix);
         list->Add(hs_dilepton_lspp_mix);
         list->Add(hs_dilepton_lsmm_mix);
+      }
+
+      if (TString(subGroup).Contains("dca")) {
+        const int ndim_dca = 4; // mee, dca1, dca2, dca12
+        const int nbins_dca[ndim_dca] = {nm - 1, ndca - 1, ndca - 1, ndca - 1};
+        const double xmin_dca[ndim_dca] = {0.0, 0.0, 0.0, 0.0};
+        const double xmax_dca[ndim_dca] = {4.0, 5.0, 5.0, 5.0};
+
+        hs_dilepton_uls_dca_same = new THnSparseF("hs_dilepton_uls_dca_same", "hs_dilepton_uls_dca;m_{ee} (GeV/c^{2});DCA_{e^{+}}^{3D} (#sigma);DCA_{e^{-}}^{3D} (#sigma);DCA_{ee}^{3D} (#sigma);", ndim_dca, nbins_dca, xmin_dca, xmax_dca);
+        hs_dilepton_uls_dca_same->SetBinEdges(0, mee);
+        hs_dilepton_uls_dca_same->SetBinEdges(1, dca);
+        hs_dilepton_uls_dca_same->SetBinEdges(2, dca);
+        hs_dilepton_uls_dca_same->SetBinEdges(3, dca);
+        hs_dilepton_uls_dca_same->Sumw2();
+        list->Add(hs_dilepton_uls_dca_same);
+
+        hs_dilepton_lspp_dca_same = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_lspp_dca_same"));
+        hs_dilepton_lsmm_dca_same = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_lsmm_dca_same"));
+        list->Add(hs_dilepton_lspp_dca_same);
+        list->Add(hs_dilepton_lsmm_dca_same);
 
         THnSparseF* hs_dilepton_uls_dca_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_dca_same->Clone("hs_dilepton_uls_dca_mix"));
         THnSparseF* hs_dilepton_lspp_dca_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lspp_dca_same->Clone("hs_dilepton_lspp_dca_mix"));
@@ -208,11 +231,11 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
         list->Add(hs_dilepton_lsmm_dca_mix);
       }
 
-      if (TString(subGroup) == "mc") {
+      if (TString(subGroup).Contains("mc")) {
         // create phiv template
-        list->Add(new TH2F("hMvsPhiV_Pi0", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", 32, 0, 3.2, 100, 0.0f, 0.1f));    // ee from pi0 dalitz decay
-        list->Add(new TH2F("hMvsPhiV_Eta", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", 32, 0, 3.2, 100, 0.0f, 0.1f));    // ee from eta dalitz decay
-        list->Add(new TH2F("hMvsPhiV_Photon", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", 32, 0, 3.2, 100, 0.0f, 0.1f)); // ee from photon conversion
+        list->Add(new TH2F("hMvsPhiV_Pi0", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", 72, 0, M_PI, 100, 0.0f, 0.1f));    // ee from pi0 dalitz decay
+        list->Add(new TH2F("hMvsPhiV_Eta", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", 72, 0, M_PI, 100, 0.0f, 0.1f));    // ee from eta dalitz decay
+        list->Add(new TH2F("hMvsPhiV_Photon", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", 72, 0, M_PI, 100, 0.0f, 0.1f)); // ee from photon conversion
 
         list->Add(new TH2F("hMvsOPA_Pi0", "m_{ee} vs. opening angle;opening angle (rad.);m_{ee} (GeV/c^{2})", 100, 0, 0.1, 100, 0.0f, 0.1f));    // ee from pi0 dalitz decay
         list->Add(new TH2F("hMvsOPA_Eta", "m_{ee} vs. opening angle;opening angle (rad.);m_{ee} (GeV/c^{2})", 100, 0, 0.1, 100, 0.0f, 0.1f));    // ee from eta dalitz decay
@@ -220,23 +243,26 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       }                                                                                                                                          // end of mc
     } else if (TString(histClass).Contains("MuMu")) {
       const int ndim = 4; // m, pt, dca, phiv
-      const int nbins[ndim] = {90, 20, 50, 1};
+      const int nbins[ndim] = {90, 20, ndca - 1, 1};
       const double xmin[ndim] = {0.2, 0.0, 0.0, 0.0};
       const double xmax[ndim] = {1.1, 2.0, 5.0, 3.2};
 
       hs_dilepton_uls_same = new THnSparseF("hs_dilepton_uls_same", "hs_dilepton_uls;m_{#mu#mu} (GeV/c^{2});p_{T,#mu#mu} (GeV/c);DCA_{#mu#mu}^{3D} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
       hs_dilepton_uls_same->Sumw2();
+      hs_dilepton_uls_same->SetBinEdges(2, dca);
       list->Add(hs_dilepton_uls_same);
 
       hs_dilepton_lspp_same = new THnSparseF("hs_dilepton_lspp_same", "hs_dilepton_lspp;m_{#mu#mu} (GeV/c^{2});p_{T,#mu#mu} (GeV/c);DCA_{#mu#mu}^{3D} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
       hs_dilepton_lspp_same->Sumw2();
+      hs_dilepton_lspp_same->SetBinEdges(2, dca);
       list->Add(hs_dilepton_lspp_same);
 
       hs_dilepton_lsmm_same = new THnSparseF("hs_dilepton_lsmm_same", "hs_dilepton_lsmm;m_{#mu#mu} (GeV/c^{2});p_{T,#mu#mu} (GeV/c);DCA_{#mu#mu}^{3D} (#sigma);#varphi_{V} (rad.);", ndim, nbins, xmin, xmax);
       hs_dilepton_lsmm_same->Sumw2();
+      hs_dilepton_lsmm_same->SetBinEdges(2, dca);
       list->Add(hs_dilepton_lsmm_same);
 
-      if (TString(subGroup) == "mix") {
+      if (TString(subGroup).Contains("mix")) {
         THnSparseF* hs_dilepton_uls_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_uls_same->Clone("hs_dilepton_uls_mix"));
         THnSparseF* hs_dilepton_lspp_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lspp_same->Clone("hs_dilepton_lspp_mix"));
         THnSparseF* hs_dilepton_lsmm_mix = reinterpret_cast<THnSparseF*>(hs_dilepton_lsmm_same->Clone("hs_dilepton_lsmm_mix"));
@@ -261,7 +287,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
 
     list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, maxP));
     list->Add(new TH1F("hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", 400, -20, 20));
-    list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 40, -2.0f, 2.0f));
+    list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 40, -2.0f, 2.0f));
     list->Add(new TH2F("hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", 200, -1.0f, 1.0f, 200, -1.0f, 1.0f));
     list->Add(new TH2F("hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", 200, -10.0f, 10.0f, 200, -10.0f, 10.0f));
     list->Add(new TH2F("hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", 1000, 0, maxP, 100, 0., 1000));
@@ -286,6 +312,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH1F("hNclsITS", "number of ITS clusters", 8, -0.5, 7.5));
     list->Add(new TH1F("hChi2ITS", "chi2/number of ITS clusters", 100, 0, 10));
     list->Add(new TH1F("hITSClusterMap", "ITS cluster map", 128, -0.5, 127.5));
+    list->Add(new TH1F("hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", 32, 0, 16));
     if (TString(subGroup).Contains("mc")) {
       list->Add(new TH2F("hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", 1000, 0, maxP, 400, -1.0f, 1.0f));
       list->Add(new TH2F("hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", 1000, 0, maxP, 400, -1.0f, 1.0f));
@@ -294,11 +321,10 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
   }
 
   if (TString(histClass) == "Cluster") {
-    list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
-    list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, TMath::TwoPi(), 400, -2.0f, 2.0f));
-    list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
-
     if (TString(subGroup) == "PHOS") {
+      list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
+      list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 400, -2.0f, 2.0f));
+      list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
       list->Add(new TH2F("hEvsNcell", "E_{cluster} vs. N_{cell};E_{cluster} (GeV);N_{cell}", 200, 0, 20, 51, -0.5, 50.5f));
       list->Add(new TH2F("hEvsM02", "E_{cluster} vs. M02;E_{cluster} (GeV);M02 (cm)", 200, 0, 20, 100, 0, 10));
       list->Add(new TH2F("hEvsM20", "E_{cluster} vs. M20;E_{cluster} (GeV);M20 (cm)", 200, 0, 20, 100, 0, 10));
@@ -309,22 +335,53 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
         list->Add(new TH2F(Form("hClusterXZM%d", i), Form("cluster (X,Z) on M%d;X;Z", i), 64, 0.5, 64.5, 56, 0.5, 56.5));
       } // end of module loop
     }
+    if (TString(subGroup).Contains("EMC")) {
+      list->Add(new TH1F("hPt", "Transverse momenta of clusters;#it{p}_{T} (GeV/c);#it{N}_{cluster}", 1000, 0.0f, 20));
+      list->Add(new TH1F("hE", "E_{cluster};#it{E}_{cluster} (GeV);#it{N}_{cluster}", 500, 0, 50));
+      list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision;#it{N}_{#gamma} per collision;#it{N}_{collisions}", 101, -0.5f, 100.5f));
+      list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 200, -1.0f, 1.0f));
+      list->Add(new TH2F("hTrackEtaPhi", "d#eta vs. d#varphi of matched tracks;d#varphi (rad.);d#eta", 100, -0.5, 0.5, 100, -0.5, 0.5));
+      if (TString(subGroup).Contains("2D")) { // Check if 2D QA histograms were selected in em-qc task
+        list->Add(new TH2F("hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{E}_{cluster} (GeV)", 51, -0.5, 50.5, 200, 0, 20));
+        list->Add(new TH2F("hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{E}_{cluster} (GeV)", 500, 0, 5, 200, 0, 20));
+        list->Add(new TH2F("hM20", "Short ellipse axis;#it{M}_{20} (cm);#it{E}_{cluster} (GeV)", 250, 0, 2.5, 200, 0, 20));
+        list->Add(new TH2F("hTime", "Cluster time;#it{t}_{cls} (ns);#it{E}_{cluster} (GeV)", 100, -250, 250, 200, 0, 20));
+        list->Add(new TH2F("hCellTime", "Cell time;#it{t}_{cell} (ns);#it{E}_{cluster} (GeV)", 100, -250, 250, 200, 0, 20));
+        list->Add(new TH2F("hDistToBC", "distance to bad channel;#it{d};#it{E}_{cluster} (GeV)", 100, 0, 1500, 200, 0, 20));
+      } else {
+        list->Add(new TH1F("hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{N}_{cluster}", 51, -0.5, 50.5));
+        list->Add(new TH1F("hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{N}_{cluster}", 500, 0, 5));
+        list->Add(new TH1F("hM20", "Short ellipse axis;#it{M}_{20} (cm);#it{N}_{cluster}", 250, 0, 2.5));
+        list->Add(new TH1F("hTime", "Cluster time;#it{t}_{cls} (ns);#it{N}_{cluster}", 500, -250, 250));
+        list->Add(new TH1F("hCellTime", "Cluster time;#it{t}_{cell} (ns);#it{N}_{cluster}", 500, -250, 250));
+        list->Add(new TH1F("hDistToBC", "distance to bad channel;#it{d};#it{N}_{cluster}", 100, 0, 1500));
+      }
+      list->Add(new TH2F("hClusterQualityCuts", "Energy at which clusters are removed by a given cut;;#it{E} (GeV)", 8, -0.5, 7.5, 500, 0, 50));
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(1, "In");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(2, "Energy");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(3, "NCell");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(4, "M02");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(5, "Timing");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(6, "Track matching");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(7, "Exotic");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(8, "Out");
+    }
   }
 
   if (TString(histClass) == "singlephoton") {
     list->Add(new TH1F("hPt", "pT of photon candidates;p_{T} (GeV/c)", 2000, 0.0f, 20));
     list->Add(new TH1F("hY", "rapidity of photon candidates;y", 40, -2.0f, 2.0f));
-    list->Add(new TH1F("hPhi", "azimuthal angle of photon candidates;#varphi (rad.)", 180, 0, TMath::TwoPi()));
+    list->Add(new TH1F("hPhi", "azimuthal angle of photon candidates;#varphi (rad.)", 180, 0, 2 * M_PI));
     if (TString(subGroup) == "mc") {
-      list->Add(new TH1F("hPt_Photon_Primary", "pT;p_{T} (GeV/c)", 2000, 0.0f, 20));                 // for MC efficiency
-      list->Add(new TH1F("hY_Photon_Primary", "rapidity;y", 40, -2.0f, 2.0f));                       // for MC efficiency
-      list->Add(new TH1F("hPhi_Photon_Primary", "#varphi;#varphi (rad.);", 180, 0, TMath::TwoPi())); // for MC efficiency
-      list->Add(new TH1F("hPt_Photon_FromWD", "pT;p_{T} (GeV/c)", 2000, 0.0f, 20));                  // for Feed down correction
-      list->Add(new TH1F("hY_Photon_FromWD", "rapidity;y", 40, -2.0f, 2.0f));                        // for Feed down correction
-      list->Add(new TH1F("hPhi_Photon_FromWD", "#varphi;#varphi (rad.);", 180, 0, TMath::TwoPi()));  // for Feed down correction
+      list->Add(new TH1F("hPt_Photon_Primary", "pT;p_{T} (GeV/c)", 2000, 0.0f, 20));           // for MC efficiency
+      list->Add(new TH1F("hY_Photon_Primary", "rapidity;y", 40, -2.0f, 2.0f));                 // for MC efficiency
+      list->Add(new TH1F("hPhi_Photon_Primary", "#varphi;#varphi (rad.);", 180, 0, 2 * M_PI)); // for MC efficiency
+      list->Add(new TH1F("hPt_Photon_FromWD", "pT;p_{T} (GeV/c)", 2000, 0.0f, 20));            // for Feed down correction
+      list->Add(new TH1F("hY_Photon_FromWD", "rapidity;y", 40, -2.0f, 2.0f));                  // for Feed down correction
+      list->Add(new TH1F("hPhi_Photon_FromWD", "#varphi;#varphi (rad.);", 180, 0, 2 * M_PI));  // for Feed down correction
       list->Add(new TH1F("hPt_Photon_hs", "pT of photon from hadronic shower in materials;p_{T} (GeV/c)", 2000, 0.0f, 20));
       list->Add(new TH1F("hY_Photon_hs", "rapidity from hadronic shower in materials;y", 40, -2.0f, 2.0f));
-      list->Add(new TH1F("hPhi_Photon_hs", "#varphi from hadronic shower in materials;#varphi (rad.);", 180, 0, TMath::TwoPi()));
+      list->Add(new TH1F("hPhi_Photon_hs", "#varphi from hadronic shower in materials;#varphi (rad.);", 180, 0, 2 * M_PI));
     }
   }
 
@@ -387,7 +444,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       const int ndim = 4; // pt, r, phi, eta
       const int nbins[ndim] = {npt - 1, 90, 72, 40};
       const double xmin[ndim] = {0.0, 0.0, 0.0, -2.0};
-      const double xmax[ndim] = {10.0, 90.0, TMath::TwoPi(), +2.0};
+      const double xmax[ndim] = {10.0, 90.0, 2 * M_PI, +2.0};
       THnSparseF* hs_conv_point = new THnSparseF("hs_conv_point", "hs_conv_point;p_{T,#gamma} (GeV/c);R_{xy} (cm);#varphi (rad.);#eta;", ndim, nbins, xmin, xmax);
       hs_conv_point->SetBinEdges(0, pt);
       hs_conv_point->Sumw2();
@@ -396,7 +453,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       const int ndim = 6; // mgg, pT1, pT2, rxy2, eta2, phi2
       const int nbins[ndim] = {200, npt - 1, npt - 1, 90, 72, 40};
       const double xmin[ndim] = {0.0, 0.0, 0.0, 0, 0, -2};
-      const double xmax[ndim] = {0.4, 10.0, 10.0, 90.0, TMath::TwoPi(), +2};
+      const double xmax[ndim] = {0.4, 10.0, 10.0, 90.0, 2 * M_PI, +2};
 
       THnSparseF* hs_conv_point_same = new THnSparseF("hs_conv_point_same", "hs_conv_point;m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma}^{tag} (GeV/c);p_{T,#gamma}^{probe} (GeV/c);R_{xy}^{probe} (cm);#varphi^{probe} (rad.);#eta^{probe};", ndim, nbins, xmin, xmax);
       hs_conv_point_same->SetBinEdges(1, pt);
@@ -421,13 +478,13 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     if (TString(subGroup) == "Photon") {
       list->Add(new TH1F("hPt_Photon", "photon pT;p_{T} (GeV/c)", 2000, 0.0f, 20));
       list->Add(new TH1F("hY_Photon", "photon y;rapidity y", 40, -2.0f, 2.0f));
-      list->Add(new TH1F("hPhi_Photon", "photon #varphi;#varphi (rad.)", 180, 0, TMath::TwoPi()));
+      list->Add(new TH1F("hPhi_Photon", "photon #varphi;#varphi (rad.)", 180, 0, 2 * M_PI));
       list->Add(new TH1F("hPt_ConvertedPhoton", "converted photon pT;p_{T} (GeV/c)", 2000, 0.0f, 20));
       list->Add(new TH1F("hY_ConvertedPhoton", "converted photon y;rapidity y", 40, -2.0f, 2.0f));
-      list->Add(new TH1F("hPhi_ConvertedPhoton", "converted photon #varphi;#varphi (rad.)", 180, 0, TMath::TwoPi()));
+      list->Add(new TH1F("hPhi_ConvertedPhoton", "converted photon #varphi;#varphi (rad.)", 180, 0, 2 * M_PI));
       list->Add(new TH2F("hPhotonRxy", "conversion point in XY MC;V_{x} (cm);V_{y} (cm)", 2000, -100.0f, 100.0f, 2000, -100.0f, 100.0f));
       list->Add(new TH2F("hPhotonRZ", "conversion point in RZ MC;V_{z} (cm);R_{xy} (cm)", 2000, -100.0f, 100.0f, 1000, 0.f, 100.0f));
-      list->Add(new TH2F("hPhotonPhivsRxy", "conversion point of #varphi vs. R_{xy} MC;#varphi (rad.);R_{xy} (cm);N_{e}", 360, 0.0f, TMath::TwoPi(), 100, 0, 100));
+      list->Add(new TH2F("hPhotonPhivsRxy", "conversion point of #varphi vs. R_{xy} MC;#varphi (rad.);R_{xy} (cm);N_{e}", 360, 0.0f, 2 * M_PI, 100, 0, 100));
     }
 
     if (TString(subGroup) == "Pi0Eta") {
@@ -435,7 +492,10 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       for (int i = 0; i < 2; i++) {
         list->Add(new TH1F(Form("hPt_%s", parnames[i].data()), Form("%s pT;p_{T} (GeV/c)", parnames[i].data()), 2000, 0.0f, 20));
         list->Add(new TH1F(Form("hY_%s", parnames[i].data()), Form("%s y;rapidity y", parnames[i].data()), 40, -2.0f, 2.0f));
-        list->Add(new TH1F(Form("hPhi_%s", parnames[i].data()), Form("%s #varphi;#varphi (rad.)", parnames[i].data()), 180, 0, TMath::TwoPi()));
+        list->Add(new TH1F(Form("hPhi_%s", parnames[i].data()), Form("%s #varphi;#varphi (rad.)", parnames[i].data()), 180, 0, 2 * M_PI));
+        list->Add(new TH1F(Form("hPt_%s_Acc", parnames[i].data()), Form("%s pT;p_{T} (GeV/c)", parnames[i].data()), 2000, 0.0f, 20));          // in pair acceptance
+        list->Add(new TH1F(Form("hY_%s_Acc", parnames[i].data()), Form("%s y;rapidity y", parnames[i].data()), 40, -2.0f, 2.0f));              // in pair acceptance
+        list->Add(new TH1F(Form("hPhi_%s_Acc", parnames[i].data()), Form("%s #varphi;#varphi (rad.)", parnames[i].data()), 180, 0, 2 * M_PI)); // in pair acceptance
       }
     }
     if (TString(subGroup) == "dielectron") {
@@ -499,24 +559,37 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
 
   if (TString(histClass) == "photon_hbt") {
     const int nm_hbt = 6;
-    double m_hbt[nm_hbt] = {0.0, 0.14, 0.5, 1.1, 2.0, 2.7};
+    double m_hbt[nm_hbt] = {0.0, 0.14, 0.5, 1.1, 2.0, 2.5};
+    THnSparseF* hs_q_same = nullptr;
+    THnSparseF* hs_q_mix = nullptr;
 
-    const int ndim = 9; // m1, m2, kt, qinv, qlong_cms, qout_cms, qside_cms, qt_cms, qlong_lcms
-    const int nbins[ndim] = {nm_hbt - 1, nm_hbt - 1, 10, 40, 80, 80, 80, 40, 80};
-    const double xmin[ndim] = {0.0, 0.0, 0.0, 0.0, -0.4, -0.4, -0.4, 0.0, -0.4};
-    const double xmax[ndim] = {2.7, 2.7, 1.0, 0.4, +0.4, +0.4, +0.4, +0.4, +0.4};
+    if (TString(subGroup) == "1d") {
+      const int ndim_1d = 4; // m1, m2, kt, qinv
+      const int nbins_1d[ndim_1d] = {nm_hbt - 1, nm_hbt - 1, 10, 40};
+      const double xmin_1d[ndim_1d] = {0.0, 0.0, 0.0, 0.0};
+      const double xmax_1d[ndim_1d] = {2.5, 2.5, 1.0, 0.4};
 
-    THnSparseF* hs_q_same = new THnSparseF("hs_q_same", "hs_q_same;m_{1} (GeV/c^{2});m_{2} (GeV/c^{2});k_{T} (GeV/c);q_{inv} (GeV/c);q_{long}^{CMS} (GeV/c);q_{out}^{CMS} (GeV/c);q_{side}^{CMS} (GeV/c);q_{T}^{CMS} (GeV/c);q_{long}^{LCMS} (GeV/c);", ndim, nbins, xmin, xmax);
-    THnSparseF* hs_q_mix = new THnSparseF("hs_q_mix", "hs_q_mix;m_{1} (GeV/c^{2});m_{2} (GeV/c^{2});k_{T} (GeV/c);q_{inv} (GeV/c);q_{long}^{CMS} (GeV/c);q_{out}^{CMS} (GeV/c);q_{side}^{CMS} (GeV/c);q_{T}^{CMS} (GeV/c);q_{long}^{LCMS} (GeV/c);", ndim, nbins, xmin, xmax);
-    hs_q_same->Sumw2();
-    hs_q_mix->Sumw2();
-    hs_q_same->SetBinEdges(0, m_hbt);
-    hs_q_same->SetBinEdges(1, m_hbt);
-    hs_q_mix->Sumw2();
-    hs_q_mix->SetBinEdges(0, m_hbt);
-    hs_q_mix->SetBinEdges(1, m_hbt);
-    list->Add(hs_q_same);
-    list->Add(hs_q_mix);
+      hs_q_same = new THnSparseF("hs_q_same", "hs_q_same;m_{1} (GeV/c^{2});m_{2} (GeV/c^{2});k_{T} (GeV/c);q_{inv} (GeV/c);q_{long}^{CMS} (GeV/c);q_{out}^{CMS} (GeV/c);q_{side}^{CMS} (GeV/c);q_{long}^{LCMS} (GeV/c);", ndim_1d, nbins_1d, xmin_1d, xmax_1d);
+      hs_q_same->Sumw2();
+      hs_q_same->SetBinEdges(0, m_hbt);
+      hs_q_same->SetBinEdges(1, m_hbt);
+      hs_q_mix = reinterpret_cast<THnSparseF*>(hs_q_same->Clone("hs_q_mix"));
+      list->Add(hs_q_same);
+      list->Add(hs_q_mix);
+    } else if (TString(subGroup) == "3d") {
+      const int ndim_3d = 8; // m1, m2, kt, qinv, qlong_cms, qout_cms, qside_cms, qlong_lcms
+      const int nbins_3d[ndim_3d] = {nm_hbt - 1, nm_hbt - 1, 10, 40, 80, 80, 80, 80};
+      const double xmin_3d[ndim_3d] = {0.0, 0.0, 0.0, 0.0, -0.4, -0.4, -0.4, -0.4};
+      const double xmax_3d[ndim_3d] = {2.5, 2.5, 1.0, 0.4, +0.4, +0.4, +0.4, +0.4};
+
+      hs_q_same = new THnSparseF("hs_q_same", "hs_q_same;m_{1} (GeV/c^{2});m_{2} (GeV/c^{2});k_{T} (GeV/c);q_{inv} (GeV/c);q_{long}^{CMS} (GeV/c);q_{out}^{CMS} (GeV/c);q_{side}^{CMS} (GeV/c);q_{long}^{LCMS} (GeV/c);", ndim_3d, nbins_3d, xmin_3d, xmax_3d);
+      hs_q_same->Sumw2();
+      hs_q_same->SetBinEdges(0, m_hbt);
+      hs_q_same->SetBinEdges(1, m_hbt);
+      hs_q_mix = reinterpret_cast<THnSparseF*>(hs_q_same->Clone("hs_q_mix"));
+      list->Add(hs_q_same);
+      list->Add(hs_q_mix);
+    }
   }
 }
 THashList* o2::aod::emphotonhistograms::AddHistClass(THashList* list, const char* histClass)

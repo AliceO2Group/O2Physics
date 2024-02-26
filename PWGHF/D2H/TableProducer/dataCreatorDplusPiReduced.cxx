@@ -61,6 +61,7 @@ struct HfDataCreatorDplusPiReduced {
   Produces<aod::HfRed3ProngsMl> hfCand3ProngMl;
   Produces<aod::HfCandB0Configs> rowCandidateConfig;
   Produces<aod::HfMcRecRedDpPis> rowHfDPiMcRecReduced;
+  Produces<aod::HfMcCheckDpPis> rowHfDPiMcCheckReduced;
   Produces<aod::HfMcGenRedB0s> rowHfB0McGenReduced;
 
   // vertexing
@@ -83,6 +84,9 @@ struct HfDataCreatorDplusPiReduced {
   // magnetic field setting from CCDB
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
+  // MC extra
+  Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "flag to enable MC checks on decay type"};
 
   HfHelper hfHelper;
 
@@ -362,6 +366,12 @@ struct HfDataCreatorDplusPiReduced {
           int8_t sign{0};
           int8_t flag{0};
           int8_t debug{0};
+          int pdgCodeBeautyMother{-1};
+          int pdgCodeCharmMother{-1};
+          int pdgCodeProng0{0};
+          int pdgCodeProng1{0};
+          int pdgCodeProng2{0};
+          int pdgCodeProng3{0};
           // B0 → D- π+ → (π- K+ π-) π+
           auto indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersB0, Pdg::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
           auto motherPt = -1.f;
@@ -370,7 +380,7 @@ struct HfDataCreatorDplusPiReduced {
             // Printf("Checking D- → π- K+ π-");
             indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD, Pdg::kDMinus, std::array{-kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
             if (indexRec > -1) {
-              flag = sign * BIT(hf_cand_b0::DecayType::B0ToDPi);
+              flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
             } else {
               debug = 1;
               LOGF(debug, "B0 decays in the expected final state but the condition on the intermediate state is not fulfilled");
@@ -382,7 +392,75 @@ struct HfDataCreatorDplusPiReduced {
               motherPt = particleMother.pt();
             }
           }
+          // B0 → Ds- π+ → (K- K+ π-) π+
+          if (!flag && checkDecayTypeMc) {
+            indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersB0, Pdg::kB0, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
+            if (indexRec > -1) {
+              // Ds- → K- K+ π-
+              indexRec = RecoDecay::getMatchedMCRec(particlesMc, arrayDaughtersD, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+              if (indexRec > -1) {
+                flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDsPiToKKPiPi);
+              }
+            }
+          }
+          // Partly reconstructed decays, i.e. the 4 prongs have a common b-hadron ancestor
+          // convention: final state particles are prong0,1,2,3
+          if (!flag && checkDecayTypeMc) {
+            auto particleProng0 = arrayDaughtersB0[0].mcParticle();
+            auto particleProng1 = arrayDaughtersB0[1].mcParticle();
+            auto particleProng2 = arrayDaughtersB0[2].mcParticle();
+            auto particleProng3 = arrayDaughtersB0[3].mcParticle();
+            // b-hadron hypothesis
+            std::array<int, 3> bHadronMotherHypos = {Pdg::kB0, Pdg::kBS, Pdg::kLambdaB0};
+            // c-hadron hypothesis
+            std::array<int, 3> cHadronMotherHypos = {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar};
+
+            for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
+              int index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
+              int index1Mother = RecoDecay::getMother(particlesMc, particleProng1, bHadronMotherHypo, true);
+              int index2Mother = RecoDecay::getMother(particlesMc, particleProng2, bHadronMotherHypo, true);
+              int index3Mother = RecoDecay::getMother(particlesMc, particleProng3, bHadronMotherHypo, true);
+
+              // look for common b-hadron ancestor
+              if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
+                if (index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
+                  flag = BIT(hf_cand_b0::DecayTypeMc::PartlyRecoDecay);
+                  pdgCodeBeautyMother = particlesMc.rawIteratorAt(index0Mother).pdgCode();
+                  pdgCodeCharmMother = 0;
+                  pdgCodeProng0 = particleProng0.pdgCode();
+                  pdgCodeProng1 = particleProng1.pdgCode();
+                  pdgCodeProng2 = particleProng2.pdgCode();
+                  pdgCodeProng3 = particleProng3.pdgCode();
+                  // look for common c-hadron mother among prongs 0, 1 and 2
+                  for (const auto& cHadronMotherHypo : cHadronMotherHypos) {
+                    int8_t depthMax = 2;
+                    if (cHadronMotherHypo == Pdg::kDStar) { // to include D* -> D π0/γ and D* -> D0 π
+                      depthMax += 1;
+                    }
+                    int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
+                    int index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, depthMax);
+                    int index2CharmMother = RecoDecay::getMother(particlesMc, particleProng2, cHadronMotherHypo, true, &sign, depthMax);
+                    if (index0CharmMother > -1 && index1CharmMother > -1 && index2CharmMother > -1) {
+                      if (index0CharmMother == index1CharmMother && index1CharmMother == index2CharmMother) {
+                        // pdgCodeCharmMother =
+                        //   Pdg::kDPlus (if D+ is the mother and does not come from D*+)
+                        //   Pdg::kDPlus + Pdg::kDStar (if D+ is the mother and D*+ -> D+ π0/γ)
+                        //   Pdg::kDStar (if D*+ is the mother and D*+ -> D0 π+)
+                        //   Pdg::kDS (if Ds is the mother)
+                        pdgCodeCharmMother += std::abs(particlesMc.rawIteratorAt(index0CharmMother).pdgCode());
+                      }
+                    }
+                  }
+                  break;
+                }
+              }
+            }
+          }
+
           rowHfDPiMcRecReduced(indexHfCand3Prong, selectedTracksPion[trackPion.globalIndex()], flag, debug, motherPt);
+          if (checkDecayTypeMc) {
+            rowHfDPiMcCheckReduced(pdgCodeBeautyMother, pdgCodeCharmMother, pdgCodeProng0, pdgCodeProng1, pdgCodeProng2, pdgCodeProng3);
+          }
         }
         fillHfCand3Prong = true;
       }                       // pion loop

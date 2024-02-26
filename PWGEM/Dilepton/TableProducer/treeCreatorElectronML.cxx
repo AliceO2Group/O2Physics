@@ -104,7 +104,7 @@ DECLARE_SOA_INDEX_COLUMN(MyCollision, mycollision);                       //!
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, MyTracks, "_Pos"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, MyTracks, "_Neg"); //!
 
-DECLARE_SOA_COLUMN(M, m, float);                 //!
+DECLARE_SOA_COLUMN(Mass, mass, float);           //!
 DECLARE_SOA_COLUMN(Pt, pt, float);               //!
 DECLARE_SOA_COLUMN(Eta, eta, float);             //!
 DECLARE_SOA_COLUMN(Phi, phi, float);             //!
@@ -121,7 +121,7 @@ DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool); //!
 // reconstructed track information
 DECLARE_SOA_TABLE(MyPairs, "AOD", "MYPAIR", //!
                   o2::soa::Index<>, mypair::MyCollisionId, mypair::PosTrackId, mypair::NegTrackId,
-                  mypair::M, mypair::Pt, mypair::Eta, mypair::Phi, mypair::PhiV, mypair::PairDCAxy, mypair::PairDCAz,
+                  mypair::Mass, mypair::Pt, mypair::Eta, mypair::Phi, mypair::PhiV, mypair::PairDCAxy, mypair::PairDCAz,
                   mypair::IsSM, mypair::IsHF, mypair::PairType, mypair::IsPrompt,
                   mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz,
@@ -170,6 +170,9 @@ struct TreeCreatorElectronML {
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max. chi2/NclsTPC"};
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
+  Configurable<bool> doLS{"doLS", true, "process also LS spectra"};
+  Configurable<double> combBgReductionFactor{"combBgReductionFactor", 1.0, "reduction factor for combinatorial background"};
+  Configurable<double> singleTrackBgReductionFactor{"singleTrackBgReductionFactor", 1.0, "reduction factor for background"};
 
   int mRunNumber;
   float d_bz;
@@ -506,33 +509,39 @@ struct TreeCreatorElectronML {
         // store all mother relation
         std::vector<int> mothers_id;
         std::vector<int> mothers_pdg;
-        int motherid = mctrack.mothersIds()[0]; // first mother index
-        while (motherid > -1) {
-          if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
-            auto mp = mctracks.iteratorAt(motherid);
-            mothers_id.emplace_back(motherid);
-            mothers_pdg.emplace_back(mp.pdgCode());
+        if (mctrack.has_mothers()) {
+          int motherid = mctrack.mothersIds()[0]; // first mother index
+          while (motherid > -1) {
+            if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mctracks.iteratorAt(motherid);
+              mothers_id.emplace_back(motherid);
+              mothers_pdg.emplace_back(mp.pdgCode());
 
-            if (mp.has_mothers()) {
-              motherid = mp.mothersIds()[0];
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0];
+              } else {
+                motherid = -999;
+              }
             } else {
-              motherid = -999;
+              LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
             }
-          } else {
-            LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
           }
         }
 
-        mytrack(mycollision.lastIndex(),
-                track.sign(), track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()),
-                track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
-                track.tpcChi2NCl(), track.tpcInnerParam(),
-                track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-                track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                track.itsClusterMap(), track.itsChi2NCl(),
-                mctrack.vx(), mctrack.vy(), mctrack.vz(),
-                mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
-
+        int pdgCode = mctrack.pdgCode();
+        double pt = track.pt();
+        double pseudoRndm = pt * 1000. - (int16_t)(pt * 1000);
+        if (abs(pdgCode) == 11 || pseudoRndm <= singleTrackBgReductionFactor) {
+          mytrack(mycollision.lastIndex(),
+                  track.sign(), pt, track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()),
+                  track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
+                  track.tpcChi2NCl(), track.tpcInnerParam(),
+                  track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                  track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                  track.itsClusterMap(), track.itsChi2NCl(),
+                  mctrack.vx(), mctrack.vy(), mctrack.vz(),
+                  pdgCode, mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
+        }
         mothers_id.shrink_to_fit();
         mothers_pdg.shrink_to_fit();
 
@@ -589,20 +598,22 @@ struct TreeCreatorElectronML {
           // store all mother relation
           std::vector<int> mothers_id;
           std::vector<int> mothers_pdg;
-          int motherid = mctrack.mothersIds()[0]; // first mother index
-          while (motherid > -1) {
-            if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
-              auto mp = mctracks.iteratorAt(motherid);
-              mothers_id.emplace_back(motherid);
-              mothers_pdg.emplace_back(mp.pdgCode());
+          if (mctrack.has_mothers()) {
+            int motherid = mctrack.mothersIds()[0]; // first mother index
+            while (motherid > -1) {
+              if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
+                auto mp = mctracks.iteratorAt(motherid);
+                mothers_id.emplace_back(motherid);
+                mothers_pdg.emplace_back(mp.pdgCode());
 
-              if (mp.has_mothers()) {
-                motherid = mp.mothersIds()[0];
+                if (mp.has_mothers()) {
+                  motherid = mp.mothersIds()[0];
+                } else {
+                  motherid = -999;
+                }
               } else {
-                motherid = -999;
+                LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
               }
-            } else {
-              LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
             }
           }
 
@@ -690,14 +701,21 @@ struct TreeCreatorElectronML {
                  isSM, isHF, EM_EEPairType::kULS, false, 0, 0, 0,
                  0, 0, 0);
         } else { // this is combinatorial bkg
-          mypair(mycollision.lastIndex(), fNewLabels[pos.globalIndex()], fNewLabels[ele.globalIndex()],
-                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
-                 isSM, isHF, EM_EEPairType::kULS, false, 0, 0, 0,
-                 0, 0, 0);
+          double pt = v12.Pt();
+          double pseudoRndm = pt * 1000. - (int16_t)(pt * 1000);
+          if (pseudoRndm <= combBgReductionFactor) {
+            mypair(mycollision.lastIndex(), fNewLabels[pos.globalIndex()], fNewLabels[ele.globalIndex()],
+                   v12.M(), pt, v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
+                   isSM, isHF, EM_EEPairType::kULS, false, 0, 0, 0,
+                   0, 0, 0);
+          }
         }
 
       } // end of uls pair loop
 
+      if (!doLS) {
+        continue;
+      }
       for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_coll, posTracks_coll))) {
         if (!IsSelected(pos1) || !IsSelected(pos2)) {
           continue;
@@ -731,10 +749,14 @@ struct TreeCreatorElectronML {
                  isSM, isHF, EM_EEPairType::kLSpp, false, 0, 0, 0,
                  0, 0, 0);
         } else { // this is combinatorial bkg
-          mypair(mycollision.lastIndex(), fNewLabels[pos1.globalIndex()], fNewLabels[pos2.globalIndex()],
-                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
-                 isSM, isHF, EM_EEPairType::kLSpp, false, 0, 0, 0,
-                 0, 0, 0);
+          double pt = v12.Pt();
+          double pseudoRndm = pt * 1000. - (int16_t)(pt * 1000);
+          if (pseudoRndm <= combBgReductionFactor) {
+            mypair(mycollision.lastIndex(), fNewLabels[pos1.globalIndex()], fNewLabels[pos2.globalIndex()],
+                   v12.M(), pt, v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
+                   isSM, isHF, EM_EEPairType::kLSpp, false, 0, 0, 0,
+                   0, 0, 0);
+          }
         }
 
       } // end of lspp pair loop
@@ -771,10 +793,14 @@ struct TreeCreatorElectronML {
                  isSM, isHF, EM_EEPairType::kLSnn, false, 0, 0, 0,
                  0, 0, 0);
         } else { // this is combinatorial bkg
-          mypair(mycollision.lastIndex(), fNewLabels[ele1.globalIndex()], fNewLabels[ele2.globalIndex()],
-                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
-                 isSM, isHF, EM_EEPairType::kLSnn, false, 0, 0, 0,
-                 0, 0, 0);
+          double pt = v12.Pt();
+          double pseudoRndm = pt * 1000. - (int16_t)(pt * 1000);
+          if (pseudoRndm <= combBgReductionFactor) {
+            mypair(mycollision.lastIndex(), fNewLabels[ele1.globalIndex()], fNewLabels[ele2.globalIndex()],
+                   v12.M(), pt, v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
+                   isSM, isHF, EM_EEPairType::kLSnn, false, 0, 0, 0,
+                   0, 0, 0);
+          }
         }
 
       } // end of lsnn pair loop

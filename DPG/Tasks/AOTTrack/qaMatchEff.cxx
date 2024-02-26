@@ -116,6 +116,8 @@ struct qaMatchEff {
   // histo axes
   //
   ConfigurableAxis ptBins{"ptBins", {100, 0.f, 20.f}, "pT binning"};
+  ConfigurableAxis XBins{"XBins", {400, -2.f, 2.f}, "X binning"};
+  ConfigurableAxis ZBins{"ZBins", {400, -20.f, 20.f}, "Z binning"};
   ConfigurableAxis ptBinsVsTime{"ptBinsVsTime", {VARIABLE_WIDTH, 0.1, 0.5, 1.0, 2.0, 5.0}, "pT binning for monitorning vs time"};
   ConfigurableAxis ptInvserseBinsVsTime{"ptInverseBinsVsTime", {VARIABLE_WIDTH, 0, 0.2, 0.5, 1, 2, 10}, "1/pT binning for monitorning vs time"};
   ConfigurableAxis etaBinsVsTime{"etaBinsVsTime", {14, -1.4, 1.4}, "eta binning for monitoring vs time"};
@@ -126,6 +128,10 @@ struct qaMatchEff {
   AxisSpec axisPDG{pdgBins, 0, pdgBins + 1.000, "pdgclass"};
   //
   AxisSpec axisPt{ptBins, "#it{p}_{T} (GeV/#it{c})"};
+  //
+  AxisSpec axisX{XBins, "track x (cm)"};
+  //
+  AxisSpec axisZ{ZBins, "track z (cm)"};
   //
   AxisSpec axisQoPt{qoptBins, -20, 20, "#Q/it{p}_{T} (GeV/#it{c})^{-1}"};
   //
@@ -140,20 +146,28 @@ struct qaMatchEff {
   // configuration for THnSparse's
   //
   Configurable<bool> makethn{"makethn", false, "choose if produce thnsparse"};
-  ConfigurableAxis thnd0{"thnd0", {600, -3.0f, 3.0f}, "impact parameter in xy [cm]"};
-  ConfigurableAxis thnPt{"thnPt", {30, 0.0f, 15.0f}, "pt [GeV/c]"};
-  ConfigurableAxis thnPhi{"thnPhi", {18, 0.0f, TMath::TwoPi()}, "phi"};
+  ConfigurableAxis thnd0{"thnd0", {150, -3.0f, 3.0f}, "impact parameter in xy [cm]"};
+  ConfigurableAxis thndz{"thndz", {150, -10.0f, 10.0f}, "impact parameter in z [cm]"};
+  ConfigurableAxis thnPt{"thnPt", {80, 0.0f, 20.0f}, "pt [GeV/c]"};
+  //  ConfigurableAxis thnPhi{"thnPhi", {18, 0.0f, TMath::TwoPi()}, "phi"};
   ConfigurableAxis thnEta{"thnEta", {20, -2.0f, 2.0f}, "eta"};
   ConfigurableAxis thnType{"thnType", {3, -0.5f, 2.5f}, "0: primary, 1: physical secondary, 2: sec. from material"};
-  ConfigurableAxis thnLabelSign{"thnLabelSign", {3, -1.5f, 1.5f}, "-1/+1 antip./particle"};
-  ConfigurableAxis thnSpec{"thnSpec", {5, 0.5f, 5.5f}, "particle from MC (1,2,3,4,5 -> e,pi,K,P,other)"};
+  ConfigurableAxis thnLabelSign{"thnLabelSign", {3, -1.5f, 1.5f}, "MC -1/+1 antip./particle"};
+  ConfigurableAxis thnSpec{"thnSpec", {10, -0.5f, 9.5f}, "particle ID"};
+  ConfigurableAxis thnITSclumap{"thnITSclumap", {128, -0.5f, 127.5f}, "ITS cluster map"};
+  ConfigurableAxis thnTPCclu{"thnTPCclu", {81, -0.5f, 160.5f}, "TPC nclust found"};
+  ConfigurableAxis thnHasDet{"thnHasDet", {7, -0.5f, 6.5f}, "presence of ITS, TPC, TOF"};
   AxisSpec thnd0Axis{thnd0, "#it{d}_{r#it{#varphi}} [cm]"};
+  AxisSpec thndzAxis{thndz, "#it{d}_{z} [cm]"};
   AxisSpec thnPtAxis{thnPt, "#it{p}_{T}^{reco} [GeV/#it{c}]"};
-  AxisSpec thnPhiAxis{thnPhi, "#varphi"};
+  //  AxisSpec thnPhiAxis{thnPhi, "#varphi"};
   AxisSpec thnEtaAxis{thnEta, "#it{#eta}"};
   AxisSpec thnTypeAxis{thnType, "0:prim-1:sec-2:matsec"};
   AxisSpec thnLabelSignAxis{thnLabelSign, "+/- 1 for part./antipart."};
-  AxisSpec thnSpecAxis{thnSpec, "particle from MC (1,2,3,4,5 -> e,pi,K,P,other)"};
+  AxisSpec thnSpecAxis{thnSpec, "particle ID"};
+  AxisSpec thnITSclumapAxis{thnITSclumap, "ITS cluster map"};
+  AxisSpec thnTPCcluAxis{thnTPCclu, "TPC nclust found"};
+  AxisSpec thnHasDetAxis{thnHasDet, "presence of ITS, TPC, TOF"};
   //
   // Tracks selection object
   TrackSelection cutObject;
@@ -251,7 +265,8 @@ struct qaMatchEff {
     //
     // thnsparse for fractions - only if selected
     if (makethn)
-      histos.add("data/sparse/thnsforfrac", "Sparse histo for imp. par. fraction analysis - data", kTHnSparseF, {thnd0Axis, thnPtAxis, thnPhiAxis, thnEtaAxis, thnTypeAxis, thnLabelSignAxis, thnSpecAxis});
+      histos.add("data/sparse/thnsforfrac", "Sparse histo for imp. par. fraction analysis - data", kTHnSparseF,
+                 {thnd0Axis, thndzAxis, thnPtAxis, thnEtaAxis, thnTypeAxis, thnLabelSignAxis, thnSpecAxis, thnITSclumapAxis, thnTPCcluAxis, thnHasDetAxis});
 
     /// control plots
     histos.add("data/control/itsHitsMatched", "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
@@ -314,6 +329,13 @@ struct qaMatchEff {
     histos.add("data/pthist_tpcits", "#it{p}_{T} distribution - data TPC+ITS tag", kTH1D, {axisPt}, true);
     histos.add("data/etahist_tpcits", "#eta distribution - data TPC+ITS tag", kTH1D, {axisEta}, true);
     histos.add("data/phihist_tpcits", "#phi distribution - data TPC+ITS tag", kTH1D, {axisPhi}, true);
+
+    //
+    //  local X,Z of track
+    histos.add("data/control/trackXhist_tpcONLY", "x distribution - data TPC ONLY tag", kTH1D, {axisX}, true);
+    histos.add("data/control/trackXhist_tpcits", "x distribution - data TPC+ITS tag", kTH1D, {axisX}, true);
+    histos.add("data/control/trackZhist_tpcONLY", "z distribution - data TPC ONLY tag", kTH1D, {axisZ}, true);
+    histos.add("data/control/trackZhist_tpcits", "z distribution - data TPC+ITS tag", kTH1D, {axisZ}, true);
 
     // pt, phi, eta TOF tagged
     histos.add("data/pthist_toftpc", "#it{p}_{T} distribution - data TOF+TPC tag", kTH1D, {axisPt}, true);
@@ -709,7 +731,8 @@ struct qaMatchEff {
     //
     // thnsparse for fractions
     if (makethn)
-      histos.add("MC/sparse/thnsforfrac", "Sparse histo for imp. par. fraction analysis - MC", kTHnSparseF, {thnd0Axis, thnPtAxis, thnPhiAxis, thnEtaAxis, thnTypeAxis, thnLabelSignAxis, thnSpecAxis});
+      histos.add("MC/sparse/thnsforfrac", "Sparse histo for imp. par. fraction analysis - MC", kTHnSparseF,
+                 {thnd0Axis, thndzAxis, thnPtAxis, thnEtaAxis, thnTypeAxis, thnLabelSignAxis, thnSpecAxis, thnITSclumapAxis, thnTPCcluAxis, thnHasDetAxis});
 
     /// control plots
     histos.add("MC/control/itsHitsMatched", "No. of hits vs ITS layer for ITS-TPC matched tracks;layer ITS", kTH2D, {{8, -1.5, 6.5}, {8, -0.5, 7.5, "No. of hits"}});
@@ -721,6 +744,12 @@ struct qaMatchEff {
     histos.add("MC/control/xyDCA_tpc", "DCA in x-y plane TPC tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
     histos.add("MC/control/zDCA_tpcits", "DCA along z TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
     histos.add("MC/control/xyDCA_tpcits", "DCA in x-y plane TPC+ITS tag;dca [cm]", kTH1D, {{200, -20.0, 20.0}}, true);
+    //
+    //  local X,Z of track
+    histos.add("MC/control/trackXhist_tpcONLY", "x distribution - data TPC ONLY tag", kTH1D, {axisX}, true);
+    histos.add("MC/control/trackXhist_tpcits", "x distribution - data TPC+ITS tag", kTH1D, {axisX}, true);
+    histos.add("MC/control/trackZhist_tpcONLY", "z distribution - data TPC ONLY tag", kTH1D, {axisZ}, true);
+    histos.add("MC/control/trackZhist_tpcits", "z distribution - data TPC+ITS tag", kTH1D, {axisZ}, true);
 
     // TPC found/findable clusters and crossed rows distributions - no conditions
     histos.add("MC/TPCclust/tpcNClsFound", "Number of TPC found clusters", kTH1F, {{161, -0.5, 160.5}}, true);
@@ -1318,6 +1347,7 @@ struct qaMatchEff {
     float tofNSigmaPion = -999.f;
     float tofNSigmaKaon = -999.f;
     float tofNSigmaProton = -999.f;
+    float hasdet = -999.f;
     //
     //
     for (auto& track : tracks) {
@@ -1408,7 +1438,7 @@ struct qaMatchEff {
       if (isPIDProtonRequired && protonPIDwithTPC && ((!trkWTOF) || protonPIDwithTOF))
         isProton = true;
       //
-      int sayPrim = -1, signPDGCode = -2, specind = 0;
+      int sayPrim = -99, signPDGCode = -99, specind = -99;
       if constexpr (IS_MC) {
         auto mcpart = track.mcParticle();
         siPDGCode = mcpart.pdgCode();
@@ -1426,8 +1456,8 @@ struct qaMatchEff {
         }
 
         /// MC info for THnSparse filling
-        sayPrim = 0;
-        specind = 0;
+        sayPrim = -99;
+        specind = -99;
         if (mcpart.isPhysicalPrimary())
           sayPrim = 0;
         else if (mcpart.getProcess() == 4)
@@ -1449,19 +1479,114 @@ struct qaMatchEff {
             specind = 4;
             break;
           default:
-            specind = 5;
+            specind = 0;
         }
+      } else {
+        // PID info for ThNSparse filling
+        //
+        //    WARNING !!!     MIND the order of lines below, pions are preferred over kaons which are preferred over protons
+        specind = -99;
+        if (isProton && !(isKaon || isPion))
+          specind = 4; // pions ONLY
+        if (isKaon && !(isPion || isProton))
+          specind = 3; // kaons ONLY
+        if (isPion && !(isKaon || isProton))
+          specind = 2; // protons ONLY
+        if (isPion && isKaon && !isProton)
+          specind = 5; // maybe pion, maybe kaon
+        if (isPion && isProton && !isKaon)
+          specind = 6; // maybe pion, maybe proton
+        if (isKaon && isProton && !isPion)
+          specind = 7; // maybe proton, maybe kaon
+        if (isPion && isKaon && isProton)
+          specind = 9; // maybe pion, maybe kaon, maybe proton
+        if (!isPion && !isKaon && !isProton)
+          specind = 1; // PID is NOT pion or kaon or proton
       }
       //
-      //
-      // fill thnsparse for fraction analysis
-      if (makethn) {
-        if constexpr (IS_MC) {
-          histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), trackPt, track.phi(), track.eta(), sayPrim, signPDGCode, specind);
-        } else {
-          histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), trackPt, track.phi(), track.eta(), sayPrim, signPDGCode, specind);
+      //***************************************************************************************************************************************************************************
+      //  MIND!!!!   THESE SETS OVERLAP!!!  ___M__U__S__T___ select one of the conditions in the analysis
+      hasdet = 0;
+      if (trkWITS && isTrackSelectedITSCuts(track)) {
+        hasdet = 1;
+        //
+        //
+        // fill thnsparse for fraction analysis
+        if (makethn) {
+          if constexpr (IS_MC) {
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          } else {
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          }
         }
       }
+      if (trkWTPC && isTrackSelectedTPCCuts(track)) {
+        hasdet = 2;
+        //
+        //
+        // fill thnsparse for fraction analysis
+        if (makethn) {
+          if constexpr (IS_MC) {
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          } else {
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          }
+        }
+      }
+      if (trkWITS && trkWTPC && isTrackSelectedTPCCuts(track) && isTrackSelectedITSCuts(track)) {
+        hasdet = 3;
+        //
+        //
+        // fill thnsparse for fraction analysis
+        if (makethn) {
+          if constexpr (IS_MC) {
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          } else {
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          }
+        }
+      }
+      if (trkWTOF && trkWTPC && isTrackSelectedTPCCuts(track)) {
+        hasdet = 4;
+        //
+        //
+        // fill thnsparse for fraction analysis
+        if (makethn) {
+          if constexpr (IS_MC) {
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          } else {
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          }
+        }
+      }
+      if (trkWITS && isTrackSelectedITSCuts(track) && trkWTOF) {
+        hasdet = 5;
+        //
+        //
+        // fill thnsparse for fraction analysis
+        if (makethn) {
+          if constexpr (IS_MC) {
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          } else {
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          }
+        }
+      }
+      if (trkWITS && trkWTOF && trkWTPC && isTrackSelectedTPCCuts(track) && isTrackSelectedITSCuts(track)) {
+        hasdet = 6;
+        //
+        //
+        // fill thnsparse for fraction analysis
+        if (makethn) {
+          if constexpr (IS_MC) {
+            histos.fill(HIST("MC/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          } else {
+            histos.fill(HIST("data/sparse/thnsforfrac"), track.dcaXY(), track.dcaZ(), trackPt, track.eta(), sayPrim, signPDGCode, specind, track.itsClusterMap(), clustpc, hasdet);
+          }
+        }
+      }
+      //***************************************************************************************************************************************************************************
+      //
       //
       // all tracks, no conditions
       //
@@ -1576,6 +1701,10 @@ struct qaMatchEff {
             histos.fill(HIST("MC/control/ptptconfTPCall"), reco_pt, tpcinner_pt);
             if (!trkWITS)
               histos.fill(HIST("MC/control/ptptconfTPCo"), reco_pt, tpcinner_pt);
+          }
+          if (!trkWITS) {
+            histos.get<TH1>(HIST("MC/control/trackXhist_tpcONLY"))->Fill(track.x());
+            histos.get<TH1>(HIST("MC/control/trackZhist_tpcONLY"))->Fill(track.z());
           }
           histos.get<TH1>(HIST("MC/qopthist_tpc"))->Fill(track.signed1Pt());
           histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(trackPt);
@@ -1708,6 +1837,10 @@ struct qaMatchEff {
             histos.fill(HIST("data/control/ptptconfTPCall"), reco_pt, tpcinner_pt);
             if (!trkWITS)
               histos.fill(HIST("data/control/ptptconfTPCo"), reco_pt, tpcinner_pt);
+          }
+          if (!trkWITS) {
+            histos.get<TH1>(HIST("data/control/trackXhist_tpcONLY"))->Fill(track.x());
+            histos.get<TH1>(HIST("data/control/trackZhist_tpcONLY"))->Fill(track.z());
           }
           histos.get<TH1>(HIST("data/qopthist_tpc"))->Fill(track.signed1Pt());
           histos.get<TH1>(HIST("data/pthist_tpc"))->Fill(trackPt);
@@ -1984,8 +2117,13 @@ struct qaMatchEff {
               histos.fill(HIST("MC/control/ptptconfTPCITS"), reco_pt, tpcinner_pt);
             histos.get<TH1>(HIST("MC/qopthist_tpcits"))->Fill(track.signed1Pt());
             histos.get<TH1>(HIST("MC/pthist_tpcits"))->Fill(trackPt);
+            //
             histos.get<TH1>(HIST("MC/phihist_tpcits"))->Fill(track.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits"))->Fill(track.eta());
+            //
+            histos.get<TH1>(HIST("MC/control/trackXhist_tpcits"))->Fill(track.x());
+            histos.get<TH1>(HIST("MC/control/trackZhist_tpcits"))->Fill(track.z());
+
             if (trkWTOF) {
               histos.get<TH1>(HIST("MC/pthist_toftpcits"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_toftpcits"))->Fill(track.phi());
@@ -2012,6 +2150,9 @@ struct qaMatchEff {
             if (makept2d)
               histos.fill(HIST("data/control/ptptconfTPCITS"), reco_pt, tpcinner_pt);
             histos.get<TH1>(HIST("data/qopthist_tpcits"))->Fill(track.signed1Pt());
+            //
+            histos.get<TH1>(HIST("data/control/trackXhist_tpcits"))->Fill(track.x());
+            histos.get<TH1>(HIST("data/control/trackZhist_tpcits"))->Fill(track.z());
             //
             //  PID is applied
             if (isPion) {

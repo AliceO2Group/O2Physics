@@ -77,6 +77,9 @@ struct FemtoCorrelationsMC {
 
   ConfigurableAxis CFkStarBinning{"CFkStarBinning", {500, 0.005, 5.005}, "k* binning of the res. matrix (Nbins, lowlimit, uplimit)"};
 
+  Configurable<int> _vertexNbinsToMix{"vertexNbinsToMix", 10, "Number of vertexZ bins for the mixing"};
+  Configurable<int> _multNsubBins{"multSubBins", 10, "number of sub-bins to perform the mixing within"};
+
   bool IsIdentical;
 
   std::pair<int, std::vector<float>> TPCcuts_1;
@@ -93,6 +96,7 @@ struct FemtoCorrelationsMC {
 
   std::map<int64_t, std::vector<trkType>> selectedtracks_1;
   std::map<int64_t, std::vector<trkType>> selectedtracks_2;
+  std::map<std::pair<int, float>, std::vector<colType>> mixbins;
 
   std::unique_ptr<o2::aod::singletrackselector::FemtoPair<trkType>> Pair = std::make_unique<o2::aod::singletrackselector::FemtoPair<trkType>>();
 
@@ -158,8 +162,6 @@ struct FemtoCorrelationsMC {
       for (int iii = ii + 1; iii < tracks.size(); iii++) {
 
         Pair->SetPair(tracks[ii], tracks[iii]);
-        Pair->SetMagField1((tracks[ii]->singleCollSel()).magField());
-        Pair->SetMagField2((tracks[iii]->singleCollSel()).magField());
 
         registry.fill(HIST("DoubleTrackEffects"), Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
         Pair->ResetPair();
@@ -174,8 +176,6 @@ struct FemtoCorrelationsMC {
       for (auto iii : tracks2) {
 
         Pair->SetPair(ii, iii);
-        Pair->SetMagField1((ii->singleCollSel()).magField());
-        Pair->SetMagField2((iii->singleCollSel()).magField());
 
         registry.fill(HIST("DoubleTrackEffects"), Pair->GetPhiStarDiff(_radiusTPC), Pair->GetEtaDiff());
         Pair->ResetPair();
@@ -209,7 +209,7 @@ struct FemtoCorrelationsMC {
     int trackPDG, trackOrigin;
 
     for (auto track : tracks) {
-      if (abs(track.singleCollSel().posZ()) > _vertexZ)
+      if (abs(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ()) > _vertexZ)
         continue;
       if (track.tpcNClsShared() > _tpcNClsShared || track.itsNCls() < _itsNCls)
         continue;
@@ -305,29 +305,67 @@ struct FemtoCorrelationsMC {
       }
     }
 
+    for (auto collision : collisions) {
+      if (selectedtracks_1.find(collision.globalIndex()) == selectedtracks_1.end()) {
+        if (IsIdentical)
+          continue;
+        else if (selectedtracks_2.find(collision.globalIndex()) == selectedtracks_2.end())
+          continue;
+      }
+      int vertexBinToMix = std::floor((collision.posZ() + _vertexZ) / (2 * _vertexZ / _vertexNbinsToMix));
+      int centBinToMix = std::floor(collision.multPerc() / (100.0 / _multNsubBins));
+
+      mixbins[std::pair<int, int>{vertexBinToMix, centBinToMix}].push_back(std::make_shared<decltype(collision)>(collision));
+    }
+
     //====================================== filling deta(dphi*) & res. matrix starts here ======================================
 
     if (IsIdentical) { //====================================== identical ======================================
 
-      for (auto i = selectedtracks_1.begin(); i != selectedtracks_1.end(); i++) { // iterating over all selected collisions with selected tracks
-        fillEtaPhi(i->second);                                                    // filling deta(dphi*) -- SE identical
-        auto j = i;
+      for (auto i = mixbins.begin(); i != mixbins.end(); i++) { // iterating over all vertex&mult bins
 
-        for (++j; j != selectedtracks_1.end(); j++) { // nested loop to do all the ME identical combinations
-          fillResMatrix(i->second, j->second);        // filling res. matrix -- ME identical
+        for (int indx1 = 0; indx1 < (i->second).size(); indx1++) { // iterating over all selected collisions with selected tracks
+
+          auto col1 = (i->second)[indx1];
+
+          Pair->SetMagField1(col1->magField());
+          Pair->SetMagField2(col1->magField());
+
+          fillEtaPhi(selectedtracks_1[col1->index()]); // filling deta(dphi*) -- SE identical
+
+          for (int indx2 = indx1 + 1; indx2 < (i->second).size(); indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+
+            auto col2 = (i->second)[indx2];
+
+            Pair->SetMagField2(col2->magField());
+            fillResMatrix(selectedtracks_1[col1->index()], selectedtracks_1[col2->index()]); // filling res. matrix -- ME identical
+          }
         }
       }
+
     } else { //====================================== non-identical ======================================
 
-      for (auto i = selectedtracks_1.begin(); i != selectedtracks_1.end(); i++) { // iterating over all selected collisions with selected tracks1
-        auto ii = selectedtracks_2.find(i->first);
-        if (ii != selectedtracks_2.end())
-          fillEtaPhi(i->second, ii->second); // checking if there are tracks2 for the choosen collision and filling deta(dphi*) -- SE non-identical
+      for (auto i = mixbins.begin(); i != mixbins.end(); i++) { // iterating over all vertex&mult bins
 
-        for (auto j = selectedtracks_2.begin(); j != selectedtracks_2.end(); j++) { // nested loop to do all the ME non-identical combinations
-          fillResMatrix(i->second, j->second);                                      // filling res. matrix -- ME non-identical
+        for (int indx1 = 0; indx1 < (i->second).size(); indx1++) { // iterating over all selected collisions with selected tracks1
+
+          auto col1 = (i->second)[indx1];
+
+          Pair->SetMagField1(col1->magField());
+          Pair->SetMagField2(col1->magField());
+
+          fillEtaPhi(selectedtracks_1[col1->index()], selectedtracks_2[col1->index()]); // filling deta(dphi*) -- SE non-identical
+
+          for (int indx2 = indx1 + 1; indx2 < (i->second).size(); indx2++) { // nested loop for all the combinations of collisions in a chosen mult/vertex bin
+
+            auto col2 = (i->second)[indx2];
+
+            Pair->SetMagField2(col2->magField());
+            fillResMatrix(selectedtracks_1[col1->index()], selectedtracks_2[col2->index()]); // filling res. matrix -- ME non-identical
+          }
         }
       }
+
     } //====================================== end of mixing non-identical ======================================
 
     // clearing up
@@ -340,6 +378,10 @@ struct FemtoCorrelationsMC {
         (i->second).clear();
       selectedtracks_2.clear();
     }
+
+    for (auto i = mixbins.begin(); i != mixbins.end(); i++)
+      (i->second).clear();
+    mixbins.clear();
   }
 };
 

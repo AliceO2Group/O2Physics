@@ -34,7 +34,7 @@ using BCPattern = std::bitset<o2::constants::lhc::LHCMaxBunches>;
 const int nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
 
 struct VdMAO2D {
-  Configurable<std::vector<int>> collBCArray{"collBCArray", {}, "Colliding BC for the VdM"};
+  Configurable<std::vector<int>> collBCArray{"collBCArray", {-999, -999}, "Colliding BC for the VdM"};
   Configurable<int> fillNumber{"fillNumber", -1, "fill nuber to select the SOR and EOR ts"};
 
   HistogramRegistry registry;

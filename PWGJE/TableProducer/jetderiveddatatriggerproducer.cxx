@@ -42,25 +42,25 @@ struct JetDerivedDataTriggerProducerTask {
 
   void processChargedJetTriggers(soa::Join<aod::Collisions, aod::JetFilters>::iterator const& collision)
   {
-    jChargedTriggerSelsTable(JetDerivedDataUtilities::setChargedTriggerSelectionBit(collision));
+    jChargedTriggerSelsTable(jetderiveddatautilities::setChargedTriggerSelectionBit(collision));
   }
   PROCESS_SWITCH(JetDerivedDataTriggerProducerTask, processChargedJetTriggers, "produces derived charged trigger table", false);
 
   void processNoChargedJetTriggers(aod::Collision const& collision)
   {
-    jChargedTriggerSelsTable(JetDerivedDataUtilities::JTrigSelCh::noChargedTigger);
+    jChargedTriggerSelsTable(jetderiveddatautilities::JTrigSelCh::noChargedTigger);
   }
   PROCESS_SWITCH(JetDerivedDataTriggerProducerTask, processNoChargedJetTriggers, "produces derived charged trigger table when sample is not triggered", true);
 
   void processFullJetTriggers(soa::Join<aod::Collisions, aod::FullJetFilters>::iterator const& collision)
   {
-    jFullTriggerSelsTable(JetDerivedDataUtilities::setFullTriggerSelectionBit(collision));
+    jFullTriggerSelsTable(jetderiveddatautilities::setFullTriggerSelectionBit(collision));
   }
   PROCESS_SWITCH(JetDerivedDataTriggerProducerTask, processFullJetTriggers, "produces derived full trigger table", false);
 
   void processNoFullJetTriggers(aod::Collision const& collision)
   {
-    jFullTriggerSelsTable(JetDerivedDataUtilities::JTrigSelFull::noFullTrigger);
+    jFullTriggerSelsTable(jetderiveddatautilities::JTrigSelFull::noFullTrigger);
   }
   PROCESS_SWITCH(JetDerivedDataTriggerProducerTask, processNoFullJetTriggers, "produces derived full trigger table table when sample is not triggered", true);
 };

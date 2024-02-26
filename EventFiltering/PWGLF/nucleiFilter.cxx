@@ -43,7 +43,7 @@ static constexpr std::array<float, nNuclei> masses{
 static constexpr std::array<int, nNuclei> charges{1, 1, 2};
 static const std::vector<std::string> matterOrNot{"Matter", "Antimatter"};
 static const std::vector<std::string> nucleiNames{"H2", "H3", "Helium"};
-static const std::vector<std::string> hypernucleiNames{"H3L"};
+static const std::vector<std::string> hypernucleiNames{"H3L"}; // 3-body decay case
 static const std::vector<std::string> cutsNames{
   "TPCnSigmaMin", "TPCnSigmaMax", "TOFnSigmaMin", "TOFnSigmaMax", "TOFpidStartPt"};
 constexpr double betheBlochDefault[nNuclei][6]{
@@ -90,16 +90,16 @@ struct nucleiFilter {
   Configurable<LabeledArray<float>> cfgCutsPID{"nucleiCutsPID", {cutsPID[0], nNuclei, nCutsPID, nucleiNames, cutsNames}, "Nuclei PID selections"};
 
   // configurable for hypertriton 3body decay
-  Configurable<float> minCosPA3body{"minCosPA3body", 0.9, "minCosPA3body"};
+  Configurable<float> minCosPA3body{"minCosPA3body", 0.99, "minCosPA3body"};
   Configurable<float> dcavtxdau{"dcavtxdau", 1.0, "DCA Vtx Daughters"};
-  Configurable<float> dcapiontopv{"dcapiontopv", 0.00, "DCA Pion To PV"};
-  Configurable<float> TofPidNsigmaMin{"TofPidNsigmaMin", -4, "TofPidNsigmaMin"};
-  Configurable<float> TofPidNsigmaMax{"TofPidNsigmaMax", 8, "TofPidNsigmaMax"};
+  Configurable<float> dcapiontopv{"dcapiontopv", 0.05, "DCA Pion To PV"};
+  Configurable<float> TofPidNsigmaMin{"TofPidNsigmaMin", -5, "TofPidNsigmaMin"};
+  Configurable<float> TofPidNsigmaMax{"TofPidNsigmaMax", 5, "TofPidNsigmaMax"};
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
   Configurable<float> lifetimecut{"lifetimecut", 40., "lifetimecut"}; // ct
   Configurable<float> minProtonPt{"minProtonPt", 0.3, "minProtonPt"};
   Configurable<float> maxProtonPt{"maxProtonPt", 5, "maxProtonPt"};
-  Configurable<float> minPionPt{"minPionPt", 0.2, "minPionPt"};
+  Configurable<float> minPionPt{"minPionPt", 0.1, "minPionPt"};
   Configurable<float> maxPionPt{"maxPionPt", 1.2, "maxPionPt"};
   Configurable<float> minDeuteronPt{"minDeuteronPt", 0.6, "minDeuteronPt"};
   Configurable<float> maxDeuteronPt{"maxDeuteronPt", 10, "maxDeuteronPt"};
@@ -109,6 +109,7 @@ struct nucleiFilter {
   Configurable<int> mincrossedrowsproton{"mincrossedrowsproton", 90, "min tpc crossed rows for pion"};
   Configurable<int> mincrossedrowspion{"mincrossedrowspion", 70, "min tpc crossed rows"};
   Configurable<int> mincrossedrowsdeuteron{"mincrossedrowsdeuteron", 100, "min tpc crossed rows for deuteron"};
+  Configurable<bool> fixTPCinnerParam{"fixTPCinnerParam", false, "Fix TPC inner param"};
 
   HistogramRegistry qaHists{"qaHists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -128,10 +129,13 @@ struct nucleiFilter {
       h2TPCnSigma[iN] = qaHists.add<TH2>(Form("fTPCcounts_%s", nucleiNames[iN].data()), "n-sigma TPC", HistType::kTH2F, {{100, -5, 5, "#it{p} /Z (GeV/#it{c})"}, {200, -10., +10., "n#sigma_{He} (a. u.)"}});
     }
 
-    auto scalers{std::get<std::shared_ptr<TH1>>(qaHists.add("fProcessedEvents", ";;Number of filtered events", HistType::kTH1F, {{nNuclei + 1, -0.5, nNuclei + 0.5}}))};
+    auto scalers{std::get<std::shared_ptr<TH1>>(qaHists.add("fProcessedEvents", ";;Number of filtered events", HistType::kTH1F, {{nNuclei + nHyperNuclei + 1, -0.5, nNuclei + nHyperNuclei + 0.5}}))};
     scalers->GetXaxis()->SetBinLabel(1, "Processed events");
     for (uint32_t iS{0}; iS < nucleiNames.size(); ++iS) {
       scalers->GetXaxis()->SetBinLabel(iS + 2, nucleiNames[iS].data());
+    }
+    for (uint32_t iS{0}; iS < hypernucleiNames.size(); ++iS) {
+      scalers->GetXaxis()->SetBinLabel(iS + nucleiNames.size() + 2, hypernucleiNames[iS].data());
     }
   }
 
@@ -172,34 +176,36 @@ struct nucleiFilter {
         track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe()};
       const int iC{track.sign() < 0};
 
+      float fixTPCrigidity{(fixTPCinnerParam && (track.pidForTracking() == track::PID::Helium3 || track.pidForTracking() == track::PID::Alpha)) ? 0.5f : 1.f};
+
       for (int iN{0}; iN < nNuclei; ++iN) {
         /// Cheap checks first
-        if (track.tpcInnerParam() < cfgMinTPCmom->get(iN, iC)) {
+        if (track.tpcInnerParam() * fixTPCrigidity < cfgMinTPCmom->get(iN, iC)) {
           continue;
         }
 
         if (cfgBetheBlochParams->get(iN, 5u) > 0.f) {
-          double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScalings[iN][iC]), cfgBetheBlochParams->get(iN, 0u), cfgBetheBlochParams->get(iN, 1u), cfgBetheBlochParams->get(iN, 2u), cfgBetheBlochParams->get(iN, 3u), cfgBetheBlochParams->get(iN, 4u))};
+          double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * fixTPCrigidity * bgScalings[iN][iC]), cfgBetheBlochParams->get(iN, 0u), cfgBetheBlochParams->get(iN, 1u), cfgBetheBlochParams->get(iN, 2u), cfgBetheBlochParams->get(iN, 3u), cfgBetheBlochParams->get(iN, 4u))};
           double expSigma{expBethe * cfgBetheBlochParams->get(iN, 5u)};
           nSigmaTPC[iN] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
         }
-        h2TPCnSigma[iN]->Fill(track.sign() * track.tpcInnerParam(), nSigmaTPC[iN]);
+        h2TPCnSigma[iN]->Fill(track.sign() * track.tpcInnerParam() * fixTPCrigidity, nSigmaTPC[iN]);
         if (nSigmaTPC[iN] < cfgCutsPID->get(iN, 0u) || nSigmaTPC[iN] > cfgCutsPID->get(iN, 1u)) {
           continue;
         }
-        if (track.pt() > cfgCutsPID->get(iN, 4u) && (nSigmaTOF[iN] < cfgCutsPID->get(iN, 2u) || nSigmaTOF[iN] > cfgCutsPID->get(iN, 3u))) {
+        if (track.p() > cfgCutsPID->get(iN, 4u) && (nSigmaTOF[iN] < cfgCutsPID->get(iN, 2u) || nSigmaTOF[iN] > cfgCutsPID->get(iN, 3u))) {
           continue;
         }
         keepEvent[iN] = true;
         if (keepEvent[iN]) {
-          h2TPCsignal[iN]->Fill(track.sign() * track.tpcInnerParam(), track.tpcSignal());
+          h2TPCsignal[iN]->Fill(track.sign() * track.tpcInnerParam() * fixTPCrigidity, track.tpcSignal());
         }
       }
 
       //
       // fill QA histograms
       //
-      qaHists.fill(HIST("fTPCsignal"), track.sign() * track.tpcInnerParam(), track.tpcSignal());
+      qaHists.fill(HIST("fTPCsignal"), track.sign() * track.tpcInnerParam() * fixTPCrigidity, track.tpcSignal());
 
     } // end loop over tracks
 
@@ -213,7 +219,7 @@ struct nucleiFilter {
       if (vtx.vtxcosPA(collision.posX(), collision.posY(), collision.posZ()) < minCosPA3body) {
         continue;
       }
-      float ct = vtx.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassHyperTriton;
+      float ct = vtx.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassHyperTriton;
       if (ct > lifetimecut) {
         continue;
       }
@@ -223,17 +229,17 @@ struct nucleiFilter {
       if ((track2.tofNSigmaDe() < TofPidNsigmaMin || track2.tofNSigmaDe() > TofPidNsigmaMax) && track2.p() > minDeuteronPUseTOF) {
         continue;
       }
-      if (TMath::Abs(track0.tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(track1.tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mHypertriton() > h3LMassLowerlimit && vtx.mHypertriton() < h3LMassUpperlimit) {
+      if (std::abs(track0.tpcNSigmaPr()) < TpcPidNsigmaCut && std::abs(track1.tpcNSigmaPi()) < TpcPidNsigmaCut && std::abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mHypertriton() > h3LMassLowerlimit && vtx.mHypertriton() < h3LMassUpperlimit) {
         if (track0.tpcNClsCrossedRows() > mincrossedrowsproton && track1.tpcNClsCrossedRows() > mincrossedrowspion && track2.tpcNClsCrossedRows() > mincrossedrowsdeuteron) {
-          if (TMath::Abs(vtx.dcatrack1topv()) > dcapiontopv) {
+          if (std::abs(vtx.dcatrack1topv()) > dcapiontopv) {
             keepEvent[3] = true;
             qaHists.fill(HIST("fH3LMassVsPt"), vtx.pt(), vtx.mHypertriton());
           }
         }
       }
-      if (TMath::Abs(track0.tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(track1.tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mAntiHypertriton() > h3LMassLowerlimit && vtx.mAntiHypertriton() < h3LMassUpperlimit) {
+      if (std::abs(track0.tpcNSigmaPi()) < TpcPidNsigmaCut && std::abs(track1.tpcNSigmaPr()) < TpcPidNsigmaCut && std::abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mAntiHypertriton() > h3LMassLowerlimit && vtx.mAntiHypertriton() < h3LMassUpperlimit) {
         if (track0.tpcNClsCrossedRows() > mincrossedrowspion && track1.tpcNClsCrossedRows() > mincrossedrowsproton && track2.tpcNClsCrossedRows() > mincrossedrowsdeuteron) {
-          if (TMath::Abs(vtx.dcatrack0topv()) > dcapiontopv) {
+          if (std::abs(vtx.dcatrack0topv()) > dcapiontopv) {
             keepEvent[3] = true;
             qaHists.fill(HIST("fH3LMassVsPt"), vtx.pt(), vtx.mAntiHypertriton());
           }
@@ -241,7 +247,7 @@ struct nucleiFilter {
       }
     } // end loop over hypertriton 3body decay candidates
 
-    for (int iDecision{0}; iDecision < 3; ++iDecision) {
+    for (int iDecision{0}; iDecision < nNuclei + nHyperNuclei; ++iDecision) {
       if (keepEvent[iDecision]) {
         qaHists.fill(HIST("fProcessedEvents"), iDecision + 1);
       }

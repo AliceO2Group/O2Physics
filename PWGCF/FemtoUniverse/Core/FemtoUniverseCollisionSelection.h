@@ -13,6 +13,7 @@
 /// \brief FemtoUniverseCollisionSelection - event selection within the o2femtouniverse framework
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@pw.edu.pl
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECOLLISIONSELECTION_H_
@@ -38,10 +39,14 @@ class FemtoUniverseCollisionSelection
 
   /// Pass the selection criteria to the class
   /// \param zvtxMax Maximal value of the z-vertex
-  /// \param checkTrigger whether or not to check for the trigger alias
+  /// \param checkTrigger Whether or not to check for the trigger alias
   /// \param trig Requested trigger alias
-  /// \param checkOffline whether or not to check for offline selection criteria
-  void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool checkRun3)
+  /// \param checkOffline Whether or not to check for offline selection criteria
+  /// \param checkRun3 To check for the Run3 data
+  /// \param centmin Minimum value of centrality selection
+  /// \param centmax Maximum value of centrality selection
+  void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool checkRun3, float centmin, float centmax)
+  // void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool checkRun3)
   {
     mCutsSet = true;
     mZvtxMax = zvtxMax;
@@ -49,6 +54,8 @@ class FemtoUniverseCollisionSelection
     mTrigger = static_cast<triggerAliases>(trig);
     mCheckOffline = checkOffline;
     mCheckIsRun3 = checkRun3;
+    mCentMin = centmin;
+    mCentMax = centmax;
   }
 
   /// Initializes histograms for the task
@@ -75,6 +82,8 @@ class FemtoUniverseCollisionSelection
     LOG(info) << "Check trigger: " << mCheckTrigger;
     LOG(info) << "Trigger: " << mTrigger;
     LOG(info) << " Check offline: " << mCheckOffline;
+    LOG(info) << " Minimum Centrality: " << mCentMin;
+    LOG(info) << " Maximum Centrality: " << mCentMax;
   }
 
   /// Check whether the collisions fulfills the specified selections
@@ -87,17 +96,30 @@ class FemtoUniverseCollisionSelection
     if (std::abs(col.posZ()) > mZvtxMax) {
       return false;
     }
-    if (mCheckIsRun3) {
-      if (mCheckOffline && !col.sel8()) {
-        return false;
-      }
-    } else {
-      if (mCheckTrigger && !col.alias_bit(mTrigger)) {
-        return false;
-      }
-      if (mCheckOffline && !col.sel7()) {
-        return false;
-      }
+    if (mCheckTrigger && !col.alias_bit(mTrigger)) {
+      return false;
+    }
+    if (mCheckOffline && !col.sel7()) {
+      return false;
+    }
+    return true;
+  }
+
+  /// Check whether the collisions fulfills the specified selections for Run3
+  /// \tparam T type of the collision
+  /// \param col Collision
+  /// \return whether or not the collisions fulfills the specified selections
+  template <typename T>
+  bool isSelectedRun3(T const& col)
+  {
+    if (std::abs(col.posZ()) > mZvtxMax) {
+      return false;
+    }
+    if (mCheckOffline && !col.sel8()) {
+      return false;
+    }
+    if ((col.centFT0C() < mCentMin) || (col.centFT0C() > mCentMax)) {
+      return false;
     }
     return true;
   }
@@ -145,6 +167,8 @@ class FemtoUniverseCollisionSelection
   bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
   triggerAliases mTrigger = kINT7;                 ///< Trigger to check for
   float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
+  float mCentMin = 0.0;                            ///< Minimum centrality value
+  float mCentMax = 100.0;                          ///< Maximum centrality value
 };
 } // namespace o2::analysis::femtoUniverse
 
