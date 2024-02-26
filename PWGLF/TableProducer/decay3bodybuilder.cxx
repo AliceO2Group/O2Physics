@@ -55,7 +55,6 @@ struct decay3bodyBuilder {
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
 
   enum vtxstep { kVtxAll = 0,
-                 kVtxSameCol,
                  kVtxTPCNcls,
                  kVtxhasSV,
                  kVtxDcaDau,
@@ -205,10 +204,6 @@ struct decay3bodyBuilder {
       auto t0 = vtx3body.template track0_as<TTrackClass>();
       auto t1 = vtx3body.template track1_as<TTrackClass>();
       auto t2 = vtx3body.template track2_as<TTrackClass>();
-      if (t0.collisionId() != t1.collisionId() || t0.collisionId() != t2.collisionId()) {
-        continue;
-      }
-      registry.fill(HIST("hVtx3BodyCounter"), kVtxSameCol);
 
       if (t0.tpcNClsFound() < mintpcNCls && t1.tpcNClsFound() < mintpcNCls && t2.tpcNClsFound() < mintpcNCls) {
         continue;
