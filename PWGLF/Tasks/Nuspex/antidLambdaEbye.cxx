@@ -315,36 +315,36 @@ struct antidLambdaEbye {
     histos.add<TH2>("QA/tpcSignal", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", HistType::kTH2F, {momAxisFine, tpcAxis});
     histos.add<TH2>("QA/tpcSignal_glo", ";#it{p}_{glo} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.);", HistType::kTH2F, {momAxisFine, tpcAxis});
 
-    tpcNsigma.at(0) = histos.add<TH2>("QA/tpcNsigma_p", ";#it{p}_{TPC} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcNsigmaAxis});
-    tpcNsigmaGlo.at(0) = histos.add<TH2>("QA/tpcNsigmaGlo_p", ";#it{p}_{T} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcNsigmaAxis});
-    tofMass.at(0) = histos.add<TH2>("QA/tofMass_p", ";#it{p}_{glo} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", HistType::kTH2F, {momAxis, tofMassAxis});
-    momCorr.at(0) = histos.add<TH3>("QA/momCorr_p", ";#it{p}_{glo} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c});", HistType::kTH3F, {momAxisFine, momResAxis, trackingPidAxis});
-    tpcSignalBkg.at(0) = histos.add<TH2>("QA/tpcSignalBkg_p", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", HistType::kTH2F, {momAxisFine, tpcAxis});
-    tofSignal.at(0) = histos.add<TH2>("QA/tofSignal_p", ";#it{p}_{TPC} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
-    tofSignal_glo.at(0) = histos.add<TH2>("QA/tofSignal_glo_p", ";#it{p}_{T} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
+    tpcNsigma[0] = histos.add<TH2>("QA/tpcNsigma_p", ";#it{p}_{TPC} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcNsigmaAxis});
+    tpcNsigmaGlo[0] = histos.add<TH2>("QA/tpcNsigmaGlo_p", ";#it{p}_{T} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcNsigmaAxis});
+    tofMass[0] = histos.add<TH2>("QA/tofMass_p", ";#it{p}_{glo} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", HistType::kTH2F, {momAxis, tofMassAxis});
+    momCorr[0] = histos.add<TH3>("QA/momCorr_p", ";#it{p}_{glo} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c});", HistType::kTH3F, {momAxisFine, momResAxis, trackingPidAxis});
+    tpcSignalBkg[0] = histos.add<TH2>("QA/tpcSignalBkg_p", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", HistType::kTH2F, {momAxisFine, tpcAxis});
+    tofSignal[0] = histos.add<TH2>("QA/tofSignal_p", ";#it{p}_{TPC} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
+    tofSignal_glo[0] = histos.add<TH2>("QA/tofSignal_glo_p", ";#it{p}_{T} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
 
-    tpcNsigma.at(1) = histos.add<TH2>("QA/tpcNsigma_d", ";#it{p}_{TPC} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcNsigmaAxis});
-    tpcNsigmaGlo.at(1) = histos.add<TH2>("QA/tpcNsigmaGlo_d", ";#it{p}_{T} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcNsigmaAxis});
-    tofMass.at(1) = histos.add<TH2>("QA/tofMass_d", ";#it{p}_{glo} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", HistType::kTH2F, {momAxis, tofMassAxis});
-    momCorr.at(1) = histos.add<TH3>("QA/momCorr_d", ";#it{p}_{glo} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c});", HistType::kTH3F, {momAxisFine, momResAxis, trackingPidAxis});
-    tpcSignalBkg.at(1) = histos.add<TH2>("QA/tpcSignalBkg_d", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", HistType::kTH2F, {momAxisFine, tpcAxis});
-    tofSignal.at(1) = histos.add<TH2>("QA/tofSignal_d", ";#it{p}_{TPC} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
-    tofSignal_glo.at(1) = histos.add<TH2>("QA/tofSignal_glo_d", ";#it{p}_{T} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
+    tpcNsigma[1] = histos.add<TH2>("QA/tpcNsigma_d", ";#it{p}_{TPC} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcNsigmaAxis});
+    tpcNsigmaGlo[1] = histos.add<TH2>("QA/tpcNsigmaGlo_d", ";#it{p}_{T} (GeV/#it{c});n#sigma_{TPC} (a.u.)", HistType::kTH2F, {momAxis, tpcNsigmaAxis});
+    tofMass[1] = histos.add<TH2>("QA/tofMass_d", ";#it{p}_{glo} (GeV/#it{c});Mass (GeV/#it{c}^{2});Entries", HistType::kTH2F, {momAxis, tofMassAxis});
+    momCorr[1] = histos.add<TH3>("QA/momCorr_d", ";#it{p}_{glo} (GeV/#it{c});#it{p}_{TPC} - #it{p}_{glo} (GeV/#it{c});", HistType::kTH3F, {momAxisFine, momResAxis, trackingPidAxis});
+    tpcSignalBkg[1] = histos.add<TH2>("QA/tpcSignalBkg_d", ";#it{p}_{TPC} (GeV/#it{c});d#it{E}/d#it{x}_{TPC} (a.u.)", HistType::kTH2F, {momAxisFine, tpcAxis});
+    tofSignal[1] = histos.add<TH2>("QA/tofSignal_d", ";#it{p}_{TPC} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
+    tofSignal_glo[1] = histos.add<TH2>("QA/tofSignal_glo_d", ";#it{p}_{T} (GeV/#it{c});#beta_{TOF}", HistType::kTH2F, {momAxisFine, tofAxis});
 
     // mc histograms
     if (doprocessMcRun3 || doprocessMcRun2) {
       histos.add<TH3>("recL", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptLambdaAxis, deltaEtaAxis});
       histos.add<TH3>("recAntiL", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptLambdaAxis, deltaEtaAxis});
-      recTracks.at(0) = histos.add<TH3>("recP", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntipAxis, deltaEtaAxis});
-      recTracks.at(1) = histos.add<TH3>("recD", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntidAxis, deltaEtaAxis});
-      recAntiTracks.at(0) = histos.add<TH3>("recAntip", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntipAxis, deltaEtaAxis});
-      recAntiTracks.at(1) = histos.add<TH3>("recAntid", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntidAxis, deltaEtaAxis});
+      recTracks[0] = histos.add<TH3>("recP", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntipAxis, deltaEtaAxis});
+      recTracks[1] = histos.add<TH3>("recD", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntidAxis, deltaEtaAxis});
+      recAntiTracks[0] = histos.add<TH3>("recAntip", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntipAxis, deltaEtaAxis});
+      recAntiTracks[1] = histos.add<TH3>("recAntid", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntidAxis, deltaEtaAxis});
       histos.add<TH3>("genL", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptLambdaAxis, deltaEtaAxis});
       histos.add<TH3>("genAntiL", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptLambdaAxis, deltaEtaAxis});
-      genTracks.at(0) = histos.add<TH3>("genP", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntipAxis, deltaEtaAxis});
-      genTracks.at(1) = histos.add<TH3>("genD", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntidAxis, deltaEtaAxis});
-      genAntiTracks.at(0) = histos.add<TH3>("genAntip", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntipAxis, deltaEtaAxis});
-      genAntiTracks.at(1) = histos.add<TH3>("genAntid", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntidAxis, deltaEtaAxis});
+      genTracks[0] = histos.add<TH3>("genP", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntipAxis, deltaEtaAxis});
+      genTracks[1] = histos.add<TH3>("genD", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntidAxis, deltaEtaAxis});
+      genAntiTracks[0] = histos.add<TH3>("genAntip", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntipAxis, deltaEtaAxis});
+      genAntiTracks[1] = histos.add<TH3>("genAntid", ";Centrality (%); #it{p}_{T} (GeV/#it{c});#Delta#eta", HistType::kTH3D, {centAxis, ptAntidAxis, deltaEtaAxis});
     }
 
     for (int i{1}; i < momCorr[0]->GetNbinsZ() + 1; ++i) {
@@ -371,12 +371,12 @@ struct antidLambdaEbye {
 
   void fillRecoEvent(TracksFull const& tracks, aod::V0Datas const& V0s, float const& centrality)
   {
-    candidateTracks.at(0).clear();
-    candidateTracks.at(1).clear();
+    candidateTracks[0].clear();
+    candidateTracks[1].clear();
     candidateV0s.clear();
 
-    tempTracks.at(0)->Reset();
-    tempTracks.at(1)->Reset();
+    tempTracks[0]->Reset();
+    tempTracks[1]->Reset();
     tempLambda->Reset();
     tempAntiLambda->Reset();
     auto rnd = static_cast<float>(gen32()) / static_cast<float>(gen32.max());
@@ -441,12 +441,12 @@ struct antidLambdaEbye {
           tpcNsigmaGlo[iP]->Fill(track.pt(), nSigmaTPC);
           tofMass[iP]->Fill(track.pt(), mass);
 
-          tempTracks.at(iP)->Fill(std::abs(track.eta()), track.pt());
+          tempTracks[iP]->Fill(std::abs(track.eta()), track.pt());
           CandidateTrack candTrack;
           candTrack.pt = track.pt();
           candTrack.eta = track.eta();
           candTrack.globalIndex = track.globalIndex();
-          candidateTracks.at(iP).push_back(candTrack);
+          candidateTracks[iP].push_back(candTrack);
         }
       }
     }
@@ -509,20 +509,20 @@ struct antidLambdaEbye {
 
     histos.fill(HIST("nEv"), subsample, centrality);
 
-    fillHistoN(nAntip, tempTracks.at(0), subsample, centrality);
-    fillHistoN(nAntid, tempTracks.at(1), subsample, centrality);
+    fillHistoN(nAntip, tempTracks[0], subsample, centrality);
+    fillHistoN(nAntid, tempTracks[1], subsample, centrality);
     fillHistoN(nAntiL, tempAntiLambda, subsample, centrality);
     fillHistoN(nL, tempLambda, subsample, centrality);
 
-    fillHistoN(nSqAntip, tempTracks.at(0), tempTracks.at(0), subsample, centrality);
-    fillHistoN(nSqAntid, tempTracks.at(1), tempTracks.at(1), subsample, centrality);
+    fillHistoN(nSqAntip, tempTracks[0], tempTracks[0], subsample, centrality);
+    fillHistoN(nSqAntid, tempTracks[1], tempTracks[1], subsample, centrality);
     fillHistoN(nSqAntiL, tempAntiLambda, tempAntiLambda, subsample, centrality);
     fillHistoN(nSqL, tempLambda, tempLambda, subsample, centrality);
 
-    fillHistoN(nAntipAntid, tempTracks.at(0), tempTracks.at(1), subsample, centrality);
-    fillHistoN(nLantid, tempLambda, tempTracks.at(1), subsample, centrality);
+    fillHistoN(nAntipAntid, tempTracks[0], tempTracks[1], subsample, centrality);
+    fillHistoN(nLantid, tempLambda, tempTracks[1], subsample, centrality);
     fillHistoN(nLantiL, tempLambda, tempAntiLambda, subsample, centrality);
-    fillHistoN(nAntiLantid, tempAntiLambda, tempTracks.at(1), subsample, centrality);
+    fillHistoN(nAntiLantid, tempAntiLambda, tempTracks[1], subsample, centrality);
   }
 
   void fillMcEvent(TracksFull const& tracks, aod::V0Datas const& V0s, float const& centrality, aod::McParticles const&, aod::McTrackLabels const& mcLabels)
@@ -532,7 +532,7 @@ struct antidLambdaEbye {
       return;
     }
     for (int iP{0}; iP < kNpart; ++iP) {
-      for (auto& candidateTrack : candidateTracks.at(iP)) {
+      for (auto& candidateTrack : candidateTracks[iP]) {
         auto mcLab = mcLabels.rawIteratorAt(candidateTrack.globalIndex);
         if (mcLab.has_mcParticle()) {
           auto mcTrack = mcLab.template mcParticle_as<aod::McParticles>();
@@ -586,8 +586,8 @@ struct antidLambdaEbye {
         continue;
       }
 
-      tempTracks.at(0)->Reset();
-      tempTracks.at(1)->Reset();
+      tempTracks[0]->Reset();
+      tempTracks[1]->Reset();
       tempLambda->Reset();
       tempAntiLambda->Reset();
 
@@ -633,28 +633,28 @@ struct antidLambdaEbye {
             continue;
           auto genPt = std::hypot(mcPart.px(), mcPart.py());
           if (pdgCode > 0) {
-            genTracks.at(iP)->Fill(centrality, genPt, std::abs(genEta));
+            genTracks[iP]->Fill(centrality, genPt, std::abs(genEta));
           } else {
-            genAntiTracks.at(iP)->Fill(centrality, genPt, std::abs(genEta));
-            tempTracks.at(iP)->Fill(std::abs(genEta), genPt);
+            genAntiTracks[iP]->Fill(centrality, genPt, std::abs(genEta));
+            tempTracks[iP]->Fill(std::abs(genEta), genPt);
           }
         }
       }
 
-      fillHistoN(nGenAntip, tempTracks.at(0), subsample, centrality);
-      fillHistoN(nGenAntid, tempTracks.at(1), subsample, centrality);
+      fillHistoN(nGenAntip, tempTracks[0], subsample, centrality);
+      fillHistoN(nGenAntid, tempTracks[1], subsample, centrality);
       fillHistoN(nGenAntiL, tempAntiLambda, subsample, centrality);
       fillHistoN(nGenL, tempLambda, subsample, centrality);
 
-      fillHistoN(nGenSqAntip, tempTracks.at(0), tempTracks.at(0), subsample, centrality);
-      fillHistoN(nGenSqAntid, tempTracks.at(1), tempTracks.at(1), subsample, centrality);
+      fillHistoN(nGenSqAntip, tempTracks[0], tempTracks[0], subsample, centrality);
+      fillHistoN(nGenSqAntid, tempTracks[1], tempTracks[1], subsample, centrality);
       fillHistoN(nGenSqAntiL, tempAntiLambda, tempAntiLambda, subsample, centrality);
       fillHistoN(nGenSqL, tempLambda, tempLambda, subsample, centrality);
 
-      fillHistoN(nGenAntipAntid, tempTracks.at(0), tempTracks.at(1), subsample, centrality);
-      fillHistoN(nGenLantid, tempLambda, tempTracks.at(1), subsample, centrality);
+      fillHistoN(nGenAntipAntid, tempTracks[0], tempTracks[1], subsample, centrality);
+      fillHistoN(nGenLantid, tempLambda, tempTracks[1], subsample, centrality);
       fillHistoN(nGenLantiL, tempLambda, tempAntiLambda, subsample, centrality);
-      fillHistoN(nGenAntiLantid, tempAntiLambda, tempTracks.at(1), subsample, centrality);
+      fillHistoN(nGenAntiLantid, tempAntiLambda, tempTracks[1], subsample, centrality);
     }
   }
 
