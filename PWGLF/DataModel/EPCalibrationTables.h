@@ -9,12 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file EPCallibrationTables.h
+/// \file EPCalibrationTables.h
 ///
 /// \author Sourav Kundu <sourav.kundu@cern.ch>
 
-#ifndef PWGLF_DATAMODEL_EPCALLIBRATIONTABLES_H_
-#define PWGLF_DATAMODEL_EPCALLIBRATIONTABLES_H_
+#ifndef PWGLF_DATAMODEL_EPCALIBRATIONTABLES_H_
+#define PWGLF_DATAMODEL_EPCALIBRATIONTABLES_H_
 
 #include <cmath>
 
@@ -25,7 +25,7 @@
 
 namespace o2::aod
 {
-namespace epcallibrationtable
+namespace epcalibrationtable
 {
 DECLARE_SOA_COLUMN(TriggerEventEP, triggereventep, bool);
 DECLARE_SOA_COLUMN(Cent, cent, float);
@@ -34,15 +34,15 @@ DECLARE_SOA_COLUMN(PsiFT0A, psiFT0A, float);
 DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);
 DECLARE_SOA_COLUMN(PsiTPCL, psiTPCL, float);
 DECLARE_SOA_COLUMN(PsiTPCR, psiTPCR, float);
-} // namespace epcallibrationtable
-DECLARE_SOA_TABLE(EPCallibrationTables, "AOD", "EPCALLCOLS",
-                  epcallibrationtable::TriggerEventEP,
-                  epcallibrationtable::Cent,
-                  epcallibrationtable::PsiFT0C,
-                  epcallibrationtable::PsiFT0A,
-                  epcallibrationtable::PsiTPC,
-                  epcallibrationtable::PsiTPCL,
-                  epcallibrationtable::PsiTPCR);
-using EPCallibrationTable = EPCallibrationTables::iterator;
+} // namespace epcalibrationtable
+DECLARE_SOA_TABLE(EPCalibrationTables, "AOD", "EPCALLCOLS",
+                  epcalibrationtable::TriggerEventEP,
+                  epcalibrationtable::Cent,
+                  epcalibrationtable::PsiFT0C,
+                  epcalibrationtable::PsiFT0A,
+                  epcalibrationtable::PsiTPC,
+                  epcalibrationtable::PsiTPCL,
+                  epcalibrationtable::PsiTPCR);
+using EPCalibrationTable = EPCalibrationTables::iterator;
 } // namespace o2::aod
-#endif // PWGLF_DATAMODEL_EPCALLIBRATIONTABLES_H_
+#endif // PWGLF_DATAMODEL_EPCALIBRATIONTABLES_H_

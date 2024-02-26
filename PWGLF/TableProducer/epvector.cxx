@@ -44,7 +44,7 @@
 #include "Common/DataModel/FT0Corrected.h"
 #include "FT0Base/Geometry.h"
 #include "FV0Base/Geometry.h"
-#include "PWGLF/DataModel/EPCallibrationTables.h"
+#include "PWGLF/DataModel/EPCalibrationTables.h"
 
 // #include "Common/Core/EventPlaneHelper.h"
 // #include "Common/DataModel/Qvectors.h"
@@ -60,7 +60,7 @@ using namespace o2::framework::expressions;
 using std::array;
 
 struct epvector {
-  Produces<aod::EPCallibrationTables> epcallibrationtable;
+  Produces<aod::EPCalibrationTables> epcalibrationtable;
   // Configurables.
   struct : ConfigurableGroup {
     Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
@@ -85,9 +85,9 @@ struct epvector {
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<int> cfgITScluster{"cfgITScluster", 4, "Number of ITS cluster"};
-  Configurable<bool> useGainCallib{"useGainCallib", true, "use gain callibration"};
+  Configurable<bool> useGainCallib{"useGainCallib", true, "use gain calibration"};
   Configurable<bool> useRecentere{"useRecentere", true, "use Recentering"};
-  Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/s/skundu/My/Object/test100", "Path to gain callibration"};
+  Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/s/skundu/My/Object/test100", "Path to gain calibration"};
   Configurable<std::string> ConfRecentere{"ConfRecentere", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for recentere"};
   void init(o2::framework::InitContext&)
   {
@@ -306,7 +306,7 @@ struct epvector {
       histos.fill(HIST("ResFT0ATPC"), centrality, TMath::Cos(2.0 * (psiTPC - psiFT0A)));
       lastRunNumber = currentRunNumber;
     }
-    epcallibrationtable(triggerevent, centrality, psiFT0C, psiFT0A, psiTPC, psiTPCL, psiTPCR);
+    epcalibrationtable(triggerevent, centrality, psiFT0C, psiFT0A, psiTPC, psiTPCL, psiTPCR);
   }
 };
 
