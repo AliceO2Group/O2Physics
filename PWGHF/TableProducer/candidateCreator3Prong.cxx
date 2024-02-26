@@ -142,7 +142,7 @@ struct HfCandidateCreator3Prong {
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
 
-      //get sign of candidate
+      // get sign of candidate
       int8_t sign = track0.sign();
 
       /// Set the magnetic field from ccdb.
