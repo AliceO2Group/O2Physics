@@ -45,7 +45,7 @@ struct MultiplicityDerivedQa {
   ConfigurableAxis axisMultZNC{"axisMultZNC", {1000, 0, 4000}, "ZNC amplitude"};
   ConfigurableAxis axisMultZEM1{"axisMultZEM1", {1000, 0, 4000}, "ZEM1 amplitude"};
   ConfigurableAxis axisMultZEM2{"axisMultZEM2", {1000, 0, 4000}, "ZEM2 amplitude"};
-  ConfigurableAxis axisMultZEM2{"axisMultZEM", {1000, 0, 4000}, "ZEM amplitude"};
+  ConfigurableAxis axisMultZEM{"axisMultZEM", {1000, 0, 4000}, "ZEM amplitude"};
   ConfigurableAxis axisMultZPA{"axisMultZPA", {1000, 0, 4000}, "ZPA amplitude"};
   ConfigurableAxis axisMultZPC{"axisMultZPC", {1000, 0, 4000}, "ZPC amplitude"};
 
@@ -66,7 +66,7 @@ struct MultiplicityDerivedQa {
   Configurable<LabeledArray<float>> selZPC{"selZPC", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZPC"};
   Configurable<LabeledArray<float>> selZEM1{"selZEM1", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZEM1"};
   Configurable<LabeledArray<float>> selZEM2{"selZEM2", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZEM2"};
-  Configurable<LabeledArray<float>> selZEM1{"selZEM", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZEM"};
+  Configurable<LabeledArray<float>> selZEM{"selZEM", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZEM"};
   Configurable<LabeledArray<float>> selFV0A{"selFV0A", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selFV0A"};
   Configurable<LabeledArray<float>> selFT0A{"selFT0A", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selFT0A"};
   
