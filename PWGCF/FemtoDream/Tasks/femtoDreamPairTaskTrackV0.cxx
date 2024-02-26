@@ -154,6 +154,7 @@ struct femtoDreamPairTaskTrackV0 {
   ConfigurableAxis ConfBinkstar{"ConfBinkstar", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis ConfBinkT{"ConfBinkT", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis ConfBinmT{"ConfBinmT", {225, 0., 7.5}, "binning mT"};
+  ConfigurableAxis ConfBinmultTempFit{"ConfBinmultTempFit", {1, 0, 1}, "multiplicity Binning for the TempFitVar plot"};
 
   ConfigurableAxis ConfBin4Dkstar{"ConfBin4Dkstar", {1500, 0., 6.}, "binning kstar for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
   ConfigurableAxis ConfBin4DmT{"ConfBin4DmT", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
@@ -186,10 +187,10 @@ struct femtoDreamPairTaskTrackV0 {
     // void init(HistogramRegistry* registry,
     //    T& MomentumBins, T& tempFitVarBins, T& NsigmaTPCBins, T& NsigmaTOFBins, T& NsigmaTPCTOFBins, T& InvMassBins,
     //    bool isMC, int pdgCode, bool isDebug = false)
-    trackHistoPartOne.init(&qaRegistry, ConfOptDummy, ConfOptDummy, ConfBinpTTrack, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarTrack, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk1_PDGCode);
-    trackHistoPartTwo.init(&qaRegistry, ConfOptDummy, ConfOptDummy, ConfBinpTV0, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarV0, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfBinInvMass, ConfOptIsMC, ConfV02_PDGCode);
-    posChildHistos.init(&qaRegistry, ConfOptDummy, ConfOptDummy, ConfBinpTV0Child, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarV0Child, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, false, 0);
-    negChildHistos.init(&qaRegistry, ConfOptDummy, ConfOptDummy, ConfBinpTV0Child, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarV0Child, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, false, 0);
+    trackHistoPartOne.init(&qaRegistry, ConfBinmultTempFit, ConfOptDummy, ConfBinpTTrack, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarTrack, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk1_PDGCode);
+    trackHistoPartTwo.init(&qaRegistry, ConfBinmultTempFit, ConfOptDummy, ConfBinpTV0, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarV0, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfBinInvMass, ConfOptIsMC, ConfV02_PDGCode);
+    posChildHistos.init(&qaRegistry, ConfBinmultTempFit, ConfOptDummy, ConfBinpTV0Child, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarV0Child, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, false, 0);
+    negChildHistos.init(&qaRegistry, ConfBinmultTempFit, ConfOptDummy, ConfBinpTV0Child, ConfOptDummy, ConfOptDummy, ConfBinTempFitVarV0Child, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, false, 0);
 
     sameEventCont.init(&resultRegistry,
                        ConfBinkstar, ConfBinpT, ConfBinkT, ConfBinmT, ConfMixingBinMult, ConfMixingBinMultPercentile,
@@ -261,7 +262,7 @@ struct femtoDreamPairTaskTrackV0 {
   {
     /// Histogramming same event
     for (auto& part : SliceTrk1) {
-      trackHistoPartOne.fillQA<isMC, false>(part, col, aod::femtodreamparticle::kPt);
+      trackHistoPartOne.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
     }
     for (auto& v0 : SliceV02) {
       const auto& posChild = parts.iteratorAt(v0.index() - 2);
@@ -277,9 +278,9 @@ struct femtoDreamPairTaskTrackV0 {
           ((posChild.pidcut() & ConfV02_ChildPos_TPCBit) == ConfV02_ChildPos_TPCBit) &&
           ((negChild.cut() & ConfV02_ChildNeg_CutBit) == ConfV02_ChildNeg_CutBit) &&
           ((negChild.pidcut() & ConfV02_ChildNeg_TPCBit) == ConfV02_ChildNeg_TPCBit)) {
-        trackHistoPartTwo.fillQA<isMC, false>(v0, col, aod::femtodreamparticle::kPt);
-        posChildHistos.fillQA<false, false>(posChild, col, aod::femtodreamparticle::kPt);
-        negChildHistos.fillQA<false, false>(negChild, col, aod::femtodreamparticle::kPt);
+        trackHistoPartTwo.fillQA<isMC, false>(v0, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+        posChildHistos.fillQA<false, false>(posChild, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+        negChildHistos.fillQA<false, false>(negChild, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
       }
     }
     /// Now build particle combinations

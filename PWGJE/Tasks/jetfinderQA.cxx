@@ -765,7 +765,7 @@ struct JetFinderQATask {
         registry.fill(HIST("h3_jet_r_jet_phi_collision"), jet.r() / 100.0, jet.phi(), 3.0);
       }
 
-      for (auto& constituent : jet.template tracks_as<JetTracks>()) {
+      for (auto& constituent : jet.template tracks_as<soa::Filtered<JetTracks>>()) {
         registry.fill(HIST("h3_jet_r_jet_pt_track_pt_MB"), jet.r() / 100.0, jet.pt(), constituent.pt());
         registry.fill(HIST("h3_jet_r_jet_pt_track_eta_MB"), jet.r() / 100.0, jet.pt(), constituent.eta());
         registry.fill(HIST("h3_jet_r_jet_pt_track_phi_MB"), jet.r() / 100.0, jet.pt(), constituent.phi());

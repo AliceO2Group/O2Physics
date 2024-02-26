@@ -42,6 +42,7 @@ struct JetDerivedDataWriter {
   Configurable<float> chargedD0JetPtMin{"chargedD0JetPtMin", 0.0, "Minimum charged D0 jet pt to accept event"};
   Configurable<float> chargedLcJetPtMin{"chargedLcJetPtMin", 0.0, "Minimum charged Lc jet pt to accept event"};
 
+  Configurable<bool> performTrackSelection{"performTrackSelection", true, "only save tracks that pass one of the track selections"};
   Configurable<bool> saveBCsTable{"saveBCsTable", true, "save the bunch crossing table to the output"};
   Configurable<bool> saveClustersTable{"saveClustersTable", true, "save the clusters table to the output"};
   Configurable<bool> saveD0Table{"saveD0Table", false, "save the D0 table to the output"};
@@ -87,6 +88,15 @@ struct JetDerivedDataWriter {
   std::vector<bool> McCollisionFlag;
   std::vector<int> bcIndicies;
   std::map<int32_t, int32_t> bcMapping;
+
+  uint32_t precisionPositionMask;
+  uint32_t precisionMomentumMask;
+
+  void init(InitContext& context)
+  {
+    precisionPositionMask = 0xFFFFFC00; // 13 bits
+    precisionMomentumMask = 0xFFFFFC00; // 13 bits  this is currently keept at 13 bits wihich gives roughly a resolution of 1/8000. This can be increased to 15 bits if really needed
+  }
 
   bool acceptCollision(aod::JCollision const& collision)
   {
@@ -168,7 +178,7 @@ struct JetDerivedDataWriter {
         }
       }
 
-      storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.centrality(), collision.eventSel(), collision.alias_raw());
+      storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.eventSel(), collision.alias_raw());
       storedJCollisionsParentIndexTable(collision.collisionId());
       if (saveBCsTable) {
         int32_t storedBCID = -1;
@@ -182,10 +192,10 @@ struct JetDerivedDataWriter {
       storedJFullTriggerSelsTable(collision.fullTriggerSel());
 
       for (const auto& track : tracks) {
-        if (track.trackSel() == 0) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept
+        if (performTrackSelection && !(track.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept
           continue;
         }
-        storedJTracksTable(storedJCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(track.pt()), o2::math_utils::detail::truncateFloatFraction(track.eta()), o2::math_utils::detail::truncateFloatFraction(track.phi()), o2::math_utils::detail::truncateFloatFraction(track.energy()), track.sign(), track.trackSel());
+        storedJTracksTable(storedJCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(track.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(track.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(track.phi(), precisionPositionMask), track.trackSel());
         storedJTracksParentIndexTable(track.trackId());
         trackMapping.insert(std::make_pair(track.globalIndex(), storedJTracksTable.lastIndex()));
       }
@@ -292,7 +302,7 @@ struct JetDerivedDataWriter {
               i++;
             }
           }
-          storedJMcParticlesTable(storedJMcCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(particle.pt()), o2::math_utils::detail::truncateFloatFraction(particle.eta()), o2::math_utils::detail::truncateFloatFraction(particle.phi()), o2::math_utils::detail::truncateFloatFraction(particle.y()), o2::math_utils::detail::truncateFloatFraction(particle.e()), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId);
+          storedJMcParticlesTable(storedJMcCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(particle.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(particle.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.phi(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.y(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.e(), precisionMomentumMask), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId);
           storedJParticlesParentIndexTable(particle.mcParticleId());
         }
 
@@ -334,7 +344,7 @@ struct JetDerivedDataWriter {
             }
           }
 
-          storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.centrality(), collision.eventSel(), collision.alias_raw());
+          storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.eventSel(), collision.alias_raw());
           storedJCollisionsParentIndexTable(collision.collisionId());
 
           auto JMcCollisionIndex = mcCollisionMapping.find(mcCollision.globalIndex());
@@ -354,10 +364,10 @@ struct JetDerivedDataWriter {
 
           const auto tracksPerCollision = tracks.sliceBy(TracksPerCollision, collision.globalIndex());
           for (const auto& track : tracksPerCollision) {
-            if (track.trackSel() == 0) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept
+            if (performTrackSelection && !(track.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept
               continue;
             }
-            storedJTracksTable(storedJCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(track.pt()), o2::math_utils::detail::truncateFloatFraction(track.eta()), o2::math_utils::detail::truncateFloatFraction(track.phi()), o2::math_utils::detail::truncateFloatFraction(track.energy()), track.sign(), track.trackSel());
+            storedJTracksTable(storedJCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(track.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(track.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(track.phi(), precisionPositionMask), track.trackSel());
             storedJTracksParentIndexTable(track.trackId());
 
             if (track.has_mcParticle()) {
@@ -468,7 +478,7 @@ struct JetDerivedDataWriter {
               i++;
             }
           }
-          storedJMcParticlesTable(storedJMcCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(particle.pt()), o2::math_utils::detail::truncateFloatFraction(particle.eta()), o2::math_utils::detail::truncateFloatFraction(particle.phi()), o2::math_utils::detail::truncateFloatFraction(particle.y()), o2::math_utils::detail::truncateFloatFraction(particle.e()), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId);
+          storedJMcParticlesTable(storedJMcCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(particle.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(particle.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.phi(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.y(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.e(), precisionMomentumMask), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId);
           storedJParticlesParentIndexTable(particle.mcParticleId());
         }
 

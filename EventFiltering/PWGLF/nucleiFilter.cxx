@@ -109,6 +109,7 @@ struct nucleiFilter {
   Configurable<int> mincrossedrowsproton{"mincrossedrowsproton", 90, "min tpc crossed rows for pion"};
   Configurable<int> mincrossedrowspion{"mincrossedrowspion", 70, "min tpc crossed rows"};
   Configurable<int> mincrossedrowsdeuteron{"mincrossedrowsdeuteron", 100, "min tpc crossed rows for deuteron"};
+  Configurable<bool> fixTPCinnerParam{"fixTPCinnerParam", false, "Fix TPC inner param"};
 
   HistogramRegistry qaHists{"qaHists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -175,34 +176,36 @@ struct nucleiFilter {
         track.tofNSigmaDe(), track.tofNSigmaTr(), track.tofNSigmaHe()};
       const int iC{track.sign() < 0};
 
+      float fixTPCrigidity{(fixTPCinnerParam && (track.pidForTracking() == track::PID::Helium3 || track.pidForTracking() == track::PID::Alpha)) ? 0.5f : 1.f};
+
       for (int iN{0}; iN < nNuclei; ++iN) {
         /// Cheap checks first
-        if (track.tpcInnerParam() < cfgMinTPCmom->get(iN, iC)) {
+        if (track.tpcInnerParam() * fixTPCrigidity < cfgMinTPCmom->get(iN, iC)) {
           continue;
         }
 
         if (cfgBetheBlochParams->get(iN, 5u) > 0.f) {
-          double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * bgScalings[iN][iC]), cfgBetheBlochParams->get(iN, 0u), cfgBetheBlochParams->get(iN, 1u), cfgBetheBlochParams->get(iN, 2u), cfgBetheBlochParams->get(iN, 3u), cfgBetheBlochParams->get(iN, 4u))};
+          double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * fixTPCrigidity * bgScalings[iN][iC]), cfgBetheBlochParams->get(iN, 0u), cfgBetheBlochParams->get(iN, 1u), cfgBetheBlochParams->get(iN, 2u), cfgBetheBlochParams->get(iN, 3u), cfgBetheBlochParams->get(iN, 4u))};
           double expSigma{expBethe * cfgBetheBlochParams->get(iN, 5u)};
           nSigmaTPC[iN] = static_cast<float>((track.tpcSignal() - expBethe) / expSigma);
         }
-        h2TPCnSigma[iN]->Fill(track.sign() * track.tpcInnerParam(), nSigmaTPC[iN]);
+        h2TPCnSigma[iN]->Fill(track.sign() * track.tpcInnerParam() * fixTPCrigidity, nSigmaTPC[iN]);
         if (nSigmaTPC[iN] < cfgCutsPID->get(iN, 0u) || nSigmaTPC[iN] > cfgCutsPID->get(iN, 1u)) {
           continue;
         }
-        if (track.pt() > cfgCutsPID->get(iN, 4u) && (nSigmaTOF[iN] < cfgCutsPID->get(iN, 2u) || nSigmaTOF[iN] > cfgCutsPID->get(iN, 3u))) {
+        if (track.p() > cfgCutsPID->get(iN, 4u) && (nSigmaTOF[iN] < cfgCutsPID->get(iN, 2u) || nSigmaTOF[iN] > cfgCutsPID->get(iN, 3u))) {
           continue;
         }
         keepEvent[iN] = true;
         if (keepEvent[iN]) {
-          h2TPCsignal[iN]->Fill(track.sign() * track.tpcInnerParam(), track.tpcSignal());
+          h2TPCsignal[iN]->Fill(track.sign() * track.tpcInnerParam() * fixTPCrigidity, track.tpcSignal());
         }
       }
 
       //
       // fill QA histograms
       //
-      qaHists.fill(HIST("fTPCsignal"), track.sign() * track.tpcInnerParam(), track.tpcSignal());
+      qaHists.fill(HIST("fTPCsignal"), track.sign() * track.tpcInnerParam() * fixTPCrigidity, track.tpcSignal());
 
     } // end loop over tracks
 
@@ -216,7 +219,7 @@ struct nucleiFilter {
       if (vtx.vtxcosPA(collision.posX(), collision.posY(), collision.posZ()) < minCosPA3body) {
         continue;
       }
-      float ct = vtx.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassHyperTriton;
+      float ct = vtx.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * constants::physics::MassHyperTriton;
       if (ct > lifetimecut) {
         continue;
       }
@@ -226,17 +229,17 @@ struct nucleiFilter {
       if ((track2.tofNSigmaDe() < TofPidNsigmaMin || track2.tofNSigmaDe() > TofPidNsigmaMax) && track2.p() > minDeuteronPUseTOF) {
         continue;
       }
-      if (TMath::Abs(track0.tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(track1.tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mHypertriton() > h3LMassLowerlimit && vtx.mHypertriton() < h3LMassUpperlimit) {
+      if (std::abs(track0.tpcNSigmaPr()) < TpcPidNsigmaCut && std::abs(track1.tpcNSigmaPi()) < TpcPidNsigmaCut && std::abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mHypertriton() > h3LMassLowerlimit && vtx.mHypertriton() < h3LMassUpperlimit) {
         if (track0.tpcNClsCrossedRows() > mincrossedrowsproton && track1.tpcNClsCrossedRows() > mincrossedrowspion && track2.tpcNClsCrossedRows() > mincrossedrowsdeuteron) {
-          if (TMath::Abs(vtx.dcatrack1topv()) > dcapiontopv) {
+          if (std::abs(vtx.dcatrack1topv()) > dcapiontopv) {
             keepEvent[3] = true;
             qaHists.fill(HIST("fH3LMassVsPt"), vtx.pt(), vtx.mHypertriton());
           }
         }
       }
-      if (TMath::Abs(track0.tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(track1.tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mAntiHypertriton() > h3LMassLowerlimit && vtx.mAntiHypertriton() < h3LMassUpperlimit) {
+      if (std::abs(track0.tpcNSigmaPi()) < TpcPidNsigmaCut && std::abs(track1.tpcNSigmaPr()) < TpcPidNsigmaCut && std::abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mAntiHypertriton() > h3LMassLowerlimit && vtx.mAntiHypertriton() < h3LMassUpperlimit) {
         if (track0.tpcNClsCrossedRows() > mincrossedrowspion && track1.tpcNClsCrossedRows() > mincrossedrowsproton && track2.tpcNClsCrossedRows() > mincrossedrowsdeuteron) {
-          if (TMath::Abs(vtx.dcatrack0topv()) > dcapiontopv) {
+          if (std::abs(vtx.dcatrack0topv()) > dcapiontopv) {
             keepEvent[3] = true;
             qaHists.fill(HIST("fH3LMassVsPt"), vtx.pt(), vtx.mAntiHypertriton());
           }

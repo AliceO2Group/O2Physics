@@ -57,13 +57,14 @@ class CollisonCuts
     }
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/posZ", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
-    mHistogramRegistry->add("Event/CentFV0A", "; vCentV0A; Entries", kTH1F, {{110, 0, 110}});
-    mHistogramRegistry->add("Event/CentFT0M", "; vCentT0M; Entries", kTH1F, {{110, 0, 110}});
-    mHistogramRegistry->add("Event/CentFT0C", "; vCentT0C; Entries", kTH1F, {{110, 0, 110}});
-    mHistogramRegistry->add("Event/CentFT0A", "; vCentT0A; Entries", kTH1F, {{110, 0, 110}});
-    mHistogramRegistry->add("Event/MultFT0M", "; FT0M signal; Entries", kTH1F, {{100000, 0, 100000}});
-    mHistogramRegistry->add("Event/MultFT0C", "; FT0C signal; Entries", kTH1F, {{100000, 0, 100000}});
-    mHistogramRegistry->add("Event/MultFT0A", "; FT0A signal; Entries", kTH1F, {{100000, 0, 100000}});
+    if (mCheckIsRun3) {
+      mHistogramRegistry->add("Event/CentFV0A", "; vCentV0A; Entries", kTH1F, {{110, 0, 110}});
+      mHistogramRegistry->add("Event/CentFT0M", "; vCentT0M; Entries", kTH1F, {{110, 0, 110}});
+      mHistogramRegistry->add("Event/CentFT0C", "; vCentT0C; Entries", kTH1F, {{110, 0, 110}});
+      mHistogramRegistry->add("Event/CentFT0A", "; vCentT0A; Entries", kTH1F, {{110, 0, 110}});
+    } else {
+      mHistogramRegistry->add("Event/CentRun2V0M", "; vCentV0M; Entries", kTH1F, {{110, 0, 110}});
+    }
   }
 
   /// Print some debug information
@@ -125,9 +126,18 @@ class CollisonCuts
       mHistogramRegistry->fill(HIST("Event/CentFT0M"), col.centFT0M());
       mHistogramRegistry->fill(HIST("Event/CentFT0C"), col.centFT0C());
       mHistogramRegistry->fill(HIST("Event/CentFT0A"), col.centFT0A());
-      mHistogramRegistry->fill(HIST("Event/MultFT0M"), col.multFT0M());
-      mHistogramRegistry->fill(HIST("Event/MultFT0C"), col.multFT0C());
-      mHistogramRegistry->fill(HIST("Event/MultFT0A"), col.multFT0A());
+    }
+  }
+
+  /// Some basic QA of the event
+  /// \tparam T type of the collision
+  /// \param col Collision
+  template <typename T>
+  void fillQARun2(T const& col)
+  {
+    if (mHistogramRegistry) {
+      mHistogramRegistry->fill(HIST("Event/posZ"), col.posZ());
+      mHistogramRegistry->fill(HIST("Event/CentRun2V0M"), col.centRun2V0M());
     }
   }
 

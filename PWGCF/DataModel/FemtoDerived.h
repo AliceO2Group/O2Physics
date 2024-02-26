@@ -220,8 +220,10 @@ enum ParticleOriginMCTruth {
   kMaterial,                   //! Particle from a material
   kNotPrimary,                 //! Not primary particles (kept for compatibility reasons with the FullProducer task. will be removed, since we look at "non primaries" more differentially now)
   kFake,                       //! particle, that has NOT the PDG code of the current analysed particle
+  kWrongCollision,             //! particle, that was associated wrongly to the collision
   kSecondaryDaughterLambda,    //! Daughter from a Lambda decay
   kSecondaryDaughterSigmaplus, //! Daughter from a Sigma^plus decay
+  kElse,                       //! none of the above; (NOTE: used to catch bugs. will be removed once MC usage is properly validated)
   kNOriginMCTruthTypes
 };
 

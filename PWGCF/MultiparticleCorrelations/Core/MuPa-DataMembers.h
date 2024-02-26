@@ -86,6 +86,16 @@ struct EventHistograms {
   Double_t fEventCuts[eEventHistograms_N][2] = {{0.}};           // [min,max]
 } eh;                                                            // "eh" labels an instance of group of histograms "EventHistograms"
 
+// *) Event cuts:
+struct EventCuts {
+  TList* fEventCutsList = NULL;   //!<! list to hold all event cuts objects
+  TProfile* fEventCutsPro = NULL; //!<! keeps flags relevant for the event cuts
+  TString fTrigger = "";          // offline trigger, use e.g. "kINT7" for Run 2 and Run 1 data via configurable cTrigger
+  Bool_t fUseTrigger = kFALSE;    // kFALSE by default. Set automatically when supported trigger is set via configurable cTrigger
+  Bool_t fUseSel7 = kFALSE;       // See doc: for Run 2 data and MC
+  Bool_t fUseSel8 = kFALSE;       // See doc: for Run 3 data and MC
+} ec;                             // "ec" is a common label for objects in this struct
+
 // *) Particle histograms:
 struct ParticleHistograms {
   TList* fParticleHistogramsList = NULL;                               //!<! list to hold all control particle histograms
@@ -96,11 +106,18 @@ struct ParticleHistograms {
   Double_t fParticleCuts[eParticleHistograms_N][2] = {{0.}};           // [min,max]
 } ph;                                                                  // "ph" labels an instance of group of histograms "ParticleHistograms"
 
+// *) Particle cuts:
+struct ParticleCuts {
+  TList* fParticleCutsList = NULL;   //!<! list to hold all particle cuts objects
+  TProfile* fParticleCutsPro = NULL; //!<! keeps flags relevant for the particle cuts
+  // ...  TBI 20240223
+} pc; // "pc" is a common label for objects in this struct
+
 // *) Q-vectors:
 struct Qvector {
   TList* fQvectorList = NULL;                                                                                                        // list to hold all Q-vector objects
   TProfile* fQvectorFlagsPro = NULL;                                                                                                 // profile to hold all flags for Q-vector
-  Bool_t fCalculateQvector = kTRUE;                                                                                                  // to calculate or not to calculate Q-vectors, that's a Boolean...
+  Bool_t fCalculateQvectors = kTRUE;                                                                                                 // to calculate or not to calculate Q-vectors, that's a Boolean...
   TComplex fQ[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}};                                         //! generic Q-vector
   TComplex fQvector[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}};                                   //! "integrated" Q-vector
   TComplex fqvector[eqvectorKine_N][gMaxNoBinsKine][gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{{TComplex(0., 0.)}}}; //! "differenttial" q-vector [kine var.][binNo][fMaxHarmonic*fMaxCorrelator+1][fMaxCorrelator+1] = [6*12+1][12+1]
@@ -164,7 +181,7 @@ struct Results {                                   // This is in addition also s
   TProfile* fResultsPro[eAsFunctionOf_N] = {NULL}; //!<! example histogram to store some results + "abstract" interface, which defines common binning, etc., for other groups of histograms.
 
   // Remark: These settings apply to following categories fCorrelationsPro, fNestedLoopsPro, fTest0Pro, and fResultsHist
-  Double_t fResultsProFixedLengthBins[eAsFunctionOf_N][3] = {{0.}};                                               // [nBins,min,max]
+  Float_t fResultsProFixedLengthBins[eAsFunctionOf_N][3] = {{0.}};                                                // [nBins,min,max]
   TArrayD* fResultsProVariableLengthBins[eAsFunctionOf_N] = {NULL};                                               // here for each variable in eAsFunctionOf I specify array holding bin boundaries
   Bool_t fUseResultsProVariableLengthBins[eAsFunctionOf_N] = {kFALSE};                                            // use or not variable-length bins
   TString fResultsProVariableLengthBinsString[eAsFunctionOf_N] = {""};                                            // TBI 20240113 temporary I do it this way

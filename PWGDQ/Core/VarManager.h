@@ -127,6 +127,22 @@ class VarManager : public TObject
     kNMaxCandidateTypes
   };
 
+  enum BarrelTrackFilteringBits {
+    kIsConversionLeg = 0,     // electron from conversions
+    kIsK0sLeg,                // pion from K0s
+    kIsLambdaLeg,             // proton or pion from Lambda
+    kIsALambdaLeg,            // proton or pion from anti-Lambda
+    kIsOmegaLeg,              // kaon from Omega baryon decay
+    kDalitzBits = 5,          // first bit for Dalitz tagged tracks
+    kBarrelUserCutsBits = 13, // first bit for user track cuts
+    kIsTPCPostcalibrated = 63 // tracks were postcalibrated for the TPC PID
+  };
+
+  enum MuonTrackFilteringBits {
+    kMuonUserCutsBits = 0, // first bit for user muon cuts
+    kMuonIsPropagated = 7  // whether the muon was propagated already
+  };
+
  public:
   enum Variables {
     kNothing = -1,
@@ -176,6 +192,7 @@ class VarManager : public TObject
     kMultZNA,
     kMultZNC,
     kMultTracklets,
+    kMultDimuons,
     kMCEventGeneratorId,
     kMCVtxX,
     kMCVtxY,
@@ -342,7 +359,7 @@ class VarManager : public TObject
     kIsDalitzLeg,             // Up to 8 dalitz selections
     kBarrelNAssocsInBunch,    // number of in bunch collision associations
     kBarrelNAssocsOutOfBunch, // number of out of bunch collision associations
-    kNBarrelTrackVariables = kIsDalitzLeg + 8,
+    kNBarrelTrackVariables,
 
     // Muon track variables
     kMuonNClusters,
@@ -441,6 +458,13 @@ class VarManager : public TObject
     kDCATrackVtxProd,
     kU2Q2,
     kU3Q3,
+    kCORR2REF,
+    kCORR2POI,
+    kCORR4REF,
+    kCORR4POI,
+    kC4REF,
+    kC4POI,
+    kV4,
     kPsi2A,
     kPsi2B,
     kPsi2C,
@@ -760,12 +784,13 @@ class VarManager : public TObject
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
 
-  ClassDefNV(VarManager, 3)
+  ClassDef(VarManager, 3);
 };
 
 template <typename T, typename U, typename V>
 auto VarManager::getRotatedCovMatrixXX(const T& matrix, U phi, V theta)
 {
+  //
   auto cp = std::cos(phi);
   auto sp = std::sin(phi);
   auto ct = std::cos(theta);
@@ -870,13 +895,12 @@ o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C
     propmuon.setZ(proptrack.getZ());
     propmuon.setCovariances(proptrack.getCovariances());
   } else if (static_cast<int>(muon.trackType()) < 2) {
-    /*double centerMFT[3] = {0, 0, -61.4};
+    double centerMFT[3] = {0, 0, -61.4};
     o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
     auto Bz = field->getBz(centerMFT); // Get field at centre of MFT
-    //auto Bz = fgMagField;
     auto geoMan = o2::base::GeometryManager::meanMaterialBudget(muon.x(), muon.y(), muon.z(), collision.posX(), collision.posY(), collision.posZ());
     auto x2x0 = static_cast<float>(geoMan.meanX2X0);
-    fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);*/
+    fwdtrack.propagateToVtxhelixWithMCS(collision.posZ(), {collision.posX(), collision.posY()}, {collision.covXX(), collision.covYY()}, Bz, x2x0);
     propmuon.setParameters(fwdtrack.getParameters());
     propmuon.setZ(fwdtrack.getZ());
     propmuon.setCovariances(fwdtrack.getCovariances());
@@ -890,6 +914,13 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
   if (!values) {
     values = fgValues;
   }
+
+  if constexpr ((fillMap & ReducedMuonCov) > 0) {
+    if (muon.filteringFlags() & (uint8_t(1) << VarManager::kMuonIsPropagated)) { // the muon is already propagated, so nothing to do
+      return;
+    }
+  }
+
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
     o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muon, collision);
 
@@ -1227,20 +1258,20 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kCharge] = track.sign();
 
     if constexpr ((fillMap & ReducedTrack) > 0 && !((fillMap & Pair) > 0)) {
-      values[kIsGlobalTrack] = track.filteringFlags_bit(0);
-      values[kIsGlobalTrackSDD] = track.filteringFlags_bit(1);
+      // values[kIsGlobalTrack] = track.filteringFlags_bit(0);
+      // values[kIsGlobalTrackSDD] = track.filteringFlags_bit(1);
       values[kIsAmbiguous] = track.isAmbiguous();
 
-      values[kIsLegFromGamma] = track.filteringFlags_bit(2);
-      values[kIsLegFromK0S] = track.filteringFlags_bit(3);
-      values[kIsLegFromLambda] = track.filteringFlags_bit(4);
-      values[kIsLegFromAntiLambda] = track.filteringFlags_bit(5);
-      values[kIsLegFromOmega] = track.filteringFlags_bit(6);
+      values[kIsLegFromGamma] = track.filteringFlags_bit(VarManager::kIsConversionLeg);
+      values[kIsLegFromK0S] = track.filteringFlags_bit(VarManager::kIsK0sLeg);
+      values[kIsLegFromLambda] = track.filteringFlags_bit(VarManager::kIsLambdaLeg);
+      values[kIsLegFromAntiLambda] = track.filteringFlags_bit(VarManager::kIsALambdaLeg);
+      values[kIsLegFromOmega] = track.filteringFlags_bit(VarManager::kIsOmegaLeg);
 
       values[kIsProtonFromLambdaAndAntiLambda] = static_cast<bool>((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
 
       for (int i = 0; i < 8; i++) {
-        values[kIsDalitzLeg + i] = track.filteringFlags_bit(7 + i);
+        values[kIsDalitzLeg + i] = track.filteringFlags_bit(VarManager::kDalitzBits + i);
       }
     }
   }
@@ -1401,6 +1432,12 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kTPCnSigmaKa] = track.tpcNSigmaKa();
     values[kTPCnSigmaPr] = track.tpcNSigmaPr();
 
+    bool isTPCCalibrated = false;
+    if constexpr ((fillMap & ReducedTrackBarrelPID) > 0) {
+      if (track.filteringFlags_bit(kIsTPCPostcalibrated)) {
+        isTPCCalibrated = true;
+      }
+    }
     // compute TPC postcalibrated electron nsigma based on calibration histograms from CCDB
     if (fgUsedVars[kTPCnSigmaEl_Corr] && fgRunTPCPostCalibration[0]) {
       TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCElectronMean]);
@@ -1418,7 +1455,11 @@ void VarManager::FillTrack(T const& track, float* values)
 
       double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
       double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
-      values[kTPCnSigmaEl_Corr] = (values[kTPCnSigmaEl] - mean) / width;
+      if (!isTPCCalibrated) {
+        values[kTPCnSigmaEl_Corr] = (values[kTPCnSigmaEl] - mean) / width;
+      } else {
+        values[kTPCnSigmaEl_Corr] = track.tpcNSigmaEl();
+      }
     }
     // compute TPC postcalibrated pion nsigma if required
     if (fgUsedVars[kTPCnSigmaPi_Corr] && fgRunTPCPostCalibration[1]) {
@@ -1437,7 +1478,11 @@ void VarManager::FillTrack(T const& track, float* values)
 
       double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
       double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
-      values[kTPCnSigmaPi_Corr] = (values[kTPCnSigmaPi] - mean) / width;
+      if (!isTPCCalibrated) {
+        values[kTPCnSigmaPi_Corr] = (values[kTPCnSigmaPi] - mean) / width;
+      } else {
+        values[kTPCnSigmaPi_Corr] = track.tpcNSigmaPi();
+      }
     }
     if (fgUsedVars[kTPCnSigmaKa_Corr] && fgRunTPCPostCalibration[2]) {
       TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCKaonMean]);
@@ -1455,7 +1500,11 @@ void VarManager::FillTrack(T const& track, float* values)
 
       double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
       double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
-      values[kTPCnSigmaKa_Corr] = (values[kTPCnSigmaKa] - mean) / width;
+      if (!isTPCCalibrated) {
+        values[kTPCnSigmaKa_Corr] = (values[kTPCnSigmaKa] - mean) / width;
+      } else {
+        values[kTPCnSigmaKa_Corr] = track.tpcNSigmaKa();
+      }
     }
     // compute TPC postcalibrated proton nsigma if required
     if (fgUsedVars[kTPCnSigmaPr_Corr] && fgRunTPCPostCalibration[3]) {
@@ -1474,7 +1523,11 @@ void VarManager::FillTrack(T const& track, float* values)
 
       double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
       double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
-      values[kTPCnSigmaPr_Corr] = (values[kTPCnSigmaPr] - mean) / width;
+      if (!isTPCCalibrated) {
+        values[kTPCnSigmaPr_Corr] = (values[kTPCnSigmaPr] - mean) / width;
+      } else {
+        values[kTPCnSigmaPr_Corr] = track.tpcNSigmaPr();
+      }
     }
     values[kTOFnSigmaEl] = track.tofNSigmaEl();
     values[kTOFnSigmaPi] = track.tofNSigmaPi();
@@ -2634,6 +2687,15 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+
+  //  kV4, kC4POI, kC4REF etc.
+  values[kCORR2REF] = (values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A] - values[kMultA]) / (values[kMultA] * (values[kMultA] - 1));
+  values[kCORR2POI] = (values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi())) / (values[kMultA] * values[kMultDimuons]);
+  values[kCORR4REF] = (std::pow((values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A]), 2.0) + values[kQ4X0A] * values[kQ4X0A] + values[kQ4Y0A] * values[kQ4Y0A] - 2 * (values[kQ4X0A] * values[kQ2X0A] * values[kQ2X0A] - values[kQ4X0A] * values[kQ2Y0A] * values[kQ2Y0A] + 2 * values[kQ4Y0A] * values[kQ2Y0A] * values[kQ2X0A])) / (values[kMultA] * (values[kMultA] - 1) * (values[kMultA] - 2) * (values[kMultA] - 3)) - 2 * (2 * (values[kMultA] - 2) * (values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A]) - values[kMultA] * (values[kMultA] - 3)) / (values[kMultA] * (values[kMultA] - 1) * (values[kMultA] - 2) * (values[kMultA] - 3));
+  values[kCORR4POI] = (values[kQ2X0A] * values[kQ2X0A] * values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * values[kQ2Y0A] * values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2X0A] * values[kQ2X0A] * values[kQ2Y0A] * std::sin(2 * v12.Phi()) + values[kQ2Y0A] * values[kQ2Y0A] * values[kQ2Y0A] * std::sin(2 * v12.Phi()) - std::cos(2 * v12.Phi()) * (values[kQ2X0A] * values[kQ4X0A] + values[kQ2Y0A] * values[kQ4Y0A]) + std::sin(2 * v12.Phi()) * (values[kQ2Y0A] * values[kQ4X0A] - values[kQ2X0A] * values[kQ4Y0A]) - 2 * values[kMultA] * (values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi())) + 2 * (values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi()))) / (values[kMultA] * values[kMultDimuons] * (values[kMultA] - 1) * (values[kMultA] - 2));
+  values[kC4REF] = values[kCORR4REF] - 2 * std::pow(values[kCORR2REF], 2.0);
+  values[kC4POI] = values[kCORR4POI] - 2 * values[kCORR2REF] * values[kCORR2POI];
+  values[kV4] = -values[kC4POI] / std::pow(-values[kC4REF], 0.75);
 
   // TODO: provide different computations for vn
   // Compute the scalar product UQ using Q-vector from A, for second and third harmonic

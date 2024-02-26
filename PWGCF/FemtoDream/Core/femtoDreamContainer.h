@@ -94,7 +94,7 @@ class FemtoDreamContainer
       mHistogramRegistry->add((folderName + "/relPairkstarmTMultMultPercentile").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2}); Multiplicity").c_str(), kTHnSparseF, {femtoObsAxis, mTAxis4D, multAxis4D, multPercentileAxis4D});
     }
     if (extendedplots) {
-      mHistogramRegistry->add((folderName + "/mTPtPart1PtPart2").c_str(), "; #it{m}_{T} (GeV/#it{c}^{2}); #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 1 (GeV/#it{c})", kTH3F, {mTAxis4D, {375, 0., 7.5}, {375, 0., 7.5}});
+      mHistogramRegistry->add((folderName + "/mTPtPart1PtPart2MultPercentile").c_str(), "; #it{m}_{T} (GeV/#it{c}^{2}); #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity Percentile (%)", kTHnSparseF, {mTAxis4D, pTAxis, pTAxis, multPercentileAxis4D});
     }
   }
 
@@ -203,7 +203,7 @@ class FemtoDreamContainer
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkstarmTMultMultPercentile"), femtoObs, mT, mult, multPercentile);
     }
     if (extendedplots) {
-      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/mTPtPart1PtPart2"), mT, part1.pt(), part2.pt());
+      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/mTPtPart1PtPart2MultPercentile"), mT, part1.pt(), part2.pt(), multPercentile);
     }
   }
 
