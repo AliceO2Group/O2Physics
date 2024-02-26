@@ -210,7 +210,7 @@ struct TableMaker {
   std::map<uint32_t, uint32_t> fTrackIndexMap;            // key: old track global index, value: new track global index
   std::map<uint32_t, uint32_t> fFwdTrackIndexMap;         // key: fwd-track global index, value: new fwd-track global index
   std::map<uint32_t, uint32_t> fFwdTrackIndexMapReversed; // key: new fwd-track global index, value: fwd-track global index
-  std::map<uint32_t, uint64_t> fFwdTrackFilterMap;        // key: fwd-track global index, value: fwd-track filter map
+  std::map<uint32_t, uint8_t> fFwdTrackFilterMap;         // key: fwd-track global index, value: fwd-track filter map
   std::map<uint32_t, uint32_t> fMftIndexMap;              // key: MFT tracklet global index, value: new MFT tracklet global index
 
   // FIXME: For now, the skimming is done using the Common track-collision association task, which does not allow to use
@@ -581,29 +581,36 @@ struct TableMaker {
           }
         }
         if (fConfigIsOnlyforMaps) {
-          if (trackFilteringTag & (uint64_t(1) << 0)) { // for electron
+          if (trackFilteringTag & (uint64_t(1) << VarManager::kIsConversionLeg)) { // for electron
             fHistMan->FillHistClass("TrackBarrel_PostCalibElectron", VarManager::fgValues);
           }
-          if (trackFilteringTag & (uint64_t(1) << 1)) { // for pion
+          if (trackFilteringTag & (uint64_t(1) << VarManager::kIsK0sLeg)) { // for pion
             fHistMan->FillHistClass("TrackBarrel_PostCalibPion", VarManager::fgValues);
           }
-          if ((static_cast<bool>(trackFilteringTag & (uint64_t(1) << 2)) * (track.sign()) > 0)) { // for proton from Lambda
+          if ((static_cast<bool>(trackFilteringTag & (uint64_t(1) << VarManager::kIsLambdaLeg)) * (track.sign()) > 0)) { // for proton from Lambda
             fHistMan->FillHistClass("TrackBarrel_PostCalibProton", VarManager::fgValues);
           }
-          if ((static_cast<bool>(trackFilteringTag & (uint64_t(1) << 3)) * (track.sign()) < 0)) { // for proton from AntiLambda
+          if ((static_cast<bool>(trackFilteringTag & (uint64_t(1) << VarManager::kIsALambdaLeg)) * (track.sign()) < 0)) { // for proton from AntiLambda
             fHistMan->FillHistClass("TrackBarrel_PostCalibProton", VarManager::fgValues);
           }
         }
         if (fConfigSaveElectronSample) { // only save electron sample
-          if (!(trackFilteringTag & (uint64_t(1) << 2))) {
+          if (!(trackFilteringTag & (uint64_t(1) << VarManager::kIsConversionLeg))) {
             continue;
           }
         }
       } // end if V0Bits
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
-        trackFilteringTag |= (uint64_t(track.dalitzBits()) << 5); // BIT5-12: Dalitz
+        trackFilteringTag |= (uint64_t(track.dalitzBits()) << VarManager::kDalitzBits); // BIT5-12: Dalitz
       }
-      trackFilteringTag |= (uint64_t(trackTempFilterMap) << 13); // BIT13-...:  user track filters
+      trackFilteringTag |= (uint64_t(trackTempFilterMap) << VarManager::kBarrelUserCutsBits); // BIT13-...:  user track filters
+
+      if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackPID)) {
+        if (fConfigComputeTPCpostCalib) {
+          trackFilteringTag |= (uint64_t(1) << VarManager::kIsTPCPostcalibrated);
+        }
+      }
+
       // write the track global index in the map for skimming (to make sure we have it just once)
       if (fTrackIndexMap.find(track.globalIndex()) == fTrackIndexMap.end()) {
         // NOTE: The collision ID that is written in the table is the one found in the first association for this track.
@@ -679,7 +686,7 @@ struct TableMaker {
     //     Muons are written only once, even if they constribute to more than one association,
     //         which means that in the case of multiple associations, the track parameters are wrong and should be computed again at analysis time.
 
-    uint64_t trackFilteringTag = uint64_t(0);
+    uint8_t trackFilteringTag = uint8_t(0);
     uint8_t trackTempFilterMap = uint8_t(0);
     fFwdTrackIndexMapReversed.clear();
 
@@ -689,7 +696,7 @@ struct TableMaker {
       // get the muon
       auto muon = assoc.template fwdtrack_as<TMuons>();
 
-      trackFilteringTag = uint64_t(0);
+      trackFilteringTag = uint8_t(0);
       VarManager::FillTrack<TMuonFillMap>(muon);
       // NOTE: If a muon is associated to multiple collisions, depending on the selections,
       //       it may be accepted for some associations and rejected for other
@@ -714,7 +721,7 @@ struct TableMaker {
       if (!trackTempFilterMap) {
         continue;
       }
-      trackFilteringTag |= uint64_t(trackTempFilterMap); // BIT0-7:  user selection cuts
+      trackFilteringTag = trackTempFilterMap; // BIT0-7:  user selection cuts
 
       // update the index map if this is a new muon (it can already exist in the map from a different collision association)
       if (fFwdTrackIndexMap.find(muon.globalIndex()) == fFwdTrackIndexMap.end()) {
@@ -764,10 +771,10 @@ struct TableMaker {
                 muon.trackTime(), muon.trackTimeRes());
       muonInfo(muon.collisionId(), collision.posX(), collision.posY(), collision.posZ());
       if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
-        muonCov(VarManager::fgValues[VarManager::kX], VarManager::fgValues[VarManager::kY], VarManager::fgValues[VarManager::kZ], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kTgl], muon.sign() / VarManager::fgValues[VarManager::kPt],
-                VarManager::fgValues[VarManager::kMuonCXX], VarManager::fgValues[VarManager::kMuonCXY], VarManager::fgValues[VarManager::kMuonCYY], VarManager::fgValues[VarManager::kMuonCPhiX], VarManager::fgValues[VarManager::kMuonCPhiY], VarManager::fgValues[VarManager::kMuonCPhiPhi],
-                VarManager::fgValues[VarManager::kMuonCTglX], VarManager::fgValues[VarManager::kMuonCTglY], VarManager::fgValues[VarManager::kMuonCTglPhi], VarManager::fgValues[VarManager::kMuonCTglTgl], VarManager::fgValues[VarManager::kMuonC1Pt2X], VarManager::fgValues[VarManager::kMuonC1Pt2Y],
-                VarManager::fgValues[VarManager::kMuonC1Pt2Phi], VarManager::fgValues[VarManager::kMuonC1Pt2Tgl], VarManager::fgValues[VarManager::kMuonC1Pt21Pt2]);
+        muonCov(muon.x(), muon.y(), muon.z(), muon.phi(), muon.tgl(), muon.sign() / muon.pt(),
+                muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(), muon.cPhiPhi(),
+                muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(), muon.c1PtX(), muon.c1PtY(),
+                muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2());
       }
     } // end loop over selected muons
   }   // end skimMuons

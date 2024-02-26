@@ -88,3 +88,8 @@ o2physics_add_dpl_workflow(kshortkshort
     SOURCES KshortKshort.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(phipbpb
+    SOURCES phipbpb.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

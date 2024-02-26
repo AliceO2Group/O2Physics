@@ -366,8 +366,8 @@ struct HfDataCreatorDplusPiReduced {
           int8_t sign{0};
           int8_t flag{0};
           int8_t debug{0};
-          int pdgCodeBeautyMother{0};
-          int pdgCodeCharmMother{0};
+          int pdgCodeBeautyMother{-1};
+          int pdgCodeCharmMother{-1};
           int pdgCodeProng0{0};
           int pdgCodeProng1{0};
           int pdgCodeProng2{0};
@@ -426,20 +426,28 @@ struct HfDataCreatorDplusPiReduced {
                 if (index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
                   flag = BIT(hf_cand_b0::DecayTypeMc::PartlyRecoDecay);
                   pdgCodeBeautyMother = particlesMc.rawIteratorAt(index0Mother).pdgCode();
-                  pdgCodeCharmMother = 1;
+                  pdgCodeCharmMother = 0;
                   pdgCodeProng0 = particleProng0.pdgCode();
                   pdgCodeProng1 = particleProng1.pdgCode();
                   pdgCodeProng2 = particleProng2.pdgCode();
                   pdgCodeProng3 = particleProng3.pdgCode();
                   // look for common c-hadron mother among prongs 0, 1 and 2
                   for (const auto& cHadronMotherHypo : cHadronMotherHypos) {
-                    int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, 2);
-                    int index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, 2);
-                    int index2CharmMother = RecoDecay::getMother(particlesMc, particleProng2, cHadronMotherHypo, true, &sign, 2);
+                    int8_t depthMax = 2;
+                    if (cHadronMotherHypo == Pdg::kDStar) { // to include D* -> D π0/γ and D* -> D0 π
+                      depthMax += 1;
+                    }
+                    int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
+                    int index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, depthMax);
+                    int index2CharmMother = RecoDecay::getMother(particlesMc, particleProng2, cHadronMotherHypo, true, &sign, depthMax);
                     if (index0CharmMother > -1 && index1CharmMother > -1 && index2CharmMother > -1) {
                       if (index0CharmMother == index1CharmMother && index1CharmMother == index2CharmMother) {
-                        pdgCodeCharmMother = particlesMc.rawIteratorAt(index0CharmMother).pdgCode();
-                        break;
+                        // pdgCodeCharmMother =
+                        //   Pdg::kDPlus (if D+ is the mother and does not come from D*+)
+                        //   Pdg::kDPlus + Pdg::kDStar (if D+ is the mother and D*+ -> D+ π0/γ)
+                        //   Pdg::kDStar (if D*+ is the mother and D*+ -> D0 π+)
+                        //   Pdg::kDS (if Ds is the mother)
+                        pdgCodeCharmMother += std::abs(particlesMc.rawIteratorAt(index0CharmMother).pdgCode());
                       }
                     }
                   }

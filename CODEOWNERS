@@ -19,6 +19,7 @@
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo
 /DPG/Tasks/AOTTrack @alibuild @mfaggin @belikov @njacazio
 /DPG/Tasks/TOF @alibuild @noferini @njacazio
+/DPG/Tasks/FT0 @alibuild @afurs
 /EventFiltering @alibuild @mpuccio @strogolo
 /EventFiltering/PWGHF @alibuild @fgrosa @zhangbiao-phy @mpuccio @strogolo
 /EventFiltering/PWGUD @alibuild @pbuehler @mpuccio @strogolo

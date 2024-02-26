@@ -59,15 +59,15 @@ struct zdcSP {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Produces<aod::ZdcSPTable> zdcSPTable;
   int mRunNumber{-1};
-  Configurable<float> cfgMaxCentFT0C{"cfgMaxCentFT0C", 90.f, "Maximum centrality FT0C"};
-  Configurable<float> cfgDownscaling{"cfgDownscaling", 1.f, "Percentage of events to be processed"};
+  Configurable<float> cfgCalibrationMaxCentFT0C{"cfgCalibrationMaxCentFT0C", 90.f, "Maximum centrality FT0C"};
+  Configurable<float> cfgCalibrationDownscaling{"cfgCalibrationDownscaling", 1.f, "Percentage of events to be processed"};
 
   HistogramRegistry mHistos;
 
   template <class collision_t>
   bool eventSelection(collision_t& collision)
   {
-    return collision.sel8() && collision.centFT0C() < cfgMaxCentFT0C && gRandom->Uniform() < cfgDownscaling;
+    return collision.sel8() && collision.centFT0C() < cfgCalibrationMaxCentFT0C && gRandom->Uniform() < cfgCalibrationDownscaling;
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -87,7 +87,7 @@ struct zdcSP {
   }
 
   Preslice<aod::Zdcs> zdcPerCollision = aod::collision::bcId;
-  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& collision, BCsRun3 const& bcs, aod::Zdcs const&)
+  void processCalibrationData(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& collision, BCsRun3 const& bcs, aod::Zdcs const&)
   {
     if (bcs.size() != 0) {
       gRandom->SetSeed(bcs.iteratorAt(0).globalBC());
@@ -113,11 +113,11 @@ struct zdcSP {
     }
     float znaCommon = zdc.energyCommonZNA() < 0 ? kVeryNegative : zdc.energyCommonZNA();
     float zncCommon = zdc.energyCommonZNC() < 0 ? kVeryNegative : zdc.energyCommonZNC();
-    zdcSPTable(bc.globalBC(), collision.posX(), collision.posY(), collision.posZ(), collision.centFT0C(),
+    zdcSPTable(bc.globalBC(), bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.centFT0C(),
                znaCommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3],
                zncCommon, zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3]);
   }
-  PROCESS_SWITCH(zdcSP, processData, "Data analysis", true);
+  PROCESS_SWITCH(zdcSP, processCalibrationData, "Data analysis", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
