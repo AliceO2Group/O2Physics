@@ -1137,7 +1137,7 @@ struct AnalysisSameEventPairing {
             }
           }      // end loop (pair cuts)
         } else { // end if (filter bits)
-          iCut++;
+          iCut = iCut + 1 + fPairCuts.size();
         }
       } // end loop (cuts)
     }   // end loop over pairs

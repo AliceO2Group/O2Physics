@@ -36,7 +36,8 @@ enum eRecSim { eRec = 0,
                eRecAndSim_Run2,
                eRec_Run1, // converted Run 1 data
                eSim_Run1,
-               eRecAndSim_Run1 };
+               eRecAndSim_Run1,
+               eTest };
 
 enum eBeforeAfter { eBefore = 0,
                     eAfter = 1 };
@@ -75,6 +76,14 @@ enum eEventHistograms {
   eEventHistograms_N
 };
 
+enum eEventCuts {
+  eTrigger = 0,
+  eUseTrigger,
+  eUseSel7,
+  eUseSel8,
+  eEventCuts_N
+};
+
 enum eParticleHistograms {
   ePhi = 0,
   ePt,
@@ -84,6 +93,11 @@ enum eParticleHistograms {
   eDCA_z,
   ePDG,
   eParticleHistograms_N
+};
+
+enum eParticleCuts {
+  eTBI = 0,
+  eParticleCuts_N
 };
 
 enum eAsFunctionOf {
