@@ -52,6 +52,7 @@ struct femtoDreamPairTaskTrackV0 {
   Configurable<bool> ConfOptCPRPlotPerRadii{"ConfOptCPRPlotPerRadii", false, "Plot CPR per radii"};
   Configurable<float> ConfOptCPRdeltaPhiMax{"ConfOptCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
   Configurable<float> ConfOptCPRdeltaEtaMax{"ConfOptCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+  Configurable<bool> ConfOptsmearingByOrigin{"ConfOptsmearingByOrigin", false, "Obtain the smearing matrix differential in the MC origin of particle 1 and particle 2. High memory consumption. Use with care!"};
   ConfigurableAxis ConfOptDummy{"ConfOptDummy", {1, 0, 1}, "Dummy axis"};
 
   /// Event selection
@@ -196,14 +197,16 @@ struct femtoDreamPairTaskTrackV0 {
                        ConfBinkstar, ConfBinpT, ConfBinkT, ConfBinmT, ConfMixingBinMult, ConfMixingBinMultPercentile,
                        ConfBin4Dkstar, ConfBin4DmT, ConfBin4DMult, ConfBin4DmultPercentile,
                        ConfOptIsMC, ConfOptUse4D, ConfOptExtendedPlots,
-                       ConfOptHighkstarCut);
+                       ConfOptHighkstarCut,
+                       ConfOptsmearingByOrigin);
 
     sameEventCont.setPDGCodes(ConfTrk1_PDGCode, ConfV02_PDGCode);
     mixedEventCont.init(&resultRegistry,
                         ConfBinkstar, ConfBinpT, ConfBinkT, ConfBinmT, ConfMixingBinMult, ConfMixingBinMultPercentile,
                         ConfBin4Dkstar, ConfBin4DmT, ConfBin4DMult, ConfBin4DmultPercentile,
                         ConfOptIsMC, ConfOptUse4D, ConfOptExtendedPlots,
-                        ConfOptHighkstarCut);
+                        ConfOptHighkstarCut,
+                        ConfOptsmearingByOrigin);
 
     mixedEventCont.setPDGCodes(ConfTrk1_PDGCode, ConfV02_PDGCode);
     pairCleaner.init(&qaRegistry);
@@ -300,7 +303,7 @@ struct femtoDreamPairTaskTrackV0 {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), ConfOptUse4D, ConfOptExtendedPlots);
+        sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), ConfOptUse4D, ConfOptExtendedPlots, ConfOptsmearingByOrigin);
       }
     }
   }
@@ -380,7 +383,7 @@ struct femtoDreamPairTaskTrackV0 {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), ConfOptUse4D, ConfOptExtendedPlots);
+        mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), ConfOptUse4D, ConfOptExtendedPlots, ConfOptsmearingByOrigin);
       }
     }
   }
@@ -413,7 +416,7 @@ struct femtoDreamPairTaskTrackV0 {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), ConfOptUse4D, ConfOptExtendedPlots);
+        mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), ConfOptUse4D, ConfOptExtendedPlots, ConfOptsmearingByOrigin);
       }
     }
   }
