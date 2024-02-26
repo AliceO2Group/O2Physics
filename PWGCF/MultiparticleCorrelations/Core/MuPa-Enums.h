@@ -20,7 +20,7 @@ enum eConfiguration {
   eVerboseForEachParticle,
   eDoAdditionalInsanityChecks,
   eUseCCDB,
-  eWhatToProcess,
+  eWhichProcess,
   eRandomSeed,
   eUseFisherYates,
   eFixedNumberOfRandomlySelectedTracks,
@@ -77,10 +77,11 @@ enum eEventHistograms {
 };
 
 enum eEventCuts {
-  eTrigger = 0,
+  eTrigger = 1, // here I start from 1 exceptionally, because these enums are used as bin contents, and ROOT starts counting bins from 1
   eUseTrigger,
   eUseSel7,
   eUseSel8,
+  eCentralityEstimator,
   eEventCuts_N
 };
 
@@ -96,7 +97,7 @@ enum eParticleHistograms {
 };
 
 enum eParticleCuts {
-  eTBI = 0,
+  eTBI = 1, // here I start from 1 exceptionally, because these enums are used as bin contents, and ROOT starts counting bins from 1
   eParticleCuts_N
 };
 
