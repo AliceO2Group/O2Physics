@@ -59,7 +59,7 @@ struct MultiplicityDerivedQa {
   // parameters:
   // --- maxFT0C -> max FT0C value for which this cut will be applied. Nothing done if maxFT0C < 0.0f
   // --- A, B, C  -> A*<variable> + B*FT0C + C > 0, arbitrary linear selection
-  static constexpr float default2dCuts[1][2] = {{-1., -1., -1., -1.}};
+  static constexpr float default2dCuts[1][4] = {{-1., -1., -1., -1.}};
   Configurable<LabeledArray<float>> selZNA{"selZNA", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZNA"};
   Configurable<LabeledArray<float>> selZNC{"selZNC", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZNC"};
   Configurable<LabeledArray<float>> selZPA{"selZPA", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZPA"};
