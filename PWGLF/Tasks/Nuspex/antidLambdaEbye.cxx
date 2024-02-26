@@ -359,7 +359,7 @@ struct antidLambdaEbye {
     }
 
     for (int i{1}; i < momCorr[0]->GetNbinsZ() + 1; ++i) {
-      for (int iP {0}; iP < kNpart; ++iP) {
+      for (int iP{0}; iP < kNpart; ++iP) {
         momCorr[iP]->GetZaxis()->SetBinLabel(i, pidHypotheses[i - 1].data());
       }
     }
