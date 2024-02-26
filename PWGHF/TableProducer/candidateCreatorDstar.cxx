@@ -63,8 +63,6 @@ struct HfCandidateCreatorDstar {
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb; // From utilsBfieldCCDB.h
-  o2::base::MatLayerCylSet* lut;            // From MatLayercylSet.h
-  // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   // D0-prong vertex fitter
   o2::vertexing::DCAFitterN<2> df;
@@ -108,10 +106,6 @@ struct HfCandidateCreatorDstar {
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking(); // set the flag to check object validity before CCDB query
-    // LOG(info) << "Retriving ccdb object";
-    // auto rectification = ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut); // retrieve an object of type T from CCDB as stored under path; will use the timestamp member
-    // lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(rectification);
-    // LOG(info) << "Successfully Retrived";
     runNumber = 0;
     bz = 0;
 
@@ -183,10 +177,6 @@ struct HfCandidateCreatorDstar {
         bz = o2::base::Propagator::Instance()->getNominalBz();
         // LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
         runNumber = bc.runNumber();
-
-        // initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2); // Sets up the grp object for magnetic field (w/o matCorr for propagation)
-        // bz = o2::base::Propagator::Instance()->getNominalBz();
-        // // LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
       }
       df.setBz(bz);
 
