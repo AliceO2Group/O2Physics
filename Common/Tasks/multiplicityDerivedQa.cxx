@@ -54,7 +54,7 @@ struct MultiplicityDerivedQa {
   ConfigurableAxis axisContributors{"axisContributors", {100, -0.5f, 99.5f}, "Vertex z (cm)"};
   ConfigurableAxis axisNumberOfPVs{"axisNumberOfPVs", {10, -0.5f, 9.5f}, "Number of reconstructed PVs"};
   ConfigurableAxis axisNchFT0{"axisNchFT0", {500, -0.5f, 499.5f}, "Number of charged particles in FT0 acceptance"};
-  
+
   // Selection criteria for QC studies in 2D plots
   // parameters:
   // --- maxFT0C -> max FT0C value for which this cut will be applied. Nothing done if maxFT0C < 0.0f
@@ -69,8 +69,6 @@ struct MultiplicityDerivedQa {
   Configurable<LabeledArray<float>> selZEM{"selZEM", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZEM"};
   Configurable<LabeledArray<float>> selFV0A{"selFV0A", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selFV0A"};
   Configurable<LabeledArray<float>> selFT0A{"selFT0A", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selFT0A"};
-  
-  
 
   void init(InitContext&)
   {
@@ -154,36 +152,27 @@ struct MultiplicityDerivedQa {
     if (fabs(col.multPVz()) > vtxZsel) {
       return;
     }
-    
+
     histos.fill(HIST("multiplicityQa/hEventCounter"), 3.5);
-    
+
     // apply special event selections
-    if(selZNA->get("maxFT0C")>-0.5f && col.multFT0C() < selZNA->get("maxFT0C")
-       && (selZNA->get("A")*col.multZNA() + selZNA->get("B")*col.multFT0C() + selZNA->get("C") < 0.0f) )
+    if (selZNA->get("maxFT0C") > -0.5f && col.multFT0C() < selZNA->get("maxFT0C") && (selZNA->get("A") * col.multZNA() + selZNA->get("B") * col.multFT0C() + selZNA->get("C") < 0.0f))
       return;
-    if(selZNC->get("maxFT0C")>-0.5f && col.multFT0C() < selZNC->get("maxFT0C")
-       && (selZNC->get("A")*col.multZNC() + selZNC->get("B")*col.multFT0C() + selZNC->get("C") < 0.0f) )
+    if (selZNC->get("maxFT0C") > -0.5f && col.multFT0C() < selZNC->get("maxFT0C") && (selZNC->get("A") * col.multZNC() + selZNC->get("B") * col.multFT0C() + selZNC->get("C") < 0.0f))
       return;
-    if(selZPA->get("maxFT0C")>-0.5f && col.multFT0C() < selZPA->get("maxFT0C")
-       && (selZPA->get("A")*col.multZPA() + selZPA->get("B")*col.multFT0C() + selZPA->get("C") < 0.0f) )
+    if (selZPA->get("maxFT0C") > -0.5f && col.multFT0C() < selZPA->get("maxFT0C") && (selZPA->get("A") * col.multZPA() + selZPA->get("B") * col.multFT0C() + selZPA->get("C") < 0.0f))
       return;
-    if(selZPC->get("maxFT0C")>-0.5f && col.multFT0C() < selZPC->get("maxFT0C")
-       && (selZPC->get("A")*col.multZPC() + selZPC->get("B")*col.multFT0C() + selZPC->get("C") < 0.0f) )
+    if (selZPC->get("maxFT0C") > -0.5f && col.multFT0C() < selZPC->get("maxFT0C") && (selZPC->get("A") * col.multZPC() + selZPC->get("B") * col.multFT0C() + selZPC->get("C") < 0.0f))
       return;
-    if(selZEM1->get("maxFT0C")>-0.5f && col.multFT0C() < selZEM1->get("maxFT0C")
-       && (selZEM1->get("A")*col.multZEM1() + selZEM1->get("B")*col.multFT0C() + selZEM1->get("C") < 0.0f) )
+    if (selZEM1->get("maxFT0C") > -0.5f && col.multFT0C() < selZEM1->get("maxFT0C") && (selZEM1->get("A") * col.multZEM1() + selZEM1->get("B") * col.multFT0C() + selZEM1->get("C") < 0.0f))
       return;
-    if(selZEM2->get("maxFT0C")>-0.5f && col.multFT0C() < selZEM2->get("maxFT0C")
-       && (selZEM2->get("A")*col.multZEM2() + selZEM2->get("B")*col.multFT0C() + selZEM2->get("C") < 0.0f) )
+    if (selZEM2->get("maxFT0C") > -0.5f && col.multFT0C() < selZEM2->get("maxFT0C") && (selZEM2->get("A") * col.multZEM2() + selZEM2->get("B") * col.multFT0C() + selZEM2->get("C") < 0.0f))
       return;
-    if(selZEM->get("maxFT0C")>-0.5f && col.multFT0C() < selZEM->get("maxFT0C")
-       && (selZEM->get("A")*col.multZEM2() + selZEM->get("B")*col.multFT0C() + selZEM->get("C") < 0.0f) )
+    if (selZEM->get("maxFT0C") > -0.5f && col.multFT0C() < selZEM->get("maxFT0C") && (selZEM->get("A") * col.multZEM2() + selZEM->get("B") * col.multFT0C() + selZEM->get("C") < 0.0f))
       return;
-    if(selFV0A->get("maxFT0C")>-0.5f && col.multFT0C() < selFV0A->get("maxFT0C")
-       && (selFV0A->get("A")*col.multFV0A() + selFV0A->get("B")*col.multFT0C() + selFV0A->get("C") < 0.0f) )
+    if (selFV0A->get("maxFT0C") > -0.5f && col.multFT0C() < selFV0A->get("maxFT0C") && (selFV0A->get("A") * col.multFV0A() + selFV0A->get("B") * col.multFT0C() + selFV0A->get("C") < 0.0f))
       return;
-    if(selFT0A->get("maxFT0C")>-0.5f && col.multFT0C() < selFT0A->get("maxFT0C")
-       && (selFT0A->get("A")*col.multFT0A() + selFT0A->get("B")*col.multFT0C() + selFT0A->get("C") < 0.0f) )
+    if (selFT0A->get("maxFT0C") > -0.5f && col.multFT0C() < selFT0A->get("maxFT0C") && (selFT0A->get("A") * col.multFT0A() + selFT0A->get("B") * col.multFT0C() + selFT0A->get("C") < 0.0f))
       return;
 
     histos.fill(HIST("multiplicityQa/hEventCounter"), 4.5);
