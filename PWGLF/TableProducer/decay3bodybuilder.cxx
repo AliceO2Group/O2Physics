@@ -76,7 +76,7 @@ struct decay3bodyBuilder {
   Configurable<int> bachelorcharge{"bachelorcharge", 1, "charge of the bachelor track"};
   // Selection criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
+  Configurable<int> mintpcNCls{"mintpcNCls", 70, "min tpc Nclusters"};
   Configurable<float> minCosPA3body{"minCosPA3body", 0.9, "minCosPA3body"};
   Configurable<float> dcavtxdau{"dcavtxdau", 1.0, "DCA Vtx Daughters"};
 
@@ -210,7 +210,7 @@ struct decay3bodyBuilder {
       }
       registry.fill(HIST("hVtx3BodyCounter"), kVtxSameCol);
 
-      if (t0.tpcNClsCrossedRows() < mincrossedrows && t1.tpcNClsCrossedRows() < mincrossedrows && t2.tpcNClsCrossedRows() < mincrossedrows) {
+      if (t0.tpcNClsFound() < mintpcNCls && t1.tpcNClsFound() < mintpcNCls && t2.tpcNClsFound() < mintpcNCls) {
         continue;
       }
       registry.fill(HIST("hVtx3BodyCounter"), kVtxTPCNcls);
