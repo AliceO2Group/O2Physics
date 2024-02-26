@@ -65,52 +65,52 @@ struct UpcTauCentralBarrelRL {
      {"Tracks/raw/PID/hTPCsignalVsP", "All tracks;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/raw/PID/hTPCsignalVsPt", "All tracks;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/raw/PID/hTPCsignalVsEta", "All tracks;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/raw/PID/hTPCsignalVsPhi", "All tracks;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/raw/PID/hTPCsignalVsPhi", "All tracks;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/raw/PID/PosCharge/hTPCsignalVsZ", "Positively charged track;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/raw/PID/PosCharge/hTPCsignalVsP", "Positively charged track;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/raw/PID/PosCharge/hTPCsignalVsPt", "Positively charged track;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/raw/PID/PosCharge/hTPCsignalVsEta", "Positively charged track;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/raw/PID/PosCharge/hTPCsignalVsPhi", "Positively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/raw/PID/PosCharge/hTPCsignalVsPhi", "Positively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/raw/PID/NegCharge/hTPCsignalVsZ", "Negatively charged track;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/raw/PID/NegCharge/hTPCsignalVsP", "Negatively charged track;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/raw/PID/NegCharge/hTPCsignalVsPt", "Negatively charged track;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/raw/PID/NegCharge/hTPCsignalVsEta", "Negatively charged track;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/raw/PID/NegCharge/hTPCsignalVsPhi", "Negatively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/raw/PID/NegCharge/hTPCsignalVsPhi", "Negatively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/hTPCsignalVsZ", "All good tracks;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/hTPCsignalVsP", "All good tracks;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/hTPCsignalVsPt", "All good tracks;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/hTPCsignalVsEta", "All good tracks;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/GoodTrack/PID/hTPCsignalVsPhi", "All good tracks;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/GoodTrack/PID/hTPCsignalVsPhi", "All good tracks;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsZ", "Positively charged track;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsP", "Positively charged track;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsPt", "Positively charged track;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsEta", "Positively charged track;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsPhi", "Positively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsPhi", "Positively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsZ", "Negatively charged track;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsP", "Negatively charged track;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsPt", "Negatively charged track;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsEta", "Negatively charged track;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsPhi", "Negatively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsPhi", "Negatively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Electron/hTPCsignalVsZ", "Identified electron;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Electron/hTPCsignalVsP", "Identified electron;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Electron/hTPCsignalVsPt", "Identified electron;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Electron/hTPCsignalVsEta", "Identified electron;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/GoodTrack/PID/Electron/hTPCsignalVsPhi", "Identified electron;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/GoodTrack/PID/Electron/hTPCsignalVsPhi", "Identified electron;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Muon/hTPCsignalVsZ", "Identified Muon;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Muon/hTPCsignalVsP", "Identified Muon;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Muon/hTPCsignalVsPt", "Identified Muon;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Muon/hTPCsignalVsEta", "Identified Muon;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/GoodTrack/PID/Muon/hTPCsignalVsPhi", "Identified Muon;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/GoodTrack/PID/Muon/hTPCsignalVsPhi", "Identified Muon;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Pion/hTPCsignalVsZ", "Identified Pion;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Pion/hTPCsignalVsP", "Identified Pion;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Pion/hTPCsignalVsPt", "Identified Pion;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Pion/hTPCsignalVsEta", "Identified Pion;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/GoodTrack/PID/Pion/hTPCsignalVsPhi", "Identified Pion;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/GoodTrack/PID/Pion/hTPCsignalVsPhi", "Identified Pion;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Others/hTPCsignalVsZ", "Identified NOT electron/Muon/Pion;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Others/hTPCsignalVsP", "Identified NOT electron/Muon/Pion;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Others/hTPCsignalVsPt", "Identified NOT electron/Muon/Pion;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Others/hTPCsignalVsEta", "Identified NOT electron/Muon/Pion;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/GoodTrack/PID/Others/hTPCsignalVsPhi", "Identified NOT electron/Muon/Pion;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/GoodTrack/PID/Others/hTPCsignalVsPhi", "Identified NOT electron/Muon/Pion;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"EventTwoTracks/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"EventTwoTracks/TwoElectrons/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"EventTwoTracks/TwoMuons/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
@@ -170,37 +170,47 @@ struct UpcTauCentralBarrelRL {
     const AxisSpec axisMomSigned{80, -2., 2.};
     const AxisSpec axisMomWide{100, 0., 10.};
     const AxisSpec axisPt{40, 0., 2.};
-    const AxisSpec axisPhi{64, -2 * TMath::Pi(), 2 * TMath::Pi()};
+    const AxisSpec axisPhi{64, -2 * o2::constants::math::PI, 2 * o2::constants::math::PI};
     const AxisSpec axisEta{50, -1.2, 1.2};
     const AxisSpec axisRap{50, -1.2, 1.2};
     const AxisSpec axisAcoplanarity{32, 0.0, o2::constants::math::PI};
     const AxisSpec axisAvgITSclsSizes{500, 0., 10.};
+	  const AxisSpec axisDCA{100, -0.5, 0.5};
+	  const AxisSpec axisITSnCls{8, -0.5, 7.5};
+	  const AxisSpec axisITSchi2{100, 0, 50};
+	  const AxisSpec axisTPCnCls{165, -0.5, 164.5};
+	  const AxisSpec axisTPCxRwsFrac{200, 0.0, 2.0};
+	  const AxisSpec axisTPCchi2{100, 0, 10};
 
     histos.add("Tracks/raw/hTrackZ", ";Track z-vertex (cm);Number of events (-)", HistType::kTH1D, {axisZvtx});
     histos.add("Tracks/raw/hTrackP", ";Track #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMom});
     histos.add("Tracks/raw/hTrackPt", ";Track #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
     histos.add("Tracks/raw/hTrackPhi", ";Track #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
     histos.add("Tracks/raw/hTrackEta", ";Track #eta (-);Number of events (-)", HistType::kTH1D, {axisEta});
-    histos.add("Tracks/raw/ITS/itsNCls", "number of found ITS clusters;# clusters ITS", kTH1D, {{8, -0.5, 7.5}});
-    histos.add("Tracks/raw/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH1D, {{100, 0, 50}});
-    histos.add("Tracks/raw/TPC/tpcNClsFindable", "number of findable TPC clusters;# findable clusters TPC", kTH1D, {{165, -0.5, 164.5}});
-    histos.add("Tracks/raw/TPC/tpcNClsFound", "number of found TPC clusters;# clusters TPC", kTH1D, {{165, -0.5, 164.5}});
-    histos.add("Tracks/raw/TPC/tpcCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH1D, {{165, -0.5, 164.5}});
-    histos.add("Tracks/raw/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {{200, 0.0, 2.0}});
-    histos.add("Tracks/raw/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {{100, 0, 10}});
+	  histos.add("Tracks/raw/hTrackDcaXY", ";Track DCA_{XY} (cm);Number of events (-)", HistType::kTH1D, {axisDCA});
+	  histos.add("Tracks/raw/hTrackDcaZ", ";Track DCA_{Z} (cm);Number of events (-)", HistType::kTH1D, {axisDCA});
+    histos.add("Tracks/raw/ITS/itsNCls", "number of found ITS clusters;# clusters ITS", kTH1D, {axisITSnCls});
+    histos.add("Tracks/raw/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH1D, {axisITSchi2});
+    histos.add("Tracks/raw/TPC/tpcNClsFindable", "number of findable TPC clusters;# findable clusters TPC", kTH1D, {axisTPCnCls});
+    histos.add("Tracks/raw/TPC/tpcNClsFound", "number of found TPC clusters;# clusters TPC", kTH1D, {axisTPCnCls});
+    histos.add("Tracks/raw/TPC/tpcCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH1D, {axisTPCnCls});
+    histos.add("Tracks/raw/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {axisTPCxRwsFrac});
+    histos.add("Tracks/raw/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {axisTPCchi2});
 
     histos.add("Tracks/GoodTrack/hTrackZ", ";Track z-vertex (cm);Number of events (-)", HistType::kTH1D, {axisZvtx});
     histos.add("Tracks/GoodTrack/hTrackP", ";Track #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMom});
     histos.add("Tracks/GoodTrack/hTrackPt", ";Track #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
     histos.add("Tracks/GoodTrack/hTrackPhi", ";Track #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
     histos.add("Tracks/GoodTrack/hTrackEta", ";Track #eta (-);Number of events (-)", HistType::kTH1D, {axisEta});
-    histos.add("Tracks/GoodTrack/ITS/itsNCls", "number of found ITS clusters;# clusters ITS", kTH1D, {{8, -0.5, 7.5}});
-    histos.add("Tracks/GoodTrack/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH1D, {{100, 0, 50}});
-    histos.add("Tracks/GoodTrack/TPC/tpcNClsFindable", "number of findable TPC clusters;# findable clusters TPC", kTH1D, {{165, -0.5, 164.5}});
-    histos.add("Tracks/GoodTrack/TPC/tpcNClsFound", "number of found TPC clusters;# clusters TPC", kTH1D, {{165, -0.5, 164.5}});
-    histos.add("Tracks/GoodTrack/TPC/tpcCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH1D, {{165, -0.5, 164.5}});
-    histos.add("Tracks/GoodTrack/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {{200, 0.0, 2.0}});
-    histos.add("Tracks/GoodTrack/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {{100, 0, 10}});
+	  histos.add("Tracks/GoodTrack/hTrackDcaXY", ";Track DCA_{XY} (cm);Number of events (-)", HistType::kTH1D, {axisDCA});
+	  histos.add("Tracks/GoodTrack/hTrackDcaZ", ";Track DCA_{Z} (cm);Number of events (-)", HistType::kTH1D, {axisDCA});
+    histos.add("Tracks/GoodTrack/ITS/itsNCls", "number of found ITS clusters;# clusters ITS", kTH1D, {axisITSnCls});
+    histos.add("Tracks/GoodTrack/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH1D, {axisITSchi2});
+    histos.add("Tracks/GoodTrack/TPC/tpcNClsFindable", "number of findable TPC clusters;# findable clusters TPC", kTH1D, {axisTPCnCls});
+    histos.add("Tracks/GoodTrack/TPC/tpcNClsFound", "number of found TPC clusters;# clusters TPC", kTH1D, {axisTPCnCls});
+    histos.add("Tracks/GoodTrack/TPC/tpcCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH1D, {axisTPCnCls});
+    histos.add("Tracks/GoodTrack/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {axisTPCxRwsFrac});
+    histos.add("Tracks/GoodTrack/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {axisTPCchi2});
 
     histos.add("EventTwoTracks/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
     histos.add("EventTwoTracks/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -490,14 +500,14 @@ struct UpcTauCentralBarrelRL {
       return false;
     // kPrimaryTracks
     // GoldenChi2 cut is only for Run 2
-    if (track.dcaZ() > cutMyGTdcaZmax)
+    if (abs(track.dcaZ()) > cutMyGTdcaZmax)
       return false;
     if (cutMyGTdcaXYusePt) {
       float maxDCA = 0.0105f + 0.0350f / pow(track.pt(), 1.1f); // ? not sure yet if will be used
-      if (track.dcaXY() > maxDCA)
+      if (abs(track.dcaXY()) > maxDCA)
         return false;
     } else {
-      if (track.dcaXY() > cutMyGTdcaXYmax)
+      if (abs(track.dcaXY()) > cutMyGTdcaXYmax)
         return false;
     }
     // kQualityTrack
@@ -549,6 +559,8 @@ struct UpcTauCentralBarrelRL {
       histos.get<TH1>(HIST("Tracks/raw/hTrackPhi"))->Fill(phi(trkPx, trkPy));
       histos.get<TH1>(HIST("Tracks/raw/hTrackEta"))->Fill(eta(trkPx, trkPy, trkPz));
       //          histosPID.get<TH2>(HIST("Tracks/raw/PID/hTPCsignalVsZ"))->Fill(track.z(),track.tpcSignal());
+	    histos.get<TH1>(HIST("Tracks/raw/hTrackDcaXY"))->Fill(track.dcaXY());
+	    histos.get<TH1>(HIST("Tracks/raw/hTrackDcaZ"))->Fill(track.dcaZ());
       histos.get<TH1>(HIST("Tracks/raw/ITS/itsNCls"))->Fill(track.itsNCls());
       histos.get<TH1>(HIST("Tracks/raw/ITS/itsChi2NCl"))->Fill(track.itsChi2NCl());
       histos.get<TH1>(HIST("Tracks/raw/TPC/tpcNClsFindable"))->Fill(track.tpcNClsFindable());
@@ -606,6 +618,8 @@ struct UpcTauCentralBarrelRL {
       histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackPhi"))->Fill(phi(trkPx, trkPy));
       histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackEta"))->Fill(eta(trkPx, trkPy, trkPz));
       //          histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/hTPCsignalVsZ"))->Fill(track.z(),track.tpcSignal());
+	    histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackDcaXY"))->Fill(track.dcaXY());
+	    histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackDcaZ"))->Fill(track.dcaZ());
       histos.get<TH1>(HIST("Tracks/GoodTrack/ITS/itsNCls"))->Fill(track.itsNCls());
       histos.get<TH1>(HIST("Tracks/GoodTrack/ITS/itsChi2NCl"))->Fill(track.itsChi2NCl());
       histos.get<TH1>(HIST("Tracks/GoodTrack/TPC/tpcNClsFindable"))->Fill(track.tpcNClsFindable());
