@@ -134,7 +134,7 @@ int trkMultPos[kIdBfNoOfSpecies];  // multiplicity of positive tracks
 int trkMultNeg[kIdBfNoOfSpecies];  // multiplicity of negative tracks
 int partMultPos[kIdBfNoOfSpecies]; // multiplicity of positive particles
 int partMultNeg[kIdBfNoOfSpecies]; // multiplicity of negative particles
-} 
+} // namespace o2::analysis::identifiedbffilter
 
 using namespace identifiedbffilter;
 
@@ -1104,9 +1104,7 @@ int8_t IdentifiedBfFilterTracks::selectTrack(TrackObject const& track)
     if (pid > 1) {
       /* fill the charged histograms */
       fillTrackHistosAfterSelection(track, kIdBfCharged);
-
     }
-
   }
   return pid;
 }
