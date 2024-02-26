@@ -749,6 +749,7 @@ DECLARE_SOA_TABLE(HfCandBplusMcGen, "AOD", "HFCANDBPMCGEN",
 // specific 3-prong decay properties
 namespace hf_cand_3prong
 {
+DECLARE_SOA_COLUMN(Sign, sign, int8_t); //! Sign of 3 prong candidate
 DECLARE_SOA_EXPRESSION_COLUMN(Px, px, //!
                               float, 1.f * aod::hf_cand::pxProng0 + 1.f * aod::hf_cand::pxProng1 + 1.f * aod::hf_cand::pxProng2);
 DECLARE_SOA_EXPRESSION_COLUMN(Py, py, //!
@@ -801,6 +802,7 @@ DECLARE_SOA_TABLE(HfCand3ProngBase, "AOD", "HFCAND3PBASE", //!
                   hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ImpactParameter2,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, hf_cand::ErrorImpactParameter2,
+                  hf_cand_3prong::Sign,
                   hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_track_index::Prong2Id, hf_cand::NProngsContributorsPV,
                   hf_track_index::HFflag,
                   /* dynamic columns */

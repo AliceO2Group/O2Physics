@@ -142,6 +142,9 @@ struct HfCandidateCreator3Prong {
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
 
+      //get sign of candidate
+      int8_t sign = track0.sign();
+
       /// Set the magnetic field from ccdb.
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
       /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
@@ -245,6 +248,7 @@ struct HfCandidateCreator3Prong {
                        pvec2[0], pvec2[1], pvec2[2],
                        impactParameter0.getY(), impactParameter1.getY(), impactParameter2.getY(),
                        std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()), std::sqrt(impactParameter2.getSigmaY2()),
+                       sign,
                        rowTrackIndexProng3.prong0Id(), rowTrackIndexProng3.prong1Id(), rowTrackIndexProng3.prong2Id(), nProngsContributorsPV,
                        rowTrackIndexProng3.hfflag());
 
