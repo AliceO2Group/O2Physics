@@ -420,8 +420,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     }
     if (subGroupStr.Contains("pidcorre")) {
       const int kNvarsPID = 3;
-      const int nbins_pIN = 169;
-      double pIN_bins[nbins_pIN + 1];
+      const int kNbins_pIN = 169;
+      double pIN_bins[kNbins_pIN + 1];
       for (int i = 0; i <= 140; i++)
         pIN_bins[i] = 0.01 * i + 0.1;
       for (int i = 1; i <= 15; i++)
@@ -429,30 +429,30 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       for (int i = 1; i <= 14; i++)
         pIN_bins[155 + i] = 3. + 0.5 * i;
 
-      const int nbins_nSigma = 100;
-      double nSigma_bins[nbins_nSigma + 1];
-      for (int i = 0; i <= nbins_nSigma; i++)
+      const int kNbins_nSigma = 100;
+      double nSigma_bins[kNbins_nSigma + 1];
+      for (int i = 0; i <= kNbins_nSigma; i++)
         nSigma_bins[i] = -5. + 0.1 * i;
 
-      const int nbins_TOFbeta = 120;
-      double TOFbeta_bins[nbins_TOFbeta + 1];
-      for (int i = 0; i <= nbins_TOFbeta; i++)
+      const int kNbins_TOFbeta = 120;
+      double TOFbeta_bins[kNbins_TOFbeta + 1];
+      for (int i = 0; i <= kNbins_TOFbeta; i++)
         TOFbeta_bins[i] = 0.01 * i;
 
-      const int nbins_TPCdEdx = 140;
-      double TPCdEdx_bins[nbins_TPCdEdx + 1];
-      for (int i = 0; i <= nbins_TPCdEdx; i++)
+      const int kNbins_TPCdEdx = 140;
+      double TPCdEdx_bins[kNbins_TPCdEdx + 1];
+      for (int i = 0; i <= kNbins_TPCdEdx; i++)
         TPCdEdx_bins[i] = i + 20;
 
       TArrayD nSigmaBinLimits[kNvarsPID];
-      nSigmaBinLimits[0] = TArrayD(nbins_pIN + 1, pIN_bins);
-      nSigmaBinLimits[1] = TArrayD(nbins_nSigma + 1, nSigma_bins);
-      nSigmaBinLimits[2] = TArrayD(nbins_nSigma + 1, nSigma_bins);
+      nSigmaBinLimits[0] = TArrayD(kNbins_pIN + 1, pIN_bins);
+      nSigmaBinLimits[1] = TArrayD(kNbins_nSigma + 1, nSigma_bins);
+      nSigmaBinLimits[2] = TArrayD(kNbins_nSigma + 1, nSigma_bins);
 
       TArrayD nSignalBinLimits[kNvarsPID];
-      nSignalBinLimits[0] = TArrayD(nbins_pIN + 1, pIN_bins);
-      nSignalBinLimits[1] = TArrayD(nbins_TPCdEdx + 1, TPCdEdx_bins);
-      nSignalBinLimits[2] = TArrayD(nbins_TOFbeta + 1, TOFbeta_bins);
+      nSignalBinLimits[0] = TArrayD(kNbins_pIN + 1, pIN_bins);
+      nSignalBinLimits[1] = TArrayD(kNbins_TPCdEdx + 1, TPCdEdx_bins);
+      nSignalBinLimits[2] = TArrayD(kNbins_TOFbeta + 1, TOFbeta_bins);
 
       int varsPIDnSignal[kNvarsPID] = {VarManager::kPin, VarManager::kTPCsignal, VarManager::kTOFbeta};
       int varsPIDnSigma[kNvarsPID] = {VarManager::kPin, VarManager::kTPCnSigmaEl, VarManager::kTOFnSigmaEl};
