@@ -210,10 +210,11 @@ namespace hf_dstar_meson
   DECLARE_SOA_COLUMN(MDstar, mDstar, float);
   DECLARE_SOA_COLUMN(PoolBin, poolBin, int);
   DECLARE_SOA_COLUMN(TimeStamp,timeStamp, int64_t);
+  DECLARE_SOA_COLUMN(IsPrompt,isPrompt,bool);
   DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 }// hf_dstar_meson
 
-DECLARE_SOA_TABLE(Dstar, "AOD","DSTAR", //! D* meson properties
+DECLARE_SOA_TABLE(Dstar, "AOD","DSTAR", //! D* meson properties (This table is not compatible with HfCandDstar & HfSelDstarToD0Pi)
                   aod::hf_dstar_meson::PhiDstar,
                   aod::hf_dstar_meson::EtaDstar,
                   aod::hf_dstar_meson::PtDstar,
@@ -227,7 +228,7 @@ namespace hf_correlation_dstar_hadron
 {
   DECLARE_SOA_COLUMN(DeltaPhiDstar, deltaPhiDstar, float);
   DECLARE_SOA_COLUMN(DeltaEta, deltaEtaDstar, float);
-  DECLARE_SOA_COLUMN(SignalStatus, signalStatus, bool);
+  DECLARE_SOA_COLUMN(MatchingStatus, matchingStatus, bool);
 }// hf_correlation_dstar_hadron
 
 DECLARE_SOA_TABLE(DstarHadronPair, "AOD","DSTARHPAIR", // D* Hadrons pairs Informations
@@ -235,11 +236,18 @@ DECLARE_SOA_TABLE(DstarHadronPair, "AOD","DSTARHPAIR", // D* Hadrons pairs Infor
                   aod::hf_correlation_dstar_hadron::DeltaEta,
                   aod::hf_dstar_meson::PtDstar,
                   aod::hf_assoc_tracks::PtH,
+                  aod::hf_dstar_meson::MDstar,
                   aod::hf_dstar_meson::PoolBin);
 
+// Why should we use these two tables below when 
+// we already have "HfCandDstarMcRec" & "HfCandDstarMcGen" in "CanidateReconstructionTables.h"
 DECLARE_SOA_TABLE(DstarHadronRecoInfo,"AOD","DSTARHRECOINFO", // D* Hadrons pairs Reconstructed Informations
-                aod::hf_dstar_meson::MDstar,
-                aod::hf_correlation_dstar_hadron::SignalStatus);
+                aod::hf_dstar_meson::IsPrompt,
+                aod::hf_correlation_dstar_hadron::MatchingStatus);
+
+DECLARE_SOA_TABLE(DstarHadronGenInfo, "AOD","DSTARHGENINFO", // D* Hadrons pairs Generator level Informations
+                aod::hf_dstar_meson::IsPrompt,
+                aod::hf_correlation_dstar_hadron::MatchingStatus);
 
 // Note: Table for selection of Lc in a collision
 namespace hf_selection_lc_collision
