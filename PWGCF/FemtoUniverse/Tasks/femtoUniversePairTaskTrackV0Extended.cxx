@@ -65,7 +65,7 @@ struct femtoUniversePairTaskTrackV0Extended {
   Configurable<int> ConfV0PDGCodePartTwo{"ConfV0PDGCodePartTwo", 3122, "Particle 2 (V0) - PDG code"};
   ConfigurableAxis ConfV0TempFitVarBins{"ConfV0TempFitVarBins", {300, 0.95, 1.}, "V0: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfV0TempFitVarpTBins{"ConfV0TempFitVarpTBins", {20, 0.5, 4.05}, "V0: pT binning of the pT vs. TempFitVar plot"};
-  Configurable<int> ConfV0PosChildType{"ConfV0PosChildType", -1, "identifier for positive v0 daughter"};
+  Configurable<int> ConfV0Type{"ConfV0Type", 0, "selection for either lambda or anti-lambda"};
   ConfigurableAxis ConfChildTempFitVarBins{"ConfChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
   Configurable<float> ConfHPtPart2{"ConfHPtPart2", 4.0f, "higher limit for pt of particle 2"};
@@ -194,7 +194,7 @@ struct femtoUniversePairTaskTrackV0Extended {
       const auto& posChild = parts.iteratorAt(part.index() - 2);
       const auto& negChild = parts.iteratorAt(part.index() - 1);
       // printf("-- V0 d- %d d+ %d\n",negChild.globalIndex(),posChild.globalIndex());
-      if (ConfV0PosChildType >= 0 && !IsParticleTPC(posChild, ConfV0PosChildType))
+      if ((ConfV0Type > 0 && !IsParticleTPC(posChild, 0)) || (ConfV0Type < 0 && !IsParticleTPC(negChild, 0)))
         continue;
 
       trackHistoPartTwo.fillQA<false, false>(part);
@@ -235,7 +235,8 @@ struct femtoUniversePairTaskTrackV0Extended {
       if (!IsParticleCombined(p1, ConfTrackChoicePartOne))
         continue;
       const auto& posChild = parts.iteratorAt(p2.index() - 2);
-      if (ConfV0PosChildType >= 0 && !IsParticleTPC(posChild, ConfV0PosChildType))
+      const auto& negChild = parts.iteratorAt(p2.index() - 1);
+      if ((ConfV0Type > 0 && !IsParticleTPC(posChild, 0)) || (ConfV0Type < 0 && !IsParticleTPC(negChild, 0)))
         continue;
       sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
     }
@@ -276,7 +277,8 @@ struct femtoUniversePairTaskTrackV0Extended {
         if (!IsParticleCombined(p1, ConfTrackChoicePartOne))
           continue;
         const auto& posChild = parts.iteratorAt(p2.index() - 2);
-        if (ConfV0PosChildType >= 0 && !IsParticleTPC(posChild, ConfV0PosChildType))
+        const auto& negChild = parts.iteratorAt(p2.index() - 1);
+        if ((ConfV0Type > 0 && !IsParticleTPC(posChild, 0)) || (ConfV0Type < 0 && !IsParticleTPC(negChild, 0)))
           continue;
         mixedEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
       }

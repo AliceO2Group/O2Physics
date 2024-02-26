@@ -18,12 +18,12 @@
 #define PWGJE_CORE_JETDERIVEDDATAUTILITIES_H_
 
 #include <string>
-
 #include "Common/CCDB/TriggerAliases.h"
-#include "PWGJE/Core/JetFinder.h"
 
 namespace jetderiveddatautilities
 {
+
+static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(211)->Mass(); //can be removed when pion mass becomes default for unidentified tracks
 
 enum JCollisionSel {
   sel8 = 0,
@@ -286,7 +286,7 @@ uint8_t setSingleTrackSelectionBit(int trackSelection)
 }
 
 template <typename T>
-float trackEnergy(T const& track, float mass = JetFinder::mPion)
+float trackEnergy(T const& track, float mass = mPion)
 {
   return std::sqrt((track.p() * track.p()) + (mass * mass));
 }

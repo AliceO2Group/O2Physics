@@ -40,6 +40,14 @@ struct MultiplicityDerivedQa {
   ConfigurableAxis axisMultFT0C{"axisMultFT0C", {10000, 0, 10000}, "FT0C amplitude"};
   ConfigurableAxis axisMultFDD{"axisMultFDD", {1000, 0, 4000}, "FDD amplitude"};
   ConfigurableAxis axisMultNTracks{"axisMultNTracks", {500, 0, 500}, "N_{tracks}"};
+
+  ConfigurableAxis axisMultZNA{"axisMultZNA", {1000, 0, 4000}, "ZNA amplitude"};
+  ConfigurableAxis axisMultZNC{"axisMultZNC", {1000, 0, 4000}, "ZNC amplitude"};
+  ConfigurableAxis axisMultZEM1{"axisMultZEM1", {1000, 0, 4000}, "ZEM1 amplitude"};
+  ConfigurableAxis axisMultZEM2{"axisMultZEM2", {1000, 0, 4000}, "ZEM2 amplitude"};
+  ConfigurableAxis axisMultZPA{"axisMultZPA", {1000, 0, 4000}, "ZPA amplitude"};
+  ConfigurableAxis axisMultZPC{"axisMultZPC", {1000, 0, 4000}, "ZPC amplitude"};
+
   ConfigurableAxis axisVertexZ{"axisVertexZ", {60, -15, 15}, "Vertex z (cm)"};
 
   ConfigurableAxis axisContributors{"axisContributors", {100, -0.5f, 99.5f}, "Vertex z (cm)"};
@@ -60,6 +68,14 @@ struct MultiplicityDerivedQa {
     histos.add("multiplicityQa/hRawFDD", "Raw FDD", kTH1D, {axisMultFDD});
     histos.add("multiplicityQa/hRawNTracksPV", "Raw NTracks", kTH1D, {axisMultNTracks});
 
+    // ZDC information
+    histos.add("multiplicityQa/hRawZNA", "Raw ZNA", kTH1D, {axisMultZNA});
+    histos.add("multiplicityQa/hRawZNC", "Raw ZNC", kTH1D, {axisMultZNC});
+    histos.add("multiplicityQa/hRawZEM1", "Raw ZEM1", kTH1D, {axisMultZEM1});
+    histos.add("multiplicityQa/hRawZEM2", "Raw ZEM2", kTH1D, {axisMultZEM2});
+    histos.add("multiplicityQa/hRawZPA", "Raw ZPA", kTH1D, {axisMultZPA});
+    histos.add("multiplicityQa/hRawZPC", "Raw ZPC", kTH1D, {axisMultZPC});
+
     // Vertex-Z profiles for vertex-Z dependency estimate
     histos.add("multiplicityQa/hVtxZFV0A", "Av FV0A vs vertex Z", kTProfile, {axisVertexZ});
     histos.add("multiplicityQa/hVtxZFT0A", "Av FT0A vs vertex Z", kTProfile, {axisVertexZ});
@@ -76,14 +92,16 @@ struct MultiplicityDerivedQa {
       histos.add("multiplicityQa/h2dNchVsFT0C", "FT0C", kTH2F, {axisMultFT0C, axisMultNTracks});
       histos.add("multiplicityQa/h2dNchVsFDD", "FDD", kTH2F, {axisMultFDD, axisMultNTracks});
 
-      histos.add("multiplicityQa/h2dPVsVsFV0", "FV0", kTH2F, {axisMultFV0, axisNumberOfPVs});
-      histos.add("multiplicityQa/h2dPVsVsFT0", "FT0", kTH2F, {axisMultFT0, axisNumberOfPVs});
-      histos.add("multiplicityQa/h2dPVsVsFT0A", "FT0A", kTH2F, {axisMultFT0A, axisNumberOfPVs});
-      histos.add("multiplicityQa/h2dPVsVsFT0C", "FT0C", kTH2F, {axisMultFT0C, axisNumberOfPVs});
-      histos.add("multiplicityQa/h2dPVsVsFDD", "FDD", kTH2F, {axisMultFDD, axisNumberOfPVs});
-
       // correlate T0 and V0
       histos.add("multiplicityQa/h2dFT0VsFV0", "FDD", kTH2F, {axisMultFV0, axisMultFT0});
+
+      // correlate ZDC and FT0C
+      histos.add("multiplicityQa/h2dZNAVsFT0C", "ZNAvsFT0C", kTH2F, {axisMultFT0C, axisMultZNA});
+      histos.add("multiplicityQa/h2dZNCVsFT0C", "ZNPvsFT0C", kTH2F, {axisMultFT0C, axisMultZNC});
+      histos.add("multiplicityQa/h2dZEM1VsFT0C", "ZEM1vsFT0C", kTH2F, {axisMultFT0C, axisMultZEM1});
+      histos.add("multiplicityQa/h2dZEM2VsFT0C", "ZEM2vsFT0C", kTH2F, {axisMultFT0C, axisMultZEM2});
+      histos.add("multiplicityQa/h2dZPAVsFT0C", "ZPAvsFT0C", kTH2F, {axisMultFT0C, axisMultZPA});
+      histos.add("multiplicityQa/h2dZPCVsFT0C", "ZPCvsFT0C", kTH2F, {axisMultFT0C, axisMultZPC});
     }
   }
 
@@ -126,6 +144,13 @@ struct MultiplicityDerivedQa {
     histos.fill(HIST("multiplicityQa/hRawFDD"), col.multFDDM());
     histos.fill(HIST("multiplicityQa/hRawNTracksPV"), col.multNTracksPV());
 
+    histos.fill(HIST("multiplicityQa/hRawZNA"), col.multZNA());
+    histos.fill(HIST("multiplicityQa/hRawZNC"), col.multZNC());
+    histos.fill(HIST("multiplicityQa/hRawZEM1"), col.multZEM1());
+    histos.fill(HIST("multiplicityQa/hRawZEM2"), col.multZEM2());
+    histos.fill(HIST("multiplicityQa/hRawZPA"), col.multZPA());
+    histos.fill(HIST("multiplicityQa/hRawZPC"), col.multZPC());
+
     // Profiles
     if (do2Dplots) {
       histos.fill(HIST("multiplicityQa/h2dNchVsFV0"), col.multFV0A(), col.multNTracksPV());
@@ -133,6 +158,13 @@ struct MultiplicityDerivedQa {
       histos.fill(HIST("multiplicityQa/h2dNchVsFT0A"), col.multFT0A(), col.multNTracksPV());
       histos.fill(HIST("multiplicityQa/h2dNchVsFT0C"), col.multFT0C(), col.multNTracksPV());
       histos.fill(HIST("multiplicityQa/h2dNchVsFDD"), col.multFDDA() + col.multFDDC(), col.multNTracksPV());
+
+      histos.fill(HIST("multiplicityQa/h2dZNAVsFT0C"), col.multFT0C(), col.multZNA());
+      histos.fill(HIST("multiplicityQa/h2dZNCVsFT0C"), col.multFT0C(), col.multZNC());
+      histos.fill(HIST("multiplicityQa/h2dZEM1VsFT0C"), col.multFT0C(), col.multZEM1());
+      histos.fill(HIST("multiplicityQa/h2dZEM2VsFT0C"), col.multFT0C(), col.multZEM2());
+      histos.fill(HIST("multiplicityQa/h2dZPAVsFT0C"), col.multFT0C(), col.multZPA());
+      histos.fill(HIST("multiplicityQa/h2dZPCVsFT0C"), col.multFT0C(), col.multZPC());
 
       // 2d FT0 vs FV0 fill
       histos.fill(HIST("multiplicityQa/h2dFT0VsFV0"), col.multFV0A(), col.multFT0A() + col.multFT0C());

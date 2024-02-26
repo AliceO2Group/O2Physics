@@ -27,3 +27,8 @@ o2physics_add_dpl_workflow(identifiedbf-filter-qa
                            SOURCES identifiedbfqa.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(twopartcorr-efficiency-qc
+                           SOURCES efficiencyAndQc.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                           COMPONENT_NAME Analysis)

@@ -25,6 +25,7 @@
 #include <ctime>
 
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -33,6 +34,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/RunningWorkflowInfo.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 #include "PWGCF/Core/PairCuts.h"
 #include "PWGCF/DataModel/DptDptFiltered.h"
@@ -675,15 +677,9 @@ struct DptDptCorrelationsTask {
   Configurable<float> cfgTwoTrackCut{"twotrackcut", -1, "Two-tracks cut: -1 = off; >0 otherwise distance value (suggested: 0.02"};
   Configurable<float> cfgTwoTrackCutMinRadius{"twotrackcutminradius", 0.8f, "Two-tracks cut: radius in m from which two-tracks cut is applied"};
 
-  Configurable<std::string> cfgSpecies{"species", "Ha", "The species to analyze: Ha, Pi, Ka, Pr, separated by commas. Default: Ha"};
   Configurable<bool> cfgSmallDCE{"smalldce", true, "Use small data collecting engine for singles processing, true = yes. Default = true"};
   Configurable<bool> cfgProcessPairs{"processpairs", false, "Process pairs: false = no, just singles, true = yes, process pairs"};
   Configurable<bool> cfgProcessME{"processmixedevents", false, "Process mixed events: false = no, just same event, true = yes, also process mixed events"};
-  Configurable<std::string> cfgCentSpec{"centralities", "00-05,05-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
-
-  Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
-                                                           {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
-                                                           "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
   Configurable<bool> cfgPtOrder{"ptorder", false, "enforce pT_1 < pT_2. Defalut: false"};
   struct : ConfigurableGroup {
     Configurable<std::string> cfgCCDBUrl{"input_ccdburl", "http://ccdb-test.cern.ch:8080", "The CCDB url for the input file"};
@@ -693,25 +689,25 @@ struct DptDptCorrelationsTask {
 
   OutputObj<TList> fOutput{"DptDptCorrelationsData", OutputObjHandlingPolicy::AnalysisObject, OutputObjSourceType::OutputObjSource};
 
-  void init(InitContext const&)
+  void init(InitContext& initContext)
   {
     using namespace correlationstask;
     using namespace o2::analysis::dptdptfilter;
 
-    /* update with the configurable values */
-    ptbins = cfgBinning->mPTbins;
-    ptlow = cfgBinning->mPTmin;
-    ptup = cfgBinning->mPTmax;
-    etabins = cfgBinning->mEtabins;
-    etalow = cfgBinning->mEtamin;
-    etaup = cfgBinning->mEtamax;
-    zvtxbins = cfgBinning->mZVtxbins;
-    zvtxlow = cfgBinning->mZVtxmin;
-    zvtxup = cfgBinning->mZVtxmax;
-    phibins = cfgBinning->mPhibins;
+    /* self configure the binning */
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmax", zvtxup);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTbins", ptbins);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmin", ptlow);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmax", ptup);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibins", phibins);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibinshift", phibinshift);
     philow = 0.0f;
     phiup = constants::math::TwoPI;
-    phibinshift = cfgBinning->mPhibinshift;
     processpairs = cfgProcessPairs.value;
     processmixedevents = cfgProcessME.value;
     ptorder = cfgPtOrder.value;
@@ -757,16 +753,41 @@ struct DptDptCorrelationsTask {
 
     /* create the data collecting engine instances according to the configured centrality/multiplicity ranges */
     {
-      /* configuring the desired species */
-      TObjArray* tokens = TString(cfgSpecies.value.c_str()).Tokenize(",");
-      int nspecies = tokens->GetEntries();
-      for (int isp = 0; isp < nspecies; ++isp) {
-        poinames.push_back(std::string(tokens->At(isp)->GetName()));
-        tnames.push_back(std::string(TString::Format("%sP", tokens->At(isp)->GetName()).Data()));
-        tnames.push_back(std::string(TString::Format("%sM", tokens->At(isp)->GetName()).Data()));
-        LOGF(info, "Incorporated species name %s to the analysis", poinames[isp].c_str());
+      /* self configure the desired species */
+      o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
+      std::vector<std::string> cfgnames = {"pipidsel", "kapidsel", "prpidsel"};
+      std::vector<uint8_t> spids = {2, 3, 4};
+      for (uint i = 0; i < cfgnames.size(); ++i) {
+        auto includeIt = [&pidselector, &initContext](int spid, auto name) {
+          bool mUseIt = false;
+          bool mExcludeIt = false;
+          if (getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mUseIt", name.c_str()).Data(), mUseIt) &&
+              getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mExclude", name.c_str()).Data(), mExcludeIt)) {
+            if (mUseIt && !mExcludeIt) {
+              auto cfg = new o2::analysis::TrackSelectionPIDCfg();
+              cfg->mUseIt = true;
+              cfg->mExclude = false;
+              pidselector.Add(spid, cfg);
+            }
+          }
+        };
+        includeIt(spids[i], cfgnames[i]);
       }
-      delete tokens;
+      uint nspecies = pidselector.getNSpecies();
+      if (nspecies == 0) {
+        /* unidentified analysis */
+        poinames.push_back(pidselector.getHadFName());
+        tnames.push_back(std::string(TString::Format("%sP", pidselector.getHadFName()).Data()));
+        tnames.push_back(std::string(TString::Format("%sM", pidselector.getHadFName()).Data()));
+        LOGF(info, "Incorporated species name %s to the analysis", poinames[0].c_str());
+      } else {
+        for (uint8_t ix = 0; ix < nspecies; ++ix) {
+          poinames.push_back(std::string(pidselector.getSpeciesFName(ix)));
+          tnames.push_back(std::string(TString::Format("%sP", pidselector.getSpeciesFName(ix)).Data()));
+          tnames.push_back(std::string(TString::Format("%sM", pidselector.getSpeciesFName(ix)).Data()));
+          LOGF(info, "Incorporated species name %s to the analysis", poinames[ix].c_str());
+        }
+      }
       uint ntracknames = tnames.size();
       for (uint isp = 0; isp < ntracknames; ++isp) {
         trackPairsNames.push_back(std::vector<std::string>());
@@ -776,11 +797,30 @@ struct DptDptCorrelationsTask {
         }
       }
 
-      /* the centrality/multiplicity ranges */
-      tokens = TString(cfgCentSpec.value.c_str()).Tokenize(",");
-      ncmranges = tokens->GetEntries();
-      fCentMultMin = new float[ncmranges];
-      fCentMultMax = new float[ncmranges];
+      /* self configure the centrality/multiplicity ranges */
+      std::string centspec;
+      if (getTaskOptionValue(initContext, "dpt-dpt-filter", "centralities", centspec)) {
+        LOGF(info, "Got the centralities specification: %s", centspec.c_str());
+        auto tokens = TString(centspec.c_str()).Tokenize(",");
+        ncmranges = tokens->GetEntries();
+        fCentMultMin = new float[ncmranges];
+        fCentMultMax = new float[ncmranges];
+        for (int i = 0; i < ncmranges; ++i) {
+          float cmmin = 0.0f;
+          float cmmax = 0.0f;
+          sscanf(tokens->At(i)->GetName(), "%f-%f", &cmmin, &cmmax);
+          fCentMultMin[i] = cmmin;
+          fCentMultMax[i] = cmmax;
+        }
+        delete tokens;
+      } else {
+        LOGF(info, "No centralities specification. Setting it to: 0-100");
+        ncmranges = 1;
+        fCentMultMin = new float[ncmranges];
+        fCentMultMax = new float[ncmranges];
+        fCentMultMin[0] = 0.0f;
+        fCentMultMax[0] = 100.0f;
+      }
       dataCE = new DataCollectingEngine<false>*[ncmranges];
       if (cfgSmallDCE) {
         dataCE_small = new DataCollectingEngine<true>*[ncmranges];
@@ -811,28 +851,23 @@ struct DptDptCorrelationsTask {
           initializeCEInstance(dce, TString::Format("DptDptCorrelationsData%s-%s", me ? "ME" : "", rg));
           return dce;
         };
-        float cmmin = 0.0f;
-        float cmmax = 0.0f;
-        sscanf(tokens->At(i)->GetName(), "%f-%f", &cmmin, &cmmax);
-        fCentMultMin[i] = cmmin;
-        fCentMultMax[i] = cmmax;
+        TString range = TString::Format("%d-%d", int(fCentMultMin[i]), int(fCentMultMax[i]));
         if (cfgSmallDCE.value) {
           if (processpairs) {
             LOGF(fatal, "Processing pairs cannot be used with the small DCE, please configure properly!!");
           }
-          dataCE_small[i] = builSmallDCEInstance(tokens->At(i)->GetName());
+          dataCE_small[i] = builSmallDCEInstance(range.Data());
         } else {
-          dataCE[i] = buildCEInstance(tokens->At(i)->GetName());
+          dataCE[i] = buildCEInstance(range.Data());
         }
         if (processmixedevents) {
           /* consistency check */
           if (cfgSmallDCE.value) {
             LOGF(fatal, "Mixed events cannot be used with the small DCE, please configure properly!!");
           }
-          dataCEME[i] = buildCEInstance(tokens->At(i)->GetName(), true);
+          dataCEME[i] = buildCEInstance(range.Data(), true);
         }
       }
-      delete tokens;
       for (int i = 0; i < ncmranges; ++i) {
         LOGF(info, " centrality/multipliicty range: %d, low limit: %f, up limit: %f", i, fCentMultMin[i], fCentMultMax[i]);
       }

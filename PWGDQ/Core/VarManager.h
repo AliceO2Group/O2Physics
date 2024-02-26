@@ -127,6 +127,22 @@ class VarManager : public TObject
     kNMaxCandidateTypes
   };
 
+  enum BarrelTrackFilteringBits {
+    kIsConversionLeg = 0,     // electron from conversions
+    kIsK0sLeg,                // pion from K0s
+    kIsLambdaLeg,             // proton or pion from Lambda
+    kIsALambdaLeg,            // proton or pion from anti-Lambda
+    kIsOmegaLeg,              // kaon from Omega baryon decay
+    kDalitzBits = 5,          // first bit for Dalitz tagged tracks
+    kBarrelUserCutsBits = 13, // first bit for user track cuts
+    kIsTPCPostcalibrated = 63 // tracks were postcalibrated for the TPC PID
+  };
+
+  enum MuonTrackFilteringBits {
+    kMuonUserCutsBits = 0, // first bit for user muon cuts
+    kMuonIsPropagated = 7  // whether the muon was propagated already
+  };
+
  public:
   enum Variables {
     kNothing = -1,
@@ -343,7 +359,7 @@ class VarManager : public TObject
     kIsDalitzLeg,             // Up to 8 dalitz selections
     kBarrelNAssocsInBunch,    // number of in bunch collision associations
     kBarrelNAssocsOutOfBunch, // number of out of bunch collision associations
-    kNBarrelTrackVariables = kIsDalitzLeg + 8,
+    kNBarrelTrackVariables,
 
     // Muon track variables
     kMuonNClusters,
@@ -768,12 +784,13 @@ class VarManager : public TObject
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
 
-  ClassDefNV(VarManager, 3)
+  ClassDef(VarManager, 3);
 };
 
 template <typename T, typename U, typename V>
 auto VarManager::getRotatedCovMatrixXX(const T& matrix, U phi, V theta)
 {
+  //
   auto cp = std::cos(phi);
   auto sp = std::sin(phi);
   auto ct = std::cos(theta);
@@ -897,6 +914,13 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
   if (!values) {
     values = fgValues;
   }
+
+  if constexpr ((fillMap & ReducedMuonCov) > 0) {
+    if (muon.filteringFlags() & (uint8_t(1) << VarManager::kMuonIsPropagated)) { // the muon is already propagated, so nothing to do
+      return;
+    }
+  }
+
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
     o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muon, collision);
 
@@ -1234,20 +1258,20 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kCharge] = track.sign();
 
     if constexpr ((fillMap & ReducedTrack) > 0 && !((fillMap & Pair) > 0)) {
-      values[kIsGlobalTrack] = track.filteringFlags_bit(0);
-      values[kIsGlobalTrackSDD] = track.filteringFlags_bit(1);
+      // values[kIsGlobalTrack] = track.filteringFlags_bit(0);
+      // values[kIsGlobalTrackSDD] = track.filteringFlags_bit(1);
       values[kIsAmbiguous] = track.isAmbiguous();
 
-      values[kIsLegFromGamma] = track.filteringFlags_bit(2);
-      values[kIsLegFromK0S] = track.filteringFlags_bit(3);
-      values[kIsLegFromLambda] = track.filteringFlags_bit(4);
-      values[kIsLegFromAntiLambda] = track.filteringFlags_bit(5);
-      values[kIsLegFromOmega] = track.filteringFlags_bit(6);
+      values[kIsLegFromGamma] = track.filteringFlags_bit(VarManager::kIsConversionLeg);
+      values[kIsLegFromK0S] = track.filteringFlags_bit(VarManager::kIsK0sLeg);
+      values[kIsLegFromLambda] = track.filteringFlags_bit(VarManager::kIsLambdaLeg);
+      values[kIsLegFromAntiLambda] = track.filteringFlags_bit(VarManager::kIsALambdaLeg);
+      values[kIsLegFromOmega] = track.filteringFlags_bit(VarManager::kIsOmegaLeg);
 
       values[kIsProtonFromLambdaAndAntiLambda] = static_cast<bool>((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
 
       for (int i = 0; i < 8; i++) {
-        values[kIsDalitzLeg + i] = track.filteringFlags_bit(7 + i);
+        values[kIsDalitzLeg + i] = track.filteringFlags_bit(VarManager::kDalitzBits + i);
       }
     }
   }
@@ -1408,6 +1432,12 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kTPCnSigmaKa] = track.tpcNSigmaKa();
     values[kTPCnSigmaPr] = track.tpcNSigmaPr();
 
+    bool isTPCCalibrated = false;
+    if constexpr ((fillMap & ReducedTrackBarrelPID) > 0) {
+      if (track.filteringFlags_bit(kIsTPCPostcalibrated)) {
+        isTPCCalibrated = true;
+      }
+    }
     // compute TPC postcalibrated electron nsigma based on calibration histograms from CCDB
     if (fgUsedVars[kTPCnSigmaEl_Corr] && fgRunTPCPostCalibration[0]) {
       TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCElectronMean]);
@@ -1425,7 +1455,11 @@ void VarManager::FillTrack(T const& track, float* values)
 
       double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
       double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
-      values[kTPCnSigmaEl_Corr] = (values[kTPCnSigmaEl] - mean) / width;
+      if (!isTPCCalibrated) {
+        values[kTPCnSigmaEl_Corr] = (values[kTPCnSigmaEl] - mean) / width;
+      } else {
+        values[kTPCnSigmaEl_Corr] = track.tpcNSigmaEl();
+      }
     }
     // compute TPC postcalibrated pion nsigma if required
     if (fgUsedVars[kTPCnSigmaPi_Corr] && fgRunTPCPostCalibration[1]) {
@@ -1444,7 +1478,11 @@ void VarManager::FillTrack(T const& track, float* values)
 
       double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
       double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
-      values[kTPCnSigmaPi_Corr] = (values[kTPCnSigmaPi] - mean) / width;
+      if (!isTPCCalibrated) {
+        values[kTPCnSigmaPi_Corr] = (values[kTPCnSigmaPi] - mean) / width;
+      } else {
+        values[kTPCnSigmaPi_Corr] = track.tpcNSigmaPi();
+      }
     }
     if (fgUsedVars[kTPCnSigmaKa_Corr] && fgRunTPCPostCalibration[2]) {
       TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCKaonMean]);
@@ -1462,7 +1500,11 @@ void VarManager::FillTrack(T const& track, float* values)
 
       double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
       double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
-      values[kTPCnSigmaKa_Corr] = (values[kTPCnSigmaKa] - mean) / width;
+      if (!isTPCCalibrated) {
+        values[kTPCnSigmaKa_Corr] = (values[kTPCnSigmaKa] - mean) / width;
+      } else {
+        values[kTPCnSigmaKa_Corr] = track.tpcNSigmaKa();
+      }
     }
     // compute TPC postcalibrated proton nsigma if required
     if (fgUsedVars[kTPCnSigmaPr_Corr] && fgRunTPCPostCalibration[3]) {
@@ -1481,7 +1523,11 @@ void VarManager::FillTrack(T const& track, float* values)
 
       double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
       double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
-      values[kTPCnSigmaPr_Corr] = (values[kTPCnSigmaPr] - mean) / width;
+      if (!isTPCCalibrated) {
+        values[kTPCnSigmaPr_Corr] = (values[kTPCnSigmaPr] - mean) / width;
+      } else {
+        values[kTPCnSigmaPr_Corr] = track.tpcNSigmaPr();
+      }
     }
     values[kTOFnSigmaEl] = track.tofNSigmaEl();
     values[kTOFnSigmaPi] = track.tofNSigmaPi();

@@ -48,8 +48,6 @@ class JetFinder
   /// \return ClusterSequenceArea object needed to access constituents
   // fastjet::ClusterSequenceArea findJets(std::vector<fastjet::PseudoJet> &inputParticles, std::vector<fastjet::PseudoJet> &jets);
 
-  static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(211)->Mass(); //can be removed when pion mass becomes default for unidentified tracks
-
   float phiMin = 0.;
   float phiMax = 2. * M_PI;
   float etaMin = -.9;
