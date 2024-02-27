@@ -65,52 +65,52 @@ struct UpcTauCentralBarrelRL {
      {"Tracks/raw/PID/hTPCsignalVsP", "All tracks;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/raw/PID/hTPCsignalVsPt", "All tracks;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/raw/PID/hTPCsignalVsEta", "All tracks;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/raw/PID/hTPCsignalVsPhi", "All tracks;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/raw/PID/hTPCsignalVsPhi", "All tracks;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/raw/PID/PosCharge/hTPCsignalVsZ", "Positively charged track;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/raw/PID/PosCharge/hTPCsignalVsP", "Positively charged track;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/raw/PID/PosCharge/hTPCsignalVsPt", "Positively charged track;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/raw/PID/PosCharge/hTPCsignalVsEta", "Positively charged track;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/raw/PID/PosCharge/hTPCsignalVsPhi", "Positively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/raw/PID/PosCharge/hTPCsignalVsPhi", "Positively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/raw/PID/NegCharge/hTPCsignalVsZ", "Negatively charged track;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/raw/PID/NegCharge/hTPCsignalVsP", "Negatively charged track;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/raw/PID/NegCharge/hTPCsignalVsPt", "Negatively charged track;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/raw/PID/NegCharge/hTPCsignalVsEta", "Negatively charged track;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/raw/PID/NegCharge/hTPCsignalVsPhi", "Negatively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/raw/PID/NegCharge/hTPCsignalVsPhi", "Negatively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/hTPCsignalVsZ", "All good tracks;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/hTPCsignalVsP", "All good tracks;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/hTPCsignalVsPt", "All good tracks;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/hTPCsignalVsEta", "All good tracks;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/GoodTrack/PID/hTPCsignalVsPhi", "All good tracks;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/GoodTrack/PID/hTPCsignalVsPhi", "All good tracks;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsZ", "Positively charged track;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsP", "Positively charged track;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsPt", "Positively charged track;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsEta", "Positively charged track;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsPhi", "Positively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/GoodTrack/PID/PosCharge/hTPCsignalVsPhi", "Positively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsZ", "Negatively charged track;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsP", "Negatively charged track;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsPt", "Negatively charged track;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsEta", "Negatively charged track;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsPhi", "Negatively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/GoodTrack/PID/NegCharge/hTPCsignalVsPhi", "Negatively charged track;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Electron/hTPCsignalVsZ", "Identified electron;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Electron/hTPCsignalVsP", "Identified electron;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Electron/hTPCsignalVsPt", "Identified electron;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Electron/hTPCsignalVsEta", "Identified electron;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/GoodTrack/PID/Electron/hTPCsignalVsPhi", "Identified electron;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/GoodTrack/PID/Electron/hTPCsignalVsPhi", "Identified electron;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Muon/hTPCsignalVsZ", "Identified Muon;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Muon/hTPCsignalVsP", "Identified Muon;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Muon/hTPCsignalVsPt", "Identified Muon;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Muon/hTPCsignalVsEta", "Identified Muon;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/GoodTrack/PID/Muon/hTPCsignalVsPhi", "Identified Muon;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/GoodTrack/PID/Muon/hTPCsignalVsPhi", "Identified Muon;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Pion/hTPCsignalVsZ", "Identified Pion;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Pion/hTPCsignalVsP", "Identified Pion;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Pion/hTPCsignalVsPt", "Identified Pion;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Pion/hTPCsignalVsEta", "Identified Pion;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/GoodTrack/PID/Pion/hTPCsignalVsPhi", "Identified Pion;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/GoodTrack/PID/Pion/hTPCsignalVsPhi", "Identified Pion;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Others/hTPCsignalVsZ", "Identified NOT electron/Muon/Pion;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, -20., 20.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Others/hTPCsignalVsP", "Identified NOT electron/Muon/Pion;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Others/hTPCsignalVsPt", "Identified NOT electron/Muon/Pion;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"Tracks/GoodTrack/PID/Others/hTPCsignalVsEta", "Identified NOT electron/Muon/Pion;Track #eta (-);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{500, -2., 2.}, {200, 0., 200}}}},
-     {"Tracks/GoodTrack/PID/Others/hTPCsignalVsPhi", "Identified NOT electron/Muon/Pion;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * TMath::Pi()}, {200, 0., 200}}}},
+     {"Tracks/GoodTrack/PID/Others/hTPCsignalVsPhi", "Identified NOT electron/Muon/Pion;Track #phi (rad);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{64, 0, 2 * o2::constants::math::PI}, {200, 0., 200}}}},
      {"EventTwoTracks/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"EventTwoTracks/TwoElectrons/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
      {"EventTwoTracks/TwoMuons/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", {HistType::kTH2D, {{200, 0., 2.}, {200, 0., 200}}}},
@@ -129,20 +129,23 @@ struct UpcTauCentralBarrelRL {
   Configurable<bool> verboseInfo{"verboseInfo", true, {"Print general info to terminal; default it true."}};
   Configurable<bool> verboseDebug{"verboseDebug", false, {"Print debug info to terminal; default it false."}};
   Configurable<int> whichGapSide{"whichGapSide", 2, {"0 for side A, 1 for side C, 2 for both sides"}};
-  Configurable<float> cutAvgITSclusterSize{"cutAvgITSclusterSize", 3.5, {"specific study"}};
-  Configurable<float> cutPtAvgITSclusterSize{"cutPtAvgITSclusterSize", 0.7, {"specific study"}};
-  Configurable<bool> cutMyGlobalTracksOnly{"cutGlobalTracksOnly", false, {"Applies cut on here defined global tracks"}};
+  Configurable<float> cutAvgITSclusterSize{"cutAvgITSclusterSize", 2.05f, {"specific study"}};
+  Configurable<float> cutPtAvgITSclusterSize{"cutPtAvgITSclusterSize", 0.7f, {"specific study"}};
+  Configurable<bool> cutMyGlobalTracksOnly{"cutMyGlobalTracksOnly", false, {"Applies cut on here defined global tracks"}};
   Configurable<float> cutMyGTptMin{"cutMyGTptMin", 0.1f, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTptMax{"cutMyGTptMax", 1e10f, {"MyGlobalTrack cut"}};
-  Configurable<float> cutMyGTetaMin{"cutMyGTetaMin", -0.8, {"MyGlobalTrack cut"}};
-  Configurable<float> cutMyGTetaMax{"cutMyGTetaMax", 0.8, {"MyGlobalTrack cut"}};
+  Configurable<float> cutMyGTetaMin{"cutMyGTetaMin", -0.8f, {"MyGlobalTrack cut"}};
+  Configurable<float> cutMyGTetaMax{"cutMyGTetaMax", 0.8f, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTdcaZmax{"cutMyGTdcaZmax", 2.f, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTdcaXYmax{"cutMyGTdcaXYmax", 1e10f, {"MyGlobalTrack cut"}};
   Configurable<bool> cutMyGTdcaXYusePt{"cutMyGTdcaXYusePt", false, {"MyGlobalTrack cut"}};
+  Configurable<bool> cutMyHasITS{"cutMyHasITS", true, {"MyGlobalTrack cut"}};
   Configurable<int> cutMyGTitsNClsMin{"cutMyGTitsNClsMin", 1, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTitsChi2NclMax{"cutMyGTitsChi2NclMax", 36.f, {"MyGlobalTrack cut"}};
+  Configurable<int> cutMyGTitsHitsRule{"cutMyGTitsHitsRule", 0, {"MyGlobalTrack cut"}};
+  Configurable<bool> cutMyHasTPC{"cutMyHasTPC", true, {"MyGlobalTrack cut"}};
   Configurable<int> cutMyGTtpcNClsMin{"cutMyGTtpcNClsMin", 1, {"MyGlobalTrack cut"}};
-  Configurable<int> cutMyGTtpcNClsCrossedRowsMin{"cutMyGTtpcNClsCrossedRows", 70, {"MyGlobalTrack cut"}};
+  Configurable<int> cutMyGTtpcNClsCrossedRowsMin{"cutMyGTtpcNClsCrossedRowsMin", 70, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTtpcNClsCrossedRowsOverNClsMin{"cutMyGTtpcNClsCrossedRowsOverNClsMin", 0.8f, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTtpcChi2NclMax{"cutMyGTtpcChi2NclMax", 4.f, {"MyGlobalTrack cut"}};
 
@@ -153,6 +156,8 @@ struct UpcTauCentralBarrelRL {
   // init
   void init(InitContext&)
   {
+    mySetITShitsRule(cutMyGTitsHitsRule);
+
     if (verboseInfo)
       printLargeMessage("INIT METHOD");
     countCollisions = 0;
@@ -165,23 +170,47 @@ struct UpcTauCentralBarrelRL {
     const AxisSpec axisMomSigned{80, -2., 2.};
     const AxisSpec axisMomWide{100, 0., 10.};
     const AxisSpec axisPt{40, 0., 2.};
-    const AxisSpec axisPhi{64, -2 * TMath::Pi(), 2 * TMath::Pi()};
+    const AxisSpec axisPhi{64, -2 * o2::constants::math::PI, 2 * o2::constants::math::PI};
     const AxisSpec axisEta{50, -1.2, 1.2};
     const AxisSpec axisRap{50, -1.2, 1.2};
     const AxisSpec axisAcoplanarity{32, 0.0, o2::constants::math::PI};
     const AxisSpec axisAvgITSclsSizes{500, 0., 10.};
+    const AxisSpec axisDCA{100, -0.5, 0.5};
+    const AxisSpec axisITSnCls{8, -0.5, 7.5};
+    const AxisSpec axisITSchi2{100, 0, 50};
+    const AxisSpec axisTPCnCls{165, -0.5, 164.5};
+    const AxisSpec axisTPCxRwsFrac{200, 0.0, 2.0};
+    const AxisSpec axisTPCchi2{100, 0, 10};
 
     histos.add("Tracks/raw/hTrackZ", ";Track z-vertex (cm);Number of events (-)", HistType::kTH1D, {axisZvtx});
     histos.add("Tracks/raw/hTrackP", ";Track #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMom});
     histos.add("Tracks/raw/hTrackPt", ";Track #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
     histos.add("Tracks/raw/hTrackPhi", ";Track #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
     histos.add("Tracks/raw/hTrackEta", ";Track #eta (-);Number of events (-)", HistType::kTH1D, {axisEta});
+    histos.add("Tracks/raw/hTrackDcaXY", ";Track DCA_{XY} (cm);Number of events (-)", HistType::kTH1D, {axisDCA});
+    histos.add("Tracks/raw/hTrackDcaZ", ";Track DCA_{Z} (cm);Number of events (-)", HistType::kTH1D, {axisDCA});
+    histos.add("Tracks/raw/ITS/itsNCls", "number of found ITS clusters;# clusters ITS", kTH1D, {axisITSnCls});
+    histos.add("Tracks/raw/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH1D, {axisITSchi2});
+    histos.add("Tracks/raw/TPC/tpcNClsFindable", "number of findable TPC clusters;# findable clusters TPC", kTH1D, {axisTPCnCls});
+    histos.add("Tracks/raw/TPC/tpcNClsFound", "number of found TPC clusters;# clusters TPC", kTH1D, {axisTPCnCls});
+    histos.add("Tracks/raw/TPC/tpcCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH1D, {axisTPCnCls});
+    histos.add("Tracks/raw/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {axisTPCxRwsFrac});
+    histos.add("Tracks/raw/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {axisTPCchi2});
 
     histos.add("Tracks/GoodTrack/hTrackZ", ";Track z-vertex (cm);Number of events (-)", HistType::kTH1D, {axisZvtx});
     histos.add("Tracks/GoodTrack/hTrackP", ";Track #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMom});
     histos.add("Tracks/GoodTrack/hTrackPt", ";Track #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {axisPt});
     histos.add("Tracks/GoodTrack/hTrackPhi", ";Track #phi (rad);Number of events (-)", HistType::kTH1D, {axisPhi});
     histos.add("Tracks/GoodTrack/hTrackEta", ";Track #eta (-);Number of events (-)", HistType::kTH1D, {axisEta});
+    histos.add("Tracks/GoodTrack/hTrackDcaXY", ";Track DCA_{XY} (cm);Number of events (-)", HistType::kTH1D, {axisDCA});
+    histos.add("Tracks/GoodTrack/hTrackDcaZ", ";Track DCA_{Z} (cm);Number of events (-)", HistType::kTH1D, {axisDCA});
+    histos.add("Tracks/GoodTrack/ITS/itsNCls", "number of found ITS clusters;# clusters ITS", kTH1D, {axisITSnCls});
+    histos.add("Tracks/GoodTrack/ITS/itsChi2NCl", "chi2 per ITS cluster;chi2 / cluster ITS", kTH1D, {axisITSchi2});
+    histos.add("Tracks/GoodTrack/TPC/tpcNClsFindable", "number of findable TPC clusters;# findable clusters TPC", kTH1D, {axisTPCnCls});
+    histos.add("Tracks/GoodTrack/TPC/tpcNClsFound", "number of found TPC clusters;# clusters TPC", kTH1D, {axisTPCnCls});
+    histos.add("Tracks/GoodTrack/TPC/tpcCrossedRows", "number of crossed TPC rows;# crossed rows TPC", kTH1D, {axisTPCnCls});
+    histos.add("Tracks/GoodTrack/TPC/tpcCrossedRowsOverFindableCls", "crossed TPC rows over findable clusters;crossed rows / findable clusters TPC", kTH1D, {axisTPCxRwsFrac});
+    histos.add("Tracks/GoodTrack/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {axisTPCchi2});
 
     histos.add("EventTwoTracks/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
     histos.add("EventTwoTracks/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -418,8 +447,51 @@ struct UpcTauCentralBarrelRL {
 
   } // end run
 
+  std::vector<std::pair<int8_t, std::set<uint8_t>>> cutMyRequiredITSHits{};
+
+  void mySetRequireHitsInITSLayers(int8_t minNRequiredHits, std::set<uint8_t> requiredLayers)
+  {
+    // layer 0 corresponds to the the innermost ITS layer
+    cutMyRequiredITSHits.push_back(std::make_pair(minNRequiredHits, requiredLayers));
+  }
+
+  void mySetITShitsRule(int matching)
+  {
+    switch (matching) {
+      case 0: // Run3ITSibAny
+        mySetRequireHitsInITSLayers(1, {0, 1, 2});
+        break;
+      case 1: // Run3ITSibTwo
+        mySetRequireHitsInITSLayers(2, {0, 1, 2});
+        break;
+      case 2: // Run3ITSallAny
+        mySetRequireHitsInITSLayers(1, {0, 1, 2, 3, 4, 5, 6});
+        break;
+      case 3: // Run3ITSall7Layers
+        mySetRequireHitsInITSLayers(7, {0, 1, 2, 3, 4, 5, 6});
+        break;
+      default:
+        LOG(fatal) << "You chose wrong ITS matching";
+        break;
+    }
+  }
+
+  bool isFulfillsITSHitRequirementsReinstatement(uint8_t itsClusterMap) const
+  {
+    constexpr uint8_t bit = 1;
+    for (auto& itsRequirement : cutMyRequiredITSHits) {
+      auto hits = std::count_if(itsRequirement.second.begin(), itsRequirement.second.end(), [&](auto&& requiredLayer) { return itsClusterMap & (bit << requiredLayer); });
+      if ((itsRequirement.first == -1) && (hits > 0)) {
+        return false; // no hits were required in specified layers
+      } else if (hits < itsRequirement.first) {
+        return false; // not enough hits found in specified layers
+      }
+    }
+    return true;
+  }
+
   template <typename T>
-  bool isGlobalTrackReinstallment(T const& track)
+  bool isGlobalTrackReinstatement(T const& track)
   {
     // kInAcceptance copy
     if (track.pt() < cutMyGTptMin || track.pt() > cutMyGTptMax)
@@ -428,30 +500,31 @@ struct UpcTauCentralBarrelRL {
       return false;
     // kPrimaryTracks
     // GoldenChi2 cut is only for Run 2
-    if (track.dcaZ() > cutMyGTdcaZmax)
+    if (abs(track.dcaZ()) > cutMyGTdcaZmax)
       return false;
     if (cutMyGTdcaXYusePt) {
       float maxDCA = 0.0105f + 0.0350f / pow(track.pt(), 1.1f); // ? not sure yet if will be used
-      if (track.dcaXY() > maxDCA)
+      if (abs(track.dcaXY()) > maxDCA)
         return false;
     } else {
-      if (track.dcaXY() > cutMyGTdcaXYmax)
+      if (abs(track.dcaXY()) > cutMyGTdcaXYmax)
         return false;
     }
     // kQualityTrack
     // TrackType is always 1 as per definition of processed Run3 AO2Ds
     // ITS
-    if (!track.hasITS())
+    if (cutMyHasITS && !track.hasITS())
       return false; // ITS refit
     if (track.itsNCls() < cutMyGTitsNClsMin)
       return false;
     if (track.itsChi2NCl() > cutMyGTitsChi2NclMax)
       return false;
-    // if (!FulfillsITSHitRequirements(track.itsClusterSizes())) return false; <---- to complicated to implement now
+    if (!isFulfillsITSHitRequirementsReinstatement(track.itsClusterMap()))
+      return false;
     //  TPC
-    if (!track.hasTPC())
+    if (cutMyHasTPC && !track.hasTPC())
       return false; // TPC refit
-    if (track.tpcNClsFindable() - track.tpcNClsFindableMinusFound() < cutMyGTtpcNClsMin)
+    if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < cutMyGTtpcNClsMin)
       return false; // tpcNClsFound()
     if (track.tpcNClsCrossedRows() < cutMyGTtpcNClsCrossedRowsMin)
       return false;
@@ -486,6 +559,15 @@ struct UpcTauCentralBarrelRL {
       histos.get<TH1>(HIST("Tracks/raw/hTrackPhi"))->Fill(phi(trkPx, trkPy));
       histos.get<TH1>(HIST("Tracks/raw/hTrackEta"))->Fill(eta(trkPx, trkPy, trkPz));
       //          histosPID.get<TH2>(HIST("Tracks/raw/PID/hTPCsignalVsZ"))->Fill(track.z(),track.tpcSignal());
+      histos.get<TH1>(HIST("Tracks/raw/hTrackDcaXY"))->Fill(track.dcaXY());
+      histos.get<TH1>(HIST("Tracks/raw/hTrackDcaZ"))->Fill(track.dcaZ());
+      histos.get<TH1>(HIST("Tracks/raw/ITS/itsNCls"))->Fill(track.itsNCls());
+      histos.get<TH1>(HIST("Tracks/raw/ITS/itsChi2NCl"))->Fill(track.itsChi2NCl());
+      histos.get<TH1>(HIST("Tracks/raw/TPC/tpcNClsFindable"))->Fill(track.tpcNClsFindable());
+      histos.get<TH1>(HIST("Tracks/raw/TPC/tpcNClsFound"))->Fill(track.tpcNClsFindable() - track.tpcNClsFindableMinusFound());
+      histos.get<TH1>(HIST("Tracks/raw/TPC/tpcCrossedRows"))->Fill(track.tpcNClsCrossedRows());
+      histos.get<TH1>(HIST("Tracks/raw/TPC/tpcCrossedRowsOverFindableCls"))->Fill((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())));
+      histos.get<TH1>(HIST("Tracks/raw/TPC/tpcChi2NCl"))->Fill(track.tpcChi2NCl());
       histosPID.get<TH2>(HIST("Tracks/raw/PID/hTPCsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tpcSignal());
       histosPID.get<TH2>(HIST("Tracks/raw/PID/hTPCsignalVsPt"))->Fill(track.pt(), track.tpcSignal());
       histosPID.get<TH2>(HIST("Tracks/raw/PID/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz), track.tpcSignal());
@@ -523,7 +605,7 @@ struct UpcTauCentralBarrelRL {
       if (track.isPVContributor() != 1)
         continue;
       if (cutMyGlobalTracksOnly) {
-        if (isGlobalTrackReinstallment(track) != 1)
+        if (isGlobalTrackReinstatement(track) != 1)
           continue;
       }
       countPVGT++;
@@ -536,6 +618,15 @@ struct UpcTauCentralBarrelRL {
       histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackPhi"))->Fill(phi(trkPx, trkPy));
       histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackEta"))->Fill(eta(trkPx, trkPy, trkPz));
       //          histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/hTPCsignalVsZ"))->Fill(track.z(),track.tpcSignal());
+      histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackDcaXY"))->Fill(track.dcaXY());
+      histos.get<TH1>(HIST("Tracks/GoodTrack/hTrackDcaZ"))->Fill(track.dcaZ());
+      histos.get<TH1>(HIST("Tracks/GoodTrack/ITS/itsNCls"))->Fill(track.itsNCls());
+      histos.get<TH1>(HIST("Tracks/GoodTrack/ITS/itsChi2NCl"))->Fill(track.itsChi2NCl());
+      histos.get<TH1>(HIST("Tracks/GoodTrack/TPC/tpcNClsFindable"))->Fill(track.tpcNClsFindable());
+      histos.get<TH1>(HIST("Tracks/GoodTrack/TPC/tpcNClsFound"))->Fill(track.tpcNClsFindable() - track.tpcNClsFindableMinusFound());
+      histos.get<TH1>(HIST("Tracks/GoodTrack/TPC/tpcCrossedRows"))->Fill(track.tpcNClsCrossedRows());
+      histos.get<TH1>(HIST("Tracks/GoodTrack/TPC/tpcCrossedRowsOverFindableCls"))->Fill((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())));
+      histos.get<TH1>(HIST("Tracks/GoodTrack/TPC/tpcChi2NCl"))->Fill(track.tpcChi2NCl());
       histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/hTPCsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tpcSignal());
       histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/hTPCsignalVsPt"))->Fill(track.pt(), track.tpcSignal());
       histosPID.get<TH2>(HIST("Tracks/GoodTrack/PID/hTPCsignalVsEta"))->Fill(eta(trkPx, trkPy, trkPz), track.tpcSignal());
