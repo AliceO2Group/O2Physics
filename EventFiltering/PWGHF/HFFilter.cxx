@@ -193,7 +193,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setTpcPidCalibrationOption(setTPCCalib);
     helper.setPtRangeSoftPiSigmaC(ptCuts->get(0u, 4u), ptCuts->get(1u, 4u));
     helper.setDeltaMassRangeSigmaC(0.14, maxDeltaMassCharmReso->get(0u, 6u));
-    helper.setPtRangeSoftKaonXicStarToSigmaC(ptCuts->get(0u, 5u), ptCuts->get(1u, 5u));
+    helper.setPtRangeSoftKaonXicResoToSigmaC(ptCuts->get(0u, 5u), ptCuts->get(1u, 5u));
 
     hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;counts", HistType::kTH1F, {{kNtriggersHF + 2, -0.5, kNtriggersHF + 1.5}});
     for (auto iBin = 0; iBin < kNtriggersHF + 2; ++iBin) {
@@ -879,7 +879,7 @@ struct HfFilter { // Main struct for HF triggers
 
           // SigmaC++ K- trigger
           // Let's flag it together with SigmaC0K0s (i.e. in kV0Charm3P) even if there is no V0
-          if (!keepEvent[kV0Charm3P] && is3Prong[2] > 0 && is3ProngInMass[2] > 0 && isSignalTagged[2] > 0 && helper.isSelectedKaonFromXicStarToSigmaC<true>(track)) {
+          if (!keepEvent[kV0Charm3P] && is3Prong[2] > 0 && is3ProngInMass[2] > 0 && isSignalTagged[2] > 0 && helper.isSelectedKaonFromXicResoToSigmaC<true>(track)) {
             // we need a candidate Lc->pKpi and a candidate soft kaon
 
             // look for SigmaC++ candidates
@@ -887,11 +887,16 @@ struct HfFilter { // Main struct for HF triggers
 
               // soft pion candidates
               auto trackSoftPi = trackSoftPiId.track_as<BigTracksPID>();
+              auto globalIndexSoftPi = trackSoftPi.globalIndex();
 
               // exclude tracks already used to build the 3-prong candidate
-              auto globalIndexSoftPi = trackSoftPi.globalIndex();
               if (globalIndexSoftPi == trackFirst.globalIndex() || globalIndexSoftPi == trackSecond.globalIndex() || globalIndexSoftPi == trackThird.globalIndex()) {
                 // do not consider as candidate soft pion a track already used to build the current 3-prong candidate
+                continue;
+              }
+
+              // exclude already the current track if it corresponds to the K- candidate
+              if (globalIndexSoftPi == track.globalIndex()) {
                 continue;
               }
 
@@ -929,20 +934,14 @@ struct HfFilter { // Main struct for HF triggers
                     continue;
                   }
 
-                  // TODO: any PID selection on kaon?
-                  // In case, this selection can be put even before the scope for this trigger,
-                  // to avoid all the computations for SigmaC
-
                   // check the invariant mass
-                  // std::array<float, 3> pVecSigmaC = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird, pVecSoftPi);
-                  // float massSigmaCKaonPair = RecoDecay::m( std::array{pVecSigmaC, pVecFourth}, std::array{massSigmaCPlusPlus, massKa} );
                   float massSigmaCPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi}, std::array{massProton, massKa, massPi, massPi});
                   float massSigmaCPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi}, std::array{massPi, massKa, massProton, massPi});
-                  float deltaMassXicStarPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi, pVecFourth}, std::array{massProton, massKa, massPi, massPi, massKa}) - massSigmaCPKPi;
-                  float deltaMassXicStarPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi, pVecFourth}, std::array{massPi, massKa, massProton, massPi, massKa}) - massSigmaCPiKP;
+                  float deltaMassXicResoPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi, pVecFourth}, std::array{massProton, massKa, massPi, massPi, massKa}) - massSigmaCPKPi;
+                  float deltaMassXicResoPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi, pVecFourth}, std::array{massPi, massKa, massProton, massPi, massKa}) - massSigmaCPiKP;
 
-                  bool isPKPiOk = (deltaMassXicStarPKPi < maxDeltaMassCharmReso->get(0u, 7u));
-                  bool isPiKPOk = (deltaMassXicStarPiKP < maxDeltaMassCharmReso->get(0u, 7u));
+                  bool isPKPiOk = (deltaMassXicResoPKPi < maxDeltaMassCharmReso->get(0u, 7u));
+                  bool isPiKPOk = (deltaMassXicResoPiKP < maxDeltaMassCharmReso->get(0u, 7u));
                   if (isPKPiOk || isPiKPOk) {
                     /// This is a good SigmaC++K- event
                     /// Let's flag it together with SigmaC0K0s
@@ -952,10 +951,10 @@ struct HfFilter { // Main struct for HF triggers
                     if (activateQA) {
                       float ptSigmaCKaon = RecoDecay::pt(pVecSigmaC, pVecFourth);
                       if (isPKPiOk) {
-                        hMassVsPtC[kNCharmParticles + 9]->Fill(ptSigmaCKaon, deltaMassXicStarPKPi);
+                        hMassVsPtC[kNCharmParticles + 11]->Fill(ptSigmaCKaon, deltaMassXicResoPKPi);
                       }
                       if (isPiKPOk) {
-                        hMassVsPtC[kNCharmParticles + 9]->Fill(ptSigmaCKaon, deltaMassXicStarPiKP);
+                        hMassVsPtC[kNCharmParticles + 11]->Fill(ptSigmaCKaon, deltaMassXicResoPiKP);
                       }
                     }
                   }
@@ -1063,6 +1062,87 @@ struct HfFilter { // Main struct for HF triggers
               }
             }
           }
+
+          /// SigmaC0K0s trigger
+          if (!keepEvent[kV0Charm3P] && is3Prong[2] > 0 && is3ProngInMass[2] > 0 && isSignalTagged[2] > 0) {
+            auto posTrack = v0.posTrack_as<BigTracksPID>();
+            auto negTrack = v0.negTrack_as<BigTracksPID>();
+            auto selV0 = helper.isSelectedV0(v0, std::array{posTrack, negTrack}, collision, activateQA, hV0Selected, hArmPod);
+            if (TESTBIT(selV0, kK0S)) {
+              /// end selected K0s
+
+              // look for SigmaC0 candidates
+              for (const auto& trackSoftPiId : trackIdsThisCollision) { // start loop over tracks (soft pi)
+
+                // soft pion candidates
+                auto trackSoftPi = trackSoftPiId.track_as<BigTracksPID>();
+                auto globalIndexSoftPi = trackSoftPi.globalIndex();
+
+                // exclude tracks already used to build the 3-prong candidate
+                if (globalIndexSoftPi == trackFirst.globalIndex() || globalIndexSoftPi == trackSecond.globalIndex() || globalIndexSoftPi == trackThird.globalIndex()) {
+                  // do not consider as candidate soft pion a track already used to build the current 3-prong candidate
+                  continue;
+                }
+
+                // check the candidate SigmaC0 charge
+                std::array<int, 4> chargesSc = {trackFirst.sign(), trackSecond.sign(), trackThird.sign(), trackSoftPi.sign()};
+                int chargeSc = std::accumulate(chargesSc.begin(), chargesSc.end(), 0); // SIGNED electric charge of SigmaC candidate
+                if (std::abs(chargeSc) != 2) {
+                  continue;
+                }
+
+                // select soft pion candidates
+                auto trackParSoftPi = getTrackPar(trackSoftPi);
+                o2::gpu::gpustd::array<float, 2> dcaSoftPi{trackSoftPi.dcaXY(), trackSoftPi.dcaZ()};
+                std::array<float, 3> pVecSoftPi = {trackSoftPi.px(), trackSoftPi.py(), trackSoftPi.pz()};
+                if (trackSoftPi.collisionId() != thisCollId) {
+                  // This is a track reassociated to this PV by the track-to-collision-associator
+                  // Let's propagate this track to it, and calculate dcaXY, dcaZ
+                  o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParSoftPi, 2.f, noMatCorr, &dcaSoftPi);
+                  getPxPyPz(trackParSoftPi, pVecSoftPi);
+                }
+                int8_t isSoftPionSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackSoftPi, trackParSoftPi, dcaSoftPi, kSigmaCppKminus);
+                if (TESTBIT(isSoftPionSelected, kSoftPionForSigmaC) /*&& (TESTBIT(is3Prong[2], 0) || TESTBIT(is3Prong[2], 1))*/) {
+
+                  // check the mass of the SigmaC0 candidate
+                  auto pVecSigmaC = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird, pVecSoftPi);
+                  auto ptSigmaC = RecoDecay::pt(pVecSigmaC);
+                  if (!helper.isSelectedSigmaCInDeltaMassRange(pVecFirst, pVecThird, pVecSecond, pVecSoftPi, ptSigmaC, is3Prong[2], hMassVsPtC[kNCharmParticles + 10], activateQA)) {
+                    /// let's build a candidate SigmaC0K0s pair
+                    /// and keep it only if it is in the correct mass range
+
+                    float massSigmaCPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi}, std::array{massProton, massKa, massPi, massPi});
+                    float massSigmaCPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi}, std::array{massPi, massKa, massProton, massPi});
+                    std::array<float, 3> pVecPiPosK0s = {posTrack.px(), posTrack.py(), posTrack.pz()};
+                    std::array<float, 3> pVecPiNegK0s = {negTrack.px(), negTrack.py(), negTrack.pz()};
+                    float deltaMassXicResoPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi, pVecPiPosK0s, pVecPiNegK0s}, std::array{massProton, massKa, massPi, massPi, massPi, massPi}) - massSigmaCPKPi;
+                    float deltaMassXicResoPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi, pVecPiPosK0s, pVecPiNegK0s}, std::array{massPi, massKa, massProton, massPi, massPi, massPi}) - massSigmaCPiKP;
+
+                    bool isPKPiOk = (deltaMassXicResoPKPi < maxDeltaMassCharmReso->get(0u, 7u));
+                    bool isPiKPOk = (deltaMassXicResoPiKP < maxDeltaMassCharmReso->get(0u, 7u));
+                    if (isPKPiOk || isPiKPOk) {
+                      /// This is a good SigmaC0K0s event
+                      keepEvent[kV0Charm3P] = true;
+
+                      /// QA plot
+                      if (activateQA) {
+                        float ptSigmaCKaon = RecoDecay::pt(pVecSigmaC, pVecPiPosK0s, pVecPiNegK0s);
+                        if (isPKPiOk) {
+                          hMassVsPtC[kNCharmParticles + 12]->Fill(ptSigmaCKaon, deltaMassXicResoPKPi);
+                        }
+                        if (isPiKPOk) {
+                          hMassVsPtC[kNCharmParticles + 12]->Fill(ptSigmaCKaon, deltaMassXicResoPiKP);
+                        }
+                      }
+                    }
+                  }
+                }
+
+              } // end loop over tracks (soft pi)
+
+            } /// end selected K0s
+          }   /// end of SigmaC0K0s trigger
+
         } // end gamma selection
 
       } // end loop over 3-prong candidates

@@ -179,14 +179,14 @@ static const std::vector<std::string> labelsColumnsFemtoChannels = {"protonDZero
 // min and max pT for all tracks combined  (except for V0 and cascades)
 constexpr float cutsPt[2][6] = {{1., 0.1, 0.8, 0.5, 0.1, 0.1},
                                 {100000., 2., 5., 100000., 100000., 100000.}}; // beauty, D*, femto, charm baryons
-static const std::vector<std::string> labelsColumnsCutsPt = {"Beauty", "DstarPlus", "Femto", "CharmBaryon", "SoftPiSigmaC", "SoftKaonXicStarToSigmaC"};
+static const std::vector<std::string> labelsColumnsCutsPt = {"Beauty", "DstarPlus", "Femto", "CharmBaryon", "SoftPiSigmaC", "SoftKaonXicResoToSigmaC"};
 static const std::vector<std::string> labelsRowsCutsPt = {"Minimum", "Maximum"};
 
 // PID cuts
 constexpr float cutsNsigma[3][6] = {{3., 3., 3., 5., 3., 3.},             // TPC proton from Lc, pi/K from D0, K from 3-prong, femto, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon
                                     {3., 3., 3., 2.5, 3., 3.},            // TOF proton from Lc, pi/K from D0, K from 3-prong, femto, pi/K from Xic/Omegac, K from Xic*->SigmaC-Kaon
                                     {999., 999., 999., 2.5, 999., 999.}}; // Sum in quadrature of TPC and TOF (used only for femto for pT < 4 GeV/c)
-static const std::vector<std::string> labelsColumnsNsigma = {"PrFromLc", "PiKaFromDZero", "KaFrom3Prong", "Femto", "PiKaFromCharmBaryon", "SoftKaonFromXicStarToSigmaC"};
+static const std::vector<std::string> labelsColumnsNsigma = {"PrFromLc", "PiKaFromDZero", "KaFrom3Prong", "Femto", "PiKaFromCharmBaryon", "SoftKaonFromXicResoToSigmaC"};
 static const std::vector<std::string> labelsRowsNsigma = {"TPC", "TOF", "Comb"};
 
 // high pt
@@ -203,7 +203,7 @@ static const std::vector<std::string> labelsColumnsDoubleCharmChannels = {"Doubl
 
 // charm resonances
 constexpr float cutsMassCharmReso[1][8] = {{0.01, 0.3, 0.3, 0.88, 0.88, 1.4, 0.18, 0.8}}; // D*+, D*0, Ds*0, Ds1+, Ds2*+, Xic*, Xic*->SigmaC
-static const std::vector<std::string> labelsColumnsDeltaMasseCharmReso = {"DstarPlus", "DstarZero", "DsStarZero", "Ds1Plus", "Ds2StarPlus", "XicStar", "SigmaC", "XicStarToSigmaC"};
+static const std::vector<std::string> labelsColumnsDeltaMasseCharmReso = {"DstarPlus", "DstarZero", "DsStarZero", "Ds1Plus", "Ds2StarPlus", "XicStar", "SigmaC", "XicResoToSigmaC"};
 // V0s for charm resonances
 constexpr float cutsV0s[1][6] = {{0.85, 0.97, 0.5, 4., 0.02, 0.01}}; // cosPaGamma, cosPaK0sLambda, radiusK0sLambda, nSigmaPrLambda, deltaMassK0S, deltaMassLambda
 static const std::vector<std::string> labelsColumnsV0s = {"CosPaGamma", "CosPaK0sLambda", "RadiusK0sLambda", "NSigmaPrLambda", "DeltaMassK0s", "DeltaMassLambda"};
@@ -259,10 +259,10 @@ class HfFilterHelper
     mDeltaMassMinSigmaC = minDeltaMass;
     mDeltaMassMaxSigmaC = maxDeltaMass;
   }
-  void setPtRangeSoftKaonXicStarToSigmaC(float minPt, float maxPt)
+  void setPtRangeSoftKaonXicResoToSigmaC(float minPt, float maxPt)
   {
-    mPtMinSoftKaonForXicStarToSigmaC = minPt;
-    mPtMaxSoftKaonForXicStarToSigmaC = maxPt;
+    mPtMinSoftKaonForXicResoToSigmaC = minPt;
+    mPtMaxSoftKaonForXicResoToSigmaC = maxPt;
   }
   void setPtLimitsCharmBaryonBachelor(float minPt, float maxPt)
   {
@@ -314,10 +314,10 @@ class HfFilterHelper
     mNSigmaTpcPiCharmBaryonBachelor = nSigmaTpc;
     mNSigmaTofPiCharmBaryonBachelor = nSigmaTof;
   }
-  void setNsigmaTpcKaonFromXicStarToSigmaC(float nSigmaTpc, float nSigmaTof)
+  void setNsigmaTpcKaonFromXicResoToSigmaC(float nSigmaTpc, float nSigmaTof)
   {
-    mNSigmaTpcKaonFromXicStarToSigmaC = nSigmaTpc;
-    mNSigmaTofKaonFromXicStarToSigmaC = nSigmaTof;
+    mNSigmaTpcKaonFromXicResoToSigmaC = nSigmaTpc;
+    mNSigmaTofKaonFromXicResoToSigmaC = nSigmaTof;
   }
 
   void setTpcPidCalibrationOption(int opt) { mTpcPidCalibrationOption = opt; }
@@ -356,7 +356,7 @@ class HfFilterHelper
   template <typename T, typename U>
   int8_t isBDTSelected(const T& scores, const U& thresholdBDTScores);
   template <bool isKaonTrack, typename T>
-  bool isSelectedKaonFromXicStarToSigmaC(const T& track);
+  bool isSelectedKaonFromXicResoToSigmaC(const T& track);
 
   // helpers
   template <typename T>
@@ -397,8 +397,8 @@ class HfFilterHelper
   float mPtMinSoftPionForDstar{0.1};                                         // minimum pt for the D*+ soft pion
   float mPtMinSoftPionForSigmaC{0.1};                                        // minimum pt for the Σ0,++ soft pion
   float mPtMaxSoftPionForSigmaC{10000.f};                                    // maximum pt for the Σ0,++ soft pion
-  float mPtMinSoftKaonForXicStarToSigmaC{0.1};                               // minimum pt for the soft kaon of Xic* to SigmaC-Kaon
-  float mPtMaxSoftKaonForXicStarToSigmaC{10000.f};                           // maximum pt for the soft kaon of Xic* to SigmaC-Kaon
+  float mPtMinSoftKaonForXicResoToSigmaC{0.1};                               // minimum pt for the soft kaon of Xic* to SigmaC-Kaon
+  float mPtMaxSoftKaonForXicResoToSigmaC{10000.f};                           // maximum pt for the soft kaon of Xic* to SigmaC-Kaon
   float mPtMinBeautyBachelor{0.5};                                           // minimum pt for the b-hadron pion daughter
   float mPtMinProtonForFemto{0.8};                                           // minimum pt for the proton for femto
   float mPtMinCharmBaryonBachelor{0.5};                                      // minimum pt for the bachelor pion from Xic/Omegac decays
@@ -434,8 +434,8 @@ class HfFilterHelper
   o2::framework::LabeledArray<double> mCutsSingleTrackCharmBaryonBachelor{}; // dca selections for the bachelor pion from Xic/Omegac decays
   float mNSigmaTpcPiCharmBaryonBachelor{3.};                                 // maximum Nsigma TPC for pions in Xic/Omegac decays
   float mNSigmaTofPiCharmBaryonBachelor{3.};                                 // maximum Nsigma TOF for pions in Xic/Omegac decays
-  float mNSigmaTpcKaonFromXicStarToSigmaC{3.};                               // maximum Nsigma TPC for kaons in Xic*->SigmaC-Kaon
-  float mNSigmaTofKaonFromXicStarToSigmaC{3.};                               // maximum Nsigma TOF for kaons in Xic*->SigmaC-Kaon
+  float mNSigmaTpcKaonFromXicResoToSigmaC{3.};                               // maximum Nsigma TPC for kaons in Xic*->SigmaC-Kaon
+  float mNSigmaTofKaonFromXicResoToSigmaC{3.};                               // maximum Nsigma TOF for kaons in Xic*->SigmaC-Kaon
 
   // PID recalibrations
   int mTpcPidCalibrationOption{0};                        // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
@@ -1485,18 +1485,18 @@ inline bool HfFilterHelper::isSelectedProton4CharmBaryons(const T& track, const 
 /// \param track is a track
 /// \return true if track passes all cuts
 template <bool isKaonTrack, typename T>
-inline bool HfFilterHelper::isSelectedKaonFromXicStarToSigmaC(const T& track)
+inline bool HfFilterHelper::isSelectedKaonFromXicResoToSigmaC(const T& track)
 {
 
   // pt selections
   float pt = track.pt();
-  if (pt < mPtMinSoftKaonForXicStarToSigmaC || pt > mPtMaxSoftKaonForXicStarToSigmaC) {
+  if (pt < mPtMinSoftKaonForXicResoToSigmaC || pt > mPtMaxSoftKaonForXicResoToSigmaC) {
     return false;
   }
 
   if constexpr (isKaonTrack) {
     /// if the kaon is a track, and not a K0s (V0), check the PID as well
-    return isSelectedKaon4Charm3Prong(track, mNSigmaTpcKaonFromXicStarToSigmaC, mNSigmaTofKaonFromXicStarToSigmaC);
+    return isSelectedKaon4Charm3Prong(track, mNSigmaTpcKaonFromXicResoToSigmaC, mNSigmaTofKaonFromXicResoToSigmaC);
   }
 
   return true;
