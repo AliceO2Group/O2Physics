@@ -885,6 +885,20 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("lmee_Run3_TPCelectron")) {
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+    cut->AddCut(GetAnalysisCut("lmee_pp_502TeV_TPCloosenopkrej"));
+  }
+
+  if (!nameStr.compare("lmee_Run3_TOFelectron")) {
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+    cut->AddCut(GetAnalysisCut("tof_electron"));
+  }
+
   std::vector<TString> vecTypetrack;
   vecTypetrack.emplace_back("");          // default TightGlobalTrackRun3
   vecTypetrack.emplace_back("_7ITSncls"); // default TightGlobalTrackRun3 but with 7 ITS clusters
@@ -2172,6 +2186,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("pairMass1_3to3_5")) {
     cut->AddCut(GetAnalysisCut("pairMass1_3to3_5"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairMass1_3")) {
+    cut->AddCut(GetAnalysisCut("pairMass1_3"));
     return cut;
   }
 
@@ -4322,6 +4341,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pairMass1_3to3_5")) {
     cut->AddCut(VarManager::kMass, 1.3, 3.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairMass1_3")) {
+    cut->AddCut(VarManager::kMass, 1.3, 1000.0);
     return cut;
   }
 
