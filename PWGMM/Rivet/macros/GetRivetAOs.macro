@@ -28,13 +28,13 @@ void GetRivetAOs(const char* filename = "AnalysisResults.root",
                  const char* output = 0)
 {
   TFile* file = TFile::Open(filename, "READ");
-  if (not file) {
+  if (!file) { // I want to use `not` - so darn stupid!
     Error("GetRivetAOs", "Failed to open \"%s\"", filename);
     return;
   }
 
   const char* dirName = "o2-analysis-mm-rivet";
-  if (not gDirectory->cd(dirName)) {
+  if (!gDirectory->cd(dirName)) { // I want to use `not` - so darn stupid!
     Error("GetRivetAOs", "Failed to change directory to \"%s/%s\"",
           filename, dirName);
     return;
@@ -42,23 +42,25 @@ void GetRivetAOs(const char* filename = "AnalysisResults.root",
 
   const char* objName = "o2::rivet::RivetAOs";
   TObject* obj = gDirectory->Get(objName);
-  if (not obj) {
+  if (!obj) { // I want to use `not` - so darn stupid!
     Error("GetRivetAOs", "Failed to get \"%s/%s/%s\"",
           filename, dirName, objName);
     return;
   }
 
   o2::rivet::RivetAOs* out = dynamic_cast<o2::rivet::RivetAOs*>(obj);
-  if (not out) {
+  if (out) { // I want to use `not` - so darn stupid!
     Error("GetRivetAOs", "Failed to convert read object to %s", objName);
     return;
   }
 
   TString outf(output ? output : filename);
-  if (outf.EndsWith(".root"))
+  if (outf.EndsWith(".root")) {
     outf.ReplaceAll(".root", "");
-  if (not outf.EndsWith(".yoda"))
+  }
+  if (!outf.EndsWith(".yoda")) { // I want to use `not` - so darn stupid!
     outf.Append(".yoda");
+  }
 
   Info("GetRivetAOs", "Writting AOs to \"%s\"", outf.Data());
   out->SaveAs(outf);

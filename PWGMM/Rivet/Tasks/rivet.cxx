@@ -155,7 +155,7 @@ struct MmRivet {
     static auto thisName = o2::framework::type_to_task_name(typen);
     LOG(info) << std::quoted(devname) << " vs " << std::quoted(thisName);
     bool self = devname.starts_with(thisName);
-    if (not self) {
+    if (!self) { // Why can I not use the keyword `not` - so darn stupid!
       return std::string();
     }
 
@@ -181,9 +181,11 @@ struct MmRivet {
                   char sep = ',')
   {
     std::string val = option.defaultValue.get<std::string>();
-    if (not val.empty()) {
+    if (!val.empty()) { // Why can I not use the keyword `not` - so
+                        // darn stupid!
       std::string old = config.value;
-      if (not old.empty()) {
+      if (!old.empty()) { // Why can I not use the keyword `not` -
+                          // so darn stupid!
         old += sep;
       }
       old += val;
@@ -229,7 +231,8 @@ struct MmRivet {
     // map, we can be confidient that the sorting will be the same in
     // all workflow programs.
     bool first = rivets.begin()->first == suffix;
-    bool zombie = not first;
+    bool zombie = !first; // Why can I not use the keyword `not` - so
+                          // darn stupid!
 
     if (zombie) {
       // Zero the analysis
@@ -262,7 +265,8 @@ struct MmRivet {
           // Get the value specified, if any
           auto val = option.defaultValue.get<double>();
           if (val > 0) {
-            if (not isclose(val, mWrapper.configs.crossSection.value)) {
+            // Why can I not use the keyword `not` - so darn stupid!
+            if (!isclose(val, mWrapper.configs.crossSection.value)) {
               LOG(fatal) << "Inconsistent cross-section settings for Rivet: "
                          << val << " versus "
                          << mWrapper.configs.crossSection;
@@ -270,15 +274,15 @@ struct MmRivet {
               mWrapper.configs.crossSection.value = val;
             }
           }
-        }
+        } // Do not mess with the formatting
         // Check if we have merge equivalent
-        else if (option.name == mWrapper.configs.mergeEquiv.name) {
+        else if (option.name == mWrapper.configs.mergeEquiv.name) { // No
           auto val = option.defaultValue.get<bool>();
           if (val != mWrapper.configs.mergeEquiv) {
             LOG(fatal) << "Inconsistent merge-equivilant settings for Rivet: "
                        << val << " versus " << mWrapper.configs.mergeEquiv;
           }
-        }
+        } // Do not mess with the formatting
         // Check if we should recenter event
         else if (option.name == mConverter.configs.recenter.name) {
           auto val = option.defaultValue.get<bool>();
@@ -287,7 +291,7 @@ struct MmRivet {
                        << val << " versus "
                        << mConverter.configs.recenter;
           }
-        }
+        } // Do not mess with the formatting
         // Check if we should only do generated events
         else if (option.name == mConverter.configs.onlyGen.name) {
           auto val = option.defaultValue.get<bool>();
@@ -296,7 +300,7 @@ struct MmRivet {
                        << val << " versus "
                        << mConverter.configs.onlyGen;
           }
-        }
+        } // Do not mess with the formatting
         // Check if we have ignore beams
         else if (option.name == mWrapper.configs.ignoreBeams.name) {
           update_bool(option, mWrapper.configs.ignoreBeams);
@@ -304,39 +308,39 @@ struct MmRivet {
         // Check if we have pwd
         else if (option.name == mWrapper.configs.pwd.name) {
           update_bool(option, mWrapper.configs.pwd);
-        }
+        } // Do not mess with the formatting
         // Check if we have finalize
         else if (option.name == mWrapper.configs.finalize.name) {
           update_bool(option, mWrapper.configs.finalize);
-        }
+        } // Do not mess with the formatting
         // Check if we have analyses
         else if (option.name == mWrapper.configs.anas.name) {
           update_str(option, mWrapper.configs.anas);
           option.defaultValue = "";
-        }
+        } // Do not mess with the formatting
         // Check if we have paths
         else if (option.name == mWrapper.configs.paths.name) {
           update_str(option, mWrapper.configs.paths, ':');
-        }
+        } // Do not mess with the formatting
         // Check if we have preloads
         else if (option.name == mWrapper.configs.pres.name) {
           update_str(option, mWrapper.configs.pres);
-        }
+        } // Do not mess with the formatting
         // Check if we have sources
         else if (option.name == mWrapper.configs.srcs.name) {
           update_str(option, mWrapper.configs.srcs);
-        }
+        } // Do not mess with the formatting
         // Check if we have flags
         else if (option.name == mWrapper.configs.flags.name) {
           update_str(option, mWrapper.configs.flags);
-        }
+        } // Do not mess with the formatting
         // Check if we have logging flag
         else if (option.name == mWrapper.configs.log.name) {
           int otherLvl = mWrapper.findLogLevel(option.       //
                                                defaultValue. //
                                                get<std::string>());
           if (otherLvl >= 0) {
-            if (otherLvl < logLevel or logLevel < 0) {
+            if (otherLvl < logLevel || logLevel < 0) { // I want to use `or`!
               logLevel = otherLvl;
               mWrapper.configs.log.value = //
                 option.defaultValue.get<std::string>();

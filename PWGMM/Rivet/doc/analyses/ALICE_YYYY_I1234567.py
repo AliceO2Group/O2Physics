@@ -47,7 +47,7 @@ def plotit(infile, raw=False, reference=False, save=False):
     ax.set_ylabel(r"$\mathrm{d}N_{\mathrm{ch}}/\mathrm{d}\eta$")
     ax.set_title(
         f"{int(nev.val())} events "  # pyright: ignore
-        f'{"("+prefix+")" if len(prefix)>0 else ""}'  # pyright: ignore
+        f'{"(" + prefix + ")" if len(prefix)>0 else ""}'  # pyright: ignore
     )
 
     ax.figure.show()
