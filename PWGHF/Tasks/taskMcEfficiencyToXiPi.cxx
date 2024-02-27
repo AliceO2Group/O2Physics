@@ -70,6 +70,12 @@ struct HfTaskMcEfficiencyToXiPi {
 
   void init(InitContext&)
   {
+    if (doprocessOmegac0 && doprocessXic0) {
+      LOGF(fatal, "Can't enable processOmegac0 and processXic0 at the same time. Please choose one.");
+    } else if (!doprocessOmegac0 && !doprocessXic0) {
+      LOGF(fatal, "Please enable either processOmegac0 or processXic0.");
+    }
+
     auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPt, axisMass, {2, -0.5, 1.5, "collision matched"}, {RecoDecay::OriginType::NonPrompt + 1, RecoDecay::OriginType::None - 0.5, RecoDecay::OriginType::NonPrompt + 0.5}}, kHFNSteps});
     hCandidates->GetAxis(0)->SetTitle("#it{p}_{T} (GeV/#it{c})");
     hCandidates->GetAxis(1)->SetTitle("#it{m}_{inv} (GeV/#it{c}^{2})");
@@ -79,10 +85,6 @@ struct HfTaskMcEfficiencyToXiPi {
     auto hTrackablePtEta = registry.add<StepTHn>("hTrackablePtEta", "Prongs kinematics at different steps", {HistType::kStepTHnF, {{200, 0, 20}, {400, -2, 2}}, kNTrackableSteps});
     hTrackablePtEta->GetAxis(0)->SetTitle("#it{p}_{T} (GeV/#it{c})");
     hTrackablePtEta->GetAxis(1)->SetTitle("#eta");
-
-    if (doprocessOmegac0 == true && doprocessXic0 == true) {
-      LOGF(fatal, "Can't enable processOmegac0 and processXic0 at the same time. Please choose one.");
-    }
   }
 
   template <typename T>
