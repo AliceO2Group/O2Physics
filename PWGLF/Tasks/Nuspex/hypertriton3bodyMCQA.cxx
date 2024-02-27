@@ -47,23 +47,23 @@ using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 template <class TMCTrackTo, typename TMCParticle>
 bool is3bodyDecayedH3L(TMCParticle const& particle)
 {
-  if (particle.pdgCode() != 1010010030 && particle.pdgCode() != -1010010030) {
+  if (std::abs(particle.pdgCode()) == 1010010030) {
     return false;
   }
   bool haveProton = false, havePion = false, haveDeuteron = false;
   bool haveAntiProton = false, haveAntiPion = false, haveAntiDeuteron = false;
-  for (auto& mcparticleDaughter : particle.template daughters_as<TMCTrackTo>()) {
-    if (mcparticleDaughter.pdgCode() == 2212)
+  for (auto& mcDaughter : particle.template daughters_as<TMCTrackTo>()) {
+    if (mcDaughter.pdgCode() == 2212)
       haveProton = true;
-    if (mcparticleDaughter.pdgCode() == -2212)
+    if (mcDaughter.pdgCode() == -2212)
       haveAntiProton = true;
-    if (mcparticleDaughter.pdgCode() == 211)
+    if (mcDaughter.pdgCode() == 211)
       havePion = true;
-    if (mcparticleDaughter.pdgCode() == -211)
+    if (mcDaughter.pdgCode() == -211)
       haveAntiPion = true;
-    if (mcparticleDaughter.pdgCode() == 1000010020)
+    if (mcDaughter.pdgCode() == 1000010020)
       haveDeuteron = true;
-    if (mcparticleDaughter.pdgCode() == -1000010020)
+    if (mcDaughter.pdgCode() == -1000010020)
       haveAntiDeuteron = true;
   }
   if (haveProton && haveAntiPion && haveDeuteron && particle.pdgCode() > 0) {
@@ -83,10 +83,10 @@ bool isPairedH3LDaughters(TMCParticle const& mctrack0, TMCParticle const& mctrac
       continue;
     }
     bool flag1 = false, flag2 = false;
-    for (auto& mcparticleDaughter : particleMother.template daughters_as<TMCTrackTo>()) {
-      if (mcparticleDaughter.globalIndex() == mctrack1.globalIndex())
+    for (auto& mcDaughter : particleMother.template daughters_as<TMCTrackTo>()) {
+      if (mcDaughter.globalIndex() == mctrack1.globalIndex())
         flag1 = true;
-      if (mcparticleDaughter.globalIndex() == mctrack2.globalIndex())
+      if (mcDaughter.globalIndex() == mctrack2.globalIndex())
         flag2 = true;
     }
     if (!flag1 || !flag2)

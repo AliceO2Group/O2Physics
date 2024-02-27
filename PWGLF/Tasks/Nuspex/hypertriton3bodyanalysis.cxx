@@ -432,7 +432,7 @@ struct hypertriton3bodyAnalysis {
   void GetGeneratedH3LInfo(aod::McParticles const& particlesMC)
   {
     for (auto& mcparticle : particlesMC) {
-      if (mcparticle.pdgCode() != 1010010030 && mcparticle.pdgCode() != -1010010030) {
+      if (std::abs(mcparticle.pdgCode()) != 1010010030) {
         continue;
       }
       registry.fill(HIST("hGeneratedHypertritonCounter"), 0.5);
