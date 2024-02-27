@@ -55,6 +55,9 @@ struct MultiplicityDerivedQa {
   ConfigurableAxis axisNumberOfPVs{"axisNumberOfPVs", {10, -0.5f, 9.5f}, "Number of reconstructed PVs"};
   ConfigurableAxis axisNchFT0{"axisNchFT0", {500, -0.5f, 499.5f}, "Number of charged particles in FT0 acceptance"};
 
+  // artificially select run if desired
+  Configurable<int> selectRun{"selectRun", -1, "explicit run selection (-1: no sel)"};
+
   // Selection criteria for QC studies in 2D plots
   // parameters:
   // --- maxFT0C -> max FT0C value for which this cut will be applied. Nothing done if maxFT0C < 0.0f
@@ -128,6 +131,10 @@ struct MultiplicityDerivedQa {
 
   void process(soa::Join<aod::Mults, aod::MultsExtra>::iterator const& col)
   {
+    // for analysis of slim derived data (MC, etc) and specific run selection
+    if(selectRun>-1 && col.multRunNumber() != selectRun)
+      return;
+
     histos.fill(HIST("multiplicityQa/hEventCounter"), 0.5);
     if (selection == 8 && !col.multSel8()) {
       return;
