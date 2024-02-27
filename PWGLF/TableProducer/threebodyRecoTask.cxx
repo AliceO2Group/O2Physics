@@ -63,8 +63,8 @@ struct Candidate3body {
   float dcadaughters;
   float dcacandtopv;
   float bachelortofNsigma;
-  TLorentzVector lgencand;
-  float genct;
+  TLorentzVector lgencand = {0, 0, 0, 0};
+  float genct = -1;
   bool isSignal = false;
   bool isReco = false;
   int pdgCode = -1;
@@ -76,6 +76,8 @@ struct threebodyRecoTask {
   Produces<aod::Hyp3BodyCands> outputDataTable;
   Produces<aod::MCHyp3BodyCands> outputMCTable;
   std::vector<Candidate3body> Candidates3body;
+  std::vector<unsigned int> filledMothers;
+  std::vector<bool> isGoodCollision;
 
   // Selection criteria
   Configurable<double> vtxcospa{"vtxcospa", 0.99, "Vtx CosPA"};         // double -> N.B. dcos(x)/dx = 0 at x=0)
@@ -234,9 +236,40 @@ struct threebodyRecoTask {
   //------------------------------------------------------------------
   Preslice<aod::Vtx3BodyDatas> perCollisionVtx3BodyDatas = o2::aod::vtx3body::collisionId;
   //------------------------------------------------------------------
+  template <class TMCTrackTo, typename TMCParticle>
+  bool is3bodyDecayed(TMCParticle const& particle)
+  {
+    if (std::abs(particle.pdgCode()) != motherPdgCode) {
+      return false;
+    }
+    bool haveProton = false, havePion = false, haveBachelor = false;
+    bool haveAntiProton = false, haveAntiPion = false, haveAntiBachelor = false;
+    for (auto& mcparticleDaughter : particle.template daughters_as<TMCTrackTo>()) {
+      if (mcparticleDaughter.pdgCode() == 2212)
+        haveProton = true;
+      if (mcparticleDaughter.pdgCode() == -2212)
+        haveAntiProton = true;
+      if (mcparticleDaughter.pdgCode() == 211)
+        havePion = true;
+      if (mcparticleDaughter.pdgCode() == -211)
+        haveAntiPion = true;
+      if (mcparticleDaughter.pdgCode() == bachelorPdgCode)
+        haveBachelor = true;
+      if (mcparticleDaughter.pdgCode() == -bachelorPdgCode)
+        haveAntiBachelor = true;
+    }
+    if (haveProton && haveAntiPion && haveBachelor && particle.pdgCode() > 0) {
+      return true;
+    } else if (haveAntiProton && havePion && haveAntiBachelor && particle.pdgCode() < 0) {
+      return true;
+    }
+    return false;
+  }
+
+  //------------------------------------------------------------------
   // Analysis process for a single candidate
   template <class TTrackClass, typename TCollisionTable, typename TCandTable>
-  void CandidateAnalysis(TCollisionTable const& dCollision, TCandTable const& candData, bool& if_hasvtx, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0,0,0,0}, double MClifetime = -1)
+  void CandidateAnalysis(TCollisionTable const& dCollision, TCandTable const& candData, bool& if_hasvtx, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double MClifetime = -1)
   {
 
     FillCandCounter(kCandAll, isTrueCand);
@@ -395,8 +428,9 @@ struct threebodyRecoTask {
       cand3body.genct = MClifetime;
       cand3body.isSignal = true;
       cand3body.isReco = true;
-      cand3body.pdgCode = motherPdgCode;
+      cand3body.pdgCode = cand3body.isMatter ? motherPdgCode : -motherPdgCode;
       cand3body.SurvivedEventSelection = true;
+      filledMothers.push_back(lLabel);
     }
 
     Candidates3body.push_back(cand3body);
@@ -494,7 +528,8 @@ struct threebodyRecoTask {
 
     for (auto& cand3body : Candidates3body) {
       outputDataTable(0, collision.posX(), collision.posY(), collision.posZ(),
-                      cand3body.isMatter, cand3body.invmass, cand3body.lcand.P(), cand3body.lcand.Pt(), cand3body.ct, cand3body.posSV[0], cand3body.posSV[1], cand3body.posSV[2],
+                      cand3body.isMatter, cand3body.invmass, cand3body.lcand.P(), cand3body.lcand.Pt(), cand3body.ct,
+                      cand3body.posSV[0], cand3body.posSV[1], cand3body.posSV[2],
                       cand3body.cosPA, cand3body.dcadaughters, cand3body.dcacandtopv,
                       cand3body.lproton.P(), cand3body.lproton.Pt(), cand3body.lproton.Eta(), cand3body.lproton.Phi(),
                       cand3body.lpion.P(), cand3body.lpion.Pt(), cand3body.lpion.Eta(), cand3body.lpion.Phi(),
@@ -509,9 +544,12 @@ struct threebodyRecoTask {
 
   //------------------------------------------------------------------
   // process mc analysis
-  void processMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, aod::McParticles const& particlesMC, MCLabeledTracksIU const& tracks)
+  void processMC(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels> const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, aod::McParticles const& particlesMC, MCLabeledTracksIU const& tracks, aod::McCollisions const& mcCollisions)
   {
+    Candidates3body.clear();
+    filledMothers.clear();
     GetGeneratedH3LInfo(particlesMC);
+    isGoodCollision.resize(mcCollisions.size(), false);
 
     for (const auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 0.5);
@@ -520,9 +558,12 @@ struct threebodyRecoTask {
       }
       registry.fill(HIST("hEventCounter"), 1.5);
       if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
-        return;
+        continue;
       }
       registry.fill(HIST("hEventCounter"), 2.5);
+      if (collision.mcCollisionId() >= 0) {
+        isGoodCollision[collision.mcCollisionId()] = true;
+      }
 
       bool if_hasvtx = false;
       auto vtxsthiscol = vtx3bodydatas.sliceBy(perCollisionVtx3BodyDatas, collision.globalIndex());
@@ -568,9 +609,10 @@ struct threebodyRecoTask {
       fillHistos();
       resetHistos();
 
-    for (auto& cand3body : Candidates3body) {
-      outputMCTable(0, collision.posX(), collision.posY(), collision.posZ(),
-                      cand3body.isMatter, cand3body.invmass, cand3body.lcand.P(), cand3body.lcand.Pt(), cand3body.ct, cand3body.posSV[0], cand3body.posSV[1], cand3body.posSV[2],
+      for (auto& cand3body : Candidates3body) {
+        outputMCTable(0, collision.posX(), collision.posY(), collision.posZ(),
+                      cand3body.isMatter, cand3body.invmass, cand3body.lcand.P(), cand3body.lcand.Pt(), cand3body.ct,
+                      cand3body.posSV[0], cand3body.posSV[1], cand3body.posSV[2],
                       cand3body.cosPA, cand3body.dcadaughters, cand3body.dcacandtopv,
                       cand3body.lproton.P(), cand3body.lproton.Pt(), cand3body.lproton.Eta(), cand3body.lproton.Phi(),
                       cand3body.lpion.P(), cand3body.lpion.Pt(), cand3body.lpion.Eta(), cand3body.lpion.Phi(),
@@ -581,10 +623,39 @@ struct threebodyRecoTask {
                       cand3body.daudcatopv[0], cand3body.daudcatopv[1], cand3body.daudcatopv[2],
                       cand3body.lgencand.P(), cand3body.lgencand.Pt(), cand3body.genct, cand3body.lgencand.Phi(), cand3body.lgencand.Eta(),
                       cand3body.isSignal, cand3body.isReco, cand3body.pdgCode, cand3body.SurvivedEventSelection);
-    }
+      }
     }
 
     // now we fill only the signal candidates that were not reconstructed
+    for (auto& mcparticle : particlesMC) {
+      if (!is3bodyDecayed<aod::McParticles>(mcparticle)) {
+        continue;
+      }
+      if (std::find(filledMothers.begin(), filledMothers.end(), mcparticle.globalIndex()) != std::end(filledMothers)) {
+        continue;
+      }
+      bool isSurEvSelection = isGoodCollision[mcparticle.mcCollisionId()];
+      std::array<float, 3> posSV;
+      for (auto& mcDaughter : mcparticle.daughters_as<aod::McParticles>()) {
+        if (std::abs(mcDaughter.pdgCode()) == bachelorPdgCode) {
+          posSV = {mcDaughter.vx(), mcDaughter.vy(), mcDaughter.vz()};
+        }
+      }
+      double MClifetime = RecoDecay::sqrtSumOfSquares(posSV[0] - mcparticle.vx(), posSV[1] - mcparticle.vy(), posSV[2] - mcparticle.vz()) * o2::constants::physics::MassHyperTriton / mcparticle.p();
+      outputMCTable(-1, -1, -1, -1,
+                    -1, -1, -1, -1, -1,
+                    -1, -1, -1,
+                    -1, -1, -1,
+                    -1, -1, -1, -1,
+                    -1, -1, -1, -1,
+                    -1, -1, -1, -1,
+                    -1, -1, -1,
+                    -1, -1, -1,
+                    -1, -1, -1, -1,
+                    -1, -1, -1,
+                    mcparticle.p(), mcparticle.pt(), MClifetime, mcparticle.phi(), mcparticle.eta(),
+                    true, false, mcparticle.pdgCode(), isSurEvSelection);
+    }
   }
   PROCESS_SWITCH(threebodyRecoTask, processMC, "MC reconstruction", false);
 };
