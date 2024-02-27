@@ -233,7 +233,7 @@ struct HfTaskMcEfficiencyToXiPi {
       }
       auto cascade = genParticles.rawIteratorAt(mcParticle.daughtersIds().front());
       auto pion = genParticles.rawIteratorAt(mcParticle.daughtersIds().back());
-      if (std::abs(cascade.pdgCode()) != kXiMinus && std::abs(cascade.pdgCode()) == kPiPlus) {
+      if (std::abs(cascade.pdgCode()) == kPiPlus) { // check if std::abs(cascade.pdgCode()) is different wrt kXiMinus and equal to kPiPlus (daughters ID assignment swapped)
         std::swap(cascade, pion);
         std::swap(cascId, pionId);
       } else if (std::abs(cascade.pdgCode()) == kXiMinus && std::abs(pion.pdgCode()) == kPiPlus) {
@@ -260,7 +260,7 @@ struct HfTaskMcEfficiencyToXiPi {
       }
       auto lambda = genParticles.rawIteratorAt(cascade.daughtersIds().front());
       auto pionFromCascade = genParticles.rawIteratorAt(cascade.daughtersIds().back());
-      if (std::abs(lambda.pdgCode()) != kLambda0 && std::abs(lambda.pdgCode()) == kPiPlus) {
+      if (std::abs(lambda.pdgCode()) == kPiPlus) { // check if std::abs(lambda.pdgCode()) is different wrt kLambda0 and equal to kPiPlus (daughters ID assignment swapped)
         std::swap(lambda, pionFromCascade);
         std::swap(lambdaId, pionFromCascadeId);
       } else if (std::abs(lambda.pdgCode()) == kLambda0 && std::abs(pionFromCascade.pdgCode()) == kPiPlus) {
@@ -279,7 +279,7 @@ struct HfTaskMcEfficiencyToXiPi {
       }
       auto proton = genParticles.rawIteratorAt(lambda.daughtersIds().front());
       auto pionFromLambda = genParticles.rawIteratorAt(lambda.daughtersIds().back());
-      if (std::abs(proton.pdgCode()) != kProton && std::abs(proton.pdgCode()) == kPiPlus) {
+      if (std::abs(proton.pdgCode()) == kPiPlus) { // check if std::abs(proton.pdgCode()) is different wrt kProton and equal to kPiPlus (daughters ID assignment swapped)
         std::swap(proton, pionFromLambda);
         std::swap(protonId, pionFromLambdaId);
       } else if (std::abs(proton.pdgCode()) == kProton && std::abs(pionFromLambda.pdgCode()) == kPiPlus) {
