@@ -637,8 +637,36 @@ inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
 template <typename TrackObject>
 inline bool matchTrackType(TrackObject const& track)
 {
+  using namespace o2::aod::track;
+
+  /* selection criteria from PWGMM */
+  // default quality criteria for tracks with ITS contribution
+  static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
+    TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
+    TrackSelectionFlags::kITSHits;
+
+  // default quality criteria for tracks with TPC contribution
+  static constexpr TrackSelectionFlags::flagtype trackSelectionTPC =
+    TrackSelectionFlags::kTPCNCls |
+    TrackSelectionFlags::kTPCCrossedRowsOverNCls |
+    TrackSelectionFlags::kTPCChi2NDF;
+
+  // default standard DCA cuts
+  static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
+    TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
+
   if (useOwnTrackSelection) {
     return ownTrackSelection.IsSelected(track);
+  } else if (tracktype == 4) {
+    // under tests MM track selection
+    // see: https://indico.cern.ch/event/1383788/contributions/5816953/attachments/2805905/4896281/TrackSel_GlobalTracks_vs_MMTrackSel.pdf
+    // it should be equivalent to this
+    //       (track.passedDCAxy && track.passedDCAz && track.passedGoldenChi2) &&
+    //       (track.passedITSNCls && track.passedITSChi2NDF && track.passedITSHits) &&
+    //       (!track.hasTPC || (track.passedTPCNCls && track.passedTPCChi2NDF && track.passedTPCCrossedRowsOverNCls));
+    return track.hasITS() && ((track.trackCutFlag() & trackSelectionITS) == trackSelectionITS) &&
+           (!track.hasTPC() || ((track.trackCutFlag() & trackSelectionTPC) == trackSelectionTPC)) &&
+           ((track.trackCutFlag() & trackSelectionDCA) == trackSelectionDCA);
   } else {
     for (auto filter : trackFilters) {
       if (filter->IsSelected(track)) {

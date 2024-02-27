@@ -851,7 +851,7 @@ struct DptDptCorrelationsTask {
           initializeCEInstance(dce, TString::Format("DptDptCorrelationsData%s-%s", me ? "ME" : "", rg));
           return dce;
         };
-        TString range = TString::Format("%d-%d", int(fCentMultMin[i]), int(fCentMultMax[i]));
+        TString range = TString::Format("%d-%d", static_cast<int>(fCentMultMin[i]), static_cast<int>(fCentMultMax[i]));
         if (cfgSmallDCE.value) {
           if (processpairs) {
             LOGF(fatal, "Processing pairs cannot be used with the small DCE, please configure properly!!");
@@ -869,7 +869,7 @@ struct DptDptCorrelationsTask {
         }
       }
       for (int i = 0; i < ncmranges; ++i) {
-        LOGF(info, " centrality/multipliicty range: %d, low limit: %f, up limit: %f", i, fCentMultMin[i], fCentMultMax[i]);
+        LOGF(info, " centrality/multipliicty range: %d, low limit: %0.2f, up limit: %0.2f", i, fCentMultMin[i], fCentMultMax[i]);
       }
     }
     /* two-track cut and conversion suppression */
