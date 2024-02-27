@@ -62,7 +62,7 @@ enum V0_type : int8_t {
   Lambda
 };
 
-enum D_type : int8_t {
+enum TypeD : uint8_t {
   Dplus = 1,
   Dstar
 };
