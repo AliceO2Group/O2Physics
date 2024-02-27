@@ -1,0 +1,178 @@
+#!/bin/bash
+#
+# Example script to run - advanced version.  If you want a simpler
+# example, take a look at `simple.sh`.
+#
+# - A simulation (no transport) of some number of Pythia8 pp events
+#
+# - Run the example Rivet analysis ../analyses/ALICE_YYYY_I1234567 on
+#   the output of that simulation.
+#
+
+
+nev=10
+nam="pythia8pp"
+src="@CMAKE_CURRENT_SOURCE_DIR@/doc/analyses"
+ana="ALICE_YYYY_I1234567"
+vrb=0
+dbg=0
+
+usage()
+{
+    cat <<EOF
+Usage: $0 [OPER] [OPTIONS]
+
+OPER is one of
+
+  all   - Do a clean up, simulation, and rivet run
+  clean - Clean up
+  sim   - Only run simulation
+  rivet - Only run rivet pass
+  plot  - Only plot result of Rivet pass
+
+Options:
+
+  -h,--help             Show this help
+  -n,--nev      NUMBER  Number of events to generate (${nev})
+  -N,--name     NAME    Name of simulation ${nam}
+  -a,--analyses NAME(S) Comma separated list of analyses (${ana})
+  -v,--verbose          Be verbose
+  -d,--debug            Show debug output
+EOF
+}
+
+while test $# -gt 0 ; do
+    case $1 in
+        all)              oper="clean sim rivet" ;;
+        sim)              oper="${oper} sim"     ;;
+        hepmc)            oper="${oper} hepmc"   ;;
+        rivet)            oper="${oper} rivet"   ;;
+        plot)             oper="${oper} plot"    ;;
+        clean)            oper="${oper} clean"   ;;
+        -h|--help)        usage  ; exit 0        ;;
+        -n|--nev)         nev=$2 ; shift         ;;
+        -N|--name)        nam=$2 ; shift         ;;
+        -a|--analyses)    ana=$2 ; shift         ;;
+        -v|--verbose)     vrb=1                  ;;
+        -d|--debug)       dbg=1                  ;;
+        --) shift ; break ;;
+        *)
+            echo "Unknown option or operation: $1" > /dev/stderr
+            exit 1
+            ;;
+    esac
+    shift
+done
+if test "x$oper" = "x" ; then
+    oper="clean sim rivet plot"
+fi
+
+if test $vrb -gt 0 ; then
+    cat<<EOF
+Settings:
+  operations:       ${oper}
+  name:             ${nam}
+  number-of-events: ${nev}
+  analyses:         ${ana}
+EOF
+    simred=
+    rvtred=
+    set -x
+else
+    simred="> ${nam}_sim.log 2>&1"
+    rvtred="-q > ${nam}_rvt.log 2>&1"
+    set -x
+fi
+if test $dbg -gt 0 ; then
+    rvtred="--severity debug ${rvtred}"
+fi
+
+if [[ $oper =~ "clean" ]] ; then
+    rm -f *.root Rivet*.so *.yoda *.hepmc *.log \
+       o2simtopology_* ${nam}_* dpl-config.json \
+       imgui.ini *.dat
+fi
+
+if [[ $oper =~ "plot" && ! -f ${nam}_Kine.yoda ]] ; then
+    oper="rivet $oper"
+fi
+if [[ $oper =~ "hepmc" && ! -f ${nam}_Kine.root ]] ; then
+    echo "=== Operation is \"hepm\" but ${nam}_Kine.root isn't there ==="
+    oper="sim $oper"
+fi
+if [[ $oper =~ "rivet" && ! -f ${nam}_Kine.root ]] ; then
+    echo "=== Operation is \"rivet\" but ${nam}_Kine.root isn't there ==="
+    oper="sim $oper"
+fi
+
+if [[ $oper =~ "sim" ]] then
+    if test -f ${nam}_Kine.root ; then
+        echo "${nam}_Kine.root already exists, not redoing"
+    else
+        o2-sim                                                           \
+            -j 1                                                         \
+            -n ${nev}                                                    \
+            -g pythia8pp                                                 \
+            -o ${nam}                                                    \
+            --noGeant                                                    \
+            --configKeyValues "GeneratorPythia8.includePartonEvent=true" \
+            ${simred}
+        ret=$?
+        if test $ret -ne 0 ; then
+            echo "Simulation pass failed, exiting" > /dev/stderr
+            exit 1
+        fi
+    fi
+fi
+
+if [[ $oper =~ "hepmc" ]] then
+    if test -f ${nam}_Kine.hepmc ; then
+        echo "${nam}_Kine.hepmc already exists, not redoing"
+    else
+        o2-aod-mc-producer-workflow                \
+            --mckine-fname ${nam} |                \
+            o2-aod-mc-to-hepmc                     \
+                --hepmc-dump ${nam}_Kine.hepmc     \
+                --batch                            \
+                $@                                 \
+                ${rvtred}
+        ret=$?
+        if test $ret -ne 0 ; then
+            echo "Simulation pass failed, exiting" > /dev/stderr
+            exit 1
+        fi
+    fi
+fi
+
+if [[ $oper =~ rivet ]] ; then
+    if test -f ${nam}_Kine.yoda ; then
+        echo "${nam}_Kine.yoda already exists, not redoing"
+    else
+        o2-aod-mc-producer-workflow                \
+            --mckine-fname ${nam} |                \
+            o2-analysis-mm-rivet                   \
+                --hepmc-recenter                   \
+                --rivet-dump ${nam}_Kine.yoda      \
+                --rivet-analysis ${ana}            \
+                --rivet-pwd                        \
+                --rivet-sources ${src}/${ana}.C    \
+                --rivet-load-paths ${src}          \
+                --rivet-finalize                   \
+                --batch                            \
+                $@                                 \
+                ${rvtred}
+            ret=$?
+        if test $ret -ne 0 ; then
+            echo "Rivet pass failed, exiting" > /dev/stderr
+            exit 1
+        fi
+    fi
+fi
+
+if [[ $oper =~ plot ]] ; then
+    ${src}/${ana}.py ${nam}_Kine.yoda
+fi
+
+#
+# EOF
+#

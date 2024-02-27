@@ -1,0 +1,54 @@
+#!/bin/bash
+#
+# Example script to run
+#
+# - A simulation (no transport) of some number of Pythia8 pp events
+#
+# - Run the example Rivet analysis ../analyses/ALICE_YYYY_I1234567 on
+#   the output of that simulation.
+#
+
+# Clean-up
+rm -f *.root Rivet*.so *.yoda *.hepmc *.log \
+   o2simtopology_* simple_* dpl-config.json \
+   imgui.ini *.dat
+
+# Run simulation - 10 Pythia8 pp events with no detector transport
+o2-sim                                                           \
+    -j 1                                                         \
+    -n 10                                                        \
+    -g pythia8pp                                                 \
+    -o simple                                                    \
+    --seed 12345                                                 \
+    --noGeant                                                    \
+    --configKeyValues "GeneratorPythia8.includePartonEvent=true"
+
+# Run Rivet analyses - we use our simple example analysis
+# ALICE_YYYY_I1234567.
+#
+# Pass `--hepmc-update never` to `o2-aod-mc-producer` to not make
+# HepMC Aux tables.
+#
+# Pass `--hepmc-no-aux` to `o2-analysis-mm-rivet` to not process HepMC
+# aux tables.
+o2-aod-mc-producer-workflow                \
+    --mckine-fname simple |                \
+    o2-analysis-mm-rivet                   \
+        --hepmc-recenter                   \
+        --rivet-dump simple_Kine.yoda      \
+        --rivet-analysis ALICE_YYYY_I1234567               \
+        --rivet-pwd                        \
+        --rivet-sources @CMAKE_CURRENT_SOURCE_DIR@/doc/analyses/ALICE_YYYY_I1234567.C   \
+        --rivet-load-paths @CMAKE_CURRENT_SOURCE_DIR@/doc/analyses          \
+        --rivet-finalize                   \
+        --batch                            \
+        $@
+
+# Plot result of analysis - using a simple Python script
+#
+# Pass option `-s` to save plot to PNG.
+@CMAKE_CURRENT_SOURCE_DIR@/doc/analyses/ALICE_YYYY_I1234567.py -s simple_Kine.yoda
+
+#
+# EOF
+#

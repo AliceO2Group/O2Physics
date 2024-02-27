@@ -1,0 +1,69 @@
+// Copyright 2023-2099 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+/** @file GetRivetAOs.C
+ *  @author Christian Holm Christensen <cholm@nbi.dk>
+ *  @brief Extract Rivet AOs from a ROOT file
+ */
+#include "RivetAOs.h"
+
+/**
+ * Open the passed file (default is `AnalysisResults.root`) and try to
+ * find the object `o2-analysis-mm-rivet/o2::rivet::RivetAOs`.  If
+ * found, then the data will be written to a YODA formatted file
+ * (default output file name is the same as the input file name but
+ * with final `.root` replaced with `.yoda`.  Thus with the default
+ * input file (`AnalysisResults.root`) the written file will be named
+ * `AnalysisResults.yoda`.
+ */
+void GetRivetAOs(const char* filename = "AnalysisResults.root",
+                 const char* output = 0)
+{
+  TFile* file = TFile::Open(filename, "READ");
+  if (not file) {
+    Error("GetRivetAOs", "Failed to open \"%s\"", filename);
+    return;
+  }
+
+  const char* dirName = "o2-analysis-mm-rivet";
+  if (not gDirectory->cd(dirName)) {
+    Error("GetRivetAOs", "Failed to change directory to \"%s/%s\"",
+          filename, dirName);
+    return;
+  }
+
+  const char* objName = "o2::rivet::RivetAOs";
+  TObject* obj = gDirectory->Get(objName);
+  if (not obj) {
+    Error("GetRivetAOs", "Failed to get \"%s/%s/%s\"",
+          filename, dirName, objName);
+    return;
+  }
+
+  o2::rivet::RivetAOs* out = dynamic_cast<o2::rivet::RivetAOs*>(obj);
+  if (not out) {
+    Error("GetRivetAOs", "Failed to convert read object to %s", objName);
+    return;
+  }
+
+  TString outf(output ? output : filename);
+  if (outf.EndsWith(".root"))
+    outf.ReplaceAll(".root", "");
+  if (not outf.EndsWith(".yoda"))
+    outf.Append(".yoda");
+
+  Info("GetRivetAOs", "Writting AOs to \"%s\"", outf.Data());
+  out->SaveAs(outf);
+}
+
+// Local Variables:
+//  mode: C++
+// End:
