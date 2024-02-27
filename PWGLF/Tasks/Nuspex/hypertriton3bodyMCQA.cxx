@@ -47,7 +47,7 @@ using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 template <class TMCTrackTo, typename TMCParticle>
 bool is3bodyDecayedH3L(TMCParticle const& particle)
 {
-  if (std::abs(particle.pdgCode()) == 1010010030) {
+  if (std::abs(particle.pdgCode()) != 1010010030) {
     return false;
   }
   bool haveProton = false, havePion = false, haveDeuteron = false;
