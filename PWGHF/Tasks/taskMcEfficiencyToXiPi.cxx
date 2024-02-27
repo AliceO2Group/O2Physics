@@ -376,14 +376,14 @@ struct HfTaskMcEfficiencyToXiPi {
                ParticleInfo const& genParticles,
                TracksWithSelectionMC const& tracks,
                aod::McCollisionLabels const& colls)
-  { 
-    if(matchXic && matchOmegac){
+  {
+    if (matchXic && matchOmegac) {
       LOGF(fatal, "Can't match Omegac0 and Xic0 at the same time, please choose one");
     } else if (!matchXic && !matchOmegac) {
       LOGF(fatal, "Please match either Omegac0 or Xic0");
-    } else if(matchXic){
+    } else if (matchXic) {
       candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kXiC0);
-    } else if (matchOmegac){
+    } else if (matchOmegac) {
       candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kOmegaC0);
     }
   }
