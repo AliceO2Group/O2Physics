@@ -142,7 +142,7 @@ struct HfDataCreatorDV0Reduced {
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
   }
 
-  template <uint8_t DecayChannel, typename C>
+  template <uint8_t DecayChannel, typename CCands>
   void runDataCreation(aod::Collision const& collision,
                        C const& candsD,
                        aod::V0Datas const& V0s,
