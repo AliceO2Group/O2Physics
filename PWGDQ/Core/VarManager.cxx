@@ -237,6 +237,18 @@ void VarManager::FillTrackDerived(float* values)
   }
 }
 
+void VarManager::FillMl(std::vector<float> const& scores, bool const& sel, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  values[kMlIsSelected] = sel;
+  for (int i = 0; i < scores.size(); i++) {
+    values[kMlScoreClass1 + i] = scores[i];
+  }
+}
+
 //__________________________________________________________________
 float VarManager::calculateCosPA(KFParticle kfp, KFParticle PV)
 {
@@ -756,4 +768,14 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kIsSingleGapA] = "";
   fgVariableNames[kIsSingleGapC] = "is single gap event side C";
   fgVariableUnits[kIsSingleGapC] = "";
+  fgVariableNames[kMlIsSelected] = "is selcted";
+  fgVariableUnits[kMlIsSelected] = "";
+  fgVariableNames[kMlScoreClass1] = "score";
+  fgVariableUnits[kMlScoreClass1] = "";
+  fgVariableNames[kMlScoreClass2] = "score";
+  fgVariableUnits[kMlScoreClass2] = "";
+  fgVariableNames[kMlScoreClass3] = "score";
+  fgVariableUnits[kMlScoreClass3] = "";
+  fgVariableNames[kMlScoreClass4] = "score";
+  fgVariableUnits[kMlScoreClass4] = "";
 }

@@ -2398,6 +2398,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  // ML cut
+  if (!nameStr.compare("MlSelection")) {
+    cut->AddCut(GetAnalysisCut("mlSelection"));
+    return cut;
+  }
+
   // -------------------------------------------------------------------------------------------------
   //
   // Below are a list of single electron single muon and in order or optimize the trigger
@@ -4447,6 +4453,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("excludePairLowMass")) {
     cut->AddCut(VarManager::kMass, 0., 0.1, true);
+    return cut;
+  }
+
+  // ML selection
+  if (!nameStr.compare("mlSelection")) {
+    cut->AddCut(VarManager::kMlIsSelected, 0.5, 1.5);
     return cut;
   }
 
