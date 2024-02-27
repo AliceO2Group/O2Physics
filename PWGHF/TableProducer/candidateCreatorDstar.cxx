@@ -111,11 +111,9 @@ struct HfCandidateCreatorDstar {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
     // LOG(info) << "Init Function Invoked";
-    ccdb->setURL(ccdbUrl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking(); // set the flag to check object validity before CCDB query
-    runNumber = 0;
-    bz = 0;
+    massPi = MassPiPlus;
+    massK = MassKPlus;
+    massD0 = MassD0;
 
     df.setPropagateToPCA(propagateToPCA);
     df.setMaxR(maxR);
@@ -126,9 +124,11 @@ struct HfCandidateCreatorDstar {
     df.setWeightedFinalPCA(useWeightedFinalPCA);
     df.setMatCorrType(noMatCorr);
 
-    massPi = MassPiPlus;
-    massK = MassKPlus;
-    massD0 = MassD0;
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking(); // set the flag to check object validity before CCDB query
+    runNumber = 0;
+    bz = 0;
   }
 
   /// @brief function for secondary vertex reconstruction and candidate creator

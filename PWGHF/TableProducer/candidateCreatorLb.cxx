@@ -60,6 +60,8 @@ struct HfCandidateCreatorLb {
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
 
+  o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
+  o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter (to rebuild Lc vertex)
   HfHelper hfHelper;
 
   double massPi{0.};
@@ -80,16 +82,7 @@ struct HfCandidateCreatorLb {
   {
     massPi = MassPiMinus;
     massLc = MassLambdaCPlus;
-  }
 
-  void process(aod::Collision const& collision,
-               soa::Filtered<soa::Join<
-                 aod::HfCand3Prong,
-                 aod::HfSelLc>> const& lcCands,
-               aod::TracksWCov const& tracks)
-  {
-    // 2-prong vertex fitter
-    o2::vertexing::DCAFitterN<2> df2;
     df2.setBz(bz);
     df2.setPropagateToPCA(propagateToPCA);
     df2.setMaxR(maxR);
@@ -99,8 +92,6 @@ struct HfCandidateCreatorLb {
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
-    // 3-prong vertex fitter (to rebuild Lc vertex)
-    o2::vertexing::DCAFitterN<3> df3;
     df3.setBz(bz);
     df3.setPropagateToPCA(propagateToPCA);
     df3.setMaxR(maxR);
@@ -109,7 +100,14 @@ struct HfCandidateCreatorLb {
     df3.setMinRelChi2Change(minRelChi2Change);
     df3.setUseAbsDCA(useAbsDCA);
     df3.setWeightedFinalPCA(useWeightedFinalPCA);
+  }
 
+  void process(aod::Collision const& collision,
+               soa::Filtered<soa::Join<
+                 aod::HfCand3Prong,
+                 aod::HfSelLc>> const& lcCands,
+               aod::TracksWCov const& tracks)
+  {
     // loop over Lc candidates
     for (const auto& lcCand : lcCands) {
       if (!(lcCand.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi)) {

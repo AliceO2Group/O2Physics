@@ -164,10 +164,8 @@ DECLARE_SOA_TABLE(HfOmegaStGen, "AOD", "HFOMEGACSTGEN",
 } // namespace o2::aod
 
 struct HfTreeCreatorOmegacSt {
-  SliceCache cache;
-  // Preslice<aod::Tracks> perCol = aod::track::collisionId;
-  Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  Preslice<aod::AssignedTrackedCascades> assignedTrackedCascadesPerCollision = aod::track::collisionId;
+  Produces<aod::HfOmegacSt> outputTable;
+  Produces<aod::HfOmegaStGen> outputTableGen;
 
   Configurable<int> materialCorrectionType{"materialCorrectionType", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -197,13 +195,9 @@ struct HfTreeCreatorOmegacSt {
   Configurable<float> maxNSigmaPion{"maxNSigmaPion", 5., "Max Nsigma for pion to be paired with Omega"};
   Configurable<bool> bzOnly{"bzOnly", true, "Use B_z instead of full field map"};
 
-  Produces<aod::HfOmegacSt> outputTable;
-  Produces<aod::HfOmegaStGen> outputTableGen;
+  SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::vertexing::DCAFitterN<2> df2;
-
-  Filter collisionFilter = (filterCollisions.node() == 0) ||
-                           (filterCollisions.node() == 8 && o2::aod::evsel::sel8 == true);
 
   float bz = 0.;
   int runNumber{0};
@@ -211,6 +205,13 @@ struct HfTreeCreatorOmegacSt {
   using Collisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
   using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   using TracksExtMc = soa::Join<TracksExt, aod::McTrackLabels>;
+
+  Filter collisionFilter = (filterCollisions.node() == 0) ||
+                           (filterCollisions.node() == 8 && o2::aod::evsel::sel8 == true);
+
+  // Preslice<aod::Tracks> perCol = aod::track::collisionId;
+  Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
+  Preslice<aod::AssignedTrackedCascades> assignedTrackedCascadesPerCollision = aod::track::collisionId;
 
   HistogramRegistry registry{
     "registry",
@@ -240,6 +241,13 @@ struct HfTreeCreatorOmegacSt {
 
   void init(InitContext const&)
   {
+    df2.setPropagateToPCA(propToDCA);
+    df2.setMaxR(maxR);
+    df2.setMaxDZIni(maxDZIni);
+    df2.setMinParamChange(minParamChange);
+    df2.setMinRelChi2Change(minRelChi2Change);
+    df2.setUseAbsDCA(useAbsDCA);
+
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -249,13 +257,6 @@ struct HfTreeCreatorOmegacSt {
       auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
       o2::base::Propagator::Instance(true)->setMatLUT(lut);
     }
-
-    df2.setPropagateToPCA(propToDCA);
-    df2.setMaxR(maxR);
-    df2.setMaxDZIni(maxDZIni);
-    df2.setMinParamChange(minParamChange);
-    df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(useAbsDCA);
   }
 
   // processMC: loop over MC objects
