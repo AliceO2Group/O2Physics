@@ -17,7 +17,6 @@
 #include <Framework/DataProcessingDevice.h>
 #include <Generators/AODToHepMC.h>
 #include "Wrapper.h"
-#include <fstream>
 
 //==================================================================
 /**
@@ -155,7 +154,7 @@ struct MmRivet {
     static auto thisName = o2::framework::type_to_task_name(typen);
     LOG(info) << std::quoted(devname) << " vs " << std::quoted(thisName);
     bool self = devname.starts_with(thisName);
-    if (!self) { // Why can I not use the keyword `not` - so darn stupid!
+    if (not self) { // NOLINT
       return std::string();
     }
 
