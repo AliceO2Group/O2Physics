@@ -66,9 +66,9 @@ bool is3bodyDecayedH3L(TMCParticle const& particle)
     if (mcparticleDaughter.pdgCode() == -1000010020)
       haveAntiDeuteron = true;
   }
-  if (haveProton && haveAntiPion && haveDeuteron && particle.pdgCode() == 1010010030) {
+  if (haveProton && haveAntiPion && haveDeuteron && particle.pdgCode() > 0) {
     return true;
-  } else if (haveAntiProton && havePion && haveAntiDeuteron && particle.pdgCode() == -1010010030) {
+  } else if (haveAntiProton && havePion && haveAntiDeuteron && particle.pdgCode() < 0) {
     return true;
   }
   return false;
