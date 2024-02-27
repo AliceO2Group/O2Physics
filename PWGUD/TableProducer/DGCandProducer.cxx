@@ -26,6 +26,7 @@ struct DGCandProducer {
   // get a DGCutparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
   Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+  Configurable<bool> fillFIThistos{"fillFIThistos", false, "fill the histograms with the FIT amplitudes"};
 
   // DG selector
   DGSelector dgSelector;
@@ -134,7 +135,6 @@ struct DGCandProducer {
   {
     std::array<bool, 5> triggers{{true, !udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits()),
                                   udhelpers::TVX(bc), udhelpers::TSC(bc), udhelpers::TCE(bc)}};
-
     if (bc.has_foundFV0()) {
       auto fv0 = bc.foundFV0();
       auto ampA = udhelpers::FV0AmplitudeA(fv0);
@@ -143,6 +143,8 @@ struct DGCandProducer {
       registry.get<TH2>(HIST("reco/fv0"))->Fill(ampA, triggers[2] ? 2 : 6);
       registry.get<TH2>(HIST("reco/fv0"))->Fill(ampA, triggers[3] ? 3 : 7);
       registry.get<TH2>(HIST("reco/fv0"))->Fill(ampA, triggers[4] ? 4 : 8);
+      registry.get<TH2>(HIST("reco/fv0"))->Fill(ampA, bc.selection_bit(o2::aod::evsel::kIsBBV0A) ?  9 : 10);
+      registry.get<TH2>(HIST("reco/fv0"))->Fill(ampA, bc.selection_bit(o2::aod::evsel::kNoBGV0A) ? 11 : 12);
     }
     if (bc.has_foundFT0()) {
       auto ft0 = bc.foundFT0();
@@ -158,6 +160,10 @@ struct DGCandProducer {
       registry.get<TH2>(HIST("reco/ft0C"))->Fill(ampC, triggers[3] ? 3 : 7);
       registry.get<TH2>(HIST("reco/ft0A"))->Fill(ampA, triggers[4] ? 4 : 8);
       registry.get<TH2>(HIST("reco/ft0C"))->Fill(ampC, triggers[4] ? 4 : 8);
+      registry.get<TH2>(HIST("reco/ft0A"))->Fill(ampA, bc.selection_bit(o2::aod::evsel::kIsBBT0A) ?  9 : 10);
+      registry.get<TH2>(HIST("reco/ft0C"))->Fill(ampC, bc.selection_bit(o2::aod::evsel::kIsBBT0C) ?  9 : 10);
+      registry.get<TH2>(HIST("reco/ft0A"))->Fill(ampA, bc.selection_bit(o2::aod::evsel::kNoBGT0A) ? 11 : 12);
+      registry.get<TH2>(HIST("reco/ft0C"))->Fill(ampC, bc.selection_bit(o2::aod::evsel::kNoBGT0C) ? 11 : 12);
     }
     if (bc.has_foundFDD()) {
       auto fdd = bc.foundFDD();
@@ -173,6 +179,10 @@ struct DGCandProducer {
       registry.get<TH2>(HIST("reco/fddC"))->Fill(ampC, triggers[3] ? 3 : 7);
       registry.get<TH2>(HIST("reco/fddA"))->Fill(ampA, triggers[4] ? 4 : 8);
       registry.get<TH2>(HIST("reco/fddC"))->Fill(ampC, triggers[4] ? 4 : 8);
+      registry.get<TH2>(HIST("reco/fddA"))->Fill(ampA, bc.selection_bit(o2::aod::evsel::kIsBBFDA) ?  9 : 10);
+      registry.get<TH2>(HIST("reco/fddC"))->Fill(ampC, bc.selection_bit(o2::aod::evsel::kIsBBFDC) ?  9 : 10);
+      registry.get<TH2>(HIST("reco/fddA"))->Fill(ampA, bc.selection_bit(o2::aod::evsel::kNoBGFDA) ? 11 : 12);
+      registry.get<TH2>(HIST("reco/fddC"))->Fill(ampC, bc.selection_bit(o2::aod::evsel::kNoBGFDC) ? 11 : 12);
     }
   }
 
@@ -193,16 +203,18 @@ struct DGCandProducer {
     //   2: TVX              6: no TVX
     //   3: TSC              7: no TSC
     //   4: TCE              8: no TCE
-    registry.add("reco/fv0", "FV0 amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
-    registry.add("reco/ft0A", "FT0A amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
-    registry.add("reco/ft0C", "FT0C amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
-    registry.add("reco/fddA", "FDDA amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
-    registry.add("reco/fddC", "FDDC amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {9, -0.5, 8.5}}});
+    //   9: IsBBXXX         10: !IsBBXXX
+    //  11: kNoBGXXX        12: !kNoBGXXX 
+    registry.add("reco/fv0",  "FV0 amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
+    registry.add("reco/ft0A", "FT0A amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
+    registry.add("reco/ft0C", "FT0C amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
+    registry.add("reco/fddA", "FDDA amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
+    registry.add("reco/fddC", "FDDC amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
   }
 
   // process function for real data
   void process(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
-               aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+               aod::Zdcs& zdcs, aod::FV0As& fv0as, aod::FT0s& ft0s, aod::FDDs& fdds)
   {
     LOGF(debug, "<DGCandProducer>  collision %d", collision.globalIndex());
     // nominal BC
@@ -215,19 +227,13 @@ struct DGCandProducer {
     // fill FIT histograms
     fillFIThistograms(bc);
 
-    // fill FIT histograms
-    fillFIThistograms(bc);
-
-    // fill FIT histograms
-    fillFIThistograms(bc);
-
     // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
     LOGF(debug, "<DGCandProducer>  Size of bcRange %d", bcRange.size());
 
     // apply DG selection
     auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
-
+    
     // save DG candidates
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
     registry.get<TH1>(HIST("reco/Stat"))->Fill(isDGEvent + 1, 1.);
