@@ -358,9 +358,9 @@ class VarManager : public TObject
     kIsLegFromAntiLambda,
     kIsLegFromOmega,
     kIsProtonFromLambdaAndAntiLambda,
-    kIsDalitzLeg,             // Up to 8 dalitz selections
-    kBarrelNAssocsInBunch = kIsDalitzLeg+8,    // number of in bunch collision associations
-    kBarrelNAssocsOutOfBunch, // number of out of bunch collision associations
+    kIsDalitzLeg,                             // Up to 8 dalitz selections
+    kBarrelNAssocsInBunch = kIsDalitzLeg + 8, // number of in bunch collision associations
+    kBarrelNAssocsOutOfBunch,                 // number of out of bunch collision associations
     kNBarrelTrackVariables,
 
     // Muon track variables

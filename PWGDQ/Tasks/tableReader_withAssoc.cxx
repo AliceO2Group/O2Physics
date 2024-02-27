@@ -1377,7 +1377,7 @@ struct AnalysisSameEventPairing {
   }
 
   void processBarrelOnlySkimmed(MyEventsVtxCovSelected const& events,
-                                soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs, 
+                                soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
                                 MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
   {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
