@@ -45,16 +45,21 @@ using namespace o2::framework::expressions;
 
 struct phosPi0 {
 
+  ConfigurableAxis timeAxisLarge{"celltime", {500, -1500.e-9, 3500.e-9}, "cell time (ns)"};
   ConfigurableAxis amplitudeAxisLarge{"amplitude", {1000, 0., 100.}, "Amplutude (GeV)"};
   ConfigurableAxis mggAxis{"mgg", {250, 0., 1.}, "m_{#gamma#gamma} (GeV/c^{2})"};
-  ConfigurableAxis timeAxisLarge{"celltime", {500, -1500.e-9, 3500.e-9}, "cell time (ns)"};
+  ConfigurableAxis nCellsAxis{"nCells", {50, 0., 50}, "nCells"};
+  ConfigurableAxis M02Axis{"M02", {50, 0., 10.}, "M_{02} (cm^{2})"};
+  ConfigurableAxis M20Axis{"M20", {50, 0., 10.}, "M_{20} (cm^{2})"};
+  Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
   Configurable<float> mMinCluE{"mMinCluE", 0.3, "Minimum cluster energy for analysis"};
   Configurable<float> mMinCluTime{"minCluTime", -50.e-9, "Min. cluster time"};
   Configurable<float> mMaxCluTime{"mMinCluTime", 100.e-9, "Max. cluster time"};
   Configurable<int> mMinCluNcell{"mMinCluNcell", 2, "min cells in cluster"};
+  Configurable<double> mMinM02{"mMinM02", 0.2, "Min number of cells in cluster"};
+  Configurable<double> mMinM20{"mMinM20", 0.2, "Min number of cells in cluster"};
   Configurable<int> mMixedEvents{"mixedEvents", 10, "number of events to mix"};
   Configurable<bool> mEventSelection{"mEventSelection", true, "to apply event selection"};
-  Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
 
   Configurable<float> mOccE{"minOccE", 0.6, "Minimum cluster energy to fill occupancy"};
 
@@ -122,10 +127,10 @@ struct phosPi0 {
     mHistManager.add("cluBCkTVXinPHOS", "Bunch crossing ID of event with PHOS", HistType::kTH1F, {bcAxis});
     mHistManager.add("ambCluBCkTVXinPHOS", "Bunch crossing ID of event with PHOS", HistType::kTH1F, {bcAxis});
 
-    mHistManager.add("cluSp", "Cluster spectrum per module",
-                     HistType::kTH2F, {amplitudeAxisLarge, modAxis});
-    mHistManager.add("ambcluSp", "Amb. Cluster spectrum per module",
-                     HistType::kTH2F, {amplitudeAxisLarge, modAxis});
+    mHistManager.add("cluSp", "Cluster spectrum per module", HistType::kTH2F, {amplitudeAxisLarge, modAxis});
+    mHistManager.add("cluSpAfterCuts", "Cluster spectra after cuts", HistType::kTH2F, {amplitudeAxisLarge, modAxis});
+    mHistManager.add("ambcluSp", "Amb. Cluster spectrum per module", HistType::kTH2F, {amplitudeAxisLarge, modAxis});
+    mHistManager.add("ambcluSpAfterCuts", "Cluster spectra after cuts", HistType::kTH2F, {amplitudeAxisLarge, modAxis});
     mHistManager.add("cluETime", "Cluster time vs E",
                      HistType::kTH3F, {amplitudeAxisLarge, timeAxisLarge, modAxis});
     mHistManager.add("ambcluETime", "Amb. cluster time vs E",
@@ -164,6 +169,12 @@ struct phosPi0 {
     mHistManager.add("mggMiAmbBoth", "inv mass for centrality",
                      HistType::kTH3F, {mggAxis, amplitudeAxisLarge, modCombAxis});
 
+    mHistManager.add("hM02Clu", "M02 in clusters", HistType::kTH3F, {M02Axis, amplitudeAxisLarge, modAxis});
+    mHistManager.add("hM20Clu", "M20 in clusters", HistType::kTH3F, {M20Axis, amplitudeAxisLarge, modAxis});
+    mHistManager.add("hNcellClu", "Number of cells in clusters", HistType::kTH3F, {nCellsAxis, amplitudeAxisLarge, modAxis});
+    mHistManager.add("hM02AmbClu", "M02 in amb clusters", HistType::kTH3F, {M02Axis, amplitudeAxisLarge, modAxis});
+    mHistManager.add("hM20AmbClu", "M20 in amb clusters", HistType::kTH3F, {M20Axis, amplitudeAxisLarge, modAxis});
+    mHistManager.add("hNcellAmbClu", "Number of cells in amb clusters", HistType::kTH3F, {nCellsAxis, amplitudeAxisLarge, modAxis});
     mHistManager.add("cluOcc", "Cluster occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
     mHistManager.add("cluCPVOcc", "Cluster with CPV occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
     mHistManager.add("cluDispOcc", "Cluster with Disp occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
@@ -276,14 +287,17 @@ struct phosPi0 {
         }
       }
 
+      mHistManager.fill(HIST("hM02Clu"), clu.m02(), clu.e(), clu.mod());
+      mHistManager.fill(HIST("hM20Clu"), clu.m20(), clu.e(), clu.mod());
+      mHistManager.fill(HIST("hNcellClu"), clu.ncell(), clu.e(), clu.mod());
       mHistManager.fill(HIST("cluETime"), clu.e(), clu.time(), clu.mod());
-
-      if (clu.e() < mMinCluE || clu.ncell() < mMinCluNcell ||
-          clu.time() > mMaxCluTime || clu.time() < mMinCluTime) {
+      mHistManager.fill(HIST("cluSp"), clu.e(), clu.mod());
+      if (clu.e() < mMinCluE || clu.ncell() < mMinCluNcell || clu.time() > mMaxCluTime || clu.time() < mMinCluTime ||
+          clu.m02() < mMinM02 || clu.m20() < mMinM20) {
         continue;
       }
 
-      mHistManager.fill(HIST("cluSp"), clu.e(), clu.mod());
+      mHistManager.fill(HIST("cluSpAfterCuts"), clu.e(), clu.mod());
       if (clu.e() > mOccE) {
         mHistManager.fill(HIST("cluOcc"), clu.x(), clu.z(), clu.mod());
         if (clu.trackdist() > 2.) {
@@ -381,13 +395,17 @@ struct phosPi0 {
         continue;
       }
 
+      mHistManager.fill(HIST("hM02AmbClu"), clu.m02(), clu.e(), clu.mod());
+      mHistManager.fill(HIST("hM20AmbClu"), clu.m20(), clu.e(), clu.mod());
+      mHistManager.fill(HIST("hNcellAmbClu"), clu.ncell(), clu.e(), clu.mod());
       mHistManager.fill(HIST("ambcluETime"), clu.e(), clu.time(), clu.mod());
-      if (clu.e() < mMinCluE || clu.ncell() < mMinCluNcell ||
-          clu.time() > mMaxCluTime || clu.time() < mMinCluTime) {
+      mHistManager.fill(HIST("ambcluSp"), clu.e(), clu.mod());
+      if (clu.e() < mMinCluE || clu.ncell() < mMinCluNcell || clu.time() > mMaxCluTime || clu.time() < mMinCluTime ||
+          clu.m02() < mMinM02 || clu.m20() < mMinM20) {
         continue;
       }
 
-      mHistManager.fill(HIST("ambcluSp"), clu.e(), clu.mod());
+      mHistManager.fill(HIST("ambcluSpAfterCuts"), clu.e(), clu.mod());
       if (clu.e() > mOccE) {
         mHistManager.fill(HIST("ambcluOcc"), clu.x(), clu.z(), clu.mod());
         if (clu.trackdist() > 2.) {
