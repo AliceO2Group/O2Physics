@@ -610,18 +610,9 @@ DECLARE_SOA_COLUMN(PzPos, pzpos, float);     //!
 DECLARE_SOA_COLUMN(PxNeg, pxneg, float);     //!
 DECLARE_SOA_COLUMN(PyNeg, pyneg, float);     //!
 DECLARE_SOA_COLUMN(PzNeg, pzneg, float);     //!
-DECLARE_SOA_COLUMN(PxPosErr, pxposerr, float);     //!
-DECLARE_SOA_COLUMN(PyPosErr, pyposerr, float);     //!
-DECLARE_SOA_COLUMN(PzPosErr, pzposerr, float);     //!
-DECLARE_SOA_COLUMN(PxNegErr, pxnegerr, float);     //!
-DECLARE_SOA_COLUMN(PyNegErr, pynegerr, float);     //!
-DECLARE_SOA_COLUMN(PzNegErr, pznegerr, float);     //!
 DECLARE_SOA_COLUMN(PxBach, pxbach, float);   //!
 DECLARE_SOA_COLUMN(PyBach, pybach, float);   //!
 DECLARE_SOA_COLUMN(PzBach, pzbach, float);   //!
-DECLARE_SOA_COLUMN(PxV0, pxv0, float);   //!
-DECLARE_SOA_COLUMN(PyV0, pyv0, float);   //!
-DECLARE_SOA_COLUMN(PzV0, pzv0, float);   //!
 DECLARE_SOA_COLUMN(Px, px, float);           //! cascade momentum X
 DECLARE_SOA_COLUMN(Py, py, float);           //! cascade momentum Y
 DECLARE_SOA_COLUMN(Pz, pz, float);           //! cascade momentum Z
@@ -631,18 +622,6 @@ DECLARE_SOA_COLUMN(Z, z, float);             //!
 DECLARE_SOA_COLUMN(Xlambda, xlambda, float); //!
 DECLARE_SOA_COLUMN(Ylambda, ylambda, float); //!
 DECLARE_SOA_COLUMN(Zlambda, zlambda, float); //!
-DECLARE_SOA_COLUMN(XPos, xpos, float);     //!
-DECLARE_SOA_COLUMN(YPos, ypos, float);     //!
-DECLARE_SOA_COLUMN(ZPos, zpos, float);     //!
-DECLARE_SOA_COLUMN(XNeg, xneg, float);     //!
-DECLARE_SOA_COLUMN(YNeg, yneg, float);     //!
-DECLARE_SOA_COLUMN(ZNeg, zneg, float);     //!
-DECLARE_SOA_COLUMN(XPosErr, xposerr, float);     //!
-DECLARE_SOA_COLUMN(YPosErr, yposerr, float);     //!
-DECLARE_SOA_COLUMN(ZPosErr, zposerr, float);     //!
-DECLARE_SOA_COLUMN(XNegErr, xnegerr, float);     //!
-DECLARE_SOA_COLUMN(YNegErr, ynegerr, float);     //!
-DECLARE_SOA_COLUMN(ZNegErr, znegerr, float);     //!
 
 // Saved from finding: DCAs
 DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0daughters, float);     //!
@@ -661,10 +640,12 @@ DECLARE_SOA_COLUMN(BachX, bachX, float); //! bachelor track X at min
 //______________________________________________________
 // REGULAR COLUMNS FOR CASCCOVS
 // Saved from finding: covariance matrix of parent track (on request)
-DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance matrix elements
-DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
-DECLARE_SOA_COLUMN(KFTrackMat, kfTrackCovMat, float[15]);     //! covariance matrix elements for KF method (Cascade)
-DECLARE_SOA_COLUMN(KFTrackMatV0, kfTrackCovMatV0, float[15]);     //! covariance matrix elements for KF method (V0)
+DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]);                //! covariance matrix elements
+DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]);                //! covariance matrix elements
+DECLARE_SOA_COLUMN(KFTrackCovMat, kfTrackCovMat, float[21]);                 //! covariance matrix elements for KF method (Cascade)
+DECLARE_SOA_COLUMN(KFTrackCovMatV0, kfTrackCovMatV0, float[21]);             //! covariance matrix elements for KF method (V0)
+DECLARE_SOA_COLUMN(KFTrackCovMatV0DauPos, kfTrackCovMatV0DauPos, float[21]); //! covariance matrix elements for KF method (V0 pos daughter)
+DECLARE_SOA_COLUMN(KFTrackCovMatV0DauNeg, kfTrackCovMatV0DauNeg, float[21]); //! covariance matrix elements for KF method (V0 neg daughter)
 
 //______________________________________________________
 // REGULAR COLUMNS FOR CASCBBS
@@ -683,6 +664,15 @@ DECLARE_SOA_COLUMN(BachBaryonDCAxyToPV, bachBaryonDCAxyToPV, float); //! avoid b
 //       this could be improved in the future!
 DECLARE_SOA_COLUMN(KFV0Chi2, kfV0Chi2, float);           //!
 DECLARE_SOA_COLUMN(KFCascadeChi2, kfCascadeChi2, float); //!
+DECLARE_SOA_COLUMN(KFPxV0, kfpxv0, float);               //!
+DECLARE_SOA_COLUMN(KFPyV0, kfpyv0, float);               //!
+DECLARE_SOA_COLUMN(KFPzV0, kfpzv0, float);               //!
+DECLARE_SOA_COLUMN(KFXPos, kfxpos, float);               //!
+DECLARE_SOA_COLUMN(KFYPos, kfypos, float);               //!
+DECLARE_SOA_COLUMN(KFZPos, kfzpos, float);               //!
+DECLARE_SOA_COLUMN(KFXNeg, kfxneg, float);               //!
+DECLARE_SOA_COLUMN(KFYNeg, kfyneg, float);               //!
+DECLARE_SOA_COLUMN(KFZNeg, kfzneg, float);               //!
 
 //______________________________________________________
 // REGULAR COLUMNS FOR TRACASCCORES
@@ -895,16 +885,12 @@ DECLARE_SOA_TABLE(StoredKFCascCores, "AOD", "KFCASCCORE", //!
                   cascdata::Sign, cascdata::MXi, cascdata::MOmega,
                   cascdata::X, cascdata::Y, cascdata::Z,
                   cascdata::Xlambda, cascdata::Ylambda, cascdata::Zlambda,
-                  cascdata::XPos, cascdata::YPos, cascdata::ZPos,
-                  cascdata::XPosErr, cascdata::YPosErr, cascdata::ZPosErr,
-                  cascdata::XNeg, cascdata::YNeg, cascdata::ZNeg,
-                  cascdata::XNegErr, cascdata::YNegErr, cascdata::ZNegErr,
+                  cascdata::KFXPos, cascdata::KFYPos, cascdata::KFZPos,
+                  cascdata::KFXNeg, cascdata::KFYNeg, cascdata::KFZNeg,
                   cascdata::PxPos, cascdata::PyPos, cascdata::PzPos,
                   cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg,
                   cascdata::PxBach, cascdata::PyBach, cascdata::PzBach,
-                  cascdata::PxPosErr, cascdata::PyPosErr, cascdata::PzPosErr,
-                  cascdata::PxNegErr, cascdata::PyNegErr, cascdata::PzNegErr,
-                  cascdata::PxV0, cascdata::PyV0, cascdata::PzV0,
+                  cascdata::KFPxV0, cascdata::KFPyV0, cascdata::KFPzV0,
                   cascdata::Px, cascdata::Py, cascdata::Pz,
                   cascdata::DCAV0Daughters, cascdata::DCACascDaughters,
                   cascdata::DCAPosToPV, cascdata::DCANegToPV, cascdata::DCABachToPV, cascdata::DCAXYCascToPV, cascdata::DCAZCascToPV,
@@ -999,7 +985,7 @@ DECLARE_SOA_TABLE_FULL(CascCovs, "CascCovs", "AOD", "CASCCOVS", //!
                        cascdata::PositionCovMat, cascdata::MomentumCovMat);
 
 DECLARE_SOA_TABLE_FULL(KFCascCovs, "KFCascCovs", "AOD", "KFCASCCOVS", //!
-                       cascdata::KFTrackMat, cascdata::KFTrackMatV0);
+                       cascdata::KFTrackCovMat, cascdata::KFTrackCovMatV0, cascdata::KFTrackCovMatV0DauPos, cascdata::KFTrackCovMatV0DauNeg);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(CascCores, StoredCascCores, "CascDATAEXT", //!

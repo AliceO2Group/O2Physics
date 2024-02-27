@@ -112,8 +112,8 @@ struct cascadeBuilder {
   Produces<aod::StoredTraCascCores> trackedcascdata;
   Produces<aod::CascTrackXs> cascTrackXs; // if desired for replaying of position information
   Produces<aod::CascBBs> cascbb;          // if enabled
-  Produces<aod::CascCovs> casccovs; // if requested by someone
-  Produces<aod::KFCascCovs> kfcasccovs; // if requested by someone
+  Produces<aod::CascCovs> casccovs;       // if requested by someone
+  Produces<aod::KFCascCovs> kfcasccovs;   // if requested by someone
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested topo sels"};
@@ -246,14 +246,10 @@ struct cascadeBuilder {
     std::array<float, 3> v0pos;
     std::array<float, 3> v0mompos;
     std::array<float, 3> v0momneg;
-    std::array<float, 3> v0momposerr;
-    std::array<float, 3> v0momnegerr;
-    std::array<float, 3> v0postrack;
-    std::array<float, 3> v0negtrack;
-    std::array<float, 3> v0postrackerr;
-    std::array<float, 3> v0negtrackerr;
+    std::array<float, 3> v0pospos;
+    std::array<float, 3> v0posneg;
     std::array<float, 3> cascademom;
-    std::array<float, 3> v0mom;
+    std::array<float, 3> kfv0mom;
     float v0dcadau;
     float v0dcapostopv;
     float v0dcanegtopv;
@@ -266,8 +262,10 @@ struct cascadeBuilder {
     float kfMLambda;
     float kfV0Chi2;
     float kfCascadeChi2;
-    std::array<float, 15> kfCascadeCov;
-    std::array<float, 15> kfV0Cov;
+    std::array<float, 21> kfCascadeCov;
+    std::array<float, 21> kfV0Cov;
+    std::array<float, 21> kfV0DauPosCov;
+    std::array<float, 21> kfV0DauNegCov;
   } cascadecandidate;
 
   o2::track::TrackParCov lBachelorTrack;
@@ -1127,7 +1125,6 @@ struct cascadeBuilder {
       massNegTrack = o2::constants::physics::MassProton;
     }
 
-  
     //__________________________________________
     //*>~<* step 1 : V0 with dca fitter, uses material corrections implicitly
     // This is optional - move close to minima and therefore take material
@@ -1172,7 +1169,7 @@ struct cascadeBuilder {
     KFV0.GetMass(massLam, sigLam);
     if (TMath::Abs(massLam - 1.116) > lambdaMassWindow)
       return false;
-    
+
     if (kfUseV0MassConstraint) {
       KFV0.SetNonlinearMassConstraint(o2::constants::physics::MassLambda);
     }
@@ -1247,7 +1244,7 @@ struct cascadeBuilder {
     kfpV0Upd.SetProductionVertex(KFXi);
     cascadecandidate.dcacascdau = kfpBachPionUpd.GetDistanceFromParticle(kfpV0Upd);
     if (cascadecandidate.dcacascdau > dcacascdau)
-        return false;
+      return false;
 
     //__________________________________________
     //*>~<* step 5 : propagate cascade to primary vertex with material corrections if asked
@@ -1277,30 +1274,14 @@ struct cascadeBuilder {
     if (kfTuneForOmega)
       cascadecandidate.kfCascadeChi2 = KFOmega.GetChi2();
 
-    // Daughter momentum not KF-updated FIXME --> but DCA fitter updated if pre-minimisation is used!!
+    // Daughter momentum not KF-updated FIXME --> but DCA fitter updated if pre-minimisation is used
     lBachelorTrack.getPxPyPzGlo(cascadecandidate.bachP);
     posTrackParCov.getPxPyPzGlo(cascadecandidate.v0mompos);
     negTrackParCov.getPxPyPzGlo(cascadecandidate.v0momneg);
-    // uncertainties
-    std::array<float, 21> cvpos, cvneg;
-    posTrackParCov.getCovXYZPxPyPzGlo(cvpos);
-    negTrackParCov.getCovXYZPxPyPzGlo(cvneg);
-    cascadecandidate.v0momposerr[0] = sqrt(cvpos[9]);
-    cascadecandidate.v0momposerr[1] = sqrt(cvpos[14]);
-    cascadecandidate.v0momposerr[2] = sqrt(cvpos[20]);
-    cascadecandidate.v0momnegerr[0] = sqrt(cvneg[9]);
-    cascadecandidate.v0momnegerr[1] = sqrt(cvneg[14]);
-    cascadecandidate.v0momnegerr[2] = sqrt(cvneg[20]);
 
-    // Daughter track position at vertex
-    posTrackParCov.getXYZGlo(cascadecandidate.v0postrack);
-    negTrackParCov.getXYZGlo(cascadecandidate.v0negtrack);
-    cascadecandidate.v0postrackerr[0] = sqrt(cvpos[0]);
-    cascadecandidate.v0postrackerr[1] = sqrt(cvpos[2]);
-    cascadecandidate.v0postrackerr[2] = sqrt(cvpos[5]);
-    cascadecandidate.v0negtrackerr[0] = sqrt(cvneg[0]);
-    cascadecandidate.v0negtrackerr[1] = sqrt(cvneg[2]);
-    cascadecandidate.v0negtrackerr[2] = sqrt(cvneg[5]);
+    // Daughter track position at vertex not KF-updated FIXME --> but DCA fitter updated if pre-minimisation is used
+    posTrackParCov.getXYZGlo(cascadecandidate.v0pospos);
+    negTrackParCov.getXYZGlo(cascadecandidate.v0posneg);
 
     // mother position information from KF
     cascadecandidate.v0pos[0] = KFV0.GetX();
@@ -1308,9 +1289,9 @@ struct cascadeBuilder {
     cascadecandidate.v0pos[2] = KFV0.GetZ();
 
     // mother momentumm information from KF
-    cascadecandidate.v0mom[0] = KFV0.GetPx();
-    cascadecandidate.v0mom[1] = KFV0.GetPy();
-    cascadecandidate.v0mom[2] = KFV0.GetPz();
+    cascadecandidate.kfv0mom[0] = KFV0.GetPx();
+    cascadecandidate.kfv0mom[1] = KFV0.GetPy();
+    cascadecandidate.kfv0mom[2] = KFV0.GetPz();
 
     // Mother position + momentum is KF updated
     if (!kfTuneForOmega) {
@@ -1360,17 +1341,26 @@ struct cascadeBuilder {
     cascadecandidate.yOmega = KFOmega.GetRapidity();
 
     // KF Cascade covariance matrix
-    o2::gpu::gpustd::array<float, 15> covCascKF;
-    for (int i = 0; i < 15; i++) { // get covariance matrix elements (lower triangle)
+    o2::gpu::gpustd::array<float, 21> covCascKF;
+    for (int i = 0; i < 21; i++) { // get covariance matrix elements (lower triangle)
       covCascKF[i] = KFXi.GetCovariance(i);
       cascadecandidate.kfCascadeCov[i] = covCascKF[i];
     }
 
     // KF V0 covariance matrix
-    o2::gpu::gpustd::array<float, 15> covV0KF;
-    for (int i = 0; i < 15; i++) { // get covariance matrix elements (lower triangle)
+    o2::gpu::gpustd::array<float, 21> covV0KF;
+    for (int i = 0; i < 21; i++) { // get covariance matrix elements (lower triangle)
       covV0KF[i] = KFV0.GetCovariance(i);
       cascadecandidate.kfV0Cov[i] = covV0KF[i];
+    }
+
+    // V0 daughter covariance matrices
+    std::array<float, 21> cvPosKF, cvNegKF;
+    posTrackParCov.getCovXYZPxPyPzGlo(cvPosKF);
+    negTrackParCov.getCovXYZPxPyPzGlo(cvNegKF);
+    for (int i = 0; i < 21; i++) {
+      cascadecandidate.kfV0DauPosCov[i] = cvPosKF[i];
+      cascadecandidate.kfV0DauNegCov[i] = cvNegKF[i];
     }
 
     registry.fill(HIST("hKFParticleStatistics"), 1.0f);
@@ -1476,16 +1466,12 @@ struct cascadeBuilder {
       kfcascdata(cascadecandidate.charge, cascadecandidate.mXi, cascadecandidate.mOmega,
                  cascadecandidate.pos[0], cascadecandidate.pos[1], cascadecandidate.pos[2],
                  cascadecandidate.v0pos[0], cascadecandidate.v0pos[1], cascadecandidate.v0pos[2],
-                 cascadecandidate.v0postrack[0], cascadecandidate.v0postrack[1], cascadecandidate.v0postrack[2],
-                 cascadecandidate.v0postrackerr[0], cascadecandidate.v0postrackerr[1], cascadecandidate.v0postrackerr[2],
-                 cascadecandidate.v0negtrack[0], cascadecandidate.v0negtrack[1], cascadecandidate.v0negtrack[2],
-                 cascadecandidate.v0negtrackerr[0], cascadecandidate.v0negtrackerr[1], cascadecandidate.v0negtrackerr[2],
+                 cascadecandidate.v0pospos[0], cascadecandidate.v0pospos[1], cascadecandidate.v0pospos[2],
+                 cascadecandidate.v0posneg[0], cascadecandidate.v0posneg[1], cascadecandidate.v0posneg[2],
                  cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
                  cascadecandidate.v0momneg[0], cascadecandidate.v0momneg[1], cascadecandidate.v0momneg[2],
                  cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
-                 cascadecandidate.v0momposerr[0], cascadecandidate.v0momposerr[1], cascadecandidate.v0momposerr[2],
-                 cascadecandidate.v0momnegerr[0], cascadecandidate.v0momnegerr[1], cascadecandidate.v0momnegerr[2],
-                 cascadecandidate.v0mom[0], cascadecandidate.v0mom[1], cascadecandidate.v0mom[2],
+                 cascadecandidate.kfv0mom[0], cascadecandidate.kfv0mom[1], cascadecandidate.kfv0mom[2],
                  cascadecandidate.cascademom[0], cascadecandidate.cascademom[1], cascadecandidate.cascademom[2],
                  cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
                  cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
@@ -1493,18 +1479,18 @@ struct cascadeBuilder {
                  cascadecandidate.kfMLambda, cascadecandidate.kfV0Chi2, cascadecandidate.kfCascadeChi2);
 
       if (createCascCovMats) {
-        // gpu::gpustd::array<float, 15> covmatrix;
-        float trackCovariance[15];
-        float trackCovarianceV0[15];
-        // covmatrix = lCascadeTrack.getCov();
-        // for (int i = 0; i < 15; i++)
-        //   trackCovariance[i] = covmatrix[i];
+        float trackCovariance[21];
+        float trackCovarianceV0[21];
+        float trackCovariancePos[21];
+        float trackCovarianceNeg[21];
 
-        for (int i =0; i < 15; i++) {
+        for (int i = 0; i < 21; i++) {
           trackCovariance[i] = cascadecandidate.kfCascadeCov[i];
           trackCovarianceV0[i] = cascadecandidate.kfV0Cov[i];
+          trackCovariancePos[i] = cascadecandidate.kfV0DauPosCov[i];
+          trackCovarianceNeg[i] = cascadecandidate.kfV0DauNegCov[i];
         }
-        kfcasccovs(trackCovariance, trackCovarianceV0);
+        kfcasccovs(trackCovariance, trackCovarianceV0, trackCovariancePos, trackCovarianceNeg);
       }
     }
   }

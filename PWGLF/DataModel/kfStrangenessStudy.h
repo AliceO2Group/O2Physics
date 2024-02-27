@@ -84,7 +84,6 @@ DECLARE_SOA_COLUMN(ProdVtxZMC, prodvtxzmc, float);
 // charge
 DECLARE_SOA_COLUMN(Charge, charge, float);
 
-
 // ********* V0 **********
 // momentum
 DECLARE_SOA_COLUMN(V0Pt, v0pt, float);
@@ -196,15 +195,12 @@ DECLARE_SOA_COLUMN(EtaPion, etapion, float);
 DECLARE_SOA_COLUMN(TPCNClsProton, tpcnclsproton, float);
 DECLARE_SOA_COLUMN(TPCNClsPion, tpcnclspion, float);
 
-
 // ********* MC info **********
 DECLARE_SOA_COLUMN(IsTrueCasc, istruecasc, int);
 DECLARE_SOA_COLUMN(Source, source, int);
 
 DECLARE_SOA_COLUMN(IsDCAFitter, isdcafitter, int);
 DECLARE_SOA_COLUMN(IsKF, iskf, int);
-
-
 
 } // namespace kfStrangenessStudy
 
