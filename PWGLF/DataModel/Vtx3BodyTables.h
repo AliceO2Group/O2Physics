@@ -312,8 +312,8 @@ DECLARE_SOA_TABLE(MCHyp3BodyCands, "AOD", "MCHYP3BODYCANDS",
                   hyp3body::GenCt,
                   hyp3body::GenPhi,
                   hyp3body::GenEta,
-                  hyp3body::IsReco,
                   hyp3body::IsSignal,
+                  hyp3body::IsReco,
                   hyp3body::PdgCode,
                   hyp3body::SurvivedEventSelection);
 
