@@ -694,6 +694,22 @@ struct DptDptCorrelationsTask {
     using namespace correlationstask;
     using namespace o2::analysis::dptdptfilter;
 
+    /* create the output directory which will own the task output */
+    TList* fGlobalOutputList = new TList();
+    fGlobalOutputList->SetOwner(true);
+    fOutput.setObject(fGlobalOutputList);
+
+    /* check consistency and if there is something to do */
+    if (doprocessCleaner) {
+      if (doprocessGenLevel || doprocessGenLevelNotStored || doprocessGenLevelMixed || doprocessGenLevelMixedNotStored ||
+          doprocessRecLevel || doprocessRecLevelNotStored || doprocessRecLevelMixed || doprocessRecLevelMixedNotStored) {
+        LOGF(fatal, "Cleaner process is activated with other processes. Please, fix it!");
+      } else {
+        /* do nothing. This task will not run! */
+        return;
+      }
+    }
+
     /* self configure the binning */
     getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow);
@@ -724,11 +740,6 @@ struct DptDptCorrelationsTask {
     deltaphibinwidth = constants::math::TwoPI / deltaphibins;
     deltaphilow = 0.0 - deltaphibinwidth / 2.0;
     deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
-
-    /* create the output directory which will own the task output */
-    TList* fGlobalOutputList = new TList();
-    fGlobalOutputList->SetOwner(true);
-    fOutput.setObject(fGlobalOutputList);
 
     /* incorporate configuration parameters to the output */
     fGlobalOutputList->Add(new TParameter<int>("NoBinsPt", ptbins, 'f'));
@@ -1374,6 +1385,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
     adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}, {"processRecLevelMixed", false}, {"processCleaner", false}}}),
-    adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", true}, {"processGenLevelMixed", false}, {"processCleaner", false}}})};
+    adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", false}, {"processGenLevelMixed", false}, {"processCleaner", true}}})};
   return workflow;
 }
