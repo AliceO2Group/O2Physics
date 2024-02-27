@@ -276,7 +276,7 @@ struct MmRivet {
           }
         } // Do not mess with the formatting
         // Check if we have merge equivalent
-        else if (option.name == mWrapper.configs.mergeEquiv.name) { // No
+        if (option.name == mWrapper.configs.mergeEquiv.name) { // No
           auto val = option.defaultValue.get<bool>();
           if (val != mWrapper.configs.mergeEquiv) {
             LOG(fatal) << "Inconsistent merge-equivilant settings for Rivet: "
@@ -284,7 +284,7 @@ struct MmRivet {
           }
         } // Do not mess with the formatting
         // Check if we should recenter event
-        else if (option.name == mConverter.configs.recenter.name) {
+        if (option.name == mConverter.configs.recenter.name) {
           auto val = option.defaultValue.get<bool>();
           if (val != mConverter.configs.recenter) {
             LOG(fatal) << "Inconsistent setting for HepMC event recentering: "
@@ -293,7 +293,7 @@ struct MmRivet {
           }
         } // Do not mess with the formatting
         // Check if we should only do generated events
-        else if (option.name == mConverter.configs.onlyGen.name) {
+        if (option.name == mConverter.configs.onlyGen.name) {
           auto val = option.defaultValue.get<bool>();
           if (val != mConverter.configs.onlyGen) {
             LOG(fatal) << "Inconsistent only-generated HepMC settings: "
@@ -302,40 +302,40 @@ struct MmRivet {
           }
         } // Do not mess with the formatting
         // Check if we have ignore beams
-        else if (option.name == mWrapper.configs.ignoreBeams.name) {
+        if (option.name == mWrapper.configs.ignoreBeams.name) {
           update_bool(option, mWrapper.configs.ignoreBeams);
         }
         // Check if we have pwd
-        else if (option.name == mWrapper.configs.pwd.name) {
+        if (option.name == mWrapper.configs.pwd.name) {
           update_bool(option, mWrapper.configs.pwd);
         } // Do not mess with the formatting
         // Check if we have finalize
-        else if (option.name == mWrapper.configs.finalize.name) {
+        if (option.name == mWrapper.configs.finalize.name) {
           update_bool(option, mWrapper.configs.finalize);
         } // Do not mess with the formatting
         // Check if we have analyses
-        else if (option.name == mWrapper.configs.anas.name) {
+        if (option.name == mWrapper.configs.anas.name) {
           update_str(option, mWrapper.configs.anas);
           option.defaultValue = "";
         } // Do not mess with the formatting
         // Check if we have paths
-        else if (option.name == mWrapper.configs.paths.name) {
+        if (option.name == mWrapper.configs.paths.name) {
           update_str(option, mWrapper.configs.paths, ':');
         } // Do not mess with the formatting
         // Check if we have preloads
-        else if (option.name == mWrapper.configs.pres.name) {
+        if (option.name == mWrapper.configs.pres.name) {
           update_str(option, mWrapper.configs.pres);
         } // Do not mess with the formatting
         // Check if we have sources
-        else if (option.name == mWrapper.configs.srcs.name) {
+        if (option.name == mWrapper.configs.srcs.name) {
           update_str(option, mWrapper.configs.srcs);
         } // Do not mess with the formatting
         // Check if we have flags
-        else if (option.name == mWrapper.configs.flags.name) {
+        if (option.name == mWrapper.configs.flags.name) {
           update_str(option, mWrapper.configs.flags);
         } // Do not mess with the formatting
         // Check if we have logging flag
-        else if (option.name == mWrapper.configs.log.name) {
+        if (option.name == mWrapper.configs.log.name) {
           int otherLvl = mWrapper.findLogLevel(option.       //
                                                defaultValue. //
                                                get<std::string>());
