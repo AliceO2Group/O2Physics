@@ -41,6 +41,9 @@ struct HfTaskMcEfficiencyToXiPi {
   Configurable<int> nClustersTpcMin{"nClustersTpcMin", 70, "Minimum number of TPC clusters requirement for pion <-- charm baryon"};
   Configurable<int> nClustersItsMin{"nClustersItsMin", 3, "Minimum number of ITS clusters requirement for pion <- charm baryon"};
 
+  Configurable<bool> matchOmegac{"matchOmegac", false, "Do MC studies for Omegac0"};
+  Configurable<bool> matchXic{"matchXic", true, "Do MC studies for Xic0"};
+
   ConfigurableAxis axisPt{"axisPt", {200, 0, 20}, "pT axis"};
   ConfigurableAxis axisMass{"axisMass", {900, 2.1, 3}, "m_inv axis"};
 
@@ -70,12 +73,6 @@ struct HfTaskMcEfficiencyToXiPi {
 
   void init(InitContext&)
   {
-    if (doprocessOmegac0 && doprocessXic0) {
-      LOGF(fatal, "Can't enable processOmegac0 and processXic0 at the same time. Please choose one.");
-    } else if (!doprocessOmegac0 && !doprocessXic0) {
-      LOGF(fatal, "Please enable either processOmegac0 or processXic0.");
-    }
-
     auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPt, axisMass, {2, -0.5, 1.5, "collision matched"}, {RecoDecay::OriginType::NonPrompt + 1, RecoDecay::OriginType::None - 0.5, RecoDecay::OriginType::NonPrompt + 0.5}}, kHFNSteps});
     hCandidates->GetAxis(0)->SetTitle("#it{p}_{T} (GeV/#it{c})");
     hCandidates->GetAxis(1)->SetTitle("#it{m}_{inv} (GeV/#it{c}^{2})");
@@ -375,23 +372,21 @@ struct HfTaskMcEfficiencyToXiPi {
   }   // close candidateMcLoop
 
   // process functions
-  void processXic0(CandidateInfo const& candidates,
-                   ParticleInfo const& genParticles,
-                   TracksWithSelectionMC const& tracks,
-                   aod::McCollisionLabels const& colls)
-  {
-    candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kXiC0);
+  void process(CandidateInfo const& candidates,
+               ParticleInfo const& genParticles,
+               TracksWithSelectionMC const& tracks,
+               aod::McCollisionLabels const& colls)
+  { 
+    if(matchXic && matchOmegac){
+      LOGF(fatal, "Can't match Omegac0 and Xic0 at the same time, please choose one");
+    } else if (!matchXic && !matchOmegac) {
+      LOGF(fatal, "Please match either Omegac0 or Xic0");
+    } else if(matchXic){
+      candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kXiC0);
+    } else if (matchOmegac){
+      candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kOmegaC0);
+    }
   }
-  PROCESS_SWITCH(HfTaskMcEfficiencyToXiPi, processXic0, "Process MC for Xic0 signal", true);
-
-  void processOmegac0(CandidateInfo const& candidates,
-                      ParticleInfo const& genParticles,
-                      TracksWithSelectionMC const& tracks,
-                      aod::McCollisionLabels const& colls)
-  {
-    candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kOmegaC0);
-  }
-  PROCESS_SWITCH(HfTaskMcEfficiencyToXiPi, processOmegac0, "Process MC for Omegac0 signal", false);
 
 }; // close struct
 
