@@ -99,10 +99,10 @@ struct NucleusCandidateFlow {
   float sumAmplFT0C;
   float qvecBPosRe;
   float qvecBPosIm;
-  float nTrkBPos;
+  int nTrkBPos;
   float qvecBNegRe;
   float qvecBNegIm;
-  float nTrkBNeg;
+  int nTrkBNeg;
 };
 
 namespace nuclei

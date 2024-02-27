@@ -69,10 +69,10 @@ DECLARE_SOA_COLUMN(YQvecFT0C, yQvecFT0C, float);
 DECLARE_SOA_COLUMN(AmplQvecFT0C, amplQvecFT0C, float);
 DECLARE_SOA_COLUMN(XQvecTPCpos, xQvecTPCpos, float);
 DECLARE_SOA_COLUMN(YQvecTPCpos, yQvecTPCpos, float);
-DECLARE_SOA_COLUMN(AmplQvecTPCpos, amplQvecTPCpos, float);
+DECLARE_SOA_COLUMN(AmplQvecTPCpos, amplQvecTPCpos, int);
 DECLARE_SOA_COLUMN(XQvecTPCneg, xQvecTPCneg, float);
 DECLARE_SOA_COLUMN(YQvecTPCneg, yQvecTPCneg, float);
-DECLARE_SOA_COLUMN(AmplQvecTPCneg, amplQvecTPCneg, float);
+DECLARE_SOA_COLUMN(AmplQvecTPCneg, amplQvecTPCneg, int);
 } // namespace NucleiFlowTableNS
 
 DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
