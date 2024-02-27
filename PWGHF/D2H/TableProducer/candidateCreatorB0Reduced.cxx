@@ -49,16 +49,14 @@ struct HfCandidateCreatorB0Reduced {
   Configurable<float> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   // selection
   Configurable<float> invMassWindowDPiTolerance{"invMassWindowDPiTolerance", 0.01, "invariant-mass window tolerance for DPi pair preselections (GeV/c2)"};
-  // variable that will store the value of invMassWindowDPi (defined in dataCreatorDplusPiReduced.cxx)
-  float myInvMassWindowDPi{1.};
 
+  float myInvMassWindowDPi{1.}; // variable that will store the value of invMassWindowDPi (defined in dataCreatorDplusPiReduced.cxx)
   float massPi{0.};
   float massD{0.};
   float massB0{0.};
   float bz{0.};
 
-  // Fitter for B vertex (2-prong vertex filter)
-  o2::vertexing::DCAFitterN<2> df2;
+  o2::vertexing::DCAFitterN<2> df2; // fitter for B vertex (2-prong vertex fitter)
 
   Preslice<soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov>> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
   Preslice<soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov, aod::HfRed3ProngsMl>> candsDWithMlPerCollision = hf_track_index_reduced::hfRedCollisionId;
@@ -73,12 +71,6 @@ struct HfCandidateCreatorB0Reduced {
       LOGP(fatal, "Only one process function for data should be enabled at a time.");
     }
 
-    // histograms
-    registry.add("hMassB0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{#minus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
-    registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
-    registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
-    registry.add("hEvents", "Events;;entries", HistType::kTH1F, {{1, 0.5, 1.5}});
-
     // invariant-mass window cut
     massPi = o2::constants::physics::MassPiPlus;
     massD = o2::constants::physics::MassDMinus;
@@ -92,6 +84,12 @@ struct HfCandidateCreatorB0Reduced {
     df2.setMinRelChi2Change(minRelChi2Change);
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    // histograms
+    registry.add("hMassB0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{#minus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
+    registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
+    registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
+    registry.add("hEvents", "Events;;entries", HistType::kTH1F, {{1, 0.5, 1.5}});
   }
 
   /// Main function to perform B0 candidate creation
