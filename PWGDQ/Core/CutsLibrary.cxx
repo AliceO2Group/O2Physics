@@ -123,7 +123,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaMedium"));
-
     return cut;
   }
 
@@ -131,7 +130,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaLoose"));
+    return cut;
+  }
 
+  if (!nameStr.compare("electronSelection1_ionut")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaMedium"));
     return cut;
   }
 
@@ -879,6 +885,20 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("lmee_Run3_TPCelectron")) {
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+    cut->AddCut(GetAnalysisCut("lmee_pp_502TeV_TPCloosenopkrej"));
+  }
+
+  if (!nameStr.compare("lmee_Run3_TOFelectron")) {
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+    cut->AddCut(GetAnalysisCut("tof_electron"));
+  }
+
   std::vector<TString> vecTypetrack;
   vecTypetrack.emplace_back("");          // default TightGlobalTrackRun3
   vecTypetrack.emplace_back("_7ITSncls"); // default TightGlobalTrackRun3 but with 7 ITS clusters
@@ -1357,6 +1377,43 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
       cut_pid_OR->AddCut(cut_tpc_nSigma);
       cut_pid_OR->AddCut(cut_tof_nSigma);
       cut->AddCut(cut_pid_OR);
+      return cut;
+    }
+
+    // 4 cuts for QC
+    if (!nameStr.compare(Form("lmee_posTOFreqRun3_posEta%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data()))) {
+      cut->AddCut(GetAnalysisCut("posTrack"));
+      cut->AddCut(GetAnalysisCut("posEtaSel"));
+      cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+      cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+      cut->AddCut(GetAnalysisCut(Form("electronPID_TOFreq%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
+      return cut;
+    }
+
+    if (!nameStr.compare(Form("lmee_posTOFreqRun3_negEta%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data()))) {
+      cut->AddCut(GetAnalysisCut("posTrack"));
+      cut->AddCut(GetAnalysisCut("negEtaSel"));
+      cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+      cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+      cut->AddCut(GetAnalysisCut(Form("electronPID_TOFreq%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
+      return cut;
+    }
+
+    if (!nameStr.compare(Form("lmee_negTOFreqRun3_posEta%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data()))) {
+      cut->AddCut(GetAnalysisCut("negTrack"));
+      cut->AddCut(GetAnalysisCut("posEtaSel"));
+      cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+      cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+      cut->AddCut(GetAnalysisCut(Form("electronPID_TOFreq%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
+      return cut;
+    }
+
+    if (!nameStr.compare(Form("lmee_negTOFreqRun3_negEta%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data()))) {
+      cut->AddCut(GetAnalysisCut("negTrack"));
+      cut->AddCut(GetAnalysisCut("negEtaSel"));
+      cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+      cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+      cut->AddCut(GetAnalysisCut(Form("electronPID_TOFreq%s_strongNSigEPbPb_rejBadTOF", vecPIDcase.at(icase).Data())));
       return cut;
     }
 
@@ -2129,6 +2186,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("pairMass1_3to3_5")) {
     cut->AddCut(GetAnalysisCut("pairMass1_3to3_5"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairMass1_3")) {
+    cut->AddCut(GetAnalysisCut("pairMass1_3"));
     return cut;
   }
 
@@ -2952,6 +3014,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("standardPrimaryTrack")) {
     cut->AddCut(VarManager::kTrackDCAxy, -1.0, 1.0);
     cut->AddCut(VarManager::kTrackDCAz, -3.0, 3.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("dcaCut1_ionut")) {
+    cut->AddCut(VarManager::kTrackDCAxy, -0.5, 0.5);
+    cut->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
     return cut;
   }
 
@@ -4273,6 +4341,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pairMass1_3to3_5")) {
     cut->AddCut(VarManager::kMass, 1.3, 3.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairMass1_3")) {
+    cut->AddCut(VarManager::kMass, 1.3, 1000.0);
     return cut;
   }
 

@@ -67,7 +67,7 @@ struct JetTaggerHFTask {
       typename JetTracksMCD::iterator hftrack;
       int origin = 0;
       if (!doWShower)
-        origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, tracks, particles, maxDeltaR);
+        origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, tracks, particles, maxDeltaR); // TODO: it is not working due to getOriginalMotherIndex
       else
         origin = jettaggingutilities::jetTrackFromHFShower(mcdjet, tracks, particles, hftrack);
       int algorithm1 = 0;

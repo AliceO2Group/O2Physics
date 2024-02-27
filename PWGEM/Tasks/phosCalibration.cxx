@@ -19,6 +19,7 @@
 #include "TLorentzVector.h"
 
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/CaloClusters.h"
 #include "DataFormatsPHOS/Cell.h"
 #include "DataFormatsPHOS/Cluster.h"
 #include "DataFormatsPHOS/TriggerRecord.h"
@@ -72,7 +73,7 @@ struct phosCalibration {
 
   ConfigurableAxis timeAxis{"t", {200, -50.e-9, 150.e-9}, "t (s)"};
   ConfigurableAxis timeAxisLarge{"celltime", {1000, -1500.e-9, 3500.e-9}, "cell time (ns)"};
-  ConfigurableAxis timeAxisRunStart{"timeRunStart", {50000, 0., 50000.}, "Time from start of the run (s)"};
+  ConfigurableAxis timeAxisRunStart{"timeRunStart", {650, 0., 650.}, "Time from start of the run (min)"};
   ConfigurableAxis amplitudeAxisLarge{"amplitude", {1000, 0., 100.}, "Amplutude (GeV)"};
   ConfigurableAxis mggAxis{"mgg", {250, 0., 1.}, "m_{#gamma#gamma} (GeV/c^{2})"};
   Configurable<int> mEvSelTrig{"mEvSelTrig", kTVXinPHOS, "Select events with this trigger"};
@@ -126,7 +127,7 @@ struct phosCalibration {
     mHistManager.add("cellTimeHG", "Time per cell, High Gain", HistType::kTH2F, {absIdAxis, timeAxis});
     mHistManager.add("cellTimeLG", "Time per cell, Low Gain", HistType::kTH2F, {absIdAxis, timeAxis});
     mHistManager.add("timeDDL", "time vs bc for DDL", HistType::kTH3F, {timeDdlAxis, bcAxis, ddlAxis});
-    mHistManager.add("cellTimeFromRunStart", "time in cells vs time from start of the run", HistType::kTH3F, {absIdAxis, timeAxis, timeAxisRunStart});
+    mHistManager.add("cellTimeFromRunStart", "time in cells vs time from start of the run", HistType::kTH3F, {ddlAxis, timeAxis, timeAxisRunStart});
 
     // Clusters
     mHistManager.add("hSoftClu", "Soft clu occupancy per module", HistType::kTH3F, {modAxis, cellXAxis, cellZAxis});
@@ -150,22 +151,34 @@ struct phosCalibration {
   }
 
   using BCsWithBcSels = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+  using SelCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
   /// \brief Process PHOS data
   void process(BCsWithBcSels const& bcs,
+               SelCollisions const& collisions,
                o2::aod::Calos const& cells,
-               o2::aod::CaloTriggers const& ctrs)
+               o2::aod::CaloTriggers const& ctrs,
+               aod::CaloClusters const& clusters)
   {
     // Fill cell histograms
     // clusterize
     // Fill clusters histograms
 
     int64_t timestamp = 0;
+    int runNumber = 0;
     if (bcs.begin() != bcs.end()) {
       timestamp = bcs.begin().timestamp(); // timestamp for CCDB object retrieval
+      runNumber = bcs.begin().runNumber();
     } else {
       return;
     }
+
+    std::map<std::string, std::string> metadata, headers;
+    const std::string run_path = Form("%s/%i", rctPath.value.data(), runNumber);
+    headers = ccdb_api.retrieveHeaders(run_path, metadata, -1);
+    if (headers.count("SOR") == 0)
+      LOGF(fatal, "Cannot find start-of-run timestamp for run number in path '%s'.", run_path.data());
+    int64_t sorTimestamp = atol(headers["SOR"].c_str()); // timestamp of the SOR in ms
 
     if (!clusterizer) {
       clusterizer = std::make_unique<o2::phos::Clusterer>();
@@ -191,10 +204,16 @@ struct phosCalibration {
       if (vec) {
         clusterizer->setL1phase((*vec)[0]);
         mL1 = (*vec)[0];
-        LOG(info) << "Got L1phase=" << mL1;
+        LOG(info) << "Got L1phase = " << mL1;
       } else {
         LOG(fatal) << "Can not get PHOS L1phase calibration";
       }
+    }
+
+    for (const auto& clu : clusters) {
+      if (!clu.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
+        continue;
+      mHistManager.fill(HIST("hSpClu"), clu.e(), clu.mod());
     }
 
     phosCells.clear();
@@ -222,17 +241,19 @@ struct phosCalibration {
         ir.setFromLong(c.bc_as<BCsWithBcSels>().globalBC());
         phosCellTRs.emplace_back(ir, phosCells.size(), 0);
         mHistManager.fill(HIST("eventsAll"), 1.);
+        if (c.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
+          mHistManager.fill(HIST("eventsTrig"), 1.);
       }
       phosCells.emplace_back(c.cellNumber(), c.amplitude(), c.time(),
                              static_cast<o2::phos::ChannelType_t>(c.cellType()));
 
       if (!c.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
         continue;
-      mHistManager.fill(HIST("eventsTrig"), 1.);
 
       // Fill calibraiton histos
       if (c.amplitude() < mMinCellAmplitude)
         continue;
+
       char relid[3];
       o2::phos::Geometry::absToRelNumbering(c.cellNumber(), relid);
       mHistManager.fill(HIST("cellOcc"), relid[0], relid[1], relid[2]);
@@ -244,7 +265,9 @@ struct phosCalibration {
       if (c.cellType() == o2::phos::HIGH_GAIN) {
         tcorr -= calibParams->getHGTimeCalib(c.cellNumber());
       } else {
-        tcorr -= calibParams->getLGTimeCalib(c.cellNumber());
+        if (c.cellType() == o2::phos::LOW_GAIN) {
+          tcorr -= calibParams->getLGTimeCalib(c.cellNumber());
+        }
       }
 
       if (!mSkipL1phase) {
@@ -256,17 +279,10 @@ struct phosCalibration {
         tcorr -= shift * 25.e-9;
       }
 
-      int runNumber = c.bc_as<BCsWithBcSels>().runNumber();
-      std::map<std::string, std::string> metadata, headers;
-      const std::string run_path = Form("%s/%i", rctPath.value.data(), runNumber);
-      headers = ccdb_api.retrieveHeaders(run_path, metadata, -1);
-      if (headers.count("SOR") == 0)
-        LOGF(fatal, "Cannot find start-of-run timestamp for run number in path '%s'.", run_path.data());
-      int64_t sorTimestamp = atol(headers["SOR"].c_str()); // timestamp of the SOR in ms
-
+      int64_t curTimestamp = c.bc_as<BCsWithBcSels>().timestamp();
       if (c.amplitude() > mCellTimeMinE) {
         mHistManager.fill(HIST("timeDDL"), tcorr, bc % 4, ddl);
-        mHistManager.fill(HIST("cellTimeFromRunStart"), c.cellNumber(), tcorr, (timestamp - sorTimestamp) / 1000.);
+        mHistManager.fill(HIST("cellTimeFromRunStart"), ddl, tcorr, (curTimestamp - sorTimestamp) / 1000. / 60.);
         if (c.cellType() == o2::phos::HIGH_GAIN) {
           mHistManager.fill(HIST("cellTimeHG"), c.cellNumber(), tcorr);
         } else {
@@ -276,6 +292,7 @@ struct phosCalibration {
         }
       }
     }
+
     // Set number of cells in last TrigRec
     if (phosCellTRs.size() > 0) {
       phosCellTRs.back().setNumberOfObjects(phosCells.size() - phosCellTRs.back().getFirstEntry());
@@ -323,7 +340,7 @@ struct phosCalibration {
         int ddl = (relid[0] - 1) * 4 + (relid[1] - 1) / 16 - 2;
 
         mHistManager.fill(HIST("hTimeEClu"), ddl, e, clu.getTime());
-        mHistManager.fill(HIST("hSpClu"), e, mod);
+        // mHistManager.fill(HIST("hSpClu"), e, mod);
         if (e > 0.5) {
           mHistManager.fill(HIST("hTimeDdlCorr"), static_cast<float>(ddl), clu.getTime(), tr.getBCData().toLong() % 4);
         }

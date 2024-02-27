@@ -59,6 +59,19 @@ using TracksPidTinyPi = soa::Join<aod::pidTPCPi, aod::pidTOFPi>;
 using TracksPidTinyKa = soa::Join<aod::pidTPCKa, aod::pidTOFKa>;
 using TracksPidTinyPr = soa::Join<aod::pidTPCPr, aod::pidTOFPr>;
 
+namespace hf_collision_centrality
+{
+// centrality selection estimators
+enum CentralityEstimator {
+  None = 0,
+  FT0A,
+  FT0C,
+  FT0M,
+  FV0A,
+  NCentralityEstimators
+};
+} // namespace hf_collision_centrality
+
 namespace pid_tpc_tof_utils
 {
 /// Function to combine TPC and TOF NSigma (for ML purposes)
@@ -1079,6 +1092,7 @@ DECLARE_SOA_COLUMN(DebugGenLambda, debugGenLambda, int8_t);
 DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
 DECLARE_SOA_COLUMN(OriginGen, originGen, int8_t);
 DECLARE_SOA_COLUMN(PtCharmBaryonGen, ptCharmBaryonGen, float);
+DECLARE_SOA_COLUMN(EtaCharmBaryonGen, etaCharmBaryonGen, float);
 
 // mapping of decay types
 enum DecayType { DecayToXiPi = 0,
@@ -1125,7 +1139,7 @@ DECLARE_SOA_TABLE(HfToXiPiMCRec, "AOD", "HFTOXIPIMCREC", //!
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfToXiPiMCGen, "AOD", "HFTOXIPIMCGEN", //!
-                  hf_cand_toxipi::FlagMcMatchGen, hf_cand_toxipi::DebugGenCharmBar, hf_cand_toxipi::DebugGenXi, hf_cand_toxipi::DebugGenLambda, hf_cand_toxipi::PtCharmBaryonGen, hf_cand_toxipi::OriginGen);
+                  hf_cand_toxipi::FlagMcMatchGen, hf_cand_toxipi::DebugGenCharmBar, hf_cand_toxipi::DebugGenXi, hf_cand_toxipi::DebugGenLambda, hf_cand_toxipi::PtCharmBaryonGen, hf_cand_toxipi::EtaCharmBaryonGen, hf_cand_toxipi::OriginGen);
 
 // specific chic candidate properties
 namespace hf_cand_chic

@@ -20,7 +20,7 @@ enum eConfiguration {
   eVerboseForEachParticle,
   eDoAdditionalInsanityChecks,
   eUseCCDB,
-  eWhatToProcess,
+  eWhichProcess,
   eRandomSeed,
   eUseFisherYates,
   eFixedNumberOfRandomlySelectedTracks,
@@ -36,7 +36,8 @@ enum eRecSim { eRec = 0,
                eRecAndSim_Run2,
                eRec_Run1, // converted Run 1 data
                eSim_Run1,
-               eRecAndSim_Run1 };
+               eRecAndSim_Run1,
+               eTest };
 
 enum eBeforeAfter { eBefore = 0,
                     eAfter = 1 };
@@ -75,6 +76,15 @@ enum eEventHistograms {
   eEventHistograms_N
 };
 
+enum eEventCuts {
+  eTrigger = 1, // here I start from 1 exceptionally, because these enums are used as bin contents, and ROOT starts counting bins from 1
+  eUseTrigger,
+  eUseSel7,
+  eUseSel8,
+  eCentralityEstimator,
+  eEventCuts_N
+};
+
 enum eParticleHistograms {
   ePhi = 0,
   ePt,
@@ -84,6 +94,11 @@ enum eParticleHistograms {
   eDCA_z,
   ePDG,
   eParticleHistograms_N
+};
+
+enum eParticleCuts {
+  eTBI = 1, // here I start from 1 exceptionally, because these enums are used as bin contents, and ROOT starts counting bins from 1
+  eParticleCuts_N
 };
 
 enum eAsFunctionOf {
