@@ -194,10 +194,10 @@ struct HfTaskMcEfficiencyToXiPi {
     int decayFlagGen = 0;
 
     if (pdgCode == Pdg::kXiC0) {
-      decayFlagGen = 4;
+      decayFlagGen = 1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi;
       mass = MassXiC0;
     } else if (pdgCode == Pdg::kOmegaC0) {
-      decayFlagGen = 2;
+      decayFlagGen = 1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi;
       mass = MassOmegaC0;
     } else {
       LOGP(fatal, "Not implemented for PDG code: ", pdgCode);
