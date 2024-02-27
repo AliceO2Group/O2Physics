@@ -45,6 +45,7 @@ struct MultiplicityDerivedQa {
   ConfigurableAxis axisMultZNC{"axisMultZNC", {1000, 0, 4000}, "ZNC amplitude"};
   ConfigurableAxis axisMultZEM1{"axisMultZEM1", {1000, 0, 4000}, "ZEM1 amplitude"};
   ConfigurableAxis axisMultZEM2{"axisMultZEM2", {1000, 0, 4000}, "ZEM2 amplitude"};
+  ConfigurableAxis axisMultZEM{"axisMultZEM", {1000, 0, 4000}, "ZEM amplitude"};
   ConfigurableAxis axisMultZPA{"axisMultZPA", {1000, 0, 4000}, "ZPA amplitude"};
   ConfigurableAxis axisMultZPC{"axisMultZPC", {1000, 0, 4000}, "ZPC amplitude"};
 
@@ -53,6 +54,21 @@ struct MultiplicityDerivedQa {
   ConfigurableAxis axisContributors{"axisContributors", {100, -0.5f, 99.5f}, "Vertex z (cm)"};
   ConfigurableAxis axisNumberOfPVs{"axisNumberOfPVs", {10, -0.5f, 9.5f}, "Number of reconstructed PVs"};
   ConfigurableAxis axisNchFT0{"axisNchFT0", {500, -0.5f, 499.5f}, "Number of charged particles in FT0 acceptance"};
+
+  // Selection criteria for QC studies in 2D plots
+  // parameters:
+  // --- maxFT0C -> max FT0C value for which this cut will be applied. Nothing done if maxFT0C < 0.0f
+  // --- A, B, C  -> A*<variable> + B*FT0C + C > 0, arbitrary linear selection
+  static constexpr float default2dCuts[1][4] = {{-1., -1., -1., -1.}};
+  Configurable<LabeledArray<float>> selZNA{"selZNA", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZNA"};
+  Configurable<LabeledArray<float>> selZNC{"selZNC", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZNC"};
+  Configurable<LabeledArray<float>> selZPA{"selZPA", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZPA"};
+  Configurable<LabeledArray<float>> selZPC{"selZPC", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZPC"};
+  Configurable<LabeledArray<float>> selZEM1{"selZEM1", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZEM1"};
+  Configurable<LabeledArray<float>> selZEM2{"selZEM2", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZEM2"};
+  Configurable<LabeledArray<float>> selZEM{"selZEM", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZEM"};
+  Configurable<LabeledArray<float>> selFV0A{"selFV0A", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selFV0A"};
+  Configurable<LabeledArray<float>> selFT0A{"selFT0A", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selFT0A"};
 
   void init(InitContext&)
   {
@@ -93,13 +109,18 @@ struct MultiplicityDerivedQa {
       histos.add("multiplicityQa/h2dNchVsFDD", "FDD", kTH2F, {axisMultFDD, axisMultNTracks});
 
       // correlate T0 and V0
-      histos.add("multiplicityQa/h2dFT0VsFV0", "FDD", kTH2F, {axisMultFV0, axisMultFT0});
+      histos.add("multiplicityQa/h2dFT0MVsFV0M", "FDD", kTH2F, {axisMultFV0, axisMultFT0});
+
+      // correlate FIT signals and FT0C
+      histos.add("multiplicityQa/h2dFV0AVsFT0C", "FV0AvsFT0C", kTH2F, {axisMultFT0C, axisMultFV0});
+      histos.add("multiplicityQa/h2dFT0AVsFT0C", "FT0AvsFT0C", kTH2F, {axisMultFT0C, axisMultFT0A});
 
       // correlate ZDC and FT0C
       histos.add("multiplicityQa/h2dZNAVsFT0C", "ZNAvsFT0C", kTH2F, {axisMultFT0C, axisMultZNA});
       histos.add("multiplicityQa/h2dZNCVsFT0C", "ZNPvsFT0C", kTH2F, {axisMultFT0C, axisMultZNC});
       histos.add("multiplicityQa/h2dZEM1VsFT0C", "ZEM1vsFT0C", kTH2F, {axisMultFT0C, axisMultZEM1});
       histos.add("multiplicityQa/h2dZEM2VsFT0C", "ZEM2vsFT0C", kTH2F, {axisMultFT0C, axisMultZEM2});
+      histos.add("multiplicityQa/h2dZEMVsFT0C", "ZEMvsFT0C", kTH2F, {axisMultFT0C, axisMultZEM});
       histos.add("multiplicityQa/h2dZPAVsFT0C", "ZPAvsFT0C", kTH2F, {axisMultFT0C, axisMultZPA});
       histos.add("multiplicityQa/h2dZPCVsFT0C", "ZPCvsFT0C", kTH2F, {axisMultFT0C, axisMultZPC});
     }
@@ -134,6 +155,28 @@ struct MultiplicityDerivedQa {
 
     histos.fill(HIST("multiplicityQa/hEventCounter"), 3.5);
 
+    // apply special event selections
+    if (selZNA->get("maxFT0C") > -0.5f && col.multFT0C() < selZNA->get("maxFT0C") && (selZNA->get("A") * col.multZNA() + selZNA->get("B") * col.multFT0C() + selZNA->get("C") < 0.0f))
+      return;
+    if (selZNC->get("maxFT0C") > -0.5f && col.multFT0C() < selZNC->get("maxFT0C") && (selZNC->get("A") * col.multZNC() + selZNC->get("B") * col.multFT0C() + selZNC->get("C") < 0.0f))
+      return;
+    if (selZPA->get("maxFT0C") > -0.5f && col.multFT0C() < selZPA->get("maxFT0C") && (selZPA->get("A") * col.multZPA() + selZPA->get("B") * col.multFT0C() + selZPA->get("C") < 0.0f))
+      return;
+    if (selZPC->get("maxFT0C") > -0.5f && col.multFT0C() < selZPC->get("maxFT0C") && (selZPC->get("A") * col.multZPC() + selZPC->get("B") * col.multFT0C() + selZPC->get("C") < 0.0f))
+      return;
+    if (selZEM1->get("maxFT0C") > -0.5f && col.multFT0C() < selZEM1->get("maxFT0C") && (selZEM1->get("A") * col.multZEM1() + selZEM1->get("B") * col.multFT0C() + selZEM1->get("C") < 0.0f))
+      return;
+    if (selZEM2->get("maxFT0C") > -0.5f && col.multFT0C() < selZEM2->get("maxFT0C") && (selZEM2->get("A") * col.multZEM2() + selZEM2->get("B") * col.multFT0C() + selZEM2->get("C") < 0.0f))
+      return;
+    if (selZEM->get("maxFT0C") > -0.5f && col.multFT0C() < selZEM->get("maxFT0C") && (selZEM->get("A") * col.multZEM2() + selZEM->get("B") * col.multFT0C() + selZEM->get("C") < 0.0f))
+      return;
+    if (selFV0A->get("maxFT0C") > -0.5f && col.multFT0C() < selFV0A->get("maxFT0C") && (selFV0A->get("A") * col.multFV0A() + selFV0A->get("B") * col.multFT0C() + selFV0A->get("C") < 0.0f))
+      return;
+    if (selFT0A->get("maxFT0C") > -0.5f && col.multFT0C() < selFT0A->get("maxFT0C") && (selFT0A->get("A") * col.multFT0A() + selFT0A->get("B") * col.multFT0C() + selFT0A->get("C") < 0.0f))
+      return;
+
+    histos.fill(HIST("multiplicityQa/hEventCounter"), 4.5);
+
     LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFV0M=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFT0M=%5.0f multFDDA=%5.0f multFDDC=%5.0f", col.multFV0A(), col.multFV0C(), col.multFV0M(), col.multFT0A(), col.multFT0C(), col.multFT0M(), col.multFDDA(), col.multFDDC());
 
     // Raw multiplicities
@@ -159,15 +202,21 @@ struct MultiplicityDerivedQa {
       histos.fill(HIST("multiplicityQa/h2dNchVsFT0C"), col.multFT0C(), col.multNTracksPV());
       histos.fill(HIST("multiplicityQa/h2dNchVsFDD"), col.multFDDA() + col.multFDDC(), col.multNTracksPV());
 
+      // correlate FIT signals and FT0C
+      histos.fill(HIST("multiplicityQa/h2dFV0AVsFT0C"), col.multFT0C(), col.multFV0A());
+      histos.fill(HIST("multiplicityQa/h2dFT0AVsFT0C"), col.multFT0C(), col.multFT0A());
+
+      // correlate ZDC and FT0C
       histos.fill(HIST("multiplicityQa/h2dZNAVsFT0C"), col.multFT0C(), col.multZNA());
       histos.fill(HIST("multiplicityQa/h2dZNCVsFT0C"), col.multFT0C(), col.multZNC());
       histos.fill(HIST("multiplicityQa/h2dZEM1VsFT0C"), col.multFT0C(), col.multZEM1());
       histos.fill(HIST("multiplicityQa/h2dZEM2VsFT0C"), col.multFT0C(), col.multZEM2());
+      histos.fill(HIST("multiplicityQa/h2dZEMVsFT0C"), col.multFT0C(), col.multZEM1() + col.multZEM2());
       histos.fill(HIST("multiplicityQa/h2dZPAVsFT0C"), col.multFT0C(), col.multZPA());
       histos.fill(HIST("multiplicityQa/h2dZPCVsFT0C"), col.multFT0C(), col.multZPC());
 
       // 2d FT0 vs FV0 fill
-      histos.fill(HIST("multiplicityQa/h2dFT0VsFV0"), col.multFV0A(), col.multFT0A() + col.multFT0C());
+      histos.fill(HIST("multiplicityQa/h2dFT0MVsFV0M"), col.multFV0A(), col.multFT0A() + col.multFT0C());
     }
   }
 };
