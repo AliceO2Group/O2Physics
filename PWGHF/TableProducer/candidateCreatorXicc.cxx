@@ -60,6 +60,8 @@ struct HfCandidateCreatorXicc {
   Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection Flag for Xic"};
   Configurable<double> cutPtPionMin{"cutPtPionMin", 1., "min. pt pion track"};
 
+  o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter to rebuild the Xic vertex
+  o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter to build the Xicc vertex
   HfHelper hfHelper;
 
   double massPi{0.};
@@ -78,14 +80,7 @@ struct HfCandidateCreatorXicc {
     massPi = MassPiPlus;
     massK = MassKPlus;
     massXic = MassXiCPlus;
-  }
 
-  void process(aod::Collision const& collision,
-               soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& xicCands,
-               aod::TracksWCov const& tracks)
-  {
-    // 3-prong vertex fitter to rebuild the Xic vertex
-    o2::vertexing::DCAFitterN<3> df3;
     df3.setBz(bz);
     df3.setPropagateToPCA(propagateToPCA);
     df3.setMaxR(maxR);
@@ -95,8 +90,6 @@ struct HfCandidateCreatorXicc {
     df3.setUseAbsDCA(useAbsDCA);
     df3.setWeightedFinalPCA(useWeightedFinalPCA);
 
-    // 2-prong vertex fitter to build the Xicc vertex
-    o2::vertexing::DCAFitterN<2> df2;
     df2.setBz(bz);
     df2.setPropagateToPCA(propagateToPCA);
     df2.setMaxR(maxR);
@@ -105,7 +98,12 @@ struct HfCandidateCreatorXicc {
     df2.setMinRelChi2Change(minRelChi2Change);
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
+  }
 
+  void process(aod::Collision const& collision,
+               soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& xicCands,
+               aod::TracksWCov const& tracks)
+  {
     for (const auto& xicCand : xicCands) {
       if (!(xicCand.hfflag() & 1 << o2::aod::hf_cand_3prong::XicToPKPi)) {
         continue;

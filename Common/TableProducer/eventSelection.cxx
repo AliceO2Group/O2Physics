@@ -42,6 +42,12 @@ struct BcSelectionTask {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> confTriggerBcShift{"triggerBcShift", 999, "set to 294 for apass2/apass3 in LHC22o-t"};
   Configurable<int> confITSROFrameBorderMargin{"ITSROFrameBorderMargin", 30, "Number of bcs at the end of ITS RO Frame border"};
+  Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", 350, "Number of bcs to cut at the start of the Time Frame"};
+  Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", 4000, "Number of bcs to cut at the end of the Time Frame"};
+
+  int lastRunNumber = -1;
+  int64_t bcSOR = -1;     // global bc of the start of the first orbit
+  int64_t nBCsPerTF = -1; // duration of TF in bcs, should be 128*3564 or 32*3564
 
   void init(InitContext&)
   {
@@ -192,9 +198,12 @@ struct BcSelectionTask {
                    aod::FT0s const&,
                    aod::FDDs const&)
   {
-    bcsel.reserve(bcs.size());
+    if (bcs.size() == 0)
+      return;
 
+    bcsel.reserve(bcs.size());
     // extract ITS time frame parameters
+
     int64_t ts = bcs.iteratorAt(0).timestamp();
     auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
 
@@ -209,6 +218,50 @@ struct BcSelectionTask {
       triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734 || run >= 534091) ? 0 : 294;
     }
 
+    // extract run number and related information
+    int run = bcs.iteratorAt(0).runNumber();
+    if (run != lastRunNumber) {
+      lastRunNumber = run; // do it only once
+      int64_t tsSOR = 0;
+      int64_t tsEOR = 0;
+
+      if (run >= 500000) { // access CCDB for data or anchored MC only
+        int64_t ts = bcs.iteratorAt(0).timestamp();
+
+        // access orbit-reset timestamp
+        auto ctpx = ccdb->getForTimeStamp<std::vector<Long64_t>>("CTP/Calib/OrbitReset", ts);
+        int64_t tsOrbitReset = (*ctpx)[0]; // us
+        LOGP(info, "tsOrbitReset={} us", tsOrbitReset);
+
+        // access TF duration, start-of-run and end-of-run timestamps from ECS GRP
+        std::map<std::string, std::string> metadata;
+        metadata["runNumber"] = Form("%d", run);
+        auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
+        uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF;  nOrbitsPerTF=128 in 2022, 32 in 2023
+        tsSOR = grpecs->getTimeStart();                 // ms
+        tsEOR = grpecs->getTimeEnd();                   // ms
+
+        // calculate SOR and EOR orbits
+        int64_t orbitSOR = (tsSOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
+        int64_t orbitEOR = (tsEOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
+
+        // adjust to the nearest TF edge
+        orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF; // was with - 1;
+        orbitEOR = orbitEOR / nOrbitsPerTF * nOrbitsPerTF; // was with - 1;
+
+        // set nOrbits and minOrbit used for orbit-axis binning
+        // nOrbits = orbitEOR - orbitSOR;
+        // minOrbit = orbitSOR;
+
+        int nBCsPerOrbit = 3564;
+        // first bc of the first orbit (should coincide with TF start)
+        bcSOR = orbitSOR * nBCsPerOrbit;
+        // duration of TF in bcs
+        nBCsPerTF = nOrbitsPerTF * nBCsPerOrbit;
+      }
+    }
+
+    // bc loop
     for (auto bc : bcs) {
       EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
       TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
@@ -288,6 +341,11 @@ struct BcSelectionTask {
       LOGP(debug, "bcInITSROF={}", bcInITSROF);
       selection |= bcInITSROF > 1 && bcInITSROF < alppar->roFrameLengthInBC - confITSROFrameBorderMargin ? BIT(kNoITSROFrameBorder) : 0;
 
+      // check if bc is far from the Time Frame borders
+      int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
+      LOGP(debug, "bcInTF={}", bcInTF);
+      selection |= bcInTF > confTimeFrameStartBorderMargin && bcInTF < nBCsPerTF - confTimeFrameEndBorderMargin ? BIT(kNoTimeFrameBorder) : 0;
+
       int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
       int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
       int32_t foundFDD = bc.has_fdd() ? bc.fdd().globalIndex() : -1;
@@ -295,7 +353,6 @@ struct BcSelectionTask {
       LOGP(debug, "foundFT0={}", foundFT0);
 
       // Temporary workaround to get visible cross section. TODO: store run-by-run visible cross sections in CCDB
-      int run = bc.runNumber();
       const char* srun = Form("%d", run);
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", bc.timestamp());
       int beamZ1 = grplhcif->getBeamZ(o2::constants::lhc::BeamA);

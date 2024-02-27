@@ -64,6 +64,8 @@ struct HfCandidateCreatorBs {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
+  o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
   HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
@@ -97,6 +99,25 @@ struct HfCandidateCreatorBs {
     massPi = MassPiPlus;
     massDs = MassDSBar;
     massBs = MassBS;
+
+    // Initialise fitter for Bs vertex (2-prong vertex fitter)
+    df2.setPropagateToPCA(propagateToPCA);
+    df2.setMaxR(maxR);
+    df2.setMaxDZIni(maxDZIni);
+    df2.setMinParamChange(minParamChange);
+    df2.setMinRelChi2Change(minRelChi2Change);
+    df2.setUseAbsDCA(useAbsDCABs);
+    df2.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    // Initialise fitter to redo Ds-vertex to get extrapolated daughter tracks (3-prong vertex fitter)
+    df3.setPropagateToPCA(propagateToPCA);
+    df3.setMaxR(maxR);
+    df3.setMaxDZIni(maxDZIni);
+    df3.setMinParamChange(minParamChange);
+    df3.setMinRelChi2Change(minRelChi2Change);
+    df3.setUseAbsDCA(useAbsDCADs);
+    df3.setWeightedFinalPCA(useWeightedFinalPCA);
+
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -130,26 +151,6 @@ struct HfCandidateCreatorBs {
                TracksWithSel const&,
                aod::BCsWithTimestamps const&)
   {
-    // Initialise fitter for Bs vertex (2-prong vertex filter)
-    o2::vertexing::DCAFitterN<2> df2;
-    df2.setPropagateToPCA(propagateToPCA);
-    df2.setMaxR(maxR);
-    df2.setMaxDZIni(maxDZIni);
-    df2.setMinParamChange(minParamChange);
-    df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(useAbsDCABs);
-    df2.setWeightedFinalPCA(useWeightedFinalPCA);
-
-    // Initialise fitter to redo Ds-vertex to get extrapolated daughter tracks (3-prong vertex filter)
-    o2::vertexing::DCAFitterN<3> df3;
-    df3.setPropagateToPCA(propagateToPCA);
-    df3.setMaxR(maxR);
-    df3.setMaxDZIni(maxDZIni);
-    df3.setMinParamChange(minParamChange);
-    df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(useAbsDCADs);
-    df3.setWeightedFinalPCA(useWeightedFinalPCA);
-
     for (const auto& collision : collisions) {
       auto primaryVertex = getPrimaryVertex(collision);
       auto covMatrixPV = primaryVertex.getCov();

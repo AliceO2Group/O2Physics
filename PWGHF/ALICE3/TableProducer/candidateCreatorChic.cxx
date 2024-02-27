@@ -63,6 +63,7 @@ struct HfCandidateCreatorChic {
   Configurable<int> selectionFlagJpsi{"selectionFlagJpsi", 1, "Selection Flag for Jpsi"};
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
 
+  o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter (to rebuild Jpsi vertex)
   HfHelper hfHelper;
 
   double massJpsi{0.};
@@ -82,6 +83,15 @@ struct HfCandidateCreatorChic {
   void init(InitContext const&)
   {
     massJpsi = MassJPsi;
+
+    df2.setBz(bz);
+    df2.setPropagateToPCA(propagateToPCA);
+    df2.setMaxR(maxR);
+    df2.setMaxDZIni(maxDZIni);
+    df2.setMinParamChange(minParamChange);
+    df2.setMinRelChi2Change(minRelChi2Change);
+    df2.setUseAbsDCA(useAbsDCA);
+    df2.setWeightedFinalPCA(useWeightedFinalPCA);
   }
 
   void process(aod::Collision const& collision,
@@ -91,17 +101,6 @@ struct HfCandidateCreatorChic {
                aod::TracksWCov const& tracks,
                aod::ECALs const& ecals)
   {
-    // 2-prong vertex fitter (to rebuild Jpsi vertex)
-    o2::vertexing::DCAFitterN<2> df2;
-    df2.setBz(bz);
-    df2.setPropagateToPCA(propagateToPCA);
-    df2.setMaxR(maxR);
-    df2.setMaxDZIni(maxDZIni);
-    df2.setMinParamChange(minParamChange);
-    df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(useAbsDCA);
-    df2.setWeightedFinalPCA(useWeightedFinalPCA);
-
     // loop over Jpsi candidates
     for (const auto& jpsiCand : jpsiCands) {
       if (!(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToMuMu)) {

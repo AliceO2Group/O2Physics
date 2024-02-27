@@ -127,22 +127,12 @@ struct HfDataCreatorDplusPiReduced {
 
   void init(InitContext const&)
   {
-    // histograms
-    constexpr int kNBinsEvents = kNEvent;
-    std::string labels[kNBinsEvents];
-    labels[Event::Processed] = "processed";
-    labels[Event::NoDPiSelected] = "without DPi pairs";
-    labels[Event::DPiSelected] = "with DPi pairs";
-    static const AxisSpec axisEvents = {kNBinsEvents, 0.5, kNBinsEvents + 0.5, ""};
-    registry.add("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
-    for (int iBin = 0; iBin < kNBinsEvents; iBin++) {
-      registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
-    }
-
-    registry.add("hMassDToPiKPi", "D^{#minus} candidates;inv. mass (p^{#minus} K^{#plus} #pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
-    registry.add("hPtD", "D^{#minus} candidates;D^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
-    registry.add("hPtPion", "#pi^{#plus} candidates;#pi^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
-    registry.add("hCPAD", "D^{#minus} candidates;D^{#minus} cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
+    // invariant-mass window cut
+    massPi = MassPiPlus;
+    massD = MassDMinus;
+    massB0 = MassB0;
+    invMass2DPiMin = (massB0 - invMassWindowDPi) * (massB0 - invMassWindowDPi);
+    invMass2DPiMax = (massB0 + invMassWindowDPi) * (massB0 + invMassWindowDPi);
 
     // Initialize fitter
     df3.setPropagateToPCA(propagateToPCA);
@@ -160,12 +150,22 @@ struct HfDataCreatorDplusPiReduced {
     ccdb->setLocalObjectValidityChecking();
     runNumber = 0;
 
-    // invariant-mass window cut
-    massPi = MassPiPlus;
-    massD = MassDMinus;
-    massB0 = MassB0;
-    invMass2DPiMin = (massB0 - invMassWindowDPi) * (massB0 - invMassWindowDPi);
-    invMass2DPiMax = (massB0 + invMassWindowDPi) * (massB0 + invMassWindowDPi);
+    // histograms
+    constexpr int kNBinsEvents = kNEvent;
+    std::string labels[kNBinsEvents];
+    labels[Event::Processed] = "processed";
+    labels[Event::NoDPiSelected] = "without DPi pairs";
+    labels[Event::DPiSelected] = "with DPi pairs";
+    static const AxisSpec axisEvents = {kNBinsEvents, 0.5, kNBinsEvents + 0.5, ""};
+    registry.add("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
+    for (int iBin = 0; iBin < kNBinsEvents; iBin++) {
+      registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+    }
+
+    registry.add("hMassDToPiKPi", "D^{#minus} candidates;inv. mass (p^{#minus} K^{#plus} #pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
+    registry.add("hPtD", "D^{#minus} candidates;D^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
+    registry.add("hPtPion", "#pi^{#plus} candidates;#pi^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
+    registry.add("hCPAD", "D^{#minus} candidates;D^{#minus} cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
   }
 
   /// Pion selection (D Pi <-- B0)
@@ -366,8 +366,8 @@ struct HfDataCreatorDplusPiReduced {
           int8_t sign{0};
           int8_t flag{0};
           int8_t debug{0};
-          int pdgCodeBeautyMother{0};
-          int pdgCodeCharmMother{0};
+          int pdgCodeBeautyMother{-1};
+          int pdgCodeCharmMother{-1};
           int pdgCodeProng0{0};
           int pdgCodeProng1{0};
           int pdgCodeProng2{0};
@@ -426,20 +426,28 @@ struct HfDataCreatorDplusPiReduced {
                 if (index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
                   flag = BIT(hf_cand_b0::DecayTypeMc::PartlyRecoDecay);
                   pdgCodeBeautyMother = particlesMc.rawIteratorAt(index0Mother).pdgCode();
-                  pdgCodeCharmMother = 1;
+                  pdgCodeCharmMother = 0;
                   pdgCodeProng0 = particleProng0.pdgCode();
                   pdgCodeProng1 = particleProng1.pdgCode();
                   pdgCodeProng2 = particleProng2.pdgCode();
                   pdgCodeProng3 = particleProng3.pdgCode();
                   // look for common c-hadron mother among prongs 0, 1 and 2
                   for (const auto& cHadronMotherHypo : cHadronMotherHypos) {
-                    int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, 2);
-                    int index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, 2);
-                    int index2CharmMother = RecoDecay::getMother(particlesMc, particleProng2, cHadronMotherHypo, true, &sign, 2);
+                    int8_t depthMax = 2;
+                    if (cHadronMotherHypo == Pdg::kDStar) { // to include D* -> D π0/γ and D* -> D0 π
+                      depthMax += 1;
+                    }
+                    int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
+                    int index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, depthMax);
+                    int index2CharmMother = RecoDecay::getMother(particlesMc, particleProng2, cHadronMotherHypo, true, &sign, depthMax);
                     if (index0CharmMother > -1 && index1CharmMother > -1 && index2CharmMother > -1) {
                       if (index0CharmMother == index1CharmMother && index1CharmMother == index2CharmMother) {
-                        pdgCodeCharmMother = particlesMc.rawIteratorAt(index0CharmMother).pdgCode();
-                        break;
+                        // pdgCodeCharmMother =
+                        //   Pdg::kDPlus (if D+ is the mother and does not come from D*+)
+                        //   Pdg::kDPlus + Pdg::kDStar (if D+ is the mother and D*+ -> D+ π0/γ)
+                        //   Pdg::kDStar (if D*+ is the mother and D*+ -> D0 π+)
+                        //   Pdg::kDS (if Ds is the mother)
+                        pdgCodeCharmMother += std::abs(particlesMc.rawIteratorAt(index0CharmMother).pdgCode());
                       }
                     }
                   }

@@ -106,9 +106,9 @@ struct nucleiFilter {
   Configurable<float> minDeuteronPUseTOF{"minDeuteronPUseTOF", 1, "minDeuteronPt Enable TOF PID"};
   Configurable<float> h3LMassLowerlimit{"h3LMassLowerlimit", 2.96, "Hypertriton mass lower limit"};
   Configurable<float> h3LMassUpperlimit{"h3LMassUpperlimit", 3.04, "Hypertriton mass upper limit"};
-  Configurable<int> mincrossedrowsproton{"mincrossedrowsproton", 90, "min tpc crossed rows for pion"};
-  Configurable<int> mincrossedrowspion{"mincrossedrowspion", 70, "min tpc crossed rows"};
-  Configurable<int> mincrossedrowsdeuteron{"mincrossedrowsdeuteron", 100, "min tpc crossed rows for deuteron"};
+  Configurable<int> mintpcNClsproton{"mintpcNClsproton", 90, "min tpc Nclusters for proton"};
+  Configurable<int> mintpcNClspion{"mintpcNClspion", 70, "min tpc Nclusters for pion"};
+  Configurable<int> mintpcNClsdeuteron{"mintpcNClsdeuteron", 100, "min tpc Nclusters for deuteron"};
   Configurable<bool> fixTPCinnerParam{"fixTPCinnerParam", false, "Fix TPC inner param"};
 
   HistogramRegistry qaHists{"qaHists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
@@ -230,7 +230,7 @@ struct nucleiFilter {
         continue;
       }
       if (std::abs(track0.tpcNSigmaPr()) < TpcPidNsigmaCut && std::abs(track1.tpcNSigmaPi()) < TpcPidNsigmaCut && std::abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mHypertriton() > h3LMassLowerlimit && vtx.mHypertriton() < h3LMassUpperlimit) {
-        if (track0.tpcNClsCrossedRows() > mincrossedrowsproton && track1.tpcNClsCrossedRows() > mincrossedrowspion && track2.tpcNClsCrossedRows() > mincrossedrowsdeuteron) {
+        if (track0.tpcNClsFound() >= mintpcNClsproton && track1.tpcNClsFound() >= mintpcNClspion && track2.tpcNClsFound() >= mintpcNClsdeuteron) {
           if (std::abs(vtx.dcatrack1topv()) > dcapiontopv) {
             keepEvent[3] = true;
             qaHists.fill(HIST("fH3LMassVsPt"), vtx.pt(), vtx.mHypertriton());
@@ -238,7 +238,7 @@ struct nucleiFilter {
         }
       }
       if (std::abs(track0.tpcNSigmaPi()) < TpcPidNsigmaCut && std::abs(track1.tpcNSigmaPr()) < TpcPidNsigmaCut && std::abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mAntiHypertriton() > h3LMassLowerlimit && vtx.mAntiHypertriton() < h3LMassUpperlimit) {
-        if (track0.tpcNClsCrossedRows() > mincrossedrowspion && track1.tpcNClsCrossedRows() > mincrossedrowsproton && track2.tpcNClsCrossedRows() > mincrossedrowsdeuteron) {
+        if (track0.tpcNClsFound() >= mintpcNClspion && track1.tpcNClsFound() >= mintpcNClsproton && track2.tpcNClsFound() >= mintpcNClsdeuteron) {
           if (std::abs(vtx.dcatrack0topv()) > dcapiontopv) {
             keepEvent[3] = true;
             qaHists.fill(HIST("fH3LMassVsPt"), vtx.pt(), vtx.mAntiHypertriton());

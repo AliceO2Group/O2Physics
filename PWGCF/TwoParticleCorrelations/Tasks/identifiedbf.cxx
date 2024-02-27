@@ -77,7 +77,7 @@ struct IdentifiedBfCorrelationsTask {
   /* the data collecting engine */
   template <bool smallsingles>
   struct DataCollectingEngine {
-    int nspecies = 1; /* for the time being just hadrons */
+    int nspecies = static_cast<int>(analysis::identifiedbffilter::kIdBfNoOfSpecies); /* Doing All Species */
     size_t nch = nspecies * 2;
 
     //============================================================================================
@@ -111,7 +111,19 @@ struct IdentifiedBfCorrelationsTask {
     std::vector<std::vector<TProfile*>> fhSum2PtPtnw_vsC{nch, {nch, nullptr}};   //!<! un-weighted accumulated \f${p_T}_1 {p_T}_2\f$ distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
     std::vector<std::vector<TProfile*>> fhSum2DptDptnw_vsC{nch, {nch, nullptr}}; //!<! un-weighted accumulated \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ distribution vs event centrality/multiplicity 1-1,1-2,2-1,2-2, combinations
 
-    std::vector<std::vector<std::string>> trackPairsNames = {{"OO", "OT"}, {"TO", "TT"}};
+    std::vector<std::vector<std::string>> chargePairsNames = {{"OO", "OT"}, {"TO", "TT"}};
+    std::vector<std::vector<std::string>> speciesPairNames = {{"OO", "OT", "OeO", "OeT", "OmuO", "OmuT", "OpiO", "OpiT", "OKO", "OKT", "OpO", "OpT"},
+                                                              {"TO", "TT", "TeO", "TeT", "TmuO", "TmuT", "TpiO", "TpiT", "TKO", "TKT", "TpO", "TpT"},
+                                                              {"eOO", "eOT", "eOeO", "eOeT", "eOmuO", "eOmuT", "eOpiO", "eOpiT", "eOKO", "eOKT", "eOpO", "eOpT"},
+                                                              {"eTO", "eTT", "eTeO", "eTeT", "eTmuO", "eTmuT", "eTpiO", "eTpiT", "eTKO", "eTKT", "eTpO", "eTpT"},
+                                                              {"muOO", "muOT", "muOeO", "muOeT", "muOmuO", "muOmuT", "muOpiO", "muOpiT", "muOKO", "muOKT", "muOpO", "muOpT"},
+                                                              {"muTO", "muTT", "muTeO", "muTeT", "muTmuO", "muTmuT", "muTpiO", "muTpiT", "muTKO", "muTKT", "muTpO", "muTpT"},
+                                                              {"piOO", "piOT", "piOeO", "piOeT", "piOmuO", "piOmuT", "piOpiO", "piOpiT", "piOKO", "piOKT", "piOpO", "piOpT"},
+                                                              {"piTO", "piTT", "piTeO", "piTeT", "piTmuO", "piTmuT", "piTpiO", "piTpiT", "piTKO", "piTKT", "piTpO", "piTpT"},
+                                                              {"KOO", "KOT", "KOeO", "KOeT", "KOmuO", "KOmuT", "KOpiO", "KOpiT", "KOKO", "KOKT", "KOpO", "KOpT"},
+                                                              {"KTO", "KTT", "KTeO", "KTeT", "KTmuO", "KTmuT", "KTpiO", "KTpiT", "KTKO", "KTKT", "KTpO", "KTpT"},
+                                                              {"pOO", "pOT", "pOeO", "pOeT", "pOmuO", "pOmuT", "pOpiO", "pOpiT", "pOKO", "pOKT", "pOpO", "pOpT"},
+                                                              {"pTO", "pTT", "pTeO", "pTeT", "pTmuO", "pTmuT", "pTpiO", "pTpiT", "pTKO", "pTKT", "pTpO", "pTpT"}};
     bool ccdbstored = false;
 
     float isCCDBstored()
@@ -591,7 +603,8 @@ struct IdentifiedBfCorrelationsTask {
             /* we don't want the Sumw2 structure being created here */
             bool defSumw2 = TH1::GetDefaultSumw2();
             TH1::SetDefaultSumw2(false);
-            const char* pname = trackPairsNames[i][j].c_str();
+            // const char* pname = chargePairsNames[i][j].c_str();
+            const char* pname = speciesPairNames[i][j].c_str();
             fhN2_vsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),
                                              deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
             fhN2cont_vsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12cont_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),

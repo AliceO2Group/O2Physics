@@ -43,20 +43,27 @@ struct JetSubstructureOutputTask {
   Produces<aod::CJetOs> jetOutputTableData;
   Produces<aod::CJetSSOs> jetSubstructureOutputTableData;
   Produces<aod::CJetMOs> jetMatchingOutputTableData;
+  Produces<aod::CJetDummyHFs> jetDummyHFTableData;
   Produces<aod::CEWSJetCOs> collisionOutputTableDataSub;
   Produces<aod::CEWSJetOs> jetOutputTableDataSub;
   Produces<aod::CEWSJetSSOs> jetSubstructureOutputTableDataSub;
   Produces<aod::CEWSJetMOs> jetMatchingOutputTableDataSub;
+  Produces<aod::CEWSJetDummyHFs> jetDummyHFTableDataSub;
   Produces<aod::CMCDJetCOs> collisionOutputTableMCD;
   Produces<aod::CMCDJetOs> jetOutputTableMCD;
   Produces<aod::CMCDJetSSOs> jetSubstructureOutputTableMCD;
   Produces<aod::CMCDJetMOs> jetMatchingOutputTableMCD;
+  Produces<aod::CMCDJetDummyHFs> jetDummyHFTableMCD;
   Produces<aod::CMCPJetCOs> collisionOutputTableMCP;
   Produces<aod::CMCPJetOs> jetOutputTableMCP;
   Produces<aod::CMCPJetSSOs> jetSubstructureOutputTableMCP;
   Produces<aod::CMCPJetMOs> jetMatchingOutputTableMCP;
+  Produces<aod::CMCPJetDummyHFs> jetDummyHFTableMCP;
 
-  Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT cut"};
+  Configurable<float> jetPtMinData{"jetPtMinData", 0.0, "minimum jet pT cut for data jets"};
+  Configurable<float> jetPtMinDataSub{"jetPtMinDataSub", 0.0, "minimum jet pT cut for eventwise constituent subtracted data jets"};
+  Configurable<float> jetPtMinMCD{"jetPtMinMCD", 0.0, "minimum jet pT cut for mcd jets"};
+  Configurable<float> jetPtMinMCP{"jetPtMinMCP", 0.0, "minimum jet pT cut for mcp jets"};
   Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.4}, "jet resolution parameters"};
   Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
@@ -74,12 +81,14 @@ struct JetSubstructureOutputTask {
   void init(InitContext const&)
   {
     jetRadiiValues = (std::vector<double>)jetRadii;
+    jetDummyHFTableData(false);    // this is a dummy table to avoid problems with unound indices in the merger
+    jetDummyHFTableDataSub(false); // this is a dummy table to avoid problems with unound indices in the merger
+    jetDummyHFTableMCD(false);     // this is a dummy table to avoid problems with unound indices in the merger
+    jetDummyHFTableMCP(false);     // this is a dummy table to avoid problems with unound indices in the merger
   }
 
-  Filter jetSelection = aod::jet::pt >= jetPtMin;
-
-  template <typename T, typename U, typename V>
-  void fillTables(T const& jet, int32_t collisionIndex, U& jetOutputTable, V& jetSubstructureOutputTable, std::map<int32_t, int32_t>& jetMapping)
+  template <typename T, typename U, typename V, typename M>
+  void fillTables(T const& jet, int32_t collisionIndex, U& jetOutputTable, V& jetSubstructureOutputTable, M& jetDummyHFTable, std::map<int32_t, int32_t>& jetMapping)
   {
     std::vector<float> energyMotherVec;
     std::vector<float> ptLeadingVec;
@@ -93,18 +102,21 @@ struct JetSubstructureOutputTask {
     std::copy(ptLeadingSpan.begin(), ptLeadingSpan.end(), std::back_inserter(ptLeadingVec));
     std::copy(ptSubLeadingSpan.begin(), ptSubLeadingSpan.end(), std::back_inserter(ptSubLeadingVec));
     std::copy(thetaSpan.begin(), thetaSpan.end(), std::back_inserter(thetaVec));
-    jetOutputTable(collisionIndex, -1, jet.pt(), jet.phi(), jet.eta(), jet.r(), jet.tracksIds().size());
+    jetOutputTable(collisionIndex, jetDummyHFTable.lastIndex(), jet.pt(), jet.phi(), jet.eta(), jet.r(), jet.tracksIds().size());
     jetSubstructureOutputTable(jetOutputTable.lastIndex(), energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec);
     jetMapping.insert(std::make_pair(jet.globalIndex(), jetOutputTable.lastIndex()));
   }
 
-  template <bool isMc, typename T, typename U, typename V, typename M, typename N>
-  void analyseCharged(T const& collision, U const& jets, V& collisionOutputTable, M& jetOutputTable, N& jetSubstructureOutputTable, std::map<int32_t, int32_t>& jetMapping)
+  template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O>
+  void analyseCharged(T const& collision, U const& jets, V& collisionOutputTable, M& jetOutputTable, N& jetSubstructureOutputTable, O& jetDummyHFTable, std::map<int32_t, int32_t>& jetMapping, float jetPtMin)
   {
 
     int nJetInCollision = 0;
     int32_t collisionIndex = -1;
     for (const auto& jet : jets) {
+      if (jet.pt() < jetPtMin) {
+        continue;
+      }
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
@@ -117,17 +129,20 @@ struct JetSubstructureOutputTask {
             }
             nJetInCollision++;
           }
-          fillTables(jet, collisionIndex, jetOutputTable, jetSubstructureOutputTable, jetMapping);
+          fillTables(jet, collisionIndex, jetOutputTable, jetSubstructureOutputTable, jetDummyHFTable, jetMapping);
         }
       }
     }
   }
 
   template <typename T, typename U, typename V>
-  void analyseMatched(T const& jets, U const& jetsTag, std::map<int32_t, int32_t>& jetMapping, std::map<int32_t, int32_t>& jetTagMapping, V& matchingOutputTable)
+  void analyseMatched(T const& jets, U const& jetsTag, std::map<int32_t, int32_t>& jetMapping, std::map<int32_t, int32_t>& jetTagMapping, V& matchingOutputTable, float jetPtMin)
   {
     std::vector<int> candMatching;
     for (const auto& jet : jets) {
+      if (jet.pt() < jetPtMin) {
+        continue;
+      }
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
@@ -166,46 +181,46 @@ struct JetSubstructureOutputTask {
   PROCESS_SWITCH(JetSubstructureOutputTask, processDummy, "Dummy process function turned on by default", true);
 
   void processOutputData(JetCollision const& collision,
-                         soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::CJetSSs>> const& jets)
+                         soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::CJetSSs> const& jets)
   {
-    analyseCharged<false>(collision, jets, collisionOutputTableData, jetOutputTableData, jetSubstructureOutputTableData, jetMappingData);
+    analyseCharged<false>(collision, jets, collisionOutputTableData, jetOutputTableData, jetSubstructureOutputTableData, jetDummyHFTableData, jetMappingData, jetPtMinData);
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutputData, "jet substructure output Data", false);
 
   void processOutputDataSub(JetCollision const& collision,
-                            soa::Filtered<soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents, aod::CEWSJetSSs>> const& jets)
+                            soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents, aod::CEWSJetSSs> const& jets)
   {
-    analyseCharged<false>(collision, jets, collisionOutputTableDataSub, jetOutputTableDataSub, jetSubstructureOutputTableDataSub, jetMappingDataSub);
+    analyseCharged<false>(collision, jets, collisionOutputTableDataSub, jetOutputTableDataSub, jetSubstructureOutputTableDataSub, jetDummyHFTableDataSub, jetMappingDataSub, jetPtMinDataSub);
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutputDataSub, "jet substructure output event-wise subtracted Data", false);
 
-  void processOutputMatchingData(soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetsMatchedToChargedEventWiseSubtractedJets>> const& jets,
-                                 soa::Filtered<soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents, aod::ChargedEventWiseSubtractedJetsMatchedToChargedJets>> const& jetsSub)
+  void processOutputMatchingData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetsMatchedToChargedEventWiseSubtractedJets> const& jets,
+                                 soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents, aod::ChargedEventWiseSubtractedJetsMatchedToChargedJets> const& jetsSub)
   {
-    analyseMatched(jets, jetsSub, jetMappingData, jetMappingDataSub, jetMatchingOutputTableData);
-    analyseMatched(jetsSub, jets, jetMappingDataSub, jetMappingData, jetMatchingOutputTableDataSub);
+    analyseMatched(jets, jetsSub, jetMappingData, jetMappingDataSub, jetMatchingOutputTableData, jetPtMinData);
+    analyseMatched(jetsSub, jets, jetMappingDataSub, jetMappingData, jetMatchingOutputTableDataSub, jetPtMinDataSub);
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutputMatchingData, "jet matching output Data", false);
 
   void processOutputMCD(JetCollision const& collision,
-                        soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::CMCDJetSSs>> const& jets)
+                        soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::CMCDJetSSs> const& jets)
   {
-    analyseCharged<false>(collision, jets, collisionOutputTableMCD, jetOutputTableMCD, jetSubstructureOutputTableMCD, jetMappingMCD);
+    analyseCharged<false>(collision, jets, collisionOutputTableMCD, jetOutputTableMCD, jetSubstructureOutputTableMCD, jetDummyHFTableMCD, jetMappingMCD, jetPtMinMCD);
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutputMCD, "jet substructure output MCD", false);
 
   void processOutputMCP(JetMcCollision const& collision,
-                        soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::CMCPJetSSs>> const& jets)
+                        soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::CMCPJetSSs> const& jets)
   {
-    analyseCharged<true>(collision, jets, collisionOutputTableMCP, jetOutputTableMCP, jetSubstructureOutputTableMCP, jetMappingMCP);
+    analyseCharged<true>(collision, jets, collisionOutputTableMCP, jetOutputTableMCP, jetSubstructureOutputTableMCP, jetDummyHFTableMCP, jetMappingMCP, jetPtMinMCP);
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutputMCP, "jet substructure output MCP", false);
 
-  void processOutputMatchingMC(soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& jetsMCD,
-                               soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>> const& jetsMCP)
+  void processOutputMatchingMC(soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets> const& jetsMCD,
+                               soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets> const& jetsMCP)
   {
-    analyseMatched(jetsMCD, jetsMCP, jetMappingMCD, jetMappingMCP, jetMatchingOutputTableMCD);
-    analyseMatched(jetsMCP, jetsMCD, jetMappingMCP, jetMappingMCD, jetMatchingOutputTableMCP);
+    analyseMatched(jetsMCD, jetsMCP, jetMappingMCD, jetMappingMCP, jetMatchingOutputTableMCD, jetPtMinMCD);
+    analyseMatched(jetsMCP, jetsMCD, jetMappingMCP, jetMappingMCD, jetMatchingOutputTableMCP, jetPtMinMCP);
   }
   PROCESS_SWITCH(JetSubstructureOutputTask, processOutputMatchingMC, "jet matching output MC", false);
 };
