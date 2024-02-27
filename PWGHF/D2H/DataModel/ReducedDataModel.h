@@ -381,7 +381,7 @@ DECLARE_SOA_COLUMN(InvMassAntiLambda, invMassAntiLambda, float); //! Invariant m
 DECLARE_SOA_COLUMN(Px, px, float);                               //! Momentum of V0/3 prong candidate in GeV/c
 DECLARE_SOA_COLUMN(Py, py, float);
 DECLARE_SOA_COLUMN(Pz, pz, float);
-DECLARE_SOA_COLUMN(V0Type, v0Type, int); //! Integer with V0 mass hypotesis used: 0 = K0s, +1 = Lambda, -1 = AntiLambda
+DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t); //! Bitmap with mass hypothesis of the V0
 DECLARE_SOA_COLUMN(DType, dType, int);   //! Integer with selected D candidate type: 1 = Dplus, -1 = Dminus, 2 = DstarPlus, -2 = DstarMinus
 } // namespace hf_reso_cand_reduced
 
