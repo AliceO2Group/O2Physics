@@ -123,7 +123,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaMedium"));
-
     return cut;
   }
 
@@ -131,7 +130,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaLoose"));
+    return cut;
+  }
 
+  if (!nameStr.compare("electronSelection1_ionut")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaMedium"));
     return cut;
   }
 
@@ -877,20 +883,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut_pid_OR->AddCut(cut_tof_rec);
     cut->AddCut(cut_pid_OR);
     return cut;
-  }
-
-  if (!nameStr.compare("lmee_Run3_TPCelectron")) {
-    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
-    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
-    cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
-    cut->AddCut(GetAnalysisCut("lmee_pp_502TeV_TPCloosenopkrej"));
-  }
-
-  if (!nameStr.compare("lmee_Run3_TOFelectron")) {
-    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
-    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
-    cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
-    cut->AddCut(GetAnalysisCut("tof_electron"));
   }
 
   std::vector<TString> vecTypetrack;
@@ -2183,11 +2175,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("pairMass1_3")) {
-    cut->AddCut(GetAnalysisCut("pairMass1_3"));
-    return cut;
-  }
-
   if (!nameStr.compare("pairMass1_5to3_5")) {
     cut->AddCut(GetAnalysisCut("pairMass1_5to3_5"));
     return cut;
@@ -3008,6 +2995,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("standardPrimaryTrack")) {
     cut->AddCut(VarManager::kTrackDCAxy, -1.0, 1.0);
     cut->AddCut(VarManager::kTrackDCAz, -3.0, 3.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("dcaCut1_ionut")) {
+    cut->AddCut(VarManager::kTrackDCAxy, -0.5, 0.5);
+    cut->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
     return cut;
   }
 
@@ -4329,11 +4322,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pairMass1_3to3_5")) {
     cut->AddCut(VarManager::kMass, 1.3, 3.5);
-    return cut;
-  }
-
-  if (!nameStr.compare("pairMass1_3")) {
-    cut->AddCut(VarManager::kMass, 1.3, 1000.0);
     return cut;
   }
 
