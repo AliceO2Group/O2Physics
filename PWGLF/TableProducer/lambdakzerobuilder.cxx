@@ -295,7 +295,8 @@ struct lambdakzeroBuilder {
 
   // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
   // tools for downsampling (Marian)
-  float TsallisCharged(float pt) {
+  float TsallisCharged(float pt)
+  {
     const float a = 6.81, b = 59.24;
     const float c = 0.082, d = 0.151;
     float mt = TMath::Sqrt(downscale_mass * downscale_mass + pt * pt);
@@ -307,7 +308,8 @@ struct lambdakzeroBuilder {
     return result;
   }
 
-  int DownsampleTsallisCharged(float pt) {
+  int DownsampleTsallisCharged(float pt)
+  {
     float prob = TsallisCharged(pt);
     float probNorm = TsallisCharged(1.);
     int triggerMask = 0;
@@ -967,11 +969,12 @@ struct lambdakzeroBuilder {
         continue; // doesn't pass selections
       }
 
-      if (downscale_adaptive){
+      if (downscale_adaptive) {
         float pt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
         int mask = TsallisCharged(pt);
         bool pass = (mask & downscale_triggerMaskSelection) == downscale_triggerMaskSelection;
-        if(!pass) continue; // skip this V0  
+        if (!pass)
+          continue; // skip this V0
       }
 
       // round the DCA variables to a certain precision if asked
@@ -1000,7 +1003,7 @@ struct lambdakzeroBuilder {
         if (createV0PosAtDCAs)
           v0dauPositions(v0candidate.posPosition[0], v0candidate.posPosition[1], v0candidate.posPosition[2],
                          v0candidate.negPosition[0], v0candidate.negPosition[1], v0candidate.negPosition[2]);
-        if (createV0PosAtDCAs){
+        if (createV0PosAtDCAs) {
           std::array<float, 3> posPositionIU;
           std::array<float, 3> negPositionIU;
           lPositiveTrackIU.getXYZGlo(posPositionIU);

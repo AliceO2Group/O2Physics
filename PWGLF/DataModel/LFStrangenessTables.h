@@ -159,12 +159,12 @@ DECLARE_SOA_COLUMN(ZPosAtDCA, zPosAtDCA, float); //! decay position Z
 DECLARE_SOA_COLUMN(XNegAtDCA, xNegAtDCA, float); //! decay position X
 DECLARE_SOA_COLUMN(YNegAtDCA, yNegAtDCA, float); //! decay position Y
 DECLARE_SOA_COLUMN(ZNegAtDCA, zNegAtDCA, float); //! decay position Z
-DECLARE_SOA_COLUMN(XPosAtIU, xPosAtIU, float); //! decay position X
-DECLARE_SOA_COLUMN(YPosAtIU, yPosAtIU, float); //! decay position Y
-DECLARE_SOA_COLUMN(ZPosAtIU, zPosAtIU, float); //! decay position Z
-DECLARE_SOA_COLUMN(XNegAtIU, xNegAtIU, float); //! decay position X
-DECLARE_SOA_COLUMN(YNegAtIU, yNegAtIU, float); //! decay position Y
-DECLARE_SOA_COLUMN(ZNegAtIU, zNegAtIU, float); //! decay position Z
+DECLARE_SOA_COLUMN(XPosAtIU, xPosAtIU, float);   //! decay position X
+DECLARE_SOA_COLUMN(YPosAtIU, yPosAtIU, float);   //! decay position Y
+DECLARE_SOA_COLUMN(ZPosAtIU, zPosAtIU, float);   //! decay position Z
+DECLARE_SOA_COLUMN(XNegAtIU, xNegAtIU, float);   //! decay position X
+DECLARE_SOA_COLUMN(YNegAtIU, yNegAtIU, float);   //! decay position Y
+DECLARE_SOA_COLUMN(ZNegAtIU, zNegAtIU, float);   //! decay position Z
 
 // Saved from finding: DCAs
 DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0daughters, float); //! DCA between V0 daughters
@@ -181,8 +181,8 @@ DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]); //! covariance mat
 DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]); //! covariance matrix elements
 DECLARE_SOA_COLUMN(CovMatPosDau, covMatPosDau, float[21]);    //! covariance matrix elements positive daughter track
 DECLARE_SOA_COLUMN(CovMatNegDau, covMatNegDau, float[21]);    //! covariance matrix elements negative daughter track
-DECLARE_SOA_COLUMN(CovMatPosDauIU, covMatPosDauIU, float[21]);    //! covariance matrix elements positive daughter track
-DECLARE_SOA_COLUMN(CovMatNegDauIU, covMatNegDauIU, float[21]);    //! covariance matrix elements negative daughter track
+DECLARE_SOA_COLUMN(CovMatPosDauIU, covMatPosDauIU, float[21]); //! covariance matrix elements positive daughter track
+DECLARE_SOA_COLUMN(CovMatNegDauIU, covMatNegDauIU, float[21]); //! covariance matrix elements negative daughter track
 
 // Saved from KF particle fit for specic table
 DECLARE_SOA_COLUMN(KFV0Chi2, kfV0Chi2, float); //!
