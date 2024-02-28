@@ -258,26 +258,25 @@ namespace hf_correlation_dstar_hadron
   DECLARE_SOA_DYNAMIC_COLUMN(DeltaPhi, deltaPhi, [](float phiCandidate, float phiTrack)->float{ return RecoDecay::constrainAngle(phiTrack,phiCandidate); });
 }// hf_correlation_dstar_hadron
 
-DECLARE_SOA_TABLE(DstarHadronPair, "AOD","DSTARHPAIR", // D* Hadrons pairs Informations
+DECLARE_SOA_TABLE(DstarHadronPair, "AOD","DSTRHPAIR", // D* Hadrons pairs Informations
+                  hf_correlation_dstar_hadron::CollisionId,
                   // D* only properties
                   hf_correlation_dstar_hadron::DstarId,
                   hf_correlation_dstar_hadron::PhiDstar,
                   hf_correlation_dstar_hadron::EtaDstar,
                   hf_correlation_dstar_hadron::PtDstar,
                   hf_correlation_dstar_hadron::MDstar,
-
                   // Track only properties
                   hf_correlation_dstar_hadron::TrackId,
                   hf_correlation_dstar_hadron::PhiTrack,
                   hf_correlation_dstar_hadron::EtaTrack,
                   hf_correlation_dstar_hadron::PtTrack,
-                  hf_correlation_dstar_hadron::PoolBin,
                   // common
                   hf_correlation_dstar_hadron::TimeStamp,
                   hf_correlation_dstar_hadron::PoolBin,
                   // common Dynamic
                   hf_correlation_dstar_hadron::DeltaPhi<hf_correlation_dstar_hadron::PhiDstar,hf_correlation_dstar_hadron::PhiTrack>,
-                  hf_correlation_dstar_hadron::DeltaEta<hf_correlation_dstar_hadron::EtaDstar,hf_correlation_dstar_hadron::EtaTrack>,
+                  hf_correlation_dstar_hadron::DeltaEta<hf_correlation_dstar_hadron::EtaDstar,hf_correlation_dstar_hadron::EtaTrack>
                   );
 
 // Tble for mc matched info

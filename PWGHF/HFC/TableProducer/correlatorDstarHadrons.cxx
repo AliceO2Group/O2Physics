@@ -52,7 +52,7 @@ struct HfCollisionSelector{
         if(selectedDstarCandidates.size() > 0){
             auto selectedDstarCandidatesGrouped = selectedDstarCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
             for(const auto & selectedCandidate: selectedDstarCandidatesGrouped){
-                auto yDstar = selectedCandidate.y();
+                auto yDstar = selectedCandidate.y(constants::physics::MassDStar);
                 auto pTDstar = selectedCandidate.pt();
                 if(yCandMax >= 0 && yDstar > yCandMax){
                     continue;
@@ -66,7 +66,7 @@ struct HfCollisionSelector{
         }
         collisionWDstar(isDstarFound); // compatible with collision table (filled collision by collision)
     }
-    PROCESS_SWITCH(HfCollisionSelector,processCollisionSelWDstar,"process only data for dstar hadron correlation", false);
+    PROCESS_SWITCH(HfCollisionSelector,processCollisionSelWDstar,"process only data for dstar hadron correlation", true);
 };
 
 struct HfCorrelatorDstarHadrons{
@@ -93,7 +93,7 @@ struct HfCorrelatorDstarHadrons{
     ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
 
     SliceCache cache;
-    ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>> binningScheme;
+    ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>> binningScheme{{binsZVtx, binsMultiplicity},true};
     // ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>> binningScheme;
 
     using CollisionsWMult = soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>;
@@ -146,7 +146,8 @@ struct HfCorrelatorDstarHadrons{
                 }
                 auto binNumber = binningScheme.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
                 if(triggerParticle.signSoftPi() > 0){
-                    rowsDstarHadronPair(gItriggerParticle,
+                    rowsDstarHadronPair(collision.globalIndex(),
+                                    gItriggerParticle,
                                     triggerParticle.phi(),
                                     triggerParticle.eta(),
                                     triggerParticle.pt(),
@@ -155,9 +156,12 @@ struct HfCorrelatorDstarHadrons{
                                     assocParticle.phi(),
                                     assocParticle.eta(),
                                     assocParticle.pt(),
-                                    binNumber);
+                                    timestamp,
+                                    binNumber
+                                    );
                 }else {
-                    rowsDstarHadronPair(gItriggerParticle,
+                    rowsDstarHadronPair(collision.globalIndex(),
+                                    gItriggerParticle,
                                     triggerParticle.phi(),
                                     triggerParticle.eta(),
                                     triggerParticle.pt(),
@@ -166,13 +170,15 @@ struct HfCorrelatorDstarHadrons{
                                     assocParticle.phi(),
                                     assocParticle.eta(),
                                     assocParticle.pt(),
-                                    binNumber);
+                                    timestamp,
+                                    binNumber
+                                    );
                 }
             }  // D-H pair loop    
         } // collision loop
     } //processData
 
-    PROCESS_SWITCH(HfCorrelatorDstarHadrons,processData,"process data only", false);
+    PROCESS_SWITCH(HfCorrelatorDstarHadrons,processData,"process data only", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc){
