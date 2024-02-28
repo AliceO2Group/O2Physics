@@ -137,7 +137,7 @@ float phi(float px, float py)
 // Just a simple function to return azimuthal angle
 {
   if (px != 0)
-    return std::atan(py / px);
+    return std::atan2(py / px);
   return -999.;
 }
 
