@@ -93,6 +93,7 @@ struct HfCorrelatorDstarHadrons{
     ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
 
     SliceCache cache;
+    
     ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>> binningScheme{{binsZVtx, binsMultiplicity},true};
     // ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>> binningScheme;
 
@@ -101,28 +102,41 @@ struct HfCorrelatorDstarHadrons{
 
     Filter CollisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == selectOnlyCollisionWDstar;
     
+    // cabdidate partition
     Partition<DstarCandidates> selectedCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstar;
+
+    // track partition 
     Partition<aod::TracksWDca> selectedTracks = nabs(aod::track::eta) < etaAbsMaxAssoTrack && aod::track::pt > pTMinAssoTrack && aod::track::pt < pTMaxAssoTrack &&
                                                 aod::track::dcaXY > dcaxyMinAssoTrack && aod::track::dcaXY < dcaxyMaxAssoTrack &&
                                                 aod::track::dcaZ > dcazMinAssoTrack && aod::track::dcaZ < dcazMaxAssoTrack;
-
+    
     void init (InitContext&){
         binningScheme = {{binsZVtx, binsMultiplicity},true};
     }
     
-    void processData(aod::BCsWithTimestamps::iterator const & bc,
-                    soa::Filtered<CollisionsWMult> const & collisions, // only collisions who have altleast one D*
+    void processData(soa::Filtered<CollisionsWMult> const & collisions, // only collisions who have altleast one D*
                     aod::TracksWDca const & tracks,
-                    DstarCandidates const & candidates){
-        auto timestamp = bc.timestamp();
+                    DstarCandidates const & candidates,
+                    aod::BCsWithTimestamps const & ){
+
+        LOG(info)<<"process data function called. Collision Table size = "<<collisions.size();
+        // selectedCandidates.bindTable(candidates);
+        // selectedTracks.bindTable(tracks);
+
         for(const auto & collision: collisions){
+
+            auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+            auto timestamp = bc.timestamp();
+            LOG(info)<<"timestamp = "<<timestamp;
+
             auto selectedCandidatesGrouped = selectedCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-            auto selectedTracksGrouped = selectedTracks->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache); 
+            LOG(info)<< "selected candidates grouped according to current collision";
+            auto selectedTracksGrouped = selectedTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache); 
 
             if((selectedCandidatesGrouped.size() == 0) || (selectedTracksGrouped.size() == 0)){
                 continue;
             }
-
+            LOG(info)<<"pair creation starts";
             // pair creation
             for(auto &[triggerParticle, assocParticle] : soa::combinations(soa::CombinationsFullIndexPolicy(selectedCandidatesGrouped,selectedTracksGrouped))){
                 auto gItriggerParticle = triggerParticle.globalIndex();
