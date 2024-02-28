@@ -54,7 +54,7 @@ enum Event : uint8_t {
 enum DecayChannel : uint8_t {
   DstarV0 = 0,
   DplusV0
-  };
+};
 
 enum V0_type : uint8_t {
   K0s = 0,
@@ -97,8 +97,6 @@ struct HfDataCreatorDV0Reduced {
   Configurable<float> minV0dauDCA{"minV0dauDCA", 0.05, "minimum DCA for V0 daughters"};
   Configurable<float> maxV0dauDCA{"maxV0dauDCA", 1., "maximum DCA for V0 daughters"};
   Configurable<float> maxNsigmaPrForLambda{"maxNsigmaPrForLambda", 4., "maximum proton NSigma in TPC and TOF for Lambdas"};
-
-  
 
   // material correction for track propagation
   o2::base::MatLayerCylSet* lut;
@@ -160,7 +158,7 @@ struct HfDataCreatorDV0Reduced {
   /// \param collision is the current collision
   /// \return a bitmap with mass hypotesis if passes all cuts
   template <typename V0, typename Coll, typename Tr>
-  inline uint8_t isSelectedV0(const V0& v0,  const Coll& collision, const std::array<Tr, 2>& dauTracks, const std::array<int, 3>& dDaughtersIDs)
+  inline uint8_t isSelectedV0(const V0& v0, const Coll& collision, const std::array<Tr, 2>& dauTracks, const std::array<int, 3>& dDaughtersIDs)
   {
     uint8_t isSelected{BIT(K0s) | BIT(Lambda) | BIT(AntiLambda)};
     // reject VOs that share daughters with D
@@ -171,7 +169,7 @@ struct HfDataCreatorDV0Reduced {
     if (std::fabs(v0.negativeeta()) > minV0dauEta || std::fabs(v0.positiveeta()) > minV0dauEta) { // cut all V0 daughters with |eta| > 1.
       return 0;
     }
-    //minimum v0radius
+    // minimum v0radius
     if (v0.v0radius() < minK0sLambdaRadius) {
       return 0;
     }
@@ -181,10 +179,10 @@ struct HfDataCreatorDV0Reduced {
       return 0;
     }
     // DCA V0 and V0 daughters to select for primary V0s
-      if (v0.dcav0topv() > maxV0DCA || v0.dcaV0daughters() > maxV0dauDCA || std::fabs(v0.dcapostopv()) <minV0dauDCA || std::fabs(v0.dcanegtopv()) <minV0dauDCA ) { 
+    if (v0.dcav0topv() > maxV0DCA || v0.dcaV0daughters() > maxV0dauDCA || std::fabs(v0.dcapostopv()) < minV0dauDCA || std::fabs(v0.dcanegtopv()) < minV0dauDCA) {
       return 0;
-      }
-    //mass hypotesis
+    }
+    // mass hypotesis
     if (TESTBIT(isSelected, K0s) && std::fabs(v0.mK0Short() - MassK0) > deltaMassK0s) {
       CLRBIT(isSelected, K0s);
     }
@@ -268,15 +266,15 @@ struct HfDataCreatorDV0Reduced {
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prong2Id();
         d_type = candD.sign() * TypeD::Dplus;
-      }   // else if
+      } // else if
 
       // Loop on V0 candidates
       for (const auto& v0 : V0s) {
         auto posTrack = v0.posTrack_as<BigTracksPID>();
         auto negTrack = v0.negTrack_as<BigTracksPID>();
-        //Apply selsection
+        // Apply selsection
         v0_type = isSelectedV0(v0, collision, std::array{posTrack, negTrack}, prongIdsD);
-        if (v0_type == 0){
+        if (v0_type == 0) {
           continue;
         }
         // propagate V0 to primary vertex (if enabled)
@@ -291,38 +289,37 @@ struct HfDataCreatorDV0Reduced {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0, 2.f, matCorr, &dcaInfo);
           getPxPyPz(trackParK0, pVecV0);
         }
-        float ptV0 = sqrt(pVecV0[0] * pVecV0[0] + pVecV0[1] * pVecV0[1]);\
-        // fill histos
+        float ptV0 = sqrt(pVecV0[0] * pVecV0[0] + pVecV0[1] * pVecV0[1]); // fill histos
         registry.fill(HIST("hPtV0"), ptV0);
         registry.fill(HIST("hV0_type"), v0_type);
-        if (TESTBIT(v0_type, K0s)){
+        if (TESTBIT(v0_type, K0s)) {
           massV0 = MassK0;
           auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
           registry.fill(HIST("hMassK0s"), v0.mK0Short());
           switch (DecayChannel) {
-          case DecayChannel::DstarV0:
-            registry.fill(HIST("hMassDs1"), sqrt(invMass2DV0) - invMassD);
-            break;
-          case DecayChannel::DplusV0:
-            registry.fill(HIST("hMassDsStar2"), sqrt(invMass2DV0) - invMassD);
-            break;
-          default:
-            break;
+            case DecayChannel::DstarV0:
+              registry.fill(HIST("hMassDs1"), sqrt(invMass2DV0) - invMassD);
+              break;
+            case DecayChannel::DplusV0:
+              registry.fill(HIST("hMassDsStar2"), sqrt(invMass2DV0) - invMassD);
+              break;
+            default:
+              break;
           }
         }
-        if (TESTBIT(v0_type, Lambda)){
+        if (TESTBIT(v0_type, Lambda)) {
           massV0 = MassLambda0;
           auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
           registry.fill(HIST("hMassLambda"), v0.mLambda());
-          if(DecayChannel == DecayChannel::DplusV0){
+          if (DecayChannel == DecayChannel::DplusV0) {
             registry.fill(HIST("hMassXcRes"), sqrt(invMass2DV0) - invMassD);
           }
         }
-        if(TESTBIT(v0_type, AntiLambda)){
+        if (TESTBIT(v0_type, AntiLambda)) {
           massV0 = MassLambda0;
           auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
           registry.fill(HIST("hMassLambda"), v0.mAntiLambda());
-          if(DecayChannel == DecayChannel::DplusV0){
+          if (DecayChannel == DecayChannel::DplusV0) {
             registry.fill(HIST("hMassXcRes"), sqrt(invMass2DV0) - invMassD);
           }
         }
@@ -399,10 +396,10 @@ struct HfDataCreatorDV0Reduced {
   PROCESS_SWITCH(HfDataCreatorDV0Reduced, processDplusV0, "Process Dplus candidates without MC info and without ML info", true);
 
   void processDstarV0(aod::Collisions const& collisions,
-                  CandDstarFiltered const& candsDstar,
-                  aod::TrackAssoc const& trackIndices,
-                  aod::V0Datas const& V0s,
-                  aod::BCsWithTimestamps const& bcs)
+                      CandDstarFiltered const& candsDstar,
+                      aod::TrackAssoc const& trackIndices,
+                      aod::V0Datas const& V0s,
+                      aod::BCsWithTimestamps const& bcs)
   {
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize());
