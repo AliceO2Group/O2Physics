@@ -9,6 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+// Minimal example to run this task:
+// o2-analysis-centrality-table -b --configuration json://configuration.json | o2-analysis-timestamp -b --configuration json://configuration.json | o2-analysis-event-selection -b --configuration json://configuration.json | o2-analysis-multiplicity-table -b --configuration json://configuration.json | o2-analysis-lf-zdcsp -b --configuration json://configuration.json --aod-file @input_data.txt --aod-writer-json OutputDirector.json
 
 #include <cmath>
 
@@ -26,6 +28,7 @@
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/DataModel/Qvectors.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -54,6 +57,14 @@ constexpr double kVeryNegative = -1.e12;
 
 using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
 
+namespace
+{
+std::unordered_map<int, TH2*> gHistosC[5];
+std::unordered_map<int, TH2*> gHistosA[5];
+TH2* gCurrentHistC[5];
+TH2* gCurrentHistA[5];
+} // namespace
+
 struct zdcSP {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -62,7 +73,8 @@ struct zdcSP {
   Configurable<float> cfgCalibrationMaxCentFT0C{"cfgCalibrationMaxCentFT0C", 90.f, "Maximum centrality FT0C"};
   Configurable<float> cfgCalibrationDownscaling{"cfgCalibrationDownscaling", 1.f, "Percentage of events to be processed"};
 
-  HistogramRegistry mHistos;
+  ctpRateFetcher mRateFetcher;
+  HistogramRegistry mHistos{"qaHists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   template <class collision_t>
   bool eventSelection(collision_t& collision)
@@ -76,6 +88,20 @@ struct zdcSP {
       return;
     }
     mRunNumber = bc.runNumber();
+    if (gHistosC[0].find(mRunNumber) == gHistosC[0].end()) {
+      gHistosC[0][mRunNumber] = mHistos.add<TH2>(Form("%i/znc_common", mRunNumber), ";Hadronic rate (kHz);ZNC common signal", kTH2D, {{51, 0, 51}, {400, 0., 400.}}).get();
+      gHistosA[0][mRunNumber] = mHistos.add<TH2>(Form("%i/zna_common", mRunNumber), ";Hadronic rate (kHz);ZNA common signal", kTH2D, {{51, 0, 51}, {400, 0., 400.}}).get();
+      for (int i{0}; i < 4; ++i) {
+        gHistosC[i + 1][mRunNumber] = mHistos.add<TH2>(Form("%i/znc_%i", mRunNumber, i + 1), Form(";Hadronic rate (kHz);ZNC %i signal", i + 1), kTH2D, {{51, 0, 51}, {400, 0., 400.}}).get();
+        gHistosA[i + 1][mRunNumber] = mHistos.add<TH2>(Form("%i/zna_%i", mRunNumber, i + 1), Form(";Hadronic rate (kHz);ZNA %i signal", i + 1), kTH2D, {{51, 0, 51}, {400, 0., 400.}}).get();
+      }
+    }
+    gCurrentHistC[0] = gHistosC[0][mRunNumber];
+    gCurrentHistA[0] = gHistosA[0][mRunNumber];
+    for (int i{0}; i < 4; ++i) {
+      gCurrentHistC[i + 1] = gHistosC[i + 1][mRunNumber];
+      gCurrentHistA[i + 1] = gHistosA[i + 1][mRunNumber];
+    }
   }
 
   void init(o2::framework::InitContext&)
@@ -100,15 +126,19 @@ struct zdcSP {
     if (!bc.has_zdc()) {
       return;
     }
+    double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZDC hadronic"); //
     auto zdc = bc.zdc();
     auto zncEnergy = zdc.energySectorZNC();
     auto znaEnergy = zdc.energySectorZNA();
+    bool goodC = true, goodA = true;
     for (int i = 0; i < 4; i++) { // avoid std::numeric_limits<float>::infinity() in the table
       if (zncEnergy[i] < kVeryNegative) {
         zncEnergy[i] = kVeryNegative;
+        goodC = false;
       }
       if (znaEnergy[i] < kVeryNegative) {
         znaEnergy[i] = kVeryNegative;
+        goodA = false;
       }
     }
     float znaCommon = zdc.energyCommonZNA() < 0 ? kVeryNegative : zdc.energyCommonZNA();
@@ -116,6 +146,18 @@ struct zdcSP {
     zdcSPTable(bc.globalBC(), bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.centFT0C(),
                znaCommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3],
                zncCommon, zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3]);
+    if (goodC) {
+      gCurrentHistC[0]->Fill(hadronicRate, zncCommon);
+      for (int i{0}; i < 4; ++i) {
+        gCurrentHistC[i + 1]->Fill(hadronicRate, zncEnergy[i]);
+      }
+    }
+    if (goodA) {
+      gCurrentHistA[0]->Fill(hadronicRate, znaCommon);
+      for (int i{0}; i < 4; ++i) {
+        gCurrentHistA[i + 1]->Fill(hadronicRate, znaEnergy[i]);
+      }
+    }
   }
   PROCESS_SWITCH(zdcSP, processCalibrationData, "Data analysis", true);
 };
