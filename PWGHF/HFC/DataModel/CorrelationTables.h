@@ -16,7 +16,13 @@
 #ifndef PWGHF_HFC_DATAMODEL_CORRELATIONTABLES_H_
 #define PWGHF_HFC_DATAMODEL_CORRELATIONTABLES_H_
 
+// O2
 #include "Framework/AnalysisDataModel.h"
+//O2Physics
+#include "Common/Core/RecoDecay.h"
+// PWGCF
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+
 
 namespace o2::aod
 {
@@ -202,52 +208,87 @@ DECLARE_SOA_TABLE(DplusHadronRecoInfo, "AOD", "DPLUSHRECOINFO", //! D+-Hadrons p
 
 
 // definition of columns and tables for Dplus properties
-namespace hf_dstar_meson
+// namespace hf_dstar_meson
+// {
+//   // DECLARE_SOA_COLUMN(PhiDstar, phiDstar, float);
+//   // DECLARE_SOA_COLUMN(EtaDstar, etaDstar, float);
+//   // DECLARE_SOA_COLUMN(PtDstar, ptDstar, float);
+//   // DECLARE_SOA_COLUMN(MDstar, mDstar, float);
+//   // DECLARE_SOA_COLUMN(PoolBin, poolBin, int);
+//   // DECLARE_SOA_COLUMN(TimeStamp,timeStamp, int64_t);
+//   // DECLARE_SOA_COLUMN(IsPrompt,isPrompt,bool);
+//   // DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+//   // DECLARE_SOA_INDEX_COLUMN(Dstar,dstar);
+//   // DECLARE_SOA_INDEX_COLUMN(Track,track);
+// }// hf_dstar_meson
+
+// DECLARE_SOA_TABLE(Dstar, "AOD","DSTAR", //! D* meson properties (This table is not compatible with HfCandDstar & HfSelDstarToD0Pi)
+//                   aod::hf_dstar_meson::PhiDstar,
+//                   aod::hf_dstar_meson::EtaDstar,
+//                   aod::hf_dstar_meson::PtDstar,
+//                   aod::hf_dstar_meson::MDstar,
+//                   aod::hf_dstar_meson::PoolBin,
+//                   aod::hf_dstar_meson::TimeStamp,
+//                   aod::hf_dstar_meson::CollisionId);
+
+// definition of columns and tables for Dstar-Hadron correlation pair
+using Dstars = HfCandDstar;
+using Dstar = Dstars::iterator;
+namespace hf_correlation_dstar_hadron
 {
+  DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+  // Dstar candidate properties
+  DECLARE_SOA_INDEX_COLUMN(Dstar,dstar);
   DECLARE_SOA_COLUMN(PhiDstar, phiDstar, float);
   DECLARE_SOA_COLUMN(EtaDstar, etaDstar, float);
   DECLARE_SOA_COLUMN(PtDstar, ptDstar, float);
   DECLARE_SOA_COLUMN(MDstar, mDstar, float);
-  DECLARE_SOA_COLUMN(PoolBin, poolBin, int);
+  // DECLARE_SOA_COLUMN(IsPrompt,isPrompt,bool); // although this also defined in (HfCandDstarMcRec HfCandDstarMcRec) tables
+  // DECLARE_SOA_COLUMN(MatchingStatus, matchingStatus, bool); // although this also defined in (HfCandDstarMcRec HfCandDstarMcRec) tables
+  // Track properties
+  DECLARE_SOA_INDEX_COLUMN(Track,track);
+  DECLARE_SOA_COLUMN(PhiTrack,phiTrack, float);
+  DECLARE_SOA_COLUMN(EtaTrack,etaTrack, float);
+  DECLARE_SOA_COLUMN(PtTrack,ptTrack, float);
+  // common
   DECLARE_SOA_COLUMN(TimeStamp,timeStamp, int64_t);
-  DECLARE_SOA_COLUMN(IsPrompt,isPrompt,bool);
-  DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-}// hf_dstar_meson
-
-DECLARE_SOA_TABLE(Dstar, "AOD","DSTAR", //! D* meson properties (This table is not compatible with HfCandDstar & HfSelDstarToD0Pi)
-                  aod::hf_dstar_meson::PhiDstar,
-                  aod::hf_dstar_meson::EtaDstar,
-                  aod::hf_dstar_meson::PtDstar,
-                  aod::hf_dstar_meson::MDstar,
-                  aod::hf_dstar_meson::PoolBin,
-                  aod::hf_dstar_meson::TimeStamp,
-                  aod::hf_dstar_meson::CollisionId);
-
-// definition of columns and tables for Dstar-Hadron correlation pair
-namespace hf_correlation_dstar_hadron
-{
-  DECLARE_SOA_COLUMN(DeltaPhiDstar, deltaPhiDstar, float);
-  DECLARE_SOA_COLUMN(DeltaEta, deltaEtaDstar, float);
-  DECLARE_SOA_COLUMN(MatchingStatus, matchingStatus, bool);
+  DECLARE_SOA_COLUMN(PoolBin, poolBin, int);
+  // Dynamic columns
+  DECLARE_SOA_DYNAMIC_COLUMN(DeltaEta, deltaEta, [](float etaTrack, float etaCandidate)->float{ return(etaTrack - etaCandidate); });
+  DECLARE_SOA_DYNAMIC_COLUMN(DeltaPhi, deltaPhi, [](float phiCandidate, float phiTrack)->float{ return RecoDecay::constrainAngle(phiTrack,phiCandidate); });
 }// hf_correlation_dstar_hadron
 
 DECLARE_SOA_TABLE(DstarHadronPair, "AOD","DSTARHPAIR", // D* Hadrons pairs Informations
-                  aod::hf_correlation_dstar_hadron::DeltaPhiDstar,
-                  aod::hf_correlation_dstar_hadron::DeltaEta,
-                  aod::hf_dstar_meson::PtDstar,
-                  aod::hf_assoc_tracks::PtH,
-                  aod::hf_dstar_meson::MDstar,
-                  aod::hf_dstar_meson::PoolBin);
+                  // D* only properties
+                  hf_correlation_dstar_hadron::DstarId,
+                  hf_correlation_dstar_hadron::PhiDstar,
+                  hf_correlation_dstar_hadron::EtaDstar,
+                  hf_correlation_dstar_hadron::PtDstar,
+                  hf_correlation_dstar_hadron::MDstar,
 
-// Why should we use these two tables below when 
-// we already have "HfCandDstarMcRec" & "HfCandDstarMcGen" in "CanidateReconstructionTables.h"
+                  // Track only properties
+                  hf_correlation_dstar_hadron::TrackId,
+                  hf_correlation_dstar_hadron::PhiTrack,
+                  hf_correlation_dstar_hadron::EtaTrack,
+                  hf_correlation_dstar_hadron::PtTrack,
+                  hf_correlation_dstar_hadron::PoolBin,
+                  // common
+                  hf_correlation_dstar_hadron::TimeStamp,
+                  hf_correlation_dstar_hadron::PoolBin,
+                  // common Dynamic
+                  hf_correlation_dstar_hadron::DeltaPhi<hf_correlation_dstar_hadron::PhiDstar,hf_correlation_dstar_hadron::PhiTrack>,
+                  hf_correlation_dstar_hadron::DeltaEta<hf_correlation_dstar_hadron::EtaDstar,hf_correlation_dstar_hadron::EtaTrack>,
+                  );
+
+// Tble for mc matched info
+using RecoMatchingInfoDstars = HfCandDstarMcRec;
+using RecoMatchingInfoDstar = RecoMatchingInfoDstars::iterator;
+
+namespace hf_correlation_dstar_hadron{
+  DECLARE_SOA_INDEX_COLUMN(RecoMatchingInfoDstar,recoMatchingInfoDstar);
+}
 DECLARE_SOA_TABLE(DstarHadronRecoInfo,"AOD","DSTARHRECOINFO", // D* Hadrons pairs Reconstructed Informations
-                aod::hf_dstar_meson::IsPrompt,
-                aod::hf_correlation_dstar_hadron::MatchingStatus);
-
-DECLARE_SOA_TABLE(DstarHadronGenInfo, "AOD","DSTARHGENINFO", // D* Hadrons pairs Generator level Informations
-                aod::hf_dstar_meson::IsPrompt,
-                aod::hf_correlation_dstar_hadron::MatchingStatus);
+                hf_correlation_dstar_hadron::RecoMatchingInfoDstarId);
 
 // Note: Table for selection of Lc in a collision
 namespace hf_selection_lc_collision

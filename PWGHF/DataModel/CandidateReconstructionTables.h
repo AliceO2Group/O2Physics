@@ -1668,6 +1668,7 @@ DECLARE_SOA_TABLE(HfCandDstarBase, "AOD", "HFCANDDSTRBASE",
                   // Two pronges of D0
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
+                  hf_track_index::Prong0Id, hf_track_index::Prong1Id,
                   // Dynamic
                   hf_cand_dstar::PtSoftPi<hf_cand_dstar::PxSoftPi, hf_cand_dstar::PySoftPi>,
                   hf_cand_dstar::PVecSoftPi<hf_cand_dstar::PxSoftPi, hf_cand_dstar::PySoftPi, hf_cand_dstar::PzSoftPi>,

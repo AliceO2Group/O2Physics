@@ -10,11 +10,16 @@
 // or submit itself to any jurisdiction.
 
 /// \file correlatorDstarHadron.cxx
-/// \author Deependra Sharma
+/// \author Deependra Sharma (IITB)
 
 // O2
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+
+// O2Physics
+#include "Common/DataModel/Multiplicity.h"
 
 // PWGHF
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
@@ -27,7 +32,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // flaging a collision if D* meson is found.
-struct HfCorrelatorDstarHadronCollisionSelector{
+struct HfCollisionSelector{
     Produces<aod::DmesonSelection> collisionWDstar;
 
     Configurable<bool> selectionFlagDstar{"selectionFlagDstar",true,"selection flag for Dstar"};
@@ -40,8 +45,6 @@ struct HfCorrelatorDstarHadronCollisionSelector{
 
     // candidates who passed the slection criteria defined in "CandidateSelectionTables.h"
     Partition<DstarCandidates> selectedDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstar; 
-
-    
 
     void processCollisionSelWDstar(aod::Collision const& collision,
                                     DstarCandidates const& candidates){
@@ -63,17 +66,49 @@ struct HfCorrelatorDstarHadronCollisionSelector{
         }
         collisionWDstar(isDstarFound); // compatible with collision table (filled collision by collision)
     }
-    PROCESS_SWITCH(HfCorrelatorDstarHadronCollisionSelector,processCollisionSelWDstar,"process only data for dstar hadron correlation", false);
+    PROCESS_SWITCH(HfCollisionSelector,processCollisionSelWDstar,"process only data for dstar hadron correlation", false);
 };
 
 struct HfCorrelatorDstarHadrons{
     Produces<aod::DstarHadronPair> rowsDstarHadronPair;
 
-    using CollisionsWMult = soa::Join<aod::Collisions,aod::Mults,aod::DmesonSelection>;
-    using DstarCandidates = soa::Join<aod::HfCandDstar,aod::HfSelDstarToD0Pi>;
+    Configurable<bool> selectOnlyCollisionWDstar{"selectOnlyCollisionWDstar",true," select on collisions which have atleast a Dstar candidate"};
 
-    Filter CollisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true;
+    // Dstar candidate related configurable
+    Configurable<bool> selectionFlagDstar{"selectionFlagDstar",true,"selection flag for Dstar"};
+    Configurable<float> pTMinDstar{"pTMinDstar",1.5,"min pT of dstar candidate"};
+    Configurable<float> pTMaxDstar{"pTMaxDstar",50,"max pT of dstar Candidate"};
+    // Configurable<float> etaAbsMaxDstar{"etaAbsMaxDstar",1.0,"max Abs(eta) cut on Dstar candidate"};
+    Configurable<float> yMaxDstar{"yMaxDstar", 0.8, "max. cand. rapidity"};
+    // track related configurable
+    Configurable<float> etaAbsMaxAssoTrack{"etaAbsMaxAssoTrack",1.0,"max Abs(eta) cut on Associated Track"};
+    Configurable<float> dcaxyMinAssoTrack{"dcaxyMinAssoTrack",0.0,"min DCAxy of Associated Track"};
+    Configurable<float> dcaxyMaxAssoTrack{"dcaxyMaxAssoTrack",0.003,"max DCAxy of Associated Track"};
+    Configurable<float> dcazMinAssoTrack{"dcazMinAssoTrack",0.0, "min DCAz of Associated Track"};
+    Configurable<float> dcazMaxAssoTrack{"dcazMaxAssoTrack",0.003,"max DCAz of Associated Track"};
+    Configurable<float> pTMinAssoTrack{"pTMinAssoTrack",0.5,"min Pt of Associated Track"};
+    Configurable<float> pTMaxAssoTrack{"pTMaxAssoTrack",50.0,"max pT of Associated Track"};
 
+    ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
+    ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
+
+    SliceCache cache;
+    ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>> binningScheme;
+    // ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>> binningScheme;
+
+    using CollisionsWMult = soa::Join<aod::Collisions, aod::Mults, aod::DmesonSelection>;
+    using DstarCandidates = soa::Join<aod::HfCandDstar, aod::HfSelDstarToD0Pi>; // if we add two extra columns of prong0Id and prong1d then we need not to join HfD0FromDstar here.
+
+    Filter CollisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == selectOnlyCollisionWDstar;
+    
+    Partition<DstarCandidates> selectedCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstar;
+    Partition<aod::TracksWDca> selectedTracks = nabs(aod::track::eta) < etaAbsMaxAssoTrack && aod::track::pt > pTMinAssoTrack && aod::track::pt < pTMaxAssoTrack &&
+                                                aod::track::dcaXY > dcaxyMinAssoTrack && aod::track::dcaXY < dcaxyMaxAssoTrack &&
+                                                aod::track::dcaZ > dcazMinAssoTrack && aod::track::dcaZ < dcazMaxAssoTrack;
+
+    void init (InitContext&){
+        binningScheme = {{binsZVtx, binsMultiplicity},true};
+    }
     
     void processData(aod::BCsWithTimestamps::iterator const & bc,
                     soa::Filtered<CollisionsWMult> const & collisions, // only collisions who have altleast one D*
@@ -81,11 +116,66 @@ struct HfCorrelatorDstarHadrons{
                     DstarCandidates const & candidates){
         auto timestamp = bc.timestamp();
         for(const auto & collision: collisions){
+            auto selectedCandidatesGrouped = selectedCandidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+            auto selectedTracksGrouped = selectedTracks->sliceByCached(aod::track::collisionId,collision.globalIndex(),cache); 
 
-        }
-        
+            if((selectedCandidatesGrouped.size() == 0) || (selectedTracksGrouped.size() == 0)){
+                continue;
+            }
 
-    }
+            // pair creation
+            for(auto &[triggerParticle, assocParticle] : soa::combinations(soa::CombinationsFullIndexPolicy(selectedCandidatesGrouped,selectedTracksGrouped))){
+                auto gItriggerParticle = triggerParticle.globalIndex();
+                auto gIassocParticle = assocParticle.globalIndex();
 
+                //Track rejection based on daughter index
+                if((triggerParticle.prong0Id() == gIassocParticle) || (triggerParticle.prong1Id() == gIassocParticle) || (triggerParticle.prongPiId() == gIassocParticle)){
+                    continue; // rejected pair if associated particle is same as any of daughter particle
+                }
+                // Track rejection based on eta, pt cut. if partition works on expression column: remove this from here
+                if(assocParticle.eta() > etaAbsMaxAssoTrack || assocParticle.pt() < pTMinAssoTrack || assocParticle.pt() > pTMaxAssoTrack){
+                    continue; // reject pair of associated particle is not within kinematic range
+                }
+                // Trigger Particle Rejection
+                if(triggerParticle.pt() > pTMinDstar || triggerParticle.pt() < pTMaxDstar){
+                    continue;
+                }
+                auto yDstar = triggerParticle.y(constants::physics::MassDStar);
+                if(std::abs(yDstar) > yMaxDstar){
+                    continue;
+                }
+                auto binNumber = binningScheme.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
+                if(triggerParticle.signSoftPi() > 0){
+                    rowsDstarHadronPair(gItriggerParticle,
+                                    triggerParticle.phi(),
+                                    triggerParticle.eta(),
+                                    triggerParticle.pt(),
+                                    triggerParticle.invMassDstar(),
+                                    gIassocParticle,
+                                    assocParticle.phi(),
+                                    assocParticle.eta(),
+                                    assocParticle.pt(),
+                                    binNumber);
+                }else {
+                    rowsDstarHadronPair(gItriggerParticle,
+                                    triggerParticle.phi(),
+                                    triggerParticle.eta(),
+                                    triggerParticle.pt(),
+                                    triggerParticle.invMassAntiDstar(),
+                                    gIassocParticle,
+                                    assocParticle.phi(),
+                                    assocParticle.eta(),
+                                    assocParticle.pt(),
+                                    binNumber);
+                }
+            }  // D-H pair loop    
+        } // collision loop
+    } //processData
+
+    PROCESS_SWITCH(HfCorrelatorDstarHadrons,processData,"process data only", false);
 };
 
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc){
+    return WorkflowSpec{adaptAnalysisTask<HfCollisionSelector>(cfgc),
+                      adaptAnalysisTask<HfCorrelatorDstarHadrons>(cfgc)};
+}
