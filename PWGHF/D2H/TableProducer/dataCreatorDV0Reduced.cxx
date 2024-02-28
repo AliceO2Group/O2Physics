@@ -52,14 +52,14 @@ enum Event : uint8_t {
 };
 
 enum DecayChannel : uint8_t {
-  Ds1ToDstarK0s = 0,
-  DsStar2ToDplusK0s,
-  Xc3055ToDplusLambda
-};
+  DstarV0 = 0,
+  DplusV0
+  };
 
-enum V0_type : int8_t {
+enum V0_type : uint8_t {
   K0s = 0,
-  Lambda
+  Lambda,
+  AntiLambda
 };
 
 enum TypeD : uint8_t {
@@ -84,9 +84,18 @@ struct HfDataCreatorDV0Reduced {
   Configurable<bool> propagateV0toPV{"propagateV0toPV", false, "Enable or disable V0 propagation to V0"};
 
   int runNumber{0}; // needed to detect if the run changed and trigger update of calibrations etc.
-  // selection
+  // selection D
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for D"};
   Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 & Pi"};
+  // selection V0
+  Configurable<float> minK0sLambdaCosinePa{"minK0sLambdaCosinePa", 0.97, "minimum cosp for K0S and Lambda"};
+  Configurable<float> minK0sLambdaRadius{"minK0sLambdaRadius", 0.5, "minimum radius for K0S and Lambda"};
+  Configurable<float> deltaMassK0s{"deltaMassK0s", 0.03, "delta mass cut for K0S"};
+  Configurable<float> deltaMassLambda{"deltaMassLambda", 0.015, "delta mass cut for Lambda"};
+  Configurable<float> minV0dauEta{"minV0dauEta", 1., "minimum eta for V0 daughters"};
+  Configurable<float> maxV0DCA{"maxV0DCA", 0.1, "maximum DCA for K0S and Lambda"};
+  Configurable<float> minV0dauDCA{"minV0dauDCA", 0.05, "minimum DCA for V0 daughters"};
+  Configurable<float> maxV0dauDCA{"maxV0dauDCA", 1., "maximum DCA for V0 daughters"};
 
   // material correction for track propagation
   o2::base::MatLayerCylSet* lut;
@@ -131,8 +140,8 @@ struct HfDataCreatorDV0Reduced {
     registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} - m_{D^{*}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0.45, 0.7}}});
     registry.add("hMassDsStar2", "Ds^{*}2 candidates; Ds^{*}2 - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0.4, 1}}});
     registry.add("hMassXcRes", "XcRes candidates; XcRes - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 1., 1.4}}});
-    registry.add("hV0_type", "XcRes candidates; XcRes - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, -3, 3}}});
-    registry.add("hD_type", "XcRes candidates; XcRes - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, -3, 3}}});
+    registry.add("hV0_type", "V0 selection flag", {HistType::kTH1F, {{8, -0.5, 7.5}}});
+    registry.add("hD_type", "D selection flag", {HistType::kTH1F, {{5, -2.5, 2.5}}});
 
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
@@ -142,9 +151,51 @@ struct HfDataCreatorDV0Reduced {
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
   }
 
+  /// Basic selection of V0 candidates
+  /// \param v0 is the v0 candidate
+  /// \param collision is the current collision
+  /// \return a bitmap with mass hypotesis if passes all cuts
+  template <typename V0, typename Coll>
+  inline uint8_t isSelectedV0(const V0& v0,  const Coll& collision, const std::array<int, 3>& dDaughtersIDs)
+  {
+    uint8_t isSelected{BIT(K0s) | BIT(Lambda) | BIT(AntiLambda)};
+    // reject VOs that share daughters with D
+    if (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), v0.posTrackId()) != dDaughtersIDs.end() || std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), v0.negTrackId()) != dDaughtersIDs.end()) {
+      return 0;
+    }
+    // eta of daughters
+    if (std::fabs(v0.negativeeta()) > minV0dauEta || std::fabs(v0.positiveeta()) > minV0dauEta) { // cut all V0 daughters with |eta| > 1.
+      return 0;
+    }
+    //minimum v0radius
+    if (v0.v0radius() < minK0sLambdaRadius) {
+      return 0;
+    }
+    // cosine of pointing angle
+    auto v0CosinePa = v0.v0cosPA();
+    if (v0CosinePa < minK0sLambdaCosinePa) {
+      return 0;
+    }
+    // DCA V0 and V0 daughters to select for primary V0s
+      if (v0.dcav0topv() > maxV0DCA || v0.dcaV0daughters() > maxV0dauDCA || std::fabs(v0.dcapostopv()) <minV0dauDCA || std::fabs(v0.dcanegtopv()) <minV0dauDCA ) { 
+      return 0;
+      }
+    //mass hypotesis
+    if (TESTBIT(isSelected, K0s) && std::fabs(v0.mK0Short() - MassK0) > deltaMassK0s) {
+      CLRBIT(isSelected, K0s);
+    }
+    if (TESTBIT(isSelected, Lambda) && std::fabs(v0.mLambda() - MassLambda0) > deltaMassLambda) {
+      CLRBIT(isSelected, Lambda);
+    }
+    if (TESTBIT(isSelected, AntiLambda) && std::fabs(v0.mAntiLambda() - MassLambda0) > deltaMassLambda) {
+      CLRBIT(isSelected, AntiLambda);
+    }
+    return isSelected;
+  }
+
   template <uint8_t DecayChannel, typename CCands>
   void runDataCreation(aod::Collision const& collision,
-                       C const& candsD,
+                       CCands const& candsD,
                        aod::V0Datas const& V0s,
                        aod::BCsWithTimestamps const& bcs)
   {
@@ -172,14 +223,14 @@ struct HfDataCreatorDV0Reduced {
       bool fillHfCandD = false;
       float invMassD;
       float massD;
-      float massV0;
+      float massV0{0.};
       std::array<float, 3> pVecD;
       std::array<float, 3> secondaryVertexD;
       std::array<int, 3> prongIdsD;
-      int8_t v0_type;
+      uint8_t v0_type;
       int8_t d_type;
 
-      if constexpr (std::is_same<C, CandDstarFiltered>::value) {
+      if constexpr (std::is_same<CCands, CandDstarFiltered>::value) {
         if (candD.signSoftPi() > 0)
           invMassD = candD.invMassDstar() - candD.invMassD0();
         else
@@ -192,50 +243,28 @@ struct HfDataCreatorDV0Reduced {
         prongIdsD[0] = candD.prong0Id();
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prongPiId();
-        v0_type = V0_type::K0s;
-        d_type = candD.signSoftPi() * D_type::Dstar;
-        massV0 = MassK0Short;
-      } else if constexpr (std::is_same<C, CandsDplusFiltered>::value) {
-        switch (DecayChannel) {
-          case DecayChannel::DsStar2ToDplusK0s:
-            invMassD = hfHelper.invMassDplusToPiKPi(candD);
-            massD = MassDPlus;
-            pVecD = candD.pVector();
-            secondaryVertexD[0] = candD.xSecondaryVertex();
-            secondaryVertexD[1] = candD.ySecondaryVertex();
-            secondaryVertexD[2] = candD.zSecondaryVertex();
-            prongIdsD[0] = candD.prong0Id();
-            prongIdsD[1] = candD.prong1Id();
-            prongIdsD[2] = candD.prong2Id();
-            v0_type = V0_type::K0s;
-            d_type = candD.sign() * D_type::Dplus;
-            massV0 = MassK0Short;
-            break;
-
-          case DecayChannel::Xc3055ToDplusLambda:
-            invMassD = hfHelper.invMassDplusToPiKPi(candD);
-            massD = MassDPlus;
-            pVecD = candD.pVector();
-            secondaryVertexD[0] = candD.xSecondaryVertex();
-            secondaryVertexD[1] = candD.ySecondaryVertex();
-            secondaryVertexD[2] = candD.zSecondaryVertex();
-            prongIdsD[0] = candD.prong0Id();
-            prongIdsD[1] = candD.prong1Id();
-            prongIdsD[2] = candD.prong2Id();
-            v0_type = candD.sign() * V0_type::Lambda;
-            d_type = candD.sign() * D_type::Dplus;
-            massV0 = MassLambda0;
-            break;
-
-          default:
-            LOG(warning) << "Decay channel not valid please choose between Ds1ToDstarK0s, DsStar2ToDplusK0s, Xc3055ToDplusLambda";
-            break;
-        } // switch
+        d_type = candD.signSoftPi() * TypeD::Dstar;
+      } else if constexpr (std::is_same<CCands, CandsDplusFiltered>::value) {
+        invMassD = hfHelper.invMassDplusToPiKPi(candD);
+        massD = MassDPlus;
+        pVecD = candD.pVector();
+        secondaryVertexD[0] = candD.xSecondaryVertex();
+        secondaryVertexD[1] = candD.ySecondaryVertex();
+        secondaryVertexD[2] = candD.zSecondaryVertex();
+        prongIdsD[0] = candD.prong0Id();
+        prongIdsD[1] = candD.prong1Id();
+        prongIdsD[2] = candD.prong2Id();
+        d_type = candD.sign() * TypeD::Dplus;
       }   // else if
 
       // Loop on V0 candidates
       for (const auto& v0 : V0s) {
-        // propagate V0 to primary vertex
+        v0_type = isSelectedV0(v0, collision,prongIdsD);
+        //Apply selsection
+        if (v0_type == 0){
+          continue;
+        }
+        // propagate V0 to primary vertex (if enabled)
         std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
         if (propagateV0toPV) {
           std::array<float, 3> pVecV0Orig = {v0.px(), v0.py(), v0.pz()};
@@ -247,36 +276,41 @@ struct HfDataCreatorDV0Reduced {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0, 2.f, matCorr, &dcaInfo);
           getPxPyPz(trackParK0, pVecV0);
         }
-
-        float ptV0 = sqrt(pVecV0[0] * pVecV0[0] + pVecV0[1] * pVecV0[1]);
-        auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
-        // LOG(info) << "V0 p before propagation: " << pVecV0Orig[0] << "," << pVecV0Orig[1] << "," << pVecV0Orig[2];
-        // LOG(info) << "V0 p after propagation: " << pVecV0[0] << "," << pVecV0[1] << "," << pVecV0[2];
-
+        float ptV0 = sqrt(pVecV0[0] * pVecV0[0] + pVecV0[1] * pVecV0[1]);\
         // fill histos
         registry.fill(HIST("hPtV0"), ptV0);
         registry.fill(HIST("hV0_type"), v0_type);
-
-        switch (DecayChannel) {
-          case DecayChannel::Ds1ToDstarK0s:
-            registry.fill(HIST("hMassK0s"), v0.mK0Short());
+        if (TESTBIT(v0_type, K0s)){
+          massV0 = MassK0;
+          auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
+          registry.fill(HIST("hMassK0s"), v0.mK0Short());
+          switch (DecayChannel) {
+          case DecayChannel::DstarV0:
             registry.fill(HIST("hMassDs1"), sqrt(invMass2DV0) - invMassD);
             break;
-          case DecayChannel::DsStar2ToDplusK0s:
-            registry.fill(HIST("hMassK0s"), v0.mK0Short());
+          case DecayChannel::DplusV0:
             registry.fill(HIST("hMassDsStar2"), sqrt(invMass2DV0) - invMassD);
-            break;
-          case DecayChannel::Xc3055ToDplusLambda:
-            if (v0_type > 0)
-              registry.fill(HIST("hMassLambda"), v0.mLambda());
-            else
-              registry.fill(HIST("hMassLambda"), v0.mAntiLambda());
-            registry.fill(HIST("hMassXcRes"), sqrt(invMass2DV0) - invMassD);
             break;
           default:
             break;
+          }
         }
-
+        if (TESTBIT(v0_type, Lambda)){
+          massV0 = MassLambda0;
+          auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
+          registry.fill(HIST("hMassLambda"), v0.mLambda());
+          if(DecayChannel == DecayChannel::DplusV0){
+            registry.fill(HIST("hMassXcRes"), sqrt(invMass2DV0) - invMassD);
+          }
+        }
+        if(TESTBIT(v0_type, AntiLambda)){
+          massV0 = MassLambda0;
+          auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
+          registry.fill(HIST("hMassLambda"), v0.mAntiLambda());
+          if(DecayChannel == DecayChannel::DplusV0){
+            registry.fill(HIST("hMassXcRes"), sqrt(invMass2DV0) - invMassD);
+          }
+        }
         // fill V0 table
         // if information on V0 already stored, go to next V0
         if (!selectedV0s.count(v0.globalIndex())) {
@@ -285,6 +319,9 @@ struct HfDataCreatorDV0Reduced {
                    v0.x(), v0.y(), v0.z(),
                    v0.mK0Short(), v0.mLambda(), v0.mAntiLambda(),
                    pVecV0[0], pVecV0[1], pVecV0[2],
+                   v0.v0cosPA(),
+                   v0.dcav0topv(),
+                   v0.v0radius(),
                    v0_type);
           selectedV0s[v0.globalIndex()] = hfCandV0.lastIndex();
         }
@@ -300,15 +337,11 @@ struct HfDataCreatorDV0Reduced {
                 d_type);
         fillHfReducedCollision = true;
         switch (DecayChannel) {
-          case DecayChannel::Ds1ToDstarK0s:
+          case DecayChannel::DstarV0:
             registry.fill(HIST("hMassDstar"), invMassD);
             registry.fill(HIST("hPtDstar"), candD.pt());
             break;
-          case DecayChannel::DsStar2ToDplusK0s:
-            registry.fill(HIST("hMassDplus"), invMassD);
-            registry.fill(HIST("hPtDplus"), candD.pt());
-            break;
-          case DecayChannel::Xc3055ToDplusLambda:
+          case DecayChannel::DplusV0:
             registry.fill(HIST("hMassDplus"), invMassD);
             registry.fill(HIST("hPtDplus"), candD.pt());
             break;
@@ -330,9 +363,9 @@ struct HfDataCreatorDV0Reduced {
                        collision.covXX(), collision.covXY(), collision.covYY(),
                        collision.covXZ(), collision.covYZ(), collision.covZZ(),
                        0);
-  }
+  } // run data creation
 
-  void processDsStar2(aod::Collisions const& collisions,
+  void processDplusV0(aod::Collisions const& collisions,
                       CandsDplusFiltered const& candsDplus,
                       aod::TrackAssoc const& trackIndices,
                       aod::V0Datas const& V0s,
@@ -345,12 +378,12 @@ struct HfDataCreatorDV0Reduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<DecayChannel::DsStar2ToDplusK0s, CandsDplusFiltered>(collision, candsDThisColl, V0sThisColl, bcs);
+      runDataCreation<DecayChannel::DplusV0, CandsDplusFiltered>(collision, candsDThisColl, V0sThisColl, bcs);
     }
   }
-  PROCESS_SWITCH(HfDataCreatorDV0Reduced, processDsStar2, "Process DsStar2 to Dplus K0s without MC info and without ML info", true);
+  PROCESS_SWITCH(HfDataCreatorDV0Reduced, processDplusV0, "Process Dplus candidates without MC info and without ML info", true);
 
-  void processDs1(aod::Collisions const& collisions,
+  void processDstarV0(aod::Collisions const& collisions,
                   CandDstarFiltered const& candsDstar,
                   aod::TrackAssoc const& trackIndices,
                   aod::V0Datas const& V0s,
@@ -363,28 +396,10 @@ struct HfDataCreatorDV0Reduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<DecayChannel::Ds1ToDstarK0s, CandDstarFiltered>(collision, candsDThisColl, V0sThisColl, bcs);
+      runDataCreation<DecayChannel::DstarV0, CandDstarFiltered>(collision, candsDThisColl, V0sThisColl, bcs);
     }
   }
-  PROCESS_SWITCH(HfDataCreatorDV0Reduced, processDs1, "Process Ds1 to DStar K0s without MC info and without ML info", false);
-
-  void processXc(aod::Collisions const& collisions,
-                 CandsDplusFiltered const& candsDplus,
-                 aod::TrackAssoc const& trackIndices,
-                 aod::V0Datas const& V0s,
-                 aod::BCsWithTimestamps const& bcs)
-  {
-    // handle normalization by the right number of collisions
-    hfCollisionCounter(collisions.tableSize());
-
-    for (const auto& collision : collisions) {
-      auto thisCollId = collision.globalIndex();
-      auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
-      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<DecayChannel::Xc3055ToDplusLambda, CandsDplusFiltered>(collision, candsDThisColl, V0sThisColl, bcs);
-    }
-  }
-  PROCESS_SWITCH(HfDataCreatorDV0Reduced, processXc, "Process Xc to Dplus Lambda without MC info and without ML info", false);
+  PROCESS_SWITCH(HfDataCreatorDV0Reduced, processDstarV0, "Process DStar candidates without MC info and without ML info", false);
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
