@@ -330,8 +330,8 @@ struct TrackTuner {
     }
   }
 
-  template <typename T1, typename T2, typename T3, typename T4>
-  void tuneTrackParams(T1 const& mcparticle, T2& trackParCov, T3 const& matCorr, T4 dcaInfoCov)
+  template <typename T1, typename T2, typename T3, typename T4, typename H>
+  void tuneTrackParams(T1 const& mcparticle, T2& trackParCov, T3 const& matCorr, T4 dcaInfoCov, H hQA)
   {
 
     double ptMC = mcparticle.pt();
@@ -533,6 +533,10 @@ struct TrackTuner {
     double sigma1PtTgl = 0.0;
     double sigma1Pt2 = 0.0;
 
+    double sigmaY2orig = trackParCov.getSigmaY2();
+    double sigmaZYorig = trackParCov.getSigmaZY();
+    double sigmaZ2orig = trackParCov.getSigmaZ2();
+
     if (updateTrackCovMat) {
       //       if(sd0rpo>0.)            covar[0]*=(sd0rpn/sd0rpo)*(sd0rpn/sd0rpo);//yy
       sigmaY2 = trackParCov.getSigmaY2();
@@ -543,7 +547,7 @@ struct TrackTuner {
       //       if(sd0zo>0. && sd0rpo>0.)covar[1]*=(sd0rpn/sd0rpo)*(sd0zn/sd0zo);//yz
       sigmaZY = trackParCov.getSigmaZY();
       if (dcaZResCurrent > 0. && dcaXYResCurrent > 0.)
-        sigmaZY *= ((dcaXYResUpgr / dcaXYResCurrent) * (dcaXYResUpgr / dcaXYResCurrent));
+        sigmaZY *= ((dcaXYResUpgr / dcaXYResCurrent) * (dcaZResUpgr / dcaZResCurrent));
       trackParCov.setCov(sigmaZY, 1);
 
       //       if(sd0zo>0.)             covar[2]*=(sd0zn/sd0zo)*(sd0zn/sd0zo);//zz
@@ -617,7 +621,7 @@ struct TrackTuner {
       trackParCov.setCov(sigmaY2, 0);
 
       // covar[1]*=pullcorr;//yz
-      sigmaZY *= ratioDCAxyPulls;
+      sigmaZY *= (ratioDCAxyPulls * ratioDCAzPulls);
       trackParCov.setCov(sigmaZY, 1);
 
       sigmaZ2 *= (ratioDCAzPulls * ratioDCAzPulls);
@@ -643,6 +647,30 @@ struct TrackTuner {
 
       sigma1PtZ *= ratioDCAzPulls;
       trackParCov.setCov(sigma1PtZ, 11);
+    }
+
+    /// sanity check for track covariance matrix element
+    /// see https://github.com/AliceO2Group/AliceO2/blob/66de30958153cd7badf522150e8554f9fcf975ff/Common/DCAFitter/include/DCAFitter/DCAFitterN.h#L38-L54
+    double detYZ = sigmaY2 * sigmaZ2 - sigmaZY * sigmaZY;
+    if (detYZ < 0) {
+      /// restore the original values for these elements, since in this case the cov. matrix gets ill-defined
+      if (debugInfo) {
+        LOG(info) << "\n>>> ILL DEFINED COV. MATRIX <<<";
+        LOG(info) << "    sigmaY2 = " << sigmaY2;
+        LOG(info) << "    sigmaZY = " << sigmaZY;
+        LOG(info) << "    sigmaZ2 = " << sigmaZ2;
+        LOG(info) << "    The product (sigmaY2*sigmaZ2 - sigmaZY*sigmaZY) = " << detYZ << " is negative. Restoring the original sigmaY2, sigmaZY, sigmaZ2 cov. matrix elements:";
+        LOG(info) << "    sigmaY2orig = " << sigmaY2orig;
+        LOG(info) << "    sigmaZYorig = " << sigmaZYorig;
+        LOG(info) << "    sigmaZ2orig = " << sigmaZ2orig;
+      }
+      trackParCov.setCov(sigmaY2orig, 0);
+      trackParCov.setCov(sigmaZYorig, 1);
+      trackParCov.setCov(sigmaZ2orig, 2);
+
+      hQA->Fill(3);
+    } else {
+      hQA->Fill(2);
     }
   }
 
