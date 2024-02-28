@@ -83,9 +83,9 @@ struct FwdTrackPropagation {
 
     if (run != fRun) {
       fRun = run;
-      std::map<string, string> metadata, headers;
-      headers = fCCDBApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", run), metadata, -1);
-      int64_t ts = std::atol(headers["SOR"].c_str());
+      std::map<string, string> metadata;
+      auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(fCCDBApi, run);
+      auto ts = soreor.first;
       auto grpmag = fCCDBApi.retrieveFromTFileAny<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", metadata, ts);
       o2::base::Propagator::initFieldFromGRP(grpmag);
       if (!o2::base::GeometryManager::isGeometryLoaded())

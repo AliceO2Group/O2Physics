@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include "CCDB/CcdbApi.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "TString.h"
 #include "map"
 #include "string"
@@ -238,17 +239,16 @@ void upload_event_selection_params()
   runLast[n] = 297624;
 
   n++;
-  map<string, string> metadata, metadataRCT, headersFirst, headersLast;
+  map<string, string> metadata;
   for (int i = 0; i < n; i++) {
     printf("%s ", period[i].c_str());
     if (!isNew[i]) {
       printf(" .... is not new, skipping\n");
       continue;
     }
-    headersFirst = ccdb.retrieveHeaders(Form("RCT/Info/RunInformation/%i", runFirst[i]), metadataRCT, -1);
-    headersLast = ccdb.retrieveHeaders(Form("RCT/Info/RunInformation/%i", runLast[i]), metadataRCT, -1);
-    ULong64_t sor = atol(headersFirst["SOR"].c_str());
-    ULong64_t eor = atol(headersLast["EOR"].c_str());
+    auto sor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdb, runFirst[i]).first;
+    auto eor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdb, runLast[i]).second;
+
     printf("sor=%llu eor=%llu\n", sor, eor);
     metadata["period"] = period[i];
     metadata["run_first"] = Form("%d", runFirst[i]);
