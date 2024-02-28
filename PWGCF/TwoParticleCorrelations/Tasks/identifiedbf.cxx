@@ -566,6 +566,7 @@ struct IdentifiedBfCorrelationsTask {
           }
         }
       } else {
+        LOGF(info, "Number of channels (particle species + and -): %d ",nch)
         for (uint i = 0; i < nch; ++i) {
           /* histograms for each track species */
           fhN1_vsEtaPhi[i] = new TH2F(TString::Format("n1_%s_vsEtaPhi", tname[i].c_str()).Data(),
