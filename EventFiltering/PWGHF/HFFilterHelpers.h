@@ -223,7 +223,7 @@ class HfFilterHelper
   HfFilterHelper() = default;
 
   // setters
-  void setHighPtTriggerThresholds(float threshold2Prongs, float threshold3Prongs) 
+  void setHighPtTriggerThresholds(float threshold2Prongs, float threshold3Prongs)
   {
     mPtThresholdHighPt2Prongs = threshold2Prongs;
     mPtThresholdHighPt3Prongs = threshold3Prongs;
@@ -320,9 +320,9 @@ class HfFilterHelper
   void setNumSigmaForDeltaMassCharmHadCut(float nSigma) { mNumSigmaDeltaMassCharmHad = nSigma; }
 
   // helper functions for selections
-  template<typename T>
+  template <typename T>
   bool isSelectedHighPt2Prong(const T& pt);
-  template<typename T>
+  template <typename T>
   bool isSelectedHighPt3Prong(const T& pt);
   template <typename T, typename T1, typename T2>
   int8_t isSelectedTrackForSoftPionOrBeauty(const T& track, const T1& trackPar, const T2& dca, const int& whichTrigger);
@@ -429,8 +429,8 @@ class HfFilterHelper
   std::array<float, 2> mDeltaMassPars2Prongs{};                              // parameters (intercept, slope) for parametrisation of mass delta wrt PDG vs pT for 2-prongs
   std::array<float, 2> mSigmaPars3Prongs{};                                  // parameters (intercept, slope) for parametrisation of mass sigma vs pT for 3-prongs
   std::array<float, 2> mDeltaMassPars3Prongs{};                              // parameters (intercept, slope) for parametrisation of mass delta wrt PDG vs pT for 3-prongs
-  float mPtThresholdHighPt2Prongs{8.};                                         // threshold for high pT triggers for 2-prongs
-  float mPtThresholdHighPt3Prongs{8.};                                         // threshold for high pT triggers for 3-prongs
+  float mPtThresholdHighPt2Prongs{8.};                                       // threshold for high pT triggers for 2-prongs
+  float mPtThresholdHighPt3Prongs{8.};                                       // threshold for high pT triggers for 3-prongs
 
   // PID recalibrations
   int mTpcPidCalibrationOption{0};                        // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
@@ -440,7 +440,7 @@ class HfFilterHelper
 
 /// Selection of high-pt 2-prong candidates
 /// \param pt is the pt of the 2-prong candidate
-template<typename T>
+template <typename T>
 inline bool HfFilterHelper::isSelectedHighPt2Prong(const T& pt)
 {
   if (pt < mPtThresholdHighPt2Prongs) {
@@ -451,7 +451,7 @@ inline bool HfFilterHelper::isSelectedHighPt2Prong(const T& pt)
 
 /// Selection of high-pt 3-prong candidates
 /// \param pt is the pt of the 3-prong candidate
-template<typename T>
+template <typename T>
 inline bool HfFilterHelper::isSelectedHighPt3Prong(const T& pt)
 {
   if (pt < mPtThresholdHighPt3Prongs) {
