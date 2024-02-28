@@ -204,7 +204,7 @@ struct DGCandProducer {
     //   3: TSC              7: no TSC
     //   4: TCE              8: no TCE
     //   9: IsBBXXX         10: !IsBBXXX
-    //  11: kNoBGXXX        12: !kNoBGXXX 
+    //  11: kNoBGXXX        12: !kNoBGXXX
     registry.add("reco/fv0",  "FV0 amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
     registry.add("reco/ft0A", "FT0A amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
     registry.add("reco/ft0C", "FT0C amplitudes", {HistType::kTH2F, {{20001, -0.5, 20000.5}, {13, -0.5, 12.5}}});
@@ -233,7 +233,7 @@ struct DGCandProducer {
 
     // apply DG selection
     auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
-    
+
     // save DG candidates
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
     registry.get<TH1>(HIST("reco/Stat"))->Fill(isDGEvent + 1, 1.);
