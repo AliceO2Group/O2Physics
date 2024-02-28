@@ -132,7 +132,7 @@ struct MultiplicityDerivedQa {
   void process(soa::Join<aod::Mults, aod::MultsExtra>::iterator const& col)
   {
     // for analysis of slim derived data (MC, etc) and specific run selection
-    if(selectRun>-1 && col.multRunNumber() != selectRun)
+    if (selectRun > -1 && col.multRunNumber() != selectRun)
       return;
 
     histos.fill(HIST("multiplicityQa/hEventCounter"), 0.5);
