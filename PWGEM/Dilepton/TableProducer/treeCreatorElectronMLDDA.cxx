@@ -962,13 +962,13 @@ struct TreeCreatorElectronMLDDA {
           //   }
           // }
         }
-        if (abs(mXi - 1.321) > 0.01 && IsKaon(bachelor)) { // reject Xi candidates
+        if (abs(mXi - 1.322) > 0.01 && IsKaon(bachelor)) { // reject Xi candidates
           registry.fill(HIST("Cascade/hMassOmega"), mOmega);
           registry.fill(HIST("Cascade/hMassPt_Omega"), mOmega, pt);
           registry.fill(HIST("Cascade/hMassPt_Omega_bachelor"), mOmega, bachelor.p());
           registry.fill(HIST("Cascade/hRxy_Omega"), mOmega, casc_rxy);
           registry.fill(HIST("Cascade/hCTau_Omega"), mOmega, ctauOmega);
-          if (abs(mOmega - 1.672) < 0.005) { // select Omega candidates
+          if (abs(mOmega - 1.672) < 0.004) { // select Omega candidates
             if (dist01(engine) < downscaling_kaon) {
               fillTrackTable(collision, bachelor, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary));
             }
