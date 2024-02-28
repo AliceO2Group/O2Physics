@@ -207,7 +207,8 @@ struct HfDataCreatorDV0Reduced {
   template <uint8_t DecayChannel, typename CCands>
   void runDataCreation(aod::Collision const& collision,
                        CCands const& candsD,
-                       aod::V0Datas const& V0s,
+                       aod::V0Datas const& V0s, 
+                       BigTracksPID const& tracks,
                        aod::BCsWithTimestamps const& bcs)
   {
     // helpers for ReducedTables filling
@@ -241,6 +242,7 @@ struct HfDataCreatorDV0Reduced {
       uint8_t v0_type;
       int8_t d_type;
 
+
       if constexpr (std::is_same<CCands, CandDstarFiltered>::value) {
         if (candD.signSoftPi() > 0)
           invMassD = candD.invMassDstar() - candD.invMassD0();
@@ -256,6 +258,7 @@ struct HfDataCreatorDV0Reduced {
         prongIdsD[2] = candD.prongPiId();
         d_type = candD.signSoftPi() * TypeD::Dstar;
       } else if constexpr (std::is_same<CCands, CandsDplusFiltered>::value) {
+        auto prong0 = candD.template prong0_as<BigTracksPID>();
         invMassD = hfHelper.invMassDplusToPiKPi(candD);
         massD = MassDPlus;
         pVecD = candD.pVector();
@@ -265,8 +268,8 @@ struct HfDataCreatorDV0Reduced {
         prongIdsD[0] = candD.prong0Id();
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prong2Id();
-        d_type = candD.sign() * TypeD::Dplus;
-      } // else if
+        d_type = prong0.sign() * TypeD::Dplus;
+      }   // else if
 
       // Loop on V0 candidates
       for (const auto& v0 : V0s) {
@@ -298,10 +301,10 @@ struct HfDataCreatorDV0Reduced {
           registry.fill(HIST("hMassK0s"), v0.mK0Short());
           switch (DecayChannel) {
             case DecayChannel::DstarV0:
-              registry.fill(HIST("hMassDs1"), sqrt(invMass2DV0) - invMassD);
+              registry.fill(HIST("hMassDs1"), sqrt(invMass2DV0) - massD);
               break;
             case DecayChannel::DplusV0:
-              registry.fill(HIST("hMassDsStar2"), sqrt(invMass2DV0) - invMassD);
+              registry.fill(HIST("hMassDsStar2"), sqrt(invMass2DV0) - massD);
               break;
             default:
               break;
@@ -312,7 +315,7 @@ struct HfDataCreatorDV0Reduced {
           auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
           registry.fill(HIST("hMassLambda"), v0.mLambda());
           if (DecayChannel == DecayChannel::DplusV0) {
-            registry.fill(HIST("hMassXcRes"), sqrt(invMass2DV0) - invMassD);
+            registry.fill(HIST("hMassXcRes"), sqrt(invMass2DV0) - massD);
           }
         }
         if (TESTBIT(v0_type, AntiLambda)) {
@@ -381,6 +384,7 @@ struct HfDataCreatorDV0Reduced {
                       CandsDplusFiltered const& candsDplus,
                       aod::TrackAssoc const& trackIndices,
                       aod::V0Datas const& V0s,
+                      BigTracksPID const& tracks,
                       aod::BCsWithTimestamps const& bcs)
   {
     // handle normalization by the right number of collisions
@@ -390,7 +394,7 @@ struct HfDataCreatorDV0Reduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<DecayChannel::DplusV0, CandsDplusFiltered>(collision, candsDThisColl, V0sThisColl, bcs);
+      runDataCreation<DecayChannel::DplusV0, CandsDplusFiltered>(collision, candsDThisColl, V0sThisColl,tracks, bcs);
     }
   }
   PROCESS_SWITCH(HfDataCreatorDV0Reduced, processDplusV0, "Process Dplus candidates without MC info and without ML info", true);
@@ -399,6 +403,7 @@ struct HfDataCreatorDV0Reduced {
                       CandDstarFiltered const& candsDstar,
                       aod::TrackAssoc const& trackIndices,
                       aod::V0Datas const& V0s,
+                      BigTracksPID const& tracks,
                       aod::BCsWithTimestamps const& bcs)
   {
     // handle normalization by the right number of collisions
@@ -408,7 +413,7 @@ struct HfDataCreatorDV0Reduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<DecayChannel::DstarV0, CandDstarFiltered>(collision, candsDThisColl, V0sThisColl, bcs);
+      runDataCreation<DecayChannel::DstarV0, CandDstarFiltered>(collision, candsDThisColl, V0sThisColl,tracks, bcs);
     }
   }
   PROCESS_SWITCH(HfDataCreatorDV0Reduced, processDstarV0, "Process DStar candidates without MC info and without ML info", false);
