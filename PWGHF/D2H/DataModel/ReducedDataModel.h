@@ -386,7 +386,7 @@ DECLARE_SOA_COLUMN(DCA, dca, float);         //! DCA of V0 candidate
 DECLARE_SOA_COLUMN(Radius, radius, float);   //! Radius of V0 candidate
 DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t); //! Bitmap with mass hypothesis of the V0
 DECLARE_SOA_COLUMN(DType, dType, int8_t);    //! Integer with selected D candidate type: 1 = Dplus, -1 = Dminus, 2 = DstarPlus, -2 = DstarMinus
-} // namespace hf_reso_cand_reduced
+} // namespace hf_reso_cand_reduced 
 
 DECLARE_SOA_TABLE(HfRedVzeros, "AOD", "HFREDVZERO", //! Table with V0 candidate information for resonances reduced workflow
                   o2::soa::Index<>,
