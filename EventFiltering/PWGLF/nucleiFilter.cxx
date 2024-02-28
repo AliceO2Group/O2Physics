@@ -142,10 +142,14 @@ struct nucleiFilter {
   // Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta);
   // using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>;
-  void process(aod::Collisions::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, TrackCandidates const& tracks)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, TrackCandidates const& tracks)
   {
     // collision process loop
     bool keepEvent[nNuclei + nHyperNuclei]{false};
+    if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      tags(keepEvent[2], keepEvent[3]);
+      return;
+    }
     //
     qaHists.fill(HIST("fCollZpos"), collision.posZ());
     qaHists.fill(HIST("fProcessedEvents"), 0);
