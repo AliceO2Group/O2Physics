@@ -75,7 +75,8 @@ DECLARE_SOA_COLUMN(TauxyBcandidate, tauxyBcandidate, float);
 DECLARE_SOA_COLUMN(TauzBcandidate, tauzBcandidate, float);
 DECLARE_SOA_COLUMN(CosPBcandidate, cosPBcandidate, float);
 DECLARE_SOA_COLUMN(Chi2Bcandidate, chi2Bcandidate, float);
-DECLARE_SOA_COLUMN(MlScore, mlScore, std::vector<float>);
+DECLARE_SOA_COLUMN(MlScoreTrack, mlScoreTrack, std::vector<float>);
+DECLARE_SOA_COLUMN(MlScoreDilepton, mlScoreDilepton, std::vector<float>);
 } // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);
@@ -84,7 +85,8 @@ DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "DQANATRKCUTS", dqanalysisflags::IsBar
 DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsPrefilterVetoed);
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate);
-DECLARE_SOA_TABLE(MlScoresTrack, "AOD", "MLSCORESTRACK", dqanalysisflags::MlScore);
+DECLARE_SOA_TABLE(MlScoresTrack, "AOD", "MLSCORESTRACK", dqanalysisflags::MlScoreTrack);
+DECLARE_SOA_TABLE(MlScoresDilepton, "AOD", "MLSCOREDILEP", dqanalysisflags::MlScoreDilepton);
 } // namespace o2::aod
 
 // Declarations of various short names
@@ -135,7 +137,7 @@ void DefineHistogramsMl(HistogramManager* histMan, std::vector<string> className
 // ML selection
 void initMlSelection(o2::analysis::DQMlResponse<float>& mlResponse, std::vector<double> fConfigBinsMl, LabeledArray<double> fConfigCutsMl, std::vector<int> fConfigCutDirMl, int fConfigNClassesMl, bool fConfigLoadModelsFromCCDB, o2::ccdb::CcdbApi& ccdbApi, std::string fConfigCcdbUrl, std::vector<string> fConfigONNXFileNames, std::vector<std::string> fConfigModelPathsCCDB, int64_t fConfigTimestampCCDB, std::vector<std::string> fConfigNamesInputFeatures, std::string fConfigNameBinVariable);
 template <typename T>
-void applyMlSelection(o2::analysis::DQMlResponse<float>& mlResponse, HistogramManager* fHistMan, uint32_t& filterMap, const int iCut, const bool fConfigQA, const char* histName, const bool fillScoreTable, T& scoreTable); // apply ML selection
+void applyMlSelection(o2::analysis::DQMlResponse<float>& mlResponse, HistogramManager* fHistMan, const bool fillScoreTable, T& scoreTable, const bool fConfigQA = true); // apply ML selection
 
 // Configurables for ML selection
 struct MlConfigs : ConfigurableGroup {
@@ -147,6 +149,7 @@ struct MlConfigs : ConfigurableGroup {
   Configurable<int> fConfigNClassesMl{"cfgNClassesMl", static_cast<int>(dq_ml_cuts::nCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> fConfigONNXFileNames{"cfgONNXFileNames", std::vector<std::string>{""}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<bool> fConfigLoadModelsFromCCDB{"cfgLoadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  Configurable<std::string> fConfigCcdbUrlMl{"cfgCcdbUrlMl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int64_t> fConfigTimestampCCDB{"cfgTimestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<std::vector<std::string>> fConfigModelPathsCCDB{"cfgModelPathsCCDB", std::vector<std::string>{""}, "Paths of models on CCDB"};
   Configurable<std::string> fConfigNameBinVariable{"cfgNameBinVariable", "kPt", "Name of the binning variable"};
@@ -279,7 +282,7 @@ struct AnalysisTrackSelection {
     }
 
     if (mlConfigs.fConfigApplyMl) {
-      initMlSelection(mlResponse, mlConfigs.fConfigBinsMl, mlConfigs.fConfigCutsMl, mlConfigs.fConfigCutDirMl, mlConfigs.fConfigNClassesMl, mlConfigs.fConfigLoadModelsFromCCDB, ccdbApi, fConfigCcdbUrl, mlConfigs.fConfigONNXFileNames, mlConfigs.fConfigModelPathsCCDB, mlConfigs.fConfigTimestampCCDB, mlConfigs.fConfigNamesInputFeatures, mlConfigs.fConfigNameBinVariable);
+      initMlSelection(mlResponse, mlConfigs.fConfigBinsMl, mlConfigs.fConfigCutsMl, mlConfigs.fConfigCutDirMl, mlConfigs.fConfigNClassesMl, mlConfigs.fConfigLoadModelsFromCCDB, ccdbApi, mlConfigs.fConfigCcdbUrlMl, mlConfigs.fConfigONNXFileNames, mlConfigs.fConfigModelPathsCCDB, mlConfigs.fConfigTimestampCCDB, mlConfigs.fConfigNamesInputFeatures, mlConfigs.fConfigNameBinVariable);
     }
 
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
@@ -354,7 +357,7 @@ struct AnalysisTrackSelection {
         fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
       }
       if (mlConfigs.fConfigApplyMl) {
-        applyMlSelection(mlResponse, fHistMan, filterMap, fConfigQA, iCut, "TrackBarrel", mlConfigs.fConfigFillScoreTable, mlScores);
+        applyMlSelection(mlResponse, fHistMan, mlConfigs.fConfigFillScoreTable, mlScores, fConfigQA);
       }
       iCut = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, iCut++) {
@@ -782,6 +785,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonFlow> dileptonFlowList;
   Produces<aod::DileptonsInfo> dileptonInfoList;
+  Produces<aod::MlScoresDilepton> mlScores;
   float mMagField = 0.0;
   o2::parameters::GRPMagField* grpmag = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
@@ -810,8 +814,10 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> fCollisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
   Configurable<float> fCenterMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
+  MlConfigs mlConfigs;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi ccdbApi;
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   // NOTE: the barrel filter map contains decisions for both electrons and hadrons used in the correlation task
   Filter filterBarrelTrackSelected = aod::dqanalysisflags::isBarrelSelected > 0;
@@ -830,6 +836,8 @@ struct AnalysisSameEventPairing {
   std::vector<std::vector<TString>> fTrackMuonHistNames;
   std::vector<AnalysisCompositeCut> fPairCuts;
 
+  o2::analysis::DQMlResponse<float> mlResponse;
+
   void init(o2::framework::InitContext& context)
   {
     fCurrentRun = 0;
@@ -837,6 +845,10 @@ struct AnalysisSameEventPairing {
     ccdb->setURL(ccdburl.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+
+    if (mlConfigs.fConfigApplyMl) {
+      initMlSelection(mlResponse, mlConfigs.fConfigBinsMl, mlConfigs.fConfigCutsMl, mlConfigs.fConfigCutDirMl, mlConfigs.fConfigNClassesMl, mlConfigs.fConfigLoadModelsFromCCDB, ccdbApi, mlConfigs.fConfigCcdbUrlMl, mlConfigs.fConfigONNXFileNames, mlConfigs.fConfigModelPathsCCDB, mlConfigs.fConfigTimestampCCDB, mlConfigs.fConfigNamesInputFeatures, mlConfigs.fConfigNameBinVariable);
+    }
 
     if (fNoCorr) {
       VarManager::SetupFwdDCAFitterNoCorr();
@@ -958,6 +970,10 @@ struct AnalysisSameEventPairing {
           }     // end loop (track cuts)
         }       // end if (equal number of cuts)
       }         // end if (track cuts)
+    }
+
+    if (mlConfigs.fConfigApplyMl) {
+      DefineHistogramsMl(fHistMan, mlConfigs.fConfigCutsMl->getLabelsCols(), mlConfigs.fConfigBinsMl.value, mlResponse.getCachedBinVariableIndex());
     }
 
     // Usage example of ccdb
@@ -1131,6 +1147,9 @@ struct AnalysisSameEventPairing {
         dileptonFlowList(VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3], VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi]);
       }
 
+      if (mlConfigs.fConfigApplyMl) {
+        applyMlSelection(mlResponse, fHistMan, mlConfigs.fConfigFillScoreTable, mlScores);
+      }
       int iCut = 0;
       for (int icut = 0; icut < ncuts; icut++) {
         if (twoTrackFilter & (uint32_t(1) << icut)) {
@@ -1640,18 +1659,12 @@ void initMlSelection(o2::analysis::DQMlResponse<float>& mlResponse, std::vector<
 }
 
 template <typename T>
-void applyMlSelection(o2::analysis::DQMlResponse<float>& mlResponse, HistogramManager* fHistMan, uint32_t& filterMap, const int iCut, const bool fConfigQA, const char* histName, const bool fillScoreTable, T& scoreTable)
+void applyMlSelection(o2::analysis::DQMlResponse<float>& mlResponse, HistogramManager* fHistMan, const bool fillScoreTable, T& scoreTable, const bool fConfigQA)
 {
   std::vector<float> inputFeatures = mlResponse.getInputFeatures();
   float binVariable = mlResponse.getBinVariable();
   std::vector<float> scores = {};
   bool isSel = mlResponse.isSelectedMl(inputFeatures, binVariable, scores);
-  /*if (isSel) {
-    filterMap |= (uint32_t(1) << iCut);
-    if (fConfigQA) {
-      fHistMan->FillHistClass(Form("%s_%s", histName, "ML"), VarManager::fgValues);
-    }
-  }*/
   VarManager::FillMl(scores, isSel);
   if (fConfigQA) {
     fHistMan->FillHistClass("ML_Output", VarManager::fgValues);
@@ -1670,7 +1683,7 @@ void DefineHistogramsMl(HistogramManager* histMan, std::vector<string> className
   const int nScoreBins = 100;
   double scoreBins[nScoreBins + 1];
   for (int i = 0; i < nScoreBins + 1; i++) {
-    scoreBins[i] = double(i) / nScoreBins;
+    scoreBins[i] = static_cast<double>(i) / nScoreBins;
   }
   int nBins = bins.size() - 1;
   histMan->AddHistogram("ML_Output", "isSelected", "is selected", false, nSelBins, selBins, VarManager::kMlIsSelected);
