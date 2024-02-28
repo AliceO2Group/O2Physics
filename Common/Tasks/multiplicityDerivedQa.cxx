@@ -69,13 +69,20 @@ struct MultiplicityDerivedQa {
   Configurable<LabeledArray<float>> selZEM{"selZEM", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selZEM"};
   Configurable<LabeledArray<float>> selFV0A{"selFV0A", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selFV0A"};
   Configurable<LabeledArray<float>> selFT0A{"selFT0A", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selFT0A"};
+  Configurable<LabeledArray<float>> selNch{"selNch", {default2dCuts[0], 4, {"maxFT0C", "A", "B", "C"}}, "selNch"};
+
+  ConfigurableAxis axisRawCentrality{"axisRawCentrality", {VARIABLE_WIDTH, 0.000f, 52.320f, 75.400f, 95.719f, 115.364f, 135.211f, 155.791f, 177.504f, 200.686f, 225.641f, 252.645f, 281.906f, 313.850f, 348.302f, 385.732f, 426.307f, 470.146f, 517.555f, 568.899f, 624.177f, 684.021f, 748.734f, 818.078f, 892.577f, 973.087f, 1058.789f, 1150.915f, 1249.319f, 1354.279f, 1465.979f, 1584.790f, 1710.778f, 1844.863f, 1985.746f, 2134.643f, 2291.610f, 2456.943f, 2630.653f, 2813.959f, 3006.631f, 3207.229f, 3417.641f, 3637.318f, 3865.785f, 4104.997f, 4354.938f, 4615.786f, 4885.335f, 5166.555f, 5458.021f, 5762.584f, 6077.881f, 6406.834f, 6746.435f, 7097.958f, 7462.579f, 7839.165f, 8231.629f, 8635.640f, 9052.000f, 9484.268f, 9929.111f, 10389.350f, 10862.059f, 11352.185f, 11856.823f, 12380.371f, 12920.401f, 13476.971f, 14053.087f, 14646.190f, 15258.426f, 15890.617f, 16544.433f, 17218.024f, 17913.465f, 18631.374f, 19374.983f, 20136.700f, 20927.783f, 21746.796f, 22590.880f, 23465.734f, 24372.274f, 25314.351f, 26290.488f, 27300.899f, 28347.512f, 29436.133f, 30567.840f, 31746.818f, 32982.664f, 34276.329f, 35624.859f, 37042.588f, 38546.609f, 40139.742f, 41837.980f, 43679.429f, 45892.130f, 400000.000f}, "raw centrality signal"}; // for QA
 
   void init(InitContext&)
   {
-    const AxisSpec axisEvent{10, 0, 10, "Event counter"};
+    const AxisSpec axisCentrality{100, 0, 100, "Centrality"};
 
     // Base histograms
-    histos.add("multiplicityQa/hEventCounter", "Event counter", kTH1D, {axisEvent});
+    histos.add("multiplicityQa/hCentralityAll", "Centrality", kTH1D, {axisCentrality});
+    histos.add("multiplicityQa/hCentralitySel8", "Centrality", kTH1D, {axisCentrality});
+    histos.add("multiplicityQa/hCentralityINELgtZERO", "Centrality", kTH1D, {axisCentrality});
+    histos.add("multiplicityQa/hCentralityVertexZ", "Centrality", kTH1D, {axisCentrality});
+    histos.add("multiplicityQa/hCentralitySelected", "Centrality", kTH1D, {axisCentrality});
 
     histos.add("multiplicityQa/hRawFV0", "Raw FV0", kTH1D, {axisMultFV0});
     histos.add("multiplicityQa/hRawFT0", "Raw FT0", kTH1D, {axisMultFT0});
@@ -124,22 +131,33 @@ struct MultiplicityDerivedQa {
       histos.add("multiplicityQa/h2dZPAVsFT0C", "ZPAvsFT0C", kTH2F, {axisMultFT0C, axisMultZPA});
       histos.add("multiplicityQa/h2dZPCVsFT0C", "ZPCvsFT0C", kTH2F, {axisMultFT0C, axisMultZPC});
     }
+
+    // for QA and test purposes
+    auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
+
+    for (int ii = 1; ii < 101; ii++) {
+      float value = 100.5f - static_cast<float>(ii);
+      hRawCentrality->SetBinContent(ii, value);
+    }
   }
 
   void process(soa::Join<aod::Mults, aod::MultsExtra>::iterator const& col)
   {
-    histos.fill(HIST("multiplicityQa/hEventCounter"), 0.5);
+    auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
+    float centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(col.multFT0C()));
+    histos.fill(HIST("multiplicityQa/hCentralityAll"), centrality);
+
     if (selection == 8 && !col.multSel8()) {
       return;
     }
     if (selection != 8 && selection >= 0) {
       LOGF(fatal, "Unknown selection type!");
     }
-    histos.fill(HIST("multiplicityQa/hEventCounter"), 1.5);
+    histos.fill(HIST("multiplicityQa/hCentralitySel8"), centrality);
     if (INELgtZERO && col.multNTracksPVeta1() < 1) {
       return;
     }
-    histos.fill(HIST("multiplicityQa/hEventCounter"), 2.5);
+    histos.fill(HIST("multiplicityQa/hCentralityINELgtZERO"), centrality);
 
     // Vertex-Z dependencies, necessary for CCDB objects
     histos.fill(HIST("multiplicityQa/hVtxZFV0A"), col.multPVz(), col.multFV0A());
@@ -152,8 +170,6 @@ struct MultiplicityDerivedQa {
     if (fabs(col.multPVz()) > vtxZsel) {
       return;
     }
-
-    histos.fill(HIST("multiplicityQa/hEventCounter"), 3.5);
 
     // apply special event selections
     if (selZNA->get("maxFT0C") > -0.5f && col.multFT0C() < selZNA->get("maxFT0C") && (selZNA->get("A") * col.multZNA() + selZNA->get("B") * col.multFT0C() + selZNA->get("C") < 0.0f))
@@ -174,8 +190,10 @@ struct MultiplicityDerivedQa {
       return;
     if (selFT0A->get("maxFT0C") > -0.5f && col.multFT0C() < selFT0A->get("maxFT0C") && (selFT0A->get("A") * col.multFT0A() + selFT0A->get("B") * col.multFT0C() + selFT0A->get("C") < 0.0f))
       return;
+    if (selNch->get("maxFT0C") > -0.5f && col.multFT0C() < selNch->get("maxFT0C") && (selNch->get("A") * col.multNTracksPV() + selNch->get("B") * col.multFT0C() + selNch->get("C") < 0.0f))
+      return;
 
-    histos.fill(HIST("multiplicityQa/hEventCounter"), 4.5);
+    histos.fill(HIST("multiplicityQa/hCentralitySelected"), centrality);
 
     LOGF(debug, "multFV0A=%5.0f multFV0C=%5.0f multFV0M=%5.0f multFT0A=%5.0f multFT0C=%5.0f multFT0M=%5.0f multFDDA=%5.0f multFDDC=%5.0f", col.multFV0A(), col.multFV0C(), col.multFV0M(), col.multFT0A(), col.multFT0C(), col.multFT0M(), col.multFDDA(), col.multFDDC());
 
