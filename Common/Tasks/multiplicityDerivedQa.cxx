@@ -117,6 +117,7 @@ struct MultiplicityDerivedQa {
       histos.add("multiplicityQa/h2dNchVsFT0A", "FT0A", kTH2F, {axisMultFT0A, axisMultNTracks});
       histos.add("multiplicityQa/h2dNchVsFT0C", "FT0C", kTH2F, {axisMultFT0C, axisMultNTracks});
       histos.add("multiplicityQa/h2dNchVsFDD", "FDD", kTH2F, {axisMultFDD, axisMultNTracks});
+      histos.add("multiplicityQa/h2dNchVsCentrality", "Centrality", kTH2F, {axisCentrality, axisMultNTracks});
 
       // correlate T0 and V0
       histos.add("multiplicityQa/h2dFT0MVsFV0M", "FDD", kTH2F, {axisMultFV0, axisMultFT0});
@@ -133,6 +134,19 @@ struct MultiplicityDerivedQa {
       histos.add("multiplicityQa/h2dZEMVsFT0C", "ZEMvsFT0C", kTH2F, {axisMultFT0C, axisMultZEM});
       histos.add("multiplicityQa/h2dZPAVsFT0C", "ZPAvsFT0C", kTH2F, {axisMultFT0C, axisMultZPA});
       histos.add("multiplicityQa/h2dZPCVsFT0C", "ZPCvsFT0C", kTH2F, {axisMultFT0C, axisMultZPC});
+
+      // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
+      // vs centrality
+      histos.add("multiplicityQa/h2dFV0AVsCentrality", "FV0AVsCentrality", kTH2F, {axisCentrality, axisMultFV0});
+      histos.add("multiplicityQa/h2dFT0AVsCentrality", "FT0AVsCentrality", kTH2F, {axisCentrality, axisMultFT0A});
+      histos.add("multiplicityQa/h2dZNAVsCentrality", "ZNAVsCentrality", kTH2F, {axisCentrality, axisMultZNA});
+      histos.add("multiplicityQa/h2dZNCVsCentrality", "ZNPVsCentrality", kTH2F, {axisCentrality, axisMultZNC});
+      histos.add("multiplicityQa/h2dZEM1VsCentrality", "ZEM1VsCentrality", kTH2F, {axisCentrality, axisMultZEM1});
+      histos.add("multiplicityQa/h2dZEM2VsCentrality", "ZEM2VsCentrality", kTH2F, {axisCentrality, axisMultZEM2});
+      histos.add("multiplicityQa/h2dZEMVsCentrality", "ZEMVsCentrality", kTH2F, {axisCentrality, axisMultZEM});
+      histos.add("multiplicityQa/h2dZPAVsCentrality", "ZPAVsCentrality", kTH2F, {axisCentrality, axisMultZPA});
+      histos.add("multiplicityQa/h2dZPCVsCentrality", "ZPCVsCentrality", kTH2F, {axisCentrality, axisMultZPC});
+      // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
     }
 
     // for QA and test purposes
@@ -177,6 +191,7 @@ struct MultiplicityDerivedQa {
     if (fabs(col.multPVz()) > vtxZsel) {
       return;
     }
+    histos.fill(HIST("multiplicityQa/hCentralityVertexZ"), centrality);
 
     // apply special event selections
     if (selZNA->get("maxFT0C") > -0.5f && col.multFT0C() < selZNA->get("maxFT0C") && (selZNA->get("A") * col.multZNA() + selZNA->get("B") * col.multFT0C() + selZNA->get("C") < 0.0f))
@@ -226,6 +241,7 @@ struct MultiplicityDerivedQa {
       histos.fill(HIST("multiplicityQa/h2dNchVsFT0A"), col.multFT0A(), col.multNTracksPV());
       histos.fill(HIST("multiplicityQa/h2dNchVsFT0C"), col.multFT0C(), col.multNTracksPV());
       histos.fill(HIST("multiplicityQa/h2dNchVsFDD"), col.multFDDA() + col.multFDDC(), col.multNTracksPV());
+      histos.fill(HIST("multiplicityQa/h2dNchVsCentrality"), centrality, col.multNTracksPV());
 
       // correlate FIT signals and FT0C
       histos.fill(HIST("multiplicityQa/h2dFV0AVsFT0C"), col.multFT0C(), col.multFV0A());
@@ -239,6 +255,19 @@ struct MultiplicityDerivedQa {
       histos.fill(HIST("multiplicityQa/h2dZEMVsFT0C"), col.multFT0C(), col.multZEM1() + col.multZEM2());
       histos.fill(HIST("multiplicityQa/h2dZPAVsFT0C"), col.multFT0C(), col.multZPA());
       histos.fill(HIST("multiplicityQa/h2dZPCVsFT0C"), col.multFT0C(), col.multZPC());
+
+      // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
+      // vs centrality
+      histos.fill(HIST("multiplicityQa/h2dFV0AVsCentrality"), centrality, col.multFV0A());
+      histos.fill(HIST("multiplicityQa/h2dFT0AVsCentrality"), centrality, col.multFT0A());
+      histos.fill(HIST("multiplicityQa/h2dZNAVsCentrality"), centrality, col.multZNA());
+      histos.fill(HIST("multiplicityQa/h2dZNCVsCentrality"), centrality, col.multZNC());
+      histos.fill(HIST("multiplicityQa/h2dZEM1VsCentrality"), centrality, col.multZEM1());
+      histos.fill(HIST("multiplicityQa/h2dZEM2VsCentrality"), centrality, col.multZEM2());
+      histos.fill(HIST("multiplicityQa/h2dZEMVsCentrality"), centrality, col.multZEM1() + col.multZEM2());
+      histos.fill(HIST("multiplicityQa/h2dZPAVsCentrality"), centrality, col.multZPA());
+      histos.fill(HIST("multiplicityQa/h2dZPCVsCentrality"), centrality, col.multZPC());
+      // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
 
       // 2d FT0 vs FV0 fill
       histos.fill(HIST("multiplicityQa/h2dFT0MVsFV0M"), col.multFV0A(), col.multFT0A() + col.multFT0C());
