@@ -13,6 +13,8 @@
 //         cascades computed with standard DCAFitter methods and the KFparticle
 //         package. It is meant for the purposes of larger-scale QA of KF reco.
 
+#include <cmath>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -27,7 +29,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
-#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;

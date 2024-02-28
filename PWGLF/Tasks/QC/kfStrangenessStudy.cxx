@@ -15,6 +15,9 @@
 
 /// \brief cascadebuilder.cxx and lambdakzerobuilder.cxx tasks need to be added to the workflow. Flag createCascCovMats needs to be enabled!
 
+#include <cmath>
+#include <iostream>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -32,8 +35,6 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
-#include <cmath>
-#include <iostream>
 
 using namespace o2;
 using namespace o2::framework;
