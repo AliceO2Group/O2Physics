@@ -146,7 +146,7 @@ struct MultiplicityDerivedQa {
     auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
     float centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(col.multFT0C()));
     histos.fill(HIST("multiplicityQa/hCentralityAll"), centrality);
-    
+
     if (selection == 8 && !col.multSel8()) {
       return;
     }
@@ -170,8 +170,6 @@ struct MultiplicityDerivedQa {
     if (fabs(col.multPVz()) > vtxZsel) {
       return;
     }
-
-    
 
     // apply special event selections
     if (selZNA->get("maxFT0C") > -0.5f && col.multFT0C() < selZNA->get("maxFT0C") && (selZNA->get("A") * col.multZNA() + selZNA->get("B") * col.multFT0C() + selZNA->get("C") < 0.0f))
