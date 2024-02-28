@@ -890,6 +890,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
     cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
     cut->AddCut(GetAnalysisCut("lmee_pp_502TeV_TPCloosenopkrej"));
+    return cut;
   }
 
   if (!nameStr.compare("lmee_Run3_TOFelectron")) {
@@ -897,6 +898,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
     cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
     cut->AddCut(GetAnalysisCut("tof_electron"));
+    return cut;
   }
 
   std::vector<TString> vecTypetrack;
@@ -907,6 +909,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   vecTypetrack.emplace_back("_TPC");      // Ask only for TPC requirements
   vecTypetrack.emplace_back("_TPCalone"); // Ask only for TPC requirements + TPCalone (no ITS matching)
   vecTypetrack.emplace_back("_TPCnoTRD"); // Ask only for TPC requirements no TRD matching
+  vecTypetrack.emplace_back("_TPCstrongncls"); // default TightGlobalTrackRun3 but with 130 TPC clusters
 
   // loop to define PID cuts with and without post calibration
   for (int icase = 0; icase < vecTypetrack.size(); icase++) {
@@ -946,6 +949,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     // 2 cuts to separate pos & neg tracks
     if (!nameStr.compare(Form("lmee_posTrack_selection%s", vecTypetrack.at(icase).Data()))) {
       cut->AddCut(GetAnalysisCut("posTrack"));
+      cut->AddCut(GetAnalysisCut("etaSel"));
       cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrack.at(icase).Data())));
       cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
       return cut;
@@ -953,6 +957,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
     if (!nameStr.compare(Form("lmee_negTrack_selection%s", vecTypetrack.at(icase).Data()))) {
       cut->AddCut(GetAnalysisCut("negTrack"));
+      cut->AddCut(GetAnalysisCut("etaSel"));
       cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrack.at(icase).Data())));
       cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
       return cut;
@@ -994,6 +999,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     // 2 cuts to separate pos & neg tracks in low B field
     if (!nameStr.compare(Form("lmee_lowB_posTrack_selection%s", vecTypetrack.at(icase).Data()))) {
       cut->AddCut(GetAnalysisCut("posTrack"));
+      cut->AddCut(GetAnalysisCut("etaSel"));
       cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrack.at(icase).Data())));
       cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
       return cut;
@@ -1001,6 +1007,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
     if (!nameStr.compare(Form("lmee_lowB_negTrack_selection%s", vecTypetrack.at(icase).Data()))) {
       cut->AddCut(GetAnalysisCut("negTrack"));
+      cut->AddCut(GetAnalysisCut("etaSel"));
       cut->AddCut(GetAnalysisCut(Form("lmeeQCTrackCuts%s", vecTypetrack.at(icase).Data())));
       cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
       return cut;
@@ -2864,6 +2871,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   vecTypetrack.emplace_back("_TPC");      // Ask only for TPC requirements
   vecTypetrack.emplace_back("_TPCalone"); // Ask only for TPC requirements + TPCalone (no ITS matching)
   vecTypetrack.emplace_back("_TPCnoTRD"); // Ask only for TPC requirements no TRD matching
+  vecTypetrack.emplace_back("_TPCstrongncls"); // default TightGlobalTrackRun3 but with 130 TPC clusters
 
   // loop to define PID cuts with and without post calibration
   for (int icase = 1; icase < vecTypetrack.size(); icase++) {
@@ -2893,11 +2901,18 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
         cut->AddCut(VarManager::kTPCnclsCR, 80.0, 161.);
         cut->AddCut(VarManager::kTPCncls, 90.0, 170.);
         cut->AddCut(VarManager::kHasITS, -0.5, 0.5);
-      } else {
+      } else if (icase == 6) {
         cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
         cut->AddCut(VarManager::kTPCnclsCR, 80.0, 161.);
         cut->AddCut(VarManager::kTPCncls, 90.0, 170.);
         cut->AddCut(VarManager::kHasTRD, -0.5, 0.5);
+      } else {
+        cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
+        cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+        cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
+        cut->AddCut(VarManager::kITSncls, 4.5, 7.5);
+        cut->AddCut(VarManager::kTPCnclsCR, 80.0, 161.);
+        cut->AddCut(VarManager::kTPCncls, 130.0, 170.);
       }
       return cut;
     }
