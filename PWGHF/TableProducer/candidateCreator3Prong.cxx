@@ -142,9 +142,6 @@ struct HfCandidateCreator3Prong {
       auto trackParVar1 = getTrackParCov(track1);
       auto trackParVar2 = getTrackParCov(track2);
 
-      // get sign of candidate
-      int8_t sign = track0.sign();
-
       /// Set the magnetic field from ccdb.
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
       /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
