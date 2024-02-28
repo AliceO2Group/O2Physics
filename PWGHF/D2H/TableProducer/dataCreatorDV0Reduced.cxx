@@ -207,7 +207,7 @@ struct HfDataCreatorDV0Reduced {
   template <uint8_t DecayChannel, typename CCands>
   void runDataCreation(aod::Collision const& collision,
                        CCands const& candsD,
-                       aod::V0Datas const& V0s, 
+                       aod::V0Datas const& V0s,
                        BigTracksPID const& tracks,
                        aod::BCsWithTimestamps const& bcs)
   {
@@ -242,7 +242,6 @@ struct HfDataCreatorDV0Reduced {
       uint8_t v0_type;
       int8_t d_type;
 
-
       if constexpr (std::is_same<CCands, CandDstarFiltered>::value) {
         if (candD.signSoftPi() > 0)
           invMassD = candD.invMassDstar() - candD.invMassD0();
@@ -269,7 +268,7 @@ struct HfDataCreatorDV0Reduced {
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prong2Id();
         d_type = prong0.sign() * TypeD::Dplus;
-      }   // else if
+      } // else if
 
       // Loop on V0 candidates
       for (const auto& v0 : V0s) {
@@ -394,7 +393,7 @@ struct HfDataCreatorDV0Reduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<DecayChannel::DplusV0, CandsDplusFiltered>(collision, candsDThisColl, V0sThisColl,tracks, bcs);
+      runDataCreation<DecayChannel::DplusV0, CandsDplusFiltered>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
     }
   }
   PROCESS_SWITCH(HfDataCreatorDV0Reduced, processDplusV0, "Process Dplus candidates without MC info and without ML info", true);
@@ -413,7 +412,7 @@ struct HfDataCreatorDV0Reduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<DecayChannel::DstarV0, CandDstarFiltered>(collision, candsDThisColl, V0sThisColl,tracks, bcs);
+      runDataCreation<DecayChannel::DstarV0, CandDstarFiltered>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
     }
   }
   PROCESS_SWITCH(HfDataCreatorDV0Reduced, processDstarV0, "Process DStar candidates without MC info and without ML info", false);
