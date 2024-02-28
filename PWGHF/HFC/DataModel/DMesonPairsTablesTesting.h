@@ -36,8 +36,8 @@ DECLARE_SOA_COLUMN(MDbarCand1, mDbarCand1, float); //! Invariant mass of first c
 DECLARE_SOA_COLUMN(MDCand2, mDCand2, float);       //! Invariant mass of second candidate as D
 DECLARE_SOA_COLUMN(MDbarCand2, mDbarCand2, float); //! Invariant mass of second candidate as Dbar
 DECLARE_SOA_COLUMN(PairType, pairType, uint8_t);   //! Bitmap with all pair types (DD, DDbar, etc.) a pair of candidates has passed
-DECLARE_SOA_COLUMN(CandidateType1, candidateType1, uint8_t);   //! Bitmap with Selected and True info of candidate 1
-DECLARE_SOA_COLUMN(CandidateType2, candidateType2, uint8_t);   //! Bitmap with Selected and True info of candidate 2
+DECLARE_SOA_COLUMN(CandidateType1, candidateType1, uint8_t); //! Bitmap with Selected and True info of candidate 1
+DECLARE_SOA_COLUMN(CandidateType2, candidateType2, uint8_t); //! Bitmap with Selected and True info of candidate 2
 // MC info
 DECLARE_SOA_COLUMN(Origin1, origin1, uint8_t);       //! candidate 1 origin
 DECLARE_SOA_COLUMN(Origin2, origin2, uint8_t);       //! candidate 2 origin
