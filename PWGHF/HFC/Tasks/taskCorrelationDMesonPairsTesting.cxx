@@ -108,7 +108,8 @@ struct HfTaskCorrelationDMesonPairsTesting {
     }
   }
 
-  uint getD0Type(uint const& candidateType) {
+  uint getD0Type(uint const& candidateType)
+  {
     if ((TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueD)) || (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueDbar))) {
       return Signal;
     } else if ((TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueDbar)) || (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueD))) {
