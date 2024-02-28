@@ -96,6 +96,9 @@ struct HfDataCreatorDV0Reduced {
   Configurable<float> maxV0DCA{"maxV0DCA", 0.1, "maximum DCA for K0S and Lambda"};
   Configurable<float> minV0dauDCA{"minV0dauDCA", 0.05, "minimum DCA for V0 daughters"};
   Configurable<float> maxV0dauDCA{"maxV0dauDCA", 1., "maximum DCA for V0 daughters"};
+  Configurable<float> maxNsigmaPrForLambda{"maxNsigmaPrForLambda", 4., "maximum proton NSigma in TPC and TOF for Lambdas"};
+
+  
 
   // material correction for track propagation
   o2::base::MatLayerCylSet* lut;
@@ -106,6 +109,7 @@ struct HfDataCreatorDV0Reduced {
 
   using CandsDplusFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
   using CandDstarFiltered = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstar, aod::HfSelDstarToD0Pi>>;
+  using BigTracksPID = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
 
   Filter filterSelectDplus = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus);
   Filter filterSelectedCandDstar = (aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi);
@@ -155,8 +159,8 @@ struct HfDataCreatorDV0Reduced {
   /// \param v0 is the v0 candidate
   /// \param collision is the current collision
   /// \return a bitmap with mass hypotesis if passes all cuts
-  template <typename V0, typename Coll>
-  inline uint8_t isSelectedV0(const V0& v0,  const Coll& collision, const std::array<int, 3>& dDaughtersIDs)
+  template <typename V0, typename Coll, typename Tr>
+  inline uint8_t isSelectedV0(const V0& v0,  const Coll& collision, const std::array<Tr, 2>& dauTracks, const std::array<int, 3>& dDaughtersIDs)
   {
     uint8_t isSelected{BIT(K0s) | BIT(Lambda) | BIT(AntiLambda)};
     // reject VOs that share daughters with D
@@ -188,6 +192,15 @@ struct HfDataCreatorDV0Reduced {
       CLRBIT(isSelected, Lambda);
     }
     if (TESTBIT(isSelected, AntiLambda) && std::fabs(v0.mAntiLambda() - MassLambda0) > deltaMassLambda) {
+      CLRBIT(isSelected, AntiLambda);
+    }
+    // PID (Lambda/AntiLambda only)
+    float nSigmaPrTpc[2] = {dauTracks[0].tpcNSigmaPr(), dauTracks[1].tpcNSigmaPr()};
+    float nSigmaPrTof[2] = {dauTracks[0].tofNSigmaPr(), dauTracks[1].tofNSigmaPr()};
+    if (TESTBIT(isSelected, Lambda) && ((dauTracks[0].hasTPC() && std::fabs(nSigmaPrTpc[0]) > maxNsigmaPrForLambda) || (dauTracks[0].hasTOF() && std::fabs(nSigmaPrTof[0]) > maxNsigmaPrForLambda))) {
+      CLRBIT(isSelected, Lambda);
+    }
+    if (TESTBIT(isSelected, AntiLambda) && ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1]) > maxNsigmaPrForLambda) || (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1]) > maxNsigmaPrForLambda))) {
       CLRBIT(isSelected, AntiLambda);
     }
     return isSelected;
@@ -259,8 +272,10 @@ struct HfDataCreatorDV0Reduced {
 
       // Loop on V0 candidates
       for (const auto& v0 : V0s) {
-        v0_type = isSelectedV0(v0, collision,prongIdsD);
+        auto posTrack = v0.posTrack_as<BigTracksPID>();
+        auto negTrack = v0.negTrack_as<BigTracksPID>();
         //Apply selsection
+        v0_type = isSelectedV0(v0, collision, std::array{posTrack, negTrack}, prongIdsD);
         if (v0_type == 0){
           continue;
         }
