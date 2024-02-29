@@ -77,6 +77,8 @@ DECLARE_SOA_COLUMN(CosPBcandidate, cosPBcandidate, float);
 DECLARE_SOA_COLUMN(Chi2Bcandidate, chi2Bcandidate, float);
 DECLARE_SOA_COLUMN(MlScoreTrack, mlScoreTrack, std::vector<float>);
 DECLARE_SOA_COLUMN(MlScoreDilepton, mlScoreDilepton, std::vector<float>);
+DECLARE_SOA_COLUMN(MlScoreMuon, mlScoreMuon, std::vector<float>);
+DECLARE_SOA_COLUMN(MlScorePrefilter, mlScorePrefilter, std::vector<float>);
 } // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);
@@ -86,7 +88,9 @@ DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuon
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsPrefilterVetoed);
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate);
 DECLARE_SOA_TABLE(MlScoresTrack, "AOD", "MLSCORESTRACK", dqanalysisflags::MlScoreTrack);
-DECLARE_SOA_TABLE(MlScoresDilepton, "AOD", "MLSCOREDILEP", dqanalysisflags::MlScoreDilepton);
+DECLARE_SOA_TABLE(MlScoresDilepton, "AOD", "MLSCORESDILEP", dqanalysisflags::MlScoreDilepton);
+DECLARE_SOA_TABLE(MlScoresMuon, "AOD", "MLSCORESMUON", dqanalysisflags::MlScoreMuon);
+DECLARE_SOA_TABLE(MlScoresPrefilter, "AOD", "MLSCORESPF", dqanalysisflags::MlScorePrefilter);
 } // namespace o2::aod
 
 // Declarations of various short names
@@ -398,13 +402,18 @@ struct AnalysisTrackSelection {
 
 struct AnalysisMuonSelection {
   Produces<aod::MuonTrackCuts> muonSel;
+  Produces<aod::MlScoresMuon> mlScores;
   OutputObj<THashList> fOutputList{"output"};
   Configurable<string> fConfigCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
+  MlConfigs mlConfigs;
 
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fMuonCuts;
+
+  o2::ccdb::CcdbApi ccdbApi;
+  o2::analysis::DQMlResponse<float> mlResponse;
 
   void init(o2::framework::InitContext&)
   {
@@ -416,6 +425,10 @@ struct AnalysisMuonSelection {
       }
     }
     VarManager::SetUseVars(AnalysisCut::fgUsedVars); // provide the list of required variables so that VarManager knows what to fill
+
+    if (mlConfigs.fConfigApplyMl) {
+      initMlSelection(mlResponse, mlConfigs.fConfigBinsMl, mlConfigs.fConfigCutsMl, mlConfigs.fConfigCutDirMl, mlConfigs.fConfigNClassesMl, mlConfigs.fConfigLoadModelsFromCCDB, ccdbApi, mlConfigs.fConfigCcdbUrlMl, mlConfigs.fConfigONNXFileNames, mlConfigs.fConfigModelPathsCCDB, mlConfigs.fConfigTimestampCCDB, mlConfigs.fConfigNamesInputFeatures, mlConfigs.fConfigNameBinVariable);
+    }
 
     if (fConfigQA) {
       VarManager::SetDefaultVarNames();
@@ -430,7 +443,10 @@ struct AnalysisMuonSelection {
       }
 
       DefineHistograms(fHistMan, histDirNames.Data(), fConfigAddMuonHistogram); // define all histograms
-      VarManager::SetUseVars(fHistMan->GetUsedVars());                          // provide the list of required variables so that VarManager knows what to fill
+      if (mlConfigs.fConfigApplyMl) {
+        DefineHistogramsMl(fHistMan, mlConfigs.fConfigCutsMl->getLabelsCols(), mlConfigs.fConfigBinsMl.value, mlResponse.getCachedBinVariableIndex());
+      }
+      VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
   }
@@ -452,6 +468,9 @@ struct AnalysisMuonSelection {
         fHistMan->FillHistClass("TrackMuon_BeforeCuts", VarManager::fgValues);
       }
 
+      if (mlConfigs.fConfigApplyMl) {
+        applyMlSelection(mlResponse, fHistMan, mlConfigs.fConfigFillScoreTable, mlScores, fConfigQA);
+      }
       iCut = 0;
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, iCut++) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
@@ -481,10 +500,13 @@ struct AnalysisMuonSelection {
 struct AnalysisPrefilterSelection {
   SliceCache cache;
   Produces<aod::Prefilter> prefilter;
+  Produces<aod::MlScoresPrefilter> mlScores;
+  OutputObj<THashList> fOutputList{"output"};
   Preslice<MyBarrelTracks> perCollision = aod::reducedtrack::reducedeventId;
 
   // Configurables
   Configurable<std::string> fConfigPrefilterPairCut{"cfgPrefilterPairCut", "", "Prefilter pair cut"};
+  MlConfigs mlConfigs;
 
   Filter barrelTracksSelectedPrefilter = aod::dqanalysisflags::isBarrelSelectedPrefilter > 0;
 
@@ -492,6 +514,11 @@ struct AnalysisPrefilterSelection {
 
   std::map<int, bool> fPrefiltermap;
   AnalysisCompositeCut* fPairCut;
+
+  HistogramManager* fHistMan;
+
+  o2::ccdb::CcdbApi ccdbApi;
+  o2::analysis::DQMlResponse<float> mlResponse;
 
   void init(o2::framework::InitContext& context)
   {
@@ -506,6 +533,15 @@ struct AnalysisPrefilterSelection {
 
     VarManager::SetupTwoProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
     VarManager::SetupTwoProngFwdDCAFitter(5.0f, true, 200.0f, 1.0e-3f, 0.9f, true);
+
+    if (mlConfigs.fConfigApplyMl) {
+      fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
+      fHistMan->SetUseDefaultVariableNames(kTRUE);
+      fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
+      initMlSelection(mlResponse, mlConfigs.fConfigBinsMl, mlConfigs.fConfigCutsMl, mlConfigs.fConfigCutDirMl, mlConfigs.fConfigNClassesMl, mlConfigs.fConfigLoadModelsFromCCDB, ccdbApi, mlConfigs.fConfigCcdbUrlMl, mlConfigs.fConfigONNXFileNames, mlConfigs.fConfigModelPathsCCDB, mlConfigs.fConfigTimestampCCDB, mlConfigs.fConfigNamesInputFeatures, mlConfigs.fConfigNameBinVariable);
+      DefineHistogramsMl(fHistMan, mlConfigs.fConfigCutsMl->getLabelsCols(), mlConfigs.fConfigBinsMl.value, mlResponse.getCachedBinVariableIndex());
+      fOutputList.setObject(fHistMan->GetMainHistogramList());
+    }
   }
 
   template <int TPairType, uint32_t TTrackFillMap, typename TTracks1, typename TTracks2>
@@ -518,6 +554,10 @@ struct AnalysisPrefilterSelection {
 
       // pairing
       VarManager::FillPair<TPairType, TTrackFillMap>(track1, track2);
+
+      if (mlConfigs.fConfigApplyMl) {
+        applyMlSelection(mlResponse, fHistMan, mlConfigs.fConfigFillScoreTable, mlScores);
+      }
 
       if (fPairCut->IsSelected(VarManager::fgValues)) {
         fPrefiltermap[track1.globalIndex()] = true;
