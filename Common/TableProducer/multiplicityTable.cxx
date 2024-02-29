@@ -415,7 +415,7 @@ struct MultiplicityTableTaskIndexed {
           case kPVMults: // PV multiplicity
           {
             // use only one single grouping operation, then do loop
-            const auto& tracksThisCollision = pvContribTracksIUEta1.sliceByCached(perCol, collision.globalIndex(), cache);
+            const auto& tracksThisCollision = pvContribTracksIUEta1.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
             multNContribsEta1 = tracksThisCollision.size();
             for (auto track : tracksThisCollision) {
               if (std::abs(track.eta()) < 0.8)
