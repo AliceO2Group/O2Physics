@@ -370,6 +370,48 @@ DECLARE_SOA_TABLE(HfCandBpConfigs, "AOD", "HFCANDBPCONFIG", //! Table with confi
                   hf_cand_bplus_config::MySelectionFlagD0,
                   hf_cand_bplus_config::MySelectionFlagD0bar,
                   hf_cand_bplus_config::MyInvMassWindowD0Pi);
+
+// Charm resonances analysis
+namespace hf_reso_cand_reduced
+{
+DECLARE_SOA_COLUMN(InvMass, invMass, float);                     //! Invariant mass of 3 prong candidate in GeV/c2
+DECLARE_SOA_COLUMN(InvMassK0s, invMassK0s, float);               //! Invariant mass of V0 candidate in GeV/c2, under K0s mass assumption
+DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, float);         //! Invariant mass of V0 candidate in GeV/c2, under Lambda mass assumption
+DECLARE_SOA_COLUMN(InvMassAntiLambda, invMassAntiLambda, float); //! Invariant mass of V0 candidate in GeV/c2, under AntiLambda mass assumption
+DECLARE_SOA_COLUMN(Px, px, float);                               //! Momentum of V0/3 prong candidate in GeV/c
+DECLARE_SOA_COLUMN(Py, py, float);
+DECLARE_SOA_COLUMN(Pz, pz, float);
+DECLARE_SOA_COLUMN(CosP, cosp, float);       //! Cos PA of V0 candidate
+DECLARE_SOA_COLUMN(DCA, dca, float);         //! DCA of V0 candidate
+DECLARE_SOA_COLUMN(Radius, radius, float);   //! Radius of V0 candidate
+DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t); //! Bitmap with mass hypothesis of the V0
+DECLARE_SOA_COLUMN(DType, dType, int8_t);    //! Integer with selected D candidate type: 1 = Dplus, -1 = Dminus, 2 = DstarPlus, -2 = DstarMinus
+} // namespace hf_reso_cand_reduced
+
+DECLARE_SOA_TABLE(HfRedVzeros, "AOD", "HFREDVZERO", //! Table with V0 candidate information for resonances reduced workflow
+                  o2::soa::Index<>,
+                  hf_track_index_reduced::Prong0Id, hf_track_index_reduced::Prong1Id,
+                  hf_track_index_reduced::HfRedCollisionId,
+                  hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
+                  hf_reso_cand_reduced::InvMassK0s, hf_reso_cand_reduced::InvMassLambda, hf_reso_cand_reduced::InvMassAntiLambda,
+                  hf_reso_cand_reduced::Px,
+                  hf_reso_cand_reduced::Py,
+                  hf_reso_cand_reduced::Pz,
+                  hf_reso_cand_reduced::CosP,
+                  hf_reso_cand_reduced::DCA,
+                  hf_reso_cand_reduced::Radius,
+                  hf_reso_cand_reduced::V0Type);
+
+DECLARE_SOA_TABLE(HfRed3PrNoTrks, "AOD", "HFRED3PRNOTRK", //! Table with 3 prong candidate information for resonances reduced workflow
+                  o2::soa::Index<>,
+                  hf_track_index_reduced::Prong0Id, hf_track_index_reduced::Prong1Id, hf_track_index_reduced::Prong2Id,
+                  hf_track_index_reduced::HfRedCollisionId,
+                  hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
+                  hf_reso_cand_reduced::InvMass,
+                  hf_reso_cand_reduced::Px,
+                  hf_reso_cand_reduced::Py,
+                  hf_reso_cand_reduced::Pz,
+                  hf_reso_cand_reduced::DType);
 } // namespace aod
 
 namespace soa

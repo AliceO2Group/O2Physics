@@ -91,7 +91,7 @@ struct femtoDreamDebugTrack {
   {
     eventHisto.fillQA(col);
     for (auto& part : groupPartsOne) {
-      trackHisto.fillQA<isMC, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfTempFitVarMomentum.value), ConfOptCorrelatedPlots, col.multNtr(), col.multV0M());
+      trackHisto.fillQA<isMC, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfTempFitVarMomentum.value), col.multNtr(), col.multV0M(), ConfOptCorrelatedPlots);
     }
   }
 

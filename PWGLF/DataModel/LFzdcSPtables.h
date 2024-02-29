@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PWGLF_DATAMODEL_ZDCSPTABLES_H_
-#define PWGLF_DATAMODEL_ZDCSPTABLES_H_
+#ifndef PWGLF_DATAMODEL_LFZDCSPTABLES_H_
+#define PWGLF_DATAMODEL_LFZDCSPTABLES_H_
 
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
@@ -34,6 +34,7 @@ DECLARE_SOA_COLUMN(EnergyZNC4, energyZNC4, float);
 } // namespace ZdcSPTableNS
 DECLARE_SOA_TABLE(ZdcSPTable, "AOD", "ZDCSPTABLE",
                   bc::GlobalBC,
+                  bc::RunNumber,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -50,4 +51,4 @@ DECLARE_SOA_TABLE(ZdcSPTable, "AOD", "ZDCSPTABLE",
                   ZdcSPTableNS::EnergyZNC4);
 } // namespace o2::aod
 
-#endif // PWGLF_DATAMODEL_ZDCSPTABLES_H_
+#endif // PWGLF_DATAMODEL_LFZDCSPTABLES_H_

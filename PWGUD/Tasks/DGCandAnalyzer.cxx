@@ -43,9 +43,6 @@ struct DGCandAnalyzer {
   // a pdg object
   TDatabasePDG* pdg = nullptr;
 
-  // get a DGCutparHolder and DGAnaparHolder
-  Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
-
   // analysis cuts
   DGAnaparHolder anaPars = DGAnaparHolder();
   Configurable<DGAnaparHolder> DGPars{"anaPars", {}, "Analysis parameters"};
@@ -160,12 +157,12 @@ struct DGCandAnalyzer {
       registry.add("tracks/nSigmaTOFPPr", "nSigma TOF for protons versus pT", {HistType::kTH2F, {axispt, axisnsTOF}});
 
       registry.add("tracks/trackHits", "Track hits in various detectors", {HistType::kTH1F, {{5, -0.5, 4.5}}});
-      registry.add("tracks/dcaXYDG", "dcaXY in DG candidates", {HistType::kTH1F, {{200, -0.5, 0.5}}});
-      registry.add("tracks/dcaZDG", "dcaZ in DG candidates", {HistType::kTH1F, {{400, -2., 2.}}});
+      registry.add("tracks/dcaXYDG", "dcaXY in DG candidates", {HistType::kTH1F, {{100, -0.2, 0.2}}});
+      registry.add("tracks/dcaZDG", "dcaZ in DG candidates", {HistType::kTH1F, {{100, -0.5, 0.5}}});
       registry.add("tracks/TPCNCl", "Number of found TPC clusters", {HistType::kTH1F, {{200, 0., 200.}}});
       registry.add("tracks/TPCChi2NCl", "TPC chi2 per cluster of tracks", {HistType::kTH1F, {{200, 0., 50.}}});
-      registry.add("tracks/ptTrkdcaXYDG", "dcaXY versus track pT in DG candidates", {HistType::kTH2F, {axispt, {100, -0.5, 0.5}}});
-      registry.add("tracks/ptTrkdcaZDG", "dcaZ versus track pT in DG candidates", {HistType::kTH2F, {axispt, {200, -2., 2.}}});
+      registry.add("tracks/ptTrkdcaXYDG", "dcaXY versus track pT in DG candidates", {HistType::kTH2F, {axispt, {100, -0.2, 0.2}}});
+      registry.add("tracks/ptTrkdcaZDG", "dcaZ versus track pT in DG candidates", {HistType::kTH2F, {axispt, {100, -0.5, 0.5}}});
 
       registry.add("system/nUnlikeIVMs", "Number of IVMs per DG collision", {HistType::kTH1F, {{36, -0.5, 35.5}}});
       registry.add("system/unlikeIVMptSysDG", "Invariant mass versus system pT in DG candidates", {HistType::kTH2F, {axisIVM, axispt}});
@@ -190,8 +187,8 @@ struct DGCandAnalyzer {
       // 2 track events
       registry.add("2Prong/TPCNCl1", "Number of found TPC clusters of track 1", {HistType::kTH1F, {{200, 0., 200.}}});
       registry.add("2Prong/TPCNCl2", "Number of found TPC clusters of track 2", {HistType::kTH1F, {{200, 0., 200.}}});
-      registry.add("2Prong/TPCChi2NCl1", "TPC chi2 of track 1", {HistType::kTH1F, {{1000, 0., 10.}}});
-      registry.add("2Prong/TPCChi2NCl2", "TPC chi2 of track 2", {HistType::kTH1F, {{1000, 0., 10.}}});
+      registry.add("2Prong/TPCChi2NCl1", "TPC chi2 of track 1", {HistType::kTH1F, {{100, 0., 5.}}});
+      registry.add("2Prong/TPCChi2NCl2", "TPC chi2 of track 2", {HistType::kTH1F, {{100, 0., 5.}}});
       registry.add("2Prong/TPCsignal1", "TPC signal of track 1", {HistType::kTH2F, {{1000, 0., 10.}, {5000, 0., 500.}}});
       registry.add("2Prong/TPCsignal2", "TPC signal of track 2", {HistType::kTH2F, {{1000, 0., 10.}, {5000, 0., 500.}}});
       registry.add("2Prong/sig1VsSig2TPC", "TPC signals of track 1 versus track 2", {HistType::kTH2F, {{300, 0., 150.}, {300, 0., 150.}}});
@@ -208,8 +205,8 @@ struct DGCandAnalyzer {
       registry.add("2Prong/pt2IVM", "pT of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, axispt}});
       registry.add("2Prong/eta1IVM", "eta of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, -2.0, 2.0}}});
       registry.add("2Prong/eta2IVM", "eta of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, -2.0, 2.0}}});
-      registry.add("2Prong/chi2NCl1IVM", "TPC chi2 of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 2.0}}});
-      registry.add("2Prong/chi2NCl2IVM", "TPC chi2 of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 2.0}}});
+      registry.add("2Prong/chi2NCl1IVM", "TPC chi2 of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, {100, 0, 5.0}}});
+      registry.add("2Prong/chi2NCl2IVM", "TPC chi2 of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, {100, 0, 5.0}}});
       registry.add("2Prong/NCl1IVM", "Number of found TPC clusters of track 1 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 200.}}});
       registry.add("2Prong/NCl2IVM", "Number of found TPC clusters of track 2 versus invariant mass", {HistType::kTH2F, {axisIVM, {200, 0, 200.}}});
     }
@@ -246,7 +243,7 @@ struct DGCandAnalyzer {
     // is BB bunch?
     auto bcnum = dgcand.globalBC();
     if (run >= 500000 && bcPatternB[bcnum % o2::constants::lhc::LHCMaxBunches] == 0) {
-      LOGF(debug, "bcnum[1] %d is not a BB BC", bcnum % o2::constants::lhc::LHCMaxBunches);
+      LOGF(info, "bcnum[1] %d is not a BB BC", bcnum % o2::constants::lhc::LHCMaxBunches);
       return;
     }
 
@@ -339,6 +336,7 @@ struct DGCandAnalyzer {
     registry.fill(HIST("stat/candCaseSel"), 0, 1.);
     registry.fill(HIST("stat/candCaseSel"), candCase, 1.);
 
+    /*
     // check bcnum
     if (bcnums.find(bcnum) != bcnums.end()) {
       LOGF(info, "candCase %d bcnum %d allready found! ", candCase, bcnum);
@@ -346,6 +344,7 @@ struct DGCandAnalyzer {
     } else {
       bcnums.insert(bcnum);
     }
+    */
     registry.get<TH1>(HIST("stat/nDGperRun"))->Fill(Form("%d", run), 1);
 
     // update histograms

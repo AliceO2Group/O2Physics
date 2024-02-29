@@ -12,6 +12,7 @@
 #define PWGCF_CORE_ANALYSISCONFIGURABLECUTS_H_
 
 #include <string>
+#include <vector>
 #include <Rtypes.h>
 #include <TObject.h>
 #include <TNamed.h>
@@ -92,14 +93,14 @@ class TrackSelectionPIDCfg
 {
  public:
   bool mUseIt = false;
-  float mMinNSigmasTPC[5] = {-3.0, -3.0, -3.0, -3.0, -3.0}; ///< nsigmas TPC lower limit for e, mu, pi, Ka, and p
-  float mMaxNSigmasTPC[5] = {3.0, 3.0, 3.0, 3.0, 3.0};      ///< nsigmas TPC upper limit for e, mu, pi, Ka, and p
-  float mPThreshold = 0.0;                                  ///< momentum threshold for considering TOF information
-  bool mRequireTOF = true;                                  ///< require or not the presence of TOF when the momentum threshold is passed
-  float mMinNSigmasTOF[5] = {-3.0, -3.0, -3.0, -3.0, -3.0}; ///< nsigmas TOF lower limit for e, mu, pi, Ka, and p
-  float mMaxNSigmasTOF[5] = {3.0, 3.0, 3.0, 3.0, 3.0};      ///< nsigmas TOF upper limit for e, mu, pi, Ka, and p
-  bool m2Dcut = true;                                       ///< use an elliptic cut using TPC and TOF nsigmas
-  bool mExclude = false;                                    ///< should the identified track be excluded for analysis?
+  std::vector<float> mMinNSigmasTPC = {0.0f, 0.0f, -3.0f, -3.0f, -3.0f}; ///< nsigmas TPC lower limit for e, mu, pi, Ka, and p
+  std::vector<float> mMaxNSigmasTPC = {0.0f, 0.0f, 3.0f, 3.0f, 3.0f};    ///< nsigmas TPC upper limit for e, mu, pi, Ka, and p
+  float mPThreshold = 0.0;                                               ///< momentum threshold for considering TOF information
+  bool mRequireTOF = true;                                               ///< require or not the presence of TOF when the momentum threshold is passed
+  std::vector<float> mMinNSigmasTOF = {0.0f, 0.0f, -3.0f, -3.0f, -3.0f}; ///< nsigmas TOF lower limit for e, mu, pi, Ka, and p
+  std::vector<float> mMaxNSigmasTOF = {0.0f, 0.0f, 3.0f, 3.0f, 3.0f};    ///< nsigmas TOF upper limit for e, mu, pi, Ka, and p
+  bool m2Dcut = true;                                                    ///< use an elliptic cut using TPC and TOF nsigmas
+  bool mExclude = false;                                                 ///< should the identified track be excluded for analysis?
  private:
   ClassDefNV(TrackSelectionPIDCfg, 1);
 };

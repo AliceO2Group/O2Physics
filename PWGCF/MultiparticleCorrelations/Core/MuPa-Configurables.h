@@ -35,9 +35,6 @@ Configurable<bool> cfDoAdditionalInsanityChecks{
 Configurable<bool> cfUseCCDB{
   "cfUseCCDB", true,
   "access personal files from CCDB or from home dir in AliEn"};
-Configurable<string> cfWhatToProcess{
-  "cfWhatToProcess", "Rec",
-  "Rec = process only reconstructed, Sim = process only simulated, RecSim = process both reconstructed and simulated. For converted Run 1 and Run 2 data, append still either _Run2 or _Run1"};
 Configurable<unsigned int> cfRandomSeed{
   "cfRandomSeed", 0,
   "0 = random seed is guaranteed to be unique in space and time"};
@@ -54,6 +51,10 @@ Configurable<bool> cfUseStopwatch{
 // Default booking:
 Configurable<vector<int>> cfBookEventHistograms{"cfBookEventHistograms", {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, "Book (1) or do not book (0) event histogram, ordering is the same as in enum eEventHistograms"};
 Configurable<vector<int>> cfBookParticleHistograms{"cfBookParticleHistograms", {1, 1, 1, 1, 1, 1, 1}, "Book (1) or do not book (0) particle histogram, ordering is the same as in enum eParticleHistograms"};
+
+// Q-vector:
+Configurable<bool> cfCalculateQvectors{"cfCalculateQvectors", true,
+                                       "calculate or not Q-vectors (all, also diff. ones). If I want only to fill control histograms, then I can set here false"};
 
 // Correlations:
 Configurable<bool> cfCalculateCorrelations{"cfCalculateCorrelations", false,
@@ -96,6 +97,15 @@ Configurable<bool> cfCalculateCustomNestedLoops{"cfCalculateCustomNestedLoops", 
                                                 "cross-check e-b-e all correlations with custom nested loops"};
 
 // Event cuts:
+Configurable<string> cfTrigger{
+  "cfTrigger", "some supported trigger",
+  "set here some supported trigger (kINT7, ...) "};
+Configurable<bool> cfUseSel7{"cfUseSel7", false, "use for Run 2 data and MC (see official doc)"};
+Configurable<bool> cfUseSel8{"cfUseSel8", false, "use for Run 3 data and MC (see official doc)"};
+Configurable<string> cfCentralityEstimator{
+  "cfCentralityEstimator", "some supported centrality estimator",
+  "set here some supported centrality estimator (CentFT0M, CentFV0A, CentNTPV, ... for Run 3, CentRun2V0M, CentRun2SPDTracklets, ..., for Run 2) "};
+
 Configurable<int> cNumberOfEvents_min{
   "cNumberOfEvents_min", -1,
   "minimum number of events to process (set to -1 to ignore)"};
@@ -148,10 +158,13 @@ Configurable<float> pt_max{"pt_max", 5.0, "maximum track pt value [GeV/c]"};
 Configurable<bool> cfSaveResultsHistograms{"cfSaveResultsHistograms", false,
                                            "save or not results histograms"};
 
-// Fixed-length binning (default): TBI 20240113 I do it via string + tokenize + Atof(), until I figure out how to pass array directly via configurable
-Configurable<string> cFixedLength_pt_bins{"cFixedLength_pt_bins", "1.0,2.0,5.0", "fixed-length pt bins"};
+// Fixed-length binning (default):
+Configurable<vector<float>> cFixedLength_mult_bins{"cFixedLength_mult_bins", {2000, 0., 20000.}, "nMultBins, multMin, multMax"};
+Configurable<vector<float>> cFixedLength_cent_bins{"cFixedLength_cent_bins", {110, 0., 110.}, "nCentBins, centMin, centMax"};
+Configurable<vector<float>> cFixedLength_pt_bins{"cFixedLength_pt_bins", {1000, 0., 100.}, "nPtBins, ptMin, ptMax"};
+Configurable<vector<float>> cFixedLength_eta_bins{"cFixedLength_eta_bins", {1000, -2., 2.}, "nEtaBins, etaMin, etaMax"};
 
-// Variable-length binning: TBI 20240113 I do it via string + tokenize + Atof(), until I figure out how to pass array directly via configurable
+// Variable-length binning: TBI 20240113 I do it via string + tokenize + Atof(), use arrays eventually as for FixedLength case above.
 Configurable<bool> cUseVariableLength_mult_bins{"cUseVariableLength_mult_bins", false, "use or not variable-length multiplicity bins"};
 Configurable<string> cVariableLength_mult_bins{"cVariableLength_mult_bins", "0.,100.,250.,1000.", "variable-length multiplicity bins"};
 Configurable<bool> cUseVariableLength_cent_bins{"cUseVariableLength_cent_bins", false, "use or not variable-length centrality bins"};

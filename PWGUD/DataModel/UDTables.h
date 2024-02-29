@@ -287,6 +287,7 @@ DECLARE_SOA_TABLE(UDTracksExtra, "AOD", "UDTRACKEXTRA",
                   track::HasTRD<udtrack::DetectorMap>,
                   track::HasTOF<udtrack::DetectorMap>,
                   track::v001::ITSNCls<track::ITSClusterSizes>,
+                  track::v001::ITSClusterMap<track::ITSClusterSizes>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>);
 
 DECLARE_SOA_TABLE(UDTracksDCA, "AOD", "UDTRACKDCA",
