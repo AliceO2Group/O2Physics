@@ -72,6 +72,7 @@ struct HfCandidateCreator2Prong {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
@@ -108,15 +109,26 @@ struct HfCandidateCreator2Prong {
     if ((std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) + std::accumulate(doprocessKF.begin(), doprocessKF.end(), 0)) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
+
+    massPi = MassPiPlus;
+    massK = MassKPlus;
+
     if (std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) == 1) {
       hVertexerType->Fill(aod::hf_cand::VertexerType::DCAFitter);
+      // Configure DCAFitterN
+      // df.setBz(bz);
+      df.setPropagateToPCA(propagateToPCA);
+      df.setMaxR(maxR);
+      df.setMaxDZIni(maxDZIni);
+      df.setMinParamChange(minParamChange);
+      df.setMinRelChi2Change(minRelChi2Change);
+      df.setUseAbsDCA(useAbsDCA);
+      df.setWeightedFinalPCA(useWeightedFinalPCA);
     }
     if (std::accumulate(doprocessKF.begin(), doprocessKF.end(), 0) == 1) {
       hVertexerType->Fill(aod::hf_cand::VertexerType::KfParticle);
     }
 
-    massPi = MassPiPlus;
-    massK = MassKPlus;
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -130,17 +142,6 @@ struct HfCandidateCreator2Prong {
                                       TTracks const& tracks,
                                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    // 2-prong vertex fitter
-    o2::vertexing::DCAFitterN<2> df;
-    // df.setBz(bz);
-    df.setPropagateToPCA(propagateToPCA);
-    df.setMaxR(maxR);
-    df.setMaxDZIni(maxDZIni);
-    df.setMinParamChange(minParamChange);
-    df.setMinRelChi2Change(minRelChi2Change);
-    df.setUseAbsDCA(useAbsDCA);
-    df.setWeightedFinalPCA(useWeightedFinalPCA);
-
     // loop over pairs of track indices
     for (const auto& rowTrackIndexProng2 : rowsTrackIndexProng2) {
 

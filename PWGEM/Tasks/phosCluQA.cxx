@@ -190,12 +190,12 @@ struct phosCluQA {
     for (const auto& cpvclu : cpvs) {
       ncpvClu[cpvclu.bcId()]++;
       o2::InteractionRecord ir;
-      ir.setFromLong(cpvclu.bc().globalBC());
+      ir.setFromLong(cpvclu.bc_as<BCsWithBcSels>().globalBC());
       mHistManager.fill(HIST("cpvBCAll"), ir.bc);
     }
     std::map<uint64_t, int> nphosClu;
     for (const auto& clu : clusters) {
-      nphosClu[clu.collision().bcId()]++;
+      nphosClu[clu.collision_as<SelCollisions>().bcId()]++;
     }
     std::map<uint64_t, int> nphosAmbClu;
     for (const auto& clu : ambclusters) {
@@ -228,6 +228,7 @@ struct phosCluQA {
       }
     }
 
+    const int nMixMax = 4; // Maximal number of events for mixing
     for (const auto& cpvclu : cpvs) {
       int bcCPV = cpvclu.bcId();
       mHistManager.fill(HIST("CPVSp"), cpvclu.amplitude(), cpvclu.moduleNumber());
@@ -237,14 +238,14 @@ struct phosCluQA {
       mHistManager.fill(HIST("CPVOcc"), cpvclu.posX(), cpvclu.posZ(), cpvclu.moduleNumber());
 
       // CPV-PHOS matching
-      int currentPHOSBc = 0;
+      int currentPHOSBc = 0, iMix = nMixMax;
       double dist = 9999.;
       double dphi = 0., dz = 0., eClose = 0;
       for (const auto& clu : clusters) {
         if (clu.mod() != cpvclu.moduleNumber()) {
           continue;
         }
-        int bcPHOS = clu.collision().bcId();
+        int bcPHOS = clu.collision_as<SelCollisions>().bcId();
         if (currentPHOSBc == 0) {
           currentPHOSBc = bcPHOS;
         }
@@ -261,7 +262,11 @@ struct phosCluQA {
                 }
               }
             }
-          } else {
+          } else { // Mixed
+            iMix--;
+            if (iMix <= 0) {
+              break;
+            }
             if (clu.mod() == 2) {
               mHistManager.fill(HIST("CPVPHOSDistMiMod2"), dphi, dz, eClose);
             } else {
@@ -287,37 +292,38 @@ struct phosCluQA {
           eClose = clu.e();
         }
       } // phos clusters
-      // last event
-      if (currentPHOSBc == bcCPV) { // Real
-        if (cpvclu.moduleNumber() == 2) {
-          mHistManager.fill(HIST("CPVPHOSDistReMod2"), dphi, dz, eClose);
-        } else {
-          if (cpvclu.moduleNumber() == 3) {
-            mHistManager.fill(HIST("CPVPHOSDistReMod3"), dphi, dz, eClose);
-          } else {
-            if (cpvclu.moduleNumber() == 4) {
-              mHistManager.fill(HIST("CPVPHOSDistReMod4"), dphi, dz, eClose);
-            }
-          }
-        }
-      } else {
-        if (cpvclu.moduleNumber() == 2) {
-          mHistManager.fill(HIST("CPVPHOSDistMiMod2"), dphi, dz, eClose);
-        } else {
-          if (cpvclu.moduleNumber() == 3) {
-            mHistManager.fill(HIST("CPVPHOSDistMiMod3"), dphi, dz, eClose);
-          } else {
-            if (cpvclu.moduleNumber() == 4) {
-              mHistManager.fill(HIST("CPVPHOSDistMiMod4"), dphi, dz, eClose);
-            }
-          }
-        }
-      }
+      // // last event
+      // if (currentPHOSBc == bcCPV) { // Real
+      //   if (cpvclu.moduleNumber() == 2) {
+      //     mHistManager.fill(HIST("CPVPHOSDistReMod2"), dphi, dz, eClose);
+      //   } else {
+      //     if (cpvclu.moduleNumber() == 3) {
+      //       mHistManager.fill(HIST("CPVPHOSDistReMod3"), dphi, dz, eClose);
+      //     } else {
+      //       if (cpvclu.moduleNumber() == 4) {
+      //         mHistManager.fill(HIST("CPVPHOSDistReMod4"), dphi, dz, eClose);
+      //       }
+      //     }
+      //   }
+      // } else {
+      //   if (cpvclu.moduleNumber() == 2) {
+      //     mHistManager.fill(HIST("CPVPHOSDistMiMod2"), dphi, dz, eClose);
+      //   } else {
+      //     if (cpvclu.moduleNumber() == 3) {
+      //       mHistManager.fill(HIST("CPVPHOSDistMiMod3"), dphi, dz, eClose);
+      //     } else {
+      //       if (cpvclu.moduleNumber() == 4) {
+      //         mHistManager.fill(HIST("CPVPHOSDistMiMod4"), dphi, dz, eClose);
+      //       }
+      //     }
+      //   }
+      // }
     }
 
     o2::InteractionRecord ir;
+
     for (const auto& clu : clusters) {
-      ir.setFromLong(clu.collision().bc().globalBC());
+      ir.setFromLong(clu.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().globalBC());
       mHistManager.fill(HIST("cluBCAll"), ir.bc);
 
       if (!clu.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
@@ -333,7 +339,7 @@ struct phosCluQA {
       }
     }
     for (const auto& clu : ambclusters) {
-      ir.setFromLong(clu.bc().globalBC());
+      ir.setFromLong(clu.bc_as<BCsWithBcSels>().globalBC());
       mHistManager.fill(HIST("ambcluBCAll"), ir.bc);
 
       if (!clu.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrigAmb))
@@ -352,58 +358,70 @@ struct phosCluQA {
 
     // inv mass
     for (const auto& clu1 : clusters) {
+      int64_t currentBC = clu1.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().globalBC();
       auto clu2 = clu1;
       ++clu2;
-      int nMix = 100; // Number of photons to mix
-      for (; clu2 != clusters.end() && nMix > 0; clu2++) {
+      int iMix = nMixMax; // Number of events to mix
+      int64_t prevBC = 0;
+      for (; clu2 != clusters.end() && iMix > 0; clu2++) {
+        int64_t newBC = clu2.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().globalBC();
         double m = pow(clu1.e() + clu2.e(), 2) - pow(clu1.px() + clu2.px(), 2) -
                    pow(clu1.py() + clu2.py(), 2) - pow(clu1.pz() + clu2.pz(), 2);
         if (m > 0)
           m = sqrt(m);
         double pt = sqrt(pow(clu1.px() + clu2.px(), 2) +
                          pow(clu1.py() + clu2.py(), 2));
-        if (clu1.collision() == clu2.collision()) { // Real
+        if (currentBC == newBC) { // Real
           if (clu1.mod() < clu2.mod()) {
             hRe[5 * (clu1.mod() - 1) + clu2.mod() - 1]->Fill(m, pt);
           } else {
             hRe[5 * (clu2.mod() - 1) + clu1.mod() - 1]->Fill(m, pt);
           }
         } else { // Mixed
+          if (prevBC != newBC) {
+            prevBC = newBC;
+            --iMix;
+          }
           if (clu1.mod() < clu2.mod()) {
             hMi[5 * (clu1.mod() - 1) + clu2.mod() - 1]->Fill(m, pt);
           } else {
             hMi[5 * (clu2.mod() - 1) + clu1.mod() - 1]->Fill(m, pt);
           }
-          --nMix;
         }
       }
     }
 
     // inv mass
     for (const auto& clu1 : ambclusters) {
+      int64_t currentBC = clu1.bc_as<BCsWithBcSels>().globalBC();
       auto clu2 = clu1;
       ++clu2;
-      int nMix = 100; // Number of photons to mix
-      for (; clu2 != ambclusters.end() && nMix > 0; clu2++) {
+      int iMix = nMixMax; // Number of events to mix
+      int64_t prevBC = 0;
+      for (; clu2 != ambclusters.end() && iMix > 0; clu2++) {
+        int64_t newBC = clu2.bc_as<BCsWithBcSels>().globalBC();
         double m = pow(clu1.e() + clu2.e(), 2) - pow(clu1.px() + clu2.px(), 2) -
                    pow(clu1.py() + clu2.py(), 2) - pow(clu1.pz() + clu2.pz(), 2);
         if (m > 0)
           m = sqrt(m);
         double pt = sqrt(pow(clu1.px() + clu2.px(), 2) +
                          pow(clu1.py() + clu2.py(), 2));
-        if (clu1.bc() == clu2.bc()) { // Real
+        if (currentBC == newBC) { // Real
           if (clu1.mod() < clu2.mod()) {
             hReAmb[5 * (clu1.mod() - 1) + clu2.mod() - 1]->Fill(m, pt);
           } else {
             hReAmb[5 * (clu2.mod() - 1) + clu1.mod() - 1]->Fill(m, pt);
           }
         } else { // Mixed
+          if (prevBC != newBC) {
+            prevBC = newBC;
+            --iMix;
+          }
           if (clu1.mod() < clu2.mod()) {
             hMiAmb[5 * (clu1.mod() - 1) + clu2.mod() - 1]->Fill(m, pt);
           } else {
             hMiAmb[5 * (clu2.mod() - 1) + clu1.mod() - 1]->Fill(m, pt);
           }
-          --nMix;
         }
       }
     }
@@ -423,12 +441,12 @@ struct phosCluQA {
     for (const auto& cpvclu : cpvs) {
       ncpvClu[cpvclu.bcId()]++;
       o2::InteractionRecord ir;
-      ir.setFromLong(cpvclu.bc().globalBC());
+      ir.setFromLong(cpvclu.bc_as<BCsWithBcSels>().globalBC());
       mHistManager.fill(HIST("cpvBCAll"), ir.bc);
     }
     std::map<uint64_t, int> nphosClu;
     for (const auto& clu : clusters) {
-      nphosClu[clu.collision().bcId()]++;
+      nphosClu[clu.collision_as<SelCollisions>().bcId()]++;
     }
     std::map<uint64_t, int> nphosAmbClu;
     for (const auto& clu : ambclusters) {
@@ -477,7 +495,7 @@ struct phosCluQA {
         if (clu.mod() != cpvclu.moduleNumber()) {
           continue;
         }
-        int bcPHOS = clu.collision().bcId();
+        int bcPHOS = clu.collision_as<SelCollisions>().bcId();
         if (currentPHOSBc == 0) {
           currentPHOSBc = bcPHOS;
         }
@@ -550,7 +568,7 @@ struct phosCluQA {
 
     o2::InteractionRecord ir;
     for (const auto& clu : clusters) {
-      ir.setFromLong(clu.collision().bc().globalBC());
+      ir.setFromLong(clu.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().globalBC());
       mHistManager.fill(HIST("cluBCAll"), ir.bc);
 
       if (!clu.collision_as<SelCollisions>().bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
@@ -597,7 +615,7 @@ struct phosCluQA {
       }
     }
     for (const auto& clu : ambclusters) {
-      ir.setFromLong(clu.bc().globalBC());
+      ir.setFromLong(clu.bc_as<BCsWithBcSels>().globalBC());
       mHistManager.fill(HIST("ambcluBCAll"), ir.bc);
 
       if (!clu.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrigAmb))
@@ -626,7 +644,7 @@ struct phosCluQA {
           m = sqrt(m);
         double pt = sqrt(pow(clu1.px() + clu2.px(), 2) +
                          pow(clu1.py() + clu2.py(), 2));
-        if (clu1.collision() == clu2.collision()) { // Real
+        if (clu1.collision_as<SelCollisions>() == clu2.collision_as<SelCollisions>()) { // Real
           if (clu1.mod() < clu2.mod()) {
             hRe[5 * (clu1.mod() - 1) + clu2.mod() - 1]->Fill(m, pt);
           } else {
@@ -655,7 +673,7 @@ struct phosCluQA {
           m = sqrt(m);
         double pt = sqrt(pow(clu1.px() + clu2.px(), 2) +
                          pow(clu1.py() + clu2.py(), 2));
-        if (clu1.bc() == clu2.bc()) { // Real
+        if (clu1.bc_as<BCsWithBcSels>() == clu2.bc_as<BCsWithBcSels>()) { // Real
           if (clu1.mod() < clu2.mod()) {
             hReAmb[5 * (clu1.mod() - 1) + clu2.mod() - 1]->Fill(m, pt);
           } else {
@@ -701,9 +719,9 @@ struct phosCluQA {
     // If several collisions appear in BC, choose one with largers number of contributors
     std::map<int64_t, int> colMap;
     for (auto cl : colls) {
-      auto colbc = colMap.find(cl.bc().globalBC());
+      auto colbc = colMap.find(cl.bc_as<BCsWithBcSels>().globalBC());
       if (colbc == colMap.end()) { // single collision per BC
-        colMap[cl.bc().globalBC()] = 1;
+        colMap[cl.bc_as<BCsWithBcSels>().globalBC()] = 1;
       } else { // not unique collision per BC
         colbc->second++;
       }

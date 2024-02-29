@@ -48,16 +48,13 @@ struct HfCandidateCreatorBplusReduced {
   Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations is chi2/chi2old > this"};
   // selection
   Configurable<double> invMassWindowD0PiTolerance{"invMassWindowD0PiTolerance", 0.01, "invariant-mass window tolerance for D0Pi pair preselections (GeV/c2)"};
-  // variable that will store the value of invMassWindowD0Pi (defined in dataCreatorD0PiReduced.cxx)
-  float myInvMassWindowD0Pi{1.};
 
+  float myInvMassWindowD0Pi{1.}; // variable that will store the value of invMassWindowD0Pi (defined in dataCreatorD0PiReduced.cxx)
   double massPi{0.};
   double massD0{0.};
   double massBplus{0.};
   double bz{0.};
-
-  // Fitter for B vertex (2-prong vertex filter)
-  o2::vertexing::DCAFitterN<2> df2;
+  o2::vertexing::DCAFitterN<2> df2; // fitter for B vertex (2-prong vertex fitter)
 
   Preslice<soa::Join<aod::HfRed2Prongs, aod::HfRed2ProngsCov>> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
   Preslice<soa::Join<aod::HfRedTracks, aod::HfRedTracksCov>> tracksPionPerCollision = hf_track_index_reduced::hfRedCollisionId;
@@ -66,11 +63,10 @@ struct HfCandidateCreatorBplusReduced {
 
   void init(InitContext const&)
   {
-    // histograms
-    registry.add("hMassBplusToD0Pi", "2-prong candidates;inv. mass (B^{+} #rightarrow #overline{D^{0}}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
-    registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
-    registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
-    registry.add("hEvents", "Events;;entries", HistType::kTH1F, {{1, 0.5, 1.5}});
+    // invariant-mass window cut
+    massPi = o2::constants::physics::MassPiPlus;
+    massD0 = o2::constants::physics::MassD0;
+    massBplus = o2::constants::physics::MassBPlus;
 
     // Initialize fitter
     df2.setPropagateToPCA(propagateToPCA);
@@ -81,10 +77,11 @@ struct HfCandidateCreatorBplusReduced {
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
-    // invariant-mass window cut
-    massPi = o2::constants::physics::MassPiPlus;
-    massD0 = o2::constants::physics::MassD0;
-    massBplus = o2::constants::physics::MassBPlus;
+    // histograms
+    registry.add("hMassBplusToD0Pi", "2-prong candidates;inv. mass (B^{+} #rightarrow #overline{D^{0}}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
+    registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
+    registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
+    registry.add("hEvents", "Events;;entries", HistType::kTH1F, {{1, 0.5, 1.5}});
   }
 
   void process(aod::HfRedCollisions const& collisions,

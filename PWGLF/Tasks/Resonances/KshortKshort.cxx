@@ -58,6 +58,9 @@ struct strangeness_tutorial {
   HistogramRegistry rKzeroShort{"kzeroShort", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry hglue{"hglueball", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
+  Configurable<bool> QAv0{"QAv0", false, "QAv0"};
+  Configurable<bool> QAPID{"QAPID", false, "QAPID"};
+  Configurable<bool> inv_mass1D{"inv_mass1D", false, "1D invariant mass histograms"};
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<float> cfgETAcut{"cfgETAcut", 0.8f, "Track ETA cut"};
@@ -111,18 +114,28 @@ struct strangeness_tutorial {
     rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
     rEventSelection.add("hmultiplicity", "hmultiplicity", {HistType::kTH1F, {{150, 0.0f, 150.0f}}});
 
-    // Invariant Mass
-    rKzeroShort.add("hMassK0ShortSelected", "hMassK0ShortSelected", {HistType::kTH1F, {K0ShortMassAxis}});
-    hglue.add("h1glueInvMassDS", "h1glueInvMassDS", kTH1F, {glueballMassAxis});
-    hglue.add("h1glueInvMassME", "h1glueInvMassME", kTH1F, {glueballMassAxis});
+    if (inv_mass1D) {
+      hglue.add("h1glueInvMassDS", "h1glueInvMassDS", kTH1F, {glueballMassAxis});
+      hglue.add("h1glueInvMassME", "h1glueInvMassME", kTH1F, {glueballMassAxis});
+    }
     hglue.add("h3glueInvMassDS", "h3glueInvMassDS", kTH3F, {multiplicityAxis, ptAxis, glueballMassAxis});
     hglue.add("h3glueInvMassME", "h3glueInvMassME", kTH3F, {multiplicityAxis, ptAxis, glueballMassAxis});
 
     // K0s topological/PID cuts
-    rKzeroShort.add("hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.2f}}});
-    rKzeroShort.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.95f, 1.f}}});
-    rKzeroShort.add("hNSigmaPosPionFromK0s", "hNSigmaPosPionFromK0s", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
-    rKzeroShort.add("hNSigmaNegPionFromK0s", "hNSigmaNegPionFromK0s", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
+    if (QAv0) {
+      // Invariant Mass
+      rKzeroShort.add("hMassK0ShortSelected", "hMassK0ShortSelected", {HistType::kTH1F, {K0ShortMassAxis}});
+      // Topological cuts
+      rKzeroShort.add("hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.2f}}});
+      rKzeroShort.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {{100, 0.95f, 1.f}}});
+      rKzeroShort.add("hLT", "hLT", {HistType::kTH1F, {{100, 0.0f, 50.0f}}});
+    }
+    if (QAPID) {
+      rKzeroShort.add("hNSigmaPosPionK0s_before", "hNSigmaPosPionK0s_before", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
+      rKzeroShort.add("hNSigmaPosPionK0s_after", "hNSigmaPosPionK0s_after", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
+      rKzeroShort.add("hNSigmaNegPionK0s_before", "hNSigmaNegPionK0s_before", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
+      rKzeroShort.add("hNSigmaNegPionK0s_after", "hNSigmaNegPionK0s_after", {HistType::kTH2F, {{ptAxis}, {100, -5.f, 5.f}}});
+    }
   }
 
   template <typename Collision, typename V0>
@@ -174,20 +187,26 @@ struct strangeness_tutorial {
       return false;
     }
 
-    // if (QAv0) {
-    //   histos.fill(HIST("hLT"), CtauK0s);
-    //   histos.fill(HIST("hMassvsptvsmult"), candidate.mK0Short(), candidate.pt(),
-    //               multiplicity);
-    //   histos.fill(HIST("hDCAV0Daughters"), candidate.dcaV0daughters());
-    //   histos.fill(HIST("hV0CosPA"), candidate.v0cosPA());
-    // }
+    if (QAv0) {
+      rKzeroShort.fill(HIST("hMassK0ShortSelected"), candidate.mK0Short());
+      rKzeroShort.fill(HIST("hLT"), CtauK0s);
+      rKzeroShort.fill(HIST("hDCAV0Daughters"), candidate.dcaV0daughters());
+      rKzeroShort.fill(HIST("hV0CosPA"), candidate.v0cosPA());
+    }
     return true;
   }
 
-  template <typename T>
+  template <typename T, typename V0s>
   bool isSelectedV0Daughter(T const& track, float charge,
-                            double nsigmaV0Daughter)
+                            double nsigmaV0Daughter, V0s const& candidate)
   {
+    if (QAPID) {
+      // Filling the PID of the V0 daughters in the region of the K0 peak.
+      // tpcInnerParam is the momentum at the inner wall of TPC. So momentum of tpc vs nsigma of tpc is plotted.
+      if (0.45 < candidate.mK0Short() && candidate.mK0Short() < 0.55) {
+        (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi());
+      }
+    }
     const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
     const auto dcaXY = track.dcaXY(); // for this we need TrackDCA table
@@ -218,6 +237,12 @@ struct strangeness_tutorial {
     // v0 PID selection
     if (std::abs(nsigmaV0Daughter) > ConfDaughPIDCuts) {
       return false;
+    }
+
+    if (QAPID) {
+      if (0.45 < candidate.mK0Short() && candidate.mK0Short() < 0.55) {
+        (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi());
+      }
     }
 
     return true;
@@ -277,6 +302,14 @@ struct strangeness_tutorial {
       if (v1.size() == 0 || v2.size() == 0) {
         continue;
       }
+
+      if (!SelectionV0(collision, v1, multiplicity)) {
+        continue;
+      }
+      if (!SelectionV0(collision, v2, multiplicity)) {
+        continue;
+      }
+
       auto postrack1 = v1.template posTrack_as<TrackCandidates>();
       auto negtrack1 = v1.template negTrack_as<TrackCandidates>();
       auto postrack2 = v2.template posTrack_as<TrackCandidates>();
@@ -292,23 +325,16 @@ struct strangeness_tutorial {
       double nTPCSigmaPos2[1]{postrack2.tpcNSigmaPi()};
       double nTPCSigmaNeg2[1]{negtrack2.tpcNSigmaPi()};
 
-      if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1[0])) {
+      if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1[0], v1)) {
         continue;
       }
-      if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2[0])) {
+      if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2[0], v2)) {
         continue;
       }
-      if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1[0])) {
+      if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1[0], v1)) {
         continue;
       }
-      if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2[0])) {
-        continue;
-      }
-
-      if (!SelectionV0(collision, v1, multiplicity)) {
-        continue;
-      }
-      if (!SelectionV0(collision, v2, multiplicity)) {
+      if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2[0], v2)) {
         continue;
       }
 
@@ -331,23 +357,11 @@ struct strangeness_tutorial {
       lv3 = lv1 + lv2;
 
       if (TMath::Abs(lv3.Rapidity() < 0.5)) {
-        hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M());
-        hglue.fill(HIST("h1glueInvMassDS"), lv3.M());
-        rKzeroShort.fill(HIST("hMassK0ShortSelected"), v1.mK0Short());
-        rKzeroShort.fill(HIST("hMassK0ShortSelected"), v2.mK0Short());
-        rKzeroShort.fill(HIST("hDCAV0Daughters"), v1.dcaV0daughters());
-        rKzeroShort.fill(HIST("hDCAV0Daughters"), v2.dcaV0daughters());
-        rKzeroShort.fill(HIST("hV0CosPA"), v1.v0cosPA());
-        rKzeroShort.fill(HIST("hV0CosPA"), v2.v0cosPA());
-      }
+        if (inv_mass1D) {
+          hglue.fill(HIST("h1glueInvMassDS"), lv3.M());
+        }
 
-      // Filling the PID of the V0 daughters in the region of the K0 peak.
-      // tpcInnerParam is the momentum at the inner wall of TPC. So momentum of tpc vs nsigma of tpc is plotted.
-      if ((0.45 < v1.mK0Short() || 0.45 < v2.mK0Short()) && (v1.mK0Short() < 0.55 || v2.mK0Short() < 0.55)) {
-        rKzeroShort.fill(HIST("hNSigmaPosPionFromK0s"), postrack1.tpcInnerParam(), postrack1.tpcNSigmaPi());
-        rKzeroShort.fill(HIST("hNSigmaPosPionFromK0s"), postrack2.tpcInnerParam(), postrack2.tpcNSigmaPi());
-        rKzeroShort.fill(HIST("hNSigmaNegPionFromK0s"), negtrack1.tpcInnerParam(), negtrack1.tpcNSigmaPi());
-        rKzeroShort.fill(HIST("hNSigmaNegPionFromK0s"), negtrack2.tpcInnerParam(), negtrack2.tpcNSigmaPi());
+        hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M());
       }
     }
   }
@@ -413,16 +427,16 @@ struct strangeness_tutorial {
         double nTPCSigmaPos2[1]{postrack2.tpcNSigmaPi()};
         double nTPCSigmaNeg2[1]{negtrack2.tpcNSigmaPi()};
 
-        if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1[0])) {
+        if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1[0], t1)) {
           continue;
         }
-        if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2[0])) {
+        if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2[0], t2)) {
           continue;
         }
-        if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1[0])) {
+        if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1[0], t1)) {
           continue;
         }
-        if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2[0])) {
+        if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2[0], t2)) {
           continue;
         }
 
@@ -444,7 +458,9 @@ struct strangeness_tutorial {
         lv2.SetPtEtaPhiM(t2.pt(), t2.eta(), t2.phi(), massK0s);
         lv3 = lv1 + lv2;
         if (TMath::Abs(lv3.Rapidity() < 0.5)) {
-          hglue.fill(HIST("h1glueInvMassME"), lv3.M());
+          if (inv_mass1D) {
+            hglue.fill(HIST("h1glueInvMassME"), lv3.M());
+          }
           hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M());
         }
       }

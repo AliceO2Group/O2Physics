@@ -261,7 +261,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSib, meanClusterSizeITSib, [](uint32
 });
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
-  for (unsigned int layer = 4; layer < 7; layer++) {
+  for (unsigned int layer = 3; layer < 7; layer++) {
     int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
     if (cluster_size_per_layer > 0) {
       nl++;
@@ -398,7 +398,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSib, meanClusterSizeITSib, [](uint32
 });
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
-  for (unsigned int layer = 4; layer < 7; layer++) {
+  for (unsigned int layer = 3; layer < 7; layer++) {
     int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
     if (cluster_size_per_layer > 0) {
       nl++;
@@ -517,7 +517,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSib, meanClusterSizeITSib, [](uint32
 });
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
-  for (unsigned int layer = 4; layer < 7; layer++) {
+  for (unsigned int layer = 3; layer < 7; layer++) {
     int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
     if (cluster_size_per_layer > 0) {
       nl++;

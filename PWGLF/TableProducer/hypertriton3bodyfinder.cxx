@@ -113,7 +113,7 @@ struct trackprefilter {
   };
 
   // change the dca cut for helium3
-  Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
+  Configurable<int> mintpcNCls{"mintpcNCls", 70, "min tpc Nclusters"};
   Configurable<int> tpcrefit{"tpcrefit", 0, "demand TPC refit"};
 
   Produces<aod::V0GoodPosTracks> v0GoodPosTracks;
@@ -133,7 +133,7 @@ struct trackprefilter {
         }
       }
       registry.fill(HIST("hGoodTrackCount"), 1.5);
-      if (t0.tpcNClsCrossedRows() < mincrossedrows) {
+      if (t0.tpcNClsFound() < mintpcNCls) {
         continue;
       }
       registry.fill(HIST("hGoodTrackCount"), 2.5);

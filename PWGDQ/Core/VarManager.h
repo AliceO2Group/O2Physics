@@ -154,6 +154,8 @@ class VarManager : public TObject
 
     // Event wise variables
     kTimestamp,
+    kCollisionTime,
+    kCollisionTimeRes,
     kBC,
     kIsPhysicsSelection,
     kIsSel8, // TVX in Run3
@@ -356,9 +358,9 @@ class VarManager : public TObject
     kIsLegFromAntiLambda,
     kIsLegFromOmega,
     kIsProtonFromLambdaAndAntiLambda,
-    kIsDalitzLeg,             // Up to 8 dalitz selections
-    kBarrelNAssocsInBunch,    // number of in bunch collision associations
-    kBarrelNAssocsOutOfBunch, // number of out of bunch collision associations
+    kIsDalitzLeg,                             // Up to 8 dalitz selections
+    kBarrelNAssocsInBunch = kIsDalitzLeg + 8, // number of in bunch collision associations
+    kBarrelNAssocsOutOfBunch,                 // number of out of bunch collision associations
     kNBarrelTrackVariables,
 
     // Muon track variables
@@ -1014,6 +1016,8 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kVtxCovYZ] = event.covYZ();
     values[kVtxCovZZ] = event.covZZ();
     values[kVtxChi2] = event.chi2();
+    values[kCollisionTime] = event.collisionTime();
+    values[kCollisionTimeRes] = event.collisionTimeRes();
   }
 
   if constexpr ((fillMap & CollisionCentRun2) > 0) {
@@ -1057,6 +1061,8 @@ void VarManager::FillEvent(T const& event, float* values)
       values[kIsSingleGapC] = (event.tag_bit(56 + kSingleGapC) > 0);
       values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
     }
+    values[kCollisionTime] = event.collisionTime();
+    values[kCollisionTimeRes] = event.collisionTimeRes();
   }
 
   if constexpr ((fillMap & ReducedEventExtended) > 0) {
