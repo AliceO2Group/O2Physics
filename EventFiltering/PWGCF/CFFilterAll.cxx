@@ -824,6 +824,12 @@ struct CFFilter {
     if (ConfEvtOfflineCheck && !col.sel8()) {
       return false;
     }
+    // if event is close to the timeframe border, return false
+    if (!col.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+
+
     return true;
   }
 
@@ -1278,6 +1284,7 @@ struct CFFilter {
     if (!ConfIsRun3) {
       LOG(fatal) << "Run 2 processing is not implemented!";
     }
+
     if (ConfUseManualPIDproton || ConfUseManualPIDdeuteron || ConfUseAvgFromCCDB) {
       currentRunNumber = col.bc_as<aod::BCsWithTimestamps>().runNumber();
       if (currentRunNumber != lastRunNumber) {
@@ -2002,6 +2009,7 @@ struct CFFilter {
       registry.fill(HIST("ld/fMultiplicity"), col.multNTracksPV());
       registry.fill(HIST("ld/fZvtx"), col.posZ());
     }
+
     tags(keepEvent3N[CFTrigger::kPPP],
          keepEvent3N[CFTrigger::kPPL],
          keepEvent3N[CFTrigger::kPLL],
