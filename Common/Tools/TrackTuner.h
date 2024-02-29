@@ -495,9 +495,11 @@ struct TrackTuner {
     // --------------------------------
     // param[0]=d0rpn;
     // double oldDCAxyValue = trackParCov.getY();
+    double trackParDcaXYoriginal = trackParCov.getY();
     trackParCov.setY(trackParDcaXYUpgr);
     // trackParCov.setY(oldDCAxyValue);
     // param[1]=d0zn ;
+    double trackParDcaZoriginal = trackParCov.getZ();
     trackParCov.setZ(trackParDcaZUpgr);
 
     if (updateCurvature) {
@@ -652,6 +654,7 @@ struct TrackTuner {
     /// sanity check for track covariance matrix element
     /// see https://github.com/AliceO2Group/AliceO2/blob/66de30958153cd7badf522150e8554f9fcf975ff/Common/DCAFitter/include/DCAFitter/DCAFitterN.h#L38-L54
     double detYZ = sigmaY2 * sigmaZ2 - sigmaZY * sigmaZY;
+    double detYZorig = sigmaY2orig * sigmaZ2orig - sigmaZYorig * sigmaZYorig;
     if (detYZ < 0) {
       /// restore the original values for these elements, since in this case the cov. matrix gets ill-defined
       if (debugInfo) {
@@ -659,16 +662,30 @@ struct TrackTuner {
         LOG(info) << "    sigmaY2 = " << sigmaY2;
         LOG(info) << "    sigmaZY = " << sigmaZY;
         LOG(info) << "    sigmaZ2 = " << sigmaZ2;
-        LOG(info) << "    The product (sigmaY2*sigmaZ2 - sigmaZY*sigmaZY) = " << detYZ << " is negative. Restoring the original sigmaY2, sigmaZY, sigmaZ2 cov. matrix elements:";
+        LOG(info) << "    The product (sigmaY2*sigmaZ2 - sigmaZY*sigmaZY) = " << detYZ << " is negative. Restoring the original sigmaY2, sigmaZY, sigmaZ2 cov. matrix elements, as well as Y and Z parameters:";
         LOG(info) << "    sigmaY2orig = " << sigmaY2orig;
         LOG(info) << "    sigmaZYorig = " << sigmaZYorig;
         LOG(info) << "    sigmaZ2orig = " << sigmaZ2orig;
+        LOG(info) << "    Original product (sigmaY2orig*sigmaZ2orig - sigmaZYorig*sigmaZYorgi) = " << detYZorig;
+        LOG(info) << "    ===> track pt = " << trackParCov.getPt();
       }
+
+      // check if this was pathological already w/o track smearing
+      if (detYZorig < 0) {
+        hQA->Fill(4);
+      }
+
+      // restore original Y and Z parameters
+      trackParCov.setY(trackParDcaXYoriginal);
+      trackParCov.setZ(trackParDcaZoriginal);
+
+      // restore original cov. matrix elements
       trackParCov.setCov(sigmaY2orig, 0);
       trackParCov.setCov(sigmaZYorig, 1);
       trackParCov.setCov(sigmaZ2orig, 2);
 
       hQA->Fill(3);
+
     } else {
       hQA->Fill(2);
     }

@@ -60,7 +60,7 @@ struct TrackPropagation {
   // for TrackTuner only (MC smearing)
   Configurable<bool> useTrackTuner{"useTrackTuner", false, "Apply Improver/DCA corrections to MC"};
   Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackCovMat=1|updateCurvature=0|updatePulls=0|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/PbPb2022|nameInputFile=trackTuner_DataLHC22sPass5_McLHC22l1b2_run529397.root|usePvRefitCorrections=0|oneOverPtCurrent=0|oneOverPtUpgr=0", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
-  OutputObj<TH1D> trackTunedTracks{TH1D("trackTunedTracks", "", 3, 0.5, 3.5), OutputObjHandlingPolicy::AnalysisObject};
+  OutputObj<TH1D> trackTunedTracks{TH1D("trackTunedTracks", "", 4, 0.5, 4.5), OutputObjHandlingPolicy::AnalysisObject};
 
   using TracksIUWithMc = soa::Join<aod::StoredTracksIU, aod::McTrackLabels, aod::TracksCovIU>;
 
@@ -109,6 +109,7 @@ struct TrackPropagation {
       trackTunedTracks->GetXaxis()->SetBinLabel(1, "all tracks");
       trackTunedTracks->GetXaxis()->SetBinLabel(2, "tracks tuned (no negative detXY)");
       trackTunedTracks->GetXaxis()->SetBinLabel(3, "untouched tracks due to negative detXY");
+      trackTunedTracks->GetXaxis()->SetBinLabel(4, "original detXY<0");
     }
   }
 
