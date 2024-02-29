@@ -889,7 +889,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
     cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
-    cut->AddCut(GetAnalysisCut("lmee_pp_502TeV_TPCloosenopkrej"));
+    cut->AddCut(GetAnalysisCut("lmee_pp_502TeV_TPCPbPbnopkrej"));
     return cut;
   }
 
@@ -3518,6 +3518,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
       } else if (icase == 1 || icase == 2) {
         cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -4., 4., false, VarManager::kPin, 0.0, 1e+10, false);
         cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -99., 2.5, true, VarManager::kPin, 0.0, 1e+10, false);
+      }
+      return cut;
+    }
+
+    if (!nameStr.compare(Form("lmee_pp_502TeV_TPCPbPbnopkrej%s", vecPIDcase.at(icase).Data()))) {
+      if (icase == 0) {
+        cut->AddCut(VarManager::kTPCnSigmaEl, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
+        cut->AddCut(VarManager::kTPCnSigmaPi, -99., 4.5, true, VarManager::kPin, 0.0, 1e+10, false);
+      } else if (icase == 1 || icase == 2) {
+        cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
+        cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -99., 4.5, true, VarManager::kPin, 0.0, 1e+10, false);
       }
       return cut;
     }
