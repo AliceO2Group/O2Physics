@@ -153,7 +153,7 @@ struct HfDataCreatorCharmHadPiReduced {
   void init(InitContext const&)
   {
     std::array<int, 8> doProcess = {doprocessDplusPiData, doprocessDplusPiDataWithMl, doprocessDplusPiMc, doprocessDplusPiMcWithMl, doprocessD0PiData, doprocessD0PiDataWithMl, doprocessD0PiMc, doprocessD0PiMcWithMl};
-    if (std::accumulate(doProcess.begin(), doProcess.end(), 0) != 0) {
+    if (std::accumulate(doProcess.begin(), doProcess.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function can be enabled at a time, please fix your configuration!");
     }
 
@@ -817,7 +817,7 @@ struct HfDataCreatorCharmHadPiReduced {
       runDataCreation<false, false, DecayChannel::BplusToD0barPi>(collision, candsCThisColl, trackIdsThisCollision, tracks, tracks, bcs);
     }
   }
-  PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processD0PiData, "Process D0Pi without MC info and without ML info", true);
+  PROCESS_SWITCH(HfDataCreatorCharmHadPiReduced, processD0PiData, "Process D0Pi without MC info and without ML info", false);
 
   void processD0PiDataWithMl(aod::Collisions const& collisions,
                              CandsD0FilteredWithMl const& candsC,
