@@ -125,8 +125,6 @@ struct zdcSP {
     if (!bc.has_zdc()) {
       return;
     }
-    initCCDB(bc);
-    double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
     auto zdc = bc.zdc();
     auto zncEnergy = zdc.energySectorZNC();
     auto znaEnergy = zdc.energySectorZNA();
@@ -146,6 +144,11 @@ struct zdcSP {
     zdcSPTable(bc.globalBC(), bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.centFT0C(),
                znaCommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3],
                zncCommon, zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3]);
+    if (!goodC && !goodA) {
+      return;
+    }
+    initCCDB(bc);
+    double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic"); //
     if (goodC) {
       gCurrentHistC[0]->Fill(hadronicRate, zncCommon);
       for (int i{0}; i < 4; ++i) {
