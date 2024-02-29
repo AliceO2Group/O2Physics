@@ -274,14 +274,14 @@ struct MultiplicityTableTaskIndexed {
     float multZEM2 = -1.f;
     float multZPA = -1.f;
     float multZPC = -1.f;
-    
+
     float multZeqFV0A = 0.f;
     float multZeqFT0A = 0.f;
     float multZeqFT0C = 0.f;
     float multZeqFDDA = 0.f;
     float multZeqFDDC = 0.f;
     float multZeqNContribs = 0.f;
-    
+
     for (auto const& collision : collisions) {
       if ((fractionOfEvents < 1.f) && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled (only for the QA)
         return;
@@ -418,9 +418,9 @@ struct MultiplicityTableTaskIndexed {
             const auto& tracksThisCollision = pvContribTracksIUEta1.sliceByCached(perCol, collision.globalIndex(), cache);
             multNContribsEta1 = tracksThisCollision.size();
             for (auto track : tracksThisCollision) {
-              if(std::abs(track.eta())<0.8) 
+              if (std::abs(track.eta()) < 0.8)
                 multNContribs++;
-              if(std::abs(track.eta())<0.5) 
+              if (std::abs(track.eta()) < 0.5)
                 multNContribsEtaHalf++;
             }
             tablePv(multNContribs, multNContribsEta1, multNContribsEtaHalf);
