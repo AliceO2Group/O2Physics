@@ -235,10 +235,10 @@ class VarManager : public TObject
     kQ2Y0A2,
     kU2Q2Ev1,
     kU2Q2Ev2,
-    kTwoR2SP1,  //Scalar product resolution of event1 for ME technique
-    kTwoR2SP2,  //Scalar product resolution of event2 for ME technique
-    kTwoR2EP1,  //Event plane resolution of event2 for ME technique
-    kTwoR2EP2,  //Event plane resolution of event2 for ME technique
+    kTwoR2SP1, // Scalar product resolution of event1 for ME technique
+    kTwoR2SP2, // Scalar product resolution of event2 for ME technique
+    kTwoR2EP1, // Event plane resolution of event2 for ME technique
+    kTwoR2EP2, // Event plane resolution of event2 for ME technique
 
     // Basic track/muon/pair wise variables
     kX,
@@ -455,8 +455,8 @@ class VarManager : public TObject
     kPsi2B,
     kPsi2C,
     kCos2DeltaPhi,
-    kCos2DeltaPhiMu1,  //cos(phi - phi1) for muon1
-    kCos2DeltaPhiMu2,  ////cos(phi - phi2) for muon2
+    kCos2DeltaPhiMu1, // cos(phi - phi1) for muon1
+    kCos2DeltaPhiMu2, ////cos(phi - phi2) for muon2
     kCos3DeltaPhi,
     kDeltaPtotTracks,
     kVertexingLxyOverErr,
@@ -671,8 +671,8 @@ class VarManager : public TObject
   static void FillEvent(T const& event, float* values = nullptr);
   template <typename T>
   static void FillTwoEvents(T const& event1, T const& event2, float* values = nullptr);
-  template <uint32_t fillMap, typename T1, typename T2 >
-  static void FillTwoMixEvents(T1 const& event1, T1 const& event2,T2 const& tracks1, T2 const& tracks2, float* values = nullptr);
+  template <uint32_t fillMap, typename T1, typename T2>
+  static void FillTwoMixEvents(T1 const& event1, T1 const& event2, T2 const& tracks1, T2 const& tracks2, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillTrack(T const& track, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
@@ -1190,7 +1190,6 @@ void VarManager::FillTwoEvents(T const& ev1, T const& ev2, float* values)
   values[kTwoEvDeltaR] = std::sqrt(values[kTwoEvDeltaX] * values[kTwoEvDeltaX] + values[kTwoEvDeltaY] * values[kTwoEvDeltaY]);
 }
 
-
 template <uint32_t fillMap, typename T1, typename T2>
 void VarManager::FillTwoMixEvents(T1 const& ev1, T1 const& ev2, T2 const& tracks1, T2 const& tracks2, float* values)
 {
@@ -1210,33 +1209,30 @@ void VarManager::FillTwoMixEvents(T1 const& ev1, T1 const& ev2, T2 const& tracks
     for (auto& track2 : tracks2) { Track2Filter = uint32_t(track2.isMuonSelected());}
    */
   if constexpr ((fillMap & ReducedEventQvector) > 0) {
-  values[kTwoR2SP1] = (ev1.q2x0b() * ev1.q2x0c() + ev1.q2y0b() * ev1.q2y0c()); 
-  values[kTwoR2SP2] = (ev2.q2x0b() * ev2.q2x0c() + ev2.q2y0b() * ev2.q2y0c());
+    values[kTwoR2SP1] = (ev1.q2x0b() * ev1.q2x0c() + ev1.q2y0b() * ev1.q2y0c());
+    values[kTwoR2SP2] = (ev2.q2x0b() * ev2.q2x0c() + ev2.q2y0b() * ev2.q2y0c());
 
-  if (ev1.q2y0b() * ev1.q2y0c() != 0.0) {
-  values[kTwoR2EP1] = TMath::Cos(2 * (getEventPlane(2, ev1.q2x0b(), ev1.q2y0b()) - getEventPlane(2, ev1.q2x0c(), ev1.q2y0c())));
+    if (ev1.q2y0b() * ev1.q2y0c() != 0.0) {
+      values[kTwoR2EP1] = TMath::Cos(2 * (getEventPlane(2, ev1.q2x0b(), ev1.q2y0b()) - getEventPlane(2, ev1.q2x0c(), ev1.q2y0c())));
+    }
+
+    if (ev2.q2y0b() * ev2.q2y0c() != 0.0) {
+      values[kTwoR2EP2] = TMath::Cos(2 * (getEventPlane(2, ev2.q2x0b(), ev2.q2y0b()) - getEventPlane(2, ev2.q2x0c(), ev2.q2y0c())));
+    }
+    // Tobe used for the calculation of u1q1 and u2q2
+    values[kQ2X0A1] = ev1.q2x0a();
+    values[kQ2X0A2] = ev2.q2x0a();
+    values[kQ2Y0A1] = ev1.q2y0a();
+    values[kQ2Y0A2] = ev2.q2y0a();
   }
-      
-  if (ev2.q2y0b() * ev2.q2y0c() != 0.0) {
-  values[kTwoR2EP2] = TMath::Cos(2 * (getEventPlane(2, ev2.q2x0b(), ev2.q2y0b()) - getEventPlane(2, ev2.q2x0c(), ev2.q2y0c())));
-  }
-   //Tobe used for the calculation of u1q1 and u2q2
-   values[kQ2X0A1] = ev1.q2x0a();
-   values[kQ2X0A2] = ev2.q2x0a();
-   values[kQ2Y0A1] = ev1.q2y0a();
-   values[kQ2Y0A2] = ev2.q2y0a();
-   
-}
-  
+
   if (isnan(VarManager::fgValues[VarManager::kTwoR2SP1]) == true || isnan(VarManager::fgValues[VarManager::kTwoR2EP1]) == true) {
     values[kTwoR2SP1] = -999.;
     values[kTwoR2SP2] = -999.;
     values[kTwoR2EP1] = -999.;
     values[kTwoR2EP2] = -999.;
   }
-  
 }
-
 
 template <uint32_t fillMap, typename T>
 void VarManager::FillTrack(T const& track, float* values)
