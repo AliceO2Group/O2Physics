@@ -97,8 +97,7 @@ class CollisonCuts
         LOGF(debug, "Offline selection failed (Run3)");
         return false;
       }
-      if (!col.selection_bit(aod::evsel::kNoTimeFrameBorder) && mApplyTFBorderCut)
-      {
+      if (!col.selection_bit(aod::evsel::kNoTimeFrameBorder) && mApplyTFBorderCut) {
         LOGF(debug, "Time frame border cut failed");
         return false;
       }
