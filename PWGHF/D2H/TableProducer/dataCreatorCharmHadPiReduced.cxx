@@ -152,48 +152,10 @@ struct HfDataCreatorCharmHadPiReduced {
 
   void init(InitContext const&)
   {
-    // histograms
-    constexpr int kNBinsEvents = kNEvent;
-    std::string labels[kNBinsEvents];
-    labels[Event::Processed] = "processed";
-    labels[Event::NoCharmHadPiSelected] = "without CharmHad-Pi pairs";
-    labels[Event::CharmHadPiSelected] = "with CharmHad-Pi pairs";
-    static const AxisSpec axisEvents = {kNBinsEvents, 0.5, kNBinsEvents + 0.5, ""};
-    registry.add("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
-    for (int iBin = 0; iBin < kNBinsEvents; iBin++) {
-      registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+    std::array<int, 8> doProcess = {doprocessDplusPiData, doprocessDplusPiDataWithMl, doprocessDplusPiMc, doprocessDplusPiMcWithMl, doprocessD0PiData, doprocessD0PiDataWithMl, doprocessD0PiMc, doprocessD0PiMcWithMl};
+    if (std::accumulate(doProcess.begin(), doProcess.end(), 0) != 0) {
+      LOGP(fatal, "One and only one process function can be enabled at a time, please fix your configuration!");
     }
-
-    registry.add("hMassCharmHad0", "D^{#minus} candidates;inv. mass (p^{#minus} K^{#plus} #pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
-    registry.add("hMassCharmHad1", "D^{#minus} candidates;inv. mass (p^{#minus} K^{#plus} #pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
-    registry.add("hPtCharmHad", "D^{#minus} candidates;D^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
-    registry.add("hPtPion", "#pi^{#plus} candidates;#pi^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
-    registry.add("hCpaCharmHad", "D^{#minus} candidates;D^{#minus} cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
-
-    // Initialize fitter
-    df2.setPropagateToPCA(propagateToPCA);
-    df2.setMaxR(maxR);
-    df2.setMaxDZIni(maxDZIni);
-    df2.setMinParamChange(minParamChange);
-    df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(useAbsDCA);
-    df2.setWeightedFinalPCA(useWeightedFinalPCA);
-    df2.setMatCorrType(noMatCorr);
-
-    df3.setPropagateToPCA(propagateToPCA);
-    df3.setMaxR(maxR);
-    df3.setMaxDZIni(maxDZIni);
-    df3.setMinParamChange(minParamChange);
-    df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(useAbsDCA);
-    df3.setWeightedFinalPCA(useWeightedFinalPCA);
-    df3.setMatCorrType(noMatCorr);
-
-    // Configure CCDB access
-    ccdb->setURL(ccdbUrl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    runNumber = 0;
 
     // invariant-mass window cut
     massPi = MassPiPlus;
@@ -206,6 +168,70 @@ struct HfDataCreatorCharmHadPiReduced {
     }
     invMass2ChHadPiMin = (massB - invMassWindowCharmHadPi) * (massB - invMassWindowCharmHadPi);
     invMass2ChHadPiMax = (massB + invMassWindowCharmHadPi) * (massB + invMassWindowCharmHadPi);
+
+    // Initialize fitter
+    if (doprocessDplusPiData || doprocessDplusPiDataWithMl || doprocessDplusPiMc || doprocessDplusPiMcWithMl) {
+      df3.setPropagateToPCA(propagateToPCA);
+      df3.setMaxR(maxR);
+      df3.setMaxDZIni(maxDZIni);
+      df3.setMinParamChange(minParamChange);
+      df3.setMinRelChi2Change(minRelChi2Change);
+      df3.setUseAbsDCA(useAbsDCA);
+      df3.setWeightedFinalPCA(useWeightedFinalPCA);
+      df3.setMatCorrType(noMatCorr);
+    } else if (doprocessD0PiData || doprocessD0PiDataWithMl || doprocessD0PiMc || doprocessD0PiMcWithMl) {
+      df2.setPropagateToPCA(propagateToPCA);
+      df2.setMaxR(maxR);
+      df2.setMaxDZIni(maxDZIni);
+      df2.setMinParamChange(minParamChange);
+      df2.setMinRelChi2Change(minRelChi2Change);
+      df2.setUseAbsDCA(useAbsDCA);
+      df2.setWeightedFinalPCA(useWeightedFinalPCA);
+      df2.setMatCorrType(noMatCorr);
+    }
+
+    // Configure CCDB access
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    runNumber = 0;
+
+    // histograms
+    constexpr int kNBinsEvents = kNEvent;
+    std::string labels[kNBinsEvents];
+    labels[Event::Processed] = "processed";
+    labels[Event::NoCharmHadPiSelected] = "without CharmHad-Pi pairs";
+    labels[Event::CharmHadPiSelected] = "with CharmHad-Pi pairs";
+    static const AxisSpec axisEvents = {kNBinsEvents, 0.5, kNBinsEvents + 0.5, ""};
+    registry.add("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
+    for (int iBin = 0; iBin < kNBinsEvents; iBin++) {
+      registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+    }
+
+    std::string charmHadInvMassTitle = "";
+    std::string charmHadTitle0 = "";
+    std::string charmHadTitle1 = "";
+    std::string histMassTitle0 = "";
+    std::string histMassTitle1 = "";
+    if (doprocessDplusPiData || doprocessDplusPiDataWithMl || doprocessDplusPiMc || doprocessDplusPiMcWithMl) {
+      charmHadTitle0 = "D^{#plus}";
+      histMassTitle0 = "Dplus";
+      charmHadInvMassTitle = "#it{M}(K#pi#pi)";
+    } else if (doprocessD0PiData || doprocessD0PiDataWithMl || doprocessD0PiMc || doprocessD0PiMcWithMl) {
+      charmHadTitle0 = "D^{0}";
+      charmHadTitle1 = "#overline{D}^{0}";
+      histMassTitle0 = "D0";
+      histMassTitle1 = "D0bar";
+      charmHadInvMassTitle = "#it{M}(K#pi)";
+    }
+
+    registry.add(Form("hMass%s", histMassTitle0.data()), Form("%s candidates; %s (GeV/#it{c}^{2});entries", charmHadTitle0.data(), charmHadInvMassTitle.data()), {HistType::kTH1F, {{500, 0., 5.}}});
+    if (doprocessD0PiData || doprocessD0PiDataWithMl || doprocessD0PiMc || doprocessD0PiMcWithMl) {
+      registry.add(Form("hMass%s", histMassTitle1.data()), Form("%s candidates; %s (GeV/#it{c}^{2});entries", charmHadTitle1.data(), charmHadInvMassTitle.data()), {HistType::kTH1F, {{500, 0., 5.}}});
+    }
+    registry.add(Form("hPt%s", histMassTitle0.data()), Form("%s candidates candidates;%s candidate #it{p}_{T} (GeV/#it{c});entries", charmHadTitle0.data(), charmHadTitle0.data()), {HistType::kTH1F, {{100, 0., 10.}}});
+    registry.add("hPtPion", "#pi^{#plus} candidates;#pi^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
+    registry.add(Form("hCpa%s", histMassTitle0.data()), Form("%s candidates;%s cosine of pointing angle;entries", charmHadTitle0.data(), charmHadTitle0.data()), {HistType::kTH1F, {{110, -1.1, 1.1}}});
   }
 
   /// Pion selection (D Pi <-- B0)
@@ -435,20 +461,22 @@ struct HfDataCreatorCharmHadPiReduced {
       if constexpr (decChannel == DecayChannel::B0ToDminusPi) {
         indexHfCandCharm = hfCand3Prong.lastIndex() + 1;
         invMassC0 = hfHelper.invMassDplusToPiKPi(candC);
-        registry.fill(HIST("hMassCharmHad"), invMassC0);
+        registry.fill(HIST("hMassDplus"), invMassC0);
+        registry.fill(HIST("hPtDplus"), candC.pt());
+        registry.fill(HIST("hCpaDplus"), candC.cpa());
       } else if constexpr (decChannel == DecayChannel::BplusToD0barPi){
         indexHfCandCharm = hfCand2Prong.lastIndex() + 1;
         if (candC.isSelD0() >= selectionFlagD0) {
           invMassC0 = hfHelper.invMassD0ToPiK(candC);
-          registry.fill(HIST("hMassCharmHad0"), invMassC0);
+          registry.fill(HIST("hMassD0"), invMassC0);
         }
         if (candC.isSelD0bar() >= selectionFlagD0bar) {
           invMassC1 = hfHelper.invMassD0barToKPi(candC);
-          registry.fill(HIST("hMassCharmHad1"), invMassC1);
+          registry.fill(HIST("hMassD0bar"), invMassC1);
         }
+        registry.fill(HIST("hPtD0"), candC.pt());
+        registry.fill(HIST("hCpaD0"), candC.cpa());
       }
-      registry.fill(HIST("hPtCharmHad"), candC.pt());
-      registry.fill(HIST("hCpaCharmHad"), candC.cpa());
 
       bool fillHfCandCharm = false;
 

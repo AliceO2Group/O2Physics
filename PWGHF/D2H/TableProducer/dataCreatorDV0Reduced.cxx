@@ -70,7 +70,7 @@ enum TypeD : uint8_t {
 /// Creation of D-V0 pairs
 struct HfDataCreatorDV0Reduced {
   // Produces AOD tables to store track information
-  Produces<aod::HfRedCollision> hfReducedCollision;  // Defined in PWGLF/DataModel/LFStrangenessTables.h
+  Produces<aod::HfRedCollisions> hfReducedCollision;  // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfOrigColCounts> hfCollisionCounter; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
 
   Produces<aod::HfRedVzeros> hfCandV0;   // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
@@ -373,10 +373,7 @@ struct HfDataCreatorDV0Reduced {
     }
     registry.fill(HIST("hEvents"), 1 + Event::DV0Selected);
     // fill collision table if it contains a DPi pair a minima
-    hfReducedCollision(collision.posX(), collision.posY(), collision.posZ(),
-                       collision.covXX(), collision.covXY(), collision.covYY(),
-                       collision.covXZ(), collision.covYZ(), collision.covZZ(),
-                       0);
+    hfReducedCollision(collision.posX(), collision.posY(), collision.posZ());
   } // run data creation
 
   void processDplusV0(aod::Collisions const& collisions,
