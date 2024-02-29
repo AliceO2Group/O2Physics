@@ -56,6 +56,8 @@ struct HfCandidateCreatorBplusReduced {
   double bz{0.};
   o2::vertexing::DCAFitterN<2> df2; // fitter for B vertex (2-prong vertex fitter)
 
+  using HfRedCollisionsWithExtras = soa::Join<aod::HfRedCollisions, aod::HfRedCollExtras>;
+
   Preslice<soa::Join<aod::HfRed2Prongs, aod::HfRed2ProngsCov>> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
   Preslice<soa::Join<aod::HfRedTracks, aod::HfRedTracksCov>> tracksPionPerCollision = hf_track_index_reduced::hfRedCollisionId;
 
@@ -84,7 +86,7 @@ struct HfCandidateCreatorBplusReduced {
     registry.add("hEvents", "Events;;entries", HistType::kTH1F, {{1, 0.5, 1.5}});
   }
 
-  void process(aod::HfRedCollisions const& collisions,
+  void process(HfRedCollisionsWithExtras const& collisions,
                soa::Join<aod::HfRed2Prongs, aod::HfRed2ProngsCov> const& candsD,
                soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov> const& tracksPion,
                aod::HfOrigColCounts const& collisionsCounter,
