@@ -83,7 +83,7 @@ struct zdcSP {
     return collision.sel8() && collision.centFT0C() < cfgCalibrationMaxCentFT0C && gRandom->Uniform() < cfgCalibrationDownscaling;
   }
 
-  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  void initCCDB(BCsRun3::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
@@ -125,6 +125,7 @@ struct zdcSP {
     if (!bc.has_zdc()) {
       return;
     }
+    initCCDB(bc);
     double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
     auto zdc = bc.zdc();
     auto zncEnergy = zdc.energySectorZNC();
