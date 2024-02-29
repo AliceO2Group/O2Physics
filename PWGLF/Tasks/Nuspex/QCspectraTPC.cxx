@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include "Framework/runDataProcessing.h"
+
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -21,6 +22,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/TrackSelection.h"
+
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 using namespace o2;
@@ -38,6 +40,7 @@ double eta2y(double pt, double m, double eta)
 
 struct QCspectraTPC {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
+  Configurable<int> cfgAverageClusterSize{"cfgAverageClusterSize", 1, "Min Average Cluster Size"};
   Configurable<float> cfgCutnSigmaTPC{"cfgCutnSigmaTPC", 10.0f, "lower bound for nsigmaTPC"};
   Configurable<float> cfgCutnSigmaTPCLow{"cfgCutnSigmaTPCLow", -3.0f, "lower bound for nsigmaTPC"};
   Configurable<float> cfgCutnSigmaTPCHigh{"cfgCutnSigmaTPCHigh", 6.0f, "upper bound for nsigmaTPC"};
@@ -177,7 +180,8 @@ struct QCspectraTPC {
       int numLayers = 7; // Number of layers
       int sumClusterSizes = clSizeLayer1 + clSizeLayer2 + clSizeLayer3 + clSizeLayer4 + clSizeLayer5 + clSizeLayer6 + clSizeLayer0;
 
-      double averageClusterSize = static_cast<double>(sumClusterSizes) / numLayers;
+      double averageClusterSize = (static_cast<double>(sumClusterSizes) / numLayers)* cos_lambda;
+      
       double cos_lambda = std::cos(std::atan(track.tgl()));
       auto delta_p = track.tpcInnerParam() - track.p();
 
@@ -185,10 +189,13 @@ struct QCspectraTPC {
       histos.fill(HIST("histTpcNsigmaPr"), track.tpcInnerParam(), nSigmaTPCPr);
       histos.fill(HIST("delta_p"), track.p() * track.sign(), delta_p * track.sign());
       //  return;
+      
+      if(averageClusterSize < cfgAverageClusterSize) continue;
+      
       if (std::abs(nSigmaTPCPr) < cfgCutnSigmaTPC) { // put nsigma cut
         histos.fill(HIST("histTpcSignal_Pr"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
 
-        histos.fill(HIST("nsigmatpc/clusterSize/histITSClusterSize_Pr"), track.pt(), averageClusterSize * cos_lambda, nSigmaTPCPr);
+        histos.fill(HIST("nsigmatpc/clusterSize/histITSClusterSize_Pr"), track.pt(), averageClusterSize , nSigmaTPCPr);
         histos.fill(HIST("nsigmatpc/clusterSize/histITSClusterSize_Pr_layer0"), track.tpcInnerParam(), clSizeLayer0 * cos_lambda);
         histos.fill(HIST("nsigmatpc/clusterSize/histITSClusterSize_Pr_layer1"), track.tpcInnerParam(), clSizeLayer1 * cos_lambda);
         histos.fill(HIST("nsigmatpc/clusterSize/histITSClusterSize_Pr_layer2"), track.tpcInnerParam(), clSizeLayer2 * cos_lambda);
@@ -197,9 +204,9 @@ struct QCspectraTPC {
         histos.fill(HIST("nsigmatpc/clusterSize/histITSClusterSize_Pr_layer5"), track.tpcInnerParam(), clSizeLayer5 * cos_lambda);
         histos.fill(HIST("nsigmatpc/clusterSize/histITSClusterSize_Pr_layer6"), track.tpcInnerParam(), clSizeLayer6 * cos_lambda);
 
-        histos.fill(HIST("nsigmatpc/clusterSize/p/histITSClusterSize_Pr_Alllayer"), track.tpcInnerParam() * track.sign(), averageClusterSize * cos_lambda);
+        histos.fill(HIST("nsigmatpc/clusterSize/p/histITSClusterSize_Pr_Alllayer"), track.tpcInnerParam() * track.sign(), averageClusterSize);
 
-        histos.fill(HIST("nsigmatpc/clusterSize/pt/histITSClusterSize_Pr_Alllayer"), track.pt() * track.sign(), averageClusterSize * cos_lambda);
+        histos.fill(HIST("nsigmatpc/clusterSize/pt/histITSClusterSize_Pr_Alllayer"), track.pt() * track.sign(), averageClusterSize);
 
         if (track.sign() > 0) {
           histos.fill(HIST("nsigmatpc/pr/pos"), track.pt(), nSigmaTPCPr);
@@ -215,7 +222,7 @@ struct QCspectraTPC {
           histos.fill(HIST("nsigmatpcCut/pr/neg"), track.pt(), nSigmaTPCPr);
         }
 
-        histos.fill(HIST("nsigmatpcCut/clusterSize/histITSClusterSize_Pr"), track.pt(), averageClusterSize * cos_lambda, nSigmaTPCPr);
+        histos.fill(HIST("nsigmatpcCut/clusterSize/histITSClusterSize_Pr"), track.pt(), averageClusterSize , nSigmaTPCPr);
         histos.fill(HIST("nsigmatpcCut/clusterSize/histITSClusterSize_Pr_layer0"), track.tpcInnerParam(), clSizeLayer0 * cos_lambda);
         histos.fill(HIST("nsigmatpcCut/clusterSize/histITSClusterSize_Pr_layer1"), track.tpcInnerParam(), clSizeLayer1 * cos_lambda);
         histos.fill(HIST("nsigmatpcCut/clusterSize/histITSClusterSize_Pr_layer2"), track.tpcInnerParam(), clSizeLayer2 * cos_lambda);
@@ -224,13 +231,13 @@ struct QCspectraTPC {
         histos.fill(HIST("nsigmatpcCut/clusterSize/histITSClusterSize_Pr_layer5"), track.tpcInnerParam(), clSizeLayer5 * cos_lambda);
         histos.fill(HIST("nsigmatpcCut/clusterSize/histITSClusterSize_Pr_layer6"), track.tpcInnerParam(), clSizeLayer6 * cos_lambda);
 
-        histos.fill(HIST("nsigmatpcCut/clusterSize/p/histITSClusterSize_Pr_Alllayer"), track.tpcInnerParam() * track.sign(), averageClusterSize * cos_lambda);
+        histos.fill(HIST("nsigmatpcCut/clusterSize/p/histITSClusterSize_Pr_Alllayer"), track.tpcInnerParam() * track.sign(), averageClusterSize );
 
-        histos.fill(HIST("nsigmatpcCut/clusterSize/pt/histITSClusterSize_Pr_Alllayer"), track.pt() * track.sign(), averageClusterSize * cos_lambda);
+        histos.fill(HIST("nsigmatpcCut/clusterSize/pt/histITSClusterSize_Pr_Alllayer"), track.pt() * track.sign(), averageClusterSize );
 
         if (cfgCutDeltaPLow < delta_p && delta_p < cfgCutDeltaPHigh) {
 
-          histos.fill(HIST("nsigmatpcCut/deltapCut/clusterSize/histITSClusterSize_Pr"), track.pt(), averageClusterSize * cos_lambda, nSigmaTPCPr);
+          histos.fill(HIST("nsigmatpcCut/deltapCut/clusterSize/histITSClusterSize_Pr"), track.pt(), averageClusterSize, nSigmaTPCPr);
         }
       }
 
