@@ -12,6 +12,7 @@
 // Minimal example to run this task:
 // o2-analysis-centrality-table -b --configuration json://configuration.json | o2-analysis-timestamp -b --configuration json://configuration.json | o2-analysis-event-selection -b --configuration json://configuration.json | o2-analysis-multiplicity-table -b --configuration json://configuration.json | o2-analysis-lf-zdcsp -b --configuration json://configuration.json --aod-file @input_data.txt --aod-writer-json OutputDirector.json
 
+#include <array>
 #include <cmath>
 
 #include "Math/Vector4D.h"
@@ -59,10 +60,10 @@ using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
 
 namespace
 {
-std::unordered_map<int, TH2*> gHistosC[5];
-std::unordered_map<int, TH2*> gHistosA[5];
-TH2* gCurrentHistC[5];
-TH2* gCurrentHistA[5];
+std::unordered_map<int, std::array<TH2*, 5>> gHistosC;
+std::unordered_map<int, std::array<TH2*, 5>> gHistosA;
+std::array<TH2*, 5> gCurrentHistC;
+std::array<TH2*, 5> gCurrentHistA;
 } // namespace
 
 struct zdcSP {
@@ -88,20 +89,18 @@ struct zdcSP {
       return;
     }
     mRunNumber = bc.runNumber();
-    if (gHistosC[0].find(mRunNumber) == gHistosC[0].end()) {
-      gHistosC[0][mRunNumber] = mHistos.add<TH2>(Form("%i/znc_common", mRunNumber), ";Hadronic rate (kHz);ZNC common signal", kTH2D, {{51, 0, 51}, {400, 0., 400.}}).get();
-      gHistosA[0][mRunNumber] = mHistos.add<TH2>(Form("%i/zna_common", mRunNumber), ";Hadronic rate (kHz);ZNA common signal", kTH2D, {{51, 0, 51}, {400, 0., 400.}}).get();
+    if (gHistosC.find(mRunNumber) == gHistosC.end()) {
+      std::array<TH2*, 5>& zncH = gHistosC[mRunNumber];
+      std::array<TH2*, 5>& znaH = gHistosA[mRunNumber];
+      zncH[0] = mHistos.add<TH2>(Form("%i/znc_common", mRunNumber), ";Hadronic rate (kHz);ZNC common signal", kTH2D, {{51, 0, 51}, {400, 0., 400.}}).get();
+      znaH[0] = mHistos.add<TH2>(Form("%i/zna_common", mRunNumber), ";Hadronic rate (kHz);ZNA common signal", kTH2D, {{51, 0, 51}, {400, 0., 400.}}).get();
       for (int i{0}; i < 4; ++i) {
-        gHistosC[i + 1][mRunNumber] = mHistos.add<TH2>(Form("%i/znc_%i", mRunNumber, i + 1), Form(";Hadronic rate (kHz);ZNC %i signal", i + 1), kTH2D, {{51, 0, 51}, {400, 0., 400.}}).get();
-        gHistosA[i + 1][mRunNumber] = mHistos.add<TH2>(Form("%i/zna_%i", mRunNumber, i + 1), Form(";Hadronic rate (kHz);ZNA %i signal", i + 1), kTH2D, {{51, 0, 51}, {400, 0., 400.}}).get();
+        zncH[i + 1] = mHistos.add<TH2>(Form("%i/znc_%i", mRunNumber, i + 1), Form(";Hadronic rate (kHz);ZNC %i signal", i + 1), kTH2D, {{51, 0, 51}, {400, 0., 400.}}).get();
+        znaH[i + 1] = mHistos.add<TH2>(Form("%i/zna_%i", mRunNumber, i + 1), Form(";Hadronic rate (kHz);ZNA %i signal", i + 1), kTH2D, {{51, 0, 51}, {400, 0., 400.}}).get();
       }
     }
-    gCurrentHistC[0] = gHistosC[0][mRunNumber];
-    gCurrentHistA[0] = gHistosA[0][mRunNumber];
-    for (int i{0}; i < 4; ++i) {
-      gCurrentHistC[i + 1] = gHistosC[i + 1][mRunNumber];
-      gCurrentHistA[i + 1] = gHistosA[i + 1][mRunNumber];
-    }
+    gCurrentHistC = gHistosC[mRunNumber];
+    gCurrentHistA = gHistosA[mRunNumber];
   }
 
   void init(o2::framework::InitContext&)
@@ -126,7 +125,7 @@ struct zdcSP {
     if (!bc.has_zdc()) {
       return;
     }
-    double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZDC hadronic"); //
+    double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
     auto zdc = bc.zdc();
     auto zncEnergy = zdc.energySectorZNC();
     auto znaEnergy = zdc.energySectorZNA();
