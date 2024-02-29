@@ -68,7 +68,7 @@ PairCuts fPairCuts;              // pair suppression engine
 bool fUseConversionCuts = false; // suppress resonances and conversions
 bool fUseTwoTrackCut = false;    // suppress too close tracks
 
-std::vector<std::string> tname = {"O", "T"}; ///< the track names
+std::vector<std::string> tname = {"O", "T", "e+", "e-", "mu+", "mu-", "pi+", "pi-", "K+", "K-", "p+", "p-"}; ///< the track names
 } // namespace correlationstask
 
 // Task for building <dpt,dpt> correlations
@@ -566,7 +566,6 @@ struct IdentifiedBfCorrelationsTask {
           }
         }
       } else {
-        LOGF(info, "Number of channels (particle species + and -): %d ",nch)
         for (uint i = 0; i < nch; ++i) {
           /* histograms for each track species */
           fhN1_vsEtaPhi[i] = new TH2F(TString::Format("n1_%s_vsEtaPhi", tname[i].c_str()).Data(),
@@ -597,7 +596,6 @@ struct IdentifiedBfCorrelationsTask {
           fOutputList->Add(fhN1nw_vsC[i]);
           fOutputList->Add(fhSum1Ptnw_vsC[i]);
         }
-
         for (uint i = 0; i < nch; ++i) {
           for (uint j = 0; j < nch; ++j) {
             /* histograms for each track pair combination */
