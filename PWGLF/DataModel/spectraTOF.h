@@ -403,7 +403,7 @@ DECLARE_SOA_TABLE(SpColls, "AOD", "SPCOLLS",
                   spectra::MultZeqNTracksPV<spectra::Sel8>,
                   spectra::MultTracklets<spectra::Sel8>,
                   spectra::MultTPC<spectra::Sel8>,
-                  spectra::SelectionBit);
+                  spectra::SelectionBit<>);
 using SpColl = SpColls::iterator;
 
 DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",
