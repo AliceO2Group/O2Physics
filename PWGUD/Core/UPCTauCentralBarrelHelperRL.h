@@ -134,10 +134,10 @@ float invariantMass(float E, float px, float py, float pz)
 }
 
 float phi(float px, float py)
-// Just a simple function to return azimuthal angle
+// Just a simple function to return azimuthal angle from 0 to 2pi
 {
   if (px != 0)
-    return std::atan2(py, px);
+    return (std::atan2(py, px)+o2::constants::math::PI);
   return -999.;
 }
 
