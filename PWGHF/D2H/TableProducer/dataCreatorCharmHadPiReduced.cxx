@@ -291,7 +291,8 @@ struct HfDataCreatorCharmHadPiReduced {
   void fillMcRecoInfo(const PParticles& particlesMc,
                       const std::vector<TTrack>& vecDaughtersB,
                       int& indexHfCandCharm,
-                      std::map<int64_t, int64_t> selectedTracksPion) {
+                      std::map<int64_t, int64_t> selectedTracksPion)
+  {
 
     // we check the MC matching to be stored
     int8_t sign{0};
@@ -395,8 +396,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
         rowHfDPiMcCheckReduced(pdgCodeBeautyMother, pdgCodeCharmMother, pdgCodeProng0, pdgCodeProng1, pdgCodeProng2, pdgCodeProng3);
       }
-    }
-    else if constexpr (decChannel == DecayChannel::BplusToD0barPi) {
+    } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) {
       // B+ → D0(bar) π+ → (K+ π-) π+
       auto indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
@@ -464,7 +464,7 @@ struct HfDataCreatorCharmHadPiReduced {
         registry.fill(HIST("hMassDplus"), invMassC0);
         registry.fill(HIST("hPtDplus"), candC.pt());
         registry.fill(HIST("hCpaDplus"), candC.cpa());
-      } else if constexpr (decChannel == DecayChannel::BplusToD0barPi){
+      } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) {
         indexHfCandCharm = hfCand2Prong.lastIndex() + 1;
         if (candC.isSelD0() >= selectionFlagD0) {
           invMassC0 = hfHelper.invMassD0ToPiK(candC);
@@ -529,7 +529,7 @@ struct HfDataCreatorCharmHadPiReduced {
         df3.getTrack(1).getPxPyPzGlo(pVec1);
         df3.getTrack(2).getPxPyPzGlo(pVec2);
         pVecCharm = RecoDecay::pVec(pVec0, pVec1, pVec2);
-        trackParCovCharmHad.setAbsCharge(charmHadDauTracks[1].sign()); // to be sure
+        trackParCovCharmHad.setAbsCharge(charmHadDauTracks[1].sign());   // to be sure
       } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) { // D0(bar) → K± π∓
         if (df2.process(trackParCov0, trackParCov1) == 0) {
           continue;
@@ -571,7 +571,7 @@ struct HfDataCreatorCharmHadPiReduced {
         if (!isPionSelected(trackPion, trackParCovPion, dcaPion, charmHadDauTracks)) {
           continue;
         }
-        
+
         registry.fill(HIST("hPtPion"), trackParCovPion.getPt());
         // compute invariant mass square and apply selection
         auto invMass2DPi = RecoDecay::m2(std::array{pVecCharm, pVecPion}, std::array{massC, massPi});
@@ -607,15 +607,15 @@ struct HfDataCreatorCharmHadPiReduced {
           fillMcRecoInfo<decChannel>(particlesMc, beautyHadDauTracks, indexHfCandCharm, selectedTracksPion);
         }
         fillHfCandCharm = true;
-      }                       // pion loop
-      if (fillHfCandCharm) { // fill candCplus table only once per D candidate
+      }                                                           // pion loop
+      if (fillHfCandCharm) {                                      // fill candCplus table only once per D candidate
         if constexpr (decChannel == DecayChannel::B0ToDminusPi) { // D∓ → π∓ K± π∓
           hfCand3Prong(charmHadDauTracks[0].globalIndex(), charmHadDauTracks[1].globalIndex(), charmHadDauTracks[2].globalIndex(),
-                      indexHfReducedCollision,
-                      trackParCovCharmHad.getX(), trackParCovCharmHad.getAlpha(),
-                      trackParCovCharmHad.getY(), trackParCovCharmHad.getZ(), trackParCovCharmHad.getSnp(),
-                      trackParCovCharmHad.getTgl(), trackParCovCharmHad.getQ2Pt(),
-                      candC.xSecondaryVertex(), candC.ySecondaryVertex(), candC.zSecondaryVertex(), invMassC0);
+                       indexHfReducedCollision,
+                       trackParCovCharmHad.getX(), trackParCovCharmHad.getAlpha(),
+                       trackParCovCharmHad.getY(), trackParCovCharmHad.getZ(), trackParCovCharmHad.getSnp(),
+                       trackParCovCharmHad.getTgl(), trackParCovCharmHad.getQ2Pt(),
+                       candC.xSecondaryVertex(), candC.ySecondaryVertex(), candC.zSecondaryVertex(), invMassC0);
           hfCand3ProngCov(trackParCovCharmHad.getSigmaY2(), trackParCovCharmHad.getSigmaZY(), trackParCovCharmHad.getSigmaZ2(),
                           trackParCovCharmHad.getSigmaSnpY(), trackParCovCharmHad.getSigmaSnpZ(),
                           trackParCovCharmHad.getSigmaSnp2(), trackParCovCharmHad.getSigmaTglY(), trackParCovCharmHad.getSigmaTglZ(),
@@ -627,11 +627,11 @@ struct HfDataCreatorCharmHadPiReduced {
           }
         } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) { // D0(bar) → K± π∓
           hfCand2Prong(charmHadDauTracks[0].globalIndex(), charmHadDauTracks[1].globalIndex(),
-                      indexHfReducedCollision,
-                      trackParCovCharmHad.getX(), trackParCovCharmHad.getAlpha(),
-                      trackParCovCharmHad.getY(), trackParCovCharmHad.getZ(), trackParCovCharmHad.getSnp(),
-                      trackParCovCharmHad.getTgl(), trackParCovCharmHad.getQ2Pt(),
-                      candC.xSecondaryVertex(), candC.ySecondaryVertex(), candC.zSecondaryVertex(), invMassC0, invMassC1);
+                       indexHfReducedCollision,
+                       trackParCovCharmHad.getX(), trackParCovCharmHad.getAlpha(),
+                       trackParCovCharmHad.getY(), trackParCovCharmHad.getZ(), trackParCovCharmHad.getSnp(),
+                       trackParCovCharmHad.getTgl(), trackParCovCharmHad.getQ2Pt(),
+                       candC.xSecondaryVertex(), candC.ySecondaryVertex(), candC.zSecondaryVertex(), invMassC0, invMassC1);
           hfCand2ProngCov(trackParCovCharmHad.getSigmaY2(), trackParCovCharmHad.getSigmaZY(), trackParCovCharmHad.getSigmaZ2(),
                           trackParCovCharmHad.getSigmaSnpY(), trackParCovCharmHad.getSigmaSnpZ(),
                           trackParCovCharmHad.getSigmaSnp2(), trackParCovCharmHad.getSigmaTglY(), trackParCovCharmHad.getSigmaTglZ(),
@@ -641,10 +641,10 @@ struct HfDataCreatorCharmHadPiReduced {
           if constexpr (withMl) {
             std::array<float, 6> bdtScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
             if (candC.mlProbD0().size() == 3) {
-               std::copy(candC.mlProbD0().begin(), candC.mlProbD0().end(), bdtScores.begin());
+              std::copy(candC.mlProbD0().begin(), candC.mlProbD0().end(), bdtScores.begin());
             }
             if (candC.mlProbD0bar().size() == 3) {
-               std::copy(candC.mlProbD0bar().begin(), candC.mlProbD0bar().end(), bdtScores.begin() + 3);
+              std::copy(candC.mlProbD0bar().begin(), candC.mlProbD0bar().end(), bdtScores.begin() + 3);
             }
 
             hfCand2ProngMl(bdtScores[0], bdtScores[1], bdtScores[2], bdtScores[3], bdtScores[4], bdtScores[5]);
@@ -667,7 +667,7 @@ struct HfDataCreatorCharmHadPiReduced {
                        bz);
   }
 
-  template<uint8_t decayChannel>
+  template <uint8_t decayChannel>
   void runMcGen(aod::McParticles const& particlesMc)
   {
     // Match generated particles.
@@ -708,7 +708,7 @@ struct HfDataCreatorCharmHadPiReduced {
                             ptProngs[0], yProngs[0], etaProngs[0],
                             ptProngs[1], yProngs[1], etaProngs[1]);
       } else if constexpr (decayChannel == DecayChannel::BplusToD0barPi) {
-      // B+ → D0bar π+
+        // B+ → D0bar π+
         if (RecoDecay::isMatchedMCGen(particlesMc, particle, Pdg::kBPlus, std::array{static_cast<int>(Pdg::kD0), +kPiPlus}, true)) {
           // Match D0bar -> π- K+
           auto candD0MC = particlesMc.rawIteratorAt(particle.daughtersIds().front());

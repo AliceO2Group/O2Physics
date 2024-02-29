@@ -70,7 +70,7 @@ enum TypeD : uint8_t {
 /// Creation of D-V0 pairs
 struct HfDataCreatorDV0Reduced {
   // Produces AOD tables to store track information
-  Produces<aod::HfRedCollisions> hfReducedCollision;  // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
+  Produces<aod::HfRedCollisions> hfReducedCollision; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfOrigColCounts> hfCollisionCounter; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
 
   Produces<aod::HfRedVzeros> hfCandV0;   // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
