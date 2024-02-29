@@ -248,6 +248,16 @@ class VarManager : public TObject
     kTwoEvDeltaY, // distance in y between collisions
     kTwoEvDeltaR, // distance in (x,y) plane between collisions
     kNEventWiseVariables,
+    kQ2X0A1,
+    kQ2X0A2,
+    kQ2Y0A1,
+    kQ2Y0A2,
+    kU2Q2Ev1,
+    kU2Q2Ev2,
+    kTwoR2SP1, // Scalar product resolution of event1 for ME technique
+    kTwoR2SP2, // Scalar product resolution of event2 for ME technique
+    kTwoR2EP1, // Event plane resolution of event2 for ME technique
+    kTwoR2EP2, // Event plane resolution of event2 for ME technique
 
     // Basic track/muon/pair wise variables
     kX,
@@ -471,6 +481,8 @@ class VarManager : public TObject
     kPsi2B,
     kPsi2C,
     kCos2DeltaPhi,
+    kCos2DeltaPhiMu1, // cos(phi - phi1) for muon1
+    kCos2DeltaPhiMu2, ////cos(phi - phi2) for muon2
     kCos3DeltaPhi,
     kDeltaPtotTracks,
     kVertexingLxyOverErr,
@@ -685,6 +697,8 @@ class VarManager : public TObject
   static void FillEvent(T const& event, float* values = nullptr);
   template <typename T>
   static void FillTwoEvents(T const& event1, T const& event2, float* values = nullptr);
+  template <uint32_t fillMap, typename T1, typename T2>
+  static void FillTwoMixEvents(T1 const& event1, T1 const& event2, T2 const& tracks1, T2 const& tracks2, float* values = nullptr);
   template <uint32_t fillMap, typename T>
   static void FillTrack(T const& track, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
@@ -1212,6 +1226,50 @@ void VarManager::FillTwoEvents(T const& ev1, T const& ev2, float* values)
   values[kTwoEvDeltaX] = ev1.posX() - ev2.posX();
   values[kTwoEvDeltaY] = ev1.posY() - ev2.posY();
   values[kTwoEvDeltaR] = std::sqrt(values[kTwoEvDeltaX] * values[kTwoEvDeltaX] + values[kTwoEvDeltaY] * values[kTwoEvDeltaY]);
+}
+
+template <uint32_t fillMap, typename T1, typename T2>
+void VarManager::FillTwoMixEvents(T1 const& ev1, T1 const& ev2, T2 const& tracks1, T2 const& tracks2, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+  values[kTwoEvPosZ1] = ev1.posZ();
+  values[kTwoEvPosZ2] = ev2.posZ();
+  values[kTwoEvPosR1] = std::sqrt(ev1.posX() * ev1.posX() + ev1.posY() * ev1.posY());
+  values[kTwoEvPosR2] = std::sqrt(ev2.posX() * ev2.posX() + ev2.posY() * ev2.posY());
+  values[kTwoEvPVcontrib1] = ev1.numContrib();
+  values[kTwoEvPVcontrib2] = ev2.numContrib();
+  /*
+   uint32_t Track1Filter = 0;
+   uint32_t Track2Filter = 0;
+    for (auto& track1 : tracks1) { Track1Filter = uint32_t(track1.isMuonSelected());}
+    for (auto& track2 : tracks2) { Track2Filter = uint32_t(track2.isMuonSelected());}
+   */
+  if constexpr ((fillMap & ReducedEventQvector) > 0) {
+    values[kTwoR2SP1] = (ev1.q2x0b() * ev1.q2x0c() + ev1.q2y0b() * ev1.q2y0c());
+    values[kTwoR2SP2] = (ev2.q2x0b() * ev2.q2x0c() + ev2.q2y0b() * ev2.q2y0c());
+
+    if (ev1.q2y0b() * ev1.q2y0c() != 0.0) {
+      values[kTwoR2EP1] = TMath::Cos(2 * (getEventPlane(2, ev1.q2x0b(), ev1.q2y0b()) - getEventPlane(2, ev1.q2x0c(), ev1.q2y0c())));
+    }
+
+    if (ev2.q2y0b() * ev2.q2y0c() != 0.0) {
+      values[kTwoR2EP2] = TMath::Cos(2 * (getEventPlane(2, ev2.q2x0b(), ev2.q2y0b()) - getEventPlane(2, ev2.q2x0c(), ev2.q2y0c())));
+    }
+    // Tobe used for the calculation of u1q1 and u2q2
+    values[kQ2X0A1] = ev1.q2x0a();
+    values[kQ2X0A2] = ev2.q2x0a();
+    values[kQ2Y0A1] = ev1.q2y0a();
+    values[kQ2Y0A2] = ev2.q2y0a();
+  }
+
+  if (isnan(VarManager::fgValues[VarManager::kTwoR2SP1]) == true || isnan(VarManager::fgValues[VarManager::kTwoR2EP1]) == true) {
+    values[kTwoR2SP1] = -999.;
+    values[kTwoR2SP2] = -999.;
+    values[kTwoR2EP1] = -999.;
+    values[kTwoR2EP2] = -999.;
+  }
 }
 
 template <uint32_t fillMap, typename T>
@@ -1959,6 +2017,13 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   values[kEta] = v12.Eta();
   values[kPhi] = v12.Phi();
   values[kRap] = -v12.Rapidity();
+
+  // TODO: provide different computations for vn
+  // Compute the scalar product UQ for two muon from different event using Q-vector from A, for second and third harmonic
+  values[kU2Q2Ev1] = values[kQ2X0A1] * std::cos(2 * v1.Phi()) + values[kQ2Y0A1] * std::sin(2 * v1.Phi());
+  values[kU2Q2Ev2] = values[kQ2X0A2] * std::cos(2 * v2.Phi()) + values[kQ2Y0A2] * std::sin(2 * v2.Phi());
+  values[kCos2DeltaPhiMu1] = std::cos(2 * (v1.Phi() - v12.Phi()));
+  values[kCos2DeltaPhiMu2] = std::cos(2 * (v2.Phi() - v12.Phi()));
 }
 
 template <typename T1, typename T2>
@@ -2710,6 +2775,8 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   values[kU3Q3] = values[kQ3X0A] * std::cos(3 * v12.Phi()) + values[kQ3Y0A] * std::sin(3 * v12.Phi());
   values[kCos2DeltaPhi] = std::cos(2 * (v12.Phi() - getEventPlane(2, values[kQ2X0A], values[kQ2Y0A])));
   values[kCos3DeltaPhi] = std::cos(3 * (v12.Phi() - getEventPlane(3, values[kQ3X0A], values[kQ3Y0A])));
+  values[kCos2DeltaPhiMu1] = std::cos(2 * (v1.Phi() - v12.Phi()));
+  values[kCos2DeltaPhiMu2] = std::cos(2 * (v2.Phi() - v12.Phi()));
   if (isnan(VarManager::fgValues[VarManager::kU2Q2]) == true) {
     values[kU2Q2] = -999.;
     values[kU3Q3] = -999.;
