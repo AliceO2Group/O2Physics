@@ -313,7 +313,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MultTracklets, multTracklets, //! Dummy
 DECLARE_SOA_DYNAMIC_COLUMN(MultTPC, multTPC, //! Dummy
                            [](bool v) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(SelectionBit, selection_bit, //! Dummy
-                           [](bool v) -> float { return 0.f; });
+                           [](bool v) -> bool { return true; });
 
 // Track info
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                  //! Index to the collision
