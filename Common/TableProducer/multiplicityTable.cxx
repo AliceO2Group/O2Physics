@@ -274,18 +274,21 @@ struct MultiplicityTableTaskIndexed {
     float multZEM2 = -1.f;
     float multZPA = -1.f;
     float multZPC = -1.f;
-    int multNContribs = 0;
-
+    
     float multZeqFV0A = 0.f;
     float multZeqFT0A = 0.f;
     float multZeqFT0C = 0.f;
     float multZeqFDDA = 0.f;
     float multZeqFDDC = 0.f;
     float multZeqNContribs = 0.f;
+    
     for (auto const& collision : collisions) {
       if ((fractionOfEvents < 1.f) && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled (only for the QA)
         return;
       }
+      int multNContribs = 0;
+      int multNContribsEta1 = 0;
+      int multNContribsEtaHalf = 0;
 
       /* check the previous run number */
       const auto& bc = collision.bc_as<BCsWithRun3Matchings>();
@@ -411,12 +414,15 @@ struct MultiplicityTableTaskIndexed {
           } break;
           case kPVMults: // PV multiplicity
           {
-            const auto& pvContribsGrouped = pvContribTracksIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-            const auto& pvContribsEta1Grouped = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-            const auto& pvContribsEtaHalfGrouped = pvContribTracksIUEtaHalf->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-            multNContribs = pvContribsGrouped.size();
-            const int multNContribsEta1 = pvContribsEta1Grouped.size();
-            const int multNContribsEtaHalf = pvContribsEtaHalfGrouped.size();
+            // use only one single grouping operation, then do loop
+            const auto& tracksThisCollision = pvContribTracksIUEta1.sliceBy(perCol, collision.globalIndex());
+            multNContribsEta1 = tracksThisCollision.size();
+            for (auto track : tracksThisCollision) {
+              if(std::abs(track.eta())<0.8) 
+                multNContribs++;
+              if(std::abs(track.eta())<0.5) 
+                multNContribsEtaHalf++;
+            }
             tablePv(multNContribs, multNContribsEta1, multNContribsEtaHalf);
             LOGF(debug, "multNContribs=%i, multNContribsEta1=%i, multNContribsEtaHalf=%i", multNContribs, multNContribsEta1, multNContribsEtaHalf);
           } break;
