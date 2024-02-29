@@ -130,11 +130,11 @@ struct FlowPbPbTask {
     // Add some output objects to the histogram registry
     // Event QA
     registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{5, 0, 5}}});
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1,"Filtered event");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2,"after sel8");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3,"after strict Pile-up cut");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4,"after additional event cut");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5,"after correction loads");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "after sel8");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "after strict Pile-up cut");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "after additional event cut");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "after correction loads");
     registry.add("hVtxZ", "", {HistType::kTH1D, {axisVertex}});
     registry.add("hMult", "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
@@ -157,7 +157,7 @@ struct FlowPbPbTask {
     registry.add("hnTPCClu", "", {HistType::kTH1D, {{100, 40, 180}}});
     registry.add("hnTPCCrossedRow", "", {HistType::kTH1D, {{100, 40, 180}}});
     registry.add("hDCAz", "", {HistType::kTH1D, {{100, -3, 3}}});
-    registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{50,-1,1},{50,0,10}}});
+    registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{50, -1, 1}, {50, 0, 10}}});
     // additional Output histograms
     registry.add("hMeanPt", "", {HistType::kTProfile, {axisCentrality}});
     registry.add("hMeanPtWithinGap08", "", {HistType::kTProfile, {axisCentrality}});
@@ -482,7 +482,7 @@ struct FlowPbPbTask {
     registry.fill(HIST("hEventCount"), 1.5);
     if (tracks.size() < 1)
       return;
-    //place holder for pile-up rejection
+    // place holder for pile-up rejection
     registry.fill(HIST("hEventCount"), 2.5);
     const auto cent = collision.centFT0C();
     if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent))
@@ -514,8 +514,8 @@ struct FlowPbPbTask {
     double ptSum = 0., ptSum_Gap08 = 0.;
     double weffEvent_WithinGap08 = 0., weffEventSquare_WithinGap08 = 0.;
     double sum_ptSquare_wSquare_WithinGap08 = 0., sum_pt_wSquare_WithinGap08 = 0.;
-    int Magnetfield=0;
-    if (cfgUseAdditionalTrackCut){
+    int Magnetfield = 0;
+    if (cfgUseAdditionalTrackCut) {
       // magnet field dependence cut
       Magnetfield = getMagneticField(bc.timestamp());
     }
