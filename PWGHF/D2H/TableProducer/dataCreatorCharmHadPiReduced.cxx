@@ -602,7 +602,9 @@ struct HfDataCreatorCharmHadPiReduced {
 
         if constexpr (doMc) {
           std::vector<typename TTracks::iterator> beautyHadDauTracks{};
-          std::copy(charmHadDauTracks.begin(), charmHadDauTracks.end(), beautyHadDauTracks.begin());
+          for (const auto& track : charmHadDauTracks) {
+            beautyHadDauTracks.push_back(track);
+          }
           beautyHadDauTracks.push_back(trackPion);
           fillMcRecoInfo<decChannel>(particlesMc, beautyHadDauTracks, indexHfCandCharm, selectedTracksPion);
         }
