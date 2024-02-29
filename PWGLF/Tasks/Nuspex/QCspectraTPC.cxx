@@ -179,10 +179,10 @@ struct QCspectraTPC {
 
       int numLayers = 7; // Number of layers
       int sumClusterSizes = clSizeLayer1 + clSizeLayer2 + clSizeLayer3 + clSizeLayer4 + clSizeLayer5 + clSizeLayer6 + clSizeLayer0;
-
+      double cos_lambda = std::cos(std::atan(track.tgl()));
       double averageClusterSize = (static_cast<double>(sumClusterSizes) / numLayers)* cos_lambda;
       
-      double cos_lambda = std::cos(std::atan(track.tgl()));
+     
       auto delta_p = track.tpcInnerParam() - track.p();
 
       histos.fill(HIST("histTpcSignal"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
