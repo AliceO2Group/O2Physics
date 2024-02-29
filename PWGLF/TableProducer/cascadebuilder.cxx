@@ -154,7 +154,6 @@ struct cascadeBuilder {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
 
   // generate and fill extra QA histograms if requested
   Configurable<bool> d_doQA{"d_doQA", false, "Do basic QA"};
@@ -266,12 +265,12 @@ struct cascadeBuilder {
 
   // Helper struct to do bookkeeping of building parameters
   struct {
-    std::array<long, kNCascSteps> cascstats;
-    std::array<long, 10> posITSclu;
-    std::array<long, 10> negITSclu;
-    std::array<long, 10> bachITSclu;
-    long exceptions;
-    long eventCounter;
+    std::array<int32_t, kNCascSteps> cascstats;
+    std::array<int32_t, 10> posITSclu;
+    std::array<int32_t, 10> negITSclu;
+    std::array<int32_t, 10> bachITSclu;
+    int32_t exceptions;
+    int32_t eventCounter;
   } statisticsRegistry;
 
   HistogramRegistry registry{
@@ -349,11 +348,11 @@ struct cascadeBuilder {
     // Optionally, add extra QA histograms to processing chain
     if (d_doQA) {
       // Basic histograms containing invariant masses of all built candidates
-      const AxisSpec axisVsPtCoarse{(int)dQANBinsPtCoarse, 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
-      const AxisSpec axisLamMass{(int)dQANBinsMass, 1.075f, 1.275f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisXiMass{(int)dQANBinsMass, 1.222f, 1.422f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisOmegaMass{(int)dQANBinsMass, 1.572f, 1.772f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisCascadeDCAtoPV{(int)dQANBinsDCAxy, -dQAMaxDCA, dQAMaxDCA, "DCA_{xy} (cm)"};
+      const AxisSpec axisVsPtCoarse{static_cast<int>(dQANBinsPtCoarse), 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
+      const AxisSpec axisLamMass{static_cast<int>(dQANBinsMass), 1.075f, 1.275f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisXiMass{static_cast<int>(dQANBinsMass), 1.222f, 1.422f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisOmegaMass{static_cast<int>(dQANBinsMass), 1.572f, 1.772f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisCascadeDCAtoPV{static_cast<int>(dQANBinsDCAxy), -dQAMaxDCA, dQAMaxDCA, "DCA_{xy} (cm)"};
 
       registry.add("h2dLambdaMass", "h2dLambdaMass", kTH2F, {axisPtQA, axisLamMass});
       registry.add("h2dAntiLambdaMass", "h2dAntiLambdaMass", kTH2F, {axisPtQA, axisLamMass});
@@ -366,8 +365,8 @@ struct cascadeBuilder {
         registry.addClone("MassHistograms/", "MassHistograms_BefPAcut/");
 
       // bit packed ITS cluster map
-      const AxisSpec axisITSCluMap{(int)128, -0.5f, +127.5f, "Packed ITS map"};
-      const AxisSpec axisRadius{(int)dQANBinsRadius, 0.0f, +50.0f, "Radius (cm)"};
+      const AxisSpec axisITSCluMap{static_cast<int>(128), -0.5f, +127.5f, "Packed ITS map"};
+      const AxisSpec axisRadius{static_cast<int>(dQANBinsRadius), 0.0f, +50.0f, "Radius (cm)"};
 
       // Histogram to bookkeep cluster maps
       registry.add("h2dITSCluMap_XiMinusPositive", "h2dITSCluMap_XiMinusPositive", kTH2D, {axisITSCluMap, axisRadius});
@@ -441,8 +440,8 @@ struct cascadeBuilder {
         registry.add("hDCAzTrackedCascadeToPVOmegaPlus", "hDCAzTrackedCascadeToPVOmegaPlus", kTH2F, {axisVsPtCoarse, axisCascadeDCAtoPV});
 
         // specific variables associated to strangeness tracking
-        const AxisSpec axisChi2{(int)dQANBinsChi2, 0.0f, dQAMaxChi2, "#chi^{2}"};
-        const AxisSpec axisCluSize{(int)dQANBinsCluSize, 0.0f, dQAMaxCluSize, "Mean ITS cluster size"};
+        const AxisSpec axisChi2{static_cast<int>(dQANBinsChi2), 0.0f, dQAMaxChi2, "#chi^{2}"};
+        const AxisSpec axisCluSize{static_cast<int>(dQANBinsCluSize), 0.0f, dQAMaxCluSize, "Mean ITS cluster size"};
         registry.add("hMatchingChi2_XiMinus", "hMatchingChi2_XiMinus", kTH1D, {axisChi2});
         registry.add("hMatchingChi2_XiPlus", "hMatchingChi2_XiPlus", kTH1D, {axisChi2});
         registry.add("hMatchingChi2_OmegaMinus", "hMatchingChi2_OmegaMinus", kTH1D, {axisChi2});
@@ -595,13 +594,13 @@ struct cascadeBuilder {
     LOGF(info, "Strangeness builder configuration:");
     if (doprocessRun2 == true) {
       LOGF(info, "Run 2 processing enabled. Will subscribe to Tracks table.");
-    };
+    }
     if (doprocessRun3 == true) {
       LOGF(info, "Run 3 processing enabled. Will subscribe to TracksIU table.");
-    };
+    }
     if (createCascCovMats > 0) {
       LOGF(info, "-> Will produce cascade cov mat table");
-    };
+    }
     //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
     // initialize O2 2-prong fitter (only once)
@@ -652,32 +651,30 @@ struct cascadeBuilder {
       return;
     }
 
-    auto run3grp_timestamp = bc.timestamp();
+    auto timestamp = bc.timestamp();
     o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    if (grpo) {
+    if (doprocessRun2) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp);
+      if (!grpo) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpPath << " of object GRPObject for timestamp " << timestamp;
+      }
       o2::base::Propagator::initFieldFromGRP(grpo);
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, timestamp);
       if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField for timestamp " << timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
+    // Fetch magnetic field from ccdb for current collision
+    d_bz = o2::base::Propagator::Instance()->getNominalBz();
+    LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kG";
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known
     fitter.setBz(d_bz);
-    float magneticField = o2::base::Propagator::Instance()->getNominalBz();
     /// Set magnetic field for KF vertexing
-    KFParticle::SetField(magneticField);
+    KFParticle::SetField(d_bz);
 
     if (useMatCorrType == 2) {
       // setMatLUT only after magfield has been initalized
@@ -1026,24 +1023,24 @@ struct cascadeBuilder {
 
       // Fill ITS cluster maps with specific mass cuts
       if (TMath::Abs(cascadecandidate.mXi - 1.322) < dQAXiMassWindow && ((cascade.isdEdxXiMinus() || dEdxUnchecked) && (cascade.isTrueXiMinus() || mcUnchecked)) && cascadecandidate.charge < 0) {
-        registry.fill(HIST("h2dITSCluMap_XiMinusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
-        registry.fill(HIST("h2dITSCluMap_XiMinusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
-        registry.fill(HIST("h2dITSCluMap_XiMinusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
+        registry.fill(HIST("h2dITSCluMap_XiMinusPositive"), static_cast<float>(posTrack.itsClusterMap()), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_XiMinusNegative"), static_cast<float>(negTrack.itsClusterMap()), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_XiMinusBachelor"), static_cast<float>(bachTrack.itsClusterMap()), cascadecandidate.cascradius);
       }
       if (TMath::Abs(cascadecandidate.mXi - 1.322) < dQAXiMassWindow && ((cascade.isdEdxXiPlus() || dEdxUnchecked) && (cascade.isTrueXiPlus() || mcUnchecked)) && cascadecandidate.charge > 0) {
-        registry.fill(HIST("h2dITSCluMap_XiPlusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
-        registry.fill(HIST("h2dITSCluMap_XiPlusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
-        registry.fill(HIST("h2dITSCluMap_XiPlusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
+        registry.fill(HIST("h2dITSCluMap_XiPlusPositive"), static_cast<float>(posTrack.itsClusterMap()), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_XiPlusNegative"), static_cast<float>(negTrack.itsClusterMap()), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_XiPlusBachelor"), static_cast<float>(bachTrack.itsClusterMap()), cascadecandidate.cascradius);
       }
       if (TMath::Abs(cascadecandidate.mOmega - 1.672) < dQAOmegaMassWindow && ((cascade.isdEdxOmegaMinus() || dEdxUnchecked) && (cascade.isTrueOmegaMinus() || mcUnchecked)) && cascadecandidate.charge < 0) {
-        registry.fill(HIST("h2dITSCluMap_OmegaMinusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
-        registry.fill(HIST("h2dITSCluMap_OmegaMinusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
-        registry.fill(HIST("h2dITSCluMap_OmegaMinusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
+        registry.fill(HIST("h2dITSCluMap_OmegaMinusPositive"), static_cast<float>(posTrack.itsClusterMap()), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_OmegaMinusNegative"), static_cast<float>(negTrack.itsClusterMap()), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_OmegaMinusBachelor"), static_cast<float>(bachTrack.itsClusterMap()), cascadecandidate.cascradius);
       }
       if (TMath::Abs(cascadecandidate.mOmega - 1.672) < dQAOmegaMassWindow && ((cascade.isdEdxOmegaPlus() || dEdxUnchecked) && (cascade.isTrueOmegaPlus() || mcUnchecked)) && cascadecandidate.charge > 0) {
-        registry.fill(HIST("h2dITSCluMap_OmegaPlusPositive"), (float)posTrack.itsClusterMap(), v0.v0radius());
-        registry.fill(HIST("h2dITSCluMap_OmegaPlusNegative"), (float)negTrack.itsClusterMap(), v0.v0radius());
-        registry.fill(HIST("h2dITSCluMap_OmegaPlusBachelor"), (float)bachTrack.itsClusterMap(), cascadecandidate.cascradius);
+        registry.fill(HIST("h2dITSCluMap_OmegaPlusPositive"), static_cast<float>(posTrack.itsClusterMap()), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_OmegaPlusNegative"), static_cast<float>(negTrack.itsClusterMap()), v0.v0radius());
+        registry.fill(HIST("h2dITSCluMap_OmegaPlusBachelor"), static_cast<float>(bachTrack.itsClusterMap()), cascadecandidate.cascradius);
       }
 
       // do specific topological variable QA too

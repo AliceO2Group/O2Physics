@@ -159,7 +159,10 @@ struct TreeCreatorElectronMLDDA {
   Configurable<float> minv0cospa{"minv0cospa", 0.997, "minimum V0 CosPA"};
   Configurable<float> maxdcav0dau{"maxdcav0dau", 0.2, "max distance between V0 Daughters"};
   Configurable<float> mindcaxytopv_v0leg{"mindcaxytopv_v0leg", -1, "max dcaxy to pv for v0 leg"}; // 0.05 cm
-  Configurable<float> downscaling_pion{"downscaling_pion", 0.1, "down scaling factor to store pion"};
+  Configurable<float> downscaling_electron{"downscaling_electron", 0.005, "down scaling factor to store electron"};
+  Configurable<float> downscaling_pion{"downscaling_pion", 0.001, "down scaling factor to store pion"};
+  Configurable<float> downscaling_kaon{"downscaling_kaon", 1.1, "down scaling factor to store kaon"};
+  Configurable<float> downscaling_proton{"downscaling_proton", 0.01, "down scaling factor to store proton"};
 
   // for pion
   Configurable<float> minTPCNsigmaPi{"minTPCNsigmaPi", -1e+10, "min. TPC n sigma for pion inclusion"}; // this is only for IsElectronTag
@@ -593,8 +596,12 @@ struct TreeCreatorElectronMLDDA {
           float rxy = std::sqrt(std::pow(svpos[0], 2) + std::pow(svpos[1], 2));
           registry.fill(HIST("hMassGamma_Rxy"), rxy, mGamma);
           if (mGamma < max_mee_pcm && rxy < 38.f) {
-            fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
-            fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
+            if (dist01(engine) < downscaling_electron) {
+              fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
+            }
+            if (dist01(engine) < downscaling_electron) {
+              fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
+            }
             registry.fill(HIST("hTPCdEdx_P_El"), neg.p(), neg.tpcSignal());
             registry.fill(HIST("hTOFbeta_P_El"), neg.p(), neg.beta());
             registry.fill(HIST("hTPCdEdx_P_El"), pos.p(), pos.tpcSignal());
@@ -609,13 +616,17 @@ struct TreeCreatorElectronMLDDA {
             registry.fill(HIST("hTOFbeta_P_Pi"), pos.p(), pos.beta());
             if (dist01(engine) < downscaling_pion) {
               fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
+            }
+            if (dist01(engine) < downscaling_pion) {
               fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
             }
           }
         } else if (v0id == EM_V0_Label::kLambda && (IsProton(pos) && IsPion(neg))) {
           registry.fill(HIST("hMassLambda"), mLambda);
           if (abs(mLambda - 1.115) < 0.005) {
-            fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kProton), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
+            if (dist01(engine) < downscaling_proton) {
+              fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kProton), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
+            }
             registry.fill(HIST("hTPCdEdx_P_Pr"), pos.p(), pos.tpcSignal());
             registry.fill(HIST("hTOFbeta_P_Pr"), pos.p(), pos.beta());
             registry.fill(HIST("hTPCdEdx_P_Pi"), neg.p(), neg.tpcSignal());
@@ -630,7 +641,9 @@ struct TreeCreatorElectronMLDDA {
             if (dist01(engine) < downscaling_pion) {
               fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
             }
-            fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kProton), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
+            if (dist01(engine) < downscaling_proton) {
+              fillTrackTable(collision, neg, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kProton), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
+            }
             registry.fill(HIST("hTPCdEdx_P_Pr"), neg.p(), neg.tpcSignal());
             registry.fill(HIST("hTOFbeta_P_Pr"), neg.p(), neg.beta());
             registry.fill(HIST("hTPCdEdx_P_Pi"), pos.p(), pos.tpcSignal());
@@ -657,13 +670,21 @@ struct TreeCreatorElectronMLDDA {
         float phiv = getPhivPair(pos.px(), pos.py(), pos.pz(), ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
         registry.fill(HIST("hMvsPhiV"), phiv, v12.M());
 
-        if (v12.M() < slope * phiv + intercept) {                                                                                                                             // photon conversion is found.
-          fillTrackTable(collision, ele, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary)); // secondary in primary electron candidates
-          fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary)); // secondary in primary electron candidates
+        if (v12.M() < slope * phiv + intercept) { // photon conversion is found.
+          if (dist01(engine) < downscaling_electron) {
+            fillTrackTable(collision, ele, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary)); // secondary in primary electron candidates
+          }
+          if (dist01(engine) < downscaling_electron) {
+            fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary)); // secondary in primary electron candidates
+          }
         }
         if (v12.M() < max_mee_pi0) { // dielectron from pi0 is found.
-          fillTrackTable(collision, ele, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary));
-          fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary));
+          if (dist01(engine) < downscaling_electron) {
+            fillTrackTable(collision, ele, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary));
+          }
+          if (dist01(engine) < downscaling_electron) {
+            fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary));
+          }
         }
       } // end of ULS pair loop
 
@@ -936,17 +957,21 @@ struct TreeCreatorElectronMLDDA {
           registry.fill(HIST("Cascade/hRxy_Xi"), mXi, casc_rxy);
           registry.fill(HIST("Cascade/hCTau_Xi"), mXi, ctauXi);
           // if (abs(mXi - 1.321) < 0.005) { // select Xi candidates
-          //   fillTrackTable(collision, bachelor, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary));
+          //   if (dist01(engine) < downscaling_pion) {
+          //     fillTrackTable(collision, bachelor, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kPion), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary));
+          //   }
           // }
         }
-        if (abs(mXi - 1.321) > 0.01 && IsKaon(bachelor)) { // reject Xi candidates
+        if (abs(mXi - 1.322) > 0.01 && IsKaon(bachelor)) { // reject Xi candidates
           registry.fill(HIST("Cascade/hMassOmega"), mOmega);
           registry.fill(HIST("Cascade/hMassPt_Omega"), mOmega, pt);
           registry.fill(HIST("Cascade/hMassPt_Omega_bachelor"), mOmega, bachelor.p());
           registry.fill(HIST("Cascade/hRxy_Omega"), mOmega, casc_rxy);
           registry.fill(HIST("Cascade/hCTau_Omega"), mOmega, ctauOmega);
-          if (abs(mOmega - 1.672) < 0.005) { // select Omega candidates
-            fillTrackTable(collision, bachelor, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary));
+          if (abs(mOmega - 1.672) < 0.004) { // select Omega candidates
+            if (dist01(engine) < downscaling_kaon) {
+              fillTrackTable(collision, bachelor, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kKaon), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary));
+            }
           }
         }
 

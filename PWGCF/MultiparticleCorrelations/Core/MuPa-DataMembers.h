@@ -39,21 +39,35 @@ TProfile* fBasePro = NULL; //!<! keeps flags relevant for the whole analysis
 
 // *) Task configuration:
 struct TaskConfiguration {
-  TString fTaskName = "";                          // task name - this one is used to get the right weights
-                                                   // programatically for this analysis
-  TString fRunNumber = "";                         // over which run number this task is executed
-  Bool_t fRunNumberIsDetermined = kFALSE;          // ensures that run number is determined in process() and propagated to already booked objects only once
-  Bool_t fDryRun = kFALSE;                         // book all histos and run without storing and calculating anything
-  Bool_t fVerbose = kFALSE;                        // print additional info like Green(__PRETTY_FUNCTION__); etc., to
-                                                   // be used during debugging, but not for function calls per particle
-  Bool_t fVerboseForEachParticle = kFALSE;         // print additional info like Green(__PRETTY_FUNCTION__); etc., to
-                                                   // be used during debugging, also for function calls per particle
-  Bool_t fDoAdditionalInsanityChecks = kFALSE;     // do additional insanity checks at run time, at the expense of losing a bit of performance
-                                                   // (for instance, check if the run number in the current 'collision' is the same as run number in the first 'collision', etc.)
-  Bool_t fUseCCDB = kFALSE;                        // access personal files from CCDB (kTRUE, this is set as default in Configurables),
-                                                   // or from home dir in AliEn (kFALSE, use with care, as this is discouraged)
-  TString fWhatToProcess = "Rec";                  // "Rec" = process only reconstructed, "Sim" = process only simulated, "RecSim" = process both reconstructed and simulated.
-                                                   // For converted Run 1 and Run 2 data, use e.g. Rec_Run2, RecSim_Run1, etc.
+  TString fTaskName = "";                      // task name - this one is used to get the right weights
+                                               // programatically for this analysis
+  TString fRunNumber = "";                     // over which run number this task is executed
+  Bool_t fRunNumberIsDetermined = kFALSE;      // ensures that run number is determined in process() and propagated to already booked objects only once
+  Bool_t fDryRun = kFALSE;                     // book all histos and run without storing and calculating anything
+  Bool_t fVerbose = kFALSE;                    // print additional info like Green(__PRETTY_FUNCTION__); etc., to
+                                               // be used during debugging, but not for function calls per particle
+  Bool_t fVerboseForEachParticle = kFALSE;     // print additional info like Green(__PRETTY_FUNCTION__); etc., to
+                                               // be used during debugging, also for function calls per particle
+  Bool_t fDoAdditionalInsanityChecks = kFALSE; // do additional insanity checks at run time, at the expense of losing a bit of performance
+                                               // (for instance, check if the run number in the current 'collision' is the same as run number in the first 'collision', etc.)
+  Bool_t fUseCCDB = kFALSE;                    // access personal files from CCDB (kTRUE, this is set as default in Configurables),
+                                               // or from home dir in AliEn (kFALSE, use with care, as this is discouraged)
+  Bool_t fProcessRec = kFALSE;                 // Run 3, only reconstructed
+  Bool_t fProcessRecSim = kFALSE;              // Run 3, both reconstructed and simulated
+  Bool_t fProcessSim = kFALSE;                 // Run 3, only simulated
+  Bool_t fProcessRec_Run2 = kFALSE;            // Run 2, only reconstructed
+  Bool_t fProcessRecSim_Run2 = kFALSE;         // Run 2, both reconstructed and simulated
+  Bool_t fProcessSim_Run2 = kFALSE;            // Run 2, only simulated
+  Bool_t fProcessRec_Run1 = kFALSE;            // Run 1, only reconstructed
+  Bool_t fProcessRecSim_Run1 = kFALSE;         // Run 1, both reconstructed and simulated
+  Bool_t fProcessSim_Run1 = kFALSE;            // Run 1, only simulated
+  Bool_t fProcessTest = kFALSE;                // minimum subscription to the tables, for testing purposes
+  TString fWhichProcess = "ProcessRec";        // dump in this variable which process was used
+
+  // Generic flags, calculated and set from individual flags above in DefaultConfiguration(), AFTER process switch was taken into account from configurables!
+  Bool_t fGenericRec = kFALSE;                     // generic "Rec" case, eTest is treated for the time being as "Rec"
+  Bool_t fGenericRecSim = kFALSE;                  // generic "RecSim" case
+  Bool_t fGenericSim = kFALSE;                     // generic "Sim" case
   UInt_t fRandomSeed = 0;                          // argument for TRandom3 constructor. By default it is 0 (seed is guaranteed to be unique in time and space)
   Bool_t fUseFisherYates = kFALSE;                 // algorithm used to randomize particle indices, set via configurable
   TArrayI* fRandomIndices = NULL;                  // array to store random indices obtained from Fisher-Yates algorithm
@@ -88,13 +102,14 @@ struct EventHistograms {
 
 // *) Event cuts:
 struct EventCuts {
-  TList* fEventCutsList = NULL;   //!<! list to hold all event cuts objects
-  TProfile* fEventCutsPro = NULL; //!<! keeps flags relevant for the event cuts
-  TString fTrigger = "";          // offline trigger, use e.g. "kINT7" for Run 2 and Run 1 data via configurable cTrigger
-  Bool_t fUseTrigger = kFALSE;    // kFALSE by default. Set automatically when supported trigger is set via configurable cTrigger
-  Bool_t fUseSel7 = kFALSE;       // See doc: for Run 2 data and MC
-  Bool_t fUseSel8 = kFALSE;       // See doc: for Run 3 data and MC
-} ec;                             // "ec" is a common label for objects in this struct
+  TList* fEventCutsList = NULL;      //!<! list to hold all event cuts objects
+  TProfile* fEventCutsPro = NULL;    //!<! keeps flags relevant for the event cuts
+  TString fTrigger = "";             // offline trigger, use e.g. "kINT7" for Run 2 and Run 1 data via configurable cfTrigger
+  Bool_t fUseTrigger = kFALSE;       // kFALSE by default. Set automatically when supported trigger is set via configurable cTrigger
+  Bool_t fUseSel7 = kFALSE;          // See doc: for Run 2 data and MC
+  Bool_t fUseSel8 = kFALSE;          // See doc: for Run 3 data and MC
+  TString fCentralityEstimator = ""; // centrality estimator, see in process() arguments to which cent. tables I subscribe, separately for Run 3 and Run 2. Set via configurable fCentralityEstimator
+} ec;                                // "ec" is a common label for objects in this struct
 
 // *) Particle histograms:
 struct ParticleHistograms {

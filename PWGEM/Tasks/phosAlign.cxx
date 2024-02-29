@@ -49,7 +49,7 @@ using namespace o2::framework::expressions;
 struct phosAlign {
 
   static constexpr int16_t kCpvX = 7; // grid 13 steps along z and 7 along phi as largest match ellips 20x10 cm
-  static constexpr int16_t kCpvZ = 13;
+  static constexpr int16_t kCpvZ = 6;
   static constexpr int16_t kCpvCells = 4 * kCpvX * kCpvZ; // 4 modules
   static constexpr float cpvMaxX = 73;                    // max CPV coordinate phi
   static constexpr float cpvMaxZ = 63;                    // max CPV coordinate z

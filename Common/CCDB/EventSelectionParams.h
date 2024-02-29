@@ -54,6 +54,7 @@ enum EventSelectionFlags {
   kIsTriggerTVX,       // FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level
   kIsINT1,             // SPDGFO >= 1 || V0A || V0C
   kNoITSROFrameBorder, // bunch crossing is far from ITS RO Frame border
+  kNoTimeFrameBorder,  // bunch crossing is far from Time Frame borders
   kNsel                // counter
 };
 

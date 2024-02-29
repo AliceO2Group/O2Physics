@@ -127,22 +127,12 @@ struct HfDataCreatorDplusPiReduced {
 
   void init(InitContext const&)
   {
-    // histograms
-    constexpr int kNBinsEvents = kNEvent;
-    std::string labels[kNBinsEvents];
-    labels[Event::Processed] = "processed";
-    labels[Event::NoDPiSelected] = "without DPi pairs";
-    labels[Event::DPiSelected] = "with DPi pairs";
-    static const AxisSpec axisEvents = {kNBinsEvents, 0.5, kNBinsEvents + 0.5, ""};
-    registry.add("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
-    for (int iBin = 0; iBin < kNBinsEvents; iBin++) {
-      registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
-    }
-
-    registry.add("hMassDToPiKPi", "D^{#minus} candidates;inv. mass (p^{#minus} K^{#plus} #pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
-    registry.add("hPtD", "D^{#minus} candidates;D^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
-    registry.add("hPtPion", "#pi^{#plus} candidates;#pi^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
-    registry.add("hCPAD", "D^{#minus} candidates;D^{#minus} cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
+    // invariant-mass window cut
+    massPi = MassPiPlus;
+    massD = MassDMinus;
+    massB0 = MassB0;
+    invMass2DPiMin = (massB0 - invMassWindowDPi) * (massB0 - invMassWindowDPi);
+    invMass2DPiMax = (massB0 + invMassWindowDPi) * (massB0 + invMassWindowDPi);
 
     // Initialize fitter
     df3.setPropagateToPCA(propagateToPCA);
@@ -160,12 +150,22 @@ struct HfDataCreatorDplusPiReduced {
     ccdb->setLocalObjectValidityChecking();
     runNumber = 0;
 
-    // invariant-mass window cut
-    massPi = MassPiPlus;
-    massD = MassDMinus;
-    massB0 = MassB0;
-    invMass2DPiMin = (massB0 - invMassWindowDPi) * (massB0 - invMassWindowDPi);
-    invMass2DPiMax = (massB0 + invMassWindowDPi) * (massB0 + invMassWindowDPi);
+    // histograms
+    constexpr int kNBinsEvents = kNEvent;
+    std::string labels[kNBinsEvents];
+    labels[Event::Processed] = "processed";
+    labels[Event::NoDPiSelected] = "without DPi pairs";
+    labels[Event::DPiSelected] = "with DPi pairs";
+    static const AxisSpec axisEvents = {kNBinsEvents, 0.5, kNBinsEvents + 0.5, ""};
+    registry.add("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
+    for (int iBin = 0; iBin < kNBinsEvents; iBin++) {
+      registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
+    }
+
+    registry.add("hMassDToPiKPi", "D^{#minus} candidates;inv. mass (p^{#minus} K^{#plus} #pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
+    registry.add("hPtD", "D^{#minus} candidates;D^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
+    registry.add("hPtPion", "#pi^{#plus} candidates;#pi^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
+    registry.add("hCPAD", "D^{#minus} candidates;D^{#minus} cosine of pointing angle;entries", {HistType::kTH1F, {{110, -1.1, 1.1}}});
   }
 
   /// Pion selection (D Pi <-- B0)
