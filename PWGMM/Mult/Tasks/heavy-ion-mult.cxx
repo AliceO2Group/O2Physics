@@ -276,7 +276,7 @@ struct HeavyIonMultiplicity {
       histos.fill(HIST("EventHist"), 0);
       if (RecCollision.sel8()) {
         histos.fill(HIST("EventHist"), 1);
-        if (RecCollision.selection_bit(kNoITSROFrameBorder) && collision.selection_bit(kNoTimeFrameBorder)) {
+        if (RecCollision.selection_bit(kNoITSROFrameBorder) && RecCollision.selection_bit(kNoTimeFrameBorder)) {
           histos.fill(HIST("EventHist"), 2);
           if (std::abs(RecCollision.posZ()) < VtxRange) {
             histos.fill(HIST("EventHist"), 3);
@@ -423,7 +423,7 @@ struct HeavyIonMultiplicity {
       histos.fill(HIST("EventHist"), 0);
       if (RecCollision.sel8()) {
         histos.fill(HIST("EventHist"), 1);
-        if (RecCollision.selection_bit(kNoITSROFrameBorder) && collision.selection_bit(kNoTimeFrameBorder)) {
+        if (RecCollision.selection_bit(kNoITSROFrameBorder) && RecCollision.selection_bit(kNoTimeFrameBorder)) {
           histos.fill(HIST("EventHist"), 2);
           if (std::abs(RecCollision.posZ()) < VtxRange) {
             histos.fill(HIST("EventHist"), 3);
