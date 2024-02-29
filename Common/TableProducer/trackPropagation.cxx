@@ -182,8 +182,8 @@ struct TrackPropagation {
       // Only propagate tracks which have passed the innermost wall of the TPC (e.g. skipping loopers etc). Others fill unpropagated.
       if (track.trackType() == aod::track::TrackIU && track.x() < minPropagationRadius) {
         if constexpr (isMc && fillCovMat) { /// track tuner ok only if cov. matrix is used
-          trackTunedTracks->Fill(1);        // all tracks
           if (useTrackTuner) {
+            trackTunedTracks->Fill(1);        // all tracks
             // call track propagator
             // this function reads many many things
             //  - reads track params
