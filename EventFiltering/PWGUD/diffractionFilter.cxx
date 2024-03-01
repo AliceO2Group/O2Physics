@@ -17,6 +17,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/StaticFor.h"
+#include "Common/DataModel/EventSelection.h"
 #include "PWGUD/Core/DGCutparHolder.h"
 #include "PWGUD/Core/DGSelector.h"
 #include "PWGUD/Core/UDHelpers.h"
@@ -145,7 +146,12 @@ struct DGFilterRun3 {
     bool ccs{false};
     registry.fill(HIST("stat/aftercuts"), 0.);
 
-    // obtain slice of compatible BCs
+    // reject events at TF boundaries
+    if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      filterTable(ccs);
+      return;
+    }
+        // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
     LOGF(debug, "  Number of compatible BCs in +- %i / %i dtcoll: %i", diffCuts.NDtcoll(), diffCuts.minNBCs(), bcRange.size());
 
