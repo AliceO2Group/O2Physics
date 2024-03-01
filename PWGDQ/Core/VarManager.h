@@ -158,7 +158,9 @@ class VarManager : public TObject
     kCollisionTimeRes,
     kBC,
     kIsPhysicsSelection,
-    kIsSel8, // TVX in Run3
+    kIsNoTFBorder,     // No time frame border
+    kIsNoITSROFBorder, // No ITS read out frame border
+    kIsSel8,           // TVX in Run3
     kIsINT7,
     kIsEMC7,
     kIsINT7inMUON,
@@ -983,6 +985,13 @@ void VarManager::FillEvent(T const& event, float* values)
   if constexpr ((fillMap & Collision) > 0) {
     // TODO: trigger info from the event selection requires a separate flag
     //       so that it can be switched off independently of the rest of Collision variables (e.g. if event selection is not available)
+
+    if (fgUsedVars[kIsNoITSROFBorder]) {
+      values[kIsNoITSROFBorder] = event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
+    }
+    if (fgUsedVars[kIsNoTFBorder]) {
+      values[kIsNoTFBorder] = event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
+    }
     if (fgUsedVars[kIsSel8]) {
       values[kIsSel8] = event.selection_bit(o2::aod::evsel::kIsTriggerTVX);
     }
@@ -1064,6 +1073,12 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kVtxY] = event.posY();
     values[kVtxZ] = event.posZ();
     values[kVtxNcontrib] = event.numContrib();
+    if (fgUsedVars[kIsNoITSROFBorder]) {
+      values[kIsNoITSROFBorder] = (event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) > 0);
+    }
+    if (fgUsedVars[kIsNoTFBorder]) {
+      values[kIsNoTFBorder] = (event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) > 0);
+    }
     if (fgUsedVars[kIsSel8]) {
       values[kIsSel8] = (event.selection_bit(o2::aod::evsel::kIsTriggerTVX) > 0);
     }
