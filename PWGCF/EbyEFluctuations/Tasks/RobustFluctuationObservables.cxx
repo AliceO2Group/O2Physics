@@ -116,8 +116,8 @@ struct RobustFluctuationObservables {
     // ### event-wise:
     // AxisSpec axisNcontrib{flagPbPb ? 8001 : 501, -0.5, flagPbPb ? 8000.5 : 500.5, "n vertex contributors"};
     // AxisSpec axisNtracks{flagPbPb ? 8001 : 501, -0.5, flagPbPb ? 8000.5 : 500.5, "n tracks"};
-    AxisSpec axisNcontrib{  500, -0.5, flagPbPb ? 7999.5 : 499.5, "n vertex contributors"};
-    AxisSpec axisNtracks{  500, -0.5, flagPbPb ? 7999.5 : 499.5, "n tracks"};
+    AxisSpec axisNcontrib{500, -0.5, flagPbPb ? 7999.5 : 499.5, "n vertex contributors"};
+    AxisSpec axisNtracks{500, -0.5, flagPbPb ? 7999.5 : 499.5, "n tracks"};
     AxisSpec axisCollIndex{flagPbPb ? 501 : 10001, -0.5, flagPbPb ? 500.5 : 10000.5, "CollIndex"};
     AxisSpec axisCollTime{1000, -50, 50, "CollTime"};
     AxisSpec axisCollTimeRes{2000, -20, 20, "CollTimeRes"};
@@ -158,7 +158,6 @@ struct RobustFluctuationObservables {
     histosEvent.add("hNtrackshGlobalAft", "hNtrackshGlobalAft", kTH1D, {axisNtracks});
     histosEvent.add("hNtrackshGlobalAft_AfterTimeFrameCut", "hNtrackshGlobalAft_AfterTimeFrameCut", kTH1D, {axisNtracks});
 
-
     // hist vs bcInTF, Feb 2, 2024
     histosEventBcInTF.add("hNumContrib_vs_bcInTF_BEFORE_SEL8_AND_Vz", "hNumContrib_vs_bcInTF_BEFORE_SEL8_AND_Vz;bc in TF; n vertex contributors", kTH1D, {axisBCinTF});
     histosEventBcInTF.add("hNumContrib_vs_bcInTF_BEFORE_SEL8_AND_Vz_ReallyAllContrib", "hNumContrib_vs_bcInTF_BEFORE_SEL8_AND_Vz_ReallyAllContrib;bc in TF; n vertex contributors", kTH1D, {axisBCinTF});
@@ -169,7 +168,7 @@ struct RobustFluctuationObservables {
     histosEventBcInTF.add("hNumContrib_vs_bcInTF_After_ITS_ROF_cut", "hNumContrib_vs_bcInTF_After_ITS_ROF_cut;bc in TF; n vertex contributors", kTH1D, {axisBCinTF});
     histosEventBcInTF.add("hNumContrib_vs_bcInTF_AfterTimeFrameCut", "hNumContrib_vs_bcInTF_AfterTimeFrameCut;bc in TF; n vertex contributors", kTH1D, {axisBCinTF});
     histosEventBcInTF.add("hGlobalTracks_vs_bcInTF", "hGlobalTracks_vs_bcInTF;bc in TF; n tracks", kTH1D, {axisBCinTF});
-    
+
     histosEventBcInTF.add("hIsTriggerTVX_vs_bcInTF_BEFORE_SEL8_AND_Vz", "hIsTriggerTVX_vs_bcInTF_BEFORE_SEL8_AND_Vz;bc in TF;IsTriggerTVX", kTH1D, {axisBCinTF});
     histosEventBcInTF.add("hIsTriggerTVX_vs_bcInTF", "hIsTriggerTVX_vs_bcInTF;bc in TF;IsTriggerTVX", kTH1D, {axisBCinTF});
 
@@ -245,8 +244,8 @@ struct RobustFluctuationObservables {
     // histos from Alex D.
     AxisSpec axisCent{100, 0.f, 100.f, "centrality"};
     AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
-    AxisSpec axisMultFw{200, 0, 200000, "mult Fwd"};         //{1000, 0, 200000, "mult"};
-    AxisSpec axisMult{200, 0.f, 5000.f, "multiplicity"}; //{1000, 0.f, 5000.f, "multiplicity"};
+    AxisSpec axisMultFw{200, 0, 200000, "mult Fwd"};           //{1000, 0, 200000, "mult"};
+    AxisSpec axisMult{200, 0.f, 5000.f, "multiplicity"};       //{1000, 0.f, 5000.f, "multiplicity"};
     AxisSpec axisMultAllTr{200, 0.f, 20000.f, "multiplicity"}; //{1000, 0.f, 5000.f, "multiplicity"};
 
     histosEvent.add("vtxCutsBef", "Vtx distribution; Vtx z [cm]; Counts", kTH1F, {axisZvert});
@@ -374,7 +373,7 @@ struct RobustFluctuationObservables {
     histosEvent.add("multV0A_vs_multT0AAft_2globalPVcontrib", " multiplicity V0A vs multiplicity T0A", kTH2F, {axisMultFw, axisMultFw});
     histosEvent.add("multV0A_vs_multT0CAft_2globalPVcontrib", " multiplicity V0A vs multiplicity T0C", kTH2F, {axisMultFw, axisMultFw});
     histosEvent.add("multT0C_vs_CentAft_2globalPVcontrib", " multiplicity T0C vs centrality T0C", kTH2F, {axisCent, axisMultFw});
-   
+
     // nTracksGlobalPVAccepted with 7 ITS hits >= 2
     histosEvent.add("multAllTr_vs_CentAft_2globalPVcontrib_ITS7hits", " multiplicity vs centrality T0C", kTH2F, {axisCent, axisMultAllTr});
     histosEvent.add("multAllTr_vs_multT0CAft_2globalPVcontrib_ITS7hits", " multiplicity vs multiplicity T0C", kTH2F, {axisMultFw, axisMultAllTr});
@@ -395,7 +394,7 @@ struct RobustFluctuationObservables {
     histosEvent.add("multV0A_vs_multT0AAft_2globalPVcontrib_ITS7hits", " multiplicity V0A vs multiplicity T0A", kTH2F, {axisMultFw, axisMultFw});
     histosEvent.add("multV0A_vs_multT0CAft_2globalPVcontrib_ITS7hits", " multiplicity V0A vs multiplicity T0C", kTH2F, {axisMultFw, axisMultFw});
     histosEvent.add("multT0C_vs_CentAft_2globalPVcontrib_ITS7hits", " multiplicity T0C vs centrality T0C", kTH2F, {axisCent, axisMultFw});
-   
+
     // nTracksGlobalPVAccepted with TRD or TOF >= 2
     histosEvent.add("multAllTr_vs_CentAft_2globalPVcontrib_TRDorTOF", " multiplicity vs centrality T0C", kTH2F, {axisCent, axisMultAllTr});
     histosEvent.add("multAllTr_vs_multT0CAft_2globalPVcontrib_TRDorTOF", " multiplicity vs multiplicity T0C", kTH2F, {axisMultFw, axisMultAllTr});
@@ -416,7 +415,7 @@ struct RobustFluctuationObservables {
     histosEvent.add("multV0A_vs_multT0AAft_2globalPVcontrib_TRDorTOF", " multiplicity V0A vs multiplicity T0A", kTH2F, {axisMultFw, axisMultFw});
     histosEvent.add("multV0A_vs_multT0CAft_2globalPVcontrib_TRDorTOF", " multiplicity V0A vs multiplicity T0C", kTH2F, {axisMultFw, axisMultFw});
     histosEvent.add("multT0C_vs_CentAft_2globalPVcontrib_TRDorTOF", " multiplicity T0C vs centrality T0C", kTH2F, {axisCent, axisMultFw});
-   
+
     // diffFoundBC_vs_BC cut
     histosEvent.add("multAllTr_vs_CentAft_diffFoundBC_vs_BC_0", " multiplicity vs centrality T0C", kTH2F, {axisCent, axisMultAllTr});
     histosEvent.add("multAllTr_vs_multT0CAft_diffFoundBC_vs_BC_0", " multiplicity vs multiplicity T0C", kTH2F, {axisMultFw, axisMultAllTr});
@@ -501,7 +500,6 @@ struct RobustFluctuationObservables {
     histosEvent.add("multV0A_vs_multT0CAft_after_PV_FT0_diff_cut_TIGHT", " multiplicity V0A vs multiplicity T0C", kTH2F, {axisMultFw, axisMultFw});
     histosEvent.add("multT0C_vs_CentAft_after_PV_FT0_diff_cut_TIGHT", " multiplicity T0C vs centrality T0C", kTH2F, {axisCent, axisMultFw});
 
-
     // ALL CUTS SIMULT
     histosEvent.add("multAllTr_vs_CentAft_ALL_CUTS", " multiplicity vs centrality T0C", kTH2F, {axisCent, axisMultAllTr});
     histosEvent.add("multAllTr_vs_multT0CAft_ALL_CUTS", " multiplicity vs multiplicity T0C", kTH2F, {axisMultFw, axisMultAllTr});
@@ -544,16 +542,13 @@ struct RobustFluctuationObservables {
     histosEvent.add("multV0A_vs_multT0CAft_ALL_CUTS_Tighter", " multiplicity V0A vs multiplicity T0C", kTH2F, {axisMultFw, axisMultFw});
     histosEvent.add("multT0C_vs_CentAft_ALL_CUTS_Tighter", " multiplicity T0C vs centrality T0C", kTH2F, {axisCent, axisMultFw});
 
-
     // histosEvent.add("nTracksITSonlyvsnTracksWithITSandTPCAft", " multiplicity ITS vs multiplicity ITS+TPC", kTH2F, {axisMult, axisMult});
     // histosEvent.add("nTracksITSonlyvsnTracksWithITSandTPCNAft", " multiplicity ITS vs multiplicity ITS+TPC", kTH2F, {axisMult, axisMult});
 
-    AxisSpec axisCounterAllVsTF{  10, -0.5, 9.5, "cut"};
+    AxisSpec axisCounterAllVsTF{10, -0.5, 9.5, "cut"};
     histosEventCounters.add("hNtracksAll_vs_variousCuts", "hNtracksAll_vs_variousCuts", kTH1D, {axisCounterAllVsTF});
     histosEventCounters.add("hNtracksGlobal_vs_variousCuts", "hNtracksGlobal_vs_variousCuts", kTH1D, {axisCounterAllVsTF});
     histosEventCounters.add("hNtotalCollisions_vs_variousCuts", "hNtotalCollisions_vs_variousCuts", kTH1D, {axisCounterAllVsTF});
-
-
 
     AxisSpec axisVtxChi2{500, 0., 100.f, "chi2"};
     histosEvent.add("vtxChi2Aft", "vtxChi2Aft; chi2; Counts", kTH1F, {axisVtxChi2});
@@ -561,7 +556,7 @@ struct RobustFluctuationObservables {
 
     // #### FT0 time
     const AxisSpec axisTimeFT0{500, -5., 5., "collision time (ns)"};
-    const AxisSpec axisColTimeResFT0{ !flagPbPb ? 500 : 2000, -0.5, 0.5, "(T0A - T0C)/2 (ns)"};
+    const AxisSpec axisColTimeResFT0{!flagPbPb ? 500 : 2000, -0.5, 0.5, "(T0A - T0C)/2 (ns)"};
     const AxisSpec axisVertexFT0{300, -30., 30.};
     const AxisSpec axisVertexFT0diff{1200, -30., 30.};
 
@@ -573,7 +568,7 @@ struct RobustFluctuationObservables {
     // #### FT0 vertex
     histosFT0.add("hT0vertex", "FT0 vertex;FT0 vertex (cm);counts", kTH1F, {axisVertexFT0});
     histosFT0.add("hPV", "PV;primary vertex (cm);counts", kTH1F, {axisVertexFT0});
-    
+
     histosFT0.add("hT0vertexDiff", "FT0V - PV;FT0 vertex -  PV (cm);counts", kTH1F, {axisVertexFT0diff});
     histosFT0.add("hT0vertexDiff_after_EvSelAndVz", "FT0V - PV;FT0 vertex -  PV (cm);counts", kTH1F, {axisVertexFT0diff});
     histosFT0.add("hT0vertexDiff_after_ITSROFcut", "FT0V - PV;FT0 vertex -  PV (cm);counts", kTH1F, {axisVertexFT0diff});
@@ -597,8 +592,7 @@ struct RobustFluctuationObservables {
     histosFT0.add("hVertex_T0_PV_2globalPVcontrib_TOForTRD", "PV vs. FT0V after TF cut;FT0 vertex (cm);primary vertex (cm)", kTH2F, {axisVertexFT0, axisVertexFT0});
 
     // IA:
-    histosFT0.add("hT0_sum_AC", "hT0_sum_AC;T0AC time (ns);counts", kTH1F, {axisTimeFT0}); 
-
+    histosFT0.add("hT0_sum_AC", "hT0_sum_AC;T0AC time (ns);counts", kTH1F, {axisTimeFT0});
 
     // ### track-wise:
     AxisSpec axisPt{nBinsPt, 0, 20, "p_{T}"};
@@ -776,9 +770,10 @@ struct RobustFluctuationObservables {
     // Colls::iterator const& collision, aod::BCsWithTimestamps const& bcs,
     // , soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA> const& tracks
     // , soa::Join<aod::Tracks, aod::pidTOFEl, aod::pidTPCEl>::iterator const& track
-    soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, 
-    aod::TrackSelectionExtension, 
-    aod::TracksDCA, aod::pidTOFEl, aod::pidTPCEl> const& tracks, aod::V0Datas const& v0s, DaughterTracks const&)
+    soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
+              aod::TrackSelectionExtension,
+              aod::TracksDCA, aod::pidTOFEl, aod::pidTPCEl> const& tracks,
+    aod::V0Datas const& v0s, DaughterTracks const&)
   // aod::V0s_001 const& v0s)
   {
     auto bc = collision.bc_as<BCsRun3>();
@@ -884,7 +879,6 @@ struct RobustFluctuationObservables {
            (int)collision.has_foundBC(), // mostProbableBC,
            tracks.size());               //, collision.globalBC() );
 
-
     int nTracksAll = 0;
     int nTracksAfterEtaTPCCuts = 0;
     int nTracksITSonly = 0, nTracksWithITS = 0, nTracksWithITSandTPC = 0;
@@ -938,16 +932,13 @@ struct RobustFluctuationObservables {
           meanPtForPVContributorsNoTOFandTRD += track.pt();
         }
 
-        if (track.isGlobalTrack()) 
-        {
+        if (track.isGlobalTrack()) {
           nTracksGlobalPVAccepted++;
           if (track.itsNCls() == 7)
             nTracksGlobalPVwithITS7hits++;
           if (track.hasTRD() || track.hasTOF())
             nTracksGlobalPVwithTRDorTOF++;
-
         }
-
       }
 
       if (track.hasITS() && !track.hasTPC()) // Flag to check if track has a TPC match
@@ -992,16 +983,13 @@ struct RobustFluctuationObservables {
     histosEvent.fill(HIST("multT0C_vs_multT0ABef"), multT0A, multT0C);
     histosEvent.fill(HIST("multV0A_vs_multT0ABef"), multT0A, multV0A);
     histosEvent.fill(HIST("multV0A_vs_multT0CBef"), multT0C, multV0A);
-    if (flagPbPb)
-    {
+    if (flagPbPb) {
       histosEvent.fill(HIST("multAllTr_vs_CentBef"), t0cCentr, multTrk);
       histosEvent.fill(HIST("multGlobalTr_vs_CentBef"), t0cCentr, nTracksGlobalAccepted);
       histosEvent.fill(HIST("multTrkPV_vs_CentBef"), t0cCentr, multNTracksPV);
       histosEvent.fill(HIST("multV0A_vs_CentBef"), t0cCentr, multV0A);
       histosEvent.fill(HIST("multT0C_vs_CentBef"), t0cCentr, multT0C);
     }
-
-
 
     //
     int runNumber = bc.runNumber();
@@ -1053,15 +1041,15 @@ struct RobustFluctuationObservables {
       // tsEOR = grpecs->getTimeEnd();                   // ms
 
       // calculate SOR and EOR orbits
-      //int64_t orbitSOR = (tsSOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
-      //int64_t orbitEOR = (tsEOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
+      // int64_t orbitSOR = (tsSOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
+      // int64_t orbitEOR = (tsEOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
 
       // adjust to the nearest TF edge
-      //orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF - 1;
-      //orbitEOR = orbitEOR / nOrbitsPerTF * nOrbitsPerTF - 1;
+      // orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF - 1;
+      // orbitEOR = orbitEOR / nOrbitsPerTF * nOrbitsPerTF - 1;
 
       // first bc of the first orbit (should coincide with TF start)
-      //bcSOR = orbitSOR * nBCsPerOrbit;
+      // bcSOR = orbitSOR * nBCsPerOrbit;
 
       // duration of TF in bcs
       nBCsPerTF = nOrbitsPerTF * nBCsPerOrbit;
@@ -1106,8 +1094,7 @@ struct RobustFluctuationObservables {
 
     histosEventBcInTF.fill(HIST("hNumContrib_vs_bcInTF_BEFORE_SEL8_AND_Vz"), bcInTF, counterPVcontributorsAfterTPCcuts);
     histosEventBcInTF.fill(HIST("hNumContrib_vs_bcInTF_BEFORE_SEL8_AND_Vz_ReallyAllContrib"), bcInTF, collision.numContrib());
-    histosEventBcInTF.fill(HIST("hIsTriggerTVX_vs_bcInTF_BEFORE_SEL8_AND_Vz"), bcInTF,  collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) ? 1 : 0  );
-
+    histosEventBcInTF.fill(HIST("hIsTriggerTVX_vs_bcInTF_BEFORE_SEL8_AND_Vz"), bcInTF, collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) ? 1 : 0);
 
     // is FT0
     bool isFT0 = false;
@@ -1128,26 +1115,23 @@ struct RobustFluctuationObservables {
         histosFT0.fill(HIST("hT0res"), collision.t0resolution());
         histosFT0.fill(HIST("hT0vertexDiff"), diff_PV_ft0_tracks);
 
-      if (collision.t0ACorrectedValid() && collision.t0CCorrectedValid()) 
-      {
-        histosFT0.fill(HIST("hT0A"), collision.t0ACorrected() );
-        histosFT0.fill(HIST("hT0C"), collision.t0CCorrected() );
-        histosFT0.fill(HIST("hT0_sum_AC"), collision.t0ACorrected() + collision.t0CCorrected() );
-      }
-      
-        
+        if (collision.t0ACorrectedValid() && collision.t0CCorrectedValid()) {
+          histosFT0.fill(HIST("hT0A"), collision.t0ACorrected());
+          histosFT0.fill(HIST("hT0C"), collision.t0CCorrected());
+          histosFT0.fill(HIST("hT0_sum_AC"), collision.t0ACorrected() + collision.t0CCorrected());
+        }
       }
     } // end of if (collision.has_foundFT0())
 
-    histosEventCounters.fill(HIST("hNtracksAll_vs_variousCuts"), 0, tracks.size() ); // ALL tracks
-    histosEventCounters.fill(HIST("hNtracksGlobal_vs_variousCuts"), 0, nTracksGlobalAccepted ); // global tracks
-    histosEventCounters.fill(HIST("hNtotalCollisions_vs_variousCuts"), 0, 1 ); // collisions counter
+    histosEventCounters.fill(HIST("hNtracksAll_vs_variousCuts"), 0, tracks.size());            // ALL tracks
+    histosEventCounters.fill(HIST("hNtracksGlobal_vs_variousCuts"), 0, nTracksGlobalAccepted); // global tracks
+    histosEventCounters.fill(HIST("hNtotalCollisions_vs_variousCuts"), 0, 1);                  // collisions counter
 
     // do counting also with TF border cut BEFORE ev. sel.
     if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      histosEventCounters.fill(HIST("hNtracksAll_vs_variousCuts"), 1, tracks.size() ); // ALL tracks
-      histosEventCounters.fill(HIST("hNtracksGlobal_vs_variousCuts"), 1, nTracksGlobalAccepted ); // global tracks
-      histosEventCounters.fill(HIST("hNtotalCollisions_vs_variousCuts"), 1, 1 ); // collisions counter
+      histosEventCounters.fill(HIST("hNtracksAll_vs_variousCuts"), 1, tracks.size());            // ALL tracks
+      histosEventCounters.fill(HIST("hNtracksGlobal_vs_variousCuts"), 1, nTracksGlobalAccepted); // global tracks
+      histosEventCounters.fill(HIST("hNtotalCollisions_vs_variousCuts"), 1, 1);                  // collisions counter
     }
 
     // ### event selection cuts
@@ -1163,45 +1147,39 @@ struct RobustFluctuationObservables {
       histosFT0.fill(HIST("hVertex_T0_PV_after_EvSelAndVz"), ft0_posZ, collision.posZ());
       histosFT0.fill(HIST("hT0vertexDiff_after_EvSelAndVz"), diff_PV_ft0_tracks);
 
-      if (counterPVcontributorsAfterTPCcuts >=2) {
+      if (counterPVcontributorsAfterTPCcuts >= 2) {
         histosFT0.fill(HIST("hVertex_T0_PV_2goodPVcontribTPC"), ft0_posZ, collision.posZ());
         histosFT0.fill(HIST("hT0vertexDiff_2goodPVcontribTPC"), diff_PV_ft0_tracks);
       }
-      if (nTracksGlobalPVAccepted >=2) {
+      if (nTracksGlobalPVAccepted >= 2) {
         histosFT0.fill(HIST("hVertex_T0_PV_2globalPVcontrib"), ft0_posZ, collision.posZ());
         histosFT0.fill(HIST("hT0vertexDiff_2globalPVcontrib"), diff_PV_ft0_tracks);
       }
 
-      if (nTracksGlobalPVAccepted >=4) {
+      if (nTracksGlobalPVAccepted >= 4) {
         histosFT0.fill(HIST("hVertex_T0_PV_4globalPVcontrib"), ft0_posZ, collision.posZ());
         histosFT0.fill(HIST("hT0vertexDiff_4globalPVcontrib"), diff_PV_ft0_tracks);
       }
-      if (nTracksGlobalPVwithITS7hits >=2) {
+      if (nTracksGlobalPVwithITS7hits >= 2) {
         histosFT0.fill(HIST("hVertex_T0_PV_2globalPVcontrib_ITS7hits"), ft0_posZ, collision.posZ());
         histosFT0.fill(HIST("hT0vertexDiff_2globalPVcontrib_ITS7hits"), diff_PV_ft0_tracks);
       }
-      if (nTracksGlobalPVwithTRDorTOF >=2) {
+      if (nTracksGlobalPVwithTRDorTOF >= 2) {
         histosFT0.fill(HIST("hVertex_T0_PV_2globalPVcontrib_TOForTRD"), ft0_posZ, collision.posZ());
         histosFT0.fill(HIST("hT0vertexDiff_2globalPVcontrib_TOForTRD"), diff_PV_ft0_tracks);
       }
-
     }
 
-
-
-
-
-    histosEventCounters.fill(HIST("hNtracksAll_vs_variousCuts"), 2, tracks.size() ); // ALL tracks
-    histosEventCounters.fill(HIST("hNtracksGlobal_vs_variousCuts"), 2, nTracksGlobalAccepted ); // global tracks
-    histosEventCounters.fill(HIST("hNtotalCollisions_vs_variousCuts"), 2, 1 ); // collisions counter
-
+    histosEventCounters.fill(HIST("hNtracksAll_vs_variousCuts"), 2, tracks.size());            // ALL tracks
+    histosEventCounters.fill(HIST("hNtracksGlobal_vs_variousCuts"), 2, nTracksGlobalAccepted); // global tracks
+    histosEventCounters.fill(HIST("hNtotalCollisions_vs_variousCuts"), 2, 1);                  // collisions counter
 
     histosEvent.fill(HIST("hNumContribAfterTPCcuts"), counterPVcontributorsAfterTPCcuts);
     histosEvent.fill(HIST("hNumContribITS7hits"), counterPVcontributorsITS7hits);
 
     histosEventBcInTF.fill(HIST("hNumContrib_vs_bcInTF"), bcInTF, counterPVcontributorsAfterTPCcuts);
     histosEventBcInTF.fill(HIST("hNumContrib_vs_bcInTF_ReallyAllContrib"), bcInTF, collision.numContrib());
-    histosEventBcInTF.fill(HIST("hIsTriggerTVX_vs_bcInTF"), bcInTF,  collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) ? 1 : 0  );
+    histosEventBcInTF.fill(HIST("hIsTriggerTVX_vs_bcInTF"), bcInTF, collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) ? 1 : 0);
 
     histosEventBcInTF.fill(HIST("hGlobalTracks_vs_bcInTF"), bcInTF, nTracksGlobalAccepted);
     histosEvent.fill(HIST("hOrbitStartFromCollIndexZeroAft"), (int32_t)orbit - (int32_t)orbitAtCollIndexZero);
@@ -1228,8 +1206,7 @@ struct RobustFluctuationObservables {
     histosEvent.fill(HIST("multT0C_vs_multT0AAft"), multT0A, multT0C);
     histosEvent.fill(HIST("multV0A_vs_multT0AAft"), multT0A, multV0A);
     histosEvent.fill(HIST("multV0A_vs_multT0CAft"), multT0C, multV0A);
-    if (flagPbPb)
-    {
+    if (flagPbPb) {
       histosEvent.fill(HIST("multAllTr_vs_CentAft"), t0cCentr, multTrk);
       histosEvent.fill(HIST("multGlobalTr_vs_CentAft"), t0cCentr, nTracksGlobalAccepted);
       histosEvent.fill(HIST("multTrkPV_vs_CentAft"), t0cCentr, multNTracksPV);
@@ -1242,9 +1219,9 @@ struct RobustFluctuationObservables {
     // cut TF borders
     if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
 
-      histosEventCounters.fill(HIST("hNtracksAll_vs_variousCuts"), 3, tracks.size() ); // ALL tracks with TF cut 
-      histosEventCounters.fill(HIST("hNtracksGlobal_vs_variousCuts"), 3, nTracksGlobalAccepted ); // global tracks
-      histosEventCounters.fill(HIST("hNtotalCollisions_vs_variousCuts"), 3, 1 ); // collisions counter
+      histosEventCounters.fill(HIST("hNtracksAll_vs_variousCuts"), 3, tracks.size());            // ALL tracks with TF cut
+      histosEventCounters.fill(HIST("hNtracksGlobal_vs_variousCuts"), 3, nTracksGlobalAccepted); // global tracks
+      histosEventCounters.fill(HIST("hNtotalCollisions_vs_variousCuts"), 3, 1);                  // collisions counter
 
       histosEventBcInTF.fill(HIST("hNumContrib_vs_bcInTF_ReallyAllContrib_AfterTimeFrameCut"), bcInTF, collision.numContrib());
       histosEventBcInTF.fill(HIST("hNumContrib_vs_bcInTF_AfterTimeFrameCut"), bcInTF, counterPVcontributorsAfterTPCcuts);
@@ -1265,8 +1242,7 @@ struct RobustFluctuationObservables {
       histosEvent.fill(HIST("multT0C_vs_multT0AAft_TFcut"), multT0A, multT0C);
       histosEvent.fill(HIST("multV0A_vs_multT0AAft_TFcut"), multT0A, multV0A);
       histosEvent.fill(HIST("multV0A_vs_multT0CAft_TFcut"), multT0C, multV0A);
-      if (flagPbPb)
-      {
+      if (flagPbPb) {
         histosEvent.fill(HIST("multAllTr_vs_CentAft_TFcut"), t0cCentr, multTrk);
         histosEvent.fill(HIST("multGlobalTr_vs_CentAft_TFcut"), t0cCentr, nTracksGlobalAccepted);
         histosEvent.fill(HIST("multTrkPV_vs_CentAft_TFcut"), t0cCentr, multNTracksPV);
@@ -1278,9 +1254,7 @@ struct RobustFluctuationObservables {
         histosFT0.fill(HIST("hVertex_T0_PV_after_TFcut"), ft0_posZ, collision.posZ());
         histosFT0.fill(HIST("hT0vertexDiff_after_TFcut"), diff_PV_ft0_tracks);
       }
-
     }
-
 
     // histosEvent.fill(HIST("nTracksITSonlyvsnTracksWithITSandTPCAft"), nTracksWithITSandTPC, nTracksITSonly);
     // histosEvent.fill(HIST("nTracksITSonlyvsnTracksWithITSandTPCNAft"), nTracksWithITSandTPC, nTracksWithITS);
@@ -1302,11 +1276,9 @@ struct RobustFluctuationObservables {
     // with FT0 conditions
     if (isFT0) {
       histosEvent.fill(HIST("hBC_vertNcontr3_with_FT0"), collBC);
-      if ( fabs(diff_PV_ft0_tracks)<1 )
+      if (fabs(diff_PV_ft0_tracks) < 1)
         histosEvent.fill(HIST("hBC_vertNcontr3_with_FT0_diffPV_1cm"), collBC);
     }
-
-
 
     // nTracks vs BC
     histosEvent.fill(HIST("h2D_nTracksBeforeCuts_vs_BC"), collBC, nTracksAll);
@@ -1322,7 +1294,6 @@ struct RobustFluctuationObservables {
 
     histosEvent.fill(HIST("h2D_nTracksGlobalWithITS7hits_vs_BC"), collBC, nTracksGlobalWithITS7hits);
     histosEvent.fill(HIST("h2D_nTracksGlobalWithTRDorTOF_vs_BC"), collBC, nTracksGlobalWithTRDorTOF);
-    
 
     // QA by hand
     histosEvent.fill(HIST("h1D_EventCounter_vs_BC"), collBC);
@@ -1372,16 +1343,15 @@ struct RobustFluctuationObservables {
     if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       histosEventBcInTF.fill(HIST("hNumContrib_vs_bcInTF_After_ITS_ROF_cut"), bcInTF, counterPVcontributorsAfterTPCcuts);
 
-      histosEventCounters.fill(HIST("hNtracksAll_vs_variousCuts"), 4, tracks.size() ); // ALL tracks outside ITS ROF cut
-      histosEventCounters.fill(HIST("hNtracksGlobal_vs_variousCuts"), 4, nTracksGlobalAccepted ); // global tracks
-      histosEventCounters.fill(HIST("hNtotalCollisions_vs_variousCuts"), 4, 1 ); // collisions counter
+      histosEventCounters.fill(HIST("hNtracksAll_vs_variousCuts"), 4, tracks.size());            // ALL tracks outside ITS ROF cut
+      histosEventCounters.fill(HIST("hNtracksGlobal_vs_variousCuts"), 4, nTracksGlobalAccepted); // global tracks
+      histosEventCounters.fill(HIST("hNtotalCollisions_vs_variousCuts"), 4, 1);                  // collisions counter
 
       histosEvent.fill(HIST("hCollIndex_ITS_ROF_cut"), collision.index());
       histosEvent.fill(HIST("hCollTime_ITS_ROF_cut"), collision.collisionTime());
       histosEvent.fill(HIST("hCollTimeRes_ITS_ROF_cut"), collision.collisionTimeRes());
       // histosEvent.fill(HIST("h2D_numContrib_vs_collIndex_ITS_ROF_cut"), collision.index(), collision.numContrib());
       histosEvent.fill(HIST("hBC_ITS_ROF_cut"), collBC);
-
 
       histosEvent.fill(HIST("multAllTr_vs_multT0CAft_ITSROFcut"), multT0C, multTrk);
       histosEvent.fill(HIST("multAllTr_vs_multV0AAft_ITSROFcut"), multV0A, multTrk);
@@ -1397,8 +1367,7 @@ struct RobustFluctuationObservables {
       histosEvent.fill(HIST("multT0C_vs_multT0AAft_ITSROFcut"), multT0A, multT0C);
       histosEvent.fill(HIST("multV0A_vs_multT0AAft_ITSROFcut"), multT0A, multV0A);
       histosEvent.fill(HIST("multV0A_vs_multT0CAft_ITSROFcut"), multT0C, multV0A);
-      if (flagPbPb)
-      {
+      if (flagPbPb) {
         histosEvent.fill(HIST("multAllTr_vs_CentAft_ITSROFcut"), t0cCentr, multTrk);
         histosEvent.fill(HIST("multGlobalTr_vs_CentAft_ITSROFcut"), t0cCentr, nTracksGlobalAccepted);
         histosEvent.fill(HIST("multTrkPV_vs_CentAft_ITSROFcut"), t0cCentr, multNTracksPV);
@@ -1427,8 +1396,7 @@ struct RobustFluctuationObservables {
         histosEvent.fill(HIST("multT0C_vs_multT0AAft_ITSROF_TF_cuts"), multT0A, multT0C);
         histosEvent.fill(HIST("multV0A_vs_multT0AAft_ITSROF_TF_cuts"), multT0A, multV0A);
         histosEvent.fill(HIST("multV0A_vs_multT0CAft_ITSROF_TF_cuts"), multT0C, multV0A);
-        if (flagPbPb)
-        {
+        if (flagPbPb) {
           histosEvent.fill(HIST("multAllTr_vs_CentAft_ITSROF_TF_cuts"), t0cCentr, multTrk);
           histosEvent.fill(HIST("multGlobalTr_vs_CentAft_ITSROF_TF_cuts"), t0cCentr, nTracksGlobalAccepted);
           histosEvent.fill(HIST("multTrkPV_vs_CentAft_ITSROF_TF_cuts"), t0cCentr, multNTracksPV);
@@ -1441,249 +1409,231 @@ struct RobustFluctuationObservables {
           histosFT0.fill(HIST("hT0vertexDiff_after_ITSROF_and_TFcut"), diff_PV_ft0_tracks);
         }
       }
-
-
     }
-
 
     // global PV contributors
     if (nTracksGlobalPVAccepted >= 2) {
-          histosEvent.fill(HIST("multAllTr_vs_multT0CAft_2globalPVcontrib"), multT0C, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multV0AAft_2globalPVcontrib"), multV0A, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multT0AAft_2globalPVcontrib"), multT0A, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_2globalPVcontrib"), multNTracksPV, multTrk);
-          histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_2globalPVcontrib"), multT0C, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_2globalPVcontrib"), multV0A, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_2globalPVcontrib"), multT0A, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_2globalPVcontrib"), multNTracksPV, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_2globalPVcontrib"), multT0C, multNTracksPV);
-          histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_2globalPVcontrib"), multV0A, multNTracksPV);
-          histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_2globalPVcontrib"), multT0A, multNTracksPV);
-          histosEvent.fill(HIST("multT0C_vs_multT0AAft_2globalPVcontrib"), multT0A, multT0C);
-          histosEvent.fill(HIST("multV0A_vs_multT0AAft_2globalPVcontrib"), multT0A, multV0A);
-          histosEvent.fill(HIST("multV0A_vs_multT0CAft_2globalPVcontrib"), multT0C, multV0A);
-          if (flagPbPb)
-          {
-            histosEvent.fill(HIST("multAllTr_vs_CentAft_2globalPVcontrib"), t0cCentr, multTrk);
-            histosEvent.fill(HIST("multGlobalTr_vs_CentAft_2globalPVcontrib"), t0cCentr, nTracksGlobalAccepted);
-            histosEvent.fill(HIST("multTrkPV_vs_CentAft_2globalPVcontrib"), t0cCentr, multNTracksPV);
-            histosEvent.fill(HIST("multV0A_vs_CentAft_2globalPVcontrib"), t0cCentr, multV0A);
-            histosEvent.fill(HIST("multT0C_vs_CentAft_2globalPVcontrib"), t0cCentr, multT0C);
-          }
+      histosEvent.fill(HIST("multAllTr_vs_multT0CAft_2globalPVcontrib"), multT0C, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multV0AAft_2globalPVcontrib"), multV0A, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multT0AAft_2globalPVcontrib"), multT0A, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_2globalPVcontrib"), multNTracksPV, multTrk);
+      histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_2globalPVcontrib"), multT0C, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_2globalPVcontrib"), multV0A, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_2globalPVcontrib"), multT0A, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_2globalPVcontrib"), multNTracksPV, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_2globalPVcontrib"), multT0C, multNTracksPV);
+      histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_2globalPVcontrib"), multV0A, multNTracksPV);
+      histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_2globalPVcontrib"), multT0A, multNTracksPV);
+      histosEvent.fill(HIST("multT0C_vs_multT0AAft_2globalPVcontrib"), multT0A, multT0C);
+      histosEvent.fill(HIST("multV0A_vs_multT0AAft_2globalPVcontrib"), multT0A, multV0A);
+      histosEvent.fill(HIST("multV0A_vs_multT0CAft_2globalPVcontrib"), multT0C, multV0A);
+      if (flagPbPb) {
+        histosEvent.fill(HIST("multAllTr_vs_CentAft_2globalPVcontrib"), t0cCentr, multTrk);
+        histosEvent.fill(HIST("multGlobalTr_vs_CentAft_2globalPVcontrib"), t0cCentr, nTracksGlobalAccepted);
+        histosEvent.fill(HIST("multTrkPV_vs_CentAft_2globalPVcontrib"), t0cCentr, multNTracksPV);
+        histosEvent.fill(HIST("multV0A_vs_CentAft_2globalPVcontrib"), t0cCentr, multV0A);
+        histosEvent.fill(HIST("multT0C_vs_CentAft_2globalPVcontrib"), t0cCentr, multT0C);
+      }
     }
     // global PV contributors with 7 ITS hits
     if (nTracksGlobalPVwithITS7hits >= 2) {
-          histosEvent.fill(HIST("multAllTr_vs_multT0CAft_2globalPVcontrib_ITS7hits"), multT0C, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multV0AAft_2globalPVcontrib_ITS7hits"), multV0A, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multT0AAft_2globalPVcontrib_ITS7hits"), multT0A, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_2globalPVcontrib_ITS7hits"), multNTracksPV, multTrk);
-          histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_2globalPVcontrib_ITS7hits"), multT0C, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_2globalPVcontrib_ITS7hits"), multV0A, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_2globalPVcontrib_ITS7hits"), multT0A, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_2globalPVcontrib_ITS7hits"), multNTracksPV, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_2globalPVcontrib_ITS7hits"), multT0C, multNTracksPV);
-          histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_2globalPVcontrib_ITS7hits"), multV0A, multNTracksPV);
-          histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_2globalPVcontrib_ITS7hits"), multT0A, multNTracksPV);
-          histosEvent.fill(HIST("multT0C_vs_multT0AAft_2globalPVcontrib_ITS7hits"), multT0A, multT0C);
-          histosEvent.fill(HIST("multV0A_vs_multT0AAft_2globalPVcontrib_ITS7hits"), multT0A, multV0A);
-          histosEvent.fill(HIST("multV0A_vs_multT0CAft_2globalPVcontrib_ITS7hits"), multT0C, multV0A);
-          if (flagPbPb)
-          {
-            histosEvent.fill(HIST("multAllTr_vs_CentAft_2globalPVcontrib_ITS7hits"), t0cCentr, multTrk);
-            histosEvent.fill(HIST("multGlobalTr_vs_CentAft_2globalPVcontrib_ITS7hits"), t0cCentr, nTracksGlobalAccepted);
-            histosEvent.fill(HIST("multTrkPV_vs_CentAft_2globalPVcontrib_ITS7hits"), t0cCentr, multNTracksPV);
-            histosEvent.fill(HIST("multV0A_vs_CentAft_2globalPVcontrib_ITS7hits"), t0cCentr, multV0A);
-            histosEvent.fill(HIST("multT0C_vs_CentAft_2globalPVcontrib_ITS7hits"), t0cCentr, multT0C);
-          }
+      histosEvent.fill(HIST("multAllTr_vs_multT0CAft_2globalPVcontrib_ITS7hits"), multT0C, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multV0AAft_2globalPVcontrib_ITS7hits"), multV0A, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multT0AAft_2globalPVcontrib_ITS7hits"), multT0A, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_2globalPVcontrib_ITS7hits"), multNTracksPV, multTrk);
+      histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_2globalPVcontrib_ITS7hits"), multT0C, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_2globalPVcontrib_ITS7hits"), multV0A, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_2globalPVcontrib_ITS7hits"), multT0A, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_2globalPVcontrib_ITS7hits"), multNTracksPV, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_2globalPVcontrib_ITS7hits"), multT0C, multNTracksPV);
+      histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_2globalPVcontrib_ITS7hits"), multV0A, multNTracksPV);
+      histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_2globalPVcontrib_ITS7hits"), multT0A, multNTracksPV);
+      histosEvent.fill(HIST("multT0C_vs_multT0AAft_2globalPVcontrib_ITS7hits"), multT0A, multT0C);
+      histosEvent.fill(HIST("multV0A_vs_multT0AAft_2globalPVcontrib_ITS7hits"), multT0A, multV0A);
+      histosEvent.fill(HIST("multV0A_vs_multT0CAft_2globalPVcontrib_ITS7hits"), multT0C, multV0A);
+      if (flagPbPb) {
+        histosEvent.fill(HIST("multAllTr_vs_CentAft_2globalPVcontrib_ITS7hits"), t0cCentr, multTrk);
+        histosEvent.fill(HIST("multGlobalTr_vs_CentAft_2globalPVcontrib_ITS7hits"), t0cCentr, nTracksGlobalAccepted);
+        histosEvent.fill(HIST("multTrkPV_vs_CentAft_2globalPVcontrib_ITS7hits"), t0cCentr, multNTracksPV);
+        histosEvent.fill(HIST("multV0A_vs_CentAft_2globalPVcontrib_ITS7hits"), t0cCentr, multV0A);
+        histosEvent.fill(HIST("multT0C_vs_CentAft_2globalPVcontrib_ITS7hits"), t0cCentr, multT0C);
+      }
     }
-    
+
     // global PV contributors with TRD or TOF signal
     if (nTracksGlobalPVwithTRDorTOF >= 2) {
-          histosEvent.fill(HIST("multAllTr_vs_multT0CAft_2globalPVcontrib_TRDorTOF"), multT0C, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multV0AAft_2globalPVcontrib_TRDorTOF"), multV0A, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multT0AAft_2globalPVcontrib_TRDorTOF"), multT0A, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_2globalPVcontrib_TRDorTOF"), multNTracksPV, multTrk);
-          histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_2globalPVcontrib_TRDorTOF"), multT0C, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_2globalPVcontrib_TRDorTOF"), multV0A, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_2globalPVcontrib_TRDorTOF"), multT0A, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_2globalPVcontrib_TRDorTOF"), multNTracksPV, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_2globalPVcontrib_TRDorTOF"), multT0C, multNTracksPV);
-          histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_2globalPVcontrib_TRDorTOF"), multV0A, multNTracksPV);
-          histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_2globalPVcontrib_TRDorTOF"), multT0A, multNTracksPV);
-          histosEvent.fill(HIST("multT0C_vs_multT0AAft_2globalPVcontrib_TRDorTOF"), multT0A, multT0C);
-          histosEvent.fill(HIST("multV0A_vs_multT0AAft_2globalPVcontrib_TRDorTOF"), multT0A, multV0A);
-          histosEvent.fill(HIST("multV0A_vs_multT0CAft_2globalPVcontrib_TRDorTOF"), multT0C, multV0A);
-          if (flagPbPb)
-          {
-            histosEvent.fill(HIST("multAllTr_vs_CentAft_2globalPVcontrib_TRDorTOF"), t0cCentr, multTrk);
-            histosEvent.fill(HIST("multGlobalTr_vs_CentAft_2globalPVcontrib_TRDorTOF"), t0cCentr, nTracksGlobalAccepted);
-            histosEvent.fill(HIST("multTrkPV_vs_CentAft_2globalPVcontrib_TRDorTOF"), t0cCentr, multNTracksPV);
-            histosEvent.fill(HIST("multV0A_vs_CentAft_2globalPVcontrib_TRDorTOF"), t0cCentr, multV0A);
-            histosEvent.fill(HIST("multT0C_vs_CentAft_2globalPVcontrib_TRDorTOF"), t0cCentr, multT0C);
-          }
+      histosEvent.fill(HIST("multAllTr_vs_multT0CAft_2globalPVcontrib_TRDorTOF"), multT0C, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multV0AAft_2globalPVcontrib_TRDorTOF"), multV0A, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multT0AAft_2globalPVcontrib_TRDorTOF"), multT0A, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_2globalPVcontrib_TRDorTOF"), multNTracksPV, multTrk);
+      histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_2globalPVcontrib_TRDorTOF"), multT0C, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_2globalPVcontrib_TRDorTOF"), multV0A, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_2globalPVcontrib_TRDorTOF"), multT0A, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_2globalPVcontrib_TRDorTOF"), multNTracksPV, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_2globalPVcontrib_TRDorTOF"), multT0C, multNTracksPV);
+      histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_2globalPVcontrib_TRDorTOF"), multV0A, multNTracksPV);
+      histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_2globalPVcontrib_TRDorTOF"), multT0A, multNTracksPV);
+      histosEvent.fill(HIST("multT0C_vs_multT0AAft_2globalPVcontrib_TRDorTOF"), multT0A, multT0C);
+      histosEvent.fill(HIST("multV0A_vs_multT0AAft_2globalPVcontrib_TRDorTOF"), multT0A, multV0A);
+      histosEvent.fill(HIST("multV0A_vs_multT0CAft_2globalPVcontrib_TRDorTOF"), multT0C, multV0A);
+      if (flagPbPb) {
+        histosEvent.fill(HIST("multAllTr_vs_CentAft_2globalPVcontrib_TRDorTOF"), t0cCentr, multTrk);
+        histosEvent.fill(HIST("multGlobalTr_vs_CentAft_2globalPVcontrib_TRDorTOF"), t0cCentr, nTracksGlobalAccepted);
+        histosEvent.fill(HIST("multTrkPV_vs_CentAft_2globalPVcontrib_TRDorTOF"), t0cCentr, multNTracksPV);
+        histosEvent.fill(HIST("multV0A_vs_CentAft_2globalPVcontrib_TRDorTOF"), t0cCentr, multV0A);
+        histosEvent.fill(HIST("multT0C_vs_CentAft_2globalPVcontrib_TRDorTOF"), t0cCentr, multT0C);
+      }
     }
 
     // diffFoundBC_vs_BC cut
     if (diffFoundBC_vs_BC == 0) {
-          histosEvent.fill(HIST("multAllTr_vs_multT0CAft_diffFoundBC_vs_BC_0"), multT0C, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multV0AAft_diffFoundBC_vs_BC_0"), multV0A, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multT0AAft_diffFoundBC_vs_BC_0"), multT0A, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_diffFoundBC_vs_BC_0"), multNTracksPV, multTrk);
-          histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_diffFoundBC_vs_BC_0"), multT0C, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_diffFoundBC_vs_BC_0"), multV0A, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_diffFoundBC_vs_BC_0"), multT0A, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_diffFoundBC_vs_BC_0"), multNTracksPV, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_diffFoundBC_vs_BC_0"), multT0C, multNTracksPV);
-          histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_diffFoundBC_vs_BC_0"), multV0A, multNTracksPV);
-          histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_diffFoundBC_vs_BC_0"), multT0A, multNTracksPV);
-          histosEvent.fill(HIST("multT0C_vs_multT0AAft_diffFoundBC_vs_BC_0"), multT0A, multT0C);
-          histosEvent.fill(HIST("multV0A_vs_multT0AAft_diffFoundBC_vs_BC_0"), multT0A, multV0A);
-          histosEvent.fill(HIST("multV0A_vs_multT0CAft_diffFoundBC_vs_BC_0"), multT0C, multV0A);
-          if (flagPbPb)
-          {
-            histosEvent.fill(HIST("multAllTr_vs_CentAft_diffFoundBC_vs_BC_0"), t0cCentr, multTrk);
-            histosEvent.fill(HIST("multGlobalTr_vs_CentAft_diffFoundBC_vs_BC_0"), t0cCentr, nTracksGlobalAccepted);
-            histosEvent.fill(HIST("multTrkPV_vs_CentAft_diffFoundBC_vs_BC_0"), t0cCentr, multNTracksPV);
-            histosEvent.fill(HIST("multV0A_vs_CentAft_diffFoundBC_vs_BC_0"), t0cCentr, multV0A);
-            histosEvent.fill(HIST("multT0C_vs_CentAft_diffFoundBC_vs_BC_0"), t0cCentr, multT0C);
-          }
+      histosEvent.fill(HIST("multAllTr_vs_multT0CAft_diffFoundBC_vs_BC_0"), multT0C, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multV0AAft_diffFoundBC_vs_BC_0"), multV0A, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multT0AAft_diffFoundBC_vs_BC_0"), multT0A, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_diffFoundBC_vs_BC_0"), multNTracksPV, multTrk);
+      histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_diffFoundBC_vs_BC_0"), multT0C, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_diffFoundBC_vs_BC_0"), multV0A, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_diffFoundBC_vs_BC_0"), multT0A, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_diffFoundBC_vs_BC_0"), multNTracksPV, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_diffFoundBC_vs_BC_0"), multT0C, multNTracksPV);
+      histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_diffFoundBC_vs_BC_0"), multV0A, multNTracksPV);
+      histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_diffFoundBC_vs_BC_0"), multT0A, multNTracksPV);
+      histosEvent.fill(HIST("multT0C_vs_multT0AAft_diffFoundBC_vs_BC_0"), multT0A, multT0C);
+      histosEvent.fill(HIST("multV0A_vs_multT0AAft_diffFoundBC_vs_BC_0"), multT0A, multV0A);
+      histosEvent.fill(HIST("multV0A_vs_multT0CAft_diffFoundBC_vs_BC_0"), multT0C, multV0A);
+      if (flagPbPb) {
+        histosEvent.fill(HIST("multAllTr_vs_CentAft_diffFoundBC_vs_BC_0"), t0cCentr, multTrk);
+        histosEvent.fill(HIST("multGlobalTr_vs_CentAft_diffFoundBC_vs_BC_0"), t0cCentr, nTracksGlobalAccepted);
+        histosEvent.fill(HIST("multTrkPV_vs_CentAft_diffFoundBC_vs_BC_0"), t0cCentr, multNTracksPV);
+        histosEvent.fill(HIST("multV0A_vs_CentAft_diffFoundBC_vs_BC_0"), t0cCentr, multV0A);
+        histosEvent.fill(HIST("multT0C_vs_CentAft_diffFoundBC_vs_BC_0"), t0cCentr, multT0C);
+      }
     }
-
 
     // FT0 present
     if (isFT0) {
-          histosEvent.fill(HIST("multAllTr_vs_multT0CAft_hasFT0_CorrectedValid"), multT0C, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multV0AAft_hasFT0_CorrectedValid"), multV0A, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multT0AAft_hasFT0_CorrectedValid"), multT0A, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_hasFT0_CorrectedValid"), multNTracksPV, multTrk);
-          histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_hasFT0_CorrectedValid"), multT0C, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_hasFT0_CorrectedValid"), multV0A, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_hasFT0_CorrectedValid"), multT0A, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_hasFT0_CorrectedValid"), multNTracksPV, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_hasFT0_CorrectedValid"), multT0C, multNTracksPV);
-          histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_hasFT0_CorrectedValid"), multV0A, multNTracksPV);
-          histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_hasFT0_CorrectedValid"), multT0A, multNTracksPV);
-          histosEvent.fill(HIST("multT0C_vs_multT0AAft_hasFT0_CorrectedValid"), multT0A, multT0C);
-          histosEvent.fill(HIST("multV0A_vs_multT0AAft_hasFT0_CorrectedValid"), multT0A, multV0A);
-          histosEvent.fill(HIST("multV0A_vs_multT0CAft_hasFT0_CorrectedValid"), multT0C, multV0A);
-          if (flagPbPb)
-          {
-            histosEvent.fill(HIST("multAllTr_vs_CentAft_hasFT0_CorrectedValid"), t0cCentr, multTrk);
-            histosEvent.fill(HIST("multGlobalTr_vs_CentAft_hasFT0_CorrectedValid"), t0cCentr, nTracksGlobalAccepted);
-            histosEvent.fill(HIST("multTrkPV_vs_CentAft_hasFT0_CorrectedValid"), t0cCentr, multNTracksPV);
-            histosEvent.fill(HIST("multV0A_vs_CentAft_hasFT0_CorrectedValid"), t0cCentr, multV0A);
-            histosEvent.fill(HIST("multT0C_vs_CentAft_hasFT0_CorrectedValid"), t0cCentr, multT0C);
-          }
+      histosEvent.fill(HIST("multAllTr_vs_multT0CAft_hasFT0_CorrectedValid"), multT0C, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multV0AAft_hasFT0_CorrectedValid"), multV0A, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multT0AAft_hasFT0_CorrectedValid"), multT0A, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_hasFT0_CorrectedValid"), multNTracksPV, multTrk);
+      histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_hasFT0_CorrectedValid"), multT0C, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_hasFT0_CorrectedValid"), multV0A, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_hasFT0_CorrectedValid"), multT0A, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_hasFT0_CorrectedValid"), multNTracksPV, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_hasFT0_CorrectedValid"), multT0C, multNTracksPV);
+      histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_hasFT0_CorrectedValid"), multV0A, multNTracksPV);
+      histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_hasFT0_CorrectedValid"), multT0A, multNTracksPV);
+      histosEvent.fill(HIST("multT0C_vs_multT0AAft_hasFT0_CorrectedValid"), multT0A, multT0C);
+      histosEvent.fill(HIST("multV0A_vs_multT0AAft_hasFT0_CorrectedValid"), multT0A, multV0A);
+      histosEvent.fill(HIST("multV0A_vs_multT0CAft_hasFT0_CorrectedValid"), multT0C, multV0A);
+      if (flagPbPb) {
+        histosEvent.fill(HIST("multAllTr_vs_CentAft_hasFT0_CorrectedValid"), t0cCentr, multTrk);
+        histosEvent.fill(HIST("multGlobalTr_vs_CentAft_hasFT0_CorrectedValid"), t0cCentr, nTracksGlobalAccepted);
+        histosEvent.fill(HIST("multTrkPV_vs_CentAft_hasFT0_CorrectedValid"), t0cCentr, multNTracksPV);
+        histosEvent.fill(HIST("multV0A_vs_CentAft_hasFT0_CorrectedValid"), t0cCentr, multV0A);
+        histosEvent.fill(HIST("multT0C_vs_CentAft_hasFT0_CorrectedValid"), t0cCentr, multT0C);
+      }
     }
 
-    
     // cut on diff b/n vertex from FT0 and track-based
-    if (isFT0 && fabs(diff_PV_ft0_tracks)<1) {
-          histosEvent.fill(HIST("multAllTr_vs_multT0CAft_after_PV_FT0_diff_cut_1cm"), multT0C, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multV0AAft_after_PV_FT0_diff_cut_1cm"), multV0A, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multT0AAft_after_PV_FT0_diff_cut_1cm"), multT0A, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_after_PV_FT0_diff_cut_1cm"), multNTracksPV, multTrk);
-          histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_after_PV_FT0_diff_cut_1cm"), multT0C, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_after_PV_FT0_diff_cut_1cm"), multV0A, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_after_PV_FT0_diff_cut_1cm"), multT0A, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_after_PV_FT0_diff_cut_1cm"), multNTracksPV, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_after_PV_FT0_diff_cut_1cm"), multT0C, multNTracksPV);
-          histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_after_PV_FT0_diff_cut_1cm"), multV0A, multNTracksPV);
-          histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_after_PV_FT0_diff_cut_1cm"), multT0A, multNTracksPV);
-          histosEvent.fill(HIST("multT0C_vs_multT0AAft_after_PV_FT0_diff_cut_1cm"), multT0A, multT0C);
-          histosEvent.fill(HIST("multV0A_vs_multT0AAft_after_PV_FT0_diff_cut_1cm"), multT0A, multV0A);
-          histosEvent.fill(HIST("multV0A_vs_multT0CAft_after_PV_FT0_diff_cut_1cm"), multT0C, multV0A);
-          if (flagPbPb)
-          {
-            histosEvent.fill(HIST("multAllTr_vs_CentAft_after_PV_FT0_diff_cut_1cm"), t0cCentr, multTrk);
-            histosEvent.fill(HIST("multGlobalTr_vs_CentAft_after_PV_FT0_diff_cut_1cm"), t0cCentr, nTracksGlobalAccepted);
-            histosEvent.fill(HIST("multTrkPV_vs_CentAft_after_PV_FT0_diff_cut_1cm"), t0cCentr, multNTracksPV);
-            histosEvent.fill(HIST("multV0A_vs_CentAft_after_PV_FT0_diff_cut_1cm"), t0cCentr, multV0A);
-            histosEvent.fill(HIST("multT0C_vs_CentAft_after_PV_FT0_diff_cut_1cm"), t0cCentr, multT0C);
-          }
+    if (isFT0 && fabs(diff_PV_ft0_tracks) < 1) {
+      histosEvent.fill(HIST("multAllTr_vs_multT0CAft_after_PV_FT0_diff_cut_1cm"), multT0C, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multV0AAft_after_PV_FT0_diff_cut_1cm"), multV0A, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multT0AAft_after_PV_FT0_diff_cut_1cm"), multT0A, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_after_PV_FT0_diff_cut_1cm"), multNTracksPV, multTrk);
+      histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_after_PV_FT0_diff_cut_1cm"), multT0C, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_after_PV_FT0_diff_cut_1cm"), multV0A, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_after_PV_FT0_diff_cut_1cm"), multT0A, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_after_PV_FT0_diff_cut_1cm"), multNTracksPV, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_after_PV_FT0_diff_cut_1cm"), multT0C, multNTracksPV);
+      histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_after_PV_FT0_diff_cut_1cm"), multV0A, multNTracksPV);
+      histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_after_PV_FT0_diff_cut_1cm"), multT0A, multNTracksPV);
+      histosEvent.fill(HIST("multT0C_vs_multT0AAft_after_PV_FT0_diff_cut_1cm"), multT0A, multT0C);
+      histosEvent.fill(HIST("multV0A_vs_multT0AAft_after_PV_FT0_diff_cut_1cm"), multT0A, multV0A);
+      histosEvent.fill(HIST("multV0A_vs_multT0CAft_after_PV_FT0_diff_cut_1cm"), multT0C, multV0A);
+      if (flagPbPb) {
+        histosEvent.fill(HIST("multAllTr_vs_CentAft_after_PV_FT0_diff_cut_1cm"), t0cCentr, multTrk);
+        histosEvent.fill(HIST("multGlobalTr_vs_CentAft_after_PV_FT0_diff_cut_1cm"), t0cCentr, nTracksGlobalAccepted);
+        histosEvent.fill(HIST("multTrkPV_vs_CentAft_after_PV_FT0_diff_cut_1cm"), t0cCentr, multNTracksPV);
+        histosEvent.fill(HIST("multV0A_vs_CentAft_after_PV_FT0_diff_cut_1cm"), t0cCentr, multV0A);
+        histosEvent.fill(HIST("multT0C_vs_CentAft_after_PV_FT0_diff_cut_1cm"), t0cCentr, multT0C);
+      }
 
-          // ALL OTHER CUTS:
-          if( collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-            histosEvent.fill(HIST("multAllTr_vs_multT0CAft_ALL_CUTS"), multT0C, multTrk);
-            histosEvent.fill(HIST("multAllTr_vs_multV0AAft_ALL_CUTS"), multV0A, multTrk);
-            histosEvent.fill(HIST("multAllTr_vs_multT0AAft_ALL_CUTS"), multT0A, multTrk);
-            histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_ALL_CUTS"), multNTracksPV, multTrk);
-            histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_ALL_CUTS"), multT0C, nTracksGlobalAccepted);
-            histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_ALL_CUTS"), multV0A, nTracksGlobalAccepted);
-            histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_ALL_CUTS"), multT0A, nTracksGlobalAccepted);
-            histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_ALL_CUTS"), multNTracksPV, nTracksGlobalAccepted);
-            histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_ALL_CUTS"), multT0C, multNTracksPV);
-            histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_ALL_CUTS"), multV0A, multNTracksPV);
-            histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_ALL_CUTS"), multT0A, multNTracksPV);
-            histosEvent.fill(HIST("multT0C_vs_multT0AAft_ALL_CUTS"), multT0A, multT0C);
-            histosEvent.fill(HIST("multV0A_vs_multT0AAft_ALL_CUTS"), multT0A, multV0A);
-            histosEvent.fill(HIST("multV0A_vs_multT0CAft_ALL_CUTS"), multT0C, multV0A);
-            if (flagPbPb)
-            {
-              histosEvent.fill(HIST("multAllTr_vs_CentAft_ALL_CUTS"), t0cCentr, multTrk);
-              histosEvent.fill(HIST("multGlobalTr_vs_CentAft_ALL_CUTS"), t0cCentr, nTracksGlobalAccepted);
-              histosEvent.fill(HIST("multTrkPV_vs_CentAft_ALL_CUTS"), t0cCentr, multNTracksPV);
-              histosEvent.fill(HIST("multV0A_vs_CentAft_ALL_CUTS"), t0cCentr, multV0A);
-              histosEvent.fill(HIST("multT0C_vs_CentAft_ALL_CUTS"), t0cCentr, multT0C);
-            }
-          }
-
+      // ALL OTHER CUTS:
+      if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        histosEvent.fill(HIST("multAllTr_vs_multT0CAft_ALL_CUTS"), multT0C, multTrk);
+        histosEvent.fill(HIST("multAllTr_vs_multV0AAft_ALL_CUTS"), multV0A, multTrk);
+        histosEvent.fill(HIST("multAllTr_vs_multT0AAft_ALL_CUTS"), multT0A, multTrk);
+        histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_ALL_CUTS"), multNTracksPV, multTrk);
+        histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_ALL_CUTS"), multT0C, nTracksGlobalAccepted);
+        histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_ALL_CUTS"), multV0A, nTracksGlobalAccepted);
+        histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_ALL_CUTS"), multT0A, nTracksGlobalAccepted);
+        histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_ALL_CUTS"), multNTracksPV, nTracksGlobalAccepted);
+        histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_ALL_CUTS"), multT0C, multNTracksPV);
+        histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_ALL_CUTS"), multV0A, multNTracksPV);
+        histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_ALL_CUTS"), multT0A, multNTracksPV);
+        histosEvent.fill(HIST("multT0C_vs_multT0AAft_ALL_CUTS"), multT0A, multT0C);
+        histosEvent.fill(HIST("multV0A_vs_multT0AAft_ALL_CUTS"), multT0A, multV0A);
+        histosEvent.fill(HIST("multV0A_vs_multT0CAft_ALL_CUTS"), multT0C, multV0A);
+        if (flagPbPb) {
+          histosEvent.fill(HIST("multAllTr_vs_CentAft_ALL_CUTS"), t0cCentr, multTrk);
+          histosEvent.fill(HIST("multGlobalTr_vs_CentAft_ALL_CUTS"), t0cCentr, nTracksGlobalAccepted);
+          histosEvent.fill(HIST("multTrkPV_vs_CentAft_ALL_CUTS"), t0cCentr, multNTracksPV);
+          histosEvent.fill(HIST("multV0A_vs_CentAft_ALL_CUTS"), t0cCentr, multV0A);
+          histosEvent.fill(HIST("multT0C_vs_CentAft_ALL_CUTS"), t0cCentr, multT0C);
+        }
+      }
     }
 
     // cut on diff b/n vertex from FT0 and track-based - TIGHTER
-    if (isFT0 && diff_PV_ft0_tracks>-0.8 && diff_PV_ft0_tracks<0.) {
-          histosEvent.fill(HIST("multAllTr_vs_multT0CAft_after_PV_FT0_diff_cut_TIGHT"), multT0C, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multV0AAft_after_PV_FT0_diff_cut_TIGHT"), multV0A, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multT0AAft_after_PV_FT0_diff_cut_TIGHT"), multT0A, multTrk);
-          histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_after_PV_FT0_diff_cut_TIGHT"), multNTracksPV, multTrk);
-          histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_after_PV_FT0_diff_cut_TIGHT"), multT0C, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_after_PV_FT0_diff_cut_TIGHT"), multV0A, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_after_PV_FT0_diff_cut_TIGHT"), multT0A, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_after_PV_FT0_diff_cut_TIGHT"), multNTracksPV, nTracksGlobalAccepted);
-          histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_after_PV_FT0_diff_cut_TIGHT"), multT0C, multNTracksPV);
-          histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_after_PV_FT0_diff_cut_TIGHT"), multV0A, multNTracksPV);
-          histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_after_PV_FT0_diff_cut_TIGHT"), multT0A, multNTracksPV);
-          histosEvent.fill(HIST("multT0C_vs_multT0AAft_after_PV_FT0_diff_cut_TIGHT"), multT0A, multT0C);
-          histosEvent.fill(HIST("multV0A_vs_multT0AAft_after_PV_FT0_diff_cut_TIGHT"), multT0A, multV0A);
-          histosEvent.fill(HIST("multV0A_vs_multT0CAft_after_PV_FT0_diff_cut_TIGHT"), multT0C, multV0A);
-          if (flagPbPb)
-          {
-            histosEvent.fill(HIST("multAllTr_vs_CentAft_after_PV_FT0_diff_cut_TIGHT"), t0cCentr, multTrk);
-            histosEvent.fill(HIST("multGlobalTr_vs_CentAft_after_PV_FT0_diff_cut_TIGHT"), t0cCentr, nTracksGlobalAccepted);
-            histosEvent.fill(HIST("multTrkPV_vs_CentAft_after_PV_FT0_diff_cut_TIGHT"), t0cCentr, multNTracksPV);
-            histosEvent.fill(HIST("multV0A_vs_CentAft_after_PV_FT0_diff_cut_TIGHT"), t0cCentr, multV0A);
-            histosEvent.fill(HIST("multT0C_vs_CentAft_after_PV_FT0_diff_cut_TIGHT"), t0cCentr, multT0C);
-          }
+    if (isFT0 && diff_PV_ft0_tracks > -0.8 && diff_PV_ft0_tracks < 0.) {
+      histosEvent.fill(HIST("multAllTr_vs_multT0CAft_after_PV_FT0_diff_cut_TIGHT"), multT0C, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multV0AAft_after_PV_FT0_diff_cut_TIGHT"), multV0A, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multT0AAft_after_PV_FT0_diff_cut_TIGHT"), multT0A, multTrk);
+      histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_after_PV_FT0_diff_cut_TIGHT"), multNTracksPV, multTrk);
+      histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_after_PV_FT0_diff_cut_TIGHT"), multT0C, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_after_PV_FT0_diff_cut_TIGHT"), multV0A, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_after_PV_FT0_diff_cut_TIGHT"), multT0A, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_after_PV_FT0_diff_cut_TIGHT"), multNTracksPV, nTracksGlobalAccepted);
+      histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_after_PV_FT0_diff_cut_TIGHT"), multT0C, multNTracksPV);
+      histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_after_PV_FT0_diff_cut_TIGHT"), multV0A, multNTracksPV);
+      histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_after_PV_FT0_diff_cut_TIGHT"), multT0A, multNTracksPV);
+      histosEvent.fill(HIST("multT0C_vs_multT0AAft_after_PV_FT0_diff_cut_TIGHT"), multT0A, multT0C);
+      histosEvent.fill(HIST("multV0A_vs_multT0AAft_after_PV_FT0_diff_cut_TIGHT"), multT0A, multV0A);
+      histosEvent.fill(HIST("multV0A_vs_multT0CAft_after_PV_FT0_diff_cut_TIGHT"), multT0C, multV0A);
+      if (flagPbPb) {
+        histosEvent.fill(HIST("multAllTr_vs_CentAft_after_PV_FT0_diff_cut_TIGHT"), t0cCentr, multTrk);
+        histosEvent.fill(HIST("multGlobalTr_vs_CentAft_after_PV_FT0_diff_cut_TIGHT"), t0cCentr, nTracksGlobalAccepted);
+        histosEvent.fill(HIST("multTrkPV_vs_CentAft_after_PV_FT0_diff_cut_TIGHT"), t0cCentr, multNTracksPV);
+        histosEvent.fill(HIST("multV0A_vs_CentAft_after_PV_FT0_diff_cut_TIGHT"), t0cCentr, multV0A);
+        histosEvent.fill(HIST("multT0C_vs_CentAft_after_PV_FT0_diff_cut_TIGHT"), t0cCentr, multT0C);
+      }
 
-
-          // ALL OTHER CUTS TIGHTER:
-          if( collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-            histosEvent.fill(HIST("multAllTr_vs_multT0CAft_ALL_CUTS_Tighter"), multT0C, multTrk);
-            histosEvent.fill(HIST("multAllTr_vs_multV0AAft_ALL_CUTS_Tighter"), multV0A, multTrk);
-            histosEvent.fill(HIST("multAllTr_vs_multT0AAft_ALL_CUTS_Tighter"), multT0A, multTrk);
-            histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_ALL_CUTS_Tighter"), multNTracksPV, multTrk);
-            histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_ALL_CUTS_Tighter"), multT0C, nTracksGlobalAccepted);
-            histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_ALL_CUTS_Tighter"), multV0A, nTracksGlobalAccepted);
-            histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_ALL_CUTS_Tighter"), multT0A, nTracksGlobalAccepted);
-            histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_ALL_CUTS_Tighter"), multNTracksPV, nTracksGlobalAccepted);
-            histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_ALL_CUTS_Tighter"), multT0C, multNTracksPV);
-            histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_ALL_CUTS_Tighter"), multV0A, multNTracksPV);
-            histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_ALL_CUTS_Tighter"), multT0A, multNTracksPV);
-            histosEvent.fill(HIST("multT0C_vs_multT0AAft_ALL_CUTS_Tighter"), multT0A, multT0C);
-            histosEvent.fill(HIST("multV0A_vs_multT0AAft_ALL_CUTS_Tighter"), multT0A, multV0A);
-            histosEvent.fill(HIST("multV0A_vs_multT0CAft_ALL_CUTS_Tighter"), multT0C, multV0A);
-            if (flagPbPb)
-            {
-              histosEvent.fill(HIST("multAllTr_vs_CentAft_ALL_CUTS_Tighter"), t0cCentr, multTrk);
-              histosEvent.fill(HIST("multGlobalTr_vs_CentAft_ALL_CUTS_Tighter"), t0cCentr, nTracksGlobalAccepted);
-              histosEvent.fill(HIST("multTrkPV_vs_CentAft_ALL_CUTS_Tighter"), t0cCentr, multNTracksPV);
-              histosEvent.fill(HIST("multV0A_vs_CentAft_ALL_CUTS_Tighter"), t0cCentr, multV0A);
-              histosEvent.fill(HIST("multT0C_vs_CentAft_ALL_CUTS_Tighter"), t0cCentr, multT0C);
-            }
-          }
+      // ALL OTHER CUTS TIGHTER:
+      if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        histosEvent.fill(HIST("multAllTr_vs_multT0CAft_ALL_CUTS_Tighter"), multT0C, multTrk);
+        histosEvent.fill(HIST("multAllTr_vs_multV0AAft_ALL_CUTS_Tighter"), multV0A, multTrk);
+        histosEvent.fill(HIST("multAllTr_vs_multT0AAft_ALL_CUTS_Tighter"), multT0A, multTrk);
+        histosEvent.fill(HIST("multAllTr_vs_multTrkPVAft_ALL_CUTS_Tighter"), multNTracksPV, multTrk);
+        histosEvent.fill(HIST("multGlobalTr_vs_multT0CAft_ALL_CUTS_Tighter"), multT0C, nTracksGlobalAccepted);
+        histosEvent.fill(HIST("multGlobalTr_vs_multV0AAft_ALL_CUTS_Tighter"), multV0A, nTracksGlobalAccepted);
+        histosEvent.fill(HIST("multGlobalTr_vs_multT0AAft_ALL_CUTS_Tighter"), multT0A, nTracksGlobalAccepted);
+        histosEvent.fill(HIST("multGlobalTr_vs_multTrkPVAft_ALL_CUTS_Tighter"), multNTracksPV, nTracksGlobalAccepted);
+        histosEvent.fill(HIST("multTrkPV_vs_multT0CAft_ALL_CUTS_Tighter"), multT0C, multNTracksPV);
+        histosEvent.fill(HIST("multTrkPV_vs_multV0AAft_ALL_CUTS_Tighter"), multV0A, multNTracksPV);
+        histosEvent.fill(HIST("multTrkPV_vs_multT0AAft_ALL_CUTS_Tighter"), multT0A, multNTracksPV);
+        histosEvent.fill(HIST("multT0C_vs_multT0AAft_ALL_CUTS_Tighter"), multT0A, multT0C);
+        histosEvent.fill(HIST("multV0A_vs_multT0AAft_ALL_CUTS_Tighter"), multT0A, multV0A);
+        histosEvent.fill(HIST("multV0A_vs_multT0CAft_ALL_CUTS_Tighter"), multT0C, multV0A);
+        if (flagPbPb) {
+          histosEvent.fill(HIST("multAllTr_vs_CentAft_ALL_CUTS_Tighter"), t0cCentr, multTrk);
+          histosEvent.fill(HIST("multGlobalTr_vs_CentAft_ALL_CUTS_Tighter"), t0cCentr, nTracksGlobalAccepted);
+          histosEvent.fill(HIST("multTrkPV_vs_CentAft_ALL_CUTS_Tighter"), t0cCentr, multNTracksPV);
+          histosEvent.fill(HIST("multV0A_vs_CentAft_ALL_CUTS_Tighter"), t0cCentr, multV0A);
+          histosEvent.fill(HIST("multT0C_vs_CentAft_ALL_CUTS_Tighter"), t0cCentr, multT0C);
+        }
+      }
     }
-
-
 
     // only verteces with nContr>=3 with 7 ITS clusters
     if (counterPVcontributorsITS7hits >= 3) {
@@ -1736,7 +1686,6 @@ struct RobustFluctuationObservables {
       LOGF(info, "The collision time:   %f", collision.collisionTime());
     if (flagShowInfo)
       LOGF(info, "Tracks for this collision: %d", tracks.size());
-
 
     bool flagShowInfoFirstTrack = false;
 
@@ -1856,7 +1805,6 @@ struct RobustFluctuationObservables {
 
     } // end of track loop
 
-
     // ##### v0 analysis
     for (const auto& v0 : v0s) {
       double v0rad = v0.v0radius();
@@ -1944,7 +1892,7 @@ struct RobustFluctuationObservables {
           histosK0S.fill(HIST("hMassK0S_cut_TPC_boundaries_for_Dau"), v0.pt(), v0.mK0Short());
       }
 
-      if (etaDauPos > 0.1 && etaDauPos < 0.8 & etaDauNeg > 0.1 && etaDauNeg < 0.8)
+      if (etaDauPos > 0.1 && etaDauPos<0.8 & etaDauNeg> 0.1 && etaDauNeg < 0.8)
         histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPtEta01_08"), v0.pt(), v0.mK0Short());
       if (etaDauPos > -0.8 && etaDauPos<-0.1 & etaDauNeg> - 0.8 && etaDauNeg < -0.1)
         histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPtEta08_01"), v0.pt(), v0.mK0Short());
