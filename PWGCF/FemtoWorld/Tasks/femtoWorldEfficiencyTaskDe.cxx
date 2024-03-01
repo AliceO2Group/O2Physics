@@ -45,7 +45,7 @@ using TracksPID = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, 
 using CollisionsEvSel = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 
 // Femto World Efficiency task
-struct femtoWorldEficiencyTaskDe{
+struct femtoWorldEficiencyTaskDe {
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
@@ -211,17 +211,17 @@ struct femtoWorldEficiencyTaskDe{
   void processReco(const CollisionsEvSel::iterator& collision,
                    soa::Filtered<soa::Join<TracksPID, aod::TrackSelection>> const& tracks /*, aod::BCsWithTimestamps const&*/)
   {
-    if (ConfIsRun3) {         //
-      if (!collision.sel8())  //  CHECK
-        return;               //
+    if (ConfIsRun3) {        //
+      if (!collision.sel8()) //  CHECK
+        return;              //
     }
 
     // auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     //  Default event selection
     // colCuts.printCuts();
-    //if (!colCuts.isSelected(collision)) //
-      //return;                           //  CHECK -- DATA BLOCKAGE
-    //colCuts.fillQA(collision);          //
+    // if (!colCuts.isSelected(collision)) //
+    // return;                           //  CHECK -- DATA BLOCKAGE
+    // colCuts.fillQA(collision);          //
 
     // Loop over tracks
     for (auto& track : tracks) {
@@ -230,9 +230,9 @@ struct femtoWorldEficiencyTaskDe{
       // track.hasTOF() - to check if TOF info available
 
       // cuts on tracks:
-      //if (!ConfPIDnoTOF) {                                                      //
-        //if (track.pt() > tofPtCut && !track.hasTOF())                           //  CHECK
-          //continue; // if no TOF information above tofPtCut reject such track   //
+      // if (!ConfPIDnoTOF) {                                                      //
+      // if (track.pt() > tofPtCut && !track.hasTOF())                           //  CHECK
+      // continue; // if no TOF information above tofPtCut reject such track   //
       //}
 
       registryGlobal.fill(HIST("crossedRows"), track.tpcNClsCrossedRows());
@@ -378,12 +378,12 @@ struct femtoWorldEficiencyTaskDe{
           if (IsNSigmaAccept(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.pt())) {
             registryPDG.fill(HIST("plus/PDGKa"), track.pt(), mcParticle.pdgCode());
           }
-          //if (IsNSigmaAccept(std::abs(track.tpcNSigmaDe()), std::abs(track.tofNSigmaDe()), track.pt())) {
-            int pdg = mcParticle.pdgCode();
-            if(pdg == 1000010020){
-              pdg = 999;
-            }
-            registryPDG.fill(HIST("plus/PDGDe"), track.pt(), pdg);
+          // if (IsNSigmaAccept(std::abs(track.tpcNSigmaDe()), std::abs(track.tofNSigmaDe()), track.pt())) {
+          int pdg = mcParticle.pdgCode();
+          if (pdg == 1000010020) {
+            pdg = 999;
+          }
+          registryPDG.fill(HIST("plus/PDGDe"), track.pt(), pdg);
           //}
         }
         if (track.sign() < 0) {
@@ -393,12 +393,12 @@ struct femtoWorldEficiencyTaskDe{
           if (IsNSigmaAccept(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.pt())) {
             registryPDG.fill(HIST("minus/PDGKa"), track.pt(), mcParticle.pdgCode());
           }
-          //if (IsNSigmaAccept(std::abs(track.tpcNSigmaDe()), std::abs(track.tofNSigmaDe()), track.pt())) {
-            int pdg = mcParticle.pdgCode();
-            if(pdg == -1000010020){
-              pdg = -999;
-            }
-            registryPDG.fill(HIST("minus/PDGDe"), track.pt(), pdg);
+          // if (IsNSigmaAccept(std::abs(track.tpcNSigmaDe()), std::abs(track.tofNSigmaDe()), track.pt())) {
+          int pdg = mcParticle.pdgCode();
+          if (pdg == -1000010020) {
+            pdg = -999;
+          }
+          registryPDG.fill(HIST("minus/PDGDe"), track.pt(), pdg);
           //}
         }
 
