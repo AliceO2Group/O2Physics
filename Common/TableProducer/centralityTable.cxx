@@ -409,6 +409,7 @@ struct CentralityTable {
             estimator.mMCScale = reinterpret_cast<TFormula*>(callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
             if (estimator.mhMultSelCalib != nullptr) {
               if (generatorName->length() != 0) {
+                LOGF(info, "Retrieving MC calibration for %d, generator name: %s", bc.runNumber(), generatorName->c_str());
                 if (estimator.mMCScale != nullptr) {
                   for (int ixpar = 0; ixpar < 6; ++ixpar) {
                     estimator.mMCScalePars[ixpar] = estimator.mMCScale->GetParameter(ixpar);
