@@ -33,7 +33,6 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
-#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 
@@ -314,7 +313,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MultTracklets, multTracklets, //! Dummy
 DECLARE_SOA_DYNAMIC_COLUMN(MultTPC, multTPC, //! Dummy
                            [](bool v) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(SelectionBit, selection_bit, //! Dummy
-                           [](o2::aod::evsel::EventSelectionParams v) -> bool { return true; });
+                           [](aod::evsel::EventSelectionFlags v) -> bool { return true; });
 
 // Track info
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                  //! Index to the collision
