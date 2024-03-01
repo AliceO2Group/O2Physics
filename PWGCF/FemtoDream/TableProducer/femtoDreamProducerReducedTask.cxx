@@ -194,13 +194,13 @@ struct femtoDreamProducerReducedTask {
       auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
 
       if (abs(pdgCode) == abs(ConfTrkPDGCode.value)) {
-        if (col.has_mcCollision() && (particleMC.mcCollisionId() != col.mcCollisionId())) {
+        if ((col.has_mcCollision() && (particleMC.mcCollisionId() != col.mcCollisionId())) || !col.has_mcCollision()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kWrongCollision;
         } else if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
-        } else if (motherparticleMC.producedByGenerator()) {
+        } else if (motherparticleMC.isPhysicalPrimary() && particleMC.getProcess() == 4) {
           particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
-        } else if (!particleMC.producedByGenerator()) {
+        } else if (particleMC.getGenStatusCode() == -1) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
         } else {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kElse;

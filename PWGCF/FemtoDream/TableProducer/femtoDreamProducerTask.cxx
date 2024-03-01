@@ -343,13 +343,15 @@ struct femtoDreamProducerTask {
 
       outputPartsMC(particleOrigin, pdgCode, particleMC.pt(), particleMC.eta(), particleMC.phi());
       outputPartsMCLabels(outputPartsMC.lastIndex());
-      outputPartsExtMCLabels(outputPartsMC.lastIndex());
       if (ConfIsDebug) {
+        outputPartsExtMCLabels(outputPartsMC.lastIndex());
         outputDebugPartsMC(motherparticleMC.pdgCode());
       }
     } else {
       outputPartsMCLabels(-1);
-      outputPartsExtMCLabels(-1);
+      if (ConfIsDebug) {
+        outputPartsExtMCLabels(-1);
+      }
     }
   }
 
