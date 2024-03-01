@@ -879,9 +879,9 @@ struct JetFinderQATask {
   void processRandomCone(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents> const& jets, JetTracksSub const& tracks)
   {
 
-    TRandom3 rand(0);
-    float randomConeEta = rand.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
-    float randomConePhi = rand.Uniform(0.0, 2 * M_PI);
+    TRandom3 randomNumber(0);
+    float randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
+    float randomConePhi = randomNumber.Uniform(0.0, 2 * M_PI);
     float randomConePt = 0;
     for (auto const& track : tracks) {
       if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
@@ -900,8 +900,8 @@ struct JetFinderQATask {
     bool jetWasInCone = false;
     while (TMath::Sqrt(dEtaLeadingJet * dEtaLeadingJet + dPhiLeadingJet * dPhiLeadingJet) < jets.iteratorAt(0).r() / 100.0 + randomConeR) {
       jetWasInCone = true;
-      randomConeEta = rand.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
-      randomConePhi = rand.Uniform(0.0, 2 * M_PI);
+      randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
+      randomConePhi = randomNumber.Uniform(0.0, 2 * M_PI);
       dPhiLeadingJet = RecoDecay::constrainAngle(jets.iteratorAt(0).phi() - randomConePhi, static_cast<float>(-M_PI));
       dEtaLeadingJet = jets.iteratorAt(0).eta() - randomConeEta;
     }
