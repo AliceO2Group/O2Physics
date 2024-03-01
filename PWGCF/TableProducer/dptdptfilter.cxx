@@ -569,15 +569,15 @@ struct DptDptFilterTracks {
 
     /* update with the configurable values */
     /* self configure the binning */
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmax", zvtxup);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTbins", ptbins);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmin", ptlow);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmax", ptup);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmax", zvtxup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTbins", ptbins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmin", ptlow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmax", ptup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup, false);
 
     /* the track types and combinations */
     tracktype = cfgTrackType.value;
@@ -618,9 +618,9 @@ struct DptDptFilterTracks {
     /* self configure system type and data type */
     /* if the system type is not known at this time, we have to put the initialization somewhere else */
     std::string tmpstr;
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "syst", tmpstr);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "syst", tmpstr, false);
     fSystem = getSystemType(tmpstr);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "datatype", tmpstr);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "datatype", tmpstr, false);
     fDataType = getDataType(tmpstr);
     fPDG = TDatabasePDG::Instance();
 
