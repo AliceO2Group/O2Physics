@@ -27,7 +27,6 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/Configurable.h"
 #include "Framework/Expressions.h"
-#include "TDatabasePDG.h"
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
