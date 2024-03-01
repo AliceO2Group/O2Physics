@@ -577,6 +577,7 @@ struct hypertriton3bodyLabelCheck {
       {"hMassTrueH3LAntiMatter", "hMassTrueH3LAntiMatter", {HistType::kTH1F, {{80, 2.96f, 3.04f}}}},
       {"hPIDCounter", "hPIDCounter", {HistType::kTH1F, {{6, 0.0f, 6.0f}}}},
       {"hHypertritonCounter", "hHypertritonCounter", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
+      {"hDecay3BodyCounter", "hDecay3BodyCounter", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
     },
   };
 
@@ -595,11 +596,26 @@ struct hypertriton3bodyLabelCheck {
     registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(2, "H3L daughters pass PID");
     registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(3, "#bar{H3L}");
     registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(4, "#bar{H3L} daughters pass PID");
+    registry.get<TH1>(HIST("hDecay3BodyCounter"))->GetXaxis()->SetBinLabel(1, "Total");
+    registry.get<TH1>(HIST("hDecay3BodyCounter"))->GetXaxis()->SetBinLabel(2, "True H3L");
+    registry.get<TH1>(HIST("hDecay3BodyCounter"))->GetXaxis()->SetBinLabel(3, "Unduplicated H3L");
+    registry.get<TH1>(HIST("hDecay3BodyCounter"))->GetXaxis()->SetBinLabel(4, "Correct collision");
+    registry.get<TH1>(HIST("hDecay3BodyCounter"))->GetXaxis()->SetBinLabel(4, "Same ColID for daughters");
   }
 
   Configurable<bool> event_sel8_selection{"event_sel8_selection", false, "event selection count post sel8 cut"};
   Configurable<bool> event_posZ_selection{"event_posZ_selection", false, "event selection count post poZ cut"};
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
+
+  struct Indexdaughters { // check duplicated paired daughters
+    int64_t index0;
+    int64_t index1;
+    int64_t index2;
+    bool operator==(const Indexdaughters& t) const
+    {
+      return (this->index0 == t.index0 && this->index1 == t.index1 && this->index2 == t.index2);
+    }
+  };
 
   void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision)
   {
@@ -607,8 +623,49 @@ struct hypertriton3bodyLabelCheck {
   }
   PROCESS_SWITCH(hypertriton3bodyLabelCheck, process, "Donot check MC label tables", true);
 
-  void processCheckLabel(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::Vtx3BodyDatas, aod::McVtx3BodyLabels> const& vtx3bodydatas, MCLabeledTracksIU const& tracks, aod::McParticles const& particlesMC)
+  void processCheckLabel(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels>::iterator const& collision, aod::Decay3Bodys const& decay3bodys, soa::Join<aod::Vtx3BodyDatas, aod::McVtx3BodyLabels> const& vtx3bodydatas, MCLabeledTracksIU const& tracks, aod::McParticles const& particlesMC, aod::McCollisions const& mcCollisions)
   {
+    // check the decay3body table
+    std::vector<Indexdaughters> set_pair;
+    for (auto& d3body : decay3bodys) {
+      registry.fill(HIST("hDecay3BodyCounter"), 0.5);
+      auto lTrack0 = d3body.track0_as<MCLabeledTracksIU>();
+      auto lTrack1 = d3body.track1_as<MCLabeledTracksIU>();
+      auto lTrack2 = d3body.track2_as<MCLabeledTracksIU>();
+      if (!lTrack0.has_mcParticle() || !lTrack1.has_mcParticle() || !lTrack2.has_mcParticle()) {
+        continue;
+      }
+      auto lMCTrack0 = lTrack0.mcParticle_as<aod::McParticles>();
+      auto lMCTrack1 = lTrack1.mcParticle_as<aod::McParticles>();
+      auto lMCTrack2 = lTrack2.mcParticle_as<aod::McParticles>();
+      if (!lMCTrack0.has_mothers() || !lMCTrack1.has_mothers() || !lMCTrack2.has_mothers()) {
+        continue;
+      }
+
+      for (auto& lMother0 : lMCTrack0.mothers_as<aod::McParticles>()) {
+        for (auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
+          for (auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
+            if (lMother0.globalIndex() == lMother1.globalIndex() && lMother0.globalIndex() == lMother2.globalIndex()) {
+              registry.fill(HIST("hDecay3BodyCounter"), 1.5);
+              // duplicated daughters check
+              Indexdaughters temp = {lMCTrack0.globalIndex(), lMCTrack1.globalIndex(), lMCTrack2.globalIndex()};
+              auto p = std::find(set_pair.begin(), set_pair.end(), temp);
+              if (p == set_pair.end()) {
+                set_pair.push_back(temp);
+                registry.fill(HIST("hDecay3BodyCounter"), 2.5);
+                if (lMother0.mcCollisionId() == collision.mcCollisionId()) {
+                  registry.fill(HIST("hDecay3BodyCounter"), 3.5);
+                  if (lTrack0.collisionId() == lTrack1.collisionId() && lTrack0.collisionId() == lTrack2.collisionId()) {
+                    registry.fill(HIST("hDecay3BodyCounter"), 4.5);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     if (event_sel8_selection && !collision.sel8()) {
       return;
     }
