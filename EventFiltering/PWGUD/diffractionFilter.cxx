@@ -154,6 +154,7 @@ struct DGFilterRun3 {
     }
     registry.fill(HIST("stat/aftercuts"), 1.);
 
+    // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
     LOGF(debug, "  Number of compatible BCs in +- %i / %i dtcoll: %i", diffCuts.NDtcoll(), diffCuts.minNBCs(), bcRange.size());
 
