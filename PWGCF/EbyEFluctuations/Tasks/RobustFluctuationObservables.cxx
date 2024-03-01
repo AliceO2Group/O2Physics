@@ -823,13 +823,12 @@ struct RobustFluctuationObservables {
     // ######## DF QA
     int64_t myDF_ID = -1;
     uint64_t DF_ID_raw = -1;
-    if (mapDF.size() < 10)
+    if (mapDF.size() < 10) {
       for (auto const& origin : origins) {
         uint64_t DF_ID = origin.dataframeID();
         DF_ID_raw = DF_ID;
-
-        if (origin.globalIndex() == 0) // look only at the id of the first subDF in this DF
-        {
+        // look only at the id of the first subDF in this DF
+        if (origin.globalIndex() == 0) {
           if (mapDF.find(DF_ID) == mapDF.end()) {
             // not found
             mapDF.insert({DF_ID, mapDF.size()});
@@ -840,10 +839,11 @@ struct RobustFluctuationObservables {
         }
         // cout << "DF globalIndex = " << origin.globalIndex() << ", ID = " << origin.dataframeID() << ", myDF_ID = " << myDF_ID << ", mapDF.size() = " << mapDF.size() << endl;
       }
+    }
 
     if (myDF_ID >= 0 && myDF_ID < 5) {
       int diffOrbits = (int32_t)orbit - (int32_t)orbitAtCollIndexZero;
-      TString strDF = Form("DF_%d", (int)DF_ID_raw);
+      TString strDF = Form("DF_%d", static_cast<int>DF_ID_raw);
       if (myDF_ID == 0) {
         h2D_Orbit_vs_CollIndex_0->Fill(collision.index(), diffOrbits);
         h2D_Orbit_vs_CollIndex_0->SetTitle(strDF);
