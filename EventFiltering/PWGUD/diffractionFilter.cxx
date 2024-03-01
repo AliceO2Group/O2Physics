@@ -151,7 +151,7 @@ struct DGFilterRun3 {
       filterTable(ccs);
       return;
     }
-        // obtain slice of compatible BCs
+    // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, diffCuts.NDtcoll(), bcs, diffCuts.minNBCs());
     LOGF(debug, "  Number of compatible BCs in +- %i / %i dtcoll: %i", diffCuts.NDtcoll(), diffCuts.minNBCs(), bcRange.size());
 
