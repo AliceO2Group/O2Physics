@@ -198,9 +198,12 @@ struct BcSelectionTask {
                    aod::FT0s const&,
                    aod::FDDs const&)
   {
-    bcsel.reserve(bcs.size());
+    if (bcs.size() == 0)
+      return;
 
+    bcsel.reserve(bcs.size());
     // extract ITS time frame parameters
+
     int64_t ts = bcs.iteratorAt(0).timestamp();
     auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
 

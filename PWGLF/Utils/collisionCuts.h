@@ -22,6 +22,7 @@
 
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
+#include "Common/DataModel/EventSelection.h"
 
 using namespace o2::framework;
 
@@ -46,6 +47,7 @@ class CollisonCuts
     mTrigger = trig;
     mCheckOffline = checkOffline;
     mCheckIsRun3 = checkRun3;
+    mApplyTFBorderCut = false;
   }
 
   /// Initializes histograms for the task
@@ -76,6 +78,9 @@ class CollisonCuts
   /// Scan the trigger alias of the event
   void setInitialTriggerScan(bool checkTrigger) { mInitialTriggerScan = checkTrigger; }
 
+  /// Set the time frame border cut
+  void setApplyTFBorderCut(bool applyTFBorderCut) { mApplyTFBorderCut = applyTFBorderCut; }
+
   /// Check whether the collisions fulfills the specified selections
   /// \tparam T type of the collision
   /// \param col Collision
@@ -90,6 +95,10 @@ class CollisonCuts
     if (mCheckIsRun3) { // Run3 case
       if (mCheckOffline && !col.sel8()) {
         LOGF(debug, "Offline selection failed (Run3)");
+        return false;
+      }
+      if (!col.selection_bit(aod::evsel::kNoTimeFrameBorder) && mApplyTFBorderCut) {
+        LOGF(debug, "Time frame border cut failed");
         return false;
       }
     } else { // Run2 case
@@ -148,6 +157,7 @@ class CollisonCuts
   bool mCheckOffline = false;                      ///< Check for offline criteria (might change)
   bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
   bool mInitialTriggerScan = false;                ///< Check trigger when the event is first selected
+  bool mApplyTFBorderCut = false;                  ///< Apply time frame border cut
   int mTrigger = kINT7;                            ///< Trigger to check for
   float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
 };

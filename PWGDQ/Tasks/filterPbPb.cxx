@@ -9,22 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+#include <Framework/AnalysisDataModel.h>
 #include <fairlogger/Logger.h>
 #include <cstdint>
-#include <iostream>
-#include <fstream>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/Core/HistogramManager.h"
-#include "PWGDQ/Core/AnalysisCut.h"
-#include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/HistogramsLibrary.h"
-#include "PWGDQ/Core/CutsLibrary.h"
 #include "CommonConstants/LHCConstants.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace std;
 
@@ -35,19 +27,12 @@ using namespace o2::aod;
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
-using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>;
-using MyMuons = aod::FwdTracks;
-
-constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
-
-void DefineHistograms(HistogramManager* histMan, TString histClasses);
 
 struct DQFilterPbPbTask {
   Produces<aod::DQEventFilter> eventFilter;
   OutputObj<TH1I> fStats{"Statistics"};
-  OutputObj<TH1F> fIsEventDGOutcome{TH1F("Filter outcome", "Filter outcome", 8, -1.5, 6.5)};
+  OutputObj<TH1I> fFilterOutcome{"Filter outcome"};
 
-  Configurable<std::string> fConfigBarrelSelections{"cfgBarrelSels", "jpsiPID1:2:5", "<track-cut>:<nmin>:<nmax>,[<track-cut>:<nmin>:<nmax>],..."};
   Configurable<std::string> fConfigEventTypes{"cfgEventTypes", "doublegap,singlegap", "Which event types to select. doublegap, singlegap or both, comma separated"};
   Configurable<int> fConfigNDtColl{"cfgNDtColl", 4, "Number of standard deviations to consider in BC range"};
   Configurable<int> fConfigMinNBCs{"cfgMinNBCs", 7, "Minimum number of BCs to consider in BC range"};
@@ -62,29 +47,47 @@ struct DQFilterPbPbTask {
   Configurable<bool> fConfigUseFV0{"cfgUseFV0", true, "Whether to use FV0 for veto"};
   Configurable<bool> fConfigUseFT0{"cfgUseFT0", true, "Whether to use FT0 for veto"};
   Configurable<bool> fConfigUseFDD{"cfgUseFDD", true, "Whether to use FDD for veto"};
-  Configurable<bool> fConfigVetoForward{"cfgVetoForward", true, "Whether to veto on forward tracks"};
-  Configurable<bool> fConfigVetoBarrel{"cfgVetoBarrel", false, "Whether to veto on barrel tracks"};
-
-  // Filter filterBarrelTrackSelected = aod::dqppfilter::isDQBarrelSelected > uint32_t(0);
-
-  int fNBarrelCuts;                   // number of barrel selections
-  std::vector<int> fBarrelNminTracks; // minimal number of tracks in barrel
-  std::vector<int> fBarrelNmaxTracks; // maximal number of tracks in barrel
 
   int eventTypeMap = 0;
   std::vector<std::string> eventTypeOptions = {"doublegap", "singlegap"}; // Map for which types of event to select
 
-  // Helper function for selecting DG events
-  template <typename TEvent, typename TBCs, typename TTracks, typename TMuons>
-  uint64_t isEventDG(TEvent const& collision, TBCs const& bcs, TTracks const& tracks, TMuons const& muons,
-                     aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
-                     int eventTypes, std::vector<float> FITAmpLimits, int nDtColl, int minNBCs, int minNPVCs, int maxNPVCs, float maxFITTime,
-                     bool useFV0, bool useFT0, bool useFDD, bool doVetoFwd, bool doVetoBarrel)
+  void init(o2::framework::InitContext&)
   {
-    fIsEventDGOutcome->Fill(0., 1.);
+    // setup the Stats histogram
+    fStats.setObject(new TH1I("Statistics", "Stats for DQ triggers", 2, -2.5, -0.5));
+    fStats->GetXaxis()->SetBinLabel(1, "Events inspected");
+    fStats->GetXaxis()->SetBinLabel(2, "Events selected");
+    // setup the FilterOutcome histogram
+    fFilterOutcome.setObject(new TH1I("Filter outcome", "Filter outcome", 5, -0.5, 4.5));
+    fFilterOutcome->GetXaxis()->SetBinLabel(1, "Events inspected");
+    fFilterOutcome->GetXaxis()->SetBinLabel(2, "Events selected");
+    fFilterOutcome->GetXaxis()->SetBinLabel(3, "Failed FIT veto");
+    fFilterOutcome->GetXaxis()->SetBinLabel(4, Form("numContrib not in [%d, %d]", fConfigMinNPVCs.value, fConfigMaxNPVCs.value));
+    fFilterOutcome->GetXaxis()->SetBinLabel(5, "BC not found");
+
+    TString eventTypesString = fConfigEventTypes.value;
+    for (std::vector<std::string>::size_type i = 0; i < eventTypeOptions.size(); i++) {
+      if (eventTypesString.Contains(eventTypeOptions[i])) {
+        eventTypeMap |= (uint32_t(1) << i);
+        LOGF(info, "filterPbPb will select '%s' events", eventTypeOptions[i]);
+      }
+    }
+    if (eventTypeMap == 0) {
+      LOGF(fatal, "No valid choice of event types to select. Use 'doublegap', 'singlegap' or both");
+    }
+  }
+
+  // Helper function for selecting double gap and single gap events
+  template <typename TEvent, typename TBCs>
+  uint64_t rapidityGapFilter(TEvent const& collision, TBCs const& bcs,
+                             aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds,
+                             int eventTypes, std::vector<float> FITAmpLimits, int nDtColl, int minNBCs, int minNPVCs, int maxNPVCs, float maxFITTime,
+                             bool useFV0, bool useFT0, bool useFDD)
+  {
+    fFilterOutcome->Fill(0., 1.);
     // Find BC associated with collision
     if (!collision.has_foundBC()) {
-      fIsEventDGOutcome->Fill(-1., 1);
+      fFilterOutcome->Fill(4., 1);
       return 0;
     }
     // foundBCId is stored in EvSels
@@ -145,7 +148,7 @@ struct DQFilterPbPbTask {
       slicemax = maxBCId - minBCId + 1;
     }
     MyBCs bcrange{{bcs.asArrowTable()->Slice(slicemin, slicemax)}, (uint16_t)slicemin};
-    // DG condition: Check FIT activity in BC range
+    // Rapidity gap condition: Check FIT activity in BC range
     bool isSideAClean = true;
     bool isSideCClean = true;
 
@@ -222,115 +225,37 @@ struct DQFilterPbPbTask {
       }
     }
     if (!FITDecision) {
-      fIsEventDGOutcome->Fill(2, 1);
+      fFilterOutcome->Fill(2, 1);
       return 0;
-    }
-
-    // Veto on activiy in either forward or barrel region
-    if (doVetoFwd) {
-      for (auto& muon : muons) {
-        // Only care about muons with good timing (MID)
-        if (muon.trackType() == 0 || muon.trackType() == 3) {
-          fIsEventDGOutcome->Fill(3, 1);
-          return 0;
-        }
-      }
-    }
-    if (doVetoBarrel) {
-      if (tracks.size() > 0) {
-        fIsEventDGOutcome->Fill(4, 1);
-        return 0;
-      }
-    }
-
-    // No global tracks which are not vtx tracks
-    for (auto& track : tracks) {
-      if (track.isGlobalTrack() && !track.isPVContributor()) {
-        fIsEventDGOutcome->Fill(5, 1);
-        return 0;
-      }
     }
 
     // Number of primary vertex contributors
     if (collision.numContrib() < minNPVCs || collision.numContrib() > maxNPVCs) {
-      fIsEventDGOutcome->Fill(6, 1);
+      fFilterOutcome->Fill(3, 1);
       return 0;
     }
 
     // If we made it here, the event passed
-    fIsEventDGOutcome->Fill(1, 1);
+    fFilterOutcome->Fill(1, 1);
     // Return filter bitmap corresponding to FIT decision
     return FITDecision;
   }
 
-  void DefineCuts()
-  {
-    TString barrelSelsStr = fConfigBarrelSelections.value;
-    std::unique_ptr<TObjArray> objArray(barrelSelsStr.Tokenize(","));
-    fNBarrelCuts = objArray->GetEntries();
-    if (fNBarrelCuts) {
-      for (int icut = 0; icut < fNBarrelCuts; ++icut) {
-        TString selStr = objArray->At(icut)->GetName();
-        std::unique_ptr<TObjArray> sel(selStr.Tokenize(":"));
-        if (sel->GetEntries() != 3) {
-          continue;
-        } else {
-          fBarrelNminTracks.push_back(std::atoi(sel->At(1)->GetName()));
-          fBarrelNmaxTracks.push_back(std::atoi(sel->At(2)->GetName()));
-        }
-      }
-    }
-    VarManager::SetUseVars(AnalysisCut::fgUsedVars);
-
-    // setup the Stats histogram
-    fStats.setObject(new TH1I("Statistics", "Stats for DQ triggers", fNBarrelCuts + 2, -2.5, -0.5 + fNBarrelCuts));
-    fStats->GetXaxis()->SetBinLabel(1, "Events inspected");
-    fStats->GetXaxis()->SetBinLabel(2, "Events selected");
-    if (fNBarrelCuts) {
-      for (int ib = 3; ib < 3 + fNBarrelCuts; ib++) {
-        fStats->GetXaxis()->SetBinLabel(ib, objArray->At(ib - 3)->GetName());
-      }
-    }
-  }
-
-  void init(o2::framework::InitContext&)
-  {
-    DefineCuts();
-
-    TString eventTypesString = fConfigEventTypes.value;
-    for (std::vector<std::string>::size_type i = 0; i < eventTypeOptions.size(); i++) {
-      if (eventTypesString.Contains(eventTypeOptions[i])) {
-        eventTypeMap |= (uint32_t(1) << i);
-        LOGF(info, "filterPbPb will select '%s' events", eventTypeOptions[i]);
-      }
-    }
-    if (eventTypeMap == 0) {
-      LOGF(fatal, "No valid choice of event types to select. Use 'doublegap', 'singlegap' or both");
-    }
-  }
-
-  template <uint32_t TEventFillMap>
-  void runFilterPbPb(MyEvents::iterator const& collision, MyBCs const& bcs, MyBarrelTracks const& tracks, MyMuons const& muons,
-                     aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
+  void processFilterPbPb(MyEvents::iterator const& collision, MyBCs const& bcs,
+                         aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
     fStats->Fill(-2.0);
 
     std::vector<float> FITAmpLimits = {fConfigFV0AmpLimit, fConfigFT0AAmpLimit, fConfigFT0CAmpLimit, fConfigFDDAAmpLimit, fConfigFDDCAmpLimit};
-    uint64_t filter = isEventDG(collision, bcs, tracks, muons, ft0s, fv0as, fdds,
-                                eventTypeMap, FITAmpLimits, fConfigNDtColl, fConfigMinNBCs, fConfigMinNPVCs, fConfigMaxNPVCs, fConfigMaxFITTime,
-                                fConfigUseFV0, fConfigUseFT0, fConfigUseFDD, fConfigVetoForward, fConfigVetoBarrel);
+
+    uint64_t filter = rapidityGapFilter(collision, bcs, ft0s, fv0as, fdds,
+                                        eventTypeMap, FITAmpLimits, fConfigNDtColl, fConfigMinNBCs, fConfigMinNPVCs, fConfigMaxNPVCs, fConfigMaxFITTime,
+                                        fConfigUseFV0, fConfigUseFT0, fConfigUseFDD);
 
     bool isSelected = filter;
     fStats->Fill(-1.0, isSelected);
 
     eventFilter(filter);
-  }
-
-  void processFilterPbPb(MyEvents::iterator const& collision, MyBCs const& bcs,
-                         MyBarrelTracks const& tracks, MyMuons const& muons,
-                         aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
-  {
-    runFilterPbPb<gkEventFillMap>(collision, bcs, tracks, muons, ft0s, fv0as, fdds);
   }
 
   void processDummy(MyEvents&)
@@ -346,20 +271,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<DQFilterPbPbTask>(cfgc)};
-}
-
-void DefineHistograms(HistogramManager* histMan, TString histClasses)
-{
-  //
-  // Define here the histograms for all the classes required in analysis.
-  //
-  std::unique_ptr<TObjArray> objArray(histClasses.Tokenize(";"));
-  for (Int_t iclass = 0; iclass < objArray->GetEntries(); ++iclass) {
-    TString classStr = objArray->At(iclass)->GetName();
-    histMan->AddHistClass(classStr.Data());
-
-    if (classStr.Contains("Track")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "its,tpcpid,dca");
-    }
-  }
 }

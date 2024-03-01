@@ -694,18 +694,34 @@ struct DptDptCorrelationsTask {
     using namespace correlationstask;
     using namespace o2::analysis::dptdptfilter;
 
+    /* create the output directory which will own the task output */
+    TList* fGlobalOutputList = new TList();
+    fGlobalOutputList->SetOwner(true);
+    fOutput.setObject(fGlobalOutputList);
+
+    /* check consistency and if there is something to do */
+    if (doprocessCleaner) {
+      if (doprocessGenLevel || doprocessGenLevelNotStored || doprocessGenLevelMixed || doprocessGenLevelMixedNotStored ||
+          doprocessRecLevel || doprocessRecLevelNotStored || doprocessRecLevelMixed || doprocessRecLevelMixedNotStored) {
+        LOGF(fatal, "Cleaner process is activated with other processes. Please, fix it!");
+      } else {
+        /* do nothing. This task will not run! */
+        return;
+      }
+    }
+
     /* self configure the binning */
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmax", zvtxup);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTbins", ptbins);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmin", ptlow);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmax", ptup);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibins", phibins);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibinshift", phibinshift);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmax", zvtxup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTbins", ptbins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmin", ptlow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmax", ptup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibins", phibins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibinshift", phibinshift, false);
     philow = 0.0f;
     phiup = constants::math::TwoPI;
     processpairs = cfgProcessPairs.value;
@@ -724,11 +740,6 @@ struct DptDptCorrelationsTask {
     deltaphibinwidth = constants::math::TwoPI / deltaphibins;
     deltaphilow = 0.0 - deltaphibinwidth / 2.0;
     deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
-
-    /* create the output directory which will own the task output */
-    TList* fGlobalOutputList = new TList();
-    fGlobalOutputList->SetOwner(true);
-    fOutput.setObject(fGlobalOutputList);
 
     /* incorporate configuration parameters to the output */
     fGlobalOutputList->Add(new TParameter<int>("NoBinsPt", ptbins, 'f'));
@@ -761,8 +772,8 @@ struct DptDptCorrelationsTask {
         auto includeIt = [&pidselector, &initContext](int spid, auto name) {
           bool mUseIt = false;
           bool mExcludeIt = false;
-          if (getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mUseIt", name.c_str()).Data(), mUseIt) &&
-              getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mExclude", name.c_str()).Data(), mExcludeIt)) {
+          if (getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mUseIt", name.c_str()).Data(), mUseIt, false) &&
+              getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mExclude", name.c_str()).Data(), mExcludeIt, false)) {
             if (mUseIt && !mExcludeIt) {
               auto cfg = new o2::analysis::TrackSelectionPIDCfg();
               cfg->mUseIt = true;
@@ -799,7 +810,7 @@ struct DptDptCorrelationsTask {
 
       /* self configure the centrality/multiplicity ranges */
       std::string centspec;
-      if (getTaskOptionValue(initContext, "dpt-dpt-filter", "centralities", centspec)) {
+      if (getTaskOptionValue(initContext, "dpt-dpt-filter", "centralities", centspec, false)) {
         LOGF(info, "Got the centralities specification: %s", centspec.c_str());
         auto tokens = TString(centspec.c_str()).Tokenize(",");
         ncmranges = tokens->GetEntries();
@@ -851,7 +862,7 @@ struct DptDptCorrelationsTask {
           initializeCEInstance(dce, TString::Format("DptDptCorrelationsData%s-%s", me ? "ME" : "", rg));
           return dce;
         };
-        TString range = TString::Format("%d-%d", int(fCentMultMin[i]), int(fCentMultMax[i]));
+        TString range = TString::Format("%d-%d", static_cast<int>(fCentMultMin[i]), static_cast<int>(fCentMultMax[i]));
         if (cfgSmallDCE.value) {
           if (processpairs) {
             LOGF(fatal, "Processing pairs cannot be used with the small DCE, please configure properly!!");
@@ -869,7 +880,7 @@ struct DptDptCorrelationsTask {
         }
       }
       for (int i = 0; i < ncmranges; ++i) {
-        LOGF(info, " centrality/multipliicty range: %d, low limit: %f, up limit: %f", i, fCentMultMin[i], fCentMultMax[i]);
+        LOGF(info, " centrality/multipliicty range: %d, low limit: %0.2f, up limit: %0.2f", i, fCentMultMin[i], fCentMultMax[i]);
       }
     }
     /* two-track cut and conversion suppression */
@@ -1374,6 +1385,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
     adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}, {"processRecLevelMixed", false}, {"processCleaner", false}}}),
-    adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", true}, {"processGenLevelMixed", false}, {"processCleaner", false}}})};
+    adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", false}, {"processGenLevelMixed", false}, {"processCleaner", true}}})};
   return workflow;
 }
