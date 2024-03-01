@@ -141,7 +141,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
       labels[0] = "processed";
       labels[1] = "selected";
       labels[2 + EventRejection::Trigger] = "rej. trigger";
-      labels[2 + EventRejection::TimeFrameBorderCut] = "time-frame border";
+      labels[2 + EventRejection::TimeFrameBorderCut] = "rej. time-frame border";
       labels[2 + EventRejection::PositionX] = "rej. #it{x}";
       labels[2 + EventRejection::PositionY] = "rej. #it{y}";
       labels[2 + EventRejection::PositionZ] = "rej. #it{z}";
