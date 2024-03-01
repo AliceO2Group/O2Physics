@@ -843,7 +843,7 @@ struct RobustFluctuationObservables {
 
     if (myDF_ID >= 0 && myDF_ID < 5) {
       int diffOrbits = (int32_t)orbit - (int32_t)orbitAtCollIndexZero;
-      TString strDF = Form("DF_%d", static_cast<int> DF_ID_raw);
+      TString strDF = Form("DF_%d", static_cast<int>(DF_ID_raw));
       if (myDF_ID == 0) {
         h2D_Orbit_vs_CollIndex_0->Fill(collision.index(), diffOrbits);
         h2D_Orbit_vs_CollIndex_0->SetTitle(strDF);
