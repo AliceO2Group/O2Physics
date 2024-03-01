@@ -25,11 +25,11 @@
 
 #include "Framework/HistogramRegistry.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamMath.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
 
 #include "Math/Vector4D.h"
 #include "TMath.h"
-#include "TDatabasePDG.h"
 
 using namespace o2::framework;
 
@@ -178,8 +178,8 @@ class FemtoDreamContainer
   /// \param pdg2 PDG code of particle two
   void setPDGCodes(const int pdg1, const int pdg2)
   {
-    mMassOne = TDatabasePDG::Instance()->GetParticle(pdg1)->Mass();
-    mMassTwo = TDatabasePDG::Instance()->GetParticle(pdg2)->Mass();
+    mMassOne = o2::analysis::femtoDream::getMass(pdg1);
+    mMassTwo = o2::analysis::femtoDream::getMass(pdg2);
     mPDGOne = pdg1;
     mPDGTwo = pdg2;
   }
