@@ -527,7 +527,7 @@ struct threebodyRecoTask {
     resetHistos();
 
     for (auto& cand3body : Candidates3body) {
-      outputDataTable(0, collision.posX(), collision.posY(), collision.posZ(), // centV0M() instead of 0. once available
+      outputDataTable(collision.FT0C(), collision.posX(), collision.posY(), collision.posZ(), 
                       cand3body.isMatter, cand3body.invmass, cand3body.lcand.P(), cand3body.lcand.Pt(), cand3body.ct,
                       cand3body.posSV[0], cand3body.posSV[1], cand3body.posSV[2],
                       cand3body.cosPA, cand3body.dcadaughters, cand3body.dcacandtopv,
