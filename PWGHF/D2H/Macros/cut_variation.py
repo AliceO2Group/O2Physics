@@ -244,6 +244,11 @@ class CutVarMinimiser:
     def get_red_chi2(self):
         """
         Helper function to get reduced chi2
+
+        Returns
+        -----------------------------------------------------
+        - chi2ndf: float
+            chi2 per degree of freedom
         """
 
         return self.chi_2 / self.ndf
@@ -251,6 +256,11 @@ class CutVarMinimiser:
     def get_prompt_yield_and_error(self):
         """
         Helper function to get prompt corrected yield and error
+
+        Returns
+        -----------------------------------------------------
+        - corry_p, corry_p_unc: (float, float)
+            prompt corrected yield and its uncertainty
         """
 
         return self.m_corr_yields.item(0), np.sqrt(self.m_covariance.item(0, 0))
@@ -258,6 +268,11 @@ class CutVarMinimiser:
     def get_nonprompt_yield_and_error(self):
         """
         Helper function to get non-prompt corrected yield and error
+
+        Returns
+        -----------------------------------------------------
+        - corry_np, corry_np_unc: (float, float)
+            non-prompt corrected yield and its uncertainty
         """
 
         return self.m_corr_yields.item(1), np.sqrt(self.m_covariance.item(1, 1))
@@ -265,9 +280,93 @@ class CutVarMinimiser:
     def get_prompt_nonprompt_cov(self):
         """
         Helper function to get covariance between prompt and non-prompt corrected yields
+
+        Returns
+        -----------------------------------------------------
+        - cov_p_np: float
+            covariance between prompt and non-prompt corrected yields
         """
 
         return self.m_covariance.item(1, 0)
+
+    def get_raw_prompt_fraction(self, effacc_p, effacc_np):
+        """
+        Helper function to get the raw prompt fraction given the efficiencies
+
+        Parameters
+        -----------------------------------------------------
+        - effacc_p: str
+            eff x acc for prompt signal
+        - effacc_np: str
+            eff x acc for non-prompt signal
+
+        Returns
+        -----------------------------------------------------
+        - f_p, f_p_unc: (float, float)
+            raw prompt fraction with its uncertainty
+        """
+
+        rawy_p = effacc_p * self.m_corr_yields.item(0)
+        rawy_np = effacc_np * self.m_corr_yields.item(1)
+        f_p = rawy_p / (rawy_p + rawy_np)
+
+        # derivatives of prompt fraction wrt corr yields
+        d_p = (effacc_p * (rawy_p + rawy_np) - effacc_p**2 * self.m_corr_yields.item(0)) / (
+            rawy_p + rawy_np)**2
+        d_np = - effacc_np * rawy_p / (rawy_p + rawy_np)**2
+        f_p_unc = np.sqrt(d_p**2 * self.m_covariance.item(0, 0) + d_np**2 * self.m_covariance.item(
+            1, 1) + 2 * d_p * d_np * self.m_covariance.item(0, 1))
+
+        return f_p, f_p_unc
+
+    def get_raw_nonprompt_fraction(self, effacc_p, effacc_np):
+        """
+        Helper function to get the raw non-prompt fraction given the efficiencies
+
+        Parameters
+        -----------------------------------------------------
+        - effacc_p: str
+            eff x acc for prompt signal
+        - effacc_np: str
+            eff x acc for non-prompt signal
+
+        Returns
+        -----------------------------------------------------
+        - f_np, f_np_unc: (float, float)
+            raw non-prompt fraction with its uncertainty
+
+        """
+
+        f_p, f_np_unc = self.get_raw_prompt_fraction(effacc_p, effacc_np)
+        f_np = 1 - f_p
+
+        return f_np, f_np_unc
+
+    def get_corr_prompt_fraction(self):
+        """
+        Helper function to get the corrected prompt fraction
+
+        Returns
+        -----------------------------------------------------
+        - f_p, f_p_unc: (float, float)
+            corrected prompt fraction with its uncertainty
+
+        """
+
+        return self.get_raw_prompt_fraction(1., 1.)
+
+    def get_corr_nonprompt_fraction(self):
+        """
+        Helper function to get the corrected non-prompt fraction
+
+        Returns
+        -----------------------------------------------------
+        - f_np, f_np_unc: (float, float)
+            corrected non-prompt fraction with its uncertainty
+
+        """
+
+        return self.get_raw_nonprompt_fraction(1., 1.)
 
     # pylint: disable=no-member
     def plot_result(self, suffix=""):
