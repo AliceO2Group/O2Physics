@@ -93,6 +93,10 @@ struct CorrelationTask {
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
 
+  // Use one mass bin only by default in case mass dependency is not needed
+  ConfigurableAxis axisInvMass{"axisInvMass", {1, -1.0, 1.0}, "invariant mass axis for histograms"};
+  ConfigurableAxis axisInvMassHistogram{"axisInvMassHistogram", {1000, 1.0, 3.0}, "invariant mass histogram binning"};
+
   // This filter is applied to AOD and derived data (column names are identical)
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   // This filter is only applied to AOD
@@ -140,7 +144,7 @@ struct CorrelationTask {
     if (doprocessSame2ProngDerived || doprocessMixed2ProngDerived) {
       registry.add("yieldsTrigger", "multiplicity/centrality vs pT vs eta (triggers)", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
       registry.add("etaphiTrigger", "multiplicity/centrality vs eta vs phi (triggers)", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
-      registry.add("invMass", "2-prong invariant mass (GeV)", {HistType::kTH1F, {{100, 0, 3, "Mass"}}});
+      registry.add("invMass", "2-prong invariant mass (GeV/c^2)", {HistType::kTH3F, {axisInvMassHistogram, axisPtTrigger, axisMultiplicity}});
     }
 
     const int maxMixBin = AxisSpec(axisMultiplicity).getNbins() * AxisSpec(axisVertex).getNbins();
@@ -173,8 +177,9 @@ struct CorrelationTask {
     std::vector<AxisSpec> effAxis = {{axisEtaEfficiency, "#eta"},
                                      {axisPtEfficiency, "p_{T} (GeV/c)"},
                                      {axisVertexEfficiency, "z-vtx (cm)"}};
-    same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
-    mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+    std::vector<AxisSpec> userAxis = {{axisInvMass, "m (GeV/c^2)"}};
+    same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
+    mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userAxis));
 
     same->setTrackEtaCut(cfgCutEta);
     mixed->setTrackEtaCut(cfgCutEta);
@@ -229,7 +234,7 @@ struct CorrelationTask {
           if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track1.decay())) == 0u)
             continue;
         }
-        registry.fill(HIST("invMass"), track1.invMass());
+        registry.fill(HIST("invMass"), track1.invMass(), track1.pt(), multiplicity);
       }
       registry.fill(HIST("yieldsTrigger"), multiplicity, track1.pt(), track1.eta());
       registry.fill(HIST("etaphiTrigger"), multiplicity, track1.eta(), track1.phi());
@@ -380,8 +385,14 @@ struct CorrelationTask {
           deltaPhi += TwoPI;
         }
 
+        float invMass;
+        if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value)
+          invMass = track1.invMass();
+        else
+          invMass = 0.0f;
+        // last param is the weight
         target->getPairHist()->Fill(step,
-                                    track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, associatedWeight);
+                                    track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, invMass, associatedWeight);
       }
     }
   }
