@@ -413,6 +413,7 @@ struct CentralityTable {
                 if (estimator.mMCScale != nullptr) {
                   for (int ixpar = 0; ixpar < 6; ++ixpar) {
                     estimator.mMCScalePars[ixpar] = estimator.mMCScale->GetParameter(ixpar);
+                    LOGF(info, "Parameter index %i value %.5f", ixpar, estimator.mMCScalePars[ixpar]);
                   }
                 } else {
                   LOGF(warning, "MC Scale information from %s for run %d not available", estimator.name.c_str(), bc.runNumber());
