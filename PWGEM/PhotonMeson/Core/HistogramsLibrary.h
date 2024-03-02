@@ -159,7 +159,7 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Fill(obj.pt());
     reinterpret_cast<TH1F*>(list->FindObject("hE"))->Fill(obj.e());
     reinterpret_cast<TH2F*>(list->FindObject("hEtaPhi"))->Fill(obj.phi(), obj.eta());
-    for (int itrack = 0; itrack < obj.tracketa().size(); itrack++) { // Fill TrackEtaPhi histogram with delta phi and delta eta of all tracks saved in the vectors in skimmerGammaCalo.cxx
+    for (size_t itrack = 0; itrack < obj.tracketa().size(); itrack++) { // Fill TrackEtaPhi histogram with delta phi and delta eta of all tracks saved in the vectors in skimmerGammaCalo.cxx
       reinterpret_cast<TH2F*>(list->FindObject("hTrackEtaPhi"))->Fill(obj.trackphi()[itrack] - obj.phi(), obj.tracketa()[itrack] - obj.eta());
     }
   }

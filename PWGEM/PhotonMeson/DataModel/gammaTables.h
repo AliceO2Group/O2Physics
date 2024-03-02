@@ -31,7 +31,6 @@ namespace o2::aod
 namespace emreducedevent
 {
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
-DECLARE_SOA_COLUMN(Tag, tag, uint64_t);            //!  Bit-field for storing event information (e.g. high level info, cut decisions)
 DECLARE_SOA_COLUMN(NgammaPCM, ngpcm, int);
 DECLARE_SOA_COLUMN(NgammaPHOS, ngphos, int);
 DECLARE_SOA_COLUMN(NgammaEMC, ngemc, int);
@@ -71,7 +70,7 @@ DECLARE_SOA_COLUMN(Q3xFV0A, q3xfv0a, float);             //! Qx for 3rd harmonic
 DECLARE_SOA_COLUMN(Q3yFV0A, q3yfv0a, float);             //! Qy for 3rd harmonics in FV0A (i.e. positive eta)
 } // namespace emreducedevent
 DECLARE_SOA_TABLE(EMReducedEvents, "AOD", "EMREDUCEDEVENT", //!   Main event information table
-                  o2::soa::Index<>, emreducedevent::CollisionId, emreducedevent::Tag, bc::RunNumber, bc::TriggerMask, evsel::Sel8,
+                  o2::soa::Index<>, emreducedevent::CollisionId, bc::GlobalBC, bc::RunNumber, evsel::Sel8, evsel::Alias, evsel::Selection,
                   emreducedevent::IsPHOSCPVReadout, emreducedevent::IsEMCReadout, emreducedevent::NcollsPerBC,
                   collision::PosX, collision::PosY, collision::PosZ,
                   collision::NumContrib, collision::CollisionTime, collision::CollisionTimeRes);
@@ -81,8 +80,11 @@ DECLARE_SOA_TABLE(EMReducedEventsBz, "AOD", "EMEVENTBZ", emreducedevent::Bz); //
 using EMReducedEventBz = EMReducedEventsBz::iterator;
 
 DECLARE_SOA_TABLE(EMReducedEventsMult, "AOD", "EMEVENTMULT", //!   event multiplicity table, joinable to EMReducedEvents
-                  mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
-                  mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV, mult::MultNTracksPVeta1);
+                  mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
+                  mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC,
+                  mult::MultTPC, mult::MultTracklets, mult::MultNTracksPV, mult::MultNTracksPVeta1, mult::MultNTracksPVetaHalf,
+                  mult::IsInelGt0<mult::MultNTracksPVeta1>,
+                  mult::IsInelGt1<mult::MultNTracksPVeta1>);
 using EMReducedEventMult = EMReducedEventsMult::iterator;
 
 DECLARE_SOA_TABLE(EMReducedEventsCent, "AOD", "EMEVENTCENT", //!   event centrality table, joinable to EMReducedEvents
