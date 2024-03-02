@@ -165,7 +165,7 @@ struct UpcTauCentralBarrelRL {
 
     const AxisSpec axisZvtx{40, -20., 20.};
     const AxisSpec axisInvMass{400, 1., 5.};
-    const AxisSpec axisInvMassWide{500, 0., 10.};
+    const AxisSpec axisInvMassWide{1000, 0., 10.};
     const AxisSpec axisMom{400, 0., 2.};
     const AxisSpec axisMomSigned{800, -2., 2.};
     const AxisSpec axisMomWide{1000, 0., 10.};
