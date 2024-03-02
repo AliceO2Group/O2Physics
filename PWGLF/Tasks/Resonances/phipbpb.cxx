@@ -133,8 +133,8 @@ struct phipbpb {
     const AxisSpec thnAxisV2{configThnAxisV2, "V2"};
     const AxisSpec thnAxisSA{configThnAxisSA, "SA"};
     histos.add("hpTvsRapidity", "pT vs Rapidity", kTH2F, {{100, 0.0f, 10.0f}, {300, -1.5f, 1.5f}});
-    histos.add("hFTOCvsTPC", "Mult correlation FT0C vs. TPC", kTH2F, {{80, 0.0f, 80.0f}, {600, -0.5f, 5999.5f}});
-    histos.add("hFTOCvsTPCSelected", "Mult correlation FT0C vs. TPC after selection", kTH2F, {{80, 0.0f, 80.0f}, {600, -0.5f, 5999.5f}});
+    histos.add("hFTOCvsTPC", "Mult correlation FT0C vs. TPC", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
+    histos.add("hFTOCvsTPCSelected", "Mult correlation FT0C vs. TPC after selection", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{200, 0.0, 200.0}});
     histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
     histos.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
@@ -144,8 +144,15 @@ struct phipbpb {
     histos.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH1F, {{200, -10.0f, 10.0f}});
     histos.add("hPsiFT0C", "Psi FT0C", kTH2F, {{111, -0.5, 110.5}, {160, -4.0f, 4.0f}});
 
-    histos.add("hSparseV2SASameEvent", "THn for V2 and SA in Same Event", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisCosThetaStarIP, thnAxisPhiminusPsi, thnAxisV2, thnAxisSA, thnAxisCentrality});
-    histos.add("hSparseV2SAMixedEvent", "THn for V2 and SA in Mixed Event", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisCosThetaStarIP, thnAxisPhiminusPsi, thnAxisV2, thnAxisSA, thnAxisCentrality});
+    histos.add("hSparseV2SASameEvent_costhetastarOP", "hSparseV2SASameEvent_costhetastarOP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
+    histos.add("hSparseV2SASameEvent_costhetastarIP", "hSparseV2SASameEvent_costhetastarIP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
+    histos.add("hSparseV2SASameEvent_SA", "hSparseV2SASameEvent_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+    histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+
+    histos.add("hSparseV2SAMixedEvent_costhetastarOP", "hSparseV2SAMixedEvent_costhetastarOP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
+    histos.add("hSparseV2SAMixedEvent_costhetastarIP", "hSparseV2SAMixedEvent_costhetastarIP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
+    histos.add("hSparseV2SAMixedEvent_SA", "hSparseV2SAMixedEvent_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+    histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
 
     // Event selection cut additional - Alex
     if (additionalEvsel) {
@@ -169,7 +176,7 @@ struct phipbpb {
   {
     if (collision.alias_bit(kTVXinTRD)) {
       // TRD triggered
-      return 0;
+      // return 0;
     }
     auto multNTracksPV = collision.multNTracksPV();
     if (multNTracksPV < fMultPVCutLow->Eval(centrality))
@@ -341,7 +348,10 @@ struct phipbpb {
         auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
         auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
-        histos.fill(HIST("hSparseV2SASameEvent"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, cosThetaStarIP, phiminuspsi, v2, SA, centrality);
+        histos.fill(HIST("hSparseV2SASameEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
+        histos.fill(HIST("hSparseV2SASameEvent_costhetastarIP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
+        histos.fill(HIST("hSparseV2SASameEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
+        histos.fill(HIST("hSparseV2SASameEvent_V2"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
       }
     }
   }
@@ -405,7 +415,10 @@ struct phipbpb {
         auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
         auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
-        histos.fill(HIST("hSparseV2SAMixedEvent"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, cosThetaStarIP, phiminuspsi, v2, SA, centrality);
+        histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
+        histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarIP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
+        histos.fill(HIST("hSparseV2SAMixedEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
+        histos.fill(HIST("hSparseV2SAMixedEvent_V2"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
       }
     }
   }
