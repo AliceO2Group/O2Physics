@@ -63,7 +63,6 @@ using MyTracksIUMC = soa::Join<MyTracksIU, aod::McTrackLabels>;
 struct PhotonConversionBuilder {
   Produces<aod::V0PhotonsKF> v0photonskf;
   Produces<aod::V0Legs> v0legs;
-  Produces<aod::V0Recalculation> fFuncTableV0Recalculated;
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -607,7 +606,6 @@ struct PhotonConversionBuilder {
                   v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
                   cospa_kf, pca_kf, alpha, qt, chi2kf);
 
-      fFuncTableV0Recalculated(xyz[0], xyz[1], xyz[2]);
       fillTrackTable(pos, kfp_pos_DecayVtx, posdcaXY, posdcaZ); // positive leg first
       fillTrackTable(ele, kfp_ele_DecayVtx, eledcaXY, eledcaZ); // negative leg second
     }                                                           // end of fill table
