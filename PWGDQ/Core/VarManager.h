@@ -705,6 +705,8 @@ class VarManager : public TObject
   static void FillTrack(T const& track, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
   static void FillTrackCollision(T const& track, C const& collision, float* values = nullptr);
+  template <uint32_t fillMap, typename T, typename C, typename M, typename P>
+  static void FillTrackCollisionMatCorr(T const& track, C const& collision, M const& materialCorr, P const& propagator, float* values = nullptr);
   template <typename U, typename T>
   static void FillTrackMC(const U& mcStack, T const& track, float* values = nullptr);
   template <uint32_t fillMap, typename T1, typename T2, typename C>
@@ -1710,6 +1712,34 @@ void VarManager::FillTrackCollision(T const& track, C const& collision, float* v
     auto trackPar = getTrackPar(track);
     std::array<float, 2> dca{1e10f, 1e10f};
     trackPar.propagateParamToDCA({collision.posX(), collision.posY(), collision.posZ()}, fgMagField, &dca);
+
+    values[kTrackDCAxy] = dca[0];
+    values[kTrackDCAz] = dca[1];
+
+    if constexpr ((fillMap & ReducedTrackBarrelCov) > 0 || (fillMap & TrackCov) > 0) {
+      if (fgUsedVars[kTrackDCAsigXY]) {
+        values[kTrackDCAsigXY] = dca[0] / std::sqrt(track.cYY());
+      }
+      if (fgUsedVars[kTrackDCAsigZ]) {
+        values[kTrackDCAsigZ] = dca[1] / std::sqrt(track.cZZ());
+      }
+    }
+  }
+}
+
+template <uint32_t fillMap, typename T, typename C, typename M, typename P>
+void VarManager::FillTrackCollisionMatCorr(T const& track, C const& collision, M const& materialCorr, P const& propagator, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+  if constexpr ((fillMap & ReducedTrackBarrel) > 0 || (fillMap & TrackDCA) > 0) {
+    auto trackPar = getTrackPar(track);
+    std::array<float, 2> dca{1e10f, 1e10f};
+    std::array<float, 3> pVec = {track.px(), track.py(), track.pz()};
+    // trackPar.propagateParamToDCA({collision.posX(), collision.posY(), collision.posZ()}, fgMagField, &dca);
+    propagator->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, materialCorr, &dca);
+    getPxPyPz(trackPar, pVec);
 
     values[kTrackDCAxy] = dca[0];
     values[kTrackDCAz] = dca[1];

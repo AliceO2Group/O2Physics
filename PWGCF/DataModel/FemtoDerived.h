@@ -272,6 +272,12 @@ DECLARE_SOA_INDEX_COLUMN(FDMCParticle, fdMCParticle); //! MC particle for femtod
 } // namespace mcfdlabel
 DECLARE_SOA_TABLE(FDMCLabels, "AOD", "FDMCLabel", //! Table joinable to FemtoDreamParticle containing the MC labels
                   mcfdlabel::FDMCParticleId);
+namespace mcfdextlabel
+{
+DECLARE_SOA_INDEX_COLUMN(FDExtMCParticle, fdExtMCParticle); //! MC particle for femtodreamparticle
+} // namespace mcfdextlabel
+DECLARE_SOA_TABLE(FDExtMCLabels, "AOD", "FDExtMCLabel", //! Table joinable to FemtoDreamParticle containing the MC labels
+                  mcfdextlabel::FDExtMCParticleId);
 
 /// Hash
 namespace hash

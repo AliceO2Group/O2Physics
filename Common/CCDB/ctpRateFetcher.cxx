@@ -26,7 +26,7 @@ double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStam
 {
   if (sourceName.find("ZNC") != std::string::npos) {
     if (runNumber < 544448) {
-      return fetchCTPratesInputs(ccdb, timeStamp, runNumber, 26) / (sourceName.find("hadronic") != std::string::npos ? 28. : 1.);
+      return fetchCTPratesInputs(ccdb, timeStamp, runNumber, 25) / (sourceName.find("hadronic") != std::string::npos ? 28. : 1.);
     } else {
       return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "C1ZNC-B-NOPF-CRU", 6) / (sourceName.find("hadronic") != std::string::npos ? 28. : 1.);
     }
@@ -38,7 +38,7 @@ double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStam
     if (runNumber < 534202) {
       return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "minbias_TVX_L0"); // 2022
     } else {
-      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-B-NOPF-CRU");
+      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-B-NOPF");
     }
   }
   LOG(error) << "CTP rate for " << sourceName << " not available";

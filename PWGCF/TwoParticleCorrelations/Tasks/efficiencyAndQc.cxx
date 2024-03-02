@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <TH2F.h>
 #include <CCDB/BasicCCDBManager.h>
 #include "ReconstructionDataFormats/PID.h"
 #include "Common/Core/TrackSelection.h"
@@ -501,6 +502,11 @@ struct DptDptEfficiencyAndQc {
   {
     using namespace efficiencyandqatask;
 
+    /* do nothing if not active */
+    if (!doprocessDetectorLevelNotStored && !doprocessDetectorLevelNotStoredNoPID && !doprocessGeneratorLevelNotStored && !doprocessReconstructedNotStored && !doprocessReconstructedNotStoredNoPID) {
+      return;
+    }
+
     /* Self configuration: requires dptdptfilter task in the workflow */
     {
       /* the binning */
@@ -658,6 +664,12 @@ struct DptDptEfficiencyAndQc {
     }
   }
 
+  void process(aod::Collisions const& collisions)
+  {
+    /* void function for alow processing the timestamp check task on faulty productions */
+    LOGF(debug, "Received %d collisions", collisions.size());
+  }
+
   using tpcPID = soa::Join<aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
   using tofPID = soa::Join<aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TOFSignal, aod::pidTOFbeta, aod::pidTOFmass>;
 
@@ -726,11 +738,11 @@ struct checkTimestamp {
   void init(InitContext&)
   {
     LOG(info) << "Initializing check timestamp task";
-    AxisSpec diffAxis{1000, 0.0001, 10000, "time (s)"};
+    AxisSpec diffAxis{10000, 0.0001, 1000000, "time (s)"};
     diffAxis.makeLogarithmic();
 
-    hTimeStampDiffNegative = registry.add<TH2>("DiffNegative", "Time before SOR (s)", kTH2F, {{1, 0, 1, "Run number"}, diffAxis});
-    hTimeStampDiffPositive = registry.add<TH2>("DiffPositive", "Time after EOR (s)", kTH2F, {{1, 0, 1, "Run number"}, diffAxis});
+    hTimeStampDiffNegative = registry.add<TH2>("DiffNegative", "Time before SOR (s)", kTH2F, {{100, 0.5, 100.5, "Run number"}, diffAxis});
+    hTimeStampDiffPositive = registry.add<TH2>("DiffPositive", "Time after EOR (s)", kTH2F, {{100, 0.5, 100.5, "Run number"}, diffAxis});
     ccdb_api.init(ccdburl);
   }
 
@@ -749,11 +761,11 @@ struct checkTimestamp {
         runsor = soreor.first;
       }
       if (bc.timestamp() < runsor || runeor < bc.timestamp()) {
-        /* we go a wrong timestamp let's convert the out of run time to seconds */
+        /* we got a wrong timestamp let's convert the out of run time to seconds */
         if (bc.timestamp() < runsor) {
-          hTimeStampDiffNegative->Fill(mRunNumber, (runsor - bc.timestamp()) / 1000);
+          hTimeStampDiffNegative->Fill(Form("%d", mRunNumber), (runsor - bc.timestamp()) / 1000, 1);
         } else {
-          hTimeStampDiffPositive->Fill(mRunNumber, (bc.timestamp() - runeor) / 1000);
+          hTimeStampDiffPositive->Fill(Form("%d", mRunNumber), (bc.timestamp() - runeor) / 1000, 1);
         }
       }
     }

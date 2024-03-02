@@ -304,14 +304,14 @@ class HfFilterHelper
   void setMassResolParametrisation(std::string recoPass)
   {
     if (recoPass == "2023_pass3") {
-      mSigmaPars2Prongs[0] = 14.24f;
-      mSigmaPars2Prongs[1] = 1.78f;
+      mSigmaPars2Prongs[0] = 0.01424f;
+      mSigmaPars2Prongs[1] = 0.00178f;
       mDeltaMassPars2Prongs[0] = -0.0025f;
-      mDeltaMassPars2Prongs[1] = 0.1f;
-      mSigmaPars3Prongs[0] = 7.96f;
-      mSigmaPars3Prongs[1] = 1.76f;
+      mDeltaMassPars2Prongs[1] = 0.0001f;
+      mSigmaPars3Prongs[0] = 0.00796f;
+      mSigmaPars3Prongs[1] = 0.00176f;
       mDeltaMassPars3Prongs[0] = -0.0025f;
-      mDeltaMassPars3Prongs[1] = 0.1f;
+      mDeltaMassPars3Prongs[1] = 0.0001f;
     } else {
       LOGP(fatal, "Mass resolution parametrisation {} not supported! Please set 2023_pass3", recoPass.data());
     }

@@ -63,7 +63,6 @@ using MyTracksIUMC = soa::Join<MyTracksIU, aod::McTrackLabels>;
 struct PhotonConversionBuilder {
   Produces<aod::V0PhotonsKF> v0photonskf;
   Produces<aod::V0Legs> v0legs;
-  Produces<aod::V0Recalculation> fFuncTableV0Recalculated;
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -146,7 +145,7 @@ struct PhotonConversionBuilder {
       {"V0/hRxy_minX_TPC_TPC", "min trackiu X vs. R_{xy};trackiu X (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{100, 0.0f, 100.f}, {100, -50.0, 50.0f}}}},
       {"V0Leg/hPt", "pT of leg at SV;p_{T,e} (GeV/c)", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
       {"V0Leg/hEtaPhi", "#eta vs. #varphi of leg at SV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, 2 * M_PI}, {400, -2, +2}}}},
-      {"V0Leg/hDCAxyz", "DCA xy vs. z to PV;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -10.f, 10.f}, {200, -10.f, +10.f}}}},
+      {"V0Leg/hDCAxyz", "DCA xy vs. z to PV;DCA_{xy} (cm);DCA_{z} (cm)", {HistType::kTH2F, {{200, -50.f, 50.f}, {200, -50.f, +50.f}}}},
       {"V0Leg/hdEdx_Pin", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200, 0.f, 200.f}}}},
       {"V0Leg/hTPCNsigmaEl", "TPC dE/dx vs. p_{in};p_{in} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5.f, +5.f}}}},
     }};
@@ -607,7 +606,6 @@ struct PhotonConversionBuilder {
                   v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
                   cospa_kf, pca_kf, alpha, qt, chi2kf);
 
-      fFuncTableV0Recalculated(xyz[0], xyz[1], xyz[2]);
       fillTrackTable(pos, kfp_pos_DecayVtx, posdcaXY, posdcaZ); // positive leg first
       fillTrackTable(ele, kfp_ele_DecayVtx, eledcaXY, eledcaZ); // negative leg second
     }                                                           // end of fill table
