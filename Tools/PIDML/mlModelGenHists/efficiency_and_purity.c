@@ -5,7 +5,7 @@
 
 void eap_draw_hist(TH1F* hist, int markerStyle, int color, const char* title, double maxX, double maxY);
 
-void efficiency_and_purity() {
+void efficiency_and_purity(TString filename) {
   const TString myfile[] = {"AnalysisResults.root"};
   const TString label[] = {"ML"};
   const char *histGenName = "ml-model-gen-hists/hPtMCPositive";
@@ -14,7 +14,7 @@ void efficiency_and_purity() {
   const char *histTPosIdenName = "ml-model-gen-hists/hPtMLTruePositive";
   const int filesCount = sizeof(myfile)/sizeof(myfile[0]);
 
-  TCanvas *canvas = new TCanvas("canvas", "canvas");
+  TCanvas *canvas = new TCanvas("canvas", "canvas", 0, 0, 1920, 1080);
   canvas->Divide(2, filesCount);
   TLegend *pleg = new TLegend(0.4, 0.1); 
 
@@ -69,6 +69,7 @@ void efficiency_and_purity() {
 
   canvas->cd(1);
   pleg->Draw();
+  canvas->Print(Form("./graphs/%s.png", filename.Data()));
 }
 
 void eap_draw_hist(TH1F* hist, int markerStyle, int color, const char* title,

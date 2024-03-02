@@ -219,8 +219,8 @@
     },
     "ml-model-gen-hists": {
         "detector": "2",
-        "pid": "211",
-        "certainty": "0.69999999999999996",
+        "pid": "321",
+        "certainty": "0.94999999999999996",
         "ccdb-path": "Users\/m\/mkabus\/PIDML",
         "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
         "useCCDB": "true",

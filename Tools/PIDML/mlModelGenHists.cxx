@@ -30,6 +30,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 #define EPS 0.00001f
+#define ETA_CUT 0.8f
 #define TOF_ACCEPTANCE_THRESHOLD (-999.0f)
 #define TRD_ACCEPTANCE_THRESHOLD (0.0f)
 
@@ -100,7 +101,8 @@ struct MlModelGenHists {
     }
 
     for (auto& mcPart : mcParticles) {
-      if(mcPart.isPhysicalPrimary() && mcPart.pdgCode() == pidModel.mPid) {
+      // eta cut is included in requireGlobalTrackInFilter() so we cut it only here
+      if(mcPart.isPhysicalPrimary() && TMath::Abs(mcPart.eta()) < ETA_CUT && mcPart.pdgCode() == pidModel.mPid) {
         histos.fill(HIST("hPtMCPositive"), mcPart.pt());
       }
     }
