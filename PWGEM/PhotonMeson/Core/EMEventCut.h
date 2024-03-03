@@ -29,7 +29,7 @@ class EMEventCut : public TNamed
   EMEventCut(const char* name, const char* title) : TNamed(name, title) {}
 
   enum class EMEventCuts : int {
-    kFT0AND, // i.e. sel8
+    kFT0AND = 0, // i.e. sel8
     kZvtx,
     kNoTFB,     // no time frame border
     kNoITSROFB, // no ITS read out frame border
@@ -89,7 +89,7 @@ class EMEventCut : public TNamed
 
  private:
   bool mRequireFT0AND{true};
-  float mMinZvtx{-10.f}, mMaxZvtx{+10.f}; // range in pT
+  float mMinZvtx{-10.f}, mMaxZvtx{+10.f};
   bool mRequireNoTFB{true};
   bool mRequireNoITSROFB{true};
 

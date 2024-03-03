@@ -85,6 +85,10 @@ struct SinglePhotonMC {
   // Configurable<float> EMC_Eoverp{"EMC_Eoverp", 1.75, "Minimum cluster energy over track momentum for EMCal track matching"};
   // Configurable<bool> EMC_UseExoticCut{"EMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
 
+  Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
+  EMEventCut fEMEventCut;
+  static constexpr std::string_view event_types[2] = {"before", "after"};
+
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputPhoton{"Photon"}; // single photon
   OutputObj<THashList> fOutputGen{"Generated"};
@@ -111,6 +115,8 @@ struct SinglePhotonMC {
     // DefinePHOSCuts();
     // DefineEMCCuts();
     addhistograms();
+    TString ev_cut_name = fConfigEMEventCut.value;
+    fEMEventCut = *eventcuts::GetCut(ev_cut_name.Data());
 
     fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
     fOutputPhoton.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Photon")));
@@ -152,7 +158,10 @@ struct SinglePhotonMC {
 
       o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, detname.data());
       THashList* list_ev_det = reinterpret_cast<THashList*>(list_ev->FindObject(detname.data()));
-      o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_det, "Event");
+      for (const auto& evtype : event_types) {
+        THashList* list_ev_det_type = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev_det, evtype.data()));
+        o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_det_type, "Event", evtype.data());
+      }
 
       o2::aod::pwgem::photon::histogram::AddHistClass(list_photon, detname.data());
 
@@ -262,7 +271,9 @@ struct SinglePhotonMC {
   template <EMDetType photontype, typename TEvents, typename TPhotons1, typename TPreslice1, typename TCuts1, typename TV0Legs, typename TEMCMatchedTracks, typename TMCParticles, typename TMCEvents>
   void FillTruePhoton(TEvents const& collisions, TPhotons1 const& photons1, TPreslice1 const& perCollision1, TCuts1 const& cuts1, TV0Legs const&, TEMCMatchedTracks const&, TMCParticles const& mcparticles, TMCEvents const& mccollisions)
   {
-    THashList* list_ev_det = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(detnames[photontype].data()));
+    THashList* list_ev_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(detnames[photontype].data())->FindObject(event_types[0].data()));
+    THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(detnames[photontype].data())->FindObject(event_types[1].data()));
+    THashList* list_photon_det = static_cast<THashList*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data()));
 
     for (auto& collision : collisions) {
       if (photontype == EMDetType::kPHOS && !collision.isPHOSCPVreadout()) {
@@ -272,29 +283,34 @@ struct SinglePhotonMC {
         continue;
       }
 
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(detnames[photontype].data())->FindObject("hCollisionCounter"))->Fill(1.0); // all
-      if (!collision.sel8()) {
+      reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(1.0);
+      if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(2.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(3.0);
+      }
+      if (collision.sel8()) {
+        reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(4.0);
+      }
+      if (collision.numContrib() > 0.5) {
+        reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(5.0);
+      }
+      if (abs(collision.posZ()) < 10.0) {
+        reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(6.0);
+      }
+
+      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_before, "", collision);
+      if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(detnames[photontype].data())->FindObject("hCollisionCounter"))->Fill(2.0); // FT0VX i.e. FT0and
-
-      if (collision.numContrib() < 0.5) {
-        continue;
-      }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(detnames[photontype].data())->FindObject("hCollisionCounter"))->Fill(3.0); // Ncontrib > 0
-
-      if (abs(collision.posZ()) > 10.0) {
-        continue;
-      }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(detnames[photontype].data())->FindObject("hZvtx"))->Fill(collision.posZ());
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(detnames[photontype].data())->FindObject("hCollisionCounter"))->Fill(4.0); // |Zvtx| < 10 cm
-
-      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_det, "", collision);
+      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_after, "", collision);
+      reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(7.0);
+      reinterpret_cast<TH1F*>(list_ev_after->FindObject("hCollisionCounter"))->Fill(7.0);
 
       auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
-
       for (auto& cut : cuts1) {
-        THashList* list_photon_det_cut = static_cast<THashList*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName()));
+        THashList* list_photon_det_cut = static_cast<THashList*>(list_photon_det->FindObject(cut.GetName()));
         for (auto& photon : photons1_coll) {
           if (!IsSelected<photontype>(photon, cut)) {
             continue;
@@ -322,17 +338,17 @@ struct SinglePhotonMC {
 
           auto mcphoton = mcparticles.iteratorAt(photonid);
           if (IsPhysicalPrimary(mcphoton.emreducedmcevent(), mcphoton, mcparticles)) {
-            reinterpret_cast<TH1F*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName())->FindObject("hPt_Photon_Primary"))->Fill(v1.Pt());
-            reinterpret_cast<TH1F*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName())->FindObject("hY_Photon_Primary"))->Fill(v1.Rapidity());
-            reinterpret_cast<TH1F*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName())->FindObject("hPhi_Photon_Primary"))->Fill(v1.Phi() < 0.0 ? v1.Phi() + TMath::TwoPi() : v1.Phi());
+            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt_Photon_Primary"))->Fill(v1.Pt());
+            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hY_Photon_Primary"))->Fill(v1.Rapidity());
+            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi_Photon_Primary"))->Fill(v1.Phi() < 0.0 ? v1.Phi() + TMath::TwoPi() : v1.Phi());
           } else if (IsFromWD(mcphoton.emreducedmcevent(), mcphoton, mcparticles)) {
-            reinterpret_cast<TH1F*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName())->FindObject("hPt_Photon_FromWD"))->Fill(v1.Pt());
-            reinterpret_cast<TH1F*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName())->FindObject("hY_Photon_FromWD"))->Fill(v1.Rapidity());
-            reinterpret_cast<TH1F*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName())->FindObject("hPhi_Photon_FromWD"))->Fill(v1.Phi() < 0.0 ? v1.Phi() + TMath::TwoPi() : v1.Phi());
+            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt_Photon_FromWD"))->Fill(v1.Pt());
+            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hY_Photon_FromWD"))->Fill(v1.Rapidity());
+            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi_Photon_FromWD"))->Fill(v1.Phi() < 0.0 ? v1.Phi() + TMath::TwoPi() : v1.Phi());
           } else {
-            reinterpret_cast<TH1F*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName())->FindObject("hPt_Photon_hs"))->Fill(v1.Pt());
-            reinterpret_cast<TH1F*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName())->FindObject("hY_Photon_hs"))->Fill(v1.Rapidity());
-            reinterpret_cast<TH1F*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data())->FindObject(cut.GetName())->FindObject("hPhi_Photon_hs"))->Fill(v1.Phi() < 0.0 ? v1.Phi() + TMath::TwoPi() : v1.Phi());
+            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt_Photon_hs"))->Fill(v1.Pt());
+            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hY_Photon_hs"))->Fill(v1.Rapidity());
+            reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi_Photon_hs"))->Fill(v1.Phi() < 0.0 ? v1.Phi() + TMath::TwoPi() : v1.Phi());
           }
 
         } // end of photon loop

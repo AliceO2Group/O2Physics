@@ -76,7 +76,7 @@ struct Pi0EtaToGammaGamma {
   Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_0_120_tpchadrejortofreq_lowB,mee_120_500_tpchadrejortofreq_lowB,mee_0_500_tpchadrejortofreq_lowB", "Comma separated list of Dalitz ee cuts"};
   Configurable<std::string> fConfigDalitzMuMuCuts{"cfgDalitzMuMuCuts", "mmumu_0_500_lowB", "Comma separated list of Dalitz mumu cuts"};
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
-  Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "nocut,asym08", "Comma separated list of pair cuts"};
+  Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "nocut", "Comma separated list of pair cuts"};
 
   Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle"};
   Configurable<std::string> fConfigEMCCuts{"cfgEMCCuts", "custom,standard,nocut", "Comma separated list of EMCal photon cuts"};
@@ -95,6 +95,7 @@ struct Pi0EtaToGammaGamma {
 
   Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
   EMEventCut fEMEventCut;
+  static constexpr std::string_view event_types[2] = {"before", "after"};
 
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputPair{"Pair"}; // 2-photon pair
@@ -107,8 +108,6 @@ struct Pi0EtaToGammaGamma {
   std::vector<EMCPhotonCut> fEMCCuts;
   std::vector<PairCut> fPairCuts;
   std::vector<std::string> fPairNames;
-
-  static constexpr std::string_view event_types[2] = {"before", "after"};
 
   void init(InitContext& context)
   {
@@ -395,10 +394,10 @@ struct Pi0EtaToGammaGamma {
       if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
         reinterpret_cast<TH1F*>(list_ev_pair_before->FindObject("hCollisionCounter"))->Fill(3.0);
       }
-      if (collision.numContrib() > 0.5) {
+      if (collision.sel8()) {
         reinterpret_cast<TH1F*>(list_ev_pair_before->FindObject("hCollisionCounter"))->Fill(4.0);
       }
-      if (collision.sel8()) {
+      if (collision.numContrib() > 0.5) {
         reinterpret_cast<TH1F*>(list_ev_pair_before->FindObject("hCollisionCounter"))->Fill(5.0);
       }
       if (abs(collision.posZ()) < 10.0) {

@@ -62,13 +62,13 @@ struct PCMQC {
 
   Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
   EMEventCut fEMEventCut;
+  static constexpr std::string_view event_types[2] = {"before", "after"};
 
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputV0Leg{"V0Leg"};
   OutputObj<THashList> fOutputV0{"V0"};
   THashList* fMainList = new THashList();
 
-  static constexpr std::string_view event_types[2] = {"before", "after"};
   void addhistograms()
   {
     fMainList->SetOwner(true);
@@ -152,10 +152,10 @@ struct PCMQC {
       if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
         reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(3.0);
       }
-      if (collision.numContrib() > 0.5) {
+      if (collision.sel8()) {
         reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(4.0);
       }
-      if (collision.sel8()) {
+      if (collision.numContrib() > 0.5) {
         reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(5.0);
       }
       if (abs(collision.posZ()) < 10.0) {
