@@ -342,8 +342,10 @@ struct phipbpb {
         eventplaneVec = ROOT::Math::XYZVector(std::cos(2.0 * psiFT0C), std::sin(2.0 * psiFT0C), 0);
         eventplaneVecNorm = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0C), -std::cos(2.0 * psiFT0C), 0);
 
-        auto cosinephidaughterstarminuspsi = eventplaneVec.Dot(threeVecDauCMXY) / std::sqrt(threeVecDauCMXY.Mag2()) / std::sqrt(eventplaneVec.Mag2());
-        auto SA = (2.0 * cosinephidaughterstarminuspsi * cosinephidaughterstarminuspsi) - 1.0;
+        // auto cosinephidaughterstarminuspsi = eventplaneVec.Dot(threeVecDauCMXY) / std::sqrt(threeVecDauCMXY.Mag2()) / std::sqrt(eventplaneVec.Mag2());
+        // auto SA = (2.0 * cosinephidaughterstarminuspsi * cosinephidaughterstarminuspsi) - 1.0;
+        auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
+        auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
         auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
         auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
         auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
@@ -409,8 +411,10 @@ struct phipbpb {
         eventplaneVec = ROOT::Math::XYZVector(std::cos(2.0 * psiFT0C), std::sin(2.0 * psiFT0C), 0);
         eventplaneVecNorm = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0C), -std::cos(2.0 * psiFT0C), 0);
 
-        auto cosinephidaughterstarminuspsi = eventplaneVec.Dot(threeVecDauCMXY) / std::sqrt(threeVecDauCMXY.Mag2()) / std::sqrt(eventplaneVec.Mag2());
-        auto SA = (2.0 * cosinephidaughterstarminuspsi * cosinephidaughterstarminuspsi) - 1.0;
+        // auto cosinephidaughterstarminuspsi = eventplaneVec.Dot(threeVecDauCMXY) / std::sqrt(threeVecDauCMXY.Mag2()) / std::sqrt(eventplaneVec.Mag2());
+        // auto SA = (2.0 * cosinephidaughterstarminuspsi * cosinephidaughterstarminuspsi) - 1.0;
+        auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
+        auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
         auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
         auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
         auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
