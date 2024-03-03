@@ -52,6 +52,10 @@ struct DalitzMuMuQCMC {
   Configurable<std::string> fConfigDalitzMuMuCuts{"cfgDalitzMuMuCuts", "nocut", "Comma separated list of dalitz mumu cuts"};
   std::vector<DalitzEECut> fDalitzMuMuCuts;
 
+  Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
+  EMEventCut fEMEventCut;
+  static constexpr std::string_view event_types[2] = {"before", "after"};
+
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputTrack{"Track"};
   OutputObj<THashList> fOutputDalitzMuMu{"DalitzMuMu"};
@@ -66,7 +70,10 @@ struct DalitzMuMuQCMC {
     // create sub lists first.
     o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Event");
     THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
-    o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev, "Event");
+    for (const auto& evtype : event_types) {
+      THashList* list_ev_type = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, evtype.data()));
+      o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_type, "Event", evtype.data());
+    }
 
     o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Track");
     THashList* list_track = reinterpret_cast<THashList*>(fMainList->FindObject("Track"));
@@ -117,6 +124,8 @@ struct DalitzMuMuQCMC {
   {
     DefineCuts();
     addhistograms(); // please call this after DefineCuts();
+    TString ev_cut_name = fConfigEMEventCut.value;
+    fEMEventCut = *eventcuts::GetCut(ev_cut_name.Data());
 
     fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
     fOutputTrack.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Track")));
@@ -143,7 +152,8 @@ struct DalitzMuMuQCMC {
 
   void processQCMC(MyCollisions const& collisions, MyDalitzMuMus const& dileptons, MyMCTracks const& tracks, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const&)
   {
-    THashList* list_ev = static_cast<THashList*>(fMainList->FindObject("Event"));
+    THashList* list_ev_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[0].data()));
+    THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[1].data()));
     THashList* list_dalitzmumu = static_cast<THashList*>(fMainList->FindObject("DalitzMuMu"));
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
     double values[4] = {0, 0, 0, 0};
@@ -151,23 +161,31 @@ struct DalitzMuMuQCMC {
     float det_pos = 999.f, det_ele = 999.f;
 
     for (auto& collision : collisions) {
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(1.0);
-      if (!collision.sel8()) {
-        continue;
-      }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(2.0);
 
-      if (collision.numContrib() < 0.5) {
-        continue;
+      reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(1.0);
+      if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(2.0);
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(3.0);
+      if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(3.0);
+      }
+      if (collision.sel8()) {
+        reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(4.0);
+      }
+      if (collision.numContrib() > 0.5) {
+        reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(5.0);
+      }
+      if (abs(collision.posZ()) < 10.0) {
+        reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(6.0);
+      }
 
-      if (abs(collision.posZ()) > 10.0) {
+      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_before, "", collision);
+      if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(4.0);
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx"))->Fill(collision.posZ());
-      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev, "", collision);
+      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_after, "", collision);
+      reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(7.0);
+      reinterpret_cast<TH1F*>(list_ev_after->FindObject("hCollisionCounter"))->Fill(7.0);
 
       auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzmumu::emreducedeventId, collision.globalIndex(), cache);
 

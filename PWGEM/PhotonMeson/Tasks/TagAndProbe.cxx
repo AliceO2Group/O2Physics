@@ -68,6 +68,10 @@ struct TagAndProbe {
   Configurable<std::string> fConfigProbeEMCCuts{"cfgProbeEMCCuts", "standard", "Comma separated list of EMCal photon cuts"};
   Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle"};
 
+  Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
+  EMEventCut fEMEventCut;
+  static constexpr std::string_view event_types[2] = {"before", "after"};
+
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputPair{"Pair"}; // 2-photon pair
   THashList* fMainList = new THashList();
@@ -101,6 +105,9 @@ struct TagAndProbe {
     DefineEMCCuts();
     DefinePairCuts();
     addhistograms();
+
+    TString ev_cut_name = fConfigEMEventCut.value;
+    fEMEventCut = *eventcuts::GetCut(ev_cut_name.Data());
 
     fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
     fOutputPair.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Pair")));
@@ -141,8 +148,11 @@ struct TagAndProbe {
     for (auto& pairname : fPairNames) {
       LOGF(info, "Enabled pairs = %s", pairname.data());
 
-      THashList* list_ev_ss = o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, pairname.data());
-      o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_ss, "Event");
+      THashList* list_ev_pair = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, pairname.data()));
+      for (const auto& evtype : event_types) {
+        THashList* list_ev_type = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev_pair, evtype.data()));
+        o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_type, "Event", evtype.data());
+      }
 
       THashList* list_pair_ss = o2::aod::pwgem::photon::histogram::AddHistClass(list_pair, pairname.data());
 
@@ -227,7 +237,8 @@ struct TagAndProbe {
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TTagCut, typename TProbeCuts, typename TPairCuts, typename TLegs, typename TEMCMTs>
   void SameEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TTagCut const& tagcut, TProbeCuts const& probecuts, TPairCuts const& paircuts, TLegs const& legs, TEMCMTs const& emcmatchedtracks)
   {
-    THashList* list_ev_pair = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data()));
+    THashList* list_ev_pair_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[0].data()));
+    THashList* list_ev_pair_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[1].data()));
     THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
 
     for (auto& collision : collisions) {
@@ -238,23 +249,30 @@ struct TagAndProbe {
         continue;
       }
 
-      reinterpret_cast<TH1F*>(list_ev_pair->FindObject("hCollisionCounter"))->Fill(1.0); // all
-      if (!collision.sel8()) {
-        continue;
+      reinterpret_cast<TH1F*>(list_ev_pair_before->FindObject("hCollisionCounter"))->Fill(1.0);
+      if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        reinterpret_cast<TH1F*>(list_ev_pair_before->FindObject("hCollisionCounter"))->Fill(2.0);
       }
-      reinterpret_cast<TH1F*>(list_ev_pair->FindObject("hCollisionCounter"))->Fill(2.0); // FT0VX i.e. FT0and
+      if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        reinterpret_cast<TH1F*>(list_ev_pair_before->FindObject("hCollisionCounter"))->Fill(3.0);
+      }
+      if (collision.sel8()) {
+        reinterpret_cast<TH1F*>(list_ev_pair_before->FindObject("hCollisionCounter"))->Fill(4.0);
+      }
+      if (collision.numContrib() > 0.5) {
+        reinterpret_cast<TH1F*>(list_ev_pair_before->FindObject("hCollisionCounter"))->Fill(5.0);
+      }
+      if (abs(collision.posZ()) < 10.0) {
+        reinterpret_cast<TH1F*>(list_ev_pair_before->FindObject("hCollisionCounter"))->Fill(6.0);
+      }
 
-      if (collision.numContrib() < 0.5) {
+      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_pair_before, "", collision);
+      if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      reinterpret_cast<TH1F*>(list_ev_pair->FindObject("hCollisionCounter"))->Fill(3.0); // Ncontrib > 0
-
-      if (abs(collision.posZ()) > 10.0) {
-        continue;
-      }
-      reinterpret_cast<TH1F*>(list_ev_pair->FindObject("hZvtx"))->Fill(collision.posZ());
-      reinterpret_cast<TH1F*>(list_ev_pair->FindObject("hCollisionCounter"))->Fill(4.0); // |Zvtx| < 10 cm
-      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_pair, "", collision);
+      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_pair_after, "", collision);
+      reinterpret_cast<TH1F*>(list_ev_pair_before->FindObject("hCollisionCounter"))->Fill(7.0);
+      reinterpret_cast<TH1F*>(list_ev_pair_after->FindObject("hCollisionCounter"))->Fill(7.0);
 
       auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
       auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
