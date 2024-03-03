@@ -431,10 +431,27 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       for (int i = 1; i <= 14; i++)
         pIN_bins[155 + i] = 3. + 0.5 * i;
 
+      const int kNbins_pINmore = 135;
+      double pIN_binsmore[kNbins_pINmore + 1];
+      for (int i = 0; i <= 120; i++)
+        pIN_binsmore[i] = 0.01 * i + 0.3;
+      for (int i = 1; i <= 10; i++)
+        pIN_binsmore[120 + i] = 1.5 + 0.2 * i;
+      pIN_binsmore[131] = 4.;
+      pIN_binsmore[132] = 5.;
+      pIN_binsmore[133] = 6.;
+      pIN_binsmore[134] = 8.;
+      pIN_binsmore[135] = 10.;
+
       const int kNbins_nSigma = 100;
       double nSigma_bins[kNbins_nSigma + 1];
       for (int i = 0; i <= kNbins_nSigma; i++)
         nSigma_bins[i] = -5. + 0.1 * i;
+
+      const int kNbins_nSigmamore = 50;
+      double nSigma_binsmore[kNbins_nSigmamore + 1];
+      for (int i = 0; i <= kNbins_nSigmamore; i++)
+        nSigma_binsmore[i] = -5. + 0.2 * i;
 
       const int kNbins_TOFbeta = 120;
       double TOFbeta_bins[kNbins_TOFbeta + 1];
@@ -457,9 +474,21 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       nSignalBinLimits[2] = TArrayD(kNbins_TOFbeta + 1, TOFbeta_bins);
 
       int varsPIDnSignal[kNvarsPID] = {VarManager::kPin, VarManager::kTPCsignal, VarManager::kTOFbeta};
-      int varsPIDnSigma[kNvarsPID] = {VarManager::kPin, VarManager::kTPCnSigmaEl, VarManager::kTOFnSigmaEl};
       hm->AddHistogram(histClass, "nSignalTPCTOF", "", kNvarsPID, varsPIDnSignal, nSignalBinLimits);
-      hm->AddHistogram(histClass, "nSigmaTPCTOF", "", kNvarsPID, varsPIDnSigma, nSigmaBinLimits);
+
+      if (subGroupStr.Contains("more")) {
+        const int kNvarsPIDmore = 4;
+        TArrayD nSigmaBinLimitsmore[kNvarsPIDmore];
+        nSigmaBinLimitsmore[0] = TArrayD(kNbins_pINmore + 1, pIN_binsmore);
+        nSigmaBinLimitsmore[1] = TArrayD(kNbins_nSigma + 1, nSigma_bins);
+        nSigmaBinLimitsmore[2] = TArrayD(kNbins_nSigmamore + 1, nSigma_binsmore);
+        nSigmaBinLimitsmore[3] = TArrayD(kNbins_nSigma + 1, nSigma_bins);
+        int varsPIDnSigmamore[kNvarsPIDmore] = {VarManager::kPin, VarManager::kTPCnSigmaEl, VarManager::kTPCnSigmaPi, VarManager::kTOFnSigmaEl};
+        hm->AddHistogram(histClass, "nSigmaTPCTOF", "", kNvarsPIDmore, varsPIDnSigmamore, nSigmaBinLimitsmore);
+      } else {
+        int varsPIDnSigma[kNvarsPID] = {VarManager::kPin, VarManager::kTPCnSigmaEl, VarManager::kTOFnSigmaEl};
+        hm->AddHistogram(histClass, "nSigmaTPCTOF", "", kNvarsPID, varsPIDnSigma, nSigmaBinLimits);
+      }
     }
     if (subGroupStr.Contains("runbyrun")) {
       hm->AddHistogram(histClass, "TPCncls_run", "Number of cluster in TPC vs RunNumber", false, (VarManager::GetNRuns() > 0 ? VarManager::GetNRuns() : 1), -0.5, -0.5 + VarManager::GetNRuns(), VarManager::kRunIndex,
