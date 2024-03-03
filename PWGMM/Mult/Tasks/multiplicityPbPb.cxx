@@ -23,7 +23,6 @@
 
 #include "Common/DataModel/EventSelection.h"
 
-
 #include "Framework/O2DatabasePDGPlugin.h"
 
 using namespace o2;
@@ -50,7 +49,6 @@ struct multiplicityPbPb {
   using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksDCA>;
   using myFilteredTracks = soa::Filtered<myCompleteTracks>;
 
-
   void init(InitContext const&)
   {
     // define axes you want to use
@@ -71,7 +69,7 @@ struct multiplicityPbPb {
     histos.add("MCGENetaHistogram", "; ", kTH1F, {axisEta});
     histos.add("ptHistogram", "; ", kTH1F, {axisPt});
     histos.add("MCGENptHistogram", "; ", kTH1F, {axisPt});
-    //
+
     histos.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
     histos.add("MCGENeventCounter", "eventCounter", kTH1F, {axisCounter});
 
