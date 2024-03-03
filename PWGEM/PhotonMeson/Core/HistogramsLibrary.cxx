@@ -32,12 +32,19 @@ using namespace std;
 #include "Framework/Logger.h"
 #include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
 
-void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* histClass, const char* subGroup)
+void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const char* histClass, const char* subGroup)
 {
   if (TString(histClass) == "Event") {
-    list->Add(new TH1F("hCollisionCounter", "hCollisionCounter", 5, 0.5f, 5.5f));
-    list->Add(new TH1F("hZvtx_before", "vertex z; Zvtx (cm)", 100, -50, +50));
-    list->Add(new TH1F("hZvtx_after", "vertex z; Zvtx (cm)", 100, -50, +50));
+    list->Add(new TH1F("hCollisionCounter", "hCollisionCounter", 10, 0.5f, 10.5f));
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(1, "all");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(2, "No TF border");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(3, "No ITS ROF border");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(4, "FT0AND");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(5, "N_{contrib}^{PV} > 0");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(6, "|Z_{vtx}| < 10 cm");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(7, "accepted");
+
+    list->Add(new TH1F("hZvtx", "vertex z; Z_{vtx} (cm)", 100, -50, +50));
     list->Add(new TH1F("hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", 6001, -0.5, 6000.5));
     list->Add(new TH1F("hMultNTracksPVeta1", "hMultNTracksPVeta1; N_{track} to PV", 6001, -0.5, 6000.5));
     list->Add(new TH2F("hMultFT0", "hMultFT0;mult. FT0A;mult. FT0C", 300, 0, 6000, 300, 0, 6000));
@@ -592,7 +599,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     }
   }
 }
-THashList* o2::aod::emphotonhistograms::AddHistClass(THashList* list, const char* histClass)
+THashList* o2::aod::pwgem::photon::histogram::AddHistClass(THashList* list, const char* histClass)
 {
   if (list->FindObject(histClass)) {
     LOGF(info, "HistogramsLibrary::AddHistClass(): Cannot add histogram class %s because it already exists.", histClass);

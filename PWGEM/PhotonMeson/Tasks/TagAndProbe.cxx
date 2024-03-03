@@ -43,6 +43,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::photonpair;
+using namespace o2::aod::pwgem::photon;
 
 using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNgPCM, aod::EMReducedEventsNgPHOS, aod::EMReducedEventsNgEMC>;
 using MyCollision = MyCollisions::iterator;
@@ -112,13 +113,13 @@ struct TagAndProbe {
     for (auto& cut2 : probecuts) {
       std::string cutname2 = cut2.GetName();
       std::string photon_cut_name = cutname1 + "_" + cutname2;
-      THashList* list_pair_subsys_photoncut = o2::aod::emphotonhistograms::AddHistClass(list_pair, photon_cut_name.data());
+      THashList* list_pair_subsys_photoncut = o2::aod::pwgem::photon::histogram::AddHistClass(list_pair, photon_cut_name.data());
 
       for (auto& cut3 : paircuts) {
         std::string pair_cut_name = cut3.GetName();
-        o2::aod::emphotonhistograms::AddHistClass(list_pair_subsys_photoncut, pair_cut_name.data());
+        o2::aod::pwgem::photon::histogram::AddHistClass(list_pair_subsys_photoncut, pair_cut_name.data());
         THashList* list_pair_subsys_paircut = reinterpret_cast<THashList*>(list_pair_subsys_photoncut->FindObject(pair_cut_name.data()));
-        o2::aod::emphotonhistograms::DefineHistograms(list_pair_subsys_paircut, "tag_and_probe", pairname.data());
+        o2::aod::pwgem::photon::histogram::DefineHistograms(list_pair_subsys_paircut, "tag_and_probe", pairname.data());
       } // end of cut3 loop pair cut
     }   // end of cut2 loop
   }
@@ -129,10 +130,10 @@ struct TagAndProbe {
     fMainList->SetOwner(true);
     fMainList->SetName("fMainList");
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Event");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Event");
     THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Pair");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Pair");
     THashList* list_pair = reinterpret_cast<THashList*>(fMainList->FindObject("Pair"));
 
     // create sub lists first.
@@ -140,10 +141,10 @@ struct TagAndProbe {
     for (auto& pairname : fPairNames) {
       LOGF(info, "Enabled pairs = %s", pairname.data());
 
-      THashList* list_ev_ss = o2::aod::emphotonhistograms::AddHistClass(list_ev, pairname.data());
-      o2::aod::emphotonhistograms::DefineHistograms(list_ev_ss, "Event");
+      THashList* list_ev_ss = o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, pairname.data());
+      o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_ss, "Event");
 
-      THashList* list_pair_ss = o2::aod::emphotonhistograms::AddHistClass(list_pair, pairname.data());
+      THashList* list_pair_ss = o2::aod::pwgem::photon::histogram::AddHistClass(list_pair, pairname.data());
 
       if (pairname == "PCMPCM") {
         add_pair_histograms(list_pair_ss, pairname, fTagPCMCut, fProbePCMCuts, fPairCuts);
@@ -199,7 +200,7 @@ struct TagAndProbe {
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         const char* cutname = objArray->At(icut)->GetName();
         LOGF(info, "add cut : %s", cutname);
-        fProbeEMCCuts.push_back(*aod::emccuts::GetCut(cutname));
+        fProbeEMCCuts.push_back(*emccuts::GetCut(cutname));
       }
     }
     LOGF(info, "Number of EMCal cuts = %d", fProbeEMCCuts.size());
@@ -237,7 +238,6 @@ struct TagAndProbe {
         continue;
       }
 
-      reinterpret_cast<TH1F*>(list_ev_pair->FindObject("hZvtx_before"))->Fill(collision.posZ());
       reinterpret_cast<TH1F*>(list_ev_pair->FindObject("hCollisionCounter"))->Fill(1.0); // all
       if (!collision.sel8()) {
         continue;
@@ -252,9 +252,9 @@ struct TagAndProbe {
       if (abs(collision.posZ()) > 10.0) {
         continue;
       }
-      reinterpret_cast<TH1F*>(list_ev_pair->FindObject("hZvtx_after"))->Fill(collision.posZ());
+      reinterpret_cast<TH1F*>(list_ev_pair->FindObject("hZvtx"))->Fill(collision.posZ());
       reinterpret_cast<TH1F*>(list_ev_pair->FindObject("hCollisionCounter"))->Fill(4.0); // |Zvtx| < 10 cm
-      o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev_pair, "", collision);
+      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_pair, "", collision);
 
       auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
       auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());

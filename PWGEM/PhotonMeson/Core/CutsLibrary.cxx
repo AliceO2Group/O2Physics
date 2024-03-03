@@ -13,7 +13,33 @@
 //
 #include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
 
-V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
+EMEventCut* o2::aod::pwgem::photon::eventcuts::GetCut(const char* cutName)
+{
+  EMEventCut* cut = new EMEventCut(cutName, cutName);
+  std::string nameStr = cutName;
+
+  if (!nameStr.compare("minbias")) {
+    cut->SetRequireFT0AND(true);
+    cut->SetZvtxRange(-10.f, +10.f);
+    cut->SetRequireNoTFB(true);
+    cut->SetRequireNoITSROFB(false);
+    return cut;
+  }
+
+  if (!nameStr.compare("nocut")) {
+    cut->SetRequireFT0AND(false);
+    cut->SetZvtxRange(-1e+10, +1e+10);
+    cut->SetRequireNoTFB(false);
+    cut->SetRequireNoITSROFB(false);
+    return cut;
+  }
+
+  delete cut;
+  LOGF(info, Form("Did not find cut %s", cutName));
+  return nullptr;
+}
+
+V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
 {
   V0PhotonCut* cut = new V0PhotonCut(cutName, cutName);
   std::string nameStr = cutName;
@@ -351,7 +377,7 @@ V0PhotonCut* o2::aod::pcmcuts::GetCut(const char* cutName)
   return nullptr;
 }
 
-DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
+DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
 {
   DalitzEECut* cut = new DalitzEECut(cutName, cutName);
   std::string nameStr = cutName;
@@ -1269,7 +1295,7 @@ DalitzEECut* o2::aod::dalitzeecuts::GetCut(const char* cutName)
   return nullptr;
 }
 
-PHOSPhotonCut* o2::aod::phoscuts::GetCut(const char* cutName)
+PHOSPhotonCut* o2::aod::pwgem::photon::phoscuts::GetCut(const char* cutName)
 {
   PHOSPhotonCut* cut = new PHOSPhotonCut(cutName, cutName);
   std::string nameStr = cutName;
@@ -1304,7 +1330,7 @@ PHOSPhotonCut* o2::aod::phoscuts::GetCut(const char* cutName)
   return nullptr;
 }
 
-EMCPhotonCut* o2::aod::emccuts::GetCut(const char* cutName)
+EMCPhotonCut* o2::aod::pwgem::photon::emccuts::GetCut(const char* cutName)
 {
   EMCPhotonCut* cut = new EMCPhotonCut(cutName, cutName);
   std::string nameStr = cutName;
@@ -1363,7 +1389,7 @@ EMCPhotonCut* o2::aod::emccuts::GetCut(const char* cutName)
   return nullptr;
 }
 
-PairCut* o2::aod::paircuts::GetCut(const char* cutName)
+PairCut* o2::aod::pwgem::photon::paircuts::GetCut(const char* cutName)
 {
   PairCut* cut = new PairCut(cutName, cutName);
   std::string nameStr = cutName;

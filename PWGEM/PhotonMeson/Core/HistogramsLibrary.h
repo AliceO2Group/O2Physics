@@ -47,15 +47,16 @@ enum class EMHistType : int {
 
 namespace o2::aod
 {
-namespace emphotonhistograms
+namespace pwgem::photon::histogram
 {
 void DefineHistograms(THashList* list, const char* histClass, const char* subGroup = "");
 THashList* AddHistClass(THashList* list, const char* histClass);
 
 template <EMHistType htype, typename T>
-void FillHistClass(THashList* list, const char* subGroup, T const& obj)
+void FillHistClass(THashList* list, const char* subGroup, T const& obj, const float weight = 1.f)
 {
   if constexpr (htype == EMHistType::kEvent) {
+    reinterpret_cast<TH1F*>(list->FindObject("hZvtx"))->Fill(obj.posZ());
     reinterpret_cast<TH1F*>(list->FindObject("hMultNTracksPV"))->Fill(obj.multNTracksPV());
     reinterpret_cast<TH1F*>(list->FindObject("hMultNTracksPVeta1"))->Fill(obj.multNTracksPVeta1());
     reinterpret_cast<TH2F*>(list->FindObject("hMultFT0"))->Fill(obj.multFT0A(), obj.multFT0C());
@@ -164,7 +165,7 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     }
   }
 }
-} // namespace emphotonhistograms
+} // namespace pwgem::photon::histogram
 } // namespace o2::aod
 
 #endif // PWGEM_PHOTONMESON_CORE_HISTOGRAMSLIBRARY_H_

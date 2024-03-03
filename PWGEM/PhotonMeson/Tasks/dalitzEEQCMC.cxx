@@ -36,6 +36,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::mcutil;
+using namespace o2::aod::pwgem::photon;
 using std::array;
 
 using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNee, aod::EMReducedMCEventLabels>;
@@ -65,43 +66,43 @@ struct DalitzEEQCMC {
     fMainList->SetName("fMainList");
 
     // create sub lists first.
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Event");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Event");
     THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
-    o2::aod::emphotonhistograms::DefineHistograms(list_ev, "Event");
+    o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev, "Event");
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Track");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Track");
     THashList* list_track = reinterpret_cast<THashList*>(fMainList->FindObject("Track"));
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "DalitzEE");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "DalitzEE");
     THashList* list_dalitzee = reinterpret_cast<THashList*>(fMainList->FindObject("DalitzEE"));
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Generated");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Generated");
     THashList* list_gen = reinterpret_cast<THashList*>(fMainList->FindObject("Generated"));
-    o2::aod::emphotonhistograms::DefineHistograms(list_gen, "Generated", "dielectron");
+    o2::aod::pwgem::photon::histogram::DefineHistograms(list_gen, "Generated", "dielectron");
 
     for (const auto& cut : fDalitzEECuts) {
       const char* cutname = cut.GetName();
-      o2::aod::emphotonhistograms::AddHistClass(list_track, cutname);
-      o2::aod::emphotonhistograms::AddHistClass(list_dalitzee, cutname);
+      o2::aod::pwgem::photon::histogram::AddHistClass(list_track, cutname);
+      o2::aod::pwgem::photon::histogram::AddHistClass(list_dalitzee, cutname);
     }
 
     // for single tracks
     for (auto& cut : fDalitzEECuts) {
       std::string_view cutname = cut.GetName();
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("Track")->FindObject(cutname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list, "Track", "mc");
+      o2::aod::pwgem::photon::histogram::DefineHistograms(list, "Track", "mc");
     }
 
     // for DalitzEEs
     for (auto& cut : fDalitzEECuts) {
       std::string_view cutname = cut.GetName();
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("DalitzEE")->FindObject(cutname.data()));
-      // o2::aod::emphotonhistograms::DefineHistograms(list, "DalitzEE", "mc");
+      // o2::aod::pwgem::photon::histogram::DefineHistograms(list, "DalitzEE", "mc");
       std::string histo_sub_group = "mc,";
       if (cfgDoDCAstudy) {
         histo_sub_group += "dca";
       }
-      o2::aod::emphotonhistograms::DefineHistograms(list, "DalitzEE", histo_sub_group.data());
+      o2::aod::pwgem::photon::histogram::DefineHistograms(list, "DalitzEE", histo_sub_group.data());
     }
   }
 
@@ -158,7 +159,6 @@ struct DalitzEEQCMC {
     float det_pos = 999.f, det_ele = 999.f;
 
     for (auto& collision : collisions) {
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_before"))->Fill(collision.posZ());
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(1.0);
       if (!collision.sel8()) {
         continue;
@@ -174,8 +174,8 @@ struct DalitzEEQCMC {
         continue;
       }
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(4.0);
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_after"))->Fill(collision.posZ());
-      o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev, "", collision);
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx"))->Fill(collision.posZ());
+      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev, "", collision);
 
       auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
 
@@ -240,7 +240,7 @@ struct DalitzEEQCMC {
               nuls++;
               for (auto& track : {pos, ele}) {
                 if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
-                  o2::aod::emphotonhistograms::FillHistClass<EMHistType::kTrack>(list_track_cut, "", track);
+                  o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kTrack>(list_track_cut, "", track);
                   used_trackIds.emplace_back(track.globalIndex());
                   auto mctrack = track.template emmcparticle_as<aod::EMMCParticles>();
                   reinterpret_cast<TH2F*>(fMainList->FindObject("Track")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPtOverPtGen"))->Fill(mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
