@@ -34,10 +34,11 @@ struct MCGeneratorStudies {
   HistogramRegistry mHistManager{"MCGeneratorStudyHistograms"};
 
   Configurable<float> mVertexCut{"vertexCut", 10.f, "apply z-vertex cut with value in cm"};
+  Configurable<float> mRapidityCut{"rapidityCut", 0.9f, "Maximum absolute rapidity of counted generated particles"};
   Configurable<double> mSelectedParticleCode{"particlePDGCode", 111, "PDG code of the particle to be investigated"};
 
   Filter collisionFilter = (aod::collision::posZ > -mVertexCut) && (aod::collision::posZ < mVertexCut);
-  Filter mcParticleFilter = aod::mcparticle::pdgCode == mSelectedParticleCode;
+  Filter mcParticleFilter = (aod::mcparticle::pdgCode == mSelectedParticleCode) && (aod::mcparticle::y > -mRapidityCut) && (aod::mcparticle::y < mRapidityCut);
 
   void init(InitContext const&)
   {
