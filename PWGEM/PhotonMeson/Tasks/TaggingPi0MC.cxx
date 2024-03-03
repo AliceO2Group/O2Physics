@@ -44,6 +44,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::photonpair;
 using namespace o2::aod::pwgem::mcutil;
+using namespace o2::aod::pwgem::photon;
 
 using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
@@ -126,14 +127,14 @@ struct TaggingPi0MC {
 
         THashList* list_pair_subsys = reinterpret_cast<THashList*>(list_pair->FindObject(pairname.data()));
         std::string photon_cut_name = cutname1 + "_" + cutname2;
-        o2::aod::emphotonhistograms::AddHistClass(list_pair_subsys, photon_cut_name.data());
+        o2::aod::pwgem::photon::histogram::AddHistClass(list_pair_subsys, photon_cut_name.data());
         THashList* list_pair_subsys_photoncut = reinterpret_cast<THashList*>(list_pair_subsys->FindObject(photon_cut_name.data()));
 
         for (auto& cut3 : cuts3) {
           std::string pair_cut_name = cut3.GetName();
-          o2::aod::emphotonhistograms::AddHistClass(list_pair_subsys_photoncut, pair_cut_name.data());
+          o2::aod::pwgem::photon::histogram::AddHistClass(list_pair_subsys_photoncut, pair_cut_name.data());
           THashList* list_pair_subsys_paircut = reinterpret_cast<THashList*>(list_pair_subsys_photoncut->FindObject(pair_cut_name.data()));
-          o2::aod::emphotonhistograms::DefineHistograms(list_pair_subsys_paircut, "tagging_pi0_mc", "pair");
+          o2::aod::pwgem::photon::histogram::DefineHistograms(list_pair_subsys_paircut, "tagging_pi0_mc", "pair");
         } // end of pair cut loop
       }   // end of cut2 loop
     }     // end of cut1 loop
@@ -146,27 +147,27 @@ struct TaggingPi0MC {
     fMainList->SetName("fMainList");
 
     // create sub lists first.
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Event");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Event");
     THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "PCM");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "PCM");
     THashList* list_pcm = reinterpret_cast<THashList*>(fMainList->FindObject("PCM"));
     for (auto& cut : fPCMCuts) {
-      THashList* list_pcm_cut = o2::aod::emphotonhistograms::AddHistClass(list_pcm, cut.GetName());
-      o2::aod::emphotonhistograms::DefineHistograms(list_pcm_cut, "tagging_pi0_mc", "pcm");
+      THashList* list_pcm_cut = o2::aod::pwgem::photon::histogram::AddHistClass(list_pcm, cut.GetName());
+      o2::aod::pwgem::photon::histogram::DefineHistograms(list_pcm_cut, "tagging_pi0_mc", "pcm");
     }
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Pair");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Pair");
     THashList* list_pair = reinterpret_cast<THashList*>(fMainList->FindObject("Pair"));
 
     for (auto& pairname : fPairNames) {
       LOGF(info, "Enabled pairs = %s", pairname.data());
 
-      o2::aod::emphotonhistograms::AddHistClass(list_ev, pairname.data());
+      o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, pairname.data());
       THashList* list_ev_pair = reinterpret_cast<THashList*>(list_ev->FindObject(pairname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list_ev_pair, "Event");
+      o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_pair, "Event");
 
-      o2::aod::emphotonhistograms::AddHistClass(list_pair, pairname.data());
+      o2::aod::pwgem::photon::histogram::AddHistClass(list_pair, pairname.data());
 
       if (pairname == "PCMDalitzEE") {
         add_pair_histograms(list_pair, pairname, fPCMCuts, fDalitzEECuts, fPairCuts);
@@ -258,7 +259,7 @@ struct TaggingPi0MC {
           custom_cut->SetUseExoticCut(EMC_UseExoticCut);
           fEMCCuts.push_back(*custom_cut);
         } else {
-          fEMCCuts.push_back(*aod::emccuts::GetCut(cutname));
+          fEMCCuts.push_back(*emccuts::GetCut(cutname));
         }
       }
     }
@@ -310,7 +311,6 @@ struct TaggingPi0MC {
         continue;
       }
 
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hZvtx_before"))->Fill(collision.posZ());
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hCollisionCounter"))->Fill(1.0); // all
       if (!collision.sel8()) {
         continue;
@@ -325,10 +325,10 @@ struct TaggingPi0MC {
       if (abs(collision.posZ()) > 10.0) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hZvtx_after"))->Fill(collision.posZ());
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hZvtx"))->Fill(collision.posZ());
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hCollisionCounter"))->Fill(4.0); // |Zvtx| < 10 cm
 
-      o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev_pair, "", collision);
+      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_pair, "", collision);
       auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
       auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
 

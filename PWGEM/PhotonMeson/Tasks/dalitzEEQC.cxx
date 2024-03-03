@@ -35,6 +35,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using namespace o2::aod::pwgem::photon;
 using std::array;
 
 using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsBz, aod::EMReducedEventsNee>;
@@ -70,25 +71,25 @@ struct DalitzEEQC {
     fMainList->SetName("fMainList");
 
     // create sub lists first.
-    THashList* list_ev = reinterpret_cast<THashList*>(o2::aod::emphotonhistograms::AddHistClass(fMainList, "Event"));
-    THashList* list_track = reinterpret_cast<THashList*>(o2::aod::emphotonhistograms::AddHistClass(fMainList, "Track"));
-    THashList* list_dalitzee = reinterpret_cast<THashList*>(o2::aod::emphotonhistograms::AddHistClass(fMainList, "DalitzEE"));
+    THashList* list_ev = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Event"));
+    THashList* list_track = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Track"));
+    THashList* list_dalitzee = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "DalitzEE"));
 
     for (size_t icen = 0; icen < vec_cent_min.size(); icen++) {
       float cen_min = vec_cent_min[icen];
       float cen_max = vec_cent_max[icen];
       const char* cent_name = Form("Cent_%s_%3.2f_%3.2f", cent_det_names[cfgCentEstimator].data(), cen_min, cen_max);
-      THashList* list_ev_cent = reinterpret_cast<THashList*>(o2::aod::emphotonhistograms::AddHistClass(list_ev, cent_name));
-      o2::aod::emphotonhistograms::DefineHistograms(list_ev_cent, "Event");
+      THashList* list_ev_cent = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, cent_name));
+      o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_cent, "Event");
 
-      THashList* list_track_cent = reinterpret_cast<THashList*>(o2::aod::emphotonhistograms::AddHistClass(list_track, cent_name));
-      THashList* list_dalitzee_cent = reinterpret_cast<THashList*>(o2::aod::emphotonhistograms::AddHistClass(list_dalitzee, cent_name));
+      THashList* list_track_cent = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_track, cent_name));
+      THashList* list_dalitzee_cent = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_dalitzee, cent_name));
       for (const auto& cut : fDalitzEECuts) {
         const char* cutname = cut.GetName();
-        THashList* list_track_cent_cut = reinterpret_cast<THashList*>(o2::aod::emphotonhistograms::AddHistClass(list_track_cent, cutname));
-        o2::aod::emphotonhistograms::DefineHistograms(list_track_cent_cut, "Track");
+        THashList* list_track_cent_cut = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_track_cent, cutname));
+        o2::aod::pwgem::photon::histogram::DefineHistograms(list_track_cent_cut, "Track");
 
-        THashList* list_dalitzee_cent_cut = reinterpret_cast<THashList*>(o2::aod::emphotonhistograms::AddHistClass(list_dalitzee_cent, cutname));
+        THashList* list_dalitzee_cent_cut = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_dalitzee_cent, cutname));
         std::string histo_sub_group = "";
         if (doMix) {
           histo_sub_group += "mix";
@@ -96,7 +97,7 @@ struct DalitzEEQC {
         if (cfgDoDCAstudy) {
           histo_sub_group += "dca";
         }
-        o2::aod::emphotonhistograms::DefineHistograms(list_dalitzee_cent_cut, "DalitzEE", histo_sub_group.data());
+        o2::aod::pwgem::photon::histogram::DefineHistograms(list_dalitzee_cent_cut, "DalitzEE", histo_sub_group.data());
       } // end of cut loop
     }   // end of centrality loop
   }
@@ -176,7 +177,6 @@ struct DalitzEEQC {
         THashList* list_dalitzee_cent = static_cast<THashList*>(list_dalitzee->FindObject(cent_name));
         THashList* list_track_cent = static_cast<THashList*>(list_track->FindObject(cent_name));
 
-        reinterpret_cast<TH1F*>(list_ev_cent->FindObject("hZvtx_before"))->Fill(collision.posZ());
         reinterpret_cast<TH1F*>(list_ev_cent->FindObject("hCollisionCounter"))->Fill(1.0);
         if (!collision.sel8()) {
           continue;
@@ -192,9 +192,9 @@ struct DalitzEEQC {
           continue;
         }
         reinterpret_cast<TH1F*>(list_ev_cent->FindObject("hCollisionCounter"))->Fill(4.0);
-        reinterpret_cast<TH1F*>(list_ev_cent->FindObject("hZvtx_after"))->Fill(collision.posZ());
+        reinterpret_cast<TH1F*>(list_ev_cent->FindObject("hZvtx"))->Fill(collision.posZ());
 
-        o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev_cent, "", collision);
+        o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_cent, "", collision);
 
         for (const auto& cut : fDalitzEECuts) {
           THashList* list_dalitzee_cent_cut = static_cast<THashList*>(list_dalitzee_cent->FindObject(cut.GetName()));
@@ -234,7 +234,7 @@ struct DalitzEEQC {
               nuls++;
               for (auto& track : {pos, ele}) {
                 if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
-                  o2::aod::emphotonhistograms::FillHistClass<EMHistType::kTrack>(list_track_cent_cut, "", track);
+                  o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kTrack>(list_track_cent_cut, "", track);
                   used_trackIds.emplace_back(track.globalIndex());
                 }
               }
