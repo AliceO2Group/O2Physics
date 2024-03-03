@@ -23,11 +23,16 @@
 
 #include "Common/DataModel/EventSelection.h"
 
+
+#include "Framework/O2DatabasePDGPlugin.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct multiplicityPbPb {
+
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   // Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
 
@@ -43,17 +48,14 @@ struct multiplicityPbPb {
   Filter trackDCA = nabs(aod::track::dcaXY) < 0.2f; // makes a big difference in etaHistogram
 
   using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksDCA>;
-  // using myCompleteTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,  aod::McTrackLabels>;
   using myFilteredTracks = soa::Filtered<myCompleteTracks>;
 
-  // Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
   void init(InitContext const&)
   {
     // define axes you want to use
     const AxisSpec axisEta{nBinsEta, -2, 2, "#eta"};
     const AxisSpec axisPt{nBinsPt, 0, 5, "p_T"};
-    const AxisSpec axisDeltaPt{100, -1.0, +1.0, "#Delta(p_{T})"};
 
     const AxisSpec axisCounter{1, 0, +1, ""};
 
@@ -155,6 +157,11 @@ struct multiplicityPbPb {
     for (auto& mcParticle : mcParticles) {
       ++MCparticleCounter;
       if (mcParticle.isPhysicalPrimary()) {
+        auto pdgparticle = pdg->GetParticle(mcParticle.pdgCode());
+        if (pdgparticle != nullptr)
+          if (pdgparticle->Charge() == 0)
+            continue;
+
         histos.fill(HIST("MCGENetaHistogram"), mcParticle.eta());
         histos.fill(HIST("MCGENptHistogram"), mcParticle.pt());
 
