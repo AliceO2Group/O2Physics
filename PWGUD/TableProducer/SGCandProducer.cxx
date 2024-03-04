@@ -180,7 +180,6 @@ struct SGCandProducer {
       for (auto& track : tracks) {
         updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
       }
-      
       // update SGFwdTracks tables
       for (auto& fwdtrack : fwdtracks) {
         updateUDFwdTrackTables(fwdtrack, bc.globalBC());
