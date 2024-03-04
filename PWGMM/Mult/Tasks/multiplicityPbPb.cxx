@@ -156,7 +156,7 @@ struct multiplicityPbPb {
       ++MCparticleCounter;
       if (mcParticle.isPhysicalPrimary()) {
         auto pdgparticle = pdg->GetParticle(mcParticle.pdgCode());
-        if (pdgparticle != nullptr){
+        if (pdgparticle != nullptr) {
           if (std::abs(pdgparticle->Charge()) > 2)
             continue;
         }
