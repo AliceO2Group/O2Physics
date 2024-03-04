@@ -263,7 +263,6 @@ struct tableMakerJpsiHf {
       runDileptonDmeson<false, false>(groupedDileptonCandidates, groupedDmesonCandidates, collision);
     }
   }
-  
 
   // process J/psi(->mumu) - D0 adding the BDT output scores to the D0 table
   void processJspiToMuMuD0WithBdt(MyEvents const& collisions, MyDimuonCandidatesSelected const& dileptons, MyD0CandidatesSelectedWithBdt const& dmesons)
@@ -290,7 +289,7 @@ struct tableMakerJpsiHf {
       runDileptonDmeson<false, true>(groupedDileptonCandidates, groupedDmesonCandidates, collision);
     }
   }
-  
+
   PROCESS_SWITCH(tableMakerJpsiHf, processJspiToMuMuD0, "Process J/psi(->mumu) - D0", false);
   PROCESS_SWITCH(tableMakerJpsiHf, processJspiToEED0, "Process J/psi(->ee) - D0", false);
   PROCESS_SWITCH(tableMakerJpsiHf, processJspiToMuMuD0WithBdt, "Process J/psi(->mumu) - D0 with BDT", false);
