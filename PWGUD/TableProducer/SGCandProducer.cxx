@@ -152,7 +152,7 @@ struct SGCandProducer {
 
     // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
-   auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, tracks, fwdtracks);
+    auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, tracks, fwdtracks);
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
     registry.get<TH1>(HIST("reco/Stat"))->Fill(isSGEvent + 1, 1.);
     if (isSGEvent <= 2) {
@@ -184,13 +184,12 @@ struct SGCandProducer {
       for (auto& fwdtrack : fwdtracks) {
         updateUDFwdTrackTables(fwdtrack, bc.globalBC());
       }
-    if (bc.has_zdc()) {
-      auto zdc = bc.zdc();
-      udZdcsReduced(outputCollisions.lastIndex(), zdc.timeZNA(), zdc.timeZNC(), zdc.energyCommonZNA(), zdc.energyCommonZNC());
-    }
-    else{
-      udZdcsReduced(outputCollisions.lastIndex(), -999, -999, -999, -999);
-    }
+      if (bc.has_zdc()) {
+        auto zdc = bc.zdc();
+        udZdcsReduced(outputCollisions.lastIndex(), zdc.timeZNA(), zdc.timeZNC(), zdc.energyCommonZNA(), zdc.energyCommonZNC());
+      } else {
+        udZdcsReduced(outputCollisions.lastIndex(), -999, -999, -999, -999);
+      }
     }
   }
 };
