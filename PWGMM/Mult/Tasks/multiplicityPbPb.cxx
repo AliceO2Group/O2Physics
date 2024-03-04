@@ -157,7 +157,7 @@ struct multiplicityPbPb {
       if (mcParticle.isPhysicalPrimary()) {
         auto pdgparticle = pdg->GetParticle(mcParticle.pdgCode());
         if (pdgparticle != nullptr) {
-          if (std::abs(pdgparticle->Charge()) > 2)
+          if (std::abs(pdgparticle->Charge()) < 3)
             continue;
         }
         histos.fill(HIST("MCGENetaHistogram"), mcParticle.eta());
