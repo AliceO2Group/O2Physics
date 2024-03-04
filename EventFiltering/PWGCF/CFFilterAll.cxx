@@ -195,6 +195,10 @@ struct CFFilter {
     "ConfEvtOfflineCheck",
     false,
     "Evt sel: check for offline selection"};
+  Configurable<bool> ConfEvtTimeFrameBorderCheck{
+    "ConfEvtTimeFrameBorderCheck",
+    true,
+    "Evt sel: check for offline selection"};
   Configurable<bool> ConfAutocorRejection{
     "ConfAutocorRejection",
     true,
@@ -825,7 +829,7 @@ struct CFFilter {
       return false;
     }
     // if event is close to the timeframe border, return false
-    if (!col.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    if (ConfEvtTimeFrameBorderCheck && !col.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
 
