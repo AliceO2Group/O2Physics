@@ -829,7 +829,6 @@ struct CFFilter {
       return false;
     }
 
-
     return true;
   }
 
