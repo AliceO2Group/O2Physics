@@ -19,63 +19,69 @@
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/SGCutParHolder.h"
 
-class SGSelector {
-public:
-    SGSelector() : fPDG(TDatabasePDG::Instance()) {}
+class SGSelector
+{
+ public:
+  SGSelector() : fPDG(TDatabasePDG::Instance()) {}
 
-    template <typename CC, typename BCs, typename TCs, typename FWs>
-    int Print(SGCutParHolder diffCuts, CC& collision, BCs& bcRange, TCs& tracks, FWs& fwdtracks) {
-        LOGF(info, "Size of array %i", collision.size());
-        return 1;
+  template <typename CC, typename BCs, typename TCs, typename FWs>
+  int Print(SGCutParHolder diffCuts, CC& collision, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
+  {
+    LOGF(info, "Size of array %i", collision.size());
+    return 1;
+  }
+
+  template <typename CC, typename BCs, typename TCs, typename FWs>
+  int IsSelected(SGCutParHolder diffCuts, CC& collision, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
+  {
+    LOGF(debug, "Collision %f", collision.collisionTime());
+    LOGF(debug, "Number of close BCs: %i", bcRange.size());
+
+    bool gA = true, gC = true;
+    for (auto const& bc : bcRange) {
+      if (!udhelpers::cleanFITA(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits()))
+        gA = false;
+      if (!udhelpers::cleanFITC(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits()))
+        gC = false;
+    }
+    if (!gA && !gC)
+      return 3;
+
+    LOGF(debug, "FwdTracks %i", fwdtracks.size());
+    for (auto& fwdtrack : fwdtracks) {
+      if (fwdtrack.trackType() == 0 || fwdtrack.trackType() == 3) {
+        return 4;
+      }
     }
 
-    template <typename CC, typename BCs, typename TCs, typename FWs>
-    int IsSelected(SGCutParHolder diffCuts, CC& collision, BCs& bcRange, TCs& tracks, FWs& fwdtracks) {
-        LOGF(debug, "Collision %f", collision.collisionTime());
-        LOGF(debug, "Number of close BCs: %i", bcRange.size());
+    double rgtrwTOF = 0.0;
+    for (auto& track : tracks) {
+      if (track.isGlobalTrack() && !track.isPVContributor()) {
+        return 5;
+      }
+      if (diffCuts.globalTracksOnly() && track.isPVContributor() && !track.isGlobalTrack()) {
+        return 6;
+      }
+      if (!diffCuts.ITSOnlyTracks() && track.isPVContributor() && !track.hasTPC()) {
+        return 7;
+      }
+      if (track.isPVContributor() && track.hasTOF()) {
+        rgtrwTOF += 1.0;
+      }
+    }
+    if (collision.numContrib() > 0) {
+      rgtrwTOF /= static_cast<double>(collision.numContrib());
+    }
+    if (rgtrwTOF < diffCuts.minRgtrwTOF()) {
+      return 8;
+    }
 
-        bool gA = true, gC = true;
-        for (auto const& bc : bcRange) {
-            if (!udhelpers::cleanFITA(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) gA = false;
-            if (!udhelpers::cleanFITC(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) gC = false;
-        }
-        if (!gA && !gC) return 3;
+    if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
+      return 9;
+    }
 
-        LOGF(debug, "FwdTracks %i", fwdtracks.size());
-        for (auto& fwdtrack : fwdtracks) {
-            if (fwdtrack.trackType() == 0 || fwdtrack.trackType() == 3) {
-                return 4;
-            }
-        }
-
-        double rgtrwTOF = 0.0;
-        for (auto& track : tracks) {
-            if (track.isGlobalTrack() && !track.isPVContributor()) {
-                return 5;
-            }
-            if (diffCuts.globalTracksOnly() && track.isPVContributor() && !track.isGlobalTrack()) {
-                return 6;
-            }
-            if (!diffCuts.ITSOnlyTracks() && track.isPVContributor() && !track.hasTPC()) {
-                return 7;
-            }
-            if (track.isPVContributor() && track.hasTOF()) {
-                rgtrwTOF += 1.0;
-            }
-        }
-        if (collision.numContrib() > 0) {
-            rgtrwTOF /= static_cast<double>(collision.numContrib());
-        }
-        if (rgtrwTOF < diffCuts.minRgtrwTOF()) {
-            return 8;
-        }
-
-        if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
-            return 9;
-        }
-
-// PID, pt, and eta of tracks, invariant mass, and net charge
-// consider only vertex tracks
+    // PID, pt, and eta of tracks, invariant mass, and net charge
+    // consider only vertex tracks
 
     // which particle hypothesis?
     auto mass2Use = 0.;
@@ -103,13 +109,11 @@ public:
       }
     }
 
+    return gA && gC ? 2 : (gA ? 0 : 1);
+  }
 
-        return gA && gC ? 2 : (gA ? 0 : 1);
-    }
-
-private:
-    TDatabasePDG* fPDG;
+ private:
+  TDatabasePDG* fPDG;
 };
 
 #endif // PWGUD_CORE_SGSELECTOR_H_
-
