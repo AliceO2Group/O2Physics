@@ -120,6 +120,7 @@ struct nucleiFilter {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
 
     qaHists.add("fCollZpos", "collision z position", HistType::kTH1F, {{600, -20., +20., "z position (cm)"}});
+    qaHists.add("fTPCsignalAll", "Specific energy loss (before filter)", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     qaHists.add("fTPCsignal", "Specific energy loss", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     qaHists.add("fDeuTOFNsigma", "Deuteron TOF Nsigma distribution", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {2000, -100, 100, "TOF n#sigma"}});
     qaHists.add("fH3LMassVsPt", "Hypertrion mass Vs pT", HistType::kTH2F, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {80, 2.96, 3.04, "Inv. Mass (GeV/c^{2})"}});
@@ -181,6 +182,9 @@ struct nucleiFilter {
       const int iC{track.sign() < 0};
 
       float fixTPCrigidity{(fixTPCinnerParam && (track.pidForTracking() == track::PID::Helium3 || track.pidForTracking() == track::PID::Alpha)) ? 0.5f : 1.f};
+
+      // fill QA hist: dEdx for all charged tracks
+      qaHists.fill(HIST("fTPCsignalAll"), track.sign() * track.tpcInnerParam() * fixTPCrigidity, track.tpcSignal());
 
       for (int iN{0}; iN < nNuclei; ++iN) {
         /// Cheap checks first
