@@ -319,8 +319,8 @@ struct phosPi0 {
       bool skipMix = false;
       uint64_t bcurrentMix = 0;
       for (; clu2 != clusters.end() && nMix > 0; clu2++) {
-        if (clu2.e() < mMinCluE || clu2.ncell() < mMinCluNcell ||
-            clu2.time() > mMaxCluTime || clu2.time() < mMinCluTime) {
+        if (clu2.e() < mMinCluE || clu2.ncell() < mMinCluNcell || clu2.time() > mMaxCluTime || clu2.time() < mMinCluTime ||
+            clu2.m02() < mMinM02 || clu2.m20() < mMinM20) {
           continue;
         }
         double m = pow(clu.e() + clu2.e(), 2) - pow(clu.px() + clu2.px(), 2) -
@@ -427,8 +427,8 @@ struct phosPi0 {
       uint64_t bcurrentMix = 0;
       bool skipMix = false;
       for (; clu2 != ambclusters.end() && nMix > 0; clu2++) {
-        if (clu2.e() < mMinCluE || clu2.ncell() < mMinCluNcell ||
-            clu2.time() > mMaxCluTime || clu2.time() < mMinCluTime) {
+        if (clu2.e() < mMinCluE || clu2.ncell() < mMinCluNcell || clu2.time() > mMaxCluTime || clu2.time() < mMinCluTime ||
+            clu2.m02() < mMinM02 || clu2.m20() < mMinM20) {
           continue;
         }
         double m = pow(clu.e() + clu2.e(), 2) - pow(clu.px() + clu2.px(), 2) -
