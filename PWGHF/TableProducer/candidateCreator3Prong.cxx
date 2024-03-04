@@ -34,6 +34,7 @@ using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_collision_centrality;
 using namespace o2::constants::physics;
 using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 /// Reconstruction of heavy-flavour 3-prong decay candidates
 struct HfCandidateCreator3Prong {
@@ -57,6 +58,11 @@ struct HfCandidateCreator3Prong {
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+  // flags to enable creation for different particle species separately 
+  Configurable<bool> createDplus{"createDplus", true, "enable D+/- candidate creation"};
+  Configurable<bool> createDs{"createDs", true, "enable Ds+/- candidate creation"};
+  Configurable<bool> createLc{"createLc", true, "enable Lc+/- candidate creation"};
+  Configurable<bool> createXic{"createXic", true, "enable Xic+/- candidate creation"};
 
   o2::vertexing::DCAFitterN<3> df; // 3-prong vertex fitter
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -69,6 +75,12 @@ struct HfCandidateCreator3Prong {
   double massK{0.};
   double massPiKPi{0.};
   double bz{0.};
+
+  using FilteredHf3Prongs = soa::Filtered<aod::Hf3Prongs>;
+  using FilteredPvRefitHf3Prongs = soa::Filtered<soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong>>;
+
+  // filter collisions
+  Filter filterSelected3Prongs = (createDplus && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi))) != static_cast<uint8_t>(0)) || (createDs && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0)) || (createLc && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::XicToPKPi))) != static_cast<uint8_t>(0)) || (createLc && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::XicToPKPi))) != static_cast<uint8_t>(0));
 
   OutputObj<TH1F> hMass3{TH1F("hMass3", "3-prong candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", 500, 1.6, 2.1)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
@@ -266,7 +278,7 @@ struct HfCandidateCreator3Prong {
 
   /// @brief process function w/ PV refit and w/o centrality selections
   void processPvRefit(aod::Collisions const& collisions,
-                      soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
+                      FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
                       aod::TracksWCovExtra const& tracks,
                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
@@ -276,7 +288,7 @@ struct HfCandidateCreator3Prong {
 
   /// @brief process function w/o PV refit and w/o centrality selections
   void processNoPvRefit(aod::Collisions const& collisions,
-                        aod::Hf3Prongs const& rowsTrackIndexProng3,
+                        FilteredHf3Prongs const& rowsTrackIndexProng3,
                         aod::TracksWCovExtra const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
@@ -292,7 +304,7 @@ struct HfCandidateCreator3Prong {
 
   /// @brief process function w/ PV refit and w/ centrality selection on FT0C
   void processPvRefitCentFT0C(soa::Join<aod::Collisions, aod::CentFT0Cs> const& collisions,
-                              soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
+                              FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
                               aod::TracksWCovExtra const& tracks,
                               aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
@@ -302,7 +314,7 @@ struct HfCandidateCreator3Prong {
 
   /// @brief process function w/o PV refit and  w/ centrality selection on FT0C
   void processNoPvRefitCentFT0C(soa::Join<aod::Collisions, aod::CentFT0Cs> const& collisions,
-                                aod::Hf3Prongs const& rowsTrackIndexProng3,
+                                FilteredHf3Prongs const& rowsTrackIndexProng3,
                                 aod::TracksWCovExtra const& tracks,
                                 aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
@@ -318,7 +330,7 @@ struct HfCandidateCreator3Prong {
 
   /// @brief process function w/ PV refit and w/ centrality selection on FT0M
   void processPvRefitCentFT0M(soa::Join<aod::Collisions, aod::CentFT0Ms> const& collisions,
-                              soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
+                              FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
                               aod::TracksWCovExtra const& tracks,
                               aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
@@ -328,7 +340,7 @@ struct HfCandidateCreator3Prong {
 
   /// @brief process function w/o PV refit and  w/ centrality selection on FT0M
   void processNoPvRefitCentFT0M(soa::Join<aod::Collisions, aod::CentFT0Ms> const& collisions,
-                                aod::Hf3Prongs const& rowsTrackIndexProng3,
+                                FilteredHf3Prongs const& rowsTrackIndexProng3,
                                 aod::TracksWCovExtra const& tracks,
                                 aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
