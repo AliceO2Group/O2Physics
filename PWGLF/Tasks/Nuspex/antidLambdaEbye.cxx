@@ -432,7 +432,7 @@ struct antidLambdaEbye {
         }
 
         float cosL = 1 / std::sqrt(1.f + track.tgl() * track.tgl());
-        if (iP && getITSClSize(track) * cosL > antidItsClsSizeCut && track.pt() > antidPtItsClsSizeCut) {
+        if (iP && getITSClSize(track) * cosL < antidItsClsSizeCut && track.pt() < antidPtItsClsSizeCut) {
           continue;
         }
 
