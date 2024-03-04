@@ -152,30 +152,13 @@ struct DalitzEEQC {
       // float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       // float centrality = centralities[cfgCentEstimator];
 
-      reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(1.0);
-      if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-        reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(2.0);
-      }
-      if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-        reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(3.0);
-      }
-      if (collision.sel8()) {
-        reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(4.0);
-      }
-      if (collision.numContrib() > 0.5) {
-        reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(5.0);
-      }
-      if (abs(collision.posZ()) < 10.0) {
-        reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(6.0);
-      }
-
       o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_before, "", collision);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
       o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_after, "", collision);
-      reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill(7.0);
-      reinterpret_cast<TH1F*>(list_ev_after->FindObject("hCollisionCounter"))->Fill(7.0);
+      reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
+      reinterpret_cast<TH1F*>(list_ev_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
 
       auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
       auto lspp_pairs_per_coll = lspp_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
