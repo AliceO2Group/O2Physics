@@ -21,6 +21,7 @@
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/RunningWorkflowInfo.h"
 #include "ReconstructionDataFormats/DCA.h"
 
 #include "Common/Core/trackUtilities.h"
@@ -34,6 +35,7 @@ using namespace o2::aod::hf_cand_3prong;
 using namespace o2::aod::hf_collision_centrality;
 using namespace o2::constants::physics;
 using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 /// Reconstruction of heavy-flavour 3-prong decay candidates
 struct HfCandidateCreator3Prong {
@@ -57,6 +59,11 @@ struct HfCandidateCreator3Prong {
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+  // flags to enable creation for different particle species separately
+  Configurable<bool> createDplus{"createDplus", false, "enable D+/- candidate creation"};
+  Configurable<bool> createDs{"createDs", false, "enable Ds+/- candidate creation"};
+  Configurable<bool> createLc{"createLc", false, "enable Lc+/- candidate creation"};
+  Configurable<bool> createXic{"createXic", false, "enable Xic+/- candidate creation"};
 
   o2::vertexing::DCAFitterN<3> df; // 3-prong vertex fitter
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -69,6 +76,12 @@ struct HfCandidateCreator3Prong {
   double massK{0.};
   double massPiKPi{0.};
   double bz{0.};
+
+  using FilteredHf3Prongs = soa::Filtered<aod::Hf3Prongs>;
+  using FilteredPvRefitHf3Prongs = soa::Filtered<soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong>>;
+
+  // filter candidates
+  Filter filterSelected3Prongs = (createDplus && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0)) || (createDs && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0)) || (createLc && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::XicToPKPi))) != static_cast<uint8_t>(0)) || (createLc && (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::XicToPKPi))) != static_cast<uint8_t>(0));
 
   OutputObj<TH1F> hMass3{TH1F("hMass3", "3-prong candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", 500, 1.6, 2.1)};
   OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
@@ -90,6 +103,12 @@ struct HfCandidateCreator3Prong {
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
+
+    std::array<bool, 4> creationFlags = {createDplus, createDs, createLc, createXic};
+    if (std::accumulate(creationFlags.begin(), creationFlags.end(), 0) == 0) {
+      LOGP(fatal, "At least one particle specie should be enabled for the creation.");
+    }
+
     massPi = MassPiPlus;
     massK = MassKPlus;
 
@@ -266,7 +285,7 @@ struct HfCandidateCreator3Prong {
 
   /// @brief process function w/ PV refit and w/o centrality selections
   void processPvRefit(aod::Collisions const& collisions,
-                      soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
+                      FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
                       aod::TracksWCovExtra const& tracks,
                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
@@ -276,7 +295,7 @@ struct HfCandidateCreator3Prong {
 
   /// @brief process function w/o PV refit and w/o centrality selections
   void processNoPvRefit(aod::Collisions const& collisions,
-                        aod::Hf3Prongs const& rowsTrackIndexProng3,
+                        FilteredHf3Prongs const& rowsTrackIndexProng3,
                         aod::TracksWCovExtra const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
@@ -292,7 +311,7 @@ struct HfCandidateCreator3Prong {
 
   /// @brief process function w/ PV refit and w/ centrality selection on FT0C
   void processPvRefitCentFT0C(soa::Join<aod::Collisions, aod::CentFT0Cs> const& collisions,
-                              soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
+                              FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
                               aod::TracksWCovExtra const& tracks,
                               aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
@@ -302,7 +321,7 @@ struct HfCandidateCreator3Prong {
 
   /// @brief process function w/o PV refit and  w/ centrality selection on FT0C
   void processNoPvRefitCentFT0C(soa::Join<aod::Collisions, aod::CentFT0Cs> const& collisions,
-                                aod::Hf3Prongs const& rowsTrackIndexProng3,
+                                FilteredHf3Prongs const& rowsTrackIndexProng3,
                                 aod::TracksWCovExtra const& tracks,
                                 aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
@@ -318,7 +337,7 @@ struct HfCandidateCreator3Prong {
 
   /// @brief process function w/ PV refit and w/ centrality selection on FT0M
   void processPvRefitCentFT0M(soa::Join<aod::Collisions, aod::CentFT0Ms> const& collisions,
-                              soa::Join<aod::Hf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexProng3,
+                              FilteredPvRefitHf3Prongs const& rowsTrackIndexProng3,
                               aod::TracksWCovExtra const& tracks,
                               aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
@@ -328,7 +347,7 @@ struct HfCandidateCreator3Prong {
 
   /// @brief process function w/o PV refit and  w/ centrality selection on FT0M
   void processNoPvRefitCentFT0M(soa::Join<aod::Collisions, aod::CentFT0Ms> const& collisions,
-                                aod::Hf3Prongs const& rowsTrackIndexProng3,
+                                FilteredHf3Prongs const& rowsTrackIndexProng3,
                                 aod::TracksWCovExtra const& tracks,
                                 aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
@@ -343,7 +362,38 @@ struct HfCandidateCreator3ProngExpressions {
   Produces<aod::HfCand3ProngMcRec> rowMcMatchRec;
   Produces<aod::HfCand3ProngMcGen> rowMcMatchGen;
 
-  void init(InitContext const&) {}
+  bool createDplus{false};
+  bool createDs{false};
+  bool createLc{false};
+  bool createXic{false};
+
+  void init(InitContext& initContext)
+  {
+
+    // inspect for which particle species the candidates were created
+    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    for (const DeviceSpec& device : workflows.devices) {
+      if (device.name.compare("hf-candidate-creator-3prong") == 0) {
+        for (const auto& option : device.options) {
+          if (option.name.compare("createDplus") == 0) {
+            createDplus = option.defaultValue.get<bool>();
+          } else if (option.name.compare("createDs") == 0) {
+            createDs = option.defaultValue.get<bool>();
+          } else if (option.name.compare("createLc") == 0) {
+            createLc = option.defaultValue.get<bool>();
+          } else if (option.name.compare("createXic") == 0) {
+            createXic = option.defaultValue.get<bool>();
+          }
+        }
+      }
+    }
+
+    LOGP(info, "Flags for candidate creation from the reco workflow:");
+    LOGP(info, "    --> createDplus = {}", createDplus);
+    LOGP(info, "    --> createDs = {}", createDs);
+    LOGP(info, "    --> createLc = {}", createLc);
+    LOGP(info, "    --> createXic = {}", createXic);
+  }
 
   /// Performs MC matching.
   void processMc(aod::TracksWMc const& tracks,
@@ -376,13 +426,15 @@ struct HfCandidateCreator3ProngExpressions {
       auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>(), candidate.prong2_as<aod::TracksWMc>()};
 
       // D± → π± K∓ π±
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
-      if (indexRec > -1) {
-        flag = sign * (1 << DecayType::DplusToPiKPi);
+      if (createDplus) {
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+        if (indexRec > -1) {
+          flag = sign * (1 << DecayType::DplusToPiKPi);
+        }
       }
 
       // Ds± → K± K∓ π± and D± → K± K∓ π±
-      if (flag == 0) {
+      if (flag == 0 && createDs) {
         bool isDplus = false;
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec == -1) {
@@ -412,7 +464,7 @@ struct HfCandidateCreator3ProngExpressions {
       }
 
       // Λc± → p± K∓ π±
-      if (flag == 0) {
+      if (flag == 0 && createLc) {
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::LcToPKPi);
@@ -439,7 +491,7 @@ struct HfCandidateCreator3ProngExpressions {
       }
 
       // Ξc± → p± K∓ π±
-      if (flag == 0) {
+      if (flag == 0 && createXic) {
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::XicToPKPi);
@@ -463,12 +515,14 @@ struct HfCandidateCreator3ProngExpressions {
       arrDaughIndex.clear();
 
       // D± → π± K∓ π±
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
-        flag = sign * (1 << DecayType::DplusToPiKPi);
+      if (createDplus) {
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+          flag = sign * (1 << DecayType::DplusToPiKPi);
+        }
       }
 
       // Ds± → K± K∓ π± and D± → K± K∓ π±
-      if (flag == 0) {
+      if (flag == 0 && createDs) {
         bool isDplus = false;
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           // DecayType::DsToKKPi is used to flag both Ds± → K± K∓ π± and D± → K± K∓ π±
@@ -497,7 +551,7 @@ struct HfCandidateCreator3ProngExpressions {
       }
 
       // Λc± → p± K∓ π±
-      if (flag == 0) {
+      if (flag == 0 && createLc) {
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::LcToPKPi);
 
@@ -520,7 +574,7 @@ struct HfCandidateCreator3ProngExpressions {
       }
 
       // Ξc± → p± K∓ π±
-      if (flag == 0) {
+      if (flag == 0 && createXic) {
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
           flag = sign * (1 << DecayType::XicToPKPi);
         }
