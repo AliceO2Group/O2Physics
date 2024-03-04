@@ -241,11 +241,9 @@ struct tableMakerJpsiHf {
   // process J/psi(->mumu) - D0
   void processJspiToMuMuD0(MyEvents const& collisions, MyDimuonCandidatesSelected const& dileptons, MyD0CandidatesSelected const& dmesons)
   {
-    LOGP(info, "---------> Processing processJspiToMuMuD0");
     if (storeTableForNorm) {
       redCollCounter(collisions.size());
     }
-    LOGP(info, "Collision table size = {}", collisions.size());
     for (auto& collision : collisions) {
       auto groupedDmesonCandidates = selectedD0Candidates->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       auto groupedDileptonCandidates = selectedDimuonCandidates->sliceByCached(aod::reducedpair::collisionId, collision.globalIndex(), cache);
