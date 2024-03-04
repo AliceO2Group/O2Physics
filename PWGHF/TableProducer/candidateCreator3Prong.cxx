@@ -58,7 +58,7 @@ struct HfCandidateCreator3Prong {
   Configurable<std::string> ccdbPathLut{"ccdbPathLut", "GLO/Param/MatLUT", "Path for LUT parametrization"};
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
-  // flags to enable creation for different particle species separately 
+  // flags to enable creation for different particle species separately
   Configurable<bool> createDplus{"createDplus", true, "enable D+/- candidate creation"};
   Configurable<bool> createDs{"createDs", true, "enable Ds+/- candidate creation"};
   Configurable<bool> createLc{"createLc", true, "enable Lc+/- candidate creation"};
