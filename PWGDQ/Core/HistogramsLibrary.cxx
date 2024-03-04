@@ -453,6 +453,11 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       for (int i = 0; i <= kNbins_nSigmamore; i++)
         nSigma_binsmore[i] = -5. + 0.2 * i;
 
+      const int kNbins_nSigmagrob = 24;
+      double nSigma_binsgrob[kNbins_nSigmagrob + 1];
+      for (int i = 0; i <= kNbins_nSigmagrob; i++)
+        nSigma_binsgrob[i] = -6. + 0.5 * i;
+
       const int kNbins_TOFbeta = 120;
       double TOFbeta_bins[kNbins_TOFbeta + 1];
       for (int i = 0; i <= kNbins_TOFbeta; i++)
@@ -480,9 +485,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         const int kNvarsPIDmore = 4;
         TArrayD nSigmaBinLimitsmore[kNvarsPIDmore];
         nSigmaBinLimitsmore[0] = TArrayD(kNbins_pINmore + 1, pIN_binsmore);
-        nSigmaBinLimitsmore[1] = TArrayD(kNbins_nSigma + 1, nSigma_bins);
-        nSigmaBinLimitsmore[2] = TArrayD(kNbins_nSigmamore + 1, nSigma_binsmore);
-        nSigmaBinLimitsmore[3] = TArrayD(kNbins_nSigma + 1, nSigma_bins);
+        nSigmaBinLimitsmore[1] = TArrayD(kNbins_nSigmamore + 1, nSigma_binsmore);
+        nSigmaBinLimitsmore[2] = TArrayD(kNbins_nSigmagrob + 1, nSigma_binsgrob);
+        nSigmaBinLimitsmore[3] = TArrayD(kNbins_nSigmamore + 1, nSigma_binsmore);
         int varsPIDnSigmamore[kNvarsPIDmore] = {VarManager::kPin, VarManager::kTPCnSigmaEl, VarManager::kTPCnSigmaPi, VarManager::kTOFnSigmaEl};
         hm->AddHistogram(histClass, "nSigmaTPCTOF", "", kNvarsPIDmore, varsPIDnSigmamore, nSigmaBinLimitsmore);
       } else {
