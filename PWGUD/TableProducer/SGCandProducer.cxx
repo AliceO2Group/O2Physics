@@ -152,19 +152,21 @@ struct SGCandProducer {
 
     // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
-    auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, tracks, fwdtracks);
+   auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange);
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
     registry.get<TH1>(HIST("reco/Stat"))->Fill(isSGEvent + 1, 1.);
     if (isSGEvent <= 2) {
+      if (isSGEvent < 2) LOGF(info, "Current BC: %i, %i", bc.globalBC(), isSGEvent);
+      if (sameCuts.minRgtrwTOF()){
+	      if (udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib()) < sameCuts.minRgtrwTOF()) return;
+      }
       upchelpers::FITInfo fitInfo{};
       udhelpers::getFITinfo(fitInfo, bc.globalBC(), bcs, ft0s, fv0as, fdds);
-
       // update SG candidates tables
-      auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(),
                        collision.numContrib(), udhelpers::netCharge<true>(tracks),
-                       rtrwTOF);
+                       1.);//rtrwTOF); //omit the calculation to speed up the things while skimming
       outputSGCollisions(isSGEvent);
       outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
                            fitInfo.triggerMaskFT0,
@@ -175,20 +177,23 @@ struct SGCandProducer {
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
       outputCollsLabels(collision.globalIndex());
-
+      if (bc.has_zdc()) {
+         auto zdc = bc.zdc();
+         udZdcsReduced(outputCollisions.lastIndex(), zdc.timeZNA(), zdc.timeZNC(), zdc.energyCommonZNA(), zdc.energyCommonZNC());
+      }
+      else{
+         udZdcsReduced(outputCollisions.lastIndex(), -999, -999, -999, -999);
+      }
       // update SGTracks tables
       for (auto& track : tracks) {
-        updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+	if (!sgSelector.TrkSelector(sameCuts, track)) updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
       }
+      
       // update SGFwdTracks tables
-      for (auto& fwdtrack : fwdtracks) {
-        updateUDFwdTrackTables(fwdtrack, bc.globalBC());
-      }
-      if (bc.has_zdc()) {
-        auto zdc = bc.zdc();
-        udZdcsReduced(outputCollisions.lastIndex(), zdc.timeZNA(), zdc.timeZNC(), zdc.energyCommonZNA(), zdc.energyCommonZNC());
-      } else {
-        udZdcsReduced(outputCollisions.lastIndex(), -999, -999, -999, -999);
+      if (sameCuts.withFwdTracks()){
+         for (auto& fwdtrack : fwdtracks) {
+           if (!sgSelector.FwdTrkSelector(fwdtrack)) updateUDFwdTrackTables(fwdtrack, bc.globalBC());
+         }
       }
     }
   }
