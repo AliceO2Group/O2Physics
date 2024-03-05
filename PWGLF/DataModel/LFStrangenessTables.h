@@ -55,8 +55,8 @@ using StraCollision = StraCollisions::iterator;
 using StraCent = StraCents::iterator;
 
 //______________________________________________________
-// for correlating information with MC 
-// also allows for collision association cross-checks 
+// for correlating information with MC
+// also allows for collision association cross-checks
 DECLARE_SOA_TABLE(StraMCCollisions, "AOD", "STRAMCCOLLISION", //! MC collision properties
                   o2::soa::Index<>, mccollision::PosX, mccollision::PosY, mccollision::PosZ,
                   mccollision::ImpactParameter);
@@ -149,7 +149,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(NegTrackExtra, negTrackExtra, int, DauTrackExtras,
 DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision);                                        //!
 DECLARE_SOA_INDEX_COLUMN(StraMCCollision, straMCCollision);                                    //!
 DECLARE_SOA_INDEX_COLUMN(MotherMCPart, motherMCPart);                                          //!
-} 
+} // namespace v0data
 //______________________________________________________
 // intermezzo: define StraCollRefs, then carry on
 DECLARE_SOA_TABLE(StraCollLabels, "AOD", "STRACOLLLABELS", //! optional table to refer back to a MC collision

@@ -493,24 +493,24 @@ struct MultiplicityTableTaskIndexed {
     int multBarrelEta08 = 0;
     int multBarrelEta10 = 0;
     for (auto const& mcPart : mcParticles) {
-      if(!mcPart.isPhysicalPrimary())
+      if (!mcPart.isPhysicalPrimary())
         continue;
 
-      if(std::abs(mcPart.eta())<1.0){ 
-        multBarrelEta10++; 
-        if(std::abs(mcPart.eta())<0.8){
-          multBarrelEta08++; 
-          if(std::abs(mcPart.eta())<0.5){
-          multBarrelEta05++; 
+      if (std::abs(mcPart.eta()) < 1.0) {
+        multBarrelEta10++;
+        if (std::abs(mcPart.eta()) < 0.8) {
+          multBarrelEta08++;
+          if (std::abs(mcPart.eta()) < 0.5) {
+            multBarrelEta05++;
           }
         }
       }
-      if(-3.3 < mcPart.eta() && mcPart.eta() < -2.1 )
-        multFT0C++; 
-      if(3.5 < mcPart.eta() && mcPart.eta() < 4.9 )
-        multFT0A++; 
+      if (-3.3 < mcPart.eta() && mcPart.eta() < -2.1)
+        multFT0C++;
+      if (3.5 < mcPart.eta() && mcPart.eta() < 4.9)
+        multFT0A++;
     }
-    tableExtraMc( multFT0A, multFT0C, multBarrelEta05, multBarrelEta08, multBarrelEta10);
+    tableExtraMc(multFT0A, multFT0C, multBarrelEta05, multBarrelEta08, multBarrelEta10);
   }
 
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", false);

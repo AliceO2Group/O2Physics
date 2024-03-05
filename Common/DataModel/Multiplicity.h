@@ -45,8 +45,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt0, isInelGt0, //! is INEL > 0
 DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt1, isInelGt1, //! is INEL > 1
                            [](int multPveta1) -> bool { return multPveta1 > 1; });
 // MC
-DECLARE_SOA_COLUMN(MultMCFT0A, multMCFT0A, int);                   //!
-DECLARE_SOA_COLUMN(MultMCFT0C, multMCFT0C, int);                   //!
+DECLARE_SOA_COLUMN(MultMCFT0A, multMCFT0A, int);                       //!
+DECLARE_SOA_COLUMN(MultMCFT0C, multMCFT0C, int);                       //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta10, multMCNParticlesEta10, int); //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta08, multMCNParticlesEta08, int); //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta05, multMCNParticlesEta05, int); //!
