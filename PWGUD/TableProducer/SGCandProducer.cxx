@@ -35,7 +35,6 @@ struct SGCandProducer {
 
   // data tables
   Produces<aod::SGCollisions> outputSGCollisions;
-  //  Produces<aod::ZDCCollisions> outputZDCCollisions;
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
   Produces<aod::UDCollsLabels> outputCollsLabels;
@@ -59,7 +58,6 @@ struct SGCandProducer {
   // data inputs
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using CC = CCs::iterator;
-  //  using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BCs = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BC = BCs::iterator;
   using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
@@ -138,18 +136,11 @@ struct SGCandProducer {
   void init(InitContext&)
   {
     sameCuts = (SGCutParHolder)SGCuts;
-
-    // add histograms for the different process functions
     registry.add("reco/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{14, -0.5, 13.5}}});
-    registry.add("reco/pt1Vspt2", "2 prong events, p_{T} versus p_{T}", {HistType::kTH2F, {{100, -3., 3.}, {100, -3., 3.0}}});
-    registry.add("reco/TPCsignal1", "2 prong events, TPC signal versus p_{T} of particle 1", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
-    registry.add("reco/TPCsignal2", "2 prong events, TPC signal versus p_{T} of particle 2", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
-    registry.add("reco/sig1VsSig2TPC", "2 prong events, TPC signal versus TPC signal", {HistType::kTH2F, {{100, 0., 100.}, {100, 0., 100.}}});
   }
 
   // process function for real data
   void process(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
-               // aod::Zdcs_000& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
                aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
     LOGF(debug, "<SGCandProducer>  collision %d", collision.globalIndex());
@@ -158,28 +149,15 @@ struct SGCandProducer {
       return;
     }
     auto bc = collision.foundBC_as<BCs>();
-    LOGF(debug, "<SGCandProducer>  BC id %d", bc.globalBC());
 
     // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
-    LOGF(debug, "<SGCandProducer>  Size of bcRange %d", bcRange.size());
-
-    // apply SG selection
-    //    auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, tracks, fwdtracks);
     auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, tracks, fwdtracks);
-
-    // Check if it's a SingleGap event for sideC
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
     registry.get<TH1>(HIST("reco/Stat"))->Fill(isSGEvent + 1, 1.);
     if (isSGEvent <= 2) {
-      LOGF(debug, "<SGCandProducer>  Data: good collision!");
-
-      // fill FITInfo
       upchelpers::FITInfo fitInfo{};
       udhelpers::getFITinfo(fitInfo, bc.globalBC(), bcs, ft0s, fv0as, fdds);
-      //  upchelpers::ZDCInfo zdcInfo{};
-      // udhelpers::getZDCinfo(zdcInfo, bc.globalBC(), bcs, zdcs);
-      // udhelpers::getZDCinfo(zdcInfo, bc.globalBC(), zdcs);
 
       // update SG candidates tables
       auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
@@ -202,67 +180,15 @@ struct SGCandProducer {
       for (auto& track : tracks) {
         updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
       }
-
       // update SGFwdTracks tables
       for (auto& fwdtrack : fwdtracks) {
         updateUDFwdTrackTables(fwdtrack, bc.globalBC());
       }
-
-      // fill UDZdcs
-      // outputZDCCollisions(zdcInfo.timeZNA,zdcInfo.timeZNC,zdcInfo.multZNA,zdcInfo.multZNC);
-      std::map<uint64_t, int32_t> mapGlobalBcWithZdc{};
-      auto globalBC = bc.globalBC();
-      for (const auto& zdc : zdcs) {
-        // auto globalBC = zdc.bc_as<o2::aod::BCs>().globalBC();
-        // auto bc = zdc.bc_as<o2::aod::BCs>().globalBC();
-        if (std::abs(zdc.timeZNA()) > 2.f && std::abs(zdc.timeZNC()) > 2.f)
-          continue;
-        // mapGlobalBcWithZdc[bc.globalBC()] = zdc.globalIndex();
-        mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
-        // mapGlobalBcWithZdc[bc] = zdc.globalIndex();
-      }
-      int candID = 0;
-      auto nZdcs = mapGlobalBcWithZdc.size();
-      if (nZdcs > 0) {
-        // auto itZDC = mapGlobalBcWithZdc.find(bc.globalBC());
-        auto itZDC = mapGlobalBcWithZdc.find(globalBC);
-        // auto itZDC = mapGlobalBcWithZdc.find(bc);
-        if (itZDC != mapGlobalBcWithZdc.end()) {
-          const auto& zdc = zdcs.iteratorAt(itZDC->second);
-          float timeZNA = zdc.timeZNA();
-          float timeZNC = zdc.timeZNC();
-          float eComZNA = zdc.energyCommonZNA();
-          float eComZNC = zdc.energyCommonZNC();
-          udZdcsReduced(candID, timeZNA, timeZNC, eComZNA, eComZNC);
-        }
-      }
-      candID++;
-      // produce TPC signal histograms for 2-track events
-      LOGF(debug, "SG candidate: number of PV tracks %d", collision.numContrib());
-      if (collision.numContrib() == 2) {
-        auto cnt = 0;
-        float pt1 = 0., pt2 = 0.;
-        float signalTPC1 = 0., signalTPC2 = 0.;
-        for (auto tr : tracks) {
-          if (tr.isPVContributor()) {
-            cnt++;
-            switch (cnt) {
-              case 1:
-                pt1 = tr.pt() * tr.sign();
-                signalTPC1 = tr.tpcSignal();
-                break;
-              case 2:
-                pt2 = tr.pt() * tr.sign();
-                signalTPC2 = tr.tpcSignal();
-            }
-            LOGF(debug, "<SGCandProducer>    track[%d] %d pT %f ITS %d TPC %d TRD %d TOF %d",
-                 cnt, tr.isGlobalTrack(), tr.pt(), tr.itsNCls(), tr.tpcNClsCrossedRows(), tr.hasTRD(), tr.hasTOF());
-          }
-        }
-        registry.get<TH2>(HIST("reco/pt1Vspt2"))->Fill(pt1, pt2);
-        registry.get<TH2>(HIST("reco/TPCsignal1"))->Fill(pt1, signalTPC1);
-        registry.get<TH2>(HIST("reco/TPCsignal2"))->Fill(pt2, signalTPC2);
-        registry.get<TH2>(HIST("reco/sig1VsSig2TPC"))->Fill(signalTPC1, signalTPC2);
+      if (bc.has_zdc()) {
+        auto zdc = bc.zdc();
+        udZdcsReduced(outputCollisions.lastIndex(), zdc.timeZNA(), zdc.timeZNC(), zdc.energyCommonZNA(), zdc.energyCommonZNC());
+      } else {
+        udZdcsReduced(outputCollisions.lastIndex(), -999, -999, -999, -999);
       }
     }
   }

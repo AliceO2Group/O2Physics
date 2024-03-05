@@ -18,6 +18,11 @@ o2physics_add_dpl_workflow(tpcpid
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(zdcsp
+                    SOURCES zdcSP.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
+                    COMPONENT_NAME Analysis)
+
 # Strangeness
 o2physics_add_dpl_workflow(lambdakzerobuilder
                     SOURCES lambdakzerobuilder.cxx
@@ -132,13 +137,18 @@ o2physics_add_dpl_workflow(threebodymcfinder
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hypertriton3bodybuilder
-                    SOURCES hypertriton3bodybuilder.cxx
+o2physics_add_dpl_workflow(decay3bodybuilder
+                    SOURCES decay3bodybuilder.cxx
                     PUBLIC_LINK_LIBRARIES  O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(hypertriton3bodyfinder
                     SOURCES hypertriton3bodyfinder.cxx
+                    PUBLIC_LINK_LIBRARIES  O2::DCAFitter O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(threebody-reco-task
+                    SOURCES threebodyRecoTask.cxx
                     PUBLIC_LINK_LIBRARIES  O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -182,4 +192,10 @@ o2physics_add_dpl_workflow(cascadeflow
 o2physics_add_dpl_workflow(spectra-derived
                     SOURCES spectraDerivedMaker.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+# epvector
+o2physics_add_dpl_workflow(epvector
+                    SOURCES epvector.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing
                     COMPONENT_NAME Analysis)

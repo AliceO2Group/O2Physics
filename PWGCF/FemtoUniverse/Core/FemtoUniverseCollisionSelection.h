@@ -96,11 +96,17 @@ class FemtoUniverseCollisionSelection
     if (std::abs(col.posZ()) > mZvtxMax) {
       return false;
     }
-    if (mCheckTrigger && !col.alias_bit(mTrigger)) {
-      return false;
-    }
-    if (mCheckOffline && !col.sel7()) {
-      return false;
+    if (mCheckIsRun3) {
+      if (mCheckOffline && !col.sel8()) {
+        return false;
+      }
+    } else {
+      if (mCheckTrigger && !col.alias_bit(mTrigger)) {
+        return false;
+      }
+      if (mCheckOffline && !col.sel7()) {
+        return false;
+      }
     }
     return true;
   }

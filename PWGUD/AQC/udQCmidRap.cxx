@@ -9,9 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief A task for Asynchronus Quality Control for Ultra-perimpheral and Diffraction (AQC-UD) two pion candidates in midrapidity
-/// \author
-/// \since
+/// \brief A task for Asynchronus Quality Control for Ultra-perimpheral and Diffraction (AQC-UD) two tracks (pion, kaon, muon and electron) candidates in midrapidity
+/// \author Anisa Khatun
+/// \author Paul Buehler
+/// \since 17.01.2023
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -41,9 +42,8 @@ struct UDQCmid {
   // get a DGCutparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
   Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
-  Configurable<bool> withAmbTrackAnalysis{"ambiguousTracks", false, "with ambiguous tracks analysis"};
-  Configurable<bool> withAmbFwdTrackAnalysis{"ambiguousFwdTracks", false, "with ambiguous forward tracks analysis"};
-  Configurable<bool> doCleanFITBC{"doCleanFITBC", false, "Require cleanFIT in compatible BCs"};
+  // Configurable<bool> withAmbTrackAnalysis{"ambiguousTracks", false, "with ambiguous tracks analysis"};
+  // Configurable<bool> withAmbFwdTrackAnalysis{"ambiguousFwdTracks", false, "with ambiguous forward tracks analysis"};
 
   // structures to hold information about the possible BCs the ambiguous tracks/FwdTracks belong to
   o2::dataformats::bcRanges abcrs = o2::dataformats::bcRanges("ambiguous_tracks");
@@ -58,7 +58,7 @@ struct UDQCmid {
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using CC = CCs::iterator;
   using BCs = soa::Join<aod::BCs, aod::BcSels, aod::Run3MatchedToBCSparse>;
-  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::TOFSignal, aod::pidTOFbeta>;
+  using TCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullMu, aod::pidTPCFullEl, aod::TOFSignal, aod::pidTOFbeta>;
   using FWs = aod::FwdTracks;
   using ATs = aod::AmbiguousTracks;
   using AFTs = aod::AmbiguousFwdTracks;
@@ -149,9 +149,9 @@ struct UDQCmid {
     registry.get<TH1>(HIST("collisions/globalTracks"))->Fill(goodTracks.size());
 
     // 12. net charge and invariant mass
-    bool goodetas = true;
-    bool goodpts = true;
-    bool ispipiCand = true;
+    // bool goodetas = true;
+    // bool goodpts = true;
+    bool ispipiCand = false;
     auto netCharge = 0;
     auto lvtmp = TLorentzVector();
     auto ivm = TLorentzVector();
@@ -163,27 +163,50 @@ struct UDQCmid {
         mass2Use = constants::physics::MassKaonCharged;
       }
 
+      if (diffCuts.pidHypothesis() == 13) {
+        mass2Use = constants::physics::MassMuon;
+      }
+
+      if (diffCuts.pidHypothesis() == 11) {
+        mass2Use = constants::physics::MassElectron;
+      }
+
       // check also pt and eta of tracks
       for (auto const& track : tracks) {
 
         // define Lorentz vector to create invariant mass
         lvtmp.SetPtEtaPhiM(track.pt(), track.eta(), track.phi(), mass2Use);
         LOGF(debug, "mass %f track pt %f/%f eta %f/%f", mass2Use, track.pt(), lvtmp.Perp(), track.eta(), lvtmp.Eta());
-        if (track.pt() <= diffCuts.minPt() || track.pt() >= diffCuts.maxPt()) {
-          goodpts = false;
-        }
-        if (track.eta() <= diffCuts.minEta() || track.eta() >= diffCuts.maxEta()) {
-          goodetas = false;
-        }
+        /* if (track.pt() <= diffCuts.minPt() || track.pt() >= diffCuts.maxPt()) {
+           goodpts = false;
+         }
+         if (track.eta() <= diffCuts.minEta() || track.eta() >= diffCuts.maxEta()) {
+           goodetas = false;
+         }*/
         netCharge += track.sign();
         ivm += lvtmp;
       }
 
       if (collision.numContrib() == 2) {
+        ispipiCand = true;
         for (auto const& track : tracks) {
           if (track.isPVContributor()) {
-            if (std::abs(track.tpcNSigmaPi()) > diffCuts.maxNSigmaTPC()) {
-              ispipiCand = false;
+            if (diffCuts.pidHypothesis() == 211) {
+              if (std::abs(track.tpcNSigmaPi()) > diffCuts.maxNSigmaTPC()) {
+                ispipiCand = false;
+              }
+            } else if (diffCuts.pidHypothesis() == 321) {
+              if (std::abs(track.tpcNSigmaKa()) > diffCuts.maxNSigmaTPC()) {
+                ispipiCand = false;
+              }
+            } else if (diffCuts.pidHypothesis() == 13) {
+              if (std::abs(track.tpcNSigmaMu()) > diffCuts.maxNSigmaTPC()) {
+                ispipiCand = false;
+              }
+            } else if (diffCuts.pidHypothesis() == 11) {
+              if (std::abs(track.tpcNSigmaEl()) > diffCuts.maxNSigmaTPC()) {
+                ispipiCand = false;
+              }
             }
           }
         } // trks
@@ -257,16 +280,10 @@ struct UDQCmid {
     auto bcSlice = udhelpers::compatibleBCs(collision, diffCuts.NDtcoll(), bct0s, diffCuts.minNBCs());
 
     // 1. no FIT signal in bcSlice / collision
-    if (doCleanFITBC) {
-      for (auto const& bc : bcSlice) {
-        if (!udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
-          isDGcandidate = false;
-          break;
-        }
-      }
-    } else {
-      if (!udhelpers::cleanFITCollision(collision, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
+    for (auto const& bc : bcSlice) {
+      if (udhelpers::FITveto(bc, diffCuts)) {
         isDGcandidate = false;
+        break;
       }
     }
     registry.get<TH1>(HIST("collisions/Stat"))->Fill(1., isDGcandidate * 1.);
@@ -291,29 +308,28 @@ struct UDQCmid {
             if (track.hasTOF()) {
               registry.get<TH2>(HIST("DG/dEdxTOF"))->Fill(track.p() / track.sign(), track.beta());
             } // fill TOF
-          }   // pb contributor
+          }   // pv contributor
         }
       }
     } // Inavariant mass after FIT
 
     // 2. no Zdc signal in bcSlice
+    bool isZDCcandidate = isDGcandidate;
     std::vector<float> lims(10, 0.);
     for (auto const& bc : bcSlice) {
       if (!udhelpers::cleanZDC(bc, zdcs, lims, cache)) {
-        isDGcandidate = false;
+        isZDCcandidate = false;
         break;
       }
     }
-    registry.get<TH1>(HIST("collisions/Stat"))->Fill(2., isDGcandidate * 1.);
+    registry.get<TH1>(HIST("collisions/Stat"))->Fill(2., isZDCcandidate * 1.);
 
-    if (isDGcandidate) {
-      if (collision.numContrib() == 2) {
-        if (ispipiCand) {
-          registry.get<TH2>(HIST("DG/IVMptSys2PVtrk2"))->Fill(ivm.M(), ivm.Pt());
-          registry.get<TH2>(HIST("DG/etaphi2"))->Fill(ivm.Eta(), ivm.Phi());
-          if (ivm.Pt() < 0.2) {
-            registry.get<TH1>(HIST("DG/hMassZDC"))->Fill(ivm.M());
-          }
+    if (isZDCcandidate) {
+      if (ispipiCand) {
+        registry.get<TH2>(HIST("DG/IVMptSys2PVtrk2"))->Fill(ivm.M(), ivm.Pt());
+        registry.get<TH2>(HIST("DG/etaphi2"))->Fill(ivm.Eta(), ivm.Phi());
+        if (ivm.Pt() < 0.2) {
+          registry.get<TH1>(HIST("DG/hMassZDC"))->Fill(ivm.M());
         }
       }
     } // Invariant mass after ZDC
@@ -323,13 +339,11 @@ struct UDQCmid {
     registry.get<TH1>(HIST("collisions/Stat"))->Fill(3., isDGcandidate * 1.);
 
     if (isDGcandidate) {
-      if (collision.numContrib() == 2) {
-        if (ispipiCand) {
-          registry.get<TH2>(HIST("DG/IVMptSys2PVtrk3"))->Fill(ivm.M(), ivm.Pt());
-          registry.get<TH2>(HIST("DG/etaphi3"))->Fill(ivm.Eta(), ivm.Phi());
-          if (ivm.Pt() < 0.2) {
-            registry.get<TH1>(HIST("DG/hMassFWD"))->Fill(ivm.M());
-          }
+      if (ispipiCand) {
+        registry.get<TH2>(HIST("DG/IVMptSys2PVtrk3"))->Fill(ivm.M(), ivm.Pt());
+        registry.get<TH2>(HIST("DG/etaphi3"))->Fill(ivm.Eta(), ivm.Phi());
+        if (ivm.Pt() < 0.2) {
+          registry.get<TH1>(HIST("DG/hMassFWD"))->Fill(ivm.M());
         }
       }
     }
@@ -348,14 +362,12 @@ struct UDQCmid {
     registry.get<TH1>(HIST("collisions/Stat"))->Fill(4., globalAndVtx * 1.);
     registry.get<TH1>(HIST("collisions/Stat"))->Fill(5., vtxAndGlobal * 1.);
 
-    if (isDGcandidate) {
-      if (collision.numContrib() == 2) {
-        if (ispipiCand) {
-          registry.get<TH2>(HIST("DG/IVMptSys2PVtrk4"))->Fill(ivm.M(), ivm.Pt());
-          registry.get<TH2>(HIST("DG/etaphi4"))->Fill(ivm.Eta(), ivm.Phi());
-          if (ivm.Pt() < 0.2) {
-            registry.get<TH1>(HIST("DG/hMassGlobalTrk"))->Fill(ivm.M());
-          }
+    if (globalAndVtx) {
+      if (ispipiCand) {
+        registry.get<TH2>(HIST("DG/IVMptSys2PVtrk4"))->Fill(ivm.M(), ivm.Pt());
+        registry.get<TH2>(HIST("DG/etaphi4"))->Fill(ivm.Eta(), ivm.Phi());
+        if (ivm.Pt() < 0.2) {
+          registry.get<TH1>(HIST("DG/hMassGlobalTrk"))->Fill(ivm.M());
         }
       }
     }
@@ -371,14 +383,12 @@ struct UDQCmid {
 
     registry.get<TH1>(HIST("collisions/Stat"))->Fill(6., noAmbTracks * 1.); // noAmbTracks
 
-    if (isDGcandidate) {
-      if (collision.numContrib() == 2) {
-        if (ispipiCand) {
-          registry.get<TH2>(HIST("DG/IVMptSys2PVtrk5"))->Fill(ivm.M(), ivm.Pt());
-          registry.get<TH2>(HIST("DG/etaphi5"))->Fill(ivm.Eta(), ivm.Phi());
-          if (ivm.Pt() < 0.2) {
-            registry.get<TH1>(HIST("DG/hMassAmbigous"))->Fill(ivm.M());
-          }
+    if (noAmbTracks) {
+      if (ispipiCand) {
+        registry.get<TH2>(HIST("DG/IVMptSys2PVtrk5"))->Fill(ivm.M(), ivm.Pt());
+        registry.get<TH2>(HIST("DG/etaphi5"))->Fill(ivm.Eta(), ivm.Phi());
+        if (ivm.Pt() < 0.2) {
+          registry.get<TH1>(HIST("DG/hMassAmbigous"))->Fill(ivm.M());
         }
       }
     }
@@ -394,14 +404,12 @@ struct UDQCmid {
 
     registry.get<TH1>(HIST("collisions/Stat"))->Fill(7., noAmbFwdTracks * 1.); // noAmbFwdTracks
 
-    if (isDGcandidate) {
-      if (collision.numContrib() == 2) {
-        if (ispipiCand) {
-          registry.get<TH2>(HIST("DG/IVMptSys2PVtrk6"))->Fill(ivm.M(), ivm.Pt());
-          registry.get<TH2>(HIST("DG/etaphi6"))->Fill(ivm.Eta(), ivm.Phi());
-          if (ivm.Pt() < 0.2) {
-            registry.get<TH1>(HIST("DG/hMassAmbigousFWD"))->Fill(ivm.M());
-          }
+    if (noAmbFwdTracks) {
+      if (ispipiCand) {
+        registry.get<TH2>(HIST("DG/IVMptSys2PVtrk6"))->Fill(ivm.M(), ivm.Pt());
+        registry.get<TH2>(HIST("DG/etaphi6"))->Fill(ivm.Eta(), ivm.Phi());
+        if (ivm.Pt() < 0.2) {
+          registry.get<TH1>(HIST("DG/hMassAmbigousFWD"))->Fill(ivm.M());
         }
       }
     }
@@ -411,13 +419,11 @@ struct UDQCmid {
     registry.get<TH1>(HIST("collisions/Stat"))->Fill(8., isDGcandidate * 1.);
 
     if (isDGcandidate) {
-      if (collision.numContrib() == 2) {
-        if (ispipiCand) {
-          registry.get<TH2>(HIST("DG/IVMptSys2PVtrk7"))->Fill(ivm.M(), ivm.Pt());
-          registry.get<TH2>(HIST("DG/etaphi7"))->Fill(ivm.Eta(), ivm.Phi());
-          if (ivm.Pt() < 0.2) {
-            registry.get<TH1>(HIST("DG/hMassTOF"))->Fill(ivm.M());
-          }
+      if (ispipiCand) {
+        registry.get<TH2>(HIST("DG/IVMptSys2PVtrk7"))->Fill(ivm.M(), ivm.Pt());
+        registry.get<TH2>(HIST("DG/etaphi7"))->Fill(ivm.Eta(), ivm.Phi());
+        if (ivm.Pt() < 0.2) {
+          registry.get<TH1>(HIST("DG/hMassTOF"))->Fill(ivm.M());
         }
       }
     }

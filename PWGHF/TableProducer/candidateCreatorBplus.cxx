@@ -104,6 +104,13 @@ struct HfCandidateCreatorBplus {
 
   void init(InitContext const&)
   {
+    // invariant-mass window cut
+    massPi = MassPiPlus;
+    massD0 = MassD0;
+    massBplus = MassBPlus;
+    invMass2D0PiMin = (massBplus - invMassWindowBplus) * (massBplus - invMassWindowBplus);
+    invMass2D0PiMax = (massBplus + invMassWindowBplus) * (massBplus + invMassWindowBplus);
+
     // Initialise fitter for B vertex
     dfB.setPropagateToPCA(propagateToPCA);
     dfB.setMaxR(maxR);
@@ -126,13 +133,6 @@ struct HfCandidateCreatorBplus {
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
-
-    // invariant-mass window cut
-    massPi = MassPiPlus;
-    massD0 = MassD0;
-    massBplus = MassBPlus;
-    invMass2D0PiMin = (massBplus - invMassWindowBplus) * (massBplus - invMassWindowBplus);
-    invMass2D0PiMax = (massBplus + invMassWindowBplus) * (massBplus + invMassWindowBplus);
   }
 
   /// Single-track cuts for pions on dcaXY

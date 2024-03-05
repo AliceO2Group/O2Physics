@@ -103,8 +103,8 @@ using MyBarrelTracksSelected = soa::Join<aod::Tracks, aod::TracksExtra, aod::Tra
                                          aod::pidTPCFullEl, aod::pidTPCFullPi,
                                          aod::pidTPCFullKa, aod::pidTPCFullPr,
                                          aod::pidTOFFullEl, aod::pidTOFFullPi,
-                                         aod::pidTOFFullKa, aod::pidTOFFullPr,
-                                         aod::DQBarrelTrackCuts>;
+                                         aod::pidTOFFullKa, aod::pidTOFFullPr>;
+using MyBarrelTracksAssocSelected = soa::Join<TrackAssoc, aod::DQBarrelTrackCuts>; // As the kinelatic values must be re-computed for the tracks everytime it is associated to a collision, the selection is done not on the tracks, but on the track-collision association
 
 using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::FwdTracksDCA>;
 using MyMuonsAssocSelected = soa::Join<FwdTrackAssoc, aod::DQMuonsCuts>; // As the kinelatic values must be re-computed for the muons tracks everytime it is associated to a collision, the selection is done not on the muon, but on the muon-collision association
@@ -191,12 +191,15 @@ struct DQBarrelTrackSelection {
 
   Configurable<std::string> fConfigCuts{"cfgBarrelTrackCuts", "jpsiPID1", "Comma separated list of barrel track cuts"};
   Configurable<bool> fConfigQA{"cfgWithQA", false, "If true, fill QA histograms"};
+  Configurable<bool> fPropTrack{"cfgPropTrack", false, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
   Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/i/iarsene/Calib/TPCpostCalib", "base path to the ccdb object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
+
+  Preslice<aod::TrackAssoc> barrelTrackIndicesPerCollision = aod::track_association::collisionId;
 
   std::vector<AnalysisCompositeCut> fTrackCuts;
   std::vector<TString> fCutHistNames;
@@ -247,12 +250,14 @@ struct DQBarrelTrackSelection {
   }
 
   // Templated function instantianed for all of the process functions
-  template <uint32_t TTrackFillMap, typename TTracks>
-  void runTrackSelection(aod::BCsWithTimestamps const& bcs, TTracks const& tracksBarrel)
+  template <uint32_t TTrackFillMap, typename TEvent, typename TTracks, typename AssocTracks>
+  void runTrackSelection(TEvent const& collision, aod::BCsWithTimestamps const& bcs, TTracks const& tracksBarrel, AssocTracks const& trackAssocs)
   {
     auto bc = bcs.begin(); // check just the first bc to get the run number
     if (fCurrentRun != bc.runNumber()) {
       fCurrentRun = bc.runNumber();
+      o2::parameters::GRPMagField* grpo = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", bc.timestamp());
+      o2::base::Propagator::initFieldFromGRP(grpo);
       if (fConfigComputeTPCpostCalib) {
         auto calibList = fCCDB->getForTimeStamp<TList>(fConfigCcdbPathTPC.value, bc.timestamp());
         VarManager::SetCalibrationObject(VarManager::kTPCElectronMean, calibList->FindObject("mean_map_electron"));
@@ -264,14 +269,24 @@ struct DQBarrelTrackSelection {
       }
     }
 
+    // material correction for track propagation
+    // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+
     uint32_t filterMap = uint32_t(0);
     trackSel.reserve(tracksBarrel.size());
 
     VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
-    for (auto& track : tracksBarrel) {
+    for (auto& trackAssoc : trackAssocs) {
       filterMap = uint32_t(0);
 
+      auto track = trackAssoc.template track_as<TTracks>();
+
       VarManager::FillTrack<TTrackFillMap>(track);
+      // compute quantities which depend on the associated collision, such as DCA
+      if (fPropTrack && (track.collisionId() != collision.globalIndex())) {
+        VarManager::FillTrackCollisionMatCorr<TTrackFillMap>(track, collision, noMatCorr, o2::base::Propagator::Instance());
+      }
       if (fConfigQA) {
         fHistMan->FillHistClass("TrackBarrel_BeforeCuts", VarManager::fgValues);
       }
@@ -288,9 +303,12 @@ struct DQBarrelTrackSelection {
     } // end loop over tracks
   }
 
-  void processSelection(aod::BCsWithTimestamps const& bcs, MyBarrelTracks const& tracks)
+  void processSelection(Collisions const& collisions, aod::BCsWithTimestamps const& bcs, MyBarrelTracks const& tracks, aod::TrackAssoc const& trackAssocs)
   {
-    runTrackSelection<gkTrackFillMap>(bcs, tracks);
+    for (auto& collision : collisions) {
+      auto trackIdsThisCollision = trackAssocs.sliceBy(barrelTrackIndicesPerCollision, collision.globalIndex());
+      runTrackSelection<gkTrackFillMap>(collision, bcs, tracks, trackIdsThisCollision);
+    }
   }
 
   void processDummy(MyBarrelTracks&)
@@ -488,7 +506,7 @@ struct DQFilterPPTask {
   Produces<aod::DQEventFilter> eventFilter;
   Produces<aod::DqFilters> dqtable;
   OutputObj<THashList> fOutputList{"output"};
-  OutputObj<TH1I> fStats{"Statistics"};
+  OutputObj<TH1F> fStats{"Statistics"};
   HistogramManager* fHistMan;
 
   Configurable<std::string> fConfigBarrelSelections{"cfgBarrelSels", "jpsiPID1:pairMassLow:1", "<track-cut>:[<pair-cut>]:<n>,[<track-cut>:[<pair-cut>]:<n>],..."};
@@ -570,7 +588,7 @@ struct DQFilterPPTask {
     VarManager::SetUseVars(AnalysisCut::fgUsedVars);
 
     // setup the Stats histogram
-    fStats.setObject(new TH1I("Statistics", "Stats for DQ triggers", fNBarrelCuts + fNMuonCuts + 2, -2.5, -0.5 + fNBarrelCuts + fNMuonCuts));
+    fStats.setObject(new TH1F("Statistics", "Stats for DQ triggers", fNBarrelCuts + fNMuonCuts + 2, -2.5, -0.5 + fNBarrelCuts + fNMuonCuts));
     fStats->GetXaxis()->SetBinLabel(1, "Events inspected");
     fStats->GetXaxis()->SetBinLabel(2, "Events selected");
     if (fNBarrelCuts) {
@@ -618,12 +636,12 @@ struct DQFilterPPTask {
     }
   }
 
-  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons, typename AssocMuons>
+  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons, typename AssocTracks, typename AssocMuons>
   uint64_t runFilterPP(TEvent const& collision,
                        aod::BCsWithTimestamps const& bcs,
                        TTracks const& tracksBarrel,
                        TMuons const& muons,
-                       aod::TrackAssoc const& barrelAssocs, AssocMuons const& muonAssocs)
+                       AssocTracks const& barrelAssocs, AssocMuons const& muonAssocs)
   {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     if (fCurrentRun != bc.runNumber()) {
@@ -643,9 +661,8 @@ struct DQFilterPPTask {
     std::vector<int> objCountersBarrel(fNBarrelCuts, 0); // init all counters to zero
     // count the number of barrel tracks fulfilling each cut
     for (auto trackAssoc : barrelAssocs) {
-      auto track = trackAssoc.template track_as<TTracks>();
       for (int i = 0; i < fNBarrelCuts; ++i) {
-        if (track.isDQBarrelSelected() & (uint32_t(1) << i)) {
+        if (trackAssoc.isDQBarrelSelected() & (uint32_t(1) << i)) {
           objCountersBarrel[i] += 1;
         }
       }
@@ -684,7 +701,7 @@ struct DQFilterPPTask {
         auto t2 = a2.template track_as<TTracks>();
 
         // check the pairing mask and that the tracks share a cut bit
-        pairFilter = pairingMask & t1.isDQBarrelSelected() & t2.isDQBarrelSelected();
+        pairFilter = pairingMask & a1.isDQBarrelSelected() & a2.isDQBarrelSelected();
         if (pairFilter == 0) {
           continue;
         }
@@ -808,7 +825,7 @@ struct DQFilterPPTask {
                        aod::BCsWithTimestamps const& bcs,
                        MyBarrelTracksSelected const& tracks,
                        MyMuons const& muons,
-                       TrackAssoc const& trackAssocs, MyMuonsAssocSelected const& muonAssocs)
+                       MyBarrelTracksAssocSelected const& trackAssocs, MyMuonsAssocSelected const& muonAssocs)
   {
     fFiltersMap.clear();
     fCEFPfilters.clear();

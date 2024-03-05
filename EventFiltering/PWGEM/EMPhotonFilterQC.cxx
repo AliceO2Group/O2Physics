@@ -46,11 +46,12 @@ struct EMPhotonFilterQC {
   {
     auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1F, {{10, 0.5f, 10.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
-    hEventCounter->GetXaxis()->SetBinLabel(2, "sel8 && |Z_{vtx}| < 10 cm");
-    hEventCounter->GetXaxis()->SetBinLabel(3, "PCM High p_{T} photon");
-    hEventCounter->GetXaxis()->SetBinLabel(4, "PCM High p_{T} photon && sel8 && |Z_{vtx}| < 10 cm");
-    hEventCounter->GetXaxis()->SetBinLabel(5, "PCM and dielectron");
-    hEventCounter->GetXaxis()->SetBinLabel(6, "PCM and dielectron && sel8 && |Z_{vtx}| < 10 cm");
+    hEventCounter->GetXaxis()->SetBinLabel(2, "No TFB");
+    hEventCounter->GetXaxis()->SetBinLabel(3, "sel8 && |Z_{vtx}| < 10 cm && No TFB");
+    hEventCounter->GetXaxis()->SetBinLabel(4, "PCM High p_{T} photon");
+    hEventCounter->GetXaxis()->SetBinLabel(5, "PCM High p_{T} photon && sel8 && |Z_{vtx}| < 10 cm && No TFB");
+    hEventCounter->GetXaxis()->SetBinLabel(6, "PCM and dielectron");
+    hEventCounter->GetXaxis()->SetBinLabel(7, "PCM and dielectron && sel8 && |Z_{vtx}| < 10 cm && No TFB");
 
     registry.add<TH1>("PCM_HighPt/hPt", "pT of PCM photon;p_{T,#gamma} (GeV/c)", kTH1F, {{200, 0, 20}});
     registry.add<TH2>("PCM_HighPt/hEtaPhi", "#eta vs. #varphi of PCM photon", kTH2F, {{72, 0, TMath::TwoPi()}, {40, -2, +2}});
@@ -75,8 +76,11 @@ struct EMPhotonFilterQC {
 
     for (auto& collision : collisions) {
       registry.fill(HIST("hEventCounter"), 1);
-      if (collision.sel8() && abs(collision.posZ()) < 10.f) {
+      if (collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         registry.fill(HIST("hEventCounter"), 2);
+      }
+      if (collision.sel8() && abs(collision.posZ()) < 10.f && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        registry.fill(HIST("hEventCounter"), 3);
       }
       // auto v0photons_coll = v0photons.sliceBy(perCollision_pcm, collision.globalIndex());
       auto dielectrons_coll = dielectrons.sliceBy(perCollision_ee, collision.globalIndex());
@@ -84,9 +88,9 @@ struct EMPhotonFilterQC {
       auto triggers_eeg_coll = swt_pair.sliceBy(perCollision_swt_pair, collision.globalIndex());
 
       if (collision.hasPCMHighPtPhoton()) {
-        registry.fill(HIST("hEventCounter"), 3);
-        if (collision.sel8() && abs(collision.posZ()) < 10.f) {
-          registry.fill(HIST("hEventCounter"), 4);
+        registry.fill(HIST("hEventCounter"), 4);
+        if (collision.sel8() && abs(collision.posZ()) < 10.f && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+          registry.fill(HIST("hEventCounter"), 5);
         }
 
         for (auto& trigger_pcm_id : triggers_pcm_coll) {
@@ -105,9 +109,9 @@ struct EMPhotonFilterQC {
       }
 
       if (collision.hasPCMandEE()) {
-        registry.fill(HIST("hEventCounter"), 5);
-        if (collision.sel8() && abs(collision.posZ()) < 10.f) {
-          registry.fill(HIST("hEventCounter"), 6);
+        registry.fill(HIST("hEventCounter"), 6);
+        if (collision.sel8() && abs(collision.posZ()) < 10.f && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+          registry.fill(HIST("hEventCounter"), 7);
         }
 
         for (auto& trigger_eeg_id : triggers_eeg_coll) {
@@ -144,10 +148,12 @@ struct EMPhotonFilterQC {
 
   void processPHOS(MyCollisions const& collisions) {}
   void processEMC(MyCollisions const& collisions) {}
+  void processDummy(MyCollisions const& collisions) {}
 
-  PROCESS_SWITCH(EMPhotonFilterQC, processPCM, "Process PCM software trigger QC", true);
+  PROCESS_SWITCH(EMPhotonFilterQC, processPCM, "Process PCM software trigger QC", false);
   PROCESS_SWITCH(EMPhotonFilterQC, processPHOS, "Process PHOS software trigger QC", false);
   PROCESS_SWITCH(EMPhotonFilterQC, processEMC, "Process EMC software trigger QC", false);
+  PROCESS_SWITCH(EMPhotonFilterQC, processDummy, "Process dummy", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)

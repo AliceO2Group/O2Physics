@@ -142,17 +142,27 @@ struct jetFilter {
   // FK//using filteredJets = o2::soa::Filtered<o2::aod::ChargedJets>;
 
   // void process(aod::JCollision const& collision, o2::aod::ChargedJets const& jets)
-  void process(soa::Join<JetCollisions, aod::BkgChargedRhos>::iterator const& collision, o2::aod::ChargedJets const& jets) // FK//
+
+  template <bool withRho, typename T, typename U>
+  void doTriggering(T const& collision, U const& jets)
   {
+
     // collision process loop
     bool keepEvent[kHighPtObjects]{false};
+    if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt]);
+      return;
+    }
+
     spectra.fill(HIST("fCollZpos"), collision.posZ());
     spectra.fill(HIST("fProcessedEvents"), kAllMBEvents); // all minimum bias events
 
     // FILL SPECTRA OF INCLUSIVE JETS IN FIDUCIAL VOLUME
     if (TMath::Abs(collision.posZ()) < cfgZvtx) {
       spectra.fill(HIST("fProcessedEvents"), kHighPtObjects); // minimum bias events |z_vtx|<10 cm
-      spectra.fill(HIST("hRho"), collision.rho());
+      if constexpr (withRho) {
+        spectra.fill(HIST("hRho"), collision.rho());
+      }
 
       for (const auto& jet : jets) { // jets are ordered by pT
         for (unsigned int ir = 0; ir < jetIntR.size(); ir++) {
@@ -160,7 +170,9 @@ struct jetFilter {
             if (TMath::Abs(jet.eta()) < jetRFidVolume[ir]) {
               float jetr = (jet.r() / 100. + 1e-5);
               spectra.fill(HIST("hPtAKTJetsInclusive"), jetr, jet.pt());
-              spectra.fill(HIST("hPtAKTJetsInclusiveBgSubtr"), jetr, jet.pt() - (collision.rho() * jet.area()));
+              if constexpr (withRho) {
+                spectra.fill(HIST("hPtAKTJetsInclusiveBgSubtr"), jetr, jet.pt() - (collision.rho() * jet.area()));
+              }
 
               if (jet.pt() > 10.) {
                 spectra.fill(HIST("hEtaAKTJetsInclusive"), jetr, jet.eta());
@@ -194,12 +206,24 @@ struct jetFilter {
         spectra.fill(HIST("fProcessedEvents"), iDecision);
       }
     }
+
     tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt]);
   }
+
+  void processWithoutRho(soa::Join<JetCollisions, aod::EvSels>::iterator const& collision, o2::aod::ChargedJets const& jets) // FK//
+  {
+    doTriggering<false>(collision, jets);
+  }
+  PROCESS_SWITCH(jetFilter, processWithoutRho, "Do charged jet triggering without background estimation for filling histograms", true);
+
+  void processWithRho(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::EvSels>::iterator const& collision, o2::aod::ChargedJets const& jets) // FK//
+  {
+    doTriggering<true>(collision, jets);
+  }
+  PROCESS_SWITCH(jetFilter, processWithRho, "Do charged jet triggering with background estimation for filling histograms", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfg)
 {
-
   return WorkflowSpec{adaptAnalysisTask<jetFilter>(cfg)};
 }

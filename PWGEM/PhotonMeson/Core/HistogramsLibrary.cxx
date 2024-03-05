@@ -32,12 +32,19 @@ using namespace std;
 #include "Framework/Logger.h"
 #include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
 
-void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* histClass, const char* subGroup)
+void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const char* histClass, const char* subGroup)
 {
   if (TString(histClass) == "Event") {
-    list->Add(new TH1F("hCollisionCounter", "hCollisionCounter", 5, 0.5f, 5.5f));
-    list->Add(new TH1F("hZvtx_before", "vertex z; Zvtx (cm)", 100, -50, +50));
-    list->Add(new TH1F("hZvtx_after", "vertex z; Zvtx (cm)", 100, -50, +50));
+    list->Add(new TH1F("hCollisionCounter", "hCollisionCounter", 10, 0.5f, 10.5f));
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(1, "all");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(2, "No TF border");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(3, "No ITS ROF border");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(4, "FT0AND");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(5, "N_{contrib}^{PV} > 0");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(6, "|Z_{vtx}| < 10 cm");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(7, "accepted");
+
+    list->Add(new TH1F("hZvtx", "vertex z; Z_{vtx} (cm)", 100, -50, +50));
     list->Add(new TH1F("hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", 6001, -0.5, 6000.5));
     list->Add(new TH1F("hMultNTracksPVeta1", "hMultNTracksPVeta1; N_{track} to PV", 6001, -0.5, 6000.5));
     list->Add(new TH2F("hMultFT0", "hMultFT0;mult. FT0A;mult. FT0C", 300, 0, 6000, 300, 0, 6000));
@@ -84,6 +91,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hCosPA_Rxy", "cos PA vs. R_{xy};R_{xy} (cm);cosine pointing angle", 200, 0.f, 100.f, 100, 0.9f, 1.0f));
     list->Add(new TH1F("hPCA", "distance between 2 legs;PCA (cm)", 500, 0.0f, 5.0f));
     list->Add(new TH2F("hPCA_Rxy", "distance between 2 legs vs. R_{xy};R_{xy} (cm);PCA (cm)", 200, 0.f, 100.f, 500, 0.0f, 5.0f));
+    list->Add(new TH2F("hPCA_CosPA", "distance between 2 legs vs. cosPA;cosine of pointing angle;PCA (cm)", 100, 0.9f, 1.f, 500, 0.0f, 5.0f));
     list->Add(new TH2F("hDCAxyz", "DCA to PV;DCA_{xy} (cm);DCA_{z} (cm)", 200, -5.f, +5.f, 200, -5.f, +5.f));
     list->Add(new TH2F("hAPplot", "AP plot;#alpha;q_{T} (GeV/c)", 200, -1.0f, +1.0f, 250, 0.0f, 0.25f));
     list->Add(new TH2F("hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", 200, 0.0f, 100.0f, 100, 0.0f, 0.1f));
@@ -321,11 +329,10 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
   }
 
   if (TString(histClass) == "Cluster") {
-    list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
-    list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 400, -2.0f, 2.0f));
-    list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
-
     if (TString(subGroup) == "PHOS") {
+      list->Add(new TH1F("hPt", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));
+      list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 400, -2.0f, 2.0f));
+      list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
       list->Add(new TH2F("hEvsNcell", "E_{cluster} vs. N_{cell};E_{cluster} (GeV);N_{cell}", 200, 0, 20, 51, -0.5, 50.5f));
       list->Add(new TH2F("hEvsM02", "E_{cluster} vs. M02;E_{cluster} (GeV);M02 (cm)", 200, 0, 20, 100, 0, 10));
       list->Add(new TH2F("hEvsM20", "E_{cluster} vs. M20;E_{cluster} (GeV);M20 (cm)", 200, 0, 20, 100, 0, 10));
@@ -335,6 +342,37 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       for (int i = 1; i <= nmod; i++) {
         list->Add(new TH2F(Form("hClusterXZM%d", i), Form("cluster (X,Z) on M%d;X;Z", i), 64, 0.5, 64.5, 56, 0.5, 56.5));
       } // end of module loop
+    }
+    if (TString(subGroup).Contains("EMC")) {
+      list->Add(new TH1F("hPt", "Transverse momenta of clusters;#it{p}_{T} (GeV/c);#it{N}_{cluster}", 1000, 0.0f, 20));
+      list->Add(new TH1F("hE", "E_{cluster};#it{E}_{cluster} (GeV);#it{N}_{cluster}", 500, 0, 50));
+      list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision;#it{N}_{#gamma} per collision;#it{N}_{collisions}", 101, -0.5f, 100.5f));
+      list->Add(new TH2F("hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 200, -1.0f, 1.0f));
+      list->Add(new TH2F("hTrackEtaPhi", "d#eta vs. d#varphi of matched tracks;d#varphi (rad.);d#eta", 100, -0.5, 0.5, 100, -0.5, 0.5));
+      if (TString(subGroup).Contains("2D")) { // Check if 2D QA histograms were selected in em-qc task
+        list->Add(new TH2F("hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{E}_{cluster} (GeV)", 51, -0.5, 50.5, 200, 0, 20));
+        list->Add(new TH2F("hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{E}_{cluster} (GeV)", 500, 0, 5, 200, 0, 20));
+        list->Add(new TH2F("hM20", "Short ellipse axis;#it{M}_{20} (cm);#it{E}_{cluster} (GeV)", 250, 0, 2.5, 200, 0, 20));
+        list->Add(new TH2F("hTime", "Cluster time;#it{t}_{cls} (ns);#it{E}_{cluster} (GeV)", 100, -250, 250, 200, 0, 20));
+        list->Add(new TH2F("hCellTime", "Cell time;#it{t}_{cell} (ns);#it{E}_{cluster} (GeV)", 100, -250, 250, 200, 0, 20));
+        list->Add(new TH2F("hDistToBC", "distance to bad channel;#it{d};#it{E}_{cluster} (GeV)", 100, 0, 1500, 200, 0, 20));
+      } else {
+        list->Add(new TH1F("hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{N}_{cluster}", 51, -0.5, 50.5));
+        list->Add(new TH1F("hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{N}_{cluster}", 500, 0, 5));
+        list->Add(new TH1F("hM20", "Short ellipse axis;#it{M}_{20} (cm);#it{N}_{cluster}", 250, 0, 2.5));
+        list->Add(new TH1F("hTime", "Cluster time;#it{t}_{cls} (ns);#it{N}_{cluster}", 500, -250, 250));
+        list->Add(new TH1F("hCellTime", "Cluster time;#it{t}_{cell} (ns);#it{N}_{cluster}", 500, -250, 250));
+        list->Add(new TH1F("hDistToBC", "distance to bad channel;#it{d};#it{N}_{cluster}", 100, 0, 1500));
+      }
+      list->Add(new TH2F("hClusterQualityCuts", "Energy at which clusters are removed by a given cut;;#it{E} (GeV)", 8, -0.5, 7.5, 500, 0, 50));
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(1, "In");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(2, "Energy");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(3, "NCell");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(4, "M02");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(5, "Timing");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(6, "Track matching");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(7, "Exotic");
+      reinterpret_cast<TH2F*>(list->FindObject("hClusterQualityCuts"))->GetXaxis()->SetBinLabel(8, "Out");
     }
   }
 
@@ -562,7 +600,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     }
   }
 }
-THashList* o2::aod::emphotonhistograms::AddHistClass(THashList* list, const char* histClass)
+THashList* o2::aod::pwgem::photon::histogram::AddHistClass(THashList* list, const char* histClass)
 {
   if (list->FindObject(histClass)) {
     LOGF(info, "HistogramsLibrary::AddHistClass(): Cannot add histogram class %s because it already exists.", histClass);

@@ -65,7 +65,6 @@ struct phosCellQA {
       cellZAxis{56, 0., 56, "z", ""},
       bcAxis{3501, -0.5, 3500.5};
 
-    mHistManager.add("eventsTrig", "Number of trigger events", HistType::kTH1F, {{2, 0., 2.}});
     mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
     mHistManager.add("eventsSelected", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
     mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", o2HistType::kTH1F, {bcAxis});
@@ -97,8 +96,6 @@ struct phosCellQA {
       eventIR.setFromLong(bc.globalBC());
       mHistManager.fill(HIST("eventsAll"), 1);
       mHistManager.fill(HIST("eventBCAll"), eventIR.bc);
-      // if (!cell.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
-      //   mHistManager.fill(HIST("eventsTrig"), 1.);
       if (mVetoBCID >= 0 && eventIR.bc == mVetoBCID)
         continue;
       mHistManager.fill(HIST("eventsSelected"), 1);
@@ -108,7 +105,7 @@ struct phosCellQA {
       if (cell.caloType() != 0)
         continue;
       o2::InteractionRecord cellIR;
-      cellIR.setFromLong(cell.bc().globalBC());
+      cellIR.setFromLong(cell.bc_as<BCsWithBcSels>().globalBC());
       mHistManager.fill(HIST("cellBCAll"), cellIR.bc);
       if (mVetoBCID >= 0 && cellIR.bc == mVetoBCID)
         continue;
@@ -117,7 +114,6 @@ struct phosCellQA {
 
       if (!cell.bc_as<BCsWithBcSels>().alias_bit(mEvSelTrig))
         continue;
-      mHistManager.fill(HIST("cellTrig"), 1.);
 
       if (cell.amplitude() < mMinCellAmplitude)
         continue;

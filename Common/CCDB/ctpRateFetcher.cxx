@@ -22,14 +22,11 @@
 
 namespace o2
 {
-
-using framework::Service;
-
-double ctpRateFetcher::fetch(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber, std::string sourceName)
+double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName)
 {
   if (sourceName.find("ZNC") != std::string::npos) {
     if (runNumber < 544448) {
-      return fetchCTPratesInputs(ccdb, timeStamp, runNumber, 26) / (sourceName.find("hadronic") != std::string::npos ? 28. : 1.);
+      return fetchCTPratesInputs(ccdb, timeStamp, runNumber, 25) / (sourceName.find("hadronic") != std::string::npos ? 28. : 1.);
     } else {
       return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "C1ZNC-B-NOPF-CRU", 6) / (sourceName.find("hadronic") != std::string::npos ? 28. : 1.);
     }
@@ -41,14 +38,14 @@ double ctpRateFetcher::fetch(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t
     if (runNumber < 534202) {
       return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "minbias_TVX_L0"); // 2022
     } else {
-      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-B-NOPF-CRU");
+      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-B-NOPF");
     }
   }
   LOG(error) << "CTP rate for " << sourceName << " not available";
   return -1.;
 }
 
-double ctpRateFetcher::fetchCTPratesClasses(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber, std::string className, int inputType)
+double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string className, int inputType)
 {
   getCTPscalers(ccdb, timeStamp, runNumber);
   getCTPconfig(ccdb, timeStamp, runNumber);
@@ -66,26 +63,26 @@ double ctpRateFetcher::fetchCTPratesClasses(Service<o2::ccdb::BasicCCDBManager>&
     LOG(fatal) << "Trigger class " << className << " not found in CTPConfiguration";
   }
 
-  auto rate{mScalers->getRateGivenT(timeStamp, classIndex, inputType)};
+  auto rate{mScalers->getRateGivenT(timeStamp * 1.e-3, classIndex, inputType)};
 
   return pileUpCorrection(rate.second);
 }
 
-double ctpRateFetcher::fetchCTPratesInputs(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber, int input)
+double ctpRateFetcher::fetchCTPratesInputs(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, int input)
 {
   getCTPscalers(ccdb, timeStamp, runNumber);
   getLHCIFdata(ccdb, timeStamp, runNumber);
 
   std::vector<ctp::CTPScalerRecordO2> recs = mScalers->getScalerRecordO2();
   if (recs[0].scalersInps.size() == 48) {
-    return pileUpCorrection(mScalers->getRateGivenT(timeStamp, input, 7).second);
+    return pileUpCorrection(mScalers->getRateGivenT(timeStamp * 1.e-3, input, 7).second);
   } else {
     LOG(error) << "Inputs not available";
     return -1.;
   }
 }
 
-void ctpRateFetcher::getCTPscalers(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber)
+void ctpRateFetcher::getCTPscalers(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber)
 {
   if (runNumber == mRunNumber && mScalers != nullptr) {
     return;
@@ -99,7 +96,7 @@ void ctpRateFetcher::getCTPscalers(Service<o2::ccdb::BasicCCDBManager>& ccdb, ui
   mScalers->convertRawToO2();
 }
 
-void ctpRateFetcher::getLHCIFdata(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber)
+void ctpRateFetcher::getLHCIFdata(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber)
 {
   if (runNumber == mRunNumber && mLHCIFdata != nullptr) {
     return;
@@ -111,7 +108,7 @@ void ctpRateFetcher::getLHCIFdata(Service<o2::ccdb::BasicCCDBManager>& ccdb, uin
   }
 }
 
-void ctpRateFetcher::getCTPconfig(Service<o2::ccdb::BasicCCDBManager>& ccdb, uint64_t timeStamp, int runNumber)
+void ctpRateFetcher::getCTPconfig(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber)
 {
   if (runNumber == mRunNumber && mConfig != nullptr) {
     return;
