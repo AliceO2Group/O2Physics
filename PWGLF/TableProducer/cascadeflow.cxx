@@ -124,7 +124,6 @@ struct cascadeFlow {
     ConfigurableAxis vertexZ{"vertexZ", {20, -10, 10}, "vertex axis for histograms"};
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {vertexZ});
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
-    histos.add("hEventSelection", "hEventSelection", kTH1F, {{4, 0, 4}});
     histos.add("hCandidate", "hCandidate", HistType::kTH1D, {{22, -0.5, 21.5}});
     histos.add("hCascadeSignal", "hCascadeSignal", HistType::kTH1D, {{6, -0.5, 5.5}});
   }
@@ -189,7 +188,7 @@ struct cascadeFlow {
     for (auto& casc : Cascades) {
       int pdgCode{casc.pdgCode()};
       if (!(std::abs(pdgCode) == 3312 && std::abs(casc.pdgCodeV0()) == 3122 && std::abs(casc.pdgCodeBachelor() == 211))     // Xi
-          && !(std::abs(pdgCode) == 3334 && std::abs(casc.pdgCodeV0()) == 3122 && std::abs(casc.pdgCodeBachelor() == 321))) // Omega
+          && !(std::abs(pdgCode) == 3334 && std::abs(casc.pdgCodeV0()) == 3122 && std::abs(casc.pdgCodeBachelor()) == 321)) // Omega
         continue;
 
       auto negExtra = casc.negTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>>();
