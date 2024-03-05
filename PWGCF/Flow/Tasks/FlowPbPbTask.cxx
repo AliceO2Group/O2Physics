@@ -50,6 +50,7 @@ struct FlowPbPbTask {
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 3.0f, "Maximal pT for ref tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
@@ -172,11 +173,11 @@ struct FlowPbPbTask {
       BootstrapArray[i].resize(kCount_ExtraProfile);
     }
     for (int i = 0; i < cfgNbootstrap; i++) {
-      BootstrapArray[i][kMeanPt_InGap08] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/hMeanPtWithinGap08", i), "", {HistType::kTProfile, {axisCentrality}}));
-      BootstrapArray[i][kC22_Gap08_Weff] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/c22_gap08_Weff", i), "", {HistType::kTProfile, {axisCentrality}}));
-      BootstrapArray[i][kC22_Gap08_MeanPt] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/c22_gap08_trackMeanPt", i), "", {HistType::kTProfile, {axisCentrality}}));
-      BootstrapArray[i][kPtVarParA_InGap08] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/PtVariance_partA_WithinGap08", i), "", {HistType::kTProfile, {axisCentrality}}));
-      BootstrapArray[i][kPtVarParB_InGap08] = std::get<std::shared_ptr<TProfile>>(registry.add(Form("BootstrapContainer_%d/PtVariance_partB_WithinGap08", i), "", {HistType::kTProfile, {axisCentrality}}));
+      BootstrapArray[i][kMeanPt_InGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/hMeanPtWithinGap08", i), "", {HistType::kTProfile, {axisCentrality}});
+      BootstrapArray[i][kC22_Gap08_Weff] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22_gap08_Weff", i), "", {HistType::kTProfile, {axisCentrality}});
+      BootstrapArray[i][kC22_Gap08_MeanPt] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22_gap08_trackMeanPt", i), "", {HistType::kTProfile, {axisCentrality}});
+      BootstrapArray[i][kPtVarParA_InGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/PtVariance_partA_WithinGap08", i), "", {HistType::kTProfile, {axisCentrality}});
+      BootstrapArray[i][kPtVarParB_InGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/PtVariance_partB_WithinGap08", i), "", {HistType::kTProfile, {axisCentrality}});
     }
 
     o2::framework::AxisSpec axis = axisPt;
@@ -417,6 +418,10 @@ struct FlowPbPbTask {
       // TRD triggered
       return 0;
     }
+    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      // reject collisions close to Time Frame borders
+      return 0;
+    }
     float vtxz = -999;
     if (collision.numContrib() > 1) {
       vtxz = collision.posZ();
@@ -479,9 +484,9 @@ struct FlowPbPbTask {
     registry.fill(HIST("hEventCount"), 0.5);
     if (!collision.sel8())
       return;
-    registry.fill(HIST("hEventCount"), 1.5);
     if (tracks.size() < 1)
       return;
+    registry.fill(HIST("hEventCount"), 1.5);
     // place holder for pile-up rejection
     registry.fill(HIST("hEventCount"), 2.5);
     const auto cent = collision.centFT0C();
@@ -521,6 +526,8 @@ struct FlowPbPbTask {
     }
 
     for (auto& track : tracks) {
+      if (track.tpcNClsFound() < cfgCutTPCclu)
+        continue;
       if (cfgOutputNUAWeights)
         fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
       if (cfgUseAdditionalTrackCut && !trackSelected(track, Magnetfield))
