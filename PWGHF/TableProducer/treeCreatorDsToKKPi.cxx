@@ -80,6 +80,7 @@ DECLARE_SOA_COLUMN(AbsCos3PiK, absCos3PiK, float);                           //!
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int); //! Event rejection flag
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);         //! Run number
+DECLARE_SOA_COLUMN(Sign, sign, int);                   //! Sign
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCandDsLites, "AOD", "HFCANDDSLITE",
@@ -197,7 +198,8 @@ DECLARE_SOA_TABLE(HfCandDsFulls, "AOD", "HFCANDDSFULL",
                   hf_cand::Chi2PCA,
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec,
-                  hf_cand_3prong::FlagMcDecayChanRec);
+                  hf_cand_3prong::FlagMcDecayChanRec,
+                  full::Sign);
 
 DECLARE_SOA_TABLE(HfCandDsFullEvs, "AOD", "HFCANDDSFULLEV",
                   collision::BCId,
@@ -431,7 +433,8 @@ struct HfTreeCreatorDsToKKPi {
         candidate.chi2PCA(),
         flagMc,
         originMc,
-        channelMc);
+        channelMc,
+        prong0.sign() + prong1.sign() + prong2.sign());
     }
   }
 
