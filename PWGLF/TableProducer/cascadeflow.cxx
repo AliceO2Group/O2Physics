@@ -187,7 +187,7 @@ struct cascadeFlow {
 
     for (auto& casc : Cascades) {
       int pdgCode{casc.pdgCode()};
-      if (!(std::abs(pdgCode) == 3312 && std::abs(casc.pdgCodeV0()) == 3122 && std::abs(casc.pdgCodeBachelor() == 211))     // Xi
+      if (!(std::abs(pdgCode) == 3312 && std::abs(casc.pdgCodeV0()) == 3122 && std::abs(casc.pdgCodeBachelor()) == 211)     // Xi
           && !(std::abs(pdgCode) == 3334 && std::abs(casc.pdgCodeV0()) == 3122 && std::abs(casc.pdgCodeBachelor()) == 321)) // Omega
         continue;
 
