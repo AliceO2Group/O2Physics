@@ -613,6 +613,62 @@ struct UpcTauCentralBarrelRL {
     return true;
   }
 
+
+		Configurable<float> cutMyGTptMin{"cutMyGTptMin", 0.1f, {"MyGlobalTrack cut"}};
+		Configurable<float> cutMyGTptMax{"cutMyGTptMax", 1e10f, {"MyGlobalTrack cut"}};
+		Configurable<float> cutMyGTetaMin{"cutMyGTetaMin", -0.8f, {"MyGlobalTrack cut"}};
+		Configurable<float> cutMyGTetaMax{"cutMyGTetaMax", 0.8f, {"MyGlobalTrack cut"}};
+		Configurable<float> cutMyGTdcaZmax{"cutMyGTdcaZmax", 2.f, {"MyGlobalTrack cut"}};
+		Configurable<float> cutMyGTdcaXYmax{"cutMyGTdcaXYmax", 1e10f, {"MyGlobalTrack cut"}};
+		Configurable<bool> cutMyGTdcaXYusePt{"cutMyGTdcaXYusePt", false, {"MyGlobalTrack cut"}};
+		Configurable<bool> cutMyHasITS{"cutMyHasITS", true, {"MyGlobalTrack cut"}};
+		Configurable<int> cutMyGTitsNClsMin{"cutMyGTitsNClsMin", 1, {"MyGlobalTrack cut"}};
+		Configurable<float> cutMyGTitsChi2NclMax{"cutMyGTitsChi2NclMax", 36.f, {"MyGlobalTrack cut"}};
+		Configurable<int> cutMyGTitsHitsRule{"cutMyGTitsHitsRule", 0, {"MyGlobalTrack cut"}};
+		Configurable<bool> cutMyHasTPC{"cutMyHasTPC", true, {"MyGlobalTrack cut"}};
+		Configurable<int> cutMyGTtpcNClsMin{"cutMyGTtpcNClsMin", 1, {"MyGlobalTrack cut"}};
+		Configurable<int> cutMyGTtpcNClsCrossedRowsMin{"cutMyGTtpcNClsCrossedRowsMin", 70, {"MyGlobalTrack cut"}};
+		Configurable<float> cutMyGTtpcNClsCrossedRowsOverNClsMin{"cutMyGTtpcNClsCrossedRowsOverNClsMin", 0.8f, {"MyGlobalTrack cut"}};
+		Configurable<float> cutMyGTtpcChi2NclMax{"cutMyGTtpcChi2NclMax", 4.f, {"MyGlobalTrack cut"}};
+
+	template<typename T>
+	void ReinstallRun2JpsiSelection(T const& track){
+		// save initial GT selection parameters
+		auto savecutMyGTptMin = cutMyGTptMin;
+		auto savecutMyGTptMax = cutMyGTptMax;
+		auto savecutMyGTetaMin = cutMyGTetaMin;
+		auto savecutMyGTetaMax = cutMyGTetaMax;
+		auto savecutMyGTdcaZmax = cutMyGTdcaZmax;
+		auto savecutMyGTdcaXYmax = cutMyGTdcaXYmax;
+		auto savecutMyGTdcaXYusePt = cutMyGTdcaXYusePt;
+		auto savecutMyHasITS = cutMyHasITS;
+		auto savecutMyGTitsNClsMin = cutMyGTitsNClsMin;
+		auto savecutMyGTitsChi2NclMax = cutMyGTitsChi2NclMax;
+		auto savecutMyGTitsHitsRule = cutMyGTitsHitsRule;
+		auto savecutMyHasTPC = cutMyHasTPC;
+		auto savecutMyGTtpcNClsMin = cutMyGTtpcNClsMin;
+		auto savecutMyGTtpcNClsCrossedRowsMin = cutMyGTtpcNClsCrossedRowsMin;
+		auto savecutMyGTtpcNClsCrossedRowsOverNClsMin = cutMyGTtpcNClsCrossedRowsOverNClsMin;
+		auto savecutMyGTtpcChi2NclMax = cutMyGTtpcChi2NclMax;
+		// restore initial GT selection parameters
+		cutMyGTptMin = savecutMyGTptMin;
+		cutMyGTptMax = savecutMyGTptMax;
+		cutMyGTetaMin = savecutMyGTetaMin;
+		cutMyGTetaMax = savecutMyGTetaMax;
+		cutMyGTdcaZmax = savecutMyGTdcaZmax;
+		cutMyGTdcaXYmax = savecutMyGTdcaXYmax;
+		cutMyGTdcaXYusePt = savecutMyGTdcaXYusePt;
+		cutMyHasITS = savecutMyHasITS;
+		cutMyGTitsNClsMin = savecutMyGTitsNClsMin;
+		cutMyGTitsChi2NclMax = savecutMyGTitsChi2NclMax;
+		cutMyGTitsHitsRule = savecutMyGTitsHitsRule;
+		cutMyHasTPC = savecutMyHasTPC;
+		cutMyGTtpcNClsMin = savecutMyGTtpcNClsMin;
+		cutMyGTtpcNClsCrossedRowsMin = savecutMyGTtpcNClsCrossedRowsMin;
+		cutMyGTtpcNClsCrossedRowsOverNClsMin = savecutMyGTtpcNClsCrossedRowsOverNClsMin;
+		cutMyGTtpcChi2NclMax = savecutMyGTtpcChi2NclMax;
+	}
+
   template <typename C, typename Ts>
   void fillHistograms(C reconstructedCollision, Ts reconstructedBarrelTracks)
   {
