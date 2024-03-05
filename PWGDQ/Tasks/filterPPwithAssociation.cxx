@@ -959,6 +959,11 @@ struct DQFilterPPTask {
     int totalEventsTriggered = 0;
     for (const auto& collision : collisions) {
       fStats->Fill(-2.0);
+      if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        eventFilter(0);
+        dqtable(false, false, false, false, false, false, false);
+        continue;
+      }
       if (!collision.isDQEventSelected()) {
         eventFilter(0);
         dqtable(false, false, false, false, false, false, false);
