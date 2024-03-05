@@ -246,7 +246,7 @@ struct strangederivedbuilder {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      collision.centFT0C(), collision.centFV0A());
-        strangeEvSels(collision.sel8());
+        strangeEvSels(collision.sel8(), collision.selection_raw());
         auto bc = collision.bc_as<aod::BCsWithTimestamps>();
         strangeStamps(bc.runNumber(), bc.timestamp());
 
@@ -292,7 +292,7 @@ struct strangederivedbuilder {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      centrality, collision.centFV0A());
-        strangeEvSels(collision.sel8());
+        strangeEvSels(collision.sel8(), collision.selection_raw());
         auto bc = collision.bc_as<aod::BCsWithTimestamps>();
         strangeStamps(bc.runNumber(), bc.timestamp());
 

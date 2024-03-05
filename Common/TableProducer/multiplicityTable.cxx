@@ -31,9 +31,10 @@ static constexpr int kTrackletMults = 4;
 static constexpr int kTPCMults = 5;
 static constexpr int kPVMults = 6;
 static constexpr int kMultsExtra = 7;
-static constexpr int kMultZeqs = 8;
-static constexpr int kMultsExtraMC = 9;
-static constexpr int nTables = 10;
+static constexpr int kMultSelections = 8;
+static constexpr int kMultZeqs = 9;
+static constexpr int kMultsExtraMC = 10;
+static constexpr int nTables = 11;
 static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{"FV0Mults",
                                                  "FT0Mults",
@@ -43,10 +44,11 @@ static const std::vector<std::string> tableNames{"FV0Mults",
                                                  "TPCMults",
                                                  "PVMults",
                                                  "MultsExtra",
+                                                 "MultSelections",
                                                  "MultZeqs",
                                                  "MultsExtraMC"};
 static const std::vector<std::string> parameterNames{"Enable"};
-static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
+static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
 struct MultiplicityTableTaskIndexed {
   SliceCache cache;
@@ -58,6 +60,7 @@ struct MultiplicityTableTaskIndexed {
   Produces<aod::TPCMults> tableTpc;
   Produces<aod::PVMults> tablePv;
   Produces<aod::MultsExtra> tableExtra;
+  Produces<aod::MultSelections> multSelections;
   Produces<aod::MultZeqs> tableMultZeq;
   Produces<aod::MultsExtraMC> tableExtraMc;
 
@@ -454,6 +457,10 @@ struct MultiplicityTableTaskIndexed {
             int bcNumber = bc.globalBC() % 3564;
 
             tableExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8(), nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC, bcNumber);
+          } break;
+          case kMultSelections: // Z equalized
+          {
+            multSelections(collision.selection_raw());
           } break;
           case kMultZeqs: // Z equalized
           {

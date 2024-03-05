@@ -12,6 +12,7 @@
 #define O2_ANALYSIS_MULTIPLICITY_H_
 
 #include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/EventSelection.h"
 
 namespace o2::aod
 {
@@ -102,6 +103,8 @@ DECLARE_SOA_TABLE(MultsExtra, "AOD", "MULTEXTRA", //!
                   mult::MultPVTotalContributors, mult::MultPVChi2, mult::MultCollisionTimeRes, mult::MultRunNumber, mult::MultPVz, mult::MultSel8,
                   mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
                   mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC, mult::BCNumber);
+DECLARE_SOA_TABLE(MultSelections, "AOD", "MULTSELECTIONS", //!
+                  evsel::Selection); // for derived data / QA studies
 using MultExtra = MultsExtra::iterator;
 DECLARE_SOA_TABLE(MultsExtraMC, "AOD", "MULTEXTRAMC", //! Table for the MC information
                   mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, o2::soa::Marker<1>);
