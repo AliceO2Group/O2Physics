@@ -52,7 +52,6 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -120,8 +119,7 @@ struct phianalysisrun3_PbPb {
       histos.add("h2PhiRec", "Phi meson Rec", kTH2F, {{100, 0.0f, 10.0f}, {200, -0.1, 0.1}});
     }
 
-
-     if (additionalEvsel) {
+    if (additionalEvsel) {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
       fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
       fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
@@ -133,8 +131,6 @@ struct phianalysisrun3_PbPb {
       // fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
       // fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
     }
-  
-  
   }
 
   double massKa = o2::constants::physics::MassKPlus;
@@ -162,7 +158,7 @@ struct phianalysisrun3_PbPb {
 
     return 1;
   }
-  
+
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
@@ -277,7 +273,7 @@ struct phianalysisrun3_PbPb {
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
-  //ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin"};
+  // ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin"};
 
   // using BinningType = BinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
   // BinningType binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
@@ -301,15 +297,14 @@ struct phianalysisrun3_PbPb {
 
     auto multiplicity = collision.centFT0C();
     auto multTPC = collision.multNTracksPV();
-    //auto psiFT0C = collision.psiFT0C();
+    // auto psiFT0C = collision.psiFT0C();
     histos.fill(HIST("hFTOCvsTPC"), multiplicity, multTPC);
 
     if (additionalEvsel && !eventSelected(collision, multiplicity)) {
       return;
     }
     histos.fill(HIST("hFTOCvsTPCSelected"), multiplicity, multTPC);
-    
- 
+
     histos.fill(HIST("hCentrality"), multiplicity);
     histos.fill(HIST("hNcontributor"), multTPC);
     histos.fill(HIST("hVtxZ"), collision.posZ());
@@ -356,7 +351,7 @@ struct phianalysisrun3_PbPb {
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass}, true};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      if (!c1.sel8() || !c2.sel8() ) {
+      if (!c1.sel8() || !c2.sel8()) {
         continue;
       }
 
