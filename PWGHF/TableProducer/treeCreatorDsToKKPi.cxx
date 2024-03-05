@@ -80,7 +80,7 @@ DECLARE_SOA_COLUMN(AbsCos3PiK, absCos3PiK, float);                           //!
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int); //! Event rejection flag
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);         //! Run number
-DECLARE_SOA_COLUMN(Sign, sign, int);                   //! Sign
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                //! Sign
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCandDsLites, "AOD", "HFCANDDSLITE",
