@@ -9,10 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 #include "Framework/ConfigParamSpec.h"
-
-using namespace o2;
-using namespace o2::framework;
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -21,6 +17,11 @@ using namespace o2::framework;
 #include "Common/DataModel/Multiplicity.h"
 #include "TableHelper.h"
 #include "iostream"
+#include "Framework/ASoAHelpers.h"
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 static constexpr int kFV0Mults = 0;
 static constexpr int kFT0Mults = 1;
@@ -207,7 +208,6 @@ struct MultiplicityTableTaskIndexed {
     tableTpc(multTPC);
     tablePv(multNContribs, multNContribsEta1, multNContribsEtaHalf);
   }
-  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", false);
 
   using Run3Tracks = soa::Join<aod::TracksIU, aod::TracksExtra>;
   Partition<Run3Tracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
@@ -478,7 +478,44 @@ struct MultiplicityTableTaskIndexed {
       }
     }
   }
+
+  // one loop better than multiple sliceby calls
+  // FIT FT0C: -3.3 < η < -2.1
+  // FOT FT0A:  3.5 < η <  4.9
+  Filter mcParticleFilter = (aod::mcparticle::eta < 4.9f) && (aod::mcparticle::eta > -3.3f);
+  using mcParticlesFiltered = soa::Filtered<aod::McParticles>;
+
+  void processMC(aod::McCollision const& mcCollision, mcParticlesFiltered const& mcParticles)
+  {
+    int multFT0A = 0;
+    int multFT0C = 0;
+    int multBarrelEta05 = 0;
+    int multBarrelEta08 = 0;
+    int multBarrelEta10 = 0;
+    for (auto const& mcPart : mcParticles) {
+      if(!mcPart.isPhysicalPrimary())
+        continue;
+
+      if(std::abs(mcPart.eta())<1.0){ 
+        multBarrelEta10++; 
+        if(std::abs(mcPart.eta())<0.8){
+          multBarrelEta08++; 
+          if(std::abs(mcPart.eta())<0.5){
+          multBarrelEta05++; 
+          }
+        }
+      }
+      if(-3.3 < mcPart.eta() && mcPart.eta() < -2.1 )
+        multFT0C++; 
+      if(3.5 < mcPart.eta() && mcPart.eta() < 4.9 )
+        multFT0A++; 
+    }
+    tableExtraMc( multFT0A, multFT0C, multBarrelEta05, multBarrelEta08, multBarrelEta10);
+  }
+
+  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", false);
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", true);
+  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processMC, "Produce MC multiplicity tables", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
