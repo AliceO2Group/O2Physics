@@ -93,23 +93,23 @@ struct HfPidCreator {
   void processDummy(aod::Collisions const&) {}
   PROCESS_SWITCH(HfPidCreator, processDummy, "Process nothing", true);
 
-  // Macro for declaring process functions per species
-  #define PROCESS_PID(_Species_) \
-  void processFull##_Species_(aod::TracksPid##_Species_ const& tracks) \
-  { \
-    for (const auto& track : tracks) { \
-      tracksPidFull##_Species_##S(combineNSigma<false>(track.tpcNSigma##_Species_(), track.tofNSigma##_Species_())); \
-    } \
-  } \
-  PROCESS_SWITCH(HfPidCreator, processFull##_Species_, "Process full "#_Species_, false); \
- \
-  void processTiny##_Species_(aod::TracksPidTiny##_Species_ const& tracks) \
-  { \
-    for (const auto& track : tracks) { \
+// Macro for declaring process functions per species
+#define PROCESS_PID(_Species_)                                                                                                \
+  void processFull##_Species_(aod::TracksPid##_Species_ const& tracks)                                                        \
+  {                                                                                                                           \
+    for (const auto& track : tracks) {                                                                                        \
+      tracksPidFull##_Species_##S(combineNSigma<false>(track.tpcNSigma##_Species_(), track.tofNSigma##_Species_()));          \
+    }                                                                                                                         \
+  }                                                                                                                           \
+  PROCESS_SWITCH(HfPidCreator, processFull##_Species_, "Process full " #_Species_, false);                                    \
+                                                                                                                              \
+  void processTiny##_Species_(aod::TracksPidTiny##_Species_ const& tracks)                                                    \
+  {                                                                                                                           \
+    for (const auto& track : tracks) {                                                                                        \
       tracksPidTiny##_Species_##S(combineNSigma<true>(track.tpcNSigmaStore##_Species_(), track.tofNSigmaStore##_Species_())); \
-    } \
-  } \
-  PROCESS_SWITCH(HfPidCreator, processTiny##_Species_, "Process tiny "#_Species_, false);
+    }                                                                                                                         \
+  }                                                                                                                           \
+  PROCESS_SWITCH(HfPidCreator, processTiny##_Species_, "Process tiny " #_Species_, false);
 
   // Declare process functions for all species.
   PROCESS_PID(El)
@@ -118,7 +118,7 @@ struct HfPidCreator {
   PROCESS_PID(Ka)
   PROCESS_PID(Pr)
 
-  #undef PROCESS_PID
+#undef PROCESS_PID
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
