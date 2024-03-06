@@ -142,7 +142,7 @@ class HfMlResponseDstarToD0Pi : public HfMlResponse<TypeOutputScore>
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       switch (idx) {
           CHECK_AND_FILL_VEC_DSTAR(chi2PCAD0);
-          CHECK_AND_FILL_VEC_DSTAR(decayLengthD0); 
+          CHECK_AND_FILL_VEC_DSTAR(decayLengthD0);
           CHECK_AND_FILL_VEC_DSTAR(decayLengthXYD0);
           CHECK_AND_FILL_VEC_DSTAR(decayLengthNormalisedD0);
           CHECK_AND_FILL_VEC_DSTAR(decayLengthXYNormalisedD0);
