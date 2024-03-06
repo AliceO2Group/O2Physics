@@ -59,6 +59,10 @@ struct Pi0EtaToGammaGammaMC {
   using MyMCElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronMCLabels, aod::EMPrimaryElectronsPrefilterBit>;
   using MyMCMuons = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonMCLabels, aod::EMPrimaryMuonsPrefilterBit>;
 
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
+  Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
+
   Configurable<float> maxY_track{"maxY_track", 0.9, "maximum rapidity for generated particles"};                 // for PCM and dielectron
   Configurable<float> minPhi_track{"minPhi_track", 0, "minimum azimuthal angle for generated particles"};        // for PCM and dielectron
   Configurable<float> maxPhi_track{"maxPhi_track", 2 * M_PI, "maximum azimuthal angle for generated particles"}; // for PCM and dielectron
@@ -339,6 +343,11 @@ struct Pi0EtaToGammaGammaMC {
         continue;
       }
 
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
+
       o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_pair_before, "", collision);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
@@ -550,6 +559,15 @@ struct Pi0EtaToGammaGammaMC {
         continue; // I don't know why this is necessary in simulation.
       }
 
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
+
+      if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+
       auto mccollision = collision.emreducedmcevent();
       reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hZvtx_before"))->Fill(mccollision.posZ());
       reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hCollisionCounter"))->Fill(1.0); // all
@@ -600,10 +618,12 @@ struct Pi0EtaToGammaGammaMC {
     }   // end of collision loop
   }
 
+  Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
+
   void processPCMPCM(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
   {
-    TruePairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, fPairCuts, v0legs, nullptr, nullptr, mccollisions, mcparticles);
-    runGenInfo<PairType::kPCMPCM>(collisions, mccollisions, mcparticles);
+    TruePairing<PairType::kPCMPCM>(grouped_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, fPairCuts, v0legs, nullptr, nullptr, mccollisions, mcparticles);
+    runGenInfo<PairType::kPCMPCM>(grouped_collisions, mccollisions, mcparticles);
   }
   void processPHOSPHOS(MyCollisions const& collisions) {}
   void processEMCEMC(MyCollisions const& collisions, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
@@ -615,14 +635,14 @@ struct Pi0EtaToGammaGammaMC {
 
   void processPCMDalitzEE(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, MyDalitzEEs const& dileptons, MyMCElectrons const& emprimaryelectrons, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
   {
-    TruePairing<PairType::kPCMDalitzEE>(collisions, v0photons, dileptons, perCollision_pcm, perCollision_dalitzee, fPCMCuts, fDalitzEECuts, fPairCuts, v0legs, emprimaryelectrons, nullptr, mccollisions, mcparticles);
-    runGenInfo<PairType::kPCMDalitzEE>(collisions, mccollisions, mcparticles);
+    TruePairing<PairType::kPCMDalitzEE>(grouped_collisions, v0photons, dileptons, perCollision_pcm, perCollision_dalitzee, fPCMCuts, fDalitzEECuts, fPairCuts, v0legs, emprimaryelectrons, nullptr, mccollisions, mcparticles);
+    runGenInfo<PairType::kPCMDalitzEE>(grouped_collisions, mccollisions, mcparticles);
   }
 
   void processPCMDalitzMuMu(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, MyDalitzMuMus const& dileptons, MyMCMuons const& emprimarymuons, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
   {
-    TruePairing<PairType::kPCMDalitzMuMu>(collisions, v0photons, dileptons, perCollision_pcm, perCollision_dalitzmumu, fPCMCuts, fDalitzMuMuCuts, fPairCuts, v0legs, nullptr, emprimarymuons, mccollisions, mcparticles);
-    runGenInfo<PairType::kPCMDalitzMuMu>(collisions, mccollisions, mcparticles);
+    TruePairing<PairType::kPCMDalitzMuMu>(grouped_collisions, v0photons, dileptons, perCollision_pcm, perCollision_dalitzmumu, fPCMCuts, fDalitzMuMuCuts, fPairCuts, v0legs, nullptr, emprimarymuons, mccollisions, mcparticles);
+    runGenInfo<PairType::kPCMDalitzMuMu>(grouped_collisions, mccollisions, mcparticles);
   }
 
   void processPHOSEMC(MyCollisions const& collisions) {}
