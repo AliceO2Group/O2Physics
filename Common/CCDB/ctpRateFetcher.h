@@ -37,6 +37,7 @@ class ctpRateFetcher
   double fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName);
 
   void setManualCleanup(bool manualCleanup = true) { mManualCleanup = manualCleanup; }
+
  private:
   double fetchCTPratesInputs(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, int input);
   double fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, const std::string& className, int inputType = 1);
