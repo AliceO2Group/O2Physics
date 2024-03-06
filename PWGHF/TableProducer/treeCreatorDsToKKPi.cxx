@@ -275,7 +275,7 @@ struct HfTreeCreatorDsToKKPi {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int runNumber;
-  double bz{0.};
+  float bz{0.};
 
   void init(InitContext const&)
   {
@@ -369,9 +369,9 @@ struct HfTreeCreatorDsToKKPi {
       runNumber = bc.runNumber();
     }
 
-    double dcaXYProng0 = getProngDcaXY(prong0, candidate.collision());
-    double dcaXYProng1 = getProngDcaXY(prong1, candidate.collision());
-    double dcaXYProng2 = getProngDcaXY(prong2, candidate.collision());
+    float dcaXYProng0 = getProngDcaXY(prong0, candidate.collision());
+    float dcaXYProng1 = getProngDcaXY(prong1, candidate.collision());
+    float dcaXYProng2 = getProngDcaXY(prong2, candidate.collision());
 
     if (fillCandidateLiteTable) {
       rowCandidateLite(
