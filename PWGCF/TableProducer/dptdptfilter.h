@@ -889,7 +889,7 @@ struct PIDSpeciesSelection {
     /* let's first check the exclusion from the analysis */
     for (uint8_t ix = 0; ix < configexclude.size(); ++ix) {
       if (isA(configexclude[ix], speciesexclude[ix])) {
-        return -ix;
+        return -(ix + 1);
       }
     }
     /* we don't exclude it so check which species if any required */
@@ -918,7 +918,7 @@ struct PIDSpeciesSelection {
     /* let's first check the exclusion from the analysis */
     for (uint8_t ix = 0; ix < configexclude.size(); ++ix) {
       if (pdgcode == pdgcodes[speciesexclude[ix]]) {
-        return -ix;
+        return -(ix + 1);
       }
     }
     /* we don't exclude it so check which species if any required */
