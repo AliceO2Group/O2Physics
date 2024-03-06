@@ -94,8 +94,8 @@ struct zdcSP {
     if (gCentroidC.find(mRunNumber) == gCentroidC.end()) {
       auto runDuration = ccdb->getRunDuration(mRunNumber);
       mSOR = runDuration.first;
-      mMinSeconds = std::floor(mSOR * 1.e-3); /// round tsSOR to the highest integer lower than tsSOR
-      double maxSec = std::ceil(runDuration.second * 1.e-3);  /// round tsEOR to the lowest integer higher than tsEOR
+      mMinSeconds = std::floor(mSOR * 1.e-3);                /// round tsSOR to the highest integer lower than tsSOR
+      double maxSec = std::ceil(runDuration.second * 1.e-3); /// round tsEOR to the lowest integer higher than tsEOR
       const AxisSpec axisSeconds{static_cast<int>(maxSec - mMinSeconds), 0, maxSec - mMinSeconds, "Seconds since SOR"};
       std::array<TH2*, 2>& zncH = gCentroidC[mRunNumber];
       std::array<TH2*, 2>& znaH = gCentroidA[mRunNumber];
@@ -149,28 +149,28 @@ struct zdcSP {
     float zncCommon = zdc.energyCommonZNC() < 0 ? -1.f : zdc.energyCommonZNC();
     if (gRandom->Uniform() < cfgCalibrationDownscaling) {
       zdcSPTable(bc.timestamp() - mSOR, bc.runNumber(), hadronicRate, collision.posX(), collision.posY(), collision.posZ(), collision.centFT0C(),
-               znaCommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3],
-               zncCommon, zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3]);
+                 znaCommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3],
+                 zncCommon, zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3]);
     }
 
     constexpr float beamEne = 5.36 * 0.5;
     constexpr float x[4] = {-1.75, 1.75, -1.75, 1.75};
     constexpr float y[4] = {-1.75, -1.75, 1.75, 1.75};
     constexpr float alpha = 0.395;
-    float numXZNC=0., numYZNC=0., denZNC=0.;
-    float numXZNA=0., numYZNA=0., denZNA=0.;
+    float numXZNC = 0., numYZNC = 0., denZNC = 0.;
+    float numXZNA = 0., numYZNA = 0., denZNA = 0.;
     //
-    for(int i=0; i<4; i++){
-      if(zncEnergy[i] > 0.) {
+    for (int i = 0; i < 4; i++) {
+      if (zncEnergy[i] > 0.) {
         float wZNC = std::pow(zncEnergy[i], alpha);
-        numXZNC += x[i]*wZNC;
-        numYZNC += y[i]*wZNC;
+        numXZNC += x[i] * wZNC;
+        numYZNC += y[i] * wZNC;
         denZNC += wZNC;
       }
-      if(znaEnergy[i] > 0.) {
+      if (znaEnergy[i] > 0.) {
         float wZNA = std::pow(znaEnergy[i], alpha);
-        numXZNA += x[i]*wZNA;
-        numYZNA += y[i]*wZNA;
+        numXZNA += x[i] * wZNA;
+        numYZNA += y[i] * wZNA;
         denZNA += wZNA;
       }
     }
@@ -181,22 +181,21 @@ struct zdcSP {
       float cZNC = 1.89358 - 0.71262 / (nSpecnC + 0.71789);
       centrZNC[0] = cZNC * numXZNC / denZNC;
       centrZNC[1] = cZNC * numYZNC / denZNC;
-    }
-    else centrZNC[0] = centrZNC[1] = 999.;
+    } else
+      centrZNC[0] = centrZNC[1] = 999.;
     //
-    if (denZNA != 0.){
+    if (denZNA != 0.) {
       float nSpecnA = znaCommon / beamEne;
       float cZNA = 1.89358 - 0.71262 / (nSpecnA + 0.71789);
       centrZNA[0] = -cZNA * numXZNA / denZNA;
       centrZNA[1] = cZNA * numYZNA / denZNA;
-    }
-    else centrZNA[0] = centrZNA[1] = 999.;
+    } else
+      centrZNA[0] = centrZNA[1] = 999.;
 
     for (int i{0}; i < 2; ++i) {
       gCurrentCentroidC[i]->Fill(seconds, centrZNC[i]);
       gCurrentCentroidA[i]->Fill(seconds, centrZNA[i]);
     }
-
   }
   PROCESS_SWITCH(zdcSP, processCalibrationData, "Data analysis", true);
 };
