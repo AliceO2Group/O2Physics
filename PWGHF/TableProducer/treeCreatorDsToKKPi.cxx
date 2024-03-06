@@ -20,10 +20,13 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "DetectorsBase/Propagator.h"
+#include "Common/Core/trackUtilities.h"
 
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -40,6 +43,9 @@ DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);           //! Transverse momentum
 DECLARE_SOA_COLUMN(PProng1, pProng1, float);             //! Momentum of prong1 (in GeV/c)
 DECLARE_SOA_COLUMN(PtProng2, ptProng2, float);           //! Transverse momentum of prong2 (GeV/c)
 DECLARE_SOA_COLUMN(PProng2, pProng2, float);             //! Momentum of prong2 (GeV/c)
+DECLARE_SOA_COLUMN(DcaXYProng0, dcaXYProng0, float);     //! DCA in XY plane of prong0 (cm)
+DECLARE_SOA_COLUMN(DcaXYProng1, dcaXYProng1, float);     //! DCA in XY plane of prong1 (cm)
+DECLARE_SOA_COLUMN(DcaXYProng2, dcaXYProng2, float);     //! DCA in XY plane of prong2 (cm)
 DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);       //! TPC Nsigma separation for prong0 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);       //! TPC Nsigma separation for prong0 with kaon mass hypothesis
 DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float);       //! TOF Nsigma separation for prong0 with pion mass hypothesis
@@ -90,6 +96,9 @@ DECLARE_SOA_TABLE(HfCandDsLites, "AOD", "HFCANDDSLITE",
                   hf_cand::ImpactParameter0,
                   hf_cand::ImpactParameter1,
                   hf_cand::ImpactParameter2,
+                  full::DcaXYProng0,
+                  full::DcaXYProng1,
+                  full::DcaXYProng2,
                   full::NSigTpcPi0,
                   full::NSigTpcKa0,
                   full::NSigTofPi0,
@@ -154,6 +163,9 @@ DECLARE_SOA_TABLE(HfCandDsFulls, "AOD", "HFCANDDSFULL",
                   hf_cand::ImpactParameter0,
                   hf_cand::ImpactParameter1,
                   hf_cand::ImpactParameter2,
+                  full::DcaXYProng0,
+                  full::DcaXYProng1,
+                  full::DcaXYProng2,
                   full::NSigTpcPi0,
                   full::NSigTpcKa0,
                   full::NSigTofPi0,
@@ -237,6 +249,10 @@ struct HfTreeCreatorDsToKKPi {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
+  // magnetic field setting from CCDB
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
+
   HfHelper hfHelper;
 
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
@@ -255,8 +271,28 @@ struct HfTreeCreatorDsToKKPi {
   Partition<CandDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi)) && (aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel || (fillDplusMc && aod::hf_cand_3prong::flagMcDecayChanRec == (decayChannel + offsetDplusDecayChannel))); // Do not store Dplus MC if fillDplusMc is false
   Partition<CandDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi));
 
+  // CCDB service
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  int runNumber;
+  double bz{0.};
+
   void init(InitContext const&)
   {
+    // Configure CCDB access
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    runNumber = 0;
+  }
+
+  template <typename T1, typename T2>
+  float getProngDcaXY(const T1& prong, const T2& collision)
+  {
+    auto trackPar = getTrackPar(prong);
+    o2::gpu::gpustd::array<float, 2> dcaInfo{-999., -999.};
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, noMatCorr, &dcaInfo);
+    return dcaInfo[0];
   }
 
   template <typename T>
@@ -317,6 +353,26 @@ struct HfTreeCreatorDsToKKPi {
     auto prong1 = candidate.template prong1_as<TracksWPid>();
     auto prong2 = candidate.template prong2_as<TracksWPid>();
 
+    // Set the magnetic field from ccdb.
+    // The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
+    // but this is not true when running on Run2 data/MC already converted into AO2Ds.
+    auto bc = candidate.collision().template bc_as<aod::BCsWithTimestamps>();
+    if (runNumber != bc.runNumber()) {
+      LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
+      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
+      if (grpo == nullptr) {
+        LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+      }
+      o2::base::Propagator::initFieldFromGRP(grpo);
+      bz = o2::base::Propagator::Instance()->getNominalBz();
+      LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
+      runNumber = bc.runNumber();
+    }
+
+    double dcaXYProng0 = getProngDcaXY(prong0, candidate.collision());
+    double dcaXYProng1 = getProngDcaXY(prong1, candidate.collision());
+    double dcaXYProng2 = getProngDcaXY(prong2, candidate.collision());
+
     if (fillCandidateLiteTable) {
       rowCandidateLite(
         candidate.ptProng0(),
@@ -325,6 +381,9 @@ struct HfTreeCreatorDsToKKPi {
         candidate.impactParameter0(),
         candidate.impactParameter1(),
         candidate.impactParameter2(),
+        dcaXYProng0,
+        dcaXYProng1,
+        dcaXYProng2,
         prong0.tpcNSigmaPi(),
         prong0.tpcNSigmaKa(),
         prong0.tofNSigmaPi(),
@@ -389,6 +448,9 @@ struct HfTreeCreatorDsToKKPi {
         candidate.impactParameter0(),
         candidate.impactParameter1(),
         candidate.impactParameter2(),
+        dcaXYProng0,
+        dcaXYProng1,
+        dcaXYProng2,
         prong0.tpcNSigmaPi(),
         prong0.tpcNSigmaKa(),
         prong0.tofNSigmaPi(),
@@ -440,7 +502,8 @@ struct HfTreeCreatorDsToKKPi {
 
   void processData(aod::Collisions const& collisions,
                    CandDsData const& candidates,
-                   TracksWPid const&)
+                   TracksWPid const&,
+                   aod::BCsWithTimestamps const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -482,7 +545,8 @@ struct HfTreeCreatorDsToKKPi {
                  aod::McCollisions const&,
                  CandDsMcReco const& candidates,
                  CandDsMcGen const& mcParticles,
-                 TracksWPid const&)
+                 TracksWPid const&,
+                 aod::BCsWithTimestamps const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
