@@ -225,6 +225,9 @@ struct antidLambdaEbye {
     if (std::abs(track.eta()) > etaMax) {
       return false;
     }
+    if (!(track.itsClusterMap() & 0x01) && !(track.itsClusterMap() & 0x02)) {
+      return false;
+    }
     if (track.itsNCls() < trackNclusItsCut ||
         track.tpcNClsFound() < trackNclusTpcCut ||
         track.tpcNClsCrossedRows() < trackNcrossedRows ||
@@ -232,6 +235,12 @@ struct antidLambdaEbye {
         track.tpcChi2NCl() > 4.f ||
         track.itsChi2NCl() > 36.f) {
       return false;
+    }
+    if (doprocessRun2 || doprocessMcRun2) {
+      if (!(track.flags() & o2::aod::track::TPCrefit) ||
+          !(track.flags() & o2::aod::track::ITSrefit)) {
+        return false;
+      }
     }
     return true;
   }
@@ -431,9 +440,11 @@ struct antidLambdaEbye {
           continue;
         }
 
-        float cosL = 1 / std::sqrt(1.f + track.tgl() * track.tgl());
-        if (iP && getITSClSize(track) * cosL > antidItsClsSizeCut && track.pt() > antidPtItsClsSizeCut) {
-          continue;
+        if (doprocessRun3 || doprocessMcRun3) {
+          float cosL = 1 / std::sqrt(1.f + track.tgl() * track.tgl());
+          if (iP && getITSClSize(track) * cosL < antidItsClsSizeCut && track.pt() < antidPtItsClsSizeCut) {
+            continue;
+          }
         }
 
         double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / partMass[iP]), cfgBetheBlochParams->get(iP, "p0"), cfgBetheBlochParams->get(iP, "p1"), cfgBetheBlochParams->get(iP, "p2"), cfgBetheBlochParams->get(iP, "p3"), cfgBetheBlochParams->get(iP, "p4"))};
@@ -502,6 +513,14 @@ struct antidLambdaEbye {
       auto neg = v0.template negTrack_as<TracksFull>();
       if (std::abs(pos.eta()) > etaMax || std::abs(neg.eta()) > etaMax) {
         continue;
+      }
+
+      if (doprocessRun2 || doprocessMcRun2) {
+        bool checkPosPileUp = pos.hasTOF() || (pos.flags() & o2::aod::track::TrackFlagsRun2Enum::ITSrefit);
+        bool checkNegPileUp = neg.hasTOF() || (neg.flags() & o2::aod::track::TrackFlagsRun2Enum::ITSrefit);
+        if (!checkPosPileUp && !checkNegPileUp) {
+          continue;
+        }
       }
 
       bool matter = v0.alpha() > 0;
@@ -709,13 +728,13 @@ struct antidLambdaEbye {
       if (!collision.sel8())
         continue;
 
+      if (std::abs(collision.posZ()) > zVtxMax)
+        continue;
+
       if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
         continue;
 
       if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
-        continue;
-
-      if (std::abs(collision.posZ()) > zVtxMax)
         continue;
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
@@ -725,8 +744,8 @@ struct antidLambdaEbye {
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
       V0Table_thisCollision.bindExternalIndices(&tracks);
 
-      auto centrality = collision.centFT0C();
       auto multiplicity = collision.multFT0C();
+      auto centrality = collision.centFT0C();
       fillRecoEvent(TrackTable_thisCollision, V0Table_thisCollision, centrality);
 
       histos.fill(HIST("QA/GlobalMultVsCent"), centrality, globalTrackCounter);
@@ -737,7 +756,7 @@ struct antidLambdaEbye {
   }
   PROCESS_SWITCH(antidLambdaEbye, processRun3, "process (Run 3)", false);
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s> const& collisions, BCsWithRun2Info const&, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s> const& collisions, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s, BCsWithRun2Info const&)
   {
     for (const auto& collision : collisions) {
       if (!collision.sel7())
@@ -761,9 +780,9 @@ struct antidLambdaEbye {
       V0Table_thisCollision.bindExternalIndices(&tracks);
 
       auto centrality = collision.centRun2V0M();
-      fillRecoEvent(tracks, V0s, centrality);
-
       auto centralityCl0 = collision.centRun2CL0();
+      fillRecoEvent(TrackTable_thisCollision, V0Table_thisCollision, centrality);
+
       histos.fill(HIST("QA/V0MvsCL0"), centralityCl0, centrality);
     }
   }
