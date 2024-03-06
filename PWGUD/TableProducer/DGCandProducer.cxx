@@ -220,13 +220,13 @@ struct DGCandProducer {
   {
     LOGF(debug, "<DGCandProducer>  collision %d", collision.globalIndex());
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
-    
+
     // reject collisions at TF boundaries
     if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return;
     }
     registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
-    
+
     // nominal BC
     if (!collision.has_foundBC()) {
       return;
