@@ -284,6 +284,8 @@ class HfFilterHelper
     mNSigmaTpcPiKaCutForDzero = nSigmaTpc;
     mNSigmaTofPiKaCutForDzero = nSigmaTof;
   }
+  void setDeltaMassCharmHadForBeauty(float delta) { mDeltaMassCharmHadForBeauty = delta; }
+  void setDeltaMassLcForSigmaC(float delta) { mDeltaMassLcForSigmaC = delta; }
   void setV0Selections(float minGammaCosPa, float minK0sLambdaCosPa, float minK0sLambdaRadius, float nSigmaPrFromLambda, float deltaMassK0s, float deltaMassLambda)
   {
     mMinGammaCosinePa = minGammaCosPa;
@@ -500,7 +502,7 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T& track,
 
   // D*+ soft pion pt cut
   // Disable this cut if SigmaC triggers are considered
-  if (pT < mPtMinSoftPionForDstar && whichTrigger != kSigmaCppKminus && whichTrigger != kSigmaC0K0s ) { // soft pion min pT cut should be less stringent than usual tracks
+  if (pT < mPtMinSoftPionForDstar && whichTrigger != kSigmaCppKminus && whichTrigger != kSigmaC0K0s) { // soft pion min pT cut should be less stringent than usual tracks
     return kRejected;
   }
 
@@ -515,10 +517,10 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T& track,
   if (whichTrigger == kSigmaCppKminus || whichTrigger == kSigmaC0K0s) {
 
     // SigmaC0,++ soft pion pt cut
-    if( pT < mPtMinSoftPionForSigmaC ) {
+    if (pT < mPtMinSoftPionForSigmaC) {
       return kRejected;
     }
-    
+
     // We do not need any further selection for SigmaC soft-pi
     // The current track is a good SigmaC soft-pi candidate
     return kSoftPionForSigmaC;
@@ -873,24 +875,26 @@ inline int8_t HfFilterHelper::isSelectedLcInMassRange(const T& pTrackSameChargeF
 /// Mass selection of Lc candidates to build SigmaC candidates
 /// \param massPKPi is the inv. mass calculated assuming p-K-pi daughters
 /// \param massPiKP is the inv. mass calculated assuming pi-K-p daughters
-inline int8_t HfFilterHelper::isSelectedLcInMassRangeSigmaC(const float& massPKPi, const float& massPiKP) {
+inline int8_t HfFilterHelper::isSelectedLcInMassRangeSigmaC(const float& massPKPi, const float& massPiKP)
+{
   int8_t retValue = 0;
-  if( std::fabs(massPKPi - massLc) < mDeltaMassLcForSigmaC ) {
+  if (std::fabs(massPKPi - massLc) < mDeltaMassLcForSigmaC) {
     retValue |= BIT(0);
   }
-  if( std::fabs(massPiKP - massLc) < mDeltaMassLcForSigmaC ) {
+  if (std::fabs(massPiKP - massLc) < mDeltaMassLcForSigmaC) {
     retValue |= BIT(1);
   }
   return retValue;
 }
 
 /// Delta mass selection on SigmaC candidates
-inline int8_t HfFilterHelper::isSelectedSigmaCInDeltaMassRange(const float& deltaMassPKPi, const float& deltaMassPiKP) {
+inline int8_t HfFilterHelper::isSelectedSigmaCInDeltaMassRange(const float& deltaMassPKPi, const float& deltaMassPiKP)
+{
   int8_t retValue = 0;
-  if( deltaMassPKPi < mDeltaMassMinSigmaC ) {
+  if (deltaMassPKPi < mDeltaMassMinSigmaC) {
     retValue |= BIT(0);
   }
-  if( deltaMassPiKP < mDeltaMassMaxSigmaC ) {
+  if (deltaMassPiKP < mDeltaMassMaxSigmaC) {
     retValue |= BIT(1);
   }
   return retValue;
