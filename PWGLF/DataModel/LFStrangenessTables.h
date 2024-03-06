@@ -22,6 +22,7 @@
 
 namespace o2::aod
 {
+
 //______________________________________________________
 // Collision declarations for derived data analysis
 // this is optional but will ensure full flexibility
@@ -37,7 +38,7 @@ DECLARE_SOA_TABLE_VERSIONED(StraRawCents_001, "AOD", "STRARAWCENTS", 1, //! debu
                             mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, mult::MultNTracksPVeta1,
                             mult::MultZNA, mult::MultZNC, mult::MultZEM1, mult::MultZEM2, mult::MultZPA, mult::MultZPC);
 DECLARE_SOA_TABLE(StraEvSels, "AOD", "STRAEVSELS", //! event selection: sel8
-                  evsel::Sel8);
+                  evsel::Sel8, evsel::Selection);
 DECLARE_SOA_TABLE(StraFT0AQVs, "AOD", "STRAFT0AQVS", //! t0a Qvec
                   qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A);
 DECLARE_SOA_TABLE(StraFT0CQVs, "AOD", "STRAFT0CQVS", //! t0c Qvec
@@ -52,6 +53,17 @@ DECLARE_SOA_TABLE(StraStamps, "AOD", "STRASTAMPS", //! information for ID-ing ma
 using StraRawCents = StraRawCents_001;
 using StraCollision = StraCollisions::iterator;
 using StraCent = StraCents::iterator;
+
+//______________________________________________________
+// for correlating information with MC
+// also allows for collision association cross-checks
+DECLARE_SOA_TABLE(StraMCCollisions, "AOD", "STRAMCCOLLISION", //! MC collision properties
+                  o2::soa::Index<>, mccollision::PosX, mccollision::PosY, mccollision::PosZ,
+                  mccollision::ImpactParameter);
+DECLARE_SOA_TABLE(StraMCCollMults, "AOD", "STRAMCCOLLMULTS", //! MC collision multiplicities
+                  mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, o2::soa::Marker<2>);
+
+using StraMCCollision = StraMCCollisions::iterator;
 
 namespace dautrack
 {
@@ -135,8 +147,16 @@ DECLARE_SOA_INDEX_COLUMN(V0, v0);                                       //!
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrackExtra, posTrackExtra, int, DauTrackExtras, "_PosExtra"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrackExtra, negTrackExtra, int, DauTrackExtras, "_NegExtra"); //!
 DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision);                                        //!
+DECLARE_SOA_INDEX_COLUMN(StraMCCollision, straMCCollision);                                    //!
 DECLARE_SOA_INDEX_COLUMN(MotherMCPart, motherMCPart);                                          //!
-
+} // namespace v0data
+//______________________________________________________
+// intermezzo: define StraCollRefs, then carry on
+DECLARE_SOA_TABLE(StraCollLabels, "AOD", "STRACOLLLABELS", //! optional table to refer back to a MC collision
+                  o2::soa::Index<>, v0data::StraMCCollisionId, o2::soa::Marker<1>);
+//______________________________________________________
+namespace v0data
+{
 //______________________________________________________
 // REGULAR COLUMNS FOR V0CORES
 // General V0 properties: position, momentum
@@ -497,6 +517,9 @@ DECLARE_SOA_TABLE(V0MCCores, "AOD", "V0MCCORE", //! MC properties of the V0 for 
                   v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
                   v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
 
+DECLARE_SOA_TABLE(V0MCCollRefs, "AOD", "V0MCCOLLREF", //! refers MC candidate back to proper MC Collision
+                  o2::soa::Index<>, v0data::StraMCCollisionId, o2::soa::Marker<2>);
+
 DECLARE_SOA_TABLE(GeK0Short, "AOD", "GeK0Short", v0data::GeneratedK0Short);
 DECLARE_SOA_TABLE(GeLambda, "AOD", "GeLambda", v0data::GeneratedLambda);
 DECLARE_SOA_TABLE(GeAntiLambda, "AOD", "GeAntiLambda", v0data::GeneratedAntiLambda);
@@ -596,6 +619,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(NegTrackExtra, negTrackExtra, int, DauTrackExtras,
 DECLARE_SOA_INDEX_COLUMN_FULL(BachTrackExtra, bachTrackExtra, int, DauTrackExtras, "_BachExtra");          //!
 DECLARE_SOA_INDEX_COLUMN_FULL(StrangeTrackExtra, strangeTrackExtra, int, DauTrackExtras, "_StrangeExtra"); //!
 DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision);                                                    //!
+DECLARE_SOA_INDEX_COLUMN(StraMCCollision, straMCCollision);                                                //!
 DECLARE_SOA_INDEX_COLUMN(MotherMCPart, motherMCPart);                                                      //!
 
 //______________________________________________________
@@ -954,6 +978,9 @@ DECLARE_SOA_TABLE(CascMCCores, "AOD", "CASCMCCORE", //! bachelor-baryon correlat
                   cascdata::PxNegMC, cascdata::PyNegMC, cascdata::PzNegMC,
                   cascdata::PxBachMC, cascdata::PyBachMC, cascdata::PzBachMC,
                   cascdata::PxMC, cascdata::PyMC, cascdata::PzMC);
+
+DECLARE_SOA_TABLE(CascMCCollRefs, "AOD", "CASCMCCOLLREF", //! refers MC candidate back to proper MC Collision
+                  o2::soa::Index<>, cascdata::StraMCCollisionId, o2::soa::Marker<3>);
 
 DECLARE_SOA_TABLE(GeXiMinus, "AOD", "GeXiMinus", cascdata::GeneratedXiMinus);
 DECLARE_SOA_TABLE(GeXiPlus, "AOD", "GeXiPlus", cascdata::GeneratedXiPlus);
