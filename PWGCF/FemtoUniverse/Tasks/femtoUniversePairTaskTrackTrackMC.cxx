@@ -448,7 +448,7 @@ struct femtoUniversePairTaskTrackTrackMC {
         }
 
         if (ConfIsCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, "same")) {
             continue;
           }
         }
@@ -480,7 +480,7 @@ struct femtoUniversePairTaskTrackTrackMC {
         }
 
         if (ConfIsCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, "same")) {
             continue;
           }
         }
@@ -594,7 +594,7 @@ struct femtoUniversePairTaskTrackTrackMC {
       }
 
       if (ConfIsCPR.value) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, "mixed")) {
           continue;
         }
       }
