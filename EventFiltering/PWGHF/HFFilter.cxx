@@ -61,9 +61,9 @@ struct HfFilter { // Main struct for HF triggers
 
   // parameters for all triggers
   // nsigma PID (except for V0 and cascades)
-  Configurable<LabeledArray<float>> nSigmaPidCuts{"nSigmaPidCuts", {cutsNsigma[0], 3, 5, labelsRowsNsigma, labelsColumnsNsigma}, "Nsigma cuts for TPC/TOF PID (except for V0 and cascades)"};
+  Configurable<LabeledArray<float>> nSigmaPidCuts{"nSigmaPidCuts", {cutsNsigma[0], 3, 6, labelsRowsNsigma, labelsColumnsNsigma}, "Nsigma cuts for TPC/TOF PID (except for V0 and cascades)"};
   // min and max pts for tracks and bachelors (except for V0 and cascades)
-  Configurable<LabeledArray<float>> ptCuts{"ptCuts", {cutsPt[0], 2, 4, labelsRowsCutsPt, labelsColumnsCutsPt}, "minimum and maximum pT for bachelor tracks (except for V0 and cascades)"};
+  Configurable<LabeledArray<float>> ptCuts{"ptCuts", {cutsPt[0], 2, 6, labelsRowsCutsPt, labelsColumnsCutsPt}, "minimum and maximum pT for bachelor tracks (except for V0 and cascades)"};
 
   // parameters for high-pT triggers
   Configurable<LabeledArray<float>> ptThresholds{"ptThresholds", {cutsHighPtThresholds[0], 1, 2, labelsEmpty, labelsColumnsHighPtThresholds}, "pT treshold for high pT charm hadron candidates for kHighPt triggers in GeV/c"};
@@ -83,19 +83,12 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<float> ptThresholdForFemtoPid{"ptThresholdForFemtoPid", 8., "pT threshold for changing strategy of proton PID in femto triggers"};
   Configurable<bool> forceTofPid{"forceTofPid", false, "force TOF PID for proton in femto triggers"};
 
-  // parameters for triggers with SigmaC0,++
-  Configurable<float> deltaMassLcForSigmaC{"deltaMassLcForSigmaC", 0.04, "Absolute delta cut from PDG Lc mass for Lc candidates to build SigmaC0, ++ candidates"};
-  Configurable<float> deltaMassMinSigmaC{"deltaMassMinSigmaC", 0.155, "Minimum delta mass M(pKpipi)-M(pKpi) of SigmaC0,++ candidates"};
-  Configurable<float> deltaMassMaxSigmaC{"deltaMassMaxSigmaC", 0.18, "Maximum delta mass M(pKpipi)-M(pKpi) of SigmaC0,++ candidates"};
-  Configurable<float> massMinSigmaCKaonPair{"massMinSigmaCKaonPair", 2.92, "Minimum invariant mass for M(SigmaC K) candidates"};
-  Configurable<float> massMaxSigmaCKaonPair{"massMaxSigmaCKaonPair", 3.25, "Maximum invariant mass for M(SigmaC K) candidates"};
-
   // double charm
   Configurable<LabeledArray<int>> enableDoubleCharmChannels{"enableDoubleCharmChannels", {activeDoubleCharmChannels[0], 1, 3, labelsEmpty, labelsColumnsDoubleCharmChannels}, "Flags to enable/disable double charm channels"};
 
   // parameters for V0 + charm triggers
   Configurable<LabeledArray<float>> cutsGammaK0sLambda{"cutsGammaK0sLambda", {cutsV0s[0], 1, 6, labelsEmpty, labelsColumnsV0s}, "Selections for V0s (gamma, K0s, Lambda) for D+V0 triggers"};
-  Configurable<LabeledArray<float>> maxDeltaMassCharmReso{"maxDeltaMassCharmReso", {cutsMassCharmReso[0], 1, 6, labelsEmpty, labelsColumnsDeltaMasseCharmReso}, "maximum invariant-mass delta for charm hadron resonances in GeV/c2"};
+  Configurable<LabeledArray<float>> maxDeltaMassCharmReso{"maxDeltaMassCharmReso", {cutsMassCharmReso[0], 1, 8, labelsEmpty, labelsColumnsDeltaMasseCharmReso}, "maximum invariant-mass delta for charm hadron resonances in GeV/c2"};
   Configurable<bool> keepAlsoWrongDplusLambdaPairs{"keepAlsoWrongDplusLambdaPairs", true, "flat go keep also wrong sign D+Lambda pairs"};
 
   // parameters for charm baryons to Xi bachelor
@@ -204,7 +197,9 @@ struct HfFilter { // Main struct for HF triggers
     helper.setTpcPidCalibrationOption(setTPCCalib);
     helper.setMassResolParametrisation(paramCharmMassShape);
     helper.setNumSigmaForDeltaMassCharmHadCut(numSigmaDeltaMassCharmHad);
-    helper.setDeltaMassRangeSigmaC(deltaMassMinSigmaC, deltaMassMaxSigmaC);
+    helper.setPtRangeSoftPiSigmaC(ptCuts->get(0u, 4u), ptCuts->get(1u, 4u));
+    helper.setDeltaMassRangeSigmaC(0.14, maxDeltaMassCharmReso->get(0u, 6u));
+    helper.setPtRangeSoftKaonXicStarToSigmaC(ptCuts->get(0u, 5u), ptCuts->get(1u, 5u));
 
     hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;counts", HistType::kTH1F, {{kNtriggersHF + 2, -0.5, kNtriggersHF + 1.5}});
     for (auto iBin = 0; iBin < kNtriggersHF + 2; ++iBin) {
@@ -890,12 +885,9 @@ struct HfFilter { // Main struct for HF triggers
           } // end femto selection
 
           // SigmaC++ K- trigger
-          if (is3Prong[2] > 0) { // we need a candidate Lc->pKpi
-
-            // select candidate Lc->pKpi in mass range
-            if (!is3ProngInMass[2]) {
-              continue;
-            }
+          // Let's flag it together with SigmaC0K0s (i.e. in kV0Charm3P) even if there is no V0
+          if (!keepEvent[kV0Charm3P] && is3Prong[2] > 0 && is3ProngInMass[2] > 0 && isSignalTagged[2] > 0 && helper.isSelectedKaonFromXicStarToSigmaC<true>(track)) {
+            // we need a candidate Lc->pKpi and a candidate soft kaon
 
             // look for SigmaC++ candidates
             for (const auto& trackSoftPiId : trackIdsThisCollision) { // start loop over tracks (soft pi)
@@ -932,16 +924,15 @@ struct HfFilter { // Main struct for HF triggers
 
                 // check the mass of the SigmaC++ candidate
                 auto pVecSigmaC = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird, pVecSoftPi);
-                auto ptSigmaC= RecoDecay::pt(pVecSigmaC);
-                if (!helper.isSelectedSigmaCInDeltaMassRange(pVecFirst, pVecThird, pVecSecond, pVecSoftPi, ptSigmaC, is3Prong[2], hMassVsPtC[kNCharmParticles + 9], activateQA))
-                {
+                auto ptSigmaC = RecoDecay::pt(pVecSigmaC);
+                if (!helper.isSelectedSigmaCInDeltaMassRange(pVecFirst, pVecThird, pVecSecond, pVecSoftPi, ptSigmaC, is3Prong[2], hMassVsPtC[kNCharmParticles + 9], activateQA)) {
                   /// let's build a candidate SigmaC++K- pair
                   /// and keep it only if:
                   ///   - it has the correct charge (±1)
                   ///   - it is in the correct mass range
-                  
+
                   // check the charge for SigmaC++K- candidates
-                  if( std::abs(chargeSc + track.sign()) != 1 ) {
+                  if (std::abs(chargeSc + track.sign()) != 1) {
                     continue;
                   }
 
@@ -950,17 +941,29 @@ struct HfFilter { // Main struct for HF triggers
                   // to avoid all the computations for SigmaC
 
                   // check the invariant mass
-                  std::array<float, 3> pVecSigmaC = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird, pVecSoftPi);
-                  float massSigmaCKaonPair = RecoDecay::m( std::array{pVecSigmaC, pVecFourth}, std::array{massSigmaCPlusPlus, massKa} );
-                  if(massMinSigmaCKaonPair < massSigmaCKaonPair && massSigmaCKaonPair < massMaxSigmaCKaonPair) {
+                  // std::array<float, 3> pVecSigmaC = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird, pVecSoftPi);
+                  // float massSigmaCKaonPair = RecoDecay::m( std::array{pVecSigmaC, pVecFourth}, std::array{massSigmaCPlusPlus, massKa} );
+                  float massSigmaCPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi}, std::array{massProton, massKa, massPi, massPi});
+                  float massSigmaCPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi}, std::array{massPi, massKa, massProton, massPi});
+                  float deltaMassXicStarPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi, pVecFourth}, std::array{massProton, massKa, massPi, massPi, massKa}) - massSigmaCPKPi;
+                  float deltaMassXicStarPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi, pVecFourth}, std::array{massPi, massKa, massProton, massPi, massKa}) - massSigmaCPiKP;
+
+                  bool isPKPiOk = (deltaMassXicStarPKPi < maxDeltaMassCharmReso->get(0u, 7u));
+                  bool isPiKPOk = (deltaMassXicStarPiKP < maxDeltaMassCharmReso->get(0u, 7u));
+                  if (isPKPiOk || isPiKPOk) {
                     /// This is a good SigmaC++K- event
                     /// Let's flag it together with SigmaC0K0s
                     keepEvent[kV0Charm3P] = true;
 
                     /// QA plot
-                    if(activateQA) {
+                    if (activateQA) {
                       float ptSigmaCKaon = RecoDecay::pt(pVecSigmaC, pVecFourth);
-                      hMassVsPtC[kNCharmParticles + 9]->Fill(ptSigmaCKaon, massSigmaCKaonPair);
+                      if (isPKPiOk) {
+                        hMassVsPtC[kNCharmParticles + 9]->Fill(ptSigmaCKaon, deltaMassXicStarPKPi);
+                      }
+                      if (isPiKPOk) {
+                        hMassVsPtC[kNCharmParticles + 9]->Fill(ptSigmaCKaon, deltaMassXicStarPiKP);
+                      }
                     }
                   }
                 }
