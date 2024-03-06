@@ -292,7 +292,6 @@ class HfFilterHelper
     mNSigmaTpcPiKaCutForDzero = nSigmaTpc;
     mNSigmaTofPiKaCutForDzero = nSigmaTof;
   }
-  void setDeltaMassCharmHadForBeauty(float delta) { mDeltaMassCharmHadForBeauty = delta; }
   void setV0Selections(float minGammaCosPa, float minK0sLambdaCosPa, float minK0sLambdaRadius, float nSigmaPrFromLambda, float deltaMassK0s, float deltaMassLambda)
   {
     mMinGammaCosinePa = minGammaCosPa;
