@@ -166,7 +166,7 @@ struct sigma {
     }
     return false;
   }
-  //v0 selection
+  // v0 selection
   template <typename Collision, typename V0>
   bool SelectionV0(Collision const& collision, V0 const& candidate, float multiplicity)
   {
@@ -430,4 +430,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<sigma>(cfgc)};
 }
-
