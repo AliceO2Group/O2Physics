@@ -132,6 +132,10 @@ struct phipbpb {
     const AxisSpec thnAxisCentrality{configThnAxisCentrality, "Centrality (%)"};
     const AxisSpec thnAxisV2{configThnAxisV2, "V2"};
     const AxisSpec thnAxisSA{configThnAxisSA, "SA"};
+    AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
+    AxisSpec resAxis = {400, -2, 2, "Res"};
+    AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
+
     histos.add("hpTvsRapidity", "pT vs Rapidity", kTH2F, {{100, 0.0f, 10.0f}, {300, -1.5f, 1.5f}});
     histos.add("hFTOCvsTPC", "Mult correlation FT0C vs. TPC", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
     histos.add("hFTOCvsTPCSelected", "Mult correlation FT0C vs. TPC after selection", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
@@ -142,8 +146,9 @@ struct phipbpb {
     histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hNsigmaKaonTPC", "NsigmaKaon TPC distribution", kTH1F, {{200, -10.0f, 10.0f}});
     histos.add("hNsigmaKaonTOF", "NsigmaKaon TOF distribution", kTH1F, {{200, -10.0f, 10.0f}});
-    histos.add("hPsiFT0C", "Psi FT0C", kTH2F, {{111, -0.5, 110.5}, {160, -4.0f, 4.0f}});
-
+    histos.add("hPsiFT0C", "PsiFT0C", kTH2F, {centAxis, phiAxis});
+    histos.add("hPsiFT0A", "PsiFT0A", kTH2F, {centAxis, phiAxis});
+    histos.add("hPsiTPC", "PsiTPC", kTH2F, {centAxis, phiAxis});
     histos.add("hSparseV2SASameEvent_costhetastarOP", "hSparseV2SASameEvent_costhetastarOP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
     histos.add("hSparseV2SASameEvent_costhetastarIP", "hSparseV2SASameEvent_costhetastarIP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
     histos.add("hSparseV2SASameEvent_SA", "hSparseV2SASameEvent_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
@@ -153,6 +158,11 @@ struct phipbpb {
     histos.add("hSparseV2SAMixedEvent_costhetastarIP", "hSparseV2SAMixedEvent_costhetastarIP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
     histos.add("hSparseV2SAMixedEvent_SA", "hSparseV2SAMixedEvent_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
     histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+
+    // histogram for resolution
+    histos.add("ResFT0CTPC", "ResFT0CTPC", kTH2F, {centAxis, resAxis});
+    histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH2F, {centAxis, resAxis});
+    histos.add("ResFT0ATPC", "ResFT0ATPC", kTH2F, {centAxis, resAxis});
 
     // Event selection cut additional - Alex
     if (additionalEvsel) {
@@ -183,12 +193,12 @@ struct phipbpb {
       return 0;
     if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
       return 0;
-    if (multTrk < fMultCutLow->Eval(centrality))
-      return 0;
-    if (multTrk > fMultCutHigh->Eval(centrality))
-      return 0;
-    if (multTrk > fMultMultPVCut->Eval(multNTracksPV))
-      return 0;
+    // if (multTrk < fMultCutLow->Eval(centrality))
+    //  return 0;
+    // if (multTrk > fMultCutHigh->Eval(centrality))
+    //  return 0;
+    // if (multTrk > fMultMultPVCut->Eval(multNTracksPV))
+    //  return 0;
 
     return 1;
   }
@@ -289,12 +299,19 @@ struct phipbpb {
     auto centrality = collision.centFT0C();
     auto multTPC = collision.multNTracksPV();
     auto psiFT0C = collision.psiFT0C();
+    auto psiFT0A = collision.psiFT0A();
+    auto psiTPC = collision.psiTPC();
     histos.fill(HIST("hFTOCvsTPC"), centrality, multTPC);
     if (additionalEvsel && !eventSelected(collision, tracks.size(), centrality)) {
       return;
     }
     histos.fill(HIST("hFTOCvsTPCSelected"), centrality, multTPC);
     histos.fill(HIST("hPsiFT0C"), centrality, psiFT0C);
+    histos.fill(HIST("hPsiFT0A"), centrality, psiFT0A);
+    histos.fill(HIST("hPsiTPC"), centrality, psiTPC);
+    histos.fill(HIST("ResFT0CTPC"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPC)));
+    histos.fill(HIST("ResFT0CFT0A"), centrality, TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
+    histos.fill(HIST("ResFT0ATPC"), centrality, TMath::Cos(2.0 * (psiTPC - psiFT0A)));
     histos.fill(HIST("hCentrality"), centrality);
     histos.fill(HIST("hVtxZ"), collision.posZ());
     for (auto track1 : posThisColl) {
