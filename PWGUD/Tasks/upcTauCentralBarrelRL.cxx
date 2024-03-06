@@ -380,16 +380,18 @@ struct UpcTauCentralBarrelRL {
 
     histos.add("EventTwoTracks/PionsSelection/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
     histos.add("EventTwoTracks/PionsSelection/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-    histos.add("EventTwoTracks/PionsSelection/hInvariantMassWideTOF", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
     histos.add("EventTwoTracks/PionsSelection/hInvariantMassWideITS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
     histos.add("EventTwoTracks/PionsSelection/hInvariantMassPtCut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
     histos.add("EventTwoTracks/PionsSelection/hInvariantMassWidePtCut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
     histos.add("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutUS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutUSmuMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
     histos.add("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutLS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-    histos.add("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutUSTOF", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
     histos.add("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutUSITScut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-    histos.add("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutLSTOF", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
     histos.add("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutLSITScut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/PionsSelection/hasTOF/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/PionsSelection/hasTOF/hInvariantMassWidePtCutUS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/PionsSelection/hasTOF/hInvariantMassWidePtCutLS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/PionsSelection/hasTOF/hInvariantMassWidePtCutUSmuMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
     histos.add("EventTwoTracks/PionsSelection/hAcoplanarity", ";#Delta#phi (rad);Number of events (-)", HistType::kTH1D, {axisAcoplanarity});
     histos.add("EventTwoTracks/PionsSelection/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMom});
     histos.add("EventTwoTracks/PionsSelection/hMotherPwide", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMomWide});
@@ -401,9 +403,9 @@ struct UpcTauCentralBarrelRL {
     histos.add("EventTwoTracks/PionsSelection/hDaughtersPt", ";Daughter 1 #it{p_{T}} (GeV/c);Daughter 2 #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
     histos.add("EventTwoTracks/PionsSelection/hDaughtersPhi", ";Daughter 1 #phi (rad);Daughter 2 #phi (rad)", HistType::kTH2D, {axisPhi, axisPhi});
     histos.add("EventTwoTracks/PionsSelection/hDaughtersPtvsModPhi", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
-    histos.add("EventTwoTracks/PionsSelection/hDaughtersPtvsModPhiTOF", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
+    histos.add("EventTwoTracks/PionsSelection/hasTOF/hDaughtersPtvsModPhi", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
     histos.add("EventTwoTracks/PionsSelection/hDaughtersPtvsModPhiPtCut", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
-    histos.add("EventTwoTracks/PionsSelection/hDaughtersPtvsModPhiPtCutTOF", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
+    histos.add("EventTwoTracks/PionsSelection/hasTOF/hDaughtersPtvsModPhiPtCut", ";Daughter #it{p_{T}} (GeV/c);Daughter fmod(#phi,#pi/9)", HistType::kTH2D, {axisPt, axisModPhi});
     histos.add("EventTwoTracks/PionsSelection/hDaughtersRapidity", ";Daughter 1 #it{y} (-);Daughter 2 #it{y} (-)", HistType::kTH2D, {axisRap, axisRap});
     histos.add("EventTwoTracks/PionsSelection/hDaughtersPtvsDcaXY", ";Daughter #it{p_{T}} (GeV/c);Daughter DCA_{XY} (cm)", HistType::kTH2D, {axisPt, axisDCA});
     histos.add("EventTwoTracks/PionsSelection/hDaughtersPtvsDcaXYPtCut", ";Daughter #it{p_{T}} (GeV/c);Daughter DCA_{XY} (cm)", HistType::kTH2D, {axisPt, axisDCA});
@@ -417,14 +419,16 @@ struct UpcTauCentralBarrelRL {
     histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
 	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
 	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSposEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegRap", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSposRap", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
     histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
     histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutLS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
     histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSITScut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSeta12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSeta10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSeta08", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSeta05", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSeta03", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap08", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap05", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap03", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
 	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNcls70", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
 	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNcls100", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
 	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNxRws70", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -435,11 +439,13 @@ struct UpcTauCentralBarrelRL {
 	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSITScut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
 	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
 	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSposEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSeta12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSeta10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSeta08", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSeta05", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
-	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSeta03", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegRap", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSposRap", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap08", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap05", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap03", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
 	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNcls70", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
 	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNcls100", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
 	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNxRws70", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -1202,15 +1208,21 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("EventTwoTracks/PionsSelection/hDaughtersPtvsModPhiPtCut"))->Fill(pion[1].Pt(), std::fmod(pion[1].Phi(), o2::constants::math::PI / 9));
           histos.get<TH2>(HIST("EventTwoTracks/PionsSelection/hDaughtersPtvsDcaXYPtCut"))->Fill(trkDaug1.pt(), trkDaug1.dcaXY());
           histos.get<TH2>(HIST("EventTwoTracks/PionsSelection/hDaughtersPtvsDcaXYPtCut"))->Fill(trkDaug2.pt(), trkDaug2.dcaXY());
-          if (sign < 0)
-            histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutUS"))->Fill(motherOfPions.M());
+          if (sign < 0) {
+	          histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutUS"))->Fill(motherOfPions.M());
+	          histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutUSmuMass"))->Fill(motherOfMuons.M());
+          }
           if (sign > 0)
             histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutLS"))->Fill(motherOfPions.M());
           if (countTOFtracks == 2) {
-            if (sign < 0)
-              histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutUSTOF"))->Fill(motherOfPions.M());
+            if (sign < 0) {
+	            histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hasTOF/hInvariantMassWidePtCutUS"))->Fill(
+					            motherOfPions.M());
+	            histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hasTOF/hInvariantMassWidePtCutUSmuMass"))->Fill(
+					            motherOfMuons.M());
+            }
             if (sign > 0)
-              histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutLSTOF"))->Fill(motherOfPions.M());
+              histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hasTOF/hInvariantMassWidePtCutLS"))->Fill(motherOfPions.M());
           }
           if (passAvgITSclsSizesCut) {
             if (sign < 0)
@@ -1219,14 +1231,14 @@ struct UpcTauCentralBarrelRL {
               histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hInvariantMassWidePtCutLSITScut"))->Fill(motherOfPions.M());
           }
           if (countTOFtracks == 2) {
-            histos.get<TH2>(HIST("EventTwoTracks/PionsSelection/hDaughtersPtvsModPhiPtCutTOF"))->Fill(pion[0].Pt(), std::fmod(pion[0].Phi(), o2::constants::math::PI / 9));
-            histos.get<TH2>(HIST("EventTwoTracks/PionsSelection/hDaughtersPtvsModPhiPtCutTOF"))->Fill(pion[1].Pt(), std::fmod(pion[1].Phi(), o2::constants::math::PI / 9));
+            histos.get<TH2>(HIST("EventTwoTracks/PionsSelection/hasTOF/hDaughtersPtvsModPhiPtCut"))->Fill(pion[0].Pt(), std::fmod(pion[0].Phi(), o2::constants::math::PI / 9));
+            histos.get<TH2>(HIST("EventTwoTracks/PionsSelection/hasTOF/hDaughtersPtvsModPhiPtCut"))->Fill(pion[1].Pt(), std::fmod(pion[1].Phi(), o2::constants::math::PI / 9));
           }
         }
         if (countTOFtracks == 2) {
-          histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hInvariantMassWideTOF"))->Fill(motherOfPions.M());
-          histos.get<TH2>(HIST("EventTwoTracks/PionsSelection/hDaughtersPtvsModPhiTOF"))->Fill(pion[0].Pt(), std::fmod(pion[0].Phi(), o2::constants::math::PI / 9));
-          histos.get<TH2>(HIST("EventTwoTracks/PionsSelection/hDaughtersPtvsModPhiTOF"))->Fill(pion[1].Pt(), std::fmod(pion[1].Phi(), o2::constants::math::PI / 9));
+          histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hasTOF/hInvariantMassWide"))->Fill(motherOfPions.M());
+          histos.get<TH2>(HIST("EventTwoTracks/PionsSelection/hasTOF/hDaughtersPtvsModPhi"))->Fill(pion[0].Pt(), std::fmod(pion[0].Phi(), o2::constants::math::PI / 9));
+          histos.get<TH2>(HIST("EventTwoTracks/PionsSelection/hasTOF/hDaughtersPtvsModPhi"))->Fill(pion[1].Pt(), std::fmod(pion[1].Phi(), o2::constants::math::PI / 9));
         }
         if (passAvgITSclsSizesCut) {
           histos.get<TH1>(HIST("EventTwoTracks/PionsSelection/hInvariantMassWideITS"))->Fill(motherOfPions.M());
@@ -1263,20 +1275,24 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsDcaXYPtCut"))->Fill(trkDaug2.pt(), trkDaug2.dcaXY());
           if (sign < 0) {
 	          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUS"))->Fill(motherOfMuons.M());
-	          if (motherOfMuons.Rapidity() < 0.0)
+	          if (muon[0].Eta() < 0.0 && muon[1].Eta() < 0.0)
 		          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegEta"))->Fill(motherOfMuons.M());
-	          if (motherOfMuons.Rapidity() > 0.0)
+	          if (muon[0].Eta() > 0.0 && muon[1].Eta() > 0.0)
 		          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSposEta"))->Fill(motherOfMuons.M());
+	          if (motherOfMuons.Rapidity() < 0.0)
+		          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegRap"))->Fill(motherOfMuons.M());
+	          if (motherOfMuons.Rapidity() > 0.0)
+		          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSposRap"))->Fill(motherOfMuons.M());
 						if (std::abs(motherOfMuons.Rapidity()) < 1.2)
-							histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSeta12"))->Fill(motherOfMuons.M());
+							histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap12"))->Fill(motherOfMuons.M());
 	          if (std::abs(motherOfMuons.Rapidity()) < 1.0)
-		          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSeta10"))->Fill(motherOfMuons.M());
+		          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap10"))->Fill(motherOfMuons.M());
 	          if (std::abs(motherOfMuons.Rapidity()) < 0.8)
-		          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSeta08"))->Fill(motherOfMuons.M());
+		          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap08"))->Fill(motherOfMuons.M());
 	          if (std::abs(motherOfMuons.Rapidity()) < 0.5)
-		          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSeta05"))->Fill(motherOfMuons.M());
+		          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap05"))->Fill(motherOfMuons.M());
 	          if (std::abs(motherOfMuons.Rapidity()) < 0.3)
-		          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSeta03"))->Fill(motherOfMuons.M());
+		          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSrap03"))->Fill(motherOfMuons.M());
 	          if (countTPCcls70 == 2)
 		          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUStpcNcls70"))->Fill(motherOfMuons.M());
 	          if (countTPCcls100 == 2)
@@ -1291,20 +1307,24 @@ struct UpcTauCentralBarrelRL {
           if (countTOFtracks == 2) {
             if (sign < 0) {
 	            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUS"))->Fill(motherOfMuons.M());
-	            if (motherOfMuons.Rapidity() < 0.0)
+	            if (muon[0].Eta() < 0.0 && muon[1].Eta() < 0.0)
 		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegEta"))->Fill(motherOfMuons.M());
-	            if (motherOfMuons.Rapidity() > 0.0)
+	            if (muon[0].Eta() > 0.0 && muon[1].Eta() > 0.0)
 		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSposEta"))->Fill(motherOfMuons.M());
+	            if (motherOfMuons.Rapidity() < 0.0)
+		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegRap"))->Fill(motherOfMuons.M());
+	            if (motherOfMuons.Rapidity() > 0.0)
+		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSposRap"))->Fill(motherOfMuons.M());
 	            if (std::abs(motherOfMuons.Rapidity()) < 1.2)
-		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSeta12"))->Fill(motherOfMuons.M());
+		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap12"))->Fill(motherOfMuons.M());
 	            if (std::abs(motherOfMuons.Rapidity()) < 1.0)
-		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSeta10"))->Fill(motherOfMuons.M());
+		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap10"))->Fill(motherOfMuons.M());
 	            if (std::abs(motherOfMuons.Rapidity()) < 0.8)
-		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSeta08"))->Fill(motherOfMuons.M());
+		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap08"))->Fill(motherOfMuons.M());
 	            if (std::abs(motherOfMuons.Rapidity()) < 0.5)
-		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSeta05"))->Fill(motherOfMuons.M());
+		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap05"))->Fill(motherOfMuons.M());
 	            if (std::abs(motherOfMuons.Rapidity()) < 0.3)
-		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSeta03"))->Fill(motherOfMuons.M());
+		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSrap03"))->Fill(motherOfMuons.M());
 	            if (countTPCcls70 == 2)
 		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUStpcNcls70"))->Fill(motherOfMuons.M());
 	            if (countTPCcls100 == 2)
