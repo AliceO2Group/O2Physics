@@ -153,11 +153,11 @@ struct SGCandProducer {
     // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
     auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange);
+    // auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, tracks);
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
     registry.get<TH1>(HIST("reco/Stat"))->Fill(isSGEvent + 1, 1.);
     if (isSGEvent <= 2) {
-      if (isSGEvent < 2)
-        LOGF(info, "Current BC: %i, %i", bc.globalBC(), isSGEvent);
+      //      if (isSGEvent < 2) LOGF(info, "Current BC: %i, %i", bc.globalBC(), isSGEvent);
       if (sameCuts.minRgtrwTOF()) {
         if (udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib()) < sameCuts.minRgtrwTOF())
           return;
@@ -187,8 +187,9 @@ struct SGCandProducer {
       }
       // update SGTracks tables
       for (auto& track : tracks) {
-        if (!sgSelector.TrkSelector(sameCuts, track))
+        if (track.isPVContributor() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta())
           updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+        // if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
       }
 
       // update SGFwdTracks tables
