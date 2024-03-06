@@ -48,11 +48,15 @@ using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMRedu
 using MyTrack = MyTracks::iterator;
 
 struct DalitzEEQC {
+
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
+  Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
+
   Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_all_tpchadrejortofreq_lowB,nocut", "Comma separated list of dalitz ee cuts"};
   std::vector<DalitzEECut> fDalitzEECuts;
 
   Configurable<bool> cfgDoDCAstudy{"cfgDoDCAstudy", false, "flag to fill histograms for DCA"};
-  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
 
   Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
   EMEventCut fEMEventCut;
@@ -134,6 +138,7 @@ struct DalitzEEQC {
   SliceCache cache;
   Preslice<MyDalitzEEs> perCollision = aod::dalitzee::emreducedeventId;
   Preslice<MyTracks> perCollision_track = aod::emprimaryelectron::emreducedeventId;
+  Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
   std::vector<uint64_t> used_trackIds;
 
@@ -148,9 +153,11 @@ struct DalitzEEQC {
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
     float det_pos = 999.f, det_ele = 999.f;
 
-    for (auto& collision : collisions) {
-      // float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      // float centrality = centralities[cfgCentEstimator];
+    for (auto& collision : grouped_collisions) {
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
 
       o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_before, "", collision);
       if (!fEMEventCut.IsSelected(collision)) {
@@ -294,6 +301,7 @@ struct DalitzEEQC {
   BinningType_C colBinning_C{{ConfVtxBins, ConfCentBins}, true};
 
   Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
+  Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   Filter collisionFilter_subsys = (o2::aod::emreducedevent::neeuls >= 1) || (o2::aod::emreducedevent::neelspp >= 1) || (o2::aod::emreducedevent::neelsmm >= 1);
   using MyFilteredCollisions = soa::Filtered<MyCollisions>; // this goes to mixed event.
 
@@ -310,9 +318,18 @@ struct DalitzEEQC {
     float det_pos = 999.f, det_ele = 999.f;
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ndepth, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
+      const float centralities1[3] = {collision1.centFT0M(), collision1.centFT0A(), collision1.centFT0C()};
+      const float centralities2[3] = {collision2.centFT0M(), collision2.centFT0A(), collision2.centFT0C()};
 
-      // float centralities[3] = {collision1.centFT0M(), collision1.centFT0A(), collision1.centFT0C()};
-      // float centrality = centralities[cfgCentEstimator];
+      if (centralities1[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities1[cfgCentEstimator]) {
+        continue;
+      }
+      if (centralities2[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities2[cfgCentEstimator]) {
+        continue;
+      }
+      if (!fEMEventCut.IsSelected(collision1) || !fEMEventCut.IsSelected(collision2)) {
+        continue;
+      }
 
       auto tracks_coll1 = tracks.sliceBy(perCollision_track, collision1.globalIndex());
       auto tracks_coll2 = tracks.sliceBy(perCollision_track, collision2.globalIndex());
