@@ -60,6 +60,8 @@
 #include "KFParticleBase.h"
 #include "KFVertex.h"
 
+#include "Common/Core/EventPlaneHelper.h"
+
 using std::cout;
 using std::endl;
 
@@ -232,8 +234,18 @@ class VarManager : public TObject
     kQ4X0C,
     kQ4Y0C,
     kR2SP,
+    kR2SP_FT0CFT0A,
+    kR2SP_FT0CTPCPOS,
+    kR2SP_FT0CTPCNEG,
+    kR2SP_FT0ATPCPOS,
+    kR2SP_FT0ATPCNEG,
     kR3SP,
     kR2EP,
+    kR2EP_FT0CFT0A,
+    kR2EP_FT0CTPCPOS,
+    kR2EP_FT0CTPCNEG,
+    kR2EP_FT0ATPCPOS,
+    kR2EP_FT0ATPCNEG,
     kR3EP,
     kIsDoubleGap,  // Double rapidity gap
     kIsSingleGapA, // Rapidity gap on side A
@@ -691,6 +703,19 @@ class VarManager : public TObject
     return (1.0 / harm) * TMath::ATan2(qnya, qnxa);
   };
 
+  static float getDeltaPsiInRange(float psi1, float psi2, float harmonic)
+  {
+    float deltaPsi = psi1 - psi2;
+    if (std::abs(deltaPsi) > o2::constants::math::PI / harmonic) {
+      if (deltaPsi > 0.) {
+        deltaPsi -= o2::constants::math::TwoPI / harmonic;
+      } else {
+        deltaPsi += o2::constants::math::TwoPI / harmonic;
+      }
+    }
+    return deltaPsi;
+  }
+
   template <typename T, typename C>
   static o2::dataformats::GlobalFwdTrack PropagateMuon(const T& muon, const C& collision);
   template <uint32_t fillMap, typename T, typename C>
@@ -731,6 +756,8 @@ class VarManager : public TObject
   static void FillDileptonCharmHadron(DQ const& dilepton, HF const& charmHadron, H hfHelper, T& bdtScoreCharmHad, float* values = nullptr);
   template <typename C, typename A>
   static void FillQVectorFromGFW(C const& collision, A const& compA1, A const& compB1, A const& compC1, A const& compA2, A const& compB2, A const& compC2, A const& compA3, A const& compB3, A const& compC3, A const& compA4, A const& compB4, A const& compC4, float normA = 1.0, float normB = 1.0, float normC = 1.0, float* values = nullptr);
+  template <typename C>
+  static void FillQVectorFromCentralFW(C const& collision, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
   static void FillPairVn(T1 const& t1, T2 const& t2, float* values = nullptr);
 
@@ -2773,6 +2800,84 @@ void VarManager::FillQVectorFromGFW(C const& collision, A const& compA1, A const
   values[kPsi2A] = getEventPlane(2, values[kQ2X0A], values[kQ2Y0A]);
   values[kPsi2B] = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
   values[kPsi2C] = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
+}
+
+template <typename C>
+void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  float xQVecFT0a = collision.qvecFT0ARe();
+  float yQVecFT0a = collision.qvecFT0AIm();
+  float xQVecFT0c = collision.qvecFT0CRe();
+  float yQVecFT0c = collision.qvecFT0CIm();
+  // float xQVecFT0m = collision.qvecFT0MRe();
+  // float yQVecFT0m = collision.qvecFT0MIm();
+  // float xQVecFV0a = collision.qvecFV0ARe();
+  // float yQVecFV0a = collision.qvecFV0AIm();
+  float xQVecBPos = collision.qvecBPosRe();
+  float yQVecBPos = collision.qvecBPosIm();
+  float xQVecBNeg = collision.qvecBNegRe();
+  float yQVecBNeg = collision.qvecBNegIm();
+
+  values[kQ1X0A] = -999;
+  values[kQ1Y0A] = -999;
+  values[kQ1X0B] = -999;
+  values[kQ1Y0B] = -999;
+  values[kQ1X0C] = -999;
+  values[kQ1Y0C] = -999;
+  values[kQ2X0A] = -999;
+  values[kQ2Y0A] = -999;
+  values[kQ2X0B] = xQVecBPos;
+  values[kQ2Y0B] = yQVecBPos;
+  values[kQ2X0C] = xQVecBNeg;
+  values[kQ2Y0C] = yQVecBNeg;
+  values[kQ3X0A] = -999;
+  values[kQ3Y0A] = -999;
+  values[kQ3X0B] = -999;
+  values[kQ3Y0B] = -999;
+  values[kQ3X0C] = -999;
+  values[kQ3Y0C] = -999;
+  values[kQ4X0A] = -999;
+  values[kQ4Y0A] = -999;
+  values[kQ4X0B] = -999;
+  values[kQ4Y0B] = -999;
+  values[kQ4X0C] = -999;
+  values[kQ4Y0C] = -999;
+  values[kMultA] = -999;
+  values[kMultB] = collision.nTrkBPos();
+  values[kMultC] = collision.nTrkBNeg();
+
+  EventPlaneHelper epHelper;
+  float Psi2B = epHelper.GetEventPlane(values[kQ2X0B], values[kQ2Y0B], 2);
+  float Psi2C = epHelper.GetEventPlane(values[kQ2X0C], values[kQ2Y0C], 2);
+
+  values[kPsi2B] = Psi2B;
+  values[kPsi2C] = Psi2C;
+
+  values[kR2SP] = (xQVecBPos * xQVecBNeg + yQVecBPos * yQVecBNeg);
+  values[kR2SP_FT0CFT0A] = (xQVecFT0c * xQVecFT0a + yQVecFT0c * yQVecFT0a);
+  values[kR2SP_FT0CTPCPOS] = (xQVecFT0c * xQVecBPos + yQVecFT0c * yQVecBPos);
+  values[kR2SP_FT0CTPCNEG] = (xQVecFT0c * xQVecBNeg + yQVecFT0c * yQVecBNeg);
+  values[kR2SP_FT0ATPCPOS] = (xQVecFT0a * xQVecBPos + yQVecFT0a * yQVecBPos);
+  values[kR2SP_FT0ATPCNEG] = (xQVecFT0a * xQVecBNeg + yQVecFT0a * yQVecBNeg);
+
+  if (values[kQ2Y0B] * values[kQ2Y0C] != 0.0) {
+    values[kR2EP] = TMath::Cos(2 * (Psi2B - Psi2C));
+  }
+
+  float epFT0a = epHelper.GetEventPlane(xQVecFT0a, yQVecFT0a, 2);
+  float epFT0c = epHelper.GetEventPlane(xQVecFT0c, yQVecFT0c, 2);
+  float epBPoss = epHelper.GetEventPlane(xQVecBPos, yQVecBPos, 2);
+  float epBNegs = epHelper.GetEventPlane(xQVecBNeg, yQVecBNeg, 2);
+
+  values[kR2EP_FT0CFT0A] = std::cos(2 * getDeltaPsiInRange(epFT0c, epFT0a, 2));
+  values[kR2EP_FT0CTPCPOS] = std::cos(2 * getDeltaPsiInRange(epFT0c, epBPoss, 2));
+  values[kR2EP_FT0CTPCNEG] = std::cos(2 * getDeltaPsiInRange(epFT0c, epBNegs, 2));
+  values[kR2EP_FT0ATPCPOS] = std::cos(2 * getDeltaPsiInRange(epFT0a, epBPoss, 2));
+  values[kR2EP_FT0ATPCNEG] = std::cos(2 * getDeltaPsiInRange(epFT0a, epBNegs, 2));
 }
 
 template <int pairType, typename T1, typename T2>
