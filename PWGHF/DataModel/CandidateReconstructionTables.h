@@ -177,27 +177,27 @@ DECLARE_SOA_COLUMN(TpcTofNSigmaPr, tpcTofNSigmaPr, float); //! Combined NSigma s
 
 // Extension of per particle tables
 DECLARE_SOA_TABLE(TracksPidFullElS, "AOD", "PIDFULLELS", //! Table of the TPC & TOF Combined NSigma for electron
-                                pid_tpc_tof_static_full::TpcTofNSigmaEl);
+                  pid_tpc_tof_static_full::TpcTofNSigmaEl);
 DECLARE_SOA_TABLE(TracksPidFullMuS, "AOD", "PIDFULLMUS", //! Table of the TPC & TOF Combined NSigma for muon
-                                pid_tpc_tof_static_full::TpcTofNSigmaMu);
+                  pid_tpc_tof_static_full::TpcTofNSigmaMu);
 DECLARE_SOA_TABLE(TracksPidFullPiS, "AOD", "PIDFULLPIS", //! Table of the TPC & TOF Combined NSigma for pion
-                                pid_tpc_tof_static_full::TpcTofNSigmaPi);
+                  pid_tpc_tof_static_full::TpcTofNSigmaPi);
 DECLARE_SOA_TABLE(TracksPidFullKaS, "AOD", "PIDFULLKAS", //! Table of the TPC & TOF Combined NSigma for kaon
-                                pid_tpc_tof_static_full::TpcTofNSigmaKa);
+                  pid_tpc_tof_static_full::TpcTofNSigmaKa);
 DECLARE_SOA_TABLE(TracksPidFullPrS, "AOD", "PIDFULLPRS", //! Table of the TPC & TOF Combined NSigma for proton
-                                pid_tpc_tof_static_full::TpcTofNSigmaPr);
+                  pid_tpc_tof_static_full::TpcTofNSigmaPr);
 
 // Extension of per particle tables
 DECLARE_SOA_TABLE(TracksPidTinyElS, "AOD", "PIDTINYELS", //! Table of the TPC & TOF Combined NSigma for electron
-                                pid_tpc_tof_static_tiny::TpcTofNSigmaEl);
+                  pid_tpc_tof_static_tiny::TpcTofNSigmaEl);
 DECLARE_SOA_TABLE(TracksPidTinyMuS, "AOD", "PIDTINYMUS", //! Table of the TPC & TOF Combined NSigma for muon
-                                pid_tpc_tof_static_tiny::TpcTofNSigmaMu);
+                  pid_tpc_tof_static_tiny::TpcTofNSigmaMu);
 DECLARE_SOA_TABLE(TracksPidTinyPiS, "AOD", "PIDTINYPIS", //! Table of the TPC & TOF Combined NSigma for pion
-                                pid_tpc_tof_static_tiny::TpcTofNSigmaPi);
+                  pid_tpc_tof_static_tiny::TpcTofNSigmaPi);
 DECLARE_SOA_TABLE(TracksPidTinyKaS, "AOD", "PIDTINYKAS", //! Table of the TPC & TOF Combined NSigma for kaon
-                                pid_tpc_tof_static_tiny::TpcTofNSigmaKa);
+                  pid_tpc_tof_static_tiny::TpcTofNSigmaKa);
 DECLARE_SOA_TABLE(TracksPidTinyPrS, "AOD", "PIDTINYPRS", //! Table of the TPC & TOF Combined NSigma for proton
-                                pid_tpc_tof_static_tiny::TpcTofNSigmaPr);
+                  pid_tpc_tof_static_tiny::TpcTofNSigmaPr);
 
 namespace hf_sel_collision
 {
