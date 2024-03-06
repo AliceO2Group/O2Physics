@@ -690,8 +690,6 @@ struct UpcTauCentralBarrelRL {
 			phimodn = o2::constants::math::TwoPI - phimodn;
 		if (sign < 0) // for negative charge
 			phimodn = o2::constants::math::TwoPI - phimodn;
-		if (phimodn < 0)
-			LOGF(warning, "phi < 0: %f", phimodn);
 		phimodn += o2::constants::math::PI / 18.0; // to center gap in the middle
 		return std::fmod(phimodn, o2::constants::math::PI / 9.0);
 	}
