@@ -55,7 +55,6 @@ struct decay3bodyBuilder {
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
 
   enum vtxstep { kVtxAll = 0,
-                 kVtxSameCol,
                  kVtxTPCNcls,
                  kVtxhasSV,
                  kVtxDcaDau,
@@ -68,7 +67,7 @@ struct decay3bodyBuilder {
     "registry",
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-      {"hVtx3BodyCounter", "hVtx3BodyCounter", {HistType::kTH1F, {{6, 0.0f, 6.0f}}}},
+      {"hVtx3BodyCounter", "hVtx3BodyCounter", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
     },
   };
 
@@ -76,7 +75,7 @@ struct decay3bodyBuilder {
   Configurable<int> bachelorcharge{"bachelorcharge", 1, "charge of the bachelor track"};
   // Selection criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
+  Configurable<int> mintpcNCls{"mintpcNCls", 70, "min tpc Nclusters"};
   Configurable<float> minCosPA3body{"minCosPA3body", 0.9, "minCosPA3body"};
   Configurable<float> dcavtxdau{"dcavtxdau", 1.0, "DCA Vtx Daughters"};
 
@@ -128,11 +127,10 @@ struct decay3bodyBuilder {
     }
 
     registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(1, "Total");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(2, "CollisionID");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(3, "TPCNcls");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(4, "HasSV");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(5, "DcaDau");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(6, "CosPA");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(2, "TPCNcls");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(3, "HasSV");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(4, "DcaDau");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(5, "CosPA");
 
     // Material correction in the DCA fitter
     o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
@@ -205,12 +203,8 @@ struct decay3bodyBuilder {
       auto t0 = vtx3body.template track0_as<TTrackClass>();
       auto t1 = vtx3body.template track1_as<TTrackClass>();
       auto t2 = vtx3body.template track2_as<TTrackClass>();
-      if (t0.collisionId() != t1.collisionId() || t0.collisionId() != t2.collisionId()) {
-        continue;
-      }
-      registry.fill(HIST("hVtx3BodyCounter"), kVtxSameCol);
 
-      if (t0.tpcNClsCrossedRows() < mincrossedrows && t1.tpcNClsCrossedRows() < mincrossedrows && t2.tpcNClsCrossedRows() < mincrossedrows) {
+      if (t0.tpcNClsFound() < mintpcNCls && t1.tpcNClsFound() < mintpcNCls && t2.tpcNClsFound() < mintpcNCls) {
         continue;
       }
       registry.fill(HIST("hVtx3BodyCounter"), kVtxTPCNcls);

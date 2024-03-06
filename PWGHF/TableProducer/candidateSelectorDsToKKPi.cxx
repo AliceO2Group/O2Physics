@@ -148,6 +148,9 @@ struct HfCandidateSelectorDsToKKPi {
     if (std::abs(candidate.impactParameterXY()) > cuts->get(pTBin, "impact parameter XY")) {
       return false;
     }
+    if (candidate.chi2PCA() > cuts->get(pTBin, "chi2PCA")) {
+      return false;
+    }
     return true;
   }
 

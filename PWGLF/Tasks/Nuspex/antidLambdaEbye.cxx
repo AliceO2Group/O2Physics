@@ -44,6 +44,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCDe, aod::pidTPCPr, aod::pidTPCPi, aod::TOFSignal, aod::TOFEvTime>;
+using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos>;
 
 namespace
 {
@@ -112,6 +113,7 @@ struct antidLambdaEbye {
   std::mt19937 gen32;
   std::vector<CandidateV0> candidateV0s;
   std::array<std::vector<CandidateTrack>, 2> candidateTracks;
+  int globalTrackCounter;
 
   int nSubsamples;
 
@@ -126,6 +128,8 @@ struct antidLambdaEbye {
   ConfigurableAxis ptLambdaAxis{"ptLambdaAxis", {VARIABLE_WIDTH, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f}, "binning of the (anti)lambda pT axis (GeV/c)"};
 
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
+  ConfigurableAxis multAxis{"multAxis", {1000, 0, 10000}, "Binning for the multiplicity axis"};
+  ConfigurableAxis multFt0Axis{"multFt0Axis", {1000, 0, 100000}, "Binning for the ft0 multiplicity axis"};
 
   // binning of (anti)lambda QA histograms
   ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.03f, o2::constants::physics::MassLambda0 + 0.03f}, "binning for the lambda invariant-mass"};
@@ -221,6 +225,9 @@ struct antidLambdaEbye {
     if (std::abs(track.eta()) > etaMax) {
       return false;
     }
+    if (!(track.itsClusterMap() & 0x01) && !(track.itsClusterMap() & 0x02)) {
+      return false;
+    }
     if (track.itsNCls() < trackNclusItsCut ||
         track.tpcNClsFound() < trackNclusTpcCut ||
         track.tpcNClsCrossedRows() < trackNcrossedRows ||
@@ -228,6 +235,12 @@ struct antidLambdaEbye {
         track.tpcChi2NCl() > 4.f ||
         track.itsChi2NCl() > 36.f) {
       return false;
+    }
+    if (doprocessRun2 || doprocessMcRun2) {
+      if (!(track.flags() & o2::aod::track::TPCrefit) ||
+          !(track.flags() & o2::aod::track::ITSrefit)) {
+        return false;
+      }
     }
     return true;
   }
@@ -314,6 +327,16 @@ struct antidLambdaEbye {
     nGenLantid = histos.add<THnSparse>("nGenLantid", ";Subsample;Centrality (%);#Delta#eta;#it{p}_{T}(#Lambda) (GeV/#it{c});#it{p}_{T}(#bar{d}) (GeV/#it{c});", HistType::kTHnSparseD, {subsampleAxis, centAxis, deltaEtaAxis, ptLambdaAxis, ptAntidAxis});
     nGenAntiLantid = histos.add<THnSparse>("nGenAntiLantid", ";Subsample;Centrality (%);#Delta#eta;#it{p}_{T}(#bar{#Lambda}) (GeV/#it{c});#it{p}_{T}(#bar{d}) (GeV/#it{c});", HistType::kTHnSparseD, {subsampleAxis, centAxis, deltaEtaAxis, ptLambdaAxis, ptAntidAxis});
 
+    // event QA
+    if (doprocessRun3) {
+      histos.add<TH2>("QA/GlobalMultVsCent", ";Centrality T0C (%);#it{N}_{global};", HistType::kTH2F, {centAxis, multAxis});
+      histos.add<TH2>("QA/PvMultVsCent", ";Centrality T0C (%);#it{N}_{PV contributors};", HistType::kTH2F, {centAxis, multAxis});
+      histos.add<TH2>("QA/GlobalMultVsPvMult", ";#it{N}_{PV contrib};#it{N}_{global}", HistType::kTH2F, {multAxis, multAxis});
+      histos.add<TH2>("QA/MultVsCent", ";Centrality T0C (%);Multiplicity T0C;", HistType::kTH2F, {centAxis, multFt0Axis});
+    } else if (doprocessRun2) {
+      histos.add<TH2>("QA/V0MvsCL0", ";Centrality CL0 (%);Centrality V0M (%)", HistType::kTH2F, {centAxis, centAxis});
+    }
+
     // v0 QA
     histos.add<TH1>("QA/massLambda", ";#it{M}(p + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH1F, {massLambdaAxis});
     histos.add<TH1>("QA/cosPa", ";cosPa;Entries", HistType::kTH1F, {cosPaAxis});
@@ -393,10 +416,13 @@ struct antidLambdaEbye {
     auto rnd = static_cast<float>(gen32()) / static_cast<float>(gen32.max());
     auto subsample = static_cast<int>(rnd * nSubsamples);
 
+    globalTrackCounter = 0;
+
     for (const auto& track : tracks) {
       if (!selectTrack(track)) {
         continue;
       }
+      globalTrackCounter += 1;
 
       if (track.sign() > 0.) {
         continue;
@@ -414,9 +440,11 @@ struct antidLambdaEbye {
           continue;
         }
 
-        float cosL = 1 / std::sqrt(1.f + track.tgl() * track.tgl());
-        if (iP && getITSClSize(track) * cosL > antidItsClsSizeCut && track.pt() > antidPtItsClsSizeCut) {
-          continue;
+        if (doprocessRun3 || doprocessMcRun3) {
+          float cosL = 1 / std::sqrt(1.f + track.tgl() * track.tgl());
+          if (iP && getITSClSize(track) * cosL < antidItsClsSizeCut && track.pt() < antidPtItsClsSizeCut) {
+            continue;
+          }
         }
 
         double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / partMass[iP]), cfgBetheBlochParams->get(iP, "p0"), cfgBetheBlochParams->get(iP, "p1"), cfgBetheBlochParams->get(iP, "p2"), cfgBetheBlochParams->get(iP, "p3"), cfgBetheBlochParams->get(iP, "p4"))};
@@ -485,6 +513,14 @@ struct antidLambdaEbye {
       auto neg = v0.template negTrack_as<TracksFull>();
       if (std::abs(pos.eta()) > etaMax || std::abs(neg.eta()) > etaMax) {
         continue;
+      }
+
+      if (doprocessRun2 || doprocessMcRun2) {
+        bool checkPosPileUp = pos.hasTOF() || (pos.flags() & o2::aod::track::TrackFlagsRun2Enum::ITSrefit);
+        bool checkNegPileUp = neg.hasTOF() || (neg.flags() & o2::aod::track::TrackFlagsRun2Enum::ITSrefit);
+        if (!checkPosPileUp && !checkNegPileUp) {
+          continue;
+        }
       }
 
       bool matter = v0.alpha() > 0;
@@ -686,10 +722,51 @@ struct antidLambdaEbye {
     }
   }
 
-  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s)
+  void processRun3(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults> const& collisions, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s)
   {
     for (const auto& collision : collisions) {
       if (!collision.sel8())
+        continue;
+
+      if (std::abs(collision.posZ()) > zVtxMax)
+        continue;
+
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+        continue;
+
+      if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+        continue;
+
+      histos.fill(HIST("QA/zVtx"), collision.posZ());
+
+      const uint64_t collIdx = collision.globalIndex();
+      auto TrackTable_thisCollision = tracks.sliceBy(perCollisionTracksFull, collIdx);
+      auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
+      V0Table_thisCollision.bindExternalIndices(&tracks);
+
+      auto multiplicity = collision.multFT0C();
+      auto centrality = collision.centFT0C();
+      fillRecoEvent(TrackTable_thisCollision, V0Table_thisCollision, centrality);
+
+      histos.fill(HIST("QA/GlobalMultVsCent"), centrality, globalTrackCounter);
+      histos.fill(HIST("QA/PvMultVsCent"), centrality, collision.numContrib());
+      histos.fill(HIST("QA/GlobalMultVsPvMult"), collision.numContrib(), globalTrackCounter);
+      histos.fill(HIST("QA/MultVsCent"), centrality, multiplicity);
+    }
+  }
+  PROCESS_SWITCH(antidLambdaEbye, processRun3, "process (Run 3)", false);
+
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s> const& collisions, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s, BCsWithRun2Info const&)
+  {
+    for (const auto& collision : collisions) {
+      if (!collision.sel7())
+        continue;
+
+      auto bc = collision.bc_as<BCsWithRun2Info>();
+      if (!(bc.eventCuts() & aod::Run2EventCuts::kAliEventCutsAccepted))
+        continue;
+
+      if (!collision.alias_bit(kINT7))
         continue;
 
       if (std::abs(collision.posZ()) > zVtxMax)
@@ -702,26 +779,12 @@ struct antidLambdaEbye {
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
       V0Table_thisCollision.bindExternalIndices(&tracks);
 
-      auto centrality = collision.centFT0C();
+      auto centrality = collision.centRun2V0M();
+      auto centralityCl0 = collision.centRun2CL0();
       fillRecoEvent(TrackTable_thisCollision, V0Table_thisCollision, centrality);
+
+      histos.fill(HIST("QA/V0MvsCL0"), centralityCl0, centrality);
     }
-  }
-  PROCESS_SWITCH(antidLambdaEbye, processRun3, "process (Run 3)", false);
-
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s)
-  {
-    if (!collision.sel7())
-      return;
-
-    if (!collision.alias_bit(kINT7))
-      return;
-
-    if (std::abs(collision.posZ()) > zVtxMax)
-      return;
-
-    histos.fill(HIST("QA/zVtx"), collision.posZ());
-    auto centrality = collision.centRun2V0M();
-    fillRecoEvent(tracks, V0s, centrality);
   }
   PROCESS_SWITCH(antidLambdaEbye, processRun2, "process (Run 2)", false);
 

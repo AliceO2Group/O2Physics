@@ -1047,10 +1047,10 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
     }
   }
   bool doublematch = false;
-  if (min_nsigma < 3.0) {
+  if (min_nsigma < minPIDSigma) {
     for (int sp = 0; (sp < kIdBfNoOfSpecies) && !doublematch; ++sp) {
       if (sp != sp_min_nsigma) {
-        if (nsigmas[sp] < 3.0) {
+        if (nsigmas[sp] < minPIDSigma) {
           doublematch = true;
         }
       }

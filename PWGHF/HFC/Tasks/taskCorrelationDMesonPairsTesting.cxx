@@ -36,11 +36,25 @@ enum PairTypeSel {
   DDbar,
   DbarD
 };
+
+enum CandidateType {
+  SelectedD = 0, // This particle is selected as a D
+  SelectedDbar,  // This particle is selected as a Dbar
+  TrueD,         // This particle is a true D
+  TrueDbar       // This particle is a true Dbar
+};
+
+enum D0Type {
+  Default = 0, // Default value
+  Signal,      // This particle is a signal D meson
+  Reflected,   // This particle is a reflected D meson
+  Bkg          // This particle is background of D meson
+};
 } // namespace
 
 // string definitions, used for histogram axis labels
-const char stringCorrelationPairs[180] = "D meson pair candidates 2D;inv. mass D_{1} (GeV/#it{c}^{2});inv. mass D_{2} (GeV/#it{c}^{2});#it{p}_{T}^{D_{1}} (GeV/#it{c});#it{p}_{T}^{D_{2}} (GeV/#it{c});#eta D_{1};#eta D_{2};";
-const char stringCorrelationPairsFinerBinning[194] = "D meson pair candidates 2D Finer Binning;inv. mass D_{1} (GeV/#it{c}^{2});inv. mass D_{2} (GeV/#it{c}^{2});#it{p}_{T}^{D_{1}} (GeV/#it{c});#it{p}_{T}^{D_{2}} (GeV/#it{c});#eta D_{1};#eta D_{2};";
+const char stringCorrelationPairs[193] = "D meson pair candidates 2D;inv. mass D_{1} (GeV/#it{c}^{2});inv. mass D_{2} (GeV/#it{c}^{2});#it{p}_{T}^{D_{1}} (GeV/#it{c});#it{p}_{T}^{D_{2}} (GeV/#it{c});#eta D_{1};#eta D_{2};type1;type2;";
+const char stringCorrelationPairsFinerBinning[207] = "D meson pair candidates 2D Finer Binning;inv. mass D_{1} (GeV/#it{c}^{2});inv. mass D_{2} (GeV/#it{c}^{2});#it{p}_{T}^{D_{1}} (GeV/#it{c});#it{p}_{T}^{D_{2}} (GeV/#it{c});#eta D_{1};#eta D_{2};type1;type2;";
 
 // definition of vectors for standard ptbin and invariant mass configurables
 const int nPtBinsCorrelations = 8;
@@ -53,8 +67,8 @@ struct HfTaskCorrelationDMesonPairsTesting {
   Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{vecPtBinsCorrelations}, "pT bin limits for correlation plots"};
 
   // HistoTypes
-  HistogramConfigSpec hTHnMass2DCorrPairs{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {10, 0., 10.}, {10, 0., 10.}, {10, -1, 1}, {10, -1, 1}}}; // note: axes 3 and 4 (the pT) are updated in the init();
-  HistogramConfigSpec hTHnMass2DCorrPairsFinerBinning{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {60, 1., 6.}, {60, 1., 6.}, {160, -0.8, 0.8}, {160, -0.8, 0.8}}};
+  HistogramConfigSpec hTHnMass2DCorrPairs{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {10, 0., 10.}, {10, 0., 10.}, {10, -1, 1}, {10, -1, 1}, {4, -0.5, 3.5}, {4, -0.5, 3.5}}}; // note: axes 3 and 4 (the pT) are updated in the init();
+  HistogramConfigSpec hTHnMass2DCorrPairsFinerBinning{HistType::kTHnSparseD, {{200, 1.6, 2.1}, {200, 1.6, 2.1}, {60, 1., 6.}, {60, 1., 6.}, {160, -0.8, 0.8}, {160, -0.8, 0.8}, {4, -0.5, 3.5}, {4, -0.5, 3.5}}};
 
   HistogramRegistry registry{
     "registry",
@@ -94,6 +108,20 @@ struct HfTaskCorrelationDMesonPairsTesting {
     }
   }
 
+  uint getD0Type(uint const& candidateType)
+  {
+    if ((TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueD)) || (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueDbar))) {
+      return Signal;
+    } else if ((TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueDbar)) || (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueD))) {
+      return Reflected;
+    } else if ((TESTBIT(candidateType, SelectedD) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar))) ||
+               (TESTBIT(candidateType, SelectedDbar) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar)))) {
+      return Bkg;
+    } else {
+      return Default;
+    }
+  }
+
   void processData(aod::D0PairTesting const& pairEntries)
   {
     for (const auto& pairEntry : pairEntries) {
@@ -107,30 +135,32 @@ struct HfTaskCorrelationDMesonPairsTesting {
       float yCand1 = pairEntry.yCand1();
       float yCand2 = pairEntry.yCand2();
       auto pairType = pairEntry.pairType();
+      auto d0Type1 = getD0Type(pairEntry.candidateType1());
+      auto d0Type2 = getD0Type(pairEntry.candidateType2());
 
       if (TESTBIT(pairType, DD)) {
-        registry.fill(HIST("hMass2DCorrelationPairsLS"), massDCand1, massDCand2, ptCand1, ptCand2, yCand1, yCand2);
+        registry.fill(HIST("hMass2DCorrelationPairsLS"), massDCand1, massDCand2, ptCand1, ptCand2, yCand1, yCand2, d0Type1, d0Type2);
         if (enableFinerBinning) {
-          registry.fill(HIST("hMass2DCorrelationPairsLSFinerBinning"), massDCand1, massDCand2, ptCand1, ptCand2, yCand1, yCand2);
+          registry.fill(HIST("hMass2DCorrelationPairsLSFinerBinning"), massDCand1, massDCand2, ptCand1, ptCand2, yCand1, yCand2, d0Type1, d0Type2);
         }
       }
       if (TESTBIT(pairType, DbarDbar)) {
-        registry.fill(HIST("hMass2DCorrelationPairsLS"), massDbarCand1, massDbarCand2, ptCand1, ptCand2, yCand1, yCand2);
+        registry.fill(HIST("hMass2DCorrelationPairsLS"), massDbarCand1, massDbarCand2, ptCand1, ptCand2, yCand1, yCand2, d0Type1, d0Type2);
         if (enableFinerBinning) {
-          registry.fill(HIST("hMass2DCorrelationPairsLSFinerBinning"), massDbarCand1, massDbarCand2, ptCand1, ptCand2, yCand1, yCand2);
+          registry.fill(HIST("hMass2DCorrelationPairsLSFinerBinning"), massDbarCand1, massDbarCand2, ptCand1, ptCand2, yCand1, yCand2, d0Type1, d0Type2);
         }
       }
 
       if (TESTBIT(pairType, DDbar)) {
-        registry.fill(HIST("hMass2DCorrelationPairsOS"), massDCand1, massDbarCand2, ptCand1, ptCand2, yCand1, yCand2);
+        registry.fill(HIST("hMass2DCorrelationPairsOS"), massDCand1, massDbarCand2, ptCand1, ptCand2, yCand1, yCand2, d0Type1, d0Type2);
         if (enableFinerBinning) {
-          registry.fill(HIST("hMass2DCorrelationPairsOSFinerBinning"), massDCand1, massDbarCand2, ptCand1, ptCand2, yCand1, yCand2);
+          registry.fill(HIST("hMass2DCorrelationPairsOSFinerBinning"), massDCand1, massDbarCand2, ptCand1, ptCand2, yCand1, yCand2, d0Type1, d0Type2);
         }
       }
       if (TESTBIT(pairType, DbarD)) {
-        registry.fill(HIST("hMass2DCorrelationPairsOS"), massDbarCand1, massDCand2, ptCand1, ptCand2, yCand1, yCand2);
+        registry.fill(HIST("hMass2DCorrelationPairsOS"), massDbarCand1, massDCand2, ptCand1, ptCand2, yCand1, yCand2, d0Type1, d0Type2);
         if (enableFinerBinning) {
-          registry.fill(HIST("hMass2DCorrelationPairsOSFinerBinning"), massDbarCand1, massDCand2, ptCand1, ptCand2, yCand1, yCand2);
+          registry.fill(HIST("hMass2DCorrelationPairsOSFinerBinning"), massDbarCand1, massDCand2, ptCand1, ptCand2, yCand1, yCand2, d0Type1, d0Type2);
         }
       }
     }
@@ -150,29 +180,31 @@ struct HfTaskCorrelationDMesonPairsTesting {
       float yParticle1 = pairEntry.yCand1();
       float yParticle2 = pairEntry.yCand2();
       auto pairType = pairEntry.pairType();
+      auto d0Type1 = getD0Type(pairEntry.candidateType1());
+      auto d0Type2 = getD0Type(pairEntry.candidateType2());
 
       if (TESTBIT(pairType, DD)) {
-        registry.fill(HIST("hMass2DCorrelationPairsLSMcGen"), massDParticle1, massDParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2);
+        registry.fill(HIST("hMass2DCorrelationPairsLSMcGen"), massDParticle1, massDParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2, d0Type1, d0Type2);
         if (enableFinerBinning) {
-          registry.fill(HIST("hMass2DCorrelationPairsLSMcGenFinerBinning"), massDParticle1, massDParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2);
+          registry.fill(HIST("hMass2DCorrelationPairsLSMcGenFinerBinning"), massDParticle1, massDParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2, d0Type1, d0Type2);
         }
       }
       if (TESTBIT(pairType, DbarDbar)) {
-        registry.fill(HIST("hMass2DCorrelationPairsLSMcGen"), massDbarParticle1, massDbarParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2);
+        registry.fill(HIST("hMass2DCorrelationPairsLSMcGen"), massDbarParticle1, massDbarParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2, d0Type1, d0Type2);
         if (enableFinerBinning) {
-          registry.fill(HIST("hMass2DCorrelationPairsLSMcGenFinerBinning"), massDbarParticle1, massDbarParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2);
+          registry.fill(HIST("hMass2DCorrelationPairsLSMcGenFinerBinning"), massDbarParticle1, massDbarParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2, d0Type1, d0Type2);
         }
       }
       if (TESTBIT(pairType, DDbar)) {
-        registry.fill(HIST("hMass2DCorrelationPairsOSMcGen"), massDParticle1, massDbarParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2);
+        registry.fill(HIST("hMass2DCorrelationPairsOSMcGen"), massDParticle1, massDbarParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2, d0Type1, d0Type2);
         if (enableFinerBinning) {
-          registry.fill(HIST("hMass2DCorrelationPairsOSMcGenFinerBinning"), massDParticle1, massDbarParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2);
+          registry.fill(HIST("hMass2DCorrelationPairsOSMcGenFinerBinning"), massDParticle1, massDbarParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2, d0Type1, d0Type2);
         }
       }
       if (TESTBIT(pairType, DbarD)) {
-        registry.fill(HIST("hMass2DCorrelationPairsOSMcGen"), massDbarParticle1, massDParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2);
+        registry.fill(HIST("hMass2DCorrelationPairsOSMcGen"), massDbarParticle1, massDParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2, d0Type1, d0Type2);
         if (enableFinerBinning) {
-          registry.fill(HIST("hMass2DCorrelationPairsOSMcGenFinerBinning"), massDbarParticle1, massDParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2);
+          registry.fill(HIST("hMass2DCorrelationPairsOSMcGenFinerBinning"), massDbarParticle1, massDParticle2, ptParticle1, ptParticle2, yParticle1, yParticle2, d0Type1, d0Type2);
         }
       }
     }

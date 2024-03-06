@@ -47,6 +47,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::mcutil;
+using namespace o2::aod::pwgem::photon;
 using std::array;
 
 using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedMCEventLabels>;
@@ -58,12 +59,20 @@ using MyV0Photon = MyV0Photons::iterator;
 struct PCMQCMC {
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
+  Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
+
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "qc,qc_ITSTPC,qc_ITSonly,qc_TPConly,wwire_ib,nocut", "Comma separated list of v0 photon cuts"};
   Configurable<float> maxY{"maxY", 0.9f, "maximum rapidity for generated particles"};
   Configurable<float> maxRgen{"maxRgen", 100.f, "maximum radius for generated particles"};
   Configurable<float> margin_z_mc{"margin_z_mc", 7.0, "margin for z cut in cm for MC"};
 
   std::vector<V0PhotonCut> fPCMCuts;
+
+  Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
+  EMEventCut fEMEventCut;
+  static constexpr std::string_view event_types[2] = {"before", "after"};
 
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputV0Leg{"V0Leg"};
@@ -77,38 +86,41 @@ struct PCMQCMC {
     fMainList->SetName("fMainList");
 
     // create sub lists first.
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Event");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Event");
     THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
-    o2::aod::emphotonhistograms::DefineHistograms(list_ev, "Event");
+    for (const auto& evtype : event_types) {
+      THashList* list_ev_type = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, evtype.data()));
+      o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_type, "Event", evtype.data());
+    }
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "V0Leg");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "V0Leg");
     THashList* list_v0leg = reinterpret_cast<THashList*>(fMainList->FindObject("V0Leg"));
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "V0");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "V0");
     THashList* list_v0 = reinterpret_cast<THashList*>(fMainList->FindObject("V0"));
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Generated");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Generated");
     THashList* list_gen = reinterpret_cast<THashList*>(fMainList->FindObject("Generated"));
-    o2::aod::emphotonhistograms::DefineHistograms(list_gen, "Generated", "Photon");
+    o2::aod::pwgem::photon::histogram::DefineHistograms(list_gen, "Generated", "Photon");
 
     for (const auto& cut : fPCMCuts) {
       const char* cutname = cut.GetName();
-      o2::aod::emphotonhistograms::AddHistClass(list_v0leg, cutname);
-      o2::aod::emphotonhistograms::AddHistClass(list_v0, cutname);
+      o2::aod::pwgem::photon::histogram::AddHistClass(list_v0leg, cutname);
+      o2::aod::pwgem::photon::histogram::AddHistClass(list_v0, cutname);
     }
 
     // for single tracks
     for (auto& cut : fPCMCuts) {
       std::string_view cutname = cut.GetName();
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("V0Leg")->FindObject(cutname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list, "V0Leg", "mc");
+      o2::aod::pwgem::photon::histogram::DefineHistograms(list, "V0Leg", "mc");
     }
 
     // for V0s
     for (auto& cut : fPCMCuts) {
       std::string_view cutname = cut.GetName();
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("V0")->FindObject(cutname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list, "V0", "mc");
+      o2::aod::pwgem::photon::histogram::DefineHistograms(list, "V0", "mc");
     }
   }
 
@@ -130,6 +142,8 @@ struct PCMQCMC {
   {
     DefineCuts();
     addhistograms(); // please call this after DefinCuts();
+    TString ev_cut_name = fConfigEMEventCut.value;
+    fEMEventCut = *eventcuts::GetCut(ev_cut_name.Data());
 
     fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
     fOutputV0Leg.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("V0Leg")));
@@ -137,34 +151,31 @@ struct PCMQCMC {
     fOutputGen.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Generated")));
   }
 
+  Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
+
   Preslice<MyV0Photons> perCollision = aod::v0photonkf::emreducedeventId;
   void processQCMC(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const&)
   {
-    THashList* list_ev = static_cast<THashList*>(fMainList->FindObject("Event"));
+    THashList* list_ev_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[0].data()));
+    THashList* list_ev_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[1].data()));
     THashList* list_v0 = static_cast<THashList*>(fMainList->FindObject("V0"));
     THashList* list_v0leg = static_cast<THashList*>(fMainList->FindObject("V0Leg"));
 
-    for (auto& collision : collisions) {
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_before"))->Fill(collision.posZ());
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(1.0);
-      if (!collision.sel8()) {
+    for (auto& collision : grouped_collisions) {
+      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(2.0);
 
-      if (collision.numContrib() < 0.5) {
+      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_before, "", collision);
+      if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(3.0);
+      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_after, "", collision);
+      reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
+      reinterpret_cast<TH1F*>(list_ev_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
 
-      if (abs(collision.posZ()) > 10.0) {
-        continue;
-      }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(4.0);
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_after"))->Fill(collision.posZ());
-      o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev, "", collision);
       auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.globalIndex());
-
       for (const auto& cut : fPCMCuts) {
         THashList* list_v0_cut = static_cast<THashList*>(list_v0->FindObject(cut.GetName()));
         THashList* list_v0leg_cut = static_cast<THashList*>(list_v0leg->FindObject(cut.GetName()));
@@ -188,7 +199,7 @@ struct PCMQCMC {
             float rxy_mc = sqrt(posmc.vx() * posmc.vx() + posmc.vy() * posmc.vy());
             float eta_cp = std::atanh(v0.vz() / sqrt(pow(v0.vx(), 2) + pow(v0.vy(), 2) + pow(v0.vz(), 2)));
 
-            o2::aod::emphotonhistograms::FillHistClass<EMHistType::kV0>(list_v0_cut, "", v0);
+            o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kV0>(list_v0_cut, "", v0);
             if (IsPhysicalPrimary(mcphoton.emreducedmcevent(), mcphoton, mcparticles)) {
               reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hPt_Photon_Primary"))->Fill(v0.pt());
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hEtaPhi_Photon_Primary"))->Fill(v0.phi(), v0.eta());
@@ -228,7 +239,7 @@ struct PCMQCMC {
             nv0++;
 
             for (auto& leg : {pos, ele}) {
-              o2::aod::emphotonhistograms::FillHistClass<EMHistType::kV0Leg>(list_v0leg_cut, "", leg);
+              o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kV0Leg>(list_v0leg_cut, "", leg);
               auto mcleg = leg.template emmcparticle_as<aod::EMMCParticles>();
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0Leg")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaPtOverPtGen"))->Fill(mcleg.pt(), (leg.pt() - mcleg.pt()) / mcleg.pt());
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0Leg")->FindObject(cut.GetName())->FindObject("hPtGen_DeltaEta"))->Fill(mcleg.pt(), leg.eta() - mcleg.eta());
@@ -250,7 +261,11 @@ struct PCMQCMC {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
 
-    for (auto& collision : collisions) {
+    for (auto& collision : grouped_collisions) {
+      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
       auto mccollision = collision.emreducedmcevent();
       // LOGF(info, "mccollision.globalIndex() = %d", mccollision.globalIndex());
 
@@ -269,6 +284,11 @@ struct PCMQCMC {
       if (abs(collision.posZ()) > 10.0) {
         continue;
       }
+
+      if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(4.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_after"))->Fill(mccollision.posZ());
 

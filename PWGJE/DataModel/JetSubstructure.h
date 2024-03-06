@@ -59,14 +59,12 @@ DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, int); //!
                                                                                                                                                                                                                                           \
   namespace _name_##collisionoutput                                                                                                                                                                                                       \
   {                                                                                                                                                                                                                                       \
-    DECLARE_SOA_COLUMN(Dummy, dummy, bool);                                                                                                                                                                                               \
     DECLARE_SOA_DYNAMIC_COLUMN(Dummy##_jet_type_, dummy##_jet_type_, []() -> int { return 0; });                                                                                                                                          \
   }                                                                                                                                                                                                                                       \
                                                                                                                                                                                                                                           \
   DECLARE_SOA_TABLE(_jet_type_##COs, "AOD", _description_ "CO", jetcollision::PosZ, jetcollision::Centrality, jetcollision::EventSel, _name_##collisionoutput::Dummy##_jet_type_<>);                                                      \
   using _jet_type_##CO = _jet_type_##COs::iterator;                                                                                                                                                                                       \
                                                                                                                                                                                                                                           \
-  DECLARE_SOA_TABLE(_jet_type_##DummyHFs, "AOD", _description_ "DHF", _name_##collisionoutput::Dummy)                                                                                                                                     \
   namespace _name_##jetoutput                                                                                                                                                                                                             \
   {                                                                                                                                                                                                                                       \
     DECLARE_SOA_INDEX_COLUMN(_jet_type_##CO, collision);                                                                                                                                                                                  \
@@ -115,7 +113,7 @@ DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, int); //!
   JETMATCHING_TABLE_DEF(_jet_type_##MCDJet, _jet_type_##MCPJet, _jet_type_##mcdjet, _description_ "MCDJET")                              \
   JETMATCHING_TABLE_DEF(_jet_type_##MCPJet, _jet_type_##MCDJet, _jet_type_##mcpjet, _description_ "MCPJET")
 
-JETSUBSTRUCTURE_TABLES_DEF(C, CJetDummyHFs, CEWSJetDummyHFs, CMCDJetDummyHFs, CMCPJetDummyHFs, "C");
+JETSUBSTRUCTURE_TABLES_DEF(C, CJetCOs, CEWSJetCOs, CMCDJetCOs, CMCPJetCOs, "C");
 JETSUBSTRUCTURE_TABLES_DEF(D0C, HfD0Bases, HfD0Bases, HfD0Bases, HfD0PBases, "D0C");
 JETSUBSTRUCTURE_TABLES_DEF(LcC, HfD0Bases, HfD0Bases, HfD0Bases, HfD0PBases, "LCC");
 JETSUBSTRUCTURE_TABLES_DEF(BplusC, HfD0Bases, HfD0Bases, HfD0Bases, HfD0PBases, "BPLUSC");

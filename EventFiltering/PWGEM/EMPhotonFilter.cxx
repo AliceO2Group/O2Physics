@@ -99,16 +99,18 @@ struct EMPhotonFilter {
     scalers->GetXaxis()->SetBinLabel(1, "all events");
     scalers->GetXaxis()->SetBinLabel(2, "sel8");
     scalers->GetXaxis()->SetBinLabel(3, "|Z_{vtx}| < 10 cm");
-    scalers->GetXaxis()->SetBinLabel(4, "sel8 && |Z_{vtx}| < 10 cm");
-    scalers->GetXaxis()->SetBinLabel(5, "PHOS photon");
-    scalers->GetXaxis()->SetBinLabel(6, "PHOS electron");
-    scalers->GetXaxis()->SetBinLabel(7, "PHOS pair");
-    scalers->GetXaxis()->SetBinLabel(8, "PHOS nbar");
-    scalers->GetXaxis()->SetBinLabel(9, "PHOS photon & electron");
-    scalers->GetXaxis()->SetBinLabel(10, "PHOS photon & pair");
-    scalers->GetXaxis()->SetBinLabel(11, "events with PHOS");
-    scalers->GetXaxis()->SetBinLabel(12, "PCM high p_{T} photon");
-    scalers->GetXaxis()->SetBinLabel(13, "PCM #gamma and dielectron");
+    scalers->GetXaxis()->SetBinLabel(4, "No TFB");
+    scalers->GetXaxis()->SetBinLabel(5, "sel8 && |Z_{vtx}| < 10 cm");
+    scalers->GetXaxis()->SetBinLabel(6, "sel8 && |Z_{vtx}| < 10 cm && No TFB");
+    scalers->GetXaxis()->SetBinLabel(7, "PHOS photon");
+    scalers->GetXaxis()->SetBinLabel(8, "PHOS electron");
+    scalers->GetXaxis()->SetBinLabel(9, "PHOS pair");
+    scalers->GetXaxis()->SetBinLabel(10, "PHOS nbar");
+    scalers->GetXaxis()->SetBinLabel(11, "PHOS photon & electron");
+    scalers->GetXaxis()->SetBinLabel(12, "PHOS photon & pair");
+    scalers->GetXaxis()->SetBinLabel(13, "events with PHOS");
+    scalers->GetXaxis()->SetBinLabel(14, "PCM high p_{T} photon");
+    scalers->GetXaxis()->SetBinLabel(15, "PCM #gamma and dielectron");
   }
 
   template <typename TTrack>
@@ -182,8 +184,19 @@ struct EMPhotonFilter {
       if (abs(collision.posZ()) < 10.f) {
         mHistManager.fill(HIST("hEventCounter"), 3.);
       }
-      if (collision.sel8() && abs(collision.posZ()) < 10.f) {
+      if (collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         mHistManager.fill(HIST("hEventCounter"), 4.);
+      }
+      if (collision.sel8() && abs(collision.posZ()) < 10.f) {
+        mHistManager.fill(HIST("hEventCounter"), 5.);
+      }
+      if (collision.sel8() && abs(collision.posZ()) < 10.f && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        mHistManager.fill(HIST("hEventCounter"), 6.);
+      }
+
+      if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        tags(false, false, false, false);
+        continue;
       }
 
       if constexpr (static_cast<bool>(system & EM_Filter_PhotonType::kPCM)) {
@@ -231,10 +244,10 @@ struct EMPhotonFilter {
         } // end of photon + dielectron pair loop
 
         if (keepEvent[kPCM_HighPtPhoton] == true) {
-          mHistManager.fill(HIST("hEventCounter"), 12);
+          mHistManager.fill(HIST("hEventCounter"), 14);
         }
         if (keepEvent[kPCM_EE] == true) {
-          mHistManager.fill(HIST("hEventCounter"), 13);
+          mHistManager.fill(HIST("hEventCounter"), 15);
         }
       } // end of PCM decision
 
@@ -279,26 +292,26 @@ struct EMPhotonFilter {
 
         // Collision processed, fill scalers here
         if (nPHOSclu) {
-          mHistManager.fill(HIST("hEventCounter"), 11.);
+          mHistManager.fill(HIST("hEventCounter"), 13.);
         }
         // Can not fill with variable, have to fill manually
         if (keepEvent[kPHOS_Photon]) {
-          mHistManager.fill(HIST("hEventCounter"), 5.);
+          mHistManager.fill(HIST("hEventCounter"), 7.);
           if (keepEvent[kPHOS_El]) {
-            mHistManager.fill(HIST("hEventCounter"), 9.);
+            mHistManager.fill(HIST("hEventCounter"), 11.);
           }
           if (keepEvent[kPHOS_Pair]) {
-            mHistManager.fill(HIST("hEventCounter"), 10.);
+            mHistManager.fill(HIST("hEventCounter"), 12.);
           }
         }
         if (keepEvent[kPHOS_El]) {
-          mHistManager.fill(HIST("hEventCounter"), 6.);
+          mHistManager.fill(HIST("hEventCounter"), 8.);
         }
         if (keepEvent[kPHOS_Pair]) {
-          mHistManager.fill(HIST("hEventCounter"), 7.);
+          mHistManager.fill(HIST("hEventCounter"), 9.);
         }
         if (keepEvent[kPHOS_Nbar]) {
-          mHistManager.fill(HIST("hEventCounter"), 8.);
+          mHistManager.fill(HIST("hEventCounter"), 10.);
         }
       }
 
@@ -308,6 +321,7 @@ struct EMPhotonFilter {
       // }
 
       tags(keepEvent[kPHOS_Photon], keepEvent[kPHOS_Nbar], keepEvent[kPCM_HighPtPhoton], keepEvent[kPCM_EE]);
+
     } // end of collision loop
   }
 

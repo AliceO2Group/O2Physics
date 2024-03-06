@@ -114,11 +114,11 @@ constexpr double bbMomScalingDefault[5][2]{
   {1., 1.},
   {1., 1.}};
 constexpr double betheBlochDefault[5][6]{
-  {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32},
-  {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32},
-  {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32},
-  {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32},
-  {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
+  {-136.71, 0.441, 0.2269, 1.347, 0.8035, 0.09},
+  {-136.71, 0.441, 0.2269, 1.347, 0.8035, 0.09},
+  {-239.99, 1.155, 1.099, 1.137, 1.006, 0.09},
+  {-321.34, 0.6539, 1.591, 0.8225, 2.363, 0.09},
+  {-586.66, 1.859, 4.435, 0.282, 3.201, 0.09}};
 constexpr double nSigmaTPCdefault[5][2]{
   {-5., 5.},
   {-5., 5.},
@@ -278,7 +278,7 @@ struct nucleiSpectra {
   template <class collision_t>
   bool eventSelection(collision_t& collision)
   {
-    return collision.sel8() && collision.posZ() > -cfgCutVertex && collision.posZ() < cfgCutVertex;
+    return collision.sel8() && collision.posZ() > -cfgCutVertex && collision.posZ() < cfgCutVertex && collision.selection_bit(aod::evsel::kNoTimeFrameBorder);
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)

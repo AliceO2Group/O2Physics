@@ -19,6 +19,7 @@
 #include <string>
 #include <iostream>
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 
@@ -83,6 +84,12 @@ class FemtoDreamCollisionSelection
   template <typename C>
   bool isSelectedCollision(C const& col)
   {
+
+    // remove events at the border of the time frame
+    if (!col.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+
     if (std::abs(col.posZ()) > mZvtxMax) {
       return false;
     }

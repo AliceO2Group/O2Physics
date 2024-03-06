@@ -103,12 +103,13 @@ struct reso2initializer {
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", false, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", 8, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", true, "Evt sel: check for offline selection"};
+  Configurable<bool> ConfEvtTFBorderCut{"ConfEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
 
   Configurable<std::string> cfgMultName{"cfgMultName", "FT0M", "The name of multiplicity estimator"};
 
   // Qvector configuration
   Configurable<bool> ConfBypassQvec{"ConfBypassQvec", true, "Bypass for qvector task"};
-  Configurable<int> cfgEvtPl{"cfgEvtPl", 50601, "Configuration of three subsystems for the event plane and its resolution, 10000*RefA + 100*RefB + S, where FT0C:1, FT0A:2, FT0M:3, FV0A:4, BPos:5, BNeg:6"};
+  Configurable<int> cfgEvtPl{"cfgEvtPl", 40500, "Configuration of three subsystems for the event plane and its resolution, 10000*RefA + 100*RefB + S, where FT0C:0, FT0A:1, FT0M:2, FV0A:3, BPos:5, BNeg:6"};
 
   // Pre-selection cuts
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
@@ -847,6 +848,7 @@ struct reso2initializer {
       colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, true);
     }
     colCuts.init(&qaRegistry);
+    colCuts.setApplyTFBorderCut(ConfEvtTFBorderCut);
     if (!ConfBypassCCDB) {
       ccdb->setURL(ccdburl.value);
       ccdb->setCaching(true);

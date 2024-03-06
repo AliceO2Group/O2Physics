@@ -425,7 +425,7 @@ struct MultiplicityCounter {
       inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kAll));
     }
 
-    if (!useEvSel || (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+    if (!useEvSel || (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
       if constexpr (hasRecoCent<C>()) {
         binnedRegistry.fill(HIST(EventSelection), 2., c);
       } else {
@@ -586,7 +586,7 @@ struct MultiplicityCounter {
       inclusiveRegistry.fill(HIST(EventSelection), static_cast<float>(EvSelBins::kAll));
     }
 
-    if (!useEvSel || (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+    if (!useEvSel || (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
       if constexpr (hasRecoCent<C>()) {
         binnedRegistry.fill(HIST(EventSelection), 2., c);
       } else {
@@ -724,7 +724,7 @@ struct MultiplicityCounter {
     MC const&, ParticlesI const& particles,
     FiLTracks const& /*tracks*/)
   {
-    if (useEvSel && !(collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+    if (useEvSel && !(collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
       return;
     }
     if (!collision.has_mcCollision()) {
@@ -830,7 +830,7 @@ struct MultiplicityCounter {
     FiLTracks const& tracks,
     soa::SmallGroups<ReTracks> const& atracks)
   {
-    if (useEvSel && !(collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+    if (useEvSel && !(collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
       return;
     }
     if (!collision.has_mcCollision()) {
@@ -931,7 +931,7 @@ struct MultiplicityCounter {
     MC const&, Particles const& particles,
     FiLTracks const& tracks)
   {
-    if (useEvSel && !(collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+    if (useEvSel && !(collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
       return;
     }
     if (!collision.has_mcCollision()) {
@@ -1156,7 +1156,7 @@ struct MultiplicityCounter {
       } else {
         inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec));
       }
-      if (!useEvSel || (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      if (!useEvSel || (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         auto z = collision.posZ();
         ++moreThanOne;
         if constexpr (hasRecoCent<C>() && !hasSimCent<MC>()) {
@@ -1334,7 +1334,7 @@ struct MultiplicityCounter {
       } else {
         inclusiveRegistry.fill(HIST(Efficiency), static_cast<float>(EvEffBins::kRec));
       }
-      if (!useEvSel || (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      if (!useEvSel || (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         auto z = collision.posZ();
         ++moreThanOne;
         if constexpr (hasRecoCent<C>() && !hasSimCent<MC>()) {

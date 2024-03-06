@@ -26,7 +26,7 @@ double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStam
 {
   if (sourceName.find("ZNC") != std::string::npos) {
     if (runNumber < 544448) {
-      return fetchCTPratesInputs(ccdb, timeStamp, runNumber, 26) / (sourceName.find("hadronic") != std::string::npos ? 28. : 1.);
+      return fetchCTPratesInputs(ccdb, timeStamp, runNumber, 25) / (sourceName.find("hadronic") != std::string::npos ? 28. : 1.);
     } else {
       return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "C1ZNC-B-NOPF-CRU", 6) / (sourceName.find("hadronic") != std::string::npos ? 28. : 1.);
     }
@@ -38,7 +38,7 @@ double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStam
     if (runNumber < 534202) {
       return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "minbias_TVX_L0"); // 2022
     } else {
-      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-B-NOPF-CRU");
+      return fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-B-NOPF");
     }
   }
   LOG(error) << "CTP rate for " << sourceName << " not available";
@@ -63,7 +63,7 @@ double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* ccdb, ui
     LOG(fatal) << "Trigger class " << className << " not found in CTPConfiguration";
   }
 
-  auto rate{mScalers->getRateGivenT(timeStamp, classIndex, inputType)};
+  auto rate{mScalers->getRateGivenT(timeStamp * 1.e-3, classIndex, inputType)};
 
   return pileUpCorrection(rate.second);
 }
@@ -75,7 +75,7 @@ double ctpRateFetcher::fetchCTPratesInputs(o2::ccdb::BasicCCDBManager* ccdb, uin
 
   std::vector<ctp::CTPScalerRecordO2> recs = mScalers->getScalerRecordO2();
   if (recs[0].scalersInps.size() == 48) {
-    return pileUpCorrection(mScalers->getRateGivenT(timeStamp, input, 7).second);
+    return pileUpCorrection(mScalers->getRateGivenT(timeStamp * 1.e-3, input, 7).second);
   } else {
     LOG(error) << "Inputs not available";
     return -1.;

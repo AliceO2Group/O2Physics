@@ -154,9 +154,13 @@ struct ChJetTriggerQATask {
 
   void
     process(soa::Filtered<soa::Join<JetCollisions,
-                                    aod::JChTrigSels>>::iterator const& collision,
+                                    aod::JChTrigSels, aod::EvSels>>::iterator const& collision,
             soa::Filtered<JetTracks> const& tracks, o2::soa::Filtered<soa::Join<o2::aod::ChargedJets, aod::ChargedJetConstituents>> const& jets)
   {
+
+    if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return;
+    }
 
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;

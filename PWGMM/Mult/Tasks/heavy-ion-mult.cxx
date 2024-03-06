@@ -101,6 +101,7 @@ std::array<std::shared_ptr<TH2>, CentHistArray> h2MCGenEtaVsVtxZHistCentFT0C;
 std::array<std::shared_ptr<TH2>, CentHistArray> h2MCGenPhiVsEtaHistCentFT0C;
 
 AxisSpec axisEvent{5, -0.5, 4.5, "#Event"};
+AxisSpec axisCentEvent{15, 0, 15, "#CentEvent"};
 AxisSpec axisVtxZ{800, -20, 20, "Vertex Z"};
 AxisSpec axisDCA = {601, -3.01, 3.01};
 AxisSpec axisPT = {1000, -0.05, 49.95};
@@ -177,8 +178,9 @@ struct HeavyIonMultiplicity {
 
     if (doprocessDataCentFT0C) {
       histos.add("CentPercentileHist", "CentPercentileHist", kTH1D, {axisCent}, false);
+      histos.add("CentEventHist", "CentEventHist", kTH1D, {axisCentEvent}, false);
       auto centinterval = static_cast<std::vector<float>>(CentInterval);
-      for (int i = 0; i < static_cast<int>(centinterval.size() - 1); ++i) {
+      for (auto i = 0U; i < centinterval.size() - 1; ++i) {
         h1MultHistCentFT0C[i] = histos.add<TH1>(Form("MultHist%d", i + 1), Form("MultHist%d", i + 1), kTH1D, {axisMult}, true);
         h1EtaHistCentFT0C[i] = histos.add<TH1>(Form("EtaHist%d", i + 1), Form("EtaHist%d", i + 1), kTH1D, {axisEta}, true);
         h1PhiHistCentFT0C[i] = histos.add<TH1>(Form("PhiHist%d", i + 1), Form("PhiHist%d", i + 1), kTH1D, {axisPhi}, true);
@@ -192,8 +194,9 @@ struct HeavyIonMultiplicity {
 
     if (doprocessMCCentFT0C) {
       histos.add("CentPercentileMCRecHist", "CentPercentileMCRecHist", kTH1D, {axisCent}, false);
+      histos.add("MCCentEventHist", "MCCentEventHist", kTH1D, {axisCentEvent}, false);
       auto centinterval = static_cast<std::vector<float>>(CentInterval);
-      for (int i = 0; i < static_cast<int>(centinterval.size() - 1); ++i) {
+      for (auto i = 0U; i < centinterval.size() - 1; ++i) {
         h1MCRecMultHistCentFT0C[i] = histos.add<TH1>(Form("MCRecMultHist%d", i + 1), Form("MCRecMultHist%d", i + 1), kTH1D, {axisMult}, true);
         h1MCRecEtaHistCentFT0C[i] = histos.add<TH1>(Form("MCRecEtaHist%d", i + 1), Form("MCRecEtaHist%d", i + 1), kTH1D, {axisEta}, true);
         h1MCRecPhiHistCentFT0C[i] = histos.add<TH1>(Form("MCRecPhiHist%d", i + 1), Form("MCRecPhiHist%d", i + 1), kTH1D, {axisPhi}, true);
@@ -235,7 +238,7 @@ struct HeavyIonMultiplicity {
     histos.fill(HIST("EventHist"), 0);
     if (collision.sel8()) {
       histos.fill(HIST("EventHist"), 1);
-      if (collision.selection_bit(kNoITSROFrameBorder)) {
+      if (collision.selection_bit(kNoITSROFrameBorder) && collision.selection_bit(kNoTimeFrameBorder)) {
         histos.fill(HIST("EventHist"), 2);
         if (std::abs(collision.posZ()) < VtxRange) {
           histos.fill(HIST("EventHist"), 3);
@@ -273,7 +276,7 @@ struct HeavyIonMultiplicity {
       histos.fill(HIST("EventHist"), 0);
       if (RecCollision.sel8()) {
         histos.fill(HIST("EventHist"), 1);
-        if (RecCollision.selection_bit(kNoITSROFrameBorder)) {
+        if (RecCollision.selection_bit(kNoITSROFrameBorder) && RecCollision.selection_bit(kNoTimeFrameBorder)) {
           histos.fill(HIST("EventHist"), 2);
           if (std::abs(RecCollision.posZ()) < VtxRange) {
             histos.fill(HIST("EventHist"), 3);
@@ -366,7 +369,7 @@ struct HeavyIonMultiplicity {
     histos.fill(HIST("EventHist"), 0);
     if (collision.sel8()) {
       histos.fill(HIST("EventHist"), 1);
-      if (collision.selection_bit(kNoITSROFrameBorder)) {
+      if (collision.selection_bit(kNoITSROFrameBorder) && collision.selection_bit(kNoTimeFrameBorder)) {
         histos.fill(HIST("EventHist"), 2);
         if (std::abs(collision.posZ()) < VtxRange) {
           histos.fill(HIST("EventHist"), 3);
@@ -374,10 +377,11 @@ struct HeavyIonMultiplicity {
           if constexpr (hasCentrality) {
             cent = collision.centFT0C();
             histos.fill(HIST("CentPercentileHist"), cent);
-            for (auto& track : tracks) {
-              if (std::abs(track.eta()) < etaRange) {
-                for (int i = 0; i < static_cast<int>(centinterval.size() - 1); ++i) {
-                  if (cent > centinterval[i] && cent <= centinterval[i + 1]) {
+            for (auto i = 0U; i < centinterval.size() - 1; ++i) {
+              if (cent > centinterval[i] && cent <= centinterval[i + 1]) {
+                histos.fill(HIST("CentEventHist"), i + 0.5);
+                for (auto& track : tracks) {
+                  if (std::abs(track.eta()) < etaRange) {
                     NchTracks[i]++;
                     h1EtaHistCentFT0C[i]->Fill(track.eta());
                     h1PhiHistCentFT0C[i]->Fill(track.phi());
@@ -388,10 +392,8 @@ struct HeavyIonMultiplicity {
                     h2PhiVsEtaHistCentFT0C[i]->Fill(track.phi(), track.eta());
                   }
                 }
+                h1MultHistCentFT0C[i]->Fill(NchTracks[i]);
               }
-            }
-            for (int i = 0; i < static_cast<int>(centinterval.size() - 1); ++i) {
-              h1MultHistCentFT0C[i]->Fill(NchTracks[i]);
             }
           }
         }
@@ -421,7 +423,7 @@ struct HeavyIonMultiplicity {
       histos.fill(HIST("EventHist"), 0);
       if (RecCollision.sel8()) {
         histos.fill(HIST("EventHist"), 1);
-        if (RecCollision.selection_bit(kNoITSROFrameBorder)) {
+        if (RecCollision.selection_bit(kNoITSROFrameBorder) && RecCollision.selection_bit(kNoTimeFrameBorder)) {
           histos.fill(HIST("EventHist"), 2);
           if (std::abs(RecCollision.posZ()) < VtxRange) {
             histos.fill(HIST("EventHist"), 3);
@@ -430,10 +432,11 @@ struct HeavyIonMultiplicity {
               cent = RecCollision.centFT0C();
               histos.fill(HIST("CentPercentileMCRecHist"), cent);
               auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
-              for (auto& Rectrack : Rectrackspart) {
-                if (std::abs(Rectrack.eta()) < etaRange) {
-                  for (int i = 0; i < static_cast<int>(centinterval.size() - 1); ++i) {
-                    if (cent > centinterval[i] && cent <= centinterval[i + 1]) {
+              for (auto i = 0U; i < centinterval.size() - 1; ++i) {
+                if (cent > centinterval[i] && cent <= centinterval[i + 1]) {
+                  histos.fill(HIST("MCCentEventHist"), i + 0.5);
+                  for (auto& Rectrack : Rectrackspart) {
+                    if (std::abs(Rectrack.eta()) < etaRange) {
                       NchRecTracks[i]++;
                       h1MCRecEtaHistCentFT0C[i]->Fill(Rectrack.eta());
                       h1MCRecPhiHistCentFT0C[i]->Fill(Rectrack.phi());
@@ -444,24 +447,20 @@ struct HeavyIonMultiplicity {
                       h2MCRecPhiVsEtaHistCentFT0C[i]->Fill(Rectrack.phi(), Rectrack.eta());
                     }
                   }
-                }
-              }
 
-              for (auto& particle : GenParticles) {
-                if (!particle.isPhysicalPrimary()) {
-                  continue;
-                }
-                if (!particle.producedByGenerator()) {
-                  continue;
-                }
-                auto pdgParticle = pdg->GetParticle(particle.pdgCode());
-                if (pdgParticle == nullptr) {
-                  continue;
-                }
-                if (std::abs(pdgParticle->Charge()) >= 3) {
-                  if (std::abs(particle.eta()) < etaRange) {
-                    for (int i = 0; i < static_cast<int>(centinterval.size() - 1); ++i) {
-                      if (cent > centinterval[i] && cent <= centinterval[i + 1]) {
+                  for (auto& particle : GenParticles) {
+                    if (!particle.isPhysicalPrimary()) {
+                      continue;
+                    }
+                    if (!particle.producedByGenerator()) {
+                      continue;
+                    }
+                    auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+                    if (pdgParticle == nullptr) {
+                      continue;
+                    }
+                    if (std::abs(pdgParticle->Charge()) >= 3) {
+                      if (std::abs(particle.eta()) < etaRange) {
                         NchGenTracks[i]++;
                         h1MCGenEtaHistCentFT0C[i]->Fill(particle.eta());
                         h1MCGenPhiHistCentFT0C[i]->Fill(particle.phi());
@@ -471,12 +470,10 @@ struct HeavyIonMultiplicity {
                       }
                     }
                   }
+                  h1MCRecMultHistCentFT0C[i]->Fill(NchRecTracks[i]);
+                  h1MCGenMultHistCentFT0C[i]->Fill(NchGenTracks[i]);
+                  h2MCGenVsRecMultHistCentFT0C[i]->Fill(NchRecTracks[i], NchGenTracks[i]);
                 }
-              }
-              for (int i = 0; i < static_cast<int>(centinterval.size() - 1); ++i) {
-                h1MCRecMultHistCentFT0C[i]->Fill(NchRecTracks[i]);
-                h1MCGenMultHistCentFT0C[i]->Fill(NchGenTracks[i]);
-                h2MCGenVsRecMultHistCentFT0C[i]->Fill(NchRecTracks[i], NchGenTracks[i]);
               }
             }
           }
@@ -493,7 +490,7 @@ struct HeavyIonMultiplicity {
     histos.fill(HIST("EventHist"), 0);
     if (collision.sel8()) {
       histos.fill(HIST("EventHist"), 1);
-      if (collision.selection_bit(kNoITSROFrameBorder)) {
+      if (collision.selection_bit(kNoITSROFrameBorder) && collision.selection_bit(kNoTimeFrameBorder)) {
         histos.fill(HIST("EventHist"), 2);
         if (std::abs(collision.posZ()) < VtxRange) {
           histos.fill(HIST("EventHist"), 3);
