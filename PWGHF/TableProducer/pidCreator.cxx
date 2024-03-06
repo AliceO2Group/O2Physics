@@ -77,21 +77,26 @@ struct HfPidCreator {
   void processDummy(aod::Collisions const&) {}
   PROCESS_SWITCH(HfPidCreator, processDummy, "Process nothing", true);
 
-  void processFullEl(aod::TracksPidEl const& tracks)
-  {
-    for (const auto& track : tracks) {
-      tracksPidFullElS(combineNSigma<false>(track.tpcNSigmaEl(), track.tofNSigmaEl()));
-    }
-  }
-  PROCESS_SWITCH(HfPidCreator, processFullEl, "Process full El ", false);
+  #define PROCESS_PID(_Species_) \
+  void processFull##_Species_(aod::TracksPid##_Species_ const& tracks) \
+  { \
+    for (const auto& track : tracks) { \
+      tracksPidFull##_Species_##S(combineNSigma<false>(track.tpcNSigma##_Species_(), track.tofNSigma##_Species_())); \
+    } \
+  } \
+  PROCESS_SWITCH(HfPidCreator, processFull##_Species_, "Process full "#_Species_, false); \
+ \
+  void processTiny##_Species_(aod::TracksPidTiny##_Species_ const& tracks) \
+  { \
+    for (const auto& track : tracks) { \
+      tracksPidTiny##_Species_##S(combineNSigma<true>(track.tpcNSigmaStore##_Species_(), track.tofNSigmaStore##_Species_())); \
+    } \
+  } \
+  PROCESS_SWITCH(HfPidCreator, processTiny##_Species_, "Process tiny "#_Species_, false);
 
-  void processTinyEl(aod::TracksPidTinyEl const& tracks)
-  {
-    for (const auto& track : tracks) {
-      tracksPidTinyElS(combineNSigma<true>(track.tpcNSigmaStoreEl(), track.tofNSigmaStoreEl()));
-    }
-  }
-  PROCESS_SWITCH(HfPidCreator, processTinyEl, "Process tiny El", false);
+  PROCESS_PID(El)
+
+  #undef PROCESS_PID
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
