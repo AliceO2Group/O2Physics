@@ -26,6 +26,8 @@ struct DGCandProducer {
   // get a DGCutparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
   Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
+  Configurable<bool> saveAllTracks{"saveAllTracks", true, "save only PV contributors or all tracks associated to a collision"};
+  Configurable<bool> rejectAtTFBoundary{"rejectAtTFBoundary", false, "reject collisions at a TF boundary"};
   Configurable<bool> fillFIThistos{"fillFIThistos", false, "fill the histograms with the FIT amplitudes"};
 
   // DG selector
@@ -191,7 +193,7 @@ struct DGCandProducer {
     diffCuts = (DGCutparHolder)DGCuts;
 
     // add histograms for the different process functions
-    registry.add("reco/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{14, -0.5, 13.5}}});
+    registry.add("reco/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{16, -0.5, 15.5}}});
     registry.add("reco/pt1Vspt2", "2 prong events, p_{T} versus p_{T}", {HistType::kTH2F, {{100, -3., 3.}, {100, -3., 3.0}}});
     registry.add("reco/TPCsignal1", "2 prong events, TPC signal versus p_{T} of particle 1", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
     registry.add("reco/TPCsignal2", "2 prong events, TPC signal versus p_{T} of particle 2", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
@@ -217,10 +219,19 @@ struct DGCandProducer {
                aod::Zdcs& zdcs, aod::FV0As& fv0as, aod::FT0s& ft0s, aod::FDDs& fdds)
   {
     LOGF(debug, "<DGCandProducer>  collision %d", collision.globalIndex());
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
+    
+    // reject collisions at TF boundaries
+    if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return;
+    }
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
+    
     // nominal BC
     if (!collision.has_foundBC()) {
       return;
     }
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(2., 1.);
     auto bc = collision.foundBC_as<BCs>();
     LOGF(debug, "<DGCandProducer>  BC id %d", bc.globalBC());
 
@@ -235,8 +246,7 @@ struct DGCandProducer {
     auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
 
     // save DG candidates
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(isDGEvent + 1, 1.);
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(isDGEvent + 3, 1.);
     if (isDGEvent == 0) {
       LOGF(debug, "<DGCandProducer>  Data: good collision!");
 
@@ -262,7 +272,9 @@ struct DGCandProducer {
 
       // update DGTracks tables
       for (auto& track : tracks) {
-        updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+        if (saveAllTracks || track.isPVContributor()) {
+          updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+        }
       }
 
       // update DGFwdTracks tables
