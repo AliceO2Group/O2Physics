@@ -421,6 +421,13 @@ struct HfCandidateSelectorD0 {
     processSel<aod::hf_cand::VertexerType::KfParticle>(candidates, tracks);
   }
   PROCESS_SWITCH(HfCandidateSelectorD0, processWithKFParticle, "process candidates selection with KFParticle", false);
+
+  void processTest(soa::Join<aod::TracksPidEl, aod::TracksPidFullElS> const& tracks)
+  // void processTest(aod::TracksPidFullElS const& tracks)
+  {
+    LOGF(info, "TracksPidFullElS size: %d", tracks.size());
+  }
+  PROCESS_SWITCH(HfCandidateSelectorD0, processTest, "process El PID", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
