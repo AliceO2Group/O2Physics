@@ -440,7 +440,6 @@ class HfFilterHelper
   float mNSigmaTofKaCutFor3Prongs{3.};                                       // maximum Nsigma TOF for kaons in 3-prong decays
   float mNSigmaTpcPiKaCutForDzero{3.};                                       // maximum Nsigma TPC for pions/kaons in D0 decays
   float mNSigmaTofPiKaCutForDzero{3.};                                       // maximum Nsigma TOF for pions/kaons in D0 decays
-  float mDeltaMassCharmHadForBeauty{0.04};                                   // delta mass cut for charm hadrons in B and charm excited decays
   float mDeltaMassMinSigmaC{0.155};                                          // minimum delta mass M(pKpipi)-M(pKpi) of SigmaC0,++ candidates
   float mDeltaMassMaxSigmaC{0.18};                                           // maximum delta mass M(pKpipi)-M(pKpi) of SigmaC0,++ candidates
   float mMinGammaCosinePa{0.85};                                             // minimum cosp for gammas
