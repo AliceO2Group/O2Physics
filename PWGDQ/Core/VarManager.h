@@ -2813,10 +2813,10 @@ void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
   float yQVecFT0a = collision.qvecFT0AIm();
   float xQVecFT0c = collision.qvecFT0CRe();
   float yQVecFT0c = collision.qvecFT0CIm();
-  //float xQVecFT0m = collision.qvecFT0MRe();
-  //float yQVecFT0m = collision.qvecFT0MIm();
-  //float xQVecFV0a = collision.qvecFV0ARe();
-  //float yQVecFV0a = collision.qvecFV0AIm();
+  // float xQVecFT0m = collision.qvecFT0MRe();
+  // float yQVecFT0m = collision.qvecFT0MIm();
+  // float xQVecFV0a = collision.qvecFV0ARe();
+  // float yQVecFV0a = collision.qvecFV0AIm();
   float xQVecBPos = collision.qvecBPosRe();
   float yQVecBPos = collision.qvecBPosIm();
   float xQVecBNeg = collision.qvecBNegRe();
