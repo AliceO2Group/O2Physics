@@ -663,7 +663,7 @@ struct UpcTauCentralBarrelRL {
 	}
 
 	template<typename C, typename T>
-	bool reinstallRun2JpsiEventSelection(C const& collision, T const& trk1, T const& trk2, float rapMother, flaot aco){
+	bool reinstallRun2JpsiEventSelection(C const& collision, T const& trk1, T const& trk2, float rapMother, float aco){
 		//tracks
 		if (!reinstallRun2JpsiTrackSelection(trk1))
 			return false;
