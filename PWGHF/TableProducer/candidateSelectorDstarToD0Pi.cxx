@@ -356,7 +356,7 @@ struct HfCandidateSelectorDstarToD0Pi {
     for (const auto& candDstar : rowsDstarCand) {
       // final selection flag: false - rejected, true - accepted
       bool statusDstar = false, statusD0Flag = false, statusTopol = false, statusCand = false, statusPID = false;
-      
+
       outputMlDstarToD0Pi.clear();
       auto ptCand = candDstar.pt();
 
@@ -462,7 +462,7 @@ struct HfCandidateSelectorDstarToD0Pi {
 
         std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candDstar, prong0, prong1, prongPi);
         isSelectedMlDstar = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMlDstarToD0Pi);
-        
+
         hfMlDstarCandidate(outputMlDstarToD0Pi);
         if (activateQA) {
           registry.fill(HIST("QA/hBdtScore1VsStatus"), outputMlDstarToD0Pi[0]);
