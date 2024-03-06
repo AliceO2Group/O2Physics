@@ -74,7 +74,7 @@
   }
 
 namespace o2::analysis
-{ 
+{
 
 enum class InputFeaturesDstarToD0Pi : uint8_t {
     chi2PCAD0 = 0,
