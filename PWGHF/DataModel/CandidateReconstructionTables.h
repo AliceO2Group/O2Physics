@@ -160,7 +160,7 @@ namespace pid_tpc_tof_static_full
 // Combined TPC and TOF NSigma
 DECLARE_SOA_COLUMN(TpcTofNSigmaEl, tpcTofNSigmaEl, float); //! Combined NSigma separation with the TPC & TOF detectors for electron
 DECLARE_SOA_COLUMN(TpcTofNSigmaMu, tpcTofNSigmaMu, float); //! Combined NSigma separation with the TPC & TOF detectors for muon
-DECLARE_SOA_COLUMN(TpcTofNSigmaPiS, tpcTofNSigmaPiS, float); //! Combined NSigma separation with the TPC & TOF detectors for pion
+DECLARE_SOA_COLUMN(TpcTofNSigmaPi, tpcTofNSigmaPi, float); //! Combined NSigma separation with the TPC & TOF detectors for pion
 DECLARE_SOA_COLUMN(TpcTofNSigmaKa, tpcTofNSigmaKa, float); //! Combined NSigma separation with the TPC & TOF detectors for kaon
 DECLARE_SOA_COLUMN(TpcTofNSigmaPr, tpcTofNSigmaPr, float); //! Combined NSigma separation with the TPC & TOF detectors for proton
 } // namespace pid_tpc_tof_static_full
@@ -181,7 +181,7 @@ DECLARE_SOA_TABLE(TracksPidFullElS, "AOD", "PIDFULLELS", //! Table of the TPC & 
 DECLARE_SOA_TABLE(TracksPidFullMuS, "AOD", "PIDFULLMUS", //! Table of the TPC & TOF Combined NSigma for muon
                   pid_tpc_tof_static_full::TpcTofNSigmaMu);
 DECLARE_SOA_TABLE(TracksPidFullPiS, "AOD", "PIDFULLPIS", //! Table of the TPC & TOF Combined NSigma for pion
-                  pid_tpc_tof_static_full::TpcTofNSigmaPiS);
+                  pid_tpc_tof_static_full::TpcTofNSigmaPi);
 DECLARE_SOA_TABLE(TracksPidFullKaS, "AOD", "PIDFULLKAS", //! Table of the TPC & TOF Combined NSigma for kaon
                   pid_tpc_tof_static_full::TpcTofNSigmaKa);
 DECLARE_SOA_TABLE(TracksPidFullPrS, "AOD", "PIDFULLPRS", //! Table of the TPC & TOF Combined NSigma for proton

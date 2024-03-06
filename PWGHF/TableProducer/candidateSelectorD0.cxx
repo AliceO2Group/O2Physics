@@ -421,16 +421,6 @@ struct HfCandidateSelectorD0 {
     processSel<aod::hf_cand::VertexerType::KfParticle>(candidates, tracks);
   }
   PROCESS_SWITCH(HfCandidateSelectorD0, processWithKFParticle, "process candidates selection with KFParticle", false);
-
-  void processTest(soa::Join<aod::TracksPidPi, aod::TracksPidFullPiS, aod::TracksPidPiExt> const& tracks)
-  {
-    LOGF(info, "TracksPidFullPi size: %d", tracks.size());
-    for (auto const& track : tracks) {
-      if (std::abs(track.tpcTofNSigmaPi() - track.tpcTofNSigmaPiS()) > 1.e-9)
-        LOGF(fatal, "TpcTofNSigmaPi = %g %g\n", track.tpcTofNSigmaPi(), track.tpcTofNSigmaPiS());
-    }
-  }
-  PROCESS_SWITCH(HfCandidateSelectorD0, processTest, "process PID", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
