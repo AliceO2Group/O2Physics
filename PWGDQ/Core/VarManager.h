@@ -2909,15 +2909,6 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-  //  kV4, kC4POI, kC4REF etc.
-  values[kCORR2REF] = (values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A] - values[kMultA]) / (values[kMultA] * (values[kMultA] - 1));
-  values[kCORR2POI] = (values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi())) / (values[kMultA] * values[kMultDimuons]);
-  values[kCORR4REF] = (std::pow((values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A]), 2.0) + values[kQ4X0A] * values[kQ4X0A] + values[kQ4Y0A] * values[kQ4Y0A] - 2 * (values[kQ4X0A] * values[kQ2X0A] * values[kQ2X0A] - values[kQ4X0A] * values[kQ2Y0A] * values[kQ2Y0A] + 2 * values[kQ4Y0A] * values[kQ2Y0A] * values[kQ2X0A])) / (values[kMultA] * (values[kMultA] - 1) * (values[kMultA] - 2) * (values[kMultA] - 3)) - 2 * (2 * (values[kMultA] - 2) * (values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A]) - values[kMultA] * (values[kMultA] - 3)) / (values[kMultA] * (values[kMultA] - 1) * (values[kMultA] - 2) * (values[kMultA] - 3));
-  values[kCORR4POI] = (values[kQ2X0A] * values[kQ2X0A] * values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * values[kQ2Y0A] * values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2X0A] * values[kQ2X0A] * values[kQ2Y0A] * std::sin(2 * v12.Phi()) + values[kQ2Y0A] * values[kQ2Y0A] * values[kQ2Y0A] * std::sin(2 * v12.Phi()) - std::cos(2 * v12.Phi()) * (values[kQ2X0A] * values[kQ4X0A] + values[kQ2Y0A] * values[kQ4Y0A]) + std::sin(2 * v12.Phi()) * (values[kQ2Y0A] * values[kQ4X0A] - values[kQ2X0A] * values[kQ4Y0A]) - 2 * values[kMultA] * (values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi())) + 2 * (values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi()))) / (values[kMultA] * values[kMultDimuons] * (values[kMultA] - 1) * (values[kMultA] - 2));
-  values[kC4REF] = values[kCORR4REF] - 2 * std::pow(values[kCORR2REF], 2.0);
-  values[kC4POI] = values[kCORR4POI] - 2 * values[kCORR2REF] * values[kCORR2POI];
-  values[kV4] = -values[kC4POI] / std::pow(-values[kC4REF], 0.75);
-
   // TODO: provide different computations for vn
   // Compute the scalar product UQ using Q-vector from A, for second and third harmonic
   // Dilepton vn could be accessible after dividing this product with the R factor
@@ -2936,6 +2927,21 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kPsi2B] = -999.;
     values[kPsi2C] = -999.;
   }
+
+  // QVector without Normalisation for Cumulants
+  values[kQ2X0A] = values[kQ2X0A] * values[kMultA];
+  values[kQ2Y0A] = values[kQ2Y0A] * values[kMultA];
+  values[kQ4X0A] = values[kQ4X0A] * values[kMultA];
+  values[kQ4Y0A] = values[kQ4Y0A] * values[kMultA];
+
+  //  kV4, kC4POI, kC4REF etc.
+  values[kCORR2REF] = (values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A] - values[kMultA]) / (values[kMultA] * (values[kMultA] - 1));
+  values[kCORR2POI] = (values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi())) / (values[kMultA] * values[kMultDimuons]);
+  values[kCORR4REF] = (std::pow((values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A]), 2.0) + values[kQ4X0A] * values[kQ4X0A] + values[kQ4Y0A] * values[kQ4Y0A] - 2 * (values[kQ4X0A] * values[kQ2X0A] * values[kQ2X0A] - values[kQ4X0A] * values[kQ2Y0A] * values[kQ2Y0A] + 2 * values[kQ4Y0A] * values[kQ2Y0A] * values[kQ2X0A])) / (values[kMultA] * (values[kMultA] - 1) * (values[kMultA] - 2) * (values[kMultA] - 3)) - 2 * (2 * (values[kMultA] - 2) * (values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A]) - values[kMultA] * (values[kMultA] - 3)) / (values[kMultA] * (values[kMultA] - 1) * (values[kMultA] - 2) * (values[kMultA] - 3));
+  values[kCORR4POI] = (values[kQ2X0A] * values[kQ2X0A] * values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * values[kQ2Y0A] * values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2X0A] * values[kQ2X0A] * values[kQ2Y0A] * std::sin(2 * v12.Phi()) + values[kQ2Y0A] * values[kQ2Y0A] * values[kQ2Y0A] * std::sin(2 * v12.Phi()) - std::cos(2 * v12.Phi()) * (values[kQ2X0A] * values[kQ4X0A] + values[kQ2Y0A] * values[kQ4Y0A]) + std::sin(2 * v12.Phi()) * (values[kQ2Y0A] * values[kQ4X0A] - values[kQ2X0A] * values[kQ4Y0A]) - 2 * values[kMultA] * (values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi())) + 2 * (values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi()))) / (values[kMultA] * values[kMultDimuons] * (values[kMultA] - 1) * (values[kMultA] - 2));
+  values[kC4REF] = values[kCORR4REF] - 2 * std::pow(values[kCORR2REF], 2.0);
+  values[kC4POI] = values[kCORR4POI] - 2 * values[kCORR2REF] * values[kCORR2POI];
+  values[kV4] = -values[kC4POI] / std::pow(-values[kC4REF], 0.75);
 }
 
 template <typename T1, typename T2>
