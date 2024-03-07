@@ -404,7 +404,7 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
 {
   DalitzEECut* cut = new DalitzEECut(cutName, cutName);
   std::string nameStr = cutName;
-  // cut name should be like this in unit of MeV. mee0_120_minpt200_maxeta09_tpchadronbandrej_lowB
+  // cut name should be like this mee0_120_minpt200_maxeta09_dca20_100_tpchadronbandrej_lowB in unit of MeV.
 
   if (!nameStr.compare("nocut")) {
     // apply kinetic cuts
@@ -458,6 +458,8 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
   float max_mass = 1e+10;
   float min_pt = 0.05;
   float max_eta = 0.9;
+  float min_dca3d_pair = 0.0;
+  float max_dca3d_pair = 1e+10;
   std::vector<std::string> tmp = splitString(nameStr, '_');
   for (size_t i = 0; i < tmp.size(); i++) {
     // printf("string = %s , num = %d\n", tmp[i].data(), customAtoi(tmp[i]));
@@ -471,6 +473,10 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
     if (tmp[i].find("maxeta") != std::string::npos) {
       max_eta = static_cast<float>(customAtoi(tmp[i])) * 0.1;
     }
+    if (tmp[i].find("dca") != std::string::npos) {
+      min_dca3d_pair = static_cast<float>(customAtoi(tmp[i])) * 0.1;     // 3d dca in sigma
+      max_dca3d_pair = static_cast<float>(customAtoi(tmp[i + 1])) * 0.1; // 3d dca in sigma
+    }
   } // end of split string loop
 
   // apply kinetic cuts
@@ -480,6 +486,7 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
   // for pair
   cut->SetMeeRange(min_mass, max_mass);
   cut->SetMaxPhivPairMeeDep([](float mee) { return (mee - -0.028) / 0.0185; });
+  cut->SetPairDCARange(min_dca3d_pair, max_dca3d_pair); // in sigma
 
   // for track cuts
   cut->SetMinNCrossedRowsTPC(100);
