@@ -112,6 +112,10 @@ struct derivedlambdakzeroanalysis {
   Configurable<float> qaMinPt{"qaMinPt", 0.0f, "minimum pT for QA plots"};
   Configurable<float> qaMaxPt{"qaMaxPt", 1000.0f, "maximum pT for QA plots"};
   Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
+  
+  // PID (TOF)
+  Configurable<float> maxDeltaTimeProton{"maxDeltaTimeProton", 1e+9, "check maximum allowed time"};
+  Configurable<float> maxDeltaTimePion{"maxDeltaTimePion", 1e+9, "check maximum allowed time"};
 
   // PID (TOF)
   Configurable<float> maxDeltaTimeProton{"maxDeltaTimeProton", 1e+9, "check maximum allowed time"};
@@ -565,6 +569,22 @@ struct derivedlambdakzeroanalysis {
       bitset(bitMap, selTPCPIDNegativePion);
     if (fabs(negTrackExtra.tpcNSigmaPr()) < TpcPidNsigmaCut)
       bitset(bitMap, selTPCPIDNegativeProton);
+    
+    // TOF PID
+    // Positive track
+    if (fabs(v0.posTOFDeltaTLaPr()) < maxDeltaTimeProton)
+      bitset(bitMap, selTOFDeltaTPositiveProtonLambda);
+    if (fabs(v0.posTOFDeltaTLaPi()) < maxDeltaTimePion)
+      bitset(bitMap, selTOFDeltaTPositivePionLambda);
+    if (fabs(v0.posTOFDeltaTK0Pi()) < maxDeltaTimePion)
+      bitset(bitMap, selTOFDeltaTPositivePionK0Short);
+    // Negative track
+    if (fabs(v0.negTOFDeltaTLaPr()) < maxDeltaTimeProton)
+      bitset(bitMap, selTOFDeltaTNegativeProtonLambda);
+    if (fabs(v0.negTOFDeltaTLaPi()) < maxDeltaTimePion)
+      bitset(bitMap, selTOFDeltaTNegativePionLambda);
+    if (fabs(v0.negTOFDeltaTK0Pi()) < maxDeltaTimePion)
+      bitset(bitMap, selTOFDeltaTNegativePionK0Short);
 
     // TOF PID in DeltaT
     // Positive track
