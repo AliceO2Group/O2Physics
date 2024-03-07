@@ -248,7 +248,13 @@ struct qVectorsTable {
         RelGainConst.push_back(1.);
       }
     } else if (cfgGainCor == 1) {
-      // TODO
+      if (!(ccdb->getForTimeStamp<std::vector<float>>("Users/j/junlee/Qvector/GainEq/FT0", cfgCcdbParam.nolaterthan.value))->empty()) {
+        RelGainConst = *(ccdb->getForTimeStamp<std::vector<float>>("Users/j/junlee/Qvector/GainEq/FT0", cfgCcdbParam.nolaterthan.value));
+      } else {
+        for (int i = 0; i < cfgFT0RelGain->size(); i++) {
+          RelGainConst.push_back(1.);
+        }
+      }
     } else if (cfgGainCor == 2) {
       for (int i = 0; i < cfgFT0RelGain->size(); i++) {
         RelGainConst.push_back(cfgFT0RelGain->at(i));
