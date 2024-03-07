@@ -31,7 +31,7 @@ namespace o2::aod
 namespace full
 {
 // from creator
-DECLARE_SOA_COLUMN(CollisionCounter, collisionCounter, int64_t);
+DECLARE_SOA_COLUMN(CollisionCounter, collisionCounter, int);
 DECLARE_SOA_COLUMN(XPv, xPv, float);
 DECLARE_SOA_COLUMN(YPv, yPv, float);
 DECLARE_SOA_COLUMN(ZPv, zPv, float);
@@ -402,7 +402,7 @@ struct HfTreeCreatorToXiPi {
                        soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling total number of collisions processed
-    int64_t collCounter = collisions.size();
+    int collCounter = collisions.size();
     rowEv(collCounter);
 
     // Filling candidate properties
@@ -417,7 +417,7 @@ struct HfTreeCreatorToXiPi {
                      soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
     // Filling total number of collisions processed
-    int64_t collCounter = collisions.size();
+    int collCounter = collisions.size();
     rowEv(collCounter);
 
     // Filling candidate properties
@@ -432,7 +432,7 @@ struct HfTreeCreatorToXiPi {
                        soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling total number of collisions processed
-    int64_t collCounter = collisions.size();
+    int collCounter = collisions.size();
     rowEv(collCounter);
 
     // Filling candidate properties
@@ -447,7 +447,7 @@ struct HfTreeCreatorToXiPi {
                      soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
     // Filling total number of collisions processed
-    int64_t collCounter = collisions.size();
+    int collCounter = collisions.size();
     rowEv(collCounter);
 
     // Filling candidate properties
