@@ -289,18 +289,18 @@ struct HfTaskFlowCharmHadrons {
       float massCand = 0.;
       std::vector<float> outputMl = {-999., -999.};
 
-      if constexpr (std::is_same<T1, CandDsData>::value || std::is_same<T1, CandDsDatawMl>::value) {
+      if constexpr (std::is_same<T1, Partition<CandDsData>>::value || std::is_same<T1, Partition<CandDsDatawMl>>::value) {
         switch (DecayChannel) {
           case DecayChannel::DsToKKPi:
             massCand = hfHelper.invMassDsToKKPi(candidate);
-            if constexpr (std::is_same<T1, CandDsDatawMl>::value) {
+            if constexpr (std::is_same<T1, Partition<CandDsDatawMl>>::value) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
                 outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
             }
             break;
           case DecayChannel::DsToPiKK:
             massCand = hfHelper.invMassDsToPiKK(candidate);
-            if constexpr (std::is_same<T1, CandDsDatawMl>::value) {
+            if constexpr (std::is_same<T1, Partition<CandDsDatawMl>>::value) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
                 outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
             }
