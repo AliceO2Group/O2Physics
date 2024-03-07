@@ -429,7 +429,7 @@ struct HfTreeCreatorToXiPi {
     for(const auto& collision : collisions){
       isEvSel8 = false;
       isEventZSel = false;
-      fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel)
+      fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel);
     }
 
     // Filling candidate properties
@@ -451,7 +451,7 @@ struct HfTreeCreatorToXiPi {
     for(const auto& collision : collisions){
       isEvSel8 = false;
       isEventZSel = false;
-      fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel)
+      fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel);
     }
 
     // Filling candidate properties
@@ -473,7 +473,7 @@ struct HfTreeCreatorToXiPi {
     for(const auto& collision : collisions){
       isEvSel8 = false;
       isEventZSel = false;
-      fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel)
+      fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel);
     }
 
     // Filling candidate properties
@@ -495,7 +495,7 @@ struct HfTreeCreatorToXiPi {
     for(const auto& collision : collisions){
       isEvSel8 = false;
       isEventZSel = false;
-      fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel)
+      fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel);
     }
 
     // Filling candidate properties
