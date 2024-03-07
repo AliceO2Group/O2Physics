@@ -80,6 +80,7 @@ TH1F* fhPtNegB = nullptr;
 TH1F* fhPtNegA[kIdBfNoOfSpecies] = {nullptr};
 TH2F* fhNPosNegA[kIdBfNoOfSpecies] = {nullptr};
 TH1F* fhDeltaNA[kIdBfNoOfSpecies] = {nullptr};
+TH1F* fhParticleSpecies = nullptr;
 
 TH1F* fhEtaB = nullptr;
 TH1F* fhEtaA = nullptr;
@@ -620,6 +621,7 @@ struct IdentifiedBfFilterTracks {
       fhDCAzB = new TH1F("DCAzB", "DCA_{z} distribution for reconstructed before;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
       fhDCAzA = new TH1F("DCAzA", "DCA_{z} distribution for reconstructed;DCA_{z} (cm);counts", 1000, -4.0, 4.0);
       fhFineDCAzA = new TH1F("FineDCAzA", "DCA_{z} distribution for reconstructed;DCA_{z} (cm);counts", 4000, -1.0, 1.0);
+      fhParticleSpecies = new TH1F("fhParticleSpecies","Particle Species",(int)kIdBfNoOfSpecies,0,(int)kIdBfNoOfSpecies);
 
       if (checkAmbiguousTracks) {
         /* let's allocate the ambigous tracks tracking histograms*/
@@ -665,6 +667,7 @@ struct IdentifiedBfFilterTracks {
       fOutputList->Add(fhDCAzB);
       fOutputList->Add(fhDCAzA);
       fOutputList->Add(fhFineDCAzA);
+      fOutputList->Add(fhParticleSpecies);
       if (checkAmbiguousTracks) {
         fOutputList->Add(fhAmbiguousTrackType);
         fOutputList->Add(fhAmbiguousTrackPt);
@@ -1058,6 +1061,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
     if (doublematch) {
       return kWrongSpecies;
     } else {
+      fhParticleSpecies->Fill((int)sp_min_nsigma);
       return sp_min_nsigma;
     }
   } else {
@@ -1131,7 +1135,6 @@ inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
 
   if (matchTrackType(track)) {
     if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
-
       MatchRecoGenSpecies sp = trackIdentification(track);
       if (sp == kWrongSpecies) {
         return -1;

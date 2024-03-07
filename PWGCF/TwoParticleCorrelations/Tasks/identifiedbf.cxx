@@ -905,7 +905,6 @@ struct IdentifiedBfCorrelationsTask {
   void processSame(FilterdCollision const& collision, FilteredTracks const& tracks, uint64_t timestamp = 0)
   {
     using namespace correlationstask;
-
     if (ccdblst == nullptr) {
       if (loadfromccdb) {
         ccdblst = getCCDBInput(cfginputfile.cfgCCDBPathName->c_str(), cfginputfile.cfgCCDBDate->c_str());
@@ -1330,6 +1329,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
     adaptAnalysisTask<IdentifiedBfCorrelationsTask>(cfgc, TaskName{"IdentifiedBfCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}, {"processRecLevelMixed", false}, {"processCleaner", false}}}),
-    adaptAnalysisTask<IdentifiedBfCorrelationsTask>(cfgc, TaskName{"IdentifiedBfCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", true}, {"processGenLevelMixed", false}, {"processCleaner", false}}})};
+    adaptAnalysisTask<IdentifiedBfCorrelationsTask>(cfgc, TaskName{"IdentifiedBfCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", false}, {"processGenLevelMixed", false}, {"processCleaner", true}}})};
   return workflow;
 }
