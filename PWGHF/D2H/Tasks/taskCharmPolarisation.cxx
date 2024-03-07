@@ -282,7 +282,7 @@ struct TaskPolarisationCharmHadrons {
           pzDau = candidate.pzProng2();
           if (bkgRotationId) {
             /// rotational background - pt of the kaon track rotated
-            invMassCharmHad = RecoDecay::m(std::array{threeVecLcProng0, threeVecLcRotatedProng1, threeVecLcProng2}, std::array{massProton, massKaon, massPi});
+            invMassCharmHad = RecoDecay::m(std::array{threeVecLcProng0, threeVecLcRotatedProng1, threeVecLcProng2}, std::array{massPi, massKaon, massProton});
             invMassCharmHadForSparse = invMassCharmHad;
           } else {
             /// original candidate (kaon track not rotated)
