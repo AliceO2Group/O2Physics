@@ -373,13 +373,13 @@ struct HfTaskLc {
           outputBkg = candidate.mlProbLcToPKPi()[0]; /// bkg score
           outputFD = candidate.mlProbLcToPKPi()[1];  /// non-prompt score
           /// Fill the ML outputScores and variables of candidate
-          registry.get<THnSparse>(HIST("hBdtScoreVsVars"))->Fill(Mass, pt, ptProng0, ptProng1, ptProng2, 0, chi2PCA, decayLength, decayLengthXY, cpa, cpaXY, outputBkg, outputFD, 0);
+          registry.get<THnSparse>(HIST("hBdtScoreVsVars"))->Fill(Mass, pt, ptProng0, ptProng1, ptProng2, nTracks, chi2PCA, decayLength, decayLengthXY, cpa, cpaXY, outputBkg, outputFD, 0);
         } else if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
           Mass = hfHelper.invMassLcToPiKP(candidate);
           outputBkg = candidate.mlProbLcToPKPi()[0]; /// bkg score
           outputFD = candidate.mlProbLcToPKPi()[1];  /// non-prompt score
           /// Fill the ML outputScores and variables of candidate
-          registry.get<THnSparse>(HIST("hBdtScoreVsVars"))->Fill(Mass, pt, ptProng0, ptProng1, ptProng2, 0, chi2PCA, decayLength, decayLengthXY, cpa, cpaXY, outputBkg, outputFD, 0);
+          registry.get<THnSparse>(HIST("hBdtScoreVsVars"))->Fill(Mass, pt, ptProng0, ptProng1, ptProng2, nTracks, chi2PCA, decayLength, decayLengthXY, cpa, cpaXY, outputBkg, outputFD, 0);
         }
       }
     }
