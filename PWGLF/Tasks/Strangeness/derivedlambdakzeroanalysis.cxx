@@ -788,37 +788,37 @@ struct derivedlambdakzeroanalysis {
     auto hOmegaPlus = histos.get<TH2>(HIST("h2dGenOmegaPlus"));
     for (auto& gVec : geK0Short) {
       for (uint32_t iv = 0; iv < gVec.generatedK0Short().size(); iv++) {
-        hK0Short->SetBinContent(iv+1, hK0Short->GetBinContent(iv+1) + gVec.generatedK0Short()[iv]);
+        hK0Short->SetBinContent(iv + 1, hK0Short->GetBinContent(iv + 1) + gVec.generatedK0Short()[iv]);
       }
     }
     for (auto& gVec : geLambda) {
       for (uint32_t iv = 0; iv < gVec.generatedLambda().size(); iv++) {
-        hLambda->SetBinContent(iv+1, hLambda->GetBinContent(iv+1) + gVec.generatedLambda()[iv]);
+        hLambda->SetBinContent(iv + 1, hLambda->GetBinContent(iv + 1) + gVec.generatedLambda()[iv]);
       }
     }
     for (auto& gVec : geAntiLambda) {
       for (uint32_t iv = 0; iv < gVec.generatedAntiLambda().size(); iv++) {
-        hAntiLambda->SetBinContent(iv+1, hAntiLambda->GetBinContent(iv+1) + gVec.generatedAntiLambda()[iv]);
+        hAntiLambda->SetBinContent(iv + 1, hAntiLambda->GetBinContent(iv + 1) + gVec.generatedAntiLambda()[iv]);
       }
     }
     for (auto& gVec : geXiMinus) {
       for (uint32_t iv = 0; iv < gVec.generatedXiMinus().size(); iv++) {
-        hXiMinus->SetBinContent(iv+1, hXiMinus->GetBinContent(iv+1) + gVec.generatedXiMinus()[iv]);
+        hXiMinus->SetBinContent(iv + 1, hXiMinus->GetBinContent(iv + 1) + gVec.generatedXiMinus()[iv]);
       }
     }
     for (auto& gVec : geXiPlus) {
       for (uint32_t iv = 0; iv < gVec.generatedXiPlus().size(); iv++) {
-        hXiPlus->SetBinContent(iv+1, hXiPlus->GetBinContent(iv+1) + gVec.generatedXiPlus()[iv]);
+        hXiPlus->SetBinContent(iv + 1, hXiPlus->GetBinContent(iv + 1) + gVec.generatedXiPlus()[iv]);
       }
     }
     for (auto& gVec : geOmegaMinus) {
       for (uint32_t iv = 0; iv < gVec.generatedOmegaMinus().size(); iv++) {
-        hOmegaMinus->SetBinContent(iv+1, hOmegaMinus->GetBinContent(iv+1) + gVec.generatedOmegaMinus()[iv]);
+        hOmegaMinus->SetBinContent(iv + 1, hOmegaMinus->GetBinContent(iv + 1) + gVec.generatedOmegaMinus()[iv]);
       }
     }
     for (auto& gVec : geOmegaPlus) {
       for (uint32_t iv = 0; iv < gVec.generatedOmegaPlus().size(); iv++) {
-        hOmegaPlus->SetBinContent(iv+1, hOmegaPlus->GetBinContent(iv+1) + gVec.generatedOmegaPlus()[iv]);
+        hOmegaPlus->SetBinContent(iv + 1, hOmegaPlus->GetBinContent(iv + 1) + gVec.generatedOmegaPlus()[iv]);
       }
     }
   }
