@@ -31,7 +31,7 @@ namespace o2::aod
 namespace full
 {
 // from creator
-DECLARE_SOA_COLUMN(CollisionCounter, collisionCounter, bool);
+DECLARE_SOA_COLUMN(CollisionCounter, collisionCounter, int);
 DECLARE_SOA_COLUMN(XPv, xPv, float);
 DECLARE_SOA_COLUMN(YPv, yPv, float);
 DECLARE_SOA_COLUMN(ZPv, zPv, float);
@@ -213,12 +213,6 @@ struct HfTreeCreatorToXiPi {
 
   void init(InitContext const&)
   {
-  }
-
-  template <typename T>
-  void fillEvent(const T& collision)
-  {
-    rowEv(true);
   }
 
   template <class TMyTracks, typename T>
@@ -407,11 +401,12 @@ struct HfTreeCreatorToXiPi {
   void processDataFull(aod::Collisions const& collisions, MyTrackTable const&,
                        soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
-    // Filling event properties
-    rowEv.reserve(collisions.size());
+    // Filling total number of collisions processed
+    int collCounter = 0;
     for (const auto& collision : collisions) {
-      fillEvent(collision);
+      ++collCounter;
     }
+    rowEv(collCounter);
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
@@ -424,11 +419,12 @@ struct HfTreeCreatorToXiPi {
   void processMcFull(aod::Collisions const& collisions, MyTrackTable const&,
                      soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
-    // Filling event properties
-    rowEv.reserve(collisions.size());
+    // Filling total number of collisions processed
+    int collCounter = 0;
     for (const auto& collision : collisions) {
-      fillEvent(collision);
+      ++collCounter;
     }
+    rowEv(collCounter);
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
@@ -441,11 +437,12 @@ struct HfTreeCreatorToXiPi {
   void processDataLite(aod::Collisions const& collisions, MyTrackTable const&,
                        soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
-    // Filling event properties
-    rowEv.reserve(collisions.size());
+    // Filling total number of collisions processed
+    int collCounter = 0;
     for (const auto& collision : collisions) {
-      fillEvent(collision);
+      ++collCounter;
     }
+    rowEv(collCounter);
 
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
@@ -458,11 +455,12 @@ struct HfTreeCreatorToXiPi {
   void processMcLite(aod::Collisions const& collisions, MyTrackTable const&,
                      soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
-    // Filling event properties
-    rowEv.reserve(collisions.size());
+    // Filling total number of collisions processed
+    int collCounter = 0;
     for (const auto& collision : collisions) {
-      fillEvent(collision);
+      ++collCounter;
     }
+    rowEv(collCounter);
 
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
