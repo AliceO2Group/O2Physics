@@ -31,7 +31,7 @@ namespace o2::aod
 namespace full
 {
 // from creator
-DECLARE_SOA_COLUMN(CollisionCounter, collisionCounter, int);
+DECLARE_SOA_COLUMN(CollisionCounter, collisionCounter, long int);
 DECLARE_SOA_COLUMN(XPv, xPv, float);
 DECLARE_SOA_COLUMN(YPv, yPv, float);
 DECLARE_SOA_COLUMN(ZPv, zPv, float);
