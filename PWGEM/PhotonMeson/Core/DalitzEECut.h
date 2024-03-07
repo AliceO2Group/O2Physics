@@ -123,7 +123,7 @@ class DalitzEECut : public TNamed
     if (!IsSelectedPair(pair, DalitzEECuts::kMee)) {
       return false;
     }
-    if (!IsSelectedPair(pair, DalitzEECuts::kPhiV)) {
+    if (mApplyPhiV && !IsSelectedPair(pair, DalitzEECuts::kPhiV)) {
       return false;
     }
     return true;
@@ -417,6 +417,7 @@ class DalitzEECut : public TNamed
   void SetMaxDcaZ(float maxDcaZ);           // in cm
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
   void ApplyPrefilter(bool flag);
+  void ApplyPhiV(bool flag);
 
   // Getters
   bool IsPhotonConversionSelected() const { return mSelectPC; }
@@ -451,6 +452,7 @@ class DalitzEECut : public TNamed
   float mMaxDcaXY{1.0f};                        // max dca in xy plane
   float mMaxDcaZ{1.0f};                         // max dca in z direction
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
+  bool mApplyPhiV{true};
   bool mApplyPF{false};
 
   // pid cuts
