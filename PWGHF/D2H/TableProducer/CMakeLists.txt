@@ -45,3 +45,8 @@ o2physics_add_dpl_workflow(data-creator-d-v0-reduced
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(data-creator-to-xi-pi-reduced
+                    SOURCES dataCreatorToXiPiReduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
