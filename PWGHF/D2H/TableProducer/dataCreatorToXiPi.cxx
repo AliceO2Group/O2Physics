@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file dataCreatorToXiPi.cxx
-/// \brief Writer of the omegac0 or xic0 to Xi Pi candidates in the form of flat tables to be stored self contained derived data for further processing on hyperloop.
+/// \brief Writer of the omegac0 or xic0 to Xi Pi candidates in the form of flat tables to be stored self contained derived data
 ///        In this file are defined and filled the output tables
 ///
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
@@ -31,7 +31,6 @@ namespace o2::aod
 namespace full
 {
 // from creator
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(XPv, xPv, float);
 DECLARE_SOA_COLUMN(YPv, yPv, float);
 DECLARE_SOA_COLUMN(ZPv, zPv, float);
@@ -67,8 +66,6 @@ DECLARE_SOA_COLUMN(ErrImpactParPiFromCharmBaryonXY, errImpactParPiFromCharmBaryo
 DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, double);
 DECLARE_SOA_COLUMN(InvMassCascade, invMassCascade, double);
 DECLARE_SOA_COLUMN(InvMassCharmBaryon, invMassCharmBaryon, double);
-DECLARE_SOA_COLUMN(CosPAV0, cosPAV0, double);
-DECLARE_SOA_COLUMN(CosPACasc, cosPACasc, double);
 DECLARE_SOA_COLUMN(EtaV0PosDau, etaV0PosDau, double);
 DECLARE_SOA_COLUMN(EtaV0NegDau, etaV0NegDau, double);
 DECLARE_SOA_COLUMN(EtaPiFromCasc, etaPiFromCasc, double);
@@ -81,20 +78,12 @@ DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
 DECLARE_SOA_COLUMN(DcaCharmBaryonDau, dcaCharmBaryonDau, float);
 DECLARE_SOA_COLUMN(ErrorDecayLengthCharmBaryon, errorDecayLengthCharmBaryon, float);
 DECLARE_SOA_COLUMN(IsPionGlbTrkWoDca, isPionGlbTrkWoDca, bool);
-DECLARE_SOA_COLUMN(ItsNCls, itsNCls, uint8_t);
-DECLARE_SOA_COLUMN(ItsNClsInnerBarrel, itsNClsInnerBarrel, uint8_t);
-DECLARE_SOA_COLUMN(ItsChi2NCl, itsChi2NCl, float);
-DECLARE_SOA_COLUMN(TpcNClsFound, tpcNClsFound, int16_t);
-DECLARE_SOA_COLUMN(TpcNClsCrossedRows, tpcNClsCrossedRows, int16_t);
-DECLARE_SOA_COLUMN(TpcCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
-DECLARE_SOA_COLUMN(TpcChi2NCl, tpcChi2NCl, float);
+DECLARE_SOA_COLUMN(PionItsNCls, pionItsNCls, uint8_t);
 // from creator - MC (rec level)
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);
 DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
 DECLARE_SOA_COLUMN(CollisionMatched, collisionMatched, bool);
 // from selector
-DECLARE_SOA_COLUMN(StatusPidCharmBaryon, statusPidCharmBaryon, bool);
-DECLARE_SOA_COLUMN(ResultSelections, resultSelections, bool);
 DECLARE_SOA_COLUMN(PidTpcInfoStored, pidTpcInfoStored, int);
 DECLARE_SOA_COLUMN(PidTofInfoStored, pidTofInfoStored, int);
 DECLARE_SOA_COLUMN(TpcNSigmaPiFromCharmBaryon, tpcNSigmaPiFromCharmBaryon, float);
@@ -109,7 +98,6 @@ DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiEvDatas, "AOD", "HFTOXIPIEVDATA",
-                  full::CollisionId,
                   collision::NumContrib,
                   collision::Chi2,
                   collision::PosX,
@@ -117,7 +105,7 @@ DECLARE_SOA_TABLE(HfToXiPiEvDatas, "AOD", "HFTOXIPIEVDATA",
                   collision::PosZ);
 
 DECLARE_SOA_TABLE(HfToXiPiDatas, "AOD", "HFTOXIPIDATA",
-                  full::CollisionId, full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
+                  full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
                   full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
@@ -130,15 +118,12 @@ DECLARE_SOA_TABLE(HfToXiPiDatas, "AOD", "HFTOXIPIDATA",
                   full::ImpactParCascXY, full::ImpactParPiFromCharmBaryonXY,
                   full::ErrImpactParCascXY, full::ErrImpactParPiFromCharmBaryonXY,
                   full::InvMassLambda, full::InvMassCascade, full::InvMassCharmBaryon,
-                  full::CosPAV0, full::CosPACasc,
                   full::EtaV0PosDau, full::EtaV0NegDau, full::EtaPiFromCasc, full::EtaPiFromCharmBaryon,
                   full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau,
                   full::DcaCascDau, full::DcaV0Dau, full::DcaCharmBaryonDau,
                   full::ErrorDecayLengthCharmBaryon,
-                  full::IsPionGlbTrkWoDca, full::ItsNCls, full::ItsNClsInnerBarrel, full::ITSChi2NCl,
-                  full::TpcNClsFound, full::TpcNClsCrossedRows, full::TpcCrossedRowsOverFindableCls, full::TpcChi2NCl,
-                  full::StatusPidCharmBaryon,
-                  full::ResultSelections, full::PidTpcInfoStored, full::PidTofInfoStored,
+                  full::IsPionGlbTrkWoDca, full::PionItsNCls,
+                  full::PidTpcInfoStored, full::PidTofInfoStored,
                   full::TpcNSigmaPiFromCharmBaryon, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
                   full::TofNSigmaPiFromCharmBaryon, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
                   full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched);
@@ -161,7 +146,6 @@ struct HfDataCreatorToXiPi {
   void fillEvent(const T& collision)
   {
     rowEvData(
-      collision.globalIndex(),
       collision.numContrib(),
       collision.chi2(),
       collision.posX(),
@@ -172,8 +156,9 @@ struct HfDataCreatorToXiPi {
   template <class TMyTracks, typename T>
   void fillCandidate(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched)
   {
+    if(candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
+    
     rowCandidateData(
-      candidate.collisionId(),
       candidate.xPv(),
       candidate.yPv(),
       candidate.zPv(),
@@ -211,8 +196,6 @@ struct HfDataCreatorToXiPi {
       candidate.invMassLambda(),
       candidate.invMassCascade(),
       candidate.invMassCharmBaryon(),
-      candidate.cosPAV0(),
-      candidate.cosPACasc(),
       candidate.etaV0PosDau(),
       candidate.etaV0NegDau(),
       candidate.etaPiFromCasc(),
@@ -226,14 +209,6 @@ struct HfDataCreatorToXiPi {
       candidate.errorDecayLengthCharmBaryon(),
       candidate.template piFromCharmBaryon_as<TMyTracks>().isGlobalTrackWoDCA(),
       candidate.template piFromCharmBaryon_as<TMyTracks>().itsNCls(),
-      candidate.template piFromCharmBaryon_as<TMyTracks>().itsNClsInnerBarrel(),
-      candidate.template piFromCharmBaryon_as<TMyTracks>().itsChi2NCl(),
-      candidate.template piFromCharmBaryon_as<TMyTracks>().tpcNClsFound(),
-      candidate.template piFromCharmBaryon_as<TMyTracks>().tpcNClsCrossedRows(), 
-      candidate.template piFromCharmBaryon_as<TMyTracks>().tpcCrossedRowsOverFindableCls(), 
-      candidate.template piFromCharmBaryon_as<TMyTracks>().tpcChi2NCl(),
-      candidate.statusPidCharmBaryon(),
-      candidate.resultSelections(),
       candidate.pidTpcInfoStored(),
       candidate.pidTofInfoStored(),
       candidate.tpcNSigmaPiFromCharmBaryon(),
@@ -247,6 +222,7 @@ struct HfDataCreatorToXiPi {
       flagMc,
       originMc,
       collisionMatched);
+    }
   }
 
   void processData(aod::Collisions const& collisions, MyTrackTable const&,
