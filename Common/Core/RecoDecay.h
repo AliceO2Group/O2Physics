@@ -47,6 +47,8 @@ class RecoDecay
                     Prompt,
                     NonPrompt };
 
+  const uint8_t PdgStatusCodeAfterFlavourOscillation = 92;
+
   // Auxiliary functions
 
   /// Sums numbers.
@@ -581,7 +583,7 @@ class RecoDecay
       stage--;
     }
     if (sign) {
-      *sign = sgn;
+      *sign = particle.getGenStatusCode() != PdgStatusCodeAfterFlavourOscillation ? sgn : -sgn; // take possible flavour oscillation of B0(s) into account
     }
 
     return indexMother;
@@ -796,6 +798,7 @@ class RecoDecay
                              std::vector<int>* listIndexDaughters = nullptr)
   {
     // Printf("MC Gen: Expected particle PDG: %d", PDGParticle);
+    bool flagFlavourOscillation = false; // true if the B0(s) mother flavour oscillated
     int8_t sgn = 0; // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGParticle)
     if (sign) {
       *sign = sgn;
@@ -841,6 +844,10 @@ class RecoDecay
       for (auto indexDaughterI : arrAllDaughtersIndex) {
         auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset()); // ith daughter particle
         auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();                                  // PDG code of the ith daughter
+        if (!flagFlavourOscillation && candidateDaughterI.getGenStatusCode() == PdgStatusCodeAfterFlavourOscillation) {
+          flagFlavourOscillation = true; // flag flavour oscillation of B0(s)
+          sgn = -sgn;                    // select the sign of the mother after flavour oscillation
+        }
         // Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, PDGCandidateDaughterI);
         bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
         for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
