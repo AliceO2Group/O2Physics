@@ -44,15 +44,17 @@ struct HfPidCreator {
   /// \param initContext  workflow context (argument of the init function)
   /// \param table  name of the table
   /// \param doprocess  process function flag
-  template <typename TSwitch>
-  void checkTableSwitch(InitContext& initContext, const std::string& table, const TSwitch& doprocess)
+  template <typename TFlag>
+  void checkTableSwitch(InitContext& initContext, const std::string& table, TFlag& doprocess)
   {
     auto isNeeded = isTableRequiredInWorkflow(initContext, table);
     if (isNeeded && !doprocess.value) {
       LOGF(fatal, "Table %s is needed but not requested. Enable the corresponding process function!", table);
     }
     if (!isNeeded && doprocess.value) {
-      LOGF(warn, "Table %s is requested but not needed. Disable the corresponding process function!", table);
+      LOGF(warn, "Table %s is requested but not needed. Disabling the corresponding process function!", table);
+      // NOTE: This does not remove the input table subscription from the context! The input table is still considered consumed.
+      doprocess.value = false;
     }
   }
 
