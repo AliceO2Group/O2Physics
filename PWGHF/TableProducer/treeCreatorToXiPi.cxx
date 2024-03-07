@@ -418,7 +418,7 @@ struct HfTreeCreatorToXiPi {
                    soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling event properties
-    rowEvData.reserve(collisions.size());
+    rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
       fillEvent(collision);
     }
@@ -435,7 +435,7 @@ struct HfTreeCreatorToXiPi {
                  soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
     // Filling event properties
-    rowEvData.reserve(collisions.size());
+    rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
       fillEvent(collision);
     }
@@ -452,7 +452,7 @@ struct HfTreeCreatorToXiPi {
                    soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling event properties
-    rowEvData.reserve(collisions.size());
+    rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
       fillEvent(collision);
     }
@@ -460,7 +460,7 @@ struct HfTreeCreatorToXiPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidateLite<MyTrackTable>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+      fillCandidateLite<MyTrackTable>(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataLite, "Process data and produce lite table version", false);
@@ -469,7 +469,7 @@ struct HfTreeCreatorToXiPi {
                  soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
     // Filling event properties
-    rowEvData.reserve(collisions.size());
+    rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
       fillEvent(collision);
     }
@@ -477,7 +477,7 @@ struct HfTreeCreatorToXiPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidateLite<MyTrackTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+      fillCandidateLite<MyTrackTable>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcLite, "Process MC and produce lite table version", false);
