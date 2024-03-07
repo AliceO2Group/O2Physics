@@ -368,6 +368,16 @@ DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaXYinSigma, dcaXYinSigma, [](float dcaXY, float cYY) -> float { return dcaXY / std::sqrt(cYY); });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaZinSigma, dcaZinSigma, [](float dcaZ, float cZZ) -> float { return dcaZ / std::sqrt(cZZ); });
+DECLARE_SOA_DYNAMIC_COLUMN(Dca3DinSigma, dca3DinSigma, [](float dcaXY, float dcaZ, float cYY, float cZZ, float cZY) -> float {
+  float det = cYY * cZZ - cZY * cZY; // determinant
+  if (det < 0) {
+    return 999.f;
+  } else {
+    return std::sqrt(std::abs((dcaXY * dcaXY * cZZ + dcaZ * dcaZ * cYY - 2. * dcaXY * dcaZ * cZY) / det / 2.)); // dca 3d in sigma
+  }
+});
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITS, meanClusterSizeITS, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
   for (unsigned int layer = 0; layer < 7; layer++) {
@@ -435,6 +445,9 @@ DECLARE_SOA_TABLE(EMPrimaryElectrons, "AOD", "EMPRIMARYEL", //!
                   emprimaryelectron::Px<track::Pt, track::Phi>,
                   emprimaryelectron::Py<track::Pt, track::Phi>,
                   emprimaryelectron::Pz<track::Pt, track::Eta>,
+                  emprimaryelectron::DcaXYinSigma<track::DcaXY, track::CYY>,
+                  emprimaryelectron::DcaZinSigma<track::DcaZ, track::CZZ>,
+                  emprimaryelectron::Dca3DinSigma<track::DcaXY, track::DcaZ, track::CYY, track::CZZ, track::CZY>,
                   emprimaryelectron::MeanClusterSizeITS<track::ITSClusterSizes>,
                   emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
                   emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
@@ -487,6 +500,16 @@ DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaXYinSigma, dcaXYinSigma, [](float dcaXY, float cYY) -> float { return dcaXY / std::sqrt(cYY); });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaZinSigma, dcaZinSigma, [](float dcaZ, float cZZ) -> float { return dcaZ / std::sqrt(cZZ); });
+DECLARE_SOA_DYNAMIC_COLUMN(Dca3DinSigma, dca3DinSigma, [](float dcaXY, float dcaZ, float cYY, float cZZ, float cZY) -> float {
+  float det = cYY * cZZ - cZY * cZY; // determinant
+  if (det < 0) {
+    return 999.f;
+  } else {
+    return std::sqrt(std::abs((dcaXY * dcaXY * cZZ + dcaZ * dcaZ * cYY - 2. * dcaXY * dcaZ * cZY) / det / 2.)); // dca 3d in sigma
+  }
+});
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITS, meanClusterSizeITS, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
   for (unsigned int layer = 0; layer < 7; layer++) {
@@ -554,6 +577,9 @@ DECLARE_SOA_TABLE(EMPrimaryMuons, "AOD", "EMPRIMARYMU", //!
                   emprimarymuon::Px<track::Pt, track::Phi>,
                   emprimarymuon::Py<track::Pt, track::Phi>,
                   emprimarymuon::Pz<track::Pt, track::Eta>,
+                  emprimarymuon::DcaXYinSigma<track::DcaXY, track::CYY>,
+                  emprimarymuon::DcaZinSigma<track::DcaZ, track::CZZ>,
+                  emprimarymuon::Dca3DinSigma<track::DcaXY, track::DcaZ, track::CYY, track::CZZ, track::CZY>,
                   emprimarymuon::MeanClusterSizeITS<track::ITSClusterSizes>,
                   emprimarymuon::MeanClusterSizeITSib<track::ITSClusterSizes>,
                   emprimarymuon::MeanClusterSizeITSob<track::ITSClusterSizes>);
