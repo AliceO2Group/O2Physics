@@ -56,8 +56,8 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
-using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras, aod::V0MCMothers>;
+using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFs, aod::V0TOFPIDs>;
+using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras, aod::V0TOFs, aod::V0TOFPIDs, aod::V0MCMothers>;
 
 // simple checkers
 #define bitset(var, nbit) ((var) |= (1 << (nbit)))
@@ -102,6 +102,10 @@ struct derivedlambdakzeroanalysis {
   Configurable<float> qaMinPt{"qaMinPt", 0.0f, "minimum pT for QA plots"};
   Configurable<float> qaMaxPt{"qaMaxPt", 1000.0f, "maximum pT for QA plots"};
   Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
+  
+  // PID (TOF)
+  Configurable<float> maxDeltaTimeProton{"maxDeltaTimeProton", 1e+9, "check maximum allowed time"};
+  Configurable<float> maxDeltaTimePion{"maxDeltaTimePion", 1e+9, "check maximum allowed time"};
 
   // for MC
   Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
@@ -145,6 +149,12 @@ struct derivedlambdakzeroanalysis {
                    selTPCPIDNegativePion,
                    selTPCPIDPositiveProton,
                    selTPCPIDNegativeProton,
+                   selTOFDeltaTPositiveProtonLambda,
+                   selTOFDeltaTPositivePionLambda,
+                   selTOFDeltaTPositivePionK0Short,
+                   selTOFDeltaTNegativeProtonLambda,
+                   selTOFDeltaTNegativePionLambda,
+                   selTOFDeltaTNegativePionK0Short,
                    selK0ShortCTau,
                    selLambdaCTau,
                    selK0ShortArmenteros,
@@ -201,18 +211,18 @@ struct derivedlambdakzeroanalysis {
     } else {
       maskTrackProperties = maskTrackProperties | (1 << selPosGoodTPCTrack);
       // TPC signal is available: ask for positive track PID
-      maskK0ShortSpecific = maskK0ShortSpecific | (1 << selTPCPIDPositivePion);
-      maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDPositiveProton);
-      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (1 << selTPCPIDPositivePion);
+      maskK0ShortSpecific = maskK0ShortSpecific | (1 << selTPCPIDPositivePion) | (1 << selTOFDeltaTPositivePionK0Short);
+      maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDPositiveProton) | (1 << selTOFDeltaTPositiveProtonLambda);
+      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (1 << selTPCPIDPositivePion) | (1 << selTOFDeltaTPositivePionLambda);
     }
     if (requireNegITSonly) {
       maskTrackProperties = maskTrackProperties | (1 << selNegItsOnly);
     } else {
       maskTrackProperties = maskTrackProperties | (1 << selNegGoodTPCTrack);
       // TPC signal is available: ask for negative track PID
-      maskK0ShortSpecific = maskK0ShortSpecific | (1 << selTPCPIDNegativePion);
-      maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDNegativePion);
-      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (1 << selTPCPIDNegativeProton);
+      maskK0ShortSpecific = maskK0ShortSpecific | (1 << selTPCPIDNegativePion) | (1 << selTOFDeltaTNegativePionK0Short);
+      maskLambdaSpecific = maskLambdaSpecific | (1 << selTPCPIDNegativePion) | (1 << selTOFDeltaTNegativePionLambda);
+      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (1 << selTPCPIDNegativeProton) | (1 << selTOFDeltaTNegativeProtonLambda);
     }
 
     // Primary particle selection, central to analysis
@@ -416,6 +426,22 @@ struct derivedlambdakzeroanalysis {
       bitset(bitMap, selTPCPIDNegativePion);
     if (fabs(negTrackExtra.tpcNSigmaPr()) < TpcPidNsigmaCut)
       bitset(bitMap, selTPCPIDNegativeProton);
+    
+    // TOF PID
+    // Positive track
+    if (fabs(v0.posTOFDeltaTLaPr()) < maxDeltaTimeProton)
+      bitset(bitMap, selTOFDeltaTPositiveProtonLambda);
+    if (fabs(v0.posTOFDeltaTLaPi()) < maxDeltaTimePion)
+      bitset(bitMap, selTOFDeltaTPositivePionLambda);
+    if (fabs(v0.posTOFDeltaTK0Pi()) < maxDeltaTimePion)
+      bitset(bitMap, selTOFDeltaTPositivePionK0Short);
+    // Negative track
+    if (fabs(v0.negTOFDeltaTLaPr()) < maxDeltaTimeProton)
+      bitset(bitMap, selTOFDeltaTNegativeProtonLambda);
+    if (fabs(v0.negTOFDeltaTLaPi()) < maxDeltaTimePion)
+      bitset(bitMap, selTOFDeltaTNegativePionLambda);
+    if (fabs(v0.negTOFDeltaTK0Pi()) < maxDeltaTimePion)
+      bitset(bitMap, selTOFDeltaTNegativePionK0Short);
 
     // ITS only tag
     if (posTrackExtra.tpcCrossedRows() < 1)
@@ -761,37 +787,37 @@ struct derivedlambdakzeroanalysis {
     auto hOmegaMinus = histos.get<TH2>(HIST("h2dGenOmegaMinus"));
     auto hOmegaPlus = histos.get<TH2>(HIST("h2dGenOmegaPlus"));
     for (auto& gVec : geK0Short) {
-      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+      for (uint32_t iv = 0; iv < gVec.generatedK0Short().size(); iv++) {
         hK0Short->SetBinContent(iv, hK0Short->GetBinContent(iv) + gVec.generatedK0Short()[iv]);
       }
     }
     for (auto& gVec : geLambda) {
-      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+      for (uint32_t iv = 0; iv < gVec.generatedLambda().size(); iv++) {
         hLambda->SetBinContent(iv, hLambda->GetBinContent(iv) + gVec.generatedLambda()[iv]);
       }
     }
     for (auto& gVec : geAntiLambda) {
-      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+      for (uint32_t iv = 0; iv < gVec.generatedAntiLambda().size(); iv++) {
         hAntiLambda->SetBinContent(iv, hAntiLambda->GetBinContent(iv) + gVec.generatedAntiLambda()[iv]);
       }
     }
     for (auto& gVec : geXiMinus) {
-      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+      for (uint32_t iv = 0; iv < gVec.generatedXiMinus().size(); iv++) {
         hXiMinus->SetBinContent(iv, hXiMinus->GetBinContent(iv) + gVec.generatedXiMinus()[iv]);
       }
     }
     for (auto& gVec : geXiPlus) {
-      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+      for (uint32_t iv = 0; iv < gVec.generatedXiPlus().size(); iv++) {
         hXiPlus->SetBinContent(iv, hXiPlus->GetBinContent(iv) + gVec.generatedXiPlus()[iv]);
       }
     }
     for (auto& gVec : geOmegaMinus) {
-      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+      for (uint32_t iv = 0; iv < gVec.generatedOmegaMinus().size(); iv++) {
         hOmegaMinus->SetBinContent(iv, hOmegaMinus->GetBinContent(iv) + gVec.generatedOmegaMinus()[iv]);
       }
     }
     for (auto& gVec : geOmegaPlus) {
-      for (uint32_t iv = 0; iv < gVec.size(); iv++) {
+      for (uint32_t iv = 0; iv < gVec.generatedOmegaPlus().size(); iv++) {
         hOmegaPlus->SetBinContent(iv, hOmegaPlus->GetBinContent(iv) + gVec.generatedOmegaPlus()[iv]);
       }
     }
