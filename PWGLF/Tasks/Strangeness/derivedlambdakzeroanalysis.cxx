@@ -338,7 +338,7 @@ struct derivedlambdakzeroanalysis {
         histos.add("K0Short/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
         histos.add("K0Short/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
         histos.add("K0Short/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-        if(doCollisionAssociationQA){ 
+        if (doCollisionAssociationQA) {
           histos.add("K0Short/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
           histos.add("K0Short/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
         }
@@ -351,7 +351,7 @@ struct derivedlambdakzeroanalysis {
         histos.add("Lambda/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
         histos.add("Lambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
         histos.add("Lambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-        if(doCollisionAssociationQA){ 
+        if (doCollisionAssociationQA) {
           histos.add("Lambda/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
           histos.add("Lambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
         }
@@ -364,7 +364,7 @@ struct derivedlambdakzeroanalysis {
         histos.add("AntiLambda/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
         histos.add("AntiLambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
         histos.add("AntiLambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
-        if(doCollisionAssociationQA){ 
+        if (doCollisionAssociationQA) {
           histos.add("AntiLambda/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
           histos.add("AntiLambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
         }
@@ -631,17 +631,17 @@ struct derivedlambdakzeroanalysis {
     // main analysis
     if (verifyMask(selMap, maskSelectionK0Short) && analyseK0Short) {
       histos.fill(HIST("K0Short/h2dPtVsNch"), mcNch, v0.pt());
-      if(!correctAssociation)
+      if (!correctAssociation)
         histos.fill(HIST("K0Short/h2dPtVsNch_BadCollAssig"), mcNch, v0.pt());
     }
     if (verifyMask(selMap, maskSelectionLambda) && analyseLambda) {
       histos.fill(HIST("Lambda/h2dPtVsNch"), mcNch, v0.pt());
-      if(!correctAssociation)
+      if (!correctAssociation)
         histos.fill(HIST("Lambda/h2dPtVsNch_BadCollAssig"), mcNch, v0.pt());
     }
     if (verifyMask(selMap, maskSelectionAntiLambda) && analyseAntiLambda) {
       histos.fill(HIST("AntiLambda/h2dPtVsNch"), mcNch, v0.pt());
-      if(!correctAssociation)
+      if (!correctAssociation)
         histos.fill(HIST("AntiLambda/h2dPtVsNch_BadCollAssig"), mcNch, v0.pt());
     }
   }
@@ -759,12 +759,12 @@ struct derivedlambdakzeroanalysis {
 
       analyseCandidate(v0, centrality, selMap);
 
-      if(doCollisionAssociationQA){
-        // check collision association explicitly 
+      if (doCollisionAssociationQA) {
+        // check collision association explicitly
         bool correctCollision = false;
         int mcNch = -1;
-        if(collision.has_straMCCollision()){ 
-          auto mcCollision = collision.straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>(); 
+        if (collision.has_straMCCollision()) {
+          auto mcCollision = collision.straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
           mcNch = mcCollision.multMCNParticlesEta05();
           correctCollision = (v0.straMCCollisionId() == mcCollision.globalIndex());
         }
