@@ -131,7 +131,7 @@ DECLARE_SOA_TABLE(HfToXiPiDatas, "AOD", "HFTOXIPIDATA",
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
-struct HfDataCreatorToXiPi {
+struct HfDataCreatorToXiPiReduced {
 
   Produces<o2::aod::HfToXiPiDatas> rowCandidateData;
   Produces<o2::aod::HfToXiPiEvDatas> rowEvData;
@@ -240,7 +240,7 @@ struct HfDataCreatorToXiPi {
       fillCandidate<MyTrackTable>(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfDataCreatorToXiPi, processData, "Process data", true);
+  PROCESS_SWITCH(HfDataCreatorToXiPiReduced, processData, "Process data", true);
 
   void processMc(aod::Collisions const& collisions, MyTrackTable const&,
                  soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
@@ -257,12 +257,12 @@ struct HfDataCreatorToXiPi {
       fillCandidate<MyTrackTable>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
     }
   }
-  PROCESS_SWITCH(HfDataCreatorToXiPi, processMc, "Process MC", false);
+  PROCESS_SWITCH(HfDataCreatorToXiPiReduced, processMc, "Process MC", false);
 
 }; // end of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfDataCreatorToXiPi>(cfgc)};
+    adaptAnalysisTask<HfDataCreatorToXiPiReduced>(cfgc)};
 }
