@@ -31,6 +31,7 @@ namespace o2::aod
 namespace full
 {
 // from creator
+DECLARE_SOA_COLUMN(CollisionCounter, collisionCounter, bool);
 DECLARE_SOA_COLUMN(XPv, xPv, float);
 DECLARE_SOA_COLUMN(YPv, yPv, float);
 DECLARE_SOA_COLUMN(ZPv, zPv, float);
@@ -140,11 +141,7 @@ DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiEv, "AOD", "HFTOXIPIEV",
-                  collision::NumContrib,
-                  collision::Chi2,
-                  collision::PosX,
-                  collision::PosY,
-                  collision::PosZ);
+                  full::CollisionCounter);
 
 DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
@@ -221,12 +218,7 @@ struct HfTreeCreatorToXiPi {
   template <typename T>
   void fillEvent(const T& collision)
   {
-    rowEv(
-      collision.numContrib(),
-      collision.chi2(),
-      collision.posX(),
-      collision.posY(),
-      collision.posZ());
+    rowEv(true);
   }
 
   template <class TMyTracks, typename T>
