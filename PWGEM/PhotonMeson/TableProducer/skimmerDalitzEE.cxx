@@ -50,6 +50,10 @@ struct skimmerDalitzEE {
   Produces<o2::aod::EMReducedEventsNee> event_nee;
 
   // Configurables
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
+  Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
+
   Configurable<float> maxMee{"maxMee", 0.5, "max. mee to store ee pairs"};
   Configurable<bool> storeLS{"storeLS", false, "flag to store LS pairs"};
   Configurable<float> minpt{"minpt", 0.2, "min pt for track for loose track sample"};
@@ -188,6 +192,12 @@ struct skimmerDalitzEE {
   void processAnalysis(MyCollisions const& collisions, MyTracks const& tracks)
   {
     for (auto& collision : collisions) {
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        event_nee(0, 0, 0);
+        continue;
+      }
+
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectron::emreducedeventId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emreducedeventId, collision.globalIndex(), cache);
       fRegistry.fill(HIST("hNpos"), collision.centFT0C(), posTracks_per_coll.size());

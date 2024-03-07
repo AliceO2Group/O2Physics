@@ -16,6 +16,7 @@
 #define PWGEM_PHOTONMESON_CORE_CUTSLIBRARY_H_
 
 #include <string>
+#include "PWGEM/PhotonMeson/Core/EMEventCut.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
 #include "PWGEM/PhotonMeson/Core/PHOSPhotonCut.h"
@@ -24,10 +25,23 @@
 
 namespace o2::aod
 {
+namespace pwgem::photon
+{
+namespace eventcuts
+{
+EMEventCut* GetCut(const char* cutName);
+} // namespace eventcuts
+
 namespace pcmcuts
 {
 V0PhotonCut* GetCut(const char* cutName);
 } // namespace pcmcuts
+
+namespace pcmcuts
+{
+V0PhotonCut* GetCut(const char* cutName);
+} // namespace pcmcuts
+
 namespace dalitzeecuts
 {
 DalitzEECut* GetCut(const char* cutName);
@@ -48,5 +62,6 @@ namespace paircuts
 PairCut* GetCut(const char* cutName);
 } // namespace paircuts
 
+} // namespace pwgem::photon
 } // namespace o2::aod
 #endif // PWGEM_PHOTONMESON_CORE_CUTSLIBRARY_H_

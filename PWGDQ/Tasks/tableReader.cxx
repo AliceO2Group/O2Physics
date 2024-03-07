@@ -671,6 +671,7 @@ struct AnalysisEventMixing {
       auto tracks2 = tracks.sliceBy(preSlice, event2.globalIndex());
       tracks2.bindExternalIndices(&events);
 
+      VarManager::FillTwoMixEvents<TEventFillMap>(event1, event2, tracks1, tracks2);
       runMixedPairing<TPairType>(tracks1, tracks2);
     } // end event loop
   }

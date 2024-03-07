@@ -58,6 +58,8 @@ struct HfCandidateCreatorB0Reduced {
 
   o2::vertexing::DCAFitterN<2> df2; // fitter for B vertex (2-prong vertex fitter)
 
+  using HfRedCollisionsWithExtras = soa::Join<aod::HfRedCollisions, aod::HfRedCollExtras>;
+
   Preslice<soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov>> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
   Preslice<soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov, aod::HfRed3ProngsMl>> candsDWithMlPerCollision = hf_track_index_reduced::hfRedCollisionId;
   Preslice<soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov>> tracksPionPerCollision = hf_track_index_reduced::hfRedCollisionId;
@@ -99,8 +101,8 @@ struct HfCandidateCreatorB0Reduced {
   /// \param tracksPionThisCollision pion tracks in this collision
   /// \param invMass2DPiMin minimum B0 invariant-mass
   /// \param invMass2DPiMax maximum B0 invariant-mass
-  template <bool withDmesMl, typename Cands, typename Pions>
-  void runCandidateCreation(aod::HfRedCollisions::iterator const& collision,
+  template <bool withDmesMl, typename Cands, typename Pions, typename Coll>
+  void runCandidateCreation(Coll const& collision,
                             Cands const& candsDThisColl,
                             Pions const& tracksPionThisCollision,
                             const float& invMass2DPiMin,
@@ -181,13 +183,13 @@ struct HfCandidateCreatorB0Reduced {
         rowCandidateProngs(candD.globalIndex(), trackPion.globalIndex());
 
         if constexpr (withDmesMl) {
-          rowCandidateDmesMlScores(candD.mlScoreBkg(), candD.mlScorePrompt(), candD.mlScoreNonprompt());
+          rowCandidateDmesMlScores(candD.mlScoreBkgMassHypo0(), candD.mlScorePromptMassHypo0(), candD.mlScoreNonpromptMassHypo0());
         }
       } // pi loop
     }   // D loop
   }
 
-  void processData(aod::HfRedCollisions const& collisions,
+  void processData(HfRedCollisionsWithExtras const& collisions,
                    soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov> const& candsD,
                    soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov> const& tracksPion,
                    aod::HfOrigColCounts const& collisionsCounter,
@@ -221,7 +223,7 @@ struct HfCandidateCreatorB0Reduced {
 
   PROCESS_SWITCH(HfCandidateCreatorB0Reduced, processData, "Process data without any ML score", true);
 
-  void processDataWithDmesMl(aod::HfRedCollisions const& collisions,
+  void processDataWithDmesMl(HfRedCollisionsWithExtras const& collisions,
                              soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov, aod::HfRed3ProngsMl> const& candsD,
                              soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov> const& tracksPion,
                              aod::HfOrigColCounts const& collisionsCounter,

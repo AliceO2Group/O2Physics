@@ -1172,7 +1172,7 @@ struct hypertriton3bodyComparewithDecay3body {
       }
     }
   }
-  PROCESS_SWITCH(hypertriton3bodyComparewithDecay3body, processDoComparison, "Compare decay3bodys and finder method with MC", true);
+  PROCESS_SWITCH(hypertriton3bodyComparewithDecay3body, processDoComparison, "Compare decay3bodys and finder method with MC", false);
 };
 
 struct hypertriton3bodyInitializer {

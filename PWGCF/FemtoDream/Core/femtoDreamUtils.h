@@ -21,6 +21,7 @@
 #include <functional>
 #include <algorithm>
 #include "Framework/ASoAHelpers.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
 
 namespace o2::analysis::femtoDream
@@ -98,7 +99,38 @@ bool isFullPIDSelected(aod::femtodreamparticle::cutContainerType const& pidCut,
   return pidSelection;
 };
 
-int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType, int motherPDG)
+/// function for getting the mass of a particle depending on the pdg code
+/// \param pdgCode pdg code of the particle
+/// \return mass of the particle
+inline float getMass(int pdgCode)
+{
+  // use this function instead of TDatabasePDG to return masses defined in the PhysicsConstants.h header
+  // this approach saves a lot of memory and important partilces like deuteron are missing in TDatabasePDG anyway
+  float Mass = 0;
+  // add new particles if necessary here
+  switch (std::abs(pdgCode)) {
+    case 211: // charged pions
+      Mass = o2::constants::physics::MassPiPlus;
+      break;
+    case 321: // charged kaon
+      Mass = o2::constants::physics::MassKPlus;
+      break;
+    case 2212: // proton
+      Mass = o2::constants::physics::MassProton;
+      break;
+    case 3122: // Lambda
+      Mass = o2::constants::physics::MassLambda;
+      break;
+    case 1000010020: // Deuteron
+      Mass = o2::constants::physics::MassDeuteron;
+      break;
+    default:
+      LOG(fatal) << "PDG code is not suppored";
+  }
+  return Mass;
+}
+
+inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType, int motherPDG)
 {
   int partOrigin = 0;
   if (partType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
@@ -137,7 +169,7 @@ int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType, int mo
 };
 
 template <typename T, typename R>
-bool containsNameValuePair(const std::vector<T>& myVector, const std::string& name, R value)
+inline bool containsNameValuePair(const std::vector<T>& myVector, const std::string& name, R value)
 {
   for (const auto& obj : myVector) {
     if (obj.name == name) {

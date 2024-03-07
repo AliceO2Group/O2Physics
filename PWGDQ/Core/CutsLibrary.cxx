@@ -897,7 +897,43 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
     cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
     cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
-    cut->AddCut(GetAnalysisCut("tof_electron"));
+    cut->AddCut(GetAnalysisCut("tof_electron_sigma"));
+    return cut;
+  }
+
+  if (!nameStr.compare("lmee_Run3_posTrack_TPCelectron")) {
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+    cut->AddCut(GetAnalysisCut("lmee_pp_502TeV_TPCPbPbnopkrej"));
+    return cut;
+  }
+
+  if (!nameStr.compare("lmee_Run3_posTrack_TOFelectron")) {
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+    cut->AddCut(GetAnalysisCut("tof_electron_sigma"));
+    return cut;
+  }
+
+  if (!nameStr.compare("lmee_Run3_negTrack_TPCelectron")) {
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+    cut->AddCut(GetAnalysisCut("lmee_pp_502TeV_TPCPbPbnopkrej"));
+    return cut;
+  }
+
+  if (!nameStr.compare("lmee_Run3_negTrack_TOFelectron")) {
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    cut->AddCut(GetAnalysisCut("TightGlobalTrackRun3"));
+    cut->AddCut(GetAnalysisCut("standardPrimaryTrackDCAz"));
+    cut->AddCut(GetAnalysisCut("tof_electron_sigma"));
     return cut;
   }
 
@@ -2531,6 +2567,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   std::string nameStr = cutName;
   // ---------------------------------------------------------------
   // Event cuts
+  if (!nameStr.compare("eventNoTFBorder")) {
+    cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
+    return cut;
+  }
+
   if (!nameStr.compare("eventStandard")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsINT7, 0.5, 1.5);
@@ -2545,6 +2586,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("eventStandardSel8")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardSel8NoTFBorder")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
     return cut;
   }
 
@@ -3524,11 +3572,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
     if (!nameStr.compare(Form("lmee_pp_502TeV_TPCPbPbnopkrej%s", vecPIDcase.at(icase).Data()))) {
       if (icase == 0) {
-        cut->AddCut(VarManager::kTPCnSigmaEl, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
-        cut->AddCut(VarManager::kTPCnSigmaPi, -99., 4.5, true, VarManager::kPin, 0.0, 1e+10, false);
+        cut->AddCut(VarManager::kTPCnSigmaEl, -1., 2., false, VarManager::kPin, 0.0, 1e+10, false);
+        cut->AddCut(VarManager::kTPCnSigmaPi, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
       } else if (icase == 1 || icase == 2) {
-        cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
-        cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -99., 4.5, true, VarManager::kPin, 0.0, 1e+10, false);
+        cut->AddCut(VarManager::kTPCnSigmaEl_Corr, -1., 2., false, VarManager::kPin, 0.0, 1e+10, false);
+        cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3., 4., true, VarManager::kPin, 0.0, 1e+10, false);
       }
       return cut;
     }
@@ -3736,6 +3784,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("tof_electron")) {
     cut->AddCut(VarManager::kTOFbeta, 0.99, 1.01, false, VarManager::kPin, 0.0, 1e+10, false);
+    return cut;
+  }
+
+  if (!nameStr.compare("tof_electron_sigma")) {
+    cut->AddCut(VarManager::kTOFnSigmaEl, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
     return cut;
   }
 

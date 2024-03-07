@@ -94,6 +94,8 @@ struct HfCorrelatorDMesonPairs {
   Configurable<float> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
   Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
+  Configurable<bool> selectSignalRegionOnly{"selectSignalRegionOnly", false, "only use events close to PDG peak"};
+  Configurable<float> massCut{"massCut", 0.05, "Maximum deviation from PDG peak allowed for signal region"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots"};
 
   HfHelper hfHelper;
@@ -424,15 +426,29 @@ struct HfCorrelatorDMesonPairs {
         continue;
       }
 
+      bool isSignalD0Cand1 = std::abs(hfHelper.invMassD0ToPiK(candidate1) - MassD0) < massCut;
+      bool isSignalD0barCand1 = std::abs(hfHelper.invMassD0barToKPi(candidate1) - MassD0Bar) < massCut;
+      if (selectSignalRegionOnly && !(isSignalD0Cand1 || isSignalD0barCand1)) {
+        continue;
+      }
       registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
       auto candidateType1 = assignCandidateTypeD0<decltype(candidate1), false>(candidate1); // Candidate type attribution.
 
-      for (const auto& candidate2 : selectedD0CandidatesGrouped) {
+      auto prong0Cand1 = candidate1.template prong0_as<aod::TracksWDca>();
+      auto prong1Cand1 = candidate1.template prong1_as<aod::TracksWDca>();
+      for (auto candidate2 = candidate1 + 1; candidate2 != selectedD0CandidatesGrouped.end(); ++candidate2) {
         if (!kinematicCuts<decltype(candidate2), true>(candidate2)) {
           continue;
         }
-        // avoid double counting
-        if (candidate1.mRowIndex >= candidate2.mRowIndex) {
+
+        auto prong0Cand2 = candidate2.template prong0_as<aod::TracksWDca>();
+        auto prong1Cand2 = candidate2.template prong1_as<aod::TracksWDca>();
+        if ((prong0Cand1 == prong0Cand2) || (prong1Cand1 == prong1Cand2) || (prong0Cand1 == prong1Cand2) || (prong1Cand1 == prong0Cand2)) {
+          continue;
+        }
+        bool isSignalD0Cand2 = std::abs(hfHelper.invMassD0ToPiK(candidate2) - MassD0) < massCut;
+        bool isSignalD0barCand2 = std::abs(hfHelper.invMassD0barToKPi(candidate2) - MassD0Bar) < massCut;
+        if (selectSignalRegionOnly && !(isSignalD0Cand2 || isSignalD0barCand2)) {
           continue;
         }
         auto candidateType2 = assignCandidateTypeD0<decltype(candidate2), false>(candidate2); // Candidate type attribution
@@ -473,9 +489,16 @@ struct HfCorrelatorDMesonPairs {
         fillInfoHists(candidate1, true, true);
       }
 
+      bool isSignalD0Cand1 = std::abs(hfHelper.invMassD0ToPiK(candidate1) - MassD0) < massCut;
+      bool isSignalD0barCand1 = std::abs(hfHelper.invMassD0barToKPi(candidate1) - MassD0Bar) < massCut;
+      if (selectSignalRegionOnly && !(isSignalD0Cand1 || isSignalD0barCand1)) {
+        continue;
+      }
       registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
       auto candidateType1 = assignCandidateTypeD0<decltype(candidate1), true>(candidate1); // Candidate type attribution
 
+      auto prong0Cand1 = candidate1.template prong0_as<aod::TracksWDca>();
+      auto prong1Cand1 = candidate1.template prong1_as<aod::TracksWDca>();
       int8_t origin1 = 0, matchedRec1 = 0;
       if (!(TESTBIT(candidateType1, TrueD) && TESTBIT(candidateType1, TrueDbar))) { // if our event is not bkg
         // check if it's prompt or non-prompt
@@ -486,17 +509,23 @@ struct HfCorrelatorDMesonPairs {
         registry.fill(HIST("hMatchedMcRec"), matchedRec1);
       }
 
-      for (const auto& candidate2 : selectedD0CandidatesGroupedMc) {
+      for (auto candidate2 = candidate1 + 1; candidate2 != selectedD0CandidatesGroupedMc.end(); ++candidate2) {
         if (!kinematicCuts<decltype(candidate2), true>(candidate2)) {
-          continue;
-        }
-        // avoid double counting
-        if (candidate1.mRowIndex >= candidate2.mRowIndex) {
           continue;
         }
 
         auto candidateType2 = assignCandidateTypeD0<decltype(candidate2), true>(candidate2); // Candidate type attribution
         int8_t origin2 = 0, matchedRec2 = 0;
+        auto prong0Cand2 = candidate2.template prong0_as<aod::TracksWDca>();
+        auto prong1Cand2 = candidate2.template prong1_as<aod::TracksWDca>();
+        if ((prong0Cand1 == prong0Cand2) || (prong1Cand1 == prong1Cand2) || (prong0Cand1 == prong1Cand2) || (prong1Cand1 == prong0Cand2)) {
+          continue;
+        }
+        bool isSignalD0Cand2 = std::abs(hfHelper.invMassD0ToPiK(candidate2) - MassD0) < massCut;
+        bool isSignalD0barCand2 = std::abs(hfHelper.invMassD0barToKPi(candidate2) - MassD0Bar) < massCut;
+        if (selectSignalRegionOnly && !(isSignalD0Cand2 || isSignalD0barCand2)) {
+          continue;
+        }
         if (!(TESTBIT(candidateType2, TrueD) && TESTBIT(candidateType2, TrueDbar))) { // if our event is not bkg
           // check if it's prompt or non-prompt
           origin2 = candidate2.originMcRec();
@@ -557,16 +586,16 @@ struct HfCorrelatorDMesonPairs {
         outerParticleSign = -1; // Dminus (second daughter track is positive)
       }
 
+      bool isSignalDPlusCand1 = std::abs(hfHelper.invMassDplusToPiKPi(candidate1) - MassDPlus) < massCut;
+      if (selectSignalRegionOnly && !isSignalDPlusCand1) {
+        continue;
+      }
       auto candidateType1 = assignCandidateTypeDPlus<decltype(candidate1), false>(candidate1, outerParticleSign);
       fillInfoHists(candidate1, false, false);
       registry.fill(HIST("hMass"), hfHelper.invMassDplusToPiKPi(candidate1), candidate1.pt());
 
-      for (const auto& candidate2 : selectedDPlusCandidatesGrouped) {
+      for (auto candidate2 = candidate1 + 1; candidate2 != selectedDPlusCandidatesGrouped.end(); ++candidate2) {
         if (!kinematicCuts<decltype(candidate2), false>(candidate2)) {
-          continue;
-        }
-        // avoid double counting
-        if (candidate1.mRowIndex >= candidate2.mRowIndex) {
           continue;
         }
 
@@ -574,6 +603,10 @@ struct HfCorrelatorDMesonPairs {
         auto innerSecondTrack = candidate2.prong1();
         if (innerSecondTrack.sign() == 1) {
           innerParticleSign = -1; // Dminus (second daughter track is positive)
+        }
+        bool isSignalDPlusCand2 = std::abs(hfHelper.invMassDplusToPiKPi(candidate2) - MassDPlus) < massCut;
+        if (selectSignalRegionOnly && !isSignalDPlusCand2) {
+          continue;
         }
         auto candidateType2 = assignCandidateTypeDPlus<decltype(candidate2), false>(candidate2, innerParticleSign);
         registry.fill(HIST("hSelectionStatus"), 1);
@@ -616,6 +649,10 @@ struct HfCorrelatorDMesonPairs {
       if (outerSecondTrack.sign() == 1) {
         outerParticleSign = -1; // Dminus (second daughter track is positive)
       }
+      bool isSignalDPlusCand1 = std::abs(hfHelper.invMassDplusToPiKPi(candidate1) - MassDPlus) < massCut;
+      if (selectSignalRegionOnly && !isSignalDPlusCand1) {
+        continue;
+      }
 
       auto candidateType1 = assignCandidateTypeDPlus<decltype(candidate1), true>(candidate1, outerParticleSign);
       registry.fill(HIST("hMass"), hfHelper.invMassDplusToPiKPi(candidate1), candidate1.pt());
@@ -630,12 +667,8 @@ struct HfCorrelatorDMesonPairs {
         registry.fill(HIST("hMatchedMcRec"), matchedRec1);
       }
 
-      for (const auto& candidate2 : selectedDPlusCandidatesGroupedMc) {
+      for (auto candidate2 = candidate1 + 1; candidate2 != selectedDPlusCandidatesGroupedMc.end(); ++candidate2) {
         if (!kinematicCuts<decltype(candidate2), false>(candidate2)) {
-          continue;
-        }
-        // avoid double counting
-        if (candidate1.mRowIndex >= candidate2.mRowIndex) {
           continue;
         }
 
@@ -643,6 +676,10 @@ struct HfCorrelatorDMesonPairs {
         auto innerSecondTrack = candidate2.prong1();
         if (innerSecondTrack.sign() == 1) {
           innerParticleSign = -1; // Dminus (second daughter track is positive)
+        }
+        bool isSignalDPlusCand2 = std::abs(hfHelper.invMassDplusToPiKPi(candidate2) - MassDPlus) < massCut;
+        if (selectSignalRegionOnly && !isSignalDPlusCand2) {
+          continue;
         }
 
         uint candidateType2 = assignCandidateTypeDPlus<decltype(candidate2), true>(candidate2, innerParticleSign);

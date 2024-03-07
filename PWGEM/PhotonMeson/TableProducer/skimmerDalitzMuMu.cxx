@@ -46,6 +46,10 @@ struct skimmerDalitzMuMu {
   Produces<o2::aod::EMReducedEventsNmumu> event_nmumu;
 
   // Configurables
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
+  Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
+
   Configurable<float> maxMmumu{"maxMmumu", 1.1, "max. mmumu to store mumu pairs"};
   Configurable<bool> storeLS{"storeLS", false, "flag to store LS pairs"};
   Configurable<float> minpt{"minpt", 0.05, "min pt for track"};
@@ -169,6 +173,12 @@ struct skimmerDalitzMuMu {
   void process(MyCollisions const& collisions, MyTracks const& tracks)
   {
     for (auto& collision : collisions) {
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        event_nmumu(0, 0, 0);
+        continue;
+      }
+
       auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimarymuon::emreducedeventId, collision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimarymuon::emreducedeventId, collision.globalIndex(), cache);
 

@@ -711,17 +711,17 @@ struct DptDptCorrelationsTask {
     }
 
     /* self configure the binning */
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmax", zvtxup);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTbins", ptbins);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmin", ptlow);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmax", ptup);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibins", phibins);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibinshift", phibinshift);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmax", zvtxup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTbins", ptbins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmin", ptlow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmax", ptup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibins", phibins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibinshift", phibinshift, false);
     philow = 0.0f;
     phiup = constants::math::TwoPI;
     processpairs = cfgProcessPairs.value;
@@ -772,8 +772,8 @@ struct DptDptCorrelationsTask {
         auto includeIt = [&pidselector, &initContext](int spid, auto name) {
           bool mUseIt = false;
           bool mExcludeIt = false;
-          if (getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mUseIt", name.c_str()).Data(), mUseIt) &&
-              getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mExclude", name.c_str()).Data(), mExcludeIt)) {
+          if (getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mUseIt", name.c_str()).Data(), mUseIt, false) &&
+              getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mExclude", name.c_str()).Data(), mExcludeIt, false)) {
             if (mUseIt && !mExcludeIt) {
               auto cfg = new o2::analysis::TrackSelectionPIDCfg();
               cfg->mUseIt = true;
@@ -810,7 +810,7 @@ struct DptDptCorrelationsTask {
 
       /* self configure the centrality/multiplicity ranges */
       std::string centspec;
-      if (getTaskOptionValue(initContext, "dpt-dpt-filter", "centralities", centspec)) {
+      if (getTaskOptionValue(initContext, "dpt-dpt-filter", "centralities", centspec, false)) {
         LOGF(info, "Got the centralities specification: %s", centspec.c_str());
         auto tokens = TString(centspec.c_str()).Tokenize(",");
         ncmranges = tokens->GetEntries();
