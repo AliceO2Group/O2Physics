@@ -945,7 +945,7 @@ void VarManager::FillMuonPDca(const T& muon, const C& collision, float* values)
     float dcaX = (propmuonAtDCA.getX() - collision.posX());
     float dcaY = (propmuonAtDCA.getY() - collision.posY());
     float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
-    values[kMuonPDca] = propmuon.getP() * dcaXY;
+    values[kMuonPDca] = muon.p() * dcaXY;
   }
 }
 
