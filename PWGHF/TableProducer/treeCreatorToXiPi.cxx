@@ -402,10 +402,7 @@ struct HfTreeCreatorToXiPi {
                        soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling total number of collisions processed
-    int64_t collCounter = 0;
-    for (const auto& collision : collisions) {
-      ++collCounter;
-    }
+    int64_t collCounter = collisions.size();
     rowEv(collCounter);
 
     // Filling candidate properties
@@ -420,10 +417,7 @@ struct HfTreeCreatorToXiPi {
                      soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
     // Filling total number of collisions processed
-    int64_t collCounter = 0;
-    for (const auto& collision : collisions) {
-      ++collCounter;
-    }
+    int64_t collCounter = collisions.size();
     rowEv(collCounter);
 
     // Filling candidate properties
@@ -438,10 +432,7 @@ struct HfTreeCreatorToXiPi {
                        soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling total number of collisions processed
-    int64_t collCounter = 0;
-    for (const auto& collision : collisions) {
-      ++collCounter;
-    }
+    int64_t collCounter = collisions.size();
     rowEv(collCounter);
 
     // Filling candidate properties
@@ -456,10 +447,7 @@ struct HfTreeCreatorToXiPi {
                      soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
     // Filling total number of collisions processed
-    int64_t collCounter = 0;
-    for (const auto& collision : collisions) {
-      ++collCounter;
-    }
+    int64_t collCounter = collisions.size();
     rowEv(collCounter);
 
     // Filling candidate properties
