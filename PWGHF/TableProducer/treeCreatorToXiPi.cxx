@@ -30,8 +30,11 @@ namespace o2::aod
 {
 namespace full
 {
+// collision info
+DECLARE_SOA_COLUMN(NewEvent, newEvent, bool);
+DECLARE_SOA_COLUMN(IsEventSel8, isEventSel8, bool);
+DECLARE_SOA_COLUMN(IsEventSelZ, isEventSelZ, bool);
 // from creator
-DECLARE_SOA_COLUMN(CollisionCounter, collisionCounter, int);
 DECLARE_SOA_COLUMN(XPv, xPv, float);
 DECLARE_SOA_COLUMN(YPv, yPv, float);
 DECLARE_SOA_COLUMN(ZPv, zPv, float);
@@ -141,7 +144,7 @@ DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiEv, "AOD", "HFTOXIPIEV",
-                  full::CollisionCounter);
+                  full::NewEvent, full::IsEventSel8, full::IsEventSelZ);
 
 DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
@@ -193,7 +196,7 @@ DECLARE_SOA_TABLE(HfToXiPiLite, "AOD", "HFTOXIPILITE",
                   full::EtaV0PosDau, full::EtaV0NegDau, full::EtaPiFromCasc, full::EtaPiFromCharmBaryon,
                   full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau,
                   full::DcaCascDau, full::DcaV0Dau, full::DcaCharmBaryonDau,
-                  full::ErrorDecayLengthCharmBaryon,
+                  full::ErrorDecayLengthCharmBaryon, full::NormImpParCascade, full::NormImpParPiFromCharmBar,
                   full::IsPionGlbTrkWoDca, full::PionItsNCls,
                   full::PidTpcInfoStored, full::PidTofInfoStored,
                   full::TpcNSigmaPiFromCharmBaryon, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
@@ -209,10 +212,25 @@ struct HfTreeCreatorToXiPi {
   Produces<o2::aod::HfToXiPiLite> rowCandidateLite;
   Produces<o2::aod::HfToXiPiEv> rowEv;
 
+  Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
+
   using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
+  using MyEventTable = soa::Join<aod::Collisions, aod::EvSels>;
 
   void init(InitContext const&)
   {
+  }
+
+  template <class TMyEvents, typename T>
+  void fillEvent(const T& collision, float cutZPv, const bool& newEvent, bool& isEvSel8, bool& isEventZSel)
+  {
+    if(collision.sel8()){
+      isEvSel8 = true;
+    }
+    if(std::abs(collision.posZ()) < cutZPv){
+      isEventZSel = true;
+    }
+    rowEv(newEvent, isEvSel8, isEventZSel);
   }
 
   template <class TMyTracks, typename T>
@@ -380,6 +398,8 @@ struct HfTreeCreatorToXiPi {
         candidate.dcaV0Dau(),
         candidate.dcaCharmBaryonDau(),
         candidate.errorDecayLengthCharmBaryon(),
+        candidate.impactParCascXY() / candidate.errImpactParCascXY(),
+        candidate.impactParPiFromCharmBaryonXY() / candidate.errImpactParPiFromCharmBaryonXY(),
         candidate.template piFromCharmBaryon_as<TMyTracks>().isGlobalTrackWoDCA(),
         candidate.template piFromCharmBaryon_as<TMyTracks>().itsNCls(),
         candidate.pidTpcInfoStored(),
@@ -398,12 +418,19 @@ struct HfTreeCreatorToXiPi {
     }
   }
 
-  void processDataFull(aod::Collisions const& collisions, MyTrackTable const&,
+  void processDataFull(MyEventTable const& collisions, MyTrackTable const&,
                        soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
-    // Filling total number of collisions processed
-    int collCounter = collisions.size();
-    rowEv(collCounter);
+    // Filling event properties
+    bool newEvent = true;
+    bool isEvSel8 = false;
+    bool isEventZSel = false;
+    rowEv.reserve(collisions.size());
+    for(const auto& collision : collisions){
+      isEvSel8 = false;
+      isEventZSel = false;
+      fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel)
+    }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
@@ -413,12 +440,19 @@ struct HfTreeCreatorToXiPi {
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataFull, "Process data with full information", true);
 
-  void processMcFull(aod::Collisions const& collisions, MyTrackTable const&,
+  void processMcFull(MyEventTable const& collisions, MyTrackTable const&,
                      soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
-    // Filling total number of collisions processed
-    int collCounter = collisions.size();
-    rowEv(collCounter);
+    // Filling event properties
+    bool newEvent = true;
+    bool isEvSel8 = false;
+    bool isEventZSel = false;
+    rowEv.reserve(collisions.size());
+    for(const auto& collision : collisions){
+      isEvSel8 = false;
+      isEventZSel = false;
+      fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel)
+    }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
@@ -428,12 +462,19 @@ struct HfTreeCreatorToXiPi {
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcFull, "Process MC with full information", false);
 
-  void processDataLite(aod::Collisions const& collisions, MyTrackTable const&,
+  void processDataLite(MyEventTable const& collisions, MyTrackTable const&,
                        soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
-    // Filling total number of collisions processed
-    int collCounter = collisions.size();
-    rowEv(collCounter);
+    // Filling event properties
+    bool newEvent = true;
+    bool isEvSel8 = false;
+    bool isEventZSel = false;
+    rowEv.reserve(collisions.size());
+    for(const auto& collision : collisions){
+      isEvSel8 = false;
+      isEventZSel = false;
+      fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel)
+    }
 
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
@@ -443,12 +484,19 @@ struct HfTreeCreatorToXiPi {
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataLite, "Process data and produce lite table version", false);
 
-  void processMcLite(aod::Collisions const& collisions, MyTrackTable const&,
+  void processMcLite(MyEventTable const& collisions, MyTrackTable const&,
                      soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
-    // Filling total number of collisions processed
-    int collCounter = collisions.size();
-    rowEv(collCounter);
+    // Filling event properties
+    bool newEvent = true;
+    bool isEvSel8 = false;
+    bool isEventZSel = false;
+    rowEv.reserve(collisions.size());
+    for(const auto& collision : collisions){
+      isEvSel8 = false;
+      isEventZSel = false;
+      fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel)
+    }
 
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
