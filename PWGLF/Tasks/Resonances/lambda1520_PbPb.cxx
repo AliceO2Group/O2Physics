@@ -451,7 +451,6 @@ struct lambdaAnalysis_pb {
       }
 
       if constexpr (mix) {
-        //	 LOGF(info, "eork 5");
         if (trkPr.sign() * trkKa.sign() < 0) {
           if (trkPr.sign() > 0)
             histos.fill(HIST("Analysis/h4d_lstar_invm_US_PM_mix"), _M, _pt, mult);
