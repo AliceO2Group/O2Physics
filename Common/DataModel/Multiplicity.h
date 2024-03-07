@@ -53,7 +53,7 @@ DECLARE_SOA_COLUMN(MultMCNParticlesEta08, multMCNParticlesEta08, int); //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta05, multMCNParticlesEta05, int); //!
 
 // complementary / MultsExtra table
-DECLARE_SOA_COLUMN(MultPVTotalContributors, multPVTotalContributors, int); //!
+DECLARE_SOA_COLUMN(MultPVTotalContributors, multPVTotalContributors, int);   //!
 DECLARE_SOA_COLUMN(MultPVChi2, multPVChi2, float);                           //!
 DECLARE_SOA_COLUMN(MultCollisionTimeRes, multCollisionTimeRes, float);       //!
 DECLARE_SOA_COLUMN(MultRunNumber, multRunNumber, int);                       //!
@@ -69,7 +69,7 @@ DECLARE_SOA_COLUMN(MultNTracksHasTRD, multNTracksHasTRD, int); //!
 DECLARE_SOA_COLUMN(MultNTracksITSOnly, multNTracksITSOnly, int); //!
 DECLARE_SOA_COLUMN(MultNTracksTPCOnly, multNTracksTPCOnly, int); //!
 DECLARE_SOA_COLUMN(MultNTracksITSTPC, multNTracksITSTPC, int);   //!
-DECLARE_SOA_COLUMN(MultAllTracksTPCOnly, multAllTracksTPCOnly, int);   //!
+DECLARE_SOA_COLUMN(MultAllTracksTPCOnly, multAllTracksTPCOnly, int); //!
 DECLARE_SOA_COLUMN(MultAllTracksITSTPC, multAllTracksITSTPC, int);   //!
 
 DECLARE_SOA_COLUMN(BCNumber, bcNumber, int); //!
@@ -104,7 +104,7 @@ using Mult = Mults::iterator;
 DECLARE_SOA_TABLE(MultsExtra, "AOD", "MULTEXTRA", //!
                   mult::MultPVTotalContributors, mult::MultPVChi2, mult::MultCollisionTimeRes, mult::MultRunNumber, mult::MultPVz, mult::MultSel8,
                   mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
-                  mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC, 
+                  mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC,
                   mult::MultAllTracksTPCOnly, mult::MultAllTracksITSTPC,
                   mult::BCNumber);
 DECLARE_SOA_TABLE(MultSelections, "AOD", "MULTSELECTIONS", //!

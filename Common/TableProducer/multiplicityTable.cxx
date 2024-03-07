@@ -455,22 +455,22 @@ struct MultiplicityTableTaskIndexed {
                 nHasTRD++;
             };
 
-            int nAllTracksTPCOnly = 0; 
-            int nAllTracksITSTPC = 0; 
+            int nAllTracksTPCOnly = 0;
+            int nAllTracksITSTPC = 0;
             for (auto track : pvAllContribsGrouped) {
               if (track.hasITS()) {
                 nAllTracksITSTPC++;
-              }else{
+              } else {
                 nAllTracksTPCOnly++;
               }
             };
 
             int bcNumber = bc.globalBC() % 3564;
 
-            tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(), 
-            mRunNumber, collision.posZ(), collision.sel8(), 
-            nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC, 
-            nAllTracksTPCOnly, nAllTracksITSTPC, bcNumber);
+            tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(),
+                       mRunNumber, collision.posZ(), collision.sel8(),
+                       nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC,
+                       nAllTracksTPCOnly, nAllTracksITSTPC, bcNumber);
           } break;
           case kMultSelections: // Z equalized
           {
