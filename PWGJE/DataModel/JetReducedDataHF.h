@@ -34,22 +34,22 @@ DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 } // namespace jd0indices
 
-DECLARE_SOA_TABLE(JD0Ids, "AOD1", "JD0ID",
+DECLARE_SOA_TABLE(JD0Ids, "AOD", "JD0ID",
                   jd0indices::JCollisionId,
                   jd0indices::Prong0Id,
                   jd0indices::Prong1Id);
 
-DECLARE_SOA_TABLE(StoredJD0Ids, "AOD", "JD0ID",
+DECLARE_SOA_TABLE(StoredJD0Ids, "AOD1", "JD0ID",
                   jd0indices::JCollisionId,
                   jd0indices::Prong0Id,
                   jd0indices::Prong1Id,
                   o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE(JD0PIds, "AOD1", "JD0PID",
+DECLARE_SOA_TABLE(JD0PIds, "AOD", "JD0PID",
                   jd0indices::JMcCollisionId,
                   jd0indices::JMcParticleId);
 
-DECLARE_SOA_TABLE(StoredJD0PIds, "AOD", "JD0PID",
+DECLARE_SOA_TABLE(StoredJD0PIds, "AOD1", "JD0PID",
                   jd0indices::JMcCollisionId,
                   jd0indices::JMcParticleId,
                   o2::soa::Marker<1>);

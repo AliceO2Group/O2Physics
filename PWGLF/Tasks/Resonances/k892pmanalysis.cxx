@@ -335,23 +335,21 @@ struct k892pmanalysis {
         continue;
       bool pass1 = false;
       bool pass2 = false;
-      // Sanity check: looking for K*0 resonances for sanity check
+      /*// Sanity check: looking for K*0 resonances for sanity check
       if (abs(part.pdgCode()) == 323) {
         LOG(info) << "Found charged K*: " << part.pdgCode() << ". Daughters' PDG are " << part.daughterPDG1() << " and " << part.daughterPDG2();
       }
       if (abs(part.pdgCode()) == 313) {
         LOG(info) << "Found non-charged K*: " << part.pdgCode() << ". Daughters' PDG are " << part.daughterPDG1() << " and " << part.daughterPDG2();
-      }
+      }*/
 
       if (part.daughterPDG1() == 211 && part.daughterPDG2() == 310) { // One decay to K0s and the other to pi+ (K*(892)+ mother) - Particle pass
         pass1 = true;
         histos.fill(HIST("hK892pmCounter"), 0.5);
-        LOG(info) << "Found K*+ resonance, PDG code is\t" << part.pdgCode();
       }
       if (part.daughterPDG1() == -211 && part.daughterPDG2() == -310) { // One decay to AntiK0s and the other to pi- (K*(892)- mother) - Antiparticle pass
         pass2 = true;
         histos.fill(HIST("hK892pmCounter"), 1.5);
-        LOG(info) << "Found K*- resonance, PDG code is\t" << part.pdgCode();
       }
       /*if (abs(part.daughterPDG1()) == 211)
         histos.fill(HIST("hDaughterCounter"), 0.5);
@@ -375,14 +373,8 @@ struct k892pmanalysis {
     // auto V0sTuple = std::make_tuple(resov0s);
     BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
     Pair<aod::ResoCollisions, aod::ResoTracks, aod::ResoV0s, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksV0sTuple, &cache}; // -1 is the number of the bin to skip
-    int bin;
-    /*BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
-    Pair<EventCandidates, TrackCandidates, V0TrackCandidate, BinningTypeVertexContributor> pairs{binningOnPositions, cfgNoMixedEvents, -1, &cache};*/
 
     for (auto& [collision1, resotracks1, collision2, resov0s2] : pairs) {
-      bin = colBinning.getBin({collision1.posZ(), collision1.cent()});
-      LOG(info) << "PosZ = " << collision1.posZ() << "\tCent = " << collision1.cent() << "\t; Bin: " << bin;
-      LOG(info) << "Collision 1 global index: " << collision1.globalIndex() << "\tCollision 2 global index: " << collision2.globalIndex();
       fillHistograms<false, true>(collision1, resotracks1, resov0s2);
     }
   };

@@ -290,13 +290,13 @@ bool isDaughterTrack(T& track, U& candidate, V const& tracks)
 {
 
   if constexpr (isD0Candidate<U>()) {
-    if (candidate.template prong0_as<V>().globalIndex() == track.globalIndex() || candidate.template prong1_as<V>().globalIndex() == track.globalIndex()) {
+    if (candidate.prong0Id() == track.globalIndex() || candidate.prong1Id() == track.globalIndex()) {
       return true;
     } else {
       return false;
     }
   } else if constexpr (isLcCandidate<U>()) {
-    if (candidate.template prong0_as<V>().globalIndex() == track.globalIndex() || candidate.template prong1_as<V>().globalIndex() == track.globalIndex() || candidate.template prong2_as<V>().globalIndex() == track.globalIndex()) {
+    if (candidate.prong0Id() == track.globalIndex() || candidate.prong1Id() == track.globalIndex() || candidate.prong2Id() == track.globalIndex()) {
       return true;
     } else {
       return false;

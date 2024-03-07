@@ -71,6 +71,7 @@ enum CandidateType {
 // event rejection types
 enum EventRejection {
   Trigger = 0,
+  TimeFrameBorderCut,
   PositionX,
   PositionY,
   PositionZ,
@@ -114,9 +115,10 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   Configurable<int> nContribMin{"nContribMin", 0, "min. number of contributors to primary-vertex reconstruction"};
   Configurable<float> chi2Max{"chi2Max", 0., "max. chi^2 of primary-vertex reconstruction"};
   Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "trigger class"};
-  Configurable<bool> useSel8Trigger{"useSel8Trigger", false, "use sel8 trigger condition, for Run3 studies"};
+  Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "use sel8 trigger condition, for Run3 studies"};
   Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
+  Configurable<bool> useTimeFrameBorderCut{"useTimeFrameBorderCut", true, "use time-frame border cut in event selection"};
 
   ConfigurableAxis axisNumContributors{"axisNumContributors", {200, -0.5f, 199.5f}, "Number of PV contributors"};
 
@@ -139,6 +141,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
       labels[0] = "processed";
       labels[1] = "selected";
       labels[2 + EventRejection::Trigger] = "rej. trigger";
+      labels[2 + EventRejection::TimeFrameBorderCut] = "rej. time-frame border";
       labels[2 + EventRejection::PositionX] = "rej. #it{x}";
       labels[2 + EventRejection::PositionY] = "rej. #it{y}";
       labels[2 + EventRejection::PositionZ] = "rej. #it{z}";
@@ -229,6 +232,13 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
         SETBIT(statusCollision, EventRejection::Trigger);
         if (fillHistograms) {
           registry.fill(HIST("hEvents"), 3 + EventRejection::Trigger);
+        }
+      }
+
+      if (useTimeFrameBorderCut && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        SETBIT(statusCollision, EventRejection::TimeFrameBorderCut);
+        if (fillHistograms) {
+          registry.fill(HIST("hEvents"), 3 + EventRejection::TimeFrameBorderCut);
         }
       }
     }

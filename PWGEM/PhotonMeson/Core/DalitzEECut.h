@@ -38,6 +38,7 @@ class DalitzEECut : public TNamed
     kMee = 0,
     kPairPtRange,
     kPairEtaRange,
+    kPairDCARange,
     kPhiV,
     // track cut
     kTrackPtRange,
@@ -97,15 +98,28 @@ class DalitzEECut : public TNamed
         return false;
       }
     }
+
+    // apply pair DCA cut here, because leg info are required.
+    float dca_pos_3d = pos.dca3DinSigma();
+    float dca_ele_3d = ele.dca3DinSigma();
+    float dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
+
+    if (dca_ee_3d < mMinPairDCA3D || mMaxPairDCA3D < dca_ee_3d) { // in sigma for pair
+      return false;
+    }
+
     return true;
   }
 
-  bool IsSelectedPair(const float mass, const float phiv) const
+  bool IsSelectedPair(const float mass, const float dca_3d_pair, const float phiv) const
   {
     if (mass < mMinMee || mMaxMee < mass) {
       return false;
     }
-    if ((phiv < mMinPhivPair || (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(mass) : mMaxPhivPair) < phiv) ^ mSelectPC) {
+    if (mApplyPhiV && ((phiv < mMinPhivPair || (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(mass) : mMaxPhivPair) < phiv) ^ mSelectPC)) {
+      return false;
+    }
+    if (dca_3d_pair < mMinPairDCA3D || mMaxPairDCA3D < dca_3d_pair) { // in sigma for pair
       return false;
     }
     return true;
@@ -120,10 +134,13 @@ class DalitzEECut : public TNamed
     if (!IsSelectedPair(pair, DalitzEECuts::kPairEtaRange)) {
       return false;
     }
+    if (!IsSelectedPair(pair, DalitzEECuts::kPairDCARange)) {
+      return false;
+    }
     if (!IsSelectedPair(pair, DalitzEECuts::kMee)) {
       return false;
     }
-    if (!IsSelectedPair(pair, DalitzEECuts::kPhiV)) {
+    if (mApplyPhiV && !IsSelectedPair(pair, DalitzEECuts::kPhiV)) {
       return false;
     }
     return true;
@@ -316,6 +333,10 @@ class DalitzEECut : public TNamed
       case DalitzEECuts::kPairEtaRange:
         return pair.eta() >= mMinPairEta && pair.eta() <= mMaxPairEta;
 
+      case DalitzEECuts::kPairDCARange: {
+        return pair.eta() >= mMinPairEta && pair.eta() <= mMaxPairEta;
+      }
+
       case DalitzEECuts::kMee:
         return mMinMee <= pair.mass() && pair.mass() <= mMaxMee;
 
@@ -349,17 +370,9 @@ class DalitzEECut : public TNamed
       case DalitzEECuts::kTPCChi2NDF:
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
-      case DalitzEECuts::kDCA3Dsigma: {
-        float dca_3d = 999.f;
-        float det = track.cYY() * track.cZZ() - track.cZY() * track.cZY();
-        if (det < 0) {
-          dca_3d = 999.f;
-        } else {
-          float chi2 = (track.dcaXY() * track.dcaXY() * track.cZZ() + track.dcaZ() * track.dcaZ() * track.cYY() - 2. * track.dcaXY() * track.dcaZ() * track.cZY()) / det;
-          dca_3d = std::sqrt(std::abs(chi2) / 2.);
-        }
-        return mMinDca3D <= dca_3d && dca_3d <= mMaxDca3D; // in sigma for single leg
-      }
+      case DalitzEECuts::kDCA3Dsigma:
+        return mMinDca3D <= track.dca3DinSigma() && track.dca3DinSigma() <= mMaxDca3D; // in sigma for single leg
+
       case DalitzEECuts::kDCAxy:
         return abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
 
@@ -383,6 +396,7 @@ class DalitzEECut : public TNamed
   // Setters
   void SetPairPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetPairEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
+  void SetPairDCARange(float min = 0.f, float max = 1e10f); // 3D DCA in sigma
   void SetMeeRange(float min = 0.f, float max = 0.5);
   void SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut);
   void SelectPhotonConversion(bool flag);
@@ -417,6 +431,7 @@ class DalitzEECut : public TNamed
   void SetMaxDcaZ(float maxDcaZ);           // in cm
   void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
   void ApplyPrefilter(bool flag);
+  void ApplyPhiV(bool flag);
 
   // Getters
   bool IsPhotonConversionSelected() const { return mSelectPC; }
@@ -427,8 +442,9 @@ class DalitzEECut : public TNamed
  private:
   // pair cuts
   float mMinMee{0.f}, mMaxMee{1e10f};
-  float mMinPairPt{0.f}, mMaxPairPt{1e10f};      // range in pT
-  float mMinPairEta{-1e10f}, mMaxPairEta{1e10f}; // range in eta
+  float mMinPairPt{0.f}, mMaxPairPt{1e10f};       // range in pT
+  float mMinPairEta{-1e10f}, mMaxPairEta{1e10f};  // range in eta
+  float mMinPairDCA3D{0.f}, mMaxPairDCA3D{1e10f}; // range in 3D DCA in sigma
   float mMinPhivPair{0.f}, mMaxPhivPair{+3.2};
   std::function<float(float)> mMaxPhivPairMeeDep{}; // max phiv as a function of mee
   bool mSelectPC{false};                            // flag to select photon conversion used in mMaxPhivPairMeeDep
@@ -451,6 +467,7 @@ class DalitzEECut : public TNamed
   float mMaxDcaXY{1.0f};                        // max dca in xy plane
   float mMaxDcaZ{1.0f};                         // max dca in z direction
   std::function<float(float)> mMaxDcaXYPtDep{}; // max dca in xy plane as function of pT
+  bool mApplyPhiV{true};
   bool mApplyPF{false};
 
   // pid cuts

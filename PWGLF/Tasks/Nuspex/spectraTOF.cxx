@@ -82,6 +82,7 @@ struct tofSpectra {
   Configurable<float> minTPCNClsFound{"minTPCNClsFound", 0.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
   Configurable<bool> makeTHnSparseChoice{"makeTHnSparseChoice", false, "choose if produce thnsparse"}; // RD
   Configurable<bool> tpctofVsMult{"tpctofVsMult", false, "Produce TPC-TOF plots vs multiplicity"};
+  Configurable<bool> removeTFBorder{"removeTFBorder", false, "Remove TF border"};
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -770,6 +771,9 @@ struct tofSpectra {
       }
     }
     if (!collision.sel8()) {
+      return false;
+    }
+    if (removeTFBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
     if constexpr (fillHistograms) {
