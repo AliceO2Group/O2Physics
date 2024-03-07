@@ -207,7 +207,7 @@ DECLARE_SOA_TABLE(DplusHadronRecoInfo, "AOD", "DPLUSHRECOINFO", //! D+-Hadrons p
                   aod::hf_correlation_dplus_hadron::SignalStatus);
 
 
-// definition of columns and tables for Dplus properties
+// definition of columns and tables for Dstar properties
 // namespace hf_dstar_meson
 // {
 //   // DECLARE_SOA_COLUMN(PhiDstar, phiDstar, float);
@@ -279,7 +279,7 @@ DECLARE_SOA_TABLE(DstarHadronPair, "AOD","DSTRHPAIR", // D* Hadrons pairs Inform
                   hf_correlation_dstar_hadron::DeltaEta<hf_correlation_dstar_hadron::EtaDstar,hf_correlation_dstar_hadron::EtaTrack>
                   );
 
-// Tble for mc matched info
+// Table for mc matched info
 using RecoMatchingInfoDstars = HfCandDstarMcRec;
 using RecoMatchingInfoDstar = RecoMatchingInfoDstars::iterator;
 

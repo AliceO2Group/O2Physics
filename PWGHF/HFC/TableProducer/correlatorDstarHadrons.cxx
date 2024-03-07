@@ -120,6 +120,13 @@ struct HfCorrelatorDstarHadron{
                                                 aod::track::dcaZ >= dcazMinAssoTrack && aod::track::dcaZ <= dcazMaxAssoTrack;
     using FilteredTracks = soa::Filtered<aod::TracksWDca>;
 
+    HistogramRegistry registry{
+        "registry",
+        {
+            {"hTriggerColCandPairCounts","Counts of Trigger Collision, Trigger Candidates and Pair Counts",{HistType::kTH1F,{{3,0.0,3.0}}}}
+        }
+
+    };
 
     void init (InitContext&){
         binningScheme = {{binsZVtx, binsMultiplicity},true};
@@ -138,15 +145,18 @@ struct HfCorrelatorDstarHadron{
         
         
         for(const auto & collision: collisions){
+            registry.fill(HIST("hTriggerColCandPairCounts"),0); // counting trigger collision
+
             auto bc = collision.bc_as<aod::BCsWithTimestamps>();
             auto timestamp = bc.timestamp();
-
             auto candidatesPerCol = candidates.sliceByCached(aod::hf_cand::collisionId,collision.globalIndex(), cache);
             auto tracksPerCol = tracks.sliceByCached(aod::track::collisionId,collision.globalIndex(), cache);
 
             if(candidatesPerCol.size() && tracksPerCol.size() == 0){
                 continue;
             }//endif
+
+            registry.fill(HIST("hTriggerColCandPairCounts"),1); // counting number of trigger particle
 
             // Pair creation
             for(const auto & [triggerParticle, assocParticle]: soa::combinations(soa::CombinationsFullIndexPolicy(candidatesPerCol,tracksPerCol))){
@@ -166,6 +176,8 @@ struct HfCorrelatorDstarHadron{
                 if(std::abs(yDstar) > yMaxDstar){
                     continue;
                 }//endif
+
+                registry.fill(HIST("hTriggerColCandPairCounts"),2); // counting number of pairs
 
                 auto binNumber = binningScheme.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
 
@@ -233,7 +245,7 @@ struct HfCorrelatorDstarHadron{
                 int binNumber = binningScheme.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()));
                 // Fill table
                 if(triggerParticle.signSoftPi() > 0){ // Fill Dstar candidate
-                    rowsDstarHadronPair(collision.globalIndex(),
+                    rowsDstarHadronPair(c2.globalIndex(), // taking c2, why not c1?
                                     gItriggerParticle,
                                     triggerParticle.phi(),
                                     triggerParticle.eta(),
@@ -247,7 +259,7 @@ struct HfCorrelatorDstarHadron{
                                     binNumber
                                     );
                 }else { // Fill AntiDstar candidate
-                    rowsDstarHadronPair(collision.globalIndex(),
+                    rowsDstarHadronPair(c2.globalIndex(), 
                                     gItriggerParticle,
                                     triggerParticle.phi(),
                                     triggerParticle.eta(),
