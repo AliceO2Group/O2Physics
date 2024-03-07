@@ -40,6 +40,10 @@ struct HfPidCreator {
   static constexpr float defaultNSigmaTolerance = .1f;
   static constexpr float defaultNSigma = -999.f + defaultNSigmaTolerance; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
 
+  /// Function to check whether the process function flag matches the need for filling the table
+  /// \param initContext  workflow context (argument of the init function)
+  /// \param table  name of the table
+  /// \param doprocess  process function flag
   template <typename TSwitch>
   void checkTableSwitch(InitContext& initContext, const std::string& table, const TSwitch& doprocess)
   {
@@ -54,6 +58,7 @@ struct HfPidCreator {
 
   void init(InitContext& initContext)
   {
+    // Check whether the right process functions are enabled.
     checkTableSwitch(initContext, "TracksPidFullElS", doprocessFullEl);
     checkTableSwitch(initContext, "TracksPidTinyElS", doprocessTinyEl);
     checkTableSwitch(initContext, "TracksPidFullMuS", doprocessFullMu);
