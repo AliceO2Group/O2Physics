@@ -569,7 +569,7 @@ struct HfCorrelatorDsHadrons {
         hAssocTracks->Fill(kAssocTrackStepMcGen, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
         if (mcParticle.pt() > ptTrackMin && std::abs(mcParticle.eta()) < etaTrackMax) {
           hAssocTracks->Fill(kAssocTrackStepMcGenInAcceptance, mcParticle.eta(), mcParticle.pt(), multiplicity, posZ);
-          registry.fill(HIST("hPtParticleAssocMcGen"), track.pt());
+          registry.fill(HIST("hPtParticleAssocMcGen"), mcParticle.pt());
         }
       }
     }
