@@ -434,6 +434,7 @@ struct MultiplicityTableTaskIndexed {
             int nHasITS = 0, nHasTPC = 0, nHasTOF = 0, nHasTRD = 0;
             int nITSonly = 0, nTPConly = 0, nITSTPC = 0;
             const auto& pvAllContribsGrouped = pvAllContribTracksIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+            const auto& tpcTracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
             for (auto track : pvAllContribsGrouped) {
               if (track.hasITS()) {
@@ -454,9 +455,22 @@ struct MultiplicityTableTaskIndexed {
                 nHasTRD++;
             };
 
+            int nAllTracksTPCOnly = 0;
+            int nAllTracksITSTPC = 0;
+            for (auto track : pvAllContribsGrouped) {
+              if (track.hasITS()) {
+                nAllTracksITSTPC++;
+              } else {
+                nAllTracksTPCOnly++;
+              }
+            };
+
             int bcNumber = bc.globalBC() % 3564;
 
-            tableExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8(), nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC, bcNumber);
+            tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(),
+                       mRunNumber, collision.posZ(), collision.sel8(),
+                       nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC,
+                       nAllTracksTPCOnly, nAllTracksITSTPC, bcNumber);
           } break;
           case kMultSelections: // Z equalized
           {
