@@ -100,22 +100,11 @@ class DalitzEECut : public TNamed
     }
 
     // apply pair DCA cut here, because leg info are required.
-    float dca_3d_pair = 999.f;
-    float dca_3d_pos = 999.f;
-    float dca_3d_ele = 999.f;
-    float det_pos = pos.cYY() * pos.cZZ() - pos.cZY() * pos.cZY();
-    float det_ele = ele.cYY() * ele.cZZ() - ele.cZY() * ele.cZY();
-    if (det_pos < 0 || det_ele < 0) {
-      dca_3d_pair = 999.f, dca_3d_pos = 999.f, dca_3d_ele = 999.f;
-    } else {
-      float chi2_pos = (pos.dcaXY() * pos.dcaXY() * pos.cZZ() + pos.dcaZ() * pos.dcaZ() * pos.cYY() - 2. * pos.dcaXY() * pos.dcaZ() * pos.cZY()) / det_pos;
-      float chi2_ele = (ele.dcaXY() * ele.dcaXY() * ele.cZZ() + ele.dcaZ() * ele.dcaZ() * ele.cYY() - 2. * ele.dcaXY() * ele.dcaZ() * ele.cZY()) / det_ele;
-      dca_3d_pos = std::sqrt(std::abs(chi2_pos) / 2.);
-      dca_3d_ele = std::sqrt(std::abs(chi2_ele) / 2.);
-      dca_3d_pair = std::sqrt((dca_3d_pos * dca_3d_pos + dca_3d_ele * dca_3d_ele) / 2.);
-    }
+    float dca_pos_3d = pos.dca3DinSigma();
+    float dca_ele_3d = ele.dca3DinSigma();
+    float dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
 
-    if (dca_3d_pair < mMinPairDCA3D || mMaxPairDCA3D < dca_3d_pair) { // in sigma for pair
+    if (dca_ee_3d < mMinPairDCA3D || mMaxPairDCA3D < dca_ee_3d) { // in sigma for pair
       return false;
     }
 
@@ -381,17 +370,9 @@ class DalitzEECut : public TNamed
       case DalitzEECuts::kTPCChi2NDF:
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
-      case DalitzEECuts::kDCA3Dsigma: {
-        float dca_3d = 999.f;
-        float det = track.cYY() * track.cZZ() - track.cZY() * track.cZY();
-        if (det < 0) {
-          dca_3d = 999.f;
-        } else {
-          float chi2 = (track.dcaXY() * track.dcaXY() * track.cZZ() + track.dcaZ() * track.dcaZ() * track.cYY() - 2. * track.dcaXY() * track.dcaZ() * track.cZY()) / det;
-          dca_3d = std::sqrt(std::abs(chi2) / 2.);
-        }
-        return mMinDca3D <= dca_3d && dca_3d <= mMaxDca3D; // in sigma for single leg
-      }
+      case DalitzEECuts::kDCA3Dsigma:
+        return mMinDca3D <= track.dca3DinSigma() && track.dca3DinSigma() <= mMaxDca3D; // in sigma for single leg
+
       case DalitzEECuts::kDCAxy:
         return abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
 
