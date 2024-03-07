@@ -112,7 +112,7 @@ struct derivedlambdakzeroanalysis {
   Configurable<float> qaMinPt{"qaMinPt", 0.0f, "minimum pT for QA plots"};
   Configurable<float> qaMaxPt{"qaMaxPt", 1000.0f, "maximum pT for QA plots"};
   Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
-  
+
   // PID (TOF)
   Configurable<float> maxDeltaTimeProton{"maxDeltaTimeProton", 1e+9, "check maximum allowed time"};
   Configurable<float> maxDeltaTimePion{"maxDeltaTimePion", 1e+9, "check maximum allowed time"};
@@ -569,7 +569,7 @@ struct derivedlambdakzeroanalysis {
       bitset(bitMap, selTPCPIDNegativePion);
     if (fabs(negTrackExtra.tpcNSigmaPr()) < TpcPidNsigmaCut)
       bitset(bitMap, selTPCPIDNegativeProton);
-    
+
     // TOF PID
     // Positive track
     if (fabs(v0.posTOFDeltaTLaPr()) < maxDeltaTimeProton)
