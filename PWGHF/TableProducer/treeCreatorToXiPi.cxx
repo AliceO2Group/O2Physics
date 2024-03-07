@@ -224,10 +224,10 @@ struct HfTreeCreatorToXiPi {
   template <class TMyEvents, typename T>
   void fillEvent(const T& collision, float cutZPv, const bool& newEvent, bool& isEvSel8, bool& isEventZSel)
   {
-    if(collision.sel8()){
+    if (collision.sel8()) {
       isEvSel8 = true;
     }
-    if(std::abs(collision.posZ()) < cutZPv){
+    if (std::abs(collision.posZ()) < cutZPv) {
       isEventZSel = true;
     }
     rowEv(newEvent, isEvSel8, isEventZSel);
@@ -426,7 +426,7 @@ struct HfTreeCreatorToXiPi {
     bool isEvSel8 = false;
     bool isEventZSel = false;
     rowEv.reserve(collisions.size());
-    for(const auto& collision : collisions){
+    for (const auto& collision : collisions) {
       isEvSel8 = false;
       isEventZSel = false;
       fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel)
@@ -448,7 +448,7 @@ struct HfTreeCreatorToXiPi {
     bool isEvSel8 = false;
     bool isEventZSel = false;
     rowEv.reserve(collisions.size());
-    for(const auto& collision : collisions){
+    for (const auto& collision : collisions) {
       isEvSel8 = false;
       isEventZSel = false;
       fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel)
@@ -470,7 +470,7 @@ struct HfTreeCreatorToXiPi {
     bool isEvSel8 = false;
     bool isEventZSel = false;
     rowEv.reserve(collisions.size());
-    for(const auto& collision : collisions){
+    for (const auto& collision : collisions) {
       isEvSel8 = false;
       isEventZSel = false;
       fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel)
@@ -492,7 +492,7 @@ struct HfTreeCreatorToXiPi {
     bool isEvSel8 = false;
     bool isEventZSel = false;
     rowEv.reserve(collisions.size());
-    for(const auto& collision : collisions){
+    for (const auto& collision : collisions) {
       isEvSel8 = false;
       isEventZSel = false;
       fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel)
