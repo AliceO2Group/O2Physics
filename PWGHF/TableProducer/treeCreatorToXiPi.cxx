@@ -224,7 +224,7 @@ struct HfTreeCreatorToXiPi {
   template <class TMyEvents, typename T>
   void fillEvent(const T& collision, float cutZPv)
   {
-    rowEv(true, collision.sel8(), std::abs(collision.posZ()) < cutZPv); 
+    rowEv(true, collision.sel8(), std::abs(collision.posZ()) < cutZPv);
   }
 
   template <class TMyTracks, typename T>
