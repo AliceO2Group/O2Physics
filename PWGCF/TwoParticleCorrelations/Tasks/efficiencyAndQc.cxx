@@ -43,17 +43,6 @@ using namespace o2::framework::expressions;
 
 namespace efficiencyandqatask
 {
-// initialized during self configuration
-int ptbins = 0;
-float ptlow = 0.0f;
-float ptup = 0.0f;
-int etabins = 0;
-float etalow = 0.0f;
-float etaup = 0.0f;
-int zvtxbins = 0;
-float zvtxlow = 0.0f;
-float zvtxup = 0.0f;
-
 /// \enum KindOfProcessQA
 /// \brief The kind of processing for templating the procedures
 enum KindOfProcess {
@@ -93,6 +82,12 @@ struct QADataCollectingEngine {
   std::vector<std::vector<std::shared_ptr<TH1>>> fhPtA{2, {nsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaA{2, {nsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_ZvtxA{2, {nsp, nullptr}};
+  std::shared_ptr<TH2> fhPt_vs_EtaItsAcc{nullptr};
+  std::shared_ptr<TH2> fhPt_vs_EtaTpcAcc{nullptr};
+  std::shared_ptr<TH2> fhPt_vs_EtaItsTpcAcc{nullptr};
+  std::shared_ptr<TH2> fhPt_vs_EtaItsTofAcc{nullptr};
+  std::shared_ptr<TH2> fhPt_vs_EtaTpcTofAcc{nullptr};
+  std::shared_ptr<TH2> fhPt_vs_EtaItsTpcTofAcc{nullptr};
   std::vector<std::shared_ptr<TH2>> fhPt_vs_EtaItsA{nsp, nullptr};
   std::vector<std::shared_ptr<TH2>> fhPt_vs_EtaTpcA{nsp, nullptr};
   std::vector<std::shared_ptr<TH2>> fhPt_vs_EtaItsTpcA{nsp, nullptr};
@@ -138,6 +133,7 @@ struct QADataCollectingEngine {
   void init(HistogramRegistry& registry, const char* dirname)
   {
     using namespace efficiencyandqatask;
+    using namespace analysis::dptdptfilter;
 
     const AxisSpec ptAxis{ptbins, ptlow, ptup, "#it{p}_{T} (GeV/c)"};
     const AxisSpec etaAxis{etabins, etalow, etaup, "#eta"};
@@ -173,6 +169,13 @@ struct QADataCollectingEngine {
       fhTPC_CrossedRows_vs_PtB = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "Before"), "TPCXrows", "TPC crossed rows", kTH2F, {ptAxis, tpcNRowsAxis});
       fhTPC_CrossedRowsOverFindableCls_vs_PtB = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "Before"), "XRowsOverFindableCls", "TPC xrows over findable clusters", kTH2F, {ptAxis, tpcXRowsOverFindClsAxis});
       fhTPC_Chi2NCls_vs_PtB = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "Before"), "TPCChi2NCls", "TPC #Chi^{2}", kTH2F, {ptAxis, tpcCh2Axis});
+      /* efficiency histograms */
+      fhPt_vs_EtaItsAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptItsAcc", "ITS tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
+      fhPt_vs_EtaTpcAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptTpcAcc", "TPC tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
+      fhPt_vs_EtaItsTpcAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptItsTpcAcc", "ITS&TPC tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
+      fhPt_vs_EtaItsTofAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptItsTofAcc", "ITS&TOF tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
+      fhPt_vs_EtaTpcTofAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptTpcTofAcc", "TPC&TOF tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
+      fhPt_vs_EtaItsTpcTofAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptItsTpcTofAcc", "ITS&TPC&TOF tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
       for (uint isp = 0; isp < nsp; ++isp) {
         fhITS_NCls_vs_PtA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "After"), HNAMESTRING("ITSNCls_%s", tnames[isp].c_str()), HTITLESTRING("ITS clusters %s", tnames[isp].c_str()), kTH2F, {ptAxis, itsNClsAxis});
         fhITS_Chi2NCls_vs_PtA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "After"), HNAMESTRING("ITSChi2NCls_%s", tnames[isp].c_str()), HTITLESTRING("ITS #Chi^{2} %s", tnames[isp].c_str()), kTH2F, {ptAxis, itsCh2Axis});
@@ -254,6 +257,8 @@ struct QADataCollectingEngine {
   void processTrack(float zvtx, TrackObject const& track)
   {
     using namespace efficiencyandqatask;
+    using namespace analysis::dptdptfilter;
+    using namespace o2::aod::track;
 
     fhPtB[kind]->Fill(track.pt());
     fhPt_vs_EtaB[kind]->Fill(track.eta(), track.pt());
@@ -264,9 +269,14 @@ struct QADataCollectingEngine {
       fhPt_vs_ZvtxA[kind][track.trackacceptedid()]->Fill(zvtx, track.pt());
     }
     if constexpr (kind == kReco) {
-      bool hasits = track.hasITS();
-      bool hastpc = track.hasTPC();
-      bool hastof = track.hasTOF();
+      auto fillhisto = [&track](auto& h, bool cond) {
+        if (cond) {
+          h->Fill(track.eta(), track.pt());
+        }
+      };
+      bool hasits = track.hasITS() && ((track.trackCutFlag() & trackSelectionITS) == trackSelectionITS) && ((track.trackCutFlag() & trackSelectionDCA) == trackSelectionDCA);
+      bool hastpc = track.hasTPC() && ((track.trackCutFlag() & trackSelectionTPC) == trackSelectionTPC) && ((track.trackCutFlag() & trackSelectionDCA) == trackSelectionDCA);
+      bool hastof = track.hasTOF() && ((track.trackCutFlag() & trackSelectionDCA) == trackSelectionDCA);
 
       fhITS_NCls_vs_PtB->Fill(track.pt(), track.itsNCls());
       fhITS_Chi2NCls_vs_PtB->Fill(track.pt(), track.itsChi2NCl());
@@ -277,7 +287,15 @@ struct QADataCollectingEngine {
       fhTPC_CrossedRows_vs_PtB->Fill(track.pt(), track.tpcNClsCrossedRows());
       fhTPC_CrossedRowsOverFindableCls_vs_PtB->Fill(track.pt(), track.tpcCrossedRowsOverFindableCls());
       fhTPC_Chi2NCls_vs_PtB->Fill(track.pt(), track.tpcChi2NCl());
-
+      if (InTheAcceptance(track)) {
+        /* efficiency histograms */
+        fillhisto(fhPt_vs_EtaItsAcc, hasits);
+        fillhisto(fhPt_vs_EtaTpcAcc, hastpc);
+        fillhisto(fhPt_vs_EtaItsTpcAcc, hasits && hastpc);
+        fillhisto(fhPt_vs_EtaItsTofAcc, hasits && hastof);
+        fillhisto(fhPt_vs_EtaTpcTofAcc, hastpc && hastof);
+        fillhisto(fhPt_vs_EtaItsTpcTofAcc, hasits && hastpc && hastof);
+      }
       if (!(track.trackacceptedid() < 0)) {
         fhITS_NCls_vs_PtA[track.trackacceptedid()]->Fill(track.pt(), track.itsNCls());
         fhITS_Chi2NCls_vs_PtA[track.trackacceptedid()]->Fill(track.pt(), track.itsChi2NCl());
@@ -289,11 +307,6 @@ struct QADataCollectingEngine {
         fhTPC_CrossedRowsOverFindableCls_vs_PtA[track.trackacceptedid()]->Fill(track.pt(), track.tpcCrossedRowsOverFindableCls());
         fhTPC_Chi2NCls_vs_PtA[track.trackacceptedid()]->Fill(track.pt(), track.tpcChi2NCl());
         /* efficiency histograms */
-        auto fillhisto = [&track](auto& h, bool cond) {
-          if (cond) {
-            h->Fill(track.eta(), track.pt());
-          }
-        };
         fillhisto(fhPt_vs_EtaItsA[track.trackacceptedid()], hasits);
         fillhisto(fhPt_vs_EtaTpcA[track.trackacceptedid()], hastpc);
         fillhisto(fhPt_vs_EtaItsTpcA[track.trackacceptedid()], hasits && hastpc);
@@ -501,6 +514,7 @@ struct DptDptEfficiencyAndQc {
   void init(o2::framework::InitContext& initContext)
   {
     using namespace efficiencyandqatask;
+    using namespace analysis::dptdptfilter;
 
     /* do nothing if not active */
     if (!doprocessDetectorLevelNotStored && !doprocessDetectorLevelNotStoredNoPID && !doprocessGeneratorLevelNotStored && !doprocessReconstructedNotStored && !doprocessReconstructedNotStoredNoPID) {
@@ -675,7 +689,8 @@ struct DptDptEfficiencyAndQc {
 
   Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == uint8_t(true));
 
-  void processReconstructedNotStored(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision, soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, tpcPID, tofPID>& tracks)
+  void processReconstructedNotStored(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
+                                     soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::TrackSelection, tpcPID, tofPID>& tracks)
   {
     using namespace efficiencyandqatask;
 
@@ -684,7 +699,7 @@ struct DptDptEfficiencyAndQc {
   PROCESS_SWITCH(DptDptEfficiencyAndQc, processReconstructedNotStored, "Process reconstructed efficiency and QA for not stored derived data", false);
 
   void processDetectorLevelNotStored(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
-                                     soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, tpcPID, tofPID, aod::McTrackLabels>& tracks,
+                                     soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::TrackSelection, tpcPID, tofPID, aod::McTrackLabels>& tracks,
                                      soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo> const&)
   {
     using namespace efficiencyandqatask;
@@ -702,7 +717,8 @@ struct DptDptEfficiencyAndQc {
   }
   PROCESS_SWITCH(DptDptEfficiencyAndQc, processGeneratorLevelNotStored, "Process MC generator level efficiency and QA for not stored derived data", true);
 
-  void processReconstructedNotStoredNoPID(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision, soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo>& tracks)
+  void processReconstructedNotStoredNoPID(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
+                                          soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::TrackSelection>& tracks)
   {
     using namespace efficiencyandqatask;
 
@@ -711,7 +727,7 @@ struct DptDptEfficiencyAndQc {
   PROCESS_SWITCH(DptDptEfficiencyAndQc, processReconstructedNotStoredNoPID, "Process reconstructed efficiency and QA for not stored derived data", false);
 
   void processDetectorLevelNotStoredNoPID(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
-                                          soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::McTrackLabels>& tracks,
+                                          soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::TrackSelection, aod::McTrackLabels>& tracks,
                                           soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo> const&)
   {
     using namespace efficiencyandqatask;
