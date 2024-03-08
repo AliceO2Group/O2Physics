@@ -101,7 +101,7 @@ o2::framework::expressions::Node combineNSigma(const T1& tpcNSigma, const T1& to
 }
 } // namespace pid_tpc_tof_utils
 
-namespace pid_tpc_tof
+namespace pid_tpc_tof_full
 {
 // Combined TPC and TOF NSigma
 DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaEl, tpcTofNSigmaEl, //! Combined NSigma separation with the TPC & TOF detectors for electron
@@ -114,7 +114,7 @@ DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaKa, tpcTofNSigmaKa, //! Combined NSigm
                               float, pid_tpc_tof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaKa, o2::aod::pidtof::tofNSigmaKa));
 DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaPr, tpcTofNSigmaPr, //! Combined NSigma separation with the TPC & TOF detectors for proton
                               float, pid_tpc_tof_utils::combineNSigma(o2::aod::pidtpc::tpcNSigmaPr, o2::aod::pidtof::tofNSigmaPr));
-} // namespace pid_tpc_tof
+} // namespace pid_tpc_tof_full
 
 namespace pid_tpc_tof_tiny
 {
@@ -133,15 +133,15 @@ DECLARE_SOA_EXPRESSION_COLUMN(TpcTofNSigmaPr, tpcTofNSigmaPr, //! Combined binne
 
 // Extension of per particle tables
 DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidElExt, TracksPidEl, "PIDELEXT", //! Table of the TPC & TOF Combined NSigma for electron
-                                pid_tpc_tof::TpcTofNSigmaEl);
+                                pid_tpc_tof_full::TpcTofNSigmaEl);
 DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidMuExt, TracksPidMu, "PIDMUEXT", //! Table of the TPC & TOF Combined NSigma for muon
-                                pid_tpc_tof::TpcTofNSigmaMu);
+                                pid_tpc_tof_full::TpcTofNSigmaMu);
 DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidPiExt, TracksPidPi, "PIDPIEXT", //! Table of the TPC & TOF Combined NSigma for pion
-                                pid_tpc_tof::TpcTofNSigmaPi);
+                                pid_tpc_tof_full::TpcTofNSigmaPi);
 DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidKaExt, TracksPidKa, "PIDKAEXT", //! Table of the TPC & TOF Combined NSigma for kaon
-                                pid_tpc_tof::TpcTofNSigmaKa);
+                                pid_tpc_tof_full::TpcTofNSigmaKa);
 DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidPrExt, TracksPidPr, "PIDPREXT", //! Table of the TPC & TOF Combined NSigma for proton
-                                pid_tpc_tof::TpcTofNSigmaPr);
+                                pid_tpc_tof_full::TpcTofNSigmaPr);
 
 // Extension of tiny size tables
 DECLARE_SOA_EXTENDED_TABLE_USER(TracksPidTinyElExt, TracksPidTinyEl, "PIDTINYELEXT", //! Table of the TPC & TOF combined binned NSigma for electron
