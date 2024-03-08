@@ -209,7 +209,7 @@ DECLARE_SOA_TABLE(HfToXiPiLites, "AOD", "HFTOXIPILITE",
 struct HfTreeCreatorToXiPi {
 
   Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
-  Produces<o2::aod::HfToXiPiLite> rowCandidateLite;
+  Produces<o2::aod::HfToXiPiLites> rowCandidateLite;
   Produces<o2::aod::HfToXiPiEv> rowEv;
 
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
