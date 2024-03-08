@@ -16,11 +16,12 @@
 #ifndef PWGHF_UTILS_UTILSEVSELHF_H_
 #define PWGHF_UTILS_UTILSEVSELHF_H_
 
-/// @brief Function to apply the event selections for HF analyses
-/// \param collision the current collision that has to satisfy the selection criteria
-/// \param useSel8Trigger bool to activate the sel8() event selection
-/// \param maxPvPosZ maximum primary-vertex Z allowed
-/// \param useTimeFrameBorderCutbool to activate the TF border cut
+/// \brief Function to apply event selections in HF analyses
+/// \param collision collision that has to satisfy the selection criteria
+/// \param useSel8Trigger switch to activate the sel8() event selection
+/// \param zPvPosMax maximum primary-vertex z
+/// \param useTimeFrameBorderCut switch to activate the time frame border cut
+/// \return true if collision satisfies all criteria, false otherwise
 template <typename Coll>
 bool isHfCollisionSelected(const Coll& collision, bool useSel8Trigger, float maxPvPosZ, bool useTimeFrameBorderCut)
 {
