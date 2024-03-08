@@ -287,6 +287,7 @@ struct HfTaskLc {
       }
     }
   }
+  
   template <bool applyMl, typename CandType>
   void processData(aod::Collision const& collision, CandType const& candidates, aod::TracksWDca const& tracks)
   {
