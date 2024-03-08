@@ -31,7 +31,6 @@ namespace o2::aod
 namespace full
 {
 // collision info
-DECLARE_SOA_COLUMN(NewEvent, newEvent, bool);
 DECLARE_SOA_COLUMN(IsEventSel8, isEventSel8, bool);
 DECLARE_SOA_COLUMN(IsEventSelZ, isEventSelZ, bool);
 // from creator
@@ -144,7 +143,7 @@ DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 } // namespace full
 
 DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
-                  full::NewEvent, full::IsEventSel8, full::IsEventSelZ);
+                  full::IsEventSel8, full::IsEventSelZ);
 
 DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::XPv, full::YPv, full::ZPv, collision::NumContrib, collision::Chi2,
@@ -224,7 +223,7 @@ struct HfTreeCreatorToXiPi {
   template <class TMyEvents, typename T>
   void fillEvent(const T& collision, float cutZPv)
   {
-    rowEv(true, collision.sel8(), std::abs(collision.posZ()) < cutZPv); 
+    rowEv(collision.sel8(), std::abs(collision.posZ()) < cutZPv); 
   }
 
   template <class TMyTracks, typename T>
