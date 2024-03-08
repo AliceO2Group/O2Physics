@@ -48,7 +48,8 @@ struct HfTaskLc {
   ConfigurableAxis thnConfigAxisChi2PCA{"thnConfigAxisChi2PCA", {100, 0, 20}, ""};
   ConfigurableAxis thnConfigAxisDecLength{"thnConfigAxisDecLength", {10, 0, 0.05}, ""};
   ConfigurableAxis thnConfigAxisCPA{"thnConfigAxisCPA", {20, 0.8, 1}, ""};
-  ConfigurableAxis thnConfigAxisBdtScoreLc{"thnConfigAxisBdtScoreLc", {1000, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisBdtScoreLc{"thnConfigAxisBdtScoreBkg", {1000, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisBdtScoreLc{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisCanType{"thnConfigAxisCanType", {5, 0., 5.}, ""};
 
   HfHelper hfHelper;
@@ -274,9 +275,9 @@ struct HfTaskLc {
       const AxisSpec thnAxisChi2PCA{thnConfigAxisChi2PCA, "Chi2PCA to sec. vertex (cm)"};
       const AxisSpec thnAxisDecLength{thnConfigAxisDecLength, "decay length (cm)"};
       const AxisSpec thnAxisCPA{thnConfigAxisCPA, "cosine of pointing angle"};
-      const AxisSpec thnAxisBdtScoreLcBkg{thnConfigAxisBdtScoreLc, "BDT bkg score (Lc)"};
-      const AxisSpec thnAxisBdtScoreLcPrompt{thnConfigAxisBdtScoreLc, "BDT prompt score (Lc)"};
-      const AxisSpec thnAxisBdtScoreLcNonPrompt{thnConfigAxisBdtScoreLc, "BDT non-prompt score (Lc)"};
+      const AxisSpec thnAxisBdtScoreLcBkg{thnConfigAxisBdtScoreBkg, "BDT bkg score (Lc)"};
+      const AxisSpec thnAxisBdtScoreLcPrompt{thnConfigAxisBdtScoreSignal, "BDT prompt score (Lc)"};
+      const AxisSpec thnAxisBdtScoreLcNonPrompt{thnConfigAxisBdtScoreSignal, "BDT non-prompt score (Lc)"};
       const AxisSpec thnAxisCanType{thnConfigAxisCanType, "candidates type"};
 
       if (applyMl) {
