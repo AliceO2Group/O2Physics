@@ -75,6 +75,16 @@ namespace cascade_flow_cuts_ml
     10.};
   auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
+  static const std::vector<std::string> onnxBinsPt = {
+    "model_onnx0.6.onnx",
+    "model_onnx1.onnx",
+    "model_onnx2.onnx",
+    "model_onnx3.onnx",
+    "model_onnx4.onnx",
+    "model_onnx5.onnx",
+    "model_onnx6.onnx",
+    "model_onnx8.onnx"};
+
   // default values for the ML model paths, one model per pT bin
   static const std::vector<std::string> modelPaths = {
     ""};
@@ -125,7 +135,7 @@ struct cascadeFlow {
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
-  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{cascade_flow_cuts_ml::onnxBinsPt}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
