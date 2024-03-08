@@ -125,6 +125,7 @@ static constexpr double defaultCutsMl[1][2] = {{0.5, 0.5}};
 struct cascadeFlow {
 
   Configurable<bool> isOmega{"isOmega", 0, "Xi or Omega"};
+  Configurable<bool> isApplyML{"isApplyML", 1, ""};
   Configurable<double> sideBandStart{"sideBandStart", 5, "Start of the sideband region in number of sigmas"};
   Configurable<double> sideBandEnd{"sideBandEnd", 7, "End of the sideband region in number of sigmas"};
   Configurable<double> downsample{"downsample", 1., "Downsample training output tree"};
@@ -272,18 +273,20 @@ struct cascadeFlow {
     histos.add("hSignalScoreAfterSel", "Signal score after selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
     histos.add("hBkgScoreAfterSel", "Bkg score after selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
 
-    // Configure and initialise the ML class
-    mlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+    if (isApplyML){
+      // Configure and initialise the ML class
+      mlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
 
-    // Bonus: retrieve the model from CCDB (needed for ML application on the GRID)
-    if (loadModelsFromCCDB) {
-      ccdbApi.init(ccdbUrl);
-      mlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB.value, timestampCCDB);
-    } else {
-      mlResponse.setModelPathsLocal(onnxFileNames);
+      // Bonus: retrieve the model from CCDB (needed for ML application on the GRID)
+      if (loadModelsFromCCDB) {
+	ccdbApi.init(ccdbUrl);
+	mlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB.value, timestampCCDB);
+      } else {
+	mlResponse.setModelPathsLocal(onnxFileNames);
+      }
+
+      mlResponse.init();
     }
-
-    mlResponse.init();
   }
 
   void processTrainingBackground(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
@@ -422,26 +425,30 @@ struct cascadeFlow {
 	  casc.bachBaryonCosPA(),
 	  casc.bachBaryonDCAxyToPV()};
 
-      // Retrieve model output and selection outcome
-      isSelectedCasc = mlResponse.isSelectedMl(inputFeaturesCasc, casc.pt(), outputMl);
+      if (isApplyML){
+	// Retrieve model output and selection outcome
+	isSelectedCasc = mlResponse.isSelectedMl(inputFeaturesCasc, casc.pt(), outputMl);
 
-      // Fill BDT score histograms before selection
-      histos.fill(HIST("hSignalScoreBeforeSel"), outputMl[0]);
-      histos.fill(HIST("hBkgScoreBeforeSel"), outputMl[1]);
+	// Fill BDT score histograms before selection
+	histos.fill(HIST("hSignalScoreBeforeSel"), outputMl[0]);
+	histos.fill(HIST("hBkgScoreBeforeSel"), outputMl[1]);
 
-      // Fill histograms for selected candidates
-      float massCasc = casc.mXi();
-      if (isOmega) massCasc =   casc.mOmega();
-      if (isSelectedCasc) {
-        histos.fill(HIST("hMassAfterSel"), massCasc);
-        histos.fill(HIST("hSignalScoreAfterSel"), outputMl[0]);
-        histos.fill(HIST("hBkgScoreAfterSel"), outputMl[1]);
-        histos.fill(HIST("hMassAfterSelVsPt"), massCasc, casc.pt());
-        histos.fill(HIST("hPromptScoreAfterSelVsPt"), outputMl[0], casc.pt());
-        histos.fill(HIST("hBkgScoreAfterSelVsPt"), outputMl[1], casc.pt());
+	// Fill histograms for selected candidates
+	float massCasc = casc.mXi();
+	if (isOmega) massCasc =   casc.mOmega();
+	if (isSelectedCasc) {
+	  histos.fill(HIST("hMassAfterSel"), massCasc);
+	  histos.fill(HIST("hSignalScoreAfterSel"), outputMl[0]);
+	  histos.fill(HIST("hBkgScoreAfterSel"), outputMl[1]);
+	  histos.fill(HIST("hMassAfterSelVsPt"), massCasc, casc.pt());
+	  histos.fill(HIST("hPromptScoreAfterSelVsPt"), outputMl[0], casc.pt());
+	  histos.fill(HIST("hBkgScoreAfterSelVsPt"), outputMl[1], casc.pt());
+	}
+
+	outputMl.clear(); // not necessary in this case but for good measure
+      } else {
+	isSelectedCasc = true;
       }
-
-      outputMl.clear(); // not necessary in this case but for good measure
 
       cascphiVec = ROOT::Math::XYZVector(cos(2*casc.phi()), sin(2*casc.phi()), 0);
       auto v2A = cascphiVec.Dot(eventplaneVecT0A);
