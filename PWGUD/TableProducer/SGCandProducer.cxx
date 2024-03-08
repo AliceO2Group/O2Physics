@@ -153,22 +153,22 @@ struct SGCandProducer {
     auto newbc = bc;
 
     // obtain slice of compatible BCs
-   auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
-   auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, bc);
-   //auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, tracks);
+    auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
+    auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, bc);
+    // auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, tracks);
     int issgevent = isSGEvent.value;
-      if (isSGEvent.bc){
-    newbc = *(isSGEvent.bc);
-      }
-      else {
+    if (isSGEvent.bc) {
+      newbc = *(isSGEvent.bc);
+    } else {
       LOGF(info, "No Newbc %i", bc.globalBC());
-      }
+    }
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
     registry.get<TH1>(HIST("reco/Stat"))->Fill(issgevent + 1, 1.);
     if (issgevent <= 2) {
-  //    LOGF(info, "Current BC: %i, %i, %i", bc.globalBC(), newbc.globalBC(), issgevent);
-      if (sameCuts.minRgtrwTOF()){
-	      if (udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib()) < sameCuts.minRgtrwTOF()) return;
+      //    LOGF(info, "Current BC: %i, %i, %i", bc.globalBC(), newbc.globalBC(), issgevent);
+      if (sameCuts.minRgtrwTOF()) {
+        if (udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib()) < sameCuts.minRgtrwTOF())
+          return;
       }
       upchelpers::FITInfo fitInfo{};
       udhelpers::getFITinfo(fitInfo, newbc.globalBC(), bcs, ft0s, fv0as, fdds);
@@ -176,7 +176,7 @@ struct SGCandProducer {
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(),
                        collision.numContrib(), udhelpers::netCharge<true>(tracks),
-                       1.);//rtrwTOF); //omit the calculation to speed up the things while skimming
+                       1.); // rtrwTOF); //omit the calculation to speed up the things while skimming
       outputSGCollisions(issgevent);
       outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
                            fitInfo.triggerMaskFT0,
@@ -188,23 +188,24 @@ struct SGCandProducer {
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
       outputCollsLabels(collision.globalIndex());
       if (newbc.has_zdc()) {
-         auto zdc = newbc.zdc();
-         udZdcsReduced(outputCollisions.lastIndex(), zdc.timeZNA(), zdc.timeZNC(), zdc.energyCommonZNA(), zdc.energyCommonZNC());
-      }
-      else{
-         udZdcsReduced(outputCollisions.lastIndex(), -999, -999, -999, -999);
+        auto zdc = newbc.zdc();
+        udZdcsReduced(outputCollisions.lastIndex(), zdc.timeZNA(), zdc.timeZNC(), zdc.energyCommonZNA(), zdc.energyCommonZNC());
+      } else {
+        udZdcsReduced(outputCollisions.lastIndex(), -999, -999, -999, -999);
       }
       // update SGTracks tables
       for (auto& track : tracks) {
-	 if (track.isPVContributor() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
-	 //if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+        if (track.isPVContributor() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta())
+          updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+        // if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
       }
-      
+
       // update SGFwdTracks tables
-      if (sameCuts.withFwdTracks()){
-         for (auto& fwdtrack : fwdtracks) {
-           if (!sgSelector.FwdTrkSelector(fwdtrack)) updateUDFwdTrackTables(fwdtrack, bc.globalBC());
-         }
+      if (sameCuts.withFwdTracks()) {
+        for (auto& fwdtrack : fwdtracks) {
+          if (!sgSelector.FwdTrkSelector(fwdtrack))
+            updateUDFwdTrackTables(fwdtrack, bc.globalBC());
+        }
       }
     }
   }

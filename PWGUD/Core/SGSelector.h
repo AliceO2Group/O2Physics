@@ -20,62 +20,71 @@
 #include "PWGUD/Core/SGCutParHolder.h"
 #include <cmath>
 
-template<typename BC>
+template <typename BC>
 struct SelectionResult {
   int value; // The original integer return value
-  BC* bc; // Pointer to the BC object
+  BC* bc;    // Pointer to the BC object
 };
 
-class SGSelector {
-public:
-    SGSelector() : fPDG(TDatabasePDG::Instance()) {}
+class SGSelector
+{
+ public:
+  SGSelector() : fPDG(TDatabasePDG::Instance()) {}
 
-    template <typename CC, typename BCs, typename TCs, typename FWs>
-    int Print(SGCutParHolder diffCuts, CC& collision, BCs& bcRange, TCs& tracks, FWs& fwdtracks) {
-        LOGF(info, "Size of array %i", collision.size());
-        return 1;
+  template <typename CC, typename BCs, typename TCs, typename FWs>
+  int Print(SGCutParHolder diffCuts, CC& collision, BCs& bcRange, TCs& tracks, FWs& fwdtracks)
+  {
+    LOGF(info, "Size of array %i", collision.size());
+    return 1;
+  }
+
+  template <typename CC, typename BCs, typename BC>
+  SelectionResult<BC> IsSelected(SGCutParHolder diffCuts, CC& collision, BCs& bcRange, BC& oldbc)
+  {
+    //        LOGF(info, "Collision %f", collision.collisionTime());
+    //        LOGF(info, "Number of close BCs: %i", bcRange.size());
+    SelectionResult<BC> result;
+    auto newbc = oldbc;
+    bool gA = true, gC = true;
+    for (auto const& bc : bcRange) {
+      if (!udhelpers::cleanFITA(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
+        if (gA)
+          newbc = bc;
+        if (!gA && std::abs(static_cast<long long>(bc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<long long>(newbc.globalBC() - oldbc.globalBC())))
+          newbc = bc;
+        gA = false;
+      }
+      if (!udhelpers::cleanFITC(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
+        if (gC)
+          newbc = bc;
+        if (!gC && std::abs(static_cast<long long>(bc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<long long>(newbc.globalBC() - oldbc.globalBC())))
+          newbc = bc;
+        gC = false;
+      }
     }
-
-    template <typename CC, typename BCs, typename BC>
-    SelectionResult<BC> IsSelected(SGCutParHolder diffCuts, CC& collision, BCs& bcRange, BC& oldbc) {
-//        LOGF(info, "Collision %f", collision.collisionTime());
-//        LOGF(info, "Number of close BCs: %i", bcRange.size());
-	SelectionResult<BC> result;
-	auto newbc = oldbc;
-        bool gA = true, gC = true;
-        for (auto const& bc : bcRange) {
-            if (!udhelpers::cleanFITA(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
-		     if (gA) newbc = bc;
-		    if (!gA && std::abs(static_cast<long long>(bc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<long long>(newbc.globalBC()-oldbc.globalBC()))) newbc = bc;
-		    gA = false;
-	    } 
-            if (!udhelpers::cleanFITC(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
-		    if (gC) newbc = bc;
-		    if (!gC && std::abs(static_cast<long long>(bc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<long long>(newbc.globalBC()-oldbc.globalBC()))) newbc = bc;
-		    gC = false;
-	    }
-        }
-	result.bc = &newbc;
-        if (!gA && !gC){
-	       	result.value = 3;
-		return result;
-	}
-        //LOGF(info, "Old BC: %i, New BC: %i",oldbc.globalBC(), newbc.globalBC());
-        if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
-            result.value= 4;
-        }
-        result.value = gA && gC ? 2 : (gA ? 0 : 1);
-	return result;
-}
+    result.bc = &newbc;
+    if (!gA && !gC) {
+      result.value = 3;
+      return result;
+    }
+    // LOGF(info, "Old BC: %i, New BC: %i",oldbc.globalBC(), newbc.globalBC());
+    if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
+      result.value = 4;
+    }
+    result.value = gA && gC ? 2 : (gA ? 0 : 1);
+    return result;
+  }
   template <typename TFwdTrack>
-    int FwdTrkSelector(TFwdTrack const& fwdtrack) {
-    if (fwdtrack.trackType() == 0 || fwdtrack.trackType() == 3) return 1;
-    else return 0;        
-    }
+  int FwdTrkSelector(TFwdTrack const& fwdtrack)
+  {
+    if (fwdtrack.trackType() == 0 || fwdtrack.trackType() == 3)
+      return 1;
+    else
+      return 0;
+  }
 
-private:
-    TDatabasePDG* fPDG;
+ private:
+  TDatabasePDG* fPDG;
 };
 
 #endif // PWGUD_CORE_SGSELECTOR_H_
-
