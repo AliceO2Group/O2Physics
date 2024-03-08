@@ -32,7 +32,8 @@ using namespace o2::framework::expressions;
 
 enum DecayChannel { DplusToPiKPi = 0,
                     DsToKKPi,
-                    DsToPiKK };
+                    DsToPiKK,
+                    D0ToPiK };
 
 enum centralityEstimator { V0A = 0,
                            T0M,
@@ -52,6 +53,7 @@ struct HfTaskFlowCharmHadrons {
   Configurable<int> qvecDetector{"qvecDetector", 0, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5)"};
   Configurable<int> centDetector{"centDetector", 0, "Detector for centrality estimation (V0A: 0, T0M: 1, T0A: 2, T0C: 3"};
   Configurable<int> selectionFlag{"selectionFlag", 1, "Selection Flag for hadron (e.g. 1 for skimming, 3 for topo. and kine., 7 for PID)"};
+  Configurable<int> prongNum{"prongNum", 3, "Number of candidate's prong (For D0, set selectionFlag = 1 and prongNum = 2)"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
   Configurable<bool> saveEpResoHisto{"saveEpResoHisto", false, "Flag to save event plane resolution histogram"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indexes of BDT scores to be stored. Two indexes max."};
@@ -64,15 +66,19 @@ struct HfTaskFlowCharmHadrons {
   ConfigurableAxis thnConfigAxisScalarProd{"thnConfigAxisScalarProd", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisMlOne{"thnConfigAxisMlOne", {1000, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisMlTwo{"thnConfigAxisMlTwo", {1000, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisSelFlag{"thnConfigAxisSelFlag", {10, -1, 9}, ""};
 
   using CandDsDatawMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using CandDplusDatawMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
+  using CandD0DatawMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
+  using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
   using CollsWithQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 
   Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
   Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
+  Filter filterSelectD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
 
   Partition<CandDsData> selectedDsToKKPi = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag;
   Partition<CandDsData> selectedDsToPiKK = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
@@ -94,11 +100,12 @@ struct HfTaskFlowCharmHadrons {
     const AxisSpec thnAxisScalarProd{thnConfigAxisScalarProd, "SP"};
     const AxisSpec thnAxisMlOne{thnConfigAxisMlOne, "Bkg score"};
     const AxisSpec thnAxisMlTwo{thnConfigAxisMlTwo, "FD score"};
+    const AxisSpec thnAxisSelFlag{thnConfigAxisSelFlag, "Selection Flag"};
 
     if (storeMl) {
-      registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisCosNPhi, thnAxisCosDeltaPhi, thnAxisScalarProd, thnAxisMlOne, thnAxisMlTwo});
+      registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisCosNPhi, thnAxisCosDeltaPhi, thnAxisScalarProd, thnAxisMlOne, thnAxisMlTwo, thnAxisSelFlag});
     } else {
-      registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisCosNPhi, thnAxisCosDeltaPhi, thnAxisScalarProd});
+      registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisCosNPhi, thnAxisCosDeltaPhi, thnAxisScalarProd, thnAxisSelFlag});
     }
     registry.add("spReso/hSpResoFT0cFT0a", "hSpResoFT0cFT0a; centrality; Q_{FT0c} #bullet Q_{FT0a}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
     registry.add("spReso/hSpResoFT0cFV0a", "hSpResoFT0cFV0a; centrality; Q_{FT0c} #bullet Q_{FV0a}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
@@ -135,11 +142,13 @@ struct HfTaskFlowCharmHadrons {
   /// \param cand is the candidate
   /// \param tracksQx is the X component of the Q vector for the tracks
   /// \param tracksQy is the Y component of the Q vector for the tracks
-  template <typename T1>
+  /// \param DecayChannel
+template <int DecayChannel, typename T1>
   void getQvecDtracks(const T1& cand,
                       std::vector<float>& tracksQx,
                       std::vector<float>& tracksQy,
-                      float& ampl)
+                      float& ampl
+                      )
   {
     // TODO: add possibility to consider different weights for the tracks, at the moment only pT is considered;
     float pXtrack0 = cand.pxProng0();
@@ -150,17 +159,20 @@ struct HfTaskFlowCharmHadrons {
     float pYtrack1 = cand.pyProng1();
     float pTtrack1 = cand.ptProng1();
     float phiTrack1 = std::atan2(pYtrack1, pXtrack1);
-    float pXtrack2 = cand.pxProng2();
-    float pYtrack2 = cand.pyProng2();
-    float pTtrack2 = cand.ptProng2();
-    float phiTrack2 = std::atan2(pYtrack2, pXtrack2);
 
     tracksQx.push_back(cos(harmonic * phiTrack0) * pTtrack0 / ampl);
     tracksQy.push_back(sin(harmonic * phiTrack0) * pTtrack0 / ampl);
     tracksQx.push_back(cos(harmonic * phiTrack1) * pTtrack1 / ampl);
     tracksQy.push_back(sin(harmonic * phiTrack1) * pTtrack1 / ampl);
-    tracksQx.push_back(cos(harmonic * phiTrack2) * pTtrack2 / ampl);
-    tracksQy.push_back(sin(harmonic * phiTrack2) * pTtrack2 / ampl);
+
+    if constexpr (DecayChannel != DecayChannel::D0ToPiK){
+      float pXtrack2 = cand.pxProng2();
+      float pYtrack2 = cand.pyProng2();
+      float pTtrack2 = cand.ptProng2();
+      float phiTrack2 = std::atan2(pYtrack2, pXtrack2);
+      tracksQx.push_back(cos(harmonic * phiTrack2) * pTtrack2 / ampl);
+      tracksQy.push_back(sin(harmonic * phiTrack2) * pTtrack2 / ampl);
+    }
   }
 
   /// Compute the delta psi in the range [0, pi/harmonic]
@@ -188,18 +200,20 @@ struct HfTaskFlowCharmHadrons {
   /// \param sp is the scalar product
   /// \param evtPlReso is the event plane resolution
   /// \param outputMl are the ML scores
+  /// \param selectionFlag for D0, only 0 or1
   void fillThn(float& mass,
                float& pt,
                float& cent,
                float& cosNPhi,
                float& cosDeltaPhi,
                float& sp,
-               std::vector<float>& outputMl)
+               std::vector<float>& outputMl,
+               int selectionFlag)
   {
     if (storeMl) {
-      registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, cosNPhi, cosDeltaPhi, sp, outputMl[0], outputMl[1]);
+      registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, cosNPhi, cosDeltaPhi, sp, outputMl[0], outputMl[1], selectionFlag);
     } else {
-      registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, cosNPhi, cosDeltaPhi, sp);
+      registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, cosNPhi, cosDeltaPhi, sp, selectionFlag);
     }
   }
 
@@ -320,13 +334,22 @@ struct HfTaskFlowCharmHadrons {
 
       // If TPC is used for the SP estimation, the tracks of the hadron candidate must be removed from the TPC Q vector to avoid double counting
       if (qvecDetector == qvecEstimator::TPCNeg || qvecDetector == qvecEstimator::TPCPos) {
-        float ampl = amplQVec - 3.;
+        float ampl = amplQVec - float(prongNum);
         std::vector<float> tracksQx = {};
         std::vector<float> tracksQy = {};
-        getQvecDtracks(candidate, tracksQx, tracksQy, ampl);
-        for (unsigned int itrack = 0; itrack < 3; itrack++) {
-          xQVec -= tracksQx[itrack];
-          yQVec -= tracksQy[itrack];
+
+        if constexpr (DecayChannel == DecayChannel::D0ToPiK){
+          getQvecDtracks<DecayChannel>(candidate, tracksQx, tracksQy, ampl);
+            for (unsigned int itrack = 0; itrack < 2; itrack++) {
+              xQVec -= tracksQx[itrack];
+              yQVec -= tracksQy[itrack];
+            }
+          } else {
+          getQvecDtracks<DecayChannel>(candidate, tracksQx, tracksQy, ampl);
+          for (unsigned int itrack = 0; itrack < 3; itrack++) {
+              xQVec -= tracksQx[itrack];
+              yQVec -= tracksQy[itrack];
+            }
         }
       }
 
@@ -335,7 +358,31 @@ struct HfTaskFlowCharmHadrons {
       float scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
       float cosDeltaPhi = std::cos(harmonic * (phiCand - evtPl));
 
-      fillThn(massCand, ptCand, cent, cosNPhi, cosDeltaPhi, scalprodCand, outputMl);
+      if constexpr (std::is_same<T1, CandD0Data>::value || std::is_same<T1, CandD0DatawMl>::value) {
+        std::vector<float> outputMlD0 = {-999., -999.};
+        std::vector<float> outputMlD0bar = {-999., -999.};
+
+        if (candidate.isSelD0() >= selectionFlag) {
+          massCand = hfHelper.invMassD0ToPiK(candidate);
+          if constexpr (std::is_same<T1, CandD0DatawMl>::value) {
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+              outputMlD0[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
+          }
+          fillThn(massCand, ptCand, cent, cosNPhi, cosDeltaPhi, scalprodCand, outputMlD0, 0);
+        }
+        if (candidate.isSelD0bar() >= selectionFlag) {
+          massCand = hfHelper.invMassD0barToKPi(candidate);
+          if constexpr (std::is_same<T1, CandD0DatawMl>::value) {
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+              outputMlD0bar[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
+          }
+          fillThn(massCand, ptCand, cent, cosNPhi, cosDeltaPhi, scalprodCand, outputMlD0bar, 1);
+        }
+      } //TODO: Whether to put all the mass calculations here
+
+      if constexpr (DecayChannel != DecayChannel::D0ToPiK) {
+        fillThn(massCand, ptCand, cent, cosNPhi, cosDeltaPhi, scalprodCand, outputMl, selectionFlag);
+      }
     }
   }
 
@@ -372,6 +419,22 @@ struct HfTaskFlowCharmHadrons {
     runFlowAnalysis<DecayChannel::DplusToPiKPi, CandDplusData>(collision, candidatesDplus);
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplus, "Process Dplus candidates", true);
+
+  // D0 with ML
+  void processD0Ml(CollsWithQvecs::iterator const& collision,
+                      CandD0DatawMl const& candidatesD0)
+  {
+    runFlowAnalysis<DecayChannel::D0ToPiK, CandD0DatawMl>(collision, candidatesD0);
+  }
+  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processD0Ml, "Process D0 candidates with ML", false);
+
+  // D0 with rectangular cuts
+  void processD0(CollsWithQvecs::iterator const& collision,
+                    CandD0Data const& candidatesD0)
+  {
+    runFlowAnalysis<DecayChannel::D0ToPiK, CandD0Data>(collision, candidatesD0);
+  }
+  PROCESS_SWITCH(HfTaskFlowCharmHadrons, processD0, "Process D0 candidates", false);
 
   // Resolution
   void processResolution(CollsWithQvecs::iterator const& collision)
