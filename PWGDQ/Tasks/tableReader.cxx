@@ -1589,7 +1589,6 @@ struct AnalysisDileptonTrackTrack {
   constexpr static uint32_t fgDileptonFillMap = VarManager::ObjTypes::ReducedTrack | VarManager::ObjTypes::Pair; // fill map
 
   // use some values array to avoid mixing up the quantities
-  float* fValuesTrack;
   float* fValuesDitrack;
   float* fValuesQuadruplet;
   HistogramManager* fHistMan;
@@ -1605,7 +1604,6 @@ struct AnalysisDileptonTrackTrack {
 
   void init(o2::framework::InitContext& context)
   {
-    fValuesTrack = new float[VarManager::kNVars];
     fValuesDitrack = new float[VarManager::kNVars];
     fValuesQuadruplet = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
@@ -1647,8 +1645,6 @@ struct AnalysisDileptonTrackTrack {
   template <int TCandidateType, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
   void runDileptonTrackTrack(TEvent const& event, TTracks const& tracks, soa::Filtered<MyDielectronCandidates> const& dileptons)
   {
-    VarManager::ResetValues(0, VarManager::kNVars, fValuesTrack);
-    VarManager::FillEvent<TEventFillMap>(event, fValuesTrack);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesDitrack);
     VarManager::FillEvent<TEventFillMap>(event, fValuesDitrack);
     VarManager::ResetValues(0, VarManager::kNVars, fValuesQuadruplet);
