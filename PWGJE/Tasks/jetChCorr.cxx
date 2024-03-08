@@ -316,7 +316,6 @@ struct JetChCorr {
 		registry.fill(HIST("hr3_ch_d_lu"), log(1/rg),log(kt_p));
 	      }
 	    }
-
 	  
         }
       }
@@ -341,14 +340,14 @@ struct JetChCorr {
   {
     jetConstituents.clear();
 
-     int leadpt =0;
-    int n_leadpt =0;   
+    //int leadpt =0;
+    //int n_leadpt =0;   
     int nn=0;
     ch_mult = 0;// jet.size();
     ch_mult =  jet.tracksIds().size();
-    //  for (auto& jetConstituent : jet.template tracks_as<U>()) {
-      for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()){
-      fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
+    //for (auto& jetConstituent : jet.template tracks_as<U>()) {
+        for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()){
+	  fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
 
 
       //int tr = jetConstituent.globalIndex();
@@ -358,17 +357,17 @@ struct JetChCorr {
       TVector3 p_leading(jetConstituent.px(), jetConstituent.py(), jetConstituent.pz());
       
       if(nn==0){
-	leadpt =  p_leading.Perp();
+	//leadpt =  p_leading.Perp();
 	trackL = jetConstituent.globalIndex();
        	//ch_l = trackSel.sign();
-	ch_l = jetConstituent.sign();
-       	v1.SetXYZ(jetConstituent.px(), jetConstituent.py(), jetConstituent.pz());
+	ch_l = jetConstituent.sign();//signed1Pt();//pt();
+       	v1.SetXYZ(jetConstituent.pt(), jetConstituent.py(), jetConstituent.pz());
       }
       
       if(nn==1){
-	n_leadpt =  p_leading.Perp();
+	//n_leadpt =  p_leading.Perp();
 	n_trackL = jetConstituent.globalIndex();
-	ch_nl = jetConstituent.sign();
+	ch_nl = jetConstituent.pt();//signed1Pt();//pt();
 	v2.SetXYZ(jetConstituent.px(), jetConstituent.py(), jetConstituent.pz());
 
 	vR = v1 + v2; 
@@ -377,7 +376,7 @@ struct JetChCorr {
 	float kt_p  = v1.Perp(vR);
 	//	float th_p  = v1.Angle(v2);
 	//	cout<<z<< " "<<fT<<"  "<<kt_p<<"  "<<th_p<<endl;
-	
+	cout<<ch_l<<"  "<<ch_nl<<endl;
 	if(ch_l == ch_nl) {
 	  registry.fill(HIST("h_ch_s_pt"), jet.pt());
 	  registry.fill(HIST("h_ch_s_kt"), kt_p);
