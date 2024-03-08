@@ -190,7 +190,7 @@ o2physics_add_dpl_workflow(cascqaanalysis
 
 o2physics_add_dpl_workflow(cascadeflow
                     SOURCES cascadeflow.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 # Spectra

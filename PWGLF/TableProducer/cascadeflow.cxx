@@ -27,7 +27,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "Tools/ML/MlResponse.h"
-#include "PWGHF/Core/HfHelper.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -52,10 +51,70 @@ static const std::vector<std::string> massSigmaParameterNames{"p0", "p1", "p2", 
 static const std::vector<std::string> speciesNames{"Xi", "Omega"};
 } // namespace cascadev2
 
+namespace cascade_flow_cuts_ml
+{
+  // direction of the cut
+  enum CutDirection {
+    CutGreater = 0, // require score < cut value
+    CutSmaller,     // require score > cut value
+    CutNot          // do not cut on score
+  };
+
+  static constexpr int nBinsPt = 8;
+  static constexpr int nCutScores = 2;
+  // default values for the pT bin edges, offset by 1 from the bin numbers in cuts array
+  constexpr double binsPt[nBinsPt + 1] = {
+    0.6,
+    1.,
+    2.,
+    3.,
+    4.,
+    5.,
+    6.,
+    8.,
+    10.};
+  auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
+
+  // default values for the ML model paths, one model per pT bin
+  static const std::vector<std::string> modelPaths = {
+    ""};
+
+  // default values for the cut directions
+  constexpr int cutDir[nCutScores] = {CutGreater, CutNot};
+  auto vecCutDir = std::vector<int>{cutDir, cutDir + nCutScores};
+
+  // default values for the cuts
+  constexpr double cuts[nBinsPt][nCutScores] = {
+    {0.5, 0.5},
+    {0.5, 0.5},
+    {0.5, 0.5},
+    {0.5, 0.5},
+    {0.5, 0.5},
+    {0.5, 0.5},
+    {0.5, 0.5},
+    {0.5, 0.5}};
+
+  // row labels
+  static const std::vector<std::string> labelsPt = {
+    "pT bin 0",
+    "pT bin 1",
+    "pT bin 2",
+    "pT bin 3",
+    "pT bin 4",
+    "pT bin 5",
+    "pT bin 6",
+    "pT bin 7"};
+
+  // column labels
+  static const std::vector<std::string> labelsCutScore = {"score class 1", "score class 2"};
+  static const std::vector<std::string> labelsDmesCutScore = {"ML score signal", "ML score bkg"};
+} // namespace cascade_flow_cuts_ml
+
 static constexpr double defaultCutsMl[1][2] = {{0.5, 0.5}};
 
 struct cascadeFlow {
 
+  Configurable<bool> isOmega{"isOmega", 0, "Xi or Omega"};
   Configurable<double> sideBandStart{"sideBandStart", 5, "Start of the sideband region in number of sigmas"};
   Configurable<double> sideBandEnd{"sideBandEnd", 7, "End of the sideband region in number of sigmas"};
   Configurable<double> downsample{"downsample", 1., "Downsample training output tree"};
@@ -63,16 +122,21 @@ struct cascadeFlow {
   Configurable<float> nsigmatpcPr{"nsigmatpcPr", 5, "nsigmatpcPr"};
   Configurable<float> nsigmatpcPi{"nsigmatpcPi", 5, "nsigmatpcPi"};
   Configurable<float> mintpccrrows{"mintpccrrows", 3, "mintpccrrows"};
-  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
-  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> modelPathsCCDB{"modelPathsCCDB", "Users/c/chdemart/CascadesFlow", "Path on CCDB"};
-  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
-  Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{0.6, 10.}, "pT bin limits for ML application"};
-  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{cuts_ml::CutSmaller, cuts_ml::CutNot}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {defaultCutsMl[0], 1, 3, {"pT bin 0"}, {"score signal", "score bkg"}}, "ML selections per pT bin"};
-  Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)2, "Number of classes in ML model"};
 
-  HfHelper hfHelper;
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+
+  // ML inference
+  Configurable<bool> applyMl{"applyMl", true, "Flag to apply ML selections"};
+  Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{cascade_flow_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
+  Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{cascade_flow_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {cascade_flow_cuts_ml::cuts[0], cascade_flow_cuts_ml::nBinsPt, cascade_flow_cuts_ml::nCutScores, cascade_flow_cuts_ml::labelsPt, cascade_flow_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)cascade_flow_cuts_ml::nCutScores, "Number of classes in ML model"};
+  //  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+
   o2::ccdb::CcdbApi ccdbApi;
 
   // Add objects needed for ML inference
@@ -171,7 +235,12 @@ struct cascadeFlow {
   void init(InitContext const&)
   {
 
+    float MinMass = 1.28;
+    if (isOmega) MinMass = 1.6;
+    float MaxMass = 1.36;
+    if (isOmega) MaxMass = 1.73;
     ConfigurableAxis vertexZ{"vertexZ", {20, -10, 10}, "vertex axis for histograms"};
+    ConfigurableAxis massCascAxis{"massCascAxis", {100, MinMass, MaxMass}, ""};
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {vertexZ});
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
     histos.add("hCandidate", "hCandidate", HistType::kTH1D, {{22, -0.5, 21.5}});
@@ -186,6 +255,12 @@ struct cascadeFlow {
     histos.add("hFT0AIm", "hFT0AIm", HistType::kTH1D, {{100, -1, 1}});
     histos.add("hFT0A", "hFT0A", HistType::kTH2D, {{100, -1, 1}, {100, -1, 1}});
     histos.add("hv2Norm", "hv2Norm", HistType::kTH1D, {{100, 0, 1}});
+    histos.add("hMassBeforeSel", "hMassBeforeSel", HistType::kTH1F, {massCascAxis});
+    histos.add("hMassAfterSel", "hMassAfterSel", HistType::kTH1F, {massCascAxis});
+    histos.add("hSignalScoreBeforeSel", "Signal score before selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
+    histos.add("hBkgScoreBeforeSel", "Bkg score before selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
+    histos.add("hSignalScoreAfterSel", "Signal score after selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
+    histos.add("hBkgScoreAfterSel", "Bkg score after selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
 
     // Configure and initialise the ML class
     mlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
@@ -321,6 +396,43 @@ struct cascadeFlow {
       IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
       histos.fill(HIST("hCascade"), counter);
 
+      // ML selections
+      bool isSelectedCasc = false;
+
+      std::vector<float> inputFeaturesCasc{casc.cascradius(),
+	  casc.v0radius(),
+	  casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()),
+	  casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()),
+	  casc.dcapostopv(),
+	  casc.dcanegtopv(),
+	  casc.dcabachtopv(),
+	  casc.dcacascdaughters(),
+	  casc.dcaV0daughters(),
+	  casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ()),
+	  casc.bachBaryonCosPA(),
+	  casc.bachBaryonDCAxyToPV()};
+
+      // Retrieve model output and selection outcome
+      isSelectedCasc = mlResponse.isSelectedMl(inputFeaturesCasc, casc.pt(), outputMl);
+
+      // Fill BDT score histograms before selection
+      histos.fill(HIST("hSignalScoreBeforeSel"), outputMl[0]);
+      histos.fill(HIST("hBkgScoreBeforeSel"), outputMl[1]);
+
+      // Fill histograms for selected candidates
+      float massCasc = casc.mXi();
+      if (isOmega) massCasc =   casc.mOmega();
+      if (isSelectedCasc) {
+        histos.fill(HIST("hMassAfterSel"), massCasc);
+        histos.fill(HIST("hSignalScoreAfterSel"), outputMl[0]);
+        histos.fill(HIST("hBkgScoreAfterSel"), outputMl[1]);
+        histos.fill(HIST("hMassAfterSelVsPt"), massCasc, casc.pt());
+        histos.fill(HIST("hPromptScoreAfterSelVsPt"), outputMl[0], casc.pt());
+        histos.fill(HIST("hBkgScoreAfterSelVsPt"), outputMl[1], casc.pt());
+      }
+
+      outputMl.clear(); // not necessary in this case but for good measure
+
       cascphiVec = ROOT::Math::XYZVector(cos(2*casc.phi()), sin(2*casc.phi()), 0);
       auto v2A = cascphiVec.Dot(eventplaneVecT0A);
       auto v2C = cascphiVec.Dot(eventplaneVecT0C);
@@ -333,7 +445,8 @@ struct cascadeFlow {
       histos.fill(HIST("hCascadePhi"), casc.phi());
       histos.fill(HIST("hcascminuspsiT0A"), cascminuspsiT0A);
       histos.fill(HIST("hcascminuspsiT0C"), cascminuspsiT0C);
-      fillAnalysedTable(coll, casc);
+
+      if (isSelectedCasc)  fillAnalysedTable(coll, casc);
     }
     
   }
