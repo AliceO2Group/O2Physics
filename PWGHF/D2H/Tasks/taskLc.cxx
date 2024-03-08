@@ -289,7 +289,9 @@ struct HfTaskLc {
   }
   
   template <bool applyMl, typename CandType>
-  void processData(aod::Collision const& collision, CandType const& candidates, aod::TracksWDca const& tracks)
+  void processData(aod::Collision const& collision, 
+                   CandType const& candidates, 
+                   aod::TracksWDca const& tracks)
   {
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -406,13 +408,17 @@ struct HfTaskLc {
     }
   }
 
-  void processDataStd(aod::Collision const& collision, LcCandidates const&, aod::TracksWDca const& tracks)
+  void processDataStd(aod::Collision const& collision, 
+                      LcCandidates const&, 
+                      aod::TracksWDca const& tracks)
   {
     processData<false>(collision, selectedLcCandidates, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStd, "Process Data with the standard method", true);
 
-  void processDataWithMl(aod::Collision const& collision, LcCandidatesMl const&, aod::TracksWDca const& tracks)
+  void processDataWithMl(aod::Collision const& collision, 
+                         LcCandidatesMl const&, 
+                         aod::TracksWDca const& tracks)
   {
     processData<true>(collision, selectedLcCandidatesMl, tracks);
   }
@@ -420,7 +426,8 @@ struct HfTaskLc {
 
   /// Fills MC histograms.
   template <bool applyMl, typename CandType>
-  void processMc(CandType const& candidates, soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
+  void processMc(CandType const& candidates, 
+                 soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                  aod::TracksWMc const&)
   {
     for (const auto& candidate : candidates) {
@@ -651,14 +658,16 @@ struct HfTaskLc {
     }
   }
 
-  void processMcStd(LcCandidatesMc const&, soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
-                 aod::TracksWMc const& tracksWithMc)
+  void processMcStd(LcCandidatesMc const&, 
+                    soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
+                    aod::TracksWMc const& tracksWithMc)
   {
     processMc<false>(selectedLcCandidatesMc, mcParticles, tracksWithMc);
   }
   PROCESS_SWITCH(HfTaskLc, processMcStd, "Process MC with the standard method", false);
 
-  void processMcWithMl(LcCandidatesMlMc const&, soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
+  void processMcWithMl(LcCandidatesMlMc const&, 
+                       soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                        aod::TracksWMc const& tracksWithMc)
   {
     processMc<true>(selectedLcCandidatesMcMl, mcParticles, tracksWithMc);
