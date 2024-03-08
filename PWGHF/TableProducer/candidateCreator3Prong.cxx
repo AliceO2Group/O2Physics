@@ -160,7 +160,7 @@ struct HfCandidateCreator3Prong {
       }
 
       /// event selection: sel8, PV posZ, TF border cut
-      if (!applyEventSelectionHfCollision(collision, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut)) {
+      if (!isHfCollisionSelected(collision, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut)) {
         continue;
       }
 

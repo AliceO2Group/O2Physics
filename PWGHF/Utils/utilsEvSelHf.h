@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file eventselectionHf.h
+/// \file utilsEvSelHf.h
 /// \brief Utility set the event selections for HF analyses
 /// \author Mattia Faggin <mfaggin@cern.ch>, CERN
 
@@ -22,7 +22,7 @@
 /// \param maxPvPosZ maximum primary-vertex Z allowed
 /// \param useTimeFrameBorderCutbool to activate the TF border cut
 template <typename Coll>
-bool applyEventSelectionHfCollision(const Coll& collision, const bool& useSel8Trigger, const float& maxPvPosZ, const bool& useTimeFrameBorderCut)
+bool isHfCollisionSelected(const Coll& collision, bool useSel8Trigger, float maxPvPosZ, bool useTimeFrameBorderCut)
 {
 
   /// sel8() condition
@@ -35,7 +35,7 @@ bool applyEventSelectionHfCollision(const Coll& collision, const bool& useSel8Tr
     return false;
   }
 
-  /// TF border cut
+  /// time frame border cut
   if (useTimeFrameBorderCut && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
     return false;
   }
