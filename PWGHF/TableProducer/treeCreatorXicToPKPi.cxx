@@ -127,7 +127,6 @@ DECLARE_SOA_TABLE(HfCandXicLites, "AOD", "HFCANDXICLITE",
                   full::OriginMcRec)
 
 DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
-                  full::CollisionId,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -197,12 +196,9 @@ DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   full::Y,
                   full::E,
                   full::FlagMc,
-                  full::OriginMcRec,
-                  full::CandidateId);
+                  full::OriginMcRec);
 
 DECLARE_SOA_TABLE(HfCandXicFullEvs, "AOD", "HFCANDXICFULLEV",
-                  full::CollisionId,
-                  collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
@@ -259,8 +255,6 @@ struct HfTreeCreatorXicToPKPi {
   void fillEvent(const T& collision, int isEventReject, int runNumber)
   {
     rowCandidateFullEvents(
-      collision.globalIndex(),
-      collision.bcId(),
       collision.numContrib(),
       collision.posX(),
       collision.posY(),
@@ -338,7 +332,6 @@ struct HfTreeCreatorXicToPKPi {
 
     } else {
       rowCandidateFull(
-        candidate.collisionId(),
         candidate.posX(),
         candidate.posY(),
         candidate.posZ(),
@@ -408,8 +401,7 @@ struct HfTreeCreatorXicToPKPi {
         hfHelper.yXic(candidate),
         hfHelper.eXic(candidate),
         flagMc,
-        originMc,
-        candidate.globalIndex());
+        originMc);
     }
   }
 
