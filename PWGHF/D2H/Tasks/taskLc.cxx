@@ -48,8 +48,8 @@ struct HfTaskLc {
   ConfigurableAxis thnConfigAxisChi2PCA{"thnConfigAxisChi2PCA", {100, 0, 20}, ""};
   ConfigurableAxis thnConfigAxisDecLength{"thnConfigAxisDecLength", {10, 0, 0.05}, ""};
   ConfigurableAxis thnConfigAxisCPA{"thnConfigAxisCPA", {20, 0.8, 1}, ""};
-  ConfigurableAxis thnConfigAxisBdtScoreLc{"thnConfigAxisBdtScoreBkg", {1000, 0., 1.}, ""};
-  ConfigurableAxis thnConfigAxisBdtScoreLc{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisBdtScoreBkg{"thnConfigAxisBdtScoreBkg", {1000, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisBdtScoreSignal{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisCanType{"thnConfigAxisCanType", {5, 0., 5.}, ""};
 
   HfHelper hfHelper;
