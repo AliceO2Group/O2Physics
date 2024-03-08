@@ -39,20 +39,16 @@ struct HfTaskLc {
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   // ThnSparse for ML outputScores and Vars
+  Configurable<bool> enableTHn{"enableTHn", false, "enable THn for Lc"};
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {360, 0, 36}, ""};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {600, 1.98, 2.58}, ""};
-  ConfigurableAxis thnConfigAxisPtProng0{"thnConfigAxisPtProng0", {500, 0, 50}, ""};
-  ConfigurableAxis thnConfigAxisPtProng1{"thnConfigAxisPtProng1", {500, 0, 50}, ""};
-  ConfigurableAxis thnConfigAxisPtProng2{"thnConfigAxisPtProng2", {500, 0, 50}, ""};
+  ConfigurableAxis thnConfigAxisPtProng{"thnConfigAxisPtProng", {500, 0, 50}, ""};
   ConfigurableAxis thnConfigAxisMultiplicity{"thnConfigAxisMultiplicity", {1000, 0, 1000}, ""};
   ConfigurableAxis thnConfigAxisChi2PCA{"thnConfigAxisChi2PCA", {500, 0, 50}, ""};
   ConfigurableAxis thnConfigAxisDecLength{"thnConfigAxisDecLength", {10, 0, 0.05}, ""};
-  ConfigurableAxis thnConfigAxisDecLengthXY{"thnConfigAxisDecLengthXY", {10, 0, 0.05}, ""};
   ConfigurableAxis thnConfigAxisCPA{"thnConfigAxisCPA", {20, 0.8, 1}, ""};
-  ConfigurableAxis thnConfigAxisCPAXY{"thnConfigAxisCPAXY", {20, 0.8, 1}, ""};
-  ConfigurableAxis thnConfigAxisBdtScoreLcBkg{"thnConfigAxisBdtScoreLcBkg", {100, 0., 1.}, ""};
-  ConfigurableAxis thnConfigAxisBdtScoreLcNonPrompt{"thnConfigAxisBdtScoreLcNonPrompt", {100, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisBdtScoreLc{"thnConfigAxisBdtScoreLc", {1000, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisCanType{"thnConfigAxisCanType", {5, 0., 5.}, ""};
 
   HfHelper hfHelper;
@@ -268,25 +264,28 @@ struct HfTaskLc {
     registry.add("MC/reconstructed/prompt/hDecLenErrSigPrompt", "3-prong candidates (matched, prompt);decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt", "3-prong candidates (matched, non-prompt);decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
-    if (applyMl) {
+    if (enableTHn) {
       const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
       const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})"};
-      const AxisSpec thnAxisPtProng0{thnConfigAxisPtProng0, "#it{p}_{T}(prong0) (GeV/#it{c})"};
-      const AxisSpec thnAxisPtProng1{thnConfigAxisPtProng1, "#it{p}_{T}(prong0) (GeV/#it{c})"};
-      const AxisSpec thnAxisPtProng2{thnConfigAxisPtProng2, "#it{p}_{T}(prong1) (GeV/#it{c})"};
+      const AxisSpec thnAxisPtProng0{thnConfigAxisPtProng, "#it{p}_{T}(prong0) (GeV/#it{c})"};
+      const AxisSpec thnAxisPtProng1{thnConfigAxisPtProng, "#it{p}_{T}(prong1) (GeV/#it{c})"};
+      const AxisSpec thnAxisPtProng2{thnConfigAxisPtProng, "#it{p}_{T}(prong2) (GeV/#it{c})"};
       const AxisSpec thnAxisMultiplicity{thnConfigAxisMultiplicity, "multiplicity"};
       const AxisSpec thnAxisChi2PCA{thnConfigAxisChi2PCA, "Chi2PCA to sec. vertex (cm)"};
       const AxisSpec thnAxisDecLength{thnConfigAxisDecLength, "decay length (cm)"};
-      const AxisSpec thnAxisDecLengthXY{thnConfigAxisDecLengthXY, "decay length xy (cm) "};
       const AxisSpec thnAxisCPA{thnConfigAxisCPA, "cosine of pointing angle"};
-      const AxisSpec thnAxisCPAXY{thnConfigAxisCPAXY, "cosine of pointing angle xy"};
-      const AxisSpec thnAxisBdtScoreLcBkg{thnConfigAxisBdtScoreLcBkg, "BDT bkg score (Lc)"};
-      const AxisSpec thnAxisBdtScoreLcNonPrompt{thnConfigAxisBdtScoreLcNonPrompt, "BDT non-prompt score (Lc)"};
+      const AxisSpec thnAxisBdtScoreLcBkg{thnConfigAxisBdtScoreLc, "BDT bkg score (Lc)"};
+      const AxisSpec thnAxisBdtScoreLcPrompt{thnConfigAxisBdtScoreLc, "BDT prompt score (Lc)"};
+      const AxisSpec thnAxisBdtScoreLcNonPrompt{thnConfigAxisBdtScoreLc, "BDT non-prompt score (Lc)"};
       const AxisSpec thnAxisCanType{thnConfigAxisCanType, "candidates type"};
-      registry.add("hBdtScoreVsVars", "THn for Lambdac candidates", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisMultiplicity, thnAxisChi2PCA, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisCPAXY, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisCanType});
+
+      if (applyMl) {
+        registry.add("hnLcVarsWithBdt", "THn for Lambdac candidates", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisMultiplicity, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisCanType});
+      } else {
+        registry.add("hnLcVars", "THn for Lambdac candidates", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisMultiplicity, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisCanType});
+      }
     }
   }
-
   template <bool applyMl, typename CandType>
   void processData(aod::Collision const& collision, CandType const& candidates, aod::TracksWDca const& tracks)
   {
@@ -364,22 +363,42 @@ struct HfTaskLc {
       registry.fill(HIST("Data/hImpParErrProng2"), candidate.errorImpactParameter2(), pt);
       registry.fill(HIST("Data/hDecLenErr"), candidate.errorDecayLength(), pt);
 
-      if constexpr (applyMl) {
-        double Mass(-1);
-        double outputBkg(-1);
-        double outputFD(-1);
+      if (enableTHn) {
+        double massLc(-1);
+        double outputBkg(-1), outputPrompt(-1), outputFD(-1);
         if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
-          Mass = hfHelper.invMassLcToPKPi(candidate);
-          outputBkg = candidate.mlProbLcToPKPi()[0]; /// bkg score
-          outputFD = candidate.mlProbLcToPKPi()[1];  /// non-prompt score
-          /// Fill the ML outputScores and variables of candidate
-          registry.get<THnSparse>(HIST("hBdtScoreVsVars"))->Fill(Mass, pt, ptProng0, ptProng1, ptProng2, nTracks, chi2PCA, decayLength, decayLengthXY, cpa, cpaXY, outputBkg, outputFD, 0);
-        } else if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
-          Mass = hfHelper.invMassLcToPiKP(candidate);
-          outputBkg = candidate.mlProbLcToPKPi()[0]; /// bkg score
-          outputFD = candidate.mlProbLcToPKPi()[1];  /// non-prompt score
-          /// Fill the ML outputScores and variables of candidate
-          registry.get<THnSparse>(HIST("hBdtScoreVsVars"))->Fill(Mass, pt, ptProng0, ptProng1, ptProng2, nTracks, chi2PCA, decayLength, decayLengthXY, cpa, cpaXY, outputBkg, outputFD, 0);
+          massLc = hfHelper.invMassLcToPKPi(candidate);
+
+          if constexpr (applyMl) {
+
+            if (candidate.mlProbLcToPKPi().size() == 3) {
+
+              outputBkg = candidate.mlProbLcToPKPi()[0];    /// bkg score
+              outputPrompt = candidate.mlProbLcToPKPi()[1]; /// prompt score
+              outputFD = candidate.mlProbLcToPKPi()[2];     /// non-prompt score
+            }
+            /// Fill the ML outputScores and variables of candidate
+            registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, nTracks, outputBkg, outputPrompt, outputFD, 0);
+          } else {
+            registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, ptProng0, ptProng1, ptProng2, nTracks, chi2PCA, decayLength, decayLengthXY, cpa, cpaXY, outputBkg, outputFD, 0);
+          }
+        }
+        if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
+          massLc = hfHelper.invMassLcToPiKP(candidate);
+
+          if constexpr (applyMl) {
+
+            if (candidate.mlProbLcToPiKP().size() == 3) {
+
+              outputBkg = candidate.mlProbLcToPiKP()[0];    /// bkg score
+              outputPrompt = candidate.mlProbLcToPiKP()[1]; /// prompt score
+              outputFD = candidate.mlProbLcToPiKP()[2];     /// non-prompt score
+            }
+            /// Fill the ML outputScores and variables of candidate
+            registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, nTracks, outputBkg, outputPrompt, outputFD, 0);
+          } else {
+            registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, nTracks, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, 0);
+          }
         }
       }
     }
@@ -551,22 +570,42 @@ struct HfTaskLc {
           registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng2SigNonPrompt"), candidate.errorImpactParameter2(), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt"), candidate.errorDecayLength(), pt);
         }
-        if constexpr (applyMl) {
-          double Mass(-1);
-          double outputBkg(-1);
-          double outputFD(-1);
+        if (enableTHn) {
+          double massLc(-1);
+          double outputBkg(-1), outputPrompt(-1), outputFD(-1);
           if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
-            Mass = hfHelper.invMassLcToPKPi(candidate);
-            outputBkg = candidate.mlProbLcToPKPi()[0]; /// bkg score
-            outputFD = candidate.mlProbLcToPKPi()[1];  /// non-prompt score
-            /// Fill the ML outputScores and variables of candidate  (todo: add multiplicty)
-            registry.get<THnSparse>(HIST("hBdtScoreVsVars"))->Fill(Mass, pt, ptProng0, ptProng1, ptProng2, 0, chi2PCA, decayLength, decayLengthXY, cpa, cpaXY, outputBkg, outputFD, originType);
-          } else if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
-            Mass = hfHelper.invMassLcToPiKP(candidate);
-            outputBkg = candidate.mlProbLcToPKPi()[0]; /// bkg score
-            outputFD = candidate.mlProbLcToPKPi()[1];  /// non-prompt score
-            /// Fill the ML outputScores and variables of candidate ( todo: add multiplicty)
-            registry.get<THnSparse>(HIST("hBdtScoreVsVars"))->Fill(Mass, pt, ptProng0, ptProng1, ptProng2, 0, chi2PCA, decayLength, decayLengthXY, cpa, cpaXY, outputBkg, outputFD, originType);
+            massLc = hfHelper.invMassLcToPKPi(candidate);
+
+            if constexpr (applyMl) {
+
+              if (candidate.mlProbLcToPKPi().size() == 3) {
+
+                outputBkg = candidate.mlProbLcToPKPi()[0];    /// bkg score
+                outputPrompt = candidate.mlProbLcToPKPi()[1]; /// prompt score
+                outputFD = candidate.mlProbLcToPKPi()[2];     /// non-prompt score
+              }
+              /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
+              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, 0, outputBkg, outputPrompt, outputFD, originType);
+            } else {
+              registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, ptProng0, ptProng1, ptProng2, 0, chi2PCA, decayLength, decayLengthXY, cpa, cpaXY, outputBkg, outputFD, originType);
+            }
+          }
+          if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
+            massLc = hfHelper.invMassLcToPiKP(candidate);
+
+            if constexpr (applyMl) {
+
+              if (candidate.mlProbLcToPiKP().size() == 3) {
+
+                outputBkg = candidate.mlProbLcToPiKP()[0];    /// bkg score
+                outputPrompt = candidate.mlProbLcToPiKP()[1]; /// prompt score
+                outputFD = candidate.mlProbLcToPiKP()[2];     /// non-prompt score
+              }
+              /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
+              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, 0, outputBkg, outputPrompt, outputFD, originType);
+            } else {
+              registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, 0, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, originType);
+            }
           }
         }
       }
