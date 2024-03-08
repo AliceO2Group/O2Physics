@@ -12,13 +12,13 @@
 #ifndef PWGUD_CORE_SGSELECTOR_H_
 #define PWGUD_CORE_SGSELECTOR_H_
 
+#include <cmath>
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "Framework/Logger.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/SGCutParHolder.h"
-#include <cmath>
 
 template <typename BC>
 struct SelectionResult {
