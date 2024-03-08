@@ -11,8 +11,8 @@ import argparse
 import json
 import os
 
-import numpy as np
-import ROOT
+import numpy as np # pylint: disable=import-error
+import ROOT # pylint: disable=import-error
 from cut_variation import CutVarMinimiser
 from style_formatter import set_object_style
 
@@ -54,9 +54,13 @@ def main(config):
     hist_corry_prompt = hist_rawy[0].Clone("hCorrYieldsPrompt")
     hist_corry_nonprompt = hist_rawy[0].Clone("hCorrYieldsNonPrompt")
     hist_covariance = hist_rawy[0].Clone("hCovPromptNonPrompt")
+    hist_corrfrac_prompt = hist_rawy[0].Clone("hCorrFracPrompt")
+    hist_corrfrac_nonprompt = hist_rawy[0].Clone("hCorrFracNonPrompt")
     hist_corry_prompt.GetYaxis().SetTitle("corrected yields prompt")
     hist_corry_nonprompt.GetYaxis().SetTitle("corrected yields non-prompt")
     hist_covariance.GetYaxis().SetTitle("#sigma(prompt, non-prompt)")
+    hist_corrfrac_prompt.GetYaxis().SetTitle("corrected fraction prompt")
+    hist_corrfrac_nonprompt.GetYaxis().SetTitle("corrected fraction non-prompt")
     set_object_style(
         hist_corry_prompt,
         color=ROOT.kRed + 1,
@@ -70,6 +74,18 @@ def main(config):
         markerstyle=ROOT.kFullSquare,
     )
     set_object_style(hist_covariance)
+    set_object_style(
+        hist_corrfrac_prompt,
+        color=ROOT.kRed + 1,
+        fillstyle=0,
+        markerstyle=ROOT.kFullCircle,
+    )
+    set_object_style(
+        hist_corrfrac_nonprompt,
+        color=ROOT.kAzure + 4,
+        fillstyle=0,
+        markerstyle=ROOT.kFullSquare,
+    )
 
     output = ROOT.TFile(
         os.path.join(cfg["output"]["directory"], cfg["output"]["file"]), "recreate"
@@ -109,6 +125,20 @@ def main(config):
         )
         hist_covariance.SetBinContent(ipt + 1, minimiser.get_prompt_nonprompt_cov())
         hist_covariance.SetBinError(ipt + 1, 0)
+        corr_frac_prompt = minimiser.get_corr_prompt_fraction()
+        corr_frac_nonprompt = minimiser.get_corr_nonprompt_fraction()
+        hist_corrfrac_prompt.SetBinContent(
+            ipt + 1, corr_frac_prompt[0]
+        )
+        hist_corrfrac_prompt.SetBinError(
+            ipt + 1, corr_frac_prompt[1]
+        )
+        hist_corrfrac_nonprompt.SetBinContent(
+            ipt + 1, corr_frac_nonprompt[0]
+        )
+        hist_corrfrac_nonprompt.SetBinError(
+            ipt + 1, corr_frac_nonprompt[1]
+        )
 
         canv_rawy, histos_rawy, leg_r = minimiser.plot_result(
             f"_pt{pt_min:.0f}_{pt_max:.0f}"
@@ -134,7 +164,7 @@ def main(config):
         for _, hist in histos_frac.items():
             hist.Write()
 
-        canv_cov, histo_cov = minimiser.plot_cov_matrix(f"_pt{pt_min:.0f}_{pt_max:.0f}")
+        canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt{pt_min:.0f}_{pt_max:.0f}")
         output.cd()
         canv_cov.Write()
         histo_cov.Write()
@@ -188,7 +218,8 @@ def main(config):
     hist_corry_prompt.Write()
     hist_corry_nonprompt.Write()
     hist_covariance.Write()
-
+    hist_corrfrac_prompt.Write()
+    hist_corrfrac_nonprompt.Write()
     output.Close()
 
 
