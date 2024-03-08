@@ -11,8 +11,8 @@ import argparse
 import json
 import os
 
-import numpy as np
-import ROOT
+import numpy as np # pylint: disable=import-error
+import ROOT # pylint: disable=import-error
 from cut_variation import CutVarMinimiser
 from style_formatter import set_object_style
 

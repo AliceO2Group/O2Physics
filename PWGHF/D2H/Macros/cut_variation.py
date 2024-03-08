@@ -9,8 +9,8 @@ Module for the (non-)prompt fraction calculation with the cut-variation method
 
 import sys
 
-import numpy as np
-import ROOT
+import numpy as np # pylint: disable=import-error
+import ROOT # pylint: disable=import-error
 from style_formatter import set_global_style, set_object_style
 
 
