@@ -143,7 +143,7 @@ DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 
 } // namespace full
 
-DECLARE_SOA_TABLE(HfToXiPiEv, "AOD", "HFTOXIPIEV",
+DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
                   full::NewEvent, full::IsEventSel8, full::IsEventSelZ);
 
 DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
@@ -210,7 +210,7 @@ struct HfTreeCreatorToXiPi {
 
   Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
   Produces<o2::aod::HfToXiPiLites> rowCandidateLite;
-  Produces<o2::aod::HfToXiPiEv> rowEv;
+  Produces<o2::aod::HfToXiPiEvs> rowEv;
 
   Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
 
