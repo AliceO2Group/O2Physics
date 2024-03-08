@@ -41,11 +41,11 @@ struct HfTaskLc {
   // ThnSparse for ML outputScores and Vars
   Configurable<bool> enableTHn{"enableTHn", false, "enable THn for Lc"};
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {360, 0, 36}, ""};
-  ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {600, 1.98, 2.58}, ""};
-  ConfigurableAxis thnConfigAxisPtProng{"thnConfigAxisPtProng", {500, 0, 50}, ""};
-  ConfigurableAxis thnConfigAxisMultiplicity{"thnConfigAxisMultiplicity", {1000, 0, 1000}, ""};
-  ConfigurableAxis thnConfigAxisChi2PCA{"thnConfigAxisChi2PCA", {500, 0, 50}, ""};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {72, 0, 36}, ""};
+  ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {300, 1.98, 2.58}, ""};
+  ConfigurableAxis thnConfigAxisPtProng{"thnConfigAxisPtProng", {100, 0, 20}, ""};
+  ConfigurableAxis thnConfigAxisMultiplicity{"thnConfigAxisMultiplicity", {100, 0, 1000}, ""};
+  ConfigurableAxis thnConfigAxisChi2PCA{"thnConfigAxisChi2PCA", {100, 0, 20}, ""};
   ConfigurableAxis thnConfigAxisDecLength{"thnConfigAxisDecLength", {10, 0, 0.05}, ""};
   ConfigurableAxis thnConfigAxisCPA{"thnConfigAxisCPA", {20, 0.8, 1}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreLc{"thnConfigAxisBdtScoreLc", {1000, 0., 1.}, ""};
