@@ -11,8 +11,8 @@ import argparse
 import json
 import os
 
-import numpy as np # pylint: disable=import-error
-import ROOT # pylint: disable=import-error
+import numpy as np  # pylint: disable=import-error
+import ROOT  # pylint: disable=import-error
 from cut_variation import CutVarMinimiser
 from style_formatter import set_object_style
 
@@ -30,23 +30,15 @@ def main(config):
         cfg = json.load(fil)
 
     hist_rawy, hist_effp, hist_effnp = ([] for _ in range(3))
-    for filename_rawy, filename_eff in zip(
-        cfg["rawyields"]["inputfiles"], cfg["efficiencies"]["inputfiles"]
-    ):
-        infile_rawy = ROOT.TFile.Open(
-            os.path.join(cfg["rawyields"]["inputdir"], filename_rawy)
-        )
+    for filename_rawy, filename_eff in zip(cfg["rawyields"]["inputfiles"], cfg["efficiencies"]["inputfiles"]):
+        infile_rawy = ROOT.TFile.Open(os.path.join(cfg["rawyields"]["inputdir"], filename_rawy))
         hist_rawy.append(infile_rawy.Get(cfg["rawyields"]["histoname"]))
         hist_rawy[-1].SetDirectory(0)
         infile_rawy.Close()
 
-        infile_eff = ROOT.TFile.Open(
-            os.path.join(cfg["efficiencies"]["inputdir"], filename_eff)
-        )
+        infile_eff = ROOT.TFile.Open(os.path.join(cfg["efficiencies"]["inputdir"], filename_eff))
         hist_effp.append(infile_eff.Get(cfg["efficiencies"]["histonames"]["prompt"]))
-        hist_effnp.append(
-            infile_eff.Get(cfg["efficiencies"]["histonames"]["nonprompt"])
-        )
+        hist_effnp.append(infile_eff.Get(cfg["efficiencies"]["histonames"]["nonprompt"]))
         hist_effp[-1].SetDirectory(0)
         hist_effnp[-1].SetDirectory(0)
         infile_eff.Close()
@@ -87,20 +79,14 @@ def main(config):
         markerstyle=ROOT.kFullSquare,
     )
 
-    output = ROOT.TFile(
-        os.path.join(cfg["output"]["directory"], cfg["output"]["file"]), "recreate"
-    )
+    output = ROOT.TFile(os.path.join(cfg["output"]["directory"], cfg["output"]["file"]), "recreate")
     n_sets = len(hist_rawy)
     for ipt in range(hist_rawy[0].GetNbinsX()):
         pt_min = hist_rawy[0].GetXaxis().GetBinLowEdge(ipt + 1)
         pt_max = hist_rawy[0].GetXaxis().GetBinUpEdge(ipt + 1)
 
-        rawy, effp, effnp, unc_rawy, unc_effp, unc_effnp = (
-            np.zeros(n_sets) for _ in range(6)
-        )
-        for iset, (hrawy, heffp, heffnp) in enumerate(
-            zip(hist_rawy, hist_effp, hist_effnp)
-        ):
+        rawy, effp, effnp, unc_rawy, unc_effp, unc_effnp = (np.zeros(n_sets) for _ in range(6))
+        for iset, (hrawy, heffp, heffnp) in enumerate(zip(hist_rawy, hist_effp, hist_effnp)):
             rawy.itemset(iset, hrawy.GetBinContent(ipt + 1))
             effp.itemset(iset, heffp.GetBinContent(ipt + 1))
             effnp.itemset(iset, heffnp.GetBinContent(ipt + 1))
@@ -111,54 +97,32 @@ def main(config):
         minimiser = CutVarMinimiser(rawy, effp, effnp, unc_rawy, unc_effp, unc_effnp)
         minimiser.minimise_system(cfg["minimisation"]["correlated"])
 
-        hist_corry_prompt.SetBinContent(
-            ipt + 1, minimiser.get_prompt_yield_and_error()[0]
-        )
-        hist_corry_prompt.SetBinError(
-            ipt + 1, minimiser.get_prompt_yield_and_error()[1]
-        )
-        hist_corry_nonprompt.SetBinContent(
-            ipt + 1, minimiser.get_nonprompt_yield_and_error()[0]
-        )
-        hist_corry_nonprompt.SetBinError(
-            ipt + 1, minimiser.get_nonprompt_yield_and_error()[1]
-        )
+        hist_corry_prompt.SetBinContent(ipt + 1, minimiser.get_prompt_yield_and_error()[0])
+        hist_corry_prompt.SetBinError(ipt + 1, minimiser.get_prompt_yield_and_error()[1])
+        hist_corry_nonprompt.SetBinContent(ipt + 1, minimiser.get_nonprompt_yield_and_error()[0])
+        hist_corry_nonprompt.SetBinError(ipt + 1, minimiser.get_nonprompt_yield_and_error()[1])
         hist_covariance.SetBinContent(ipt + 1, minimiser.get_prompt_nonprompt_cov())
         hist_covariance.SetBinError(ipt + 1, 0)
         corr_frac_prompt = minimiser.get_corr_prompt_fraction()
         corr_frac_nonprompt = minimiser.get_corr_nonprompt_fraction()
-        hist_corrfrac_prompt.SetBinContent(
-            ipt + 1, corr_frac_prompt[0]
-        )
-        hist_corrfrac_prompt.SetBinError(
-            ipt + 1, corr_frac_prompt[1]
-        )
-        hist_corrfrac_nonprompt.SetBinContent(
-            ipt + 1, corr_frac_nonprompt[0]
-        )
-        hist_corrfrac_nonprompt.SetBinError(
-            ipt + 1, corr_frac_nonprompt[1]
-        )
+        hist_corrfrac_prompt.SetBinContent(ipt + 1, corr_frac_prompt[0])
+        hist_corrfrac_prompt.SetBinError(ipt + 1, corr_frac_prompt[1])
+        hist_corrfrac_nonprompt.SetBinContent(ipt + 1, corr_frac_nonprompt[0])
+        hist_corrfrac_nonprompt.SetBinError(ipt + 1, corr_frac_nonprompt[1])
 
-        canv_rawy, histos_rawy, leg_r = minimiser.plot_result(
-            f"_pt{pt_min:.0f}_{pt_max:.0f}"
-        )
+        canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min:.0f}_{pt_max:.0f}")
         output.cd()
         canv_rawy.Write()
         for _, hist in histos_rawy.items():
             hist.Write()
 
-        canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(
-            f"_pt{pt_min:.0f}_{pt_max:.0f}"
-        )
+        canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt{pt_min:.0f}_{pt_max:.0f}")
         output.cd()
         canv_eff.Write()
         for _, hist in histos_eff.items():
             hist.Write()
 
-        canv_frac, histos_frac, leg_f = minimiser.plot_fractions(
-            f"_pt{pt_min:.0f}_{pt_max:.0f}"
-        )
+        canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt{pt_min:.0f}_{pt_max:.0f}")
         output.cd()
         canv_frac.Write()
         for _, hist in histos_frac.items():
@@ -172,47 +136,21 @@ def main(config):
         output_name_rawy_pdf = f"Distr_{cfg['output']['file'].replace('.root', '.pdf')}"
         output_name_eff_pdf = f"Eff_{cfg['output']['file'].replace('.root', '.pdf')}"
         output_name_frac_pdf = f"Frac_{cfg['output']['file'].replace('.root', '.pdf')}"
-        output_name_covmat_pdf = (
-            f"CovMatrix_{cfg['output']['file'].replace('.root', '.pdf')}"
-        )
+        output_name_covmat_pdf = f"CovMatrix_{cfg['output']['file'].replace('.root', '.pdf')}"
         if ipt == 0:
-            canv_rawy.SaveAs(
-                f"{os.path.join(cfg['output']['directory'], output_name_rawy_pdf)}["
-            )
-            canv_eff.SaveAs(
-                f"{os.path.join(cfg['output']['directory'], output_name_eff_pdf)}["
-            )
-            canv_frac.SaveAs(
-                f"{os.path.join(cfg['output']['directory'], output_name_frac_pdf)}["
-            )
-            canv_cov.SaveAs(
-                f"{os.path.join(cfg['output']['directory'], output_name_covmat_pdf)}["
-            )
-        canv_rawy.SaveAs(
-            f"{os.path.join(cfg['output']['directory'], output_name_rawy_pdf)}"
-        )
-        canv_eff.SaveAs(
-            f"{os.path.join(cfg['output']['directory'], output_name_eff_pdf)}"
-        )
-        canv_frac.SaveAs(
-            f"{os.path.join(cfg['output']['directory'], output_name_frac_pdf)}"
-        )
-        canv_cov.SaveAs(
-            f"{os.path.join(cfg['output']['directory'], output_name_covmat_pdf)}"
-        )
+            canv_rawy.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_rawy_pdf)}[")
+            canv_eff.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_eff_pdf)}[")
+            canv_frac.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_frac_pdf)}[")
+            canv_cov.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_covmat_pdf)}[")
+        canv_rawy.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_rawy_pdf)}")
+        canv_eff.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_eff_pdf)}")
+        canv_frac.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_frac_pdf)}")
+        canv_cov.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_covmat_pdf)}")
         if ipt == hist_rawy[0].GetNbinsX() - 1:
-            canv_rawy.SaveAs(
-                f"{os.path.join(cfg['output']['directory'], output_name_rawy_pdf)}]"
-            )
-            canv_eff.SaveAs(
-                f"{os.path.join(cfg['output']['directory'], output_name_eff_pdf)}]"
-            )
-            canv_frac.SaveAs(
-                f"{os.path.join(cfg['output']['directory'], output_name_frac_pdf)}]"
-            )
-            canv_cov.SaveAs(
-                f"{os.path.join(cfg['output']['directory'], output_name_covmat_pdf)}]"
-            )
+            canv_rawy.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_rawy_pdf)}]")
+            canv_eff.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_eff_pdf)}]")
+            canv_frac.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_frac_pdf)}]")
+            canv_cov.SaveAs(f"{os.path.join(cfg['output']['directory'], output_name_covmat_pdf)}]")
 
     output.cd()
     hist_corry_prompt.Write()

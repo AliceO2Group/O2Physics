@@ -9,8 +9,8 @@ Module for the (non-)prompt fraction calculation with the cut-variation method
 
 import sys
 
-import numpy as np # pylint: disable=import-error
-import ROOT # pylint: disable=import-error
+import numpy as np  # pylint: disable=import-error
+import ROOT  # pylint: disable=import-error
 from style_formatter import set_global_style, set_object_style
 
 
@@ -77,26 +77,16 @@ class CutVarMinimiser:
         Helper method to check self consistency of inputs
         """
 
-        if (
-            len(self.eff_prompt) != self.n_sets
-            or len(self.eff_nonprompt) != self.n_sets
-        ):
+        if len(self.eff_prompt) != self.n_sets or len(self.eff_nonprompt) != self.n_sets:
             print("ERROR: number of raw yields and efficiencies not consistent! Exit")
             sys.exit()
 
         if len(self.unc_raw_yields) != self.n_sets:
-            print(
-                "ERROR: number of raw yields and raw-yield uncertainties not consistent! Exit"
-            )
+            print("ERROR: number of raw yields and raw-yield uncertainties not consistent! Exit")
             sys.exit()
 
-        if (
-            len(self.unc_eff_prompt) != self.n_sets
-            or len(self.unc_eff_nonprompt) != self.n_sets
-        ):
-            print(
-                "ERROR: number of raw yields and efficiency uncertainties not consistent! Exit"
-            )
+        if len(self.unc_eff_prompt) != self.n_sets or len(self.unc_eff_nonprompt) != self.n_sets:
+            print("ERROR: number of raw yields and efficiency uncertainties not consistent! Exit")
             sys.exit()
 
     def __initialise_objects(self):
@@ -118,9 +108,7 @@ class CutVarMinimiser:
         self.unc_frac_prompt = np.zeros(shape=self.n_sets)
         self.unc_frac_nonprompt = np.zeros(shape=self.n_sets)
 
-        for i_set, (rawy, effp, effnp) in enumerate(
-            zip(self.raw_yields, self.eff_prompt, self.eff_nonprompt)
-        ):
+        for i_set, (rawy, effp, effnp) in enumerate(zip(self.raw_yields, self.eff_prompt, self.eff_nonprompt)):
             self.m_rawy.itemset(i_set, rawy)
             self.m_eff.itemset((i_set, 0), effp)
             self.m_eff.itemset((i_set, 1), effnp)
@@ -152,9 +140,7 @@ class CutVarMinimiser:
                 zip(self.unc_raw_yields, self.unc_eff_prompt, self.unc_eff_nonprompt)
             ):
                 for i_col, (rw_unc_col, effp_unc_col, effnp_unc_col) in enumerate(
-                    zip(
-                        self.unc_raw_yields, self.unc_eff_prompt, self.unc_eff_nonprompt
-                    )
+                    zip(self.unc_raw_yields, self.unc_eff_prompt, self.unc_eff_nonprompt)
                 ):
                     unc_row = np.sqrt(
                         rw_unc_row**2
@@ -189,16 +175,12 @@ class CutVarMinimiser:
             self.m_covariance = np.linalg.inv(np.linalg.cholesky(self.m_covariance))
             self.m_covariance = self.m_covariance.T * self.m_covariance
 
-            self.m_corr_yields = (
-                self.m_covariance * (m_eff_tr * self.m_weights) * self.m_rawy
-            )
+            self.m_corr_yields = self.m_covariance * (m_eff_tr * self.m_weights) * self.m_rawy
             self.m_res = self.m_eff * self.m_corr_yields - self.m_rawy
 
             rel_delta = [
-                (self.m_corr_yields.item(0) - m_corr_yields_old.item(0))
-                / self.m_corr_yields.item(0),
-                (self.m_corr_yields.item(1) - m_corr_yields_old.item(1))
-                / self.m_corr_yields.item(1),
+                (self.m_corr_yields.item(0) - m_corr_yields_old.item(0)) / self.m_corr_yields.item(0),
+                (self.m_corr_yields.item(1) - m_corr_yields_old.item(1)) / self.m_corr_yields.item(1),
             ]
 
             if rel_delta[0] < precision and rel_delta[1] < precision:
@@ -213,18 +195,10 @@ class CutVarMinimiser:
         for i_set, (effp, effnp) in enumerate(zip(self.eff_prompt, self.eff_nonprompt)):
             rawyp = effp * self.m_corr_yields.item(0)
             rawynp = effnp * self.m_corr_yields.item(1)
-            der_fp_p = (
-                effp * (rawyp + rawynp) - effp**2 * self.m_corr_yields.item(0)
-            ) / (rawyp + rawynp) ** 2
-            der_fp_np = (
-                -effp * effnp * self.m_corr_yields.item(0) / (rawyp + rawynp) ** 2
-            )
-            der_fnp_np = (
-                effnp * (rawyp + rawynp) - effnp**2 * self.m_corr_yields.item(1)
-            ) / (rawyp + rawynp) ** 2
-            der_fnp_p = (
-                -effp * effnp * self.m_corr_yields.item(1) / (rawyp + rawynp) ** 2
-            )
+            der_fp_p = (effp * (rawyp + rawynp) - effp**2 * self.m_corr_yields.item(0)) / (rawyp + rawynp) ** 2
+            der_fp_np = -effp * effnp * self.m_corr_yields.item(0) / (rawyp + rawynp) ** 2
+            der_fnp_np = (effnp * (rawyp + rawynp) - effnp**2 * self.m_corr_yields.item(1)) / (rawyp + rawynp) ** 2
+            der_fnp_p = -effp * effnp * self.m_corr_yields.item(1) / (rawyp + rawynp) ** 2
 
             unc_fp = np.sqrt(
                 der_fp_p**2 * self.m_covariance.item(0, 0)
@@ -311,11 +285,13 @@ class CutVarMinimiser:
         f_p = rawy_p / (rawy_p + rawy_np)
 
         # derivatives of prompt fraction wrt corr yields
-        d_p = (effacc_p * (rawy_p + rawy_np) - effacc_p**2 * self.m_corr_yields.item(0)) / (
-            rawy_p + rawy_np)**2
-        d_np = - effacc_np * rawy_p / (rawy_p + rawy_np)**2
-        f_p_unc = np.sqrt(d_p**2 * self.m_covariance.item(0, 0) + d_np**2 * self.m_covariance.item(
-            1, 1) + 2 * d_p * d_np * self.m_covariance.item(0, 1))
+        d_p = (effacc_p * (rawy_p + rawy_np) - effacc_p**2 * self.m_corr_yields.item(0)) / (rawy_p + rawy_np) ** 2
+        d_np = -effacc_np * rawy_p / (rawy_p + rawy_np) ** 2
+        f_p_unc = np.sqrt(
+            d_p**2 * self.m_covariance.item(0, 0)
+            + d_np**2 * self.m_covariance.item(1, 1)
+            + 2 * d_p * d_np * self.m_covariance.item(0, 1)
+        )
 
         return f_p, f_p_unc
 
@@ -353,7 +329,7 @@ class CutVarMinimiser:
 
         """
 
-        return self.get_raw_prompt_fraction(1., 1.)
+        return self.get_raw_prompt_fraction(1.0, 1.0)
 
     def get_corr_nonprompt_fraction(self):
         """
@@ -366,7 +342,7 @@ class CutVarMinimiser:
 
         """
 
-        return self.get_raw_nonprompt_fraction(1., 1.)
+        return self.get_raw_nonprompt_fraction(1.0, 1.0)
 
     # pylint: disable=no-member
     def plot_result(self, suffix=""):
@@ -436,9 +412,7 @@ class CutVarMinimiser:
             rawy_nonprompt = self.m_corr_yields.item(1) * effnp
             unc_rawy_nonprompt = np.sqrt(self.m_covariance.item(1, 1)) * effnp
             unc_sum = np.sqrt(
-                unc_rawy_prompt**2
-                + unc_rawy_nonprompt**2
-                + 2 * self.m_covariance.item(1, 0) * effp * effnp
+                unc_rawy_prompt**2 + unc_rawy_nonprompt**2 + 2 * self.m_covariance.item(1, 0) * effp * effnp
             )
 
             hist_raw_yield_prompt.SetBinContent(i_bin + 1, rawy_prompt)
@@ -450,9 +424,7 @@ class CutVarMinimiser:
 
         set_object_style(hist_raw_yield)
         set_object_style(hist_raw_yield_prompt, color=ROOT.kRed + 1, fillstyle=3145)
-        set_object_style(
-            hist_raw_yield_nonprompt, color=ROOT.kAzure + 4, fillstyle=3154
-        )
+        set_object_style(hist_raw_yield_nonprompt, color=ROOT.kAzure + 4, fillstyle=3154)
         set_object_style(hist_raw_yield_sum, color=ROOT.kGreen + 2, fillstyle=0)
 
         canvas = ROOT.TCanvas(f"cRawYieldVsCut{suffix}", "", 500, 500)
