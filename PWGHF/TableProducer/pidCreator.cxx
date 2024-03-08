@@ -26,16 +26,16 @@ using namespace o2;
 using namespace o2::framework;
 
 struct HfPidCreator {
-  Produces<aod::TracksPidFullElS> tracksPidFullElS;
-  Produces<aod::TracksPidTinyElS> tracksPidTinyElS;
-  Produces<aod::TracksPidFullMuS> tracksPidFullMuS;
-  Produces<aod::TracksPidTinyMuS> tracksPidTinyMuS;
-  Produces<aod::TracksPidFullPiS> tracksPidFullPiS;
-  Produces<aod::TracksPidTinyPiS> tracksPidTinyPiS;
-  Produces<aod::TracksPidFullKaS> tracksPidFullKaS;
-  Produces<aod::TracksPidTinyKaS> tracksPidTinyKaS;
-  Produces<aod::TracksPidFullPrS> tracksPidFullPrS;
-  Produces<aod::TracksPidTinyPrS> tracksPidTinyPrS;
+  Produces<aod::TracksPidFullElS> trackPidFullEl;
+  Produces<aod::TracksPidTinyElS> trackPidTinyEl;
+  Produces<aod::TracksPidFullMuS> trackPidFullMu;
+  Produces<aod::TracksPidTinyMuS> trackPidTinyMu;
+  Produces<aod::TracksPidFullPiS> trackPidFullPi;
+  Produces<aod::TracksPidTinyPiS> trackPidTinyPi;
+  Produces<aod::TracksPidFullKaS> trackPidFullKa;
+  Produces<aod::TracksPidTinyKaS> trackPidTinyKa;
+  Produces<aod::TracksPidFullPrS> trackPidFullPr;
+  Produces<aod::TracksPidTinyPrS> trackPidTinyPr;
 
   static constexpr float defaultNSigmaTolerance = .1f;
   static constexpr float defaultNSigma = -999.f + defaultNSigmaTolerance; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
@@ -105,7 +105,7 @@ struct HfPidCreator {
   void processFull##_Species_(aod::TracksPid##_Species_ const& tracks)                                                        \
   {                                                                                                                           \
     for (const auto& track : tracks) {                                                                                        \
-      tracksPidFull##_Species_##S(combineNSigma<false>(track.tpcNSigma##_Species_(), track.tofNSigma##_Species_()));          \
+      trackPidFull##_Species_(combineNSigma<false>(track.tpcNSigma##_Species_(), track.tofNSigma##_Species_()));          \
     }                                                                                                                         \
   }                                                                                                                           \
   PROCESS_SWITCH(HfPidCreator, processFull##_Species_, "Process full " #_Species_, false);                                    \
@@ -113,7 +113,7 @@ struct HfPidCreator {
   void processTiny##_Species_(aod::TracksPidTiny##_Species_ const& tracks)                                                    \
   {                                                                                                                           \
     for (const auto& track : tracks) {                                                                                        \
-      tracksPidTiny##_Species_##S(combineNSigma<true>(track.tpcNSigmaStore##_Species_(), track.tofNSigmaStore##_Species_())); \
+      trackPidTiny##_Species_(combineNSigma<true>(track.tpcNSigmaStore##_Species_(), track.tofNSigmaStore##_Species_())); \
     }                                                                                                                         \
   }                                                                                                                           \
   PROCESS_SWITCH(HfPidCreator, processTiny##_Species_, "Process tiny " #_Species_, false);
