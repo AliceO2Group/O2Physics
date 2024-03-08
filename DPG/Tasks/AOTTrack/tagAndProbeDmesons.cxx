@@ -158,7 +158,7 @@ struct TagTwoProngDisplacedVertices {
   Produces<aod::PiKaFromDzTags> tagPiKaTable;
   Produces<aod::TagTopoVariables> tagVarsTable;
   SliceCache cache;
-  Configurable<int> fillTagTable{"fillTagTable", 3, "flag to fill tag table with topological variables (0 -> disabled, 1 -> signal only, 2 -> bkg only, 3 -> both)"};
+  Configurable<int> fillTagTable{"fillTagTable", 0, "flag to fill tag table with topological variables (0 -> disabled, 1 -> signal only, 2 -> bkg only, 3 -> both)"};
   Configurable<bool> applyTofPid{"applyTofPid", true, "flag to enable TOF PID selection"};
   Configurable<bool> studyDzeroReflections{"studyDzeroReflections", false, "flag to study Dzero reflections"};
   Configurable<float> trackNumSigmaTof{"trackNumSigmaTof", 3.f, "number of sigma for TOF PID compatibility"};
