@@ -50,14 +50,14 @@ class SGSelector
       if (!udhelpers::cleanFITA(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
         if (gA)
           newbc = bc;
-        if (!gA && std::abs(static_cast<long long>(bc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<long long>(newbc.globalBC() - oldbc.globalBC())))
+        if (!gA && std::abs(static_cast<int64_t>(bc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<int64_t>(newbc.globalBC() - oldbc.globalBC())))
           newbc = bc;
         gA = false;
       }
       if (!udhelpers::cleanFITC(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
         if (gC)
           newbc = bc;
-        if (!gC && std::abs(static_cast<long long>(bc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<long long>(newbc.globalBC() - oldbc.globalBC())))
+        if (!gC && std::abs(static_cast<int64_t>(bc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<int64_t>(newbc.globalBC() - oldbc.globalBC())))
           newbc = bc;
         gC = false;
       }
