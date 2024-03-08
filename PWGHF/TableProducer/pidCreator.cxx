@@ -26,16 +26,16 @@ using namespace o2;
 using namespace o2::framework;
 
 struct HfPidCreator {
-  Produces<aod::TracksPidFullElS> tracksPidFullElS;
-  Produces<aod::TracksPidTinyElS> tracksPidTinyElS;
-  Produces<aod::TracksPidFullMuS> tracksPidFullMuS;
-  Produces<aod::TracksPidTinyMuS> tracksPidTinyMuS;
-  Produces<aod::TracksPidFullPiS> tracksPidFullPiS;
-  Produces<aod::TracksPidTinyPiS> tracksPidTinyPiS;
-  Produces<aod::TracksPidFullKaS> tracksPidFullKaS;
-  Produces<aod::TracksPidTinyKaS> tracksPidTinyKaS;
-  Produces<aod::TracksPidFullPrS> tracksPidFullPrS;
-  Produces<aod::TracksPidTinyPrS> tracksPidTinyPrS;
+  Produces<aod::PidTpcTofFullEl> trackPidFullEl;
+  Produces<aod::PidTpcTofTinyEl> trackPidTinyEl;
+  Produces<aod::PidTpcTofFullMu> trackPidFullMu;
+  Produces<aod::PidTpcTofTinyMu> trackPidTinyMu;
+  Produces<aod::PidTpcTofFullPi> trackPidFullPi;
+  Produces<aod::PidTpcTofTinyPi> trackPidTinyPi;
+  Produces<aod::PidTpcTofFullKa> trackPidFullKa;
+  Produces<aod::PidTpcTofTinyKa> trackPidTinyKa;
+  Produces<aod::PidTpcTofFullPr> trackPidFullPr;
+  Produces<aod::PidTpcTofTinyPr> trackPidTinyPr;
 
   static constexpr float defaultNSigmaTolerance = .1f;
   static constexpr float defaultNSigma = -999.f + defaultNSigmaTolerance; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
@@ -61,16 +61,16 @@ struct HfPidCreator {
   void init(InitContext& initContext)
   {
     // Check whether the right process functions are enabled.
-    checkTableSwitch(initContext, "TracksPidFullElS", doprocessFullEl);
-    checkTableSwitch(initContext, "TracksPidTinyElS", doprocessTinyEl);
-    checkTableSwitch(initContext, "TracksPidFullMuS", doprocessFullMu);
-    checkTableSwitch(initContext, "TracksPidTinyMuS", doprocessTinyMu);
-    checkTableSwitch(initContext, "TracksPidFullPiS", doprocessFullPi);
-    checkTableSwitch(initContext, "TracksPidTinyPiS", doprocessTinyPi);
-    checkTableSwitch(initContext, "TracksPidFullKaS", doprocessFullKa);
-    checkTableSwitch(initContext, "TracksPidTinyKaS", doprocessTinyKa);
-    checkTableSwitch(initContext, "TracksPidFullPrS", doprocessFullPr);
-    checkTableSwitch(initContext, "TracksPidTinyPrS", doprocessTinyPr);
+    checkTableSwitch(initContext, "PidTpcTofFullEl", doprocessFullEl);
+    checkTableSwitch(initContext, "PidTpcTofTinyEl", doprocessTinyEl);
+    checkTableSwitch(initContext, "PidTpcTofFullMu", doprocessFullMu);
+    checkTableSwitch(initContext, "PidTpcTofTinyMu", doprocessTinyMu);
+    checkTableSwitch(initContext, "PidTpcTofFullPi", doprocessFullPi);
+    checkTableSwitch(initContext, "PidTpcTofTinyPi", doprocessTinyPi);
+    checkTableSwitch(initContext, "PidTpcTofFullKa", doprocessFullKa);
+    checkTableSwitch(initContext, "PidTpcTofTinyKa", doprocessTinyKa);
+    checkTableSwitch(initContext, "PidTpcTofFullPr", doprocessFullPr);
+    checkTableSwitch(initContext, "PidTpcTofTinyPr", doprocessTinyPr);
   }
 
   /// Function to combine TPC and TOF NSigma
@@ -101,21 +101,21 @@ struct HfPidCreator {
   PROCESS_SWITCH(HfPidCreator, processDummy, "Process nothing", true);
 
 // Macro for declaring process functions per species
-#define PROCESS_PID(_Species_)                                                                                                \
-  void processFull##_Species_(aod::TracksPid##_Species_ const& tracks)                                                        \
-  {                                                                                                                           \
-    for (const auto& track : tracks) {                                                                                        \
-      tracksPidFull##_Species_##S(combineNSigma<false>(track.tpcNSigma##_Species_(), track.tofNSigma##_Species_()));          \
-    }                                                                                                                         \
-  }                                                                                                                           \
-  PROCESS_SWITCH(HfPidCreator, processFull##_Species_, "Process full " #_Species_, false);                                    \
-                                                                                                                              \
-  void processTiny##_Species_(aod::TracksPidTiny##_Species_ const& tracks)                                                    \
-  {                                                                                                                           \
-    for (const auto& track : tracks) {                                                                                        \
-      tracksPidTiny##_Species_##S(combineNSigma<true>(track.tpcNSigmaStore##_Species_(), track.tofNSigmaStore##_Species_())); \
-    }                                                                                                                         \
-  }                                                                                                                           \
+#define PROCESS_PID(_Species_)                                                                                            \
+  void processFull##_Species_(aod::TracksPid##_Species_ const& tracks)                                                    \
+  {                                                                                                                       \
+    for (const auto& track : tracks) {                                                                                    \
+      trackPidFull##_Species_(combineNSigma<false>(track.tpcNSigma##_Species_(), track.tofNSigma##_Species_()));          \
+    }                                                                                                                     \
+  }                                                                                                                       \
+  PROCESS_SWITCH(HfPidCreator, processFull##_Species_, "Process full " #_Species_, false);                                \
+                                                                                                                          \
+  void processTiny##_Species_(aod::TracksPidTiny##_Species_ const& tracks)                                                \
+  {                                                                                                                       \
+    for (const auto& track : tracks) {                                                                                    \
+      trackPidTiny##_Species_(combineNSigma<true>(track.tpcNSigmaStore##_Species_(), track.tofNSigmaStore##_Species_())); \
+    }                                                                                                                     \
+  }                                                                                                                       \
   PROCESS_SWITCH(HfPidCreator, processTiny##_Species_, "Process tiny " #_Species_, false);
 
   // Declare process functions for all species.
