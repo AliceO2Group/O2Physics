@@ -211,15 +211,12 @@ DECLARE_SOA_TABLE(HfCandXicFullEvs, "AOD", "HFCANDXICFULLEV",
                   full::RunNumber);
 
 DECLARE_SOA_TABLE(HfCandXicFullPs, "AOD", "HFCANDXICFULLP",
-                  full::CollisionId,
-                  collision::BCId,
                   full::Pt,
                   full::Eta,
                   full::Phi,
                   full::Y,
                   full::FlagMc,
-                  full::OriginMcGen,
-                  full::CandidateId);
+                  full::OriginMcGen);
 
 } // namespace o2::aod
 
@@ -536,15 +533,12 @@ struct HfTreeCreatorXicToPKPi {
     rowCandidateFullParticles.reserve(mcParticles.size());
     for (const auto& particle : mcParticles) {
       rowCandidateFullParticles(
-        particle.mcCollision().globalIndex(),
-        particle.mcCollision().bcId(),
         particle.pt(),
         particle.eta(),
         particle.phi(),
         RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassXiCPlus),
         particle.flagMcMatchGen(),
-        particle.originMcGen(),
-        particle.globalIndex());
+        particle.originMcGen());
     }
   }
 
