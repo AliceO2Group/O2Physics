@@ -284,13 +284,13 @@ struct TagTwoProngDisplacedVertices {
     pdgResonances.clear();
     if (channel == aod::tagandprobe::TagChannels::DplusToKPiPi) {
       pdgDecayMothers.push_back(constants::physics::Pdg::kDPlus);
-      pdgResonances.push_back(313); // K*(892)0
-      pdgResonances.push_back(10313); // K1(1270)0
+      pdgResonances.push_back(313);    // K*(892)0
+      pdgResonances.push_back(10313);  // K1(1270)0
       pdgResonances.push_back(100313); // K*(1410)0
-      pdgResonances.push_back(10311); // K*0(1430)0
+      pdgResonances.push_back(10311);  // K*0(1430)0
       pdgResonances.push_back(100311); // K*(1460)0
-      pdgResonances.push_back(20313); // K1(1400)0
-      pdgResonances.push_back(30313); // K*(1680)0
+      pdgResonances.push_back(20313);  // K1(1400)0
+      pdgResonances.push_back(30313);  // K*(1680)0
     } else if (channel == aod::tagandprobe::TagChannels::DsOrDplusToKKPi) {
       pdgDecayMothers.push_back(constants::physics::Pdg::kDPlus);
       pdgDecayMothers.push_back(constants::physics::Pdg::kDS);
