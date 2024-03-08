@@ -287,10 +287,10 @@ struct HfTaskLc {
       }
     }
   }
-  
+
   template <bool applyMl, typename CandType>
-  void processData(aod::Collision const& collision, 
-                   CandType const& candidates, 
+  void processData(aod::Collision const& collision,
+                   CandType const& candidates,
                    aod::TracksWDca const& tracks)
   {
     int nTracks = 0;
@@ -408,16 +408,16 @@ struct HfTaskLc {
     }
   }
 
-  void processDataStd(aod::Collision const& collision, 
-                      LcCandidates const&, 
+  void processDataStd(aod::Collision const& collision,
+                      LcCandidates const&,
                       aod::TracksWDca const& tracks)
   {
     processData<false>(collision, selectedLcCandidates, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStd, "Process Data with the standard method", true);
 
-  void processDataWithMl(aod::Collision const& collision, 
-                         LcCandidatesMl const&, 
+  void processDataWithMl(aod::Collision const& collision,
+                         LcCandidatesMl const&,
                          aod::TracksWDca const& tracks)
   {
     processData<true>(collision, selectedLcCandidatesMl, tracks);
@@ -426,7 +426,7 @@ struct HfTaskLc {
 
   /// Fills MC histograms.
   template <bool applyMl, typename CandType>
-  void processMc(CandType const& candidates, 
+  void processMc(CandType const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                  aod::TracksWMc const&)
   {
@@ -658,7 +658,7 @@ struct HfTaskLc {
     }
   }
 
-  void processMcStd(LcCandidatesMc const&, 
+  void processMcStd(LcCandidatesMc const&,
                     soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                     aod::TracksWMc const& tracksWithMc)
   {
@@ -666,7 +666,7 @@ struct HfTaskLc {
   }
   PROCESS_SWITCH(HfTaskLc, processMcStd, "Process MC with the standard method", false);
 
-  void processMcWithMl(LcCandidatesMlMc const&, 
+  void processMcWithMl(LcCandidatesMlMc const&,
                        soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                        aod::TracksWMc const& tracksWithMc)
   {
