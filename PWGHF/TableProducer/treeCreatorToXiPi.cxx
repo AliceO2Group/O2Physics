@@ -222,15 +222,9 @@ struct HfTreeCreatorToXiPi {
   }
 
   template <class TMyEvents, typename T>
-  void fillEvent(const T& collision, float cutZPv, const bool& newEvent, bool& isEvSel8, bool& isEventZSel)
+  void fillEvent(const T& collision, float cutZPv)
   {
-    if (collision.sel8()) {
-      isEvSel8 = true;
-    }
-    if (std::abs(collision.posZ()) < cutZPv) {
-      isEventZSel = true;
-    }
-    rowEv(newEvent, isEvSel8, isEventZSel);
+    rowEv(true, collision.sel8(), std::abs(collision.posZ()) < cutZPv); 
   }
 
   template <class TMyTracks, typename T>
@@ -422,14 +416,9 @@ struct HfTreeCreatorToXiPi {
                        soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling event properties
-    bool newEvent = true;
-    bool isEvSel8 = false;
-    bool isEventZSel = false;
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      isEvSel8 = false;
-      isEventZSel = false;
-      fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel);
+      fillEvent<MyEventTable>(collision, zPvCut);
     }
 
     // Filling candidate properties
@@ -444,14 +433,9 @@ struct HfTreeCreatorToXiPi {
                      soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
     // Filling event properties
-    bool newEvent = true;
-    bool isEvSel8 = false;
-    bool isEventZSel = false;
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      isEvSel8 = false;
-      isEventZSel = false;
-      fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel);
+      fillEvent<MyEventTable>(collision, zPvCut);
     }
 
     // Filling candidate properties
@@ -466,14 +450,9 @@ struct HfTreeCreatorToXiPi {
                        soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
     // Filling event properties
-    bool newEvent = true;
-    bool isEvSel8 = false;
-    bool isEventZSel = false;
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      isEvSel8 = false;
-      isEventZSel = false;
-      fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel);
+      fillEvent<MyEventTable>(collision, zPvCut);
     }
 
     // Filling candidate properties
@@ -488,14 +467,9 @@ struct HfTreeCreatorToXiPi {
                      soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
     // Filling event properties
-    bool newEvent = true;
-    bool isEvSel8 = false;
-    bool isEventZSel = false;
     rowEv.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      isEvSel8 = false;
-      isEventZSel = false;
-      fillEvent<MyEventTable>(collision, zPvCut, newEvent, isEvSel8, isEventZSel);
+      fillEvent<MyEventTable>(collision, zPvCut);
     }
 
     // Filling candidate properties
