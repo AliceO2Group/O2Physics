@@ -1010,7 +1010,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "hPhiVsPtVsBdtDmesonWithJPsi", "", false, 100, 0.f, 1.f, VarManager::kBdtCharmHadron, 100, 0.f, 50.f, VarManager::kPtCharmHadron, 180, 0., 2 * constants::math::PI, VarManager::kPhiCharmHadron);
     }
   }
-  if (groupStr.Contains("dilepton-track-track")) {
+  if (groupStr.Contains("dilepton-dihardon")) {
     if (subGroupStr.EqualTo("xtojpsipipi")) {
       hm->AddHistogram(histClass, "hMass_X3872", "", false, 1000, 3.0, 5.0, VarManager::kQuadMass);
       hm->AddHistogram(histClass, "hPt_X3872", "", false, 200, 0.0, 20.0, VarManager::kQuadPt);
