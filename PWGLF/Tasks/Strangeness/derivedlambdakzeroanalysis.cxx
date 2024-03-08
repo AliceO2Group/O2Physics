@@ -57,7 +57,7 @@ using std::array;
 
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
-using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras, aod::V0MCMothers>;
+using v0MCCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0MCCores, aod::V0Extras, aod::V0MCMothers, aod::V0MCCollRefs>;
 
 // simple checkers
 #define bitset(var, nbit) ((var) |= (1 << (nbit)))
@@ -71,6 +71,8 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> analyseLambda{"analyseLambda", true, "process Lambda-like candidates"};
   Configurable<bool> analyseAntiLambda{"analyseAntiLambda", true, "process AntiLambda-like candidates"};
   Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "fill feeddown matrix if MC"};
+  Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
+  Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
 
   // Selection criteria: acceptance
   Configurable<float> rapidityCut{"rapidityCut", 0.5, "rapidity"};
@@ -103,6 +105,7 @@ struct derivedlambdakzeroanalysis {
 
   // for MC
   Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
+  Configurable<bool> doCollisionAssociationQA{"doCollisionAssociationQA", true, "check collision association"};
 
   static constexpr float defaultLifetimeCuts[1][2] = {{30., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
@@ -131,6 +134,9 @@ struct derivedlambdakzeroanalysis {
   // Track quality axes
   ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
   ConfigurableAxis axisITSclus{"axisITSclus", {7, 0.0f, 7.0f}, "N ITS Clusters"};
+
+  // MC coll assoc QA axis
+  ConfigurableAxis axisMonteCarloNch{"axisMonteCarloNch", {300, 0.0f, 3000.0f}, "N_{ch} MC"};
 
   enum selection { selCosPA = 0,
                    selRadius,
@@ -223,10 +229,12 @@ struct derivedlambdakzeroanalysis {
     secondaryMaskSelectionAntiLambda = maskTopological | maskTrackProperties | maskAntiLambdaSpecific;
 
     // Event Counters
-    histos.add("hEventSelection", "hEventSelection", kTH1F, {{3, -0.5f, +2.5f}});
+    histos.add("hEventSelection", "hEventSelection", kTH1F, {{10, -0.5f, +9.5f}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(5, "kNoTimeFrameBorder");
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
 
@@ -334,6 +342,10 @@ struct derivedlambdakzeroanalysis {
         histos.add("K0Short/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
         histos.add("K0Short/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
         histos.add("K0Short/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+        if (doCollisionAssociationQA) {
+          histos.add("K0Short/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
+          histos.add("K0Short/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
+        }
       }
       if (analyseLambda) {
         histos.add("Lambda/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
@@ -343,6 +355,10 @@ struct derivedlambdakzeroanalysis {
         histos.add("Lambda/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
         histos.add("Lambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
         histos.add("Lambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+        if (doCollisionAssociationQA) {
+          histos.add("Lambda/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
+          histos.add("Lambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
+        }
       }
       if (analyseAntiLambda) {
         histos.add("AntiLambda/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
@@ -352,6 +368,10 @@ struct derivedlambdakzeroanalysis {
         histos.add("AntiLambda/hV0Radius", "hV0Radius", kTH1F, {axisV0Radius});
         histos.add("AntiLambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
         histos.add("AntiLambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2F, {axisTPCrows, axisITSclus});
+        if (doCollisionAssociationQA) {
+          histos.add("AntiLambda/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
+          histos.add("AntiLambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
+        }
       }
     }
 
@@ -608,6 +628,29 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0>
+  void analyseCollisionAssociation(TV0 v0, int mcNch, bool correctAssociation, uint32_t selMap)
+  // analyse collision association
+  {
+    // __________________________________________
+    // main analysis
+    if (verifyMask(selMap, maskSelectionK0Short) && analyseK0Short) {
+      histos.fill(HIST("K0Short/h2dPtVsNch"), mcNch, v0.pt());
+      if (!correctAssociation)
+        histos.fill(HIST("K0Short/h2dPtVsNch_BadCollAssig"), mcNch, v0.pt());
+    }
+    if (verifyMask(selMap, maskSelectionLambda) && analyseLambda) {
+      histos.fill(HIST("Lambda/h2dPtVsNch"), mcNch, v0.pt());
+      if (!correctAssociation)
+        histos.fill(HIST("Lambda/h2dPtVsNch_BadCollAssig"), mcNch, v0.pt());
+    }
+    if (verifyMask(selMap, maskSelectionAntiLambda) && analyseAntiLambda) {
+      histos.fill(HIST("AntiLambda/h2dPtVsNch"), mcNch, v0.pt());
+      if (!correctAssociation)
+        histos.fill(HIST("AntiLambda/h2dPtVsNch_BadCollAssig"), mcNch, v0.pt());
+    }
+  }
+
+  template <typename TV0>
   void fillFeeddownMatrix(TV0 v0, float centrality, uint32_t selMap)
   // fill feeddown matrix for Lambdas or AntiLambdas
   // fixme: a potential improvement would be to consider mass windows for the l/al
@@ -646,6 +689,16 @@ struct derivedlambdakzeroanalysis {
     }
     histos.fill(HIST("hEventSelection"), 2 /* vertex-Z selected */);
 
+    if (rejectITSROFBorder && collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 3 /* Not at ITS ROF border */);
+
+    if (rejectTFBorder && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 4 /* Not at TF border */);
+
     float centrality = collision.centFT0C();
     if (qaCentrality) {
       auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
@@ -675,7 +728,7 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
-  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&, aod::MotherMCParts const&)
+  void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraRawCents, aod::StraEvSels, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mccollisions)
   {
     histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
     if (!collision.sel8()) {
@@ -687,6 +740,16 @@ struct derivedlambdakzeroanalysis {
       return;
     }
     histos.fill(HIST("hEventSelection"), 2 /* vertex-Z selected */);
+
+    if (rejectITSROFBorder && collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 3 /* Not at ITS ROF border */);
+
+    if (rejectTFBorder && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 4 /* Not at TF border */);
 
     float centrality = collision.centFT0C();
     if (qaCentrality) {
@@ -719,6 +782,19 @@ struct derivedlambdakzeroanalysis {
       }
 
       analyseCandidate(v0, centrality, selMap);
+
+      if (doCollisionAssociationQA) {
+        // check collision association explicitly
+        bool correctCollision = false;
+        int mcNch = -1;
+        if (collision.has_straMCCollision()) {
+          auto mcCollision = collision.straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
+          mcNch = mcCollision.multMCNParticlesEta05();
+          correctCollision = (v0.straMCCollisionId() == mcCollision.globalIndex());
+        }
+        analyseCollisionAssociation(v0, mcNch, correctCollision, selMap);
+      }
+
     } // end v0 loop
   }
 

@@ -153,7 +153,7 @@ struct cascademcbuilder {
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // build kf cascade labels
-  void processKFCascades(aod::KFCascDatas const& casctable, aod::V0sLinked const&, aod::V0Datas const& v0table, aod::McTrackLabels const&, aod::McParticles const&)
+  void processKFCascades(aod::KFCascDatas const& casctable, aod::V0s const&, aod::McTrackLabels const&, aod::McParticles const&)
   {
     for (auto& casc : casctable) {
       int lLabel = -1;

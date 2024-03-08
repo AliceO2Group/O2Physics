@@ -45,7 +45,7 @@ enum EvFlags : uint8_t {
 DECLARE_SOA_COLUMN(CollisionZ, zcoll, float);
 DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
 DECLARE_SOA_COLUMN(MultFV0A, multFV0A, float);
-DECLARE_SOA_COLUMN(Sign, sign, float);
+DECLARE_SOA_COLUMN(Sign, sign, int);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(RapXi, rapxi, float);
 DECLARE_SOA_COLUMN(RapOmega, rapomega, float);
@@ -66,9 +66,9 @@ DECLARE_SOA_COLUMN(DCAV0ToPV, dcav0topv, float);
 DECLARE_SOA_COLUMN(PosEta, poseta, float);
 DECLARE_SOA_COLUMN(NegEta, negeta, float);
 DECLARE_SOA_COLUMN(BachEta, bacheta, float);
-DECLARE_SOA_COLUMN(PosITSHits, positshits, float);
-DECLARE_SOA_COLUMN(NegITSHits, negitshits, float);
-DECLARE_SOA_COLUMN(BachITSHits, bachitshits, float);
+DECLARE_SOA_COLUMN(PosITSHits, positshits, int);
+DECLARE_SOA_COLUMN(NegITSHits, negitshits, int);
+DECLARE_SOA_COLUMN(BachITSHits, bachitshits, int);
 DECLARE_SOA_COLUMN(CtauXi, ctauxi, float);
 DECLARE_SOA_COLUMN(CtauOmega, ctauomega, float);
 DECLARE_SOA_COLUMN(NTPCSigmaNegPr, ntpcsigmanegpr, float);
@@ -83,20 +83,20 @@ DECLARE_SOA_COLUMN(NTOFSigmaNegPi, ntofsigmanegpi, float);
 DECLARE_SOA_COLUMN(NTOFSigmaPosPi, ntofsigmapospi, float);
 DECLARE_SOA_COLUMN(NTOFSigmaBachPi, ntofsigmabachpi, float);
 DECLARE_SOA_COLUMN(NTOFSigmaBachKa, ntofsigmabachka, float);
-DECLARE_SOA_COLUMN(PosNTPCClusters, posntpcscls, float);
-DECLARE_SOA_COLUMN(NegNTPCClusters, negntpcscls, float);
-DECLARE_SOA_COLUMN(BachNTPCClusters, bachntpcscls, float);
-DECLARE_SOA_COLUMN(PosNTPCCrossedRows, posntpccrrows, float);
-DECLARE_SOA_COLUMN(NegNTPCCrossedRows, negntpccrrows, float);
-DECLARE_SOA_COLUMN(BachNTPCCrossedRows, bachntpccrrows, float);
-DECLARE_SOA_COLUMN(PosHasTOF, poshastof, float);
-DECLARE_SOA_COLUMN(NegHasTOF, neghastof, float);
-DECLARE_SOA_COLUMN(BachHasTOF, bachhastof, float);
+DECLARE_SOA_COLUMN(PosNTPCClusters, posntpcscls, int);
+DECLARE_SOA_COLUMN(NegNTPCClusters, negntpcscls, int);
+DECLARE_SOA_COLUMN(BachNTPCClusters, bachntpcscls, int);
+DECLARE_SOA_COLUMN(PosNTPCCrossedRows, posntpccrrows, int);
+DECLARE_SOA_COLUMN(NegNTPCCrossedRows, negntpccrrows, int);
+DECLARE_SOA_COLUMN(BachNTPCCrossedRows, bachntpccrrows, int);
+DECLARE_SOA_COLUMN(PosHasTOF, poshastof, int);
+DECLARE_SOA_COLUMN(NegHasTOF, neghastof, int);
+DECLARE_SOA_COLUMN(BachHasTOF, bachhastof, int);
 DECLARE_SOA_COLUMN(PosPt, pospt, float);
 DECLARE_SOA_COLUMN(NegPt, negpt, float);
 DECLARE_SOA_COLUMN(BachPt, bachpt, float);
-DECLARE_SOA_COLUMN(McPdgCode, mcPdgCode, float);                     //! -1 unknown
-DECLARE_SOA_COLUMN(IsPrimary, isPrimary, float);                     //! -1 unknown, 0 not primary, 1 primary
+DECLARE_SOA_COLUMN(McPdgCode, mcPdgCode, int);                       //! -1 unknown
+DECLARE_SOA_COLUMN(IsPrimary, isPrimary, int);                       //! -1 unknown, 0 not primary, 1 primary
 DECLARE_SOA_COLUMN(BachBaryonCosPA, bachBaryonCosPA, float);         //! avoid bach-baryon correlated inv mass structure in analysis
 DECLARE_SOA_COLUMN(BachBaryonDCAxyToPV, bachBaryonDCAxyToPV, float); //! avoid bach-baryon correlated inv mass structure in analysis
 DECLARE_SOA_COLUMN(EventSelFilterBitMask, eventSelFilterBitMask, uint8_t);

@@ -60,10 +60,10 @@ using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
 
 namespace
 {
-std::unordered_map<int, std::array<TH2*, 5>> gHistosC;
-std::unordered_map<int, std::array<TH2*, 5>> gHistosA;
-std::array<TH2*, 5> gCurrentHistC;
-std::array<TH2*, 5> gCurrentHistA;
+std::unordered_map<int, std::array<TH2*, 2>> gCentroidC;
+std::unordered_map<int, std::array<TH2*, 2>> gCentroidA;
+std::array<TH2*, 2> gCurrentCentroidC;
+std::array<TH2*, 2> gCurrentCentroidA;
 } // namespace
 
 struct zdcSP {
@@ -71,6 +71,8 @@ struct zdcSP {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Produces<aod::ZdcSPTable> zdcSPTable;
   int mRunNumber{-1};
+  uint64_t mSOR{0};
+  double mMinSeconds{-1.};
   Configurable<float> cfgCalibrationMaxCentFT0C{"cfgCalibrationMaxCentFT0C", 90.f, "Maximum centrality FT0C"};
   Configurable<float> cfgCalibrationDownscaling{"cfgCalibrationDownscaling", 1.f, "Percentage of events to be processed"};
 
@@ -80,7 +82,7 @@ struct zdcSP {
   template <class collision_t>
   bool eventSelection(collision_t& collision)
   {
-    return collision.sel8() && collision.centFT0C() < cfgCalibrationMaxCentFT0C && gRandom->Uniform() < cfgCalibrationDownscaling;
+    return collision.sel8() && collision.centFT0C() < cfgCalibrationMaxCentFT0C;
   }
 
   void initCCDB(BCsRun3::iterator const& bc)
@@ -89,25 +91,28 @@ struct zdcSP {
       return;
     }
     mRunNumber = bc.runNumber();
-    if (gHistosC.find(mRunNumber) == gHistosC.end()) {
-      std::array<TH2*, 5>& zncH = gHistosC[mRunNumber];
-      std::array<TH2*, 5>& znaH = gHistosA[mRunNumber];
-      zncH[0] = mHistos.add<TH2>(Form("%i/znc_common", mRunNumber), ";Hadronic rate (kHz);ZNC common signal", kTH2D, {{51, 0, 51}, {400, 0., 400.}}).get();
-      znaH[0] = mHistos.add<TH2>(Form("%i/zna_common", mRunNumber), ";Hadronic rate (kHz);ZNA common signal", kTH2D, {{51, 0, 51}, {400, 0., 400.}}).get();
-      for (int i{0}; i < 4; ++i) {
-        zncH[i + 1] = mHistos.add<TH2>(Form("%i/znc_%i", mRunNumber, i + 1), Form(";Hadronic rate (kHz);ZNC %i signal", i + 1), kTH2D, {{51, 0, 51}, {400, 0., 400.}}).get();
-        znaH[i + 1] = mHistos.add<TH2>(Form("%i/zna_%i", mRunNumber, i + 1), Form(";Hadronic rate (kHz);ZNA %i signal", i + 1), kTH2D, {{51, 0, 51}, {400, 0., 400.}}).get();
+    if (gCentroidC.find(mRunNumber) == gCentroidC.end()) {
+      auto runDuration = ccdb->getRunDuration(mRunNumber);
+      mSOR = runDuration.first;
+      mMinSeconds = std::floor(mSOR * 1.e-3);                /// round tsSOR to the highest integer lower than tsSOR
+      double maxSec = std::ceil(runDuration.second * 1.e-3); /// round tsEOR to the lowest integer higher than tsEOR
+      const AxisSpec axisSeconds{static_cast<int>(maxSec - mMinSeconds), 0, maxSec - mMinSeconds, "Seconds since SOR"};
+      std::array<TH2*, 2>& zncH = gCentroidC[mRunNumber];
+      std::array<TH2*, 2>& znaH = gCentroidA[mRunNumber];
+      std::string xy[2] = {"X", "Y"};
+      for (int i{0}; i < 2; ++i) {
+        zncH[i] = mHistos.add<TH2>(Form("%i/centroidC%s", mRunNumber, xy[i].data()), Form(";Time since SOR (s);ZNC centroid %s", xy[i].data()), kTH2D, {axisSeconds, {50, -1.5, 1.5}}).get();
+        znaH[i] = mHistos.add<TH2>(Form("%i/centroidA%s", mRunNumber, xy[i].data()), Form(";Time since SOR (s);ZNC centroid %s", xy[i].data()), kTH2D, {axisSeconds, {50, -1.5, 1.5}}).get();
       }
     }
-    gCurrentHistC = gHistosC[mRunNumber];
-    gCurrentHistA = gHistosA[mRunNumber];
+    gCurrentCentroidC = gCentroidC[mRunNumber];
+    gCurrentCentroidA = gCentroidA[mRunNumber];
   }
 
   void init(o2::framework::InitContext&)
   {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
   }
 
@@ -125,41 +130,72 @@ struct zdcSP {
     if (!bc.has_zdc()) {
       return;
     }
+    initCCDB(bc);
+    double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
+
+    double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
     auto zdc = bc.zdc();
     auto zncEnergy = zdc.energySectorZNC();
     auto znaEnergy = zdc.energySectorZNA();
-    bool goodC = true, goodA = true;
     for (int i = 0; i < 4; i++) { // avoid std::numeric_limits<float>::infinity() in the table
       if (zncEnergy[i] < kVeryNegative) {
-        zncEnergy[i] = kVeryNegative;
-        goodC = false;
+        zncEnergy[i] = -1.f;
       }
       if (znaEnergy[i] < kVeryNegative) {
-        znaEnergy[i] = kVeryNegative;
-        goodA = false;
+        znaEnergy[i] = -1.f;
       }
     }
-    float znaCommon = zdc.energyCommonZNA() < 0 ? kVeryNegative : zdc.energyCommonZNA();
-    float zncCommon = zdc.energyCommonZNC() < 0 ? kVeryNegative : zdc.energyCommonZNC();
-    zdcSPTable(bc.globalBC(), bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.centFT0C(),
-               znaCommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3],
-               zncCommon, zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3]);
-    if (!goodC && !goodA) {
-      return;
+    float znaCommon = zdc.energyCommonZNA() < 0 ? -1.f : zdc.energyCommonZNA();
+    float zncCommon = zdc.energyCommonZNC() < 0 ? -1.f : zdc.energyCommonZNC();
+    if (gRandom->Uniform() < cfgCalibrationDownscaling) {
+      zdcSPTable(bc.timestamp() - mSOR, bc.runNumber(), hadronicRate, collision.posX(), collision.posY(), collision.posZ(), collision.centFT0C(),
+                 znaCommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3],
+                 zncCommon, zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3]);
     }
-    initCCDB(bc);
-    double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic"); //
-    if (goodC) {
-      gCurrentHistC[0]->Fill(hadronicRate, zncCommon);
-      for (int i{0}; i < 4; ++i) {
-        gCurrentHistC[i + 1]->Fill(hadronicRate, zncEnergy[i]);
+
+    constexpr float beamEne = 5.36 * 0.5;
+    constexpr float x[4] = {-1.75, 1.75, -1.75, 1.75};
+    constexpr float y[4] = {-1.75, -1.75, 1.75, 1.75};
+    constexpr float alpha = 0.395;
+    float numXZNC = 0., numYZNC = 0., denZNC = 0.;
+    float numXZNA = 0., numYZNA = 0., denZNA = 0.;
+    //
+    for (int i = 0; i < 4; i++) {
+      if (zncEnergy[i] > 0.) {
+        float wZNC = std::pow(zncEnergy[i], alpha);
+        numXZNC += x[i] * wZNC;
+        numYZNC += y[i] * wZNC;
+        denZNC += wZNC;
+      }
+      if (znaEnergy[i] > 0.) {
+        float wZNA = std::pow(znaEnergy[i], alpha);
+        numXZNA += x[i] * wZNA;
+        numYZNA += y[i] * wZNA;
+        denZNA += wZNA;
       }
     }
-    if (goodA) {
-      gCurrentHistA[0]->Fill(hadronicRate, znaCommon);
-      for (int i{0}; i < 4; ++i) {
-        gCurrentHistA[i + 1]->Fill(hadronicRate, znaEnergy[i]);
-      }
+    //
+    float centrZNC[2], centrZNA[2];
+    if (denZNC != 0.) {
+      float nSpecnC = zncCommon / beamEne;
+      float cZNC = 1.89358 - 0.71262 / (nSpecnC + 0.71789);
+      centrZNC[0] = cZNC * numXZNC / denZNC;
+      centrZNC[1] = cZNC * numYZNC / denZNC;
+    } else {
+      centrZNC[0] = centrZNC[1] = 999.;
+    }
+    //
+    if (denZNA != 0.) {
+      float nSpecnA = znaCommon / beamEne;
+      float cZNA = 1.89358 - 0.71262 / (nSpecnA + 0.71789);
+      centrZNA[0] = -cZNA * numXZNA / denZNA;
+      centrZNA[1] = cZNA * numYZNA / denZNA;
+    } else {
+      centrZNA[0] = centrZNA[1] = 999.;
+    }
+    for (int i{0}; i < 2; ++i) {
+      gCurrentCentroidC[i]->Fill(seconds, centrZNC[i]);
+      gCurrentCentroidA[i]->Fill(seconds, centrZNA[i]);
     }
   }
   PROCESS_SWITCH(zdcSP, processCalibrationData, "Data analysis", true);

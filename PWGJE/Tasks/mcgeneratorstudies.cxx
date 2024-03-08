@@ -51,6 +51,8 @@ struct MCGeneratorStudies {
     mHistManager.add("hpT_T0Triggered_EMCReadout_Unique", "Unique T0 triggered and EMC readout collisions", HistType::kTH1F, {pTAxis});
   }
 
+  PresliceUnsorted<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
+
   void process(soa::Filtered<MyMCCollisions>::iterator const& collision, soa::Filtered<aod::McParticles> const& mcParticles)
   {
     bool isT0Triggered = collision.sel8();
@@ -68,7 +70,8 @@ struct MCGeneratorStudies {
         }
       }
     }
-    for (auto& mcParticle : mcParticles) {
+    auto mcParticles_inColl = mcParticles.sliceBy(perMcCollision, collision.globalIndex());
+    for (auto& mcParticle : mcParticles_inColl) {
       mHistManager.fill(HIST("hpT_all"), mcParticle.pt());
       if (isT0Triggered) {
         mHistManager.fill(HIST("hpT_T0Triggered"), mcParticle.pt());

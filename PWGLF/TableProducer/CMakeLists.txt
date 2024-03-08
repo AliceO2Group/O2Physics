@@ -158,6 +158,11 @@ o2physics_add_dpl_workflow(reso2initializer
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(reso2mergedf
+                    SOURCES LFResonanceMergeDF.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(f1protoninitializer
                     SOURCES f1protonInitializer.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing

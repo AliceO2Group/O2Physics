@@ -163,7 +163,6 @@ struct DalitzMuMuQCMC {
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
     double values[4] = {0, 0, 0, 0};
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
-    float det_pos = 999.f, det_ele = 999.f;
 
     for (auto& collision : grouped_collisions) {
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
@@ -205,18 +204,9 @@ struct DalitzMuMuQCMC {
           if (mother_id > 0) {
             auto mcmother = mcparticles.iteratorAt(mother_id);
             if (IsPhysicalPrimary(mcmother.emreducedmcevent(), mcmother, mcparticles)) {
-
-              det_pos = pos.cYY() * pos.cZZ() - pos.cZY() * pos.cZY();
-              det_ele = ele.cYY() * ele.cZZ() - ele.cZY() * ele.cZY();
-              if (det_pos < 0 || det_ele < 0) {
-                dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
-              } else {
-                float chi2pos = (pos.dcaXY() * pos.dcaXY() * pos.cZZ() + pos.dcaZ() * pos.dcaZ() * pos.cYY() - 2. * pos.dcaXY() * pos.dcaZ() * pos.cZY()) / det_pos;
-                float chi2ele = (ele.dcaXY() * ele.dcaXY() * ele.cZZ() + ele.dcaZ() * ele.dcaZ() * ele.cYY() - 2. * ele.dcaXY() * ele.dcaZ() * ele.cZY()) / det_ele;
-                dca_pos_3d = std::sqrt(std::abs(chi2pos) / 2.);
-                dca_ele_3d = std::sqrt(std::abs(chi2ele) / 2.);
-                dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
-              }
+              dca_pos_3d = pos.dca3DinSigma();
+              dca_ele_3d = ele.dca3DinSigma();
+              dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
 
               values[0] = uls_pair.mass();
               values[1] = uls_pair.pt();

@@ -158,7 +158,6 @@ struct DalitzMuMuQC {
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
     double values[4] = {0, 0, 0, 0};
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
-    float det_pos = 999.f, det_ele = 999.f;
 
     for (auto& collision : grouped_collisions) {
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
@@ -189,17 +188,9 @@ struct DalitzMuMuQC {
           auto ele = uls_pair.template negTrack_as<MyTracks>();
 
           if (cut.IsSelected<MyTracks>(uls_pair)) {
-            det_pos = pos.cYY() * pos.cZZ() - pos.cZY() * pos.cZY();
-            det_ele = ele.cYY() * ele.cZZ() - ele.cZY() * ele.cZY();
-            if (det_pos < 0 || det_ele < 0) {
-              dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
-            } else {
-              float chi2pos = (pos.dcaXY() * pos.dcaXY() * pos.cZZ() + pos.dcaZ() * pos.dcaZ() * pos.cYY() - 2. * pos.dcaXY() * pos.dcaZ() * pos.cZY()) / det_pos;
-              float chi2ele = (ele.dcaXY() * ele.dcaXY() * ele.cZZ() + ele.dcaZ() * ele.dcaZ() * ele.cYY() - 2. * ele.dcaXY() * ele.dcaZ() * ele.cZY()) / det_ele;
-              dca_pos_3d = std::sqrt(std::abs(chi2pos) / 2.);
-              dca_ele_3d = std::sqrt(std::abs(chi2ele) / 2.);
-              dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
-            }
+            dca_pos_3d = pos.dca3DinSigma();
+            dca_ele_3d = ele.dca3DinSigma();
+            dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
 
             values[0] = uls_pair.mass();
             values[1] = uls_pair.pt();
@@ -221,17 +212,10 @@ struct DalitzMuMuQC {
           auto pos = lspp_pair.template posTrack_as<MyTracks>();
           auto ele = lspp_pair.template negTrack_as<MyTracks>();
           if (cut.IsSelected<MyTracks>(lspp_pair)) {
-            det_pos = pos.cYY() * pos.cZZ() - pos.cZY() * pos.cZY();
-            det_ele = ele.cYY() * ele.cZZ() - ele.cZY() * ele.cZY();
-            if (det_pos < 0 || det_ele < 0) {
-              dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
-            } else {
-              float chi2pos = (pos.dcaXY() * pos.dcaXY() * pos.cZZ() + pos.dcaZ() * pos.dcaZ() * pos.cYY() - 2. * pos.dcaXY() * pos.dcaZ() * pos.cZY()) / det_pos;
-              float chi2ele = (ele.dcaXY() * ele.dcaXY() * ele.cZZ() + ele.dcaZ() * ele.dcaZ() * ele.cYY() - 2. * ele.dcaXY() * ele.dcaZ() * ele.cZY()) / det_ele;
-              dca_pos_3d = std::sqrt(std::abs(chi2pos) / 2.);
-              dca_ele_3d = std::sqrt(std::abs(chi2ele) / 2.);
-              dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
-            }
+            dca_pos_3d = pos.dca3DinSigma();
+            dca_ele_3d = ele.dca3DinSigma();
+            dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
+
             values[0] = lspp_pair.mass();
             values[1] = lspp_pair.pt();
             values[2] = dca_ee_3d;
@@ -246,17 +230,10 @@ struct DalitzMuMuQC {
           auto pos = lsmm_pair.template posTrack_as<MyTracks>();
           auto ele = lsmm_pair.template negTrack_as<MyTracks>();
           if (cut.IsSelected<MyTracks>(lsmm_pair)) {
-            det_pos = pos.cYY() * pos.cZZ() - pos.cZY() * pos.cZY();
-            det_ele = ele.cYY() * ele.cZZ() - ele.cZY() * ele.cZY();
-            if (det_pos < 0 || det_ele < 0) {
-              dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
-            } else {
-              float chi2pos = (pos.dcaXY() * pos.dcaXY() * pos.cZZ() + pos.dcaZ() * pos.dcaZ() * pos.cYY() - 2. * pos.dcaXY() * pos.dcaZ() * pos.cZY()) / det_pos;
-              float chi2ele = (ele.dcaXY() * ele.dcaXY() * ele.cZZ() + ele.dcaZ() * ele.dcaZ() * ele.cYY() - 2. * ele.dcaXY() * ele.dcaZ() * ele.cZY()) / det_ele;
-              dca_pos_3d = std::sqrt(std::abs(chi2pos) / 2.);
-              dca_ele_3d = std::sqrt(std::abs(chi2ele) / 2.);
-              dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
-            }
+            dca_pos_3d = pos.dca3DinSigma();
+            dca_ele_3d = ele.dca3DinSigma();
+            dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
+
             values[0] = lsmm_pair.mass();
             values[1] = lsmm_pair.pt();
             values[2] = dca_ee_3d;
@@ -298,7 +275,6 @@ struct DalitzMuMuQC {
     ROOT::Math::PtEtaPhiMVector v1, v2, v12;
     float phiv = 0;
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
-    float det_pos = 999.f, det_ele = 999.f;
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ndepth, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
 
@@ -325,23 +301,16 @@ struct DalitzMuMuQC {
           v2 = ROOT::Math::PtEtaPhiMVector(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon);
           v12 = v1 + v2;
 
-          det_pos = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
-          det_ele = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
-          if (det_pos < 0 || det_ele < 0) {
-            dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
-          } else {
-            float chi2pos = (t1.dcaXY() * t1.dcaXY() * t1.cZZ() + t1.dcaZ() * t1.dcaZ() * t1.cYY() - 2. * t1.dcaXY() * t1.dcaZ() * t1.cZY()) / det_pos;
-            float chi2ele = (t2.dcaXY() * t2.dcaXY() * t2.cZZ() + t2.dcaZ() * t2.dcaZ() * t2.cYY() - 2. * t2.dcaXY() * t2.dcaZ() * t2.cZY()) / det_ele;
-            dca_pos_3d = std::sqrt(std::abs(chi2pos) / 2.);
-            dca_ele_3d = std::sqrt(std::abs(chi2ele) / 2.);
-            dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
-          }
+          dca_pos_3d = t1.dca3DinSigma();
+          dca_ele_3d = t2.dca3DinSigma();
+          dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
+
           values[0] = v12.M();
           values[1] = v12.Pt();
           values[2] = dca_ee_3d;
           values[3] = phiv;
 
-          if (cut.IsSelectedTrack(t1) && cut.IsSelectedTrack(t2) && cut.IsSelectedPair(v12.M(), phiv)) {
+          if (cut.IsSelectedTrack(t1) && cut.IsSelectedTrack(t2) && cut.IsSelectedPair(v12.M(), dca_ee_3d, phiv)) {
             if (t1.sign() * t2.sign() < 0) {
               reinterpret_cast<THnSparseF*>(list_dalitzmumu_cut->FindObject("hs_dilepton_uls_mix"))->Fill(values);
             } else if (t1.sign() > 0 && t2.sign() > 0) {
