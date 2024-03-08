@@ -651,8 +651,7 @@ struct HfTaskLc {
     }
   }
 
-  void
-    processMcStd(LcCandidatesMc const&, soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
+  void processMcStd(LcCandidatesMc const&, soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                  aod::TracksWMc const& tracksWithMc)
   {
     processMc<false>(selectedLcCandidatesMc, mcParticles, tracksWithMc);
