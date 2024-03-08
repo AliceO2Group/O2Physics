@@ -39,12 +39,12 @@ class CutVarMinimiser:
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        raw_yields=None,
-        eff_prompt=None,
-        eff_nonprompt=None,
-        unc_raw_yields=None,
-        unc_eff_prompt=None,
-        unc_eff_nonprompt=None,
+        raw_yields=np.zeros(0),
+        eff_prompt=np.zeros(0),
+        eff_nonprompt=np.zeros(0),
+        unc_raw_yields=np.zeros(0),
+        unc_eff_prompt=np.zeros(0),
+        unc_eff_nonprompt=np.zeros(0),
     ):
         self.raw_yields = raw_yields
         self.eff_prompt = eff_prompt
@@ -53,21 +53,21 @@ class CutVarMinimiser:
         self.unc_eff_prompt = unc_eff_prompt
         self.unc_eff_nonprompt = unc_eff_nonprompt
 
-        self.frac_prompt = None
-        self.frac_nonprompt = None
-        self.unc_frac_prompt = None
-        self.unc_frac_nonprompt = None
-
         self.n_sets = len(raw_yields)
 
-        self.m_rawy = None
-        self.m_eff = None
-        self.m_cov_sets = None
-        self.m_corr_sets = None
-        self.m_weights = None
-        self.m_res = None
-        self.m_corr_yields = None
-        self.m_covariance = None
+        self.frac_prompt = np.zeros(shape=self.n_sets)
+        self.frac_nonprompt = np.zeros(shape=self.n_sets)
+        self.unc_frac_prompt = np.zeros(shape=self.n_sets)
+        self.unc_frac_nonprompt = np.zeros(shape=self.n_sets)
+
+        self.m_rawy = np.zeros(shape=(self.n_sets, 1))
+        self.m_eff = np.zeros(shape=(self.n_sets, 2))
+        self.m_cov_sets = np.zeros(shape=(self.n_sets, self.n_sets))
+        self.m_corr_sets = np.zeros(shape=(self.n_sets, self.n_sets))
+        self.m_weights = np.zeros(shape=(self.n_sets, self.n_sets))
+        self.m_res = np.zeros(shape=(self.n_sets, 1))
+        self.m_corr_yields = np.zeros(shape=(2, 1))
+        self.m_covariance = np.zeros(shape=(2, 2))
 
         self.chi_2 = 0.0
         self.ndf = self.n_sets - 2
