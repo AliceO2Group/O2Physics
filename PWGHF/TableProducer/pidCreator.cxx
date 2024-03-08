@@ -26,16 +26,16 @@ using namespace o2;
 using namespace o2::framework;
 
 struct HfPidCreator {
-  Produces<aod::TracksPidFullElS> trackPidFullEl;
-  Produces<aod::TracksPidTinyElS> trackPidTinyEl;
-  Produces<aod::TracksPidFullMuS> trackPidFullMu;
-  Produces<aod::TracksPidTinyMuS> trackPidTinyMu;
-  Produces<aod::TracksPidFullPiS> trackPidFullPi;
-  Produces<aod::TracksPidTinyPiS> trackPidTinyPi;
-  Produces<aod::TracksPidFullKaS> trackPidFullKa;
-  Produces<aod::TracksPidTinyKaS> trackPidTinyKa;
-  Produces<aod::TracksPidFullPrS> trackPidFullPr;
-  Produces<aod::TracksPidTinyPrS> trackPidTinyPr;
+  Produces<aod::PidTpcTofFullEl> trackPidFullEl;
+  Produces<aod::PidTpcTofTinyEl> trackPidTinyEl;
+  Produces<aod::PidTpcTofFullMu> trackPidFullMu;
+  Produces<aod::PidTpcTofTinyMu> trackPidTinyMu;
+  Produces<aod::PidTpcTofFullPi> trackPidFullPi;
+  Produces<aod::PidTpcTofTinyPi> trackPidTinyPi;
+  Produces<aod::PidTpcTofFullKa> trackPidFullKa;
+  Produces<aod::PidTpcTofTinyKa> trackPidTinyKa;
+  Produces<aod::PidTpcTofFullPr> trackPidFullPr;
+  Produces<aod::PidTpcTofTinyPr> trackPidTinyPr;
 
   static constexpr float defaultNSigmaTolerance = .1f;
   static constexpr float defaultNSigma = -999.f + defaultNSigmaTolerance; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
@@ -61,16 +61,16 @@ struct HfPidCreator {
   void init(InitContext& initContext)
   {
     // Check whether the right process functions are enabled.
-    checkTableSwitch(initContext, "TracksPidFullElS", doprocessFullEl);
-    checkTableSwitch(initContext, "TracksPidTinyElS", doprocessTinyEl);
-    checkTableSwitch(initContext, "TracksPidFullMuS", doprocessFullMu);
-    checkTableSwitch(initContext, "TracksPidTinyMuS", doprocessTinyMu);
-    checkTableSwitch(initContext, "TracksPidFullPiS", doprocessFullPi);
-    checkTableSwitch(initContext, "TracksPidTinyPiS", doprocessTinyPi);
-    checkTableSwitch(initContext, "TracksPidFullKaS", doprocessFullKa);
-    checkTableSwitch(initContext, "TracksPidTinyKaS", doprocessTinyKa);
-    checkTableSwitch(initContext, "TracksPidFullPrS", doprocessFullPr);
-    checkTableSwitch(initContext, "TracksPidTinyPrS", doprocessTinyPr);
+    checkTableSwitch(initContext, "PidTpcTofFullEl", doprocessFullEl);
+    checkTableSwitch(initContext, "PidTpcTofTinyEl", doprocessTinyEl);
+    checkTableSwitch(initContext, "PidTpcTofFullMu", doprocessFullMu);
+    checkTableSwitch(initContext, "PidTpcTofTinyMu", doprocessTinyMu);
+    checkTableSwitch(initContext, "PidTpcTofFullPi", doprocessFullPi);
+    checkTableSwitch(initContext, "PidTpcTofTinyPi", doprocessTinyPi);
+    checkTableSwitch(initContext, "PidTpcTofFullKa", doprocessFullKa);
+    checkTableSwitch(initContext, "PidTpcTofTinyKa", doprocessTinyKa);
+    checkTableSwitch(initContext, "PidTpcTofFullPr", doprocessFullPr);
+    checkTableSwitch(initContext, "PidTpcTofTinyPr", doprocessTinyPr);
   }
 
   /// Function to combine TPC and TOF NSigma
