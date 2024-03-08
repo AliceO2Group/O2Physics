@@ -128,7 +128,8 @@ DECLARE_SOA_TABLE(HfCandDsLites, "AOD", "HFCANDDSLITE",
                   hf_cand::Chi2PCA,
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec,
-                  hf_cand_3prong::FlagMcDecayChanRec)
+                  hf_cand_3prong::FlagMcDecayChanRec,
+                  full::Sign);
 
 DECLARE_SOA_TABLE(HfCandDsFulls, "AOD", "HFCANDDSFULL",
                   collision::BCId,
@@ -363,7 +364,8 @@ struct HfTreeCreatorDsToKKPi {
         candidate.chi2PCA(),
         flagMc,
         originMc,
-        channelMc);
+        channelMc,
+        prong0.sign() + prong1.sign() + prong2.sign());
     } else {
       rowCandidateFull(
         candidate.collision().bcId(),
