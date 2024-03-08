@@ -134,6 +134,7 @@ struct qVectorsTable {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(cfgCcdbParam.nolaterthan.value);
+    ccdb->setFatalWhenNull(false);
 
     LOGF(info, "Getting alignment offsets from the CCDB...");
     offsetFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align",
@@ -264,12 +265,13 @@ struct qVectorsTable {
         RelGainConst.push_back(1.);
       }
     } else if (cfgGainCor == 1) {
-      if (!(ccdb->getForTimeStamp<std::vector<float>>(cfgGainEqPath, cfgCcdbParam.nolaterthan.value))->empty()) {
-        RelGainConst = *(ccdb->getForTimeStamp<std::vector<float>>(cfgGainEqPath, cfgCcdbParam.nolaterthan.value));
-      } else {
+      auto obj = ccdb->getForTimeStamp<std::vector<float>>(cfgGainEqPath, cfgCcdbParam.nolaterthan.value);
+      if (!obj) {
         for (int i = 0; i < cfgFT0RelGain->size(); i++) {
           RelGainConst.push_back(1.);
         }
+      } else {
+        RelGainConst = *(obj);
       }
     } else if (cfgGainCor == 2) {
       for (int i = 0; i < cfgFT0RelGain->size(); i++) {
