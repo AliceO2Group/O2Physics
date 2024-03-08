@@ -2966,6 +2966,20 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   values[kU3Q3] = values[kQ3X0A] * std::cos(3 * v12.Phi()) + values[kQ3Y0A] * std::sin(3 * v12.Phi());
   values[kCos2DeltaPhi] = std::cos(2 * (v12.Phi() - getEventPlane(2, values[kQ2X0A], values[kQ2Y0A])));
   values[kCos3DeltaPhi] = std::cos(3 * (v12.Phi() - getEventPlane(3, values[kQ3X0A], values[kQ3Y0A])));
+
+  float Psi2B = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
+  float Psi3B = getEventPlane(3, values[kQ3X0B], values[kQ3Y0B]);
+  float Psi2C = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
+  float Psi3C = getEventPlane(3, values[kQ3X0C], values[kQ3Y0C]);
+  values[kR2SP] = (values[kQ2X0B] * values[kQ2X0C] + values[kQ2Y0B] * values[kQ2Y0C]);
+  values[kR3SP] = (values[kQ3X0B] * values[kQ3X0C] + values[kQ3Y0B] * values[kQ3Y0C]);
+  if (values[kQ2Y0B] * values[kQ2Y0C] != 0.0) {
+    values[kR2EP] = TMath::Cos(2 * (Psi2B - Psi2C));
+  }
+  if (values[kQ3Y0B] * values[kQ3Y0C] != 0.0) {
+    values[kR3EP] = TMath::Cos(3 * (Psi3B - Psi3C));
+  }
+
   values[kCos2DeltaPhiMu1] = std::cos(2 * (v1.Phi() - v12.Phi()));
   values[kCos2DeltaPhiMu2] = std::cos(2 * (v2.Phi() - v12.Phi()));
   if (isnan(VarManager::fgValues[VarManager::kU2Q2]) == true) {
