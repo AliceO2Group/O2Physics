@@ -457,7 +457,7 @@ struct MultiplicityTableTaskIndexed {
 
             int nAllTracksTPCOnly = 0;
             int nAllTracksITSTPC = 0;
-            for (auto track : pvAllContribsGrouped) {
+            for (auto track : tpcTracksGrouped) {
               if (track.hasITS()) {
                 nAllTracksITSTPC++;
               } else {
