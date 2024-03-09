@@ -60,15 +60,17 @@ enum BeforeAfter {
 // initialized during self configuration
 std::vector<std::string> poinames; ///< the species of interest names
 std::vector<std::string> tnames;   ///< the track names
-} // namespace efficiencyandqatask
 
 static const std::vector<o2::track::PID::ID> mainspecies{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton};
 static const std::vector<std::string> mainspnames{"PionP", "PionM", "KaonP", "KaonM", "ProtonP", "ProtonM"};
+static const std::vector<int> pdgcodes = {11, 13, 211, 321, 2212};
 static const std::vector<std::string> mainsptitles{"#pi^{#plus}", "#pi^{#minus}", "K^{#plus}", "K^{#minus}", "p", "#bar{p}"};
+} // namespace efficiencyandqatask
 
 /* the QA data collecting engine */
 struct QADataCollectingEngine {
-  size_t nsp = efficiencyandqatask::tnames.size();
+  uint nsp = static_cast<uint>(efficiencyandqatask::tnames.size());
+  uint nmainsp = static_cast<uint>(efficiencyandqatask::mainspnames.size());
 
   //===================================================
   // The QA output objects
@@ -97,14 +99,20 @@ struct QADataCollectingEngine {
   /* primaries and secondaries */
   /* overall, first index detector level second index generator level */
   /* detailed, first index detector level, second index associated particle */
+  std::shared_ptr<TH3> fhPtPurityPosPrimA{nullptr};
+  std::shared_ptr<TH3> fhPtPurityNegPrimA{nullptr};
   std::vector<std::shared_ptr<TH2>> fhPt_vs_EtaPrimA{nsp, nullptr};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaPrimItsA{2, {nsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaPrimItsTpcA{2, {nsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaPrimItsTpcTofA{2, {nsp, nullptr}};
+  std::shared_ptr<TH3> fhPtPurityPosSecA{nullptr};
+  std::shared_ptr<TH3> fhPtPurityNegSecA{nullptr};
   std::vector<std::shared_ptr<TH2>> fhPt_vs_EtaSecA{nsp, nullptr};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaSecItsA{2, {nsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaSecItsTpcA{2, {nsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaSecItsTpcTofA{2, {nsp, nullptr}};
+  std::shared_ptr<TH3> fhPtPurityPosMatA{nullptr};
+  std::shared_ptr<TH3> fhPtPurityNegMatA{nullptr};
   std::vector<std::shared_ptr<TH2>> fhPt_vs_EtaMatA{nsp, nullptr};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaMatItsA{2, {nsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaMatItsTpcA{2, {nsp, nullptr}};
@@ -195,6 +203,14 @@ struct QADataCollectingEngine {
         fhPt_vs_EtaItsTpcTofA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), HNAMESTRING("ptItsTpcTof_%s", tnames[isp].c_str()), HTITLESTRING("ITS&TPC&TOF %s tracks", tnames[isp].c_str()), kTH2F, {etaAxis, ptAxis});
       }
     } else {
+      AxisSpec recoSpecies{static_cast<int>(nsp) + 1, -0.5, nsp - 0.5, "reco species"};
+      AxisSpec trueSpecies{static_cast<int>(nmainsp) + 1, -0.5, nmainsp + 0.5, "true species"};
+      fhPtPurityPosPrimA = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s", dirname, "Purity"), "ptPurityPosPrim", "Primaries for reconstructed positive", kTH3F, {recoSpecies, trueSpecies, ptAxis});
+      fhPtPurityNegPrimA = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s", dirname, "Purity"), "ptPurityNegPrim", "Primaries for reconstructed negative", kTH3F, {recoSpecies, trueSpecies, ptAxis});
+      fhPtPurityPosSecA = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s", dirname, "Purity"), "ptPurityPosSec", "Secondaries for reconstructed positive", kTH3F, {recoSpecies, trueSpecies, ptAxis});
+      fhPtPurityNegSecA = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s", dirname, "Purity"), "ptPurityNegSec", "Secondaries for reconstructed negative", kTH3F, {recoSpecies, trueSpecies, ptAxis});
+      fhPtPurityPosMatA = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s", dirname, "Purity"), "ptPurityPosMat", "Secondaries from material for reconstructed positive", kTH3F, {recoSpecies, trueSpecies, ptAxis});
+      fhPtPurityNegMatA = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s", dirname, "Purity"), "ptPurityNegMat", "Secondaries from material for reconstructed negative", kTH3F, {recoSpecies, trueSpecies, ptAxis});
       for (uint isp = 0; isp < nsp; ++isp) {
         /* detector level and generator level histograms */
         fhPt_vs_EtaPrimA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Gen"),
@@ -315,13 +331,35 @@ struct QADataCollectingEngine {
         fillhisto(fhPt_vs_EtaItsTpcTofA[track.trackacceptedid()], hasits && hastpc && hastof);
         /* the detector / generator combined level */
         if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
+          auto findgenid = [&](auto& part) {
+            int pdgcode = std::abs(part.pdgCode());
+            for (uint ix = 0; ix < pdgcodes.size(); ++ix) {
+              if (pdgcode == pdgcodes[ix]) {
+                return ix;
+              }
+            }
+            return static_cast<uint>(pdgcodes.size());
+          };
+          auto fillpurityhistos = [](auto& hpos, auto& hneg, auto& genid, auto& track, bool cond) {
+            if (cond) {
+              if (track.sign() > 0) {
+                hpos->Fill(static_cast<int>(track.trackacceptedid() / 2), genid, track.pt());
+              } else {
+                hneg->Fill(static_cast<int>(track.trackacceptedid() / 2), genid, track.pt());
+              }
+            }
+          };
           /* get the associated MC particle we are sure it does exist because the track was accepted */
           const auto& mcparticle = track.template mcParticle_as<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>>();
+          float genid = findgenid(mcparticle);
 
-          /* TODO: what if the id of the generated is not the same as the id of the reconstructed */
           bool isprimary = mcparticle.isPhysicalPrimary();
           bool issecdecay = !isprimary && (mcparticle.getProcess() == 4);
           bool isfrommaterial = !isprimary && !issecdecay;
+          fillpurityhistos(fhPtPurityPosPrimA, fhPtPurityNegPrimA, genid, track, isprimary);
+          fillpurityhistos(fhPtPurityPosSecA, fhPtPurityNegSecA, genid, track, issecdecay);
+          fillpurityhistos(fhPtPurityPosMatA, fhPtPurityNegMatA, genid, track, isfrommaterial);
+
           auto fillhisto = [](auto& h, float pt, float eta, bool cond1, bool cond2) {
             if (cond1 && cond2) {
               h->Fill(eta, pt);
@@ -360,8 +398,8 @@ struct QADataCollectingEngine {
 
 /* the PID data collecting engine */
 struct PidDataCollectingEngine {
-  size_t nsp = efficiencyandqatask::tnames.size();
-  size_t nmainsp = mainspnames.size();
+  uint nsp = static_cast<uint>(efficiencyandqatask::tnames.size());
+  uint nmainsp = static_cast<uint>(efficiencyandqatask::mainspnames.size());
 
   /* PID histograms */
   /* before and after */
@@ -521,6 +559,7 @@ struct DptDptEfficiencyAndQc {
       return;
     }
 
+    fPDG = TDatabasePDG::Instance();
     /* Self configuration: requires dptdptfilter task in the workflow */
     {
       /* the binning */

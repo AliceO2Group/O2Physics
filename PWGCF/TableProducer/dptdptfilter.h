@@ -731,13 +731,24 @@ void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
   }
 }
 
+template <typename ParticleObject>
+inline float getCharge(ParticleObject& particle)
+{
+  float charge = 0.0;
+  TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
+  if (pdgparticle != nullptr) {
+    charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0);
+  }
+  return charge;
+}
+
 /// \brief Accepts or not the passed generated particle
 /// \param track the particle of interest
 /// \return `true` if the particle is accepted, `false` otherwise
 template <typename ParticleObject, typename MCCollisionObject>
 inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision)
 {
-  float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
+  float charge = getCharge(particle);
 
   if (particle.isPhysicalPrimary()) {
     if ((particle.mcCollisionId() == 0) && traceCollId0) {
