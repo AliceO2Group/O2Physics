@@ -163,74 +163,80 @@ struct qVectorsTable {
     if (cfgCCDBConst == 1) {
       fullPath = cfgQvecCalibPath;
       fullPath += "/FT0C";
-      if (!(ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value))->empty()) {
-        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value)));
-      } else {
+      auto obj = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      if (!obj) {
         if (cfgFT0CCorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for FT0C");
         } else {
           cfgCorr.push_back(cfgFT0CCorr);
         }
+      } else {
+        cfgCorr.push_back(*(obj));
       }
 
       fullPath = cfgQvecCalibPath;
       fullPath += "/FT0A";
-      if (!(ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value))->empty()) {
-        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value)));
-      } else {
+      auto obj = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      if (!obj) {
         if (cfgFT0ACorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for FT0A");
         } else {
           cfgCorr.push_back(cfgFT0ACorr);
         }
+      } else {
+        cfgCorr.push_back(*(obj));
       }
 
       fullPath = cfgQvecCalibPath;
       fullPath += "/FT0M";
-      if (!(ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value))->empty()) {
-        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value)));
-      } else {
+      auto obj = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      if (!obj) {
         if (cfgFT0MCorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for FT0M");
         } else {
           cfgCorr.push_back(cfgFT0MCorr);
         }
+      } else {
+        cfgCorr.push_back(*(obj));
       }
 
       fullPath = cfgQvecCalibPath;
-      fullPath += "/FT0C"; // no FV0A, will be adapted.
-      if (!(ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value))->empty()) {
-        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value)));
-      } else {
+      fullPath += "/FT0C"; // will be corrected
+      auto obj = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      if (!obj) {
         if (cfgFV0ACorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for FV0A");
         } else {
           cfgCorr.push_back(cfgFV0ACorr);
         }
-      } // no FV0A
+      } else {
+        cfgCorr.push_back(*(obj));
+      }
 
       fullPath = cfgQvecCalibPath;
       fullPath += "/BPos";
-      if (!(ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value))->empty()) {
-        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value)));
-      } else {
+      auto obj = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      if (!obj) {
         if (cfgBPosCorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for BPos");
         } else {
           cfgCorr.push_back(cfgBPosCorr);
         }
+      } else {
+        cfgCorr.push_back(*(obj));
       }
 
       fullPath = cfgQvecCalibPath;
       fullPath += "/BNeg";
-      if (!(ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value))->empty()) {
-        cfgCorr.push_back(*(ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value)));
-      } else {
+      auto obj = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      if (!obj) {
         if (cfgBNegCorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for BNeg");
         } else {
           cfgCorr.push_back(cfgBNegCorr);
         }
+      } else {
+        cfgCorr.push_back(*(obj));
       }
     } else if (cfgCCDBConst == 2) {
       if (cfgFT0CCorr->size() < 48) {
