@@ -163,80 +163,80 @@ struct qVectorsTable {
     if (cfgCCDBConst == 1) {
       fullPath = cfgQvecCalibPath;
       fullPath += "/FT0C";
-      auto obj = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
-      if (!obj) {
+      auto objft0c = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      if (!objft0c) {
         if (cfgFT0CCorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for FT0C");
         } else {
           cfgCorr.push_back(cfgFT0CCorr);
         }
       } else {
-        cfgCorr.push_back(*(obj));
+        cfgCorr.push_back(*(objft0c));
       }
 
       fullPath = cfgQvecCalibPath;
       fullPath += "/FT0A";
-      auto obj = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
-      if (!obj) {
+      auto objft0a = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      if (!objft0a) {
         if (cfgFT0ACorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for FT0A");
         } else {
           cfgCorr.push_back(cfgFT0ACorr);
         }
       } else {
-        cfgCorr.push_back(*(obj));
+        cfgCorr.push_back(*(objft0a));
       }
 
       fullPath = cfgQvecCalibPath;
       fullPath += "/FT0M";
-      auto obj = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
-      if (!obj) {
+      auto objft0m = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      if (!objft0m) {
         if (cfgFT0MCorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for FT0M");
         } else {
           cfgCorr.push_back(cfgFT0MCorr);
         }
       } else {
-        cfgCorr.push_back(*(obj));
+        cfgCorr.push_back(*(objft0m));
       }
 
       fullPath = cfgQvecCalibPath;
       fullPath += "/FT0C"; // will be corrected
-      auto obj = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
-      if (!obj) {
+      auto objfv0a = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      if (!objfv0a) {
         if (cfgFV0ACorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for FV0A");
         } else {
           cfgCorr.push_back(cfgFV0ACorr);
         }
       } else {
-        cfgCorr.push_back(*(obj));
+        cfgCorr.push_back(*(objfv0a));
       }
 
       fullPath = cfgQvecCalibPath;
       fullPath += "/BPos";
-      auto obj = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
-      if (!obj) {
+      auto objbpos = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      if (!objbpos) {
         if (cfgBPosCorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for BPos");
         } else {
           cfgCorr.push_back(cfgBPosCorr);
         }
       } else {
-        cfgCorr.push_back(*(obj));
+        cfgCorr.push_back(*(objbpos));
       }
 
       fullPath = cfgQvecCalibPath;
       fullPath += "/BNeg";
-      auto obj = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
-      if (!obj) {
+      auto objbneg = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      if (!objbneg) {
         if (cfgBNegCorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for BNeg");
         } else {
           cfgCorr.push_back(cfgBNegCorr);
         }
       } else {
-        cfgCorr.push_back(*(obj));
+        cfgCorr.push_back(*(objbneg));
       }
     } else if (cfgCCDBConst == 2) {
       if (cfgFT0CCorr->size() < 48) {
