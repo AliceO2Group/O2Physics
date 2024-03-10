@@ -14,15 +14,15 @@
 ///
 /// \author Chi ZHANG, CEA-Saclay, chi.zhang@cern.ch
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
 #include <cmath>
 #include <string>
 #include <unordered_map>
 #include <vector>
 #include <iostream>
 #include <gsl/span>
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 #include <Math/Vector4D.h>
 #include <TCanvas.h>
@@ -340,7 +340,7 @@ struct mchAlignRecordTask {
           mch_cluster->z = master.z();
         }
 
-        uint32_t ClUId = mch::Cluster::buildUniqueId(int(cluster.deId() / 100) - 1, cluster.deId(), clIndex);
+        uint32_t ClUId = mch::Cluster::buildUniqueId(static_cast<int>(cluster.deId() / 100) - 1, cluster.deId(), clIndex);
         mch_cluster->uid = ClUId;
 
         mch_cluster->ex = cluster.isGoodX() ? 0.2 : 10.0;
