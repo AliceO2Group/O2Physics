@@ -415,10 +415,10 @@ struct PidDataCollectingEngine {
   /* only after track selection */
   std::vector<std::shared_ptr<TH2>> fhIdTPCdEdxSignalVsP{nsp, nullptr};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTPCdEdxSignalDiffVsP{nsp, {nsp, nullptr}};
-  std::vector<std::shared_ptr<TH2>> fhIdTPCnSigmasVsP{nsp, nullptr};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTPCnSigmasVsP{nsp, {nmainsp, nullptr}};
   std::vector<std::shared_ptr<TH2>> fhIdTOFSignalVsP{nsp, nullptr};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTOFSignalDiffVsP{nsp, {nsp, nullptr}};
-  std::vector<std::shared_ptr<TH2>> fhIdTOFnSigmasVsP{nsp, nullptr};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTOFnSigmasVsP{nsp, {nmainsp, nullptr}};
   std::vector<std::shared_ptr<TH2>> fhIdPvsTOFSqMass{nsp, nullptr};
 
   template <efficiencyandqatask::KindOfProcess kind>
@@ -470,6 +470,26 @@ struct PidDataCollectingEngine {
                                                    kTH3F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", mainsptitles[isp].c_str())}, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", mainsptitles[isp].c_str())}});
         }
       }
+      for (uint isp = 0; isp < nsp; ++isp) {
+        fhIdTPCdEdxSignalVsP[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
+                                                 HNAMESTRING("tpcSignalVsPSelected_%s", tnames[isp].c_str()),
+                                                 HTITLESTRING("TPC dE/dx for selected %s", tnames[isp].c_str()),
+                                                 kTH2F, {pidPAxis, dEdxAxis});
+        fhIdTOFSignalVsP[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
+                                             HNAMESTRING("tofSignalVsPSelected_%s", tnames[isp].c_str()),
+                                             HTITLESTRING("TOF signal for selected %s", tnames[isp].c_str()),
+                                             kTH2F, {pidPAxis, {200, 0.0, 1.1, "#beta"}});
+        for (uint imainsp = 0; imainsp < nmainsp; ++imainsp) {
+          fhIdTPCnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
+                                                         HNAMESTRING("tpcNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), mainspnames[imainsp].c_str()),
+                                                         HTITLESTRING("TPC n#sigma for selected %s to the %s line", tnames[isp].c_str(), mainsptitles[imainsp].c_str()),
+                                                         kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", mainsptitles[isp].c_str())}});
+          fhIdTOFnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
+                                                         HNAMESTRING("tofNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), mainspnames[imainsp].c_str()),
+                                                         HTITLESTRING("TOF n#sigma for selected %s to the %s line", tnames[isp].c_str(), mainsptitles[imainsp].c_str()),
+                                                         kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", mainsptitles[isp].c_str())}});
+        }
+      }
     }
   }
 
@@ -489,9 +509,11 @@ struct PidDataCollectingEngine {
       fhTPCTOFSigmaVsP[when][ix]->Fill(track.p(), o2::aod::pidutils::tpcNSigma<id>(track), o2::aod::pidutils::tofNSigma<id>(track));
       if (track.trackacceptedid() < 0) {
         /* track not accepted */
-        break;
+        return;
       }
     }
+    fhIdTPCnSigmasVsP[track.trackacceptedid()][ix]->Fill(track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
+    fhIdTOFnSigmasVsP[track.trackacceptedid()][ix]->Fill(track.p(), o2::aod::pidutils::tofNSigma<id>(track));
   }
 
   template <typename TrackObject>
@@ -503,9 +525,11 @@ struct PidDataCollectingEngine {
       fhPvsTOFSqMass[when]->Fill(track.mass() * track.mass(), track.p());
       if (track.trackacceptedid() < 0) {
         /* track not accepted */
-        break;
+        return;
       }
     }
+    fhIdTPCdEdxSignalVsP[track.trackacceptedid()]->Fill(track.p(), track.tpcSignal());
+    fhIdTOFSignalVsP[track.trackacceptedid()]->Fill(track.p(), track.beta());
   }
 
   template <efficiencyandqatask::KindOfProcess kind, typename TrackObject>
