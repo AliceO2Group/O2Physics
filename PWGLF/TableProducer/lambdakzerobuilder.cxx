@@ -1077,7 +1077,7 @@ struct lambdakzeroPreselector {
   // for bit-packed maps
   std::vector<uint32_t> selectionMask;
 
-  // selection masks set up at ::Init time 
+  // selection masks set up at ::Init time
   uint32_t selectionK0Short;
   uint32_t selectionLambda;
   uint32_t selectionAntiLambda;
@@ -1087,7 +1087,7 @@ struct lambdakzeroPreselector {
 
   void init(InitContext const&)
   {
-    // initalise selection criteria 
+    // initalise selection criteria
     selectionK0Short = 0;
     selectionLambda = 0;
     selectionAntiLambda = 0;
@@ -1097,54 +1097,54 @@ struct lambdakzeroPreselector {
 
     //_____________________________________
     // TPC Quality requirements
-    if( dTPCNCrossedRows > 0 ){ // if it's stated that there is a TPC requirement, set masks accordingly
-      selectionK0Short = selectionK0Short | (1 << bitTrackPosGoodTPC) | (1 << bitTrackNegGoodTPC); 
-      selectionGamma = selectionGamma | (1 << bitTrackPosGoodTPC) | (1 << bitTrackNegGoodTPC); 
-      if(!dPreselectOnlyBaryons){ 
-        selectionLambda = selectionLambda | (1 << bitTrackPosGoodTPC) | (1 << bitTrackNegGoodTPC); 
-        selectionAntiLambda = selectionAntiLambda | (1 << bitTrackPosGoodTPC) | (1 << bitTrackNegGoodTPC); 
-        selectionHypertriton = selectionHypertriton | (1 << bitTrackPosGoodTPC) | (1 << bitTrackNegGoodTPC); 
-        selectionAntiHypertriton = selectionAntiHypertriton | (1 << bitTrackPosGoodTPC) | (1 << bitTrackNegGoodTPC); 
-      }else{
+    if (dTPCNCrossedRows > 0) { // if it's stated that there is a TPC requirement, set masks accordingly
+      selectionK0Short = selectionK0Short | (1 << bitTrackPosGoodTPC) | (1 << bitTrackNegGoodTPC);
+      selectionGamma = selectionGamma | (1 << bitTrackPosGoodTPC) | (1 << bitTrackNegGoodTPC);
+      if (!dPreselectOnlyBaryons) {
+        selectionLambda = selectionLambda | (1 << bitTrackPosGoodTPC) | (1 << bitTrackNegGoodTPC);
+        selectionAntiLambda = selectionAntiLambda | (1 << bitTrackPosGoodTPC) | (1 << bitTrackNegGoodTPC);
+        selectionHypertriton = selectionHypertriton | (1 << bitTrackPosGoodTPC) | (1 << bitTrackNegGoodTPC);
+        selectionAntiHypertriton = selectionAntiHypertriton | (1 << bitTrackPosGoodTPC) | (1 << bitTrackNegGoodTPC);
+      } else {
         // if preselection only affects baryons, accept also mesonic daughter via ITS only (with min ITS clu = minITSCluITSOnly)
-        selectionLambda = selectionLambda | (1 << bitTrackPosGoodTPC) | (1 << bitTrackNegGoodTPCorITSOnly); 
-        selectionAntiLambda = selectionAntiLambda | (1 << bitTrackPosGoodTPCorITSOnly) | (1 << bitTrackNegGoodTPC); 
-        selectionHypertriton = selectionHypertriton | (1 << bitTrackPosGoodTPC) | (1 << bitTrackNegGoodTPCorITSOnly); 
-        selectionAntiHypertriton = selectionAntiHypertriton | (1 << bitTrackPosGoodTPCorITSOnly) | (1 << bitTrackNegGoodTPC); 
+        selectionLambda = selectionLambda | (1 << bitTrackPosGoodTPC) | (1 << bitTrackNegGoodTPCorITSOnly);
+        selectionAntiLambda = selectionAntiLambda | (1 << bitTrackPosGoodTPCorITSOnly) | (1 << bitTrackNegGoodTPC);
+        selectionHypertriton = selectionHypertriton | (1 << bitTrackPosGoodTPC) | (1 << bitTrackNegGoodTPCorITSOnly);
+        selectionAntiHypertriton = selectionAntiHypertriton | (1 << bitTrackPosGoodTPCorITSOnly) | (1 << bitTrackNegGoodTPC);
       }
     }
 
     //_____________________________________
     // TPC PID requirements
-    selectionK0Short = selectionK0Short | (1 << bitdEdxPosPion) | (1 << bitdEdxNegPion); 
-    selectionGamma = selectionGamma | (1 << bitdEdxPosElectron) | (1 << bitdEdxNegElectron); 
-    if(!dPreselectOnlyBaryons){ 
-      selectionLambda = selectionLambda | (1 << bitdEdxPosProton) | (1 << bitdEdxNegPion); 
-      selectionAntiLambda = selectionAntiLambda | (1 << bitdEdxPosPion) | (1 << bitdEdxNegProton); 
-      selectionHypertriton = selectionHypertriton | (1 << bitdEdxPosHelium3) | (1 << bitdEdxNegPion); 
-      selectionAntiHypertriton = selectionAntiHypertriton | (1 << bitdEdxPosPion) | (1 << bitdEdxNegHelium3); 
-    }else{
+    selectionK0Short = selectionK0Short | (1 << bitdEdxPosPion) | (1 << bitdEdxNegPion);
+    selectionGamma = selectionGamma | (1 << bitdEdxPosElectron) | (1 << bitdEdxNegElectron);
+    if (!dPreselectOnlyBaryons) {
+      selectionLambda = selectionLambda | (1 << bitdEdxPosProton) | (1 << bitdEdxNegPion);
+      selectionAntiLambda = selectionAntiLambda | (1 << bitdEdxPosPion) | (1 << bitdEdxNegProton);
+      selectionHypertriton = selectionHypertriton | (1 << bitdEdxPosHelium3) | (1 << bitdEdxNegPion);
+      selectionAntiHypertriton = selectionAntiHypertriton | (1 << bitdEdxPosPion) | (1 << bitdEdxNegHelium3);
+    } else {
       // if preselection only affects baryons, accept also mesonic daughter via ITS only (with min ITS clu = minITSCluITSOnly)
-      selectionLambda = selectionLambda | (1 << bitdEdxPosProton); 
-      selectionAntiLambda = selectionAntiLambda | (1 << bitdEdxNegProton); 
-      selectionHypertriton = selectionHypertriton | (1 << bitdEdxPosHelium3); 
-      selectionAntiHypertriton = selectionAntiHypertriton | (1 << bitdEdxNegHelium3); 
+      selectionLambda = selectionLambda | (1 << bitdEdxPosProton);
+      selectionAntiLambda = selectionAntiLambda | (1 << bitdEdxNegProton);
+      selectionHypertriton = selectionHypertriton | (1 << bitdEdxPosHelium3);
+      selectionAntiHypertriton = selectionAntiHypertriton | (1 << bitdEdxNegHelium3);
     }
 
-    if(doprocessBuildMCAssociated || doprocessBuildValiddEdxMCAssociated){
-      selectionK0Short = selectionK0Short | (dIfMCgenerateK0Short << bitTrueK0Short); 
-      selectionLambda = selectionLambda | (dIfMCgenerateLambda << bitTrueLambda); 
-      selectionAntiLambda = selectionAntiLambda | (dIfMCgenerateAntiLambda << bitTrueAntiLambda); 
-      selectionGamma = selectionGamma | (dIfMCgenerateGamma << bitTrueGamma); 
-      selectionHypertriton = selectionHypertriton | (dIfMCgenerateHypertriton << bitTrueHypertriton); 
-      selectionAntiHypertriton = selectionAntiHypertriton | (dIfMCgenerateAntiHypertriton << bitTrueAntiHypertriton); 
+    if (doprocessBuildMCAssociated || doprocessBuildValiddEdxMCAssociated) {
+      selectionK0Short = selectionK0Short | (dIfMCgenerateK0Short << bitTrueK0Short);
+      selectionLambda = selectionLambda | (dIfMCgenerateLambda << bitTrueLambda);
+      selectionAntiLambda = selectionAntiLambda | (dIfMCgenerateAntiLambda << bitTrueAntiLambda);
+      selectionGamma = selectionGamma | (dIfMCgenerateGamma << bitTrueGamma);
+      selectionHypertriton = selectionHypertriton | (dIfMCgenerateHypertriton << bitTrueHypertriton);
+      selectionAntiHypertriton = selectionAntiHypertriton | (dIfMCgenerateAntiHypertriton << bitTrueAntiHypertriton);
     }
 
     uint32_t globalSelection = 0; // for master switches
-    if(doprocessSkipV0sNotUsedInCascades) 
-      globalSelection = globalSelection | (1 << bitUsedInCascade); 
-    if(doprocessSkipV0sNotUsedInTrackedCascades) 
-      globalSelection = globalSelection | (1 << bitUsedInTrackedCascade); 
+    if (doprocessSkipV0sNotUsedInCascades)
+      globalSelection = globalSelection | (1 << bitUsedInCascade);
+    if (doprocessSkipV0sNotUsedInTrackedCascades)
+      globalSelection = globalSelection | (1 << bitUsedInTrackedCascade);
 
     selectionK0Short = selectionK0Short | globalSelection;
     selectionLambda = selectionLambda | globalSelection;
@@ -1229,14 +1229,14 @@ struct lambdakzeroPreselector {
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
 
     // dEdx check with LF PID
-    bitsetvalue(maskElement, bitdEdxPosElectron, (TMath::Abs(lPosTrack.tpcNSigmaEl()) < ddEdxPreSelectionWindow)); 
-    bitsetvalue(maskElement, bitdEdxPosPion, (TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)); 
-    bitsetvalue(maskElement, bitdEdxPosProton, (TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow)); 
-    bitsetvalue(maskElement, bitdEdxPosHelium3, (TMath::Abs(lPosTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow)); 
-    bitsetvalue(maskElement, bitdEdxNegElectron, (TMath::Abs(lNegTrack.tpcNSigmaEl()) < ddEdxPreSelectionWindow)); 
-    bitsetvalue(maskElement, bitdEdxNegPion, (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)); 
-    bitsetvalue(maskElement, bitdEdxNegProton, (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow)); 
-    bitsetvalue(maskElement, bitdEdxNegHelium3, (TMath::Abs(lNegTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow)); 
+    bitsetvalue(maskElement, bitdEdxPosElectron, (TMath::Abs(lPosTrack.tpcNSigmaEl()) < ddEdxPreSelectionWindow));
+    bitsetvalue(maskElement, bitdEdxPosPion, (TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow));
+    bitsetvalue(maskElement, bitdEdxPosProton, (TMath::Abs(lPosTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow));
+    bitsetvalue(maskElement, bitdEdxPosHelium3, (TMath::Abs(lPosTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow));
+    bitsetvalue(maskElement, bitdEdxNegElectron, (TMath::Abs(lNegTrack.tpcNSigmaEl()) < ddEdxPreSelectionWindow));
+    bitsetvalue(maskElement, bitdEdxNegPion, (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow));
+    bitsetvalue(maskElement, bitdEdxNegProton, (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow));
+    bitsetvalue(maskElement, bitdEdxNegHelium3, (TMath::Abs(lNegTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow));
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// Initialization of mask vectors if uninitialized
@@ -1258,7 +1258,7 @@ struct lambdakzeroPreselector {
   void checkAndFinalize()
   {
     int preselectorStatistics[7]; // faster
-    for(int ii=0; ii<7; ii++)
+    for (int ii = 0; ii < 7; ii++)
       preselectorStatistics[ii] = 0;
     // parse + publish tag table now
     for (int ii = 0; ii < selectionMask.size(); ii++) {
@@ -1269,7 +1269,7 @@ struct lambdakzeroPreselector {
       bool inGa = (selectionMask[ii] & selectionGamma) == selectionGamma;
       bool inHyp = (selectionMask[ii] & selectionHypertriton) == selectionHypertriton;
       bool inAntiHy = (selectionMask[ii] & selectionAntiHypertriton) == selectionAntiHypertriton;
-      bool inAny = inK0S || inLam || inAnLam || inGa || inHyp || inAntiHy; 
+      bool inAny = inK0S || inLam || inAnLam || inGa || inHyp || inAntiHy;
 
       preselectorStatistics[0] += static_cast<int>(inK0S);
       preselectorStatistics[1] += static_cast<int>(inLam);
