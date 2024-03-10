@@ -78,7 +78,7 @@ struct UDTutorial02b {
 
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>;
   using UDCollisionFull = UDCollisionsFull::iterator;
-  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags>;
+  using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::TracksDCA, aod::UDTracksFlags>;
 
   void process(UDCollisionFull const& dgcand, UDTracksFull const& dgtracks)
   {
