@@ -7,7 +7,7 @@
         "start-value-enumeration": "0",
         "end-value-enumeration": "-1",
         "step-value-enumeration": "1",
-        "aod-file": "AO2D.root"
+        "aod-file": "AO2D_18G4_run285064_002.root"
     },
     "internal-dpl-aod-spawner": "",
     "fdd-converter": "",
@@ -208,7 +208,7 @@
     "ml-model-gen-hists": {
         "detector": "2",
         "pid": "321",
-        "certainty": "0.95",
+        "certainty": "0.8",
         "ccdb-path": "Users\/m\/mkabus\/PIDML",
         "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
         "useCCDB": "true",
