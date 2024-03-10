@@ -63,6 +63,7 @@ struct strangeness_tutorial {
   Configurable<bool> inv_mass1D{"inv_mass1D", false, "1D invariant mass histograms"};
   Configurable<bool> DCAv0topv{"DCAv0topv", false, "DCA V0 to PV"};
   Configurable<bool> armcut{"armcut", true, "arm cut"};
+  Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
 
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -266,6 +267,9 @@ struct strangeness_tutorial {
     if (!collision.sel8()) {
       return;
     }
+    if (timFrameEvsel && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return;
+    }
     float multiplicity = 0.0f;
     if (cfgMultFT0)
       multiplicity = collision.multZeqFT0A() + collision.multZeqFT0C();
@@ -359,6 +363,10 @@ struct strangeness_tutorial {
       }
       if (!c2.sel8()) {
         continue;
+      }
+
+      if (timFrameEvsel && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
+        return;
       }
 
       float multiplicity = 0.0f;
