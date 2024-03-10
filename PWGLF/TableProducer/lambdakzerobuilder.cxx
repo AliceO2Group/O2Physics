@@ -781,8 +781,8 @@ struct lambdakzeroBuilder {
     // check if user requested to correlate mass requirement with TPC PID
     // (useful for data volume reduction)
     bool dEdxK0Short = V0.isdEdxK0Short() || !massWindowWithTPCPID;
-    bool dEdxLambda = V0.isdEdxLambda() || !massWindowWithTPCPID;
-    bool dEdxAntiLambda = V0.isdEdxAntiLambda() || !massWindowWithTPCPID;
+    bool dEdxLambda = (V0.isdEdxLambda() || (V0.isdEdxPosProton() && !negTrack.hasTPC())) || !massWindowWithTPCPID;
+    bool dEdxAntiLambda = (V0.isdEdxAntiLambda() || (V0.isdEdxNegProton() && !posTrack.hasTPC())) || !massWindowWithTPCPID;
 
     // check proper lifetime if asked for
     bool passML2P_K0Short = lML2P_K0Short < lifetimecut->get("lifetimecutK0S") || lifetimecut->get("lifetimecutK0S") > 1000;
