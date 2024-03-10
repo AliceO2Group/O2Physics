@@ -14,17 +14,16 @@
 ///
 /// \author Chi ZHANG, CEA-Saclay, chi.zhang@cern.ch
 
+#include <gsl/span>
 #include <cmath>
 #include <string>
 #include <unordered_map>
 #include <vector>
 #include <iostream>
-#include <gsl/span>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
-#include <Math/Vector4D.h>
 #include <TCanvas.h>
 #include <TDatabasePDG.h>
 #include <TF1.h>
