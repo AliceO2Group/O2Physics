@@ -14,7 +14,6 @@
 ///
 /// \author Chi ZHANG, CEA-Saclay, chi.zhang@cern.ch
 
-
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -85,7 +84,7 @@ const int fgNCh = 10;
 const int fgNDetElemCh[fgNCh] = {4, 4, 4, 4, 18, 18, 26, 26, 26, 26};
 const int fgSNDetElemCh[fgNCh + 1] = {0, 4, 8, 12, 16, 34, 52, 78, 104, 130, 156};
 
-//using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
+// using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEvents = aod::Collisions;
 
 struct mchAlignRecordTask {
