@@ -565,45 +565,108 @@ using V0Linked = V0sLinked::iterator;
 // helper for building
 namespace v0tag
 {
-// Global bool
-DECLARE_SOA_COLUMN(IsInteresting, isInteresting, bool); //! will this be built or not?
+namespace enums{
+  enum v0bit { 
+               // Track quality 
+               bitTrackPosGoodTPC,
+               bitTrackPosGoodITSOnly,
+               bitTrackPosGoodTPCorITSOnly,
+               bitTrackNegGoodTPC,
+               bitTrackNegGoodITSOnly,
+               bitTrackNegGoodTPCorITSOnly,
 
-// MC association bools
-DECLARE_SOA_COLUMN(IsTrueGamma, isTrueGamma, bool);                     //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueK0Short, isTrueK0Short, bool);                 //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueLambda, isTrueLambda, bool);                   //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueAntiLambda, isTrueAntiLambda, bool);           //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueHypertriton, isTrueHypertriton, bool);         //! PDG checked correctly in MC
-DECLARE_SOA_COLUMN(IsTrueAntiHypertriton, isTrueAntiHypertriton, bool); //! PDG checked correctly in MC
+               // dEdx compatibility bits
+               bitdEdxPosElectron,
+               bitdEdxPosPion,
+               bitdEdxPosProton,
+               bitdEdxPosHelium3,
+               bitdEdxNegElectron,
+               bitdEdxNegPion,
+               bitdEdxNegProton,
+               bitdEdxNegHelium3,
 
-// dE/dx compatibility bools
-DECLARE_SOA_COLUMN(IsdEdxGamma, isdEdxGamma, bool);                     //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsdEdxK0Short, isdEdxK0Short, bool);                 //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsdEdxLambda, isdEdxLambda, bool);                   //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsdEdxAntiLambda, isdEdxAntiLambda, bool);           //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsdEdxHypertriton, isdEdxHypertriton, bool);         //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsdEdxAntiHypertriton, isdEdxAntiHypertriton, bool); //! compatible with dE/dx hypotheses
+               // Monte Carlo Association bits
+               bitTrueGamma,
+               bitTrueK0Short,
+               bitTrueLambda,
+               bitTrueAntiLambda,
+               bitTrueHypertriton,
+               bitTrueAntiHypertriton,
 
-// used in cascades (potentially useful in general, make available as tags)
-DECLARE_SOA_COLUMN(IsFromCascade, isFromCascade, bool);               //! compatible with dE/dx hypotheses
-DECLARE_SOA_COLUMN(IsFromTrackedCascade, isFromTrackedCascade, bool); //! compatible with dE/dx hypotheses
+               // cascade use bits
+               bitUsedInCascade,
+               bitUsedInTrackedCascade };
+}
+
+DECLARE_SOA_COLUMN(IsInteresting, isInteresting, bool); //! global selector (keep legacy behaviour)
+
+// dynamic columns to keep legacy behaviour of compound dEdx selectors
+DECLARE_SOA_DYNAMIC_COLUMN(IsdEdxGamma, isdEdxGamma, //!
+                           [](uint32_t selectionMap) -> bool { return (selectionMap & 
+                           ((1 << enums::bitdEdxPosElectron) | (1 << enums::bitdEdxNegElectron))) == 
+                           ((1 << enums::bitdEdxPosElectron) | (1 << enums::bitdEdxNegElectron)); });
+DECLARE_SOA_DYNAMIC_COLUMN(IsdEdxK0Short, isdEdxK0Short, //! 
+                           [](uint32_t selectionMap) -> bool { return (selectionMap & 
+                           ((1 << enums::bitdEdxPosPion) | (1 << enums::bitdEdxNegPion))) == 
+                           ((1 << enums::bitdEdxPosPion) | (1 << enums::bitdEdxNegPion)); });
+DECLARE_SOA_DYNAMIC_COLUMN(IsdEdxLambda, isdEdxLambda, //! 
+                           [](uint32_t selectionMap) -> bool { return (selectionMap & 
+                           ((1 << enums::bitdEdxPosProton) | (1 << enums::bitdEdxNegPion))) == 
+                           ((1 << enums::bitdEdxPosProton) | (1 << enums::bitdEdxNegPion)); });
+DECLARE_SOA_DYNAMIC_COLUMN(IsdEdxAntiLambda, isdEdxAntiLambda, //! 
+                           [](uint32_t selectionMap) -> bool { return (selectionMap & 
+                           ((1 << enums::bitdEdxPosPion) | (1 << enums::bitdEdxNegProton))) == 
+                           ((1 << enums::bitdEdxPosPion) | (1 << enums::bitdEdxNegProton)); });
+DECLARE_SOA_DYNAMIC_COLUMN(IsdEdxHypertriton, isdEdxHypertriton, //! 
+                           [](uint32_t selectionMap) -> bool { return (selectionMap & 
+                           ((1 << enums::bitdEdxPosHelium3) | (1 << enums::bitdEdxNegPion))) == 
+                           ((1 << enums::bitdEdxPosHelium3) | (1 << enums::bitdEdxNegPion)); });
+DECLARE_SOA_DYNAMIC_COLUMN(IsdEdxAntiHypertriton, isdEdxAntiHypertriton, //! 
+                           [](uint32_t selectionMap) -> bool { return (selectionMap & 
+                           ((1 << enums::bitdEdxPosPion) | (1 << enums::bitdEdxNegHelium3))) == 
+                           ((1 << enums::bitdEdxPosPion) | (1 << enums::bitdEdxNegHelium3)); });
+
+DECLARE_SOA_DYNAMIC_COLUMN(IsTrueGamma, isTrueGamma, //! 
+                           [](uint32_t selectionMap) -> bool { 
+                            return (selectionMap & (1 << enums::bitTrueGamma)) == (1 << enums::bitTrueGamma); });
+DECLARE_SOA_DYNAMIC_COLUMN(IsTrueK0Short, isTrueK0Short, //! 
+                           [](uint32_t selectionMap) -> bool { 
+                            return (selectionMap & (1 << enums::bitTrueK0Short)) == (1 << enums::bitTrueK0Short); });
+DECLARE_SOA_DYNAMIC_COLUMN(IsTrueLambda, isTrueLambda, //! 
+                           [](uint32_t selectionMap) -> bool { 
+                            return (selectionMap & (1 << enums::bitTrueLambda)) == (1 << enums::bitTrueLambda); });
+DECLARE_SOA_DYNAMIC_COLUMN(IsTrueAntiLambda, isTrueAntiLambda, //! 
+                           [](uint32_t selectionMap) -> bool { 
+                            return (selectionMap & (1 << enums::bitTrueAntiLambda)) == (1 << enums::bitTrueAntiLambda); });
+DECLARE_SOA_DYNAMIC_COLUMN(IsTrueHypertriton, isTrueHypertriton, //! 
+                           [](uint32_t selectionMap) -> bool { 
+                            return (selectionMap & (1 << enums::bitTrueHypertriton)) == (1 << enums::bitTrueHypertriton); });
+DECLARE_SOA_DYNAMIC_COLUMN(IsTrueAntiHypertriton, isTrueAntiHypertriton, //! 
+                           [](uint32_t selectionMap) -> bool { 
+                            return (selectionMap & (1 << enums::bitTrueAntiHypertriton)) == (1 << enums::bitTrueAntiHypertriton); });
+
+DECLARE_SOA_COLUMN(Tag, tag, uint32_t); // pack according to enums
 } // namespace v0tag
 DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
                   v0tag::IsInteresting,
-                  v0tag::IsTrueGamma,
-                  v0tag::IsTrueK0Short,
-                  v0tag::IsTrueLambda,
-                  v0tag::IsTrueAntiLambda,
-                  v0tag::IsTrueHypertriton,
-                  v0tag::IsTrueAntiHypertriton,
-                  v0tag::IsdEdxGamma,
-                  v0tag::IsdEdxK0Short,
-                  v0tag::IsdEdxLambda,
-                  v0tag::IsdEdxAntiLambda,
-                  v0tag::IsdEdxHypertriton,
-                  v0tag::IsdEdxAntiHypertriton,
-                  v0tag::IsFromCascade,
-                  v0tag::IsFromTrackedCascade);
+                  v0tag::Tag,
+
+                  // Dynamic composite
+                  v0tag::IsdEdxGamma<v0tag::Tag>,
+                  v0tag::IsdEdxK0Short<v0tag::Tag>,
+                  v0tag::IsdEdxLambda<v0tag::Tag>,
+                  v0tag::IsdEdxAntiLambda<v0tag::Tag>,
+                  v0tag::IsdEdxHypertriton<v0tag::Tag>,
+                  v0tag::IsdEdxAntiHypertriton<v0tag::Tag>,
+
+                  // true flags
+                  v0tag::IsTrueGamma<v0tag::Tag>,
+                  v0tag::IsTrueK0Short<v0tag::Tag>,
+                  v0tag::IsTrueLambda<v0tag::Tag>,
+                  v0tag::IsTrueAntiLambda<v0tag::Tag>,
+                  v0tag::IsTrueHypertriton<v0tag::Tag>,
+                  v0tag::IsTrueAntiHypertriton<v0tag::Tag>
+                  );
 
 namespace kfcascdata
 {
