@@ -65,7 +65,6 @@ struct strangeness_tutorial {
   Configurable<bool> armcut{"armcut", true, "arm cut"};
   Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
 
-
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<float> cfgETAcut{"cfgETAcut", 0.8f, "Track ETA cut"};
@@ -268,7 +267,7 @@ struct strangeness_tutorial {
     if (!collision.sel8()) {
       return;
     }
-     if (timFrameEvsel && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    if (timFrameEvsel && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return;
     }
     float multiplicity = 0.0f;
