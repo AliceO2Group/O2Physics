@@ -12,6 +12,7 @@
 /// \file MeanPtFlucIdentified.cxx
 /// \brief Calculate EbyE <pt> fluctuations with moments method.
 ///        For charged particles and identified particles.
+///        For Run-2 and RUN-3
 ///
 /// \author Tanu Gahlaut <tanu.gahlaut@cern.ch>
 
@@ -78,7 +79,7 @@ struct meanPtFlucId {
   Configurable<float> prP5{"prP5", 1.13, "proton p (5)"};
   Configurable<float> prP6{"prP6", 1.18, "proton p (6)"};
   ConfigurableAxis multTPCBins{"multTPCBins", {150, 0, 150}, "TPC Multiplicity bins"};
-  ConfigurableAxis multFT0MBins{"multFT0MBins", {150, 0, 10000}, "Forward Multiplicity bins"};
+  ConfigurableAxis multFT0MBins{"multFT0MBins", {150, 0, 1500}, "Forward Multiplicity bins"};
   ConfigurableAxis dcaXYBins{"dcaXYBins", {100, -0.15, 0.15}, "dcaXY bins"};
   ConfigurableAxis dcaZBins{"dcaZBins", {100, -1.2, 1.2}, "dcaZ bins"};
 
@@ -142,7 +143,6 @@ struct meanPtFlucId {
     hist.addClone("QA/before/", "QA/after/");
 
     hist.add("QA/after/p_NTPC_NFT0M", "N_{TPC} vs N_{FT0M} (Profile)", kTProfile, {{axisMultFT0M}});
-    hist.add("QA/after/p_NFT0M_NTPC", "N_{FT0M} vs N_{TPC} (Profile)", kTProfile, {{axisMultTPC}});
     hist.add("QA/after/p_NTPC_Cent", "N_{TPC} vs FT0M(%) (Profile)", kTProfile, {{axisCentFT0M}});
     hist.add("QA/after/h2_NTPC_Nch", "N_{ch} vs N_{TPC}", kTH2D, {{axisMultTPC}, {axisMult}});
 
@@ -169,9 +169,15 @@ struct meanPtFlucId {
     hist.add("Analysis/Charged/h_mean_Q1", " <p_{T}> ", kTH1D, {axisMeanPt});
     hist.add("Analysis/Charged/p_mean_Q1", " <p_{T}> ", kTProfile, {axisMult});
     hist.add("Analysis/Charged/h_mean_Q1_Mult", " <p_{T}> vs N_{ch} ", QnHist);
-    hist.add("Analysis/Charged/h_twopart_Mult", "Twopart vs N_{ch} ", QnHist);
-    hist.add("Analysis/Charged/h_threepart_Mult", "Threepart vs N_{ch} ", QnHist);
-    hist.add("Analysis/Charged/h_fourpart_Mult", "Fourpart vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_mean_Q1_Mult_var", " <p_{T}> vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_mean_Q1_Mult_skew", " <p_{T}> vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_mean_Q1_Mult_kurto", " <p_{T}> vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_twopart_Mult_var", "Twopart vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_twopart_Mult_skew", "Twopart vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_twopart_Mult_kurto", "Twopart vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_threepart_Mult_skew", "Threepart vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_threepart_Mult_kurto", "Threepart vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_fourpart_Mult_kurto", "Fourpart vs N_{ch} ", QnHist);
 
     hist.addClone("Analysis/Charged/", "Analysis/Pion/");
     hist.addClone("Analysis/Charged/", "Analysis/Kaon/");
@@ -302,10 +308,10 @@ struct meanPtFlucId {
     double pt_Pi = 0, Q1_Pi = 0, Q2_Pi = 0, Q3_Pi = 0, Q4_Pi = 0;
     double pt_Pr = 0, Q1_Pr = 0, Q2_Pr = 0, Q3_Pr = 0, Q4_Pr = 0;
     double pt_Ka = 0, Q1_Ka = 0, Q2_Ka = 0, Q3_Ka = 0, Q4_Ka = 0;
-    double mean_Q1_Ch = 0, mean_Q1_Pi = 0, mean_Q1_Ka = 0, mean_Q1_Pr = 0;
-    double twopart_Ch = 0, twopart_Pi = 0, twopart_Ka = 0, twopart_Pr = 0;
-    double threepart_Ch = 0, threepart_Pi = 0, threepart_Ka = 0, threepart_Pr = 0;
-    double fourpart_Ch = 0, fourpart_Pi = 0, fourpart_Ka = 0, fourpart_Pr = 0;
+    double mean_Q1_Ch, mean_Q1_Pi, mean_Q1_Ka, mean_Q1_Pr;
+    double twopart_Ch, twopart_Pi, twopart_Ka, twopart_Pr;
+    double threepart_Ch, threepart_Pi, threepart_Ka, threepart_Pr;
+    double fourpart_Ch, fourpart_Pi, fourpart_Ka, fourpart_Pr;
 
     for (auto& track : tracks) {
       if (!selTrack(track))
@@ -411,7 +417,6 @@ struct meanPtFlucId {
     hist.fill(HIST("QA/after/h2_NTPC_Cent"), Cent_FT0M, NTPC);
     hist.fill(HIST("QA/after/p_NTPC_Cent"), Cent_FT0M, NTPC);
     hist.fill(HIST("QA/after/p_NTPC_NFT0M"), N_FT0M, NTPC);
-    hist.fill(HIST("QA/after/p_NFT0M_NTPC"), NTPC, N_FT0M);
     hist.fill(HIST("QA/after/h2_NTPC_Nch"), NTPC, Nch);
 
     static constexpr std::string_view dire[] = {"Analysis/Charged/", "Analysis/Pion/", "Analysis/Kaon/", "Analysis/Proton/"};
@@ -427,14 +432,31 @@ struct meanPtFlucId {
       hist.fill(HIST(dire[0]) + HIST("p_mean_Q1"), NTPC, mean_Q1_Ch);
       hist.fill(HIST(dire[0]) + HIST("h_mean_Q1_Mult"), NTPC, mean_Q1_Ch, Cent_FT0M);
     }
-    if (Nch > 1 && twopart_Ch != 0)
-      hist.fill(HIST(dire[0]) + HIST("h_twopart_Mult"), NTPC, twopart_Ch, Cent_FT0M);
+    if (Nch > 1) {
+      if (mean_Q1_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_mean_Q1_Mult_var"), NTPC, mean_Q1_Ch, Cent_FT0M);
+      if (twopart_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_twopart_Mult_var"), NTPC, twopart_Ch, Cent_FT0M);
+    }
+    if (Nch > 2) {
+      if (mean_Q1_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_mean_Q1_Mult_skew"), NTPC, mean_Q1_Ch, Cent_FT0M);
+      if (twopart_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_twopart_Mult_skew"), NTPC, twopart_Ch, Cent_FT0M);
+      if (threepart_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_threepart_Mult_skew"), NTPC, threepart_Ch, Cent_FT0M);
+    }
 
-    if (Nch > 2 && threepart_Ch != 0)
-      hist.fill(HIST(dire[0]) + HIST("h_threepart_Mult"), NTPC, threepart_Ch, Cent_FT0M);
-
-    if (Nch > 3 && fourpart_Ch != 0)
-      hist.fill(HIST(dire[0]) + HIST("h_fourpart_Mult"), NTPC, fourpart_Ch, Cent_FT0M);
+    if (Nch > 3) {
+      if (mean_Q1_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_mean_Q1_Mult_kurto"), NTPC, mean_Q1_Ch, Cent_FT0M);
+      if (twopart_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_twopart_Mult_kurto"), NTPC, twopart_Ch, Cent_FT0M);
+      if (threepart_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_threepart_Mult_kurto"), NTPC, threepart_Ch, Cent_FT0M);
+      if (fourpart_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_fourpart_Mult_kurto"), NTPC, fourpart_Ch, Cent_FT0M);
+    }
 
     parts(Q1_Pi, Q2_Pi, Q3_Pi, Q4_Pi, N_Pi, &mean_Q1_Pi, &twopart_Pi, &threepart_Pi, &fourpart_Pi);
     if (N_Pi > 0 && mean_Q1_Pi != 0) {
@@ -442,14 +464,32 @@ struct meanPtFlucId {
       hist.fill(HIST(dire[1]) + HIST("p_mean_Q1"), NTPC, mean_Q1_Pi);
       hist.fill(HIST(dire[1]) + HIST("h_mean_Q1_Mult"), NTPC, mean_Q1_Pi, Cent_FT0M);
     }
-    if (N_Pi > 1 && twopart_Pi != 0)
-      hist.fill(HIST(dire[1]) + HIST("h_twopart_Mult"), NTPC, twopart_Pi, Cent_FT0M);
+    if (N_Pi > 1) {
+      if (mean_Q1_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_mean_Q1_Mult_var"), NTPC, mean_Q1_Pi, Cent_FT0M);
+      if (twopart_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_twopart_Mult_var"), NTPC, twopart_Pi, Cent_FT0M);
+    }
 
-    if (N_Pi > 2 && threepart_Pi != 0)
-      hist.fill(HIST(dire[1]) + HIST("h_threepart_Mult"), NTPC, threepart_Pi, Cent_FT0M);
+    if (N_Pi > 2) {
+      if (mean_Q1_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_mean_Q1_Mult_skew"), NTPC, mean_Q1_Pi, Cent_FT0M);
+      if (twopart_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_twopart_Mult_skew"), NTPC, twopart_Pi, Cent_FT0M);
+      if (threepart_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_threepart_Mult_skew"), NTPC, threepart_Pi, Cent_FT0M);
+    }
 
-    if (N_Pi > 3 && fourpart_Pi != 0)
-      hist.fill(HIST(dire[1]) + HIST("h_fourpart_Mult"), NTPC, fourpart_Pi, Cent_FT0M);
+    if (N_Pi > 3) {
+      if (mean_Q1_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_mean_Q1_Mult_kurto"), NTPC, mean_Q1_Pi, Cent_FT0M);
+      if (twopart_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_twopart_Mult_kurto"), NTPC, twopart_Pi, Cent_FT0M);
+      if (threepart_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_threepart_Mult_kurto"), NTPC, threepart_Pi, Cent_FT0M);
+      if (fourpart_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_fourpart_Mult_kurto"), NTPC, fourpart_Pi, Cent_FT0M);
+    }
 
     parts(Q1_Ka, Q2_Ka, Q3_Ka, Q4_Ka, N_Ka, &mean_Q1_Ka, &twopart_Ka, &threepart_Ka, &fourpart_Ka);
     if (N_Ka > 0 && mean_Q1_Ka != 0) {
@@ -457,30 +497,66 @@ struct meanPtFlucId {
       hist.fill(HIST(dire[2]) + HIST("p_mean_Q1"), NTPC, mean_Q1_Ka);
       hist.fill(HIST(dire[2]) + HIST("h_mean_Q1_Mult"), NTPC, mean_Q1_Ka, Cent_FT0M);
     }
-    if (N_Ka > 1 && twopart_Ka != 0)
-      hist.fill(HIST(dire[2]) + HIST("h_twopart_Mult"), NTPC, twopart_Ka, Cent_FT0M);
+    if (N_Ka > 1) {
+      if (mean_Q1_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_mean_Q1_Mult_var"), NTPC, mean_Q1_Ka, Cent_FT0M);
+      if (twopart_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_twopart_Mult_var"), NTPC, twopart_Ka, Cent_FT0M);
+    }
+    if (N_Ka > 2) {
+      if (mean_Q1_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_mean_Q1_Mult_skew"), NTPC, mean_Q1_Ka, Cent_FT0M);
+      if (twopart_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_twopart_Mult_skew"), NTPC, twopart_Ka, Cent_FT0M);
+      if (threepart_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_threepart_Mult_skew"), NTPC, threepart_Ka, Cent_FT0M);
+    }
 
-    if (N_Ka > 2 && threepart_Ka != 0)
-      hist.fill(HIST(dire[2]) + HIST("h_threepart_Mult"), NTPC, threepart_Ka, Cent_FT0M);
-
-    if (N_Ka > 3 && fourpart_Ka != 0)
-      hist.fill(HIST(dire[2]) + HIST("h_fourpart_Mult"), NTPC, fourpart_Ka, Cent_FT0M);
+    if (N_Ka > 3) {
+      if (mean_Q1_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_mean_Q1_Mult_kurto"), NTPC, mean_Q1_Ka, Cent_FT0M);
+      if (twopart_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_twopart_Mult_kurto"), NTPC, twopart_Ka, Cent_FT0M);
+      if (threepart_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_threepart_Mult_kurto"), NTPC, threepart_Ka, Cent_FT0M);
+      if (fourpart_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_fourpart_Mult_kurto"), NTPC, fourpart_Ka, Cent_FT0M);
+    }
 
     parts(Q1_Pr, Q2_Pr, Q3_Pr, Q4_Pr, N_Pr, &mean_Q1_Pr, &twopart_Pr, &threepart_Pr, &fourpart_Pr);
     if (N_Pr > 0 && mean_Q1_Pr != 0) {
       hist.fill(HIST(dire[3]) + HIST("h_mean_Q1"), mean_Q1_Pr);
       hist.fill(HIST(dire[3]) + HIST("p_mean_Q1"), NTPC, mean_Q1_Pr);
-      hist.fill(HIST(dire[3]) + HIST("h_mean_Q1_Mult"), NTPC, mean_Q1_Pr, N_FT0M);
+      hist.fill(HIST(dire[3]) + HIST("h_mean_Q1_Mult"), NTPC, mean_Q1_Pr, Cent_FT0M);
     }
-    if (N_Pr > 1 && twopart_Pr != 0)
-      hist.fill(HIST(dire[3]) + HIST("h_twopart_Mult"), NTPC, twopart_Pr, Cent_FT0M);
+    if (N_Pr > 1) {
+      if (mean_Q1_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_mean_Q1_Mult_var"), NTPC, mean_Q1_Pr, Cent_FT0M);
+      if (twopart_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_twopart_Mult_var"), NTPC, twopart_Pr, Cent_FT0M);
+    }
 
-    if (N_Pr > 2 && threepart_Pr != 0)
-      hist.fill(HIST(dire[3]) + HIST("h_threepart_Mult"), NTPC, threepart_Pr, Cent_FT0M);
+    if (N_Pr > 2) {
+      if (mean_Q1_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_mean_Q1_Mult_skew"), NTPC, mean_Q1_Pr, Cent_FT0M);
+      if (twopart_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_twopart_Mult_skew"), NTPC, twopart_Pr, Cent_FT0M);
+      if (threepart_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_threepart_Mult_skew"), NTPC, threepart_Pr, Cent_FT0M);
+    }
 
-    if (N_Pr > 3 && fourpart_Pr != 0)
-      hist.fill(HIST(dire[3]) + HIST("h_fourpart_Mult"), NTPC, fourpart_Pr, Cent_FT0M);
+    if (N_Pr > 3) {
+      if (mean_Q1_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_mean_Q1_Mult_kurto"), NTPC, mean_Q1_Pr, Cent_FT0M);
+      if (twopart_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_twopart_Mult_kurto"), NTPC, twopart_Pr, Cent_FT0M);
+      if (threepart_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_threepart_Mult_kurto"), NTPC, threepart_Pr, Cent_FT0M);
+      if (fourpart_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_fourpart_Mult_kurto"), NTPC, fourpart_Pr, Cent_FT0M);
+    }
   }
+
   void process_Run2(MyRun2Collisions::iterator const& col, MyAllTracks const& tracks)
   {
     double Cent_V0M = 0, N_FV0M = 0;
