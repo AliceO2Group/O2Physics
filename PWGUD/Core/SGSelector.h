@@ -44,6 +44,11 @@ class SGSelector
     //        LOGF(info, "Collision %f", collision.collisionTime());
     //        LOGF(info, "Number of close BCs: %i", bcRange.size());
     SelectionResult<BC> result;
+    result.bc = &oldbc;
+    if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
+      result.value = 4;
+      return result;
+    }
     auto newbc = oldbc;
     bool gA = true, gC = true;
     for (auto const& bc : bcRange) {
@@ -68,9 +73,6 @@ class SGSelector
       return result;
     }
     // LOGF(info, "Old BC: %i, New BC: %i",oldbc.globalBC(), newbc.globalBC());
-    if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
-      result.value = 4;
-    }
     result.value = gA && gC ? 2 : (gA ? 0 : 1);
     return result;
   }
