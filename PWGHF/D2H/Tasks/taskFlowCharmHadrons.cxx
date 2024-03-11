@@ -51,7 +51,7 @@ struct HfTaskFlowCharmHadrons {
   Configurable<float> zVtxMax{"zVtxMax", 10., "Max vertex coordinate z"};
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<int> qvecDetector{"qvecDetector", 0, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5)"};
-  Configurable<int> centDetector{"centDetector", 0, "Detector for centrality estimation (V0A: 0, T0M: 1, T0A: 2, T0C: 3"};
+  Configurable<int> centDetector{"centDetector", 0, "Detector for centrality estimation (V0A: 0, T0M: 1, T0A: 2, T0C: 3)"};
   Configurable<int> selectionFlag{"selectionFlag", 1, "Selection Flag for hadron (e.g. 1 for skimming, 3 for topo. and kine., 7 for PID)"};
   Configurable<int> prongNum{"prongNum", 3, "Number of candidate's prong (For D0, set selectionFlag = 1 and prongNum = 2)"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
@@ -66,7 +66,6 @@ struct HfTaskFlowCharmHadrons {
   ConfigurableAxis thnConfigAxisScalarProd{"thnConfigAxisScalarProd", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisMlOne{"thnConfigAxisMlOne", {1000, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisMlTwo{"thnConfigAxisMlTwo", {1000, 0., 1.}, ""};
-  ConfigurableAxis thnConfigAxisSelFlag{"thnConfigAxisSelFlag", {10, -1, 9}, ""};
 
   using CandDsDatawMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
@@ -142,7 +141,7 @@ struct HfTaskFlowCharmHadrons {
   /// \param tracksQx is the X component of the Q vector for the tracks
   /// \param tracksQy is the Y component of the Q vector for the tracks
   /// \param DecayChannel
-template <int DecayChannel, typename T1>
+  template <int DecayChannel, typename T1>
   void getQvecDtracks(const T1& cand,
                       std::vector<float>& tracksQx,
                       std::vector<float>& tracksQy,
@@ -363,8 +362,10 @@ template <int DecayChannel, typename T1>
         if (candidate.isSelD0() >= selectionFlag) {
           massCand = hfHelper.invMassD0ToPiK(candidate);
           if constexpr (std::is_same<T1, CandD0DatawMl>::value) {
-            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+            std::cout << "Here is CandD0DatawMl" << std::endl;
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
               outputMlD0[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
+              std::cout << "Here is iclass " << iclass << "\t Here is outputMl " << outputMlD0[iclass] << std::endl; }
           }
           fillThn(massCand, ptCand, cent, cosNPhi, cosDeltaPhi, scalprodCand, outputMlD0);
         }
