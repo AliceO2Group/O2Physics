@@ -145,8 +145,7 @@ struct HfTaskFlowCharmHadrons {
   void getQvecDtracks(const T1& cand,
                       std::vector<float>& tracksQx,
                       std::vector<float>& tracksQy,
-                      float& ampl
-                      )
+                      float& ampl)
   {
     // TODO: add possibility to consider different weights for the tracks, at the moment only pT is considered;
     float pXtrack0 = cand.pxProng0();
@@ -163,7 +162,7 @@ struct HfTaskFlowCharmHadrons {
     tracksQx.push_back(cos(harmonic * phiTrack1) * pTtrack1 / ampl);
     tracksQy.push_back(sin(harmonic * phiTrack1) * pTtrack1 / ampl);
 
-    if constexpr (DecayChannel != DecayChannel::D0ToPiK){
+    if constexpr (DecayChannel != DecayChannel::D0ToPiK) {
       float pXtrack2 = cand.pxProng2();
       float pYtrack2 = cand.pyProng2();
       float pTtrack2 = cand.ptProng2();
@@ -335,18 +334,18 @@ struct HfTaskFlowCharmHadrons {
         std::vector<float> tracksQx = {};
         std::vector<float> tracksQy = {};
 
-        if constexpr (DecayChannel == DecayChannel::D0ToPiK){
+        if constexpr (DecayChannel == DecayChannel::D0ToPiK) {
           getQvecDtracks<DecayChannel>(candidate, tracksQx, tracksQy, ampl);
-            for (unsigned int itrack = 0; itrack < 2; itrack++) {
-              xQVec -= tracksQx[itrack];
-              yQVec -= tracksQy[itrack];
-            }
-          } else {
+          for (unsigned int itrack = 0; itrack < 2; itrack++) {
+            xQVec -= tracksQx[itrack];
+            yQVec -= tracksQy[itrack];
+          }
+        } else {
           getQvecDtracks<DecayChannel>(candidate, tracksQx, tracksQy, ampl);
           for (unsigned int itrack = 0; itrack < 3; itrack++) {
-              xQVec -= tracksQx[itrack];
-              yQVec -= tracksQy[itrack];
-            }
+            xQVec -= tracksQx[itrack];
+            yQVec -= tracksQy[itrack];
+          }
         }
       }
 
@@ -365,7 +364,8 @@ struct HfTaskFlowCharmHadrons {
             std::cout << "Here is CandD0DatawMl" << std::endl;
             for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
               outputMlD0[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
-              std::cout << "Here is iclass " << iclass << "\t Here is outputMl " << outputMlD0[iclass] << std::endl; }
+              std::cout << "Here is iclass " << iclass << "\t Here is outputMl " << outputMlD0[iclass] << std::endl;
+            }
           }
           fillThn(massCand, ptCand, cent, cosNPhi, cosDeltaPhi, scalprodCand, outputMlD0);
         }
@@ -377,7 +377,7 @@ struct HfTaskFlowCharmHadrons {
           }
           fillThn(massCand, ptCand, cent, cosNPhi, cosDeltaPhi, scalprodCand, outputMlD0bar);
         }
-      } //TODO: Whether to put all the mass calculations here
+      } // TODO: Whether to put all the mass calculations here
 
       if constexpr (DecayChannel != DecayChannel::D0ToPiK) {
         fillThn(massCand, ptCand, cent, cosNPhi, cosDeltaPhi, scalprodCand, outputMl);
@@ -421,7 +421,7 @@ struct HfTaskFlowCharmHadrons {
 
   // D0 with ML
   void processD0Ml(CollsWithQvecs::iterator const& collision,
-                      CandD0DatawMl const& candidatesD0)
+                   CandD0DatawMl const& candidatesD0)
   {
     runFlowAnalysis<DecayChannel::D0ToPiK, CandD0DatawMl>(collision, candidatesD0);
   }
@@ -429,7 +429,7 @@ struct HfTaskFlowCharmHadrons {
 
   // D0 with rectangular cuts
   void processD0(CollsWithQvecs::iterator const& collision,
-                    CandD0Data const& candidatesD0)
+                 CandD0Data const& candidatesD0)
   {
     runFlowAnalysis<DecayChannel::D0ToPiK, CandD0Data>(collision, candidatesD0);
   }
