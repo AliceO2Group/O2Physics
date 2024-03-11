@@ -586,6 +586,10 @@ enum v0bit {
   bitdEdxNegProton,
   bitdEdxNegHelium3,
 
+  // Mixed bits 
+  bitdEdxPosPionOrITSOnly, 
+  bitdEdxNegPionOrITSOnly, 
+
   // Monte Carlo Association bits
   bitTrueGamma,
   bitTrueK0Short,

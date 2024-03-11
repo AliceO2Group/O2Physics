@@ -1125,10 +1125,10 @@ struct lambdakzeroPreselector {
       selectionAntiHypertriton = selectionAntiHypertriton | (1 << bitdEdxPosPion) | (1 << bitdEdxNegHelium3);
     } else {
       // if preselection only affects baryons, accept also mesonic daughter via ITS only (with min ITS clu = minITSCluITSOnly)
-      selectionLambda = selectionLambda | (1 << bitdEdxPosProton);
-      selectionAntiLambda = selectionAntiLambda | (1 << bitdEdxNegProton);
-      selectionHypertriton = selectionHypertriton | (1 << bitdEdxPosHelium3);
-      selectionAntiHypertriton = selectionAntiHypertriton | (1 << bitdEdxNegHelium3);
+      selectionLambda = selectionLambda | (1 << bitdEdxPosProton) | (1 << bitdEdxNegPionOrITSOnly);
+      selectionAntiLambda = selectionAntiLambda | (1 << bitdEdxNegProton) | (1 << bitdEdxPosPionOrITSOnly);
+      selectionHypertriton = selectionHypertriton | (1 << bitdEdxPosHelium3) | (1 << bitdEdxNegPionOrITSOnly);
+      selectionAntiHypertriton = selectionAntiHypertriton | (1 << bitdEdxNegHelium3) | (1 << bitdEdxPosPionOrITSOnly);
     }
 
     if (doprocessBuildMCAssociated || doprocessBuildValiddEdxMCAssociated) {
@@ -1237,6 +1237,9 @@ struct lambdakzeroPreselector {
     bitsetvalue(maskElement, bitdEdxNegPion, (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow));
     bitsetvalue(maskElement, bitdEdxNegProton, (TMath::Abs(lNegTrack.tpcNSigmaPr()) < ddEdxPreSelectionWindow));
     bitsetvalue(maskElement, bitdEdxNegHelium3, (TMath::Abs(lNegTrack.tpcNSigmaHe()) < ddEdxPreSelectionWindow));
+
+    bitsetvalue(maskElement, bitdEdxPosPionOrITSOnly, (!lPosTrack.hasTPC() && lPosTrack.itsNCls() >= minITSCluITSOnly || (TMath::Abs(lPosTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)));
+    bitsetvalue(maskElement, bitdEdxNegPionOrITSOnly, (!lNegTrack.hasTPC() && lNegTrack.itsNCls() >= minITSCluITSOnly || (TMath::Abs(lNegTrack.tpcNSigmaPi()) < ddEdxPreSelectionWindow)));
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// Initialization of mask vectors if uninitialized
