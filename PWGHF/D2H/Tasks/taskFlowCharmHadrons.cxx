@@ -53,7 +53,7 @@ struct HfTaskFlowCharmHadrons {
   Configurable<int> qvecDetector{"qvecDetector", 0, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5)"};
   Configurable<int> centDetector{"centDetector", 0, "Detector for centrality estimation (V0A: 0, T0M: 1, T0A: 2, T0C: 3)"};
   Configurable<int> selectionFlag{"selectionFlag", 1, "Selection Flag for hadron (e.g. 1 for skimming, 3 for topo. and kine., 7 for PID)"};
-  Configurable<int> prongNum{"prongNum", 3, "Number of candidate's prong (For D0, set selectionFlag = 1 and prongNum = 2)"};
+  Configurable<int> nProngs{"nProngs", 3, "Number of candidate's prong (For D0, set selectionFlag = 1 and nProngs = 2)"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
   Configurable<bool> saveEpResoHisto{"saveEpResoHisto", false, "Flag to save event plane resolution histogram"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indexes of BDT scores to be stored. Two indexes max."};
@@ -140,8 +140,8 @@ struct HfTaskFlowCharmHadrons {
   /// \param cand is the candidate
   /// \param tracksQx is the X component of the Q vector for the tracks
   /// \param tracksQy is the Y component of the Q vector for the tracks
-  /// \param DecayChannel
-  template <int DecayChannel, typename T1>
+  /// \param DeChannel is the decay channel
+  template <int DeChannel, typename T1>
   void getQvecDtracks(const T1& cand,
                       std::vector<float>& tracksQx,
                       std::vector<float>& tracksQy,
@@ -157,18 +157,18 @@ struct HfTaskFlowCharmHadrons {
     float pTtrack1 = cand.ptProng1();
     float phiTrack1 = std::atan2(pYtrack1, pXtrack1);
 
-    tracksQx.push_back(cos(harmonic * phiTrack0) * pTtrack0 / ampl);
-    tracksQy.push_back(sin(harmonic * phiTrack0) * pTtrack0 / ampl);
-    tracksQx.push_back(cos(harmonic * phiTrack1) * pTtrack1 / ampl);
-    tracksQy.push_back(sin(harmonic * phiTrack1) * pTtrack1 / ampl);
+    tracksQx.push_back(std::cos(harmonic * phiTrack0) * pTtrack0 / ampl);
+    tracksQy.push_back(std::sin(harmonic * phiTrack0) * pTtrack0 / ampl);
+    tracksQx.push_back(std::cos(harmonic * phiTrack1) * pTtrack1 / ampl);
+    tracksQy.push_back(std::sin(harmonic * phiTrack1) * pTtrack1 / ampl);
 
-    if constexpr (DecayChannel != DecayChannel::D0ToPiK) {
+    if constexpr (DeChannel != DecayChannel::D0ToPiK) {
       float pXtrack2 = cand.pxProng2();
       float pYtrack2 = cand.pyProng2();
       float pTtrack2 = cand.ptProng2();
       float phiTrack2 = std::atan2(pYtrack2, pXtrack2);
-      tracksQx.push_back(cos(harmonic * phiTrack2) * pTtrack2 / ampl);
-      tracksQy.push_back(sin(harmonic * phiTrack2) * pTtrack2 / ampl);
+      tracksQx.push_back(std::cos(harmonic * phiTrack2) * pTtrack2 / ampl);
+      tracksQy.push_back(std::sin(harmonic * phiTrack2) * pTtrack2 / ampl);
     }
   }
 
@@ -330,7 +330,7 @@ struct HfTaskFlowCharmHadrons {
 
       // If TPC is used for the SP estimation, the tracks of the hadron candidate must be removed from the TPC Q vector to avoid double counting
       if (qvecDetector == qvecEstimator::TPCNeg || qvecDetector == qvecEstimator::TPCPos) {
-        float ampl = amplQVec - static_cast<float>(prongNum);
+        float ampl = amplQVec - static_cast<float>(nProngs);
         std::vector<float> tracksQx = {};
         std::vector<float> tracksQy = {};
 
