@@ -344,7 +344,7 @@ struct centralEventFilterTask {
     auto mFiltered{scalers.get<TH1>(HIST("mFiltered"))};
     auto mCovariance{scalers.get<TH2>(HIST("mCovariance"))};
 
-    int64_t nEvents{-1};
+    int64_t nEvents{collTabPtr->num_rows()};
     std::vector<uint64_t> outTrigger, outDecision;
     int64_t nSelected{0};
     for (auto& tableName : mDownscaling) {
@@ -354,9 +354,8 @@ struct centralEventFilterTask {
       auto tableConsumer = pc.inputs().get<TableConsumer>(tableName.first);
       auto tablePtr{tableConsumer->asArrowTable()};
       int64_t nRows{tablePtr->num_rows()};
-      nEvents = nEvents < 0 ? nRows : nEvents;
       if (nEvents != nRows) {
-        LOG(fatal) << "Inconsistent number of rows across trigger tables.";
+        LOGF(fatal, "Inconsistent number of rows in the trigger table %s: %lld but it should be %lld", tableName.first.data(), nRows, nEvents);
       }
 
       if (outDecision.size() == 0) {
@@ -414,12 +413,11 @@ struct centralEventFilterTask {
       }
     }
 
-    /// Filling the output table
-    if (outDecision.size() != static_cast<uint64_t>(collTabPtr->num_rows())) {
-      LOG(fatal) << "Inconsistent number of rows across Collision table and CEFP decision vector.";
+    if (outDecision.size() != static_cast<uint64_t>(nEvents)) {
+      LOGF(fatal, "Inconsistent number of rows across Collision table and CEFP decision vector.");
     }
     if (outDecision.size() != static_cast<uint64_t>(evSelTabPtr->num_rows())) {
-      LOG(fatal) << "Inconsistent number of rows across EvSel table and CEFP decision vector.";
+      LOGF(fatal, "Inconsistent number of rows across EvSel table and CEFP decision vector %ull vs %ll", outDecision.size(), evSelTabPtr->num_rows());
     }
     for (uint64_t iD{0}; iD < outDecision.size(); ++iD) {
       uint64_t foundBC = FoundBCArray->Value(iD) >= 0 && FoundBCArray->Value(iD) < GloBCArray->length() ? GloBCArray->Value(FoundBCArray->Value(iD)) : -1;
