@@ -398,7 +398,7 @@ struct DGCandAnalyzer {
         fillSignalHists(ivm, PVContributors, pidsel);
       }
       goodIVMs++;
-      
+
       // update system/IVMptSysDG
       registry.fill(HIST("system/unlikeIVMptSysDG"), ivm.M(), ivm.Perp());
 
