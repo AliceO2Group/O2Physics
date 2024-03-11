@@ -254,7 +254,7 @@ struct MultiplicityTableTaskIndexed {
           tableExtra.reserve(collisions.size());
           break;
         case kMultSelections: // Extra information
-          tableExtra.reserve(collisions.size());
+          multSelections.reserve(collisions.size());
           break;
         case kMultZeqs: // Equalized multiplicity
           tableMultZeq.reserve(collisions.size());
