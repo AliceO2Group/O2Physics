@@ -374,7 +374,7 @@ struct HfTaskFlowCharmHadrons {
           }
           fillThn(massCand, ptCand, cent, cosNPhi, cosDeltaPhi, scalprodCand, outputMlD0bar);
         }
-      } // TODO: Whether to put all the mass calculations here
+      } // TODO: whether to put all the mass calculations here
 
       if constexpr (DecayChannel != DecayChannel::D0ToPiK) {
         fillThn(massCand, ptCand, cent, cosNPhi, cosDeltaPhi, scalprodCand, outputMl);
