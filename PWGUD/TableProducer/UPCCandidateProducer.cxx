@@ -279,7 +279,7 @@ struct UpcCandProducer {
         continue;
       int32_t mcEventID = mcPart.mcCollisionId();
       const auto& mcEvent = mcCollisions.iteratorAt(mcEventID);
-      bool isSignal = mcEvent.generatorsID() == fSignalGenID;
+      bool isSignal = mcEvent.getSourceId() == fSignalGenID;
       if (!isSignal) {
         continue;
       }
@@ -291,6 +291,8 @@ struct UpcCandProducer {
       }
     }
 
+    std::vector<int32_t> newMotherIDs{};
+
     // storing MC particles
     for (const auto& item : fNewPartIDs) {
       int32_t mcPartID = item.first;
@@ -298,36 +300,39 @@ struct UpcCandProducer {
       int32_t mcEventID = mcPart.mcCollisionId();
       int32_t newEventID = newEventIDs[mcEventID];
       // collecting new mother IDs
-      const auto& motherIDs = mcPart.mothersIds();
-      std::vector<int32_t> newMotherIDs;
-      newMotherIDs.reserve(motherIDs.size());
-      for (auto motherID : motherIDs) {
-        if (motherID >= nMCParticles) {
-          continue;
-        }
-        auto it = fNewPartIDs.find(motherID);
-        if (it != fNewPartIDs.end()) {
-          newMotherIDs.push_back(it->second);
+      if (mcPart.has_mothers()) {
+        const auto& motherIDs = mcPart.mothersIds();
+        for (auto motherID : motherIDs) {
+          if (motherID >= nMCParticles) {
+            continue;
+          }
+          auto it = fNewPartIDs.find(motherID);
+          if (it != fNewPartIDs.end()) {
+            newMotherIDs.push_back(it->second);
+          }
         }
       }
       // collecting new daughter IDs
-      const auto& daughterIDs = mcPart.daughtersIds();
       int32_t newDaughterIDs[2] = {-1, -1};
-      if (daughterIDs.size() > 0) {
-        int32_t firstDaughter = daughterIDs.front();
-        int32_t lastDaughter = daughterIDs.back();
-        if (firstDaughter >= nMCParticles || lastDaughter >= nMCParticles) {
-          continue;
-        }
-        auto itFirst = fNewPartIDs.find(firstDaughter);
-        auto itLast = fNewPartIDs.find(lastDaughter);
-        if (itFirst != fNewPartIDs.end() && itLast != fNewPartIDs.end()) {
-          newDaughterIDs[0] = fNewPartIDs.at(daughterIDs.front());
-          newDaughterIDs[1] = fNewPartIDs.at(daughterIDs.back());
+      if (mcPart.has_daughters()) {
+        const auto& daughterIDs = mcPart.daughtersIds();
+        if (daughterIDs.size() > 0) {
+          int32_t firstDaughter = daughterIDs.front();
+          int32_t lastDaughter = daughterIDs.back();
+          if (firstDaughter >= nMCParticles || lastDaughter >= nMCParticles) {
+            continue;
+          }
+          auto itFirst = fNewPartIDs.find(firstDaughter);
+          auto itLast = fNewPartIDs.find(lastDaughter);
+          if (itFirst != fNewPartIDs.end() && itLast != fNewPartIDs.end()) {
+            newDaughterIDs[0] = fNewPartIDs.at(daughterIDs.front());
+            newDaughterIDs[1] = fNewPartIDs.at(daughterIDs.back());
+          }
         }
       }
       udMCParticles(newEventID, mcPart.pdgCode(), mcPart.getHepMCStatusCode(), mcPart.flags(), newMotherIDs, newDaughterIDs,
                     mcPart.weight(), mcPart.px(), mcPart.py(), mcPart.pz(), mcPart.e());
+      newMotherIDs.clear();
     }
 
     // storing MC events
@@ -1482,6 +1487,7 @@ struct UpcCandProducer {
                         bcs, collisions,
                         ft0s, fdds, fv0as, zdcs,
                         &mcFwdTrackLabels);
+    fNewPartIDs.clear();
   }
 
   PROCESS_SWITCH(UpcCandProducer, processSemiFwd, "Produce candidates in semiforward/forward region", false);
