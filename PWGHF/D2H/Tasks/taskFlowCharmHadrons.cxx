@@ -330,7 +330,7 @@ struct HfTaskFlowCharmHadrons {
 
       // If TPC is used for the SP estimation, the tracks of the hadron candidate must be removed from the TPC Q vector to avoid double counting
       if (qvecDetector == qvecEstimator::TPCNeg || qvecDetector == qvecEstimator::TPCPos) {
-        float ampl = amplQVec - float(prongNum);
+        float ampl = amplQVec - static_cast<float>(prongNum);
         std::vector<float> tracksQx = {};
         std::vector<float> tracksQy = {};
 
@@ -361,11 +361,8 @@ struct HfTaskFlowCharmHadrons {
         if (candidate.isSelD0() >= selectionFlag) {
           massCand = hfHelper.invMassD0ToPiK(candidate);
           if constexpr (std::is_same<T1, CandD0DatawMl>::value) {
-            std::cout << "Here is CandD0DatawMl" << std::endl;
-            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
               outputMlD0[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
-              std::cout << "Here is iclass " << iclass << "\t Here is outputMl " << outputMlD0[iclass] << std::endl;
-            }
           }
           fillThn(massCand, ptCand, cent, cosNPhi, cosDeltaPhi, scalprodCand, outputMlD0);
         }
