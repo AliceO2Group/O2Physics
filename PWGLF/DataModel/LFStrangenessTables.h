@@ -632,40 +632,19 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsdEdxAntiHypertriton, isdEdxAntiHypertriton, //!
                                                                        ((1 << enums::bitdEdxPosPion) | (1 << enums::bitdEdxNegHelium3))) ==
                                                                       ((1 << enums::bitdEdxPosPion) | (1 << enums::bitdEdxNegHelium3)); });
 
-DECLARE_SOA_DYNAMIC_COLUMN(IsTrueGamma, isTrueGamma, //!
-                           [](uint32_t selectionMap) -> bool { return (selectionMap & (1 << enums::bitTrueGamma)) == (1 << enums::bitTrueGamma); });
-DECLARE_SOA_DYNAMIC_COLUMN(IsTrueK0Short, isTrueK0Short, //!
-                           [](uint32_t selectionMap) -> bool { return (selectionMap & (1 << enums::bitTrueK0Short)) == (1 << enums::bitTrueK0Short); });
-DECLARE_SOA_DYNAMIC_COLUMN(IsTrueLambda, isTrueLambda, //!
-                           [](uint32_t selectionMap) -> bool { return (selectionMap & (1 << enums::bitTrueLambda)) == (1 << enums::bitTrueLambda); });
-DECLARE_SOA_DYNAMIC_COLUMN(IsTrueAntiLambda, isTrueAntiLambda, //!
-                           [](uint32_t selectionMap) -> bool { return (selectionMap & (1 << enums::bitTrueAntiLambda)) == (1 << enums::bitTrueAntiLambda); });
-DECLARE_SOA_DYNAMIC_COLUMN(IsTrueHypertriton, isTrueHypertriton, //!
-                           [](uint32_t selectionMap) -> bool { return (selectionMap & (1 << enums::bitTrueHypertriton)) == (1 << enums::bitTrueHypertriton); });
-DECLARE_SOA_DYNAMIC_COLUMN(IsTrueAntiHypertriton, isTrueAntiHypertriton, //!
-                           [](uint32_t selectionMap) -> bool { return (selectionMap & (1 << enums::bitTrueAntiHypertriton)) == (1 << enums::bitTrueAntiHypertriton); });
-
-DECLARE_SOA_COLUMN(Tag, tag, uint32_t); // pack according to enums
+DECLARE_SOA_BITMAP_COLUMN(Tag, tag, 32);
 } // namespace v0tag
 DECLARE_SOA_TABLE(V0Tags, "AOD", "V0TAGS",
                   v0tag::IsInteresting,
                   v0tag::Tag,
 
-                  // Dynamic composite
+                  // Dynamic composite: two bits checked
                   v0tag::IsdEdxGamma<v0tag::Tag>,
                   v0tag::IsdEdxK0Short<v0tag::Tag>,
                   v0tag::IsdEdxLambda<v0tag::Tag>,
                   v0tag::IsdEdxAntiLambda<v0tag::Tag>,
                   v0tag::IsdEdxHypertriton<v0tag::Tag>,
-                  v0tag::IsdEdxAntiHypertriton<v0tag::Tag>,
-
-                  // true flags
-                  v0tag::IsTrueGamma<v0tag::Tag>,
-                  v0tag::IsTrueK0Short<v0tag::Tag>,
-                  v0tag::IsTrueLambda<v0tag::Tag>,
-                  v0tag::IsTrueAntiLambda<v0tag::Tag>,
-                  v0tag::IsTrueHypertriton<v0tag::Tag>,
-                  v0tag::IsTrueAntiHypertriton<v0tag::Tag>);
+                  v0tag::IsdEdxAntiHypertriton<v0tag::Tag>);
 
 namespace kfcascdata
 {

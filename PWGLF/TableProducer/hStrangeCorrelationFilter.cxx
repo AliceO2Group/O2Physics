@@ -32,6 +32,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::v0tag::enums; // for the selectiom bits
 
 #define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
@@ -380,7 +381,7 @@ struct hstrangecorrelationfilter {
       ) {
         assocV0(v0.collisionId(), v0.globalIndex(),
                 compatibleK0Short, compatibleLambda, compatibleAntiLambda,
-                origV0entry.isTrueK0Short(), origV0entry.isTrueLambda(), origV0entry.isTrueAntiLambda(),
+                origV0entry.tag_bit(bitTrueK0Short), origV0entry.tag_bit(bitTrueLambda), origV0entry.tag_bit(bitTrueAntiLambda),
                 massRegK0Short, massRegLambda, massRegAntiLambda);
       }
     }

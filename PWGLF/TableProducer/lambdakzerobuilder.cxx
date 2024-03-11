@@ -781,8 +781,8 @@ struct lambdakzeroBuilder {
     // check if user requested to correlate mass requirement with TPC PID
     // (useful for data volume reduction)
     bool dEdxK0Short = V0.isdEdxK0Short() || !massWindowWithTPCPID;
-    bool dEdxLambda = (V0.isdEdxLambda() || (V0.isdEdxPosProton() && !negTrack.hasTPC())) || !massWindowWithTPCPID;
-    bool dEdxAntiLambda = (V0.isdEdxAntiLambda() || (V0.isdEdxNegProton() && !posTrack.hasTPC())) || !massWindowWithTPCPID;
+    bool dEdxLambda = (V0.isdEdxLambda() || (V0.tag_bit(bitdEdxPosProton) && !negTrack.hasTPC())) || !massWindowWithTPCPID;
+    bool dEdxAntiLambda = (V0.isdEdxAntiLambda() || (V0.tag_bit(bitdEdxNegProton) && !posTrack.hasTPC())) || !massWindowWithTPCPID;
 
     // check proper lifetime if asked for
     bool passML2P_K0Short = lML2P_K0Short < lifetimecut->get("lifetimecutK0S") || lifetimecut->get("lifetimecutK0S") > 1000;
@@ -814,34 +814,34 @@ struct lambdakzeroBuilder {
 
       // Fill basic mass histograms
       if (TMath::Abs(RecoDecay::eta(std::array{px, py, pz})) < 0.5) {
-        if ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))
+        if ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.tag_bit(bitTrueGamma) || mcUnchecked))
           registry.fill(HIST("h2dGammaMass"), lPt, lGammaMass);
-        if ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))
+        if ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.tag_bit(bitTrueK0Short) || mcUnchecked))
           registry.fill(HIST("h2dK0ShortMass"), lPt, v0candidate.k0ShortMass);
-        if ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))
+        if ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.tag_bit(bitTrueLambda) || mcUnchecked))
           registry.fill(HIST("h2dLambdaMass"), lPt, v0candidate.lambdaMass);
-        if ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))
+        if ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.tag_bit(bitTrueAntiLambda) || mcUnchecked))
           registry.fill(HIST("h2dAntiLambdaMass"), lPt, v0candidate.antiLambdaMass);
-        if ((V0.isdEdxHypertriton() || dEdxUnchecked) && (V0.isTrueHypertriton() || mcUnchecked))
+        if ((V0.isdEdxHypertriton() || dEdxUnchecked) && (V0.tag_bit(bitTrueHypertriton) || mcUnchecked))
           registry.fill(HIST("h2dHypertritonMass"), lPtHy, lHypertritonMass);
-        if ((V0.isdEdxAntiHypertriton() || dEdxUnchecked) && (V0.isTrueAntiHypertriton() || mcUnchecked))
+        if ((V0.isdEdxAntiHypertriton() || dEdxUnchecked) && (V0.tag_bit(bitTrueAntiHypertriton) || mcUnchecked))
           registry.fill(HIST("h2dAntiHypertritonMass"), lPtAnHy, lAntiHypertritonMass);
       }
 
       // Fill ITS cluster maps with specific mass cuts
-      if (TMath::Abs(lGammaMass - 0.0) < dQAGammaMassWindow && ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.isTrueGamma() || mcUnchecked))) {
+      if (TMath::Abs(lGammaMass - 0.0) < dQAGammaMassWindow && ((V0.isdEdxGamma() || dEdxUnchecked) && (V0.tag_bit(bitTrueGamma) || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_Gamma"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
         registry.fill(HIST("h2dXIU_Gamma"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
-      if (TMath::Abs(v0candidate.k0ShortMass - 0.497) < dQAK0ShortMassWindow && ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.isTrueK0Short() || mcUnchecked))) {
+      if (TMath::Abs(v0candidate.k0ShortMass - 0.497) < dQAK0ShortMassWindow && ((V0.isdEdxK0Short() || dEdxUnchecked) && (V0.tag_bit(bitTrueK0Short) || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_K0Short"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
         registry.fill(HIST("h2dXIU_K0Short"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
-      if (TMath::Abs(v0candidate.lambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.isTrueLambda() || mcUnchecked))) {
+      if (TMath::Abs(v0candidate.lambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxLambda() || dEdxUnchecked) && (V0.tag_bit(bitTrueLambda) || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_Lambda"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
         registry.fill(HIST("h2dXIU_Lambda"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
-      if (TMath::Abs(v0candidate.antiLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.isTrueAntiLambda() || mcUnchecked))) {
+      if (TMath::Abs(v0candidate.antiLambdaMass - 1.116) < dQALambdaMassWindow && ((V0.isdEdxAntiLambda() || dEdxUnchecked) && (V0.tag_bit(bitTrueAntiLambda) || mcUnchecked))) {
         registry.fill(HIST("h2dITSCluMap_AntiLambda"), static_cast<float>(posTrack.itsClusterMap()), static_cast<float>(negTrack.itsClusterMap()), v0candidate.V0radius);
         registry.fill(HIST("h2dXIU_AntiLambda"), static_cast<float>(posTrack.x()), static_cast<float>(negTrack.x()), v0candidate.V0radius);
       }
@@ -883,7 +883,7 @@ struct lambdakzeroBuilder {
 
       // let's just use tagged, cause we can
       if (!posTrack.hasITS() && !posTrack.hasTRD() && !posTrack.hasTOF() && !negTrack.hasITS() && !negTrack.hasTRD() && !negTrack.hasTOF()) {
-        if (V0.isTrueGamma()) {
+        if (V0.tag_bit(bitTrueGamma)) {
           registry.fill(HIST("h2d_pcm_DCAXY_True"), lPt, std::hypot(dcaInfo[0], dcaInfo[1]));
           registry.fill(HIST("h2d_pcm_DCACHI2_True"), lPt, fitter.getChi2AtPCACandidate());
           registry.fill(HIST("h2d_pcm_DeltaDistanceRadii_True"), lPt, centerDistance - trcCircle1.rC - trcCircle2.rC);
