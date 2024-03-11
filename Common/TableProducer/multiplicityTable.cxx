@@ -253,10 +253,14 @@ struct MultiplicityTableTaskIndexed {
         case kMultsExtra: // Extra information
           tableExtra.reserve(collisions.size());
           break;
+        case kMultSelections: // Extra information
+          multSelections.reserve(collisions.size());
+          break;
         case kMultZeqs: // Equalized multiplicity
           tableMultZeq.reserve(collisions.size());
           break;
         case kMultsExtraMC: // MC extra information (nothing to do, this is data)
+          tableExtraMc.reserve(collisions.size());
           break;
         default:
           LOG(fatal) << "Unknown table requested: " << i;
