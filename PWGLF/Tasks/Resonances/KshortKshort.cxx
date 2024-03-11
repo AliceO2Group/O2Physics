@@ -61,38 +61,34 @@ struct strangeness_tutorial {
   Configurable<bool> QAv0{"QAv0", false, "QAv0"};
   Configurable<bool> QAPID{"QAPID", false, "QAPID"};
   Configurable<bool> inv_mass1D{"inv_mass1D", false, "1D invariant mass histograms"};
+  Configurable<bool> DCAv0topv{"DCAv0topv", false, "DCA V0 to PV"};
+  Configurable<bool> armcut{"armcut", true, "arm cut"};
+  Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
+
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<float> cfgETAcut{"cfgETAcut", 0.8f, "Track ETA cut"};
 
   // Configurable parameters for V0 selection
-  Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1, "DCA V0 Daughters"};
+  Configurable<float> ConfV0DCADaughMax{"ConfV0DCADaughMax", 1.0f, "DCA b/w V0 daughters"};
   Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.06, "DCA Pos To PV"};
   Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.06, "DCA Neg To PV"};
+  Configurable<double> cMaxV0DCA{"cMaxV0DCA", 1, "DCA V0 to PV"};
+  // Configurable<float> ConfDaughDCAMin{"ConfDaughDCAMin", 0.06f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"}; // same as DCA pos to pv and neg to pv
+
   Configurable<float> ConfV0PtMin{"ConfV0PtMin", 0.f, "Minimum transverse momentum of V0"};
-  Configurable<float> ConfV0DCADaughMax{"ConfV0DCADaughMax", 1.0f, "Maximum DCA between the V0 daughters"};
   Configurable<float> ConfV0CPAMin{"ConfV0CPAMin", 0.97f, "Minimum CPA of V0"};
   Configurable<float> ConfV0TranRadV0Min{"ConfV0TranRadV0Min", 0.5f, "Minimum transverse radius"};
   Configurable<float> ConfV0TranRadV0Max{"ConfV0TranRadV0Max", 200.f, "Maximum transverse radius"};
   Configurable<double> cMaxV0LifeTime{"cMaxV0LifeTime", 15, "Maximum V0 life time"};
-  Configurable<double> cMaxV0DCA{"cMaxV0DCA", 0.3, "DCA V0 to PV"};
   Configurable<double> cSigmaMassKs0{"cSigmaMassKs0", 4, "n Sigma cut on KS0 mass"};
   Configurable<double> cWidthKs0{"cWidthKs0", 0.005, "Width of KS0"};
   Configurable<float> ConfDaughEta{"ConfDaughEta", 0.8f, "V0 Daugh sel: max eta"};
   Configurable<float> ConfDaughTPCnclsMin{"ConfDaughTPCnclsMin", 70.f, "V0 Daugh sel: Min. nCls TPC"};
-  Configurable<float> ConfDaughDCAMin{"ConfDaughDCAMin", 0.06f, "V0 Daugh sel:  Max. DCA Daugh to PV (cm)"};
-  Configurable<float> ConfDaughPIDCuts{"ConfDaughPIDCuts", 4, "PID selections for KS0 daughters"};
+  Configurable<float> ConfDaughPIDCuts{"ConfDaughPIDCuts", 5, "PID selections for KS0 daughters"};
 
-  // Configurable parameters for PID selection
-  //   Configurable<float> NSigmaTPCPion{"NSigmaTPCPion", 4, "NSigmaTPCPion"};
-
-  // Configurable for track selection
-  Configurable<float> cfgTrackDCAxy{"cfgTrackDCAxy", 2.0f, "Track DCAxy"};
-  Configurable<float> cfgTrackDCAz{"cfgTrackDCAz", 2.0f, "Track DCAz"};
+  // Configurable for track selection and multiplicity
   Configurable<float> cfgPTcut{"cfgPTcut", 0.2f, "Track PT cut"};
-  Configurable<float> cfgnSigmaTPCcut{"cfgnSigmaTPCcut", 3.0f, "Track nSigma TPC cut"};
-  Configurable<float> cfgnSigmaTOFcut{"cfgnSigmaTOFcut", 3.0f, "Track nSigma TOF cut"};
-  Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0f, "Track nSigma Combined cut"};
   Configurable<int> cfgNmixedEvents{"cfgNmixedEvents", 5, "Number of mixed events"};
   Configurable<bool> cfgMultFT0{"cfgMultFT0", false, "Use FT0 multiplicity"};
   Configurable<bool> cfgMultFOTM{"cfgMultFOTM", false, "Use FOTM multiplicity"};
@@ -142,7 +138,7 @@ struct strangeness_tutorial {
   bool SelectionV0(Collision const& collision, V0 const& candidate,
                    float multiplicity)
   {
-    if (fabs(candidate.dcav0topv()) > cMaxV0DCA) {
+    if (!DCAv0topv && fabs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
 
@@ -178,12 +174,10 @@ struct strangeness_tutorial {
     if (tranRad > ConfV0TranRadV0Max) {
       return false;
     }
-    if (fabs(CtauK0s) > cMaxV0LifeTime ||
-        candidate.mK0Short() < lowmasscutks0 ||
-        candidate.mK0Short() > highmasscutks0) {
+    if (fabs(CtauK0s) > cMaxV0LifeTime || candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
       return false;
     }
-    if (arm < 0.2) {
+    if (!armcut && arm < 0.2) {
       return false;
     }
 
@@ -203,13 +197,13 @@ struct strangeness_tutorial {
     if (QAPID) {
       // Filling the PID of the V0 daughters in the region of the K0 peak.
       // tpcInnerParam is the momentum at the inner wall of TPC. So momentum of tpc vs nsigma of tpc is plotted.
-      if (0.45 < candidate.mK0Short() && candidate.mK0Short() < 0.55) {
-        (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi());
-      }
+      // if (0.45 < candidate.mK0Short() && candidate.mK0Short() < 0.55) {
+      (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi());
+      // }
     }
     const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
-    const auto dcaXY = track.dcaXY(); // for this we need TrackDCA table
+    // const auto dcaXY = track.dcaXY(); // for this we need TrackDCA table
     const auto sign = track.sign();
 
     if (!track.hasTPC())
@@ -231,45 +225,31 @@ struct strangeness_tutorial {
     if (tpcNClsF < ConfDaughTPCnclsMin) {
       return false;
     }
-    if (std::abs(dcaXY) < ConfDaughDCAMin) {
-      return false;
-    }
+    // if (std::abs(dcaXY) < ConfDaughDCAMin) {
+    //   return false;
+    // }
     // v0 PID selection
     if (std::abs(nsigmaV0Daughter) > ConfDaughPIDCuts) {
       return false;
     }
 
     if (QAPID) {
-      if (0.45 < candidate.mK0Short() && candidate.mK0Short() < 0.55) {
-        (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi());
-      }
+      // if (0.45 < candidate.mK0Short() && candidate.mK0Short() < 0.55) {
+      (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi());
+      // }
     }
 
     return true;
-  }
-
-  template <typename T>
-  bool PIDselection(T const& candidate)
-  {
-    if (candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (nsigmaCutCombined * nsigmaCutCombined)) {
-      return true;
-    }
-    if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < cfgnSigmaTPCcut) {
-      return true;
-    }
-    return false;
   }
 
   // Defining filters for events (event selection)
   // Filter eventFilter = (o2::aod::evsel::sel8 == true);
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < cutzvertex);
   Filter AcceptenceFilter = (nabs(aod::track::eta) < cfgETAcut && nabs(aod::track::pt) > cfgPTcut);
-  Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgTrackDCAxy) && (nabs(aod::track::dcaZ) < cfgTrackDCAz);
 
   // Filters on V0s
-  // Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv &&
-  //                       nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv &&
-  //                       aod::v0data::dcaV0daughters < v0setting_dcav0dau);
+  Filter preFilterV0 = (nabs(aod::v0data::dcapostopv) > v0setting_dcapostopv &&
+                        nabs(aod::v0data::dcanegtopv) > v0setting_dcanegtopv);
 
   // Defining the type of the daughter tracks
   using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi>;
@@ -285,6 +265,9 @@ struct strangeness_tutorial {
   {
     const double massK0s = TDatabasePDG::Instance()->GetParticle(kK0Short)->Mass();
     if (!collision.sel8()) {
+      return;
+    }
+    if (timFrameEvsel && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return;
     }
     float multiplicity = 0.0f;
@@ -314,6 +297,7 @@ struct strangeness_tutorial {
       auto negtrack1 = v1.template negTrack_as<TrackCandidates>();
       auto postrack2 = v2.template posTrack_as<TrackCandidates>();
       auto negtrack2 = v2.template negTrack_as<TrackCandidates>();
+
       if (postrack1.globalIndex() == postrack2.globalIndex()) {
         continue;
       }
@@ -338,25 +322,12 @@ struct strangeness_tutorial {
         continue;
       }
 
-      // if (!PIDselection(postrack1)) {
-      //   continue;
-      // }
-      // if (!PIDselection(postrack2)) {
-      //   continue;
-      // }
-      // if (!PIDselection(negtrack1)) {
-      //   continue;
-      // }
-      // if (!PIDselection(negtrack2)) {
-      //   continue;
-      // }
-
       TLorentzVector lv1, lv2, lv3;
       lv1.SetPtEtaPhiM(v1.pt(), v1.eta(), v1.phi(), massK0s);
       lv2.SetPtEtaPhiM(v2.pt(), v2.eta(), v2.phi(), massK0s);
       lv3 = lv1 + lv2;
 
-      if (TMath::Abs(lv3.Rapidity() < 0.5)) {
+      if (TMath::Abs(lv3.Rapidity() <= 0.5)) {
         if (inv_mass1D) {
           hglue.fill(HIST("h1glueInvMassDS"), lv3.M());
         }
@@ -392,6 +363,10 @@ struct strangeness_tutorial {
       }
       if (!c2.sel8()) {
         continue;
+      }
+
+      if (timFrameEvsel && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
+        return;
       }
 
       float multiplicity = 0.0f;
@@ -440,24 +415,11 @@ struct strangeness_tutorial {
           continue;
         }
 
-        // if (!PIDselection(postrack1)) {
-        //   continue;
-        // }
-        // if (!PIDselection(postrack2)) {
-        //   continue;
-        // }
-        // if (!PIDselection(negtrack1)) {
-        //   continue;
-        // }
-        // if (!PIDselection(negtrack2)) {
-        //   continue;
-        // }
-
         TLorentzVector lv1, lv2, lv3;
         lv1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), massK0s);
         lv2.SetPtEtaPhiM(t2.pt(), t2.eta(), t2.phi(), massK0s);
         lv3 = lv1 + lv2;
-        if (TMath::Abs(lv3.Rapidity() < 0.5)) {
+        if (TMath::Abs(lv3.Rapidity() <= 0.5)) {
           if (inv_mass1D) {
             hglue.fill(HIST("h1glueInvMassME"), lv3.M());
           }

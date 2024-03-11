@@ -944,11 +944,7 @@ struct DptDptFilterTracks {
     }
 
     for (auto& particle : particles) {
-      float charge = 0.0;
-      TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
-      if (pdgparticle != nullptr) {
-        charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0.0);
-      }
+      float charge = getCharge(particle);
 
       int8_t pid = -1;
       if (charge != 0) {
@@ -1190,11 +1186,7 @@ inline int8_t DptDptFilterTracks::identifyParticle(ParticleObject const& particl
 template <typename ParticleObject, typename MCCollisionObject>
 inline int8_t DptDptFilterTracks::selectParticle(ParticleObject const& particle, MCCollisionObject const& mccollision)
 {
-  float charge = 0.0;
-  TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
-  if (pdgparticle != nullptr) {
-    charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0);
-  }
+  float charge = getCharge(particle);
   int8_t sp = -127;
   if (charge != 0) {
     /* before particle selection */
