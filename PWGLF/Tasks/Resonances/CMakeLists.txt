@@ -104,7 +104,7 @@ o2physics_add_dpl_workflow(sigma
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(k892SpherocityAnalysis
+o2physics_add_dpl_workflow(k892Spherocityanalysis
     SOURCES k892SpherocityAnalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
