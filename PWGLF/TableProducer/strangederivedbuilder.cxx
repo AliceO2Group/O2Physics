@@ -402,7 +402,7 @@ struct strangederivedbuilder {
           auto mcParticle = v0.mcParticle();
           indMCColl = mcParticle.mcCollisionId();
         }
-        v0collref(indMCColl);
+        v0mccollref(indMCColl);
       }
       for (const auto& casc : CascTable_thisColl) {
         uint32_t indMCColl = -1;
@@ -410,7 +410,7 @@ struct strangederivedbuilder {
           auto mcParticle = casc.mcParticle();
           indMCColl = mcParticle.mcCollisionId();
         }
-        casccollref(indMCColl);
+        cascmccollref(indMCColl);
       }
     }
   }
