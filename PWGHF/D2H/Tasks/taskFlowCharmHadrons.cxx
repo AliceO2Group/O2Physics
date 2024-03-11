@@ -360,7 +360,7 @@ struct HfTaskFlowCharmHadrons {
 
         if (candidate.isSelD0() >= selectionFlag) {
           massCand = hfHelper.invMassD0ToPiK(candidate);
-	  if constexpr (std::is_same<T1, CandD0DatawMl>::value) {
+          if constexpr (std::is_same<T1, CandD0DatawMl>::value) {
             for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
               outputMlD0[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
           }
