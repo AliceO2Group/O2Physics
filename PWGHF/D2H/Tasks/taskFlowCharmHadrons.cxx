@@ -206,8 +206,7 @@ template <int DecayChannel, typename T1>
                float& cosNPhi,
                float& cosDeltaPhi,
                float& sp,
-               std::vector<float>& outputMl,
-               int selectionFlag)
+               std::vector<float>& outputMl)
   {
     if (storeMl) {
       registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, cosNPhi, cosDeltaPhi, sp, outputMl[0], outputMl[1]);
