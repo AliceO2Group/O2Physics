@@ -33,6 +33,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using MyCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
 using McMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
+using McMFTs = soa::Join<aod::MFTTracks, aod::MFTTrackLabels>;
 
 namespace
 {
@@ -95,15 +96,16 @@ struct HfTaskSingleMuonSource {
     AxisSpec axisChi2{500, 0., 100., "#chi^{2} of MCH-MFT matching"};
     AxisSpec axisPt{200, 0., 100., "#it{p}_{T,reco} (GeV/#it{c})"};
     AxisSpec axisDeltaPt{1000, -50., 50., "#Delta #it{p}_{T} (GeV/#it{c})"};
+    AxisSpec axisMftNC{10, 0., 11., "Number of clusters in MFT"};
 
     HistogramConfigSpec h2PtDCA{HistType::kTH2F, {axisPt, axisDCA}};
     HistogramConfigSpec h2PtChi2{HistType::kTH2F, {axisPt, axisChi2}};
-    HistogramConfigSpec h2PtDeltaPt{HistType::kTH2F, {axisPt, axisDeltaPt}};
+    HistogramConfigSpec h3PtDeltaPtMftNC{HistType::kTH3F, {axisPt, axisDeltaPt, axisMftNC}};
 
     for (const auto& src : muonSources) {
       registry.add(Form("h2%sPtDCA", src.Data()), "", h2PtDCA);
       registry.add(Form("h2%sPtChi2", src.Data()), "", h2PtChi2);
-      registry.add(Form("h2%sPtDeltaPt", src.Data()), "", h2PtDeltaPt);
+      registry.add(Form("h3%sPtDeltaPtMftNC", src.Data()), "", h3PtDeltaPtMftNC);
     }
   }
 
@@ -244,41 +246,48 @@ struct HfTaskSingleMuonSource {
     const auto muonType3 = muon.matchMCHTrack_as<McMuons>();
     const auto deltaPt = muonType3.pt() - pt;
 
+    if(!muon.has_matchMFTTrack()) {
+      return;
+    }
+    const auto mft = muon.matchMFTTrack_as<McMFTs>();
+    const auto mftNC = mft.nClusters();
+
     singleMuonSource(pt, dca, mask);
 
     if (isBeautyDecayMu(mask)) {
       registry.fill(HIST("h2BeautyDecayMuPtDCA"), pt, dca);
       registry.fill(HIST("h2BeautyDecayMuPtChi2"), pt, chi2);
-      registry.fill(HIST("h2BeautyDecayMuPtDeltaPt"), pt, deltaPt);
+      registry.fill(HIST("h3BeautyDecayMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
     } else if (isNonpromptCharmMu(mask)) {
       registry.fill(HIST("h2NonpromptCharmMuPtDCA"), pt, dca);
       registry.fill(HIST("h2NonpromptCharmMuPtChi2"), pt, chi2);
-      registry.fill(HIST("h2NonpromptCharmMuPtDeltaPt"), pt, deltaPt);
+      registry.fill(HIST("h3NonpromptCharmMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
     } else if (isPromptCharmMu(mask)) {
       registry.fill(HIST("h2PromptCharmMuPtDCA"), pt, dca);
       registry.fill(HIST("h2PromptCharmMuPtChi2"), pt, chi2);
-      registry.fill(HIST("h2PromptCharmMuPtDeltaPt"), pt, deltaPt);
+      registry.fill(HIST("h3PromptCharmMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
     } else if (isLightDecayMu(mask)) {
       registry.fill(HIST("h2LightDecayMuPtDCA"), pt, dca);
       registry.fill(HIST("h2LightDecayMuPtChi2"), pt, chi2);
-      registry.fill(HIST("h2LightDecayMuPtDeltaPt"), pt, deltaPt);
+      registry.fill(HIST("h3LightDecayMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
     } else if (isSecondaryMu(mask)) {
       registry.fill(HIST("h2SecondaryMuPtDCA"), pt, dca);
       registry.fill(HIST("h2SecondaryMuPtChi2"), pt, chi2);
-      registry.fill(HIST("h2SecondaryMuPtDeltaPt"), pt, deltaPt);
+      registry.fill(HIST("h3SecondaryMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
     } else if (isHadron(mask)) {
       registry.fill(HIST("h2HadronPtDCA"), pt, dca);
       registry.fill(HIST("h2HadronPtChi2"), pt, chi2);
-      registry.fill(HIST("h2HadronPtDeltaPt"), pt, deltaPt);
+      registry.fill(HIST("h3HadronPtDeltaPtMftNC"), pt, deltaPt, mftNC);
     } else if (isUnidentified(mask)) {
       registry.fill(HIST("h2UnidentifiedPtDCA"), pt, dca);
       registry.fill(HIST("h2UnidentifiedPtChi2"), pt, chi2);
-      registry.fill(HIST("h2UnidentifiedPtDeltaPt"), pt, deltaPt);
+      registry.fill(HIST("h3UnidentifiedPtDeltaPtMftNC"), pt, deltaPt, mftNC);
     }
   }
 
   void process(MyCollisions::iterator const& collision,
                McMuons const& muons,
+               McMFTs const&,
                aod::McParticles const&)
   {
     // event selections
