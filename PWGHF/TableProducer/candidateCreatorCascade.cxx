@@ -28,6 +28,7 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -42,6 +43,10 @@ struct HfCandidateCreatorCascade {
   // centrality
   Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
+  // event selection
+  Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "apply the sel8 event selection"};
+  Configurable<float> maxPvPosZ{"maxPvPosZ", 10.f, "max. PV posZ (cm)"};
+  Configurable<bool> useTimeFrameBorderCut{"useTimeFrameBorderCut", true, "apply TF border cut"};
   // vertexing
   // Configurable<double> bz{"bz", 5., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
@@ -131,6 +136,11 @@ struct HfCandidateCreatorCascade {
         if (centrality < centralityMin || centrality > centralityMax) {
           continue;
         }
+      }
+
+      /// event selection: sel8, PV posZ, TF border cut
+      if (!isHfCollisionSelected(collision, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut)) {
+        continue;
       }
 
       const auto& bach = casc.prong0_as<aod::TracksWCov>();
@@ -297,7 +307,7 @@ struct HfCandidateCreatorCascade {
   }
 
   /// @brief process function w/o centrality selections
-  void processNoCent(aod::Collisions const& collisions,
+  void processNoCent(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                      aod::HfCascades const& rowsTrackIndexCasc,
                      aod::V0sLinked const& v0sLinked,
                      aod::V0Datas const& v0Data,
@@ -310,7 +320,7 @@ struct HfCandidateCreatorCascade {
   PROCESS_SWITCH(HfCandidateCreatorCascade, processNoCent, " Run candidate creator w/o centrality selections", true);
 
   /// @brief process function w/ centrality selection on FT0C
-  void processCentFT0C(soa::Join<aod::Collisions, aod::CentFT0Cs> const& collisions,
+  void processCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                        aod::HfCascades const& rowsTrackIndexCasc,
                        aod::V0sLinked const& v0sLinked,
                        aod::V0Datas const& v0Data,
@@ -323,7 +333,7 @@ struct HfCandidateCreatorCascade {
   PROCESS_SWITCH(HfCandidateCreatorCascade, processCentFT0C, " Run candidate creator w/ centrality selection on FT0C", false);
 
   /// @brief process function w/ centrality selection on FT0M
-  void processCentFT0M(soa::Join<aod::Collisions, aod::CentFT0Ms> const& collisions,
+  void processCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                        aod::HfCascades const& rowsTrackIndexCasc,
                        aod::V0sLinked const& v0sLinked,
                        aod::V0Datas const& v0Data,

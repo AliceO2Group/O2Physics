@@ -12,12 +12,19 @@
 #ifndef PWGUD_CORE_SGSELECTOR_H_
 #define PWGUD_CORE_SGSELECTOR_H_
 
+#include <cmath>
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "Framework/Logger.h"
 #include "Framework/AnalysisTask.h"
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/SGCutParHolder.h"
+
+template <typename BC>
+struct SelectionResult {
+  int value; // The original integer return value
+  BC* bc;    // Pointer to the BC object
+};
 
 class SGSelector
 {
@@ -31,25 +38,43 @@ class SGSelector
     return 1;
   }
 
-  template <typename CC, typename BCs>
-  int IsSelected(SGCutParHolder diffCuts, CC& collision, BCs& bcRange)
+  template <typename CC, typename BCs, typename BC>
+  SelectionResult<BC> IsSelected(SGCutParHolder diffCuts, CC& collision, BCs& bcRange, BC& oldbc)
   {
-    LOGF(debug, "Collision %f", collision.collisionTime());
-    LOGF(debug, "Number of close BCs: %i", bcRange.size());
-
+    //        LOGF(info, "Collision %f", collision.collisionTime());
+    //        LOGF(info, "Number of close BCs: %i", bcRange.size());
+    SelectionResult<BC> result;
+    result.bc = &oldbc;
+    if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
+      result.value = 4;
+      return result;
+    }
+    auto newbc = oldbc;
     bool gA = true, gC = true;
     for (auto const& bc : bcRange) {
-      if (!udhelpers::cleanFITA(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits()))
+      if (!udhelpers::cleanFITA(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
+        if (gA)
+          newbc = bc;
+        if (!gA && std::abs(static_cast<int64_t>(bc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<int64_t>(newbc.globalBC() - oldbc.globalBC())))
+          newbc = bc;
         gA = false;
-      if (!udhelpers::cleanFITC(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits()))
+      }
+      if (!udhelpers::cleanFITC(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
+        if (gC)
+          newbc = bc;
+        if (!gC && std::abs(static_cast<int64_t>(bc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<int64_t>(newbc.globalBC() - oldbc.globalBC())))
+          newbc = bc;
         gC = false;
+      }
     }
-    if (!gA && !gC)
-      return 3;
-    if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
-      return 4;
+    result.bc = &newbc;
+    if (!gA && !gC) {
+      result.value = 3;
+      return result;
     }
-    return gA && gC ? 2 : (gA ? 0 : 1);
+    // LOGF(info, "Old BC: %i, New BC: %i",oldbc.globalBC(), newbc.globalBC());
+    result.value = gA && gC ? 2 : (gA ? 0 : 1);
+    return result;
   }
   template <typename TFwdTrack>
   int FwdTrkSelector(TFwdTrack const& fwdtrack)
