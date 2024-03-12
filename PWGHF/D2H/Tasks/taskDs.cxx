@@ -45,7 +45,7 @@ struct HfTaskDs {
 
   HfHelper hfHelper;
 
-  using CentralityEstimator = CentralityEstimator;
+  using CentralityEstimator = o2::aod::hf_collision_centrality::CentralityEstimator;
 
   using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
   using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
