@@ -326,12 +326,12 @@ struct qVectorsTable {
   }
 
   void process(MyCollisions::iterator const& coll, aod::BCsWithTimestamps const&, aod::FT0s const& ft0s, aod::FV0As const& fv0s, MyTracks const& tracks) //, aod::FV0Cs const&)
-                                                                                                                          //  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+                                                                                                                                                         //  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
   {
     auto bc = coll.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
 
-   // Get the centrality value for all subscribed estimators and takes the one
+    // Get the centrality value for all subscribed estimators and takes the one
     // corresponding to cfgCentEsti. Reject also the events with invalid values.
     // NOTE: centFDDM and centNTPV not implemented as it makes the compilation crashes...
     float centAllEstim[4] = {
