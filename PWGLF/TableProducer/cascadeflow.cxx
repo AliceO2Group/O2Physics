@@ -433,8 +433,8 @@ struct cascadeFlow {
       float massCasc = casc.mXi();
       if (isOmega) massCasc =   casc.mOmega();
 
-      histos.fill(HIST("hMassAfterSel"), massCasc);
-      histos.fill(HIST("hMassAfterSelVsPt"), massCasc, casc.pt());
+      histos.fill(HIST("hMassBeforeSel"), massCasc);
+      histos.fill(HIST("hMassBeforeSelVsPt"), massCasc, casc.pt());
 
       if (isApplyML){
 	// Retrieve model output and selection outcome
