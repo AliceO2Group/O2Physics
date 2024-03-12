@@ -150,25 +150,25 @@ struct HfTaskFlowCharmHadrons {
     // TODO: add possibility to consider different weights for the tracks, at the moment only pT is considered;
     float pXTrack0 = cand.pxProng0();
     float pYTrack0 = cand.pyProng0();
-    float pTtrack0 = cand.ptProng0();
+    float pTTrack0 = cand.ptProng0();
     float phiTrack0 = std::atan2(pYTrack0, pXTrack0);
     float pXTrack1 = cand.pxProng1();
     float pYTrack1 = cand.pyProng1();
-    float pTtrack1 = cand.ptProng1();
+    float pTTrack1 = cand.ptProng1();
     float phiTrack1 = std::atan2(pYTrack1, pXTrack1);
 
-    tracksQx.push_back(std::cos(harmonic * phiTrack0) * pTtrack0 / ampl);
-    tracksQy.push_back(std::sin(harmonic * phiTrack0) * pTtrack0 / ampl);
-    tracksQx.push_back(std::cos(harmonic * phiTrack1) * pTtrack1 / ampl);
-    tracksQy.push_back(std::sin(harmonic * phiTrack1) * pTtrack1 / ampl);
+    tracksQx.push_back(std::cos(harmonic * phiTrack0) * pTTrack0 / ampl);
+    tracksQy.push_back(std::sin(harmonic * phiTrack0) * pTTrack0 / ampl);
+    tracksQx.push_back(std::cos(harmonic * phiTrack1) * pTTrack1 / ampl);
+    tracksQy.push_back(std::sin(harmonic * phiTrack1) * pTTrack1 / ampl);
 
     if constexpr (DeChannel != DecayChannel::D0ToPiK) {
       float pXTrack2 = cand.pxProng2();
       float pYTrack2 = cand.pyProng2();
-      float pTtrack2 = cand.ptProng2();
+      float pTTrack2 = cand.ptProng2();
       float phiTrack2 = std::atan2(pYTrack2, pXTrack2);
-      tracksQx.push_back(std::cos(harmonic * phiTrack2) * pTtrack2 / ampl);
-      tracksQy.push_back(std::sin(harmonic * phiTrack2) * pTtrack2 / ampl);
+      tracksQx.push_back(std::cos(harmonic * phiTrack2) * pTTrack2 / ampl);
+      tracksQy.push_back(std::sin(harmonic * phiTrack2) * pTTrack2 / ampl);
     }
   }
 
