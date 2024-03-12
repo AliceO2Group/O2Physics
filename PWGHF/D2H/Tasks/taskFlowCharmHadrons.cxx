@@ -339,7 +339,6 @@ struct HfTaskFlowCharmHadrons {
           xQVec -= tracksQx[iTrack];
           yQVec -= tracksQy[iTrack];
         }
-        }
       }
 
       float cosNPhi = std::cos(harmonic * phiCand);
