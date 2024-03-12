@@ -566,6 +566,13 @@ class VarManager : public TObject
     kSingleGapC
   };
 
+  enum MuonExtrapolation {
+    // Index used to set different options for Muon propagation
+    kToVertex = 0, // propagtion to vertex by default
+    kToDCA,
+    kToRabs
+  };
+
   static TString fgVariableNames[kNVars]; // variable names
   static TString fgVariableUnits[kNVars]; // variable units
   static void SetDefaultVarNames();
@@ -717,7 +724,9 @@ class VarManager : public TObject
   }
 
   template <typename T, typename C>
-  static o2::dataformats::GlobalFwdTrack PropagateMuon(const T& muon, const C& collision);
+  static o2::dataformats::GlobalFwdTrack PropagateMuon(const T& muon, const C& collision, int endPoint = kToVertex);
+  template <uint32_t fillMap, typename T, typename C>
+  static void FillMuonPDca(const T& muon, const C& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
   static void FillPropagateMuon(const T& muon, const C& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T>
@@ -920,7 +929,7 @@ KFPVertex VarManager::createKFPVertexFromCollision(const T& collision)
 }
 
 template <typename T, typename C>
-o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C& collision)
+o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C& collision, const int endPoint)
 {
   double chi2 = muon.chi2();
   SMatrix5 tpars(muon.x(), muon.y(), muon.phi(), muon.tgl(), muon.signed1Pt());
@@ -936,11 +945,22 @@ o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C
     track.setZ(fwdtrack.getZ());
     track.setCovariances(tcovs);
     auto mchTrack = mMatching.FwdtoMCH(track);
-    o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
+
+    if (endPoint == kToVertex) {
+      o2::mch::TrackExtrap::extrapToVertex(mchTrack, collision.posX(), collision.posY(), collision.posZ(), collision.covXX(), collision.covYY());
+    }
+    if (endPoint == kToDCA) {
+      o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchTrack, collision.posZ());
+    }
+    if (endPoint == kToRabs) {
+      o2::mch::TrackExtrap::extrapToZ(mchTrack, -505.);
+    }
+
     auto proptrack = mMatching.MCHtoFwd(mchTrack);
     propmuon.setParameters(proptrack.getParameters());
     propmuon.setZ(proptrack.getZ());
     propmuon.setCovariances(proptrack.getCovariances());
+
   } else if (static_cast<int>(muon.trackType()) < 2) {
     double centerMFT[3] = {0, 0, -61.4};
     o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
@@ -953,6 +973,25 @@ o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C
     propmuon.setCovariances(fwdtrack.getCovariances());
   }
   return propmuon;
+}
+
+template <uint32_t fillMap, typename T, typename C>
+void VarManager::FillMuonPDca(const T& muon, const C& collision, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
+
+    o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muon, collision);
+    o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(muon, collision, kToDCA);
+
+    float dcaX = (propmuonAtDCA.getX() - collision.posX());
+    float dcaY = (propmuonAtDCA.getY() - collision.posY());
+    float dcaXY = std::sqrt(dcaX * dcaX + dcaY * dcaY);
+    values[kMuonPDca] = muon.p() * dcaXY;
+  }
 }
 
 template <uint32_t fillMap, typename T, typename C>
@@ -970,7 +1009,6 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
 
   if constexpr ((fillMap & MuonCov) > 0 || (fillMap & ReducedMuonCov) > 0) {
     o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muon, collision);
-
     values[kPt] = propmuon.getPt();
     values[kX] = propmuon.getX();
     values[kY] = propmuon.getY();
@@ -978,8 +1016,20 @@ void VarManager::FillPropagateMuon(const T& muon, const C& collision, float* val
     values[kEta] = propmuon.getEta();
     values[kTgl] = propmuon.getTgl();
     values[kPhi] = propmuon.getPhi();
-    values[kMuonDCAx] = (propmuon.getX() - collision.posX());
-    values[kMuonDCAy] = (propmuon.getY() - collision.posY());
+
+    // Redo propagation only for muon tracks
+    // propagation of MFT tracks alredy done in fwdtrack-extention task
+    if (static_cast<int>(muon.trackType()) > 2) {
+      o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(muon, collision, kToDCA);
+      o2::dataformats::GlobalFwdTrack propmuonAtRabs = PropagateMuon(muon, collision, kToRabs);
+      float dcaX = (propmuonAtDCA.getX() - collision.posX());
+      float dcaY = (propmuonAtDCA.getY() - collision.posY());
+      values[kMuonDCAx] = dcaX;
+      values[kMuonDCAy] = dcaY;
+      double xAbs = propmuonAtRabs.getX();
+      double yAbs = propmuonAtRabs.getY();
+      values[kMuonRAtAbsorberEnd] = std::sqrt(xAbs * xAbs + yAbs * yAbs);
+    }
 
     SMatrix55 cov = propmuon.getCovariances();
     values[kMuonCXX] = cov(0, 0);
@@ -2916,6 +2966,20 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   values[kU3Q3] = values[kQ3X0A] * std::cos(3 * v12.Phi()) + values[kQ3Y0A] * std::sin(3 * v12.Phi());
   values[kCos2DeltaPhi] = std::cos(2 * (v12.Phi() - getEventPlane(2, values[kQ2X0A], values[kQ2Y0A])));
   values[kCos3DeltaPhi] = std::cos(3 * (v12.Phi() - getEventPlane(3, values[kQ3X0A], values[kQ3Y0A])));
+
+  float Psi2B = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
+  float Psi3B = getEventPlane(3, values[kQ3X0B], values[kQ3Y0B]);
+  float Psi2C = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
+  float Psi3C = getEventPlane(3, values[kQ3X0C], values[kQ3Y0C]);
+  values[kR2SP] = (values[kQ2X0B] * values[kQ2X0C] + values[kQ2Y0B] * values[kQ2Y0C]);
+  values[kR3SP] = (values[kQ3X0B] * values[kQ3X0C] + values[kQ3Y0B] * values[kQ3Y0C]);
+  if (values[kQ2Y0B] * values[kQ2Y0C] != 0.0) {
+    values[kR2EP] = TMath::Cos(2 * (Psi2B - Psi2C));
+  }
+  if (values[kQ3Y0B] * values[kQ3Y0C] != 0.0) {
+    values[kR3EP] = TMath::Cos(3 * (Psi3B - Psi3C));
+  }
+
   values[kCos2DeltaPhiMu1] = std::cos(2 * (v1.Phi() - v12.Phi()));
   values[kCos2DeltaPhiMu2] = std::cos(2 * (v2.Phi() - v12.Phi()));
   if (isnan(VarManager::fgValues[VarManager::kU2Q2]) == true) {

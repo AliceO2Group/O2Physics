@@ -825,10 +825,14 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "MassLow", "", false, 400, 0.0, 2.0, VarManager::kMass);
       }
       if (subGroupStr.Contains("flow-dimuon")) {
-        hm->AddHistogram(histClass, "Mass_u2q2", "u_{2}Q_{2}^{A} vs m", true, 125, 0.0, 5.0, VarManager::kMass, 100, -1.0, 1.0, VarManager::kU2Q2);
-        hm->AddHistogram(histClass, "Mass_u3q3", "u_{3}Q_{3}^{A} vs m", true, 125, 0.0, 5.0, VarManager::kMass, 100, -1.0, 1.0, VarManager::kU3Q3);
-        hm->AddHistogram(histClass, "Mass_cos2DeltaPhi", "cos 2(#varphi-#Psi_{2}^{A}) vs m", true, 125, 0.0, 5.0, VarManager::kMass, 100, -1.0, 1.0, VarManager::kCos2DeltaPhi);
-        hm->AddHistogram(histClass, "Mass_cos3DeltaPhi", "cos 3(#varphi-#Psi_{3}^{A}) vs m", true, 125, 0.0, 5.0, VarManager::kMass, 100, -1.0, 1.0, VarManager::kCos3DeltaPhi);
+        hm->AddHistogram(histClass, "Mass_centFT0C_u2q2", "u_{2}Q_{2}^{A} vs m vs cent", false, 125, 0.0, 5.0, VarManager::kMass, 9, 0.0, 90.0, VarManager::kCentFT0C, 200, -10.0, 10.0, VarManager::kU2Q2);
+        hm->AddHistogram(histClass, "Mass_centFT0C_u3q3", "u_{3}Q_{3}^{A} vs m vs cent", false, 125, 0.0, 5.0, VarManager::kMass, 9, 0.0, 90.0, VarManager::kCentFT0C, 200, -10.0, 10.0, VarManager::kU3Q3);
+        hm->AddHistogram(histClass, "Mass_centFT0C_cos2DeltaPhi", "cos 2(#varphi-#Psi_{2}^{A}) vs m vs cent", false, 125, 0.0, 5.0, VarManager::kMass, 9, 0.0, 90.0, VarManager::kCentFT0C, 200, -10.0, 10.0, VarManager::kCos2DeltaPhi);
+        hm->AddHistogram(histClass, "Mass_centFT0C_cos3DeltaPhi", "cos 3(#varphi-#Psi_{3}^{A}) vs m vs cent", false, 125, 0.0, 5.0, VarManager::kMass, 9, 0.0, 90.0, VarManager::kCentFT0C, 200, -10.0, 10.0, VarManager::kCos3DeltaPhi);
+        hm->AddHistogram(histClass, "Mass_centFT0C_R2SP", "R2SP vs m vs cent", false, 125, 0.0, 5.0, VarManager::kMass, 9, 0.0, 90.0, VarManager::kCentFT0C, 200, -10.0, 10.0, VarManager::kU2Q2);
+        hm->AddHistogram(histClass, "Mass_centFT0C_R3SP", "R3SP vs m vs cent", false, 125, 0.0, 5.0, VarManager::kMass, 9, 0.0, 90.0, VarManager::kCentFT0C, 200, -10.0, 10.0, VarManager::kU3Q3);
+        hm->AddHistogram(histClass, "Mass_centFT0C_R2EP", "R2EP vs m vs cent", false, 125, 0.0, 5.0, VarManager::kMass, 9, 0.0, 90.0, VarManager::kCentFT0C, 200, -10.0, 10.0, VarManager::kCos2DeltaPhi);
+        hm->AddHistogram(histClass, "Mass_centFT0C_R3EP", "R3EP vs m vs cent", false, 125, 0.0, 5.0, VarManager::kMass, 9, 0.0, 90.0, VarManager::kCentFT0C, 200, -10.0, 10.0, VarManager::kCos3DeltaPhi);
       }
       if (subGroupStr.Contains("z-boson")) {
         hm->AddHistogram(histClass, "MassZboson", "", false, 240, 20.0, 140.0, VarManager::kMass);

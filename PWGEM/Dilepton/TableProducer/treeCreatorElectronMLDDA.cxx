@@ -517,6 +517,10 @@ struct TreeCreatorElectronMLDDA {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
 
+      if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        continue;
+      }
+
       std::array<float, 3> pVtx = {collision.posX(), collision.posY(), collision.posZ()};
       auto v0s_coll = v0s.sliceBy(perCollision_v0, collision.globalIndex());
       for (auto& v0 : v0s_coll) {
@@ -996,6 +1000,10 @@ struct TreeCreatorElectronMLDDA {
 
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
+
+      if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        continue;
+      }
 
       auto positrons_per_coll = positrons->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto electrons_per_coll = electrons->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);

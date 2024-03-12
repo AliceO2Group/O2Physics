@@ -322,14 +322,13 @@ struct DGPIDSelector {
     }
 
     // cut on dcaXY and dcaZ
-    // LOGF(debug, "mAnaPars.maxDCAxyz %f %f", mAnaPars.maxDCAxy(), mAnaPars.maxDCAz());
-    // if (track.dcaXY() < -abs(mAnaPars.maxDCAxy()) || track.dcaXY() > abs(mAnaPars.maxDCAxy())) {
-    //  return false;
-    //}
-
-    // if (track.dcaZ() < -abs(mAnaPars.maxDCAz()) || track.dcaZ() > abs(mAnaPars.maxDCAz())) {
-    //   return false;
-    // }
+    LOGF(debug, "mAnaPars.maxDCAxyz %f %f", mAnaPars.maxDCAxy(), mAnaPars.maxDCAz());
+    if (track.dcaXY() < -abs(mAnaPars.maxDCAxy()) || track.dcaXY() > abs(mAnaPars.maxDCAxy())) {
+      return false;
+    }
+    if (track.dcaZ() < -abs(mAnaPars.maxDCAz()) || track.dcaZ() > abs(mAnaPars.maxDCAz())) {
+      return false;
+    }
 
     // loop over all PIDCuts and apply the ones which apply to this track
     auto pidcuts = mAnaPars.PIDCuts().Cuts();
@@ -394,6 +393,7 @@ struct DGPIDSelector {
       }
     }
 
+    // the track is good if we arrive here
     return true;
   }
 

@@ -166,6 +166,7 @@ struct strangederivedbuilder {
   Configurable<bool> fillRawFV0A{"fillRawFV0A", false, "Fill raw FV0A information for debug"};
   Configurable<bool> fillRawZDC{"fillRawZDC", false, "Fill raw ZDC information for debug"};
   Configurable<bool> fillRawNTracksEta1{"fillRawNTracksEta1", true, "Fill raw NTracks |eta|<1 information for debug"};
+  Configurable<bool> fillRawNTracksForCorrelation{"fillRawNTracksForCorrelation", true, "Fill raw NTracks for correlation cuts"};
 
   Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
 
@@ -235,7 +236,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels> const& collisions, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra> const& collisions, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
@@ -255,6 +256,10 @@ struct strangederivedbuilder {
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
                           collision.multFT0A() * static_cast<float>(fillRawFV0A),
                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
+                          collision.multNTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
+                          collision.multNTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
+                          collision.multAllTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
+                          collision.multAllTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multZNA() * static_cast<float>(fillRawZDC),
                           collision.multZNC() * static_cast<float>(fillRawZDC),
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
@@ -268,7 +273,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&)
+  void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
@@ -301,6 +306,10 @@ struct strangederivedbuilder {
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
                           collision.multFT0A() * static_cast<float>(fillRawFV0A),
                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
+                          collision.multNTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
+                          collision.multNTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
+                          collision.multAllTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
+                          collision.multAllTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multZNA() * static_cast<float>(fillRawZDC),
                           collision.multZNC() * static_cast<float>(fillRawZDC),
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
@@ -320,7 +329,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&, soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions)
+  void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&, soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
   {
     // ______________________________________________
     // fill all MC collisions, correlate via index later on
@@ -365,6 +374,10 @@ struct strangederivedbuilder {
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
                           collision.multFT0A() * static_cast<float>(fillRawFV0A),
                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
+                          collision.multNTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
+                          collision.multNTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
+                          collision.multAllTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
+                          collision.multAllTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multZNA() * static_cast<float>(fillRawZDC),
                           collision.multZNC() * static_cast<float>(fillRawZDC),
                           collision.multZEM1() * static_cast<float>(fillRawZDC),
@@ -389,7 +402,7 @@ struct strangederivedbuilder {
           auto mcParticle = v0.mcParticle();
           indMCColl = mcParticle.mcCollisionId();
         }
-        v0collref(indMCColl);
+        v0mccollref(indMCColl);
       }
       for (const auto& casc : CascTable_thisColl) {
         uint32_t indMCColl = -1;
@@ -397,7 +410,7 @@ struct strangederivedbuilder {
           auto mcParticle = casc.mcParticle();
           indMCColl = mcParticle.mcCollisionId();
         }
-        casccollref(indMCColl);
+        cascmccollref(indMCColl);
       }
     }
   }
