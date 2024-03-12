@@ -33,7 +33,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using MyCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
 using McMuons = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels, aod::FwdTracksDCA>;
-using McMFTs = soa::Join<aod::MFTTracks, aod::MFTTrackLabels>;
+using McMFTs = soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>;
 
 namespace
 {
