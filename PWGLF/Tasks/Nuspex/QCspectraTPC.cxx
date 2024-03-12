@@ -149,12 +149,16 @@ struct QCspectraTPC {
         return;
       }
 
-      if (track.itsNCls() == ITSNCls)
+      if (track.itsNCls() != ITSNCls)
         continue;
-      // if (track.tpcNClsFound() > minTPCNClsFound) continue;
-      // if (track.tpcNClsCrossedRows() > minNCrossedRowsTPC) continue;
-      // if (track.tpcChi2NCl() < maxChi2PerClusterTPC) continue;
-      // if (track.itsChi2NCl() < maxChi2PerClusterITS) continue;
+      if (track.tpcNClsFound() < 100)
+        continue;
+      if (track.tpcNClsCrossedRows() < 100)
+        continue;
+      if (track.tpcChi2NCl() > 4)
+        continue;
+      if (track.itsChi2NCl() > 36)
+        continue;
       if (abs(track.dcaXY()) > cfgCutDCAXY)
         continue;
       if (abs(track.dcaZ()) > cfgCutDCAZ)
