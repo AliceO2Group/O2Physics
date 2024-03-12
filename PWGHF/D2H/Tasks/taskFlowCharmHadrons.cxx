@@ -137,7 +137,7 @@ struct HfTaskFlowCharmHadrons {
   /// \param cand is the candidate
   /// \param tracksQx is the X component of the Q vector for the tracks
   /// \param tracksQy is the Y component of the Q vector for the tracks
-  /// \param DeChannel is the decay channel
+  /// \param channel is the decay channel
   template <int channel, typename T1>
   void getQvecDtracks(const T1& cand,
                       std::vector<float>& tracksQx,
@@ -192,9 +192,7 @@ struct HfTaskFlowCharmHadrons {
   /// \param cosNPhi is the cosine of the n*phi angle
   /// \param cosDeltaPhi is the cosine of the n*(phi - evtPl) angle
   /// \param sp is the scalar product
-  /// \param evtPlReso is the event plane resolution
   /// \param outputMl are the ML scores
-  /// \param selectionFlag for D0, only 0 or1
   void fillThn(float& mass,
                float& pt,
                float& cent,
