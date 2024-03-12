@@ -141,7 +141,7 @@ struct HfTaskFlowCharmHadrons {
   /// \param tracksQx is the X component of the Q vector for the tracks
   /// \param tracksQy is the Y component of the Q vector for the tracks
   /// \param DeChannel is the decay channel
-  template <int DeChannel, typename T1>
+  template <DecayChannel channel, typename T1>
   void getQvecDtracks(const T1& cand,
                       std::vector<float>& tracksQx,
                       std::vector<float>& tracksQy,
