@@ -1820,7 +1820,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, Configurab
     }
 
     if (classStr.Contains("Quadruplet")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-dihardon", histName);
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-dihadron", histName);
     }
 
   } // end loop over histogram classes
