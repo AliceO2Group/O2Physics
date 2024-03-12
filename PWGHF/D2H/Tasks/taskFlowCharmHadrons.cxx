@@ -334,18 +334,11 @@ struct HfTaskFlowCharmHadrons {
         std::vector<float> tracksQx = {};
         std::vector<float> tracksQy = {};
 
-        if constexpr (DecayChannel == DecayChannel::D0ToPiK) {
-          getQvecDtracks<DecayChannel>(candidate, tracksQx, tracksQy, ampl);
-          for (unsigned int itrack = 0; itrack < 2; itrack++) {
-            xQVec -= tracksQx[itrack];
-            yQVec -= tracksQy[itrack];
-          }
-        } else {
-          getQvecDtracks<DecayChannel>(candidate, tracksQx, tracksQy, ampl);
-          for (unsigned int itrack = 0; itrack < 3; itrack++) {
-            xQVec -= tracksQx[itrack];
-            yQVec -= tracksQy[itrack];
-          }
+        getQvecDtracks<DecayChannel>(candidate, tracksQx, tracksQy, ampl);
+        for (auto iTrack{0u}; iTrack < tracksQx.size(); ++iTrack) {
+          xQVec -= tracksQx[iTrack];
+          yQVec -= tracksQy[iTrack];
+        }
         }
       }
 
