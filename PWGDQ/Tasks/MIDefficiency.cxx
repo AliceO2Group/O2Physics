@@ -24,12 +24,6 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/CallbackService.h"
 
-// ROOT-C++ libraries
-#include <iostream>
-#include <vector>
-#include "TFile.h"
-#include "TTree.h"
-
 // O2 physics classes
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 
