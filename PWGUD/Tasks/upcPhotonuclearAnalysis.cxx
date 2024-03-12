@@ -215,7 +215,7 @@ struct upcPhotonuclearAnalysis {
         break;
     }
   }
-  PROCESS_SWITCH(upcPhotonuclearAnalysis, processSG, "Process in UD tables", true)
+  PROCESS_SWITCH(upcPhotonuclearAnalysis, processSG, "Process in UD tables", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
