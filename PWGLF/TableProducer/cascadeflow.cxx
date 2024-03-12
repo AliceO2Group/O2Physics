@@ -232,7 +232,7 @@ struct cascadeFlow {
 
   template <class collision_t, class cascade_t>
   //  void fillAnalisedTable(collision_t coll, cascade_t casc, float BDTresponse)
-  void fillAnalysedTable(collision_t coll, cascade_t casc)
+  void fillAnalysedTable(collision_t coll, cascade_t casc, float v2A, float v2C, float BDTresponse)
   {
     analysisSample(coll.centFT0M(),
                    casc.sign(),
@@ -240,7 +240,9 @@ struct cascadeFlow {
                    casc.eta(),
                    casc.mXi(),
                    casc.mOmega(),
-                   casc.mLambda());
+                   v2A,
+		   v2C,
+		   BDTresponse);
   }
 
   void init(InitContext const&)
@@ -252,6 +254,7 @@ struct cascadeFlow {
     if (isOmega) MaxMass = 1.73;
     ConfigurableAxis vertexZ{"vertexZ", {20, -10, 10}, "vertex axis for histograms"};
     ConfigurableAxis massCascAxis{"massCascAxis", {100, MinMass, MaxMass}, ""};
+    ConfigurableAxis ptAxis{"ptAxis", {100, 0, 10}, ""};
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {vertexZ});
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
     histos.add("hCandidate", "hCandidate", HistType::kTH1D, {{22, -0.5, 21.5}});
@@ -268,6 +271,8 @@ struct cascadeFlow {
     histos.add("hv2Norm", "hv2Norm", HistType::kTH1D, {{100, 0, 1}});
     histos.add("hMassBeforeSel", "hMassBeforeSel", HistType::kTH1F, {massCascAxis});
     histos.add("hMassAfterSel", "hMassAfterSel", HistType::kTH1F, {massCascAxis});
+    histos.add("hMassBeforeSelVsPt", "hMassBeforeSelVsPt", HistType::kTH2F, {{massCascAxis}, {ptAxis}});
+    histos.add("hMassAfterSelVsPt", "hMassAfterSelVsPt", HistType::kTH2F, {{massCascAxis}, {ptAxis}});
     histos.add("hSignalScoreBeforeSel", "Signal score before selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
     histos.add("hBkgScoreBeforeSel", "Bkg score before selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
     histos.add("hSignalScoreAfterSel", "Signal score after selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
@@ -377,10 +382,10 @@ struct cascadeFlow {
 
     eventplaneVecT0A = ROOT::Math::XYZVector(coll.qvecFT0ARe(), coll.qvecFT0AIm(), 0);
     eventplaneVecT0C = ROOT::Math::XYZVector(coll.qvecFT0CRe(), coll.qvecFT0CIm(), 0);
-    //float eventplaneVecT0ANorm = sqrt(eventplaneVecT0A.Dot(eventplaneVecT0A));
-    //float eventplaneVecT0CNorm = sqrt(eventplaneVecT0C.Dot(eventplaneVecT0C));
+    float eventplaneVecT0ANorm = sqrt(eventplaneVecT0A.Dot(eventplaneVecT0A));
+    float eventplaneVecT0CNorm = sqrt(eventplaneVecT0C.Dot(eventplaneVecT0C));
     //    float v2Norm = eventplaneVecT0A.Dot(eventplaneVecT0C)/coll.sumAmplFT0A()/coll.sumAmplFT0C();
-    float v2Norm = eventplaneVecT0A.Dot(eventplaneVecT0C);
+    float v2Norm = eventplaneVecT0A.Dot(eventplaneVecT0C) / eventplaneVecT0ANorm / eventplaneVecT0CNorm;
     //std::cout << "eventplaneVecT0ANorm: " << eventplaneVecT0ANorm <<  " = " << sqrt(pow(coll.qvecFT0ARe(), 2) + pow(coll.qvecFT0AIm(), 2)) << std::endl; //these two are equal
     //std::cout << "stored norm value: " << coll.sumAmplFT0A() << std::endl;
     histos.fill(HIST("hv2Norm"), v2Norm);
@@ -425,6 +430,12 @@ struct cascadeFlow {
 	  casc.bachBaryonCosPA(),
 	  casc.bachBaryonDCAxyToPV()};
 
+      float massCasc = casc.mXi();
+      if (isOmega) massCasc =   casc.mOmega();
+
+      histos.fill(HIST("hMassAfterSel"), massCasc);
+      histos.fill(HIST("hMassAfterSelVsPt"), massCasc, casc.pt());
+
       if (isApplyML){
 	// Retrieve model output and selection outcome
 	isSelectedCasc = mlResponse.isSelectedMl(inputFeaturesCasc, casc.pt(), outputMl);
@@ -434,13 +445,9 @@ struct cascadeFlow {
 	histos.fill(HIST("hBkgScoreBeforeSel"), outputMl[1]);
 
 	// Fill histograms for selected candidates
-	float massCasc = casc.mXi();
-	if (isOmega) massCasc =   casc.mOmega();
 	if (isSelectedCasc) {
-	  histos.fill(HIST("hMassAfterSel"), massCasc);
 	  histos.fill(HIST("hSignalScoreAfterSel"), outputMl[0]);
 	  histos.fill(HIST("hBkgScoreAfterSel"), outputMl[1]);
-	  histos.fill(HIST("hMassAfterSelVsPt"), massCasc, casc.pt());
 	  histos.fill(HIST("hPromptScoreAfterSelVsPt"), outputMl[0], casc.pt());
 	  histos.fill(HIST("hBkgScoreAfterSelVsPt"), outputMl[1], casc.pt());
 	}
@@ -450,9 +457,14 @@ struct cascadeFlow {
 	isSelectedCasc = true;
       }
 
+      if (isSelectedCasc) {
+	histos.fill(HIST("hMassAfterSel"), massCasc);
+	histos.fill(HIST("hMassAfterSelVsPt"), massCasc, casc.pt());
+      }
+
       cascphiVec = ROOT::Math::XYZVector(cos(2*casc.phi()), sin(2*casc.phi()), 0);
-      auto v2A = cascphiVec.Dot(eventplaneVecT0A);
-      auto v2C = cascphiVec.Dot(eventplaneVecT0C);
+      auto v2A = cascphiVec.Dot(eventplaneVecT0A)/sqrt(eventplaneVecT0A.Dot(eventplaneVecT0A));
+      auto v2C = cascphiVec.Dot(eventplaneVecT0C)/sqrt(eventplaneVecT0C.Dot(eventplaneVecT0C));
       auto cascminuspsiT0A = GetPhiInRange(casc.phi() - PsiT0A);
       auto cascminuspsiT0C = GetPhiInRange(casc.phi() - PsiT0C);
       float v2A_diff =  TMath::Cos(2.0 * cascminuspsiT0A);
@@ -463,7 +475,9 @@ struct cascadeFlow {
       histos.fill(HIST("hcascminuspsiT0A"), cascminuspsiT0A);
       histos.fill(HIST("hcascminuspsiT0C"), cascminuspsiT0C);
 
-      if (isSelectedCasc)  fillAnalysedTable(coll, casc);
+      float BDTresponse = 0;
+      if (isApplyML) BDTresponse = outputMl[0];
+      if (isSelectedCasc)  fillAnalysedTable(coll, casc, v2A, v2C, BDTresponse);
     }
     
   }
