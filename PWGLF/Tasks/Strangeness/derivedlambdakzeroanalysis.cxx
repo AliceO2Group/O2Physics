@@ -117,10 +117,6 @@ struct derivedlambdakzeroanalysis {
   Configurable<float> maxDeltaTimeProton{"maxDeltaTimeProton", 1e+9, "check maximum allowed time"};
   Configurable<float> maxDeltaTimePion{"maxDeltaTimePion", 1e+9, "check maximum allowed time"};
 
-  // PID (TOF)
-  Configurable<float> maxDeltaTimeProton{"maxDeltaTimeProton", 1e+9, "check maximum allowed time"};
-  Configurable<float> maxDeltaTimePion{"maxDeltaTimePion", 1e+9, "check maximum allowed time"};
-
   // for MC
   Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
   Configurable<bool> doCollisionAssociationQA{"doCollisionAssociationQA", true, "check collision association"};
@@ -938,8 +934,6 @@ struct derivedlambdakzeroanalysis {
 
     histos.fill(HIST("hEventCentrality"), centrality);
 
-    histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
-
     // __________________________________________
     // perform main analysis
     for (auto& v0 : fullV0s) {
@@ -991,8 +985,6 @@ struct derivedlambdakzeroanalysis {
     }
 
     histos.fill(HIST("hEventCentrality"), centrality);
-
-    histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
 
     // __________________________________________
     // perform main analysis
