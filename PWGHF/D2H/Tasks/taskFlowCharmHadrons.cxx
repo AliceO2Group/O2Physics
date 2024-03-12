@@ -24,23 +24,20 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::hf_collision_centrality;
 
 enum DecayChannel { DplusToPiKPi = 0,
                     DsToKKPi,
                     DsToPiKK,
                     D0ToPiK };
 
-enum centralityEstimator { V0A = 0,
-                           T0M,
-                           T0A,
-                           T0C };
-
-enum qvecEstimator { FV0A = 0,
+enum QvecEstimator { FV0A = 0,
                      FT0M,
                      FT0A,
                      FT0C,
@@ -51,7 +48,7 @@ struct HfTaskFlowCharmHadrons {
   Configurable<float> zVtxMax{"zVtxMax", 10., "Max vertex coordinate z"};
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<int> qvecDetector{"qvecDetector", 0, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5)"};
-  Configurable<int> centDetector{"centDetector", 0, "Detector for centrality estimation (V0A: 0, T0M: 1, T0A: 2, T0C: 3)"};
+  Configurable<int> centEstimator{"centEstimator", 4, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
   Configurable<int> selectionFlag{"selectionFlag", 1, "Selection Flag for hadron (e.g. 1 for skimming, 3 for topo. and kine., 7 for PID)"};
   Configurable<int> nProngs{"nProngs", 3, "Number of candidate's prong (For D0, set selectionFlag = 1 and nProngs = 2)"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
@@ -218,17 +215,17 @@ struct HfTaskFlowCharmHadrons {
   float getCentrality(CollsWithQvecs::iterator const& collision)
   {
     float cent = -999.;
-    switch (centDetector) {
-      case centralityEstimator::V0A:
+    switch (centEstimator) {
+      case CentralityEstimator::FV0A:
         cent = collision.centFV0A();
         break;
-      case centralityEstimator::T0M:
+      case CentralityEstimator::FT0M:
         cent = collision.centFT0M();
         break;
-      case centralityEstimator::T0A:
+      case CentralityEstimator::FT0A:
         cent = collision.centFT0A();
         break;
-      case centralityEstimator::T0C:
+      case CentralityEstimator::FT0C:
         cent = collision.centFT0C();
         break;
       default:
@@ -247,27 +244,27 @@ struct HfTaskFlowCharmHadrons {
     float yQVec = -999.;
     float amplQVec = -999.;
     switch (qvecDetector) {
-      case qvecEstimator::FV0A:
+      case QvecEstimator::FV0A:
         xQVec = collision.qvecFV0ARe();
         yQVec = collision.qvecFV0AIm();
         break;
-      case qvecEstimator::FT0M:
+      case QvecEstimator::FT0M:
         xQVec = collision.qvecFT0MRe();
         yQVec = collision.qvecFT0MIm();
         break;
-      case qvecEstimator::FT0A:
+      case QvecEstimator::FT0A:
         xQVec = collision.qvecFT0ARe();
         yQVec = collision.qvecFT0AIm();
         break;
-      case qvecEstimator::FT0C:
+      case QvecEstimator::FT0C:
         xQVec = collision.qvecFT0CRe();
         yQVec = collision.qvecFT0CIm();
-      case qvecEstimator::TPCPos:
+      case QvecEstimator::TPCPos:
         xQVec = collision.qvecBPosRe();
         yQVec = collision.qvecBPosIm();
         amplQVec = collision.nTrkBPos();
         break;
-      case qvecEstimator::TPCNeg:
+      case QvecEstimator::TPCNeg:
         xQVec = collision.qvecBNegRe();
         yQVec = collision.qvecBNegIm();
         amplQVec = collision.nTrkBNeg();
@@ -329,7 +326,7 @@ struct HfTaskFlowCharmHadrons {
       float phiCand = candidate.phi();
 
       // If TPC is used for the SP estimation, the tracks of the hadron candidate must be removed from the TPC Q vector to avoid double counting
-      if (qvecDetector == qvecEstimator::TPCNeg || qvecDetector == qvecEstimator::TPCPos) {
+      if (qvecDetector == QvecEstimator::TPCNeg || qvecDetector == QvecEstimator::TPCPos) {
         float ampl = amplQVec - static_cast<float>(nProngs);
         std::vector<float> tracksQx = {};
         std::vector<float> tracksQy = {};
