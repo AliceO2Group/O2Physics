@@ -414,6 +414,8 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
     // for pair
     cut->SetMeeRange(0, 1e+10);
     cut->SetMaxPhivPairMeeDep([](float mee) { return (mee - -0.028) / 0.0185; });
+    cut->ApplyPhiV(false);
+    cut->ApplyPrefilter(false);
 
     // for track cuts
     cut->SetMinNCrossedRowsTPC(100);

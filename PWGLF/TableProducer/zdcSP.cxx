@@ -62,8 +62,10 @@ namespace
 {
 std::unordered_map<int, std::array<TH2*, 2>> gCentroidC;
 std::unordered_map<int, std::array<TH2*, 2>> gCentroidA;
+std::unordered_map<int, TH2*> gHadronicRate;
 std::array<TH2*, 2> gCurrentCentroidC;
 std::array<TH2*, 2> gCurrentCentroidA;
+TH2* gCurrentHadronicRate;
 } // namespace
 
 struct zdcSP {
@@ -102,9 +104,11 @@ struct zdcSP {
       std::string xy[2] = {"X", "Y"};
       for (int i{0}; i < 2; ++i) {
         zncH[i] = mHistos.add<TH2>(Form("%i/centroidC%s", mRunNumber, xy[i].data()), Form(";Time since SOR (s);ZNC centroid %s", xy[i].data()), kTH2D, {axisSeconds, {50, -1.5, 1.5}}).get();
-        znaH[i] = mHistos.add<TH2>(Form("%i/centroidA%s", mRunNumber, xy[i].data()), Form(";Time since SOR (s);ZNC centroid %s", xy[i].data()), kTH2D, {axisSeconds, {50, -1.5, 1.5}}).get();
+        znaH[i] = mHistos.add<TH2>(Form("%i/centroidA%s", mRunNumber, xy[i].data()), Form(";Time since SOR (s);ZNA centroid %s", xy[i].data()), kTH2D, {axisSeconds, {50, -1.5, 1.5}}).get();
       }
+      gHadronicRate[mRunNumber] = mHistos.add<TH2>(Form("%i/hadronicRate", mRunNumber), ";Time since SOR (s);Hadronic rate (kHz)", kTH2D, {{static_cast<int>((maxSec - mMinSeconds) / 20.f), 0, maxSec - mMinSeconds, "Seconds since SOR"}, {510, 0., 51.}}).get();
     }
+    gCurrentHadronicRate = gHadronicRate[mRunNumber];
     gCurrentCentroidC = gCentroidC[mRunNumber];
     gCurrentCentroidA = gCentroidA[mRunNumber];
   }
@@ -132,8 +136,8 @@ struct zdcSP {
     }
     initCCDB(bc);
     double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; //
-
     double seconds = bc.timestamp() * 1.e-3 - mMinSeconds;
+    gCurrentHadronicRate->Fill(seconds, hadronicRate);
     auto zdc = bc.zdc();
     auto zncEnergy = zdc.energySectorZNC();
     auto znaEnergy = zdc.energySectorZNA();
@@ -153,6 +157,12 @@ struct zdcSP {
                  zncCommon, zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3]);
     }
 
+    ///          | 3 | 4 |
+    /// beam out | 1 | 2 | --> x       (ZNC)
+    ///
+    ///          | 3 | 4 |
+    ///    <-- x | 1 | 2 |   beam in   (ZNA)
+
     constexpr float beamEne = 5.36 * 0.5;
     constexpr float x[4] = {-1.75, 1.75, -1.75, 1.75};
     constexpr float y[4] = {-1.75, -1.75, 1.75, 1.75};
@@ -163,7 +173,7 @@ struct zdcSP {
     for (int i = 0; i < 4; i++) {
       if (zncEnergy[i] > 0.) {
         float wZNC = std::pow(zncEnergy[i], alpha);
-        numXZNC += x[i] * wZNC;
+        numXZNC -= x[i] * wZNC;
         numYZNC += y[i] * wZNC;
         denZNC += wZNC;
       }
@@ -188,7 +198,7 @@ struct zdcSP {
     if (denZNA != 0.) {
       float nSpecnA = znaCommon / beamEne;
       float cZNA = 1.89358 - 0.71262 / (nSpecnA + 0.71789);
-      centrZNA[0] = -cZNA * numXZNA / denZNA;
+      centrZNA[0] = cZNA * numXZNA / denZNA;
       centrZNA[1] = cZNA * numYZNA / denZNA;
     } else {
       centrZNA[0] = centrZNA[1] = 999.;
