@@ -246,7 +246,7 @@ struct HfTaskSingleMuonSource {
     const auto muonType3 = muon.matchMCHTrack_as<McMuons>();
     const auto deltaPt = muonType3.pt() - pt;
 
-    if(!muon.has_matchMFTTrack()) {
+    if (!muon.has_matchMFTTrack()) {
       return;
     }
     const auto mft = muon.matchMFTTrack_as<McMFTs>();
