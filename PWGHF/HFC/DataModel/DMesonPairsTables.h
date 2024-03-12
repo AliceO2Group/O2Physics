@@ -30,11 +30,11 @@ DECLARE_SOA_COLUMN(PtCand2, ptCand2, float); //! Transverse momentum of second c
 DECLARE_SOA_COLUMN(YCand1, yCand1, float);   //! Rapidity of first candidate
 DECLARE_SOA_COLUMN(YCand2, yCand2, float);   //! Rapidity of second candidate
 // Invariant mass
-DECLARE_SOA_COLUMN(MDCand1, mDCand1, float);       //! Invariant mass of first candidate as D
-DECLARE_SOA_COLUMN(MDbarCand1, mDbarCand1, float); //! Invariant mass of first candidate as Dbar
-DECLARE_SOA_COLUMN(MDCand2, mDCand2, float);       //! Invariant mass of second candidate as D
-DECLARE_SOA_COLUMN(MDbarCand2, mDbarCand2, float); //! Invariant mass of second candidate as Dbar
-DECLARE_SOA_COLUMN(PairType, pairType, uint8_t);   //! Bitmap with all pair types (DD, DDbar, etc.) a pair of candidates has passed
+DECLARE_SOA_COLUMN(MDCand1, mDCand1, float);                 //! Invariant mass of first candidate as D
+DECLARE_SOA_COLUMN(MDbarCand1, mDbarCand1, float);           //! Invariant mass of first candidate as Dbar
+DECLARE_SOA_COLUMN(MDCand2, mDCand2, float);                 //! Invariant mass of second candidate as D
+DECLARE_SOA_COLUMN(MDbarCand2, mDbarCand2, float);           //! Invariant mass of second candidate as Dbar
+DECLARE_SOA_COLUMN(PairType, pairType, uint8_t);             //! Bitmap with all pair types (DD, DDbar, etc.) a pair of candidates has passed
 DECLARE_SOA_COLUMN(CandidateType1, candidateType1, uint8_t); //! Bitmap with Selected and True info of candidate 1
 DECLARE_SOA_COLUMN(CandidateType2, candidateType2, uint8_t); //! Bitmap with Selected and True info of candidate 2
 // MC info
