@@ -199,7 +199,7 @@ struct nucleiSpectra {
     kHe3 = BIT(3),
     kHe4 = BIT(4),
     kHasTOF = BIT(5),
-    kIsReconstructed = BIT(6),
+    kHasTRD = BIT(6),
     kIsAmbiguous = BIT(7), /// just a placeholder now
     kPositive = BIT(8),
     kIsPhysicalPrimary = BIT(9), /// MC flags starting from the second half of the short
@@ -482,6 +482,9 @@ struct nucleiSpectra {
       uint16_t flag = static_cast<uint16_t>((track.pidForTracking() & 0xF) << 12);
       if (track.hasTOF()) {
         flag |= kHasTOF;
+      }
+      if (track.hasTRD()) {
+        flag |= kHasTRD;
       }
       if (!iC) {
         flag |= kPositive;
