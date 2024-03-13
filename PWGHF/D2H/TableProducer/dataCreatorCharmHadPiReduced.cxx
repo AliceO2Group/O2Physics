@@ -81,6 +81,7 @@ struct HfDataCreatorCharmHadPiReduced {
 
   Produces<aod::HfCandBpConfigs> rowCandidateConfigBplus;
   Produces<aod::HfMcRecRedD0Pis> rowHfD0PiMcRecReduced;
+  Produces<aod::HfMcCheckD0Pis> rowHfD0PiMcCheckReduced;
   Produces<aod::HfMcGenRedBps> rowHfBpMcGenReduced;
 
   // vertexing
@@ -409,14 +410,13 @@ struct HfDataCreatorCharmHadPiReduced {
       // B+ → D0(bar) π+ → (K+ π-) π+
       auto indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
-        // D0bar → K+ π-
         // Printf("Checking D0bar → K+ π-");
         indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1);
         if (indexRec > -1) {
           flag = sign * BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
         } else {
           debug = 1;
-          LOGF(debug, "B0 decays in the expected final state but the condition on the intermediate state is not fulfilled");
+          LOGF(debug, "B+ decays in the expected final state but the condition on the intermediate state is not fulfilled");
         }
 
         auto indexMother = RecoDecay::getMother(particlesMc, vecDaughtersB.back().template mcParticle_as<PParticles>(), Pdg::kBPlus, true);
@@ -426,6 +426,39 @@ struct HfDataCreatorCharmHadPiReduced {
         }
       }
       rowHfD0PiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, debug, motherPt);
+
+      // additional checks for correlated backgrounds
+      if (checkDecayTypeMc) {
+        // Partly reconstructed decays, i.e. the 3 prongs have a common b-hadron ancestor
+        // convention: final state particles are prong0,1,2
+        if (!flag) {
+          auto particleProng0 = vecDaughtersB[0].mcParticle();
+          auto particleProng1 = vecDaughtersB[1].mcParticle();
+          auto particleProng2 = vecDaughtersB[2].mcParticle();
+          // b-hadron hypothesis
+          std::array<int, 3> bHadronMotherHypos = {Pdg::kBPlus, Pdg::kB0, Pdg::kBS};
+
+          for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
+            int index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
+            int index1Mother = RecoDecay::getMother(particlesMc, particleProng1, bHadronMotherHypo, true);
+            int index2Mother = RecoDecay::getMother(particlesMc, particleProng2, bHadronMotherHypo, true);
+
+            // look for common b-hadron ancestor
+            if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1) {
+              if (index0Mother == index1Mother && index1Mother == index2Mother) {
+                flag = BIT(hf_cand_bplus::DecayTypeMc::PartlyRecoDecay);
+                pdgCodeBeautyMother = particlesMc.rawIteratorAt(index0Mother).pdgCode();
+                pdgCodeCharmMother = 0;
+                pdgCodeProng0 = particleProng0.pdgCode();
+                pdgCodeProng1 = particleProng1.pdgCode();
+                pdgCodeProng2 = particleProng2.pdgCode();
+                break;
+              }
+            }
+          }
+        }
+        rowHfD0PiMcCheckReduced(pdgCodeBeautyMother, pdgCodeProng0, pdgCodeProng1, pdgCodeProng2);
+      }
     }
   }
 

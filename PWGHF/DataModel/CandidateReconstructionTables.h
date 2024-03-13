@@ -767,6 +767,11 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       // particle origin, 
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
 
 enum DecayType { BplusToD0Pi = 0 };
+
+enum DecayTypeMc : uint8_t { BplusToD0PiToKPiPi = 0,
+                             PartlyRecoDecay,
+                             OtherDecay,
+                             NDecayTypeMc };
 } // namespace hf_cand_bplus
 
 // declare dedicated BPlus decay candidate table
