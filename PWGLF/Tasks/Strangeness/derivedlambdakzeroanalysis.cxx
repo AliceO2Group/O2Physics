@@ -468,22 +468,6 @@ struct derivedlambdakzeroanalysis {
     if (fabs(v0.negTOFDeltaTK0Pi()) < maxDeltaTimePion)
       bitset(bitMap, selTOFDeltaTNegativePionK0Short);
 
-    // TOF PID
-    // Positive track
-    if (fabs(v0.posTOFDeltaTLaPr()) < maxDeltaTimeProton)
-      bitset(bitMap, selTOFDeltaTPositiveProtonLambda);
-    if (fabs(v0.posTOFDeltaTLaPi()) < maxDeltaTimePion)
-      bitset(bitMap, selTOFDeltaTPositivePionLambda);
-    if (fabs(v0.posTOFDeltaTK0Pi()) < maxDeltaTimePion)
-      bitset(bitMap, selTOFDeltaTPositivePionK0Short);
-    // Negative track
-    if (fabs(v0.negTOFDeltaTLaPr()) < maxDeltaTimeProton)
-      bitset(bitMap, selTOFDeltaTNegativeProtonLambda);
-    if (fabs(v0.negTOFDeltaTLaPi()) < maxDeltaTimePion)
-      bitset(bitMap, selTOFDeltaTNegativePionLambda);
-    if (fabs(v0.negTOFDeltaTK0Pi()) < maxDeltaTimePion)
-      bitset(bitMap, selTOFDeltaTNegativePionK0Short);
-
     // ITS only tag
     if (posTrackExtra.tpcCrossedRows() < 1)
       bitset(bitMap, selPosItsOnly);
