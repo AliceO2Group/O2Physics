@@ -857,49 +857,49 @@ struct derivedlambdakzeroanalysis {
     auto hOmegaMinus = histos.get<TH2>(HIST("h2dGenOmegaMinus"));
     auto hOmegaPlus = histos.get<TH2>(HIST("h2dGenOmegaPlus"));
     for (auto& gVec : geK0Short) {
-      if(gVec.size()!=hK0Short->GetNcells())
+      if (gVec.size() != hK0Short->GetNcells())
         LOGF(fatal, "K0Short: Number of elements in generated array and number of cells in receiving histogram differ!");
       for (uint32_t iv = 0; iv < hK0Short->GetNcells(); iv++) {
         hK0Short->SetBinContent(iv + 1, hK0Short->GetBinContent(iv + 1) + gVec.generatedK0Short()[iv]);
       }
     }
     for (auto& gVec : geLambda) {
-      if(gVec.size()!=hLambda->GetNcells())
+      if (gVec.size() != hLambda->GetNcells())
         LOGF(fatal, "Lambda: Number of elements in generated array and number of cells in receiving histogram differ!");
       for (uint32_t iv = 0; iv < hLambda->GetNcells(); iv++) {
         hLambda->SetBinContent(iv, hLambda->GetBinContent(iv) + gVec.generatedLambda()[iv]);
       }
     }
     for (auto& gVec : geAntiLambda) {
-      if(gVec.size()!=hAntiLambda->GetNcells())
+      if (gVec.size() != hAntiLambda->GetNcells())
         LOGF(fatal, "AntiLambda: Number of elements in generated array and number of cells in receiving histogram differ!");
       for (uint32_t iv = 0; iv < hAntiLambda->GetNcells(); iv++) {
         hAntiLambda->SetBinContent(iv, hAntiLambda->GetBinContent(iv) + gVec.generatedAntiLambda()[iv]);
       }
     }
     for (auto& gVec : geXiMinus) {
-      if(gVec.size()!=hXiMinus->GetNcells())
+      if (gVec.size() != hXiMinus->GetNcells())
         LOGF(fatal, "XiMinus: Number of elements in generated array and number of cells in receiving histogram differ!");
       for (uint32_t iv = 0; iv < hXiMinus->GetNcells(); iv++) {
         hXiMinus->SetBinContent(iv, hXiMinus->GetBinContent(iv) + gVec.generatedXiMinus()[iv]);
       }
     }
     for (auto& gVec : geXiPlus) {
-      if(gVec.size()!=hXiPlus->GetNcells())
+      if (gVec.size() != hXiPlus->GetNcells())
         LOGF(fatal, "XiPlus: Number of elements in generated array and number of cells in receiving histogram differ!");
       for (uint32_t iv = 0; iv < hXiPlus->GetNcells(); iv++) {
         hXiPlus->SetBinContent(iv, hXiPlus->GetBinContent(iv) + gVec.generatedXiPlus()[iv]);
       }
     }
     for (auto& gVec : geOmegaMinus) {
-      if(gVec.size()!=hOmegaMinus->GetNcells())
+      if (gVec.size() != hOmegaMinus->GetNcells())
         LOGF(fatal, "OmegaMinus: Number of elements in generated array and number of cells in receiving histogram differ!");
       for (uint32_t iv = 0; iv < hOmegaMinus->GetNcells(); iv++) {
         hOmegaMinus->SetBinContent(iv, hOmegaMinus->GetBinContent(iv) + gVec.generatedOmegaMinus()[iv]);
       }
     }
     for (auto& gVec : geOmegaPlus) {
-      if(gVec.size()!=hOmegaPlus->GetNcells())
+      if (gVec.size() != hOmegaPlus->GetNcells())
         LOGF(fatal, "OmegaPlus: Number of elements in generated array and number of cells in receiving histogram differ!");
       for (uint32_t iv = 0; iv < hOmegaPlus->GetNcells(); iv++) {
         hOmegaPlus->SetBinContent(iv, hOmegaPlus->GetBinContent(iv) + gVec.generatedOmegaPlus()[iv]);
