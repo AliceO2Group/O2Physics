@@ -11,9 +11,12 @@
 ///
 /// \brief
 /// \author Sara Haidlova, sara.haidlova@cern.ch
+/// \since March 2024
 
 #ifndef PWGUD_CORE_UPCJPSICENTRALBARRELCORR_H_
 #define PWGUD_CORE_UPCJPSICENTRALBARRELCORR_H_
+
+#include <algorithm>
 
 using namespace o2;
 using namespace o2::framework;
@@ -37,8 +40,9 @@ int testPIDhypo(T trackPID)
                                     std::min_element(std::begin(nSigmaTPC), std::end(nSigmaTPC)));
   if (trackPID.hasTPC()) {
     return enumChoiceTPC;
-  } else
-    return -1;
+  } else {
+      return -1;
+  }
 }
 
 float mom(float px, float py, float pz)
@@ -50,8 +54,9 @@ float phi(float px, float py)
 {
   if (px != 0) {
     return std::atan2(py, px);
-  } else
-    return -999;
+  } else {
+      return -999;
+  }
 }
 
 float eta(float px, float py, float pz)
@@ -59,21 +64,11 @@ float eta(float px, float py, float pz)
   float mom = std::sqrt(px * px + py * py + pz * pz);
   if (mom != 0) {
     return std::atanh(pz / mom);
-  } else
-    return -999;
+  } else {
+      return -999;
+  }
 }
 
-/*float energy(float mass, float px, float py, float pz)
-// Just a simple function to return track energy
-{
-  return std::sqrt(mass * mass + px * px + py * py + pz * pz);
-}
-
-float rap(float mass, float px, float py, float pz)
-// Just a simple function to return track rapidity
-{
-  return 0.5 * std::log((energy(mass, px, py, pz) + pz) / (energy(mass, px, py, pz) - pz));
-}*/
 
 float* correlation(TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
 {
