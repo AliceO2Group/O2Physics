@@ -86,7 +86,7 @@ enum kDetector {
 struct nucleiFlow {
 
   Configurable<int> cfgCentDetector{"cfgCentDetector", 0, "Detector for centrality estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3)"};
-  Configurable<int> cfgHarmonic{"cfgHarmonic", 2, "cfgHarmonic number"};
+  Configurable<int> cfgHarmonic{"cfgHarmonic", 2, "Harmonic number"};
   Configurable<int> cfgQvecDetector{"cfgQvecDetector", 0, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5)"};
   Configurable<int> cfgSpecies{"cfgSpecies", 3, "Species under study (proton: 0, deuteron: 1, triton: 2, helion: 3, alpha: 4)"};
 

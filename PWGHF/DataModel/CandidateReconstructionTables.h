@@ -68,6 +68,7 @@ enum CentralityEstimator {
   FT0C,
   FT0M,
   FV0A,
+  NTracksPV,
   NCentralityEstimators
 };
 } // namespace hf_collision_centrality

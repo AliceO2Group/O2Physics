@@ -18,6 +18,7 @@
 #include "TableHelper.h"
 #include "iostream"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -66,6 +67,7 @@ struct MultiplicityTableTaskIndexed {
 
   // For vertex-Z corrections in calibration
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   using Run2Tracks = soa::Join<aod::Tracks, aod::TracksExtra>;
   Partition<Run2Tracks> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
@@ -253,10 +255,14 @@ struct MultiplicityTableTaskIndexed {
         case kMultsExtra: // Extra information
           tableExtra.reserve(collisions.size());
           break;
+        case kMultSelections: // Extra information
+          multSelections.reserve(collisions.size());
+          break;
         case kMultZeqs: // Equalized multiplicity
           tableMultZeq.reserve(collisions.size());
           break;
         case kMultsExtraMC: // MC extra information (nothing to do, this is data)
+          tableExtraMc.reserve(collisions.size());
           break;
         default:
           LOG(fatal) << "Unknown table requested: " << i;
@@ -516,6 +522,15 @@ struct MultiplicityTableTaskIndexed {
     for (auto const& mcPart : mcParticles) {
       if (!mcPart.isPhysicalPrimary())
         continue;
+
+      auto charge = 0.;
+      auto* p = pdg->GetParticle(mcPart.pdgCode());
+      if (p != nullptr) {
+        charge = p->Charge();
+      }
+      if (std::abs(charge) < 1e-3) {
+        continue; // reject neutral particles in counters
+      }
 
       if (std::abs(mcPart.eta()) < 1.0) {
         multBarrelEta10++;

@@ -136,11 +136,25 @@ struct qVectorsTable {
     ccdb->setCreatedNotAfter(cfgCcdbParam.nolaterthan.value);
     ccdb->setFatalWhenNull(false);
 
-    LOGF(info, "Getting alignment offsets from the CCDB...");
-    offsetFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align",
-                                                                              cfgCcdbParam.nolaterthan.value);
-    offsetFV0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align",
-                                                                              cfgCcdbParam.nolaterthan.value);
+    AxisSpec axisPt = {40, 0.0, 4.0};
+    AxisSpec axisEta = {32, -0.8, 0.8};
+    AxisSpec axisPhi = {32, 0, 2.0 * TMath::Pi()};
+    AxisSpec axixCent = {20, 0, 100};
+
+    AxisSpec axisFITamp{cfgaxisFITamp, "FIT amp"};
+    AxisSpec axisChID = {220, 0, 220};
+
+    histosQA.add("ChTracks", "", {HistType::kTHnSparseF, {axisPt, axisEta, axisPhi, axixCent}});
+    histosQA.add("FITAmp", "", {HistType::kTH2F, {axisFITamp, axisChID}});
+    histosQA.add("FITAmpCor", "", {HistType::kTH2F, {axisFITamp, axisChID}});
+  }
+
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    auto timestamp = bc.timestamp();
+
+    offsetFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", timestamp);
+    offsetFV0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align", timestamp);
 
     // Get the offset values for the different parts of FIT.
     if (offsetFT0 != nullptr) {
@@ -163,7 +177,7 @@ struct qVectorsTable {
     if (cfgCCDBConst == 1) {
       fullPath = cfgQvecCalibPath;
       fullPath += "/FT0C";
-      auto objft0c = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      auto objft0c = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
       if (!objft0c) {
         if (cfgFT0CCorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for FT0C");
@@ -176,7 +190,7 @@ struct qVectorsTable {
 
       fullPath = cfgQvecCalibPath;
       fullPath += "/FT0A";
-      auto objft0a = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      auto objft0a = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
       if (!objft0a) {
         if (cfgFT0ACorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for FT0A");
@@ -189,7 +203,7 @@ struct qVectorsTable {
 
       fullPath = cfgQvecCalibPath;
       fullPath += "/FT0M";
-      auto objft0m = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      auto objft0m = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
       if (!objft0m) {
         if (cfgFT0MCorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for FT0M");
@@ -202,7 +216,7 @@ struct qVectorsTable {
 
       fullPath = cfgQvecCalibPath;
       fullPath += "/FT0C"; // will be corrected
-      auto objfv0a = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      auto objfv0a = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
       if (!objfv0a) {
         if (cfgFV0ACorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for FV0A");
@@ -215,7 +229,7 @@ struct qVectorsTable {
 
       fullPath = cfgQvecCalibPath;
       fullPath += "/BPos";
-      auto objbpos = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      auto objbpos = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
       if (!objbpos) {
         if (cfgBPosCorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for BPos");
@@ -228,7 +242,7 @@ struct qVectorsTable {
 
       fullPath = cfgQvecCalibPath;
       fullPath += "/BNeg";
-      auto objbneg = ccdb->getForTimeStamp<std::vector<float>>(fullPath, cfgCcdbParam.nolaterthan.value);
+      auto objbneg = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
       if (!objbneg) {
         if (cfgBNegCorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for BNeg");
@@ -271,7 +285,7 @@ struct qVectorsTable {
         RelGainConst.push_back(1.);
       }
     } else if (cfgGainCor == 1) {
-      auto obj = ccdb->getForTimeStamp<std::vector<float>>(cfgGainEqPath, cfgCcdbParam.nolaterthan.value);
+      auto obj = ccdb->getForTimeStamp<std::vector<float>>(cfgGainEqPath, timestamp);
       if (!obj) {
         for (int i = 0; i < cfgFT0RelGain->size(); i++) {
           RelGainConst.push_back(1.);
@@ -284,28 +298,6 @@ struct qVectorsTable {
         RelGainConst.push_back(cfgFT0RelGain->at(i));
       }
     }
-
-    /*  // Debug printing.
-      printf("Offset for FT0A: x = %.3f y = %.3f\n", (*offsetFT0)[0].getX(), (*offsetFT0)[0].getY());
-      printf("Offset for FT0C: x = %.3f y = %.3f\n", (*offsetFT0)[1].getX(), (*offsetFT0)[1].getY());
-      printf("Offset for FV0-left: x = %.3f y = %.3f\n", (*offsetFV0)[0].getX(), (*offsetFV0)[0].getY());
-      printf("Offset for FV0-right: x = %.3f y = %.3f\n", (*offsetFV0)[1].getX(), (*offsetFV0)[1].getY());
-    */
-
-    // LOKI: If we need to access the corrections from the CCDB, insert that here.
-    // In the meantime, call upon the external files with all the configurables.
-
-    AxisSpec axisPt = {40, 0.0, 4.0};
-    AxisSpec axisEta = {32, -0.8, 0.8};
-    AxisSpec axisPhi = {32, 0, 2.0 * TMath::Pi()};
-    AxisSpec axixCent = {20, 0, 100};
-
-    AxisSpec axisFITamp{cfgaxisFITamp, "FIT amp"};
-    AxisSpec axisChID = {220, 0, 220};
-
-    histosQA.add("ChTracks", "", {HistType::kTHnSparseF, {axisPt, axisEta, axisPhi, axixCent}});
-    histosQA.add("FITAmp", "", {HistType::kTH2F, {axisFITamp, axisChID}});
-    histosQA.add("FITAmpCor", "", {HistType::kTH2F, {axisFITamp, axisChID}});
   }
 
   template <typename TrackType>
@@ -333,9 +325,12 @@ struct qVectorsTable {
     return true;
   }
 
-  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s, MyTracks const& tracks) //, aod::FV0Cs const&)
-                                                                                                                          //  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+  void process(MyCollisions::iterator const& coll, aod::BCsWithTimestamps const&, aod::FT0s const& ft0s, aod::FV0As const& fv0s, MyTracks const& tracks) //, aod::FV0Cs const&)
+                                                                                                                                                         //  void process(MyCollisions::iterator const& coll, aod::FT0s const& ft0s, aod::FV0As const& fv0s)
   {
+    auto bc = coll.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
+    initCCDB(bc);
+
     // Get the centrality value for all subscribed estimators and takes the one
     // corresponding to cfgCentEsti. Reject also the events with invalid values.
     // NOTE: centFDDM and centNTPV not implemented as it makes the compilation crashes...
