@@ -241,7 +241,7 @@ struct femtoUniversePairTaskTrackV0Extended {
       sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
     }
   }
- 
+
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEvent, "Enable processing same event for track - V0", false);
 
   /// This function processes the same event for V0 - V0
