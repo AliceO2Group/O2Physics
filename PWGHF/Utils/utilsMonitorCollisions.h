@@ -13,8 +13,8 @@
 /// \brief Utility to monitor collisions passing the event selections for HF analyses
 /// \author Mattia Faggin <mfaggin@cern.ch>, CERN
 
-#ifndef PWGHF_UTILS_MONITORCOLLISIONS_H_
-#define PWGHF_UTILS_MONITORCOLLISIONS_H_
+#ifndef PWGHF_UTILS_UTILSMONITORCOLLISIONS_H_
+#define PWGHF_UTILS_UTILSMONITORCOLLISIONS_H_
 
 /// @brief function to monitor the event selection satisfied by collisions used for HF analyses
 /// \param collisions are the collisions in the DF

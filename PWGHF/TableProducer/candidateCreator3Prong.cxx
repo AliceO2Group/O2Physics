@@ -171,20 +171,8 @@ struct HfCandidateCreator3Prong {
       /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexProng3.template collision_as<Coll>();
       uint16_t statusCollision = isHfCollisionSelected<centEstimator>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
-      if (TESTBIT(statusCollision, EventRejection::Centrality)) {
-        /// event selection - centrality
-        continue;
-      }
-      if (useSel8Trigger && TESTBIT(statusCollision, EventRejection::Trigger)) {
-        /// event selection - sel8()
-        continue;
-      }
-      if (TESTBIT(statusCollision, EventRejection::PositionZ)) {
-        /// event selection - PV position Z
-        continue;
-      }
-      if (useTimeFrameBorderCut && TESTBIT(statusCollision, EventRejection::TimeFrameBorderCut)) {
-        /// event selection - Time Frame border cut
+      if (statusCollision != 0) {
+        /// at least one event selection not satisfied --> reject the candidate
         continue;
       }
 
