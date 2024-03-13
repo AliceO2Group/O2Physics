@@ -177,7 +177,9 @@ struct CorrelationTask {
     std::vector<AxisSpec> effAxis = {{axisEtaEfficiency, "#eta"},
                                      {axisPtEfficiency, "p_{T} (GeV/c)"},
                                      {axisVertexEfficiency, "z-vtx (cm)"}};
-    std::vector<AxisSpec> userAxis = cfgMassAxis != 0 ? {{axisInvMass, "m (GeV/c^2)"}} : {};
+    std::vector<AxisSpec> userAxis;
+    if (cfgMassAxis != 0)
+      userAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userAxis));
 
@@ -391,8 +393,9 @@ struct CorrelationTask {
             target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track1.invMass(), associatedWeight);
           else
             LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
-        } else
+        } else {
           target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, associatedWeight);
+        }
       }
     }
   }
