@@ -715,12 +715,12 @@ struct derivedlambdakzeroanalysis {
     }
     histos.fill(HIST("hEventSelection"), 2 /* vertex-Z selected */);
 
-    if (rejectITSROFBorder && collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+    if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return;
     }
     histos.fill(HIST("hEventSelection"), 3 /* Not at ITS ROF border */);
 
-    if (rejectTFBorder && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+    if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return;
     }
     histos.fill(HIST("hEventSelection"), 4 /* Not at TF border */);
@@ -767,12 +767,12 @@ struct derivedlambdakzeroanalysis {
     }
     histos.fill(HIST("hEventSelection"), 2 /* vertex-Z selected */);
 
-    if (rejectITSROFBorder && collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+    if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return;
     }
     histos.fill(HIST("hEventSelection"), 3 /* Not at ITS ROF border */);
 
-    if (rejectTFBorder && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+    if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return;
     }
     histos.fill(HIST("hEventSelection"), 4 /* Not at TF border */);
