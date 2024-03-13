@@ -99,6 +99,9 @@ struct HfCandidateCreator3Prong {
   OutputObj<TH1F> hCovSVZZ{TH1F("hCovSVZZ", "3-prong candidates;ZZ element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
   OutputObj<TH2F> hDcaXYProngs{TH2F("hDcaXYProngs", "DCAxy of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
   OutputObj<TH2F> hDcaZProngs{TH2F("hDcaZProngs", "DCAz of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
+  OutputObj<TH1D> hCollisions{TH1D("hCollisions", "HF event counter", 5, -0.5, 4.5)};
+  OutputObj<TH1D> hPosZBeforeEvSel{TH1D("hPosZBeforeEvSel", "PV position Z before ev. selection;posZ (cm);entries", 400, -20, 20)};
+  OutputObj<TH1D> hPosZAfterEvSel{TH1D("hPosZAfterEvSel", "PV position Z after ev. selection;posZ (cm);entries", 400, -20, 20)};
 
   void init(InitContext const&)
   {
@@ -107,6 +110,20 @@ struct HfCandidateCreator3Prong {
                                      doprocessPvRefitCentFT0M, doprocessNoPvRefitCentFT0M};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
+    }
+
+    std::array<bool, 3> processesCollisions = {doprocessCollisions, doprocessCollisionsCentFT0C, doprocessCollisionsCentFT0M};
+    if (std::accumulate(processesCollisions.begin(), processesCollisions.end(), 0) != 1) {
+      LOGP(fatal, "One and only one process function for collision monitoring must be enabled at a time.");
+    }
+    if ((doprocessPvRefit || doprocessNoPvRefit) && !doprocessCollisions) {
+      LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisions\"?");
+    }
+    if ((doprocessPvRefitCentFT0C || doprocessNoPvRefitCentFT0C) && !doprocessCollisionsCentFT0C) {
+      LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsCentFT0C\"?");
+    }
+    if ((doprocessPvRefitCentFT0M || doprocessNoPvRefitCentFT0M) && !doprocessCollisionsCentFT0M) {
+      LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsCentFT0M\"?");
     }
 
     std::array<bool, 4> creationFlags = {createDplus, createDs, createLc, createXic};
@@ -132,6 +149,13 @@ struct HfCandidateCreator3Prong {
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
+
+    /// collision monitoring
+    hCollisions->GetXaxis()->SetBinLabel(1, "All collisions");
+    hCollisions->GetXaxis()->SetBinLabel(2, "Centrality ok");
+    hCollisions->GetXaxis()->SetBinLabel(3, "Centrality + sel8 ok");
+    hCollisions->GetXaxis()->SetBinLabel(4, "Centrality + sel8 + posZ ok");
+    hCollisions->GetXaxis()->SetBinLabel(5, "Centrality + sel8 + posZ + TF border ok");
   }
 
   template <bool doPvRefit = false, int centEstimator = 0, typename Coll, typename Cand>
@@ -143,16 +167,10 @@ struct HfCandidateCreator3Prong {
     // loop over triplets of track indices
     for (const auto& rowTrackIndexProng3 : rowsTrackIndexProng3) {
 
-      /// reject candidates not satisfying the event selections
+      /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexProng3.template collision_as<Coll>();
-      bool useCentrality = true;
-      if constexpr (centEstimator == CentralityEstimator::None) {
-        useCentrality = false;
-      }
-      float centrality = -1.;
-      uint16_t statusCollision = isHfCollisionSelected<centEstimator>(collision, useCentrality, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut, centrality);
-
-      if (useCentrality && TESTBIT(statusCollision, EventRejection::Centrality)) {
+      uint16_t statusCollision = isHfCollisionSelected<centEstimator>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      if (TESTBIT(statusCollision, EventRejection::Centrality)) {
         /// event selection - centrality
         continue;
       }
@@ -292,6 +310,48 @@ struct HfCandidateCreator3Prong {
     }
   }
 
+  template <int centEstimator = 0, typename Coll>
+  void monitorCollisions(Coll const& collisions)
+  {
+
+    /// loop over collisions
+    for (const auto& collision : collisions) {
+
+      hCollisions->Fill(0); // all collisions
+      const float posZ = collision.posZ();
+      hPosZBeforeEvSel->Fill(posZ);
+
+      /// bitmask with event. selection info
+      const uint16_t statusCollision = isHfCollisionSelected<centEstimator>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+
+      /// centrality
+      if (TESTBIT(statusCollision, EventRejection::Centrality)) {
+        continue;
+      }
+      hCollisions->Fill(1); // Centrality ok
+
+      /// sel8()
+      if (useSel8Trigger && TESTBIT(statusCollision, EventRejection::Trigger)) {
+        continue;
+      }
+      hCollisions->Fill(2); // Centrality + sel8 ok
+
+      /// PV position Z
+      if (TESTBIT(statusCollision, EventRejection::PositionZ)) {
+        continue;
+      }
+      hCollisions->Fill(3); // Centrality + sel8 + posZ ok
+
+      /// Time Frame border cut
+      if (useTimeFrameBorderCut && TESTBIT(statusCollision, EventRejection::TimeFrameBorderCut)) {
+        continue;
+      }
+      hCollisions->Fill(4); // Centrality + sel8 + posZ + TF border ok
+      hPosZAfterEvSel->Fill(posZ);
+
+    } /// end loop over collisions
+  }
+
   ///////////////////////////////////
   ///                             ///
   ///   No centrality selection   ///
@@ -369,6 +429,33 @@ struct HfCandidateCreator3Prong {
     runCreator3Prong</*doPvRefit*/ false, CentralityEstimator::FT0M>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefitCentFT0M, "Run candidate creator without PV refit and  w/ centrality selection on FT0M", false);
+
+  ///////////////////////////////////////////////////////////
+  ///                                                     ///
+  ///   Process functions only for collision monitoring   ///
+  ///                                                     ///
+  ///////////////////////////////////////////////////////////
+
+  /// @brief process function to monitor collisions - no centrality
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions)
+  {
+    monitorCollisions<CentralityEstimator::None>(collisions);
+  }
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processCollisions, "Collision monitoring - no centrality", true);
+
+  /// @brief process function to monitor collisions - FT0C centrality
+  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions)
+  {
+    monitorCollisions<CentralityEstimator::FT0C>(collisions);
+  }
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processCollisionsCentFT0C, "Collision monitoring - FT0C centrality", false);
+
+  /// @brief process function to monitor collisions - FT0M centrality
+  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions)
+  {
+    monitorCollisions<CentralityEstimator::FT0M>(collisions);
+  }
+  PROCESS_SWITCH(HfCandidateCreator3Prong, processCollisionsCentFT0M, "Collision monitoring - FT0M centrality", false);
 };
 
 /// Extends the base table with expression columns.

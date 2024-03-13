@@ -38,10 +38,11 @@ enum EventRejection {
 /// \param useTimeFrameBorderCut switch to activate the time frame border cut
 /// \return true if collision satisfies all criteria, false otherwise
 template <int centEstimator = 0, typename Coll>
-bool isHfCollisionSelected(const Coll& collision, bool useCentrality, std::array<float, 2> centralityLimits, bool useSel8Trigger, float maxPvPosZ, bool useTimeFrameBorderCut, float& centrality)
+uint16_t isHfCollisionSelected(const Coll& collision, std::array<float, 2> centralityLimits, bool useSel8Trigger, float maxPvPosZ, bool useTimeFrameBorderCut)
 {
 
   uint16_t statusCollision = 0; // 16 bits, in case new ev. selections will be added
+  float centrality = -1.;
 
   if constexpr (centEstimator != CentralityEstimator::None) {
     if constexpr (centEstimator == CentralityEstimator::FT0C) {

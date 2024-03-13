@@ -157,16 +157,10 @@ struct HfCandidateCreatorDstar {
     // loop over suspected Dstar Candidate
     for (const auto& rowTrackIndexDstar : rowsTrackIndexDstar) {
 
-      /// reject candidates not satisfying the event selections
+      /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexDstar.template collision_as<Coll>();
-      bool useCentrality = true;
-      if constexpr (centEstimator == CentralityEstimator::None) {
-        useCentrality = false;
-      }
-      float centrality = -1.;
-      uint16_t statusCollision = isHfCollisionSelected<centEstimator>(collision, useCentrality, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut, centrality);
-
-      if (useCentrality && TESTBIT(statusCollision, EventRejection::Centrality)) {
+      const uint16_t statusCollision = isHfCollisionSelected<centEstimator>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      if (TESTBIT(statusCollision, EventRejection::Centrality)) {
         /// event selection - centrality
         continue;
       }
