@@ -87,10 +87,12 @@ struct kstarqa {
   Configurable<bool> QAbefore{"QAbefore", false, "QAbefore"};
   Configurable<bool> QAafter{"QAafter", false, "QAafter"};
   Configurable<bool> QAv0{"QAv0", false, "QAv0"};
+  Configurable<bool> onlyTPC{"onlyTPC", false, "only TPC tracks"}
 
   // Configurable for event selection
-  Configurable<float> cutzvertex{"cutzvertex", 10.0f,
-                                 "Accepted z-vertex range (cm)"};
+  Configurable<float>
+    cutzvertex{"cutzvertex", 10.0f,
+               "Accepted z-vertex range (cm)"};
 
   // Configurables for track selections
   Configurable<float> cfgCutPT{"cfgCutPT", 0.2f, "PT cut on daughter track"};
@@ -171,9 +173,9 @@ struct kstarqa {
       return false;
     }
     if (ismanualDCAcut &&
-        !(candidate.isGlobalTrackWoDCA() || candidate.isPVContributor() ||
-          std::abs(candidate.dcaXY()) < cfgCutDCAxy ||
-          std::abs(candidate.dcaZ()) < cfgCutDCAz ||
+        !(candidate.isGlobalTrackWoDCA() && candidate.isPVContributor() &&
+          std::abs(candidate.dcaXY()) < cfgCutDCAxy &&
+          std::abs(candidate.dcaZ()) < cfgCutDCAz &&
           candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
@@ -190,9 +192,11 @@ struct kstarqa {
             (nsigmaCutCombined * nsigmaCutCombined)) {
         return true;
       }
-      if (!candidate.hasTOF() &&
-          std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
-        return true;
+      if (onlyTPC) {
+        if (!candidate.hasTOF() &&
+            std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
+          return true;
+        }
       }
     } else if (PID == 1) {
       if (candidate.hasTOF() &&
@@ -201,9 +205,11 @@ struct kstarqa {
             (nsigmaCutCombined * nsigmaCutCombined)) {
         return true;
       }
-      if (!candidate.hasTOF() &&
-          std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
-        return true;
+      if (onlyTPC) {
+        if (!candidate.hasTOF() &&
+            std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+          return true;
+        }
       }
     }
     return false;
