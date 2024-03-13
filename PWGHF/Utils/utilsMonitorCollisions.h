@@ -55,4 +55,4 @@ void monitorCollision(Coll const& collision, const uint16_t statusCollision, His
   hPosZAfterEvSel->Fill(posZ);
 }
 
-#endif
+#endif // PWGHF_UTILS_UTILSMONITORCOLLISIONS_H_
