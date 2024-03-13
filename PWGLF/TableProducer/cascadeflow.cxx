@@ -30,6 +30,7 @@
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::analysis;
 using namespace o2::framework::expressions;
 using std::array;
 
@@ -75,19 +76,8 @@ namespace cascade_flow_cuts_ml
     10.};
   auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
-  static const std::vector<std::string> onnxBinsPt = {
-    "model_onnx0.6.onnx",
-    "model_onnx1.onnx",
-    "model_onnx2.onnx",
-    "model_onnx3.onnx",
-    "model_onnx4.onnx",
-    "model_onnx5.onnx",
-    "model_onnx6.onnx",
-    "model_onnx8.onnx"};
-
   // default values for the ML model paths, one model per pT bin
-  static const std::vector<std::string> modelPaths = {
-    ""};
+  static const std::vector<std::string> modelPaths = {""};
 
   // default values for the cut directions
   constexpr int cutDir[nCutScores] = {CutGreater, CutNot};
@@ -125,6 +115,8 @@ static constexpr double defaultCutsMl[1][2] = {{0.5, 0.5}};
 struct cascadeFlow {
 
   Configurable<bool> isOmega{"isOmega", 0, "Xi or Omega"};
+  Configurable<float> MinPt{"MinPt", 0.6, "Min pt of cascade"};
+  Configurable<float> MaxPt{"MaxPt", 10, "Max pt of cascade"};
   Configurable<bool> isApplyML{"isApplyML", 1, ""};
   Configurable<double> sideBandStart{"sideBandStart", 5, "Start of the sideband region in number of sigmas"};
   Configurable<double> sideBandEnd{"sideBandEnd", 7, "End of the sideband region in number of sigmas"};
@@ -136,7 +128,7 @@ struct cascadeFlow {
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
-  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{cascade_flow_cuts_ml::onnxBinsPt}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
@@ -281,15 +273,13 @@ struct cascadeFlow {
     if (isApplyML){
       // Configure and initialise the ML class
       mlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
-
       // Bonus: retrieve the model from CCDB (needed for ML application on the GRID)
       if (loadModelsFromCCDB) {
 	ccdbApi.init(ccdbUrl);
-	mlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB.value, timestampCCDB);
+	mlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
       } else {
 	mlResponse.setModelPathsLocal(onnxFileNames);
       }
-
       mlResponse.init();
     }
   }
@@ -373,6 +363,8 @@ struct cascadeFlow {
   void processAnalyseData(CollEventPlane const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
   {
 
+    //std::cout << "onnxFileNames " << onnxFileNames.value[0] << std::endl;
+
     if (!coll.sel8() || std::abs(coll.posZ()) > 10.) {
       return;
     }
@@ -394,8 +386,6 @@ struct cascadeFlow {
     float PsiT0C = TMath::ACos(coll.qvecFT0CRe()) / 2;
     if (coll.qvecFT0AIm() < 0) PsiT0A = -PsiT0A + TMath::Pi()/2; //to get dstribution between 0 and Pi
     if (coll.qvecFT0CIm() < 0) PsiT0C = -PsiT0C + TMath::Pi()/2; //to get dstribution between 0 and Pi
-    std::cout << "PsiT0A : " << PsiT0A << std::endl;
-    std::cout << "PsiT0C : " << PsiT0C << std::endl;
 
     histos.fill(HIST("hFT0ARe"), coll.qvecFT0ARe());
     histos.fill(HIST("hFT0AIm"), coll.qvecFT0AIm());
@@ -433,13 +423,21 @@ struct cascadeFlow {
       float massCasc = casc.mXi();
       if (isOmega) massCasc =   casc.mOmega();
 
+      //inv mass loose cut
+      if (casc.pt() < MinPt) continue;
+      if (casc.pt() > MaxPt) continue;
+      if (isOmega) {
+	if (massCasc < 1.6 || massCasc > 1.73) continue;
+      } else {
+	if (massCasc < 1.28 || massCasc > 1.36) continue;
+      }
+
       histos.fill(HIST("hMassBeforeSel"), massCasc);
       histos.fill(HIST("hMassBeforeSelVsPt"), massCasc, casc.pt());
 
       if (isApplyML){
 	// Retrieve model output and selection outcome
 	isSelectedCasc = mlResponse.isSelectedMl(inputFeaturesCasc, casc.pt(), outputMl);
-
 	// Fill BDT score histograms before selection
 	histos.fill(HIST("hSignalScoreBeforeSel"), outputMl[0]);
 	histos.fill(HIST("hBkgScoreBeforeSel"), outputMl[1]);
@@ -448,8 +446,6 @@ struct cascadeFlow {
 	if (isSelectedCasc) {
 	  histos.fill(HIST("hSignalScoreAfterSel"), outputMl[0]);
 	  histos.fill(HIST("hBkgScoreAfterSel"), outputMl[1]);
-	  histos.fill(HIST("hPromptScoreAfterSelVsPt"), outputMl[0], casc.pt());
-	  histos.fill(HIST("hBkgScoreAfterSelVsPt"), outputMl[1], casc.pt());
 	}
 
 	outputMl.clear(); // not necessary in this case but for good measure
@@ -467,10 +463,10 @@ struct cascadeFlow {
       auto v2C = cascphiVec.Dot(eventplaneVecT0C)/sqrt(eventplaneVecT0C.Dot(eventplaneVecT0C));
       auto cascminuspsiT0A = GetPhiInRange(casc.phi() - PsiT0A);
       auto cascminuspsiT0C = GetPhiInRange(casc.phi() - PsiT0C);
-      float v2A_diff =  TMath::Cos(2.0 * cascminuspsiT0A);
-      float v2C_diff =  TMath::Cos(2.0 * cascminuspsiT0C);
-      std::cout << "v2A: " << v2A << " v2C " << v2C << std::endl;
-      std::cout << "v2A_diff: " << v2A_diff << " v2C_diff " << v2C_diff << std::endl;
+      //float v2A_diff =  TMath::Cos(2.0 * cascminuspsiT0A);
+      //float v2C_diff =  TMath::Cos(2.0 * cascminuspsiT0C);
+      //std::cout << "v2A: " << v2A << " v2C " << v2C << std::endl;
+      //std::cout << "v2A_diff: " << v2A_diff << " v2C_diff " << v2C_diff << std::endl;
       histos.fill(HIST("hCascadePhi"), casc.phi());
       histos.fill(HIST("hcascminuspsiT0A"), cascminuspsiT0A);
       histos.fill(HIST("hcascminuspsiT0C"), cascminuspsiT0C);
