@@ -40,7 +40,6 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
-#include "PWGHF/Utils/utilsMonitorCollisions.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -166,7 +165,7 @@ struct HfCandidateCreator2Prong {
     hCollisions->GetXaxis()->SetBinLabel(5, "Centrality + sel8 + posZ + TF border ok");
   }
 
-  template <bool doPvRefit, int centEstimator, typename Coll, typename CandType, typename TTracks>
+  template <bool doPvRefit, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll, typename CandType, typename TTracks>
   void runCreator2ProngWithDCAFitterN(Coll const& collisions,
                                       CandType const& rowsTrackIndexProng2,
                                       TTracks const& tracks,
@@ -177,8 +176,8 @@ struct HfCandidateCreator2Prong {
 
       /// reject candidates not satisfying the event selections
       auto collision = rowTrackIndexProng2.template collision_as<Coll>();
-      const uint16_t statusCollision = isHfCollisionSelected<centEstimator>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
-      if (statusCollision != 0) {
+      const uint16_t rejectionMask = getHfCollisionRejectionMask<centEstimator>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
       }
@@ -295,7 +294,7 @@ struct HfCandidateCreator2Prong {
     }
   }
 
-  template <bool doPvRefit, int centEstimator, typename Coll, typename CandType, typename TTracks>
+  template <bool doPvRefit, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll, typename CandType, typename TTracks>
   void runCreator2ProngWithKFParticle(Coll const& collisions,
                                       CandType const& rowsTrackIndexProng2,
                                       TTracks const& tracks,
@@ -306,8 +305,8 @@ struct HfCandidateCreator2Prong {
 
       /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexProng2.template collision_as<Coll>();
-      const uint16_t statusCollision = isHfCollisionSelected<centEstimator>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
-      if (statusCollision != 0) {
+      const uint16_t rejectionMask = getHfCollisionRejectionMask<centEstimator>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
       }
@@ -585,10 +584,10 @@ struct HfCandidateCreator2Prong {
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
-      const uint16_t statusCollision = isHfCollisionSelected<CentralityEstimator::None>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      const uint16_t rejectionMask = getHfCollisionRejectionMask<CentralityEstimator::None>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
 
       /// monitor the satisfied event selections
-      monitorCollision(collision, statusCollision, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
+      monitorCollision(collision, rejectionMask, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
 
     } /// end loop over collisions
   }
@@ -601,10 +600,10 @@ struct HfCandidateCreator2Prong {
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
-      const uint16_t statusCollision = isHfCollisionSelected<CentralityEstimator::FT0C>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      const uint16_t rejectionMask = getHfCollisionRejectionMask<CentralityEstimator::FT0C>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
 
       /// monitor the satisfied event selections
-      monitorCollision(collision, statusCollision, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
+      monitorCollision(collision, rejectionMask, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
 
     } /// end loop over collisions
   }
@@ -617,10 +616,10 @@ struct HfCandidateCreator2Prong {
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
-      const uint16_t statusCollision = isHfCollisionSelected<CentralityEstimator::FT0M>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      const uint16_t rejectionMask = getHfCollisionRejectionMask<CentralityEstimator::FT0M>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
 
       /// monitor the satisfied event selections
-      monitorCollision(collision, statusCollision, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
+      monitorCollision(collision, rejectionMask, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
 
     } /// end loop over collisions
   }

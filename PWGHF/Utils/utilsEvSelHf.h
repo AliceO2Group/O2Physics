@@ -16,8 +16,6 @@
 #ifndef PWGHF_UTILS_UTILSEVSELHF_H_
 #define PWGHF_UTILS_UTILSEVSELHF_H_
 
-using namespace o2::aod::hf_collision_centrality;
-
 // event rejection types
 enum EventRejection {
   Trigger = 0,
@@ -36,18 +34,18 @@ enum EventRejection {
 /// \param useSel8Trigger switch to activate the sel8() event selection
 /// \param zPvPosMax maximum primary-vertex z
 /// \param useTimeFrameBorderCut switch to activate the time frame border cut
-/// \return true if collision satisfies all criteria, false otherwise
-template <int centEstimator = 0, typename Coll>
-uint16_t isHfCollisionSelected(const Coll& collision, std::array<float, 2> centralityLimits, bool useSel8Trigger, float maxPvPosZ, bool useTimeFrameBorderCut)
+/// \return a bitmask with the event selections not satisfied by the analysed collision
+template <o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll>
+uint16_t getHfCollisionRejectionMask(const Coll& collision, std::array<float, 2> centralityLimits, bool useSel8Trigger, float maxPvPosZ, bool useTimeFrameBorderCut)
 {
 
   uint16_t statusCollision = 0; // 16 bits, in case new ev. selections will be added
   float centrality = -1.;
 
-  if constexpr (centEstimator != CentralityEstimator::None) {
-    if constexpr (centEstimator == CentralityEstimator::FT0C) {
+  if constexpr (centEstimator != o2::aod::hf_collision_centrality::CentralityEstimator::None) {
+    if constexpr (centEstimator == o2::aod::hf_collision_centrality::CentralityEstimator::FT0C) {
       centrality = collision.centFT0C();
-    } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
+    } else if constexpr (centEstimator == o2::aod::hf_collision_centrality::CentralityEstimator::FT0M) {
       centrality = collision.centFT0M();
     } else {
       LOGP(fatal, "Centrality estimator different from FT0C and FT0M, fix it!");
@@ -76,4 +74,45 @@ uint16_t isHfCollisionSelected(const Coll& collision, std::array<float, 2> centr
 
   return statusCollision;
 }
+
+/// @brief function to monitor the event selection satisfied by collisions used for HF analyses
+/// \param collision is the analysed collision
+/// \param rejectionMask is the bitmask storing the info about which ev. selections are not satisfied by the collision
+/// \param hCollisions is a histogram to keep track of the satisfied event selections
+/// \param hPosZBeforeEvSel is PV position Z for all analysed collisions
+/// \param hPosZAfterEvSel is PV position Z only for collisions satisfying the event selections
+template <typename Coll, typename Hist>
+void monitorCollision(Coll const& collision, const uint16_t rejectionMask, Hist const& hCollisions, Hist const& hPosZBeforeEvSel, Hist const& hPosZAfterEvSel)
+{
+
+  hCollisions->Fill(0); // all collisions
+  const float posZ = collision.posZ();
+  hPosZBeforeEvSel->Fill(posZ);
+
+  /// centrality
+  if (TESTBIT(rejectionMask, EventRejection::Centrality)) {
+    return;
+  }
+  hCollisions->Fill(1); // Centrality ok
+
+  /// sel8()
+  if (TESTBIT(rejectionMask, EventRejection::Trigger)) {
+    return;
+  }
+  hCollisions->Fill(2); // Centrality + sel8 ok
+
+  /// PV position Z
+  if (TESTBIT(rejectionMask, EventRejection::PositionZ)) {
+    return;
+  }
+  hCollisions->Fill(3); // Centrality + sel8 + posZ ok
+
+  /// Time Frame border cut
+  if (TESTBIT(rejectionMask, EventRejection::TimeFrameBorderCut)) {
+    return;
+  }
+  hCollisions->Fill(4); // Centrality + sel8 + posZ + TF border ok
+  hPosZAfterEvSel->Fill(posZ);
+}
+
 #endif // PWGHF_UTILS_UTILSEVSELHF_H_
