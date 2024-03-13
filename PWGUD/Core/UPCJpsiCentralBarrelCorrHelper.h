@@ -13,8 +13,8 @@
 /// \author Sara Haidlova, sara.haidlova@cern.ch
 /// \since March 2024
 
-#ifndef PWGUD_CORE_UPCJPSICENTRALBARRELCORR_H_
-#define PWGUD_CORE_UPCJPSICENTRALBARRELCORR_H_
+#ifndef PWGUD_CORE_UPCJPSICENTRALBARRELCORRHELPER_H_
+#define PWGUD_CORE_UPCJPSICENTRALBARRELCORRHELPER_H_
 
 #include <algorithm>
 
@@ -41,7 +41,7 @@ int testPIDhypo(T trackPID)
   if (trackPID.hasTPC()) {
     return enumChoiceTPC;
   } else {
-      return -1;
+    return -1;
   }
 }
 
@@ -55,7 +55,7 @@ float phi(float px, float py)
   if (px != 0) {
     return std::atan2(py, px);
   } else {
-      return -999;
+    return -999;
   }
 }
 
@@ -65,10 +65,9 @@ float eta(float px, float py, float pz)
   if (mom != 0) {
     return std::atanh(pz / mom);
   } else {
-      return -999;
+    return -999;
   }
 }
-
 
 float* correlation(TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
 {
@@ -213,4 +212,4 @@ double DeltaPhi(TLorentzVector lv1, TLorentzVector lv2)
   return dp;
 }
 
-#endif // PWGUD_CORE_UPCJPSICENTRALBARRELCORR_H_
+#endif // PWGUD_CORE_UPCJPSICENTRALBARRELCORRHELPER_H_
