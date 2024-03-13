@@ -147,7 +147,7 @@ struct perfK0sResolution {
       case 0:
         break;
       case 1:
-        if (!ptrack.itsNClsInnerBarrel() < 1) {
+        if (ptrack.itsNClsInnerBarrel() < 1) {
           return false;
         }
         break;
@@ -164,7 +164,7 @@ struct perfK0sResolution {
       case 0:
         break;
       case 1:
-        if (!ntrack.itsNClsInnerBarrel() < 1) {
+        if (ntrack.itsNClsInnerBarrel() < 1) {
           return false;
         }
         break;
