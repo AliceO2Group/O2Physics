@@ -314,7 +314,7 @@ struct HfDataCreatorDV0Reduced {
           auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
           registry.fill(HIST("hMassLambda"), v0.mLambda());
           if (DecayChannel == DecayChannel::DplusV0) {
-            registry.fill(HIST("hMassXcRes"), sqrt(invMass2DV0));
+            registry.fill(HIST("hMassXcRes"), std::sqrt(invMass2DV0));
           }
         }
         if (TESTBIT(v0type, AntiLambda)) {

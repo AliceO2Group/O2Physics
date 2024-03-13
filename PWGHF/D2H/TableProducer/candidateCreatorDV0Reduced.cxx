@@ -110,7 +110,7 @@ struct HfCandidateCreatorDV0Reduced {
     massDstar = o2::constants::physics::MassDStar;
   }
 
-  template <uint8_t DecayChannel, typename D>
+  template <DecayChannel channel, typename D>
   bool isDSelected(D const& candD)
   {
     float massD{0.};
@@ -149,7 +149,7 @@ struct HfCandidateCreatorDV0Reduced {
     return true;
   }
 
-  template <uint8_t DecayChannel, typename C, typename D, typename V>
+  template <DecayChannel channel, typename C, typename D, typename V>
   void runCandidateCreation(C const& collisions,
                             D const& candsD,
                             V const& candsV0)
@@ -223,7 +223,7 @@ struct HfCandidateCreatorDV0Reduced {
     }
   } // main function
 
-  void processDstar2toDplusK0s(aod::HfRedCollisions::iterator const& collision,
+  void processDstar2ToDplusK0s(aod::HfRedCollisions::iterator const& collision,
                                aod::HfRed3PrNoTrks const& candsD,
                                aod::HfRedVzeros const& candsV0)
   {
