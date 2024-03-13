@@ -29,6 +29,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGHF/Utils/utilsMonitorCollisions.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -310,48 +311,6 @@ struct HfCandidateCreator3Prong {
     }
   }
 
-  template <int centEstimator = 0, typename Coll>
-  void monitorCollisions(Coll const& collisions)
-  {
-
-    /// loop over collisions
-    for (const auto& collision : collisions) {
-
-      hCollisions->Fill(0); // all collisions
-      const float posZ = collision.posZ();
-      hPosZBeforeEvSel->Fill(posZ);
-
-      /// bitmask with event. selection info
-      const uint16_t statusCollision = isHfCollisionSelected<centEstimator>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
-
-      /// centrality
-      if (TESTBIT(statusCollision, EventRejection::Centrality)) {
-        continue;
-      }
-      hCollisions->Fill(1); // Centrality ok
-
-      /// sel8()
-      if (useSel8Trigger && TESTBIT(statusCollision, EventRejection::Trigger)) {
-        continue;
-      }
-      hCollisions->Fill(2); // Centrality + sel8 ok
-
-      /// PV position Z
-      if (TESTBIT(statusCollision, EventRejection::PositionZ)) {
-        continue;
-      }
-      hCollisions->Fill(3); // Centrality + sel8 + posZ ok
-
-      /// Time Frame border cut
-      if (useTimeFrameBorderCut && TESTBIT(statusCollision, EventRejection::TimeFrameBorderCut)) {
-        continue;
-      }
-      hCollisions->Fill(4); // Centrality + sel8 + posZ + TF border ok
-      hPosZAfterEvSel->Fill(posZ);
-
-    } /// end loop over collisions
-  }
-
   ///////////////////////////////////
   ///                             ///
   ///   No centrality selection   ///
@@ -439,21 +398,48 @@ struct HfCandidateCreator3Prong {
   /// @brief process function to monitor collisions - no centrality
   void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions)
   {
-    monitorCollisions<CentralityEstimator::None>(collisions);
+    /// loop over collisions
+    for (const auto& collision : collisions) {
+
+      /// bitmask with event. selection info
+      const uint16_t statusCollision = isHfCollisionSelected<CentralityEstimator::None>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+
+      /// monitor the satisfied event selections
+      monitorCollision(collision, statusCollision, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
+
+    } /// end loop over collisions
   }
   PROCESS_SWITCH(HfCandidateCreator3Prong, processCollisions, "Collision monitoring - no centrality", true);
 
   /// @brief process function to monitor collisions - FT0C centrality
   void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions)
   {
-    monitorCollisions<CentralityEstimator::FT0C>(collisions);
+    /// loop over collisions
+    for (const auto& collision : collisions) {
+
+      /// bitmask with event. selection info
+      const uint16_t statusCollision = isHfCollisionSelected<CentralityEstimator::FT0C>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+
+      /// monitor the satisfied event selections
+      monitorCollision(collision, statusCollision, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
+
+    } /// end loop over collisions
   }
   PROCESS_SWITCH(HfCandidateCreator3Prong, processCollisionsCentFT0C, "Collision monitoring - FT0C centrality", false);
 
   /// @brief process function to monitor collisions - FT0M centrality
   void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions)
   {
-    monitorCollisions<CentralityEstimator::FT0M>(collisions);
+    /// loop over collisions
+    for (const auto& collision : collisions) {
+
+      /// bitmask with event. selection info
+      const uint16_t statusCollision = isHfCollisionSelected<CentralityEstimator::FT0M>(collision, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+
+      /// monitor the satisfied event selections
+      monitorCollision(collision, statusCollision, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
+
+    } /// end loop over collisions
   }
   PROCESS_SWITCH(HfCandidateCreator3Prong, processCollisionsCentFT0M, "Collision monitoring - FT0M centrality", false);
 };
