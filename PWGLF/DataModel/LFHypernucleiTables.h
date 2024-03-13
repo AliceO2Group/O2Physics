@@ -137,6 +137,56 @@ using DataHypCand = DataHypCands::iterator;
 using DataHypCandFlow = DataHypCandsFlow::iterator;
 using MCHypCand = MCHypCands::iterator;
 
+namespace hyperkink
+{
+DECLARE_SOA_COLUMN(PtHyper, ptHyper, float);                              // Pt of the hypertriton
+DECLARE_SOA_COLUMN(PhiHyper, phiHyper, float);                            // Phi of the hypertriton
+DECLARE_SOA_COLUMN(EtaHyper, etaHyper, float);                            // Eta of the hypertriton
+DECLARE_SOA_COLUMN(PtTrit, ptTrit, float);                                // Pt of the triton kink
+DECLARE_SOA_COLUMN(PhiTrit, phiTrit, float);                              // Phi of the triton kink
+DECLARE_SOA_COLUMN(EtaTrit, etaTrit, float);                              // Eta of the triton kink
+DECLARE_SOA_COLUMN(DcaHyperPv, dcaHyperPv, float);                        // DCA of the hypertriton to the primary vertex
+DECLARE_SOA_COLUMN(DcaTritPv, dcaTritPv, float);                          // DCA of the triton kink to the primary vertex
+DECLARE_SOA_COLUMN(DCAKinkTopo, dcaKinkTopo, float);                      // DCA of the kink topology
+DECLARE_SOA_COLUMN(ITSclusterSizesHyper, itsClusterSizesHyper, uint32_t); // ITS cluster size of the hypertriton
+DECLARE_SOA_COLUMN(ITSclusterSizesTrit, itsClusterSizesTrit, uint32_t);   // ITS cluster size of the triton kink
+DECLARE_SOA_COLUMN(PIDinTrackTrit, pidInTrackTrit, uint8_t);              // PID in track for the triton kink
+
+DECLARE_SOA_COLUMN(TPCmomTrit, tpcMomTrit, float);          // TPC momentum of the triton kink
+DECLARE_SOA_COLUMN(TPCsignalTrit, tpcSignalTrit, uint16_t); // TPC signal of the triton kink
+DECLARE_SOA_COLUMN(NSigmaTPCTrit, nSigmaTPCTrit, float);    // Number of tpc sigmas of the triton kink
+DECLARE_SOA_COLUMN(NSigmaTOFTrit, nSigmaTOFTrit, float);    // Number of tof sigmas of the triton kink
+
+// MC additional info
+DECLARE_SOA_COLUMN(GenPtTrit, genPtTrit, float);   // Pt of the triton kink
+DECLARE_SOA_COLUMN(HyperPtITS, hyperPtITS, float); // Pt of the hypertriton from ITS standalone, hypertriton tagged with MC truth
+DECLARE_SOA_COLUMN(MCMask, mcMask, bool);          // bool: true for fake triton
+
+} // namespace hyperkink
+
+DECLARE_SOA_TABLE(DataHypKinkCands, "AOD", "HYPKINKCANDS",
+                  o2::soa::Index<>,
+                  hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
+                  hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
+                  hyperrec::IsMatter, hyperkink::PtHyper, hyperkink::PhiHyper, hyperkink::EtaHyper,
+                  hyperkink::PtTrit, hyperkink::PhiTrit, hyperkink::EtaTrit,
+                  hyperkink::DcaHyperPv, hyperkink::DcaTritPv, hyperkink::DCAKinkTopo,
+                  hyperkink::ITSclusterSizesHyper, hyperkink::ITSclusterSizesTrit, hyperkink::PIDinTrackTrit,
+                  hyperkink::TPCmomTrit, hyperkink::TPCsignalTrit, hyperkink::NSigmaTPCTrit, hyperkink::NSigmaTOFTrit);
+
+DECLARE_SOA_TABLE(MCHypKinkCands, "AOD", "MCHYPKINKCANDS",
+                  o2::soa::Index<>,
+                  hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
+                  hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
+                  hyperrec::IsMatter, hyperkink::PtHyper, hyperkink::PhiHyper, hyperkink::EtaHyper,
+                  hyperkink::PtTrit, hyperkink::PhiTrit, hyperkink::EtaTrit,
+                  hyperkink::DcaHyperPv, hyperkink::DcaTritPv, hyperkink::DCAKinkTopo,
+                  hyperkink::ITSclusterSizesHyper, hyperkink::ITSclusterSizesTrit, hyperkink::PIDinTrackTrit,
+                  hyperkink::TPCmomTrit, hyperkink::TPCsignalTrit, hyperkink::NSigmaTPCTrit, hyperkink::NSigmaTOFTrit,
+                  hyperrec::GenXDecVtx, hyperrec::GenYDecVtx, hyperrec::GenZDecVtx,
+                  hyperrec::GenPt, hyperkink::GenPtTrit,
+                  hyperrec::IsReco, hyperrec::IsSignal, hyperkink::MCMask, hyperkink::HyperPtITS);
+
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFHYPERNUCLEITABLES_H_
