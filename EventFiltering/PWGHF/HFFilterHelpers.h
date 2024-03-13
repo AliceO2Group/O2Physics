@@ -531,10 +531,9 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T& track,
 /// \param activateQA flag to activate the filling of QA histos
 /// \param hProtonTPCPID histo with NsigmaTPC vs. p
 /// \param hProtonTOFPID histo with NsigmaTOF vs. p
-/// \param forceTof flag to force TOF PID
 /// \return true if track passes all cuts
 template <typename T1, typename T2, typename H2>
-inline bool HfFilterHelper::isSelectedProton4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID, bool forceTof)
+inline bool HfFilterHelper::isSelectedProton4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID)
 {
   float pt = trackPar.getPt();
   if (pt < mPtMinProtonForFemto || pt > mPtMaxProtonForFemto) {
@@ -551,9 +550,6 @@ inline bool HfFilterHelper::isSelectedProton4Femto(const T1& track, const T2& tr
 
   float NSigmaTPC = track.tpcNSigmaPr();
   float NSigmaTOF = track.tofNSigmaPr();
-  if (!forceTof && !track.hasTOF()) {
-    NSigmaTOF = 0.; // always accepted
-  }
 
   if (mTpcPidCalibrationOption == 1) {
     NSigmaTPC = getTPCPostCalib(track, kPr);
@@ -579,9 +575,7 @@ inline bool HfFilterHelper::isSelectedProton4Femto(const T1& track, const T2& tr
 
   if (activateQA > 1) {
     hProtonTPCPID->Fill(track.p(), NSigmaTPC);
-    if (forceTof || track.hasTOF()) {
-      hProtonTOFPID->Fill(track.p(), NSigmaTOF);
-    }
+    hProtonTOFPID->Fill(track.p(), NSigmaTOF);
   }
 
   return true;
