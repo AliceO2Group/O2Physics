@@ -122,17 +122,17 @@ struct QCspectraTPC {
     histos.add("nsigmatpcCut/pr/neg", "n_#sigma TPC anti-proton", HistType::kTH2F, {ptAxis, {axisnSigmaTPC}});
     histos.add("delta_p", "delta_p", HistType::kTH2F, {{axisPGlobal}, {axisDeltaP}});
 
-       //**************************************************************************************************
-   // MC hists
-  if(doProcessMC){
-    histos.add("spectraGen/histGenVetxZ", "PosZ generated events", HistType::kTH1F, {{1500, -15.f, 15.f, "Vertex Z (cm)"}});
-    histos.add("spectraGen/proton/pos/histGenPtProton", "generated particles", HistType::kTH1F, {ptAxis});
-    histos.add("spectraGen/proton/pos/histGenPtProtonPrim", "generated particles", HistType::kTH1F, {ptAxis});
-    histos.add("spectraGen/proton/pos/histGenPtProtonSec", "generated particles", HistType::kTH1F, {ptAxis});
-    histos.add("spectraRec/proton/pos/histRecPtProton", "recosntructed particles", HistType::kTH1F, {ptAxis});
-    histos.add("spectraRec/proton/pos/histRecPtProtonPrim", "recosntructed particles", HistType::kTH1F, {ptAxis});
-}
-} // init loop end
+    //**************************************************************************************************
+    // MC hists
+    if (doProcessMC) {
+      histos.add("spectraGen/histGenVetxZ", "PosZ generated events", HistType::kTH1F, {{1500, -15.f, 15.f, "Vertex Z (cm)"}});
+      histos.add("spectraGen/proton/pos/histGenPtProton", "generated particles", HistType::kTH1F, {ptAxis});
+      histos.add("spectraGen/proton/pos/histGenPtProtonPrim", "generated particles", HistType::kTH1F, {ptAxis});
+      histos.add("spectraGen/proton/pos/histGenPtProtonSec", "generated particles", HistType::kTH1F, {ptAxis});
+      histos.add("spectraRec/proton/pos/histRecPtProton", "recosntructed particles", HistType::kTH1F, {ptAxis});
+      histos.add("spectraRec/proton/pos/histRecPtProtonPrim", "recosntructed particles", HistType::kTH1F, {ptAxis});
+    }
+  } // init loop end
 
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr>;
@@ -164,13 +164,13 @@ struct QCspectraTPC {
 
       if (track.itsNCls() != ITSNCls)
         continue;
-       if (track.tpcNClsFound() < 100)
+      if (track.tpcNClsFound() < 100)
         continue;
-       if (track.tpcNClsCrossedRows() < 100)
+      if (track.tpcNClsCrossedRows() < 100)
         continue;
-       if (track.tpcChi2NCl() > 4)
+      if (track.tpcChi2NCl() > 4)
         continue;
-       if (track.itsChi2NCl() > 36)
+      if (track.itsChi2NCl() > 36)
         continue;
       if (abs(track.dcaXY()) > cfgCutDCAXY)
         continue;
@@ -262,57 +262,57 @@ struct QCspectraTPC {
 
   } // collision loop
 
- PROCESS_SWITCH(QCspectraTPC, process, "process data", true);
+  PROCESS_SWITCH(QCspectraTPC, process, "process data", true);
 
-   void processMCGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)
+  void processMCGen(aod::McCollision const& mcCollision, aod::McParticles& mcParticles)
   {
-  if(doProcessMC){
-  histos.fill(HIST("spectraGen/histGenVetxZ"), mcCollision.posZ());}
+    if (doProcessMC) {
+      histos.fill(HIST("spectraGen/histGenVetxZ"), mcCollision.posZ());
+    }
 
     for (auto& mcParticleGen : mcParticles) {
       if (abs(mcParticleGen.y()) > std::abs(cfgCutY)) {
         continue;
       }
       bool isPhysPrim = mcParticleGen.isPhysicalPrimary();
-     if(doProcessMC){
-     if (mcParticleGen.pdgCode() == 2212) {
+      if (doProcessMC) {
+        if (mcParticleGen.pdgCode() == 2212) {
           histos.fill(HIST("spectraGen/proton/pos/histGenPtProton"), mcParticleGen.pt());
-          if (isPhysPrim){
+          if (isPhysPrim) {
             histos.fill(HIST("spectraGen/proton/pos/histGenPtProtonPrim"), mcParticleGen.pt());
-       }  else {
+          } else {
             histos.fill(HIST("spectraGen/proton/pos/histGenPtProtonSec"), mcParticleGen.pt());
+          }
+        }
+      }
+    }
+  } // process_mc loop end
 
-         }
-   }
-   }
-  }
-   } //process_mc loop end
+  PROCESS_SWITCH(QCspectraTPC, processMCGen, "process MC Generated", true);
 
- PROCESS_SWITCH(QCspectraTPC, processMCGen, "process MC Generated", true);
-
- using CollisionCandidateMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>; // RD
-   void processMCRec(soa::Join<aod::Tracks, aod::TracksExtra,
-                           aod::TracksDCA, aod::McTrackLabels,
-                           aod::TrackSelection> const& tracks,
-                 aod::McParticles const& mcParticles,
-                 aod::McCollisions const& mcCollisions,
-                 CollisionCandidateMC const& collisions)
+  using CollisionCandidateMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>; // RD
+  void processMCRec(soa::Join<aod::Tracks, aod::TracksExtra,
+                              aod::TracksDCA, aod::McTrackLabels,
+                              aod::TrackSelection> const& tracks,
+                    aod::McParticles const& mcParticles,
+                    aod::McCollisions const& mcCollisions,
+                    CollisionCandidateMC const& collisions)
   {
 
     for (auto& track : tracks) {
 
-    const auto& mcParticle = track.mcParticle();
-  if (mcParticle.pdgCode() != 2212) {
-      return;
-   }
+      const auto& mcParticle = track.mcParticle();
+      if (mcParticle.pdgCode() != 2212) {
+        return;
+      }
 
-    if (abs(track.eta()) > cfgCutEta) {
+      if (abs(track.eta()) > cfgCutEta) {
         return;
       }
 
       if (std::abs(mcParticle.y()) > cfgCutY) {
-      return;
-    }
+        return;
+      }
 
       uint32_t clsizeflag = track.itsClusterSizes();
 
@@ -328,35 +328,32 @@ struct QCspectraTPC {
       int sumClusterSizes = clSizeLayer1 + clSizeLayer2 + clSizeLayer3 + clSizeLayer4 + clSizeLayer5 + clSizeLayer6 + clSizeLayer0;
       double cos_lambda = std::cos(std::atan(track.tgl()));
       double averageClusterSize = (static_cast<double>(sumClusterSizes) / numLayers) * cos_lambda;
-     if (averageClusterSize < cfgAverageClusterSize)
+      if (averageClusterSize < cfgAverageClusterSize)
         continue;
 
-        if (track.itsNCls() != ITSNCls)
+      if (track.itsNCls() != ITSNCls)
         continue;
       if (track.tpcNClsFound() < 100)
         continue;
-       if (track.tpcNClsCrossedRows() < 100)
+      if (track.tpcNClsCrossedRows() < 100)
         continue;
-       if (track.tpcChi2NCl() > 4)
+      if (track.tpcChi2NCl() > 4)
         continue;
-       if (track.itsChi2NCl() > 36)
+      if (track.itsChi2NCl() > 36)
         continue;
       if (abs(track.dcaXY()) > cfgCutDCAXY)
         continue;
       if (abs(track.dcaZ()) > cfgCutDCAZ)
         continue;
 
-    histos.fill(HIST("spectraRec/proton/pos/histRecPtProton"), track.pt());
-    if (mcParticle.isPhysicalPrimary()) {
-     histos.fill(HIST("spectraRec/proton/pos/histRecPtProtonPrim"), track.pt());
-
+      histos.fill(HIST("spectraRec/proton/pos/histRecPtProton"), track.pt());
+      if (mcParticle.isPhysicalPrimary()) {
+        histos.fill(HIST("spectraRec/proton/pos/histRecPtProtonPrim"), track.pt());
+      }
     }
+  } // process_mc loop end
 
-  }
-   } //process_mc loop end
-
- PROCESS_SWITCH(QCspectraTPC, processMCRec, "process MC Reconstructed", true);
-
+  PROCESS_SWITCH(QCspectraTPC, processMCRec, "process MC Reconstructed", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
