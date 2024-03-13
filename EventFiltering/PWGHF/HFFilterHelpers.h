@@ -327,7 +327,7 @@ class HfFilterHelper
   template <typename T, typename T1, typename T2>
   int8_t isSelectedTrackForSoftPionOrBeauty(const T& track, const T1& trackPar, const T2& dca, const int& whichTrigger);
   template <typename T1, typename T2, typename H2>
-  bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID);
+  bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID, bool forceTof);
   template <typename T>
   int8_t isDzeroPreselected(const T& trackPos, const T& trackNeg);
   template <typename T>
