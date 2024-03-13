@@ -1193,8 +1193,7 @@ struct JetFragmentation {
       registry.fill(HIST("matching/jets/V0/partJetPtK0STrackProjDetJetPtK0STrackProjCosPA"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, v0.v0cosPA(), weight);
       registry.fill(HIST("matching/jets/V0/partJetPtK0STrackProjDetJetPtK0STrackProjDCAposneg"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, v0.dcapostopv(), v0.dcanegtopv(), weight);
       registry.fill(HIST("matching/jets/V0/partJetPtK0STrackProjDetJetPtK0STrackProjDCAd"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, v0.dcaV0daughters(), weight);
-    }                                      // K0S
-    else if (particle.pdgCode() == 3122) { // Lambda
+    } else if (particle.pdgCode() == 3122) { // Lambda
       registry.fill(HIST("matching/jets/V0/matchDetJetPtLambda0TrackProjPartJetPtLambda0TrackProj"), detJet.pt(), detTrackProj, partJet.pt(), partTrackProj, weight);
       registry.fill(HIST("matching/jets/V0/partJetPtLambda0PtDetJetPtLambda0Pt"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), weight);
 
@@ -1219,8 +1218,7 @@ struct JetFragmentation {
       registry.fill(HIST("matching/jets/V0/partJetPtLambda0TrackProjDetJetPtLambda0TrackProjCosPA"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, v0.v0cosPA(), weight);
       registry.fill(HIST("matching/jets/V0/partJetPtLambda0TrackProjDetJetPtLambda0TrackProjDCAposneg"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, v0.dcapostopv(), v0.dcanegtopv(), weight);
       registry.fill(HIST("matching/jets/V0/partJetPtLambda0TrackProjDetJetPtLambda0TrackProjDCAd"), partJet.pt(), partTrackProj, detJet.pt(), detTrackProj, v0.dcaV0daughters(), weight);
-    }                                       // Lambda0
-    else if (particle.pdgCode() == -3122) { // AntiLambda
+    } else if (particle.pdgCode() == -3122) { // AntiLambda
       registry.fill(HIST("matching/jets/V0/matchDetJetPtAntiLambda0TrackProjPartJetPtAntiLambda0TrackProj"), detJet.pt(), detTrackProj, partJet.pt(), partTrackProj, weight);
       registry.fill(HIST("matching/jets/V0/partJetPtAntiLambda0PtDetJetPtAntiLambda0Pt"), partJet.pt(), particle.pt(), detJet.pt(), v0.pt(), weight);
 
