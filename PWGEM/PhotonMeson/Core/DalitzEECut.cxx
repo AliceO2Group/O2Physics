@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 //
-// Class for track selection
+// Class for dilepton Cut
 //
 
 #include "Framework/Logger.h"
@@ -18,7 +18,7 @@
 
 ClassImp(DalitzEECut);
 
-const char* DalitzEECut::mCutNames[static_cast<int>(DalitzEECut::DalitzEECuts::kNCuts)] = {"Mee", "PairPtRange", "PairEtaRange", "PhivPair", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaMu", "TPCNsigmaPi", "TPCNsigmaKa", "TPCNsigmaPr", "TOFNsigmaEl", "TOFNsigmaMu", "TOFNsigmaPi", "TOFNsigmaKa", "TOFNsigmaPr", "DCA3Dsigma", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF"};
+const char* DalitzEECut::mCutNames[static_cast<int>(DalitzEECut::DalitzEECuts::kNCuts)] = {"Mee", "PairPtRange", "PairEtaRange", "PairDCARange", "PhivPair", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaMu", "TPCNsigmaPi", "TPCNsigmaKa", "TPCNsigmaPr", "TOFNsigmaEl", "TOFNsigmaMu", "TOFNsigmaPi", "TOFNsigmaKa", "TOFNsigmaPr", "DCA3Dsigma", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF"};
 
 void DalitzEECut::SetPairPtRange(float minPt, float maxPt)
 {
@@ -32,11 +32,17 @@ void DalitzEECut::SetPairEtaRange(float minEta, float maxEta)
   mMaxPairEta = maxEta;
   LOG(info) << "DalitzEE Cut, set pair eta range: " << mMinPairEta << " - " << mMaxPairEta;
 }
+void DalitzEECut::SetPairDCARange(float min, float max)
+{
+  mMinPairDCA3D = min;
+  mMaxPairDCA3D = max;
+  LOG(info) << "DalitzEE Cut, set pair 3d dca range: " << mMinPairDCA3D << " - " << mMaxPairDCA3D;
+}
 void DalitzEECut::SetMeeRange(float min, float max)
 {
   mMinMee = min;
   mMaxMee = max;
-  LOG(info) << "DalitzEE selection, set mee range: " << mMinMee << " - " << mMaxMee;
+  LOG(info) << "DalitzEE Cut, set mee range: " << mMinMee << " - " << mMaxMee;
 }
 void DalitzEECut::SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut)
 {
@@ -116,6 +122,11 @@ void DalitzEECut::SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
   mMaxDcaXYPtDep = ptDepCut;
   LOG(info) << "DalitzEE Cut, set max DCA xy pt dep: " << mMaxDcaXYPtDep(1.0);
 }
+void DalitzEECut::ApplyPhiV(bool flag)
+{
+  mApplyPhiV = flag;
+  LOG(info) << "DalitzEE Cut, apply phiv cut: " << mApplyPhiV;
+}
 void DalitzEECut::ApplyPrefilter(bool flag)
 {
   mApplyPF = flag;
@@ -144,69 +155,69 @@ void DalitzEECut::SetTOFbetaRange(bool flag, float min, float max)
   mApplyTOFbeta = flag;
   mMinTOFbeta = min;
   mMaxTOFbeta = max;
-  LOG(info) << "DalitzEE selection, set TOF beta rejection range: " << mMinTOFbeta << " - " << mMaxTOFbeta;
+  LOG(info) << "DalitzEE Cut, set TOF beta rejection range: " << mMinTOFbeta << " - " << mMaxTOFbeta;
 }
 
 void DalitzEECut::SetTPCNsigmaElRange(float min, float max)
 {
   mMinTPCNsigmaEl = min;
   mMaxTPCNsigmaEl = max;
-  LOG(info) << "DalitzEE selection, set TPC n sigma El range: " << mMinTPCNsigmaEl << " - " << mMaxTPCNsigmaEl;
+  LOG(info) << "DalitzEE Cut, set TPC n sigma El range: " << mMinTPCNsigmaEl << " - " << mMaxTPCNsigmaEl;
 }
 void DalitzEECut::SetTPCNsigmaMuRange(float min, float max)
 {
   mMinTPCNsigmaMu = min;
   mMaxTPCNsigmaMu = max;
-  LOG(info) << "DalitzEE selection, set TPC n sigma Mu range: " << mMinTPCNsigmaMu << " - " << mMaxTPCNsigmaMu;
+  LOG(info) << "DalitzEE Cut, set TPC n sigma Mu range: " << mMinTPCNsigmaMu << " - " << mMaxTPCNsigmaMu;
 }
 void DalitzEECut::SetTPCNsigmaPiRange(float min, float max)
 {
   mMinTPCNsigmaPi = min;
   mMaxTPCNsigmaPi = max;
-  LOG(info) << "DalitzEE selection, set TPC n sigma Pi range: " << mMinTPCNsigmaPi << " - " << mMaxTPCNsigmaPi;
+  LOG(info) << "DalitzEE Cut, set TPC n sigma Pi range: " << mMinTPCNsigmaPi << " - " << mMaxTPCNsigmaPi;
 }
 void DalitzEECut::SetTPCNsigmaKaRange(float min, float max)
 {
   mMinTPCNsigmaKa = min;
   mMaxTPCNsigmaKa = max;
-  LOG(info) << "DalitzEE selection, set TPC n sigma Ka range: " << mMinTPCNsigmaKa << " - " << mMaxTPCNsigmaKa;
+  LOG(info) << "DalitzEE Cut, set TPC n sigma Ka range: " << mMinTPCNsigmaKa << " - " << mMaxTPCNsigmaKa;
 }
 void DalitzEECut::SetTPCNsigmaPrRange(float min, float max)
 {
   mMinTPCNsigmaPr = min;
   mMaxTPCNsigmaPr = max;
-  LOG(info) << "DalitzEE selection, set TPC n sigma Pr range: " << mMinTPCNsigmaPr << " - " << mMaxTPCNsigmaPr;
+  LOG(info) << "DalitzEE Cut, set TPC n sigma Pr range: " << mMinTPCNsigmaPr << " - " << mMaxTPCNsigmaPr;
 }
 
 void DalitzEECut::SetTOFNsigmaElRange(float min, float max)
 {
   mMinTOFNsigmaEl = min;
   mMaxTOFNsigmaEl = max;
-  LOG(info) << "DalitzEE selection, set TOF n sigma El range: " << mMinTOFNsigmaEl << " - " << mMaxTOFNsigmaEl;
+  LOG(info) << "DalitzEE Cut, set TOF n sigma El range: " << mMinTOFNsigmaEl << " - " << mMaxTOFNsigmaEl;
 }
 void DalitzEECut::SetTOFNsigmaMuRange(float min, float max)
 {
   mMinTOFNsigmaMu = min;
   mMaxTOFNsigmaMu = max;
-  LOG(info) << "DalitzEE selection, set TOF n sigma Mu range: " << mMinTOFNsigmaMu << " - " << mMaxTOFNsigmaMu;
+  LOG(info) << "DalitzEE Cut, set TOF n sigma Mu range: " << mMinTOFNsigmaMu << " - " << mMaxTOFNsigmaMu;
 }
 void DalitzEECut::SetTOFNsigmaPiRange(float min, float max)
 {
   mMinTOFNsigmaPi = min;
   mMaxTOFNsigmaPi = max;
-  LOG(info) << "DalitzEE selection, set TOF n sigma Pi range: " << mMinTOFNsigmaPi << " - " << mMaxTOFNsigmaPi;
+  LOG(info) << "DalitzEE Cut, set TOF n sigma Pi range: " << mMinTOFNsigmaPi << " - " << mMaxTOFNsigmaPi;
 }
 void DalitzEECut::SetTOFNsigmaKaRange(float min, float max)
 {
   mMinTOFNsigmaKa = min;
   mMaxTOFNsigmaKa = max;
-  LOG(info) << "DalitzEE selection, set TOF n sigma Ka range: " << mMinTOFNsigmaKa << " - " << mMaxTOFNsigmaKa;
+  LOG(info) << "DalitzEE Cut, set TOF n sigma Ka range: " << mMinTOFNsigmaKa << " - " << mMaxTOFNsigmaKa;
 }
 void DalitzEECut::SetTOFNsigmaPrRange(float min, float max)
 {
   mMinTOFNsigmaPr = min;
   mMaxTOFNsigmaPr = max;
-  LOG(info) << "DalitzEE selection, set TOF n sigma Pr range: " << mMinTOFNsigmaPr << " - " << mMaxTOFNsigmaPr;
+  LOG(info) << "DalitzEE Cut, set TOF n sigma Pr range: " << mMinTOFNsigmaPr << " - " << mMaxTOFNsigmaPr;
 }
 void DalitzEECut::SetMaxPinMuonTPConly(float max)
 {

@@ -109,6 +109,7 @@ struct perfK0sResolution {
   Configurable<int> trdSelectionNeg{"trdSelectionNeg", 0, "Flag for the TRD selection on negative daughters: -1 no TRD, 0 no selection, 1 TRD"};
   Configurable<int> tofSelectionPos{"tofSelectionPos", 0, "Flag for the TOF selection on positive daughters: -1 no TOF, 0 no selection, 1 TOF"};
   Configurable<int> tofSelectionNeg{"tofSelectionNeg", 0, "Flag for the TOF selection on negative daughters: -1 no TOF, 0 no selection, 1 TOF"};
+  Configurable<float> extraCutTPCClusters{"extraCutTPCClusters", -1.0f, "Extra cut on daugthers for TPC clusters"};
   Configurable<bool> useMultidimHisto{"useMultidimHisto", false, "use multidimentional histograms"};
   Configurable<bool> computeInvMassFromDaughters{"computeInvMassFromDaughters", false, "Compute the invariant mass from the daughters"};
 
@@ -141,7 +142,7 @@ struct perfK0sResolution {
       case 0:
         break;
       case 1:
-        if (!ptrack.itsNClsInnerBarrel() < 1) {
+        if (ptrack.itsNClsInnerBarrel() < 1) {
           return false;
         }
         break;
@@ -158,7 +159,7 @@ struct perfK0sResolution {
       case 0:
         break;
       case 1:
-        if (!ntrack.itsNClsInnerBarrel() < 1) {
+        if (ntrack.itsNClsInnerBarrel() < 1) {
           return false;
         }
         break;
@@ -171,6 +172,9 @@ struct perfK0sResolution {
       return false;
     }
     if (ntrack.tpcNSigmaPi() > nSigTPC || ptrack.tpcNSigmaPi() > nSigTPC) {
+      return false;
+    }
+    if (ntrack.tpcNClsCrossedRows() < extraCutTPCClusters || ptrack.tpcNClsCrossedRows() < extraCutTPCClusters) {
       return false;
     }
     // TOF selection

@@ -28,6 +28,7 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -42,6 +43,10 @@ struct HfCandidateCreatorCascade {
   // centrality
   Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
+  // event selection
+  Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "apply the sel8 event selection"};
+  Configurable<float> maxPvPosZ{"maxPvPosZ", 10.f, "max. PV posZ (cm)"};
+  Configurable<bool> useTimeFrameBorderCut{"useTimeFrameBorderCut", true, "apply TF border cut"};
   // vertexing
   // Configurable<double> bz{"bz", 5., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
@@ -60,6 +65,7 @@ struct HfCandidateCreatorCascade {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
@@ -87,6 +93,16 @@ struct HfCandidateCreatorCascade {
     massK0s = MassK0Short;
     massPi = MassPiPlus;
     massLc = MassLambdaCPlus;
+
+    // df.setBz(bz);
+    df.setPropagateToPCA(propagateToPCA);
+    df.setMaxR(maxR);
+    df.setMaxDZIni(maxDZIni);
+    df.setMinParamChange(minParamChange);
+    df.setMinRelChi2Change(minRelChi2Change);
+    df.setUseAbsDCA(useAbsDCA);
+    df.setWeightedFinalPCA(useWeightedFinalPCA);
+
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -103,18 +119,6 @@ struct HfCandidateCreatorCascade {
                          aod::TracksWCov const&,
                          aod::BCsWithTimestamps const&)
   {
-
-    // 2-prong vertex fitter
-    o2::vertexing::DCAFitterN<2> df;
-    // df.setBz(bz);
-    df.setPropagateToPCA(propagateToPCA);
-    df.setMaxR(maxR);
-    df.setMaxDZIni(maxDZIni);
-    df.setMinParamChange(minParamChange);
-    df.setMinRelChi2Change(minRelChi2Change);
-    df.setUseAbsDCA(useAbsDCA);
-    df.setWeightedFinalPCA(useWeightedFinalPCA);
-
     // loop over pairs of track indices
     for (const auto& casc : rowsTrackIndexCasc) {
 
@@ -132,6 +136,11 @@ struct HfCandidateCreatorCascade {
         if (centrality < centralityMin || centrality > centralityMax) {
           continue;
         }
+      }
+
+      /// event selection: sel8, PV posZ, TF border cut
+      if (!isHfCollisionSelected(collision, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut)) {
+        continue;
       }
 
       const auto& bach = casc.prong0_as<aod::TracksWCov>();
@@ -298,7 +307,7 @@ struct HfCandidateCreatorCascade {
   }
 
   /// @brief process function w/o centrality selections
-  void processNoCent(aod::Collisions const& collisions,
+  void processNoCent(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                      aod::HfCascades const& rowsTrackIndexCasc,
                      aod::V0sLinked const& v0sLinked,
                      aod::V0Datas const& v0Data,
@@ -311,7 +320,7 @@ struct HfCandidateCreatorCascade {
   PROCESS_SWITCH(HfCandidateCreatorCascade, processNoCent, " Run candidate creator w/o centrality selections", true);
 
   /// @brief process function w/ centrality selection on FT0C
-  void processCentFT0C(soa::Join<aod::Collisions, aod::CentFT0Cs> const& collisions,
+  void processCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                        aod::HfCascades const& rowsTrackIndexCasc,
                        aod::V0sLinked const& v0sLinked,
                        aod::V0Datas const& v0Data,
@@ -324,7 +333,7 @@ struct HfCandidateCreatorCascade {
   PROCESS_SWITCH(HfCandidateCreatorCascade, processCentFT0C, " Run candidate creator w/ centrality selection on FT0C", false);
 
   /// @brief process function w/ centrality selection on FT0M
-  void processCentFT0M(soa::Join<aod::Collisions, aod::CentFT0Ms> const& collisions,
+  void processCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                        aod::HfCascades const& rowsTrackIndexCasc,
                        aod::V0sLinked const& v0sLinked,
                        aod::V0Datas const& v0Data,

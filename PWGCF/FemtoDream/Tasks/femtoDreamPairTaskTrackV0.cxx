@@ -52,6 +52,7 @@ struct femtoDreamPairTaskTrackV0 {
   Configurable<bool> ConfOptCPRPlotPerRadii{"ConfOptCPRPlotPerRadii", false, "Plot CPR per radii"};
   Configurable<float> ConfOptCPRdeltaPhiMax{"ConfOptCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
   Configurable<float> ConfOptCPRdeltaEtaMax{"ConfOptCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
+  Configurable<bool> ConfOptsmearingByOrigin{"ConfOptsmearingByOrigin", false, "Obtain the smearing matrix differential in the MC origin of particle 1 and particle 2. High memory consumption. Use with care!"};
   ConfigurableAxis ConfOptDummy{"ConfOptDummy", {1, 0, 1}, "Dummy axis"};
 
   /// Event selection
@@ -196,14 +197,16 @@ struct femtoDreamPairTaskTrackV0 {
                        ConfBinkstar, ConfBinpT, ConfBinkT, ConfBinmT, ConfMixingBinMult, ConfMixingBinMultPercentile,
                        ConfBin4Dkstar, ConfBin4DmT, ConfBin4DMult, ConfBin4DmultPercentile,
                        ConfOptIsMC, ConfOptUse4D, ConfOptExtendedPlots,
-                       ConfOptHighkstarCut);
+                       ConfOptHighkstarCut,
+                       ConfOptsmearingByOrigin);
 
     sameEventCont.setPDGCodes(ConfTrk1_PDGCode, ConfV02_PDGCode);
     mixedEventCont.init(&resultRegistry,
                         ConfBinkstar, ConfBinpT, ConfBinkT, ConfBinmT, ConfMixingBinMult, ConfMixingBinMultPercentile,
                         ConfBin4Dkstar, ConfBin4DmT, ConfBin4DMult, ConfBin4DmultPercentile,
                         ConfOptIsMC, ConfOptUse4D, ConfOptExtendedPlots,
-                        ConfOptHighkstarCut);
+                        ConfOptHighkstarCut,
+                        ConfOptsmearingByOrigin);
 
     mixedEventCont.setPDGCodes(ConfTrk1_PDGCode, ConfV02_PDGCode);
     pairCleaner.init(&qaRegistry);
@@ -248,20 +251,14 @@ struct femtoDreamPairTaskTrackV0 {
         }
       }
     }
-    if ((doprocessSameEvent && doprocessSameEventMasked) ||
-        (doprocessMixedEvent && doprocessMixedEventMasked) ||
-        (doprocessSameEventMC && doprocessSameEventMCMasked) ||
-        (doprocessMixedEventMC && doprocessMixedEventMCMasked)) {
-      LOG(fatal) << "Normal and masked processing cannot be activated simultaneously!";
-    }
   }
 
   /// This function processes the same event and takes care of all the histogramming
   template <bool isMC, typename PartitionType, typename TableTracks, typename Collision>
-  void doSameEvent(PartitionType& SliceTrk1, PartitionType& SliceV02, TableTracks& parts, Collision col)
+  void doSameEvent(PartitionType& SliceTrk1, PartitionType& SliceV02, TableTracks const& parts, Collision const& col)
   {
     /// Histogramming same event
-    for (auto& part : SliceTrk1) {
+    for (auto const& part : SliceTrk1) {
       trackHistoPartOne.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
     }
     for (auto& v0 : SliceV02) {
@@ -284,7 +281,7 @@ struct femtoDreamPairTaskTrackV0 {
       }
     }
     /// Now build particle combinations
-    for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceV02))) {
+    for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceV02))) {
       const auto& posChild = parts.iteratorAt(p2.index() - 2);
       const auto& negChild = parts.iteratorAt(p2.index() - 1);
       // cuts on V0 children still need to be applied
@@ -300,22 +297,10 @@ struct femtoDreamPairTaskTrackV0 {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), ConfOptUse4D, ConfOptExtendedPlots);
+        sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), ConfOptUse4D, ConfOptExtendedPlots, ConfOptsmearingByOrigin);
       }
     }
   }
-
-  void processSameEvent(FilteredCollision const& col, FilteredFDParticles const& parts)
-  {
-    eventHisto.fillQA(col);
-    auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    auto SliceV02 = PartitionV02->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    if (SliceTrk1.size() == 0 && SliceV02.size() == 0) {
-      return;
-    }
-    doSameEvent<false>(SliceTrk1, SliceV02, parts, col);
-  }
-  PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEvent, "Enable processing same event", true);
 
   void processSameEventMasked(FilteredMaskedCollision const& col, FilteredFDParticles const& parts)
   {
@@ -327,21 +312,9 @@ struct femtoDreamPairTaskTrackV0 {
     auto SliceV02 = PartitionV02->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent<false>(SliceTrk1, SliceV02, parts, col);
   }
-  PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEventMasked, "Enable processing same event with masks", false);
+  PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEventMasked, "Enable processing same event with masks", true);
 
-  void processSameEventMC(FilteredCollision& col, FilteredFDMCParts& parts, o2::aod::FDMCParticles&)
-  {
-    eventHisto.fillQA(col);
-    auto SliceMCTrk1 = PartitionMCTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    auto SliceMCV02 = PartitionMCV02->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    if (SliceMCTrk1.size() == 0 && SliceMCV02.size() == 0) {
-      return;
-    }
-    doSameEvent<true>(SliceMCTrk1, SliceMCV02, parts, col);
-  }
-  PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEventMC, "Enable processing same event MC", false);
-
-  void processSameEventMCMasked(FilteredMaskedCollision& col, FilteredFDMCParts& parts, o2::aod::FDMCParticles&)
+  void processSameEventMCMasked(FilteredMaskedCollision const& col, FilteredFDMCParts const& parts, o2::aod::FDMCParticles const&)
   {
     if ((col.bitmaskTrackOne() & BitMask) != BitMask && (col.bitmaskTrackTwo() & BitMask) != BitMask) {
       return;
@@ -354,39 +327,7 @@ struct femtoDreamPairTaskTrackV0 {
   PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processSameEventMCMasked, "Enable processing same event MC with masks", false);
 
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
-  void doMixedEvent_NotMasked(CollisionType& cols, PartType& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
-  {
-    for (auto const& [collision1, collision2] : soa::selfCombinations(policy, ConfMixingDepth.value, -1, cols, cols)) {
-      auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
-      auto SliceV02 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
-      if (SliceTrk1.size() == 0 || SliceV02.size() == 0) {
-        continue;
-      }
-      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceV02))) {
-        const auto& posChild = parts.iteratorAt(p2.index() - 2);
-        const auto& negChild = parts.iteratorAt(p2.index() - 1);
-        // check cuts on V0 children
-        if (((posChild.cut() & ConfV02_ChildPos_CutBit) == ConfV02_ChildPos_CutBit) &&
-            ((posChild.pidcut() & ConfV02_ChildPos_TPCBit) == ConfV02_ChildPos_TPCBit) &&
-            ((negChild.cut() & ConfV02_ChildNeg_CutBit) == ConfV02_ChildNeg_CutBit) &&
-            ((negChild.pidcut() & ConfV02_ChildNeg_TPCBit) == ConfV02_ChildNeg_TPCBit)) {
-          continue;
-        }
-        if (ConfOptUseCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, collision1.magField())) {
-            continue;
-          }
-        }
-        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-          continue;
-        }
-        mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), ConfOptUse4D, ConfOptExtendedPlots);
-      }
-    }
-  }
-
-  template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
-  void doMixedEvent_Masked(CollisionType& cols, PartType& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
+  void doMixedEvent_Masked(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
   {
     Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
     Partition<CollisionType> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
@@ -413,30 +354,12 @@ struct femtoDreamPairTaskTrackV0 {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), ConfOptUse4D, ConfOptExtendedPlots);
+        mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), ConfOptUse4D, ConfOptExtendedPlots, ConfOptsmearingByOrigin);
       }
     }
   }
 
-  void processMixedEvent(FilteredCollisions& cols, FilteredFDParticles& parts)
-  {
-    switch (ConfMixingPolicy.value) {
-      case femtodreamcollision::kMult:
-        doMixedEvent_NotMasked<false>(cols, parts, PartitionTrk1, PartitionV02, colBinningMult);
-        break;
-      case femtodreamcollision::kMultPercentile:
-        doMixedEvent_NotMasked<false>(cols, parts, PartitionTrk1, PartitionV02, colBinningMultPercentile);
-        break;
-      case femtodreamcollision::kMultMultPercentile:
-        doMixedEvent_NotMasked<false>(cols, parts, PartitionTrk1, PartitionV02, colBinningMultMultPercentile);
-        break;
-      default:
-        LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
-    }
-  }
-  PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processMixedEvent, "Enable processing mixed events", true);
-
-  void processMixedEventMasked(FilteredMaskedCollisions& cols, FilteredFDParticles& parts)
+  void processMixedEventMasked(FilteredMaskedCollisions const& cols, FilteredFDParticles const& parts)
   {
     switch (ConfMixingPolicy.value) {
       case femtodreamcollision::kMult:
@@ -452,27 +375,9 @@ struct femtoDreamPairTaskTrackV0 {
         LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
     }
   }
-  PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processMixedEventMasked, "Enable processing mixed events with masks", false);
+  PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processMixedEventMasked, "Enable processing mixed events with masks", true);
 
-  void processMixedEventMC(FilteredCollisions& cols, FilteredFDMCParts& parts, o2::aod::FDMCParticles&)
-  {
-    switch (ConfMixingPolicy.value) {
-      case femtodreamcollision::kMult:
-        doMixedEvent_NotMasked<true>(cols, parts, PartitionMCTrk1, PartitionMCV02, colBinningMult);
-        break;
-      case femtodreamcollision::kMultPercentile:
-        doMixedEvent_NotMasked<true>(cols, parts, PartitionMCTrk1, PartitionMCV02, colBinningMultPercentile);
-        break;
-      case femtodreamcollision::kMultMultPercentile:
-        doMixedEvent_NotMasked<true>(cols, parts, PartitionMCTrk1, PartitionMCV02, colBinningMultMultPercentile);
-        break;
-      default:
-        LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
-    }
-  }
-  PROCESS_SWITCH(femtoDreamPairTaskTrackV0, processMixedEventMC, "Enable processing mixed events MC", false);
-
-  void processMixedEventMCMasked(FilteredMaskedCollisions& cols, FilteredFDMCParts& parts, o2::aod::FDMCParticles&)
+  void processMixedEventMCMasked(FilteredMaskedCollisions const& cols, FilteredFDMCParts const& parts, o2::aod::FDMCParticles const&)
   {
     switch (ConfMixingPolicy.value) {
       case femtodreamcollision::kMult:

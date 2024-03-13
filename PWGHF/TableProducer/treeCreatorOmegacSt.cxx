@@ -36,6 +36,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGHF/Core/SelectorCuts.h"
 
@@ -45,6 +46,9 @@ using namespace o2::framework::expressions;
 
 namespace o2::aod
 {
+// CharmedBaryon -> Casc + Pion
+//                   -> Lambda + BachPi/BachKa
+//                        -> Pr + Pi
 namespace st_omegac
 {
 DECLARE_SOA_COLUMN(MassOmega, massOmega, float);
@@ -69,24 +73,30 @@ DECLARE_SOA_COLUMN(PyPion, pyPion, float);
 DECLARE_SOA_COLUMN(PzPion, pzPion, float);
 DECLARE_SOA_COLUMN(IsPositivePion, isPositivePion, bool);
 DECLARE_SOA_COLUMN(ITSClusterMapPion, itsClusterMapPion, uint8_t);
-DECLARE_SOA_COLUMN(CpaOmegac, cpaOmegac, float);
-DECLARE_SOA_COLUMN(CpaOmega, cpaOmega, float);
-DECLARE_SOA_COLUMN(DcaXYOmega, dcaXYOmega, float);
-DECLARE_SOA_COLUMN(DcaZOmega, dcaZOmega, float);
+DECLARE_SOA_COLUMN(CpaCharmedBaryon, cpaCharmedBaryon, float);
+DECLARE_SOA_COLUMN(CpaXYCharmedBaryon, cpaXYCharmedBaryon, float);
+DECLARE_SOA_COLUMN(CpaCasc, cpaCasc, float);
+DECLARE_SOA_COLUMN(CpaXYCasc, cpaXYCasc, float);
+DECLARE_SOA_COLUMN(DcaXYCasc, dcaXYCasc, float);
+DECLARE_SOA_COLUMN(DcaXYUncCasc, dcaXYUncCasc, float);
+DECLARE_SOA_COLUMN(DcaZCasc, dcaZCasc, float);
+DECLARE_SOA_COLUMN(DcaZUncCasc, dcaZUncCasc, float);
 DECLARE_SOA_COLUMN(DcaXYPion, dcaXYPion, float);
+DECLARE_SOA_COLUMN(DcaXYUncPion, dcaXYUncPion, float);
 DECLARE_SOA_COLUMN(DcaZPion, dcaZPion, float);
+DECLARE_SOA_COLUMN(DcaZUncPion, dcaZUncPion, float);
 DECLARE_SOA_COLUMN(DcaXYPr, dcaXYPr, float);
 DECLARE_SOA_COLUMN(DcaZPr, dcaZPr, float);
 DECLARE_SOA_COLUMN(DcaXYKa, dcaXYKa, float);
 DECLARE_SOA_COLUMN(DcaZKa, dcaZKa, float);
 DECLARE_SOA_COLUMN(DcaXYPi, dcaXYPi, float);
 DECLARE_SOA_COLUMN(DcaZPi, dcaZPi, float);
-DECLARE_SOA_COLUMN(Chi2TopologicalOmegac, chi2TopologicalOmegac, float);
-DECLARE_SOA_COLUMN(Chi2TopologicalOmega, chi2TopologicalOmega, float);
-DECLARE_SOA_COLUMN(DecayLengthOmegac, decayLengthOmegac, float);
-DECLARE_SOA_COLUMN(DecayLengthXYOmegac, decayLengthXYOmegac, float);
-DECLARE_SOA_COLUMN(DecayLengthOmega, decayLengthOmega, float);
-DECLARE_SOA_COLUMN(DecayLengthXYOmega, decayLengthXYOmega, float);
+DECLARE_SOA_COLUMN(Chi2TopologicalCharmedBaryon, chi2TopologicalCharmedBaryon, float);
+DECLARE_SOA_COLUMN(Chi2TopologicalCasc, chi2TopologicalCasc, float);
+DECLARE_SOA_COLUMN(DecayLengthCharmedBaryon, decayLengthCharmedBaryon, float);
+DECLARE_SOA_COLUMN(DecayLengthXYCharmedBaryon, decayLengthXYCharmedBaryon, float);
+DECLARE_SOA_COLUMN(DecayLengthCasc, decayLengthCasc, float);
+DECLARE_SOA_COLUMN(DecayLengthXYCasc, decayLengthXYCasc, float);
 } // namespace st_omegac
 
 namespace st_omegac_gen
@@ -128,24 +138,30 @@ DECLARE_SOA_TABLE(HfOmegacSt, "AOD", "HFOMEGACST",
                   st_omegac::PzPion,
                   st_omegac::IsPositivePion,
                   st_omegac::ITSClusterMapPion,
-                  st_omegac::CpaOmegac,
-                  st_omegac::CpaOmega,
-                  st_omegac::DcaXYOmega,
-                  st_omegac::DcaZOmega,
+                  st_omegac::CpaCharmedBaryon,
+                  st_omegac::CpaXYCharmedBaryon,
+                  st_omegac::CpaCasc,
+                  st_omegac::CpaXYCasc,
+                  st_omegac::DcaXYCasc,
+                  st_omegac::DcaXYUncCasc,
+                  st_omegac::DcaZCasc,
+                  st_omegac::DcaZUncCasc,
                   st_omegac::DcaXYPion,
+                  st_omegac::DcaXYUncPion,
                   st_omegac::DcaZPion,
+                  st_omegac::DcaZUncPion,
                   st_omegac::DcaXYPr,
                   st_omegac::DcaZPr,
                   st_omegac::DcaXYKa,
                   st_omegac::DcaZKa,
                   st_omegac::DcaXYPi,
                   st_omegac::DcaZPi,
-                  st_omegac::Chi2TopologicalOmegac,
-                  st_omegac::Chi2TopologicalOmega,
-                  st_omegac::DecayLengthOmegac,
-                  st_omegac::DecayLengthXYOmegac,
-                  st_omegac::DecayLengthOmega,
-                  st_omegac::DecayLengthXYOmega);
+                  st_omegac::Chi2TopologicalCharmedBaryon,
+                  st_omegac::Chi2TopologicalCasc,
+                  st_omegac::DecayLengthCharmedBaryon,
+                  st_omegac::DecayLengthXYCharmedBaryon,
+                  st_omegac::DecayLengthCasc,
+                  st_omegac::DecayLengthXYCasc);
 
 DECLARE_SOA_TABLE(HfOmegaStGen, "AOD", "HFOMEGACSTGEN",
                   st_omegac_gen::PxOmegac,
@@ -163,6 +179,9 @@ DECLARE_SOA_TABLE(HfOmegaStGen, "AOD", "HFOMEGACSTGEN",
 } // namespace o2::aod
 
 struct HfTreeCreatorOmegacSt {
+  Produces<aod::HfOmegacSt> outputTable;
+  Produces<aod::HfOmegaStGen> outputTableGen;
+
   Configurable<int> materialCorrectionType{"materialCorrectionType", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpMagPath{"grpMagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -191,13 +210,9 @@ struct HfTreeCreatorOmegacSt {
   Configurable<float> maxNSigmaPion{"maxNSigmaPion", 5., "Max Nsigma for pion to be paired with Omega"};
   Configurable<bool> bzOnly{"bzOnly", true, "Use B_z instead of full field map"};
 
-  Produces<aod::HfOmegacSt> outputTable;
-  Produces<aod::HfOmegaStGen> outputTableGen;
+  SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::vertexing::DCAFitterN<2> df2;
-
-  Filter collisionFilter = (filterCollisions.node() == 0) ||
-                           (filterCollisions.node() == 8 && o2::aod::evsel::sel8 == true);
 
   float bz = 0.;
   int runNumber{0};
@@ -205,6 +220,13 @@ struct HfTreeCreatorOmegacSt {
   using Collisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
   using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
   using TracksExtMc = soa::Join<TracksExt, aod::McTrackLabels>;
+
+  Filter collisionFilter = (filterCollisions.node() == 0) ||
+                           (filterCollisions.node() == 8 && o2::aod::evsel::sel8 == true);
+
+  // Preslice<aod::Tracks> perCol = aod::track::collisionId;
+  Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
+  Preslice<aod::AssignedTrackedCascades> assignedTrackedCascadesPerCollision = aod::track::collisionId;
 
   HistogramRegistry registry{
     "registry",
@@ -234,6 +256,13 @@ struct HfTreeCreatorOmegacSt {
 
   void init(InitContext const&)
   {
+    df2.setPropagateToPCA(propToDCA);
+    df2.setMaxR(maxR);
+    df2.setMaxDZIni(maxDZIni);
+    df2.setMinParamChange(minParamChange);
+    df2.setMinRelChi2Change(minRelChi2Change);
+    df2.setUseAbsDCA(useAbsDCA);
+
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -243,13 +272,6 @@ struct HfTreeCreatorOmegacSt {
       auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
       o2::base::Propagator::Instance(true)->setMatLUT(lut);
     }
-
-    df2.setPropagateToPCA(propToDCA);
-    df2.setMaxR(maxR);
-    df2.setMaxDZIni(maxDZIni);
-    df2.setMinParamChange(minParamChange);
-    df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(useAbsDCA);
   }
 
   // processMC: loop over MC objects
@@ -273,211 +295,227 @@ struct HfTreeCreatorOmegacSt {
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMc, "Process MC", true);
 
-  void processData(Collisions::iterator const& collision,
+  void processData(Collisions const& collisions,
                    aod::AssignedTrackedCascades const& trackedCascades,
+                   aod::TrackAssoc const& trackIndices,
                    aod::Cascades const& cascades,
                    aod::V0s const& v0s,
                    TracksExt const& tracks,
                    aod::BCsWithTimestamps const&)
   {
-    const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    if (runNumber != bc.runNumber()) {
-      runNumber = bc.runNumber();
-      auto timestamp = bc.timestamp();
-
-      if (o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp)) {
-        o2::base::Propagator::initFieldFromGRP(grpo);
-        bz = grpo->getNominalL3Field();
-      } else if (o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpMagPath, timestamp)) {
-        o2::base::Propagator::initFieldFromGRP(grpmag);
-        bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      } else {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpMagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << timestamp;
-      }
-      df2.setBz(bz);
-    }
-
     const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(materialCorrectionType.value);
-    const auto primaryVertex = getPrimaryVertex(collision);
-    const std::array<double, 3> primaryVertexPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
-    o2::dataformats::DCA impactParameterTrk;
-    for (const auto& trackedCascade : trackedCascades) {
-      const auto trackCasc = trackedCascade.track_as<TracksExt>();
-      auto trackParCovTrk = getTrackParCov(trackCasc);
-      if (bzOnly) {
-        o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovTrk, bz, 2.f, matCorr, &impactParameterTrk);
-      } else {
-        o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovTrk, 2.f, matCorr, &impactParameterTrk);
+
+    for (const auto& collision : collisions) {
+      const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      if (runNumber != bc.runNumber()) {
+        runNumber = bc.runNumber();
+        auto timestamp = bc.timestamp();
+
+        if (o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp)) {
+          o2::base::Propagator::initFieldFromGRP(grpo);
+          bz = grpo->getNominalL3Field();
+        } else if (o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpMagPath, timestamp)) {
+          o2::base::Propagator::initFieldFromGRP(grpmag);
+          bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+        } else {
+          LOG(fatal) << "Got nullptr from CCDB for path " << grpMagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << timestamp;
+        }
+        df2.setBz(bz);
       }
 
-      const auto& casc = trackedCascade.cascade();
-      const auto& bachelor = casc.bachelor_as<TracksExt>();
-      const auto& v0 = casc.v0();
-      const auto& v0TrackPos = v0.posTrack_as<TracksExt>();
-      const auto& v0TrackNeg = v0.negTrack_as<TracksExt>();
+      const auto primaryVertex = getPrimaryVertex(collision);
+      const std::array<double, 3> primaryVertexPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
 
-      if (!v0TrackPos.hasTPC() || !v0TrackNeg.hasTPC() || !bachelor.hasTPC() ||
-          v0TrackPos.tpcNClsFindable() < minNoClsTrackedCascade ||
-          v0TrackNeg.tpcNClsFindable() < minNoClsTrackedCascade ||
-          bachelor.tpcNClsFindable() < minNoClsTrackedCascade) {
-        continue;
-      }
+      const auto collId = collision.globalIndex();
+      auto groupedTrackIds = trackIndices.sliceBy(trackIndicesPerCollision, collId);
+      auto groupedTrackedCascades = trackedCascades.sliceBy(assignedTrackedCascadesPerCollision, collId);
 
-      const auto& v0TrackPr = trackCasc.sign() < 0 ? v0TrackPos : v0TrackNeg;
-      const auto& v0TrackPi = trackCasc.sign() < 0 ? v0TrackNeg : v0TrackPos;
+      o2::dataformats::DCA impactParameterCasc;
+      for (const auto& trackedCascade : groupedTrackedCascades) {
+        const auto trackCasc = trackedCascade.track_as<TracksExt>();
+        auto trackParCovCasc = getTrackParCov(trackCasc);
+        if (bzOnly) {
+          o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovCasc, bz, 2.f, matCorr, &impactParameterCasc);
+        } else {
+          o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovCasc, 2.f, matCorr, &impactParameterCasc);
+        }
 
-      // track propagation
-      if (!df2.process(getTrackParCov(v0TrackPr), getTrackParCov(v0TrackPi))) {
-        continue;
-      }
-      std::array<double, 2> massesV0Daughters{o2::constants::physics::MassProton, o2::constants::physics::MassPiMinus};
-      std::array<std::array<float, 3>, 2> momentaV0Daughters;
-      o2::track::TrackPar trackParV0Pr = df2.getTrackParamAtPCA(0);
-      trackParV0Pr.getPxPyPzGlo(momentaV0Daughters[0]);
-      o2::track::TrackPar trackParV0Pi = df2.getTrackParamAtPCA(1);
-      trackParV0Pi.getPxPyPzGlo(momentaV0Daughters[1]);
-      const auto massV0 = RecoDecay::m(momentaV0Daughters, massesV0Daughters);
+        const auto& casc = trackedCascade.cascade();
+        const auto& bachelor = casc.bachelor_as<TracksExt>();
+        const auto& v0 = casc.v0();
+        const auto& v0TrackPos = v0.posTrack_as<TracksExt>();
+        const auto& v0TrackNeg = v0.negTrack_as<TracksExt>();
 
-      o2::track::TrackParCov trackParCovV0 = df2.createParentTrackParCov(0);
-      if (!df2.process(trackParCovV0, getTrackParCov(bachelor))) {
-        continue;
-      }
-      const auto& secondaryVertex = df2.getPCACandidate();
-      const auto decayLengthOmega = RecoDecay::distance(secondaryVertex, primaryVertexPos);
-      const auto decayLengthOmegaXY = RecoDecay::distanceXY(secondaryVertex, primaryVertexPos);
-      o2::track::TrackPar trackParV0 = df2.getTrackParamAtPCA(0);
-      o2::track::TrackPar trackParBachelor = df2.getTrackParamAtPCA(1);
-      std::array<std::array<float, 3>, 2> momentaOmegaDaughters;
-      trackParV0.getPxPyPzGlo(momentaOmegaDaughters[0]);
-      trackParBachelor.getPxPyPzGlo(momentaOmegaDaughters[1]);
-      std::array<float, 3> pOmega;
-      const auto trackParCovOmega = df2.createParentTrackParCov();
-      trackParCovOmega.getPxPyPzGlo(pOmega);
-      const auto cpaOmega = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pOmega);
+        if (!v0TrackPos.hasTPC() || !v0TrackNeg.hasTPC() || !bachelor.hasTPC() ||
+            v0TrackPos.tpcNClsFindable() < minNoClsTrackedCascade ||
+            v0TrackNeg.tpcNClsFindable() < minNoClsTrackedCascade ||
+            bachelor.tpcNClsFindable() < minNoClsTrackedCascade) {
+          continue;
+        }
 
-      std::array<double, 2> massesXiDaughters = {o2::constants::physics::MassLambda0, o2::constants::physics::MassPiPlus};
-      const auto massXi = RecoDecay::m(momentaOmegaDaughters, massesXiDaughters);
-      std::array<double, 2> massesOmegaDaughters = {o2::constants::physics::MassLambda0, o2::constants::physics::MassKPlus};
-      const auto massOmega = RecoDecay::m(momentaOmegaDaughters, massesOmegaDaughters);
+        const auto& v0TrackPr = trackCasc.sign() < 0 ? v0TrackPos : v0TrackNeg;
+        const auto& v0TrackPi = trackCasc.sign() < 0 ? v0TrackNeg : v0TrackPos;
 
-      registry.fill(HIST("hDca"), std::sqrt(impactParameterTrk.getR2()));
-      registry.fill(HIST("hDcaXY"), impactParameterTrk.getY());
-      registry.fill(HIST("hDcaXYVsPt"), trackParCovTrk.getPt(), impactParameterTrk.getY());
-      registry.fill(HIST("hDcaZ"), impactParameterTrk.getZ());
-      registry.fill(HIST("hDcaZVsPt"), trackParCovTrk.getPt(), impactParameterTrk.getZ());
-      registry.fill(HIST("hDcaVsPt"), impactParameterTrk.getY(), trackCasc.pt());
-      registry.fill(HIST("hDcaVsR"), impactParameterTrk.getY(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
-      registry.fill(HIST("hPtVsMassOmega"), trackCasc.pt(), massOmega);
+        // track propagation
+        if (!df2.process(getTrackParCov(v0TrackPr), getTrackParCov(v0TrackPi))) {
+          continue;
+        }
+        std::array<double, 2> massesV0Daughters{o2::constants::physics::MassProton, o2::constants::physics::MassPiMinus};
+        std::array<std::array<float, 3>, 2> momentaV0Daughters;
+        o2::track::TrackPar trackParV0Pr = df2.getTrackParamAtPCA(0);
+        trackParV0Pr.getPxPyPzGlo(momentaV0Daughters[0]);
+        o2::track::TrackPar trackParV0Pi = df2.getTrackParamAtPCA(1);
+        trackParV0Pi.getPxPyPzGlo(momentaV0Daughters[1]);
+        const auto massV0 = RecoDecay::m(momentaV0Daughters, massesV0Daughters);
 
-      if ((std::abs(massOmega - o2::constants::physics::MassOmegaMinus) < massWindowTrackedOmega) ||
-          (std::abs(massXi - o2::constants::physics::MassXiMinus) < massWindowTrackedXi)) {
-        if (((std::abs(bachelor.tpcNSigmaKa()) < maxNSigmaBachelor) || (std::abs(bachelor.tpcNSigmaPi()) < maxNSigmaBachelor)) &&
-            (std::abs(v0TrackPr.tpcNSigmaPr()) < maxNSigmaV0Pr) &&
-            (std::abs(v0TrackPi.tpcNSigmaPi()) < maxNSigmaV0Pi)) {
-          std::array<double, 2> masses{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
-          std::array<double, 2> massesXicDaughters{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus};
-          std::array<std::array<float, 3>, 2> momenta;
+        o2::track::TrackParCov trackParCovV0 = df2.createParentTrackParCov(0);
+        if (!df2.process(trackParCovV0, getTrackParCov(bachelor))) {
+          continue;
+        }
+        const auto& secondaryVertex = df2.getPCACandidate();
+        const auto decayLengthCasc = RecoDecay::distance(secondaryVertex, primaryVertexPos);
+        const auto decayLengthCascXY = RecoDecay::distanceXY(secondaryVertex, primaryVertexPos);
+        o2::track::TrackPar trackParV0 = df2.getTrackParamAtPCA(0);
+        o2::track::TrackPar trackParBachelor = df2.getTrackParamAtPCA(1);
+        std::array<std::array<float, 3>, 2> momentaCascDaughters;
+        trackParV0.getPxPyPzGlo(momentaCascDaughters[0]);
+        trackParBachelor.getPxPyPzGlo(momentaCascDaughters[1]);
+        std::array<float, 3> pCasc;
+        df2.createParentTrackParCov().getPxPyPzGlo(pCasc);
+        const auto cpaCasc = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pCasc);
+        const auto cpaXYCasc = RecoDecay::cpaXY(primaryVertexPos, df2.getPCACandidate(), pCasc);
 
-          auto trackParCovPr = getTrackParCov(v0TrackPr);
-          auto trackParCovKa = getTrackParCov(v0TrackPi);
-          auto trackParCovPi = getTrackParCov(bachelor);
-          o2::dataformats::DCA impactParameterPr;
-          o2::dataformats::DCA impactParameterKa;
-          o2::dataformats::DCA impactParameterPi;
-          if (bzOnly) {
-            o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovPr, bz, 2.f, matCorr, &impactParameterPr);
-            o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovKa, bz, 2.f, matCorr, &impactParameterKa);
-            o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovPi, bz, 2.f, matCorr, &impactParameterPi);
-          } else {
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovPr, 2.f, matCorr, &impactParameterPr);
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovKa, 2.f, matCorr, &impactParameterKa);
-            o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovPi, 2.f, matCorr, &impactParameterPi);
-          }
+        std::array<double, 2> massesXiDaughters = {o2::constants::physics::MassLambda0, o2::constants::physics::MassPiPlus};
+        const auto massXi = RecoDecay::m(momentaCascDaughters, massesXiDaughters);
+        std::array<double, 2> massesOmegaDaughters = {o2::constants::physics::MassLambda0, o2::constants::physics::MassKPlus};
+        const auto massOmega = RecoDecay::m(momentaCascDaughters, massesOmegaDaughters);
 
-          for (const auto& track : tracks) {
-            const auto trackId = track.globalIndex();
-            if (trackId == v0TrackPr.globalIndex() ||
-                trackId == v0TrackPi.globalIndex() ||
-                trackId == bachelor.globalIndex()) {
-              continue;
+        registry.fill(HIST("hDca"), std::sqrt(impactParameterCasc.getR2()));
+        registry.fill(HIST("hDcaXY"), impactParameterCasc.getY());
+        registry.fill(HIST("hDcaXYVsPt"), trackParCovCasc.getPt(), impactParameterCasc.getY());
+        registry.fill(HIST("hDcaZ"), impactParameterCasc.getZ());
+        registry.fill(HIST("hDcaZVsPt"), trackParCovCasc.getPt(), impactParameterCasc.getZ());
+        registry.fill(HIST("hDcaVsPt"), impactParameterCasc.getY(), trackCasc.pt());
+        registry.fill(HIST("hDcaVsR"), impactParameterCasc.getY(), RecoDecay::sqrtSumOfSquares(trackCasc.x(), trackCasc.y()));
+        registry.fill(HIST("hPtVsMassOmega"), trackCasc.pt(), massOmega);
+
+        if ((std::abs(massOmega - o2::constants::physics::MassOmegaMinus) < massWindowTrackedOmega) ||
+            (std::abs(massXi - o2::constants::physics::MassXiMinus) < massWindowTrackedXi)) {
+          if (((std::abs(bachelor.tpcNSigmaKa()) < maxNSigmaBachelor) || (std::abs(bachelor.tpcNSigmaPi()) < maxNSigmaBachelor)) &&
+              (std::abs(v0TrackPr.tpcNSigmaPr()) < maxNSigmaV0Pr) &&
+              (std::abs(v0TrackPi.tpcNSigmaPi()) < maxNSigmaV0Pi)) {
+            std::array<double, 2> massesOmegacDaughters{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
+            std::array<double, 2> massesXicDaughters{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus};
+            std::array<std::array<float, 3>, 2> momenta;
+
+            auto trackParCovPr = getTrackParCov(v0TrackPr);
+            auto trackParCovKa = getTrackParCov(v0TrackPi);
+            auto trackParCovPi = getTrackParCov(bachelor);
+            o2::dataformats::DCA impactParameterPr;
+            o2::dataformats::DCA impactParameterKa;
+            o2::dataformats::DCA impactParameterPi;
+            if (bzOnly) {
+              o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovPr, bz, 2.f, matCorr, &impactParameterPr);
+              o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovKa, bz, 2.f, matCorr, &impactParameterKa);
+              o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovPi, bz, 2.f, matCorr, &impactParameterPi);
+            } else {
+              o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovPr, 2.f, matCorr, &impactParameterPr);
+              o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovKa, 2.f, matCorr, &impactParameterKa);
+              o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovPi, 2.f, matCorr, &impactParameterPi);
             }
-            if ((track.itsNCls() >= 4) &&
-                (track.tpcNClsFound() >= minNoClsTrackedPion) &&
-                (track.tpcNClsCrossedRows() >= minNoClsTrackedPion) &&
-                (track.tpcNClsCrossedRows() >= 0.8 * track.tpcNClsFindable()) &&
-                (track.tpcChi2NCl() <= 4.f) &&
-                (track.itsChi2NCl() <= 36.f) &&
-                (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion)) {
-              LOGF(debug, "  .. combining with pion candidate %d", track.globalIndex());
-              auto trackParCovCasc = getTrackParCov(trackCasc);
-              auto trackParCovPion = getTrackParCov(track);
-              o2::dataformats::DCA impactParameterPion;
-              if (bzOnly) {
-                o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovPion, bz, 2.f, matCorr, &impactParameterPion);
-              } else {
-                o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovPion, 2.f, matCorr, &impactParameterPion);
+
+            for (auto trackId : groupedTrackIds) {
+              const auto track = trackId.template track_as<TracksExt>();
+              if (track.globalIndex() == v0TrackPr.globalIndex() ||
+                  track.globalIndex() == v0TrackPi.globalIndex() ||
+                  track.globalIndex() == bachelor.globalIndex()) {
+                continue;
               }
+              if ((track.itsNCls() >= 4) &&
+                  (track.tpcNClsFound() >= minNoClsTrackedPion) &&
+                  (track.tpcNClsCrossedRows() >= minNoClsTrackedPion) &&
+                  (track.tpcNClsCrossedRows() >= 0.8 * track.tpcNClsFindable()) &&
+                  (track.tpcChi2NCl() <= 4.f) &&
+                  (track.itsChi2NCl() <= 36.f) &&
+                  (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion)) {
+                LOGF(debug, "  .. combining with pion candidate %d", track.globalIndex());
+                auto trackParCovCasc = getTrackParCov(trackCasc);
+                auto trackParCovPion = getTrackParCov(track);
+                o2::dataformats::DCA impactParameterPion;
+                if (bzOnly) {
+                  o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovPion, bz, 2.f, matCorr, &impactParameterPion);
+                } else {
+                  o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovPion, 2.f, matCorr, &impactParameterPion);
+                }
 
-              if (df2.process(trackParCovCasc, trackParCovPion)) {
-                const auto& secondaryVertex = df2.getPCACandidate();
-                const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
-                const auto decayLengthXY = RecoDecay::distanceXY(secondaryVertex, primaryVertexPos);
-                const auto chi2TopOmegac = df2.getChi2AtPCACandidate();
-                std::array<float, 3> pOmegac;
-                df2.createParentTrackParCov().getPxPyPzGlo(pOmegac);
-                const auto cpaOmegaC = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pOmegac);
+                if (df2.process(trackParCovCasc, trackParCovPion)) {
+                  const auto& secondaryVertex = df2.getPCACandidate();
+                  const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
+                  const auto decayLengthXY = RecoDecay::distanceXY(secondaryVertex, primaryVertexPos);
+                  const auto chi2TopCharmedBaryon = df2.getChi2AtPCACandidate();
+                  std::array<float, 3> pCharmedBaryon;
+                  df2.createParentTrackParCov().getPxPyPzGlo(pCharmedBaryon);
+                  const auto cpaCharmedBaryon = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pCharmedBaryon);
+                  const auto cpaXYCharmedBaryon = RecoDecay::cpaXY(primaryVertexPos, df2.getPCACandidate(), pCharmedBaryon);
 
-                df2.getTrackParamAtPCA(0).getPxPyPzGlo(momenta[0]);
-                df2.getTrackParamAtPCA(1).getPxPyPzGlo(momenta[1]);
-                const auto massOmegaC = RecoDecay::m(momenta, masses);
-                const auto massXiC = RecoDecay::m(momenta, massesXicDaughters);
-                registry.fill(HIST("hMassOmegac"), massOmegaC);
-                registry.fill(HIST("hMassOmegacVsPt"), massOmegaC, RecoDecay::pt(momenta[0], momenta[1]));
+                  df2.getTrackParamAtPCA(0).getPxPyPzGlo(momenta[0]);
+                  df2.getTrackParamAtPCA(1).getPxPyPzGlo(momenta[1]);
+                  const auto massOmegaC = RecoDecay::m(momenta, massesOmegacDaughters);
+                  const auto massXiC = RecoDecay::m(momenta, massesXicDaughters);
+                  registry.fill(HIST("hMassOmegac"), massOmegaC);
+                  registry.fill(HIST("hMassOmegacVsPt"), massOmegaC, RecoDecay::pt(momenta[0], momenta[1]));
 
-                if ((std::abs(massOmegaC - o2::constants::physics::MassOmegaC0) < massWindowOmegaC) ||
-                    (std::abs(massXiC - o2::constants::physics::MassXiC0) < massWindowXiC)) {
-                  registry.fill(HIST("hDecayLength"), decayLength * 1e4);
-                  registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
-                  outputTable(massOmega,
-                              massXi,
-                              massV0,
-                              track.tpcNSigmaPi(),
-                              track.tofNSigmaPi(),
-                              v0TrackPr.tpcNSigmaPr(),
-                              v0TrackPr.tofNSigmaPr(),
-                              v0TrackPi.tpcNSigmaPi(),
-                              v0TrackPi.tofNSigmaPi(),
-                              bachelor.tpcNSigmaPi(),
-                              bachelor.tofNSigmaPi(),
-                              bachelor.tpcNSigmaKa(),
-                              bachelor.tofNSigmaKa(),
-                              momenta[0][0], // cascade momentum
-                              momenta[0][1],
-                              momenta[0][2],
-                              trackCasc.sign() > 0 ? true : false,
-                              momenta[1][0], // pion momentum
-                              momenta[1][1],
-                              momenta[1][2],
-                              track.sign() > 0 ? true : false,
-                              track.itsClusterMap(),
-                              cpaOmegaC,
-                              cpaOmega,
-                              impactParameterTrk.getY(),
-                              impactParameterTrk.getZ(),
-                              impactParameterPion.getY(),
-                              impactParameterPion.getZ(),
-                              impactParameterPr.getY(),
-                              impactParameterPr.getZ(),
-                              impactParameterKa.getY(),
-                              impactParameterKa.getZ(),
-                              impactParameterPi.getY(),
-                              impactParameterPi.getZ(),
-                              chi2TopOmegac,
-                              trackedCascade.topologyChi2(),
-                              decayLength,
-                              decayLengthXY,
-                              decayLengthOmega,
-                              decayLengthOmegaXY);
+                  if ((std::abs(massOmegaC - o2::constants::physics::MassOmegaC0) < massWindowOmegaC) ||
+                      (std::abs(massXiC - o2::constants::physics::MassXiC0) < massWindowXiC)) {
+                    registry.fill(HIST("hDecayLength"), decayLength * 1e4);
+                    registry.fill(HIST("hDecayLengthScaled"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
+                    outputTable(massOmega,
+                                massXi,
+                                massV0,
+                                track.tpcNSigmaPi(),
+                                track.tofNSigmaPi(),
+                                v0TrackPr.tpcNSigmaPr(),
+                                v0TrackPr.tofNSigmaPr(),
+                                v0TrackPi.tpcNSigmaPi(),
+                                v0TrackPi.tofNSigmaPi(),
+                                bachelor.tpcNSigmaPi(),
+                                bachelor.tofNSigmaPi(),
+                                bachelor.tpcNSigmaKa(),
+                                bachelor.tofNSigmaKa(),
+                                momenta[0][0], // cascade momentum
+                                momenta[0][1],
+                                momenta[0][2],
+                                trackCasc.sign() > 0 ? true : false,
+                                momenta[1][0], // pion momentum
+                                momenta[1][1],
+                                momenta[1][2],
+                                track.sign() > 0 ? true : false,
+                                track.itsClusterMap(),
+                                cpaCharmedBaryon,
+                                cpaXYCharmedBaryon,
+                                cpaCasc,
+                                cpaXYCasc,
+                                impactParameterCasc.getY(),
+                                std::sqrt(impactParameterCasc.getSigmaY2()),
+                                impactParameterCasc.getZ(),
+                                std::sqrt(impactParameterCasc.getSigmaZ2()),
+                                impactParameterPion.getY(),
+                                std::sqrt(impactParameterPion.getSigmaY2()),
+                                impactParameterPion.getZ(),
+                                std::sqrt(impactParameterPion.getSigmaZ2()),
+                                impactParameterPr.getY(),
+                                impactParameterPr.getZ(),
+                                impactParameterKa.getY(),
+                                impactParameterKa.getZ(),
+                                impactParameterPi.getY(),
+                                impactParameterPi.getZ(),
+                                chi2TopCharmedBaryon,
+                                trackedCascade.topologyChi2(),
+                                decayLength,
+                                decayLengthXY,
+                                decayLengthCasc,
+                                decayLengthCascXY);
+                  }
                 }
               }
             }
@@ -513,14 +551,14 @@ struct HfTreeCreatorOmegacSt {
 
     const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(materialCorrectionType.value);
     const auto primaryVertex = getPrimaryVertex(collision);
-    o2::dataformats::DCA impactParameterTrk;
+    o2::dataformats::DCA impactParameterCasc;
     for (const auto& trackedCascade : trackedCascades) {
       const auto trackCasc = trackedCascade.track_as<TracksExtMc>();
-      auto trackParCovTrk = getTrackParCov(trackCasc);
+      auto trackParCovCasc = getTrackParCov(trackCasc);
       if (bzOnly) {
-        o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovTrk, bz, 2.f, matCorr, &impactParameterTrk);
+        o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovCasc, bz, 2.f, matCorr, &impactParameterCasc);
       } else {
-        o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovTrk, 2.f, matCorr, &impactParameterTrk);
+        o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovCasc, 2.f, matCorr, &impactParameterCasc);
       }
 
       const auto& casc = trackedCascade.cascade();
@@ -571,12 +609,12 @@ struct HfTreeCreatorOmegacSt {
                   o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVertex, trackParCovPion, 2.f, matCorr, &impactParameterPion);
                 }
 
-                trackParCovTrk.getPxPyPzGlo(momenta[0]);
+                trackParCovCasc.getPxPyPzGlo(momenta[0]);
                 trackParCovPion.getPxPyPzGlo(momenta[1]);
                 registry.fill(HIST("hDeltaPtVsPt"), mcpart.pt(), (trackParCovPion.getPt() - mcpart.pt()) / mcpart.pt());
                 registry.fill(HIST("hMassOmegacId"), RecoDecay::m(momenta, masses));
 
-                if (df2.process(trackParCovTrk, trackParCovPion)) {
+                if (df2.process(trackParCovCasc, trackParCovPion)) {
                   const auto& secondaryVertex = df2.getPCACandidate();
                   const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
                   if (mother.has_mothers()) {

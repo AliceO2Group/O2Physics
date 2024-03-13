@@ -51,13 +51,13 @@ using namespace o2::analysis;
 
 namespace o2::analysis::dptdptfilter
 {
-using DptDptFullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
-using DptDptFullTracksAmbiguous = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackCompColls>;
+using DptDptFullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
+using DptDptFullTracksAmbiguous = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackCompColls>;
 using DptDptTracksPID = soa::Join<aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
 using DptDptFullTracksPID = soa::Join<DptDptFullTracks, DptDptTracksPID>;
 using DptDptFullTracksPIDAmbiguous = soa::Join<DptDptFullTracksAmbiguous, DptDptTracksPID>;
-using DptDptFullTracksDetLevel = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA>;
-using DptDptFullTracksDetLevelAmbiguous = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA, aod::TrackCompColls>;
+using DptDptFullTracksDetLevel = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
+using DptDptFullTracksDetLevelAmbiguous = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackCompColls>;
 using DptDptFullTracksPIDDetLevel = soa::Join<DptDptFullTracksDetLevel, DptDptTracksPID>;
 using DptDptFullTracksPIDDetLevelAmbiguous = soa::Join<DptDptFullTracksDetLevelAmbiguous, DptDptTracksPID>;
 
@@ -539,7 +539,7 @@ struct DptDptFilterTracks {
   Produces<aod::DptDptCFGenTracksInfo> gentracksinfo;
 
   Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
-  Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = Run2 global tracks FB96, 3 = Run3 tracks, 5 = Run2 TPC only tracks, 7 = Run 3 TPC only tracks. Default 1"};
+  Configurable<int> cfgTrackType{"trktype", 4, "Type of selected tracks: 0 = no selection, 1 = Run2 global tracks FB96, 3 = Run3 tracks, 4 = Run3 tracks MM sel, 5 = Run2 TPC only tracks, 7 = Run 3 TPC only tracks. Default 4"};
   Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
   Configurable<float> cfgTraceOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
   Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 No PID, 1 PID, 2 mcparticle. Default 0"};
@@ -569,15 +569,15 @@ struct DptDptFilterTracks {
 
     /* update with the configurable values */
     /* self configure the binning */
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmax", zvtxup);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTbins", ptbins);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmin", ptlow);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmax", ptup);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmax", zvtxup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTbins", ptbins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmin", ptlow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmax", ptup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup, false);
 
     /* the track types and combinations */
     tracktype = cfgTrackType.value;
@@ -618,9 +618,9 @@ struct DptDptFilterTracks {
     /* self configure system type and data type */
     /* if the system type is not known at this time, we have to put the initialization somewhere else */
     std::string tmpstr;
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "syst", tmpstr);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "syst", tmpstr, false);
     fSystem = getSystemType(tmpstr);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "datatype", tmpstr);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "datatype", tmpstr, false);
     fDataType = getDataType(tmpstr);
     fPDG = TDatabasePDG::Instance();
 
@@ -944,11 +944,7 @@ struct DptDptFilterTracks {
     }
 
     for (auto& particle : particles) {
-      float charge = 0.0;
-      TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
-      if (pdgparticle != nullptr) {
-        charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0.0);
-      }
+      float charge = getCharge(particle);
 
       int8_t pid = -1;
       if (charge != 0) {
@@ -1190,11 +1186,7 @@ inline int8_t DptDptFilterTracks::identifyParticle(ParticleObject const& particl
 template <typename ParticleObject, typename MCCollisionObject>
 inline int8_t DptDptFilterTracks::selectParticle(ParticleObject const& particle, MCCollisionObject const& mccollision)
 {
-  float charge = 0.0;
-  TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
-  if (pdgparticle != nullptr) {
-    charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0);
-  }
+  float charge = getCharge(particle);
   int8_t sp = -127;
   if (charge != 0) {
     /* before particle selection */

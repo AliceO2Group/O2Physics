@@ -41,10 +41,6 @@ void SGCutParHolder::SetNTracks(int MinNTracks, int MaxNTracks)
   mMinNTracks = MinNTracks;
   mMaxNTracks = MaxNTracks;
 }
-void SGCutParHolder::SetNetCharges(std::vector<int> netCharges)
-{
-  mNetCharges = netCharges;
-}
 void SGCutParHolder::SetPidHypothesis(int pidHypo)
 {
   mPidHypo = pidHypo;
@@ -65,19 +61,6 @@ void SGCutParHolder::SetEtaRange(float minEta, float maxEta)
   mMinEta = minEta;
   mMaxEta = maxEta;
 }
-void SGCutParHolder::SetIVMRange(float minIVM, float maxIVM)
-{
-  mMinIVM = minIVM;
-  mMaxIVM = maxIVM;
-}
-void SGCutParHolder::SetMaxNSigmaTPC(float maxnSigma)
-{
-  mMaxNSigmaTPC = maxnSigma;
-}
-void SGCutParHolder::SetMaxNSigmaTOF(float maxnSigma)
-{
-  mMaxNSigmaTOF = maxnSigma;
-}
 void SGCutParHolder::SetMaxFITtime(float maxFITtime)
 {
   mMaxFITtime = maxFITtime;
@@ -96,7 +79,6 @@ bool SGCutParHolder::ITSOnlyTracks() const { return mITSOnlyTracks; }
 float SGCutParHolder::minRgtrwTOF() const { return mMinRgtrwTOF; }
 int SGCutParHolder::minNTracks() const { return mMinNTracks; }
 int SGCutParHolder::maxNTracks() const { return mMaxNTracks; }
-std::vector<int> SGCutParHolder::netCharges() const { return mNetCharges; }
 int SGCutParHolder::pidHypothesis() const { return mPidHypo; }
 float SGCutParHolder::minPosz() const { return mMinVertexPosz; }
 float SGCutParHolder::maxPosz() const { return mMaxVertexPosz; }
@@ -104,9 +86,5 @@ float SGCutParHolder::minPt() const { return mMinPt; }
 float SGCutParHolder::maxPt() const { return mMaxPt; }
 float SGCutParHolder::minEta() const { return mMinEta; }
 float SGCutParHolder::maxEta() const { return mMaxEta; }
-float SGCutParHolder::minIVM() const { return mMinIVM; }
-float SGCutParHolder::maxIVM() const { return mMaxIVM; }
-float SGCutParHolder::maxNSigmaTPC() const { return mMaxNSigmaTPC; }
-float SGCutParHolder::maxNSigmaTOF() const { return mMaxNSigmaTOF; }
 float SGCutParHolder::maxFITtime() const { return mMaxFITtime; }
 std::vector<float> SGCutParHolder::FITAmpLimits() const { return mFITAmpLimits; }

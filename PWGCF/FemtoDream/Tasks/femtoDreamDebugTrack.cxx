@@ -64,7 +64,7 @@ struct femtoDreamDebugTrack {
     ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk1_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCTOFBit));
   Preslice<FemtoFullParticles> perColReco = aod::femtodreamparticle::fdCollisionId;
 
-  using FemtoFullParticlesMC = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
+  using FemtoFullParticlesMC = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels, aod::FDExtMCLabels>;
   Partition<FemtoFullParticlesMC> partsOneMC =
     (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
     ncheckbit(aod::femtodreamparticle::cut, ConfTrk1_CutBit) &&
@@ -110,7 +110,7 @@ struct femtoDreamDebugTrack {
   /// \param col subscribe to FemtoDreamCollision table
   /// \param parts subscribe to the joined table of FemtoDreamParticles and FemtoDreamMCLabels table
   /// \param FemtoDramMCParticles subscribe to the table containing the Monte Carlo Truth information
-  void processMC(o2::aod::FDCollision& col, FemtoFullParticlesMC& parts, o2::aod::FDMCParticles&)
+  void processMC(o2::aod::FDCollision& col, FemtoFullParticlesMC& parts, aod::FDMCParticles&, aod::FDExtMCParticles&)
   {
     auto groupPartsOne = partsOneMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     FillDebugHistos<true>(col, groupPartsOne);

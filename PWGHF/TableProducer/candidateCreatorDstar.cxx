@@ -29,6 +29,7 @@
 // PWGHF
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 using namespace o2;
 using namespace o2::aod::hf_collision_centrality;
@@ -58,6 +59,11 @@ struct HfCandidateCreatorDstar {
   Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
 
+  // event selection
+  Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "apply the sel8 event selection"};
+  Configurable<float> maxPvPosZ{"maxPvPosZ", 10.f, "max. PV posZ (cm)"};
+  Configurable<bool> useTimeFrameBorderCut{"useTimeFrameBorderCut", true, "apply TF border cut"};
+
   // vertexing
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};                                   // ........... what is unit of this?
@@ -68,8 +74,7 @@ struct HfCandidateCreatorDstar {
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb; // From utilsBfieldCCDB.h
-  o2::base::MatLayerCylSet* lut;            // From MatLayercylSet.h
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   // D0-prong vertex fitter
   o2::vertexing::DCAFitterN<2> df;
   int runNumber;
@@ -112,15 +117,9 @@ struct HfCandidateCreatorDstar {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
     // LOG(info) << "Init Function Invoked";
-    ccdb->setURL(ccdbUrl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking(); // set the flag to check object validity before CCDB query
-    // LOG(info) << "Retriving ccdb object";
-    auto rectification = ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut); // retrieve an object of type T from CCDB as stored under path; will use the timestamp member
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(rectification);
-    // LOG(info) << "Successfully Retrived";
-    runNumber = 0;
-    bz = 0;
+    massPi = MassPiPlus;
+    massK = MassKPlus;
+    massD0 = MassD0;
 
     df.setPropagateToPCA(propagateToPCA);
     df.setMaxR(maxR);
@@ -129,10 +128,13 @@ struct HfCandidateCreatorDstar {
     df.setMinRelChi2Change(minRelChi2Change);
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
+    df.setMatCorrType(noMatCorr);
 
-    massPi = MassPiPlus;
-    massK = MassKPlus;
-    massD0 = MassD0;
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking(); // set the flag to check object validity before CCDB query
+    runNumber = 0;
+    bz = 0;
   }
 
   /// @brief function for secondary vertex reconstruction and candidate creator
@@ -171,6 +173,11 @@ struct HfCandidateCreatorDstar {
         }
       }
 
+      /// event selection: sel8, PV posZ, TF border cut
+      if (!isHfCollisionSelected(collision, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut)) {
+        continue;
+      }
+
       auto trackPi = rowTrackIndexDstar.template prong0_as<aod::TracksWCov>();
       auto prongD0 = rowTrackIndexDstar.template prongD0_as<aod::Hf2Prongs>();
       auto trackD0Prong0 = prongD0.template prong0_as<aod::TracksWCov>();
@@ -195,9 +202,14 @@ struct HfCandidateCreatorDstar {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
         // LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
-        initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2); // Sets up the grp object for magnetic field (w/o matCorr for propagation)
+        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
+        if (grpo == nullptr) {
+          LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
+        o2::base::Propagator::initFieldFromGRP(grpo);
         bz = o2::base::Propagator::Instance()->getNominalBz();
         // LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
+        runNumber = bc.runNumber();
       }
       df.setBz(bz);
 
@@ -325,7 +337,7 @@ struct HfCandidateCreatorDstar {
   ///////////////////////////////////
 
   /// @brief process function w/ PV refit and w/o centrality selections
-  void processPvRefit(aod::Collisions const& collisions,
+  void processPvRefit(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                       aod::Hf2Prongs const& rowsTrackIndexD0,
                       aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
                       aod::TracksWCov const& tracks,
@@ -336,7 +348,7 @@ struct HfCandidateCreatorDstar {
   PROCESS_SWITCH(HfCandidateCreatorDstar, processPvRefit, " Run candidate creator with PV refit and w/o centrality selections", false);
 
   /// @brief process function w/o PV refit and w/o centrality selections
-  void processNoPvRefit(aod::Collisions const& collisions,
+  void processNoPvRefit(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                         aod::Hf2Prongs const& rowsTrackIndexD0,
                         aod::HfDstars const& rowsTrackIndexDstar,
                         aod::TracksWCov const& tracks,
@@ -353,7 +365,7 @@ struct HfCandidateCreatorDstar {
   /////////////////////////////////////////////
 
   /// @brief process function w/ PV refit and w/ centrality selection on FT0C
-  void processPvRefitCentFT0C(soa::Join<aod::Collisions, aod::CentFT0Cs> const& collisions,
+  void processPvRefitCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                               aod::Hf2Prongs const& rowsTrackIndexD0,
                               aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
                               aod::TracksWCov const& tracks,
@@ -364,7 +376,7 @@ struct HfCandidateCreatorDstar {
   PROCESS_SWITCH(HfCandidateCreatorDstar, processPvRefitCentFT0C, " Run candidate creator with PV refit nad w/ centrality selection on FT0C", false);
 
   /// @brief process function w/o PV refit and w/ centrality selection on FT0C
-  void processNoPvRefitCentFT0C(soa::Join<aod::Collisions, aod::CentFT0Cs> const& collisions,
+  void processNoPvRefitCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                 aod::Hf2Prongs const& rowsTrackIndexD0,
                                 aod::HfDstars const& rowsTrackIndexDstar,
                                 aod::TracksWCov const& tracks,
@@ -381,7 +393,7 @@ struct HfCandidateCreatorDstar {
   /////////////////////////////////////////////
 
   /// @brief process function w/ PV refit and w/ centrality selection on FT0M
-  void processPvRefitCentFT0M(soa::Join<aod::Collisions, aod::CentFT0Ms> const& collisions,
+  void processPvRefitCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                               aod::Hf2Prongs const& rowsTrackIndexD0,
                               aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
                               aod::TracksWCov const& tracks,
@@ -392,7 +404,7 @@ struct HfCandidateCreatorDstar {
   PROCESS_SWITCH(HfCandidateCreatorDstar, processPvRefitCentFT0M, " Run candidate creator with PV refit nad w/ centrality selection on FT0M", false);
 
   /// @brief process function w/o PV refit and w/ centrality selection on FT0M
-  void processNoPvRefitCentFT0M(soa::Join<aod::Collisions, aod::CentFT0Ms> const& collisions,
+  void processNoPvRefitCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                 aod::Hf2Prongs const& rowsTrackIndexD0,
                                 aod::HfDstars const& rowsTrackIndexDstar,
                                 aod::TracksWCov const& tracks,

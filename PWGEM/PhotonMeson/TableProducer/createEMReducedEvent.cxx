@@ -29,7 +29,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
+using MyBCs = soa::Join<aod::BCs, aod::BcSels>;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
 using MyCollisions_Cent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
@@ -87,16 +87,15 @@ struct CreateEMEvent {
         registry.fill(HIST("hEventCounter"), 2);
       }
 
-      uint64_t tag = collision.selection_raw();
-      event(collision.globalIndex(), tag, bc.runNumber(), bc.triggerMask(), collision.sel8(),
+      // uint64_t tag = collision.selection_raw();
+      event(collision.globalIndex(), bc.globalBC(), bc.runNumber(), collision.sel8(), collision.alias_raw(), collision.selection_raw(),
             is_phoscpv_readout, is_emc_readout, map_ncolls_per_bc[bc.globalIndex()],
             collision.posX(), collision.posY(), collision.posZ(),
             collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
 
-      event_mult(collision.multTPC(),
-                 collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.multFDDA(), collision.multFDDC(),
+      event_mult(collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(), collision.multFDDA(), collision.multFDDC(),
                  collision.multZNA(), collision.multZNC(),
-                 collision.multTracklets(), collision.multNTracksPV(), collision.multNTracksPVeta1());
+                 collision.multTPC(), collision.multTracklets(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
 
       if constexpr (eventype == EMEventType::kEvent) {
         event_cent(105.f, 105.f, 105.f, 105.f);

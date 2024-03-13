@@ -102,6 +102,22 @@ int phibins = 72;
 float philow = 0.0;
 float phiup = constants::math::TwoPI;
 
+/* selection criteria from PWGMM */
+// default quality criteria for tracks with ITS contribution
+static constexpr o2::aod::track::TrackSelectionFlags::flagtype trackSelectionITS =
+  o2::aod::track::TrackSelectionFlags::kITSNCls | o2::aod::track::TrackSelectionFlags::kITSChi2NDF |
+  o2::aod::track::TrackSelectionFlags::kITSHits;
+
+// default quality criteria for tracks with TPC contribution
+static constexpr o2::aod::track::TrackSelectionFlags::flagtype trackSelectionTPC =
+  o2::aod::track::TrackSelectionFlags::kTPCNCls |
+  o2::aod::track::TrackSelectionFlags::kTPCCrossedRowsOverNCls |
+  o2::aod::track::TrackSelectionFlags::kTPCChi2NDF;
+
+// default standard DCA cuts
+static constexpr o2::aod::track::TrackSelectionFlags::flagtype trackSelectionDCA =
+  o2::aod::track::TrackSelectionFlags::kDCAz | o2::aod::track::TrackSelectionFlags::kDCAxy;
+
 int tracktype = 1;
 
 std::vector<TrackSelection*> trackFilters = {};
@@ -350,7 +366,7 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
     case kPbPbRun3:
       switch (fTriggerSelection) {
         case kMB:
-          if (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+          if (collision.sel8() && collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
             trigsel = true;
           }
           break;
@@ -637,8 +653,20 @@ inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
 template <typename TrackObject>
 inline bool matchTrackType(TrackObject const& track)
 {
+  using namespace o2::aod::track;
+
   if (useOwnTrackSelection) {
     return ownTrackSelection.IsSelected(track);
+  } else if (tracktype == 4) {
+    // under tests MM track selection
+    // see: https://indico.cern.ch/event/1383788/contributions/5816953/attachments/2805905/4896281/TrackSel_GlobalTracks_vs_MMTrackSel.pdf
+    // it should be equivalent to this
+    //       (track.passedDCAxy && track.passedDCAz && track.passedGoldenChi2) &&
+    //       (track.passedITSNCls && track.passedITSChi2NDF && track.passedITSHits) &&
+    //       (!track.hasTPC || (track.passedTPCNCls && track.passedTPCChi2NDF && track.passedTPCCrossedRowsOverNCls));
+    return track.hasITS() && ((track.trackCutFlag() & trackSelectionITS) == trackSelectionITS) &&
+           (!track.hasTPC() || ((track.trackCutFlag() & trackSelectionTPC) == trackSelectionTPC)) &&
+           ((track.trackCutFlag() & trackSelectionDCA) == trackSelectionDCA);
   } else {
     for (auto filter : trackFilters) {
       if (filter->IsSelected(track)) {
@@ -657,21 +685,32 @@ inline bool matchTrackType(TrackObject const& track)
   }
 }
 
-/// \brief Accepts or not the passed track
+/// \brief Checks if the passed track is within the acceptance conditions of the analysis
 /// \param track the track of interest
-/// \return true if the track is accepted, otherwise false
+/// \return true if the track is in the acceptance, otherwise false
 template <typename TrackObject>
-inline bool AcceptTrack(TrackObject const& track)
+inline bool InTheAcceptance(TrackObject const& track)
 {
-  /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
     if (track.mcParticleId() < 0) {
       return false;
     }
   }
 
-  if (matchTrackType(track)) {
-    if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
+  if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
+    return true;
+  }
+  return false;
+}
+
+/// \brief Accepts or not the passed track
+/// \param track the track of interest
+/// \return true if the track is accepted, otherwise false
+template <typename TrackObject>
+inline bool AcceptTrack(TrackObject const& track)
+{
+  if (InTheAcceptance(track)) {
+    if (matchTrackType(track)) {
       return true;
     }
   }
@@ -692,13 +731,24 @@ void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
   }
 }
 
+template <typename ParticleObject>
+inline float getCharge(ParticleObject& particle)
+{
+  float charge = 0.0;
+  TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
+  if (pdgparticle != nullptr) {
+    charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0);
+  }
+  return charge;
+}
+
 /// \brief Accepts or not the passed generated particle
 /// \param track the particle of interest
 /// \return `true` if the particle is accepted, `false` otherwise
 template <typename ParticleObject, typename MCCollisionObject>
 inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision)
 {
-  float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
+  float charge = getCharge(particle);
 
   if (particle.isPhysicalPrimary()) {
     if ((particle.mcCollisionId() == 0) && traceCollId0) {
@@ -861,7 +911,7 @@ struct PIDSpeciesSelection {
     /* let's first check the exclusion from the analysis */
     for (uint8_t ix = 0; ix < configexclude.size(); ++ix) {
       if (isA(configexclude[ix], speciesexclude[ix])) {
-        return -ix;
+        return -(ix + 1);
       }
     }
     /* we don't exclude it so check which species if any required */
@@ -890,7 +940,7 @@ struct PIDSpeciesSelection {
     /* let's first check the exclusion from the analysis */
     for (uint8_t ix = 0; ix < configexclude.size(); ++ix) {
       if (pdgcode == pdgcodes[speciesexclude[ix]]) {
-        return -ix;
+        return -(ix + 1);
       }
     }
     /* we don't exclude it so check which species if any required */

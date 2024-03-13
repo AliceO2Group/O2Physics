@@ -230,8 +230,11 @@ void analyseParticles(std::vector<fastjet::PseudoJet>& inputParticles, std::stri
     if constexpr (jethfutilities::isHFMcCandidate<U>()) {
       if (candidate != std::nullopt) {
         auto cand = candidate.value();
+        if (cand.mcParticleId() == particle.globalIndex()) {
+          continue;
+        }
         auto hfParticle = cand.template mcParticle_as<T>();
-        if (jethfutilities::isDaughterParticle(hfParticle, particle.globalIndex()) || (hfParticle.globalIndex() == particle.globalIndex())) {
+        if (jethfutilities::isDaughterParticle(hfParticle, particle.globalIndex())) {
           continue;
         }
       }

@@ -44,11 +44,12 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::photonpair;
 using namespace o2::aod::pwgem::mcutil;
+using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNgPCM>;
+using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNgPCM, aod::EMReducedMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMReducedEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
@@ -56,9 +57,9 @@ using MyMCV0Leg = MyMCV0Legs::iterator;
 
 struct MaterialBudgetMC {
 
-  Configurable<float> CentMin{"CentMin", -1, "min. centrality"};
-  Configurable<float> CentMax{"CentMax", 999, "max. centrality"};
-  Configurable<std::string> CentEstimator{"CentEstimator", "FT0M", "centrality estimator"};
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
+  Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
 
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for generated particles"};
   Configurable<float> maxRgen{"maxRgen", 90.f, "maximum radius for generated particles"};
@@ -66,6 +67,10 @@ struct MaterialBudgetMC {
   Configurable<std::string> fConfigTagCuts{"cfgTagCuts", "qc", "Comma separated list of V0 photon cuts for tag"};
   Configurable<std::string> fConfigProbeCuts{"cfgProbeCuts", "qc,wwire_ib", "Comma separated list of V0 photon cuts for probe"};
   Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "nocut", "Comma separated list of pair cuts"};
+
+  Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
+  EMEventCut fEMEventCut;
+  static constexpr std::string_view event_types[2] = {"before", "after"};
 
   OutputObj<THashList> fOutputEvent{"Event"};
   OutputObj<THashList> fOutputV0{"V0"};
@@ -88,6 +93,8 @@ struct MaterialBudgetMC {
     DefineProbeCuts();
     DefinePairCuts();
     addhistograms();
+    TString ev_cut_name = fConfigEMEventCut.value;
+    fEMEventCut = *eventcuts::GetCut(ev_cut_name.Data());
 
     fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
     fOutputV0.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("V0")));
@@ -109,14 +116,14 @@ struct MaterialBudgetMC {
 
         THashList* list_pair_subsys = reinterpret_cast<THashList*>(list_pair->FindObject(pairname.data()));
         std::string photon_cut_name = cutname1 + "_" + cutname2;
-        o2::aod::emphotonhistograms::AddHistClass(list_pair_subsys, photon_cut_name.data());
+        o2::aod::pwgem::photon::histogram::AddHistClass(list_pair_subsys, photon_cut_name.data());
         THashList* list_pair_subsys_photoncut = reinterpret_cast<THashList*>(list_pair_subsys->FindObject(photon_cut_name.data()));
 
         for (auto& cut3 : cuts3) {
           std::string pair_cut_name = cut3.GetName();
-          o2::aod::emphotonhistograms::AddHistClass(list_pair_subsys_photoncut, pair_cut_name.data());
+          o2::aod::pwgem::photon::histogram::AddHistClass(list_pair_subsys_photoncut, pair_cut_name.data());
           THashList* list_pair_subsys_paircut = reinterpret_cast<THashList*>(list_pair_subsys_photoncut->FindObject(pair_cut_name.data()));
-          o2::aod::emphotonhistograms::DefineHistograms(list_pair_subsys_paircut, "material_budget_study", "Pair");
+          o2::aod::pwgem::photon::histogram::DefineHistograms(list_pair_subsys_paircut, "material_budget_study", "Pair");
         } // end of cut3 loop pair cut
       }   // end of probecut loop
     }     // end of tagcut loop
@@ -129,30 +136,32 @@ struct MaterialBudgetMC {
     fMainList->SetName("fMainList");
 
     // create sub lists first.
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Event");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Event");
     THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Pair");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Pair");
     THashList* list_pair = reinterpret_cast<THashList*>(fMainList->FindObject("Pair"));
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "V0");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "V0");
     THashList* list_v0 = reinterpret_cast<THashList*>(fMainList->FindObject("V0"));
 
     // for V0s
     for (const auto& cut : fProbeCuts) {
       const char* cutname = cut.GetName();
-      THashList* list_v0_cut = o2::aod::emphotonhistograms::AddHistClass(list_v0, cutname);
-      o2::aod::emphotonhistograms::DefineHistograms(list_v0_cut, "material_budget_study", "V0");
+      THashList* list_v0_cut = o2::aod::pwgem::photon::histogram::AddHistClass(list_v0, cutname);
+      o2::aod::pwgem::photon::histogram::DefineHistograms(list_v0_cut, "material_budget_study", "V0");
     }
 
     for (auto& pairname : fPairNames) {
       LOGF(info, "Enabled pairs = %s", pairname.data());
 
-      o2::aod::emphotonhistograms::AddHistClass(list_ev, pairname.data());
-      THashList* list_ev_pair = reinterpret_cast<THashList*>(list_ev->FindObject(pairname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list_ev_pair, "Event");
+      THashList* list_ev_pair = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev, pairname.data()));
+      for (const auto& evtype : event_types) {
+        THashList* list_ev_type = reinterpret_cast<THashList*>(o2::aod::pwgem::photon::histogram::AddHistClass(list_ev_pair, evtype.data()));
+        o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev_type, "Event", evtype.data());
+      }
 
-      o2::aod::emphotonhistograms::AddHistClass(list_pair, pairname.data());
+      o2::aod::pwgem::photon::histogram::AddHistClass(list_pair, pairname.data());
 
       if (pairname == "PCMPCM") {
         add_pair_histograms(list_pair, pairname, fTagCuts, fProbeCuts, fPairCuts);
@@ -160,9 +169,9 @@ struct MaterialBudgetMC {
 
     } // end of pair name loop
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Generated");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Generated");
     THashList* list_gen = reinterpret_cast<THashList*>(fMainList->FindObject("Generated"));
-    o2::aod::emphotonhistograms::DefineHistograms(list_gen, "Generated", "");
+    o2::aod::pwgem::photon::histogram::DefineHistograms(list_gen, "Generated", "");
   }
 
   void DefineTagCuts()
@@ -218,29 +227,23 @@ struct MaterialBudgetMC {
   template <PairType pairtype, typename TEvents, typename TPhotons, typename TPreslice, typename TCuts, typename TLegs, typename TMCParticles, typename TMCEvents>
   void fillsinglephoton(TEvents const& collisions, TPhotons const& photons, TPreslice const& perCollision, TCuts const& cuts, TLegs const& legs, TMCParticles const& mcparticles, TMCEvents const&)
   {
-    THashList* list_ev_pair = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data()));
+    THashList* list_ev_pair_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[0].data()));
+    THashList* list_ev_pair_after = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject(event_types[1].data()));
     THashList* list_v0 = static_cast<THashList*>(fMainList->FindObject("V0"));
     double value[4] = {0.f};
     for (auto& collision : collisions) {
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hZvtx_before"))->Fill(collision.posZ());
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hCollisionCounter"))->Fill(1.0); // all
-      if (!collision.sel8()) {
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hCollisionCounter"))->Fill(2.0); // FT0VX i.e. FT0and
 
-      if (collision.numContrib() < 0.5) {
+      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_pair_before, "", collision);
+      if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hCollisionCounter"))->Fill(3.0); // Ncontrib > 0
-
-      if (abs(collision.posZ()) > 10.0) {
-        continue;
-      }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hZvtx_after"))->Fill(collision.posZ());
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject(pairnames[pairtype].data())->FindObject("hCollisionCounter"))->Fill(4.0); // |Zvtx| < 10 cm
-
-      o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev_pair, "", collision);
+      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_pair_after, "", collision);
+      reinterpret_cast<TH1F*>(list_ev_pair_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
+      reinterpret_cast<TH1F*>(list_ev_pair_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
 
       auto photons_coll = photons.sliceBy(perCollision, collision.globalIndex());
       for (auto& cut : cuts) {
@@ -285,6 +288,14 @@ struct MaterialBudgetMC {
     THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
 
     for (auto& collision : collisions) {
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
+      if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+
       auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
       auto photons2_coll = photons2.sliceBy(perCollision2, collision.globalIndex());
 
@@ -358,10 +369,11 @@ struct MaterialBudgetMC {
     }           // end of collision loop
   }
 
-  Partition<MyCollisions> grouped_collisions = CentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < CentMax; // this goes to same event.
-  Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true && CentMin < o2::aod::cent::centFT0M&& o2::aod::cent::centFT0M < CentMax;
+  Partition<MyCollisions> grouped_collisions = cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax; // this goes to same event.
+  Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
+  Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   Filter collisionFilter_subsys = o2::aod::emreducedevent::ngpcm >= 2;
-  using MyFilteredCollisions = soa::Filtered<MyCollisions>; // this goes to mixed event.
+  using MyFilteredCollisions = soa::Filtered<MyCollisions>; // this goes to same event pairing.
 
   void processMBMC(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, MyMCV0Legs const& legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
   {
@@ -370,12 +382,16 @@ struct MaterialBudgetMC {
   }
 
   PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
-  void processGen(soa::Join<MyCollisions, aod::EMReducedMCEventLabels> const& collisions, aod::EMReducedMCEvents const&, aod::EMMCParticles const& mcparticles)
+  void processGen(MyCollisions const& collisions, aod::EMReducedMCEvents const&, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
 
-    for (auto& collision : collisions) {
+    for (auto& collision : grouped_collisions) {
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
       auto mccollision = collision.emreducedmcevent();
       // LOGF(info, "mccollision.globalIndex() = %d", mccollision.globalIndex());
 

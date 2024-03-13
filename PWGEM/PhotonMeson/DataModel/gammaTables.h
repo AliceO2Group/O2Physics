@@ -31,7 +31,6 @@ namespace o2::aod
 namespace emreducedevent
 {
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
-DECLARE_SOA_COLUMN(Tag, tag, uint64_t);            //!  Bit-field for storing event information (e.g. high level info, cut decisions)
 DECLARE_SOA_COLUMN(NgammaPCM, ngpcm, int);
 DECLARE_SOA_COLUMN(NgammaPHOS, ngphos, int);
 DECLARE_SOA_COLUMN(NgammaEMC, ngemc, int);
@@ -71,7 +70,7 @@ DECLARE_SOA_COLUMN(Q3xFV0A, q3xfv0a, float);             //! Qx for 3rd harmonic
 DECLARE_SOA_COLUMN(Q3yFV0A, q3yfv0a, float);             //! Qy for 3rd harmonics in FV0A (i.e. positive eta)
 } // namespace emreducedevent
 DECLARE_SOA_TABLE(EMReducedEvents, "AOD", "EMREDUCEDEVENT", //!   Main event information table
-                  o2::soa::Index<>, emreducedevent::CollisionId, emreducedevent::Tag, bc::RunNumber, bc::TriggerMask, evsel::Sel8,
+                  o2::soa::Index<>, emreducedevent::CollisionId, bc::GlobalBC, bc::RunNumber, evsel::Sel8, evsel::Alias, evsel::Selection,
                   emreducedevent::IsPHOSCPVReadout, emreducedevent::IsEMCReadout, emreducedevent::NcollsPerBC,
                   collision::PosX, collision::PosY, collision::PosZ,
                   collision::NumContrib, collision::CollisionTime, collision::CollisionTimeRes);
@@ -81,8 +80,11 @@ DECLARE_SOA_TABLE(EMReducedEventsBz, "AOD", "EMEVENTBZ", emreducedevent::Bz); //
 using EMReducedEventBz = EMReducedEventsBz::iterator;
 
 DECLARE_SOA_TABLE(EMReducedEventsMult, "AOD", "EMEVENTMULT", //!   event multiplicity table, joinable to EMReducedEvents
-                  mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
-                  mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV, mult::MultNTracksPVeta1);
+                  mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
+                  mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC,
+                  mult::MultTPC, mult::MultTracklets, mult::MultNTracksPV, mult::MultNTracksPVeta1, mult::MultNTracksPVetaHalf,
+                  mult::IsInelGt0<mult::MultNTracksPVeta1>,
+                  mult::IsInelGt1<mult::MultNTracksPVeta1>);
 using EMReducedEventMult = EMReducedEventsMult::iterator;
 
 DECLARE_SOA_TABLE(EMReducedEventsCent, "AOD", "EMEVENTCENT", //!   event centrality table, joinable to EMReducedEvents
@@ -261,7 +263,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSib, meanClusterSizeITSib, [](uint32
 });
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
-  for (unsigned int layer = 4; layer < 7; layer++) {
+  for (unsigned int layer = 3; layer < 7; layer++) {
     int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
     if (cluster_size_per_layer > 0) {
       nl++;
@@ -366,6 +368,16 @@ DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaXYinSigma, dcaXYinSigma, [](float dcaXY, float cYY) -> float { return dcaXY / std::sqrt(cYY); });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaZinSigma, dcaZinSigma, [](float dcaZ, float cZZ) -> float { return dcaZ / std::sqrt(cZZ); });
+DECLARE_SOA_DYNAMIC_COLUMN(Dca3DinSigma, dca3DinSigma, [](float dcaXY, float dcaZ, float cYY, float cZZ, float cZY) -> float {
+  float det = cYY * cZZ - cZY * cZY; // determinant
+  if (det < 0) {
+    return 999.f;
+  } else {
+    return std::sqrt(std::abs((dcaXY * dcaXY * cZZ + dcaZ * dcaZ * cYY - 2. * dcaXY * dcaZ * cZY) / det / 2.)); // dca 3d in sigma
+  }
+});
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITS, meanClusterSizeITS, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
   for (unsigned int layer = 0; layer < 7; layer++) {
@@ -398,7 +410,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSib, meanClusterSizeITSib, [](uint32
 });
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
-  for (unsigned int layer = 4; layer < 7; layer++) {
+  for (unsigned int layer = 3; layer < 7; layer++) {
     int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
     if (cluster_size_per_layer > 0) {
       nl++;
@@ -433,6 +445,9 @@ DECLARE_SOA_TABLE(EMPrimaryElectrons, "AOD", "EMPRIMARYEL", //!
                   emprimaryelectron::Px<track::Pt, track::Phi>,
                   emprimaryelectron::Py<track::Pt, track::Phi>,
                   emprimaryelectron::Pz<track::Pt, track::Eta>,
+                  emprimaryelectron::DcaXYinSigma<track::DcaXY, track::CYY>,
+                  emprimaryelectron::DcaZinSigma<track::DcaZ, track::CZZ>,
+                  emprimaryelectron::Dca3DinSigma<track::DcaXY, track::DcaZ, track::CYY, track::CZZ, track::CZY>,
                   emprimaryelectron::MeanClusterSizeITS<track::ITSClusterSizes>,
                   emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
                   emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
@@ -485,6 +500,16 @@ DECLARE_SOA_COLUMN(PrefilterBit, pfb, uint8_t);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaXYinSigma, dcaXYinSigma, [](float dcaXY, float cYY) -> float { return dcaXY / std::sqrt(cYY); });
+DECLARE_SOA_DYNAMIC_COLUMN(DcaZinSigma, dcaZinSigma, [](float dcaZ, float cZZ) -> float { return dcaZ / std::sqrt(cZZ); });
+DECLARE_SOA_DYNAMIC_COLUMN(Dca3DinSigma, dca3DinSigma, [](float dcaXY, float dcaZ, float cYY, float cZZ, float cZY) -> float {
+  float det = cYY * cZZ - cZY * cZY; // determinant
+  if (det < 0) {
+    return 999.f;
+  } else {
+    return std::sqrt(std::abs((dcaXY * dcaXY * cZZ + dcaZ * dcaZ * cYY - 2. * dcaXY * dcaZ * cZY) / det / 2.)); // dca 3d in sigma
+  }
+});
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITS, meanClusterSizeITS, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
   for (unsigned int layer = 0; layer < 7; layer++) {
@@ -517,7 +542,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSib, meanClusterSizeITSib, [](uint32
 });
 DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32_t itsClusterSizes) -> float {
   int total_cluster_size = 0, nl = 0;
-  for (unsigned int layer = 4; layer < 7; layer++) {
+  for (unsigned int layer = 3; layer < 7; layer++) {
     int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
     if (cluster_size_per_layer > 0) {
       nl++;
@@ -552,6 +577,9 @@ DECLARE_SOA_TABLE(EMPrimaryMuons, "AOD", "EMPRIMARYMU", //!
                   emprimarymuon::Px<track::Pt, track::Phi>,
                   emprimarymuon::Py<track::Pt, track::Phi>,
                   emprimarymuon::Pz<track::Pt, track::Eta>,
+                  emprimarymuon::DcaXYinSigma<track::DcaXY, track::CYY>,
+                  emprimarymuon::DcaZinSigma<track::DcaZ, track::CZZ>,
+                  emprimarymuon::Dca3DinSigma<track::DcaXY, track::DcaZ, track::CYY, track::CZZ, track::CZY>,
                   emprimarymuon::MeanClusterSizeITS<track::ITSClusterSizes>,
                   emprimarymuon::MeanClusterSizeITSib<track::ITSClusterSizes>,
                   emprimarymuon::MeanClusterSizeITSob<track::ITSClusterSizes>);
@@ -639,20 +667,6 @@ DECLARE_SOA_INDEX_COLUMN(V0DaughterMcParticle, v0DaughterMcParticle);
 
 // DECLARE_SOA_INDEX_TABLE_USER(MCTrackIndex, V0MCDaughterParticles, "MCTRACKINDEX", MCParticleTrueIndex::V0DaughterTrackId);
 DECLARE_SOA_TABLE(MCParticleIndex, "AOD", "MCPARTICLEINDEX", MCParticleTrueIndex::V0DaughterMcParticleId);
-
-namespace v0Recalculations
-{
-DECLARE_SOA_COLUMN(RecalculatedVtxX, recalculatedVtxX, float); //! Recalculated conversion point
-DECLARE_SOA_COLUMN(RecalculatedVtxY, recalculatedVtxY, float); //! Recalculated conversion point
-DECLARE_SOA_COLUMN(RecalculatedVtxZ, recalculatedVtxZ, float); //! Recalculated conversion point
-DECLARE_SOA_DYNAMIC_COLUMN(RecalculatedVtxR, recalculatedVtxR, [](float x, float y) { return sqrt(x * x + y * y); });
-} // namespace v0Recalculations
-
-DECLARE_SOA_TABLE(V0Recalculation, "AOD", "V0RECALC",
-                  v0Recalculations::RecalculatedVtxX,
-                  v0Recalculations::RecalculatedVtxY,
-                  v0Recalculations::RecalculatedVtxZ,
-                  v0Recalculations::RecalculatedVtxR<o2::aod::v0Recalculations::RecalculatedVtxX, o2::aod::v0Recalculations::RecalculatedVtxY>);
 
 namespace gammamctrue
 {

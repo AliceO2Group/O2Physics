@@ -51,6 +51,15 @@ class DGSelector
     //  2 TCE
     //  3 TOR
     for (auto const& bc : bcRange) {
+      /* for debuging
+      auto isVetoed = udhelpers::FITveto(bc, diffCuts);
+      auto isClean = udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits());
+      LOGF(info, "<IsSelected> isVetoed: %d isClean: %d", isVetoed, isClean);
+      if (isVetoed) {
+        return 1;
+      }
+      */
+
       if (udhelpers::FITveto(bc, diffCuts)) {
         return 1;
       }

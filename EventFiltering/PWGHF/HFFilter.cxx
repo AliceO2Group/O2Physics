@@ -56,7 +56,8 @@ struct HfFilter { // Main struct for HF triggers
   Produces<aod::HFOptimisationTreeCollisions> optimisationTreeCollisions;
 
   Configurable<int> activateQA{"activateQA", 0, "flag to enable QA histos (0 no QA, 1 basic QA, 2 extended QA, 3 very extended QA)"};
-  Configurable<bool> applyEventSelection{"applyEventSelection", false, "flag to enable event selection (sel8 + Zvt)"};
+  Configurable<bool> applyEventSelection{"applyEventSelection", true, "flag to enable event selection (sel8 + Zvt and possibly time-frame border cut)"};
+  Configurable<bool> applyTimeFrameBorderCut{"applyTimeFrameBorderCut", true, "flag to enable time-frame border cut"};
 
   // parameters for all triggers
   // nsigma PID (except for V0 and cascades)
@@ -68,10 +69,12 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<LabeledArray<float>> ptThresholds{"ptThresholds", {cutsHighPtThresholds[0], 1, 2, labelsEmpty, labelsColumnsHighPtThresholds}, "pT treshold for high pT charm hadron candidates for kHighPt triggers in GeV/c"};
 
   // parameters for beauty triggers
-  Configurable<LabeledArray<float>> deltaMassBeauty{"deltaMassBeauty", {cutsDeltaMassB[0], 1, kNBeautyParticles + 1, labelsEmpty, labelsColumnsDeltaMassB}, "invariant-mass delta with respect to the b-hadron masses in GeV/c2"};
+  Configurable<LabeledArray<float>> deltaMassBeauty{"deltaMassBeauty", {cutsDeltaMassB[0], 1, kNBeautyParticles, labelsEmpty, labelsColumnsDeltaMassB}, "invariant-mass delta with respect to the b-hadron masses in GeV/c2"};
   Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCAXY pT-dependent cut"};
   Configurable<LabeledArray<double>> cutsTrackBeauty3Prong{"cutsTrackBeauty3Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 3-prong beauty candidates"};
   Configurable<LabeledArray<double>> cutsTrackBeauty4Prong{"cutsTrackBeauty4Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 4-prong beauty candidates"};
+  Configurable<std::string> paramCharmMassShape{"paramCharmMassShape", "2023_pass3", "Parametrisation of charm-hadron mass shape (options: 2023_pass3)"};
+  Configurable<float> numSigmaDeltaMassCharmHad{"numSigmaDeltaMassCharmHad", 2.5, "Number of sigma for charm-hadron delta mass cut in B and D resonance triggers"};
 
   // parameters for femto triggers
   Configurable<float> femtoMaxRelativeMomentum{"femtoMaxRelativeMomentum", 2., "Maximal allowed value for relative momentum between charm-proton pairs in GeV/c"};
@@ -174,6 +177,7 @@ struct HfFilter { // Main struct for HF triggers
 
   void init(InitContext&)
   {
+    helper.setHighPtTriggerThresholds(ptThresholds->get(0u, 0u), ptThresholds->get(0u, 1u));
     helper.setPtBinsSingleTracks(pTBinsTrack);
     helper.setPtLimitsBeautyBachelor(ptCuts->get(0u, 0u), ptCuts->get(1u, 0u));
     helper.setPtLimitsDstarSoftPion(ptCuts->get(0u, 1u), ptCuts->get(1u, 1u));
@@ -186,11 +190,12 @@ struct HfFilter { // Main struct for HF triggers
     helper.setNsigmaProtonCutsForCharmBaryons(nSigmaPidCuts->get(0u, 0u), nSigmaPidCuts->get(1u, 0u));
     helper.setNsigmaPionKaonCutsForDzero(nSigmaPidCuts->get(0u, 1u), nSigmaPidCuts->get(1u, 1u));
     helper.setNsigmaKaonCutsFor3Prongs(nSigmaPidCuts->get(0u, 2u), nSigmaPidCuts->get(1u, 2u));
-    helper.setDeltaMassCharmHadForBeauty(deltaMassBeauty->get(0u, kNBeautyParticles));
     helper.setV0Selections(cutsGammaK0sLambda->get(0u, 0u), cutsGammaK0sLambda->get(0u, 1u), cutsGammaK0sLambda->get(0u, 2u), cutsGammaK0sLambda->get(0u, 3u), cutsGammaK0sLambda->get(0u, 4u), cutsGammaK0sLambda->get(0u, 5u));
     helper.setXiSelections(cutsXiCascades->get(0u, 0u), cutsXiCascades->get(0u, 1u), cutsXiCascades->get(0u, 2u), cutsXiCascades->get(0u, 3u), cutsXiCascades->get(0u, 4u), cutsXiCascades->get(0u, 5u), cutsXiCascades->get(0u, 6u), cutsXiCascades->get(0u, 7u));
     helper.setNsigmaPiCutsForCharmBaryonBachelor(nSigmaPidCuts->get(0u, 4u), nSigmaPidCuts->get(1u, 4u));
     helper.setTpcPidCalibrationOption(setTPCCalib);
+    helper.setMassResolParametrisation(paramCharmMassShape);
+    helper.setNumSigmaForDeltaMassCharmHadCut(numSigmaDeltaMassCharmHad);
 
     hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;counts", HistType::kTH1F, {{kNtriggersHF + 2, -0.5, kNtriggersHF + 1.5}});
     for (auto iBin = 0; iBin < kNtriggersHF + 2; ++iBin) {
@@ -307,7 +312,8 @@ struct HfFilter { // Main struct for HF triggers
     for (const auto& collision : collisions) {
 
       bool keepEvent[kNtriggersHF]{false};
-      if (applyEventSelection && (!collision.sel8() || std::fabs(collision.posZ()) > 11.f)) { // safety margin for Zvtx
+      if (applyEventSelection && (!collision.sel8() || std::fabs(collision.posZ()) > 11.f || (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && applyTimeFrameBorderCut))) { // safety margin for Zvtx
+
         tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach]);
         continue;
       }
@@ -433,7 +439,7 @@ struct HfFilter { // Main struct for HF triggers
 
         auto selD0 = helper.isSelectedD0InMassRange(pVecPos, pVecNeg, pt2Prong, preselD0, activateQA, hMassVsPtC[kD0]);
 
-        if (pt2Prong >= ptThresholds->get(0u, 0u)) {
+        if (helper.isSelectedHighPt2Prong(pt2Prong)) {
           keepEvent[kHighPt2P] = true;
           if (activateQA) {
             hCharmHighPt[kD0]->Fill(pt2Prong);
@@ -797,7 +803,7 @@ struct HfFilter { // Main struct for HF triggers
           }
         }
 
-        if (pt3Prong >= ptThresholds->get(0u, 1u)) {
+        if (helper.isSelectedHighPt3Prong(pt3Prong)) {
           keepEvent[kHighPt3P] = true;
           if (activateQA) {
             for (auto iCharmPart{1}; iCharmPart < kNCharmParticles; ++iCharmPart) {
