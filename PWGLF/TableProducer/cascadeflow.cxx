@@ -110,7 +110,6 @@ namespace cascade_flow_cuts_ml
   static const std::vector<std::string> labelsDmesCutScore = {"ML score signal", "ML score bkg"};
 } // namespace cascade_flow_cuts_ml
 
-static constexpr double defaultCutsMl[1][2] = {{0.5, 0.5}};
 
 struct cascadeFlow {
 
