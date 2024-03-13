@@ -172,7 +172,7 @@ struct epvector {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (!(candidate.isGlobalTrack() || candidate.isPVContributor() || candidate.itsNCls() > cfgITScluster)) {
+    if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
     return true;

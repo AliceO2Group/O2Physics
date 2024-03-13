@@ -209,12 +209,10 @@ struct TableMaker {
         fCCDB->get<TGeoManager>(geoPath);
       }
     }
-
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
     fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
-
     // Only use detailed QA when QA is set true
     if (fConfigQA && fConfigDetailedQA) {
       fDoDetailedQA = true;
@@ -289,7 +287,6 @@ struct TableMaker {
         }
       }
     }
-
     VarManager::SetRunlist((TString)fConfigRunPeriods);
     if (fConfigDummyRunlist) {
       VarManager::SetDummyRunlist(fConfigInitRunNumber);
@@ -300,7 +297,6 @@ struct TableMaker {
     DefineHistograms(histClasses);                   // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
-
     // CCDB configuration
     if (fConfigComputeTPCpostCalib) {
       fCCDB->setURL(fConfigCcdbUrl.value);
@@ -675,6 +671,12 @@ struct TableMaker {
         VarManager::FillTrack<TMuonFillMap>(muon);
         if (fPropMuon) {
           VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
+          if (static_cast<int>(muon.trackType()) < 2) {
+            auto const& matchMCH = muon.template matchMCHTrack_as<TMuons>();
+            VarManager::FillMuonPDca<TMuonFillMap>(matchMCH, collision);
+          } else if (static_cast<int>(muon.trackType()) > 2) {
+            VarManager::FillMuonPDca<TMuonFillMap>(muon, collision);
+          }
         }
         if (fDoDetailedQA) {
           fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
@@ -740,17 +742,27 @@ struct TableMaker {
         }
 
         muonBasic(event.lastIndex(), newMatchIndex.find(muon.index())->second, newMFTMatchIndex.find(muon.index())->second, trackFilteringTag, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], muon.sign(), isAmbiguous);
-        muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
-                  muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
-                  muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
-                  muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY(),
-                  muon.trackTime(), muon.trackTimeRes());
         muonInfo(muon.collisionId(), collision.posX(), collision.posY(), collision.posZ());
         if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
+
+          if (fPropMuon) {
+            muonExtra(muon.nClusters(), VarManager::fgValues[VarManager::kMuonPDca], VarManager::fgValues[VarManager::kMuonRAtAbsorberEnd],
+                      muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
+                      muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
+                      muon.midBoards(), muon.trackType(), VarManager::fgValues[VarManager::kMuonDCAx], VarManager::fgValues[VarManager::kMuonDCAy],
+                      muon.trackTime(), muon.trackTimeRes());
+          }
+
           muonCov(VarManager::fgValues[VarManager::kX], VarManager::fgValues[VarManager::kY], VarManager::fgValues[VarManager::kZ], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kTgl], muon.sign() / VarManager::fgValues[VarManager::kPt],
                   VarManager::fgValues[VarManager::kMuonCXX], VarManager::fgValues[VarManager::kMuonCXY], VarManager::fgValues[VarManager::kMuonCYY], VarManager::fgValues[VarManager::kMuonCPhiX], VarManager::fgValues[VarManager::kMuonCPhiY], VarManager::fgValues[VarManager::kMuonCPhiPhi],
                   VarManager::fgValues[VarManager::kMuonCTglX], VarManager::fgValues[VarManager::kMuonCTglY], VarManager::fgValues[VarManager::kMuonCTglPhi], VarManager::fgValues[VarManager::kMuonCTglTgl], VarManager::fgValues[VarManager::kMuonC1Pt2X], VarManager::fgValues[VarManager::kMuonC1Pt2Y],
                   VarManager::fgValues[VarManager::kMuonC1Pt2Phi], VarManager::fgValues[VarManager::kMuonC1Pt2Tgl], VarManager::fgValues[VarManager::kMuonC1Pt21Pt2]);
+        } else {
+          muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
+                    muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
+                    muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
+                    muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY(),
+                    muon.trackTime(), muon.trackTimeRes());
         }
       }
     } // end if constexpr (TMuonFillMap)
@@ -1027,7 +1039,14 @@ struct TableMaker {
         VarManager::FillTrack<TMuonFillMap>(muon);
         if (fPropMuon) {
           VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
+          if (static_cast<int>(muon.trackType()) < 2) {
+            auto const& matchMCH = tracksMuon.rawIteratorAt(static_cast<int>(muon.matchMCHTrackId()));
+            VarManager::FillMuonPDca<TMuonFillMap>(matchMCH, collision);
+          } else if (static_cast<int>(muon.trackType()) > 2) {
+            VarManager::FillMuonPDca<TMuonFillMap>(muon, collision);
+          }
         }
+
         if (fDoDetailedQA) {
           fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
           if (fIsAmbiguous && isAmbiguous == 1) {
@@ -1051,8 +1070,12 @@ struct TableMaker {
         if (!trackTempFilterMap) {
           continue;
         }
+
         // store the cut decisions
-        trackFilteringTag |= uint64_t(trackTempFilterMap); // BIT0-7:  user selection cuts
+        trackFilteringTag = trackTempFilterMap; // BIT0-7:  user selection cuts
+        if (fPropMuon) {
+          trackFilteringTag |= (uint8_t(1) << VarManager::kMuonIsPropagated); // store the info on whether the muon is propagated or not
+        }
 
         // update the matching MCH/MFT index
         if (static_cast<int>(muon.trackType()) == 0 || static_cast<int>(muon.trackType()) == 2) { // MCH-MFT(2) or GLB(0) track
@@ -1075,17 +1098,27 @@ struct TableMaker {
         }
 
         muonBasic(event.lastIndex(), newMatchIndex.find(muon.index())->second, -1, trackFilteringTag, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], muon.sign(), isAmbiguous);
-        muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
-                  muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
-                  muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
-                  muon.midBoards(), muon.trackType(), VarManager::fgValues[VarManager::kMuonDCAx], VarManager::fgValues[VarManager::kMuonDCAy],
-                  muon.trackTime(), muon.trackTimeRes());
         muonInfo(muon.collisionId(), collision.posX(), collision.posY(), collision.posZ());
         if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
+
+          if (fPropMuon) {
+            muonExtra(muon.nClusters(), VarManager::fgValues[VarManager::kMuonPDca], VarManager::fgValues[VarManager::kMuonRAtAbsorberEnd],
+                      muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
+                      muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
+                      muon.midBoards(), muon.trackType(), VarManager::fgValues[VarManager::kMuonDCAx], VarManager::fgValues[VarManager::kMuonDCAy],
+                      muon.trackTime(), muon.trackTimeRes());
+          }
+
           muonCov(VarManager::fgValues[VarManager::kX], VarManager::fgValues[VarManager::kY], VarManager::fgValues[VarManager::kZ], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kTgl], muon.sign() / VarManager::fgValues[VarManager::kPt],
                   VarManager::fgValues[VarManager::kMuonCXX], VarManager::fgValues[VarManager::kMuonCXY], VarManager::fgValues[VarManager::kMuonCYY], VarManager::fgValues[VarManager::kMuonCPhiX], VarManager::fgValues[VarManager::kMuonCPhiY], VarManager::fgValues[VarManager::kMuonCPhiPhi],
                   VarManager::fgValues[VarManager::kMuonCTglX], VarManager::fgValues[VarManager::kMuonCTglY], VarManager::fgValues[VarManager::kMuonCTglPhi], VarManager::fgValues[VarManager::kMuonCTglTgl], VarManager::fgValues[VarManager::kMuonC1Pt2X], VarManager::fgValues[VarManager::kMuonC1Pt2Y],
                   VarManager::fgValues[VarManager::kMuonC1Pt2Phi], VarManager::fgValues[VarManager::kMuonC1Pt2Tgl], VarManager::fgValues[VarManager::kMuonC1Pt21Pt2]);
+        } else {
+          muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
+                    muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
+                    muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
+                    muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY(),
+                    muon.trackTime(), muon.trackTimeRes());
         }
       }
     } // end if constexpr (TMuonFillMap)

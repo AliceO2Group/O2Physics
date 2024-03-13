@@ -502,7 +502,7 @@ struct threebodyRecoTask {
 
   //------------------------------------------------------------------
   // process real data analysis
-  void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, FullTracksExtIU const& tracks)
+  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, FullTracksExtIU const& tracks)
   {
     Candidates3body.clear();
     registry.fill(HIST("hEventCounter"), 0.5);
@@ -527,7 +527,7 @@ struct threebodyRecoTask {
     resetHistos();
 
     for (auto& cand3body : Candidates3body) {
-      outputDataTable(0, collision.posX(), collision.posY(), collision.posZ(), // centV0M() instead of 0. once available
+      outputDataTable(collision.centFT0C(), collision.posX(), collision.posY(), collision.posZ(),
                       cand3body.isMatter, cand3body.invmass, cand3body.lcand.P(), cand3body.lcand.Pt(), cand3body.ct,
                       cand3body.posSV[0], cand3body.posSV[1], cand3body.posSV[2],
                       cand3body.cosPA, cand3body.dcadaughters, cand3body.dcacandtopv,
@@ -544,7 +544,7 @@ struct threebodyRecoTask {
 
   //------------------------------------------------------------------
   // process mc analysis
-  void processMC(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels> const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, aod::McParticles const& particlesMC, MCLabeledTracksIU const& tracks, aod::McCollisions const& mcCollisions)
+  void processMC(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, aod::McParticles const& particlesMC, MCLabeledTracksIU const& tracks, aod::McCollisions const& mcCollisions)
   {
     Candidates3body.clear();
     filledMothers.clear();
@@ -610,7 +610,7 @@ struct threebodyRecoTask {
       resetHistos();
 
       for (auto& cand3body : Candidates3body) {
-        outputMCTable(0, collision.posX(), collision.posY(), collision.posZ(), // centV0M() instead of 0. once available
+        outputMCTable(collision.centFT0C(), collision.posX(), collision.posY(), collision.posZ(), // centV0M() instead of 0. once available
                       cand3body.isMatter, cand3body.invmass, cand3body.lcand.P(), cand3body.lcand.Pt(), cand3body.ct,
                       cand3body.posSV[0], cand3body.posSV[1], cand3body.posSV[2],
                       cand3body.cosPA, cand3body.dcadaughters, cand3body.dcacandtopv,

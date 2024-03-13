@@ -225,27 +225,27 @@ struct flowQC {
     float QxFT0C = collision.qvecFT0CRe();
     float QyFT0C = collision.qvecFT0CIm();
     float QmodFT0C = std::hypot(QxFT0C, QyFT0C);
-    float psiFT0C = std::atan2(QyFT0C, QxFT0C);
+    float psiFT0C = std::atan2(QyFT0C, QxFT0C) / 2;
 
     float QxFT0A = collision.qvecFT0ARe();
     float QyFT0A = collision.qvecFT0AIm();
     float QmodFT0A = std::hypot(QxFT0A, QyFT0A);
-    float psiFT0A = std::atan2(QyFT0A, QxFT0A);
+    float psiFT0A = std::atan2(QyFT0A, QxFT0A) / 2;
 
     float QxFV0A = collision.qvecFV0ARe();
     float QyFV0A = collision.qvecFV0AIm();
     float QmodFV0A = std::hypot(QxFV0A, QyFV0A);
-    float psiFV0A = std::atan2(QyFV0A, QxFV0A);
+    float psiFV0A = std::atan2(QyFV0A, QxFV0A) / 2;
 
     float QxBpos = collision.qvecBPosRe();
     float QyBpos = collision.qvecBPosIm();
     float QmodBpos = std::hypot(QxBpos, QyBpos);
-    float psiBpos = std::atan2(QyBpos, QxBpos);
+    float psiBpos = std::atan2(QyBpos, QxBpos) / 2;
 
     float QxBneg = collision.qvecBNegRe();
     float QyBneg = collision.qvecBNegIm();
     float QmodBneg = std::hypot(QxBneg, QyBneg);
-    float psiBneg = std::atan2(QyBneg, QxBneg);
+    float psiBneg = std::atan2(QyBneg, QxBneg) / 2;
 
     std::array<float, qVecDetectors::kNqVecDetectors> vec_Qx = {QxFT0C, QxFT0A, QxFV0A, QxBpos, QxBneg};
     std::array<float, qVecDetectors::kNqVecDetectors> vec_Qy = {QyFT0C, QyFT0A, QyFV0A, QyBpos, QyBneg};
@@ -258,7 +258,7 @@ struct flowQC {
       hPsi[iQvecDet]->Fill(centrality, vec_Qpsi[iQvecDet]);
       for (int jQvecDet = iQvecDet + 1; jQvecDet < qVecDetectors::kNqVecDetectors; jQvecDet++) {
         // Q-vector azimuthal-angle differences
-        hDeltaPsi[iQvecDet][jQvecDet]->Fill(centrality, vec_Qpsi[iQvecDet]);
+        hDeltaPsi[iQvecDet][jQvecDet]->Fill(centrality, vec_Qpsi[iQvecDet] - vec_Qpsi[jQvecDet]);
         // Scalar-product histograms
         auto getSP = [&](int iDet1, int iDet2) {
           return vec_Qx[iDet1] * vec_Qx[iDet2] + vec_Qy[iDet1] * vec_Qy[iDet2];

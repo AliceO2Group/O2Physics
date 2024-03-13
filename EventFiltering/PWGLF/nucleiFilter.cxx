@@ -147,13 +147,14 @@ struct nucleiFilter {
   {
     // collision process loop
     bool keepEvent[nNuclei + nHyperNuclei]{false};
+    //
+    qaHists.fill(HIST("fCollZpos"), collision.posZ());
+    qaHists.fill(HIST("fProcessedEvents"), 0);
+    //
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       tags(keepEvent[2], keepEvent[3]);
       return;
     }
-    //
-    qaHists.fill(HIST("fCollZpos"), collision.posZ());
-    qaHists.fill(HIST("fProcessedEvents"), 0);
     //
     const double bgScalings[nNuclei][2]{
       {charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / masses[0], charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / masses[0]},

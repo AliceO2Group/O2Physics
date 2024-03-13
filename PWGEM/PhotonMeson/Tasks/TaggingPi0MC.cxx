@@ -59,6 +59,10 @@ struct TaggingPi0MC {
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
   using MyMCTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronMCLabels, aod::EMPrimaryElectronsPrefilterBit>;
 
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
+  Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
+
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_0_120_tpchadrejortofreq,mee_0_120_tpchadrejortofreq_lowB", "Comma separated list of Dalitz ee cuts"};
@@ -320,6 +324,11 @@ struct TaggingPi0MC {
         continue;
       }
 
+      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
+
       o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_pair_before, "", collision);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
@@ -452,20 +461,21 @@ struct TaggingPi0MC {
   Preslice<MyDalitzEEs> perCollision_dalitz = aod::dalitzee::emreducedeventId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
+  Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
   void processPCMDalitzEE(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& legs, MyFilteredDalitzEEs const& dielectrons, MyMCTracks const& emprimaryelectrons, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
   {
-    TruePairing<PairType::kPCMDalitzEE>(collisions, v0photons, dielectrons, perCollision_pcm, perCollision_dalitz, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimaryelectrons, mcparticles, mccollisions);
+    TruePairing<PairType::kPCMDalitzEE>(grouped_collisions, v0photons, dielectrons, perCollision_pcm, perCollision_dalitz, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimaryelectrons, mcparticles, mccollisions);
   }
 
   void processPCMPHOS(MyCollisions const& collisions, MyV0Photons const& v0photons, aod::PHOSClusters const& phosclusters, MyMCV0Legs const& legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
   {
-    TruePairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision_pcm, perCollision_phos, fPCMCuts, fPHOSCuts, fPairCuts, legs, nullptr, mcparticles, mccollisions);
+    TruePairing<PairType::kPCMPHOS>(grouped_collisions, v0photons, phosclusters, perCollision_pcm, perCollision_phos, fPCMCuts, fPHOSCuts, fPairCuts, legs, nullptr, mcparticles, mccollisions);
   }
 
   void processPCMEMC(MyCollisions const& collisions, MyV0Photons const& v0photons, aod::SkimEMCClusters const& emcclusters, MyMCV0Legs const& legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
   {
-    TruePairing<PairType::kPCMEMC>(collisions, v0photons, emcclusters, perCollision_pcm, perCollision_emc, fPCMCuts, fEMCCuts, fPairCuts, legs, nullptr, mcparticles, mccollisions);
+    TruePairing<PairType::kPCMEMC>(grouped_collisions, v0photons, emcclusters, perCollision_pcm, perCollision_emc, fPCMCuts, fEMCCuts, fPairCuts, legs, nullptr, mcparticles, mccollisions);
   }
 
   void processDummy(MyCollisions const& collision) {}

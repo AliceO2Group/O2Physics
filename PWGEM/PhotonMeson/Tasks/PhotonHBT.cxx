@@ -56,6 +56,9 @@ using MyPrimaryElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElec
 using MyPrimaryElectron = MyPrimaryElectrons::iterator;
 
 struct PhotonHBT {
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
+  Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
 
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "qc", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_all_tpchadrejortofreq_prompt", "Comma separated list of DalitzEE cuts"};
@@ -266,8 +269,12 @@ struct PhotonHBT {
     THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
 
     for (auto& collision : collisions) {
-
       if ((pairtype == kPHOSPHOS || pairtype == kPCMPHOS) && !collision.isPHOSCPVreadout()) {
+        continue;
+      }
+
+      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
@@ -438,23 +445,38 @@ struct PhotonHBT {
 
   Configurable<int> ndepth{"ndepth", 10, "depth for event mixing"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 10.f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 1e+10f}, "Mixing bins - multiplicity"};
-  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
-  BinningType colBinning{{ConfVtxBins, ConfMultBins}, true};
+  ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 999.f}, "Mixing bins - centrality"};
+  using BinningType_M = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  using BinningType_A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0A>;
+  using BinningType_C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  BinningType_M colBinning_M{{ConfVtxBins, ConfCentBins}, true};
+  BinningType_A colBinning_A{{ConfVtxBins, ConfCentBins}, true};
+  BinningType_C colBinning_C{{ConfVtxBins, ConfCentBins}, true};
 
-  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TPairCuts, typename TLegs, typename TEMPrimaryElectrons>
-  void MixedEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TPairCuts const& paircuts, TLegs const& legs, TEMPrimaryElectrons const& emprimaryelectrons)
+  template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TPairCuts, typename TLegs, typename TEMPrimaryElectrons, typename TMixedBinning>
+  void MixedEventPairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TPairCuts const& paircuts, TLegs const& legs, TEMPrimaryElectrons const& emprimaryelectrons, TMixedBinning const& colBinning)
   {
     THashList* list_pair_ss = static_cast<THashList*>(fMainList->FindObject("Pair")->FindObject(pairnames[pairtype].data()));
     // LOGF(info, "Number of collisions after filtering: %d", collisions.size());
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ndepth, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
-      // LOGF(info, "Mixed event globalIndex: (%d, %d) , counter = %d, ngpcm: (%d, %d), ngphos: (%d, %d), ngemc: (%d, %d)",
-      //     collision1.globalIndex(), collision2.globalIndex(), nev, collision1.ngpcm(), collision2.ngpcm(), collision1.ngphos(), collision2.ngphos(), collision1.ngemc(), collision2.ngemc());
+      // LOGF(info, "Mixed event globalIndex: (%d, %d) , counter = %d, ngpcm: (%d, %d), ngphos: (%d, %d), ngemc: (%d, %d)", collision1.globalIndex(), collision2.globalIndex(), nev, collision1.ngpcm(), collision2.ngpcm(), collision1.ngphos(), collision2.ngphos(), collision1.ngemc(), collision2.ngemc());
+
+      const float centralities1[3] = {collision1.centFT0M(), collision1.centFT0A(), collision1.centFT0C()};
+      const float centralities2[3] = {collision2.centFT0M(), collision2.centFT0A(), collision2.centFT0C()};
+
+      if (centralities1[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities1[cfgCentEstimator]) {
+        continue;
+      }
+      if (centralities2[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities2[cfgCentEstimator]) {
+        continue;
+      }
+      if (!fEMEventCut.IsSelected(collision1) || !fEMEventCut.IsSelected(collision2)) {
+        continue;
+      }
 
       auto photons_coll1 = photons1.sliceBy(perCollision1, collision1.globalIndex());
       auto photons_coll2 = photons2.sliceBy(perCollision2, collision2.globalIndex());
-      // LOGF(info, "collision1: posZ = %f, numContrib = %d , sel8 = %d | collision2: posZ = %f, numContrib = %d , sel8 = %d",
-      //     collision1.posZ(), collision1.numContrib(), collision1.sel8(), collision2.posZ(), collision2.numContrib(), collision2.sel8());
+      // LOGF(info, "collision1: posZ = %f, numContrib = %d , sel8 = %d | collision2: posZ = %f, numContrib = %d , sel8 = %d", collision1.posZ(), collision1.numContrib(), collision1.sel8(), collision2.posZ(), collision2.numContrib(), collision2.sel8());
 
       double values_1d[4] = {0.f};
       double values_3d[8] = {0.f};
@@ -543,41 +565,62 @@ struct PhotonHBT {
   Filter eeFilter = o2::aod::dalitzee::sign == 0 && nabs(o2::aod::dalitzee::rapidity) < maxY_dielectron; // analyze only uls
   using filteredMyDalitzEEs = soa::Filtered<MyDalitzEEs>;
 
+  Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
+
   Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
+  Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   Filter collisionFilter_subsys = (o2::aod::emreducedevent::ngpcm >= 1);
   using MyFilteredCollisions = soa::Filtered<MyCollisions>;
 
   void processPCMPCM(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs)
   {
-    SameEventPairing<PairType::kPCMPCM>(collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, fPairCuts, legs, nullptr);
-    MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, fPairCuts, legs, nullptr);
+    SameEventPairing<PairType::kPCMPCM>(grouped_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, fPairCuts, legs, nullptr);
+    if (cfgCentEstimator == 0) {
+      MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, fPairCuts, legs, nullptr, colBinning_M);
+    } else if (cfgCentEstimator == 1) {
+      MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, fPairCuts, legs, nullptr, colBinning_A);
+    } else if (cfgCentEstimator == 2) {
+      MixedEventPairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, fPairCuts, legs, nullptr, colBinning_C);
+    }
   }
 
   void processPCMDalitzEE(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::V0Legs const& legs, filteredMyDalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons)
   {
-    SameEventPairing<PairType::kPCMDalitzEE>(collisions, v0photons, dielectrons, perCollision_pcm, perCollision_dalitzee, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimaryelectrons);
-    MixedEventPairing<PairType::kPCMDalitzEE>(filtered_collisions, v0photons, dielectrons, perCollision_pcm, perCollision_dalitzee, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimaryelectrons);
+    SameEventPairing<PairType::kPCMDalitzEE>(grouped_collisions, v0photons, dielectrons, perCollision_pcm, perCollision_dalitzee, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimaryelectrons);
+    if (cfgCentEstimator == 0) {
+      MixedEventPairing<PairType::kPCMDalitzEE>(filtered_collisions, v0photons, dielectrons, perCollision_pcm, perCollision_dalitzee, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimaryelectrons, colBinning_M);
+    } else if (cfgCentEstimator == 1) {
+      MixedEventPairing<PairType::kPCMDalitzEE>(filtered_collisions, v0photons, dielectrons, perCollision_pcm, perCollision_dalitzee, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimaryelectrons, colBinning_A);
+    } else if (cfgCentEstimator == 2) {
+      MixedEventPairing<PairType::kPCMDalitzEE>(filtered_collisions, v0photons, dielectrons, perCollision_pcm, perCollision_dalitzee, fPCMCuts, fDalitzEECuts, fPairCuts, legs, emprimaryelectrons, colBinning_C);
+    }
   }
 
   void processDalitzEEDalitzEE(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, filteredMyDalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons)
   {
-    SameEventPairing<PairType::kDalitzEEDalitzEE>(collisions, dielectrons, dielectrons, perCollision_dalitzee, perCollision_dalitzee, fDalitzEECuts, fDalitzEECuts, fPairCuts, nullptr, emprimaryelectrons);
-    MixedEventPairing<PairType::kDalitzEEDalitzEE>(filtered_collisions, dielectrons, dielectrons, perCollision_dalitzee, perCollision_dalitzee, fDalitzEECuts, fDalitzEECuts, fPairCuts, nullptr, emprimaryelectrons);
+    SameEventPairing<PairType::kDalitzEEDalitzEE>(grouped_collisions, dielectrons, dielectrons, perCollision_dalitzee, perCollision_dalitzee, fDalitzEECuts, fDalitzEECuts, fPairCuts, nullptr, emprimaryelectrons);
+    if (cfgCentEstimator == 0) {
+      MixedEventPairing<PairType::kDalitzEEDalitzEE>(filtered_collisions, dielectrons, dielectrons, perCollision_dalitzee, perCollision_dalitzee, fDalitzEECuts, fDalitzEECuts, fPairCuts, nullptr, emprimaryelectrons, colBinning_M);
+    } else if (cfgCentEstimator == 1) {
+      MixedEventPairing<PairType::kDalitzEEDalitzEE>(filtered_collisions, dielectrons, dielectrons, perCollision_dalitzee, perCollision_dalitzee, fDalitzEECuts, fDalitzEECuts, fPairCuts, nullptr, emprimaryelectrons, colBinning_A);
+    } else if (cfgCentEstimator == 2) {
+      MixedEventPairing<PairType::kDalitzEEDalitzEE>(filtered_collisions, dielectrons, dielectrons, perCollision_dalitzee, perCollision_dalitzee, fDalitzEECuts, fDalitzEECuts, fPairCuts, nullptr, emprimaryelectrons, colBinning_C);
+    }
   }
 
   void processPHOSPHOS(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, aod::PHOSClusters const& phosclusters)
   {
-    SameEventPairing<PairType::kPHOSPHOS>(collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fPHOSCuts, fPHOSCuts, fPairCuts, nullptr, nullptr);
-    MixedEventPairing<PairType::kPHOSPHOS>(filtered_collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fPHOSCuts, fPHOSCuts, fPairCuts, nullptr, nullptr);
+    SameEventPairing<PairType::kPHOSPHOS>(grouped_collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fPHOSCuts, fPHOSCuts, fPairCuts, nullptr, nullptr);
+    MixedEventPairing<PairType::kPHOSPHOS>(filtered_collisions, phosclusters, phosclusters, perCollision_phos, perCollision_phos, fPHOSCuts, fPHOSCuts, fPairCuts, nullptr, nullptr, colBinning_C);
   }
 
   void processPCMPHOS(MyCollisions const& collisions, MyFilteredCollisions const& filtered_collisions, MyV0Photons const& v0photons, aod::PHOSClusters const& phosclusters, aod::V0Legs const& legs)
   {
-    SameEventPairing<PairType::kPCMPHOS>(collisions, v0photons, phosclusters, perCollision_pcm, perCollision_phos, fPCMCuts, fPHOSCuts, fPairCuts, legs, nullptr);
-    MixedEventPairing<PairType::kPCMPHOS>(filtered_collisions, v0photons, phosclusters, perCollision_pcm, perCollision_phos, fPCMCuts, fPHOSCuts, fPairCuts, legs, nullptr);
+    SameEventPairing<PairType::kPCMPHOS>(grouped_collisions, v0photons, phosclusters, perCollision_pcm, perCollision_phos, fPCMCuts, fPHOSCuts, fPairCuts, legs, nullptr);
+    MixedEventPairing<PairType::kPCMPHOS>(filtered_collisions, v0photons, phosclusters, perCollision_pcm, perCollision_phos, fPCMCuts, fPHOSCuts, fPairCuts, legs, nullptr, colBinning_C);
   }
 
-  void processDummy(MyCollisions::iterator const& collision) {}
+  void processDummy(MyCollisions const& collisions) {}
 
   PROCESS_SWITCH(PhotonHBT, processPCMPCM, "pairing PCM-PCM", false);
   PROCESS_SWITCH(PhotonHBT, processPCMDalitzEE, "pairing PCM-DalitzEE", false);
