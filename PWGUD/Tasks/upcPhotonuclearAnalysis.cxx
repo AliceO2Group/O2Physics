@@ -162,7 +162,7 @@ struct upcPhotonuclearAnalysis {
           }
         }
         histos.fill(HIST("Events/SGsideA/hNch"), nTracksCharged);
-        histos.fill(HIST("Events/SGsideA/hPtVSNch"), nTracksCharged, (sumPt / nTracksCharged) );
+        histos.fill(HIST("Events/SGsideA/hPtVSNch"), nTracksCharged, (sumPt / nTracksCharged));
         nTracksCharged = sumPt = 0;
         break;
       case 1: // for side C
