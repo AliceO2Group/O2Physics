@@ -110,7 +110,6 @@ static const std::vector<std::string> labelsCutScore = {"score class 1", "score 
 static const std::vector<std::string> labelsDmesCutScore = {"ML score signal", "ML score bkg"};
 } // namespace cascade_flow_cuts_ml
 
-
 struct cascadeFlow {
 
   Configurable<bool> isOmega{"isOmega", 0, "Xi or Omega"};
