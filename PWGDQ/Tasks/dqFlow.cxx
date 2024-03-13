@@ -230,8 +230,8 @@ struct DQEventQvector {
   }
 
   // Templated function instantianed for all of the process functions
-  template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
-  void runFillQvectorFromCentralFW(TEvent const& collision, aod::BCsWithTimestamps const&, TTracks const& tracks1)
+  template <uint32_t TEventFillMap, typename TEvent>
+  void runFillQvectorFromCentralFW(TEvent const& collision)
   {
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<TEventFillMap>(collision);
@@ -376,9 +376,9 @@ struct DQEventQvector {
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
-  void processCentralQvector(MyEventsWithCentQvectRun3::iterator const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
+  void processCentralQvector(MyEventsWithCentQvectRun3::iterator const& collisions)
   {
-    runFillQvectorFromCentralFW<gkEventFillMapRun3, gkTrackFillMap>(collisions, bcs, tracks);
+    runFillQvectorFromCentralFW<gkEventFillMapRun3>(collisions);
   }
 
   // Process to fill Q vector using forward tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
