@@ -386,14 +386,13 @@ struct CorrelationTask {
         }
 
         // last param is the weight
-        const double params[] = {track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, associatedWeight, associatedWeight};
         if (cfgMassAxis) {
           if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value)
-            params[6] = track1.invMass();
+            target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track1.invMass(), associatedWeight);
           else
-            params[6] = 0.0f;
-        }
-        target->getPairHist()->Fill(step, 7 + cfgMassAxis, params);
+            LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
+        } else
+          target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, associatedWeight);
       }
     }
   }
