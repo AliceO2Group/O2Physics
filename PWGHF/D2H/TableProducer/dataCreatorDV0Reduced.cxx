@@ -255,7 +255,7 @@ struct HfDataCreatorDV0Reduced {
         prongIdsD[0] = candD.prong0Id();
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prongPiId();
-        dtype = candD.signSoftPi() * DType::Dstar; //needs fixing
+        dtype = candD.signSoftPi() * DType::Dstar; 
       } else if constexpr (std::is_same<CCands, CandsDplusFiltered>::value) {
         auto prong0 = candD.template prong0_as<BigTracksPID>();
         invMassD = hfHelper.invMassDplusToPiKPi(candD);
@@ -267,7 +267,7 @@ struct HfDataCreatorDV0Reduced {
         prongIdsD[0] = candD.prong0Id();
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prong2Id();
-        dtype = (int8_t)(prong0.sign() * DType::Dplus); //needs fixing
+        dtype = (int8_t)(prong0.sign() * DType::Dplus); 
       } // else if
 
       // Loop on V0 candidates
