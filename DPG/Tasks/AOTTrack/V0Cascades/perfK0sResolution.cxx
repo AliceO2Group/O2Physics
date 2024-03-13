@@ -46,6 +46,7 @@ struct perfK0sResolution {
 
   void init(InitContext const&)
   {
+    const AxisSpec eventAxis{10, 0, 10, "Events"};
     const AxisSpec mAxis{mBins, "#it{m} (GeV/#it{c}^{2})"};
     const AxisSpec pTAxis{pTBins, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec pTResAxis{pTResBins, "#Delta#it{p}_{T} (GeV/#it{c})"};
@@ -67,6 +68,7 @@ struct perfK0sResolution {
       nProc++;
     }
 
+    rK0sResolution.add("h1_events", "h1_events", {HistType::kTH1F, {eventAxis}});
     if (doprocessMC) {
       rK0sDauResolution.add("h2_massPosPtRes", "h2_massPosPtRes", {HistType::kTH2F, {mAxis, pTResAxis}});
       rK0sDauResolution.add("h2_massNegPtRes", "h2_massNegPtRes", {HistType::kTH2F, {mAxis, pTResAxis}});
@@ -109,6 +111,8 @@ struct perfK0sResolution {
   Configurable<int> trdSelectionNeg{"trdSelectionNeg", 0, "Flag for the TRD selection on negative daughters: -1 no TRD, 0 no selection, 1 TRD"};
   Configurable<int> tofSelectionPos{"tofSelectionPos", 0, "Flag for the TOF selection on positive daughters: -1 no TOF, 0 no selection, 1 TOF"};
   Configurable<int> tofSelectionNeg{"tofSelectionNeg", 0, "Flag for the TOF selection on negative daughters: -1 no TOF, 0 no selection, 1 TOF"};
+  Configurable<int> pidHypoPos{"pidHypoPos", -1, "Index for the PID hypothesis used in tracking for the positive daughters: -1 no selection, 0 Electron, 1 Muon, 2 Pion, 3 Kaon, 4 Proton"};
+  Configurable<int> pidHypoNeg{"pidHypoNeg", -1, "Index for the PID hypothesis used in tracking for the negative daughters: -1 no selection, 0 Electron, 1 Muon, 2 Pion, 3 Kaon, 4 Proton"};
   Configurable<float> extraCutTPCClusters{"extraCutTPCClusters", -1.0f, "Extra cut on daugthers for TPC clusters"};
   Configurable<bool> useMultidimHisto{"useMultidimHisto", false, "use multidimentional histograms"};
   Configurable<bool> computeInvMassFromDaughters{"computeInvMassFromDaughters", false, "Compute the invariant mass from the daughters"};
@@ -132,6 +136,7 @@ struct perfK0sResolution {
     }
 
     // Apply selections on V0 daughters
+
     // ITS selection
     switch (itsIbSelectionPos) {
       case -1:
@@ -167,6 +172,7 @@ struct perfK0sResolution {
         LOG(fatal) << "Invalid ITS selection for negative daughter";
         break;
     }
+
     // TPC selection
     if (!ntrack.hasTPC() || !ptrack.hasTPC()) {
       return false;
@@ -177,6 +183,7 @@ struct perfK0sResolution {
     if (ntrack.tpcNClsCrossedRows() < extraCutTPCClusters || ptrack.tpcNClsCrossedRows() < extraCutTPCClusters) {
       return false;
     }
+
     // TOF selection
     switch (tofSelectionPos) {
       case -1:
@@ -212,6 +219,7 @@ struct perfK0sResolution {
         LOG(fatal) << "Invalid TOF selection for negative daughter";
         break;
     }
+
     // TRD selection
     switch (trdSelectionPos) {
       case -1:
@@ -247,6 +255,40 @@ struct perfK0sResolution {
         LOG(fatal) << "Invalid TRD selection for negative daughter";
         break;
     }
+
+    // PID hypothesis selection
+    switch (pidHypoPos) {
+      case -1:
+        break;
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+        if (ptrack.pidForTracking() != static_cast<uint32_t>(pidHypoPos)) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid PID selection for positive daughter";
+        break;
+    }
+    switch (pidHypoNeg) {
+      case -1:
+        break;
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+        if (ntrack.pidForTracking() != static_cast<uint32_t>(pidHypoNeg)) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid PID selection for negative daughter";
+        break;
+    }
     return true;
   }
 
@@ -264,7 +306,9 @@ struct perfK0sResolution {
                    soa::Filtered<aod::V0Datas> const& fullV0s,
                    PIDTracks const& tracks)
   {
+    rK0sResolution.fill(HIST("h1_events"), 0.5);
     for (auto& v0 : fullV0s) {
+      rK0sResolution.fill(HIST("h1_events"), 1.5);
       const auto& posTrack = v0.posTrack_as<PIDTracks>();
       const auto& negTrack = v0.negTrack_as<PIDTracks>();
       if (!acceptV0(v0, negTrack, posTrack, collision))
@@ -290,7 +334,9 @@ struct perfK0sResolution {
   void processMC(soa::Filtered<SelectedCollisions>::iterator const& collision, soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>> const& fullV0s,
                  soa::Join<PIDTracks, aod::McTrackLabels> const& tracks, aod::McParticles const&)
   {
+    rK0sResolution.fill(HIST("h1_events"), 0.5);
     for (auto& v0 : fullV0s) {
+      rK0sResolution.fill(HIST("h1_events"), 1.5);
       const auto& posTrack = v0.posTrack_as<soa::Join<PIDTracks, aod::McTrackLabels>>();
       const auto& negTrack = v0.negTrack_as<soa::Join<PIDTracks, aod::McTrackLabels>>();
       if (!acceptV0(v0, negTrack, posTrack, collision))

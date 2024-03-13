@@ -76,6 +76,14 @@ struct emcalQC {
     THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
     o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev, "Event");
 
+    list_ev->Add(new TH1F("hNEvents", "hNEvents", 6, 0.5f, 6.5f));
+    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(1, "all cols");
+    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
+    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(3, "emc readout");
+    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(5, "1+ Contributor");
+    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(6, "z<10cm");
+    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(7, "unique col");
+
     o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Cluster");
     THashList* list_cluster = reinterpret_cast<THashList*>(fMainList->FindObject("Cluster"));
 
@@ -139,12 +147,6 @@ struct emcalQC {
     DefineCuts();
     addhistograms(); // please call this after DefinCuts();
 
-    reinterpret_cast<TH2F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(1, "all cols");
-    reinterpret_cast<TH2F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(2, "sel8 + readout");
-    reinterpret_cast<TH2F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(3, "1+ Contributor");
-    reinterpret_cast<TH2F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(4, "z<10cm");
-    reinterpret_cast<TH2F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(5, "unique col");
-
     fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
     fOutputCluster.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Cluster")));
   }
@@ -157,27 +159,31 @@ struct emcalQC {
     THashList* list_cluster = static_cast<THashList*>(fMainList->FindObject("Cluster"));
 
     for (auto& collision : collisions) {
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(1.0);
-      if (!collision.sel8() || collision.isEMCreadout() == 0) { // Check sel8 and whether EMC was read out
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hNEvents"))->Fill(1.0);
+      if (!collision.sel8()) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(2.0);
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hNEvents"))->Fill(2.0);
+      if (collision.isEMCreadout() == 0) {
+        continue;
+      }
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hNEvents"))->Fill(3.0);
 
       if (collision.numContrib() < 0.5) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(3.0);
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hNEvents"))->Fill(4.0);
 
       if (abs(collision.posZ()) > 10.0) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(4.0);
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hNEvents"))->Fill(5.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx"))->Fill(collision.posZ());
 
       if (collision.ncollsPerBC() != 1) { // Check that the collision is unique (the only one in the bc)
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(5.0);
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hNEvents"))->Fill(6.0);
 
       o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev, "", collision); // Fill event histograms
 
