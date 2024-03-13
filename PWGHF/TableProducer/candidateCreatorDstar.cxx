@@ -157,24 +157,29 @@ struct HfCandidateCreatorDstar {
     // loop over suspected Dstar Candidate
     for (const auto& rowTrackIndexDstar : rowsTrackIndexDstar) {
 
-      // reject candidates in collisions outside the centrality range
+      /// reject candidates not satisfying the event selections
       auto collision = rowTrackIndexDstar.template collision_as<Coll>();
-      float centrality = -1.;
-      if constexpr (centEstimator != CentralityEstimator::None) {
-        if constexpr (centEstimator == CentralityEstimator::FT0C) {
-          centrality = collision.centFT0C();
-        } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
-          centrality = collision.centFT0M();
-        } else {
-          LOGP(fatal, "Centrality estimator different from FT0C and FT0M, fix it!");
-        }
-        if (centrality < centralityMin || centrality > centralityMax) {
-          continue;
-        }
+      bool useCentrality = true;
+      if constexpr (centEstimator == CentralityEstimator::None) {
+        useCentrality = false;
       }
+      float centrality = -1.;
+      uint16_t statusCollision = isHfCollisionSelected<centEstimator>(collision, useCentrality, std::array<float, 2>{centralityMin.value, centralityMax.value}, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut, centrality);
 
-      /// event selection: sel8, PV posZ, TF border cut
-      if (!isHfCollisionSelected(collision, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut)) {
+      if (useCentrality && TESTBIT(statusCollision, EventRejection::Centrality)) {
+        /// event selection - centrality
+        continue;
+      }
+      if (useSel8Trigger && TESTBIT(statusCollision, EventRejection::Trigger)) {
+        /// event selection - sel8()
+        continue;
+      }
+      if (TESTBIT(statusCollision, EventRejection::PositionZ)) {
+        /// event selection - PV position Z
+        continue;
+      }
+      if (useTimeFrameBorderCut && TESTBIT(statusCollision, EventRejection::TimeFrameBorderCut)) {
+        /// event selection - Time Frame border cut
         continue;
       }
 
