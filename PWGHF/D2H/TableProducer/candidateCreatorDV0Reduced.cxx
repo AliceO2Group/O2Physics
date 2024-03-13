@@ -29,7 +29,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-enum Selections : uint8_t{
+enum Selections : uint8_t {
   NoSel = 0,
   DSel,
   V0Sel,
@@ -39,7 +39,7 @@ enum DecayChannel : uint8_t {
   Ds1toDstarK0s = 0,
   Dstar2toDplusK0s,
   XctoDplusLambda
-  };
+};
 enum V0Type : uint8_t {
   K0s = 0,
   Lambda,
@@ -82,15 +82,15 @@ struct HfCandidateCreatorDV0Reduced {
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
-  { 
-    for (const auto& value : vecBins){
-      LOGF(info, "bin limit %f",value );
+  {
+    for (const auto& value : vecBins) {
+      LOGF(info, "bin limit %f", value);
     }
-    const AxisSpec axisPt{(std::vector<double>)vecBins,"#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisPt{(std::vector<double>)vecBins, "#it{p}_{T} (GeV/#it{c})"};
     // histograms
-    registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} - m_{D^{*}} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, 2.4, 2.7},{(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassDsStar2", "Ds^{*}2 candidates; Ds^{*}2 - m_{D^{#plus}} (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 2.4, 2.7},{(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassXcRes", "XcRes candidates; XcRes - m_{D^{#plus}} (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 2.9, 3.3},{(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} - m_{D^{*}} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, 2.4, 2.7}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassDsStar2", "Ds^{*}2 candidates; Ds^{*}2 - m_{D^{#plus}} (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 2.4, 2.7}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassXcRes", "XcRes candidates; XcRes - m_{D^{#plus}} (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 2.9, 3.3}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     if (activateQA) {
       constexpr int kNBinsSelections = Selections::NSelSteps;
       std::string labels[kNBinsSelections];
@@ -103,27 +103,27 @@ struct HfCandidateCreatorDV0Reduced {
         registry.get<TH1>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
     }
-    
+
     massK0 = o2::constants::physics::MassK0Short;
     massLambda = o2::constants::physics::MassLambda;
     massDplus = o2::constants::physics::MassDPlus;
     massDstar = o2::constants::physics::MassDStar;
   }
-  
+
   template <uint8_t DecayChannel, typename D>
   bool isDSelected(D const& candD)
   {
     float massD{0.};
-    //slection on D candidate mass
-    if (DecayChannel == DecayChannel::Dstar2toDplusK0s || DecayChannel == DecayChannel::XctoDplusLambda ){
-        massD = massDplus;
-    } else if (DecayChannel == DecayChannel::Ds1toDstarK0s){
-        massD = massDstar;
+    // slection on D candidate mass
+    if (DecayChannel == DecayChannel::Dstar2toDplusK0s || DecayChannel == DecayChannel::XctoDplusLambda) {
+      massD = massDplus;
+    } else if (DecayChannel == DecayChannel::Ds1toDstarK0s) {
+      massD = massDstar;
     }
-    if (std::fabs(candD.invMass() - massD) > invMassWindowD){
-        return false;
+    if (std::fabs(candD.invMass() - massD) > invMassWindowD) {
+      return false;
     }
-    return true;  
+    return true;
   }
 
   template <uint8_t DecayChannel, typename D, typename V>
@@ -131,22 +131,22 @@ struct HfCandidateCreatorDV0Reduced {
   {
     float massV0{0.};
     float invMassV0{0.};
-    //slection on V0 candidate mass
-    if (DecayChannel == DecayChannel::Dstar2toDplusK0s || DecayChannel == DecayChannel::Ds1toDstarK0s){
-        massV0 = massK0;
-        invMassV0 = candV0.invMassK0s();
-    } else if (DecayChannel == DecayChannel::XctoDplusLambda){
-        massV0 = massLambda;
-        if (candD.dType() > 0){
-            invMassV0 = candV0.invMassLambda();
-        } else {
-          invMassV0 = candV0.invMassAntiLambda();
-          }
+    // slection on V0 candidate mass
+    if (DecayChannel == DecayChannel::Dstar2toDplusK0s || DecayChannel == DecayChannel::Ds1toDstarK0s) {
+      massV0 = massK0;
+      invMassV0 = candV0.invMassK0s();
+    } else if (DecayChannel == DecayChannel::XctoDplusLambda) {
+      massV0 = massLambda;
+      if (candD.dType() > 0) {
+        invMassV0 = candV0.invMassLambda();
+      } else {
+        invMassV0 = candV0.invMassAntiLambda();
+      }
     }
-    if (std::fabs(invMassV0 - massV0) > invMassWindowV0 ){
+    if (std::fabs(invMassV0 - massV0) > invMassWindowV0) {
       return false;
     }
-    return true;  
+    return true;
   }
 
   template <uint8_t DecayChannel, typename C, typename D, typename V>
@@ -156,94 +156,94 @@ struct HfCandidateCreatorDV0Reduced {
   {
     // loop on D candidates
     for (const auto& candD : candsD) {
-        // selection of D candidates
-        if (activateQA) {
-          registry.fill(HIST("hSelections"), 1);
+      // selection of D candidates
+      if (activateQA) {
+        registry.fill(HIST("hSelections"), 1);
+      }
+      if (!isDSelected<DecayChannel>(candD)) {
+        continue;
+      }
+      if (activateQA) {
+        registry.fill(HIST("hSelections"), 1 + Selections::DSel);
+      }
+      float invMassD = candD.invMass();
+      std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
+      float ptD = RecoDecay::pt(pVecD);
+      ;
+      // loop on V0 candidates
+      bool already_counted{false};
+      for (const auto& candV0 : candsV0) {
+        if (!isV0Selected<DecayChannel>(candV0, candD)) {
+          continue;
         }
-        if(!isDSelected<DecayChannel>(candD)){
-            continue;
+        if (activateQA && !already_counted) {
+          registry.fill(HIST("hSelections"), 1 + Selections::V0Sel);
+          already_counted = true;
         }
-        if (activateQA) {
-          registry.fill(HIST("hSelections"), 1 + Selections::DSel);
-        }
-        float invMassD = candD.invMass();
-        std::array<float, 3> pVecD = {candD.px(),candD.py(),candD.pz()};
-        float ptD = RecoDecay::pt(pVecD);;
-        // loop on V0 candidates
-        bool already_counted{false};
-        for (const auto& candV0 : candsV0){
-            if(!isV0Selected<DecayChannel>(candV0, candD)){
-                continue;
+        float invMass2Reso{0.};
+        float invMassV0{0.};
+        std::array<float, 3> pVecV0 = {candV0.px(), candV0.py(), candV0.pz()};
+        float ptV0 = RecoDecay::pt(pVecV0);
+        float ptReso = RecoDecay::pt(RecoDecay::sumOfVec(pVecV0, pVecD));
+        switch (DecayChannel) {
+          case DecayChannel::Ds1toDstarK0s:
+            invMassV0 = candV0.invMassK0s();
+            invMass2Reso = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massDstar, massK0});
+            registry.fill(HIST("hMassDs1"), sqrt(invMass2Reso), ptReso);
+            break;
+          case DecayChannel::Dstar2toDplusK0s:
+            invMassV0 = candV0.invMassK0s();
+            invMass2Reso = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massDplus, massK0});
+            registry.fill(HIST("hMassDsStar2"), sqrt(invMass2Reso), ptReso);
+            break;
+          case DecayChannel::XctoDplusLambda:
+            if (candD.dType() > 0) {
+              invMassV0 = candV0.invMassLambda();
+            } else {
+              invMassV0 = candV0.invMassAntiLambda();
             }
-            if (activateQA && !already_counted) {
-              registry.fill(HIST("hSelections"), 1 + Selections::V0Sel);
-              already_counted = true;
-            }
-            float invMass2Reso{0.};
-            float invMassV0{0.};
-            std::array<float, 3> pVecV0 = {candV0.px(),candV0.py(),candV0.pz()};
-            float ptV0 = RecoDecay::pt(pVecV0);
-            float ptReso = RecoDecay::pt(RecoDecay::sumOfVec(pVecV0,pVecD));
-            switch (DecayChannel) {
-            case DecayChannel::Ds1toDstarK0s:
-              invMassV0 = candV0.invMassK0s();
-              invMass2Reso = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massDstar, massK0});
-              registry.fill(HIST("hMassDs1"), sqrt(invMass2Reso), ptReso);
-              break;
-            case DecayChannel::Dstar2toDplusK0s:
-              invMassV0 = candV0.invMassK0s();
-              invMass2Reso = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massDplus, massK0});
-              registry.fill(HIST("hMassDsStar2"), sqrt(invMass2Reso), ptReso);
-              break;
-            case DecayChannel::XctoDplusLambda:
-              if (candD.dType() > 0){
-                invMassV0 = candV0.invMassLambda();
-              } else {
-                invMassV0 = candV0.invMassAntiLambda();
-              }
-              invMass2Reso = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massDplus, massLambda});
-              registry.fill(HIST("hMassXcRes"), sqrt(invMass2Reso), ptReso);
-              break;
-            default:
-              break;
-            }
-            //Filling Output table
-            rowCandidateReso(collisions.globalIndex(),
-                             sqrt(invMass2Reso),
-                             ptReso,
-                             invMassD,
-                             ptD,
-                             invMassV0,
-                             ptV0,
-                             candV0.cpa(),
-                             candV0.dca(),
-                             candV0.radius());
+            invMass2Reso = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massDplus, massLambda});
+            registry.fill(HIST("hMassXcRes"), sqrt(invMass2Reso), ptReso);
+            break;
+          default:
+            break;
         }
-        
+        // Filling Output table
+        rowCandidateReso(collisions.globalIndex(),
+                         sqrt(invMass2Reso),
+                         ptReso,
+                         invMassD,
+                         ptD,
+                         invMassV0,
+                         ptV0,
+                         candV0.cpa(),
+                         candV0.dca(),
+                         candV0.radius());
+      }
     }
-  }//main function
+  } // main function
 
   void processDstar2toDplusK0s(aod::HfRedCollisions::iterator const& collision,
                                aod::HfRed3PrNoTrks const& candsD,
                                aod::HfRedVzeros const& candsV0)
   {
-      runCandidateCreation<DecayChannel::Dstar2toDplusK0s>(collision, candsD, candidatesK0s);
+    runCandidateCreation<DecayChannel::Dstar2toDplusK0s>(collision, candsD, candidatesK0s);
   }
   PROCESS_SWITCH(HfCandidateCreatorDV0Reduced, processDstar2toDplusK0s, "Process Dplus candidates without MC info and without ML info", true);
-  
+
   void processDs1toDstarK0s(aod::HfRedCollisions::iterator const& collision,
-                               aod::HfRed3PrNoTrks const& candsD,
-                               aod::HfRedVzeros const& candsV0)
+                            aod::HfRed3PrNoTrks const& candsD,
+                            aod::HfRedVzeros const& candsV0)
   {
-      runCandidateCreation<DecayChannel::Ds1toDstarK0s>(collision, candsD, candidatesK0s);
+    runCandidateCreation<DecayChannel::Ds1toDstarK0s>(collision, candsD, candidatesK0s);
   }
   PROCESS_SWITCH(HfCandidateCreatorDV0Reduced, processDs1toDstarK0s, "Process Dplus candidates without MC info and without ML info", false);
 
   void processXctoDplusLambda(aod::HfRedCollisions::iterator const& collision,
-                               aod::HfRed3PrNoTrks const& candsD,
-                               aod::HfRedVzeros const& candsV0)
+                              aod::HfRed3PrNoTrks const& candsD,
+                              aod::HfRedVzeros const& candsV0)
   {
-      runCandidateCreation<DecayChannel::XctoDplusLambda>(collision, candsD, candidatesLambda);
+    runCandidateCreation<DecayChannel::XctoDplusLambda>(collision, candsD, candidatesLambda);
   }
   PROCESS_SWITCH(HfCandidateCreatorDV0Reduced, processXctoDplusLambda, "Process Dplus candidates without MC info and without ML info", false);
 }; // struct
