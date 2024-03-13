@@ -56,13 +56,13 @@ enum DecayChannel : uint8_t {
   DplusV0
 };
 
-enum V0_type : uint8_t {
+enum V0Type : uint8_t {
   K0s = 0,
   Lambda,
   AntiLambda
 };
 
-enum TypeD : uint8_t {
+enum DType : uint8_t {
   Dplus = 1,
   Dstar
 };
@@ -133,17 +133,17 @@ struct HfDataCreatorDV0Reduced {
       registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
     registry.add("hMassDplus", "Dplus candidates;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 1.7, 2}}});
-    registry.add("hMassDstar", "Dstar candidates;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0.05, 0.25}}});
+    registry.add("hMassDstar", "Dstar candidates;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0.14, 0.17}}});
     registry.add("hMassK0s", "K0^{s} candidates;inv. mass (#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0.35, 0.65}}});
     registry.add("hMassLambda", "Lambda candidates;inv. mass (p #pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 1.05, 1.35}}});
     registry.add("hPtDplus", "D^{#minus} candidates;D^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
     registry.add("hPtDstar", "D^{*} candidates;D^{*} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
     registry.add("hPtV0", "V0 candidates;V0 candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
-    registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} - m_{D^{*}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0.45, 0.7}}});
-    registry.add("hMassDsStar2", "Ds^{*}2 candidates; Ds^{*}2 - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0.4, 1}}});
-    registry.add("hMassXcRes", "XcRes candidates; XcRes - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 1., 1.4}}});
-    registry.add("hV0_type", "V0 selection flag", {HistType::kTH1F, {{8, -0.5, 7.5}}});
-    registry.add("hD_type", "D selection flag", {HistType::kTH1F, {{5, -2.5, 2.5}}});
+    registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} - m_{D^{*}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 2.4, 2.7}}});
+    registry.add("hMassDsStar2", "Ds^{*}2 candidates; Ds^{*}2 - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 2.4, 2.7}}});
+    registry.add("hMassXcRes", "XcRes candidates; XcRes - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 2.9, 3.3}}});
+    registry.add("hV0Type", "V0 selection flag", {HistType::kTH1F, {{8, -0.5, 7.5}}});
+    registry.add("hDType", "D selection flag", {HistType::kTH1F, {{5, -2.5, 2.5}}});
 
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
@@ -158,7 +158,7 @@ struct HfDataCreatorDV0Reduced {
   /// \param collision is the current collision
   /// \return a bitmap with mass hypotesis if passes all cuts
   template <typename V0, typename Coll, typename Tr>
-  inline uint8_t isSelectedV0(const V0& v0, const Coll& collision, const std::array<Tr, 2>& dauTracks, const std::array<int, 3>& dDaughtersIDs)
+  inline uint8_t getSelectionMapV0(const V0& v0, const Coll& collision, const std::array<Tr, 2>& dauTracks, const std::array<int, 3>& dDaughtersIDs)
   {
     uint8_t isSelected{BIT(K0s) | BIT(Lambda) | BIT(AntiLambda)};
     // reject VOs that share daughters with D
@@ -239,12 +239,12 @@ struct HfDataCreatorDV0Reduced {
       std::array<float, 3> pVecD;
       std::array<float, 3> secondaryVertexD;
       std::array<int, 3> prongIdsD;
-      uint8_t v0_type;
-      int8_t d_type;
+      uint8_t v0type;
+      int8_t dtype;
 
       if constexpr (std::is_same<CCands, CandDstarFiltered>::value) {
         if (candD.signSoftPi() > 0)
-          invMassD = candD.invMassDstar() - candD.invMassD0();
+          invMassD = candD.invMassDstar();
         else
           invMassD = candD.invMassAntiDstar() - candD.invMassD0Bar();
         massD = MassDStar;
@@ -255,7 +255,7 @@ struct HfDataCreatorDV0Reduced {
         prongIdsD[0] = candD.prong0Id();
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prongPiId();
-        d_type = candD.signSoftPi() * TypeD::Dstar;
+        dtype = candD.signSoftPi() * DType::Dstar; //needs fixing
       } else if constexpr (std::is_same<CCands, CandsDplusFiltered>::value) {
         auto prong0 = candD.template prong0_as<BigTracksPID>();
         invMassD = hfHelper.invMassDplusToPiKPi(candD);
@@ -267,7 +267,7 @@ struct HfDataCreatorDV0Reduced {
         prongIdsD[0] = candD.prong0Id();
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prong2Id();
-        d_type = prong0.sign() * TypeD::Dplus;
+        dtype = (int8_t)(prong0.sign() * DType::Dplus); //needs fixing
       } // else if
 
       // Loop on V0 candidates
@@ -275,8 +275,8 @@ struct HfDataCreatorDV0Reduced {
         auto posTrack = v0.posTrack_as<BigTracksPID>();
         auto negTrack = v0.negTrack_as<BigTracksPID>();
         // Apply selsection
-        v0_type = isSelectedV0(v0, collision, std::array{posTrack, negTrack}, prongIdsD);
-        if (v0_type == 0) {
+        v0type = getSelectionMapV0(v0, collision, std::array{posTrack, negTrack}, prongIdsD);
+        if (v0type == 0) {
           continue;
         }
         // propagate V0 to primary vertex (if enabled)
@@ -291,38 +291,38 @@ struct HfDataCreatorDV0Reduced {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0, 2.f, matCorr, &dcaInfo);
           getPxPyPz(trackParK0, pVecV0);
         }
-        float ptV0 = sqrt(pVecV0[0] * pVecV0[0] + pVecV0[1] * pVecV0[1]); // fill histos
+        float ptV0 = RecoDecay::pt(pVecV0); // fill histos
         registry.fill(HIST("hPtV0"), ptV0);
-        registry.fill(HIST("hV0_type"), v0_type);
-        if (TESTBIT(v0_type, K0s)) {
+        registry.fill(HIST("hV0Type"), v0type);
+        if (TESTBIT(v0type, K0s)) {
           massV0 = MassK0;
           auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
           registry.fill(HIST("hMassK0s"), v0.mK0Short());
           switch (DecayChannel) {
             case DecayChannel::DstarV0:
-              registry.fill(HIST("hMassDs1"), sqrt(invMass2DV0) - massD);
+              registry.fill(HIST("hMassDs1"), sqrt(invMass2DV0));
               break;
             case DecayChannel::DplusV0:
-              registry.fill(HIST("hMassDsStar2"), sqrt(invMass2DV0) - massD);
+              registry.fill(HIST("hMassDsStar2"), sqrt(invMass2DV0));
               break;
             default:
               break;
           }
         }
-        if (TESTBIT(v0_type, Lambda)) {
+        if (TESTBIT(v0type, Lambda)) {
           massV0 = MassLambda0;
           auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
           registry.fill(HIST("hMassLambda"), v0.mLambda());
           if (DecayChannel == DecayChannel::DplusV0) {
-            registry.fill(HIST("hMassXcRes"), sqrt(invMass2DV0) - massD);
+            registry.fill(HIST("hMassXcRes"), sqrt(invMass2DV0));
           }
         }
-        if (TESTBIT(v0_type, AntiLambda)) {
+        if (TESTBIT(v0type, AntiLambda)) {
           massV0 = MassLambda0;
           auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
           registry.fill(HIST("hMassLambda"), v0.mAntiLambda());
           if (DecayChannel == DecayChannel::DplusV0) {
-            registry.fill(HIST("hMassXcRes"), sqrt(invMass2DV0) - massD);
+            registry.fill(HIST("hMassXcRes"), sqrt(invMass2DV0));
           }
         }
         // fill V0 table
@@ -336,7 +336,7 @@ struct HfDataCreatorDV0Reduced {
                    v0.v0cosPA(),
                    v0.dcav0topv(),
                    v0.v0radius(),
-                   v0_type);
+                   v0type);
           selectedV0s[v0.globalIndex()] = hfCandV0.lastIndex();
         }
         fillHfCandD = true;
@@ -348,7 +348,7 @@ struct HfDataCreatorDV0Reduced {
                 secondaryVertexD[0], secondaryVertexD[1], secondaryVertexD[2],
                 invMassD,
                 pVecD[0], pVecD[1], pVecD[2],
-                d_type);
+                dtype);
         fillHfReducedCollision = true;
         switch (DecayChannel) {
           case DecayChannel::DstarV0:
@@ -362,8 +362,7 @@ struct HfDataCreatorDV0Reduced {
           default:
             break;
         }
-        registry.fill(HIST("hPtDplus"), candD.pt());
-        registry.fill(HIST("hD_type"), d_type);
+        registry.fill(HIST("hDType"), dtype);
       }
     } // candsD loop
     registry.fill(HIST("hEvents"), 1 + Event::Processed);
