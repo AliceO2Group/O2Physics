@@ -21,14 +21,15 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/Tools/TrackTuner.h"
 
 using namespace o2;
 using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using PIDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullPi>;
-using PIDTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullPi>;
+using PIDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullPi>;
+using PIDTracksIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TracksDCACov, aod::McTrackLabels, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullPi>;
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
 struct perfK0sResolution {
@@ -40,9 +41,27 @@ struct perfK0sResolution {
   ConfigurableAxis etaBins{"etaBins", {2, -1.f, 1.f}, "eta binning"};
   ConfigurableAxis etaBinsDauthers{"etaBinsDauthers", {100, -1.f, 1.f}, "eta binning for daughters"};
   ConfigurableAxis phiBins{"phiBins", {100, 0.f, 6.28f}, "phi binning"};
-
+  ConfigurableAxis relpTResBins{"relpTResBins", {200, 0.f, 0.5f}, "rel. pT resolution binning"};
+  
   HistogramRegistry rK0sResolution{"K0sResolution", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rK0sDauResolution{"K0sDauResolution", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  // for TrackTuner only (MC smearing)
+  o2::parameters::GRPMagField* grpmag = nullptr;
+  o2::base::MatLayerCylSet* lut = nullptr;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  TrackTuner trackTunerObj;
+
+  Configurable<bool> useTrackTuner{"useTrackTuner", false, "Apply Improver/DCA corrections to MC"};
+  Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackCovMat=0|updateCurvature=1|updatePulls=0|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/PbPb2022|nameInputFile=trackTuner_DataLHC22sPass5_McLHC22l1b2_run529397.root|usePvRefitCorrections=0|oneOverPtCurrent=1|oneOverPtUpgr=1.2", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
+  OutputObj<TH1D> trackTunedTracks{TH1D("trackTunedTracks", "", 4, 0.5, 4.5), OutputObjHandlingPolicy::AnalysisObject};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+
+  int runNumber = -1;
 
   void init(InitContext const&)
   {
@@ -51,6 +70,7 @@ struct perfK0sResolution {
     const AxisSpec pTResAxis{pTResBins, "#Delta#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec pTResRelAxis{pTResRelBins, "(#it{p}_{T}^{rec} - #it{p}_{T}^{MC})/#it{p}_{T}^{MC}"};
     const AxisSpec invpTResAxis{invpTResBins, "1/#it{p}_{T}-1/#it{p}_{T}^{MC} (GeV/#it{c})^{-1}"};
+    const AxisSpec relpTResAxis{relpTResBins, "#sigma(#it{p}_{T})/#it{p}_{T}"};
     const AxisSpec etaAxis{etaBins, "#eta"};
     const AxisSpec etaAxisPosD{etaBinsDauthers, "#eta pos."};
     const AxisSpec etaAxisNegD{etaBinsDauthers, "#eta neg."};
@@ -80,6 +100,9 @@ struct perfK0sResolution {
       rK0sDauResolution.add("h2_genPxNegPxRes", "h2_genPxNegPxRes", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
       rK0sDauResolution.add("h2_genPyNegPyRes", "h2_genPyNegPyRes", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
       rK0sDauResolution.add("h2_genPzNegPzRes", "h2_genPzNegPzRes", {HistType::kTH2F, {pTResRelAxis, pTAxis}});
+
+      rK0sDauResolution.add("h2_PosRelPtRes", "h2_PosRelPtRes", {HistType::kTH2F, {pTAxis, relpTResAxis}});
+      rK0sDauResolution.add("h2_NegRelPtRes", "h2_NegRelPtRes", {HistType::kTH2F, {pTAxis, relpTResAxis}});
     }
     rK0sResolution.add("h2_masspT", "h2_masspT", {HistType::kTH2F, {mAxis, pTAxis}});
     rK0sResolution.add("h2_masseta", "h2_masseta", {HistType::kTH2F, {mAxis, etaAxis}});
@@ -91,6 +114,39 @@ struct perfK0sResolution {
         rK0sResolution.add("thn_mass", "thn_mass", kTHnSparseF, {mAxis, pTAxis, etaAxis, phiAxis, etaAxisPosD, etaAxisNegD});
       }
     }
+
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
+
+    /// TrackTuner initialization
+    if (useTrackTuner) {
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+      std::string outputStringParams = trackTunerObj.configParams(trackTunerParams);
+      trackTunerObj.getDcaGraphs();
+      // QA is done in tuneTrackParams method
+      trackTunedTracks->SetTitle(outputStringParams.c_str());
+      trackTunedTracks->GetXaxis()->SetBinLabel(1, "all tracks");
+      trackTunedTracks->GetXaxis()->SetBinLabel(2, "tracks tuned (no negative detXY)");
+      trackTunedTracks->GetXaxis()->SetBinLabel(3, "untouched tracks due to negative detXY");
+      trackTunedTracks->GetXaxis()->SetBinLabel(4, "original detXY<0");
+    }
+  }
+
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (runNumber == bc.runNumber()) {
+      return;
+    }
+    grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+    if (!grpmag) {
+      LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath;
+    }
+    LOG(info) << "Setting magnetic field to current " << grpmag->getL3Current() << " A for run " << bc.runNumber() << " from its GRPMagField CCDB object";
+    o2::base::Propagator::initFieldFromGRP(grpmag);
+    o2::base::Propagator::Instance()->setMatLUT(lut);
+    runNumber = bc.runNumber();
   }
 
   // Selection criteria
@@ -101,7 +157,7 @@ struct perfK0sResolution {
   Configurable<float> v0setting_radius{"v0setting_radius", 0.9, "V0 Radius"};
   Configurable<float> v0setting_rapidity{"v0setting_rapidity", 0.5, "rapidity"};
 
-  Configurable<float> v0lifetime{"v0lifetime", 3., "n ctau"};
+  Configurable<float> nV0lifetime{"nV0lifetime", 3., "n ctau"};
   Configurable<float> nSigTPC{"nSigTPC", 10., "nSigTPC"};
   Configurable<int> itsIbSelectionPos{"itsIbSelectionPos", 0, "Flag for the ITS IB selection on positive daughters: -1 no ITS IB, 0 no selection, 1 ITS IB"};
   Configurable<int> itsIbSelectionNeg{"itsIbSelectionNeg", 0, "Flag for the ITS IB IB selection on negative daughters: -1 no ITS IB, 0 no selection, 1 ITS IB"};
@@ -112,6 +168,7 @@ struct perfK0sResolution {
   Configurable<float> extraCutTPCClusters{"extraCutTPCClusters", -1.0f, "Extra cut on daugthers for TPC clusters"};
   Configurable<bool> useMultidimHisto{"useMultidimHisto", false, "use multidimentional histograms"};
   Configurable<bool> computeInvMassFromDaughters{"computeInvMassFromDaughters", false, "Compute the invariant mass from the daughters"};
+  Configurable<bool> requireTrueK0s{"requireTrueK0s", false, "require rec. v0 to be true K0s"};
 
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -127,7 +184,7 @@ struct perfK0sResolution {
     if (v0.v0radius() < v0setting_radius) {
       return false;
     }
-    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * pid_constants::sMasses[PID::K0] > 2.684 * v0lifetime) {
+    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * pid_constants::sMasses[PID::K0] > 2.684 * nV0lifetime) {
       return false;
     }
 
@@ -262,7 +319,7 @@ struct perfK0sResolution {
 
   void processData(soa::Filtered<SelectedCollisions>::iterator const& collision,
                    soa::Filtered<aod::V0Datas> const& fullV0s,
-                   PIDTracks const& tracks)
+                   PIDTracks const&)
   {
     for (auto& v0 : fullV0s) {
       const auto& posTrack = v0.posTrack_as<PIDTracks>();
@@ -287,12 +344,52 @@ struct perfK0sResolution {
   }
   PROCESS_SWITCH(perfK0sResolution, processData, "Process data", true);
 
-  void processMC(soa::Filtered<SelectedCollisions>::iterator const& collision, soa::Filtered<soa::Join<aod::V0Datas, aod::McV0Labels>> const& fullV0s,
-                 soa::Join<PIDTracks, aod::McTrackLabels> const& tracks, aod::McParticles const&)
+  // Running variables
+  o2::dataformats::VertexBase mVtx;
+  o2::dataformats::DCA mDcaInfoCovPos;
+  o2::dataformats::DCA mDcaInfoCovNeg;
+  o2::track::TrackParametrizationWithError<float> mTrackParCovPos;
+  o2::track::TrackParametrizationWithError<float> mTrackParCovNeg;
+
+  template <class TV0TracksTo, typename TV0>
+  void tuneV0(TV0 const& v0,
+              aod::McParticles const&,
+              aod::BCsWithTimestamps const& bcs)
+  {
+    initCCDB(bcs.begin());
+    trackTunedTracks->Fill(1, 2); // tune 2 tracks
+
+    const auto& posTrack = v0.template posTrack_as<TV0TracksTo>();
+    const auto& negTrack = v0.template negTrack_as<TV0TracksTo>();
+    setTrackParCov(posTrack, mTrackParCovPos);
+    setTrackParCov(negTrack, mTrackParCovNeg);
+    mTrackParCovPos.setPID(posTrack.pidForTracking());
+    mTrackParCovNeg.setPID(negTrack.pidForTracking());
+    mDcaInfoCovPos.set(999, 999, 999, 999, 999);
+    mDcaInfoCovNeg.set(999, 999, 999, 999, 999);
+    auto mcParticlePos = posTrack.mcParticle();
+    auto mcParticleNeg = negTrack.mcParticle();
+
+    LOG(info) << "Inside tuneTrack: before calling tuneTrackParams trackParCov.getY(): " << trackParCov.getY();
+    trackTunerObj.tuneTrackParams(mcParticlePos, mTrackParCovPos, matCorr, &mDcaInfoCovPos, trackTunedTracks);
+    trackTunerObj.tuneTrackParams(mcParticleNeg, mTrackParCovNeg, matCorr, &mDcaInfoCovNeg, trackTunedTracks);
+    LOG(info) << "Inside tuneTrack: after calling tuneTrackParams trackParCov.getY(): " << trackParCov.getY();
+    // trackTunedTracks->Fill(1, 2);
+    mVtx.setPos({v0.x(), v0.y(), v0.z()});
+    mVtx.setCov(v0.positionCovMat()[0], v0.positionCovMat()[1], v0.positionCovMat()[2], v0.positionCovMat()[3], v0.positionCovMat()[4], v0.positionCovMat()[5]);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCovPos, 2.f, matCorr, &mDcaInfoCovPos);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCovNeg, 2.f, matCorr, &mDcaInfoCovNeg);
+  }
+
+  void processMC(soa::Filtered<SelectedCollisions>::iterator const& collision, 
+                 soa::Filtered<soa::Join<aod::V0Datas, aod::V0Covs, aod::V0DauCovs, aod::McV0Labels>> const& fullV0s,
+                 PIDTracksIUMC const&,
+                 aod::McParticles const& mcParticles,
+                 aod::BCsWithTimestamps const& bcs)
   {
     for (auto& v0 : fullV0s) {
-      const auto& posTrack = v0.posTrack_as<soa::Join<PIDTracks, aod::McTrackLabels>>();
-      const auto& negTrack = v0.negTrack_as<soa::Join<PIDTracks, aod::McTrackLabels>>();
+      const auto& posTrack = v0.posTrack_as<PIDTracksIUMC>();
+      const auto& negTrack = v0.negTrack_as<PIDTracksIUMC>();
       if (!acceptV0(v0, negTrack, posTrack, collision))
         continue;
       if (!posTrack.has_mcParticle()) {
@@ -304,13 +401,31 @@ struct perfK0sResolution {
       if (posTrack.mcParticle().pdgCode() != 211 || negTrack.mcParticle().pdgCode() != -211) {
         continue;
       }
+      if (useTrackTuner) {
+        tuneV0<PIDTracksIUMC>(v0, mcParticles, bcs);
+      }
+
       float mass = v0.mK0Short();
+
       if (computeInvMassFromDaughters) {
         mass = RecoDecay::m(std::array{std::array{posTrack.px(), posTrack.py(), posTrack.pz()},
                                        std::array{negTrack.px(), negTrack.py(), negTrack.pz()}},
                             std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
       }
+      if (useTrackTuner) {
+        std::array<float, 3> pPos{0., 0., 0.};
+        std::array<float, 3> pNeg{0., 0., 0.};  
+        mTrackParCovPos.getPxPyPzGlo(pPos);
+        mTrackParCovNeg.getPxPyPzGlo(pNeg);
+        mass = RecoDecay::m(std::array{std::array{pPos[0], pPos[1], pPos[2]},
+                                       std::array{pNeg[0], pNeg[1], pNeg[2]}},
+                            std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
+      }
+
       const bool isTrueK0s = (v0.has_mcParticle() && v0.mcParticle().pdgCode() == 310);
+      if (!isTrueK0s && requireTrueK0s) {
+        continue;
+      }
       rK0sDauResolution.fill(HIST("h2_genPtPosPtRes"), (v0.positivept() - posTrack.mcParticle().pt()) / posTrack.mcParticle().pt(), posTrack.mcParticle().pt());
       rK0sDauResolution.fill(HIST("h2_genPxPosPxRes"), (v0.pxpos() - posTrack.mcParticle().px()) / posTrack.mcParticle().px(), posTrack.mcParticle().px());
       rK0sDauResolution.fill(HIST("h2_genPyPosPyRes"), (v0.pypos() - posTrack.mcParticle().py()) / posTrack.mcParticle().py(), posTrack.mcParticle().py());
@@ -323,9 +438,15 @@ struct perfK0sResolution {
 
       rK0sDauResolution.fill(HIST("h2_massPosPtRes"), mass, v0.positivept() - posTrack.mcParticle().pt());
       rK0sDauResolution.fill(HIST("h2_massNegPtRes"), mass, v0.negativept() - negTrack.mcParticle().pt());
+
+      rK0sDauResolution.fill(HIST("h2_PosRelPtRes"), v0.positivept(), RecoDecay::sqrtSumOfSquares(v0.covMatPosDau()[9], v0.covMatPosDau()[14]), v0.positivept());
+      rK0sDauResolution.fill(HIST("h2_NegRelPtRes"), v0.negativept(), RecoDecay::sqrtSumOfSquares(v0.covMatNegDau()[9], v0.covMatNegDau()[14]), v0.positivept());
+
+      // Can be taken from kTHnSparseF (useMultidimHisto configurable)
       rK0sResolution.fill(HIST("h2_masspT"), mass, v0.pt());
       rK0sResolution.fill(HIST("h2_masseta"), mass, v0.eta());
       rK0sResolution.fill(HIST("h2_massphi"), mass, v0.phi());
+
       if (useMultidimHisto) {
         rK0sResolution.fill(HIST("thn_mass"), mass, v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta(),
                             1. / v0.positivept() - 1. / posTrack.mcParticle().pt(),
