@@ -503,7 +503,7 @@ struct AntimatterAbsorptionHMPID {
   // Propagated tracks
   using TrackCandidatesIU = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA,
                                       PidInfoTPC, PidInfoTOF,
-                                      aod::TrackSelection, aod::TrackSelectionExtension>;
+                                      aod::TrackSelection, aod::TrackSelectionExtension, o2::aod::HMPID>;
 
   // Propagated to PV tracks
   using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA,
