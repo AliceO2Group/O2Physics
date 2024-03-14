@@ -87,7 +87,7 @@ struct kstarqa {
   Configurable<bool> QAbefore{"QAbefore", false, "QAbefore"};
   Configurable<bool> QAafter{"QAafter", false, "QAafter"};
   Configurable<bool> QAv0{"QAv0", false, "QAv0"};
-  Configurable<bool> onlyTPC{"onlyTPC", false, "only TPC tracks"}
+  Configurable<bool> onlyTPC{"onlyTPC", false, "only TPC tracks"};
 
   // Configurable for event selection
   Configurable<float>
