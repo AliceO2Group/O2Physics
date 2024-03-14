@@ -158,7 +158,7 @@ struct HfCandidateCreator3Prong {
     hCollisions->GetXaxis()->SetBinLabel(5, "Centrality + sel8 + posZ + TF border ok");
   }
 
-  template <bool doPvRefit = false, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator = 0, typename Coll, typename Cand>
+  template <bool doPvRefit = false, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll, typename Cand>
   void runCreator3Prong(Coll const& collisions,
                         Cand const& rowsTrackIndexProng3,
                         aod::TracksWCovExtra const& tracks,
