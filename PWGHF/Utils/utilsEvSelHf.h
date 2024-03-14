@@ -29,6 +29,27 @@ enum EventRejection {
   NEventRejection
 };
 
+enum ValuesEvSel : int {
+  All = 0,
+  Cent,
+  CentSel8,
+  CentSel8PosZ,
+  CentSel8PosZTFBorder,
+  NEvSel
+};
+
+/// @brief Function to put labels on collision monitoring histogram
+/// \param hCollisions is the histogram
+template <typename Histo>
+void setLabelHistoEvSel(Histo& hCollisions)
+{
+  hCollisions->GetXaxis()->SetBinLabel(ValuesEvSel::All + 1, "All collisions");
+  hCollisions->GetXaxis()->SetBinLabel(ValuesEvSel::Cent + 1, "Centrality ok");
+  hCollisions->GetXaxis()->SetBinLabel(ValuesEvSel::CentSel8 + 1, "Centrality + sel8 ok");
+  hCollisions->GetXaxis()->SetBinLabel(ValuesEvSel::CentSel8PosZ + 1, "Centrality + sel8 + posZ ok");
+  hCollisions->GetXaxis()->SetBinLabel(ValuesEvSel::CentSel8PosZTFBorder + 1, "Centrality + sel8 + posZ + TF border ok");
+}
+
 /// \brief Function to apply event selections in HF analyses
 /// \param collision collision that has to satisfy the selection criteria
 /// \param useSel8Trigger switch to activate the sel8() event selection
@@ -36,7 +57,7 @@ enum EventRejection {
 /// \param useTimeFrameBorderCut switch to activate the time frame border cut
 /// \return a bitmask with the event selections not satisfied by the analysed collision
 template <o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll>
-uint16_t getHfCollisionRejectionMask(const Coll& collision, std::array<float, 2> centralityLimits, bool useSel8Trigger, float maxPvPosZ, bool useTimeFrameBorderCut)
+uint16_t getHfCollisionRejectionMask(const Coll& collision, float centralityMin, float centralityMax, bool useSel8Trigger, float maxPvPosZ, bool useTimeFrameBorderCut)
 {
 
   uint16_t statusCollision = 0; // 16 bits, in case new ev. selections will be added
@@ -50,7 +71,7 @@ uint16_t getHfCollisionRejectionMask(const Coll& collision, std::array<float, 2>
     } else {
       LOGP(fatal, "Centrality estimator different from FT0C and FT0M, fix it!");
     }
-    if (centrality < centralityLimits.at(0) || centrality > centralityLimits.at(1)) {
+    if (centrality < centralityMin || centrality > centralityMax) {
       SETBIT(statusCollision, EventRejection::Centrality);
     }
   }
@@ -82,10 +103,10 @@ uint16_t getHfCollisionRejectionMask(const Coll& collision, std::array<float, 2>
 /// \param hPosZBeforeEvSel is PV position Z for all analysed collisions
 /// \param hPosZAfterEvSel is PV position Z only for collisions satisfying the event selections
 template <typename Coll, typename Hist>
-void monitorCollision(Coll const& collision, const uint16_t rejectionMask, Hist const& hCollisions, Hist const& hPosZBeforeEvSel, Hist const& hPosZAfterEvSel)
+void monitorCollision(Coll const& collision, const uint16_t rejectionMask, Hist& hCollisions, Hist& hPosZBeforeEvSel, Hist& hPosZAfterEvSel)
 {
 
-  hCollisions->Fill(0); // all collisions
+  hCollisions->Fill(ValuesEvSel::All); // all collisions
   const float posZ = collision.posZ();
   hPosZBeforeEvSel->Fill(posZ);
 
@@ -93,25 +114,25 @@ void monitorCollision(Coll const& collision, const uint16_t rejectionMask, Hist 
   if (TESTBIT(rejectionMask, EventRejection::Centrality)) {
     return;
   }
-  hCollisions->Fill(1); // Centrality ok
+  hCollisions->Fill(ValuesEvSel::Cent); // Centrality ok
 
   /// sel8()
   if (TESTBIT(rejectionMask, EventRejection::Trigger)) {
     return;
   }
-  hCollisions->Fill(2); // Centrality + sel8 ok
+  hCollisions->Fill(ValuesEvSel::CentSel8); // Centrality + sel8 ok
 
   /// PV position Z
   if (TESTBIT(rejectionMask, EventRejection::PositionZ)) {
     return;
   }
-  hCollisions->Fill(3); // Centrality + sel8 + posZ ok
+  hCollisions->Fill(ValuesEvSel::CentSel8PosZ); // Centrality + sel8 + posZ ok
 
   /// Time Frame border cut
   if (TESTBIT(rejectionMask, EventRejection::TimeFrameBorderCut)) {
     return;
   }
-  hCollisions->Fill(4); // Centrality + sel8 + posZ + TF border ok
+  hCollisions->Fill(ValuesEvSel::CentSel8PosZTFBorder); // Centrality + sel8 + posZ + TF border ok
   hPosZAfterEvSel->Fill(posZ);
 }
 
