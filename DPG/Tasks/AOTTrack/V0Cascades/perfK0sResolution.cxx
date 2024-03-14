@@ -440,7 +440,7 @@ struct perfK0sResolution {
     o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCovNeg, 2.f, matCorr, &mDcaInfoCovNeg);
   }
 
-  void processMC(soa::Filtered<SelectedCollisions>::iterator const& collision, 
+  void processMC(soa::Filtered<SelectedCollisions>::iterator const& collision,
                  soa::Filtered<soa::Join<aod::V0Datas, aod::V0Covs, aod::V0DauCovs, aod::McV0Labels>> const& fullV0s,
                  PIDTracksIUMC const&,
                  aod::McParticles const& mcParticles,
@@ -475,7 +475,7 @@ struct perfK0sResolution {
       }
       if (useTrackTuner) {
         std::array<float, 3> pPos{0., 0., 0.};
-        std::array<float, 3> pNeg{0., 0., 0.};  
+        std::array<float, 3> pNeg{0., 0., 0.};
         mTrackParCovPos.getPxPyPzGlo(pPos);
         mTrackParCovNeg.getPxPyPzGlo(pNeg);
         mass = RecoDecay::m(std::array{std::array{pPos[0], pPos[1], pPos[2]},
