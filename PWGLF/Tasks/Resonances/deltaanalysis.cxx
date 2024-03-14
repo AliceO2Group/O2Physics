@@ -79,6 +79,8 @@ struct deltaAnalysis {
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
   Configurable<float> nsigmaCutTOF{"nsigmaCutTOF", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
+  Configurable<float> cfgCutPtProtonTPC{"cfgCutPtProtonTPC", 0.8, "Pt cut of proton in TPC"};
+  Configurable<float> cfgCutPtPionTPC{"cfgCutPtPionTPC", 0.8, "Pt cut of pion in TPC"};
 
   // Histogram axes
   AxisSpec nSigmaTPCaxis = {100, -5., 5., "n#sigma_{TPC}"};
@@ -211,7 +213,9 @@ struct deltaAnalysis {
         histos.fill(HIST("hPiMinusDCAxy"), track.dcaXY());
         histos.fill(HIST("hPiMinusDCAz"), track.dcaZ());
       }
-      return true;
+      if (track.pt() < cfgCutPtPionTPC) {
+        return true;
+      }
     }
     return false;
   }
@@ -246,7 +250,9 @@ struct deltaAnalysis {
         histos.fill(HIST("hPrMinusDCAxy"), track.dcaXY());
         histos.fill(HIST("hPrMinusDCAz"), track.dcaZ());
       }
-      return true;
+      if (track.pt() < cfgCutPtProtonTPC) {
+        return true;
+      }
     }
     return false;
   }
