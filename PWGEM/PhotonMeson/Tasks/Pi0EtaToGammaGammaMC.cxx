@@ -318,7 +318,7 @@ struct Pi0EtaToGammaGammaMC {
     } else if (pairtype == PairType::kPHOSPHOS) {
       return o2::aod::pwgem::mcutil::IsInAcceptance(mcparticle, mcparticles, std::vector<int>{-13, 13, 22}, -maxY_phos, +maxY_phos, minPhi_phos, maxPhi_phos);
     } else if (pairtype == PairType::kEMCEMC) {
-      return o2::aod::pwgem::mcutil::IsInAcceptance(mcparticle, mcparticles, std::vector<int>{-13, 13, 22}, -maxY_emc, +maxY_emc, minPhi_emc, maxPhi_emc);
+      return o2::aod::pwgem::mcutil::IsInAcceptance(mcparticle, mcparticles, std::vector<int>{22, 22}, -maxY_emc, +maxY_emc, minPhi_emc, maxPhi_emc);
     }
     return true;
   }

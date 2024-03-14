@@ -158,6 +158,8 @@ struct phipbpb {
     histos.add("hPsiFT0C", "PsiFT0C", kTH2F, {centAxis, phiAxis});
     histos.add("hPsiFT0A", "PsiFT0A", kTH2F, {centAxis, phiAxis});
     histos.add("hPsiTPC", "PsiTPC", kTH2F, {centAxis, phiAxis});
+    histos.add("hPsiTPCR", "PsiTPCR", kTH2F, {centAxis, phiAxis});
+    histos.add("hPsiTPCL", "PsiTPCL", kTH2F, {centAxis, phiAxis});
 
     histos.add("hSparseV2SASameEvent_costhetastarOP", "hSparseV2SASameEvent_costhetastarOP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
     histos.add("hSparseV2SASameEvent_costhetastarIP", "hSparseV2SASameEvent_costhetastarIP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
@@ -180,6 +182,9 @@ struct phipbpb {
 
     // histogram for resolution
     histos.add("ResFT0CTPC", "ResFT0CTPC", kTH2F, {centAxis, resAxis});
+    histos.add("ResFT0CTPCR", "ResFT0CTPCR", kTH2F, {centAxis, resAxis});
+    histos.add("ResFT0CTPCL", "ResFT0CTPCL", kTH2F, {centAxis, resAxis});
+    histos.add("ResTPCRTPCL", "ResTPCRTPCL", kTH2F, {centAxis, resAxis});
     histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH2F, {centAxis, resAxis});
     histos.add("ResFT0ATPC", "ResFT0ATPC", kTH2F, {centAxis, resAxis});
 
@@ -339,6 +344,8 @@ struct phipbpb {
     auto psiFT0C = collision.psiFT0C();
     auto psiFT0A = collision.psiFT0A();
     auto psiTPC = collision.psiTPC();
+    auto psiTPCR = collision.psiTPCR();
+    auto psiTPCL = collision.psiTPCL();
     histos.fill(HIST("hFTOCvsTPC"), centrality, multTPC);
     if (additionalEvsel && !eventSelected(collision, centrality)) {
       return;
@@ -347,7 +354,12 @@ struct phipbpb {
     histos.fill(HIST("hPsiFT0C"), centrality, psiFT0C);
     histos.fill(HIST("hPsiFT0A"), centrality, psiFT0A);
     histos.fill(HIST("hPsiTPC"), centrality, psiTPC);
+    histos.fill(HIST("hPsiTPCR"), centrality, psiTPCR);
+    histos.fill(HIST("hPsiTPCL"), centrality, psiTPCL);
     histos.fill(HIST("ResFT0CTPC"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPC)));
+    histos.fill(HIST("ResFT0CTPCR"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPCR)));
+    histos.fill(HIST("ResFT0CTPCL"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPCL)));
+    histos.fill(HIST("ResTPCRTPCL"), centrality, TMath::Cos(2.0 * (psiTPCR - psiTPCL)));
     histos.fill(HIST("ResFT0CFT0A"), centrality, TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
     histos.fill(HIST("ResFT0ATPC"), centrality, TMath::Cos(2.0 * (psiTPC - psiFT0A)));
     histos.fill(HIST("hCentrality"), centrality);
