@@ -168,7 +168,7 @@ struct HfCandidateCreator3Prong {
 
       /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexProng3.template collision_as<Coll>();
-      auto rejectionMask = getHfCollisionRejectionMask<centEstimator>(collision, centralityMin, centralityMax, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      const auto rejectionMask = getHfCollisionRejectionMask<centEstimator>(collision, centralityMin, centralityMax, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
