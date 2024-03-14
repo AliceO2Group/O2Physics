@@ -112,6 +112,7 @@ struct AntimatterAbsorptionHMPID {
                 {pAxis, {100, -1.0, 1.0, "eta"}});
     pos_reg.add("histPhi", "phi", HistType::kTH2F,
                 {pAxis, {200, 0.0, TMath::TwoPi(), "phi"}});
+    pos_reg.add("hmpidMapPos", "hmpidMapPos", HistType::kTH3F, {pAxis, {120, -0.6, 0.6, "#eta"}, {100, 0.0, TMath::Pi() / 2.0, "#phi"}});
 
     // General Histogram (Negative Tracks)
     neg_reg.add("histTpcSignalData", "dE/dx", HistType::kTH2F,
@@ -138,12 +139,23 @@ struct AntimatterAbsorptionHMPID {
                 {pAxis, {100, -1.0, 1.0, "eta"}});
     neg_reg.add("histPhi", "phi", HistType::kTH2F,
                 {pAxis, {200, 0.0, TMath::TwoPi(), "phi"}});
+    pos_reg.add("hmpidMapNeg", "hmpidMapNeg", HistType::kTH3F, {pAxis, {120, -0.6, 0.6, "#eta"}, {100, 0.0, TMath::Pi() / 2.0, "#phi"}});
 
     // Pion Pos
     pion_pos_reg.add("histTpcNsigmaData", "nsigmaTPC (#pi)", HistType::kTH2F,
                      {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (#pi)"}});
     pion_pos_reg.add("histTofNsigmaData", "nsigmaTOF (#pi)", HistType::kTH2F,
                      {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (#pi)"}});
+
+    pion_pos_reg.add("incomingPi_Pos_8cm", "incomingPi_Pos_8cm", HistType::kTH1F, {pAxis});
+    pion_pos_reg.add("incomingPi_Pos_4cm", "incomingPi_Pos_4cm", HistType::kTH1F, {pAxis});
+    pion_pos_reg.add("survivingPi_Pos_8cm", "survivingPi_Pos_8cm", HistType::kTH2F, {pAxis, {300, 0.0, 30.0, "#Delta R (cm)"}});
+    pion_pos_reg.add("survivingPi_Pos_4cm", "survivingPi_Pos_4cm", HistType::kTH2F, {pAxis, {300, 0.0, 30.0, "#Delta R (cm)"}});
+    pion_pos_reg.add("Pi_Pos_Q_8cm", "Pi_Pos_Q_8cm", HistType::kTH2F, {pAxis, {100, 0.0, 1000.0, "Q (ADC)"}});
+    pion_pos_reg.add("Pi_Pos_Q_4cm", "Pi_Pos_Q_4cm", HistType::kTH2F, {pAxis, {100, 0.0, 1000.0, "Q (ADC)"}});
+    pion_pos_reg.add("Pi_Pos_ClsSize_8cm", "Pi_Pos_ClsSize_8cm", HistType::kTH2F, {pAxis, {100, 0.0, 100, "Cls size"}});
+    pion_pos_reg.add("Pi_Pos_ClsSize_4cm", "Pi_Pos_ClsSize_4cm", HistType::kTH2F, {pAxis, {100, 0.0, 100, "Cls size"}});
+    pion_pos_reg.add("Pi_Pos_momentum", "Pi_Pos_momentum", HistType::kTH2F, {{100, 0.0, 3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {100, 0.0, 3.0, "#it{p}_{mhpid} (GeV/#it{c})"}});
 
     // Kaon Pos
     kaon_pos_reg.add("histTpcNsigmaData", "nsigmaTPC (K)", HistType::kTH2F,
@@ -168,6 +180,16 @@ struct AntimatterAbsorptionHMPID {
                      {pAxis, {160, -20.0, +20.0, "n#sigma_{TPC} (#pi)"}});
     pion_neg_reg.add("histTofNsigmaData", "nsigmaTOF (#pi)", HistType::kTH2F,
                      {pAxis, {160, -20.0, +20.0, "n#sigma_{TOF} (#pi)"}});
+
+    pion_neg_reg.add("incomingPi_Neg_8cm", "incomingPi_Neg_8cm", HistType::kTH1F, {pAxis});
+    pion_neg_reg.add("incomingPi_Neg_4cm", "incomingPi_Neg_4cm", HistType::kTH1F, {pAxis});
+    pion_neg_reg.add("survivingPi_Neg_8cm", "survivingPi_Neg_8cm", HistType::kTH2F, {pAxis, {300, 0.0, 30.0, "#Delta R (cm)"}});
+    pion_neg_reg.add("survivingPi_Neg_4cm", "survivingPi_Neg_4cm", HistType::kTH2F, {pAxis, {300, 0.0, 30.0, "#Delta R (cm)"}});
+    pion_neg_reg.add("Pi_Neg_Q_8cm", "Pi_Neg_Q_8cm", HistType::kTH2F, {pAxis, {100, 0.0, 1000.0, "Q (ADC)"}});
+    pion_neg_reg.add("Pi_Neg_Q_4cm", "Pi_Neg_Q_4cm", HistType::kTH2F, {pAxis, {100, 0.0, 1000.0, "Q (ADC)"}});
+    pion_neg_reg.add("Pi_Neg_ClsSize_8cm", "Pi_Neg_ClsSize_8cm", HistType::kTH2F, {pAxis, {100, 0.0, 100, "Cls size"}});
+    pion_neg_reg.add("Pi_Neg_ClsSize_4cm", "Pi_Neg_ClsSize_4cm", HistType::kTH2F, {pAxis, {100, 0.0, 100, "Cls size"}});
+    pion_neg_reg.add("Pi_Neg_momentum", "Pi_Neg_momentum", HistType::kTH2F, {{100, 0.0, 3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {100, 0.0, 3.0, "#it{p}_{mhpid} (GeV/#it{c})"}});
 
     // Kaon Neg
     kaon_neg_reg.add("histTpcNsigmaData", "nsigmaTPC (K)", HistType::kTH2F,
@@ -292,6 +314,10 @@ struct AntimatterAbsorptionHMPID {
       }
 
       // Track Selection
+      if (!track.hasTPC())
+        continue;
+      if (!track.hasITS())
+        continue;
       if (!track.passedITSRefit())
         continue;
       if (!track.passedTPCRefit())
@@ -320,6 +346,10 @@ struct AntimatterAbsorptionHMPID {
         continue;
 
       if (track.sign() > 0) {
+        if (track.hmpidQMip() > 100) {
+          pos_reg.fill(HIST("hmpidMapPos"), track.p(), track.eta(), track.phi());
+        }
+
         pion_pos_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaPi());
         kaon_pos_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaKa());
         proton_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaPr());
@@ -327,6 +357,10 @@ struct AntimatterAbsorptionHMPID {
       }
 
       if (track.sign() < 0) {
+        if (track.hmpidQMip() > 100) {
+          neg_reg.fill(HIST("hmpidMapNeg"), track.p(), track.eta(), track.phi());
+        }
+
         pion_neg_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaPi());
         kaon_neg_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaKa());
         antiproton_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaPr());
@@ -377,6 +411,69 @@ struct AntimatterAbsorptionHMPID {
           antiproton_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaPr());
         if (passedDeutTPCsel)
           antideuteron_reg.fill(HIST("histTofNsigmaData"), track.p(), track.tofNSigmaDe());
+      }
+
+      bool passedPionTOFsel = false;
+      bool passedKaonTOFsel = false;
+      bool passedProtTOFsel = false;
+      bool passedDeutTOFsel = false;
+
+      if (track.tofNSigmaPi() > nsigmaTOFMin &&
+          track.tofNSigmaPi() < nsigmaTOFMax)
+        passedPionTOFsel = true;
+
+      if (track.tofNSigmaKa() > nsigmaTOFMin &&
+          track.tofNSigmaKa() < nsigmaTOFMax)
+        passedKaonTOFsel = true;
+
+      if (track.tofNSigmaPr() > nsigmaTOFMin &&
+          track.tofNSigmaPr() < nsigmaTOFMax)
+        passedProtTOFsel = true;
+
+      if (track.tofNSigmaDe() > nsigmaTOFMin &&
+          track.tofNSigmaDe() < nsigmaTOFMax)
+        passedDeutTOFsel = true;
+
+      // To be calculated
+      bool hmpidAbs8cm = true;
+      bool hmpidAbs4cm = true;
+
+      // Pi Plus
+      if (passedPionTPCsel && passedPionTOFsel && track.sign() > 0) {
+
+        pion_pos_reg.fill(HIST("Pi_Pos_momentum"), track.p(), track.hmpidMom());
+
+        if (hmpidAbs8cm) {
+          pion_pos_reg.fill(HIST("incomingPi_Pos_8cm"), track.hmpidMom());
+          pion_pos_reg.fill(HIST("survivingPi_Pos_8cm"), track.hmpidMom(), track.hmpidDistance());
+          pion_pos_reg.fill(HIST("Pi_Pos_Q_8cm"), track.hmpidMom(), track.hmpidQMip());
+          pion_pos_reg.fill(HIST("Pi_Pos_ClsSize_8cm"), track.hmpidMom(), track.hmpidClusSize());
+        }
+        if (hmpidAbs4cm) {
+          pion_pos_reg.fill(HIST("incomingPi_Pos_4cm"), track.hmpidMom());
+          pion_pos_reg.fill(HIST("survivingPi_Pos_4cm"), track.hmpidMom(), track.hmpidDistance());
+          pion_pos_reg.fill(HIST("Pi_Pos_Q_4cm"), track.hmpidMom(), track.hmpidQMip());
+          pion_pos_reg.fill(HIST("Pi_Pos_ClsSize_4cm"), track.hmpidMom(), track.hmpidClusSize());
+        }
+      }
+
+      // Pi Minus
+      if (passedPionTPCsel && passedPionTOFsel && track.sign() < 0) {
+
+        pion_neg_reg.fill(HIST("Pi_Neg_momentum"), track.p(), track.hmpidMom());
+
+        if (hmpidAbs8cm) {
+          pion_neg_reg.fill(HIST("incomingPi_Neg_8cm"), track.hmpidMom());
+          pion_neg_reg.fill(HIST("survivingPi_Neg_8cm"), track.hmpidMom(), track.hmpidDistance());
+          pion_neg_reg.fill(HIST("Pi_Neg_Q_8cm"), track.hmpidMom(), track.hmpidQMip());
+          pion_neg_reg.fill(HIST("Pi_Neg_ClsSize_8cm"), track.hmpidMom(), track.hmpidClusSize());
+        }
+        if (hmpidAbs4cm) {
+          pion_neg_reg.fill(HIST("incomingPi_Neg_4cm"), track.hmpidMom());
+          pion_neg_reg.fill(HIST("survivingPi_Neg_4cm"), track.hmpidMom(), track.hmpidDistance());
+          pion_neg_reg.fill(HIST("Pi_Neg_Q_4cm"), track.hmpidMom(), track.hmpidQMip());
+          pion_neg_reg.fill(HIST("Pi_Neg_ClsSize_4cm"), track.hmpidMom(), track.hmpidClusSize());
+        }
       }
     }
   }
