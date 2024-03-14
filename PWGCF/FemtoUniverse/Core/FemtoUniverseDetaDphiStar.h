@@ -145,6 +145,32 @@ class FemtoUniverseDetaDphiStar
         }
       }
       return pass;
+
+    } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kV0 && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kV0) {
+      /// V0-V0 combination
+      // check if provided particles are in agreement with the class instantiation
+      if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kV0 || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kV0) {
+        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar instantiation! Please provide kV0,kV0 candidates.";
+        return false;
+      }
+
+      bool pass = false;
+      for (int i = 0; i < 2; i++) {
+        auto indexOfDaughterpart1 = part1.index() - 2 + i;
+        auto indexOfDaughterpart2 = part2.index() - 2 + i;
+        auto daughterpart1 = particles.begin() + indexOfDaughterpart1;
+        auto daughterpart2 = particles.begin() + indexOfDaughterpart2;
+        auto deta = daughterpart1.eta() - daughterpart2.eta();
+        auto dphiAvg = AveragePhiStar(*daughterpart1, *daughterpart2, i);
+        histdetadpi[i][0]->Fill(deta, dphiAvg);
+        if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+          pass = true;
+        } else {
+          histdetadpi[i][1]->Fill(deta, dphiAvg);
+        }
+      }
+      return pass;
+
     } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kD0) {
       /// Track-D0 combination
       // check if provided particles are in agreement with the class instantiation
