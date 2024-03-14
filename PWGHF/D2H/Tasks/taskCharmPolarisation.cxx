@@ -335,7 +335,7 @@ struct TaskPolarisationCharmHadrons {
   /// \param isRotatedCandidate is a flag that keeps the info of the rotation of the candidate for bkg studies
   /// \param origin is the MC origin
   template <charm_polarisation::DecayChannel channel, bool withMl, bool doMc, charm_polarisation::CosThetaStarType cosThetaStarType>
-  void fillRecoHistos(float& invMassCharmHad, float& ptCharmHad, float& pzCharmHad, float& rapCharmHad, float& cosThetaStar, std::array<float, 3>& outputMl, int& isRotatedCandidate, int8_t origin)
+  void fillRecoHistos(float invMassCharmHad, float ptCharmHad, float pzCharmHad, float rapCharmHad, float cosThetaStar, std::array<float, 3> outputMl, int isRotatedCandidate, int8_t origin)
   {
     if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Helicity) { // Helicity
       if constexpr (!doMc) {                                                            // data
