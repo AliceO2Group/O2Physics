@@ -36,9 +36,9 @@ enum Selections : uint8_t {
   NSelSteps
 };
 enum DecayChannel : uint8_t {
-  Ds1toDstarK0s = 0,
-  Dstar2toDplusK0s,
-  XctoDplusLambda
+  Ds1ToDstarK0s = 0,
+  Dstar2ToDplusK0s,
+  XcToDplusLambda
 };
 enum V0Type : uint8_t {
   K0s = 0,
@@ -115,9 +115,9 @@ struct HfCandidateCreatorDV0Reduced {
   {
     float massD{0.};
     // slection on D candidate mass
-    if (channel == DecayChannel::Dstar2toDplusK0s || channel == DecayChannel::XctoDplusLambda) {
+    if (channel == DecayChannel::Dstar2ToDplusK0s || channel == DecayChannel::XcToDplusLambda) {
       massD = massDplus;
-    } else if (channel == DecayChannel::Ds1toDstarK0s) {
+    } else if (channel == DecayChannel::Ds1ToDstarK0s) {
       massD = massDstar;
     }
     if (std::fabs(candD.invMass() - massD) > invMassWindowD) {
@@ -132,10 +132,10 @@ struct HfCandidateCreatorDV0Reduced {
     float massV0{0.};
     float invMassV0{0.};
     // slection on V0 candidate mass
-    if (channel == DecayChannel::Dstar2toDplusK0s || channel == DecayChannel::Ds1toDstarK0s) {
+    if (channel == DecayChannel::Dstar2ToDplusK0s || channel == DecayChannel::Ds1ToDstarK0s) {
       massV0 = massK0;
       invMassV0 = candV0.invMassK0s();
-    } else if (channel == DecayChannel::XctoDplusLambda) {
+    } else if (channel == DecayChannel::XcToDplusLambda) {
       massV0 = massLambda;
       if (candD.dType() > 0) {
         invMassV0 = candV0.invMassLambda();
@@ -186,17 +186,17 @@ struct HfCandidateCreatorDV0Reduced {
         float ptV0 = RecoDecay::pt(pVecV0);
         float ptReso = RecoDecay::pt(RecoDecay::sumOfVec(pVecV0, pVecD));
         switch (channel) {
-          case DecayChannel::Ds1toDstarK0s:
+          case DecayChannel::Ds1ToDstarK0s:
             invMassV0 = candV0.invMassK0s();
             invMass2Reso = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massDstar, massK0});
             registry.fill(HIST("hMassDs1"), std::sqrt(invMass2Reso), ptReso);
             break;
-          case DecayChannel::Dstar2toDplusK0s:
+          case DecayChannel::Dstar2ToDplusK0s:
             invMassV0 = candV0.invMassK0s();
             invMass2Reso = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massDplus, massK0});
             registry.fill(HIST("hMassDsStar2"), std::sqrt(invMass2Reso), ptReso);
             break;
-          case DecayChannel::XctoDplusLambda:
+          case DecayChannel::XcToDplusLambda:
             if (candD.dType() > 0) {
               invMassV0 = candV0.invMassLambda();
             } else {
@@ -227,25 +227,25 @@ struct HfCandidateCreatorDV0Reduced {
                                aod::HfRed3PrNoTrks const& candsD,
                                aod::HfRedVzeros const& candsV0)
   {
-    runCandidateCreation<DecayChannel::Dstar2toDplusK0s>(collision, candsD, candidatesK0s);
+    runCandidateCreation<DecayChannel::Dstar2ToDplusK0s>(collision, candsD, candidatesK0s);
   }
-  PROCESS_SWITCH(HfCandidateCreatorDV0Reduced, processDstar2toDplusK0s, "Process Dstar2 candidates without MC info and without ML info", true);
+  PROCESS_SWITCH(HfCandidateCreatorDV0Reduced, processDstar2ToDplusK0s, "Process Dstar2 candidates without MC info and without ML info", true);
 
   void processDs1ToDstarK0s(aod::HfRedCollisions::iterator const& collision,
                             aod::HfRed3PrNoTrks const& candsD,
                             aod::HfRedVzeros const& candsV0)
   {
-    runCandidateCreation<DecayChannel::Ds1toDstarK0s>(collision, candsD, candidatesK0s);
+    runCandidateCreation<DecayChannel::Ds1ToDstarK0s>(collision, candsD, candidatesK0s);
   }
-  PROCESS_SWITCH(HfCandidateCreatorDV0Reduced, processDs1toDstarK0s, "Process Ds1 candidates without MC info and without ML info", false);
+  PROCESS_SWITCH(HfCandidateCreatorDV0Reduced, processDs1ToDstarK0s, "Process Ds1 candidates without MC info and without ML info", false);
 
   void processXcToDplusLambda(aod::HfRedCollisions::iterator const& collision,
                               aod::HfRed3PrNoTrks const& candsD,
                               aod::HfRedVzeros const& candsV0)
   {
-    runCandidateCreation<DecayChannel::XctoDplusLambda>(collision, candsD, candidatesLambda);
+    runCandidateCreation<DecayChannel::XcToDplusLambda>(collision, candsD, candidatesLambda);
   }
-  PROCESS_SWITCH(HfCandidateCreatorDV0Reduced, processXctoDplusLambda, "Process Xc candidates without MC info and without ML info", false);
+  PROCESS_SWITCH(HfCandidateCreatorDV0Reduced, processXcToDplusLambda, "Process Xc candidates without MC info and without ML info", false);
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
