@@ -529,7 +529,7 @@ struct HfTaskDs {
   }
 
   void processDataWithCentFT0C(CollisionsWithFT0C const&,
-                              CandDsData const& candidates)
+                               CandDsData const& candidates)
   {
     runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0C, false>(selectedDsToKKPiCandData);
     runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0C, false>(selectedDsToPiKKCandData);
@@ -561,7 +561,7 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processData, "Process data w/o ML information on Ds, w/o information on centrality", true);
 
   void processDataWithMlAndCentFT0C(CollisionsWithFT0C const&,
-                                   CandDsDataWithMl const& candidates)
+                                    CandDsDataWithMl const& candidates)
   {
     runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0C, true>(selectedDsToKKPiCandWithMlData);
     runDataAnalysis<FinalState::PiKK, CentralityEstimator::FT0C, true>(selectedDsToPiKKCandWithMlData);
@@ -593,9 +593,9 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processDataWithMl, "Process data with ML information on Ds, w/o information on centrality", false);
 
   void processMcWithCentFT0C(CollisionsWithFT0C const&,
-                            CandDsMcReco const& candidates,
-                            CandDsMcGen const& mcParticles,
-                            aod::TracksWMc const&)
+                             CandDsMcReco const& candidates,
+                             CandDsMcGen const& mcParticles,
+                             aod::TracksWMc const&)
   {
     runMcAnalysis<false>(candidates, mcParticles);
     runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0C, false>(selectedDsToKKPiCandMc);
@@ -637,9 +637,9 @@ struct HfTaskDs {
   PROCESS_SWITCH(HfTaskDs, processMc, "Process MC w/o ML information on Ds, w/o information on centrality", false);
 
   void processMcWithMlAndCentFT0C(CollisionsWithFT0C const&,
-                                 CandDsMcRecoWithMl const& candidates,
-                                 CandDsMcGen const& mcParticles,
-                                 aod::TracksWMc const&)
+                                  CandDsMcRecoWithMl const& candidates,
+                                  CandDsMcGen const& mcParticles,
+                                  aod::TracksWMc const&)
   {
     runMcAnalysis<true>(candidates, mcParticles);
     runDataAnalysis<FinalState::KKPi, CentralityEstimator::FT0C, true>(selectedDsToKKPiCandWithMlMc);
