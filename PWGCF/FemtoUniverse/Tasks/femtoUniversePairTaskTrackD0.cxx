@@ -428,7 +428,7 @@ struct femtoUniversePairTaskTrackD0 {
   void processSideBand(o2::aod::FDCollision& col, FemtoFullParticles& parts)
   {
     auto groupPartsOnlyD0D0bar = partsOnlyD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    
+
     double deltaPhi = 0.0;
     double deltaEta = 0.0;
 
