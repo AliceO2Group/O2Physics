@@ -93,17 +93,20 @@ struct HfCandidateCreatorCascade {
     }
 
     std::array<bool, 3> processesCollisions = {doprocessCollisions, doprocessCollisionsCentFT0C, doprocessCollisionsCentFT0M};
-    if (std::accumulate(processesCollisions.begin(), processesCollisions.end(), 0) != 1) {
-      LOGP(fatal, "One and only one process function for collision monitoring must be enabled at a time.");
+    const int nProcessesCollisions = std::accumulate(processesCollisions.begin(), processesCollisions.end(), 0);
+    if (nProcessesCollisions > 1) {
+      LOGP(fatal, "At most one process function for collision monitoring can be enabled at a time.");
     }
-    if (doprocessNoCent && !doprocessCollisions) {
-      LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisions\"?");
-    }
-    if (doprocessCentFT0C && !doprocessCollisionsCentFT0C) {
-      LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsCentFT0C\"?");
-    }
-    if (doprocessCentFT0M && !doprocessCollisionsCentFT0M) {
-      LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsCentFT0M\"?");
+    if (nProcessesCollisions == 1) {
+      if (doprocessNoCent && !doprocessCollisions) {
+        LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisions\"?");
+      }
+      if (doprocessCentFT0C && !doprocessCollisionsCentFT0C) {
+        LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsCentFT0C\"?");
+      }
+      if (doprocessCentFT0M && !doprocessCollisionsCentFT0M) {
+        LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsCentFT0M\"?");
+      }
     }
 
     massP = MassProton;
