@@ -101,9 +101,7 @@ struct SG_D0_Analyzer {
             registry.fill(HIST("os_KPi_eTa_2"), v01.Eta());
             registry.fill(HIST("os_KPi_invm_2"), v01.M());
           }
-        }
-        // Same sign pairs
-        else if (t0.sign() == t1.sign()) {
+        } else if (t0.sign() == t1.sign()) {
           registry.fill(HIST("ss_KPi_pT"), v01.Pt());
           registry.fill(HIST("ss_KPi_eTa"), v01.Eta());
           registry.fill(HIST("ss_KPi_invm"), v01.M());
@@ -123,9 +121,7 @@ struct SG_D0_Analyzer {
             registry.fill(HIST("ss_KPi_invm_2"), v01.M());
           }
         }
-      }
-      // PID cut - t0=pi, t1=K
-      else if (std::abs(t1.tpcNSigmaKa()) < 3 && std::abs(t0.tpcNSigmaPi()) < 3 && std::abs(t1.tofNSigmaKa()) < 3 && std::abs(t0.tofNSigmaPi()) < 3) {
+      } else if (std::abs(t1.tpcNSigmaKa()) < 3 && std::abs(t0.tpcNSigmaPi()) < 3 && std::abs(t1.tofNSigmaKa()) < 3 && std::abs(t0.tofNSigmaPi()) < 3) {
         // Apply pion hypothesis and create pairs
         v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
         v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
@@ -150,9 +146,7 @@ struct SG_D0_Analyzer {
             registry.fill(HIST("os_KPi_eTa_2"), v01.Eta());
             registry.fill(HIST("os_KPi_invm_2"), v01.M());
           }
-        }
-        // Same sign pairs
-        else if (t0.sign() == t1.sign()) {
+        } else if (t0.sign() == t1.sign()) {
           registry.fill(HIST("ss_KPi_pT"), v01.Pt());
           registry.fill(HIST("ss_KPi_eTa"), v01.Eta());
           registry.fill(HIST("ss_KPi_invm"), v01.M());
