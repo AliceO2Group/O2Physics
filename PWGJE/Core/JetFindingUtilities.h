@@ -149,9 +149,11 @@ bool analyseCandidateMC(std::vector<fastjet::PseudoJet>& inputParticles, T const
  * @param doHFJetFinding set whether only jets containing a HF candidate are saved
  */
 template <typename T, typename U, typename V>
-void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputParticles, std::vector<double> jetRadius, float jetAreaFractionMin, T const& collision, U& jetsTable, V& constituentsTable, bool doHFJetFinding = false)
+void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputParticles, float jetPtMin, float jetPtMax, std::vector<double> jetRadius, float jetAreaFractionMin, T const& collision, U& jetsTable, V& constituentsTable, bool doHFJetFinding = false)
 {
   auto jetRValues = static_cast<std::vector<double>>(jetRadius);
+  jetFinder.jetPtMin = jetPtMin;
+  jetFinder.jetPtMax = jetPtMax;
   for (auto R : jetRValues) {
     jetFinder.jetR = R;
     std::vector<fastjet::PseudoJet> jets;
