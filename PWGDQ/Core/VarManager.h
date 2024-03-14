@@ -539,6 +539,13 @@ class VarManager : public TObject
     // Index used to scan bit maps
     kBitMapIndex,
 
+    // ML Output
+    kMlIsSelected,
+    kMlScoreClass1,
+    kMlScoreClass2,
+    kMlScoreClass3,
+    kMlScoreClass4,
+
     kNVars
   }; // end of Variables enumeration
 
@@ -769,6 +776,7 @@ class VarManager : public TObject
   static void FillQVectorFromCentralFW(C const& collision, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
   static void FillPairVn(T1 const& t1, T2 const& t2, float* values = nullptr);
+  static void FillMl(std::vector<float> const& scores, bool const& sel, float* values = nullptr);
 
   static void SetCalibrationObject(CalibObjects calib, TObject* obj)
   {
