@@ -30,7 +30,8 @@ struct SGCandProducer {
   // get an SGCutparHolder
   SGCutParHolder sameCuts = SGCutParHolder(); // SGCutparHolder
   Configurable<SGCutParHolder> SGCuts{"SGCuts", {}, "SG event cuts"};
-  Configurable<bool> saveAllTracks{"saveAllTracks", false, "save only PV contributors or all tracks associated to a collision"};
+  Configurable<bool> saveAllTracks{"saveAllTracks", true, "save only PV contributors or all tracks associated to a collision"};
+  Configurable<bool> savenonPVCITSOnlyTracks{"savenonPVCITSOnlyTracks", false, "save non PV contributors with ITS only information"};
   // Configurable<bool> rejectAtTFBoundary{"rejectAtTFBoundary", true, "reject collisions at a TF boundary"};
   //  SG selector
   SGSelector sgSelector;
@@ -203,7 +204,7 @@ struct SGCandProducer {
       // update SGTracks tables
       for (auto& track : tracks) {
         if (track.isPVContributor() || saveAllTracks) {
-          if (track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta())
+          if (track.itsClusterSizes() && track.itsChi2NCl() > 0 && ((track.tpcNClsFindable() == 0 && savenonPVCITSOnlyTracks) || track.tpcNClsFindable() > 50) && track.pt() > sameCuts.minPt() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta())
             updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
           // if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
         }
