@@ -148,7 +148,7 @@ struct phianalysisrun3_PbPb {
   {
     if (collision.alias_bit(kTVXinTRD)) {
       // TRD triggered
-      return 0;
+     // return 0;
     }
     auto multNTracksPV = collision.multNTracksPV();
     if (multNTracksPV < fMultPVCutLow->Eval(centrality))
@@ -162,13 +162,13 @@ struct phianalysisrun3_PbPb {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (iscustomDCAcut && !(candidate.isGlobalTrack() || candidate.isPVContributor() || candidate.itsNCls() > cfgITScluster)) {
+    if (iscustomDCAcut && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
-    if (ismanualDCAcut && !(candidate.isGlobalTrackWoDCA() || candidate.isPVContributor() || std::abs(candidate.dcaXY()) < cfgCutDCAxy || std::abs(candidate.dcaZ()) < cfgCutDCAz || candidate.itsNCls() > cfgITScluster)) {
+    if (ismanualDCAcut && !(candidate.isGlobalTrackWoDCA() && candidate.isPVContributor() && std::abs(candidate.dcaXY()) < cfgCutDCAxy && std::abs(candidate.dcaZ()) < cfgCutDCAz && candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
-    if (isITSOnlycut && !(candidate.isPVContributor() || std::abs(candidate.dcaXY()) < cfgCutDCAxy || std::abs(candidate.dcaZ()) < cfgCutDCAz || candidate.itsNCls() > cfgITScluster)) {
+    if (isITSOnlycut && !(candidate.isPVContributor() && std::abs(candidate.dcaXY()) < cfgCutDCAxy && std::abs(candidate.dcaZ()) < cfgCutDCAz && candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
     return true;
