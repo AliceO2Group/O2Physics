@@ -343,9 +343,7 @@ struct NonPromptCascadeTask {
   void processTrackedCascadesMC(CollisionCandidatesRun3 const& collision,
                                 aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades,
                                 aod::V0s const& v0s, TracksExtMC const& tracks,
-                                soa::Join<aod::TraCascDatas, aod::McTraCascLabels> const& trackedcascdata,
-                                aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&,
-                                aod::McTrackLabels const& trackLabelsMC)
+                                aod::McParticles const& mcParticles, aod::BCsWithTimestamps const&)
   {
     candidates.clear();
     bool isOmega{false};
@@ -364,10 +362,7 @@ struct NonPromptCascadeTask {
     df2.setMinRelChi2Change(minRelChi2Change);
     df2.setUseAbsDCA(useAbsDCA);
 
-    for (const auto& trackedCascadeData : trackedcascdata) {
-      registry.fill(HIST("h_buildermassvspt_Omega"), trackedCascadeData.mOmega(), trackedCascadeData.pt());
-      registry.fill(HIST("h_buildermassvspt_Xi"), trackedCascadeData.mXi(), trackedCascadeData.pt());
-    }
+    std::vector<int> mcParticleId;
 
     for (const auto& trackedCascade : trackedCascades) {
 
@@ -538,24 +533,6 @@ struct NonPromptCascadeTask {
           protonTrack.mcParticle().mothersIds()[0] == pionTrack.mcParticle().mothersIds()[0]) {
         const auto v0part = protonTrack.mcParticle().mothers_as<aod::McParticles>()[0];
         LOG(debug) << "v0 with PDG code: " << v0part.pdgCode();
-        if (v0part.has_mothers() && bachelor.mcParticle().has_mothers() &&
-            v0part.mothersIds()[0] == bachelor.mcParticle().mothersIds()[0]) {
-          int mcid = v0part.mothersIds()[0];
-          for (const auto& trackedCascadeData : trackedcascdata) {
-            if (trackedCascadeData.mcParticleId() == mcid) {
-              if (isOmega) {
-                registry.fill(HIST("h_massvsmass_Omega"), massOmega, trackedCascadeData.mOmega());
-              } else {
-                registry.fill(HIST("h_massvsmass_Xi"), massOmega, trackedCascadeData.mOmega());
-              }
-              break;
-            }
-            LOG(debug) << "cascade with PDG code: " << v0part.mothers_as<aod::McParticles>()[0].pdgCode();
-          }
-        } else {
-          LOG(debug) << "Rejecting particle.";
-          continue;
-        }
       }
       daughtersDCA dDCA;
       fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega, dDCA);
@@ -571,14 +548,19 @@ struct NonPromptCascadeTask {
                                               protonTrack.hasTOF(), pionTrack.hasTOF(), bachKaonHasTOF, bachPionHasTOF,
                                               protonTrack.tofNSigmaPr(), pionTrack.tofNSigmaPi(), bachelor.tofNSigmaKa(), bachelor.tofNSigmaPi()});
 
+      if (track.mcParticleId() < -1 || track.mcParticleId() >= mcParticles.size()) {
+        mcParticleId.push_back(-1);
+      } else {
+        mcParticleId.push_back(track.mcParticleId());
+      }
     } // end loop over tracked cascades
 
-    for (auto& c : candidates) {
-      auto label = trackLabelsMC.iteratorAt(c.globalIndex);
-      if (label.mcParticleId() < -1 || label.mcParticleId() >= mcParticles.size()) {
+    for (size_t i = 0; i < candidates.size(); ++i) {
+      if (mcParticleId[i] < 0) {
         continue;
       }
-      auto particle = mcParticles.iteratorAt(label.mcParticleId());
+      auto particle = mcParticles.iteratorAt(mcParticleId[i]);
+      auto& c = candidates[i];
 
       NPCTableMC(c.cascPt, c.cascEta, c.cascPhi,
                  c.cascDCAxy, c.cascDCAz, c.protonDCAxy, c.protonDCAz, c.pionDCAxy, c.pionDCAz, c.bachDCAxy, c.bachDCAz,
