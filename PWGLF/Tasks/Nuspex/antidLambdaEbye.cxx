@@ -830,16 +830,10 @@ struct antidLambdaEbye {
   }
   PROCESS_SWITCH(antidLambdaEbye, processMcRun3, "process MC (Run 3)", false);
 
-  void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentRun2V0Ms> const& collisions, aod::McCollisions const& mcCollisions, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab)
+  void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentRun2V0Ms> const& collisions, aod::McCollisions const& mcCollisions, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab)
   {
     std::vector<std::pair<bool, float>> goodCollisions(mcCollisions.size(), std::make_pair(false, -999.));
     for (auto& collision : collisions) {
-      if (!collision.sel7())
-        continue;
-
-      if (!collision.alias_bit(kINT7))
-        continue;
-
       if (std::abs(collision.posZ()) > zVtxMax)
         continue;
 
