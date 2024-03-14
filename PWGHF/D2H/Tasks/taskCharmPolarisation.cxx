@@ -466,7 +466,7 @@ struct TaskPolarisationCharmHadrons {
   /// \param cosThetaStar is the cosThetaStar of the particle
   /// \param origin is the MC origin
   template <charm_polarisation::CosThetaStarType cosThetaStarType>
-  void fillGenHistos(float& ptCharmHad, float& pzCharmHad, float& rapCharmHad, float& cosThetaStar, int8_t origin)
+  void fillGenHistos(float ptCharmHad, float pzCharmHad, float rapCharmHad, float cosThetaStar, int8_t origin)
   {
     if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Helicity) { // Helicity
       if (origin == RecoDecay::OriginType::Prompt) {                                    // prompt
