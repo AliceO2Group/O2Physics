@@ -453,33 +453,6 @@ struct LFNucleiBATask {
     if (doprocessMCReco || doprocessMCRecoLfPid || doprocessMCRecoFiltered || doprocessMCRecoFilteredLight) {
       // inclusive production
       if (enableTrackingEff) {
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1PIDTruePrim_its", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1PIDTruePrim_tpc", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1PIDTruePrim_its_tpc", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1PIDTruePrim_its_tpc_tof", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1PIDTruePrim_its_tpc_trd", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1PIDTruePrim_its_tpc_trd_tof", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
-
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1PIDTruePrimGoodHit_its", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1PIDTruePrimGoodHit_tpc", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1PIDTruePrimGoodHit_its_tpc", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1PIDTruePrimGoodHit_its_tpc_tof", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1PIDTruePrimGoodHit_its_tpc_trd", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1PIDTruePrimGoodHit_its_tpc_trd_tof", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
-
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1antiPIDTruePrim_its", "#it{p}_{T} (#bar{p})", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1antiPIDTruePrim_tpc", "#it{p}_{T} (#bar{p})", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1antiPIDTruePrim_its_tpc", "#it{p}_{T} (#bar{p})", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1antiPIDTruePrim_its_tpc_tof", "#it{p}_{T} (#bar{p})", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1antiPIDTruePrim_its_tpc_trd", "#it{p}_{T} (#bar{p})", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1antiPIDTruePrim_its_tpc_trd_tof", "#it{p}_{T} (#bar{p})", HistType::kTH1F, {ptAxis});
-
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1antiPIDTruePrimGoodHit_its", "#it{p}_{T} (#bar{p})", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1antiPIDTruePrimGoodHit_tpc", "#it{p}_{T} (#bar{p})", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1antiPIDTruePrimGoodHit_its_tpc", "#it{p}_{T} (#bar{p})", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1antiPIDTruePrimGoodHit_its_tpc_tof", "#it{p}_{T} (#bar{p})", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1antiPIDTruePrimGoodHit_its_tpc_trd", "#it{p}_{T} (#bar{p})", HistType::kTH1F, {ptAxis});
-        // debugHistos.add<TH1>("tracks/trackingEffPID/h1antiPIDTruePrimGoodHit_its_tpc_trd_tof", "#it{p}_{T} (#bar{p})", HistType::kTH1F, {ptAxis});
 
         debugHistos.add<TH1>("tracks/trackingEff/h1_its", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
         debugHistos.add<TH1>("tracks/trackingEff/h1_tpc", "#it{p}_{T} (p)", HistType::kTH1F, {ptAxis});
