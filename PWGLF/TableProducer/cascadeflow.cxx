@@ -80,7 +80,7 @@ namespace cascade_flow_cuts_ml
   static const std::vector<std::string> modelPaths = {""};
 
   // default values for the cut directions
-  constexpr int cutDir[nCutScores] = {CutGreater, CutNot};
+  constexpr int cutDir[nCutScores] = {CutSmaller, CutNot};
   auto vecCutDir = std::vector<int>{cutDir, cutDir + nCutScores};
 
   // default values for the cuts
@@ -246,6 +246,8 @@ struct cascadeFlow {
     ConfigurableAxis vertexZ{"vertexZ", {20, -10, 10}, "vertex axis for histograms"};
     ConfigurableAxis massCascAxis{"massCascAxis", {100, MinMass, MaxMass}, ""};
     ConfigurableAxis ptAxis{"ptAxis", {100, 0, 10}, ""};
+    ConfigurableAxis v2Axis{"v2Axis", {200, -1, 1}, ""};
+    ConfigurableAxis CentAxis{"CentAxis", {100, 0, 100}, ""};
     histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {vertexZ});
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
     histos.add("hCandidate", "hCandidate", HistType::kTH1D, {{22, -0.5, 21.5}});
@@ -268,6 +270,8 @@ struct cascadeFlow {
     histos.add("hBkgScoreBeforeSel", "Bkg score before selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
     histos.add("hSignalScoreAfterSel", "Signal score after selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
     histos.add("hBkgScoreAfterSel", "Bkg score after selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
+    histos.add("hSparseV2A", "hSparseV2A", HistType::kTHnSparseF, {massCascAxis, ptAxis, v2Axis, CentAxis});
+    histos.add("hSparseV2C", "hSparseV2C", HistType::kTHnSparseF, {massCascAxis, ptAxis, v2Axis, CentAxis});
 
     if (isApplyML){
       // Configure and initialise the ML class
@@ -385,10 +389,10 @@ struct cascadeFlow {
     //std::cout << "stored norm value: " << coll.sumAmplFT0A() << std::endl;
     histos.fill(HIST("hv2Norm"), v2Norm);
 
-    float PsiT0A = TMath::ACos(coll.qvecFT0ARe()) / 2; 
-    float PsiT0C = TMath::ACos(coll.qvecFT0CRe()) / 2;
-    if (coll.qvecFT0AIm() < 0) PsiT0A = -PsiT0A + TMath::Pi()/2; //to get dstribution between 0 and Pi
-    if (coll.qvecFT0CIm() < 0) PsiT0C = -PsiT0C + TMath::Pi()/2; //to get dstribution between 0 and Pi
+    float PsiT0A = TMath::ATan2(coll.qvecFT0CIm(), coll.qvecFT0ARe()) / 2; 
+    float PsiT0C = TMath::ATan2(coll.qvecFT0ARe(), coll.qvecFT0CRe()) / 2;
+    //if (coll.qvecFT0AIm() < 0) PsiT0A = -PsiT0A + TMath::Pi()/2; //to get dstribution between 0 and Pi
+    //if (coll.qvecFT0CIm() < 0) PsiT0C = -PsiT0C + TMath::Pi()/2; //to get dstribution between 0 and Pi
 
     histos.fill(HIST("hFT0ARe"), coll.qvecFT0ARe());
     histos.fill(HIST("hFT0AIm"), coll.qvecFT0AIm());
@@ -466,13 +470,19 @@ struct cascadeFlow {
       auto v2C = cascphiVec.Dot(eventplaneVecT0C)/sqrt(eventplaneVecT0C.Dot(eventplaneVecT0C));
       auto cascminuspsiT0A = GetPhiInRange(casc.phi() - PsiT0A);
       auto cascminuspsiT0C = GetPhiInRange(casc.phi() - PsiT0C);
-      //float v2A_diff =  TMath::Cos(2.0 * cascminuspsiT0A);
-      //float v2C_diff =  TMath::Cos(2.0 * cascminuspsiT0C);
+      //ThNSparse
+
+      float v2A_diff =  TMath::Cos(2.0 * cascminuspsiT0A);
+      float v2C_diff =  TMath::Cos(2.0 * cascminuspsiT0C);
       //std::cout << "v2A: " << v2A << " v2C " << v2C << std::endl;
       //std::cout << "v2A_diff: " << v2A_diff << " v2C_diff " << v2C_diff << std::endl;
       histos.fill(HIST("hCascadePhi"), casc.phi());
       histos.fill(HIST("hcascminuspsiT0A"), cascminuspsiT0A);
       histos.fill(HIST("hcascminuspsiT0C"), cascminuspsiT0C);
+      if (isSelectedCasc) {
+      histos.fill(HIST("hSparseV2A"), massCasc, casc.pt(), v2A, coll.centFT0C());
+      histos.fill(HIST("hSparseV2C"), massCasc, casc.pt(), v2C, coll.centFT0C());
+      }
 
       float BDTresponse = 0;
       if (isApplyML) BDTresponse = outputMl[0];
