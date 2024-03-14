@@ -81,6 +81,7 @@ struct epvector {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentrality{"cfgCutCentrality", 80.0f, "Centrality cut"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.15, "PT cut on daughter track"};
+  Configurable<float> cfgCutPTMax{"cfgCutPTMax", 3.0, "Max PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
@@ -171,7 +172,7 @@ struct epvector {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (!(candidate.isGlobalTrack() || candidate.isPVContributor() || candidate.itsNCls() > cfgITScluster)) {
+    if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
     return true;
@@ -251,7 +252,7 @@ struct epvector {
       auto qyTPCR = 0.0;
 
       for (auto& trk : tracks) {
-        if (!selectionTrack(trk) || abs(trk.eta()) > 0.8 || trk.pt() > 3.0) {
+        if (!selectionTrack(trk) || abs(trk.eta()) > 0.8 || trk.pt() > cfgCutPTMax) {
           continue;
         }
         qxTPC = qxTPC + trk.pt() * TMath::Cos(2.0 * trk.phi());

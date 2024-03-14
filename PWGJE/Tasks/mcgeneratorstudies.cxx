@@ -34,10 +34,11 @@ struct MCGeneratorStudies {
   HistogramRegistry mHistManager{"MCGeneratorStudyHistograms"};
 
   Configurable<float> mVertexCut{"vertexCut", 10.f, "apply z-vertex cut with value in cm"};
+  Configurable<float> mRapidityCut{"rapidityCut", 0.9f, "Maximum absolute rapidity of counted generated particles"};
   Configurable<double> mSelectedParticleCode{"particlePDGCode", 111, "PDG code of the particle to be investigated"};
 
   Filter collisionFilter = (aod::collision::posZ > -mVertexCut) && (aod::collision::posZ < mVertexCut);
-  Filter mcParticleFilter = aod::mcparticle::pdgCode == mSelectedParticleCode;
+  Filter mcParticleFilter = (aod::mcparticle::pdgCode == mSelectedParticleCode) && (aod::mcparticle::y > -mRapidityCut) && (aod::mcparticle::y < mRapidityCut);
 
   void init(InitContext const&)
   {
@@ -49,6 +50,8 @@ struct MCGeneratorStudies {
     mHistManager.add("hpT_T0Triggered_EMCReadout", "T0 triggered and EMC readout collisions", HistType::kTH1F, {pTAxis});
     mHistManager.add("hpT_T0Triggered_EMCReadout_Unique", "Unique T0 triggered and EMC readout collisions", HistType::kTH1F, {pTAxis});
   }
+
+  PresliceUnsorted<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
   void process(soa::Filtered<MyMCCollisions>::iterator const& collision, soa::Filtered<aod::McParticles> const& mcParticles)
   {
@@ -67,7 +70,8 @@ struct MCGeneratorStudies {
         }
       }
     }
-    for (auto& mcParticle : mcParticles) {
+    auto mcParticles_inColl = mcParticles.sliceBy(perMcCollision, collision.globalIndex());
+    for (auto& mcParticle : mcParticles_inColl) {
       mHistManager.fill(HIST("hpT_all"), mcParticle.pt());
       if (isT0Triggered) {
         mHistManager.fill(HIST("hpT_T0Triggered"), mcParticle.pt());

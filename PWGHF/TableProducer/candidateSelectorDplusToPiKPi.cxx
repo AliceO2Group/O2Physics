@@ -30,12 +30,6 @@ using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
 
-/// Struct to extend TracksPid tables
-struct HfCandidateSelectorDplusToPiKPiExpressions {
-  Spawns<aod::TracksPidPiExt> rowTracksPidFullPi;
-  Spawns<aod::TracksPidKaExt> rowTracksPidFullKa;
-};
-
 /// Struct for applying Dplus to piKpi selection cuts
 struct HfCandidateSelectorDplusToPiKPi {
   Produces<aod::HfSelDplusToPiKPi> hfSelDplusToPiKPiCandidate;
@@ -82,7 +76,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   TrackSelectorKa selectorKaon;
   HfHelper hfHelper;
 
-  using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPiExt, aod::TracksPidKaExt>;
+  using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   HistogramRegistry registry{"registry"};
 
@@ -275,7 +269,5 @@ struct HfCandidateSelectorDplusToPiKPi {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorDplusToPiKPiExpressions>(cfgc),
-    adaptAnalysisTask<HfCandidateSelectorDplusToPiKPi>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCandidateSelectorDplusToPiKPi>(cfgc)};
 }

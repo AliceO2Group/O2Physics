@@ -63,9 +63,9 @@ struct SinglePhotonMC {
     kEMC = 2,
   };
 
-  Configurable<float> CentMin{"CentMin", -1, "min. centrality"};
-  Configurable<float> CentMax{"CentMax", 999, "max. centrality"};
-  Configurable<std::string> CentEstimator{"CentEstimator", "FT0M", "centrality estimator"};
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<float> cfgCentMin{"cfgCentMin", -1, "min. centrality"};
+  Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
 
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
 
@@ -283,6 +283,11 @@ struct SinglePhotonMC {
         continue;
       }
 
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
+
       o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_before, "", collision);
       if (!fEMEventCut.IsSelected(collision)) {
         continue;
@@ -339,7 +344,7 @@ struct SinglePhotonMC {
     }     // end of collision loop
   }
 
-  Partition<MyCollisions> grouped_collisions = CentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < CentMax; // this goes to same event.
+  Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
   void processPCM(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const& mccollisions)
   {
@@ -361,7 +366,11 @@ struct SinglePhotonMC {
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
-    for (auto& collision : collisions) {
+    for (auto& collision : grouped_collisions) {
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
       auto mccollision = collision.emreducedmcevent();
 
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(1.0);

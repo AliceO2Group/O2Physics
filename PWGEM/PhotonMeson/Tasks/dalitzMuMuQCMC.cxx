@@ -49,6 +49,10 @@ using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMReducedEvent
 using MyMCTracks = soa::Join<MyTracks, aod::EMPrimaryMuonMCLabels>;
 
 struct DalitzMuMuQCMC {
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
+  Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
+
   Configurable<std::string> fConfigDalitzMuMuCuts{"cfgDalitzMuMuCuts", "nocut", "Comma separated list of dalitz mumu cuts"};
   std::vector<DalitzEECut> fDalitzMuMuCuts;
 
@@ -147,6 +151,7 @@ struct DalitzMuMuQCMC {
 
   SliceCache cache;
   Preslice<MyDalitzMuMus> perCollision = aod::dalitzmumu::emreducedeventId;
+  Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
   std::vector<uint64_t> used_trackIds;
 
@@ -158,9 +163,12 @@ struct DalitzMuMuQCMC {
     THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
     double values[4] = {0, 0, 0, 0};
     float dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
-    float det_pos = 999.f, det_ele = 999.f;
 
-    for (auto& collision : collisions) {
+    for (auto& collision : grouped_collisions) {
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
 
       o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_before, "", collision);
       if (!fEMEventCut.IsSelected(collision)) {
@@ -196,18 +204,9 @@ struct DalitzMuMuQCMC {
           if (mother_id > 0) {
             auto mcmother = mcparticles.iteratorAt(mother_id);
             if (IsPhysicalPrimary(mcmother.emreducedmcevent(), mcmother, mcparticles)) {
-
-              det_pos = pos.cYY() * pos.cZZ() - pos.cZY() * pos.cZY();
-              det_ele = ele.cYY() * ele.cZZ() - ele.cZY() * ele.cZY();
-              if (det_pos < 0 || det_ele < 0) {
-                dca_pos_3d = 999.f, dca_ele_3d = 999.f, dca_ee_3d = 999.f;
-              } else {
-                float chi2pos = (pos.dcaXY() * pos.dcaXY() * pos.cZZ() + pos.dcaZ() * pos.dcaZ() * pos.cYY() - 2. * pos.dcaXY() * pos.dcaZ() * pos.cZY()) / det_pos;
-                float chi2ele = (ele.dcaXY() * ele.dcaXY() * ele.cZZ() + ele.dcaZ() * ele.dcaZ() * ele.cYY() - 2. * ele.dcaXY() * ele.dcaZ() * ele.cZY()) / det_ele;
-                dca_pos_3d = std::sqrt(std::abs(chi2pos) / 2.);
-                dca_ele_3d = std::sqrt(std::abs(chi2ele) / 2.);
-                dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
-              }
+              dca_pos_3d = pos.dca3DinSigma();
+              dca_ele_3d = ele.dca3DinSigma();
+              dca_ee_3d = std::sqrt((dca_pos_3d * dca_pos_3d + dca_ele_3d * dca_ele_3d) / 2.);
 
               values[0] = uls_pair.mass();
               values[1] = uls_pair.pt();
@@ -248,10 +247,13 @@ struct DalitzMuMuQCMC {
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
-    for (auto& collision : collisions) {
+    for (auto& collision : grouped_collisions) {
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
+
       auto mccollision = collision.emreducedmcevent();
-      // LOGF(info, "mccollision.globalIndex() = %d", mccollision.globalIndex());
-      // auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
 
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(1.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_before"))->Fill(mccollision.posZ());
@@ -268,8 +270,12 @@ struct DalitzMuMuQCMC {
       if (abs(collision.posZ()) > 10.0) {
         continue;
       }
+      if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(4.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_after"))->Fill(mccollision.posZ());
+
       auto posTracks_per_coll = posTracks->sliceByCachedUnsorted(o2::aod::emmcparticle::emreducedmceventId, mccollision.globalIndex(), cache);
       auto negTracks_per_coll = negTracks->sliceByCachedUnsorted(o2::aod::emmcparticle::emreducedmceventId, mccollision.globalIndex(), cache);
       for (auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) {

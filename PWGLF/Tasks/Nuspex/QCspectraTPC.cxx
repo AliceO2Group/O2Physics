@@ -122,7 +122,7 @@ struct QCspectraTPC {
     histos.add("delta_p", "delta_p", HistType::kTH2F, {{axisPGlobal}, {axisDeltaP}});
   } // init loop end
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels /*, aod::CentFT0Cs*/>;
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTPCFullDe>;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr>;
 
   void process(CollisionCandidate::iterator const& collision, TrackCandidates const& tracks)
   {
@@ -149,15 +149,19 @@ struct QCspectraTPC {
         return;
       }
 
-      if (track.itsNCls() == ITSNCls)
+      if (track.itsNCls() != ITSNCls)
         continue;
-      // if (track.tpcNClsFound() > minTPCNClsFound) continue;
-      // if (track.tpcNClsCrossedRows() > minNCrossedRowsTPC) continue;
-      // if (track.tpcChi2NCl() < maxChi2PerClusterTPC) continue;
-      // if (track.itsChi2NCl() < maxChi2PerClusterITS) continue;
-      if (abs(track.dcaXY()) < cfgCutDCAXY)
+      if (track.tpcNClsFound() < 100)
         continue;
-      if (abs(track.dcaZ()) < cfgCutDCAZ)
+      if (track.tpcNClsCrossedRows() < 100)
+        continue;
+      if (track.tpcChi2NCl() > 4)
+        continue;
+      if (track.itsChi2NCl() > 36)
+        continue;
+      if (abs(track.dcaXY()) > cfgCutDCAXY)
+        continue;
+      if (abs(track.dcaZ()) > cfgCutDCAZ)
         continue;
 
       histos.fill(HIST("etaHistogram"), track.eta());

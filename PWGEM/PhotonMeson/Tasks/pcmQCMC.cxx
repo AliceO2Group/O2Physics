@@ -59,6 +59,10 @@ using MyV0Photon = MyV0Photons::iterator;
 struct PCMQCMC {
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
 
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
+  Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
+
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "qc,qc_ITSTPC,qc_ITSonly,qc_TPConly,wwire_ib,nocut", "Comma separated list of v0 photon cuts"};
   Configurable<float> maxY{"maxY", 0.9f, "maximum rapidity for generated particles"};
   Configurable<float> maxRgen{"maxRgen", 100.f, "maximum radius for generated particles"};
@@ -147,6 +151,8 @@ struct PCMQCMC {
     fOutputGen.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Generated")));
   }
 
+  Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
+
   Preslice<MyV0Photons> perCollision = aod::v0photonkf::emreducedeventId;
   void processQCMC(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const&)
   {
@@ -155,7 +161,11 @@ struct PCMQCMC {
     THashList* list_v0 = static_cast<THashList*>(fMainList->FindObject("V0"));
     THashList* list_v0leg = static_cast<THashList*>(fMainList->FindObject("V0Leg"));
 
-    for (auto& collision : collisions) {
+    for (auto& collision : grouped_collisions) {
+      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
 
       o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev_before, "", collision);
       if (!fEMEventCut.IsSelected(collision)) {
@@ -251,7 +261,11 @@ struct PCMQCMC {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
 
-    for (auto& collision : collisions) {
+    for (auto& collision : grouped_collisions) {
+      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
       auto mccollision = collision.emreducedmcevent();
       // LOGF(info, "mccollision.globalIndex() = %d", mccollision.globalIndex());
 
@@ -270,6 +284,11 @@ struct PCMQCMC {
       if (abs(collision.posZ()) > 10.0) {
         continue;
       }
+
+      if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(4.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_after"))->Fill(mccollision.posZ());
 

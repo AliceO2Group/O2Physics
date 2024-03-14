@@ -113,7 +113,8 @@ struct k892pmanalysis {
 
     if (doprocessMELight) {
       // Event-mixing background
-      histos.add("k892pmMEbackground", "Mixed-event background of charged K*(892)", kTH1F, {invMassAxis});
+      histos.add("k892pmMEbackground", "Mixed-event reconstructed K*(892) invariant mass distribution", kTH1F, {invMassAxis});
+      histos.add("k892pmMEMassPtMult3d", "Mixed-event reconstructed K*(892) mass vs pT vs V0 multiplicity distribution", kTH3F, {invMassAxis, ptAxis, centAxis});
     }
 
     if (doprocessMCLight) {
@@ -283,9 +284,9 @@ struct k892pmanalysis {
         histos.fill(HIST("QAafter/hGoodTracksV0s"), 2.5);
         // Filling invariant mass histograms
         if constexpr (!IsMix) {
-          // K*(892)pm mass
+          // Reconstructed K*(892)pm mass
           histos.fill(HIST("k892pminvmass"), lResonance.M());
-          // K*(892)pm 3d mass, pt, multiplicity histogram
+          // Reconstructed K*(892)pm 3d mass, pt, multiplicity histogram
           histos.fill(HIST("k892pmMassPtMult3d"), lResonance.M(), lResonance.Pt(), multiplicity);
           if constexpr (IsMC) {
             // LOG(info) << "track PDG:\t" << trk.pdgCode() << "\tV0 PDG:\t" << v0.pdgCode();
@@ -299,7 +300,10 @@ struct k892pmanalysis {
             histos.fill(HIST("k892pmPtRec"), lResonance.Pt());
           }
         } else {
+          // Mixed-event reeconstructed K*(892)pm mass
           histos.fill(HIST("k892pmMEbackground"), lResonance.M());
+          // Mixed-event reconstructed K*(892)pm 3d mass, pt, multiplicity histogram
+          histos.fill(HIST("k892pmMEMassPtMult3d"), lResonance.M(), lResonance.Pt(), multiplicity);
         }
         IsV0Processed = true;
       }
@@ -335,23 +339,21 @@ struct k892pmanalysis {
         continue;
       bool pass1 = false;
       bool pass2 = false;
-      // Sanity check: looking for K*0 resonances for sanity check
+      /*// Sanity check: looking for K*0 resonances for sanity check
       if (abs(part.pdgCode()) == 323) {
         LOG(info) << "Found charged K*: " << part.pdgCode() << ". Daughters' PDG are " << part.daughterPDG1() << " and " << part.daughterPDG2();
       }
       if (abs(part.pdgCode()) == 313) {
         LOG(info) << "Found non-charged K*: " << part.pdgCode() << ". Daughters' PDG are " << part.daughterPDG1() << " and " << part.daughterPDG2();
-      }
+      }*/
 
       if (part.daughterPDG1() == 211 && part.daughterPDG2() == 310) { // One decay to K0s and the other to pi+ (K*(892)+ mother) - Particle pass
         pass1 = true;
         histos.fill(HIST("hK892pmCounter"), 0.5);
-        LOG(info) << "Found K*+ resonance, PDG code is\t" << part.pdgCode();
       }
       if (part.daughterPDG1() == -211 && part.daughterPDG2() == -310) { // One decay to AntiK0s and the other to pi- (K*(892)- mother) - Antiparticle pass
         pass2 = true;
         histos.fill(HIST("hK892pmCounter"), 1.5);
-        LOG(info) << "Found K*- resonance, PDG code is\t" << part.pdgCode();
       }
       /*if (abs(part.daughterPDG1()) == 211)
         histos.fill(HIST("hDaughterCounter"), 0.5);
@@ -375,14 +377,8 @@ struct k892pmanalysis {
     // auto V0sTuple = std::make_tuple(resov0s);
     BinningTypeVtxZT0M colBinning{{CfgVtxBins, CfgMultBins}, true};
     Pair<aod::ResoCollisions, aod::ResoTracks, aod::ResoV0s, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksV0sTuple, &cache}; // -1 is the number of the bin to skip
-    int bin;
-    /*BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
-    Pair<EventCandidates, TrackCandidates, V0TrackCandidate, BinningTypeVertexContributor> pairs{binningOnPositions, cfgNoMixedEvents, -1, &cache};*/
 
     for (auto& [collision1, resotracks1, collision2, resov0s2] : pairs) {
-      bin = colBinning.getBin({collision1.posZ(), collision1.cent()});
-      LOG(info) << "PosZ = " << collision1.posZ() << "\tCent = " << collision1.cent() << "\t; Bin: " << bin;
-      LOG(info) << "Collision 1 global index: " << collision1.globalIndex() << "\tCollision 2 global index: " << collision2.globalIndex();
       fillHistograms<false, true>(collision1, resotracks1, resov0s2);
     }
   };

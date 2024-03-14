@@ -2567,6 +2567,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   std::string nameStr = cutName;
   // ---------------------------------------------------------------
   // Event cuts
+  if (!nameStr.compare("eventNoTFBorder")) {
+    cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
+    return cut;
+  }
+
   if (!nameStr.compare("eventStandard")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsINT7, 0.5, 1.5);
@@ -2581,6 +2586,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("eventStandardSel8")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardSel8NoTFBorder")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
     return cut;
   }
 

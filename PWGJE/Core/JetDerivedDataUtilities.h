@@ -19,6 +19,7 @@
 
 #include <string>
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/CCDB/EventSelectionParams.h"
 
 namespace jetderiveddatautilities
 {
@@ -54,6 +55,10 @@ uint8_t setEventSelectionBit(T const& collision)
 {
 
   uint8_t bit = 0;
+
+  if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+    return bit;
+  }
 
   if (collision.sel8()) {
     SETBIT(bit, JCollisionSel::sel8);

@@ -187,7 +187,7 @@ struct phosAlign {
       }
 
       int16_t module;
-      float trackX, trackZ;
+      float trackX = 999., trackZ = 999.;
 
       auto trackPar = getTrackPar(track);
       if (!impactOnPHOS(trackPar, track.trackEtaEmcal(), track.trackPhiEmcal(), track.collision_as<SelCollisions>().posZ(), module, trackX, trackZ)) {
@@ -380,11 +380,34 @@ struct phosAlign {
     geomPHOS->getAlignmentMatrix(module)->LocalToMaster(posL, posG);
     double rPHOS = sqrt(posG[0] * posG[0] + posG[1] * posG[1]);
     double alpha = (230. + 20. * module) * 0.017453293;
-    trackPar.rotate(alpha);
-    trackPar.propagateTo(rPHOS, bz);
-    posG[0] = trackPar.getX();
-    posG[1] = trackPar.getY();
+
+    // During main reconstruction track was propagated to radius 460 cm with accounting material
+    // now material is not available. Therefore, start from main rec. position and extrapoate to actual radius without material
+    // Get track parameters at point where main reconstruction stop
+    float xPHOS = 460.f, xtrg = 0.f;
+    if (!trackPar.getXatLabR(xPHOS, xtrg, bz, o2::track::DirType::DirOutward)) {
+      return false;
+    }
+    auto prop = o2::base::Propagator::Instance();
+    if (!trackPar.rotate(alpha) ||
+        !prop->PropagateToXBxByBz(trackPar, xtrg, 0.95, 10, o2::base::Propagator::MatCorrType::USEMatCorrNONE)) {
+      return false;
+    }
+    // calculate xyz from old (Phi, eta) and new r
+    float r = std::sqrt(trackPar.getX() * trackPar.getX() + trackPar.getY() * trackPar.getY());
+    trackPar.setX(r * std::cos(trackPhi - alpha));
+    trackPar.setY(r * std::sin(trackPhi - alpha));
+    trackPar.setZ(r / std::tan(2. * std::atan(std::exp(-trackEta))));
+
+    if (!prop->PropagateToXBxByBz(trackPar, rPHOS, 0.95, 10, o2::base::Propagator::MatCorrType::USEMatCorrNONE)) {
+      return false;
+    }
+    alpha = trackPar.getAlpha();
+    double ca = cos(alpha), sa = sin(alpha);
+    posG[0] = trackPar.getX() * ca - trackPar.getY() * sa;
+    posG[1] = trackPar.getY() * ca + trackPar.getX() * sa;
     posG[2] = trackPar.getZ();
+
     geomPHOS->getAlignmentMatrix(module)->MasterToLocal(posG, posL);
     trackX = posL[0];
     trackZ = posL[1];

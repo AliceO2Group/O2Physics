@@ -110,6 +110,8 @@ struct femtoUniverseProducerTask {
 
   Configurable<bool> ConfIsForceGRP{"ConfIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
+  Configurable<bool> ConfDoSpher{"ConfDoSpher", false, "Calculate sphericity. If false sphericity will take value of 2."};
+
   /// Event cuts
   FemtoUniverseCollisionSelection colCuts;
   Configurable<bool> ConfEvtUseTPCmult{"ConfEvtUseTPCmult", false, "Use multiplicity based on the number of tracks with TPC information"};
@@ -504,7 +506,6 @@ struct femtoUniverseProducerTask {
   void fillCollisions(CollisionType const& col, TrackType const& tracks)
   {
     const auto vtxZ = col.posZ();
-    const auto spher = colCuts.computeSphericity(col, tracks);
     int mult = 0;
     int multNtr = 0;
     if (ConfIsRun3) {
@@ -526,13 +527,21 @@ struct femtoUniverseProducerTask {
     // particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+        if (ConfDoSpher) {
+          outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+        } else {
+          outputCollision(vtxZ, mult, multNtr, 2, mMagField);
+        }
       }
       return;
     }
 
     colCuts.fillQA(col);
-    outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+    if (ConfDoSpher) {
+      outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+    } else {
+      outputCollision(vtxZ, mult, multNtr, 2, mMagField);
+    }
   }
 
   template <typename CollisionType, typename TrackType>
@@ -553,7 +562,6 @@ struct femtoUniverseProducerTask {
   void fillCollisionsCentRun2(CollisionType const& col, TrackType const& tracks)
   {
     const auto vtxZ = col.posZ();
-    const auto spher = colCuts.computeSphericity(col, tracks);
     int cent = 0;
     int multNtr = 0;
     if (!ConfIsRun3) {
@@ -568,20 +576,28 @@ struct femtoUniverseProducerTask {
     // particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
       if (ConfIsTrigger) {
-        outputCollision(vtxZ, cent, multNtr, spher, mMagField); //////
+        if (ConfDoSpher) {
+          outputCollision(vtxZ, cent, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+        } else {
+          outputCollision(vtxZ, cent, multNtr, 2, mMagField);
+        }
       }
+
       return;
     }
 
     // colCuts.fillQA(col); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
-    outputCollision(vtxZ, cent, multNtr, spher, mMagField);
+    if (ConfDoSpher) {
+      outputCollision(vtxZ, cent, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+    } else {
+      outputCollision(vtxZ, cent, multNtr, 2, mMagField);
+    }
   }
 
   template <bool isMC, typename CollisionType, typename TrackType>
   void fillCollisionsCentRun3(CollisionType const& col, TrackType const& tracks)
   {
     const auto vtxZ = col.posZ();
-    const auto spher = colCuts.computeSphericity(col, tracks);
     int cent = 0;
     int multNtr = 0;
     if (ConfIsRun3) {
@@ -596,13 +612,22 @@ struct femtoUniverseProducerTask {
     // particle candidates for such collisions
     if (!colCuts.isSelectedRun3(col)) {
       if (ConfIsTrigger) {
-        outputCollision(vtxZ, cent, multNtr, spher, mMagField); //////
-      }
+        if (ConfDoSpher) {
+          outputCollision(vtxZ, cent, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+        } else {
+          outputCollision(vtxZ, cent, multNtr, 2, mMagField);
+        }
+      } //////
+
       return;
     }
 
     // colCuts.fillQA(col); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
-    outputCollision(vtxZ, cent, multNtr, spher, mMagField);
+    if (ConfDoSpher) {
+      outputCollision(vtxZ, cent, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+    } else {
+      outputCollision(vtxZ, cent, multNtr, 2, mMagField);
+    }
   }
 
   template <bool isMC, typename TrackType>
@@ -1039,11 +1064,10 @@ struct femtoUniverseProducerTask {
     }
   }
 
-  void
-    processFullData(aod::FemtoFullCollision const& col,
-                    aod::BCsWithTimestamps const&,
-                    aod::FemtoFullTracks const& tracks,
-                    o2::aod::V0Datas const& fullV0s)
+  void processFullData(aod::FemtoFullCollision const& col,
+                       aod::BCsWithTimestamps const&,
+                       aod::FemtoFullTracks const& tracks,
+                       o2::aod::V0Datas const& fullV0s)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -1052,11 +1076,10 @@ struct femtoUniverseProducerTask {
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processFullData, "Provide experimental data", false);
 
-  void
-    processTrackV0(aod::FemtoFullCollision const& col,
-                   aod::BCsWithTimestamps const&,
-                   soa::Filtered<aod::FemtoFullTracks> const& tracks,
-                   o2::aod::V0Datas const& fullV0s)
+  void processTrackV0(aod::FemtoFullCollision const& col,
+                      aod::BCsWithTimestamps const&,
+                      soa::Filtered<aod::FemtoFullTracks> const& tracks,
+                      o2::aod::V0Datas const& fullV0s)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -1065,13 +1088,12 @@ struct femtoUniverseProducerTask {
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackV0, "Provide experimental data for track v0", false);
 
-  void
-    processFullMC(aod::FemtoFullCollisionMC const& col,
-                  aod::BCsWithTimestamps const&,
-                  soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                  aod::McCollisions const& mcCollisions,
-                  aod::McParticles const& mcParticles,
-                  soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s)
+  void processFullMC(aod::FemtoFullCollisionMC const& col,
+                     aod::BCsWithTimestamps const&,
+                     soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                     aod::McCollisions const& mcCollisions,
+                     aod::McParticles const& mcParticles,
+                     soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -1080,12 +1102,11 @@ struct femtoUniverseProducerTask {
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processFullMC, "Provide MC data (tracks, V0, Phi)", false);
 
-  void
-    processTrackMC(aod::FemtoFullCollisionMC const& col,
-                   aod::BCsWithTimestamps const&,
-                   soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
-                   aod::McCollisions const& mcCollisions,
-                   aod::McParticles const&)
+  void processTrackMC(aod::FemtoFullCollisionMC const& col,
+                      aod::BCsWithTimestamps const&,
+                      soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
+                      aod::McCollisions const& mcCollisions,
+                      aod::McParticles const&)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -1095,10 +1116,9 @@ struct femtoUniverseProducerTask {
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMC, "Provide MC data for track analysis", false);
 
-  void
-    processTrackData(aod::FemtoFullCollision const& col,
-                     aod::BCsWithTimestamps const&,
-                     aod::FemtoFullTracks const& tracks)
+  void processTrackData(aod::FemtoFullCollision const& col,
+                        aod::BCsWithTimestamps const&,
+                        aod::FemtoFullTracks const& tracks)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -1124,11 +1144,10 @@ struct femtoUniverseProducerTask {
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackPhiData,
                  "Provide experimental data for track phi", false);
 
-  void
-    processTrackD0mesonData(aod::FemtoFullCollision const& col,
-                            aod::BCsWithTimestamps const&,
-                            soa::Filtered<aod::FemtoFullTracks> const& tracks,
-                            soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
+  void processTrackD0mesonData(aod::FemtoFullCollision const& col,
+                               aod::BCsWithTimestamps const&,
+                               soa::Filtered<aod::FemtoFullTracks> const& tracks,
+                               soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -1140,11 +1159,10 @@ struct femtoUniverseProducerTask {
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackD0mesonData,
                  "Provide experimental data for track D0 meson", false);
 
-  void
-    processTrackMCTruth(aod::McCollision const& mcCol,
-                        soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
-                        aod::McParticles const& mcParticles,
-                        aod::BCsWithTimestamps const&)
+  void processTrackMCTruth(aod::McCollision const& mcCol,
+                           soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
+                           aod::McParticles const& mcParticles,
+                           aod::BCsWithTimestamps const&)
   {
     // magnetic field for run not needed for mc truth
     // fill the tables
@@ -1153,10 +1171,9 @@ struct femtoUniverseProducerTask {
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackMCTruth, "Provide MC data for MC truth track analysis", false);
 
-  void
-    processTrackCentRun2Data(aod::FemtoFullCollisionCentRun2 const& col,
-                             aod::BCsWithTimestamps const&,
-                             aod::FemtoFullTracks const& tracks)
+  void processTrackCentRun2Data(aod::FemtoFullCollisionCentRun2 const& col,
+                                aod::BCsWithTimestamps const&,
+                                aod::FemtoFullTracks const& tracks)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -1166,10 +1183,9 @@ struct femtoUniverseProducerTask {
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackCentRun2Data, "Provide experimental data for Run 2 with centrality for track track", false);
 
-  void
-    processTrackCentRun3Data(aod::FemtoFullCollisionCentRun3 const& col,
-                             aod::BCsWithTimestamps const&,
-                             aod::FemtoFullTracks const& tracks)
+  void processTrackCentRun3Data(aod::FemtoFullCollisionCentRun3 const& col,
+                                aod::BCsWithTimestamps const&,
+                                aod::FemtoFullTracks const& tracks)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());

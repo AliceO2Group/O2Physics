@@ -1131,7 +1131,6 @@ inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
 
   if (matchTrackType(track)) {
     if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
-
       MatchRecoGenSpecies sp = trackIdentification(track);
       if (sp == kWrongSpecies) {
         return -1;

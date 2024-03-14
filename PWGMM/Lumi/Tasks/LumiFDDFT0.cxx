@@ -72,6 +72,8 @@ DECLARE_SOA_COLUMN(isFDD, isfdd, bool);
 DECLARE_SOA_COLUMN(TCMTriggerFDD, tcmTriggerfdd, uint8_t);
 DECLARE_SOA_COLUMN(TimeAFDD, timeAfdd, double);
 DECLARE_SOA_COLUMN(TimeCFDD, timeCfdd, double);
+DECLARE_SOA_COLUMN(IsCoinAmpFDDA, isCoinAmpFDDA, bool);
+DECLARE_SOA_COLUMN(IsCoinAmpFDDC, isCoinAmpFDDC, bool);
 DECLARE_SOA_COLUMN(ChargeAFDD, chargeAfdd, double);
 DECLARE_SOA_COLUMN(ChargeCFDD, chargeCfdd, double);
 
@@ -97,7 +99,8 @@ DECLARE_SOA_TABLE(EventInfo, "AOD", "EventInfo", full::TimeStamp, full::VertexX,
 DECLARE_SOA_TABLE(EventInfoFDD, "AOD", "EventInfoFDD",
                   full::TimeStamp, full::GlobalBC,
                   full::TCMTriggerFDD, full::TimeAFDD,
-                  full::TimeCFDD, full::ChargeAFDD,
+                  full::TimeCFDD, full::IsCoinAmpFDDA,
+                  full::IsCoinAmpFDDC, full::ChargeAFDD,
                   full::ChargeCFDD);
 
 DECLARE_SOA_TABLE(EventInfoFT0, "AOD", "EventInfoFT0",
@@ -339,13 +342,27 @@ struct LumiFDDFT0 {
       double chargeaFDD = 0.;
       double chargecFDD = 0.;
 
-      for (auto amplitude : fdd.chargeA()) {
-        chargeaFDD += amplitude;
+      auto SideA = fdd.chargeA();
+      auto SideC = fdd.chargeC();
+      std::vector<int> channelA;
+      std::vector<int> channelC;
+      for (auto i = 0; i < 8; i++) {
+        if (SideA[i] > 0) {
+          channelA.push_back(i);
+        }
+
+        if (SideC[i] > 0) {
+          channelC.push_back(i);
+        }
+
+        chargeaFDD += SideA[i];
+        chargecFDD += SideC[i];
       }
-      for (auto amplitude : fdd.chargeC()) {
-        chargecFDD += amplitude;
-      }
-      rowEventInfofdd(relTS, globalBC, fdd.triggerMask(), fdd.timeA(), fdd.timeC(), chargeaFDD, chargecFDD);
+
+      bool isCoinA = checkAnyCoincidence(channelA);
+      bool isCoinC = checkAnyCoincidence(channelC);
+
+      rowEventInfofdd(relTS, globalBC, fdd.triggerMask(), fdd.timeA(), fdd.timeC(), isCoinA, isCoinC, chargeaFDD, chargecFDD);
     } // end of fdd table
 
     // Scan over the FT0 table and store charge and time along with globalBC
@@ -369,6 +386,18 @@ struct LumiFDDFT0 {
     } // end of ft0 table
   };
   PROCESS_SWITCH(LumiFDDFT0, processLite, "Process FDD and FT0 info", false);
+
+  bool checkAnyCoincidence(const std::vector<int>& channels)
+  {
+    std::map<int, int> channelPairs = {{0, 4}, {1, 5}, {2, 6}, {3, 7}};
+    for (const auto& pair : channelPairs) {
+      if (std::find(channels.begin(), channels.end(), pair.first) != channels.end() &&
+          std::find(channels.begin(), channels.end(), pair.second) != channels.end()) {
+        return true;
+      }
+    }
+    return false;
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
