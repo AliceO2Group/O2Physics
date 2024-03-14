@@ -95,8 +95,8 @@ DECLARE_SOA_COLUMN(BachHasTOF, bachhastof, int);
 DECLARE_SOA_COLUMN(PosPt, pospt, float);
 DECLARE_SOA_COLUMN(NegPt, negpt, float);
 DECLARE_SOA_COLUMN(BachPt, bachpt, float);
-DECLARE_SOA_COLUMN(McPdgCode, mcPdgCode, int);                       //! -1 unknown
-DECLARE_SOA_COLUMN(IsPrimary, isPrimary, int);                       //! -1 unknown, 0 not primary, 1 primary
+DECLARE_SOA_COLUMN(McPdgCode, mcPdgCode, int);                     //! -1 unknown
+DECLARE_SOA_COLUMN(IsPrimary, isPrimary, int);                     //! -1 unknown, 0 not primary, 1 primary
 DECLARE_SOA_COLUMN(BachBaryonCosPA, bachBaryonCosPA, float);         //! avoid bach-baryon correlated inv mass structure in analysis
 DECLARE_SOA_COLUMN(BachBaryonDCAxyToPV, bachBaryonDCAxyToPV, float); //! avoid bach-baryon correlated inv mass structure in analysis
 DECLARE_SOA_COLUMN(EventSelFilterBitMask, eventSelFilterBitMask, uint8_t);
@@ -112,7 +112,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsINELgt1, isINELgt1, //! True if the Event belongs t
 namespace cascadesflow
 {
 
-DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
+DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);
+DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(Sign, sign, int);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
@@ -149,7 +151,8 @@ DECLARE_SOA_TABLE(CascTraining, "AOD", "CascTraining", o2::soa::Index<>,
                   mycascades::DCABachToPV, mycascades::DCACascDaughters, mycascades::DCAV0Daughters, mycascades::DCAV0ToPV, mycascades::BachBaryonCosPA, mycascades::BachBaryonDCAxyToPV, mycascades::McPdgCode);
 
 DECLARE_SOA_TABLE(CascAnalysis, "AOD", "CascAnalysis", o2::soa::Index<>,
-                  cascadesflow::MultFT0M, cascadesflow::Sign, cascadesflow::Pt, cascadesflow::Eta, cascadesflow::MassXi, cascadesflow::MassOmega, cascadesflow::V2A, cascadesflow::V2C, cascadesflow::BDTResponse);
+                  cascadesflow::CentFT0C
+, cascadesflow::Sign, cascadesflow::Pt, cascadesflow::Eta, cascadesflow::MassXi, cascadesflow::MassOmega, cascadesflow::V2A, cascadesflow::V2C, cascadesflow::BDTResponse);
 
 namespace myMCcascades
 {
