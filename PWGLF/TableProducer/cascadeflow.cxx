@@ -110,6 +110,7 @@ namespace cascade_flow_cuts_ml
   static const std::vector<std::string> labelsDmesCutScore = {"ML score signal", "ML score bkg"};
 } // namespace cascade_flow_cuts_ml
 
+
 struct cascadeFlow {
 
   Configurable<bool> isOmega{"isOmega", 0, "Xi or Omega"};
@@ -122,13 +123,13 @@ struct cascadeFlow {
   Configurable<bool> doNTPCSigmaCut{"doNTPCSigmaCut", 1, "doNtpcSigmaCut"};
   Configurable<float> nsigmatpcPr{"nsigmatpcPr", 5, "nsigmatpcPr"};
   Configurable<float> nsigmatpcPi{"nsigmatpcPi", 5, "nsigmatpcPi"};
-  Configurable<float> mintpccrrows{"mintpccrrows", 3, "mintpccrrows"};
+  Configurable<float> mintpccrrows{"mintpccrrows", 70, "mintpccrrows"};
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
-  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", true, "Flag to enable or disable the loading of models from CCDB"};
 
   // ML inference
   Configurable<bool> applyMl{"applyMl", true, "Flag to apply ML selections"};
