@@ -857,38 +857,52 @@ struct derivedlambdakzeroanalysis {
     auto hOmegaMinus = histos.get<TH2>(HIST("h2dGenOmegaMinus"));
     auto hOmegaPlus = histos.get<TH2>(HIST("h2dGenOmegaPlus"));
     for (auto& gVec : geK0Short) {
-      for (uint32_t iv = 0; iv < gVec.generatedK0Short().size(); iv++) {
+      if (gVec.size() != hK0Short->GetNcells())
+        LOGF(fatal, "K0Short: Number of elements in generated array and number of cells in receiving histogram differ!");
+      for (uint32_t iv = 0; iv < hK0Short->GetNcells(); iv++) {
         hK0Short->SetBinContent(iv + 1, hK0Short->GetBinContent(iv + 1) + gVec.generatedK0Short()[iv]);
       }
     }
     for (auto& gVec : geLambda) {
-      for (uint32_t iv = 0; iv < gVec.generatedLambda().size(); iv++) {
-        hLambda->SetBinContent(iv + 1, hLambda->GetBinContent(iv + 1) + gVec.generatedLambda()[iv]);
+      if (gVec.size() != hLambda->GetNcells())
+        LOGF(fatal, "Lambda: Number of elements in generated array and number of cells in receiving histogram differ!");
+      for (uint32_t iv = 0; iv < hLambda->GetNcells(); iv++) {
+        hLambda->SetBinContent(iv, hLambda->GetBinContent(iv) + gVec.generatedLambda()[iv]);
       }
     }
     for (auto& gVec : geAntiLambda) {
-      for (uint32_t iv = 0; iv < gVec.generatedAntiLambda().size(); iv++) {
-        hAntiLambda->SetBinContent(iv + 1, hAntiLambda->GetBinContent(iv + 1) + gVec.generatedAntiLambda()[iv]);
+      if (gVec.size() != hAntiLambda->GetNcells())
+        LOGF(fatal, "AntiLambda: Number of elements in generated array and number of cells in receiving histogram differ!");
+      for (uint32_t iv = 0; iv < hAntiLambda->GetNcells(); iv++) {
+        hAntiLambda->SetBinContent(iv, hAntiLambda->GetBinContent(iv) + gVec.generatedAntiLambda()[iv]);
       }
     }
     for (auto& gVec : geXiMinus) {
-      for (uint32_t iv = 0; iv < gVec.generatedXiMinus().size(); iv++) {
-        hXiMinus->SetBinContent(iv + 1, hXiMinus->GetBinContent(iv + 1) + gVec.generatedXiMinus()[iv]);
+      if (gVec.size() != hXiMinus->GetNcells())
+        LOGF(fatal, "XiMinus: Number of elements in generated array and number of cells in receiving histogram differ!");
+      for (uint32_t iv = 0; iv < hXiMinus->GetNcells(); iv++) {
+        hXiMinus->SetBinContent(iv, hXiMinus->GetBinContent(iv) + gVec.generatedXiMinus()[iv]);
       }
     }
     for (auto& gVec : geXiPlus) {
-      for (uint32_t iv = 0; iv < gVec.generatedXiPlus().size(); iv++) {
-        hXiPlus->SetBinContent(iv + 1, hXiPlus->GetBinContent(iv + 1) + gVec.generatedXiPlus()[iv]);
+      if (gVec.size() != hXiPlus->GetNcells())
+        LOGF(fatal, "XiPlus: Number of elements in generated array and number of cells in receiving histogram differ!");
+      for (uint32_t iv = 0; iv < hXiPlus->GetNcells(); iv++) {
+        hXiPlus->SetBinContent(iv, hXiPlus->GetBinContent(iv) + gVec.generatedXiPlus()[iv]);
       }
     }
     for (auto& gVec : geOmegaMinus) {
-      for (uint32_t iv = 0; iv < gVec.generatedOmegaMinus().size(); iv++) {
-        hOmegaMinus->SetBinContent(iv + 1, hOmegaMinus->GetBinContent(iv + 1) + gVec.generatedOmegaMinus()[iv]);
+      if (gVec.size() != hOmegaMinus->GetNcells())
+        LOGF(fatal, "OmegaMinus: Number of elements in generated array and number of cells in receiving histogram differ!");
+      for (uint32_t iv = 0; iv < hOmegaMinus->GetNcells(); iv++) {
+        hOmegaMinus->SetBinContent(iv, hOmegaMinus->GetBinContent(iv) + gVec.generatedOmegaMinus()[iv]);
       }
     }
     for (auto& gVec : geOmegaPlus) {
-      for (uint32_t iv = 0; iv < gVec.generatedOmegaPlus().size(); iv++) {
-        hOmegaPlus->SetBinContent(iv + 1, hOmegaPlus->GetBinContent(iv + 1) + gVec.generatedOmegaPlus()[iv]);
+      if (gVec.size() != hOmegaPlus->GetNcells())
+        LOGF(fatal, "OmegaPlus: Number of elements in generated array and number of cells in receiving histogram differ!");
+      for (uint32_t iv = 0; iv < hOmegaPlus->GetNcells(); iv++) {
+        hOmegaPlus->SetBinContent(iv, hOmegaPlus->GetBinContent(iv) + gVec.generatedOmegaPlus()[iv]);
       }
     }
   }
