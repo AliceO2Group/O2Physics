@@ -139,7 +139,7 @@ struct hJetAnalysis {
         n_TT++;
       }
       if (!is_sig_col && track.pt() < pt_TTref_max && track.pt() > pt_TTref_min) {
-        phi_TT_ar.push_back(track.pt());
+        phi_TT_ar.push_back(track.phi());
         n_TT++;
       }
       registry.fill(HIST("hPtTrack"), track.pt());
@@ -222,7 +222,7 @@ struct hJetAnalysis {
         n_TT++;
       }
       if (!is_sig_col && particle.pt() < pt_TTref_max && particle.pt() > pt_TTref_min) {
-        phi_TT_ar.push_back(particle.pt());
+        phi_TT_ar.push_back(particle.phi());
         n_TT++;
       }
       registry.fill(HIST("hPtPart"), particle.pt());
