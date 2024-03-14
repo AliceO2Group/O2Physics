@@ -474,7 +474,7 @@ struct TaskPolarisationCharmHadrons {
       } else { // non-prompt
         registry.fill(HIST("hGenNonPromptHelicity"), ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
       }
-    } else if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Production) { // Prodution
+    } else if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Production) { // Production
       if (origin == RecoDecay::OriginType::Prompt) {                                             // prompt
         registry.fill(HIST("hGenPromptProduction"), ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
       } else { // non-prompt
