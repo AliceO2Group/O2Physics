@@ -33,6 +33,7 @@ using PIDTracksIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovI
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
 struct perfK0sResolution {
+  // Configurable bins
   ConfigurableAxis mBins{"mBins", {200, 0.4f, 0.6f}, "Mass binning"};
   ConfigurableAxis pTBins{"pTBins", {200, 0.f, 10.f}, "pT binning"};
   ConfigurableAxis pTResBins{"pTResBins", {200, -1.2f, 1.2f}, "pT resolution binning"};
@@ -42,7 +43,37 @@ struct perfK0sResolution {
   ConfigurableAxis etaBinsDauthers{"etaBinsDauthers", {100, -1.f, 1.f}, "eta binning for daughters"};
   ConfigurableAxis phiBins{"phiBins", {100, 0.f, 6.28f}, "phi binning"};
   ConfigurableAxis relpTResBins{"relpTResBins", {200, 0.f, 0.5f}, "rel. pT resolution binning"};
-  
+
+  // Selection criteria
+  Configurable<float> v0setting_cospa{"v0setting_cospa", 0.995, "V0 CosPA"}; // shoudl be double in future
+  Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1., "DCA V0 Daughters"};
+  Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "DCA Pos To PV"};
+  Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "DCA Neg To PV"};
+  Configurable<float> v0setting_radius{"v0setting_radius", 0.9, "V0 Radius"};
+  Configurable<float> v0setting_rapidity{"v0setting_rapidity", 0.5, "rapidity"};
+
+  Configurable<float> nV0lifetime{"nV0lifetime", 3., "n ctau"};
+  Configurable<float> nMaxTPCNsigma{"nMaxTPCNsigma", 10., "Maximum TPC nsigma for pions"};
+  Configurable<int> itsIbSelectionPos{"itsIbSelectionPos", 0, "Flag for the ITS IB selection on positive daughters: -1 no ITS IB, 0 no selection, 1 ITS IB"};
+  Configurable<int> itsIbSelectionNeg{"itsIbSelectionNeg", 0, "Flag for the ITS IB IB selection on negative daughters: -1 no ITS IB, 0 no selection, 1 ITS IB"};
+  Configurable<int> trdSelectionPos{"trdSelectionPos", 0, "Flag for the TRD selection on positive daughters: -1 no TRD, 0 no selection, 1 TRD"};
+  Configurable<int> trdSelectionNeg{"trdSelectionNeg", 0, "Flag for the TRD selection on negative daughters: -1 no TRD, 0 no selection, 1 TRD"};
+  Configurable<int> tofSelectionPos{"tofSelectionPos", 0, "Flag for the TOF selection on positive daughters: -1 no TOF, 0 no selection, 1 TOF"};
+  Configurable<int> tofSelectionNeg{"tofSelectionNeg", 0, "Flag for the TOF selection on negative daughters: -1 no TOF, 0 no selection, 1 TOF"};
+  Configurable<int> pidHypoPos{"pidHypoPos", -1, "Index for the PID hypothesis used in tracking for the positive daughters: -1 no selection, 0 Electron, 1 Muon, 2 Pion, 3 Kaon, 4 Proton"};
+  Configurable<int> pidHypoNeg{"pidHypoNeg", -1, "Index for the PID hypothesis used in tracking for the negative daughters: -1 no selection, 0 Electron, 1 Muon, 2 Pion, 3 Kaon, 4 Proton"};
+  Configurable<float> extraCutTPCClusters{"extraCutTPCClusters", -1.0f, "Extra cut on daugthers for TPC clusters"};
+
+  // Configure plots to enable
+  Configurable<bool> useMultidimHisto{"useMultidimHisto", false, "use multidimentional histograms"};
+  Configurable<bool> enableTPCPlot{"enableTPCPlot", false, "Enable the TPC plot"};
+  Configurable<bool> computeInvMassFromDaughters{"computeInvMassFromDaughters", false, "Compute the invariant mass from the daughters"};
+  Configurable<bool> requireTrueK0s{"requireTrueK0s", false, "require rec. v0 to be true K0s"};
+
+  // Configurable for event selection
+  Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
+  Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
+
   HistogramRegistry rK0sResolution{"K0sResolution", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry rK0sDauResolution{"K0sDauResolution", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -65,6 +96,7 @@ struct perfK0sResolution {
 
   void init(InitContext const&)
   {
+    const AxisSpec eventAxis{10, 0, 10, "Events"};
     const AxisSpec mAxis{mBins, "#it{m} (GeV/#it{c}^{2})"};
     const AxisSpec pTAxis{pTBins, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec pTResAxis{pTResBins, "#Delta#it{p}_{T} (GeV/#it{c})"};
@@ -87,6 +119,7 @@ struct perfK0sResolution {
       nProc++;
     }
 
+    rK0sResolution.add("h1_events", "h1_events", {HistType::kTH1F, {eventAxis}});
     if (doprocessMC) {
       rK0sDauResolution.add("h2_massPosPtRes", "h2_massPosPtRes", {HistType::kTH2F, {mAxis, pTResAxis}});
       rK0sDauResolution.add("h2_massNegPtRes", "h2_massNegPtRes", {HistType::kTH2F, {mAxis, pTResAxis}});
@@ -113,6 +146,10 @@ struct perfK0sResolution {
       } else {
         rK0sResolution.add("thn_mass", "thn_mass", kTHnSparseF, {mAxis, pTAxis, etaAxis, phiAxis, etaAxisPosD, etaAxisNegD});
       }
+    }
+
+    if (enableTPCPlot) {
+      rK0sDauResolution.add("h3_tpc_vs_pid_hypothesis", "h3_tpc_vs_pid_hypothesis", {HistType::kTH3F, {{200, -10.f, 10.f, "#it{p}/Z (GeV/#it{c})"}, {1000, 0, 1000.f, "dE/dx (a.u.)"}, {10, -0.5, 9.5f, "PID hypothesis"}}});
     }
 
     ccdb->setURL(ccdburl);
@@ -149,31 +186,6 @@ struct perfK0sResolution {
     runNumber = bc.runNumber();
   }
 
-  // Selection criteria
-  Configurable<float> v0setting_cospa{"v0setting_cospa", 0.995, "V0 CosPA"}; // shoudl be double in future
-  Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1., "DCA V0 Daughters"};
-  Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "DCA Pos To PV"};
-  Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "DCA Neg To PV"};
-  Configurable<float> v0setting_radius{"v0setting_radius", 0.9, "V0 Radius"};
-  Configurable<float> v0setting_rapidity{"v0setting_rapidity", 0.5, "rapidity"};
-
-  Configurable<float> nV0lifetime{"nV0lifetime", 3., "n ctau"};
-  Configurable<float> nSigTPC{"nSigTPC", 10., "nSigTPC"};
-  Configurable<int> itsIbSelectionPos{"itsIbSelectionPos", 0, "Flag for the ITS IB selection on positive daughters: -1 no ITS IB, 0 no selection, 1 ITS IB"};
-  Configurable<int> itsIbSelectionNeg{"itsIbSelectionNeg", 0, "Flag for the ITS IB IB selection on negative daughters: -1 no ITS IB, 0 no selection, 1 ITS IB"};
-  Configurable<int> trdSelectionPos{"trdSelectionPos", 0, "Flag for the TRD selection on positive daughters: -1 no TRD, 0 no selection, 1 TRD"};
-  Configurable<int> trdSelectionNeg{"trdSelectionNeg", 0, "Flag for the TRD selection on negative daughters: -1 no TRD, 0 no selection, 1 TRD"};
-  Configurable<int> tofSelectionPos{"tofSelectionPos", 0, "Flag for the TOF selection on positive daughters: -1 no TOF, 0 no selection, 1 TOF"};
-  Configurable<int> tofSelectionNeg{"tofSelectionNeg", 0, "Flag for the TOF selection on negative daughters: -1 no TOF, 0 no selection, 1 TOF"};
-  Configurable<float> extraCutTPCClusters{"extraCutTPCClusters", -1.0f, "Extra cut on daugthers for TPC clusters"};
-  Configurable<bool> useMultidimHisto{"useMultidimHisto", false, "use multidimentional histograms"};
-  Configurable<bool> computeInvMassFromDaughters{"computeInvMassFromDaughters", false, "Compute the invariant mass from the daughters"};
-  Configurable<bool> requireTrueK0s{"requireTrueK0s", false, "require rec. v0 to be true K0s"};
-
-  // Configurable for event selection
-  Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
-  Configurable<bool> eventSelection{"eventSelection", true, "event selection"};
-
   template <typename T1, typename T2, typename C>
   bool acceptV0(const T1& v0, const T2& ntrack, const T2& ptrack, const C& collision)
   {
@@ -189,6 +201,7 @@ struct perfK0sResolution {
     }
 
     // Apply selections on V0 daughters
+
     // ITS selection
     switch (itsIbSelectionPos) {
       case -1:
@@ -224,16 +237,21 @@ struct perfK0sResolution {
         LOG(fatal) << "Invalid ITS selection for negative daughter";
         break;
     }
+
     // TPC selection
     if (!ntrack.hasTPC() || !ptrack.hasTPC()) {
       return false;
     }
-    if (ntrack.tpcNSigmaPi() > nSigTPC || ptrack.tpcNSigmaPi() > nSigTPC) {
+    if (abs(ntrack.tpcNSigmaPi()) > nMaxTPCNsigma) {
+      return false;
+    }
+    if (abs(ptrack.tpcNSigmaPi()) > nMaxTPCNsigma) {
       return false;
     }
     if (ntrack.tpcNClsCrossedRows() < extraCutTPCClusters || ptrack.tpcNClsCrossedRows() < extraCutTPCClusters) {
       return false;
     }
+
     // TOF selection
     switch (tofSelectionPos) {
       case -1:
@@ -269,6 +287,7 @@ struct perfK0sResolution {
         LOG(fatal) << "Invalid TOF selection for negative daughter";
         break;
     }
+
     // TRD selection
     switch (trdSelectionPos) {
       case -1:
@@ -304,6 +323,40 @@ struct perfK0sResolution {
         LOG(fatal) << "Invalid TRD selection for negative daughter";
         break;
     }
+
+    // PID hypothesis selection
+    switch (pidHypoPos) {
+      case -1:
+        break;
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+        if (ptrack.pidForTracking() != static_cast<uint32_t>(pidHypoPos)) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid PID selection for positive daughter";
+        break;
+    }
+    switch (pidHypoNeg) {
+      case -1:
+        break;
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+        if (ntrack.pidForTracking() != static_cast<uint32_t>(pidHypoNeg)) {
+          return false;
+        }
+        break;
+      default:
+        LOG(fatal) << "Invalid PID selection for negative daughter";
+        break;
+    }
     return true;
   }
 
@@ -321,7 +374,9 @@ struct perfK0sResolution {
                    soa::Filtered<aod::V0Datas> const& fullV0s,
                    PIDTracks const&)
   {
+    rK0sResolution.fill(HIST("h1_events"), 0.5);
     for (auto& v0 : fullV0s) {
+      rK0sResolution.fill(HIST("h1_events"), 1.5);
       const auto& posTrack = v0.posTrack_as<PIDTracks>();
       const auto& negTrack = v0.negTrack_as<PIDTracks>();
       if (!acceptV0(v0, negTrack, posTrack, collision))
@@ -339,6 +394,10 @@ struct perfK0sResolution {
       rK0sResolution.fill(HIST("h2_massphi"), mass, v0.phi());
       if (useMultidimHisto) {
         rK0sResolution.fill(HIST("thn_mass"), mass, v0.pt(), v0.eta(), v0.phi(), posTrack.eta(), negTrack.eta());
+      }
+      if (enableTPCPlot) {
+        rK0sDauResolution.fill(HIST("h3_tpc_vs_pid_hypothesis"), posTrack.tpcInnerParam(), posTrack.tpcSignal(), posTrack.pidForTracking());
+        rK0sDauResolution.fill(HIST("h3_tpc_vs_pid_hypothesis"), -negTrack.tpcInnerParam(), negTrack.tpcSignal(), negTrack.pidForTracking());
       }
     }
   }
@@ -370,10 +429,10 @@ struct perfK0sResolution {
     auto mcParticlePos = posTrack.mcParticle();
     auto mcParticleNeg = negTrack.mcParticle();
 
-    LOG(info) << "Inside tuneTrack: before calling tuneTrackParams trackParCov.getY(): " << trackParCov.getY();
+    LOG(info) << "Inside tuneTrack: before calling tuneTrackParams trackParCov.getY(): " << mTrackParCovPos.getY();
     trackTunerObj.tuneTrackParams(mcParticlePos, mTrackParCovPos, matCorr, &mDcaInfoCovPos, trackTunedTracks);
     trackTunerObj.tuneTrackParams(mcParticleNeg, mTrackParCovNeg, matCorr, &mDcaInfoCovNeg, trackTunedTracks);
-    LOG(info) << "Inside tuneTrack: after calling tuneTrackParams trackParCov.getY(): " << trackParCov.getY();
+    LOG(info) << "Inside tuneTrack: after calling tuneTrackParams trackParCov.getY(): " << mTrackParCovPos.getY();
     // trackTunedTracks->Fill(1, 2);
     mVtx.setPos({v0.x(), v0.y(), v0.z()});
     mVtx.setCov(v0.positionCovMat()[0], v0.positionCovMat()[1], v0.positionCovMat()[2], v0.positionCovMat()[3], v0.positionCovMat()[4], v0.positionCovMat()[5]);
@@ -387,7 +446,9 @@ struct perfK0sResolution {
                  aod::McParticles const& mcParticles,
                  aod::BCsWithTimestamps const& bcs)
   {
+    rK0sResolution.fill(HIST("h1_events"), 0.5);
     for (auto& v0 : fullV0s) {
+      rK0sResolution.fill(HIST("h1_events"), 1.5);
       const auto& posTrack = v0.posTrack_as<PIDTracksIUMC>();
       const auto& negTrack = v0.negTrack_as<PIDTracksIUMC>();
       if (!acceptV0(v0, negTrack, posTrack, collision))

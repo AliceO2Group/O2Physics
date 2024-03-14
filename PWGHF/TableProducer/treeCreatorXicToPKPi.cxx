@@ -33,7 +33,6 @@ namespace o2::aod
 namespace full
 {
 
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_COLUMN(RSecondaryVertex, rSecondaryVertex, float);
 DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);
 DECLARE_SOA_COLUMN(PProng0, pProng0, float);
@@ -79,7 +78,6 @@ DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
-DECLARE_SOA_INDEX_COLUMN_FULL(Candidate, candidate, int, HfCand3Prong, "_0");
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
@@ -127,7 +125,6 @@ DECLARE_SOA_TABLE(HfCandXicLites, "AOD", "HFCANDXICLITE",
                   full::OriginMcRec)
 
 DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
-                  full::CollisionId,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -197,12 +194,9 @@ DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   full::Y,
                   full::E,
                   full::FlagMc,
-                  full::OriginMcRec,
-                  full::CandidateId);
+                  full::OriginMcRec);
 
 DECLARE_SOA_TABLE(HfCandXicFullEvs, "AOD", "HFCANDXICFULLEV",
-                  full::CollisionId,
-                  collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
@@ -211,15 +205,12 @@ DECLARE_SOA_TABLE(HfCandXicFullEvs, "AOD", "HFCANDXICFULLEV",
                   full::RunNumber);
 
 DECLARE_SOA_TABLE(HfCandXicFullPs, "AOD", "HFCANDXICFULLP",
-                  full::CollisionId,
-                  collision::BCId,
                   full::Pt,
                   full::Eta,
                   full::Phi,
                   full::Y,
                   full::FlagMc,
-                  full::OriginMcGen,
-                  full::CandidateId);
+                  full::OriginMcGen);
 
 } // namespace o2::aod
 
@@ -262,8 +253,6 @@ struct HfTreeCreatorXicToPKPi {
   void fillEvent(const T& collision, int isEventReject, int runNumber)
   {
     rowCandidateFullEvents(
-      collision.globalIndex(),
-      collision.bcId(),
       collision.numContrib(),
       collision.posX(),
       collision.posY(),
@@ -341,7 +330,6 @@ struct HfTreeCreatorXicToPKPi {
 
     } else {
       rowCandidateFull(
-        candidate.collisionId(),
         candidate.posX(),
         candidate.posY(),
         candidate.posZ(),
@@ -411,8 +399,7 @@ struct HfTreeCreatorXicToPKPi {
         hfHelper.yXic(candidate),
         hfHelper.eXic(candidate),
         flagMc,
-        originMc,
-        candidate.globalIndex());
+        originMc);
     }
   }
 
@@ -536,15 +523,12 @@ struct HfTreeCreatorXicToPKPi {
     rowCandidateFullParticles.reserve(mcParticles.size());
     for (const auto& particle : mcParticles) {
       rowCandidateFullParticles(
-        particle.mcCollision().globalIndex(),
-        particle.mcCollision().bcId(),
         particle.pt(),
         particle.eta(),
         particle.phi(),
         RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassXiCPlus),
         particle.flagMcMatchGen(),
-        particle.originMcGen(),
-        particle.globalIndex());
+        particle.originMcGen());
     }
   }
 
