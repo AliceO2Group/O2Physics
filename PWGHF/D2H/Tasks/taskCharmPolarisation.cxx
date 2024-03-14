@@ -137,7 +137,7 @@ struct TaskPolarisationCharmHadrons {
       }
     }
 
-    // check bkg roation for MC (not supported currently)
+    // check bkg rotation for MC (not supported currently)
     if (nBkgRotations > 0 && (doprocessDstarMc || doprocessDstarMcWithMl || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl)) {
       LOGP(fatal, "No background rotation supported for MC.");
     }
