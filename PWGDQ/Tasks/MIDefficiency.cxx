@@ -98,7 +98,7 @@ struct midEfficiency {
     LOGF(debug, "Calling process function");
 
     // Loop over all forward tracks
-    LOGP(info, "collision index = {} ,  nTracks = {}", event.globalIndex(), muons.size());
+    //LOGP(info, "collision index = {} ,  nTracks = {}", event.globalIndex(), muons.size());
     for (auto& track : muons) {
 
       LOGF(debug, "Processing a track");
