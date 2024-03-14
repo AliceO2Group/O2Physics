@@ -90,7 +90,6 @@ struct PseudorapidityDensityMFT {
   HistogramRegistry registry{
       "registry",
       {
-
           {"TracksEtaZvtx",
            "; #eta; #it{z}_{vtx} (cm); tracks",
            {HistType::kTH2F, {EtaAxis, ZAxis}}}, //
@@ -109,7 +108,6 @@ struct PseudorapidityDensityMFT {
           {"EventSelection",
            ";status;events",
            {HistType::kTH1F, {{7, 0.5, 7.5}}}}, //
-
       } //
   };
 
