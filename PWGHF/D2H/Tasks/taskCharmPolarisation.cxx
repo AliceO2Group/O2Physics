@@ -543,8 +543,7 @@ struct TaskPolarisationCharmHadrons {
         pyCharmHad = candidate.pyDstar();
         pzCharmHad = candidate.pzDstar();
         massDau = massPi; // (*)
-        auto sign = candidate.signSoftPi();
-        if (sign > 0) {
+        if (candidate.signSoftPi() > 0) {
           invMassCharmHad = candidate.invMassDstar();
           invMassCharmHadForSparse = invMassCharmHad - candidate.invMassD0();
         } else {
