@@ -34,18 +34,7 @@ DECLARE_SOA_COLUMN(SigmaDcaXYZ2, sigmaDcaXYZ2, float);
 } // namespace jtracktag
 
 DECLARE_SOA_TABLE(JTracksTag, "AOD", "JTracksTag",
-                  track::X,
-                  track::Y,
-                  track::Z,
-                  track::Alpha,
-                  track::Snp,
-                  track::Tgl,
-                  track::Signed1Pt,
-                  track::DcaXY,
-                  track::DcaZ,
                   jtracktag::DcaXYZ,
-                  track::SigmaDcaXY2,
-                  track::SigmaDcaZ2,
                   jtracktag::SigmaDcaXYZ2);
 
 using JTrackTag = JTracksTag::iterator;

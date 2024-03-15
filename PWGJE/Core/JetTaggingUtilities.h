@@ -383,13 +383,14 @@ float getTrackProbability(T const& fResoFuncjet, U const& collision, V const& je
  *         specific flavor. Returns -1 if the jet contains fewer than two tracks with a positive
  *         geometric sign.
  */
-template <typename T, typename U, typename V, typename W>
-float getJetProbability(T const& fResoFuncjet, U const& collision, V const& jet, W const& tracks)
+template <typename T, typename U, typename V, typename W, typename X>
+float getJetProbability(T const& fResoFuncjet, U const& collision, V const& jet, W const& jtracks, X const& tracks)
 {
   std::vector<float> jetTracksPt;
   float trackjetProb = 1.;
 
-  for (auto& track : jet.template tracks_as<W>()) {
+  for (auto& jtrack : jet.template tracks_as<W>()) {
+    auto track = jtrack.template track_as<X>();
 
     float probTrack = getTrackProbability(fResoFuncjet, collision, jet, track);
 

@@ -44,24 +44,25 @@ struct JetTaggerHFTask {
   Configurable<bool> doSV{"doSV", false, "fill table for secondary vertex algorithm"};
   Configurable<float> maxDeltaR{"maxDeltaR", 0.25, "maximum distance of jet axis from flavour initiating parton"};
 
-  using JetTagTracksData = soa::Join<JetTracks, aod::JTracksTag>;
-  using JetTagTracksMCD = soa::Join<JetTracks, aod::JTracksTag, aod::JMcTrackLbs>;
+  using JetTagTracksData = soa::Join<JetTracks, aod::JTrackPIs, aod::JTracksTag>;
+  using JetTagTracksMCD = soa::Join<JetTracksMCD, aod::JTrackPIs, aod::JTracksTag>;
+  using OriTracksData = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection>;
+  using OriTracksMCD = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::McTrackLabels>;
 
   void processDummy(JetCollisions const& collision)
   {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processDummy, "Dummy process", true);
 
-  void processData(JetCollision const& collision, JetTableData const& jets, JetTagTracksData const& tracks)
+  void processData(JetCollision const& collision, JetTableData const& jets, JetTagTracksData const& jtracks, OriTracksData const& tracks)
   {
     for (auto& jet : jets) {
-
       float jetProb = 0;
       int algorithm2 = 0;
       int algorithm3 = 0;
       TF1* fSignImpXYSig = jettaggingutilities::getResolutionFunction(0);
       if (doTC) {
-        jetProb = jettaggingutilities::getJetProbability(fSignImpXYSig, collision, jet, tracks);
+        jetProb = jettaggingutilities::getJetProbability(fSignImpXYSig, collision, jet, jtracks, tracks);
       }
       // if (doSV) algorithm2 = jettaggingutilities::Algorithm2((mcdjet, tracks);
       taggingTableData(0, jetProb, algorithm2, algorithm3);
@@ -69,21 +70,21 @@ struct JetTaggerHFTask {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processData, "Fill tagging decision for data jets", false);
 
-  void processMCD(JetCollision const& collision, JetTableMCD const& mcdjets, JetTagTracksMCD const& tracks, JetParticles const& particles)
+  void processMCD(JetCollision const& collision, JetTableMCD const& mcdjets, JetTagTracksMCD const& jtracks, OriTracksMCD const& tracks, JetParticles const& particles)
   {
     for (auto& mcdjet : mcdjets) {
       typename JetTagTracksMCD::iterator hftrack;
       int origin = 0;
       if (!doWShower)
-        origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, tracks, particles, maxDeltaR);
+        origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, jtracks, particles, maxDeltaR);
       else
-        origin = jettaggingutilities::jetTrackFromHFShower(mcdjet, tracks, particles, hftrack);
+        origin = jettaggingutilities::jetTrackFromHFShower(mcdjet, jtracks, particles, hftrack);
       float jetProb = 0;
       int algorithm2 = 0;
       int algorithm3 = 0;
       TF1* fSignImpXYSig = jettaggingutilities::getResolutionFunction(origin);
       if (doTC) {
-        jetProb = jettaggingutilities::getJetProbability(fSignImpXYSig, collision, mcdjet, tracks);
+        jetProb = jettaggingutilities::getJetProbability(fSignImpXYSig, collision, mcdjet, jtracks, tracks);
       }
       // if (doSV) algorithm2 = jettaggingutilities::Algorithm2((mcdjet, tracks);
       taggingTableMCD(origin, jetProb, algorithm2, algorithm3);
@@ -112,7 +113,7 @@ struct JetTaggerHFExtTask {
     float sigmaDcaXYZ2 = 0;
 
     jettaggingutilities::calculateDcaXYZ(dcaXYZ, sigmaDcaXYZ2, track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(), track.sigmaDcaXY2(), track.sigmaDcaZ2());
-    jTracksTagTable(track.x(), track.y(), track.z(), track.alpha(), track.snp(), track.tgl(), track.signed1Pt(), track.dcaXY(), track.dcaZ(), dcaXYZ, track.sigmaDcaXY2(), track.sigmaDcaZ2(), sigmaDcaXYZ2);
+    jTracksTagTable(dcaXYZ, sigmaDcaXYZ2);
   }
   PROCESS_SWITCH(JetTaggerHFExtTask, processTracks, "produces derived track table for tagging", true);
 };
