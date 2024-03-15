@@ -62,7 +62,7 @@ struct qaEventTrack {
   Configurable<bool> selectGoodEvents{"selectGoodEvents", true, "select good events"};
 
   // option to apply a timeframe cut
-  Configurable<bool> tfCut{"tfCut", true, "applies timeframe cut"};
+  Configurable<bool> tfCut{"tfCut", false, "applies timeframe cut"};
 
   // options to select only specific tracks
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
