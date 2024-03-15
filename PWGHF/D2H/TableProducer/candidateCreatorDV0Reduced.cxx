@@ -13,6 +13,7 @@
 /// \brief Reconstruction of Resonance candidates
 ///
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, Università degli Studi di Torino
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -37,7 +38,7 @@ enum Selections : uint8_t {
 };
 enum DecayChannel : uint8_t {
   Ds1ToDstarK0s = 0,
-  Dstar2ToDplusK0s,
+  Ds2StarToDplusK0s,
   XcToDplusLambda
 };
 enum V0Type : uint8_t {
@@ -60,7 +61,8 @@ auto vecBins = std::vector<double>{binsPt, binsPt + nBins + 1};
 struct HfCandidateCreatorDV0Reduced {
   // Produces: Tables with resonance info
   Produces<aod::HfCandCharmReso> rowCandidateReso;
-  // Configurables
+
+    // Configurables
   Configurable<double> invMassWindowD{"invMassWindowD", 0.5, "invariant-mass window for D candidates (GeV/c2)"};
   Configurable<double> invMassWindowV0{"invMassWindowV0", 0.5, "invariant-mass window for V0 candidates (GeV/c2)"};
   // QA switch
@@ -89,7 +91,7 @@ struct HfCandidateCreatorDV0Reduced {
     const AxisSpec axisPt{(std::vector<double>)vecBins, "#it{p}_{T} (GeV/#it{c})"};
     // histograms
     registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} - m_{D^{*}} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, 2.4, 2.7}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassDsStar2", "Ds^{*}2 candidates; Ds^{*}2 - m_{D^{#plus}} (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 2.4, 2.7}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassDs2Star", "Ds^{*}2 candidates; Ds^{*}2 - m_{D^{#plus}} (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 2.4, 2.7}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassXcRes", "XcRes candidates; XcRes - m_{D^{#plus}} (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 2.9, 3.3}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     if (activateQA) {
       constexpr int kNBinsSelections = Selections::NSelSteps;
@@ -115,7 +117,7 @@ struct HfCandidateCreatorDV0Reduced {
   {
     float massD{0.};
     // slection on D candidate mass
-    if (channel == DecayChannel::Dstar2ToDplusK0s || channel == DecayChannel::XcToDplusLambda) {
+    if (channel == DecayChannel::Ds2StarToDplusK0s || channel == DecayChannel::XcToDplusLambda) {
       massD = massDplus;
     } else if (channel == DecayChannel::Ds1ToDstarK0s) {
       massD = massDstar;
@@ -171,7 +173,7 @@ struct HfCandidateCreatorDV0Reduced {
       float ptD = RecoDecay::pt(pVecD);
       ;
       // loop on V0 candidates
-      bool already_counted{false};
+      bool alreadyCounted{false};
       for (const auto& candV0 : candsV0) {
         if (!isV0Selected<channel>(candV0, candD)) {
           continue;
@@ -188,13 +190,13 @@ struct HfCandidateCreatorDV0Reduced {
         switch (channel) {
           case DecayChannel::Ds1ToDstarK0s:
             invMassV0 = candV0.invMassK0s();
-            invMass2Reso = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massDstar, massK0});
-            registry.fill(HIST("hMassDs1"), std::sqrt(invMass2Reso), ptReso);
+            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0}, std::array{massDstar, massK0});
+            registry.fill(HIST("hMassDs1"), invMassReso, ptReso);
             break;
-          case DecayChannel::Dstar2ToDplusK0s:
+          case DecayChannel::Ds2StarToDplusK0s:
             invMassV0 = candV0.invMassK0s();
             invMass2Reso = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massDplus, massK0});
-            registry.fill(HIST("hMassDsStar2"), std::sqrt(invMass2Reso), ptReso);
+            registry.fill(HIST("hMassDs2Star"), std::sqrt(invMass2Reso), ptReso);
             break;
           case DecayChannel::XcToDplusLambda:
             if (candD.dType() > 0) {
