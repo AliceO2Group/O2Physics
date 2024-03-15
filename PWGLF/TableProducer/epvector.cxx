@@ -215,10 +215,6 @@ struct epvector {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    // if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
-    //  return false;
-    // }
-
     if (!(candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
