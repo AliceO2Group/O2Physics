@@ -45,6 +45,8 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
 
+#include "Common/DataModel/Qvectors.h"
+
 using std::complex;
 using std::cout;
 using std::endl;
@@ -59,6 +61,7 @@ using namespace o2::aod;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
 using MyEventsWithCentRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+using MyEventsWithCentQvectRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
@@ -227,6 +230,28 @@ struct DQEventQvector {
   }
 
   // Templated function instantianed for all of the process functions
+  template <uint32_t TEventFillMap, typename TEvent>
+  void runFillQvectorFromCentralFW(TEvent const& collision)
+  {
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillEvent<TEventFillMap>(collision);
+
+    VarManager::FillQVectorFromCentralFW(collision);
+
+    if (fConfigQA) {
+      fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
+      if (fEventCut->IsSelected(VarManager::fgValues)) {
+        fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+      }
+    }
+
+    // Fill the tree for the reduced event table with Q vector quantities
+    if (fEventCut->IsSelected(VarManager::fgValues)) {
+      eventQvector(VarManager::fgValues[VarManager::kQ1X0A], VarManager::fgValues[VarManager::kQ1Y0A], VarManager::fgValues[VarManager::kQ1X0B], VarManager::fgValues[VarManager::kQ1Y0B], VarManager::fgValues[VarManager::kQ1X0C], VarManager::fgValues[VarManager::kQ1Y0C], VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kQ3X0A], VarManager::fgValues[VarManager::kQ3Y0A], VarManager::fgValues[VarManager::kQ3X0B], VarManager::fgValues[VarManager::kQ3Y0B], VarManager::fgValues[VarManager::kQ3X0C], VarManager::fgValues[VarManager::kQ3Y0C], VarManager::fgValues[VarManager::kQ4X0A], VarManager::fgValues[VarManager::kQ4Y0A], VarManager::fgValues[VarManager::kQ4X0B], VarManager::fgValues[VarManager::kQ4Y0B], VarManager::fgValues[VarManager::kQ4X0C], VarManager::fgValues[VarManager::kQ4Y0C]);
+    }
+  }
+
+  // Templated function instantianed for all of the process functions
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename TTracks>
   void runFillQvector(TEvent const& collision, aod::BCsWithTimestamps const&, TTracks const& tracks1)
   {
@@ -350,6 +375,12 @@ struct DQEventQvector {
     runFillQvector<gkEventFillMapRun3, gkTrackFillMap>(collisions, bcs, tracks);
   }
 
+  // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
+  void processCentralQvector(MyEventsWithCentQvectRun3::iterator const& collisions)
+  {
+    runFillQvectorFromCentralFW<gkEventFillMapRun3>(collisions);
+  }
+
   // Process to fill Q vector using forward tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
   void processForwardQvector(MyEventsWithCentRun3::iterator const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<aod::MFTTracks> const& tracks)
   {
@@ -364,6 +395,7 @@ struct DQEventQvector {
 
   PROCESS_SWITCH(DQEventQvector, processBarrelQvectorRun2, "Run q-vector task on barrel tracks for Run2", false);
   PROCESS_SWITCH(DQEventQvector, processBarrelQvector, "Run q-vector task on barrel tracks for Run3", false);
+  PROCESS_SWITCH(DQEventQvector, processCentralQvector, "Run q-vector task using central q-vector", false);
   PROCESS_SWITCH(DQEventQvector, processForwardQvector, "Run q-vector task on forward tracks for Run3", false);
   PROCESS_SWITCH(DQEventQvector, processDummy, "Dummy function", false);
 };

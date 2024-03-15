@@ -45,8 +45,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
-using MCLabeledFullTracksExtIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
+using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
+using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
 template <class TMCTrackTo, typename TMCParticle>
 bool is3bodyDecayedH3L(TMCParticle const& particle)
@@ -54,25 +54,25 @@ bool is3bodyDecayedH3L(TMCParticle const& particle)
   if (particle.pdgCode() != 1010010030 && particle.pdgCode() != -1010010030) {
     return false;
   }
-  bool haveProton = false, havePion = false, haveDeuteron = false;
-  bool haveAntiProton = false, haveAntiPion = false, haveAntiDeuteron = false;
+  bool haveProton = false, havePionPlus = false, haveDeuteron = false;
+  bool haveAntiProton = false, havePionMinus = false, haveAntiDeuteron = false;
   for (auto& mcparticleDaughter : particle.template daughters_as<aod::McParticles>()) {
     if (mcparticleDaughter.pdgCode() == 2212)
       haveProton = true;
     if (mcparticleDaughter.pdgCode() == -2212)
       haveAntiProton = true;
     if (mcparticleDaughter.pdgCode() == 211)
-      havePion = true;
+      havePionPlus = true;
     if (mcparticleDaughter.pdgCode() == -211)
-      haveAntiPion = true;
+      havePionMinus = true;
     if (mcparticleDaughter.pdgCode() == 1000010020)
       haveDeuteron = true;
     if (mcparticleDaughter.pdgCode() == -1000010020)
       haveAntiDeuteron = true;
   }
-  if (haveProton && haveAntiPion && haveDeuteron && particle.pdgCode() == 1010010030) {
+  if (haveProton && havePionMinus && haveDeuteron && particle.pdgCode() == 1010010030) {
     return true;
-  } else if (haveAntiProton && havePion && haveAntiDeuteron && particle.pdgCode() == -1010010030) {
+  } else if (haveAntiProton && havePionPlus && haveAntiDeuteron && particle.pdgCode() == -1010010030) {
     return true;
   }
   return false;
@@ -113,7 +113,7 @@ struct trackprefilter {
   };
 
   // change the dca cut for helium3
-  Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
+  Configurable<int> mintpcNCls{"mintpcNCls", 70, "min tpc Nclusters"};
   Configurable<int> tpcrefit{"tpcrefit", 0, "demand TPC refit"};
 
   Produces<aod::V0GoodPosTracks> v0GoodPosTracks;
@@ -133,7 +133,7 @@ struct trackprefilter {
         }
       }
       registry.fill(HIST("hGoodTrackCount"), 1.5);
-      if (t0.tpcNClsCrossedRows() < mincrossedrows) {
+      if (t0.tpcNClsFound() < mintpcNCls) {
         continue;
       }
       registry.fill(HIST("hGoodTrackCount"), 2.5);
@@ -155,13 +155,13 @@ struct trackprefilter {
   // process function for MC d3body check
   // void processCheck(aod::Collision const& collision, aod::Decay3Bodys const& decay3bodys,
   void processCheck(aod::Decay3Bodys const& decay3bodys,
-                    MCLabeledFullTracksExtIU const& tracks, aod::McParticles const& particlesMC)
+                    MCLabeledTracksIU const& tracks, aod::McParticles const& particlesMC)
   {
     for (auto& d3body : decay3bodys) {
       registry.fill(HIST("h3bodyCounter"), 0.5);
-      auto lTrack0 = d3body.track0_as<MCLabeledFullTracksExtIU>();
-      auto lTrack1 = d3body.track1_as<MCLabeledFullTracksExtIU>();
-      auto lTrack2 = d3body.track2_as<MCLabeledFullTracksExtIU>();
+      auto lTrack0 = d3body.track0_as<MCLabeledTracksIU>();
+      auto lTrack1 = d3body.track1_as<MCLabeledTracksIU>();
+      auto lTrack2 = d3body.track2_as<MCLabeledTracksIU>();
       if (!lTrack0.has_mcParticle() || !lTrack1.has_mcParticle() || !lTrack2.has_mcParticle()) {
         continue;
       }
@@ -482,11 +482,11 @@ struct hypertriton3bodyFinder {
 
   //------------------------------------------------------------------
   // Check the info of good tracks
-  template <class TTrackTo, typename TGoodTrackTable>
+  template <class TTrackClass, typename TGoodTrackTable>
   void CheckGoodTracks(TGoodTrackTable const& dGoodtracks, aod::McParticles const& particlesMC)
   {
     for (auto& goodtrackid : dGoodtracks) {
-      auto goodtrack = goodtrackid.template goodTrack_as<TTrackTo>();
+      auto goodtrack = goodtrackid.template goodTrack_as<TTrackClass>();
       if (!goodtrack.has_mcParticle()) {
         continue;
       }
@@ -515,7 +515,7 @@ struct hypertriton3bodyFinder {
   o2::dataformats::VertexBase mMeanVertex{{0., 0., 0.}, {0.1 * 0.1, 0., 0.1 * 0.1, 0., 0., 6. * 6.}};
   //------------------------------------------------------------------
   // Virtual Lambda V0 finder
-  template <class TTrackTo, typename TCollisionTable, typename TTrackTable>
+  template <class TTrackClass, typename TCollisionTable, typename TTrackTable>
   bool DecayV0Finder(TCollisionTable const& dCollision, TTrackTable const& dPtrack, TTrackTable const& dNtrack, float& rv0, bool isTrue3bodyV0 = false)
   {
     if (dPtrack.collisionId() != dNtrack.collisionId()) {
@@ -604,7 +604,7 @@ struct hypertriton3bodyFinder {
   }
   //------------------------------------------------------------------
   // 3body decay vertex finder
-  template <class TTrackTo, typename TCollisionTable, typename TTrackTable>
+  template <class TTrackClass, typename TCollisionTable, typename TTrackTable>
   void Decay3bodyFinder(TCollisionTable const& dCollision, TTrackTable const& dPtrack, TTrackTable const& dNtrack, TTrackTable const& dBachtrack, float const& rv0, bool isTrue3bodyVtx = false)
   {
     if (dPtrack.collisionId() != dBachtrack.collisionId()) {
@@ -715,22 +715,22 @@ struct hypertriton3bodyFinder {
   }
   //------------------------------------------------------------------
   // 3body decay finder for a collsion
-  template <class TTrackTo, typename TCollisionTable, typename TPosTrackTable, typename TNegTrackTable, typename TGoodTrackTable>
+  template <class TTrackClass, typename TCollisionTable, typename TPosTrackTable, typename TNegTrackTable, typename TGoodTrackTable>
   void DecayFinder(TCollisionTable const& dCollision, TPosTrackTable const& dPtracks, TNegTrackTable const& dNtracks, TGoodTrackTable const& dGoodtracks)
   {
     for (auto& t0id : dPtracks) { // FIXME: turn into combination(...)
-      auto t0 = t0id.template goodTrack_as<TTrackTo>();
+      auto t0 = t0id.template goodTrack_as<TTrackClass>();
 
       for (auto& t1id : dNtracks) {
-        auto t1 = t1id.template goodTrack_as<TTrackTo>();
+        auto t1 = t1id.template goodTrack_as<TTrackClass>();
         float rv0;
-        if (!DecayV0Finder<TTrackTo>(dCollision, t0, t1, rv0)) {
+        if (!DecayV0Finder<TTrackClass>(dCollision, t0, t1, rv0)) {
           continue;
         }
 
         for (auto& t2id : dGoodtracks) {
-          auto t2 = t2id.template goodTrack_as<TTrackTo>();
-          Decay3bodyFinder<TTrackTo>(dCollision, t0, t1, t2, rv0);
+          auto t2 = t2id.template goodTrack_as<TTrackClass>();
+          Decay3bodyFinder<TTrackClass>(dCollision, t0, t1, t2, rv0);
         }
       }
     }
@@ -739,13 +739,13 @@ struct hypertriton3bodyFinder {
   }
   //------------------------------------------------------------------
   // MC 3body decay vertex finder
-  template <class TTrackTo, typename TCollisionTable, typename TPosTrackTable, typename TNegTrackTable, typename TGoodTrackTable>
+  template <class TTrackClass, typename TCollisionTable, typename TPosTrackTable, typename TNegTrackTable, typename TGoodTrackTable>
   void DecayFinderMC(TCollisionTable const& dCollision, TPosTrackTable const& dPtracks, TNegTrackTable const& dNtracks, TGoodTrackTable const& dGoodtracks)
   {
     for (auto& t0id : dPtracks) { // FIXME: turn into combination(...)
-      auto t0 = t0id.template goodTrack_as<TTrackTo>();
+      auto t0 = t0id.template goodTrack_as<TTrackClass>();
       for (auto& t1id : dNtracks) {
-        auto t1 = t1id.template goodTrack_as<TTrackTo>();
+        auto t1 = t1id.template goodTrack_as<TTrackClass>();
         if (t0.collisionId() != t1.collisionId()) {
           continue;
         }
@@ -768,12 +768,12 @@ struct hypertriton3bodyFinder {
         }
 
         float rv0;
-        if (!DecayV0Finder<TTrackTo>(dCollision, t0, t1, rv0, isTrue3bodyV0)) {
+        if (!DecayV0Finder<TTrackClass>(dCollision, t0, t1, rv0, isTrue3bodyV0)) {
           continue;
         }
 
         for (auto& t2id : dGoodtracks) {
-          auto t2 = t2id.template goodTrack_as<TTrackTo>();
+          auto t2 = t2id.template goodTrack_as<TTrackClass>();
 
           bool isTrue3bodyVtx = false;
           if (t0.has_mcParticle() && t1.has_mcParticle() && t2.has_mcParticle()) {
@@ -795,7 +795,7 @@ struct hypertriton3bodyFinder {
             }
           }
 
-          Decay3bodyFinder<TTrackTo>(dCollision, t0, t1, t2, rv0, isTrue3bodyVtx);
+          Decay3bodyFinder<TTrackClass>(dCollision, t0, t1, t2, rv0, isTrue3bodyVtx);
         }
       }
     }
@@ -804,13 +804,13 @@ struct hypertriton3bodyFinder {
   }
   //------------------------------------------------------------------
   // MC virtual lambda check
-  template <class TTrackTo, typename TCollisionTable, typename TV0DataTable>
+  template <class TTrackClass, typename TCollisionTable, typename TV0DataTable>
   void VirtualLambdaCheck(TCollisionTable const& dCollision, TV0DataTable const& fullV0s, int bin)
   {
     for (auto& v0 : fullV0s) {
       statisticsRegistry.virtLambdastats[bin]++;
-      auto postrack = v0.template posTrack_as<TTrackTo>();
-      auto negtrack = v0.template negTrack_as<TTrackTo>();
+      auto postrack = v0.template posTrack_as<TTrackClass>();
+      auto negtrack = v0.template negTrack_as<TTrackClass>();
       if (postrack.has_mcParticle() && negtrack.has_mcParticle()) {
         auto postrackmc = postrack.template mcParticle_as<aod::McParticles>();
         auto negtrackmc = negtrack.template mcParticle_as<aod::McParticles>();
@@ -870,18 +870,18 @@ struct hypertriton3bodyFinder {
   }
   PROCESS_SWITCH(hypertriton3bodyFinder, processCFFilteredData, "Produce StoredVtx3BodyDatas with data using CFtriggers", false);
 
-  void processMC(aod::Collision const& collision, aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks, aod::V0GoodTracks const& goodtracks, aod::McParticles const& particlesMC, MCLabeledFullTracksExtIU const&, aod::BCsWithTimestamps const&)
+  void processMC(aod::Collision const& collision, aod::V0GoodPosTracks const& ptracks, aod::V0GoodNegTracks const& ntracks, aod::V0GoodTracks const& goodtracks, aod::McParticles const& particlesMC, MCLabeledTracksIU const&, aod::BCsWithTimestamps const&)
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     registry.fill(HIST("hEventCounter"), 0.5);
 
-    CheckGoodTracks<MCLabeledFullTracksExtIU>(goodtracks, particlesMC);
-    DecayFinderMC<MCLabeledFullTracksExtIU>(collision, ptracks, ntracks, goodtracks);
+    CheckGoodTracks<MCLabeledTracksIU>(goodtracks, particlesMC);
+    DecayFinderMC<MCLabeledTracksIU>(collision, ptracks, ntracks, goodtracks);
   }
   PROCESS_SWITCH(hypertriton3bodyFinder, processMC, "Produce StoredVtx3BodyDatas with MC", false);
 
-  void processCFFilteredMC(aod::Collisions const& collisions, aod::CFFilters const& cffilters, aod::V0GoodPosTracks const& Ptracks, aod::V0GoodNegTracks const& Ntracks, aod::V0GoodTracks const& Goodtracks, aod::V0s const& V0s, aod::V0Datas const& fullV0s, aod::McParticles const& particlesMC, MCLabeledFullTracksExtIU const&, aod::BCsWithTimestamps const&)
+  void processCFFilteredMC(aod::Collisions const& collisions, aod::CFFilters const& cffilters, aod::V0GoodPosTracks const& Ptracks, aod::V0GoodNegTracks const& Ntracks, aod::V0GoodTracks const& Goodtracks, aod::V0s const& V0s, aod::V0Datas const& fullV0s, aod::McParticles const& particlesMC, MCLabeledTracksIU const&, aod::BCsWithTimestamps const&)
   {
     for (int i{0}; i < collisions.size(); i++) {
       auto collision = collisions.iteratorAt(i);
@@ -891,11 +891,11 @@ struct hypertriton3bodyFinder {
       registry.fill(HIST("hEventCounter"), 0.5);
 
       auto goodtracks = Goodtracks.sliceBy(perCollisionGoodTracks, collision.globalIndex());
-      CheckGoodTracks<MCLabeledFullTracksExtIU>(goodtracks, particlesMC);
+      CheckGoodTracks<MCLabeledTracksIU>(goodtracks, particlesMC);
       auto v0s = V0s.sliceBy(perCollisionV0s, collision.globalIndex());
       auto fullv0s = fullV0s.sliceBy(perCollisionV0Datas, collision.globalIndex());
-      VirtualLambdaCheck<MCLabeledFullTracksExtIU>(collision, v0s, 0);
-      VirtualLambdaCheck<MCLabeledFullTracksExtIU>(collision, fullv0s, 3);
+      VirtualLambdaCheck<MCLabeledTracksIU>(collision, v0s, 0);
+      VirtualLambdaCheck<MCLabeledTracksIU>(collision, fullv0s, 3);
 
       if (!cffilter.hasLD() && UseCFFilter) {
         continue;
@@ -905,9 +905,9 @@ struct hypertriton3bodyFinder {
       auto ptracks = Ptracks.sliceBy(perCollisionGoodPosTracks, collision.globalIndex());
       auto ntracks = Ntracks.sliceBy(perCollisionGoodNegTracks, collision.globalIndex());
 
-      VirtualLambdaCheck<MCLabeledFullTracksExtIU>(collision, v0s, 6);
-      VirtualLambdaCheck<MCLabeledFullTracksExtIU>(collision, fullv0s, 9);
-      DecayFinderMC<MCLabeledFullTracksExtIU>(collision, ptracks, ntracks, goodtracks);
+      VirtualLambdaCheck<MCLabeledTracksIU>(collision, v0s, 6);
+      VirtualLambdaCheck<MCLabeledTracksIU>(collision, fullv0s, 9);
+      DecayFinderMC<MCLabeledTracksIU>(collision, ptracks, ntracks, goodtracks);
     }
   }
   PROCESS_SWITCH(hypertriton3bodyFinder, processCFFilteredMC, "Produce StoredVtx3BodyDatas with MC using CFtriggers", false);
@@ -922,13 +922,12 @@ struct hypertriton3bodyLabelBuilder {
     "registry",
     {
       {"hLabelCounter", "hLabelCounter", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
-      {"hHypertritonCounter", "hHypertritonCounter", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
-      {"hPIDCounter", "hPIDCounter", {HistType::kTH1F, {{6, 0.0f, 6.0f}}}},
       {"hHypertritonMCPt", "hHypertritonMCPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"hAntiHypertritonMCPt", "hAntiHypertritonMCPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-      {"hHypertritonMCMass", "hHypertritonMCMass", {HistType::kTH1F, {{40, 2.95f, 3.05f}}}},
-      {"hAntiHypertritonMCMass", "hAntiHypertritonMCMass", {HistType::kTH1F, {{40, 2.95f, 3.05f}}}},
-      {"h3dTotalTrueHypertriton", "h3dTotalTrueHypertriton", {HistType::kTH3F, {{50, 0, 50, "ct(cm)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"hHypertritonMCMass", "hHypertritonMCMass", {HistType::kTH1F, {{40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"hAntiHypertritonMCMass", "hAntiHypertritonMCMass", {HistType::kTH1F, {{40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"hHypertritonMCLifetime", "hHypertritonMCLifetime", {HistType::kTH1F, {{50, 0.0f, 50.0f, "ct(cm)"}}}},
+      {"hAntiHypertritonMCLifetime", "hAntiHypertritonMCLifetime", {HistType::kTH1F, {{50, 0.0f, 50.0f, "ct(cm)"}}}},
     },
   };
 
@@ -937,16 +936,6 @@ struct hypertriton3bodyLabelBuilder {
     registry.get<TH1>(HIST("hLabelCounter"))->GetXaxis()->SetBinLabel(1, "Total");
     registry.get<TH1>(HIST("hLabelCounter"))->GetXaxis()->SetBinLabel(2, "Same MotherParticle");
     registry.get<TH1>(HIST("hLabelCounter"))->GetXaxis()->SetBinLabel(3, "True H3L");
-    registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(1, "H3L");
-    registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(2, "H3L daughters pass PID");
-    registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(3, "#bar{H3L}");
-    registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(4, "#bar{H3L} daughters pass PID");
-    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(1, "H3L Proton PID > 5");
-    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(2, "H3L Pion PID > 5");
-    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(3, "H3L Deuteron PID > 5");
-    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(4, "#bar{H3L} Proton PID > 5");
-    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(5, "#bar{H3L} Pion PID > 5");
-    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(6, "#bar{H3L} Deuteron PID > 5");
   }
 
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
@@ -957,7 +946,7 @@ struct hypertriton3bodyLabelBuilder {
   }
   PROCESS_SWITCH(hypertriton3bodyLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
 
-  void processBuildLabels(aod::Vtx3BodyDatas const& vtx3bodydatas, MCLabeledFullTracksExtIU const&, aod::McParticles const& particlesMC)
+  void processBuildLabels(aod::Vtx3BodyDatas const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const& particlesMC)
   {
     std::vector<int> lIndices;
     lIndices.reserve(vtx3bodydatas.size());
@@ -974,9 +963,9 @@ struct hypertriton3bodyLabelBuilder {
       bool is3bodyDecay = false;
       int lGlobalIndex = -1;
 
-      auto lTrack0 = vtx3body.track0_as<MCLabeledFullTracksExtIU>();
-      auto lTrack1 = vtx3body.track1_as<MCLabeledFullTracksExtIU>();
-      auto lTrack2 = vtx3body.track2_as<MCLabeledFullTracksExtIU>();
+      auto lTrack0 = vtx3body.track0_as<MCLabeledTracksIU>();
+      auto lTrack1 = vtx3body.track1_as<MCLabeledTracksIU>();
+      auto lTrack2 = vtx3body.track2_as<MCLabeledTracksIU>();
       registry.fill(HIST("hLabelCounter"), 0.5);
 
       // Association check
@@ -1018,43 +1007,17 @@ struct hypertriton3bodyLabelBuilder {
         lLabel = lGlobalIndex;
         double hypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
         registry.fill(HIST("hLabelCounter"), 2.5);
-        registry.fill(HIST("hHypertritonCounter"), 0.5);
         registry.fill(HIST("hHypertritonMCPt"), lPt);
+        registry.fill(HIST("hHypertritonMCLifetime"), MClifetime);
         registry.fill(HIST("hHypertritonMCMass"), hypertritonMCMass);
-        registry.fill(HIST("h3dTotalTrueHypertriton"), MClifetime, lPt, hypertritonMCMass);
-        if (TMath::Abs(lTrack0.tpcNSigmaPr()) > TpcPidNsigmaCut) {
-          registry.fill(HIST("hPIDCounter"), 0.5);
-        }
-        if (TMath::Abs(lTrack1.tpcNSigmaPi()) > TpcPidNsigmaCut) {
-          registry.fill(HIST("hPIDCounter"), 1.5);
-        }
-        if (TMath::Abs(lTrack2.tpcNSigmaDe()) > TpcPidNsigmaCut) {
-          registry.fill(HIST("hPIDCounter"), 2.5);
-        }
-        if (TMath::Abs(lTrack0.tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(lTrack1.tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(lTrack2.tpcNSigmaDe()) < TpcPidNsigmaCut) {
-          registry.fill(HIST("hHypertritonCounter"), 1.5);
-        }
       }
       if (lPDG == -1010010030 && lMCTrack0.pdgCode() == 211 && lMCTrack1.pdgCode() == -2212 && lMCTrack2.pdgCode() == -1000010020) {
         lLabel = lGlobalIndex;
         double antiHypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron});
         registry.fill(HIST("hLabelCounter"), 2.5);
-        registry.fill(HIST("hHypertritonCounter"), 2.5);
         registry.fill(HIST("hAntiHypertritonMCPt"), lPt);
+        registry.fill(HIST("hAntiHypertritonMCLifetime"), MClifetime);
         registry.fill(HIST("hAntiHypertritonMCMass"), antiHypertritonMCMass);
-        registry.fill(HIST("h3dTotalTrueHypertriton"), MClifetime, lPt, antiHypertritonMCMass);
-        if (TMath::Abs(lTrack0.tpcNSigmaPi()) > TpcPidNsigmaCut) {
-          registry.fill(HIST("hPIDCounter"), 4.5);
-        }
-        if (TMath::Abs(lTrack1.tpcNSigmaPr()) > TpcPidNsigmaCut) {
-          registry.fill(HIST("hPIDCounter"), 3.5);
-        }
-        if (TMath::Abs(lTrack2.tpcNSigmaDe()) > TpcPidNsigmaCut) {
-          registry.fill(HIST("hPIDCounter"), 5.5);
-        }
-        if (TMath::Abs(lTrack0.tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(lTrack1.tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(lTrack2.tpcNSigmaDe()) < TpcPidNsigmaCut) {
-          registry.fill(HIST("hHypertritonCounter"), 3.5);
-        }
       }
 
       // Construct label table, only true hypertriton and true daughters with a specified order is labeled
@@ -1108,15 +1071,15 @@ struct hypertriton3bodyComparewithDecay3body {
   }
   PROCESS_SWITCH(hypertriton3bodyComparewithDecay3body, processDoNotCompare, "Do not do comparison", true);
 
-  void processDoComparison(aod::Decay3Bodys const& decay3bodytable, soa::Join<aod::Vtx3BodyDatas, aod::McVtx3BodyLabels> const& vtx3bodydatas, MCLabeledFullTracksExtIU const&, aod::McParticles const& particlesMC)
+  void processDoComparison(aod::Decay3Bodys const& decay3bodytable, soa::Join<aod::Vtx3BodyDatas, aod::McVtx3BodyLabels> const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const& particlesMC)
   {
     std::vector<Indexdaughters> set_pair;
     for (auto d3body : decay3bodytable) {
       registry.fill(HIST("hCheckCounter"), 0.5);
       registry.fill(HIST("hMCInfoCounter"), 0.5);
-      auto lTrack0 = d3body.track0_as<MCLabeledFullTracksExtIU>();
-      auto lTrack1 = d3body.track1_as<MCLabeledFullTracksExtIU>();
-      auto lTrack2 = d3body.track2_as<MCLabeledFullTracksExtIU>();
+      auto lTrack0 = d3body.track0_as<MCLabeledTracksIU>();
+      auto lTrack1 = d3body.track1_as<MCLabeledTracksIU>();
+      auto lTrack2 = d3body.track2_as<MCLabeledTracksIU>();
       if (!lTrack0.has_mcParticle() || !lTrack1.has_mcParticle() || !lTrack2.has_mcParticle()) {
         continue;
       }
@@ -1209,7 +1172,7 @@ struct hypertriton3bodyComparewithDecay3body {
       }
     }
   }
-  PROCESS_SWITCH(hypertriton3bodyComparewithDecay3body, processDoComparison, "Compare decay3bodys and finder method with MC", true);
+  PROCESS_SWITCH(hypertriton3bodyComparewithDecay3body, processDoComparison, "Compare decay3bodys and finder method with MC", false);
 };
 
 struct hypertriton3bodyInitializer {

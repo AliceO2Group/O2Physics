@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// Builder task for hypertriton 3-body decay reconstruction
+// Builder task for 3-body decay reconstruction (p + pion + bachelor)
 // author: yuanzhe.wang@cern.ch
 
 #include <cmath>
@@ -43,12 +43,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
-using FullTracksExtMCIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
+using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
+using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
-using LabeledTracks = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
-
-struct hypertriton3bodyBuilder {
+struct decay3bodyBuilder {
 
   Produces<aod::StoredVtx3BodyDatas> vtx3bodydata;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -57,7 +55,6 @@ struct hypertriton3bodyBuilder {
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
 
   enum vtxstep { kVtxAll = 0,
-                 kVtxSameCol,
                  kVtxTPCNcls,
                  kVtxhasSV,
                  kVtxDcaDau,
@@ -70,15 +67,17 @@ struct hypertriton3bodyBuilder {
     "registry",
     {
       {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
-      {"hVtx3BodyCounter", "hVtx3BodyCounter", {HistType::kTH1F, {{6, 0.0f, 6.0f}}}},
+      {"hVtx3BodyCounter", "hVtx3BodyCounter", {HistType::kTH1F, {{5, 0.0f, 5.0f}}}},
     },
   };
 
+  // hypothesis
+  Configurable<int> bachelorcharge{"bachelorcharge", 1, "charge of the bachelor track"};
   // Selection criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
+  Configurable<int> mintpcNCls{"mintpcNCls", 70, "min tpc Nclusters"};
   Configurable<float> minCosPA3body{"minCosPA3body", 0.9, "minCosPA3body"};
-  Configurable<float> dcavtxdau{"dcavtxdau", 2.0, "DCA Vtx Daughters"};
+  Configurable<float> dcavtxdau{"dcavtxdau", 1.0, "DCA Vtx Daughters"};
 
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   // CCDB options
@@ -128,11 +127,10 @@ struct hypertriton3bodyBuilder {
     }
 
     registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(1, "Total");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(2, "CollisionID");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(3, "TPCNcls");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(4, "HasSV");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(5, "DcaDau");
-    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(6, "CosPA");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(2, "TPCNcls");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(3, "HasSV");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(4, "DcaDau");
+    registry.get<TH1>(HIST("hVtx3BodyCounter"))->GetXaxis()->SetBinLabel(5, "CosPA");
 
     // Material correction in the DCA fitter
     o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
@@ -191,28 +189,22 @@ struct hypertriton3bodyBuilder {
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
   }
+
   //------------------------------------------------------------------
-
-  void process(aod::Collision const& collision, FullTracksExtIU const& tracks, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  // 3body candidate builder
+  template <class TTrackClass, typename TCollisionTable, typename TTrackTable>
+  void buildVtx3BodyDataTable(TCollisionTable const& collision, TTrackTable const& tracks, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
   {
-
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
-    registry.fill(HIST("hEventCounter"), 0.5);
 
     for (auto& vtx3body : decay3bodys) {
 
       registry.fill(HIST("hVtx3BodyCounter"), kVtxAll);
 
-      auto t0 = vtx3body.track0_as<FullTracksExtIU>();
-      auto t1 = vtx3body.track1_as<FullTracksExtIU>();
-      auto t2 = vtx3body.track2_as<FullTracksExtIU>();
-      if (t0.collisionId() != t1.collisionId() || t0.collisionId() != t2.collisionId()) {
-        continue;
-      }
-      registry.fill(HIST("hVtx3BodyCounter"), kVtxSameCol);
+      auto t0 = vtx3body.template track0_as<TTrackClass>();
+      auto t1 = vtx3body.template track1_as<TTrackClass>();
+      auto t2 = vtx3body.template track2_as<TTrackClass>();
 
-      if (t0.tpcNClsCrossedRows() < mincrossedrows && t1.tpcNClsCrossedRows() < mincrossedrows && t2.tpcNClsCrossedRows() < mincrossedrows) {
+      if (t0.tpcNClsFound() < mintpcNCls && t1.tpcNClsFound() < mintpcNCls && t2.tpcNClsFound() < mintpcNCls) {
         continue;
       }
       registry.fill(HIST("hVtx3BodyCounter"), kVtxTPCNcls);
@@ -254,6 +246,9 @@ struct hypertriton3bodyBuilder {
       propagatedTrack0.getPxPyPzGlo(p0);
       propagatedTrack1.getPxPyPzGlo(p1);
       propagatedTrack2.getPxPyPzGlo(p2);
+      for (int i = 0; i < 3; i++) {
+        p2[i] *= bachelorcharge;
+      }
       std::array<float, 3> p3B = {p0[0] + p1[0] + p2[0], p0[1] + p1[1] + p2[1], p0[2] + p1[2] + p2[2]};
 
       if (fitter3body.getChi2AtPCACandidate() > dcavtxdau) {
@@ -275,9 +270,19 @@ struct hypertriton3bodyBuilder {
         Track0dcaXY, Track1dcaXY, Track2dcaXY);
     }
   }
+
+  //------------------------------------------------------------------
+  void process(aod::Collision const& collision, FullTracksExtIU const& tracks, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  {
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    initCCDB(bc);
+    registry.fill(HIST("hEventCounter"), 0.5);
+
+    buildVtx3BodyDataTable<FullTracksExtIU>(collision, tracks, decay3bodys, bachelorcharge);
+  }
 };
 
-struct hypertriton3bodyDataLinkBuilder {
+struct decay3bodyDataLinkBuilder {
   Produces<aod::Decay3BodyDataLink> vtxdataLink;
 
   void init(InitContext const&) {}
@@ -297,7 +302,7 @@ struct hypertriton3bodyDataLinkBuilder {
   }
 };
 
-struct hypertriton3bodyLabelBuilder {
+struct decay3bodyLabelBuilder {
 
   Produces<aod::McVtx3BodyLabels> vtxlabels;
   Produces<aod::McFullVtx3BodyLabels> vtxfulllabels;
@@ -307,31 +312,20 @@ struct hypertriton3bodyLabelBuilder {
     "registry",
     {
       {"hLabelCounter", "hLabelCounter", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
-      {"hHypertritonCounter", "hHypertritonCounter", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
-      {"hPIDCounter", "hPIDCounter", {HistType::kTH1F, {{6, 0.0f, 6.0f}}}},
       {"hHypertritonMCPt", "hHypertritonMCPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"hAntiHypertritonMCPt", "hAntiHypertritonMCPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
-      {"hHypertritonMCMass", "hHypertritonMCMass", {HistType::kTH1F, {{40, 2.95f, 3.05f}}}},
-      {"hAntiHypertritonMCMass", "hAntiHypertritonMCMass", {HistType::kTH1F, {{40, 2.95f, 3.05f}}}},
-      {"h3dTotalTrueHypertriton", "h3dTotalTrueHypertriton", {HistType::kTH3F, {{50, 0, 50, "ct(cm)"}, {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"}, {40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"hHypertritonMCMass", "hHypertritonMCMass", {HistType::kTH1F, {{40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"hAntiHypertritonMCMass", "hAntiHypertritonMCMass", {HistType::kTH1F, {{40, 2.95f, 3.05f, "Inv. Mass (GeV/c^{2})"}}}},
+      {"hHypertritonMCLifetime", "hHypertritonMCLifetime", {HistType::kTH1F, {{50, 0.0f, 50.0f, "ct(cm)"}}}},
+      {"hAntiHypertritonMCLifetime", "hAntiHypertritonMCLifetime", {HistType::kTH1F, {{50, 0.0f, 50.0f, "ct(cm)"}}}},
     },
   };
 
   void init(InitContext const&)
   {
     registry.get<TH1>(HIST("hLabelCounter"))->GetXaxis()->SetBinLabel(1, "Total");
-    registry.get<TH1>(HIST("hLabelCounter"))->GetXaxis()->SetBinLabel(2, "Same MotherParticle");
+    registry.get<TH1>(HIST("hLabelCounter"))->GetXaxis()->SetBinLabel(2, "Have Same MotherTrack");
     registry.get<TH1>(HIST("hLabelCounter"))->GetXaxis()->SetBinLabel(3, "True H3L");
-    registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(1, "H3L");
-    registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(2, "H3L daughters pass PID");
-    registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(3, "#bar{H3L}");
-    registry.get<TH1>(HIST("hHypertritonCounter"))->GetXaxis()->SetBinLabel(4, "#bar{H3L} daughters pass PID");
-    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(1, "H3L Proton PID > 5");
-    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(2, "H3L Pion PID > 5");
-    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(3, "H3L Deuteron PID > 5");
-    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(4, "#bar{H3L} Proton PID > 5");
-    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(5, "#bar{H3L} Pion PID > 5");
-    registry.get<TH1>(HIST("hPIDCounter"))->GetXaxis()->SetBinLabel(6, "#bar{H3L} Deuteron PID > 5");
   }
 
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
@@ -340,9 +334,9 @@ struct hypertriton3bodyLabelBuilder {
   {
     // dummy process function - should not be required in the future
   }
-  PROCESS_SWITCH(hypertriton3bodyLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
+  PROCESS_SWITCH(decay3bodyLabelBuilder, processDoNotBuildLabels, "Do not produce MC label tables", true);
 
-  void processBuildLabels(aod::Decay3BodysLinked const& decay3bodys, aod::Vtx3BodyDatas const& vtx3bodydatas, LabeledTracks const&, aod::McParticles const& particlesMC)
+  void processBuildLabels(aod::Decay3BodysLinked const& decay3bodys, aod::Vtx3BodyDatas const& vtx3bodydatas, MCLabeledTracksIU const&, aod::McParticles const& particlesMC)
   {
     std::vector<int> lIndices;
     lIndices.reserve(vtx3bodydatas.size());
@@ -359,9 +353,9 @@ struct hypertriton3bodyLabelBuilder {
       bool is3bodyDecay = false;
       int lGlobalIndex = -1;
 
-      auto lTrack0 = decay3body.track0_as<LabeledTracks>();
-      auto lTrack1 = decay3body.track1_as<LabeledTracks>();
-      auto lTrack2 = decay3body.track2_as<LabeledTracks>();
+      auto lTrack0 = decay3body.track0_as<MCLabeledTracksIU>();
+      auto lTrack1 = decay3body.track1_as<MCLabeledTracksIU>();
+      auto lTrack2 = decay3body.track2_as<MCLabeledTracksIU>();
       registry.fill(HIST("hLabelCounter"), 0.5);
 
       // Association check
@@ -385,8 +379,8 @@ struct hypertriton3bodyLabelBuilder {
               lGlobalIndex = lMother1.globalIndex();
               lPt = lMother1.pt();
               lPDG = lMother1.pdgCode();
-              MClifetime = RecoDecay::sqrtSumOfSquares(lMCTrack2.vx() - lMother2.vx(), lMCTrack2.vy() - lMother2.vy(), lMCTrack2.vz() - lMother2.vz()) * o2::constants::physics::MassHyperTriton / lMother2.p();
-              is3bodyDecay = true; // vtxs with the same mother
+              MClifetime = RecoDecay::sqrtSumOfSquares(lMCTrack2.vx() - lMother2.vx(), lMCTrack2.vy() - lMother2.vy(), lMCTrack2.vz() - lMother2.vz()) * o2::constants::physics::MassHyperTriton / lMother2.p(); // only for hypertriton
+              is3bodyDecay = true;                                                                                                                                                                               // vtxs with the same mother
             }
           }
         }
@@ -397,54 +391,27 @@ struct hypertriton3bodyLabelBuilder {
       }
       registry.fill(HIST("hLabelCounter"), 1.5);
 
-      // Intended for cross-checks only
-      // N.B. no rapidity cut!
+      // Intended for hypertriton cross-checks only
       if (lPDG == 1010010030 && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == 1000010020) {
         lLabel = lGlobalIndex;
         double hypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
         registry.fill(HIST("hLabelCounter"), 2.5);
-        registry.fill(HIST("hHypertritonCounter"), 0.5);
         registry.fill(HIST("hHypertritonMCPt"), lPt);
+        registry.fill(HIST("hHypertritonMCLifetime"), MClifetime);
         registry.fill(HIST("hHypertritonMCMass"), hypertritonMCMass);
-        registry.fill(HIST("h3dTotalTrueHypertriton"), MClifetime, lPt, hypertritonMCMass);
-        if (TMath::Abs(lTrack0.tpcNSigmaPr()) > TpcPidNsigmaCut) {
-          registry.fill(HIST("hPIDCounter"), 0.5);
-        }
-        if (TMath::Abs(lTrack1.tpcNSigmaPi()) > TpcPidNsigmaCut) {
-          registry.fill(HIST("hPIDCounter"), 1.5);
-        }
-        if (TMath::Abs(lTrack2.tpcNSigmaDe()) > TpcPidNsigmaCut) {
-          registry.fill(HIST("hPIDCounter"), 2.5);
-        }
-        if (TMath::Abs(lTrack0.tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(lTrack1.tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(lTrack2.tpcNSigmaDe()) < TpcPidNsigmaCut) {
-          registry.fill(HIST("hHypertritonCounter"), 1.5);
-        }
       }
       if (lPDG == -1010010030 && lMCTrack0.pdgCode() == 211 && lMCTrack1.pdgCode() == -2212 && lMCTrack2.pdgCode() == -1000010020) {
         lLabel = lGlobalIndex;
         double antiHypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron});
         registry.fill(HIST("hLabelCounter"), 2.5);
-        registry.fill(HIST("hHypertritonCounter"), 2.5);
         registry.fill(HIST("hAntiHypertritonMCPt"), lPt);
+        registry.fill(HIST("hAntiHypertritonMCLifetime"), MClifetime);
         registry.fill(HIST("hAntiHypertritonMCMass"), antiHypertritonMCMass);
-        registry.fill(HIST("h3dTotalTrueHypertriton"), MClifetime, lPt, antiHypertritonMCMass);
-        if (TMath::Abs(lTrack0.tpcNSigmaPi()) > TpcPidNsigmaCut) {
-          registry.fill(HIST("hPIDCounter"), 4.5);
-        }
-        if (TMath::Abs(lTrack1.tpcNSigmaPr()) > TpcPidNsigmaCut) {
-          registry.fill(HIST("hPIDCounter"), 3.5);
-        }
-        if (TMath::Abs(lTrack2.tpcNSigmaDe()) > TpcPidNsigmaCut) {
-          registry.fill(HIST("hPIDCounter"), 5.5);
-        }
-        if (TMath::Abs(lTrack0.tpcNSigmaPi()) < TpcPidNsigmaCut && TMath::Abs(lTrack1.tpcNSigmaPr()) < TpcPidNsigmaCut && TMath::Abs(lTrack2.tpcNSigmaDe()) < TpcPidNsigmaCut) {
-          registry.fill(HIST("hHypertritonCounter"), 3.5);
-        }
       }
 
-      // Construct label table, only true hypertriton and true daughters with a specified order is labeled
-      // for matter: track0->p, track1->pi, track2->d
-      // for antimatter: track0->pi, track1->p, track2->d
+      // Construct label table, only vtx which corresponds to true mother and true daughters with a specified order is labeled
+      // for matter: track0->p, track1->pi, track2->bachelor
+      // for antimatter: track0->pi, track1->p, track2->bachelor
       vtxfulllabels(lLabel);
       if (decay3body.vtx3BodyDataId() != -1) {
         lIndices[decay3body.vtx3BodyDataId()] = lLabel;
@@ -454,10 +421,10 @@ struct hypertriton3bodyLabelBuilder {
       vtxlabels(lIndices[ii]);
     }
   }
-  PROCESS_SWITCH(hypertriton3bodyLabelBuilder, processBuildLabels, "Produce MC label tables", false);
+  PROCESS_SWITCH(decay3bodyLabelBuilder, processBuildLabels, "Produce MC label tables", false);
 };
 
-struct hypertriton3bodyInitializer {
+struct decay3bodyInitializer {
   Spawns<aod::Vtx3BodyDatas> vtx3bodydatas;
   void init(InitContext const&) {}
 };
@@ -465,9 +432,9 @@ struct hypertriton3bodyInitializer {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<hypertriton3bodyBuilder>(cfgc),
-    adaptAnalysisTask<hypertriton3bodyDataLinkBuilder>(cfgc),
-    adaptAnalysisTask<hypertriton3bodyLabelBuilder>(cfgc),
-    adaptAnalysisTask<hypertriton3bodyInitializer>(cfgc),
+    adaptAnalysisTask<decay3bodyBuilder>(cfgc),
+    adaptAnalysisTask<decay3bodyDataLinkBuilder>(cfgc),
+    adaptAnalysisTask<decay3bodyLabelBuilder>(cfgc),
+    adaptAnalysisTask<decay3bodyInitializer>(cfgc),
   };
 }

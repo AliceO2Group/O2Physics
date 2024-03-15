@@ -135,8 +135,11 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   /// Event part
   Configurable<float> ConfV0MLow{"ConfV0MLow", 0.0, "Lower limit for V0M multiplicity"};
   Configurable<float> ConfV0MHigh{"ConfV0MHigh", 25000.0, "Upper limit for V0M multiplicity"};
+  Configurable<float> ConfSphericityCutMin{"ConfSphericityCutMin", 0, "Min. sphericity"};
+  Configurable<float> ConfSphericityCutMax{"ConfSphericityCutMax", 3, "Max. sphericity"};
 
   Filter collV0Mfilter = ((o2::aod::femtouniversecollision::multV0M > ConfV0MLow) && (o2::aod::femtouniversecollision::multV0M < ConfV0MHigh));
+  Filter colSpherfilter = ((o2::aod::femtouniversecollision::sphericity > ConfSphericityCutMin) && (o2::aod::femtouniversecollision::sphericity < ConfSphericityCutMax));
   // Filter trackAdditionalfilter = (nabs(aod::femtouniverseparticle::eta) < twotracksconfigs.ConfEtaMax); // example filtering on configurable
 
   /// Particle part
@@ -213,6 +216,8 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
 
   HistogramRegistry SameMultRegistryMM{"SameMultRegistryMM", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry MixedMultRegistryMM{"MixedMultRegistryMM", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
+  HistogramRegistry sphericityRegistry{"SphericityHisto", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // PID for protons
   bool IsProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
@@ -343,6 +348,8 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   void init(InitContext&)
   {
     eventHisto.init(&qaRegistry);
+    sphericityRegistry.add("sphericity", ";Sphericity;Entries", kTH1F, {{150, 0.0, 3, "Sphericity"}});
+
     trackHistoPartOne.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, twotracksconfigs.ConfIsMC, trackonefilter.ConfPDGCodePartOne, true);
 
     trackHistoPartTwo.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, twotracksconfigs.ConfIsMC, tracktwofilter.ConfPDGCodePartTwo, true);
@@ -454,7 +461,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
         }
 
         if (ConfIsCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
             continue;
           }
         }
@@ -484,7 +491,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
         }
 
         if (ConfIsCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
             continue;
           }
         }
@@ -528,6 +535,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
                         FilteredFemtoFullParticles& parts)
   {
     fillCollision(col);
+    sphericityRegistry.fill(HIST("sphericity"), col.sphericity());
 
     auto thegroupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -595,7 +603,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
       }
 
       if (ConfIsCPR.value) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::mixed)) {
           continue;
         }
       }

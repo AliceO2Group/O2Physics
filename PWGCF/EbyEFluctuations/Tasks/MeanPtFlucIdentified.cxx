@@ -12,6 +12,7 @@
 /// \file MeanPtFlucIdentified.cxx
 /// \brief Calculate EbyE <pt> fluctuations with moments method.
 ///        For charged particles and identified particles.
+///        For RUN-3
 ///
 /// \author Tanu Gahlaut <tanu.gahlaut@cern.ch>
 
@@ -78,7 +79,7 @@ struct meanPtFlucId {
   Configurable<float> prP5{"prP5", 1.13, "proton p (5)"};
   Configurable<float> prP6{"prP6", 1.18, "proton p (6)"};
   ConfigurableAxis multTPCBins{"multTPCBins", {150, 0, 150}, "TPC Multiplicity bins"};
-  ConfigurableAxis multFT0MBins{"multFT0MBins", {150, 0, 10000}, "Forward Multiplicity bins"};
+  ConfigurableAxis multFT0MBins{"multFT0MBins", {150, 0, 1500}, "Forward Multiplicity bins"};
   ConfigurableAxis dcaXYBins{"dcaXYBins", {100, -0.15, 0.15}, "dcaXY bins"};
   ConfigurableAxis dcaZBins{"dcaZBins", {100, -1.2, 1.2}, "dcaZ bins"};
 
@@ -86,8 +87,12 @@ struct meanPtFlucId {
                                 aod::pidTOFFullPi, aod::pidTPCFullPi, aod::pidTOFFullPr, aod::pidTPCFullPr,
                                 aod::pidTOFFullKa, aod::pidTPCFullKa, aod::pidTOFFullEl, aod::pidTPCFullEl,
                                 aod::pidTOFbeta>;
-  using MyRun2Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentRun2V0Ms>;
-  using MyRun3Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs>;
+  using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs>;
+  using MyMCCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+  using MyMCTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA,
+                               aod::pidTOFFullPi, aod::pidTPCFullPi, aod::pidTOFFullPr, aod::pidTPCFullPr,
+                               aod::pidTOFFullKa, aod::pidTPCFullKa, aod::pidTOFFullEl, aod::pidTPCFullEl,
+                               aod::pidTOFbeta, aod::McTrackLabels>;
 
   HistogramRegistry hist{"hist", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(InitContext const&)
@@ -142,7 +147,6 @@ struct meanPtFlucId {
     hist.addClone("QA/before/", "QA/after/");
 
     hist.add("QA/after/p_NTPC_NFT0M", "N_{TPC} vs N_{FT0M} (Profile)", kTProfile, {{axisMultFT0M}});
-    hist.add("QA/after/p_NFT0M_NTPC", "N_{FT0M} vs N_{TPC} (Profile)", kTProfile, {{axisMultTPC}});
     hist.add("QA/after/p_NTPC_Cent", "N_{TPC} vs FT0M(%) (Profile)", kTProfile, {{axisCentFT0M}});
     hist.add("QA/after/h2_NTPC_Nch", "N_{ch} vs N_{TPC}", kTH2D, {{axisMultTPC}, {axisMult}});
 
@@ -169,28 +173,39 @@ struct meanPtFlucId {
     hist.add("Analysis/Charged/h_mean_Q1", " <p_{T}> ", kTH1D, {axisMeanPt});
     hist.add("Analysis/Charged/p_mean_Q1", " <p_{T}> ", kTProfile, {axisMult});
     hist.add("Analysis/Charged/h_mean_Q1_Mult", " <p_{T}> vs N_{ch} ", QnHist);
-    hist.add("Analysis/Charged/h_twopart_Mult", "Twopart vs N_{ch} ", QnHist);
-    hist.add("Analysis/Charged/h_threepart_Mult", "Threepart vs N_{ch} ", QnHist);
-    hist.add("Analysis/Charged/h_fourpart_Mult", "Fourpart vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_mean_Q1_Mult_var", " <p_{T}> vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_mean_Q1_Mult_skew", " <p_{T}> vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_mean_Q1_Mult_kurto", " <p_{T}> vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_twopart_Mult_var", "Twopart vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_twopart_Mult_skew", "Twopart vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_twopart_Mult_kurto", "Twopart vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_threepart_Mult_skew", "Threepart vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_threepart_Mult_kurto", "Threepart vs N_{ch} ", QnHist);
+    hist.add("Analysis/Charged/h_fourpart_Mult_kurto", "Fourpart vs N_{ch} ", QnHist);
 
     hist.addClone("Analysis/Charged/", "Analysis/Pion/");
     hist.addClone("Analysis/Charged/", "Analysis/Kaon/");
     hist.addClone("Analysis/Charged/", "Analysis/Proton/");
-  }
 
-  template <typename T>
-  bool selRun2Col(T const& col)
-  {
-    if (std::abs(col.posZ()) > posZCut)
-      return false;
+    hist.add("Reco/Counts", "Counts", kTH1D, {axisEvents});
+    hist.add("Reco/vtxZ", "Vertex Z ", kTH1D, {axisVtxZ});
+    hist.add("Reco/Charged/h_Mult", "Multiplicity", kTH1D, {axisMult});
+    hist.add("Reco/Charged/h_Pt", "p_{T} Charged Particles", kTH1D, {axisPt});
+    hist.add("Reco/Charged/h_mean_pt", " <p_{T}> ", kTH1D, {axisMeanPt});
+    hist.add("Reco/Charged/h_mean_Q1_Mult", " <p_{T}> vs N_{ch} ", kTProfile, {axisMult});
+    hist.add("Reco/Charged/h_mean_Q1_Mult_var", " <p_{T}> vs N_{ch} ", kTProfile, {axisMult});
+    hist.add("Reco/Charged/h_twopart_Mult_var", "Twopart vs N_{ch} ", kTProfile, {axisMult});
+    hist.add("QA/Reco/Pion/h2_tofSignal", "TOF Signal ", TOFSignalHist);
+    hist.add("QA/Reco/Pion/h2_tpcSignal", "TPC Signal #frac{dE}{dx}", TPCSignalHist);
 
-    if (!col.sel7())
-      return false;
+    hist.addClone("Reco/Charged/", "Reco/Pion/");
+    hist.addClone("Reco/Charged/", "Reco/Kaon/");
+    hist.addClone("Reco/Charged/", "Reco/Proton/");
 
-    if (!col.alias_bit(kINT7))
-      return false;
+    hist.addClone("QA/Reco/Pion/", "QA/Reco/Kaon/");
+    hist.addClone("QA/Reco/Pion/", "QA/Reco/Proton/");
 
-    return true;
+    hist.addClone("Reco/", "Gen/");
   }
 
   template <typename T>
@@ -213,6 +228,9 @@ struct meanPtFlucId {
       return false;
 
     if (track.pt() > ptMax)
+      return false;
+
+    if (track.sign() == 0)
       return false;
 
     if (std::abs(track.eta()) > etaCut)
@@ -302,10 +320,10 @@ struct meanPtFlucId {
     double pt_Pi = 0, Q1_Pi = 0, Q2_Pi = 0, Q3_Pi = 0, Q4_Pi = 0;
     double pt_Pr = 0, Q1_Pr = 0, Q2_Pr = 0, Q3_Pr = 0, Q4_Pr = 0;
     double pt_Ka = 0, Q1_Ka = 0, Q2_Ka = 0, Q3_Ka = 0, Q4_Ka = 0;
-    double mean_Q1_Ch = 0, mean_Q1_Pi = 0, mean_Q1_Ka = 0, mean_Q1_Pr = 0;
-    double twopart_Ch = 0, twopart_Pi = 0, twopart_Ka = 0, twopart_Pr = 0;
-    double threepart_Ch = 0, threepart_Pi = 0, threepart_Ka = 0, threepart_Pr = 0;
-    double fourpart_Ch = 0, fourpart_Pi = 0, fourpart_Ka = 0, fourpart_Pr = 0;
+    double mean_Q1_Ch, mean_Q1_Pi, mean_Q1_Ka, mean_Q1_Pr;
+    double twopart_Ch, twopart_Pi, twopart_Ka, twopart_Pr;
+    double threepart_Ch, threepart_Pi, threepart_Ka, threepart_Pr;
+    double fourpart_Ch, fourpart_Pi, fourpart_Ka, fourpart_Pr;
 
     for (auto& track : tracks) {
       if (!selTrack(track))
@@ -411,7 +429,6 @@ struct meanPtFlucId {
     hist.fill(HIST("QA/after/h2_NTPC_Cent"), Cent_FT0M, NTPC);
     hist.fill(HIST("QA/after/p_NTPC_Cent"), Cent_FT0M, NTPC);
     hist.fill(HIST("QA/after/p_NTPC_NFT0M"), N_FT0M, NTPC);
-    hist.fill(HIST("QA/after/p_NFT0M_NTPC"), NTPC, N_FT0M);
     hist.fill(HIST("QA/after/h2_NTPC_Nch"), NTPC, Nch);
 
     static constexpr std::string_view dire[] = {"Analysis/Charged/", "Analysis/Pion/", "Analysis/Kaon/", "Analysis/Proton/"};
@@ -427,14 +444,31 @@ struct meanPtFlucId {
       hist.fill(HIST(dire[0]) + HIST("p_mean_Q1"), NTPC, mean_Q1_Ch);
       hist.fill(HIST(dire[0]) + HIST("h_mean_Q1_Mult"), NTPC, mean_Q1_Ch, Cent_FT0M);
     }
-    if (Nch > 1 && twopart_Ch != 0)
-      hist.fill(HIST(dire[0]) + HIST("h_twopart_Mult"), NTPC, twopart_Ch, Cent_FT0M);
+    if (Nch > 1) {
+      if (mean_Q1_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_mean_Q1_Mult_var"), NTPC, mean_Q1_Ch, Cent_FT0M);
+      if (twopart_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_twopart_Mult_var"), NTPC, twopart_Ch, Cent_FT0M);
+    }
+    if (Nch > 2) {
+      if (mean_Q1_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_mean_Q1_Mult_skew"), NTPC, mean_Q1_Ch, Cent_FT0M);
+      if (twopart_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_twopart_Mult_skew"), NTPC, twopart_Ch, Cent_FT0M);
+      if (threepart_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_threepart_Mult_skew"), NTPC, threepart_Ch, Cent_FT0M);
+    }
 
-    if (Nch > 2 && threepart_Ch != 0)
-      hist.fill(HIST(dire[0]) + HIST("h_threepart_Mult"), NTPC, threepart_Ch, Cent_FT0M);
-
-    if (Nch > 3 && fourpart_Ch != 0)
-      hist.fill(HIST(dire[0]) + HIST("h_fourpart_Mult"), NTPC, fourpart_Ch, Cent_FT0M);
+    if (Nch > 3) {
+      if (mean_Q1_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_mean_Q1_Mult_kurto"), NTPC, mean_Q1_Ch, Cent_FT0M);
+      if (twopart_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_twopart_Mult_kurto"), NTPC, twopart_Ch, Cent_FT0M);
+      if (threepart_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_threepart_Mult_kurto"), NTPC, threepart_Ch, Cent_FT0M);
+      if (fourpart_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_fourpart_Mult_kurto"), NTPC, fourpart_Ch, Cent_FT0M);
+    }
 
     parts(Q1_Pi, Q2_Pi, Q3_Pi, Q4_Pi, N_Pi, &mean_Q1_Pi, &twopart_Pi, &threepart_Pi, &fourpart_Pi);
     if (N_Pi > 0 && mean_Q1_Pi != 0) {
@@ -442,14 +476,32 @@ struct meanPtFlucId {
       hist.fill(HIST(dire[1]) + HIST("p_mean_Q1"), NTPC, mean_Q1_Pi);
       hist.fill(HIST(dire[1]) + HIST("h_mean_Q1_Mult"), NTPC, mean_Q1_Pi, Cent_FT0M);
     }
-    if (N_Pi > 1 && twopart_Pi != 0)
-      hist.fill(HIST(dire[1]) + HIST("h_twopart_Mult"), NTPC, twopart_Pi, Cent_FT0M);
+    if (N_Pi > 1) {
+      if (mean_Q1_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_mean_Q1_Mult_var"), NTPC, mean_Q1_Pi, Cent_FT0M);
+      if (twopart_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_twopart_Mult_var"), NTPC, twopart_Pi, Cent_FT0M);
+    }
 
-    if (N_Pi > 2 && threepart_Pi != 0)
-      hist.fill(HIST(dire[1]) + HIST("h_threepart_Mult"), NTPC, threepart_Pi, Cent_FT0M);
+    if (N_Pi > 2) {
+      if (mean_Q1_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_mean_Q1_Mult_skew"), NTPC, mean_Q1_Pi, Cent_FT0M);
+      if (twopart_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_twopart_Mult_skew"), NTPC, twopart_Pi, Cent_FT0M);
+      if (threepart_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_threepart_Mult_skew"), NTPC, threepart_Pi, Cent_FT0M);
+    }
 
-    if (N_Pi > 3 && fourpart_Pi != 0)
-      hist.fill(HIST(dire[1]) + HIST("h_fourpart_Mult"), NTPC, fourpart_Pi, Cent_FT0M);
+    if (N_Pi > 3) {
+      if (mean_Q1_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_mean_Q1_Mult_kurto"), NTPC, mean_Q1_Pi, Cent_FT0M);
+      if (twopart_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_twopart_Mult_kurto"), NTPC, twopart_Pi, Cent_FT0M);
+      if (threepart_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_threepart_Mult_kurto"), NTPC, threepart_Pi, Cent_FT0M);
+      if (fourpart_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_fourpart_Mult_kurto"), NTPC, fourpart_Pi, Cent_FT0M);
+    }
 
     parts(Q1_Ka, Q2_Ka, Q3_Ka, Q4_Ka, N_Ka, &mean_Q1_Ka, &twopart_Ka, &threepart_Ka, &fourpart_Ka);
     if (N_Ka > 0 && mean_Q1_Ka != 0) {
@@ -457,69 +509,178 @@ struct meanPtFlucId {
       hist.fill(HIST(dire[2]) + HIST("p_mean_Q1"), NTPC, mean_Q1_Ka);
       hist.fill(HIST(dire[2]) + HIST("h_mean_Q1_Mult"), NTPC, mean_Q1_Ka, Cent_FT0M);
     }
-    if (N_Ka > 1 && twopart_Ka != 0)
-      hist.fill(HIST(dire[2]) + HIST("h_twopart_Mult"), NTPC, twopart_Ka, Cent_FT0M);
+    if (N_Ka > 1) {
+      if (mean_Q1_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_mean_Q1_Mult_var"), NTPC, mean_Q1_Ka, Cent_FT0M);
+      if (twopart_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_twopart_Mult_var"), NTPC, twopart_Ka, Cent_FT0M);
+    }
+    if (N_Ka > 2) {
+      if (mean_Q1_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_mean_Q1_Mult_skew"), NTPC, mean_Q1_Ka, Cent_FT0M);
+      if (twopart_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_twopart_Mult_skew"), NTPC, twopart_Ka, Cent_FT0M);
+      if (threepart_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_threepart_Mult_skew"), NTPC, threepart_Ka, Cent_FT0M);
+    }
 
-    if (N_Ka > 2 && threepart_Ka != 0)
-      hist.fill(HIST(dire[2]) + HIST("h_threepart_Mult"), NTPC, threepart_Ka, Cent_FT0M);
-
-    if (N_Ka > 3 && fourpart_Ka != 0)
-      hist.fill(HIST(dire[2]) + HIST("h_fourpart_Mult"), NTPC, fourpart_Ka, Cent_FT0M);
+    if (N_Ka > 3) {
+      if (mean_Q1_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_mean_Q1_Mult_kurto"), NTPC, mean_Q1_Ka, Cent_FT0M);
+      if (twopart_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_twopart_Mult_kurto"), NTPC, twopart_Ka, Cent_FT0M);
+      if (threepart_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_threepart_Mult_kurto"), NTPC, threepart_Ka, Cent_FT0M);
+      if (fourpart_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_fourpart_Mult_kurto"), NTPC, fourpart_Ka, Cent_FT0M);
+    }
 
     parts(Q1_Pr, Q2_Pr, Q3_Pr, Q4_Pr, N_Pr, &mean_Q1_Pr, &twopart_Pr, &threepart_Pr, &fourpart_Pr);
     if (N_Pr > 0 && mean_Q1_Pr != 0) {
       hist.fill(HIST(dire[3]) + HIST("h_mean_Q1"), mean_Q1_Pr);
       hist.fill(HIST(dire[3]) + HIST("p_mean_Q1"), NTPC, mean_Q1_Pr);
-      hist.fill(HIST(dire[3]) + HIST("h_mean_Q1_Mult"), NTPC, mean_Q1_Pr, N_FT0M);
+      hist.fill(HIST(dire[3]) + HIST("h_mean_Q1_Mult"), NTPC, mean_Q1_Pr, Cent_FT0M);
     }
-    if (N_Pr > 1 && twopart_Pr != 0)
-      hist.fill(HIST(dire[3]) + HIST("h_twopart_Mult"), NTPC, twopart_Pr, Cent_FT0M);
+    if (N_Pr > 1) {
+      if (mean_Q1_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_mean_Q1_Mult_var"), NTPC, mean_Q1_Pr, Cent_FT0M);
+      if (twopart_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_twopart_Mult_var"), NTPC, twopart_Pr, Cent_FT0M);
+    }
 
-    if (N_Pr > 2 && threepart_Pr != 0)
-      hist.fill(HIST(dire[3]) + HIST("h_threepart_Mult"), NTPC, threepart_Pr, Cent_FT0M);
+    if (N_Pr > 2) {
+      if (mean_Q1_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_mean_Q1_Mult_skew"), NTPC, mean_Q1_Pr, Cent_FT0M);
+      if (twopart_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_twopart_Mult_skew"), NTPC, twopart_Pr, Cent_FT0M);
+      if (threepart_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_threepart_Mult_skew"), NTPC, threepart_Pr, Cent_FT0M);
+    }
 
-    if (N_Pr > 3 && fourpart_Pr != 0)
-      hist.fill(HIST(dire[3]) + HIST("h_fourpart_Mult"), NTPC, fourpart_Pr, Cent_FT0M);
+    if (N_Pr > 3) {
+      if (mean_Q1_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_mean_Q1_Mult_kurto"), NTPC, mean_Q1_Pr, Cent_FT0M);
+      if (twopart_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_twopart_Mult_kurto"), NTPC, twopart_Pr, Cent_FT0M);
+      if (threepart_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_threepart_Mult_kurto"), NTPC, threepart_Pr, Cent_FT0M);
+      if (fourpart_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_fourpart_Mult_kurto"), NTPC, fourpart_Pr, Cent_FT0M);
+    }
   }
-  void process_Run2(MyRun2Collisions::iterator const& col, MyAllTracks const& tracks)
+
+  template <typename T, typename U>
+  void FillRecoHistos(T const& col, U const& tracks)
   {
-    double Cent_V0M = 0, N_FV0M = 0;
-    int NTPC = 0;
+    int N_Pi = 0, N_Ka = 0, N_Pr = 0;
+    int Nch = 0;
+    double pt_ch = 0, Q1_ch = 0, Q2_ch = 0, Q3_ch = 0, Q4_ch = 0;
+    double pt_Pi = 0, Q1_Pi = 0, Q2_Pi = 0, Q3_Pi = 0, Q4_Pi = 0;
+    double pt_Pr = 0, Q1_Pr = 0, Q2_Pr = 0, Q3_Pr = 0, Q4_Pr = 0;
+    double pt_Ka = 0, Q1_Ka = 0, Q2_Ka = 0, Q3_Ka = 0, Q4_Ka = 0;
+    double mean_Q1_Ch, mean_Q1_Pi, mean_Q1_Ka, mean_Q1_Pr;
+    double twopart_Ch, twopart_Pi, twopart_Ka, twopart_Pr;
+    double threepart_Ch, threepart_Pi, threepart_Ka, threepart_Pr;
+    double fourpart_Ch, fourpart_Pi, fourpart_Ka, fourpart_Pr;
 
-    // Before Collision and Track Cuts:
-    for (auto& myTrack : tracks) {
-      hist.fill(HIST("QA/before/h_Eta"), myTrack.eta());
-      hist.fill(HIST("QA/before/h_Pt"), myTrack.pt());
-      hist.fill(HIST("QA/before/h2_Pt_Eta"), myTrack.eta(), myTrack.pt());
-      hist.fill(HIST("QA/before/h_TPCChi2perCluster"), myTrack.tpcChi2NCl());
-      hist.fill(HIST("QA/before/h_ITSChi2perCluster"), myTrack.itsChi2NCl());
-      hist.fill(HIST("QA/before/h_crossedTPC"), myTrack.tpcNClsCrossedRows());
-      hist.fill(HIST("QA/before/h2_DcaXY"), myTrack.pt(), myTrack.dcaXY());
-      hist.fill(HIST("QA/before/h2_DcaZ"), myTrack.pt(), myTrack.dcaZ());
-    }
-    hist.fill(HIST("QA/before/h_VtxZ"), col.posZ());
-    hist.fill(HIST("QA/before/h_Counts"), 2);
+    for (auto& track : tracks) {
+      if (selTrack(track) && track.has_mcParticle()) {
+        auto mcParticle = track.mcParticle();
+        if (mcParticle.isPhysicalPrimary()) {
+          Nch++;
+          pt_ch = track.pt();
+          moments(pt_ch, &Q1_ch, &Q2_ch, &Q3_ch, &Q4_ch);
+          hist.fill(HIST("Reco/Charged/h_Pt"), track.pt());
 
-    hist.fill(HIST("QA/before/h_NTPC"), col.multTPC());
-    hist.fill(HIST("QA/before/h_Cent"), col.centRun2V0M());
-    hist.fill(HIST("QA/before/h_NFT0M"), col.multFV0M());
-    hist.fill(HIST("QA/before/h2_NTPC_NFT0M"), col.multFV0M(), col.multTPC());
-    hist.fill(HIST("QA/before/h2_NTPC_Cent"), col.centRun2V0M(), col.multTPC());
+          if (std::abs(track.mcParticle().pdgCode()) == 211 && selPions(track)) {
+            N_Pi++;
+            pt_Pi = track.pt();
+            moments(pt_Pi, &Q1_Pi, &Q2_Pi, &Q3_Pi, &Q4_Pi);
+            hist.fill(HIST("Reco/Pion/h_Pt"), track.pt());
+            hist.fill(HIST("QA/Reco/Pion/h2_tpcSignal"), track.p(), track.tpcSignal());
+            hist.fill(HIST("QA/Reco/Pion/h2_tofSignal"), track.p(), track.beta());
+          }
 
-    // After Collision and Track Cuts:
-    if (selRun2Col(col)) {
-      Cent_V0M = col.centRun2V0M();
-      N_FV0M = col.multFV0M();
-      for (auto& track : tracks) {
-        if (track.hasTPC() && track.hasITS())
-          NTPC++;
+          if (std::abs(track.mcParticle().pdgCode()) == 321 && selKaons(track)) {
+            N_Ka++;
+            pt_Ka = track.pt();
+            moments(pt_Ka, &Q1_Ka, &Q2_Ka, &Q3_Ka, &Q4_Ka);
+            hist.fill(HIST("Reco/Kaon/h_Pt"), track.pt());
+            hist.fill(HIST("QA/Reco/Kaon/h2_tpcSignal"), track.p(), track.tpcSignal());
+            hist.fill(HIST("QA/Reco/Kaon/h2_tofSignal"), track.p(), track.beta());
+          }
+
+          if (std::abs(track.mcParticle().pdgCode()) == 2212 && selProtons(track)) {
+            N_Pr++;
+            pt_Pr = track.pt();
+            moments(pt_Pr, &Q1_Pr, &Q2_Pr, &Q3_Pr, &Q4_Pr);
+            hist.fill(HIST("Reco/Proton/h_Pt"), track.pt());
+            hist.fill(HIST("QA/Reco/Proton/h2_tpcSignal"), track.p(), track.tpcSignal());
+            hist.fill(HIST("QA/Reco/Proton/h2_tofSignal"), track.p(), track.beta());
+          }
+        }
       }
-      FillHistos(col, tracks, Cent_V0M, N_FV0M, NTPC);
+    }
+    hist.fill(HIST("Reco/Counts"), 2);
+    hist.fill(HIST("Reco/vtxZ"), col.posZ());
+
+    static constexpr std::string_view dire[] = {"Reco/Charged/", "Reco/Pion/", "Reco/Kaon/", "Reco/Proton/"};
+
+    hist.fill(HIST(dire[0]) + HIST("h_Mult"), Nch);
+    hist.fill(HIST(dire[1]) + HIST("h_Mult"), N_Pi);
+    hist.fill(HIST(dire[2]) + HIST("h_Mult"), N_Ka);
+    hist.fill(HIST(dire[3]) + HIST("h_Mult"), N_Pr);
+
+    parts(Q1_ch, Q2_ch, Q3_ch, Q4_ch, Nch, &mean_Q1_Ch, &twopart_Ch, &threepart_Ch, &fourpart_Ch);
+    if (Nch > 0 && mean_Q1_Ch != 0) {
+      hist.fill(HIST(dire[0]) + HIST("h_mean_pt"), mean_Q1_Ch);
+      hist.fill(HIST(dire[0]) + HIST("h_mean_Q1_Mult"), Nch, mean_Q1_Ch);
+    }
+    if (Nch > 1) {
+      if (mean_Q1_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_mean_Q1_Mult_var"), Nch, mean_Q1_Ch);
+      if (twopart_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_twopart_Mult_var"), Nch, twopart_Ch);
+    }
+
+    parts(Q1_Pi, Q2_Pi, Q3_Pi, Q4_Pi, N_Pi, &mean_Q1_Pi, &twopart_Pi, &threepart_Pi, &fourpart_Pi);
+    if (N_Pi > 0 && mean_Q1_Pi != 0) {
+      hist.fill(HIST(dire[1]) + HIST("h_mean_pt"), mean_Q1_Pi);
+      hist.fill(HIST(dire[1]) + HIST("h_mean_Q1_Mult"), Nch, mean_Q1_Pi);
+    }
+    if (N_Pi > 1) {
+      if (mean_Q1_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_mean_Q1_Mult_var"), Nch, mean_Q1_Pi);
+      if (twopart_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_twopart_Mult_var"), Nch, twopart_Pi);
+    }
+
+    parts(Q1_Ka, Q2_Ka, Q3_Ka, Q4_Ka, N_Ka, &mean_Q1_Ka, &twopart_Ka, &threepart_Ka, &fourpart_Ka);
+    if (N_Ka > 0 && mean_Q1_Ka != 0) {
+      hist.fill(HIST(dire[2]) + HIST("h_mean_pt"), mean_Q1_Ka);
+      hist.fill(HIST(dire[2]) + HIST("h_mean_Q1_Mult"), Nch, mean_Q1_Ka);
+    }
+    if (N_Ka > 1) {
+      if (mean_Q1_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_mean_Q1_Mult_var"), Nch, mean_Q1_Ka);
+      if (twopart_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_twopart_Mult_var"), Nch, twopart_Ka);
+    }
+
+    parts(Q1_Pr, Q2_Pr, Q3_Pr, Q4_Pr, N_Pr, &mean_Q1_Pr, &twopart_Pr, &threepart_Pr, &fourpart_Pr);
+    if (N_Pr > 0 && mean_Q1_Pr != 0) {
+      hist.fill(HIST(dire[3]) + HIST("h_mean_pt"), mean_Q1_Pr);
+      hist.fill(HIST(dire[3]) + HIST("h_mean_Q1_Mult"), Nch, mean_Q1_Pr);
+    }
+    if (N_Pr > 1) {
+      if (mean_Q1_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_mean_Q1_Mult_var"), Nch, mean_Q1_Pr);
+      if (twopart_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_twopart_Mult_var"), Nch, twopart_Pr);
     }
   }
-  PROCESS_SWITCH(meanPtFlucId, process_Run2, "Process for Run2", false);
 
-  void process_Run3(MyRun3Collisions::iterator const& col, MyAllTracks const& tracks)
+  void process_Run3(MyCollisions::iterator const& col, MyAllTracks const& tracks)
   {
     double N_FT0M = 0, Cent_FT0M = 0;
     int NTPC = 0;
@@ -552,6 +713,118 @@ struct meanPtFlucId {
     }
   }
   PROCESS_SWITCH(meanPtFlucId, process_Run3, "Process for Run3", true);
+
+  void process_MCRecoRun3(MyMCCollisions::iterator const& col, aod::McCollisions const&, MyMCTracks const& tracks, aod::McParticles const&)
+  {
+    if (selRun3Col(col)) {
+      FillRecoHistos(col, tracks);
+    }
+  }
+  PROCESS_SWITCH(meanPtFlucId, process_MCRecoRun3, "process MC Reconstructed Run-3", true);
+
+  void process_MCGen(aod::McCollisions::iterator const& mccol, aod::McParticles const& McParticles)
+  {
+    int N_Pi = 0, N_Ka = 0, N_Pr = 0;
+    int Nch = 0;
+    double pt_ch = 0, Q1_ch = 0, Q2_ch = 0, Q3_ch = 0, Q4_ch = 0;
+    double pt_Pi = 0, Q1_Pi = 0, Q2_Pi = 0, Q3_Pi = 0, Q4_Pi = 0;
+    double pt_Pr = 0, Q1_Pr = 0, Q2_Pr = 0, Q3_Pr = 0, Q4_Pr = 0;
+    double pt_Ka = 0, Q1_Ka = 0, Q2_Ka = 0, Q3_Ka = 0, Q4_Ka = 0;
+    double mean_Q1_Ch, mean_Q1_Pi, mean_Q1_Ka, mean_Q1_Pr;
+    double twopart_Ch, twopart_Pi, twopart_Ka, twopart_Pr;
+    double threepart_Ch, threepart_Pi, threepart_Ka, threepart_Pr;
+    double fourpart_Ch, fourpart_Pi, fourpart_Ka, fourpart_Pr;
+
+    if (abs(mccol.posZ()) > posZCut)
+      return;
+
+    for (auto& mcParticle : McParticles) {
+      if (mcParticle.isPhysicalPrimary() && mcParticle.pt() > ptMin && mcParticle.pt() < ptMax && std::abs(mcParticle.eta()) < etaCut) {
+        Nch++;
+        pt_ch = mcParticle.pt();
+        moments(pt_ch, &Q1_ch, &Q2_ch, &Q3_ch, &Q4_ch);
+        hist.fill(HIST("Gen/Charged/h_Pt"), mcParticle.pt());
+
+        if (std::abs(mcParticle.pdgCode()) == 211 && abs(mcParticle.y()) < rapCut) {
+          N_Pi++;
+          pt_Pi = mcParticle.pt();
+          moments(pt_Pi, &Q1_Pi, &Q2_Pi, &Q3_Pi, &Q4_Pi);
+          hist.fill(HIST("Gen/Pion/h_Pt"), mcParticle.pt());
+        }
+
+        if (std::abs(mcParticle.pdgCode()) == 321 && abs(mcParticle.y()) < rapCut) {
+          N_Ka++;
+          pt_Ka = mcParticle.pt();
+          moments(pt_Ka, &Q1_Ka, &Q2_Ka, &Q3_Ka, &Q4_Ka);
+          hist.fill(HIST("Gen/Kaon/h_Pt"), mcParticle.pt());
+        }
+
+        if (std::abs(mcParticle.pdgCode()) == 2212 && abs(mcParticle.y()) < rapCut) {
+          N_Pr++;
+          pt_Pr = mcParticle.pt();
+          moments(pt_Pr, &Q1_Pr, &Q2_Pr, &Q3_Pr, &Q4_Pr);
+          hist.fill(HIST("Gen/Proton/h_Pt"), mcParticle.pt());
+        }
+      }
+    }
+    hist.fill(HIST("Gen/Counts"), 2);
+    hist.fill(HIST("Gen/vtxZ"), mccol.posZ());
+    static constexpr std::string_view dire[] = {"Gen/Charged/", "Gen/Pion/", "Gen/Kaon/", "Gen/Proton/"};
+
+    hist.fill(HIST(dire[0]) + HIST("h_Mult"), Nch);
+    hist.fill(HIST(dire[1]) + HIST("h_Mult"), N_Pi);
+    hist.fill(HIST(dire[2]) + HIST("h_Mult"), N_Ka);
+    hist.fill(HIST(dire[3]) + HIST("h_Mult"), N_Pr);
+
+    parts(Q1_ch, Q2_ch, Q3_ch, Q4_ch, Nch, &mean_Q1_Ch, &twopart_Ch, &threepart_Ch, &fourpart_Ch);
+    if (Nch > 0 && mean_Q1_Ch != 0) {
+      hist.fill(HIST(dire[0]) + HIST("h_mean_pt"), mean_Q1_Ch);
+      hist.fill(HIST(dire[0]) + HIST("h_mean_Q1_Mult"), Nch, mean_Q1_Ch);
+    }
+    if (Nch > 1) {
+      if (mean_Q1_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_mean_Q1_Mult_var"), Nch, mean_Q1_Ch);
+      if (twopart_Ch != 0)
+        hist.fill(HIST(dire[0]) + HIST("h_twopart_Mult_var"), Nch, twopart_Ch);
+    }
+
+    parts(Q1_Pi, Q2_Pi, Q3_Pi, Q4_Pi, N_Pi, &mean_Q1_Pi, &twopart_Pi, &threepart_Pi, &fourpart_Pi);
+    if (N_Pi > 0 && mean_Q1_Pi != 0) {
+      hist.fill(HIST(dire[1]) + HIST("h_mean_pt"), mean_Q1_Pi);
+      hist.fill(HIST(dire[1]) + HIST("h_mean_Q1_Mult"), Nch, mean_Q1_Pi);
+    }
+    if (N_Pi > 1) {
+      if (mean_Q1_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_mean_Q1_Mult_var"), Nch, mean_Q1_Pi);
+      if (twopart_Pi != 0)
+        hist.fill(HIST(dire[1]) + HIST("h_twopart_Mult_var"), Nch, twopart_Pi);
+    }
+
+    parts(Q1_Ka, Q2_Ka, Q3_Ka, Q4_Ka, N_Ka, &mean_Q1_Ka, &twopart_Ka, &threepart_Ka, &fourpart_Ka);
+    if (N_Ka > 0 && mean_Q1_Ka != 0) {
+      hist.fill(HIST(dire[2]) + HIST("h_mean_pt"), mean_Q1_Ka);
+      hist.fill(HIST(dire[2]) + HIST("h_mean_Q1_Mult"), Nch, mean_Q1_Ka);
+    }
+    if (N_Ka > 1) {
+      if (mean_Q1_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_mean_Q1_Mult_var"), Nch, mean_Q1_Ka);
+      if (twopart_Ka != 0)
+        hist.fill(HIST(dire[2]) + HIST("h_twopart_Mult_var"), Nch, twopart_Ka);
+    }
+
+    parts(Q1_Pr, Q2_Pr, Q3_Pr, Q4_Pr, N_Pr, &mean_Q1_Pr, &twopart_Pr, &threepart_Pr, &fourpart_Pr);
+    if (N_Pr > 0 && mean_Q1_Pr != 0) {
+      hist.fill(HIST(dire[3]) + HIST("h_mean_pt"), mean_Q1_Pr);
+      hist.fill(HIST(dire[3]) + HIST("h_mean_Q1_Mult"), Nch, mean_Q1_Pr);
+    }
+    if (N_Pr > 1) {
+      if (mean_Q1_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_mean_Q1_Mult_var"), Nch, mean_Q1_Pr);
+      if (twopart_Pr != 0)
+        hist.fill(HIST(dire[3]) + HIST("h_twopart_Mult_var"), Nch, twopart_Pr);
+    }
+  }
+  PROCESS_SWITCH(meanPtFlucId, process_MCGen, "process MC Generated", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

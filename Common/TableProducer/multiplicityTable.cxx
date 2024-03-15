@@ -9,10 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 #include "Framework/ConfigParamSpec.h"
-
-using namespace o2;
-using namespace o2::framework;
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -21,6 +17,12 @@ using namespace o2::framework;
 #include "Common/DataModel/Multiplicity.h"
 #include "TableHelper.h"
 #include "iostream"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+
+using namespace o2;
+using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 static constexpr int kFV0Mults = 0;
 static constexpr int kFT0Mults = 1;
@@ -30,9 +32,10 @@ static constexpr int kTrackletMults = 4;
 static constexpr int kTPCMults = 5;
 static constexpr int kPVMults = 6;
 static constexpr int kMultsExtra = 7;
-static constexpr int kMultZeqs = 8;
-static constexpr int kMultsExtraMC = 9;
-static constexpr int nTables = 10;
+static constexpr int kMultSelections = 8;
+static constexpr int kMultZeqs = 9;
+static constexpr int kMultsExtraMC = 10;
+static constexpr int nTables = 11;
 static constexpr int nParameters = 1;
 static const std::vector<std::string> tableNames{"FV0Mults",
                                                  "FT0Mults",
@@ -42,10 +45,11 @@ static const std::vector<std::string> tableNames{"FV0Mults",
                                                  "TPCMults",
                                                  "PVMults",
                                                  "MultsExtra",
+                                                 "MultSelections",
                                                  "MultZeqs",
                                                  "MultsExtraMC"};
 static const std::vector<std::string> parameterNames{"Enable"};
-static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
+static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
 struct MultiplicityTableTaskIndexed {
   SliceCache cache;
@@ -57,11 +61,13 @@ struct MultiplicityTableTaskIndexed {
   Produces<aod::TPCMults> tableTpc;
   Produces<aod::PVMults> tablePv;
   Produces<aod::MultsExtra> tableExtra;
+  Produces<aod::MultSelections> multSelections;
   Produces<aod::MultZeqs> tableMultZeq;
   Produces<aod::MultsExtraMC> tableExtraMc;
 
   // For vertex-Z corrections in calibration
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   using Run2Tracks = soa::Join<aod::Tracks, aod::TracksExtra>;
   Partition<Run2Tracks> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
@@ -207,7 +213,6 @@ struct MultiplicityTableTaskIndexed {
     tableTpc(multTPC);
     tablePv(multNContribs, multNContribsEta1, multNContribsEtaHalf);
   }
-  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", false);
 
   using Run3Tracks = soa::Join<aod::TracksIU, aod::TracksExtra>;
   Partition<Run3Tracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
@@ -250,10 +255,14 @@ struct MultiplicityTableTaskIndexed {
         case kMultsExtra: // Extra information
           tableExtra.reserve(collisions.size());
           break;
+        case kMultSelections: // Extra information
+          multSelections.reserve(collisions.size());
+          break;
         case kMultZeqs: // Equalized multiplicity
           tableMultZeq.reserve(collisions.size());
           break;
         case kMultsExtraMC: // MC extra information (nothing to do, this is data)
+          tableExtraMc.reserve(collisions.size());
           break;
         default:
           LOG(fatal) << "Unknown table requested: " << i;
@@ -274,7 +283,6 @@ struct MultiplicityTableTaskIndexed {
     float multZEM2 = -1.f;
     float multZPA = -1.f;
     float multZPC = -1.f;
-    int multNContribs = 0;
 
     float multZeqFV0A = 0.f;
     float multZeqFT0A = 0.f;
@@ -282,10 +290,14 @@ struct MultiplicityTableTaskIndexed {
     float multZeqFDDA = 0.f;
     float multZeqFDDC = 0.f;
     float multZeqNContribs = 0.f;
+
     for (auto const& collision : collisions) {
       if ((fractionOfEvents < 1.f) && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > fractionOfEvents) { // Skip events that are not sampled (only for the QA)
         return;
       }
+      int multNContribs = 0;
+      int multNContribsEta1 = 0;
+      int multNContribsEtaHalf = 0;
 
       /* check the previous run number */
       const auto& bc = collision.bc_as<BCsWithRun3Matchings>();
@@ -411,12 +423,15 @@ struct MultiplicityTableTaskIndexed {
           } break;
           case kPVMults: // PV multiplicity
           {
-            const auto& pvContribsGrouped = pvContribTracksIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-            const auto& pvContribsEta1Grouped = pvContribTracksIUEta1->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-            const auto& pvContribsEtaHalfGrouped = pvContribTracksIUEtaHalf->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-            multNContribs = pvContribsGrouped.size();
-            const int multNContribsEta1 = pvContribsEta1Grouped.size();
-            const int multNContribsEtaHalf = pvContribsEtaHalfGrouped.size();
+            // use only one single grouping operation, then do loop
+            const auto& tracksThisCollision = pvContribTracksIUEta1.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+            multNContribsEta1 = tracksThisCollision.size();
+            for (auto track : tracksThisCollision) {
+              if (std::abs(track.eta()) < 0.8)
+                multNContribs++;
+              if (std::abs(track.eta()) < 0.5)
+                multNContribsEtaHalf++;
+            }
             tablePv(multNContribs, multNContribsEta1, multNContribsEtaHalf);
             LOGF(debug, "multNContribs=%i, multNContribsEta1=%i, multNContribsEtaHalf=%i", multNContribs, multNContribsEta1, multNContribsEtaHalf);
           } break;
@@ -425,6 +440,7 @@ struct MultiplicityTableTaskIndexed {
             int nHasITS = 0, nHasTPC = 0, nHasTOF = 0, nHasTRD = 0;
             int nITSonly = 0, nTPConly = 0, nITSTPC = 0;
             const auto& pvAllContribsGrouped = pvAllContribTracksIU->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+            const auto& tpcTracksGrouped = tracksIUWithTPC->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
             for (auto track : pvAllContribsGrouped) {
               if (track.hasITS()) {
@@ -445,9 +461,26 @@ struct MultiplicityTableTaskIndexed {
                 nHasTRD++;
             };
 
+            int nAllTracksTPCOnly = 0;
+            int nAllTracksITSTPC = 0;
+            for (auto track : tpcTracksGrouped) {
+              if (track.hasITS()) {
+                nAllTracksITSTPC++;
+              } else {
+                nAllTracksTPCOnly++;
+              }
+            };
+
             int bcNumber = bc.globalBC() % 3564;
 
-            tableExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8(), nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC, bcNumber);
+            tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(),
+                       mRunNumber, collision.posZ(), collision.sel8(),
+                       nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC,
+                       nAllTracksTPCOnly, nAllTracksITSTPC, bcNumber);
+          } break;
+          case kMultSelections: // Z equalized
+          {
+            multSelections(collision.selection_raw());
           } break;
           case kMultZeqs: // Z equalized
           {
@@ -472,7 +505,53 @@ struct MultiplicityTableTaskIndexed {
       }
     }
   }
+
+  // one loop better than multiple sliceby calls
+  // FIT FT0C: -3.3 < η < -2.1
+  // FOT FT0A:  3.5 < η <  4.9
+  Filter mcParticleFilter = (aod::mcparticle::eta < 4.9f) && (aod::mcparticle::eta > -3.3f);
+  using mcParticlesFiltered = soa::Filtered<aod::McParticles>;
+
+  void processMC(aod::McCollision const& mcCollision, mcParticlesFiltered const& mcParticles)
+  {
+    int multFT0A = 0;
+    int multFT0C = 0;
+    int multBarrelEta05 = 0;
+    int multBarrelEta08 = 0;
+    int multBarrelEta10 = 0;
+    for (auto const& mcPart : mcParticles) {
+      if (!mcPart.isPhysicalPrimary())
+        continue;
+
+      auto charge = 0.;
+      auto* p = pdg->GetParticle(mcPart.pdgCode());
+      if (p != nullptr) {
+        charge = p->Charge();
+      }
+      if (std::abs(charge) < 1e-3) {
+        continue; // reject neutral particles in counters
+      }
+
+      if (std::abs(mcPart.eta()) < 1.0) {
+        multBarrelEta10++;
+        if (std::abs(mcPart.eta()) < 0.8) {
+          multBarrelEta08++;
+          if (std::abs(mcPart.eta()) < 0.5) {
+            multBarrelEta05++;
+          }
+        }
+      }
+      if (-3.3 < mcPart.eta() && mcPart.eta() < -2.1)
+        multFT0C++;
+      if (3.5 < mcPart.eta() && mcPart.eta() < 4.9)
+        multFT0A++;
+    }
+    tableExtraMc(multFT0A, multFT0C, multBarrelEta05, multBarrelEta08, multBarrelEta10);
+  }
+
+  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", false);
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", true);
+  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processMC, "Produce MC multiplicity tables", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

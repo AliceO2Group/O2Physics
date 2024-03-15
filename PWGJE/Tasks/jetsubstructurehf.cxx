@@ -51,9 +51,6 @@ struct JetSubstructureHFTask {
   Produces<SubstructureTableMCD> jetSubstructureMCDTable;
   Produces<SubstructureTableMCP> jetSubstructureMCPTable;
   Produces<SubstructureTableDataSub> jetSubstructureDataSubTable;
-  OutputObj<TH2F> hZg{"h_jet_zg_jet_pt"};
-  OutputObj<TH2F> hRg{"h_jet_rg_jet_pt"};
-  OutputObj<TH2F> hNsd{"h_jet_nsd_jet_pt"};
 
   // Jet level configurables
   Configurable<float> zCut{"zCut", 0.1, "soft drop z cut"};
@@ -69,17 +66,17 @@ struct JetSubstructureHFTask {
   HistogramRegistry registry;
   void init(InitContext const&)
   {
-    registry.add("h_jet_pt_jet_zg", ";#it{p}_{T,jet} (GeV/#it{c});#it{z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h_jet_pt_jet_rg", ";#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h_jet_pt_jet_nsd", ";#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {10, -0.5, 9.5}}});
+    registry.add("h2_jet_pt_jet_zg", ";#it{p}_{T,jet} (GeV/#it{c});#it{z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_jet_rg", ";#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_jet_nsd", ";#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {15, -0.5, 14.5}}});
 
-    registry.add("h_jet_pt_part_jet_zg_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{z}_{g}^{part}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h_jet_pt_part_jet_rg_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{R}_{g}^{part}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h_jet_pt_part_jet_nsd_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{n}_{SD}^{part}", {HistType::kTH2F, {{200, 0., 200.}, {10, -0.5, 9.5}}});
+    registry.add("h2_jet_pt_part_jet_zg_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{z}_{g}^{part}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_part_jet_rg_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{R}_{g}^{part}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_part_jet_nsd_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{n}_{SD}^{part}", {HistType::kTH2F, {{200, 0., 200.}, {15, -0.5, 14.5}}});
 
-    registry.add("h_jet_pt_jet_zg_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h_jet_pt_jet_rg_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h_jet_pt_jet_nsd_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {10, -0.5, 9.5}}});
+    registry.add("h2_jet_pt_jet_zg_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_jet_rg_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_jet_nsd_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {15, -0.5, 14.5}}});
 
     jetReclusterer.isReclustering = true;
     jetReclusterer.algorithm = fastjet::JetAlgorithm::cambridge_algorithm;
@@ -127,16 +124,16 @@ struct JetSubstructureHFTask {
           zg = z;
           rg = theta;
           if constexpr (!isSubtracted && !isMCP) {
-            registry.fill(HIST("h_jet_pt_jet_zg"), jet.pt(), zg);
-            registry.fill(HIST("h_jet_pt_jet_rg"), jet.pt(), rg);
+            registry.fill(HIST("h2_jet_pt_jet_zg"), jet.pt(), zg);
+            registry.fill(HIST("h2_jet_pt_jet_rg"), jet.pt(), rg);
           }
           if constexpr (!isSubtracted && isMCP) {
-            registry.fill(HIST("h_jet_pt_part_jet_zg_part"), jet.pt(), zg);
-            registry.fill(HIST("h_jet_pt_part_jet_rg_part"), jet.pt(), rg);
+            registry.fill(HIST("h2_jet_pt_part_jet_zg_part"), jet.pt(), zg);
+            registry.fill(HIST("h2_jet_pt_part_jet_rg_part"), jet.pt(), rg);
           }
           if constexpr (isSubtracted && !isMCP) {
-            registry.fill(HIST("h_jet_pt_jet_zg_eventwiseconstituentsubtracted"), jet.pt(), zg);
-            registry.fill(HIST("h_jet_pt_jet_rg_eventwiseconstituentsubtracted"), jet.pt(), rg);
+            registry.fill(HIST("h2_jet_pt_jet_zg_eventwiseconstituentsubtracted"), jet.pt(), zg);
+            registry.fill(HIST("h2_jet_pt_jet_rg_eventwiseconstituentsubtracted"), jet.pt(), rg);
           }
           softDropped = true;
         }
@@ -145,13 +142,13 @@ struct JetSubstructureHFTask {
       daughterSubJet = parentSubJet1;
     }
     if constexpr (!isSubtracted && !isMCP) {
-      registry.fill(HIST("h_jet_pt_jet_nsd"), jet.pt(), nsd);
+      registry.fill(HIST("h2_jet_pt_jet_nsd"), jet.pt(), nsd);
     }
     if constexpr (!isSubtracted && isMCP) {
-      registry.fill(HIST("h_jet_pt_part_jet_nsd_part"), jet.pt(), nsd);
+      registry.fill(HIST("h2_jet_pt_part_jet_nsd_part"), jet.pt(), nsd);
     }
     if constexpr (isSubtracted && !isMCP) {
-      registry.fill(HIST("h_jet_pt_jet_nsd_eventwiseconstituentsubtracted"), jet.pt(), nsd);
+      registry.fill(HIST("h2_jet_pt_jet_nsd_eventwiseconstituentsubtracted"), jet.pt(), nsd);
     }
     outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec);
   }
@@ -214,9 +211,9 @@ struct JetSubstructureHFTask {
   }
   PROCESS_SWITCH(JetSubstructureHFTask, processChargedJetsMCP, "HF jet substructure on MC particle level", false);
 };
-using JetSubstructureD0 = JetSubstructureHFTask<soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents>, soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents>, soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>, soa::Join<aod::D0ChargedEventWiseSubtractedJets, aod::D0ChargedEventWiseSubtractedJetConstituents>, CandidatesD0Data, CandidatesD0MCP, aod::D0ChargedJetSubstructures, aod::D0ChargedMCDetectorLevelJetSubstructures, aod::D0ChargedMCParticleLevelJetSubstructures, aod::D0ChargedEventWiseSubtractedJetSubstructures, aod::JTrackD0Subs>;
-// using JetSubstructureLc = JetSubstructureHFTask<soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents>,soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents>,soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents>,soa::Join<aod::LcChargedEventWiseSubtractedJets, aod::LcChargedEventWiseSubtractedJetConstituents>, CandidatesLcData, CandidatesLcMCP, aod::LcChargedJetSubstructures,aod::LcChargedMCDetectorLevelJetSubstructures,aod::LcChargedMCParticleLevelJetSubstructures, aod::LcChargedEventWiseSubtractedJetSubstructures, aod::JTrackLcSubs>;
-// using JetSubstructureBplus = JetSubstructureHFTask<soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents>,soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents>,soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents>,soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents>, CandidatesBplusData, CandidatesBplusMCP, aod::BplusChargedJetSubstructures,aod::BplusChargedMCDetectorLevelJetSubstructures,aod::BplusChargedMCParticleLevelJetSubstructures, aod::BplusChargedEventWiseSubtractedJetSubstructures, aod::JTrackBplusSubs>;
+using JetSubstructureD0 = JetSubstructureHFTask<soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents>, soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents>, soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>, soa::Join<aod::D0ChargedEventWiseSubtractedJets, aod::D0ChargedEventWiseSubtractedJetConstituents>, CandidatesD0Data, CandidatesD0MCP, aod::D0CJetSSs, aod::D0CMCDJetSSs, aod::D0CMCPJetSSs, aod::D0CEWSJetSSs, aod::JTrackD0Subs>;
+// using JetSubstructureLc = JetSubstructureHFTask<soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents>,soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents>,soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents>,soa::Join<aod::LcChargedEventWiseSubtractedJets, aod::LcChargedEventWiseSubtractedJetConstituents>, CandidatesLcData, CandidatesLcMCP, aod::LcCJetSSs,aod::LcCMCDJetSSs,aod::LcCMCPJetSSs, aod::LcCEWSJetSSs, aod::JTrackLcSubs>;
+// using JetSubstructureBplus = JetSubstructureHFTask<soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents>,soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents>,soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents>,soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents>, CandidatesBplusData, CandidatesBplusMCP, aod::BplusCJetSSs,aod::BplusCMCDJetSSs,aod::BplusCMCPJetSSs, aod::BplusCEWSJetSSs, aod::JTrackBplusSubs>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

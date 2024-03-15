@@ -151,7 +151,6 @@ struct lambdakzeroBuilder {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
-  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
 
   // round some V0 core variables up to a certain level of precision if requested
   // useful to keep derived data sizes under control
@@ -194,7 +193,7 @@ struct lambdakzeroBuilder {
   Configurable<LabeledArray<float>> massCutK0{"massCutK0", {defaultK0MassWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for K0"};
   Configurable<LabeledArray<float>> massCutLambda{"massCutLambda", {defaultLambdaWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for Lambda"};
   Configurable<float> massWindownumberOfSigmas{"massWindownumberOfSigmas", 5e+6, "number of sigmas around mass peaks to keep"};
-  Configurable<bool> massWindowWithTPCPID{"massWindowWithTPCPID", true, "when checking mass windows, correlate with TPC dE/dx"};
+  Configurable<bool> massWindowWithTPCPID{"massWindowWithTPCPID", false, "when checking mass windows, correlate with TPC dE/dx"};
   Configurable<float> massWindowSafetyMargin{"massWindowSafetyMargin", 0.001, "Extra mass window safety margin"};
 
   // apply lifetime cuts to K0Short and Lambda candidates
@@ -574,26 +573,25 @@ struct lambdakzeroBuilder {
       return;
     }
 
-    auto run3grp_timestamp = bc.timestamp();
+    auto timestamp = bc.timestamp();
     o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    if (grpo) {
+    if (doprocessRun2) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp);
+      if (!grpo) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpPath << " of object GRPObject for timestamp " << timestamp;
+      }
       o2::base::Propagator::initFieldFromGRP(grpo);
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, timestamp);
       if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField for timestamp " << timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     }
+    // Fetch magnetic field from ccdb for current collision
+    d_bz = o2::base::Propagator::Instance()->getNominalBz();
+    LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kG";
     mVtx = ccdb->getForTimeStamp<o2::dataformats::MeanVertexObject>(mVtxPath, bc.timestamp());
     mRunNumber = bc.runNumber();
     // Set magnetic field value once known

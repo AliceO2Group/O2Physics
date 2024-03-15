@@ -50,10 +50,12 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod;
+using namespace o2::aod::hf_collision_centrality;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -65,28 +67,6 @@ enum CandidateType {
   CandDstar,
   CandCascadeBachelor,
   NCandidateTypes
-};
-
-// event rejection types
-enum EventRejection {
-  Trigger = 0,
-  PositionX,
-  PositionY,
-  PositionZ,
-  NContrib,
-  Chi2,
-  Centrality,
-  NEventRejection
-};
-
-// event rejection types
-enum CentralityEstimator {
-  None = 0,
-  FT0A,
-  FT0C,
-  FT0M,
-  FV0A,
-  NCentralityEstimators
 };
 
 // enum for proton PID strategy (only proton for baryons)
@@ -109,11 +89,6 @@ enum ChannelsProtonPid {
 // kaon PID (opposite-sign track in 3-prong decays)
 constexpr int channelKaonPid = ChannelsProtonPid::NChannelsProtonPid;
 
-using TracksWithSelAndDca = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection>;
-using TracksWithSelAndDcaAndPidTpc = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTPCFullKa>;
-using TracksWithSelAndDcaAndPidTof = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection, aod::pidTOFFullPr, aod::pidTOFFullKa>;
-using TracksWithSelAndDcaAndPidTpcTof = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullKa, aod::pidTOFFullKa>;
-
 /// Event selection
 struct HfTrackIndexSkimCreatorTagSelCollisions {
   Produces<aod::HfSelCollision> rowSelectedCollision;
@@ -128,9 +103,10 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   Configurable<int> nContribMin{"nContribMin", 0, "min. number of contributors to primary-vertex reconstruction"};
   Configurable<float> chi2Max{"chi2Max", 0., "max. chi^2 of primary-vertex reconstruction"};
   Configurable<std::string> triggerClassName{"triggerClassName", "kINT7", "trigger class"};
-  Configurable<bool> useSel8Trigger{"useSel8Trigger", false, "use sel8 trigger condition, for Run3 studies"};
+  Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "use sel8 trigger condition, for Run3 studies"};
   Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
+  Configurable<bool> useTimeFrameBorderCut{"useTimeFrameBorderCut", true, "use time-frame border cut in event selection"};
 
   ConfigurableAxis axisNumContributors{"axisNumContributors", {200, -0.5f, 199.5f}, "Number of PV contributors"};
 
@@ -153,6 +129,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
       labels[0] = "processed";
       labels[1] = "selected";
       labels[2 + EventRejection::Trigger] = "rej. trigger";
+      labels[2 + EventRejection::TimeFrameBorderCut] = "rej. time-frame border";
       labels[2 + EventRejection::PositionX] = "rej. #it{x}";
       labels[2 + EventRejection::PositionY] = "rej. #it{y}";
       labels[2 + EventRejection::PositionZ] = "rej. #it{z}";
@@ -243,6 +220,13 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
         SETBIT(statusCollision, EventRejection::Trigger);
         if (fillHistograms) {
           registry.fill(HIST("hEvents"), 3 + EventRejection::Trigger);
+        }
+      }
+
+      if (useTimeFrameBorderCut && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        SETBIT(statusCollision, EventRejection::TimeFrameBorderCut);
+        if (fillHistograms) {
+          registry.fill(HIST("hEvents"), 3 + EventRejection::TimeFrameBorderCut);
         }
       }
     }
@@ -409,6 +393,18 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   // proton PID, if enabled
   std::array<TrackSelectorPr, ChannelsProtonPid::NChannelsProtonPid> selectorProton;
   TrackSelectorKa selectorKaon;
+
+  using TracksWithSelAndDca = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection>;
+  using TracksWithSelAndDcaAndPidTpc = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTPCFullKa>;
+  using TracksWithSelAndDcaAndPidTof = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection, aod::pidTOFFullPr, aod::pidTOFFullKa>;
+  using TracksWithSelAndDcaAndPidTpcTof = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullKa, aod::pidTOFFullKa>;
+
+  Preslice<TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
+
+  Partition<TracksWithSelAndDca> pvContributors = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
+  Partition<TracksWithSelAndDcaAndPidTpc> pvContributorsWithPidTpc = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
+  Partition<TracksWithSelAndDcaAndPidTof> pvContributorsWithPidTof = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
+  Partition<TracksWithSelAndDcaAndPidTpcTof> pvContributorsWithPidTpcTof = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
 
   // QA of PV refit
   ConfigurableAxis axisPvRefitDeltaX{"axisPvRefitDeltaX", {1000, -0.5f, 0.5f}, "DeltaX binning PV refit"};
@@ -1104,12 +1100,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     }
   }
 
-  Preslice<TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  Partition<TracksWithSelAndDca> pvContributors = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
-  Partition<TracksWithSelAndDcaAndPidTpc> pvContributorsWithPidTpc = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
-  Partition<TracksWithSelAndDcaAndPidTof> pvContributorsWithPidTof = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
-  Partition<TracksWithSelAndDcaAndPidTpcTof> pvContributorsWithPidTpcTof = ((aod::track::flags & (uint32_t)aod::track::PVContributor) == (uint32_t)aod::track::PVContributor);
-
   void processNoPid(aod::Collisions const& collisions,
                     TrackAssoc const& trackIndices,
                     TracksWithSelAndDca const& tracks,
@@ -1139,7 +1129,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
-
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelTracks, processNoPid, "Process without PID selections", true);
 
   void processProtonPidTpc(aod::Collisions const& collisions,
@@ -1171,7 +1160,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
-
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelTracks, processProtonPidTpc, "Process with proton TPC PID selection", false);
 
   void processProtonPidTof(aod::Collisions const& collisions,
@@ -1203,7 +1191,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
-
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelTracks, processProtonPidTof, "Process with proton TOF PID selection", false);
 
   void processProtonPidTpcOrTof(aod::Collisions const& collisions,
@@ -1235,7 +1222,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
-
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelTracks, processProtonPidTpcOrTof, "Process with proton PID selection (TPC or TOF logic)", false);
 
   void processProtonPidTpcAndTof(aod::Collisions const& collisions,
@@ -1267,7 +1253,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       fillPvRefitTable(pvRefitDcaPerTrack, pvRefitPvCoordPerTrack, pvRefitPvCovMatrixPerTrack);
     }
   }
-
   PROCESS_SWITCH(HfTrackIndexSkimCreatorTagSelTracks, processProtonPidTpcAndTof, "Process with proton PID selection (TPC and TOF logic)", false);
 };
 
@@ -1275,8 +1260,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
 /// Pre-selection of 2-prong and 3-prong secondary vertices
 struct HfTrackIndexSkimCreator {
-  SliceCache cache;
-
   Produces<aod::Hf2Prongs> rowTrackIndexProng2;
   Produces<aod::HfCutStatus2Prong> rowProng2CutStatus;
   Produces<aod::HfPvRefit2Prong> rowProng2PVrefit;
@@ -1346,6 +1329,9 @@ struct HfTrackIndexSkimCreator {
   Configurable<bool> applyProtonPidForXicToPKPi{"applyProtonPidForXicToPKPi", false, "Apply proton PID for Xic->pKpi"};
   Configurable<bool> applyKaonPidIn3Prongs{"applyKaonPidIn3Prongs", false, "Apply kaon PID for opposite-sign track in 3-prong and D* decays"};
 
+  SliceCache cache;
+  o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
+  o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
@@ -1444,6 +1430,28 @@ struct HfTrackIndexSkimCreator {
     cut3Prong = {cutsDplusToPiKPi, cutsLcToPKPi, cutsDsToKKPi, cutsXicToPKPi};
     pTBins3Prong = {binsPtDplusToPiKPi, binsPtLcToPKPi, binsPtDsToKKPi, binsPtXicToPKPi};
 
+    df2.setPropagateToPCA(propagateToPCA);
+    df2.setMaxR(maxR);
+    df2.setMaxDZIni(maxDZIni);
+    df2.setMinParamChange(minParamChange);
+    df2.setMinRelChi2Change(minRelChi2Change);
+    df2.setUseAbsDCA(useAbsDCA);
+    df2.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    df3.setPropagateToPCA(propagateToPCA);
+    df3.setMaxR(maxR);
+    df3.setMaxDZIni(maxDZIni);
+    df3.setMinParamChange(minParamChange);
+    df3.setMinRelChi2Change(minRelChi2Change);
+    df3.setUseAbsDCA(useAbsDCA);
+    df3.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
+    runNumber = 0;
+
     if (fillHistograms) {
       registry.add("hNTracks", "Number of selected tracks;# of selected tracks;entries", {HistType::kTH1F, {axisNumTracks}});
       // 2-prong histograms
@@ -1497,12 +1505,6 @@ struct HfTrackIndexSkimCreator {
         registry.add("PvRefit/hNContribPvRefitChi2Minus1", "N. contributors original PV for PV refit #it{#chi}^{2}==#minus1", kTH1F, {axisCollisionNContrib});
       }
     }
-
-    ccdb->setURL(ccdbUrl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
-    runNumber = 0;
   }
 
   /// Method to perform selections for 2-prong candidates before vertex reconstruction
@@ -2073,28 +2075,8 @@ struct HfTrackIndexSkimCreator {
       // set the magnetic field from CCDB
       auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
       initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
-
-      // 2-prong vertex fitter
-      o2::vertexing::DCAFitterN<2> df2;
       df2.setBz(o2::base::Propagator::Instance()->getNominalBz());
-      df2.setPropagateToPCA(propagateToPCA);
-      df2.setMaxR(maxR);
-      df2.setMaxDZIni(maxDZIni);
-      df2.setMinParamChange(minParamChange);
-      df2.setMinRelChi2Change(minRelChi2Change);
-      df2.setUseAbsDCA(useAbsDCA);
-      df2.setWeightedFinalPCA(useWeightedFinalPCA);
-
-      // 3-prong vertex fitter
-      o2::vertexing::DCAFitterN<3> df3;
       df3.setBz(o2::base::Propagator::Instance()->getNominalBz());
-      df3.setPropagateToPCA(propagateToPCA);
-      df3.setMaxR(maxR);
-      df3.setMaxDZIni(maxDZIni);
-      df3.setMinParamChange(minParamChange);
-      df3.setMinRelChi2Change(minRelChi2Change);
-      df3.setUseAbsDCA(useAbsDCA);
-      df3.setWeightedFinalPCA(useWeightedFinalPCA);
 
       // used to calculate number of candidiates per event
       auto nCand2 = rowTrackIndexProng2.lastIndex();
@@ -2596,7 +2578,7 @@ struct HfTrackIndexSkimCreator {
               o2::gpu::gpustd::array<float, 2> dcaInfoNeg2{trackNeg2.dcaXY(), trackNeg2.dcaZ()};
 
               // preselection of 3-prong candidates
-              if (applyKaonPidIn3Prongs > 0) {
+              if (isSelected3ProngCand) {
                 if (thisCollId != trackNeg2.collisionId()) { // this is not the "default" collision for this track and we still did not re-propagate it, we have to re-propagate it
                   o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParVarNeg2, 2.f, noMatCorr, &dcaInfoNeg2);
                   getPxPyPz(trackParVarNeg2, pVecTrackNeg2);
@@ -2909,7 +2891,6 @@ struct HfTrackIndexSkimCreator {
   {
     run2And3Prongs<true>(collisions, bcWithTimeStamps, trackIndices, tracks);
   }
-
   PROCESS_SWITCH(HfTrackIndexSkimCreator, process2And3ProngsWithPvRefit, "Process 2-prong and 3-prong skim with PV refit", false);
 
   void process2And3ProngsNoPvRefit( // soa::Join<aod::Collisions, aod::CentV0Ms>::iterator const& collision, //FIXME add centrality when option for variations to the process function appears
@@ -2920,7 +2901,6 @@ struct HfTrackIndexSkimCreator {
   {
     run2And3Prongs(collisions, bcWithTimeStamps, trackIndices, tracks);
   }
-
   PROCESS_SWITCH(HfTrackIndexSkimCreator, process2And3ProngsNoPvRefit, "Process 2-prong and 3-prong skim without PV refit", true);
 };
 
@@ -2981,6 +2961,7 @@ struct HfTrackIndexSkimCreatorCascades {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
@@ -2992,11 +2973,11 @@ struct HfTrackIndexSkimCreatorCascades {
   double massPi{0.};
   double massLc{0.};
 
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandV0bachelor))) != 0u && (applyProtonPid == false || (aod::hf_sel_track::isIdentifiedPid & static_cast<uint32_t>(BIT(ChannelsProtonPid::LcToPK0S))) != 0u);
-
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
+
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
+  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandV0bachelor))) != 0u && (applyProtonPid == false || (aod::hf_sel_track::isIdentifiedPid & static_cast<uint32_t>(BIT(ChannelsProtonPid::LcToPK0S))) != 0u);
 
   Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::V0Datas> v0sPerCollision = aod::v0data::collisionId;
@@ -3018,6 +2999,15 @@ struct HfTrackIndexSkimCreatorCascades {
     massK0s = o2::constants::physics::MassK0Short;
     massPi = o2::constants::physics::MassPiPlus;
     massLc = o2::constants::physics::MassLambdaCPlus;
+
+    df2.setPropagateToPCA(propagateToPCA);
+    df2.setMaxR(maxR);
+    df2.setMinParamChange(minParamChange);
+    df2.setMinRelChi2Change(minRelChi2Change);
+    // df2.setMaxDZIni(1e9); // used in cascadeproducer.cxx, but not for the 2 prongs
+    // df2.setMaxChi2(1e9);  // used in cascadeproducer.cxx, but not for the 2 prongs
+    df2.setUseAbsDCA(useAbsDCA);
+    df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -3049,18 +3039,7 @@ struct HfTrackIndexSkimCreatorCascades {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
       initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
-
-      // Define o2 fitter, 2-prong
-      o2::vertexing::DCAFitterN<2> fitter;
-      fitter.setBz(o2::base::Propagator::Instance()->getNominalBz());
-      fitter.setPropagateToPCA(propagateToPCA);
-      fitter.setMaxR(maxR);
-      fitter.setMinParamChange(minParamChange);
-      fitter.setMinRelChi2Change(minRelChi2Change);
-      // fitter.setMaxDZIni(1e9); // used in cascadeproducer.cxx, but not for the 2 prongs
-      // fitter.setMaxChi2(1e9);  // used in cascadeproducer.cxx, but not for the 2 prongs
-      fitter.setUseAbsDCA(useAbsDCA);
-      fitter.setWeightedFinalPCA(useWeightedFinalPCA);
+      df2.setBz(o2::base::Propagator::Instance()->getNominalBz());
 
       // fist we loop over the bachelor candidate
 
@@ -3157,7 +3136,7 @@ struct HfTrackIndexSkimCreatorCascades {
           // now we find the DCA between the V0 and the bachelor, for the cascade
           int nCand2 = 0;
           try {
-            nCand2 = fitter.process(trackV0, trackBach);
+            nCand2 = df2.process(trackV0, trackBach);
           } catch (...) {
             continue;
           }
@@ -3165,9 +3144,9 @@ struct HfTrackIndexSkimCreatorCascades {
           if (nCand2 == 0) {
             continue;
           }
-          fitter.propagateTracksToVertex();        // propagate the bach and V0 to the Lc vertex
-          fitter.getTrack(0).getPxPyPzGlo(pVecV0); // take the momentum at the Lc vertex
-          fitter.getTrack(1).getPxPyPzGlo(pVecBach);
+          df2.propagateTracksToVertex();        // propagate the bach and V0 to the Lc vertex
+          df2.getTrack(0).getPxPyPzGlo(pVecV0); // take the momentum at the Lc vertex
+          df2.getTrack(1).getPxPyPzGlo(pVecBach);
 
           // cascade candidate pT cut
           auto ptCascCand = RecoDecay::pt(pVecBach, pVecV0);
@@ -3180,7 +3159,7 @@ struct HfTrackIndexSkimCreatorCascades {
           mass2K0sP = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{massP, massK0s});
 
           std::array<float, 3> posCasc = {0., 0., 0.};
-          const auto& cascVtx = fitter.getPCACandidate();
+          const auto& cascVtx = df2.getPCACandidate();
           for (int i = 0; i < 3; i++) {
             posCasc[i] = cascVtx[i];
           }
@@ -3198,7 +3177,6 @@ struct HfTrackIndexSkimCreatorCascades {
       }   // loop over tracks
     }     // loop over collisions
   }       // processCascades
-
   PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processCascades, "Skim HF -> V0 cascades", false);
 };
 
@@ -3256,10 +3234,11 @@ struct HfTrackIndexSkimCreatorLfCascades {
   Configurable<std::string> ccdbPathGrp{"ccdbPathGrp", "GLO/GRP/GRP", "Path of the grp file (Run 2)"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
 
+  o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
+  o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-
   int runNumber;
 
   // array of PDG masses of possible charm baryon daughters
@@ -3274,6 +3253,18 @@ struct HfTrackIndexSkimCreatorLfCascades {
   double massXi{0.};
   double massOmega{0.};
   double massLambda{0.};
+
+  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
+  using SelectedHfTrackAssoc = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
+  using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
+  using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
+
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
+  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandCascadeBachelor))) != 0u;
+
+  Preslice<aod::TracksWCovDca> tracksPerCollision = aod::track::collisionId;                     // needed for PV refit
+  Preslice<SelectedHfTrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
+  Preslice<CascFull> cascadesPerCollision = aod::cascdata::collisionId;
 
   // histograms
   HistogramRegistry registry{"registry"};
@@ -3293,6 +3284,22 @@ struct HfTrackIndexSkimCreatorLfCascades {
     arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi] = std::array{massXi, massPi};
     arrMass2Prong[hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi] = std::array{massOmega, massPi};
     arrMass3Prong[hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi] = std::array{massXi, massPi, massPi};
+
+    df2.setPropagateToPCA(propagateToPCA);
+    df2.setMaxR(maxR);
+    df2.setMaxDZIni(maxDZIni);
+    df2.setMinParamChange(minParamChange);
+    df2.setMinRelChi2Change(minRelChi2Change);
+    df2.setUseAbsDCA(useAbsDCA);
+    df2.setWeightedFinalPCA(useWeightedFinalPCA);
+
+    df3.setPropagateToPCA(propagateToPCA);
+    df3.setMaxR(maxR);
+    df3.setMaxDZIni(maxDZIni);
+    df3.setMinParamChange(minParamChange);
+    df3.setMinRelChi2Change(minRelChi2Change);
+    df3.setUseAbsDCA(useAbsDCA);
+    df3.setWeightedFinalPCA(useWeightedFinalPCA);
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -3338,18 +3345,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
     }
   }
 
-  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using SelectedHfTrackAssoc = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
-  using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
-  using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
-
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandCascadeBachelor))) != 0u;
-
-  Preslice<aod::TracksWCovDca> tracksPerCollision = aod::track::collisionId;                     // needed for PV refit
-  Preslice<SelectedHfTrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
-  Preslice<CascFull> cascadesPerCollision = aod::cascdata::collisionId;
-
   /// Single-cascade cuts
   template <typename TCascade>
   bool isPreselectedCascade(const TCascade& casc, const float& pvx, const float& pvy, const float& pvz)
@@ -3360,10 +3355,10 @@ struct HfTrackIndexSkimCreatorLfCascades {
         casc.casccosPA(pvx, pvy, pvz) > cascCosPA &&
         casc.dcacascdaughters() < dcaCascDau &&
         casc.dcaV0daughters() < dcaV0Dau &&
-        casc.dcanegtopv() > dcaNegToPv &&
-        casc.dcapostopv() > dcaPosToPv &&
-        casc.dcabachtopv() > dcaBachToPv &&
-        casc.dcav0topv(pvx, pvy, pvz) > dcaV0ToPv &&
+        std::abs(casc.dcanegtopv()) > dcaNegToPv &&
+        std::abs(casc.dcapostopv()) > dcaPosToPv &&
+        std::abs(casc.dcabachtopv()) > dcaBachToPv &&
+        std::abs(casc.dcav0topv(pvx, pvy, pvz)) > dcaV0ToPv &&
         casc.v0radius() > v0TransvRadius &&
         casc.cascradius() > cascTransvRadius &&
         std::abs(casc.mLambda() - massLambda) < v0MassWindow) {
@@ -3409,28 +3404,9 @@ struct HfTrackIndexSkimCreatorLfCascades {
                          aod::BCsWithTimestamps const&,
                          V0Full const&)
   {
-
-    // Define o2 fitter for charm baryon decay vertex, 2prong
-    o2::vertexing::DCAFitterN<2> df2;
-    df2.setPropagateToPCA(propagateToPCA);
-    df2.setMaxR(maxR);
-    df2.setMaxDZIni(maxDZIni);
-    df2.setMinParamChange(minParamChange);
-    df2.setMinRelChi2Change(minRelChi2Change);
-    df2.setUseAbsDCA(useAbsDCA);
-    df2.setWeightedFinalPCA(useWeightedFinalPCA);
-
-    // Define o2 fitter for charm baryon decay vertex, 3prong
-    o2::vertexing::DCAFitterN<3> df3;
-    df3.setPropagateToPCA(propagateToPCA);
-    df3.setMaxR(maxR);
-    df3.setMaxDZIni(maxDZIni);
-    df3.setMinParamChange(minParamChange);
-    df3.setMinRelChi2Change(minRelChi2Change);
-    df3.setUseAbsDCA(useAbsDCA);
-    df3.setWeightedFinalPCA(useWeightedFinalPCA);
-
     uint8_t hfFlag = 0;
+    bool isGoogForXi2Prong = true;
+    bool isGoogForOmega2Prong = true;
 
     for (const auto& collision : collisions) {
 
@@ -3510,6 +3486,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
         for (auto trackIdPion1 = groupedBachTrackIndices.begin(); trackIdPion1 != groupedBachTrackIndices.end(); ++trackIdPion1) {
 
           hfFlag = 0;
+          isGoogForXi2Prong = true;
+          isGoogForOmega2Prong = true;
 
           auto trackPion1 = trackIdPion1.track_as<aod::TracksWCovDca>();
 
@@ -3538,9 +3516,9 @@ struct HfTrackIndexSkimCreatorLfCascades {
             if (fillHistograms) {
               registry.fill(HIST("hFitterStatusXi2Prong"), 1);
             }
-            continue;
+            isGoogForXi2Prong = false;
           }
-          if (fillHistograms) {
+          if (isGoogForXi2Prong && fillHistograms) {
             registry.fill(HIST("hFitterStatusXi2Prong"), 0);
           }
 
@@ -3578,9 +3556,9 @@ struct HfTrackIndexSkimCreatorLfCascades {
             if (fillHistograms) {
               registry.fill(HIST("hFitterStatusOmega2Prong"), 1);
             }
-            continue;
+            isGoogForOmega2Prong = false;
           }
-          if (fillHistograms) {
+          if (isGoogForOmega2Prong && fillHistograms) {
             registry.fill(HIST("hFitterStatusOmega2Prong"), 0);
           }
 

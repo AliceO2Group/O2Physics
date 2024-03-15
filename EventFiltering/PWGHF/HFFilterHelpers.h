@@ -163,7 +163,7 @@ static const o2::framework::AxisSpec alphaAxis{100, -1.f, 1.f};
 static const o2::framework::AxisSpec qtAxis{100, 0.f, 0.25f};
 static const o2::framework::AxisSpec bdtAxis{100, 0.f, 1.f};
 static const o2::framework::AxisSpec phiAxis{36, 0., o2::constants::math::TwoPI};
-static const std::array<o2::framework::AxisSpec, kNCharmParticles + 8> massAxisC = {o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.75f, 2.15f}, o2::framework::AxisSpec{100, 2.05f, 2.45f}, o2::framework::AxisSpec{100, 2.25f, 2.65f}, o2::framework::AxisSpec{100, 0.139f, 0.159f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}};
+static const std::array<o2::framework::AxisSpec, kNCharmParticles + 9> massAxisC = {o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.75f, 2.15f}, o2::framework::AxisSpec{100, 2.05f, 2.45f}, o2::framework::AxisSpec{100, 2.25f, 2.65f}, o2::framework::AxisSpec{100, 0.139f, 0.159f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}};
 static const std::array<o2::framework::AxisSpec, kNBeautyParticles> massAxisB = {o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 5.0f, 6.2f}, o2::framework::AxisSpec{240, 5.0f, 6.2f}};
 
 // default values for configurables
@@ -189,8 +189,8 @@ constexpr float cutsHighPtThresholds[1][2] = {{8., 8.}}; // 2-prongs, 3-prongs
 static const std::vector<std::string> labelsColumnsHighPtThresholds = {"2Prongs", "3Prongs"};
 
 // beauty
-constexpr float cutsDeltaMassB[1][kNBeautyParticles + 1] = {{0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.04}}; // B+, B0, B0toDstar, Bs, Lb, Xib, charm daughter
-static const std::vector<std::string> labelsColumnsDeltaMassB = {"Bplus", "BZero", "BZeroToDstar", "Bs", "Lb", "Xib", "CharmDau"};
+constexpr float cutsDeltaMassB[1][kNBeautyParticles] = {{0.4, 0.4, 0.4, 0.4, 0.4, 0.4}}; // B+, B0, B0toDstar, Bs, Lb, Xib
+static const std::vector<std::string> labelsColumnsDeltaMassB = {"Bplus", "BZero", "BZeroToDstar", "Bs", "Lb", "Xib"};
 
 // double charm
 constexpr int activeDoubleCharmChannels[1][3] = {{1, 1, 1}}; // kDoubleCharm2P, kDoubleCharm3P, kDoubleCharmMix
@@ -204,8 +204,8 @@ constexpr float cutsV0s[1][6] = {{0.85, 0.97, 0.5, 4., 0.02, 0.01}}; // cosPaGam
 static const std::vector<std::string> labelsColumnsV0s = {"CosPaGamma", "CosPaK0sLambda", "RadiusK0sLambda", "NSigmaPrLambda", "DeltaMassK0s", "DeltaMassLambda"};
 
 // cascades for Xi + bachelor triggers
-constexpr float cutsCascades[1][7] = {{0.2, 0.01, 0.01, 0.99, 0.99, 0.3, 3.}}; // ptXiBachelor, deltaMassXi, deltaMassLambda, cosPaXi, cosPaLambda, DCAxyXi, nSigmaPid
-static const std::vector<std::string> labelsColumnsCascades = {"PtBachelor", "DeltaMassXi", "DeltaMassLambda", "CosPAXi", "CosPaLambda", "DCAxyXi", "NsigmaPid"};
+constexpr float cutsCascades[1][8] = {{0.2, 1., 0.01, 0.01, 0.99, 0.99, 0.3, 3.}}; // ptXiBachelor, deltaMassXi, deltaMassLambda, cosPaXi, cosPaLambda, DCAxyXi, nSigmaPid
+static const std::vector<std::string> labelsColumnsCascades = {"PtBachelor", "PtXi", "DeltaMassXi", "DeltaMassLambda", "CosPAXi", "CosPaLambda", "DCAxyXi", "NsigmaPid"};
 constexpr float cutsCharmBaryons[1][4] = {{3., 3., 2.35, 2.60}}; // MinPtXiPi, MinPtXiKa, MinMassXiPi, MinMassXiKa
 static const std::vector<std::string> labelsColumnsCharmBaryons = {"MinPtXiPi", "MinPtXiKa", "MinMassXiPi", "MinMassXiKa"};
 
@@ -223,6 +223,11 @@ class HfFilterHelper
   HfFilterHelper() = default;
 
   // setters
+  void setHighPtTriggerThresholds(float threshold2Prongs, float threshold3Prongs)
+  {
+    mPtThresholdHighPt2Prongs = threshold2Prongs;
+    mPtThresholdHighPt3Prongs = threshold3Prongs;
+  }
   void setPtBinsSingleTracks(std::vector<double> ptBins) { mPtBinsTracks = ptBins; }
   void setCutsSingleTrackBeauty(o2::framework::LabeledArray<double> cutsSingleTrack3P, o2::framework::LabeledArray<double> cutsSingleTrack4P)
   {
@@ -267,7 +272,6 @@ class HfFilterHelper
     mNSigmaTpcPiKaCutForDzero = nSigmaTpc;
     mNSigmaTofPiKaCutForDzero = nSigmaTof;
   }
-  void setDeltaMassCharmHadForBeauty(float delta) { mDeltaMassCharmHadForBeauty = delta; }
   void setV0Selections(float minGammaCosPa, float minK0sLambdaCosPa, float minK0sLambdaRadius, float nSigmaPrFromLambda, float deltaMassK0s, float deltaMassLambda)
   {
     mMinGammaCosinePa = minGammaCosPa;
@@ -277,9 +281,10 @@ class HfFilterHelper
     mDeltaMassK0s = deltaMassK0s;
     mDeltaMassLambda = deltaMassLambda;
   }
-  void setXiSelections(float minPtXiBachelor, float deltaMassXi, float deltaMassLambda, float cosPaXi, float cosPaLambdaFromXi, float maxDcaxyXi, float nSigma)
+  void setXiSelections(float minPtXiBachelor, float minPtXi, float deltaMassXi, float deltaMassLambda, float cosPaXi, float cosPaLambdaFromXi, float maxDcaxyXi, float nSigma)
   {
     mMinPtXiBachelor = minPtXiBachelor;
+    mMinPtXi = minPtXi;
     mDeltaMassXi = deltaMassXi;
     mDeltaMassLambdaFromXi = deltaMassLambda;
     mCosPaXi = cosPaXi;
@@ -296,11 +301,33 @@ class HfFilterHelper
 
   void setTpcPidCalibrationOption(int opt) { mTpcPidCalibrationOption = opt; }
 
+  void setMassResolParametrisation(std::string recoPass)
+  {
+    if (recoPass == "2023_pass3") {
+      mSigmaPars2Prongs[0] = 0.01424f;
+      mSigmaPars2Prongs[1] = 0.00178f;
+      mDeltaMassPars2Prongs[0] = -0.0025f;
+      mDeltaMassPars2Prongs[1] = 0.0001f;
+      mSigmaPars3Prongs[0] = 0.00796f;
+      mSigmaPars3Prongs[1] = 0.00176f;
+      mDeltaMassPars3Prongs[0] = -0.0025f;
+      mDeltaMassPars3Prongs[1] = 0.0001f;
+    } else {
+      LOGP(fatal, "Mass resolution parametrisation {} not supported! Please set 2023_pass3", recoPass.data());
+    }
+  }
+
+  void setNumSigmaForDeltaMassCharmHadCut(float nSigma) { mNumSigmaDeltaMassCharmHad = nSigma; }
+
   // helper functions for selections
+  template <typename T>
+  bool isSelectedHighPt2Prong(const T& pt);
+  template <typename T>
+  bool isSelectedHighPt3Prong(const T& pt);
   template <typename T, typename T1, typename T2>
-  int8_t isSelectedTrackForSoftPionOrBeauty(const T track, const T1& trackPar, const T2& dca, const int& whichTrigger);
+  int8_t isSelectedTrackForSoftPionOrBeauty(const T& track, const T1& trackPar, const T2& dca, const int& whichTrigger);
   template <typename T1, typename T2, typename H2>
-  bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID);
+  bool isSelectedProton4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID, bool forceTof);
   template <typename T>
   int8_t isDzeroPreselected(const T& trackPos, const T& trackNeg);
   template <typename T>
@@ -380,14 +407,14 @@ class HfFilterHelper
   float mNSigmaTofKaCutFor3Prongs{3.};                                       // maximum Nsigma TOF for kaons in 3-prong decays
   float mNSigmaTpcPiKaCutForDzero{3.};                                       // maximum Nsigma TPC for pions/kaons in D0 decays
   float mNSigmaTofPiKaCutForDzero{3.};                                       // maximum Nsigma TOF for pions/kaons in D0 decays
-  float mDeltaMassCharmHadForBeauty{0.04};                                   // delta mass cut for charm hadrons in B and charm excited decays
   float mMinGammaCosinePa{0.85};                                             // minimum cosp for gammas
   float mMinK0sLambdaCosinePa{0.97};                                         // minimum cosp for K0S and Lambda in charm excited decays
   float mMinK0sLambdaRadius{0.5};                                            // minimum radius for K0S and Lambda in charm excited decays
   float mMaxNsigmaPrForLambda{4.};                                           // maximum Nsigma TPC and TOF for protons in Lambda decays
   float mDeltaMassK0s{0.02};                                                 // delta mass cut for K0S in charm excited decays
   float mDeltaMassLambda{0.01};                                              // delta mass cut for Lambda in charm excited decays
-  float mMinPtXiBachelor{0.1};                                               // minimum pt for Xi bachelor
+  float mMinPtXiBachelor{0.1};                                               // minimum pt for Xi bachelor in Xic/Omegac decays
+  float mMinPtXi{1.};                                                        // minimum pt for Xi in Xic/Omegac decays
   float mDeltaMassXi{0.01};                                                  // delta mass cut for Xi in Xic/Omegac decays
   float mDeltaMassLambdaFromXi{0.01};                                        // delta mass cut for Lambda <- Xi in Xic/Omegac decays
   float mCosPaXi{0.99};                                                      // minimum cosp for Xi in Xic/Omegac decays
@@ -397,6 +424,13 @@ class HfFilterHelper
   o2::framework::LabeledArray<double> mCutsSingleTrackCharmBaryonBachelor{}; // dca selections for the bachelor pion from Xic/Omegac decays
   float mNSigmaTpcPiCharmBaryonBachelor{3.};                                 // maximum Nsigma TPC for pions in Xic/Omegac decays
   float mNSigmaTofPiCharmBaryonBachelor{3.};                                 // maximum Nsigma TOF for pions in Xic/Omegac decays
+  float mNumSigmaDeltaMassCharmHad{2.5};                                     // number of sigmas for delta mass cut for charm hadrons in B and charm excited decays
+  std::array<float, 2> mSigmaPars2Prongs{};                                  // parameters (intercept, slope) for parametrisation of mass sigma vs pT for 2-prongs
+  std::array<float, 2> mDeltaMassPars2Prongs{};                              // parameters (intercept, slope) for parametrisation of mass delta wrt PDG vs pT for 2-prongs
+  std::array<float, 2> mSigmaPars3Prongs{};                                  // parameters (intercept, slope) for parametrisation of mass sigma vs pT for 3-prongs
+  std::array<float, 2> mDeltaMassPars3Prongs{};                              // parameters (intercept, slope) for parametrisation of mass delta wrt PDG vs pT for 3-prongs
+  float mPtThresholdHighPt2Prongs{8.};                                       // threshold for high pT triggers for 2-prongs
+  float mPtThresholdHighPt3Prongs{8.};                                       // threshold for high pT triggers for 3-prongs
 
   // PID recalibrations
   int mTpcPidCalibrationOption{0};                        // Option for TPC PID calibration (0 -> AO2D, 1 -> postcalibrations, 2 -> alternative bethe bloch parametrisation)
@@ -404,13 +438,35 @@ class HfFilterHelper
   std::array<std::vector<double>, 6> mBetheBlochPiKaPr{}; // Bethe-Bloch parametrisations for pions, antipions, kaons, antikaons, protons, antiprotons in TPC
 };
 
+/// Selection of high-pt 2-prong candidates
+/// \param pt is the pt of the 2-prong candidate
+template <typename T>
+inline bool HfFilterHelper::isSelectedHighPt2Prong(const T& pt)
+{
+  if (pt < mPtThresholdHighPt2Prongs) {
+    return false;
+  }
+  return true;
+}
+
+/// Selection of high-pt 3-prong candidates
+/// \param pt is the pt of the 3-prong candidate
+template <typename T>
+inline bool HfFilterHelper::isSelectedHighPt3Prong(const T& pt)
+{
+  if (pt < mPtThresholdHighPt3Prongs) {
+    return false;
+  }
+  return true;
+}
+
 /// Single-track cuts for bachelor track of beauty candidates
 /// \param track is a track parameter
 /// \param trackPar is a track parameter
 /// \param dca is the 2d array with dcaXY and dcaZ of the track
 /// \return a flag that encodes the selection for soft pions BIT(kSoftPion), tracks for beauty BIT(kForBeauty), or soft pions for beauty BIT(kSoftPionForBeauty)
 template <typename T, typename T1, typename T2>
-inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T track, const T1& trackPar, const T2& dca, const int& whichTrigger)
+inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T& track, const T1& trackPar, const T2& dca, const int& whichTrigger)
 {
 
   int8_t retValue{BIT(kSoftPion) | BIT(kForBeauty) | BIT(kSoftPionForBeauty)};
@@ -475,9 +531,10 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T track, 
 /// \param activateQA flag to activate the filling of QA histos
 /// \param hProtonTPCPID histo with NsigmaTPC vs. p
 /// \param hProtonTOFPID histo with NsigmaTOF vs. p
+/// \param forceTof flag to force TOF PID
 /// \return true if track passes all cuts
 template <typename T1, typename T2, typename H2>
-inline bool HfFilterHelper::isSelectedProton4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID)
+inline bool HfFilterHelper::isSelectedProton4Femto(const T1& track, const T2& trackPar, const int& activateQA, H2 hProtonTPCPID, H2 hProtonTOFPID, bool forceTof)
 {
   float pt = trackPar.getPt();
   if (pt < mPtMinProtonForFemto || pt > mPtMaxProtonForFemto) {
@@ -494,6 +551,9 @@ inline bool HfFilterHelper::isSelectedProton4Femto(const T1& track, const T2& tr
 
   float NSigmaTPC = track.tpcNSigmaPr();
   float NSigmaTOF = track.tofNSigmaPr();
+  if (!forceTof && !track.hasTOF()) {
+    NSigmaTOF = 0.; // always accepted
+  }
 
   if (mTpcPidCalibrationOption == 1) {
     NSigmaTPC = getTPCPostCalib(track, kPr);
@@ -519,7 +579,9 @@ inline bool HfFilterHelper::isSelectedProton4Femto(const T1& track, const T2& tr
 
   if (activateQA > 1) {
     hProtonTPCPID->Fill(track.p(), NSigmaTPC);
-    hProtonTOFPID->Fill(track.p(), NSigmaTOF);
+    if (forceTof || track.hasTOF()) {
+      hProtonTOFPID->Fill(track.p(), NSigmaTOF);
+    }
   }
 
   return true;
@@ -649,13 +711,16 @@ inline int8_t HfFilterHelper::isDzeroPreselected(const T& trackPos, const T& tra
 template <typename T, typename H2>
 inline int8_t HfFilterHelper::isSelectedD0InMassRange(const T& pTrackPos, const T& pTrackNeg, const float& ptD, int8_t isSelected, const int& activateQA, H2 hMassVsPt)
 {
+  float peakMean = (ptD < 10) ? ((massD0 + mDeltaMassPars2Prongs[0]) + mDeltaMassPars2Prongs[1] * ptD) : massD0;
+  float peakWidth = mSigmaPars2Prongs[0] + mSigmaPars2Prongs[1] * ptD;
+
   int8_t retValue = 0;
   if (TESTBIT(isSelected, 0)) {
     auto invMassD0 = RecoDecay::m(std::array{pTrackPos, pTrackNeg}, std::array{massPi, massKa});
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassD0);
     }
-    if (std::fabs(invMassD0 - massD0) < mDeltaMassCharmHadForBeauty || ptD > 10) {
+    if (std::fabs(invMassD0 - peakMean) < mNumSigmaDeltaMassCharmHad * peakWidth || ptD > mPtThresholdHighPt2Prongs) {
       retValue |= BIT(0);
     }
   }
@@ -664,7 +729,7 @@ inline int8_t HfFilterHelper::isSelectedD0InMassRange(const T& pTrackPos, const 
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassD0bar);
     }
-    if (std::fabs(invMassD0bar - massD0) < mDeltaMassCharmHadForBeauty || ptD > 10) {
+    if (std::fabs(invMassD0bar - peakMean) < mNumSigmaDeltaMassCharmHad * peakWidth || ptD > mPtThresholdHighPt2Prongs) {
       retValue |= BIT(1);
     }
   }
@@ -683,12 +748,15 @@ inline int8_t HfFilterHelper::isSelectedD0InMassRange(const T& pTrackPos, const 
 template <typename T, typename H2>
 inline int8_t HfFilterHelper::isSelectedDplusInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD, const int& activateQA, H2 hMassVsPt)
 {
+  float peakMean = (ptD < 10) ? ((massDPlus + mDeltaMassPars3Prongs[0]) + mDeltaMassPars3Prongs[1] * ptD) : massDPlus;
+  float peakWidth = mSigmaPars3Prongs[0] + mSigmaPars3Prongs[1] * ptD;
+
   auto invMassDplus = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackSameChargeSecond, pTrackOppositeCharge}, std::array{massPi, massPi, massKa});
   if (activateQA) {
     hMassVsPt->Fill(ptD, invMassDplus);
   }
 
-  if (std::fabs(invMassDplus - massDPlus) > mDeltaMassCharmHadForBeauty && ptD > 0) {
+  if (std::fabs(invMassDplus - peakMean) > mNumSigmaDeltaMassCharmHad * peakWidth && ptD < mPtThresholdHighPt3Prongs) {
     return 0;
   }
 
@@ -707,13 +775,16 @@ inline int8_t HfFilterHelper::isSelectedDplusInMassRange(const T& pTrackSameChar
 template <typename T, typename H2>
 inline int8_t HfFilterHelper::isSelectedDsInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptD, int8_t isSelected, const int& activateQA, H2 hMassVsPt)
 {
+  float peakMean = (ptD < 10) ? ((massDs + mDeltaMassPars3Prongs[0]) + mDeltaMassPars3Prongs[1] * ptD) : massDs;
+  float peakWidth = mSigmaPars3Prongs[0] + mSigmaPars3Prongs[1] * ptD;
+
   int8_t retValue = 0;
   if (TESTBIT(isSelected, 0)) {
     auto invMassDsToKKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massKa, massKa, massPi});
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassDsToKKPi);
     }
-    if (std::fabs(invMassDsToKKPi - massDs) < mDeltaMassCharmHadForBeauty || ptD > 10) {
+    if (std::fabs(invMassDsToKKPi - peakMean) < peakWidth * mNumSigmaDeltaMassCharmHad || ptD > mPtThresholdHighPt3Prongs) {
       retValue |= BIT(0);
     }
   }
@@ -722,7 +793,7 @@ inline int8_t HfFilterHelper::isSelectedDsInMassRange(const T& pTrackSameChargeF
     if (activateQA) {
       hMassVsPt->Fill(ptD, invMassDsToPiKK);
     }
-    if (std::fabs(invMassDsToPiKK - massDs) < mDeltaMassCharmHadForBeauty || ptD > 10) {
+    if (std::fabs(invMassDsToPiKK - peakMean) < peakWidth * mNumSigmaDeltaMassCharmHad || ptD > mPtThresholdHighPt3Prongs) {
       retValue |= BIT(1);
     }
   }
@@ -742,13 +813,16 @@ inline int8_t HfFilterHelper::isSelectedDsInMassRange(const T& pTrackSameChargeF
 template <typename T, typename H2>
 inline int8_t HfFilterHelper::isSelectedLcInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptLc, const int8_t isSelected, const int& activateQA, H2 hMassVsPt)
 {
+  float peakMean = (ptLc < 10) ? ((massLc + mDeltaMassPars3Prongs[0]) + mDeltaMassPars3Prongs[1] * ptLc) : massLc;
+  float peakWidth = mSigmaPars3Prongs[0] + mSigmaPars3Prongs[1] * ptLc;
+
   int8_t retValue = 0;
   if (TESTBIT(isSelected, 0)) {
     auto invMassLcToPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massKa, massPi});
     if (activateQA) {
       hMassVsPt->Fill(ptLc, invMassLcToPKPi);
     }
-    if (std::fabs(invMassLcToPKPi - massLc) < mDeltaMassCharmHadForBeauty || ptLc > 10) {
+    if (std::fabs(invMassLcToPKPi - peakMean) < peakWidth * mNumSigmaDeltaMassCharmHad || ptLc > mPtThresholdHighPt3Prongs) {
       retValue |= BIT(0);
     }
   }
@@ -757,7 +831,7 @@ inline int8_t HfFilterHelper::isSelectedLcInMassRange(const T& pTrackSameChargeF
     if (activateQA) {
       hMassVsPt->Fill(ptLc, invMassLcToPiKP);
     }
-    if (std::fabs(invMassLcToPiKP - massLc) < mDeltaMassCharmHadForBeauty || ptLc > 10) {
+    if (std::fabs(invMassLcToPiKP - peakMean) < peakWidth * mNumSigmaDeltaMassCharmHad || ptLc > mPtThresholdHighPt3Prongs) {
       retValue |= BIT(1);
     }
   }
@@ -777,13 +851,16 @@ inline int8_t HfFilterHelper::isSelectedLcInMassRange(const T& pTrackSameChargeF
 template <typename T, typename H2>
 inline int8_t HfFilterHelper::isSelectedXicInMassRange(const T& pTrackSameChargeFirst, const T& pTrackSameChargeSecond, const T& pTrackOppositeCharge, const float& ptXic, const int8_t isSelected, const int& activateQA, H2 hMassVsPt)
 {
+  float peakMean = (ptXic < 10) ? ((massLc + mDeltaMassPars3Prongs[0]) + mDeltaMassPars3Prongs[1] * ptXic) : massXic;
+  float peakWidth = mSigmaPars3Prongs[0] + mSigmaPars3Prongs[1] * massXic;
+
   int8_t retValue = 0;
   if (TESTBIT(isSelected, 0)) {
     auto invMassXicToPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond}, std::array{massProton, massKa, massPi});
     if (activateQA) {
       hMassVsPt->Fill(ptXic, invMassXicToPKPi);
     }
-    if (std::fabs(invMassXicToPKPi - massXic) < mDeltaMassCharmHadForBeauty || ptXic > 10) {
+    if (std::fabs(invMassXicToPKPi - peakMean) < peakWidth * mNumSigmaDeltaMassCharmHad || ptXic > mPtThresholdHighPt3Prongs) {
       retValue |= BIT(0);
     }
   }
@@ -792,7 +869,7 @@ inline int8_t HfFilterHelper::isSelectedXicInMassRange(const T& pTrackSameCharge
     if (activateQA) {
       hMassVsPt->Fill(ptXic, invMassXicToPiKP);
     }
-    if (std::fabs(invMassXicToPiKP - massXic) < mDeltaMassCharmHadForBeauty || ptXic > 10) {
+    if (std::fabs(invMassXicToPiKP - peakMean) < peakWidth * mNumSigmaDeltaMassCharmHad || ptXic > mPtThresholdHighPt3Prongs) {
       retValue |= BIT(1);
     }
   }
@@ -960,6 +1037,12 @@ inline int8_t HfFilterHelper::isSelectedV0(const V0& v0, const std::array<T, 2>&
 template <typename Casc, typename T, typename Coll>
 inline bool HfFilterHelper::isSelectedCascade(const Casc& casc, const std::array<T, 3>& dauTracks, const Coll& collision)
 {
+
+  // Xi min pT
+  if (casc.pt() < mMinPtXi) {
+    return false;
+  }
+
   // eta of daughters
   if (std::fabs(dauTracks[0].eta()) > 1. || std::fabs(dauTracks[1].eta()) > 1. || std::fabs(dauTracks[2].eta()) > 1.) { // cut all V0 daughters with |eta| > 1.
     return false;

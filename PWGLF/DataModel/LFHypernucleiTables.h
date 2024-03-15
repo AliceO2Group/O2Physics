@@ -27,18 +27,12 @@ namespace hyperrec
 DECLARE_SOA_COLUMN(CentralityFT0A, centralityFT0A, float); // centrality with FT0A estimator
 DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float); // centrality with FT0C estimator
 DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float); // centrality with FT0M estimator
-DECLARE_SOA_COLUMN(QVecXFT0A, qVecXFT0A, float);           // Q vector x component with FT0A estimator
-DECLARE_SOA_COLUMN(QVecYFT0A, qVecYFT0A, float);           // Q vector y component with FT0A estimator
-DECLARE_SOA_COLUMN(QVecAmpFT0A, qVecAmpFT0A, float);       // Q vector amplitude with FT0A estimator
-DECLARE_SOA_COLUMN(QVecXFT0C, qVecXFT0C, float);           // Q vector x component with FT0C estimator
-DECLARE_SOA_COLUMN(QVecYFT0C, qVecYFT0C, float);           // Q vector y component with FT0C estimator
-DECLARE_SOA_COLUMN(QVecAmpFT0C, qVecAmpFT0C, float);       // Q vector amplitude with FT0C estimator
-DECLARE_SOA_COLUMN(QVecXFT0M, qVecXFT0M, float);           // Q vector x component with FT0M estimator
-DECLARE_SOA_COLUMN(QVecYFT0M, qVecYFT0M, float);           // Q vector y component with FT0M estimator
-DECLARE_SOA_COLUMN(QVecAmpFT0M, qVecAmpFT0M, float);       // Q vector amplitude with FT0M estimator
-DECLARE_SOA_COLUMN(QVecXFV0A, qVecXFV0A, float);           // Q vector x component with FV0A estimator
-DECLARE_SOA_COLUMN(QVecYFV0A, qVecYFV0A, float);           // Q vector y component with FV0A estimator
-DECLARE_SOA_COLUMN(QVecAmpFV0A, qVecAmpFV0A, float);       // Q vector amplitude with FV0A estimator
+DECLARE_SOA_COLUMN(PsiFT0A, psiFT0A, float);               // Psi with FT0A estimator
+DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);             // Multiplicity with FT0A estimator
+DECLARE_SOA_COLUMN(PsiFT0C, psiFT0C, float);               // Psi with FT0C estimator
+DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);             // Multiplicity with FT0C estimator
+DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);                 // Psi with TPC estimator
+DECLARE_SOA_COLUMN(MultTPC, multTPC, float);               // Multiplicity with TPC estimator
 
 DECLARE_SOA_COLUMN(IsMatter, isMatter, bool);                             // bool: true for matter
 DECLARE_SOA_COLUMN(PtHe3, ptHe3, float);                                  // Pt of the He daughter
@@ -99,10 +93,9 @@ DECLARE_SOA_TABLE(DataHypCands, "AOD", "HYPCANDS",
 DECLARE_SOA_TABLE(DataHypCandsFlow, "AOD", "HYPCANDSFLOW",
                   o2::soa::Index<>,
                   hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
-                  hyperrec::QVecXFT0A, hyperrec::QVecYFT0A, hyperrec::QVecAmpFT0A,
-                  hyperrec::QVecXFT0C, hyperrec::QVecYFT0C, hyperrec::QVecAmpFT0C,
-                  hyperrec::QVecXFT0M, hyperrec::QVecYFT0M, hyperrec::QVecAmpFT0M,
-                  hyperrec::QVecXFV0A, hyperrec::QVecYFV0A, hyperrec::QVecAmpFV0A,
+                  hyperrec::PsiFT0A, hyperrec::MultFT0A,
+                  hyperrec::PsiFT0C, hyperrec::MultFT0C,
+                  hyperrec::PsiTPC, hyperrec::MultTPC,
                   hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
 
                   hyperrec::IsMatter,
@@ -143,6 +136,56 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
 using DataHypCand = DataHypCands::iterator;
 using DataHypCandFlow = DataHypCandsFlow::iterator;
 using MCHypCand = MCHypCands::iterator;
+
+namespace hyperkink
+{
+DECLARE_SOA_COLUMN(PtHyper, ptHyper, float);                              // Pt of the hypertriton
+DECLARE_SOA_COLUMN(PhiHyper, phiHyper, float);                            // Phi of the hypertriton
+DECLARE_SOA_COLUMN(EtaHyper, etaHyper, float);                            // Eta of the hypertriton
+DECLARE_SOA_COLUMN(PtTrit, ptTrit, float);                                // Pt of the triton kink
+DECLARE_SOA_COLUMN(PhiTrit, phiTrit, float);                              // Phi of the triton kink
+DECLARE_SOA_COLUMN(EtaTrit, etaTrit, float);                              // Eta of the triton kink
+DECLARE_SOA_COLUMN(DcaHyperPv, dcaHyperPv, float);                        // DCA of the hypertriton to the primary vertex
+DECLARE_SOA_COLUMN(DcaTritPv, dcaTritPv, float);                          // DCA of the triton kink to the primary vertex
+DECLARE_SOA_COLUMN(DCAKinkTopo, dcaKinkTopo, float);                      // DCA of the kink topology
+DECLARE_SOA_COLUMN(ITSclusterSizesHyper, itsClusterSizesHyper, uint32_t); // ITS cluster size of the hypertriton
+DECLARE_SOA_COLUMN(ITSclusterSizesTrit, itsClusterSizesTrit, uint32_t);   // ITS cluster size of the triton kink
+DECLARE_SOA_COLUMN(PIDinTrackTrit, pidInTrackTrit, uint8_t);              // PID in track for the triton kink
+
+DECLARE_SOA_COLUMN(TPCmomTrit, tpcMomTrit, float);          // TPC momentum of the triton kink
+DECLARE_SOA_COLUMN(TPCsignalTrit, tpcSignalTrit, uint16_t); // TPC signal of the triton kink
+DECLARE_SOA_COLUMN(NSigmaTPCTrit, nSigmaTPCTrit, float);    // Number of tpc sigmas of the triton kink
+DECLARE_SOA_COLUMN(NSigmaTOFTrit, nSigmaTOFTrit, float);    // Number of tof sigmas of the triton kink
+
+// MC additional info
+DECLARE_SOA_COLUMN(GenPtTrit, genPtTrit, float);   // Pt of the triton kink
+DECLARE_SOA_COLUMN(HyperPtITS, hyperPtITS, float); // Pt of the hypertriton from ITS standalone, hypertriton tagged with MC truth
+DECLARE_SOA_COLUMN(MCMask, mcMask, bool);          // bool: true for fake triton
+
+} // namespace hyperkink
+
+DECLARE_SOA_TABLE(DataHypKinkCands, "AOD", "HYPKINKCANDS",
+                  o2::soa::Index<>,
+                  hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
+                  hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
+                  hyperrec::IsMatter, hyperkink::PtHyper, hyperkink::PhiHyper, hyperkink::EtaHyper,
+                  hyperkink::PtTrit, hyperkink::PhiTrit, hyperkink::EtaTrit,
+                  hyperkink::DcaHyperPv, hyperkink::DcaTritPv, hyperkink::DCAKinkTopo,
+                  hyperkink::ITSclusterSizesHyper, hyperkink::ITSclusterSizesTrit, hyperkink::PIDinTrackTrit,
+                  hyperkink::TPCmomTrit, hyperkink::TPCsignalTrit, hyperkink::NSigmaTPCTrit, hyperkink::NSigmaTOFTrit);
+
+DECLARE_SOA_TABLE(MCHypKinkCands, "AOD", "MCHYPKINKCANDS",
+                  o2::soa::Index<>,
+                  hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
+                  hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
+                  hyperrec::IsMatter, hyperkink::PtHyper, hyperkink::PhiHyper, hyperkink::EtaHyper,
+                  hyperkink::PtTrit, hyperkink::PhiTrit, hyperkink::EtaTrit,
+                  hyperkink::DcaHyperPv, hyperkink::DcaTritPv, hyperkink::DCAKinkTopo,
+                  hyperkink::ITSclusterSizesHyper, hyperkink::ITSclusterSizesTrit, hyperkink::PIDinTrackTrit,
+                  hyperkink::TPCmomTrit, hyperkink::TPCsignalTrit, hyperkink::NSigmaTPCTrit, hyperkink::NSigmaTOFTrit,
+                  hyperrec::GenXDecVtx, hyperrec::GenYDecVtx, hyperrec::GenZDecVtx,
+                  hyperrec::GenPt, hyperkink::GenPtTrit,
+                  hyperrec::IsReco, hyperrec::IsSignal, hyperkink::MCMask, hyperkink::HyperPtITS);
 
 } // namespace o2::aod
 

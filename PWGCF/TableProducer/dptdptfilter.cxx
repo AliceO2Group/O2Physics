@@ -17,6 +17,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -25,6 +26,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/RunningWorkflowInfo.h"
 #include <TROOT.h>
 #include <TDatabasePDG.h>
 #include <TParameter.h>
@@ -49,13 +51,13 @@ using namespace o2::analysis;
 
 namespace o2::analysis::dptdptfilter
 {
-using DptDptFullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
-using DptDptFullTracksAmbiguous = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackCompColls>;
+using DptDptFullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
+using DptDptFullTracksAmbiguous = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackCompColls>;
 using DptDptTracksPID = soa::Join<aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
 using DptDptFullTracksPID = soa::Join<DptDptFullTracks, DptDptTracksPID>;
 using DptDptFullTracksPIDAmbiguous = soa::Join<DptDptFullTracksAmbiguous, DptDptTracksPID>;
-using DptDptFullTracksDetLevel = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA>;
-using DptDptFullTracksDetLevelAmbiguous = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TracksDCA, aod::TrackCompColls>;
+using DptDptFullTracksDetLevel = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
+using DptDptFullTracksDetLevelAmbiguous = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackCompColls>;
 using DptDptFullTracksPIDDetLevel = soa::Join<DptDptFullTracksDetLevel, DptDptTracksPID>;
 using DptDptFullTracksPIDDetLevelAmbiguous = soa::Join<DptDptFullTracksDetLevelAmbiguous, DptDptTracksPID>;
 
@@ -162,6 +164,7 @@ struct DptDptFilter {
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
   Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
   Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB, None. Default MB"};
+  Configurable<std::string> cfgCentSpec{"centralities", "00-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
@@ -530,179 +533,13 @@ T computeRMS(std::vector<T>& vec)
 
 struct DptDptFilterTracks {
 
-  struct PIDSpeciesSelection {
-    static const std::vector<int> pdgcodes;
-    static const std::vector<std::string> spnames;
-    static const std::vector<std::string> sptitles;
-    static const std::vector<std::string> spfnames;
-    static const char hadname[];
-    static const char hadtitle[];
-    static const char hadfname[];
-    uint getNSpecies() { return config.size(); }
-    const std::string& getSpeciesName(uint8_t ix) { return spnames[species[ix]]; }
-    const std::string& getSpeciesTitle(uint8_t ix) { return sptitles[species[ix]]; }
-    const std::string& getSpeciesFName(uint8_t ix) { return spfnames[species[ix]]; }
-    static const char* getHadName() { return hadname; }
-    static const char* getHadTitle() { return hadtitle; }
-    static const char* getHadFName() { return hadfname; }
-    void Add(uint8_t sp, const o2::analysis::TrackSelectionPIDCfg* cfg)
-    {
-      config.push_back(cfg);
-      species.push_back(sp);
-    }
-    void AddExclude(uint8_t sp, const o2::analysis::TrackSelectionPIDCfg* cfg)
-    {
-      configexclude.push_back(cfg);
-      speciesexclude.push_back(sp);
-    }
-    template <typename TrackObject>
-    int8_t whichSpecies(TrackObject const& track)
-    {
-      static std::vector<float> tpcnsigmas = {track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
-      static std::vector<float> tofnsigmas = {track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
-
-      auto closeTo = [](auto values, auto mindet, auto maxdet, uint8_t sp) {
-        if (mindet[sp] <= values[sp] && values[sp] < maxdet[sp]) {
-          return true;
-        } else {
-          return false;
-        }
-      };
-      auto awayFrom = [](auto values, auto mindet, auto maxdet, uint8_t sp) {
-        for (int ix = 0; ix < 5; ix++) {
-          if (ix != sp) {
-            if (mindet[ix] <= values[ix] && values[ix] < maxdet[ix]) {
-              return false;
-            }
-          } else {
-            continue;
-          }
-        }
-        return true;
-      };
-      auto closeToTPC = [&](auto config, uint8_t sp) {
-        return closeTo(tpcnsigmas, config->mMinNSigmasTPC, config->mMaxNSigmasTPC, sp);
-      };
-      auto awayFromTPC = [&](auto config, uint8_t sp) {
-        return awayFrom(tpcnsigmas, config->mMinNSigmasTPC, config->mMaxNSigmasTPC, sp);
-      };
-      auto closeToTPCTOF = [&](auto config, uint8_t sp) {
-        float a = (config->mMaxNSigmasTPC[sp] - config->mMinNSigmasTPC[sp]) / 2.0;
-        float b = (config->mMaxNSigmasTOF[sp] - config->mMinNSigmasTOF[sp]) / 2.0;
-        float oa = (config->mMaxNSigmasTPC[sp] + config->mMinNSigmasTPC[sp]) / 2.0;
-        float ob = (config->mMaxNSigmasTOF[sp] + config->mMinNSigmasTOF[sp]) / 2.0;
-        float vtpc = tpcnsigmas[sp] - oa;
-        float vtof = tofnsigmas[sp] - ob;
-        return (vtpc * vtpc / a / a + vtof * vtof / b / b < 1);
-      };
-      auto closeToTOF = [&](auto config, uint8_t sp) {
-        if (!track.hasTOF()) {
-          if (config->mRequireTOF) {
-            return false;
-          } else {
-            return true;
-          }
-        } else {
-          if (config->m2Dcut) {
-            return closeToTPCTOF(config, sp);
-          } else {
-            return closeTo(tofnsigmas, config->mMinNSigmasTOF, config->mMaxNSigmasTOF, sp);
-          }
-        }
-      };
-      auto awayFromTOF = [&](auto config, uint8_t sp) {
-        /* if we are here is because the track has TOF */
-        if (config->m2Dcut) {
-          for (uint8_t ix = 0; ix < 5; ++ix) {
-            if (ix != sp) {
-              if (closeToTPCTOF(config, ix)) {
-                return false;
-              }
-            } else {
-              continue;
-            }
-          }
-          return true;
-        } else {
-          return awayFrom(tofnsigmas, config->mMinNSigmasTOF, config->mMaxNSigmasTOF, sp);
-        }
-      };
-      auto aboveThreshold = [&](auto config) {
-        return ((config->mPThreshold > 0.0) && (config->mPThreshold < track.p()));
-      };
-
-      /* let's first check the exclusion from the analysis */
-      for (uint8_t ix = 0; ix < configexclude.size(); ++ix) {
-        if (closeToTPC(configexclude[ix], speciesexclude[ix]) && awayFromTPC(configexclude[ix], speciesexclude[ix])) {
-          if (aboveThreshold(configexclude[ix])) {
-            if (closeToTOF(configexclude[ix], speciesexclude[ix]) && awayFromTOF(configexclude[ix], speciesexclude[ix])) {
-              return -ix;
-            }
-          }
-        }
-      }
-      /* we don't exclude it so check which species if any required */
-      if (config.size() > 0) {
-        int8_t id = -127;
-        for (uint8_t ix = 0; ix < config.size(); ++ix) {
-          if (closeToTPC(config[ix], species[ix]) && awayFromTPC(config[ix], species[ix])) {
-            if (aboveThreshold(config[ix])) {
-              if (closeToTOF(config[ix], species[ix]) && awayFromTOF(config[ix], species[ix])) {
-                if (id < 0) {
-                  id = ix;
-                } else {
-                  /* already identified once */
-                  return -127;
-                }
-              }
-            }
-          }
-        }
-        return id;
-      } else {
-        return 0;
-      }
-    }
-    template <typename ParticleObject>
-    int8_t whichTruthSpecies(ParticleObject part)
-    {
-      int pdgcode = abs(part.pdgCode());
-      /* let's first check the exclusion from the analysis */
-      for (uint8_t ix = 0; ix < configexclude.size(); ++ix) {
-        if (pdgcode == pdgcodes[speciesexclude[ix]]) {
-          return -ix;
-        }
-      }
-      /* we don't exclude it so check which species if any required */
-      if (config.size() > 0) {
-        for (uint8_t ix = 0; ix < config.size(); ++ix) {
-          if (pdgcode == pdgcodes[species[ix]]) {
-            return ix;
-          }
-        }
-        return -127;
-      } else {
-        return 0;
-      }
-    }
-    std::vector<const o2::analysis::TrackSelectionPIDCfg*> config;        ///< the PID selection configuration of the species to include in the analysis
-    std::vector<uint8_t> species;                                         ///< the species index of the species to include in the analysis
-    std::vector<const o2::analysis::TrackSelectionPIDCfg*> configexclude; ///< the PID selection configuration of the species to exclude from the analysis
-    std::vector<uint8_t> speciesexclude;                                  ///< the species index of teh species to exclude from the analysis
-  };
-
   Produces<aod::ScannedTracks> scannedtracks;
   Produces<aod::DptDptCFTracksInfo> tracksinfo;
   Produces<aod::ScannedTrueTracks> scannedgentracks;
   Produces<aod::DptDptCFGenTracksInfo> gentracksinfo;
 
   Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
-  Configurable<int> cfgTrackType{"trktype", 1, "Type of selected tracks: 0 = no selection, 1 = Run2 global tracks FB96, 3 = Run3 tracks, 5 = Run2 TPC only tracks, 7 = Run 3 TPC only tracks. Default 1"};
-  Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
-  Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
-  Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
-                                                           {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
-                                                           "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
+  Configurable<int> cfgTrackType{"trktype", 4, "Type of selected tracks: 0 = no selection, 1 = Run2 global tracks FB96, 3 = Run3 tracks, 4 = Run3 tracks MM sel, 5 = Run2 TPC only tracks, 7 = Run 3 TPC only tracks. Default 4"};
   Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
   Configurable<float> cfgTraceOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
   Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 No PID, 1 PID, 2 mcparticle. Default 0"};
@@ -724,23 +561,24 @@ struct DptDptFilterTracks {
   PIDSpeciesSelection pidselector;
   bool checkAmbiguousTracks = false;
 
-  void init(InitContext&)
+  void init(InitContext& initContext)
   {
     LOGF(info, "DptDptFilterTracks::init()");
 
     fullDerivedData = cfgFullDerivedData;
 
     /* update with the configurable values */
-    /* the binning */
-    ptbins = cfgBinning->mPTbins;
-    ptlow = cfgBinning->mPTmin;
-    ptup = cfgBinning->mPTmax;
-    etabins = cfgBinning->mEtabins;
-    etalow = cfgBinning->mEtamin;
-    etaup = cfgBinning->mEtamax;
-    zvtxbins = cfgBinning->mZVtxbins;
-    zvtxlow = cfgBinning->mZVtxmin;
-    zvtxup = cfgBinning->mZVtxmax;
+    /* self configure the binning */
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmax", zvtxup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTbins", ptbins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmin", ptlow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmax", ptup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup, false);
+
     /* the track types and combinations */
     tracktype = cfgTrackType.value;
     initializeTrackSelection();
@@ -777,9 +615,13 @@ struct DptDptFilterTracks {
       useOwnTrackSelection = false;
     }
 
+    /* self configure system type and data type */
     /* if the system type is not known at this time, we have to put the initialization somewhere else */
-    fSystem = getSystemType(cfgSystem);
-    fDataType = getDataType(cfgDataType);
+    std::string tmpstr;
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "syst", tmpstr, false);
+    fSystem = getSystemType(tmpstr);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "datatype", tmpstr, false);
+    fDataType = getDataType(tmpstr);
     fPDG = TDatabasePDG::Instance();
 
     /* required ambiguous tracks checks? */
@@ -788,14 +630,14 @@ struct DptDptFilterTracks {
     }
 
     /* configure the PID selection */
-    auto insertInPIDselector = [&](auto cfg, int sp) {
+    auto insertInPIDselector = [&](auto cfg, uint sp) {
       if (cfg.value.mUseIt) {
         if (cfg.value.mExclude) {
-          LOGF(info, "Incorporating species: %s to PID selection for exclusion", pidselector.getSpeciesName(sp));
           pidselector.AddExclude(sp, &(cfg.value));
+          LOGF(info, "Incorporated species: %s to PID selection for exclusion", pidselector.spnames[sp].data());
         } else {
-          LOGF(info, "Incorporating species: %s to PID selection", pidselector.getSpeciesName(sp));
           pidselector.Add(sp, &(cfg.value));
+          LOGF(info, "Incorporated species: %s to PID selection", pidselector.spnames[sp].data());
         }
       }
     };
@@ -882,7 +724,7 @@ struct DptDptFilterTracks {
         LOGF(info, "Identified analysis with %d species", nspecies);
         for (uint sp = 0; sp < nspecies; ++sp) {
           LOGF(info, "Adding species %s", pidselector.getSpeciesFName(sp));
-          createHistos(sp, pidselector.getSpeciesFName(sp).c_str(), pidselector.getSpeciesTitle(sp).c_str());
+          createHistos(sp, pidselector.getSpeciesFName(sp), pidselector.getSpeciesTitle(sp));
         }
       }
 
@@ -977,7 +819,7 @@ struct DptDptFilterTracks {
       } else {
         reserveTruthHistos(nspecies);
         for (uint sp = 0; sp < nspecies; ++sp) {
-          createTruthHistos(sp, pidselector.getSpeciesFName(sp).c_str(), pidselector.getSpeciesTitle(sp).c_str());
+          createTruthHistos(sp, pidselector.getSpeciesFName(sp), pidselector.getSpeciesTitle(sp));
         }
       }
 
@@ -1102,11 +944,7 @@ struct DptDptFilterTracks {
     }
 
     for (auto& particle : particles) {
-      float charge = 0.0;
-      TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
-      if (pdgparticle != nullptr) {
-        charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0.0);
-      }
+      float charge = getCharge(particle);
 
       int8_t pid = -1;
       if (charge != 0) {
@@ -1147,13 +985,13 @@ struct DptDptFilterTracks {
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithPIDAmbiguous, "Not stored derived data track filtering with ambiguous tracks check", false)
 
-  void filterDetectorLevelWithPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevel const& tracks)
+  void filterDetectorLevelWithPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevel const& tracks, aod::McParticles const&)
   {
     filterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithPID, "Not stored derived data detector level track filtering", false)
 
-  void filterDetectorLevelWithPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevelAmbiguous const& tracks)
+  void filterDetectorLevelWithPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevelAmbiguous const& tracks, aod::McParticles const&)
   {
     filterTracks(collisions, tracks);
   }
@@ -1171,13 +1009,13 @@ struct DptDptFilterTracks {
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithoutPIDAmbiguous, "Track filtering without PID information with ambiguous tracks check", false)
 
-  void filterDetectorLevelWithoutPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracksDetLevel const& tracks)
+  void filterDetectorLevelWithoutPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracksDetLevel const& tracks, aod::McParticles const&)
   {
     filterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithoutPID, "Detector level track filtering without PID information", false)
 
-  void filterDetectorLevelWithoutPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracksDetLevelAmbiguous const& tracks)
+  void filterDetectorLevelWithoutPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracksDetLevelAmbiguous const& tracks, aod::McParticles const&)
   {
     filterTracks(collisions, tracks);
   }
@@ -1189,14 +1027,6 @@ struct DptDptFilterTracks {
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterGenerated, "Generated particles filtering", true)
 };
-
-const std::vector<int> DptDptFilterTracks::PIDSpeciesSelection::pdgcodes = {11, 13, 211, 321, 2212};
-const std::vector<std::string> DptDptFilterTracks::PIDSpeciesSelection::spnames = {"e", "mu", "pi", "ka", "p"};
-const std::vector<std::string> DptDptFilterTracks::PIDSpeciesSelection::sptitles = {"e", "#mu", "#pi", "K", "p"};
-const std::vector<std::string> DptDptFilterTracks::PIDSpeciesSelection::spfnames = {"E", "Mu", "Pi", "Ka", "Pr"};
-const char DptDptFilterTracks::PIDSpeciesSelection::hadname[] = "h";
-const char DptDptFilterTracks::PIDSpeciesSelection::hadtitle[] = "h";
-const char DptDptFilterTracks::PIDSpeciesSelection::hadfname[] = "Ha";
 
 template <typename TrackObject>
 int8_t DptDptFilterTracks::trackIdentification(TrackObject const& track)
@@ -1327,18 +1157,15 @@ void DptDptFilterTracks::fillTrackHistosBeforeSelection(TrackObject const& track
 template <typename TrackObject>
 void DptDptFilterTracks::fillTrackHistosAfterSelection(TrackObject const& track, int8_t sp)
 {
-  /* the charged species should have been called first so avoid double counting */
-  if (sp == kDptDptCharged) {
-    fhEtaA->Fill(track.eta());
-    fhPhiA->Fill(track.phi());
-    fhDCAxyA->Fill(track.dcaXY());
-    fhDCAzA->Fill(track.dcaZ());
-    if (track.dcaXY() < 1.0) {
-      fhFineDCAxyA->Fill(track.dcaXY());
-    }
-    if (track.dcaZ() < 1.0) {
-      fhFineDCAzA->Fill(track.dcaZ());
-    }
+  fhEtaA->Fill(track.eta());
+  fhPhiA->Fill(track.phi());
+  fhDCAxyA->Fill(track.dcaXY());
+  fhDCAzA->Fill(track.dcaZ());
+  if (track.dcaXY() < 1.0) {
+    fhFineDCAxyA->Fill(track.dcaXY());
+  }
+  if (track.dcaZ() < 1.0) {
+    fhFineDCAzA->Fill(track.dcaZ());
   }
   fhPA[sp]->Fill(track.p());
   fhPtA[sp]->Fill(track.pt());
@@ -1359,11 +1186,7 @@ inline int8_t DptDptFilterTracks::identifyParticle(ParticleObject const& particl
 template <typename ParticleObject, typename MCCollisionObject>
 inline int8_t DptDptFilterTracks::selectParticle(ParticleObject const& particle, MCCollisionObject const& mccollision)
 {
-  float charge = 0.0;
-  TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
-  if (pdgparticle != nullptr) {
-    charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0);
-  }
+  float charge = getCharge(particle);
   int8_t sp = -127;
   if (charge != 0) {
     /* before particle selection */
@@ -1373,7 +1196,7 @@ inline int8_t DptDptFilterTracks::selectParticle(ParticleObject const& particle,
     if (AcceptParticle(particle, mccollision)) {
       /* the particle has been accepted */
       /* let's identify the particle */
-      int8_t sp = identifyParticle(particle);
+      sp = identifyParticle(particle);
       if (!(sp < 0)) {
         /* fill the species  histograms */
         fillParticleHistosAfterSelection(particle, mccollision, charge, sp);
@@ -1420,22 +1243,19 @@ void DptDptFilterTracks::fillParticleHistosBeforeSelection(ParticleObject const&
 template <typename ParticleObject, typename MCCollisionObject>
 void DptDptFilterTracks::fillParticleHistosAfterSelection(ParticleObject const& particle, MCCollisionObject const& collision, float charge, int8_t sp)
 {
-  /* the charged species should have been called first so avoid double counting */
-  if (sp == kDptDptCharged) {
-    fhTrueEtaA->Fill(particle.eta());
-    fhTruePhiA->Fill(particle.phi());
-    float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                              (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
-    if (traceDCAOutliers.mDoIt && (traceDCAOutliers.mLowValue < dcaxy) && (dcaxy < traceDCAOutliers.mUpValue)) {
-      LOGF(info, "DCAxy outlier: Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
-           particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
-      LOGF(info, "               With status %d and flags %0X", particle.statusCode(), particle.flags());
-    }
-
-    fhTrueDCAxyA->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                   (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
-    fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
+  fhTrueEtaA->Fill(particle.eta());
+  fhTruePhiA->Fill(particle.phi());
+  float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                            (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
+  if (traceDCAOutliers.mDoIt && (traceDCAOutliers.mLowValue < dcaxy) && (dcaxy < traceDCAOutliers.mUpValue)) {
+    LOGF(info, "DCAxy outlier: Particle with index %d and pdg code %d assigned to MC collision %d, pT: %f, phi: %f, eta: %f",
+         particle.globalIndex(), particle.pdgCode(), particle.mcCollisionId(), particle.pt(), particle.phi(), particle.eta());
+    LOGF(info, "               With status %d and flags %0X", particle.statusCode(), particle.flags());
   }
+
+  fhTrueDCAxyA->Fill(TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
+                                 (particle.vy() - collision.posY()) * (particle.vy() - collision.posY())));
+  fhTrueDCAzA->Fill((particle.vz() - collision.posZ()));
   fhTruePA[sp]->Fill(particle.p());
   fhTruePtA[sp]->Fill(particle.pt());
   if (charge > 0) {

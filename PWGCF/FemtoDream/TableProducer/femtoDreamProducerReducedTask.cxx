@@ -182,8 +182,8 @@ struct femtoDreamProducerReducedTask {
     mRunNumber = bc.runNumber();
   }
 
-  template <typename CandidateType>
-  void fillMCParticle(CandidateType const& candidate, o2::aod::femtodreamparticle::ParticleType fdparttype)
+  template <typename CollisionType, typename CandidateType>
+  void fillMCParticle(CollisionType const& col, CandidateType const& candidate, o2::aod::femtodreamparticle::ParticleType fdparttype)
   {
     if (candidate.has_mcParticle()) {
       // get corresponding MC particle and its info
@@ -194,15 +194,17 @@ struct femtoDreamProducerReducedTask {
       auto motherparticleMC = particleMC.template mothers_as<aod::McParticles>().front();
 
       if (abs(pdgCode) == abs(ConfTrkPDGCode.value)) {
-
-        if (particleMC.isPhysicalPrimary()) {
+        if ((col.has_mcCollision() && (particleMC.mcCollisionId() != col.mcCollisionId())) || !col.has_mcCollision()) {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kWrongCollision;
+        } else if (particleMC.isPhysicalPrimary()) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kPrimary;
-        } else if (motherparticleMC.producedByGenerator()) {
+        } else if (motherparticleMC.isPhysicalPrimary() && particleMC.getProcess() == 4) {
           particleOrigin = checkDaughterType(fdparttype, motherparticleMC.pdgCode());
-        } else {
+        } else if (particleMC.getGenStatusCode() == -1) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
+        } else {
+          particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kElse;
         }
-
       } else {
 
         particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kFake;
@@ -275,7 +277,7 @@ struct femtoDreamProducerReducedTask {
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
                   track.dcaXY(), childIDs, 0, 0);
       if constexpr (isMC) {
-        fillMCParticle(track, o2::aod::femtodreamparticle::ParticleType::kTrack);
+        fillMCParticle(col, track, o2::aod::femtodreamparticle::ParticleType::kTrack);
       }
 
       if (ConfIsDebug) {

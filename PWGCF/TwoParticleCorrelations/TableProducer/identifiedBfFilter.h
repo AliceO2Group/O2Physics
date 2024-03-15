@@ -42,6 +42,53 @@ namespace analysis
 {
 namespace identifiedbffilter
 {
+
+/// \enum MatchRecoGenSpecies
+/// \brief The species considered by the matching test
+enum MatchRecoGenSpecies {
+  kIdBfCharged = 0, ///< charged particle/track
+  kIdBfElectron,    ///< electron
+  kIdBfMuon,        ///< muon
+  kIdBfPion,        ///< pion
+  kIdBfKaon,        ///< kaon
+  kIdBfProton,      ///< proton
+  kIdBfNoOfSpecies, ///< the number of considered species
+  kWrongSpecies = -1
+};
+
+/// \enum SpeciesPairMatch
+/// \brief The species pair considered by the matching test
+enum SpeciesPairMatch {
+  kIdBfElectronElectron, ///< Electron-Electron,Electron-Positron
+  kIdBfElectronMuon,     ///< Electron-Muon
+  kIdBfElectronPion,     ///< Electron-Pion
+  kIdBfElectronKaon,     ///< Electron-Kaon
+  kIdBfElectronProton,   ///< Electron-Proton
+  kIdBfMuonMuon,         ///< Muon-Muon
+  kIdBfMuonPion,         ///< Muon-Pion
+  kIdBfMuonKaon,         ///< Muon-Kaon
+  kIdBfMuonProton,       ///< Muon-Proton
+  kIdBfPionPion,         ///< Pion-Pion
+  kIdBfPionKaon,         ///< Pion-Kaon
+  kIdBfPionProton,       ///< Pion-Proton
+  kIdBfKaonKaon,         ///< Kaon-Kaon
+  kIdBfKaonProton,       ///< Kaon-Proton
+  kIdBfProtonProton      ///< Proton-Proton
+};
+
+const char* speciesName[kIdBfNoOfSpecies] = {"h", "e", "mu", "pi", "ka", "p"};
+
+const char* speciesTitle[kIdBfNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"};
+
+const int speciesChargeValue1[kIdBfNoOfSpecies] = {
+  0, //<Unidentified hadron
+  2, //< electron
+  4, //< muon
+  6, //< pion
+  8, //< Kaon
+  10 //< proton
+};
+
 /// \enum SystemType
 /// \brief The type of the system under analysis
 enum SystemType {
@@ -109,6 +156,8 @@ std::vector<TrackSelection*> trackFilters = {};
 bool dca2Dcut = false;
 float maxDCAz = 1e6f;
 float maxDCAxy = 1e6f;
+
+float minPIDSigma = 3.0;
 
 inline void initializeTrackSelection()
 {
@@ -562,6 +611,7 @@ inline bool centralitySelection(CollisionObject const&, float&)
 template <>
 inline bool centralitySelection<aod::CollisionEvSelCent>(aod::CollisionEvSelCent const& collision, float& centmult)
 {
+
   return centralitySelectionMult(collision, centmult);
 }
 
@@ -569,6 +619,7 @@ inline bool centralitySelection<aod::CollisionEvSelCent>(aod::CollisionEvSelCent
 template <>
 inline bool centralitySelection<aod::CollisionEvSelRun2Cent>(aod::CollisionEvSelRun2Cent const& collision, float& centmult)
 {
+
   return centralitySelectionMult(collision, centmult);
 }
 
@@ -576,6 +627,7 @@ inline bool centralitySelection<aod::CollisionEvSelRun2Cent>(aod::CollisionEvSel
 template <>
 inline bool centralitySelection<aod::CollisionEvSel>(aod::CollisionEvSel const& collision, float& centmult)
 {
+
   return centralitySelectionNoMult(collision, centmult);
 }
 
@@ -583,6 +635,7 @@ inline bool centralitySelection<aod::CollisionEvSel>(aod::CollisionEvSel const& 
 template <>
 inline bool centralitySelection<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator const& collision, float& centmult)
 {
+
   return centralitySelectionNoMult(collision, centmult);
 }
 
@@ -590,6 +643,7 @@ inline bool centralitySelection<soa::Join<aod::CollisionsEvSel, aod::McCollision
 template <>
 inline bool centralitySelection<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator const& collision, float& centmult)
 {
+
   return centralitySelectionMult(collision, centmult);
 }
 
@@ -627,7 +681,6 @@ inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
   }
 
   bool centmultsel = centralitySelection(collision, centormult);
-
   return trigsel && zvtxsel && centmultsel;
 }
 
@@ -666,29 +719,6 @@ inline bool matchTrackType(TrackObject const& track)
 /// - positive track pid even
 /// - negative track pid odd
 /// - charged hadron 0/1
-template <typename TrackObject>
-inline int8_t AcceptTrack(TrackObject const& track)
-{
-  /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
-  if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
-    if (track.mcParticleId() < 0) {
-      return -1;
-    }
-  }
-
-  if (matchTrackType(track)) {
-    if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
-      if (track.sign() > 0) {
-        return 0;
-      }
-      if (track.sign() < 0) {
-        return 1;
-      }
-    }
-  }
-  return -1;
-}
-
 template <typename ParticleObject, typename MCCollisionObject>
 void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
 {

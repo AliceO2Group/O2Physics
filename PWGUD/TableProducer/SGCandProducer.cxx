@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <cmath>
 #include "Framework/AnalysisDataModel.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
@@ -29,13 +30,14 @@ struct SGCandProducer {
   // get an SGCutparHolder
   SGCutParHolder sameCuts = SGCutParHolder(); // SGCutparHolder
   Configurable<SGCutParHolder> SGCuts{"SGCuts", {}, "SG event cuts"};
-
-  // SG selector
+  Configurable<bool> saveAllTracks{"saveAllTracks", true, "save only PV contributors or all tracks associated to a collision"};
+  Configurable<bool> savenonPVCITSOnlyTracks{"savenonPVCITSOnlyTracks", false, "save non PV contributors with ITS only information"};
+  // Configurable<bool> rejectAtTFBoundary{"rejectAtTFBoundary", true, "reject collisions at a TF boundary"};
+  //  SG selector
   SGSelector sgSelector;
 
   // data tables
   Produces<aod::SGCollisions> outputSGCollisions;
-  //  Produces<aod::ZDCCollisions> outputZDCCollisions;
   Produces<aod::UDCollisions> outputCollisions;
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
   Produces<aod::UDCollsLabels> outputCollsLabels;
@@ -59,7 +61,6 @@ struct SGCandProducer {
   // data inputs
   using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using CC = CCs::iterator;
-  //  using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BCs = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BC = BCs::iterator;
   using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
@@ -138,56 +139,53 @@ struct SGCandProducer {
   void init(InitContext&)
   {
     sameCuts = (SGCutParHolder)SGCuts;
-
-    // add histograms for the different process functions
     registry.add("reco/Stat", "Cut statistics; Selection criterion; Collisions", {HistType::kTH1F, {{14, -0.5, 13.5}}});
-    registry.add("reco/pt1Vspt2", "2 prong events, p_{T} versus p_{T}", {HistType::kTH2F, {{100, -3., 3.}, {100, -3., 3.0}}});
-    registry.add("reco/TPCsignal1", "2 prong events, TPC signal versus p_{T} of particle 1", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
-    registry.add("reco/TPCsignal2", "2 prong events, TPC signal versus p_{T} of particle 2", {HistType::kTH2F, {{200, -3., 3.}, {200, 0., 100.0}}});
-    registry.add("reco/sig1VsSig2TPC", "2 prong events, TPC signal versus TPC signal", {HistType::kTH2F, {{100, 0., 100.}, {100, 0., 100.}}});
   }
 
   // process function for real data
   void process(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
-               // aod::Zdcs_000& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
                aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
     LOGF(debug, "<SGCandProducer>  collision %d", collision.globalIndex());
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
+    // reject collisions at TF boundaries
+    // if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    //  return;
+    //}
+    // registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
     // nominal BC
     if (!collision.has_foundBC()) {
       return;
     }
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(2., 1.);
     auto bc = collision.foundBC_as<BCs>();
-    LOGF(debug, "<SGCandProducer>  BC id %d", bc.globalBC());
+    auto newbc = bc;
 
     // obtain slice of compatible BCs
     auto bcRange = udhelpers::compatibleBCs(collision, sameCuts.NDtcoll(), bcs, sameCuts.minNBCs());
-    LOGF(debug, "<SGCandProducer>  Size of bcRange %d", bcRange.size());
-
-    // apply SG selection
-    //    auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, tracks, fwdtracks);
-    auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, tracks, fwdtracks);
-
-    // Check if it's a SingleGap event for sideC
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(isSGEvent + 1, 1.);
-    if (isSGEvent <= 2) {
-      LOGF(debug, "<SGCandProducer>  Data: good collision!");
-
-      // fill FITInfo
+    auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, bc);
+    // auto isSGEvent = sgSelector.IsSelected(sameCuts, collision, bcRange, tracks);
+    int issgevent = isSGEvent.value;
+    if (isSGEvent.bc) {
+      newbc = *(isSGEvent.bc);
+    } else {
+      LOGF(info, "No Newbc %i", bc.globalBC());
+    }
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(issgevent + 3, 1.);
+    if (issgevent <= 2) {
+      //    LOGF(info, "Current BC: %i, %i, %i", bc.globalBC(), newbc.globalBC(), issgevent);
+      if (sameCuts.minRgtrwTOF()) {
+        if (udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib()) < sameCuts.minRgtrwTOF())
+          return;
+      }
       upchelpers::FITInfo fitInfo{};
-      udhelpers::getFITinfo(fitInfo, bc.globalBC(), bcs, ft0s, fv0as, fdds);
-      //  upchelpers::ZDCInfo zdcInfo{};
-      // udhelpers::getZDCinfo(zdcInfo, bc.globalBC(), bcs, zdcs);
-      // udhelpers::getZDCinfo(zdcInfo, bc.globalBC(), zdcs);
-
+      udhelpers::getFITinfo(fitInfo, newbc.globalBC(), bcs, ft0s, fv0as, fdds);
       // update SG candidates tables
-      auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(),
                        collision.numContrib(), udhelpers::netCharge<true>(tracks),
-                       rtrwTOF);
-      outputSGCollisions(isSGEvent);
+                       1.); // rtrwTOF); //omit the calculation to speed up the things while skimming
+      outputSGCollisions(issgevent);
       outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
                            fitInfo.triggerMaskFT0,
                            fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC,
@@ -197,72 +195,26 @@ struct SGCandProducer {
                            fitInfo.BBFV0Apf, fitInfo.BGFV0Apf,
                            fitInfo.BBFDDApf, fitInfo.BBFDDCpf, fitInfo.BGFDDApf, fitInfo.BGFDDCpf);
       outputCollsLabels(collision.globalIndex());
-
+      if (newbc.has_zdc()) {
+        auto zdc = newbc.zdc();
+        udZdcsReduced(outputCollisions.lastIndex(), zdc.timeZNA(), zdc.timeZNC(), zdc.energyCommonZNA(), zdc.energyCommonZNC());
+      } else {
+        udZdcsReduced(outputCollisions.lastIndex(), -999, -999, -999, -999);
+      }
       // update SGTracks tables
       for (auto& track : tracks) {
-        updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+        if (track.isPVContributor() || saveAllTracks) {
+          if (track.itsClusterSizes() && track.itsChi2NCl() > 0 && ((track.tpcNClsFindable() == 0 && savenonPVCITSOnlyTracks) || track.tpcNClsFindable() > 50) && track.pt() > sameCuts.minPt() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta())
+            updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+          // if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+        }
       }
-
       // update SGFwdTracks tables
-      for (auto& fwdtrack : fwdtracks) {
-        updateUDFwdTrackTables(fwdtrack, bc.globalBC());
-      }
-
-      // fill UDZdcs
-      // outputZDCCollisions(zdcInfo.timeZNA,zdcInfo.timeZNC,zdcInfo.multZNA,zdcInfo.multZNC);
-      std::map<uint64_t, int32_t> mapGlobalBcWithZdc{};
-      auto globalBC = bc.globalBC();
-      for (const auto& zdc : zdcs) {
-        // auto globalBC = zdc.bc_as<o2::aod::BCs>().globalBC();
-        // auto bc = zdc.bc_as<o2::aod::BCs>().globalBC();
-        if (std::abs(zdc.timeZNA()) > 2.f && std::abs(zdc.timeZNC()) > 2.f)
-          continue;
-        // mapGlobalBcWithZdc[bc.globalBC()] = zdc.globalIndex();
-        mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
-        // mapGlobalBcWithZdc[bc] = zdc.globalIndex();
-      }
-      int candID = 0;
-      auto nZdcs = mapGlobalBcWithZdc.size();
-      if (nZdcs > 0) {
-        // auto itZDC = mapGlobalBcWithZdc.find(bc.globalBC());
-        auto itZDC = mapGlobalBcWithZdc.find(globalBC);
-        // auto itZDC = mapGlobalBcWithZdc.find(bc);
-        if (itZDC != mapGlobalBcWithZdc.end()) {
-          const auto& zdc = zdcs.iteratorAt(itZDC->second);
-          float timeZNA = zdc.timeZNA();
-          float timeZNC = zdc.timeZNC();
-          float eComZNA = zdc.energyCommonZNA();
-          float eComZNC = zdc.energyCommonZNC();
-          udZdcsReduced(candID, timeZNA, timeZNC, eComZNA, eComZNC);
+      if (sameCuts.withFwdTracks()) {
+        for (auto& fwdtrack : fwdtracks) {
+          if (!sgSelector.FwdTrkSelector(fwdtrack))
+            updateUDFwdTrackTables(fwdtrack, bc.globalBC());
         }
-      }
-      candID++;
-      // produce TPC signal histograms for 2-track events
-      LOGF(debug, "SG candidate: number of PV tracks %d", collision.numContrib());
-      if (collision.numContrib() == 2) {
-        auto cnt = 0;
-        float pt1 = 0., pt2 = 0.;
-        float signalTPC1 = 0., signalTPC2 = 0.;
-        for (auto tr : tracks) {
-          if (tr.isPVContributor()) {
-            cnt++;
-            switch (cnt) {
-              case 1:
-                pt1 = tr.pt() * tr.sign();
-                signalTPC1 = tr.tpcSignal();
-                break;
-              case 2:
-                pt2 = tr.pt() * tr.sign();
-                signalTPC2 = tr.tpcSignal();
-            }
-            LOGF(debug, "<SGCandProducer>    track[%d] %d pT %f ITS %d TPC %d TRD %d TOF %d",
-                 cnt, tr.isGlobalTrack(), tr.pt(), tr.itsNCls(), tr.tpcNClsCrossedRows(), tr.hasTRD(), tr.hasTOF());
-          }
-        }
-        registry.get<TH2>(HIST("reco/pt1Vspt2"))->Fill(pt1, pt2);
-        registry.get<TH2>(HIST("reco/TPCsignal1"))->Fill(pt1, signalTPC1);
-        registry.get<TH2>(HIST("reco/TPCsignal2"))->Fill(pt2, signalTPC2);
-        registry.get<TH2>(HIST("reco/sig1VsSig2TPC"))->Fill(signalTPC1, signalTPC2);
       }
     }
   }

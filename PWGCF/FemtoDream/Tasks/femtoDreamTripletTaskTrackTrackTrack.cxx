@@ -51,6 +51,7 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   /// Particle selection part
 
   /// Table for both particles
+  Configurable<float> ConfTracksInMixedEvent{"ConfTracksInMixedEvent", 1, "Number of tracks of interest, contained in the mixed event sample: 1 - only events with at least one track of interest are used in mixing; ...; 3 - only events with at least three track of interest are used in mixing. Max value is 3"};
   Configurable<float> ConfMaxpT{"ConfMaxpT", 4.05f, "Maximum transverse momentum of the particles"};
   Configurable<float> ConfPIDthrMom{"ConfPIDthrMom", 1.f, "Momentum threshold from which TPC and TOF are required for PID"};
   Configurable<o2::aod::femtodreamparticle::cutContainerType> ConfTPCPIDBit{"ConfTPCPIDBit", 16, "PID TPC bit from cutCulator "};
@@ -81,6 +82,7 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   /// particle part
   ConfigurableAxis ConfTempFitVarBins{"ConfTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
+  ConfigurableAxis ConfBinmultTempFit{"ConfBinmultTempFit", {1, 0, 1}, "multiplicity Binning for the TempFitVar plot"};
 
   /// Correlation part
   ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 20.0f, 40.0f, 60.0f, 80.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"};
@@ -109,7 +111,7 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   {
 
     eventHisto.init(&qaRegistry);
-    trackHistoSelectedParts.init(&qaRegistry, ConfDummy, ConfDummy, ConfTempFitVarpTBins, ConfDummy, ConfDummy, ConfTempFitVarBins, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfPDGCodePart);
+    trackHistoSelectedParts.init(&qaRegistry, ConfBinmultTempFit, ConfDummy, ConfTempFitVarpTBins, ConfDummy, ConfDummy, ConfTempFitVarBins, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfDummy, ConfIsMC, ConfPDGCodePart);
 
     ThreeBodyQARegistry.add("TripletTaskQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     ThreeBodyQARegistry.add("TripletTaskQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
@@ -172,11 +174,11 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   /// @param magFieldTesla magnetic field of the collision
   /// @param multCol multiplicity of the collision
   template <bool isMC, typename PartitionType, typename PartType>
-  void doSameEvent(PartitionType groupSelectedParts, PartType parts, float magFieldTesla, int multCol)
+  void doSameEvent(PartitionType groupSelectedParts, PartType parts, float magFieldTesla, int multCol, float centCol)
   {
     /// Histogramming same event
     for (auto& part : groupSelectedParts) {
-      trackHistoSelectedParts.fillQA<isMC, false>(part, multCol, aod::femtodreamparticle::kPt);
+      trackHistoSelectedParts.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt, multCol, centCol);
     }
 
     /// Now build the combinations
@@ -215,7 +217,7 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   {
     fillCollision(col);
     auto thegroupSelectedParts = SelectedParts->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    doSameEvent<false>(thegroupSelectedParts, parts, col.magField(), col.multNtr());
+    doSameEvent<false>(thegroupSelectedParts, parts, col.magField(), col.multNtr(), col.multV0M());
   }
   PROCESS_SWITCH(femtoDreamTripletTaskTrackTrackTrack, processSameEvent, "Enable processing same event", true);
 
@@ -224,11 +226,17 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   /// \param parts subscribe to the femtoDreamParticleTable
   void processSameEventMasked(MaskedCollision& col, o2::aod::FDParticles& parts)
   {
-    if ((col.bitmaskTrackOne() & MaskBit) != MaskBit)
+    if (ConfTracksInMixedEvent < 1 || ConfTracksInMixedEvent > 3)
+      LOG(fatal) << "ConfTracksInMixedEvent must be between 1 and 3!";
+    if (ConfTracksInMixedEvent == 1 && (col.bitmaskTrackOne() & MaskBit) != MaskBit)
+      return;
+    if (ConfTracksInMixedEvent == 2 && (col.bitmaskTrackTwo() & MaskBit) != MaskBit)
+      return;
+    if (ConfTracksInMixedEvent == 3 && (col.bitmaskTrackThree() & MaskBit) != MaskBit)
       return;
     fillCollision(col);
     auto thegroupSelectedParts = SelectedParts->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    doSameEvent<false>(thegroupSelectedParts, parts, col.magField(), col.multNtr());
+    doSameEvent<false>(thegroupSelectedParts, parts, col.magField(), col.multNtr(), col.multV0M());
   }
   PROCESS_SWITCH(femtoDreamTripletTaskTrackTrackTrack, processSameEventMasked, "Enable processing same event with masks", false);
 
@@ -242,7 +250,7 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   {
     fillCollision(col);
     auto thegroupSelectedParts = SelectedPartsMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    doSameEvent<true>(thegroupSelectedParts, parts, col.magField(), col.multNtr());
+    doSameEvent<true>(thegroupSelectedParts, parts, col.magField(), col.multNtr(), col.multV0M());
   }
   PROCESS_SWITCH(femtoDreamTripletTaskTrackTrackTrack, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
@@ -254,11 +262,17 @@ struct femtoDreamTripletTaskTrackTrackTrack {
                                 soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
                                 o2::aod::FDMCParticles&)
   {
-    if ((col.bitmaskTrackOne() & MaskBit) != MaskBit)
+    if (ConfTracksInMixedEvent < 1 || ConfTracksInMixedEvent > 3)
+      LOG(fatal) << "ConfTracksInMixedEvent must be between 1 and 3!";
+    if (ConfTracksInMixedEvent == 1 && (col.bitmaskTrackOne() & MaskBit) != MaskBit)
+      return;
+    if (ConfTracksInMixedEvent == 2 && (col.bitmaskTrackTwo() & MaskBit) != MaskBit)
+      return;
+    if (ConfTracksInMixedEvent == 3 && (col.bitmaskTrackThree() & MaskBit) != MaskBit)
       return;
     fillCollision(col);
     auto thegroupSelectedParts = SelectedPartsMC->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    doSameEvent<true>(thegroupSelectedParts, parts, col.magField(), col.multNtr());
+    doSameEvent<true>(thegroupSelectedParts, parts, col.magField(), col.multNtr(), col.multV0M());
   }
   PROCESS_SWITCH(femtoDreamTripletTaskTrackTrackTrack, processSameEventMCMasked, "Enable processing same event for Monte Carlo", false);
 
@@ -325,7 +339,9 @@ struct femtoDreamTripletTaskTrackTrackTrack {
   /// @param parts subscribe to the femtoDreamParticleTable
   void processMixedEventMasked(MaskedCollisions& cols, o2::aod::FDParticles& parts)
   {
-    Partition<MaskedCollisions> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & MaskBit) == MaskBit;
+    Partition<MaskedCollisions> PartitionMaskedCol1 = (ConfTracksInMixedEvent == 1 && (aod::femtodreamcollision::bitmaskTrackOne & MaskBit) == MaskBit) ||
+                                                      (ConfTracksInMixedEvent == 2 && (aod::femtodreamcollision::bitmaskTrackTwo & MaskBit) == MaskBit) ||
+                                                      (ConfTracksInMixedEvent == 3 && (aod::femtodreamcollision::bitmaskTrackThree & MaskBit) == MaskBit);
     PartitionMaskedCol1.bindTable(cols);
 
     for (auto& [collision1, collision2, collision3] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, PartitionMaskedCol1, PartitionMaskedCol1, PartitionMaskedCol1)) {
@@ -387,7 +403,9 @@ struct femtoDreamTripletTaskTrackTrackTrack {
                                  soa::Join<o2::aod::FDParticles, o2::aod::FDMCLabels>& parts,
                                  o2::aod::FDMCParticles&)
   {
-    Partition<MaskedCollisions> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & MaskBit) == MaskBit;
+    Partition<MaskedCollisions> PartitionMaskedCol1 = (ConfTracksInMixedEvent == 1 && (aod::femtodreamcollision::bitmaskTrackOne & MaskBit) == MaskBit) ||
+                                                      (ConfTracksInMixedEvent == 2 && (aod::femtodreamcollision::bitmaskTrackTwo & MaskBit) == MaskBit) ||
+                                                      (ConfTracksInMixedEvent == 3 && (aod::femtodreamcollision::bitmaskTrackThree & MaskBit) == MaskBit);
     PartitionMaskedCol1.bindTable(cols);
 
     for (auto& [collision1, collision2, collision3] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, PartitionMaskedCol1, PartitionMaskedCol1, PartitionMaskedCol1)) {

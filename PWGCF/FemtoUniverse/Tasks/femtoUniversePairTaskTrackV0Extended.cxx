@@ -65,7 +65,7 @@ struct femtoUniversePairTaskTrackV0Extended {
   Configurable<int> ConfV0PDGCodePartTwo{"ConfV0PDGCodePartTwo", 3122, "Particle 2 (V0) - PDG code"};
   ConfigurableAxis ConfV0TempFitVarBins{"ConfV0TempFitVarBins", {300, 0.95, 1.}, "V0: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfV0TempFitVarpTBins{"ConfV0TempFitVarpTBins", {20, 0.5, 4.05}, "V0: pT binning of the pT vs. TempFitVar plot"};
-  Configurable<int> ConfV0PosChildType{"ConfV0PosChildType", -1, "identifier for positive v0 daughter"};
+  Configurable<int> ConfV0Type{"ConfV0Type", 0, "selection for either lambda or anti-lambda"};
   ConfigurableAxis ConfChildTempFitVarBins{"ConfChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   ConfigurableAxis ConfChildTempFitVarpTBins{"ConfChildTempFitVarpTBins", {20, 0.5, 4.05}, "V0 child: pT binning of the pT vs. TempFitVar plot"};
   Configurable<float> ConfHPtPart2{"ConfHPtPart2", 4.0f, "higher limit for pt of particle 2"};
@@ -178,7 +178,7 @@ struct femtoUniversePairTaskTrackV0Extended {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRPlotPerRadii.value);
     }
   }
-  /// This function processes the same event and takes care of all the histogramming
+  /// This function processes the same event for track - V0
   void processSameEvent(o2::aod::FDCollision& col, FemtoFullParticles& parts)
   {
     const auto& magFieldTesla = col.magField();
@@ -194,7 +194,7 @@ struct femtoUniversePairTaskTrackV0Extended {
       const auto& posChild = parts.iteratorAt(part.index() - 2);
       const auto& negChild = parts.iteratorAt(part.index() - 1);
       // printf("-- V0 d- %d d+ %d\n",negChild.globalIndex(),posChild.globalIndex());
-      if (ConfV0PosChildType >= 0 && !IsParticleTPC(posChild, ConfV0PosChildType))
+      if ((ConfV0Type > 0 && !IsParticleTPC(posChild, 0)) || (ConfV0Type < 0 && !IsParticleTPC(negChild, 0)))
         continue;
 
       trackHistoPartTwo.fillQA<false, false>(part);
@@ -223,7 +223,7 @@ struct femtoUniversePairTaskTrackV0Extended {
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
       if (ConfIsCPR.value) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla)) {
+        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
           continue;
         }
       }
@@ -235,15 +235,60 @@ struct femtoUniversePairTaskTrackV0Extended {
       if (!IsParticleCombined(p1, ConfTrackChoicePartOne))
         continue;
       const auto& posChild = parts.iteratorAt(p2.index() - 2);
-      if (ConfV0PosChildType >= 0 && !IsParticleTPC(posChild, ConfV0PosChildType))
+      const auto& negChild = parts.iteratorAt(p2.index() - 1);
+      if ((ConfV0Type > 0 && !IsParticleTPC(posChild, 0)) || (ConfV0Type < 0 && !IsParticleTPC(negChild, 0)))
         continue;
       sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
     }
   }
 
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEvent, "Enable processing same event", true);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEvent, "Enable processing same event for track - V0", false);
 
-  /// This function processes the mixed event
+  /// This function processes the same event for V0 - V0
+  void processSameEventV0(o2::aod::FDCollision& col, FemtoFullParticles& parts)
+  {
+    const auto& magFieldTesla = col.magField();
+
+    auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    const int multCol = col.multNtr();
+
+    eventHisto.fillQA(col);
+
+    /// Histogramming same event
+    for (auto& part : groupPartsTwo) {
+      const auto& posChild = parts.iteratorAt(part.index() - 2);
+      const auto& negChild = parts.iteratorAt(part.index() - 1);
+      // printf("-- V0 d- %d d+ %d\n",negChild.globalIndex(),posChild.globalIndex());
+      if ((ConfV0Type > 0 && !IsParticleTPC(posChild, 0)) || (ConfV0Type < 0 && !IsParticleTPC(negChild, 0)))
+        continue;
+
+      trackHistoPartTwo.fillQA<false, false>(part);
+      posChildHistos.fillQA<false, false>(posChild);
+      negChildHistos.fillQA<false, false>(negChild);
+    }
+
+    /// Now build the combinations
+    for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+      if (ConfIsCPR.value) {
+        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
+          continue;
+        }
+      }
+      // track cleaning
+      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+        continue;
+      }
+      const auto& posChild = parts.iteratorAt(p2.index() - 2);
+      const auto& negChild = parts.iteratorAt(p2.index() - 1);
+      if ((ConfV0Type > 0 && !IsParticleTPC(posChild, 0)) || (ConfV0Type < 0 && !IsParticleTPC(negChild, 0)))
+        continue;
+      sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
+    }
+  }
+
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEventV0, "Enable processing same event for V0 - V0", false);
+
+  /// This function processes the mixed event for track - V0
   void processMixedEvent(o2::aod::FDCollisions& cols, FemtoFullParticles& parts)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
@@ -264,7 +309,7 @@ struct femtoUniversePairTaskTrackV0Extended {
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         if (ConfIsCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1)) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femtoUniverseContainer::EventType::mixed)) {
             continue;
           }
         }
@@ -276,14 +321,55 @@ struct femtoUniversePairTaskTrackV0Extended {
         if (!IsParticleCombined(p1, ConfTrackChoicePartOne))
           continue;
         const auto& posChild = parts.iteratorAt(p2.index() - 2);
-        if (ConfV0PosChildType >= 0 && !IsParticleTPC(posChild, ConfV0PosChildType))
+        const auto& negChild = parts.iteratorAt(p2.index() - 1);
+        if ((ConfV0Type > 0 && !IsParticleTPC(posChild, 0)) || (ConfV0Type < 0 && !IsParticleTPC(negChild, 0)))
           continue;
         mixedEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
       }
     }
   }
 
-  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEvent, "Enable processing mixed events", true);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEvent, "Enable processing mixed events for track - V0", false);
+
+  /// This function processes the mixed event for V0 - V0
+  void processMixedEventV0(o2::aod::FDCollisions& cols, FemtoFullParticles& parts)
+  {
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
+
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+
+      const int multCol = collision1.multNtr();
+
+      auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+
+      const auto& magFieldTesla1 = collision1.magField();
+      const auto& magFieldTesla2 = collision2.magField();
+
+      if (magFieldTesla1 != magFieldTesla2) {
+        continue;
+      }
+
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+        if (ConfIsCPR.value) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femtoUniverseContainer::EventType::mixed)) {
+            continue;
+          }
+        }
+        // track cleaning
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
+        const auto& posChild = parts.iteratorAt(p2.index() - 2);
+        const auto& negChild = parts.iteratorAt(p2.index() - 1);
+        if ((ConfV0Type > 0 && !IsParticleTPC(posChild, 0)) || (ConfV0Type < 0 && !IsParticleTPC(negChild, 0)))
+          continue;
+        mixedEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
+      }
+    }
+  }
+
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEventV0, "Enable processing mixed events for V0 - V0", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

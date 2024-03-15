@@ -156,7 +156,7 @@ struct correlateStrangeness {
       if (!mixing)
         histos.fill(HIST("sameEvent/TriggerParticlesV0"), trigg.pt(), mult);
       for (auto& assocCandidate : assocs) {
-        auto assoc = assocCandidate.v0Data();
+        auto assoc = assocCandidate.v0Core_as<V0DatasWithoutTrackX>();
 
         //---] removing autocorrelations [---
         auto postrack = assoc.posTrack_as<TracksComplete>();
@@ -665,7 +665,7 @@ struct correlateStrangeness {
     hEfficiencyV0[2] = hEfficiencyAntiLambda;
 
     for (auto const& v0 : associatedV0s) {
-      auto v0Data = v0.v0Data();
+      auto v0Data = v0.v0Core_as<V0DatasWithoutTrackX>();
       static_for<0, 2>([&](auto i) {
         constexpr int index = i.value;
         if (v0.compatible(index) && (!doMCassociation || v0.mcTrue(index)) && bitcheck(doCorrelation, index)) {

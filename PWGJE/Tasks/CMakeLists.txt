@@ -34,6 +34,10 @@ o2physics_add_dpl_workflow(emc-tmmonitor
                     SOURCES emctmmonitor.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(mc-generator-studies
+                    SOURCES mcgeneratorstudies.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 
 if(FastJet_FOUND)
     o2physics_add_dpl_workflow(jet-substructure
@@ -119,5 +123,9 @@ if(FastJet_FOUND)
     o2physics_add_dpl_workflow(jet-lund-reclustering
                         SOURCES jetLundReclustering.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-hf-fragmentation
+                        SOURCES hffragmentationfunction.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
 endif()

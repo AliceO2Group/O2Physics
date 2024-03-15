@@ -28,10 +28,9 @@
 #include <vector>
 #include <string>
 
-void checkSkimming(std::string original_path = "alice/data/2022/LHC22m/523308/apass4/0140/OfflineTriggerSelection/Stage_5/001/AnalysisResults_fullrun.root", std::string skimmed_path = "AnalysisResults.root")
+void checkSkimming(std::string original_path = "AnalysisResults.root", std::string skimmed_path = "AnalysisResults_skimmed.root")
 {
   // Define the labels to be compared (only triggers not downscaled)
-  std::vector<std::string> labels = {"fPHOSnbar", "fPHOSPair", "fPHOSElectron", "fPHOSPhoton", "fOmegaLargeRadius", "fSingleXiYN", "fQuadrupleXi", "fhadronXi", "fTripleXi", "fGammaHighPtDCAL", "fGammaHighPtEMCAL", "fJetFullHighPt", "fLD", "fPD", "fLLL", "fPLL", "fPPL", "fPPP", "fHighFt0cFv0Flat", "fHighFt0cFv0Mult", "fHighFt0Flat", "fHighFt0Mult", "fHighTrackMult", "fHfDoubleCharmMix", "fHfDoubleCharm3P", "fHfSoftGamma3P", "fHfFemto2P", "fHfBeauty4P", "fHfFemto3P", "fHfBeauty3P", "fHfSoftGamma2P", "fHfDoubleCharm2P", "fDiMuon", "fDiElectron", "fUDdiff", "fHe"};
 
   // Load the root files
   TFile file1(original_path.c_str());
@@ -41,27 +40,35 @@ void checkSkimming(std::string original_path = "alice/data/2022/LHC22m/523308/ap
   TH1* hist1 = dynamic_cast<TH1*>(file1.Get("central-event-filter-task/scalers/mFiltered;1")); // Replace with the correct path
   TH1* hist2 = dynamic_cast<TH1*>(file2.Get("central-event-filter-task/scalers/mScalers;1"));  // Replace with the correct path
 
+  std::vector<std::string> labels;
+  for (int i = 1; i <= hist1->GetNbinsX(); i++) {
+    std::string label = hist1->GetXaxis()->GetBinLabel(i);
+    if (label != "Total number of events" && label != "Filtered events") {
+      labels.push_back(label);
+    }
+  }
+
   if (!hist1 || !hist2) {
     std::cerr << "Error: Failed to extract histograms from the root files." << std::endl;
     return;
   }
 
   // Find the bins corresponding to the desired labels
-  std::vector<int> selected_bins1, selected_bins2;
+  std::vector<double> selected_bins1, selected_bins2;
   for (auto lab : labels) {
     int bin1 = hist1->GetXaxis()->FindBin(lab.c_str());
     if (bin1 == -1) {
       std::cerr << "Error: Label " << lab << " not found in histogram 1." << std::endl;
       return;
     }
-    selected_bins1.push_back(bin1);
+    selected_bins1.push_back(hist1->GetBinContent(bin1));
 
     int bin2 = hist2->GetXaxis()->FindBin(lab.c_str());
     if (bin2 == -1) {
       std::cerr << "Error: Label " << lab << " not found in histogram 2." << std::endl;
       return;
     }
-    selected_bins2.push_back(bin2);
+    selected_bins2.push_back(hist2->GetBinContent(bin2));
   }
 
   TFile output("output.root", "RECREATE");
@@ -71,12 +78,17 @@ void checkSkimming(std::string original_path = "alice/data/2022/LHC22m/523308/ap
 
   // Fill the histograms
   for (int i = 0; i < labels.size(); i++) {
-    hOriginal->SetBinContent(i + 1, hist1->GetBinContent(selected_bins1[i]));
-    hSkimmed->SetBinContent(i + 1, hist2->GetBinContent(selected_bins2[i]));
-    hRatio->SetBinContent(i + 1, hist2->GetBinContent(selected_bins2[i]) / hist1->GetBinContent(selected_bins1[i]));
+    hOriginal->SetBinContent(i + 1, selected_bins1[i]);
+    hSkimmed->SetBinContent(i + 1, selected_bins2[i]);
     hOriginal->GetXaxis()->SetBinLabel(i + 1, labels[i].c_str());
     hSkimmed->GetXaxis()->SetBinLabel(i + 1, labels[i].c_str());
+
+    if (selected_bins1[i] < 1. || labels[i].find("Single") != std::string::npos || labels[i].find("Low") != std::string::npos || labels[i].find("Pt3P") != std::string::npos) {
+      hRatio->GetXaxis()->SetBinLabel(i + 1, "Disabled");
+      continue;
+    }
     hRatio->GetXaxis()->SetBinLabel(i + 1, labels[i].c_str());
+    hRatio->SetBinContent(i + 1, selected_bins2[i] / selected_bins1[i]);
   }
   hOriginal->Write();
   hSkimmed->Write();

@@ -22,7 +22,9 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
+#include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -32,7 +34,6 @@
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "DCAFitter/DCAFitterN.h"
-#include "Common/DataModel/Qvectors.h"
 
 #include "PWGLF/DataModel/LFHypernucleiTables.h"
 
@@ -44,7 +45,7 @@ using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
 
-using CollisionsFullWithFlow = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::QvectorFT0As, aod::QvectorFT0Cs, aod::QvectorFT0Ms, aod::QvectorFV0As>;
+using CollisionsFullWithFlow = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::EPCalibrationTables>;
 
 namespace
 {
@@ -463,15 +464,9 @@ struct hyperRecoTask {
       initCCDB(bc);
 
       hEvents->Fill(0.);
-      if (!collision.sel8())
+      if (!collision.sel8() || std::abs(collision.posZ()) > 10 || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         continue;
-
       hEvents->Fill(1.);
-
-      if (std::abs(collision.posZ()) > 10.f)
-        continue;
-
-      hEvents->Fill(2.);
       hZvtx->Fill(collision.posZ());
       hCentFT0A->Fill(collision.centFT0A());
       hCentFT0C->Fill(collision.centFT0C());
@@ -510,15 +505,9 @@ struct hyperRecoTask {
       initCCDB(bc);
 
       hEvents->Fill(0.);
-      if (!collision.sel8())
+      if (!collision.sel8() || std::abs(collision.posZ()) > 10 || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         continue;
-
       hEvents->Fill(1.);
-
-      if (std::abs(collision.posZ()) > 10.f)
-        continue;
-
-      hEvents->Fill(2.);
       hZvtx->Fill(collision.posZ());
       hCentFT0A->Fill(collision.centFT0A());
       hCentFT0C->Fill(collision.centFT0C());
@@ -533,10 +522,9 @@ struct hyperRecoTask {
 
       for (auto& hypCand : hyperCandidates) {
         outputDataTableWithFlow(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
-                                collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.sumAmplFT0A(),
-                                collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.sumAmplFT0C(),
-                                collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.sumAmplFT0M(),
-                                collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.sumAmplFV0A(),
+                                collision.psiFT0A(), collision.multFT0A(),
+                                collision.psiFT0C(), collision.multFT0C(),
+                                collision.psiTPC(), collision.multTPC(),
                                 collision.posX(), collision.posY(), collision.posZ(),
                                 hypCand.isMatter,
                                 hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
@@ -562,14 +550,9 @@ struct hyperRecoTask {
       initCCDB(bc);
 
       hEvents->Fill(0.);
-      if (!collision.sel8()) {
+      if (!collision.sel8() || std::abs(collision.posZ()) > 10 || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         continue;
-      }
       hEvents->Fill(1.);
-      if (std::abs(collision.posZ()) > 10.f) {
-        continue;
-      }
-      hEvents->Fill(2.);
       hZvtx->Fill(collision.posZ());
       hCentFT0A->Fill(collision.centFT0A());
       hCentFT0C->Fill(collision.centFT0C());
