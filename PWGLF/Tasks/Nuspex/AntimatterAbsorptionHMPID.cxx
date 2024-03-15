@@ -435,25 +435,27 @@ struct AntimatterAbsorptionHMPID {
       }
 
       bool passedPionTOFsel = false;
-      bool passedKaonTOFsel = false;
-      bool passedProtTOFsel = false;
-      bool passedDeutTOFsel = false;
+      // bool passedKaonTOFsel = false;
+      // bool passedProtTOFsel = false;
+      // bool passedDeutTOFsel = false;
 
       if (track.tofNSigmaPi() > nsigmaTOFMin &&
           track.tofNSigmaPi() < nsigmaTOFMax)
         passedPionTOFsel = true;
 
-      if (track.tofNSigmaKa() > nsigmaTOFMin &&
-          track.tofNSigmaKa() < nsigmaTOFMax)
-        passedKaonTOFsel = true;
+      /*
+        if (track.tofNSigmaKa() > nsigmaTOFMin &&
+            track.tofNSigmaKa() < nsigmaTOFMax)
+          passedKaonTOFsel = true;
 
-      if (track.tofNSigmaPr() > nsigmaTOFMin &&
-          track.tofNSigmaPr() < nsigmaTOFMax)
-        passedProtTOFsel = true;
+        if (track.tofNSigmaPr() > nsigmaTOFMin &&
+            track.tofNSigmaPr() < nsigmaTOFMax)
+          passedProtTOFsel = true;
 
-      if (track.tofNSigmaDe() > nsigmaTOFMin &&
-          track.tofNSigmaDe() < nsigmaTOFMax)
-        passedDeutTOFsel = true;
+        if (track.tofNSigmaDe() > nsigmaTOFMin &&
+            track.tofNSigmaDe() < nsigmaTOFMax)
+          passedDeutTOFsel = true;
+       */
 
       // To be calculated
       bool hmpidAbs8cm = true;
