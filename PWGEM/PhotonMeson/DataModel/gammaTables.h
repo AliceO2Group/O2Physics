@@ -119,25 +119,25 @@ DECLARE_SOA_COLUMN(PosX, posX, float); //!
 DECLARE_SOA_COLUMN(PosY, posY, float); //!
 DECLARE_SOA_COLUMN(PosZ, posZ, float); //!
 } // namespace emreducedmcevent
-DECLARE_SOA_TABLE(EMReducedMCEvents, "AOD", "EMMCEVENT", //!   MC event information table
+DECLARE_SOA_TABLE(EMMCEvents, "AOD", "EMMCEVENT", //!   MC event information table
                   o2::soa::Index<>, mccollision::GeneratorsID,
                   emreducedmcevent::PosX, emreducedmcevent::PosY, emreducedmcevent::PosZ,
                   mccollision::T, mccollision::Weight, mccollision::ImpactParameter);
-using EMReducedMCEvent = EMReducedMCEvents::iterator;
+using EMMCEvent = EMMCEvents::iterator;
 
 namespace emmceventlabel
 {
-DECLARE_SOA_INDEX_COLUMN(EMReducedMCEvent, emreducedmcevent); //! MC collision
-DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);                 //! Bit mask to indicate collision mismatches (bit ON means mismatch). Bit 15: indicates negative label
+DECLARE_SOA_INDEX_COLUMN(EMMCEvent, emreducedmcevent); //! MC collision
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);          //! Bit mask to indicate collision mismatches (bit ON means mismatch). Bit 15: indicates negative label
 } // namespace emmceventlabel
 
-DECLARE_SOA_TABLE(EMReducedMCEventLabels, "AOD", "EMMCEVENTLABEL", //! Table joined to the EMReducedEvents table containing the MC index
-                  emmceventlabel::EMReducedMCEventId, emmceventlabel::McMask);
-using EMReducedMCEventLabel = EMReducedMCEventLabels::iterator;
+DECLARE_SOA_TABLE(EMMCEventLabels, "AOD", "EMMCEVENTLABEL", //! Table joined to the EMReducedEvents table containing the MC index
+                  emmceventlabel::EMMCEventId, emmceventlabel::McMask);
+using EMMCEventLabel = EMMCEventLabels::iterator;
 
 namespace emmcparticle
 {
-DECLARE_SOA_INDEX_COLUMN(EMReducedMCEvent, emreducedmcevent);                             //!
+DECLARE_SOA_INDEX_COLUMN(EMMCEvent, emreducedmcevent);                                    //!
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother0, mother0, int, "EMMCParticles_Mother0");       //! Track index of the first mother
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother1, mother1, int, "EMMCParticles_Mother1");       //! Track index of the last mother
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter0, daughter0, int, "EMMCParticles_Daughter0"); //! Track index of the first daughter
@@ -165,7 +165,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
 // NOTE: This table is nearly identical to the one from Framework (except that it points to the event ID, not the BC id)
 //       This table contains all MC truth tracks (both v0 and calos)
 DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //!  MC track information (on disk)
-                       o2::soa::Index<>, emmcparticle::EMReducedMCEventId,
+                       o2::soa::Index<>, emmcparticle::EMMCEventId,
                        mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
                        emmcparticle::MothersIds, emmcparticle::DaughtersIdSlice,
                        mcparticle::Weight,

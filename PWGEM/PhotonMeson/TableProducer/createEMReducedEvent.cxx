@@ -42,6 +42,8 @@ struct CreateEMEvent {
   Produces<o2::aod::EMReducedEventsMult> event_mult;
   Produces<o2::aod::EMReducedEventsCent> event_cent;
 
+  Configurable<bool> requireCaloReadout{"requireCaloReadout", true, "Require calorimeters readout when analyzing EMCal/PHOS"};
+
   enum class EMEventType : int {
     kEvent = 0,
     kEvent_Cent = 1,
@@ -80,8 +82,8 @@ struct CreateEMEvent {
       // LOGF(info, "collision-loop | bc.globalIndex() = %d, ncolls_per_bc = %d", bc.globalIndex(), map_ncolls_per_bc[bc.globalIndex()]);
       registry.fill(HIST("hEventCounter"), 1);
 
-      bool is_phoscpv_readout = collision.alias_bit(kTVXinPHOS);
-      bool is_emc_readout = collision.alias_bit(kTVXinEMC);
+      bool is_phoscpv_readout = (!requireCaloReadout || collision.alias_bit(kTVXinPHOS));
+      bool is_emc_readout = (!requireCaloReadout || collision.alias_bit(kTVXinEMC));
 
       if (collision.sel8()) {
         registry.fill(HIST("hEventCounter"), 2);

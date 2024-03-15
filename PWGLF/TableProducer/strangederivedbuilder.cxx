@@ -47,6 +47,7 @@
 #include "Common/DataModel/Qvectors.h"
 #include "Framework/StaticFor.h"
 #include "Common/DataModel/McCollisionExtra.h"
+#include "PWGLF/DataModel/EPCalibrationTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -764,6 +765,10 @@ struct strangederivedbuilder {
   {
     StraFT0CQVs(collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.sumAmplFT0C());
   }
+  void processFT0CQVectorsLF(soa::Join<aod::Collisions, aod::EPCalibrationTables>::iterator const& collision)
+  {
+    StraFT0CQVs(std::cos(2 * collision.psiFT0C()), std::sin(2 * collision.psiFT0C()), 1.f);
+  }
   void processFT0MQVectors(soa::Join<aod::Collisions, aod::QvectorFT0Ms>::iterator const& collision)
   {
     StraFT0MQVs(collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.sumAmplFT0M());
@@ -788,6 +793,7 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processProduceCascTOFs, "Produce CascTOFs table", true);
   PROCESS_SWITCH(strangederivedbuilder, processFT0AQVectors, "Produce FT0A Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processFT0CQVectors, "Produce FT0C Q-vectors table", false);
+  PROCESS_SWITCH(strangederivedbuilder, processFT0CQVectorsLF, "Produce FT0C Q-vectors table using LF temporary calibration", false);
   PROCESS_SWITCH(strangederivedbuilder, processFT0MQVectors, "Produce FT0M Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processFV0AQVectors, "Produce FV0A Q-vectors table", false);
 };

@@ -50,6 +50,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -66,19 +67,6 @@ enum CandidateType {
   CandDstar,
   CandCascadeBachelor,
   NCandidateTypes
-};
-
-// event rejection types
-enum EventRejection {
-  Trigger = 0,
-  TimeFrameBorderCut,
-  PositionX,
-  PositionY,
-  PositionZ,
-  NContrib,
-  Chi2,
-  Centrality,
-  NEventRejection
 };
 
 // enum for proton PID strategy (only proton for baryons)

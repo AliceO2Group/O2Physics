@@ -41,16 +41,16 @@ class EMEventCut : public TNamed
   template <typename T>
   bool IsSelected(T const& collision) const
   {
-    if (!IsSelected(collision, EMEventCuts::kFT0AND)) {
+    if (mRequireFT0AND && !IsSelected(collision, EMEventCuts::kFT0AND)) {
       return false;
     }
     if (!IsSelected(collision, EMEventCuts::kZvtx)) {
       return false;
     }
-    if (!IsSelected(collision, EMEventCuts::kNoTFB)) {
+    if (mRequireNoTFB && !IsSelected(collision, EMEventCuts::kNoTFB)) {
       return false;
     }
-    if (!IsSelected(collision, EMEventCuts::kNoITSROFB)) {
+    if (mRequireNoITSROFB && !IsSelected(collision, EMEventCuts::kNoITSROFB)) {
       return false;
     }
     return true;
