@@ -558,23 +558,20 @@ struct MultiplicityTableTaskIndexed {
     // counter from Igor
     int nGlobalTracks = 0;
     for (auto& track : tracks) {
-      if (fabs(track.eta()) > 0.8)
-        continue;
-      if (track.tpcNClsFound() < 80)
-        continue;
-      if (track.tpcNClsCrossedRows() < 100)
-        continue;
-      if (track.isGlobalTrack()) {
-        nGlobalTracks++;
+      if (fabs(track.eta()) < 0.8 && track.tpcNClsFound() >= 80 && track.tpcNClsCrossedRows() >= 100){
+        if (track.isGlobalTrack()) {
+          nGlobalTracks++;
+        }
       }
-      multsGlobal(nGlobalTracks);
     }
+    multsGlobal(nGlobalTracks);
+  }
 
-    PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", false);
-    PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", true);
-    PROCESS_SWITCH(MultiplicityTableTaskIndexed, processGlobalTrackingCounters, "Produce Run 3 global counters", false);
-    PROCESS_SWITCH(MultiplicityTableTaskIndexed, processMC, "Produce MC multiplicity tables", false);
-  };
+  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", false);
+  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", true);
+  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processGlobalTrackingCounters, "Produce Run 3 global counters", false);
+  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processMC, "Produce MC multiplicity tables", false);
+};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
