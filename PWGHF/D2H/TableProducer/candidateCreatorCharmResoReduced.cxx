@@ -58,7 +58,7 @@ constexpr double binsPt[nBins + 1] = {
   50.};
 auto vecBins = std::vector<double>{binsPt, binsPt + nBins + 1};
 
-struct HfCandidateCreatorDV0Reduced {
+struct HfCandidateCreatorCharmResoReduced {
   // Produces: Tables with resonance info
   Produces<aod::HfCandCharmReso> rowCandidateReso;
 
@@ -134,15 +134,21 @@ struct HfCandidateCreatorDV0Reduced {
     float massV0{0.};
     float invMassV0{0.};
     // slection on V0 candidate mass
-    if (channel == DecayChannel::Dstar2ToDplusK0s || channel == DecayChannel::Ds1ToDstarK0s) {
+    if (channel == DecayChannel::Ds2StarToDplusK0s || channel == DecayChannel::Ds1ToDstarK0s) {
       massV0 = massK0;
       invMassV0 = candV0.invMassK0s();
     } else if (channel == DecayChannel::XcToDplusLambda) {
       massV0 = massLambda;
+      uint8_t targetV0Type{0};
       if (candD.dType() > 0) {
         invMassV0 = candV0.invMassLambda();
+        targetV0Type = V0Type::Lambda;
       } else {
         invMassV0 = candV0.invMassAntiLambda();
+        targetV0Type = V0Type::AntiLambda;
+      }
+      if (!TESTBIT(candV0.v0Type(),targetV0Type)) {
+        return false;
       }
     }
     if (std::fabs(invMassV0 - massV0) > invMassWindowV0) {
@@ -178,11 +184,11 @@ struct HfCandidateCreatorDV0Reduced {
         if (!isV0Selected<channel>(candV0, candD)) {
           continue;
         }
-        if (activateQA && !already_counted) {
+        if (activateQA && !alreadyCounted) {
           registry.fill(HIST("hSelections"), 1 + Selections::V0Sel);
-          already_counted = true;
+          alreadyCounted = true;
         }
-        float invMass2Reso{0.};
+        float invMassReso{0.};
         float invMassV0{0.};
         std::array<float, 3> pVecV0 = {candV0.px(), candV0.py(), candV0.pz()};
         float ptV0 = RecoDecay::pt(pVecV0);
@@ -195,8 +201,8 @@ struct HfCandidateCreatorDV0Reduced {
             break;
           case DecayChannel::Ds2StarToDplusK0s:
             invMassV0 = candV0.invMassK0s();
-            invMass2Reso = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massDplus, massK0});
-            registry.fill(HIST("hMassDs2Star"), std::sqrt(invMass2Reso), ptReso);
+            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0}, std::array{massDplus, massK0});
+            registry.fill(HIST("hMassDs2Star"), invMassReso, ptReso);
             break;
           case DecayChannel::XcToDplusLambda:
             if (candD.dType() > 0) {
@@ -204,15 +210,15 @@ struct HfCandidateCreatorDV0Reduced {
             } else {
               invMassV0 = candV0.invMassAntiLambda();
             }
-            invMass2Reso = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massDplus, massLambda});
-            registry.fill(HIST("hMassXcRes"), std::sqrt(invMass2Reso), ptReso);
+            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0}, std::array{massDplus, massLambda});
+            registry.fill(HIST("hMassXcRes"), invMassReso, ptReso);
             break;
           default:
             break;
         }
         // Filling Output table
         rowCandidateReso(collisions.globalIndex(),
-                         std::sqrt(invMass2Reso),
+                         invMassReso,
                          ptReso,
                          invMassD,
                          ptD,
@@ -225,13 +231,13 @@ struct HfCandidateCreatorDV0Reduced {
     }
   } // main function
 
-  void processDstar2ToDplusK0s(aod::HfRedCollisions::iterator const& collision,
+  void processDs2StarToDplusK0s(aod::HfRedCollisions::iterator const& collision,
                                aod::HfRed3PrNoTrks const& candsD,
                                aod::HfRedVzeros const& candsV0)
   {
-    runCandidateCreation<DecayChannel::Dstar2ToDplusK0s>(collision, candsD, candidatesK0s);
+    runCandidateCreation<DecayChannel::Ds2StarToDplusK0s>(collision, candsD, candidatesK0s);
   }
-  PROCESS_SWITCH(HfCandidateCreatorDV0Reduced, processDstar2ToDplusK0s, "Process Dstar2 candidates without MC info and without ML info", true);
+  PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDs2StarToDplusK0s, "Process Ds2* candidates without MC info and without ML info", true);
 
   void processDs1ToDstarK0s(aod::HfRedCollisions::iterator const& collision,
                             aod::HfRed3PrNoTrks const& candsD,
@@ -239,7 +245,7 @@ struct HfCandidateCreatorDV0Reduced {
   {
     runCandidateCreation<DecayChannel::Ds1ToDstarK0s>(collision, candsD, candidatesK0s);
   }
-  PROCESS_SWITCH(HfCandidateCreatorDV0Reduced, processDs1ToDstarK0s, "Process Ds1 candidates without MC info and without ML info", false);
+  PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDs1ToDstarK0s, "Process Ds1 candidates without MC info and without ML info", false);
 
   void processXcToDplusLambda(aod::HfRedCollisions::iterator const& collision,
                               aod::HfRed3PrNoTrks const& candsD,
@@ -247,10 +253,10 @@ struct HfCandidateCreatorDV0Reduced {
   {
     runCandidateCreation<DecayChannel::XcToDplusLambda>(collision, candsD, candidatesLambda);
   }
-  PROCESS_SWITCH(HfCandidateCreatorDV0Reduced, processXcToDplusLambda, "Process Xc candidates without MC info and without ML info", false);
+  PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processXcToDplusLambda, "Process Xc candidates without MC info and without ML info", false);
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfCandidateCreatorDV0Reduced>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCandidateCreatorCharmResoReduced>(cfgc)};
 }

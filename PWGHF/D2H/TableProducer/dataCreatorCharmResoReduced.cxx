@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file dataCreatorDV0Reduced.cxx
+/// \file dataCreatorCharmResoReduced.cxx
 /// \brief Creation of D-V0 pairs
 ///
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, UniTO Turin
@@ -68,7 +68,7 @@ enum DType : uint8_t {
 };
 
 /// Creation of D-V0 pairs
-struct HfDataCreatorDV0Reduced {
+struct HfDataCreatorCharmResoReduced {
   // Produces AOD tables to store track information
   Produces<aod::HfRedCollisions> hfReducedCollision; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfOrigColCounts> hfCollisionCounter; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
@@ -296,14 +296,14 @@ struct HfDataCreatorDV0Reduced {
         registry.fill(HIST("hV0Type"), v0type);
         if (TESTBIT(v0type, K0s)) {
           massV0 = MassK0;
-          auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
+          auto invMassDV0 = RecoDecay::m(std::array{pVecD, pVecV0}, std::array{massD, massV0});
           registry.fill(HIST("hMassK0s"), v0.mK0Short());
           switch (DecayChannel) {
             case DecayChannel::DstarV0:
-              registry.fill(HIST("hMassDs1"), sqrt(invMass2DV0));
+              registry.fill(HIST("hMassDs1"), invMassDV0);
               break;
             case DecayChannel::DplusV0:
-              registry.fill(HIST("hMassDsStar2"), sqrt(invMass2DV0));
+              registry.fill(HIST("hMassDsStar2"), invMassDV0);
               break;
             default:
               break;
@@ -311,18 +311,18 @@ struct HfDataCreatorDV0Reduced {
         }
         if (TESTBIT(v0type, Lambda)) {
           massV0 = MassLambda0;
-          auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
+          auto invMassDV0 = RecoDecay::m(std::array{pVecD, pVecV0}, std::array{massD, massV0});
           registry.fill(HIST("hMassLambda"), v0.mLambda());
           if (DecayChannel == DecayChannel::DplusV0) {
-            registry.fill(HIST("hMassXcRes"), std::sqrt(invMass2DV0));
+            registry.fill(HIST("hMassXcRes"), invMassDV0);
           }
         }
         if (TESTBIT(v0type, AntiLambda)) {
           massV0 = MassLambda0;
-          auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
+          auto invMassDV0 = RecoDecay::m(std::array{pVecD, pVecV0}, std::array{massD, massV0});
           registry.fill(HIST("hMassLambda"), v0.mAntiLambda());
           if (DecayChannel == DecayChannel::DplusV0) {
-            registry.fill(HIST("hMassXcRes"), sqrt(invMass2DV0));
+            registry.fill(HIST("hMassXcRes"), invMassDV0);
           }
         }
         // fill V0 table
@@ -392,7 +392,7 @@ struct HfDataCreatorDV0Reduced {
       runDataCreation<DecayChannel::DplusV0, CandsDplusFiltered>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
     }
   }
-  PROCESS_SWITCH(HfDataCreatorDV0Reduced, processDplusV0, "Process Dplus candidates without MC info and without ML info", true);
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0, "Process Dplus candidates without MC info and without ML info", true);
 
   void processDstarV0(aod::Collisions const& collisions,
                       CandDstarFiltered const& candsDstar,
@@ -411,10 +411,10 @@ struct HfDataCreatorDV0Reduced {
       runDataCreation<DecayChannel::DstarV0, CandDstarFiltered>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
     }
   }
-  PROCESS_SWITCH(HfDataCreatorDV0Reduced, processDstarV0, "Process DStar candidates without MC info and without ML info", false);
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0, "Process DStar candidates without MC info and without ML info", false);
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfDataCreatorDV0Reduced>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfDataCreatorCharmResoReduced>(cfgc)};
 }
