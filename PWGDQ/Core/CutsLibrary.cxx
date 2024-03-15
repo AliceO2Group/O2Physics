@@ -362,6 +362,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pionPIDCut1")) {
+    cut->AddCut(GetAnalysisCut("pionQualityCut1"));
+    cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
+    return cut;
+  }
+
   if (!nameStr.compare("PIDCalibElectron")) {
     cut->AddCut(GetAnalysisCut("pidcalib_ele"));
     return cut;
@@ -938,13 +944,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   std::vector<TString> vecTypetrack;
-  vecTypetrack.emplace_back("");          // default TightGlobalTrackRun3
-  vecTypetrack.emplace_back("_7ITSncls"); // default TightGlobalTrackRun3 but with 7 ITS clusters
-  vecTypetrack.emplace_back("_ITS");      // Ask only for ITS requirements
-  vecTypetrack.emplace_back("_ITSalone"); // Ask only for ITS requirements + ITSalone (no TPC matching)
-  vecTypetrack.emplace_back("_TPC");      // Ask only for TPC requirements
-  vecTypetrack.emplace_back("_TPCalone"); // Ask only for TPC requirements + TPCalone (no ITS matching)
-  vecTypetrack.emplace_back("_TPCnoTRD"); // Ask only for TPC requirements no TRD matching
+  vecTypetrack.emplace_back("");               // default TightGlobalTrackRun3
+  vecTypetrack.emplace_back("_7ITSncls");      // default TightGlobalTrackRun3 but with 7 ITS clusters
+  vecTypetrack.emplace_back("_ITS");           // Ask only for ITS requirements
+  vecTypetrack.emplace_back("_ITSalone");      // Ask only for ITS requirements + ITSalone (no TPC matching)
+  vecTypetrack.emplace_back("_TPC");           // Ask only for TPC requirements
+  vecTypetrack.emplace_back("_TPCalone");      // Ask only for TPC requirements + TPCalone (no ITS matching)
+  vecTypetrack.emplace_back("_TPCnoTRD");      // Ask only for TPC requirements no TRD matching
   vecTypetrack.emplace_back("_TPCstrongncls"); // default TightGlobalTrackRun3 but with 130 TPC clusters
 
   // loop to define PID cuts with and without post calibration
@@ -2402,6 +2408,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairJpsi2")) {
+    cut->AddCut(GetAnalysisCut("pairJpsi2"));
+    return cut;
+  }
+
   if (!nameStr.compare("pairPsi2S")) {
     cut->AddCut(GetAnalysisCut("pairPsi2S"));
     return cut;
@@ -2409,6 +2420,16 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("pairUpsilon")) {
     cut->AddCut(GetAnalysisCut("pairUpsilon"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairX3872Cut1")) {
+    cut->AddCut(GetAnalysisCut("pairX3872"));
+    return cut;
+  }
+
+  if (!nameStr.compare("DipionPairCut1")) {
+    cut->AddCut(GetAnalysisCut("DipionMassCut1"));
     return cut;
   }
 
@@ -2912,13 +2933,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   std::vector<TString> vecTypetrack;
-  vecTypetrack.emplace_back("");          // default TightGlobalTrackRun3 as above
-  vecTypetrack.emplace_back("_7ITSncls"); // default TightGlobalTrackRun3 but with 7 ITS clusters
-  vecTypetrack.emplace_back("_ITS");      // Ask only for ITS requirements
-  vecTypetrack.emplace_back("_ITSalone"); // Ask only for ITS requirements + ITSalone (no TPC matching)
-  vecTypetrack.emplace_back("_TPC");      // Ask only for TPC requirements
-  vecTypetrack.emplace_back("_TPCalone"); // Ask only for TPC requirements + TPCalone (no ITS matching)
-  vecTypetrack.emplace_back("_TPCnoTRD"); // Ask only for TPC requirements no TRD matching
+  vecTypetrack.emplace_back("");               // default TightGlobalTrackRun3 as above
+  vecTypetrack.emplace_back("_7ITSncls");      // default TightGlobalTrackRun3 but with 7 ITS clusters
+  vecTypetrack.emplace_back("_ITS");           // Ask only for ITS requirements
+  vecTypetrack.emplace_back("_ITSalone");      // Ask only for ITS requirements + ITSalone (no TPC matching)
+  vecTypetrack.emplace_back("_TPC");           // Ask only for TPC requirements
+  vecTypetrack.emplace_back("_TPCalone");      // Ask only for TPC requirements + TPCalone (no ITS matching)
+  vecTypetrack.emplace_back("_TPCnoTRD");      // Ask only for TPC requirements no TRD matching
   vecTypetrack.emplace_back("_TPCstrongncls"); // default TightGlobalTrackRun3 but with 130 TPC clusters
 
   // loop to define PID cuts with and without post calibration
@@ -3065,6 +3086,15 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCncls, 60, 161);
     cut->AddCut(VarManager::kTrackDCAxy, -1.5, 1.5);
     cut->AddCut(VarManager::kTrackDCAz, -1.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("pionQualityCut1")) {
+    cut->AddCut(VarManager::kPt, 0.15, 1000.0);
+    cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    cut->AddCut(VarManager::kTPCncls, 100, 161);
+    cut->AddCut(VarManager::kTrackDCAxy, -0.05, 0.05);
+    cut->AddCut(VarManager::kTrackDCAz, -0.1, 0.1);
     return cut;
   }
 
@@ -4343,6 +4373,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("DipionMassCut1")) {
+    cut->AddCut(VarManager::kMass, 0.5, 1.0);
+    return cut;
+  }
+
   if (!nameStr.compare("pairMassLow1")) {
     cut->AddCut(VarManager::kMass, 1.0, 1000.0);
     return cut;
@@ -4438,6 +4473,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairJpsi2")) {
+    cut->AddCut(VarManager::kMass, 2.72, 3.2);
+    return cut;
+  }
+
   if (!nameStr.compare("pairPsi2S")) {
     cut->AddCut(VarManager::kMass, 3.4, 3.9);
     return cut;
@@ -4445,6 +4485,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pairUpsilon")) {
     cut->AddCut(VarManager::kMass, 8.0, 11.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairX3872")) {
+    cut->AddCut(VarManager::kCosthetaDileptonDitrack, 0.98, 1);
     return cut;
   }
 

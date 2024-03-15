@@ -42,7 +42,7 @@ using namespace o2::aod::photonpair;
 using namespace o2::aod::pwgem::mcutil;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMReducedEventIds>;
@@ -318,7 +318,7 @@ struct Pi0EtaToGammaGammaMC {
     } else if (pairtype == PairType::kPHOSPHOS) {
       return o2::aod::pwgem::mcutil::IsInAcceptance(mcparticle, mcparticles, std::vector<int>{-13, 13, 22}, -maxY_phos, +maxY_phos, minPhi_phos, maxPhi_phos);
     } else if (pairtype == PairType::kEMCEMC) {
-      return o2::aod::pwgem::mcutil::IsInAcceptance(mcparticle, mcparticles, std::vector<int>{-13, 13, 22}, -maxY_emc, +maxY_emc, minPhi_emc, maxPhi_emc);
+      return o2::aod::pwgem::mcutil::IsInAcceptance(mcparticle, mcparticles, std::vector<int>{22, 22}, -maxY_emc, +maxY_emc, minPhi_emc, maxPhi_emc);
     }
     return true;
   }
@@ -620,26 +620,26 @@ struct Pi0EtaToGammaGammaMC {
 
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
-  void processPCMPCM(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
+  void processPCMPCM(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
   {
     TruePairing<PairType::kPCMPCM>(grouped_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fPCMCuts, fPCMCuts, fPairCuts, v0legs, nullptr, nullptr, mccollisions, mcparticles);
     runGenInfo<PairType::kPCMPCM>(grouped_collisions, mccollisions, mcparticles);
   }
   void processPHOSPHOS(MyCollisions const& collisions) {}
-  void processEMCEMC(MyCollisions const& collisions, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
+  void processEMCEMC(MyCollisions const& collisions, aod::EMMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
   {
     runGenInfo<PairType::kEMCEMC>(collisions, mccollisions, mcparticles);
   }
   void processPCMPHOS(MyCollisions const& collisions) {}
   void processPCMEMC(MyCollisions const& collisions) {}
 
-  void processPCMDalitzEE(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, MyDalitzEEs const& dileptons, MyMCElectrons const& emprimaryelectrons, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
+  void processPCMDalitzEE(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, MyDalitzEEs const& dileptons, MyMCElectrons const& emprimaryelectrons, aod::EMMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
   {
     TruePairing<PairType::kPCMDalitzEE>(grouped_collisions, v0photons, dileptons, perCollision_pcm, perCollision_dalitzee, fPCMCuts, fDalitzEECuts, fPairCuts, v0legs, emprimaryelectrons, nullptr, mccollisions, mcparticles);
     runGenInfo<PairType::kPCMDalitzEE>(grouped_collisions, mccollisions, mcparticles);
   }
 
-  void processPCMDalitzMuMu(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, MyDalitzMuMus const& dileptons, MyMCMuons const& emprimarymuons, aod::EMReducedMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
+  void processPCMDalitzMuMu(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, MyDalitzMuMus const& dileptons, MyMCMuons const& emprimarymuons, aod::EMMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
   {
     TruePairing<PairType::kPCMDalitzMuMu>(grouped_collisions, v0photons, dileptons, perCollision_pcm, perCollision_dalitzmumu, fPCMCuts, fDalitzMuMuCuts, fPairCuts, v0legs, nullptr, emprimarymuons, mccollisions, mcparticles);
     runGenInfo<PairType::kPCMDalitzMuMu>(grouped_collisions, mccollisions, mcparticles);

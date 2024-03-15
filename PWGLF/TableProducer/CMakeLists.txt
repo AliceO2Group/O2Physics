@@ -127,6 +127,11 @@ o2physics_add_dpl_workflow(hypertriton-reco-task
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(hyper-kink-reco-task
+                    SOURCES hyperKinkRecoTask.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(hyhefour-builder
                     SOURCES hyhe4builder.cxx
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
@@ -190,7 +195,7 @@ o2physics_add_dpl_workflow(cascqaanalysis
 
 o2physics_add_dpl_workflow(cascadeflow
                     SOURCES cascadeflow.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 # Spectra
