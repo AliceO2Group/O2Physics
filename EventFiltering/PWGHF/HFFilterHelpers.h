@@ -70,8 +70,6 @@ enum HfTriggers {
   kV0Charm2P,
   kV0Charm3P,
   kCharmBarToXiBach,
-  kSigmaCppKminus,
-  kSigmaC0K0s,
   kNtriggersHF
 };
 
@@ -168,7 +166,7 @@ static const o2::framework::AxisSpec alphaAxis{100, -1.f, 1.f};
 static const o2::framework::AxisSpec qtAxis{100, 0.f, 0.25f};
 static const o2::framework::AxisSpec bdtAxis{100, 0.f, 1.f};
 static const o2::framework::AxisSpec phiAxis{36, 0., o2::constants::math::TwoPI};
-static const std::array<o2::framework::AxisSpec, kNCharmParticles + 13> massAxisC = {o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.75f, 2.15f}, o2::framework::AxisSpec{100, 2.05f, 2.45f}, o2::framework::AxisSpec{100, 2.25f, 2.65f}, o2::framework::AxisSpec{100, 0.139f, 0.159f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}, o2::framework::AxisSpec{240, 0.14f, 0.2f}, o2::framework::AxisSpec{240, 0.14f, 0.2f}, o2::framework::AxisSpec{600, 0.4f, 1.0f}, o2::framework::AxisSpec{600, 0.4f, 1.0f}};
+static const std::array<o2::framework::AxisSpec, kNCharmParticles + 15> massAxisC = {o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.65f, 2.05f}, o2::framework::AxisSpec{100, 1.75f, 2.15f}, o2::framework::AxisSpec{100, 2.05f, 2.45f}, o2::framework::AxisSpec{100, 2.25f, 2.65f}, o2::framework::AxisSpec{100, 0.139f, 0.159f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{100, 0.f, 0.25f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{200, 0.48f, 0.88f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 1.1f, 1.4f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}, o2::framework::AxisSpec{100, 2.3f, 2.9f}, o2::framework::AxisSpec{680, 0.13f, 0.3f}, o2::framework::AxisSpec{680, 0.13f, 0.3f}, o2::framework::AxisSpec{600, 0.4f, 1.0f}, o2::framework::AxisSpec{600, 0.4f, 1.0f}, o2::framework::AxisSpec{600, 0.4f, 1.0f}, o2::framework::AxisSpec{600, 0.4f, 1.0f}};
 static const std::array<o2::framework::AxisSpec, kNBeautyParticles> massAxisB = {o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 4.8f, 6.0f}, o2::framework::AxisSpec{240, 5.0f, 6.2f}, o2::framework::AxisSpec{240, 5.0f, 6.2f}};
 
 // default values for configurables
@@ -202,8 +200,11 @@ constexpr int activeDoubleCharmChannels[1][3] = {{1, 1, 1}}; // kDoubleCharm2P, 
 static const std::vector<std::string> labelsColumnsDoubleCharmChannels = {"DoubleCharm2Prong", "DoubleCharm3Prong", "DoubleCharmMix"};
 
 // charm resonances
-constexpr float cutsMassCharmReso[1][8] = {{0.01, 0.3, 0.3, 0.88, 0.88, 1.4, 0.18, 0.8}}; // D*+, D*0, Ds*0, Ds1+, Ds2*+, Xic*, Xic*->SigmaC
-static const std::vector<std::string> labelsColumnsDeltaMasseCharmReso = {"DstarPlus", "DstarZero", "DsStarZero", "Ds1Plus", "Ds2StarPlus", "XicStar", "SigmaC", "XicResoToSigmaC"};
+constexpr float cutsCharmReso[3][9] = {{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.0},
+                                       {0.155, 0.3, 0.3, 0.88, 0.88, 1.4, 0.18, 0.26, 0.8},
+                                       {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}}; // D*+, D*0, Ds*0, Ds1+, Ds2*+, Xic*, SigmaC, SigmaC2520, Xic*->SigmaC
+static const std::vector<std::string> labelsColumnsDeltaMassCharmReso = {"DstarPlus", "DstarZero", "DsStarZero", "Ds1Plus", "Ds2StarPlus", "XicResoToD", "SigmaC", "SigmaC2520", "XicResoToSigmaC"};
+static const std::vector<std::string> labelsRowsDeltaMassCharmReso = {"deltaMassMin", "deltaMassMax", "ptMin"};
 // V0s for charm resonances
 constexpr float cutsV0s[1][6] = {{0.85, 0.97, 0.5, 4., 0.02, 0.01}}; // cosPaGamma, cosPaK0sLambda, radiusK0sLambda, nSigmaPrLambda, deltaMassK0S, deltaMassLambda
 static const std::vector<std::string> labelsColumnsV0s = {"CosPaGamma", "CosPaK0sLambda", "RadiusK0sLambda", "NSigmaPrLambda", "DeltaMassK0s", "DeltaMassLambda"};
@@ -259,10 +260,14 @@ class HfFilterHelper
     mPtMinSoftPionForSigmaC = minPt;
     mPtMaxSoftPionForSigmaC = maxPt;
   }
-  void setDeltaMassRangeSigmaC(float minDeltaMass, float maxDeltaMass)
+  void setPtDeltaMassRangeSigmaC(float minDeltaMassSigmaC, float maxDeltaMassSigmaC, float minDeltaMassSigmaC2520, float maxDeltaMassSigmaC2520, float minPtSigmaC, float minPtSigmaC2520)
   {
-    mDeltaMassMinSigmaC = minDeltaMass;
-    mDeltaMassMaxSigmaC = maxDeltaMass;
+    mDeltaMassMinSigmaC = minDeltaMassSigmaC;
+    mDeltaMassMaxSigmaC = maxDeltaMassSigmaC;
+    mDeltaMassMinSigmaC2520 = minDeltaMassSigmaC2520;
+    mDeltaMassMaxSigmaC2520 = maxDeltaMassSigmaC2520;
+    mPtMinSigmaC = minPtSigmaC;
+    mPtMinSigmaC2520 = minPtSigmaC2520;
   }
   void setPtRangeSoftKaonXicResoToSigmaC(float minPt, float maxPt)
   {
@@ -402,9 +407,9 @@ class HfFilterHelper
  private:
   // selections
   template <typename T>
-  bool isSelectedKaon4Charm3Prong(const T& track, const float& nsigmaTPCKaon3Prong, const float& nsigmaTOFKaon3Prong);
+  bool isSelectedKaon4Charm3Prong(const T& track);
   template <typename T>
-  bool isSelectedProton4CharmBaryons(const T& track, const float& nsigmaTPCProton, const float& nsigmaTOFProton);
+  bool isSelectedProton4CharmBaryons(const T& track);
 
   // PID
   template <typename T>
@@ -433,6 +438,8 @@ class HfFilterHelper
   float mPtMaxProtonForFemto{5.0};                                           // maximum pt for the proton for femto
   float mPtMaxCharmBaryonBachelor{100000.};                                  // maximum pt for the bachelor pion from Xic/Omegac decays
   float mPtThresholdPidStrategyForFemto{8.};                                 // pt threshold to change strategy for proton PID for femto
+  float mPtMinSigmaC{0.f};                                                   // pt min SigmaC candidate
+  float mPtMinSigmaC2520{0.f};                                               // pt min SigmaC(2520) candidate
   std::array<float, 3> mNSigmaPrCutsForFemto{3., 3., 3.};                    // cut values for Nsigma TPC, TOF, combined for femto protons
   float mNSigmaTpcPrCutForCharmBaryons{3.};                                  // maximum Nsigma TPC for protons in Lc and Xic decays
   float mNSigmaTofPrCutForCharmBaryons{3.};                                  // maximum Nsigma TOF for protons in Lc and Xic decays
@@ -442,6 +449,8 @@ class HfFilterHelper
   float mNSigmaTofPiKaCutForDzero{3.};                                       // maximum Nsigma TOF for pions/kaons in D0 decays
   float mDeltaMassMinSigmaC{0.155};                                          // minimum delta mass M(pKpipi)-M(pKpi) of SigmaC0,++ candidates
   float mDeltaMassMaxSigmaC{0.18};                                           // maximum delta mass M(pKpipi)-M(pKpi) of SigmaC0,++ candidates
+  float mDeltaMassMinSigmaC2520{0.2};                                        // minimum delta mass M(pKpipi)-M(pKpi) of SigmaC0,++(2520) candidates
+  float mDeltaMassMaxSigmaC2520{0.26};                                       // maximum delta mass M(pKpipi)-M(pKpi) of SigmaC0,++(2520) candidates
   float mMinGammaCosinePa{0.85};                                             // minimum cosp for gammas
   float mMinK0sLambdaCosinePa{0.97};                                         // minimum cosp for K0S and Lambda in charm excited decays
   float mMinK0sLambdaRadius{0.5};                                            // minimum radius for K0S and Lambda in charm excited decays
@@ -532,7 +541,7 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T& track,
     return kRejected;
   }
 
-  if (whichTrigger == kSigmaCppKminus || whichTrigger == kSigmaC0K0s) {
+  if (whichTrigger == kV0Charm3P) {
 
     // SigmaC0,++ soft pion pt cut
     if (pT < mPtMinSoftPionForSigmaC || pT > mPtMaxSoftPionForSigmaC) {
@@ -649,7 +658,7 @@ inline int8_t HfFilterHelper::isDplusPreselected(const T& trackOppositeCharge)
   int8_t retValue = 0;
 
   // check PID of opposite charge track
-  if (!isSelectedKaon4Charm3Prong(trackOppositeCharge, mNSigmaTpcKaCutFor3Prongs, mNSigmaTofKaCutFor3Prongs)) {
+  if (!isSelectedKaon4Charm3Prong(trackOppositeCharge)) {
     return retValue;
   }
 
@@ -669,7 +678,7 @@ inline int8_t HfFilterHelper::isDsPreselected(const P& pTrackSameChargeFirst, co
   int8_t retValue = 0;
 
   // check PID of opposite charge track
-  if (!isSelectedKaon4Charm3Prong(trackOppositeCharge, mNSigmaTpcKaCutFor3Prongs, mNSigmaTofKaCutFor3Prongs)) {
+  if (!isSelectedKaon4Charm3Prong(trackOppositeCharge)) {
     return retValue;
   }
 
@@ -697,13 +706,13 @@ inline int8_t HfFilterHelper::isCharmBaryonPreselected(const T& trackSameChargeF
 {
   int8_t retValue = 0;
   // check PID of opposite charge track
-  if (!isSelectedKaon4Charm3Prong(trackOppositeCharge, mNSigmaTpcKaCutFor3Prongs, mNSigmaTofKaCutFor3Prongs)) {
+  if (!isSelectedKaon4Charm3Prong(trackOppositeCharge)) {
     return retValue;
   }
-  if (isSelectedProton4CharmBaryons(trackSameChargeFirst, mNSigmaTpcPrCutForCharmBaryons, mNSigmaTofPrCutForCharmBaryons)) {
+  if (isSelectedProton4CharmBaryons(trackSameChargeFirst)) {
     retValue |= BIT(0);
   }
-  if (isSelectedProton4CharmBaryons(trackSameChargeSecond, mNSigmaTpcPrCutForCharmBaryons, mNSigmaTofPrCutForCharmBaryons)) {
+  if (isSelectedProton4CharmBaryons(trackSameChargeSecond)) {
     retValue |= BIT(1);
   }
 
@@ -901,8 +910,16 @@ inline int8_t HfFilterHelper::isSelectedSigmaCInDeltaMassRange(const T& pTrackSa
     std::array<float, 4> massDausSigmaCToLcPKPi{massProton, massKa, massPi, massPi};
     float invMassSigmaCToLcPKPi = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond, pTrackSoftPi}, massDausSigmaCToLcPKPi);
     float deltaMassPKPi = invMassSigmaCToLcPKPi - invMassLcToPKPi;
-    if (mDeltaMassMinSigmaC < deltaMassPKPi && deltaMassPKPi < mDeltaMassMaxSigmaC) {
+    bool isSigmaC2455 = (mDeltaMassMinSigmaC < deltaMassPKPi && deltaMassPKPi < mDeltaMassMaxSigmaC && ptSigmaC > mPtMinSigmaC);
+    bool isSigmaC2520 = (mDeltaMassMinSigmaC2520 < deltaMassPKPi && deltaMassPKPi < mDeltaMassMaxSigmaC2520 && ptSigmaC > mPtMinSigmaC2520);
+    if (isSigmaC2455 || isSigmaC2520) {
       retValue |= BIT(0);
+      if (isSigmaC2455) {
+        SETBIT(retValue, 2);
+      }
+      if (isSigmaC2520) {
+        SETBIT(retValue, 3);
+      }
       /// QA plot
       if (activateQA) {
         hMassVsPt->Fill(ptSigmaC, deltaMassPKPi);
@@ -915,8 +932,16 @@ inline int8_t HfFilterHelper::isSelectedSigmaCInDeltaMassRange(const T& pTrackSa
     std::array<float, 4> massDausSigmaCToLcPiKP{massPi, massKa, massProton, massPi};
     float invMassSigmaCToLcPiKP = RecoDecay::m(std::array{pTrackSameChargeFirst, pTrackOppositeCharge, pTrackSameChargeSecond, pTrackSoftPi}, massDausSigmaCToLcPiKP);
     float deltaMassPiKP = invMassSigmaCToLcPiKP - invMassLcToPiKP;
-    if (mDeltaMassMinSigmaC < deltaMassPiKP && deltaMassPiKP < mDeltaMassMaxSigmaC) {
+    bool isSigmaC2455 = (mDeltaMassMinSigmaC < deltaMassPiKP && deltaMassPiKP < mDeltaMassMaxSigmaC && ptSigmaC > mPtMinSigmaC);
+    bool isSigmaC2520 = (mDeltaMassMinSigmaC2520 < deltaMassPiKP && deltaMassPiKP < mDeltaMassMaxSigmaC2520 && ptSigmaC > mPtMinSigmaC2520);
+    if (isSigmaC2455 || isSigmaC2520) {
       retValue |= BIT(1);
+      if (isSigmaC2455) {
+        SETBIT(retValue, 2);
+      }
+      if (isSigmaC2520) {
+        SETBIT(retValue, 3);
+      }
       /// QA plot
       if (activateQA) {
         hMassVsPt->Fill(ptSigmaC, deltaMassPiKP);
@@ -1530,7 +1555,7 @@ inline void HfFilterHelper::setTpcRecalibMaps(o2::framework::Service<o2::ccdb::B
 /// \param nsigmaTOFProton max NsigmaTOF for proton candidates
 /// \return true if track passes all cuts
 template <typename T>
-inline bool HfFilterHelper::isSelectedProton4CharmBaryons(const T& track, const float& nsigmaTPCProton, const float& nsigmaTOFProton)
+inline bool HfFilterHelper::isSelectedProton4CharmBaryons(const T& track)
 {
   float NSigmaTPC = track.tpcNSigmaPr();
   float NSigmaTOF = track.tofNSigmaPr();
@@ -1545,10 +1570,10 @@ inline bool HfFilterHelper::isSelectedProton4CharmBaryons(const T& track, const 
     }
   }
 
-  if (std::fabs(NSigmaTPC) > nsigmaTPCProton) {
+  if (std::fabs(NSigmaTPC) > mNSigmaTpcPrCutForCharmBaryons) {
     return false;
   }
-  if (track.hasTOF() && std::fabs(NSigmaTOF) > nsigmaTOFProton) {
+  if (track.hasTOF() && std::fabs(NSigmaTOF) > mNSigmaTofPrCutForCharmBaryons) {
     return false;
   }
 
@@ -1571,7 +1596,7 @@ inline bool HfFilterHelper::isSelectedKaonFromXicResoToSigmaC(const T& track)
 
   if constexpr (isKaonTrack) {
     /// if the kaon is a track, and not a K0s (V0), check the PID as well
-    return isSelectedKaon4Charm3Prong(track, mNSigmaTpcKaonFromXicResoToSigmaC, mNSigmaTofKaonFromXicResoToSigmaC);
+    return isSelectedKaon4Charm3Prong(track);
   }
 
   return true;
@@ -1579,11 +1604,9 @@ inline bool HfFilterHelper::isSelectedKaonFromXicResoToSigmaC(const T& track)
 
 /// Basic selection of kaon candidates for charm candidates
 /// \param track is a track
-/// \param nsigmaTPCKaon max NsigmaTPC for kaon candidates
-/// \param nsigmaTOFKaon max NsigmaTOF for kaon candidates
 /// \return true if track passes all cuts
 template <typename T>
-inline bool HfFilterHelper::isSelectedKaon4Charm3Prong(const T& track, const float& nsigmaTPCKaon, const float& nsigmaTOFKaon)
+inline bool HfFilterHelper::isSelectedKaon4Charm3Prong(const T& track)
 {
   float NSigmaTPC = track.tpcNSigmaKa();
   float NSigmaTOF = track.tofNSigmaKa();
@@ -1598,10 +1621,10 @@ inline bool HfFilterHelper::isSelectedKaon4Charm3Prong(const T& track, const flo
     }
   }
 
-  if (std::fabs(NSigmaTPC) > nsigmaTPCKaon) {
+  if (std::fabs(NSigmaTPC) > mNSigmaTpcKaCutFor3Prongs) {
     return false;
   }
-  if (track.hasTOF() && std::fabs(NSigmaTOF) > nsigmaTOFKaon) {
+  if (track.hasTOF() && std::fabs(NSigmaTOF) > mNSigmaTofKaCutFor3Prongs) {
     return false;
   }
 

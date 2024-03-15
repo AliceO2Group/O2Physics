@@ -67,7 +67,8 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
   // additional selections for D*
   Configurable<float> minPtSoftPion{"minPtSoftPion", static_cast<float>(cutsPt[0][1]), "minimum pT for soft pion tracks in D*+ -> D0pi decay"};
   Configurable<float> maxPtSoftPion{"maxPtSoftPion", static_cast<float>(cutsPt[1][1]), "maximum pT for soft pion tracks in D*+ -> D0pi decay"};
-  Configurable<float> maxDeltaMassDstar{"maxDeltaMassDstar", static_cast<float>(cutsMassCharmReso[0][0]), "maximum invariant-mass delta for D*+ in GeV/c2"};
+  Configurable<float> minDeltaMassDstar{"minDeltaMassDstar", static_cast<float>(cutsCharmReso[0][0]), "minimum invariant-mass delta for D*+ in GeV/c2"};
+  Configurable<float> maxDeltaMassDstar{"maxDeltaMassDstar", static_cast<float>(cutsCharmReso[1][0]), "maximum invariant-mass delta for D*+ in GeV/c2"};
   Configurable<std::vector<double>> pTBinsTrack{"pTBinsTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCAXY pT-dependent cut (D* from beauty)"};
   Configurable<LabeledArray<double>> cutsTrackBeauty3Prong{"cutsTrackBeauty3Prong", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 3-prong beauty candidates"};
 
@@ -298,7 +299,7 @@ struct HfFilterCharmHadronSignals { // Main struct for HF triggers
             auto ptDstar = RecoDecay::pt(pVecDstar);
             auto phiDstar = RecoDecay::phi(pVecDstar[0], pVecDstar[1]);
             auto yDstar = RecoDecay::y(pVecDstar, massDStar);
-            if (std::fabs(massDiffDstar - (massDStar - massD0)) <= maxDeltaMassDstar) {
+            if (minDeltaMassDstar <= massDiffDstar && massDiffDstar <= maxDeltaMassDstar) {
               registry.fill(HIST("hDstarToDzeroPi"), massDiffDstar, ptDstar, yDstar, phiDstar, collision.posZ(), collision.numContrib(), collision.multFT0M(), scoresToFill[1], scoresToFill[2]); // for D* we store the BDT output scores of the D0
               if (TESTBIT(isTrackSelected, kSoftPionForBeauty)) {
                 registry.fill(HIST("hDstarToDzeroPiForBeauty"), massDiffDstar, ptDstar, yDstar, phiDstar, collision.posZ(), collision.numContrib(), collision.multFT0M(), scoresToFill[1], scoresToFill[2]); // for D* we store the BDT output scores of the D0
