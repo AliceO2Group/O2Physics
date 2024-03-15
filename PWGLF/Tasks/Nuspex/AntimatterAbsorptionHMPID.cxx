@@ -151,10 +151,10 @@ struct AntimatterAbsorptionHMPID {
     pion_pos_reg.add("incomingPi_Pos_4cm", "incomingPi_Pos_4cm", HistType::kTH1F, {pAxis});
     pion_pos_reg.add("survivingPi_Pos_8cm", "survivingPi_Pos_8cm", HistType::kTH2F, {pAxis, {300, 0.0, 30.0, "#Delta R (cm)"}});
     pion_pos_reg.add("survivingPi_Pos_4cm", "survivingPi_Pos_4cm", HistType::kTH2F, {pAxis, {300, 0.0, 30.0, "#Delta R (cm)"}});
-    pion_pos_reg.add("Pi_Pos_Q_8cm", "Pi_Pos_Q_8cm", HistType::kTH2F, {pAxis, {100, 0.0, 1000.0, "Q (ADC)"}});
-    pion_pos_reg.add("Pi_Pos_Q_4cm", "Pi_Pos_Q_4cm", HistType::kTH2F, {pAxis, {100, 0.0, 1000.0, "Q (ADC)"}});
-    pion_pos_reg.add("Pi_Pos_ClsSize_8cm", "Pi_Pos_ClsSize_8cm", HistType::kTH2F, {pAxis, {100, 0.0, 100, "Cls size"}});
-    pion_pos_reg.add("Pi_Pos_ClsSize_4cm", "Pi_Pos_ClsSize_4cm", HistType::kTH2F, {pAxis, {100, 0.0, 100, "Cls size"}});
+    pion_pos_reg.add("Pi_Pos_Q_8cm", "Pi_Pos_Q_8cm", HistType::kTH2F, {pAxis, {200, 0.0, 2000.0, "Q (ADC)"}});
+    pion_pos_reg.add("Pi_Pos_Q_4cm", "Pi_Pos_Q_4cm", HistType::kTH2F, {pAxis, {200, 0.0, 2000.0, "Q (ADC)"}});
+    pion_pos_reg.add("Pi_Pos_ClsSize_8cm", "Pi_Pos_ClsSize_8cm", HistType::kTH2F, {pAxis, {200, 0.0, 2000.0, "Cls size"}});
+    pion_pos_reg.add("Pi_Pos_ClsSize_4cm", "Pi_Pos_ClsSize_4cm", HistType::kTH2F, {pAxis, {200, 0.0, 2000.0, "Cls size"}});
     pion_pos_reg.add("Pi_Pos_momentum", "Pi_Pos_momentum", HistType::kTH2F, {{100, 0.0, 3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {100, 0.0, 3.0, "#it{p}_{mhpid} (GeV/#it{c})"}});
 
     // Kaon Pos
@@ -185,10 +185,10 @@ struct AntimatterAbsorptionHMPID {
     pion_neg_reg.add("incomingPi_Neg_4cm", "incomingPi_Neg_4cm", HistType::kTH1F, {pAxis});
     pion_neg_reg.add("survivingPi_Neg_8cm", "survivingPi_Neg_8cm", HistType::kTH2F, {pAxis, {300, 0.0, 30.0, "#Delta R (cm)"}});
     pion_neg_reg.add("survivingPi_Neg_4cm", "survivingPi_Neg_4cm", HistType::kTH2F, {pAxis, {300, 0.0, 30.0, "#Delta R (cm)"}});
-    pion_neg_reg.add("Pi_Neg_Q_8cm", "Pi_Neg_Q_8cm", HistType::kTH2F, {pAxis, {100, 0.0, 1000.0, "Q (ADC)"}});
-    pion_neg_reg.add("Pi_Neg_Q_4cm", "Pi_Neg_Q_4cm", HistType::kTH2F, {pAxis, {100, 0.0, 1000.0, "Q (ADC)"}});
-    pion_neg_reg.add("Pi_Neg_ClsSize_8cm", "Pi_Neg_ClsSize_8cm", HistType::kTH2F, {pAxis, {100, 0.0, 100, "Cls size"}});
-    pion_neg_reg.add("Pi_Neg_ClsSize_4cm", "Pi_Neg_ClsSize_4cm", HistType::kTH2F, {pAxis, {100, 0.0, 100, "Cls size"}});
+    pion_neg_reg.add("Pi_Neg_Q_8cm", "Pi_Neg_Q_8cm", HistType::kTH2F, {pAxis, {200, 0.0, 2000.0, "Q (ADC)"}});
+    pion_neg_reg.add("Pi_Neg_Q_4cm", "Pi_Neg_Q_4cm", HistType::kTH2F, {pAxis, {200, 0.0, 2000.0, "Q (ADC)"}});
+    pion_neg_reg.add("Pi_Neg_ClsSize_8cm", "Pi_Neg_ClsSize_8cm", HistType::kTH2F, {pAxis, {200, 0.0, 2000.0, "Cls size"}});
+    pion_neg_reg.add("Pi_Neg_ClsSize_4cm", "Pi_Neg_ClsSize_4cm", HistType::kTH2F, {pAxis, {200, 0.0, 2000.0, "Cls size"}});
     pion_neg_reg.add("Pi_Neg_momentum", "Pi_Neg_momentum", HistType::kTH2F, {{100, 0.0, 3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {100, 0.0, 3.0, "#it{p}_{mhpid} (GeV/#it{c})"}});
 
     // Kaon Neg
@@ -248,8 +248,28 @@ struct AntimatterAbsorptionHMPID {
   Configurable<bool> enable_PVcontributor_deuteron{"enable_PVcontributor_deuteron", true, "is PV contributor (deuteron)"};
   Configurable<bool> enable_PVcontributor_antideuteron{"enable_PVcontributor_antideuteron", true, "is PV contributor (antideuteron)"};
 
-  template <typename CollisionType, typename TracksType>
-  void fillHistograms(const CollisionType& event, const TracksType& tracks)
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels>;
+
+  // Info for TPC PID
+  using PidInfoTPC = soa::Join<aod::pidTPCLfFullPi, aod::pidTPCLfFullKa,
+                               aod::pidTPCLfFullPr, aod::pidTPCLfFullDe,
+                               aod::pidTPCLfFullTr, aod::pidTPCLfFullHe,
+                               aod::pidTPCLfFullAl>;
+
+  // Info for TOF PID
+  using PidInfoTOF = soa::Join<aod::pidTOFFullPi, aod::pidTOFFullKa,
+                               aod::pidTOFFullPr, aod::pidTOFFullDe,
+                               aod::pidTOFFullTr, aod::pidTOFFullHe,
+                               aod::pidTOFFullAl,
+                               aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>;
+
+  // Propagated to PV tracks
+  using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA,
+                                    PidInfoTPC, PidInfoTOF,
+                                    aod::TrackSelection, aod::TrackSelectionExtension>;
+
+  void processData(const aod::HMPIDs& hmpids, EventCandidates::iterator const& event,
+                   TrackCandidates const& tracksIU)
   {
     // Event Selection
     if (!event.sel8())
@@ -258,8 +278,9 @@ struct AntimatterAbsorptionHMPID {
     // Event Counter
     pos_reg.fill(HIST("histRecVtxZData"), event.posZ());
 
-    // Loop over Reconstructed Tracks
-    for (auto track : tracks) {
+    for (const auto& t : hmpids) {
+
+      auto track = t.track_as<TrackCandidates>();
 
       // Loose Track Selection
       if (!track.isGlobalTrackWoDCA())
@@ -476,37 +497,6 @@ struct AntimatterAbsorptionHMPID {
         }
       }
     }
-  }
-
-  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels>;
-
-  // Info for TPC PID
-  using PidInfoTPC = soa::Join<aod::pidTPCLfFullPi, aod::pidTPCLfFullKa,
-                               aod::pidTPCLfFullPr, aod::pidTPCLfFullDe,
-                               aod::pidTPCLfFullTr, aod::pidTPCLfFullHe,
-                               aod::pidTPCLfFullAl>;
-
-  // Info for TOF PID
-  using PidInfoTOF = soa::Join<aod::pidTOFFullPi, aod::pidTOFFullKa,
-                               aod::pidTOFFullPr, aod::pidTOFFullDe,
-                               aod::pidTOFFullTr, aod::pidTOFFullHe,
-                               aod::pidTOFFullAl,
-                               aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>;
-
-  // Propagated tracks
-  using TrackCandidatesIU = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA,
-                                      PidInfoTPC, PidInfoTOF,
-                                      aod::TrackSelection, aod::TrackSelectionExtension, o2::aod::HMPID>;
-
-  // Propagated to PV tracks
-  using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA,
-                                    PidInfoTPC, PidInfoTOF,
-                                    aod::TrackSelection, aod::TrackSelectionExtension>;
-
-  void processData(EventCandidates::iterator const& event,
-                   TrackCandidatesIU const& tracksIU)
-  {
-    fillHistograms(event, tracksIU);
   }
   PROCESS_SWITCH(AntimatterAbsorptionHMPID, processData, "process data", true);
 };
