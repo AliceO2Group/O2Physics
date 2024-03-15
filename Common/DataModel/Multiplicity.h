@@ -71,7 +71,7 @@ DECLARE_SOA_COLUMN(MultNTracksTPCOnly, multNTracksTPCOnly, int); //!
 DECLARE_SOA_COLUMN(MultNTracksITSTPC, multNTracksITSTPC, int);   //!
 DECLARE_SOA_COLUMN(MultAllTracksTPCOnly, multAllTracksTPCOnly, int); //!
 DECLARE_SOA_COLUMN(MultAllTracksITSTPC, multAllTracksITSTPC, int);   //!
-DECLARE_SOA_COLUMN(MultNTracksGlobal, multNTracksGlobal, int);   //!
+DECLARE_SOA_COLUMN(MultNTracksGlobal, multNTracksGlobal, int);       //!
 
 DECLARE_SOA_COLUMN(BCNumber, bcNumber, int); //!
 

@@ -552,10 +552,10 @@ struct MultiplicityTableTaskIndexed {
   }
 
   void processGlobalTrackingCounters(aod::Collision const& collisions,
-                   soa::Join<Run3Tracks, aod::TrackSelection,
-              aod::TrackSelectionExtension> const& tracks)
+                                     soa::Join<Run3Tracks, aod::TrackSelection,
+                                               aod::TrackSelectionExtension> const& tracks)
   {
-    //counter from Igor 
+    // counter from Igor
     int nGlobalTracks = 0;
     for (auto& track : tracks) {
       if (fabs(track.eta()) > 0.8)
@@ -566,15 +566,15 @@ struct MultiplicityTableTaskIndexed {
         continue;
       if (track.isGlobalTrack()) {
         nGlobalTracks++;
-    } 
-    multsGlobal(nGlobalTracks);
-  }
+      }
+      multsGlobal(nGlobalTracks);
+    }
 
-  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", false);
-  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", true);
-  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processGlobalTrackingCounters, "Produce Run 3 global counters", false);
-  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processMC, "Produce MC multiplicity tables", false);
-};
+    PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", false);
+    PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", true);
+    PROCESS_SWITCH(MultiplicityTableTaskIndexed, processGlobalTrackingCounters, "Produce Run 3 global counters", false);
+    PROCESS_SWITCH(MultiplicityTableTaskIndexed, processMC, "Produce MC multiplicity tables", false);
+  };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

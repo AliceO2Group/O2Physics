@@ -42,19 +42,19 @@ DECLARE_SOA_TABLE_VERSIONED(StraRawCents_001, "AOD", "STRARAWCENTS", 1,     //! 
 DECLARE_SOA_TABLE_VERSIONED(StraRawCents_002, "AOD", "STRARAWCENTS", 2,            //! debug information
                             mult::MultFT0A, mult::MultFT0C, mult::MultFV0A,        // FIT detectors
                             mult::MultNTracksPVeta1,                               // track multiplicities with eta cut for INEL>0
-                            mult::MultNTracksITSTPC,     // track multiplicities, PV contribs, no eta cut
+                            mult::MultNTracksITSTPC,                               // track multiplicities, PV contribs, no eta cut
                             mult::MultAllTracksTPCOnly, mult::MultAllTracksITSTPC, // track multiplicities, all, no eta cut
                             mult::MultZNA, mult::MultZNC, mult::MultZEM1,          // ZDC signals
                             mult::MultZEM2, mult::MultZPA, mult::MultZPC);
-DECLARE_SOA_TABLE_VERSIONED(StraRawCents_003, "AOD", "STRARAWCENTS", 3,            //! debug information
-                            mult::MultFT0A, mult::MultFT0C, mult::MultFV0A,        // FIT detectors
-                            mult::MultNTracksPVeta1,                               // track multiplicities with eta cut for INEL>0
-                            mult::MultPVTotalContributors,                         // number of PV contribs total
-                            mult::MultNTracksGlobal,     // global track multiplicities
-                            mult::MultNTracksITSTPC,     // track multiplicities, PV contribs, no eta cut
-                            mult::MultAllTracksTPCOnly, // TPConly track multiplicities, all, no eta cut 
-                            mult::MultAllTracksITSTPC, // ITSTPC track multiplicities, all, no eta cut
-                            mult::MultZNA, mult::MultZNC, mult::MultZEM1,          // ZDC signals
+DECLARE_SOA_TABLE_VERSIONED(StraRawCents_003, "AOD", "STRARAWCENTS", 3,     //! debug information
+                            mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
+                            mult::MultNTracksPVeta1,                        // track multiplicities with eta cut for INEL>0
+                            mult::MultPVTotalContributors,                  // number of PV contribs total
+                            mult::MultNTracksGlobal,                        // global track multiplicities
+                            mult::MultNTracksITSTPC,                        // track multiplicities, PV contribs, no eta cut
+                            mult::MultAllTracksTPCOnly,                     // TPConly track multiplicities, all, no eta cut
+                            mult::MultAllTracksITSTPC,                      // ITSTPC track multiplicities, all, no eta cut
+                            mult::MultZNA, mult::MultZNC, mult::MultZEM1,   // ZDC signals
                             mult::MultZEM2, mult::MultZPA, mult::MultZPC);
 DECLARE_SOA_TABLE(StraEvSels, "AOD", "STRAEVSELS", //! event selection: sel8
                   evsel::Sel8, evsel::Selection);
