@@ -509,6 +509,5 @@ struct AntimatterAbsorptionHMPID {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<AntimatterAbsorptionHMPID>(
-    cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<AntimatterAbsorptionHMPID>(cfgc)};
 }
