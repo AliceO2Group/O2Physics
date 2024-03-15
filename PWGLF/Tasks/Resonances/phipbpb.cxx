@@ -85,6 +85,7 @@ struct phipbpb {
   Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 1, "Number of mixed events per event"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
+  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
   Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
   Configurable<bool> ispTdepPID{"ispTdepPID", true, "pT dependent PID"};
@@ -147,6 +148,7 @@ struct phipbpb {
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
 
     histos.add("hpTvsRapidity", "pT vs Rapidity", kTH2F, {{100, 0.0f, 10.0f}, {300, -1.5f, 1.5f}});
+    histos.add("hFTOCvsTPCNoCut", "Mult correlation FT0C vs. TPC without any cut", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
     histos.add("hFTOCvsTPC", "Mult correlation FT0C vs. TPC", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
     histos.add("hFTOCvsTPCSelected", "Mult correlation FT0C vs. TPC after selection", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{200, 0.0, 200.0}});
@@ -248,7 +250,7 @@ struct phipbpb {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster)) {
+    if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
       return false;
     }
     return true;
@@ -332,7 +334,9 @@ struct phipbpb {
     if (!collision.sel8()) {
       return;
     }
-
+    auto centrality = collision.centFT0C();
+    auto multTPC = collision.multNTracksPV();
+    histos.fill(HIST("hFTOCvsTPCNoCut"), centrality, multTPC);
     if (!collision.triggereventep()) {
       return;
     }
@@ -341,8 +345,6 @@ struct phipbpb {
     }
     auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto centrality = collision.centFT0C();
-    auto multTPC = collision.multNTracksPV();
     auto psiFT0C = collision.psiFT0C();
     auto psiFT0A = collision.psiFT0A();
     auto psiTPC = collision.psiTPC();
@@ -559,9 +561,9 @@ struct phipbpb {
         if (!track1.has_mcParticle()) {
           continue;
         }
-        auto track1ID = track1.globalIndex();
+        auto track1ID = track1.index();
         for (auto track2 : Rectrackspart) {
-          auto track2ID = track2.globalIndex();
+          auto track2ID = track2.index();
           if (track2ID <= track1ID) {
             continue;
           }
