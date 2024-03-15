@@ -459,8 +459,8 @@ struct AntimatterAbsorptionHMPID {
       bool hmpidAbs8cm = true;
       bool hmpidAbs4cm = true;
 
-      float dx = track_hmpid.HMPIDXTrack() - track_hmpid.HMPIDXMip();
-      float dy = track_hmpid.HMPIDYTrack() - track_hmpid.HMPIDYMip();
+      float dx = track_hmpid.hmpidXTrack() - track_hmpid.hmpidXMip();
+      float dy = track_hmpid.hmpidYTrack() - track_hmpid.hmpidYMip();
       float dr = sqrt(dx * dx + dy * dy);
 
       // Pi Plus
