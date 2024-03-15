@@ -255,7 +255,7 @@ struct strangederivedbuilder {
         if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC) {
           strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
-                          collision.multFT0A() * static_cast<float>(fillRawFV0A),
+                          collision.multFV0A() * static_cast<float>(fillRawFV0A),
                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
                           collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
@@ -306,7 +306,7 @@ struct strangederivedbuilder {
         if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC) {
           strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
-                          collision.multFT0A() * static_cast<float>(fillRawFV0A),
+                          collision.multFV0A() * static_cast<float>(fillRawFV0A),
                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
                           collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
@@ -375,7 +375,7 @@ struct strangederivedbuilder {
         if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC) {
           strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
-                          collision.multFT0A() * static_cast<float>(fillRawFV0A),
+                          collision.multFV0A() * static_cast<float>(fillRawFV0A),
                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
                           collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
