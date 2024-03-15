@@ -62,7 +62,7 @@ DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float); // Multiplicity with FT0C estimat
 DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);     // Psi with TPC estimator
 DECLARE_SOA_COLUMN(PsiTPCl, psiTPCl, float);   // Psi with TPC estimator (left)
 DECLARE_SOA_COLUMN(PsiTPCr, psiTPCr, float);   // Psi with TPC estimator (right)
-DECLARE_SOA_COLUMN(MultTPC, multTPC, float);   // Multiplicity with TPC estimator
+DECLARE_SOA_COLUMN(MultTPC, multTPC, int);     // Multiplicity with TPC estimator
 } // namespace NucleiFlowTableNS
 
 DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
