@@ -46,7 +46,7 @@ struct strarawcentsconverter {
                        values.multZPC());
     }
   }
-  
+
   PROCESS_SWITCH(strarawcentsconverter, process000to001, "from raw 000 to 001", false);
   PROCESS_SWITCH(strarawcentsconverter, process002to003, "from raw 002 to 003", false);
 };
