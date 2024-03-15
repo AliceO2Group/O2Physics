@@ -143,13 +143,13 @@ struct derivedCascadeAnalysis {
     histos.add("hCandidate", "hCandidate", HistType::kTH1D, {{22, -0.5, 21.5}});
     histos.add("hCutValue", "hCutValue", HistType::kTH2D, {{22, -0.5, 21.5}, {300, 0, 3.01}});
 
-    histos.add("hNsigmaProton", "hNsigmaProton", HistType::kTH3D, {{100, -7, 7}, {100, 0, 10}, {100, 0, 100}});
-    histos.add("hNsigmaPionPos", "hNsigmaPionPos", HistType::kTH3D, {{100, -7, 7}, {100, 0, 10}, {100, 0, 100}});
-    histos.add("hNsigmaPionPosBach", "hNsigmaPionPosBach", HistType::kTH3D, {{100, -7, 7}, {100, 0, 10}, {100, 0, 100}});
-    histos.add("hNsigmaProtonNeg", "hNsigmaProtonNeg", HistType::kTH3D, {{100, -7, 7}, {100, 0, 10}, {100, 0, 100}});
-    histos.add("hNsigmaPionNeg", "hNsigmaPionNeg", HistType::kTH3D, {{100, -7, 7}, {100, 0, 10}, {100, 0, 100}});
-    histos.add("hNsigmaPionNegBach", "hNsigmaPionNegBach", HistType::kTH3D, {{100, -7, 7}, {100, 0, 10}, {100, 0, 100}});
-    histos.add("hNsigmaKaon", "hNsigmaKaon", HistType::kTH2D, {{100, -7, 7}, {100, 0, 10}});
+    histos.add("hNsigmaProton", "hNsigmaProton", HistType::kTH3D, {{175, -7, 7}, {100, 0, 10}, {100, 0, 100}});
+    histos.add("hNsigmaPionPos", "hNsigmaPionPos", HistType::kTH3D, {{175, -7, 7}, {100, 0, 10}, {100, 0, 100}});
+    histos.add("hNsigmaPionPosBach", "hNsigmaPionPosBach", HistType::kTH3D, {{175, -7, 7}, {100, 0, 10}, {100, 0, 100}});
+    histos.add("hNsigmaProtonNeg", "hNsigmaProtonNeg", HistType::kTH3D, {{175, -7, 7}, {100, 0, 10}, {100, 0, 100}});
+    histos.add("hNsigmaPionNeg", "hNsigmaPionNeg", HistType::kTH3D, {{175, -7, 7}, {100, 0, 10}, {100, 0, 100}});
+    histos.add("hNsigmaPionNegBach", "hNsigmaPionNegBach", HistType::kTH3D, {{175, -7, 7}, {100, 0, 10}, {100, 0, 100}});
+    histos.add("hNsigmaKaon", "hNsigmaKaon", HistType::kTH3D, {{175, -7, 7}, {100, 0, 10}, {100, 0, 100}});
 
     TString CutLabel[22] = {"All", "MassWin", "y", "DCACascDau", "DCAV0Dau", "rCasc", "rCascMax", "rV0", "rV0Max", "LambdaMass", "Bach-baryon", "V0CosPA", "CompDecayMass", "DCADauToPV", "EtaDau", "CascCosPA", "DCAV0ToPV", "nSigmaTPCV0Dau", "NTPCrows", "OOBRej", "nSigmaTPCbachelor", "ctau"};
     for (Int_t i = 1; i <= histos.get<TH1>(HIST("hCandidate"))->GetNbinsX(); i++) {
@@ -619,7 +619,7 @@ struct derivedCascadeAnalysis {
           ++counter;
         }
       } else {
-        histos.fill(HIST("hNsigmaKaon"), bachExtra.tpcNSigmaKa(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)));
+        histos.fill(HIST("hNsigmaKaon"), bachExtra.tpcNSigmaKa(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)), coll.centFT0C());
         if (doNTPCSigmaCut) {
           if (TMath::Abs(bachExtra.tpcNSigmaKa()) > nsigmatpcKa)
             continue;
@@ -805,7 +805,7 @@ struct derivedCascadeAnalysis {
 
         invmass = casc.mXi();
       } else {
-        histos.fill(HIST("hNsigmaKaon"), bachExtra.tpcNSigmaKa(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)));
+        histos.fill(HIST("hNsigmaKaon"), bachExtra.tpcNSigmaKa(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)), coll.centFT0C());
         if (doNTPCSigmaCut) {
           if (TMath::Abs(bachExtra.tpcNSigmaKa()) > nsigmatpcKa)
             continue;
