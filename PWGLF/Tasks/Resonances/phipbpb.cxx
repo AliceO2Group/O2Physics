@@ -100,6 +100,7 @@ struct phipbpb {
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
   Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
   Configurable<bool> isMC{"isMC", false, "use MC"};
+  Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
   Configurable<bool> islike{"islike", false, "use like"};
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter centralityFilter = nabs(aod::cent::centFT0C) < cfgCutCentrality;
@@ -191,6 +192,7 @@ struct phipbpb {
     // MC histogram
     if (isMC) {
       histos.add("hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
+      histos.add("h1PhiRecsplit", "Phi meson Rec split", kTH1F, {{100, 0.0f, 10.0f}});
       histos.add("CentPercentileMCRecHist", "MC Centrality", kTH1F, {{100, 0.0f, 100.0f}});
       histos.add("hSparseV2SASameEvent_costhetastarOP_MCGen", "hSparseV2SASameEvent_costhetastarOP_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
       histos.add("hSparseV2SASameEvent_costhetastarIP_MCGen", "hSparseV2SASameEvent_costhetastarIP_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
@@ -541,6 +543,7 @@ struct phipbpb {
       histos.fill(HIST("hMC"), 7);
       auto centrality = RecCollision.centFT0C();
       histos.fill(HIST("CentPercentileMCRecHist"), centrality);
+      auto oldindex = -999;
       auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
       // loop over reconstructed particle
       for (auto track1 : Rectrackspart) {
@@ -558,6 +561,10 @@ struct phipbpb {
         }
         auto track1ID = track1.globalIndex();
         for (auto track2 : Rectrackspart) {
+          auto track2ID = track2.globalIndex();
+          if (track2ID <= track1ID) {
+            continue;
+          }
           if (!selectionTrack(track2)) {
             continue;
           }
@@ -570,14 +577,10 @@ struct phipbpb {
           if (!track2.has_mcParticle()) {
             continue;
           }
-          auto track2ID = track2.globalIndex();
           if (!selectionPair(track1, track2)) {
             continue;
           }
           if (track1.sign() * track2.sign() > 0) {
-            continue;
-          }
-          if (track1ID == track2ID) {
             continue;
           }
           const auto mctrack1 = track1.mcParticle();
@@ -610,6 +613,11 @@ struct phipbpb {
               if (!selectionPID(track1) || !selectionPID(track2)) {
                 continue;
               }
+              if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
+                histos.fill(HIST("h1PhiRecsplit"), mothertrack1.pt());
+                continue;
+              }
+              oldindex = mothertrack1.globalIndex();
               KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
               KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
               PhiMesonMother = KaonPlus + KaonMinus;
