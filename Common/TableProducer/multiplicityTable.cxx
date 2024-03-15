@@ -558,7 +558,7 @@ struct MultiplicityTableTaskIndexed {
     // counter from Igor
     int nGlobalTracks = 0;
     for (auto& track : tracks) {
-      if (fabs(track.eta()) < 0.8 && track.tpcNClsFound() >= 80 && track.tpcNClsCrossedRows() >= 100){
+      if (fabs(track.eta()) < 0.8 && track.tpcNClsFound() >= 80 && track.tpcNClsCrossedRows() >= 100) {
         if (track.isGlobalTrack()) {
           nGlobalTracks++;
         }
