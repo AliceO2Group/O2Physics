@@ -151,7 +151,7 @@ struct epvector {
     fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
     fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
     // }
-    
+
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -177,10 +177,10 @@ struct epvector {
       return 0;
     if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
       return 0;
-    
+
     return 1;
   }
-  
+
   double GetPhiFT0(int chno, double offsetX, double offsetY)
   {
     o2::ft0::Geometry ft0Det;
