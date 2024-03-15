@@ -459,9 +459,9 @@ struct AntimatterAbsorptionHMPID {
       bool hmpidAbs8cm = true;
       bool hmpidAbs4cm = true;
 
-      double dx = track_hmpid.HMPIDXTrack() - track_hmpid.HMPIDXMip();
-      double dy = track_hmpid.HMPIDYTrack() - track_hmpid.HMPIDYMip();
-      double dr = sqrt(dx * dx + dy * dy);
+      float dx = track_hmpid.HMPIDXTrack() - track_hmpid.HMPIDXMip();
+      float dy = track_hmpid.HMPIDYTrack() - track_hmpid.HMPIDYMip();
+      float dr = sqrt(dx * dx + dy * dy);
 
       // Pi Plus
       if (passedPionTPCsel && passedPionTOFsel && track.sign() > 0) {
