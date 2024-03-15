@@ -96,7 +96,7 @@ struct perfK0sResolution {
 
   void init(InitContext const&)
   {
-    const AxisSpec statAxis{3, 0, 3, "Stats"};
+    const AxisSpec statAxis{5, 0, 5, "Stats"};
     const AxisSpec mAxis{mBins, "#it{m} (GeV/#it{c}^{2})"};
     const AxisSpec pTAxis{pTBins, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec pTResAxis{pTResBins, "#Delta#it{p}_{T} (GeV/#it{c})"};
@@ -110,7 +110,7 @@ struct perfK0sResolution {
     const AxisSpec trueK0Axis{2, -0.5, 1.5, "True K0"};
 
     rK0sResolution.add("h1_stats", "h1_stats", {HistType::kTH1F, {statAxis}});
-    TString hStatsLabels[3] = {"Selected Events", "All V0s", "Selected V0s"};
+    TString hStatsLabels[5] = {"Selected Events", "All V0s", "Selected V0s", "Daughters have MC particles", "Daughters corr. rec."};
     for (Int_t n = 1; n <= rK0sResolution.get<TH1>(HIST("h1_stats"))->GetNbinsX(); n++) {
       rK0sResolution.get<TH1>(HIST("h1_stats"))->GetXaxis()->SetBinLabel(n, hStatsLabels[n - 1]);
     }
@@ -454,8 +454,10 @@ struct perfK0sResolution {
 
       if (posTrack.has_mcParticle() && negTrack.has_mcParticle()) {
         daughtersHaveMCParticles = true;
+        rK0sResolution.fill(HIST("h1_stats"), 3.5);
         if (posTrack.mcParticle().pdgCode() == 211 && negTrack.mcParticle().pdgCode() == -211) {
           daughtersCorrRec = true;
+          rK0sResolution.fill(HIST("h1_stats"), 4.5);
         }
       }
 
