@@ -271,12 +271,12 @@ struct phianalysisrun3 {
       histos.fill(HIST("hDcaz"), track1.dcaZ());
       histos.fill(HIST("hNsigmaKaonTPC"), track1.tpcNSigmaKa());
       histos.fill(HIST("hNsigmaKaonTOF"), track1.tofNSigmaKa());
-      auto track1ID = track1.globalIndex();
+      auto track1ID = track1.index();
       for (auto track2 : tracks) {
         if (!selectionTrack(track2)) {
           continue;
         }
-        auto track2ID = track2.globalIndex();
+        auto track2ID = track2.index();
         if (track2ID <= track1ID) {
           continue;
         }
@@ -422,7 +422,7 @@ struct phianalysisrun3 {
       if (!track1.has_mcParticle()) {
         continue;
       }
-      auto track1ID = track1.globalIndex();
+      auto track1ID = track1.index();
       for (auto track2 : tracks) {
         if (!track2.has_mcParticle()) {
           continue;
@@ -430,7 +430,7 @@ struct phianalysisrun3 {
         if (!selectionTrack(track2)) {
           continue;
         }
-        auto track2ID = track2.globalIndex();
+        auto track2ID = track2.index();
         if (track2ID <= track1ID) {
           continue;
         }
