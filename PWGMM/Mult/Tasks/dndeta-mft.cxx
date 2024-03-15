@@ -398,8 +398,6 @@ struct PseudorapidityDensityMFT {
           o2::math_utils::bringTo02Pi(phi);
 
           if (usePhiCut) {
-            LOG(info) << "Using azimuthal angle cut: ";
-            LOG(info) << "\tcfgPhiCut=" << cfgPhiCut;
             if ((phi < cfgPhiCut) ||
                 ((phi > M_PI - cfgPhiCut) && (phi < M_PI + cfgPhiCut)) ||
                 (phi > 2. * M_PI - cfgPhiCut) ||
@@ -523,8 +521,6 @@ struct PseudorapidityDensityMFT {
         o2::math_utils::bringTo02Pi(phi);
 
         if (usePhiCut) {
-          LOG(info) << "Using azimuthal angle cut: ";
-          LOG(info) << "\tcfgPhiCut=" << cfgPhiCut;
           if ((phi < cfgPhiCut) ||
               ((phi > M_PI - cfgPhiCut) && (phi < M_PI + cfgPhiCut)) ||
               (phi > 2. * M_PI - cfgPhiCut) ||
