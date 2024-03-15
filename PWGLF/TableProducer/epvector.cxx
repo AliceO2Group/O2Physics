@@ -91,7 +91,7 @@ struct epvector {
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<int> cfgITScluster{"cfgITScluster", 4, "Number of ITS cluster"};
-  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
+  // Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> useGainCallib{"useGainCallib", true, "use gain calibration"};
   Configurable<bool> useRecentere{"useRecentere", true, "use Recentering"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/s/skundu/My/Object/test100", "Path to gain calibration"};
@@ -215,7 +215,11 @@ struct epvector {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
+    // if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
+    //  return false;
+    // }
+
+    if (!(candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
     return true;
