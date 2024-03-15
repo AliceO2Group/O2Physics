@@ -73,15 +73,12 @@ DECLARE_SOA_TABLE(JetDistanceTable, "AOD", "JETDISTTABLE",
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
-struct crCharmHadronizationTask {
+struct HfFragmentationFunctionTask {
   // producing new table
   Produces<aod::JetDistanceTable> distJetTable;
 
   // Histogram registry: an object to hold your histograms
   HistogramRegistry registry{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
-  // histogram configurables
-  Configurable<int> distBins{"distBins", 1000, "number of bins in distance histogram"};
 
   void init(InitContext const&)
   {
@@ -89,9 +86,9 @@ struct crCharmHadronizationTask {
     // create histograms
     // D0 candidate histograms
     registry.add("h_jet_counter", ";# jets;", {HistType::kTH1F, {{2, 0., 1.}}});
-    registry.add("h_d0_jet_projection", ";z^{D^{0},jet}_{||};dN/dz^{D^{0},jet}_{||}", {HistType::kTH1F, {{distBins, 0., 10.}}});
-    registry.add("h_d0_jet_distance_vs_projection", ";#DeltaR_{D^{0},jet};z^{D^{0},jet}_{||}", {HistType::kTH2F, {{distBins, 0., 10.}, {distBins, 0., 10.}}});
-    registry.add("h_d0_jet_distance", ";#DeltaR_{D^{0},jet};dN/d(#DeltaR)", {HistType::kTH1F, {{distBins, 0., 10.}}});
+    registry.add("h_d0_jet_projection", ";z^{D^{0},jet}_{||};dN/dz^{D^{0},jet}_{||}", {HistType::kTH1F, {{1000, 0., 10.}}});
+    registry.add("h_d0_jet_distance_vs_projection", ";#DeltaR_{D^{0},jet};z^{D^{0},jet}_{||}", {HistType::kTH2F, {{1000, 0., 10.}, {1000, 0., 10.}}});
+    registry.add("h_d0_jet_distance", ";#DeltaR_{D^{0},jet};dN/d(#DeltaR)", {HistType::kTH1F, {{1000, 0., 10.}}});
     registry.add("h_d0_jet_pt", ";p_{T,D^{0} jet};dN/dp_{T,D^{0} jet}", {HistType::kTH1F, {{200, 0., 10.}}});
     registry.add("h_d0_jet_eta", ";#eta_{T,D^{0} jet};dN/d#eta_{D^{0} jet}", {HistType::kTH1F, {{250, -5., 5.}}});
     registry.add("h_d0_jet_phi", ";#phi_{T,D^{0} jet};dN/d#phi_{D^{0} jet}", {HistType::kTH1F, {{250, -10., 10.}}});
@@ -101,7 +98,7 @@ struct crCharmHadronizationTask {
   }
 
   void processDummy(aod::TracksIU const& tracks) {}
-  PROCESS_SWITCH(crCharmHadronizationTask, processDummy, "Dummy process function turned on by default", false);
+  PROCESS_SWITCH(HfFragmentationFunctionTask, processDummy, "Dummy process function turned on by default", false);
 
   void processDataChargedSubstructure(JetCollision const& collision,
                                       soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents> const& jets,
@@ -146,14 +143,11 @@ struct crCharmHadronizationTask {
     } // end of jets loop
 
   } // end of process function
-  PROCESS_SWITCH(crCharmHadronizationTask, processDataChargedSubstructure, "charged HF jet substructure", true);
+  PROCESS_SWITCH(HfFragmentationFunctionTask, processDataChargedSubstructure, "charged HF jet substructure", true);
 };
-
-// for templates only
-// using JetSubstructureD0 = crCharmHadronizationTask<soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents>, CandidatesD0Data, aod::JTrackD0Subs>
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<crCharmHadronizationTask>(cfgc, TaskName{"jet-charm-hadronization"})};
+    adaptAnalysisTask<HfFragmentationFunctionTask>(cfgc, TaskName{"jet-charm-hadronization"})};
 }
