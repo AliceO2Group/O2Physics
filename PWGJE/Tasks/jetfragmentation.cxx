@@ -105,7 +105,7 @@ struct JetFragmentation {
   ConfigurableAxis trackCount{"trackCount", {1000, -.5f, 999.5f}, ""};
   ConfigurableAxis v0Count{"v0Count", {50, -.5f, 49.5f}, ""};
 
-  ConfigurableAxis binV0Pt{"binV0Pt", {600, 0.0f, 60.0f}, ""};
+  ConfigurableAxis binV0Pt{"binV0Pt", {120, 0.0f, 60.0f}, ""};
   ConfigurableAxis binV0Eta{"binV0Eta", {20, -1.f, 1.f}, ""};
   ConfigurableAxis binV0Phi{"binV0Phi", {18 * 8, 0.f, 2. * TMath::Pi()}, ""};
   ConfigurableAxis binV0Ctau{"binV0Ctau", {200, 0.0f, 40.0f}, ""};
@@ -1384,10 +1384,12 @@ struct JetFragmentation {
 
         for (const auto& track : detJet.tracks_as<JetTracksMCD>()) {
           bool isTrackMatched = false;
+          if (!track.has_mcParticle()) {
+            isFake = true;
+            fillMatchingFakeOrMiss(detJet, track, isFake, weight);
+            continue;
+          }
           for (const auto& particle : partJet.tracks_as<JetParticles>()) {
-            if (!track.has_mcParticle()) {
-              continue;
-            }
             if (particle.globalIndex() == track.template mcParticle_as<JetParticles>().globalIndex()) {
               isTrackMatched = true;
               fillMatchingHistogramsConstituent(detJet, partJet, track, particle, weight);
@@ -1524,10 +1526,12 @@ struct JetFragmentation {
           isV0Used[iv0] = true;
           if (!v0.has_mcParticle()) {
             fillMatchingV0Fake(collision, detJet, v0, weight);
+            continue;
           }
           const auto& particle = v0.template mcParticle_as<aod::McParticles>();
           if (!((particle.pdgCode() == 310) || (particle.pdgCode() == 3122) || (particle.pdgCode() == -3122))) {
             fillMatchingV0Fake(collision, detJet, v0, weight);
+            continue;
           }
           // Found a matched V0 in the jet
           // TODO: How to count nK0SinJet, nLambdainJet, nAntiLambdainJet? Use pdg or v0 identification?
@@ -1570,8 +1574,8 @@ struct JetFragmentation {
           isParticleUsed[iparticle] = true;
           continue;
         }
+        // If the particle has been used or it is not a particle of interest, skip it
         if (isParticleUsed[iparticle]) {
-          isParticleUsed[iparticle] = true;
           continue;
         }
         if (jetutilities::deltaR(partJet, particle) >= partJet.r() * 1e-2) {
@@ -1582,6 +1586,7 @@ struct JetFragmentation {
         if (!partJet.has_matchedJetGeo()) {
           isParticleUsed[iparticle] = true;
           fillMatchingV0Miss(partJet, particle, weight);
+          continue;
         }
         for (const auto& detJet : partJet.template matchedJetGeo_as<MatchedMcDJets>()) {
           for (const auto& v0 : v0s) {

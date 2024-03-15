@@ -38,8 +38,8 @@ struct AssociateMCInfo {
     kDalitzMuMu = 0x10,
   };
 
-  Produces<o2::aod::EMReducedMCEvents> mcevents;
-  Produces<o2::aod::EMReducedMCEventLabels> mceventlabels;
+  Produces<o2::aod::EMMCEvents> mcevents;
+  Produces<o2::aod::EMMCEventLabels> mceventlabels;
   Produces<o2::aod::EMMCParticles> emmcparticles;
   Produces<o2::aod::V0LegMCLabels> v0legmclabels;
   Produces<o2::aod::EMPrimaryElectronMCLabels> emprimaryelectronmclabels;
