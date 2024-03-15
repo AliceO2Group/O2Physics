@@ -273,7 +273,7 @@ struct cascadeFlow {
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
         mlResponseXi.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
-        mlResponseOmega.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB); //TODO: use different model for Xi and Omega
+        mlResponseOmega.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB); // TODO: use different model for Xi and Omega
       } else {
         mlResponseXi.setModelPathsLocal(onnxFileNames);
         mlResponseOmega.setModelPathsLocal(onnxFileNames);
