@@ -178,14 +178,6 @@ struct strangederivedbuilder {
   Preslice<aod::TraCascDatas> TraCascperCollision = o2::aod::cascdata::collisionId;
   Preslice<aod::McParticles> mcParticlePerMcCollision = o2::aod::mcparticle::mcCollisionId;
 
-  std::vector<uint32_t> genK0Short;
-  std::vector<uint32_t> genLambda;
-  std::vector<uint32_t> genAntiLambda;
-  std::vector<uint32_t> genXiMinus;
-  std::vector<uint32_t> genXiPlus;
-  std::vector<uint32_t> genOmegaMinus;
-  std::vector<uint32_t> genOmegaPlus;
-
   float roundToPrecision(float number, float step = 0.01)
   {
     // this function rounds a certain number in an axis that is quantized by
@@ -220,20 +212,6 @@ struct strangederivedbuilder {
     for (int ii = 1; ii < 101; ii++) {
       float value = 100.5f - static_cast<float>(ii);
       hRawCentrality->SetBinContent(ii, value);
-    }
-
-    if (doprocessBinnedGenerated) {
-      // reserve space for generated vectors if that process enabled
-      auto hBinFinder = histos.get<TH2>(HIST("h2dGenK0Short"));
-      LOGF(info, "Binned generated processing enabled. Initialising with %i elements...", hBinFinder->GetNcells());
-      genK0Short.resize(hBinFinder->GetNcells(), 0);
-      genLambda.resize(hBinFinder->GetNcells(), 0);
-      genAntiLambda.resize(hBinFinder->GetNcells(), 0);
-      genXiMinus.resize(hBinFinder->GetNcells(), 0);
-      genXiPlus.resize(hBinFinder->GetNcells(), 0);
-      genOmegaMinus.resize(hBinFinder->GetNcells(), 0);
-      genOmegaPlus.resize(hBinFinder->GetNcells(), 0);
-      LOGF(info, "Binned generated processing: init done.");
     }
   }
 
@@ -687,22 +665,28 @@ struct strangederivedbuilder {
 
   void processBinnedGenerated(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, aod::McParticles const& mcParticlesEntireTable)
   {
-    // set to zero
-    std::fill(genK0Short.begin(), genK0Short.end(), 0);
-    std::fill(genLambda.begin(), genLambda.end(), 0);
-    std::fill(genAntiLambda.begin(), genAntiLambda.end(), 0);
-    std::fill(genXiMinus.begin(), genXiMinus.end(), 0);
-    std::fill(genXiPlus.begin(), genXiPlus.end(), 0);
-    std::fill(genOmegaMinus.begin(), genOmegaMinus.end(), 0);
-    std::fill(genOmegaPlus.begin(), genOmegaPlus.end(), 0);
+    std::vector<uint32_t> genK0Short;
+    std::vector<uint32_t> genLambda;
+    std::vector<uint32_t> genAntiLambda;
+    std::vector<uint32_t> genXiMinus;
+    std::vector<uint32_t> genXiPlus;
+    std::vector<uint32_t> genOmegaMinus;
+    std::vector<uint32_t> genOmegaPlus;
+
+    // use one of the generated histograms as the bin finder
+    auto hBinFinder = histos.get<TH2>(HIST("h2dGenK0Short"));
+
+    genK0Short.resize(hBinFinder->GetNcells(), 0);
+    genLambda.resize(hBinFinder->GetNcells(), 0);
+    genAntiLambda.resize(hBinFinder->GetNcells(), 0);
+    genXiMinus.resize(hBinFinder->GetNcells(), 0);
+    genXiPlus.resize(hBinFinder->GetNcells(), 0);
+    genOmegaMinus.resize(hBinFinder->GetNcells(), 0);
+    genOmegaPlus.resize(hBinFinder->GetNcells(), 0);
 
     // this process function also checks if a given collision was reconstructed and checks explicitly for splitting, etc
     for (auto& mcCollision : mcCollisions) {
       const uint64_t mcCollIndex = mcCollision.globalIndex();
-
-      // use one of the generated histograms as the bin finder
-      auto hBinFinder = histos.get<TH2>(HIST("h2dGenK0Short"));
-
       auto mcParticles = mcParticlesEntireTable.sliceBy(mcParticlePerMcCollision, mcCollIndex);
       for (auto& mcp : mcParticles) {
         if (TMath::Abs(mcp.y()) < 0.5 && mcp.isPhysicalPrimary()) {
