@@ -324,9 +324,9 @@ struct cascadeFlow {
             continue;
           histos.fill(HIST("hCandidate"), ++counter);
         }
-      } else
+      } else {
         ++counter;
-
+      }
       if (posExtra.tpcCrossedRows() < mintpccrrows || negExtra.tpcCrossedRows() < mintpccrrows || bachExtra.tpcCrossedRows() < mintpccrrows)
         continue;
       histos.fill(HIST("hCandidate"), ++counter);
