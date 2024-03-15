@@ -459,6 +459,10 @@ struct AntimatterAbsorptionHMPID {
       bool hmpidAbs8cm = true;
       bool hmpidAbs4cm = true;
 
+      double dx = track_hmpid.HMPIDXTrack() - track_hmpid.HMPIDXMip();
+      double dy = track_hmpid.HMPIDYTrack() - track_hmpid.HMPIDYMip();
+      double dr = sqrt(dx * dx + dy * dy);
+
       // Pi Plus
       if (passedPionTPCsel && passedPionTOFsel && track.sign() > 0) {
 
@@ -466,13 +470,13 @@ struct AntimatterAbsorptionHMPID {
 
         if (hmpidAbs8cm) {
           pion_pos_reg.fill(HIST("incomingPi_Pos_8cm"), track_hmpid.hmpidMom());
-          pion_pos_reg.fill(HIST("survivingPi_Pos_8cm"), track_hmpid.hmpidMom(), track_hmpid.hmpidDistance());
+          pion_pos_reg.fill(HIST("survivingPi_Pos_8cm"), track_hmpid.hmpidMom(), dr);
           pion_pos_reg.fill(HIST("Pi_Pos_Q_8cm"), track_hmpid.hmpidMom(), track_hmpid.hmpidQMip());
           pion_pos_reg.fill(HIST("Pi_Pos_ClsSize_8cm"), track_hmpid.hmpidMom(), track_hmpid.hmpidClusSize());
         }
         if (hmpidAbs4cm) {
           pion_pos_reg.fill(HIST("incomingPi_Pos_4cm"), track_hmpid.hmpidMom());
-          pion_pos_reg.fill(HIST("survivingPi_Pos_4cm"), track_hmpid.hmpidMom(), track_hmpid.hmpidDistance());
+          pion_pos_reg.fill(HIST("survivingPi_Pos_4cm"), track_hmpid.hmpidMom(), dr);
           pion_pos_reg.fill(HIST("Pi_Pos_Q_4cm"), track_hmpid.hmpidMom(), track_hmpid.hmpidQMip());
           pion_pos_reg.fill(HIST("Pi_Pos_ClsSize_4cm"), track_hmpid.hmpidMom(), track_hmpid.hmpidClusSize());
         }
@@ -485,13 +489,13 @@ struct AntimatterAbsorptionHMPID {
 
         if (hmpidAbs8cm) {
           pion_neg_reg.fill(HIST("incomingPi_Neg_8cm"), track_hmpid.hmpidMom());
-          pion_neg_reg.fill(HIST("survivingPi_Neg_8cm"), track_hmpid.hmpidMom(), track_hmpid.hmpidDistance());
+          pion_neg_reg.fill(HIST("survivingPi_Neg_8cm"), track_hmpid.hmpidMom(), dr);
           pion_neg_reg.fill(HIST("Pi_Neg_Q_8cm"), track_hmpid.hmpidMom(), track_hmpid.hmpidQMip());
           pion_neg_reg.fill(HIST("Pi_Neg_ClsSize_8cm"), track_hmpid.hmpidMom(), track_hmpid.hmpidClusSize());
         }
         if (hmpidAbs4cm) {
           pion_neg_reg.fill(HIST("incomingPi_Neg_4cm"), track_hmpid.hmpidMom());
-          pion_neg_reg.fill(HIST("survivingPi_Neg_4cm"), track_hmpid.hmpidMom(), track_hmpid.hmpidDistance());
+          pion_neg_reg.fill(HIST("survivingPi_Neg_4cm"), track_hmpid.hmpidMom(), dr);
           pion_neg_reg.fill(HIST("Pi_Neg_Q_4cm"), track_hmpid.hmpidMom(), track_hmpid.hmpidQMip());
           pion_neg_reg.fill(HIST("Pi_Neg_ClsSize_4cm"), track_hmpid.hmpidMom(), track_hmpid.hmpidClusSize());
         }
