@@ -88,7 +88,6 @@ struct JetDerivedDataWriter {
   std::vector<bool> collisionFlag;
   std::vector<bool> McCollisionFlag;
   std::vector<int> bcIndicies;
-  std::map<int32_t, int32_t> bcMapping;
 
   uint32_t precisionPositionMask;
   uint32_t precisionMomentumMask;
@@ -169,6 +168,7 @@ struct JetDerivedDataWriter {
 
   void processData(soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JChTrigSels, aod::JFullTrigSels>::iterator const& collision, soa::Join<aod::JBCs, aod::JBCPIs> const& bcs, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks> const& clusters, aod::HfD0CollBases const& D0Collisions, CandidatesD0Data const& D0s)
   {
+    std::map<int32_t, int32_t> bcMapping;
     std::map<int32_t, int32_t> trackMapping;
 
     if (collisionFlag[collision.globalIndex()]) {
@@ -254,7 +254,7 @@ struct JetDerivedDataWriter {
 
   void processMC(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JChTrigSels, aod::JFullTrigSels, aod::JMcCollisionLbs> const& collisions, soa::Join<aod::JBCs, aod::JBCPIs> const& bcs, soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks> const& clusters, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles, aod::HfD0CollBases const& D0Collisions, CandidatesD0MCD const& D0s, soa::Join<aod::HfD0PBases, aod::JD0PIds> const& D0Particles)
   {
-
+    std::map<int32_t, int32_t> bcMapping;
     std::map<int32_t, int32_t> paticleMapping;
     std::map<int32_t, int32_t> mcCollisionMapping;
     int particleTableIndex = 0;
