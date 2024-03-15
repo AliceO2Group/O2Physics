@@ -61,6 +61,9 @@ struct qaEventTrack {
   // options to select specific events
   Configurable<bool> selectGoodEvents{"selectGoodEvents", true, "select good events"};
 
+  // option to apply a timeframe cut
+  Configurable<bool> tfCut{"tfCut", false, "applies timeframe cut"};
+
   // options to select only specific tracks
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<int> selectCharge{"selectCharge", 0, "select charge +1 or -1 (0 means no selection)"};
@@ -622,6 +625,9 @@ struct qaEventTrack {
       histos.fill(HIST("Events/recoEff"), 1);
     }
     if (selectGoodEvents && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
+      return false;
+    }
+    if (tfCut && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
     if constexpr (doFill) {
