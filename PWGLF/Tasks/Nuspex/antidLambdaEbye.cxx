@@ -341,6 +341,7 @@ struct antidLambdaEbye {
       histos.add<TH2>("QA/MultVsCent", ";Centrality T0C (%);Multiplicity T0C;", HistType::kTH2F, {centAxis, multFt0Axis});
     } else if (doprocessRun2) {
       histos.add<TH2>("QA/V0MvsCL0", ";Centrality CL0 (%);Centrality V0M (%)", HistType::kTH2F, {centAxis, centAxis});
+      histos.add<TH2>("QA/trackletsVsV0M", ";Centrality CL0 (%);Centrality V0M (%)", HistType::kTH2F, {centAxis, multAxis});
     }
 
     // v0 QA
@@ -767,14 +768,14 @@ struct antidLambdaEbye {
   }
   PROCESS_SWITCH(antidLambdaEbye, processRun3, "process (Run 3)", false);
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s> const& collisions, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s, BCsWithRun2Info const&)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::TrackletMults> const& collisions, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s, BCsWithRun2Info const&)
   {
     for (const auto& collision : collisions) {
       if (!collision.sel7())
         continue;
 
       auto bc = collision.bc_as<BCsWithRun2Info>();
-      if (!(bc.eventCuts() & aod::Run2EventCuts::kAliEventCutsAccepted))
+      if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
         continue;
 
       if (!collision.alias_bit(kINT7))
@@ -792,9 +793,11 @@ struct antidLambdaEbye {
 
       auto centrality = collision.centRun2V0M();
       auto centralityCl0 = collision.centRun2CL0();
+      auto multTracklets = collision.multTracklets();
       fillRecoEvent(TrackTable_thisCollision, V0Table_thisCollision, centrality);
 
       histos.fill(HIST("QA/V0MvsCL0"), centralityCl0, centrality);
+      histos.fill(HIST("QA/trackletsVsV0M"), centrality, multTracklets);
     }
   }
   PROCESS_SWITCH(antidLambdaEbye, processRun2, "process (Run 2)", false);
