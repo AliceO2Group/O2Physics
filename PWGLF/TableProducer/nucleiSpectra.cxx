@@ -93,7 +93,7 @@ struct NucleusCandidateFlow {
   float psiTPC;
   float psiTPCl;
   float psiTPCr;
-  float multTPC;
+  int multTPC;
 };
 
 namespace nuclei
