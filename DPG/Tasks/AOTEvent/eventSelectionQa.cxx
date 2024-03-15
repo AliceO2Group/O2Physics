@@ -9,6 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "map"
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -559,9 +561,81 @@ struct EventSelectionQaTask {
         int64_t orbitSOR = (tsSOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
         int64_t orbitEOR = (tsEOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
 
+        // temporary map of TF start orbit shifts (affected all runs < LHC22o)
+        std::map<int, int> mapOrbitShift;
+        mapOrbitShift[517619] = 109;
+        mapOrbitShift[517620] = 109;
+        mapOrbitShift[517623] = 109;
+        mapOrbitShift[517677] = 127;
+        mapOrbitShift[517678] = 127;
+        mapOrbitShift[517679] = 127;
+        mapOrbitShift[517737] = 127;
+        mapOrbitShift[517748] = 127;
+        mapOrbitShift[517751] = 127;
+        mapOrbitShift[517753] = 127;
+        mapOrbitShift[517758] = 127;
+        mapOrbitShift[517767] = 127;
+        mapOrbitShift[518541] = 40;
+        mapOrbitShift[518543] = 92;
+        mapOrbitShift[518546] = 124;
+        mapOrbitShift[518547] = 47;
+        mapOrbitShift[519041] = 59;
+        mapOrbitShift[519043] = 59;
+        mapOrbitShift[519045] = 59;
+        mapOrbitShift[519497] = 86;
+        mapOrbitShift[519498] = 86;
+        mapOrbitShift[519499] = 86;
+        mapOrbitShift[519502] = 86;
+        mapOrbitShift[519503] = 86;
+        mapOrbitShift[519504] = 86;
+        mapOrbitShift[519506] = 86;
+        mapOrbitShift[519507] = 86;
+        mapOrbitShift[519903] = 62;
+        mapOrbitShift[519904] = 62;
+        mapOrbitShift[519905] = 62;
+        mapOrbitShift[519906] = 62;
+        mapOrbitShift[520259] = 76;
+        mapOrbitShift[520294] = 76;
+        mapOrbitShift[520471] = 46;
+        mapOrbitShift[520472] = 46;
+        mapOrbitShift[520473] = 46;
+        mapOrbitShift[523142] = 127;
+        mapOrbitShift[523148] = 127;
+        mapOrbitShift[523182] = 127;
+        mapOrbitShift[523186] = 127;
+        mapOrbitShift[523298] = 28;
+        mapOrbitShift[523306] = 28;
+        mapOrbitShift[523308] = 28;
+        mapOrbitShift[523309] = 28;
+        mapOrbitShift[523397] = 110;
+        mapOrbitShift[523399] = 110;
+        mapOrbitShift[523401] = 110;
+        mapOrbitShift[523441] = 117;
+        mapOrbitShift[523541] = 103;
+        mapOrbitShift[523559] = 103;
+        mapOrbitShift[523669] = 39;
+        mapOrbitShift[523671] = 39;
+        mapOrbitShift[523677] = 39;
+        mapOrbitShift[523728] = 113;
+        mapOrbitShift[523731] = 113;
+        mapOrbitShift[523779] = 41;
+        mapOrbitShift[523783] = 41;
+        mapOrbitShift[523786] = 41;
+        mapOrbitShift[523788] = 41;
+        mapOrbitShift[523789] = 41;
+        mapOrbitShift[523792] = 41;
+        mapOrbitShift[523797] = 41;
+        mapOrbitShift[523821] = 36;
+        mapOrbitShift[523897] = 38;
+
+        int orbitShift = 0;
+        if (auto search = mapOrbitShift.find(runNumber); search != mapOrbitShift.end()) {
+          orbitShift = search->second;
+        }
+
         // adjust to the nearest TF edge
-        orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF; // was with - 1;
-        orbitEOR = orbitEOR / nOrbitsPerTF * nOrbitsPerTF; // was with - 1;
+        orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF + orbitShift; // was with - 1;
+        orbitEOR = orbitEOR / nOrbitsPerTF * nOrbitsPerTF + orbitShift; // was with - 1;
 
         // set nOrbits and minOrbit used for orbit-axis binning
         nOrbits = orbitEOR - orbitSOR;
