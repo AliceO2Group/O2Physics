@@ -39,13 +39,13 @@ using namespace o2::aod::pwgem::mcutil;
 using namespace o2::aod::pwgem::photon;
 using std::array;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNmumu, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsNmumu, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
-using MyDalitzMuMus = soa::Join<aod::DalitzMuMus, aod::DalitzMuMuEMReducedEventIds>;
+using MyDalitzMuMus = soa::Join<aod::DalitzMuMus, aod::DalitzMuMuEMEventIds>;
 using MyDalitzMuMu = MyDalitzMuMus::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMReducedEventIds, aod::EMPrimaryMuonsPrefilterBit>;
+using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMEventIds, aod::EMPrimaryMuonsPrefilterBit>;
 using MyMCTracks = soa::Join<MyTracks, aod::EMPrimaryMuonMCLabels>;
 
 struct DalitzMuMuQCMC {
@@ -150,7 +150,7 @@ struct DalitzMuMuQCMC {
   Partition<MyDalitzMuMus> uls_pairs = o2::aod::dalitzmumu::sign == 0;
 
   SliceCache cache;
-  Preslice<MyDalitzMuMus> perCollision = aod::dalitzmumu::emreducedeventId;
+  Preslice<MyDalitzMuMus> perCollision = aod::dalitzmumu::emeventId;
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
   std::vector<uint64_t> used_trackIds;
@@ -178,7 +178,7 @@ struct DalitzMuMuQCMC {
       reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
       reinterpret_cast<TH1F*>(list_ev_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
 
-      auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzmumu::emreducedeventId, collision.globalIndex(), cache);
+      auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzmumu::emeventId, collision.globalIndex(), cache);
 
       for (const auto& cut : fDalitzMuMuCuts) {
         THashList* list_dalitzmumu_cut = static_cast<THashList*>(list_dalitzmumu->FindObject(cut.GetName()));

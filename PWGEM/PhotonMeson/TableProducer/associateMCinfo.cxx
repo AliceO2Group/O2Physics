@@ -133,10 +133,10 @@ struct AssociateMCInfo {
           continue;
         }
 
-        // extra check for secondary photons to reduce data size.
-        if (abs(pdg) == 22 && !mctrack.producedByGenerator() && !IsPhysicalPrimary(mcCollision, mctrack, mcTracks)) {
-          continue;
-        }
+        // // extra check for secondary photons to reduce data size.
+        // if (abs(pdg) == 22 && !mctrack.producedByGenerator() && !IsPhysicalPrimary(mcCollision, mctrack, mcTracks)) {
+        //   continue;
+        // }
 
         // LOGF(info,"index = %d , mc track pdg = %d , producedByGenerator =  %d , isPhysicalPrimary = %d", mctrack.index(), mctrack.pdgCode(), mctrack.producedByGenerator(), mctrack.isPhysicalPrimary());
 
@@ -231,11 +231,11 @@ struct AssociateMCInfo {
 
       std::vector<int> mothers;
       if (mctrack.has_mothers()) {
-        LOGF(info, "mother ids size = %d", mctrack.mothersIds().size());
-        int counter = 0;
+        // LOGF(info, "mother ids size = %d", mctrack.mothersIds().size());
+        // int counter = 0;
         for (auto& m : mctrack.mothersIds()) {
-          LOGF(info, "counter = %d , mother id = %d", counter, m);
-          counter++;
+          // LOGF(info, "counter = %d , mother id = %d", counter, m);
+          // counter++;
 
           if (m < mcTracks.size()) { // protect against bad mother indices
             if (fNewLabels.find(m) != fNewLabels.end()) {
