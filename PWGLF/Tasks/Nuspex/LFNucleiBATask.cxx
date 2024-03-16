@@ -1462,115 +1462,118 @@ struct LFNucleiBATask {
       return;
     }
     // MC histograms  -   all, primary, sec. from weak decay, sec. from material
-    spectraGen.add("spectraGen/histGenVetxZ", "PosZ generated events", HistType::kTH1F, {{1500, -15.f, 15.f, "Vertex Z (cm)"}});
+    spectraGen.add("histGenVetxZ", "PosZ generated events", HistType::kTH1F, {{1500, -15.f, 15.f, "Vertex Z (cm)"}});
 
-    spectraGen.add("spectraGen/helium/histPtGenHe", "PtGenHe", HistType::kTH1F, {{800, 0.f, 8.f}});
-    spectraGen.add("spectraGen/helium/histPtRecHe", "PtRecHe", HistType::kTH1F, {{800, 0.f, 8.f}});
-    spectraGen.add("spectraGen/helium/histPtShiftHe", "PtReco-PtGen vs PtReco", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
-    spectraGen.add("spectraGen/helium/histPtShiftVsEtaHe", "PtReco-PtGen vs #eta", HistType::kTH2F, {{200, -2.f, 2.f}, {400, -4.f, 4.f}});
+    spectraGen.add("helium/histPtGenHe", "PtGenHe", HistType::kTH1F, {{800, 0.f, 8.f}});
+    spectraGen.add("helium/histPtRecHe", "PtRecHe", HistType::kTH1F, {{800, 0.f, 8.f}});
+    spectraGen.add("helium/histPtShiftHe", "PtReco-PtGen vs PtReco", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
+    spectraGen.add("helium/histPtShiftVsEtaHe", "PtReco-PtGen vs #eta", HistType::kTH2F, {{200, -2.f, 2.f}, {400, -4.f, 4.f}});
 
-    spectraGen.add("spectraGen/helium/histPGenHe", "PGenHe", HistType::kTH1F, {{800, 0.f, 8.f}});
-    spectraGen.add("spectraGen/helium/histPRecHe", "PRecHe", HistType::kTH1F, {{800, 0.f, 8.f}});
-    spectraGen.add("spectraGen/helium/histPShiftHe", "PReco-PGen vs PReco", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
-    spectraGen.add("spectraGen/helium/histPShiftVsEtaHe", "PReco-PGen vs #eta", HistType::kTH2F, {{200, -2.f, 2.f}, {400, -4.f, 4.f}});
+    spectraGen.add("helium/histPGenHe", "PGenHe", HistType::kTH1F, {{800, 0.f, 8.f}});
+    spectraGen.add("helium/histPRecHe", "PRecHe", HistType::kTH1F, {{800, 0.f, 8.f}});
+    spectraGen.add("helium/histPShiftHe", "PReco-PGen vs PReco", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
+    spectraGen.add("helium/histPShiftVsEtaHe", "PReco-PGen vs #eta", HistType::kTH2F, {{200, -2.f, 2.f}, {400, -4.f, 4.f}});
 
-    spectraGen.add("spectraGen/helium/histPtGenantiHe", "PtGenantiHe", HistType::kTH1F, {{800, 0.f, 8.f}});
-    spectraGen.add("spectraGen/helium/histPtRecantiHe", "PtRecantiHe", HistType::kTH1F, {{800, 0.f, 8.f}});
-    spectraGen.add("spectraGen/helium/histPtShiftantiHe", "PtReco-PtGen vs PtReco", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
-    spectraGen.add("spectraGen/helium/histPtShiftVsEtaantiHe", "PtReco-PtGen vs #eta", HistType::kTH2F, {{200, -2.f, 2.f}, {400, -4.f, 4.f}});
+    spectraGen.add("helium/histPtGenantiHe", "PtGenantiHe", HistType::kTH1F, {{800, 0.f, 8.f}});
+    spectraGen.add("helium/histPtRecantiHe", "PtRecantiHe", HistType::kTH1F, {{800, 0.f, 8.f}});
+    spectraGen.add("helium/histPtShiftantiHe", "PtReco-PtGen vs PtReco", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
+    spectraGen.add("helium/histPtShiftVsEtaantiHe", "PtReco-PtGen vs #eta", HistType::kTH2F, {{200, -2.f, 2.f}, {400, -4.f, 4.f}});
 
-    spectraGen.add("spectraGen/helium/histPGenantiHe", "PGenantiHe", HistType::kTH1F, {{800, 0.f, 8.f}});
-    spectraGen.add("spectraGen/helium/histPRecantiHe", "PRecantiHe", HistType::kTH1F, {{800, 0.f, 8.f}});
-    spectraGen.add("spectraGen/helium/histPShiftantiHe", "PReco-PGen vs PReco", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
-    spectraGen.add("spectraGen/helium/histPShiftVsEtaantiHe", "PReco-PGen vs #eta", HistType::kTH2F, {{200, -2.f, 2.f}, {400, -4.f, 4.f}});
+    spectraGen.add("helium/histPGenantiHe", "PGenantiHe", HistType::kTH1F, {{800, 0.f, 8.f}});
+    spectraGen.add("helium/histPRecantiHe", "PRecantiHe", HistType::kTH1F, {{800, 0.f, 8.f}});
+    spectraGen.add("helium/histPShiftantiHe", "PReco-PGen vs PReco", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
+    spectraGen.add("helium/histPShiftVsEtaantiHe", "PReco-PGen vs #eta", HistType::kTH2F, {{200, -2.f, 2.f}, {400, -4.f, 4.f}});
 
-    spectraGen.add("spectraGen/histPtShift_Pr", "PtReco-PtGen vs PtReco (protons)  ", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
+    spectraGen.add("histPtShift_Pr", "PtReco-PtGen vs PtReco (protons)  ", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
 
-    spectraGen.add("spectraGen/pion/histGenPtPion", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("spectraGen/pion/histGenPtPionPrim", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("spectraGen/pion/histGenPtPionSec", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("spectraGen/pion/histSecTransportPtPion", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("pion/histGenPtPion", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("pion/histGenPtPionPrim", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("pion/histGenPtPionSec", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("pion/histSecTransportPtPion", "generated particles", HistType::kTH1F, {ptAxis});
 
-    spectraGen.add("spectraGen/pion/histGenPtantiPion", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("spectraGen/pion/histGenPtantiPionPrim", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("spectraGen/pion/histGenPtantiPionSec", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("spectraGen/pion/histSecTransportPtantiPion", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("pion/histGenPtantiPion", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("pion/histGenPtantiPionPrim", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("pion/histGenPtantiPionSec", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("pion/histSecTransportPtantiPion", "generated particles", HistType::kTH1F, {ptAxis});
 
-    spectraGen.add("spectraGen/kaon/histGenPtKaon", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("spectraGen/kaon/histGenPtKaonPrim", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("spectraGen/kaon/histGenPtKaonSec", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("spectraGen/kaon/histSecTransportPtKaon", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("kaon/histGenPtKaon", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("kaon/histGenPtKaonPrim", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("kaon/histGenPtKaonSec", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("kaon/histSecTransportPtKaon", "generated particles", HistType::kTH1F, {ptAxis});
 
-    spectraGen.add("spectraGen/kaon/histGenPtantiKaon", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("spectraGen/kaon/histGenPtantiKaonPrim", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("spectraGen/kaon/histGenPtantiKaonSec", "generated particles", HistType::kTH1F, {ptAxis});
-    spectraGen.add("spectraGen/kaon/histSecTransportPtantiKaon", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("kaon/histGenPtantiKaon", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("kaon/histGenPtantiKaonPrim", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("kaon/histGenPtantiKaonSec", "generated particles", HistType::kTH1F, {ptAxis});
+    spectraGen.add("kaon/histSecTransportPtantiKaon", "generated particles", HistType::kTH1F, {ptAxis});
 
     if (enablePr) {
-      spectraGen.add("spectraGen/proton/histGenPtProton", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/proton/histGenPtProtonPrim", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/proton/histGenPtProtonSec", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/proton/histSecTransportPtProton", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("proton/histGenPtProton", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("proton/histGenPtProtonPrim", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("proton/histGenPtProtonSec", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("proton/histSecTransportPtProton", "generated particles", HistType::kTH1F, {ptAxis});
 
-      spectraGen.add("spectraGen/proton/histGenPtantiProton", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/proton/histGenPtantiProtonPrim", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/proton/histGenPtantiProtonSec", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/proton/histSecTransportPtantiProton", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("proton/histGenPtantiProton", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("proton/histGenPtantiProtonPrim", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("proton/histGenPtantiProtonSec", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("proton/histSecTransportPtantiProton", "generated particles", HistType::kTH1F, {ptAxis});
+
+      spectraGen.add("proton/histGenPtProtonPrim_Y", "generated particles", HistType::kTH2F, {{150, -1.5f, 1.5f}, {ptAxis}});
+      spectraGen.add("proton/histGenPtantiProtonPrim_Y", "generated particles", HistType::kTH2F, {{150, -1.5f, 1.5f}, {ptAxis}});
     }
     if (enableDe) {
-      spectraGen.add("spectraGen/deuteron/histGenPtD", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/deuteron/histGenPtDPrim", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/deuteron/histGenPtDSec", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/deuteron/histSecTransportPtD", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("deuteron/histGenPtD", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("deuteron/histGenPtDPrim", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("deuteron/histGenPtDSec", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("deuteron/histSecTransportPtD", "generated particles", HistType::kTH1F, {ptAxis});
       histos.add("tracks/deuteron/histAntiDeuteronPtShiftRec", "histAntiDeuteronPtShiftRec", HistType::kTH1F, {ptAxis});
       histos.add("tracks/deuteron/histAntiDeuteronPtRec", "histAntiDeuteronPtRec", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/deuteron/histAntiDeuteronPtShiftCorrection", "histAntiDeuteronPtShiftCorrection", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
-      spectraGen.add("spectraGen/deuteron/histAntiDeuteronPtShift", "PtReco-PtGen vs PtReco", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
-      spectraGen.add("spectraGen/deuteron/histAntiDeuteronPtShiftVsEta", "PtReco-PtGen vs #eta", HistType::kTH2F, {{200, -2.f, 2.f}, {400, -4.f, 4.f}});
+      spectraGen.add("deuteron/histAntiDeuteronPtShiftCorrection", "histAntiDeuteronPtShiftCorrection", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
+      spectraGen.add("deuteron/histAntiDeuteronPtShift", "PtReco-PtGen vs PtReco", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
+      spectraGen.add("deuteron/histAntiDeuteronPtShiftVsEta", "PtReco-PtGen vs #eta", HistType::kTH2F, {{200, -2.f, 2.f}, {400, -4.f, 4.f}});
 
       histos.add("tracks/deuteron/histDeuteronPtShiftRec", "histDeuteronPtShiftRec", HistType::kTH1F, {ptAxis});
       histos.add("tracks/deuteron/histDeuteronPtRec", "histDeuteronPtRec", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/deuteron/histDeuteronPtShiftCorrection", "histDeuteronPtShiftCorrection", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
-      spectraGen.add("spectraGen/deuteron/histDeuteronPtShift", "PtReco-PtGen vs PtReco", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
-      spectraGen.add("spectraGen/deuteron/histDeuteronPtShiftVsEta", "PtReco-PtGen vs #eta", HistType::kTH2F, {{200, -2.f, 2.f}, {400, -4.f, 4.f}});
+      spectraGen.add("deuteron/histDeuteronPtShiftCorrection", "histDeuteronPtShiftCorrection", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
+      spectraGen.add("deuteron/histDeuteronPtShift", "PtReco-PtGen vs PtReco", HistType::kTH2F, {{800, 0.f, 8.f}, {400, -4.f, 4.f}});
+      spectraGen.add("deuteron/histDeuteronPtShiftVsEta", "PtReco-PtGen vs #eta", HistType::kTH2F, {{200, -2.f, 2.f}, {400, -4.f, 4.f}});
 
-      spectraGen.add("spectraGen/deuteron/histGenPtantiD", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/deuteron/histGenPtantiDPrim", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/deuteron/histGenPtantiDSec", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/deuteron/histSecTransportPtantiD", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("deuteron/histGenPtantiD", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("deuteron/histGenPtantiDPrim", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("deuteron/histGenPtantiDSec", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("deuteron/histSecTransportPtantiD", "generated particles", HistType::kTH1F, {ptAxis});
     }
     if (enableTr) {
-      spectraGen.add("spectraGen/triton/histGenPtT", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/triton/histGenPtTPrim", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/triton/histGenPtTSec", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/triton/histSecTransportPtT", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("triton/histGenPtT", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("triton/histGenPtTPrim", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("triton/histGenPtTSec", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("triton/histSecTransportPtT", "generated particles", HistType::kTH1F, {ptAxis});
 
-      spectraGen.add("spectraGen/triton/histGenPtantiT", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/triton/histGenPtantiTPrim", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/triton/histGenPtantiTSec", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/triton/histSecTransportPtantiT", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("triton/histGenPtantiT", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("triton/histGenPtantiTPrim", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("triton/histGenPtantiTSec", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("triton/histSecTransportPtantiT", "generated particles", HistType::kTH1F, {ptAxis});
     }
     if (enableHe) {
-      spectraGen.add("spectraGen/helium/histGenPtHe", "generated particles", HistType::kTH1F, {ptHeAxis});
-      spectraGen.add("spectraGen/helium/histGenPtHePrim", "generated particles", HistType::kTH1F, {ptHeAxis});
-      spectraGen.add("spectraGen/helium/histGenPtHeSec", "generated particles", HistType::kTH1F, {ptHeAxis});
-      spectraGen.add("spectraGen/helium/histSecTransportPtHe", "generated particles", HistType::kTH1F, {ptHeAxis});
+      spectraGen.add("helium/histGenPtHe", "generated particles", HistType::kTH1F, {ptHeAxis});
+      spectraGen.add("helium/histGenPtHePrim", "generated particles", HistType::kTH1F, {ptHeAxis});
+      spectraGen.add("helium/histGenPtHeSec", "generated particles", HistType::kTH1F, {ptHeAxis});
+      spectraGen.add("helium/histSecTransportPtHe", "generated particles", HistType::kTH1F, {ptHeAxis});
 
-      spectraGen.add("spectraGen/helium/histGenPtantiHe", "generated particles", HistType::kTH1F, {ptHeAxis});
-      spectraGen.add("spectraGen/helium/histGenPtantiHePrim", "generated particles", HistType::kTH1F, {ptHeAxis});
-      spectraGen.add("spectraGen/helium/histGenPtantiHeSec", "generated particles", HistType::kTH1F, {ptHeAxis});
-      spectraGen.add("spectraGen/helium/histSecTransportPtantiHe", "generated particles", HistType::kTH1F, {ptHeAxis});
+      spectraGen.add("helium/histGenPtantiHe", "generated particles", HistType::kTH1F, {ptHeAxis});
+      spectraGen.add("helium/histGenPtantiHePrim", "generated particles", HistType::kTH1F, {ptHeAxis});
+      spectraGen.add("helium/histGenPtantiHeSec", "generated particles", HistType::kTH1F, {ptHeAxis});
+      spectraGen.add("helium/histSecTransportPtantiHe", "generated particles", HistType::kTH1F, {ptHeAxis});
     }
     if (enableAl) {
-      spectraGen.add("spectraGen/alpha/histGenPtAl", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/alpha/histGenPtAlPrim", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/alpha/histGenPtAlSec", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/alpha/histSecTransportPtAl", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("alpha/histGenPtAl", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("alpha/histGenPtAlPrim", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("alpha/histGenPtAlSec", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("alpha/histSecTransportPtAl", "generated particles", HistType::kTH1F, {ptAxis});
 
-      spectraGen.add("spectraGen/alpha/histGenPtantiAl", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/alpha/histGenPtantiAlPrim", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/alpha/histGenPtantiAlSec", "generated particles", HistType::kTH1F, {ptAxis});
-      spectraGen.add("spectraGen/alpha/histSecTransportPtantiAl", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("alpha/histGenPtantiAl", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("alpha/histGenPtantiAlPrim", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("alpha/histGenPtantiAlSec", "generated particles", HistType::kTH1F, {ptAxis});
+      spectraGen.add("alpha/histSecTransportPtantiAl", "generated particles", HistType::kTH1F, {ptAxis});
     }
     LOG(info) << "Histograms of LFNucleiBATask:";
     histos.print();
@@ -3491,7 +3494,7 @@ struct LFNucleiBATask {
 
         switch (pdgCode) {
           case PDGProton:
-            if (enablePr) {
+            if (enablePr && prRapCut) {
               histos.fill(HIST("tracks/proton/h1ProtonSpectraTrue"), track.pt());
               histos.fill(HIST("tracks/proton/dca/after/hDCAxyVsPtProtonTrue"), track.pt(), track.dcaXY());
               histos.fill(HIST("tracks/proton/dca/after/hDCAzVsPtProtonTrue"), track.pt(), track.dcaZ());
@@ -3606,7 +3609,7 @@ struct LFNucleiBATask {
             }
             break;
           case -PDGProton:
-            if (enablePr) {
+            if (enablePr && prRapCut) {
               histos.fill(HIST("tracks/proton/h1antiProtonSpectraTrue"), track.pt());
               histos.fill(HIST("tracks/proton/dca/after/hDCAxyVsPtantiProtonTrue"), track.pt(), track.dcaXY());
               histos.fill(HIST("tracks/proton/dca/after/hDCAzVsPtantiProtonTrue"), track.pt(), track.dcaZ());
@@ -4363,8 +4366,10 @@ struct LFNucleiBATask {
       if (enablePr) {
         if (mcParticleGen.pdgCode() == PDGProton) {
           spectraGen.fill(HIST("spectraGen/proton/histGenPtProton"), mcParticleGen.pt());
-          if (isPhysPrim)
+          if (isPhysPrim) {
             spectraGen.fill(HIST("spectraGen/proton/histGenPtProtonPrim"), mcParticleGen.pt());
+            spectraGen.fill(HIST("spectraGen/proton/histGenPtProtonPrim_Y"), mcParticleGen.y(), mcParticleGen.pt());
+          }
           if (!isPhysPrim && isProdByGen) {
             //
           }
@@ -4377,8 +4382,10 @@ struct LFNucleiBATask {
         }
         if (mcParticleGen.pdgCode() == -PDGProton) {
           spectraGen.fill(HIST("spectraGen/proton/histGenPtantiProton"), mcParticleGen.pt());
-          if (isPhysPrim)
+          if (isPhysPrim) {
             spectraGen.fill(HIST("spectraGen/proton/histGenPtantiProtonPrim"), mcParticleGen.pt());
+            spectraGen.fill(HIST("spectraGen/proton/histGenPtantiProtonPrim_Y"), mcParticleGen.y(), mcParticleGen.pt());
+          }
           if (!isPhysPrim && isProdByGen) {
             //
           }
