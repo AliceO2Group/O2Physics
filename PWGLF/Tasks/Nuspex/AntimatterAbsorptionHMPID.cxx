@@ -265,7 +265,7 @@ struct AntimatterAbsorptionHMPID {
 
   // Propagated to PV tracks
   // using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, PidInfoTPC, PidInfoTOF, aod::TrackSelection, aod::TrackSelectionExtension>;
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, PidInfoTPC, PidInfoTOF>;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, PidInfoTPC, PidInfoTOF>;
 
   void processData(aod::HMPIDs const& hmpids, EventCandidates::iterator const& event,
                    TrackCandidates const& tracksIU)
@@ -306,7 +306,7 @@ struct AntimatterAbsorptionHMPID {
         continue;
 
       // Fill QA Histograms (Positive Tracks)
-      if (track.sign() > 0) {
+      if (track_hmpid.track_as<TrackCandidates>().sign() > 0) {
 
         pos_reg.fill(HIST("histTpcSignalData"), track_hmpid.track_as<TrackCandidates>().tpcInnerParam(), track_hmpid.track_as<TrackCandidates>().tpcSignal());
         pos_reg.fill(HIST("histTofSignalData"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().beta());
@@ -322,7 +322,7 @@ struct AntimatterAbsorptionHMPID {
       }
 
       // Fill QA Histograms (Negative Tracks)
-      if (track.sign() < 0) {
+      if (track_hmpid.track_as<TrackCandidates>().sign() < 0) {
 
         neg_reg.fill(HIST("histTpcSignalData"), track_hmpid.track_as<TrackCandidates>().tpcInnerParam(), track_hmpid.track_as<TrackCandidates>().tpcSignal());
         neg_reg.fill(HIST("histTofSignalData"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().beta());
