@@ -283,7 +283,6 @@ struct qVectorsTable {
       cfgCorr.push_back(cfgBNegCorr);
     }
 
-
     if (cfgGainCor == 0) {
       for (int i = 0; i < cfgFT0RelGain->size(); i++) {
         FT0RelGainConst.push_back(1.);
@@ -352,7 +351,7 @@ struct qVectorsTable {
       IsFirstRun = false;
     }
 
-   // Get the centrality value for all subscribed estimators and takes the one
+    // Get the centrality value for all subscribed estimators and takes the one
     // corresponding to cfgCentEsti. Reject also the events with invalid values.
     // NOTE: centFDDM and centNTPV not implemented as it makes the compilation crashes...
     float centAllEstim[4] = {
@@ -484,7 +483,6 @@ struct qVectorsTable {
       qVectFV0A[0] = -999.;
       qVectFV0A[1] = -999.;
     }
-
 
     int nTrkBPos = 0;
     int nTrkBNeg = 0;
