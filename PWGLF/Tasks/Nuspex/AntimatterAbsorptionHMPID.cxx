@@ -264,7 +264,8 @@ struct AntimatterAbsorptionHMPID {
                                aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>;
 
   // Propagated to PV tracks
-  using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, PidInfoTPC, PidInfoTOF, aod::TrackSelection, aod::TrackSelectionExtension>;
+  // using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, PidInfoTPC, PidInfoTOF, aod::TrackSelection, aod::TrackSelectionExtension>;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, PidInfoTPC, PidInfoTOF>;
 
   void processData(aod::HMPIDs const& hmpids, EventCandidates::iterator const& event,
                    TrackCandidates const& tracksIU)
@@ -278,96 +279,96 @@ struct AntimatterAbsorptionHMPID {
 
     for (const auto& track_hmpid : hmpids) {
 
-      const auto& track = track_hmpid.track_as<TrackCandidates>();
+      // const auto& track = track_hmpid.track_as<TrackCandidates>();
 
       // Require HMPID Hit
       // if (!track.has_hmpid())
       // continue;
 
       // Loose Track Selection
-      if (!track.isGlobalTrackWoDCA())
+      if (!track_hmpid.track_as<TrackCandidates>().isGlobalTrackWoDCA())
         continue;
-      if (!track.passedITSRefit())
+      if (!track_hmpid.track_as<TrackCandidates>().passedITSRefit())
         continue;
-      if (!track.passedTPCRefit())
+      if (!track_hmpid.track_as<TrackCandidates>().passedTPCRefit())
         continue;
-      if (track.itsNCls() < 1)
+      if (track_hmpid.track_as<TrackCandidates>().itsNCls() < 1)
         continue;
-      if (track.tpcNClsFound() < 0)
+      if (track_hmpid.track_as<TrackCandidates>().tpcNClsFound() < 0)
         continue;
-      if (track.tpcNClsCrossedRows() < 60)
+      if (track_hmpid.track_as<TrackCandidates>().tpcNClsCrossedRows() < 60)
         continue;
-      if (TMath::Abs(track.dcaXY()) > 1.0)
+      if (TMath::Abs(track_hmpid.track_as<TrackCandidates>().dcaXY()) > 1.0)
         continue;
-      if (TMath::Abs(track.dcaZ()) > 1.0)
+      if (TMath::Abs(track_hmpid.track_as<TrackCandidates>().dcaZ()) > 1.0)
         continue;
-      if (enable_PVcontributor_global && !(track.isPVContributor()))
+      if (enable_PVcontributor_global && !(track_hmpid.track_as<TrackCandidates>().isPVContributor()))
         continue;
 
       // Fill QA Histograms (Positive Tracks)
       if (track.sign() > 0) {
 
-        pos_reg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(), track.tpcSignal());
-        pos_reg.fill(HIST("histTofSignalData"), track.p(), track.beta());
-        pos_reg.fill(HIST("histDcaxyVsPData"), track.p(), track.dcaXY());
-        pos_reg.fill(HIST("histDcaZVsPtData"), track.p(), track.dcaZ());
-        pos_reg.fill(HIST("histNClusterTPC"), track.p(), track.tpcNClsFound());
-        pos_reg.fill(HIST("histNCrossedRowTPC"), track.p(), track.tpcNClsCrossedRows());
-        pos_reg.fill(HIST("histNClusterITS"), track.p(), track.itsNCls());
-        pos_reg.fill(HIST("histChi2TPC"), track.p(), track.tpcChi2NCl());
-        pos_reg.fill(HIST("histChi2ITS"), track.p(), track.itsChi2NCl());
-        pos_reg.fill(HIST("histEta"), track.p(), track.eta());
-        pos_reg.fill(HIST("histPhi"), track.p(), track.phi());
+        pos_reg.fill(HIST("histTpcSignalData"), track_hmpid.track_as<TrackCandidates>().tpcInnerParam(), track_hmpid.track_as<TrackCandidates>().tpcSignal());
+        pos_reg.fill(HIST("histTofSignalData"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().beta());
+        pos_reg.fill(HIST("histDcaxyVsPData"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().dcaXY());
+        pos_reg.fill(HIST("histDcaZVsPtData"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().dcaZ());
+        pos_reg.fill(HIST("histNClusterTPC"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().tpcNClsFound());
+        pos_reg.fill(HIST("histNCrossedRowTPC"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().tpcNClsCrossedRows());
+        pos_reg.fill(HIST("histNClusterITS"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().itsNCls());
+        pos_reg.fill(HIST("histChi2TPC"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().tpcChi2NCl());
+        pos_reg.fill(HIST("histChi2ITS"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().itsChi2NCl());
+        pos_reg.fill(HIST("histEta"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().eta());
+        pos_reg.fill(HIST("histPhi"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().phi());
       }
 
       // Fill QA Histograms (Negative Tracks)
       if (track.sign() < 0) {
 
-        neg_reg.fill(HIST("histTpcSignalData"), track.tpcInnerParam(), track.tpcSignal());
-        neg_reg.fill(HIST("histTofSignalData"), track.p(), track.beta());
-        neg_reg.fill(HIST("histDcaxyVsPData"), track.p(), track.dcaXY());
-        neg_reg.fill(HIST("histDcaZVsPtData"), track.p(), track.dcaZ());
-        neg_reg.fill(HIST("histNClusterTPC"), track.p(), track.tpcNClsFound());
-        neg_reg.fill(HIST("histNCrossedRowTPC"), track.p(), track.tpcNClsCrossedRows());
-        neg_reg.fill(HIST("histNClusterITS"), track.p(), track.itsNCls());
-        neg_reg.fill(HIST("histChi2TPC"), track.p(), track.tpcChi2NCl());
-        neg_reg.fill(HIST("histChi2ITS"), track.p(), track.itsChi2NCl());
-        neg_reg.fill(HIST("histEta"), track.p(), track.eta());
-        neg_reg.fill(HIST("histPhi"), track.p(), track.phi());
+        neg_reg.fill(HIST("histTpcSignalData"), track_hmpid.track_as<TrackCandidates>().tpcInnerParam(), track_hmpid.track_as<TrackCandidates>().tpcSignal());
+        neg_reg.fill(HIST("histTofSignalData"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().beta());
+        neg_reg.fill(HIST("histDcaxyVsPData"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().dcaXY());
+        neg_reg.fill(HIST("histDcaZVsPtData"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().dcaZ());
+        neg_reg.fill(HIST("histNClusterTPC"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().tpcNClsFound());
+        neg_reg.fill(HIST("histNCrossedRowTPC"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().tpcNClsCrossedRows());
+        neg_reg.fill(HIST("histNClusterITS"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().itsNCls());
+        neg_reg.fill(HIST("histChi2TPC"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().tpcChi2NCl());
+        neg_reg.fill(HIST("histChi2ITS"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().itsChi2NCl());
+        neg_reg.fill(HIST("histEta"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().eta());
+        neg_reg.fill(HIST("histPhi"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().phi());
       }
-
-      // Track Selection
-      if (!track.hasTPC())
-        continue;
-      if (!track.hasITS())
-        continue;
-      if (!track.passedITSRefit())
-        continue;
-      if (!track.passedTPCRefit())
-        continue;
-      if (track.itsNCls() < minReqClusterITS)
-        continue;
-      if (track.tpcNClsFound() < minTPCnClsFound)
-        continue;
-      if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
-        continue;
-      if (track.tpcChi2NCl() > maxChi2TPC)
-        continue;
-      if (track.itsChi2NCl() > maxChi2ITS)
-        continue;
-      if (TMath::Abs(track.dcaXY()) > maxDCA_xy)
-        continue;
-      if (TMath::Abs(track.dcaZ()) > maxDCA_z)
-        continue;
-      if (track.eta() < etaMin)
-        continue;
-      if (track.eta() > etaMax)
-        continue;
-      if (track.phi() < phiMin)
-        continue;
-      if (track.phi() > phiMax)
-        continue;
-
+      /*
+            // Track Selection
+            if (!track.hasTPC())
+              continue;
+            if (!track.hasITS())
+              continue;
+            if (!track.passedITSRefit())
+              continue;
+            if (!track.passedTPCRefit())
+              continue;
+            if (track.itsNCls() < minReqClusterITS)
+              continue;
+            if (track.tpcNClsFound() < minTPCnClsFound)
+              continue;
+            if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+              continue;
+            if (track.tpcChi2NCl() > maxChi2TPC)
+              continue;
+            if (track.itsChi2NCl() > maxChi2ITS)
+              continue;
+            if (TMath::Abs(track.dcaXY()) > maxDCA_xy)
+              continue;
+            if (TMath::Abs(track.dcaZ()) > maxDCA_z)
+              continue;
+            if (track.eta() < etaMin)
+              continue;
+            if (track.eta() > etaMax)
+              continue;
+            if (track.phi() < phiMin)
+              continue;
+            if (track.phi() > phiMax)
+              continue;
+      */
       /*
         if (track.sign() > 0) {
           if (track_hmpid.hmpidQMip() > 100) {
