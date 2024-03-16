@@ -87,8 +87,8 @@ struct kstarqa {
   Configurable<bool> QA{"QA", false, "QA"};
   Configurable<bool> QAbefore{"QAbefore", true, "QAbefore"};
   Configurable<bool> QAafter{"QAafter", true, "QAafter"};
-  Configurable<bool> onlyTPCQA{"onlyTPCQA", false, "only TPC tracks"};
   Configurable<bool> onlyTOF{"onlyTOF", false, "only TOF tracks"};
+  Configurable<bool> onlyTOFHIT{"onlyTOFHIT", false, "accept only TOF hit tracks at high pt"};
 
   // Configurable for event selection
   Configurable<float>
@@ -204,15 +204,22 @@ struct kstarqa {
   {
     if (PID == 0) {
       if (onlyTOF) {
+        // LOG(info) << "************I am inside ONLYTOF****************";
         if (candidate.hasTOF() &&
             std::abs(candidate.tofNSigmaPi()) < nsigmaCutTOFPi) {
           return true;
         }
-      } else if (onlyTPCQA) {
-        if (std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi) {
+      } else if (onlyTOFHIT) {
+        // LOG(info) << "************I am inside ONLYTOFHIT****************";
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < nsigmaCutTOFPi) {
+          return true;
+        }
+        if (!candidate.hasTOF() &&
+            std::abs(candidate.tpcNSigmaPi()) < nsigmaCutTPCPi) {
           return true;
         }
       } else {
+        // LOG(info) << "************I am neither in ONLYTOF or ONLYTOFHIT****************";
         if (candidate.hasTOF() &&
             (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() +
              candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) <
@@ -230,9 +237,12 @@ struct kstarqa {
             std::abs(candidate.tofNSigmaKa()) < nsigmaCutTOFKa) {
           return true;
         }
-      }
-      if (onlyTPCQA) {
-        if (std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa) {
+      } else if (onlyTOFHIT) {
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < nsigmaCutTOFKa) {
+          return true;
+        }
+        if (!candidate.hasTOF() &&
+            std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa) {
           return true;
         }
       } else {
@@ -469,13 +479,13 @@ struct kstarqa {
         return;
       }
 
-      float multiplicity = 0.0f;
+      // float multiplicity = 0.0f;
       /*      if (cfgMultFT0)
         multiplicity = c1.multZeqFT0A() + c1.multZeqFT0C();
         if (cfgMultFT0 == 0 && cfgCentFT0C == 1)
         multiplicity = c1.centFT0C();
         if (cfgMultFT0 == 0 && cfgCentFT0C == 0)*/
-      multiplicity = c1.centFT0M();
+      // multiplicity = c1.centFT0M();
 
       for (auto& [t1, t2] : o2::soa::combinations(
              o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
