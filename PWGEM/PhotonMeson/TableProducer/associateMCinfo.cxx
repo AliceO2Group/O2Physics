@@ -48,7 +48,7 @@ struct AssociateMCInfo {
   Produces<o2::aod::EMPrimaryMuonMCLabels> emprimarymuonmclabels;
 
   Configurable<float> max_rxy_gen{"max_rxy_gen", 100, "max rxy to store generated information"};
-  Configurable<float> max_Y_gen{"max_Y_gen", 1.5, "max rapidity Y to store generated information"};
+  Configurable<float> max_Y_gen{"max_Y_gen", 0.9, "max rapidity Y to store generated information"};
   Configurable<float> margin_z_gen{"margin_z_gen", 15.f, "margin for Z of true photon conversion point to store generated information"};
 
   HistogramRegistry registry{"EMMCEvent"};
@@ -58,6 +58,8 @@ struct AssociateMCInfo {
     auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1I, {{6, 0.5f, 6.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
     hEventCounter->GetXaxis()->SetBinLabel(2, "has mc collision");
+    registry.add<TH2>("PCM/hXY", "hRxy;X (cm);Y (cm)", kTH2F, {{400, -100, +100}, {400, -100, +100}});
+    registry.add<TH2>("PCM/hRZ", "hRxy;R (cm);Z (cm)", kTH2F, {{400, -100, +100}, {200, 0, +100}});
   }
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
@@ -92,7 +94,6 @@ struct AssociateMCInfo {
       // make an entry for this MC event only if it was not already added to the table
       if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {
         mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.impactParameter());
-        // mcevents(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.impactParameter());
         fEventLabels[mcCollision.globalIndex()] = fCounters[1];
         fCounters[1]++;
       }
@@ -103,7 +104,7 @@ struct AssociateMCInfo {
       auto groupedMcTracks = mcTracks.sliceBy(perMcCollision, mcCollision.globalIndex());
 
       for (auto& mctrack : groupedMcTracks) { // store necessary information for denominator of efficiency
-        if (mctrack.pt() < 1e-3 || abs(mctrack.y()) > max_Y_gen || abs(mctrack.vz()) > 250 || sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) > max_rxy_gen) {
+        if (mctrack.pt() < 1e-3 || abs(mctrack.vz()) > 250 || sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) > max_rxy_gen) {
           continue;
         }
         int pdg = mctrack.pdgCode();
@@ -138,14 +139,30 @@ struct AssociateMCInfo {
         }
         // LOGF(info,"index = %d , mc track pdg = %d , producedByGenerator =  %d , isPhysicalPrimary = %d", mctrack.index(), mctrack.pdgCode(), mctrack.producedByGenerator(), mctrack.isPhysicalPrimary());
 
-        if (abs(pdg) == 11) { // electrons // extra check of production vertex for secondary electrons to reduce data size.
-          if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator() && sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) < abs(mctrack.vz()) * std::tan(2 * std::atan(std::exp(-max_Y_gen))) - margin_z_gen) {
+        if (!(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) { // neither physical primary nor producedByGenerator
+          if (abs(pdg) == 11) {                                                // one more check for secondary electrons. i.e. gamma->ee
+
+            if (sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) < abs(mctrack.vz()) * std::tan(2 * std::atan(std::exp(-max_Y_gen))) - margin_z_gen) {
+              continue;
+            }
+
+            if (mctrack.has_mothers()) {
+              auto mp = mctrack.template mothers_first_as<aod::McParticles>(); // mother particle of electron
+              int pdg_mother = mp.pdgCode();
+              if (pdg_mother != 22 || !(mp.isPhysicalPrimary() || mp.producedByGenerator())) { // mother of electron is not photon, or not physical primary, or not producedByGenerator
+                continue;
+              }
+            }
+          } else { // not physical primary, not producedByGenerator, not electrons
             continue;
           }
-        } else {
-          if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
-            continue;
-          }
+        } else if (abs(mctrack.y()) > max_Y_gen) { // physical primary or producedByGenerator, but outside of acceptance.
+          continue;
+        }
+
+        if (abs(pdg) == 11 && !(mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) { // only for quick check, only secondary electrons should appear.
+          registry.fill(HIST("PCM/hXY"), mctrack.vx(), mctrack.vy());
+          registry.fill(HIST("PCM/hRZ"), mctrack.vz(), sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)));
         }
 
         // these are used as denominator for efficiency. (i.e. generated information)
@@ -326,12 +343,7 @@ struct AssociateMCInfo {
 
       std::vector<int> mothers;
       if (mctrack.has_mothers()) {
-        // LOGF(info, "mother ids size = %d", mctrack.mothersIds().size());
-        // int counter = 0;
         for (auto& m : mctrack.mothersIds()) {
-          // LOGF(info, "counter = %d , mother id = %d", counter, m);
-          // counter++;
-
           if (m < mcTracks.size()) { // protect against bad mother indices
             if (fNewLabels.find(m) != fNewLabels.end()) {
               mothers.push_back(fNewLabels.find(m)->second);
