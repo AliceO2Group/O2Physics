@@ -286,8 +286,10 @@ struct AntimatterAbsorptionHMPID {
       // continue;
 
       // Loose Track Selection
-      if (!track_hmpid.track_as<TrackCandidates>().isGlobalTrack())
+      if (!track_hmpid.track_as<TrackCandidates>().isGlobalTrack() != (uint8_t) true) {
         continue;
+      }
+
       // if (!track_hmpid.track_as<TrackCandidates>().passedITSRefit())
       //   continue;
       // if (!track_hmpid.track_as<TrackCandidates>().passedTPCRefit())
