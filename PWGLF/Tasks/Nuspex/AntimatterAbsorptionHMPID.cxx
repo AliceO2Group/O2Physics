@@ -266,7 +266,7 @@ struct AntimatterAbsorptionHMPID {
   // Propagated to PV tracks
   using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, PidInfoTPC, PidInfoTOF, aod::TrackSelection, aod::TrackSelectionExtension>;
 
-  void processData(o2::aod::HMPIDs const& hmpids, EventCandidates::iterator const& event,
+  void processData(aod::HMPIDs const& hmpids, EventCandidates::iterator const& event,
                    TrackCandidates const& tracksIU)
   {
     // Event Selection
@@ -279,6 +279,10 @@ struct AntimatterAbsorptionHMPID {
     for (const auto& track_hmpid : hmpids) {
 
       const auto& track = track_hmpid.track_as<TrackCandidates>();
+
+      // Require HMPID Hit
+      if (!track.has_hmpid())
+        continue;
 
       // Loose Track Selection
       if (!track.isGlobalTrackWoDCA())
@@ -454,6 +458,7 @@ struct AntimatterAbsorptionHMPID {
         passedDeutTOFsel = true;
 
       // To be calculated
+      /*
       bool hmpidAbs8cm = true;
       bool hmpidAbs4cm = true;
 
@@ -498,6 +503,7 @@ struct AntimatterAbsorptionHMPID {
           pion_neg_reg.fill(HIST("Pi_Neg_ClsSize_4cm"), track_hmpid.hmpidMom(), track_hmpid.hmpidClusSize());
         }
       }
+      */
     }
   }
   PROCESS_SWITCH(AntimatterAbsorptionHMPID, processData, "process data", true);
