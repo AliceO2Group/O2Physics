@@ -292,18 +292,19 @@ struct AntimatterAbsorptionHMPID {
       //   continue;
       // if (!track_hmpid.track_as<TrackCandidates>().passedTPCRefit())
       //  continue;
-      if (track_hmpid.track_as<TrackCandidates>().itsNCls() < 1)
-        continue;
-      if (track_hmpid.track_as<TrackCandidates>().tpcNClsFound() < 0)
-        continue;
-      if (track_hmpid.track_as<TrackCandidates>().tpcNClsCrossedRows() < 60)
-        continue;
+      // if (track_hmpid.track_as<TrackCandidates>().itsNCls() < 1)
+      //  continue;
+      // if (track_hmpid.track_as<TrackCandidates>().tpcNClsFound() < 0)
+      //  continue;
+      // if (track_hmpid.track_as<TrackCandidates>().tpcNClsCrossedRows() < 60)
+      //  continue;
       if (TMath::Abs(track_hmpid.track_as<TrackCandidates>().dcaXY()) > 1.0)
         continue;
       if (TMath::Abs(track_hmpid.track_as<TrackCandidates>().dcaZ()) > 1.0)
         continue;
 
       // Fill QA Histograms (Positive Tracks)
+      /*
       if (track_hmpid.track_as<TrackCandidates>().sign() > 0) {
 
         pos_reg.fill(HIST("histTpcSignalData"), track_hmpid.track_as<TrackCandidates>().tpcInnerParam(), track_hmpid.track_as<TrackCandidates>().tpcSignal());
@@ -334,6 +335,7 @@ struct AntimatterAbsorptionHMPID {
         neg_reg.fill(HIST("histEta"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().eta());
         neg_reg.fill(HIST("histPhi"), track_hmpid.track_as<TrackCandidates>().p(), track_hmpid.track_as<TrackCandidates>().phi());
       }
+      */
       /*
             // Track Selection
             if (!track.hasTPC())
