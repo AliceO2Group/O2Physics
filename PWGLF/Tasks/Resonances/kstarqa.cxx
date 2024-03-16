@@ -295,12 +295,12 @@ struct kstarqa {
 
   using BinningTypeTPCMultiplicity =
     ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
-  using BinningTypeVertexContributor =
-    ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
+  // using BinningTypeVertexContributor =
+  // ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
   using BinningTypeCentralityM =
     ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-  // using BinningTypeVertexContributor =
-  // ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  using BinningTypeVertexContributor =
+    ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
 
   BinningTypeVertexContributor binningOnPositions{
     {axisVertex, axisMultiplicity},
@@ -476,7 +476,7 @@ struct kstarqa {
       }
 
       if (timFrameEvsel && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
-        return;
+        continue;
       }
 
       // float multiplicity = 0.0f;
