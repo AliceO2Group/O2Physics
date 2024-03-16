@@ -664,6 +664,7 @@ struct lambdakzeroBuilder {
     //---/---/---/
     // Move close to minima
     int nCand = 0;
+    fitter.setCollinear(V0.isCollinearV0());
     try {
       nCand = fitter.process(lPositiveTrack, lNegativeTrack);
     } catch (...) {
