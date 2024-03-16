@@ -569,6 +569,9 @@ struct EventSelectionQaTask {
         mapOrbitShift[517677] = 127;
         mapOrbitShift[517678] = 127;
         mapOrbitShift[517679] = 127;
+        mapOrbitShift[517685] = 127;
+        mapOrbitShift[517690] = 127;
+        mapOrbitShift[517693] = 127;
         mapOrbitShift[517737] = 127;
         mapOrbitShift[517748] = 127;
         mapOrbitShift[517751] = 127;
