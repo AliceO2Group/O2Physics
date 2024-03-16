@@ -908,6 +908,13 @@ struct PIDSpeciesSelection {
       return closeToTPC(config, sp) && awayFromTPC(config, sp);
     };
 
+    /* let's start discarding garbage */
+    if (track.hasTOF()) {
+      if (track.beta() < 0.42) {
+        return -127;
+      }
+    }
+
     /* let's first check the exclusion from the analysis */
     for (uint8_t ix = 0; ix < configexclude.size(); ++ix) {
       if (isA(configexclude[ix], speciesexclude[ix])) {
