@@ -281,7 +281,7 @@ struct AntimatterAbsorptionHMPID {
       const auto& track = track_hmpid.track_as<TrackCandidates>();
 
       // Require HMPID Hit
-      if (!track.has_hmpid())
+      if (!track_hmpid.has_hmpid())
         continue;
 
       // Loose Track Selection
