@@ -263,14 +263,8 @@ struct AntimatterAbsorptionHMPID {
                                aod::pidTOFFullAl,
                                aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>;
 
-  struct BuildHmpidIndex {
-    // build the index table HMPIDTracksIndex
-    Builds<aod::HMPIDTracksIndex> idx;
-    void init(InitContext const&){};
-  };
-
   // Propagated to PV tracks
-  using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, PidInfoTPC, PidInfoTOF, aod::TrackSelection, aod::TrackSelectionExtension, aod::HMPIDTracksIndex>;
+  using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, PidInfoTPC, PidInfoTOF, aod::TrackSelection, aod::TrackSelectionExtension>;
 
   void processData(aod::HMPIDs const& hmpids, EventCandidates::iterator const& event,
                    TrackCandidates const& tracksIU)
@@ -287,8 +281,8 @@ struct AntimatterAbsorptionHMPID {
       const auto& track = track_hmpid.track_as<TrackCandidates>();
 
       // Require HMPID Hit
-      if (!track.has_hmpid())
-        continue;
+      // if (!track.has_hmpid())
+      // continue;
 
       // Loose Track Selection
       if (!track.isGlobalTrackWoDCA())
@@ -396,6 +390,7 @@ struct AntimatterAbsorptionHMPID {
         antideuteron_reg.fill(HIST("histTpcNsigmaData"), track.p(), track.tpcNSigmaDe());
       }
 
+      /*
       bool passedPionTPCsel = false;
       bool passedKaonTPCsel = false;
       bool passedProtTPCsel = false;
@@ -464,7 +459,7 @@ struct AntimatterAbsorptionHMPID {
         passedDeutTOFsel = true;
 
       // To be calculated
-      /*
+
       bool hmpidAbs8cm = true;
       bool hmpidAbs4cm = true;
 
