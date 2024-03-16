@@ -263,6 +263,12 @@ struct AntimatterAbsorptionHMPID {
                                aod::pidTOFFullAl,
                                aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>;
 
+  struct BuildHmpidIndex {
+    // build the index table HMPIDTracksIndex
+    Builds<aod::HMPIDTracksIndex> idx;
+    void init(InitContext const&){};
+  };
+
   // Propagated to PV tracks
   using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, PidInfoTPC, PidInfoTOF, aod::TrackSelection, aod::TrackSelectionExtension, aod::HMPIDTracksIndex>;
 
