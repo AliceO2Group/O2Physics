@@ -20,11 +20,13 @@
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using namespace o2::aod::pwgem::mcutil;
 
 using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels>;
 using TracksMC = soa::Join<aod::TracksIU, aod::McTrackLabels>;
@@ -87,8 +89,8 @@ struct AssociateMCInfo {
 
       // make an entry for this MC event only if it was not already added to the table
       if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {
-        // mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter());
-        mcevents(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.weight(), mcCollision.impactParameter());
+        // mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.impactParameter());
+        mcevents(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.impactParameter());
         fEventLabels[mcCollision.globalIndex()] = fCounters[1];
         fCounters[1]++;
       }
@@ -99,7 +101,8 @@ struct AssociateMCInfo {
       auto groupedMcTracks = mcTracks.sliceBy(perMcCollision, mcCollision.globalIndex());
 
       for (auto& mctrack : groupedMcTracks) {
-        if (mctrack.pt() < 1e-3 || abs(mctrack.y()) > 1.5 || abs(mctrack.vz()) > 250 || sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) > max_rxy_gen) {
+        float rxy_gen = sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2));
+        if (mctrack.pt() < 1e-3 || abs(mctrack.y()) > 1.5 || abs(mctrack.vz()) > 250 || rxy_gen > max_rxy_gen) {
           continue;
         }
         int pdg = mctrack.pdgCode();
@@ -122,6 +125,16 @@ struct AssociateMCInfo {
           && (abs(pdg) != 130)  // K0L
           && (abs(pdg) != 3122) // Lambda
         ) {
+          continue;
+        }
+
+        // extra check of production vertex for secondary electrons to reduce data size.
+        if (abs(pdg) == 11 && !mctrack.producedByGenerator() && rxy_gen < abs(mctrack.vz()) * std::tan(2 * std::atan(std::exp(-1.5))) - 15.f) {
+          continue;
+        }
+
+        // extra check for secondary photons to reduce data size.
+        if (abs(pdg) == 22 && !mctrack.producedByGenerator() && !IsPhysicalPrimary(mcCollision, mctrack, mcTracks)) {
           continue;
         }
 
@@ -218,7 +231,12 @@ struct AssociateMCInfo {
 
       std::vector<int> mothers;
       if (mctrack.has_mothers()) {
+        LOGF(info, "mother ids size = %d", mctrack.mothersIds().size());
+        int counter = 0;
         for (auto& m : mctrack.mothersIds()) {
+          LOGF(info, "counter = %d , mother id = %d", counter, m);
+          counter++;
+
           if (m < mcTracks.size()) { // protect against bad mother indices
             if (fNewLabels.find(m) != fNewLabels.end()) {
               mothers.push_back(fNewLabels.find(m)->second);
@@ -252,9 +270,9 @@ struct AssociateMCInfo {
         daughterRange[1] = daughters[daughters.size() - 1];
       }
 
-      emmcparticles(fEventIdx.find(oldLabel)->second, mctrack.pdgCode(), mctrack.statusCode(), mctrack.flags(),
+      emmcparticles(fEventIdx.find(oldLabel)->second, mctrack.pdgCode(), mctrack.flags(),
                     mothers, daughterRange,
-                    mctrack.weight(), mctrack.pt(), mctrack.eta(), mctrack.phi(), mctrack.e(),
+                    mctrack.px(), mctrack.py(), mctrack.pz(),
                     mctrack.vx(), mctrack.vy(), mctrack.vz(), mctrack.vt());
     } // end loop over labels
 

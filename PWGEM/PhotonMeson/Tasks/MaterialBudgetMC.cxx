@@ -262,7 +262,7 @@ struct MaterialBudgetMC {
           bool is_photon_physical_primary = false;
           if (photonid > 0) {
             auto mcphoton = mcparticles.iteratorAt(photonid);
-            is_photon_physical_primary = IsPhysicalPrimary(mcphoton.emreducedmcevent(), mcphoton, mcparticles);
+            is_photon_physical_primary = IsPhysicalPrimary(mcphoton.emmcevent(), mcphoton, mcparticles);
           }
           if (!is_photon_physical_primary) {
             continue;
@@ -345,7 +345,7 @@ struct MaterialBudgetMC {
                   continue;
                 }
                 auto pi0mc = mcparticles.iteratorAt(pi0id);
-                if (!IsPhysicalPrimary(pi0mc.emreducedmcevent(), pi0mc, mcparticles)) {
+                if (!IsPhysicalPrimary(pi0mc.emmcevent(), pi0mc, mcparticles)) {
                   continue;
                 }
 
@@ -381,7 +381,7 @@ struct MaterialBudgetMC {
     TruePairing<PairType::kPCMPCM>(filtered_collisions, v0photons, v0photons, perCollision_pcm, perCollision_pcm, fTagCuts, fProbeCuts, fPairCuts, legs, mcparticles, mccollisions);
   }
 
-  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
+  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
   void processGen(MyCollisions const& collisions, aod::EMMCEvents const&, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
@@ -392,7 +392,7 @@ struct MaterialBudgetMC {
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
-      auto mccollision = collision.emreducedmcevent();
+      auto mccollision = collision.emmcevent();
       // LOGF(info, "mccollision.globalIndex() = %d", mccollision.globalIndex());
 
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(1.0);

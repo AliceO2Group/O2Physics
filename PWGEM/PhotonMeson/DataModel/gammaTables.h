@@ -10,6 +10,8 @@
 // or submit itself to any jurisdiction.
 
 #include <vector>
+#include <TMath.h>
+#include <TDatabasePDG.h>
 
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -20,7 +22,6 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
-#include <TMath.h>
 
 #ifndef PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
 #define PWGEM_PHOTONMESON_DATAMODEL_GAMMATABLES_H_
@@ -113,22 +114,16 @@ using EMReducedEventNee = EMReducedEventsNee::iterator;
 DECLARE_SOA_TABLE(EMReducedEventsNmumu, "AOD", "EMEVENTNMUMU", emreducedevent::NmumuULS, emreducedevent::NmumuLSpp, emreducedevent::NmumuLSmm); // joinable to EMReducedEvents
 using EMReducedEventNmumu = EMReducedEventsNmumu::iterator;
 
-namespace emreducedmcevent
-{
-DECLARE_SOA_COLUMN(PosX, posX, float); //!
-DECLARE_SOA_COLUMN(PosY, posY, float); //!
-DECLARE_SOA_COLUMN(PosZ, posZ, float); //!
-} // namespace emreducedmcevent
 DECLARE_SOA_TABLE(EMMCEvents, "AOD", "EMMCEVENT", //!   MC event information table
                   o2::soa::Index<>, mccollision::GeneratorsID,
-                  emreducedmcevent::PosX, emreducedmcevent::PosY, emreducedmcevent::PosZ,
-                  mccollision::T, mccollision::Weight, mccollision::ImpactParameter);
+                  mccollision::PosX, mccollision::PosY, mccollision::PosZ,
+                  mccollision::T, mccollision::ImpactParameter);
 using EMMCEvent = EMMCEvents::iterator;
 
 namespace emmceventlabel
 {
-DECLARE_SOA_INDEX_COLUMN(EMMCEvent, emreducedmcevent); //! MC collision
-DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);          //! Bit mask to indicate collision mismatches (bit ON means mismatch). Bit 15: indicates negative label
+DECLARE_SOA_INDEX_COLUMN(EMMCEvent, emmcevent); //! MC collision
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);   //! Bit mask to indicate collision mismatches (bit ON means mismatch). Bit 15: indicates negative label
 } // namespace emmceventlabel
 
 DECLARE_SOA_TABLE(EMMCEventLabels, "AOD", "EMMCEVENTLABEL", //! Table joined to the EMReducedEvents table containing the MC index
@@ -137,24 +132,17 @@ using EMMCEventLabel = EMMCEventLabels::iterator;
 
 namespace emmcparticle
 {
-DECLARE_SOA_INDEX_COLUMN(EMMCEvent, emreducedmcevent);                                    //!
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother0, mother0, int, "EMMCParticles_Mother0");       //! Track index of the first mother
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother1, mother1, int, "EMMCParticles_Mother1");       //! Track index of the last mother
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter0, daughter0, int, "EMMCParticles_Daughter0"); //! Track index of the first daughter
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter1, daughter1, int, "EMMCParticles_Daughter1"); //! Track index of the last daughter
-DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);                                    //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
-DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters);                                //! Daughter tracks (possibly empty) slice. Check for non-zero with mcParticle.has_daughters(). Iterate over mcParticle.daughters_as<aod::McParticles>())
-DECLARE_SOA_COLUMN(Pt, pt, float);                                                        //!
-DECLARE_SOA_COLUMN(Eta, eta, float);                                                      //!
-DECLARE_SOA_COLUMN(Phi, phi, float);                                                      //!
-DECLARE_SOA_COLUMN(E, e, float);                                                          //!
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) -> float { return pt * std::cos(phi); });
-DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) -> float { return pt * std::sin(phi); });
-DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) -> float { return pt * std::sinh(eta); });
-DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) -> float { return pt * std::cosh(eta); });
+DECLARE_SOA_INDEX_COLUMN(EMMCEvent, emmcevent);
+DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);     //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
+DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters); //! Daughter tracks (possibly empty) slice. Check for non-zero with mcParticle.has_daughters(). Iterate over mcParticle.daughters_as<aod::McParticles>())
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array{px, py, pz}); });
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) -> float { return RecoDecay::phi(px, py); });
+DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float px, float py, float pz) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz); });
+DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](float px, float py, float pz, int pdg) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz, TDatabasePDG::Instance()->GetParticle(pdg)->Mass()); });
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
-                           [](float pt, float eta, float e) -> float {
-                             float pz = pt * std::sinh(eta);
+                           [](float px, float py, float pz, int pdg) -> float {
+                             float e = RecoDecay::sqrtSumOfSquares(px, py, pz, TDatabasePDG::Instance()->GetParticle(pdg)->Mass());
                              if ((e - pz) > static_cast<float>(1e-7)) {
                                return 0.5f * std::log((e + pz) / (e - pz));
                              } else {
@@ -162,26 +150,25 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
                              }
                            });
 } // namespace emmcparticle
-// NOTE: This table is nearly identical to the one from Framework (except that it points to the event ID, not the BC id)
-//       This table contains all MC truth tracks (both v0 and calos)
+
+// This table contains all MC truth tracks (both v0 and calos)
 DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //!  MC track information (on disk)
                        o2::soa::Index<>, emmcparticle::EMMCEventId,
-                       mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
+                       mcparticle::PdgCode, mcparticle::Flags,
                        emmcparticle::MothersIds, emmcparticle::DaughtersIdSlice,
-                       mcparticle::Weight,
-                       emmcparticle::Pt, emmcparticle::Eta, emmcparticle::Phi, emmcparticle::E,
+                       mcparticle::Px, mcparticle::Py, mcparticle::Pz,
                        mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
 
                        // dynamic column
-                       emmcparticle::Px<emmcparticle::Pt, emmcparticle::Phi>,
-                       emmcparticle::Py<emmcparticle::Pt, emmcparticle::Phi>,
-                       emmcparticle::Pz<emmcparticle::Pt, emmcparticle::Eta>,
-                       emmcparticle::P<emmcparticle::Pt, emmcparticle::Eta>,
-                       emmcparticle::Y<emmcparticle::Pt, emmcparticle::Eta, emmcparticle::E>,
+                       emmcparticle::Pt<mcparticle::Px, mcparticle::Py>,
+                       emmcparticle::Eta<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
+                       emmcparticle::Phi<mcparticle::Px, mcparticle::Py>,
+
+                       emmcparticle::P<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
+                       emmcparticle::E<mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::PdgCode>, // energy
+                       emmcparticle::Y<mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::PdgCode>, // rapidity
                        mcparticle::ProducedByGenerator<mcparticle::Flags>,
                        mcparticle::FromBackgroundEvent<mcparticle::Flags>,
-                       mcparticle::GetGenStatusCode<mcparticle::Flags, mcparticle::StatusCode>,
-                       mcparticle::GetProcess<mcparticle::Flags, mcparticle::StatusCode>,
                        mcparticle::IsPhysicalPrimary<mcparticle::Flags>);
 
 using EMMCParticle = EMMCParticles::iterator;

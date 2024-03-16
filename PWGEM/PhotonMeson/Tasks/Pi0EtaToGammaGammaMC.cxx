@@ -410,9 +410,9 @@ struct Pi0EtaToGammaGammaMC {
 
               if (pi0id > 0) {
                 auto pi0mc = mcparticles.iteratorAt(pi0id);
-                if (IsPhysicalPrimary(pi0mc.emreducedmcevent(), pi0mc, mcparticles)) {
+                if (IsPhysicalPrimary(pi0mc.emmcevent(), pi0mc, mcparticles)) {
                   reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_Primary"))->Fill(v12.M(), v12.Pt());
-                } else if (IsFromWD(pi0mc.emreducedmcevent(), pi0mc, mcparticles)) {
+                } else if (IsFromWD(pi0mc.emmcevent(), pi0mc, mcparticles)) {
                   reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_FromWD"))->Fill(v12.M(), v12.Pt());
                 }
               } else if (etaid > 0) {
@@ -518,9 +518,9 @@ struct Pi0EtaToGammaGammaMC {
                 }
                 if (pi0id > 0) {
                   auto pi0mc = mcparticles.iteratorAt(pi0id);
-                  if (IsPhysicalPrimary(pi0mc.emreducedmcevent(), pi0mc, mcparticles)) {
+                  if (IsPhysicalPrimary(pi0mc.emmcevent(), pi0mc, mcparticles)) {
                     reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_Primary"))->Fill(v12.M(), v12.Pt());
-                  } else if (IsFromWD(pi0mc.emreducedmcevent(), pi0mc, mcparticles)) {
+                  } else if (IsFromWD(pi0mc.emmcevent(), pi0mc, mcparticles)) {
                     reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_FromWD"))->Fill(v12.M(), v12.Pt());
                   }
                 } else if (etaid > 0) {
@@ -536,8 +536,8 @@ struct Pi0EtaToGammaGammaMC {
     } // end of collision loop
   }
 
-  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
-  PresliceUnsorted<MyCollisions> rec_perMcCollision = aod::emmceventlabel::emreducedmceventId;
+  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
+  PresliceUnsorted<MyCollisions> rec_perMcCollision = aod::emmceventlabel::emmceventId;
 
   template <PairType pairtype, typename TCollisions, typename TMCCollisions, typename TMCParticles>
   void runGenInfo(TCollisions const& collisions, TMCCollisions const& mccollisions, TMCParticles const& mcparticles)
@@ -568,7 +568,7 @@ struct Pi0EtaToGammaGammaMC {
         continue;
       }
 
-      auto mccollision = collision.emreducedmcevent();
+      auto mccollision = collision.emmcevent();
       reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hZvtx_before"))->Fill(mccollision.posZ());
       reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hCollisionCounter"))->Fill(1.0); // all
       if (!collision.sel8()) {
@@ -595,7 +595,7 @@ struct Pi0EtaToGammaGammaMC {
         }
         int pdg = mctrack.pdgCode();
 
-        if (abs(pdg) == 111 && IsPhysicalPrimary(mctrack.emreducedmcevent(), mctrack, mcparticles)) {
+        if (abs(pdg) == 111 && IsPhysicalPrimary(mctrack.emmcevent(), mctrack, mcparticles)) {
           reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hPt_Pi0"))->Fill(mctrack.pt());
           reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hY_Pi0"))->Fill(mctrack.y());
           reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hPhi_Pi0"))->Fill(mctrack.phi());
@@ -604,7 +604,7 @@ struct Pi0EtaToGammaGammaMC {
             reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hY_Pi0_Acc"))->Fill(mctrack.y());
             reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hPhi_Pi0_Acc"))->Fill(mctrack.phi());
           }
-        } else if (abs(pdg) == 221 && IsPhysicalPrimary(mctrack.emreducedmcevent(), mctrack, mcparticles)) {
+        } else if (abs(pdg) == 221 && IsPhysicalPrimary(mctrack.emmcevent(), mctrack, mcparticles)) {
           reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hPt_Eta"))->Fill(mctrack.pt());
           reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hY_Eta"))->Fill(mctrack.y());
           reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hPhi_Eta"))->Fill(mctrack.phi());
