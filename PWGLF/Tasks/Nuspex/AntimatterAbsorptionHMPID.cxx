@@ -265,7 +265,7 @@ struct AntimatterAbsorptionHMPID {
 
   // Propagated to PV tracks
   // using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, PidInfoTPC, PidInfoTOF, aod::TrackSelection, aod::TrackSelectionExtension>;
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, PidInfoTPC, PidInfoTOF>;
+  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, PidInfoTPC, PidInfoTOF>;
 
   void processData(aod::HMPIDs const& hmpids, EventCandidates::iterator const& event,
                    TrackCandidates const& tracksIU)
@@ -286,12 +286,12 @@ struct AntimatterAbsorptionHMPID {
       // continue;
 
       // Loose Track Selection
-      if (!track_hmpid.track_as<TrackCandidates>().isGlobalTrackWoDCA())
+      if (!track_hmpid.track_as<TrackCandidates>().isGlobalTrack())
         continue;
-      if (!track_hmpid.track_as<TrackCandidates>().passedITSRefit())
-        continue;
-      if (!track_hmpid.track_as<TrackCandidates>().passedTPCRefit())
-        continue;
+      // if (!track_hmpid.track_as<TrackCandidates>().passedITSRefit())
+      //   continue;
+      // if (!track_hmpid.track_as<TrackCandidates>().passedTPCRefit())
+      //  continue;
       if (track_hmpid.track_as<TrackCandidates>().itsNCls() < 1)
         continue;
       if (track_hmpid.track_as<TrackCandidates>().tpcNClsFound() < 0)
@@ -301,8 +301,6 @@ struct AntimatterAbsorptionHMPID {
       if (TMath::Abs(track_hmpid.track_as<TrackCandidates>().dcaXY()) > 1.0)
         continue;
       if (TMath::Abs(track_hmpid.track_as<TrackCandidates>().dcaZ()) > 1.0)
-        continue;
-      if (enable_PVcontributor_global && !(track_hmpid.track_as<TrackCandidates>().isPVContributor()))
         continue;
 
       // Fill QA Histograms (Positive Tracks)
