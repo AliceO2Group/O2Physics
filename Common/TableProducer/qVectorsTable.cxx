@@ -344,7 +344,7 @@ struct qVectorsTable {
     return true;
   }
 
-  void process(MyCollisions::iterator const& coll, aod::BCsWithTimestamps const&, aod::FT0s const& ft0s, aod::FV0As const& fv0s, MyTracks const& tracks) 
+  void process(MyCollisions::iterator const& coll, aod::BCsWithTimestamps const&, aod::FT0s const& ft0s, aod::FV0As const& fv0s, MyTracks const& tracks)
   {
     if (IsFirstRun) {
       auto bc = coll.bc_as<aod::BCsWithTimestamps>();
