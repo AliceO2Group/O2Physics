@@ -264,7 +264,7 @@ struct AntimatterAbsorptionHMPID {
                                aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>;
 
   // Propagated to PV tracks
-  using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, PidInfoTPC, PidInfoTOF, aod::TrackSelection, aod::TrackSelectionExtension>;
+  using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, PidInfoTPC, PidInfoTOF, aod::TrackSelection, aod::TrackSelectionExtension, aod::HMPIDTracksIndex>;
 
   void processData(aod::HMPIDs const& hmpids, EventCandidates::iterator const& event,
                    TrackCandidates const& tracksIU)
@@ -281,7 +281,7 @@ struct AntimatterAbsorptionHMPID {
       const auto& track = track_hmpid.track_as<TrackCandidates>();
 
       // Require HMPID Hit
-      if (!track_hmpid.has_hmpid())
+      if (!track.has_hmpid())
         continue;
 
       // Loose Track Selection
