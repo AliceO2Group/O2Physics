@@ -624,7 +624,7 @@ struct EventSelectionQaTask {
 
         // first bc of the first orbit (should coincide with TF start)
         bcSOR = orbitSOR * nBCsPerOrbit;
-        
+
         // duration of TF in bcs
         nBCsPerTF = nOrbitsPerTF * nBCsPerOrbit;
       }
