@@ -50,7 +50,10 @@ class SGSelector
       return result;
     }
     auto newbc = oldbc;
+    auto newznabc = oldbc;
+    auto newzncbc = oldbc;
     bool gA = true, gC = true;
+    bool gzA = true, gzC = true;
     for (auto const& bc : bcRange) {
       if (!udhelpers::cleanFITA(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
         if (gA)
@@ -71,6 +74,77 @@ class SGSelector
     if (!gA && !gC) {
       result.value = 3;
       return result;
+    }
+    for (auto const& bc : bcRange) {
+      if (bc.has_zdc()) {
+        auto zdc = bc.zdc();
+        if (std::abs(static_cast<float>(zdc.timeZNA())) < 2 && zdc.energyCommonZNA() > 0) {
+          if (gzA) {
+            newznabc = bc;
+          }
+          if (!gzA && std::abs(static_cast<int64_t>(bc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<int64_t>(newznabc.globalBC() - oldbc.globalBC()))) {
+            newznabc = bc;
+          }
+          gzA = false;
+        }
+        if (std::abs(static_cast<float>(zdc.timeZNC())) < 2 && zdc.energyCommonZNC() > 0) {
+          if (gzC) {
+            newzncbc = bc;
+          }
+          if (!gzC && std::abs(static_cast<int64_t>(bc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<int64_t>(newzncbc.globalBC() - oldbc.globalBC()))) {
+            newzncbc = bc;
+          }
+          gzC = false;
+        }
+      }
+    }
+    if (gA && gC) {
+      if (!gzA && !gzC) {
+        if (std::abs(static_cast<int64_t>(newznabc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<int64_t>(newzncbc.globalBC() - oldbc.globalBC()))) {
+          newzncbc = newznabc;
+          newbc = newznabc;
+        } else {
+          newznabc = newzncbc;
+          newbc = newzncbc;
+        }
+      } else if (!gzA) {
+        newzncbc = newznabc;
+        newbc = newznabc;
+      } else if (!gzC) {
+        newznabc = newzncbc;
+        newbc = newzncbc;
+      }
+    } else if (!gA) {
+      if (!gzA) {
+        if (newbc.globalBC() == newznabc.globalBC()) {
+          newzncbc = newznabc;
+        } else if (std::abs(static_cast<int64_t>(newznabc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<int64_t>(newbc.globalBC() - oldbc.globalBC()))) {
+          newzncbc = newznabc;
+          newbc = newznabc;
+        } else {
+          newzncbc = newbc;
+          newznabc = newbc;
+        }
+      } else {
+        newzncbc = newbc;
+        newznabc = newbc;
+      }
+    } else if (!gC) {
+      if (!gzC) {
+        if (newbc.globalBC() == newzncbc.globalBC()) {
+          newznabc = newzncbc;
+        } else if (std::abs(static_cast<int64_t>(newzncbc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<int64_t>(newbc.globalBC() - oldbc.globalBC()))) {
+          newznabc = newzncbc;
+          newbc = newzncbc;
+        } else {
+          newzncbc = newbc;
+          newznabc = newbc;
+        }
+
+      } else {
+        newzncbc = newbc;
+        newznabc = newbc;
+      }
     }
     // LOGF(info, "Old BC: %i, New BC: %i",oldbc.globalBC(), newbc.globalBC());
     result.value = gA && gC ? 2 : (gA ? 0 : 1);
