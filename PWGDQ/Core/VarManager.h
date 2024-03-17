@@ -126,6 +126,8 @@ class VarManager : public TObject
     kElectronMuon,   // e.g. Electron - muon correlations
     kBcToThreeMuons, // e.g. Bc           -> mu+ mu- mu+
     kBtoJpsiEEK,     // e.g. B+           -> e+ e- K+
+    kXtoJpsiPiPi,    // e.g. X(3872)      -> J/psi pi+ pi-
+    kChictoJpsiEE,   // e.g. Chi_c1      -> J/psi e+ e-
     kNMaxCandidateTypes
   };
 
@@ -529,6 +531,15 @@ class VarManager : public TObject
     kDeltaPhiSym,
     kNCorrelationVariables,
 
+    // Dilepton-track-track variables
+    kQuadMass,
+    kQuadPt,
+    kQuadEta,
+    kQuadPhi,
+    kCosthetaDileptonDitrack,
+    kDitrackMass,
+    kDitrackPt,
+
     // DQ-HF correlation variables
     kMassCharmHadron,
     kPtCharmHadron,
@@ -769,6 +780,8 @@ class VarManager : public TObject
   static void FillQVectorFromCentralFW(C const& collision, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
   static void FillPairVn(T1 const& t1, T2 const& t2, float* values = nullptr);
+  template <int candidateType, typename T1, typename T2, typename T3>
+  static void FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T3 const& hadron2, float* values = nullptr);
 
   static void SetCalibrationObject(CalibObjects calib, TObject* obj)
   {
@@ -3098,6 +3111,46 @@ void VarManager::FillDileptonCharmHadron(DQ const& dilepton, HF const& charmHadr
 {
   FillSingleDileptonCharmHadron<kJPsi>(dilepton, hfHelper, bdtScoreCharmHad, values);
   FillSingleDileptonCharmHadron<partTypeCharmHad>(charmHadron, hfHelper, bdtScoreCharmHad, values);
+}
+
+template <int candidateType, typename T1, typename T2, typename T3>
+void VarManager::FillDileptonTrackTrack(T1 const& dilepton, T2 const& hadron1, T3 const& hadron2, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  double DefaultdileptonMass = 3.096;
+  double hadronMass1 = o2::constants::physics::MassPionCharged;
+  double hadronMass2 = o2::constants::physics::MassPionCharged;
+  if (candidateType == kXtoJpsiPiPi) {
+    DefaultdileptonMass = 3.096;
+    hadronMass1 = o2::constants::physics::MassPionCharged;
+    hadronMass2 = o2::constants::physics::MassPionCharged;
+  }
+  if (candidateType == kChictoJpsiEE) {
+    DefaultdileptonMass = 3.096;
+    hadronMass1 = o2::constants::physics::MassElectron;
+    hadronMass2 = o2::constants::physics::MassElectron;
+  }
+
+  ROOT::Math::PtEtaPhiMVector v1(dilepton.pt(), dilepton.eta(), dilepton.phi(), dilepton.mass());
+  ROOT::Math::PtEtaPhiMVector v2(hadron1.pt(), hadron1.eta(), hadron1.phi(), hadronMass1);
+  ROOT::Math::PtEtaPhiMVector v3(hadron2.pt(), hadron2.eta(), hadron2.phi(), hadronMass2);
+  ROOT::Math::PtEtaPhiMVector v123 = v1 + v2 + v3;
+  values[kQuadMass] = v123.M() - v1.M() + DefaultdileptonMass;
+  values[kQuadPt] = v123.Pt();
+  values[kQuadEta] = v123.Eta();
+  values[kQuadPhi] = v123.Phi();
+
+  if (fgUsedVars[kCosthetaDileptonDitrack] || fgUsedVars[kPairMass] || fgUsedVars[kPairPt] || fgUsedVars[kDitrackPt] || fgUsedVars[kDitrackMass]) {
+    ROOT::Math::PtEtaPhiMVector v23 = v2 + v3;
+    values[kPairMass] = v1.M();
+    values[kPairPt] = v1.Pt();
+    values[kDitrackMass] = v23.M();
+    values[kDitrackPt] = v23.Pt();
+    values[kCosthetaDileptonDitrack] = (v1.Px() * v123.Px() + v1.Py() * v123.Py() + v1.Pz() * v123.Pz()) / (v1.P() * v123.P());
+  }
 }
 
 #endif // PWGDQ_CORE_VARMANAGER_H_

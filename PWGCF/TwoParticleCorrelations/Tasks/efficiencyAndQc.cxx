@@ -61,16 +61,20 @@ enum BeforeAfter {
 std::vector<std::string> poinames; ///< the species of interest names
 std::vector<std::string> tnames;   ///< the track names
 
+static const std::vector<o2::track::PID::ID> allmainspecies{o2::track::PID::Electron, o2::track::PID::Muon, o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton};
+static const std::vector<std::string> allmainspnames{"ElectronP", "ElectronM", "MuonP", "MuonM", "PionP", "PionM", "KaonP", "KaonM", "ProtonP", "ProtonM"};
 static const std::vector<o2::track::PID::ID> mainspecies{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton};
 static const std::vector<std::string> mainspnames{"PionP", "PionM", "KaonP", "KaonM", "ProtonP", "ProtonM"};
 static const std::vector<int> pdgcodes = {11, 13, 211, 321, 2212};
 static const std::vector<std::string> mainsptitles{"#pi^{#plus}", "#pi^{#minus}", "K^{#plus}", "K^{#minus}", "p", "#bar{p}"};
+static const std::vector<std::string> allmainsptitles{"e^{#plus}", "e^{#minus}", "#mu^{#plus}", "#mu^{#minus}", "#pi^{#plus}", "#pi^{#minus}", "K^{#plus}", "K^{#minus}", "p", "#bar{p}"};
 } // namespace efficiencyandqatask
 
 /* the QA data collecting engine */
 struct QADataCollectingEngine {
   uint nsp = static_cast<uint>(efficiencyandqatask::tnames.size());
   uint nmainsp = static_cast<uint>(efficiencyandqatask::mainspnames.size());
+  uint nallmainsp = static_cast<uint>(efficiencyandqatask::allmainspnames.size());
 
   //===================================================
   // The QA output objects
@@ -400,25 +404,26 @@ struct QADataCollectingEngine {
 struct PidDataCollectingEngine {
   uint nsp = static_cast<uint>(efficiencyandqatask::tnames.size());
   uint nmainsp = static_cast<uint>(efficiencyandqatask::mainspnames.size());
+  uint nallmainsp = static_cast<uint>(efficiencyandqatask::allmainspnames.size());
 
   /* PID histograms */
   /* before and after */
   std::vector<std::shared_ptr<TH2>> fhTPCdEdxSignalVsP{2, nullptr};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhTPCdEdxSignalDiffVsP{2, {nmainsp, nullptr}};
-  std::vector<std::vector<std::shared_ptr<TH2>>> fhTPCnSigmasVsP{2, {nmainsp, nullptr}};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhTPCnSigmasVsP{2, {nallmainsp, nullptr}};
   std::vector<std::shared_ptr<TH2>> fhTOFSignalVsP{2, nullptr};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhTOFSignalDiffVsP{2, {nmainsp, nullptr}};
-  std::vector<std::vector<std::shared_ptr<TH2>>> fhTOFnSigmasVsP{2, {nmainsp, nullptr}};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhTOFnSigmasVsP{2, {nallmainsp, nullptr}};
   std::vector<std::shared_ptr<TH2>> fhPvsTOFSqMass{2, nullptr};
   std::vector<std::vector<std::shared_ptr<TH3>>> fhTPCTOFSigmaVsP{2, {nmainsp, nullptr}};
   /* PID histograms */
   /* only after track selection */
   std::vector<std::shared_ptr<TH2>> fhIdTPCdEdxSignalVsP{nsp, nullptr};
-  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTPCdEdxSignalDiffVsP{nsp, {nsp, nullptr}};
-  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTPCnSigmasVsP{nsp, {nmainsp, nullptr}};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTPCdEdxSignalDiffVsP{nsp, {nmainsp, nullptr}};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTPCnSigmasVsP{nsp, {nallmainsp, nullptr}};
   std::vector<std::shared_ptr<TH2>> fhIdTOFSignalVsP{nsp, nullptr};
-  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTOFSignalDiffVsP{nsp, {nsp, nullptr}};
-  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTOFnSigmasVsP{nsp, {nmainsp, nullptr}};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTOFSignalDiffVsP{nsp, {nmainsp, nullptr}};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTOFnSigmasVsP{nsp, {nallmainsp, nullptr}};
   std::vector<std::shared_ptr<TH2>> fhIdPvsTOFSqMass{nsp, nullptr};
 
   template <efficiencyandqatask::KindOfProcess kind>
@@ -452,22 +457,24 @@ struct PidDataCollectingEngine {
                                                          HNAMESTRING("tpcSignalDiffVsP%c_%s", whenprefix[ix], mainspnames[isp].c_str()),
                                                          HTITLESTRING("TPC dE/dx to the %s line %s", mainsptitles[isp].c_str(), whentitle[ix].c_str()),
                                                          kTH2F, {pidPAxis, {400, -200.0, 200.0, FORMATSTRING("dE/dx - <dE/dx>_{%s}", mainsptitles[isp].c_str())}});
-          fhTPCnSigmasVsP[ix][isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
-                                                  HNAMESTRING("tpcNSigmasVsP%c_%s", whenprefix[ix], mainspnames[isp].c_str()),
-                                                  HTITLESTRING("TPC n#sigma to the %s line %s", mainsptitles[isp].c_str(), whentitle[ix].c_str()),
-                                                  kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", mainsptitles[isp].c_str())}});
           fhTOFSignalDiffVsP[ix][isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
                                                      HNAMESTRING("tofSignalDiffVsP%c_%s", whenprefix[ix], mainspnames[isp].c_str()),
                                                      HTITLESTRING("#Delta^{TOF_{%s}} %s", mainsptitles[isp].c_str(), whentitle[ix].c_str()),
                                                      kTH2F, {pidPAxis, {200, -1000.0, 1000.0, FORMATSTRING("t-t_{ev}-t_{exp_{%s}} (ps)", mainsptitles[isp].c_str())}});
-          fhTOFnSigmasVsP[ix][isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
-                                                  HNAMESTRING("tofNSigmasVsP%c_%s", whenprefix[ix], mainspnames[isp].c_str()),
-                                                  HTITLESTRING("TOF n#sigma to the %s line %s", mainsptitles[isp].c_str(), whentitle[ix].c_str()),
-                                                  kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", mainsptitles[isp].c_str())}});
           fhTPCTOFSigmaVsP[ix][isp] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
                                                    HNAMESTRING("toftpcNSigmasVsP%c_%s", whenprefix[ix], mainspnames[isp].c_str()),
                                                    HTITLESTRING("n#sigma to the %s line %s", mainsptitles[isp].c_str(), whentitle[ix].c_str()),
                                                    kTH3F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", mainsptitles[isp].c_str())}, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", mainsptitles[isp].c_str())}});
+        }
+        for (uint isp = 0; isp < nallmainsp; ++isp) {
+          fhTPCnSigmasVsP[ix][isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
+                                                  HNAMESTRING("tpcNSigmasVsP%c_%s", whenprefix[ix], allmainspnames[isp].c_str()),
+                                                  HTITLESTRING("TPC n#sigma to the %s line %s", allmainsptitles[isp].c_str(), whentitle[ix].c_str()),
+                                                  kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", allmainsptitles[isp].c_str())}});
+          fhTOFnSigmasVsP[ix][isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
+                                                  HNAMESTRING("tofNSigmasVsP%c_%s", whenprefix[ix], allmainspnames[isp].c_str()),
+                                                  HTITLESTRING("TOF n#sigma to the %s line %s", allmainsptitles[isp].c_str(), whentitle[ix].c_str()),
+                                                  kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", allmainsptitles[isp].c_str())}});
         }
       }
       for (uint isp = 0; isp < nsp; ++isp) {
@@ -479,18 +486,38 @@ struct PidDataCollectingEngine {
                                              HNAMESTRING("tofSignalVsPSelected_%s", tnames[isp].c_str()),
                                              HTITLESTRING("TOF signal for selected %s", tnames[isp].c_str()),
                                              kTH2F, {pidPAxis, {200, 0.0, 1.1, "#beta"}});
-        for (uint imainsp = 0; imainsp < nmainsp; ++imainsp) {
+        for (uint imainsp = 0; imainsp < nallmainsp; ++imainsp) {
           fhIdTPCnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
-                                                         HNAMESTRING("tpcNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), mainspnames[imainsp].c_str()),
-                                                         HTITLESTRING("TPC n#sigma for selected %s to the %s line", tnames[isp].c_str(), mainsptitles[imainsp].c_str()),
-                                                         kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", mainsptitles[isp].c_str())}});
+                                                         HNAMESTRING("tpcNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), allmainspnames[imainsp].c_str()),
+                                                         HTITLESTRING("TPC n#sigma for selected %s to the %s line", tnames[isp].c_str(), allmainsptitles[imainsp].c_str()),
+                                                         kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", allmainsptitles[isp].c_str())}});
           fhIdTOFnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
-                                                         HNAMESTRING("tofNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), mainspnames[imainsp].c_str()),
-                                                         HTITLESTRING("TOF n#sigma for selected %s to the %s line", tnames[isp].c_str(), mainsptitles[imainsp].c_str()),
-                                                         kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", mainsptitles[isp].c_str())}});
+                                                         HNAMESTRING("tofNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), allmainspnames[imainsp].c_str()),
+                                                         HTITLESTRING("TOF n#sigma for selected %s to the %s line", tnames[isp].c_str(), allmainsptitles[imainsp].c_str()),
+                                                         kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", allmainsptitles[isp].c_str())}});
         }
       }
     }
+  }
+
+  template <o2::track::PID::ID id, typename TrackObject>
+  void fillAllSpeciesPID(uint ix, TrackObject const& track)
+  {
+    if (track.sign() < 0) {
+      ix = 2 * ix + 1;
+    } else {
+      ix = 2 * ix;
+    }
+    for (uint when = 0; when < 2; ++when) {
+      fhTPCnSigmasVsP[when][ix]->Fill(track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
+      fhTOFnSigmasVsP[when][ix]->Fill(track.p(), o2::aod::pidutils::tofNSigma<id>(track));
+      if (track.trackacceptedid() < 0) {
+        /* track not accepted */
+        return;
+      }
+    }
+    fhIdTPCnSigmasVsP[track.trackacceptedid()][ix]->Fill(track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
+    fhIdTOFnSigmasVsP[track.trackacceptedid()][ix]->Fill(track.p(), o2::aod::pidutils::tofNSigma<id>(track));
   }
 
   template <o2::track::PID::ID id, typename TrackObject>
@@ -503,17 +530,13 @@ struct PidDataCollectingEngine {
     }
     for (uint when = 0; when < 2; ++when) {
       fhTPCdEdxSignalDiffVsP[when][ix]->Fill(track.p(), o2::aod::pidutils::tpcExpSignalDiff<id>(track));
-      fhTPCnSigmasVsP[when][ix]->Fill(track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
       fhTOFSignalDiffVsP[when][ix]->Fill(track.p(), o2::aod::pidutils::tofExpSignalDiff<id>(track));
-      fhTOFnSigmasVsP[when][ix]->Fill(track.p(), o2::aod::pidutils::tofNSigma<id>(track));
       fhTPCTOFSigmaVsP[when][ix]->Fill(track.p(), o2::aod::pidutils::tpcNSigma<id>(track), o2::aod::pidutils::tofNSigma<id>(track));
       if (track.trackacceptedid() < 0) {
         /* track not accepted */
         return;
       }
     }
-    fhIdTPCnSigmasVsP[track.trackacceptedid()][ix]->Fill(track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
-    fhIdTOFnSigmasVsP[track.trackacceptedid()][ix]->Fill(track.p(), o2::aod::pidutils::tofNSigma<id>(track));
   }
 
   template <typename TrackObject>
@@ -542,6 +565,11 @@ struct PidDataCollectingEngine {
       fillSpeciesPID<o2::track::PID::Pion>(0, track);
       fillSpeciesPID<o2::track::PID::Kaon>(1, track);
       fillSpeciesPID<o2::track::PID::Proton>(2, track);
+      fillAllSpeciesPID<o2::track::PID::Electron>(0, track);
+      fillAllSpeciesPID<o2::track::PID::Muon>(1, track);
+      fillAllSpeciesPID<o2::track::PID::Pion>(2, track);
+      fillAllSpeciesPID<o2::track::PID::Kaon>(3, track);
+      fillAllSpeciesPID<o2::track::PID::Proton>(4, track);
     }
   }
 };

@@ -38,13 +38,13 @@ using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
 using std::array;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsBz, aod::EMReducedEventsNee>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsBz, aod::EMEventsNee>;
 using MyCollision = MyCollisions::iterator;
 
-using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
+using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMEventIds>;
 using MyDalitzEE = MyDalitzEEs::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMReducedEventIds, aod::EMPrimaryElectronsPrefilterBit>;
+using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBit>;
 using MyTrack = MyTracks::iterator;
 
 struct DalitzEEQC {
@@ -136,8 +136,8 @@ struct DalitzEEQC {
   Partition<MyDalitzEEs> lsmm_pairs = o2::aod::dalitzee::sign == -1;
 
   SliceCache cache;
-  Preslice<MyDalitzEEs> perCollision = aod::dalitzee::emreducedeventId;
-  Preslice<MyTracks> perCollision_track = aod::emprimaryelectron::emreducedeventId;
+  Preslice<MyDalitzEEs> perCollision = aod::dalitzee::emeventId;
+  Preslice<MyTracks> perCollision_track = aod::emprimaryelectron::emeventId;
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
   std::vector<uint64_t> used_trackIds;
@@ -166,9 +166,9 @@ struct DalitzEEQC {
       reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
       reinterpret_cast<TH1F*>(list_ev_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
 
-      auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
-      auto lspp_pairs_per_coll = lspp_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
-      auto lsmm_pairs_per_coll = lsmm_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
+      auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzee::emeventId, collision.globalIndex(), cache);
+      auto lspp_pairs_per_coll = lspp_pairs->sliceByCached(o2::aod::dalitzee::emeventId, collision.globalIndex(), cache);
+      auto lsmm_pairs_per_coll = lsmm_pairs->sliceByCached(o2::aod::dalitzee::emeventId, collision.globalIndex(), cache);
 
       for (const auto& cut : fDalitzEECuts) {
         THashList* list_dalitzee_cut = static_cast<THashList*>(list_dalitzee->FindObject(cut.GetName()));
@@ -278,7 +278,7 @@ struct DalitzEEQC {
 
   Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  Filter collisionFilter_subsys = (o2::aod::emreducedevent::neeuls >= 1) || (o2::aod::emreducedevent::neelspp >= 1) || (o2::aod::emreducedevent::neelsmm >= 1);
+  Filter collisionFilter_subsys = (o2::aod::emevent::neeuls >= 1) || (o2::aod::emevent::neelspp >= 1) || (o2::aod::emevent::neelsmm >= 1);
   using MyFilteredCollisions = soa::Filtered<MyCollisions>; // this goes to mixed event.
 
   // e+, e- enter to event mixing, only if any pair exists. If you want to do mixed event, please store LS for ee

@@ -148,7 +148,7 @@ struct phianalysisrun3_PbPb {
   {
     if (collision.alias_bit(kTVXinTRD)) {
       // TRD triggered
-      return 0;
+      // return 0;
     }
     auto multNTracksPV = collision.multNTracksPV();
     if (multNTracksPV < fMultPVCutLow->Eval(centrality))
@@ -162,13 +162,13 @@ struct phianalysisrun3_PbPb {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (iscustomDCAcut && !(candidate.isGlobalTrack() || candidate.isPVContributor() || candidate.itsNCls() > cfgITScluster)) {
+    if (iscustomDCAcut && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
-    if (ismanualDCAcut && !(candidate.isGlobalTrackWoDCA() || candidate.isPVContributor() || std::abs(candidate.dcaXY()) < cfgCutDCAxy || std::abs(candidate.dcaZ()) < cfgCutDCAz || candidate.itsNCls() > cfgITScluster)) {
+    if (ismanualDCAcut && !(candidate.isGlobalTrackWoDCA() && candidate.isPVContributor() && std::abs(candidate.dcaXY()) < cfgCutDCAxy && std::abs(candidate.dcaZ()) < cfgCutDCAz && candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
-    if (isITSOnlycut && !(candidate.isPVContributor() || std::abs(candidate.dcaXY()) < cfgCutDCAxy || std::abs(candidate.dcaZ()) < cfgCutDCAz || candidate.itsNCls() > cfgITScluster)) {
+    if (isITSOnlycut && !(candidate.isPVContributor() && std::abs(candidate.dcaXY()) < cfgCutDCAxy && std::abs(candidate.dcaZ()) < cfgCutDCAz && candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
     return true;
@@ -356,17 +356,17 @@ struct phianalysisrun3_PbPb {
       }
 
       if (timFrameEvsel && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
-        return;
+        continue;
       }
 
       auto multiplicity = c1.centFT0C();
       auto multiplicity2 = c2.centFT0C();
 
       if (additionalEvsel && !eventSelected(c1, multiplicity)) {
-        return;
+        continue;
       }
       if (additionalEvsel && !eventSelected(c2, multiplicity2)) {
-        return;
+        continue;
       }
 
       for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {

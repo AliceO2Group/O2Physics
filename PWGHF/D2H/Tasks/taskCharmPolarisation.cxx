@@ -296,7 +296,7 @@ struct TaskPolarisationCharmHadrons {
     }
 
     // MC Gen histos
-    if (doprocessDstarMc || doprocessDstarMc || doprocessLcToPKPiMc || doprocessLcToPKPiMc) {
+    if (doprocessDstarMc || doprocessDstarMcWithMl || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl) {
       if (activateTHnSparseCosThStarHelicity) {
         registry.add("hGenPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis -- gen prompt signal", HistType::kTHnSparseF, {thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity});
         registry.add("hGenNonPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis -- gen non-prompt signal", HistType::kTHnSparseF, {thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity});
@@ -307,7 +307,7 @@ struct TaskPolarisationCharmHadrons {
       }
       if (activateTHnSparseCosThStarBeam) {
         registry.add("hGenPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis -- gen prompt signal", HistType::kTHnSparseF, {thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam});
-        registry.add("hRecoNonPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis -- gen non-prompt signal", HistType::kTHnSparseF, {thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam});
+        registry.add("hGenNonPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis -- gen non-prompt signal", HistType::kTHnSparseF, {thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam});
       }
       if (activateTHnSparseCosThStarRandom) {
         registry.add("hGenPromptRandom", "THn for polarisation studies with cosThStar w.r.t. random axis -- gen prompt signal", HistType::kTHnSparseF, {thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom});

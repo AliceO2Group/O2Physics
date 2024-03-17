@@ -17,16 +17,38 @@ using namespace o2;
 using namespace o2::framework;
 
 // Converts V0 version 001 to 002
-
 struct strarawcentsconverter {
   Produces<aod::StraRawCents_001> straRawCents_001;
+  Produces<aod::StraRawCents_003> straRawCents_003;
 
-  void process(aod::StraRawCents_000 const& straRawCents_000)
+  void process000to001(aod::StraRawCents_000 const& straRawCents_000)
   {
     for (auto& values : straRawCents_000) {
       straRawCents_001(values.multFT0A(), values.multFT0C(), values.multFV0A(), values.multNTracksPVeta1(), 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     }
   }
+  void process002to003(aod::StraRawCents_002 const& straRawCents_002)
+  {
+    for (auto& values : straRawCents_002) {
+      straRawCents_003(values.multFT0A(),
+                       values.multFT0C(),
+                       values.multFT0A(),
+                       values.multNTracksPVeta1(),
+                       0, 0,
+                       values.multNTracksITSTPC(),
+                       values.multAllTracksTPCOnly(),
+                       values.multAllTracksITSTPC(),
+                       values.multZNA(),
+                       values.multZNC(),
+                       values.multZEM1(),
+                       values.multZEM2(),
+                       values.multZPA(),
+                       values.multZPC());
+    }
+  }
+
+  PROCESS_SWITCH(strarawcentsconverter, process000to001, "from raw 000 to 001", false);
+  PROCESS_SWITCH(strarawcentsconverter, process002to003, "from raw 002 to 003", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

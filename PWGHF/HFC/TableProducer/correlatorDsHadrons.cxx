@@ -152,7 +152,7 @@ struct HfCorrelatorDsHadrons {
   Configurable<float> ptTrackMin{"ptTrackMin", 0.3, "min. track pT"};
   Configurable<float> ptTrackMax{"ptTrackMax", 50., "max. track pT"};
   Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots"};
-  Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{VARIABLE_WIDTH, 0., 2., 4., 8., 12., 50.}, "pT bin limits for assoc particle"};
+  Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for assoc particle"};
   Configurable<std::vector<double>> binsPtEfficiencyD{"binsPtEfficiencyD", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", {1., 1., 1., 1., 1., 1.}, "efficiency values for Ds meson"};
   ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0}, "z vertex position pools"};
@@ -161,7 +161,7 @@ struct HfCorrelatorDsHadrons {
   ConfigurableAxis binsEta{"binsEta", {100, -2., 2.}, "#it{#eta}"};
   ConfigurableAxis binsPhi{"binsPhi", {128, -PIHalf, 3. * PIHalf}, "#it{#varphi}"};
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {200, 0., 800.}, "Multiplicity"};
-  ConfigurableAxis binsMultFT0M{"binsMultFT0M", {1000, 0., 10000.}, "Multiplicity as FT0M signal amplitude"};
+  ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 6000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
 
@@ -181,15 +181,15 @@ struct HfCorrelatorDsHadrons {
                         kAssocTrackStepFake,
                         kAssocTrackNSteps };
 
-  using SelCollisionsWithDs = soa::Filtered<soa::Join<aod::Collisions, aod::Mults /*, aod::HfSelCollision*/, aod::DmesonSelection>>; // collisionFilter applied
-  using SelCollisionsWithDsMc = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection>>;                                   // collisionFilter applied
-  using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;                                                // flagDsFilter applied
-  using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;                      // flagDsFilter applied
-  using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;                                                           // flagDsFilter applied
-  using MyTracksData = soa::Filtered<aod::TracksWDca>;                                                                               // trackFilter applied
-  using TracksWithMc = soa::Filtered<soa::Join<aod::TracksWDca, o2::aod::McTrackLabels>>;                                            // trackFilter applied
+  using SelCollisionsWithDs = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::DmesonSelection>>; // collisionFilter applied
+  using SelCollisionsWithDsMc = soa::Filtered<soa::Join<aod::McCollisions, aod::DmesonSelection>>;                      // collisionFilter applied
+  using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;                                   // flagDsFilter applied
+  using CandDsMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfCand3ProngMcRec>>;         // flagDsFilter applied
+  using CandDsMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;                                              // flagDsFilter applied
+  using MyTracksData = soa::Filtered<aod::TracksWDca>;                                                                  // trackFilter applied
+  using TracksWithMc = soa::Filtered<soa::Join<aod::TracksWDca, o2::aod::McTrackLabels>>;                               // trackFilter applied
 
-  Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true /*&& aod::hf_sel_collision::whyRejectColl == 0*/;
+  Filter collisionFilter = aod::hf_selection_dmeson_collision::dmesonSel == true && o2::aod::evsel::sel8 == true;
   Filter flagDsFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::DsToKKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs);
   Filter trackFilter = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
 
@@ -222,9 +222,6 @@ struct HfCorrelatorDsHadrons {
     registry.add("hMultiplicity", "Multiplicity", {HistType::kTH1F, {axisMultiplicity}});
     registry.add("hMultFT0M", "Multiplicity FT0M", {HistType::kTH1F, {axisMultFT0M}});
     registry.add("hZVtx", "z vertex", {HistType::kTH1F, {axisPosZ}});
-    registry.add("hPoolBinCollision", "Collisions in each pool Bin", {HistType::kTH1F, {axisPoolBin}});
-    registry.add("hPoolBinDs", "Ds selected in pool Bin", {HistType::kTH1F, {axisPoolBin}});
-    registry.add("hPoolBinPartAssoc", "Tracks selected in pool Bin", {HistType::kTH1F, {axisPoolBin}});
     registry.add("hMassDsVsPt", "Ds candidates massVsPt", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
     registry.add("hMassDsData", "Ds candidates mass", {HistType::kTH1F, {axisMassD}});
     registry.add("hCollisionPoolBin", "Ds candidates collision pool bin", {HistType::kTH1F, {axisPoolBin}});

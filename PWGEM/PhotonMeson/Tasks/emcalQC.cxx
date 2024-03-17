@@ -42,7 +42,7 @@ using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
 using std::array;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
 struct emcalQC {
@@ -80,9 +80,9 @@ struct emcalQC {
     reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(1, "all cols");
     reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
     reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(3, "emc readout");
-    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(5, "1+ Contributor");
-    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(6, "z<10cm");
-    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(7, "unique col");
+    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(4, "1+ Contributor");
+    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(5, "z<10cm");
+    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(6, "unique col");
 
     o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Cluster");
     THashList* list_cluster = reinterpret_cast<THashList*>(fMainList->FindObject("Cluster"));

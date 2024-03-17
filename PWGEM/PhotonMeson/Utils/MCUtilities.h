@@ -62,6 +62,8 @@ bool IsPhysicalPrimary(TCollision const& mccollision, TTrack const& mctrack, TMC
         } else {
           motherid = -999;
         }
+      } else {
+        motherid = -999;
       }
     }
 
