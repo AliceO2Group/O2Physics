@@ -12,6 +12,7 @@
 #define PWGLF_DATAMODEL_LFSTRANGENESSTABLES_H_
 
 #include <cmath>
+#include <vector>
 #include "Framework/AnalysisDataModel.h"
 #include "Common/Core/RecoDecay.h"
 #include "CommonConstants/PhysicsConstants.h"
