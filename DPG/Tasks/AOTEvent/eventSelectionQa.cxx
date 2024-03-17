@@ -40,7 +40,6 @@ struct EventSelectionQaTask {
   Configurable<int> nOrbitsConf{"nOrbits", 10000, "number of orbits"};
   Configurable<int> refBC{"refBC", 1238, "reference bc"};
   Configurable<bool> isLowFlux{"isLowFlux", 1, "1 - low flux (pp, pPb), 0 - high flux (PbPb)"};
-  Configurable<bool> flagMonitorBcInTF{"flagMonitorBcInTF", 1, "0 - no, 1 - yes"};
 
   uint64_t minGlobalBC = 0;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -265,12 +264,6 @@ struct EventSelectionQaTask {
     histos.add("hMultT0MVsNcontribAcc", "", kTH2F, {axisMultT0M, axisNcontrib}); // before ITS RO Frame border cut
     histos.add("hMultT0MVsNcontribCut", "", kTH2F, {axisMultT0M, axisNcontrib}); // after ITS RO Frame border cut
 
-    if (flagMonitorBcInTF) {
-      AxisSpec axisBCinTF{128 * nBCsPerOrbit + 1 + 10, -0.5, 128 * nBCsPerOrbit + 0.5 + 10, "bc in TF"};
-      histos.add("hNcontribVsBcInTF", ";bc in TF; n vertex contributors", kTH1F, {axisBCinTF});
-      histos.add("hNcontribAfterCutsVsBcInTF", ";bc in TF; n vertex contributors", kTH1F, {axisBCinTF});
-    }
-
     // MC histograms
     histos.add("hGlobalBcColMC", "", kTH1F, {axisGlobalBCs});
     histos.add("hBcColMC", "", kTH1F, {axisBCs});
@@ -407,18 +400,11 @@ struct EventSelectionQaTask {
       auto trackletsGrouped = tracklets->sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
       int nTracklets = trackletsGrouped.size();
 
-      float multT0A = 0;
-      float multT0C = 0;
       float multFDA = 0;
       float multFDC = 0;
-      if (bc.has_ft0()) {
-        for (auto amplitude : bc.ft0().amplitudeA()) {
-          multT0A += amplitude;
-        }
-        for (auto amplitude : bc.ft0().amplitudeC()) {
-          multT0C += amplitude;
-        }
-      }
+      float multT0A = bc.has_ft0() ? bc.ft0().sumAmpA() : -999.f;
+      float multT0C = bc.has_ft0() ? bc.ft0().sumAmpC() : -999.f;
+
       if (bc.has_fdd()) {
         for (auto amplitude : bc.fdd().chargeA()) {
           multFDA += amplitude;
@@ -547,14 +533,6 @@ struct EventSelectionQaTask {
         tsSOR = grpecs->getTimeStart();        // ms
         tsEOR = grpecs->getTimeEnd();          // ms
 
-        // Temporary workaround for 22q (due to ZDC bc shifts)
-        // o2::ccdb::CcdbApi ccdb_api;
-        // ccdb_api.init("http://alice-ccdb.cern.ch");
-        // std::map<string, string> metadataRCT, headers;
-        // headers = ccdb_api.retrieveHeaders(Form("RCT/Info/RunInformation/%i", runNumber), metadataRCT, -1);
-        // tsSOR = atol(headers["SOR"].c_str());
-        // tsEOR = atol(headers["EOR"].c_str());
-        // uint32_t nOrbitsPerTF = 128;
         LOGP(info, "nOrbitsPerTF={} tsSOR={} ms tsEOR={} ms", nOrbitsPerTF, tsSOR, tsEOR);
 
         // calculate SOR and EOR orbits
@@ -637,8 +615,8 @@ struct EventSelectionQaTask {
         }
 
         // adjust to the nearest TF edge
-        orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF + orbitShift; // was with - 1;
-        orbitEOR = orbitEOR / nOrbitsPerTF * nOrbitsPerTF + orbitShift; // was with - 1;
+        orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF + orbitShift;
+        orbitEOR = orbitEOR / nOrbitsPerTF * nOrbitsPerTF + orbitShift;
 
         // set nOrbits and minOrbit used for orbit-axis binning
         nOrbits = orbitEOR - orbitSOR;
@@ -646,13 +624,14 @@ struct EventSelectionQaTask {
 
         // first bc of the first orbit (should coincide with TF start)
         bcSOR = orbitSOR * nBCsPerOrbit;
+
         // duration of TF in bcs
         nBCsPerTF = nOrbitsPerTF * nBCsPerOrbit;
       }
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
       // otherwise default minOrbit and nOrbits will be used
-      const AxisSpec axisOrbits{nOrbits / static_cast<int>(nOrbitsPerTF) /*128*/, 0., static_cast<double>(nOrbits), ""};
+      const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
       histos.add("hOrbitAll", "", kTH1F, {axisOrbits});
       histos.add("hOrbitCol", "", kTH1F, {axisOrbits});
       histos.add("hOrbitAcc", "", kTH1F, {axisOrbits});
@@ -662,6 +641,10 @@ struct EventSelectionQaTask {
       histos.add("hOrbitFDD", "", kTH1F, {axisOrbits});
       histos.add("hOrbitZDC", "", kTH1F, {axisOrbits});
       histos.add("hOrbitColMC", "", kTH1F, {axisOrbits});
+
+      const AxisSpec axisBCinTF{static_cast<int>(nBCsPerTF), 0, static_cast<double>(nBCsPerTF), "bc in TF"};
+      histos.add("hNcontribVsBcInTF", ";bc in TF; n vertex contributors", kTH1F, {axisBCinTF});
+      histos.add("hNcontribAfterCutsVsBcInTF", ";bc in TF; n vertex contributors", kTH1F, {axisBCinTF});
 
       double minSec = floor(tsSOR / 1000.);
       double maxSec = ceil(tsEOR / 1000.);
@@ -1069,12 +1052,9 @@ struct EventSelectionQaTask {
 
       histos.fill(HIST("hNcontribCol"), nContributors);
 
-      // monitor nContributors vs bc in timeframe:
-      if (flagMonitorBcInTF) {
-        int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
-        histos.fill(HIST("hNcontribVsBcInTF"), bcInTF, nContributors);
-        histos.fill(HIST("hNcontribAfterCutsVsBcInTF"), bcInTF, nContributorsAfterEtaTPCCuts);
-      }
+      int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
+      histos.fill(HIST("hNcontribVsBcInTF"), bcInTF, nContributors);
+      histos.fill(HIST("hNcontribAfterCutsVsBcInTF"), bcInTF, nContributorsAfterEtaTPCCuts);
 
       const auto& foundBC = col.foundBC_as<BCsRun3>();
 
@@ -1098,16 +1078,9 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hTimeZACcol"), znDif, znSum);
 
       // FT0
-      float multT0A = 0;
-      float multT0C = 0;
-      if (foundBC.has_ft0()) {
-        for (auto amplitude : foundBC.ft0().amplitudeA()) {
-          multT0A += amplitude;
-        }
-        for (auto amplitude : foundBC.ft0().amplitudeC()) {
-          multT0C += amplitude;
-        }
-      }
+      float multT0A = foundBC.has_ft0() ? foundBC.ft0().sumAmpA() : -999.f;
+      float multT0C = foundBC.has_ft0() ? foundBC.ft0().sumAmpC() : -999.f;
+
       // FV0
       float multV0A = 0;
       if (foundBC.has_fv0a()) {
