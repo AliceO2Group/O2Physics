@@ -631,7 +631,7 @@ struct EventSelectionQaTask {
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
       // otherwise default minOrbit and nOrbits will be used
-      const AxisSpec axisOrbits{nOrbits / nOrbitsPerTF, 0., static_cast<double>(nOrbits), ""};
+      const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
       histos.add("hOrbitAll", "", kTH1F, {axisOrbits});
       histos.add("hOrbitCol", "", kTH1F, {axisOrbits});
       histos.add("hOrbitAcc", "", kTH1F, {axisOrbits});
@@ -642,7 +642,7 @@ struct EventSelectionQaTask {
       histos.add("hOrbitZDC", "", kTH1F, {axisOrbits});
       histos.add("hOrbitColMC", "", kTH1F, {axisOrbits});
 
-      const AxisSpec axisBCinTF{nBCsPerTF, 0, static_cast<double>(nBCsPerTF), "bc in TF"};
+      const AxisSpec axisBCinTF{static_cast<int>(nBCsPerTF), 0, static_cast<double>(nBCsPerTF), "bc in TF"};
       histos.add("hNcontribVsBcInTF", ";bc in TF; n vertex contributors", kTH1F, {axisBCinTF});
       histos.add("hNcontribAfterCutsVsBcInTF", ";bc in TF; n vertex contributors", kTH1F, {axisBCinTF});
 
