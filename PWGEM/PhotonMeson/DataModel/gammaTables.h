@@ -11,7 +11,6 @@
 
 #include <vector>
 #include <TMath.h>
-#include <TDatabasePDG.h>
 
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -31,7 +30,7 @@ namespace o2::aod
 
 namespace emevent
 {
-DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int);
 DECLARE_SOA_COLUMN(NgammaPCM, ngpcm, int);
 DECLARE_SOA_COLUMN(NgammaPHOS, ngphos, int);
 DECLARE_SOA_COLUMN(NgammaEMC, ngemc, int);
@@ -114,10 +113,21 @@ using EMEventNee = EMEventsNee::iterator;
 DECLARE_SOA_TABLE(EMEventsNmumu, "AOD", "EMEVENTNMUMU", emevent::NmumuULS, emevent::NmumuLSpp, emevent::NmumuLSmm); // joinable to EMEvents
 using EMEventNmumu = EMEventsNmumu::iterator;
 
+namespace emmcevent
+{
+DECLARE_SOA_COLUMN(McCollisionId, mcCollisionId, int);
+}
+
 DECLARE_SOA_TABLE(EMMCEvents, "AOD", "EMMCEVENT", //!   MC event information table
-                  o2::soa::Index<>, mccollision::GeneratorsID,
+                  o2::soa::Index<>, emmcevent::McCollisionId, mccollision::GeneratorsID,
                   mccollision::PosX, mccollision::PosY, mccollision::PosZ,
-                  mccollision::T, mccollision::ImpactParameter);
+                  mccollision::T, mccollision::ImpactParameter,
+
+                  // dynamic column
+                  mccollision::GetGeneratorId<mccollision::GeneratorsID>,
+                  mccollision::GetSubGeneratorId<mccollision::GeneratorsID>,
+                  mccollision::GetSourceId<mccollision::GeneratorsID>);
+
 using EMMCEvent = EMMCEvents::iterator;
 
 namespace emmceventlabel
@@ -139,10 +149,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return Reco
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array{px, py, pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) -> float { return RecoDecay::phi(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float px, float py, float pz) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz); });
-DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](float px, float py, float pz, int pdg) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz, TDatabasePDG::Instance()->GetParticle(pdg)->Mass()); });
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Particle rapidity
-                           [](float px, float py, float pz, int pdg) -> float {
-                             float e = RecoDecay::sqrtSumOfSquares(px, py, pz, TDatabasePDG::Instance()->GetParticle(pdg)->Mass());
+                           [](float pz, float e) -> float {
                              if ((e - pz) > static_cast<float>(1e-7)) {
                                return 0.5f * std::log((e + pz) / (e - pz));
                              } else {
@@ -156,7 +164,7 @@ DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //
                        o2::soa::Index<>, emmcparticle::EMMCEventId,
                        mcparticle::PdgCode, mcparticle::Flags,
                        emmcparticle::MothersIds, emmcparticle::DaughtersIdSlice,
-                       mcparticle::Px, mcparticle::Py, mcparticle::Pz,
+                       mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::E,
                        mcparticle::Vx, mcparticle::Vy, mcparticle::Vz, mcparticle::Vt,
 
                        // dynamic column
@@ -165,8 +173,7 @@ DECLARE_SOA_TABLE_FULL(EMMCParticles, "EMMCParticles", "AOD", "EMMCPARTICLE", //
                        emmcparticle::Phi<mcparticle::Px, mcparticle::Py>,
 
                        emmcparticle::P<mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
-                       emmcparticle::E<mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::PdgCode>, // energy
-                       emmcparticle::Y<mcparticle::Px, mcparticle::Py, mcparticle::Pz, mcparticle::PdgCode>, // rapidity
+                       emmcparticle::Y<mcparticle::Pz, mcparticle::E>,
                        mcparticle::ProducedByGenerator<mcparticle::Flags>,
                        mcparticle::FromBackgroundEvent<mcparticle::Flags>,
                        mcparticle::IsPhysicalPrimary<mcparticle::Flags>);

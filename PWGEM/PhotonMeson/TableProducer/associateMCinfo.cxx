@@ -48,6 +48,8 @@ struct AssociateMCInfo {
   Produces<o2::aod::EMPrimaryMuonMCLabels> emprimarymuonmclabels;
 
   Configurable<float> max_rxy_gen{"max_rxy_gen", 100, "max rxy to store generated information"};
+  Configurable<float> max_Y_gen{"max_Y_gen", 1.5, "max rapidity Y to store generated information"};
+  Configurable<float> margin_z_gen{"margin_z_gen", 15.f, "margin for Z of true photon conversion point to store generated information"};
 
   HistogramRegistry registry{"EMMCEvent"};
 
@@ -89,8 +91,8 @@ struct AssociateMCInfo {
 
       // make an entry for this MC event only if it was not already added to the table
       if (!(fEventLabels.find(mcCollision.globalIndex()) != fEventLabels.end())) {
-        // mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.impactParameter());
-        mcevents(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.impactParameter());
+        mcevents(mcCollision.globalIndex(), mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.impactParameter());
+        // mcevents(mcCollision.generatorsID(), mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.t(), mcCollision.impactParameter());
         fEventLabels[mcCollision.globalIndex()] = fCounters[1];
         fCounters[1]++;
       }
@@ -100,9 +102,8 @@ struct AssociateMCInfo {
       // store mc particles
       auto groupedMcTracks = mcTracks.sliceBy(perMcCollision, mcCollision.globalIndex());
 
-      for (auto& mctrack : groupedMcTracks) {
-        float rxy_gen = sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2));
-        if (mctrack.pt() < 1e-3 || abs(mctrack.y()) > 1.5 || abs(mctrack.vz()) > 250 || rxy_gen > max_rxy_gen) {
+      for (auto& mctrack : groupedMcTracks) { // store necessary information for denominator of efficiency
+        if (mctrack.pt() < 1e-3 || abs(mctrack.y()) > max_Y_gen || abs(mctrack.vz()) > 250 || sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) > max_rxy_gen) {
           continue;
         }
         int pdg = mctrack.pdgCode();
@@ -120,25 +121,32 @@ struct AssociateMCInfo {
           && (abs(pdg) != 223) // omega(782)
           && (abs(pdg) != 331) // eta'(958)
           && (abs(pdg) != 333) // phi(1020)
+          // charmonia
+          && (abs(pdg) != 443)    // J/psi
+          && (abs(pdg) != 100443) // psi(2S)
+          // bottomonia
+          && (abs(pdg) != 553)    // Upsilon(1S)
+          && (abs(pdg) != 100553) // Upsilon(2S)
+          && (abs(pdg) != 200553) // Upsilon(3S)
+
           // strange hadrons
-          && (abs(pdg) != 310)  // K0S
-          && (abs(pdg) != 130)  // K0L
-          && (abs(pdg) != 3122) // Lambda
+          // && (abs(pdg) != 310)  // K0S
+          // && (abs(pdg) != 130)  // K0L
+          // && (abs(pdg) != 3122) // Lambda
         ) {
           continue;
         }
-
-        // extra check of production vertex for secondary electrons to reduce data size.
-        if (abs(pdg) == 11 && !mctrack.producedByGenerator() && rxy_gen < abs(mctrack.vz()) * std::tan(2 * std::atan(std::exp(-1.5))) - 15.f) {
-          continue;
-        }
-
-        // // extra check for secondary photons to reduce data size.
-        // if (abs(pdg) == 22 && !mctrack.producedByGenerator() && !IsPhysicalPrimary(mcCollision, mctrack, mcTracks)) {
-        //   continue;
-        // }
-
         // LOGF(info,"index = %d , mc track pdg = %d , producedByGenerator =  %d , isPhysicalPrimary = %d", mctrack.index(), mctrack.pdgCode(), mctrack.producedByGenerator(), mctrack.isPhysicalPrimary());
+
+        if (abs(pdg) == 11) { // electrons // extra check of production vertex for secondary electrons to reduce data size.
+          if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator() && sqrt(pow(mctrack.vx(), 2) + pow(mctrack.vy(), 2)) < abs(mctrack.vz()) * std::tan(2 * std::atan(std::exp(-max_Y_gen))) - margin_z_gen) {
+            continue;
+          }
+        } else {
+          if (!mctrack.isPhysicalPrimary() && !mctrack.producedByGenerator()) {
+            continue;
+          }
+        }
 
         // these are used as denominator for efficiency. (i.e. generated information)
         if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
@@ -167,6 +175,7 @@ struct AssociateMCInfo {
             // auto o2track = leg.template track_as<TracksMC>();
             auto o2track = o2tracks.iteratorAt(leg.trackId());
             auto mctrack = o2track.template mcParticle_as<aod::McParticles>();
+            // LOGF(info, "mctrack.globalIndex() = %d, mctrack.index() = %d", mctrack.globalIndex(), mctrack.index()); // these are exactly the same.
 
             // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
             if (!(fNewLabels.find(mctrack.globalIndex()) != fNewLabels.end())) {
@@ -177,8 +186,36 @@ struct AssociateMCInfo {
               fCounters[0]++;
             }
             v0legmclabels(fNewLabels.find(mctrack.index())->second, o2track.mcMask());
-          } // end of leg loop
-        }   // end of v0 loop
+
+            // Next, store mother-chain of this reconstructed track.
+            int motherid = -999; // first mother index
+            if (mctrack.has_mothers()) {
+              motherid = mctrack.mothersIds()[0]; // first mother index
+            }
+            while (motherid > -1) {
+              if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
+                auto mp = mcTracks.iteratorAt(motherid);
+
+                // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+                if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
+                  fNewLabels[mp.globalIndex()] = fCounters[0];
+                  fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
+                  // fMCFlags[mp.globalIndex()] = mcflags;
+                  fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+                  fCounters[0]++;
+                }
+
+                if (mp.has_mothers()) {
+                  motherid = mp.mothersIds()[0]; // first mother index
+                } else {
+                  motherid = -999;
+                }
+              } else {
+                motherid = -999;
+              }
+            } // end of mother chain loop
+          }   // end of leg loop
+        }     // end of v0 loop
       }
       if constexpr (static_cast<bool>(system & kDalitzEE)) {
         // for dalitz ee
@@ -199,6 +236,35 @@ struct AssociateMCInfo {
             fCounters[0]++;
           }
           emprimaryelectronmclabels(fNewLabels.find(mctrack.index())->second, o2track.mcMask());
+
+          // Next, store mother-chain of this reconstructed track.
+          int motherid = -999; // first mother index
+          if (mctrack.has_mothers()) {
+            motherid = mctrack.mothersIds()[0]; // first mother index
+          }
+          while (motherid > -1) {
+            if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mcTracks.iteratorAt(motherid);
+
+              // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+              if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
+                fNewLabels[mp.globalIndex()] = fCounters[0];
+                fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
+                // fMCFlags[mp.globalIndex()] = mcflags;
+                fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+                fCounters[0]++;
+              }
+
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0]; // first mother index
+              } else {
+                motherid = -999;
+              }
+            } else {
+              motherid = -999;
+            }
+          } // end of mother chain loop
+
         } // end of em primary track loop
       }
       if constexpr (static_cast<bool>(system & kDalitzMuMu)) {
@@ -220,6 +286,35 @@ struct AssociateMCInfo {
             fCounters[0]++;
           }
           emprimarymuonmclabels(fNewLabels.find(mctrack.index())->second, o2track.mcMask());
+
+          // Next, store mother-chain of this reconstructed track.
+          int motherid = -999; // first mother index
+          if (mctrack.has_mothers()) {
+            motherid = mctrack.mothersIds()[0]; // first mother index
+          }
+          while (motherid > -1) {
+            if (motherid < mcTracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mcTracks.iteratorAt(motherid);
+
+              // if the MC truth particle corresponding to this reconstructed track which is not already written, add it to the skimmed MC stack
+              if (!(fNewLabels.find(mp.globalIndex()) != fNewLabels.end())) {
+                fNewLabels[mp.globalIndex()] = fCounters[0];
+                fNewLabelsReversed[fCounters[0]] = mp.globalIndex();
+                // fMCFlags[mp.globalIndex()] = mcflags;
+                fEventIdx[mp.globalIndex()] = fEventLabels.find(mcCollision.globalIndex())->second;
+                fCounters[0]++;
+              }
+
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0]; // first mother index
+              } else {
+                motherid = -999;
+              }
+            } else {
+              motherid = -999;
+            }
+          } // end of mother chain loop
+
         } // end of em primary track loop
       }
     } // end of collision loop
@@ -272,7 +367,7 @@ struct AssociateMCInfo {
 
       emmcparticles(fEventIdx.find(oldLabel)->second, mctrack.pdgCode(), mctrack.flags(),
                     mothers, daughterRange,
-                    mctrack.px(), mctrack.py(), mctrack.pz(),
+                    mctrack.px(), mctrack.py(), mctrack.pz(), mctrack.e(),
                     mctrack.vx(), mctrack.vy(), mctrack.vz(), mctrack.vt());
     } // end loop over labels
 
