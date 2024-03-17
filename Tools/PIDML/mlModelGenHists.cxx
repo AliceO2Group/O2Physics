@@ -65,9 +65,11 @@ struct MlModelGenHists {
   
   bool IsNSigmaAccept(const BigTracks::iterator &track)
   {
-    double nsigmaTPC, nsigmaTOF;
+    int sign = cfgPid > 0 ? 1 : -1;
+    if(track.sign() != sign) return false;
 
-    switch(cfgPid) {
+    double nsigmaTPC, nsigmaTOF;
+    switch(TMath::Abs(cfgPid)) {
       case 211: // pion
         nsigmaTOF = track.tofNSigmaPi();
         nsigmaTPC = track.tpcNSigmaPi();
@@ -87,7 +89,7 @@ struct MlModelGenHists {
     histos.fill(HIST("hPtTOFNSigma"), track.pt(), nsigmaTOF);
     histos.fill(HIST("hPtTPCNSigma"), track.pt(), nsigmaTPC);
 
-    if (cfgDetector == 0) {
+    if (cfgDetector == 0 || track.pt() <= cfgTofPtCut) {
       if (TMath::Abs(nsigmaTPC) < cfgNSigmaCut)
         return true;
       return false;
@@ -151,10 +153,9 @@ struct MlModelGenHists {
         if(mcPart.isPhysicalPrimary()) {
           bool mlAccepted = pidModel.applyModelBoolean(track);
           bool nSigmaAccepted = IsNSigmaAccept(track);
-          bool tofPtCutted = cfgDetector != 0 && track.pt() <= cfgTofPtCut;
 
-          LOGF(info, "collision id: %d track id: %d mlAccepted: %d nSigmaAccepted: %d tofPtCutted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
-              track.collisionId(), track.index(), mlAccepted, nSigmaAccepted, tofPtCutted, track.p(), track.x(), track.y(), track.z());
+          LOGF(info, "collision id: %d track id: %d mlAccepted: %d nSigmaAccepted: %d p: %.3f; x: %.3f, y: %.3f, z: %.3f",
+              track.collisionId(), track.index(), mlAccepted, nSigmaAccepted, track.p(), track.x(), track.y(), track.z());
 
           if(mcPart.pdgCode() == pidModel.mPid) {
             histos.fill(HIST("hPtMCTracked"), mcPart.pt());
@@ -163,14 +164,14 @@ struct MlModelGenHists {
           histos.fill(HIST("hPtTOFBeta"), track.pt(), track.beta());
           histos.fill(HIST("hPtTPCSignal"), track.pt(), track.tpcSignal());
 
-          if(mlAccepted && !tofPtCutted) {
+          if(mlAccepted) {
             if(mcPart.pdgCode() == pidModel.mPid) {
               histos.fill(HIST("hPtMLTruePositive"), mcPart.pt());
             }
             histos.fill(HIST("hPtMLPositive"), mcPart.pt());
           }
 
-          if(nSigmaAccepted && !tofPtCutted) {
+          if(nSigmaAccepted) {
             if(mcPart.pdgCode() == pidModel.mPid) {
               histos.fill(HIST("hPtNSigmaTruePositive"), mcPart.pt());
             }

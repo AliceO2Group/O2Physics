@@ -3,8 +3,8 @@
 config_file="my-dpl-config.json"
 usage="$0 <pid> <certainty> <output graph filename>"
 
-sed -i 's/"pid": "[0-9]*",$/"pid": "'"$1"'",/' $config_file
-sed -i 's/"certainty": "[0-9/.]*",$/"certainty": "'"$2"'",/' $config_file
+sed -i 's/"pid": "\-\?[0-9]*",$/"pid": "'"$1"'",/' $config_file
+sed -i 's/"certainty": "[0-9\.]*",$/"certainty": "'"$2"'",/' $config_file
 
 o2-analysis-tracks-extra-converter --configuration json://$config_file -b |
 o2-analysis-timestamp --configuration json://$config_file -b |
