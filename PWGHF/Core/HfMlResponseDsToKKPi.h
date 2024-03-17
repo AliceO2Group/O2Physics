@@ -98,7 +98,7 @@ enum class InputFeaturesDsToKKPi : uint8_t {
   nSigTpcTofKa0,
   nSigTpcTofKa1,
   nSigTpcTofKa2,
-  cos3PiK,
+  absCos3PiK,
   deltaMassPhi
 };
 
@@ -159,7 +159,7 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_DS_FULL(prong2, nSigTpcTofKa2, tpcTofNSigmaKa);
 
         // Ds specific variables
-        CHECK_AND_FILL_VEC_DS_HFHELPER_SIGNED(candidate, cos3PiK, cos3PiKDsToKKPi, cos3PiKDsToPiKK);
+        CHECK_AND_FILL_VEC_DS_HFHELPER_SIGNED(candidate, absCos3PiK, absCos3PiKDsToKKPi, absCos3PiKDsToPiKK);
         CHECK_AND_FILL_VEC_DS_HFHELPER_SIGNED(candidate, deltaMassPhi, deltaMassPhiDsToKKPi, deltaMassPhiDsToPiKK);
       }
     }
@@ -203,7 +203,7 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_DS(nSigTpcTofKa2),
 
       // Ds specific variables
-      FILL_MAP_DS(cos3PiK),
+      FILL_MAP_DS(absCos3PiK),
       FILL_MAP_DS(deltaMassPhi)};
   }
 };
