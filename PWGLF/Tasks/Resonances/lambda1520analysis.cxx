@@ -218,8 +218,8 @@ struct lambda1520analysis {
       histos.add("QA/MC/trkDCAz_ka", "DCAz distribution of kaon track candidates", HistType::kTH1F, {axisDCAz});
       histos.add("Result/MC/h3lambda1520Recoinvmass", "Invariant mass of Reconstructed MC #Lambda(1520)0", kTH3F, {axisMult, axisPt, axisMassLambda1520});
       histos.add("Result/MC/h3antilambda1520Recoinvmass", "Invariant mass of Reconstructed MC Anti-#Lambda(1520)0", kTH3F, {axisMult, axisPt, axisMassLambda1520});
-      histos.add("lambda1520GenpT", "pT distribution of True MC #Lambda(1520)0", kTH1F, {axisPt});
-      histos.add("lambda1520GenAntipT", "pT distribution of True MC Anti-#Lambda(1520)0", kTH1F, {axisPt});
+      histos.add("Result/MC/lambda1520GenpT", "pT distribution of True MC #Lambda(1520)0", kTH1F, {axisPt});
+      histos.add("Result/MC/lambda1520GenAntipT", "pT distribution of True MC Anti-#Lambda(1520)0", kTH1F, {axisPt});
       histos.add("Result/MC/lambda1520RecopT", "pT distribution of Reconstructed MC #Lambda(1520)0", kTH1F, {axisPt});
       histos.add("Result/MC/antilambda1520RecopT", "pT distribution of Reconstructed MC Anti-#Lambda(1520)0", kTH1F, {axisPt});
       histos.add("Result/MC/hlambda1520Recoinvmass", "Inv mass distribution of Reconstructed MC #Lambda(1520)", kTH1F, {axisMassLambda1520});
