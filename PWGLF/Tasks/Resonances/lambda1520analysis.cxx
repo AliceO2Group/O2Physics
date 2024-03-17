@@ -39,7 +39,7 @@ struct lambda1520analysis {
   Configurable<bool> IsAddlTrackcut{"IsAddlTrackcut", false, "Switch to turn on/off Additional track cut"};
   Configurable<bool> IsOldPIDcut{"IsOldPIDcut", false, "Switch to turn on/off old PID cut to apply pt dependent cut"};
   Configurable<bool> IsDCAr7SigCut{"IsDCAr7SigCut", false, "Track DCAr 7 Sigma cut to PV Maximum"};
-    Configurable<bool> cKinCuts{"cKinCuts", false, "Kinematic Cuts for p-K pair opening angle"};
+  Configurable<bool> cKinCuts{"cKinCuts", false, "Kinematic Cuts for p-K pair opening angle"};
 
   // Pre-selection Track cuts
   Configurable<float> cMinPtcut{"cMinPtcut", 0.15f, "Minimal pT for tracks"};
