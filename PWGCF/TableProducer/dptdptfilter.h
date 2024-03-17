@@ -19,6 +19,7 @@
 #include <iostream>
 #include <locale>
 #include <sstream>
+#include <map>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -107,10 +108,6 @@ float zvtxlow = -10.0, zvtxup = 10.0;
 int phibins = 72;
 float philow = 0.0;
 float phiup = constants::math::TwoPI;
-std::string cfgCCDBUrl{"http://ccdb-test.cern.ch:8080"};
-std::string cfgCCDBPathName{""};
-std::string cfgCCDBDate{"20220307"};
-std::string cfgCCDBPeriod{"LHC22o"};
 
 /* selection criteria from PWGMM */
 // default quality criteria for tracks with ITS contribution

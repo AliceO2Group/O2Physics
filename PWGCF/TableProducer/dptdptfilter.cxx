@@ -547,6 +547,11 @@ struct DptDptFilterTracks {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   bool storedccdbinfo = false;
 
+  std::string cfgCCDBUrl{"http://ccdb-test.cern.ch:8080"};
+  std::string cfgCCDBPathName{""};
+  std::string cfgCCDBDate{"20220307"};
+  std::string cfgCCDBPeriod{"LHC22o"};
+
   Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
   Configurable<int> cfgTrackType{"trktype", 4, "Type of selected tracks: 0 = no selection, 1 = Run2 global tracks FB96, 3 = Run3 tracks, 4 = Run3 tracks MM sel, 5 = Run2 TPC only tracks, 7 = Run 3 TPC only tracks. Default 4"};
   Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};

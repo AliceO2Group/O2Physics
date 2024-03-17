@@ -669,6 +669,10 @@ struct DptDptCorrelationsTask {
   /* the input file structure from CCDB */
   TList* ccdblst = nullptr;
   bool loadfromccdb = false;
+  std::string cfgCCDBUrl{"http://ccdb-test.cern.ch:8080"};
+  std::string cfgCCDBPathName{""};
+  std::string cfgCCDBDate{"20220307"};
+  std::string cfgCCDBPeriod{"LHC22o"};
 
   /* pair conversion suppression defaults */
   static constexpr float cfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
