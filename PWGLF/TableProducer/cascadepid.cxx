@@ -407,26 +407,26 @@ struct cascadepid {
           // fill QA histograms for cross-checking
           histos.fill(HIST("hArcDebug"), cascade.pt(), lengthCascade - d3d); // for debugging purposes
 
-          if(cascade.dcaV0daughters()<qaV0DCADau && cascade.dcacascdaughters()<qaCascDCADau && cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ())>qaV0CosPA && cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ())>qaCascCosPA){ 
+          if (cascade.dcaV0daughters() < qaV0DCADau && cascade.dcacascdaughters() < qaCascDCADau && cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > qaV0CosPA && cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > qaCascCosPA) {
 
-            if(cascade.sign()<0){
-              if(std::abs(cascade.mXi()-1.32171)<qaMassWindow){
+            if (cascade.sign() < 0) {
+              if (std::abs(cascade.mXi() - 1.32171) < qaMassWindow) {
                 histos.fill(HIST("h2dposDeltaTimeAsXiPr"), cascade.pt(), posDeltaTimeAsXiPr);
                 histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.pt(), negDeltaTimeAsXiPi);
                 histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), bachDeltaTimeAsXiPi);
               }
-              if(std::abs(cascade.mOmega()-1.67245)<qaMassWindow){
+              if (std::abs(cascade.mOmega() - 1.67245) < qaMassWindow) {
                 histos.fill(HIST("h2dposDeltaTimeAsOmPr"), cascade.pt(), posDeltaTimeAsOmPr);
                 histos.fill(HIST("h2dnegDeltaTimeAsOmPi"), cascade.pt(), negDeltaTimeAsOmPi);
                 histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), bachDeltaTimeAsOmKa);
               }
-            }else{
-              if(std::abs(cascade.mXi()-1.32171)<qaMassWindow){
+            } else {
+              if (std::abs(cascade.mXi() - 1.32171) < qaMassWindow) {
                 histos.fill(HIST("h2dposDeltaTimeAsXiPi"), cascade.pt(), posDeltaTimeAsXiPi);
                 histos.fill(HIST("h2dnegDeltaTimeAsXiPr"), cascade.pt(), negDeltaTimeAsXiPr);
                 histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), bachDeltaTimeAsXiPi);
               }
-              if(std::abs(cascade.mOmega()-1.67245)<qaMassWindow){
+              if (std::abs(cascade.mOmega() - 1.67245) < qaMassWindow) {
                 histos.fill(HIST("h2dposDeltaTimeAsOmPi"), cascade.pt(), posDeltaTimeAsOmPi);
                 histos.fill(HIST("h2dnegDeltaTimeAsOmPr"), cascade.pt(), negDeltaTimeAsOmPr);
                 histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), bachDeltaTimeAsOmKa);
@@ -439,11 +439,11 @@ struct cascadepid {
   }
 };
 
-  Configurable<float> qaV0DCADau{"qaV0DCADau", 0.5, "DCA daughters (cm) for QA plots"};
-  Configurable<float> qaCascDCADau{"qaCascDCADau", 0.5, "DCA daughters (cm) for QA plots"};
-  Configurable<float> qaV0CosPA{"qaV0CosPA", 0.995, "CosPA for QA plots"};
-  Configurable<float> qaCascCosPA{"qaCascCosPA", 0.995, "CosPA for QA plots"};
-  Configurable<float> qaMassWindow{"qaMassWindow", 0.005, "Mass window around expected (in GeV/c2) for QA plots"};
+Configurable<float> qaV0DCADau{"qaV0DCADau", 0.5, "DCA daughters (cm) for QA plots"};
+Configurable<float> qaCascDCADau{"qaCascDCADau", 0.5, "DCA daughters (cm) for QA plots"};
+Configurable<float> qaV0CosPA{"qaV0CosPA", 0.995, "CosPA for QA plots"};
+Configurable<float> qaCascCosPA{"qaCascCosPA", 0.995, "CosPA for QA plots"};
+Configurable<float> qaMassWindow{"qaMassWindow", 0.005, "Mass window around expected (in GeV/c2) for QA plots"};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
