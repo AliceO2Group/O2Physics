@@ -122,6 +122,7 @@ struct kstarqa {
   Configurable<float> cfgRCRFC{"cfgRCRFC", 0.8f, "Crossed Rows to Findable Clusters"};
   ConfigurableAxis cMixMultBins{"cMixMultBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f}, "Mixing bins - multiplicity"};
   Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
+  Configurable<bool> MID{"MID", false, "Misidentification of tracks"};
 
   void init(InitContext const&)
   {
@@ -261,6 +262,93 @@ struct kstarqa {
     return false;
   }
 
+  template <typename T>
+  bool MIDselectionPID(const T& candidate, int PID)
+  {
+    if (PID == 0) {
+      if (onlyTOF) {
+        if (candidate.hasTOF() &&
+            std::abs(candidate.tofNSigmaPi()) < 3.0) {
+          return true;
+        }
+      } else if (onlyTOFHIT) {
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < 3.0) {
+          return true;
+        }
+        if (!candidate.hasTOF() &&
+            std::abs(candidate.tpcNSigmaPi()) < 3.0) {
+          return true;
+        }
+      } else {
+        // LOG(info) << "************I am neither in ONLYTOF or ONLYTOFHIT****************";
+        if (candidate.hasTOF() &&
+            (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() +
+             candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) <
+              (3.0 * 3.0)) {
+          return true;
+        }
+        if (!candidate.hasTOF() &&
+            std::abs(candidate.tpcNSigmaPi()) < 3.0) {
+          return true;
+        }
+      }
+    } else if (PID == 1) {
+      if (onlyTOF) {
+        if (candidate.hasTOF() &&
+            std::abs(candidate.tofNSigmaKa()) < 3.0) {
+          return true;
+        }
+      } else if (onlyTOFHIT) {
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < 3.0) {
+          return true;
+        }
+        if (!candidate.hasTOF() &&
+            std::abs(candidate.tpcNSigmaKa()) < 3.0) {
+          return true;
+        }
+      } else {
+        if (candidate.hasTOF() &&
+            (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() +
+             candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) <
+              (3.0 * 3.0)) {
+          return true;
+        }
+        if (!candidate.hasTOF() &&
+            std::abs(candidate.tpcNSigmaKa()) < 3.0) {
+          return true;
+        }
+      }
+    } else if (PID == 2) {
+      if (onlyTOF) {
+        if (candidate.hasTOF() &&
+            std::abs(candidate.tofNSigmaPr()) < 3.0) {
+          return true;
+        }
+      } else if (onlyTOFHIT) {
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPr()) < 3.0) {
+          return true;
+        }
+        if (!candidate.hasTOF() &&
+            std::abs(candidate.tpcNSigmaPr()) < 3.0) {
+          return true;
+        }
+      } else {
+        // LOG(info) << "************I am neither in ONLYTOF or ONLYTOFHIT****************";
+        if (candidate.hasTOF() &&
+            (candidate.tofNSigmaPr() * candidate.tofNSigmaPr() +
+             candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) <
+              (3.0 * 3.0)) {
+          return true;
+        }
+        if (!candidate.hasTOF() &&
+            std::abs(candidate.tpcNSigmaPr()) < 3.0) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   // Defining filters for events (event selection)
   // Processed events will be already fulfilling the event selection
   // requirements
@@ -277,7 +365,7 @@ struct kstarqa {
               aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
   using TrackCandidates = soa::Filtered<
     soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
-              aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa>>;
+              aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>>;
   using V0TrackCandidate = aod::V0Datas;
 
   ConfigurableAxis axisVertex{
@@ -382,6 +470,14 @@ struct kstarqa {
       if (!selectionPID(track1, 1)) // kaon
         continue;
 
+      if (MID) {
+        if (MIDselectionPID(track1, 0)) // misidentified as pion
+          continue;
+
+        if (MIDselectionPID(track1, 2)) // misidentified as proton
+          continue;
+      }
+
       totmomka = TMath::Sqrt(track1.px() * track1.px() + track1.py() * track1.py() + track1.pz() * track1.pz());
 
       ROOT::Math::PtEtaPhiMVector temp1(track1.pt(), track1.eta(), track1.phi(),
@@ -415,6 +511,11 @@ struct kstarqa {
 
       if (!selectionPID(track2, 0)) // pion
         continue;
+
+      if (MID) {
+        if (MIDselectionPID(track2, 1)) // misidentified as kaon
+          continue;
+      }
 
       totmompi = TMath::Sqrt(track2.px() * track2.px() + track2.py() * track2.py() + track2.pz() * track2.pz());
 
@@ -498,6 +599,14 @@ struct kstarqa {
           continue;
         if (!selectionPID(t2, 0))
           continue;
+        if (MID) {
+          if (MIDselectionPID(t1, 0)) // misidentified as pion
+            continue;
+          if (MIDselectionPID(t1, 2)) // misidentified as proton
+            continue;
+          if (MIDselectionPID(t2, 1)) // misidentified as kaon
+            continue;
+        }
 
         TLorentzVector KAON;
         KAON.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), massKa);
