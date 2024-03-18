@@ -397,12 +397,12 @@ struct lambdakzeropid {
             histos.fill(HIST("h2dProtonMeasuredVsExpected"),
                         (timeLambda + timePositivePr),
                         (v0.posTOFSignal() - v0.posTOFEventTime()));
-            if(v0.v0cosPA() > qaCosPA && v0.dcaV0daughters() < qaDCADau){
-              if(std::abs(v0.mLambda()-1.115683)<qaMassWindow)
+            if (v0.v0cosPA() > qaCosPA && v0.dcaV0daughters() < qaDCADau) {
+              if (std::abs(v0.mLambda() - 1.115683) < qaMassWindow)
                 histos.fill(HIST("h2dDeltaTimePositiveLambdaPr"), v0.pt(), v0.eta(), deltaTimePositiveLambdaPr);
-              if(std::abs(v0.mAntiLambda()-1.115683)<qaMassWindow)
+              if (std::abs(v0.mAntiLambda() - 1.115683) < qaMassWindow)
                 histos.fill(HIST("h2dDeltaTimePositiveLambdaPi"), v0.pt(), v0.eta(), deltaTimePositiveLambdaPi);
-              if(std::abs(v0.mK0Short()-0.497)<qaMassWindow)
+              if (std::abs(v0.mK0Short() - 0.497) < qaMassWindow)
                 histos.fill(HIST("h2dDeltaTimePositiveK0ShortPi"), v0.pt(), v0.eta(), deltaTimePositiveK0ShortPi);
             }
           }
@@ -411,12 +411,12 @@ struct lambdakzeropid {
             histos.fill(HIST("h2dPionMeasuredVsExpected"),
                         (timeLambda + timeNegativePi),
                         (v0.negTOFSignal() - v0.negTOFEventTime()));
-            if(v0.v0cosPA() > qaCosPA && v0.dcaV0daughters() < qaDCADau){
-              if(std::abs(v0.mLambda()-1.115683)<qaMassWindow)
+            if (v0.v0cosPA() > qaCosPA && v0.dcaV0daughters() < qaDCADau) {
+              if (std::abs(v0.mLambda() - 1.115683) < qaMassWindow)
                 histos.fill(HIST("h2dDeltaTimeNegativeLambdaPi"), v0.pt(), v0.eta(), deltaTimeNegativeLambdaPi);
-              if(std::abs(v0.mAntiLambda()-1.115683)<qaMassWindow)
+              if (std::abs(v0.mAntiLambda() - 1.115683) < qaMassWindow)
                 histos.fill(HIST("h2dDeltaTimeNegativeLambdaPr"), v0.pt(), v0.eta(), deltaTimeNegativeLambdaPr);
-              if(std::abs(v0.mK0Short()-0.497)<qaMassWindow)
+              if (std::abs(v0.mK0Short() - 0.497) < qaMassWindow)
                 histos.fill(HIST("h2dDeltaTimeNegativeK0ShortPi"), v0.pt(), v0.eta(), deltaTimeNegativeK0ShortPi);
             }
           }
