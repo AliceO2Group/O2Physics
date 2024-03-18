@@ -156,11 +156,13 @@ struct HfDataCreatorCharmResoReduced {
   /// Basic selection of V0 candidates
   /// \param v0 is the v0 candidate
   /// \param collision is the current collision
+  /// \param dauTracks are the v0 daughter tracks
+  /// \param dDaughtersIDs are the IDs of the D meson daughter tracks 
   /// \return a bitmap with mass hypotesis if passes all cuts
   template <typename V0, typename Coll, typename Tr>
   inline uint8_t getSelectionMapV0(const V0& v0, const Coll& collision, const std::array<Tr, 2>& dauTracks, const std::array<int, 3>& dDaughtersIDs)
   {
-    uint8_t isSelected{BIT(K0s) | BIT(Lambda) | BIT(AntiLambda)};
+    uint8_t selMap{BIT(K0s) | BIT(Lambda) | BIT(AntiLambda)};
     // reject VOs that share daughters with D
     if (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), v0.posTrackId()) != dDaughtersIDs.end() || std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), v0.negTrackId()) != dDaughtersIDs.end()) {
       return 0;
@@ -183,25 +185,25 @@ struct HfDataCreatorCharmResoReduced {
       return 0;
     }
     // mass hypotesis
-    if (TESTBIT(isSelected, K0s) && std::fabs(v0.mK0Short() - MassK0) > deltaMassK0s) {
-      CLRBIT(isSelected, K0s);
+    if (std::fabs(v0.mK0Short() - MassK0) > deltaMassK0s) {
+      CLRBIT(selMap, K0s);
     }
-    if (TESTBIT(isSelected, Lambda) && std::fabs(v0.mLambda() - MassLambda0) > deltaMassLambda) {
-      CLRBIT(isSelected, Lambda);
+    if (std::fabs(v0.mLambda() - MassLambda0) > deltaMassLambda) {
+      CLRBIT(selMap, Lambda);
     }
-    if (TESTBIT(isSelected, AntiLambda) && std::fabs(v0.mAntiLambda() - MassLambda0) > deltaMassLambda) {
-      CLRBIT(isSelected, AntiLambda);
+    if (std::fabs(v0.mAntiLambda() - MassLambda0) > deltaMassLambda) {
+      CLRBIT(selMap, AntiLambda);
     }
     // PID (Lambda/AntiLambda only)
     float nSigmaPrTpc[2] = {dauTracks[0].tpcNSigmaPr(), dauTracks[1].tpcNSigmaPr()};
     float nSigmaPrTof[2] = {dauTracks[0].tofNSigmaPr(), dauTracks[1].tofNSigmaPr()};
-    if (TESTBIT(isSelected, Lambda) && ((dauTracks[0].hasTPC() && std::fabs(nSigmaPrTpc[0]) > maxNsigmaPrForLambda) || (dauTracks[0].hasTOF() && std::fabs(nSigmaPrTof[0]) > maxNsigmaPrForLambda))) {
-      CLRBIT(isSelected, Lambda);
+    if (TESTBIT(selMap, Lambda) && ((dauTracks[0].hasTPC() && std::fabs(nSigmaPrTpc[0]) > maxNsigmaPrForLambda) || (dauTracks[0].hasTOF() && std::fabs(nSigmaPrTof[0]) > maxNsigmaPrForLambda))) {
+      CLRBIT(selMap, Lambda);
     }
-    if (TESTBIT(isSelected, AntiLambda) && ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1]) > maxNsigmaPrForLambda) || (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1]) > maxNsigmaPrForLambda))) {
-      CLRBIT(isSelected, AntiLambda);
+    if (TESTBIT(selMap, AntiLambda) && ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1]) > maxNsigmaPrForLambda) || (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1]) > maxNsigmaPrForLambda))) {
+      CLRBIT(selMap, AntiLambda);
     }
-    return isSelected;
+    return selMap;
   }
 
   template <uint8_t DecayChannel, typename CCands>
@@ -218,18 +220,8 @@ struct HfDataCreatorCharmResoReduced {
     std::map<int64_t, int64_t> selectedV0s;
     bool fillHfReducedCollision = false;
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    if (runNumber != bc.runNumber()) {
-      LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
-      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
-      if (grpo == nullptr) {
-        LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
-      }
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      // setMatLUT only after magfield has been initalized
-      o2::base::Propagator::Instance()->setMatLUT(lut);
-      runNumber = bc.runNumber();
-    }
-
+    initCCDB(bc, runNumber, ccdb, ccdbPathGrpMag, lut, false);
+    // loop on D candidates
     for (const auto& candD : candsD) {
       // initialize variables depending on decay channel
       bool fillHfCandD = false;
@@ -241,7 +233,6 @@ struct HfDataCreatorCharmResoReduced {
       std::array<int, 3> prongIdsD;
       uint8_t v0type;
       int8_t dtype;
-
       if constexpr (std::is_same<CCands, CandDstarFiltered>::value) {
         if (candD.signSoftPi() > 0)
           invMassD = candD.invMassDstar();
@@ -267,7 +258,7 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[0] = candD.prong0Id();
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prong2Id();
-        dtype = (int8_t)(prong0.sign() * DType::Dplus);
+        dtype = static_cast<int8_t>(prong0.sign() * DType::Dplus);
       } // else if
 
       // Loop on V0 candidates
