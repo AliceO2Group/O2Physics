@@ -63,6 +63,7 @@ enum class InputFeaturesDplusToPiKPi : uint8_t {
   cpa,
   cpaXY,
   maxNormalisedDeltaIP,
+  chi2PCA,
   tpcNSigmaPi0,
   tpcNSigmaKa0,
   tpcNSigmaPi1,
@@ -117,6 +118,7 @@ class HfMlResponseDplusToPiKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_DPLUS(cpa);
         CHECK_AND_FILL_VEC_DPLUS(cpaXY);
         CHECK_AND_FILL_VEC_DPLUS(maxNormalisedDeltaIP);
+        CHECK_AND_FILL_VEC_DPLUS(chi2PCA);
         // TPC PID variables
         CHECK_AND_FILL_VEC_DPLUS_FULL(prong0, tpcNSigmaPi0, tpcNSigmaPi);
         CHECK_AND_FILL_VEC_DPLUS_FULL(prong0, tpcNSigmaKa0, tpcNSigmaKa);
@@ -160,6 +162,7 @@ class HfMlResponseDplusToPiKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_DPLUS(cpa),
       FILL_MAP_DPLUS(cpaXY),
       FILL_MAP_DPLUS(maxNormalisedDeltaIP),
+      FILL_MAP_DPLUS(chi2PCA),
       // TPC PID variables
       FILL_MAP_DPLUS(tpcNSigmaPi0),
       FILL_MAP_DPLUS(tpcNSigmaKa0),
