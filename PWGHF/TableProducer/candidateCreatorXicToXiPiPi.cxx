@@ -548,8 +548,6 @@ struct HfCandidateCreatorXicMc {
   Produces<aod::HfCandXicMcRec> rowMcMatchRec;
   Produces<aod::HfCandXicMcGen> rowMcMatchGen;
 
-  Configurable<bool> matchXicPlusMc{"matchXicPlusMc", true, "Do MC matching for XicPlus"};
-
   void init(InitContext const&) {}
 
   void processMc(aod::HfCandXic const& candidates,
