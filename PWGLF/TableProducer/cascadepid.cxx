@@ -89,6 +89,7 @@ struct cascadepid {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
+  ConfigurableAxis axisEta{"axisEta", {20, -1.0f, +1.0f}, "#eta"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {2000, -1000.0f, +1000.0f}, "delta-time (ps)"};
   ConfigurableAxis axisTime{"axisTime", {200, 0.0f, +20000.0f}, "T (ps)"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "p_{T} (GeV/c)"};
@@ -242,17 +243,17 @@ struct cascadepid {
     if (doQA) {
       // standard deltaTime values
       histos.add("hArcDebug", "hArcDebug", kTH2F, {axisPt, {500, -5.0f, 10.0f}});
-      histos.add("h2dposDeltaTimeAsXiPi", "h2dposDeltaTimeAsXiPi", {HistType::kTH2F, {axisPt, axisDeltaTime}});
-      histos.add("h2dposDeltaTimeAsXiPr", "h2dposDeltaTimeAsXiPr", {HistType::kTH2F, {axisPt, axisDeltaTime}});
-      histos.add("h2dnegDeltaTimeAsXiPi", "h2dnegDeltaTimeAsXiPi", {HistType::kTH2F, {axisPt, axisDeltaTime}});
-      histos.add("h2dnegDeltaTimeAsXiPr", "h2dnegDeltaTimeAsXiPr", {HistType::kTH2F, {axisPt, axisDeltaTime}});
-      histos.add("h2dbachDeltaTimeAsXiPi", "h2dbachDeltaTimeAsXiPi", {HistType::kTH2F, {axisPt, axisDeltaTime}});
+      histos.add("h2dposDeltaTimeAsXiPi", "h2dposDeltaTimeAsXiPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+      histos.add("h2dposDeltaTimeAsXiPr", "h2dposDeltaTimeAsXiPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+      histos.add("h2dnegDeltaTimeAsXiPi", "h2dnegDeltaTimeAsXiPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+      histos.add("h2dnegDeltaTimeAsXiPr", "h2dnegDeltaTimeAsXiPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+      histos.add("h2dbachDeltaTimeAsXiPi", "h2dbachDeltaTimeAsXiPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
 
-      histos.add("h2dposDeltaTimeAsOmPi", "h2dposDeltaTimeAsOmPi", {HistType::kTH2F, {axisPt, axisDeltaTime}});
-      histos.add("h2dposDeltaTimeAsOmPr", "h2dposDeltaTimeAsOmPr", {HistType::kTH2F, {axisPt, axisDeltaTime}});
-      histos.add("h2dnegDeltaTimeAsOmPi", "h2dnegDeltaTimeAsOmPi", {HistType::kTH2F, {axisPt, axisDeltaTime}});
-      histos.add("h2dnegDeltaTimeAsOmPr", "h2dnegDeltaTimeAsOmPr", {HistType::kTH2F, {axisPt, axisDeltaTime}});
-      histos.add("h2dbachDeltaTimeAsOmKa", "h2dbachDeltaTimeAsOmKa", {HistType::kTH2F, {axisPt, axisDeltaTime}});
+      histos.add("h2dposDeltaTimeAsOmPi", "h2dposDeltaTimeAsOmPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+      histos.add("h2dposDeltaTimeAsOmPr", "h2dposDeltaTimeAsOmPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+      histos.add("h2dnegDeltaTimeAsOmPi", "h2dnegDeltaTimeAsOmPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+      histos.add("h2dnegDeltaTimeAsOmPr", "h2dnegDeltaTimeAsOmPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+      histos.add("h2dbachDeltaTimeAsOmKa", "h2dbachDeltaTimeAsOmKa", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
     }
   }
 
@@ -408,28 +409,27 @@ struct cascadepid {
           histos.fill(HIST("hArcDebug"), cascade.pt(), lengthCascade - d3d); // for debugging purposes
 
           if (cascade.dcaV0daughters() < qaV0DCADau && cascade.dcacascdaughters() < qaCascDCADau && cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > qaV0CosPA && cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > qaCascCosPA) {
-
-            if (cascade.sign() < 0) {
-              if (std::abs(cascade.mXi() - 1.32171) < qaMassWindow) {
-                histos.fill(HIST("h2dposDeltaTimeAsXiPr"), cascade.pt(), posDeltaTimeAsXiPr);
-                histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.pt(), negDeltaTimeAsXiPi);
-                histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), bachDeltaTimeAsXiPi);
+            if(cascade.sign()<0){
+              if(std::abs(cascade.mXi()-1.32171)<qaMassWindow){
+                histos.fill(HIST("h2dposDeltaTimeAsXiPr"), cascade.pt(), cascade.eta(), posDeltaTimeAsXiPr);
+                histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), negDeltaTimeAsXiPi);
+                histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), bachDeltaTimeAsXiPi);
               }
-              if (std::abs(cascade.mOmega() - 1.67245) < qaMassWindow) {
-                histos.fill(HIST("h2dposDeltaTimeAsOmPr"), cascade.pt(), posDeltaTimeAsOmPr);
-                histos.fill(HIST("h2dnegDeltaTimeAsOmPi"), cascade.pt(), negDeltaTimeAsOmPi);
-                histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), bachDeltaTimeAsOmKa);
+              if(std::abs(cascade.mOmega()-1.67245)<qaMassWindow){
+                histos.fill(HIST("h2dposDeltaTimeAsOmPr"), cascade.pt(), cascade.eta(), posDeltaTimeAsOmPr);
+                histos.fill(HIST("h2dnegDeltaTimeAsOmPi"), cascade.pt(), cascade.eta(), negDeltaTimeAsOmPi);
+                histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), cascade.eta(), bachDeltaTimeAsOmKa);
               }
-            } else {
-              if (std::abs(cascade.mXi() - 1.32171) < qaMassWindow) {
-                histos.fill(HIST("h2dposDeltaTimeAsXiPi"), cascade.pt(), posDeltaTimeAsXiPi);
-                histos.fill(HIST("h2dnegDeltaTimeAsXiPr"), cascade.pt(), negDeltaTimeAsXiPr);
-                histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), bachDeltaTimeAsXiPi);
+            }else{
+              if(std::abs(cascade.mXi()-1.32171)<qaMassWindow){
+                histos.fill(HIST("h2dposDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), posDeltaTimeAsXiPi);
+                histos.fill(HIST("h2dnegDeltaTimeAsXiPr"), cascade.pt(), cascade.eta(), negDeltaTimeAsXiPr);
+                histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), bachDeltaTimeAsXiPi);
               }
-              if (std::abs(cascade.mOmega() - 1.67245) < qaMassWindow) {
-                histos.fill(HIST("h2dposDeltaTimeAsOmPi"), cascade.pt(), posDeltaTimeAsOmPi);
-                histos.fill(HIST("h2dnegDeltaTimeAsOmPr"), cascade.pt(), negDeltaTimeAsOmPr);
-                histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), bachDeltaTimeAsOmKa);
+              if(std::abs(cascade.mOmega()-1.67245)<qaMassWindow){
+                histos.fill(HIST("h2dposDeltaTimeAsOmPi"), cascade.pt(), cascade.eta(), posDeltaTimeAsOmPi);
+                histos.fill(HIST("h2dnegDeltaTimeAsOmPr"), cascade.pt(), cascade.eta(), negDeltaTimeAsOmPr);
+                histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), cascade.eta(), bachDeltaTimeAsOmKa);
               }
             }
           }
