@@ -389,7 +389,7 @@ struct lambdakzeropid {
         v0tofdebugs(timeLambda, timeK0Short, timePositivePr, timePositivePi, timeNegativePr, timeNegativePi);
 
         if (doQA) {
-          if (v0.posTOFSignal() > 0 && v0.posTOFEventTime() > 0){
+          if (v0.posTOFSignal() > 0 && v0.posTOFEventTime() > 0) {
             histos.fill(HIST("h2dProtonMeasuredVsExpected"),
                         (timeLambda + timePositivePr),
                         (v0.posTOFSignal() - v0.posTOFEventTime()));
@@ -398,7 +398,7 @@ struct lambdakzeropid {
             histos.fill(HIST("h2dDeltaTimePositiveK0ShortPi"), v0.pt(), deltaTimePositiveK0ShortPi);
           }
 
-          if (v0.negTOFSignal() > 0 && v0.negTOFEventTime() > 0){
+          if (v0.negTOFSignal() > 0 && v0.negTOFEventTime() > 0) {
             histos.fill(HIST("h2dPionMeasuredVsExpected"),
                         (timeLambda + timeNegativePi),
                         (v0.negTOFSignal() - v0.negTOFEventTime()));

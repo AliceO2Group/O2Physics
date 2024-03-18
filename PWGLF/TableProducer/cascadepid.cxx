@@ -242,7 +242,7 @@ struct cascadepid {
       histos.add("h2dnegDeltaTimeAsXiPi", "h2dnegDeltaTimeAsXiPi", {HistType::kTH2F, {axisPt, axisDeltaTime}});
       histos.add("h2dnegDeltaTimeAsXiPr", "h2dnegDeltaTimeAsXiPr", {HistType::kTH2F, {axisPt, axisDeltaTime}});
       histos.add("h2dbachDeltaTimeAsXiPi", "h2dbachDeltaTimeAsXiPi", {HistType::kTH2F, {axisPt, axisDeltaTime}});
-      
+
       histos.add("h2dposDeltaTimeAsOmPi", "h2dposDeltaTimeAsOmPi", {HistType::kTH2F, {axisPt, axisDeltaTime}});
       histos.add("h2dposDeltaTimeAsOmPr", "h2dposDeltaTimeAsOmPr", {HistType::kTH2F, {axisPt, axisDeltaTime}});
       histos.add("h2dnegDeltaTimeAsOmPi", "h2dnegDeltaTimeAsOmPi", {HistType::kTH2F, {axisPt, axisDeltaTime}});
@@ -325,9 +325,9 @@ struct cascadepid {
         float velocityOm = velocity(cascTrack.getP(), o2::constants::physics::MassOmegaMinus);
         float velocityLa = velocity(std::hypot(cascade.pxlambda(), cascade.pylambda(), cascade.pzlambda()), o2::constants::physics::MassLambda);
 
-        // calculate daughter length to TOF intercept 
-        float lengthPositive = findInterceptLength(posTrack, d_bz); // FIXME: tofPosition ok? adjust?
-        float lengthNegative = findInterceptLength(negTrack, d_bz); // FIXME: tofPosition ok? adjust?
+        // calculate daughter length to TOF intercept
+        float lengthPositive = findInterceptLength(posTrack, d_bz);  // FIXME: tofPosition ok? adjust?
+        float lengthNegative = findInterceptLength(negTrack, d_bz);  // FIXME: tofPosition ok? adjust?
         float lengthBachelor = findInterceptLength(bachTrack, d_bz); // FIXME: tofPosition ok? adjust?
 
         // calculate mother lengths
@@ -336,8 +336,8 @@ struct cascadepid {
         const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
         bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(collVtx, cascTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE);
         float d = -1.0f, d3d = 0.0f;
-        float linearToPV = std::hypot(cascade.x()-collision.posX(),cascade.y()-collision.posY(), cascade.z()-collision.posZ()); 
-        if(successPropag){
+        float linearToPV = std::hypot(cascade.x() - collision.posX(), cascade.y() - collision.posY(), cascade.z() - collision.posZ());
+        if (successPropag) {
           std::array<float, 3> cascCloseToPVPosition;
           cascTrack.getXYZGlo(cascCloseToPVPosition);
           o2::math_utils::CircleXYf_t trcCircleCascade;
@@ -345,49 +345,49 @@ struct cascadepid {
           cascTrack.getCircleParams(d_bz, trcCircleCascade, sna, csa);
 
           // calculate 2D distance between two points
-          d = std::hypot(cascade.x()-cascCloseToPVPosition[0],cascade.y()-cascCloseToPVPosition[1]); 
-          d3d = std::hypot(cascade.x()-cascCloseToPVPosition[0],cascade.y()-cascCloseToPVPosition[1], cascade.z()-cascCloseToPVPosition[2]); // cross-check variable
-          float sinThetaOverTwo = d/(2.0f*trcCircleCascade.rC);
-          lengthCascade = 2.0f*trcCircleCascade.rC*TMath::ASin(sinThetaOverTwo);
+          d = std::hypot(cascade.x() - cascCloseToPVPosition[0], cascade.y() - cascCloseToPVPosition[1]);
+          d3d = std::hypot(cascade.x() - cascCloseToPVPosition[0], cascade.y() - cascCloseToPVPosition[1], cascade.z() - cascCloseToPVPosition[2]); // cross-check variable
+          float sinThetaOverTwo = d / (2.0f * trcCircleCascade.rC);
+          lengthCascade = 2.0f * trcCircleCascade.rC * TMath::ASin(sinThetaOverTwo);
           lengthCascade *= sqrt(1.0f + cascTrack.getTgl() * cascTrack.getTgl());
         }
 
-        if(!successPropag){
+        if (!successPropag) {
           lengthCascade = linearToPV; // if propagation failed, use linear estimate (optional: actually do not define?)
         }
 
         // lambda, xi and omega flight time is always defined
-        float lambdaFlight = lengthV0/velocityLa;
-        float xiFlight = lengthCascade/velocityXi;
-        float omFlight = lengthCascade/velocityOm;
-        float posFlightPi = lengthPositive/velocityPositivePi;
-        float posFlightPr = lengthPositive/velocityPositivePr;
-        float negFlightPi = lengthNegative/velocityNegativePi;
-        float negFlightPr = lengthNegative/velocityNegativePr;
-        float bachFlightPi = lengthBachelor/velocityBachelorPi;
-        float bachFlightKa = lengthBachelor/velocityBachelorKa;
+        float lambdaFlight = lengthV0 / velocityLa;
+        float xiFlight = lengthCascade / velocityXi;
+        float omFlight = lengthCascade / velocityOm;
+        float posFlightPi = lengthPositive / velocityPositivePi;
+        float posFlightPr = lengthPositive / velocityPositivePr;
+        float negFlightPi = lengthNegative / velocityNegativePi;
+        float negFlightPr = lengthNegative / velocityNegativePr;
+        float bachFlightPi = lengthBachelor / velocityBachelorPi;
+        float bachFlightKa = lengthBachelor / velocityBachelorKa;
 
         // initialize delta-times (actual PID variables)
         float posDeltaTimeAsXiPi = -1e+6, posDeltaTimeAsXiPr = -1e+6;
-        float negDeltaTimeAsXiPi = -1e+6, negDeltaTimeAsXiPr = -1e+6; 
+        float negDeltaTimeAsXiPi = -1e+6, negDeltaTimeAsXiPr = -1e+6;
         float bachDeltaTimeAsXiPi = -1e+6;
         float posDeltaTimeAsOmPi = -1e+6, posDeltaTimeAsOmPr = -1e+6;
-        float negDeltaTimeAsOmPi = -1e+6, negDeltaTimeAsOmPr = -1e+6; 
-        float bachDeltaTimeAsOmKa = -1e+6; 
+        float negDeltaTimeAsOmPi = -1e+6, negDeltaTimeAsOmPr = -1e+6;
+        float bachDeltaTimeAsOmKa = -1e+6;
 
-        if( cascade.posTOFSignal() > 0 && cascade.posTOFEventTime() > 0 ){ 
+        if (cascade.posTOFSignal() > 0 && cascade.posTOFEventTime() > 0) {
           posDeltaTimeAsXiPi = (cascade.posTOFSignal() - cascade.posTOFEventTime()) - (xiFlight + lambdaFlight + posFlightPi);
           posDeltaTimeAsXiPr = (cascade.posTOFSignal() - cascade.posTOFEventTime()) - (xiFlight + lambdaFlight + posFlightPr);
           posDeltaTimeAsOmPi = (cascade.posTOFSignal() - cascade.posTOFEventTime()) - (omFlight + lambdaFlight + posFlightPi);
           posDeltaTimeAsOmPr = (cascade.posTOFSignal() - cascade.posTOFEventTime()) - (omFlight + lambdaFlight + posFlightPr);
         }
-        if( cascade.posTOFSignal() > 0 && cascade.posTOFEventTime() > 0 ){ 
+        if (cascade.posTOFSignal() > 0 && cascade.posTOFEventTime() > 0) {
           negDeltaTimeAsXiPi = (cascade.negTOFSignal() - cascade.negTOFEventTime()) - (xiFlight + lambdaFlight + negFlightPi);
           negDeltaTimeAsXiPr = (cascade.negTOFSignal() - cascade.negTOFEventTime()) - (xiFlight + lambdaFlight + negFlightPr);
           negDeltaTimeAsOmPi = (cascade.negTOFSignal() - cascade.negTOFEventTime()) - (omFlight + lambdaFlight + negFlightPi);
           negDeltaTimeAsOmPr = (cascade.negTOFSignal() - cascade.negTOFEventTime()) - (omFlight + lambdaFlight + negFlightPr);
         }
-        if( cascade.bachTOFSignal() > 0 && cascade.bachTOFEventTime() > 0 ){ 
+        if (cascade.bachTOFSignal() > 0 && cascade.bachTOFEventTime() > 0) {
           bachDeltaTimeAsXiPi = (cascade.bachTOFSignal() - cascade.bachTOFEventTime()) - (xiFlight + bachFlightPi);
           bachDeltaTimeAsOmKa = (cascade.bachTOFSignal() - cascade.bachTOFEventTime()) - (omFlight + bachFlightKa);
         }
@@ -397,10 +397,10 @@ struct cascadepid {
           posDeltaTimeAsOmPi, posDeltaTimeAsOmPr, negDeltaTimeAsOmPi, negDeltaTimeAsOmPr, bachDeltaTimeAsOmKa,
           0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f // no Nsigmas yet
         );
-  
+
         if (doQA) {
           // fill QA histograms for cross-checking
-          histos.fill(HIST("hArcDebug"), cascade.pt(), lengthCascade-d3d); // for debugging purposes
+          histos.fill(HIST("hArcDebug"), cascade.pt(), lengthCascade - d3d); // for debugging purposes
           histos.fill(HIST("h2dposDeltaTimeAsXiPi"), cascade.pt(), posDeltaTimeAsXiPi);
           histos.fill(HIST("h2dposDeltaTimeAsXiPr"), cascade.pt(), posDeltaTimeAsXiPr);
           histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.pt(), negDeltaTimeAsXiPi);
