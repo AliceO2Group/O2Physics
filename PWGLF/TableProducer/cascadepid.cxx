@@ -76,6 +76,11 @@ struct cascadepid {
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<float> tofPosition{"tofPosition", 377.934f, "TOF effective (inscribed) radius"};
   Configurable<bool> doQA{"doQA", true, "create QA histos"};
+  Configurable<float> qaV0DCADau{"qaV0DCADau", 0.5, "DCA daughters (cm) for QA plots"};
+  Configurable<float> qaCascDCADau{"qaCascDCADau", 0.5, "DCA daughters (cm) for QA plots"};
+  Configurable<float> qaV0CosPA{"qaV0CosPA", 0.995, "CosPA for QA plots"};
+  Configurable<float> qaCascCosPA{"qaCascCosPA", 0.995, "CosPA for QA plots"};
+  Configurable<float> qaMassWindow{"qaMassWindow", 0.005, "Mass window around expected (in GeV/c2) for QA plots"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -395,28 +400,50 @@ struct cascadepid {
         casctofpids(
           posDeltaTimeAsXiPi, posDeltaTimeAsXiPr, negDeltaTimeAsXiPi, negDeltaTimeAsXiPr, bachDeltaTimeAsXiPi,
           posDeltaTimeAsOmPi, posDeltaTimeAsOmPr, negDeltaTimeAsOmPi, negDeltaTimeAsOmPr, bachDeltaTimeAsOmKa,
-          0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f // no Nsigmas yet
+          0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f // no Nsigmas yet, note: could be fewer
         );
 
         if (doQA) {
           // fill QA histograms for cross-checking
           histos.fill(HIST("hArcDebug"), cascade.pt(), lengthCascade - d3d); // for debugging purposes
-          histos.fill(HIST("h2dposDeltaTimeAsXiPi"), cascade.pt(), posDeltaTimeAsXiPi);
-          histos.fill(HIST("h2dposDeltaTimeAsXiPr"), cascade.pt(), posDeltaTimeAsXiPr);
-          histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.pt(), negDeltaTimeAsXiPi);
-          histos.fill(HIST("h2dnegDeltaTimeAsXiPr"), cascade.pt(), negDeltaTimeAsXiPr);
-          histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), bachDeltaTimeAsXiPi);
 
-          histos.fill(HIST("h2dposDeltaTimeAsOmPi"), cascade.pt(), posDeltaTimeAsOmPi);
-          histos.fill(HIST("h2dposDeltaTimeAsOmPr"), cascade.pt(), posDeltaTimeAsOmPr);
-          histos.fill(HIST("h2dnegDeltaTimeAsOmPi"), cascade.pt(), negDeltaTimeAsOmPi);
-          histos.fill(HIST("h2dnegDeltaTimeAsOmPr"), cascade.pt(), negDeltaTimeAsOmPr);
-          histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), bachDeltaTimeAsOmKa);
+          if(cascade.dcaV0daughters()<qaV0DCADau && cascade.dcacascdaughters()<qaCascDCADau && cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ())>qaV0CosPA && cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ())>qaCascCosPA){ 
+
+            if(cascade.sign()<0){
+              if(std::abs(cascade.mXi()-1.32171)<qaMassWindow){
+                histos.fill(HIST("h2dposDeltaTimeAsXiPr"), cascade.pt(), posDeltaTimeAsXiPr);
+                histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.pt(), negDeltaTimeAsXiPi);
+                histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), bachDeltaTimeAsXiPi);
+              }
+              if(std::abs(cascade.mOmega()-1.67245)<qaMassWindow){
+                histos.fill(HIST("h2dposDeltaTimeAsOmPr"), cascade.pt(), posDeltaTimeAsOmPr);
+                histos.fill(HIST("h2dnegDeltaTimeAsOmPi"), cascade.pt(), negDeltaTimeAsOmPi);
+                histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), bachDeltaTimeAsOmKa);
+              }
+            }else{
+              if(std::abs(cascade.mXi()-1.32171)<qaMassWindow){
+                histos.fill(HIST("h2dposDeltaTimeAsXiPi"), cascade.pt(), posDeltaTimeAsXiPi);
+                histos.fill(HIST("h2dnegDeltaTimeAsXiPr"), cascade.pt(), negDeltaTimeAsXiPr);
+                histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), bachDeltaTimeAsXiPi);
+              }
+              if(std::abs(cascade.mOmega()-1.67245)<qaMassWindow){
+                histos.fill(HIST("h2dposDeltaTimeAsOmPi"), cascade.pt(), posDeltaTimeAsOmPi);
+                histos.fill(HIST("h2dnegDeltaTimeAsOmPr"), cascade.pt(), negDeltaTimeAsOmPr);
+                histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), bachDeltaTimeAsOmKa);
+              }
+            }
+          }
         }
       }
     }
   }
 };
+
+  Configurable<float> qaV0DCADau{"qaV0DCADau", 0.5, "DCA daughters (cm) for QA plots"};
+  Configurable<float> qaCascDCADau{"qaCascDCADau", 0.5, "DCA daughters (cm) for QA plots"};
+  Configurable<float> qaV0CosPA{"qaV0CosPA", 0.995, "CosPA for QA plots"};
+  Configurable<float> qaCascCosPA{"qaCascCosPA", 0.995, "CosPA for QA plots"};
+  Configurable<float> qaMassWindow{"qaMassWindow", 0.005, "Mass window around expected (in GeV/c2) for QA plots"};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
