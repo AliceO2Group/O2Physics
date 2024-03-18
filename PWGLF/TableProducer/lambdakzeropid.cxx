@@ -58,23 +58,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-// use parameters + cov mat non-propagated, aux info + (extension propagated)
-using FullTracksExt = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov>;
-using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TOFEvTime, aod::TOFSignal>;
-using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
-
-// For dE/dx association in pre-selection
-using TracksExtraWithPID = soa::Join<aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullHe>;
-
-// For MC and dE/dx association
-using TracksExtraWithPIDandLabels = soa::Join<aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::McTrackLabels>;
-
-// Pre-selected V0s
-using TaggedV0s = soa::Join<aod::V0s, aod::V0Tags>;
-
-// For MC association in pre-selection
-using LabeledTracksExtra = soa::Join<aod::TracksExtra, aod::McTrackLabels>;
-
 // Cores with references and TOF pid
 using V0FullCores = soa::Join<aod::V0Cores, aod::V0TOFs, aod::V0CollRefs>;
 
@@ -260,6 +243,14 @@ struct lambdakzeropid {
       histos.add("h2dProtonMeasuredVsExpected", "h2dProtonMeasuredVsExpected", {HistType::kTH2F, {axisTime, axisTime}});
       histos.add("h2dPionMeasuredVsExpected", "h2dPionMeasuredVsExpected", {HistType::kTH2F, {axisTime, axisTime}});
 
+      // standard deltaTime values
+      histos.add("h2dDeltaTimePositiveLambdaPi", "h2dDeltaTimePositiveLambdaPi", {HistType::kTH2F, {axisPt, axisDeltaTime}});
+      histos.add("h2dDeltaTimeNegativeLambdaPi", "h2dDeltaTimeNegativeLambdaPi", {HistType::kTH2F, {axisPt, axisDeltaTime}});
+      histos.add("h2dDeltaTimePositiveLambdaPr", "h2dDeltaTimePositiveLambdaPr", {HistType::kTH2F, {axisPt, axisDeltaTime}});
+      histos.add("h2dDeltaTimeNegativeLambdaPr", "h2dDeltaTimeNegativeLambdaPr", {HistType::kTH2F, {axisPt, axisDeltaTime}});
+      histos.add("h2dDeltaTimePositiveK0ShortPi", "h2dDeltaTimePositiveK0ShortPi", {HistType::kTH2F, {axisPt, axisDeltaTime}});
+      histos.add("h2dDeltaTimeNegativeK0ShortPi", "h2dDeltaTimeNegativeK0ShortPi", {HistType::kTH2F, {axisPt, axisDeltaTime}});
+
       // delta lambda decay time
       histos.add("h2dLambdaDeltaDecayTime", "h2dLambdaDeltaDecayTime", {HistType::kTH2F, {axisPt, axisDeltaTime}});
     }
@@ -356,7 +347,7 @@ struct lambdakzeropid {
         if (v0.posTOFSignal() > 0 && v0.posTOFEventTime() > 0 && lengthPositive > 0) {
           deltaTimePositiveLambdaPr = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeLambda + timePositivePr);
           deltaTimePositiveLambdaPi = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeLambda + timePositivePi);
-          deltaTimePositiveK0ShortPi = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeK0Short + timeNegativePi);
+          deltaTimePositiveK0ShortPi = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeK0Short + timePositivePi);
         }
         if (v0.negTOFSignal() > 0 && v0.negTOFEventTime() > 0 && lengthNegative > 0) {
           deltaTimeNegativeLambdaPr = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeLambda + timeNegativePr);
@@ -398,15 +389,23 @@ struct lambdakzeropid {
         v0tofdebugs(timeLambda, timeK0Short, timePositivePr, timePositivePi, timeNegativePr, timeNegativePi);
 
         if (doQA) {
-          if (v0.posTOFSignal() > 0 && v0.posTOFEventTime() > 0)
+          if (v0.posTOFSignal() > 0 && v0.posTOFEventTime() > 0){
             histos.fill(HIST("h2dProtonMeasuredVsExpected"),
                         (timeLambda + timePositivePr),
                         (v0.posTOFSignal() - v0.posTOFEventTime()));
-          if (v0.negTOFSignal() > 0 && v0.negTOFEventTime() > 0)
+            histos.fill(HIST("h2dDeltaTimePositiveLambdaPi"), v0.pt(), deltaTimePositiveLambdaPi);
+            histos.fill(HIST("h2dDeltaTimePositiveLambdaPr"), v0.pt(), deltaTimePositiveLambdaPr);
+            histos.fill(HIST("h2dDeltaTimePositiveK0ShortPi"), v0.pt(), deltaTimePositiveK0ShortPi);
+          }
+
+          if (v0.negTOFSignal() > 0 && v0.negTOFEventTime() > 0){
             histos.fill(HIST("h2dPionMeasuredVsExpected"),
                         (timeLambda + timeNegativePi),
                         (v0.negTOFSignal() - v0.negTOFEventTime()));
-
+            histos.fill(HIST("h2dDeltaTimeNegativeLambdaPi"), v0.pt(), deltaTimeNegativeLambdaPi);
+            histos.fill(HIST("h2dDeltaTimeNegativeLambdaPr"), v0.pt(), deltaTimeNegativeLambdaPr);
+            histos.fill(HIST("h2dDeltaTimeNegativeK0ShortPi"), v0.pt(), deltaTimeNegativeK0ShortPi);
+          }
           // delta lambda decay time
           histos.fill(HIST("h2dLambdaDeltaDecayTime"), v0.pt(), deltaDecayTimeLambda);
         }
