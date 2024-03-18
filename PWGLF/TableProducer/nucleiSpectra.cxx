@@ -134,6 +134,12 @@ constexpr int TreeConfigDefault[5][2]{
   {0, 0},
   {0, 0},
   {0, 0}};
+constexpr int FlowHistDefault[5][1]{
+  {0},
+  {0},
+  {0},
+  {0},
+  {0}};
 constexpr double DownscalingDefault[5][1]{
   {1.},
   {1.},
@@ -149,6 +155,7 @@ static const std::vector<std::string> matter{"M", "A"};
 static const std::vector<std::string> pidName{"TPC", "TOF"};
 static const std::vector<std::string> names{"proton", "deuteron", "triton", "He3", "alpha"};
 static const std::vector<std::string> treeConfigNames{"Filter trees", "Use TOF selection"};
+static const std::vector<std::string> flowConfigNames{"Save flow hists"};
 static const std::vector<std::string> nSigmaConfigName{"nsigma_min", "nsigma_max"};
 static const std::vector<std::string> nDCAConfigName{"max DCAxy", "max DCAz"};
 static const std::vector<std::string> DownscalingConfigName{"Fraction of kept candidates"};
@@ -223,7 +230,7 @@ struct nucleiSpectra {
   Configurable<LabeledArray<double>> cfgDCAcut{"cfgDCAcut", {nuclei::DCAcutDefault[0], 5, 2, nuclei::names, nuclei::nDCAConfigName}, "Max DCAxy and DCAz for light nuclei"};
   Configurable<LabeledArray<double>> cfgDownscaling{"cfgDownscaling", {nuclei::DownscalingDefault[0], 5, 1, nuclei::names, nuclei::DownscalingConfigName}, "Fraction of kept candidates for light nuclei"};
   Configurable<LabeledArray<int>> cfgTreeConfig{"cfgTreeConfig", {nuclei::TreeConfigDefault[0], 5, 2, nuclei::names, nuclei::treeConfigNames}, "Filtered trees configuration"};
-  Configurable<LabeledArray<int>> cfgFlowHist{"cfgFlowHist", {nuclei::TreeConfigDefault[0], 5, 2, nuclei::names, nuclei::treeConfigNames}, "Flow hist configuration"};
+  Configurable<LabeledArray<int>> cfgFlowHist{"cfgFlowHist", {nuclei::FlowHistDefault[0], 5, 1, nuclei::names, nuclei::flowConfigNames}, "Flow hist configuration"};
 
   ConfigurableAxis cfgDCAxyBinsProtons{"cfgDCAxyBinsProtons", {1500, -1.5f, 1.5f}, "DCAxy binning for Protons"};
   ConfigurableAxis cfgDCAxyBinsDeuterons{"cfgDCAxyBinsDeuterons", {1500, -1.5f, 1.5f}, "DCAxy binning for Deuterons"};
@@ -373,8 +380,8 @@ struct nucleiSpectra {
           nuclei::hGenNuclei[iS][iC] = spectra.add<TH2>(fmt::format("h{}Gen{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Generated {}", nuclei::names[iS]).data(), HistType::kTH2D, {centAxis, ptAxes[iS]});
         }
         if (doprocessDataFlow) {
-          if (cfgFlowHist->get(iS, 1u)) {
-            nuclei::hFlowHists[iC][iS] = spectra.add<THn>(fmt::format("hFlowHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Flow histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnF, {centAxis, matterAxis, ptAxes[iS], nSigmaAxes[0], tofMassAxis, v2Axis, nITSClusAxis, nTPCClusAxis});
+          if (cfgFlowHist->get(iS)) {
+            nuclei::hFlowHists[iC][iS] = spectra.add<THn>(fmt::format("hFlowHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Flow histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnF, {centAxis, ptAxes[iS], nSigmaAxes[0], tofMassAxis, v2Axis, nITSClusAxis, nTPCClusAxis});
           }
         }
       }
@@ -520,11 +527,11 @@ struct nucleiSpectra {
                   nuclei::hTOFmassEta[iS][iC]->Fill(fvector.eta(), fvector.pt(), tofMass);
                 }
 
-                if (cfgFlowHist->get(iS, 1u) && doprocessDataFlow) {
+                if (cfgFlowHist->get(iS) && doprocessDataFlow) {
                   if constexpr (std::is_same<Tcoll, CollWithEP>::value) {
                     auto deltaPhiInRange = getPhiInRange(fvector.phi() - collision.psiFT0C());
                     auto v2 = TMath::Cos(2.0 * deltaPhiInRange);
-                    nuclei::hFlowHists[iC][iS]->Fill(collision.centFT0C(), iC, fvector.pt(), nSigma[0][iS], tofMass, v2, track.itsNCls(), track.tpcNClsFound());
+                    nuclei::hFlowHists[iC][iS]->Fill(collision.centFT0C(), fvector.pt(), nSigma[0][iS], tofMass, v2, track.itsNCls(), track.tpcNClsFound());
                   }
                 }
               }
