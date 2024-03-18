@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file dataCreatorDV0Reduced.cxx
+/// \file dataCreatorCharmResoReduced.cxx
 /// \brief Creation of D-V0 pairs
 ///
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, UniTO Turin
@@ -56,19 +56,19 @@ enum DecayChannel : uint8_t {
   DplusV0
 };
 
-enum V0_type : uint8_t {
+enum V0Type : uint8_t {
   K0s = 0,
   Lambda,
   AntiLambda
 };
 
-enum TypeD : uint8_t {
+enum DType : uint8_t {
   Dplus = 1,
   Dstar
 };
 
 /// Creation of D-V0 pairs
-struct HfDataCreatorDV0Reduced {
+struct HfDataCreatorCharmResoReduced {
   // Produces AOD tables to store track information
   Produces<aod::HfRedCollisions> hfReducedCollision; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfOrigColCounts> hfCollisionCounter; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
@@ -133,17 +133,17 @@ struct HfDataCreatorDV0Reduced {
       registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
     registry.add("hMassDplus", "Dplus candidates;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 1.7, 2}}});
-    registry.add("hMassDstar", "Dstar candidates;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0.05, 0.25}}});
+    registry.add("hMassDstar", "Dstar candidates;inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0.14, 0.17}}});
     registry.add("hMassK0s", "K0^{s} candidates;inv. mass (#pi^{#plus}#pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0.35, 0.65}}});
     registry.add("hMassLambda", "Lambda candidates;inv. mass (p #pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 1.05, 1.35}}});
     registry.add("hPtDplus", "D^{#minus} candidates;D^{#minus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
     registry.add("hPtDstar", "D^{*} candidates;D^{*} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
     registry.add("hPtV0", "V0 candidates;V0 candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
-    registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} - m_{D^{*}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0.45, 0.7}}});
-    registry.add("hMassDsStar2", "Ds^{*}2 candidates; Ds^{*}2 - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0.4, 1}}});
-    registry.add("hMassXcRes", "XcRes candidates; XcRes - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 1., 1.4}}});
-    registry.add("hV0_type", "V0 selection flag", {HistType::kTH1F, {{8, -0.5, 7.5}}});
-    registry.add("hD_type", "D selection flag", {HistType::kTH1F, {{5, -2.5, 2.5}}});
+    registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} - m_{D^{*}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 2.4, 2.7}}});
+    registry.add("hMassDsStar2", "Ds^{*}2 candidates; Ds^{*}2 - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 2.4, 2.7}}});
+    registry.add("hMassXcRes", "XcRes candidates; XcRes - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 2.9, 3.3}}});
+    registry.add("hV0Type", "V0 selection flag", {HistType::kTH1F, {{8, -0.5, 7.5}}});
+    registry.add("hDType", "D selection flag", {HistType::kTH1F, {{5, -2.5, 2.5}}});
 
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
@@ -156,11 +156,13 @@ struct HfDataCreatorDV0Reduced {
   /// Basic selection of V0 candidates
   /// \param v0 is the v0 candidate
   /// \param collision is the current collision
+  /// \param dauTracks are the v0 daughter tracks
+  /// \param dDaughtersIDs are the IDs of the D meson daughter tracks
   /// \return a bitmap with mass hypotesis if passes all cuts
   template <typename V0, typename Coll, typename Tr>
-  inline uint8_t isSelectedV0(const V0& v0, const Coll& collision, const std::array<Tr, 2>& dauTracks, const std::array<int, 3>& dDaughtersIDs)
+  inline uint8_t getSelectionMapV0(const V0& v0, const Coll& collision, const std::array<Tr, 2>& dauTracks, const std::array<int, 3>& dDaughtersIDs)
   {
-    uint8_t isSelected{BIT(K0s) | BIT(Lambda) | BIT(AntiLambda)};
+    uint8_t selMap{BIT(K0s) | BIT(Lambda) | BIT(AntiLambda)};
     // reject VOs that share daughters with D
     if (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), v0.posTrackId()) != dDaughtersIDs.end() || std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), v0.negTrackId()) != dDaughtersIDs.end()) {
       return 0;
@@ -183,25 +185,25 @@ struct HfDataCreatorDV0Reduced {
       return 0;
     }
     // mass hypotesis
-    if (TESTBIT(isSelected, K0s) && std::fabs(v0.mK0Short() - MassK0) > deltaMassK0s) {
-      CLRBIT(isSelected, K0s);
+    if (std::fabs(v0.mK0Short() - MassK0) > deltaMassK0s) {
+      CLRBIT(selMap, K0s);
     }
-    if (TESTBIT(isSelected, Lambda) && std::fabs(v0.mLambda() - MassLambda0) > deltaMassLambda) {
-      CLRBIT(isSelected, Lambda);
+    if (std::fabs(v0.mLambda() - MassLambda0) > deltaMassLambda) {
+      CLRBIT(selMap, Lambda);
     }
-    if (TESTBIT(isSelected, AntiLambda) && std::fabs(v0.mAntiLambda() - MassLambda0) > deltaMassLambda) {
-      CLRBIT(isSelected, AntiLambda);
+    if (std::fabs(v0.mAntiLambda() - MassLambda0) > deltaMassLambda) {
+      CLRBIT(selMap, AntiLambda);
     }
     // PID (Lambda/AntiLambda only)
     float nSigmaPrTpc[2] = {dauTracks[0].tpcNSigmaPr(), dauTracks[1].tpcNSigmaPr()};
     float nSigmaPrTof[2] = {dauTracks[0].tofNSigmaPr(), dauTracks[1].tofNSigmaPr()};
-    if (TESTBIT(isSelected, Lambda) && ((dauTracks[0].hasTPC() && std::fabs(nSigmaPrTpc[0]) > maxNsigmaPrForLambda) || (dauTracks[0].hasTOF() && std::fabs(nSigmaPrTof[0]) > maxNsigmaPrForLambda))) {
-      CLRBIT(isSelected, Lambda);
+    if (TESTBIT(selMap, Lambda) && ((dauTracks[0].hasTPC() && std::fabs(nSigmaPrTpc[0]) > maxNsigmaPrForLambda) || (dauTracks[0].hasTOF() && std::fabs(nSigmaPrTof[0]) > maxNsigmaPrForLambda))) {
+      CLRBIT(selMap, Lambda);
     }
-    if (TESTBIT(isSelected, AntiLambda) && ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1]) > maxNsigmaPrForLambda) || (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1]) > maxNsigmaPrForLambda))) {
-      CLRBIT(isSelected, AntiLambda);
+    if (TESTBIT(selMap, AntiLambda) && ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1]) > maxNsigmaPrForLambda) || (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1]) > maxNsigmaPrForLambda))) {
+      CLRBIT(selMap, AntiLambda);
     }
-    return isSelected;
+    return selMap;
   }
 
   template <uint8_t DecayChannel, typename CCands>
@@ -218,18 +220,8 @@ struct HfDataCreatorDV0Reduced {
     std::map<int64_t, int64_t> selectedV0s;
     bool fillHfReducedCollision = false;
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    if (runNumber != bc.runNumber()) {
-      LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
-      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
-      if (grpo == nullptr) {
-        LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
-      }
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      // setMatLUT only after magfield has been initalized
-      o2::base::Propagator::Instance()->setMatLUT(lut);
-      runNumber = bc.runNumber();
-    }
-
+    initCCDB(bc, runNumber, ccdb, ccdbPathGrpMag, lut, false);
+    // loop on D candidates
     for (const auto& candD : candsD) {
       // initialize variables depending on decay channel
       bool fillHfCandD = false;
@@ -239,12 +231,11 @@ struct HfDataCreatorDV0Reduced {
       std::array<float, 3> pVecD;
       std::array<float, 3> secondaryVertexD;
       std::array<int, 3> prongIdsD;
-      uint8_t v0_type;
-      int8_t d_type;
-
+      uint8_t v0type;
+      int8_t dtype;
       if constexpr (std::is_same<CCands, CandDstarFiltered>::value) {
         if (candD.signSoftPi() > 0)
-          invMassD = candD.invMassDstar() - candD.invMassD0();
+          invMassD = candD.invMassDstar();
         else
           invMassD = candD.invMassAntiDstar() - candD.invMassD0Bar();
         massD = MassDStar;
@@ -255,7 +246,7 @@ struct HfDataCreatorDV0Reduced {
         prongIdsD[0] = candD.prong0Id();
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prongPiId();
-        d_type = candD.signSoftPi() * TypeD::Dstar;
+        dtype = candD.signSoftPi() * DType::Dstar;
       } else if constexpr (std::is_same<CCands, CandsDplusFiltered>::value) {
         auto prong0 = candD.template prong0_as<BigTracksPID>();
         invMassD = hfHelper.invMassDplusToPiKPi(candD);
@@ -267,7 +258,7 @@ struct HfDataCreatorDV0Reduced {
         prongIdsD[0] = candD.prong0Id();
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prong2Id();
-        d_type = prong0.sign() * TypeD::Dplus;
+        dtype = static_cast<int8_t>(prong0.sign() * DType::Dplus);
       } // else if
 
       // Loop on V0 candidates
@@ -275,8 +266,8 @@ struct HfDataCreatorDV0Reduced {
         auto posTrack = v0.posTrack_as<BigTracksPID>();
         auto negTrack = v0.negTrack_as<BigTracksPID>();
         // Apply selsection
-        v0_type = isSelectedV0(v0, collision, std::array{posTrack, negTrack}, prongIdsD);
-        if (v0_type == 0) {
+        v0type = getSelectionMapV0(v0, collision, std::array{posTrack, negTrack}, prongIdsD);
+        if (v0type == 0) {
           continue;
         }
         // propagate V0 to primary vertex (if enabled)
@@ -291,38 +282,38 @@ struct HfDataCreatorDV0Reduced {
           o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0, 2.f, matCorr, &dcaInfo);
           getPxPyPz(trackParK0, pVecV0);
         }
-        float ptV0 = sqrt(pVecV0[0] * pVecV0[0] + pVecV0[1] * pVecV0[1]); // fill histos
+        float ptV0 = RecoDecay::pt(pVecV0); // fill histos
         registry.fill(HIST("hPtV0"), ptV0);
-        registry.fill(HIST("hV0_type"), v0_type);
-        if (TESTBIT(v0_type, K0s)) {
+        registry.fill(HIST("hV0Type"), v0type);
+        if (TESTBIT(v0type, K0s)) {
           massV0 = MassK0;
-          auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
+          auto invMassDV0 = RecoDecay::m(std::array{pVecD, pVecV0}, std::array{massD, massV0});
           registry.fill(HIST("hMassK0s"), v0.mK0Short());
           switch (DecayChannel) {
             case DecayChannel::DstarV0:
-              registry.fill(HIST("hMassDs1"), sqrt(invMass2DV0) - massD);
+              registry.fill(HIST("hMassDs1"), invMassDV0);
               break;
             case DecayChannel::DplusV0:
-              registry.fill(HIST("hMassDsStar2"), sqrt(invMass2DV0) - massD);
+              registry.fill(HIST("hMassDsStar2"), invMassDV0);
               break;
             default:
               break;
           }
         }
-        if (TESTBIT(v0_type, Lambda)) {
+        if (TESTBIT(v0type, Lambda)) {
           massV0 = MassLambda0;
-          auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
+          auto invMassDV0 = RecoDecay::m(std::array{pVecD, pVecV0}, std::array{massD, massV0});
           registry.fill(HIST("hMassLambda"), v0.mLambda());
           if (DecayChannel == DecayChannel::DplusV0) {
-            registry.fill(HIST("hMassXcRes"), sqrt(invMass2DV0) - massD);
+            registry.fill(HIST("hMassXcRes"), invMassDV0);
           }
         }
-        if (TESTBIT(v0_type, AntiLambda)) {
+        if (TESTBIT(v0type, AntiLambda)) {
           massV0 = MassLambda0;
-          auto invMass2DV0 = RecoDecay::m2(std::array{pVecD, pVecV0}, std::array{massD, massV0});
+          auto invMassDV0 = RecoDecay::m(std::array{pVecD, pVecV0}, std::array{massD, massV0});
           registry.fill(HIST("hMassLambda"), v0.mAntiLambda());
           if (DecayChannel == DecayChannel::DplusV0) {
-            registry.fill(HIST("hMassXcRes"), sqrt(invMass2DV0) - massD);
+            registry.fill(HIST("hMassXcRes"), invMassDV0);
           }
         }
         // fill V0 table
@@ -336,7 +327,7 @@ struct HfDataCreatorDV0Reduced {
                    v0.v0cosPA(),
                    v0.dcav0topv(),
                    v0.v0radius(),
-                   v0_type);
+                   v0type);
           selectedV0s[v0.globalIndex()] = hfCandV0.lastIndex();
         }
         fillHfCandD = true;
@@ -348,7 +339,7 @@ struct HfDataCreatorDV0Reduced {
                 secondaryVertexD[0], secondaryVertexD[1], secondaryVertexD[2],
                 invMassD,
                 pVecD[0], pVecD[1], pVecD[2],
-                d_type);
+                dtype);
         fillHfReducedCollision = true;
         switch (DecayChannel) {
           case DecayChannel::DstarV0:
@@ -362,8 +353,7 @@ struct HfDataCreatorDV0Reduced {
           default:
             break;
         }
-        registry.fill(HIST("hPtDplus"), candD.pt());
-        registry.fill(HIST("hD_type"), d_type);
+        registry.fill(HIST("hDType"), dtype);
       }
     } // candsD loop
     registry.fill(HIST("hEvents"), 1 + Event::Processed);
@@ -393,7 +383,7 @@ struct HfDataCreatorDV0Reduced {
       runDataCreation<DecayChannel::DplusV0, CandsDplusFiltered>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
     }
   }
-  PROCESS_SWITCH(HfDataCreatorDV0Reduced, processDplusV0, "Process Dplus candidates without MC info and without ML info", true);
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0, "Process Dplus candidates without MC info and without ML info", true);
 
   void processDstarV0(aod::Collisions const& collisions,
                       CandDstarFiltered const& candsDstar,
@@ -412,10 +402,10 @@ struct HfDataCreatorDV0Reduced {
       runDataCreation<DecayChannel::DstarV0, CandDstarFiltered>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
     }
   }
-  PROCESS_SWITCH(HfDataCreatorDV0Reduced, processDstarV0, "Process DStar candidates without MC info and without ML info", false);
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0, "Process DStar candidates without MC info and without ML info", false);
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfDataCreatorDV0Reduced>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfDataCreatorCharmResoReduced>(cfgc)};
 }
