@@ -407,29 +407,41 @@ struct kfStrangenessStudy {
             o2::base::Propagator::Instance()->propagateToDCABxByBz(mV0vtx, posTrackParCov, 2.f, matCorr);
             o2::base::Propagator::Instance()->propagateToDCABxByBz(mV0vtx, negTrackParCov, 2.f, matCorr);
 
-            // get new daughter track position and uncertainties
+            // get new parameters and covariance matrix
+            std::array<float, 21> covpos, covneg;
+            std::array<float, 3> xyzpos, xyzneg;
+            posTrackParCov.getCovXYZPxPyPzGlo(covpos);
+            negTrackParCov.getCovXYZPxPyPzGlo(covneg);
+            posTrackParCov.getXYZGlo(xyzpos);
+            negTrackParCov.getXYZGlo(xyzneg);
+
+            // fill new daughter track position and uncertainties
             if (charge == -1) {
-              posProtonRec[0] = posTrackParCov.getX();
-              posProtonRec[1] = posTrackParCov.getY();
-              posProtonRec[2] = posTrackParCov.getZ();
-              posProtonRecErr[1] = sqrt(posTrackParCov.getSigmaY2());
-              posProtonRecErr[2] = sqrt(posTrackParCov.getSigmaZ2());
-              posPionRec[0] = negTrackParCov.getX();
-              posPionRec[1] = negTrackParCov.getY();
-              posPionRec[2] = negTrackParCov.getZ();
-              posPionRecErr[1] = sqrt(negTrackParCov.getSigmaY2());
-              posPionRecErr[2] = sqrt(negTrackParCov.getSigmaZ2());
+              posProtonRec[0] = xyzpos[0];
+              posProtonRec[1] = xyzpos[1];
+              posProtonRec[2] = xyzpos[2];
+              posProtonRecErr[0] = sqrt(covpos[0]);
+              posProtonRecErr[1] = sqrt(covpos[2]);
+              posProtonRecErr[2] = sqrt(covpos[5]);
+              posPionRec[0] = xyzneg[0];
+              posPionRec[1] = xyzneg[1];
+              posPionRec[2] = xyzneg[2];
+              posPionRecErr[0] = sqrt(covneg[0]);
+              posPionRecErr[1] = sqrt(covneg[2]);
+              posPionRecErr[2] = sqrt(covneg[5]);
             } else if (charge == +1) {
-              posProtonRec[0] = negTrackParCov.getX();
-              posProtonRec[1] = negTrackParCov.getY();
-              posProtonRec[2] = negTrackParCov.getZ();
-              posProtonRecErr[1] = sqrt(negTrackParCov.getSigmaY2());
-              posProtonRecErr[2] = sqrt(negTrackParCov.getSigmaZ2());
-              posPionRec[0] = posTrackParCov.getX();
-              posPionRec[1] = posTrackParCov.getY();
-              posPionRec[2] = posTrackParCov.getZ();
-              posPionRecErr[1] = sqrt(posTrackParCov.getSigmaY2());
-              posPionRecErr[2] = sqrt(posTrackParCov.getSigmaZ2());
+              posProtonRec[0] = xyzneg[0];
+              posProtonRec[1] = xyzneg[1];
+              posProtonRec[2] = xyzneg[2];
+              posProtonRecErr[0] = sqrt(covneg[0]);
+              posProtonRecErr[1] = sqrt(covneg[2]);
+              posProtonRecErr[2] = sqrt(covneg[5]);
+              posPionRec[0] = xyzpos[0];
+              posPionRec[1] = xyzpos[1];
+              posPionRec[2] = xyzpos[2];
+              posPionRecErr[0] = sqrt(covpos[0]);
+              posPionRecErr[1] = sqrt(covpos[2]);
+              posPionRecErr[2] = sqrt(covpos[5]);
             }
 
             // fill cascade table
