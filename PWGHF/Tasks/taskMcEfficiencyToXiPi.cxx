@@ -302,7 +302,7 @@ struct HfTaskMcEfficiencyToXiPi {
         if (inAcceptance) {
           hCandidates->Fill(kHFStepAcceptanceTrackable, mcParticle.pt(), mass, true, mcParticle.originGen());
         } else {
-          LOGP(debug, "Candidate {} not in acceptance but tracked.", mcParticle.globalIndex()); 
+          LOGP(debug, "Candidate {} not in acceptance but tracked.", mcParticle.globalIndex());
           LOGP(debug, "MC cascade: pt={} eta={}", cascade.pt(), cascade.eta());
           LOGP(debug, "MC pion<--charm baryon: pt={} eta={}", pion.pt(), pion.eta());
         }
