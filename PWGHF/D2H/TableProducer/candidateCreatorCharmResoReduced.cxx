@@ -62,7 +62,7 @@ struct HfCandidateCreatorCharmResoReduced {
   // Produces: Tables with resonance info
   Produces<aod::HfCandCharmReso> rowCandidateReso;
 
-    // Configurables
+  // Configurables
   Configurable<double> invMassWindowD{"invMassWindowD", 0.5, "invariant-mass window for D candidates (GeV/c2)"};
   Configurable<double> invMassWindowV0{"invMassWindowV0", 0.5, "invariant-mass window for V0 candidates (GeV/c2)"};
   // QA switch
@@ -147,7 +147,7 @@ struct HfCandidateCreatorCharmResoReduced {
         invMassV0 = candV0.invMassAntiLambda();
         targetV0Type = V0Type::AntiLambda;
       }
-      if (!TESTBIT(candV0.v0Type(),targetV0Type)) {
+      if (!TESTBIT(candV0.v0Type(), targetV0Type)) {
         return false;
       }
     }
@@ -232,8 +232,8 @@ struct HfCandidateCreatorCharmResoReduced {
   } // main function
 
   void processDs2StarToDplusK0s(aod::HfRedCollisions::iterator const& collision,
-                               aod::HfRed3PrNoTrks const& candsD,
-                               aod::HfRedVzeros const& candsV0)
+                                aod::HfRed3PrNoTrks const& candsD,
+                                aod::HfRedVzeros const& candsV0)
   {
     runCandidateCreation<DecayChannel::Ds2StarToDplusK0s>(collision, candsD, candidatesK0s);
   }

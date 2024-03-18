@@ -157,7 +157,7 @@ struct HfDataCreatorCharmResoReduced {
   /// \param v0 is the v0 candidate
   /// \param collision is the current collision
   /// \param dauTracks are the v0 daughter tracks
-  /// \param dDaughtersIDs are the IDs of the D meson daughter tracks 
+  /// \param dDaughtersIDs are the IDs of the D meson daughter tracks
   /// \return a bitmap with mass hypotesis if passes all cuts
   template <typename V0, typename Coll, typename Tr>
   inline uint8_t getSelectionMapV0(const V0& v0, const Coll& collision, const std::array<Tr, 2>& dauTracks, const std::array<int, 3>& dDaughtersIDs)
