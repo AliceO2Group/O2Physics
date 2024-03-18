@@ -544,6 +544,7 @@ struct HfCandidateCreatorXic {
 
 /// Performs MC matching.
 struct HfCandidateCreatorXicMc {
+  Spawns<aod::HfCandXicExt> rowCandXicToXiPiPi;
   Produces<aod::HfCandXicMcRec> rowMcMatchRec;
   Produces<aod::HfCandXicMcGen> rowMcMatchGen;
 
