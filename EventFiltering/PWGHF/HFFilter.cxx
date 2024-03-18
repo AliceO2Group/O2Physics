@@ -695,7 +695,7 @@ struct HfFilter { // Main struct for HF triggers
                   if (TESTBIT(selD0, 1)) {
                     massXicStarBarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecV0}, std::array{massKa, massPi, massLambda});
                     massDiffXicStarBarCand = massXicStarBarCand - massD0BarCand;
-                    isRightSignXicStarBar = TESTBIT(selV0, kLambda); // right sign if AntiLambda
+                    isRightSignXicStarBar = TESTBIT(selV0, kAntiLambda); // right sign if AntiLambda
                   }
                   bool isGoodXicStar = (cutsPtDeltaMassCharmReso->get(0u, 5u) < massDiffXicStarCand && massDiffXicStarCand < cutsPtDeltaMassCharmReso->get(1u, 5u));
                   bool isGoodXicStarBar = (cutsPtDeltaMassCharmReso->get(0u, 5u) < massDiffXicStarBarCand && massDiffXicStarBarCand < cutsPtDeltaMassCharmReso->get(1u, 5u));
