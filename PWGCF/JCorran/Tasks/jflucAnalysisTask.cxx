@@ -34,8 +34,30 @@ using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
+namespace o2::aod
+{
+namespace jweight
+{
+DECLARE_SOA_COLUMN(WeightNUA, weightNUA, float); //! Non-uniform acceptance weight
+DECLARE_SOA_COLUMN(WeightEff, weightEff, float); //! Non-uniform efficiency weight
+} // namespace cfmultiplicity
+DECLARE_SOA_TABLE(JWeights, "AOD", "JWEIGHT", jweight::WeightNUA, jweight::WeightEff); //! JFluc table for weights
+} // namespace o2::aod
+
+struct jflucWeightsLoader {
+  //
+	Produces<aod::JWeights> output;
+  void processLoadWeights(aod::JCollision const& collision, aod::JTracks const& tracks){
+  	//In the future, this will do the job of weight loading
+	for(auto &track : tracks){
+		(void)track;
+		output(1.0f,1.0f);
+	}
+	}
+    PROCESS_SWITCH(jflucWeightsLoader, processLoadWeights, "Load weights histograms", true);
+};
+
 struct jflucAnalysisTask {
- public:
   ~jflucAnalysisTask()
   {
     delete pcf;
@@ -50,24 +72,22 @@ struct jflucAnalysisTask {
   {
     //
     pcf = new JFFlucAnalysis("jflucAnalysis");
-    pcf->SetNumBins(sizeof(jflucCentBins) / sizeof(jflucCentBins[0]));
+    //pcf->SetNumBins(sizeof(jflucCentBins) / sizeof(jflucCentBins[0]));
+    pcf->SetNumBins(5);
     pcf->AddFlags(JFFlucAnalysis::kFlucEbEWeighting);
 
     output->cd();
     pcf->UserCreateOutputObjects();
   }
 
-  void process(soa::Join<aod::Collisions, aod::CollisionData>::iterator const& collision, aod::ParticleTrack const& tracks)
+  //void process(soa::Join<aod::Collisions, aod::CollisionData>::iterator const& collision, aod::ParticleTrack const& tracks)
+  void process(aod::JCollision const& collision, soa::Join<aod::JTracks, aod::JWeights> const& tracks)
   {
-    if (tracks.size() == 0)
-      return; // rejected event
-
-    const double fVertex[3] = {collision.posX(), collision.posY(), collision.posZ()};
-
+    const double fVertex[3] = {0.0f, 0.0f, collision.posZ()}; //TODO: check if posX/Y is really needed
     pcf->Init();
-    pcf->FillQA<const aod::ParticleTrack>(tracks);
-    pcf->CalculateQvectorsQC<const aod::ParticleTrack>(tracks);
-    pcf->SetEventCentralityAndBin(collision.cent(), collision.cbin());
+    pcf->FillQA(tracks);
+    pcf->CalculateQvectorsQC(tracks);
+    //pcf->SetEventCentralityAndBin(collision.cent(), collision.cbin());
     pcf->SetEventVertex(fVertex);
     pcf->SetEtaRange(etamin, etamax);
     pcf->UserExec("");
@@ -78,5 +98,6 @@ struct jflucAnalysisTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
+    adaptAnalysisTask<jflucWeightsLoader>(cfgc),
     adaptAnalysisTask<jflucAnalysisTask>(cfgc)};
 }
