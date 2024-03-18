@@ -958,10 +958,30 @@ struct DptDptCorrelationsTask {
     /* locate the data collecting engine for the collision centrality/multiplicity */
     int ixDCE = getDCEindex(collision);
     if (!(ixDCE < 0)) {
-      if (ccdblst != nullptr && !(dataCE[ixDCE]->isCCDBstored())) {
+      auto isCCDBstored = [&]() {
+        if (cfgSmallDCE.value) {
+          return dataCE_small[ixDCE]->isCCDBstored();
+        } else {
+          return dataCE[ixDCE]->isCCDBstored();
+        }
+      };
+      auto storePtAverages = [&](auto& ptavgs) {
+        if (cfgSmallDCE.value) {
+          dataCE_small[ixDCE]->storePtAverages(ptavgs);
+        } else {
+          dataCE[ixDCE]->storePtAverages(ptavgs);
+        }
+      };
+      auto storeTrackCorrections = [&](auto& corrs) {
+        if (cfgSmallDCE.value) {
+          dataCE_small[ixDCE]->storeTrackCorrections(corrs);
+        } else {
+          dataCE[ixDCE]->storeTrackCorrections(corrs);
+        }
+      };
+      if (ccdblst != nullptr && !(isCCDBstored())) {
         if constexpr (gen) {
           std::vector<TH2*> ptavgs{tnames.size(), nullptr};
-          bool present = false;
           for (uint isp = 0; isp < tnames.size(); ++isp) {
             ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
               TString::Format("trueptavgetaphi_%02d-%02d_%s",
@@ -969,26 +989,10 @@ struct DptDptCorrelationsTask {
                               static_cast<int>(fCentMultMax[ixDCE]),
                               tnames[isp].c_str())
                 .Data()));
-            if (ptavgs[isp] != nullptr) {
-              present = true;
-            }
           }
-          if (present) {
-            if (cfgSmallDCE.value) {
-              dataCE_small[ixDCE]->storePtAverages(ptavgs);
-            } else {
-              dataCE[ixDCE]->storePtAverages(ptavgs);
-            }
-          } else {
-            if (cfgSmallDCE.value) {
-              dataCE_small[ixDCE]->ccdbstored = true;
-            } else {
-              dataCE[ixDCE]->ccdbstored = true;
-            }
-          }
+          storePtAverages(ptavgs);
         } else {
           std::vector<TH3*> corrs{tnames.size(), nullptr};
-          bool present = false;
           for (uint isp = 0; isp < tnames.size(); ++isp) {
             corrs[isp] = reinterpret_cast<TH3*>(ccdblst->FindObject(
               TString::Format("correction_%02d-%02d_%s",
@@ -996,26 +1000,9 @@ struct DptDptCorrelationsTask {
                               static_cast<int>(fCentMultMax[ixDCE]),
                               tnames[isp].c_str())
                 .Data()));
-            if (corrs[isp] != nullptr) {
-              present = true;
-            }
           }
-          if (present) {
-            if (cfgSmallDCE.value) {
-              dataCE_small[ixDCE]->storeTrackCorrections(corrs);
-            } else {
-              dataCE[ixDCE]->storeTrackCorrections(corrs);
-            }
-          } else {
-            if (cfgSmallDCE.value) {
-              dataCE_small[ixDCE]->ccdbstored = true;
-            } else {
-              dataCE[ixDCE]->ccdbstored = true;
-            }
-          }
-
+          storeTrackCorrections(corrs);
           std::vector<TH2*> ptavgs{tnames.size(), nullptr};
-          present = false;
           for (uint isp = 0; isp < tnames.size(); ++isp) {
             ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
               TString::Format("ptavgetaphi_%02d-%02d_%s",
@@ -1023,23 +1010,8 @@ struct DptDptCorrelationsTask {
                               static_cast<int>(fCentMultMax[ixDCE]),
                               tnames[isp].c_str())
                 .Data()));
-            if (ptavgs[isp] != nullptr) {
-              present = true;
-            }
           }
-          if (present) {
-            if (cfgSmallDCE.value) {
-              dataCE_small[ixDCE]->storePtAverages(ptavgs);
-            } else {
-              dataCE[ixDCE]->storePtAverages(ptavgs);
-            }
-          } else {
-            if (cfgSmallDCE.value) {
-              dataCE_small[ixDCE]->ccdbstored = true;
-            } else {
-              dataCE[ixDCE]->ccdbstored = true;
-            }
-          }
+          storePtAverages(ptavgs);
         }
       }
 
@@ -1084,7 +1056,6 @@ struct DptDptCorrelationsTask {
       if (ccdblst != nullptr && !(dataCEME[ixDCE]->isCCDBstored())) {
         if constexpr (gen) {
           std::vector<TH2*> ptavgs{tnames.size(), nullptr};
-          bool present = false;
           for (uint isp = 0; isp < tnames.size(); ++isp) {
             ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
               TString::Format("trueptavgetaphi_%02d-%02d_%s",
@@ -1092,17 +1063,9 @@ struct DptDptCorrelationsTask {
                               static_cast<int>(fCentMultMax[ixDCE]),
                               tnames[isp].c_str())
                 .Data()));
-            if (ptavgs[isp] != nullptr) {
-              present = true;
-            }
           }
-          if (present) {
-            dataCEME[ixDCE]->storePtAverages(ptavgs);
-          } else {
-            dataCEME[ixDCE]->ccdbstored = true;
-          }
+          dataCEME[ixDCE]->storePtAverages(ptavgs);
         } else {
-          bool present = false;
           std::vector<TH3*> corrs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
             corrs[isp] = reinterpret_cast<TH3*>(ccdblst->FindObject(
@@ -1111,16 +1074,8 @@ struct DptDptCorrelationsTask {
                               static_cast<int>(fCentMultMax[ixDCE]),
                               tnames[isp].c_str())
                 .Data()));
-            if (corrs[isp] != nullptr) {
-              present = true;
-            }
           }
-          if (present) {
-            dataCEME[ixDCE]->storeTrackCorrections(corrs);
-          } else {
-            dataCEME[ixDCE]->ccdbstored = true;
-          }
-          present = false;
+          dataCEME[ixDCE]->storeTrackCorrections(corrs);
           std::vector<TH2*> ptavgs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
             ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
@@ -1129,15 +1084,8 @@ struct DptDptCorrelationsTask {
                               static_cast<int>(fCentMultMax[ixDCE]),
                               tnames[isp].c_str())
                 .Data()));
-            if (ptavgs[isp] != nullptr) {
-              present = true;
-            }
           }
-          if (present) {
-            dataCEME[ixDCE]->storePtAverages(ptavgs);
-          } else {
-            dataCEME[ixDCE]->ccdbstored = true;
-          }
+          dataCEME[ixDCE]->storePtAverages(ptavgs);
         }
       }
 
