@@ -803,6 +803,7 @@ struct derivedlambdakzeroanalysis {
     }
 
     histos.fill(HIST("hEventCentrality"), centrality);    
+    
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
 
     // __________________________________________
@@ -856,6 +857,7 @@ struct derivedlambdakzeroanalysis {
     }
 
     histos.fill(HIST("hEventCentrality"), centrality);
+
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
 
     // __________________________________________
