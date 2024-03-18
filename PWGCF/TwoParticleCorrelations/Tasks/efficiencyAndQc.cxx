@@ -43,17 +43,6 @@ using namespace o2::framework::expressions;
 
 namespace efficiencyandqatask
 {
-// initialized during self configuration
-int ptbins = 0;
-float ptlow = 0.0f;
-float ptup = 0.0f;
-int etabins = 0;
-float etalow = 0.0f;
-float etaup = 0.0f;
-int zvtxbins = 0;
-float zvtxlow = 0.0f;
-float zvtxup = 0.0f;
-
 /// \enum KindOfProcessQA
 /// \brief The kind of processing for templating the procedures
 enum KindOfProcess {
@@ -71,15 +60,21 @@ enum BeforeAfter {
 // initialized during self configuration
 std::vector<std::string> poinames; ///< the species of interest names
 std::vector<std::string> tnames;   ///< the track names
-} // namespace efficiencyandqatask
 
+static const std::vector<o2::track::PID::ID> allmainspecies{o2::track::PID::Electron, o2::track::PID::Muon, o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton};
+static const std::vector<std::string> allmainspnames{"ElectronP", "ElectronM", "MuonP", "MuonM", "PionP", "PionM", "KaonP", "KaonM", "ProtonP", "ProtonM"};
 static const std::vector<o2::track::PID::ID> mainspecies{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton};
 static const std::vector<std::string> mainspnames{"PionP", "PionM", "KaonP", "KaonM", "ProtonP", "ProtonM"};
+static const std::vector<int> pdgcodes = {11, 13, 211, 321, 2212};
 static const std::vector<std::string> mainsptitles{"#pi^{#plus}", "#pi^{#minus}", "K^{#plus}", "K^{#minus}", "p", "#bar{p}"};
+static const std::vector<std::string> allmainsptitles{"e^{#plus}", "e^{#minus}", "#mu^{#plus}", "#mu^{#minus}", "#pi^{#plus}", "#pi^{#minus}", "K^{#plus}", "K^{#minus}", "p", "#bar{p}"};
+} // namespace efficiencyandqatask
 
 /* the QA data collecting engine */
 struct QADataCollectingEngine {
-  size_t nsp = efficiencyandqatask::tnames.size();
+  uint nsp = static_cast<uint>(efficiencyandqatask::tnames.size());
+  uint nmainsp = static_cast<uint>(efficiencyandqatask::mainspnames.size());
+  uint nallmainsp = static_cast<uint>(efficiencyandqatask::allmainspnames.size());
 
   //===================================================
   // The QA output objects
@@ -93,6 +88,12 @@ struct QADataCollectingEngine {
   std::vector<std::vector<std::shared_ptr<TH1>>> fhPtA{2, {nsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaA{2, {nsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_ZvtxA{2, {nsp, nullptr}};
+  std::shared_ptr<TH2> fhPt_vs_EtaItsAcc{nullptr};
+  std::shared_ptr<TH2> fhPt_vs_EtaTpcAcc{nullptr};
+  std::shared_ptr<TH2> fhPt_vs_EtaItsTpcAcc{nullptr};
+  std::shared_ptr<TH2> fhPt_vs_EtaItsTofAcc{nullptr};
+  std::shared_ptr<TH2> fhPt_vs_EtaTpcTofAcc{nullptr};
+  std::shared_ptr<TH2> fhPt_vs_EtaItsTpcTofAcc{nullptr};
   std::vector<std::shared_ptr<TH2>> fhPt_vs_EtaItsA{nsp, nullptr};
   std::vector<std::shared_ptr<TH2>> fhPt_vs_EtaTpcA{nsp, nullptr};
   std::vector<std::shared_ptr<TH2>> fhPt_vs_EtaItsTpcA{nsp, nullptr};
@@ -102,14 +103,20 @@ struct QADataCollectingEngine {
   /* primaries and secondaries */
   /* overall, first index detector level second index generator level */
   /* detailed, first index detector level, second index associated particle */
+  std::shared_ptr<TH3> fhPtPurityPosPrimA{nullptr};
+  std::shared_ptr<TH3> fhPtPurityNegPrimA{nullptr};
   std::vector<std::shared_ptr<TH2>> fhPt_vs_EtaPrimA{nsp, nullptr};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaPrimItsA{2, {nsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaPrimItsTpcA{2, {nsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaPrimItsTpcTofA{2, {nsp, nullptr}};
+  std::shared_ptr<TH3> fhPtPurityPosSecA{nullptr};
+  std::shared_ptr<TH3> fhPtPurityNegSecA{nullptr};
   std::vector<std::shared_ptr<TH2>> fhPt_vs_EtaSecA{nsp, nullptr};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaSecItsA{2, {nsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaSecItsTpcA{2, {nsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaSecItsTpcTofA{2, {nsp, nullptr}};
+  std::shared_ptr<TH3> fhPtPurityPosMatA{nullptr};
+  std::shared_ptr<TH3> fhPtPurityNegMatA{nullptr};
   std::vector<std::shared_ptr<TH2>> fhPt_vs_EtaMatA{nsp, nullptr};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaMatItsA{2, {nsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhPt_vs_EtaMatItsTpcA{2, {nsp, nullptr}};
@@ -138,6 +145,7 @@ struct QADataCollectingEngine {
   void init(HistogramRegistry& registry, const char* dirname)
   {
     using namespace efficiencyandqatask;
+    using namespace analysis::dptdptfilter;
 
     const AxisSpec ptAxis{ptbins, ptlow, ptup, "#it{p}_{T} (GeV/c)"};
     const AxisSpec etaAxis{etabins, etalow, etaup, "#eta"};
@@ -173,6 +181,13 @@ struct QADataCollectingEngine {
       fhTPC_CrossedRows_vs_PtB = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "Before"), "TPCXrows", "TPC crossed rows", kTH2F, {ptAxis, tpcNRowsAxis});
       fhTPC_CrossedRowsOverFindableCls_vs_PtB = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "Before"), "XRowsOverFindableCls", "TPC xrows over findable clusters", kTH2F, {ptAxis, tpcXRowsOverFindClsAxis});
       fhTPC_Chi2NCls_vs_PtB = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "Before"), "TPCChi2NCls", "TPC #Chi^{2}", kTH2F, {ptAxis, tpcCh2Axis});
+      /* efficiency histograms */
+      fhPt_vs_EtaItsAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptItsAcc", "ITS tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
+      fhPt_vs_EtaTpcAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptTpcAcc", "TPC tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
+      fhPt_vs_EtaItsTpcAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptItsTpcAcc", "ITS&TPC tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
+      fhPt_vs_EtaItsTofAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptItsTofAcc", "ITS&TOF tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
+      fhPt_vs_EtaTpcTofAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptTpcTofAcc", "TPC&TOF tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
+      fhPt_vs_EtaItsTpcTofAcc = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), "ptItsTpcTofAcc", "ITS&TPC&TOF tracks within the acceptance", kTH2F, {etaAxis, ptAxis});
       for (uint isp = 0; isp < nsp; ++isp) {
         fhITS_NCls_vs_PtA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "After"), HNAMESTRING("ITSNCls_%s", tnames[isp].c_str()), HTITLESTRING("ITS clusters %s", tnames[isp].c_str()), kTH2F, {ptAxis, itsNClsAxis});
         fhITS_Chi2NCls_vs_PtA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Reco", "After"), HNAMESTRING("ITSChi2NCls_%s", tnames[isp].c_str()), HTITLESTRING("ITS #Chi^{2} %s", tnames[isp].c_str()), kTH2F, {ptAxis, itsCh2Axis});
@@ -192,6 +207,14 @@ struct QADataCollectingEngine {
         fhPt_vs_EtaItsTpcTofA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Reco"), HNAMESTRING("ptItsTpcTof_%s", tnames[isp].c_str()), HTITLESTRING("ITS&TPC&TOF %s tracks", tnames[isp].c_str()), kTH2F, {etaAxis, ptAxis});
       }
     } else {
+      AxisSpec recoSpecies{static_cast<int>(nsp) + 1, -0.5, nsp - 0.5, "reco species"};
+      AxisSpec trueSpecies{static_cast<int>(nmainsp) + 1, -0.5, nmainsp + 0.5, "true species"};
+      fhPtPurityPosPrimA = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s", dirname, "Purity"), "ptPurityPosPrim", "Primaries for reconstructed positive", kTH3F, {recoSpecies, trueSpecies, ptAxis});
+      fhPtPurityNegPrimA = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s", dirname, "Purity"), "ptPurityNegPrim", "Primaries for reconstructed negative", kTH3F, {recoSpecies, trueSpecies, ptAxis});
+      fhPtPurityPosSecA = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s", dirname, "Purity"), "ptPurityPosSec", "Secondaries for reconstructed positive", kTH3F, {recoSpecies, trueSpecies, ptAxis});
+      fhPtPurityNegSecA = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s", dirname, "Purity"), "ptPurityNegSec", "Secondaries for reconstructed negative", kTH3F, {recoSpecies, trueSpecies, ptAxis});
+      fhPtPurityPosMatA = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s", dirname, "Purity"), "ptPurityPosMat", "Secondaries from material for reconstructed positive", kTH3F, {recoSpecies, trueSpecies, ptAxis});
+      fhPtPurityNegMatA = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s", dirname, "Purity"), "ptPurityNegMat", "Secondaries from material for reconstructed negative", kTH3F, {recoSpecies, trueSpecies, ptAxis});
       for (uint isp = 0; isp < nsp; ++isp) {
         /* detector level and generator level histograms */
         fhPt_vs_EtaPrimA[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "Efficiency", "Gen"),
@@ -254,6 +277,8 @@ struct QADataCollectingEngine {
   void processTrack(float zvtx, TrackObject const& track)
   {
     using namespace efficiencyandqatask;
+    using namespace analysis::dptdptfilter;
+    using namespace o2::aod::track;
 
     fhPtB[kind]->Fill(track.pt());
     fhPt_vs_EtaB[kind]->Fill(track.eta(), track.pt());
@@ -264,9 +289,14 @@ struct QADataCollectingEngine {
       fhPt_vs_ZvtxA[kind][track.trackacceptedid()]->Fill(zvtx, track.pt());
     }
     if constexpr (kind == kReco) {
-      bool hasits = track.hasITS();
-      bool hastpc = track.hasTPC();
-      bool hastof = track.hasTOF();
+      auto fillhisto = [&track](auto& h, bool cond) {
+        if (cond) {
+          h->Fill(track.eta(), track.pt());
+        }
+      };
+      bool hasits = track.hasITS() && ((track.trackCutFlag() & trackSelectionITS) == trackSelectionITS) && ((track.trackCutFlag() & trackSelectionDCA) == trackSelectionDCA);
+      bool hastpc = track.hasTPC() && ((track.trackCutFlag() & trackSelectionTPC) == trackSelectionTPC) && ((track.trackCutFlag() & trackSelectionDCA) == trackSelectionDCA);
+      bool hastof = track.hasTOF() && ((track.trackCutFlag() & trackSelectionDCA) == trackSelectionDCA);
 
       fhITS_NCls_vs_PtB->Fill(track.pt(), track.itsNCls());
       fhITS_Chi2NCls_vs_PtB->Fill(track.pt(), track.itsChi2NCl());
@@ -277,7 +307,15 @@ struct QADataCollectingEngine {
       fhTPC_CrossedRows_vs_PtB->Fill(track.pt(), track.tpcNClsCrossedRows());
       fhTPC_CrossedRowsOverFindableCls_vs_PtB->Fill(track.pt(), track.tpcCrossedRowsOverFindableCls());
       fhTPC_Chi2NCls_vs_PtB->Fill(track.pt(), track.tpcChi2NCl());
-
+      if (InTheAcceptance(track)) {
+        /* efficiency histograms */
+        fillhisto(fhPt_vs_EtaItsAcc, hasits);
+        fillhisto(fhPt_vs_EtaTpcAcc, hastpc);
+        fillhisto(fhPt_vs_EtaItsTpcAcc, hasits && hastpc);
+        fillhisto(fhPt_vs_EtaItsTofAcc, hasits && hastof);
+        fillhisto(fhPt_vs_EtaTpcTofAcc, hastpc && hastof);
+        fillhisto(fhPt_vs_EtaItsTpcTofAcc, hasits && hastpc && hastof);
+      }
       if (!(track.trackacceptedid() < 0)) {
         fhITS_NCls_vs_PtA[track.trackacceptedid()]->Fill(track.pt(), track.itsNCls());
         fhITS_Chi2NCls_vs_PtA[track.trackacceptedid()]->Fill(track.pt(), track.itsChi2NCl());
@@ -289,11 +327,6 @@ struct QADataCollectingEngine {
         fhTPC_CrossedRowsOverFindableCls_vs_PtA[track.trackacceptedid()]->Fill(track.pt(), track.tpcCrossedRowsOverFindableCls());
         fhTPC_Chi2NCls_vs_PtA[track.trackacceptedid()]->Fill(track.pt(), track.tpcChi2NCl());
         /* efficiency histograms */
-        auto fillhisto = [&track](auto& h, bool cond) {
-          if (cond) {
-            h->Fill(track.eta(), track.pt());
-          }
-        };
         fillhisto(fhPt_vs_EtaItsA[track.trackacceptedid()], hasits);
         fillhisto(fhPt_vs_EtaTpcA[track.trackacceptedid()], hastpc);
         fillhisto(fhPt_vs_EtaItsTpcA[track.trackacceptedid()], hasits && hastpc);
@@ -302,13 +335,35 @@ struct QADataCollectingEngine {
         fillhisto(fhPt_vs_EtaItsTpcTofA[track.trackacceptedid()], hasits && hastpc && hastof);
         /* the detector / generator combined level */
         if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
+          auto findgenid = [&](auto& part) {
+            int pdgcode = std::abs(part.pdgCode());
+            for (uint ix = 0; ix < pdgcodes.size(); ++ix) {
+              if (pdgcode == pdgcodes[ix]) {
+                return ix;
+              }
+            }
+            return static_cast<uint>(pdgcodes.size());
+          };
+          auto fillpurityhistos = [](auto& hpos, auto& hneg, auto& genid, auto& track, bool cond) {
+            if (cond) {
+              if (track.sign() > 0) {
+                hpos->Fill(static_cast<int>(track.trackacceptedid() / 2), genid, track.pt());
+              } else {
+                hneg->Fill(static_cast<int>(track.trackacceptedid() / 2), genid, track.pt());
+              }
+            }
+          };
           /* get the associated MC particle we are sure it does exist because the track was accepted */
           const auto& mcparticle = track.template mcParticle_as<soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo>>();
+          float genid = findgenid(mcparticle);
 
-          /* TODO: what if the id of the generated is not the same as the id of the reconstructed */
           bool isprimary = mcparticle.isPhysicalPrimary();
           bool issecdecay = !isprimary && (mcparticle.getProcess() == 4);
           bool isfrommaterial = !isprimary && !issecdecay;
+          fillpurityhistos(fhPtPurityPosPrimA, fhPtPurityNegPrimA, genid, track, isprimary);
+          fillpurityhistos(fhPtPurityPosSecA, fhPtPurityNegSecA, genid, track, issecdecay);
+          fillpurityhistos(fhPtPurityPosMatA, fhPtPurityNegMatA, genid, track, isfrommaterial);
+
           auto fillhisto = [](auto& h, float pt, float eta, bool cond1, bool cond2) {
             if (cond1 && cond2) {
               h->Fill(eta, pt);
@@ -347,27 +402,28 @@ struct QADataCollectingEngine {
 
 /* the PID data collecting engine */
 struct PidDataCollectingEngine {
-  size_t nsp = efficiencyandqatask::tnames.size();
-  size_t nmainsp = mainspnames.size();
+  uint nsp = static_cast<uint>(efficiencyandqatask::tnames.size());
+  uint nmainsp = static_cast<uint>(efficiencyandqatask::mainspnames.size());
+  uint nallmainsp = static_cast<uint>(efficiencyandqatask::allmainspnames.size());
 
   /* PID histograms */
   /* before and after */
   std::vector<std::shared_ptr<TH2>> fhTPCdEdxSignalVsP{2, nullptr};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhTPCdEdxSignalDiffVsP{2, {nmainsp, nullptr}};
-  std::vector<std::vector<std::shared_ptr<TH2>>> fhTPCnSigmasVsP{2, {nmainsp, nullptr}};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhTPCnSigmasVsP{2, {nallmainsp, nullptr}};
   std::vector<std::shared_ptr<TH2>> fhTOFSignalVsP{2, nullptr};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhTOFSignalDiffVsP{2, {nmainsp, nullptr}};
-  std::vector<std::vector<std::shared_ptr<TH2>>> fhTOFnSigmasVsP{2, {nmainsp, nullptr}};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhTOFnSigmasVsP{2, {nallmainsp, nullptr}};
   std::vector<std::shared_ptr<TH2>> fhPvsTOFSqMass{2, nullptr};
   std::vector<std::vector<std::shared_ptr<TH3>>> fhTPCTOFSigmaVsP{2, {nmainsp, nullptr}};
   /* PID histograms */
   /* only after track selection */
   std::vector<std::shared_ptr<TH2>> fhIdTPCdEdxSignalVsP{nsp, nullptr};
-  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTPCdEdxSignalDiffVsP{nsp, {nsp, nullptr}};
-  std::vector<std::shared_ptr<TH2>> fhIdTPCnSigmasVsP{nsp, nullptr};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTPCdEdxSignalDiffVsP{nsp, {nmainsp, nullptr}};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTPCnSigmasVsP{nsp, {nallmainsp, nullptr}};
   std::vector<std::shared_ptr<TH2>> fhIdTOFSignalVsP{nsp, nullptr};
-  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTOFSignalDiffVsP{nsp, {nsp, nullptr}};
-  std::vector<std::shared_ptr<TH2>> fhIdTOFnSigmasVsP{nsp, nullptr};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTOFSignalDiffVsP{nsp, {nmainsp, nullptr}};
+  std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTOFnSigmasVsP{nsp, {nallmainsp, nullptr}};
   std::vector<std::shared_ptr<TH2>> fhIdPvsTOFSqMass{nsp, nullptr};
 
   template <efficiencyandqatask::KindOfProcess kind>
@@ -401,25 +457,67 @@ struct PidDataCollectingEngine {
                                                          HNAMESTRING("tpcSignalDiffVsP%c_%s", whenprefix[ix], mainspnames[isp].c_str()),
                                                          HTITLESTRING("TPC dE/dx to the %s line %s", mainsptitles[isp].c_str(), whentitle[ix].c_str()),
                                                          kTH2F, {pidPAxis, {400, -200.0, 200.0, FORMATSTRING("dE/dx - <dE/dx>_{%s}", mainsptitles[isp].c_str())}});
-          fhTPCnSigmasVsP[ix][isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
-                                                  HNAMESTRING("tpcNSigmasVsP%c_%s", whenprefix[ix], mainspnames[isp].c_str()),
-                                                  HTITLESTRING("TPC n#sigma to the %s line %s", mainsptitles[isp].c_str(), whentitle[ix].c_str()),
-                                                  kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", mainsptitles[isp].c_str())}});
           fhTOFSignalDiffVsP[ix][isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
                                                      HNAMESTRING("tofSignalDiffVsP%c_%s", whenprefix[ix], mainspnames[isp].c_str()),
                                                      HTITLESTRING("#Delta^{TOF_{%s}} %s", mainsptitles[isp].c_str(), whentitle[ix].c_str()),
                                                      kTH2F, {pidPAxis, {200, -1000.0, 1000.0, FORMATSTRING("t-t_{ev}-t_{exp_{%s}} (ps)", mainsptitles[isp].c_str())}});
-          fhTOFnSigmasVsP[ix][isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
-                                                  HNAMESTRING("tofNSigmasVsP%c_%s", whenprefix[ix], mainspnames[isp].c_str()),
-                                                  HTITLESTRING("TOF n#sigma to the %s line %s", mainsptitles[isp].c_str(), whentitle[ix].c_str()),
-                                                  kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", mainsptitles[isp].c_str())}});
           fhTPCTOFSigmaVsP[ix][isp] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
                                                    HNAMESTRING("toftpcNSigmasVsP%c_%s", whenprefix[ix], mainspnames[isp].c_str()),
                                                    HTITLESTRING("n#sigma to the %s line %s", mainsptitles[isp].c_str(), whentitle[ix].c_str()),
                                                    kTH3F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", mainsptitles[isp].c_str())}, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", mainsptitles[isp].c_str())}});
         }
+        for (uint isp = 0; isp < nallmainsp; ++isp) {
+          fhTPCnSigmasVsP[ix][isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
+                                                  HNAMESTRING("tpcNSigmasVsP%c_%s", whenprefix[ix], allmainspnames[isp].c_str()),
+                                                  HTITLESTRING("TPC n#sigma to the %s line %s", allmainsptitles[isp].c_str(), whentitle[ix].c_str()),
+                                                  kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", allmainsptitles[isp].c_str())}});
+          fhTOFnSigmasVsP[ix][isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
+                                                  HNAMESTRING("tofNSigmasVsP%c_%s", whenprefix[ix], allmainspnames[isp].c_str()),
+                                                  HTITLESTRING("TOF n#sigma to the %s line %s", allmainsptitles[isp].c_str(), whentitle[ix].c_str()),
+                                                  kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", allmainsptitles[isp].c_str())}});
+        }
+      }
+      for (uint isp = 0; isp < nsp; ++isp) {
+        fhIdTPCdEdxSignalVsP[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
+                                                 HNAMESTRING("tpcSignalVsPSelected_%s", tnames[isp].c_str()),
+                                                 HTITLESTRING("TPC dE/dx for selected %s", tnames[isp].c_str()),
+                                                 kTH2F, {pidPAxis, dEdxAxis});
+        fhIdTOFSignalVsP[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
+                                             HNAMESTRING("tofSignalVsPSelected_%s", tnames[isp].c_str()),
+                                             HTITLESTRING("TOF signal for selected %s", tnames[isp].c_str()),
+                                             kTH2F, {pidPAxis, {200, 0.0, 1.1, "#beta"}});
+        for (uint imainsp = 0; imainsp < nallmainsp; ++imainsp) {
+          fhIdTPCnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
+                                                         HNAMESTRING("tpcNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), allmainspnames[imainsp].c_str()),
+                                                         HTITLESTRING("TPC n#sigma for selected %s to the %s line", tnames[isp].c_str(), allmainsptitles[imainsp].c_str()),
+                                                         kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", allmainsptitles[isp].c_str())}});
+          fhIdTOFnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
+                                                         HNAMESTRING("tofNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), allmainspnames[imainsp].c_str()),
+                                                         HTITLESTRING("TOF n#sigma for selected %s to the %s line", tnames[isp].c_str(), allmainsptitles[imainsp].c_str()),
+                                                         kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", allmainsptitles[isp].c_str())}});
+        }
       }
     }
+  }
+
+  template <o2::track::PID::ID id, typename TrackObject>
+  void fillAllSpeciesPID(uint ix, TrackObject const& track)
+  {
+    if (track.sign() < 0) {
+      ix = 2 * ix + 1;
+    } else {
+      ix = 2 * ix;
+    }
+    for (uint when = 0; when < 2; ++when) {
+      fhTPCnSigmasVsP[when][ix]->Fill(track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
+      fhTOFnSigmasVsP[when][ix]->Fill(track.p(), o2::aod::pidutils::tofNSigma<id>(track));
+      if (track.trackacceptedid() < 0) {
+        /* track not accepted */
+        return;
+      }
+    }
+    fhIdTPCnSigmasVsP[track.trackacceptedid()][ix]->Fill(track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
+    fhIdTOFnSigmasVsP[track.trackacceptedid()][ix]->Fill(track.p(), o2::aod::pidutils::tofNSigma<id>(track));
   }
 
   template <o2::track::PID::ID id, typename TrackObject>
@@ -432,13 +530,11 @@ struct PidDataCollectingEngine {
     }
     for (uint when = 0; when < 2; ++when) {
       fhTPCdEdxSignalDiffVsP[when][ix]->Fill(track.p(), o2::aod::pidutils::tpcExpSignalDiff<id>(track));
-      fhTPCnSigmasVsP[when][ix]->Fill(track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
       fhTOFSignalDiffVsP[when][ix]->Fill(track.p(), o2::aod::pidutils::tofExpSignalDiff<id>(track));
-      fhTOFnSigmasVsP[when][ix]->Fill(track.p(), o2::aod::pidutils::tofNSigma<id>(track));
       fhTPCTOFSigmaVsP[when][ix]->Fill(track.p(), o2::aod::pidutils::tpcNSigma<id>(track), o2::aod::pidutils::tofNSigma<id>(track));
       if (track.trackacceptedid() < 0) {
         /* track not accepted */
-        break;
+        return;
       }
     }
   }
@@ -452,9 +548,11 @@ struct PidDataCollectingEngine {
       fhPvsTOFSqMass[when]->Fill(track.mass() * track.mass(), track.p());
       if (track.trackacceptedid() < 0) {
         /* track not accepted */
-        break;
+        return;
       }
     }
+    fhIdTPCdEdxSignalVsP[track.trackacceptedid()]->Fill(track.p(), track.tpcSignal());
+    fhIdTOFSignalVsP[track.trackacceptedid()]->Fill(track.p(), track.beta());
   }
 
   template <efficiencyandqatask::KindOfProcess kind, typename TrackObject>
@@ -467,6 +565,11 @@ struct PidDataCollectingEngine {
       fillSpeciesPID<o2::track::PID::Pion>(0, track);
       fillSpeciesPID<o2::track::PID::Kaon>(1, track);
       fillSpeciesPID<o2::track::PID::Proton>(2, track);
+      fillAllSpeciesPID<o2::track::PID::Electron>(0, track);
+      fillAllSpeciesPID<o2::track::PID::Muon>(1, track);
+      fillAllSpeciesPID<o2::track::PID::Pion>(2, track);
+      fillAllSpeciesPID<o2::track::PID::Kaon>(3, track);
+      fillAllSpeciesPID<o2::track::PID::Proton>(4, track);
     }
   }
 };
@@ -501,12 +604,14 @@ struct DptDptEfficiencyAndQc {
   void init(o2::framework::InitContext& initContext)
   {
     using namespace efficiencyandqatask;
+    using namespace analysis::dptdptfilter;
 
     /* do nothing if not active */
     if (!doprocessDetectorLevelNotStored && !doprocessDetectorLevelNotStoredNoPID && !doprocessGeneratorLevelNotStored && !doprocessReconstructedNotStored && !doprocessReconstructedNotStoredNoPID) {
       return;
     }
 
+    fPDG = TDatabasePDG::Instance();
     /* Self configuration: requires dptdptfilter task in the workflow */
     {
       /* the binning */
@@ -675,7 +780,8 @@ struct DptDptEfficiencyAndQc {
 
   Filter onlyacceptedcollisions = (aod::dptdptfilter::collisionaccepted == uint8_t(true));
 
-  void processReconstructedNotStored(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision, soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, tpcPID, tofPID>& tracks)
+  void processReconstructedNotStored(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
+                                     soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::TrackSelection, tpcPID, tofPID>& tracks)
   {
     using namespace efficiencyandqatask;
 
@@ -684,7 +790,7 @@ struct DptDptEfficiencyAndQc {
   PROCESS_SWITCH(DptDptEfficiencyAndQc, processReconstructedNotStored, "Process reconstructed efficiency and QA for not stored derived data", false);
 
   void processDetectorLevelNotStored(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
-                                     soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, tpcPID, tofPID, aod::McTrackLabels>& tracks,
+                                     soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::TrackSelection, tpcPID, tofPID, aod::McTrackLabels>& tracks,
                                      soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo> const&)
   {
     using namespace efficiencyandqatask;
@@ -702,7 +808,8 @@ struct DptDptEfficiencyAndQc {
   }
   PROCESS_SWITCH(DptDptEfficiencyAndQc, processGeneratorLevelNotStored, "Process MC generator level efficiency and QA for not stored derived data", true);
 
-  void processReconstructedNotStoredNoPID(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision, soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo>& tracks)
+  void processReconstructedNotStoredNoPID(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
+                                          soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::TrackSelection>& tracks)
   {
     using namespace efficiencyandqatask;
 
@@ -711,7 +818,7 @@ struct DptDptEfficiencyAndQc {
   PROCESS_SWITCH(DptDptEfficiencyAndQc, processReconstructedNotStoredNoPID, "Process reconstructed efficiency and QA for not stored derived data", false);
 
   void processDetectorLevelNotStoredNoPID(soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>::iterator const& collision,
-                                          soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::McTrackLabels>& tracks,
+                                          soa::Join<aod::FullTracks, aod::DptDptCFTracksInfo, aod::TrackSelection, aod::McTrackLabels>& tracks,
                                           soa::Join<aod::McParticles, aod::DptDptCFGenTracksInfo> const&)
   {
     using namespace efficiencyandqatask;

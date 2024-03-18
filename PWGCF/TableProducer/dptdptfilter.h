@@ -11,8 +11,15 @@
 #ifndef PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
 #define PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
 
+#include <CCDB/BasicCCDBManager.h>
+#include <TList.h>
 #include <vector>
 #include <string>
+#include <iomanip>
+#include <iostream>
+#include <locale>
+#include <sstream>
+#include <map>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -102,12 +109,51 @@ int phibins = 72;
 float philow = 0.0;
 float phiup = constants::math::TwoPI;
 
+/* selection criteria from PWGMM */
+// default quality criteria for tracks with ITS contribution
+static constexpr o2::aod::track::TrackSelectionFlags::flagtype trackSelectionITS =
+  o2::aod::track::TrackSelectionFlags::kITSNCls | o2::aod::track::TrackSelectionFlags::kITSChi2NDF |
+  o2::aod::track::TrackSelectionFlags::kITSHits;
+
+// default quality criteria for tracks with TPC contribution
+static constexpr o2::aod::track::TrackSelectionFlags::flagtype trackSelectionTPC =
+  o2::aod::track::TrackSelectionFlags::kTPCNCls |
+  o2::aod::track::TrackSelectionFlags::kTPCCrossedRowsOverNCls |
+  o2::aod::track::TrackSelectionFlags::kTPCChi2NDF;
+
+// default standard DCA cuts
+static constexpr o2::aod::track::TrackSelectionFlags::flagtype trackSelectionDCA =
+  o2::aod::track::TrackSelectionFlags::kDCAz | o2::aod::track::TrackSelectionFlags::kDCAxy;
+
 int tracktype = 1;
 
 std::vector<TrackSelection*> trackFilters = {};
 bool dca2Dcut = false;
 float maxDCAz = 1e6f;
 float maxDCAxy = 1e6f;
+
+inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdate, const char* period = "")
+{
+  std::tm cfgtm = {};
+  std::stringstream ss(ccdbdate);
+  ss >> std::get_time(&cfgtm, "%Y%m%d");
+  cfgtm.tm_hour = 12;
+  int64_t timestamp = std::mktime(&cfgtm) * 1000;
+
+  TList* lst = nullptr;
+  if (std::strlen(period) != 0) {
+    std::map<std::string, std::string> metadata{{"Period", period}};
+    lst = ccdb->template getSpecific<TList>(ccdbpath, timestamp, metadata);
+  } else {
+    lst = ccdb->template getForTimeStamp<TList>(ccdbpath, timestamp);
+  }
+  if (lst != nullptr) {
+    LOGF(info, "Correctly loaded CCDB input object");
+  } else {
+    LOGF(error, "CCDB input object could not be loaded");
+  }
+  return lst;
+}
 
 inline void initializeTrackSelection()
 {
@@ -639,22 +685,6 @@ inline bool matchTrackType(TrackObject const& track)
 {
   using namespace o2::aod::track;
 
-  /* selection criteria from PWGMM */
-  // default quality criteria for tracks with ITS contribution
-  static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
-    TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
-    TrackSelectionFlags::kITSHits;
-
-  // default quality criteria for tracks with TPC contribution
-  static constexpr TrackSelectionFlags::flagtype trackSelectionTPC =
-    TrackSelectionFlags::kTPCNCls |
-    TrackSelectionFlags::kTPCCrossedRowsOverNCls |
-    TrackSelectionFlags::kTPCChi2NDF;
-
-  // default standard DCA cuts
-  static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
-    TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
-
   if (useOwnTrackSelection) {
     return ownTrackSelection.IsSelected(track);
   } else if (tracktype == 4) {
@@ -685,21 +715,32 @@ inline bool matchTrackType(TrackObject const& track)
   }
 }
 
-/// \brief Accepts or not the passed track
+/// \brief Checks if the passed track is within the acceptance conditions of the analysis
 /// \param track the track of interest
-/// \return true if the track is accepted, otherwise false
+/// \return true if the track is in the acceptance, otherwise false
 template <typename TrackObject>
-inline bool AcceptTrack(TrackObject const& track)
+inline bool InTheAcceptance(TrackObject const& track)
 {
-  /* TODO: incorporate a mask in the scanned tracks table for the rejecting track reason */
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
     if (track.mcParticleId() < 0) {
       return false;
     }
   }
 
-  if (matchTrackType(track)) {
-    if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
+  if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
+    return true;
+  }
+  return false;
+}
+
+/// \brief Accepts or not the passed track
+/// \param track the track of interest
+/// \return true if the track is accepted, otherwise false
+template <typename TrackObject>
+inline bool AcceptTrack(TrackObject const& track)
+{
+  if (InTheAcceptance(track)) {
+    if (matchTrackType(track)) {
       return true;
     }
   }
@@ -720,13 +761,24 @@ void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
   }
 }
 
+template <typename ParticleObject>
+inline float getCharge(ParticleObject& particle)
+{
+  float charge = 0.0;
+  TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
+  if (pdgparticle != nullptr) {
+    charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0);
+  }
+  return charge;
+}
+
 /// \brief Accepts or not the passed generated particle
 /// \param track the particle of interest
 /// \return `true` if the particle is accepted, `false` otherwise
 template <typename ParticleObject, typename MCCollisionObject>
 inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision)
 {
-  float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
+  float charge = getCharge(particle);
 
   if (particle.isPhysicalPrimary()) {
     if ((particle.mcCollisionId() == 0) && traceCollId0) {
@@ -769,6 +821,8 @@ struct PIDSpeciesSelection {
   const std::vector<std::string_view> spnames = {"e", "mu", "pi", "ka", "p"};
   const std::vector<std::string_view> sptitles = {"e", "#mu", "#pi", "K", "p"};
   const std::vector<std::string_view> spfnames = {"E", "Mu", "Pi", "Ka", "Pr"};
+  const std::vector<std::string_view> spadjnames = {"Electron", "Muon", "Pion", "Kaon", "Proton"};
+  const std::vector<std::string_view> chadjnames = {"P", "M"};
   const char* hadname = "h";
   const char* hadtitle = "h";
   const char* hadfname = "Ha";
@@ -779,6 +833,31 @@ struct PIDSpeciesSelection {
   const char* getHadName() { return hadname; }
   const char* getHadTitle() { return hadtitle; }
   const char* getHadFName() { return hadfname; }
+  void storePIDAdjustments(TList* lst)
+  {
+    auto storedetectorwithcharge = [&](auto& detectorstore, auto detectorname, auto charge) {
+      for (uint isp = 0; isp < spadjnames.size(); ++isp) {
+        TString fullhname = TString::Format("%s%s%s_Difference", detectorname, spadjnames[isp].data(), charge);
+        detectorstore[isp] = static_cast<TH1*>(lst->FindObject(fullhname.Data()));
+      }
+    };
+    auto reportadjdetectorwithcharge = [&](auto& detectorstore, auto detectorname, auto charge) {
+      for (uint isp = 0; isp < spadjnames.size(); ++isp) {
+        if (detectorstore[isp] != nullptr) {
+          LOGF(info, "Stored nsigmas adjust for detector %s and species %s%s in histogram %s", detectorname, spadjnames[isp].data(), charge, detectorstore[isp]->GetName());
+        }
+      }
+    };
+    storedetectorwithcharge(tpcnsigmasshiftpos, "TPC", "P");
+    storedetectorwithcharge(tofnsigmasshiftpos, "TOF", "P");
+    storedetectorwithcharge(tpcnsigmasshiftneg, "TPC", "M");
+    storedetectorwithcharge(tofnsigmasshiftneg, "TOF", "M");
+
+    reportadjdetectorwithcharge(tpcnsigmasshiftpos, "TPC", "P");
+    reportadjdetectorwithcharge(tofnsigmasshiftpos, "TOF", "P");
+    reportadjdetectorwithcharge(tpcnsigmasshiftneg, "TPC", "M");
+    reportadjdetectorwithcharge(tofnsigmasshiftneg, "TOF", "M");
+  }
   void Add(uint8_t sp, o2::analysis::TrackSelectionPIDCfg* incfg)
   {
     o2::analysis::TrackSelectionPIDCfg* cfg = new o2::analysis::TrackSelectionPIDCfg(*incfg);
@@ -886,10 +965,46 @@ struct PIDSpeciesSelection {
       return closeToTPC(config, sp) && awayFromTPC(config, sp);
     };
 
+    auto adjustnsigmas = [&]() {
+      if (track.sign() > 0) {
+        for (uint isp = 0; isp < spnames.size(); ++isp) {
+          if (tpcnsigmasshiftpos[isp] != nullptr) {
+            TH1* h = tpcnsigmasshiftpos[isp];
+            tpcnsigmas[isp] -= h->GetBinContent(h->GetXaxis()->FindFixBin(track.p()));
+          }
+          if (tofnsigmasshiftpos[isp] != nullptr) {
+            TH1* h = tofnsigmasshiftpos[isp];
+            tofnsigmas[isp] -= h->GetBinContent(h->GetXaxis()->FindFixBin(track.p()));
+          }
+        }
+      } else {
+        for (uint isp = 0; isp < spnames.size(); ++isp) {
+          if (tpcnsigmasshiftneg[isp] != nullptr) {
+            TH1* h = tpcnsigmasshiftneg[isp];
+            tpcnsigmas[isp] -= h->GetBinContent(h->GetXaxis()->FindFixBin(track.p()));
+          }
+          if (tofnsigmasshiftneg[isp] != nullptr) {
+            TH1* h = tofnsigmasshiftneg[isp];
+            tofnsigmas[isp] -= h->GetBinContent(h->GetXaxis()->FindFixBin(track.p()));
+          }
+        }
+      }
+    };
+
+    /* let's start discarding garbage */
+    if (track.hasTOF()) {
+      if (track.beta() < 0.42) {
+        return -127;
+      }
+    }
+
+    /* now adjust the nsigmas values if appropriate */
+    adjustnsigmas();
+
     /* let's first check the exclusion from the analysis */
     for (uint8_t ix = 0; ix < configexclude.size(); ++ix) {
       if (isA(configexclude[ix], speciesexclude[ix])) {
-        return -ix;
+        return -(ix + 1);
       }
     }
     /* we don't exclude it so check which species if any required */
@@ -918,7 +1033,7 @@ struct PIDSpeciesSelection {
     /* let's first check the exclusion from the analysis */
     for (uint8_t ix = 0; ix < configexclude.size(); ++ix) {
       if (pdgcode == pdgcodes[speciesexclude[ix]]) {
-        return -ix;
+        return -(ix + 1);
       }
     }
     /* we don't exclude it so check which species if any required */
@@ -933,10 +1048,15 @@ struct PIDSpeciesSelection {
       return 0;
     }
   }
+
   std::vector<const o2::analysis::TrackSelectionPIDCfg*> config;        ///< the PID selection configuration of the species to include in the analysis
   std::vector<uint8_t> species;                                         ///< the species index of the species to include in the analysis
   std::vector<const o2::analysis::TrackSelectionPIDCfg*> configexclude; ///< the PID selection configuration of the species to exclude from the analysis
   std::vector<uint8_t> speciesexclude;                                  ///< the species index of teh species to exclude from the analysis
+  std::vector<TH1*> tpcnsigmasshiftpos{spnames.size(), nullptr};
+  std::vector<TH1*> tpcnsigmasshiftneg{spnames.size(), nullptr};
+  std::vector<TH1*> tofnsigmasshiftpos{spnames.size(), nullptr};
+  std::vector<TH1*> tofnsigmasshiftneg{spnames.size(), nullptr};
 };
 
 } // namespace dptdptfilter

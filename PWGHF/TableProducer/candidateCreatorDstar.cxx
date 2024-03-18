@@ -29,6 +29,7 @@
 // PWGHF
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 using namespace o2;
 using namespace o2::aod::hf_collision_centrality;
@@ -57,6 +58,11 @@ struct HfCandidateCreatorDstar {
   // centrality
   Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
+
+  // event selection
+  Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "apply the sel8 event selection"};
+  Configurable<float> maxPvPosZ{"maxPvPosZ", 10.f, "max. PV posZ (cm)"};
+  Configurable<bool> useTimeFrameBorderCut{"useTimeFrameBorderCut", true, "apply TF border cut"};
 
   // vertexing
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
@@ -101,6 +107,10 @@ struct HfCandidateCreatorDstar {
      {"QA/hPtD0", "D^{0} candidates", {HistType::kTH1F, {ptAxis}}},
      {"QA/hPtDstar", "D* candidates", {HistType::kTH1F, {ptAxis}}}}};
 
+  OutputObj<TH1D> hCollisions{TH1D("hCollisions", "HF event counter", ValuesEvSel::NEvSel, -0.5f, static_cast<float>(ValuesEvSel::NEvSel) - 0.5f)};
+  OutputObj<TH1D> hPosZBeforeEvSel{TH1D("hPosZBeforeEvSel", "PV position Z before ev. selection;posZ (cm);entries", 400, -20, 20)};
+  OutputObj<TH1D> hPosZAfterEvSel{TH1D("hPosZAfterEvSel", "PV position Z after ev. selection;posZ (cm);entries", 400, -20, 20)};
+
   /// @brief This function initializes the ccdb setting, vertex fitter and runs function MatLayerCylSet::rectifyPtrFromFile(..args..)
   void init(InitContext const&)
   {
@@ -110,6 +120,24 @@ struct HfCandidateCreatorDstar {
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
+
+    std::array<bool, 3> processesCollisions = {doprocessCollisions, doprocessCollisionsCentFT0C, doprocessCollisionsCentFT0M};
+    const int nProcessesCollisions = std::accumulate(processesCollisions.begin(), processesCollisions.end(), 0);
+    if (nProcessesCollisions > 1) {
+      LOGP(fatal, "At most one process function for collision monitoring can be enabled at a time.");
+    }
+    if (nProcessesCollisions == 1) {
+      if ((doprocessPvRefit || doprocessNoPvRefit) && !doprocessCollisions) {
+        LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisions\"?");
+      }
+      if ((doprocessPvRefitCentFT0C || doprocessNoPvRefitCentFT0C) && !doprocessCollisionsCentFT0C) {
+        LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsCentFT0C\"?");
+      }
+      if ((doprocessPvRefitCentFT0M || doprocessNoPvRefitCentFT0M) && !doprocessCollisionsCentFT0M) {
+        LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsCentFT0M\"?");
+      }
+    }
+
     // LOG(info) << "Init Function Invoked";
     massPi = MassPiPlus;
     massK = MassKPlus;
@@ -129,6 +157,9 @@ struct HfCandidateCreatorDstar {
     ccdb->setLocalObjectValidityChecking(); // set the flag to check object validity before CCDB query
     runNumber = 0;
     bz = 0;
+
+    /// collision monitoring
+    setLabelHistoEvSel(hCollisions.object);
   }
 
   /// @brief function for secondary vertex reconstruction and candidate creator
@@ -139,7 +170,7 @@ struct HfCandidateCreatorDstar {
   /// @param rowsTrackIndexD0 D0 table object from trackIndexSkimCreator.cxx
   /// @param tracks track table with Cov object
   /// @param bcWithTimeStamps Bunch Crossing with timestamps
-  template <bool doPvRefit, int centEstimator, typename Coll, typename CandsDstar>
+  template <bool doPvRefit, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll, typename CandsDstar>
   void runCreatorDstar(Coll const& collisions,
                        CandsDstar const& rowsTrackIndexDstar,
                        aod::Hf2Prongs const& rowsTrackIndexD0,
@@ -151,20 +182,12 @@ struct HfCandidateCreatorDstar {
     // loop over suspected Dstar Candidate
     for (const auto& rowTrackIndexDstar : rowsTrackIndexDstar) {
 
-      // reject candidates in collisions outside the centrality range
+      /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexDstar.template collision_as<Coll>();
-      float centrality = -1.;
-      if constexpr (centEstimator != CentralityEstimator::None) {
-        if constexpr (centEstimator == CentralityEstimator::FT0C) {
-          centrality = collision.centFT0C();
-        } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
-          centrality = collision.centFT0M();
-        } else {
-          LOGP(fatal, "Centrality estimator different from FT0C and FT0M, fix it!");
-        }
-        if (centrality < centralityMin || centrality > centralityMax) {
-          continue;
-        }
+      const auto rejectionMask = getHfCollisionRejectionMask<centEstimator>(collision, centralityMin, centralityMax, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the candidate
+        continue;
       }
 
       auto trackPi = rowTrackIndexDstar.template prong0_as<aod::TracksWCov>();
@@ -326,7 +349,7 @@ struct HfCandidateCreatorDstar {
   ///////////////////////////////////
 
   /// @brief process function w/ PV refit and w/o centrality selections
-  void processPvRefit(aod::Collisions const& collisions,
+  void processPvRefit(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                       aod::Hf2Prongs const& rowsTrackIndexD0,
                       aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
                       aod::TracksWCov const& tracks,
@@ -337,7 +360,7 @@ struct HfCandidateCreatorDstar {
   PROCESS_SWITCH(HfCandidateCreatorDstar, processPvRefit, " Run candidate creator with PV refit and w/o centrality selections", false);
 
   /// @brief process function w/o PV refit and w/o centrality selections
-  void processNoPvRefit(aod::Collisions const& collisions,
+  void processNoPvRefit(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                         aod::Hf2Prongs const& rowsTrackIndexD0,
                         aod::HfDstars const& rowsTrackIndexDstar,
                         aod::TracksWCov const& tracks,
@@ -354,7 +377,7 @@ struct HfCandidateCreatorDstar {
   /////////////////////////////////////////////
 
   /// @brief process function w/ PV refit and w/ centrality selection on FT0C
-  void processPvRefitCentFT0C(soa::Join<aod::Collisions, aod::CentFT0Cs> const& collisions,
+  void processPvRefitCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                               aod::Hf2Prongs const& rowsTrackIndexD0,
                               aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
                               aod::TracksWCov const& tracks,
@@ -365,7 +388,7 @@ struct HfCandidateCreatorDstar {
   PROCESS_SWITCH(HfCandidateCreatorDstar, processPvRefitCentFT0C, " Run candidate creator with PV refit nad w/ centrality selection on FT0C", false);
 
   /// @brief process function w/o PV refit and w/ centrality selection on FT0C
-  void processNoPvRefitCentFT0C(soa::Join<aod::Collisions, aod::CentFT0Cs> const& collisions,
+  void processNoPvRefitCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                 aod::Hf2Prongs const& rowsTrackIndexD0,
                                 aod::HfDstars const& rowsTrackIndexDstar,
                                 aod::TracksWCov const& tracks,
@@ -382,7 +405,7 @@ struct HfCandidateCreatorDstar {
   /////////////////////////////////////////////
 
   /// @brief process function w/ PV refit and w/ centrality selection on FT0M
-  void processPvRefitCentFT0M(soa::Join<aod::Collisions, aod::CentFT0Ms> const& collisions,
+  void processPvRefitCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                               aod::Hf2Prongs const& rowsTrackIndexD0,
                               aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
                               aod::TracksWCov const& tracks,
@@ -393,7 +416,7 @@ struct HfCandidateCreatorDstar {
   PROCESS_SWITCH(HfCandidateCreatorDstar, processPvRefitCentFT0M, " Run candidate creator with PV refit nad w/ centrality selection on FT0M", false);
 
   /// @brief process function w/o PV refit and w/ centrality selection on FT0M
-  void processNoPvRefitCentFT0M(soa::Join<aod::Collisions, aod::CentFT0Ms> const& collisions,
+  void processNoPvRefitCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                 aod::Hf2Prongs const& rowsTrackIndexD0,
                                 aod::HfDstars const& rowsTrackIndexDstar,
                                 aod::TracksWCov const& tracks,
@@ -402,6 +425,60 @@ struct HfCandidateCreatorDstar {
     runCreatorDstar</*doPvRefit*/ false, CentralityEstimator::FT0M>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfCandidateCreatorDstar, processNoPvRefitCentFT0M, " Run candidate creator without PV refit and w/ centrality selection on FT0M", false);
+
+  ///////////////////////////////////////////////////////////
+  ///                                                     ///
+  ///   Process functions only for collision monitoring   ///
+  ///                                                     ///
+  ///////////////////////////////////////////////////////////
+
+  /// @brief process function to monitor collisions - no centrality
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions)
+  {
+    /// loop over collisions
+    for (const auto& collision : collisions) {
+
+      /// bitmask with event. selection info
+      const auto rejectionMask = getHfCollisionRejectionMask<CentralityEstimator::None>(collision, centralityMin, centralityMax, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+
+      /// monitor the satisfied event selections
+      monitorCollision(collision, rejectionMask, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
+
+    } /// end loop over collisions
+  }
+  PROCESS_SWITCH(HfCandidateCreatorDstar, processCollisions, "Collision monitoring - no centrality", true);
+
+  /// @brief process function to monitor collisions - FT0C centrality
+  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions)
+  {
+    /// loop over collisions
+    for (const auto& collision : collisions) {
+
+      /// bitmask with event. selection info
+      const auto rejectionMask = getHfCollisionRejectionMask<CentralityEstimator::FT0C>(collision, centralityMin, centralityMax, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+
+      /// monitor the satisfied event selections
+      monitorCollision(collision, rejectionMask, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
+
+    } /// end loop over collisions
+  }
+  PROCESS_SWITCH(HfCandidateCreatorDstar, processCollisionsCentFT0C, "Collision monitoring - FT0C centrality", false);
+
+  /// @brief process function to monitor collisions - FT0M centrality
+  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions)
+  {
+    /// loop over collisions
+    for (const auto& collision : collisions) {
+
+      /// bitmask with event. selection info
+      const auto rejectionMask = getHfCollisionRejectionMask<CentralityEstimator::FT0M>(collision, centralityMin, centralityMax, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+
+      /// monitor the satisfied event selections
+      monitorCollision(collision, rejectionMask, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
+
+    } /// end loop over collisions
+  }
+  PROCESS_SWITCH(HfCandidateCreatorDstar, processCollisionsCentFT0M, "Collision monitoring - FT0M centrality", false);
 };
 
 struct HfCandidateCreatorDstarExpressions {

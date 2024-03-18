@@ -670,6 +670,7 @@ struct strangenessFilter {
     hProcessedEvents->Fill(-0.5);
 
     if (isTimeFrameBorderCut && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      fillTriggerTable(keepEvent);
       return;
     }
     // all processed events after event selection

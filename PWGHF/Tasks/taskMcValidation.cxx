@@ -16,6 +16,7 @@
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari & INFN, Sezione di Bari
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
+/// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
@@ -44,15 +45,6 @@ static const std::array<std::string, nCharmHadrons> particleNames = {"Dplus", "D
 static const std::array<std::string, 2> originNames = {"Prompt", "NonPrompt"};
 } // namespace
 
-/// Add relevant information about ambiguous tracks
-namespace o2::aod
-{
-// Columns to store the information about the presence of HF signals in a MC collision
-DECLARE_SOA_COLUMN(HasHFsignal, hasHFsignal, bool);         //!
-DECLARE_SOA_TABLE(CollWithHFSignal, "AOD", "COLLWHFSIGNAL", //!
-                  HasHFsignal);
-} // namespace o2::aod
-
 /// Generated Level Validation
 ///
 /// - Number of HF quarks produced per collision
@@ -66,8 +58,6 @@ DECLARE_SOA_TABLE(CollWithHFSignal, "AOD", "COLLWHFSIGNAL", //!
 /// - Momentum Conservation for these particles
 
 struct HfTaskMcValidationGen {
-  Produces<o2::aod::CollWithHFSignal> collWithHFSignal;
-
   Configurable<double> xVertexMin{"xVertexMin", -100., "min. x of generated primary vertex [cm]"};
   Configurable<double> xVertexMax{"xVertexMax", 100., "max. x of generated primary vertex [cm]"};
   Configurable<double> yVertexMin{"yVertexMin", -100., "min. y of generated primary vertex [cm]"};
@@ -155,11 +145,9 @@ struct HfTaskMcValidationGen {
                aod::McParticles const& mcParticles)
   {
     if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
-      collWithHFSignal(false);
       return;
     }
     if (!selectVertex(mcCollision)) {
-      collWithHFSignal(false);
       return;
     }
 
@@ -168,7 +156,6 @@ struct HfTaskMcValidationGen {
     int bPerCollision = 0;
     int bBarPerCollision = 0;
     std::array<int, nCharmHadrons> counterPrompt{0}, counterNonPrompt{0};
-    bool hasSignal = false;
 
     for (const auto& particle : mcParticles) {
       if (!particle.has_mothers()) {
@@ -241,7 +228,6 @@ struct HfTaskMcValidationGen {
           continue;
         }
 
-        hasSignal = true;
         int origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
         if (origin == RecoDecay::OriginType::Prompt) {
           counterPrompt[iD]++;
@@ -287,8 +273,6 @@ struct HfTaskMcValidationGen {
     registry.fill(HIST("hCounterPerCollisionNonPromptLambdaC"), counterNonPrompt[4]);
     registry.fill(HIST("hCounterPerCollisionNonPromptXiC"), counterNonPrompt[5]);
     registry.fill(HIST("hCounterPerCollisionNonPromptJPsi"), counterNonPrompt[6]);
-
-    collWithHFSignal(hasSignal);
   }
 };
 
@@ -306,7 +290,6 @@ struct HfTaskMcValidationRec {
   SliceCache cache;
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
 
-  Configurable<bool> checkAmbiguousTracksWithHfEventsOnly{"checkAmbiguousTracksWithHfEventsOnly", false, "Activate checks for ambiguous tracks only for events with HF signals (including decay channels of interest)"};
   Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "If positive, enable event selection using subGeneratorId information. The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
 
   std::array<std::shared_ptr<TH1>, nCharmHadrons> histDeltaPt, histDeltaPx, histDeltaPy, histDeltaPz, histDeltaSecondaryVertexX, histDeltaSecondaryVertexY, histDeltaSecondaryVertexZ, histDeltaDecayLength;
@@ -320,7 +303,6 @@ struct HfTaskMcValidationRec {
   using HfCand3ProngWithMCRec = soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>;
   using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::HfSelCollision>;
   using TracksWithSel = soa::Join<aod::TracksWMc, aod::TracksExtra, aod::TrackSelection, aod::TrackCompColls>;
-  using McCollisionWithHFSignalInfo = soa::Join<aod::McCollisions, aod::CollWithHFSignal>;
 
   Partition<TracksWithSel> tracksFilteredGlobalTrackWoDCA = requireGlobalTrackWoDCAInFilter();
   Partition<TracksWithSel> tracksInAcc = requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks);
@@ -414,7 +396,7 @@ struct HfTaskMcValidationRec {
                HfCand3ProngWithMCRec const& cand3Prongs,
                TracksWithSel const& tracks,
                aod::McParticles const& mcParticles,
-               McCollisionWithHFSignalInfo const& mcCollisions,
+               aod::McCollisions const& mcCollisions,
                CollisionsWithMCLabels const& collisions,
                aod::BCs const&)
   {
@@ -426,11 +408,8 @@ struct HfTaskMcValidationRec {
       if (!collision.has_mcCollision()) {
         continue;
       }
-      auto mcCollision = collision.mcCollision_as<McCollisionWithHFSignalInfo>();
+      auto mcCollision = collision.mcCollision_as<aod::McCollisions>();
       if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
-        continue;
-      }
-      if (checkAmbiguousTracksWithHfEventsOnly && !mcCollision.hasHFsignal()) {
         continue;
       }
       registry.fill(HIST("histXvtxReco"), collision.posX());
@@ -502,11 +481,8 @@ struct HfTaskMcValidationRec {
       uint index = uint(track.collisionId() >= 0);
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle(); // get corresponding MC particle to check origin
-        auto mcCollision = particle.mcCollision_as<McCollisionWithHFSignalInfo>();
+        auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
         if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
-          continue;
-        }
-        if (checkAmbiguousTracksWithHfEventsOnly && !mcCollision.hasHFsignal()) {
           continue;
         }
         auto origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
@@ -528,7 +504,7 @@ struct HfTaskMcValidationRec {
         float deltaZ = -999.f;
         if (index) {
           auto collision = track.collision_as<CollisionsWithMCLabels>();
-          auto mcCollision = particle.mcCollision_as<McCollisionWithHFSignalInfo>();
+          auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
           deltaZ = collision.posZ() - mcCollision.posZ();
           if (collision.has_mcCollision() && collision.mcCollisionId() == particle.mcCollisionId()) {
             histOriginTracks[index + 1]->Fill(origin, track.pt(), track.eta(), deltaZ, track.isPVContributor(), track.hasTOF(), nITSlayers);
@@ -562,7 +538,7 @@ struct HfTaskMcValidationRec {
     for (const auto& cand2Prong : cand2Prongs) {
 
       if (cand2Prong.collision_as<CollisionsWithMCLabels>().has_mcCollision()) {
-        auto mcCollision = cand2Prong.collision_as<CollisionsWithMCLabels>().mcCollision_as<McCollisionWithHFSignalInfo>();
+        auto mcCollision = cand2Prong.collision_as<CollisionsWithMCLabels>().mcCollision_as<aod::McCollisions>();
         if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
           continue;
         }
@@ -627,7 +603,7 @@ struct HfTaskMcValidationRec {
     for (const auto& cand3Prong : cand3Prongs) {
 
       if (cand3Prong.collision_as<CollisionsWithMCLabels>().has_mcCollision()) {
-        auto mcCollision = cand3Prong.collision_as<CollisionsWithMCLabels>().mcCollision_as<McCollisionWithHFSignalInfo>();
+        auto mcCollision = cand3Prong.collision_as<CollisionsWithMCLabels>().mcCollision_as<aod::McCollisions>();
         if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
           continue;
         }

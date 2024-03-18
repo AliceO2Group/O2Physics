@@ -138,7 +138,7 @@ struct DGCandAnalyzer {
     const AxisSpec axispt{ptAxis, "pt axis for histograms"};
 
     if (context.mOptions.get<bool>("processReco")) {
-      registry.add("stat/candCaseAll", "Types of all DG candidates", {HistType::kTH1F, {{5, -0.5, 4.5}}});
+      registry.add("stat/candCaseAll", "Types of all DG candidates", {HistType::kTH1F, {{3, -0.5, 2.5}}});
       registry.add("stat/candCaseSel", "Types of all selectedDG candidates", {HistType::kTH1F, {{5, -0.5, 4.5}}});
       registry.add("stat/nDGperRun", "Number of DG collisions per run", {HistType::kTH1D, {{1, 0, 1}}});
       registry.add("stat/nPVtracks", "Number of PV tracks of analyzed collisions", {HistType::kTH1D, {{51, -0.5, 50.5}}});
@@ -238,14 +238,14 @@ struct DGCandAnalyzer {
       lastRun = run;
       LOGF(info, "done!");
     }
-    registry.fill(HIST("stat/candCaseAll"), 1, 1.);
 
     // is BB bunch?
     auto bcnum = dgcand.globalBC();
     if (run >= 500000 && bcPatternB[bcnum % o2::constants::lhc::LHCMaxBunches] == 0) {
-      LOGF(info, "bcnum[1] %d is not a BB BC", bcnum % o2::constants::lhc::LHCMaxBunches);
+      LOGF(debug, "bcnum[1] %d is not a BB BC", bcnum % o2::constants::lhc::LHCMaxBunches);
       return;
     }
+    registry.fill(HIST("stat/candCaseAll"), 1, 1.);
 
     // skip unwanted cases
     // 0. all candidates
@@ -331,6 +331,7 @@ struct DGCandAnalyzer {
       LOGF(debug, "Rejected 4: no IVMs.");
       return;
     }
+    LOGF(debug, "nIVMs %d / %d", nIVMs[0], nIVMs[1]);
 
     // update histogram stat/candCase and stat/nDGperRun
     registry.fill(HIST("stat/candCaseSel"), 0, 1.);
@@ -339,7 +340,7 @@ struct DGCandAnalyzer {
     /*
     // check bcnum
     if (bcnums.find(bcnum) != bcnums.end()) {
-      LOGF(info, "candCase %d bcnum %d allready found! ", candCase, bcnum);
+      LOGF(debug, "candCase %d bcnum %d allready found! ", candCase, bcnum);
       registry.fill(HIST("stat/candCaseSel"), 4, 1.);
     } else {
       bcnums.insert(bcnum);
@@ -396,22 +397,16 @@ struct DGCandAnalyzer {
 
         fillSignalHists(ivm, PVContributors, pidsel);
       }
+      goodIVMs++;
 
       // update system/IVMptSysDG
       registry.fill(HIST("system/unlikeIVMptSysDG"), ivm.M(), ivm.Perp());
+
+      // loop over tracks of IVM and fill related histograms
       for (auto ind : ivm.trkinds()) {
         auto track = PVContributors.begin() + ind;
         registry.fill(HIST("system/unlikeIVMptTrkDG"), ivm.M(), track.pt());
-      }
-      goodIVMs++;
-    }
 
-    // fill histograms with PV track information of collisions with DG candidates
-    registry.fill(HIST("system/nUnlikeIVMs"), goodIVMs, 1.);
-    if (goodIVMs > 0) {
-
-      // loop over PV tracks and update histograms
-      for (auto track : PVContributors) {
         registry.fill(HIST("tracks/trackHits"), 0., 1.);
         registry.fill(HIST("tracks/trackHits"), 1., track.hasITS() * 1.);
         registry.fill(HIST("tracks/trackHits"), 2., track.hasTPC() * 1.);
@@ -456,6 +451,8 @@ struct DGCandAnalyzer {
         }
       }
     }
+    LOGF(debug, "goodIVMs %d", goodIVMs);
+    registry.fill(HIST("system/nUnlikeIVMs"), goodIVMs, 1.);
 
     // process the like sign combinations
     goodIVMs = 0;
@@ -481,6 +478,7 @@ struct DGCandAnalyzer {
           continue;
         }
       }
+      goodIVMs++;
 
       // update system/IVMptSysDG
       registry.fill(HIST("system/likeIVMptSysDG"), ivm.M(), ivm.Perp());
@@ -488,7 +486,6 @@ struct DGCandAnalyzer {
         auto track = PVContributors.begin() + ind;
         registry.fill(HIST("system/likeIVMptTrkDG"), ivm.M(), track.pt());
       }
-      goodIVMs++;
     }
     registry.fill(HIST("system/nLikeIVMs"), goodIVMs, 1.);
   }
