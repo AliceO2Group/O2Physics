@@ -214,8 +214,8 @@ class VarManager : public TObject
     kQ1Y0B,
     kQ1X0C,
     kQ1Y0C,
-    kQ2X0A, // q-vector (e.g. from TPC) with x component (harmonic 2 and power 0), sub-event A
-    kQ2Y0A, // q-vector (e.g. from TPC) with y component (harmonic 2 and power 0), sub-event A
+    kQ2X0A,    // q-vector (e.g. from TPC) with x component (harmonic 2 and power 0), sub-event A
+    kQ2Y0A,    // q-vector (e.g. from TPC) with y component (harmonic 2 and power 0), sub-event A
     kQ2X0APOS, // q-vector (e.g. from TPC) with x component (harmonic 2 and power 0), Pos. TPC
     kQ2Y0APOS, // q-vector (e.g. from TPC) with y component (harmonic 2 and power 0), Pos. TPC
     kQ2X0ANEG, // q-vector (e.g. from TPC) with x component (harmonic 2 and power 0), Neg. TPC
@@ -224,7 +224,7 @@ class VarManager : public TObject
     kQ2Y0B,
     kQ2X0C,
     kQ2Y0C,
-    kMultA, // Multiplicity of the sub-event A
+    kMultA,    // Multiplicity of the sub-event A
     kMultAPOS, // Multiplicity of the sub-event A
     kMultANEG, // Multiplicity of the sub-event A
     kMultB,
@@ -2911,14 +2911,14 @@ void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
   values[kQ2Y0B] = yQVecFT0a;
   values[kQ2X0C] = xQVecFT0c;
   values[kQ2Y0C] = yQVecFT0c;
-  values[kMultA] = collision.nTrkBPos();  // WARNING: to be updated with full TPC tracks
+  values[kMultA] = collision.nTrkBPos(); // WARNING: to be updated with full TPC tracks
   values[kMultAPOS] = collision.nTrkBPos();
   values[kMultANEG] = collision.nTrkBNeg();
   values[kMultB] = collision.sumAmplFT0A();
   values[kMultC] = collision.sumAmplFT0C();
 
   EventPlaneHelper epHelper;
-  float Psi2A = epHelper.GetEventPlane(values[kQ2X0APOS], values[kQ2Y0APOS], 2);  // WARNING: to be updated with full TPC tracks
+  float Psi2A = epHelper.GetEventPlane(values[kQ2X0APOS], values[kQ2Y0APOS], 2); // WARNING: to be updated with full TPC tracks
   float Psi2APOS = epHelper.GetEventPlane(values[kQ2X0APOS], values[kQ2Y0APOS], 2);
   float Psi2ANEG = epHelper.GetEventPlane(values[kQ2X0ANEG], values[kQ2Y0ANEG], 2);
   float Psi2B = epHelper.GetEventPlane(values[kQ2X0B], values[kQ2Y0B], 2);
