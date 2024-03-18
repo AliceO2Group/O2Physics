@@ -932,8 +932,7 @@ struct derivedlambdakzeroanalysis {
       centrality = hRawCentrality->GetBinContent(hRawCentrality->FindBin(collision.multFT0C()));
     }
 
-    histos.fill(HIST("hEventCentrality"), centrality);
-    
+    histos.fill(HIST("hEventCentrality"), centrality);    
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
 
     // __________________________________________
@@ -987,7 +986,6 @@ struct derivedlambdakzeroanalysis {
     }
 
     histos.fill(HIST("hEventCentrality"), centrality);
-    
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
 
     // __________________________________________
