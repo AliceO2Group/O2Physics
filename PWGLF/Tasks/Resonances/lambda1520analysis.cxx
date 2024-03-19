@@ -536,9 +536,9 @@ struct lambda1520analysis {
       if (trk2.isPrimaryTrack())
         counterpv2 = 1;
 
-      histos.fill(HIST("MultCalib/centglopi"), multiplicity, counterglo1);
+      histos.fill(HIST("MultCalib/centglopr"), multiplicity, counterglo1);
       histos.fill(HIST("MultCalib/centgloka"), multiplicity, counterglo2);
-      histos.fill(HIST("MultCalib/GloPVpi"), counterglo1, counterpv1);
+      histos.fill(HIST("MultCalib/GloPVpr"), counterglo1, counterpv1);
       histos.fill(HIST("MultCalib/GloPVka"), counterglo2, counterpv2);
 
       // Apply kinematic cuts.
