@@ -12,19 +12,20 @@
 /// \author Jasper Parkkila (jparkkil@cern.ch)
 /// \since Sep 2022
 
-#ifndef JFFLUC_ANALYSIS_H
-#define JFFLUC_ANALYSIS_H
+#ifndef PWGCF_JCORRAN_CORE_JFFLUCANALYSIS_H_
+#define PWGCF_JCORRAN_CORE_JFFLUCANALYSIS_H_
 
 #include <experimental/type_traits>
 #include "JHistManager.h"
 #include <TComplex.h>
+#include <tuple>
 
 class JFFlucAnalysis
 {
  public:
   JFFlucAnalysis();
-  JFFlucAnalysis(const char* name);
-  JFFlucAnalysis(const JFFlucAnalysis& a);             // not implemented
+  explicit JFFlucAnalysis(const char* name);
+  explicit JFFlucAnalysis(const JFFlucAnalysis& a);    // not implemented
   JFFlucAnalysis& operator=(const JFFlucAnalysis& ap); // not implemented
 
   ~JFFlucAnalysis();
@@ -51,13 +52,13 @@ class JFFlucAnalysis
   }
   inline void SetEventTracksQA(unsigned int tpc, unsigned int glb)
   {
-    fTPCtrks = (float)tpc;
-    fGlbtrks = (float)glb;
+    fTPCtrks = static_cast<float>(tpc);
+    fGlbtrks = static_cast<float>(glb);
   }
   inline void SetEventFB32TracksQA(unsigned int fb32, unsigned int fb32tof)
   {
-    fFB32trks = (float)fb32;
-    fFB32TOFtrks = (float)fb32tof;
+    fFB32trks = static_cast<float>(fb32);
+    fFB32TOFtrks = static_cast<float>(fb32tof);
   }
   enum SubEvent {
     kSubEvent_A = 0x1,
@@ -132,6 +133,7 @@ class JFFlucAnalysis
       fh_vertex[iaxis]->Fill(fVertex[iaxis]);
   };
 
+#define NK nKL // for cpplint nonsense
   template <class JInputClass>
   inline void CalculateQvectorsQC(JInputClass& inputInst)
   {
@@ -153,7 +155,7 @@ class JFFlucAnalysis
       UInt_t isub = (UInt_t)(track.eta() > 0.0);
       for (UInt_t ih = 0; ih < kNH; ih++) {
         Double_t tf = 1.0;
-        TComplex q[nKL];
+        TComplex q[NK];
         for (UInt_t ik = 0; ik < nKL; ik++) {
           q[ik] = TComplex(tf * TMath::Cos(ih * track.phi()), tf * TMath::Sin(ih * track.phi()));
           QvectorQC[ih][ik] += q[ik];
@@ -266,4 +268,4 @@ class JFFlucAnalysis
   // JTH1D fh_evt_SP_QC_ratio_4p;     //! // check SP QC evt by evt ratio
 };
 
-#endif
+#endif // PWGCF_JCORRAN_CORE_JFFLUCANALYSIS_H_
