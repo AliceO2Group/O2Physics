@@ -10,8 +10,8 @@
 // or submit itself to any jurisdiction.
 
 /// \file derivedDataCreatorLcToPKPi.cxx
-/// \brief Producer of derived tables of D0 candidates, collisions and MC particles
-/// \note Based on treeCreatorLcToPKPi.cxx
+/// \brief Producer of derived tables of Lc candidates, collisions and MC particles
+/// \note Based on treeCreatorLcToPKPi.cxx and derivedDataCreatorD0ToKPi.cxx
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
@@ -32,16 +32,16 @@ using namespace o2::framework::expressions;
 
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorLcToPKPi {
-  Produces<o2::aod::HfD0Bases> rowCandidateBase;
-  Produces<o2::aod::HfD0Pars> rowCandidatePar;
-  Produces<o2::aod::HfD0ParEs> rowCandidateParE;
-  Produces<o2::aod::HfD0Sels> rowCandidateSel;
-  Produces<o2::aod::HfD0Ids> rowCandidateId;
-  Produces<o2::aod::HfD0Mcs> rowCandidateMc;
-  Produces<o2::aod::HfD0CollBases> rowCollBase;
-  Produces<o2::aod::HfD0CollIds> rowCollId;
-  Produces<o2::aod::HfD0PBases> rowParticleBase;
-  Produces<o2::aod::HfD0PIds> rowParticleId;
+  Produces<o2::aod::HfLcBases> rowCandidateBase;
+  Produces<o2::aod::HfLcPars> rowCandidatePar;
+  Produces<o2::aod::HfLcParEs> rowCandidateParE;
+  Produces<o2::aod::HfLcSels> rowCandidateSel;
+  Produces<o2::aod::HfLcIds> rowCandidateId;
+  Produces<o2::aod::HfLcMcs> rowCandidateMc;
+  Produces<o2::aod::HfLcCollBases> rowCollBase;
+  Produces<o2::aod::HfLcCollIds> rowCollId;
+  Produces<o2::aod::HfLcPBases> rowParticleBase;
+  Produces<o2::aod::HfLcPIds> rowParticleId;
 
   // Switches for filling tables
   Configurable<bool> fillCandidateBase{"fillCandidateBase", true, "Fill candidate base properties"};
@@ -61,15 +61,15 @@ struct HfDerivedDataCreatorLcToPKPi {
   HfHelper hfHelper;
   SliceCache cache;
 
-  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
-  using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
-  using SelectedCandidatesKf = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0>>;
-  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
-  using SelectedCandidatesMcKf = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
-  using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
+  using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
+  using SelectedCandidatesKf = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngKF, aod::HfSelLc>>;
+  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc>>;
+  using SelectedCandidatesMcKf = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngKF, aod::HfCand3ProngMcRec, aod::HfSelLc>>;
+  using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
 
-  Filter filterSelectCandidates = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
-  Filter filterMcGenMatching = nabs(aod::hf_cand_2prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
+  Filter filterSelectCandidates = aod::hf_sel_candidate_lc::isSelLcToPKPi >= 1 || aod::hf_sel_candidate_lc::isSelLcToPiKP >= 1;
+  Filter filterMcGenMatching = nabs(aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::LcToPKPi));
 
   Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId;
   Preslice<SelectedCandidatesKf> candidatesKfPerCollision = aod::hf_cand::collisionId;
@@ -77,15 +77,15 @@ struct HfDerivedDataCreatorLcToPKPi {
   Preslice<SelectedCandidatesMcKf> candidatesMcKfPerCollision = aod::hf_cand::collisionId;
 
   // trivial partitions for all candidates to allow "->sliceByCached" inside processCandidates
-  Partition<SelectedCandidates> candidatesAll = aod::hf_sel_candidate_d0::isSelD0 >= 0;
-  Partition<SelectedCandidatesKf> candidatesKfAll = aod::hf_sel_candidate_d0::isSelD0 >= 0;
-  Partition<SelectedCandidatesMc> candidatesMcAll = aod::hf_sel_candidate_d0::isSelD0 >= 0;
-  Partition<SelectedCandidatesMcKf> candidatesMcKfAll = aod::hf_sel_candidate_d0::isSelD0 >= 0;
+  Partition<SelectedCandidates> candidatesAll = aod::hf_sel_candidate_lc::isSelLcToPKPi >= 0;
+  Partition<SelectedCandidatesKf> candidatesKfAll = aod::hf_sel_candidate_lc::isSelLcToPKPi >= 0;
+  Partition<SelectedCandidatesMc> candidatesMcAll = aod::hf_sel_candidate_lc::isSelLcToPKPi >= 0;
+  Partition<SelectedCandidatesMcKf> candidatesMcKfAll = aod::hf_sel_candidate_lc::isSelLcToPKPi >= 0;
   // partitions for signal and background
-  Partition<SelectedCandidatesMc> candidatesMcSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
-  Partition<SelectedCandidatesMc> candidatesMcBkg = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
-  Partition<SelectedCandidatesMcKf> candidatesMcKfSig = nabs(aod::hf_cand_2prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
-  Partition<SelectedCandidatesMcKf> candidatesMcKfBkg = nabs(aod::hf_cand_2prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_2prong::DecayType::D0ToPiK));
+  Partition<SelectedCandidatesMc> candidatesMcSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::LcToPKPi));
+  Partition<SelectedCandidatesMc> candidatesMcBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::LcToPKPi));
+  Partition<SelectedCandidatesMcKf> candidatesMcKfSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::LcToPKPi));
+  Partition<SelectedCandidatesMcKf> candidatesMcKfBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::LcToPKPi));
 
   void init(InitContext const&)
   {
@@ -255,7 +255,7 @@ struct HfDerivedDataCreatorLcToPKPi {
           flagMcRec = candidate.flagMcMatchRec();
           origin = candidate.originMcRec();
           if constexpr (onlyBkg) {
-            if (TESTBIT(std::abs(flagMcRec), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+            if (TESTBIT(std::abs(flagMcRec), aod::hf_cand_3prong::DecayType::LcToPKPi)) {
               continue;
             }
             if (downSampleBkgFactor < 1.) {
@@ -266,7 +266,7 @@ struct HfDerivedDataCreatorLcToPKPi {
             }
           }
           if constexpr (onlySig) {
-            if (!TESTBIT(std::abs(flagMcRec), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+            if (!TESTBIT(std::abs(flagMcRec), aod::hf_cand_3prong::DecayType::LcToPKPi)) {
               continue;
             }
           }
@@ -277,21 +277,21 @@ struct HfDerivedDataCreatorLcToPKPi {
         auto prong0 = candidate.template prong0_as<TracksWPid>();
         auto prong1 = candidate.template prong1_as<TracksWPid>();
         double ctD = hfHelper.ctD0(candidate);
-        float massD0, massD0bar;
+        float massLcToPKPi, massLcToPiKP;
         float topolChi2PerNdf = -999.;
         if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
-          massD0 = candidate.kfGeoMassD0();
-          massD0bar = candidate.kfGeoMassD0bar();
+          massLcToPKPi = candidate.kfGeoMassD0();
+          massLcToPiKP = candidate.kfGeoMassD0bar();
           topolChi2PerNdf = candidate.kfTopolChi2OverNdf();
         } else {
-          massD0 = hfHelper.invMassD0ToPiK(candidate);
-          massD0bar = hfHelper.invMassD0barToKPi(candidate);
+          massLcToPKPi = hfHelper.invMassLcToPKPi(candidate);
+          massLcToPiKP = hfHelper.invMassLcToPiKP(candidate);
         }
-        if (candidate.isSelD0()) {
-          fillTablesCandidate(candidate, prong0, prong1, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, flagMcRec, origin);
+        if (candidate.isSelLcToPKPi()) {
+          fillTablesCandidate(candidate, prong0, prong1, 0, massLcToPKPi, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, flagMcRec, origin);
         }
-        if (candidate.isSelD0bar()) {
-          fillTablesCandidate(candidate, prong0, prong1, 1, massD0bar, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, flagMcRec, origin);
+        if (candidate.isSelLcToPiKP()) {
+          fillTablesCandidate(candidate, prong0, prong1, 1, massLcToPiKP, hfHelper.cosThetaStarD0bar(candidate), topolChi2PerNdf, ctD, flagMcRec, origin);
         }
       }
     }
@@ -305,10 +305,10 @@ struct HfDerivedDataCreatorLcToPKPi {
     reserveTable(rowParticleBase, fillParticleBase, sizeTablePart);
     reserveTable(rowParticleId, fillParticleId, sizeTablePart);
     for (const auto& particle : mcParticles) {
-      if (!TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+      if (!TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         continue;
       }
-      fillTablesParticle(particle, o2::constants::physics::MassD0);
+      fillTablesParticle(particle, o2::constants::physics::MassLambdaCPlus);
     }
   }
 
