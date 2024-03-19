@@ -183,7 +183,7 @@ struct jflucAnalysisTask {
     pcf->FillQA(tracks);
     pcf->CalculateQvectorsQC(tracks);
     const auto& edges = AxisSpec(axisMultiplicity).binEdges;
-    for (UInt_t i = 0, n = AxisSpec(axisMultiplicity).getNbins() - 1; i < n; ++i)
+    for (UInt_t i = 0, n = AxisSpec(axisMultiplicity).getNbins(); i < n; ++i)
       if (collision.multiplicity() < edges[i + 1]) {
         pcf->SetEventCentralityAndBin(collision.multiplicity(), i);
         break;
@@ -201,7 +201,7 @@ struct jflucAnalysisTask {
     pcf->FillQA(tracks);
     pcf->CalculateQvectorsQC(tracks);
     const auto& edges = AxisSpec(axisMultiplicity).binEdges;
-    for (UInt_t i = 0, n = AxisSpec(axisMultiplicity).getNbins() - 1; i < n; ++i)
+    for (UInt_t i = 0, n = AxisSpec(axisMultiplicity).getNbins(); i < n; ++i)
       if (collision.multiplicity() < edges[i + 1]) {
         pcf->SetEventCentralityAndBin(collision.multiplicity(), i);
         break;
