@@ -45,15 +45,16 @@ struct AntimatterAbsorptionHMPID {
   // Track Selection Parameters
   Configurable<float> pmin{"pmin", 0.1, "pmin"};
   Configurable<float> pmax{"pmax", 3.0, "pmax"};
-  Configurable<float> etaMin{"etaMin", -0.6, "etaMin"};
-  Configurable<float> etaMax{"etaMax", +0.6, "etaMax"};
+  Configurable<float> etaMin{"etaMin", -0.8, "etaMin"};
+  Configurable<float> etaMax{"etaMax", +0.8, "etaMax"};
   Configurable<float> phiMin{"phiMin", 0.0, "phiMin"};
-  Configurable<float> phiMax{"phiMax", TMath::Pi() / 2.0, "phiMax"};
+  Configurable<float> phiMax{"phiMax", 2.0 * TMath::Pi(), "phiMax"};
   Configurable<float> nsigmaTPCMin{"nsigmaTPCMin", -3.0, "nsigmaTPCMin"};
   Configurable<float> nsigmaTPCMax{"nsigmaTPCMax", +3.0, "nsigmaTPCMax"};
   Configurable<float> nsigmaTOFMin{"nsigmaTOFMin", -3.0, "nsigmaTOFMin"};
   Configurable<float> nsigmaTOFMax{"nsigmaTOFMax", +3.5, "nsigmaTOFMax"};
   Configurable<float> minReqClusterITS{"minReqClusterITS", 4.0, "min number of clusters required in ITS"};
+  Configurable<float> minTPCnClsFound{"minTPCnClsFound", 50.0f, "minTPCnClsFound"};
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.0f, "min number of crossed rows TPC"};
   Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
@@ -92,6 +93,65 @@ struct AntimatterAbsorptionHMPID {
     registryDA.add("Pi_Neg_momentum", "Pi_Neg_momentum", HistType::kTH2F, {{100, 0.0, 3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {100, 0.0, 3.0, "#it{p}_{mhpid} (GeV/#it{c})"}});
   }
 
+  // Single-Track Selection
+  template <typename trackType>
+  bool passedTrackSelection(const trackType& track)
+  {
+    if (!track.hasITS())
+      return false;
+    if (!track.hasTPC())
+      return false;
+    if (!track.hasTOF())
+      return false;
+    // if (!track.has_hmpid())
+    // return false;
+    if (!track.passedITSRefit())
+      return false;
+    if (!track.passedTPCRefit())
+      return false;
+    if (track.itsNCls() < minReqClusterITS)
+      return false;
+    if (track.tpcNClsFound() < minTPCnClsFound)
+      return false;
+    if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      return false;
+    if (track.tpcChi2NCl() > maxChi2TPC)
+      return false;
+    if (track.itsChi2NCl() > maxChi2ITS)
+      return false;
+    if (TMath::Abs(track.dcaXY()) > maxDCAxy)
+      return false;
+    if (TMath::Abs(track.dcaZ()) > maxDCAz)
+      return false;
+    /*
+      if (track.eta() < etaMin)
+      return false;
+    if (track.eta() > etaMax)
+      return false;
+    if (track.phi() < phiMin)
+      return false;
+    if (track.phi() > phiMax)
+      return false;*/
+
+    return true;
+  }
+
+  // Particle Identification (Pions)
+  template <typename pionCandidate>
+  bool passedPionSelection(const pionCandidate& track)
+  {
+    if (track.tpcNSigmaPi() < nsigmaTPCMin)
+      return false;
+    if (track.tpcNSigmaPi() > nsigmaTPCMax)
+      return false;
+    if (track.tofNSigmaPi() < nsigmaTOFMin)
+      return false;
+    if (track.tofNSigmaPi() > nsigmaTOFMax)
+      return false;
+
+    return true;
+  }
+
   // Info for TPC PID
   using PidInfoTPC = soa::Join<aod::pidTPCLfFullPi, aod::pidTPCLfFullKa,
                                aod::pidTPCLfFullPr, aod::pidTPCLfFullDe,
@@ -123,12 +183,67 @@ struct AntimatterAbsorptionHMPID {
     registryQC.fill(HIST("number_of_events_data"), 1.5);
 
     for (const auto& hmpid : hmpids) {
+
+      // Get Track
       const auto& track = hmpid.track_as<FullTracks>();
+
+      // Track Selection
+      if (!passedTrackSelection(track))
+        continue;
+
       if (track.sign() > 0) {
         registryDA.fill(HIST("hmpidXYpos"), hmpid.hmpidXMip(), hmpid.hmpidYMip());
       }
       if (track.sign() < 0) {
         registryDA.fill(HIST("hmpidXYneg"), hmpid.hmpidXMip(), hmpid.hmpidYMip());
+      }
+
+      // Particle Identification
+      bool passedPionSel = false;
+      if (passedPionSelection(track))
+        passedPionSel = true;
+
+      // Absorber
+      bool hmpidAbs8cm = true;
+      bool hmpidAbs4cm = true;
+
+      // Distance between extrapolated and matched point
+      float dx = hmpid.hmpidXTrack() - hmpid.hmpidXMip();
+      float dy = hmpid.hmpidYTrack() - hmpid.hmpidYMip();
+      float dr = sqrt(dx * dx + dy * dy);
+
+      // Fill Histograms for Positive Pions
+      if (passedPionSel && track.sign() > 0) {
+
+        if (hmpidAbs8cm) {
+          registryDA.fill(HIST("incomingPi_Pos_8cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingPi_Pos_8cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("Pi_Pos_Q_8cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("Pi_Pos_ClsSize_8cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+        if (hmpidAbs4cm) {
+          registryDA.fill(HIST("incomingPi_Pos_4cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingPi_Pos_4cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("Pi_Pos_Q_4cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("Pi_Pos_ClsSize_4cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+      }
+
+      // Fill Histograms for Negative Pions
+      if (passedPionSel && track.sign() < 0) {
+
+        if (hmpidAbs8cm) {
+          registryDA.fill(HIST("incomingPi_Neg_8cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingPi_Neg_8cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("Pi_Neg_Q_8cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("Pi_Neg_ClsSize_8cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+        if (hmpidAbs4cm) {
+          registryDA.fill(HIST("incomingPi_Neg_4cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingPi_Neg_4cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("Pi_Neg_Q_4cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("Pi_Neg_ClsSize_4cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
       }
     }
   }
