@@ -378,7 +378,7 @@ struct HfTaskLc {
             /// Fill the ML outputScores and variables of candidate
             registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, nTracks, outputBkg, outputPrompt, outputFD, 0);
           } else {
-            registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, ptProng0, ptProng1, ptProng2, nTracks, chi2PCA, decayLength, decayLengthXY, cpa, cpaXY, outputBkg, outputFD, 0);
+            registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, nTracks, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, 0);
           }
         }
         if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
@@ -590,7 +590,7 @@ struct HfTaskLc {
               /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
               registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, 0, outputBkg, outputPrompt, outputFD, originType);
             } else {
-              registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, ptProng0, ptProng1, ptProng2, 0, chi2PCA, decayLength, decayLengthXY, cpa, cpaXY, outputBkg, outputFD, originType);
+              registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, 0, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, originType);
             }
           }
           if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
