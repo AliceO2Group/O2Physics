@@ -669,14 +669,17 @@ struct TableMaker {
         trackTempFilterMap = uint8_t(0);
 
         VarManager::FillTrack<TMuonFillMap>(muon);
+
+        // recalculte pDca for global muon tracks
+        if (static_cast<int>(muon.trackType()) < 2) {
+          auto const& matchMCH = muon.template matchMCHTrack_as<TMuons>();
+          VarManager::FillMuonPDca<TMuonFillMap>(matchMCH, collision);
+        } else if (static_cast<int>(muon.trackType()) > 2) {
+          VarManager::FillMuonPDca<TMuonFillMap>(muon, collision);
+        }
+
         if (fPropMuon) {
           VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
-          if (static_cast<int>(muon.trackType()) < 2) {
-            auto const& matchMCH = muon.template matchMCHTrack_as<TMuons>();
-            VarManager::FillMuonPDca<TMuonFillMap>(matchMCH, collision);
-          } else if (static_cast<int>(muon.trackType()) > 2) {
-            VarManager::FillMuonPDca<TMuonFillMap>(muon, collision);
-          }
         }
         if (fDoDetailedQA) {
           fHistMan->FillHistClass("Muons_BeforeCuts", VarManager::fgValues);
@@ -1037,14 +1040,17 @@ struct TableMaker {
         trackTempFilterMap = uint8_t(0);
 
         VarManager::FillTrack<TMuonFillMap>(muon);
+
+        // recalculte pDca for global muon tracks
+        if (static_cast<int>(muon.trackType()) < 2) {
+          auto const& matchMCH = tracksMuon.rawIteratorAt(static_cast<int>(muon.matchMCHTrackId()));
+          VarManager::FillMuonPDca<TMuonFillMap>(matchMCH, collision);
+        } else if (static_cast<int>(muon.trackType()) > 2) {
+          VarManager::FillMuonPDca<TMuonFillMap>(muon, collision);
+        }
+
         if (fPropMuon) {
           VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
-          if (static_cast<int>(muon.trackType()) < 2) {
-            auto const& matchMCH = tracksMuon.rawIteratorAt(static_cast<int>(muon.matchMCHTrackId()));
-            VarManager::FillMuonPDca<TMuonFillMap>(matchMCH, collision);
-          } else if (static_cast<int>(muon.trackType()) > 2) {
-            VarManager::FillMuonPDca<TMuonFillMap>(muon, collision);
-          }
         }
 
         if (fDoDetailedQA) {

@@ -281,7 +281,7 @@ struct HfTaskLc {
       const AxisSpec thnAxisCanType{thnConfigAxisCanType, "candidates type"};
 
       if (applyMl) {
-        registry.add("hnLcVarsWithBdt", "THn for Lambdac candidates", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisMultiplicity, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcNonPrompt, thnAxisCanType});
+        registry.add("hnLcVarsWithBdt", "THn for Lambdac candidates with BDT scores", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisMultiplicity, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisCanType});
       } else {
         registry.add("hnLcVars", "THn for Lambdac candidates", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisMultiplicity, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisCanType});
       }

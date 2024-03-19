@@ -47,6 +47,7 @@
 #include "Common/DataModel/Qvectors.h"
 #include "Framework/StaticFor.h"
 #include "Common/DataModel/McCollisionExtra.h"
+#include "PWGLF/DataModel/EPCalibrationTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -236,7 +237,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra> const& collisions, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+  void processCollisionsV0sOnly(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
@@ -254,9 +255,10 @@ struct strangederivedbuilder {
         if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC) {
           strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
-                          collision.multFT0A() * static_cast<float>(fillRawFV0A),
+                          collision.multFV0A() * static_cast<float>(fillRawFV0A),
                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
-                          collision.multNTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
+                          collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
+                          collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multNTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multAllTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multAllTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
@@ -273,7 +275,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&)
+  void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       const uint64_t collIdx = collision.globalIndex();
@@ -304,9 +306,10 @@ struct strangederivedbuilder {
         if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC) {
           strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
-                          collision.multFT0A() * static_cast<float>(fillRawFV0A),
+                          collision.multFV0A() * static_cast<float>(fillRawFV0A),
                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
-                          collision.multNTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
+                          collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
+                          collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multNTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multAllTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multAllTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
@@ -329,7 +332,7 @@ struct strangederivedbuilder {
     }
   }
 
-  void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&, soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
+  void processCollisionsMC(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::McCollisionLabels, aod::MultsExtra, aod::MultsGlobal> const& collisions, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, soa::Join<aod::CascDatas, aod::McCascLabels> const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const&, soa::Join<aod::McCollisions, aod::MultsExtraMC> const& mcCollisions, aod::McParticles const&)
   {
     // ______________________________________________
     // fill all MC collisions, correlate via index later on
@@ -372,9 +375,10 @@ struct strangederivedbuilder {
         if (fillRawFT0C || fillRawFT0C || fillRawFV0A || fillRawNTracksEta1 || fillRawZDC) {
           strangeRawCents(collision.multFT0A() * static_cast<float>(fillRawFT0A),
                           collision.multFT0C() * static_cast<float>(fillRawFT0C),
-                          collision.multFT0A() * static_cast<float>(fillRawFV0A),
+                          collision.multFV0A() * static_cast<float>(fillRawFV0A),
                           collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
-                          collision.multNTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
+                          collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
+                          collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multNTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multAllTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
                           collision.multAllTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
@@ -764,6 +768,10 @@ struct strangederivedbuilder {
   {
     StraFT0CQVs(collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.sumAmplFT0C());
   }
+  void processFT0CQVectorsLF(soa::Join<aod::Collisions, aod::EPCalibrationTables>::iterator const& collision)
+  {
+    StraFT0CQVs(std::cos(2 * collision.psiFT0C()), std::sin(2 * collision.psiFT0C()), 1.f);
+  }
   void processFT0MQVectors(soa::Join<aod::Collisions, aod::QvectorFT0Ms>::iterator const& collision)
   {
     StraFT0MQVs(collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.sumAmplFT0M());
@@ -788,6 +796,7 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processProduceCascTOFs, "Produce CascTOFs table", true);
   PROCESS_SWITCH(strangederivedbuilder, processFT0AQVectors, "Produce FT0A Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processFT0CQVectors, "Produce FT0C Q-vectors table", false);
+  PROCESS_SWITCH(strangederivedbuilder, processFT0CQVectorsLF, "Produce FT0C Q-vectors table using LF temporary calibration", false);
   PROCESS_SWITCH(strangederivedbuilder, processFT0MQVectors, "Produce FT0M Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processFV0AQVectors, "Produce FV0A Q-vectors table", false);
 };

@@ -18,6 +18,8 @@
 #include "TableHelper.h"
 #include "iostream"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -63,9 +65,11 @@ struct MultiplicityTableTaskIndexed {
   Produces<aod::MultSelections> multSelections;
   Produces<aod::MultZeqs> tableMultZeq;
   Produces<aod::MultsExtraMC> tableExtraMc;
+  Produces<aod::MultsGlobal> multsGlobal;
 
   // For vertex-Z corrections in calibration
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Service<o2::framework::O2DatabasePDG> pdg;
 
   using Run2Tracks = soa::Join<aod::Tracks, aod::TracksExtra>;
   Partition<Run2Tracks> run2tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
@@ -521,6 +525,15 @@ struct MultiplicityTableTaskIndexed {
       if (!mcPart.isPhysicalPrimary())
         continue;
 
+      auto charge = 0.;
+      auto* p = pdg->GetParticle(mcPart.pdgCode());
+      if (p != nullptr) {
+        charge = p->Charge();
+      }
+      if (std::abs(charge) < 1e-3) {
+        continue; // reject neutral particles in counters
+      }
+
       if (std::abs(mcPart.eta()) < 1.0) {
         multBarrelEta10++;
         if (std::abs(mcPart.eta()) < 0.8) {
@@ -538,8 +551,25 @@ struct MultiplicityTableTaskIndexed {
     tableExtraMc(multFT0A, multFT0C, multBarrelEta05, multBarrelEta08, multBarrelEta10);
   }
 
+  void processGlobalTrackingCounters(aod::Collision const& collisions,
+                                     soa::Join<Run3Tracks, aod::TrackSelection,
+                                               aod::TrackSelectionExtension> const& tracks)
+  {
+    // counter from Igor
+    int nGlobalTracks = 0;
+    for (auto& track : tracks) {
+      if (fabs(track.eta()) < 0.8 && track.tpcNClsFound() >= 80 && track.tpcNClsCrossedRows() >= 100) {
+        if (track.isGlobalTrack()) {
+          nGlobalTracks++;
+        }
+      }
+    }
+    multsGlobal(nGlobalTracks);
+  }
+
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", false);
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", true);
+  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processGlobalTrackingCounters, "Produce Run 3 global counters", false);
   PROCESS_SWITCH(MultiplicityTableTaskIndexed, processMC, "Produce MC multiplicity tables", false);
 };
 

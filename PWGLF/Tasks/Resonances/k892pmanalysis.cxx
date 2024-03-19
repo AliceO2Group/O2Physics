@@ -113,7 +113,8 @@ struct k892pmanalysis {
 
     if (doprocessMELight) {
       // Event-mixing background
-      histos.add("k892pmMEbackground", "Mixed-event background of charged K*(892)", kTH1F, {invMassAxis});
+      histos.add("k892pmMEbackground", "Mixed-event reconstructed K*(892) invariant mass distribution", kTH1F, {invMassAxis});
+      histos.add("k892pmMEMassPtMult3d", "Mixed-event reconstructed K*(892) mass vs pT vs V0 multiplicity distribution", kTH3F, {invMassAxis, ptAxis, centAxis});
     }
 
     if (doprocessMCLight) {
@@ -283,9 +284,9 @@ struct k892pmanalysis {
         histos.fill(HIST("QAafter/hGoodTracksV0s"), 2.5);
         // Filling invariant mass histograms
         if constexpr (!IsMix) {
-          // K*(892)pm mass
+          // Reconstructed K*(892)pm mass
           histos.fill(HIST("k892pminvmass"), lResonance.M());
-          // K*(892)pm 3d mass, pt, multiplicity histogram
+          // Reconstructed K*(892)pm 3d mass, pt, multiplicity histogram
           histos.fill(HIST("k892pmMassPtMult3d"), lResonance.M(), lResonance.Pt(), multiplicity);
           if constexpr (IsMC) {
             // LOG(info) << "track PDG:\t" << trk.pdgCode() << "\tV0 PDG:\t" << v0.pdgCode();
@@ -299,7 +300,10 @@ struct k892pmanalysis {
             histos.fill(HIST("k892pmPtRec"), lResonance.Pt());
           }
         } else {
+          // Mixed-event reeconstructed K*(892)pm mass
           histos.fill(HIST("k892pmMEbackground"), lResonance.M());
+          // Mixed-event reconstructed K*(892)pm 3d mass, pt, multiplicity histogram
+          histos.fill(HIST("k892pmMEMassPtMult3d"), lResonance.M(), lResonance.Pt(), multiplicity);
         }
         IsV0Processed = true;
       }

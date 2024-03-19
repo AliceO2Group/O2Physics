@@ -464,15 +464,9 @@ struct hyperRecoTask {
       initCCDB(bc);
 
       hEvents->Fill(0.);
-      if (!collision.sel8())
+      if (!collision.sel8() || std::abs(collision.posZ()) > 10 || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         continue;
-
       hEvents->Fill(1.);
-
-      if (std::abs(collision.posZ()) > 10.f)
-        continue;
-
-      hEvents->Fill(2.);
       hZvtx->Fill(collision.posZ());
       hCentFT0A->Fill(collision.centFT0A());
       hCentFT0C->Fill(collision.centFT0C());
@@ -511,15 +505,9 @@ struct hyperRecoTask {
       initCCDB(bc);
 
       hEvents->Fill(0.);
-      if (!collision.sel8())
+      if (!collision.sel8() || std::abs(collision.posZ()) > 10 || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         continue;
-
       hEvents->Fill(1.);
-
-      if (std::abs(collision.posZ()) > 10.f)
-        continue;
-
-      hEvents->Fill(2.);
       hZvtx->Fill(collision.posZ());
       hCentFT0A->Fill(collision.centFT0A());
       hCentFT0C->Fill(collision.centFT0C());
@@ -562,14 +550,9 @@ struct hyperRecoTask {
       initCCDB(bc);
 
       hEvents->Fill(0.);
-      if (!collision.sel8()) {
+      if (!collision.sel8() || std::abs(collision.posZ()) > 10 || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         continue;
-      }
       hEvents->Fill(1.);
-      if (std::abs(collision.posZ()) > 10.f) {
-        continue;
-      }
-      hEvents->Fill(2.);
       hZvtx->Fill(collision.posZ());
       hCentFT0A->Fill(collision.centFT0A());
       hCentFT0C->Fill(collision.centFT0C());
