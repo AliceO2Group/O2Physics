@@ -75,6 +75,7 @@ struct phianalysisrun3 {
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
+  Configurable<bool> timFrameEvsel{"timFrameEvsel", true, "TPC Time frame boundary cut"};
   // MC
   Configurable<bool> isMC{"isMC", false, "Run MC"};
   Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
@@ -254,6 +255,9 @@ struct phianalysisrun3 {
     if (!collision.sel8()) {
       return;
     }
+    if (timFrameEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      return;
+    }
     float multiplicity;
     if (cfgMultFT0)
       multiplicity = collision.centFT0C();
@@ -311,7 +315,9 @@ struct phianalysisrun3 {
       if (!c2.sel8()) {
         continue;
       }
-
+      if (timFrameEvsel && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !c2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
       float multiplicity;
       if (cfgMultFT0)
         multiplicity = c1.centFT0C();
