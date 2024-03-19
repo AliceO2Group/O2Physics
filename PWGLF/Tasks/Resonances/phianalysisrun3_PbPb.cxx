@@ -356,17 +356,17 @@ struct phianalysisrun3_PbPb {
       }
 
       if (timFrameEvsel && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
-        return;
+        continue;
       }
 
       auto multiplicity = c1.centFT0C();
       auto multiplicity2 = c2.centFT0C();
 
       if (additionalEvsel && !eventSelected(c1, multiplicity)) {
-        return;
+        continue;
       }
       if (additionalEvsel && !eventSelected(c2, multiplicity2)) {
-        return;
+        continue;
       }
 
       for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {

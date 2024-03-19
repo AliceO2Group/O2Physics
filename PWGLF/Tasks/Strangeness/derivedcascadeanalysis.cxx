@@ -62,9 +62,12 @@ struct derivedCascadeAnalysis {
 
   Configurable<bool> isXi{"isXi", 1, "Apply cuts for Xi identification"};
   Configurable<bool> isMC{"isMC", false, "MC data are processed"};
+  Configurable<bool> doBefSelCheck{"doBefSelCheck", false, "Fill mass histograms of all candidates before selections"};
+  Configurable<bool> doBefSelEventMultCorr{"doBefSelEventMultCorr", false, "Fill historam of multiplicity correlations before selections"};
   Configurable<bool> doPtDepCutStudy{"doPtDepCutStudy", false, "Fill histogram with a cutting paramer"};
   Configurable<bool> doITSFrameBorderCut{"doITSFrameBorderCut", true, "Do the event selection based on the ITSROFrameBorder"};
   Configurable<bool> doTFeventCut{"doTFeventCut", true, "Remove the collisions at the edges of the time frames"};
+  Configurable<bool> doPIDwrongIDcandidateCheck{"doPIDwrongIDcandidateCheck", true, "check PDG code of wrongly ID candidates"};
 
   Configurable<int> centMin{"centMin", 0, "Minimal accepted centrality"};
   Configurable<int> centMax{"centMax", 100, "Maximal accepted centrality"};
@@ -136,20 +139,22 @@ struct derivedCascadeAnalysis {
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
     histos.add("hEventSelection", "hEventSelection", kTH1F, {{6, 0, 6}});
 
-    histos.add("hEventNchCorrelationBefCuts", "hEventNchCorrelationBefCuts", kTH2F, {{5000, 0, 5000}, {5000, 0, 5000}});
-    histos.add("hEventNchCorrelationAfITSCut", "hEventNchCorrelationAfITSCut", kTH2F, {{5000, 0, 5000}, {5000, 0, 5000}});
+    if (doBefSelEventMultCorr) {
+      histos.add("hEventNchCorrelationBefCuts", "hEventNchCorrelationBefCuts", kTH2F, {{5000, 0, 5000}, {5000, 0, 5000}});
+      histos.add("hEventNchCorrelationAfITSCut", "hEventNchCorrelationAfITSCut", kTH2F, {{5000, 0, 5000}, {5000, 0, 5000}});
+    }
     histos.add("hEventNchCorrelationAfCuts", "hEventNchCorrelationAfCuts", kTH2F, {{5000, 0, 5000}, {5000, 0, 5000}});
 
     histos.add("hCandidate", "hCandidate", HistType::kTH1D, {{22, -0.5, 21.5}});
     histos.add("hCutValue", "hCutValue", HistType::kTH2D, {{22, -0.5, 21.5}, {300, 0, 3.01}});
 
-    histos.add("hNsigmaProton", "hNsigmaProton", HistType::kTH3D, {{100, -7, 7}, {100, 0, 10}, {100, 0, 100}});
-    histos.add("hNsigmaPionPos", "hNsigmaPionPos", HistType::kTH3D, {{100, -7, 7}, {100, 0, 10}, {100, 0, 100}});
-    histos.add("hNsigmaPionPosBach", "hNsigmaPionPosBach", HistType::kTH3D, {{100, -7, 7}, {100, 0, 10}, {100, 0, 100}});
-    histos.add("hNsigmaProtonNeg", "hNsigmaProtonNeg", HistType::kTH3D, {{100, -7, 7}, {100, 0, 10}, {100, 0, 100}});
-    histos.add("hNsigmaPionNeg", "hNsigmaPionNeg", HistType::kTH3D, {{100, -7, 7}, {100, 0, 10}, {100, 0, 100}});
-    histos.add("hNsigmaPionNegBach", "hNsigmaPionNegBach", HistType::kTH3D, {{100, -7, 7}, {100, 0, 10}, {100, 0, 100}});
-    histos.add("hNsigmaKaon", "hNsigmaKaon", HistType::kTH2D, {{100, -7, 7}, {100, 0, 10}});
+    histos.add("hNsigmaProton", "hNsigmaProton", HistType::kTH3D, {{175, -7, 7}, {100, 0, 10}, {100, 0, 100}});
+    histos.add("hNsigmaPionPos", "hNsigmaPionPos", HistType::kTH3D, {{175, -7, 7}, {100, 0, 10}, {100, 0, 100}});
+    histos.add("hNsigmaPionPosBach", "hNsigmaPionPosBach", HistType::kTH3D, {{175, -7, 7}, {100, 0, 10}, {100, 0, 100}});
+    histos.add("hNsigmaProtonNeg", "hNsigmaProtonNeg", HistType::kTH3D, {{175, -7, 7}, {100, 0, 10}, {100, 0, 100}});
+    histos.add("hNsigmaPionNeg", "hNsigmaPionNeg", HistType::kTH3D, {{175, -7, 7}, {100, 0, 10}, {100, 0, 100}});
+    histos.add("hNsigmaPionNegBach", "hNsigmaPionNegBach", HistType::kTH3D, {{175, -7, 7}, {100, 0, 10}, {100, 0, 100}});
+    histos.add("hNsigmaKaon", "hNsigmaKaon", HistType::kTH3D, {{175, -7, 7}, {100, 0, 10}, {100, 0, 100}});
 
     TString CutLabel[22] = {"All", "MassWin", "y", "DCACascDau", "DCAV0Dau", "rCasc", "rCascMax", "rV0", "rV0Max", "LambdaMass", "Bach-baryon", "V0CosPA", "CompDecayMass", "DCADauToPV", "EtaDau", "CascCosPA", "DCAV0ToPV", "nSigmaTPCV0Dau", "NTPCrows", "OOBRej", "nSigmaTPCbachelor", "ctau"};
     for (Int_t i = 1; i <= histos.get<TH1>(HIST("hCandidate"))->GetNbinsX(); i++) {
@@ -157,17 +162,23 @@ struct derivedCascadeAnalysis {
       histos.get<TH2>(HIST("hCutValue"))->GetXaxis()->SetBinLabel(i, CutLabel[i - 1]);
     }
 
-    histos.add("InvMassBefSel/hNegativeCascade", "hNegativeCascade", HistType::kTH3F, {axisPt, axisXiMass, {101, 0, 101}});
-    histos.add("InvMassBefSel/hPositiveCascade", "hPositiveCascade", {HistType::kTH3F, {axisPt, axisXiMass, {101, 0, 101}}});
+    histos.add("InvMassAfterSel/hNegativeCascade", "hNegativeCascade", HistType::kTH3F, {axisPt, axisXiMass, {101, 0, 101}});
+    histos.add("InvMassAfterSel/hPositiveCascade", "hPositiveCascade", {HistType::kTH3F, {axisPt, axisXiMass, {101, 0, 101}}});
 
     if (!isXi) {
-      histos.get<TH3>(HIST("InvMassBefSel/hNegativeCascade"))->GetYaxis()->Set(200, 1.572f, 1.772f);
-      histos.get<TH3>(HIST("InvMassBefSel/hPositiveCascade"))->GetYaxis()->Set(200, 1.572f, 1.772f);
+      histos.get<TH3>(HIST("InvMassAfterSel/hNegativeCascade"))->GetYaxis()->Set(200, 1.572f, 1.772f);
+      histos.get<TH3>(HIST("InvMassAfterSel/hPositiveCascade"))->GetYaxis()->Set(200, 1.572f, 1.772f);
     }
 
-    histos.addClone("InvMassBefSel/", "InvMassAfterSel/");
+    if (doBefSelCheck)
+      histos.addClone("InvMassAfterSel/", "InvMassBefSel/");
+
     if (isMC)
-      histos.addClone("InvMassBefSel/", "InvMassAfterSelMCrecTruth/");
+      histos.addClone("InvMassAfterSel/", "InvMassAfterSelMCrecTruth/");
+    if (doPIDwrongIDcandidateCheck) {
+      histos.add("hPDGcodeWrongPIDNeg", "hPDGcodeWrongPIDNeg", HistType::kTH3F, {axisPt, {5000, 0, 5000}, {101, 0, 101}});
+      histos.add("hPDGcodeWrongPIDPos", "hPDGcodeWrongPIDPos", HistType::kTH3F, {axisPt, {5000, 0, 5000}, {101, 0, 101}});
+    }
 
     if (doPtDepCutStudy && !doProperLifeTimeCut) {
       histos.add("PtDepCutStudy/hNegativeCascadeProperLifeTime", "hNegativeCascadeProperLifeTime", HistType::kTH3F, {axisPt, axisXiMass, {100, 0, 10}});
@@ -335,14 +346,16 @@ struct derivedCascadeAnalysis {
     }
 
     histos.fill(HIST("hEventSelection"), 3.5 /* collisions  after centrality sel*/);
-    histos.fill(HIST("hEventNchCorrelationBefCuts"), coll.multNTracksPVeta1(), coll.multAllTracksITSTPC());
+    if (doBefSelEventMultCorr)
+      histos.fill(HIST("hEventNchCorrelationBefCuts"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
 
     if (doITSFrameBorderCut && !coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
     histos.fill(HIST("hEventSelection"), 4.5 /* Not at ITS ROF border */);
 
-    histos.fill(HIST("hEventNchCorrelationAfITSCut"), coll.multNTracksPVeta1(), coll.multAllTracksITSTPC());
+    if (doBefSelEventMultCorr)
+      histos.fill(HIST("hEventNchCorrelationAfITSCut"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
 
     if (doTFeventCut && !coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return false;
@@ -351,7 +364,7 @@ struct derivedCascadeAnalysis {
 
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
-    histos.fill(HIST("hEventNchCorrelationAfCuts"), coll.multNTracksPVeta1(), coll.multAllTracksITSTPC());
+    histos.fill(HIST("hEventNchCorrelationAfCuts"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
     return true;
   }
 
@@ -516,10 +529,10 @@ struct derivedCascadeAnalysis {
       else
         invmass = casc.mOmega();
       // To have trace of how it was before selections
-      if (casc.sign() < 0) {
+      if (casc.sign() < 0 && doBefSelCheck) {
         histos.fill(HIST("InvMassBefSel/hNegativeCascade"), casc.pt(), invmass, coll.centFT0C());
       }
-      if (casc.sign() > 0) {
+      if (casc.sign() > 0 && doBefSelCheck) {
         histos.fill(HIST("InvMassBefSel/hPositiveCascade"), casc.pt(), invmass, coll.centFT0C());
       }
 
@@ -619,7 +632,7 @@ struct derivedCascadeAnalysis {
           ++counter;
         }
       } else {
-        histos.fill(HIST("hNsigmaKaon"), bachExtra.tpcNSigmaKa(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)));
+        histos.fill(HIST("hNsigmaKaon"), bachExtra.tpcNSigmaKa(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)), coll.centFT0C());
         if (doNTPCSigmaCut) {
           if (TMath::Abs(bachExtra.tpcNSigmaKa()) > nsigmatpcKa)
             continue;
@@ -700,13 +713,13 @@ struct derivedCascadeAnalysis {
       histos.fill(HIST("hCandidate"), ++counter);
 
       // To have trace of how it was before selections
-      if (casc.sign() < 0) {
+      if (casc.sign() < 0 && doBefSelCheck) {
         if (isXi)
           histos.fill(HIST("InvMassBefSel/hNegativeCascade"), casc.pt(), casc.mXi(), coll.centFT0C());
         else
           histos.fill(HIST("InvMassBefSel/hNegativeCascade"), casc.pt(), casc.mOmega(), coll.centFT0C());
       }
-      if (casc.sign() > 0) {
+      if (casc.sign() > 0 && doBefSelCheck) {
         if (isXi)
           histos.fill(HIST("InvMassBefSel/hPositiveCascade"), casc.pt(), casc.mXi(), coll.centFT0C());
         else
@@ -805,7 +818,7 @@ struct derivedCascadeAnalysis {
 
         invmass = casc.mXi();
       } else {
-        histos.fill(HIST("hNsigmaKaon"), bachExtra.tpcNSigmaKa(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)));
+        histos.fill(HIST("hNsigmaKaon"), bachExtra.tpcNSigmaKa(), TMath::Sqrt(TMath::Power(casc.pxbach(), 2) + TMath::Power(casc.pybach(), 2) + TMath::Power(casc.pzbach(), 2)), coll.centFT0C());
         if (doNTPCSigmaCut) {
           if (TMath::Abs(bachExtra.tpcNSigmaKa()) > nsigmatpcKa)
             continue;
@@ -876,6 +889,9 @@ struct derivedCascadeAnalysis {
             if ((isXi && casc.pdgCodeV0() == 3122 && casc.pdgCodePositive() == 2212 && casc.pdgCodeNegative() == -211 && casc.pdgCodeBachelor() == -211) || (!isXi && casc.pdgCodeV0() == 3122 && casc.pdgCodePositive() == 2212 && casc.pdgCodeNegative() == -211 && casc.pdgCodeBachelor() == -321))
               histos.fill(HIST("hNegativeCascadePtForEfficiency"), casc.pt(), invmass, coll.centFT0C());
           }
+        } else {
+          if (doPIDwrongIDcandidateCheck)
+            histos.fill(HIST("hPDGcodeWrongPIDNeg"), casc.pt(), casc.pdgCode(), coll.centFT0C());
         }
       } else {
         histos.fill(HIST("InvMassAfterSel/hPositiveCascade"), casc.pt(), invmass, coll.centFT0C());
@@ -930,6 +946,9 @@ struct derivedCascadeAnalysis {
               histos.fill(HIST("PtDepCutStudyMCTruth/hPositiveCascadeProperLifeTime"), casc.pt(), invmass, ctau);
             if ((isXi && casc.pdgCodeV0() == -3122 && casc.pdgCodePositive() == 211 && casc.pdgCodeNegative() == -2212 && casc.pdgCodeBachelor() == 211) || (!isXi && casc.pdgCodeV0() == -3122 && casc.pdgCodePositive() == 211 && casc.pdgCodeNegative() == -2212 && casc.pdgCodeBachelor() == 321))
               histos.fill(HIST("hPositiveCascadePtForEfficiency"), casc.pt(), invmass, coll.centFT0C());
+          } else {
+            if (doPIDwrongIDcandidateCheck)
+              histos.fill(HIST("hPDGcodeWrongPIDPos"), casc.pt(), casc.pdgCode(), coll.centFT0C());
           }
         }
       }
