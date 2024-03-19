@@ -282,7 +282,7 @@ struct HfTaskLc {
     }
   }
 
-  template <bool applyMl, typename CandType>
+  template <bool fillMl, typename CandType>
   void processData(aod::Collision const& collision,
                    CandType const& candidates,
                    aod::TracksWDca const& tracks)
@@ -367,7 +367,7 @@ struct HfTaskLc {
         if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
           massLc = hfHelper.invMassLcToPKPi(candidate);
 
-          if constexpr (applyMl) {
+          if constexpr (fillMl) {
 
             if (candidate.mlProbLcToPKPi().size() == 3) {
 
@@ -384,7 +384,7 @@ struct HfTaskLc {
         if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
           massLc = hfHelper.invMassLcToPiKP(candidate);
 
-          if constexpr (applyMl) {
+          if constexpr (fillMl) {
 
             if (candidate.mlProbLcToPiKP().size() == 3) {
 
@@ -419,7 +419,7 @@ struct HfTaskLc {
   PROCESS_SWITCH(HfTaskLc, processDataWithMl, "Process Data with the ML method", false);
 
   /// Fills MC histograms.
-  template <bool applyMl, typename CandType>
+  template <bool fillMl, typename CandType>
   void processMc(CandType const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                  aod::TracksWMc const&)
@@ -579,7 +579,7 @@ struct HfTaskLc {
           if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
             massLc = hfHelper.invMassLcToPKPi(candidate);
 
-            if constexpr (applyMl) {
+            if constexpr (fillMl) {
 
               if (candidate.mlProbLcToPKPi().size() == 3) {
 
@@ -596,7 +596,7 @@ struct HfTaskLc {
           if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
             massLc = hfHelper.invMassLcToPiKP(candidate);
 
-            if constexpr (applyMl) {
+            if constexpr (fillMl) {
 
               if (candidate.mlProbLcToPiKP().size() == 3) {
 
