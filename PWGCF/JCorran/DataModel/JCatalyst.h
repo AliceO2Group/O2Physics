@@ -19,7 +19,7 @@ namespace o2::aod
 namespace jcollision
 {
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float); //! Collision centrality or multiplicity
-} // namespace collisionData
+} // namespace jcollision
 
 DECLARE_SOA_TABLE(JCollisions, "AOD", "JCOLLISION",
                   o2::soa::Index<>,
@@ -35,7 +35,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float);               //! p_T (GeV/c)
 DECLARE_SOA_COLUMN(Eta, eta, float);             //! Eta
 DECLARE_SOA_COLUMN(Phi, phi, float);             //! Phi
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);             //! Phi
-} // namespace particleTrack
+} // namespace jtrack
 
 DECLARE_SOA_TABLE(JTracks, "AOD", "JTRACK",
 				  o2::soa::Index<>,
