@@ -60,7 +60,7 @@ struct JetTaggerHFTask {
       float jetProb = 0;
       int algorithm2 = 0;
       int algorithm3 = 0;
-      TF1* fSignImpXYSig = jettaggingutilities::getResolutionFunction(0);
+      std::unique_ptr<TF1> fSignImpXYSig(jettaggingutilities::getResolutionFunction(0));
       if (doTC) {
         jetProb = jettaggingutilities::getJetProbability(fSignImpXYSig, collision, jet, jtracks, tracks);
       }
@@ -82,7 +82,7 @@ struct JetTaggerHFTask {
       float jetProb = 0;
       int algorithm2 = 0;
       int algorithm3 = 0;
-      TF1* fSignImpXYSig = jettaggingutilities::getResolutionFunction(origin);
+      std::unique_ptr<TF1> fSignImpXYSig(jettaggingutilities::getResolutionFunction(origin));
       if (doTC) {
         jetProb = jettaggingutilities::getJetProbability(fSignImpXYSig, collision, mcdjet, jtracks, tracks);
       }
