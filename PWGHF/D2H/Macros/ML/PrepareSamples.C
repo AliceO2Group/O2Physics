@@ -52,11 +52,11 @@ const std::vector<T> getVectorFromJson(const TypeJsonEntry& jsonEntry)
     }
   } else if constexpr (std::is_same<T, uint8_t>::value) {
     for (const auto& entry : jsonArray) {
-      vec.emplace_back((uint8_t)entry.GetInt());
+      vec.emplace_back(static_cast<uint8_t>(entry.GetInt()));
     }
   } else if constexpr (std::is_same<T, int>::value) {
     for (const auto& entry : jsonArray) {
-      vec.emplace_back((int)entry.GetInt());
+      vec.emplace_back(static_cast<int>(entry.GetInt()));
     }
   } else if constexpr (std::is_same<T, float>::value) {
     for (const auto& entry : jsonArray) {
