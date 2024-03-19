@@ -515,7 +515,7 @@ template <typename T, typename T1, typename T2>
 inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T& track, const T1& trackPar, const T2& dca, const int& whichTrigger)
 {
 
-  int8_t retValue{BIT(kSoftPion) | BIT(kForBeauty) | BIT(kSoftPionForBeauty)};
+  int8_t retValue{BIT(kSoftPion) | BIT(kForBeauty) | BIT(kSoftPionForBeauty) | BIT(kSoftPionForSigmaC)};
 
   if (!track.isGlobalTrackWoDCA()) {
     return kRejected;
@@ -550,7 +550,7 @@ inline int8_t HfFilterHelper::isSelectedTrackForSoftPionOrBeauty(const T& track,
 
     // We do not need any further selection for SigmaC soft-pi
     // The current track is a good SigmaC soft-pi candidate
-    return kSoftPionForSigmaC;
+    return retValue;
   }
 
   if (pT > mPtMaxSoftPionForDstar) {

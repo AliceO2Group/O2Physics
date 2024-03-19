@@ -946,6 +946,8 @@ struct HfFilter { // Main struct for HF triggers
           if (!keepEvent[kV0Charm3P] && is3Prong[2] > 0 && is3ProngInMass[2] > 0 && isSignalTagged[2] > 0 && helper.isSelectedKaonFromXicResoToSigmaC<true>(track)) {
             // we need a candidate Lc->pKpi and a candidate soft kaon
 
+            LOGP(info, "--> We have a selected Lc and a selected kaon!");
+
             // look for SigmaC++ candidates
             for (const auto& trackSoftPiId : trackIdsThisCollision) { // start loop over tracks (soft pi)
 
