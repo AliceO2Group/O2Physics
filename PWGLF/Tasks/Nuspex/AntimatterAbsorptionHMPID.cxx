@@ -103,8 +103,8 @@ struct AntimatterAbsorptionHMPID {
       return false;
     if (!track.hasTOF())
       return false;
-    if (!track.has_hmpid())
-      return false;
+    // if (!track.has_hmpid())
+    // return false;
     if (!track.passedITSRefit())
       return false;
     if (!track.passedTPCRefit())
