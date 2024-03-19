@@ -43,7 +43,6 @@ using namespace o2::framework::expressions;
 #define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
 using TracksComplete = soa::Join<aod::Tracks, aod::TracksExtra>;
-using V0DatasWithoutTrackX = soa::Join<aod::V0Indices, aod::V0Cores>;
 
 struct correlateStrangeness {
   // for efficiency corrections if requested
@@ -156,7 +155,7 @@ struct correlateStrangeness {
       if (!mixing)
         histos.fill(HIST("sameEvent/TriggerParticlesV0"), trigg.pt(), mult);
       for (auto& assocCandidate : assocs) {
-        auto assoc = assocCandidate.v0Core_as<V0DatasWithoutTrackX>();
+        auto assoc = assocCandidate.v0Core();
 
         //---] removing autocorrelations [---
         auto postrack = assoc.posTrack_as<TracksComplete>();
@@ -639,7 +638,7 @@ struct correlateStrangeness {
 
   void processSameEventHV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator const& collision,
                             aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks,
-                            V0DatasWithoutTrackX const&, aod::V0sLinked const&, TracksComplete const&)
+                            aod::V0Cores const&, aod::V0sLinked const&, TracksComplete const&)
   {
     // ________________________________________________
     // Perform basic event selection
