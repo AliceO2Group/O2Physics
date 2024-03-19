@@ -193,6 +193,7 @@ struct jflucAnalysisTask {
     pcf->SetEtaRange(etamin, etamax);
     pcf->UserExec("");
   }
+  PROCESS_SWITCH(jflucAnalysisTask, process, "Process data", true);
 
   void processCorrected(aod::JCollision const& collision, soa::Filtered<soa::Join<aod::JTracks, aod::JWeights>> const& tracks)
   {
@@ -210,6 +211,8 @@ struct jflucAnalysisTask {
     pcf->SetEtaRange(etamin, etamax);
     pcf->UserExec("");
   }
+  PROCESS_SWITCH(jflucAnalysisTask, processCorrected, "Process data with corrections", false);
+
   JFFlucAnalysis* pcf;
 };
 
