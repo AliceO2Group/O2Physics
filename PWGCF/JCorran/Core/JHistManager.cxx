@@ -404,7 +404,7 @@ JArrayAlgorithmSimple::~JArrayAlgorithmSimple()
 {
   // Dimension, GetEntries, SizeOf
   if (fArray)
-    delete[](void**) fArray;
+    delete[] (void**)fArray;
 }
 
 //_____________________________________________________

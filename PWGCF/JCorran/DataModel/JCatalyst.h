@@ -11,8 +11,8 @@
 /// \author Jasper Parkkila (jparkkil@cern.ch)
 /// \author Dong Jo Kim (djkim@jyu.fi)
 /// \since Sep 2022
-#ifndef JFLUC_CATALYST_H
-#define JFLUC_CATALYST_H
+#ifndef PWGCF_JCORRAN_DATAMODEL_JCATALYST_H_
+#define PWGCF_JCORRAN_DATAMODEL_JCATALYST_H_
 
 namespace o2::aod
 {
@@ -23,25 +23,25 @@ DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float); //! Collision centrality 
 
 DECLARE_SOA_TABLE(JCollisions, "AOD", "JCOLLISION",
                   o2::soa::Index<>,
-				  bc::RunNumber,
-				  collision::PosZ,
-				  jcollision::Multiplicity);
+                  bc::RunNumber,
+                  collision::PosZ,
+                  jcollision::Multiplicity);
 using JCollision = JCollisions::iterator;
 
 namespace jtrack
 {
-DECLARE_SOA_INDEX_COLUMN(JCollision, jcollision);  //! collision ID
-DECLARE_SOA_COLUMN(Pt, pt, float);               //! p_T (GeV/c)
-DECLARE_SOA_COLUMN(Eta, eta, float);             //! Eta
-DECLARE_SOA_COLUMN(Phi, phi, float);             //! Phi
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);             //! Phi
+DECLARE_SOA_INDEX_COLUMN(JCollision, jcollision); //! collision ID
+DECLARE_SOA_COLUMN(Pt, pt, float);                //! p_T (GeV/c)
+DECLARE_SOA_COLUMN(Eta, eta, float);              //! Eta
+DECLARE_SOA_COLUMN(Phi, phi, float);              //! Phi
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);           //! Phi
 } // namespace jtrack
 
 DECLARE_SOA_TABLE(JTracks, "AOD", "JTRACK",
-				  o2::soa::Index<>,
+                  o2::soa::Index<>,
                   jtrack::JCollisionId,
                   jtrack::Pt, jtrack::Eta, jtrack::Phi, jtrack::Sign);
 using JTrack = JTracks::iterator;
 } // namespace o2::aod
 
-#endif
+#endif // PWGCF_JCORRAN_DATAMODEL_JCATALYST_H_

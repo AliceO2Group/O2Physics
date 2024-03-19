@@ -12,11 +12,15 @@
 /// \author Dong Jo Kim (djkim@jyu.fi)
 /// \since Sep 2022
 
+#include <CCDB/BasicCCDBManager.h>
+#include <Math/Vector4D.h>
+#include <Math/LorentzVector.h>
+#include <TRandom.h>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/ASoAHelpers.h"
-#include <CCDB/BasicCCDBManager.h>
 
 // centrality
 #include "Common/DataModel/Multiplicity.h"
@@ -34,10 +38,6 @@
 #include "ReconstructionDataFormats/V0.h"
 ////
 
-#include <Math/Vector4D.h>
-#include <Math/LorentzVector.h>
-#include <TRandom.h>
-
 #include "PWGCF/JCorran/DataModel/JCatalyst.h"
 
 using namespace o2;
@@ -54,7 +54,7 @@ namespace o2::aod
 namespace jmultiplicity
 {
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float); //! Collision centrality or multiplicity
-} // namespace cfmultiplicity
+} // namespace jmultiplicity
 DECLARE_SOA_TABLE(JMultiplicities, "AOD", "JMULTIPLICITY", jmultiplicity::Multiplicity); //! Transient multiplicity table
 } // namespace o2::aod
 
@@ -87,30 +87,30 @@ struct JCatalyst {
 
   void process(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::JMultiplicities>>::iterator const& collision, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection>> const& tracks)
   {
-    switch(trigger){
-	case 7:
-		if (!collision.alias_bit(kINT7) || !collision.sel7())
-		  return;
-		break;
-	case 8:
-	 	if(!collision.sel8())
-		  return;
-		break;
-	default:
-		break;
-	}
+    switch (trigger) {
+      case 7:
+        if (!collision.alias_bit(kINT7) || !collision.sel7())
+          return;
+        break;
+      case 8:
+        if (!collision.sel8())
+          return;
+        break;
+      default:
+        break;
+    }
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    collisionData(bc.runNumber(),collision.posZ(),collision.multiplicity());
+    collisionData(bc.runNumber(), collision.posZ(), collision.multiplicity());
 
-	for(auto &track : tracks){
-	  particleTrack(collisionData.lastIndex(),track.pt(),track.eta(),track.phi(),track.sign());
-	}
+    for (auto& track : tracks) {
+      particleTrack(collisionData.lastIndex(), track.pt(), track.eta(), track.phi(), track.sign());
+    }
   }
 };
 
-struct JMultiplicitySelector{
-	Produces<aod::JMultiplicities> output;
+struct JMultiplicitySelector {
+  Produces<aod::JMultiplicities> output;
 
   O2_DEFINE_CONFIGURABLE(ptmin, float, 0.2f, "Minimal pT for tracks")
   O2_DEFINE_CONFIGURABLE(etamax, float, 0.9f, "Eta range for tracks")
@@ -147,4 +147,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<JCatalyst>(cfgc),
     adaptAnalysisTask<JMultiplicitySelector>(cfgc)};
 }
-

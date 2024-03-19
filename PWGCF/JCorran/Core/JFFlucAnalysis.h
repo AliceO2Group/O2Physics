@@ -87,16 +87,19 @@ class JFFlucAnalysis
   using hasWeightEff = decltype(std::declval<T&>().weightEff());
 
   template <class JInputClassIter>
-  inline std::tuple<double, double> GetWeights(const JInputClassIter &track){
-      Double_t phiNUACorr, effCorr;
-      if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value)
-		  phiNUACorr = track.weightNUA();
-	  else phiNUACorr = 1.0;
-      if constexpr (std::experimental::is_detected<hasWeightEff, const JInputClassIter>::value)
-		  effCorr = track.weightEff();
-	  else effCorr = 1.0;
-	  return {phiNUACorr,effCorr};
-   }
+  inline std::tuple<double, double> GetWeights(const JInputClassIter& track)
+  {
+    Double_t phiNUACorr, effCorr;
+    if constexpr (std::experimental::is_detected<hasWeightNUA, const JInputClassIter>::value)
+      phiNUACorr = track.weightNUA();
+    else
+      phiNUACorr = 1.0;
+    if constexpr (std::experimental::is_detected<hasWeightEff, const JInputClassIter>::value)
+      effCorr = track.weightEff();
+    else
+      effCorr = 1.0;
+    return {phiNUACorr, effCorr};
+  }
 
   template <class JInputClass>
   inline void FillQA(JInputClass& inputInst)
@@ -118,7 +121,7 @@ class JFFlucAnalysis
       if (TMath::Abs(track.eta()) < fEta_min || TMath::Abs(track.eta()) > fEta_max)
         continue;
 
-	  auto [phiNUACorr,effCorr] = GetWeights<const typename JInputClass::iterator>(track);
+      auto [phiNUACorr, effCorr] = GetWeights<const typename JInputClass::iterator>(track);
       Double_t effCorrInv = 1.0 / effCorr;
       fh_eta[fCBin]->Fill(track.eta(), effCorrInv);
       fh_pt[fCBin]->Fill(track.pt(), effCorrInv);
@@ -145,7 +148,7 @@ class JFFlucAnalysis
       if (track.eta() < -fEta_max || track.eta() > fEta_max)
         continue;
 
-	  auto [phiNUACorr,effCorr] = GetWeights<const typename JInputClass::iterator>(track);
+      auto [phiNUACorr, effCorr] = GetWeights<const typename JInputClass::iterator>(track);
 
       UInt_t isub = (UInt_t)(track.eta() > 0.0);
       for (UInt_t ih = 0; ih < kNH; ih++) {
