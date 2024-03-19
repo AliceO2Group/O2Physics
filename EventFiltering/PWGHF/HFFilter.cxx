@@ -81,7 +81,7 @@ struct HfFilter { // Main struct for HF triggers
   Configurable<LabeledArray<int>> enableFemtoChannels{"enableFemtoChannels", {activeFemtoChannels[0], 1, 5, labelsEmpty, labelsColumnsFemtoChannels}, "Flags to enable/disable femto channels"};
   Configurable<bool> requireCharmMassForFemto{"requireCharmMassForFemto", false, "Flags to enable/disable cut on charm-hadron invariant-mass window for femto"};
   Configurable<float> ptThresholdForFemtoPid{"ptThresholdForFemtoPid", 8., "pT threshold for changing strategy of proton PID in femto triggers"};
-  Configurable<bool> forceTofPid{"forceTofPid", true, "force TOF PID for proton in femto triggers"};
+  Configurable<bool> forceTofPidForFemto{"forceTofPidForFemto", true, "force TOF PID for proton in femto triggers"};
 
   // double charm
   Configurable<LabeledArray<int>> enableDoubleCharmChannels{"enableDoubleCharmChannels", {activeDoubleCharmChannels[0], 1, 3, labelsEmpty, labelsColumnsDoubleCharmChannels}, "Flags to enable/disable double charm channels"};
@@ -551,7 +551,7 @@ struct HfFilter { // Main struct for HF triggers
 
           // 2-prong femto
           if (!keepEvent[kFemto2P] && enableFemtoChannels->get(0u, 0u) && isCharmTagged && track.collisionId() == thisCollId && (TESTBIT(selD0, 0) || TESTBIT(selD0, 1) || !requireCharmMassForFemto)) {
-            bool isProton = helper.isSelectedProton4Femto(track, trackParThird, activateQA, hProtonTPCPID, hProtonTOFPID, forceTofPid);
+            bool isProton = helper.isSelectedProton4Femto(track, trackParThird, activateQA, hProtonTPCPID, hProtonTOFPID, forceTofPidForFemto);
             if (isProton) {
               float relativeMomentum = helper.computeRelativeMomentum(pVecThird, pVec2Prong, massD0);
               if (applyOptimisation) {
@@ -923,7 +923,7 @@ struct HfFilter { // Main struct for HF triggers
           } // end beauty selection
 
           // 3-prong femto
-          bool isProton = helper.isSelectedProton4Femto(track, trackParFourth, activateQA, hProtonTPCPID, hProtonTOFPID, forceTofPid);
+          bool isProton = helper.isSelectedProton4Femto(track, trackParFourth, activateQA, hProtonTPCPID, hProtonTOFPID, forceTofPidForFemto);
           if (isProton && track.collisionId() == thisCollId) {
             for (int iHypo{0}; iHypo < kNCharmParticles - 1 && !keepEvent[kFemto3P]; ++iHypo) {
               if (isCharmTagged[iHypo] && enableFemtoChannels->get(0u, iHypo + 1) && (TESTBIT(is3ProngInMass[iHypo], 0) || TESTBIT(is3ProngInMass[iHypo], 1) || !requireCharmMassForFemto)) {
