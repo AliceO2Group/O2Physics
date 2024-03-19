@@ -112,32 +112,6 @@ struct tpcPid {
   // Parametrization configuration
   bool useCCDBParam = false;
 
-  int getPIDIndex(int pdgCode)
-  {
-    switch (abs(pdgCode)) {
-      case 11:
-        return o2::track::PID::Electron;
-      case 13:
-        return o2::track::PID::Muon;
-      case 211:
-        return o2::track::PID::Pion;
-      case 321:
-        return o2::track::PID::Kaon;
-      case 2212:
-        return o2::track::PID::Proton;
-      case 1000010020:
-        return o2::track::PID::Deuteron;
-      case 1000010030:
-        return o2::track::PID::Triton;
-      case 1000020030:
-        return o2::track::PID::Helium3;
-      case 1000020040:
-        return o2::track::PID::Alpha;
-      default: // treat as pion if not any of the above
-        return o2::track::PID::Pion;
-    }
-  }
-
   void init(o2::framework::InitContext& initContext)
   {
     // Protection for process flags
@@ -463,7 +437,7 @@ struct tpcPid {
 
   void processMcTuneOnData(CollMC const& collisionsMc, TrksMC const& tracksMc, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
-
+    gRandom->SetSeed(0); // Ensure unique seed from UUID for each process call 
     const uint64_t outTable_size = tracksMc.size();
 
     auto reserveTable = [&outTable_size](const Configurable<int>& flag, auto& table) {
