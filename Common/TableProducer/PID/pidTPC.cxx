@@ -437,7 +437,7 @@ struct tpcPid {
 
   void processMcTuneOnData(CollMC const& collisionsMc, TrksMC const& tracksMc, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
-    gRandom->SetSeed(0); // Ensure unique seed from UUID for each process call 
+    gRandom->SetSeed(0); // Ensure unique seed from UUID for each process call
     const uint64_t outTable_size = tracksMc.size();
 
     auto reserveTable = [&outTable_size](const Configurable<int>& flag, auto& table) {
