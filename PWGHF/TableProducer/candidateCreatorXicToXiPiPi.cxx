@@ -544,16 +544,17 @@ struct HfCandidateCreatorXic {
 
 /// Performs MC matching.
 struct HfCandidateCreatorXicMc {
-  Spawns<aod::HfCandXicExt> rowCandXicToXiPiPi;
+  Spawns<aod::HfCandXicExt> rowCandidateXic;
   Produces<aod::HfCandXicMcRec> rowMcMatchRec;
   Produces<aod::HfCandXicMcGen> rowMcMatchGen;
 
   void init(InitContext const&) {}
 
-  void processMc(aod::HfCandXic const& candidates,
-                 aod::TracksWMc const& tracks,
+  void processMc(aod::TracksWMc const& tracks,
                  aod::McParticles const& mcParticles)
   {
+    rowCandidateXic->bindExternalIndices(&tracks);
+
     int indexRec = -1;
     int indexRecXicPlus = -1;
     int8_t sign = -9;
@@ -570,7 +571,7 @@ struct HfCandidateCreatorXicMc {
     int pdgCodeProton = kProton;        // 2212
 
     // Match reconstructed candidates.
-    for (const auto& candidate : candidates) {
+    for (const auto& candidate : *rowCandidateXic) {
       flag = 0;
       sign = -9;
       origin = RecoDecay::OriginType::None;
