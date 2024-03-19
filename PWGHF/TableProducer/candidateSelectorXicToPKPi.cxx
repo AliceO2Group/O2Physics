@@ -78,7 +78,9 @@ struct HfCandidateSelectorXicToPKPi {
   TrackSelectorPr selectorProton;
   HfHelper hfHelper;
 
-  using TracksSel = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr>;
+  using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
+
+
 
   void init(InitContext const&)
   {
@@ -126,7 +128,7 @@ struct HfCandidateSelectorXicToPKPi {
       return false;
     }
 
-    // candidate chi2PC
+    // candidate chi2PCA
     if (candidate.chi2PCA() > cuts->get(pTBin, "chi2PCA")) {
       return false;
     }
@@ -343,6 +345,6 @@ struct HfCandidateSelectorXicToPKPi {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorXicToPKPi>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCandidateSelectorXicToPKPi>(cfgc)};
+
 }
