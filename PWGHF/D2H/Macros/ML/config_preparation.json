@@ -1,0 +1,27 @@
+{
+  "channel": "DplusToPiKPi",
+  "seed_split": 42,
+  "labels": ["Bkg", "Prompt", "Nonprompt"],
+  "prepare_samples": {
+    "input": {
+      "files": [
+        "./AO2D_merged.root"],
+      "tree_name": "O2hfcanddplite"
+    }
+  },
+  "preselections": [],
+  "cols_to_remove": null,
+  "pid": {
+    "combine_vars": true,
+    "mass_hypos": ["Pi", "Ka"],
+    "n_prongs": 3
+  },
+  "downscale_bkg": 1.0,
+  "filt_bkg_mass": "fM < 1.82 || (1.92 < fM && fM < 2.00)",
+  "output": {
+    "dirs": [
+      "./FilteredSample"],
+    "force": true,
+    "tree_name": "treeMLDplus"
+  }
+}
