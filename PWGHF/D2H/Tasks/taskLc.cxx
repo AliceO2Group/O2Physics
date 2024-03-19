@@ -664,7 +664,7 @@ struct HfTaskLc {
                        soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                        aod::TracksWMc const& tracksWithMc)
   {
-    processMc<true>(selectedLcCandidatesMcMl, mcParticles, tracksWithMc);
+    processMc<true>(selectedLcCandidatesMlMc, mcParticles, tracksWithMc);
   }
   PROCESS_SWITCH(HfTaskLc, processMcWithMl, "Process Mc with the ML method", false);
 };
