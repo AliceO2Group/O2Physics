@@ -9,4 +9,9 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(include)
+o2physics_add_header_only_library(MultCore
+                                  HEADERS Axes.h
+                                          Functions.h
+                                          Histograms.h
+                                          Selections.h)
+

@@ -258,7 +258,7 @@ struct HfTaskDs {
       }
     }
     registry.fill(HIST("hCos3PiK"), hfHelper.cos3PiKDsToKKPi(candidate), pt);
-    registry.fill(HIST("hAbsCos3PiK"), std::abs(hfHelper.cos3PiKDsToKKPi(candidate)), pt);
+    registry.fill(HIST("hAbsCos3PiK"), hfHelper.absCos3PiKDsToKKPi(candidate), pt);
     registry.fill(HIST("hDeltaMassPhi"), hfHelper.deltaMassPhiDsToKKPi(candidate), pt);
     registry.fill(HIST("hMassKK"), hfHelper.massKKPairDsToKKPi(candidate), pt);
     return;
@@ -288,7 +288,7 @@ struct HfTaskDs {
       }
     }
     registry.fill(HIST("hCos3PiK"), hfHelper.cos3PiKDsToPiKK(candidate), pt);
-    registry.fill(HIST("hAbsCos3PiK"), std::abs(hfHelper.cos3PiKDsToPiKK(candidate)), pt);
+    registry.fill(HIST("hAbsCos3PiK"), hfHelper.absCos3PiKDsToPiKK(candidate), pt);
     registry.fill(HIST("hDeltaMassPhi"), hfHelper.deltaMassPhiDsToPiKK(candidate), pt);
     registry.fill(HIST("hMassKK"), hfHelper.massKKPairDsToPiKK(candidate), pt);
     return;

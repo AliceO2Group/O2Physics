@@ -40,6 +40,7 @@ struct SG_FIT_Analyzer { // UDTutorial01
   ConfigurableAxis ZDCAxis{"ZDCAxis", {1000, -2.5, 199.5}, ""};
   Configurable<float> FV0_cut{"FV0", 100., "FV0A threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
+
   // initialize histogram registry
   HistogramRegistry registry{
     "registry",
@@ -261,6 +262,7 @@ struct SG_FIT_Analyzer { // UDTutorial01
     registry.add("ZDC/MCZNA", "Track number vs Amp FDDA", {HistType::kTH2F, {{axismult}, {axiszdc}}});
     registry.add("ZDC/MACZNA", "Track number vs Amp FDDC", {HistType::kTH2F, {{axismult}, {axiszdc}}});
     registry.add("ZDC/MACZNC", "Track number vs Amp FDDC", {HistType::kTH2F, {{axismult}, {axiszdc}}});
+
   }
 
   // define data types

@@ -876,45 +876,52 @@ struct chargedkstaranalysis {
           for (auto& mothertrack2 : mctrackv0.mothers_as<aod::McParticles>()) {
 
             rRecParticles.fill(HIST("hMCRec"), 4.5);
-            // LOG(info) << "Mothers PDG:\t" <<mothertrack1.pdgCode()<<" "<<mothertrack2.pdgCode();
+            // LOG(info) << "Initial Mothers PDG:\t" <<mothertrack1.pdgCode()<<" "<<mothertrack2.pdgCode();
 
-            if (mothertrack1.pdgCode() != mothertrack2.pdgCode()) {
+            if (mothertrack2.pdgCode() != 311) // K0
               continue;
+
+            for (auto& mothertrack3 : mothertrack2.mothers_as<aod::McParticles>()) {
+
+              // LOG(info) << "final Mothers PDG:\t" <<mothertrack3.pdgCode();
+
+              if (std::abs(mothertrack3.pdgCode()) != 323) {
+                continue;
+              }
+
+              if (mothertrack3.pdgCode() != mothertrack1.pdgCode()) {
+                continue;
+              }
+
+              // LOG(info) << "final Mothers PDG:\t" <<mothertrack3.pdgCode()<<" "<<mothertrack3.globalIndex()<<" "<<mothertrack1.globalIndex();
+
+              rRecParticles.fill(HIST("hMCRec"), 5.5);
+
+              if (mothertrack3.globalIndex() != mothertrack1.globalIndex()) {
+                continue;
+              }
+
+              rRecParticles.fill(HIST("hMCRec"), 6.5);
+              /*
+                    if (!mothertrack1.producedByGenerator()) {
+                      continue;
+                    }
+                */
+              // rRecParticles.fill(HIST("hMCRec"), 7.5);
+
+              // LOG(info) << "Mothers PDG:\t" <<mothertrack1.pdgCode()<<" "<<mothertrack2.pdgCode();
+
+              if (std::abs(mothertrack1.y()) >= 0.5) {
+                continue;
+              }
+
+              rRecParticles.fill(HIST("hMCRec"), 7.5);
+
+              rRecParticles.fill(HIST("hCKSRec"), mothertrack1.pt());
             }
-
-            rRecParticles.fill(HIST("hMCRec"), 5.5);
-
-            if (mothertrack1.globalIndex() != mothertrack2.globalIndex()) {
-              continue;
-            }
-
-            rRecParticles.fill(HIST("hMCRec"), 6.5);
-
-            if (!mothertrack1.producedByGenerator()) {
-              continue;
-            }
-
-            rRecParticles.fill(HIST("hMCRec"), 7.5);
-
-            // LOG(info) << "Mothers PDG:\t" <<mothertrack1.pdgCode()<<" "<<mothertrack2.pdgCode();
-
-            if (std::abs(mothertrack1.y()) >= 0.5) {
-              continue;
-            }
-
-            rRecParticles.fill(HIST("hMCRec"), 6.5);
-
-            if (std::abs(mothertrack1.pdgCode()) != 323) {
-              continue;
-            }
-
-            rRecParticles.fill(HIST("hMCRec"), 7.5);
-
-            rRecParticles.fill(HIST("hCKSRec"), mothertrack1.pt());
           }
         }
       }
-
     } // track loop ends
   }
 

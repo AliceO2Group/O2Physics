@@ -47,8 +47,14 @@ int initialiseEventSelection(std::string eventSelection)
 {
   if (eventSelection == "sel8") {
     return JCollisionSel::sel8;
+  } else if (eventSelection == "sel8WithoutTimeFrameBorderCut") {
+    return JCollisionSel::sel8WithoutTimeFrameBorderCut;
   } else if (eventSelection == "sel7") {
     return JCollisionSel::sel7;
+  } else if (eventSelection == "sel7WithoutTimeFrameBorderCut") {
+    return JCollisionSel::sel7WithoutTimeFrameBorderCut;
+  } else if (eventSelection == "WithoutTimeFrameBorderCut") {
+    return JCollisionSel::WithoutTimeFrameBorderCut;
   }
   return -1;
 }

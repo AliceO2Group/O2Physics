@@ -180,18 +180,18 @@ struct strangenessFilter {
     mTrackSelector.SetMaxDcaXY(1.f);
     mTrackSelector.SetMaxDcaZ(2.f);
 
-    hProcessedEvents->GetXaxis()->SetBinLabel(1, "Events processed");
-    hProcessedEvents->GetXaxis()->SetBinLabel(2, "Events w/ high-#it{p}_{T} hadron");
-    hProcessedEvents->GetXaxis()->SetBinLabel(3, "#Omega");
-    hProcessedEvents->GetXaxis()->SetBinLabel(4, "high-#it{p}_{T} hadron - #Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(5, "2#Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(6, "3#Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(7, "4#Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(8, "#Xi-YN");
-    hProcessedEvents->GetXaxis()->SetBinLabel(9, "#Omega high radius");
-    hProcessedEvents->GetXaxis()->SetBinLabel(10, "#Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(11, "trk. #Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(12, "trk. #Omega");
+    hProcessedEvents->GetXaxis()->SetBinLabel(2, "Events processed");
+    hProcessedEvents->GetXaxis()->SetBinLabel(3, "Events w/ high-#it{p}_{T} hadron");
+    hProcessedEvents->GetXaxis()->SetBinLabel(4, "#Omega");
+    hProcessedEvents->GetXaxis()->SetBinLabel(5, "high-#it{p}_{T} hadron - #Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(6, "2#Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(7, "3#Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(8, "4#Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(9, "#Xi-YN");
+    hProcessedEvents->GetXaxis()->SetBinLabel(10, "#Omega high radius");
+    hProcessedEvents->GetXaxis()->SetBinLabel(11, "#Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(12, "trk. #Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(13, "trk. #Omega");
 
     hCandidate->GetXaxis()->SetBinLabel(1, "All");
     hCandidate->GetXaxis()->SetBinLabel(2, "Has_V0");

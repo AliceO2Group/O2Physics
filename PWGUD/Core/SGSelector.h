@@ -145,8 +145,8 @@ class SGSelector
         newznabc = newbc;
       }
     }
-    result.bc = &newbc;
     // LOGF(info, "Old BC: %i, New BC: %i",oldbc.globalBC(), newbc.globalBC());
+    result.bc = &newbc;
     result.value = gA && gC ? 2 : (gA ? 0 : 1);
     return result;
   }

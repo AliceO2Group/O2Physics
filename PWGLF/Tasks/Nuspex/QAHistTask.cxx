@@ -218,9 +218,15 @@ struct QAHistTask {
     MC_recon_reg.add("histChi2ITSvsITSnClsAll", "chi^2 ITS vs ITS nCls", HistType::kTH2F, {{125, 0.0, 50.0, "chi^2"}, {10, 0.0, 10.0, "ITS nCls"}});
     MC_recon_reg.add("histChi2TOF", "chi^2 TOF vs Pt", HistType::kTH3F, {ptAxis, {75, 0.0, 15.0, "chi^2"}, PDGBINNING});
     MC_recon_reg.add("histTrackLength", "Track length", HistType::kTH2F, {{350, 0., 700., "length (cm)"}, PDGBINNING});
+    MC_recon_reg.add("histGlobalpDist", "Global p distribution", HistType::kTH2F, {{150, -10, +10, "#it{p} (GeV/c)"}, PDGBINNING});
+    MC_recon_reg.add("histTPCpDist", "TPC p distribution", HistType::kTH2F, {{150, -10, +10, "#it{p} (GeV/c)"}, PDGBINNING});
     MC_recon_reg.add("histTPCFractionSharedCls", "Fraction of shared TPC clusters", HistType::kTH2F, {{100, -2.0, 2.0, "Shared Cls"}, PDGBINNING});
-    MC_recon_reg.add("histpTCorralation", "TPC-glo pT vs glo pT", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
-    MC_recon_reg.add("histpTCorralation_PDG", "TPC-glo pT vs glo pT", HistType::kTH3F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}, PDGBINNING});
+    MC_recon_reg.add("histpTCorralation", "TPC-glo p vs glo p", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
+    MC_recon_reg.add("histpTCorralation_PDG", "TPC-glo p vs glo p", HistType::kTH3F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}, PDGBINNING});
+
+    MC_recon_reg.add("histpTCorralation_pion", "TPC-glo p vs glo p", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
+    MC_recon_reg.add("histpTCorralation_apion", "TPC-glo p vs glo p", HistType::kTH2F, {{100, -5.0, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {80, -4.0, 4.0, "#it{p}^{TPC} - #it{p}^{global} (GeV/#it{c})"}});
+    MC_recon_reg.add("histpTCorralation_2", "TPC p vs global p", HistType::kTH3F, {{110, -0.5, 5.0, "#it{p}^{global} (GeV/#it{c})"}, {110, -0.5, 5.0, "#it{p}^{TPC} (GeV/#it{c})"}, PDGBINNING});
 
     // MC diff (truth - reconstructed)
     MC_recon_diff_reg.add("histPhiDiff", "MC t", HistType::kTH2F, {ptAxis_diff, PDGBINNING});
@@ -601,8 +607,12 @@ struct QAHistTask {
       MC_recon_reg.fill(HIST("histChi2TOF"), track.pt(), track.tofChi2(), pdgbin);
       MC_recon_reg.fill(HIST("histTrackLength"), track.length(), pdgbin);
       MC_recon_reg.fill(HIST("histTPCFractionSharedCls"), track.tpcFractionSharedCls(), pdgbin);
-      MC_recon_reg.fill(HIST("histpTCorralation"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt());
-      MC_recon_reg.fill(HIST("histpTCorralation_PDG"), track.sign() * track.pt(), track.tpcInnerParam() - track.pt(), pdgbin);
+      MC_recon_reg.fill(HIST("histpTCorralation"), track.sign() * track.p(), track.tpcInnerParam() - track.p());
+      MC_recon_reg.fill(HIST("histpTCorralation_PDG"), track.sign() * track.p(), track.tpcInnerParam() - track.p(), pdgbin);
+
+      MC_recon_reg.fill(HIST("histGlobalpDist"), track.p(), pdgbin);
+      MC_recon_reg.fill(HIST("histTPCpDist"), track.tpcInnerParam(), pdgbin);
+      MC_recon_reg.fill(HIST("histpTCorralation_2"), track.p(), track.tpcInnerParam(), pdgbin);
 
       if (track.hasTOF()) {
         Float_t TOFmass2 = ((track.mass()) * (track.mass()));

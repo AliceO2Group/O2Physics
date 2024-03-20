@@ -159,6 +159,12 @@ std::vector<int> partMultNeg; // multiplicity of negative particles
 using namespace dptdptfilter;
 
 struct DptDptFilter {
+  struct : ConfigurableGroup {
+    Configurable<std::string> cfgCCDBUrl{"input_ccdburl", "http://ccdb-test.cern.ch:8080", "The CCDB url for the input file"};
+    Configurable<std::string> cfgCCDBPathName{"input_ccdbpath", "", "The CCDB path for the input file. Default \"\", i.e. don't load from CCDB"};
+    Configurable<std::string> cfgCCDBDate{"input_ccdbdate", "20220307", "The CCDB date for the input file"};
+    Configurable<std::string> cfgCCDBPeriod{"input_ccdbperiod", "LHC22o", "The CCDB dataset period for the input file"};
+  } cfginputfile;
   Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
   Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M,CL0,CL1,FV0A,FT0M,FT0A,FT0C,NTPV,NOCM: none. Default V0M"};
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
@@ -538,6 +544,14 @@ struct DptDptFilterTracks {
   Produces<aod::ScannedTrueTracks> scannedgentracks;
   Produces<aod::DptDptCFGenTracksInfo> gentracksinfo;
 
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  bool storedccdbinfo = false;
+
+  std::string cfgCCDBUrl{"http://ccdb-test.cern.ch:8080"};
+  std::string cfgCCDBPathName{""};
+  std::string cfgCCDBDate{"20220307"};
+  std::string cfgCCDBPeriod{"LHC22o"};
+
   Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
   Configurable<int> cfgTrackType{"trktype", 4, "Type of selected tracks: 0 = no selection, 1 = Run2 global tracks FB96, 3 = Run3 tracks, 4 = Run3 tracks MM sel, 5 = Run2 TPC only tracks, 7 = Run 3 TPC only tracks. Default 4"};
   Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
@@ -578,6 +592,12 @@ struct DptDptFilterTracks {
     getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins, false);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow, false);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup, false);
+
+    /* self configure the CCDB access to the input file */
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdburl", cfgCCDBUrl, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbpath", cfgCCDBPathName, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbdate", cfgCCDBDate, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbperiod", cfgCCDBPeriod, false);
 
     /* the track types and combinations */
     tracktype = cfgTrackType.value;
@@ -849,6 +869,25 @@ struct DptDptFilterTracks {
         fOutputList->Add(fhTrueDeltaNA[sp]);
       }
     }
+    /* initialize access to the CCDB */
+    ccdb->setURL(cfgCCDBUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+  }
+
+  void getCCDBInformation()
+  {
+    using namespace analysis::dptdptfilter;
+
+    /* let's get a potential PID adjustment */
+    if (cfgCCDBPathName.length() > 0 && !storedccdbinfo) {
+      LOGF(info, "Getting information for PID adjustment from %s, at %s, for %s", cfgCCDBPathName.c_str(), cfgCCDBDate.c_str(), cfgCCDBPeriod.c_str());
+      TList* pidinfo = getCCDBInput(ccdb, cfgCCDBPathName.c_str(), cfgCCDBDate.c_str(), cfgCCDBPeriod.c_str());
+      if (pidinfo != nullptr) {
+        pidselector.storePIDAdjustments(pidinfo);
+      }
+      storedccdbinfo = true;
+    }
   }
 
   template <typename TrackObject>
@@ -881,6 +920,9 @@ struct DptDptFilterTracks {
   void filterTracks(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions,
                     passedtracks const& tracks)
   {
+    /* do check for special adjustments */
+    getCCDBInformation();
+
     int naccepted = 0;
     int ncollaccepted = 0;
     if (!fullDerivedData) {
