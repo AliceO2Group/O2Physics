@@ -48,7 +48,7 @@ struct HfTaskFlowCharmHadrons {
   Configurable<float> zVtxMax{"zVtxMax", 10., "Max vertex coordinate z"};
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<int> qvecDetector{"qvecDetector", 0, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5)"};
-  Configurable<int> centEstimator{"centEstimator", 4, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
+  Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
   Configurable<int> selectionFlag{"selectionFlag", 1, "Selection Flag for hadron (e.g. 1 for skimming, 3 for topo. and kine., 7 for PID)"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
   Configurable<bool> saveEpResoHisto{"saveEpResoHisto", false, "Flag to save event plane resolution histogram"};
