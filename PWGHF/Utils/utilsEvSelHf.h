@@ -50,19 +50,19 @@ void setLabelHistoEvSel(Histo& hCollisions)
 }
 
 /// \brief Function to apply event selections in HF analyses
+/// \param applyEvSel template argument to use information from the EvSel table
+/// \param centEstimator template argument to select the centrality estimator
 /// \param collision collision that has to satisfy the selection criteria
 /// \param centrality collision centrality to be initialised in this function
 /// \param centralityMin minimum centrality accepted
 /// \param centralityMax maximum centrality accepted
 /// \param useSel8Trigger switch to activate the sel8() event selection
 /// \param triggerClass trigger class different from sel8 (e.g. kINT7 for Run2) used only if useSel8Trigger is false
+/// \param useTimeFrameBorderCut switch to activate the time frame border cut
 /// \param zPvPosMin minimum primary-vertex z
 /// \param zPvPosMax maximum primary-vertex z
 /// \param nPvContributorsMin minimum number of PV contributors
 /// \param chi2PvMax maximum PV chi2
-/// \param useTimeFrameBorderCut switch to activate the time frame border cut
-/// \param applyEvSel template argument to use information from the EvSel table
-/// \param centEstimator template argument to select the centrality estimator
 /// \return a bitmask with the event selections not satisfied by the analysed collision
 template <bool applyEvSel, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll>
 uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, float centralityMin, float centralityMax, bool useSel8Trigger, int triggerClass, bool useTimeFrameBorderCut, float zPvPosMin, float zPvPosMax, int nPvContributorsMin, float chi2PvMax)
