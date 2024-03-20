@@ -18,6 +18,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "iostream"
 #include "PWGUD/DataModel/UDTables.h"
+#include "PWGUD/Core/SGSelector.h"
 #include "Common/DataModel/PIDResponse.h"
 #include <TString.h>
 #include "TLorentzVector.h"
@@ -30,9 +31,15 @@ using namespace o2::framework::expressions;
 #define mkaon 0.4937
 #define mproton 0.9383
 struct SG_D0_Analyzer {
+  SGSelector sgSelector;
+  Configurable<float> FV0_cut{"FV0", 100., "FV0A threshold"};
+  Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
   HistogramRegistry registry{
     "registry",
     {
+
+      {"GapSide", "Gap Side; Entries", {HistType::kTH1F, {{4, -1.5, 2.5}}}},
+      {"TrueGapSide", "Gap Side; Entries", {HistType::kTH1F, {{4, -1.5, 2.5}}}},
       {"os_KPi_pT", "#K#Pi pT (GeV/c); Entries", {HistType::kTH1F, {{5000, 0, 10}}}},
       {"os_KPi_eTa", "#K#Pi eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -1., 1.}}}},
       {"os_KPi_invm", "#K#Pi Mass (GeV/c^2); Entries", {HistType::kTH1F, {{5000, 0, 10}}}},
@@ -73,6 +80,11 @@ struct SG_D0_Analyzer {
     TLorentzVector v0;
     TLorentzVector v1;
     TLorentzVector v01;
+    //  int truegapSide = sgSelector.trueGap(collision);
+    int truegapSide = sgSelector.trueGap(collision, FV0_cut, ZDC_cut);
+    registry.fill(HIST("GapSide"), gapSide);
+    registry.fill(HIST("TrueGapSide"), truegapSide);
+    gapSide = truegapSide;
     // Look for D0 and D0bar
     for (auto& [t0, t1] : combinations(tracks, tracks)) {
       // PID cut - t0=K, t1=pi
