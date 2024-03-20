@@ -61,8 +61,8 @@ void setLabelHistoEvSel(Histo& hCollisions)
 /// \param nPvContributorsMin minimum number of PV contributors
 /// \param chi2PvMax maximum PV chi2
 /// \param useTimeFrameBorderCut switch to activate the time frame border cut
-/// \param applyEvSel template argument to use information from the EvSel table 
-/// \param centEstimator template argument to select the centrality estimator 
+/// \param applyEvSel template argument to use information from the EvSel table
+/// \param centEstimator template argument to select the centrality estimator
 /// \return a bitmask with the event selections not satisfied by the analysed collision
 template <bool applyEvSel, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll>
 uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, float centralityMin, float centralityMax, bool useSel8Trigger, int triggerClass, bool useTimeFrameBorderCut, float zPvPosMin, float zPvPosMax, int nPvContributorsMin, float chi2PvMax)
