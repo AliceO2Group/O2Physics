@@ -222,7 +222,7 @@ struct SGSpectraAnalyzer {
 
     for (auto& track : tracks) {
       if (!track.isPVContributor()) {
-         registry.get<TH1>(HIST("ITS_Cluster_nonPV"))->Fill(track.itsClusterSizes());
+        registry.get<TH1>(HIST("ITS_Cluster_nonPV"))->Fill(track.itsClusterSizes());
         registry.get<TH1>(HIST("ITS_Chi2_nonPV"))->Fill(track.itsChi2NCl());
         registry.get<TH1>(HIST("TPC_Chi2_nonPV"))->Fill(track.tpcChi2NCl());
         registry.get<TH1>(HIST("Length_nonPV"))->Fill(track.length());

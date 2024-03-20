@@ -262,7 +262,6 @@ struct SG_FIT_Analyzer { // UDTutorial01
     registry.add("ZDC/MCZNA", "Track number vs Amp FDDA", {HistType::kTH2F, {{axismult}, {axiszdc}}});
     registry.add("ZDC/MACZNA", "Track number vs Amp FDDC", {HistType::kTH2F, {{axismult}, {axiszdc}}});
     registry.add("ZDC/MACZNC", "Track number vs Amp FDDC", {HistType::kTH2F, {{axismult}, {axiszdc}}});
-
   }
 
   // define data types
