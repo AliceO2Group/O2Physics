@@ -217,7 +217,7 @@ DECLARE_SOA_COLUMN(PhiDstar, phiDstar, float);
 DECLARE_SOA_COLUMN(EtaDstar, etaDstar, float);
 DECLARE_SOA_COLUMN(PtDstar, ptDstar, float);
 DECLARE_SOA_COLUMN(MDstar, mDstar, float);
-DECLARE_SOA_COLUMN(MD0,mD0, float);
+DECLARE_SOA_COLUMN(MD0, mD0, float);
 // DECLARE_SOA_COLUMN(IsPrompt,isPrompt,bool); // although this also defined in (HfCandDstarMcRec HfCandDstarMcRec) tables
 // DECLARE_SOA_COLUMN(MatchingStatus, matchingStatus, bool); // although this also defined in (HfCandDstarMcRec HfCandDstarMcRec) tables
 // Track properties
@@ -231,7 +231,7 @@ DECLARE_SOA_COLUMN(PoolBin, poolBin, int);
 // Dynamic columns
 DECLARE_SOA_DYNAMIC_COLUMN(DeltaEta, deltaEta, [](float etaTrack, float etaCandidate) -> float { return (etaTrack - etaCandidate); });
 DECLARE_SOA_DYNAMIC_COLUMN(DeltaPhi, deltaPhi, [](float phiCandidate, float phiTrack) -> float { return RecoDecay::constrainAngle(phiTrack, phiCandidate); });
-DECLARE_SOA_DYNAMIC_COLUMN(DeltaM, deltaM, [](float massDstar, float massD0)-> float{ return (massDstar - massD0); });
+DECLARE_SOA_DYNAMIC_COLUMN(DeltaM, deltaM, [](float massDstar, float massD0) -> float { return (massDstar - massD0); });
 } // namespace hf_correlation_dstar_hadron
 
 DECLARE_SOA_TABLE(DstarHadronPair, "AOD", "DSTRHPAIR", // D* Hadrons pairs Informations

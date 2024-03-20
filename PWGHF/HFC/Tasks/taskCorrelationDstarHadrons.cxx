@@ -86,7 +86,7 @@ struct HfTaskCorrelationDstarHadron {
   Configurable<std::vector<double>> rightSidebandOuterBoundary{"rightSidebandOuterBoundary", std::vector<double>{correlation::vecSidebandRightOuterDefault}, "right sideband outer baoundary vs pT"};
   Configurable<std::vector<double>> rightSidebandInnerBoundary{"rightSidebandInnerBoundary", std::vector<double>{correlation::vecSidebandRightInnerDefault}, "right sideband inner boundary"};
 
-  HistogramRegistry registry{"registry",{},OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   void init(InitContext&)
   {
@@ -131,7 +131,7 @@ struct HfTaskCorrelationDstarHadron {
 
       if (applyEfficiency) {
         float efficiencyWeightDstar = efficiencyDstar->at(effBinPtDstar);
-        LOG(info)<<"efficiencyWeightDstar "<<efficiencyWeightDstar;
+        LOG(info) << "efficiencyWeightDstar " << efficiencyWeightDstar;
         netEfficiencyWeight = 1.0 / (efficiencyWeightDstar * efficiencyWeightTracks);
       }
 
