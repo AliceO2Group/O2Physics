@@ -222,9 +222,7 @@ struct SGSpectraAnalyzer {
 
     for (auto& track : tracks) {
       if (!track.isPVContributor()) {
-        //	      if (!track.itsClusterSizes())break;
-        //    if (track.dcaZ()>900 || track.dcaXY()>900)break;
-        registry.get<TH1>(HIST("ITS_Cluster_nonPV"))->Fill(track.itsClusterSizes());
+         registry.get<TH1>(HIST("ITS_Cluster_nonPV"))->Fill(track.itsClusterSizes());
         registry.get<TH1>(HIST("ITS_Chi2_nonPV"))->Fill(track.itsChi2NCl());
         registry.get<TH1>(HIST("TPC_Chi2_nonPV"))->Fill(track.tpcChi2NCl());
         registry.get<TH1>(HIST("Length_nonPV"))->Fill(track.length());
@@ -235,7 +233,6 @@ struct SGSpectraAnalyzer {
         registry.get<TH1>(HIST("TPC_IP_nonPV"))->Fill(track.tpcInnerParam());
         registry.get<TH1>(HIST("DcaZ_nonPV"))->Fill(track.dcaZ());
         registry.get<TH1>(HIST("DcaXY_nonPV"))->Fill(track.dcaXY());
-        //	      break;
       } else {
         registry.get<TH1>(HIST("ITS_Cluster_PV"))->Fill(track.itsClusterSizes());
         registry.get<TH1>(HIST("ITS_Chi2_PV"))->Fill(track.itsChi2NCl());
