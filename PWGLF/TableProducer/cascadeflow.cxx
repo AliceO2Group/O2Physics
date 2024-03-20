@@ -86,11 +86,11 @@ auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 static const std::vector<std::string> modelPaths = {""};
 
 // default values for the cut directions
-  constexpr int cutDir[nCutScores] = {CutSmaller, CutNot}; //CutSmaller selects values > fixed value to signal BDT score, CutNot does not apply any selection to the background BDT score
+constexpr int cutDir[nCutScores] = {CutSmaller, CutNot}; // CutSmaller selects values > fixed value to signal BDT score, CutNot does not apply any selection to the background BDT score
 auto vecCutDir = std::vector<int>{cutDir, cutDir + nCutScores};
 
 // default values for the cuts
-  constexpr double cuts[nBinsPt][nCutScores] = { //background, signal
+constexpr double cuts[nBinsPt][nCutScores] = { // background, signal
   {0., 0.9},
   {0., 0.9},
   {0., 0.9},
@@ -456,7 +456,7 @@ struct cascadeFlow {
 
       float BDTresponse[2]{0.f, 0.f};
       if (isApplyML) {
-        BDTresponse[0] = bdtScore[0][1]; 
+        BDTresponse[0] = bdtScore[0][1];
         BDTresponse[1] = bdtScore[1][1];
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
