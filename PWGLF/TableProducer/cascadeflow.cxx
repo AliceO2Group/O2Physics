@@ -86,19 +86,19 @@ auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 static const std::vector<std::string> modelPaths = {""};
 
 // default values for the cut directions
-constexpr int cutDir[nCutScores] = {CutSmaller, CutNot};
+  constexpr int cutDir[nCutScores] = {CutSmaller, CutNot}; //CutSmaller selects values > fixed value to signal BDT score, CutNot does not apply any selection to the background BDT score
 auto vecCutDir = std::vector<int>{cutDir, cutDir + nCutScores};
 
 // default values for the cuts
-constexpr double cuts[nBinsPt][nCutScores] = {
-  {0.9, 0.5},
-  {0.9, 0.5},
-  {0.9, 0.5},
-  {0.9, 0.5},
-  {0.9, 0.5},
-  {0.9, 0.5},
-  {0.9, 0.5},
-  {0.9, 0.5}};
+  constexpr double cuts[nBinsPt][nCutScores] = { //background, signal
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9}};
 
 // row labels
 static const std::vector<std::string> labelsPt = {
@@ -112,14 +112,13 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 7"};
 
 // column labels
-static const std::vector<std::string> labelsCutScore = {"Signal score", "Background score"};
+static const std::vector<std::string> labelsCutScore = {"Background score", "Signal score"};
 } // namespace cascade_flow_cuts_ml
 
 struct cascadeFlow {
 
   Configurable<float> MinPt{"MinPt", 0.6, "Min pt of cascade"};
   Configurable<float> MaxPt{"MaxPt", 10, "Max pt of cascade"};
-  Configurable<bool> isApplyML{"isApplyML", 1, ""};
   Configurable<double> sideBandStart{"sideBandStart", 5, "Start of the sideband region in number of sigmas"};
   Configurable<double> sideBandEnd{"sideBandEnd", 7, "End of the sideband region in number of sigmas"};
   Configurable<double> downsample{"downsample", 1., "Downsample training output tree"};
@@ -135,7 +134,7 @@ struct cascadeFlow {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", true, "Flag to enable or disable the loading of models from CCDB"};
 
   // ML inference
-  Configurable<bool> applyMl{"applyMl", true, "Flag to apply ML selections"};
+  Configurable<bool> isApplyML{"isApplyML", 1, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{cascade_flow_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{cascade_flow_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {cascade_flow_cuts_ml::cuts[0], cascade_flow_cuts_ml::nBinsPt, cascade_flow_cuts_ml::nCutScores, cascade_flow_cuts_ml::labelsPt, cascade_flow_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
