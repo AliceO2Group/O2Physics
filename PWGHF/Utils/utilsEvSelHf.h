@@ -88,7 +88,7 @@ uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, f
   }
 
   if constexpr (applyEvSel) {
-    /// sel8() condition
+    /// trigger condition
     if ((useSel8Trigger && !collision.sel8()) || (!useSel8Trigger && triggerClass > -1 && !collision.alias_bit(triggerClass))) {
       SETBIT(statusCollision, EventRejection::Trigger);
     }
