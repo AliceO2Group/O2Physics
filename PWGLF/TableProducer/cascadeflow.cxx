@@ -423,13 +423,13 @@ struct cascadeFlow {
 
         for (int iS{0}; iS < 2; ++iS) {
           // Fill BDT score histograms before selection
-          cascadev2::hSignalScoreBeforeSel[iS]->Fill(bdtScore[0][0]);
-          cascadev2::hBkgScoreBeforeSel[iS]->Fill(bdtScore[1][1]);
+          cascadev2::hSignalScoreBeforeSel[iS]->Fill(bdtScore[0][1]);
+          cascadev2::hBkgScoreBeforeSel[iS]->Fill(bdtScore[1][0]);
 
           // Fill histograms for selected candidates
           if (isSelectedCasc[iS]) {
-            cascadev2::hSignalScoreAfterSel[iS]->Fill(bdtScore[0][0]);
-            cascadev2::hBkgScoreAfterSel[iS]->Fill(bdtScore[1][1]);
+            cascadev2::hSignalScoreAfterSel[iS]->Fill(bdtScore[0][1]);
+            cascadev2::hBkgScoreAfterSel[iS]->Fill(bdtScore[1][0]);
             cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
           }
         }
@@ -455,8 +455,8 @@ struct cascadeFlow {
 
       float BDTresponse[2]{0.f, 0.f};
       if (isApplyML) {
-        BDTresponse[0] = bdtScore[0][0];
-        BDTresponse[1] = bdtScore[1][0];
+        BDTresponse[0] = bdtScore[0][1]; 
+        BDTresponse[1] = bdtScore[1][1];
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
         fillAnalysedTable(coll, casc, v2C, BDTresponse[0], BDTresponse[1]);
