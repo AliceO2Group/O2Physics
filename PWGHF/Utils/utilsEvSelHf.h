@@ -39,13 +39,14 @@ o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, st
 template <typename Histo>
 void setLabelHistoEvSel(Histo& hCollisions)
 {
+  hCollisions->SetTitle("HF event counter;;accepted collisions");
   hCollisions->GetXaxis()->SetBinLabel(EventRejection::None + 1, "All collisions");
-  hCollisions->GetXaxis()->SetBinLabel(EventRejection::Centrality + 1, "Centrality acc.");
-  hCollisions->GetXaxis()->SetBinLabel(EventRejection::Trigger + 1, "sel8 / trigger class acc.");
-  hCollisions->GetXaxis()->SetBinLabel(EventRejection::TimeFrameBorderCut + 1, "TF border acc.");
-  hCollisions->GetXaxis()->SetBinLabel(EventRejection::NContrib + 1, "PV contr acc.");
-  hCollisions->GetXaxis()->SetBinLabel(EventRejection::Chi2 + 1, "PV chi2 acc.");
-  hCollisions->GetXaxis()->SetBinLabel(EventRejection::PositionZ + 1, "posZ acc.");
+  hCollisions->GetXaxis()->SetBinLabel(EventRejection::Centrality + 1, "Centrality");
+  hCollisions->GetXaxis()->SetBinLabel(EventRejection::Trigger + 1, "Trigger");
+  hCollisions->GetXaxis()->SetBinLabel(EventRejection::TimeFrameBorderCut + 1, "TF border");
+  hCollisions->GetXaxis()->SetBinLabel(EventRejection::NContrib + 1, "# of PV contributors");
+  hCollisions->GetXaxis()->SetBinLabel(EventRejection::Chi2 + 1, "PV #it{#chi}^{2}");
+  hCollisions->GetXaxis()->SetBinLabel(EventRejection::PositionZ + 1, "PV #it{z}");
 }
 
 /// \brief Function to apply event selections in HF analyses
