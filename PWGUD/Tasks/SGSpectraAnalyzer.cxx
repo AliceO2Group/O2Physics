@@ -35,6 +35,8 @@ struct SGSpectraAnalyzer{
   SGSelector sgSelector;
   Configurable<float> FV0_cut{"FV0", 100., "FV0A threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
+  Configurable<float> eta_cut{"Eta", 0.9, "Eta cut"};
+  Configurable<bool> use_tof{"Use_TOF", true, "TOF PID"};
   HistogramRegistry registry{
     "registry",
     {
@@ -130,29 +132,75 @@ using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UD
 using UDCollisionFull = UDCollisionsFull::iterator;  
 
 template <typename T>
-int trackselector(const T& track){
-	if (std::abs(track.dcaZ())>.2) return 0;
-	if (std::abs(track.dcaXY())>.2) return 0;
+int trackselector(const T& track, bool use_tof){
+	TLorentzVector a;
+        a.SetXYZM(track.px(), track.py(), track.pz(),mpion);
+	if (std::abs(track.dcaZ())>2.) return 0;
+	if (std::abs(track.dcaXY())>.0105 + .035/ pow(a.Pt(), 1.1)) return 0;
 	if (track.tpcChi2NCl() > 4) return 0;
 	if (track.tpcNClsFindable() < 70) return 0;
 	if (track.itsChi2NCl() > 36) return 0;
-	if (std::abs(track.tpcNSigmaPi() < 3)){
-		if (track.tofChi2()>-1){
-			if (std::abs(track.tofNSigmaPi() < 3)) return 1;
-		} else return 1;
-	} else if (std::abs(track.tpcNSigmaKa() < 3)){
-		if (track.tofChi2()>-1){
-			if (std::abs(track.tofNSigmaKa() < 3)) return 2;
-		} else return 2;
-	} else if (std::abs(track.tpcNSigmaPr() < 3)){
-		if (track.tofChi2()>-1){
-			if (std::abs(track.tofNSigmaPr() < 3)) return 3;
-		} else return 3;
-	} else {
-		return 0;
-	}
+	return 1;
 }
-
+template <typename T>
+int trackpid(const T& track, bool use_tof){
+	int pid = 0;
+	float pi, ka, pr;
+	float tpi, tka, tpr;
+	pi = std::abs(track.tpcNSigmaPi());
+	ka = std::abs(track.tpcNSigmaKa());
+	pr = std::abs(track.tpcNSigmaPr());
+	if (pi < 1. && pi < ka && pi < pr) pid = 1; 
+	else if (ka < 1. && ka < pi && ka < pr) pid = 2; 
+	else if (pr < 1. && pr < pi && pr < ka) pid = 3; 
+	if (use_tof && track.tofChi2()>-1){
+		tpi = std::abs(track.tofNSigmaPi());
+		tka = std::abs(track.tofNSigmaKa());
+		tpr = std::abs(track.tofNSigmaPr());
+		if (std::sqrt(pi*pi + tpi*tpi) < 2 && std::sqrt(pi*pi + tpi*tpi) < std::sqrt(ka*ka + tka*tka) && std::sqrt(pi*pi + tpi*tpi) < std::sqrt(pr*pr + tpr*tpr)) pid = 1;
+		else if (std::sqrt(ka*ka + tka*tka) < 2 && std::sqrt(pi*pi + tpi*tpi) > std::sqrt(ka*ka + tka*tka) && std::sqrt(ka*ka + tka*tka) < std::sqrt(pr*pr + tpr*tpr)) pid = 2;
+		else if (std::sqrt(pr*pr + tpr*tpr) < 2 && std::sqrt(pr*pr + tpr*tpr) < std::sqrt(ka*ka + tka*tka) && std::sqrt(pi*pi + tpi*tpi) > std::sqrt(pr*pr + tpr*tpr)) pid = 3;
+	}
+	return pid;
+}	
+/*
+template <typename T>
+bool ispion(const T& track, bool use_tof){
+	int pid = 0;
+	if (std::abs(track.tpcNSigmaPi() < 3)){
+		if (use_tof && track.tofChi2()>-1){
+			if (std::abs(track.tofNSigmaPi() < 3)) pid = 1;
+			else pid = 0;
+		} else pid = 1;
+	}
+        if (pid ==1) return true;
+	else return false;
+}	
+template <typename T>
+bool iskaon(const T& track, bool use_tof){
+	int pid = 0;
+	if (std::abs(track.tpcNSigmaKa() < 3)){
+		if (use_tof && track.tofChi2()>-1){
+			if (std::abs(track.tofNSigmaKa() < 3)) pid = 2;
+			else pid =  0;
+		} else pid = 2;
+	}
+        if (pid ==2) return true;
+	else return false;
+}	
+template <typename T>
+bool isproton(const T& track, bool use_tof){
+	int pid = 0;
+       	if (std::abs(track.tpcNSigmaPr() < 3)){
+		if (use_tof && track.tofChi2()>-1){
+			if (std::abs(track.tofNSigmaPr() < 3)) pid = 3;
+			else pid =  0;
+		} else pid = 3;
+	}
+        if (pid ==3) return true;
+	else return false;
+}
+*/
 void process(UDCollisionFull const& collision, udtracksfull const& tracks){
     TLorentzVector a;
     int gapSide = collision.gapSide();
@@ -189,18 +237,22 @@ void process(UDCollisionFull const& collision, udtracksfull const& tracks){
             registry.get<TH1>(HIST("TPC_IP_PV"))->Fill(track.tpcInnerParam());
             registry.get<TH1>(HIST("DcaZ_PV"))->Fill(track.dcaZ());
             registry.get<TH1>(HIST("DcaXY_PV"))->Fill(track.dcaXY());
-      int trackpid = trackselector(track);
-      if (trackpid == 1) {
+      if (trackselector(track, use_tof)){
+      //if (ispion(track, use_tof)) {
+      if (trackpid(track, use_tof) == 1) {
        a.SetXYZM(track.px(), track.py(), track.pz(),mpion);
-       fillHistograms("Pion", a.Pt(), a.Eta(), gapSide);
+       if (std::abs(a.Eta())<eta_cut) fillHistograms("Pion", a.Pt(), a.Eta(), gapSide);
       }
-      if (trackpid == 2) {
+//      if (iskaon(track, use_tof)) {
+      if (trackpid(track, use_tof) == 2) {
         a.SetXYZM(track.px(), track.py(), track.pz(),mkaon);
-        fillHistograms("Kaon", a.Pt(), a.Eta(), gapSide);
+       if (std::abs(a.Eta())<eta_cut) fillHistograms("Kaon", a.Pt(), a.Eta(), gapSide);
       }
-      if (trackpid == 3) {
+  //    if (isproton(track, use_tof)) {
+      if (trackpid(track, use_tof) == 3) {
         a.SetXYZM(track.px(), track.py(), track.pz(),mproton);
-        fillHistograms("Proton", a.Pt(), a.Eta(), gapSide);
+       if (std::abs(a.Eta())<eta_cut) fillHistograms("Proton", a.Pt(), a.Eta(), gapSide);
+      }
       }
     }
     }

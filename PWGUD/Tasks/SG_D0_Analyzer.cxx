@@ -80,7 +80,7 @@ void process(UDCollisionFull const& collision, udtracksfull const& tracks){
       TLorentzVector v1;
       TLorentzVector v01;
     //  int truegapSide = sgSelector.trueGap(collision);
-    int truegapSide = sgSelector.trueGap(dgcand, FV0_cut, ZDC_cut);
+    int truegapSide = sgSelector.trueGap(collision, FV0_cut, ZDC_cut);
       registry.fill(HIST("GapSide"), gapSide);
       registry.fill(HIST("TrueGapSide"), truegapSide);
       gapSide=truegapSide;
