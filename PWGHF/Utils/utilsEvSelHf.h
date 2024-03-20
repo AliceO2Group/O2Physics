@@ -53,7 +53,7 @@ void setLabelHistoEvSel(Histo& hCollisions)
 /// \param collision collision that has to satisfy the selection criteria
 /// \param centrality collision centrality to be initialised in this function
 /// \param centralityMin minimum centrality accepted
-/// \param centralityMin maximum centrality accepted
+/// \param centralityMax maximum centrality accepted
 /// \param useSel8Trigger switch to activate the sel8() event selection
 /// \param triggerClass trigger class different from sel8 (e.g. kINT7 for Run2) used only if useSel8Trigger is false
 /// \param zPvPosMin minimum primary-vertex z
