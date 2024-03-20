@@ -549,7 +549,7 @@ struct efficiencyQA {
           probe.ptProp = probeTrackCov.getPt();
           probe.etaProp = probeTrackCov.getEta();
           probe.phiProp = probeTrackCov.getPhi();
-          
+
           bool acceptTrackPt;
           bool acceptTrackEta;
           bool acceptTrackPhi;
@@ -567,7 +567,7 @@ struct efficiencyQA {
             acceptTrackPhi = std::abs(tpcTrackCov.getPhi() - probeTrackCov.getPhi()) < nSigmaDeltaPhi * phiWindowCustom;
           }
           bool acceptTpcTrack = acceptTrackPt && acceptTrackEta && acceptTrackPhi;
-        
+
           // LOGF(debug, "idx = %lld, Dpt = %f, Deta = %f, Dphi = %f", tpcTrack.globalIndex(), std::abs(tpcTrackCov.getPt() - propTrackProbe.getPt()), std::abs(tpcTrackCov.getEta() - propTrackProbe.getEta()), std::abs(tpcTrackCov.getPhi() - propTrackProbe.getPhi()));
 
           if (acceptTpcTrack) {
