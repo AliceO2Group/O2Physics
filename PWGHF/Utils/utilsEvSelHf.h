@@ -16,159 +16,160 @@
 #ifndef PWGHF_UTILS_UTILSEVSELHF_H_
 #define PWGHF_UTILS_UTILSEVSELHF_H_
 
-// event rejection types
-enum EventRejection {
-  Trigger = 0,
-  TimeFrameBorderCut,
-  PositionZ,
-  NContrib,
-  Chi2,
-  Centrality,
-  NEventRejection
-};
+#include "Framework/HistogramSpec.h"
 
-enum ValuesEvSel : int {
-  All = 0,
-  Cent,
-  CentSel8,
-  CentSel8TFBorder,
-  CentSel8TFBorderPvContr,
-  CentSel8TFBorderPvContrChi2,
-  CentSel8TFBorderPvContrChi2PosZ,
-  NEvSel
-};
-
-/// @brief Function to put labels on collision monitoring histogram
-/// \param hCollisions is the histogram
-template <typename Histo>
-void setLabelHistoEvSel(Histo& hCollisions)
+namespace o2::hf_evsel
 {
-  hCollisions->GetXaxis()->SetBinLabel(ValuesEvSel::All + 1, "All collisions");
-  hCollisions->GetXaxis()->SetBinLabel(ValuesEvSel::Cent + 1, "Centrality ok");
-  hCollisions->GetXaxis()->SetBinLabel(ValuesEvSel::CentSel8 + 1, "Centrality + sel8 ok");
-  hCollisions->GetXaxis()->SetBinLabel(ValuesEvSel::CentSel8TFBorder + 1, "Centrality + sel8 + TF border ok");
-  hCollisions->GetXaxis()->SetBinLabel(ValuesEvSel::CentSel8TFBorderPvContr + 1, "Centrality + sel8 + TF border + PV contr ok");
-  hCollisions->GetXaxis()->SetBinLabel(ValuesEvSel::CentSel8TFBorderPvContrChi2 + 1, "Centrality + sel8 + TF border + PV contr + chi2 ok");
-  hCollisions->GetXaxis()->SetBinLabel(ValuesEvSel::CentSel8TFBorderPvContrChi2PosZ + 1, "Centrality + sel8 + TF border + PV contr + chi2 + posZ ok");
-}
+  // event rejection types
+  enum EventRejection {
+    None = 0,
+    Centrality,
+    Trigger,
+    TimeFrameBorderCut,
+    NContrib,
+    Chi2,
+    PositionZ,
+    NEventRejection
+  };
 
-/// \brief Function to apply event selections in HF analyses
-/// \param collision collision that has to satisfy the selection criteria
-/// \param useSel8Trigger switch to activate the sel8() event selection
-/// \param zPvPosMin minimum primary-vertex z
-/// \param zPvPosMax maximum primary-vertex z
-/// \param nPvContributorsMin minimum number of PV contributors
-/// \param chi2PvMax maximum PV chi2
-/// \param useTimeFrameBorderCut switch to activate the time frame border cut
-/// \return a bitmask with the event selections not satisfied by the analysed collision
-template <bool applyEvSel, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll>
-uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, float centralityMin, float centralityMax, bool useSel8Trigger, bool useTimeFrameBorderCut, float zPvPosMin, float zPvPosMax, int nPvContributorsMin, float chi2PvMax)
-{
+  o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, static_cast<float>(EventRejection::NEventRejection) - 0.5f, ""};
 
-  uint16_t statusCollision = 0; // 16 bits, in case new ev. selections will be added
+  /// @brief Function to put labels on collision monitoring histogram
+  /// \param hCollisions is the histogram
+  template <typename Histo>
+  void setLabelHistoEvSel(Histo& hCollisions)
+  {
+    hCollisions->GetXaxis()->SetBinLabel(EventRejection::None + 1, "All collisions");
+    hCollisions->GetXaxis()->SetBinLabel(EventRejection::Centrality + 1, "Centrality acc.");
+    hCollisions->GetXaxis()->SetBinLabel(EventRejection::Trigger + 1, "sel8 / trigger class acc.");
+    hCollisions->GetXaxis()->SetBinLabel(EventRejection::TimeFrameBorderCut + 1, "TF border acc.");
+    hCollisions->GetXaxis()->SetBinLabel(EventRejection::NContrib + 1, "PV contr acc.");
+    hCollisions->GetXaxis()->SetBinLabel(EventRejection::Chi2 + 1, "PV chi2 acc.");
+    hCollisions->GetXaxis()->SetBinLabel(EventRejection::PositionZ + 1, "posZ acc.");
+  }
 
-  if constexpr (centEstimator != o2::aod::hf_collision_centrality::CentralityEstimator::None) {
-    if constexpr (centEstimator == o2::aod::hf_collision_centrality::CentralityEstimator::FT0A) {
-      centrality = collision.centFT0A();
-    } else if constexpr (centEstimator == o2::aod::hf_collision_centrality::CentralityEstimator::FT0C) {
-      centrality = collision.centFT0C();
-    } else if constexpr (centEstimator == o2::aod::hf_collision_centrality::CentralityEstimator::FT0M) {
-      centrality = collision.centFT0M();
-    } else if constexpr (centEstimator == o2::aod::hf_collision_centrality::CentralityEstimator::FV0A) {
-      centrality = collision.centFV0A();
-    } else {
-      LOGP(fatal, "Centrality estimator different from FT0A, FT0C, FT0M, and FV0A, fix it!");
+  /// \brief Function to apply event selections in HF analyses
+  /// \param collision collision that has to satisfy the selection criteria
+  /// \param centrality collision centrality to be initialised in this function
+  /// \param centralityMin minimum centrality accepted
+  /// \param centralityMin maximum centrality accepted
+  /// \param useSel8Trigger switch to activate the sel8() event selection
+  /// \param triggerClass trigger class different from sel8 (e.g. kINT7 for Run2) used only if useSel8Trigger is false 
+  /// \param zPvPosMin minimum primary-vertex z
+  /// \param zPvPosMax maximum primary-vertex z
+  /// \param nPvContributorsMin minimum number of PV contributors
+  /// \param chi2PvMax maximum PV chi2 
+  /// \param useTimeFrameBorderCut switch to activate the time frame border cut
+  /// \return a bitmask with the event selections not satisfied by the analysed collision
+  template <bool applyEvSel, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll>
+  uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, float centralityMin, float centralityMax, bool useSel8Trigger, int triggerClass, bool useTimeFrameBorderCut, float zPvPosMin, float zPvPosMax, int nPvContributorsMin, float chi2PvMax)
+  {
+
+    uint16_t statusCollision = 0; // 16 bits, in case new ev. selections will be added
+
+    if constexpr (centEstimator != o2::aod::hf_collision_centrality::CentralityEstimator::None) {
+      if constexpr (centEstimator == o2::aod::hf_collision_centrality::CentralityEstimator::FT0A) {
+        centrality = collision.centFT0A();
+      } else if constexpr (centEstimator == o2::aod::hf_collision_centrality::CentralityEstimator::FT0C) {
+        centrality = collision.centFT0C();
+      } else if constexpr (centEstimator == o2::aod::hf_collision_centrality::CentralityEstimator::FT0M) {
+        centrality = collision.centFT0M();
+      } else if constexpr (centEstimator == o2::aod::hf_collision_centrality::CentralityEstimator::FV0A) {
+        centrality = collision.centFV0A();
+      } else {
+        LOGP(fatal, "Centrality estimator different from FT0A, FT0C, FT0M, and FV0A, fix it!");
+      }
+      if (centrality < centralityMin || centrality > centralityMax) {
+        SETBIT(statusCollision, EventRejection::Centrality);
+      }
     }
-    if (centrality < centralityMin || centrality > centralityMax) {
-      SETBIT(statusCollision, EventRejection::Centrality);
+
+    if constexpr (applyEvSel) {
+      /// sel8() condition
+      if ((useSel8Trigger && !collision.sel8()) || (!useSel8Trigger && triggerClass > -1 && !collision.alias_bit(triggerClass))) {
+        SETBIT(statusCollision, EventRejection::Trigger);
+      }
+      /// time frame border cut
+      if (useTimeFrameBorderCut && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        SETBIT(statusCollision, EventRejection::TimeFrameBorderCut);
+      }
     }
-  }
 
-  if constexpr (applyEvSel) {
-    /// sel8() condition
-    if (useSel8Trigger && !collision.sel8()) {
-      SETBIT(statusCollision, EventRejection::Trigger);
+    /// primary vertex z
+    if (collision.posZ() < zPvPosMin || collision.posZ() > zPvPosMax) {
+      SETBIT(statusCollision, EventRejection::PositionZ);
     }
-    /// time frame border cut
-    if (useTimeFrameBorderCut && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      SETBIT(statusCollision, EventRejection::TimeFrameBorderCut);
+
+    /// number of PV contributors
+    if (collision.numContrib() < nPvContributorsMin) {
+      SETBIT(statusCollision, EventRejection::NContrib);
     }
+
+    /// max PV chi2
+    if (chi2PvMax > 0. && collision.chi2() > chi2PvMax) {
+      SETBIT(statusCollision, EventRejection::Chi2);
+    }
+
+    return statusCollision;
   }
 
-  /// primary vertex z
-  if (collision.posZ() > zPvPosMin || collision.posZ() < zPvPosMax) {
-    SETBIT(statusCollision, EventRejection::PositionZ);
+  /// @brief function to monitor the event selection satisfied by collisions used for HF analyses
+  /// \param collision is the analysed collision
+  /// \param rejectionMask is the bitmask storing the info about which ev. selections are not satisfied by the collision
+  /// \param hCollisions is a histogram to keep track of the satisfied event selections
+  /// \param hPosZBeforeEvSel is a histogram for the PV position Z for all analysed collisions
+  /// \param hPosZAfterEvSel is a histogram for the PV position Z only for collisions satisfying the event selections
+  /// \param hPosXAfterEvSel is a histogram for the PV position X only for collisions satisfying the event selections
+  /// \param hPosYAfterEvSel is a histogram for the PV position Y only for collisions satisfying the event selections
+  /// \param hNumContributors is a histogram for the number of PV contributors only for collisions satisfying the event selections
+  template <typename Coll, typename Hist>
+  void monitorCollision(Coll const& collision, const uint16_t rejectionMask, Hist& hCollisions, Hist& hPosZBeforeEvSel, Hist& hPosZAfterEvSel, Hist& hPosXAfterEvSel, Hist& hPosYAfterEvSel, Hist& hNumContributors)
+  {
+
+    hCollisions->Fill(EventRejection::None); // all collisions
+    const float posZ = collision.posZ();
+    hPosZBeforeEvSel->Fill(posZ);
+
+    /// centrality
+    if (TESTBIT(rejectionMask, EventRejection::Centrality)) {
+      return;
+    }
+    hCollisions->Fill(EventRejection::Centrality); // Centrality ok
+
+    /// sel8()
+    if (TESTBIT(rejectionMask, EventRejection::Trigger)) {
+      return;
+    }
+    hCollisions->Fill(EventRejection::Trigger); // Centrality + sel8 ok
+
+    /// Time Frame border cut
+    if (TESTBIT(rejectionMask, EventRejection::TimeFrameBorderCut)) {
+      return;
+    }
+    hCollisions->Fill(EventRejection::TimeFrameBorderCut); // Centrality + sel8 + TF border ok
+
+    /// PV contributors
+    if (TESTBIT(rejectionMask, EventRejection::NContrib)) {
+      return;
+    }
+    hCollisions->Fill(EventRejection::NContrib); // Centrality + sel8 + TF border + PV contr ok
+
+    /// PV chi2
+    if (TESTBIT(rejectionMask, EventRejection::Chi2)) {
+      return;
+    }
+    hCollisions->Fill(EventRejection::Chi2); // Centrality + sel8 + TF border + PV contr + chi2 ok
+
+    /// PV position Z
+    if (TESTBIT(rejectionMask, EventRejection::PositionZ)) {
+      return;
+    }
+    hCollisions->Fill(EventRejection::PositionZ); // Centrality + sel8 + TF border + PV contr + chi2 + posZ ok
+
+    hPosXAfterEvSel->Fill(collision.posX());
+    hPosYAfterEvSel->Fill(collision.posY());
+    hNumContributors->Fill(collision.numContrib());
   }
-
-  /// number of PV contributors
-  if (collision.numContrib() < nPvContributorsMin) {
-    SETBIT(statusCollision, EventRejection::NContrib);
-  }
-
-  /// max PV chi2
-  if (chi2PvMax > 0. && collision.chi2() > chi2PvMax) {
-    SETBIT(statusCollision, EventRejection::Chi2);
-  }
-
-  return statusCollision;
-}
-
-/// @brief function to monitor the event selection satisfied by collisions used for HF analyses
-/// \param collision is the analysed collision
-/// \param rejectionMask is the bitmask storing the info about which ev. selections are not satisfied by the collision
-/// \param hCollisions is a histogram to keep track of the satisfied event selections
-/// \param hPosZBeforeEvSel is a histogram for the PV position Z for all analysed collisions
-/// \param hPosZAfterEvSel is a histogram for the PV position Z only for collisions satisfying the event selections
-/// \param hPosXAfterEvSel is a histogram for the PV position X only for collisions satisfying the event selections
-/// \param hPosYAfterEvSel is a histogram for the PV position Y only for collisions satisfying the event selections
-/// \param hNumContributors is a histogram for the number of PV contributors only for collisions satisfying the event selections
-template <typename Coll, typename Hist>
-void monitorCollision(Coll const& collision, const uint16_t rejectionMask, Hist& hCollisions, Hist& hPosZBeforeEvSel, Hist& hPosZAfterEvSel, Hist& hPosXAfterEvSel, Hist& hPosYAfterEvSel, Hist& hNumContributors)
-{
-
-  hCollisions->Fill(ValuesEvSel::All); // all collisions
-  const float posZ = collision.posZ();
-  hPosZBeforeEvSel->Fill(posZ);
-
-  /// centrality
-  if (TESTBIT(rejectionMask, EventRejection::Centrality)) {
-    return;
-  }
-  hCollisions->Fill(ValuesEvSel::Cent); // Centrality ok
-
-  /// sel8()
-  if (TESTBIT(rejectionMask, EventRejection::Trigger)) {
-    return;
-  }
-  hCollisions->Fill(ValuesEvSel::CentSel8); // Centrality + sel8 ok
-
-  /// Time Frame border cut
-  if (TESTBIT(rejectionMask, EventRejection::TimeFrameBorderCut)) {
-    return;
-  }
-  hCollisions->Fill(ValuesEvSel::CentSel8TFBorder); // Centrality + sel8 + TF border ok
-
-  /// PV contributors
-  if (TESTBIT(rejectionMask, EventRejection::NContrib)) {
-    return;
-  }
-  hCollisions->Fill(ValuesEvSel::CentSel8TFBorderPvContr); // Centrality + sel8 + TF border + PV contr ok
-
-  /// PV chi2
-  if (TESTBIT(rejectionMask, EventRejection::Chi2)) {
-    return;
-  }
-  hCollisions->Fill(ValuesEvSel::CentSel8TFBorderPvContrChi2); // Centrality + sel8 + TF border + PV contr + chi2 ok
-
-  /// PV position Z
-  if (TESTBIT(rejectionMask, EventRejection::PositionZ)) {
-    return;
-  }
-  hCollisions->Fill(ValuesEvSel::CentSel8TFBorderPvContrChi2PosZ); // Centrality + sel8 + TF border + PV contr + chi2 + posZ ok
-
-  hPosXAfterEvSel->Fill(collision.posX());
-  hPosYAfterEvSel->Fill(collision.posY());
-  hNumContributors->Fill(collision.numContrib());
 }
 
 #endif // PWGHF_UTILS_UTILSEVSELHF_H_

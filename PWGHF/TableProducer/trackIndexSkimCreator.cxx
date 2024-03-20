@@ -54,6 +54,7 @@
 
 using namespace o2;
 using namespace o2::analysis;
+using namespace o2::hf_evsel;
 using namespace o2::aod;
 using namespace o2::aod::hf_collision_centrality;
 using namespace o2::framework;
@@ -122,7 +123,6 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
 
     if (fillHistograms) {
-      AxisSpec axisEvents = {ValuesEvSel::NEvSel, -0.5f, static_cast<float>(ValuesEvSel::NEvSel) - 0.5f, ""};
       hEvents = registry.add<TH1>("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
       setLabelHistoEvSel(hEvents);
 
@@ -147,7 +147,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   void selectCollision(const Col& collision)
   {
     float centrality = -1.;
-    const auto statusCollision = getHfCollisionRejectionMask<applyTrigSel, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, useTimeFrameBorderCut, zVertexMin, zVertexMax, nContribMin, chi2Max);
+    const auto statusCollision = getHfCollisionRejectionMask<applyTrigSel, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, triggerClass, useTimeFrameBorderCut, zVertexMin, zVertexMax, nContribMin, chi2Max);
 
     if (fillHistograms) {
       monitorCollision(collision, statusCollision, hEvents, hPrimVtxZBeforeSel, hPrimVtxZAfterSel, hPrimVtxXAfterSel, hPrimVtxYAfterSel, hNContributorsAfterSel);
