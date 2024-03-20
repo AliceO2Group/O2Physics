@@ -126,12 +126,15 @@ struct HfCandidateCreatorXic {
     }
   }
 
+  using CascadesLinked = soa::Join<aod::Cascades, aod::CascDataLink>;
+  using KFCascadesLinked = soa::Join<aod::Cascades, aod::KFCascDataLink>;
   using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
-  using CascFullKF = soa::Join<aod::KFCascDatas, aod::KFCascCovs>;
+  using KFCascFull = soa::Join<aod::KFCascDatas, aod::KFCascCovs>;
 
   template <bool doPvRefit, typename CandType, typename TTracks>
   void runCreatorXicPlusWithDcaFitter(aod::Collisions const& collisions,
                                       CandType const& rowsTrackIndexXicPlus,
+                                      CascadesLinked const&,
                                       CascFull const& cascs,
                                       TTracks const& tracks,
                                       aod::BCsWithTimestamps const& bcWithTimeStamps)
@@ -148,9 +151,13 @@ struct HfCandidateCreatorXic {
 
     // loop over triplets of track indices
     for (const auto& rowTrackIndexXicPlus : rowsTrackIndexXicPlus) {
+      auto cascAodElement = rowTrackIndexXicPlus.template cascade_as<aod::CascadesLinked>();
+      if (!cascAodElement.has_cascData())
+        continue; 
+      auto casc = cascAodElement.template cascData_as<CascFull>();
       auto track0 = rowTrackIndexXicPlus.template prong0_as<TTracks>();
       auto track1 = rowTrackIndexXicPlus.template prong1_as<TTracks>();
-      auto casc = rowTrackIndexXicPlus.template cascade_as<CascFull>();
+      //auto casc = rowTrackIndexXicPlus.template cascade_as<CascFull>();
 
       // preselect cascade candidates
       if (doCascadePreselection) {
@@ -348,13 +355,18 @@ struct HfCandidateCreatorXic {
   template <bool doPvRefit, typename CandType, typename TTracks>
   void runCreatorXicPlusWithKFParticle(aod::Collisions const& collisions,
                                        CandType const& rowsTrackIndexXicPlus,
-                                       CascFullKF const&,
+                                       KFCascadesLinked const&,
+                                       KFCascFull const&,
                                        TTracks const& tracks,
                                        aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
     // loop over triplets of track indices
     for (const auto& rowTrackIndexXicPlus : rowsTrackIndexXicPlus) {
-      auto casc = rowTrackIndexXicPlus.template cascade_as<CascFullKF>();
+      auto cascAodElement = rowTrackIndexXicPlus.template cascade_as<aod::KFCascadesLinked>();
+      if (!cascAodElement.has_kfCascData())
+        continue; 
+      auto casc = cascAodElement.template kfCascData_as<KFCascFull>();
+      //auto casc = rowTrackIndexXicPlus.template cascade_as<KFCascFull>();
       auto track0 = rowTrackIndexXicPlus.template prong0_as<TTracks>();
       auto track1 = rowTrackIndexXicPlus.template prong1_as<TTracks>();
       auto collision = rowTrackIndexXicPlus.collision();
@@ -503,41 +515,45 @@ struct HfCandidateCreatorXic {
 
   void processPvRefitWithDCAFitterN(aod::Collisions const& collisions,
                                     soa::Join<aod::HfCascLf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexXicPlus,
+                                    CascadesLinked const& cascsLinked,
                                     CascFull const& cascs,
                                     aod::TracksWCovDca const& tracks,
                                     aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreatorXicPlusWithDcaFitter<true>(collisions, rowsTrackIndexXicPlus, cascs, tracks, bcWithTimeStamps);
+    runCreatorXicPlusWithDcaFitter<true>(collisions, rowsTrackIndexXicPlus, cascsLinked, cascs, tracks, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic, processPvRefitWithDCAFitterN, "Run candidate creator with PV refit", false);
 
   void processNoPvRefitWithDCAFitterN(aod::Collisions const& collisions,
                                       aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
+                                      CascadesLinked const& cascsLinked,
                                       CascFull const& cascs,
                                       aod::TracksWCovDca const& tracks,
                                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreatorXicPlusWithDcaFitter<false>(collisions, rowsTrackIndexXicPlus, cascs, tracks, bcWithTimeStamps);
+    runCreatorXicPlusWithDcaFitter<false>(collisions, rowsTrackIndexXicPlus, cascsLinked, cascs, tracks, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic, processNoPvRefitWithDCAFitterN, "Run candidate creator without PV refit", true);
 
   void processPvRefitWithKFParticle(aod::Collisions const& collisions,
                                     soa::Join<aod::HfCascLf3Prongs, aod::HfPvRefit3Prong> const& rowsTrackIndexXicPlus,
-                                    CascFullKF const& cascs,
+                                    KFCascadesLinked const& cascsLinked,
+                                    KFCascFull const& cascs,
                                     aod::TracksWCovExtra const& tracks,
                                     aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreatorXicPlusWithKFParticle<true>(collisions, rowsTrackIndexXicPlus, cascs, tracks, bcWithTimeStamps);
+    runCreatorXicPlusWithKFParticle<true>(collisions, rowsTrackIndexXicPlus, cascsLinked, cascs, tracks, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic, processPvRefitWithKFParticle, "Run candidate creator with PV refit", false);
 
   void processNoPvRefitWithKFParticle(aod::Collisions const& collisions,
                                       aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
-                                      CascFullKF const& cascs,
+                                      KFCascadesLinked const& cascsLinked,
+                                      KFCascFull const& cascs,
                                       aod::TracksWCovExtra const& tracks,
                                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreatorXicPlusWithKFParticle<false>(collisions, rowsTrackIndexXicPlus, cascs, tracks, bcWithTimeStamps);
+    runCreatorXicPlusWithKFParticle<false>(collisions, rowsTrackIndexXicPlus, cascsLinked, cascs, tracks, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic, processNoPvRefitWithKFParticle, "Run candidate creator without PV refit", false);
 }; // struct
