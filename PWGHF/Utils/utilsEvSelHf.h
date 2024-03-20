@@ -66,7 +66,7 @@ template <bool applyEvSel, o2::aod::hf_collision_centrality::CentralityEstimator
 uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, float centralityMin, float centralityMax, bool useSel8Trigger, int triggerClass, bool useTimeFrameBorderCut, float zPvPosMin, float zPvPosMax, int nPvContributorsMin, float chi2PvMax)
 {
 
-  uint16_t statusCollision = 0; // 16 bits, in case new ev. selections will be added
+  uint16_t statusCollision{0}; // 16 bits, in case new ev. selections will be added
 
   if constexpr (centEstimator != o2::aod::hf_collision_centrality::CentralityEstimator::None) {
     if constexpr (centEstimator == o2::aod::hf_collision_centrality::CentralityEstimator::FT0A) {
