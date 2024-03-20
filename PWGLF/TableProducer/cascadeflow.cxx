@@ -128,8 +128,10 @@ struct cascadeFlow {
   Configurable<float> mintpccrrows{"mintpccrrows", 70, "mintpccrrows"};
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
-  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<std::vector<std::string>> modelPathsCCDBXi{"modelPathsCCDBXi", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> modelPathsCCDBOmega{"modelPathsCCDBOmega", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNamesXi{"onnxFileNamesXi", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<std::vector<std::string>> onnxFileNamesOmega{"onnxFileNamesOmega", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", true, "Flag to enable or disable the loading of models from CCDB"};
 
@@ -271,11 +273,11 @@ struct cascadeFlow {
       // Bonus: retrieve the model from CCDB (needed for ML application on the GRID)
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
-        mlResponseXi.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
-        mlResponseOmega.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB); // TODO: use different model for Xi and Omega
+        mlResponseXi.setModelPathsCCDB(onnxFileNamesXi, ccdbApi, modelPathsCCDBXi, timestampCCDB);
+        mlResponseOmega.setModelPathsCCDB(onnxFileNamesOmega, ccdbApi, modelPathsCCDBOmega, timestampCCDB); // TODO: use different model for Xi and Omega
       } else {
-        mlResponseXi.setModelPathsLocal(onnxFileNames);
-        mlResponseOmega.setModelPathsLocal(onnxFileNames);
+        mlResponseXi.setModelPathsLocal(onnxFileNamesXi);
+        mlResponseOmega.setModelPathsLocal(onnxFileNamesOmega);
       }
       mlResponseXi.init();
       mlResponseOmega.init();
