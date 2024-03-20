@@ -174,7 +174,7 @@ std::shared_ptr<TH3> hDCAxy[2][5][2];
 std::shared_ptr<TH3> hDCAz[2][5][2];
 std::shared_ptr<TH2> hGloTOFtracks[2];
 std::shared_ptr<TH2> hDeltaP[2][5];
-std::shared_ptr<THn> hFlowHists[2][5];
+std::shared_ptr<THnSparse> hFlowHists[2][5];
 o2::base::MatLayerCylSet* lut = nullptr;
 
 std::vector<NucleusCandidate> candidates;
@@ -381,7 +381,7 @@ struct nucleiSpectra {
         }
         if (doprocessDataFlow) {
           if (cfgFlowHist->get(iS)) {
-            nuclei::hFlowHists[iC][iS] = spectra.add<THn>(fmt::format("hFlowHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Flow histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnF, {centAxis, ptAxes[iS], nSigmaAxes[0], tofMassAxis, v2Axis, nITSClusAxis, nTPCClusAxis});
+            nuclei::hFlowHists[iC][iS] = spectra.add<THnSparse>(fmt::format("hFlowHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Flow histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnSparseF, {centAxis, ptAxes[iS], nSigmaAxes[0], tofMassAxis, v2Axis, nITSClusAxis, nTPCClusAxis});
           }
         }
       }
