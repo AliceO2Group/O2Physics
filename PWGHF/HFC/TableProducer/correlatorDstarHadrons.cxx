@@ -183,9 +183,9 @@ struct HfCorrelatorDstarHadron {
         // Fill table
         if (triggerParticle.signSoftPi() > 0) { // Fill Dstar candidate
 
-        ///////////////////////////////////////
+          ///////////////////////////////////////
           triggerParticle.invMassD0();
-        ///////////////////////////////////////
+          ///////////////////////////////////////
           rowsDstarHadronPair(collision.globalIndex(),
                               gItriggerParticle,
                               triggerParticle.phi(),
