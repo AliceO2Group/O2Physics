@@ -80,8 +80,6 @@ struct HfCandidateSelectorXicToPKPi {
 
   using TracksSel = soa::Join<aod::TracksWExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 
-
-
   void init(InitContext const&)
   {
     selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
@@ -346,5 +344,4 @@ struct HfCandidateSelectorXicToPKPi {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<HfCandidateSelectorXicToPKPi>(cfgc)};
-
 }

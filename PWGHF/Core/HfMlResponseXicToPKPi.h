@@ -203,13 +203,13 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_XIC(tofNSigmaPi2),
       // Combined PID variables
       FILL_MAP_XIC(tpcTofNSigmaPi0),
-      FILL_MAP_XIC(tpcTofNSigmaPi1), 
-      FILL_MAP_XIC(tpcTofNSigmaPi2), 
-      FILL_MAP_XIC(tpcTofNSigmaKa0), 
-      FILL_MAP_XIC(tpcTofNSigmaKa1), 
-      FILL_MAP_XIC(tpcTofNSigmaKa2), 
-      FILL_MAP_XIC(tpcTofNSigmaPr0), 
-      FILL_MAP_XIC(tpcTofNSigmaPr1), 
+      FILL_MAP_XIC(tpcTofNSigmaPi1),
+      FILL_MAP_XIC(tpcTofNSigmaPi2),
+      FILL_MAP_XIC(tpcTofNSigmaKa0),
+      FILL_MAP_XIC(tpcTofNSigmaKa1),
+      FILL_MAP_XIC(tpcTofNSigmaKa2),
+      FILL_MAP_XIC(tpcTofNSigmaPr0),
+      FILL_MAP_XIC(tpcTofNSigmaPr1),
       FILL_MAP_XIC(tpcTofNSigmaPr2)};
   }
 };
