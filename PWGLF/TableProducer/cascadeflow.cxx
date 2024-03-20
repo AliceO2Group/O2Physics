@@ -86,19 +86,19 @@ auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 static const std::vector<std::string> modelPaths = {""};
 
 // default values for the cut directions
-constexpr int cutDir[nCutScores] = {CutSmaller, CutNot};
+constexpr int cutDir[nCutScores] = {CutSmaller, CutNot}; // CutSmaller selects values > fixed value to signal BDT score, CutNot does not apply any selection to the background BDT score
 auto vecCutDir = std::vector<int>{cutDir, cutDir + nCutScores};
 
 // default values for the cuts
-constexpr double cuts[nBinsPt][nCutScores] = {
-  {0.9, 0.5},
-  {0.9, 0.5},
-  {0.9, 0.5},
-  {0.9, 0.5},
-  {0.9, 0.5},
-  {0.9, 0.5},
-  {0.9, 0.5},
-  {0.9, 0.5}};
+constexpr double cuts[nBinsPt][nCutScores] = { // background, signal
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9}};
 
 // row labels
 static const std::vector<std::string> labelsPt = {
@@ -112,14 +112,13 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 7"};
 
 // column labels
-static const std::vector<std::string> labelsCutScore = {"Signal score", "Background score"};
+static const std::vector<std::string> labelsCutScore = {"Background score", "Signal score"};
 } // namespace cascade_flow_cuts_ml
 
 struct cascadeFlow {
 
   Configurable<float> MinPt{"MinPt", 0.6, "Min pt of cascade"};
   Configurable<float> MaxPt{"MaxPt", 10, "Max pt of cascade"};
-  Configurable<bool> isApplyML{"isApplyML", 1, ""};
   Configurable<double> sideBandStart{"sideBandStart", 5, "Start of the sideband region in number of sigmas"};
   Configurable<double> sideBandEnd{"sideBandEnd", 7, "End of the sideband region in number of sigmas"};
   Configurable<double> downsample{"downsample", 1., "Downsample training output tree"};
@@ -129,13 +128,15 @@ struct cascadeFlow {
   Configurable<float> mintpccrrows{"mintpccrrows", 70, "mintpccrrows"};
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
-  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<std::vector<std::string>> modelPathsCCDBXi{"modelPathsCCDBXi", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> modelPathsCCDBOmega{"modelPathsCCDBOmega", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNamesXi{"onnxFileNamesXi", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<std::vector<std::string>> onnxFileNamesOmega{"onnxFileNamesOmega", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", true, "Flag to enable or disable the loading of models from CCDB"};
 
   // ML inference
-  Configurable<bool> applyMl{"applyMl", true, "Flag to apply ML selections"};
+  Configurable<bool> isApplyML{"isApplyML", 1, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{cascade_flow_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{cascade_flow_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {cascade_flow_cuts_ml::cuts[0], cascade_flow_cuts_ml::nBinsPt, cascade_flow_cuts_ml::nCutScores, cascade_flow_cuts_ml::labelsPt, cascade_flow_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
@@ -272,11 +273,11 @@ struct cascadeFlow {
       // Bonus: retrieve the model from CCDB (needed for ML application on the GRID)
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
-        mlResponseXi.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
-        mlResponseOmega.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB); // TODO: use different model for Xi and Omega
+        mlResponseXi.setModelPathsCCDB(onnxFileNamesXi, ccdbApi, modelPathsCCDBXi, timestampCCDB);
+        mlResponseOmega.setModelPathsCCDB(onnxFileNamesOmega, ccdbApi, modelPathsCCDBOmega, timestampCCDB); // TODO: use different model for Xi and Omega
       } else {
-        mlResponseXi.setModelPathsLocal(onnxFileNames);
-        mlResponseOmega.setModelPathsLocal(onnxFileNames);
+        mlResponseXi.setModelPathsLocal(onnxFileNamesXi);
+        mlResponseOmega.setModelPathsLocal(onnxFileNamesOmega);
       }
       mlResponseXi.init();
       mlResponseOmega.init();
@@ -423,13 +424,13 @@ struct cascadeFlow {
 
         for (int iS{0}; iS < 2; ++iS) {
           // Fill BDT score histograms before selection
-          cascadev2::hSignalScoreBeforeSel[iS]->Fill(bdtScore[0][0]);
-          cascadev2::hBkgScoreBeforeSel[iS]->Fill(bdtScore[1][1]);
+          cascadev2::hSignalScoreBeforeSel[iS]->Fill(bdtScore[0][1]);
+          cascadev2::hBkgScoreBeforeSel[iS]->Fill(bdtScore[1][0]);
 
           // Fill histograms for selected candidates
           if (isSelectedCasc[iS]) {
-            cascadev2::hSignalScoreAfterSel[iS]->Fill(bdtScore[0][0]);
-            cascadev2::hBkgScoreAfterSel[iS]->Fill(bdtScore[1][1]);
+            cascadev2::hSignalScoreAfterSel[iS]->Fill(bdtScore[0][1]);
+            cascadev2::hBkgScoreAfterSel[iS]->Fill(bdtScore[1][0]);
             cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
           }
         }
@@ -455,8 +456,8 @@ struct cascadeFlow {
 
       float BDTresponse[2]{0.f, 0.f};
       if (isApplyML) {
-        BDTresponse[0] = bdtScore[0][0];
-        BDTresponse[1] = bdtScore[1][0];
+        BDTresponse[0] = bdtScore[0][1];
+        BDTresponse[1] = bdtScore[1][1];
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
         fillAnalysedTable(coll, casc, v2C, BDTresponse[0], BDTresponse[1]);
