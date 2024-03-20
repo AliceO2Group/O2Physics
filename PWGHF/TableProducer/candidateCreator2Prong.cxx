@@ -374,7 +374,7 @@ struct HfCandidateCreator2Prong {
       }
       if (!kfNegPion.GetDistanceFromVertexXY(KFPV, impactParameter1XY, errImpactParameter1XY)) {
         registry.fill(HIST("hDcaXYProngs"), track1.pt(), impactParameter1XY * toMicrometers);
-        registry.fill(HIST("hDcaZProngs"), track1.pt(), std::sqrt(kfPosPion.GetDistanceFromVertex(KFPV) * kfPosPion.GetDistanceFromVertex(KFPV) - impactParameter1XY * impactParameter1XY) * toMicrometers);
+        registry.fill(HIST("hDcaZProngs"), track1.pt(), std::sqrt(kfNegPion.GetDistanceFromVertex(KFPV) * kfNegPion.GetDistanceFromVertex(KFPV) - impactParameter1XY * impactParameter1XY) * toMicrometers);
       } else {
         registry.fill(HIST("hDcaXYProngs"), track1.pt(), -999.f);
         registry.fill(HIST("hDcaZProngs"), track1.pt(), -999.f);
