@@ -17,6 +17,7 @@
 // Framework
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/HistogramRegistry.h"
 
 // PWGHF
 #include "PWGHF/Core/SelectorCuts.h"
@@ -42,25 +43,25 @@ namespace o2::dstar::correlation
 {
 const int nBinsPtCorrelation = 8;
 
-const double binsPtCorrelations[nBinsPtCorrelation + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 99.};
+const double binsPtCorrelations[nBinsPtCorrelation + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 100.};
 auto vecBinsPtCorrelations = std::vector<double>{binsPtCorrelations, binsPtCorrelations + nBinsPtCorrelation + 1};
 
-const double signalRegionLefBoundDefault[nBinsPtCorrelation] = {1.8490, 1.8490, 1.8490, 1.8490, 1.8490, 1.8490, 1.8490, 1.8490};
+const double signalRegionLefBoundDefault[nBinsPtCorrelation] = {0.144, 0.144, 0.144, 0.144, 0.144, 0.144, 0.144, 0.144};
 auto vecSignalRegionLefBoundDefault = std::vector<double>{signalRegionLefBoundDefault, signalRegionLefBoundDefault + nBinsPtCorrelation};
 
-const double signalRegionRightBoundDefault[nBinsPtCorrelation] = {1.8890, 1.8890, 1.8890, 1.8890, 1.8890, 1.8890, 1.8890, 1.8890};
+const double signalRegionRightBoundDefault[nBinsPtCorrelation] = {0.146, 0.146, 0.146, 0.146, 0.146, 0.146, 0.146, 0.146};
 auto vecSignalRegionRightBoundDefault = std::vector<double>{signalRegionRightBoundDefault, signalRegionRightBoundDefault + nBinsPtCorrelation};
 
-const double sidebandLeftOuterDefault[nBinsPtCorrelation] = {1.7690, 1.7690, 1.7690, 1.7690, 1.7690, 1.7690, 1.7690, 1.7690};
-auto vecSidebandLeftOuterDefault = std::vector<double>{sidebandLeftOuterDefault, sidebandLeftOuterDefault + nBinsPtCorrelation};
+// const double sidebandLeftOuterDefault[nBinsPtCorrelation] = {1.7690, 1.7690, 1.7690, 1.7690, 1.7690, 1.7690, 1.7690, 1.7690};
+// auto vecSidebandLeftOuterDefault = std::vector<double>{sidebandLeftOuterDefault, sidebandLeftOuterDefault + nBinsPtCorrelation};
 
-const double sidebandLeftInnerDefault[nBinsPtCorrelation] = {1.8250, 1.8250, 1.8250, 1.8250, 1.8250, 1.8250, 1.8250, 1.8250};
-auto vecSidebandLeftInnerDefault = std::vector<double>{sidebandLeftInnerDefault, sidebandLeftInnerDefault + nBinsPtCorrelation};
+// const double sidebandLeftInnerDefault[nBinsPtCorrelation] = {1.8250, 1.8250, 1.8250, 1.8250, 1.8250, 1.8250, 1.8250, 1.8250};
+// auto vecSidebandLeftInnerDefault = std::vector<double>{sidebandLeftInnerDefault, sidebandLeftInnerDefault + nBinsPtCorrelation};
 
-const double sidebandRightInnerDefault[nBinsPtCorrelation] = {1.9130, 1.9130, 1.9130, 1.9130, 1.9130, 1.9130, 1.9130, 1.9130};
+const double sidebandRightInnerDefault[nBinsPtCorrelation] = {0.147, 0.147, 0.147, 0.147, 0.147, 0.147, 0.147, 0.147};
 auto vecSidebandRightInnerDefault = std::vector<double>{sidebandRightInnerDefault, sidebandRightInnerDefault + nBinsPtCorrelation};
 
-const double sidebandRightOuterDefault[nBinsPtCorrelation] = {1.9690, 1.9690, 1.9690, 1.9690, 1.9690, 1.9690, 1.9690, 1.9690};
+const double sidebandRightOuterDefault[nBinsPtCorrelation] = {0.154, 0.154, 0.154, 0.154, 0.154, 0.154, 0.154, 0.154};
 auto vecSidebandRightOuterDefault = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + nBinsPtCorrelation};
 
 const int npTBinsEfficiency = o2::analysis::hf_cuts_dstar_to_d0_pi::nBinsPt;
@@ -72,7 +73,7 @@ using namespace o2::dstar;
 // Dstar-Hadron correlation pair
 struct HfTaskCorrelationDstarHadron {
 
-  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying efficiency weights"};
+  Configurable<bool> applyEfficiency{"applyEfficiency", true, "Flag for applying efficiency weights"};
   // pT ranges for correlation plots: the default values are those embedded in hf_cuts_dplus_to_pi_k_pi (i.e. the mass pT bins), but can be redefined via json files
   Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{correlation::vecBinsPtCorrelations}, "pT bin limits for correlation plots"};
   Configurable<std::vector<double>> binsPtEfficiency{"binsPtEfficiency", std::vector<double>{o2::analysis::hf_cuts_dstar_to_d0_pi::vecBinsPt}, "pT bin limits for efficiency"};
@@ -80,14 +81,12 @@ struct HfTaskCorrelationDstarHadron {
 
   Configurable<std::vector<double>> signalRegionLefBound{"signalRegionLefBound", std::vector<double>{correlation::vecSignalRegionLefBoundDefault}, "left boundary of signal region vs pT"};
   Configurable<std::vector<double>> signalRegionRightBound{"signalRegionRightBound", std::vector<double>{correlation::vecSignalRegionRightBoundDefault}, "right boundary of signal region vs pT"};
-  Configurable<std::vector<double>> leftSidebandOuterBoundary{"leftSidebandOuterBoundary", std::vector<double>{correlation::vecSidebandLeftOuterDefault}, "left sideband outer boundary vs pT"};
-  Configurable<std::vector<double>> leftSidebandInnerBoundary{"leftSidebandInnerBoundary", std::vector<double>{correlation::vecSidebandLeftInnerDefault}, "left sideband inner boundary vs pT"};
+  // Configurable<std::vector<double>> leftSidebandOuterBoundary{"leftSidebandOuterBoundary", std::vector<double>{correlation::vecSidebandLeftOuterDefault}, "left sideband outer boundary vs pT"};
+  // Configurable<std::vector<double>> leftSidebandInnerBoundary{"leftSidebandInnerBoundary", std::vector<double>{correlation::vecSidebandLeftInnerDefault}, "left sideband inner boundary vs pT"};
   Configurable<std::vector<double>> rightSidebandOuterBoundary{"rightSidebandOuterBoundary", std::vector<double>{correlation::vecSidebandRightOuterDefault}, "right sideband outer baoundary vs pT"};
   Configurable<std::vector<double>> rightSidebandInnerBoundary{"rightSidebandInnerBoundary", std::vector<double>{correlation::vecSidebandRightInnerDefault}, "right sideband inner boundary"};
 
-  HistogramRegistry registry{
-    "registry",
-    {}};
+  HistogramRegistry registry{"registry",{},OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   void init(InitContext&)
   {
@@ -113,10 +112,12 @@ struct HfTaskCorrelationDstarHadron {
       float ptDstar = dstarHPair.ptDstar();
       float ptTrack = dstarHPair.ptTrack();
       int poolBin = dstarHPair.poolBin();
-      float massDstar = dstarHPair.mDstar();
+      float deltaM = dstarHPair.deltaM();
 
       int effBinPtDstar = o2::analysis::findBin(binsPtEfficiency, ptDstar);
+      LOG(info) << "efficiency index " << effBinPtDstar;
       int corrBinPtDstar = o2::analysis::findBin(binsPtCorrelations, ptDstar);
+      LOG(info) << "correlation index " << corrBinPtDstar;
 
       // reject candidate if outside pT ranges of interst
       if (corrBinPtDstar < 0 || effBinPtDstar < 0) {
@@ -129,17 +130,19 @@ struct HfTaskCorrelationDstarHadron {
       float efficiencyWeightTracks = 1.0;
 
       if (applyEfficiency) {
-        netEfficiencyWeight = 1.0 / (efficiencyDstar->at(effBinPtDstar) * efficiencyWeightTracks);
+        float efficiencyWeightDstar = efficiencyDstar->at(effBinPtDstar);
+        LOG(info)<<"efficiencyWeightDstar "<<efficiencyWeightDstar;
+        netEfficiencyWeight = 1.0 / (efficiencyWeightDstar * efficiencyWeightTracks);
       }
 
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
-      if (massDstar > signalRegionLefBound->at(ptDstar) && massDstar < signalRegionRightBound->at(ptDstar)) {
+      if (deltaM > signalRegionLefBound->at(corrBinPtDstar) && deltaM < signalRegionRightBound->at(corrBinPtDstar)) {
         // in signal region
         registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptDstar, ptTrack, poolBin, netEfficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSignalRegion"), deltaPhi, deltaEta, netEfficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, netEfficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, netEfficiencyWeight);
-      } else if ((massDstar > leftSidebandOuterBoundary->at(ptDstar) && massDstar < leftSidebandInnerBoundary->at(ptDstar)) || (massDstar > rightSidebandInnerBoundary->at(ptDstar) && massDstar < rightSidebandOuterBoundary->at(ptDstar))) {
+      } else if (/*(deltaM > leftSidebandOuterBoundary->at(corrBinPtDstar) && deltaM < leftSidebandInnerBoundary->at(corrBinPtDstar)) ||*/ (deltaM > rightSidebandInnerBoundary->at(corrBinPtDstar) && deltaM < rightSidebandOuterBoundary->at(corrBinPtDstar))) {
         registry.fill(HIST("hCorrel2DVsPtSidebands"), deltaPhi, deltaEta, ptDstar, ptTrack, poolBin, netEfficiencyWeight);
         registry.fill(HIST("hCorrel2DPtIntSidebands"), deltaPhi, deltaEta, netEfficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebands"), deltaEta, netEfficiencyWeight);

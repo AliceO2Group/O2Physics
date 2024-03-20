@@ -217,6 +217,7 @@ DECLARE_SOA_COLUMN(PhiDstar, phiDstar, float);
 DECLARE_SOA_COLUMN(EtaDstar, etaDstar, float);
 DECLARE_SOA_COLUMN(PtDstar, ptDstar, float);
 DECLARE_SOA_COLUMN(MDstar, mDstar, float);
+DECLARE_SOA_COLUMN(MD0,mD0, float);
 // DECLARE_SOA_COLUMN(IsPrompt,isPrompt,bool); // although this also defined in (HfCandDstarMcRec HfCandDstarMcRec) tables
 // DECLARE_SOA_COLUMN(MatchingStatus, matchingStatus, bool); // although this also defined in (HfCandDstarMcRec HfCandDstarMcRec) tables
 // Track properties
@@ -230,6 +231,7 @@ DECLARE_SOA_COLUMN(PoolBin, poolBin, int);
 // Dynamic columns
 DECLARE_SOA_DYNAMIC_COLUMN(DeltaEta, deltaEta, [](float etaTrack, float etaCandidate) -> float { return (etaTrack - etaCandidate); });
 DECLARE_SOA_DYNAMIC_COLUMN(DeltaPhi, deltaPhi, [](float phiCandidate, float phiTrack) -> float { return RecoDecay::constrainAngle(phiTrack, phiCandidate); });
+DECLARE_SOA_DYNAMIC_COLUMN(DeltaM, deltaM, [](float massDstar, float massD0)-> float{ return (massDstar - massD0); });
 } // namespace hf_correlation_dstar_hadron
 
 DECLARE_SOA_TABLE(DstarHadronPair, "AOD", "DSTRHPAIR", // D* Hadrons pairs Informations
@@ -240,6 +242,7 @@ DECLARE_SOA_TABLE(DstarHadronPair, "AOD", "DSTRHPAIR", // D* Hadrons pairs Infor
                   hf_correlation_dstar_hadron::EtaDstar,
                   hf_correlation_dstar_hadron::PtDstar,
                   hf_correlation_dstar_hadron::MDstar,
+                  hf_correlation_dstar_hadron::MD0,
                   // Track only properties
                   hf_correlation_dstar_hadron::TrackId,
                   hf_correlation_dstar_hadron::PhiTrack,
@@ -250,7 +253,8 @@ DECLARE_SOA_TABLE(DstarHadronPair, "AOD", "DSTRHPAIR", // D* Hadrons pairs Infor
                   hf_correlation_dstar_hadron::PoolBin,
                   // common Dynamic
                   hf_correlation_dstar_hadron::DeltaPhi<hf_correlation_dstar_hadron::PhiDstar, hf_correlation_dstar_hadron::PhiTrack>,
-                  hf_correlation_dstar_hadron::DeltaEta<hf_correlation_dstar_hadron::EtaDstar, hf_correlation_dstar_hadron::EtaTrack>);
+                  hf_correlation_dstar_hadron::DeltaEta<hf_correlation_dstar_hadron::EtaDstar, hf_correlation_dstar_hadron::EtaTrack>,
+                  hf_correlation_dstar_hadron::DeltaM<hf_correlation_dstar_hadron::MDstar, hf_correlation_dstar_hadron::MD0>);
 
 // Table for mc matched info
 using RecoMatchingInfoDstars = HfCandDstarMcRec;

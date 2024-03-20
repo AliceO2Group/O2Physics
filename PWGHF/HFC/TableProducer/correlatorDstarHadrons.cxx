@@ -71,7 +71,7 @@ struct HfCollisionSelector {
         isDstarFound = true;
         break;
       } // candidate loop
-      LOG(info) << "processCollisionSelWDstar: isDstarFound = " << isDstarFound;
+      // LOG(info) << "processCollisionSelWDstar: isDstarFound = " << isDstarFound;
       collisionWDstar(isDstarFound); // compatible with collision table (filled collision by collision)
     }                                // collision loop
   }
@@ -182,12 +182,17 @@ struct HfCorrelatorDstarHadron {
 
         // Fill table
         if (triggerParticle.signSoftPi() > 0) { // Fill Dstar candidate
+
+        ///////////////////////////////////////
+          triggerParticle.invMassD0();
+        ///////////////////////////////////////
           rowsDstarHadronPair(collision.globalIndex(),
                               gItriggerParticle,
                               triggerParticle.phi(),
                               triggerParticle.eta(),
                               triggerParticle.pt(),
                               triggerParticle.invMassDstar(),
+                              triggerParticle.invMassD0(),
                               gIassocParticle,
                               assocParticle.phi(),
                               assocParticle.eta(),
@@ -201,6 +206,7 @@ struct HfCorrelatorDstarHadron {
                               triggerParticle.eta(),
                               triggerParticle.pt(),
                               triggerParticle.invMassAntiDstar(),
+                              triggerParticle.invMassD0Bar(),
                               gIassocParticle,
                               assocParticle.phi(),
                               assocParticle.eta(),
@@ -249,6 +255,7 @@ struct HfCorrelatorDstarHadron {
                               triggerParticle.eta(),
                               triggerParticle.pt(),
                               triggerParticle.invMassDstar(),
+                              triggerParticle.invMassD0(),
                               gIassocParticle,
                               assocParticle.phi(),
                               assocParticle.eta(),
@@ -262,6 +269,7 @@ struct HfCorrelatorDstarHadron {
                               triggerParticle.eta(),
                               triggerParticle.pt(),
                               triggerParticle.invMassAntiDstar(),
+                              triggerParticle.invMassD0Bar(),
                               gIassocParticle,
                               assocParticle.phi(),
                               assocParticle.eta(),
