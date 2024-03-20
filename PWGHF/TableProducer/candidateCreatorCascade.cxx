@@ -20,6 +20,7 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
@@ -78,12 +79,8 @@ struct HfCandidateCreatorCascade {
   double mass2K0sP{0.};
   double bz = 0.;
 
-  OutputObj<TH1F> hMass2{TH1F("hMass2", "2-prong candidates;inv. mass (p K_{S}^{0}) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
-  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
-  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
-  OutputObj<TH1D> hCollisions{TH1D("hCollisions", "HF event counter", ValuesEvSel::NEvSel, -0.5f, static_cast<float>(ValuesEvSel::NEvSel) - 0.5f)};
-  OutputObj<TH1D> hPosZBeforeEvSel{TH1D("hPosZBeforeEvSel", "PV position Z before ev. selection;posZ (cm);entries", 400, -20, 20)};
-  OutputObj<TH1D> hPosZAfterEvSel{TH1D("hPosZAfterEvSel", "PV position Z after ev. selection;posZ (cm);entries", 400, -20, 20)};
+  std::shared_ptr<TH1> hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
@@ -109,6 +106,17 @@ struct HfCandidateCreatorCascade {
       }
     }
 
+    // histograms
+    registry.add("hMass2", "2-prong candidates;inv. mass (p K_{S}^{0}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 2.05, 2.55}}});
+    registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
+    registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
+    hCollisions = registry.add<TH1>("hCollisions", "HF event counter;;entries", {HistType::kTH1D, {{ValuesEvSel::NEvSel, -0.5f, static_cast<float>(ValuesEvSel::NEvSel) - 0.5f}}});
+    hPosZBeforeEvSel = registry.add<TH1>("hPosZBeforeEvSel", "all events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{400, -20., 20.}}});
+    hPosZAfterEvSel = registry.add<TH1>("hPosZAfterEvSel", "selected events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{400, -20., 20.}}});
+    hPosXAfterEvSel = registry.add<TH1>("hPosXAfterEvSel", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
+    hPosYAfterEvSel = registry.add<TH1>("hPosYAfterEvSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
+    hNumPvContributorsAfterSel = registry.add<TH1>("hNumPvContributorsAfterSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{500, -0.5, 499.5}}});
+
     massP = MassProton;
     massK0s = MassK0Short;
     massPi = MassPiPlus;
@@ -130,7 +138,7 @@ struct HfCandidateCreatorCascade {
     runNumber = 0;
 
     /// collision monitoring
-    setLabelHistoEvSel(hCollisions.object);
+    setLabelHistoEvSel(hCollisions);
   }
 
   template <o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll>
@@ -147,7 +155,8 @@ struct HfCandidateCreatorCascade {
 
       /// reject candidates in collisions not satisfying the event selections
       auto collision = casc.template collision_as<Coll>();
-      const auto rejectionMask = getHfCollisionRejectionMask<centEstimator>(collision, centralityMin, centralityMax, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      float centrality{-1.f};
+      const auto rejectionMask = getHfCollisionRejectionMask<true, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, useTimeFrameBorderCut, -maxPvPosZ, maxPvPosZ, 0, -1.f);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
@@ -257,7 +266,7 @@ struct HfCandidateCreatorCascade {
       const auto& secondaryVertex = df.getPCACandidate();
       auto chi2PCA = df.getChi2AtPCACandidate();
       auto covMatrixPCA = df.calcPCACovMatrixFlat();
-      hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
+      registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
       // do I have to call "df.propagateTracksToVertex();"?
       auto trackParVarV0 = df.getTrack(0);
       auto trackParVarBach = df.getTrack(1);
@@ -272,7 +281,7 @@ struct HfCandidateCreatorCascade {
       // This modifies track momenta!
       auto primaryVertex = getPrimaryVertex(collision);
       auto covMatrixPV = primaryVertex.getCov();
-      hCovPVXX->Fill(covMatrixPV[0]);
+      registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
       o2::dataformats::DCA impactParameterV0;
       o2::dataformats::DCA impactParameterBach;
       trackParVarV0.propagateToDCA(primaryVertex, bz, &impactParameterV0); // we do this wrt the primary vtx
@@ -309,7 +318,7 @@ struct HfCandidateCreatorCascade {
       if (fillHistograms) {
         // calculate invariant masses
         mass2K0sP = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{massP, massK0s});
-        hMass2->Fill(mass2K0sP);
+        registry.fill(HIST("hMass2"), mass2K0sP);
       }
     }
 
@@ -368,10 +377,11 @@ struct HfCandidateCreatorCascade {
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
-      const auto rejectionMask = getHfCollisionRejectionMask<CentralityEstimator::None>(collision, centralityMin, centralityMax, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      float centrality{-1.f};
+      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::None>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, useTimeFrameBorderCut, -maxPvPosZ, maxPvPosZ, 0, -1.f);
 
       /// monitor the satisfied event selections
-      monitorCollision(collision, rejectionMask, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
+      monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
 
     } /// end loop over collisions
   }
@@ -384,10 +394,11 @@ struct HfCandidateCreatorCascade {
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
-      const auto rejectionMask = getHfCollisionRejectionMask<CentralityEstimator::FT0C>(collision, centralityMin, centralityMax, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      float centrality{-1.f};
+      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0C>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, useTimeFrameBorderCut, -maxPvPosZ, maxPvPosZ, 0, -1.f);
 
       /// monitor the satisfied event selections
-      monitorCollision(collision, rejectionMask, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
+      monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
 
     } /// end loop over collisions
   }
@@ -400,10 +411,11 @@ struct HfCandidateCreatorCascade {
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
-      const auto rejectionMask = getHfCollisionRejectionMask<CentralityEstimator::FT0M>(collision, centralityMin, centralityMax, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      float centrality{-1.f};
+      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0M>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, useTimeFrameBorderCut, -maxPvPosZ, maxPvPosZ, 0, -1.f);
 
       /// monitor the satisfied event selections
-      monitorCollision(collision, rejectionMask, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
+      monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
 
     } /// end loop over collisions
   }
