@@ -67,6 +67,7 @@ struct lambdakzeropid {
   Produces<aod::V0TOFPIDs> v0tofpid; // table with Nsigmas
   Produces<aod::V0TOFBetas> v0tofbeta;    // table with betas
   Produces<aod::V0TOFDebugs> v0tofdebugs; // table with extra debug information
+  Produces<aod::V0TOFNSigmas> v0tofnsigmas; // table with nsigmas
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -83,6 +84,7 @@ struct lambdakzeropid {
   Configurable<float> qaCosPA{"qaCosPA", 0.999, "CosPA for QA plots"};
   Configurable<float> qaMassWindow{"qaMassWindow", 0.005, "Mass window around expected (in GeV/c2) for QA plots"};
   Configurable<float> qaTPCNSigma{"qaTPCNSigma", 5, "TPC N-sigma to apply for qa plots"};
+  Configurable<bool> doNSigmas{"doNSigmas", false, "calculate TOF N-sigma"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -90,11 +92,22 @@ struct lambdakzeropid {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
+  Configurable<std::string> nSigmaPath{"nSigmaPath", "GLO/Config/GeometryAligned", "Path of information for n-sigma calculation"};
 
   ConfigurableAxis axisEta{"axisEta", {20, -1.0f, +1.0f}, "#eta"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {2000, -1000.0f, +1000.0f}, "delta-time (ps)"};
   ConfigurableAxis axisTime{"axisTime", {200, 0.0f, +20000.0f}, "T (ps)"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "p_{T} (GeV/c)"};
+
+  // for n-sigma calibration 
+  bool nSigmaCalibLoaded;
+  TList* nSigmaCalibObjects;
+  TH1F *hMeanPosLaPi, *hSigmaPosLaPi;
+  TH1F *hMeanPosLaPr, *hSigmaPosLaPr;
+  TH1F *hMeanNegLaPi, *hSigmaNegLaPi;
+  TH1F *hMeanNegLaPr, *hSigmaNegLaPr;
+  TH1F *hMeanPosK0Pi, *hSigmaPosK0Pi;
+  TH1F *hMeanNegK0Pi, *hSigmaNegK0Pi;
 
   int mRunNumber;
   float d_bz;
@@ -231,6 +244,23 @@ struct lambdakzeropid {
 
   void init(InitContext& context)
   {
+    nSigmaCalibLoaded = false;
+    nSigmaCalibObjects = nullptr;
+
+    // for n-sigma calibration 
+    hMeanPosLaPi = nullptr;
+    hSigmaPosLaPi = nullptr;
+    hMeanPosLaPr = nullptr;
+    hSigmaPosLaPr = nullptr;
+    hMeanNegLaPi = nullptr;
+    hSigmaNegLaPi  = nullptr;
+    hMeanNegLaPr = nullptr;
+    hSigmaNegLaPr = nullptr;
+    hMeanPosK0Pi = nullptr;
+    hSigmaNegK0Pi  = nullptr;
+    hMeanNegK0Pi = nullptr;
+    hSigmaNegK0Pi = nullptr;
+
     mRunNumber = 0;
     d_bz = 0;
     maxSnp = 0.85f;  // could be changed later
@@ -297,6 +327,26 @@ struct lambdakzeropid {
       // Fetch magnetic field from ccdb for current collision
       d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    }
+
+    // if TOF Nsigma desired
+    if(doNSigmas){ 
+      nSigmaCalibObjects = ccdb->getForTimeStamp<TList>(nSigmaPath, collision.timestamp());
+      if (nSigmaCalibObjects) {
+        hMeanPosLaPi = static_cast<TH1F*>(nSigmaCalibObjects->FindObject("hMeanPosLaPi"));
+        hMeanPosLaPr = static_cast<TH1F*>(nSigmaCalibObjects->FindObject("hMeanPosLaPr"));
+        hMeanNegLaPi = static_cast<TH1F*>(nSigmaCalibObjects->FindObject("hMeanNegLaPi"));
+        hMeanNegLaPr = static_cast<TH1F*>(nSigmaCalibObjects->FindObject("hMeanNegLaPr"));
+        hMeanPosK0Pi = static_cast<TH1F*>(nSigmaCalibObjects->FindObject("hMeanPosK0Pi"));
+        hMeanNegK0Pi = static_cast<TH1F*>(nSigmaCalibObjects->FindObject("hMeanNegK0Pi"));
+
+        hSigmaPosLaPi = static_cast<TH1F*>(nSigmaCalibObjects->FindObject("hSigmaPosLaPi"));
+        hSigmaPosLaPr = static_cast<TH1F*>(nSigmaCalibObjects->FindObject("hSigmaPosLaPr"));
+        hSigmaNegLaPi = static_cast<TH1F*>(nSigmaCalibObjects->FindObject("hSigmaNegLaPi"));
+        hSigmaNegLaPr = static_cast<TH1F*>(nSigmaCalibObjects->FindObject("hSigmaNegLaPr"));
+        hSigmaPosK0Pi = static_cast<TH1F*>(nSigmaCalibObjects->FindObject("hSigmaPosK0Pi"));
+        hSigmaNegK0Pi = static_cast<TH1F*>(nSigmaCalibObjects->FindObject("hSigmaNegK0Pi"));
+      }
     }
     mRunNumber = collision.runNumber();
   }
@@ -393,6 +443,36 @@ struct lambdakzeropid {
                  deltaDecayTimeLambda, deltaDecayTimeAntiLambda, deltaDecayTimeK0Short);
         v0tofbeta(betaLambda, betaAntiLambda, betaK0Short);
         v0tofdebugs(timeLambda, timeK0Short, timePositivePr, timePositivePi, timeNegativePr, timeNegativePi);
+
+        // do Nsigmas if requested
+        if (doNSigmas){ 
+          // sweep through all viable hypotheses and produce N-sigma
+          float nSigmaPositiveLambdaPi = -1e+6;
+          float nSigmaPositiveLambdaPr = -1e+6;
+          float nSigmaNegativeLambdaPi = -1e+6;
+          float nSigmaNegativeLambdaPr = -1e+6;
+          float nSigmaPositiveK0ShortPi = -1e+6;
+          float nSigmaNegativeK0ShortPi = -1e+6;
+
+          if(deltaTimePositiveLambdaPi>-1e+5)
+            nSigmaPositiveLambdaPi = (deltaTimePositiveLambdaPi - hMeanPosLaPi->Interpolate(v0.pt()))/hSigmaPosLaPi->Interpolate(v0.pt());
+          if(deltaTimePositiveLambdaPr>-1e+5)
+            nSigmaPositiveLambdaPr = (deltaTimePositiveLambdaPr - hMeanPosLaPr->Interpolate(v0.pt()))/hSigmaPosLaPr->Interpolate(v0.pt());
+          if(deltaTimeNegativeLambdaPi>-1e+5)
+            nSigmaNegativeLambdaPi = (deltaTimeNegativeLambdaPi - hMeanNegLaPr->Interpolate(v0.pt()))/hSigmaNegLaPi->Interpolate(v0.pt());
+          if(deltaTimeNegativeLambdaPr>-1e+5)
+            nSigmaNegativeLambdaPr = (deltaTimeNegativeLambdaPr - hMeanNegLaPr->Interpolate(v0.pt()))/hSigmaNegLaPr->Interpolate(v0.pt());
+          if(deltaTimePositiveK0ShortPi>-1e+5)
+            nSigmaPositiveK0ShortPi = (deltaTimePositiveK0ShortPi - hMeanPosK0Pi->Interpolate(v0.pt()))/hSigmaPosK0Pi->Interpolate(v0.pt());
+          if(deltaTimeNegativeK0ShortPi>-1e+5)
+            nSigmaNegativeK0ShortPi = (deltaTimeNegativeK0ShortPi - hMeanNegK0Pi->Interpolate(v0.pt()))/hSigmaNegK0Pi->Interpolate(v0.pt());
+
+          v0tofnsigmas(
+            nSigmaPositiveLambdaPi, nSigmaPositiveLambdaPr, 
+            nSigmaNegativeLambdaPi, deltaTimeNegativeLambdaPr, 
+            nSigmaPositiveK0ShortPi, nSigmaNegativeK0ShortPi
+          );
+        }
 
         if (doQA) {
           auto pTra = v0.posTrackExtra_as<dauTracks>();
