@@ -112,7 +112,7 @@ struct HfDerivedDataCreatorLcToPKPi {
 
   template <typename T, typename U>
   auto fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, const U& prong2, int candFlag, double invMass,
-                           double ct, int8_t flagMc, int8_t origin)
+                           double ct, int8_t flagMc, int8_t origin, int8_t swapping)
   {
     if (fillCandidateBase) {
       rowCandidateBase(
@@ -197,7 +197,8 @@ struct HfDerivedDataCreatorLcToPKPi {
     if (fillCandidateMc) {
       rowCandidateMc(
         flagMc,
-        origin);
+        origin,
+        swapping);
     }
   }
 
@@ -248,11 +249,12 @@ struct HfDerivedDataCreatorLcToPKPi {
       if constexpr (isMc) {
         reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
       }
-      int8_t flagMcRec, origin;
+      int8_t flagMcRec = 0, origin = 0, swapping = 0;
       for (const auto& candidate : candidatesThisColl) {
         if constexpr (isMc) {
           flagMcRec = candidate.flagMcMatchRec();
           origin = candidate.originMcRec();
+          swapping = candidate.isCandidateSwapped();
           if constexpr (onlyBkg) {
             if (TESTBIT(std::abs(flagMcRec), aod::hf_cand_3prong::DecayType::LcToPKPi)) {
               continue;
@@ -269,9 +271,6 @@ struct HfDerivedDataCreatorLcToPKPi {
               continue;
             }
           }
-        } else {
-          flagMcRec = 0;
-          origin = 0;
         }
         auto prong0 = candidate.template prong0_as<TracksWPid>();
         auto prong1 = candidate.template prong1_as<TracksWPid>();
@@ -280,10 +279,10 @@ struct HfDerivedDataCreatorLcToPKPi {
         float massLcToPKPi = hfHelper.invMassLcToPKPi(candidate);
         float massLcToPiKP = hfHelper.invMassLcToPiKP(candidate);
         if (candidate.isSelLcToPKPi()) {
-          fillTablesCandidate(candidate, prong0, prong1, prong2, 0, massLcToPKPi, ct, flagMcRec, origin);
+          fillTablesCandidate(candidate, prong0, prong1, prong2, 0, massLcToPKPi, ct, flagMcRec, origin, swapping);
         }
         if (candidate.isSelLcToPiKP()) {
-          fillTablesCandidate(candidate, prong0, prong1, prong2, 1, massLcToPiKP, ct, flagMcRec, origin);
+          fillTablesCandidate(candidate, prong0, prong1, prong2, 1, massLcToPiKP, ct, flagMcRec, origin, swapping);
         }
       }
     }

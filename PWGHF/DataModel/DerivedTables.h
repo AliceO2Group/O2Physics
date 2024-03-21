@@ -626,11 +626,13 @@ DECLARE_SOA_TABLE(StoredHf3PIds, "AOD1", "HF3PID", //! Table with global indices
 DECLARE_SOA_TABLE(Hf3PMcs, "AOD", "HF3PMC", //! Table with MC candidate info
                   hf_cand_mc::FlagMcMatchRec,
                   hf_cand_mc::OriginMcRec,
+                  hf_cand_mc::IsCandidateSwapped,
                   soa::Marker<2>);
 
 DECLARE_SOA_TABLE(StoredHf3PMcs, "AOD1", "HF3PMC", //! Table with MC candidate info (stored version)
                   hf_cand_mc::FlagMcMatchRec,
                   hf_cand_mc::OriginMcRec,
+                  hf_cand_mc::IsCandidateSwapped,
                   soa::Marker<3>);
 
 DECLARE_SOA_TABLE(Hf3PPBases, "AOD", "HF3PPBASE", //! Table with MC particle info
