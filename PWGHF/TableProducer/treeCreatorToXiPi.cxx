@@ -226,15 +226,15 @@ struct HfTreeCreatorToXiPi {
     rowEv(collision.sel8(), std::abs(collision.posZ()) < cutZPv);
   }
 
-  template <class TMyTracks, typename T>
+  template <typename T>
   void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
   {
     rowCandidateFull(
       candidate.xPv(),
       candidate.yPv(),
       candidate.zPv(),
-      candidate.collision().numContrib(),
-      candidate.collision().chi2(),
+      candidate.template collision_as<MyEventTable>().numContrib(),
+      candidate.template collision_as<MyEventTable>().chi2(),
       candidate.xDecayVtxCharmBaryon(),
       candidate.yDecayVtxCharmBaryon(),
       candidate.zDecayVtxCharmBaryon(),
@@ -312,8 +312,8 @@ struct HfTreeCreatorToXiPi {
       candidate.impactParCascXY() / candidate.errImpactParCascXY(),
       candidate.impactParPiFromCharmBaryonXY() / candidate.errImpactParPiFromCharmBaryonXY(),
       candidate.decLenCharmBaryon() / candidate.errorDecayLengthCharmBaryon(),
-      candidate.template piFromCharmBaryon_as<TMyTracks>().isGlobalTrackWoDCA(),
-      candidate.template piFromCharmBaryon_as<TMyTracks>().itsNCls(),
+      candidate.template piFromCharmBaryon_as<MyTrackTable>().isGlobalTrackWoDCA(),
+      candidate.template piFromCharmBaryon_as<MyTrackTable>().itsNCls(),
       candidate.statusPidLambda(),
       candidate.statusPidCascade(),
       candidate.statusPidCharmBaryon(),
@@ -337,7 +337,7 @@ struct HfTreeCreatorToXiPi {
       collisionMatched);
   }
 
-  template <class TMyTracks, typename T>
+  template <typename T>
   void fillCandidateLite(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched)
   {
     if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
@@ -346,8 +346,8 @@ struct HfTreeCreatorToXiPi {
         candidate.xPv(),
         candidate.yPv(),
         candidate.zPv(),
-        candidate.collision().numContrib(),
-        candidate.collision().chi2(),
+        candidate.template collision_as<MyEventTable>().numContrib(),
+        candidate.template collision_as<MyEventTable>().chi2(),
         candidate.xDecayVtxCharmBaryon(),
         candidate.yDecayVtxCharmBaryon(),
         candidate.zDecayVtxCharmBaryon(),
@@ -393,8 +393,8 @@ struct HfTreeCreatorToXiPi {
         candidate.errorDecayLengthCharmBaryon(),
         candidate.impactParCascXY() / candidate.errImpactParCascXY(),
         candidate.impactParPiFromCharmBaryonXY() / candidate.errImpactParPiFromCharmBaryonXY(),
-        candidate.template piFromCharmBaryon_as<TMyTracks>().isGlobalTrackWoDCA(),
-        candidate.template piFromCharmBaryon_as<TMyTracks>().itsNCls(),
+        candidate.template piFromCharmBaryon_as<MyTrackTable>().isGlobalTrackWoDCA(),
+        candidate.template piFromCharmBaryon_as<MyTrackTable>().itsNCls(),
         candidate.pidTpcInfoStored(),
         candidate.pidTofInfoStored(),
         candidate.tpcNSigmaPiFromCharmBaryon(),
@@ -423,7 +423,7 @@ struct HfTreeCreatorToXiPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<MyTrackTable>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+      fillCandidate(candidate, -7, -7, RecoDecay::OriginType::None, false);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataFull, "Process data with full information", true);
@@ -440,7 +440,7 @@ struct HfTreeCreatorToXiPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<MyTrackTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+      fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcFull, "Process MC with full information", false);
@@ -457,7 +457,7 @@ struct HfTreeCreatorToXiPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidateLite<MyTrackTable>(candidate, -7, RecoDecay::OriginType::None, false);
+      fillCandidateLite(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataLite, "Process data and produce lite table version", false);
@@ -474,7 +474,7 @@ struct HfTreeCreatorToXiPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidateLite<MyTrackTable>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+      fillCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcLite, "Process MC and produce lite table version", false);

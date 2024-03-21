@@ -44,8 +44,16 @@ class SGSelector
     //        LOGF(info, "Collision %f", collision.collisionTime());
     //        LOGF(info, "Number of close BCs: %i", bcRange.size());
     SelectionResult<BC> result;
+    result.bc = &oldbc;
+    if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
+      result.value = 4;
+      return result;
+    }
     auto newbc = oldbc;
+    auto newznabc = oldbc;
+    auto newzncbc = oldbc;
     bool gA = true, gC = true;
+    bool gzA = true, gzC = true;
     for (auto const& bc : bcRange) {
       if (!udhelpers::cleanFITA(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
         if (gA)
@@ -62,15 +70,83 @@ class SGSelector
         gC = false;
       }
     }
-    result.bc = &newbc;
     if (!gA && !gC) {
       result.value = 3;
       return result;
     }
-    // LOGF(info, "Old BC: %i, New BC: %i",oldbc.globalBC(), newbc.globalBC());
-    if (collision.numContrib() < diffCuts.minNTracks() || collision.numContrib() > diffCuts.maxNTracks()) {
-      result.value = 4;
+    for (auto const& bc : bcRange) {
+      if (bc.has_zdc()) {
+        auto zdc = bc.zdc();
+        if (std::abs(static_cast<float>(zdc.timeZNA())) < 2 && zdc.energyCommonZNA() > 0) {
+          if (gzA) {
+            newznabc = bc;
+          }
+          if (!gzA && std::abs(static_cast<int64_t>(bc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<int64_t>(newznabc.globalBC() - oldbc.globalBC()))) {
+            newznabc = bc;
+          }
+          gzA = false;
+        }
+        if (std::abs(static_cast<float>(zdc.timeZNC())) < 2 && zdc.energyCommonZNC() > 0) {
+          if (gzC) {
+            newzncbc = bc;
+          }
+          if (!gzC && std::abs(static_cast<int64_t>(bc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<int64_t>(newzncbc.globalBC() - oldbc.globalBC()))) {
+            newzncbc = bc;
+          }
+          gzC = false;
+        }
+      }
     }
+    if (gA && gC) {
+      if (!gzA && !gzC) {
+        if (std::abs(static_cast<int64_t>(newznabc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<int64_t>(newzncbc.globalBC() - oldbc.globalBC()))) {
+          newzncbc = newznabc;
+          newbc = newznabc;
+        } else {
+          newznabc = newzncbc;
+          newbc = newzncbc;
+        }
+      } else if (!gzA) {
+        newzncbc = newznabc;
+        newbc = newznabc;
+      } else if (!gzC) {
+        newznabc = newzncbc;
+        newbc = newzncbc;
+      }
+    } else if (!gA) {
+      if (!gzA) {
+        if (newbc.globalBC() == newznabc.globalBC()) {
+          newzncbc = newznabc;
+        } else if (std::abs(static_cast<int64_t>(newznabc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<int64_t>(newbc.globalBC() - oldbc.globalBC()))) {
+          newzncbc = newznabc;
+          newbc = newznabc;
+        } else {
+          newzncbc = newbc;
+          newznabc = newbc;
+        }
+      } else {
+        newzncbc = newbc;
+        newznabc = newbc;
+      }
+    } else if (!gC) {
+      if (!gzC) {
+        if (newbc.globalBC() == newzncbc.globalBC()) {
+          newznabc = newzncbc;
+        } else if (std::abs(static_cast<int64_t>(newzncbc.globalBC() - oldbc.globalBC())) < std::abs(static_cast<int64_t>(newbc.globalBC() - oldbc.globalBC()))) {
+          newznabc = newzncbc;
+          newbc = newzncbc;
+        } else {
+          newzncbc = newbc;
+          newznabc = newbc;
+        }
+
+      } else {
+        newzncbc = newbc;
+        newznabc = newbc;
+      }
+    }
+    // LOGF(info, "Old BC: %i, New BC: %i",oldbc.globalBC(), newbc.globalBC());
+    result.bc = &newbc;
     result.value = gA && gC ? 2 : (gA ? 0 : 1);
     return result;
   }
@@ -81,6 +157,28 @@ class SGSelector
       return 1;
     else
       return 0;
+  }
+
+  template <typename CC>
+  int trueGap(CC& collision, float fv0_cut, float zdc_cut)
+  {
+    int gap = collision.gapSide();
+    int true_gap = gap;
+    if (gap == 0) {
+      if (collision.totalFV0AmplitudeA() > fv0_cut || collision.energyCommonZNA() > zdc_cut)
+        true_gap = -1;
+    } else if (gap == 1) {
+      if (collision.energyCommonZNC() > zdc_cut)
+        true_gap = -1;
+    } else if (gap == 2) {
+      if ((collision.totalFV0AmplitudeA() > fv0_cut || collision.energyCommonZNA() > zdc_cut) && (collision.energyCommonZNC() > zdc_cut))
+        true_gap = -1;
+      else if (collision.totalFV0AmplitudeA() > fv0_cut || collision.energyCommonZNA() > zdc_cut)
+        true_gap = 1;
+      else if (collision.energyCommonZNC() > zdc_cut)
+        true_gap = 0;
+    }
+    return true_gap;
   }
 
  private:

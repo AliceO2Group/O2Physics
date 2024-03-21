@@ -13,6 +13,7 @@
 /// \brief Jet tagging related utilities
 ///
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
+/// \author Hanseo Park <hanseo.park@cern.ch>
 
 #ifndef PWGJE_CORE_JETTAGGINGUTILITIES_H_
 #define PWGJE_CORE_JETTAGGINGUTILITIES_H_
@@ -23,6 +24,7 @@
 #include <tuple>
 #include <vector>
 
+#include "TF1.h"
 #include "Framework/Logger.h"
 #include "Common/Core/RecoDecay.h"
 #include "PWGJE/Core/JetUtilities.h"
@@ -305,6 +307,111 @@ void calculateDcaXYZ(float& dcaXYZ, float& sigmaDcaXYZ2, float dcaXY, float dcaZ
   float dFdxy = 2 * dcaXY / dcaXYZ;
   float dFdz = 2 * dcaZ / dcaXYZ;
   sigmaDcaXYZ2 = std::abs(cYY * dFdxy * dFdxy + cZZ * dFdz * dFdz + 2 * cZY * dFdxy * dFdz);
+}
+
+/**
+ * Generates and configures a resolution function for the impact parameter distribution of jets,
+ * tailored to the specified jet flavour. The resolution function is a composite of exponential
+ * and Gaussian components, designed to model the distribution's characteristics accurately.
+ *
+ * @param jetflavour An identifier for the jet flavour (e.g., 1 for c-jet, 2 for b-jet, 3 for light-flavour jet),
+ *                   used to select the appropriate parameter set for the resolution function.
+ */
+// TODO: The fitting function obtained with fewer events locally. We will change to parameters with higher statistics in the future
+template <typename T = float>
+TF1* getResolutionFunction(T const& jetflavour)
+{
+  TF1* fResoFunc = nullptr;
+  fResoFunc = new TF1("fResoFunc", "expo(0)+expo(2)+expo(4)+gaus(6)", -40, 0);
+  switch (static_cast<int>(jetflavour)) {
+    case 1: // c-jet
+      fResoFunc->SetParameters(3.56397, 0.0977181, 4.34329, 0.497469, 1.29482, 0.494429, 7350.86, 0.27023, 1.0822);
+      break;
+    case 2: // b-jet
+      fResoFunc->SetParameters(5.28562, 0.754341, 2.67886, 0.0556572, 4.26838, 173.447, 1484.69, 0.0359118, -0.923933);
+      break;
+    case 3: // lf-jet (light-flavour jet)
+      fResoFunc->SetParameters(7.69109, 1.02418, 1.91596, 0.0589323, -5.80351, 1.06489, 6282.07, -0.0558066, 0.888488);
+      break;
+    default:
+      // Handle unexpected jet flavour, possibly with a warning or default function
+      fResoFunc->SetParameters(8.07756, 0.89488, 3.73556, 0.0628505, -0.0302361, 0.865316, 14170.4, 0.0148564, 0.915118);
+      break;
+  }
+
+  return fResoFunc;
+}
+
+/**
+ * Calculates the probability of a given track being associated with a jet, based on the geometric
+ * sign and the resolution function of the jet's impact parameter significance. This probability
+ * helps in distinguishing between tracks likely originating from the primary vertex and those from
+ * secondary vertices, aiding in jet flavor tagging.
+ *
+ * @param fResoFuncjet The resolution function for the jet, used to model the distribution of impact
+ *                     parameter significances for tracks associated with the jet.
+ * @param collision The collision event data, providing context for calculating geometric signs.
+ * @param jet The specific jet being analyzed.
+ * @param track The track for which the probability is being calculated.
+ * @param minSignImpXYSig The minimum significance of the impact parameter in the XY plane, used as
+ *                        the lower limit for integration of the resolution function. Defaults to -10.
+ * @return The calculated probability of the track being associated with the jet, based on its
+ *         impact parameter significance.
+ */
+template <typename T, typename U, typename V, typename W>
+float getTrackProbability(T const& fResoFuncjet, U const& collision, V const& jet, W const& track, const float& minSignImpXYSig = -10)
+{
+  float probTrack = 0.;
+  auto varSignImpXYSig = getGeoSign(collision, jet, track) * TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
+  probTrack = fResoFuncjet->Integral(minSignImpXYSig, -1 * TMath::Abs(varSignImpXYSig)) / fResoFuncjet->Integral(minSignImpXYSig, 0);
+
+  return probTrack;
+}
+
+/**
+ * Computes the jet probability (JP) for a given jet, considering only tracks with a positive geometric
+ * sign. JP is calculated using the product of individual track probabilities and the sum of logarithmic
+ * terms derived from these probabilities, providing a measure for the likelihood of the jet being
+ * associated with a particular flavor based on its constituent tracks' impact parameters.
+ *
+ * @param fResoFuncjet The resolution function for the jet, applied to each track within the jet to
+ *                     assess its probability based on the impact parameter significance.
+ * @param collision The collision event data, necessary for geometric sign calculations.
+ * @param jet The jet for which the probability is being calculated.
+ * @param tracks The collection of tracks associated with the jet.
+ * @return The jet probability (JP), indicating the likelihood of the jet's association with a
+ *         specific flavor. Returns -1 if the jet contains fewer than two tracks with a positive
+ *         geometric sign.
+ */
+template <typename T, typename U, typename V, typename W, typename X>
+float getJetProbability(T const& fResoFuncjet, U const& collision, V const& jet, W const& jtracks, X const& tracks)
+{
+  std::vector<float> jetTracksPt;
+  float trackjetProb = 1.;
+
+  for (auto& jtrack : jet.template tracks_as<W>()) {
+    auto track = jtrack.template track_as<X>();
+
+    float probTrack = getTrackProbability(fResoFuncjet, collision, jet, track);
+
+    auto geoSign = getGeoSign(collision, jet, track);
+    if (geoSign > 0) { // only take positive sign track for JP calculation
+      trackjetProb *= TMath::Abs(probTrack);
+      jetTracksPt.push_back(track.pt());
+    }
+  }
+
+  float JP = -1.;
+  if (jetTracksPt.size() < 2)
+    return -1;
+
+  float sumjetProb = 0.;
+  for (int i = 0; i < jetTracksPt.size(); i++) {
+    sumjetProb += (TMath::Power(-1 * TMath::Log(trackjetProb), i) / TMath::Factorial(i));
+  }
+
+  JP = trackjetProb * sumjetProb;
+  return JP;
 }
 
 }; // namespace jettaggingutilities

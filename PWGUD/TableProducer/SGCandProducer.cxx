@@ -30,8 +30,10 @@ struct SGCandProducer {
   // get an SGCutparHolder
   SGCutParHolder sameCuts = SGCutParHolder(); // SGCutparHolder
   Configurable<SGCutParHolder> SGCuts{"SGCuts", {}, "SG event cuts"};
-
-  // SG selector
+  Configurable<bool> saveAllTracks{"saveAllTracks", true, "save only PV contributors or all tracks associated to a collision"};
+  Configurable<bool> savenonPVCITSOnlyTracks{"savenonPVCITSOnlyTracks", false, "save non PV contributors with ITS only information"};
+  // Configurable<bool> rejectAtTFBoundary{"rejectAtTFBoundary", true, "reject collisions at a TF boundary"};
+  //  SG selector
   SGSelector sgSelector;
 
   // data tables
@@ -145,10 +147,17 @@ struct SGCandProducer {
                aod::Zdcs& zdcs, aod::FT0s& ft0s, aod::FV0As& fv0as, aod::FDDs& fdds)
   {
     LOGF(debug, "<SGCandProducer>  collision %d", collision.globalIndex());
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
+    // reject collisions at TF boundaries
+    // if (rejectAtTFBoundary && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    //  return;
+    //}
+    // registry.get<TH1>(HIST("reco/Stat"))->Fill(1., 1.);
     // nominal BC
     if (!collision.has_foundBC()) {
       return;
     }
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(2., 1.);
     auto bc = collision.foundBC_as<BCs>();
     auto newbc = bc;
 
@@ -162,8 +171,7 @@ struct SGCandProducer {
     } else {
       LOGF(info, "No Newbc %i", bc.globalBC());
     }
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
-    registry.get<TH1>(HIST("reco/Stat"))->Fill(issgevent + 1, 1.);
+    registry.get<TH1>(HIST("reco/Stat"))->Fill(issgevent + 3, 1.);
     if (issgevent <= 2) {
       //    LOGF(info, "Current BC: %i, %i, %i", bc.globalBC(), newbc.globalBC(), issgevent);
       if (sameCuts.minRgtrwTOF()) {
@@ -195,11 +203,12 @@ struct SGCandProducer {
       }
       // update SGTracks tables
       for (auto& track : tracks) {
-        if (track.isPVContributor() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta())
-          updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
-        // if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+        if (track.isPVContributor() || saveAllTracks) {
+          if (track.itsClusterSizes() && track.itsChi2NCl() > 0 && ((track.tpcNClsFindable() == 0 && savenonPVCITSOnlyTracks) || track.tpcNClsFindable() > 50) && track.pt() > sameCuts.minPt() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta())
+            updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+          // if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+        }
       }
-
       // update SGFwdTracks tables
       if (sameCuts.withFwdTracks()) {
         for (auto& fwdtrack : fwdtracks) {

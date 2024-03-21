@@ -51,7 +51,7 @@ struct skimmerPrimaryElectron {
   SliceCache cache;
   Preslice<aod::Tracks> perCol = o2::aod::track::collisionId;
   Produces<aod::EMPrimaryElectrons> emprimaryelectrons;
-  Produces<o2::aod::EMReducedEventsBz> events_bz;
+  Produces<o2::aod::EMEventsBz> events_bz;
 
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
