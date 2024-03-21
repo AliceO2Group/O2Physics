@@ -306,7 +306,8 @@ struct HfTaskMcEfficiencyToXiPi {
           LOGP(debug, "MC cascade: pt={} eta={}", cascade.pt(), cascade.eta());
           LOGP(debug, "MC pion<--charm baryon: pt={} eta={}", pion.pt(), pion.eta());
         }
-
+        
+        // final state daughters info
         // pion <- charm baryon info
         hTrackablePtEta->Fill(kTrackableAll, pion.pt(), pion.eta());
         if (hasITS[pion.globalIndex()]) {
