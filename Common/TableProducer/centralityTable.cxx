@@ -365,7 +365,6 @@ struct CentralityTable {
       centRun2CL1(cCL1);
     }
   }
-  PROCESS_SWITCH(CentralityTable, processRun2, "Provide Run2 calibrated centrality/multiplicity percentiles tables", true);
 
   using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
 
@@ -423,9 +422,11 @@ struct CentralityTable {
             estimator.mMCScale = reinterpret_cast<TFormula*>(callst->FindObject(TString::Format("%s-%s", generatorName->c_str(), estimator.name.c_str()).Data()));
             if (estimator.mhMultSelCalib != nullptr) {
               if (generatorName->length() != 0) {
+                LOGF(info, "Retrieving MC calibration for %d, generator name: %s", bc.runNumber(), generatorName->c_str());
                 if (estimator.mMCScale != nullptr) {
                   for (int ixpar = 0; ixpar < 6; ++ixpar) {
                     estimator.mMCScalePars[ixpar] = estimator.mMCScale->GetParameter(ixpar);
+                    LOGF(info, "Parameter index %i value %.5f", ixpar, estimator.mMCScalePars[ixpar]);
                   }
                 } else {
                   LOGF(warning, "MC Scale information from %s for run %d not available", estimator.name.c_str(), bc.runNumber());
@@ -475,13 +476,13 @@ struct CentralityTable {
 
       /**
        * @brief Populates a table with data based on the given calibration information and multiplicity.
-       *
+       * 
        * @param table The table to populate.
        * @param estimator The calibration information.
        * @param multiplicity The multiplicity value.
        */
       auto populateTable = [&](auto& table, struct calibrationInfo& estimator, float multiplicity) {
-        const bool assignOutOfRange = embedINELgtZEROselection && !collision.isInelGt0();
+        const bool assignOutOfRange = embedINELgtZEROselection && collision.isInelGt0();
         auto scaleMC = [](float x, float pars[6]) {
           return pow(((pars[0] + pars[1] * pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
         };
@@ -545,15 +546,18 @@ struct CentralityTable {
   {
     produceRun3Tables(collisions);
   }
-  PROCESS_SWITCH(CentralityTable, processRun3, "Provide Run3 calibrated centrality/multiplicity percentiles tables", false);
 
-  void processRun3FT0(soa::Join<aod::Collisions, aod::PVMults, aod::FT0MultZeqs> const& collisions, BCsWithTimestamps const&)
+  void processRun3FT0(soa::Join<aod::Collisions, aod::PVMults, aod::FT0MultZeqs, aod::PVMultZeqs> const& collisions, BCsWithTimestamps const&)
   {
     produceRun3Tables<false, // FV0
                       true,  // FT0
                       false, // PV
                       false>(collisions);
   }
+
+  // Process switches
+  PROCESS_SWITCH(CentralityTable, processRun2, "Provide Run2 calibrated centrality/multiplicity percentiles tables", true);
+  PROCESS_SWITCH(CentralityTable, processRun3, "Provide Run3 calibrated centrality/multiplicity percentiles tables", false);
   PROCESS_SWITCH(CentralityTable, processRun3FT0, "Provide Run3 calibrated centrality/multiplicity percentiles tables for FT0 only", false);
 };
 
