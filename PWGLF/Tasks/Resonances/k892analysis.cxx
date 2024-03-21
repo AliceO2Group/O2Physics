@@ -195,7 +195,7 @@ struct k892analysis {
       if (candidate.hasTOF() && (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion)) {
         return true;
       }
-      if (!candidate.hasTOF() && (candidate.tpcNSigmaPi() < cMaxTPCnSigmaPion)) {
+      if (!candidate.hasTOF() && (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion)) {
         return true;
       }
     } else {
@@ -226,7 +226,7 @@ struct k892analysis {
       if (candidate.hasTOF() && (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon)) {
         return true;
       }
-      if (!candidate.hasTOF() && (candidate.tpcNSigmaKa() < cMaxTPCnSigmaKaon)) {
+      if (!candidate.hasTOF() && (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon)) {
         return true;
       }
     } else {
