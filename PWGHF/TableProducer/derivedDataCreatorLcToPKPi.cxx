@@ -111,7 +111,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   }
 
   template <typename T, typename U>
-  auto fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, int candFlag, double invMass,
+  auto fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, const U& prong2, int candFlag, double invMass,
                            double ct, int8_t flagMc, int8_t origin)
   {
     if (fillCandidateBase) {
@@ -131,22 +131,28 @@ struct HfDerivedDataCreatorLcToPKPi {
         candidate.decayLengthXYNormalised(),
         candidate.ptProng0(),
         candidate.ptProng1(),
+        candidate.ptProng2(),
         candidate.impactParameter0(),
         candidate.impactParameter1(),
+        candidate.impactParameter2(),
         candidate.impactParameterNormalised0(),
         candidate.impactParameterNormalised1(),
+        candidate.impactParameterNormalised2(),
         prong0.tpcNSigmaPi(),
-        prong0.tpcNSigmaKa(),
+        prong0.tpcNSigmaPr(),
         prong0.tofNSigmaPi(),
-        prong0.tofNSigmaKa(),
+        prong0.tofNSigmaPr(),
         prong0.tpcTofNSigmaPi(),
-        prong0.tpcTofNSigmaKa(),
-        prong1.tpcNSigmaPi(),
+        prong0.tpcTofNSigmaPr(),
         prong1.tpcNSigmaKa(),
-        prong1.tofNSigmaPi(),
         prong1.tofNSigmaKa(),
-        prong1.tpcTofNSigmaPi(),
         prong1.tpcTofNSigmaKa(),
+        prong2.tpcNSigmaPi(),
+        prong2.tpcNSigmaPr(),
+        prong2.tofNSigmaPi(),
+        prong2.tofNSigmaPr(),
+        prong2.tpcTofNSigmaPi(),
+        prong2.tpcTofNSigmaPr(),
         candidate.cpa(),
         candidate.cpaXY());
     }
@@ -163,14 +169,19 @@ struct HfDerivedDataCreatorLcToPKPi {
         candidate.rSecondaryVertex(),
         RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
         RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+        RecoDecay::p(candidate.pxProng2(), candidate.pyProng2(), candidate.pzProng2()),
         candidate.pxProng0(),
         candidate.pyProng0(),
         candidate.pzProng0(),
         candidate.pxProng1(),
         candidate.pyProng1(),
         candidate.pzProng1(),
+        candidate.pxProng2(),
+        candidate.pyProng2(),
+        candidate.pzProng2(),
         candidate.errorImpactParameter0(),
         candidate.errorImpactParameter1(),
+        candidate.errorImpactParameter2(),
         ct);
     }
     if (fillCandidateSel) {
@@ -264,14 +275,15 @@ struct HfDerivedDataCreatorLcToPKPi {
         }
         auto prong0 = candidate.template prong0_as<TracksWPid>();
         auto prong1 = candidate.template prong1_as<TracksWPid>();
+        auto prong2 = candidate.template prong2_as<TracksWPid>();
         double ct = hfHelper.ctLc(candidate);
         float massLcToPKPi = hfHelper.invMassLcToPKPi(candidate);
         float massLcToPiKP = hfHelper.invMassLcToPiKP(candidate);
         if (candidate.isSelLcToPKPi()) {
-          fillTablesCandidate(candidate, prong0, prong1, 0, massLcToPKPi, ct, flagMcRec, origin);
+          fillTablesCandidate(candidate, prong0, prong1, prong2, 0, massLcToPKPi, ct, flagMcRec, origin);
         }
         if (candidate.isSelLcToPiKP()) {
-          fillTablesCandidate(candidate, prong0, prong1, 1, massLcToPiKP, ct, flagMcRec, origin);
+          fillTablesCandidate(candidate, prong0, prong1, prong2, 1, massLcToPiKP, ct, flagMcRec, origin);
         }
       }
     }

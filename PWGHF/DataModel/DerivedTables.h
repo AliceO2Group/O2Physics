@@ -116,24 +116,45 @@ auto y(TPt pt, TEta eta, TM m)
   return std::log((RecoDecay::sqrtSumOfSquares(m, pt * std::cosh(eta)) + pt * std::sinh(eta)) / RecoDecay::sqrtSumOfSquares(m, pt));
 }
 
+/// Energy as a function of pT, eta, mass
+/// \todo Move to RecoDecay
+template <typename TPt, typename TEta, typename TM>
+auto e(TPt pt, TEta eta, TM m)
+{
+  return RecoDecay::sqrtSumOfSquares(m, p(pt, eta));
+}
+
+/// px as a function of pT, phi
+/// \todo Move to RecoDecay
 template <typename TPt, typename TPhi>
 auto px(TPt pt, TPhi phi)
 {
   return pt * std::cos(phi);
 }
 
+/// py as a function of pT, phi
+/// \todo Move to RecoDecay
 template <typename TPt, typename TPhi>
 auto py(TPt pt, TPhi phi)
 {
   return pt * std::sin(phi);
 }
 
-template <typename TPt, typename TPhi>
-auto pz(TPt pt, TPhi eta)
+/// pz as a function of pT, eta
+/// \todo Move to RecoDecay
+template <typename TPt, typename TEta>
+auto pz(TPt pt, TEta eta)
 {
   return pt * std::sinh(eta);
 }
 
+/// p as a function of pT, eta
+/// \todo Move to RecoDecay
+template <typename TPt, typename TEta>
+auto p(TPt pt, TEta eta)
+{
+  return pt * std::cosh(eta);
+}
 } // namespace functions
 
 namespace d0
@@ -231,6 +252,8 @@ DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);                  //! ML score
 DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);            //! ML score for prompt class
 DECLARE_SOA_COLUMN(MlScoreNonPrompt, mlScoreNonPrompt, float);      //! ML score for non-prompt class
 } // namespace hf_cand_mc
+
+// D0
 
 DECLARE_SOA_TABLE(HfD0Bases, "AOD", "HFD0BASE", //! Table with basic candidate properties used in the analyses
                   o2::soa::Index<>,
@@ -475,22 +498,28 @@ DECLARE_SOA_TABLE(Hf3PPars, "AOD", "HF3PPAR", //! Table with candidate propertie
                   hf_cand_par::DecayLengthXYNormalised,
                   hf_cand_par::PtProng0,
                   hf_cand_par::PtProng1,
+                  hf_cand_par::PtProng2,
                   hf_cand::ImpactParameter0,
                   hf_cand::ImpactParameter1,
+                  hf_cand::ImpactParameter2,
                   hf_cand_par::ImpactParameterNormalised0,
                   hf_cand_par::ImpactParameterNormalised1,
+                  hf_cand_par::ImpactParameterNormalised2,
                   hf_cand_par::NSigTpcPi0,
-                  hf_cand_par::NSigTpcKa0,
+                  hf_cand_par::NSigTpcPr0,
                   hf_cand_par::NSigTofPi0,
-                  hf_cand_par::NSigTofKa0,
+                  hf_cand_par::NSigTofPr0,
                   hf_cand_par::NSigTpcTofPi0,
-                  hf_cand_par::NSigTpcTofKa0,
-                  hf_cand_par::NSigTpcPi1,
+                  hf_cand_par::NSigTpcTofPr0,
                   hf_cand_par::NSigTpcKa1,
-                  hf_cand_par::NSigTofPi1,
                   hf_cand_par::NSigTofKa1,
-                  hf_cand_par::NSigTpcTofPi1,
                   hf_cand_par::NSigTpcTofKa1,
+                  hf_cand_par::NSigTpcPi2,
+                  hf_cand_par::NSigTpcPr2,
+                  hf_cand_par::NSigTofPi2,
+                  hf_cand_par::NSigTofPr2,
+                  hf_cand_par::NSigTpcTofPi2,
+                  hf_cand_par::NSigTpcTofPr2,
                   hf_cand_par::Cpa,
                   hf_cand_par::CpaXY,
                   soa::Marker<2>);
@@ -535,14 +564,19 @@ DECLARE_SOA_TABLE(Hf3PParEs, "AOD", "HF3PPARE", //! Table with additional candid
                   hf_cand_par::RSecondaryVertex,
                   hf_cand_par::PProng0,
                   hf_cand_par::PProng1,
+                  hf_cand_par::PProng2,
                   hf_cand::PxProng0,
                   hf_cand::PyProng0,
                   hf_cand::PzProng0,
                   hf_cand::PxProng1,
                   hf_cand::PyProng1,
                   hf_cand::PzProng1,
+                  hf_cand::PxProng2,
+                  hf_cand::PyProng2,
+                  hf_cand::PzProng2,
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
+                  hf_cand::ErrorImpactParameter2,
                   hf_cand_par::Ct,
                   soa::Marker<2>);
 
