@@ -476,7 +476,7 @@ struct CentralityTable {
 
       /**
        * @brief Populates a table with data based on the given calibration information and multiplicity.
-       * 
+       *
        * @param table The table to populate.
        * @param estimator The calibration information.
        * @param multiplicity The multiplicity value.
