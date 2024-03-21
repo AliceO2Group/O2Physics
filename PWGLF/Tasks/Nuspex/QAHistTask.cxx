@@ -191,9 +191,9 @@ struct QAHistTask {
     MC_truth_reg.add("histEta", "#eta", HistType::kTH2F, {{102, -2.01, 2.01}, PDGBINNING});
     MC_truth_reg.add("histPt", "p_{t}", HistType::kTH2F, {ptAxis, PDGBINNING});
     MC_truth_reg.add("histRecVtxMC", "MC collision z position", HistType::kTH1F, {{400, -40., +40., "z position (cm)"}});
+    MC_truth_reg.add("histCentrality", "Centrality", HistType::kTH1F, {centralityAxis_extended});
 
     // MC reconstructed
-    MC_recon_reg.add("histCentrality", "Centrality", HistType::kTH1F, {centralityAxis_extended});
     MC_recon_reg.add("histPhi", "#phi", HistType::kTH2F, {{100, 0., 2. * TMath::Pi()}, PDGBINNING});
     MC_recon_reg.add("histEta", "#eta", HistType::kTH2F, {{102, -2.01, 2.01}, PDGBINNING});
     MC_recon_reg.add("histPt", "p_{t}", HistType::kTH2F, {ptAxis, PDGBINNING});
@@ -562,12 +562,11 @@ struct QAHistTask {
   }
   PROCESS_SWITCH(QAHistTask, processDataCent, "process data containing centralities", false);
 
-  void processMC(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Cs>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
+  void processMC(soa::Join<aod::Collisions, aod::McCollisionLabels>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
                  aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
   {
 
     MC_truth_reg.fill(HIST("histRecVtxMC"), collisions.posZ());
-    MC_recon_reg.fill(HIST("histCentrality"), collisions.centFT0C());
 
     for (auto& track : tracks) {
       const auto particle = track.mcParticle();
@@ -635,6 +634,14 @@ struct QAHistTask {
     }
   }
   PROCESS_SWITCH(QAHistTask, processMC, "process MC", false);
+
+  void processMCCent(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Cs>::iterator const& collisions)
+  {
+
+    MC_truth_reg.fill(HIST("histCentrality"), collisions.centFT0C());
+
+  }
+  PROCESS_SWITCH(QAHistTask, processMCCent, "process MC with centrality", false);
 };
 
 //****************************************************************************************************
