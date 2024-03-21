@@ -192,7 +192,8 @@ struct HfDerivedDataCreatorLcToPKPi {
       rowCandidateId(
         candidate.collisionId(),
         candidate.prong0Id(),
-        candidate.prong1Id());
+        candidate.prong1Id(),
+        candidate.prong2Id());
     }
     if (fillCandidateMc) {
       rowCandidateMc(

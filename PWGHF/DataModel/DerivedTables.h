@@ -615,12 +615,14 @@ DECLARE_SOA_TABLE(Hf3PIds, "AOD", "HF3PID", //! Table with global indices for ca
                   hf_cand::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id,
+                  hf_track_index::Prong2Id,
                   soa::Marker<2>);
 
 DECLARE_SOA_TABLE(StoredHf3PIds, "AOD1", "HF3PID", //! Table with global indices for candidates (stored version)
                   hf_cand::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id,
+                  hf_track_index::Prong2Id,
                   soa::Marker<3>);
 
 DECLARE_SOA_TABLE(Hf3PMcs, "AOD", "HF3PMC", //! Table with MC candidate info
