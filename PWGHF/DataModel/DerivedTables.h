@@ -76,10 +76,9 @@ DECLARE_SOA_TABLE(Hf3PCollBases, "AOD", "HF3PCOLLBASE", //! Table with basic col
                   hf_coll_base::CentFT0C,
                   hf_coll_base::CentFT0M,
                   hf_coll_base::CentFV0A,
-                  hf_coll_base::MultZeqNTracksPV,
+                  hf_coll_base::MultZeqNTracksPV);
                   // hf_coll_base::IsEventReject,
                   // bc::RunNumber,
-                  soa::Marker<2>);
 
 using Hf3PCollBase = Hf3PCollBases::iterator;
 
@@ -96,7 +95,7 @@ DECLARE_SOA_TABLE(StoredHf3PCollBases, "AOD1", "HF3PCOLLBASE", //! Table with ba
                   hf_coll_base::MultZeqNTracksPV,
                   // hf_coll_base::IsEventReject,
                   // bc::RunNumber,
-                  soa::Marker<3>);
+                  soa::Marker<1>);
 
 using StoredHf3PCollBase = StoredHf3PCollBases::iterator;
 
@@ -508,6 +507,8 @@ DECLARE_SOA_TABLE(StoredHf3PBases, "AOD1", "HF3PBASE", //! Table with basic cand
 // normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
 DECLARE_SOA_TABLE(Hf3PPars, "AOD", "HF3PPAR", //! Table with candidate properties used for selection
                   hf_cand::Chi2PCA,
+                  hf_cand_par::Cpa,
+                  hf_cand_par::CpaXY,
                   hf_cand_par::DecayLength,
                   hf_cand_par::DecayLengthXY,
                   hf_cand_par::DecayLengthNormalised,
@@ -535,13 +536,12 @@ DECLARE_SOA_TABLE(Hf3PPars, "AOD", "HF3PPAR", //! Table with candidate propertie
                   hf_cand_par::NSigTofPi2,
                   hf_cand_par::NSigTofPr2,
                   hf_cand_par::NSigTpcTofPi2,
-                  hf_cand_par::NSigTpcTofPr2,
-                  hf_cand_par::Cpa,
-                  hf_cand_par::CpaXY,
-                  soa::Marker<2>);
+                  hf_cand_par::NSigTpcTofPr2);
 
 DECLARE_SOA_TABLE(StoredHf3PPars, "AOD1", "HF3PPAR", //! Table with candidate properties used for selection (stored version)
                   hf_cand::Chi2PCA,
+                  hf_cand_par::Cpa,
+                  hf_cand_par::CpaXY,
                   hf_cand_par::DecayLength,
                   hf_cand_par::DecayLengthXY,
                   hf_cand_par::DecayLengthNormalised,
@@ -553,20 +553,21 @@ DECLARE_SOA_TABLE(StoredHf3PPars, "AOD1", "HF3PPAR", //! Table with candidate pr
                   hf_cand_par::ImpactParameterNormalised0,
                   hf_cand_par::ImpactParameterNormalised1,
                   hf_cand_par::NSigTpcPi0,
-                  hf_cand_par::NSigTpcKa0,
+                  hf_cand_par::NSigTpcPr0,
                   hf_cand_par::NSigTofPi0,
-                  hf_cand_par::NSigTofKa0,
+                  hf_cand_par::NSigTofPr0,
                   hf_cand_par::NSigTpcTofPi0,
-                  hf_cand_par::NSigTpcTofKa0,
-                  hf_cand_par::NSigTpcPi1,
+                  hf_cand_par::NSigTpcTofPr0,
                   hf_cand_par::NSigTpcKa1,
-                  hf_cand_par::NSigTofPi1,
                   hf_cand_par::NSigTofKa1,
-                  hf_cand_par::NSigTpcTofPi1,
                   hf_cand_par::NSigTpcTofKa1,
-                  hf_cand_par::Cpa,
-                  hf_cand_par::CpaXY,
-                  soa::Marker<3>);
+                  hf_cand_par::NSigTpcPi2,
+                  hf_cand_par::NSigTpcPr2,
+                  hf_cand_par::NSigTofPi2,
+                  hf_cand_par::NSigTofPr2,
+                  hf_cand_par::NSigTpcTofPi2,
+                  hf_cand_par::NSigTpcTofPr2,
+                  soa::Marker<1>);
 
 DECLARE_SOA_TABLE(Hf3PParEs, "AOD", "HF3PPARE", //! Table with additional candidate properties used for selection
                   collision::PosX,
@@ -593,8 +594,7 @@ DECLARE_SOA_TABLE(Hf3PParEs, "AOD", "HF3PPARE", //! Table with additional candid
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
                   hf_cand::ErrorImpactParameter2,
-                  hf_cand_par::Ct,
-                  soa::Marker<2>);
+                  hf_cand_par::Ct);
 
 DECLARE_SOA_TABLE(StoredHf3PParEs, "AOD1", "HF3PPARE", //! Table with additional candidate properties used for selection (stored version)
                   collision::PosX,
@@ -617,7 +617,7 @@ DECLARE_SOA_TABLE(StoredHf3PParEs, "AOD1", "HF3PPARE", //! Table with additional
                   hf_cand::ErrorImpactParameter0,
                   hf_cand::ErrorImpactParameter1,
                   hf_cand_par::Ct,
-                  soa::Marker<3>);
+                  soa::Marker<1>);
 
 DECLARE_SOA_TABLE(Hf3PSels, "AOD", "HF3PSEL", //! Table with candidate selection flags
                   hf_cand_sel::CandidateSelFlag,
@@ -631,27 +631,25 @@ DECLARE_SOA_TABLE(Hf3PIds, "AOD", "HF3PID", //! Table with global indices for ca
                   hf_cand::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id,
-                  hf_track_index::Prong2Id,
-                  soa::Marker<2>);
+                  hf_track_index::Prong2Id);
 
 DECLARE_SOA_TABLE(StoredHf3PIds, "AOD1", "HF3PID", //! Table with global indices for candidates (stored version)
                   hf_cand::CollisionId,
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id,
                   hf_track_index::Prong2Id,
-                  soa::Marker<3>);
+                  soa::Marker<1>);
 
 DECLARE_SOA_TABLE(Hf3PMcs, "AOD", "HF3PMC", //! Table with MC candidate info
                   hf_cand_mc::FlagMcMatchRec,
                   hf_cand_mc::OriginMcRec,
-                  hf_cand_mc::IsCandidateSwapped,
-                  soa::Marker<2>);
+                  hf_cand_mc::IsCandidateSwapped);
 
 DECLARE_SOA_TABLE(StoredHf3PMcs, "AOD1", "HF3PMC", //! Table with MC candidate info (stored version)
                   hf_cand_mc::FlagMcMatchRec,
                   hf_cand_mc::OriginMcRec,
                   hf_cand_mc::IsCandidateSwapped,
-                  soa::Marker<3>);
+                  soa::Marker<1>);
 
 DECLARE_SOA_TABLE(Hf3PPBases, "AOD", "HF3PPBASE", //! Table with MC particle info
                   o2::soa::Index<>,
