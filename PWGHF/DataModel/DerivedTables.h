@@ -507,6 +507,7 @@ DECLARE_SOA_TABLE(StoredHf3PBases, "AOD1", "HF3PBASE", //! Table with basic cand
 // normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
 DECLARE_SOA_TABLE(Hf3PPars, "AOD", "HF3PPAR", //! Table with candidate properties used for selection
                   hf_cand::Chi2PCA,
+                  hf_cand::NProngsContributorsPV,
                   hf_cand_par::Cpa,
                   hf_cand_par::CpaXY,
                   hf_cand_par::DecayLength,
@@ -540,6 +541,7 @@ DECLARE_SOA_TABLE(Hf3PPars, "AOD", "HF3PPAR", //! Table with candidate propertie
 
 DECLARE_SOA_TABLE(StoredHf3PPars, "AOD1", "HF3PPAR", //! Table with candidate properties used for selection (stored version)
                   hf_cand::Chi2PCA,
+                  hf_cand::NProngsContributorsPV,
                   hf_cand_par::Cpa,
                   hf_cand_par::CpaXY,
                   hf_cand_par::DecayLength,
