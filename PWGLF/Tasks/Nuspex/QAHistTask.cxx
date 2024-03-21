@@ -639,7 +639,6 @@ struct QAHistTask {
   {
 
     MC_truth_reg.fill(HIST("histCentrality"), collisions.centFT0C());
-
   }
   PROCESS_SWITCH(QAHistTask, processMCCent, "process MC with centrality", false);
 };
