@@ -121,7 +121,7 @@ DECLARE_SOA_COLUMN(M, m, float);                                  //! invariant 
 DECLARE_SOA_COLUMN(Phi, phi, float);                              //! azimuth
 DECLARE_SOA_COLUMN(Pt, pt, float);                                //! transverse momentum
 
-namespace functions
+namespace functions_pt_eta_phi
 {
 /// px as a function of pT, phi
 /// \todo Move to RecoDecay
@@ -170,26 +170,26 @@ auto e(TPt pt, TEta eta, TM m)
 {
   return RecoDecay::sqrtSumOfSquares(m, p(pt, eta));
 }
-} // namespace functions
+} // namespace functions_pt_eta_phi
 
 namespace d0
 {
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! D0 rapidity
-                           [](float pt, float eta) -> float { return functions::y(pt, eta, o2::constants::physics::MassD0); });
+                           [](float pt, float eta) -> float { return functions_pt_eta_phi::y(pt, eta, o2::constants::physics::MassD0); });
 }
 namespace lc
 {
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //! Lambda_c rapidity
-                           [](float pt, float eta) -> float { return functions::y(pt, eta, o2::constants::physics::MassLambdaCPlus); });
+                           [](float pt, float eta) -> float { return functions_pt_eta_phi::y(pt, eta, o2::constants::physics::MassLambdaCPlus); });
 }
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! px
-                           [](float pt, float phi) -> float { return functions::px(pt, phi); });
+                           [](float pt, float phi) -> float { return functions_pt_eta_phi::px(pt, phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! py
-                           [](float pt, float phi) -> float { return functions::py(pt, phi); });
+                           [](float pt, float phi) -> float { return functions_pt_eta_phi::py(pt, phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! px
-                           [](float pt, float eta) -> float { return functions::pz(pt, eta); });
+                           [](float pt, float eta) -> float { return functions_pt_eta_phi::pz(pt, eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! momentum
-                           [](float pt, float eta) -> float { return functions::p(pt, eta); });
+                           [](float pt, float eta) -> float { return functions_pt_eta_phi::p(pt, eta); });
 } // namespace hf_cand_base
 
 // Candidate properties used for selection
