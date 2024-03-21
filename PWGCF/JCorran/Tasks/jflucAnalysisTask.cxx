@@ -32,6 +32,7 @@
 // #include "CCDB/BasicCCDBManager.h"
 
 #include "PWGCF/JCorran/DataModel/JCatalyst.h"
+#include "PWGCF/DataModel/CorrelationsDerived.h"
 #include "JFFlucAnalysis.h"
 
 using namespace o2;
@@ -177,7 +178,8 @@ struct jflucAnalysisTask {
     pcf->UserCreateOutputObjects();
   }
 
-  void process(aod::JCollision const& collision, soa::Filtered<aod::JTracks> const& tracks)
+  template <class CollisionT, class TrackT>
+  void analyze(CollisionT const& collision, TrackT const& tracks)
   {
     pcf->Init();
     pcf->FillQA(tracks);
@@ -192,26 +194,31 @@ struct jflucAnalysisTask {
     pcf->SetEventVertex(fVertex);
     pcf->SetEtaRange(etamin, etamax);
     pcf->UserExec("");
+  }
+
+  void process(aod::JCollision const& collision, soa::Filtered<aod::JTracks> const& tracks)
+  {
+    analyze(collision, tracks);
   }
   PROCESS_SWITCH(jflucAnalysisTask, process, "Process data", true);
 
   void processCorrected(aod::JCollision const& collision, soa::Filtered<soa::Join<aod::JTracks, aod::JWeights>> const& tracks)
   {
-    pcf->Init();
-    pcf->FillQA(tracks);
-    pcf->CalculateQvectorsQC(tracks);
-    const auto& edges = AxisSpec(axisMultiplicity).binEdges;
-    for (UInt_t i = 0, n = AxisSpec(axisMultiplicity).getNbins(); i < n; ++i)
-      if (collision.multiplicity() < edges[i + 1]) {
-        pcf->SetEventCentralityAndBin(collision.multiplicity(), i);
-        break;
-      }
-    const double fVertex[3] = {0.0f, 0.0f, collision.posZ()}; // TODO: check if posX/Y is really needed
-    pcf->SetEventVertex(fVertex);
-    pcf->SetEtaRange(etamin, etamax);
-    pcf->UserExec("");
+    analyze(collision, tracks);
   }
   PROCESS_SWITCH(jflucAnalysisTask, processCorrected, "Process data with corrections", false);
+
+  void processCFDerived(aod::CFCollision const& collision, soa::Filtered<aod::CFTracks> const& tracks)
+  {
+    analyze(collision, tracks);
+  }
+  PROCESS_SWITCH(jflucAnalysisTask, processCFDerived, "Process CF derived data", false);
+
+  void processCFDerivedCorrected(aod::CFCollision const& collision, soa::Filtered<soa::Join<aod::CFTracks, aod::JWeights>> const& tracks)
+  {
+    analyze(collision, tracks);
+  }
+  PROCESS_SWITCH(jflucAnalysisTask, processCFDerivedCorrected, "Process CF derived data with corrections", false);
 
   JFFlucAnalysis* pcf;
 };

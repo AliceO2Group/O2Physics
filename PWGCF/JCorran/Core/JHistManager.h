@@ -466,8 +466,8 @@ class JHistManager : public JNamed
   void Add(JBin* o);
   void Add(JTH1* o);
 
-  int GetNBin() { return fBin.size() > fBinNames.size() ? fBin.size() : fBinNames.size(); }      // TODO
-  int GetNHist() { return fHist.size() > fHistNames.size() ? fHist.size() : fHistNames.size(); } // TODO
+  UInt_t GetNBin() { return fBin.size() > fBinNames.size() ? fBin.size() : fBinNames.size(); }      // TODO
+  UInt_t GetNHist() { return fHist.size() > fHistNames.size() ? fHist.size() : fHistNames.size(); } // TODO
   void Print();
   int LoadConfig();
   TDirectory* GetDirectory() { return fDirectory; }
@@ -480,9 +480,9 @@ class JHistManager : public JNamed
   TString GetString()
   {
     TString st;
-    for (int i = 0; i < GetNBin(); i++)
+    for (UInt_t i = 0; i < GetNBin(); i++)
       st += fBin[i]->GetString() + "\n";
-    for (int i = 0; i < GetNHist(); i++) {
+    for (UInt_t i = 0; i < GetNHist(); i++) {
       st += fHist[i]->GetString() + "\n";
     }
     return st;

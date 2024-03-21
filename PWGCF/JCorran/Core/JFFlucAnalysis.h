@@ -133,7 +133,7 @@ class JFFlucAnalysis
       fh_vertex[iaxis]->Fill(fVertex[iaxis]);
   };
 
-#define NK nKL // for cpplint nonsense
+#define NK nKL // avoid cpplint "variable size array" error when in reality it is fixed size TComplex q[nKL]
   template <class JInputClass>
   inline void CalculateQvectorsQC(JInputClass& inputInst)
   {

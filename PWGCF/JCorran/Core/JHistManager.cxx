@@ -96,7 +96,7 @@ JBin::JBin(TString config, JHistManager* hmg) : JNamed("JBin", "%.2f-%2.f", "&Mo
   fMode = GetMode(GetOption("mode"));
   AddToManager(hmg);
   TString s;
-  for (int i = 5; i < t.size(); i++)
+  for (UInt_t i = 5; i < t.size(); i++)
     s += " " + t[i];
   SetBin(s);
 }
@@ -253,7 +253,7 @@ void JBin::Print()
 
 int JBin::GetBin(double x)
 {
-  int i = TMath::BinarySearch(fBinD.size(), &fBinD[0], x);
+  auto i = TMath::BinarySearch(fBinD.size(), &fBinD[0], x);
   if (fMode == kRange && i + 1 >= fBinD.size())
     return -1;
   return i;
@@ -496,7 +496,7 @@ JTH1::JTH1(TString config, JHistManager* hmg) : fDirectory(NULL),
   fMode = HasOption("mode", "Single") ? kSingle : kNormal;
   AddToManager(hmg);
   TString s;
-  for (int i = 4; i < t.size(); i++)
+  for (UInt_t i = 4; i < t.size(); i++)
     s += " " + t[i];
   AddDim(s);
   FixBin();
@@ -589,7 +589,7 @@ TString JTH1::GetString()
 {
   TString s = Form("%s\t%s\t\"%s\"\t%s\t",
                    ClassName(), fName.Data(), fTitle.Data(), fOption.Data());
-  for (int i = 0; i < Dimension(); i++) {
+  for (UInt_t i = 0; i < Dimension(); i++) {
     if (fBins.size() > i && fBins[i] != NULL) {
       s += " " + fBins[i]->GetName();
     } else {
@@ -641,7 +641,7 @@ TString JTH1::BuildName()
 {
   TString name = fName;
   if (!HasOption("Single")) {
-    for (int i = 0; i < Dimension(); i++) {
+    for (UInt_t i = 0; i < Dimension(); i++) {
       name += ((fBins.size() > i && fBins[i] != NULL) ? fBins[i]->GetIndexName() : "H") + Form("%02d", Index(i));
     }
   }
@@ -651,7 +651,7 @@ TString JTH1::BuildName()
 TString JTH1::BuildTitle()
 {
   TString title = fTitle;
-  for (int i = 0; i < Dimension(); i++)
+  for (UInt_t i = 0; i < Dimension(); i++)
     title += ((static_cast<int>(fBins.size()) > i && fBins[i] != NULL) ? " " + fBins[i]->BuildTitle(Index(i)) : "") + Form("%02d", Index(i));
   return title;
 }
@@ -820,7 +820,7 @@ JHistManager* JHistManager::CurrentManager(JHistManager* hmg)
 
 JBin* JHistManager::GetBuiltBin(TString s)
 {
-  for (int i = 0; i < fBin.size(); i++)
+  for (UInt_t i = 0; i < fBin.size(); i++)
     if (fBin[i]->GetName() == s)
       return fBin[i];
   return NULL;
@@ -830,7 +830,7 @@ JBin* JHistManager::GetBin(TString s)
   JBin* h = GetBuiltBin(s);
   if (h)
     return h;
-  for (int i = 0; i < GetNBin(); i++)
+  for (UInt_t i = 0; i < GetNBin(); i++)
     if (fBinNames[i] == s) {
       return new JBin(fBinConfigs[i], this);
     }
@@ -838,7 +838,7 @@ JBin* JHistManager::GetBin(TString s)
 }
 JTH1* JHistManager::GetBuiltTH1(TString s)
 {
-  for (int i = 0; i < fHist.size(); i++)
+  for (UInt_t i = 0; i < fHist.size(); i++)
     if (fHist[i]->GetName() == s)
       return fHist[i];
   return NULL;
@@ -851,7 +851,7 @@ JTH1* JHistManager::GetTH1(TString s)
   JTH1* h = GetBuiltTH1(s);
   if (h)
     return h;
-  for (int i = 0; i < GetNHist(); i++)
+  for (UInt_t i = 0; i < GetNHist(); i++)
     if (fHistNames[i] == s) {
       if (fHistConfigs[i].BeginsWith("JTH1D"))
         return new JTH1D(fHistConfigs[i], this);
@@ -889,17 +889,17 @@ void JHistManager::Print()
   }
   LOGF(info, "============ JHistManager : %s ===================\n", fName.Data());
   LOGF(info, "\n---- JBin ----\n");
-  for (int i = 0; i < GetNBin(); i++) {
+  for (UInt_t i = 0; i < GetNBin(); i++) {
     fBin[i]->Print();
   }
   LOGF(info, "\n---- JTH1 ----\n");
-  for (int i = 0; i < GetNHist(); i++) {
+  for (UInt_t i = 0; i < GetNHist(); i++) {
     fHist[i]->Print();
   }
 }
 void JHistManager::Write()
 {
-  for (int i = 0; i < GetNHist(); i++)
+  for (UInt_t i = 0; i < GetNHist(); i++)
     fHist[i]->Write();
 }
 
