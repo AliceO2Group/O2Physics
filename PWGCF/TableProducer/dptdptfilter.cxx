@@ -570,6 +570,9 @@ struct DptDptFilterTracks {
   Configurable<o2::analysis::TrackSelectionPIDCfg> cfgElectronPIDSelection{"elpidsel",
                                                                            {},
                                                                            "PID criteria for electrons"};
+  Configurable<o2::analysis::TrackSelectionPIDCfg> cfgMuonPIDSelection{"mupidsel",
+                                                                       {},
+                                                                       "PID criteria for muons"};
 
   OutputObj<TList> fOutput{"DptDptFilterTracksInfo", OutputObjHandlingPolicy::AnalysisObject};
   PIDSpeciesSelection pidselector;
@@ -661,10 +664,11 @@ struct DptDptFilterTracks {
         }
       }
     };
+    insertInPIDselector(cfgElectronPIDSelection, 0);
+    insertInPIDselector(cfgMuonPIDSelection, 1);
     insertInPIDselector(cfgPionPIDSelection, 2);
     insertInPIDselector(cfgKaonPIDSelection, 3);
     insertInPIDselector(cfgProtonPIDSelection, 4);
-    insertInPIDselector(cfgElectronPIDSelection, 0);
 
     /* create the output list which will own the task histograms */
     TList* fOutputList = new TList();
