@@ -198,7 +198,7 @@ struct qVectorsCorrection {
   {
     histosQA.fill(HIST("histCentFull"), qVec.cent());
     fillHistosQvec(qVec);
-  }   // End void process(...)
+  } // End void process(...)
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
