@@ -454,7 +454,6 @@ struct NucleiHistTask {
     MC_eff.add("histPt_TOF_aHe3", "^{3}#bar{He} reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
     MC_eff.add("histPt_TOF_He4", "^{4}He reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
     MC_eff.add("histPt_TOF_aHe4", "^{4}#bar{He} reconstructed p_{T} TOF", HistType::kTH1F, {ptAxis});
-
   }
 
   // Configurables
@@ -576,7 +575,7 @@ struct NucleiHistTask {
       lorentzVector_He3.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
       lorentzVector_He4.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
 
-      if (lorentzVector_pion.Rapidity() < yMin || lorentzVector_pion.Rapidity() > yMax || 
+      if (lorentzVector_pion.Rapidity() < yMin || lorentzVector_pion.Rapidity() > yMax ||
           lorentzVector_proton.Rapidity() < yMin || lorentzVector_proton.Rapidity() > yMax ||
           lorentzVector_deuteron.Rapidity() < yMin || lorentzVector_deuteron.Rapidity() > yMax ||
           lorentzVector_triton.Rapidity() < yMin || lorentzVector_triton.Rapidity() > yMax ||
@@ -1339,7 +1338,7 @@ struct NucleiHistTask {
         continue;
       }
 
-// cut on rapidity
+      // cut on rapidity
       TLorentzVector lorentzVector_pion{};
       TLorentzVector lorentzVector_proton{};
       TLorentzVector lorentzVector_deuteron{};
@@ -1354,7 +1353,7 @@ struct NucleiHistTask {
       lorentzVector_He3.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
       lorentzVector_He4.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
 
-      if (lorentzVector_pion.Rapidity() < yMin || lorentzVector_pion.Rapidity() > yMax || 
+      if (lorentzVector_pion.Rapidity() < yMin || lorentzVector_pion.Rapidity() > yMax ||
           lorentzVector_proton.Rapidity() < yMin || lorentzVector_proton.Rapidity() > yMax ||
           lorentzVector_deuteron.Rapidity() < yMin || lorentzVector_deuteron.Rapidity() > yMax ||
           lorentzVector_triton.Rapidity() < yMin || lorentzVector_triton.Rapidity() > yMax ||
@@ -1527,7 +1526,8 @@ struct NucleiHistTask {
       const auto particle = track.mcParticle();
       const auto pdg = Form("%i", particle.pdgCode());
 
-      if (!particle.isPhysicalPrimary()) continue;
+      if (!particle.isPhysicalPrimary())
+        continue;
 
       histPDG->Fill(pdg, 1);
       const float pdgbin = histPDG->GetXaxis()->GetBinCenter(histPDG->GetXaxis()->FindBin(pdg));
@@ -1592,20 +1592,32 @@ struct NucleiHistTask {
         MC_recon_reg.fill(HIST("histTofSignalData"), track.pt() * track.sign(), track.beta(), pdgbin);
 
         if (track.sign() > 0) {
-          if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh) MC_recon_reg.fill(HIST("histTofNsigmaDataPi"), track.pt(), track.tofNSigmaPi());
-          if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh) MC_recon_reg.fill(HIST("histTofNsigmaDataPr"), track.pt(), track.tofNSigmaPr());
-          if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh) MC_recon_reg.fill(HIST("histTofNsigmaDataDe"), track.pt(), track.tofNSigmaDe());
-          if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh) MC_recon_reg.fill(HIST("histTofNsigmaDataTr"), track.pt(), track.tofNSigmaTr());
-          if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh) MC_recon_reg.fill(HIST("histTofNsigmaDataHe"), track.pt(), track.tofNSigmaHe());
-          if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh) MC_recon_reg.fill(HIST("histTofNsigmaDataAl"), track.pt(), track.tofNSigmaAl());
+          if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh)
+            MC_recon_reg.fill(HIST("histTofNsigmaDataPi"), track.pt(), track.tofNSigmaPi());
+          if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh)
+            MC_recon_reg.fill(HIST("histTofNsigmaDataPr"), track.pt(), track.tofNSigmaPr());
+          if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh)
+            MC_recon_reg.fill(HIST("histTofNsigmaDataDe"), track.pt(), track.tofNSigmaDe());
+          if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh)
+            MC_recon_reg.fill(HIST("histTofNsigmaDataTr"), track.pt(), track.tofNSigmaTr());
+          if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh)
+            MC_recon_reg.fill(HIST("histTofNsigmaDataHe"), track.pt(), track.tofNSigmaHe());
+          if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh)
+            MC_recon_reg.fill(HIST("histTofNsigmaDataAl"), track.pt(), track.tofNSigmaAl());
         }
         if (track.sign() < 0) {
-          if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh) MC_recon_reg.fill(HIST("histTofNsigmaDataaPi"), track.pt(), track.tofNSigmaPi());
-          if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh) MC_recon_reg.fill(HIST("histTofNsigmaDataaPr"), track.pt(), track.tofNSigmaPr());
-          if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh) MC_recon_reg.fill(HIST("histTofNsigmaDataaDe"), track.pt(), track.tofNSigmaDe());
-          if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh) MC_recon_reg.fill(HIST("histTofNsigmaDataaTr"), track.pt(), track.tofNSigmaTr());
-          if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh) MC_recon_reg.fill(HIST("histTofNsigmaDataaHe"), track.pt(), track.tofNSigmaHe());
-          if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh) MC_recon_reg.fill(HIST("histTofNsigmaDataaAl"), track.pt(), track.tofNSigmaAl());
+          if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh)
+            MC_recon_reg.fill(HIST("histTofNsigmaDataaPi"), track.pt(), track.tofNSigmaPi());
+          if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh)
+            MC_recon_reg.fill(HIST("histTofNsigmaDataaPr"), track.pt(), track.tofNSigmaPr());
+          if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh)
+            MC_recon_reg.fill(HIST("histTofNsigmaDataaDe"), track.pt(), track.tofNSigmaDe());
+          if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh)
+            MC_recon_reg.fill(HIST("histTofNsigmaDataaTr"), track.pt(), track.tofNSigmaTr());
+          if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh)
+            MC_recon_reg.fill(HIST("histTofNsigmaDataaHe"), track.pt(), track.tofNSigmaHe());
+          if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh)
+            MC_recon_reg.fill(HIST("histTofNsigmaDataaAl"), track.pt(), track.tofNSigmaAl());
         }
       }
 
@@ -1624,8 +1636,7 @@ struct NucleiHistTask {
   }
   PROCESS_SWITCH(NucleiHistTask, processMC, "process MC", false);
 
-
-  void processMCefficiency(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Cs>::iterator const& collisions, 
+  void processMCefficiency(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Cs>::iterator const& collisions,
                            soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
                            aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
   {
@@ -1634,7 +1645,8 @@ struct NucleiHistTask {
       const auto particle = track.mcParticle();
       const auto pdg = Form("%i", particle.pdgCode());
 
-      if (!particle.isPhysicalPrimary()) continue;
+      if (!particle.isPhysicalPrimary())
+        continue;
 
       histPDG_eff->Fill(pdg, 1);
       const float pdgbin = histPDG_eff->GetXaxis()->GetBinCenter(histPDG_eff->GetXaxis()->FindBin(pdg));
@@ -1654,7 +1666,7 @@ struct NucleiHistTask {
       lorentzVector_He3.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassHelium3);
       lorentzVector_He4.SetPtEtaPhiM(track.pt() * 2.0, track.eta(), track.phi(), constants::physics::MassAlpha);
 
-      if (lorentzVector_pion.Rapidity() < yMin || lorentzVector_pion.Rapidity() > yMax || 
+      if (lorentzVector_pion.Rapidity() < yMin || lorentzVector_pion.Rapidity() > yMax ||
           lorentzVector_proton.Rapidity() < yMin || lorentzVector_proton.Rapidity() > yMax ||
           lorentzVector_deuteron.Rapidity() < yMin || lorentzVector_deuteron.Rapidity() > yMax ||
           lorentzVector_triton.Rapidity() < yMin || lorentzVector_triton.Rapidity() > yMax ||
@@ -1709,46 +1721,68 @@ struct NucleiHistTask {
       float TOFnSigmaHe4 = track.tofNSigmaAl();
 
       if (track.sign() > 0) {
-        if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh) MC_eff.fill(HIST("histPt_TPC_Pi"), track.pt());
-        if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh) MC_eff.fill(HIST("histPt_TPC_Pr"), track.pt());
-        if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh) MC_eff.fill(HIST("histPt_TPC_De"), track.pt());
-        if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh) MC_eff.fill(HIST("histPt_TPC_Tr"), track.pt());
-        if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh) MC_eff.fill(HIST("histPt_TPC_He3"), track.pt());
-        if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh) MC_eff.fill(HIST("histPt_TPC_He4"), track.pt());
+        if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh)
+          MC_eff.fill(HIST("histPt_TPC_Pi"), track.pt());
+        if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh)
+          MC_eff.fill(HIST("histPt_TPC_Pr"), track.pt());
+        if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh)
+          MC_eff.fill(HIST("histPt_TPC_De"), track.pt());
+        if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh)
+          MC_eff.fill(HIST("histPt_TPC_Tr"), track.pt());
+        if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh)
+          MC_eff.fill(HIST("histPt_TPC_He3"), track.pt());
+        if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh)
+          MC_eff.fill(HIST("histPt_TPC_He4"), track.pt());
       }
       if (track.sign() < 0) {
-        if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh) MC_eff.fill(HIST("histPt_TPC_aPi"), track.pt());
-        if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh) MC_eff.fill(HIST("histPt_TPC_aPr"), track.pt());
-        if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh) MC_eff.fill(HIST("histPt_TPC_aDe"), track.pt());
-        if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh) MC_eff.fill(HIST("histPt_TPC_aTr"), track.pt());
-        if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh) MC_eff.fill(HIST("histPt_TPC_aHe3"), track.pt());
-        if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh) MC_eff.fill(HIST("histPt_TPC_aHe4"), track.pt());
+        if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh)
+          MC_eff.fill(HIST("histPt_TPC_aPi"), track.pt());
+        if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh)
+          MC_eff.fill(HIST("histPt_TPC_aPr"), track.pt());
+        if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh)
+          MC_eff.fill(HIST("histPt_TPC_aDe"), track.pt());
+        if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh)
+          MC_eff.fill(HIST("histPt_TPC_aTr"), track.pt());
+        if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh)
+          MC_eff.fill(HIST("histPt_TPC_aHe3"), track.pt());
+        if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh)
+          MC_eff.fill(HIST("histPt_TPC_aHe4"), track.pt());
       }
 
       if (track.hasTOF()) {
 
         if (track.sign() > 0) {
-          if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh && TOFnSigmaPion > nsigmacutLow && TOFnSigmaPion < nsigmacutHigh) MC_eff.fill(HIST("histPt_TOF_Pi"), track.pt());
-          if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh && TOFnSigmaProton > nsigmacutLow && TOFnSigmaProton < nsigmacutHigh) MC_eff.fill(HIST("histPt_TOF_Pr"), track.pt());
-          if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh && TOFnSigmaDeuteron > nsigmacutLow && TOFnSigmaDeuteron < nsigmacutHigh) MC_eff.fill(HIST("histPt_TOF_De"), track.pt());
-          if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh && TOFnSigmaTriton > nsigmacutLow && TOFnSigmaTriton < nsigmacutHigh) MC_eff.fill(HIST("histPt_TOF_Tr"), track.pt());
-          if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh && TOFnSigmaHe3 > nsigmacutLow && TOFnSigmaHe3 < nsigmacutHigh) MC_eff.fill(HIST("histPt_TOF_He3"), track.pt());
-          if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh && TOFnSigmaHe4 > nsigmacutLow && TOFnSigmaHe4 < nsigmacutHigh) MC_eff.fill(HIST("histPt_TOF_He4"), track.pt());
+          if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh && TOFnSigmaPion > nsigmacutLow && TOFnSigmaPion < nsigmacutHigh)
+            MC_eff.fill(HIST("histPt_TOF_Pi"), track.pt());
+          if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh && TOFnSigmaProton > nsigmacutLow && TOFnSigmaProton < nsigmacutHigh)
+            MC_eff.fill(HIST("histPt_TOF_Pr"), track.pt());
+          if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh && TOFnSigmaDeuteron > nsigmacutLow && TOFnSigmaDeuteron < nsigmacutHigh)
+            MC_eff.fill(HIST("histPt_TOF_De"), track.pt());
+          if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh && TOFnSigmaTriton > nsigmacutLow && TOFnSigmaTriton < nsigmacutHigh)
+            MC_eff.fill(HIST("histPt_TOF_Tr"), track.pt());
+          if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh && TOFnSigmaHe3 > nsigmacutLow && TOFnSigmaHe3 < nsigmacutHigh)
+            MC_eff.fill(HIST("histPt_TOF_He3"), track.pt());
+          if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh && TOFnSigmaHe4 > nsigmacutLow && TOFnSigmaHe4 < nsigmacutHigh)
+            MC_eff.fill(HIST("histPt_TOF_He4"), track.pt());
         }
         if (track.sign() < 0) {
-          if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh && TOFnSigmaPion > nsigmacutLow && TOFnSigmaPion < nsigmacutHigh) MC_eff.fill(HIST("histPt_TOF_aPi"), track.pt());
-          if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh && TOFnSigmaProton > nsigmacutLow && TOFnSigmaProton < nsigmacutHigh) MC_eff.fill(HIST("histPt_TOF_aPr"), track.pt());
-          if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh && TOFnSigmaDeuteron > nsigmacutLow && TOFnSigmaDeuteron < nsigmacutHigh) MC_eff.fill(HIST("histPt_TOF_aDe"), track.pt());
-          if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh && TOFnSigmaTriton > nsigmacutLow && TOFnSigmaTriton < nsigmacutHigh) MC_eff.fill(HIST("histPt_TOF_aTr"), track.pt());
-          if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh && TOFnSigmaHe3 > nsigmacutLow && TOFnSigmaHe3 < nsigmacutHigh) MC_eff.fill(HIST("histPt_TOF_aHe3"), track.pt());
-          if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh && TOFnSigmaHe4 > nsigmacutLow && TOFnSigmaHe4 < nsigmacutHigh) MC_eff.fill(HIST("histPt_TOF_aHe4"), track.pt());
+          if (nSigmaPion > nsigmacutLow && nSigmaPion < nsigmacutHigh && TOFnSigmaPion > nsigmacutLow && TOFnSigmaPion < nsigmacutHigh)
+            MC_eff.fill(HIST("histPt_TOF_aPi"), track.pt());
+          if (nSigmaProton > nsigmacutLow && nSigmaProton < nsigmacutHigh && TOFnSigmaProton > nsigmacutLow && TOFnSigmaProton < nsigmacutHigh)
+            MC_eff.fill(HIST("histPt_TOF_aPr"), track.pt());
+          if (nSigmaDeuteron > nsigmacutLow && nSigmaDeuteron < nsigmacutHigh && TOFnSigmaDeuteron > nsigmacutLow && TOFnSigmaDeuteron < nsigmacutHigh)
+            MC_eff.fill(HIST("histPt_TOF_aDe"), track.pt());
+          if (nSigmaTriton > nsigmacutLow && nSigmaTriton < nsigmacutHigh && TOFnSigmaTriton > nsigmacutLow && TOFnSigmaTriton < nsigmacutHigh)
+            MC_eff.fill(HIST("histPt_TOF_aTr"), track.pt());
+          if (nSigmaHe3 > nsigmacutLow && nSigmaHe3 < nsigmacutHigh && TOFnSigmaHe3 > nsigmacutLow && TOFnSigmaHe3 < nsigmacutHigh)
+            MC_eff.fill(HIST("histPt_TOF_aHe3"), track.pt());
+          if (nSigmaHe4 > nsigmacutLow && nSigmaHe4 < nsigmacutHigh && TOFnSigmaHe4 > nsigmacutLow && TOFnSigmaHe4 < nsigmacutHigh)
+            MC_eff.fill(HIST("histPt_TOF_aHe4"), track.pt());
         }
       }
-
     }
   }
   PROCESS_SWITCH(NucleiHistTask, processMCefficiency, "process MC efficencies", false);
-
 };
 
 //****************************************************************************************************
