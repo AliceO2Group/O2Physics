@@ -82,7 +82,7 @@ struct HfDerivedDataCreatorLcToPKPi {
 
   void init(InitContext const&)
   {
-    std::array<bool, 4> doprocess{doprocessDataWithDCAFitterN, doprocessMcWithDCAFitterSig, doprocessMcWithDCAFitterBkg, doprocessMcWithDCAFitterAll};
+    std::array<bool, 4> doprocess{doprocessData, doprocessMcSig, doprocessMcBkg, doprocessMcAll};
     if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
@@ -315,16 +315,16 @@ struct HfDerivedDataCreatorLcToPKPi {
     }
   }
 
-  void processDataWithDCAFitterN(CollisionsWCentMult const& collisions,
+  void processData(CollisionsWCentMult const& collisions,
                                  SelectedCandidates const&,
                                  TracksWPid const& tracks,
                                  aod::BCs const& bcs)
   {
     processCandidates<false, false, false>(collisions, candidatesAll, tracks, bcs);
   }
-  PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processDataWithDCAFitterN, "Process data", true);
+  PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processData, "Process data", true);
 
-  void processMcWithDCAFitterSig(CollisionsWCentMult const& collisions,
+  void processMcSig(CollisionsWCentMult const& collisions,
                                  SelectedCandidatesMc const&,
                                  MatchedGenCandidatesMc const& mcParticles,
                                  TracksWPid const& tracks,
@@ -333,9 +333,9 @@ struct HfDerivedDataCreatorLcToPKPi {
     processCandidates<true, false, true>(collisions, candidatesMcSig, tracks, bcs);
     processMcParticles(mcParticles);
   }
-  PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcWithDCAFitterSig, "Process MC only for signals", false);
+  PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcSig, "Process MC only for signals", false);
 
-  void processMcWithDCAFitterBkg(CollisionsWCentMult const& collisions,
+  void processMcBkg(CollisionsWCentMult const& collisions,
                                  SelectedCandidatesMc const&,
                                  MatchedGenCandidatesMc const& mcParticles,
                                  TracksWPid const& tracks,
@@ -344,9 +344,9 @@ struct HfDerivedDataCreatorLcToPKPi {
     processCandidates<true, true, false>(collisions, candidatesMcBkg, tracks, bcs);
     processMcParticles(mcParticles);
   }
-  PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcWithDCAFitterBkg, "Process MC only for background", false);
+  PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcBkg, "Process MC only for background", false);
 
-  void processMcWithDCAFitterAll(CollisionsWCentMult const& collisions,
+  void processMcAll(CollisionsWCentMult const& collisions,
                                  SelectedCandidatesMc const&,
                                  MatchedGenCandidatesMc const& mcParticles,
                                  TracksWPid const& tracks,
@@ -355,7 +355,7 @@ struct HfDerivedDataCreatorLcToPKPi {
     processCandidates<true, false, false>(collisions, candidatesMcAll, tracks, bcs);
     processMcParticles(mcParticles);
   }
-  PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcWithDCAFitterAll, "Process MC", false);
+  PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcAll, "Process MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
