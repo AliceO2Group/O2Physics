@@ -318,6 +318,39 @@ struct HfTaskMcEfficiencyToXiPi {
         if (hasITS[pion.globalIndex()] && hasTPC[pion.globalIndex()]) {
           hTrackablePtEta->Fill(kTrackableITSTPC, pion.pt(), pion.eta());
         }
+        // pion <- cascade
+        hTrackablePtEta->Fill(kTrackableAll, pionFromCascade.pt(), pionFromCascade.eta());
+        if (hasITS[pionFromCascade.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableITS, pionFromCascade.pt(), pionFromCascade.eta());
+        }
+        if (hasTPC[pionFromCascade.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableTPC, pionFromCascade.pt(), pionFromCascade.eta());
+        }
+        if (hasITS[pionFromCascade.globalIndex()] && hasTPC[pionFromCascade.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableITSTPC, pionFromCascade.pt(), pionFromCascade.eta());
+        }
+        // pion <- lambda
+        hTrackablePtEta->Fill(kTrackableAll, pionFromLambda.pt(), pionFromLambda.eta());
+        if (hasITS[pionFromLambda.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableITS, pionFromLambda.pt(), pionFromLambda.eta());
+        }
+        if (hasTPC[pionFromLambda.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableTPC, pionFromLambda.pt(), pionFromLambda.eta());
+        }
+        if (hasITS[pionFromLambda.globalIndex()] && hasTPC[pionFromLambda.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableITSTPC, pionFromLambda.pt(), pionFromLambda.eta());
+        }
+        // proton <- lambda
+        hTrackablePtEta->Fill(kTrackableAll, proton.pt(), proton.eta());
+        if (hasITS[proton.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableITS, proton.pt(), proton.eta());
+        }
+        if (hasTPC[proton.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableTPC, proton.pt(), proton.eta());
+        }
+        if (hasITS[proton.globalIndex()] && hasTPC[proton.globalIndex()]) {
+          hTrackablePtEta->Fill(kTrackableITSTPC, proton.pt(), proton.eta());
+        }
       } // close tracked if
 
       // with pion track cuts (see checkTrackGlbTrk and checkTrkItsTrk)
