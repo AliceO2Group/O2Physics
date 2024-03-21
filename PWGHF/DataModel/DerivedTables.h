@@ -68,18 +68,34 @@ DECLARE_SOA_TABLE(StoredHfD0CollIds, "AOD1", "HFD0COLLID", //! Table with global
 
 DECLARE_SOA_TABLE(Hf3PCollBases, "AOD", "HF3PCOLLBASE", //! Table with basic collision info
                   o2::soa::Index<>,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
                   collision::NumContrib,
-                  hf_coll_base::IsEventReject,
-                  bc::RunNumber,
+                  hf_coll_base::CentFT0A,
+                  hf_coll_base::CentFT0C,
+                  hf_coll_base::CentFT0M,
+                  hf_coll_base::CentFV0A,
+                  hf_coll_base::MultZeqNTracksPV,
+                  // hf_coll_base::IsEventReject,
+                  // bc::RunNumber,
                   soa::Marker<2>);
 
 using Hf3PCollBase = Hf3PCollBases::iterator;
 
 DECLARE_SOA_TABLE(StoredHf3PCollBases, "AOD1", "HF3PCOLLBASE", //! Table with basic collision info (stored version)
                   o2::soa::Index<>,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
                   collision::NumContrib,
-                  hf_coll_base::IsEventReject,
-                  bc::RunNumber,
+                  hf_coll_base::CentFT0A,
+                  hf_coll_base::CentFT0C,
+                  hf_coll_base::CentFT0M,
+                  hf_coll_base::CentFV0A,
+                  hf_coll_base::MultZeqNTracksPV,
+                  // hf_coll_base::IsEventReject,
+                  // bc::RunNumber,
                   soa::Marker<3>);
 
 using StoredHf3PCollBase = StoredHf3PCollBases::iterator;

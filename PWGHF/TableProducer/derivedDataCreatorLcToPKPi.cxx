@@ -61,6 +61,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   HfHelper hfHelper;
   SliceCache cache;
 
+  using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::MultZeqs>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
   using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc>>;
@@ -96,13 +97,22 @@ struct HfDerivedDataCreatorLcToPKPi {
   };
 
   template <typename T>
-  void fillTablesCollision(const T& collision, int isEventReject, int runNumber)
+  // void fillTablesCollision(const T& collision, int isEventReject, int runNumber)
+  void fillTablesCollision(const T& collision)
   {
     if (fillCollBase) {
       rowCollBase(
+        collision.posX(),
+        collision.posY(),
+        collision.posZ(),
         collision.numContrib(),
-        isEventReject,
-        runNumber);
+        collision.centFT0A(),
+        collision.centFT0C(),
+        collision.centFT0M(),
+        collision.centFV0A(),
+        collision.multZeqNTracksPV());
+        // isEventReject,
+        // runNumber);
     }
     if (fillCollId) {
       rowCollId(
@@ -221,8 +231,8 @@ struct HfDerivedDataCreatorLcToPKPi {
     }
   }
 
-  template <bool isMc, bool onlyBkg, bool onlySig, typename CandType>
-  void processCandidates(aod::Collisions const& collisions,
+  template <bool isMc, bool onlyBkg, bool onlySig, typename CollType, typename CandType>
+  void processCandidates(CollType const& collisions,
                          Partition<CandType>& candidates,
                          TracksWPid const&,
                          aod::BCs const&)
@@ -239,7 +249,8 @@ struct HfDerivedDataCreatorLcToPKPi {
       if (sizeTableCand == 0) {
         continue;
       }
-      fillTablesCollision(collision, 0, collision.bc().runNumber());
+      // fillTablesCollision(collision, 0, collision.bc().runNumber());
+      fillTablesCollision(collision);
 
       // Fill candidate properties
       reserveTable(rowCandidateBase, fillCandidateBase, sizeTableCand);
@@ -304,7 +315,7 @@ struct HfDerivedDataCreatorLcToPKPi {
     }
   }
 
-  void processDataWithDCAFitterN(aod::Collisions const& collisions,
+  void processDataWithDCAFitterN(CollisionsWCentMult const& collisions,
                                  SelectedCandidates const&,
                                  TracksWPid const& tracks,
                                  aod::BCs const& bcs)
@@ -313,7 +324,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   }
   PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processDataWithDCAFitterN, "Process data", true);
 
-  void processMcWithDCAFitterSig(aod::Collisions const& collisions,
+  void processMcWithDCAFitterSig(CollisionsWCentMult const& collisions,
                                  SelectedCandidatesMc const&,
                                  MatchedGenCandidatesMc const& mcParticles,
                                  TracksWPid const& tracks,
@@ -324,7 +335,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   }
   PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcWithDCAFitterSig, "Process MC only for signals", false);
 
-  void processMcWithDCAFitterBkg(aod::Collisions const& collisions,
+  void processMcWithDCAFitterBkg(CollisionsWCentMult const& collisions,
                                  SelectedCandidatesMc const&,
                                  MatchedGenCandidatesMc const& mcParticles,
                                  TracksWPid const& tracks,
@@ -335,7 +346,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   }
   PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcWithDCAFitterBkg, "Process MC only for background", false);
 
-  void processMcWithDCAFitterAll(aod::Collisions const& collisions,
+  void processMcWithDCAFitterAll(CollisionsWCentMult const& collisions,
                                  SelectedCandidatesMc const&,
                                  MatchedGenCandidatesMc const& mcParticles,
                                  TracksWPid const& tracks,
