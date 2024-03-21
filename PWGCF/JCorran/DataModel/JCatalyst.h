@@ -21,7 +21,7 @@ namespace jcollision
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float); //! Collision centrality or multiplicity
 } // namespace jcollision
 
-DECLARE_SOA_TABLE(JCollisions, "AOD", "JCOLLISION",
+DECLARE_SOA_TABLE(JCollisions, "AOD", "JCOLLISION", //! Reduced collision table
                   o2::soa::Index<>,
                   bc::RunNumber,
                   collision::PosZ,
@@ -37,7 +37,7 @@ DECLARE_SOA_COLUMN(Phi, phi, float);              //! Phi
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);           //! Phi
 } // namespace jtrack
 
-DECLARE_SOA_TABLE(JTracks, "AOD", "JTRACK",
+DECLARE_SOA_TABLE(JTracks, "AOD", "JTRACK", //! Reduced track table
                   o2::soa::Index<>,
                   jtrack::JCollisionId,
                   jtrack::Pt, jtrack::Eta, jtrack::Phi, jtrack::Sign);
