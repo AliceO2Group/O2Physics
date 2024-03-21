@@ -411,7 +411,7 @@ struct cascadeCorrelations {
       double invMassOmTrigg = trigger.mOmega();
       double invMassXiAssoc = assoc.mXi();
       double invMassOmAssoc = assoc.mOmega();
-      
+
       double weight = 1.; // Will be changed by Efficiency-correction
 
       // Fill the correct histograms based on same-sign or opposite-sign
@@ -490,12 +490,12 @@ struct cascadeCorrelations {
     } // correlations
   }   // process same event
 
-  void processMixedEvent(myCollisions const& collisions, myCascades const& Cascades, 
+  void processMixedEvent(myCollisions const& collisions, myCascades const& Cascades,
                          aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
   {
     // mixed events
 
-    for (auto& [col1, cascades1, col2, cascades2] : pair){
+    for (auto& [col1, cascades1, col2, cascades2] : pair) {
       if (!col1.sel8() || !col2.sel8())
         continue;
       if (TMath::Abs(col1.posZ()) > zVertexCut || TMath::Abs(col2.posZ()) > zVertexCut)
@@ -504,7 +504,7 @@ struct cascadeCorrelations {
       registry.fill(HIST("MixedEvents/hMEVz1"), col1.posZ());
       registry.fill(HIST("MixedEvents/hMEVz2"), col2.posZ());
 
-      for (auto& [casc1, casc2] : combinations(CombinationsFullIndexPolicy(cascades1, cascades2))){
+      for (auto& [casc1, casc2] : combinations(CombinationsFullIndexPolicy(cascades1, cascades2))) {
         // specify FullIndexPolicy since the cascades are from different collisions
         auto* triggerAddress = &casc1;
         auto* assocAddress = &casc2;
@@ -526,20 +526,20 @@ struct cascadeCorrelations {
 
         if (trigger.sign() * assoc.sign() < 0) { // opposite-sign
           registry.fill(HIST("MixedEvents/hMEDeltaPhiOS"), dphi);
-          registry.fill(HIST("MixedEvents/hMEXiXiOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight); 
-          registry.fill(HIST("MixedEvents/hMEXiOmOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight); 
-          registry.fill(HIST("MixedEvents/hMEOmXiOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight); 
-          registry.fill(HIST("MixedEvents/hMEOmOmOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight); 
+          registry.fill(HIST("MixedEvents/hMEXiXiOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight);
+          registry.fill(HIST("MixedEvents/hMEXiOmOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight);
+          registry.fill(HIST("MixedEvents/hMEOmXiOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight);
+          registry.fill(HIST("MixedEvents/hMEOmOmOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight);
         } else { // same sign
           registry.fill(HIST("MixedEvents/hMEDeltaPhiSS"), dphi);
-          registry.fill(HIST("MixedEvents/hMEXiXiSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight); 
-          registry.fill(HIST("MixedEvents/hMEXiOmSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight); 
-          registry.fill(HIST("MixedEvents/hMEOmXiSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight); 
-          registry.fill(HIST("MixedEvents/hMEOmOmSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight); 
+          registry.fill(HIST("MixedEvents/hMEXiXiSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight);
+          registry.fill(HIST("MixedEvents/hMEXiOmSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight);
+          registry.fill(HIST("MixedEvents/hMEOmXiSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight);
+          registry.fill(HIST("MixedEvents/hMEOmOmSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight);
         }
       } // correlations
-    } // collisions
-  } // process mixed events
+    }   // collisions
+  }     // process mixed events
 
   PROCESS_SWITCH(cascadeCorrelations, processSameEvent, "Process same events", true);
   PROCESS_SWITCH(cascadeCorrelations, processMixedEvent, "Process mixed events", true);
