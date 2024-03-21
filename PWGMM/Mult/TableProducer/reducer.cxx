@@ -20,7 +20,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-static constexpr float defparams[1][7] = {{0.142664,	1.40302,	2.61158,	1.20139,	5.24992,	2.16384,	0.871307}};
+static constexpr float defparams[1][7] = {{0.142664, 1.40302, 2.61158, 1.20139, 5.24992, 2.16384, 0.871307}};
 
 struct Reducer {
   using BCs = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
@@ -57,12 +57,12 @@ struct Reducer {
     // alpha = p[1]^2 / ( 1 + p[1]^2), relative weight, 0 < alpha < 1
 
     return params->get((int)0, 6) *
-           ( params->get((int)0, 1) * params->get((int)0, 1) / ( 1. + params->get((int)0, 1) * params->get((int)0, 1) ) *                 //alpha
-           // 	       v1 +
-            1. / ( x * TMath::Beta ( x, ( 1. + params->get((int)0, 3) * params->get((int)0, 3) ) ) ) * TMath::Power ( ( params->get((int)0, 2) * params->get((int)0, 2) ) / ( ( 1. + params->get((int)0, 3) * params->get((int)0, 3) ) + ( params->get((int)0, 2) * params->get((int)0, 2) ) ), x ) * TMath::Power ( ( 1. + params->get((int)0, 3) * params->get((int)0, 3) ) / ( ( 1. + params->get((int)0, 3) * params->get((int)0, 3) ) + ( params->get((int)0, 2) * params->get((int)0, 2) ) ) , ( 1. + params->get((int)0, 3) * params->get((int)0, 3) ) ) +
-            1. / ( 1 + params->get((int)0, 1) * params->get((int)0, 1) ) *                              // 1 - alpha
-           // 		   v2 );
-            1. / ( x * TMath::Beta ( x, ( 1. + params->get((int)0, 5) * params->get((int)0, 5) ) ) ) * TMath::Power ( ( params->get((int)0, 4) * params->get((int)0, 4) ) / ( ( 1. + params->get((int)0, 5) * params->get((int)0, 5) ) + ( params->get((int)0, 4) * params->get((int)0, 4) ) ), x ) * TMath::Power ( ( 1. + params->get((int)0, 5) * params->get((int)0, 5) ) / ( ( 1. + params->get((int)0, 5) * params->get((int)0, 5) ) + ( params->get((int)0, 4) * params->get((int)0, 4) ) ) , ( 1. + params->get((int)0, 5) * params->get((int)0, 5) ) ) );
+           (params->get((int)0, 1) * params->get((int)0, 1) / (1. + params->get((int)0, 1) * params->get((int)0, 1)) * // alpha
+              // 	       v1 +
+              1. / (x * TMath::Beta(x, (1. + params->get((int)0, 3) * params->get((int)0, 3)))) * TMath::Power((params->get((int)0, 2) * params->get((int)0, 2)) / ((1. + params->get((int)0, 3) * params->get((int)0, 3)) + (params->get((int)0, 2) * params->get((int)0, 2))), x) * TMath::Power((1. + params->get((int)0, 3) * params->get((int)0, 3)) / ((1. + params->get((int)0, 3) * params->get((int)0, 3)) + (params->get((int)0, 2) * params->get((int)0, 2))), (1. + params->get((int)0, 3) * params->get((int)0, 3))) +
+            1. / (1 + params->get((int)0, 1) * params->get((int)0, 1)) * // 1 - alpha
+                                                                         // 		   v2 );
+              1. / (x * TMath::Beta(x, (1. + params->get((int)0, 5) * params->get((int)0, 5)))) * TMath::Power((params->get((int)0, 4) * params->get((int)0, 4)) / ((1. + params->get((int)0, 5) * params->get((int)0, 5)) + (params->get((int)0, 4) * params->get((int)0, 4))), x) * TMath::Power((1. + params->get((int)0, 5) * params->get((int)0, 5)) / ((1. + params->get((int)0, 5) * params->get((int)0, 5)) + (params->get((int)0, 4) * params->get((int)0, 4))), (1. + params->get((int)0, 5) * params->get((int)0, 5))));
   }
 
   void init(InitContext const&)
@@ -118,7 +118,7 @@ struct Reducer {
     }
     checkSampling(mccollisions);
     // if all events are discarded, skip the BC
-    if (std::all_of(weights.begin(), weights.end(), [](auto const& x){ return x < 0; })) {
+    if (std::all_of(weights.begin(), weights.end(), [](auto const& x) { return x < 0; })) {
       return;
     }
     // keep the BC
@@ -158,25 +158,24 @@ struct Reducer {
       ++i;
     }
   }
-
 };
 
 struct ReducerTest {
   HistogramRegistry r{
     "Common",
     {
-     {"ReconstructedMultiplicity", " ; N_{trk}", {HistType::kTH1F, {{301, -0.5, 300.5}}}}, //
-     {"GeneratedMultiplicity", " ; N_{particles}", {HistType::kTH1F, {{301, -0.5, 300.5}}}} //
-    }//
+      {"ReconstructedMultiplicity", " ; N_{trk}", {HistType::kTH1F, {{301, -0.5, 300.5}}}},  //
+      {"GeneratedMultiplicity", " ; N_{particles}", {HistType::kTH1F, {{301, -0.5, 300.5}}}} //
+    }                                                                                        //
   };
 
   void process(aod::StoredRMCCollisions const& mccollisions, soa::Join<aod::StoredRCollisions, aod::StoredRMCColLabels> const& collisions)
   {
     for (auto& c : collisions) {
-        r.fill(HIST("ReconstructedMultiplicity"), c.multNTracksPVeta1(), c.rmccollision_as<aod::StoredRMCCollisions>().weight());
+      r.fill(HIST("ReconstructedMultiplicity"), c.multNTracksPVeta1(), c.rmccollision_as<aod::StoredRMCCollisions>().weight());
     }
     for (auto& c : mccollisions) {
-        r.fill(HIST("GeneratedMultiplicity"), c.multMCNParticlesEta10(), c.weight());
+      r.fill(HIST("GeneratedMultiplicity"), c.multMCNParticlesEta10(), c.weight());
     }
   }
 };
