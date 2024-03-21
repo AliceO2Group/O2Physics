@@ -77,8 +77,8 @@ DECLARE_SOA_TABLE(Hf3PCollBases, "AOD", "HF3PCOLLBASE", //! Table with basic col
                   hf_coll_base::CentFT0M,
                   hf_coll_base::CentFV0A,
                   hf_coll_base::MultZeqNTracksPV);
-                  // hf_coll_base::IsEventReject,
-                  // bc::RunNumber,
+// hf_coll_base::IsEventReject,
+// bc::RunNumber,
 
 using Hf3PCollBase = Hf3PCollBases::iterator;
 

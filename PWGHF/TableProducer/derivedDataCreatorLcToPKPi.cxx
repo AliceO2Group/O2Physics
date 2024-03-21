@@ -111,8 +111,8 @@ struct HfDerivedDataCreatorLcToPKPi {
         collision.centFT0M(),
         collision.centFV0A(),
         collision.multZeqNTracksPV());
-        // isEventReject,
-        // runNumber);
+      // isEventReject,
+      // runNumber);
     }
     if (fillCollId) {
       rowCollId(
@@ -316,19 +316,19 @@ struct HfDerivedDataCreatorLcToPKPi {
   }
 
   void processData(CollisionsWCentMult const& collisions,
-                                 SelectedCandidates const&,
-                                 TracksWPid const& tracks,
-                                 aod::BCs const& bcs)
+                   SelectedCandidates const&,
+                   TracksWPid const& tracks,
+                   aod::BCs const& bcs)
   {
     processCandidates<false, false, false>(collisions, candidatesAll, tracks, bcs);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processData, "Process data", true);
 
   void processMcSig(CollisionsWCentMult const& collisions,
-                                 SelectedCandidatesMc const&,
-                                 MatchedGenCandidatesMc const& mcParticles,
-                                 TracksWPid const& tracks,
-                                 aod::BCs const& bcs)
+                    SelectedCandidatesMc const&,
+                    MatchedGenCandidatesMc const& mcParticles,
+                    TracksWPid const& tracks,
+                    aod::BCs const& bcs)
   {
     processCandidates<true, false, true>(collisions, candidatesMcSig, tracks, bcs);
     processMcParticles(mcParticles);
@@ -336,10 +336,10 @@ struct HfDerivedDataCreatorLcToPKPi {
   PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcSig, "Process MC only for signals", false);
 
   void processMcBkg(CollisionsWCentMult const& collisions,
-                                 SelectedCandidatesMc const&,
-                                 MatchedGenCandidatesMc const& mcParticles,
-                                 TracksWPid const& tracks,
-                                 aod::BCs const& bcs)
+                    SelectedCandidatesMc const&,
+                    MatchedGenCandidatesMc const& mcParticles,
+                    TracksWPid const& tracks,
+                    aod::BCs const& bcs)
   {
     processCandidates<true, true, false>(collisions, candidatesMcBkg, tracks, bcs);
     processMcParticles(mcParticles);
@@ -347,10 +347,10 @@ struct HfDerivedDataCreatorLcToPKPi {
   PROCESS_SWITCH(HfDerivedDataCreatorLcToPKPi, processMcBkg, "Process MC only for background", false);
 
   void processMcAll(CollisionsWCentMult const& collisions,
-                                 SelectedCandidatesMc const&,
-                                 MatchedGenCandidatesMc const& mcParticles,
-                                 TracksWPid const& tracks,
-                                 aod::BCs const& bcs)
+                    SelectedCandidatesMc const&,
+                    MatchedGenCandidatesMc const& mcParticles,
+                    TracksWPid const& tracks,
+                    aod::BCs const& bcs)
   {
     processCandidates<true, false, false>(collisions, candidatesMcAll, tracks, bcs);
     processMcParticles(mcParticles);
