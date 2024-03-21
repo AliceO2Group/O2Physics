@@ -282,7 +282,7 @@ struct HfTaskFlowCharmHadrons {
   /// Compute the scalar product
   /// \param collision is the collision with the Q vector information and event plane
   /// \param candidates are the selected candidates
-  template <DecayChannel Channel, typename T1>
+  template <DecayChannel channel, typename T1>
   void runFlowAnalysis(CollsWithQvecs::iterator const& collision,
                        T1 const& candidates)
   {
@@ -299,7 +299,7 @@ struct HfTaskFlowCharmHadrons {
       std::vector<float> outputMl = {-999., -999.};
 
       if constexpr (std::is_same<T1, Partition<CandDsData>>::value || std::is_same<T1, Partition<CandDsDataWMl>>::value) {
-        switch (Channel) {
+        switch (channel) {
           case DecayChannel::DsToKKPi:
             massCand = hfHelper.invMassDsToKKPi(candidate);
             if constexpr (std::is_same<T1, Partition<CandDsDataWMl>>::value) {
@@ -325,7 +325,7 @@ struct HfTaskFlowCharmHadrons {
         }
       } else if constexpr (std::is_same<T1, CandD0Data>::value || std::is_same<T1, CandD0DataWMl>::value) {
         nProngs = 2;
-        switch (Channel) {
+        switch (channel) {
           case DecayChannel::D0ToPiK:
             massCand = hfHelper.invMassD0ToPiK(candidate);
             if constexpr (std::is_same<T1, CandD0DataWMl>::value) {
@@ -354,7 +354,7 @@ struct HfTaskFlowCharmHadrons {
         std::vector<float> tracksQx = {};
         std::vector<float> tracksQy = {};
 
-        getQvecDtracks<Channel>(candidate, tracksQx, tracksQy, ampl);
+        getQvecDtracks<channel>(candidate, tracksQx, tracksQy, ampl);
         for (auto iTrack{0u}; iTrack < tracksQx.size(); ++iTrack) {
           xQVec -= tracksQx[iTrack];
           yQVec -= tracksQy[iTrack];
