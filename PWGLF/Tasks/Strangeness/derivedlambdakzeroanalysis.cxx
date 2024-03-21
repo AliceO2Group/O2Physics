@@ -917,7 +917,6 @@ struct derivedlambdakzeroanalysis {
       if (gVec.generatedK0Short().size() != hK0Short->GetNcells())
         LOGF(fatal, "K0Short: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedK0Short().size(), hK0Short->GetNcells());
       for (uint32_t iv = 0; iv < hK0Short->GetNcells(); iv++) {
-        LOGF(info, "processing element %i with content: %i", iv, gVec.generatedK0Short()[iv]);
         hK0Short->SetBinContent(iv, hK0Short->GetBinContent(iv) + gVec.generatedK0Short()[iv]);
       }
     }

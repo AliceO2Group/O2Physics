@@ -59,7 +59,8 @@ using namespace o2::framework::expressions;
 using std::array;
 
 // Cores with references and TOF pid
-using CascFullCores = soa::Join<aod::CascCores, aod::CascTOFs, aod::CascCollRefs>;
+using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+using CascFullCores = soa::Join<aod::CascCores, aod::CascTOFs, aod::CascExtras, aod::CascCollRefs>;
 
 struct cascadepid {
   // TOF pid for strangeness (recalculated with topology)
@@ -81,6 +82,7 @@ struct cascadepid {
   Configurable<float> qaV0CosPA{"qaV0CosPA", 0.995, "CosPA for QA plots"};
   Configurable<float> qaCascCosPA{"qaCascCosPA", 0.995, "CosPA for QA plots"};
   Configurable<float> qaMassWindow{"qaMassWindow", 0.005, "Mass window around expected (in GeV/c2) for QA plots"};
+  Configurable<float> qaTPCNSigma{"qaTPCNSigma", 5, "TPC N-sigma to apply for qa plots"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -304,7 +306,7 @@ struct cascadepid {
     return 0.0299792458 * TMath::Sqrt(lA / (1 + lA));
   }
 
-  void process(soa::Join<aod::StraCollisions, aod::StraStamps> const& collisions, CascFullCores const& Cascades)
+  void process(soa::Join<aod::StraCollisions, aod::StraStamps> const& collisions, CascFullCores const& Cascades, dauTracks const&)
   {
     for (const auto& collision : collisions) {
       // Fire up CCDB - based on StraCollisions for derived analysis
@@ -405,28 +407,32 @@ struct cascadepid {
         );
 
         if (doQA) {
+          auto pTra = cascade.posTrackExtra_as<dauTracks>();
+          auto nTra = cascade.negTrackExtra_as<dauTracks>();
+          auto bTra = cascade.negTrackExtra_as<dauTracks>();
+
           // fill QA histograms for cross-checking
           histos.fill(HIST("hArcDebug"), cascade.pt(), lengthCascade - d3d); // for debugging purposes
 
           if (cascade.dcaV0daughters() < qaV0DCADau && cascade.dcacascdaughters() < qaCascDCADau && cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > qaV0CosPA && cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > qaCascCosPA) {
             if (cascade.sign() < 0) {
-              if (std::abs(cascade.mXi() - 1.32171) < qaMassWindow) {
+              if (std::abs(cascade.mXi() - 1.32171) < qaMassWindow && fabs(pTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(bTra.tpcNSigmaPi()) < qaTPCNSigma) {
                 histos.fill(HIST("h2dposDeltaTimeAsXiPr"), cascade.pt(), cascade.eta(), posDeltaTimeAsXiPr);
                 histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), negDeltaTimeAsXiPi);
                 histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), bachDeltaTimeAsXiPi);
               }
-              if (std::abs(cascade.mOmega() - 1.67245) < qaMassWindow) {
+              if (std::abs(cascade.mOmega() - 1.67245) < qaMassWindow && fabs(pTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(bTra.tpcNSigmaKa()) < qaTPCNSigma) {
                 histos.fill(HIST("h2dposDeltaTimeAsOmPr"), cascade.pt(), cascade.eta(), posDeltaTimeAsOmPr);
                 histos.fill(HIST("h2dnegDeltaTimeAsOmPi"), cascade.pt(), cascade.eta(), negDeltaTimeAsOmPi);
                 histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), cascade.eta(), bachDeltaTimeAsOmKa);
               }
             } else {
-              if (std::abs(cascade.mXi() - 1.32171) < qaMassWindow) {
+              if (std::abs(cascade.mXi() - 1.32171) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(bTra.tpcNSigmaPi()) < qaTPCNSigma) {
                 histos.fill(HIST("h2dposDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), posDeltaTimeAsXiPi);
                 histos.fill(HIST("h2dnegDeltaTimeAsXiPr"), cascade.pt(), cascade.eta(), negDeltaTimeAsXiPr);
                 histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), bachDeltaTimeAsXiPi);
               }
-              if (std::abs(cascade.mOmega() - 1.67245) < qaMassWindow) {
+              if (std::abs(cascade.mOmega() - 1.67245) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(bTra.tpcNSigmaKa()) < qaTPCNSigma) {
                 histos.fill(HIST("h2dposDeltaTimeAsOmPi"), cascade.pt(), cascade.eta(), posDeltaTimeAsOmPi);
                 histos.fill(HIST("h2dnegDeltaTimeAsOmPr"), cascade.pt(), cascade.eta(), negDeltaTimeAsOmPr);
                 histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), cascade.eta(), bachDeltaTimeAsOmKa);

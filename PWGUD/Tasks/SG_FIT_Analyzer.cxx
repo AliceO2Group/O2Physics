@@ -20,12 +20,14 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UDHelpers.h"
+#include "PWGUD/Core/SGSelector.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct SG_FIT_Analyzer { // UDTutorial01
+  SGSelector sgSelector;
 
   // configurables
   Configurable<bool> verbose{"Verbose", {}, "Additional print outs"};
@@ -34,8 +36,11 @@ struct SG_FIT_Analyzer { // UDTutorial01
   ConfigurableAxis sigTPCAxis{"sigTPCAxis", {100, -100.0, 100.0}, ""};
   ConfigurableAxis sigTOFAxis{"sigTOFAxis", {100, -100.0, 100.0}, ""};
   ConfigurableAxis multAxis{"multAxis", {51, -.5, 50.5}, ""};
-  ConfigurableAxis FitAxis{"FitAxis", {5000, -0.5, 9999.5}, ""};
-  ConfigurableAxis ZDCAxis{"FITAxis", {1000, -2.5, 199.5}, ""};
+  ConfigurableAxis FitAxis{"FitAxis", {2000, -0.5, 3999.5}, ""};
+  ConfigurableAxis ZDCAxis{"ZDCAxis", {1000, -2.5, 199.5}, ""};
+  Configurable<float> FV0_cut{"FV0", 100., "FV0A threshold"};
+  Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
+
   // initialize histogram registry
   HistogramRegistry registry{
     "registry",
@@ -66,6 +71,7 @@ struct SG_FIT_Analyzer { // UDTutorial01
     registry.add("collisions/multiplicityZ1PVCC", "Multiplicity of PV contributors C-side; PV contributors; Tracks", {HistType::kTH1F, {{axismult}}});
     registry.add("collisions/multiplicityZ1PVCAC", "Multiplicity of PV contributors AC-side; PV contributors; Tracks", {HistType::kTH1F, {{axismult}}});
     registry.add("collisions/GapSide", "Gap Side: A, C, A+C", {HistType::kTH1F, {{3, -0.5, 2.5}}});
+    registry.add("collisions/TrueGapSide", "Gap Side: A, C, A+C", {HistType::kTH1F, {{4, -1.5, 2.5}}});
 
     // track histograms
     registry.add("tracks/QCAll", "Track QC of all tracks; Hit in detector; Tracks", {HistType::kTH1F, {{5, -0.5, 4.5}}});
@@ -250,12 +256,12 @@ struct SG_FIT_Analyzer { // UDTutorial01
     registry.add("FIT/MFT0C", "Track number vs Amp FT0C", {HistType::kTH2F, {{axismult}, {axisfit}}});
     registry.add("FIT/MFDDA", "Track number vs Amp FDDA", {HistType::kTH2F, {{axismult}, {axisfit}}});
     registry.add("FIT/MFDDC", "Track number vs Amp FDDC", {HistType::kTH2F, {{axismult}, {axisfit}}});
-    registry.add("ZDC/MAZNA", "Track number vs Amp FV0A", {HistType::kTH2F, {{axismult}, {axisfit}}});
-    registry.add("ZDC/MAZNC", "Track number vs Amp FT0A", {HistType::kTH2F, {{axismult}, {axisfit}}});
-    registry.add("ZDC/MCZNC", "Track number vs Amp FT0C", {HistType::kTH2F, {{axismult}, {axisfit}}});
-    registry.add("ZDC/MCZNA", "Track number vs Amp FDDA", {HistType::kTH2F, {{axismult}, {axisfit}}});
-    registry.add("ZDC/MACZNA", "Track number vs Amp FDDC", {HistType::kTH2F, {{axismult}, {axisfit}}});
-    registry.add("ZDC/MACZNC", "Track number vs Amp FDDC", {HistType::kTH2F, {{axismult}, {axisfit}}});
+    registry.add("ZDC/MAZNA", "Track number vs Amp FV0A", {HistType::kTH2F, {{axismult}, {axiszdc}}});
+    registry.add("ZDC/MAZNC", "Track number vs Amp FT0A", {HistType::kTH2F, {{axismult}, {axiszdc}}});
+    registry.add("ZDC/MCZNC", "Track number vs Amp FT0C", {HistType::kTH2F, {{axismult}, {axiszdc}}});
+    registry.add("ZDC/MCZNA", "Track number vs Amp FDDA", {HistType::kTH2F, {{axismult}, {axiszdc}}});
+    registry.add("ZDC/MACZNA", "Track number vs Amp FDDC", {HistType::kTH2F, {{axismult}, {axiszdc}}});
+    registry.add("ZDC/MACZNC", "Track number vs Amp FDDC", {HistType::kTH2F, {{axismult}, {axiszdc}}});
   }
 
   // define data types
@@ -273,6 +279,8 @@ struct SG_FIT_Analyzer { // UDTutorial01
 
     // fill collision histograms
     registry.get<TH1>(HIST("collisions/GapSide"))->Fill(dgcand.gapSide(), 1.);
+    int truegapSide = sgSelector.trueGap(dgcand, FV0_cut, ZDC_cut);
+    registry.get<TH1>(HIST("collisions/TrueGapSide"))->Fill(truegapSide, 1.);
     // select PV contributors
     Partition<UDTracksFull> PVContributors = aod::udtrack::isPVContributor == true;
     PVContributors.bindTable(dgtracks);
@@ -303,43 +311,43 @@ struct SG_FIT_Analyzer { // UDTutorial01
     registry.get<TH1>(HIST("FIT/TFV0A"))->Fill(dgcand.timeFV0A(), 1.);
     registry.get<TH1>(HIST("FIT/TFDDA"))->Fill(dgcand.timeFDDA(), 1.);
     registry.get<TH1>(HIST("FIT/TFDDC"))->Fill(dgcand.timeFDDC(), 1.);
-    //    if (dgcand.gapSide() == 0) {
+    //    if (truegapSide == 0) {
     registry.get<TH2>(HIST("FIT/TAFT0A"))->Fill(dgcand.timeFT0A(), dgcand.totalFT0AmplitudeA());
-    if (dgcand.gapSide() == 0)
+    if (truegapSide == 0)
       registry.get<TH2>(HIST("FIT/TTFT0"))->Fill(dgcand.timeFT0A(), dgcand.timeFT0C());
-    if (dgcand.gapSide() == 1)
+    if (truegapSide == 1)
       registry.get<TH2>(HIST("FIT/TTFT01"))->Fill(dgcand.timeFT0A(), dgcand.timeFT0C());
-    if (dgcand.gapSide() == 2)
+    if (truegapSide == 2)
       registry.get<TH2>(HIST("FIT/TTFT02"))->Fill(dgcand.timeFT0A(), dgcand.timeFT0C());
-    if (dgcand.gapSide() == 0)
+    if (truegapSide == 0)
       registry.get<TH2>(HIST("FIT/AFT0AC"))->Fill(dgcand.totalFT0AmplitudeA(), dgcand.totalFT0AmplitudeC());
-    if (dgcand.gapSide() == 1)
+    if (truegapSide == 1)
       registry.get<TH2>(HIST("FIT/CFT0AC"))->Fill(dgcand.totalFT0AmplitudeA(), dgcand.totalFT0AmplitudeC());
-    if (dgcand.gapSide() == 2)
+    if (truegapSide == 2)
       registry.get<TH2>(HIST("FIT/ACFT0AC"))->Fill(dgcand.totalFT0AmplitudeA(), dgcand.totalFT0AmplitudeC());
-    if (dgcand.gapSide() == 0)
+    if (truegapSide == 0)
       registry.get<TH2>(HIST("FIT/AFTV0A"))->Fill(dgcand.totalFT0AmplitudeA(), dgcand.totalFV0AmplitudeA());
-    if (dgcand.gapSide() == 1)
+    if (truegapSide == 1)
       registry.get<TH2>(HIST("FIT/CFTV0A"))->Fill(dgcand.totalFT0AmplitudeA(), dgcand.totalFV0AmplitudeA());
-    if (dgcand.gapSide() == 2)
+    if (truegapSide == 2)
       registry.get<TH2>(HIST("FIT/ACFTV0A"))->Fill(dgcand.totalFT0AmplitudeA(), dgcand.totalFV0AmplitudeA());
-    if (dgcand.gapSide() == 0)
+    if (truegapSide == 0)
       registry.get<TH2>(HIST("FIT/AFTV0C"))->Fill(dgcand.totalFV0AmplitudeA(), dgcand.totalFT0AmplitudeC());
-    if (dgcand.gapSide() == 1)
+    if (truegapSide == 1)
       registry.get<TH2>(HIST("FIT/CFTV0C"))->Fill(dgcand.totalFV0AmplitudeA(), dgcand.totalFT0AmplitudeC());
-    if (dgcand.gapSide() == 2)
+    if (truegapSide == 2)
       registry.get<TH2>(HIST("FIT/ACFTV0C"))->Fill(dgcand.totalFV0AmplitudeA(), dgcand.totalFT0AmplitudeC());
-    if (dgcand.gapSide() == 0)
+    if (truegapSide == 0)
       registry.get<TH2>(HIST("FIT/AFDV0A"))->Fill(dgcand.totalFDDAmplitudeA(), dgcand.totalFV0AmplitudeA());
-    if (dgcand.gapSide() == 1)
+    if (truegapSide == 1)
       registry.get<TH2>(HIST("FIT/CFDV0A"))->Fill(dgcand.totalFDDAmplitudeA(), dgcand.totalFV0AmplitudeA());
-    if (dgcand.gapSide() == 2)
+    if (truegapSide == 2)
       registry.get<TH2>(HIST("FIT/ACFDV0A"))->Fill(dgcand.totalFDDAmplitudeA(), dgcand.totalFV0AmplitudeA());
-    if (dgcand.gapSide() == 0)
+    if (truegapSide == 0)
       registry.get<TH2>(HIST("FIT/AFDT0A"))->Fill(dgcand.totalFDDAmplitudeA(), dgcand.totalFT0AmplitudeA());
-    if (dgcand.gapSide() == 1)
+    if (truegapSide == 1)
       registry.get<TH2>(HIST("FIT/CFDT0A"))->Fill(dgcand.totalFDDAmplitudeA(), dgcand.totalFT0AmplitudeA());
-    if (dgcand.gapSide() == 2)
+    if (truegapSide == 2)
       registry.get<TH2>(HIST("FIT/ACFDT0A"))->Fill(dgcand.totalFDDAmplitudeA(), dgcand.totalFT0AmplitudeA());
     float totalA = dgcand.totalFDDAmplitudeA() + dgcand.totalFT0AmplitudeA() + dgcand.totalFV0AmplitudeA();
     float totalC = dgcand.totalFDDAmplitudeC() + dgcand.totalFT0AmplitudeC();
@@ -373,7 +381,7 @@ struct SG_FIT_Analyzer { // UDTutorial01
     registry.get<TH2>(HIST("FIT/TAFDDA"))->Fill(dgcand.timeFDDA(), dgcand.totalFDDAmplitudeA());
     registry.get<TH2>(HIST("FIT/TAFDDC"))->Fill(dgcand.timeFDDC(), dgcand.totalFDDAmplitudeC());
     //    }
-    if (dgcand.gapSide() == 1) {
+    if (truegapSide == 1) {
       registry.get<TH2>(HIST("FIT/TCFT0A"))->Fill(dgcand.timeFT0A(), dgcand.totalFT0AmplitudeA());
       registry.get<TH2>(HIST("FIT/TCFT0C"))->Fill(dgcand.timeFT0C(), dgcand.totalFT0AmplitudeC());
       registry.get<TH2>(HIST("FIT/TCFV0A"))->Fill(dgcand.timeFV0A(), dgcand.totalFV0AmplitudeA());
@@ -382,7 +390,7 @@ struct SG_FIT_Analyzer { // UDTutorial01
       registry.get<TH1>(HIST("ZDC/tCZNA"))->Fill(dgcand.timeZNA(), 1.);
       registry.get<TH1>(HIST("ZDC/tCZNC"))->Fill(dgcand.timeZNC(), 1.);
     }
-    if (dgcand.gapSide() == 0) {
+    if (truegapSide == 0) {
       registry.get<TH1>(HIST("ZDC/tAZNA"))->Fill(dgcand.timeZNA(), 1.);
       registry.get<TH1>(HIST("ZDC/tAZNC"))->Fill(dgcand.timeZNC(), 1.);
       registry.get<TH1>(HIST("ZDC/AZNA"))->Fill(zna, 1.);
@@ -444,7 +452,7 @@ struct SG_FIT_Analyzer { // UDTutorial01
       registry.get<TH2>(HIST("ZDC/MAZNA"))->Fill(PVContributors.size(), zna);
       registry.get<TH2>(HIST("ZDC/MAZNC"))->Fill(PVContributors.size(), znc);
     }
-    if (dgcand.gapSide() == 1) {
+    if (truegapSide == 1) {
       registry.get<TH1>(HIST("ZDC/CZNA"))->Fill(zna, 1.);
       registry.get<TH1>(HIST("ZDC/CZNC"))->Fill(znc, 1.);
       registry.get<TH2>(HIST("ZDC/CZNAC"))->Fill(zna, znc);
@@ -502,7 +510,7 @@ struct SG_FIT_Analyzer { // UDTutorial01
       registry.get<TH1>(HIST("FIT/CFDDA"))->Fill(dgcand.totalFDDAmplitudeA(), 1.);
       registry.get<TH1>(HIST("FIT/CFDDC"))->Fill(dgcand.totalFDDAmplitudeC(), 1.);
     }
-    if (dgcand.gapSide() == 2) {
+    if (truegapSide == 2) {
       registry.get<TH1>(HIST("ZDC/tACZNA"))->Fill(dgcand.timeZNA(), 1.);
       registry.get<TH1>(HIST("ZDC/tACZNC"))->Fill(dgcand.timeZNC(), 1.);
       registry.get<TH1>(HIST("ZDC/ACZNA"))->Fill(zna, 1.);
@@ -540,11 +548,11 @@ struct SG_FIT_Analyzer { // UDTutorial01
         tof = true;
       auto vtrk = TVector3(track.px(), track.py(), track.pz());
       registry.get<TH1>(HIST("tracks/ptAll"))->Fill(track.pt(), 1.);
-      if (dgcand.gapSide() == 0)
+      if (truegapSide == 0)
         registry.get<TH1>(HIST("tracks/etaA"))->Fill(vtrk.Eta(), 1.);
-      if (dgcand.gapSide() == 1)
+      if (truegapSide == 1)
         registry.get<TH1>(HIST("tracks/etaC"))->Fill(vtrk.Eta(), 1.);
-      if (dgcand.gapSide() == 2)
+      if (truegapSide == 2)
         registry.get<TH1>(HIST("tracks/etaAC"))->Fill(vtrk.Eta(), 1.);
 
       auto signalTPC = track.tpcSignal() * track.sign();
@@ -552,11 +560,11 @@ struct SG_FIT_Analyzer { // UDTutorial01
       auto signalTOF = track.tofSignal() * track.sign() / 1.E3;
       registry.get<TH2>(HIST("tracks/TOFSignalvspAll"))->Fill(vtrk.Mag(), signalTOF, 1.);
       if (track.isPVContributor()) {
-        if (dgcand.gapSide() == 0)
+        if (truegapSide == 0)
           registry.get<TH2>(HIST("tracks/etavsptA"))->Fill(vtrk.Eta(), track.pt(), 1.);
-        if (dgcand.gapSide() == 1)
+        if (truegapSide == 1)
           registry.get<TH2>(HIST("tracks/etavsptC"))->Fill(vtrk.Eta(), track.pt(), 1.);
-        if (dgcand.gapSide() == 2)
+        if (truegapSide == 2)
           registry.get<TH2>(HIST("tracks/etavsptAC"))->Fill(vtrk.Eta(), track.pt(), 1.);
         registry.get<TH1>(HIST("tracks/QCPVC"))->Fill(0., 1.);
         registry.get<TH1>(HIST("tracks/QCPVC"))->Fill(1., track.hasITS() * 1.);
@@ -565,7 +573,7 @@ struct SG_FIT_Analyzer { // UDTutorial01
         registry.get<TH1>(HIST("tracks/QCPVC"))->Fill(4., track.hasTOF() * 1.);
         registry.get<TH1>(HIST("tracks/ptPVC"))->Fill(track.pt(), 1.);
         //        registry.get<TH2>(HIST("tracks/etavsptPVC"))->Fill(vtrk.Eta(), track.pt(), 1.);
-        if (dgcand.gapSide() == 0) {
+        if (truegapSide == 0) {
           registry.get<TH1>(HIST("tracks/etaApv"))->Fill(vtrk.Eta(), 1.);
           if (!an)
             registry.get<TH1>(HIST("tracks/eta2Apv"))->Fill(vtrk.Eta(), 1.);
@@ -575,7 +583,7 @@ struct SG_FIT_Analyzer { // UDTutorial01
             z1pva++;
           pva++;
         }
-        if (dgcand.gapSide() == 1) {
+        if (truegapSide == 1) {
           registry.get<TH1>(HIST("tracks/etaCpv"))->Fill(vtrk.Eta(), 1.);
           if (!cn)
             registry.get<TH1>(HIST("tracks/eta2Cpv"))->Fill(vtrk.Eta(), 1.);
@@ -585,7 +593,7 @@ struct SG_FIT_Analyzer { // UDTutorial01
             z1pvc++;
           pvc++;
         }
-        if (dgcand.gapSide() == 2) {
+        if (truegapSide == 2) {
           registry.get<TH1>(HIST("tracks/etaACpv"))->Fill(vtrk.Eta(), 1.);
           if (!an && !cn)
             registry.get<TH1>(HIST("tracks/eta2ACpv"))->Fill(vtrk.Eta(), 1.);
@@ -618,9 +626,9 @@ struct SG_FIT_Analyzer { // UDTutorial01
     if (pvac)
       registry.get<TH1>(HIST("collisions/multiplicityZ1PVCAC"))->Fill(z1pvac, 1.);
     if (tof) {
-      if (dgcand.gapSide() == 0)
+      if (truegapSide == 0)
         registry.get<TH1>(HIST("FIT/tAFT0C"))->Fill(dgcand.totalFT0AmplitudeC(), 1.);
-      if (dgcand.gapSide() == 1)
+      if (truegapSide == 1)
         registry.get<TH1>(HIST("FIT/tCFT0A"))->Fill(dgcand.totalFT0AmplitudeA(), 1.);
       registry.get<TH1>(HIST("collisions/multiplicityTPVC"))->Fill(PVContributors.size(), 1.);
       if (pva)
