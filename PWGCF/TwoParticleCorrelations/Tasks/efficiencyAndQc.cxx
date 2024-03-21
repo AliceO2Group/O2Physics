@@ -609,7 +609,7 @@ struct DptDptEfficiencyAndQc {
   std::vector<HistogramRegistry*> registrybank{&registry_one, &registry_two, &registry_three, &registry_four, &registry_five,
                                                &registry_six, &registry_seven, &registry_eight, &registry_nine, &registry_ten};
   std::vector<HistogramRegistry*> pidregistrybank{&registry_pidone, &registry_pidtwo, &registry_pidthree, &registry_pidfour, &registry_pidfive,
-                                               &registry_pidsix, &registry_pidseven, &registry_pideight, &registry_pidnine, &registry_pidten};
+                                                  &registry_pidsix, &registry_pidseven, &registry_pideight, &registry_pidnine, &registry_pidten};
 
   Configurable<bool> inCentralityClasses{"usecentrality", false, "Perform the task using centrality/multiplicity classes. Default value: false"};
 
