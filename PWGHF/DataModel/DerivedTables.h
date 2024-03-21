@@ -108,22 +108,6 @@ DECLARE_SOA_COLUMN(Pt, pt, float);                                //! transverse
 
 namespace functions
 {
-/// Rapidity as a function of pT, eta, mass
-/// \todo Move to RecoDecay
-template <typename TPt, typename TEta, typename TM>
-auto y(TPt pt, TEta eta, TM m)
-{
-  return std::log((RecoDecay::sqrtSumOfSquares(m, pt * std::cosh(eta)) + pt * std::sinh(eta)) / RecoDecay::sqrtSumOfSquares(m, pt));
-}
-
-/// Energy as a function of pT, eta, mass
-/// \todo Move to RecoDecay
-template <typename TPt, typename TEta, typename TM>
-auto e(TPt pt, TEta eta, TM m)
-{
-  return RecoDecay::sqrtSumOfSquares(m, p(pt, eta));
-}
-
 /// px as a function of pT, phi
 /// \todo Move to RecoDecay
 template <typename TPt, typename TPhi>
@@ -155,6 +139,22 @@ auto p(TPt pt, TEta eta)
 {
   return pt * std::cosh(eta);
 }
+
+/// Rapidity as a function of pT, eta, mass
+/// \todo Move to RecoDecay
+template <typename TPt, typename TEta, typename TM>
+auto y(TPt pt, TEta eta, TM m)
+{
+  return std::log((RecoDecay::sqrtSumOfSquares(m, pt * std::cosh(eta)) + pt * std::sinh(eta)) / RecoDecay::sqrtSumOfSquares(m, pt));
+}
+
+/// Energy as a function of pT, eta, mass
+/// \todo Move to RecoDecay
+template <typename TPt, typename TEta, typename TM>
+auto e(TPt pt, TEta eta, TM m)
+{
+  return RecoDecay::sqrtSumOfSquares(m, p(pt, eta));
+}
 } // namespace functions
 
 namespace d0
@@ -174,7 +174,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! py
 DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! px
                            [](float pt, float eta) -> float { return functions::pz(pt, eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, //! momentum
-                           [](float pt, float eta) -> float { return pt * std::cosh(eta); });
+                           [](float pt, float eta) -> float { return functions::p(pt, eta); });
 } // namespace hf_cand_base
 
 // Candidate properties used for selection
