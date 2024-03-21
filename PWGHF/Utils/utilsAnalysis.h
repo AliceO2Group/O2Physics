@@ -36,6 +36,27 @@ int findBin(T1 const& binsPt, T2 value)
   }
   return std::distance(binsPt->begin(), std::upper_bound(binsPt->begin(), binsPt->end(), value)) - 1;
 }
+
+/// Single-track cut on DCAxy
+/// \param trackPt is the prong pT
+/// \param dcaXY is the prong dcaXY
+/// \return true if track passes all cuts
+template <typename T1, typename T2>
+bool isSelectedTrackDcaXY(T1 const& binsPtTrack, T2 const& cutsSingleTrack, const float& trackPt, const float& dcaXY)
+{
+  auto pTBinTrack = findBin(binsPtTrack, trackPt);
+  if (pTBinTrack == -1) {
+    return false;
+  }
+  if (std::abs(dcaXY) < cutsSingleTrack->get(pTBinTrack, "min_dcaxytoprimary")) {
+    return false; // minimum DCAxy
+  }
+  if (std::abs(dcaXY) > cutsSingleTrack->get(pTBinTrack, "max_dcaxytoprimary")) {
+    return false; // maximum DCAxy
+  }
+  return true;
+}
+
 } // namespace o2::analysis
 
 #endif // PWGHF_UTILS_UTILSANALYSIS_H_
