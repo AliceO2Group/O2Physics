@@ -17,6 +17,7 @@
 #define PWGUD_CORE_UPCJPSICENTRALBARRELCORRHELPER_H_
 
 #include <algorithm>
+#include "CommonConstants/MathConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -45,30 +46,6 @@ int testPIDhypo(T trackPID)
   }
 }
 
-float mom(float px, float py, float pz)
-{
-  return std::sqrt(px * px + py * py + pz * pz);
-}
-
-float phi(float px, float py)
-{
-  if (px != 0) {
-    return std::atan2(py, px);
-  } else {
-    return -999;
-  }
-}
-
-float eta(float px, float py, float pz)
-{
-  float mom = std::sqrt(px * px + py * py + pz * pz);
-  if (mom != 0) {
-    return std::atanh(pz / mom);
-  } else {
-    return -999;
-  }
-}
-
 float* correlation(TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
 {
   TLorentzVector pa(1., 0., 0, 1);  // projectile
@@ -79,7 +56,7 @@ float* correlation(TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
   // Accoplanarity angle
   Float_t deltaPhi;
   deltaPhi = lv1->Phi() - lv2->Phi();
-  float accoplCut = 1. - TMath::Abs(deltaPhi) / TMath::Pi();
+  float accoplCut = 1. - abs(deltaPhi) / o2::constants::math::PI;
   // z
   TLorentzVector z;
   Float_t part1, part2;
@@ -193,7 +170,8 @@ float* correlation(TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
 
   float phi = atan2(SinThetaSinPhiCS, SinThetaCosPhiCS);
   // if (phi>=0) phi = phi;
-  // if (phi<0) phi = phi + 2*TMath::Pi();
+  if (phi < 0)
+    phi = phi + o2::constants::math::TwoPI;
 
   q[0] = accoplCut;
   q[1] = phi;
