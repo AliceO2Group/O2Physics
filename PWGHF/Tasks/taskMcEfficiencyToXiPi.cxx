@@ -120,7 +120,7 @@ struct HfTaskMcEfficiencyToXiPi {
     for (const auto& candidate : candidates) {
 
       // only take into account matched decays
-      if (candidate.flagMcMatchRec() != decayFlag) {
+      if (std::abs(candidate.flagMcMatchRec()) != decayFlag) {
         continue;
       }
 
@@ -206,7 +206,7 @@ struct HfTaskMcEfficiencyToXiPi {
       if (std::abs(mcParticle.pdgCode()) != pdgCode) {
         continue;
       }
-      /// check if the charm baryon devays to the desired channel
+      /// check if the charm baryon decays to the desired channel
       if (std::abs(mcParticle.flagMcMatchGen()) != decayFlagGen) {
         continue;
       }
@@ -307,8 +307,7 @@ struct HfTaskMcEfficiencyToXiPi {
           LOGP(debug, "MC pion<--charm baryon: pt={} eta={}", pion.pt(), pion.eta());
         }
 
-        // final state daughters info
-        // pion <- charm baryon
+        // pion <- charm baryon info
         hTrackablePtEta->Fill(kTrackableAll, pion.pt(), pion.eta());
         if (hasITS[pion.globalIndex()]) {
           hTrackablePtEta->Fill(kTrackableITS, pion.pt(), pion.eta());
@@ -318,39 +317,6 @@ struct HfTaskMcEfficiencyToXiPi {
         }
         if (hasITS[pion.globalIndex()] && hasTPC[pion.globalIndex()]) {
           hTrackablePtEta->Fill(kTrackableITSTPC, pion.pt(), pion.eta());
-        }
-        // pion <- cascade
-        hTrackablePtEta->Fill(kTrackableAll, pionFromCascade.pt(), pionFromCascade.eta());
-        if (hasITS[pionFromCascade.globalIndex()]) {
-          hTrackablePtEta->Fill(kTrackableITS, pionFromCascade.pt(), pionFromCascade.eta());
-        }
-        if (hasTPC[pionFromCascade.globalIndex()]) {
-          hTrackablePtEta->Fill(kTrackableTPC, pionFromCascade.pt(), pionFromCascade.eta());
-        }
-        if (hasITS[pionFromCascade.globalIndex()] && hasTPC[pionFromCascade.globalIndex()]) {
-          hTrackablePtEta->Fill(kTrackableITSTPC, pionFromCascade.pt(), pionFromCascade.eta());
-        }
-        // pion <- lambda
-        hTrackablePtEta->Fill(kTrackableAll, pionFromLambda.pt(), pionFromLambda.eta());
-        if (hasITS[pionFromLambda.globalIndex()]) {
-          hTrackablePtEta->Fill(kTrackableITS, pionFromLambda.pt(), pionFromLambda.eta());
-        }
-        if (hasTPC[pionFromLambda.globalIndex()]) {
-          hTrackablePtEta->Fill(kTrackableTPC, pionFromLambda.pt(), pionFromLambda.eta());
-        }
-        if (hasITS[pionFromLambda.globalIndex()] && hasTPC[pionFromLambda.globalIndex()]) {
-          hTrackablePtEta->Fill(kTrackableITSTPC, pionFromLambda.pt(), pionFromLambda.eta());
-        }
-        // proton <- lambda
-        hTrackablePtEta->Fill(kTrackableAll, proton.pt(), proton.eta());
-        if (hasITS[proton.globalIndex()]) {
-          hTrackablePtEta->Fill(kTrackableITS, proton.pt(), proton.eta());
-        }
-        if (hasTPC[proton.globalIndex()]) {
-          hTrackablePtEta->Fill(kTrackableTPC, proton.pt(), proton.eta());
-        }
-        if (hasITS[proton.globalIndex()] && hasTPC[proton.globalIndex()]) {
-          hTrackablePtEta->Fill(kTrackableITSTPC, proton.pt(), proton.eta());
         }
       } // close tracked if
 
