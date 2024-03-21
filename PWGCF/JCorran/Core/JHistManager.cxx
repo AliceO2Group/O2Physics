@@ -589,7 +589,7 @@ TString JTH1::GetString()
 {
   TString s = Form("%s\t%s\t\"%s\"\t%s\t",
                    ClassName(), fName.Data(), fTitle.Data(), fOption.Data());
-  for (UInt_t i = 0; i < Dimension(); i++) {
+  for (int i = 0; i < Dimension(); i++) {
     if (fBins.size() > i && fBins[i] != NULL) {
       s += " " + fBins[i]->GetName();
     } else {
@@ -651,7 +651,7 @@ TString JTH1::BuildName()
 TString JTH1::BuildTitle()
 {
   TString title = fTitle;
-  for (UInt_t i = 0; i < Dimension(); i++)
+  for (int i = 0; i < Dimension(); i++)
     title += ((static_cast<int>(fBins.size()) > i && fBins[i] != NULL) ? " " + fBins[i]->BuildTitle(Index(i)) : "") + Form("%02d", Index(i));
   return title;
 }
