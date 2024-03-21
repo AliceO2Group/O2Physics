@@ -58,10 +58,10 @@ struct Reducer {
 
     return params->get((int)0, 6) *
            (params->get((int)0, 1) * params->get((int)0, 1) / (1. + params->get((int)0, 1) * params->get((int)0, 1)) * // alpha
-            // v1 +
+                                                                                                                       // v1 +
               1. / (x * TMath::Beta(x, (1. + params->get((int)0, 3) * params->get((int)0, 3)))) * TMath::Power((params->get((int)0, 2) * params->get((int)0, 2)) / ((1. + params->get((int)0, 3) * params->get((int)0, 3)) + (params->get((int)0, 2) * params->get((int)0, 2))), x) * TMath::Power((1. + params->get((int)0, 3) * params->get((int)0, 3)) / ((1. + params->get((int)0, 3) * params->get((int)0, 3)) + (params->get((int)0, 2) * params->get((int)0, 2))), (1. + params->get((int)0, 3) * params->get((int)0, 3))) +
             1. / (1 + params->get((int)0, 1) * params->get((int)0, 1)) * // 1 - alpha
-            // v2 );
+                                                                         // v2 );
               1. / (x * TMath::Beta(x, (1. + params->get((int)0, 5) * params->get((int)0, 5)))) * TMath::Power((params->get((int)0, 4) * params->get((int)0, 4)) / ((1. + params->get((int)0, 5) * params->get((int)0, 5)) + (params->get((int)0, 4) * params->get((int)0, 4))), x) * TMath::Power((1. + params->get((int)0, 5) * params->get((int)0, 5)) / ((1. + params->get((int)0, 5) * params->get((int)0, 5)) + (params->get((int)0, 4) * params->get((int)0, 4))), (1. + params->get((int)0, 5) * params->get((int)0, 5))));
   }
 
