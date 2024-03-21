@@ -40,8 +40,6 @@ template <typename JetTagTableData, typename JetTagTableMCD, typename JetTagTabl
 struct JetTaggerHFQA {
 
   // Cut configuration
-  Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
-  Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum eta acceptance for tracks"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum eta acceptance for tracks"};
@@ -49,20 +47,31 @@ struct JetTaggerHFQA {
   Configurable<float> trackPtMax{"trackPtMax", 100.0, "maximum pT acceptance for tracks"};
   Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
+  Configurable<int> numFlavourSpecies{"numFlavourSpecies", 6, "number of jet flavour species"};
+  Configurable<int> numOrder{"numOrder", 6, "number of ordering"};
 
   // Binning
   ConfigurableAxis binJetFlavour{"binJetFlavour", {6, -0.5, 5.5}, ""};
-  ConfigurableAxis binJetPt{"binJetPt", {201, -0.5f, 200.5f}, ""};
+  ConfigurableAxis binJetPt{"binJetPt", {200, 0., 200.}, ""};
   ConfigurableAxis binEta{"binEta", {100, -1.f, 1.f}, ""};
   ConfigurableAxis binPhi{"binPhi", {18 * 8, 0.f, 2. * TMath::Pi()}, ""};
-  ConfigurableAxis binNtracks{"binNtracks", {100, -0.5, 99.5}, ""};
+  ConfigurableAxis binNtracks{"binNtracks", {100, 0., 100.}, ""};
   ConfigurableAxis binTrackPt{"binTrackPt", {200, 0.f, 100.f}, ""};
   ConfigurableAxis binImpactParameterXY{"binImpactParameterXY", {801, -400.5f, 400.5f}, ""};
-  ConfigurableAxis binImpactParameterXYSignificance{"binImpactParameterXYSignificance", {801, -40.5f, 40.5f}, ""}; // test
+  ConfigurableAxis binImpactParameterXYSignificance{"binImpactParameterXYSignificance", {801, -40.5f, 40.5f}, ""};
   ConfigurableAxis binImpactParameterZ{"binImpactParameterZ", {801, -400.5f, 400.5f}, ""};
-  ConfigurableAxis binImpactParameterZSignificance{"binImpactParameterZSignificance", {801, -40.5f, 40.5f}, ""}; // test
+  ConfigurableAxis binImpactParameterZSignificance{"binImpactParameterZSignificance", {801, -40.5f, 40.5f}, ""};
   ConfigurableAxis binImpactParameterXYZ{"binImpactParameterXYZ", {2001, -1000.5f, 1000.5f}, ""};
-  ConfigurableAxis binImpactParameterXYZSignificance{"binImpactParameterXYZSignificance", {2001, -1000.5f, 1000.5f}, ""};
+  ConfigurableAxis binImpactParameterXYZSignificance{"binImpactParameterXYZSignificance", {2001, -100.5f, 100.5f}, ""};
+  ConfigurableAxis binNumOrder{"binNumOrder", {6, 0.5, 6.5}, ""};
+  ConfigurableAxis binJetProbability{"binJetProbability", {100, 0.f, 1.f}, ""};
+  ConfigurableAxis binJetProbabilityLog{"binJetProbabilityLog", {100, 0.f, 10.f}, ""};
+  ConfigurableAxis binLxy{"binLxy", {100, 0, 1.f}, ""};
+  ConfigurableAxis binSxy{"binSxy", {100, 0, 100.f}, ""};
+  ConfigurableAxis binLxyz{"binLxyz", {100, 0, 1.f}, ""};
+  ConfigurableAxis binSxyz{"binSxyz", {100, 0, 100.f}, ""};
+  ConfigurableAxis binSigmaLxy{"binSigmaLxy", {100, 0., 0.1}, ""};
+  ConfigurableAxis binSigmaLxyz{"binSigmaLxyz", {100, 0., 0.1}, ""};
 
   // Axis
   AxisSpec jetFlavourAxis = {binJetFlavour, "Jet flavour"};
@@ -77,40 +86,52 @@ struct JetTaggerHFQA {
   AxisSpec impactParameterZSignificanceAxis = {binImpactParameterZSignificance, "IPs_{Z}"};
   AxisSpec impactParameterXYZAxis = {binImpactParameterXYZ, "IP_{XYZ} [#mum]"};
   AxisSpec impactParameterXYZSignificanceAxis = {binImpactParameterXYZSignificance, "IPs_{XYZ}"};
+  AxisSpec numOrderAxis = {binNumOrder, "N_{order}"};
+  AxisSpec JetProbabilityAxis = {binJetProbability, "JP"};
+  AxisSpec JetProbabilityLogAxis = {binJetProbabilityLog, "-Log(JP)"};
+  AxisSpec LxyAxis = {binLxy, "L_{XY} [cm]"};
+  AxisSpec SxyAxis = {binSxy, "S_{XY}"};
+  AxisSpec LxyzAxis = {binLxyz, "L_{XYZ} [cm]"};
+  AxisSpec SxyzAxis = {binSxyz, "S_{XYZ}"};
+  AxisSpec sigmaLxyAxis = {binSigmaLxy, "#simga_{L_{XY}} [cm]"};
+  AxisSpec sigmaLxyzAxis = {binSigmaLxyz, "#simga_{L_{XYZ}} [cm]"};
 
-  int eventSelection = -1;
-  int trackSelection = -1;
+  int numberOfJetFlavourSpecies = 6;
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext const&)
   {
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
-    trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    numberOfJetFlavourSpecies = static_cast<int>(numFlavourSpecies);
 
     if (doprocessIPsData) {
       registry.add("h3_jet_pt_track_pt_track_eta", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {etaAxis}}});
       registry.add("h3_jet_pt_track_pt_track_phi", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {phiAxis}}});
-      registry.add("h3_jet_pt_track_pt_impact_parameter_xy", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterXYAxis}}});
-      registry.add("h3_jet_pt_track_pt_sign_impact_parameter_xy", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterXYAxis}}});
-      registry.add("h3_jet_pt_track_pt_impact_parameter_xy_significance", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterXYSignificanceAxis}}});
+      registry.add("h2_jet_pt_impact_parameter_xy", "", {HistType::kTH2F, {{jetPtAxis}, {impactParameterXYAxis}}});
+      registry.add("h2_jet_pt_sign_impact_parameter_xy", "", {HistType::kTH2F, {{jetPtAxis}, {impactParameterXYAxis}}});
+      registry.add("h2_jet_pt_impact_parameter_xy_significance", "", {HistType::kTH2F, {{jetPtAxis}, {impactParameterXYSignificanceAxis}}});
       registry.add("h3_jet_pt_track_pt_sign_impact_parameter_xy_significance", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterXYSignificanceAxis}}});
-
-      registry.add("h3_jet_pt_track_pt_impact_parameter_z", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterZAxis}}});
-      registry.add("h3_jet_pt_track_pt_sign_impact_parameter_z", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterZAxis}}});
-      registry.add("h3_jet_pt_track_pt_impact_parameter_z_significance", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterZSignificanceAxis}}});
+      registry.add("h2_jet_pt_impact_parameter_z", "", {HistType::kTH2F, {{jetPtAxis}, {impactParameterZAxis}}});
+      registry.add("h2_jet_pt_sign_impact_parameter_z", "", {HistType::kTH2F, {{jetPtAxis}, {impactParameterZAxis}}});
+      registry.add("h2_jet_pt_impact_parameter_z_significance", "", {HistType::kTH2F, {{jetPtAxis}, {impactParameterZSignificanceAxis}}});
       registry.add("h3_jet_pt_track_pt_sign_impact_parameter_z_significance", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterZSignificanceAxis}}});
-      registry.add("h3_jet_pt_track_pt_impact_parameter_xyz", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterXYZAxis}}});
-      registry.add("h3_jet_pt_track_pt_sign_impact_parameter_xyz", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterXYZAxis}}});
-      registry.add("h3_jet_pt_track_pt_impact_parameter_xyz_significance", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterXYZSignificanceAxis}}});
+      registry.add("h2_jet_pt_impact_parameter_xyz", "", {HistType::kTH2F, {{jetPtAxis}, {impactParameterXYZAxis}}});
+      registry.add("h2_jet_pt_sign_impact_parameter_xyz", "", {HistType::kTH2F, {{jetPtAxis}, {impactParameterXYZAxis}}});
+      registry.add("h2_jet_pt_impact_parameter_xyz_significance", "", {HistType::kTH2F, {{jetPtAxis}, {impactParameterXYZSignificanceAxis}}});
       registry.add("h3_jet_pt_track_pt_sign_impact_parameter_xyz_significance", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterXYZSignificanceAxis}}});
 
       // TC
-      registry.add("h3_jet_pt_track_pt_sign_impact_parameter_xy_significance_N1", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterXYSignificanceAxis}}});
-      registry.add("h3_jet_pt_track_pt_sign_impact_parameter_xy_significance_N2", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterXYSignificanceAxis}}});
-      registry.add("h3_jet_pt_track_pt_sign_impact_parameter_xy_significance_N3", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {impactParameterXYSignificanceAxis}}});
+      registry.add("h3_jet_pt_sign_impact_parameter_xy_significance_tc", "", {HistType::kTH3F, {{jetPtAxis}, {impactParameterXYSignificanceAxis}, {numOrderAxis}}});
+      registry.add("h3_jet_pt_sign_impact_parameter_z_significance_tc", "", {HistType::kTH3F, {{jetPtAxis}, {impactParameterZSignificanceAxis}, {numOrderAxis}}});
+      registry.add("h3_jet_pt_sign_impact_parameter_xyz_significance_tc", "", {HistType::kTH3F, {{jetPtAxis}, {impactParameterXYZSignificanceAxis}, {numOrderAxis}}});
+      registry.add("h3_track_pt_sign_impact_parameter_xy_significance_tc", "", {HistType::kTH3F, {{trackPtAxis}, {impactParameterXYSignificanceAxis}, {numOrderAxis}}});
+      registry.add("h3_track_pt_sign_impact_parameter_z_significance_tc", "", {HistType::kTH3F, {{trackPtAxis}, {impactParameterZSignificanceAxis}, {numOrderAxis}}});
+      registry.add("h3_track_pt_sign_impact_parameter_xyz_significance_tc", "", {HistType::kTH3F, {{trackPtAxis}, {impactParameterXYZSignificanceAxis}, {numOrderAxis}}});
     }
     if (doprocessIPsMCD) {
+      registry.add("h2_jet_pt_flavour", "", {HistType::kTH2F, {{jetPtAxis}, {jetFlavourAxis}}});
+      registry.add("h2_jet_eta_flavour", "", {HistType::kTH2F, {{jetPtAxis}, {jetFlavourAxis}}});
+      registry.add("h2_jet_phi_flavour", "", {HistType::kTH2F, {{jetPtAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_track_pt_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {trackPtAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_track_eta_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {etaAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_track_phi_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {phiAxis}, {jetFlavourAxis}}});
@@ -129,7 +150,7 @@ struct JetTaggerHFQA {
 
       registry.add("h3_track_pt_impact_parameter_xy_flavour", "", {HistType::kTH3F, {{trackPtAxis}, {impactParameterXYAxis}, {jetFlavourAxis}}});
       registry.add("h3_track_pt_sign_impact_parameter_xy_flavour", "", {HistType::kTH3F, {{trackPtAxis}, {impactParameterXYSignificanceAxis}, {jetFlavourAxis}}});
-      registry.add("h3_track_pt_impact_parameter_xy_significance_flavour", "", {HistType::kTH3F, {{trackPtAxis}, {impactParameterXYAxis}, {jetFlavourAxis}}});
+      registry.add("h3_track_pt_impact_parameter_xy_significance_flavour", "", {HistType::kTH3F, {{trackPtAxis}, {impactParameterXYSignificanceAxis}, {jetFlavourAxis}}});
       registry.add("h3_track_pt_sign_impact_parameter_xy_significance_flavour", "", {HistType::kTH3F, {{trackPtAxis}, {impactParameterXYSignificanceAxis}, {jetFlavourAxis}}});
       registry.add("h3_track_pt_impact_parameter_z_flavour", "", {HistType::kTH3F, {{trackPtAxis}, {impactParameterZAxis}, {jetFlavourAxis}}});
       registry.add("h3_track_pt_sign_impact_parameter_z_flavour", "", {HistType::kTH3F, {{trackPtAxis}, {impactParameterZSignificanceAxis}, {jetFlavourAxis}}});
@@ -150,29 +171,80 @@ struct JetTaggerHFQA {
       registry.add("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N1", "", {HistType::kTH3F, {{jetPtAxis}, {impactParameterXYZSignificanceAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2", "", {HistType::kTH3F, {{jetPtAxis}, {impactParameterXYZSignificanceAxis}, {jetFlavourAxis}}});
       registry.add("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N3", "", {HistType::kTH3F, {{jetPtAxis}, {impactParameterXYZSignificanceAxis}, {jetFlavourAxis}}});
+      registry.add("h3_sign_impact_parameter_xy_significance_tc_flavour", "", {HistType::kTH3F, {{impactParameterXYSignificanceAxis}, {numOrderAxis}, {jetFlavourAxis}}});
+      registry.add("h3_sign_impact_parameter_z_significance_tc_flavour", "", {HistType::kTH3F, {{impactParameterZSignificanceAxis}, {numOrderAxis}, {jetFlavourAxis}}});
+      registry.add("h3_sign_impact_parameter_xyz_significance_tc_flavour", "", {HistType::kTH3F, {{impactParameterXYZSignificanceAxis}, {numOrderAxis}, {jetFlavourAxis}}});
+    }
+    if (doprocessJP) {
+      registry.add("h3_jet_pt_JP_flavour", "jet pt jet probability flavour", {HistType::kTH3F, {{jetPtAxis}, {JetProbabilityAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_neg_log_JP_flavour", "jet pt jet probability flavour", {HistType::kTH3F, {{jetPtAxis}, {JetProbabilityLogAxis}, {jetFlavourAxis}}});
+    }
+    if (doprocessSV2ProngMCD) {
+      registry.add("h3_jet_pt_2prong_Lxy_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {LxyAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_2prong_Sxy_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {SxyAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_2prong_Lxyz_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {LxyzAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_2prong_Sxyz_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {SxyzAxis}, {jetFlavourAxis}}});
+      registry.add("h3_2prong_Sxy_sigmaLxy_flavour", "", {HistType::kTH3F, {{SxyAxis}, {sigmaLxyAxis}, {jetFlavourAxis}}});
+      registry.add("h3_2prong_Sxyz_sigmaLxyz_flavour", "", {HistType::kTH3F, {{SxyzAxis}, {sigmaLxyzAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_2prong_sigmaLxy_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {sigmaLxyAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_2prong_sigmaLxyz_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {sigmaLxyzAxis}, {jetFlavourAxis}}});
+    }
+    if (doprocessSV3ProngMCD) {
+      registry.add("h3_jet_pt_3prong_Lxy_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {LxyAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_3prong_Sxy_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {SxyAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_3prong_Lxyz_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {LxyzAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_3prong_Sxyz_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {SxyzAxis}, {jetFlavourAxis}}});
+      registry.add("h3_3prong_Sxy_sigmaLxy_flavour", "", {HistType::kTH3F, {{SxyAxis}, {sigmaLxyAxis}, {jetFlavourAxis}}});
+      registry.add("h3_3prong_Sxyz_sigmaLxyz_flavour", "", {HistType::kTH3F, {{SxyzAxis}, {sigmaLxyzAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_3prong_sigmaLxy_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {sigmaLxyAxis}, {jetFlavourAxis}}});
+      registry.add("h3_jet_pt_3prong_sigmaLxyz_flavour", "", {HistType::kTH3F, {{jetPtAxis}, {sigmaLxyzAxis}, {jetFlavourAxis}}});
     }
   }
 
-  Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
+  // Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
   Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut);
 
-  using JetTagTracksData = soa::Join<aod::JTracks, aod::JTrackPIs>;
-  using JetTagTracksMCD = soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs>;
-  using OriTracksData = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection>;
-  using OriTracksMCD = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::McTrackLabels>;
+  using JetTagTracksData = soa::Join<JetTracks, aod::JTrackPIs, aod::JTracksTag>;
+  using JetTagTracksMCD = soa::Join<JetTracksMCD, aod::JTrackPIs, aod::JTracksTag>;
+  using OriTracksData = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection>;
+  using OriTracksMCD = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::McTrackLabels>;
 
-  template <typename T, typename U, typename V>
-  void fillHistogramIPsData(T const& collision, U const& jets, V const& tracks)
+  std::function<bool(const std::vector<float>&, const std::vector<float>&)> sortImp =
+    [](const std::vector<float>& a, const std::vector<float>& b) {
+      return a[0] > b[0];
+    };
+
+  template <typename T>
+  bool trackAcceptance(T const& track)
+  {
+    if (track.pt() < trackPtMin || track.pt() > trackPtMax)
+      return 0;
+
+    return 1;
+  }
+
+  template <typename T>
+  bool prongAcceptance(T const& prong)
+  {
+    auto Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
+    if (prong.errorDecayLengthXY() < 0.03 || Sxy > 7)
+      return 0;
+
+    return 1;
+  }
+
+  template <typename T, typename U, typename V, typename W>
+  void fillHistogramIPsData(T const& collision, U const& jets, V const& jtracks, W const& tracks)
   {
     for (auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
-      std::vector<std::vector<float>> TracksImpXY, TracksSignImpXY, TracksImpXYSig, TracksSignImpXYSig;
-      std::vector<std::vector<float>> TracksImpZ, TracksSignImpZ, TracksImpZSig, TracksSignImpZSig;
-      std::vector<std::vector<float>> TracksImpXYZ, TracksSignImpXYZ, TracksImpXYZSig, TracksSignImpXYZSig;
-      for (auto& jtrack : jet.template tracks_as<JetTagTracksData>()) {
-        auto track = jtrack.template track_as<OriTracksData>();
+      std::vector<std::vector<float>> vecSignImpXYSig, vecSignImpZSig, vecSignImpXYZSig;
+      for (auto& jtrack : jet.template tracks_as<V>()) {
+        auto track = jtrack.template track_as<W>();
+        if (!trackAcceptance(track))
+          continue;
 
         // General parameters
         registry.fill(HIST("h3_jet_pt_track_pt_track_eta"), jet.pt(), track.pt(), track.eta());
@@ -188,72 +260,80 @@ struct JetTaggerHFQA {
         varSignImpZ = geoSign * TMath::Abs(track.dcaZ()) * jettaggingutilities::cmTomum;
         varImpZSig = track.dcaZ() / TMath::Sqrt(track.sigmaDcaZ2());
         varSignImpZSig = geoSign * TMath::Abs(track.dcaZ()) / TMath::Sqrt(track.sigmaDcaZ2());
-        float dcaXYZ, sigmaDcaXYZ2;
-        jettaggingutilities::calculateDcaXYZ(dcaXYZ, sigmaDcaXYZ2, track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(), track.sigmaDcaXY2(), track.sigmaDcaZ2());
+        float dcaXYZ = jtrack.dcaXYZ();
+        float sigmaDcaXYZ2 = jtrack.sigmaDcaXYZ2();
         varImpXYZ = dcaXYZ * jettaggingutilities::cmTomum;
         varSignImpXYZ = geoSign * TMath::Abs(dcaXYZ) * jettaggingutilities::cmTomum;
         varImpXYZSig = dcaXYZ / TMath::Sqrt(sigmaDcaXYZ2);
         varSignImpXYZSig = geoSign * TMath::Abs(dcaXYZ) / TMath::Sqrt(sigmaDcaXYZ2);
 
-        registry.fill(HIST("h3_jet_pt_track_pt_impact_parameter_xy"), jet.pt(), track.pt(), varImpXY);
-        registry.fill(HIST("h3_jet_pt_track_pt_sign_impact_parameter_xy"), jet.pt(), track.pt(), varSignImpXY);
-        registry.fill(HIST("h3_jet_pt_track_pt_impact_parameter_xy_significance"), jet.pt(), track.pt(), varImpXYSig);
+        registry.fill(HIST("h2_jet_pt_impact_parameter_xy"), jet.pt(), varImpXY);
+        registry.fill(HIST("h2_jet_pt_sign_impact_parameter_xy"), jet.pt(), varSignImpXY);
+        registry.fill(HIST("h2_jet_pt_impact_parameter_xy_significance"), jet.pt(), varImpXYSig);
         registry.fill(HIST("h3_jet_pt_track_pt_sign_impact_parameter_xy_significance"), jet.pt(), track.pt(), varSignImpXYSig);
 
-        registry.fill(HIST("h3_jet_pt_track_pt_impact_parameter_z"), jet.pt(), track.pt(), varImpZ);
-        registry.fill(HIST("h3_jet_pt_track_pt_sign_impact_parameter_z"), jet.pt(), track.pt(), varSignImpZ);
-        registry.fill(HIST("h3_jet_pt_track_pt_impact_parameter_z_significance"), jet.pt(), track.pt(), varImpZSig);
+        registry.fill(HIST("h2_jet_pt_impact_parameter_z"), jet.pt(), varImpZ);
+        registry.fill(HIST("h2_jet_pt_sign_impact_parameter_z"), jet.pt(), varSignImpZ);
+        registry.fill(HIST("h2_jet_pt_impact_parameter_z_significance"), jet.pt(), varImpZSig);
         registry.fill(HIST("h3_jet_pt_track_pt_sign_impact_parameter_z_significance"), jet.pt(), track.pt(), varSignImpZSig);
-        registry.fill(HIST("h3_jet_pt_track_pt_impact_parameter_xyz"), jet.pt(), track.pt(), varImpXYZ);
-        registry.fill(HIST("h3_jet_pt_track_pt_sign_impact_parameter_xyz"), jet.pt(), track.pt(), varSignImpXYZ);
-        registry.fill(HIST("h3_jet_pt_track_pt_impact_parameter_xyz_significance"), jet.pt(), track.pt(), varImpXYZSig);
+        registry.fill(HIST("h2_jet_pt_impact_parameter_xyz"), jet.pt(), varImpXYZ);
+        registry.fill(HIST("h2_jet_pt_sign_impact_parameter_xyz"), jet.pt(), varSignImpXYZ);
+        registry.fill(HIST("h2_jet_pt_impact_parameter_xyz_significance"), jet.pt(), varImpXYZSig);
         registry.fill(HIST("h3_jet_pt_track_pt_sign_impact_parameter_xyz_significance"), jet.pt(), track.pt(), varSignImpXYZSig);
 
-        TracksImpXY.push_back({varImpXY, track.pt()});
-        TracksSignImpXY.push_back({varSignImpXY, track.pt()});
-        TracksImpXYSig.push_back({varImpXYSig, track.pt()});
-        TracksSignImpXYSig.push_back({varSignImpXYSig, track.pt()});
-      }
-      auto sortImp = [](const std::vector<float>& a, const std::vector<float>& b) {
-        return a[0] > b[0];
-      };
-
-      std::sort(TracksImpXY.begin(), TracksImpXY.end(), sortImp);
-      std::sort(TracksSignImpXY.begin(), TracksSignImpXY.end(), sortImp);
-      std::sort(TracksImpXYSig.begin(), TracksImpXYSig.end(), sortImp);
-      std::sort(TracksSignImpXYSig.begin(), TracksSignImpXYSig.end(), sortImp);
-
-      if (TracksImpXY.size() > 0) { // N1
-        registry.fill(HIST("h3_jet_pt_track_pt_sign_impact_parameter_xy_significance_N1"), jet.pt(), TracksSignImpXYSig[0][1], TracksSignImpXYSig[0][0]);
+        vecSignImpXYSig.push_back({varSignImpXYSig, track.pt()});
+        vecSignImpZSig.push_back({varSignImpXYSig, track.pt()});
+        vecSignImpXYZSig.push_back({varSignImpXYSig, track.pt()});
       }
 
-      if (TracksImpXY.size() > 1) { // N2
-        registry.fill(HIST("h3_jet_pt_track_pt_sign_impact_parameter_xy_significance_N2"), jet.pt(), TracksSignImpXYSig[1][1], TracksSignImpXYSig[1][0]);
-      }
+      std::sort(vecSignImpXYSig.begin(), vecSignImpXYSig.end(), sortImp);
+      std::sort(vecSignImpZSig.begin(), vecSignImpZSig.end(), sortImp);
+      std::sort(vecSignImpXYZSig.begin(), vecSignImpXYZSig.end(), sortImp);
 
-      if (TracksImpXY.size() > 2) { // N3
-        registry.fill(HIST("h3_jet_pt_track_pt_sign_impact_parameter_xy_significance_N3"), jet.pt(), TracksSignImpXYSig[2][1], TracksSignImpXYSig[2][0]);
+      if (vecSignImpXYSig.empty() || vecSignImpZSig.empty() || vecSignImpXYZSig.empty())
+        continue;
+      for (int order = 1; order <= numOrder; order++) {
+        if (order < vecSignImpXYSig.size()) {
+          registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_tc"), jet.pt(), vecSignImpXYSig[order][0], order);
+          registry.fill(HIST("h3_track_pt_sign_impact_parameter_xy_significance_tc"), vecSignImpXYSig[order][1], vecSignImpXYSig[order][0], order);
+        }
+        if (order < vecSignImpZSig.size()) {
+          registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_tc"), jet.pt(), vecSignImpZSig[order][0], order);
+          registry.fill(HIST("h3_track_pt_sign_impact_parameter_z_significance_tc"), vecSignImpZSig[order][1], vecSignImpZSig[order][0], order);
+        }
+        if (order < vecSignImpXYZSig.size()) {
+          registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_tc"), jet.pt(), vecSignImpXYZSig[order][0], order);
+          registry.fill(HIST("h3_track_pt_sign_impact_parameter_xyz_significance_tc"), vecSignImpXYZSig[order][1], vecSignImpXYZSig[order][0], order);
+        }
       }
     }
   }
 
-  template <typename T, typename U, typename V>
-  void fillHistogramIPsMCD(T const& collision, U const& mcdjets, V const& tracks)
+  template <typename T, typename U, typename V, typename W>
+  void fillHistogramIPsMCD(T const& collision, U const& mcdjets, V const& jtracks, W const& tracks)
   {
-    int numberOfJetFlavourSpecies = 6;
     for (auto& mcdjet : mcdjets) {
       if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
       }
-      std::vector<float> TracksImpXY[numberOfJetFlavourSpecies], TracksSignImpXY[numberOfJetFlavourSpecies], TracksImpXYSig[numberOfJetFlavourSpecies], TracksSignImpXYSig[numberOfJetFlavourSpecies];
-      std::vector<float> TracksImpZ[numberOfJetFlavourSpecies], TracksSignImpZ[numberOfJetFlavourSpecies], TracksImpZSig[numberOfJetFlavourSpecies], TracksSignImpZSig[numberOfJetFlavourSpecies];
-      std::vector<float> TracksImpXYZ[numberOfJetFlavourSpecies], TracksSignImpXYZ[numberOfJetFlavourSpecies], TracksImpXYZSig[numberOfJetFlavourSpecies], TracksSignImpXYZSig[numberOfJetFlavourSpecies];
+      std::vector<float> vecImpXY[numberOfJetFlavourSpecies], vecSignImpXY[numberOfJetFlavourSpecies], vecImpXYSig[numberOfJetFlavourSpecies], vecSignImpXYSig[numberOfJetFlavourSpecies];
+      std::vector<float> vecImpZ[numberOfJetFlavourSpecies], vecSignImpZ[numberOfJetFlavourSpecies], vecImpZSig[numberOfJetFlavourSpecies], vecSignImpZSig[numberOfJetFlavourSpecies];
+      std::vector<float> vecImpXYZ[numberOfJetFlavourSpecies], vecSignImpXYZ[numberOfJetFlavourSpecies], vecImpXYZSig[numberOfJetFlavourSpecies], vecSignImpXYZSig[numberOfJetFlavourSpecies];
+      std::vector<std::vector<float>> vecSignImpXYSigTC, vecSignImpZSigTC, vecSignImpXYZSigTC;
       int jetflavour = mcdjet.origin();
       if (jetflavour == JetTaggingSpecies::none) {
         LOGF(debug, "NOT DEFINE JET FLAVOR");
       }
-      for (auto& jtrack : mcdjet.template tracks_as<JetTagTracksMCD>()) {
-        auto track = jtrack.template track_as<OriTracksMCD>();
+      registry.fill(HIST("h2_jet_pt_flavour"), mcdjet.pt(), jetflavour);
+      registry.fill(HIST("h2_jet_eta_flavour"), mcdjet.eta(), jetflavour);
+      registry.fill(HIST("h2_jet_phi_flavour"), mcdjet.phi(), jetflavour);
+      for (auto& jtrack : mcdjet.template tracks_as<V>()) {
+        auto track = jtrack.template track_as<W>();
+        if (!trackAcceptance(track))
+          continue;
+        // auto deltaR = jetutilities::deltaR(mcdjet, track);
+        // if (deltaR*100>40) LOG(info) << "deltaR: " << deltaR*100 << " jetR: " << mcdjet.r();
+
         // General parameters
         registry.fill(HIST("h3_jet_pt_track_pt_flavour"), mcdjet.pt(), track.pt(), jetflavour);
         registry.fill(HIST("h3_jet_pt_track_eta_flavour"), mcdjet.pt(), track.eta(), jetflavour);
@@ -269,8 +349,8 @@ struct JetTaggerHFQA {
         varSignImpZ = geoSign * TMath::Abs(track.dcaZ()) * jettaggingutilities::cmTomum;
         varImpZSig = track.dcaZ() / TMath::Sqrt(track.sigmaDcaZ2());
         varSignImpZSig = geoSign * TMath::Abs(track.dcaZ()) / TMath::Sqrt(track.sigmaDcaZ2());
-        float dcaXYZ, sigmaDcaXYZ2;
-        jettaggingutilities::calculateDcaXYZ(dcaXYZ, sigmaDcaXYZ2, track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(), track.sigmaDcaXY2(), track.sigmaDcaZ2());
+        float dcaXYZ = jtrack.dcaXYZ();
+        float sigmaDcaXYZ2 = jtrack.sigmaDcaXYZ2();
         varImpXYZ = dcaXYZ * jettaggingutilities::cmTomum;
         varSignImpXYZ = geoSign * TMath::Abs(dcaXYZ) * jettaggingutilities::cmTomum;
         varImpXYZSig = dcaXYZ / TMath::Sqrt(sigmaDcaXYZ2);
@@ -289,62 +369,158 @@ struct JetTaggerHFQA {
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_flavour"), mcdjet.pt(), varSignImpXYZ, jetflavour);
         registry.fill(HIST("h3_jet_pt_impact_parameter_xyz_significance_flavour"), mcdjet.pt(), varImpXYZSig, jetflavour);
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour"), mcdjet.pt(), varSignImpXYZSig, jetflavour);
-        registry.fill(HIST("h3_track_pt_impact_parameter_xy_flavour"), track.pt(), varImpXY, jetflavour);
-        registry.fill(HIST("h3_track_pt_sign_impact_parameter_xy_flavour"), track.pt(), varSignImpXY, jetflavour);
-        registry.fill(HIST("h3_track_pt_impact_parameter_xy_significance_flavour"), track.pt(), varImpXYSig, jetflavour);
-        registry.fill(HIST("h3_track_pt_sign_impact_parameter_xy_significance_flavour"), track.pt(), varSignImpXYSig, jetflavour);
-        registry.fill(HIST("h3_track_pt_impact_parameter_z_flavour"), track.pt(), varImpZ, jetflavour);
-        registry.fill(HIST("h3_track_pt_sign_impact_parameter_z_flavour"), track.pt(), varSignImpZ, jetflavour);
-        registry.fill(HIST("h3_track_pt_impact_parameter_z_significance_flavour"), track.pt(), varImpZSig, jetflavour);
-        registry.fill(HIST("h3_track_pt_sign_impact_parameter_z_significance_flavour"), track.pt(), varSignImpZSig, jetflavour);
-        registry.fill(HIST("h3_track_pt_impact_parameter_xyz_flavour"), track.pt(), varImpXYZ, jetflavour);
-        registry.fill(HIST("h3_track_pt_sign_impact_parameter_xyz_flavour"), track.pt(), varSignImpXYZ, jetflavour);
-        registry.fill(HIST("h3_track_pt_impact_parameter_xyz_significance_flavour"), track.pt(), varImpXYZSig, jetflavour);
-        registry.fill(HIST("h3_track_pt_sign_impact_parameter_xyz_significance_flavour"), track.pt(), varSignImpXYZSig, jetflavour);
+        registry.fill(HIST("h3_track_pt_impact_parameter_xy_flavour"), jtrack.pt(), varImpXY, jetflavour);
+        registry.fill(HIST("h3_track_pt_sign_impact_parameter_xy_flavour"), jtrack.pt(), varSignImpXY, jetflavour);
+        registry.fill(HIST("h3_track_pt_impact_parameter_xy_significance_flavour"), jtrack.pt(), varImpXYSig, jetflavour);
+        registry.fill(HIST("h3_track_pt_sign_impact_parameter_xy_significance_flavour"), jtrack.pt(), varSignImpXYSig, jetflavour);
+        registry.fill(HIST("h3_track_pt_impact_parameter_z_flavour"), jtrack.pt(), varImpZ, jetflavour);
+        registry.fill(HIST("h3_track_pt_sign_impact_parameter_z_flavour"), jtrack.pt(), varSignImpZ, jetflavour);
+        registry.fill(HIST("h3_track_pt_impact_parameter_z_significance_flavour"), jtrack.pt(), varImpZSig, jetflavour);
+        registry.fill(HIST("h3_track_pt_sign_impact_parameter_z_significance_flavour"), jtrack.pt(), varSignImpZSig, jetflavour);
+        registry.fill(HIST("h3_track_pt_impact_parameter_xyz_flavour"), jtrack.pt(), varImpXYZ, jetflavour);
+        registry.fill(HIST("h3_track_pt_sign_impact_parameter_xyz_flavour"), jtrack.pt(), varSignImpXYZ, jetflavour);
+        registry.fill(HIST("h3_track_pt_impact_parameter_xyz_significance_flavour"), jtrack.pt(), varImpXYZSig, jetflavour);
+        registry.fill(HIST("h3_track_pt_sign_impact_parameter_xyz_significance_flavour"), jtrack.pt(), varSignImpXYZSig, jetflavour);
 
         // For TC
-        TracksImpXY[jetflavour].push_back(varImpXY);
-        TracksSignImpXY[jetflavour].push_back(varSignImpXY);
-        TracksImpXYSig[jetflavour].push_back(varImpXYSig);
-        TracksSignImpXYSig[jetflavour].push_back(varSignImpXYSig);
-        TracksImpZ[jetflavour].push_back(varImpZ);
-        TracksSignImpZ[jetflavour].push_back(varSignImpZ);
-        TracksImpZSig[jetflavour].push_back(varImpZSig);
-        TracksSignImpZSig[jetflavour].push_back(varSignImpZSig);
-        TracksImpXYZ[jetflavour].push_back(varImpXYZ);
-        TracksSignImpXYZ[jetflavour].push_back(varSignImpXYZ);
-        TracksImpXYZSig[jetflavour].push_back(varImpXYZSig);
-        TracksSignImpXYZSig[jetflavour].push_back(varSignImpXYZSig);
+        vecImpXY[jetflavour].push_back(varImpXY);
+        vecSignImpXY[jetflavour].push_back(varSignImpXY);
+        vecImpXYSig[jetflavour].push_back(varImpXYSig);
+        vecSignImpXYSig[jetflavour].push_back(varSignImpXYSig);
+        vecImpZ[jetflavour].push_back(varImpZ);
+        vecSignImpZ[jetflavour].push_back(varSignImpZ);
+        vecImpZSig[jetflavour].push_back(varImpZSig);
+        vecSignImpZSig[jetflavour].push_back(varSignImpZSig);
+        vecImpXYZ[jetflavour].push_back(varImpXYZ);
+        vecSignImpXYZ[jetflavour].push_back(varSignImpXYZ);
+        vecImpXYZSig[jetflavour].push_back(varImpXYZSig);
+        vecSignImpXYZSig[jetflavour].push_back(varSignImpXYZSig);
+        vecSignImpXYSigTC.push_back({varSignImpXYSig, jtrack.pt()});
+        vecSignImpZSigTC.push_back({varSignImpXYSig, jtrack.pt()});
+        vecSignImpXYZSigTC.push_back({varSignImpXYSig, jtrack.pt()});
       }
 
       // For TC
-      sort(TracksImpXY[jetflavour].begin(), TracksImpXY[jetflavour].end(), std::greater<float>());
-      sort(TracksSignImpXY[jetflavour].begin(), TracksSignImpXY[jetflavour].end(), std::greater<float>());
-      sort(TracksImpXYSig[jetflavour].begin(), TracksImpXYSig[jetflavour].end(), std::greater<float>());
-      sort(TracksSignImpXYSig[jetflavour].begin(), TracksSignImpXYSig[jetflavour].end(), std::greater<float>());
-      sort(TracksImpZ[jetflavour].begin(), TracksImpZ[jetflavour].end(), std::greater<float>());
-      sort(TracksSignImpZ[jetflavour].begin(), TracksSignImpZ[jetflavour].end(), std::greater<float>());
-      sort(TracksImpZSig[jetflavour].begin(), TracksImpZSig[jetflavour].end(), std::greater<float>());
-      sort(TracksSignImpZSig[jetflavour].begin(), TracksSignImpZSig[jetflavour].end(), std::greater<float>());
-      sort(TracksImpXYZ[jetflavour].begin(), TracksImpXYZ[jetflavour].end(), std::greater<float>());
-      sort(TracksSignImpXYZ[jetflavour].begin(), TracksSignImpXYZ[jetflavour].end(), std::greater<float>());
-      sort(TracksImpXYZSig[jetflavour].begin(), TracksImpXYZSig[jetflavour].end(), std::greater<float>());
-      sort(TracksSignImpXYZSig[jetflavour].begin(), TracksSignImpXYZSig[jetflavour].end(), std::greater<float>());
+      sort(vecImpXY[jetflavour].begin(), vecImpXY[jetflavour].end(), std::greater<float>());
+      sort(vecSignImpXY[jetflavour].begin(), vecSignImpXY[jetflavour].end(), std::greater<float>());
+      sort(vecImpXYSig[jetflavour].begin(), vecImpXYSig[jetflavour].end(), std::greater<float>());
+      sort(vecSignImpXYSig[jetflavour].begin(), vecSignImpXYSig[jetflavour].end(), std::greater<float>());
+      sort(vecImpZ[jetflavour].begin(), vecImpZ[jetflavour].end(), std::greater<float>());
+      sort(vecSignImpZ[jetflavour].begin(), vecSignImpZ[jetflavour].end(), std::greater<float>());
+      sort(vecImpZSig[jetflavour].begin(), vecImpZSig[jetflavour].end(), std::greater<float>());
+      sort(vecSignImpZSig[jetflavour].begin(), vecSignImpZSig[jetflavour].end(), std::greater<float>());
+      sort(vecImpXYZ[jetflavour].begin(), vecImpXYZ[jetflavour].end(), std::greater<float>());
+      sort(vecSignImpXYZ[jetflavour].begin(), vecSignImpXYZ[jetflavour].end(), std::greater<float>());
+      sort(vecImpXYZSig[jetflavour].begin(), vecImpXYZSig[jetflavour].end(), std::greater<float>());
+      sort(vecSignImpXYZSig[jetflavour].begin(), vecSignImpXYZSig[jetflavour].end(), std::greater<float>());
 
-      if (TracksImpXY[jetflavour].size() > 0) { // N1
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N1"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][0], jetflavour);
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N1"), mcdjet.pt(), TracksSignImpZSig[jetflavour][0], jetflavour);
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N1"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][0], jetflavour);
+      if (vecImpXY[jetflavour].size() > 0) { // N1
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N1"), mcdjet.pt(), vecSignImpXYSig[jetflavour][0], jetflavour);
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N1"), mcdjet.pt(), vecSignImpZSig[jetflavour][0], jetflavour);
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N1"), mcdjet.pt(), vecSignImpXYZSig[jetflavour][0], jetflavour);
       }
-      if (TracksImpXY[jetflavour].size() > 1) { // N2
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][1], jetflavour);
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N2"), mcdjet.pt(), TracksSignImpZSig[jetflavour][1], jetflavour);
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][1], jetflavour);
+      if (vecImpXY[jetflavour].size() > 1) { // N2
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N2"), mcdjet.pt(), vecSignImpXYSig[jetflavour][1], jetflavour);
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N2"), mcdjet.pt(), vecSignImpZSig[jetflavour][1], jetflavour);
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2"), mcdjet.pt(), vecSignImpXYZSig[jetflavour][1], jetflavour);
       }
-      if (TracksImpXY[jetflavour].size() > 2) { // N3
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYSig[jetflavour][2], jetflavour);
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N2"), mcdjet.pt(), TracksSignImpZSig[jetflavour][2], jetflavour);
-        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2"), mcdjet.pt(), TracksSignImpXYZSig[jetflavour][2], jetflavour);
+      if (vecImpXY[jetflavour].size() > 2) { // N3
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N3"), mcdjet.pt(), vecSignImpXYSig[jetflavour][2], jetflavour);
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_z_significance_flavour_N3"), mcdjet.pt(), vecSignImpZSig[jetflavour][2], jetflavour);
+        registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N3"), mcdjet.pt(), vecSignImpXYZSig[jetflavour][2], jetflavour);
+      }
+
+      std::sort(vecSignImpXYSigTC.begin(), vecSignImpXYSigTC.end(), sortImp);
+      std::sort(vecSignImpZSigTC.begin(), vecSignImpZSigTC.end(), sortImp);
+      std::sort(vecSignImpXYZSigTC.begin(), vecSignImpXYZSigTC.end(), sortImp);
+
+      if (vecSignImpXYSigTC.empty() || vecSignImpZSigTC.empty() || vecSignImpXYZSigTC.empty())
+        continue;
+      for (int order = 1; order <= numOrder; order++) {
+        if (order < vecSignImpXYSigTC.size()) {
+          registry.fill(HIST("h3_sign_impact_parameter_xy_significance_tc_flavour"), vecSignImpXYSigTC[order][0], order, jetflavour);
+        }
+        if (order < vecSignImpZSigTC.size()) {
+          registry.fill(HIST("h3_sign_impact_parameter_z_significance_tc_flavour"), vecSignImpZSigTC[order][0], order, jetflavour);
+        }
+        if (order < vecSignImpXYZSigTC.size()) {
+          registry.fill(HIST("h3_sign_impact_parameter_xyz_significance_tc_flavour"), vecSignImpXYZSigTC[order][0], order, jetflavour);
+        }
+      }
+    }
+  }
+
+  template <typename T, typename U>
+  void fillHistogramJP(T const& collision, U const& mcdjets)
+  {
+    for (auto& mcdjet : mcdjets) {
+      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      registry.fill(HIST("h3_jet_pt_JP_flavour"), mcdjet.pt(), mcdjet.jetProb(), mcdjet.origin());
+      registry.fill(HIST("h3_jet_pt_neg_log_JP_flavour"), mcdjet.pt(), -1 * TMath::Log(mcdjet.jetProb()), mcdjet.origin());
+    }
+  }
+
+  Preslice<aod::HfCand2Prong> perColFor2Prong = aod::hf_cand::collisionId;
+  Preslice<aod::HfCand3Prong> perColFor3Prong = aod::hf_cand::collisionId;
+
+  template <typename T, typename U, typename V>
+  void fillHistogramSV2ProngMCD(T const& collision, U const& mcdjets, V const& prongs)
+  {
+    for (const auto& mcdjet : mcdjets) {
+      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      auto origin = mcdjet.origin();
+      auto prongsPerCol = prongs.sliceBy(perColFor2Prong, collision.globalIndex());
+      for (const auto& prong : prongsPerCol) {
+        auto deltaR = jetutilities::deltaR(mcdjet, prong);
+        if (deltaR > mcdjet.r() / 100.0) {
+          continue;
+        }
+        auto Lxy = prong.decayLengthXY();
+        auto Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
+        auto Lxyz = prong.decayLength();
+        auto Sxyz = prong.decayLength() / prong.errorDecayLength();
+        registry.fill(HIST("h3_jet_pt_2prong_Lxy_flavour"), mcdjet.pt(), Lxy, origin);
+        registry.fill(HIST("h3_jet_pt_2prong_Sxy_flavour"), mcdjet.pt(), Sxy, origin);
+        registry.fill(HIST("h3_jet_pt_2prong_Lxyz_flavour"), mcdjet.pt(), Lxyz, origin);
+        registry.fill(HIST("h3_jet_pt_2prong_Sxyz_flavour"), mcdjet.pt(), Sxyz, origin);
+        registry.fill(HIST("h3_2prong_Sxy_sigmaLxy_flavour"), Sxy, prong.errorDecayLengthXY(), origin);
+        registry.fill(HIST("h3_2prong_Sxyz_sigmaLxyz_flavour"), Sxyz, prong.errorDecayLength(), origin);
+        registry.fill(HIST("h3_jet_pt_2prong_sigmaLxy_flavour"), mcdjet.pt(), prong.errorDecayLengthXY(), origin);
+        registry.fill(HIST("h3_jet_pt_2prong_sigmaLxyz_flavour"), mcdjet.pt(), prong.errorDecayLength(), origin);
+      }
+    }
+  }
+
+  template <typename T, typename U, typename V>
+  void fillHistogramSV3ProngMCD(T const& collision, U const& mcdjets, V const& prongs)
+  {
+    for (const auto& mcdjet : mcdjets) {
+      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      auto origin = mcdjet.origin();
+      auto prongsPerCol = prongs.sliceBy(perColFor3Prong, collision.globalIndex());
+      for (const auto& prong : prongsPerCol) {
+        auto deltaR = jetutilities::deltaR(mcdjet, prong);
+        if (deltaR > mcdjet.r() / 100.0) {
+          continue;
+        }
+        auto Lxy = prong.decayLengthXY();
+        auto Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
+        auto Lxyz = prong.decayLength();
+        auto Sxyz = prong.decayLength() / prong.errorDecayLength();
+        registry.fill(HIST("h3_3prong_Lxy_flavour"), mcdjet.pt(), Lxy, origin);
+        registry.fill(HIST("h3_3prong_Sxy_flavour"), mcdjet.pt(), Sxy, origin);
+        registry.fill(HIST("h3_3prong_Lxyz_flavour"), mcdjet.pt(), Lxyz, origin);
+        registry.fill(HIST("h3_3prong_Sxyz_flavour"), mcdjet.pt(), Sxyz, origin);
+        registry.fill(HIST("h3_3prong_Sxy_sigmaLxy_flavour"), Sxy, prong.errorDecayLengthXY(), origin);
+        registry.fill(HIST("h3_3prong_Sxyz_sigmaLxyz_flavour"), Sxyz, prong.errorDecayLength(), origin);
+        registry.fill(HIST("h3_jet_pt_3prong_sigmaLxy_flavour"), mcdjet.pt(), prong.errorDecayLengthXY(), origin);
+        registry.fill(HIST("h3_jet_pt_3prong_sigmaLxyz_flavour"), mcdjet.pt(), prong.errorDecayLength(), origin);
       }
     }
   }
@@ -354,19 +530,35 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processDummy, "Dummy process", true);
 
-  void processIPsData(soa::Join<aod::JCollisions, aod::JCollisionPIs>::iterator const& jcollision, aod::Collisions&, JetTagTableData const& jets, JetTracks const& jtracks, OriTracksData const& tracks)
+  void processIPsData(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableData const& jets, JetTagTracksData const& jtracks, OriTracksData const& tracks)
   {
-    auto oricoll = jcollision.template collision_as<aod::Collisions>();
-    fillHistogramIPsData<aod::Collision, JetTagTableData, OriTracksData>(oricoll, jets, tracks);
+    fillHistogramIPsData(jcollision, jets, jtracks, tracks);
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsData, "Fill impact parameter inpormation for data jets", false);
 
-  void processIPsMCD(soa::Join<aod::JCollisions, aod::JCollisionPIs>::iterator const& jcollision, aod::Collisions&, JetTagTableMCD const& mcdjets, JetTracksMCD const& jtracks, OriTracksMCD const& tracks, JetParticles&)
+  void processIPsMCD(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableMCD const& mcdjets, JetTagTracksMCD const& jtracks, OriTracksMCD const& tracks, JetParticles&)
   {
-    auto oricoll = jcollision.template collision_as<aod::Collisions>();
-    fillHistogramIPsMCD<aod::Collision, JetTagTableMCD, OriTracksMCD>(oricoll, mcdjets, tracks);
+    fillHistogramIPsMCD(jcollision, mcdjets, jtracks, tracks);
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsMCD, "Fill impact parameter inpormation for mcd jets", false);
+
+  void processJP(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableMCD const& mcdjets, JetTagTracksMCD const& jtracks)
+  {
+    fillHistogramJP(jcollision, mcdjets);
+  }
+  PROCESS_SWITCH(JetTaggerHFQA, processJP, "Fill jet probability imformation for mcd jets", false);
+
+  void processSV2ProngMCD(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableMCD const& mcdjets, aod::HfCand2Prong const& prongs)
+  {
+    fillHistogramSV2ProngMCD(jcollision, mcdjets, prongs);
+  }
+  PROCESS_SWITCH(JetTaggerHFQA, processSV2ProngMCD, "Fill 2prong inpormation for mcd jets", false);
+
+  void processSV3ProngMCD(soa::Filtered<JetCollisions>::iterator const& jcollision, JetTagTableMCD const& mcdjets, aod::HfCand3Prong const& prongs)
+  {
+    fillHistogramSV3ProngMCD(jcollision, mcdjets, prongs);
+  }
+  PROCESS_SWITCH(JetTaggerHFQA, processSV3ProngMCD, "Fill 3prong inpormation for mcd jets", false);
 };
 
 using JetTaggerQAChargedDataJets = soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetTags>;
@@ -382,15 +574,15 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   tasks.emplace_back(
     adaptAnalysisTask<JetTaggerQACharged>(cfgc,
-                                          SetDefaultProcesses{}, TaskName{"jet-taggerhf-tc-charged"}));
+                                          SetDefaultProcesses{}, TaskName{"jet-taggerhf-qa-charged"}));
   /*
   tasks.emplace_back(
     adaptAnalysisTask<JetTaggerQAFull>(cfgc,
-                                         SetDefaultProcesses{}, TaskName{"jet-taggerhf-tc-full"}));
+                                         SetDefaultProcesses{}, TaskName{"jet-taggerhf-qa-full"}));
 
     tasks.emplace_back(
       adaptAnalysisTask<JetTaggerQANeutral>(cfgc,
-                                                  SetDefaultProcesses{}, TaskName{"jet-taggerhf-tc-neutral"}));
+                                                  SetDefaultProcesses{}, TaskName{"jet-taggerhf-qa-neutral"}));
   */
   return WorkflowSpec{tasks};
 }

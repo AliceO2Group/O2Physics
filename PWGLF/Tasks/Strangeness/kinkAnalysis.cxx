@@ -119,6 +119,7 @@ struct kinkAnalysis {
   Configurable<float> zDiff{"zDiff", 20., "mother-daughter z diff"};
   Configurable<float> phiDiff{"phiDiff", 100., "mother-daughter phi diff"};
   Configurable<bool> cfgIsMC{"cfgIsMC", true, "data or MC"};
+  Configurable<bool> cfgMassCheck{"cfgMassCheck", false, "check if the reconstructed neutral mass is within 0.1 of the PDG mass"};
 
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::dataformats::MeanVertexObject* mVtx = nullptr;
@@ -341,6 +342,8 @@ struct kinkAnalysis {
 
     histos.add("hNSigmaTrVsPt", "hNSigmaTrVsPt", kTH2F, {axisPtHyp, {100, -5, 5, "nSigmaTPC"}});
     histos.add("hpRes", "hpRes", kTH2F, {axisPtHyp, {100, -0.5, 0.5, "p_{T} Res"}});
+    histos.add("hDCAdaughterMC", "hDCAdaughterMC", kTH1F, {axisDCAdaugh});
+    histos.add("tpcClusterTriton", "tpcClusterTriton", kTH1F, {{100, 0, 300, "TPC clusters"}});
 
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(cfgLUTpath));
     ft2.setMaxChi2(5);
@@ -415,11 +418,11 @@ struct kinkAnalysis {
       } else {
         for (const auto& ambTrack : ambiTracks) {
           if (ambTrack.trackId() == track.globalIndex()) {
-            if (!ambTrack.has_bc() || ambTrack.bc().size() == 0) {
+            if (!ambTrack.has_bc() || ambTrack.bc_as<aod::BCsWithTimestamps>().size() == 0) {
               globalBCvector.push_back(-1);
               break;
             }
-            globalBCvector.push_back(ambTrack.bc().begin().globalBC());
+            globalBCvector.push_back(ambTrack.bc_as<aod::BCsWithTimestamps>().begin().globalBC());
             break;
           }
         }
@@ -730,8 +733,10 @@ struct kinkAnalysis {
               neutronPabs = sqrt(pow((sigmaPDC[2] - pionPDC[2]), 2) + pow((sigmaPDC[1] - pionPDC[1]), 2) + pow((sigmaPDC[0] - pionPDC[0]), 2));
               neutronM = sqrt((sigmaE - pionE) * (sigmaE - pionE) - neutronPabs * neutronPabs);
 
-              if (abs(neutronM - mNeutralDaughter) / mNeutralDaughter > 0.1)
-                continue;
+              if (cfgMassCheck) {
+                if (abs(neutronM - mNeutralDaughter) / mNeutralDaughter > 0.1)
+                  continue;
+              }
 
               if ((particleName == SigmaMinus) || (particleName == SigmaPlusToPi)) {
                 if ((theta * radToDeg > (angleCutFunction(particleName, sigmaPabsDC))) && (sigmaPabsDC > 1.6))
@@ -800,6 +805,18 @@ struct kinkAnalysis {
 
               mass = sqrt((neutronE + pionE) * (neutronE + pionE) - sigmaPabsDC * sigmaPabsDC);
 
+              if (isDaughter)
+                histos.fill(HIST("hDCAdaughterMC"), kinkdcaXY);
+
+              if (particleName == Hypertriton) {
+                if (trackDgh.tpcNSigmaTr() > 4 || trackDgh.tpcNSigmaTr() < -2)
+                  continue;
+
+                histos.fill(HIST("tpcClusterTriton"), trackDgh.tpcNClsFound());
+                if (trackDgh.tpcNClsFound() < 90)
+                  continue;
+              }
+
               if (particleName == Hypertriton) {
                 histos.fill(HIST("hHypMass"), mass);
                 histos.fill(HIST("hHypMassPt"), mass, sigmaPt);
@@ -817,14 +834,13 @@ struct kinkAnalysis {
 
               if ((chargeM == -1) && (chargeD == -1)) {
                 if (cfgIsMC) {
-                  histos.fill(HIST("hcodes"), motherPdg, daughterPdg);
                   if ((motherPdg == particlePdgCode || motherPdg == -3222) && (daughterPdg == -211)) {
                     histos.fill(HIST("hPtMinusRecMcTrth"), mass, sigmaPt);
                     histos.fill(HIST("hptMDtrue"), sigmaPt, PionTr.getPt());
                   } else if ((motherPdg == particlePdgCode || motherPdg == -3222) && (daughterPdg != -211)) {
                     histos.fill(HIST("hptMtrue"), sigmaPt, PionTr.getPt());
                     histos.fill(HIST("hPtMinusRecMcTrthM"), mass, sigmaPt);
-                  } else if ((motherPdg == particlePdgCode || motherPdg == -1010010030) && (daughterPdg == -1000010030 || daughterPdg == 1000010030)) {
+                  } else if (motherPdg == -1010010030 && daughterPdg == -1000010030) {
                     histos.fill(HIST("hpRes"), sigmaPt, (mcMotherPt - sigmaPt) / mcMotherPt);
                   } else {
                     histos.fill(HIST("hptMDelse"), sigmaPt, PionTr.getPt());
@@ -837,6 +853,8 @@ struct kinkAnalysis {
                 if (cfgIsMC) {
                   if (motherPdg == particlePdgCode)
                     histos.fill(HIST("hPtPlusRecMcTrth"), mass, sigmaPt);
+                  if (motherPdg == 1010010030 && daughterPdg == 1000010030)
+                    histos.fill(HIST("hpRes"), sigmaPt, (mcMotherPt - sigmaPt) / mcMotherPt);
                 }
                 histos.fill(HIST("hMassPlusPt"), mass, sigmaPt);
               }

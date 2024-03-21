@@ -708,6 +708,9 @@ struct TableMakerMC {
           }
           auto mctrack = muon.template mcParticle_as<aod::McParticles_001>();
           VarManager::FillTrack<TMuonFillMap>(muon);
+          if (fPropMuon) {
+            VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
+          }
           VarManager::FillTrackMC(mcTracks, mctrack);
 
           if (fDoDetailedQA) {
@@ -785,17 +788,25 @@ struct TableMakerMC {
             }
           }
 
-          muonBasic(event.lastIndex(), newMatchIndex.find(muon.index())->second, -1, trackFilteringTag, muon.pt(), muon.eta(), muon.phi(), muon.sign(), isAmbiguous);
-          muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
-                    muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
-                    muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
-                    muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY(),
-                    muon.trackTime(), muon.trackTimeRes());
+          muonBasic(event.lastIndex(), newMatchIndex.find(muon.index())->second, -1, trackFilteringTag, VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], muon.sign(), isAmbiguous);
           if constexpr (static_cast<bool>(TMuonFillMap & VarManager::ObjTypes::MuonCov)) {
-            muonCov(muon.x(), muon.y(), muon.z(), muon.phi(), muon.tgl(), muon.signed1Pt(),
-                    muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(), muon.cPhiPhi(),
-                    muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(), muon.c1PtX(), muon.c1PtY(),
-                    muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2());
+            if (fPropMuon) {
+              muonExtra(muon.nClusters(), VarManager::fgValues[VarManager::kMuonPDca], VarManager::fgValues[VarManager::kMuonRAtAbsorberEnd],
+                        muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
+                        muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
+                        muon.midBoards(), muon.trackType(), VarManager::fgValues[VarManager::kMuonDCAx], VarManager::fgValues[VarManager::kMuonDCAy],
+                        muon.trackTime(), muon.trackTimeRes());
+            }
+            muonCov(VarManager::fgValues[VarManager::kX], VarManager::fgValues[VarManager::kY], VarManager::fgValues[VarManager::kZ], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kTgl], muon.sign() / VarManager::fgValues[VarManager::kPt],
+                    VarManager::fgValues[VarManager::kMuonCXX], VarManager::fgValues[VarManager::kMuonCXY], VarManager::fgValues[VarManager::kMuonCYY], VarManager::fgValues[VarManager::kMuonCPhiX], VarManager::fgValues[VarManager::kMuonCPhiY], VarManager::fgValues[VarManager::kMuonCPhiPhi],
+                    VarManager::fgValues[VarManager::kMuonCTglX], VarManager::fgValues[VarManager::kMuonCTglY], VarManager::fgValues[VarManager::kMuonCTglPhi], VarManager::fgValues[VarManager::kMuonCTglTgl], VarManager::fgValues[VarManager::kMuonC1Pt2X], VarManager::fgValues[VarManager::kMuonC1Pt2Y],
+                    VarManager::fgValues[VarManager::kMuonC1Pt2Phi], VarManager::fgValues[VarManager::kMuonC1Pt2Tgl], VarManager::fgValues[VarManager::kMuonC1Pt21Pt2]);
+          } else {
+            muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
+                      muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
+                      muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
+                      muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY(),
+                      muon.trackTime(), muon.trackTimeRes());
           }
           muonLabels(fNewLabels.find(mctrack.index())->second, muon.mcMask(), mcflags);
         }

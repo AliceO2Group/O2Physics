@@ -33,6 +33,8 @@
 #include <THnSparse.h>
 #include <TIterator.h>
 #include <TClass.h>
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
 
 enum class EMHistType : int {
   kEvent = 0,
@@ -47,15 +49,33 @@ enum class EMHistType : int {
 
 namespace o2::aod
 {
-namespace emphotonhistograms
+namespace pwgem::photon::histogram
 {
 void DefineHistograms(THashList* list, const char* histClass, const char* subGroup = "");
 THashList* AddHistClass(THashList* list, const char* histClass);
 
 template <EMHistType htype, typename T>
-void FillHistClass(THashList* list, const char* subGroup, T const& obj)
+void FillHistClass(THashList* list, const char* subGroup, T const& obj, const float weight = 1.f)
 {
   if constexpr (htype == EMHistType::kEvent) {
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("all", 1.f);
+    if (obj.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("No TF border", 1.f);
+    }
+    if (obj.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("No ITS ROF border", 1.f);
+    }
+    if (obj.sel8()) {
+      reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("FT0AND", 1.f);
+    }
+    if (obj.numContrib() > 0.5) {
+      reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("N_{contrib}^{PV} > 0", 1.f);
+    }
+    if (abs(obj.posZ()) < 10.0) {
+      reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("|Z_{vtx}| < 10 cm", 1.f);
+    }
+
+    reinterpret_cast<TH1F*>(list->FindObject("hZvtx"))->Fill(obj.posZ());
     reinterpret_cast<TH1F*>(list->FindObject("hMultNTracksPV"))->Fill(obj.multNTracksPV());
     reinterpret_cast<TH1F*>(list->FindObject("hMultNTracksPVeta1"))->Fill(obj.multNTracksPVeta1());
     reinterpret_cast<TH2F*>(list->FindObject("hMultFT0"))->Fill(obj.multFT0A(), obj.multFT0C());
@@ -75,6 +95,7 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH1F*>(list->FindObject("hCosPA"))->Fill(obj.cospa());
     reinterpret_cast<TH2F*>(list->FindObject("hCosPA_Rxy"))->Fill(obj.v0radius(), obj.cospa());
     reinterpret_cast<TH1F*>(list->FindObject("hPCA"))->Fill(obj.pca());
+    reinterpret_cast<TH1F*>(list->FindObject("hPCA_CosPA"))->Fill(obj.cospa(), obj.pca());
     reinterpret_cast<TH2F*>(list->FindObject("hPCA_Rxy"))->Fill(obj.v0radius(), obj.pca());
     reinterpret_cast<TH2F*>(list->FindObject("hDCAxyz"))->Fill(obj.dcaXYtopv(), obj.dcaZtopv());
     reinterpret_cast<TH2F*>(list->FindObject("hAPplot"))->Fill(obj.alpha(), obj.qtarm());
@@ -142,9 +163,29 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj)
     reinterpret_cast<TH2F*>(list->FindObject("hEvsM20"))->Fill(obj.e(), obj.m20());
     reinterpret_cast<TH1F*>(list->FindObject("hDistToBC"))->Fill(obj.distanceToBadChannel());
     reinterpret_cast<TH2F*>(list->FindObject(Form("hClusterXZM%d", obj.mod())))->Fill(obj.cellx(), obj.cellz());
+  } else if constexpr (htype == EMHistType::kEMCCluster) {
+    if (TString(subGroup) == "2D") {
+      reinterpret_cast<TH2F*>(list->FindObject("hNCell"))->Fill(obj.nCells(), obj.e());
+      reinterpret_cast<TH2F*>(list->FindObject("hM02"))->Fill(obj.m02(), obj.e());
+      reinterpret_cast<TH2F*>(list->FindObject("hM20"))->Fill(obj.m20(), obj.e());
+      reinterpret_cast<TH2F*>(list->FindObject("hTime"))->Fill(obj.time(), obj.e());
+      reinterpret_cast<TH2F*>(list->FindObject("hDistToBC"))->Fill(obj.distanceToBadChannel(), obj.e());
+    } else {
+      reinterpret_cast<TH1F*>(list->FindObject("hNCell"))->Fill(obj.nCells());
+      reinterpret_cast<TH1F*>(list->FindObject("hM02"))->Fill(obj.m02());
+      reinterpret_cast<TH1F*>(list->FindObject("hM20"))->Fill(obj.m20());
+      reinterpret_cast<TH1F*>(list->FindObject("hTime"))->Fill(obj.time());
+      reinterpret_cast<TH1F*>(list->FindObject("hDistToBC"))->Fill(obj.distanceToBadChannel());
+    }
+    reinterpret_cast<TH1F*>(list->FindObject("hPt"))->Fill(obj.pt());
+    reinterpret_cast<TH1F*>(list->FindObject("hE"))->Fill(obj.e());
+    reinterpret_cast<TH2F*>(list->FindObject("hEtaPhi"))->Fill(obj.phi(), obj.eta());
+    for (size_t itrack = 0; itrack < obj.tracketa().size(); itrack++) { // Fill TrackEtaPhi histogram with delta phi and delta eta of all tracks saved in the vectors in skimmerGammaCalo.cxx
+      reinterpret_cast<TH2F*>(list->FindObject("hTrackEtaPhi"))->Fill(obj.trackphi()[itrack] - obj.phi(), obj.tracketa()[itrack] - obj.eta());
+    }
   }
 }
-} // namespace emphotonhistograms
+} // namespace pwgem::photon::histogram
 } // namespace o2::aod
 
 #endif // PWGEM_PHOTONMESON_CORE_HISTOGRAMSLIBRARY_H_

@@ -81,6 +81,7 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgVerbosity, int, 1, "Verbosity level (0 = major, 1 = per collision)")
 
   O2_DEFINE_CONFIGURABLE(cfgDecayParticleMask, int, 0, "Selection bitmask for the decay particles: 0 = no selection")
+  O2_DEFINE_CONFIGURABLE(cfgMassAxis, int, 0, "Use invariant mass axis (0 = OFF, 1 = ON)")
 
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
@@ -92,6 +93,9 @@ struct CorrelationTask {
   ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
   ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
+
+  ConfigurableAxis axisInvMass{"axisInvMass", {VARIABLE_WIDTH, 0, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0, 5.0}, "invariant mass axis for histograms"};
+  ConfigurableAxis axisInvMassHistogram{"axisInvMassHistogram", {1000, 1.0, 3.0}, "invariant mass histogram binning"};
 
   // This filter is applied to AOD and derived data (column names are identical)
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -140,7 +144,7 @@ struct CorrelationTask {
     if (doprocessSame2ProngDerived || doprocessMixed2ProngDerived) {
       registry.add("yieldsTrigger", "multiplicity/centrality vs pT vs eta (triggers)", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
       registry.add("etaphiTrigger", "multiplicity/centrality vs eta vs phi (triggers)", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
-      registry.add("invMass", "2-prong invariant mass (GeV)", {HistType::kTH1F, {{100, 0, 3, "Mass"}}});
+      registry.add("invMass", "2-prong invariant mass (GeV/c^2)", {HistType::kTH3F, {axisInvMassHistogram, axisPtTrigger, axisMultiplicity}});
     }
 
     const int maxMixBin = AxisSpec(axisMultiplicity).getNbins() * AxisSpec(axisVertex).getNbins();
@@ -173,8 +177,11 @@ struct CorrelationTask {
     std::vector<AxisSpec> effAxis = {{axisEtaEfficiency, "#eta"},
                                      {axisPtEfficiency, "p_{T} (GeV/c)"},
                                      {axisVertexEfficiency, "z-vtx (cm)"}};
-    same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
-    mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+    std::vector<AxisSpec> userAxis;
+    if (cfgMassAxis != 0)
+      userAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
+    same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
+    mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userAxis));
 
     same->setTrackEtaCut(cfgCutEta);
     mixed->setTrackEtaCut(cfgCutEta);
@@ -217,14 +224,19 @@ struct CorrelationTask {
     }
   }
 
+  template <class T>
+  using hasInvMass = decltype(std::declval<T&>().invMass());
+
   template <typename TCollision, typename TTracks1, typename TTracks2>
   void fillQA(const TCollision& collision, float multiplicity, const TTracks1& tracks1, const TTracks2& tracks2)
   {
     for (auto& track1 : tracks1) {
-      if constexpr (std::is_same<TTracks1, aod::CF2ProngTracks>::value) {
-        if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track1.decay())) == 0u)
-          continue;
-        registry.fill(HIST("invMass"), track1.invMass());
+      if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value) {
+        if constexpr (std::experimental::is_detected<hasDecay, typename TTracks1::iterator>::value) {
+          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track1.decay())) == 0u)
+            continue;
+        }
+        registry.fill(HIST("invMass"), track1.invMass(), track1.pt(), multiplicity);
       }
       registry.fill(HIST("yieldsTrigger"), multiplicity, track1.pt(), track1.eta());
       registry.fill(HIST("etaphiTrigger"), multiplicity, track1.eta(), track1.phi());
@@ -262,6 +274,12 @@ struct CorrelationTask {
 
   template <class T>
   using hasSign = decltype(std::declval<T&>().sign());
+  template <class T>
+  using hasDecay = decltype(std::declval<T&>().decay());
+  template <class T>
+  using hasProng0Id = decltype(std::declval<T&>().cfTrackProng0Id());
+  template <class T>
+  using hasProng1Id = decltype(std::declval<T&>().cfTrackProng1Id());
 
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks1, typename TTracks2>
   void fillCorrelations(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight)
@@ -286,12 +304,12 @@ struct CorrelationTask {
         }
       }
 
-      if constexpr (std::is_same<TTracks1, aod::CF2ProngTracks>::value) {
+      if constexpr (std::experimental::is_detected<hasDecay, typename TTracks1::iterator>::value) {
         if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track1.decay())) == 0u)
           continue;
       }
 
-      if constexpr (std::experimental::is_detected<hasSign, TTracks1>::value) {
+      if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value) {
         if (cfgTriggerCharge != 0 && cfgTriggerCharge * track1.sign() < 0) {
           continue;
         }
@@ -313,8 +331,12 @@ struct CorrelationTask {
             continue;
           }
         }
-        if constexpr (std::is_same<TTracks1, aod::CF2ProngTracks>::value) {
-          if (track2.globalIndex() == track1.cfTrackProng0Id() || track2.globalIndex() == track1.cfTrackProng1Id()) // do not correlate daughter tracks of the same event
+        if constexpr (std::experimental::is_detected<hasProng0Id, typename TTracks1::iterator>::value) {
+          if (track2.globalIndex() == track1.cfTrackProng0Id()) // do not correlate daughter tracks of the same event
+            continue;
+        }
+        if constexpr (std::experimental::is_detected<hasProng1Id, typename TTracks1::iterator>::value) {
+          if (track2.globalIndex() == track1.cfTrackProng1Id()) // do not correlate daughter tracks of the same event
             continue;
         }
 
@@ -332,7 +354,7 @@ struct CorrelationTask {
           continue;
         }
 
-        if constexpr (std::experimental::is_detected<hasSign, TTracks1>::value) {
+        if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value) {
           if (cfgPairCharge != 0 && cfgPairCharge * track1.sign() * track2.sign() < 0) {
             continue;
           }
@@ -365,8 +387,15 @@ struct CorrelationTask {
           deltaPhi += TwoPI;
         }
 
-        target->getPairHist()->Fill(step,
-                                    track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, associatedWeight);
+        // last param is the weight
+        if (cfgMassAxis) {
+          if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value)
+            target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track1.invMass(), associatedWeight);
+          else
+            LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
+        } else {
+          target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, associatedWeight);
+        }
       }
     }
   }

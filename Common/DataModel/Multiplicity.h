@@ -12,6 +12,7 @@
 #define O2_ANALYSIS_MULTIPLICITY_H_
 
 #include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/EventSelection.h"
 
 namespace o2::aod
 {
@@ -45,12 +46,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt0, isInelGt0, //! is INEL > 0
 DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt1, isInelGt1, //! is INEL > 1
                            [](int multPveta1) -> bool { return multPveta1 > 1; });
 // MC
-DECLARE_SOA_COLUMN(MultMCFT0A, multMCFT0A, float);                   //!
-DECLARE_SOA_COLUMN(MultMCFT0C, multMCFT0C, float);                   //!
-DECLARE_SOA_COLUMN(MultMCNTracksPVeta1, multMCNTracksPVeta1, float); //!
+DECLARE_SOA_COLUMN(MultMCFT0A, multMCFT0A, int);                       //!
+DECLARE_SOA_COLUMN(MultMCFT0C, multMCFT0C, int);                       //!
+DECLARE_SOA_COLUMN(MultMCNParticlesEta10, multMCNParticlesEta10, int); //!
+DECLARE_SOA_COLUMN(MultMCNParticlesEta08, multMCNParticlesEta08, int); //!
+DECLARE_SOA_COLUMN(MultMCNParticlesEta05, multMCNParticlesEta05, int); //!
 
 // complementary / MultsExtra table
-DECLARE_SOA_COLUMN(MultPVTotalContributors, multPVTotalContributors, float); //!
+DECLARE_SOA_COLUMN(MultPVTotalContributors, multPVTotalContributors, int);   //!
 DECLARE_SOA_COLUMN(MultPVChi2, multPVChi2, float);                           //!
 DECLARE_SOA_COLUMN(MultCollisionTimeRes, multCollisionTimeRes, float);       //!
 DECLARE_SOA_COLUMN(MultRunNumber, multRunNumber, int);                       //!
@@ -66,6 +69,9 @@ DECLARE_SOA_COLUMN(MultNTracksHasTRD, multNTracksHasTRD, int); //!
 DECLARE_SOA_COLUMN(MultNTracksITSOnly, multNTracksITSOnly, int); //!
 DECLARE_SOA_COLUMN(MultNTracksTPCOnly, multNTracksTPCOnly, int); //!
 DECLARE_SOA_COLUMN(MultNTracksITSTPC, multNTracksITSTPC, int);   //!
+DECLARE_SOA_COLUMN(MultAllTracksTPCOnly, multAllTracksTPCOnly, int); //!
+DECLARE_SOA_COLUMN(MultAllTracksITSTPC, multAllTracksITSTPC, int);   //!
+DECLARE_SOA_COLUMN(MultNTracksGlobal, multNTracksGlobal, int);       //!
 
 DECLARE_SOA_COLUMN(BCNumber, bcNumber, int); //!
 
@@ -99,10 +105,18 @@ using Mult = Mults::iterator;
 DECLARE_SOA_TABLE(MultsExtra, "AOD", "MULTEXTRA", //!
                   mult::MultPVTotalContributors, mult::MultPVChi2, mult::MultCollisionTimeRes, mult::MultRunNumber, mult::MultPVz, mult::MultSel8,
                   mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
-                  mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC, mult::BCNumber);
+                  mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC,
+                  mult::MultAllTracksTPCOnly, mult::MultAllTracksITSTPC,
+                  mult::BCNumber);
+
+// for QA purposes
+DECLARE_SOA_TABLE(MultsGlobal, "AOD", "MULTGLOBAL", //! counters that use Track Selection (optional)
+                  mult::MultNTracksGlobal);
+DECLARE_SOA_TABLE(MultSelections, "AOD", "MULTSELECTIONS", //!
+                  evsel::Selection);                       // for derived data / QA studies
 using MultExtra = MultsExtra::iterator;
 DECLARE_SOA_TABLE(MultsExtraMC, "AOD", "MULTEXTRAMC", //! Table for the MC information
-                  mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNTracksPVeta1);
+                  mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, o2::soa::Marker<1>);
 using MultExtraMC = MultsExtraMC::iterator;
 
 namespace multZeq

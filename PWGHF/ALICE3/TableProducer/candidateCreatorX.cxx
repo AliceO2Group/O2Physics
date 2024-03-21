@@ -62,6 +62,8 @@ struct HfCandidateCreatorX {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> diffMassJpsiMax{"diffMassJpsiMax", 0.07, "max. diff. between Jpsi rec. and PDG mass"};
 
+  o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter (to rebuild Jpsi vertex)
+  o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
   HfHelper hfHelper;
 
   double massPi{0.};
@@ -83,16 +85,7 @@ struct HfCandidateCreatorX {
   {
     massPi = MassPiPlus;
     massJpsi = MassJPsi;
-  }
 
-  void process(aod::Collision const& collision,
-               soa::Filtered<soa::Join<
-                 aod::HfCand2Prong,
-                 aod::HfSelJpsi>> const& jpsiCands,
-               aod::TracksWCov const& tracks)
-  {
-    // 2-prong vertex fitter (to rebuild Jpsi vertex)
-    o2::vertexing::DCAFitterN<2> df2;
     df2.setBz(bz);
     df2.setPropagateToPCA(propagateToPCA);
     df2.setMaxR(maxR);
@@ -102,8 +95,6 @@ struct HfCandidateCreatorX {
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
-    // 3-prong vertex fitter
-    o2::vertexing::DCAFitterN<3> df3;
     df3.setBz(bz);
     df3.setPropagateToPCA(propagateToPCA);
     df3.setMaxR(maxR);
@@ -112,7 +103,14 @@ struct HfCandidateCreatorX {
     df3.setMinRelChi2Change(minRelChi2Change);
     df3.setUseAbsDCA(useAbsDCA);
     df3.setWeightedFinalPCA(useWeightedFinalPCA);
+  }
 
+  void process(aod::Collision const& collision,
+               soa::Filtered<soa::Join<
+                 aod::HfCand2Prong,
+                 aod::HfSelJpsi>> const& jpsiCands,
+               aod::TracksWCov const& tracks)
+  {
     // loop over Jpsi candidates
     for (const auto& jpsiCand : jpsiCands) {
       if (!(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToMuMu)) {

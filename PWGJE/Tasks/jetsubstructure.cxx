@@ -40,13 +40,10 @@ using namespace o2::framework::expressions;
 #include "Framework/runDataProcessing.h"
 
 struct JetSubstructureTask {
-  Produces<aod::ChargedJetSubstructures> jetSubstructureDataTable;
-  Produces<aod::ChargedMCDetectorLevelJetSubstructures> jetSubstructureMCDTable;
-  Produces<aod::ChargedMCParticleLevelJetSubstructures> jetSubstructureMCPTable;
-  Produces<aod::ChargedEventWiseSubtractedJetSubstructures> jetSubstructureDataSubTable;
-  OutputObj<TH2F> hZg{"h_jet_zg_jet_pt"};
-  OutputObj<TH2F> hRg{"h_jet_rg_jet_pt"};
-  OutputObj<TH2F> hNsd{"h_jet_nsd_jet_pt"};
+  Produces<aod::CJetSSs> jetSubstructureDataTable;
+  Produces<aod::CMCDJetSSs> jetSubstructureMCDTable;
+  Produces<aod::CMCPJetSSs> jetSubstructureMCPTable;
+  Produces<aod::CEWSJetSSs> jetSubstructureDataSubTable;
 
   Configurable<float> zCut{"zCut", 0.1, "soft drop z cut"};
   Configurable<float> beta{"beta", 0.0, "soft drop beta"};
@@ -60,17 +57,17 @@ struct JetSubstructureTask {
 
   void init(InitContext const&)
   {
-    registry.add("h_jet_pt_jet_zg", ";#it{p}_{T,jet} (GeV/#it{c});#it{z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h_jet_pt_jet_rg", ";#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h_jet_pt_jet_nsd", ";#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {10, -0.5, 9.5}}});
+    registry.add("h2_jet_pt_jet_zg", ";#it{p}_{T,jet} (GeV/#it{c});#it{z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_jet_rg", ";#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_jet_nsd", ";#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {15, -0.5, 14.5}}});
 
-    registry.add("h_jet_pt_part_jet_zg_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{z}_{g}^{part}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h_jet_pt_part_jet_rg_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{R}_{g}^{part}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h_jet_pt_part_jet_nsd_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{n}_{SD}^{part}", {HistType::kTH2F, {{200, 0., 200.}, {10, -0.5, 9.5}}});
+    registry.add("h2_jet_pt_part_jet_zg_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{z}_{g}^{part}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_part_jet_rg_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{R}_{g}^{part}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_part_jet_nsd_part", ";#it{p}_{T,jet}^{part} (GeV/#it{c});#it{n}_{SD}^{part}", {HistType::kTH2F, {{200, 0., 200.}, {15, -0.5, 14.5}}});
 
-    registry.add("h_jet_pt_jet_zg_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h_jet_pt_jet_rg_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
-    registry.add("h_jet_pt_jet_nsd_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {10, -0.5, 9.5}}});
+    registry.add("h2_jet_pt_jet_zg_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{z}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_jet_rg_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{R}_{g}", {HistType::kTH2F, {{200, 0., 200.}, {22, 0.0, 1.1}}});
+    registry.add("h2_jet_pt_jet_nsd_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {15, -0.5, 14.5}}});
 
     jetReclusterer.isReclustering = true;
     jetReclusterer.algorithm = fastjet::JetAlgorithm::cambridge_algorithm;
@@ -110,16 +107,16 @@ struct JetSubstructureTask {
           zg = z;
           rg = theta;
           if constexpr (!isSubtracted && !isMCP) {
-            registry.fill(HIST("h_jet_pt_jet_zg"), jet.pt(), zg);
-            registry.fill(HIST("h_jet_pt_jet_rg"), jet.pt(), rg);
+            registry.fill(HIST("h2_jet_pt_jet_zg"), jet.pt(), zg);
+            registry.fill(HIST("h2_jet_pt_jet_rg"), jet.pt(), rg);
           }
           if constexpr (!isSubtracted && isMCP) {
-            registry.fill(HIST("h_jet_pt_part_jet_zg_part"), jet.pt(), zg);
-            registry.fill(HIST("h_jet_pt_part_jet_rg_part"), jet.pt(), rg);
+            registry.fill(HIST("h2_jet_pt_part_jet_zg_part"), jet.pt(), zg);
+            registry.fill(HIST("h2_jet_pt_part_jet_rg_part"), jet.pt(), rg);
           }
           if constexpr (isSubtracted && !isMCP) {
-            registry.fill(HIST("h_jet_pt_jet_zg_eventwiseconstituentsubtracted"), jet.pt(), zg);
-            registry.fill(HIST("h_jet_pt_jet_rg_eventwiseconstituentsubtracted"), jet.pt(), rg);
+            registry.fill(HIST("h2_jet_pt_jet_zg_eventwiseconstituentsubtracted"), jet.pt(), zg);
+            registry.fill(HIST("h2_jet_pt_jet_rg_eventwiseconstituentsubtracted"), jet.pt(), rg);
           }
           softDropped = true;
         }
@@ -128,13 +125,13 @@ struct JetSubstructureTask {
       daughterSubJet = parentSubJet1;
     }
     if constexpr (!isSubtracted && !isMCP) {
-      registry.fill(HIST("h_jet_pt_jet_nsd"), jet.pt(), nsd);
+      registry.fill(HIST("h2_jet_pt_jet_nsd"), jet.pt(), nsd);
     }
     if constexpr (!isSubtracted && isMCP) {
-      registry.fill(HIST("h_jet_pt_part_jet_nsd_part"), jet.pt(), nsd);
+      registry.fill(HIST("h2_jet_pt_part_jet_nsd_part"), jet.pt(), nsd);
     }
     if constexpr (isSubtracted && !isMCP) {
-      registry.fill(HIST("h_jet_pt_jet_nsd_eventwiseconstituentsubtracted"), jet.pt(), nsd);
+      registry.fill(HIST("h2_jet_pt_jet_nsd_eventwiseconstituentsubtracted"), jet.pt(), nsd);
     }
     outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec);
   }

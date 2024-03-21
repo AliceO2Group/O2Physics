@@ -79,6 +79,8 @@ struct deltaAnalysis {
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
   Configurable<float> nsigmaCutTOF{"nsigmaCutTOF", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
+  Configurable<float> cfgCutPtProtonTPC{"cfgCutPtProtonTPC", 0.8, "Pt cut of proton in TPC"};
+  Configurable<float> cfgCutPtPionTPC{"cfgCutPtPionTPC", 0.8, "Pt cut of pion in TPC"};
 
   // Histogram axes
   AxisSpec nSigmaTPCaxis = {100, -5., 5., "n#sigma_{TPC}"};
@@ -104,21 +106,25 @@ struct deltaAnalysis {
     histos.add("hPiPlusDCAxy", "DCA_{xy} distribution for #pi^{+}; DCA_{xy} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hPiPlusDCAz", "DCA_{z} distribution for #pi^{+}; DCA_{z} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hPiPlusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for #pi^{+}", kTH2F, {ptAxis, nSigmaTPCaxis});
+    histos.add("hPiPlusNsigmaTPCvsPt_TPC_only", "n#sigma_{TPC} distribution vs #it{p}_{T} for #pi^{+}", kTH2F, {ptAxis, nSigmaTPCaxis});
     histos.add("hPiPlusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for #pi^{+}", kTH2F, {ptAxis, nSigmaTOFaxis});
 
     histos.add("hPiMinusDCAxy", "DCA_{xy} distribution for #pi^{-}; DCA_{xy} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hPiMinusDCAz", "DCA_{z} distribution for #pi^{-}; DCA_{z} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hPiMinusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for #pi^{-}", kTH2F, {ptAxis, nSigmaTPCaxis});
+    histos.add("hPiMinusNsigmaTPCvsPt_TPC_only", "n#sigma_{TPC} distribution vs #it{p}_{T} for #pi^{-}", kTH2F, {ptAxis, nSigmaTPCaxis});
     histos.add("hPiMinusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for #pi^{-}", kTH2F, {ptAxis, nSigmaTOFaxis});
 
     histos.add("hPrPlusDCAxy", "DCA_{xy} distribution for p; DCA_{xy} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hPrPlusDCAz", "DCA_{z} distribution for p; DCA_{z} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hPrPlusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for p", kTH2F, {ptAxis, nSigmaTPCaxis});
+    histos.add("hPrPlusNsigmaTPCvsPt_TPC_only", "n#sigma_{TPC} distribution vs #it{p}_{T} for p", kTH2F, {ptAxis, nSigmaTPCaxis});
     histos.add("hPrPlusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for p", kTH2F, {ptAxis, nSigmaTOFaxis});
 
     histos.add("hPrMinusDCAxy", "DCA_{xy} distribution for #bar{p}; DCA_{xy} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hPrMinusDCAz", "DCA_{z} distribution for #bar{p};  DCA_{z} (cm)", kTH1F, {{200, -1.0f, 1.0f}});
     histos.add("hPrMinusNsigmaTPCvsPt", "n#sigma_{TPC} distribution vs #it{p}_{T} for #bar{p}", kTH2F, {ptAxis, nSigmaTPCaxis});
+    histos.add("hPrMinusNsigmaTPCvsPt_TPC_only", "n#sigma_{TPC} distribution vs #it{p}_{T} for #bar{p}", kTH2F, {ptAxis, nSigmaTPCaxis});
     histos.add("hPrMinusNsigmaTOFvsPt", "n#sigma_{TOF} distribution vs #it{p}_{T} for #bar{p}", kTH2F, {ptAxis, nSigmaTOFaxis});
 
     // Deltas
@@ -198,14 +204,18 @@ struct deltaAnalysis {
     } else if (std::abs(track.tpcNSigmaPi()) < nsigmaCutTPC) {
       if (track.sign() > 0) {
         histos.fill(HIST("hPiPlusNsigmaTPCvsPt"), track.pt(), track.tpcNSigmaPi());
+        histos.fill(HIST("hPiPlusNsigmaTPCvsPt_TPC_only"), track.pt(), track.tpcNSigmaPi());
         histos.fill(HIST("hPiPlusDCAxy"), track.dcaXY());
         histos.fill(HIST("hPiPlusDCAz"), track.dcaZ());
       } else {
         histos.fill(HIST("hPiMinusNsigmaTPCvsPt"), track.pt(), track.tpcNSigmaPi());
+        histos.fill(HIST("hPiMinusNsigmaTPCvsPt_TPC_only"), track.pt(), track.tpcNSigmaPi());
         histos.fill(HIST("hPiMinusDCAxy"), track.dcaXY());
         histos.fill(HIST("hPiMinusDCAz"), track.dcaZ());
       }
-      return true;
+      if (track.pt() < cfgCutPtPionTPC) {
+        return true;
+      }
     }
     return false;
   }
@@ -231,14 +241,18 @@ struct deltaAnalysis {
     } else if (std::abs(track.tpcNSigmaPr()) < nsigmaCutTPC) {
       if (track.sign() > 0) {
         histos.fill(HIST("hPrPlusNsigmaTPCvsPt"), track.pt(), track.tpcNSigmaPr());
+        histos.fill(HIST("hPrPlusNsigmaTPCvsPt_TPC_only"), track.pt(), track.tpcNSigmaPr());
         histos.fill(HIST("hPrPlusDCAxy"), track.dcaXY());
         histos.fill(HIST("hPrPlusDCAz"), track.dcaZ());
       } else {
         histos.fill(HIST("hPrMinusNsigmaTPCvsPt"), track.pt(), track.tpcNSigmaPr());
+        histos.fill(HIST("hPrMinusNsigmaTPCvsPt_TPC_only"), track.pt(), track.tpcNSigmaPr());
         histos.fill(HIST("hPrMinusDCAxy"), track.dcaXY());
         histos.fill(HIST("hPrMinusDCAz"), track.dcaZ());
       }
-      return true;
+      if (track.pt() < cfgCutPtProtonTPC) {
+        return true;
+      }
     }
     return false;
   }

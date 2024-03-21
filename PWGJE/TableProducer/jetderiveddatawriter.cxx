@@ -16,6 +16,7 @@
 /// \author Jochen Klein <jochen.klein@cern.ch>
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
+#include <MathUtils/Utils.h>
 #include <algorithm>
 
 #include "Framework/AnalysisTask.h"
@@ -34,12 +35,15 @@ using namespace o2::framework::expressions;
 struct JetDerivedDataWriter {
 
   Configurable<float> chargedJetPtMin{"chargedJetPtMin", 0.0, "Minimum charged jet pt to accept event"};
+  Configurable<float> chargedEventWiseSubtractedJetPtMin{"chargedEventWiseSubtractedJetPtMin", 0.0, "Minimum charged event-wise subtracted jet pt to accept event"};
   Configurable<float> chargedMCPJetPtMin{"chargedMCPJetPtMin", 0.0, "Minimum charged mcp jet pt to accept event"};
   Configurable<float> neutralJetPtMin{"neutralJetPtMin", 0.0, "Minimum charged jet pt to accept event"};
   Configurable<float> fullJetPtMin{"fullJetPtMin", 0.0, "Minimum full jet pt to accept event"};
+  Configurable<float> chargedEventWiseSubtractedD0JetPtMin{"chargedEventWiseSubtractedD0JetPtMin", 0.0, "Minimum charged event-wise subtracted D0 jet pt to accept event"};
   Configurable<float> chargedD0JetPtMin{"chargedD0JetPtMin", 0.0, "Minimum charged D0 jet pt to accept event"};
   Configurable<float> chargedLcJetPtMin{"chargedLcJetPtMin", 0.0, "Minimum charged Lc jet pt to accept event"};
 
+  Configurable<bool> performTrackSelection{"performTrackSelection", true, "only save tracks that pass one of the track selections"};
   Configurable<bool> saveBCsTable{"saveBCsTable", true, "save the bunch crossing table to the output"};
   Configurable<bool> saveClustersTable{"saveClustersTable", true, "save the clusters table to the output"};
   Configurable<bool> saveD0Table{"saveD0Table", false, "save the D0 table to the output"};
@@ -84,7 +88,15 @@ struct JetDerivedDataWriter {
   std::vector<bool> collisionFlag;
   std::vector<bool> McCollisionFlag;
   std::vector<int> bcIndicies;
-  std::map<int32_t, int32_t> bcMapping;
+
+  uint32_t precisionPositionMask;
+  uint32_t precisionMomentumMask;
+
+  void init(InitContext& context)
+  {
+    precisionPositionMask = 0xFFFFFC00; // 13 bits
+    precisionMomentumMask = 0xFFFFFC00; // 13 bits  this is currently keept at 13 bits wihich gives roughly a resolution of 1/8000. This can be increased to 15 bits if really needed
+  }
 
   bool acceptCollision(aod::JCollision const& collision)
   {
@@ -93,13 +105,13 @@ struct JetDerivedDataWriter {
 
   void processCollisions(aod::JCollisions const& collisions)
   {
-    collisionFlag.reserve(collisions.size());
+    collisionFlag.resize(collisions.size());
     std::fill(collisionFlag.begin(), collisionFlag.end(), false);
   }
 
   void processMcCollisions(aod::JMcCollisions const& Mccollisions)
   {
-    McCollisionFlag.reserve(Mccollisions.size());
+    McCollisionFlag.resize(Mccollisions.size());
     std::fill(McCollisionFlag.begin(), McCollisionFlag.end(), false);
   }
 
@@ -109,6 +121,8 @@ struct JetDerivedDataWriter {
     float jetPtMin = 0.0;
     if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedJets> || std::is_same_v<std::decay_t<T>, aod::ChargedMCDetectorLevelJets>) {
       jetPtMin = chargedJetPtMin;
+    } else if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedEventWiseSubtractedJets>) {
+      jetPtMin = chargedEventWiseSubtractedJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedMCParticleLevelJets>) {
       jetPtMin = chargedMCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::NeutralJets>) {
@@ -117,12 +131,13 @@ struct JetDerivedDataWriter {
       jetPtMin = fullJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::D0ChargedJets>) {
       jetPtMin = chargedD0JetPtMin;
+    } else if constexpr (std::is_same_v<std::decay_t<T>, aod::D0ChargedEventWiseSubtractedJets>) {
+      jetPtMin = chargedEventWiseSubtractedD0JetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::LcChargedJets>) {
       jetPtMin = chargedLcJetPtMin;
     } else {
       jetPtMin = 0.0;
     }
-
     for (const auto& jet : jets) {
       if (jet.pt() >= jetPtMin) {
         if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::NeutralMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::FullMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::D0ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::LcChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::BplusChargedMCParticleLevelJets>) {
@@ -133,27 +148,27 @@ struct JetDerivedDataWriter {
       }
     }
   }
-// TODO: replace with PROCESS_SWITCH_FULL when available
-#define PROCESS_SWITCH_JKL(_Class_, _Method_, _Name_, _Help_, _Default_) \
-  decltype(ProcessConfigurable{&_Class_ ::_Method_, #_Name_, _Default_, _Help_}) do##_Name_ = ProcessConfigurable{&_Class_ ::_Method_, #_Name_, _Default_, _Help_};
   PROCESS_SWITCH(JetDerivedDataWriter, processCollisions, "setup the writing for data and MCD", true);
   PROCESS_SWITCH(JetDerivedDataWriter, processMcCollisions, "setup the writing for MCP", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::ChargedJets>, processChargedJets, "process charged jets", true);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::ChargedEventWiseSubtractedJets>, processChargedEventWiseSubtractedJets, "process charged event-wise subtracted jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::ChargedMCDetectorLevelJets>, processChargedMCDJets, "process charged mcd jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::ChargedMCParticleLevelJets>, processChargedMCPJets, "process charged mcp jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::NeutralJets>, processNeutralJets, "process neutral jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::FullJets>, processFullJets, "process full jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::D0ChargedJets>, processD0ChargedJets, "process D0 charged jets", false);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::D0ChargedEventWiseSubtractedJets>, processD0ChargedEventWiseSubtractedJets, "process D0 event-wise subtracted charged jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processJets<aod::LcChargedJets>, processLcChargedJets, "process Lc charged jets", false);
 
-  void processDummy(aod::JDummys const& Dummys)
+  void processDummyTable(aod::JDummys const& Dummys)
   {
     storedJDummysTable(1);
   }
-  PROCESS_SWITCH(JetDerivedDataWriter, processDummy, "write out dummy output table", true);
+  PROCESS_SWITCH(JetDerivedDataWriter, processDummyTable, "write out dummy output table", true);
 
   void processData(soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JChTrigSels, aod::JFullTrigSels>::iterator const& collision, soa::Join<aod::JBCs, aod::JBCPIs> const& bcs, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks> const& clusters, aod::HfD0CollBases const& D0Collisions, CandidatesD0Data const& D0s)
   {
+    std::map<int32_t, int32_t> bcMapping;
     std::map<int32_t, int32_t> trackMapping;
 
     if (collisionFlag[collision.globalIndex()]) {
@@ -167,7 +182,7 @@ struct JetDerivedDataWriter {
         }
       }
 
-      storedJCollisionsTable(collision.posZ(), collision.centrality(), collision.eventSel(), collision.alias_raw());
+      storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.eventSel(), collision.alias_raw());
       storedJCollisionsParentIndexTable(collision.collisionId());
       if (saveBCsTable) {
         int32_t storedBCID = -1;
@@ -181,7 +196,10 @@ struct JetDerivedDataWriter {
       storedJFullTriggerSelsTable(collision.fullTriggerSel());
 
       for (const auto& track : tracks) {
-        storedJTracksTable(storedJCollisionsTable.lastIndex(), track.pt(), track.eta(), track.phi(), track.energy(), track.sign(), track.trackSel());
+        if (performTrackSelection && !(track.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept
+          continue;
+        }
+        storedJTracksTable(storedJCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(track.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(track.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(track.phi(), precisionPositionMask), track.trackSel());
         storedJTracksParentIndexTable(track.trackId());
         trackMapping.insert(std::make_pair(track.globalIndex(), storedJTracksTable.lastIndex()));
       }
@@ -232,11 +250,11 @@ struct JetDerivedDataWriter {
   }
   // process switch for output writing must be last
   // to run after all jet selections
-  PROCESS_SWITCH(JetDerivedDataWriter, processData, "write out data output tables", true);
+  PROCESS_SWITCH(JetDerivedDataWriter, processData, "write out data output tables", false);
 
   void processMC(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JChTrigSels, aod::JFullTrigSels, aod::JMcCollisionLbs> const& collisions, soa::Join<aod::JBCs, aod::JBCPIs> const& bcs, soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks> const& clusters, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles, aod::HfD0CollBases const& D0Collisions, CandidatesD0MCD const& D0s, soa::Join<aod::HfD0PBases, aod::JD0PIds> const& D0Particles)
   {
-
+    std::map<int32_t, int32_t> bcMapping;
     std::map<int32_t, int32_t> paticleMapping;
     std::map<int32_t, int32_t> mcCollisionMapping;
     int particleTableIndex = 0;
@@ -253,7 +271,7 @@ struct JetDerivedDataWriter {
 
         const auto particlesPerMcCollision = particles.sliceBy(ParticlesPerMcCollision, mcCollision.globalIndex());
 
-        storedJMcCollisionsTable(mcCollision.posZ(), mcCollision.weight());
+        storedJMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.weight());
         storedJMcCollisionsParentIndexTable(mcCollision.mcCollisionId());
         mcCollisionMapping.insert(std::make_pair(mcCollision.globalIndex(), storedJMcCollisionsTable.lastIndex()));
 
@@ -288,7 +306,7 @@ struct JetDerivedDataWriter {
               i++;
             }
           }
-          storedJMcParticlesTable(storedJMcCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId);
+          storedJMcParticlesTable(storedJMcCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(particle.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(particle.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.phi(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.y(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.e(), precisionMomentumMask), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId);
           storedJParticlesParentIndexTable(particle.mcParticleId());
         }
 
@@ -330,7 +348,7 @@ struct JetDerivedDataWriter {
             }
           }
 
-          storedJCollisionsTable(collision.posZ(), collision.centrality(), collision.eventSel(), collision.alias_raw());
+          storedJCollisionsTable(collision.posX(), collision.posY(), collision.posZ(), collision.multiplicity(), collision.centrality(), collision.eventSel(), collision.alias_raw());
           storedJCollisionsParentIndexTable(collision.collisionId());
 
           auto JMcCollisionIndex = mcCollisionMapping.find(mcCollision.globalIndex());
@@ -350,7 +368,10 @@ struct JetDerivedDataWriter {
 
           const auto tracksPerCollision = tracks.sliceBy(TracksPerCollision, collision.globalIndex());
           for (const auto& track : tracksPerCollision) {
-            storedJTracksTable(storedJCollisionsTable.lastIndex(), track.pt(), track.eta(), track.phi(), track.energy(), track.sign(), track.trackSel());
+            if (performTrackSelection && !(track.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) { // skips tracks that pass no selections. This might cause a problem with tracks matched with clusters. We should generate a track selection purely for cluster matched tracks so that they are kept
+              continue;
+            }
+            storedJTracksTable(storedJCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(track.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(track.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(track.phi(), precisionPositionMask), track.trackSel());
             storedJTracksParentIndexTable(track.trackId());
 
             if (track.has_mcParticle()) {
@@ -426,7 +447,7 @@ struct JetDerivedDataWriter {
       if (McCollisionFlag[mcCollision.globalIndex()]) { // you can also check if any of its detector level counterparts are correct
         std::map<int32_t, int32_t> paticleMapping;
 
-        storedJMcCollisionsTable(mcCollision.posZ(), mcCollision.weight());
+        storedJMcCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.weight());
         storedJMcCollisionsParentIndexTable(mcCollision.mcCollisionId());
 
         const auto particlesPerMcCollision = particles.sliceBy(ParticlesPerMcCollision, mcCollision.globalIndex());
@@ -461,7 +482,7 @@ struct JetDerivedDataWriter {
               i++;
             }
           }
-          storedJMcParticlesTable(storedJMcCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId);
+          storedJMcParticlesTable(storedJMcCollisionsTable.lastIndex(), o2::math_utils::detail::truncateFloatFraction(particle.pt(), precisionMomentumMask), o2::math_utils::detail::truncateFloatFraction(particle.eta(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.phi(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.y(), precisionPositionMask), o2::math_utils::detail::truncateFloatFraction(particle.e(), precisionMomentumMask), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), mothersId, daughtersId);
           storedJParticlesParentIndexTable(particle.mcParticleId());
         }
 

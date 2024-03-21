@@ -33,6 +33,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "PWGEM/Dilepton/Utils/MCUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -104,7 +105,7 @@ DECLARE_SOA_INDEX_COLUMN(MyCollision, mycollision);                       //!
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, MyTracks, "_Pos"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, MyTracks, "_Neg"); //!
 
-DECLARE_SOA_COLUMN(M, m, float);                 //!
+DECLARE_SOA_COLUMN(Mass, mass, float);           //!
 DECLARE_SOA_COLUMN(Pt, pt, float);               //!
 DECLARE_SOA_COLUMN(Eta, eta, float);             //!
 DECLARE_SOA_COLUMN(Phi, phi, float);             //!
@@ -121,7 +122,7 @@ DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool); //!
 // reconstructed track information
 DECLARE_SOA_TABLE(MyPairs, "AOD", "MYPAIR", //!
                   o2::soa::Index<>, mypair::MyCollisionId, mypair::PosTrackId, mypair::NegTrackId,
-                  mypair::M, mypair::Pt, mypair::Eta, mypair::Phi, mypair::PhiV, mypair::PairDCAxy, mypair::PairDCAz,
+                  mypair::Mass, mypair::Pt, mypair::Eta, mypair::Phi, mypair::PhiV, mypair::PairDCAxy, mypair::PairDCAz,
                   mypair::IsSM, mypair::IsHF, mypair::PairType, mypair::IsPrompt,
                   mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz,
@@ -139,14 +140,6 @@ using MyPair = MyPairs::iterator;
 } // namespace o2::aod
 
 struct TreeCreatorElectronML {
-  enum EM_HFeeType {
-    kUndef = -1,
-    kCe_Ce = 0,        // ULS
-    kBe_Be = 1,        // ULS
-    kBCe_BCe = 2,      // ULS
-    kBCe_Be_SameB = 3, // ULS
-    kBCe_Be_DiffB = 4, // LS
-  };
   enum EM_EEPairType {
     kULS = 0,
     kLSpp = 1,
@@ -170,6 +163,9 @@ struct TreeCreatorElectronML {
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max. chi2/NclsTPC"};
   Configurable<float> maxeta{"maxeta", 0.9, "eta acceptance"};
+  Configurable<bool> doLS{"doLS", true, "process also LS spectra"};
+  Configurable<double> combBgReductionFactor{"combBgReductionFactor", 1.0, "reduction factor for combinatorial background"};
+  Configurable<double> singleTrackBgReductionFactor{"singleTrackBgReductionFactor", 1.0, "reduction factor for background"};
 
   int mRunNumber;
   float d_bz;
@@ -351,107 +347,6 @@ struct TreeCreatorElectronML {
     return motherid1;
   }
 
-  template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
-  int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcparticles)
-  {
-    // in total, 4 cases for ULS pairs
-    // 0. prompt c->e+ and cbar->e-
-    // 1. b->e- and bbar->e+ (different b and bbar)
-    // 2. b->c->e+ and bbar->cbar->e- (different b and bbar)
-    // 3. b->c->e+ and b->e- (1 same b (or bbar))
-    if (!p1.has_mothers() || !p2.has_mothers()) {
-      return EM_HFeeType::kUndef;
-    }
-
-    if (p1.mothersIds()[0] == p2.mothersIds()[0]) { // same mother
-      return EM_HFeeType::kUndef;                   // this never happens in correlated HF->ee decays
-    }
-
-    // store all mother1 relation
-    std::vector<int> mothers_id1;
-    std::vector<int> mothers_pdg1;
-    int motherid1 = p1.mothersIds()[0]; // first mother index
-    while (motherid1 > -1) {
-      if (motherid1 < mcparticles.size()) { // protect against bad mother indices. why is this needed?
-        auto mp = mcparticles.iteratorAt(motherid1);
-        mothers_id1.emplace_back(motherid1);
-        mothers_pdg1.emplace_back(mp.pdgCode());
-
-        if (mp.has_mothers()) {
-          motherid1 = mp.mothersIds()[0];
-        } else {
-          motherid1 = -999;
-        }
-      } else {
-        LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid1, mcparticles.size());
-      }
-    }
-
-    // store all mother2 relation
-    std::vector<int> mothers_id2;
-    std::vector<int> mothers_pdg2;
-    int motherid2 = p2.mothersIds()[0]; // first mother index
-    while (motherid2 > -1) {
-      if (motherid2 < mcparticles.size()) { // protect against bad mother indices. why is this needed?
-        auto mp = mcparticles.iteratorAt(motherid2);
-        mothers_id2.emplace_back(motherid2);
-        mothers_pdg2.emplace_back(mp.pdgCode());
-
-        if (mp.has_mothers()) {
-          motherid2 = mp.mothersIds()[0];
-        } else {
-          motherid2 = -999;
-        }
-      } else {
-        LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid2, mcparticles.size());
-      }
-    }
-
-    if (std::to_string(mothers_pdg1[0]).find("5") != std::string::npos && std::to_string(mothers_pdg2[0]).find("5") != std::string::npos) {
-      return EM_HFeeType::kBe_Be; // bb->ee, decay type = 2
-      // this is easy. first mother is b hadron for both leg.
-    }
-
-    if (std::to_string(mothers_pdg1[0]).find("4") != std::string::npos && std::to_string(mothers_pdg2[0]).find("4") != std::string::npos) {
-      // mother is c hadron. next, check c is prompt or non-prompt.
-
-      bool is_c_from_b1 = false;
-      for (unsigned int i1 = 1; i1 < mothers_pdg1.size(); i1++) {
-        if (std::to_string(mothers_pdg1[i1]).find("5") != std::string::npos) {
-          is_c_from_b1 = true;
-          break;
-        }
-      }
-      bool is_c_from_b2 = false;
-      for (unsigned int i2 = 1; i2 < mothers_pdg2.size(); i2++) {
-        if (std::to_string(mothers_pdg2[i2]).find("5") != std::string::npos) {
-          is_c_from_b2 = true;
-          break;
-        }
-      }
-
-      if (!is_c_from_b1 && !is_c_from_b2) {
-        return EM_HFeeType::kCe_Ce; // prompt cc->ee, decay type = 0
-      } else if (is_c_from_b1 && is_c_from_b2) {
-        return EM_HFeeType::kBCe_BCe; // b->c->e and b->c->e, decay type = 1
-      } else {
-        for (auto& mid1 : mothers_id1) {
-          for (auto& mid2 : mothers_id2) {
-            if (mid1 == mid2) {
-              return EM_HFeeType::kBCe_Be_SameB; // b->c->e and c->e, decay type = 3. this should happen only in ULS.
-            }
-          }                                // end of mother id 2
-        }                                  // end of mother id 1
-        return EM_HFeeType::kBCe_Be_DiffB; // b->c->e and c->e, decay type = 4. this should happen only in LS. But, this may happen, when ele/pos is reconstructed as pos/ele wrongly. and create LS pair
-      }
-    }
-    mothers_id1.shrink_to_fit();
-    mothers_pdg1.shrink_to_fit();
-    mothers_id2.shrink_to_fit();
-    mothers_pdg2.shrink_to_fit();
-    return EM_HFeeType::kUndef;
-  }
-
   template <typename TTrack>
   bool IsSelected(TTrack const& track)
   {
@@ -506,33 +401,39 @@ struct TreeCreatorElectronML {
         // store all mother relation
         std::vector<int> mothers_id;
         std::vector<int> mothers_pdg;
-        int motherid = mctrack.mothersIds()[0]; // first mother index
-        while (motherid > -1) {
-          if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
-            auto mp = mctracks.iteratorAt(motherid);
-            mothers_id.emplace_back(motherid);
-            mothers_pdg.emplace_back(mp.pdgCode());
+        if (mctrack.has_mothers()) {
+          int motherid = mctrack.mothersIds()[0]; // first mother index
+          while (motherid > -1) {
+            if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
+              auto mp = mctracks.iteratorAt(motherid);
+              mothers_id.emplace_back(motherid);
+              mothers_pdg.emplace_back(mp.pdgCode());
 
-            if (mp.has_mothers()) {
-              motherid = mp.mothersIds()[0];
+              if (mp.has_mothers()) {
+                motherid = mp.mothersIds()[0];
+              } else {
+                motherid = -999;
+              }
             } else {
-              motherid = -999;
+              LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
             }
-          } else {
-            LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
           }
         }
 
-        mytrack(mycollision.lastIndex(),
-                track.sign(), track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()),
-                track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
-                track.tpcChi2NCl(), track.tpcInnerParam(),
-                track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-                track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                track.itsClusterMap(), track.itsChi2NCl(),
-                mctrack.vx(), mctrack.vy(), mctrack.vz(),
-                mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
-
+        int pdgCode = mctrack.pdgCode();
+        double pt = track.pt();
+        double pseudoRndm = pt * 1000. - (int16_t)(pt * 1000);
+        if (abs(pdgCode) == 11 || pseudoRndm <= singleTrackBgReductionFactor) {
+          mytrack(mycollision.lastIndex(),
+                  track.sign(), pt, track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()),
+                  track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
+                  track.tpcChi2NCl(), track.tpcInnerParam(),
+                  track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                  track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                  track.itsClusterMap(), track.itsChi2NCl(),
+                  mctrack.vx(), mctrack.vy(), mctrack.vz(),
+                  pdgCode, mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
+        }
         mothers_id.shrink_to_fit();
         mothers_pdg.shrink_to_fit();
 
@@ -589,20 +490,22 @@ struct TreeCreatorElectronML {
           // store all mother relation
           std::vector<int> mothers_id;
           std::vector<int> mothers_pdg;
-          int motherid = mctrack.mothersIds()[0]; // first mother index
-          while (motherid > -1) {
-            if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
-              auto mp = mctracks.iteratorAt(motherid);
-              mothers_id.emplace_back(motherid);
-              mothers_pdg.emplace_back(mp.pdgCode());
+          if (mctrack.has_mothers()) {
+            int motherid = mctrack.mothersIds()[0]; // first mother index
+            while (motherid > -1) {
+              if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
+                auto mp = mctracks.iteratorAt(motherid);
+                mothers_id.emplace_back(motherid);
+                mothers_pdg.emplace_back(mp.pdgCode());
 
-              if (mp.has_mothers()) {
-                motherid = mp.mothersIds()[0];
+                if (mp.has_mothers()) {
+                  motherid = mp.mothersIds()[0];
+                } else {
+                  motherid = -999;
+                }
               } else {
-                motherid = -999;
+                LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
               }
-            } else {
-              LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
             }
           }
 
@@ -652,7 +555,7 @@ struct TreeCreatorElectronML {
         if (common_mother_id > 0) {
           isSM = true;
         }
-        int isHF = IsHF(mcpos, mcele, mctracks); // if isHF == true, pdgCode is set to 0, because this pair is correlated HF ee pair decayed from different 2 mothers. Check pdg code of legs.
+        int isHF = o2::aod::pwgem::dilepton::mcutil::IsHF(mcpos, mcele, mctracks); // if isHF == true, pdgCode is set to 0, because this pair is correlated HF ee pair decayed from different 2 mothers. Check pdg code of legs.
 
         if (isSM) {
           auto mcpair = mctracks.iteratorAt(common_mother_id);
@@ -690,14 +593,21 @@ struct TreeCreatorElectronML {
                  isSM, isHF, EM_EEPairType::kULS, false, 0, 0, 0,
                  0, 0, 0);
         } else { // this is combinatorial bkg
-          mypair(mycollision.lastIndex(), fNewLabels[pos.globalIndex()], fNewLabels[ele.globalIndex()],
-                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
-                 isSM, isHF, EM_EEPairType::kULS, false, 0, 0, 0,
-                 0, 0, 0);
+          double pt = v12.Pt();
+          double pseudoRndm = pt * 1000. - (int16_t)(pt * 1000);
+          if (pseudoRndm <= combBgReductionFactor) {
+            mypair(mycollision.lastIndex(), fNewLabels[pos.globalIndex()], fNewLabels[ele.globalIndex()],
+                   v12.M(), pt, v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
+                   isSM, isHF, EM_EEPairType::kULS, false, 0, 0, 0,
+                   0, 0, 0);
+          }
         }
 
       } // end of uls pair loop
 
+      if (!doLS) {
+        continue;
+      }
       for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_coll, posTracks_coll))) {
         if (!IsSelected(pos1) || !IsSelected(pos2)) {
           continue;
@@ -723,18 +633,22 @@ struct TreeCreatorElectronML {
         float pair_dca_z = sqrt((pow(pos2.dcaZ() / sqrt(pos2.cZZ()), 2) + pow(pos1.dcaZ() / sqrt(pos1.cZZ()), 2)) / 2.);
 
         bool isSM = false;
-        int isHF = IsHF(mcpos1, mcpos2, mctracks);
-        if (isHF != EM_HFeeType::kUndef) {
+        int isHF = o2::aod::pwgem::dilepton::mcutil::IsHF(mcpos1, mcpos2, mctracks);
+        if (isHF != static_cast<int>(o2::aod::pwgem::dilepton::mcutil::EM_HFeeType::kUndef)) {
           // isSM and isHF are not satisfied at the same time.
           mypair(mycollision.lastIndex(), fNewLabels[pos1.globalIndex()], fNewLabels[pos2.globalIndex()],
                  v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
                  isSM, isHF, EM_EEPairType::kLSpp, false, 0, 0, 0,
                  0, 0, 0);
         } else { // this is combinatorial bkg
-          mypair(mycollision.lastIndex(), fNewLabels[pos1.globalIndex()], fNewLabels[pos2.globalIndex()],
-                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
-                 isSM, isHF, EM_EEPairType::kLSpp, false, 0, 0, 0,
-                 0, 0, 0);
+          double pt = v12.Pt();
+          double pseudoRndm = pt * 1000. - (int16_t)(pt * 1000);
+          if (pseudoRndm <= combBgReductionFactor) {
+            mypair(mycollision.lastIndex(), fNewLabels[pos1.globalIndex()], fNewLabels[pos2.globalIndex()],
+                   v12.M(), pt, v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
+                   isSM, isHF, EM_EEPairType::kLSpp, false, 0, 0, 0,
+                   0, 0, 0);
+          }
         }
 
       } // end of lspp pair loop
@@ -763,18 +677,22 @@ struct TreeCreatorElectronML {
         float pair_dca_z = sqrt((pow(ele2.dcaZ() / sqrt(ele2.cZZ()), 2) + pow(ele1.dcaZ() / sqrt(ele1.cZZ()), 2)) / 2.);
 
         bool isSM = false;
-        int isHF = IsHF(mcele1, mcele2, mctracks);
-        if (isHF != EM_HFeeType::kUndef) {
+        int isHF = o2::aod::pwgem::dilepton::mcutil::IsHF(mcele1, mcele2, mctracks);
+        if (isHF != static_cast<int>(o2::aod::pwgem::dilepton::mcutil::EM_HFeeType::kUndef)) {
           // isSM and isHF are not satisfied at the same time.
           mypair(mycollision.lastIndex(), fNewLabels[ele1.globalIndex()], fNewLabels[ele2.globalIndex()],
                  v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
                  isSM, isHF, EM_EEPairType::kLSnn, false, 0, 0, 0,
                  0, 0, 0);
         } else { // this is combinatorial bkg
-          mypair(mycollision.lastIndex(), fNewLabels[ele1.globalIndex()], fNewLabels[ele2.globalIndex()],
-                 v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
-                 isSM, isHF, EM_EEPairType::kLSnn, false, 0, 0, 0,
-                 0, 0, 0);
+          double pt = v12.Pt();
+          double pseudoRndm = pt * 1000. - (int16_t)(pt * 1000);
+          if (pseudoRndm <= combBgReductionFactor) {
+            mypair(mycollision.lastIndex(), fNewLabels[ele1.globalIndex()], fNewLabels[ele2.globalIndex()],
+                   v12.M(), pt, v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z,
+                   isSM, isHF, EM_EEPairType::kLSnn, false, 0, 0, 0,
+                   0, 0, 0);
+          }
         }
 
       } // end of lsnn pair loop

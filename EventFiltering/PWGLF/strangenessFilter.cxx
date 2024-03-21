@@ -68,7 +68,7 @@ struct strangenessFilter {
   HistogramRegistry QAHistosTriggerParticles{"QAHistosTriggerParticles", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry QAHistosStrangenessTracking{"QAHistosStrangenessTracking", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry EventsvsMultiplicity{"EventsvsMultiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1F> hProcessedEvents{TH1F("hProcessedEvents", "Strangeness - event filtered; Event counter; Number of events", 12, 0., 12.)};
+  OutputObj<TH1F> hProcessedEvents{TH1F("hProcessedEvents", "Strangeness - event filtered; Event counter; Number of events", 13, -1., 12.)};
   OutputObj<TH1F> hCandidate{TH1F("hCandidate", "; Candidate pass selection; Number of events", 30, 0., 30.)};
   OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of h-Xi events with pT_h higher than thrd; hadrons with p_{T}>bincenter (GeV/c); Number of events", 11, 0., 11.)};
   OutputObj<TH1F> hhXiPairsvsPt{TH1F("hhXiPairsvsPt", "pt distributions of Xi in events with a trigger particle; #it{p}_{T} (GeV/c); Number of Xi", 100, 0., 10.)};
@@ -108,6 +108,7 @@ struct strangenessFilter {
   Configurable<bool> kint7{"kint7", 0, "Apply kINT7 event selection"};
   Configurable<bool> sel7{"sel7", 0, "Apply sel7 event selection"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
+  Configurable<bool> isTimeFrameBorderCut{"isTimeFrameBorderCut", 1, "Apply timeframe border cut"};
   Configurable<bool> useSigmaBasedMassCutXi{"useSigmaBasedMassCutXi", true, "Mass window based on n*sigma instead of fixed"};
   Configurable<bool> useSigmaBasedMassCutOmega{"useSigmaBasedMassCutOmega", true, "Mass window based on n*sigma instead of fixed"};
   Configurable<float> massWindowOmegaNsigma{"massWindowOmegaNsigma", 6, "Inv. mass window for tracked Omega"};
@@ -179,18 +180,18 @@ struct strangenessFilter {
     mTrackSelector.SetMaxDcaXY(1.f);
     mTrackSelector.SetMaxDcaZ(2.f);
 
-    hProcessedEvents->GetXaxis()->SetBinLabel(1, "Events processed");
-    hProcessedEvents->GetXaxis()->SetBinLabel(2, "Events w/ high-#it{p}_{T} hadron");
-    hProcessedEvents->GetXaxis()->SetBinLabel(3, "#Omega");
-    hProcessedEvents->GetXaxis()->SetBinLabel(4, "high-#it{p}_{T} hadron - #Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(5, "2#Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(6, "3#Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(7, "4#Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(8, "#Xi-YN");
-    hProcessedEvents->GetXaxis()->SetBinLabel(9, "#Omega high radius");
-    hProcessedEvents->GetXaxis()->SetBinLabel(10, "#Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(11, "trk. #Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(12, "trk. #Omega");
+    hProcessedEvents->GetXaxis()->SetBinLabel(2, "Events processed");
+    hProcessedEvents->GetXaxis()->SetBinLabel(3, "Events w/ high-#it{p}_{T} hadron");
+    hProcessedEvents->GetXaxis()->SetBinLabel(4, "#Omega");
+    hProcessedEvents->GetXaxis()->SetBinLabel(5, "high-#it{p}_{T} hadron - #Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(6, "2#Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(7, "3#Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(8, "4#Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(9, "#Xi-YN");
+    hProcessedEvents->GetXaxis()->SetBinLabel(10, "#Omega high radius");
+    hProcessedEvents->GetXaxis()->SetBinLabel(11, "#Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(12, "trk. #Xi");
+    hProcessedEvents->GetXaxis()->SetBinLabel(13, "trk. #Omega");
 
     hCandidate->GetXaxis()->SetBinLabel(1, "All");
     hCandidate->GetXaxis()->SetBinLabel(2, "Has_V0");
@@ -418,7 +419,6 @@ struct strangenessFilter {
       fillTriggerTable(keepEvent);
       return;
     }
-
     if (TMath::Abs(collision.posZ()) > cutzvertex) {
       fillTriggerTable(keepEvent);
       return;
@@ -664,6 +664,12 @@ struct strangenessFilter {
     bool keepEvent[9]{}; // explicitly zero-initialised
 
     if (sel8 && !collision.sel8()) {
+      fillTriggerTable(keepEvent);
+      return;
+    }
+    hProcessedEvents->Fill(-0.5);
+
+    if (isTimeFrameBorderCut && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       fillTriggerTable(keepEvent);
       return;
     }

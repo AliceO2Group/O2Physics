@@ -14,6 +14,21 @@ o2physics_add_dpl_workflow(upc
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(sg-spectra
+                           SOURCES SGSpectraAnalyzer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(sg-d0
+                           SOURCES SG_D0_Analyzer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(sg-fit
+                           SOURCES SG_FIT_Analyzer.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(upc-forward
                            SOURCES upcForward.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
@@ -54,10 +69,11 @@ o2physics_add_dpl_workflow(upc-mft
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsBase O2::DetectorsCommonDataFormats
                            COMPONENT_NAME Analysis)
 
+
 o2physics_add_dpl_workflow(upc-veto
-        SOURCES upcVetoAnalysis.cxx
-        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
-        COMPONENT_NAME Analysis)
+                           SOURCES upcVetoAnalysis.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(tautau13topo
                            SOURCES upcTauTau13topo.cxx
@@ -66,4 +82,9 @@ o2physics_add_dpl_workflow(tautau13topo
 o2physics_add_dpl_workflow(upc-tau-rl
                            SOURCES upcTauCentralBarrelRL.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats O2::DetectorsBase O2::DetectorsCommonDataFormats
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(polarisation-rho
+                           SOURCES PolarisationRho.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGPIDSelector
                            COMPONENT_NAME Analysis)

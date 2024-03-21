@@ -30,12 +30,6 @@ using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
 
-/// Struct to extend TracksPid tables
-struct HfCandidateSelectorDsToKKPiExpressions {
-  Spawns<aod::TracksPidPiExt> rowTracksPidFullPi;
-  Spawns<aod::TracksPidKaExt> rowTracksPidFullKa;
-};
-
 /// Struct for applying Ds to KKpi selection cuts
 struct HfCandidateSelectorDsToKKPi {
   Produces<aod::HfSelDsToKKPi> hfSelDsToKKPiCandidate;
@@ -54,6 +48,10 @@ struct HfCandidateSelectorDsToKKPi {
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_ds_to_k_k_pi::cuts[0], hf_cuts_ds_to_k_k_pi::nBinsPt, hf_cuts_ds_to_k_k_pi::nCutVars, hf_cuts_ds_to_k_k_pi::labelsPt, hf_cuts_ds_to_k_k_pi::labelsCutVar}, "Ds candidate selection per pT bin"};
+  // DCAxy selections
+  Configurable<LabeledArray<double>> cutsSingleTrack{"cutsSingleTrack", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections"};
+  // pT bins for single-track cuts
+  Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCA XY pT-dependent cut"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // ML inference
@@ -78,7 +76,7 @@ struct HfCandidateSelectorDsToKKPi {
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
 
-  using TracksSel = soa::Join<aod::TracksWDca, aod::TracksPidPiExt, aod::TracksPidKaExt>;
+  using TracksSel = soa::Join<aod::TracksWDca, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
   HistogramRegistry registry{"registry"};
 
@@ -118,6 +116,40 @@ struct HfCandidateSelectorDsToKKPi {
     }
   }
 
+  /// Single-track cuts
+  /// \param trackPt is the prong pT
+  /// \param dcaXY is the prong dcaXY
+  /// \return true if track passes all cuts
+  bool isSelectedTrackDcaXY(const float& trackPt, const float& dcaXY)
+  {
+    auto pTBinTrack = findBin(binsPtTrack, trackPt);
+    if (pTBinTrack == -1) {
+      return false;
+    }
+
+    if (std::abs(dcaXY) < cutsSingleTrack->get(pTBinTrack, "min_dcaxytoprimary")) {
+      return false; // minimum DCAxy
+    }
+    if (std::abs(dcaXY) > cutsSingleTrack->get(pTBinTrack, "max_dcaxytoprimary")) {
+      return false; // maximum DCAxy
+    }
+    return true;
+  }
+
+  /// Single-track cuts
+  /// \param candidate is the Ds candidate
+  /// \return true if all the prongs pass the selections
+  template <typename T1>
+  bool isSelectedCandidateDcaXY(const T1& candidate)
+  {
+    if (isSelectedTrackDcaXY(candidate.ptProng0(), candidate.impactParameter0()) &&
+        isSelectedTrackDcaXY(candidate.ptProng1(), candidate.impactParameter1()) &&
+        isSelectedTrackDcaXY(candidate.ptProng2(), candidate.impactParameter2())) {
+      return true;
+    }
+    return false;
+  }
+
   /// Candidate selections independent from the daugther-mass hypothesis
   /// \param candidate is candidate
   /// \return true if candidate passes all cuts
@@ -148,6 +180,12 @@ struct HfCandidateSelectorDsToKKPi {
     if (std::abs(candidate.impactParameterXY()) > cuts->get(pTBin, "impact parameter XY")) {
       return false;
     }
+    if (candidate.chi2PCA() > cuts->get(pTBin, "chi2PCA")) {
+      return false;
+    }
+    if (!isSelectedCandidateDcaXY(candidate)) {
+      return false;
+    }
     return true;
   }
 
@@ -174,7 +212,7 @@ struct HfCandidateSelectorDsToKKPi {
     if (hfHelper.deltaMassPhiDsToKKPi(candidate) > cuts->get(pTBin, "deltaM Phi")) {
       return false;
     }
-    if (std::abs(hfHelper.cos3PiKDsToKKPi(candidate)) < cuts->get(pTBin, "cos^3 theta_PiK")) {
+    if (hfHelper.absCos3PiKDsToKKPi(candidate) < cuts->get(pTBin, "cos^3 theta_PiK")) {
       return false;
     }
     return true;
@@ -203,7 +241,7 @@ struct HfCandidateSelectorDsToKKPi {
     if (hfHelper.deltaMassPhiDsToPiKK(candidate) > cuts->get(pTBin, "deltaM Phi")) {
       return false;
     }
-    if (std::abs(hfHelper.cos3PiKDsToPiKK(candidate)) < cuts->get(pTBin, "cos^3 theta_PiK")) {
+    if (hfHelper.absCos3PiKDsToPiKK(candidate) < cuts->get(pTBin, "cos^3 theta_PiK")) {
       return false;
     }
     return true;
@@ -340,7 +378,5 @@ struct HfCandidateSelectorDsToKKPi {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorDsToKKPiExpressions>(cfgc),
-    adaptAnalysisTask<HfCandidateSelectorDsToKKPi>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCandidateSelectorDsToKKPi>(cfgc)};
 }
