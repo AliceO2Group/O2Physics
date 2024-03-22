@@ -101,7 +101,7 @@ struct lambdakzeropid {
   ConfigurableAxis axisNSigma{"axisNSigma", {200, -10.0f, +10.0f}, "N(#sigma)"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "p_{T} (GeV/c)"};
 
-  // for n-sigma calibration 
+  // for n-sigma calibration
   bool nSigmaCalibLoaded;
   TList* nSigmaCalibObjects;
   TH1 *hMeanPosLaPi, *hSigmaPosLaPi;
@@ -249,17 +249,17 @@ struct lambdakzeropid {
     nSigmaCalibLoaded = false;
     nSigmaCalibObjects = nullptr;
 
-    // for n-sigma calibration 
+    // for n-sigma calibration
     hMeanPosLaPi = nullptr;
     hSigmaPosLaPi = nullptr;
     hMeanPosLaPr = nullptr;
     hSigmaPosLaPr = nullptr;
     hMeanNegLaPi = nullptr;
-    hSigmaNegLaPi  = nullptr;
+    hSigmaNegLaPi = nullptr;
     hMeanNegLaPr = nullptr;
     hSigmaNegLaPr = nullptr;
     hMeanPosK0Pi = nullptr;
-    hSigmaNegK0Pi  = nullptr;
+    hSigmaNegK0Pi = nullptr;
     hMeanNegK0Pi = nullptr;
     hSigmaNegK0Pi = nullptr;
 
@@ -289,7 +289,7 @@ struct lambdakzeropid {
       histos.add("h2dDeltaTimePositiveK0ShortPi", "h2dDeltaTimePositiveK0ShortPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
       histos.add("h2dDeltaTimeNegativeK0ShortPi", "h2dDeltaTimeNegativeK0ShortPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
 
-      if(doQANSigma){ 
+      if (doQANSigma) {
         // standard NSigma values
         histos.add("h2dNSigmaPositiveLambdaPi", "h2dNSigmaPositiveLambdaPi", {HistType::kTH2F, {axisPt, axisNSigma}});
         histos.add("h2dNSigmaNegativeLambdaPi", "h2dNSigmaNegativeLambdaPi", {HistType::kTH2F, {axisPt, axisNSigma}});
@@ -342,10 +342,10 @@ struct lambdakzeropid {
     }
 
     // if TOF Nsigma desired
-    if(doNSigmas){ 
+    if (doNSigmas) {
       nSigmaCalibObjects = ccdb->getForTimeStamp<TList>(nSigmaPath, collision.timestamp());
       if (nSigmaCalibObjects) {
-        LOGF(info, "loaded TList with this many objects: %i", nSigmaCalibObjects->GetEntries());  
+        LOGF(info, "loaded TList with this many objects: %i", nSigmaCalibObjects->GetEntries());
 
         hMeanPosLaPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosLaPi"));
         hMeanPosLaPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosLaPr"));
@@ -361,19 +361,19 @@ struct lambdakzeropid {
         hSigmaPosK0Pi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosK0Pi"));
         hSigmaNegK0Pi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegK0Pi"));
 
-        if(!hMeanPosLaPi)
+        if (!hMeanPosLaPi)
           LOG(info) << "Problems finding mean histogram hMeanPosLaPi!";
-        if(!hMeanPosLaPr)
+        if (!hMeanPosLaPr)
           LOG(info) << "Problems finding mean histogram hMeanPosLaPr!";
-        if(!hMeanNegLaPi)
+        if (!hMeanNegLaPi)
           LOG(info) << "Problems finding mean histogram hMeanNegLaPi!";
-        if(!hMeanNegLaPr)
+        if (!hMeanNegLaPr)
           LOG(info) << "Problems finding mean histogram hMeanNegLaPr!";
-        if(!hMeanPosK0Pi)
+        if (!hMeanPosK0Pi)
           LOG(info) << "Problems finding mean histogram hMeanPosK0Pi!";
-        if(!hMeanNegK0Pi)
+        if (!hMeanNegK0Pi)
           LOG(info) << "Problems finding mean histogram hMeanNegK0Pi!";
-        if(!hSigmaPosK0Pi || !hSigmaNegK0Pi || !hSigmaPosLaPi || !hSigmaPosLaPr || !hSigmaNegLaPi || !hSigmaNegLaPr){
+        if (!hSigmaPosK0Pi || !hSigmaNegK0Pi || !hSigmaPosLaPi || !hSigmaPosLaPr || !hSigmaNegLaPi || !hSigmaNegLaPr) {
           LOG(info) << "Problems finding sigma histograms!";
         }
       }
@@ -482,27 +482,26 @@ struct lambdakzeropid {
         v0tofdebugs(timeLambda, timeK0Short, timePositivePr, timePositivePi, timeNegativePr, timeNegativePi);
 
         // do Nsigmas if requested
-        if (doNSigmas){ 
+        if (doNSigmas) {
           // sweep through all viable hypotheses and produce N-sigma
 
-          if(deltaTimePositiveLambdaPi>-1e+5)
-            nSigmaPositiveLambdaPi = (deltaTimePositiveLambdaPi - hMeanPosLaPi->Interpolate(v0.pt()))/hSigmaPosLaPi->Interpolate(v0.pt());
-          if(deltaTimePositiveLambdaPr>-1e+5)
-            nSigmaPositiveLambdaPr = (deltaTimePositiveLambdaPr - hMeanPosLaPr->Interpolate(v0.pt()))/hSigmaPosLaPr->Interpolate(v0.pt());
-          if(deltaTimeNegativeLambdaPi>-1e+5)
-            nSigmaNegativeLambdaPi = (deltaTimeNegativeLambdaPi - hMeanNegLaPr->Interpolate(v0.pt()))/hSigmaNegLaPi->Interpolate(v0.pt());
-          if(deltaTimeNegativeLambdaPr>-1e+5)
-            nSigmaNegativeLambdaPr = (deltaTimeNegativeLambdaPr - hMeanNegLaPr->Interpolate(v0.pt()))/hSigmaNegLaPr->Interpolate(v0.pt());
-          if(deltaTimePositiveK0ShortPi>-1e+5)
-            nSigmaPositiveK0ShortPi = (deltaTimePositiveK0ShortPi - hMeanPosK0Pi->Interpolate(v0.pt()))/hSigmaPosK0Pi->Interpolate(v0.pt());
-          if(deltaTimeNegativeK0ShortPi>-1e+5)
-            nSigmaNegativeK0ShortPi = (deltaTimeNegativeK0ShortPi - hMeanNegK0Pi->Interpolate(v0.pt()))/hSigmaNegK0Pi->Interpolate(v0.pt());
+          if (deltaTimePositiveLambdaPi > -1e+5)
+            nSigmaPositiveLambdaPi = (deltaTimePositiveLambdaPi - hMeanPosLaPi->Interpolate(v0.pt())) / hSigmaPosLaPi->Interpolate(v0.pt());
+          if (deltaTimePositiveLambdaPr > -1e+5)
+            nSigmaPositiveLambdaPr = (deltaTimePositiveLambdaPr - hMeanPosLaPr->Interpolate(v0.pt())) / hSigmaPosLaPr->Interpolate(v0.pt());
+          if (deltaTimeNegativeLambdaPi > -1e+5)
+            nSigmaNegativeLambdaPi = (deltaTimeNegativeLambdaPi - hMeanNegLaPr->Interpolate(v0.pt())) / hSigmaNegLaPi->Interpolate(v0.pt());
+          if (deltaTimeNegativeLambdaPr > -1e+5)
+            nSigmaNegativeLambdaPr = (deltaTimeNegativeLambdaPr - hMeanNegLaPr->Interpolate(v0.pt())) / hSigmaNegLaPr->Interpolate(v0.pt());
+          if (deltaTimePositiveK0ShortPi > -1e+5)
+            nSigmaPositiveK0ShortPi = (deltaTimePositiveK0ShortPi - hMeanPosK0Pi->Interpolate(v0.pt())) / hSigmaPosK0Pi->Interpolate(v0.pt());
+          if (deltaTimeNegativeK0ShortPi > -1e+5)
+            nSigmaNegativeK0ShortPi = (deltaTimeNegativeK0ShortPi - hMeanNegK0Pi->Interpolate(v0.pt())) / hSigmaNegK0Pi->Interpolate(v0.pt());
 
           v0tofnsigmas(
-            nSigmaPositiveLambdaPi, nSigmaPositiveLambdaPr, 
-            nSigmaNegativeLambdaPi, deltaTimeNegativeLambdaPr, 
-            nSigmaPositiveK0ShortPi, nSigmaNegativeK0ShortPi
-          );
+            nSigmaPositiveLambdaPi, nSigmaPositiveLambdaPr,
+            nSigmaNegativeLambdaPi, deltaTimeNegativeLambdaPr,
+            nSigmaPositiveK0ShortPi, nSigmaNegativeK0ShortPi);
         }
 
         if (doQA) {
@@ -514,19 +513,19 @@ struct lambdakzeropid {
                         (timeLambda + timePositivePr),
                         (v0.posTOFSignal() - v0.posTOFEventTime()));
             if (v0.v0cosPA() > qaCosPA && v0.dcaV0daughters() < qaDCADau) {
-              if (std::abs(v0.mLambda() - 1.115683) < qaMassWindow && fabs(pTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma){
+              if (std::abs(v0.mLambda() - 1.115683) < qaMassWindow && fabs(pTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma) {
                 histos.fill(HIST("h2dDeltaTimePositiveLambdaPr"), v0.pt(), v0.eta(), deltaTimePositiveLambdaPr);
-                if(doQANSigma)
+                if (doQANSigma)
                   histos.fill(HIST("h2dNSigmaPositiveLambdaPr"), v0.pt(), nSigmaPositiveLambdaPr);
               }
-              if (std::abs(v0.mAntiLambda() - 1.115683) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < qaTPCNSigma){
+              if (std::abs(v0.mAntiLambda() - 1.115683) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < qaTPCNSigma) {
                 histos.fill(HIST("h2dDeltaTimePositiveLambdaPi"), v0.pt(), v0.eta(), deltaTimePositiveLambdaPi);
-                if(doQANSigma)
+                if (doQANSigma)
                   histos.fill(HIST("h2dNSigmaPositiveLambdaPi"), v0.pt(), nSigmaPositiveLambdaPi);
               }
-              if (std::abs(v0.mK0Short() - 0.497) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma){
+              if (std::abs(v0.mK0Short() - 0.497) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma) {
                 histos.fill(HIST("h2dDeltaTimePositiveK0ShortPi"), v0.pt(), v0.eta(), deltaTimePositiveK0ShortPi);
-                if(doQANSigma)
+                if (doQANSigma)
                   histos.fill(HIST("h2dNSigmaPositiveK0ShortPi"), v0.pt(), nSigmaPositiveK0ShortPi);
               }
             }
@@ -537,19 +536,19 @@ struct lambdakzeropid {
                         (timeLambda + timeNegativePi),
                         (v0.negTOFSignal() - v0.negTOFEventTime()));
             if (v0.v0cosPA() > qaCosPA && v0.dcaV0daughters() < qaDCADau) {
-              if (std::abs(v0.mLambda() - 1.115683) < qaMassWindow && fabs(pTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma){
+              if (std::abs(v0.mLambda() - 1.115683) < qaMassWindow && fabs(pTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma) {
                 histos.fill(HIST("h2dDeltaTimeNegativeLambdaPi"), v0.pt(), v0.eta(), deltaTimeNegativeLambdaPi);
-                if(doQANSigma)
+                if (doQANSigma)
                   histos.fill(HIST("h2dNSigmaNegativeLambdaPr"), v0.pt(), nSigmaNegativeLambdaPr);
               }
-              if (std::abs(v0.mAntiLambda() - 1.115683) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < qaTPCNSigma){
+              if (std::abs(v0.mAntiLambda() - 1.115683) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < qaTPCNSigma) {
                 histos.fill(HIST("h2dDeltaTimeNegativeLambdaPr"), v0.pt(), v0.eta(), deltaTimeNegativeLambdaPr);
-                if(doQANSigma)
+                if (doQANSigma)
                   histos.fill(HIST("h2dNSigmaNegativeLambdaPi"), v0.pt(), nSigmaNegativeLambdaPi);
               }
-              if (std::abs(v0.mK0Short() - 0.497) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma){
+              if (std::abs(v0.mK0Short() - 0.497) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma) {
                 histos.fill(HIST("h2dDeltaTimeNegativeK0ShortPi"), v0.pt(), v0.eta(), deltaTimeNegativeK0ShortPi);
-                if(doQANSigma)
+                if (doQANSigma)
                   histos.fill(HIST("h2dNSigmaNegativeK0ShortPi"), v0.pt(), nSigmaNegativeK0ShortPi);
               }
             }
