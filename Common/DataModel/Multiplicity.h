@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_MULTIPLICITY_H_
-#define O2_ANALYSIS_MULTIPLICITY_H_
+#ifndef COMMON_DATAMODEL_MULTIPLICITY_H_
+#define COMMON_DATAMODEL_MULTIPLICITY_H_
 
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
@@ -185,4 +185,4 @@ using MultBC = MultsBC::iterator;
 
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_MULTIPLICITY_H_
+#endif // COMMON_DATAMODEL_MULTIPLICITY_H_
