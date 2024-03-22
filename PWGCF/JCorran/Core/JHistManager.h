@@ -11,8 +11,8 @@
 /// \author Dong Jo Kim (djkim@jyu.fi)
 /// \since Sep 2022
 
-#ifndef UTILS_ALIJARRAY_H
-#define UTILS_ALIJARRAY_H
+#ifndef PWGCF_JCORRAN_CORE_JHISTMANAGER_H_
+#define PWGCF_JCORRAN_CORE_JHISTMANAGER_H_
 
 #include <vector>
 #include <TString.h>
@@ -111,7 +111,7 @@ class JBin : public JNamed
          kNMode };
   JBin();
   JBin(TString config, JHistManager* hmg);
-  JBin(const JBin& obj);
+  explicit JBin(const JBin& obj);
   JBin& operator=(const JBin& obj);
   JBin& Set(TString name, TString iname, TString Title, int mode = kRange);
   void AddToManager(JHistManager* hmg);
@@ -228,7 +228,7 @@ class JArrayBase : public JNamed
 class JArrayAlgorithm
 {
  public:
-  JArrayAlgorithm(JArrayBase* cmd); // TODO Move to private
+  explicit JArrayAlgorithm(JArrayBase* cmd); // TODO Move to private
   JArrayAlgorithm(const JArrayAlgorithm& obj);
   JArrayAlgorithm& operator=(const JArrayAlgorithm& obj);
   virtual ~JArrayAlgorithm();
@@ -255,7 +255,7 @@ class JArrayAlgorithm
 class JArrayAlgorithmSimple : public JArrayAlgorithm
 {
  public:
-  JArrayAlgorithmSimple(JArrayBase* cmd);
+  explicit JArrayAlgorithmSimple(JArrayBase* cmd);
   JArrayAlgorithmSimple(const JArrayAlgorithmSimple& obj);
   JArrayAlgorithmSimple& operator=(const JArrayAlgorithmSimple& obj);
   virtual ~JArrayAlgorithmSimple();
@@ -268,7 +268,7 @@ class JArrayAlgorithmSimple : public JArrayAlgorithm
   virtual void** GetRawItem() { return &fArray[GlobalIndex()]; }
   virtual bool Next(void*& item)
   {
-    item = fPos < GetEntries() ? (void*)fArray[fPos] : NULL;
+    item = fPos < GetEntries() ? fArray[fPos] : NULL;
     if (fPos < GetEntries())
       ReverseIndex(fPos);
     return fPos++ < GetEntries();
@@ -418,7 +418,7 @@ template <typename T>
 class JTH1DerivedPlayer
 {
  public:
-  JTH1DerivedPlayer(JTH1Derived<T>* cmd) : fLevel(0), fCMD(cmd){};
+  explicit JTH1DerivedPlayer(JTH1Derived<T>* cmd) : fLevel(0), fCMD(cmd) {}
   JTH1DerivedPlayer<T>& operator[](int i)
   {
     if (fLevel > fCMD->Dimension()) {
@@ -460,14 +460,14 @@ typedef JTH1Derived<TProfile> JTProfile;
 class JHistManager : public JNamed
 {
  public:
-  JHistManager(TString name, TString dirname = "");
-  JHistManager(const JHistManager& obj);
+  explicit JHistManager(TString name, TString dirname = "");
+  explicit JHistManager(const JHistManager& obj);
   JHistManager& operator=(const JHistManager& obj);
   void Add(JBin* o);
   void Add(JTH1* o);
 
-  int GetNBin() { return fBin.size() > fBinNames.size() ? fBin.size() : fBinNames.size(); }      // TODO
-  int GetNHist() { return fHist.size() > fHistNames.size() ? fHist.size() : fHistNames.size(); } // TODO
+  UInt_t GetNBin() { return fBin.size() > fBinNames.size() ? fBin.size() : fBinNames.size(); }      // TODO
+  UInt_t GetNHist() { return fHist.size() > fHistNames.size() ? fHist.size() : fHistNames.size(); } // TODO
   void Print();
   int LoadConfig();
   TDirectory* GetDirectory() { return fDirectory; }
@@ -480,9 +480,9 @@ class JHistManager : public JNamed
   TString GetString()
   {
     TString st;
-    for (int i = 0; i < GetNBin(); i++)
+    for (UInt_t i = 0; i < GetNBin(); i++)
       st += fBin[i]->GetString() + "\n";
-    for (int i = 0; i < GetNHist(); i++) {
+    for (UInt_t i = 0; i < GetNHist(); i++) {
       st += fHist[i]->GetString() + "\n";
     }
     return st;
@@ -518,4 +518,4 @@ class JHistManager : public JNamed
   std::vector<TString> fHistConfigs;
 };
 
-#endif
+#endif // PWGCF_JCORRAN_CORE_JHISTMANAGER_H_

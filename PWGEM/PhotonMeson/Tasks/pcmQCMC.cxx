@@ -50,10 +50,10 @@ using namespace o2::aod::pwgem::mcutil;
 using namespace o2::aod::pwgem::photon;
 using std::array;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMReducedEventIds>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct PCMQCMC {
@@ -153,7 +153,7 @@ struct PCMQCMC {
 
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
-  Preslice<MyV0Photons> perCollision = aod::v0photonkf::emreducedeventId;
+  Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;
   void processQCMC(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles, aod::EMMCEvents const&)
   {
     THashList* list_ev_before = static_cast<THashList*>(fMainList->FindObject("Event")->FindObject(event_types[0].data()));
@@ -200,7 +200,7 @@ struct PCMQCMC {
             float eta_cp = std::atanh(v0.vz() / sqrt(pow(v0.vx(), 2) + pow(v0.vy(), 2) + pow(v0.vz(), 2)));
 
             o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kV0>(list_v0_cut, "", v0);
-            if (IsPhysicalPrimary(mcphoton.emreducedmcevent(), mcphoton, mcparticles)) {
+            if (IsPhysicalPrimary(mcphoton.emmcevent(), mcphoton, mcparticles)) {
               reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hPt_Photon_Primary"))->Fill(v0.pt());
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hEtaPhi_Photon_Primary"))->Fill(v0.phi(), v0.eta());
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hXY_Photon_Primary"))->Fill(v0.vx(), v0.vy());
@@ -216,7 +216,7 @@ struct PCMQCMC {
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hEtaRec_DeltaEta"))->Fill(eta_cp, v0.eta() - mcphoton.eta());
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hEtaRec_DeltaPhi"))->Fill(eta_cp, v0.phi() - mcphoton.phi());
 
-            } else if (IsFromWD(mcphoton.emreducedmcevent(), mcphoton, mcparticles)) {
+            } else if (IsFromWD(mcphoton.emmcevent(), mcphoton, mcparticles)) {
               reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hPt_Photon_FromWD"))->Fill(v0.pt());
               reinterpret_cast<TH2F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hEtaPhi_Photon_FromWD"))->Fill(v0.phi(), v0.eta());
             } else {
@@ -255,7 +255,7 @@ struct PCMQCMC {
     }   // end of collision loop
   }     // end of process
 
-  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
+  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
   void processGen(MyCollisions const& collisions, aod::EMMCEvents const&, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
@@ -266,7 +266,7 @@ struct PCMQCMC {
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
-      auto mccollision = collision.emreducedmcevent();
+      auto mccollision = collision.emmcevent();
       // LOGF(info, "mccollision.globalIndex() = %d", mccollision.globalIndex());
 
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(1.0);
@@ -298,7 +298,7 @@ struct PCMQCMC {
           continue;
         }
 
-        if (abs(mctrack.pdgCode()) == 22 && IsPhysicalPrimary(mctrack.emreducedmcevent(), mctrack, mcparticles)) {
+        if (abs(mctrack.pdgCode()) == 22 && IsPhysicalPrimary(mctrack.emmcevent(), mctrack, mcparticles)) {
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPt_Photon"))->Fill(mctrack.pt());
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hY_Photon"))->Fill(mctrack.y());
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPhi_Photon"))->Fill(mctrack.phi());

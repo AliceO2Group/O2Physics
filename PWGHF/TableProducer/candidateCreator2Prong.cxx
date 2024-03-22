@@ -31,6 +31,7 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
 
@@ -43,6 +44,7 @@
 
 using namespace o2;
 using namespace o2::analysis;
+using namespace o2::hf_evsel;
 using namespace o2::aod::hf_cand_2prong;
 using namespace o2::aod::hf_collision_centrality;
 using namespace o2::constants::physics;
@@ -58,7 +60,7 @@ struct HfCandidateCreator2Prong {
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
   // event selection
   Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "apply the sel8 event selection"};
-  Configurable<float> maxPvPosZ{"maxPvPosZ", 10.f, "max. PV posZ (cm)"};
+  Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "max. PV posZ (cm)"};
   Configurable<bool> useTimeFrameBorderCut{"useTimeFrameBorderCut", true, "apply TF border cut"};
   // vertexing
   Configurable<bool> constrainKfToPv{"constrainKfToPv", true, "constraint KFParticle to PV"};
@@ -90,21 +92,8 @@ struct HfCandidateCreator2Prong {
   double massKPi{0.};
   double bz{0.};
 
-  OutputObj<TH1F> hMass2{TH1F("hMass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", 500, 0., 5.)};
-  OutputObj<TH1F> hCovPVXX{TH1F("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
-  OutputObj<TH1F> hCovSVXX{TH1F("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
-  OutputObj<TH1F> hCovPVYY{TH1F("hCovPVYY", "2-prong candidates;YY element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
-  OutputObj<TH1F> hCovSVYY{TH1F("hCovSVYY", "2-prong candidates;YY element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
-  OutputObj<TH1F> hCovPVXZ{TH1F("hCovPVXZ", "2-prong candidates;XZ element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, -1.e-4, 1.e-4)};
-  OutputObj<TH1F> hCovSVXZ{TH1F("hCovSVXZ", "2-prong candidates;XZ element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, -1.e-4, 0.2)};
-  OutputObj<TH1F> hCovPVZZ{TH1F("hCovPVZZ", "2-prong candidates;ZZ element of cov. matrix of prim. vtx. position (cm^{2});entries", 100, 0., 1.e-4)};
-  OutputObj<TH1F> hCovSVZZ{TH1F("hCovSVZZ", "2-prong candidates;ZZ element of cov. matrix of sec. vtx. position (cm^{2});entries", 100, 0., 0.2)};
-  OutputObj<TH2F> hDcaXYProngs{TH2F("hDcaXYProngs", "DCAxy of 2-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
-  OutputObj<TH2F> hDcaZProngs{TH2F("hDcaZProngs", "DCAz of 2-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", 100, 0., 20., 200, -500., 500.)};
-  OutputObj<TH1F> hVertexerType{TH1F("hVertexerType", "Use KF or DCAFitterN;Vertexer type;entries", 2, -0.5, 1.5)}; // See o2::aod::hf_cand::VertexerType
-  OutputObj<TH1D> hCollisions{TH1D("hCollisions", "HF event counter", ValuesEvSel::NEvSel, -0.5f, static_cast<float>(ValuesEvSel::NEvSel) - 0.5f)};
-  OutputObj<TH1D> hPosZBeforeEvSel{TH1D("hPosZBeforeEvSel", "PV position Z before ev. selection;posZ (cm);entries", 400, -20, 20)};
-  OutputObj<TH1D> hPosZAfterEvSel{TH1D("hPosZAfterEvSel", "PV position Z after ev. selection;posZ (cm);entries", 400, -20, 20)};
+  std::shared_ptr<TH1> hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
+  HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
   {
@@ -135,11 +124,31 @@ struct HfCandidateCreator2Prong {
       }
     }
 
+    // histograms
+    registry.add("hMass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 1.6, 2.1}}});
+    registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
+    registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
+    registry.add("hCovPVYY", "2-prong candidates;YY element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
+    registry.add("hCovSVYY", "2-prong candidates;YY element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
+    registry.add("hCovPVXZ", "2-prong candidates;XZ element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, -1.e-4, 1.e-4}}});
+    registry.add("hCovSVXZ", "2-prong candidates;XZ element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, -1.e-4, 0.2}}});
+    registry.add("hCovPVZZ", "2-prong candidates;ZZ element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
+    registry.add("hCovSVZZ", "2-prong candidates;ZZ element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
+    registry.add("hDcaXYProngs", "DCAxy of 2-prong candidate daughters;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", {HistType::kTH2F, {{100, 0., 20.}, {200, -500., 500.}}});
+    registry.add("hDcaZProngs", "DCAz of 2-prong candidate daughters;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", {HistType::kTH2F, {{100, 0., 20.}, {200, -500., 500.}}});
+    registry.add("hVertexerType", "Use KF or DCAFitterN;Vertexer type;entries", {HistType::kTH1D, {{2, -0.5, 1.5}}}); // See o2::aod::hf_cand::VertexerType
+    hCollisions = registry.add<TH1>("hCollisions", "HF event counter;;entries", {HistType::kTH1D, {axisEvents}});
+    hPosZBeforeEvSel = registry.add<TH1>("hPosZBeforeEvSel", "all events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{400, -20., 20.}}});
+    hPosZAfterEvSel = registry.add<TH1>("hPosZAfterEvSel", "selected events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{400, -20., 20.}}});
+    hPosXAfterEvSel = registry.add<TH1>("hPosXAfterEvSel", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
+    hPosYAfterEvSel = registry.add<TH1>("hPosYAfterEvSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
+    hNumPvContributorsAfterSel = registry.add<TH1>("hNumPvContributorsAfterSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{500, -0.5, 499.5}}});
+
     massPi = MassPiPlus;
     massK = MassKPlus;
 
     if (std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) == 1) {
-      hVertexerType->Fill(aod::hf_cand::VertexerType::DCAFitter);
+      registry.fill(HIST("hVertexerType"), aod::hf_cand::VertexerType::DCAFitter);
       // Configure DCAFitterN
       // df.setBz(bz);
       df.setPropagateToPCA(propagateToPCA);
@@ -151,7 +160,7 @@ struct HfCandidateCreator2Prong {
       df.setWeightedFinalPCA(useWeightedFinalPCA);
     }
     if (std::accumulate(doprocessKF.begin(), doprocessKF.end(), 0) == 1) {
-      hVertexerType->Fill(aod::hf_cand::VertexerType::KfParticle);
+      registry.fill(HIST("hVertexerType"), aod::hf_cand::VertexerType::KfParticle);
     }
 
     ccdb->setURL(ccdbUrl);
@@ -161,7 +170,7 @@ struct HfCandidateCreator2Prong {
     runNumber = 0;
 
     /// collision monitoring
-    setLabelHistoEvSel(hCollisions.object);
+    setLabelHistoEvSel(hCollisions);
   }
 
   template <bool doPvRefit, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Coll, typename CandType, typename TTracks>
@@ -175,7 +184,8 @@ struct HfCandidateCreator2Prong {
 
       /// reject candidates not satisfying the event selections
       auto collision = rowTrackIndexProng2.template collision_as<Coll>();
-      const auto rejectionMask = getHfCollisionRejectionMask<centEstimator>(collision, centralityMin, centralityMax, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      float centrality{-1.f};
+      const auto rejectionMask = getHfCollisionRejectionMask<true, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
@@ -207,10 +217,10 @@ struct HfCandidateCreator2Prong {
       const auto& secondaryVertex = df.getPCACandidate();
       auto chi2PCA = df.getChi2AtPCACandidate();
       auto covMatrixPCA = df.calcPCACovMatrixFlat();
-      hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
-      hCovSVYY->Fill(covMatrixPCA[2]);
-      hCovSVXZ->Fill(covMatrixPCA[3]);
-      hCovSVZZ->Fill(covMatrixPCA[5]);
+      registry.fill(HIST("hCovSVXX"), covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
+      registry.fill(HIST("hCovSVYY"), covMatrixPCA[2]);
+      registry.fill(HIST("hCovSVXZ"), covMatrixPCA[3]);
+      registry.fill(HIST("hCovSVZZ"), covMatrixPCA[5]);
       auto trackParVar0 = df.getTrack(0);
       auto trackParVar1 = df.getTrack(1);
 
@@ -240,18 +250,18 @@ struct HfCandidateCreator2Prong {
         primaryVertex.setSigmaZ2(rowTrackIndexProng2.pvRefitSigmaZ2());
         covMatrixPV = primaryVertex.getCov();
       }
-      hCovPVXX->Fill(covMatrixPV[0]);
-      hCovPVYY->Fill(covMatrixPV[2]);
-      hCovPVXZ->Fill(covMatrixPV[3]);
-      hCovPVZZ->Fill(covMatrixPV[5]);
+      registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
+      registry.fill(HIST("hCovPVYY"), covMatrixPV[2]);
+      registry.fill(HIST("hCovPVXZ"), covMatrixPV[3]);
+      registry.fill(HIST("hCovPVZZ"), covMatrixPV[5]);
       o2::dataformats::DCA impactParameter0;
       o2::dataformats::DCA impactParameter1;
       trackParVar0.propagateToDCA(primaryVertex, bz, &impactParameter0);
       trackParVar1.propagateToDCA(primaryVertex, bz, &impactParameter1);
-      hDcaXYProngs->Fill(track0.pt(), impactParameter0.getY() * toMicrometers);
-      hDcaXYProngs->Fill(track1.pt(), impactParameter1.getY() * toMicrometers);
-      hDcaZProngs->Fill(track0.pt(), impactParameter0.getZ() * toMicrometers);
-      hDcaZProngs->Fill(track1.pt(), impactParameter1.getZ() * toMicrometers);
+      registry.fill(HIST("hDcaXYProngs"), track0.pt(), impactParameter0.getY() * toMicrometers);
+      registry.fill(HIST("hDcaXYProngs"), track1.pt(), impactParameter1.getY() * toMicrometers);
+      registry.fill(HIST("hDcaZProngs"), track0.pt(), impactParameter0.getZ() * toMicrometers);
+      registry.fill(HIST("hDcaZProngs"), track1.pt(), impactParameter1.getZ() * toMicrometers);
 
       // get uncertainty of the decay length
       double phi, theta;
@@ -287,8 +297,8 @@ struct HfCandidateCreator2Prong {
         auto arrayMomenta = std::array{pvec0, pvec1};
         massPiK = RecoDecay::m(arrayMomenta, std::array{massPi, massK});
         massKPi = RecoDecay::m(arrayMomenta, std::array{massK, massPi});
-        hMass2->Fill(massPiK);
-        hMass2->Fill(massKPi);
+        registry.fill(HIST("hMass2"), massPiK);
+        registry.fill(HIST("hMass2"), massKPi);
       }
     }
   }
@@ -304,7 +314,8 @@ struct HfCandidateCreator2Prong {
 
       /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexProng2.template collision_as<Coll>();
-      const auto rejectionMask = getHfCollisionRejectionMask<centEstimator>(collision, centralityMin, centralityMax, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      float centrality{-1.f};
+      const auto rejectionMask = getHfCollisionRejectionMask<true, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
@@ -340,10 +351,10 @@ struct HfCandidateCreator2Prong {
       }
       kfpVertex.GetCovarianceMatrix(covMatrixPV);
       KFParticle KFPV(kfpVertex);
-      hCovPVXX->Fill(covMatrixPV[0]);
-      hCovPVYY->Fill(covMatrixPV[2]);
-      hCovPVXZ->Fill(covMatrixPV[3]);
-      hCovPVZZ->Fill(covMatrixPV[5]);
+      registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
+      registry.fill(HIST("hCovPVYY"), covMatrixPV[2]);
+      registry.fill(HIST("hCovPVXZ"), covMatrixPV[3]);
+      registry.fill(HIST("hCovPVZZ"), covMatrixPV[5]);
 
       KFPTrack kfpTrack0 = createKFPTrackFromTrack(track0);
       KFPTrack kfpTrack1 = createKFPTrackFromTrack(track1);
@@ -355,18 +366,18 @@ struct HfCandidateCreator2Prong {
 
       float impactParameter0XY = 0., errImpactParameter0XY = 0., impactParameter1XY = 0., errImpactParameter1XY = 0.;
       if (!kfPosPion.GetDistanceFromVertexXY(KFPV, impactParameter0XY, errImpactParameter0XY)) {
-        hDcaXYProngs->Fill(track0.pt(), impactParameter0XY * toMicrometers);
-        hDcaZProngs->Fill(track0.pt(), std::sqrt(kfPosPion.GetDistanceFromVertex(KFPV) * kfPosPion.GetDistanceFromVertex(KFPV) - impactParameter0XY * impactParameter0XY) * toMicrometers);
+        registry.fill(HIST("hDcaXYProngs"), track0.pt(), impactParameter0XY * toMicrometers);
+        registry.fill(HIST("hDcaZProngs"), track0.pt(), std::sqrt(kfPosPion.GetDistanceFromVertex(KFPV) * kfPosPion.GetDistanceFromVertex(KFPV) - impactParameter0XY * impactParameter0XY) * toMicrometers);
       } else {
-        hDcaXYProngs->Fill(track0.pt(), -999.);
-        hDcaZProngs->Fill(track0.pt(), -999.);
+        registry.fill(HIST("hDcaXYProngs"), track0.pt(), -999.f);
+        registry.fill(HIST("hDcaZProngs"), track0.pt(), -999.f);
       }
       if (!kfNegPion.GetDistanceFromVertexXY(KFPV, impactParameter1XY, errImpactParameter1XY)) {
-        hDcaXYProngs->Fill(track1.pt(), impactParameter1XY * toMicrometers);
-        hDcaZProngs->Fill(track1.pt(), std::sqrt(kfNegPion.GetDistanceFromVertex(KFPV) * kfNegPion.GetDistanceFromVertex(KFPV) - impactParameter1XY * impactParameter1XY) * toMicrometers);
+        registry.fill(HIST("hDcaXYProngs"), track1.pt(), impactParameter1XY * toMicrometers);
+        registry.fill(HIST("hDcaZProngs"), track1.pt(), std::sqrt(kfNegPion.GetDistanceFromVertex(KFPV) * kfNegPion.GetDistanceFromVertex(KFPV) - impactParameter1XY * impactParameter1XY) * toMicrometers);
       } else {
-        hDcaXYProngs->Fill(track1.pt(), -999.);
-        hDcaZProngs->Fill(track1.pt(), -999.);
+        registry.fill(HIST("hDcaXYProngs"), track1.pt(), -999.f);
+        registry.fill(HIST("hDcaZProngs"), track1.pt(), -999.f);
       }
 
       KFParticle kfCandD0;
@@ -381,10 +392,11 @@ struct HfCandidateCreator2Prong {
       auto massD0 = kfCandD0.GetMass();
       auto massD0bar = kfCandD0bar.GetMass();
 
-      hCovSVXX->Fill(kfCandD0.Covariance(0, 0));
-      hCovSVYY->Fill(kfCandD0.Covariance(1, 1));
-      hCovSVXZ->Fill(kfCandD0.Covariance(2, 0));
-      hCovSVZZ->Fill(kfCandD0.Covariance(2, 2));
+      registry.fill(HIST("hCovSVXX"), kfCandD0.Covariance(0, 0));
+      registry.fill(HIST("hCovSVYY"), kfCandD0.Covariance(1, 1));
+      registry.fill(HIST("hCovSVXZ"), kfCandD0.Covariance(2, 0));
+      registry.fill(HIST("hCovSVZZ"), kfCandD0.Covariance(2, 2));
+
       auto covMatrixSV = kfCandD0.CovarianceMatrix();
 
       double phi, theta;
@@ -426,8 +438,8 @@ struct HfCandidateCreator2Prong {
 
       // fill histograms
       if (fillHistograms) {
-        hMass2->Fill(massD0);
-        hMass2->Fill(massD0bar);
+        registry.fill(HIST("hMass2"), massD0);
+        registry.fill(HIST("hMass2"), massD0bar);
       }
     }
   }
@@ -583,10 +595,11 @@ struct HfCandidateCreator2Prong {
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
-      const auto rejectionMask = getHfCollisionRejectionMask<CentralityEstimator::None>(collision, centralityMin, centralityMax, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      float centrality{-1.f};
+      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::None>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
 
       /// monitor the satisfied event selections
-      monitorCollision(collision, rejectionMask, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
+      monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
 
     } /// end loop over collisions
   }
@@ -599,10 +612,11 @@ struct HfCandidateCreator2Prong {
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
-      const auto rejectionMask = getHfCollisionRejectionMask<CentralityEstimator::FT0C>(collision, centralityMin, centralityMax, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      float centrality{-1.f};
+      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0C>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
 
       /// monitor the satisfied event selections
-      monitorCollision(collision, rejectionMask, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
+      monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
 
     } /// end loop over collisions
   }
@@ -615,10 +629,11 @@ struct HfCandidateCreator2Prong {
     for (const auto& collision : collisions) {
 
       /// bitmask with event. selection info
-      const auto rejectionMask = getHfCollisionRejectionMask<CentralityEstimator::FT0M>(collision, centralityMin, centralityMax, useSel8Trigger, maxPvPosZ, useTimeFrameBorderCut);
+      float centrality{-1.f};
+      const auto rejectionMask = getHfCollisionRejectionMask<true, CentralityEstimator::FT0M>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, -1, useTimeFrameBorderCut, -zPvPosMax, zPvPosMax, 0, -1.f);
 
       /// monitor the satisfied event selections
-      monitorCollision(collision, rejectionMask, hCollisions.object, hPosZBeforeEvSel.object, hPosZAfterEvSel.object);
+      monitorCollision(collision, rejectionMask, hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel);
 
     } /// end loop over collisions
   }

@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <vector>
 #include <bitset>
+#include "TRandom3.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -159,6 +160,7 @@ struct femtoDreamPairTaskTrackTrack {
   ConfigurableAxis ConfMixingBinVztx{"ConfMixingBinVztx", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   Configurable<int> ConfMixingDepth{"ConfMixingDepth", 5, "Number of events for mixing"};
   Configurable<int> ConfMixingPolicy{"ConfMixingBinPolicy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
+  Configurable<bool> ConfRandomizePair{"ConfRandomizePair", true, "Randomly assign particle 1 and particle 2 in case both are identical"};
 
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{ConfMixingBinVztx, ConfMixingBinMult}, true};
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{ConfMixingBinVztx, ConfMixingBinMultPercentile}, true};
@@ -172,8 +174,11 @@ struct femtoDreamPairTaskTrackTrack {
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  TRandom3 random;
+
   void init(InitContext& context)
   {
+    random.SetSeed(0);
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, ConfBinmultTempFit, ConfOptDummy, ConfBinTrackpT, ConfOptDummy, ConfOptDummy, ConfBinTempFitVar, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk1_PDGCode);
     if (!ConfOptSameSpecies) {
@@ -269,6 +274,7 @@ struct femtoDreamPairTaskTrackTrack {
     }
 
     /// Now build the combinations
+    float rand = 0.;
     if (ConfOptSameSpecies.value) {
       for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(SliceTrk1, SliceTrk2))) {
         if (ConfOptUseCPR.value) {
@@ -280,7 +286,14 @@ struct femtoDreamPairTaskTrackTrack {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), ConfOptUse4D, ConfOptExtendedPlots, ConfOptsmearingByOrigin);
+        if (ConfRandomizePair.value) {
+          rand = random.Rndm();
+        }
+        if (rand >= 0.5) {
+          sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), ConfOptUse4D, ConfOptExtendedPlots, ConfOptsmearingByOrigin);
+        } else {
+          sameEventCont.setPair<isMC>(p2, p1, col.multNtr(), col.multV0M(), ConfOptUse4D, ConfOptExtendedPlots, ConfOptsmearingByOrigin);
+        }
       }
     } else {
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {

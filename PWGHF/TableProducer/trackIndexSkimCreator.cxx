@@ -54,6 +54,7 @@
 
 using namespace o2;
 using namespace o2::analysis;
+using namespace o2::hf_evsel;
 using namespace o2::aod;
 using namespace o2::aod::hf_collision_centrality;
 using namespace o2::framework;
@@ -94,10 +95,6 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   Produces<aod::HfSelCollision> rowSelectedCollision;
 
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
-  Configurable<float> xVertexMin{"xVertexMin", -100., "min. x of primary vertex [cm]"};
-  Configurable<float> xVertexMax{"xVertexMax", 100., "max. x of primary vertex [cm]"};
-  Configurable<float> yVertexMin{"yVertexMin", -100., "min. y of primary vertex [cm]"};
-  Configurable<float> yVertexMax{"yVertexMax", 100., "max. y of primary vertex [cm]"};
   Configurable<float> zVertexMin{"zVertexMin", -100., "min. z of primary vertex [cm]"};
   Configurable<float> zVertexMax{"zVertexMax", 100., "max. z of primary vertex [cm]"};
   Configurable<int> nContribMin{"nContribMin", 0, "min. number of contributors to primary-vertex reconstruction"};
@@ -112,6 +109,8 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   int triggerClass;
 
+  // QA histos
+  std::shared_ptr<TH1> hEvents, hPrimVtxZBeforeSel, hPrimVtxZAfterSel, hPrimVtxXAfterSel, hPrimVtxYAfterSel, hNContributorsAfterSel;
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
@@ -124,152 +123,40 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     triggerClass = std::distance(aliasLabels, std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data()));
 
     if (fillHistograms) {
-      constexpr int kNBinsEvents = 2 + EventRejection::NEventRejection;
-      std::string labels[kNBinsEvents];
-      labels[0] = "processed";
-      labels[1] = "selected";
-      labels[2 + EventRejection::Trigger] = "rej. trigger";
-      labels[2 + EventRejection::TimeFrameBorderCut] = "rej. time-frame border";
-      labels[2 + EventRejection::PositionX] = "rej. #it{x}";
-      labels[2 + EventRejection::PositionY] = "rej. #it{y}";
-      labels[2 + EventRejection::PositionZ] = "rej. #it{z}";
-      labels[2 + EventRejection::NContrib] = "rej. # of contributors";
-      labels[2 + EventRejection::Chi2] = "rej. #it{#chi}^{2}";
-      labels[2 + EventRejection::Centrality] = "rej. centrality";
-      AxisSpec axisEvents = {kNBinsEvents, 0.5, kNBinsEvents + 0.5, ""};
-      registry.add("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
-      for (int iBin = 0; iBin < kNBinsEvents; iBin++) {
-        registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
-      }
+      hEvents = registry.add<TH1>("hEvents", "Events;;entries", HistType::kTH1F, {axisEvents});
+      setLabelHistoEvSel(hEvents);
+
       // primary vertex histograms
-      registry.add("hNContributors", "Number of PV contributors;entries", {HistType::kTH1F, {axisNumContributors}});
-      registry.add("hPrimVtxX", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{200, -0.5, 0.5}}});
-      registry.add("hPrimVtxY", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{200, -0.5, 0.5}}});
-      registry.add("hPrimVtxZ", "selected events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1F, {{200, -20., 20.}}});
+      hPrimVtxZBeforeSel = registry.add<TH1>("hPrimVtxZBeforeSel", "all events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -20., 20.}}});
+      hPrimVtxZAfterSel = registry.add<TH1>("hPrimVtxZAfterSel", "selected events;#it{z}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -20., 20.}}});
+      hPrimVtxXAfterSel = registry.add<TH1>("hPrimVtxXAfterSel", "selected events;#it{x}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
+      hPrimVtxYAfterSel = registry.add<TH1>("hPrimVtxYAfterSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {{200, -0.5, 0.5}}});
+      hNContributorsAfterSel = registry.add<TH1>("hNContributorsAfterSel", "selected events;#it{y}_{prim. vtx.} (cm);entries", {HistType::kTH1D, {axisNumContributors}});
 
       if (doprocessTrigAndCentFT0ASel || doprocessTrigAndCentFT0CSel || doprocessTrigAndCentFT0MSel || doprocessTrigAndCentFV0ASel) {
         AxisSpec axisCentrality{200, 0., 100., "centrality percentile"};
-        registry.add("hCentralitySelected", "Centrality percentile of selected events; centrality percentile;entries", {HistType::kTH1F, {axisCentrality}});
-        registry.add("hCentralityRejected", "Centrality percentile of rejected events; centrality percentile;entries", {HistType::kTH1F, {axisCentrality}});
-      }
-    }
-  }
-
-  /// Primary-vertex selection
-  /// \param collision  collision table row
-  /// \param statusCollision  bit map with rejection results
-  template <typename Col>
-  void selectVertex(const Col& collision, int& statusCollision)
-  {
-    if (fillHistograms) {
-      registry.fill(HIST("hNContributors"), collision.numContrib());
-    }
-
-    // x position
-    if (collision.posX() < xVertexMin || collision.posX() > xVertexMax) {
-      SETBIT(statusCollision, EventRejection::PositionX);
-      if (fillHistograms) {
-        registry.fill(HIST("hEvents"), 3 + EventRejection::PositionX);
-      }
-    }
-    // y position
-    if (collision.posY() < yVertexMin || collision.posY() > yVertexMax) {
-      SETBIT(statusCollision, EventRejection::PositionY);
-      if (fillHistograms) {
-        registry.fill(HIST("hEvents"), 3 + EventRejection::PositionY);
-      }
-    }
-    // z position
-    if (collision.posZ() < zVertexMin || collision.posZ() > zVertexMax) {
-      SETBIT(statusCollision, EventRejection::PositionZ);
-      if (fillHistograms) {
-        registry.fill(HIST("hEvents"), 3 + EventRejection::PositionZ);
-      }
-    }
-    // number of contributors
-    if (collision.numContrib() < nContribMin) {
-      SETBIT(statusCollision, EventRejection::NContrib);
-      if (fillHistograms) {
-        registry.fill(HIST("hEvents"), 3 + EventRejection::NContrib);
-      }
-    }
-    // chi^2
-    if (chi2Max > 0. && collision.chi2() > chi2Max) {
-      SETBIT(statusCollision, EventRejection::Chi2);
-      if (fillHistograms) {
-        registry.fill(HIST("hEvents"), 3 + EventRejection::Chi2);
+        registry.add("hCentralitySelected", "Centrality percentile of selected events in the centrality interval; centrality percentile;entries", {HistType::kTH1D, {axisCentrality}});
+        registry.add("hCentralityRejected", "Centrality percentile of selected events outside the centrality interval; centrality percentile;entries", {HistType::kTH1D, {axisCentrality}});
       }
     }
   }
 
   /// Collision selection
   /// \param collision  collision table with
-  template <bool applyTrigSel, int centEstimator, typename Col>
+  template <bool applyTrigSel, o2::aod::hf_collision_centrality::CentralityEstimator centEstimator, typename Col>
   void selectCollision(const Col& collision)
   {
-    int statusCollision = 0;
-
-    // processed events
-    if (fillHistograms) {
-      registry.fill(HIST("hEvents"), 1);
-    }
-
-    // trigger selection
-    if constexpr (applyTrigSel) {
-      if ((!useSel8Trigger && !collision.alias_bit(triggerClass)) || (useSel8Trigger && !collision.sel8())) {
-        SETBIT(statusCollision, EventRejection::Trigger);
-        if (fillHistograms) {
-          registry.fill(HIST("hEvents"), 3 + EventRejection::Trigger);
-        }
-      }
-
-      if (useTimeFrameBorderCut && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-        SETBIT(statusCollision, EventRejection::TimeFrameBorderCut);
-        if (fillHistograms) {
-          registry.fill(HIST("hEvents"), 3 + EventRejection::TimeFrameBorderCut);
-        }
-      }
-    }
-
     float centrality = -1.;
-    if constexpr (centEstimator != CentralityEstimator::None) {
-      if constexpr (centEstimator == CentralityEstimator::FT0A) {
-        centrality = collision.centFT0A();
-      } else if constexpr (centEstimator == CentralityEstimator::FT0C) {
-        centrality = collision.centFT0C();
-      } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
-        centrality = collision.centFT0M();
-      } else if constexpr (centEstimator == CentralityEstimator::FV0A) {
-        centrality = collision.centFV0A();
-      } else {
-        LOGP(fatal, "Centrality estimator not set!");
-      }
-      if (centrality < centralityMin || centrality > centralityMax) {
-        SETBIT(statusCollision, EventRejection::Centrality);
-        if (fillHistograms) {
-          registry.fill(HIST("hEvents"), 3 + EventRejection::Centrality);
-        }
-      }
-    }
+    const auto statusCollision = getHfCollisionRejectionMask<applyTrigSel, centEstimator>(collision, centrality, centralityMin, centralityMax, useSel8Trigger, triggerClass, useTimeFrameBorderCut, zVertexMin, zVertexMax, nContribMin, chi2Max);
 
-    // vertex selection
-    selectVertex(collision, statusCollision);
-
-    // selected events
     if (fillHistograms) {
-      if (statusCollision == 0) {
-        registry.fill(HIST("hEvents"), 2);
-        registry.fill(HIST("hPrimVtxX"), collision.posX());
-        registry.fill(HIST("hPrimVtxY"), collision.posY());
-        registry.fill(HIST("hPrimVtxZ"), collision.posZ());
-        if constexpr (centEstimator != CentralityEstimator::None) {
+      monitorCollision(collision, statusCollision, hEvents, hPrimVtxZBeforeSel, hPrimVtxZAfterSel, hPrimVtxXAfterSel, hPrimVtxYAfterSel, hNContributorsAfterSel);
+      // additional centrality histos
+      if constexpr (centEstimator != o2::aod::hf_collision_centrality::None) {
+        if (statusCollision == 0) {
           registry.fill(HIST("hCentralitySelected"), centrality);
-        }
-      } else {
-        if constexpr (centEstimator != CentralityEstimator::None) {
-          if (TESTBIT(statusCollision, EventRejection::Centrality)) {
-            registry.fill(HIST("hCentralityRejected"), centrality);
-          }
+        } else if (statusCollision == BIT(EventRejection::Centrality)) { // rejected by centrality only
+          registry.fill(HIST("hCentralityRejected"), centrality);
         }
       }
     }
@@ -1366,7 +1253,7 @@ struct HfTrackIndexSkimCreator {
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
 
   // filter collisions
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint16_t>(0));
 
   // define slice of track indices per collisions
   Preslice<TracksWithPVRefitAndDCA> tracksPerCollision = aod::track::collisionId; // needed for PV refit
@@ -2976,7 +2863,7 @@ struct HfTrackIndexSkimCreatorCascades {
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
 
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint16_t>(0));
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandV0bachelor))) != 0u && (applyProtonPid == false || (aod::hf_sel_track::isIdentifiedPid & static_cast<uint32_t>(BIT(ChannelsProtonPid::LcToPK0S))) != 0u);
 
   Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
@@ -3259,7 +3146,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
   using V0Full = soa::Join<aod::V0Datas, aod::V0Covs>;
 
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0);
+  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<uint16_t>(0));
   Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandCascadeBachelor))) != 0u;
 
   Preslice<aod::TracksWCovDca> tracksPerCollision = aod::track::collisionId;                     // needed for PV refit

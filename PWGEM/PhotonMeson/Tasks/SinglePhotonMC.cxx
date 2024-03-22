@@ -48,10 +48,10 @@ using namespace o2::soa;
 using namespace o2::aod::pwgem::mcutil;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMReducedEventIds>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
@@ -248,7 +248,7 @@ struct SinglePhotonMC {
   //    LOGF(info, "Number of EMCal cuts = %d", fEMCCuts.size());
   //  }
 
-  Preslice<MyV0Photons> perCollision = aod::v0photonkf::emreducedeventId;
+  Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;
   // Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   // Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
@@ -325,11 +325,11 @@ struct SinglePhotonMC {
           }
 
           auto mcphoton = mcparticles.iteratorAt(photonid);
-          if (IsPhysicalPrimary(mcphoton.emreducedmcevent(), mcphoton, mcparticles)) {
+          if (IsPhysicalPrimary(mcphoton.emmcevent(), mcphoton, mcparticles)) {
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt_Photon_Primary"))->Fill(v1.Pt());
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hY_Photon_Primary"))->Fill(v1.Rapidity());
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi_Photon_Primary"))->Fill(v1.Phi() < 0.0 ? v1.Phi() + TMath::TwoPi() : v1.Phi());
-          } else if (IsFromWD(mcphoton.emreducedmcevent(), mcphoton, mcparticles)) {
+          } else if (IsFromWD(mcphoton.emmcevent(), mcphoton, mcparticles)) {
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt_Photon_FromWD"))->Fill(v1.Pt());
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hY_Photon_FromWD"))->Fill(v1.Rapidity());
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi_Photon_FromWD"))->Fill(v1.Phi() < 0.0 ? v1.Phi() + TMath::TwoPi() : v1.Phi());
@@ -361,7 +361,7 @@ struct SinglePhotonMC {
   //   FillTruePhoton<EMDetType::kEMC>(grouped_collisions, emcclusters, perCollision_emc, fEMCCuts, nullptr, emcmatchedtracks, mcparticles, mccollisions);
   // }
 
-  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
+  PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
   void processGen(MyCollisions const& collisions, aod::EMMCEvents const&, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
@@ -371,7 +371,7 @@ struct SinglePhotonMC {
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
-      auto mccollision = collision.emreducedmcevent();
+      auto mccollision = collision.emmcevent();
 
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(1.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_before"))->Fill(mccollision.posZ());
@@ -391,7 +391,7 @@ struct SinglePhotonMC {
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hCollisionCounter"))->Fill(4.0);
       reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hZvtx_after"))->Fill(mccollision.posZ());
 
-      auto mctracks_coll = mcparticles.sliceBy(perMcCollision, collision.emreducedmceventId());
+      auto mctracks_coll = mcparticles.sliceBy(perMcCollision, collision.emmceventId());
       for (auto& mctrack : mctracks_coll) {
         if (abs(mctrack.y()) > maxY) {
           continue;
@@ -400,11 +400,11 @@ struct SinglePhotonMC {
         int photonid = IsEleFromPC(mctrack, mcparticles);
         if (photonid > 0) {
           auto mcphoton = mcparticles.iteratorAt(photonid);
-          if (!IsPhysicalPrimary(mcphoton.emreducedmcevent(), mcphoton, mcparticles)) {
+          if (!IsPhysicalPrimary(mcphoton.emmcevent(), mcphoton, mcparticles)) {
             continue;
           }
         }
-        if (abs(mctrack.pdgCode()) == 22 && IsPhysicalPrimary(mctrack.emreducedmcevent(), mctrack, mcparticles)) {
+        if (abs(mctrack.pdgCode()) == 22 && IsPhysicalPrimary(mctrack.emmcevent(), mctrack, mcparticles)) {
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPt_Photon"))->Fill(mctrack.pt());
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hY_Photon"))->Fill(mctrack.y());
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPhi_Photon"))->Fill(mctrack.phi());

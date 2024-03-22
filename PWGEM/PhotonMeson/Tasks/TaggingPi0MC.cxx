@@ -46,13 +46,13 @@ using namespace o2::aod::photonpair;
 using namespace o2::aod::pwgem::mcutil;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMReducedEventIds>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
-using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
+using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMEventIds>;
 using MyDalitzEE = MyDalitzEEs::iterator;
 
 struct TaggingPi0MC {
@@ -365,9 +365,9 @@ struct TaggingPi0MC {
             int pi0id1 = IsXFromY(mcphoton1, mcparticles, 22, 111);
             if (pi0id1 > 0) {
               auto mcpi01 = mcparticles.iteratorAt(pi0id1);
-              if (IsPhysicalPrimary(mcpi01.emreducedmcevent(), mcpi01, mcparticles)) {
+              if (IsPhysicalPrimary(mcpi01.emmcevent(), mcpi01, mcparticles)) {
                 reinterpret_cast<TH1F*>(list_pcm->FindObject(Form("%s", cut1.GetName()))->FindObject("hPt_v0photon_Pi0_Primary"))->Fill(g1.pt());
-              } else if (IsFromWD(mcpi01.emreducedmcevent(), mcpi01, mcparticles)) {
+              } else if (IsFromWD(mcpi01.emmcevent(), mcpi01, mcparticles)) {
                 reinterpret_cast<TH1F*>(list_pcm->FindObject(Form("%s", cut1.GetName()))->FindObject("hPt_v0photon_Pi0_FromWD"))->Fill(g1.pt());
               } else {
                 reinterpret_cast<TH1F*>(list_pcm->FindObject(Form("%s", cut1.GetName()))->FindObject("hPt_v0photon_Pi0_hs"))->Fill(g1.pt());
@@ -439,9 +439,9 @@ struct TaggingPi0MC {
 
               if (pi0id > 0) {
                 auto mcpi0 = mcparticles.iteratorAt(pi0id);
-                if (IsPhysicalPrimary(mcpi0.emreducedmcevent(), mcpi0, mcparticles)) {
+                if (IsPhysicalPrimary(mcpi0.emmcevent(), mcpi0, mcparticles)) {
                   reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_Primary"))->Fill(v12.M(), v1.Pt());
-                } else if (IsFromWD(mcpi0.emreducedmcevent(), mcpi0, mcparticles)) {
+                } else if (IsFromWD(mcpi0.emmcevent(), mcpi0, mcparticles)) {
                   reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_FromWD"))->Fill(v12.M(), v1.Pt());
                 } else {
                   reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_hs"))->Fill(v12.M(), v1.Pt());
@@ -457,8 +457,8 @@ struct TaggingPi0MC {
   Filter DalitzEEFilter = o2::aod::dalitzee::sign == 0; // analyze only uls
   using MyFilteredDalitzEEs = soa::Filtered<MyDalitzEEs>;
 
-  Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::emreducedeventId;
-  Preslice<MyDalitzEEs> perCollision_dalitz = aod::dalitzee::emreducedeventId;
+  Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::emeventId;
+  Preslice<MyDalitzEEs> perCollision_dalitz = aod::dalitzee::emeventId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.

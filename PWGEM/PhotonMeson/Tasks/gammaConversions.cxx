@@ -35,7 +35,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using V0DatasAdditional = soa::Join<aod::V0PhotonsKF, aod::V0KFEMReducedEventIds>;
+using V0DatasAdditional = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using V0LegsWithMC = soa::Join<aod::V0Legs, aod::MCParticleIndex>;
 
 // using collisionEvSelIt = soa::Join<aod::Collisions, aod::EvSels>::iterator;
@@ -608,8 +608,8 @@ struct GammaConversions {
     }
   }
 
-  Preslice<V0DatasAdditional> perCollision = aod::v0photonkf::emreducedeventId;
-  void processRec(aod::EMReducedEvents::iterator const& theCollision,
+  Preslice<V0DatasAdditional> perCollision = aod::v0photonkf::emeventId;
+  void processRec(aod::EMEvents::iterator const& theCollision,
                   V0DatasAdditional const& theV0s,
                   aod::V0Legs const& theAllTracks)
   {
@@ -634,7 +634,7 @@ struct GammaConversions {
 
   Preslice<aod::McGammasTrue> gperV0 = aod::gammamctrue::v0photonkfId;
 
-  void processMc(aod::EMReducedEvents::iterator const& theCollision,
+  void processMc(aod::EMEvents::iterator const& theCollision,
                  V0DatasAdditional const& theV0s,
                  V0LegsWithMC const& theAllTracks,
                  aod::V0DaughterMcParticles const& TheAllTracksMC,

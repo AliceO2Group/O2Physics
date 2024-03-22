@@ -99,6 +99,8 @@ struct derivedlambdakzeroanalysis {
 
   Configurable<bool> doCompleteQA{"doCompleteQA", false, "do topological variable QA histograms"};
   Configurable<bool> doTPCQA{"doTPCQA", false, "do TPC QA histograms"};
+  Configurable<bool> doTOFQA{"doTOFQA", false, "do TOF QA histograms"};
+
   Configurable<bool> doPlainQA{"doPlainQA", true, "do simple 1D QA of candidates"};
   Configurable<float> qaMinPt{"qaMinPt", 0.0f, "minimum pT for QA plots"};
   Configurable<float> qaMaxPt{"qaMaxPt", 1000.0f, "maximum pT for QA plots"};
@@ -131,6 +133,7 @@ struct derivedlambdakzeroanalysis {
   ConfigurableAxis axisV0Radius{"axisV0Radius", {20, 0.0f, 60.0f}, "V0 2D radius (cm)"};
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {200, -10.0f, 10.0f}, "N sigma TPC"};
   ConfigurableAxis axisTPCsignal{"axisTPCsignal", {200, 0.0f, 200.0f}, "TPC signal"};
+  ConfigurableAxis axisTOFdeltaT{"axisTOFdeltaT", {200, -5000.0f, 5000.0f}, "TOF Delta T (ps)"};
 
   // AP plot axes
   ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
@@ -297,6 +300,14 @@ struct derivedlambdakzeroanalysis {
           histos.add("K0Short/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
           histos.add("K0Short/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
         }
+        if (doTOFQA) {
+          histos.add("K0Short/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+          histos.add("K0Short/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+          histos.add("K0Short/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+          histos.add("K0Short/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+          histos.add("K0Short/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+          histos.add("K0Short/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        }
       }
       if (analyseLambda) {
         histos.add("Lambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
@@ -318,6 +329,14 @@ struct derivedlambdakzeroanalysis {
           histos.add("Lambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
           histos.add("Lambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
         }
+        if (doTOFQA) {
+          histos.add("Lambda/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+          histos.add("Lambda/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+          histos.add("Lambda/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+          histos.add("Lambda/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+          histos.add("Lambda/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+          histos.add("Lambda/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        }
       }
       if (analyseAntiLambda) {
         histos.add("AntiLambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
@@ -338,6 +357,14 @@ struct derivedlambdakzeroanalysis {
           histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
           histos.add("AntiLambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
           histos.add("AntiLambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        }
+        if (doTOFQA) {
+          histos.add("AntiLambda/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+          histos.add("AntiLambda/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+          histos.add("AntiLambda/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+          histos.add("AntiLambda/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+          histos.add("AntiLambda/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+          histos.add("AntiLambda/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3F, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
         }
       }
     }
@@ -606,6 +633,16 @@ struct derivedlambdakzeroanalysis {
             histos.fill(HIST("K0Short/h3dNegTPCsignalVsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcSignal());
           }
         }
+        if (doTOFQA) {
+          if (verifyMask(selMap, maskTopological | maskK0ShortSpecific)) {
+            histos.fill(HIST("K0Short/h3dPosTOFdeltaT"), centrality, v0.pt(), v0.posTOFDeltaTK0Pi());
+            histos.fill(HIST("K0Short/h3dNegTOFdeltaT"), centrality, v0.pt(), v0.negTOFDeltaTK0Pi());
+            histos.fill(HIST("K0Short/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), v0.posTOFDeltaTK0Pi());
+            histos.fill(HIST("K0Short/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), v0.negTOFDeltaTK0Pi());
+            histos.fill(HIST("K0Short/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTK0Pi());
+            histos.fill(HIST("K0Short/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTK0Pi());
+          }
+        }
       }
 
       if (analyseLambda) {
@@ -635,6 +672,16 @@ struct derivedlambdakzeroanalysis {
             histos.fill(HIST("Lambda/h3dNegTPCsignalVsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcSignal());
           }
         }
+        if (doTOFQA) {
+          if (verifyMask(selMap, maskTopological | maskLambdaSpecific)) {
+            histos.fill(HIST("Lambda/h3dPosTOFdeltaT"), centrality, v0.pt(), v0.posTOFDeltaTLaPr());
+            histos.fill(HIST("Lambda/h3dNegTOFdeltaT"), centrality, v0.pt(), v0.negTOFDeltaTLaPi());
+            histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), v0.posTOFDeltaTLaPr());
+            histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), v0.negTOFDeltaTLaPi());
+            histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPr());
+            histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPi());
+          }
+        }
       }
       if (analyseAntiLambda) {
         if (verifyMask(selMap, maskTopoNoV0Radius | maskAntiLambdaSpecific))
@@ -661,6 +708,16 @@ struct derivedlambdakzeroanalysis {
             histos.fill(HIST("AntiLambda/h3dNegNsigmaTPCvsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcNSigmaPr());
             histos.fill(HIST("AntiLambda/h3dPosTPCsignalVsTrackPt"), centrality, v0.positivept(), posTrackExtra.tpcSignal());
             histos.fill(HIST("AntiLambda/h3dNegTPCsignalVsTrackPt"), centrality, v0.negativept(), negTrackExtra.tpcSignal());
+          }
+        }
+        if (doTOFQA) {
+          if (verifyMask(selMap, maskTopological | maskAntiLambdaSpecific)) {
+            histos.fill(HIST("AntiLambda/h3dPosTOFdeltaT"), centrality, v0.pt(), v0.posTOFDeltaTLaPi());
+            histos.fill(HIST("AntiLambda/h3dNegTOFdeltaT"), centrality, v0.pt(), v0.negTOFDeltaTLaPr());
+            histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), v0.posTOFDeltaTLaPi());
+            histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), v0.negTOFDeltaTLaPr());
+            histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPi());
+            histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPr());
           }
         }
       }
@@ -857,50 +914,50 @@ struct derivedlambdakzeroanalysis {
     auto hOmegaMinus = histos.get<TH2>(HIST("h2dGenOmegaMinus"));
     auto hOmegaPlus = histos.get<TH2>(HIST("h2dGenOmegaPlus"));
     for (auto& gVec : geK0Short) {
-      if (gVec.size() != hK0Short->GetNcells())
-        LOGF(fatal, "K0Short: Number of elements in generated array and number of cells in receiving histogram differ!");
+      if (gVec.generatedK0Short().size() != hK0Short->GetNcells())
+        LOGF(fatal, "K0Short: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedK0Short().size(), hK0Short->GetNcells());
       for (uint32_t iv = 0; iv < hK0Short->GetNcells(); iv++) {
-        hK0Short->SetBinContent(iv + 1, hK0Short->GetBinContent(iv + 1) + gVec.generatedK0Short()[iv]);
+        hK0Short->SetBinContent(iv, hK0Short->GetBinContent(iv) + gVec.generatedK0Short()[iv]);
       }
     }
     for (auto& gVec : geLambda) {
-      if (gVec.size() != hLambda->GetNcells())
-        LOGF(fatal, "Lambda: Number of elements in generated array and number of cells in receiving histogram differ!");
+      if (gVec.generatedLambda().size() != hLambda->GetNcells())
+        LOGF(fatal, "Lambda: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedLambda().size(), hLambda->GetNcells());
       for (uint32_t iv = 0; iv < hLambda->GetNcells(); iv++) {
         hLambda->SetBinContent(iv, hLambda->GetBinContent(iv) + gVec.generatedLambda()[iv]);
       }
     }
     for (auto& gVec : geAntiLambda) {
-      if (gVec.size() != hAntiLambda->GetNcells())
-        LOGF(fatal, "AntiLambda: Number of elements in generated array and number of cells in receiving histogram differ!");
+      if (gVec.generatedAntiLambda().size() != hAntiLambda->GetNcells())
+        LOGF(fatal, "AntiLambda: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedAntiLambda().size(), hAntiLambda->GetNcells());
       for (uint32_t iv = 0; iv < hAntiLambda->GetNcells(); iv++) {
         hAntiLambda->SetBinContent(iv, hAntiLambda->GetBinContent(iv) + gVec.generatedAntiLambda()[iv]);
       }
     }
     for (auto& gVec : geXiMinus) {
-      if (gVec.size() != hXiMinus->GetNcells())
-        LOGF(fatal, "XiMinus: Number of elements in generated array and number of cells in receiving histogram differ!");
+      if (gVec.generatedXiMinus().size() != hXiMinus->GetNcells())
+        LOGF(fatal, "XiMinus: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedXiMinus().size(), hXiMinus->GetNcells());
       for (uint32_t iv = 0; iv < hXiMinus->GetNcells(); iv++) {
         hXiMinus->SetBinContent(iv, hXiMinus->GetBinContent(iv) + gVec.generatedXiMinus()[iv]);
       }
     }
     for (auto& gVec : geXiPlus) {
-      if (gVec.size() != hXiPlus->GetNcells())
-        LOGF(fatal, "XiPlus: Number of elements in generated array and number of cells in receiving histogram differ!");
+      if (gVec.generatedXiPlus().size() != hXiPlus->GetNcells())
+        LOGF(fatal, "XiPlus: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedXiPlus().size(), hXiPlus->GetNcells());
       for (uint32_t iv = 0; iv < hXiPlus->GetNcells(); iv++) {
         hXiPlus->SetBinContent(iv, hXiPlus->GetBinContent(iv) + gVec.generatedXiPlus()[iv]);
       }
     }
     for (auto& gVec : geOmegaMinus) {
-      if (gVec.size() != hOmegaMinus->GetNcells())
-        LOGF(fatal, "OmegaMinus: Number of elements in generated array and number of cells in receiving histogram differ!");
+      if (gVec.generatedOmegaMinus().size() != hOmegaMinus->GetNcells())
+        LOGF(fatal, "OmegaMinus: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedOmegaMinus().size(), hOmegaMinus->GetNcells());
       for (uint32_t iv = 0; iv < hOmegaMinus->GetNcells(); iv++) {
         hOmegaMinus->SetBinContent(iv, hOmegaMinus->GetBinContent(iv) + gVec.generatedOmegaMinus()[iv]);
       }
     }
     for (auto& gVec : geOmegaPlus) {
-      if (gVec.size() != hOmegaPlus->GetNcells())
-        LOGF(fatal, "OmegaPlus: Number of elements in generated array and number of cells in receiving histogram differ!");
+      if (gVec.generatedOmegaPlus().size() != hOmegaPlus->GetNcells())
+        LOGF(fatal, "OmegaPlus: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedOmegaPlus().size(), hOmegaPlus->GetNcells());
       for (uint32_t iv = 0; iv < hOmegaPlus->GetNcells(); iv++) {
         hOmegaPlus->SetBinContent(iv, hOmegaPlus->GetBinContent(iv) + gVec.generatedOmegaPlus()[iv]);
       }

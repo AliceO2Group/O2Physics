@@ -75,6 +75,7 @@ struct phianalysisrun3 {
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
+  Configurable<bool> timFrameEvsel{"timFrameEvsel", true, "TPC Time frame boundary cut"};
   // MC
   Configurable<bool> isMC{"isMC", false, "Run MC"};
   Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
@@ -254,6 +255,9 @@ struct phianalysisrun3 {
     if (!collision.sel8()) {
       return;
     }
+    if (timFrameEvsel && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+      return;
+    }
     float multiplicity;
     if (cfgMultFT0)
       multiplicity = collision.centFT0C();
@@ -271,12 +275,12 @@ struct phianalysisrun3 {
       histos.fill(HIST("hDcaz"), track1.dcaZ());
       histos.fill(HIST("hNsigmaKaonTPC"), track1.tpcNSigmaKa());
       histos.fill(HIST("hNsigmaKaonTOF"), track1.tofNSigmaKa());
-      auto track1ID = track1.globalIndex();
+      auto track1ID = track1.index();
       for (auto track2 : tracks) {
         if (!selectionTrack(track2)) {
           continue;
         }
-        auto track2ID = track2.globalIndex();
+        auto track2ID = track2.index();
         if (track2ID <= track1ID) {
           continue;
         }
@@ -311,7 +315,9 @@ struct phianalysisrun3 {
       if (!c2.sel8()) {
         continue;
       }
-
+      if (timFrameEvsel && (!c1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !c1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !c2.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
       float multiplicity;
       if (cfgMultFT0)
         multiplicity = c1.centFT0C();
@@ -422,7 +428,7 @@ struct phianalysisrun3 {
       if (!track1.has_mcParticle()) {
         continue;
       }
-      auto track1ID = track1.globalIndex();
+      auto track1ID = track1.index();
       for (auto track2 : tracks) {
         if (!track2.has_mcParticle()) {
           continue;
@@ -430,7 +436,7 @@ struct phianalysisrun3 {
         if (!selectionTrack(track2)) {
           continue;
         }
-        auto track2ID = track2.globalIndex();
+        auto track2ID = track2.index();
         if (track2ID <= track1ID) {
           continue;
         }

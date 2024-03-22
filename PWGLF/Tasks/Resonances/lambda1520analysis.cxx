@@ -33,11 +33,14 @@ struct lambda1520analysis {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Configurables
-  // Eta-asymmetry switch
-  Configurable<bool> isEtaAssym{"isEtaAssym", false, "Turn on/off EtaAssym calculation"};
+  // switches
+  Configurable<bool> cEtaAssym{"cEtaAssym", false, "Turn on/off EtaAssym calculation"};
   // Configurable<bool> isFillQA{"isFillQA", false, "Turn on/off QA plots"};
-  Configurable<bool> IsAddlTrackcut{"IsAddlTrackcut", false, "Switch to turn on/off Additional track cut"};
-  Configurable<bool> IsOldPIDcut{"IsOldPIDcut", true, "Switch to turn on/off old PID cut to apply pt dependent cut"};
+  Configurable<bool> cAddlTrackcut{"cAddlTrackcut", false, "Switch to turn on/off Additional track cut"};
+  Configurable<bool> cOldPIDcut{"cOldPIDcut", false, "Switch to turn on/off old PID cut to apply pt dependent cut"};
+  Configurable<bool> cDCAr7SigCut{"cDCAr7SigCut", false, "Track DCAr 7 Sigma cut to PV Maximum"};
+  Configurable<bool> cKinCuts{"cKinCuts", false, "Kinematic Cuts for p-K pair opening angle"};
+  Configurable<bool> cTPCNClsFound{"cTPCNClsFound", false, "Switch to turn on/off TPCNClsFound cut"};
 
   // Pre-selection Track cuts
   Configurable<float> cMinPtcut{"cMinPtcut", 0.15f, "Minimal pT for tracks"};
@@ -45,11 +48,11 @@ struct lambda1520analysis {
   Configurable<float> cMinRtpccut{"cMinRtpccut", 0.8f, "minimum ratio of number of Xrows to findable clusters in TPC"};
   Configurable<float> cMaxChi2ITScut{"cMaxChi2ITScut", 36.0f, "Maximal pT for Chi2/cluster for ITS"};
   Configurable<float> cMaxChi2TPCcut{"cMaxChi2TPCcut", 4.0f, "Maximal pT for Chi2/cluster for TPC"};
+  Configurable<float> cMinTPCNClsFound{"cMinTPCNClsFound", 120, "minimum TPCNClsFound value for good track"};
 
   // DCA Selections
   // DCAr to PV
-  Configurable<bool> IsDCAr7SigCut{"IsDCAr7SigCut", false, "Track DCAr 7 Sigma cut to PV Maximum"};
-  Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.12f, "Track DCAr cut to PV Maximum"};
+  Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.1f, "Track DCAr cut to PV Maximum"};
   // DCAz to PV
   Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0f, "Track DCAz cut to PV Maximum"};
 
@@ -59,28 +62,40 @@ struct lambda1520analysis {
   Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"};          // PV Contriuibutor
 
   /// PID Selections
+  Configurable<float> cRejNsigmaTpc{"cRejNsigmaTpc", 3.0, "Reject tracks to improve purity of TPC PID"}; // Reject missidentified particles when tpc bands merge
+  Configurable<float> cRejNsigmaTof{"cRejNsigmaTof", 3.0, "Reject tracks to improve purity of TOF PID"}; // Reject missidentified particles when tpc bands merge
+  Configurable<bool> cUseRejNsigma{"cUseRejNsigma", false, "Switch on/off track rejection method to improve purity"};
+
   // Kaon
+  // Old PID use case
   Configurable<std::vector<double>> kaonTPCPIDpTintv{"kaonTPCPIDpTintv", {999.}, "pT intervals for Kaon TPC PID cuts"};
   Configurable<std::vector<double>> kaonTPCPIDcuts{"kaonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
   Configurable<std::vector<double>> kaonTOFPIDpTintv{"kaonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
   Configurable<std::vector<double>> kaonTOFPIDcuts{"kaonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
   Configurable<double> cMaxTPCnSigmaKaonVETO{"cMaxTPCnSigmaKaonVETO", 3.0, "TPC nSigma VETO cut for Kaon"}; // TPC
 
-  Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};              // TPC
-  Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", 3.0, "Combined nSigma cut for Kaon"}; // Combined
+  // New PID use case
+  Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};                // TPC
+  Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", 3.0, "Combined nSigma cut for Kaon"};   // Combined
+  Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Pion"};                // TOF
+  Configurable<bool> cUseOnlyTOFTrackKa{"cUseOnlyTOFTrackKa", false, "Use only TOF track for PID selection"}; // Use only TOF track for Kaon PID selection
 
   // Proton
+  // Old PID use case
   Configurable<std::vector<double>> protonTPCPIDpTintv{"protonTPCPIDpTintv", {999.}, "pT intervals for Kaon TPC PID cuts"};
   Configurable<std::vector<double>> protonTPCPIDcuts{"protonTPCPIDcuts", {2}, "nSigma list for Kaon TPC PID cuts"};
   Configurable<std::vector<double>> protonTOFPIDpTintv{"protonTOFPIDpTintv", {999.}, "pT intervals for Kaon TOF PID cuts"};
   Configurable<std::vector<double>> protonTOFPIDcuts{"protonTOFPIDcuts", {2}, "nSigma list for Kaon TOF PID cuts"};
   Configurable<double> cMaxTPCnSigmaProtonVETO{"cMaxTPCnSigmaProtonVETO", 3.0, "TPC nSigma VETO cut for Proton"}; // TPC
 
+  // New PID use case
   Configurable<double> cMaxTPCnSigmaProton{"cMaxTPCnSigmaProton", 3.0, "TPC nSigma cut for Proton"};              // TPC
   Configurable<double> nsigmaCutCombinedProton{"nsigmaCutCombinedProton", 3.0, "Combined nSigma cut for Proton"}; // Combined
+  Configurable<double> cMaxTOFnSigmaProton{"cMaxTOFnSigmaProton", 3.0, "TOF nSigma cut for Pion"};                // TOF
+  Configurable<bool> cUseOnlyTOFTrackPr{"cUseOnlyTOFTrackPr", false, "Use only TOF track for PID selection"};     // Use only TOF track for Pion PID selection
 
   /// Event Mixing
-  Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
+  Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f}, "Mixing bins - multiplicity"};
 
@@ -88,7 +103,7 @@ struct lambda1520analysis {
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 10.0, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 12.0, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 13.0, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 14.0, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.0}, "Binning of the pT axis"};
   ConfigurableAxis binsEta{"binsEta", {100, -1, 1}, ""};
   ConfigurableAxis binsMass{"binsMass", {1700, 1.3, 3.0}, "Invariant Mass (GeV/#it{c}^2)"};
-  ConfigurableAxis binsMult{"binsMult", {150, 0.0, 150.0}, "mult_{FT0M}"};
+  ConfigurableAxis binsMult{"binsMult", {110, 0.0, 110.0}, "mult_{FT0M}"};
   ConfigurableAxis binsDCAz{"binsDCAz", {600, -3, 3}, ""};
   ConfigurableAxis binsDCAxy{"binsDCAxy", {300, -1.5, 1.5}, ""};
   ConfigurableAxis binsTPCXrows{"binsTPCXrows", {200, 0, 200}, ""};
@@ -99,13 +114,13 @@ struct lambda1520analysis {
   {
     // axes
     AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec axisEta{binsEta, ""};
+    AxisSpec axisEta{binsEta, "#eta"};
     AxisSpec axisMassLambda1520{binsMass, "Invariant Mass (GeV/#it{c}^2)"};
     AxisSpec axisMult{binsMult, "mult_{V0M}"};
-    AxisSpec axisDCAz{binsDCAz, ""};
-    AxisSpec axisDCAxy{binsDCAxy, ""};
-    AxisSpec axisTPCXrow{binsTPCXrows, ""};
-    AxisSpec pidQAAxis = {binsnSigma, ""};
+    AxisSpec axisDCAz{binsDCAz, "DCA_{z}"};
+    AxisSpec axisDCAxy{binsDCAxy, "DCA_{XY}"};
+    AxisSpec axisTPCXrow{binsTPCXrows, "#Xrows_{TPC}"};
+    AxisSpec pidQAAxis = {binsnSigma, "#sigma"};
     AxisSpec axisTPCSignal = {binsnTPCSignal, ""};
 
     // Track QA before cuts
@@ -123,6 +138,18 @@ struct lambda1520analysis {
     histos.add("QA/QAbefore/Track/TPC_CR", "# TPC Xrows distribution of selected Kaons; #it{p}_{T} (GeV/#it{c}); TPC X rows", HistType::kTH2F, {axisPt, axisTPCXrow});
     histos.add("QA/QAbefore/Track/pT", "pT distribution of Kaons; #it{p}_{T} (GeV/#it{c}); Counts;", {HistType::kTH1F, {axisPt}});
     histos.add("QA/QAbefore/Track/eta", "#eta distribution of Kaons; #eta; Counts;", {HistType::kTH1F, {axisEta}});
+
+    // TPC ncluster distirbutions
+    histos.add("TPCncluster/TPCnclusterpr", "TPC ncluster distribution", kTH1F, {{160, 0, 160, "TPC nCluster"}});
+    histos.add("TPCncluster/TPCnclusterka", "TPC ncluster distribution", kTH1F, {{160, 0, 160, "TPC nCluster"}});
+    histos.add("TPCncluster/TPCnclusterPhipr", "TPC ncluster vs phi", kTH2F, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}});
+    histos.add("TPCncluster/TPCnclusterPhika", "TPC ncluster vs phi", kTH2F, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}});
+
+    // Multiplicity correlation calibrations
+    histos.add("MultCalib/centglopr", "Centrality vs Global-Tracks", kTH2F, {{110, 0, 110, "Centrality"}, {500, 0, 5000, "Global Tracks"}});
+    histos.add("MultCalib/centgloka", "Centrality vs Global-Tracks", kTH2F, {{110, 0, 110, "Centrality"}, {500, 0, 5000, "Global Tracks"}});
+    histos.add("MultCalib/GloPVpr", "Global tracks vs PV tracks", kTH2F, {{500, 0, 5000, "Global tracks"}, {500, 0, 5000, "PV tracks"}});
+    histos.add("MultCalib/GloPVka", "Global tracks vs PV tracks", kTH2F, {{500, 0, 5000, "Global tracks"}, {500, 0, 5000, "PV tracks"}});
 
     // PID QA after cuts
     //  --- Kaon
@@ -165,7 +192,7 @@ struct lambda1520analysis {
         histos.add("Result/Data/h3lambda1520invmassME", "Invariant mass of #Lambda(1520) mixed event K^{#pm}p^{#mp}", HistType::kTH3F, {axisMult, axisPt, axisMassLambda1520});
       }
 
-      if (isEtaAssym) {
+      if (cEtaAssym) {
         histos.add("Result/Data/hlambda1520invmassUnlikeSignAside", "Invariant mass of #Lambda(1520) Unlike Sign A side", {HistType::kTH1F, {axisMassLambda1520}});
         histos.add("Result/Data/hlambda1520invmassLikeSignAside", "Invariant mass of #Lambda(1520) Like Sign A side", {HistType::kTH1F, {axisMassLambda1520}});
         histos.add("Result/Data/hlambda1520invmassUnlikeSignCside", "Invariant mass of #Lambda(1520) Unlike Sign C side", {HistType::kTH1F, {axisMassLambda1520}});
@@ -197,11 +224,16 @@ struct lambda1520analysis {
       histos.add("QA/MC/trkDCAz_ka", "DCAz distribution of kaon track candidates", HistType::kTH1F, {axisDCAz});
       histos.add("Result/MC/h3lambda1520Recoinvmass", "Invariant mass of Reconstructed MC #Lambda(1520)0", kTH3F, {axisMult, axisPt, axisMassLambda1520});
       histos.add("Result/MC/h3antilambda1520Recoinvmass", "Invariant mass of Reconstructed MC Anti-#Lambda(1520)0", kTH3F, {axisMult, axisPt, axisMassLambda1520});
-      histos.add("Result/MC/lambda1520Reco", "pT distribution of Reconstructed MC #Lambda(1520)0", kTH1F, {axisPt});
-      histos.add("Result/MC/antilambda1520Reco", "pT distribution of Reconstructed MC Anti-#Lambda(1520)0", kTH1F, {axisPt});
+      histos.add("Result/MC/lambda1520GenpT", "pT distribution of True MC #Lambda(1520)0", kTH1F, {axisPt});
+      histos.add("Result/MC/lambda1520GenAntipT", "pT distribution of True MC Anti-#Lambda(1520)0", kTH1F, {axisPt});
+      histos.add("Result/MC/lambda1520RecopT", "pT distribution of Reconstructed MC #Lambda(1520)0", kTH1F, {axisPt});
+      histos.add("Result/MC/antilambda1520RecopT", "pT distribution of Reconstructed MC Anti-#Lambda(1520)0", kTH1F, {axisPt});
       histos.add("Result/MC/hlambda1520Recoinvmass", "Inv mass distribution of Reconstructed MC #Lambda(1520)", kTH1F, {axisMassLambda1520});
       histos.add("Result/MC/hantilambda1520Recoinvmass", "Inv mass distribution of Reconstructed MC Anti-#Lambda(1520)", kTH1F, {axisMassLambda1520});
     }
+    // Print output histograms statistics
+    LOG(info) << "Size of the histograms in spectraTOF";
+    histos.print();
   }
 
   double massKa = MassKaonCharged;
@@ -213,7 +245,7 @@ struct lambda1520analysis {
     // basic track cuts
     if (std::abs(track.pt()) < cMinPtcut)
       return false;
-    if (IsDCAr7SigCut) {
+    if (cDCAr7SigCut) {
       if (std::abs(track.dcaXY()) > (0.004f + 0.0130f / (track.pt()))) // 7 - Sigma cut
         return false;
     } else {
@@ -224,7 +256,7 @@ struct lambda1520analysis {
       return false;
     if (track.tpcNClsCrossedRows() < cMinTPCncr)
       return false;
-    if (IsAddlTrackcut) {
+    if (cAddlTrackcut) {
       if (!track.passedITSRefit() || !track.passedTPCRefit())
         return false;
       if (track.tpcCrossedRowsOverFindableCls() < cMinRtpccut)
@@ -234,6 +266,8 @@ struct lambda1520analysis {
       if (track.tpcChi2NCl() > cMaxChi2TPCcut)
         return false;
     }
+    if (cTPCNClsFound && (track.tpcNClsFound() < cMinTPCNClsFound))
+      return false;
     if (cfgPrimaryTrack && !track.isPrimaryTrack())
       return false;
     if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
@@ -244,33 +278,138 @@ struct lambda1520analysis {
     return true;
   }
 
-  // PID selection
+  // PID selection new PID method
   template <typename T>
-  bool selectionPIDProton(const T& candidate, bool hasTOF)
+  bool selectionnewPIDProton(const T& candidate)
   {
-    if (hasTOF && (candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < (2.0 * nsigmaCutCombinedProton * nsigmaCutCombinedProton)) {
-      return true;
-    } else if (std::abs(candidate.tpcNSigmaPr()) < cMaxTPCnSigmaProton) {
-      return true;
+    bool tpcPIDPassed{false}, tofPIDPassed{false};
+    if (std::abs(candidate.tpcNSigmaPr()) < cMaxTPCnSigmaProton) {
+      if (cUseRejNsigma) {
+        if (candidate.tpcNSigmaPi() > cRejNsigmaTpc && candidate.tpcNSigmaKa() > cRejNsigmaTpc) {
+          tpcPIDPassed = true;
+        }
+      } else {
+        tpcPIDPassed = true;
+      }
     }
-    return false;
-  }
-  template <typename T>
-  bool selectionPIDKaon(const T& candidate, bool hasTOF)
-  {
-    if (hasTOF && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (2.0 * nsigmaCutCombinedKaon * nsigmaCutCombinedKaon)) {
-      return true;
-    } else if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
+    if (candidate.hasTOF()) {
+      if ((nsigmaCutCombinedProton > 0) && ((candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < (nsigmaCutCombinedProton * nsigmaCutCombinedProton))) {
+        if (cUseRejNsigma) {
+          if (candidate.tofNSigmaPi() > cRejNsigmaTof && candidate.tofNSigmaKa() > cRejNsigmaTof) {
+            tofPIDPassed = true;
+          }
+        } else {
+          tofPIDPassed = true;
+        }
+      } else if (std::abs(candidate.tofNSigmaPr()) < cMaxTOFnSigmaProton) {
+        if (cUseRejNsigma) {
+          if (candidate.tofNSigmaPi() > cRejNsigmaTof && candidate.tofNSigmaKa() > cRejNsigmaTof) {
+            tofPIDPassed = true;
+          }
+        } else {
+          tofPIDPassed = true;
+        }
+      }
+    } else {
+      tofPIDPassed = true;
+    }
+    if (tpcPIDPassed && tofPIDPassed) {
       return true;
     }
     return false;
   }
 
-  template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
-  void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
+  template <typename T>
+  bool selectionnewPIDKaon(const T& candidate)
   {
-    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
+    bool tpcPIDPassed{false}, tofPIDPassed{false};
+    if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
+      if (cUseRejNsigma) {
+        if (candidate.tpcNSigmaPi() > cRejNsigmaTpc && candidate.tpcNSigmaPr() > cRejNsigmaTpc) {
+          tpcPIDPassed = true;
+        }
+      } else {
+        tpcPIDPassed = true;
+      }
+    }
+    if (candidate.hasTOF()) {
+      if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
+        if (cUseRejNsigma) {
+          if (candidate.tofNSigmaPi() > cRejNsigmaTof && candidate.tofNSigmaPr() > cRejNsigmaTof) {
+            tofPIDPassed = true;
+          }
+        } else {
+          tofPIDPassed = true;
+        }
+      }
+      if ((nsigmaCutCombinedKaon > 0) && ((candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < (nsigmaCutCombinedKaon * nsigmaCutCombinedKaon))) {
+        if (cUseRejNsigma) {
+          if (candidate.tofNSigmaPi() > cRejNsigmaTof && candidate.tofNSigmaPr() > cRejNsigmaTof) {
+            tofPIDPassed = true;
+          }
+        } else {
+          tofPIDPassed = true;
+        }
+      }
+    } else {
+      tofPIDPassed = true;
+    }
+    if (tpcPIDPassed && tofPIDPassed) {
+      return true;
+    }
+    return false;
+  }
 
+  // PID selection old PID method
+  template <typename T>
+  bool selectionoldPIDProton(const T& candidate)
+  {
+    auto vProtonTPCPIDpTintv = static_cast<std::vector<double>>(protonTPCPIDpTintv);
+    vProtonTPCPIDpTintv.insert(vProtonTPCPIDpTintv.begin(), cMinPtcut);
+    auto vProtonTPCPIDcuts = static_cast<std::vector<double>>(protonTPCPIDcuts);
+    auto vProtonTOFPIDpTintv = static_cast<std::vector<double>>(protonTOFPIDpTintv);
+    auto vProtonTOFPIDcuts = static_cast<std::vector<double>>(protonTOFPIDcuts);
+    auto lengthOfprotonTPCPIDpTintv = static_cast<int>(vProtonTPCPIDpTintv.size());
+    auto lengthOfprotonTOFPIDpTintv = static_cast<int>(vProtonTOFPIDpTintv.size());
+
+    bool isTrk1Selected{true};
+
+    // For Proton candidate:
+    if (candidate.hasTOF()) {
+      if (lengthOfprotonTOFPIDpTintv > 0) {
+        if (candidate.pt() > vProtonTOFPIDpTintv[lengthOfprotonTOFPIDpTintv - 1]) {
+          isTrk1Selected = false;
+        } else {
+          for (int i = 0; i < lengthOfprotonTOFPIDpTintv; i++) {
+            if (candidate.pt() < vProtonTOFPIDpTintv[i]) {
+              if (std::abs(candidate.tofNSigmaPr()) > vProtonTOFPIDcuts[i])
+                isTrk1Selected = false;
+              if (std::abs(candidate.tpcNSigmaPr()) > cMaxTPCnSigmaProtonVETO)
+                isTrk1Selected = false;
+            }
+          }
+        }
+      }
+    } else {
+      if (lengthOfprotonTPCPIDpTintv > 0) {
+        if (candidate.pt() > vProtonTPCPIDpTintv[lengthOfprotonTPCPIDpTintv - 1]) {
+          isTrk1Selected = false;
+        } else {
+          for (int i = 0; i < lengthOfprotonTPCPIDpTintv; i++) {
+            if (candidate.pt() > vProtonTPCPIDpTintv[i] && candidate.pt() < vProtonTPCPIDpTintv[i + 1]) {
+              if (std::abs(candidate.tpcNSigmaPr()) > vProtonTPCPIDcuts[i])
+                isTrk1Selected = false;
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  template <typename T>
+  bool selectionoldPIDKaon(const T& candidate)
+  {
     auto vKaonTPCPIDpTintv = static_cast<std::vector<double>>(kaonTPCPIDpTintv);
     vKaonTPCPIDpTintv.insert(vKaonTPCPIDpTintv.begin(), cMinPtcut);
     auto vKaonTPCPIDcuts = static_cast<std::vector<double>>(kaonTPCPIDcuts);
@@ -279,13 +418,47 @@ struct lambda1520analysis {
     auto lengthOfkaonTPCPIDpTintv = static_cast<int>(vKaonTPCPIDpTintv.size());
     auto lengthOfkaonTOFPIDpTintv = static_cast<int>(vKaonTOFPIDpTintv.size());
 
-    auto vProtonTPCPIDpTintv = static_cast<std::vector<double>>(protonTPCPIDpTintv);
-    vProtonTPCPIDpTintv.insert(vProtonTPCPIDpTintv.begin(), cMinPtcut);
-    auto vProtonTPCPIDcuts = static_cast<std::vector<double>>(protonTPCPIDcuts);
-    auto vProtonTOFPIDpTintv = static_cast<std::vector<double>>(protonTOFPIDpTintv);
-    auto vProtonTOFPIDcuts = static_cast<std::vector<double>>(protonTOFPIDcuts);
-    auto lengthOfprotonTPCPIDpTintv = static_cast<int>(vProtonTPCPIDpTintv.size());
-    auto lengthOfprotonTOFPIDpTintv = static_cast<int>(vProtonTOFPIDpTintv.size());
+    bool isTrk2Selected{true};
+
+    // For Kaon candidate:
+    if (candidate.hasTOF()) {
+      if (lengthOfkaonTOFPIDpTintv > 0) {
+        if (candidate.pt() > vKaonTOFPIDpTintv[lengthOfkaonTOFPIDpTintv - 1]) {
+          isTrk2Selected = false;
+        } else {
+          for (int i = 0; i < lengthOfkaonTOFPIDpTintv; i++) {
+            if (candidate.pt() < vKaonTOFPIDpTintv[i]) {
+              if (std::abs(candidate.tofNSigmaKa()) > vKaonTOFPIDcuts[i])
+                isTrk2Selected = false;
+              if (std::abs(candidate.tpcNSigmaKa()) > cMaxTPCnSigmaKaonVETO)
+                isTrk2Selected = false;
+            }
+          }
+        }
+      }
+    } else {
+      if (lengthOfkaonTPCPIDpTintv > 0) {
+        if (candidate.pt() > vKaonTPCPIDpTintv[lengthOfkaonTPCPIDpTintv - 1]) {
+          isTrk2Selected = false;
+        } else {
+          for (int i = 0; i < lengthOfkaonTPCPIDpTintv; i++) {
+            if (candidate.pt() > vKaonTPCPIDpTintv[i] && candidate.pt() < vKaonTPCPIDpTintv[i + 1]) {
+              if (std::abs(candidate.tpcNSigmaKa()) > vKaonTPCPIDcuts[i])
+                isTrk2Selected = false;
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
+  void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
+  {
+    auto multiplicity = collision.cent();
+
+    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
 
     for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
       // Full index policy is needed to consider all possible combinations
@@ -298,8 +471,6 @@ struct lambda1520analysis {
 
       //// Initialize variables
       // Trk1: Proton, Trk2: Kaon
-      bool isTrk1Selected{true}, isTrk2Selected{true}; //, isTrk1hasTOF{false}, isTrk2hasTOF{false};
-
       auto isTrk1hasTOF = trk1.hasTOF();
       auto isTrk2hasTOF = trk2.hasTOF();
 
@@ -309,72 +480,6 @@ struct lambda1520analysis {
       auto trk2ptKa = trk2.pt();
       auto trk2NSigmaKaTPC = trk2.tpcNSigmaKa();
       auto trk2NSigmaKaTOF = (isTrk2hasTOF) ? trk2.tofNSigmaKa() : -999.;
-
-      //// PID selections
-      // we can apply pT-dependent PID cuts
-      // For Proton candidate:
-      if (isTrk1hasTOF) {
-        trk1NSigmaPrTOF = trk1.tofNSigmaPr();
-        if (lengthOfprotonTOFPIDpTintv > 0) {
-          if (trk1ptPr > vProtonTOFPIDpTintv[lengthOfprotonTOFPIDpTintv - 1]) {
-            isTrk1Selected = false;
-          } else {
-            for (int i = 0; i < lengthOfprotonTOFPIDpTintv; i++) {
-              if (trk1ptPr < vProtonTOFPIDpTintv[i]) {
-                if (std::abs(trk1NSigmaPrTOF) > vProtonTOFPIDcuts[i])
-                  isTrk1Selected = false;
-                if (std::abs(trk1NSigmaPrTPC) > cMaxTPCnSigmaProtonVETO)
-                  isTrk1Selected = false;
-              }
-            }
-          }
-        }
-      } else {
-        if (lengthOfprotonTPCPIDpTintv > 0) {
-          if (trk1ptPr > vProtonTPCPIDpTintv[lengthOfprotonTPCPIDpTintv - 1]) {
-            isTrk1Selected = false;
-          } else {
-            for (int i = 0; i < lengthOfprotonTPCPIDpTintv; i++) {
-              if (trk1ptPr > vProtonTPCPIDpTintv[i] && trk1ptPr < vProtonTPCPIDpTintv[i + 1]) {
-                if (std::abs(trk1NSigmaPrTPC) > vProtonTPCPIDcuts[i])
-                  isTrk1Selected = false;
-              }
-            }
-          }
-        }
-      }
-
-      // For Kaon candidate:
-      if (isTrk2hasTOF) {
-        trk2NSigmaKaTOF = trk2.tofNSigmaKa();
-        if (lengthOfkaonTOFPIDpTintv > 0) {
-          if (trk2ptKa > vKaonTOFPIDpTintv[lengthOfkaonTOFPIDpTintv - 1]) {
-            isTrk2Selected = false;
-          } else {
-            for (int i = 0; i < lengthOfkaonTOFPIDpTintv; i++) {
-              if (trk2ptKa < vKaonTOFPIDpTintv[i]) {
-                if (std::abs(trk2NSigmaKaTOF) > vKaonTOFPIDcuts[i])
-                  isTrk2Selected = false;
-                if (std::abs(trk2NSigmaKaTPC) > cMaxTPCnSigmaKaonVETO)
-                  isTrk2Selected = false;
-              }
-            }
-          }
-        }
-      } else {
-        if (lengthOfkaonTPCPIDpTintv > 0) {
-          if (trk2ptKa > vKaonTPCPIDpTintv[lengthOfkaonTPCPIDpTintv - 1]) {
-            isTrk2Selected = false;
-          } else {
-            for (int i = 0; i < lengthOfkaonTPCPIDpTintv; i++) {
-              if (trk2ptKa > vKaonTPCPIDpTintv[i] && trk2ptKa < vKaonTPCPIDpTintv[i + 1]) {
-                if (std::abs(trk2NSigmaKaTPC) > vKaonTPCPIDcuts[i])
-                  isTrk2Selected = false;
-              }
-            }
-          }
-        }
-      }
 
       //// QA plots before the selection
       //  --- Track QA all
@@ -404,11 +509,15 @@ struct lambda1520analysis {
       }
 
       //// Apply the pid selection
-      if (IsOldPIDcut) {
-        if (!isTrk1Selected || !isTrk2Selected)
+      if (cUseOnlyTOFTrackPr && !isTrk1hasTOF)
+        continue;
+      if (cUseOnlyTOFTrackKa && !isTrk2hasTOF)
+        continue;
+      if (cOldPIDcut) {
+        if (!selectionoldPIDProton(trk1) || !selectionoldPIDKaon(trk2))
           continue;
       } else {
-        if (!selectionPIDProton(trk1, isTrk1hasTOF) || !selectionPIDKaon(trk2, isTrk2hasTOF))
+        if (!selectionnewPIDProton(trk1) || !selectionnewPIDKaon(trk2))
           continue;
       }
 
@@ -445,6 +554,42 @@ struct lambda1520analysis {
         histos.fill(HIST("QA/QAafter/Kaon/pT"), trk2ptKa);
         histos.fill(HIST("QA/QAafter/Kaon/eta"), trk2.eta());
       }
+
+      // TPCncluster distributions
+      histos.fill(HIST("TPCncluster/TPCnclusterpr"), trk1.tpcNClsFound());
+      histos.fill(HIST("TPCncluster/TPCnclusterka"), trk2.tpcNClsFound());
+      histos.fill(HIST("TPCncluster/TPCnclusterPhipr"), trk1.tpcNClsFound(), trk1.phi());
+      histos.fill(HIST("TPCncluster/TPCnclusterPhika"), trk2.tpcNClsFound(), trk2.phi());
+
+      // Multiplicity correlation calibration plots
+      int counterglo1 = 0;
+      int counterglo2 = 0;
+      int counterpv1 = 0;
+      int counterpv2 = 0;
+
+      if (trk1.isGlobalTrack())
+        counterglo1 = 1;
+      if (trk2.isGlobalTrack())
+        counterglo2 = 1;
+      if (trk1.isPrimaryTrack())
+        counterpv1 = 1;
+      if (trk2.isPrimaryTrack())
+        counterpv2 = 1;
+
+      histos.fill(HIST("MultCalib/centglopr"), multiplicity, counterglo1);
+      histos.fill(HIST("MultCalib/centgloka"), multiplicity, counterglo2);
+      histos.fill(HIST("MultCalib/GloPVpr"), counterglo1, counterpv1);
+      histos.fill(HIST("MultCalib/GloPVka"), counterglo2, counterpv2);
+
+      // Apply kinematic cuts.
+      if (cKinCuts) {
+        TVector3 v1(trk1.px(), trk1.py(), trk1.pz());
+        TVector3 v2(trk2.px(), trk2.py(), trk2.pz());
+        float alpha = v1.Angle(v2);
+        if (alpha > 1.4 && alpha < 2.4)
+          continue;
+      }
+
       //// Resonance reconstruction
       lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massPr);
       lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
@@ -457,20 +602,20 @@ struct lambda1520analysis {
         if constexpr (!IsMix) {
           histos.fill(HIST("Result/Data/lambda1520invmass"), lResonance.M());
           histos.fill(HIST("Result/Data/h3lambda1520invmass"), collision.cent(), lResonance.Pt(), lResonance.M());
-          if (isEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
+          if (cEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassUnlikeSignAside"), lResonance.M());
             histos.fill(HIST("Result/Data/h3lambda1520invmassUnlikeSignAside"), collision.cent(), lResonance.Pt(), lResonance.M());
-          } else if (isEtaAssym && trk1.eta() > -0.6 && trk1.eta() < 0.0 && trk2.eta() > -0.6 && trk2.eta() < 0.0) { // Eta-range will be updated
+          } else if (cEtaAssym && trk1.eta() > -0.6 && trk1.eta() < 0.0 && trk2.eta() > -0.6 && trk2.eta() < 0.0) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassUnlikeSignCside"), lResonance.M());
             histos.fill(HIST("Result/Data/h3lambda1520invmassUnlikeSignCside"), collision.cent(), lResonance.Pt(), lResonance.M());
           }
         } else {
           histos.fill(HIST("Result/Data/lambda1520invmassME"), lResonance.M());
           histos.fill(HIST("Result/Data/h3lambda1520invmassME"), collision.cent(), lResonance.Pt(), lResonance.M());
-          if (isEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
+          if (cEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassMixedAside"), lResonance.M());
             histos.fill(HIST("Result/Data/h3lambda1520invmassMixedAside"), collision.cent(), lResonance.Pt(), lResonance.M());
-          } else if (isEtaAssym && trk1.eta() > -0.6 && trk1.eta() < 0.0 && trk2.eta() > -0.6 && trk2.eta() < 0.0) { // Eta-range will be updated
+          } else if (cEtaAssym && trk1.eta() > -0.6 && trk1.eta() < 0.0 && trk2.eta() > -0.6 && trk2.eta() < 0.0) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassMixedCside"), lResonance.M());
             histos.fill(HIST("Result/Data/h3lambda1520invmassMixedCside"), collision.cent(), lResonance.Pt(), lResonance.M());
           }
@@ -506,10 +651,10 @@ struct lambda1520analysis {
         }
       } else {
         if constexpr (!IsMix) {
-          if (isEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
+          if (cEtaAssym && trk1.eta() > 0.2 && trk1.eta() < 0.8 && trk2.eta() > 0.2 && trk2.eta() < 0.8) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassLikeSignAside"), lResonance.M());
             histos.fill(HIST("Result/Data/h3lambda1520invmassLikeSignAside"), collision.cent(), lResonance.Pt(), lResonance.M());
-          } else if (isEtaAssym && trk1.eta() > -0.6 && trk1.eta() < 0.0 && trk2.eta() > -0.6 && trk2.eta() < 0.0) { // Eta-range will be updated
+          } else if (cEtaAssym && trk1.eta() > -0.6 && trk1.eta() < 0.0 && trk2.eta() > -0.6 && trk2.eta() < 0.0) { // Eta-range will be updated
             histos.fill(HIST("Result/Data/hlambda1520invmassLikeSignCside"), lResonance.M());
             histos.fill(HIST("Result/Data/h3lambda1520invmassLikeSignCside"), collision.cent(), lResonance.Pt(), lResonance.M());
           }
