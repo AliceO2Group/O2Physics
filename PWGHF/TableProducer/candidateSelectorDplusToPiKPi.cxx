@@ -41,12 +41,16 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<bool> acceptPIDNotApplicable{"acceptPIDNotApplicable", true, "Switch to accept Status::NotApplicable [(NotApplicable for one detector) and (NotApplicable or Conditional for the other)] in PID selection"};
   // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
-  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 20., "Upper bound of track pT for TPC PID"};
-  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC"};
+  Configurable<double> ptPidTpcMax{"ptPidTpcMax", 5., "Upper bound of track pT for TPC PID"};
+  Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
+  Configurable<double> nSigmaTpcCombinedMax{"nSigmaTpcCombinedMax", 5., "Nsigma cut on TPC combined with TOF"};
   // TOF PID
   Configurable<double> ptPidTofMin{"ptPidTofMin", 0.15, "Lower bound of track pT for TOF PID"};
-  Configurable<double> ptPidTofMax{"ptPidTofMax", 20., "Upper bound of track pT for TOF PID"};
-  Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF"};
+  Configurable<double> ptPidTofMax{"ptPidTofMax", 5., "Upper bound of track pT for TOF PID"};
+  Configurable<double> nSigmaTofMax{"nSigmaTofMax", 3., "Nsigma cut on TOF only"};
+  Configurable<double> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
+  // AND logic for TOF+TPC PID (as in Run2)
+  Configurable<bool> usePidTpcAndTof{"usePidTpcAndTof", false, "Use AND logic for TPC and TOF PID"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_dplus_to_pi_k_pi::vecBinsPt}, "pT bin limits"};
   Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_dplus_to_pi_k_pi::cuts[0], hf_cuts_dplus_to_pi_k_pi::nBinsPt, hf_cuts_dplus_to_pi_k_pi::nCutVars, hf_cuts_dplus_to_pi_k_pi::labelsPt, hf_cuts_dplus_to_pi_k_pi::labelsCutVar}, "Dplus candidate selection per pT bin"};
@@ -82,8 +86,10 @@ struct HfCandidateSelectorDplusToPiKPi {
   {
     selectorPion.setRangePtTpc(ptPidTpcMin, ptPidTpcMax);
     selectorPion.setRangeNSigmaTpc(-nSigmaTpcMax, nSigmaTpcMax);
+    selectorPion.setRangeNSigmaTpcCondTof(-nSigmaTpcCombinedMax, nSigmaTpcCombinedMax);
     selectorPion.setRangePtTof(ptPidTofMin, ptPidTofMax);
     selectorPion.setRangeNSigmaTof(-nSigmaTofMax, nSigmaTofMax);
+    selectorPion.setRangeNSigmaTofCondTpc(-nSigmaTofCombinedMax, nSigmaTofCombinedMax);
     selectorKaon = selectorPion;
 
     if (activateQA) {
@@ -226,10 +232,20 @@ struct HfCandidateSelectorDplusToPiKPi {
       }
 
       // track-level PID selection
-      int pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
-      int pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
-      int pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
-
+      int pidTrackPos1Pion = -1;
+      int pidTrackNegKaon = -1;
+      int pidTrackPos2Pion = -1;
+      
+      if (usePidTpcAndTof) {
+        pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1);
+        pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
+        pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2);
+      } else{
+        pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
+        pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
+        pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
+      }
+     
       if (!selectionPID(pidTrackPos1Pion, pidTrackNegKaon, pidTrackPos2Pion)) { // exclude D±
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         if (applyMl) {
