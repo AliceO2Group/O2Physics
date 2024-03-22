@@ -13,6 +13,7 @@
 /// \brief Analysis task for charm hadron flow
 ///
 /// \author S. Politanò, INFN Torino, Italy
+/// \author Wu Chuntai, CUG, China
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
