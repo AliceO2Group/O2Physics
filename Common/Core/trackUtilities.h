@@ -18,7 +18,7 @@
 #define COMMON_CORE_TRACKUTILITIES_H_
 
 #include <utility> // std::move
-
+#include "CommonConstants/MathConstants.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "ReconstructionDataFormats/Vertex.h"
 #include "Common/Core/RecoDecay.h"
