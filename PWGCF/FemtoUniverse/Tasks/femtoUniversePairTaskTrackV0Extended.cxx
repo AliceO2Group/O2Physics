@@ -358,7 +358,7 @@ struct femtoUniversePairTaskTrackV0Extended {
         continue;
       }
 
-      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         if (ConfIsCPR.value) {
           if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla1, femtoUniverseContainer::EventType::mixed)) {
             continue;
