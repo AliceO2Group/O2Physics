@@ -631,8 +631,6 @@ struct EventSelectionQaTask {
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
       // otherwise default minOrbit and nOrbits will be used
-      printf("DEBUG: %d %d %ld\n", nOrbits, nOrbitsPerTF, nBCsPerTF);
-
       const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
       histos.add("hOrbitAll", "", kTH1F, {axisOrbits});
       histos.add("hOrbitCol", "", kTH1F, {axisOrbits});
