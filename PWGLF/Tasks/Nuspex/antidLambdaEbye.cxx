@@ -778,8 +778,7 @@ struct antidLambdaEbye {
         continue;
 
       auto centrality = collision.centRun2V0M();
-      if (!collision.alias_bit(kINT7)
-          && (!kINT7Intervals || (kINT7Intervals && ((centrality >= 10 && centrality < 30) || centrality > 50))))
+      if (!collision.alias_bit(kINT7) && (!kINT7Intervals || (kINT7Intervals && ((centrality >= 10 && centrality < 30) || centrality > 50))))
         continue;
 
       if (std::abs(collision.posZ()) > zVtxMax)
