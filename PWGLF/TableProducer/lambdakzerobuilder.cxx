@@ -132,7 +132,7 @@ struct lambdakzeroBuilder {
   Configurable<float> downscale_factorPt{"downscale_factorPt", 1.0, "Downscale: factor Pt"};
   Configurable<float> downscale_factor1Pt{"downscale_factor1Pt", 1.0, "Downscale: factor 1/Pt"};
   Configurable<float> downscale_factorUniform{"downscale_factorPt", 1e-3, "Downscale: factor Pt"};
-  Configurable<int> downscale_triggerMaskSelection{"downscale_triggerMaskSelection", 0.0, "Downscale: trigger mask selection"};
+  Configurable<int> downscale_triggerMaskSelection{"downscale_triggerMaskSelection", 0, "Downscale: trigger mask selection"};
 
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
