@@ -133,18 +133,23 @@ struct MultiplicityTable {
         }
       }
     }
+
     // Check that the tables are enabled consistenly
     if (tEnabled[kFV0MultZeqs] && !tEnabled[kFV0Mults]) { // FV0
-      LOG(fatal) << "Cannot have the extra table enabled and not the one on FV0";
+      mEnabledTables.push_back(kFV0Mults);
+      LOG(info) << "Cannot have the " << tableNames[kFV0MultZeqs] << " table enabled and not the one on " << tableNames[kFV0Mults] << ". Enabling it.";
     }
     if (tEnabled[kFT0MultZeqs] && !tEnabled[kFT0Mults]) { // FT0
-      LOG(fatal) << "Cannot have the extra table enabled and not the one on FT0";
+      mEnabledTables.push_back(kFT0Mults);
+      LOG(info) << "Cannot have the " << tableNames[kFT0MultZeqs] << " table enabled and not the one on " << tableNames[kFT0Mults] << ". Enabling it.";
     }
     if (tEnabled[kFDDMultZeqs] && !tEnabled[kFDDMults]) { // FDD
-      LOG(fatal) << "Cannot have the extra table enabled and not the one on FDD";
+      mEnabledTables.push_back(kFDDMults);
+      LOG(info) << "Cannot have the " << tableNames[kFDDMultZeqs] << " table enabled and not the one on " << tableNames[kFDDMults] << ". Enabling it.";
     }
     if (tEnabled[kPVMultZeqs] && !tEnabled[kPVMults]) { // PV
-      LOG(fatal) << "Cannot have the extra table enabled and not the one on PV";
+      mEnabledTables.push_back(kPVMults);
+      LOG(info) << "Cannot have the " << tableNames[kPVMultZeqs] << " table enabled and not the one on " << tableNames[kPVMults] << ". Enabling it.";
     }
 
     mRunNumber = 0;
