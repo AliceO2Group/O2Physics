@@ -134,19 +134,20 @@ void getPxPyPz(T const& trackPars, U& pVec)
 /// \param track  track from a table containing `o2::aod::TracksCov, o2::aod::TracksDCA`.
 /// \param sigmaDcaXYZ2  pointer to the sigma^2 of the impact parameter in XYZ to be calculated
 /// \return impact parameter in XYZ of the track w.r.t the primary vertex
-
 template <typename T>
 float getDcaXYZ(T const& track, float* sigmaDcaXYZ2 = nullptr)
 {
   float dcaXY = track.dcaXY();
   float dcaZ = track.dcaZ();
   float dcaXYZ = std::sqrt(dcaXY * dcaXY + dcaZ * dcaZ);
-  if (dcaXYZ < 1e-10)
-    dcaXYZ = 1e-10; // Protection against division by zero
   if (sigmaDcaXYZ2) {
-    float dFdxy = 2 * dcaXY / dcaXYZ;
-    float dFdz = 2 * dcaZ / dcaXYZ;
-    *sigmaDcaXYZ2 = track.cYY() * dFdxy * dFdxy + track.cZZ() * dFdz * dFdz + 2 * track.cZY() * dFdxy * dFdz;
+    if (dcaXYZ < o2::constants::math::Almost0) {
+      *sigmaDcaXYZ2 = o2::constants::math::VeryBig; // Protection against division by zero
+    } else {
+      float dFdxy = 2.f * dcaXY / dcaXYZ;
+      float dFdz = 2.f * dcaZ / dcaXYZ;
+      *sigmaDcaXYZ2 = track.cYY() * dFdxy * dFdxy + track.cZZ() * dFdz * dFdz + 2.f * track.cZY() * dFdxy * dFdz;
+    }
   }
   return dcaXYZ;
 }
