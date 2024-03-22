@@ -45,15 +45,16 @@ struct AntimatterAbsorptionHMPID {
   // Track Selection Parameters
   Configurable<float> pmin{"pmin", 0.1, "pmin"};
   Configurable<float> pmax{"pmax", 3.0, "pmax"};
-  Configurable<float> etaMin{"etaMin", -0.6, "etaMin"};
-  Configurable<float> etaMax{"etaMax", +0.6, "etaMax"};
+  Configurable<float> etaMin{"etaMin", -0.8, "etaMin"};
+  Configurable<float> etaMax{"etaMax", +0.8, "etaMax"};
   Configurable<float> phiMin{"phiMin", 0.0, "phiMin"};
-  Configurable<float> phiMax{"phiMax", TMath::Pi() / 2.0, "phiMax"};
+  Configurable<float> phiMax{"phiMax", 2.0 * TMath::Pi(), "phiMax"};
   Configurable<float> nsigmaTPCMin{"nsigmaTPCMin", -3.0, "nsigmaTPCMin"};
   Configurable<float> nsigmaTPCMax{"nsigmaTPCMax", +3.0, "nsigmaTPCMax"};
   Configurable<float> nsigmaTOFMin{"nsigmaTOFMin", -3.0, "nsigmaTOFMin"};
   Configurable<float> nsigmaTOFMax{"nsigmaTOFMax", +3.5, "nsigmaTOFMax"};
   Configurable<float> minReqClusterITS{"minReqClusterITS", 4.0, "min number of clusters required in ITS"};
+  Configurable<float> minTPCnClsFound{"minTPCnClsFound", 50.0f, "minTPCnClsFound"};
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.0f, "min number of crossed rows TPC"};
   Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
@@ -68,6 +69,9 @@ struct AntimatterAbsorptionHMPID {
     // HMPID Maps
     registryDA.add("hmpidXYpos", "hmpidXYpos", HistType::kTH2F, {{300, 0.0, 300.0, "x_{MIP}"}, {300, 0.0, 300.0, "y_{MIP}"}});
     registryDA.add("hmpidXYneg", "hmpidXYneg", HistType::kTH2F, {{300, 0.0, 300.0, "x_{MIP}"}, {300, 0.0, 300.0, "y_{MIP}"}});
+
+    registryDA.add("hmpidEtaPhiMomPos", "hmpidEtaPhiMomPos", HistType::kTH3F, {{29, 0.1, 3.0, "p (GeV/c)"}, {180, -0.9, 0.9, "#eta"}, {200, 0.0, TMath::Pi(), "#phi"}});
+    registryDA.add("hmpidEtaPhiMomNeg", "hmpidEtaPhiMomNeg", HistType::kTH3F, {{29, 0.1, 3.0, "p (GeV/c)"}, {180, -0.9, 0.9, "#eta"}, {200, 0.0, TMath::Pi(), "#phi"}});
 
     // Pion Pos
     registryDA.add("incomingPi_Pos_8cm", "incomingPi_Pos_8cm", HistType::kTH1F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}});
@@ -90,6 +94,177 @@ struct AntimatterAbsorptionHMPID {
     registryDA.add("Pi_Neg_ClsSize_8cm", "Pi_Neg_ClsSize_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Cls size"}});
     registryDA.add("Pi_Neg_ClsSize_4cm", "Pi_Neg_ClsSize_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Cls size"}});
     registryDA.add("Pi_Neg_momentum", "Pi_Neg_momentum", HistType::kTH2F, {{100, 0.0, 3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {100, 0.0, 3.0, "#it{p}_{mhpid} (GeV/#it{c})"}});
+
+    // Kaon Pos
+    registryDA.add("incomingKa_Pos_8cm", "incomingKa_Pos_8cm", HistType::kTH1F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}});
+    registryDA.add("incomingKa_Pos_4cm", "incomingKa_Pos_4cm", HistType::kTH1F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}});
+    registryDA.add("survivingKa_Pos_8cm", "survivingKa_Pos_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {300, 0.0, 30.0, "#Delta R (cm)"}});
+    registryDA.add("survivingKa_Pos_4cm", "survivingKa_Pos_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {300, 0.0, 30.0, "#Delta R (cm)"}});
+    registryDA.add("Ka_Pos_Q_8cm", "Ka_Pos_Q_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Q (ADC)"}});
+    registryDA.add("Ka_Pos_Q_4cm", "Ka_Pos_Q_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Q (ADC)"}});
+    registryDA.add("Ka_Pos_ClsSize_8cm", "Ka_Pos_ClsSize_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Cls size"}});
+    registryDA.add("Ka_Pos_ClsSize_4cm", "Ka_Pos_ClsSize_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Cls size"}});
+    registryDA.add("Ka_Pos_momentum", "Ka_Pos_momentum", HistType::kTH2F, {{100, 0.0, 3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {100, 0.0, 3.0, "#it{p}_{mhpid} (GeV/#it{c})"}});
+
+    // Kaon Neg
+    registryDA.add("incomingKa_Neg_8cm", "incomingKa_Neg_8cm", HistType::kTH1F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}});
+    registryDA.add("incomingKa_Neg_4cm", "incomingKa_Neg_4cm", HistType::kTH1F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}});
+    registryDA.add("survivingKa_Neg_8cm", "survivingKa_Neg_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {300, 0.0, 30.0, "#Delta R (cm)"}});
+    registryDA.add("survivingKa_Neg_4cm", "survivingKa_Neg_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {300, 0.0, 30.0, "#Delta R (cm)"}});
+    registryDA.add("Ka_Neg_Q_8cm", "Ka_Neg_Q_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Q (ADC)"}});
+    registryDA.add("Ka_Neg_Q_4cm", "Ka_Neg_Q_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Q (ADC)"}});
+    registryDA.add("Ka_Neg_ClsSize_8cm", "Ka_Neg_ClsSize_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Cls size"}});
+    registryDA.add("Ka_Neg_ClsSize_4cm", "Ka_Neg_ClsSize_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Cls size"}});
+    registryDA.add("Ka_Neg_momentum", "Ka_Neg_momentum", HistType::kTH2F, {{100, 0.0, 3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {100, 0.0, 3.0, "#it{p}_{mhpid} (GeV/#it{c})"}});
+
+    // Proton Pos
+    registryDA.add("incomingPr_Pos_8cm", "incomingPr_Pos_8cm", HistType::kTH1F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}});
+    registryDA.add("incomingPr_Pos_4cm", "incomingPr_Pos_4cm", HistType::kTH1F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}});
+    registryDA.add("survivingPr_Pos_8cm", "survivingPr_Pos_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {300, 0.0, 30.0, "#Delta R (cm)"}});
+    registryDA.add("survivingPr_Pos_4cm", "survivingPr_Pos_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {300, 0.0, 30.0, "#Delta R (cm)"}});
+    registryDA.add("Pr_Pos_Q_8cm", "Pr_Pos_Q_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Q (ADC)"}});
+    registryDA.add("Pr_Pos_Q_4cm", "Pr_Pos_Q_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Q (ADC)"}});
+    registryDA.add("Pr_Pos_ClsSize_8cm", "Pr_Pos_ClsSize_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Cls size"}});
+    registryDA.add("Pr_Pos_ClsSize_4cm", "Pr_Pos_ClsSize_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Cls size"}});
+    registryDA.add("Pr_Pos_momentum", "Pr_Pos_momentum", HistType::kTH2F, {{100, 0.0, 3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {100, 0.0, 3.0, "#it{p}_{mhpid} (GeV/#it{c})"}});
+
+    // Proton Neg
+    registryDA.add("incomingPr_Neg_8cm", "incomingPr_Neg_8cm", HistType::kTH1F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}});
+    registryDA.add("incomingPr_Neg_4cm", "incomingPr_Neg_4cm", HistType::kTH1F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}});
+    registryDA.add("survivingPr_Neg_8cm", "survivingPr_Neg_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {300, 0.0, 30.0, "#Delta R (cm)"}});
+    registryDA.add("survivingPr_Neg_4cm", "survivingPr_Neg_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {300, 0.0, 30.0, "#Delta R (cm)"}});
+    registryDA.add("Pr_Neg_Q_8cm", "Pr_Neg_Q_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Q (ADC)"}});
+    registryDA.add("Pr_Neg_Q_4cm", "Pr_Neg_Q_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Q (ADC)"}});
+    registryDA.add("Pr_Neg_ClsSize_8cm", "Pr_Neg_ClsSize_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Cls size"}});
+    registryDA.add("Pr_Neg_ClsSize_4cm", "Pr_Neg_ClsSize_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Cls size"}});
+    registryDA.add("Pr_Neg_momentum", "Pr_Neg_momentum", HistType::kTH2F, {{100, 0.0, 3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {100, 0.0, 3.0, "#it{p}_{mhpid} (GeV/#it{c})"}});
+
+    // Deuteron Pos
+    registryDA.add("incomingDe_Pos_8cm", "incomingDe_Pos_8cm", HistType::kTH1F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}});
+    registryDA.add("incomingDe_Pos_4cm", "incomingDe_Pos_4cm", HistType::kTH1F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}});
+    registryDA.add("survivingDe_Pos_8cm", "survivingDe_Pos_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {300, 0.0, 30.0, "#Delta R (cm)"}});
+    registryDA.add("survivingDe_Pos_4cm", "survivingDe_Pos_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {300, 0.0, 30.0, "#Delta R (cm)"}});
+    registryDA.add("De_Pos_Q_8cm", "De_Pos_Q_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Q (ADC)"}});
+    registryDA.add("De_Pos_Q_4cm", "De_Pos_Q_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Q (ADC)"}});
+    registryDA.add("De_Pos_ClsSize_8cm", "De_Pos_ClsSize_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Cls size"}});
+    registryDA.add("De_Pos_ClsSize_4cm", "De_Pos_ClsSize_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Cls size"}});
+    registryDA.add("De_Pos_momentum", "De_Pos_momentum", HistType::kTH2F, {{100, 0.0, 3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {100, 0.0, 3.0, "#it{p}_{mhpid} (GeV/#it{c})"}});
+
+    // Deuteron Neg
+    registryDA.add("incomingDe_Neg_8cm", "incomingDe_Neg_8cm", HistType::kTH1F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}});
+    registryDA.add("incomingDe_Neg_4cm", "incomingDe_Neg_4cm", HistType::kTH1F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}});
+    registryDA.add("survivingDe_Neg_8cm", "survivingDe_Neg_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {300, 0.0, 30.0, "#Delta R (cm)"}});
+    registryDA.add("survivingDe_Neg_4cm", "survivingDe_Neg_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {300, 0.0, 30.0, "#Delta R (cm)"}});
+    registryDA.add("De_Neg_Q_8cm", "De_Neg_Q_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Q (ADC)"}});
+    registryDA.add("De_Neg_Q_4cm", "De_Neg_Q_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Q (ADC)"}});
+    registryDA.add("De_Neg_ClsSize_8cm", "De_Neg_ClsSize_8cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Cls size"}});
+    registryDA.add("De_Neg_ClsSize_4cm", "De_Neg_ClsSize_4cm", HistType::kTH2F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}, {200, 0.0, 2000.0, "Cls size"}});
+    registryDA.add("De_Neg_momentum", "De_Neg_momentum", HistType::kTH2F, {{100, 0.0, 3.0, "#it{p}_{vtx} (GeV/#it{c})"}, {100, 0.0, 3.0, "#it{p}_{mhpid} (GeV/#it{c})"}});
+  }
+
+  // Single-Track Selection
+  template <typename trackType>
+  bool passedTrackSelection(const trackType& track)
+  {
+    if (!track.hasITS())
+      return false;
+    if (!track.hasTPC())
+      return false;
+    if (!track.hasTOF())
+      return false;
+    if (!track.passedITSRefit())
+      return false;
+    if (!track.passedTPCRefit())
+      return false;
+    if (track.itsNCls() < minReqClusterITS)
+      return false;
+    if (track.tpcNClsFound() < minTPCnClsFound)
+      return false;
+    if (track.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      return false;
+    if (track.tpcChi2NCl() > maxChi2TPC)
+      return false;
+    if (track.itsChi2NCl() > maxChi2ITS)
+      return false;
+    if (TMath::Abs(track.dcaXY()) > maxDCAxy)
+      return false;
+    if (TMath::Abs(track.dcaZ()) > maxDCAz)
+      return false;
+    /*
+      if (track.eta() < etaMin)
+      return false;
+    if (track.eta() > etaMax)
+      return false;
+    if (track.phi() < phiMin)
+      return false;
+    if (track.phi() > phiMax)
+      return false;*/
+
+    return true;
+  }
+
+  // Particle Identification (Pions)
+  template <typename pionCandidate>
+  bool passedPionSelection(const pionCandidate& track)
+  {
+    if (track.tpcNSigmaPi() < nsigmaTPCMin)
+      return false;
+    if (track.tpcNSigmaPi() > nsigmaTPCMax)
+      return false;
+    if (track.tofNSigmaPi() < nsigmaTOFMin)
+      return false;
+    if (track.tofNSigmaPi() > nsigmaTOFMax)
+      return false;
+
+    return true;
+  }
+
+  // Particle Identification (Kaons)
+  template <typename kaonCandidate>
+  bool passedKaonSelection(const kaonCandidate& track)
+  {
+    if (track.tpcNSigmaKa() < nsigmaTPCMin)
+      return false;
+    if (track.tpcNSigmaKa() > nsigmaTPCMax)
+      return false;
+    if (track.tofNSigmaKa() < nsigmaTOFMin)
+      return false;
+    if (track.tofNSigmaKa() > nsigmaTOFMax)
+      return false;
+
+    return true;
+  }
+
+  // Particle Identification (Protons)
+  template <typename protonCandidate>
+  bool passedProtonSelection(const protonCandidate& track)
+  {
+    if (track.tpcNSigmaPr() < nsigmaTPCMin)
+      return false;
+    if (track.tpcNSigmaPr() > nsigmaTPCMax)
+      return false;
+    if (track.tofNSigmaPr() < nsigmaTOFMin)
+      return false;
+    if (track.tofNSigmaPr() > nsigmaTOFMax)
+      return false;
+
+    return true;
+  }
+
+  // Particle Identification (Deuterons)
+  template <typename deuteronCandidate>
+  bool passedDeuteronSelection(const deuteronCandidate& track)
+  {
+    if (track.tpcNSigmaDe() < nsigmaTPCMin)
+      return false;
+    if (track.tpcNSigmaDe() > nsigmaTPCMax)
+      return false;
+    if (track.tofNSigmaDe() < nsigmaTOFMin)
+      return false;
+    if (track.tofNSigmaDe() > nsigmaTOFMax)
+      return false;
+
+    return true;
   }
 
   // Info for TPC PID
@@ -123,12 +298,166 @@ struct AntimatterAbsorptionHMPID {
     registryQC.fill(HIST("number_of_events_data"), 1.5);
 
     for (const auto& hmpid : hmpids) {
+
+      // Get Track
       const auto& track = hmpid.track_as<FullTracks>();
+
+      // Track Selection
+      if (!passedTrackSelection(track))
+        continue;
+
       if (track.sign() > 0) {
         registryDA.fill(HIST("hmpidXYpos"), hmpid.hmpidXMip(), hmpid.hmpidYMip());
+        registryDA.fill(HIST("hmpidEtaPhiMomPos"), track.p(), track.eta(), track.phi());
       }
       if (track.sign() < 0) {
         registryDA.fill(HIST("hmpidXYneg"), hmpid.hmpidXMip(), hmpid.hmpidYMip());
+        registryDA.fill(HIST("hmpidEtaPhiMomNeg"), track.p(), track.eta(), track.phi());
+      }
+
+      // Absorber
+      bool hmpidAbs8cm = true;
+      bool hmpidAbs4cm = true;
+
+      // Distance between extrapolated and matched point
+      float dx = hmpid.hmpidXTrack() - hmpid.hmpidXMip();
+      float dy = hmpid.hmpidYTrack() - hmpid.hmpidYMip();
+      float dr = sqrt(dx * dx + dy * dy);
+
+      // Fill Histograms for Positive Pions
+      if (passedPionSelection(track) && track.sign() > 0) {
+
+        if (hmpidAbs8cm) {
+          registryDA.fill(HIST("incomingPi_Pos_8cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingPi_Pos_8cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("Pi_Pos_Q_8cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("Pi_Pos_ClsSize_8cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+        if (hmpidAbs4cm) {
+          registryDA.fill(HIST("incomingPi_Pos_4cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingPi_Pos_4cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("Pi_Pos_Q_4cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("Pi_Pos_ClsSize_4cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+      }
+
+      // Fill Histograms for Negative Pions
+      if (passedPionSelection(track) && track.sign() < 0) {
+
+        if (hmpidAbs8cm) {
+          registryDA.fill(HIST("incomingPi_Neg_8cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingPi_Neg_8cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("Pi_Neg_Q_8cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("Pi_Neg_ClsSize_8cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+        if (hmpidAbs4cm) {
+          registryDA.fill(HIST("incomingPi_Neg_4cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingPi_Neg_4cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("Pi_Neg_Q_4cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("Pi_Neg_ClsSize_4cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+      }
+
+      // Fill Histograms for Positive Kaons
+      if (passedKaonSelection(track) && track.sign() > 0) {
+
+        if (hmpidAbs8cm) {
+          registryDA.fill(HIST("incomingKa_Pos_8cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingKa_Pos_8cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("Ka_Pos_Q_8cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("Ka_Pos_ClsSize_8cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+        if (hmpidAbs4cm) {
+          registryDA.fill(HIST("incomingKa_Pos_4cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingKa_Pos_4cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("Ka_Pos_Q_4cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("Ka_Pos_ClsSize_4cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+      }
+
+      // Fill Histograms for Negative Kaons
+      if (passedKaonSelection(track) && track.sign() < 0) {
+
+        if (hmpidAbs8cm) {
+          registryDA.fill(HIST("incomingKa_Neg_8cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingKa_Neg_8cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("Ka_Neg_Q_8cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("Ka_Neg_ClsSize_8cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+        if (hmpidAbs4cm) {
+          registryDA.fill(HIST("incomingKa_Neg_4cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingKa_Neg_4cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("Ka_Neg_Q_4cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("Ka_Neg_ClsSize_4cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+      }
+
+      // Fill Histograms for Positive Protons
+      if (passedProtonSelection(track) && track.sign() > 0) {
+
+        if (hmpidAbs8cm) {
+          registryDA.fill(HIST("incomingPr_Pos_8cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingPr_Pos_8cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("Pr_Pos_Q_8cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("Pr_Pos_ClsSize_8cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+        if (hmpidAbs4cm) {
+          registryDA.fill(HIST("incomingPr_Pos_4cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingPr_Pos_4cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("Pr_Pos_Q_4cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("Pr_Pos_ClsSize_4cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+      }
+
+      // Fill Histograms for Negative Protons
+      if (passedProtonSelection(track) && track.sign() < 0) {
+
+        if (hmpidAbs8cm) {
+          registryDA.fill(HIST("incomingPr_Neg_8cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingPr_Neg_8cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("Pr_Neg_Q_8cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("Pr_Neg_ClsSize_8cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+        if (hmpidAbs4cm) {
+          registryDA.fill(HIST("incomingPr_Neg_4cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingPr_Neg_4cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("Pr_Neg_Q_4cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("Pr_Neg_ClsSize_4cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+      }
+
+      // Fill Histograms for Positive Deuterons
+      if (passedDeuteronSelection(track) && track.sign() > 0) {
+
+        if (hmpidAbs8cm) {
+          registryDA.fill(HIST("incomingDe_Pos_8cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingDe_Pos_8cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("De_Pos_Q_8cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("De_Pos_ClsSize_8cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+        if (hmpidAbs4cm) {
+          registryDA.fill(HIST("incomingDe_Pos_4cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingDe_Pos_4cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("De_Pos_Q_4cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("De_Pos_ClsSize_4cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+      }
+
+      // Fill Histograms for Negative Deuterons
+      if (passedDeuteronSelection(track) && track.sign() < 0) {
+
+        if (hmpidAbs8cm) {
+          registryDA.fill(HIST("incomingDe_Neg_8cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingDe_Neg_8cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("De_Neg_Q_8cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("De_Neg_ClsSize_8cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
+        if (hmpidAbs4cm) {
+          registryDA.fill(HIST("incomingDe_Neg_4cm"), hmpid.hmpidMom());
+          registryDA.fill(HIST("survivingDe_Neg_4cm"), hmpid.hmpidMom(), dr);
+          registryDA.fill(HIST("De_Neg_Q_4cm"), hmpid.hmpidMom(), hmpid.hmpidQMip());
+          registryDA.fill(HIST("De_Neg_ClsSize_4cm"), hmpid.hmpidMom(), hmpid.hmpidClusSize());
+        }
       }
     }
   }

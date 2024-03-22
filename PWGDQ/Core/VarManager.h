@@ -1884,7 +1884,8 @@ void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
   values[kMCY] = track.y();
   values[kMCParticleGeneratorId] = track.producedByGenerator();
   if (track.has_mothers()) {
-    auto mother = track.template mothers_first_as<U>();
+    auto motherId = track.mothersIds()[0];
+    auto mother = mcStack.rawIteratorAt(motherId);
     values[kMCMotherPdgCode] = mother.pdgCode();
   }
 
@@ -2942,7 +2943,7 @@ void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
   values[kR2SP_FV0ATPCNEG] = (xQVecFV0a * xQVecBNeg + yQVecFV0a * yQVecBNeg);
 
   float epTpcPos = epHelper.GetEventPlane(xQVecBPos, yQVecBPos, 2);
-  float epTpcNeg = epHelper.GetEventPlane(xQVecBPos, yQVecBPos, 2);
+  float epTpcNeg = epHelper.GetEventPlane(xQVecBNeg, yQVecBNeg, 2);
   float epFT0a = epHelper.GetEventPlane(xQVecFT0a, yQVecFT0a, 2);
   float epFT0c = epHelper.GetEventPlane(xQVecFT0c, yQVecFT0c, 2);
   float epFT0m = epHelper.GetEventPlane(xQVecFT0m, yQVecFT0m, 2);

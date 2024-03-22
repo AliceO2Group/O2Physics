@@ -127,8 +127,8 @@ struct JetFragmentation {
 
   Partition<MatchedMcDJets> detJetEtaPartition = (aod::jet::eta > matchedDetJetEtaMin) && (aod::jet::eta < matchedDetJetEtaMax);
   Partition<MatchedMcDJets> detJetEtaV0Partition = (aod::jet::eta > v0EtaMin + aod::jet::r * 0.01f) && (aod::jet::eta < v0EtaMax - aod::jet::r * 0.01f);
-  Partition<ChargedJetsWithConstituents> dataJetEtaPartition = (aod::jet::eta > dataJetEtaMin) && (aod::jet::eta < dataJetEtaMax);
-  Partition<ChargedJetsWithConstituents> dataJetEtaV0Partition = (aod::jet::eta > v0EtaMin + aod::jet::r * 0.01f) && (aod::jet::eta < v0EtaMax - aod::jet::r * 0.01f);
+  // Partition<ChargedJetsWithConstituents> dataJetEtaPartition = (aod::jet::eta > dataJetEtaMin) && (aod::jet::eta < dataJetEtaMax);
+  // Partition<ChargedJetsWithConstituents> dataJetEtaV0Partition = (aod::jet::eta > v0EtaMin + aod::jet::r * 0.01f) && (aod::jet::eta < v0EtaMax - aod::jet::r * 0.01f);
 
   Preslice<MyTracks> TracksPerCollision = aod::track::collisionId;
   Preslice<aod::V0Datas> V0sPerCollision = aod::v0data::collisionId;
@@ -805,8 +805,7 @@ struct JetFragmentation {
   {
     registry.fill(HIST("data/jets/jetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
     for (const auto& track : jet.template tracks_as<JetTracks>()) {
-      double chargeFrag = -1., trackProj = -1., xi = -1.;
-      double theta = -1.;
+      double chargeFrag = -1., trackProj = -1., xi = -1., theta = -1.;
       chargeFrag = ChargeFrag(jet, track);
       trackProj = TrackProj(jet, track);
       theta = Theta(jet, track);
@@ -1354,7 +1353,10 @@ struct JetFragmentation {
         registry.fill(HIST("data/tracks/trackPtEtaPhi"), track.pt(), track.eta(), track.phi());
       }
     }
-    for (const auto& jet : dataJetEtaPartition) {
+    for (const auto& jet : jets) {
+      if ((jet.eta() <= dataJetEtaMin) || (jet.eta() >= dataJetEtaMax)) {
+        continue;
+      }
       nJets++;
       fillDataRun3Histograms(jet);
     }
@@ -1379,7 +1381,7 @@ struct JetFragmentation {
     const auto& mcPartJets = allMcPartJets.sliceBy(PartJetsPerCollision, collision.mcCollision().globalIndex()); // Only jets from the same collision
     bool isFake = false;
     for (const auto& detJet : detJetEtaPartition) {
-      for (auto& partJet : detJet.template matchedJetGeo_as<McPJets>()) {
+      for (auto& partJet : detJet.template matchedJetGeo_as<MatchedMcPJets>()) {
         fillMatchingHistogramsJet(detJet, partJet, weight);
 
         for (const auto& track : detJet.tracks_as<JetTracksMCD>()) {
@@ -1411,13 +1413,14 @@ struct JetFragmentation {
       } // if detJet does not have a match
     }   // for det jet
     for (const auto& partJet : mcPartJets) {
-      for (const auto& detJet : partJet.template matchedJetGeo_as<McDJets>()) {
+      for (const auto& detJet : partJet.template matchedJetGeo_as<MatchedMcDJets>()) {
         // Check if the matched detector level jet is outside the allowed eta range
-        if ((detJet.eta() < matchedDetJetEtaMin) || (detJet.eta() > matchedDetJetEtaMax)) {
+        if ((detJet.eta() <= matchedDetJetEtaMin) || (detJet.eta() >= matchedDetJetEtaMax)) {
           for (const auto& particle : partJet.tracks_as<JetParticles>()) {
             isFake = false;
             fillMatchingFakeOrMiss(partJet, particle, isFake, weight);
           }
+          continue;
         }
         // If the jets are properly matched, we can check the particles
         for (const auto& particle : partJet.tracks_as<JetParticles>()) {
@@ -1589,6 +1592,9 @@ struct JetFragmentation {
           continue;
         }
         for (const auto& detJet : partJet.template matchedJetGeo_as<MatchedMcDJets>()) {
+          if ((detJet.eta() <= v0EtaMin + detJet.r() * 1e-2) || (detJet.eta() >= v0EtaMax - detJet.r() * 1e-2)) {
+            continue;
+          }
           for (const auto& v0 : v0s) {
             if (!v0.has_mcParticle()) {
               continue;
@@ -1645,7 +1651,10 @@ struct JetFragmentation {
     registry.fill(HIST("data/V0/nV0sEvent"), kNV0s);
 
     fillDataV0Histograms(collision, v0s, tracks);
-    for (const auto& jet : dataJetEtaV0Partition) {
+    for (const auto& jet : jets) {
+      if ((jet.eta() < v0EtaMin + jet.r() * 1e-2) || (jet.eta() > v0EtaMax - jet.r() * 1e-2)) {
+        continue;
+      }
       fillDataRun3Histograms(jet);
       // fastjet::PseudoJet newjet(jet.px(), jet.py(), jet.pz(), jet.e()); // Jet with corrections from V0
       int iv0 = -1;

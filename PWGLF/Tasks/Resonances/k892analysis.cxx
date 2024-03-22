@@ -76,6 +76,8 @@ struct k892analysis {
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};           // PV Contriuibutor
+  Configurable<bool> additionalQAplots{"additionalQAplots", false, "Additional QA plots"};
+  Configurable<bool> tof_at_high_pt{"tof_at_high_pt", false, "Use TOF at high pT"};
 
   void init(o2::framework::InitContext&)
   {
@@ -94,17 +96,19 @@ struct k892analysis {
     histos.add("k892invmassLSAnti", "Invariant mass of Anti-K(892)0 like sign", kTH1F, {invMassAxis});
     histos.add("k892invmassME", "Invariant mass of K(892)0 mixed event", kTH1F, {invMassAxis});
 
-    // TPC ncluster distirbutions
-    histos.add("TPCncluster/TPCnclusterpi", "TPC ncluster distribution", kTH1F, {{160, 0, 160, "TPC nCluster"}});
-    histos.add("TPCncluster/TPCnclusterka", "TPC ncluster distribution", kTH1F, {{160, 0, 160, "TPC nCluster"}});
-    histos.add("TPCncluster/TPCnclusterPhipi", "TPC ncluster vs phi", kTH2F, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}});
-    histos.add("TPCncluster/TPCnclusterPhika", "TPC ncluster vs phi", kTH2F, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}});
+    if (additionalQAplots) {
+      // TPC ncluster distirbutions
+      histos.add("TPCncluster/TPCnclusterpi", "TPC ncluster distribution", kTH1F, {{160, 0, 160, "TPC nCluster"}});
+      histos.add("TPCncluster/TPCnclusterka", "TPC ncluster distribution", kTH1F, {{160, 0, 160, "TPC nCluster"}});
+      histos.add("TPCncluster/TPCnclusterPhipi", "TPC ncluster vs phi", kTH2F, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}});
+      histos.add("TPCncluster/TPCnclusterPhika", "TPC ncluster vs phi", kTH2F, {{160, 0, 160, "TPC nCluster"}, {63, 0, 6.28, "#phi"}});
 
-    // Multiplicity correlation calibrations
-    histos.add("MultCalib/centglopi", "Centrality vs Global-Tracks", kTH2F, {{110, 0, 110, "Centrality"}, {500, 0, 5000, "Global Tracks"}});
-    histos.add("MultCalib/centgloka", "Centrality vs Global-Tracks", kTH2F, {{110, 0, 110, "Centrality"}, {500, 0, 5000, "Global Tracks"}});
-    histos.add("MultCalib/GloPVpi", "Global tracks vs PV tracks", kTH2F, {{500, 0, 5000, "Global tracks"}, {500, 0, 5000, "PV tracks"}});
-    histos.add("MultCalib/GloPVka", "Global tracks vs PV tracks", kTH2F, {{500, 0, 5000, "Global tracks"}, {500, 0, 5000, "PV tracks"}});
+      // Multiplicity correlation calibrations
+      histos.add("MultCalib/centglopi", "Centrality vs Global-Tracks", kTH2F, {{110, 0, 110, "Centrality"}, {500, 0, 5000, "Global Tracks"}});
+      histos.add("MultCalib/centgloka", "Centrality vs Global-Tracks", kTH2F, {{110, 0, 110, "Centrality"}, {500, 0, 5000, "Global Tracks"}});
+      histos.add("MultCalib/GloPVpi", "Global tracks vs PV tracks", kTH2F, {{500, 0, 5000, "Global tracks"}, {500, 0, 5000, "PV tracks"}});
+      histos.add("MultCalib/GloPVka", "Global tracks vs PV tracks", kTH2F, {{500, 0, 5000, "Global tracks"}, {500, 0, 5000, "PV tracks"}});
+    }
 
     // DCA QA
     histos.add("QAbefore/trkDCAxy_pi", "DCAxy distribution of pion track candidates", HistType::kTH1F, {dcaxyAxis});
@@ -187,44 +191,62 @@ struct k892analysis {
   template <typename T>
   bool selectionPIDPion(const T& candidate)
   {
-    bool tpcPIDPassed{false}, tofPIDPassed{false};
-    if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
-      tpcPIDPassed = true;
-    }
-    if (candidate.hasTOF()) {
-      if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion) {
-        tofPIDPassed = true;
+    if (tof_at_high_pt) {
+      if (candidate.hasTOF() && (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion)) {
+        return true;
       }
-      if ((nsigmaCutCombinedPion > 0) && (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi() < nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
-        tofPIDPassed = true;
+      if (!candidate.hasTOF() && (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion)) {
+        return true;
       }
     } else {
-      tofPIDPassed = true;
-    }
-    if (tpcPIDPassed && tofPIDPassed) {
-      return true;
+      bool tpcPIDPassed{false}, tofPIDPassed{false};
+      if (std::abs(candidate.tpcNSigmaPi()) < cMaxTPCnSigmaPion) {
+        tpcPIDPassed = true;
+      }
+      if (candidate.hasTOF()) {
+        if (std::abs(candidate.tofNSigmaPi()) < cMaxTOFnSigmaPion) {
+          tofPIDPassed = true;
+        }
+        if ((nsigmaCutCombinedPion > 0) && (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi() < nsigmaCutCombinedPion * nsigmaCutCombinedPion)) {
+          tofPIDPassed = true;
+        }
+      } else {
+        tofPIDPassed = true;
+      }
+      if (tpcPIDPassed && tofPIDPassed) {
+        return true;
+      }
     }
     return false;
   }
   template <typename T>
   bool selectionPIDKaon(const T& candidate)
   {
-    bool tpcPIDPassed{false}, tofPIDPassed{false};
-    if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
-      tpcPIDPassed = true;
-    }
-    if (candidate.hasTOF()) {
-      if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
-        tofPIDPassed = true;
+    if (tof_at_high_pt) {
+      if (candidate.hasTOF() && (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon)) {
+        return true;
       }
-      if ((nsigmaCutCombinedKaon > 0) && (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa() < nsigmaCutCombinedKaon * nsigmaCutCombinedKaon)) {
-        tofPIDPassed = true;
+      if (!candidate.hasTOF() && (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon)) {
+        return true;
       }
     } else {
-      tofPIDPassed = true;
-    }
-    if (tpcPIDPassed && tofPIDPassed) {
-      return true;
+      bool tpcPIDPassed{false}, tofPIDPassed{false};
+      if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
+        tpcPIDPassed = true;
+      }
+      if (candidate.hasTOF()) {
+        if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
+          tofPIDPassed = true;
+        }
+        if ((nsigmaCutCombinedKaon > 0) && (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa() < nsigmaCutCombinedKaon * nsigmaCutCombinedKaon)) {
+          tofPIDPassed = true;
+        }
+      } else {
+        tofPIDPassed = true;
+      }
+      if (tpcPIDPassed && tofPIDPassed) {
+        return true;
+      }
     }
     return false;
   }
@@ -283,31 +305,33 @@ struct k892analysis {
       if (!selectionPIDPion(trk1) || !selectionPIDKaon(trk2))
         continue;
 
-      // TPCncluster distributions
-      histos.fill(HIST("TPCncluster/TPCnclusterpi"), trk1.tpcNClsFound());
-      histos.fill(HIST("TPCncluster/TPCnclusterka"), trk2.tpcNClsFound());
-      histos.fill(HIST("TPCncluster/TPCnclusterPhipi"), trk1.tpcNClsFound(), trk1.phi());
-      histos.fill(HIST("TPCncluster/TPCnclusterPhika"), trk2.tpcNClsFound(), trk2.phi());
+      if (additionalQAplots) {
+        // TPCncluster distributions
+        histos.fill(HIST("TPCncluster/TPCnclusterpi"), trk1.tpcNClsFound());
+        histos.fill(HIST("TPCncluster/TPCnclusterka"), trk2.tpcNClsFound());
+        histos.fill(HIST("TPCncluster/TPCnclusterPhipi"), trk1.tpcNClsFound(), trk1.phi());
+        histos.fill(HIST("TPCncluster/TPCnclusterPhika"), trk2.tpcNClsFound(), trk2.phi());
 
-      // Multiplicity correlation calibration plots
-      int counterglo1 = 0;
-      int counterglo2 = 0;
-      int counterpv1 = 0;
-      int counterpv2 = 0;
+        // Multiplicity correlation calibration plots
+        int counterglo1 = 0;
+        int counterglo2 = 0;
+        int counterpv1 = 0;
+        int counterpv2 = 0;
 
-      if (trk1.isGlobalTrack())
-        counterglo1 = 1;
-      if (trk2.isGlobalTrack())
-        counterglo2 = 1;
-      if (trk1.isPrimaryTrack())
-        counterpv1 = 1;
-      if (trk2.isPrimaryTrack())
-        counterpv2 = 1;
+        if (trk1.isGlobalTrack())
+          counterglo1 = 1;
+        if (trk2.isGlobalTrack())
+          counterglo2 = 1;
+        if (trk1.isPrimaryTrack())
+          counterpv1 = 1;
+        if (trk2.isPrimaryTrack())
+          counterpv2 = 1;
 
-      histos.fill(HIST("MultCalib/centglopi"), multiplicity, counterglo1);
-      histos.fill(HIST("MultCalib/centgloka"), multiplicity, counterglo2);
-      histos.fill(HIST("MultCalib/GloPVpi"), counterglo1, counterpv1);
-      histos.fill(HIST("MultCalib/GloPVka"), counterglo2, counterpv2);
+        histos.fill(HIST("MultCalib/centglopi"), multiplicity, counterglo1);
+        histos.fill(HIST("MultCalib/centgloka"), multiplicity, counterglo2);
+        histos.fill(HIST("MultCalib/GloPVpi"), counterglo1, counterpv1);
+        histos.fill(HIST("MultCalib/GloPVka"), counterglo2, counterpv2);
+      }
 
       if constexpr (!IsMix) {
         //// QA plots after the selection

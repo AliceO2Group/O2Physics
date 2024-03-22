@@ -120,7 +120,7 @@ struct HfTaskMcEfficiencyToXiPi {
     for (const auto& candidate : candidates) {
 
       // only take into account matched decays
-      if (candidate.flagMcMatchRec() != decayFlag) {
+      if (std::abs(candidate.flagMcMatchRec()) != decayFlag) {
         continue;
       }
 
@@ -206,7 +206,7 @@ struct HfTaskMcEfficiencyToXiPi {
       if (std::abs(mcParticle.pdgCode()) != pdgCode) {
         continue;
       }
-      /// check if the charm baryon devays to the desired channel
+      /// check if the charm baryon decays to the desired channel
       if (std::abs(mcParticle.flagMcMatchGen()) != decayFlagGen) {
         continue;
       }

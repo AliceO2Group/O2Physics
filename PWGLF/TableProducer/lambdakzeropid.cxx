@@ -59,7 +59,8 @@ using namespace o2::framework::expressions;
 using std::array;
 
 // Cores with references and TOF pid
-using V0FullCores = soa::Join<aod::V0Cores, aod::V0TOFs, aod::V0CollRefs>;
+using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+using V0FullCores = soa::Join<aod::V0Cores, aod::V0TOFs, aod::V0Extras, aod::V0CollRefs>;
 
 struct lambdakzeropid {
   // TOF pid for strangeness (recalculated with topology)
@@ -81,6 +82,7 @@ struct lambdakzeropid {
   Configurable<float> qaDCADau{"qaDCADau", 0.5, "DCA daughters (cm) for QA plots"};
   Configurable<float> qaCosPA{"qaCosPA", 0.999, "CosPA for QA plots"};
   Configurable<float> qaMassWindow{"qaMassWindow", 0.005, "Mass window around expected (in GeV/c2) for QA plots"};
+  Configurable<float> qaTPCNSigma{"qaTPCNSigma", 5, "TPC N-sigma to apply for qa plots"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -307,7 +309,7 @@ struct lambdakzeropid {
     return 0.0299792458 * TMath::Sqrt(lA / (1 + lA));
   }
 
-  void process(soa::Join<aod::StraCollisions, aod::StraStamps> const& collisions, V0FullCores const& V0s)
+  void process(soa::Join<aod::StraCollisions, aod::StraStamps> const& collisions, V0FullCores const& V0s, dauTracks const&)
   {
     for (const auto& collision : collisions) {
       // Fire up CCDB - based on StraCollisions for derived analysis
@@ -393,16 +395,19 @@ struct lambdakzeropid {
         v0tofdebugs(timeLambda, timeK0Short, timePositivePr, timePositivePi, timeNegativePr, timeNegativePi);
 
         if (doQA) {
+          auto pTra = v0.posTrackExtra_as<dauTracks>();
+          auto nTra = v0.negTrackExtra_as<dauTracks>();
+
           if (v0.posTOFSignal() > 0 && v0.posTOFEventTime() > 0) {
             histos.fill(HIST("h2dProtonMeasuredVsExpected"),
                         (timeLambda + timePositivePr),
                         (v0.posTOFSignal() - v0.posTOFEventTime()));
             if (v0.v0cosPA() > qaCosPA && v0.dcaV0daughters() < qaDCADau) {
-              if (std::abs(v0.mLambda() - 1.115683) < qaMassWindow)
+              if (std::abs(v0.mLambda() - 1.115683) < qaMassWindow && fabs(pTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma)
                 histos.fill(HIST("h2dDeltaTimePositiveLambdaPr"), v0.pt(), v0.eta(), deltaTimePositiveLambdaPr);
-              if (std::abs(v0.mAntiLambda() - 1.115683) < qaMassWindow)
+              if (std::abs(v0.mAntiLambda() - 1.115683) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < qaTPCNSigma)
                 histos.fill(HIST("h2dDeltaTimePositiveLambdaPi"), v0.pt(), v0.eta(), deltaTimePositiveLambdaPi);
-              if (std::abs(v0.mK0Short() - 0.497) < qaMassWindow)
+              if (std::abs(v0.mK0Short() - 0.497) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma)
                 histos.fill(HIST("h2dDeltaTimePositiveK0ShortPi"), v0.pt(), v0.eta(), deltaTimePositiveK0ShortPi);
             }
           }
@@ -412,11 +417,11 @@ struct lambdakzeropid {
                         (timeLambda + timeNegativePi),
                         (v0.negTOFSignal() - v0.negTOFEventTime()));
             if (v0.v0cosPA() > qaCosPA && v0.dcaV0daughters() < qaDCADau) {
-              if (std::abs(v0.mLambda() - 1.115683) < qaMassWindow)
+              if (std::abs(v0.mLambda() - 1.115683) < qaMassWindow && fabs(pTra.tpcNSigmaPr()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma)
                 histos.fill(HIST("h2dDeltaTimeNegativeLambdaPi"), v0.pt(), v0.eta(), deltaTimeNegativeLambdaPi);
-              if (std::abs(v0.mAntiLambda() - 1.115683) < qaMassWindow)
+              if (std::abs(v0.mAntiLambda() - 1.115683) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < qaTPCNSigma)
                 histos.fill(HIST("h2dDeltaTimeNegativeLambdaPr"), v0.pt(), v0.eta(), deltaTimeNegativeLambdaPr);
-              if (std::abs(v0.mK0Short() - 0.497) < qaMassWindow)
+              if (std::abs(v0.mK0Short() - 0.497) < qaMassWindow && fabs(pTra.tpcNSigmaPi()) < qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < qaTPCNSigma)
                 histos.fill(HIST("h2dDeltaTimeNegativeK0ShortPi"), v0.pt(), v0.eta(), deltaTimeNegativeK0ShortPi);
             }
           }
