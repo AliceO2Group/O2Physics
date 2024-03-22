@@ -69,7 +69,7 @@ struct Reducer {
   {
     std::random_device randomdevice;
     randomgen.seed(randomdevice());
-    LOGP(info, ">>> Starting with params: {}, {}, {}, {}, {}, {}, {}", params->get((int)0, int(0)), params->get((int)0, 1), params->get((int)0, 2),
+    LOGP(debug, ">>> Starting with params: {}, {}, {}, {}, {}, {}, {}", params->get((int)0, int(0)), params->get((int)0, 1), params->get((int)0, 2),
          params->get((int)0, 3), params->get((int)0, 4), params->get((int)0, 5), params->get((int)0, 6));
   }
 
@@ -80,26 +80,26 @@ struct Reducer {
     weights.resize(mccollisions.size());
     std::fill(weights.begin(), weights.end(), (float)-1.);
     auto i = 0;
-    LOGP(info, ">>> {} MC collisions for BC", mccollisions.size());
+    LOGP(debug, ">>> {} MC collisions for BC", mccollisions.size());
     for (auto& mcc : mccollisions) {
       auto value = (mcc.multMCNParticlesEta10() == 0) ? params->get((int)0, (int)0) : NormalizedDoubleNBD((double)mcc.multMCNParticlesEta10());
-      LOGP(info, ">>> {} value for reduction (threshold {})", value, (float)reductionFactor);
+      LOGP(debug, ">>> {} value for reduction (threshold {})", value, (float)reductionFactor);
       if (value < reductionFactor) {
         // if the fraction of events at this multiplicity is less than reduction factor, keep the event as is
         weights[i] = 1.f;
-        LOGP(info, ">>> keeping with weight {}", weights[i]);
+        LOGP(debug, ">>> keeping with weight {}", weights[i]);
       } else {
         // if the fraction of events at this multiplicity is greater than the reduction factor, randomly discard it or add with the weight
         std::uniform_real_distribution<float> d(0, value);
         auto r = d(randomgen);
-        LOGP(info, ">>> die roll: {}", r);
+        LOGP(debug, ">>> die roll: {}", r);
         if (r > reductionFactor) {
           // dicard
-          LOGP(info, ">>> discarding");
+          LOGP(debug, ">>> discarding");
         } else {
           // keep
           weights[i] = value / reductionFactor;
-          LOGP(info, ">>> keeping with weight {}", weights[i]);
+          LOGP(debug, ">>> keeping with weight {}", weights[i]);
         }
       }
       ++i;
