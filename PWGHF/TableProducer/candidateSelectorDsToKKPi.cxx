@@ -37,7 +37,7 @@ struct HfCandidateSelectorDsToKKPi {
 
   Configurable<double> ptCandMin{"ptCandMin", 1., "Lower bound of candidate pT"};
   Configurable<double> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
- // TPC PID
+  // TPC PID
   Configurable<double> ptPidTpcMin{"ptPidTpcMin", 0.15, "Lower bound of track pT for TPC PID"};
   Configurable<double> ptPidTpcMax{"ptPidTpcMax", 5., "Upper bound of track pT for TPC PID"};
   Configurable<double> nSigmaTpcMax{"nSigmaTpcMax", 3., "Nsigma cut on TPC only"};
@@ -320,14 +320,14 @@ struct HfCandidateSelectorDsToKKPi {
       int pidTrackPos2Pion = -1;
       int pidTrackPos2Kaon = -1;
       int pidTrackNegKaon = -1;
-      
+
       if (usePidTpcAndTof) {
         selectorPion.statusTpcAndTof(trackPos1);
         selectorKaon.statusTpcAndTof(trackPos1);
         selectorPion.statusTpcAndTof(trackPos2);
         selectorKaon.statusTpcAndTof(trackPos2);
         selectorKaon.statusTpcAndTof(trackNeg);
-      } else{
+      } else {
         selectorPion.statusTpcOrTof(trackPos1);
         selectorKaon.statusTpcOrTof(trackPos1);
         selectorPion.statusTpcOrTof(trackPos2);
