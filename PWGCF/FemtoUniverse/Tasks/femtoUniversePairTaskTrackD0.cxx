@@ -166,7 +166,6 @@ struct femtoUniversePairTaskTrackD0 {
 
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
-
   Configurable<float> ConfCPRdeltaPhiCut{"ConfCPRdeltaPhiCut", 0.0, "Delta Phi cut for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaCut{"ConfCPRdeltaEtaCut", 0.0, "Delta Eta cut for Close Pair Rejection"};
   Configurable<float> ConfCPRChosenRadii{"ConfCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
@@ -438,6 +437,7 @@ struct femtoUniversePairTaskTrackD0 {
       if (cand1.mLambda() > 0.0f && cand1.mAntiLambda() < 0.0f) {
         continue;
       }
+
       for (auto const& cand2 : groupPartsOnlyD0D0bar) {
         // Check if the second candidate is D0bar meson
         if (cand2.mLambda() < 0.0f && cand2.mAntiLambda() > 0.0f) {
@@ -451,26 +451,26 @@ struct femtoUniversePairTaskTrackD0 {
         registry.fill(HIST("hDeltaEtaDeltaPhi"), deltaEta, deltaPhi);
 
         // ----------------------------------- Creating D0-D0bar pairs correlations ------------------------------------------------
-        if (cand1.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMin && cand1.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMax) {
+        if (cand1.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMin.value && cand1.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMax.value) {
           // S(D0) x S(D0bar) correlation
-          if (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMin && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMax) {
+          if (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMin.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMax.value) {
             registry.fill(HIST("hDeltaPhiSigSig"), deltaPhi);
           }
           // S(D0) x B(D0bar) correlation
-          if ((cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB) ||
-              (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB)) {
+          if ((cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB.value) ||
+              (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB.value)) {
             registry.fill(HIST("hDeltaPhiD0SigD0barBg"), deltaPhi);
           }
         }
-        if ((cand1.mLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB && cand1.mLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB) ||
-            (cand1.mLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB && cand1.mLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB)) {
+        if ((cand1.mLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB.value && cand1.mLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB.value) ||
+            (cand1.mLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB.value && cand1.mLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB.value)) {
           // B(D0) x S (D0bar) correlation
-          if (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMin && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMax) {
+          if (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMin.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMax.value) {
             registry.fill(HIST("hDeltaPhiD0BgD0barSig"), deltaPhi);
           }
           // B(D0) x B(D0bar) correlation
-          if ((cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB) ||
-              (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB)) {
+          if ((cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB.value) ||
+              (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB.value)) {
             registry.fill(HIST("hDeltaPhiBgBg"), deltaPhi);
           }
         }
