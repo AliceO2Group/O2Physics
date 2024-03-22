@@ -449,34 +449,6 @@ struct kfStrangenessStudy {
               posPionRecErr[2] = sqrt(covpos[5]);
             }
 
-            // // reconstructed cascade transverse momentum at generated cascade production vertex position
-            
-            // prodVtxCasc.setPos({prodVtxGen[0], prodVtxGen[1], prodVtxGen[2]});
-            // prodVtxV0.setPos({vtxGen[0], vtxGen[1], vtxGen[2]});
-
-            // // create TrackParCov objects from cascade and V0
-            // std::array<float, 3> VtxCasc = {cascdata.x(), cascdata.y(), cascdata.z()};
-            // std::array<float, 3> VtxV0 = {cascdata.xlambda(), cascdata.ylambda(), cascdata.zlambda()};
-
-            // std::array<float, 21> covV0KF = {0.};
-            // constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-            // for (int i = 0; i < 6; i++) {
-            //   covCascKF[MomInd[i]] = cascdata.momentumCovMat()[i];
-            //   covCascKF[i] = cascdata.positionCovMat()[i];
-            // }
-
-            // // create cascade track
-            // o2::track::TrackParCov trackCasc;
-            // if (trackXiDauCharged.sign() > 0) {
-            //   trackCasc = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, 1, true);
-            // } else if (trackXiDauCharged.sign() < 0) {
-            //   trackCasc = o2::track::TrackParCov(vertexCasc, pVecCasc, covCasc, -1, true);
-            // } else {
-            //   continue;
-            // }
-            // trackCasc.setAbsCharge(1);
-            // trackCasc.setPID(o2::track::PID::XiMinus);
-
             // fill cascade table
             fillCascMCTable(collision);
 
