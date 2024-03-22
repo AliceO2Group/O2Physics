@@ -223,9 +223,9 @@ struct LumiFDDFT0 {
     double refitX = -999.;
     double refitY = -999.;
     double refitZ = -999.;
-    double refitXX = -999.;
-    double refitYY = -999.;
-    double refitXY = -999.;
+    // double refitXX = -999.;
+    // double refitYY = -999.;
+    // double refitXY = -999.;
 
     double timeaFDD = -999.;
     double timecFDD = -999.;
@@ -245,9 +245,9 @@ struct LumiFDDFT0 {
       refitX = Pvtx_refitted.getX();
       refitY = Pvtx_refitted.getY();
       refitZ = Pvtx_refitted.getZ();
-      refitXX = Pvtx_refitted.getSigmaX2();
-      refitYY = Pvtx_refitted.getSigmaY2();
-      refitXY = Pvtx_refitted.getSigmaXY();
+      // refitXX = Pvtx_refitted.getSigmaX2();
+      // refitYY = Pvtx_refitted.getSigmaY2();
+      // refitXY = Pvtx_refitted.getSigmaXY();
 
       // now get information for FDD
       if (collision.has_foundFDD()) {

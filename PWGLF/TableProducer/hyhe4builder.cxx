@@ -433,9 +433,9 @@ struct hyHe4Preselector {
     auto const& trackProng1 = d3body.template track1_as<TTrackTo>();
     auto const& trackProng2 = d3body.template track2_as<TTrackTo>();
 
-    int lPDG0 = -1;
-    int lPDG1 = -1;
-    int lPDG2 = -1;
+    // int lPDG0 = -1;
+    // int lPDG1 = -1;
+    // int lPDG2 = -1;
 
     // Association check
     // Lets do something to identify the PID of particles
@@ -443,9 +443,9 @@ struct hyHe4Preselector {
       auto lMCtrackProng0 = trackProng0.template mcParticle_as<aod::McParticles>();
       auto lMCtrackProng1 = trackProng1.template mcParticle_as<aod::McParticles>();
       auto lMCtrackProng2 = trackProng2.template mcParticle_as<aod::McParticles>();
-      lPDG0 = lMCtrackProng0.pdgCode();
-      lPDG1 = lMCtrackProng1.pdgCode();
-      lPDG2 = lMCtrackProng2.pdgCode();
+      // lPDG0 = lMCtrackProng0.pdgCode();
+      // lPDG1 = lMCtrackProng1.pdgCode();
+      // lPDG2 = lMCtrackProng2.pdgCode();
       if (lMCtrackProng0.has_mothers() && lMCtrackProng1.has_mothers() && lMCtrackProng2.has_mothers()) {
         for (auto& lProng0Mother : lMCtrackProng0.template mothers_as<aod::McParticles>()) {
           for (auto& lProng1Mother : lMCtrackProng1.template mothers_as<aod::McParticles>()) {
