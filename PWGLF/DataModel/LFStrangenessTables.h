@@ -166,6 +166,9 @@ DECLARE_SOA_COLUMN(XNegAtIU, xNegAtIU, float);   //! decay position X
 DECLARE_SOA_COLUMN(YNegAtIU, yNegAtIU, float);   //! decay position Y
 DECLARE_SOA_COLUMN(ZNegAtIU, zNegAtIU, float);   //! decay position Z
 
+// ivanov scaling 
+DECLARE_SOA_COLUMN(IvanovMap, ivanovMap, int);   //! coded downscale bits
+
 // Saved from finding: DCAs
 DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0daughters, float); //! DCA between V0 daughters
 DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);         //! DCA positive prong to PV
@@ -438,6 +441,9 @@ DECLARE_SOA_TABLE(V0TraPosAtDCAs, "AOD", "V0TRAPOSATDCAs", //! positions of trac
 DECLARE_SOA_TABLE(V0TraPosAtIUs, "AOD", "V0TRAPOSATIUs", //! positions of tracks at their IU for debug
                   v0data::XPosAtIU, v0data::YPosAtIU, v0data::ZPosAtIU,
                   v0data::XNegAtIU, v0data::YNegAtIU, v0data::ZNegAtIU);
+
+DECLARE_SOA_TABLE(V0Ivanovs, "AOD", "V0Ivanovs", //! bitmaps for Marian
+                  v0data::IvanovMap);
 
 DECLARE_SOA_TABLE_FULL(V0Covs, "V0Covs", "AOD", "V0COVS", //! V0 covariance matrices
                        v0data::PositionCovMat, v0data::MomentumCovMat, o2::soa::Marker<1>);

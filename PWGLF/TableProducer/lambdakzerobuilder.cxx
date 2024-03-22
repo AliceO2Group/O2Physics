@@ -100,6 +100,7 @@ struct lambdakzeroBuilder {
   Produces<aod::V0DauCovIUs> v0daucovIUs;        // covariances of daughter tracks
   Produces<aod::V0TraPosAtDCAs> v0dauPositions;  // auxiliary debug information
   Produces<aod::V0TraPosAtIUs> v0dauPositionsIU; // auxiliary debug information
+  Produces<aod::V0Ivanovs> v0ivanovs; 
 
   Produces<aod::V0fCIndices> v0fcindices;
   Produces<aod::StoredV0fCCores> v0fccores;
@@ -130,6 +131,7 @@ struct lambdakzeroBuilder {
   Configurable<float> downscale_sqrts{"downscale_sqrts", 13.6, "Downscale: Tsallis sqrts"};
   Configurable<float> downscale_factorPt{"downscale_factorPt", 1.0, "Downscale: factor Pt"};
   Configurable<float> downscale_factor1Pt{"downscale_factor1Pt", 1.0, "Downscale: factor 1/Pt"};
+  Configurable<float> downscale_factorUniform{"downscale_factorPt", 1e-3, "Downscale: factor Pt"};
   Configurable<int> downscale_triggerMaskSelection{"downscale_triggerMaskSelection", 0.0, "Downscale: trigger mask selection"};
 
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
@@ -308,7 +310,7 @@ struct lambdakzeroBuilder {
     return result;
   }
 
-  int DownsampleTsallisCharged(float pt)
+  int DownsampleMap(float pt)
   {
     float prob = TsallisCharged(pt);
     float probNorm = TsallisCharged(1.);
@@ -319,6 +321,8 @@ struct lambdakzeroBuilder {
       triggerMask |= 2;
     if (prng.Rndm() < downscale_factorPt)
       triggerMask |= 4;
+    if (prng.Rndm() < downscale_factorUniform)
+      triggerMask |= 8;
     return triggerMask;
   }
   // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
@@ -969,12 +973,12 @@ struct lambdakzeroBuilder {
         continue; // doesn't pass selections
       }
 
+      int ivanovMap = 0;
       if (downscale_adaptive) {
         float pt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
-        int mask = TsallisCharged(pt);
-        bool pass = (mask & downscale_triggerMaskSelection) == downscale_triggerMaskSelection;
-        if (!pass)
-          continue; // skip this V0
+        ivanovMap = DownsampleMap(pt);
+        if (ivanovMap==0)
+          continue; // skip this V0, passes nothing
       }
 
       // round the DCA variables to a certain precision if asked
@@ -1010,6 +1014,9 @@ struct lambdakzeroBuilder {
           lNegativeTrackIU.getXYZGlo(negPositionIU);
           v0dauPositionsIU(posPositionIU[0], posPositionIU[1], posPositionIU[2],
                            negPositionIU[0], negPositionIU[1], negPositionIU[2]);
+        }
+        if (downscale_adaptive){
+          v0ivanovs(ivanovMap);
         }
       } else {
         // place V0s built exclusively for the sake of cascades
