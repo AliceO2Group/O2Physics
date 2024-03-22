@@ -12,7 +12,6 @@
 #ifndef PWGMM_MULT_DATAMODEL_REDUCEDTABLES_H_
 #define PWGMM_MULT_DATAMODEL_REDUCEDTABLES_H_
 #include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -24,10 +23,10 @@ namespace o2::aod
                bc::RunNumber
 
 // Reduced BCs as a root index
-DECLARE_SOA_TABLE(RBCs, "AOD", "RBC",
+DECLARE_SOA_TABLE(RBCs, "AOD", "RBCS",
                   BCcols,
                   soa::Marker<1>);
-DECLARE_SOA_TABLE(StoredRBCs, "AOD1", "RBC",
+DECLARE_SOA_TABLE(StoredRBCs, "AOD1", "RBCS",
                   BCcols,
                   soa::Marker<2>);
 
@@ -60,10 +59,10 @@ DECLARE_SOA_INDEX_COLUMN(RBC, rbc);
                cent::CentNTPV
 
 // Reduced Collisions
-DECLARE_SOA_TABLE(RCollisions, "AOD", "RCOLLS",
+DECLARE_SOA_TABLE(RCollisions, "AOD", "RCOLLISIONS",
                   Ccols,
                   soa::Marker<1>)
-DECLARE_SOA_TABLE(StoredRCollisions, "AOD1", "RCOLLS",
+DECLARE_SOA_TABLE(StoredRCollisions, "AOD1", "RCOLLISIONS",
                   Ccols,
                   soa::Marker<2>)
 
@@ -90,10 +89,10 @@ DECLARE_SOA_COLUMN(Weight, weight, float);
               track::DcaXY,         \
               track::DcaZ
 
-DECLARE_SOA_TABLE(RTracks, "AOD", "RTRK",
+DECLARE_SOA_TABLE(RTracks, "AOD", "RTRACKS",
                   Tcols,
                   soa::Marker<1>)
-DECLARE_SOA_TABLE(StoredRTracks, "AOD1", "RTRK",
+DECLARE_SOA_TABLE(StoredRTracks, "AOD1", "RTRACKS",
                   Tcols,
                   soa::Marker<2>)
 
@@ -107,10 +106,10 @@ DECLARE_SOA_TABLE(StoredRTracks, "AOD1", "RTRK",
                fwdtrack::FwdDcaX,    \
                fwdtrack::FwdDcaY
 
-DECLARE_SOA_TABLE(RFTracks, "AOD", "RFTRK",
+DECLARE_SOA_TABLE(RFTracks, "AOD", "RFTRACKS",
                   TFcols,
                   soa::Marker<1>)
-DECLARE_SOA_TABLE(StoredRFTracks, "AOD1", "RFTRK",
+DECLARE_SOA_TABLE(StoredRFTracks, "AOD1", "RFTRACKS",
                   TFcols,
                   soa::Marker<2>)
 
@@ -131,10 +130,10 @@ DECLARE_SOA_COLUMN(Weight, weight, float);
                 mult::MultMCNParticlesEta05,  \
                 mult::MultMCNParticlesEta10
 
-DECLARE_SOA_TABLE(RMCCollisions, "AOD", "RMCCOLS",
+DECLARE_SOA_TABLE(RMCCollisions, "AOD", "RMCCOLLISIONS",
                   MCCcols,
                   soa::Marker<1>)
-DECLARE_SOA_TABLE(StoredRMCCollisions, "AOD1", "RMCCOLS",
+DECLARE_SOA_TABLE(StoredRMCCollisions, "AOD1", "RMCCOLLISIONS",
                   MCCcols,
                   soa::Marker<2>)
 
@@ -201,10 +200,10 @@ DECLARE_SOA_INDEX_COLUMN(RMCCollision, rmccollision);
                  mcparticle::E,                \
                  mcparticle::Weight
 
-DECLARE_SOA_TABLE(RMCParticles, "AOD", "RMCPART",
+DECLARE_SOA_TABLE(RMCParticles, "AOD", "RMCPARTICLES",
                   RMCPcols,
                   soa::Marker<1>)
-DECLARE_SOA_TABLE(StoredRMCParticles, "AOD1", "RMCPART",
+DECLARE_SOA_TABLE(StoredRMCParticles, "AOD1", "RMCPARTICLES",
                   RMCPcols,
                   soa::Marker<2>)
 
@@ -214,14 +213,14 @@ namespace rlabels
 DECLARE_SOA_INDEX_COLUMN(RMCCollision, rmccollision);
 DECLARE_SOA_INDEX_COLUMN(RMCParticle, rmcparticle);
 } // namespace rlabels
-DECLARE_SOA_TABLE(RMCTrackLabels, "AOD", "RMCTRKL",
+DECLARE_SOA_TABLE(RMCTrackLabels, "AOD", "RMCTRKLABELS",
                   rlabels::RMCParticleId, soa::Marker<1>)
-DECLARE_SOA_TABLE(StoredRMCTrackLabels, "AOD1", "RMCTRKL",
+DECLARE_SOA_TABLE(StoredRMCTrackLabels, "AOD1", "RMCTRKLABELS",
                   rlabels::RMCParticleId, soa::Marker<2>)
 
-DECLARE_SOA_TABLE(RMCColLabels, "AOD", "RMCCOLL",
+DECLARE_SOA_TABLE(RMCColLabels, "AOD", "RMCCOLLABELS",
                   rlabels::RMCCollisionId, soa::Marker<1>)
-DECLARE_SOA_TABLE(StoredRMCColLabels, "AOD1", "RMCCOLL",
+DECLARE_SOA_TABLE(StoredRMCColLabels, "AOD1", "RMCCOLLABELS",
                   rlabels::RMCCollisionId, soa::Marker<2>)
 } // namespace o2::aod
 namespace o2::soa
