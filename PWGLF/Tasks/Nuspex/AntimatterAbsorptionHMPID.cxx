@@ -70,6 +70,9 @@ struct AntimatterAbsorptionHMPID {
     registryDA.add("hmpidXYpos", "hmpidXYpos", HistType::kTH2F, {{300, 0.0, 300.0, "x_{MIP}"}, {300, 0.0, 300.0, "y_{MIP}"}});
     registryDA.add("hmpidXYneg", "hmpidXYneg", HistType::kTH2F, {{300, 0.0, 300.0, "x_{MIP}"}, {300, 0.0, 300.0, "y_{MIP}"}});
 
+    registryDA.add("hmpidEtaPhiMomPos", "hmpidEtaPhiMomPos", HistType::kTH3F, {{29, 0.1, 3.0, "p (GeV/c)"}, {180, -0.9, 0.9, "#eta"}, {200, 0.0, TMath::Pi(), "#phi"}});
+    registryDA.add("hmpidEtaPhiMomNeg", "hmpidEtaPhiMomNeg", HistType::kTH3F, {{29, 0.1, 3.0, "p (GeV/c)"}, {180, -0.9, 0.9, "#eta"}, {200, 0.0, TMath::Pi(), "#phi"}});
+
     // Pion Pos
     registryDA.add("incomingPi_Pos_8cm", "incomingPi_Pos_8cm", HistType::kTH1F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}});
     registryDA.add("incomingPi_Pos_4cm", "incomingPi_Pos_4cm", HistType::kTH1F, {{290, 0.1, 3.0, "#it{p} (GeV/#it{c})"}});
@@ -305,9 +308,11 @@ struct AntimatterAbsorptionHMPID {
 
       if (track.sign() > 0) {
         registryDA.fill(HIST("hmpidXYpos"), hmpid.hmpidXMip(), hmpid.hmpidYMip());
+        registryDA.fill(HIST("hmpidEtaPhiMomPos"), track.p(), track.eta(), track.phi());
       }
       if (track.sign() < 0) {
         registryDA.fill(HIST("hmpidXYneg"), hmpid.hmpidXMip(), hmpid.hmpidYMip());
+        registryDA.fill(HIST("hmpidEtaPhiMomNeg"), track.p(), track.eta(), track.phi());
       }
 
       // Absorber

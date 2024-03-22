@@ -18,6 +18,7 @@
 #include <TF3.h>
 #include <TMath.h>
 #include <TComplex.h>
+#include <algorithm>
 
 #include "JFFlucAnalysis.h"
 
@@ -351,7 +352,7 @@ TComplex JFFlucAnalysis::Four(int n1, int n2, int n3, int n4)
 #undef C
 
 //________________________________________________________________________
-void JFFlucAnalysis::UserExec(Option_t*)
+void JFFlucAnalysis::UserExec(Option_t* popt)
 {
   for (UInt_t ih = 2; ih < kNH; ih++) {
     fh_cos_n_phi[ih][fCBin]->Fill(QvectorQC[ih][1].Re() / QvectorQC[0][1].Re());
@@ -404,16 +405,17 @@ void JFFlucAnalysis::UserExec(Option_t*)
       ebe_6p_weight};
     if (flags & kFlucEbEWeighting) {
       for (UInt_t ik = 3; ik < 2 * nKL; ik++) {
-        double dk = (double)ik;
+        double dk = static_cast<double>(ik);
         ref_2Np[ik] = ref_2Np[ik - 1] * std::max(pQq[A][0][1].Re() - dk, 1.0) * std::max(pQq[B][0][1].Re() - dk, 1.0);
         ebe_2Np_weight[ik] = ebe_2Np_weight[ik - 1] * std::max(pQq[A][0][1].Re() - dk, 1.0) * std::max(pQq[B][0][1].Re() - dk, 1.0);
       }
-    } else
+    } else {
       for (UInt_t ik = 3; ik < 2 * nKL; ik++) {
-        double dk = (double)ik;
+        double dk = static_cast<double>(ik);
         ref_2Np[ik] = ref_2Np[ik - 1] * std::max(pQq[A][0][1].Re() - dk, 1.0) * std::max(pQq[B][0][1].Re() - dk, 1.0);
         ebe_2Np_weight[ik] = 1.0;
       }
+    }
 
     for (UInt_t ih = 2; ih < kNH; ih++) {
       corr[ih][1] = TwoGap(pQq, i, ih, ih);
@@ -548,6 +550,6 @@ void JFFlucAnalysis::UserExec(Option_t*)
 }
 
 //________________________________________________________________________
-void JFFlucAnalysis::Terminate(Option_t*)
+void JFFlucAnalysis::Terminate(Option_t* popt)
 {
 }

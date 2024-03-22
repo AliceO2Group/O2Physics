@@ -529,6 +529,7 @@ struct HfDataCreatorCharmHadPiReduced {
         df3.getTrack(1).getPxPyPzGlo(pVec1);
         df3.getTrack(2).getPxPyPzGlo(pVec2);
         pVecCharm = RecoDecay::pVec(pVec0, pVec1, pVec2);
+        trackParCovCharmHad = df3.createParentTrackParCov();
         trackParCovCharmHad.setAbsCharge(charmHadDauTracks[1].sign());   // to be sure
       } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) { // D0(bar) → K± π∓
         if (df2.process(trackParCov0, trackParCov1) == 0) {
