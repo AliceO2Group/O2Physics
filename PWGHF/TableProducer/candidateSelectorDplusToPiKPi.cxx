@@ -235,17 +235,17 @@ struct HfCandidateSelectorDplusToPiKPi {
       int pidTrackPos1Pion = -1;
       int pidTrackNegKaon = -1;
       int pidTrackPos2Pion = -1;
-      
+
       if (usePidTpcAndTof) {
         pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1);
         pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
         pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2);
-      } else{
+      } else {
         pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
         pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
         pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
       }
-     
+
       if (!selectionPID(pidTrackPos1Pion, pidTrackNegKaon, pidTrackPos2Pion)) { // exclude D±
         hfSelDplusToPiKPiCandidate(statusDplusToPiKPi);
         if (applyMl) {
