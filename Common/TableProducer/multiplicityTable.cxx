@@ -12,7 +12,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "TableHelper.h"
@@ -477,7 +477,7 @@ struct MultiplicityTable {
                 nHasTOF++;
               if (track.hasTRD())
                 nHasTRD++;
-            };
+            }
 
             int nAllTracksTPCOnly = 0;
             int nAllTracksITSTPC = 0;
@@ -487,7 +487,7 @@ struct MultiplicityTable {
               } else {
                 nAllTracksTPCOnly++;
               }
-            };
+            }
 
             int bcNumber = bc.globalBC() % 3564;
 
