@@ -100,7 +100,7 @@ struct lambdakzeroBuilder {
   Produces<aod::V0DauCovIUs> v0daucovIUs;        // covariances of daughter tracks
   Produces<aod::V0TraPosAtDCAs> v0dauPositions;  // auxiliary debug information
   Produces<aod::V0TraPosAtIUs> v0dauPositionsIU; // auxiliary debug information
-  Produces<aod::V0Ivanovs> v0ivanovs; 
+  Produces<aod::V0Ivanovs> v0ivanovs;
 
   Produces<aod::V0fCIndices> v0fcindices;
   Produces<aod::StoredV0fCCores> v0fccores;
@@ -977,7 +977,7 @@ struct lambdakzeroBuilder {
       if (downscale_adaptive) {
         float pt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
         ivanovMap = DownsampleMap(pt);
-        if (ivanovMap==0)
+        if (ivanovMap == 0)
           continue; // skip this V0, passes nothing
       }
 
@@ -1015,7 +1015,7 @@ struct lambdakzeroBuilder {
           v0dauPositionsIU(posPositionIU[0], posPositionIU[1], posPositionIU[2],
                            negPositionIU[0], negPositionIU[1], negPositionIU[2]);
         }
-        if (downscale_adaptive){
+        if (downscale_adaptive) {
           v0ivanovs(ivanovMap);
         }
       } else {

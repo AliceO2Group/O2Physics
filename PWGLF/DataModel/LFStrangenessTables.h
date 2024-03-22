@@ -166,8 +166,8 @@ DECLARE_SOA_COLUMN(XNegAtIU, xNegAtIU, float);   //! decay position X
 DECLARE_SOA_COLUMN(YNegAtIU, yNegAtIU, float);   //! decay position Y
 DECLARE_SOA_COLUMN(ZNegAtIU, zNegAtIU, float);   //! decay position Z
 
-// ivanov scaling 
-DECLARE_SOA_COLUMN(IvanovMap, ivanovMap, int);   //! coded downscale bits
+// ivanov scaling
+DECLARE_SOA_COLUMN(IvanovMap, ivanovMap, int); //! coded downscale bits
 
 // Saved from finding: DCAs
 DECLARE_SOA_COLUMN(DCAV0Daughters, dcaV0daughters, float); //! DCA between V0 daughters
