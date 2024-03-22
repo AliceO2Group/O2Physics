@@ -389,7 +389,7 @@ struct cascadepid {
           posDeltaTimeAsOmPi = (cascade.posTOFSignal() - cascade.posTOFEventTime()) - (omFlight + lambdaFlight + posFlightPi);
           posDeltaTimeAsOmPr = (cascade.posTOFSignal() - cascade.posTOFEventTime()) - (omFlight + lambdaFlight + posFlightPr);
         }
-        if (cascade.posTOFSignal() > 0 && cascade.posTOFEventTime() > 0) {
+        if (cascade.negTOFSignal() > 0 && cascade.negTOFEventTime() > 0) {
           negDeltaTimeAsXiPi = (cascade.negTOFSignal() - cascade.negTOFEventTime()) - (xiFlight + lambdaFlight + negFlightPi);
           negDeltaTimeAsXiPr = (cascade.negTOFSignal() - cascade.negTOFEventTime()) - (xiFlight + lambdaFlight + negFlightPr);
           negDeltaTimeAsOmPi = (cascade.negTOFSignal() - cascade.negTOFEventTime()) - (omFlight + lambdaFlight + negFlightPi);
