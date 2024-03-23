@@ -59,10 +59,10 @@ DECLARE_SOA_INDEX_COLUMN(RBC, rbc);
                cent::CentNTPV
 
 // Reduced Collisions
-DECLARE_SOA_TABLE(RCollisions, "AOD", "RCOLLISIONS",
+DECLARE_SOA_TABLE(RCollisions, "AOD", "RCOLLISION",
                   Ccols,
                   soa::Marker<1>)
-DECLARE_SOA_TABLE(StoredRCollisions, "AOD1", "RCOLLISIONS",
+DECLARE_SOA_TABLE(StoredRCollisions, "AOD1", "RCOLLISION",
                   Ccols,
                   soa::Marker<2>)
 
@@ -89,10 +89,10 @@ DECLARE_SOA_COLUMN(Weight, weight, float);
               track::DcaXY,         \
               track::DcaZ
 
-DECLARE_SOA_TABLE(RTracks, "AOD", "RTRACKS",
+DECLARE_SOA_TABLE(RTracks, "AOD", "RTRACK",
                   Tcols,
                   soa::Marker<1>)
-DECLARE_SOA_TABLE(StoredRTracks, "AOD1", "RTRACKS",
+DECLARE_SOA_TABLE(StoredRTracks, "AOD1", "RTRACK",
                   Tcols,
                   soa::Marker<2>)
 
@@ -106,10 +106,10 @@ DECLARE_SOA_TABLE(StoredRTracks, "AOD1", "RTRACKS",
                fwdtrack::FwdDcaX,    \
                fwdtrack::FwdDcaY
 
-DECLARE_SOA_TABLE(RFTracks, "AOD", "RFTRACKS",
+DECLARE_SOA_TABLE(RFTracks, "AOD", "RFTRACK",
                   TFcols,
                   soa::Marker<1>)
-DECLARE_SOA_TABLE(StoredRFTracks, "AOD1", "RFTRACKS",
+DECLARE_SOA_TABLE(StoredRFTracks, "AOD1", "RFTRACK",
                   TFcols,
                   soa::Marker<2>)
 
@@ -130,10 +130,10 @@ DECLARE_SOA_COLUMN(Weight, weight, float);
                 mult::MultMCNParticlesEta05,  \
                 mult::MultMCNParticlesEta10
 
-DECLARE_SOA_TABLE(RMCCollisions, "AOD", "RMCCOLLISIONS",
+DECLARE_SOA_TABLE(RMCCollisions, "AOD", "RMCCOLLISION",
                   MCCcols,
                   soa::Marker<1>)
-DECLARE_SOA_TABLE(StoredRMCCollisions, "AOD1", "RMCCOLLISIONS",
+DECLARE_SOA_TABLE(StoredRMCCollisions, "AOD1", "RMCCOLLISION",
                   MCCcols,
                   soa::Marker<2>)
 
@@ -157,10 +157,10 @@ DECLARE_SOA_INDEX_COLUMN(RMCCollision, rmccollison);
                 hepmcpdfinfo::Pdf1,       \
                 hepmcpdfinfo::Pdf2
 
-DECLARE_SOA_TABLE(RHepMCinfos, "AOD", "RHMCI",
+DECLARE_SOA_TABLE(RHepMCinfos, "AOD", "RHEPMCINFO",
                   HMCcols,
                   soa::Marker<1>);
-DECLARE_SOA_TABLE(StoredRHepMCinfos, "AOD1", "RHMCI",
+DECLARE_SOA_TABLE(StoredRHepMCinfos, "AOD1", "RHEPMCINFO",
                   HMCcols,
                   soa::Marker<2>);
 
@@ -174,10 +174,10 @@ DECLARE_SOA_TABLE(StoredRHepMCinfos, "AOD1", "RHMCI",
                   hepmcheavyion::SigmaInelNN,     \
                   hepmcheavyion::Centrality
 
-DECLARE_SOA_TABLE(RHepMCHI, "AOD", "RHMCHI",
+DECLARE_SOA_TABLE(RHepMCHIs, "AOD", "RHEPMCHI",
                   HMCHIcols,
                   soa::Marker<1>);
-DECLARE_SOA_TABLE(StoredRHepMCHI, "AOD1", "RHMCHI",
+DECLARE_SOA_TABLE(StoredRHepMCHIs, "AOD1", "RHEPMCHI",
                   HMCHIcols,
                   soa::Marker<2>);
 
@@ -200,10 +200,10 @@ DECLARE_SOA_INDEX_COLUMN(RMCCollision, rmccollision);
                  mcparticle::E,                \
                  mcparticle::Weight
 
-DECLARE_SOA_TABLE(RMCParticles, "AOD", "RMCPARTICLES",
+DECLARE_SOA_TABLE(RMCParticles, "AOD", "RMCPARTICLE",
                   RMCPcols,
                   soa::Marker<1>)
-DECLARE_SOA_TABLE(StoredRMCParticles, "AOD1", "RMCPARTICLES",
+DECLARE_SOA_TABLE(StoredRMCParticles, "AOD1", "RMCPARTICLE",
                   RMCPcols,
                   soa::Marker<2>)
 
@@ -213,14 +213,14 @@ namespace rlabels
 DECLARE_SOA_INDEX_COLUMN(RMCCollision, rmccollision);
 DECLARE_SOA_INDEX_COLUMN(RMCParticle, rmcparticle);
 } // namespace rlabels
-DECLARE_SOA_TABLE(RMCTrackLabels, "AOD", "RMCTRKLABELS",
+DECLARE_SOA_TABLE(RMCTrackLabels, "AOD", "RMCTRKLABEL",
                   rlabels::RMCParticleId, soa::Marker<1>)
-DECLARE_SOA_TABLE(StoredRMCTrackLabels, "AOD1", "RMCTRKLABELS",
+DECLARE_SOA_TABLE(StoredRMCTrackLabels, "AOD1", "RMCTRKLABEL",
                   rlabels::RMCParticleId, soa::Marker<2>)
 
-DECLARE_SOA_TABLE(RMCColLabels, "AOD", "RMCCOLLABELS",
+DECLARE_SOA_TABLE(RMCColLabels, "AOD", "RMCCOLLABEL",
                   rlabels::RMCCollisionId, soa::Marker<1>)
-DECLARE_SOA_TABLE(StoredRMCColLabels, "AOD1", "RMCCOLLABELS",
+DECLARE_SOA_TABLE(StoredRMCColLabels, "AOD1", "RMCCOLLABEL",
                   rlabels::RMCCollisionId, soa::Marker<2>)
 } // namespace o2::aod
 namespace o2::soa
