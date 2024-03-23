@@ -728,8 +728,8 @@ struct EventSelectionQaTask {
     for (auto& bc : bcs) {
       if (bc.foundFT0Id() < 0)
         continue;
-      float multT0A = bc.sumAmpA();
-      float multT0C = bc.sumAmpC();
+      float multT0A = bc.ft0().sumAmpA();
+      float multT0C = bc.ft0().sumAmpC();
       histos.fill(HIST("hMultT0Mref"), multT0A + multT0C);
       if (!bc.selection_bit(kIsTriggerTVX))
         continue;
@@ -804,8 +804,8 @@ struct EventSelectionQaTask {
         histos.fill(HIST("hGlobalBcFT0"), globalBC - minGlobalBC);
         histos.fill(HIST("hOrbitFT0"), orbit - minOrbit);
         histos.fill(HIST("hBcFT0"), localBC);
-        float multT0A = bc.sumAmpA();
-        float multT0C = bc.sumAmpC();
+        float multT0A = bc.ft0().sumAmpA();
+        float multT0C = bc.ft0().sumAmpC();
         histos.fill(HIST("hMultT0Aall"), multT0A);
         histos.fill(HIST("hMultT0Call"), multT0C);
         if (localBC == refBC) {
@@ -878,7 +878,7 @@ struct EventSelectionQaTask {
     for (auto& bc : bcs) {
       int64_t globalBC = bc.globalBC();
       // skip non-colliding bcs for data and anchored runs
-      if (run >= 500000 && bcPatternB[globalBC % o2::constants::lhc::LHCMaxBunches] == 0) {
+      if (runNumber >= 500000 && bcPatternB[globalBC % o2::constants::lhc::LHCMaxBunches] == 0) {
         continue;
       }
       if (bc.selection_bit(kIsBBT0A) || bc.selection_bit(kIsBBT0C)) {
