@@ -1000,7 +1000,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       DelEtaBinLims[i] = -2 + i * 0.2;
 
     const int kDelPhiBins = 50;
-    double DelPhiBinLims[kDelEtaBins + 1];
+    double DelPhiBinLims[kDelPhiBins + 1];
     for (int i = 0; i <= kDelPhiBins; i++)
       DelPhiBinLims[i] = -8 + i * 0.32;
 
