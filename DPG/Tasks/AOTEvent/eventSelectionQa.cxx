@@ -278,6 +278,13 @@ struct EventSelectionQaTask {
     histos.add("hMultT0MVsNcontribAcc", "", kTH2F, {axisMultT0M, axisNcontrib}); // before ITS RO Frame border cut
     histos.add("hMultT0MVsNcontribCut", "", kTH2F, {axisMultT0M, axisNcontrib}); // after ITS RO Frame border cut
 
+    histos.add("hMultV0AVsNcontribAcc", "", kTH2F, {axisMultV0A, axisNcontrib}); // before ITS RO Frame border cut
+    histos.add("hMultV0AVsNcontribCut", "", kTH2F, {axisMultV0A, axisNcontrib}); // after ITS RO Frame border cut
+
+    histos.add("hBcForMultV0AVsNcontribAcc", "", kTH1F, {axisBCs});      // bc distribution for V0A-vs-Ncontrib accepted
+    histos.add("hBcForMultV0AVsNcontribOutliers", "", kTH1F, {axisBCs}); // bc distribution for V0A-vs-Ncontrib outliers
+    histos.add("hBcForMultV0AVsNcontribCut", "", kTH1F, {axisBCs});      // bc distribution for V0A-vs-Ncontrib after ITS-ROF border cut
+
     // MC histograms
     histos.add("hGlobalBcColMC", "", kTH1F, {axisGlobalBCs});
     histos.add("hBcColMC", "", kTH1F, {axisBCs});
@@ -726,7 +733,7 @@ struct EventSelectionQaTask {
 
     // bc-based event selection qa
     for (auto& bc : bcs) {
-      if (bc.foundFT0Id() < 0)
+      if (!bc.has_ft0())
         continue;
       float multT0A = bc.ft0().sumAmpA();
       float multT0C = bc.ft0().sumAmpC();
@@ -935,31 +942,46 @@ struct EventSelectionQaTask {
         histos.fill(HIST("hOrbitAcc"), orbit - minOrbit);
       }
 
+      // search for nearest ft0a&ft0c entry
+      int32_t indexClosestTVX = findClosest(globalBC, mapGlobalBcWithTVX);
+      int bcDiff = static_cast<int>(globalBC - vGlobalBCs[indexClosestTVX]);
+
       // count tracks of different types
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
       int nTPCtracks = 0;
       int nTOFtracks = 0;
       int nTRDtracks = 0;
+      int nContributorsAfterEtaTPCCuts = 0;
       for (auto& track : tracksGrouped) {
-        if (!track.isPVContributor()) {
+        int trackBcDiff = bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS;
+        if (!track.isPVContributor())
           continue;
-        }
         nTPCtracks += track.hasTPC();
         nTOFtracks += track.hasTOF();
         nTRDtracks += track.hasTRD() && !track.hasTOF();
-
+        if (fabs(track.eta()) < 0.8 && track.tpcNClsFound() > 80 && track.tpcNClsCrossedRows() > 100)
+          nContributorsAfterEtaTPCCuts++;
+        if (!track.hasTPC())
+          histos.fill(HIST("hITStrackBcDiff"), trackBcDiff);
         if (track.hasTOF()) {
           histos.fill(HIST("hBcTrackTOF"), (globalBC + TMath::FloorNint(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS)) % 3564);
         } else if (track.hasTRD()) {
           histos.fill(HIST("hBcTrackTRD"), (globalBC + TMath::Nint(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS)) % 3564);
         }
+        if (track.hasTOF() || track.hasTRD() || !track.hasITS() || !track.hasTPC() || track.pt() < 1)
+          continue;
+        histos.fill(HIST("hTrackBcDiffVsEta"), track.eta(), trackBcDiff);
+        if (track.eta() < -0.2 || track.eta() > 0.2)
+          continue;
+        histos.fill(HIST("hSecondsTVXvsBcDif"), bc.timestamp() / 1000., trackBcDiff);
       }
 
-      // search for nearest ft0a&ft0c entry
-      int32_t indexClosestTVX = findClosest(globalBC, mapGlobalBcWithTVX);
-      int bcDiff = static_cast<int>(globalBC - vGlobalBCs[indexClosestTVX]);
       int nContributors = col.numContrib();
       float timeRes = col.collisionTimeRes();
+      int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
+      histos.fill(HIST("hNcontribCol"), nContributors);
+      histos.fill(HIST("hNcontribVsBcInTF"), bcInTF, nContributors);
+      histos.fill(HIST("hNcontribAfterCutsVsBcInTF"), bcInTF, nContributorsAfterEtaTPCCuts);
       histos.fill(HIST("hColBcDiffVsNcontrib"), nContributors, bcDiff);
       histos.fill(HIST("hColTimeResVsNcontrib"), nContributors, timeRes);
       if (nTPCtracks == 0) {
@@ -984,41 +1006,6 @@ struct EventSelectionQaTask {
           histos.fill(HIST("hNcontribAccTRD"), nContributors);
         }
       }
-
-      int nContributorsAfterEtaTPCCuts = 0;
-
-      // fill track time histograms
-      for (auto& track : tracksGrouped) {
-        if (!track.isPVContributor()) {
-          continue;
-        }
-
-        if (fabs(track.eta()) < 0.8 && track.tpcNClsFound() > 80 && track.tpcNClsCrossedRows() > 100)
-          nContributorsAfterEtaTPCCuts++;
-
-        if (track.hasTOF())
-          continue;
-        if (track.hasTRD())
-          continue;
-        if (!track.hasITS())
-          continue;
-        if (!track.hasTPC()) {
-          histos.fill(HIST("hITStrackBcDiff"), bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
-          continue;
-        }
-        if (track.pt() < 1)
-          continue;
-        histos.fill(HIST("hTrackBcDiffVsEta"), track.eta(), bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
-        if (track.eta() < -0.2 || track.eta() > 0.2)
-          continue;
-        histos.fill(HIST("hSecondsTVXvsBcDif"), bc.timestamp() / 1000., bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
-      }
-
-      histos.fill(HIST("hNcontribCol"), nContributors);
-
-      int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
-      histos.fill(HIST("hNcontribVsBcInTF"), bcInTF, nContributors);
-      histos.fill(HIST("hNcontribAfterCutsVsBcInTF"), bcInTF, nContributorsAfterEtaTPCCuts);
 
       const auto& foundBC = col.foundBC_as<BCsRun3>();
 
@@ -1065,8 +1052,8 @@ struct EventSelectionQaTask {
       }
 
       // ZDC
-      float multZNA = col.foundZDCId() >= 0 ? col.foundZDC().energyCommonZNA() : -999.f;
-      float multZNC = col.foundZDCId() >= 0 ? col.foundZDC().energyCommonZNC() : -999.f;
+      float multZNA = foundBC.has_zdc() ? foundBC.zdc().energyCommonZNA() : -999.f;
+      float multZNC = foundBC.has_zdc() ? foundBC.zdc().energyCommonZNC() : -999.f;
 
       histos.fill(HIST("hMultT0Acol"), multT0A);
       histos.fill(HIST("hMultT0Ccol"), multT0C);
@@ -1080,6 +1067,19 @@ struct EventSelectionQaTask {
       if (!col.sel8()) {
         continue;
       }
+
+      if (col.selection_bit(kNoTimeFrameBorder)) {
+        histos.fill(HIST("hMultV0AVsNcontribAcc"), multV0A, nContributors);
+        histos.fill(HIST("hBcForMultV0AVsNcontribAcc"), foundBC.globalBC());
+        if (nContributors < 0.02 * multV0A - 200) {
+          histos.fill(HIST("hBcForMultV0AVsNcontribOutliers"), foundBC.globalBC());
+        }
+        if (col.selection_bit(kNoITSROFrameBorder)) {
+          histos.fill(HIST("hMultV0AVsNcontribCut"), multV0A, nContributors);
+          histos.fill(HIST("hBcForMultV0AVsNcontribCut"), foundBC.globalBC());
+        }
+      }
+
       histos.fill(HIST("hMultT0MVsNcontribAcc"), multT0A + multT0C, nContributors);
       if (col.selection_bit(kNoITSROFrameBorder)) {
         histos.fill(HIST("hMultT0MVsNcontribCut"), multT0A + multT0C, nContributors);
