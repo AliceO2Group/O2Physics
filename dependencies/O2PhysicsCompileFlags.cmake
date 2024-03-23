@@ -11,7 +11,7 @@
 
 include_guard()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-error -Werror=unused")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-error -Werror=unused -Werror=parentheses")
 
 IF (ENABLE_TIMETRACE)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace")
