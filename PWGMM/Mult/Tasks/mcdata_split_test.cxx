@@ -25,6 +25,8 @@
 
 #include "Framework/O2DatabasePDGPlugin.h"
 
+#include <TRandom.h>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -113,14 +115,14 @@ struct mcdata {
       histos.fill(HIST("FakeDataZvtxEvents"), collision.posZ());
 
       for (auto& track : tracks) {
-        ++trackCounter;
+        ++faketrackCounter;
 
         histos.fill(HIST("FakeDataetaHistogram"), track.eta());
         histos.fill(HIST("FakeDataPhiTracks"), track.phi());
         histos.fill(HIST("FakeDataEtaZvtxTracks"), track.eta(), collision.posZ());
       }
 
-      histos.fill(HIST("FakeDataMultiplicity"), trackCounter);
+      histos.fill(HIST("FakeDataMultiplicity"), faketrackCounter);
     }
   }
 
