@@ -13,6 +13,10 @@
 /// \author Salman Malik
 /// \author Balwan Singh
 
+#include <iostream>
+#include <array>
+#include <TH1F.h>
+// O2 includes
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -21,9 +25,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include <iostream>
-#include <TH1F.h>
-#include <array>
 
 using std::array;
 using namespace o2;
