@@ -490,7 +490,7 @@ struct lambdakzeropid {
           if (deltaTimePositiveLambdaPr > -1e+5)
             nSigmaPositiveLambdaPr = (deltaTimePositiveLambdaPr - hMeanPosLaPr->Interpolate(v0.pt())) / hSigmaPosLaPr->Interpolate(v0.pt());
           if (deltaTimeNegativeLambdaPi > -1e+5)
-            nSigmaNegativeLambdaPi = (deltaTimeNegativeLambdaPi - hMeanNegLaPr->Interpolate(v0.pt())) / hSigmaNegLaPi->Interpolate(v0.pt());
+            nSigmaNegativeLambdaPi = (deltaTimeNegativeLambdaPi - hMeanNegLaPi->Interpolate(v0.pt())) / hSigmaNegLaPi->Interpolate(v0.pt());
           if (deltaTimeNegativeLambdaPr > -1e+5)
             nSigmaNegativeLambdaPr = (deltaTimeNegativeLambdaPr - hMeanNegLaPr->Interpolate(v0.pt())) / hSigmaNegLaPr->Interpolate(v0.pt());
           if (deltaTimePositiveK0ShortPi > -1e+5)
@@ -500,7 +500,7 @@ struct lambdakzeropid {
 
           v0tofnsigmas(
             nSigmaPositiveLambdaPi, nSigmaPositiveLambdaPr,
-            nSigmaNegativeLambdaPi, deltaTimeNegativeLambdaPr,
+            nSigmaNegativeLambdaPi, nSigmaNegativeLambdaPr,
             nSigmaPositiveK0ShortPi, nSigmaNegativeK0ShortPi);
         }
 
