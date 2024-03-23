@@ -60,6 +60,20 @@ struct EventSelectionQaTask {
   SliceCache cache;
   Partition<aod::Tracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
 
+  int32_t findClosest(int64_t globalBC, std::map<int64_t, int32_t>& bcs)
+  {
+    auto it = bcs.lower_bound(globalBC);
+    int64_t bc1 = it->first;
+    int32_t index1 = it->second;
+    if (it != bcs.begin())
+      --it;
+    int64_t bc2 = it->first;
+    int32_t index2 = it->second;
+    int64_t dbc1 = std::abs(bc1 - globalBC);
+    int64_t dbc2 = std::abs(bc2 - globalBC);
+    return (dbc1 <= dbc2) ? index1 : index2;
+  }
+
   void init(InitContext&)
   {
     minGlobalBC = uint64_t(minOrbit) * 3564;
@@ -714,14 +728,8 @@ struct EventSelectionQaTask {
     for (auto& bc : bcs) {
       if (bc.foundFT0Id() < 0)
         continue;
-      float multT0A = 0;
-      for (auto amplitude : bc.ft0().amplitudeA()) {
-        multT0A += amplitude;
-      }
-      float multT0C = 0;
-      for (auto amplitude : bc.ft0().amplitudeC()) {
-        multT0C += amplitude;
-      }
+      float multT0A = bc.sumAmpA();
+      float multT0C = bc.sumAmpC();
       histos.fill(HIST("hMultT0Mref"), multT0A + multT0C);
       if (!bc.selection_bit(kIsTriggerTVX))
         continue;
@@ -796,14 +804,8 @@ struct EventSelectionQaTask {
         histos.fill(HIST("hGlobalBcFT0"), globalBC - minGlobalBC);
         histos.fill(HIST("hOrbitFT0"), orbit - minOrbit);
         histos.fill(HIST("hBcFT0"), localBC);
-        float multT0A = 0;
-        for (auto amplitude : bc.ft0().amplitudeA()) {
-          multT0A += amplitude;
-        }
-        float multT0C = 0;
-        for (auto amplitude : bc.ft0().amplitudeC()) {
-          multT0C += amplitude;
-        }
+        float multT0A = bc.sumAmpA();
+        float multT0C = bc.sumAmpC();
         histos.fill(HIST("hMultT0Aall"), multT0A);
         histos.fill(HIST("hMultT0Call"), multT0C);
         if (localBC == refBC) {
@@ -869,6 +871,24 @@ struct EventSelectionQaTask {
       mapAmbTrIds[ambTrack.trackId()] = ambTrack.globalIndex();
     }
 
+    // create maps from globalBC to bc index for TVX or FT0-OR fired bcs
+    // to be used for closest TVX (FT0-OR) searches
+    std::map<int64_t, int32_t> mapGlobalBcWithTVX;
+    std::map<int64_t, int32_t> mapGlobalBcWithTOR;
+    for (auto& bc : bcs) {
+      int64_t globalBC = bc.globalBC();
+      // skip non-colliding bcs for data and anchored runs
+      if (run >= 500000 && bcPatternB[globalBC % o2::constants::lhc::LHCMaxBunches] == 0) {
+        continue;
+      }
+      if (bc.selection_bit(kIsBBT0A) || bc.selection_bit(kIsBBT0C)) {
+        mapGlobalBcWithTOR[globalBC] = bc.globalIndex();
+      }
+      if (bc.selection_bit(kIsTriggerTVX)) {
+        mapGlobalBcWithTVX[globalBC] = bc.globalIndex();
+      }
+    }
+
     // Fill track bc distributions (all tracks including ambiguous)
     for (const auto& track : tracks) {
       auto mapAmbTrIdsIt = mapAmbTrIds.find(track.globalIndex());
@@ -877,35 +897,8 @@ struct EventSelectionQaTask {
       auto bc = bcs.iteratorAt(indexBc);
       int64_t globalBC = bc.globalBC() + floor(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
 
-      int indexNearestTVX = indexBc;
-      if (vIsTVX[indexBc]) {
-        indexNearestTVX = indexBc;
-      } else {
-        bool foundNext = 0;
-        int indexNext = indexBc;
-        while (!foundNext && indexNext < nBCs - 1) {
-          if (vIsTVX[++indexNext]) {
-            foundNext = 1;
-          }
-        }
-        bool foundPrev = 0;
-        int indexPrev = indexBc;
-        while (!foundPrev && indexPrev > 0) {
-          if (vIsTVX[--indexPrev]) {
-            foundPrev = 1;
-          }
-        }
-        if (foundNext && foundPrev) {
-          int64_t diffNext = vGlobalBCs[indexNext] - globalBC;
-          int64_t diffPrev = globalBC - vGlobalBCs[indexPrev];
-          indexNearestTVX = diffNext <= diffPrev ? indexNext : indexPrev;
-        } else if (foundNext) {
-          indexNearestTVX = indexNext;
-        } else if (foundPrev) {
-          indexNearestTVX = indexPrev;
-        }
-      }
-      int bcDiff = static_cast<int>(globalBC - vGlobalBCs[indexNearestTVX]);
+      int32_t indexClosestTVX = findClosest(globalBC, mapGlobalBcWithTVX);
+      int bcDiff = static_cast<int>(globalBC - vGlobalBCs[indexClosestTVX]);
       if (track.hasTOF() || track.hasTRD() || !track.hasITS() || !track.hasTPC() || track.pt() < 1)
         continue;
       histos.fill(HIST("hTrackBcDiffVsEtaAll"), track.eta(), bcDiff);
@@ -963,37 +956,8 @@ struct EventSelectionQaTask {
       }
 
       // search for nearest ft0a&ft0c entry
-      int indexBc = bc.globalIndex();
-      int indexNearestTVX = indexBc;
-      if (vIsTVX[indexBc]) {
-        indexNearestTVX = indexBc;
-      } else {
-        bool foundNext = 0;
-        int indexNext = indexBc;
-        while (!foundNext && indexNext < nBCs - 1) {
-          if (vIsTVX[++indexNext]) {
-            foundNext = 1;
-          }
-        }
-        bool foundPrev = 0;
-        int indexPrev = indexBc;
-        while (!foundPrev && indexPrev > 0) {
-          if (vIsTVX[--indexPrev]) {
-            foundPrev = 1;
-          }
-        }
-        if (foundNext && foundPrev) {
-          int64_t diffNext = vGlobalBCs[indexNext] - globalBC;
-          int64_t diffPrev = globalBC - vGlobalBCs[indexPrev];
-          indexNearestTVX = diffNext <= diffPrev ? indexNext : indexPrev;
-        } else if (foundNext) {
-          indexNearestTVX = indexNext;
-        } else if (foundPrev) {
-          indexNearestTVX = indexPrev;
-        }
-      }
-      const auto& nearestTVX = bcs.iteratorAt(indexNearestTVX);
-      int bcDiff = static_cast<int>(globalBC - nearestTVX.globalBC());
+      int32_t indexClosestTVX = findClosest(globalBC, mapGlobalBcWithTVX);
+      int bcDiff = static_cast<int>(globalBC - vGlobalBCs[indexClosestTVX]);
       int nContributors = col.numContrib();
       float timeRes = col.collisionTimeRes();
       histos.fill(HIST("hColBcDiffVsNcontrib"), nContributors, bcDiff);
