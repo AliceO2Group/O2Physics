@@ -129,6 +129,12 @@ struct NSubjettinessTask {
   std::vector<float> nSub_CA_results;
   std::vector<float> nSub_CASD_results;
 
+  std::vector<fastjet::PseudoJet> dummyVector;
+  fastjet::JetDefinition dummyJetDef{fastjet::antikt_algorithm, 0.1, fastjet::E_scheme, fastjet::Best};
+  fastjet::GhostedAreaSpec ghostareaspec{0.0, 1, 0.05};
+  fastjet::AreaDefinition dummyAreaDef{fastjet::active_area, ghostareaspec};
+  fastjet::ClusterSequenceArea clusterSeq{dummyVector, dummyJetDef, dummyAreaDef};
+
   void init(InitContext const&)
   {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/c)"};
@@ -210,7 +216,7 @@ struct NSubjettinessTask {
       }
     }
     std::vector<fastjet::PseudoJet> jetReclustered;
-    fastjet::ClusterSequenceArea clusterSeq(jetReclusterer.findJets(jetConstituents, jetReclustered));
+    clusterSeq = jetReclusterer.findJets(jetConstituents, jetReclustered);
     jetReclustered = sorted_by_pt(jetReclustered);
     return jetReclustered[0];
   }
