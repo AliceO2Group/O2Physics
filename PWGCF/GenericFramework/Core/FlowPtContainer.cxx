@@ -366,6 +366,7 @@ TH1* FlowPtContainer::getCumulantHist(int ind, int m)
     return 0;
   if (ind + 1 < fCumulantList->GetEntries())
     return reinterpret_cast<TH1*>(fCumulantList->At((ind + 1) * mpar + m - 1));
+  return 0;
 }
 void FlowPtContainer::CreateCumulantList()
 {
