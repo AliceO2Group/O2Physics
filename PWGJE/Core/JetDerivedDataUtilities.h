@@ -60,10 +60,10 @@ int initialiseEventSelection(std::string eventSelection)
 }
 
 template <typename T>
-uint8_t setEventSelectionBit(T const& collision)
+uint16_t setEventSelectionBit(T const& collision)
 {
 
-  uint8_t bit = 0;
+  uint16_t bit = 0;
 
   if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
     SETBIT(bit, JCollisionSel::WithoutTimeFrameBorderCut);
@@ -196,9 +196,9 @@ int initialiseFullTriggerSelection(std::string triggerSelection)
 }
 
 template <typename T>
-uint8_t setFullTriggerSelectionBit(T const& collision)
+uint32_t setFullTriggerSelectionBit(T const& collision)
 {
-  uint8_t bit = 0;
+  uint32_t bit = 0;
   if (collision.hasJetFullHighPt()) {
     SETBIT(bit, JTrigSelFull::fullHigh);
   }

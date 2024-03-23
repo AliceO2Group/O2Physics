@@ -66,10 +66,10 @@ DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
-DECLARE_SOA_COLUMN(EventSel, eventSel, uint8_t);
+DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
-DECLARE_SOA_COLUMN(ChargedTriggerSel, chargedTriggerSel, uint16_t);
-DECLARE_SOA_COLUMN(FullTriggerSel, fullTriggerSel, uint16_t);
+DECLARE_SOA_COLUMN(ChargedTriggerSel, chargedTriggerSel, uint8_t);
+DECLARE_SOA_COLUMN(FullTriggerSel, fullTriggerSel, uint32_t);
 } // namespace jcollision
 
 DECLARE_SOA_TABLE(JCollisions, "AOD", "JCOLLISION",
