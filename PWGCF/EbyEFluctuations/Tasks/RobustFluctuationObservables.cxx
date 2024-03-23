@@ -56,43 +56,6 @@ using namespace o2::framework::expressions;
   mHist[hName] = v.size();                            \
   v.push_back(histosEventNew.add<TH2>(TString::Format("%s/%s", hName, cutName.c_str()).Data(), title, kTH2F, {axisX, axisY}));
 
-namespace robustfluctuationsQA
-{
-// naming of the 2D correlation plots
-string strCutNames[] =
-  {
-    "Bef",
-    "Aft",
-    "TFcut",
-    "ITSROFcut",
-    "ITSROF_TF_cuts",
-    "2globalPVcontrib",
-    "2globalPVcontrib_ITS7hits",
-    "2globalPVcontrib_TRDorTOF",
-    "diffFoundBC_vs_BC_0",
-    "hasFT0_CorrectedValid",
-    "PV_FT0_diff_cut",
-    "PV_FT0_diff_cut_TIGHT",
-    "ALL_CUTS",
-    "ALL_CUTS_Tighter",
-    "NoTFborder_FoundBCwithDiff0",
-    "NoTFborder_NoFoundBCwithDiff0",
-    "NoTFborder_DiffBnBcAtLeast10",
-    "NoTFborder_DiffBnBcAtLeast20",
-    "NoTFborder_DiffBnBcAtLeast40",
-    "antiITSROFcut",
-    "CutEventsByMultPVvsV0A",
-    "antiCutEventsByMultPVvsV0A",
-    "ALL_CUTS_CutEventsByMultPVvsV0A",
-    "Handmade_ITSROFcut",
-    "antiHandmade_ITSROFcut",
-    "ALL_CUTS_Handmade_ITSROFcut",
-    "Handmade_ITSROF_and_TF_cuts",
-
-    "isITSonlyVertex",
-    "antiIsITSonlyVertex",
-};
-} // end of namespace robustfluctuationsQA
 
 struct RobustFluctuationObservables {
   // for vertex vs time:
@@ -189,6 +152,40 @@ struct RobustFluctuationObservables {
 
   void init(InitContext const&)
   {
+    // naming of the 2D correlation plots
+    string strCutNames[] =
+    {
+        "Bef",
+        "Aft",
+        "TFcut",
+        "ITSROFcut",
+        "ITSROF_TF_cuts",
+        "2globalPVcontrib",
+        "2globalPVcontrib_ITS7hits",
+        "2globalPVcontrib_TRDorTOF",
+        "diffFoundBC_vs_BC_0",
+        "hasFT0_CorrectedValid",
+        "PV_FT0_diff_cut",
+        "PV_FT0_diff_cut_TIGHT",
+        "ALL_CUTS",
+        "ALL_CUTS_Tighter",
+        "NoTFborder_FoundBCwithDiff0",
+        "NoTFborder_NoFoundBCwithDiff0",
+        "NoTFborder_DiffBnBcAtLeast10",
+        "NoTFborder_DiffBnBcAtLeast20",
+        "NoTFborder_DiffBnBcAtLeast40",
+        "antiITSROFcut",
+        "CutEventsByMultPVvsV0A",
+        "antiCutEventsByMultPVvsV0A",
+        "ALL_CUTS_CutEventsByMultPVvsV0A",
+        "Handmade_ITSROFcut",
+        "antiHandmade_ITSROFcut",
+        "ALL_CUTS_Handmade_ITSROFcut",
+        "Handmade_ITSROF_and_TF_cuts",
+
+        "isITSonlyVertex",
+        "antiIsITSonlyVertex",
+    };
     funcCutEventsByMultPVvsV0A = new TF1("funcCutEventsByMultPVvsV0A", "[0]*x+[1]", 0, 200000);
     funcCutEventsByMultPVvsV0A->SetParameters(3200. / 160000, -240);
 
@@ -200,7 +197,7 @@ struct RobustFluctuationObservables {
     AxisSpec axisMultAllTr{200, -0.5, 5 * nMaxTracks - 0.5, "multiplicity"};
 
     AxisSpec axisCollIndex{nBinsCollIndex, -0.5, nMaxCollIndex - 0.5, "collision index"};
-    AxisSpec axisMultFw{nBinsMultFwd, 0., (float)nMaxMultFwd, "mult Fwd"}; //{1000, 0, 200000, "mult"};
+    AxisSpec axisMultFw{nBinsMultFwd, 0., static_cast<float>(nMaxMultFwd), "mult Fwd"}; //{1000, 0, 200000, "mult"};
 
     AxisSpec axisCent{100, 0.f, 100.f, "centrality"};
     AxisSpec axisCentBins{{0, 5., 10., 20., 30., 40., 50., 60., 70., 80.}, "centrality percentile"};
@@ -386,10 +383,10 @@ struct RobustFluctuationObservables {
     histosEvent.add("vtxCutsAft", "Vtx distribution; Vtx z [cm]; Counts", kTH1F, {axisZvert});
 
     // #### try via loop
-    int nCutsQA = sizeof(robustfluctuationsQA::strCutNames) / sizeof(*robustfluctuationsQA::strCutNames);
+    int nCutsQA = sizeof(strCutNames) / sizeof(*strCutNames);
     for (int i = 0; i < nCutsQA; i++) {
       // add this cut name and id to map
-      string cutName = robustfluctuationsQA::strCutNames[i].c_str();
+      string cutName = strCutNames[i].c_str();
       mMyCuts[cutName] = i;
 
       // now add histograms
@@ -704,13 +701,13 @@ struct RobustFluctuationObservables {
     if (collBC > nITSROF_BC_cutWidth / 2 && collBC < (nBCsPerOrbit - nITSROF_BC_cutWidth / 2)) {
       for (int iROF = 0; iROF < nITSROF; iROF++) {
         int ROF_BC_center = nITSROF_BC_offset + iROF * nBCsPerOrbit / nITSROF;
-        if (fabs((int)collBC - ROF_BC_center) <= nITSROF_BC_cutWidth / 2) {
+        if (fabs(static_cast<int>(collBC) - ROF_BC_center) <= nITSROF_BC_cutWidth / 2) {
           flagBCisNotInHandmadeBoundariesITSROF = false;
           if (TFid < 2)
             cout << "QA: collBC = " << collBC << ", nITSROF_BC_offset = " << nITSROF_BC_offset
                  << ", ROF_BC_center = " << ROF_BC_center << ", nITSROF_BC_cutWidth = " << nITSROF_BC_cutWidth
-                 << ", fabs(collBC - ROF_BC_center) = " << fabs((int)collBC - ROF_BC_center)
-                 << ", (int)collBC - ROF_BC_center = " << (int)collBC - ROF_BC_center
+                 << ", fabs(collBC - ROF_BC_center) = " << fabs(static_cast<int>(collBC) - ROF_BC_center)
+                 << ", (int)collBC - ROF_BC_center = " << static_cast<int>(collBC) - ROF_BC_center
                  << endl;
           break;
         }
@@ -803,6 +800,7 @@ struct RobustFluctuationObservables {
     int64_t myDF_ID = -1;
     uint64_t DF_ID_raw = -1;
     if (mapDF.size() < 10)
+    {
       for (auto const& origin : origins) {
         uint64_t DF_ID = origin.dataframeID();
         DF_ID_raw = DF_ID;
@@ -812,17 +810,16 @@ struct RobustFluctuationObservables {
           if (mapDF.find(DF_ID) == mapDF.end()) {
             // not found
             mapDF.insert({DF_ID, mapDF.size()});
-          } else {
-            // found
           }
           myDF_ID = mapDF[DF_ID];
         }
         // cout << "DF globalIndex = " << origin.globalIndex() << ", ID = " << origin.dataframeID() << ", myDF_ID = " << myDF_ID << ", mapDF.size() = " << mapDF.size() << endl;
       }
+    }
 
     if (myDF_ID >= 0 && myDF_ID < nHistQAplotsDF) {
       int diffOrbits = (int32_t)orbit - (int32_t)orbitAtCollIndexZero;
-      TString strDF = Form("DF_%d", (int)DF_ID_raw);
+      TString strDF = Form("DF_%d", static_cast<int>(DF_ID_raw));
       fV_h1D_Orbit_vs_CollIndex[myDF_ID]->Fill(collision.index(), diffOrbits);
       fV_h1D_Orbit_vs_CollIndex[myDF_ID]->SetTitle(strDF);
     }
@@ -841,7 +838,7 @@ struct RobustFluctuationObservables {
     // int nTracksAfterEtaCuts = 0;
     // int nTracksAfterEtaCutsPV = 0;
     int nTracksAfterEtaCutsITSonly = 0;
-    int nTracksAfterEtaCutsITSonlyPV = 0;
+    // int nTracksAfterEtaCutsITSonlyPV = 0;
 
     int nTracksAfterEtaTPCCuts = 0;
     int nTracksWithITS = 0, nTracksWithITSandTPC = 0;
@@ -884,8 +881,8 @@ struct RobustFluctuationObservables {
       if (track.hasITS() && !track.hasTPC()) // Flag to check if track has a TPC match
       {
         nTracksAfterEtaCutsITSonly++;
-        if (track.isPVContributor())
-          nTracksAfterEtaCutsITSonlyPV++;
+        // if (track.isPVContributor())
+          // nTracksAfterEtaCutsITSonlyPV++;
       }
 
       // nTracksAfterEtaCuts++;
@@ -1280,8 +1277,9 @@ struct RobustFluctuationObservables {
       }
       if (isITSonlyVertex) {
         histosFT0.fill(HIST("hVertex_T0_PV_after_ITSonlyVertex"), ft0_posZ, collision.posZ());
-      } else
+      } else {
         histosFT0.fill(HIST("hVertex_T0_PV_after_ITSonlyVertex_ANTI"), ft0_posZ, collision.posZ());
+      }
     }
 
     histosEventCounters.fill(HIST("hNtracksAll_vs_variousCuts"), 2, tracks.size());            // ALL tracks
@@ -1463,8 +1461,10 @@ struct RobustFluctuationObservables {
           histosFT0.fill(HIST("hT0vertexDiff_after_ITSROF_and_TFcut"), diff_PV_ft0_tracks);
         }
       }
-    } else // look into what is within the ITSROF cut borders
+    } else {
+      // look into what is within the ITSROF cut borders
       fillHistForThisCut("antiITSROFcut", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr);
+    }
 
     // global PV contributors
     if (nTracksGlobalPVAccepted >= 2)
