@@ -56,7 +56,6 @@ using namespace o2::framework::expressions;
   mHist[hName] = v.size();                            \
   v.push_back(histosEventNew.add<TH2>(TString::Format("%s/%s", hName, cutName.c_str()).Data(), title, kTH2F, {axisX, axisY}));
 
-
 struct RobustFluctuationObservables {
   // for vertex vs time:
   bool flagShowInfo = false;
@@ -154,7 +153,7 @@ struct RobustFluctuationObservables {
   {
     // naming of the 2D correlation plots
     string strCutNames[] =
-    {
+      {
         "Bef",
         "Aft",
         "TFcut",
@@ -185,7 +184,7 @@ struct RobustFluctuationObservables {
 
         "isITSonlyVertex",
         "antiIsITSonlyVertex",
-    };
+      };
     funcCutEventsByMultPVvsV0A = new TF1("funcCutEventsByMultPVvsV0A", "[0]*x+[1]", 0, 200000);
     funcCutEventsByMultPVvsV0A->SetParameters(3200. / 160000, -240);
 
@@ -799,8 +798,7 @@ struct RobustFluctuationObservables {
     // ######## DF QA
     int64_t myDF_ID = -1;
     uint64_t DF_ID_raw = -1;
-    if (mapDF.size() < 10)
-    {
+    if (mapDF.size() < 10) {
       for (auto const& origin : origins) {
         uint64_t DF_ID = origin.dataframeID();
         DF_ID_raw = DF_ID;
@@ -882,7 +880,7 @@ struct RobustFluctuationObservables {
       {
         nTracksAfterEtaCutsITSonly++;
         // if (track.isPVContributor())
-          // nTracksAfterEtaCutsITSonlyPV++;
+        // nTracksAfterEtaCutsITSonlyPV++;
       }
 
       // nTracksAfterEtaCuts++;
