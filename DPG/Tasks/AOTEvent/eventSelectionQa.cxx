@@ -1070,13 +1070,13 @@ struct EventSelectionQaTask {
 
       if (col.selection_bit(kNoTimeFrameBorder)) {
         histos.fill(HIST("hMultV0AVsNcontribAcc"), multV0A, nContributors);
-        histos.fill(HIST("hBcForMultV0AVsNcontribAcc"), foundBC.globalBC());
+        histos.fill(HIST("hBcForMultV0AVsNcontribAcc"), foundBC.globalBC() % 3564);
         if (nContributors < 0.02 * multV0A - 200) {
-          histos.fill(HIST("hBcForMultV0AVsNcontribOutliers"), foundBC.globalBC());
+          histos.fill(HIST("hBcForMultV0AVsNcontribOutliers"), foundBC.globalBC() % 3564);
         }
         if (col.selection_bit(kNoITSROFrameBorder)) {
           histos.fill(HIST("hMultV0AVsNcontribCut"), multV0A, nContributors);
-          histos.fill(HIST("hBcForMultV0AVsNcontribCut"), foundBC.globalBC());
+          histos.fill(HIST("hBcForMultV0AVsNcontribCut"), foundBC.globalBC() % 3564);
         }
       }
 
