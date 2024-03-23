@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <TH2F.h>
+#include <TProfile2D.h>
 #include <CCDB/BasicCCDBManager.h>
 #include "ReconstructionDataFormats/PID.h"
 #include "Common/Core/TrackSelection.h"
@@ -56,6 +57,9 @@ enum BeforeAfter {
   kBefore = 0, ///< filling before track selection
   kAfter       ///< filling after track selection
 };
+
+/* the PID selector object to help with the configuration and the id of the selected particles */
+o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
 
 // initialized during self configuration
 std::vector<std::string> poinames; ///< the species of interest names
@@ -419,9 +423,11 @@ struct PidDataCollectingEngine {
   /* PID histograms */
   /* only after track selection */
   std::vector<std::shared_ptr<TH2>> fhIdTPCdEdxSignalVsP{nsp, nullptr};
+  std::vector<std::shared_ptr<TProfile2D>> fpIdTPCdEdxSignalVsPSigmas{nsp, nullptr};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTPCdEdxSignalDiffVsP{nsp, {nmainsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTPCnSigmasVsP{nsp, {nallmainsp, nullptr}};
   std::vector<std::shared_ptr<TH2>> fhIdTOFSignalVsP{nsp, nullptr};
+  std::vector<std::shared_ptr<TProfile2D>> fpIdTOFSignalVsPSigmas{nsp, nullptr};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTOFSignalDiffVsP{nsp, {nmainsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTOFnSigmasVsP{nsp, {nallmainsp, nullptr}};
   std::vector<std::shared_ptr<TH2>> fhIdPvsTOFSqMass{nsp, nullptr};
@@ -482,19 +488,30 @@ struct PidDataCollectingEngine {
                                                  HNAMESTRING("tpcSignalVsPSelected_%s", tnames[isp].c_str()),
                                                  HTITLESTRING("TPC dE/dx for selected %s", tnames[isp].c_str()),
                                                  kTH2F, {pidPAxis, dEdxAxis});
+        fpIdTPCdEdxSignalVsPSigmas[isp] = ADDHISTOGRAM(TProfile2D, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
+                                                       HNAMESTRING("tpcSignalSigmasVsPSelected_%s", tnames[isp].c_str()),
+                                                       HTITLESTRING("TPC dE/dx and n#sigma for selected %s", tnames[isp].c_str()),
+                                                       kTProfile2D, {pidPAxis, dEdxAxis});
         fhIdTOFSignalVsP[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
                                              HNAMESTRING("tofSignalVsPSelected_%s", tnames[isp].c_str()),
                                              HTITLESTRING("TOF signal for selected %s", tnames[isp].c_str()),
                                              kTH2F, {pidPAxis, {200, 0.0, 1.1, "#beta"}});
+        fpIdTOFSignalVsPSigmas[isp] = ADDHISTOGRAM(TProfile2D, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
+                                                   HNAMESTRING("tofSignalSigmasVsPSelected_%s", tnames[isp].c_str()),
+                                                   HTITLESTRING("TOF signal and n#sigma for selected %s", tnames[isp].c_str()),
+                                                   kTProfile2D, {pidPAxis, {200, 0.0, 1.1, "#beta"}});
         for (uint imainsp = 0; imainsp < nallmainsp; ++imainsp) {
-          fhIdTPCnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
-                                                         HNAMESTRING("tpcNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), allmainspnames[imainsp].c_str()),
-                                                         HTITLESTRING("TPC n#sigma for selected %s to the %s line", tnames[isp].c_str(), allmainsptitles[imainsp].c_str()),
-                                                         kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", allmainsptitles[isp].c_str())}});
-          fhIdTOFnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
-                                                         HNAMESTRING("tofNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), allmainspnames[imainsp].c_str()),
-                                                         HTITLESTRING("TOF n#sigma for selected %s to the %s line", tnames[isp].c_str(), allmainsptitles[imainsp].c_str()),
-                                                         kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", allmainsptitles[isp].c_str())}});
+          /* only the same charge makes any sense */
+          if (isp % 2 == imainsp % 2) {
+            fhIdTPCnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
+                                                           HNAMESTRING("tpcNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), allmainspnames[imainsp].c_str()),
+                                                           HTITLESTRING("TPC n#sigma for selected %s to the %s line", tnames[isp].c_str(), allmainsptitles[imainsp].c_str()),
+                                                           kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", allmainsptitles[isp].c_str())}});
+            fhIdTOFnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
+                                                           HNAMESTRING("tofNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), allmainspnames[imainsp].c_str()),
+                                                           HTITLESTRING("TOF n#sigma for selected %s to the %s line", tnames[isp].c_str(), allmainsptitles[imainsp].c_str()),
+                                                           kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", allmainsptitles[isp].c_str())}});
+          }
         }
       }
     }
@@ -518,6 +535,11 @@ struct PidDataCollectingEngine {
     }
     fhIdTPCnSigmasVsP[track.trackacceptedid()][ix]->Fill(track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
     fhIdTOFnSigmasVsP[track.trackacceptedid()][ix]->Fill(track.p(), o2::aod::pidutils::tofNSigma<id>(track));
+    if (efficiencyandqatask::pidselector.isGlobalSpecies(track.trackacceptedid() / 2, id)) {
+      /* only if the species of the selected track matches the target of the number of sigmas */
+      fpIdTPCdEdxSignalVsPSigmas[track.trackacceptedid()]->Fill(track.p(), track.tpcSignal(), o2::aod::pidutils::tpcNSigma<id>(track));
+      fpIdTOFSignalVsPSigmas[track.trackacceptedid()]->Fill(track.p(), track.beta(), o2::aod::pidutils::tofNSigma<id>(track));
+    }
   }
 
   template <o2::track::PID::ID id, typename TrackObject>
@@ -638,11 +660,10 @@ struct DptDptEfficiencyAndQc {
       getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup, false);
 
       /* configuring the involved species */
-      o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
       std::vector<std::string> cfgnames = {"elpidsel", "mupidsel", "pipidsel", "kapidsel", "prpidsel"};
       std::vector<uint8_t> spids = {0, 1, 2, 3, 4};
       for (uint i = 0; i < cfgnames.size(); ++i) {
-        auto includeIt = [&pidselector, &initContext](int spid, auto name) {
+        auto includeIt = [&initContext](int spid, auto name) {
           bool mUseIt = false;
           bool mExcludeIt = false;
           if (getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mUseIt", name.c_str()).Data(), mUseIt, false) &&

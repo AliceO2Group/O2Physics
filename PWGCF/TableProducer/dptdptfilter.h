@@ -21,6 +21,7 @@
 #include <sstream>
 #include <map>
 
+#include "ReconstructionDataFormats/PID.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
@@ -834,6 +835,7 @@ struct PIDSpeciesSelection {
   const char* getHadTitle() { return hadtitle; }
   const char* getHadFName() { return hadfname; }
   bool isSpeciesBeingSelected(uint8_t sp) { return std::find(species.begin(), species.end(), sp) != species.end(); }
+  bool isGlobalSpecies(uint8_t isp, o2::track::PID::ID glsp) { return species[isp] == glsp; }
   void storePIDAdjustments(TList* lst)
   {
     auto storedetectorwithcharge = [&](auto& detectorstore, auto detectorname, auto charge) {
