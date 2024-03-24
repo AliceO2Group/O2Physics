@@ -28,7 +28,10 @@ static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(2
 
 enum JCollisionSel {
   sel8 = 0,
-  sel7 = 1
+  sel8WithoutTimeFrameBorderCut = 1,
+  sel7 = 2,
+  sel7WithoutTimeFrameBorderCut = 3,
+  WithoutTimeFrameBorderCut = 4
 };
 
 template <typename T>
@@ -44,27 +47,40 @@ int initialiseEventSelection(std::string eventSelection)
 {
   if (eventSelection == "sel8") {
     return JCollisionSel::sel8;
+  } else if (eventSelection == "sel8WithoutTimeFrameBorderCut") {
+    return JCollisionSel::sel8WithoutTimeFrameBorderCut;
   } else if (eventSelection == "sel7") {
     return JCollisionSel::sel7;
+  } else if (eventSelection == "sel7WithoutTimeFrameBorderCut") {
+    return JCollisionSel::sel7WithoutTimeFrameBorderCut;
+  } else if (eventSelection == "WithoutTimeFrameBorderCut") {
+    return JCollisionSel::WithoutTimeFrameBorderCut;
   }
   return -1;
 }
 
 template <typename T>
-uint8_t setEventSelectionBit(T const& collision)
+uint16_t setEventSelectionBit(T const& collision)
 {
 
-  uint8_t bit = 0;
+  uint16_t bit = 0;
 
   if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-    return bit;
+    SETBIT(bit, JCollisionSel::WithoutTimeFrameBorderCut);
   }
-
   if (collision.sel8()) {
-    SETBIT(bit, JCollisionSel::sel8);
+    if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      SETBIT(bit, JCollisionSel::sel8);
+    } else {
+      SETBIT(bit, JCollisionSel::sel8WithoutTimeFrameBorderCut);
+    }
   }
   if (collision.sel7()) {
-    SETBIT(bit, JCollisionSel::sel7);
+    if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      SETBIT(bit, JCollisionSel::sel7);
+    } else {
+      SETBIT(bit, JCollisionSel::sel7WithoutTimeFrameBorderCut);
+    }
   }
   return bit;
 }
@@ -180,9 +196,9 @@ int initialiseFullTriggerSelection(std::string triggerSelection)
 }
 
 template <typename T>
-uint8_t setFullTriggerSelectionBit(T const& collision)
+uint32_t setFullTriggerSelectionBit(T const& collision)
 {
-  uint8_t bit = 0;
+  uint32_t bit = 0;
   if (collision.hasJetFullHighPt()) {
     SETBIT(bit, JTrigSelFull::fullHigh);
   }

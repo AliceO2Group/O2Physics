@@ -83,13 +83,13 @@ struct PseudorapidityDensityMFT {
     "maxZDiff", 1.0f,
     "max allowed Z difference for reconstruced collisions (cm)"};
 
+  Configurable<bool> usePhiCut{"usePhiCut", true, "use azimuthal angle cut"};
   Configurable<float> cfgPhiCut{"cfgPhiCut", 0.1f,
                                 "Cut on azimuthal angle of MFT tracks"};
 
   HistogramRegistry registry{
     "registry",
     {
-
       {"TracksEtaZvtx",
        "; #eta; #it{z}_{vtx} (cm); tracks",
        {HistType::kTH2F, {EtaAxis, ZAxis}}}, //
@@ -108,8 +108,7 @@ struct PseudorapidityDensityMFT {
       {"EventSelection",
        ";status;events",
        {HistType::kTH1F, {{7, 0.5, 7.5}}}}, //
-
-    } //
+    }                                       //
   };
 
   void init(InitContext&)
@@ -295,9 +294,6 @@ struct PseudorapidityDensityMFT {
       registry.add({"Events/Centrality/NtrkZvtxGen_t",
                     "; N_{trk}; Z_{vtx} (cm); centrality",
                     {HistType::kTH3F, {MultAxis, ZAxis, CentAxis}}});
-      registry.add({"Tracks/Centrality/EtaZvtxRec",
-                    "; #eta; Z_{vtx} (cm); centrality",
-                    {HistType::kTH3F, {EtaAxis, ZAxis, CentAxis}}});
       registry.add({"Tracks/Centrality/EtaZvtxGen_t",
                     "; #eta; Z_{vtx} (cm); centrality",
                     {HistType::kTH3F, {EtaAxis, ZAxis, CentAxis}}});
@@ -401,12 +397,14 @@ struct PseudorapidityDensityMFT {
           float phi = track.phi();
           o2::math_utils::bringTo02Pi(phi);
 
-          if ((phi < cfgPhiCut) ||
-              ((phi > M_PI - cfgPhiCut) && (phi < M_PI + cfgPhiCut)) ||
-              (phi > 2. * M_PI - cfgPhiCut) ||
-              ((phi > ((M_PI / 2. - 0.1) * M_PI) - cfgPhiCut) &&
-               (phi < ((M_PI / 2. - 0.1) * M_PI) + cfgPhiCut)))
-            continue;
+          if (usePhiCut) {
+            if ((phi < cfgPhiCut) ||
+                ((phi > M_PI - cfgPhiCut) && (phi < M_PI + cfgPhiCut)) ||
+                (phi > 2. * M_PI - cfgPhiCut) ||
+                ((phi > ((M_PI / 2. - 0.1) * M_PI) - cfgPhiCut) &&
+                 (phi < ((M_PI / 2. - 0.1) * M_PI) + cfgPhiCut)))
+              continue;
+          }
 
           registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
           if (midtracks.size() > 0) // INEL>0
@@ -522,12 +520,14 @@ struct PseudorapidityDensityMFT {
         float phi = track.phi();
         o2::math_utils::bringTo02Pi(phi);
 
-        if ((phi < cfgPhiCut) ||
-            ((phi > M_PI - cfgPhiCut) && (phi < M_PI + cfgPhiCut)) ||
-            (phi > 2. * M_PI - cfgPhiCut) ||
-            ((phi > ((M_PI / 2. - 0.1) * M_PI) - cfgPhiCut) &&
-             (phi < ((M_PI / 2. - 0.1) * M_PI) + cfgPhiCut)))
-          continue;
+        if (usePhiCut) {
+          if ((phi < cfgPhiCut) ||
+              ((phi > M_PI - cfgPhiCut) && (phi < M_PI + cfgPhiCut)) ||
+              (phi > 2. * M_PI - cfgPhiCut) ||
+              ((phi > ((M_PI / 2. - 0.1) * M_PI) - cfgPhiCut) &&
+               (phi < ((M_PI / 2. - 0.1) * M_PI) + cfgPhiCut)))
+            continue;
+        }
 
         registry.fill(HIST("Tracks/Centrality/EtaZvtx"), track.eta(), z, c);
         registry.fill(HIST("Tracks/Centrality/PhiEta"), phi, track.eta(), c);
@@ -679,72 +679,90 @@ struct PseudorapidityDensityMFT {
   PROCESS_SWITCH(PseudorapidityDensityMFT, processGen,
                  "Process generator-level info", false);
 
-  void
-    processGenCent(aod::McCollisions::iterator const& mcCollision,
-                   o2::soa::SmallGroups<
-                     soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs,
-                               aod::McCollisionLabels>> const& collisions,
-                   Particles const& particles, MFTTracksLabeled const& tracks)
+  using ExColsGenCent =
+    soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions,
+                               aod::CentFT0Cs, aod::EvSels>>;
+
+  void processGenCent(aod::McCollisions::iterator const& mcCollision,
+                      ExColsGenCent const& collisions,
+                      Particles const& particles,
+                      MFTTracksLabeled const& tracks)
   {
 
     LOGP(debug, "MC col {} has {} reco cols", mcCollision.globalIndex(),
          collisions.size());
 
+    float c_gen = -1;
+    bool atLeastOne = false;
     for (auto& collision : collisions) {
-      auto c = collision.centFT0C();
-      registry.fill(HIST("Events/Centrality/EventEfficiency"), 1., c);
-
-      //       auto perCollisionMCSample = particles.sliceBy(perMcCol,
-      //       mcCollision.globalIndex());
-      auto perCollisionMCSample = mcSample->sliceByCached(
-        aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-
-      auto nCharged = 0;
-      for (auto& particle : perCollisionMCSample) {
-        auto p = pdg->GetParticle(particle.pdgCode());
-        auto charge = 0;
-        if (p != nullptr) {
-          charge = static_cast<int>(p->Charge());
-        }
-        if (std::abs(charge) < 3.) {
-          continue;
-        }
-        nCharged++;
+      float c_rec = -1;
+      if constexpr (ExColsGenCent::template contains<aod::CentFT0Cs>()) {
+        c_rec = collision.centFT0C();
       }
-      registry.fill(HIST("Events/Centrality/NtrkZvtxGen_t"), nCharged,
-                    mcCollision.posZ(), c);
-      //
-      bool atLeastOne = false;
       if (!useEvSel || (useEvSel && collision.sel8())) {
-        registry.fill(HIST("Events/Centrality/EventEfficiency"), 2., c);
-        registry.fill(HIST("Events/Centrality/CentPercentileMCGen"), c);
+        if constexpr (ExColsGenCent::template contains<aod::CentFT0Cs>()) {
+          if (!atLeastOne) {
+            c_gen = c_rec;
+          }
+        }
         atLeastOne = true;
+
+        registry.fill(HIST("Events/Centrality/EventEfficiency"), 2., c_gen);
+        registry.fill(HIST("Events/Centrality/CentPercentileMCGen"), c_gen);
 
         auto perCollisionSample = sample->sliceByCached(
           o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
         registry.fill(HIST("Events/Centrality/NtrkZvtxGen"),
-                      perCollisionSample.size(), collision.posZ(), c);
+                      perCollisionSample.size(), collision.posZ(), c_gen);
+      }
+    }
+
+    registry.fill(HIST("Events/Centrality/EventEfficiency"), 1., c_gen);
+
+    auto perCollisionMCSample = mcSample->sliceByCached(
+      aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+    auto nCharged = 0;
+
+    for (auto& particle : perCollisionMCSample) {
+      auto p = pdg->GetParticle(particle.pdgCode());
+      auto charge = 0;
+      if (p != nullptr) {
+        charge = static_cast<int>(p->Charge());
+      }
+      if (std::abs(charge) < 3.) {
+        continue;
+      }
+      nCharged++;
+    }
+
+    if constexpr (ExColsGenCent::template contains<aod::CentFT0Cs>()) {
+      registry.fill(HIST("Events/Centrality/NtrkZvtxGen_t"), nCharged,
+                    mcCollision.posZ(), c_gen);
+    }
+
+    for (auto& particle : particles) {
+      auto p = pdg->GetParticle(particle.pdgCode());
+      auto charge = 0;
+      if (p != nullptr) {
+        charge = static_cast<int>(p->Charge());
+      }
+      if (std::abs(charge) < 3.) {
+        continue;
       }
 
-      for (auto& particle : particles) {
-        auto p = pdg->GetParticle(particle.pdgCode());
-        auto charge = 0;
-        if (p != nullptr) {
-          charge = static_cast<int>(p->Charge());
-        }
-        if (std::abs(charge) < 3.) {
-          continue;
-        }
+      if constexpr (ExColsGenCent::template contains<aod::CentFT0Cs>()) {
         registry.fill(HIST("Tracks/Centrality/EtaZvtxGen_t"), particle.eta(),
-                      mcCollision.posZ(), c);
+                      mcCollision.posZ(), c_gen);
+      }
 
-        if (atLeastOne) {
+      if (atLeastOne) {
+        if constexpr (ExColsGenCent::template contains<aod::CentFT0Cs>()) {
           registry.fill(HIST("Tracks/Centrality/EtaZvtxGen"), particle.eta(),
-                        mcCollision.posZ(), c);
+                        mcCollision.posZ(), c_gen);
           float phi = particle.phi();
           o2::math_utils::bringTo02Pi(phi);
           registry.fill(HIST("Tracks/Centrality/PhiEtaGen"), phi,
-                        particle.eta(), c);
+                        particle.eta(), c_gen);
         }
       }
     }

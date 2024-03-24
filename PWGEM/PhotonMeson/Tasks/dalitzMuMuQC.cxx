@@ -37,13 +37,13 @@ using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
 using std::array;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsNmumu>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsNmumu>;
 using MyCollision = MyCollisions::iterator;
 
-using MyDalitzMuMus = soa::Join<aod::DalitzMuMus, aod::DalitzMuMuEMReducedEventIds>;
+using MyDalitzMuMus = soa::Join<aod::DalitzMuMus, aod::DalitzMuMuEMEventIds>;
 using MyDalitzMuMu = MyDalitzMuMus::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMReducedEventIds, aod::EMPrimaryMuonsPrefilterBit>;
+using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMEventIds, aod::EMPrimaryMuonsPrefilterBit>;
 using MyTrack = MyTracks::iterator;
 
 struct DalitzMuMuQC {
@@ -144,8 +144,8 @@ struct DalitzMuMuQC {
   Partition<MyDalitzMuMus> lsmm_pairs = o2::aod::dalitzmumu::sign == -1;
 
   SliceCache cache;
-  Preslice<MyDalitzMuMus> perCollision = aod::dalitzmumu::emreducedeventId;
-  Preslice<MyTracks> perCollision_track = aod::emprimarymuon::emreducedeventId;
+  Preslice<MyDalitzMuMus> perCollision = aod::dalitzmumu::emeventId;
+  Preslice<MyTracks> perCollision_track = aod::emprimarymuon::emeventId;
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.
 
   std::vector<uint64_t> used_trackIds;
@@ -173,9 +173,9 @@ struct DalitzMuMuQC {
       reinterpret_cast<TH1F*>(list_ev_before->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
       reinterpret_cast<TH1F*>(list_ev_after->FindObject("hCollisionCounter"))->Fill("accepted", 1.f);
 
-      auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzmumu::emreducedeventId, collision.globalIndex(), cache);
-      auto lspp_pairs_per_coll = lspp_pairs->sliceByCached(o2::aod::dalitzmumu::emreducedeventId, collision.globalIndex(), cache);
-      auto lsmm_pairs_per_coll = lsmm_pairs->sliceByCached(o2::aod::dalitzmumu::emreducedeventId, collision.globalIndex(), cache);
+      auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzmumu::emeventId, collision.globalIndex(), cache);
+      auto lspp_pairs_per_coll = lspp_pairs->sliceByCached(o2::aod::dalitzmumu::emeventId, collision.globalIndex(), cache);
+      auto lsmm_pairs_per_coll = lsmm_pairs->sliceByCached(o2::aod::dalitzmumu::emeventId, collision.globalIndex(), cache);
 
       for (const auto& cut : fDalitzMuMuCuts) {
         THashList* list_dalitzmumu_cut = static_cast<THashList*>(list_dalitzmumu->FindObject(cut.GetName()));
@@ -263,7 +263,7 @@ struct DalitzMuMuQC {
 
   Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  Filter collisionFilter_subsys = (o2::aod::emreducedevent::nmumuuls >= 1) || (o2::aod::emreducedevent::nmumulspp >= 1) || (o2::aod::emreducedevent::nmumulsmm >= 1);
+  Filter collisionFilter_subsys = (o2::aod::emevent::nmumuuls >= 1) || (o2::aod::emevent::nmumulspp >= 1) || (o2::aod::emevent::nmumulsmm >= 1);
   using MyFilteredCollisions = soa::Filtered<MyCollisions>; // this goes to mixed event.
 
   // mu+, mu- enter to event mixing, only if any pair exists. If you want to do mixed event, please store LS for mumu

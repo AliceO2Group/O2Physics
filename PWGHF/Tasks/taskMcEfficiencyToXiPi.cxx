@@ -120,7 +120,7 @@ struct HfTaskMcEfficiencyToXiPi {
     for (const auto& candidate : candidates) {
 
       // only take into account matched decays
-      if (candidate.flagMcMatchRec() != decayFlag) {
+      if (std::abs(candidate.flagMcMatchRec()) != decayFlag) {
         continue;
       }
 
@@ -206,7 +206,7 @@ struct HfTaskMcEfficiencyToXiPi {
       if (std::abs(mcParticle.pdgCode()) != pdgCode) {
         continue;
       }
-      /// check if the charm baryon devays to the desired channel
+      /// check if the charm baryon decays to the desired channel
       if (std::abs(mcParticle.flagMcMatchGen()) != decayFlagGen) {
         continue;
       }
@@ -234,7 +234,7 @@ struct HfTaskMcEfficiencyToXiPi {
         std::swap(cascade, pion);
         std::swap(cascId, pionId);
       } else if (std::abs(cascade.pdgCode()) == kXiMinus && std::abs(pion.pdgCode()) == kPiPlus) {
-        LOGF(info, "Correct assignment of charm baryon daughters IDs - gen level");
+        LOGP(debug, "Correct assignment of charm baryon daughters IDs - gen level");
       } else {
         LOGP(fatal, "Invalid charm baryon daughters PDG codes");
       }
@@ -261,7 +261,7 @@ struct HfTaskMcEfficiencyToXiPi {
         std::swap(lambda, pionFromCascade);
         std::swap(lambdaId, pionFromCascadeId);
       } else if (std::abs(lambda.pdgCode()) == kLambda0 && std::abs(pionFromCascade.pdgCode()) == kPiPlus) {
-        LOGF(info, "Correct assignment of cascade daughters IDs - gen level");
+        LOGP(debug, "Correct assignment of cascade daughters IDs - gen level");
       } else {
         LOGP(fatal, "Invalid cascade daughters PDG codes");
       }
@@ -280,7 +280,7 @@ struct HfTaskMcEfficiencyToXiPi {
         std::swap(proton, pionFromLambda);
         std::swap(protonId, pionFromLambdaId);
       } else if (std::abs(proton.pdgCode()) == kProton && std::abs(pionFromLambda.pdgCode()) == kPiPlus) {
-        LOGF(info, "Correct assignment of lambda daughters IDs - gen level");
+        LOGP(debug, "Correct assignment of lambda daughters IDs - gen level");
       } else {
         LOGP(fatal, "Invalid lambda daughters PDG codes");
       }
@@ -302,9 +302,9 @@ struct HfTaskMcEfficiencyToXiPi {
         if (inAcceptance) {
           hCandidates->Fill(kHFStepAcceptanceTrackable, mcParticle.pt(), mass, true, mcParticle.originGen());
         } else {
-          LOGF(info, "Candidate {} not in acceptance but tracked.", mcParticle.globalIndex());
-          LOGF(info, "MC cascade: pt={} eta={}", cascade.pt(), cascade.eta());
-          LOGF(info, "MC pion<--charm baryon: pt={} eta={}", pion.pt(), pion.eta());
+          LOGP(debug, "Candidate {} not in acceptance but tracked.", mcParticle.globalIndex());
+          LOGP(debug, "MC cascade: pt={} eta={}", cascade.pt(), cascade.eta());
+          LOGP(debug, "MC pion<--charm baryon: pt={} eta={}", pion.pt(), pion.eta());
         }
 
         // final state daughters info
@@ -358,13 +358,13 @@ struct HfTaskMcEfficiencyToXiPi {
       if (selectedIts[pionId]) {
         hCandidates->Fill(kHFStepItsTrackableCuts, mcParticle.pt(), mass, true, mcParticle.originGen());
         if (!inAcceptance) {
-          LOGP(info, "Candidate {} has daughters not in acceptance but pion <-- charm tracked and selected (its only)", mcParticle.globalIndex());
+          LOGP(debug, "Candidate {} has daughters not in acceptance but pion <-- charm tracked and selected (its only)", mcParticle.globalIndex());
         }
       }
       if (selectedItsTpc[pionId]) {
         hCandidates->Fill(kHFStepItsTpcTrackableCuts, mcParticle.pt(), mass, true, mcParticle.originGen());
         if (!inAcceptance) {
-          LOGP(info, "Candidate {} has daughters not in acceptance but pion <-- charm tracked and selected (its & tpc)", mcParticle.globalIndex());
+          LOGP(debug, "Candidate {} has daughters not in acceptance but pion <-- charm tracked and selected (its & tpc)", mcParticle.globalIndex());
         }
       }
 
@@ -378,9 +378,9 @@ struct HfTaskMcEfficiencyToXiPi {
                aod::McCollisionLabels const& colls)
   {
     if (matchXic && matchOmegac) {
-      LOGF(fatal, "Can't match Omegac0 and Xic0 at the same time, please choose one");
+      LOGP(fatal, "Can't match Omegac0 and Xic0 at the same time, please choose one");
     } else if (!matchXic && !matchOmegac) {
-      LOGF(fatal, "Please match either Omegac0 or Xic0");
+      LOGP(fatal, "Please match either Omegac0 or Xic0");
     } else if (matchXic) {
       candidateFullLoop(candidates, genParticles, tracks, colls, Pdg::kXiC0);
     } else if (matchOmegac) {

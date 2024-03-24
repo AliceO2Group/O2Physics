@@ -750,6 +750,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kQuadDCAsigZ] = "#sigma";
   fgVariableNames[kQuadDCAsigXYZ] = "DCA_{xyz}^{quad}";
   fgVariableUnits[kQuadDCAsigXYZ] = "#sigma";
+  fgVariableNames[kSignQuadDCAsigXY] = "signDCA_{xy}^{quad}";
+  fgVariableUnits[kSignQuadDCAsigXY] = "#sigma";
   fgVariableNames[kTrackDCAsigXY] = "DCA_{xy}";
   fgVariableUnits[kTrackDCAsigXY] = "#sigma";
   fgVariableNames[kTrackDCAsigZ] = "DCA_{z}";
@@ -776,4 +778,18 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kIsSingleGapA] = "";
   fgVariableNames[kIsSingleGapC] = "is single gap event side C";
   fgVariableUnits[kIsSingleGapC] = "";
+  fgVariableNames[kQuadMass] = "mass quadruplet";
+  fgVariableUnits[kQuadMass] = "GeV/c2";
+  fgVariableNames[kQuadPt] = "p_{T}";
+  fgVariableUnits[kQuadPt] = "GeV/c";
+  fgVariableNames[kQuadEta] = "#eta";
+  fgVariableUnits[kQuadEta] = "";
+  fgVariableNames[kQuadPhi] = "#varphi";
+  fgVariableUnits[kQuadPhi] = "rad.";
+  fgVariableNames[kCosthetaDileptonDitrack] = "cos#it{#theta}_{dilepton-ditrack}";
+  fgVariableUnits[kCosthetaDileptonDitrack] = "";
+  fgVariableNames[kDitrackMass] = "mass di-track";
+  fgVariableUnits[kDitrackMass] = "GeV/c2";
+  fgVariableNames[kDitrackPt] = "p_{T}";
+  fgVariableUnits[kDitrackPt] = "GeV/c";
 }

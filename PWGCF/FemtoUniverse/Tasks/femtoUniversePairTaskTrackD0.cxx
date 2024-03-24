@@ -14,7 +14,7 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Katarzyna Gwiździel, WUT Warsaw, katarzyna.gwizdziel@cern.ch
 
 #include <vector>
@@ -103,17 +103,17 @@ struct femtoUniversePairTaskTrackD0 {
   struct : o2::framework::ConfigurableGroup {
     Configurable<int> ConfPDGCodeD0{"ConfPDGCodeD0", 421, "D0 meson - PDG code"};
     Configurable<int> ConfPDGCodeD0bar{"ConfPDGCodeD0bar", -421, "D0bar meson - PDG code"};
-    Configurable<double> ConfMinInvMassD0D0bar{"ConfMinInvMassD0D0bar", 1.65, "D0/D0bar sel. - min. invMass"};
-    Configurable<double> ConfMaxInvMassD0D0bar{"ConfMaxInvMassD0D0bar", 2.05, "D0/D0bar sel. - max. invMass"};
+    Configurable<float> ConfMinInvMassD0D0bar{"ConfMinInvMassD0D0bar", 1.65, "D0/D0bar sel. - min. invMass"};
+    Configurable<float> ConfMaxInvMassD0D0bar{"ConfMaxInvMassD0D0bar", 2.05, "D0/D0bar sel. - max. invMass"};
   } ConfDmesons;
 
   struct : o2::framework::ConfigurableGroup {
-    Configurable<double> ConfSignalRegionMin{"ConfSignalRegionMin", 1.810, "Min. inv. mass for D0/D0bar in the signal region"};
-    Configurable<double> ConfSignalRegionMax{"ConfSignalRegionMax", 1.922, "Max. inv. mass for D0/D0bar in the signal region"};
-    Configurable<double> ConfMinInvMassLeftSB{"ConfMinInvMassLeftSB", 1.642, "Min. inv. mass for D0/D0bar in the left sideband region"};
-    Configurable<double> ConfMaxInvMassLeftSB{"ConfMaxInvMassLeftSB", 1.754, "Max. inv. mass for D0/D0bar in the left sideband region"};
-    Configurable<double> ConfMinInvMassRightSB{"ConfMinInvMassRightSB", 1.978, "Min. inv. mass for D0/D0bar in the right sideband region"};
-    Configurable<double> ConfMaxInvMassRightSB{"ConfMaxInvMassRightSB", 2.090, "Max. inv. mass for D0/D0bar in the right sideband region"};
+    Configurable<float> ConfSignalRegionMin{"ConfSignalRegionMin", 1.810, "Min. inv. mass for D0/D0bar in the signal region"};
+    Configurable<float> ConfSignalRegionMax{"ConfSignalRegionMax", 1.922, "Max. inv. mass for D0/D0bar in the signal region"};
+    Configurable<float> ConfMinInvMassLeftSB{"ConfMinInvMassLeftSB", 1.642, "Min. inv. mass for D0/D0bar in the left sideband region"};
+    Configurable<float> ConfMaxInvMassLeftSB{"ConfMaxInvMassLeftSB", 1.754, "Max. inv. mass for D0/D0bar in the left sideband region"};
+    Configurable<float> ConfMinInvMassRightSB{"ConfMinInvMassRightSB", 1.978, "Min. inv. mass for D0/D0bar in the right sideband region"};
+    Configurable<float> ConfMaxInvMassRightSB{"ConfMaxInvMassRightSB", 2.090, "Max. inv. mass for D0/D0bar in the right sideband region"};
   } ConfD0D0barSideBand;
 
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
@@ -166,10 +166,9 @@ struct femtoUniversePairTaskTrackD0 {
 
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<float> ConfCPRdeltaPhiMax{"ConfCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
-  Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaPhiCut{"ConfCPRdeltaPhiCut", 0.0, "Delta Phi cut for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaCut{"ConfCPRdeltaEtaCut", 0.0, "Delta Eta cut for Close Pair Rejection"};
+  Configurable<float> ConfCPRChosenRadii{"ConfCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
 
   FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::same, femtoUniverseFemtoContainer::Observable::kstar> sameEventFemtoCont;
   FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::mixed, femtoUniverseFemtoContainer::Observable::kstar> mixedEventFemtoCont;
@@ -187,8 +186,10 @@ struct femtoUniversePairTaskTrackD0 {
   HistogramRegistry registry{"registry",
                              {{"hInvMassD0", ";#it{M}(K^{-}#pi^{+}) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {ConfInvMassBins}}},
                               {"hInvMassD0bar", ";#it{M}(#pi^{-}K^{+}) (GeV/#it{c}^{2});counts", {HistType::kTH1F, {ConfInvMassBins}}},
-                              {"hPtD0", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {ConfPtBins}}},
-                              {"hPtD0bar", ";#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {ConfPtBins}}},
+                              {"hPtDmesonCand", "2-prong candidates;#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {ConfPtBins}}},
+                              {"hPtD0", "D^{0} cand.;#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {ConfPtBins}}},
+                              {"hPtD0bar", "#bar{D^{0}};#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {ConfPtBins}}},
+                              {"hPtD0D0bar", "#bar{D^{0}};#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {ConfPtBins}}},
                               {"hPhiDmesonCand", ";#varphi (rad);counts", {HistType::kTH1F, {{80, 0., 2. * o2::constants::math::PI}}}},
                               {"hPhiD0", ";#varphi (rad);counts", {HistType::kTH1F, {{80, 0., 2. * o2::constants::math::PI}}}},
                               {"hPhiD0bar", ";#varphi (rad);counts", {HistType::kTH1F, {{80, 0., 2. * o2::constants::math::PI}}}},
@@ -340,7 +341,7 @@ struct femtoUniversePairTaskTrackD0 {
 
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRChosenRadii.value, ConfCPRPlotPerRadii.value);
     }
 
     vPIDTrack = ConfTrack.ConfPIDTrack.value;
@@ -351,7 +352,6 @@ struct femtoUniversePairTaskTrackD0 {
     registry.add("hMassVsPt", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {ConfInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassVsPtFinerBinning", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {ConfInvMassFinerBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hInvMassVsPtOnlyD0D0bar", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {ConfInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hPtDmesonCand", "2-prong candidates;#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDeltaPhiSigSig", "SxS correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{50, -0.5 * o2::constants::math::PI, 1.5 * o2::constants::math::PI}}});
     registry.add("hDeltaPhiD0BgD0barSig", "B(D0)x S(D0bar) correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{50, -0.5 * o2::constants::math::PI, 1.5 * o2::constants::math::PI}}});
     registry.add("hDeltaPhiD0SigD0barBg", "S(D0)x B(D0bar) correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{50, -0.5 * o2::constants::math::PI, 1.5 * o2::constants::math::PI}}});
@@ -393,6 +393,9 @@ struct femtoUniversePairTaskTrackD0 {
 
     // loop over D0/D0bar mesons (ONLY)
     for (auto const& d0d0bar : groupPartsOnlyD0D0bar) {
+
+      registry.fill(HIST("hPtD0D0bar"), d0d0bar.pt());
+
       if (d0d0bar.mLambda() > 0.0f && d0d0bar.mAntiLambda() < 0.0f) {
         registry.fill(HIST("hInvMassVsPtOnlyD0D0bar"), d0d0bar.mLambda(), d0d0bar.pt());
         if (d0d0bar.mLambda() > ConfDmesons.ConfMinInvMassD0D0bar && d0d0bar.mLambda() < ConfDmesons.ConfMaxInvMassD0D0bar) {
@@ -434,6 +437,7 @@ struct femtoUniversePairTaskTrackD0 {
       if (cand1.mLambda() > 0.0f && cand1.mAntiLambda() < 0.0f) {
         continue;
       }
+
       for (auto const& cand2 : groupPartsOnlyD0D0bar) {
         // Check if the second candidate is D0bar meson
         if (cand2.mLambda() < 0.0f && cand2.mAntiLambda() > 0.0f) {
@@ -447,26 +451,26 @@ struct femtoUniversePairTaskTrackD0 {
         registry.fill(HIST("hDeltaEtaDeltaPhi"), deltaEta, deltaPhi);
 
         // ----------------------------------- Creating D0-D0bar pairs correlations ------------------------------------------------
-        if (cand1.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMin && cand1.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMax) {
+        if (cand1.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMin.value && cand1.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMax.value) {
           // S(D0) x S(D0bar) correlation
-          if (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMin && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMax) {
+          if (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMin.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMax.value) {
             registry.fill(HIST("hDeltaPhiSigSig"), deltaPhi);
           }
           // S(D0) x B(D0bar) correlation
-          if ((cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB) ||
-              (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB)) {
+          if ((cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB.value) ||
+              (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB.value)) {
             registry.fill(HIST("hDeltaPhiD0SigD0barBg"), deltaPhi);
           }
         }
-        if ((cand1.mLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB && cand1.mLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB) ||
-            (cand1.mLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB && cand1.mLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB)) {
+        if ((cand1.mLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB.value && cand1.mLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB.value) ||
+            (cand1.mLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB.value && cand1.mLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB.value)) {
           // B(D0) x S (D0bar) correlation
-          if (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMin && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMax) {
+          if (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMin.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMax.value) {
             registry.fill(HIST("hDeltaPhiD0BgD0barSig"), deltaPhi);
           }
           // B(D0) x B(D0bar) correlation
-          if ((cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB) ||
-              (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB)) {
+          if ((cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB.value) ||
+              (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB.value)) {
             registry.fill(HIST("hDeltaPhiBgBg"), deltaPhi);
           }
         }
@@ -513,7 +517,7 @@ struct femtoUniversePairTaskTrackD0 {
       }
       // // Close Pair Rejection
       if (ConfIsCPR.value) {
-        if (pairCloseRejection.isClosePair(track, d0candidate, parts, magFieldTesla)) {
+        if (pairCloseRejection.isClosePair(track, d0candidate, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
           continue;
         }
       }
@@ -580,7 +584,7 @@ struct femtoUniversePairTaskTrackD0 {
         }
       }
       if (ConfIsCPR.value) {
-        if (pairCloseRejection.isClosePair(track, d0candidate, parts, magFieldTesla)) {
+        if (pairCloseRejection.isClosePair(track, d0candidate, parts, magFieldTesla, femtoUniverseContainer::EventType::mixed)) {
           continue;
         }
       }

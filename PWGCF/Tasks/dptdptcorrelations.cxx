@@ -669,6 +669,10 @@ struct DptDptCorrelationsTask {
   /* the input file structure from CCDB */
   TList* ccdblst = nullptr;
   bool loadfromccdb = false;
+  std::string cfgCCDBUrl{"http://ccdb-test.cern.ch:8080"};
+  std::string cfgCCDBPathName{""};
+  std::string cfgCCDBDate{"20220307"};
+  std::string cfgCCDBPeriod{"LHC22o"};
 
   /* pair conversion suppression defaults */
   static constexpr float cfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
@@ -681,12 +685,6 @@ struct DptDptCorrelationsTask {
   Configurable<bool> cfgProcessPairs{"processpairs", false, "Process pairs: false = no, just singles, true = yes, process pairs"};
   Configurable<bool> cfgProcessME{"processmixedevents", false, "Process mixed events: false = no, just same event, true = yes, also process mixed events"};
   Configurable<bool> cfgPtOrder{"ptorder", false, "enforce pT_1 < pT_2. Defalut: false"};
-  struct : ConfigurableGroup {
-    Configurable<std::string> cfgCCDBUrl{"input_ccdburl", "http://ccdb-test.cern.ch:8080", "The CCDB url for the input file"};
-    Configurable<std::string> cfgCCDBPathName{"input_ccdbpath", "", "The CCDB path for the input file. Default \"\", i.e. don't load from CCDB"};
-    Configurable<std::string> cfgCCDBDate{"input_ccdbdate", "20220307", "The CCDB date for the input file"};
-  } cfginputfile;
-
   OutputObj<TList> fOutput{"DptDptCorrelationsData", OutputObjHandlingPolicy::AnalysisObject, OutputObjSourceType::OutputObjSource};
 
   void init(InitContext& initContext)
@@ -727,7 +725,14 @@ struct DptDptCorrelationsTask {
     processpairs = cfgProcessPairs.value;
     processmixedevents = cfgProcessME.value;
     ptorder = cfgPtOrder.value;
-    loadfromccdb = cfginputfile.cfgCCDBPathName->length() > 0;
+
+    /* self configure the CCDB access to the input file */
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdburl", cfgCCDBUrl, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbpath", cfgCCDBPathName, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbdate", cfgCCDBDate, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbperiod", cfgCCDBPeriod, false);
+    loadfromccdb = cfgCCDBPathName.length() > 0;
+
     /* update the potential binning change */
     etabinwidth = (etaup - etalow) / static_cast<float>(etabins);
     phibinwidth = (phiup - philow) / static_cast<float>(phibins);
@@ -766,8 +771,8 @@ struct DptDptCorrelationsTask {
     {
       /* self configure the desired species */
       o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
-      std::vector<std::string> cfgnames = {"pipidsel", "kapidsel", "prpidsel"};
-      std::vector<uint8_t> spids = {2, 3, 4};
+      std::vector<std::string> cfgnames = {"elpidsel", "mupidsel", "pipidsel", "kapidsel", "prpidsel"};
+      std::vector<uint8_t> spids = {0, 1, 2, 3, 4};
       for (uint i = 0; i < cfgnames.size(); ++i) {
         auto includeIt = [&pidselector, &initContext](int spid, auto name) {
           bool mUseIt = false;
@@ -899,7 +904,7 @@ struct DptDptCorrelationsTask {
     }
 
     /* initialize access to the CCDB */
-    ccdb->setURL(cfginputfile.cfgCCDBUrl);
+    ccdb->setURL(cfgCCDBUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
   }
@@ -924,23 +929,6 @@ struct DptDptCorrelationsTask {
     return ixDCE;
   }
 
-  TList* getCCDBInput(const char* ccdbpath, const char* ccdbdate)
-  {
-    std::tm cfgtm = {};
-    std::stringstream ss(ccdbdate);
-    ss >> std::get_time(&cfgtm, "%Y%m%d");
-    cfgtm.tm_hour = 12;
-    int64_t timestamp = std::mktime(&cfgtm) * 1000;
-
-    TList* lst = ccdb->getForTimeStamp<TList>(ccdbpath, timestamp);
-    if (lst != nullptr) {
-      LOGF(info, "Correctly loaded CCDB input object");
-    } else {
-      LOGF(error, "CCDB input object could not be loaded");
-    }
-    return lst;
-  }
-
   int getMagneticField(uint64_t timestamp)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
@@ -963,14 +951,35 @@ struct DptDptCorrelationsTask {
 
     if (ccdblst == nullptr) {
       if (loadfromccdb) {
-        ccdblst = getCCDBInput(cfginputfile.cfgCCDBPathName->c_str(), cfginputfile.cfgCCDBDate->c_str());
+        ccdblst = getCCDBInput(ccdb, cfgCCDBPathName.c_str(), cfgCCDBDate.c_str());
       }
     }
 
     /* locate the data collecting engine for the collision centrality/multiplicity */
     int ixDCE = getDCEindex(collision);
     if (!(ixDCE < 0)) {
-      if (ccdblst != nullptr && !(dataCE[ixDCE]->isCCDBstored())) {
+      auto isCCDBstored = [&]() {
+        if (cfgSmallDCE.value) {
+          return dataCE_small[ixDCE]->isCCDBstored();
+        } else {
+          return dataCE[ixDCE]->isCCDBstored();
+        }
+      };
+      auto storePtAverages = [&](auto& ptavgs) {
+        if (cfgSmallDCE.value) {
+          dataCE_small[ixDCE]->storePtAverages(ptavgs);
+        } else {
+          dataCE[ixDCE]->storePtAverages(ptavgs);
+        }
+      };
+      auto storeTrackCorrections = [&](auto& corrs) {
+        if (cfgSmallDCE.value) {
+          dataCE_small[ixDCE]->storeTrackCorrections(corrs);
+        } else {
+          dataCE[ixDCE]->storeTrackCorrections(corrs);
+        }
+      };
+      if (ccdblst != nullptr && !(isCCDBstored())) {
         if constexpr (gen) {
           std::vector<TH2*> ptavgs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
@@ -981,11 +990,7 @@ struct DptDptCorrelationsTask {
                               tnames[isp].c_str())
                 .Data()));
           }
-          if (cfgSmallDCE.value) {
-            dataCE_small[ixDCE]->storePtAverages(ptavgs);
-          } else {
-            dataCE[ixDCE]->storePtAverages(ptavgs);
-          }
+          storePtAverages(ptavgs);
         } else {
           std::vector<TH3*> corrs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
@@ -996,12 +1001,7 @@ struct DptDptCorrelationsTask {
                               tnames[isp].c_str())
                 .Data()));
           }
-          if (cfgSmallDCE.value) {
-            dataCE_small[ixDCE]->storeTrackCorrections(corrs);
-          } else {
-            dataCE[ixDCE]->storeTrackCorrections(corrs);
-          }
-
+          storeTrackCorrections(corrs);
           std::vector<TH2*> ptavgs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
             ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
@@ -1011,11 +1011,7 @@ struct DptDptCorrelationsTask {
                               tnames[isp].c_str())
                 .Data()));
           }
-          if (cfgSmallDCE.value) {
-            dataCE_small[ixDCE]->storePtAverages(ptavgs);
-          } else {
-            dataCE[ixDCE]->storePtAverages(ptavgs);
-          }
+          storePtAverages(ptavgs);
         }
       }
 
@@ -1050,7 +1046,7 @@ struct DptDptCorrelationsTask {
 
     if (ccdblst == nullptr) {
       if (loadfromccdb) {
-        ccdblst = getCCDBInput(cfginputfile.cfgCCDBPathName->c_str(), cfginputfile.cfgCCDBDate->c_str());
+        ccdblst = getCCDBInput(ccdb, cfgCCDBPathName.c_str(), cfgCCDBDate.c_str());
       }
     }
 
@@ -1080,7 +1076,6 @@ struct DptDptCorrelationsTask {
                 .Data()));
           }
           dataCEME[ixDCE]->storeTrackCorrections(corrs);
-
           std::vector<TH2*> ptavgs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
             ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(

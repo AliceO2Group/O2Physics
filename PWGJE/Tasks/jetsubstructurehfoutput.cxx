@@ -245,15 +245,24 @@ struct JetSubstructureHFOutputTask {
     }
   }
 
-  void processDummy(JetCollisions const& collisions) {}
-  PROCESS_SWITCH(JetSubstructureHFOutputTask, processDummy, "Dummy process function turned on by default", true);
+  void processClearMaps(JetCollisions const& collisions)
+  {
+
+    candidateMapping.clear();
+    candidateCollisionMapping.clear();
+    candidateMappingMCP.clear();
+    jetMappingData.clear();
+    jetMappingDataSub.clear();
+    jetMappingMCD.clear();
+    jetMappingMCP.clear();
+  }
+  PROCESS_SWITCH(JetSubstructureHFOutputTask, processClearMaps, "process function that clears all the maps in each dataframe", true);
 
   void processOutputCandidatesData(JetCollision const& collision,
                                    JetTableData const& jets,
                                    CandidateCollisionTable const& canidateCollisions,
                                    CandidateTable const& candidates)
   {
-
     analyseCandidates<false, false>(jets, canidateCollisions, candidates, candidateMapping, jetPtMinData);
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCandidatesData, "hf candidate and collision output data", false);
@@ -263,7 +272,6 @@ struct JetSubstructureHFOutputTask {
                                       CandidateCollisionTable const& canidateCollisions,
                                       CandidateTable const& candidates)
   {
-
     analyseCandidates<false, false>(jets, canidateCollisions, candidates, candidateMapping, jetPtMinDataSub);
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputCandidatesDataSub, "hf candidate and collision output data eventwise constituent subtracted", false);

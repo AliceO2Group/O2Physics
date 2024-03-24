@@ -12,7 +12,7 @@
 /// \file femtoUniverseDebugTrack.cxx
 /// \brief Tasks that reads the particle tables and fills QA histograms for tracks
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #include "DataFormatsParameters/GRPObject.h"
 #include "Framework/ASoAHelpers.h"

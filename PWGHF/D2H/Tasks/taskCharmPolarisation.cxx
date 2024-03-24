@@ -41,10 +41,18 @@ namespace o2::aod
 {
 namespace charm_polarisation
 {
+enum CosThetaStarType : uint8_t {
+  Helicity = 0,
+  Production,
+  Beam,
+  Random,
+  NTypes
+};
 enum DecayChannel : uint8_t {
   DstarToDzeroPi = 0,
   LcToPKPi,
-  LcToPK0S
+  LcToPK0S,
+  NChannels
 };
 enum MassHyposLcToPKPi : uint8_t {
   PKPi = 0,
@@ -70,19 +78,19 @@ struct TaskPolarisationCharmHadrons {
   Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 Pi"};
   Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for Lc decay to P K Pi"};
 
-  ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {200, 0.139, 0.179}, "#it{M} (GeV/#it{c}^{2})"};
-  ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0., 100.}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis configThnAxisPz{"configThnAxisPz", {100, -50., 50.}, "#it{p}_{z} (GeV/#it{c})"};
-  ConfigurableAxis configThnAxisY{"configThnAxisY", {20, -1., 1.}, "#it{y}"};
-  ConfigurableAxis configThnAxisCosThetaStarHelicity{"configThnAxisCosThetaStarHelicity", {20, -1., 1.}, "cos(#vartheta_{helicity})"};
-  ConfigurableAxis configThnAxisCosThetaStarProduction{"configThnAxisCosThetaStarProduction", {20, -1., 1.}, "cos(#vartheta_{production})"};
-  ConfigurableAxis configThnAxisCosThetaStarRandom{"configThnAxisCosThetaStarRandom", {20, -1., 1.}, "cos(#vartheta_{random})"};
-  ConfigurableAxis configThnAxisCosThetaStarBeam{"configThnAxisCosThetaStarBeam", {20, -1., 1.}, "cos(#vartheta_{beam})"};
-  ConfigurableAxis configThnAxisMlBkg{"configThnAxisMlBkg", {100, 0., 1.}, "ML bkg"};
-  // ConfigurableAxis configThnAxisMlPrompt{"configThnAxisMlPrompt", {100, 0., 1.}, "ML prompt"};
-  ConfigurableAxis configThnAxisMlNonPrompt{"configThnAxisMlNonPrompt", {100, 0., 1.}, "ML non-prompt"};
-  // ConfigurableAxis configThnAxisCent{"configThnAxisCent", {102, -1., 101.}, "centrality (%)"};
-  ConfigurableAxis configThnAxisIsRotatedCandidate{"configThnAxisIsRotatedCandidate", {2, -0.5, 1.5}, "0: standard candidate, 1: rotated candidate"};
+  ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {200, 0.139f, 0.179f}, "#it{M} (GeV/#it{c}^{2})"};
+  ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.f, 100.f}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis configThnAxisPz{"configThnAxisPz", {100, -50.f, 50.f}, "#it{p}_{z} (GeV/#it{c})"};
+  ConfigurableAxis configThnAxisY{"configThnAxisY", {20, -1.f, 1.f}, "#it{y}"};
+  ConfigurableAxis configThnAxisCosThetaStarHelicity{"configThnAxisCosThetaStarHelicity", {20, -1.f, 1.f}, "cos(#vartheta_{helicity})"};
+  ConfigurableAxis configThnAxisCosThetaStarProduction{"configThnAxisCosThetaStarProduction", {20, -1.f, 1.f}, "cos(#vartheta_{production})"};
+  ConfigurableAxis configThnAxisCosThetaStarRandom{"configThnAxisCosThetaStarRandom", {20, -1.f, 1.f}, "cos(#vartheta_{random})"};
+  ConfigurableAxis configThnAxisCosThetaStarBeam{"configThnAxisCosThetaStarBeam", {20, -1.f, 1.f}, "cos(#vartheta_{beam})"};
+  ConfigurableAxis configThnAxisMlBkg{"configThnAxisMlBkg", {100, 0.f, 1.f}, "ML bkg"};
+  // ConfigurableAxis configThnAxisMlPrompt{"configThnAxisMlPrompt", {100, 0.f, 1.f}, "ML prompt"};
+  ConfigurableAxis configThnAxisMlNonPrompt{"configThnAxisMlNonPrompt", {100, 0.f, 1.f}, "ML non-prompt"};
+  // ConfigurableAxis configThnAxisCent{"configThnAxisCent", {102, -1.f, 101.f}, "centrality (%)"};
+  ConfigurableAxis configThnAxisIsRotatedCandidate{"configThnAxisIsRotatedCandidate", {2, -0.5f, 1.5f}, "0: standard candidate, 1: rotated candidate"};
 
   /// activate rotational background
   Configurable<int> nBkgRotations{"nBkgRotations", 0, "Number of rotated copies (background) per each original candidate"};
@@ -102,7 +110,7 @@ struct TaskPolarisationCharmHadrons {
   void init(InitContext&)
   {
     /// check process functions
-    std::array<int, 4> processes = {doprocessDstar, doprocessDstarWithMl, doprocessLcToPKPi, doprocessLcToPKPiWithMl};
+    std::array<int, 8> processes = {doprocessDstar, doprocessDstarWithMl, doprocessLcToPKPi, doprocessLcToPKPiWithMl, doprocessDstarMc, doprocessDstarMcWithMl, doprocessLcToPKPiMc, doprocessLcToPKPiMcWithMl};
     const int nProcesses = std::accumulate(processes.begin(), processes.end(), 0);
     if (nProcesses > 1) {
       LOGP(fatal, "Only one process function should be enabled at a time, please check your configuration");
@@ -129,6 +137,11 @@ struct TaskPolarisationCharmHadrons {
       }
     }
 
+    // check bkg rotation for MC (not supported currently)
+    if (nBkgRotations > 0 && (doprocessDstarMc || doprocessDstarMcWithMl || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl)) {
+      LOGP(fatal, "No background rotation supported for MC.");
+    }
+
     massPi = o2::constants::physics::MassPiPlus;
     massProton = o2::constants::physics::MassProton;
     massKaon = o2::constants::physics::MassKaonCharged;
@@ -148,61 +161,157 @@ struct TaskPolarisationCharmHadrons {
     const AxisSpec thnAxisMlNonPrompt{configThnAxisMlNonPrompt, "ML non-prompt"};
     const AxisSpec thnAxisIsRotatedCandidate{configThnAxisIsRotatedCandidate, "0: standard candidate, 1: rotated candidate"};
 
-    if (doprocessDstarWithMl) {
+    if (doprocessDstarWithMl || doprocessDstarMcWithMl) {
       /// analysis for D*+ meson with ML, w/o rot. background axis
+      if (doprocessDstarWithMl) {
+        if (activateTHnSparseCosThStarHelicity) {
+          registry.add("hHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+        if (activateTHnSparseCosThStarProduction) {
+          registry.add("hProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction, thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+        if (activateTHnSparseCosThStarBeam) {
+          registry.add("hBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis and BDT scores", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam, thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+        if (activateTHnSparseCosThStarRandom) {
+          registry.add("hRandom", "THn for polarisation studies with cosThStar w.r.t. random axis and BDT scores", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom, thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+      } else {
+        if (activateTHnSparseCosThStarHelicity) {
+          registry.add("hRecoPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisMlBkg, thnAxisMlNonPrompt});
+          registry.add("hRecoNonPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+        if (activateTHnSparseCosThStarProduction) {
+          registry.add("hRecoPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction, thnAxisMlBkg, thnAxisMlNonPrompt});
+          registry.add("hRecoNonPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction, thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+        if (activateTHnSparseCosThStarBeam) {
+          registry.add("hRecoPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam, thnAxisMlBkg, thnAxisMlNonPrompt});
+          registry.add("hRecoNonPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam, thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+        if (activateTHnSparseCosThStarRandom) {
+          registry.add("hRecoPromptRandom", "THn for polarisation studies with cosThStar w.r.t. random axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom, thnAxisMlBkg, thnAxisMlNonPrompt});
+          registry.add("hRecoNonPromptRandom", "THn for polarisation studies with cosThStar w.r.t. random axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom, thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+      }
+    } else if (doprocessLcToPKPiWithMl || doprocessLcToPKPiMcWithMl) {
+      /// analysis for Lc+ baryon with ML, w/ rot. background axis (for data only)
+      if (doprocessLcToPKPiWithMl) {
+        if (activateTHnSparseCosThStarHelicity) {
+          registry.add("hHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisMlBkg, thnAxisMlNonPrompt, thnAxisIsRotatedCandidate});
+        }
+        if (activateTHnSparseCosThStarProduction) {
+          registry.add("hProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction, thnAxisMlBkg, thnAxisMlNonPrompt, thnAxisIsRotatedCandidate});
+        }
+        if (activateTHnSparseCosThStarBeam) {
+          registry.add("hBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis and BDT scores", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam, thnAxisMlBkg, thnAxisMlNonPrompt, thnAxisIsRotatedCandidate});
+        }
+        if (activateTHnSparseCosThStarRandom) {
+          registry.add("hRandom", "THn for polarisation studies with cosThStar w.r.t. random axis and BDT scores", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom, thnAxisMlBkg, thnAxisMlNonPrompt, thnAxisIsRotatedCandidate});
+        }
+      } else {
+        if (activateTHnSparseCosThStarHelicity) {
+          registry.add("hRecoPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisMlBkg, thnAxisMlNonPrompt});
+          registry.add("hRecoNonPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+        if (activateTHnSparseCosThStarProduction) {
+          registry.add("hRecoPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction, thnAxisMlBkg, thnAxisMlNonPrompt});
+          registry.add("hRecoNonPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction, thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+        if (activateTHnSparseCosThStarBeam) {
+          registry.add("hRecoPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam, thnAxisMlBkg, thnAxisMlNonPrompt});
+          registry.add("hRecoNonPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam, thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+        if (activateTHnSparseCosThStarRandom) {
+          registry.add("hRecoPromptRandom", "THn for polarisation studies with cosThStar w.r.t. random axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom, thnAxisMlBkg, thnAxisMlNonPrompt});
+          registry.add("hRecoNonPromptRandom", "THn for polarisation studies with cosThStar w.r.t. random axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom, thnAxisMlBkg, thnAxisMlNonPrompt});
+        }
+      }
+    } else if (doprocessDstar || doprocessDstarMc) {
+      /// analysis for D*+ meson, w/o rot. background axis
+      if (doprocessDstar) {
+        if (activateTHnSparseCosThStarHelicity) {
+          registry.add("hHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity});
+        }
+        if (activateTHnSparseCosThStarProduction) {
+          registry.add("hProduction", "THn for polarisation studies with cosThStar w.r.t. production axis", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction});
+        }
+        if (activateTHnSparseCosThStarBeam) {
+          registry.add("hBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam});
+        }
+        if (activateTHnSparseCosThStarRandom) {
+          registry.add("hRandom", "THn for polarisation studies with cosThStar w.r.t. random axis", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom});
+        }
+      } else {
+        if (activateTHnSparseCosThStarHelicity) {
+          registry.add("hRecoPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis -- reco prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity});
+          registry.add("hRecoNonPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity});
+        }
+        if (activateTHnSparseCosThStarProduction) {
+          registry.add("hRecoPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis -- reco prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction});
+          registry.add("hRecoNonPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction});
+        }
+        if (activateTHnSparseCosThStarBeam) {
+          registry.add("hRecoPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis -- reco prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam});
+          registry.add("hRecoNonPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam});
+        }
+        if (activateTHnSparseCosThStarRandom) {
+          registry.add("hRecoPromptRandom", "THn for polarisation studies with cosThStar w.r.t. random axis -- reco prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom});
+          registry.add("hRecoNonPromptRandom", "THn for polarisation studies with cosThStar w.r.t. random axis -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom});
+        }
+      }
+    } else if (doprocessLcToPKPi || doprocessLcToPKPiMc) {
+      /// analysis for Lc+ baryon, rot. background axis (for data only)
+      if (doprocessLcToPKPi) {
+        if (activateTHnSparseCosThStarHelicity) {
+          registry.add("hHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisIsRotatedCandidate});
+        }
+        if (activateTHnSparseCosThStarProduction) {
+          registry.add("hProduction", "THn for polarisation studies with cosThStar w.r.t. production axis", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction, thnAxisIsRotatedCandidate});
+        }
+        if (activateTHnSparseCosThStarBeam) {
+          registry.add("hBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam, thnAxisIsRotatedCandidate});
+        }
+        if (activateTHnSparseCosThStarRandom) {
+          registry.add("hRandom", "THn for polarisation studies with cosThStar w.r.t. random axis", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom, thnAxisIsRotatedCandidate});
+        }
+      } else {
+        if (activateTHnSparseCosThStarHelicity) {
+          registry.add("hRecoPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis -- reco prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity});
+          registry.add("hRecoNonPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity});
+        }
+        if (activateTHnSparseCosThStarProduction) {
+          registry.add("hRecoPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis -- reco prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction});
+          registry.add("hRecoNonPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction});
+        }
+        if (activateTHnSparseCosThStarBeam) {
+          registry.add("hRecoPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis -- reco prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam});
+          registry.add("hRecoNonPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam});
+        }
+        if (activateTHnSparseCosThStarRandom) {
+          registry.add("hRecoPromptRandom", "THn for polarisation studies with cosThStar w.r.t. random axis -- reco prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom});
+          registry.add("hRecoNonPromptRandom", "THn for polarisation studies with cosThStar w.r.t. random axis -- reco non-prompt signal", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom});
+        }
+      }
+    }
+
+    // MC Gen histos
+    if (doprocessDstarMc || doprocessDstarMcWithMl || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl) {
       if (activateTHnSparseCosThStarHelicity) {
-        registry.add("hSparseCharmPolarisationHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisMlBkg, thnAxisMlNonPrompt});
+        registry.add("hGenPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis -- gen prompt signal", HistType::kTHnSparseF, {thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity});
+        registry.add("hGenNonPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis -- gen non-prompt signal", HistType::kTHnSparseF, {thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity});
       }
       if (activateTHnSparseCosThStarProduction) {
-        registry.add("hSparseCharmPolarisationProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction, thnAxisMlBkg, thnAxisMlNonPrompt});
+        registry.add("hGenPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis -- gen prompt signal", HistType::kTHnSparseF, {thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction});
+        registry.add("hGenNonPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis -- gen non-prompt signal", HistType::kTHnSparseF, {thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction});
       }
       if (activateTHnSparseCosThStarBeam) {
-        registry.add("hSparseCharmPolarisationBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis and BDT scores", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam, thnAxisMlBkg, thnAxisMlNonPrompt});
+        registry.add("hGenPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis -- gen prompt signal", HistType::kTHnSparseF, {thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam});
+        registry.add("hGenNonPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis -- gen non-prompt signal", HistType::kTHnSparseF, {thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam});
       }
       if (activateTHnSparseCosThStarRandom) {
-        registry.add("hSparseCharmPolarisationRandom", "THn for polarisation studies with cosThStar w.r.t. random axis and BDT scores", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom, thnAxisMlBkg, thnAxisMlNonPrompt});
-      }
-    } else if (doprocessLcToPKPiWithMl) {
-      /// analysis for Lc+ baryon with ML, w/ rot. background axis
-      if (activateTHnSparseCosThStarHelicity) {
-        registry.add("hSparseCharmPolarisationHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisMlBkg, thnAxisMlNonPrompt, thnAxisIsRotatedCandidate});
-      }
-      if (activateTHnSparseCosThStarProduction) {
-        registry.add("hSparseCharmPolarisationProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction, thnAxisMlBkg, thnAxisMlNonPrompt, thnAxisIsRotatedCandidate});
-      }
-      if (activateTHnSparseCosThStarBeam) {
-        registry.add("hSparseCharmPolarisationBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis and BDT scores", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam, thnAxisMlBkg, thnAxisMlNonPrompt, thnAxisIsRotatedCandidate});
-      }
-      if (activateTHnSparseCosThStarRandom) {
-        registry.add("hSparseCharmPolarisationRandom", "THn for polarisation studies with cosThStar w.r.t. random axis and BDT scores", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom, thnAxisMlBkg, thnAxisMlNonPrompt, thnAxisIsRotatedCandidate});
-      }
-    } else if (doprocessDstar) {
-      /// analysis for D*+ meson, rot. background axis
-      if (activateTHnSparseCosThStarHelicity) {
-        registry.add("hSparseCharmPolarisationHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity});
-      }
-      if (activateTHnSparseCosThStarProduction) {
-        registry.add("hSparseCharmPolarisationProduction", "THn for polarisation studies with cosThStar w.r.t. production axis", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction});
-      }
-      if (activateTHnSparseCosThStarBeam) {
-        registry.add("hSparseCharmPolarisationBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam});
-      }
-      if (activateTHnSparseCosThStarRandom) {
-        registry.add("hSparseCharmPolarisationRandom", "THn for polarisation studies with cosThStar w.r.t. random axis", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom});
-      }
-    } else if (doprocessLcToPKPi) {
-      /// analysis for Lc+ baryon, rot. background axis
-      if (activateTHnSparseCosThStarHelicity) {
-        registry.add("hSparseCharmPolarisationHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisIsRotatedCandidate});
-      }
-      if (activateTHnSparseCosThStarProduction) {
-        registry.add("hSparseCharmPolarisationProduction", "THn for polarisation studies with cosThStar w.r.t. production axis", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarProduction, thnAxisIsRotatedCandidate});
-      }
-      if (activateTHnSparseCosThStarBeam) {
-        registry.add("hSparseCharmPolarisationBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarBeam, thnAxisIsRotatedCandidate});
-      }
-      if (activateTHnSparseCosThStarRandom) {
-        registry.add("hSparseCharmPolarisationRandom", "THn for polarisation studies with cosThStar w.r.t. random axis", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom, thnAxisIsRotatedCandidate});
+        registry.add("hGenPromptRandom", "THn for polarisation studies with cosThStar w.r.t. random axis -- gen prompt signal", HistType::kTHnSparseF, {thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom});
+        registry.add("hGenNonPromptRandom", "THn for polarisation studies with cosThStar w.r.t. random axis -- gen non-prompt signal", HistType::kTHnSparseF, {thnAxisPt, thnAxisPz, thnAxisY, thnAxisCosThetaStarRandom});
       }
     }
 
@@ -217,20 +326,210 @@ struct TaskPolarisationCharmHadrons {
 
   }; // end init
 
+  /// \param invMassCharmHad is the invariant-mass of the candidate
+  /// \param ptCharmHad is the pt of the candidate
+  /// \param pzCharmHad is the pz of the candidate
+  /// \param rapCharmHad is the rapidity of the candidate
+  /// \param cosThetaStar is the cosThetaStar of the candidate
+  /// \param outputMl is the array with ML output scores
+  /// \param isRotatedCandidate is a flag that keeps the info of the rotation of the candidate for bkg studies
+  /// \param origin is the MC origin
+  template <charm_polarisation::DecayChannel channel, bool withMl, bool doMc, charm_polarisation::CosThetaStarType cosThetaStarType>
+  void fillRecoHistos(float invMassCharmHad, float ptCharmHad, float pzCharmHad, float rapCharmHad, float cosThetaStar, std::array<float, 3> outputMl, int isRotatedCandidate, int8_t origin)
+  {
+    if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Helicity) { // Helicity
+      if constexpr (!doMc) {                                                            // data
+        if constexpr (withMl) {                                                         // with ML
+          if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {  // D*+
+            registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+          } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
+            registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], isRotatedCandidate);
+          }
+        } else {                                                                       // without ML
+          if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
+            registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+          } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
+            registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, isRotatedCandidate);
+          }
+        }
+      } else {                                           // MC --> no distinction among channels, since rotational bkg not supported
+        if constexpr (withMl) {                          // with ML
+          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+            registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+          } else { // non-prompt
+            registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+          }
+        } else {                                         // without ML
+          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+            registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+          } else { // non-prompt
+            registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+          }
+        }
+      }
+    } else if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Production) { // Production
+      if constexpr (!doMc) {                                                                     // data
+        if constexpr (withMl) {                                                                  // with ML
+          if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {           // D*+
+            registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+          } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
+            registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], isRotatedCandidate);
+          }
+        } else {                                                                       // without ML
+          if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
+            registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+          } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
+            registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, isRotatedCandidate);
+          }
+        }
+      } else {                                           // MC --> no distinction among channels, since rotational bkg not supported
+        if constexpr (withMl) {                          // with ML
+          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+            registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+          } else { // non-prompt
+            registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+          }
+        } else {                                         // without ML
+          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+            registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+          } else { // non-prompt
+            registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+          }
+        }
+      }
+    } else if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Beam) { // Beam
+      if constexpr (!doMc) {                                                               // data
+        if constexpr (withMl) {                                                            // with ML
+          if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {     // D*+
+            registry.fill(HIST("hBeam"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+          } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
+            registry.fill(HIST("hBeam"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], isRotatedCandidate);
+          }
+        } else {                                                                       // without ML
+          if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
+            registry.fill(HIST("hBeam"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+          } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
+            registry.fill(HIST("hBeam"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, isRotatedCandidate);
+          }
+        }
+      } else {                                           // MC --> no distinction among channels, since rotational bkg not supported
+        if constexpr (withMl) {                          // with ML
+          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+            registry.fill(HIST("hRecoPromptBeam"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+          } else { // non-prompt
+            registry.fill(HIST("hRecoNonPromptBeam"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+          }
+        } else {                                         // without ML
+          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+            registry.fill(HIST("hRecoPromptBeam"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+          } else { // non-prompt
+            registry.fill(HIST("hRecoNonPromptBeam"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+          }
+        }
+      }
+    } else if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Random) { // Random
+      if constexpr (!doMc) {                                                                 // data
+        if constexpr (withMl) {                                                              // with ML
+          if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {       // D*+
+            registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+          } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
+            registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], isRotatedCandidate);
+          }
+        } else {                                                                       // without ML
+          if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
+            registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+          } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
+            registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, isRotatedCandidate);
+          }
+        }
+      } else {                                           // MC --> no distinction among channels, since rotational bkg not supported
+        if constexpr (withMl) {                          // with ML
+          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+            registry.fill(HIST("hRecoPromptRandom"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+          } else { // non-prompt
+            registry.fill(HIST("hRecoNonPromptRandom"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+          }
+        } else {                                         // without ML
+          if (origin == RecoDecay::OriginType::Prompt) { // prompt
+            registry.fill(HIST("hRecoPromptRandom"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+          } else { // non-prompt
+            registry.fill(HIST("hRecoNonPromptRandom"), invMassCharmHad, ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+          }
+        }
+      }
+    }
+  }
+
+  /// \param ptCharmHad is the pt of the particle
+  /// \param pzCharmHad is the pz of the particle
+  /// \param rapCharmHad is the rapidity of the particle
+  /// \param cosThetaStar is the cosThetaStar of the particle
+  /// \param origin is the MC origin
+  template <charm_polarisation::CosThetaStarType cosThetaStarType>
+  void fillGenHistos(float ptCharmHad, float pzCharmHad, float rapCharmHad, float cosThetaStar, int8_t origin)
+  {
+    if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Helicity) { // Helicity
+      if (origin == RecoDecay::OriginType::Prompt) {                                    // prompt
+        registry.fill(HIST("hGenPromptHelicity"), ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+      } else { // non-prompt
+        registry.fill(HIST("hGenNonPromptHelicity"), ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+      }
+    } else if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Production) { // Production
+      if (origin == RecoDecay::OriginType::Prompt) {                                             // prompt
+        registry.fill(HIST("hGenPromptProduction"), ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+      } else { // non-prompt
+        registry.fill(HIST("hGenNonPromptProduction"), ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+      }
+    } else if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Beam) { // Beam
+      if (origin == RecoDecay::OriginType::Prompt) {                                       // prompt
+        registry.fill(HIST("hGenPromptBeam"), ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+      } else { // non-prompt
+        registry.fill(HIST("hGenNonPromptBeam"), ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+      }
+    } else if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Random) { // Random
+      if (origin == RecoDecay::OriginType::Prompt) {                                         // prompt
+        registry.fill(HIST("hGenPromptRandom"), ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+      } else { // non-prompt
+        registry.fill(HIST("hGenNonPromptRandom"), ptCharmHad, pzCharmHad, rapCharmHad, cosThetaStar);
+      }
+    }
+  }
+
   /// \param candidates are the selected candidates
-  template <uint8_t channel, bool withMl, typename Cand>
+  /// \param bkgRotationId is the id for the background rotation
+  template <charm_polarisation::DecayChannel channel, bool withMl, bool doMc, typename Cand>
   void runPolarisationAnalysis(Cand const& candidate, int bkgRotationId = 0)
   {
+    int8_t origin{RecoDecay::OriginType::None};
+    int8_t massHypoMcTruth{-1};
+    if constexpr (doMc) {
+      if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
+        if (!TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // this candidate is not signal, skip
+          return;
+        }
+        origin = candidate.originMcRec();
+      } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) {
+        if (!TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::LcToPKPi)) { // this candidate is not signal, skip
+          return;
+        }
+        origin = candidate.originMcRec();
+        if (candidate.isCandidateSwapped()) {
+          massHypoMcTruth = charm_polarisation::MassHyposLcToPKPi::PiKP;
+        } else {
+          massHypoMcTruth = charm_polarisation::MassHyposLcToPKPi::PKPi;
+        }
+      }
+    }
 
     // loop over mass hypotheses
     for (uint8_t iMass = 0u; iMass < nMassHypos; iMass++) {
 
       // variable definition
-      float pxDau{-1000.}, pyDau{-1000.}, pzDau{-1000.};
-      float pxCharmHad{-1000.}, pyCharmHad{-1000.}, pzCharmHad{-1000.};
-      float massDau{0.}, invMassCharmHad{0.}, invMassCharmHadForSparse{0.};
-      float rapidity{-999.};
-      std::array<float, 3> outputMl{-1., -1., -1.};
+      float pxDau{-1000.f}, pyDau{-1000.f}, pzDau{-1000.f};
+      float pxCharmHad{-1000.f}, pyCharmHad{-1000.f}, pzCharmHad{-1000.f};
+      float massDau{0.f}, invMassCharmHad{0.f}, invMassCharmHadForSparse{0.f};
+      float rapidity{-999.f};
+      std::array<float, 3> outputMl{-1.f, -1.f, -1.f};
       int isRotatedCandidate = 0; // currently meaningful only for Lc->pKpi
 
       if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
@@ -244,17 +543,28 @@ struct TaskPolarisationCharmHadrons {
         pyCharmHad = candidate.pyDstar();
         pzCharmHad = candidate.pzDstar();
         massDau = massPi; // (*)
-        invMassCharmHad = (candidate.signSoftPi() > 0) ? candidate.invMassDstar() : candidate.invMassAntiDstar();
-        invMassCharmHadForSparse = (candidate.signSoftPi() > 0) ? (invMassCharmHad - candidate.invMassD0()) : (invMassCharmHad - candidate.invMassD0Bar()); // different for D*
+        if (candidate.signSoftPi() > 0) {
+          invMassCharmHad = candidate.invMassDstar();
+          invMassCharmHadForSparse = invMassCharmHad - candidate.invMassD0();
+        } else {
+          invMassCharmHad = candidate.invMassAntiDstar();
+          invMassCharmHadForSparse = invMassCharmHad - candidate.invMassD0Bar();
+        }
         rapidity = candidate.y(massDstar);
         if constexpr (withMl) {
-          outputMl[0] = -1.; // not yet implemented in the selector
-          outputMl[1] = -1.; // not yet implemented in the selector
-          outputMl[2] = -1.; // not yet implemented in the selector
+          outputMl[0] = candidate.mlProbDstarToD0Pi()[0];
+          outputMl[1] = candidate.mlProbDstarToD0Pi()[1];
+          outputMl[2] = candidate.mlProbDstarToD0Pi()[2];
         }
       } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) {
         // Lc->pKpi analysis
         // polarization measured from the proton daughter (*)
+
+        if constexpr (doMc) { // we keep only the good hypo in the MC
+          if ((iMass == charm_polarisation::MassHyposLcToPKPi::PiKP && massHypoMcTruth == charm_polarisation::MassHyposLcToPKPi::PKPi) || (iMass == charm_polarisation::MassHyposLcToPKPi::PKPi && massHypoMcTruth == charm_polarisation::MassHyposLcToPKPi::PiKP)) {
+            continue;
+          }
+        }
 
         /// mass-hypothesis-independent variables
         /// daughters momenta
@@ -337,101 +647,125 @@ struct TaskPolarisationCharmHadrons {
 
       } // Lc->pKpi
 
-      float phiRandom = gRandom->Uniform(0., constants::math::TwoPI);
-      float thetaRandom = gRandom->Uniform(0., constants::math::PI);
+      float phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+      float thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
       ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(pxDau, pyDau, pzDau, massDau);
       ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(pxCharmHad, pyCharmHad, pzCharmHad, invMassCharmHad);
       ROOT::Math::Boost boost{fourVecMother.BoostToCM()};
       ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);
       ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();
 
-      ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
-      ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0., 0., 1.);
-      ROOT::Math::XYZVector helicityVec = fourVecMother.Vect();
-      ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(pyCharmHad, -pxCharmHad, 0.);
+      float ptCharmHad = std::sqrt(pxCharmHad * pxCharmHad + pyCharmHad * pyCharmHad); // this definition is valid for both rotated and original candidates
 
-      float cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2());
-      float cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2());
-      float cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-      float cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-
-      const float candidatePt = std::sqrt(pxCharmHad * pxCharmHad + pyCharmHad * pyCharmHad); // this definition is valid for both rotated and original candidates
-      if constexpr (withMl) {
-        if (activateTHnSparseCosThStarHelicity) {
-          if (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
-            // D*+
-            registry.fill(HIST("hSparseCharmPolarisationHelicity"), invMassCharmHadForSparse, candidatePt, pzCharmHad, rapidity, cosThetaStarHelicity, outputMl[0], /*outputMl[1],*/ outputMl[2]);
-          } else if (channel == charm_polarisation::DecayChannel::LcToPKPi) {
-            // Lc+
-            registry.fill(HIST("hSparseCharmPolarisationHelicity"), invMassCharmHadForSparse, candidatePt, pzCharmHad, rapidity, cosThetaStarHelicity, outputMl[0], /*outputMl[1],*/ outputMl[2], isRotatedCandidate);
-          }
-        }
-        if (activateTHnSparseCosThStarProduction) {
-          if (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
-            // D*+
-            registry.fill(HIST("hSparseCharmPolarisationProduction"), invMassCharmHadForSparse, candidatePt, pzCharmHad, rapidity, cosThetaStarProduction, outputMl[0], /*outputMl[1],*/ outputMl[2]);
-          } else if (channel == charm_polarisation::DecayChannel::LcToPKPi) {
-            // Lc+
-            registry.fill(HIST("hSparseCharmPolarisationProduction"), invMassCharmHadForSparse, candidatePt, pzCharmHad, rapidity, cosThetaStarProduction, outputMl[0], /*outputMl[1],*/ outputMl[2], isRotatedCandidate);
-          }
-        }
-        if (activateTHnSparseCosThStarBeam) {
-          if (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
-            // D*+
-            registry.fill(HIST("hSparseCharmPolarisationBeam"), invMassCharmHadForSparse, candidatePt, pzCharmHad, rapidity, cosThetaStarBeam, outputMl[0], /*outputMl[1],*/ outputMl[2]);
-          } else if (channel == charm_polarisation::DecayChannel::LcToPKPi) {
-            // Lc+
-            registry.fill(HIST("hSparseCharmPolarisationBeam"), invMassCharmHadForSparse, candidatePt, pzCharmHad, rapidity, cosThetaStarBeam, outputMl[0], /*outputMl[1],*/ outputMl[2], isRotatedCandidate);
-          }
-        }
-        if (activateTHnSparseCosThStarRandom) {
-          if (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
-            // D*+
-            registry.fill(HIST("hSparseCharmPolarisationRandom"), invMassCharmHadForSparse, candidatePt, pzCharmHad, rapidity, cosThetaStarRandom, outputMl[0], /*outputMl[1],*/ outputMl[2]);
-          } else if (channel == charm_polarisation::DecayChannel::LcToPKPi) {
-            // Lc+
-            registry.fill(HIST("hSparseCharmPolarisationRandom"), invMassCharmHadForSparse, candidatePt, pzCharmHad, rapidity, cosThetaStarRandom, outputMl[0], /*outputMl[1],*/ outputMl[2], isRotatedCandidate);
-          }
-        }
-      } else {
-        if (activateTHnSparseCosThStarHelicity) {
-          if (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
-            // D*+
-            registry.fill(HIST("hSparseCharmPolarisationHelicity"), invMassCharmHadForSparse, candidatePt, pzCharmHad, rapidity, cosThetaStarHelicity);
-          } else if (channel == charm_polarisation::DecayChannel::LcToPKPi) {
-            // Lc+
-            registry.fill(HIST("hSparseCharmPolarisationHelicity"), invMassCharmHadForSparse, candidatePt, pzCharmHad, rapidity, cosThetaStarHelicity, isRotatedCandidate);
-          }
-        }
-        if (activateTHnSparseCosThStarProduction) {
-          if (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
-            // D*+
-            registry.fill(HIST("hSparseCharmPolarisationProduction"), invMassCharmHadForSparse, candidatePt, pzCharmHad, rapidity, cosThetaStarProduction);
-          } else if (channel == charm_polarisation::DecayChannel::LcToPKPi) {
-            // Lc+
-            registry.fill(HIST("hSparseCharmPolarisationProduction"), invMassCharmHadForSparse, candidatePt, pzCharmHad, rapidity, cosThetaStarProduction, isRotatedCandidate);
-          }
-        }
-        if (activateTHnSparseCosThStarBeam) {
-          if (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
-            // D*+
-            registry.fill(HIST("hSparseCharmPolarisationBeam"), invMassCharmHadForSparse, candidatePt, pzCharmHad, rapidity, cosThetaStarBeam);
-          } else if (channel == charm_polarisation::DecayChannel::LcToPKPi) {
-            // Lc+
-            registry.fill(HIST("hSparseCharmPolarisationBeam"), invMassCharmHadForSparse, candidatePt, pzCharmHad, rapidity, cosThetaStarBeam, isRotatedCandidate);
-          }
-        }
-        if (activateTHnSparseCosThStarRandom) {
-          if (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
-            // D*+
-            registry.fill(HIST("hSparseCharmPolarisationRandom"), invMassCharmHadForSparse, candidatePt, pzCharmHad, rapidity, cosThetaStarRandom);
-          } else if (channel == charm_polarisation::DecayChannel::LcToPKPi) {
-            // Lc+
-            registry.fill(HIST("hSparseCharmPolarisationRandom"), invMassCharmHadForSparse, candidatePt, pzCharmHad, rapidity, cosThetaStarRandom, isRotatedCandidate);
-          }
-        }
+      if (activateTHnSparseCosThStarHelicity) {
+        ROOT::Math::XYZVector helicityVec = fourVecMother.Vect();
+        float cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2());
+        fillRecoHistos<channel, withMl, doMc, charm_polarisation::CosThetaStarType::Helicity>(invMassCharmHadForSparse, ptCharmHad, pzCharmHad, rapidity, cosThetaStarHelicity, outputMl, isRotatedCandidate, origin);
+      }
+      if (activateTHnSparseCosThStarProduction) {
+        ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(pyCharmHad, -pxCharmHad, 0.f);
+        float cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2());
+        fillRecoHistos<channel, withMl, doMc, charm_polarisation::CosThetaStarType::Production>(invMassCharmHadForSparse, ptCharmHad, pzCharmHad, rapidity, cosThetaStarProduction, outputMl, isRotatedCandidate, origin);
+      }
+      if (activateTHnSparseCosThStarBeam) {
+        ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
+        float cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
+        fillRecoHistos<channel, withMl, doMc, charm_polarisation::CosThetaStarType::Beam>(invMassCharmHadForSparse, ptCharmHad, pzCharmHad, rapidity, cosThetaStarBeam, outputMl, isRotatedCandidate, origin);
+      }
+      if (activateTHnSparseCosThStarRandom) {
+        ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
+        float cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
+        fillRecoHistos<channel, withMl, doMc, charm_polarisation::CosThetaStarType::Random>(invMassCharmHadForSparse, ptCharmHad, pzCharmHad, rapidity, cosThetaStarRandom, outputMl, isRotatedCandidate, origin);
       }
     } /// end loop over mass hypotheses
+  }
+
+  /// \param mcParticle is the Mc particle
+  /// \param mcParticles is the table of Mc particles
+  template <charm_polarisation::DecayChannel channel, typename Part, typename Particles>
+  void runMcGenPolarisationAnalysis(Part const& mcParticle, Particles const& mcParticles)
+  {
+    int8_t origin{RecoDecay::OriginType::None};
+    std::vector<int> listDaughters{};
+    float massDau{0.f}, massCharmHad{0.f};
+    if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
+      if (!TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // this particle is not signal, skip
+        return;
+      }
+      origin = mcParticle.originMcGen();
+      std::array<int, 2> dauPdgs = {kPiPlus, o2::constants::physics::Pdg::kD0};
+      RecoDecay::getDaughters(mcParticle, &listDaughters, dauPdgs, 1);
+      massDau = massPi;
+      massCharmHad = massDstar;
+    } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) {
+      if (!TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_3prong::DecayType::LcToPKPi)) { // this particle is not signal, skip
+        return;
+      }
+      origin = mcParticle.originMcGen();
+      std::array<int, 3> dauPdgs = {kProton, -kKPlus, kPiPlus};
+      RecoDecay::getDaughters(mcParticle, &listDaughters, dauPdgs, 2);
+      massDau = massProton;
+      massCharmHad = massLc;
+    }
+
+    float rapidity = mcParticle.y();
+    if (std::abs(rapidity) > 1.f) { // we do not keep particles with |y| > 1
+      return;
+    }
+
+    float pxCharmHad = mcParticle.px();
+    float pyCharmHad = mcParticle.py();
+    float pzCharmHad = mcParticle.pz();
+    float ptCharmHad = mcParticle.pt();
+
+    float pxDau{-1000.f}, pyDau{-1000.f}, pzDau{-1000.f};
+    for (const auto& dauIdx : listDaughters) {
+      auto dauPart = mcParticles.rawIteratorAt(dauIdx);
+      if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
+        if (std::abs(dauPart.pdgCode()) == kPiPlus) {
+          pxDau = dauPart.px();
+          pyDau = dauPart.py();
+          pzDau = dauPart.pz();
+          break;
+        }
+      } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) {
+        if (std::abs(dauPart.pdgCode()) == kProton) {
+          pxDau = dauPart.px();
+          pyDau = dauPart.py();
+          pzDau = dauPart.pz();
+          break;
+        }
+      }
+    }
+
+    float phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+    float thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
+    ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(pxDau, pyDau, pzDau, massDau);
+    ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(pxCharmHad, pyCharmHad, pzCharmHad, massCharmHad);
+    ROOT::Math::Boost boost{fourVecMother.BoostToCM()};
+    ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);
+    ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();
+
+    if (activateTHnSparseCosThStarHelicity) {
+      ROOT::Math::XYZVector helicityVec = fourVecMother.Vect();
+      float cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2());
+      fillGenHistos<charm_polarisation::CosThetaStarType::Helicity>(ptCharmHad, pzCharmHad, rapidity, cosThetaStarHelicity, origin);
+    }
+    if (activateTHnSparseCosThStarProduction) {
+      ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(pyCharmHad, -pxCharmHad, 0.f);
+      float cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2());
+      fillGenHistos<charm_polarisation::CosThetaStarType::Production>(ptCharmHad, pzCharmHad, rapidity, cosThetaStarProduction, origin);
+    }
+    if (activateTHnSparseCosThStarBeam) {
+      ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
+      float cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
+      fillGenHistos<charm_polarisation::CosThetaStarType::Beam>(ptCharmHad, pzCharmHad, rapidity, cosThetaStarBeam, origin);
+    }
+    if (activateTHnSparseCosThStarRandom) {
+      ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
+      float cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
+      fillGenHistos<charm_polarisation::CosThetaStarType::Random>(ptCharmHad, pzCharmHad, rapidity, cosThetaStarRandom, origin);
+    }
   }
 
   /////////////////////////
@@ -441,16 +775,42 @@ struct TaskPolarisationCharmHadrons {
   // Dstar with rectangular cuts
   void processDstar(soa::Filtered<CandDstarWSelFlag>::iterator const& dstarCandidate)
   {
-    runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false>(dstarCandidate);
+    runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(dstarCandidate);
   }
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstar, "Process Dstar candidates without ML", true);
 
   // Dstar with ML cuts
-  void processDstarWithMl(soa::Filtered<CandDstarWSelFlag>::iterator const&)
+  void processDstarWithMl(soa::Filtered<soa::Join<CandDstarWSelFlag, aod::HfMlDstarToD0Pi>>::iterator const& dstarCandidate)
   {
-    // DUMMY
+    runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(dstarCandidate);
   }
-  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarWithMl, "Process Dstar candidates with ML (DUMMY)", false);
+  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarWithMl, "Process Dstar candidates with ML", false);
+
+  // Dstar in MC with rectangular cuts
+  void processDstarMc(soa::Filtered<soa::Join<CandDstarWSelFlag, aod::HfCandDstarMcRec>> const& dstarCandidates, soa::Join<aod::McParticles, aod::HfCandDstarMcGen> const& mcParticles)
+  {
+    for (const auto& dstarCandidate : dstarCandidates) {
+      runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, true>(dstarCandidate);
+    }
+
+    for (const auto& mcParticle : mcParticles) {
+      runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi>(mcParticle, mcParticles);
+    }
+  }
+  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarMc, "Process Dstar candidates in MC without ML", false);
+
+  // Dstar in MC with ML cuts
+  void processDstarMcWithMl(soa::Filtered<soa::Join<CandDstarWSelFlag, aod::HfCandDstarMcRec, aod::HfMlDstarToD0Pi>> const& dstarCandidates, soa::Join<aod::McParticles, aod::HfCandDstarMcGen> const& mcParticles)
+  {
+    for (const auto& dstarCandidate : dstarCandidates) {
+      runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true>(dstarCandidate);
+    }
+
+    for (const auto& mcParticle : mcParticles) {
+      runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi>(mcParticle, mcParticles);
+    }
+  }
+  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processDstarMcWithMl, "Process Dstar candidates in MC with ML", false);
 
   ////////////////////////////
   //   Lc->pKpi analysis   ///
@@ -459,11 +819,11 @@ struct TaskPolarisationCharmHadrons {
   // Lc->pKpi with rectangular cuts
   void processLcToPKPi(soa::Filtered<CandLcToPKPiWSelFlag>::iterator const& lcCandidate)
   {
-    runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false>(lcCandidate);
+    runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false, false>(lcCandidate);
 
     /// rotational background
     for (int iRotation = 1; iRotation <= nBkgRotations; iRotation++) {
-      runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false>(lcCandidate, iRotation);
+      runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false, false>(lcCandidate, iRotation);
     }
   }
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPi, "Process Lc candidates without ML", false);
@@ -471,14 +831,40 @@ struct TaskPolarisationCharmHadrons {
   // Lc->pKpi with ML cuts
   void processLcToPKPiWithMl(soa::Filtered<soa::Join<CandLcToPKPiWSelFlag, aod::HfMlLcToPKPi>>::iterator const& lcCandidate)
   {
-    runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true>(lcCandidate);
+    runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, false>(lcCandidate);
 
     /// rotational background
     for (int iRotation = 1; iRotation <= nBkgRotations; iRotation++) {
-      runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true>(lcCandidate, iRotation);
+      runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, false>(lcCandidate, iRotation);
     }
   }
   PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPiWithMl, "Process Lc candidates with ML", false);
+
+  // Lc->pKpi in MC with rectangular cuts
+  void processLcToPKPiMc(soa::Filtered<soa::Join<CandLcToPKPiWSelFlag, aod::HfCand3ProngMcRec>> const& lcCandidates, soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles)
+  {
+    for (const auto& lcCandidate : lcCandidates) {
+      runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, false, true>(lcCandidate);
+    }
+
+    for (const auto& mcParticle : mcParticles) {
+      runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi>(mcParticle, mcParticles);
+    }
+  }
+  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPiMc, "Process Lc candidates in MC without ML", false);
+
+  // Lc->pKpi in MC with ML cuts
+  void processLcToPKPiMcWithMl(soa::Filtered<soa::Join<CandLcToPKPiWSelFlag, aod::HfMlLcToPKPi, aod::HfCand3ProngMcRec>> const& lcCandidates, soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles)
+  {
+    for (const auto& lcCandidate : lcCandidates) {
+      runPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi, true, true>(lcCandidate);
+    }
+
+    for (const auto& mcParticle : mcParticles) {
+      runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::LcToPKPi>(mcParticle, mcParticles);
+    }
+  }
+  PROCESS_SWITCH(TaskPolarisationCharmHadrons, processLcToPKPiMcWithMl, "Process Lc candidates in MC with ML", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
