@@ -28,7 +28,7 @@ using namespace o2::track;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using PIDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullPi>;
+using PIDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullPi>;
 using PIDTracksIUMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TracksDCACov, aod::McTrackLabels, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullPi>;
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 
@@ -96,7 +96,7 @@ struct perfK0sResolution {
 
   void init(InitContext const&)
   {
-    const AxisSpec statAxis{5, 0, 5, "Stats"};
+    const AxisSpec statAxis{5, 0, 5, ""};
     const AxisSpec mAxis{mBins, "#it{m} (GeV/#it{c}^{2})"};
     const AxisSpec pTAxis{pTBins, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec pTResAxis{pTResBins, "#Delta#it{p}_{T} (GeV/#it{c})"};

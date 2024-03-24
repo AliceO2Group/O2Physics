@@ -750,6 +750,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kQuadDCAsigZ] = "#sigma";
   fgVariableNames[kQuadDCAsigXYZ] = "DCA_{xyz}^{quad}";
   fgVariableUnits[kQuadDCAsigXYZ] = "#sigma";
+  fgVariableNames[kSignQuadDCAsigXY] = "signDCA_{xy}^{quad}";
+  fgVariableUnits[kSignQuadDCAsigXY] = "#sigma";
   fgVariableNames[kTrackDCAsigXY] = "DCA_{xy}";
   fgVariableUnits[kTrackDCAsigXY] = "#sigma";
   fgVariableNames[kTrackDCAsigZ] = "DCA_{z}";

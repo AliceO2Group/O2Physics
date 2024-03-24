@@ -49,8 +49,8 @@ struct EventSelectionQaTask {
   int lastRunNumber = -1;
   int nOrbits = nOrbitsConf;
   double minOrbit = minOrbitConf;
-  int64_t bcSOR = -1;     // global bc of the start of the first orbit
-  int64_t nBCsPerTF = -1; // duration of TF in bcs, should be 128*3564 or 32*3564
+  int64_t bcSOR = 0;                      // global bc of the start of the first orbit, setting 0 by default for unanchored MC
+  int64_t nBCsPerTF = 128 * nBCsPerOrbit; // duration of TF in bcs, should be 128*3564 or 32*3564, setting 128 orbits by default sfor unanchored MC
   std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternA;
   std::bitset<o2::constants::lhc::LHCMaxBunches> beamPatternC;
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternA;
@@ -59,6 +59,20 @@ struct EventSelectionQaTask {
 
   SliceCache cache;
   Partition<aod::Tracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
+
+  int32_t findClosest(int64_t globalBC, std::map<int64_t, int32_t>& bcs)
+  {
+    auto it = bcs.lower_bound(globalBC);
+    int64_t bc1 = it->first;
+    int32_t index1 = it->second;
+    if (it != bcs.begin())
+      --it;
+    int64_t bc2 = it->first;
+    int32_t index2 = it->second;
+    int64_t dbc1 = std::abs(bc1 - globalBC);
+    int64_t dbc2 = std::abs(bc2 - globalBC);
+    return (dbc1 <= dbc2) ? index1 : index2;
+  }
 
   void init(InitContext&)
   {
@@ -263,6 +277,13 @@ struct EventSelectionQaTask {
 
     histos.add("hMultT0MVsNcontribAcc", "", kTH2F, {axisMultT0M, axisNcontrib}); // before ITS RO Frame border cut
     histos.add("hMultT0MVsNcontribCut", "", kTH2F, {axisMultT0M, axisNcontrib}); // after ITS RO Frame border cut
+
+    histos.add("hMultV0AVsNcontribAcc", "", kTH2F, {axisMultV0A, axisNcontrib}); // before ITS RO Frame border cut
+    histos.add("hMultV0AVsNcontribCut", "", kTH2F, {axisMultV0A, axisNcontrib}); // after ITS RO Frame border cut
+
+    histos.add("hBcForMultV0AVsNcontribAcc", "", kTH1F, {axisBCs});      // bc distribution for V0A-vs-Ncontrib accepted
+    histos.add("hBcForMultV0AVsNcontribOutliers", "", kTH1F, {axisBCs}); // bc distribution for V0A-vs-Ncontrib outliers
+    histos.add("hBcForMultV0AVsNcontribCut", "", kTH1F, {axisBCs});      // bc distribution for V0A-vs-Ncontrib after ITS-ROF border cut
 
     // MC histograms
     histos.add("hGlobalBcColMC", "", kTH1F, {axisGlobalBCs});
@@ -495,7 +516,7 @@ struct EventSelectionQaTask {
     if (runNumber != lastRunNumber) {
       lastRunNumber = runNumber; // do it only once
       int64_t tsSOR = 0;
-      int64_t tsEOR = 0;
+      int64_t tsEOR = 1;
 
       if (runNumber >= 500000) { // access CCDB for data or anchored MC only
         int64_t ts = bcs.iteratorAt(0).timestamp();
@@ -712,16 +733,10 @@ struct EventSelectionQaTask {
 
     // bc-based event selection qa
     for (auto& bc : bcs) {
-      if (bc.foundFT0Id() < 0)
+      if (!bc.has_ft0())
         continue;
-      float multT0A = 0;
-      for (auto amplitude : bc.ft0().amplitudeA()) {
-        multT0A += amplitude;
-      }
-      float multT0C = 0;
-      for (auto amplitude : bc.ft0().amplitudeC()) {
-        multT0C += amplitude;
-      }
+      float multT0A = bc.ft0().sumAmpA();
+      float multT0C = bc.ft0().sumAmpC();
       histos.fill(HIST("hMultT0Mref"), multT0A + multT0C);
       if (!bc.selection_bit(kIsTriggerTVX))
         continue;
@@ -796,14 +811,8 @@ struct EventSelectionQaTask {
         histos.fill(HIST("hGlobalBcFT0"), globalBC - minGlobalBC);
         histos.fill(HIST("hOrbitFT0"), orbit - minOrbit);
         histos.fill(HIST("hBcFT0"), localBC);
-        float multT0A = 0;
-        for (auto amplitude : bc.ft0().amplitudeA()) {
-          multT0A += amplitude;
-        }
-        float multT0C = 0;
-        for (auto amplitude : bc.ft0().amplitudeC()) {
-          multT0C += amplitude;
-        }
+        float multT0A = bc.ft0().sumAmpA();
+        float multT0C = bc.ft0().sumAmpC();
         histos.fill(HIST("hMultT0Aall"), multT0A);
         histos.fill(HIST("hMultT0Call"), multT0C);
         if (localBC == refBC) {
@@ -869,6 +878,24 @@ struct EventSelectionQaTask {
       mapAmbTrIds[ambTrack.trackId()] = ambTrack.globalIndex();
     }
 
+    // create maps from globalBC to bc index for TVX or FT0-OR fired bcs
+    // to be used for closest TVX (FT0-OR) searches
+    std::map<int64_t, int32_t> mapGlobalBcWithTVX;
+    std::map<int64_t, int32_t> mapGlobalBcWithTOR;
+    for (auto& bc : bcs) {
+      int64_t globalBC = bc.globalBC();
+      // skip non-colliding bcs for data and anchored runs
+      if (runNumber >= 500000 && bcPatternB[globalBC % o2::constants::lhc::LHCMaxBunches] == 0) {
+        continue;
+      }
+      if (bc.selection_bit(kIsBBT0A) || bc.selection_bit(kIsBBT0C)) {
+        mapGlobalBcWithTOR[globalBC] = bc.globalIndex();
+      }
+      if (bc.selection_bit(kIsTriggerTVX)) {
+        mapGlobalBcWithTVX[globalBC] = bc.globalIndex();
+      }
+    }
+
     // Fill track bc distributions (all tracks including ambiguous)
     for (const auto& track : tracks) {
       auto mapAmbTrIdsIt = mapAmbTrIds.find(track.globalIndex());
@@ -877,35 +904,8 @@ struct EventSelectionQaTask {
       auto bc = bcs.iteratorAt(indexBc);
       int64_t globalBC = bc.globalBC() + floor(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
 
-      int indexNearestTVX = indexBc;
-      if (vIsTVX[indexBc]) {
-        indexNearestTVX = indexBc;
-      } else {
-        bool foundNext = 0;
-        int indexNext = indexBc;
-        while (!foundNext && indexNext < nBCs - 1) {
-          if (vIsTVX[++indexNext]) {
-            foundNext = 1;
-          }
-        }
-        bool foundPrev = 0;
-        int indexPrev = indexBc;
-        while (!foundPrev && indexPrev > 0) {
-          if (vIsTVX[--indexPrev]) {
-            foundPrev = 1;
-          }
-        }
-        if (foundNext && foundPrev) {
-          int64_t diffNext = vGlobalBCs[indexNext] - globalBC;
-          int64_t diffPrev = globalBC - vGlobalBCs[indexPrev];
-          indexNearestTVX = diffNext <= diffPrev ? indexNext : indexPrev;
-        } else if (foundNext) {
-          indexNearestTVX = indexNext;
-        } else if (foundPrev) {
-          indexNearestTVX = indexPrev;
-        }
-      }
-      int bcDiff = static_cast<int>(globalBC - vGlobalBCs[indexNearestTVX]);
+      int32_t indexClosestTVX = findClosest(globalBC, mapGlobalBcWithTVX);
+      int bcDiff = static_cast<int>(globalBC - vGlobalBCs[indexClosestTVX]);
       if (track.hasTOF() || track.hasTRD() || !track.hasITS() || !track.hasTPC() || track.pt() < 1)
         continue;
       histos.fill(HIST("hTrackBcDiffVsEtaAll"), track.eta(), bcDiff);
@@ -942,60 +942,46 @@ struct EventSelectionQaTask {
         histos.fill(HIST("hOrbitAcc"), orbit - minOrbit);
       }
 
+      // search for nearest ft0a&ft0c entry
+      int32_t indexClosestTVX = findClosest(globalBC, mapGlobalBcWithTVX);
+      int bcDiff = static_cast<int>(globalBC - vGlobalBCs[indexClosestTVX]);
+
       // count tracks of different types
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
       int nTPCtracks = 0;
       int nTOFtracks = 0;
       int nTRDtracks = 0;
+      int nContributorsAfterEtaTPCCuts = 0;
       for (auto& track : tracksGrouped) {
-        if (!track.isPVContributor()) {
+        int trackBcDiff = bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS;
+        if (!track.isPVContributor())
           continue;
-        }
         nTPCtracks += track.hasTPC();
         nTOFtracks += track.hasTOF();
         nTRDtracks += track.hasTRD() && !track.hasTOF();
-
+        if (fabs(track.eta()) < 0.8 && track.tpcNClsFound() > 80 && track.tpcNClsCrossedRows() > 100)
+          nContributorsAfterEtaTPCCuts++;
+        if (!track.hasTPC())
+          histos.fill(HIST("hITStrackBcDiff"), trackBcDiff);
         if (track.hasTOF()) {
           histos.fill(HIST("hBcTrackTOF"), (globalBC + TMath::FloorNint(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS)) % 3564);
         } else if (track.hasTRD()) {
           histos.fill(HIST("hBcTrackTRD"), (globalBC + TMath::Nint(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS)) % 3564);
         }
+        if (track.hasTOF() || track.hasTRD() || !track.hasITS() || !track.hasTPC() || track.pt() < 1)
+          continue;
+        histos.fill(HIST("hTrackBcDiffVsEta"), track.eta(), trackBcDiff);
+        if (track.eta() < -0.2 || track.eta() > 0.2)
+          continue;
+        histos.fill(HIST("hSecondsTVXvsBcDif"), bc.timestamp() / 1000., trackBcDiff);
       }
 
-      // search for nearest ft0a&ft0c entry
-      int indexBc = bc.globalIndex();
-      int indexNearestTVX = indexBc;
-      if (vIsTVX[indexBc]) {
-        indexNearestTVX = indexBc;
-      } else {
-        bool foundNext = 0;
-        int indexNext = indexBc;
-        while (!foundNext && indexNext < nBCs - 1) {
-          if (vIsTVX[++indexNext]) {
-            foundNext = 1;
-          }
-        }
-        bool foundPrev = 0;
-        int indexPrev = indexBc;
-        while (!foundPrev && indexPrev > 0) {
-          if (vIsTVX[--indexPrev]) {
-            foundPrev = 1;
-          }
-        }
-        if (foundNext && foundPrev) {
-          int64_t diffNext = vGlobalBCs[indexNext] - globalBC;
-          int64_t diffPrev = globalBC - vGlobalBCs[indexPrev];
-          indexNearestTVX = diffNext <= diffPrev ? indexNext : indexPrev;
-        } else if (foundNext) {
-          indexNearestTVX = indexNext;
-        } else if (foundPrev) {
-          indexNearestTVX = indexPrev;
-        }
-      }
-      const auto& nearestTVX = bcs.iteratorAt(indexNearestTVX);
-      int bcDiff = static_cast<int>(globalBC - nearestTVX.globalBC());
       int nContributors = col.numContrib();
       float timeRes = col.collisionTimeRes();
+      int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
+      histos.fill(HIST("hNcontribCol"), nContributors);
+      histos.fill(HIST("hNcontribVsBcInTF"), bcInTF, nContributors);
+      histos.fill(HIST("hNcontribAfterCutsVsBcInTF"), bcInTF, nContributorsAfterEtaTPCCuts);
       histos.fill(HIST("hColBcDiffVsNcontrib"), nContributors, bcDiff);
       histos.fill(HIST("hColTimeResVsNcontrib"), nContributors, timeRes);
       if (nTPCtracks == 0) {
@@ -1020,41 +1006,6 @@ struct EventSelectionQaTask {
           histos.fill(HIST("hNcontribAccTRD"), nContributors);
         }
       }
-
-      int nContributorsAfterEtaTPCCuts = 0;
-
-      // fill track time histograms
-      for (auto& track : tracksGrouped) {
-        if (!track.isPVContributor()) {
-          continue;
-        }
-
-        if (fabs(track.eta()) < 0.8 && track.tpcNClsFound() > 80 && track.tpcNClsCrossedRows() > 100)
-          nContributorsAfterEtaTPCCuts++;
-
-        if (track.hasTOF())
-          continue;
-        if (track.hasTRD())
-          continue;
-        if (!track.hasITS())
-          continue;
-        if (!track.hasTPC()) {
-          histos.fill(HIST("hITStrackBcDiff"), bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
-          continue;
-        }
-        if (track.pt() < 1)
-          continue;
-        histos.fill(HIST("hTrackBcDiffVsEta"), track.eta(), bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
-        if (track.eta() < -0.2 || track.eta() > 0.2)
-          continue;
-        histos.fill(HIST("hSecondsTVXvsBcDif"), bc.timestamp() / 1000., bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
-      }
-
-      histos.fill(HIST("hNcontribCol"), nContributors);
-
-      int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
-      histos.fill(HIST("hNcontribVsBcInTF"), bcInTF, nContributors);
-      histos.fill(HIST("hNcontribAfterCutsVsBcInTF"), bcInTF, nContributorsAfterEtaTPCCuts);
 
       const auto& foundBC = col.foundBC_as<BCsRun3>();
 
@@ -1101,8 +1052,8 @@ struct EventSelectionQaTask {
       }
 
       // ZDC
-      float multZNA = col.foundZDCId() >= 0 ? col.foundZDC().energyCommonZNA() : -999.f;
-      float multZNC = col.foundZDCId() >= 0 ? col.foundZDC().energyCommonZNC() : -999.f;
+      float multZNA = foundBC.has_zdc() ? foundBC.zdc().energyCommonZNA() : -999.f;
+      float multZNC = foundBC.has_zdc() ? foundBC.zdc().energyCommonZNC() : -999.f;
 
       histos.fill(HIST("hMultT0Acol"), multT0A);
       histos.fill(HIST("hMultT0Ccol"), multT0C);
@@ -1116,6 +1067,19 @@ struct EventSelectionQaTask {
       if (!col.sel8()) {
         continue;
       }
+
+      if (col.selection_bit(kNoTimeFrameBorder)) {
+        histos.fill(HIST("hMultV0AVsNcontribAcc"), multV0A, nContributors);
+        histos.fill(HIST("hBcForMultV0AVsNcontribAcc"), foundBC.globalBC() % 3564);
+        if (nContributors < 0.02 * multV0A - 200) {
+          histos.fill(HIST("hBcForMultV0AVsNcontribOutliers"), foundBC.globalBC() % 3564);
+        }
+        if (col.selection_bit(kNoITSROFrameBorder)) {
+          histos.fill(HIST("hMultV0AVsNcontribCut"), multV0A, nContributors);
+          histos.fill(HIST("hBcForMultV0AVsNcontribCut"), foundBC.globalBC() % 3564);
+        }
+      }
+
       histos.fill(HIST("hMultT0MVsNcontribAcc"), multT0A + multT0C, nContributors);
       if (col.selection_bit(kNoITSROFrameBorder)) {
         histos.fill(HIST("hMultT0MVsNcontribCut"), multT0A + multT0C, nContributors);

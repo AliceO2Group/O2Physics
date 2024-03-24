@@ -21,6 +21,7 @@
 #include <sstream>
 #include <map>
 
+#include "ReconstructionDataFormats/PID.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
@@ -833,6 +834,8 @@ struct PIDSpeciesSelection {
   const char* getHadName() { return hadname; }
   const char* getHadTitle() { return hadtitle; }
   const char* getHadFName() { return hadfname; }
+  bool isSpeciesBeingSelected(uint8_t sp) { return std::find(species.begin(), species.end(), sp) != species.end(); }
+  bool isGlobalSpecies(uint8_t isp, o2::track::PID::ID glsp) { return species[isp] == glsp; }
   void storePIDAdjustments(TList* lst)
   {
     auto storedetectorwithcharge = [&](auto& detectorstore, auto detectorname, auto charge) {
@@ -949,10 +952,10 @@ struct PIDSpeciesSelection {
       return ((config->mPThreshold > 0.0) && (config->mPThreshold < track.p()));
     };
     auto isA = [&](auto& config, uint8_t sp) {
-      if (aboveThreshold(config)) {
-        if (track.hasTOF()) {
-          return closeToTPCTOF(config, sp) && awayFromTPCTOF(config, sp);
-        } else {
+      if (track.hasTOF()) {
+        return closeToTPCTOF(config, sp) && awayFromTPCTOF(config, sp);
+      } else {
+        if (aboveThreshold(config)) {
           if (config->mRequireTOF) {
             return false;
           }
@@ -991,14 +994,7 @@ struct PIDSpeciesSelection {
       }
     };
 
-    /* let's start discarding garbage */
-    if (track.hasTOF()) {
-      if (track.beta() < 0.42) {
-        return -127;
-      }
-    }
-
-    /* now adjust the nsigmas values if appropriate */
+    /* adjust the nsigmas values if appropriate */
     adjustnsigmas();
 
     /* let's first check the exclusion from the analysis */

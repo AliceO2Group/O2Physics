@@ -174,7 +174,7 @@ std::shared_ptr<TH3> hDCAxy[2][5][2];
 std::shared_ptr<TH3> hDCAz[2][5][2];
 std::shared_ptr<TH2> hGloTOFtracks[2];
 std::shared_ptr<TH2> hDeltaP[2][5];
-std::shared_ptr<THn> hFlowHists[2][5];
+std::shared_ptr<THnSparse> hFlowHists[2][5];
 o2::base::MatLayerCylSet* lut = nullptr;
 
 std::vector<NucleusCandidate> candidates;
@@ -335,7 +335,7 @@ struct nucleiSpectra {
     const AxisSpec v2Axis{cfgV2Bins, "cos(2(#phi - #Psi_{2}))"};
     const AxisSpec nITSClusAxis{cfgNITSClusBins, "N ITS clusters"};
     const AxisSpec nTPCClusAxis{cfgNTPCClusBins, "N TPC clusters"};
-    const AxisSpec matterAxis{2, -0.5, 1.5, "Matter/Antimatter"};
+    const AxisSpec hasTRDAxis{2, -0.5, 1.5, "Has TRD"};
 
     const AxisSpec ptAxes[5]{
       {cfgPtBinsProtons, "#it{p}_{T} (GeV/#it{c})"},
@@ -381,7 +381,7 @@ struct nucleiSpectra {
         }
         if (doprocessDataFlow) {
           if (cfgFlowHist->get(iS)) {
-            nuclei::hFlowHists[iC][iS] = spectra.add<THn>(fmt::format("hFlowHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Flow histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnF, {centAxis, ptAxes[iS], nSigmaAxes[0], tofMassAxis, v2Axis, nITSClusAxis, nTPCClusAxis});
+            nuclei::hFlowHists[iC][iS] = spectra.add<THnSparse>(fmt::format("hFlowHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Flow histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnSparseF, {centAxis, ptAxes[iS], nSigmaAxes[0], tofMassAxis, v2Axis, nITSClusAxis, nTPCClusAxis, hasTRDAxis});
           }
         }
       }
@@ -452,7 +452,7 @@ struct nucleiSpectra {
       bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
       float correctedTpcInnerParam = (heliumPID && cfgCompensatePIDinTracking) ? track.tpcInnerParam() / 2 : track.tpcInnerParam();
 
-      spectra.fill(HIST("hTpcSignalData"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
+      spectra.fill(HIST("hTpcSignalData"), correctedTpcInnerParam * track.sign(), track.tpcSignal());
       float nSigma[2][5]{
         {-10., -10., -10., -10., -10.},
         {0.f, 0.f, 0.f, 0.f, 0.f}}; /// then we will calibrate the TOF mass for the He3 and Alpha
@@ -531,7 +531,7 @@ struct nucleiSpectra {
                   if constexpr (std::is_same<Tcoll, CollWithEP>::value) {
                     auto deltaPhiInRange = getPhiInRange(fvector.phi() - collision.psiFT0C());
                     auto v2 = TMath::Cos(2.0 * deltaPhiInRange);
-                    nuclei::hFlowHists[iC][iS]->Fill(collision.centFT0C(), fvector.pt(), nSigma[0][iS], tofMass, v2, track.itsNCls(), track.tpcNClsFound());
+                    nuclei::hFlowHists[iC][iS]->Fill(collision.centFT0C(), fvector.pt(), nSigma[0][iS], tofMass, v2, track.itsNCls(), track.tpcNClsFound(), track.hasTRD());
                   }
                 }
               }
@@ -566,7 +566,7 @@ struct nucleiSpectra {
             collision.multTPC(),
           });
         }
-        nuclei::candidates.emplace_back(NucleusCandidate{static_cast<int>(track.globalIndex()), (1 - 2 * iC) * trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), track.tpcInnerParam(), beta, collision.posZ(), dcaInfo[0], dcaInfo[1], track.tpcSignal(), track.itsChi2NCl(), track.tpcChi2NCl(), flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(), static_cast<uint8_t>(track.tpcNClsFound()), static_cast<uint32_t>(track.itsClusterSizes())});
+        nuclei::candidates.emplace_back(NucleusCandidate{static_cast<int>(track.globalIndex()), (1 - 2 * iC) * trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), correctedTpcInnerParam, beta, collision.posZ(), dcaInfo[0], dcaInfo[1], track.tpcSignal(), track.itsChi2NCl(), track.tpcChi2NCl(), flag, track.tpcNClsFindable(), static_cast<uint8_t>(track.tpcNClsCrossedRows()), track.itsClusterMap(), static_cast<uint8_t>(track.tpcNClsFound()), static_cast<uint32_t>(track.itsClusterSizes())});
       }
     } // end loop over tracks
 

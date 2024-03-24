@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <TH2F.h>
+#include <TProfile2D.h>
 #include <CCDB/BasicCCDBManager.h>
 #include "ReconstructionDataFormats/PID.h"
 #include "Common/Core/TrackSelection.h"
@@ -57,17 +58,20 @@ enum BeforeAfter {
   kAfter       ///< filling after track selection
 };
 
+/* the PID selector object to help with the configuration and the id of the selected particles */
+o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
+
 // initialized during self configuration
 std::vector<std::string> poinames; ///< the species of interest names
 std::vector<std::string> tnames;   ///< the track names
 
 static const std::vector<o2::track::PID::ID> allmainspecies{o2::track::PID::Electron, o2::track::PID::Muon, o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton};
 static const std::vector<std::string> allmainspnames{"ElectronP", "ElectronM", "MuonP", "MuonM", "PionP", "PionM", "KaonP", "KaonM", "ProtonP", "ProtonM"};
+static const std::vector<std::string> allmainsptitles{"e^{#plus}", "e^{#minus}", "#mu^{#plus}", "#mu^{#minus}", "#pi^{#plus}", "#pi^{#minus}", "K^{#plus}", "K^{#minus}", "p", "#bar{p}"};
 static const std::vector<o2::track::PID::ID> mainspecies{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton};
 static const std::vector<std::string> mainspnames{"PionP", "PionM", "KaonP", "KaonM", "ProtonP", "ProtonM"};
-static const std::vector<int> pdgcodes = {11, 13, 211, 321, 2212};
 static const std::vector<std::string> mainsptitles{"#pi^{#plus}", "#pi^{#minus}", "K^{#plus}", "K^{#minus}", "p", "#bar{p}"};
-static const std::vector<std::string> allmainsptitles{"e^{#plus}", "e^{#minus}", "#mu^{#plus}", "#mu^{#minus}", "#pi^{#plus}", "#pi^{#minus}", "K^{#plus}", "K^{#minus}", "p", "#bar{p}"};
+static const std::vector<int> pdgcodes = {11, 13, 211, 321, 2212};
 } // namespace efficiencyandqatask
 
 /* the QA data collecting engine */
@@ -294,9 +298,9 @@ struct QADataCollectingEngine {
           h->Fill(track.eta(), track.pt());
         }
       };
-      bool hasits = track.hasITS() && ((track.trackCutFlag() & trackSelectionITS) == trackSelectionITS) && ((track.trackCutFlag() & trackSelectionDCA) == trackSelectionDCA);
-      bool hastpc = track.hasTPC() && ((track.trackCutFlag() & trackSelectionTPC) == trackSelectionTPC) && ((track.trackCutFlag() & trackSelectionDCA) == trackSelectionDCA);
-      bool hastof = track.hasTOF() && ((track.trackCutFlag() & trackSelectionDCA) == trackSelectionDCA);
+      bool hasits = track.hasITS() && TrackSelectionFlags::checkFlag(track.trackCutFlag(), trackSelectionITS) && TrackSelectionFlags::checkFlag(track.trackCutFlag(), trackSelectionDCA);
+      bool hastpc = track.hasTPC() && TrackSelectionFlags::checkFlag(track.trackCutFlag(), trackSelectionTPC);
+      bool hastof = track.hasTOF();
 
       fhITS_NCls_vs_PtB->Fill(track.pt(), track.itsNCls());
       fhITS_Chi2NCls_vs_PtB->Fill(track.pt(), track.itsChi2NCl());
@@ -419,9 +423,11 @@ struct PidDataCollectingEngine {
   /* PID histograms */
   /* only after track selection */
   std::vector<std::shared_ptr<TH2>> fhIdTPCdEdxSignalVsP{nsp, nullptr};
+  std::vector<std::shared_ptr<TProfile2D>> fpIdTPCdEdxSignalVsPSigmas{nsp, nullptr};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTPCdEdxSignalDiffVsP{nsp, {nmainsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTPCnSigmasVsP{nsp, {nallmainsp, nullptr}};
   std::vector<std::shared_ptr<TH2>> fhIdTOFSignalVsP{nsp, nullptr};
+  std::vector<std::shared_ptr<TProfile2D>> fpIdTOFSignalVsPSigmas{nsp, nullptr};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTOFSignalDiffVsP{nsp, {nmainsp, nullptr}};
   std::vector<std::vector<std::shared_ptr<TH2>>> fhIdTOFnSigmasVsP{nsp, {nallmainsp, nullptr}};
   std::vector<std::shared_ptr<TH2>> fhIdPvsTOFSqMass{nsp, nullptr};
@@ -482,19 +488,30 @@ struct PidDataCollectingEngine {
                                                  HNAMESTRING("tpcSignalVsPSelected_%s", tnames[isp].c_str()),
                                                  HTITLESTRING("TPC dE/dx for selected %s", tnames[isp].c_str()),
                                                  kTH2F, {pidPAxis, dEdxAxis});
+        fpIdTPCdEdxSignalVsPSigmas[isp] = ADDHISTOGRAM(TProfile2D, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
+                                                       HNAMESTRING("tpcSignalSigmasVsPSelected_%s", tnames[isp].c_str()),
+                                                       HTITLESTRING("TPC dE/dx and n#sigma for selected %s", tnames[isp].c_str()),
+                                                       kTProfile2D, {pidPAxis, dEdxAxis});
         fhIdTOFSignalVsP[isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
                                              HNAMESTRING("tofSignalVsPSelected_%s", tnames[isp].c_str()),
                                              HTITLESTRING("TOF signal for selected %s", tnames[isp].c_str()),
                                              kTH2F, {pidPAxis, {200, 0.0, 1.1, "#beta"}});
+        fpIdTOFSignalVsPSigmas[isp] = ADDHISTOGRAM(TProfile2D, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
+                                                   HNAMESTRING("tofSignalSigmasVsPSelected_%s", tnames[isp].c_str()),
+                                                   HTITLESTRING("TOF signal and n#sigma for selected %s", tnames[isp].c_str()),
+                                                   kTProfile2D, {pidPAxis, {200, 0.0, 1.1, "#beta"}});
         for (uint imainsp = 0; imainsp < nallmainsp; ++imainsp) {
-          fhIdTPCnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
-                                                         HNAMESTRING("tpcNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), allmainspnames[imainsp].c_str()),
-                                                         HTITLESTRING("TPC n#sigma for selected %s to the %s line", tnames[isp].c_str(), allmainsptitles[imainsp].c_str()),
-                                                         kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", allmainsptitles[isp].c_str())}});
-          fhIdTOFnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
-                                                         HNAMESTRING("tofNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), allmainspnames[imainsp].c_str()),
-                                                         HTITLESTRING("TOF n#sigma for selected %s to the %s line", tnames[isp].c_str(), allmainsptitles[imainsp].c_str()),
-                                                         kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", allmainsptitles[isp].c_str())}});
+          /* only the same charge makes any sense */
+          if (isp % 2 == imainsp % 2) {
+            fhIdTPCnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
+                                                           HNAMESTRING("tpcNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), allmainspnames[imainsp].c_str()),
+                                                           HTITLESTRING("TPC n#sigma for selected %s to the %s line", tnames[isp].c_str(), allmainsptitles[imainsp].c_str()),
+                                                           kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TPC}^{%s}", allmainsptitles[isp].c_str())}});
+            fhIdTOFnSigmasVsP[isp][imainsp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", "Selected"),
+                                                           HNAMESTRING("tofNSigmasVsPSelected_%s_to%s", tnames[isp].c_str(), allmainspnames[imainsp].c_str()),
+                                                           HTITLESTRING("TOF n#sigma for selected %s to the %s line", tnames[isp].c_str(), allmainsptitles[imainsp].c_str()),
+                                                           kTH2F, {pidPAxis, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", allmainsptitles[isp].c_str())}});
+          }
         }
       }
     }
@@ -518,6 +535,11 @@ struct PidDataCollectingEngine {
     }
     fhIdTPCnSigmasVsP[track.trackacceptedid()][ix]->Fill(track.p(), o2::aod::pidutils::tpcNSigma<id>(track));
     fhIdTOFnSigmasVsP[track.trackacceptedid()][ix]->Fill(track.p(), o2::aod::pidutils::tofNSigma<id>(track));
+    if (efficiencyandqatask::pidselector.isGlobalSpecies(track.trackacceptedid() / 2, id)) {
+      /* only if the species of the selected track matches the target of the number of sigmas */
+      fpIdTPCdEdxSignalVsPSigmas[track.trackacceptedid()]->Fill(track.p(), track.tpcSignal(), o2::aod::pidutils::tpcNSigma<id>(track));
+      fpIdTOFSignalVsPSigmas[track.trackacceptedid()]->Fill(track.p(), track.beta(), o2::aod::pidutils::tofNSigma<id>(track));
+    }
   }
 
   template <o2::track::PID::ID id, typename TrackObject>
@@ -596,8 +618,20 @@ struct DptDptEfficiencyAndQc {
   HistogramRegistry registry_eight{"registry_eight", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registry_nine{"registry_nine", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registry_ten{"registry_ten", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registry_pidone{"pidregistry_one", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registry_pidtwo{"pidregistry_two", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registry_pidthree{"pidregistry_three", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registry_pidfour{"pidregistry_four", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registry_pidfive{"pidregistry_five", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registry_pidsix{"pidregistry_six", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registry_pidseven{"pidregistry_seven", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registry_pideight{"pidregistry_eight", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registry_pidnine{"pidregistry_nine", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registry_pidten{"pidregistry_ten", {}, OutputObjHandlingPolicy::AnalysisObject};
   std::vector<HistogramRegistry*> registrybank{&registry_one, &registry_two, &registry_three, &registry_four, &registry_five,
                                                &registry_six, &registry_seven, &registry_eight, &registry_nine, &registry_ten};
+  std::vector<HistogramRegistry*> pidregistrybank{&registry_pidone, &registry_pidtwo, &registry_pidthree, &registry_pidfour, &registry_pidfive,
+                                                  &registry_pidsix, &registry_pidseven, &registry_pideight, &registry_pidnine, &registry_pidten};
 
   Configurable<bool> inCentralityClasses{"usecentrality", false, "Perform the task using centrality/multiplicity classes. Default value: false"};
 
@@ -626,11 +660,10 @@ struct DptDptEfficiencyAndQc {
       getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup, false);
 
       /* configuring the involved species */
-      o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
-      std::vector<std::string> cfgnames = {"pipidsel", "kapidsel", "prpidsel"};
-      std::vector<uint8_t> spids = {2, 3, 4};
+      std::vector<std::string> cfgnames = {"elpidsel", "mupidsel", "pipidsel", "kapidsel", "prpidsel"};
+      std::vector<uint8_t> spids = {0, 1, 2, 3, 4};
       for (uint i = 0; i < cfgnames.size(); ++i) {
-        auto includeIt = [&pidselector, &initContext](int spid, auto name) {
+        auto includeIt = [&initContext](int spid, auto name) {
           bool mUseIt = false;
           bool mExcludeIt = false;
           if (getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mUseIt", name.c_str()).Data(), mUseIt, false) &&
@@ -699,22 +732,22 @@ struct DptDptEfficiencyAndQc {
       }
       /* in reverse order for proper order in results file */
       for (uint i = 0; i < ncmranges; ++i) {
-        auto initializeCEInstance = [&](auto dce, auto name) {
+        auto initializeCEInstance = [&](auto dce, auto name, auto& registry) {
           /* crete the output list for the passed centrality/multiplicity range */
           /* init the data collection instance */
-          dce->template init<kReco>(*registrybank[i], name.Data());
+          dce->template init<kReco>(registry, name.Data());
           if (doprocessGeneratorLevelNotStored) {
-            dce->template init<kGen>(*registrybank[i], name.Data());
+            dce->template init<kGen>(registry, name.Data());
           }
         };
-        auto buildQACEInstance = [&initializeCEInstance](float min, float max) {
+        auto buildQACEInstance = [&](float min, float max) {
           auto* dce = new QADataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndQaData-%d-%d", static_cast<int>(min), static_cast<int>(max)));
+          initializeCEInstance(dce, TString::Format("EfficiencyAndQaData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *registrybank[i]);
           return dce;
         };
-        auto buildPidCEInstance = [&initializeCEInstance](float min, float max) {
+        auto buildPidCEInstance = [&](float min, float max) {
           auto* dce = new PidDataCollectingEngine();
-          initializeCEInstance(dce, TString::Format("EfficiencyAndQaData-%d-%d", static_cast<int>(min), static_cast<int>(max)));
+          initializeCEInstance(dce, TString::Format("EfficiencyAndPidData-%d-%d", static_cast<int>(min), static_cast<int>(max)), *pidregistrybank[i]);
           return dce;
         };
         /* in reverse order for proper order in results file */

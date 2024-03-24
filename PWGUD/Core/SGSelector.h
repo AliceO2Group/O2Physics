@@ -159,6 +159,28 @@ class SGSelector
       return 0;
   }
 
+  template <typename CC>
+  int trueGap(CC& collision, float fv0_cut, float zdc_cut)
+  {
+    int gap = collision.gapSide();
+    int true_gap = gap;
+    if (gap == 0) {
+      if (collision.totalFV0AmplitudeA() > fv0_cut || collision.energyCommonZNA() > zdc_cut)
+        true_gap = -1;
+    } else if (gap == 1) {
+      if (collision.energyCommonZNC() > zdc_cut)
+        true_gap = -1;
+    } else if (gap == 2) {
+      if ((collision.totalFV0AmplitudeA() > fv0_cut || collision.energyCommonZNA() > zdc_cut) && (collision.energyCommonZNC() > zdc_cut))
+        true_gap = -1;
+      else if (collision.totalFV0AmplitudeA() > fv0_cut || collision.energyCommonZNA() > zdc_cut)
+        true_gap = 1;
+      else if (collision.energyCommonZNC() > zdc_cut)
+        true_gap = 0;
+    }
+    return true_gap;
+  }
+
  private:
   TDatabasePDG* fPDG;
 };

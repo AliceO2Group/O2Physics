@@ -84,6 +84,7 @@ struct derivedlambdakzeroanalysis {
   Configurable<float> dcanegtopv{"dcanegtopv", .05, "min DCA Neg To PV (cm)"};
   Configurable<float> dcapostopv{"dcapostopv", .05, "min DCA Pos To PV (cm)"};
   Configurable<float> v0radius{"v0radius", 1.2, "minimum V0 radius (cm)"};
+  Configurable<float> v0radiusMax{"v0radiusMax", 1E5, "maximum V0 radius (cm)"};
 
   // Additional selection on the AP plot (exclusive for K0Short)
   // original equation: lArmPt*5>TMath::Abs(lArmAlpha)
@@ -148,6 +149,7 @@ struct derivedlambdakzeroanalysis {
 
   enum selection { selCosPA = 0,
                    selRadius,
+                   selRadiusMax,
                    selDCANegToPV,
                    selDCAPosToPV,
                    selDCAV0Dau,
@@ -200,12 +202,12 @@ struct derivedlambdakzeroanalysis {
   void init(InitContext const&)
   {
     // initialise bit masks
-    maskTopological = (1 << selCosPA) | (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau);
-    maskTopoNoV0Radius = (1 << selCosPA) | (1 << selDCANegToPV) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau);
-    maskTopoNoDCANegToPV = (1 << selCosPA) | (1 << selRadius) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau);
-    maskTopoNoDCAPosToPV = (1 << selCosPA) | (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAV0Dau);
-    maskTopoNoCosPA = (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau);
-    maskTopoNoDCAV0Dau = (1 << selCosPA) | (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV);
+    maskTopological = (1 << selCosPA) | (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau) | (1 << selRadiusMax);
+    maskTopoNoV0Radius = (1 << selCosPA) | (1 << selDCANegToPV) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau) | (1 << selRadiusMax);
+    maskTopoNoDCANegToPV = (1 << selCosPA) | (1 << selRadius) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau) | (1 << selRadiusMax);
+    maskTopoNoDCAPosToPV = (1 << selCosPA) | (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAV0Dau) | (1 << selRadiusMax);
+    maskTopoNoCosPA = (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV) | (1 << selDCAV0Dau) | (1 << selRadiusMax);
+    maskTopoNoDCAV0Dau = (1 << selCosPA) | (1 << selRadius) | (1 << selDCANegToPV) | (1 << selDCAPosToPV) | (1 << selRadiusMax);
 
     maskK0ShortSpecific = (1 << selK0ShortRapidity) | (1 << selK0ShortCTau) | (1 << selK0ShortArmenteros) | (1 << selConsiderK0Short);
     maskLambdaSpecific = (1 << selLambdaRapidity) | (1 << selLambdaCTau) | (1 << selConsiderLambda);
@@ -444,6 +446,8 @@ struct derivedlambdakzeroanalysis {
     // Base topological variables
     if (v0.v0radius() > v0radius)
       bitset(bitMap, selRadius);
+    if (v0.v0radius() < v0radiusMax)
+      bitset(bitMap, selRadiusMax);
     if (TMath::Abs(v0.dcapostopv()) > dcapostopv)
       bitset(bitMap, selDCAPosToPV);
     if (TMath::Abs(v0.dcanegtopv()) > dcanegtopv)
@@ -917,7 +921,6 @@ struct derivedlambdakzeroanalysis {
       if (gVec.generatedK0Short().size() != hK0Short->GetNcells())
         LOGF(fatal, "K0Short: Number of elements in generated array and number of cells in receiving histogram differ: %i vs %i!", gVec.generatedK0Short().size(), hK0Short->GetNcells());
       for (uint32_t iv = 0; iv < hK0Short->GetNcells(); iv++) {
-        LOGF(info, "processing element %i with content: %i", iv, gVec.generatedK0Short()[iv]);
         hK0Short->SetBinContent(iv, hK0Short->GetBinContent(iv) + gVec.generatedK0Short()[iv]);
       }
     }

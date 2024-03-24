@@ -152,6 +152,8 @@ struct antidLambdaEbye {
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
 
+  Configurable<float> kINT7Intervals{"kINT7Intervals", false, "toggle kINT7 trigger selection in the 10-30% and 50-90% centrality intervals (2018 Pb-Pb)"};
+
   Configurable<float> antidPtMin{"antidPtMin", 0.8f, "minimum antideuteron pT (GeV/c)"};
   Configurable<float> antidPtTof{"antidPtTof", 1.0f, "antideuteron pT to switch to TOF pid (GeV/c) "};
   Configurable<float> antidPtMax{"antidPtMax", 1.8f, "maximum antideuteron pT (GeV/c)"};
@@ -771,14 +773,12 @@ struct antidLambdaEbye {
   void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::TrackletMults> const& collisions, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s, BCsWithRun2Info const&)
   {
     for (const auto& collision : collisions) {
-      if (!collision.sel7())
-        continue;
-
       auto bc = collision.bc_as<BCsWithRun2Info>();
       if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
         continue;
 
-      if (!collision.alias_bit(kINT7))
+      auto centrality = collision.centRun2V0M();
+      if (!collision.alias_bit(kINT7) && (!kINT7Intervals || (kINT7Intervals && ((centrality >= 10 && centrality < 30) || centrality > 50))))
         continue;
 
       if (std::abs(collision.posZ()) > zVtxMax)
@@ -791,7 +791,6 @@ struct antidLambdaEbye {
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
       V0Table_thisCollision.bindExternalIndices(&tracks);
 
-      auto centrality = collision.centRun2V0M();
       auto centralityCl0 = collision.centRun2CL0();
       auto multTracklets = collision.multTracklets();
       fillRecoEvent(TrackTable_thisCollision, V0Table_thisCollision, centrality);

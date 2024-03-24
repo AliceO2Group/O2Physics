@@ -493,6 +493,7 @@ class VarManager : public TObject
     kQuadDCAabsZ,
     kQuadDCAsigZ,
     kQuadDCAsigXYZ,
+    kSignQuadDCAsigXY,
     kCosPointingAngle,
     kImpParXYJpsi,
     kImpParXYK,
@@ -1884,7 +1885,8 @@ void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
   values[kMCY] = track.y();
   values[kMCParticleGeneratorId] = track.producedByGenerator();
   if (track.has_mothers()) {
-    auto mother = track.template mothers_first_as<U>();
+    auto motherId = track.mothersIds()[0];
+    auto mother = mcStack.rawIteratorAt(motherId);
     values[kMCMotherPdgCode] = mother.pdgCode();
   }
 
@@ -2012,7 +2014,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
 
   if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
 
-    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAabsZ] || fgUsedVars[kQuadDCAsigZ] || fgUsedVars[kQuadDCAsigXYZ]) {
+    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAabsZ] || fgUsedVars[kQuadDCAsigZ] || fgUsedVars[kQuadDCAsigXYZ] || fgUsedVars[kSignQuadDCAsigXY]) {
       // Quantities based on the barrel tables
       double dca1XY = t1.dcaXY();
       double dca2XY = t2.dcaXY();
@@ -2027,6 +2029,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
       values[kQuadDCAabsZ] = std::sqrt((dca1Z * dca1Z + dca2Z * dca2Z) / 2);
       values[kQuadDCAsigZ] = std::sqrt((dca1sigZ * dca1sigZ + dca2sigZ * dca2sigZ) / 2);
+      values[kSignQuadDCAsigXY] = t1.sign() * t2.sign() * std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
 
       double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
       double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();

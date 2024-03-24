@@ -62,6 +62,10 @@ struct lambda1520analysis {
   Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"};          // PV Contriuibutor
 
   /// PID Selections
+  Configurable<float> cRejNsigmaTpc{"cRejNsigmaTpc", 3.0, "Reject tracks to improve purity of TPC PID"}; // Reject missidentified particles when tpc bands merge
+  Configurable<float> cRejNsigmaTof{"cRejNsigmaTof", 3.0, "Reject tracks to improve purity of TOF PID"}; // Reject missidentified particles when tpc bands merge
+  Configurable<bool> cUseRejNsigma{"cUseRejNsigma", false, "Switch on/off track rejection method to improve purity"};
+
   // Kaon
   // Old PID use case
   Configurable<std::vector<double>> kaonTPCPIDpTintv{"kaonTPCPIDpTintv", {999.}, "pT intervals for Kaon TPC PID cuts"};
@@ -280,13 +284,31 @@ struct lambda1520analysis {
   {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
     if (std::abs(candidate.tpcNSigmaPr()) < cMaxTPCnSigmaProton) {
-      tpcPIDPassed = true;
+      if (cUseRejNsigma) {
+        if (candidate.tpcNSigmaPi() > cRejNsigmaTpc && candidate.tpcNSigmaKa() > cRejNsigmaTpc) {
+          tpcPIDPassed = true;
+        }
+      } else {
+        tpcPIDPassed = true;
+      }
     }
     if (candidate.hasTOF()) {
       if ((nsigmaCutCombinedProton > 0) && ((candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < (nsigmaCutCombinedProton * nsigmaCutCombinedProton))) {
-        tofPIDPassed = true;
+        if (cUseRejNsigma) {
+          if (candidate.tofNSigmaPi() > cRejNsigmaTof && candidate.tofNSigmaKa() > cRejNsigmaTof) {
+            tofPIDPassed = true;
+          }
+        } else {
+          tofPIDPassed = true;
+        }
       } else if (std::abs(candidate.tofNSigmaPr()) < cMaxTOFnSigmaProton) {
-        tofPIDPassed = true;
+        if (cUseRejNsigma) {
+          if (candidate.tofNSigmaPi() > cRejNsigmaTof && candidate.tofNSigmaKa() > cRejNsigmaTof) {
+            tofPIDPassed = true;
+          }
+        } else {
+          tofPIDPassed = true;
+        }
       }
     } else {
       tofPIDPassed = true;
@@ -302,14 +324,32 @@ struct lambda1520analysis {
   {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
     if (std::abs(candidate.tpcNSigmaKa()) < cMaxTPCnSigmaKaon) {
-      tpcPIDPassed = true;
+      if (cUseRejNsigma) {
+        if (candidate.tpcNSigmaPi() > cRejNsigmaTpc && candidate.tpcNSigmaPr() > cRejNsigmaTpc) {
+          tpcPIDPassed = true;
+        }
+      } else {
+        tpcPIDPassed = true;
+      }
     }
     if (candidate.hasTOF()) {
       if (std::abs(candidate.tofNSigmaKa()) < cMaxTOFnSigmaKaon) {
-        tofPIDPassed = true;
+        if (cUseRejNsigma) {
+          if (candidate.tofNSigmaPi() > cRejNsigmaTof && candidate.tofNSigmaPr() > cRejNsigmaTof) {
+            tofPIDPassed = true;
+          }
+        } else {
+          tofPIDPassed = true;
+        }
       }
       if ((nsigmaCutCombinedKaon > 0) && ((candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < (nsigmaCutCombinedKaon * nsigmaCutCombinedKaon))) {
-        tofPIDPassed = true;
+        if (cUseRejNsigma) {
+          if (candidate.tofNSigmaPi() > cRejNsigmaTof && candidate.tofNSigmaPr() > cRejNsigmaTof) {
+            tofPIDPassed = true;
+          }
+        } else {
+          tofPIDPassed = true;
+        }
       }
     } else {
       tofPIDPassed = true;
@@ -536,9 +576,9 @@ struct lambda1520analysis {
       if (trk2.isPrimaryTrack())
         counterpv2 = 1;
 
-      histos.fill(HIST("MultCalib/centglopi"), multiplicity, counterglo1);
+      histos.fill(HIST("MultCalib/centglopr"), multiplicity, counterglo1);
       histos.fill(HIST("MultCalib/centgloka"), multiplicity, counterglo2);
-      histos.fill(HIST("MultCalib/GloPVpi"), counterglo1, counterpv1);
+      histos.fill(HIST("MultCalib/GloPVpr"), counterglo1, counterpv1);
       histos.fill(HIST("MultCalib/GloPVka"), counterglo2, counterpv2);
 
       // Apply kinematic cuts.

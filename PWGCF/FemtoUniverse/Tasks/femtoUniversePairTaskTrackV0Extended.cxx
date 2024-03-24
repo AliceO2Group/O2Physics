@@ -11,7 +11,7 @@
 
 /// \brief Tasks that build pairs of track particles and v0s
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Shirajum Monira, WUT Warsaw, shirajum.monira.dokt@pw.edu.pl
 
 #include <vector>
@@ -98,6 +98,7 @@ struct femtoUniversePairTaskTrackV0Extended {
   Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaPhiCut{"ConfCPRdeltaPhiCut", 0.0, "Delta Phi cut for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaCut{"ConfCPRdeltaEtaCut", 0.0, "Delta Eta cut for Close Pair Rejection"};
+  Configurable<float> ConfCPRChosenRadii{"ConfCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
   Configurable<int> ConfPhiBins{"ConfPhiBins", 29, "Number of phi bins in deta dphi"};
   Configurable<int> ConfEtaBins{"ConfEtaBins", 29, "Number of eta bins in deta dphi"};
   ConfigurableAxis ConfmTBins3D{"ConfmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfUse3D>> to true in order to use)"};
@@ -106,7 +107,9 @@ struct femtoUniversePairTaskTrackV0Extended {
   FemtoUniverseContainer<femtoUniverseContainer::EventType::same, femtoUniverseContainer::Observable::kstar> sameEventCont;
   FemtoUniverseContainer<femtoUniverseContainer::EventType::mixed, femtoUniverseContainer::Observable::kstar> mixedEventCont;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kV0> pairCleaner;
+  FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kV0, aod::femtouniverseparticle::ParticleType::kV0> pairCleanerV0;
   FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kV0> pairCloseRejection;
+  FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kV0, aod::femtouniverseparticle::ParticleType::kV0> pairCloseRejectionV0;
   /// Histogram output
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -174,8 +177,10 @@ struct femtoUniversePairTaskTrackV0Extended {
     mixedEventCont.setPDGCodes(ConfTrkPDGCodePartOne, ConfV0PDGCodePartTwo);
 
     pairCleaner.init(&qaRegistry);
+    pairCleanerV0.init(&qaRegistry);
     if (ConfIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRChosenRadii.value, ConfCPRPlotPerRadii.value);
+      pairCloseRejectionV0.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRChosenRadii.value, ConfCPRPlotPerRadii.value);
     }
   }
   /// This function processes the same event for track - V0
@@ -270,17 +275,21 @@ struct femtoUniversePairTaskTrackV0Extended {
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
       if (ConfIsCPR.value) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
+        if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
           continue;
         }
       }
       // track cleaning
-      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+      if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
         continue;
       }
-      const auto& posChild = parts.iteratorAt(p2.index() - 2);
-      const auto& negChild = parts.iteratorAt(p2.index() - 1);
-      if ((ConfV0Type > 0 && !IsParticleTPC(posChild, 0)) || (ConfV0Type < 0 && !IsParticleTPC(negChild, 0)))
+      const auto& posChild1 = parts.iteratorAt(p1.index() - 2);
+      const auto& negChild1 = parts.iteratorAt(p1.index() - 1);
+      if ((ConfV0Type > 0 && !IsParticleTPC(posChild1, 0)) || (ConfV0Type < 0 && !IsParticleTPC(negChild1, 0)))
+        continue;
+      const auto& posChild2 = parts.iteratorAt(p2.index() - 2);
+      const auto& negChild2 = parts.iteratorAt(p2.index() - 1);
+      if ((ConfV0Type > 0 && !IsParticleTPC(posChild2, 0)) || (ConfV0Type < 0 && !IsParticleTPC(negChild2, 0)))
         continue;
       sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
     }
@@ -352,17 +361,21 @@ struct femtoUniversePairTaskTrackV0Extended {
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
         if (ConfIsCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femtoUniverseContainer::EventType::mixed)) {
+          if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla1, femtoUniverseContainer::EventType::mixed)) {
             continue;
           }
         }
         // track cleaning
-        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+        if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        const auto& posChild = parts.iteratorAt(p2.index() - 2);
-        const auto& negChild = parts.iteratorAt(p2.index() - 1);
-        if ((ConfV0Type > 0 && !IsParticleTPC(posChild, 0)) || (ConfV0Type < 0 && !IsParticleTPC(negChild, 0)))
+        const auto& posChild1 = parts.iteratorAt(p1.index() - 2);
+        const auto& negChild1 = parts.iteratorAt(p1.index() - 1);
+        if ((ConfV0Type > 0 && !IsParticleTPC(posChild1, 0)) || (ConfV0Type < 0 && !IsParticleTPC(negChild1, 0)))
+          continue;
+        const auto& posChild2 = parts.iteratorAt(p2.index() - 2);
+        const auto& negChild2 = parts.iteratorAt(p2.index() - 1);
+        if ((ConfV0Type > 0 && !IsParticleTPC(posChild2, 0)) || (ConfV0Type < 0 && !IsParticleTPC(negChild2, 0)))
           continue;
         mixedEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
       }
