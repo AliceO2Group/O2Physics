@@ -23,10 +23,10 @@ namespace o2::aod
                bc::RunNumber
 
 // Reduced BCs as a root index
-DECLARE_SOA_TABLE(RBCs, "AOD", "RBCS",
+DECLARE_SOA_TABLE(RBCs, "AOD", "RBC",
                   BCcols,
                   soa::Marker<1>);
-DECLARE_SOA_TABLE(StoredRBCs, "AOD1", "RBCS",
+DECLARE_SOA_TABLE(StoredRBCs, "AOD1", "RBC",
                   BCcols,
                   soa::Marker<2>);
 
