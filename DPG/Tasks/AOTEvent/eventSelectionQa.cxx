@@ -110,6 +110,8 @@ struct EventSelectionQaTask {
     const AxisSpec axisBcDif{600, -300., 300., "collision bc difference"};
     const AxisSpec axisAliases{kNaliases, 0., static_cast<double>(kNaliases), ""};
     const AxisSpec axisSelections{kNsel, 0., static_cast<double>(kNsel), ""};
+    const AxisSpec axisVtxZ{500, -25., 25., ""};
+    const AxisSpec axisVtxXY{500, -1., 1., ""};
 
     histos.add("hTimeV0Aall", "All bcs;V0A time (ns);Entries", kTH1F, {axisTime});
     histos.add("hTimeV0Call", "All bcs;V0C time (ns);Entries", kTH1F, {axisTime});
@@ -278,19 +280,23 @@ struct EventSelectionQaTask {
     histos.add("hMultT0MVsNcontribAcc", "", kTH2F, {axisMultT0M, axisNcontrib}); // before ITS RO Frame border cut
     histos.add("hMultT0MVsNcontribCut", "", kTH2F, {axisMultT0M, axisNcontrib}); // after ITS RO Frame border cut
 
-    histos.add("hMultV0AVsNcontribAcc", "", kTH2F, {axisMultV0A, axisNcontrib}); // before ITS RO Frame border cut
-    histos.add("hMultV0AVsNcontribCut", "", kTH2F, {axisMultV0A, axisNcontrib}); // after ITS RO Frame border cut
+    histos.add("hMultV0AVsNcontribAcc", "", kTH2F, {axisMultV0A, axisNcontrib});  // before ITS RO Frame border cut
+    histos.add("hMultV0AVsNcontribCut", "", kTH2F, {axisMultV0A, axisNcontrib});  // after ITS RO Frame border cut
+    histos.add("hMultV0AVsNcontribGood", "", kTH2F, {axisMultV0A, axisNcontrib}); // after good vertex cut
 
     histos.add("hBcForMultV0AVsNcontribAcc", "", kTH1F, {axisBCs});      // bc distribution for V0A-vs-Ncontrib accepted
     histos.add("hBcForMultV0AVsNcontribOutliers", "", kTH1F, {axisBCs}); // bc distribution for V0A-vs-Ncontrib outliers
     histos.add("hBcForMultV0AVsNcontribCut", "", kTH1F, {axisBCs});      // bc distribution for V0A-vs-Ncontrib after ITS-ROF border cut
 
+    histos.add("hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ}); // FT0-vertex vs z-vertex from collisions
+    histos.add("hVtxFT0MinusVtxCol", "", kTH1F, {axisVtxZ});        // FT0-vertex minus z-vertex from collisions
+
     // MC histograms
     histos.add("hGlobalBcColMC", "", kTH1F, {axisGlobalBCs});
     histos.add("hBcColMC", "", kTH1F, {axisBCs});
-    histos.add("hVertexXMC", "", kTH1F, {{1000, -1., 1., "cm"}});
-    histos.add("hVertexYMC", "", kTH1F, {{1000, -1., 1., "cm"}});
-    histos.add("hVertexZMC", "", kTH1F, {{1000, -20., 20., "cm"}});
+    histos.add("hVertexXMC", "", kTH1F, {axisVtxXY});
+    histos.add("hVertexYMC", "", kTH1F, {axisVtxXY});
+    histos.add("hVertexZMC", "", kTH1F, {axisVtxZ});
 
     for (int i = 0; i < kNsel; i++) {
       histos.get<TH1>(HIST("hSelCounter"))->GetXaxis()->SetBinLabel(i + 1, selectionLabels[i]);
@@ -1068,16 +1074,31 @@ struct EventSelectionQaTask {
         continue;
       }
 
+      bool isGoodVertex = 0;
+      if (foundBC.has_ft0()) {
+        histos.fill(HIST("hVtxFT0VsVtxCol"), foundBC.ft0().posZ(), col.posZ());
+        histos.fill(HIST("hVtxFT0MinusVtxCol"), foundBC.ft0().posZ() - col.posZ());
+        isGoodVertex = fabs(foundBC.ft0().posZ() - col.posZ()) < 1;
+      }
+
+      int foundLocalBC = foundBC.globalBC() % nBCsPerOrbit;
+      int bcInITSROF = (foundLocalBC + 594 - 71) % 594;
+      bool noITSROFBorder = bcInITSROF < 594 - 15;
+
       if (col.selection_bit(kNoTimeFrameBorder)) {
         histos.fill(HIST("hMultV0AVsNcontribAcc"), multV0A, nContributors);
-        histos.fill(HIST("hBcForMultV0AVsNcontribAcc"), foundBC.globalBC() % nBCsPerOrbit);
+        histos.fill(HIST("hBcForMultV0AVsNcontribAcc"), foundLocalBC);
         if (nContributors < 0.043 * multV0A - 860) {
-          histos.fill(HIST("hBcForMultV0AVsNcontribOutliers"), foundBC.globalBC() % nBCsPerOrbit);
+          histos.fill(HIST("hBcForMultV0AVsNcontribOutliers"), foundLocalBC);
         }
         if (col.selection_bit(kNoITSROFrameBorder)) {
           histos.fill(HIST("hMultV0AVsNcontribCut"), multV0A, nContributors);
-          histos.fill(HIST("hBcForMultV0AVsNcontribCut"), foundBC.globalBC() % nBCsPerOrbit);
+          histos.fill(HIST("hBcForMultV0AVsNcontribCut"), foundLocalBC);
         }
+      }
+
+      if (col.selection_bit(kNoTimeFrameBorder) && noITSROFBorder && isGoodVertex) {
+        histos.fill(HIST("hMultV0AVsNcontribGood"), multV0A, nContributors);
       }
 
       histos.fill(HIST("hMultT0MVsNcontribAcc"), multT0A + multT0C, nContributors);
