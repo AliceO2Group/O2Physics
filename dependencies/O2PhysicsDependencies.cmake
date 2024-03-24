@@ -26,4 +26,19 @@ set_package_properties(fjcontrib PROPERTIES TYPE REQUIRED)
 
 find_package(ONNXRuntime::ONNXRuntime)
 
+find_package(Yoda 1.9.0)
+set_package_properties(Yoda PROPERTIES
+  TYPE RECOMMENDED
+  DESCRIPTION "Yoda data structure package"
+  URL "https://yoda.hepforge.org/"
+  PURPOSE "Support for Rivet analyses on MC data")
+
+find_package(Rivet 3.1.8)
+set_package_properties(Rivet PROPERTIES
+  TYPE RECOMMENDED
+  DESCRIPTION "Rivet MC analysis tool"
+  URL "https://rivet.hepforge.org/"
+  PURPOSE "Support running Rivet analyses on MC data")
+
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
+

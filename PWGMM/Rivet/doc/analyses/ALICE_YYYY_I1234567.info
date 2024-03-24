@@ -1,0 +1,20 @@
+Name: ALICE_YYYY_I1234567
+Year: YYYY
+Summary: A test analysis
+Experiment: ALICE
+Collider: LHC
+Status: UNVALIDATED REENTRY UNPHYSICAL
+Authors:
+ - Christian Holm Christensen <cholm@nbi.dk>
+RunInfo: Simple example of an analysis
+#Beams: [p+, p+]
+#Energies: [[6500,6500]]
+Description:
+  'A simple test analysis'
+#ReleaseTests:
+# - $A my-hepmc-prefix :MODE=some_rivet_flag
+Keywords: []
+BibKey:
+BibTeX: ''
+ToDo:
+ - Nothing.  This is a test.

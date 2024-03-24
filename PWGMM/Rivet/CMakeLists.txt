@@ -1,4 +1,4 @@
-# Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+# Copyright 2019-2099 CERN and copyright holders of ALICE O2.
 # See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 # All rights not expressly granted are reserved.
 #
@@ -9,11 +9,21 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Core)
+# add_subdirectory(Core)
 add_subdirectory(DataModel)
-add_subdirectory(TableProducer)
 add_subdirectory(Tasks)
-add_subdirectory(Lumi)
-add_subdirectory(Mult)
-add_subdirectory(UE)
-add_subdirectory(Rivet)
+# add_subdirectory(Analysis)
+# add_subdirectory(TableProducer)
+
+configure_file(doc/examples/pythia8pp.sh.in
+  doc/examples/pythia8pp.sh
+  @ONLY)
+
+configure_file(doc/examples/simple.sh.in
+  doc/examples/simple.sh
+  @ONLY)
+
+#
+# EOF
+#
+
