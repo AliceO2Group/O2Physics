@@ -76,6 +76,7 @@ struct phipbpb {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentrality{"cfgCutCentrality", 80.0f, "Accepted maximum Centrality"};
   // track
+  Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use Global track"};
   Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0, "cut on Charge"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.2, "PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
@@ -93,7 +94,7 @@ struct phipbpb {
   Configurable<double> confRapidity{"confRapidity", 0.5, "Rapidity cut"};
   ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {120, 0.98, 1.1}, "#it{M} (GeV/#it{c}^{2})"};
   ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.0, 10.}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis configThnAxisCosThetaStar{"configThnAxisCosThetaStar", {10, 0.0, 1.}, "cos(#vartheta)"};
+  ConfigurableAxis configThnAxisCosThetaStar{"configThnAxisCosThetaStar", {10, -1.0, 1.}, "cos(#vartheta)"};
   ConfigurableAxis configThnAxisCentrality{"configThnAxisCentrality", {8, 0., 80}, "Centrality"};
   ConfigurableAxis configThnAxisPhiminusPsi{"configThnAxisPhiminusPsi", {6, 0.0, TMath::Pi()}, "#phi - #psi"};
   ConfigurableAxis configThnAxisV2{"configThnAxisV2", {200, -1, 1}, "V2"};
@@ -250,7 +251,10 @@ struct phipbpb {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
+    if (useGlobalTrack && !(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster)) {
+      return false;
+    }
+    if (!useGlobalTrack && !(candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
     return true;
@@ -258,10 +262,13 @@ struct phipbpb {
   template <typename T>
   bool selectionPIDpTdependent(const T& candidate)
   {
-    if (candidate.pt() < 0.5 && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+    if (candidate.p() < 0.5 && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.pt() >= 0.5 && candidate.hasTOF() && ((candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) + (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa())) < (nsigmaCutCombined * nsigmaCutCombined)) {
+    if (candidate.p() >= 0.5 && candidate.hasTOF() && ((candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) + (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa())) < (nsigmaCutCombined * nsigmaCutCombined)) {
+      return true;
+    }
+    if (!useGlobalTrack && !candidate.hasTPC()) {
       return true;
     }
     return false;
@@ -423,9 +430,11 @@ struct phipbpb {
         // auto SA = (2.0 * cosinephidaughterstarminuspsi * cosinephidaughterstarminuspsi) - 1.0;
         auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
         auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
-        auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
+        // auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
+        auto cosThetaStarOP = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
         auto SA_A0 = 1 - (cosThetaStarOP * cosThetaStarOP);
-        auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
+        // auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
+        auto cosThetaStarIP = eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2());
         auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
         histos.fill(HIST("hSparseV2SASameEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
@@ -502,9 +511,11 @@ struct phipbpb {
         // auto SA = (2.0 * cosinephidaughterstarminuspsi * cosinephidaughterstarminuspsi) - 1.0;
         auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
         auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
-        auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
+        // auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
+        auto cosThetaStarOP = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
         auto SA_A0 = 1 - (cosThetaStarOP * cosThetaStarOP);
-        auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
+        // auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
+        auto cosThetaStarIP = eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2());
         auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
         histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
@@ -573,9 +584,11 @@ struct phipbpb {
 
         auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
         auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
-        auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
+        // auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
+        auto cosThetaStarOP = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
         auto SA_A0 = 1 - (cosThetaStarOP * cosThetaStarOP);
-        auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
+        // auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
+        auto cosThetaStarIP = eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2());
         auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
         histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
@@ -706,9 +719,11 @@ struct phipbpb {
               eventplaneVecNorm = ROOT::Math::XYZVector(std::sin(2.0 * psiFT0C), -std::cos(2.0 * psiFT0C), 0);
               auto cosPhistarminuspsi = GetPhiInRange(fourVecDauCM.Phi() - psiFT0C);
               auto SA = TMath::Cos(2.0 * cosPhistarminuspsi);
-              auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
+              // auto cosThetaStarOP = TMath::Abs(eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2()));
+              auto cosThetaStarOP = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
               auto SA_A0 = 1 - (cosThetaStarOP * cosThetaStarOP);
-              auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
+              // auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
+              auto cosThetaStarIP = eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2());
               auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
               auto v2 = TMath::Cos(2.0 * phiminuspsi);
               histos.fill(HIST("hSparseV2SASameEvent_costhetastarOP_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
