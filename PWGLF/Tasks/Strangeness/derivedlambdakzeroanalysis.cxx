@@ -230,17 +230,17 @@ struct derivedlambdakzeroanalysis {
     } else {
       maskTrackProperties = maskTrackProperties | (uint64_t(1) << selPosGoodTPCTrack);
       // TPC signal is available: ask for positive track PID
-      if(TpcPidNsigmaCut<1e+5){ // safeguard for no cut
+      if (TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDPositivePion);
         maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDPositiveProton);
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDPositivePion);
       }
 
-      if(TofPidNsigmaCutK0Pi<1e+5) // safeguard for no cut
+      if (TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaPositivePionK0Short) | (uint64_t(1) << selTOFDeltaTPositivePionK0Short);
-      if(TofPidNsigmaCutLaPr<1e+5) // safeguard for no cut
+      if (TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
         maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaPositiveProtonLambda) | (uint64_t(1) << selTOFDeltaTPositiveProtonLambda);
-      if(TofPidNsigmaCutLaPi<1e+5) // safeguard for no cut
+      if (TofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaPositivePionLambda) | (uint64_t(1) << selTOFDeltaTPositivePionLambda);
     }
     if (requireNegITSonly) {
@@ -248,17 +248,17 @@ struct derivedlambdakzeroanalysis {
     } else {
       maskTrackProperties = maskTrackProperties | (uint64_t(1) << selNegGoodTPCTrack);
       // TPC signal is available: ask for negative track PID
-      if(TpcPidNsigmaCut<1e+5){ // safeguard for no cut
+      if (TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDNegativePion);
         maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDNegativePion);
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDNegativeProton);
       }
 
-      if(TofPidNsigmaCutK0Pi<1e+5) // safeguard for no cut
+      if (TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaNegativePionK0Short) | (uint64_t(1) << selTOFDeltaTNegativePionK0Short);
-      if(TofPidNsigmaCutLaPr<1e+5) // safeguard for no cut
+      if (TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
         maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativePionLambda) | (uint64_t(1) << selTOFDeltaTNegativePionLambda);
-      if(TofPidNsigmaCutLaPi<1e+5) // safeguard for no cut
+      if (TofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativeProtonLambda) | (uint64_t(1) << selTOFDeltaTNegativeProtonLambda);
     }
 
