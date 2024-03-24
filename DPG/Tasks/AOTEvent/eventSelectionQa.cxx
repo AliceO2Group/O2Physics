@@ -280,9 +280,10 @@ struct EventSelectionQaTask {
     histos.add("hMultT0MVsNcontribAcc", "", kTH2F, {axisMultT0M, axisNcontrib}); // before ITS RO Frame border cut
     histos.add("hMultT0MVsNcontribCut", "", kTH2F, {axisMultT0M, axisNcontrib}); // after ITS RO Frame border cut
 
-    histos.add("hMultV0AVsNcontribAcc", "", kTH2F, {axisMultV0A, axisNcontrib});  // before ITS RO Frame border cut
-    histos.add("hMultV0AVsNcontribCut", "", kTH2F, {axisMultV0A, axisNcontrib});  // after ITS RO Frame border cut
-    histos.add("hMultV0AVsNcontribGood", "", kTH2F, {axisMultV0A, axisNcontrib}); // after good vertex cut
+    histos.add("hMultV0AVsNcontribAcc", "", kTH2F, {axisMultV0A, axisNcontrib});         // before ITS RO Frame border cut
+    histos.add("hMultV0AVsNcontribCut", "", kTH2F, {axisMultV0A, axisNcontrib});         // after ITS RO Frame border cut
+    histos.add("hMultV0AVsNcontribAfterVertex", "", kTH2F, {axisMultV0A, axisNcontrib}); // after good vertex cut
+    histos.add("hMultV0AVsNcontribGood", "", kTH2F, {axisMultV0A, axisNcontrib});        // after pileup check
 
     histos.add("hBcForMultV0AVsNcontribAcc", "", kTH1F, {axisBCs});      // bc distribution for V0A-vs-Ncontrib accepted
     histos.add("hBcForMultV0AVsNcontribOutliers", "", kTH1F, {axisBCs}); // bc distribution for V0A-vs-Ncontrib outliers
@@ -878,6 +879,19 @@ struct EventSelectionQaTask {
       vGlobalBCs[indexBc] = globalBC;
     }
 
+    // map for pileup checks
+    std::vector<int> vCollisionsPerBc(bcs.size(), 0);
+    for (auto& col : cols) {
+      if (col.foundBCId() < 0 || col.foundBCId() >= bcs.size())
+        continue;
+      vCollisionsPerBc[col.foundBCId()]++;
+    }
+
+    // consider sliceBy to collect pileup vertices?
+    // for (auto const& bc : bcs) {
+    //  auto collisionsGrouped = cols.sliceBy(perFoundBC, bc.globalIndex());
+    // }
+
     // build map from track index to ambiguous track index
     std::unordered_map<int32_t, int32_t> mapAmbTrIds;
     for (const auto& ambTrack : ambTracks) {
@@ -1074,6 +1088,11 @@ struct EventSelectionQaTask {
         continue;
       }
 
+      bool noPileup = vCollisionsPerBc[foundBC.globalIndex()] <= 1;
+      if (!noPileup) {
+        histos.fill(HIST("hMultT0Mpup"), multT0A + multT0C);
+      }
+
       bool isGoodVertex = 0;
       if (foundBC.has_ft0()) {
         histos.fill(HIST("hVtxFT0VsVtxCol"), foundBC.ft0().posZ(), col.posZ());
@@ -1098,6 +1117,10 @@ struct EventSelectionQaTask {
       }
 
       if (col.selection_bit(kNoTimeFrameBorder) && noITSROFBorder && isGoodVertex) {
+        histos.fill(HIST("hMultV0AVsNcontribAfterVertex"), multV0A, nContributors);
+      }
+
+      if (col.selection_bit(kNoTimeFrameBorder) && noITSROFBorder && isGoodVertex && noPileup) {
         histos.fill(HIST("hMultV0AVsNcontribGood"), multV0A, nContributors);
       }
 
@@ -1121,23 +1144,8 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hMultZNAacc"), multZNA);
       histos.fill(HIST("hMultZNCacc"), multZNC);
       histos.fill(HIST("hNcontribAcc"), nContributors);
+
     } // collisions
-    /*
-    // pileup checks
-    for (auto const& bc : bcs) {
-      auto collisionsGrouped = cols.sliceBy(perFoundBC, bc.globalIndex());
-      if (collisionsGrouped.size() < 2)
-        continue;
-      float multT0M = 0;
-      if (bc.has_ft0()) {
-        for (auto amplitude : bc.ft0().amplitudeA())
-          multT0M += amplitude;
-        for (auto amplitude : bc.ft0().amplitudeC())
-          multT0M += amplitude;
-      }
-      histos.fill(HIST("hMultT0Mpup"), multT0M);
-    }
-    */
   }
   PROCESS_SWITCH(EventSelectionQaTask, processRun3, "Process Run3 event selection QA", false);
 
