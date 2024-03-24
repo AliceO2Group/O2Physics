@@ -847,7 +847,7 @@ struct nuclei_in_jets {
       if (particle.pdgCode() == -2212 && particle.isPhysicalPrimary() && TMath::Abs(track.dcaZ()) < max_dcaz)
         registryMC.fill(HIST("antiproton_dca_prim"), pt, track.dcaXY());
 
-      if (particle.pdgCode() == -2212 && !particle.isSecondaryFromWeakDecay() && TMath::Abs(track.dcaZ()) < max_dcaz)
+      if (particle.pdgCode() == -2212 && (!particle.isPhysicalPrimary()) && TMath::Abs(track.dcaZ()) < max_dcaz)
         registryMC.fill(HIST("antiproton_dca_sec"), pt, track.dcaXY());
 
       if (!particle.isPhysicalPrimary())
