@@ -76,7 +76,7 @@ struct EventSelectionQaTask {
 
   void init(InitContext&)
   {
-    minGlobalBC = uint64_t(minOrbit) * 3564;
+    minGlobalBC = uint64_t(minOrbit) * nBCsPerOrbit;
 
     // ccdb->setURL("http://ccdb-test.cern.ch:8080");
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -91,8 +91,8 @@ struct EventSelectionQaTask {
     const AxisSpec axisMultT0M{1000, 0., isLowFlux ? 12000. : 270000., "T0M multiplicity"};
     const AxisSpec axisMultFDA{1000, 0., isLowFlux ? 50000. : 40000., "FDA multiplicity"};
     const AxisSpec axisMultFDC{1000, 0., isLowFlux ? 50000. : 40000., "FDC multiplicity"};
-    const AxisSpec axisMultZNA{1000, 0., isLowFlux ? 1000. : 10000., "ZNA multiplicity"};
-    const AxisSpec axisMultZNC{1000, 0., isLowFlux ? 1000. : 10000., "ZNC multiplicity"};
+    const AxisSpec axisMultZNA{1000, 0., isLowFlux ? 1000. : 400., "ZNA multiplicity"};
+    const AxisSpec axisMultZNC{1000, 0., isLowFlux ? 1000. : 400., "ZNC multiplicity"};
     const AxisSpec axisNtracklets{200, 0., isLowFlux ? 200. : 6000., "n tracklets"};
     const AxisSpec axisNclusters{200, 0., isLowFlux ? 1000. : 20000., "n clusters"};
     const AxisSpec axisMultOnlineV0M{400, 0., isLowFlux ? 8000. : 40000., "Online V0M"};
@@ -104,7 +104,7 @@ struct EventSelectionQaTask {
     const AxisSpec axisTimeSum{100, -10., 10., ""};
     const AxisSpec axisGlobalBCs{nGlobalBCs, 0., static_cast<double>(nGlobalBCs), ""};
     const AxisSpec axisBCs{nBCsPerOrbit, 0., static_cast<double>(nBCsPerOrbit), ""};
-    const AxisSpec axisNcontrib{200, 0., isLowFlux ? 200. : 7000., "n contributors"};
+    const AxisSpec axisNcontrib{200, 0., isLowFlux ? 200. : 8000., "n contributors"};
     const AxisSpec axisEta{100, -1., 1., "track #eta"};
     const AxisSpec axisColTimeRes{1500, 0., 1500., "collision time resolution (ns)"};
     const AxisSpec axisBcDif{600, -300., 300., "collision bc difference"};
@@ -964,9 +964,9 @@ struct EventSelectionQaTask {
         if (!track.hasTPC())
           histos.fill(HIST("hITStrackBcDiff"), trackBcDiff);
         if (track.hasTOF()) {
-          histos.fill(HIST("hBcTrackTOF"), (globalBC + TMath::FloorNint(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS)) % 3564);
+          histos.fill(HIST("hBcTrackTOF"), (globalBC + TMath::FloorNint(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS)) % nBCsPerOrbit);
         } else if (track.hasTRD()) {
-          histos.fill(HIST("hBcTrackTRD"), (globalBC + TMath::Nint(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS)) % 3564);
+          histos.fill(HIST("hBcTrackTRD"), (globalBC + TMath::Nint(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS)) % nBCsPerOrbit);
         }
         if (track.hasTOF() || track.hasTRD() || !track.hasITS() || !track.hasTPC() || track.pt() < 1)
           continue;
@@ -1070,13 +1070,13 @@ struct EventSelectionQaTask {
 
       if (col.selection_bit(kNoTimeFrameBorder)) {
         histos.fill(HIST("hMultV0AVsNcontribAcc"), multV0A, nContributors);
-        histos.fill(HIST("hBcForMultV0AVsNcontribAcc"), foundBC.globalBC() % 3564);
-        if (nContributors < 0.02 * multV0A - 200) {
-          histos.fill(HIST("hBcForMultV0AVsNcontribOutliers"), foundBC.globalBC() % 3564);
+        histos.fill(HIST("hBcForMultV0AVsNcontribAcc"), foundBC.globalBC() % nBCsPerOrbit);
+        if (nContributors < 0.043 * multV0A - 860) {
+          histos.fill(HIST("hBcForMultV0AVsNcontribOutliers"), foundBC.globalBC() % nBCsPerOrbit);
         }
         if (col.selection_bit(kNoITSROFrameBorder)) {
           histos.fill(HIST("hMultV0AVsNcontribCut"), multV0A, nContributors);
-          histos.fill(HIST("hBcForMultV0AVsNcontribCut"), foundBC.globalBC() % 3564);
+          histos.fill(HIST("hBcForMultV0AVsNcontribCut"), foundBC.globalBC() % nBCsPerOrbit);
         }
       }
 
