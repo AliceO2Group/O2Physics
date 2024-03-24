@@ -44,6 +44,7 @@ struct UDQCmid {
   Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
   // Configurable<bool> withAmbTrackAnalysis{"ambiguousTracks", false, "with ambiguous tracks analysis"};
   // Configurable<bool> withAmbFwdTrackAnalysis{"ambiguousFwdTracks", false, "with ambiguous forward tracks analysis"};
+  //  Configurable<bool> doCleanFITBC{"doCleanFITBC", false, "Require cleanFIT in compatible BCs"};
 
   // structures to hold information about the possible BCs the ambiguous tracks/FwdTracks belong to
   o2::dataformats::bcRanges abcrs = o2::dataformats::bcRanges("ambiguous_tracks");
@@ -96,6 +97,8 @@ struct UDQCmid {
       registry.add("DG/hMassTOF", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{2000, 0., 20.}}});
       registry.add("DG/hMassFWD", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{2000, 0., 20.}}});
       registry.add("DG/hMassGlobalTrk", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{2000, 0., 20.}}});
+      registry.add("DG/hMassITSTrk", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{2000, 0., 20.}}});
+
       registry.add("DG/hMassAmbigous", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{2000, 0., 20.}}});
       registry.add("DG/hMassAmbigousFWD", "DG: Invariant mass of pions; Invarian mass [GeV/c^2]", {HistType::kTH1F, {{2000, 0., 20.}}});
 
@@ -107,22 +110,25 @@ struct UDQCmid {
       registry.add("DG/etaphi5", "DG: Eta versus Phi; eta ; #phi ", {HistType::kTH2F, {{80, -2., 2.}, {120, 0., 6.28}}});
       registry.add("DG/etaphi6", "DG: Eta versus Phi; eta ; #phi ", {HistType::kTH2F, {{80, -2., 2.}, {120, 0., 6.28}}});
       registry.add("DG/etaphi7", "DG: Eta versus Phi; eta ; #phi ", {HistType::kTH2F, {{80, -2., 2.}, {120, 0., 6.28}}});
+      registry.add("DG/etaphi8", "DG: Eta versus Phi; eta ; #phi ", {HistType::kTH2F, {{80, -2., 2.}, {120, 0., 6.28}}});
 
       registry.add("DG/IVMptSys2PVtrk", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions 2 PV tracks", {HistType::kTH2F, {{2000, 0., 20.}, {2000, 0., 20.0}}});
       registry.add("DG/IVMptSys2PVtrk1", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions 2 PV tracks", {HistType::kTH2F, {{2000, 0., 20.}, {2000, 0., 20.0}}});
       registry.add("DG/IVMptSys2PVtrk2", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions 2 PV tracks", {HistType::kTH2F, {{2000, 0., 20.}, {2000, 0., 20.0}}});
       registry.add("DG/IVMptSys2PVtrk3", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions 2 PV tracks", {HistType::kTH2F, {{2000, 0., 20.}, {2000, 0., 20.0}}});
-
       registry.add("DG/IVMptSys2PVtrk4", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions 2 PV tracks", {HistType::kTH2F, {{2000, 0., 20.}, {2000, 0., 20.0}}});
       registry.add("DG/IVMptSys2PVtrk5", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions 2 PV tracks", {HistType::kTH2F, {{2000, 0., 20.}, {2000, 0., 20.0}}});
       registry.add("DG/IVMptSys2PVtrk6", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions 2 PV tracks", {HistType::kTH2F, {{2000, 0., 20.}, {2000, 0., 20.0}}});
       registry.add("DG/IVMptSys2PVtrk7", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions 2 PV tracks", {HistType::kTH2F, {{2000, 0., 20.}, {2000, 0., 20.0}}});
+      registry.add("DG/IVMptSys2PVtrk8", "DG: Invariant mass versus p_{T, system}; Invarian mass [GeV/c^2]; p_{T, system} [GeV/c]; DG collisions 2 PV tracks", {HistType::kTH2F, {{2000, 0., 20.}, {2000, 0., 20.0}}});
     }
 
     if (context.mOptions.get<bool>("processFewProng")) {
       registry.add("fpStat", "#fpStat", {HistType::kTH1F, {{2, 0.5, 2.5}}});
       registry.add("allPVC", "#allPVC", {HistType::kTH1F, {{200, 0.5, 200.5}}});
       registry.add("fpPVC", "#fpPVC", {HistType::kTH1F, {{200, 0.5, 200.5}}});
+      registry.add("fpPVC1", "#fpPVC1", {HistType::kTH1F, {{200, 0.5, 200.5}}});
+      registry.add("fpPVC2", "#fpPVC2", {HistType::kTH1F, {{200, 0.5, 200.5}}});
     }
   }
 
@@ -286,6 +292,14 @@ struct UDQCmid {
         break;
       }
     }
+    /* if (doCleanFITBC) {
+       for (auto const& bc : bcSlice) {
+         if (!udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits())) {
+           isDGcandidate = false;
+           break;
+         }
+       }
+     }*/
     registry.get<TH1>(HIST("collisions/Stat"))->Fill(1., isDGcandidate * 1.);
 
     // Invariant mass with 2 PV contributors and all contributors
@@ -348,19 +362,14 @@ struct UDQCmid {
       }
     }
 
-    // 4. Check for global tracks which are no vtx tracks
+    // 4. Check for global tracks
     bool globalAndVtx = isDGcandidate;
-    bool vtxAndGlobal = isDGcandidate;
     for (auto const& track : tracks) {
-      if (track.isGlobalTrack() && !track.isPVContributor()) {
+      if (track.isGlobalTrack() && track.isPVContributor()) {
         globalAndVtx = false;
-      }
-      if (track.isPVContributor() && !track.isGlobalTrack()) {
-        vtxAndGlobal = false;
       }
     }
     registry.get<TH1>(HIST("collisions/Stat"))->Fill(4., globalAndVtx * 1.);
-    registry.get<TH1>(HIST("collisions/Stat"))->Fill(5., vtxAndGlobal * 1.);
 
     if (globalAndVtx) {
       if (ispipiCand) {
@@ -372,7 +381,26 @@ struct UDQCmid {
       }
     }
 
-    // 5. check a given bc for possible ambiguous Tracks
+    // 5. Check for ITS only tracks
+    bool ITSOnlytrks = isDGcandidate;
+    for (auto const& track : tracks) {
+      if (track.hasITS() && track.isPVContributor() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF()) {
+        ITSOnlytrks = false;
+      }
+    }
+    registry.get<TH1>(HIST("collisions/Stat"))->Fill(5., ITSOnlytrks * 1.);
+
+    if (ITSOnlytrks) {
+      if (ispipiCand) {
+        registry.get<TH2>(HIST("DG/IVMptSys2PVtrk5"))->Fill(ivm.M(), ivm.Pt());
+        registry.get<TH2>(HIST("DG/etaphi5"))->Fill(ivm.Eta(), ivm.Phi());
+        if (ivm.Pt() < 0.2) {
+          registry.get<TH1>(HIST("DG/hMassITSTrk"))->Fill(ivm.M());
+        }
+      }
+    }
+
+    // 6. check a given bc for possible ambiguous Tracks
     auto noAmbTracks = isDGcandidate;
     for (auto const& bc : bcSlice) {
       if (abcrs.isInRange(bc.globalIndex())) {
@@ -385,15 +413,15 @@ struct UDQCmid {
 
     if (noAmbTracks) {
       if (ispipiCand) {
-        registry.get<TH2>(HIST("DG/IVMptSys2PVtrk5"))->Fill(ivm.M(), ivm.Pt());
-        registry.get<TH2>(HIST("DG/etaphi5"))->Fill(ivm.Eta(), ivm.Phi());
+        registry.get<TH2>(HIST("DG/IVMptSys2PVtrk6"))->Fill(ivm.M(), ivm.Pt());
+        registry.get<TH2>(HIST("DG/etaphi6"))->Fill(ivm.Eta(), ivm.Phi());
         if (ivm.Pt() < 0.2) {
           registry.get<TH1>(HIST("DG/hMassAmbigous"))->Fill(ivm.M());
         }
       }
     }
 
-    // 6. check a given bc for possible ambiguous FwdTracks
+    // 7. check a given bc for possible ambiguous FwdTracks
     auto noAmbFwdTracks = isDGcandidate;
     for (auto const& bc : bcSlice) {
       if (afbcrs.isInRange(bc.globalIndex())) {
@@ -406,22 +434,22 @@ struct UDQCmid {
 
     if (noAmbFwdTracks) {
       if (ispipiCand) {
-        registry.get<TH2>(HIST("DG/IVMptSys2PVtrk6"))->Fill(ivm.M(), ivm.Pt());
-        registry.get<TH2>(HIST("DG/etaphi6"))->Fill(ivm.Eta(), ivm.Phi());
+        registry.get<TH2>(HIST("DG/IVMptSys2PVtrk7"))->Fill(ivm.M(), ivm.Pt());
+        registry.get<TH2>(HIST("DG/etaphi7"))->Fill(ivm.Eta(), ivm.Phi());
         if (ivm.Pt() < 0.2) {
           registry.get<TH1>(HIST("DG/hMassAmbigousFWD"))->Fill(ivm.M());
         }
       }
     }
 
-    // 7. fraction of PV tracks with TOF hit
+    // 8. fraction of PV tracks with TOF hit
     isDGcandidate &= (rgtrwTOF >= diffCuts.minRgtrwTOF());
     registry.get<TH1>(HIST("collisions/Stat"))->Fill(8., isDGcandidate * 1.);
 
     if (isDGcandidate) {
       if (ispipiCand) {
-        registry.get<TH2>(HIST("DG/IVMptSys2PVtrk7"))->Fill(ivm.M(), ivm.Pt());
-        registry.get<TH2>(HIST("DG/etaphi7"))->Fill(ivm.Eta(), ivm.Phi());
+        registry.get<TH2>(HIST("DG/IVMptSys2PVtrk8"))->Fill(ivm.M(), ivm.Pt());
+        registry.get<TH2>(HIST("DG/etaphi8"))->Fill(ivm.Eta(), ivm.Phi());
         if (ivm.Pt() < 0.2) {
           registry.get<TH1>(HIST("DG/hMassTOF"))->Fill(ivm.M());
         }
@@ -447,7 +475,24 @@ struct UDQCmid {
 
       // update #PV contributors in collisions with empty FT0
       registry.get<TH1>(HIST("fpPVC"))->Fill(collision.numContrib(), 1.);
-    }
+
+      if (udhelpers::cleanFV0(bc, diffCuts.maxFITtime(), 0.)) {
+        // only collisions with empty FV0 and FT0 arrive here
+        registry.get<TH1>(HIST("fpStat"))->Fill(3., 1.);
+
+        // update #PV contributors in collisions with empty FT0 && FV0
+        registry.get<TH1>(HIST("fpPVC1"))->Fill(collision.numContrib(), 1.);
+
+        if (udhelpers::cleanFDD(bc, diffCuts.maxFITtime(), 0., 0.)) {
+          // only collisions with empty FV0 arrive here
+          registry.get<TH1>(HIST("fpStat"))->Fill(4., 1.);
+
+          // update #PV contributors in collisions with empty FT0 && FV0&& FDCC
+          registry.get<TH1>(HIST("fpPVC2"))->Fill(collision.numContrib(), 1.);
+        } // fdd
+      }   // fvo
+
+    } // ft0
   }
   PROCESS_SWITCH(UDQCmid, processFewProng, "Process FewProng", true);
 };
