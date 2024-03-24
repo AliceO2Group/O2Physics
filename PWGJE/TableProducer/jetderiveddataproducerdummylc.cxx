@@ -24,7 +24,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct JetDerivedDataProducerDummyTask {
+struct JetDerivedDataProducerDummyLcTask {
 
   Produces<aod::HfD0CollBases> d0CollisionsTable;
   Produces<aod::HfD0Bases> d0sTable;
@@ -34,14 +34,6 @@ struct JetDerivedDataProducerDummyTask {
   Produces<aod::HfD0Mcs> d0McsTable;
   Produces<aod::HfD0PBases> d0ParticlesTable;
 
-  Produces<aod::Hf3PCollBases> LcCollisionsTable;
-  Produces<aod::Hf3PBases> LcsTable;
-  Produces<aod::Hf3PPars> LcParsTable;
-  Produces<aod::Hf3PParEs> LcParExtrasTable;
-  Produces<aod::Hf3PSels> LcSelsTable;
-  Produces<aod::Hf3PMcs> LcMcsTable;
-  Produces<aod::Hf3PPBases> LcParticlesTable;
-
   void init(InitContext const&)
   {
   }
@@ -49,11 +41,11 @@ struct JetDerivedDataProducerDummyTask {
   void processDummy(aod::JDummys const& dummys)
   {
   }
-  PROCESS_SWITCH(JetDerivedDataProducerDummyTask, processDummy, "leaves all tables empty", true);
+  PROCESS_SWITCH(JetDerivedDataProducerDummyLcTask, processDummy, "leaves all tables empty", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JetDerivedDataProducerDummyTask>(cfgc, TaskName{"jet-deriveddata-producer-dummy"})};
+    adaptAnalysisTask<JetDerivedDataProducerDummyLcTask>(cfgc, TaskName{"jet-deriveddata-producer-dummy-lc"})};
 }

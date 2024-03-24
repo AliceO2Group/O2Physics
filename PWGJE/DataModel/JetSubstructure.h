@@ -115,7 +115,7 @@ DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, int); //!
 
 JETSUBSTRUCTURE_TABLES_DEF(C, CJetCOs, CEWSJetCOs, CMCDJetCOs, CMCPJetCOs, "C");
 JETSUBSTRUCTURE_TABLES_DEF(D0C, HfD0Bases, HfD0Bases, HfD0Bases, HfD0PBases, "D0C");
-JETSUBSTRUCTURE_TABLES_DEF(LcC, HfD0Bases, HfD0Bases, HfD0Bases, HfD0PBases, "LCC");
+JETSUBSTRUCTURE_TABLES_DEF(LcC, Hf3PBases, Hf3PBases, Hf3PBases, Hf3PPBases, "LCC");
 JETSUBSTRUCTURE_TABLES_DEF(BplusC, HfD0Bases, HfD0Bases, HfD0Bases, HfD0PBases, "BPLUSC");
 
 } // namespace o2::aod

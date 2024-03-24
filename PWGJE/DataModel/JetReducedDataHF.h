@@ -54,6 +54,38 @@ DECLARE_SOA_TABLE(StoredJD0PIds, "AOD1", "JD0PID",
                   jd0indices::JMcParticleId,
                   o2::soa::Marker<1>);
 
+namespace jlcindices
+{
+DECLARE_SOA_INDEX_COLUMN(JCollision, collision);
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, JTracks, "_0");
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, JTracks, "_1");
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong2, prong2, int, JTracks, "_2");
+DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
+DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
+} // namespace jlcindices
+
+DECLARE_SOA_TABLE(JLcIds, "AOD", "JLCID",
+                  jlcindices::JCollisionId,
+                  jlcindices::Prong0Id,
+                  jlcindices::Prong1Id,
+                  jlcindices::Prong2Id);
+
+DECLARE_SOA_TABLE(StoredJLcIds, "AOD1", "JLCID",
+                  jlcindices::JCollisionId,
+                  jlcindices::Prong0Id,
+                  jlcindices::Prong1Id,
+                  jlcindices::Prong2Id,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(JLcPIds, "AOD", "JLCPID",
+                  jlcindices::JMcCollisionId,
+                  jlcindices::JMcParticleId);
+
+DECLARE_SOA_TABLE(StoredJLcPIds, "AOD1", "JLCPID",
+                  jlcindices::JMcCollisionId,
+                  jlcindices::JMcParticleId,
+                  o2::soa::Marker<1>);
+
 } // namespace o2::aod
 
 #endif // PWGJE_DATAMODEL_JETREDUCEDDATAHF_H_

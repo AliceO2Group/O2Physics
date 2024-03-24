@@ -61,6 +61,8 @@ struct JetDerivedDataProducerTask {
   Produces<aod::JClusterTracks> jClustersMatchedTracksTable;
   Produces<aod::JD0Ids> jD0IdsTable;
   Produces<aod::JD0PIds> jD0ParticleIdsTable;
+  Produces<aod::JLcIds> jLcIdsTable;
+  Produces<aod::JLcPIds> jLcParticleIdsTable;
 
   Preslice<aod::EMCALClusterCells> perClusterCells = aod::emcalclustercell::emcalclusterId;
   Preslice<aod::EMCALMatchedTracks> perClusterTracks = aod::emcalclustercell::emcalclusterId;
@@ -201,7 +203,17 @@ struct JetDerivedDataProducerTask {
   {
     jD0ParticleIdsTable(D0.mcCollisionId(), D0.mcParticleId());
   }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processD0MC, "produces derived bunch crossing table for D0 particles", false);
+  void processLc(aod::Hf3PIds::iterator const& Lc, soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::Tracks const& tracks)
+  {
+    jLcIdsTable(Lc.collisionId(), Lc.prong0Id(), Lc.prong1Id(), Lc.prong2Id());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processLc, "produces derived bunch crossing table for Lc candidates", false);
+
+  void processLcMC(aod::Hf3PPIds::iterator const& Lc, aod::McCollisions const& mcCollisions, aod::McParticles const& particles)
+  {
+    jLcParticleIdsTable(Lc.mcCollisionId(), Lc.mcParticleId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processLcMC, "produces derived bunch crossing table for Lc particles", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
