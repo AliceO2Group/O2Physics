@@ -60,7 +60,7 @@ using std::array;
 
 // Cores with references and TOF pid
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using V0FullCores = soa::Join<aod::V0Cores, aod::V0TOFs, aod::V0Extras, aod::V0CollRefs>;
+using V0FullCores = soa::Join<aod::V0Cores, aod::V0Extras, aod::V0CollRefs, aod::V0TOFs, aod::V0TOFNSigmas>;
 
 struct lambdakzeropid {
   // TOF pid for strangeness (recalculated with topology)
@@ -418,12 +418,12 @@ struct lambdakzeropid {
         float deltaTimePositiveK0ShortPi = -1e+6;
         float deltaTimeNegativeK0ShortPi = -1e+6;
 
-        float nSigmaPositiveLambdaPi = -1e+6;
-        float nSigmaPositiveLambdaPr = -1e+6;
-        float nSigmaNegativeLambdaPi = -1e+6;
-        float nSigmaNegativeLambdaPr = -1e+6;
-        float nSigmaPositiveK0ShortPi = -1e+6;
-        float nSigmaNegativeK0ShortPi = -1e+6;
+        float nSigmaPositiveLambdaPi = -1e+3;
+        float nSigmaPositiveLambdaPr = -1e+3;
+        float nSigmaNegativeLambdaPi = -1e+3;
+        float nSigmaNegativeLambdaPr = -1e+3;
+        float nSigmaPositiveK0ShortPi = -1e+3;
+        float nSigmaNegativeK0ShortPi = -1e+3;
 
         float velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
         float velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
