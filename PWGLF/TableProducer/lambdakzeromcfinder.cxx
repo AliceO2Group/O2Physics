@@ -66,7 +66,7 @@ using namespace ROOT::Math;
 using LabeledTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels>;
 
 struct lambdakzeromcfinder {
-  Produces<aod::V0s_001> v0;
+  Produces<aod::V0s> v0;
   Produces<aod::McFullV0Labels> fullv0labels;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -404,7 +404,7 @@ struct lambdakzeromcfinder {
     // V0 list established, populate
     for (auto ic : sortedIndices) {
       if (v0collisionId[ic] >= 0 || doUnassociatedV0s) {
-        v0(v0collisionId[ic], v0positiveIndex[ic], v0negativeIndex[ic]);
+        v0(v0collisionId[ic], v0positiveIndex[ic], v0negativeIndex[ic], 1); // type 1 : standard
         fullv0labels(v0mcLabel[ic]);
       }
     }
@@ -476,7 +476,7 @@ struct lambdakzeromcfinder {
     // V0 list established, populate
     for (auto ic : sortedIndices) {
       if (v0collisionId[ic] >= 0 || doUnassociatedV0s) {
-        v0(v0collisionId[ic], v0positiveIndex[ic], v0negativeIndex[ic]);
+        v0(v0collisionId[ic], v0positiveIndex[ic], v0negativeIndex[ic], 1);
         fullv0labels(v0mcLabel[ic]);
       }
     }
