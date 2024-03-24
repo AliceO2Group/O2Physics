@@ -271,7 +271,7 @@ struct cascademcfinder {
       bool bachelorTPCITS = false;
       bool reconstructed = false;
       for (auto& mcParticle : mcParticles) {
-        if(fabs(mcParticle.y()) < yPreFilter)
+        if (fabs(mcParticle.y()) < yPreFilter)
           continue; // non-declarative skip necessary
 
         if (mcParticle.pdgCode() == 3312 && findXiMinus) {
