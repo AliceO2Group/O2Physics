@@ -38,9 +38,9 @@ using MyCollisionsMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::
 using MyCollisionsMC_Cent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
 
 struct CreateEMEvent {
-  Produces<o2::aod::EMReducedEvents> event;
-  Produces<o2::aod::EMReducedEventsMult> event_mult;
-  Produces<o2::aod::EMReducedEventsCent> event_cent;
+  Produces<o2::aod::EMEvents> event;
+  Produces<o2::aod::EMEventsMult> event_mult;
+  Produces<o2::aod::EMEventsCent> event_cent;
 
   Configurable<bool> requireCaloReadout{"requireCaloReadout", true, "Require calorimeters readout when analyzing EMCal/PHOS"};
 
@@ -138,15 +138,15 @@ struct CreateEMEvent {
   PROCESS_SWITCH(CreateEMEvent, processDummy, "processDummy", true);
 };
 struct AssociatePhotonToEMEvent {
-  Produces<o2::aod::V0KFEMReducedEventIds> v0kfeventid;
-  Produces<o2::aod::EMPrimaryElectronEMReducedEventIds> prmeleventid;
-  Produces<o2::aod::EMPrimaryMuonEMReducedEventIds> prmmueventid;
-  Produces<o2::aod::PHOSEMReducedEventIds> phoseventid;
-  Produces<o2::aod::EMCEMReducedEventIds> emceventid;
+  Produces<o2::aod::V0KFEMEventIds> v0kfeventid;
+  Produces<o2::aod::EMPrimaryElectronEMEventIds> prmeleventid;
+  Produces<o2::aod::EMPrimaryMuonEMEventIds> prmmueventid;
+  Produces<o2::aod::PHOSEMEventIds> phoseventid;
+  Produces<o2::aod::EMCEMEventIds> emceventid;
 
-  Produces<o2::aod::EMReducedEventsNgPCM> event_ng_pcm;
-  Produces<o2::aod::EMReducedEventsNgPHOS> event_ng_phos;
-  Produces<o2::aod::EMReducedEventsNgEMC> event_ng_emc;
+  Produces<o2::aod::EMEventsNgPCM> event_ng_pcm;
+  Produces<o2::aod::EMEventsNgPHOS> event_ng_phos;
+  Produces<o2::aod::EMEventsNgEMC> event_ng_emc;
 
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   Preslice<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
@@ -211,32 +211,32 @@ struct AssociatePhotonToEMEvent {
   // This struct is for both data and MC.
   // Note that reconstructed collisions without mc collisions are already rejected in CreateEMEvent in MC.
 
-  void processPCM(aod::EMReducedEvents const& collisions, aod::V0PhotonsKF const& photons)
+  void processPCM(aod::EMEvents const& collisions, aod::V0PhotonsKF const& photons)
   {
     fillEventId_Ng(collisions, photons, v0kfeventid, event_ng_pcm, perCollision_pcm);
   }
 
-  void processDalitzEE(aod::EMReducedEvents const& collisions, aod::EMPrimaryElectrons const& tracks)
+  void processDalitzEE(aod::EMEvents const& collisions, aod::EMPrimaryElectrons const& tracks)
   {
     fillEventId(collisions, tracks, prmeleventid, perCollision_el);
   }
 
-  void processDalitzMuMu(aod::EMReducedEvents const& collisions, aod::EMPrimaryMuons const& tracks)
+  void processDalitzMuMu(aod::EMEvents const& collisions, aod::EMPrimaryMuons const& tracks)
   {
     fillEventId(collisions, tracks, prmmueventid, perCollision_mu);
   }
 
-  void processPHOS(aod::EMReducedEvents const& collisions, aod::PHOSClusters const& photons)
+  void processPHOS(aod::EMEvents const& collisions, aod::PHOSClusters const& photons)
   {
     fillEventId_Ng(collisions, photons, phoseventid, event_ng_phos, perCollision_phos);
   }
 
-  void processEMC(aod::EMReducedEvents const& collisions, aod::SkimEMCClusters const& photons)
+  void processEMC(aod::EMEvents const& collisions, aod::SkimEMCClusters const& photons)
   {
     fillEventId_Ng(collisions, photons, emceventid, event_ng_emc, perCollision_emc);
   }
 
-  void processZeroPadding(aod::EMReducedEvents const& collisions)
+  void processZeroPadding(aod::EMEvents const& collisions)
   {
     if (!doPCM) {
       zero_padding(collisions, event_ng_pcm);

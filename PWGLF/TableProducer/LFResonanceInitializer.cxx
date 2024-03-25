@@ -104,6 +104,7 @@ struct reso2initializer {
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", 8, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", true, "Evt sel: check for offline selection"};
   Configurable<bool> ConfEvtTFBorderCut{"ConfEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
+  Configurable<bool> ConfEvtNoITSROBorderCut{"ConfEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
 
   Configurable<std::string> cfgMultName{"cfgMultName", "FT0M", "The name of multiplicity estimator"};
 
@@ -171,10 +172,13 @@ struct reso2initializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == 10221)   // f_0(1370)
                                                     || (nabs(aod::mcparticle::pdgCode) == 9030221) // f_0(1500)
                                                     || (nabs(aod::mcparticle::pdgCode) == 10331)   // f_0(1710)
+                                                    || (nabs(aod::mcparticle::pdgCode) == 20223)   // f_1(1285)
+                                                    || (nabs(aod::mcparticle::pdgCode) == 20333)   // f_1(1420)
+                                                    || (nabs(aod::mcparticle::pdgCode) == 335)     // f_1(1525)
                                                     || (nabs(aod::mcparticle::pdgCode) == 113)     // rho(770)
                                                     || (nabs(aod::mcparticle::pdgCode) == 213)     // rho(770)pm
                                                     || (nabs(aod::mcparticle::pdgCode) == 3224)    // Sigma(1385)+
-                                                    || (nabs(aod::mcparticle::pdgCode) == 3124)    // Lambda(1520)
+                                                    || (nabs(aod::mcparticle::pdgCode) == 102134)  // Lambda(1520)
                                                     || (nabs(aod::mcparticle::pdgCode) == 3324)    // Xi(1530)0
                                                     || (nabs(aod::mcparticle::pdgCode) == 10323)   // K1(1270)+
                                                     || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
@@ -445,6 +449,7 @@ struct reso2initializer {
                 track.phi(),
                 track.sign(),
                 (uint8_t)track.tpcNClsCrossedRows(),
+                (uint8_t)track.tpcNClsFound(),
                 track.dcaXY(),
                 track.dcaZ(),
                 track.x(),
@@ -460,6 +465,7 @@ struct reso2initializer {
                 track.passedITSRefit(),
                 track.passedTPCRefit(),
                 track.isGlobalTrackWoDCA(),
+                track.isGlobalTrack(),
                 track.isPrimaryTrack(),
                 track.isPVContributor(),
                 track.tpcCrossedRowsOverFindableCls(),
@@ -849,6 +855,7 @@ struct reso2initializer {
     }
     colCuts.init(&qaRegistry);
     colCuts.setApplyTFBorderCut(ConfEvtTFBorderCut);
+    colCuts.setApplyNoITSROBorderCut(ConfEvtNoITSROBorderCut);
     if (!ConfBypassCCDB) {
       ccdb->setURL(ccdburl.value);
       ccdb->setCaching(true);

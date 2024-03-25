@@ -307,11 +307,11 @@ struct HfTreeCreatorDsToKKPi {
     if constexpr (massHypo == 0) {
       invMassDs = hfHelper.invMassDsToKKPi(candidate);
       deltaMassPhiKK = hfHelper.deltaMassPhiDsToKKPi(candidate);
-      absCos3PiKDs = std::abs(hfHelper.cos3PiKDsToKKPi(candidate));
+      absCos3PiKDs = hfHelper.absCos3PiKDsToKKPi(candidate);
     } else if constexpr (massHypo == 1) {
       invMassDs = hfHelper.invMassDsToPiKK(candidate);
       deltaMassPhiKK = hfHelper.deltaMassPhiDsToPiKK(candidate);
-      absCos3PiKDs = std::abs(hfHelper.cos3PiKDsToPiKK(candidate));
+      absCos3PiKDs = hfHelper.absCos3PiKDsToPiKK(candidate);
     }
 
     auto prong0 = candidate.template prong0_as<TracksWPid>();

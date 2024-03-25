@@ -47,17 +47,23 @@ int initialiseEventSelection(std::string eventSelection)
 {
   if (eventSelection == "sel8") {
     return JCollisionSel::sel8;
+  } else if (eventSelection == "sel8WithoutTimeFrameBorderCut") {
+    return JCollisionSel::sel8WithoutTimeFrameBorderCut;
   } else if (eventSelection == "sel7") {
     return JCollisionSel::sel7;
+  } else if (eventSelection == "sel7WithoutTimeFrameBorderCut") {
+    return JCollisionSel::sel7WithoutTimeFrameBorderCut;
+  } else if (eventSelection == "WithoutTimeFrameBorderCut") {
+    return JCollisionSel::WithoutTimeFrameBorderCut;
   }
   return -1;
 }
 
 template <typename T>
-uint8_t setEventSelectionBit(T const& collision)
+uint16_t setEventSelectionBit(T const& collision)
 {
 
-  uint8_t bit = 0;
+  uint16_t bit = 0;
 
   if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
     SETBIT(bit, JCollisionSel::WithoutTimeFrameBorderCut);
@@ -190,9 +196,9 @@ int initialiseFullTriggerSelection(std::string triggerSelection)
 }
 
 template <typename T>
-uint8_t setFullTriggerSelectionBit(T const& collision)
+uint32_t setFullTriggerSelectionBit(T const& collision)
 {
-  uint8_t bit = 0;
+  uint32_t bit = 0;
   if (collision.hasJetFullHighPt()) {
     SETBIT(bit, JTrigSelFull::fullHigh);
   }

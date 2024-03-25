@@ -38,7 +38,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies
-double getDeltaPhi(double phiD, double phiHadron)
+double getDeltaPhi(double phiHadron, double phiD)
 {
   return RecoDecay::constrainAngle(phiHadron - phiD, -PIHalf);
 }

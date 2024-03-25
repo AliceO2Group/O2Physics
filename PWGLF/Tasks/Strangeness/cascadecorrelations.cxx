@@ -42,6 +42,7 @@
 #include <TDatabasePDG.h>
 
 using namespace o2;
+using namespace o2::soa;
 using namespace o2::constants::math;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -75,6 +76,7 @@ struct cascadeSelector {
   Configurable<float> tpcNsigmaPion{"tpcNsigmaPion", 3, "TPC NSigma pion <- lambda"};
   Configurable<int> minTPCCrossedRows{"minTPCCrossedRows", 80, "min N TPC crossed rows"}; // TODO: finetune! 80 > 159/2, so no split tracks?
   Configurable<int> minITSClusters{"minITSClusters", 4, "minimum number of ITS clusters"};
+  // Configurable<float> etaTracks{"etaTracks", 0.8, "min/max of eta for tracks"}
 
   // Selection criteria - compatible with core wagon autodetect - copied from cascadeanalysis.cxx
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -261,6 +263,9 @@ struct cascadeSelector {
 };    // struct
 
 struct cascadeCorrelations {
+
+  Configurable<float> zVertexCut{"zVertexCut", 10, "Cut on PV position"};
+
   AxisSpec invMassAxis = {2000, 1.0f, 3.0f, "Inv. Mass (GeV/c^{2})"};
   AxisSpec deltaPhiAxis = {100, -PI / 2, 1.5 * PI, "#Delta#varphi"};
   AxisSpec deltaEtaAxis = {40, -2, 2, "#Delta#eta"};
@@ -310,12 +315,39 @@ struct cascadeCorrelations {
       {"hOmXiSS", "hOmXiSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
       {"hOmOmOS", "hOmOmOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
       {"hOmOmSS", "hOmOmSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
+
+      // ad hoc mixed events
+      {"MixedEvents/hMEVz1", "hMEVz1", {HistType::kTH1F, {vertexAxis}}},
+      {"MixedEvents/hMEVz2", "hMEVz2", {HistType::kTH1F, {vertexAxis}}},
+      {"MixedEvents/hMEDeltaPhiSS", "hMEDeltaPhiSS", {HistType::kTH1F, {deltaPhiAxis}}},
+      {"MixedEvents/hMEDeltaPhiOS", "hMEDeltaPhiOS", {HistType::kTH1F, {deltaPhiAxis}}},
+      {"MixedEvents/hMEXiXiOS", "hMEXiXiOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
+      {"MixedEvents/hMEXiXiSS", "hMEXiXiSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
+      {"MixedEvents/hMEXiOmOS", "hMEXiOmOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
+      {"MixedEvents/hMEXiOmSS", "hMEXiOmSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
+      {"MixedEvents/hMEOmXiOS", "hMEOmXiOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
+      {"MixedEvents/hMEOmXiSS", "hMEOmXiSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
+      {"MixedEvents/hMEOmOmOS", "hMEOmOmOS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
+      {"MixedEvents/hMEOmOmSS", "hMEOmOmSS", {HistType::kTHnSparseF, {deltaPhiAxis, deltaEtaAxis, ptAxis, ptAxis, invMassAxis, invMassAxis, selectionFlagAxis, selectionFlagAxis, vertexAxis, multiplicityAxis}}},
     },
   };
 
+  // cascade filter
   Filter Selector = aod::cascadeflags::isSelected > 0;
 
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults>::iterator const& collision, soa::Filtered<aod::CascDataExtSelected> const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
+  // Mixed events setup:
+  using myCascades = soa::Filtered<aod::CascDataExtSelected>;
+  using myCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults>;
+
+  SliceCache cache;
+  ConfigurableAxis axisVtxZ{"axisVtxZ", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100, 1000}, "Mixing bins - multiplicity"};
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
+  BinningType colBinning{{axisVtxZ, axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+  // Preslice<aod::CascDataExtSelected> collisionSliceCascades = aod::CascDataExtSelected::collisionId;
+  SameKindPair<myCollisions, myCascades, BinningType> pair{colBinning, 5, -1, &cache};
+
+  void processSameEvent(myCollisions::iterator const& collision, myCascades const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
   {
     if (!collision.sel8()) {
       return;
@@ -380,6 +412,8 @@ struct cascadeCorrelations {
       double invMassXiAssoc = assoc.mXi();
       double invMassOmAssoc = assoc.mOmega();
 
+      double weight = 1.; // Will be changed by Efficiency-correction
+
       // Fill the correct histograms based on same-sign or opposite-sign
       if (trigger.sign() * assoc.sign() < 0) { // opposite-sign
         // check for autocorrelations between mis-identified kaons (omega bach) and protons (lambda daughter) TODO: improve logic?
@@ -409,10 +443,10 @@ struct cascadeCorrelations {
         }
 
         registry.fill(HIST("hDeltaPhiOS"), dphi);
-        registry.fill(HIST("hXiXiOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
-        registry.fill(HIST("hXiOmOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
-        registry.fill(HIST("hOmXiOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
-        registry.fill(HIST("hOmOmOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
+        registry.fill(HIST("hXiXiOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M(), weight);
+        registry.fill(HIST("hXiOmOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M(), weight);
+        registry.fill(HIST("hOmXiOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M(), weight);
+        registry.fill(HIST("hOmOmOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M(), weight);
       } else { // same-sign
         // make sure to check for autocorrelations - only possible in same-sign correlations (if PID is correct)
         if (posIdTrigg == posIdAssoc && negIdTrigg == negIdAssoc) {
@@ -448,13 +482,68 @@ struct cascadeCorrelations {
           }
         }
         registry.fill(HIST("hDeltaPhiSS"), dphi);
-        registry.fill(HIST("hXiXiSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
-        registry.fill(HIST("hXiOmSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
-        registry.fill(HIST("hOmXiSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
-        registry.fill(HIST("hOmOmSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M());
+        registry.fill(HIST("hXiXiSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M(), weight);
+        registry.fill(HIST("hXiOmSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M(), weight);
+        registry.fill(HIST("hOmXiSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M(), weight);
+        registry.fill(HIST("hOmOmSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), collision.posZ(), collision.multFT0M(), weight);
       }
     } // correlations
-  }   // process
+  }   // process same event
+
+  void processMixedEvent(myCollisions const& collisions, myCascades const& Cascades,
+                         aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
+  {
+    // mixed events
+
+    for (auto& [col1, cascades1, col2, cascades2] : pair) {
+      if (!col1.sel8() || !col2.sel8())
+        continue;
+      if (TMath::Abs(col1.posZ()) > zVertexCut || TMath::Abs(col2.posZ()) > zVertexCut)
+        continue;
+
+      registry.fill(HIST("MixedEvents/hMEVz1"), col1.posZ());
+      registry.fill(HIST("MixedEvents/hMEVz2"), col2.posZ());
+
+      for (auto& [casc1, casc2] : combinations(CombinationsFullIndexPolicy(cascades1, cascades2))) {
+        // specify FullIndexPolicy since the cascades are from different collisions
+        auto* triggerAddress = &casc1;
+        auto* assocAddress = &casc2;
+        if (assocAddress->pt() > triggerAddress->pt()) {
+          std::swap(triggerAddress, assocAddress);
+        }
+        auto trigger = *triggerAddress;
+        auto assoc = *assocAddress;
+
+        double deta = trigger.eta() - assoc.eta();
+        double dphi = RecoDecay::constrainAngle(trigger.phi() - assoc.phi(), -0.5 * PI);
+
+        double invMassXiTrigg = trigger.mXi();
+        double invMassOmTrigg = trigger.mOmega();
+        double invMassXiAssoc = assoc.mXi();
+        double invMassOmAssoc = assoc.mOmega();
+
+        double weight = 1.; // Will be changed by Efficiency-correction
+
+        if (trigger.sign() * assoc.sign() < 0) { // opposite-sign
+          registry.fill(HIST("MixedEvents/hMEDeltaPhiOS"), dphi);
+          registry.fill(HIST("MixedEvents/hMEXiXiOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight);
+          registry.fill(HIST("MixedEvents/hMEXiOmOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight);
+          registry.fill(HIST("MixedEvents/hMEOmXiOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight);
+          registry.fill(HIST("MixedEvents/hMEOmOmOS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight);
+        } else { // same sign
+          registry.fill(HIST("MixedEvents/hMEDeltaPhiSS"), dphi);
+          registry.fill(HIST("MixedEvents/hMEXiXiSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight);
+          registry.fill(HIST("MixedEvents/hMEXiOmSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassXiTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight);
+          registry.fill(HIST("MixedEvents/hMEOmXiSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassXiAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight);
+          registry.fill(HIST("MixedEvents/hMEOmOmSS"), dphi, deta, trigger.pt(), assoc.pt(), invMassOmTrigg, invMassOmAssoc, trigger.isSelected(), assoc.isSelected(), col1.posZ(), col1.multFT0M(), weight);
+        }
+      } // correlations
+    }   // collisions
+  }     // process mixed events
+
+  PROCESS_SWITCH(cascadeCorrelations, processSameEvent, "Process same events", true);
+  PROCESS_SWITCH(cascadeCorrelations, processMixedEvent, "Process mixed events", true);
+
 };    // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

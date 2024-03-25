@@ -42,7 +42,7 @@ using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
 using std::array;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
 struct phosQC {
@@ -104,7 +104,7 @@ struct phosQC {
     fOutputCluster.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Cluster")));
   }
 
-  Filter collisionFilter = o2::aod::emreducedevent::isPHOSCPVreadout == true;
+  Filter collisionFilter = o2::aod::emevent::isPHOSCPVreadout == true;
   using MyFilteredCollisions = soa::Filtered<MyCollisions>;
   Preslice<aod::PHOSClusters> perCollision = aod::skimmedcluster::collisionId;
 

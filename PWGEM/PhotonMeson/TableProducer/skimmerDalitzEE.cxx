@@ -26,10 +26,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsBz>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsBz>;
 using MyCollision = MyCollisions::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMReducedEventIds>;
+using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds>;
 using MyTrack = MyTracks::iterator;
 
 struct skimmerDalitzEE {
@@ -40,14 +40,14 @@ struct skimmerDalitzEE {
   };
 
   SliceCache cache;
-  Preslice<MyTracks> perCol = o2::aod::emprimaryelectron::emreducedeventId;
+  Preslice<MyTracks> perCol = o2::aod::emprimaryelectron::emeventId;
 
   SliceCache cache_cefp;
   Preslice<aod::EMPrimaryElectrons> perCol_cefp = o2::aod::emprimaryelectron::collisionId;
 
   Produces<aod::DalitzEEs> dalitzees;
-  Produces<o2::aod::DalitzEEEMReducedEventIds> dalitz_ee_eventid;
-  Produces<o2::aod::EMReducedEventsNee> event_nee;
+  Produces<o2::aod::DalitzEEEMEventIds> dalitz_ee_eventid;
+  Produces<o2::aod::EMEventsNee> event_nee;
 
   // Configurables
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
@@ -198,8 +198,8 @@ struct skimmerDalitzEE {
         continue;
       }
 
-      auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectron::emreducedeventId, collision.globalIndex(), cache);
-      auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emreducedeventId, collision.globalIndex(), cache);
+      auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
+      auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
       fRegistry.fill(HIST("hNpos"), collision.centFT0C(), posTracks_per_coll.size());
       fRegistry.fill(HIST("hNele"), collision.centFT0C(), negTracks_per_coll.size());
       // LOGF(info, "collision.centFT0C() = %f, posTracks_per_coll.size() = %d, negTracks_per_coll.size() = %d", collision.centFT0C() , posTracks_per_coll.size(), negTracks_per_coll.size());
@@ -217,7 +217,7 @@ struct skimmerDalitzEE {
 
   Partition<aod::EMPrimaryElectrons> posTracks_cefp = o2::aod::emprimaryelectron::sign > 0 && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
   Partition<aod::EMPrimaryElectrons> negTracks_cefp = o2::aod::emprimaryelectron::sign < 0 && o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl;
-  void processCEFP(soa::Join<aod::Collisions, aod::EMReducedEventsBz> const& collisions, aod::EMPrimaryElectrons const& tracks)
+  void processCEFP(soa::Join<aod::Collisions, aod::EMEventsBz> const& collisions, aod::EMPrimaryElectrons const& tracks)
   {
     for (auto& collision : collisions) {
       auto posTracks_per_coll = posTracks_cefp->sliceByCached(o2::aod::emprimaryelectron::collisionId, collision.globalIndex(), cache_cefp);

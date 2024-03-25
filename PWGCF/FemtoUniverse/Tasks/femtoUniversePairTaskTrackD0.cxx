@@ -14,7 +14,7 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Katarzyna Gwiździel, WUT Warsaw, katarzyna.gwizdziel@cern.ch
 
 #include <vector>
@@ -166,10 +166,9 @@ struct femtoUniversePairTaskTrackD0 {
 
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<float> ConfCPRdeltaPhiMax{"ConfCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
-  Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaPhiCut{"ConfCPRdeltaPhiCut", 0.0, "Delta Phi cut for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaCut{"ConfCPRdeltaEtaCut", 0.0, "Delta Eta cut for Close Pair Rejection"};
+  Configurable<float> ConfCPRChosenRadii{"ConfCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
 
   FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::same, femtoUniverseFemtoContainer::Observable::kstar> sameEventFemtoCont;
   FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::mixed, femtoUniverseFemtoContainer::Observable::kstar> mixedEventFemtoCont;
@@ -342,7 +341,7 @@ struct femtoUniversePairTaskTrackD0 {
 
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRChosenRadii.value, ConfCPRPlotPerRadii.value);
     }
 
     vPIDTrack = ConfTrack.ConfPIDTrack.value;
@@ -438,6 +437,7 @@ struct femtoUniversePairTaskTrackD0 {
       if (cand1.mLambda() > 0.0f && cand1.mAntiLambda() < 0.0f) {
         continue;
       }
+
       for (auto const& cand2 : groupPartsOnlyD0D0bar) {
         // Check if the second candidate is D0bar meson
         if (cand2.mLambda() < 0.0f && cand2.mAntiLambda() > 0.0f) {
@@ -451,26 +451,26 @@ struct femtoUniversePairTaskTrackD0 {
         registry.fill(HIST("hDeltaEtaDeltaPhi"), deltaEta, deltaPhi);
 
         // ----------------------------------- Creating D0-D0bar pairs correlations ------------------------------------------------
-        if (cand1.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMin && cand1.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMax) {
+        if (cand1.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMin.value && cand1.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMax.value) {
           // S(D0) x S(D0bar) correlation
-          if (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMin && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMax) {
+          if (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMin.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMax.value) {
             registry.fill(HIST("hDeltaPhiSigSig"), deltaPhi);
           }
           // S(D0) x B(D0bar) correlation
-          if ((cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB) ||
-              (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB)) {
+          if ((cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB.value) ||
+              (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB.value)) {
             registry.fill(HIST("hDeltaPhiD0SigD0barBg"), deltaPhi);
           }
         }
-        if ((cand1.mLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB && cand1.mLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB) ||
-            (cand1.mLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB && cand1.mLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB)) {
+        if ((cand1.mLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB.value && cand1.mLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB.value) ||
+            (cand1.mLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB.value && cand1.mLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB.value)) {
           // B(D0) x S (D0bar) correlation
-          if (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMin && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMax) {
+          if (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMin.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMax.value) {
             registry.fill(HIST("hDeltaPhiD0BgD0barSig"), deltaPhi);
           }
           // B(D0) x B(D0bar) correlation
-          if ((cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB) ||
-              (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB)) {
+          if ((cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassLeftSB.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassLeftSB.value) ||
+              (cand2.mAntiLambda() > ConfD0D0barSideBand.ConfMinInvMassRightSB.value && cand2.mAntiLambda() < ConfD0D0barSideBand.ConfMaxInvMassRightSB.value)) {
             registry.fill(HIST("hDeltaPhiBgBg"), deltaPhi);
           }
         }

@@ -13,7 +13,7 @@
 /// \brief FemtoUniverseCutculator - small class to match bit-wise encoding and actual physics cuts
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECUTCULATOR_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECUTCULATOR_H_

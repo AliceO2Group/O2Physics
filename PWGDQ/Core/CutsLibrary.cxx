@@ -437,6 +437,22 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("singleGapTrackCuts1")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt"));
+    cut->AddCut(GetAnalysisCut("SPDany"));
+    cut->AddCut(GetAnalysisCut("openEtaSel"));
+    cut->AddCut(GetAnalysisCut("pionQuality"));
+    return cut;
+  }
+
+  if (!nameStr.compare("singleGapTrackCuts2")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt3"));
+    cut->AddCut(GetAnalysisCut("ITSiball"));
+    cut->AddCut(GetAnalysisCut("openEtaSel"));
+    cut->AddCut(GetAnalysisCut("pionQuality"));
+    return cut;
+  }
+
   if (!nameStr.compare("PIDCalib")) {
     cut->AddCut(GetAnalysisCut("PIDStandardKine")); // standard kine cuts usually are applied via Filter in the task
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -2738,7 +2754,7 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   if (!nameStr.compare("openEtaSel")) {
-    cut->AddCut(VarManager::kEta, -1.5, 1.5);
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
     return cut;
   }
 
@@ -3031,6 +3047,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("SPDany")) {
     cut->AddCut(VarManager::kIsSPDany, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("ITSiball")) {
+    cut->AddCut(VarManager::kIsITSibAll, 0.5, 1.5);
     return cut;
   }
 

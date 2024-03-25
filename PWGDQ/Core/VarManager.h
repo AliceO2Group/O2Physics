@@ -214,13 +214,19 @@ class VarManager : public TObject
     kQ1Y0B,
     kQ1X0C,
     kQ1Y0C,
-    kQ2X0A, // q-vector (e.g. from TPC) with x component (harmonic 2 and power 0), sub-event A
-    kQ2Y0A, // q-vector (e.g. from TPC) with y component (harmonic 2 and power 0), sub-event A
+    kQ2X0A,    // q-vector (e.g. from TPC) with x component (harmonic 2 and power 0), sub-event A
+    kQ2Y0A,    // q-vector (e.g. from TPC) with y component (harmonic 2 and power 0), sub-event A
+    kQ2X0APOS, // q-vector (e.g. from TPC) with x component (harmonic 2 and power 0), Pos. TPC
+    kQ2Y0APOS, // q-vector (e.g. from TPC) with y component (harmonic 2 and power 0), Pos. TPC
+    kQ2X0ANEG, // q-vector (e.g. from TPC) with x component (harmonic 2 and power 0), Neg. TPC
+    kQ2Y0ANEG, // q-vector (e.g. from TPC) with y component (harmonic 2 and power 0), Neg. TPC
     kQ2X0B,
     kQ2Y0B,
     kQ2X0C,
     kQ2Y0C,
-    kMultA, // Multiplicity of the sub-event A
+    kMultA,    // Multiplicity of the sub-event A
+    kMultAPOS, // Multiplicity of the sub-event A
+    kMultANEG, // Multiplicity of the sub-event A
     kMultB,
     kMultC,
     kQ3X0A, // q-vector (e.g. from TPC) with x component (harmonic 3 and power 0), sub-event A
@@ -241,6 +247,10 @@ class VarManager : public TObject
     kR2SP_FT0CTPCNEG,
     kR2SP_FT0ATPCPOS,
     kR2SP_FT0ATPCNEG,
+    kR2SP_FT0MTPCPOS,
+    kR2SP_FT0MTPCNEG,
+    kR2SP_FV0ATPCPOS,
+    kR2SP_FV0ATPCNEG,
     kR3SP,
     kR2EP,
     kR2EP_FT0CFT0A,
@@ -248,6 +258,10 @@ class VarManager : public TObject
     kR2EP_FT0CTPCNEG,
     kR2EP_FT0ATPCPOS,
     kR2EP_FT0ATPCNEG,
+    kR2EP_FT0MTPCPOS,
+    kR2EP_FT0MTPCNEG,
+    kR2EP_FV0ATPCPOS,
+    kR2EP_FV0ATPCNEG,
     kR3EP,
     kIsDoubleGap,  // Double rapidity gap
     kIsSingleGapA, // Rapidity gap on side A
@@ -479,6 +493,7 @@ class VarManager : public TObject
     kQuadDCAabsZ,
     kQuadDCAsigZ,
     kQuadDCAsigXYZ,
+    kSignQuadDCAsigXY,
     kCosPointingAngle,
     kImpParXYJpsi,
     kImpParXYK,
@@ -494,6 +509,8 @@ class VarManager : public TObject
     kC4POI,
     kV4,
     kPsi2A,
+    kPsi2APOS,
+    kPsi2ANEG,
     kPsi2B,
     kPsi2C,
     kCos2DeltaPhi,
@@ -1868,7 +1885,8 @@ void VarManager::FillTrackMC(const U& mcStack, T const& track, float* values)
   values[kMCY] = track.y();
   values[kMCParticleGeneratorId] = track.producedByGenerator();
   if (track.has_mothers()) {
-    auto mother = track.template mothers_first_as<U>();
+    auto motherId = track.mothersIds()[0];
+    auto mother = mcStack.rawIteratorAt(motherId);
     values[kMCMotherPdgCode] = mother.pdgCode();
   }
 
@@ -1996,7 +2014,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
 
   if constexpr ((pairType == kDecayToEE) && ((fillMap & TrackCov) > 0 || (fillMap & ReducedTrackBarrelCov) > 0)) {
 
-    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAabsZ] || fgUsedVars[kQuadDCAsigZ] || fgUsedVars[kQuadDCAsigXYZ]) {
+    if (fgUsedVars[kQuadDCAabsXY] || fgUsedVars[kQuadDCAsigXY] || fgUsedVars[kQuadDCAabsZ] || fgUsedVars[kQuadDCAsigZ] || fgUsedVars[kQuadDCAsigXYZ] || fgUsedVars[kSignQuadDCAsigXY]) {
       // Quantities based on the barrel tables
       double dca1XY = t1.dcaXY();
       double dca2XY = t2.dcaXY();
@@ -2011,6 +2029,7 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
       values[kQuadDCAsigXY] = std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
       values[kQuadDCAabsZ] = std::sqrt((dca1Z * dca1Z + dca2Z * dca2Z) / 2);
       values[kQuadDCAsigZ] = std::sqrt((dca1sigZ * dca1sigZ + dca2sigZ * dca2sigZ) / 2);
+      values[kSignQuadDCAsigXY] = t1.sign() * t2.sign() * std::sqrt((dca1sigXY * dca1sigXY + dca2sigXY * dca2sigXY) / 2);
 
       double det1 = t1.cYY() * t1.cZZ() - t1.cZY() * t1.cZY();
       double det2 = t2.cYY() * t2.cZZ() - t2.cZY() * t2.cZY();
@@ -2876,47 +2895,41 @@ void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
   float yQVecFT0a = collision.qvecFT0AIm();
   float xQVecFT0c = collision.qvecFT0CRe();
   float yQVecFT0c = collision.qvecFT0CIm();
-  // float xQVecFT0m = collision.qvecFT0MRe();
-  // float yQVecFT0m = collision.qvecFT0MIm();
-  // float xQVecFV0a = collision.qvecFV0ARe();
-  // float yQVecFV0a = collision.qvecFV0AIm();
+  float xQVecFT0m = collision.qvecFT0MRe();
+  float yQVecFT0m = collision.qvecFT0MIm();
+  float xQVecFV0a = collision.qvecFV0ARe();
+  float yQVecFV0a = collision.qvecFV0AIm();
   float xQVecBPos = collision.qvecBPosRe();
   float yQVecBPos = collision.qvecBPosIm();
   float xQVecBNeg = collision.qvecBNegRe();
   float yQVecBNeg = collision.qvecBNegIm();
 
-  values[kQ1X0A] = -999;
-  values[kQ1Y0A] = -999;
-  values[kQ1X0B] = -999;
-  values[kQ1Y0B] = -999;
-  values[kQ1X0C] = -999;
-  values[kQ1Y0C] = -999;
-  values[kQ2X0A] = -999;
-  values[kQ2Y0A] = -999;
-  values[kQ2X0B] = xQVecBPos;
-  values[kQ2Y0B] = yQVecBPos;
-  values[kQ2X0C] = xQVecBNeg;
-  values[kQ2Y0C] = yQVecBNeg;
-  values[kQ3X0A] = -999;
-  values[kQ3Y0A] = -999;
-  values[kQ3X0B] = -999;
-  values[kQ3Y0B] = -999;
-  values[kQ3X0C] = -999;
-  values[kQ3Y0C] = -999;
-  values[kQ4X0A] = -999;
-  values[kQ4Y0A] = -999;
-  values[kQ4X0B] = -999;
-  values[kQ4Y0B] = -999;
-  values[kQ4X0C] = -999;
-  values[kQ4Y0C] = -999;
-  values[kMultA] = -999;
-  values[kMultB] = collision.nTrkBPos();
-  values[kMultC] = collision.nTrkBNeg();
+  values[kQ2X0A] = xQVecBPos; // WARNING: to be updated with full TPC tracks
+  values[kQ2Y0A] = yQVecBPos; // WARNING: to be updated with full TPC tracks
+  values[kQ2X0APOS] = xQVecBPos;
+  values[kQ2Y0APOS] = yQVecBPos;
+  values[kQ2X0ANEG] = xQVecBNeg;
+  values[kQ2Y0ANEG] = yQVecBNeg;
+  values[kQ2X0B] = xQVecFT0a;
+  values[kQ2Y0B] = yQVecFT0a;
+  values[kQ2X0C] = xQVecFT0c;
+  values[kQ2Y0C] = yQVecFT0c;
+  values[kMultA] = collision.nTrkBPos(); // WARNING: to be updated with full TPC tracks
+  values[kMultAPOS] = collision.nTrkBPos();
+  values[kMultANEG] = collision.nTrkBNeg();
+  values[kMultB] = collision.sumAmplFT0A();
+  values[kMultC] = collision.sumAmplFT0C();
 
   EventPlaneHelper epHelper;
+  float Psi2A = epHelper.GetEventPlane(values[kQ2X0APOS], values[kQ2Y0APOS], 2); // WARNING: to be updated with full TPC tracks
+  float Psi2APOS = epHelper.GetEventPlane(values[kQ2X0APOS], values[kQ2Y0APOS], 2);
+  float Psi2ANEG = epHelper.GetEventPlane(values[kQ2X0ANEG], values[kQ2Y0ANEG], 2);
   float Psi2B = epHelper.GetEventPlane(values[kQ2X0B], values[kQ2Y0B], 2);
   float Psi2C = epHelper.GetEventPlane(values[kQ2X0C], values[kQ2Y0C], 2);
 
+  values[kPsi2A] = Psi2A;
+  values[kPsi2APOS] = Psi2APOS;
+  values[kPsi2ANEG] = Psi2ANEG;
   values[kPsi2B] = Psi2B;
   values[kPsi2C] = Psi2C;
 
@@ -2926,21 +2939,30 @@ void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
   values[kR2SP_FT0CTPCNEG] = (xQVecFT0c * xQVecBNeg + yQVecFT0c * yQVecBNeg);
   values[kR2SP_FT0ATPCPOS] = (xQVecFT0a * xQVecBPos + yQVecFT0a * yQVecBPos);
   values[kR2SP_FT0ATPCNEG] = (xQVecFT0a * xQVecBNeg + yQVecFT0a * yQVecBNeg);
+  values[kR2SP_FT0MTPCPOS] = (xQVecFT0m * xQVecBPos + yQVecFT0m * yQVecBPos);
+  values[kR2SP_FT0MTPCNEG] = (xQVecFT0m * xQVecBNeg + yQVecFT0m * yQVecBNeg);
+  values[kR2SP_FV0ATPCPOS] = (xQVecFV0a * xQVecBPos + yQVecFV0a * yQVecBPos);
+  values[kR2SP_FV0ATPCNEG] = (xQVecFV0a * xQVecBNeg + yQVecFV0a * yQVecBNeg);
 
-  if (values[kQ2Y0B] * values[kQ2Y0C] != 0.0) {
-    values[kR2EP] = TMath::Cos(2 * (Psi2B - Psi2C));
-  }
-
+  float epTpcPos = epHelper.GetEventPlane(xQVecBPos, yQVecBPos, 2);
+  float epTpcNeg = epHelper.GetEventPlane(xQVecBNeg, yQVecBNeg, 2);
   float epFT0a = epHelper.GetEventPlane(xQVecFT0a, yQVecFT0a, 2);
   float epFT0c = epHelper.GetEventPlane(xQVecFT0c, yQVecFT0c, 2);
+  float epFT0m = epHelper.GetEventPlane(xQVecFT0m, yQVecFT0m, 2);
+  float epFV0a = epHelper.GetEventPlane(xQVecFV0a, yQVecFV0a, 2);
   float epBPoss = epHelper.GetEventPlane(xQVecBPos, yQVecBPos, 2);
   float epBNegs = epHelper.GetEventPlane(xQVecBNeg, yQVecBNeg, 2);
 
+  values[kR2EP] = std::cos(2 * getDeltaPsiInRange(epTpcPos, epTpcNeg, 2));
   values[kR2EP_FT0CFT0A] = std::cos(2 * getDeltaPsiInRange(epFT0c, epFT0a, 2));
   values[kR2EP_FT0CTPCPOS] = std::cos(2 * getDeltaPsiInRange(epFT0c, epBPoss, 2));
   values[kR2EP_FT0CTPCNEG] = std::cos(2 * getDeltaPsiInRange(epFT0c, epBNegs, 2));
   values[kR2EP_FT0ATPCPOS] = std::cos(2 * getDeltaPsiInRange(epFT0a, epBPoss, 2));
   values[kR2EP_FT0ATPCNEG] = std::cos(2 * getDeltaPsiInRange(epFT0a, epBNegs, 2));
+  values[kR2EP_FT0MTPCPOS] = std::cos(2 * getDeltaPsiInRange(epFT0m, epBPoss, 2));
+  values[kR2EP_FT0MTPCNEG] = std::cos(2 * getDeltaPsiInRange(epFT0m, epBNegs, 2));
+  values[kR2EP_FV0ATPCPOS] = std::cos(2 * getDeltaPsiInRange(epFV0a, epBPoss, 2));
+  values[kR2EP_FV0ATPCNEG] = std::cos(2 * getDeltaPsiInRange(epFV0a, epBNegs, 2));
 }
 
 template <int pairType, typename T1, typename T2>
