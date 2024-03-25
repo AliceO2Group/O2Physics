@@ -549,7 +549,7 @@ struct nucleiSpectra {
           flag |= BIT(iS);
         }
       }
-      if (flag & (kProton | kDeuteron | kTriton | kHe3 | kHe4)) {
+      if (flag & (kProton | kDeuteron | kTriton | kHe3 | kHe4) || doprocessMC) { /// ignore PID pre-selections for the MC
         if constexpr (std::is_same<Tcoll, CollWithEP>::value) {
           nuclei::candidates_flow.emplace_back(NucleusCandidateFlow{
             collision.centFV0A(),
@@ -624,6 +624,17 @@ struct nucleiSpectra {
         continue;
       }
       auto particle = particlesMC.iteratorAt(label.mcParticleId());
+      bool storeIt{false};
+      for (int iS{0}; iS < nuclei::species; ++iS) {
+        if (std::abs(particle.pdgCode()) == nuclei::codes[iS]) {
+          nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt * nuclei::charges[iS]), 1. - std::abs(c.pt * nuclei::charges[iS]) / particle.pt());
+          storeIt = cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u); /// store only the particles of interest
+          break;
+        }
+      }
+      if (!storeIt) {
+        continue;
+      }
       isReconstructed[particle.globalIndex()] = true;
       if (particle.isPhysicalPrimary()) {
         c.flags |= kIsPhysicalPrimary;
@@ -632,14 +643,7 @@ struct nucleiSpectra {
       } else {
         c.flags |= kIsSecondaryFromMaterial;
       }
-
       nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()]);
-      for (int iS{0}; iS < nuclei::species; ++iS) {
-        if (std::abs(particle.pdgCode()) == nuclei::codes[iS]) {
-          nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt * nuclei::charges[iS]), 1. - std::abs(c.pt * nuclei::charges[iS]) / particle.pt());
-          break;
-        }
-      }
     }
 
     int index{0};
@@ -649,19 +653,16 @@ struct nucleiSpectra {
         if (pdg != nuclei::codes[iS]) {
           continue;
         }
-        uint16_t flags{0u};
+        uint16_t flags{kIsPhysicalPrimary};
         if (particle.isPhysicalPrimary()) {
-          flags |= kIsPhysicalPrimary;
           if (particle.y() > cfgCutRapidityMin && particle.y() < cfgCutRapidityMax) {
             nuclei::hGenNuclei[iS][particle.pdgCode() < 0]->Fill(1., particle.pt());
           }
-        } else if (particle.has_mothers()) {
-          flags |= kIsSecondaryFromWeakDecay;
         } else {
-          flags |= kIsSecondaryFromMaterial;
+          continue; /// for not-reconstructed particles we store only the primaries
         }
 
-        if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u)) && particle.isPhysicalPrimary()) {
+        if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
           nucleiTableMC(999., 999., 999., 0., 0., 999., 999., 999., -1, -1, -1, flags, 0, 0, 0, 0, 0, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()]);
         }
         break;
