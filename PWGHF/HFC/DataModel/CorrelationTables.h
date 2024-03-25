@@ -215,7 +215,7 @@ DECLARE_SOA_COLUMN(PhiDstar, phiDstar, float);
 DECLARE_SOA_COLUMN(EtaDstar, etaDstar, float);
 DECLARE_SOA_COLUMN(PtDstar, ptDstar, float);
 DECLARE_SOA_COLUMN(MDstar, mDstar, float);
-DECLARE_SOA_COLUMN(MD0,mD0, float);
+DECLARE_SOA_COLUMN(MD0, mD0, float);
 // DECLARE_SOA_COLUMN(IsPrompt,isPrompt,bool); // although this also defined in (HfCandDstarMcRec HfCandDstarMcRec) tables
 // DECLARE_SOA_COLUMN(MatchingStatus, matchingStatus, bool); // although this also defined in (HfCandDstarMcRec HfCandDstarMcRec) tables
 // Track properties
