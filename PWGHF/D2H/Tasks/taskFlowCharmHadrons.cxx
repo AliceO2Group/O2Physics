@@ -324,19 +324,19 @@ struct HfTaskFlowCharmHadrons {
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
             outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
         }
-      } else if constexpr (std::is_same<T1, CandD0Data>::value || std::is_same<T1, CandD0DataWMl>::value) {
+      } else if constexpr (std::is_same<T1, Partition<CandD0Data>>::value || std::is_same<T1, Partition<CandD0DataWMl>>::value) {
         nProngs = 2;
         switch (channel) {
           case DecayChannel::D0ToPiK:
             massCand = hfHelper.invMassD0ToPiK(candidate);
-            if constexpr (std::is_same<T1, CandD0DataWMl>::value) {
+            if constexpr (std::is_same<T1, Partition<CandD0DataWMl>>::value) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
                 outputMl[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
             }
             break;
           case DecayChannel::D0ToKPi:
             massCand = hfHelper.invMassD0barToKPi(candidate);
-            if constexpr (std::is_same<T1, CandD0DataWMl>::value) {
+            if constexpr (std::is_same<T1, Partition<CandD0DataWMl>>::value) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
                 outputMl[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
             }
