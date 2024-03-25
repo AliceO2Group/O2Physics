@@ -67,8 +67,8 @@ struct qVectorsTable {
     Configurable<std::string> cfgURL{"cfgURL",
                                      "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
     Configurable<int64_t> nolaterthan{"ccdb-no-later-than",
-                                  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
-                                  "Latest acceptable timestamp of creation for the object"};
+                                      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
+                                      "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
 
   Configurable<int> cfgCentEsti{"cfgCentEsti",

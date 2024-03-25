@@ -79,7 +79,7 @@ TH1* BootstrapProfile::getHist(Int_t ind)
   if (fPresetWeights && fMultiRebin > 0)
     return getWeightBasedRebin(ind);
   if (ind < 0) {
-    if (reinterpret_cast<TProfile*>(this)) { // FIXME: -Wnonnull-compare
+    if (reinterpret_cast<TProfile*>(this)) {                     // FIXME: -Wnonnull-compare
       return getHistRebinned(reinterpret_cast<TProfile*>(this)); //((TProfile*)this)->ProjectionX(Form("%s_hist",this->GetName()));
     } else {
       printf("Empty BootstrapProfile addressed, cannot get a histogram\n");

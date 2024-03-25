@@ -1820,9 +1820,9 @@ struct RobustFluctuationObservables {
           histosK0S.fill(HIST("hMassK0S_cut_TPC_boundaries_for_Dau"), v0.pt(), v0.mK0Short());
       }
 
-      if (etaDauPos > 0.1 && etaDauPos<0.8 && etaDauNeg> 0.1 && etaDauNeg < 0.8)
+      if (etaDauPos > 0.1 && etaDauPos < 0.8 && etaDauNeg > 0.1 && etaDauNeg < 0.8)
         histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPtEta01_08"), v0.pt(), v0.mK0Short());
-      if (etaDauPos > -0.8 && etaDauPos<-0.1 && etaDauNeg> - 0.8 && etaDauNeg < -0.1)
+      if (etaDauPos > -0.8 && etaDauPos < -0.1 && etaDauNeg > -0.8 && etaDauNeg < -0.1)
         histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPtEta08_01"), v0.pt(), v0.mK0Short());
 
       histosK0S.fill(HIST("hMassK0ShortAfterSelectionVsPtPIDnSigma"), v0.pt(), v0.mK0Short());
