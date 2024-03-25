@@ -12,7 +12,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "TableHelper.h"
@@ -34,38 +34,47 @@ static constexpr int kTPCMults = 5;
 static constexpr int kPVMults = 6;
 static constexpr int kMultsExtra = 7;
 static constexpr int kMultSelections = 8;
-static constexpr int kMultZeqs = 9;
-static constexpr int kMultsExtraMC = 10;
-static constexpr int nTables = 11;
+static constexpr int kFV0MultZeqs = 9;
+static constexpr int kFT0MultZeqs = 10;
+static constexpr int kFDDMultZeqs = 11;
+static constexpr int kPVMultZeqs = 12;
+static constexpr int kMultsExtraMC = 13;
+static constexpr int nTables = 14;
 static constexpr int nParameters = 1;
-static const std::vector<std::string> tableNames{"FV0Mults",
-                                                 "FT0Mults",
-                                                 "FDDMults",
-                                                 "ZDCMults",
-                                                 "TrackletMults",
-                                                 "TPCMults",
-                                                 "PVMults",
-                                                 "MultsExtra",
-                                                 "MultSelections",
-                                                 "MultZeqs",
-                                                 "MultsExtraMC"};
+static const std::vector<std::string> tableNames{"FV0Mults",       // 0
+                                                 "FT0Mults",       // 1
+                                                 "FDDMults",       // 2
+                                                 "ZDCMults",       // 3
+                                                 "TrackletMults",  // 4
+                                                 "TPCMults",       // 5
+                                                 "PVMults",        // 6
+                                                 "MultsExtra",     // 7
+                                                 "MultSelections", // 8
+                                                 "FV0MultZeqs",    // 9
+                                                 "FT0MultZeqs",    // 10
+                                                 "FDDMultZeqs",    // 11
+                                                 "PVMultZeqs",     // 12
+                                                 "MultsExtraMC"};  // 13
 static const std::vector<std::string> parameterNames{"Enable"};
-static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
+static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
-struct MultiplicityTableTaskIndexed {
+struct MultiplicityTable {
   SliceCache cache;
-  Produces<aod::FV0Mults> tableFV0;
-  Produces<aod::FT0Mults> tableFT0;
-  Produces<aod::FDDMults> tableFDD;
-  Produces<aod::ZDCMults> tableZDC;
-  Produces<aod::TrackletMults> tableTracklet;
-  Produces<aod::TPCMults> tableTpc;
-  Produces<aod::PVMults> tablePv;
-  Produces<aod::MultsExtra> tableExtra;
-  Produces<aod::MultSelections> multSelections;
-  Produces<aod::MultZeqs> tableMultZeq;
-  Produces<aod::MultsExtraMC> tableExtraMc;
-  Produces<aod::MultsGlobal> multsGlobal;
+  Produces<aod::FV0Mults> tableFV0;             // 0
+  Produces<aod::FT0Mults> tableFT0;             // 1
+  Produces<aod::FDDMults> tableFDD;             // 2
+  Produces<aod::ZDCMults> tableZDC;             // 3
+  Produces<aod::TrackletMults> tableTracklet;   // 4
+  Produces<aod::TPCMults> tableTpc;             // 5
+  Produces<aod::PVMults> tablePv;               // 6
+  Produces<aod::MultsExtra> tableExtra;         // 7
+  Produces<aod::MultSelections> multSelections; // 8
+  Produces<aod::FV0MultZeqs> tableFV0Zeqs;      // 9
+  Produces<aod::FT0MultZeqs> tableFT0Zeqs;      // 10
+  Produces<aod::FDDMultZeqs> tableFDDZeqs;      // 11
+  Produces<aod::PVMultZeqs> tablePVZeqs;        // 12
+  Produces<aod::MultsExtraMC> tableExtraMc;     // 13
+  Produces<aod::MultsGlobal> multsGlobal;       // Not accounted for, produced based on process function processGlobalTrackingCounters
 
   // For vertex-Z corrections in calibration
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -124,20 +133,23 @@ struct MultiplicityTableTaskIndexed {
         }
       }
     }
+
     // Check that the tables are enabled consistenly
-    if (tEnabled[kMultZeqs]) {
-      if (!tEnabled[kFV0Mults]) {
-        LOG(fatal) << "Cannot have the extra table enabled and not the one on FV0";
-      }
-      if (!tEnabled[kFT0Mults]) {
-        LOG(fatal) << "Cannot have the extra table enabled and not the one on FT0";
-      }
-      if (!tEnabled[kFDDMults]) {
-        LOG(fatal) << "Cannot have the extra table enabled and not the one on FDD";
-      }
-      if (!tEnabled[kPVMults]) {
-        LOG(fatal) << "Cannot have the extra table enabled and not the one on PV";
-      }
+    if (tEnabled[kFV0MultZeqs] && !tEnabled[kFV0Mults]) { // FV0
+      mEnabledTables.push_back(kFV0Mults);
+      LOG(info) << "Cannot have the " << tableNames[kFV0MultZeqs] << " table enabled and not the one on " << tableNames[kFV0Mults] << ". Enabling it.";
+    }
+    if (tEnabled[kFT0MultZeqs] && !tEnabled[kFT0Mults]) { // FT0
+      mEnabledTables.push_back(kFT0Mults);
+      LOG(info) << "Cannot have the " << tableNames[kFT0MultZeqs] << " table enabled and not the one on " << tableNames[kFT0Mults] << ". Enabling it.";
+    }
+    if (tEnabled[kFDDMultZeqs] && !tEnabled[kFDDMults]) { // FDD
+      mEnabledTables.push_back(kFDDMults);
+      LOG(info) << "Cannot have the " << tableNames[kFDDMultZeqs] << " table enabled and not the one on " << tableNames[kFDDMults] << ". Enabling it.";
+    }
+    if (tEnabled[kPVMultZeqs] && !tEnabled[kPVMults]) { // PV
+      mEnabledTables.push_back(kPVMults);
+      LOG(info) << "Cannot have the " << tableNames[kPVMultZeqs] << " table enabled and not the one on " << tableNames[kPVMults] << ". Enabling it.";
     }
 
     mRunNumber = 0;
@@ -260,10 +272,19 @@ struct MultiplicityTableTaskIndexed {
         case kMultSelections: // Extra information
           multSelections.reserve(collisions.size());
           break;
-        case kMultZeqs: // Equalized multiplicity
-          tableMultZeq.reserve(collisions.size());
+        case kFV0MultZeqs: // Equalized multiplicity for FV0
+          tableFV0Zeqs.reserve(collisions.size());
           break;
-        case kMultsExtraMC: // MC extra information (nothing to do, this is data)
+        case kFT0MultZeqs: // Equalized multiplicity for FT0
+          tableFT0Zeqs.reserve(collisions.size());
+          break;
+        case kFDDMultZeqs: // Equalized multiplicity for FDD
+          tableFDDZeqs.reserve(collisions.size());
+          break;
+        case kPVMultZeqs: // Equalized multiplicity for PV
+          tablePVZeqs.reserve(collisions.size());
+          break;
+        case kMultsExtraMC: // MC extra information
           tableExtraMc.reserve(collisions.size());
           break;
         default:
@@ -461,7 +482,7 @@ struct MultiplicityTableTaskIndexed {
                 nHasTOF++;
               if (track.hasTRD())
                 nHasTRD++;
-            };
+            }
 
             int nAllTracksTPCOnly = 0;
             int nAllTracksITSTPC = 0;
@@ -471,7 +492,7 @@ struct MultiplicityTableTaskIndexed {
               } else {
                 nAllTracksTPCOnly++;
               }
-            };
+            }
 
             int bcNumber = bc.globalBC() % 3564;
 
@@ -480,21 +501,39 @@ struct MultiplicityTableTaskIndexed {
                        nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC,
                        nAllTracksTPCOnly, nAllTracksITSTPC, bcNumber);
           } break;
-          case kMultSelections: // Z equalized
+          case kMultSelections: // Multiplicity selections
           {
             multSelections(collision.selection_raw());
           } break;
-          case kMultZeqs: // Z equalized
+          case kFV0MultZeqs: // Z equalized FV0
           {
             if (fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
               multZeqFV0A = hVtxZFV0A->Interpolate(0.0) * multFV0A / hVtxZFV0A->Interpolate(collision.posZ());
+            }
+            tableFV0Zeqs(multZeqFV0A);
+          } break;
+          case kFT0MultZeqs: // Z equalized FT0
+          {
+            if (fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
               multZeqFT0A = hVtxZFT0A->Interpolate(0.0) * multFT0A / hVtxZFT0A->Interpolate(collision.posZ());
               multZeqFT0C = hVtxZFT0C->Interpolate(0.0) * multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
+            }
+            tableFT0Zeqs(multZeqFT0A, multZeqFT0C);
+          } break;
+          case kFDDMultZeqs: // Z equalized FDD
+          {
+            if (fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
               multZeqFDDA = hVtxZFDDA->Interpolate(0.0) * multFDDA / hVtxZFDDA->Interpolate(collision.posZ());
               multZeqFDDC = hVtxZFDDC->Interpolate(0.0) * multFDDC / hVtxZFDDC->Interpolate(collision.posZ());
+            }
+            tableFDDZeqs(multZeqFDDA, multZeqFDDC);
+          } break;
+          case kPVMultZeqs: // Z equalized PV
+          {
+            if (fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
               multZeqNContribs = hVtxZNTracks->Interpolate(0.0) * multNContribs / hVtxZNTracks->Interpolate(collision.posZ());
             }
-            tableMultZeq(multZeqFV0A, multZeqFT0A, multZeqFT0C, multZeqFDDA, multZeqFDDC, multZeqNContribs);
+            tablePVZeqs(multZeqNContribs);
           } break;
           case kMultsExtraMC: // MC only (nothing to do)
           {
@@ -567,13 +606,11 @@ struct MultiplicityTableTaskIndexed {
     multsGlobal(nGlobalTracks);
   }
 
-  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun2, "Produce Run 2 multiplicity tables", false);
-  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processRun3, "Produce Run 3 multiplicity tables", true);
-  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processGlobalTrackingCounters, "Produce Run 3 global counters", false);
-  PROCESS_SWITCH(MultiplicityTableTaskIndexed, processMC, "Produce MC multiplicity tables", false);
+  // Process switches
+  PROCESS_SWITCH(MultiplicityTable, processRun2, "Produce Run 2 multiplicity tables", false);
+  PROCESS_SWITCH(MultiplicityTable, processRun3, "Produce Run 3 multiplicity tables", true);
+  PROCESS_SWITCH(MultiplicityTable, processGlobalTrackingCounters, "Produce Run 3 global counters", false);
+  PROCESS_SWITCH(MultiplicityTable, processMC, "Produce MC multiplicity tables", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{adaptAnalysisTask<MultiplicityTableTaskIndexed>(cfgc, TaskName{"multiplicity-table"})};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<MultiplicityTable>(cfgc)}; }
