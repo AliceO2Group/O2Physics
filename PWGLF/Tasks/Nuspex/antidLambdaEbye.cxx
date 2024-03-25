@@ -50,10 +50,17 @@ namespace
 {
 constexpr int kNpart = 2;
 constexpr double betheBlochDefault[kNpart][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}, {-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
+constexpr double estimatorsCorrelationCoef[1][2]{{-0.669108, 1.04489}};
+constexpr double estimatorsSigmaPars[1][4]{{0.933321, 0.0416976, -0.000936344, 8.92179e-06}};
+constexpr double deltaEstimatorNsigma[1][2]{{5.5, 5.}};
 constexpr double partMass[kNpart]{o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron};
 constexpr double partPdg[kNpart]{2212, o2::constants::physics::kDeuteron};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 static const std::vector<std::string> particleNamesBB{"p", "d"};
+static const std::vector<std::string> estimatorsCorrelationCoefParNames{"p0", "p1"};
+static const std::vector<std::string> estimatorsSigmaParNames{"p0", "p1", "p2", "p3"};
+static const std::vector<std::string> deltaEstimatorNsigmaParNames{"low", "high"};
+static const std::vector<std::string> datasetNames{"LHC18qr"};
 static const std::vector<std::string> pidHypotheses{"Electron", "Muon", "Pion", "Kaon", "Proton", "Deuteron", "Triton", "He3", "Alpha", "Pion0", "Photon", "K0", "Lambda", "HyperTriton", "Hyperhydrog4", "XiMinus", "OmegaMinus"};
 std::array<std::shared_ptr<TH2>, kNpart> tempTracks;
 std::shared_ptr<TH2> tempAntiLambda;
@@ -119,6 +126,9 @@ struct antidLambdaEbye {
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {betheBlochDefault[0], 2, 6, particleNamesBB, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
+  Configurable<LabeledArray<double>> cfgEstimatorsCorrelationCoef{"cfgEstimatorsCorrelationCoef", {estimatorsCorrelationCoef[0], 1, 2, datasetNames, estimatorsCorrelationCoefParNames}, "estimators correlation parameters"};
+  Configurable<LabeledArray<double>> cfgEstimatorsSigmaPars{"cfgEstimatorsSigmaPars", {estimatorsSigmaPars[0], 1, 4, datasetNames, estimatorsSigmaParNames}, "estimators sigma parameters"};
+  Configurable<LabeledArray<double>> cfgDeltaEstimatorNsigma{"cfgDeltaEstimatorNsigma", {deltaEstimatorNsigma[0], 1, 2, datasetNames, deltaEstimatorNsigmaParNames}, "estimators nsigma cut"};
 
   ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
   ConfigurableAxis subsampleAxis{"subsampleAxis", {30, 0, 30}, "binning of the subsample axis"};
@@ -152,7 +162,9 @@ struct antidLambdaEbye {
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
 
-  Configurable<float> kINT7Intervals{"kINT7Intervals", false, "toggle kINT7 trigger selection in the 10-30% and 50-90% centrality intervals (2018 Pb-Pb)"};
+  Configurable<bool> kINT7Intervals{"kINT7Intervals", false, "toggle kINT7 trigger selection in the 10-30% and 50-90% centrality intervals (2018 Pb-Pb)"};
+  Configurable<bool> kUseTPCPileUpCut{"kUseTPCPileUpCut", false, "toggle strong correlation cuts (Run 2)"};
+  Configurable<bool> kUseEstimatorsCorrelationCut{"kUseEstimatorsCorrelationCut", false, "toggle cut on the correlation between centrality estimators (2018 Pb-Pb)"};
 
   Configurable<float> antidPtMin{"antidPtMin", 0.8f, "minimum antideuteron pT (GeV/c)"};
   Configurable<float> antidPtTof{"antidPtTof", 1.0f, "antideuteron pT to switch to TOF pid (GeV/c) "};
@@ -773,16 +785,29 @@ struct antidLambdaEbye {
   void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::TrackletMults> const& collisions, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s, BCsWithRun2Info const&)
   {
     for (const auto& collision : collisions) {
+      if (std::abs(collision.posZ()) > zVtxMax)
+        continue;
+
       auto bc = collision.bc_as<BCsWithRun2Info>();
       if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
+        continue;
+
+      if (kUseTPCPileUpCut && !(bc.eventCuts() & BIT(aod::Run2EventCuts::kTPCPileUp)))
         continue;
 
       auto centrality = collision.centRun2V0M();
       if (!collision.alias_bit(kINT7) && (!kINT7Intervals || (kINT7Intervals && ((centrality >= 10 && centrality < 30) || centrality > 50))))
         continue;
 
-      if (std::abs(collision.posZ()) > zVtxMax)
-        continue;
+      auto centralityCl0 = collision.centRun2CL0();
+      if (kUseEstimatorsCorrelationCut) {
+        const auto& x = centralityCl0;
+        const double center = cfgEstimatorsCorrelationCoef->get("p0") + cfgEstimatorsCorrelationCoef->get("p1") * x;
+        const double sigma = cfgEstimatorsSigmaPars->get("p0") + cfgEstimatorsSigmaPars->get("p1") * x + cfgEstimatorsSigmaPars->get("p2") * std::pow(x, 2) + cfgEstimatorsSigmaPars->get("p3") * std::pow(x, 3);
+        if (centrality < center - cfgDeltaEstimatorNsigma->get("low") * sigma || centrality > center + cfgDeltaEstimatorNsigma->get("high") * sigma) {
+          continue;
+        }
+      }
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
@@ -791,7 +816,6 @@ struct antidLambdaEbye {
       auto V0Table_thisCollision = V0s.sliceBy(perCollisionV0, collIdx);
       V0Table_thisCollision.bindExternalIndices(&tracks);
 
-      auto centralityCl0 = collision.centRun2CL0();
       auto multTracklets = collision.multTracklets();
       fillRecoEvent(TrackTable_thisCollision, V0Table_thisCollision, centrality);
 
