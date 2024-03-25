@@ -437,7 +437,9 @@ struct deutRtTask {
 
       double Rt = static_cast<double>(mult_Transverse) / cfgAverage_Nch_Transv;
       histos.fill(HIST("hRtDistribution"), Rt);
-      if (IsCleanDeuteron(track)) {histos.fill(HIST("histTpcSignal_CleanDeut"), track.tpcInnerParam() * track.sign(), track.tpcSignal());}
+      if (IsCleanDeuteron(track)) {
+        histos.fill(HIST("histTpcSignal_CleanDeut"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
+      }
       if (IsDeuteronCandidate(track)) {
         histos.fill(HIST("histTpcSignal_Deut"), track.tpcInnerParam() * track.sign(), track.tpcSignal());
         FillHistograms_StandardCuts(mult_Transverse, delta_phi, track);
