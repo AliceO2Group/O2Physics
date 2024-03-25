@@ -2321,7 +2321,7 @@ struct LFNucleiBATask {
         }
         if (enableDe && deRapCut) {
           if (std::abs(track.tpcNSigmaDe()) < nsigmaTPCDe) {
-            
+
             if (usenITSLayer && !itsClusterMap.test(nITSLayer))
               continue;
 
