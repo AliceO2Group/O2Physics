@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file correlatorDstarHadron.cxx
+/// \file correlatorDstarHadrons.cxx
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
@@ -23,23 +23,23 @@
 #include "Common/DataModel/Multiplicity.h"
 
 // PWGHF
-#include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/HFC/DataModel/CorrelationTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // flaging a collision if D* meson is found.
-struct HfCollisionSelector {
+struct HfCorrelatorDstarHadronsCollisionSelector {
   Produces<aod::DmesonSelection> collisionWDstar;
 
   Configurable<bool> selectionFlagDstar{"selectionFlagDstar", true, "selection flag for Dstar"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
 
-  using DstarCandidates = soa::Join<aod::HfCandDstar, aod::HfSelDstarToD0Pi>;
+  using DstarCandidates = soa::Join<aod::HfCandDstars, aod::HfSelDstarToD0Pi>;
   using FilteredCandidates = soa::Filtered<DstarCandidates>;
 
   SliceCache cache;
@@ -75,26 +75,26 @@ struct HfCollisionSelector {
       collisionWDstar(isDstarFound); // compatible with collision table (filled collision by collision)
     }                                // collision loop
   }
-  PROCESS_SWITCH(HfCollisionSelector, processCollisionSelWDstar, "process only data for dstar hadron correlation", true);
+  PROCESS_SWITCH(HfCorrelatorDstarHadronsCollisionSelector, processCollisionSelWDstar, "process only data for dstar hadron correlation", true);
 };
 
-struct HfCorrelatorDstarHadron {
+struct HfCorrelatorDstarHadrons {
   Produces<aod::DstarHadronPair> rowsDstarHadronPair;
   // Dstar candidate related configurable
   Configurable<bool> selectOnlyCollisionWDstar{"selectOnlyCollisionWDstar", true, " select on collisions which have atleast a Dstar candidate"};
   Configurable<bool> selectionFlagDstar{"selectionFlagDstar", true, "selection flag for Dstar"};
-  Configurable<float> pTMinDstar{"pTMinDstar", 1.5, "min pT of dstar candidate"};
-  Configurable<float> pTMaxDstar{"pTMaxDstar", 50, "max pT of dstar Candidate"};
-  // Configurable<float> etaAbsMaxDstar{"etaAbsMaxDstar",1.0,"max Abs(eta) cut on Dstar candidate"};
-  Configurable<float> yMaxDstar{"yMaxDstar", 0.8, "max. cand. rapidity"};
+  Configurable<float> ptDstarMin{"ptDstarMin", 1.5, "min pT of dstar candidate"};
+  Configurable<float> ptDstarMax{"ptDstarMax", 50, "max pT of dstar Candidate"};
+  // Configurable<float> etaAbsDstarMax{"etaAbsDstarMax",1.0,"max Abs(eta) cut on Dstar candidate"};
+  Configurable<float> yAbsDstarMax{"yAbsDstarMax", 0.8, "max. cand. rapidity"};
   // track related configurable
-  Configurable<float> etaAbsMaxAssoTrack{"etaAbsMaxAssoTrack", 0.8, "max Abs(eta) cut on Associated Track"};
-  Configurable<float> dcaxyMinAssoTrack{"dcaxyMinAssoTrack", 0.0, "min DCAxy of Associated Track"};
-  Configurable<float> dcaxyMaxAssoTrack{"dcaxyMaxAssoTrack", 10.0, "max DCAxy of Associated Track"};
-  Configurable<float> dcazMinAssoTrack{"dcazMinAssoTrack", 0.0, "min DCAz of Associated Track"};
-  Configurable<float> dcazMaxAssoTrack{"dcazMaxAssoTrack", 10.0, "max DCAz of Associated Track"};
-  Configurable<float> pTMinAssoTrack{"pTMinAssoTrack", 0.5, "min Pt of Associated Track"};
-  Configurable<float> pTMaxAssoTrack{"pTMaxAssoTrack", 50.0, "max pT of Associated Track"};
+  Configurable<float> etaAbsAssoTrackMax{"etaAbsAssoTrackMax", 0.8, "max Abs(eta) cut on Associated Track"};
+  Configurable<float> dcaxyAssoTrackMin{"dcaxyAssoTrackMin", 0.0, "min DCAxy of Associated Track"};
+  Configurable<float> dcaxyAssoTrackMax{"dcaxyAssoTrackMax", 10.0, "max DCAxy of Associated Track"};
+  Configurable<float> dcazAssoTrackMin{"dcazAssoTrackMin", 0.0, "min DCAz of Associated Track"};
+  Configurable<float> dcazAssoTrackMax{"dcazAssoTrackMax", 10.0, "max DCAz of Associated Track"};
+  Configurable<float> ptAssoTrackMin{"ptAssoTrackMin", 0.5, "min Pt of Associated Track"};
+  Configurable<float> ptAssoTrackMax{"ptAssoTrackMax", 50.0, "max pT of Associated Track"};
 
   ConfigurableAxis binsMultiplicity{"binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 100000.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis binsZVtx{"binsZVtx", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "Mixing bins - z-vertex"};
@@ -109,7 +109,7 @@ struct HfCorrelatorDstarHadron {
   using FilteredCollisions = soa::Filtered<CollisionsWDstar>;
 
   // candidate table
-  using DstarCandidates = soa::Join<aod::HfCandDstar, aod::HfSelDstarToD0Pi>; // Added extra cloumns in HfCandDstar (Prong0Id, Prong1Id), so no need to add table HfCandD0Fromdstar
+  using DstarCandidates = soa::Join<aod::HfCandDstars, aod::HfSelDstarToD0Pi>; // Added extra cloumns in HfCandDstar (Prong0Id, Prong1Id), so no need to add table HfCandD0Fromdstar
   using FilteredCandidates = soa::Filtered<DstarCandidates>;
 
   using FilteredTracks = soa::Filtered<aod::TracksWDca>;
@@ -119,9 +119,9 @@ struct HfCorrelatorDstarHadron {
   // candidate filter
   Filter candidateFilter = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstar;
   // track table filter
-  Filter trackFilter = nabs(aod::track::eta) <= etaAbsMaxAssoTrack && aod::track::pt >= pTMinAssoTrack && aod::track::pt <= pTMaxAssoTrack &&
-                       aod::track::dcaXY >= dcaxyMinAssoTrack && aod::track::dcaXY <= dcaxyMaxAssoTrack &&
-                       aod::track::dcaZ >= dcazMinAssoTrack && aod::track::dcaZ <= dcazMaxAssoTrack;
+  Filter trackFilter = nabs(aod::track::eta) <= etaAbsAssoTrackMax && aod::track::pt >= ptAssoTrackMin && aod::track::pt <= ptAssoTrackMax &&
+                       aod::track::dcaXY >= dcaxyAssoTrackMin && aod::track::dcaXY <= dcaxyAssoTrackMax &&
+                       aod::track::dcaZ >= dcazAssoTrackMin && aod::track::dcaZ <= dcazAssoTrackMax;
   SliceCache cache;
   // Preslice<DstarCandidates> perColCandidates = aod::hf_cand::collisionId;
   Preslice<FilteredCandidates> perColCandidates = aod::hf_cand::collisionId;
@@ -168,11 +168,11 @@ struct HfCorrelatorDstarHadron {
         }           // endif
 
         // Trigger Particle Rejection
-        if (triggerParticle.pt() > pTMaxDstar || triggerParticle.pt() < pTMinDstar) {
+        if (triggerParticle.pt() > ptDstarMax || triggerParticle.pt() < ptDstarMin) {
           continue;
         } // endif
         auto yDstar = triggerParticle.y(constants::physics::MassDStar);
-        if (std::abs(yDstar) > yMaxDstar) {
+        if (std::abs(yDstar) > yAbsDstarMax) {
           continue;
         } // endif
 
@@ -220,7 +220,7 @@ struct HfCorrelatorDstarHadron {
     } // collision loop
 
   } // processDataSameEvent
-  PROCESS_SWITCH(HfCorrelatorDstarHadron, processDataSameEvent, "process only same event data", true);
+  PROCESS_SWITCH(HfCorrelatorDstarHadrons, processDataSameEvent, "process only same event data", true);
 
   void processDataWithMixedEvent(FilteredCollisions const& collisions, // only collisions who have altleast one D*
                                  FilteredTracks const& tracks,
@@ -242,7 +242,7 @@ struct HfCorrelatorDstarHadron {
         auto gIassocParticle = assocParticle.globalIndex();
 
         auto yDstar = triggerParticle.y(constants::physics::MassDStar);
-        if (std::abs(yDstar) > yMaxDstar) {
+        if (std::abs(yDstar) > yAbsDstarMax) {
           continue;
         } // endif
 
@@ -283,11 +283,11 @@ struct HfCorrelatorDstarHadron {
     } // Event Mixing loop
 
   } // processDataWithMixedEvent
-  PROCESS_SWITCH(HfCorrelatorDstarHadron, processDataWithMixedEvent, "process only mixed events data", false);
+  PROCESS_SWITCH(HfCorrelatorDstarHadrons, processDataWithMixedEvent, "process only mixed events data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfCollisionSelector>(cfgc),
-                      adaptAnalysisTask<HfCorrelatorDstarHadron>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCorrelatorDstarHadronsCollisionSelector>(cfgc),
+                      adaptAnalysisTask<HfCorrelatorDstarHadrons>(cfgc)};
 }

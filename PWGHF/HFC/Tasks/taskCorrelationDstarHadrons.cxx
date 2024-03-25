@@ -9,15 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskCorrelationrDstarHadron.cxx
+/// \file taskCorrelationDstarHadrons.cxx
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 /// \author Shyam Kumar <shyam.kumar@cern.ch>
 
 // Framework
 #include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 
 // PWGHF
 #include "PWGHF/Core/SelectorCuts.h"
@@ -25,7 +25,6 @@
 #include "PWGHF/Utils/utilsAnalysis.h"
 
 using namespace o2;
-// using namespace o2::dstar;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -39,12 +38,11 @@ const TString stringSignal = "signal region;";
 const TString stringSideband = "sidebands;";
 const TString stringPoolBin = "Pool Bin Number;";
 
-namespace o2::dstar::correlation
-{
+
 const int nBinsPtCorrelation = 8;
 
-const double binsPtCorrelations[nBinsPtCorrelation + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 100.};
-auto vecBinsPtCorrelations = std::vector<double>{binsPtCorrelations, binsPtCorrelations + nBinsPtCorrelation + 1};
+const double binsPtCorrelationsDefault[nBinsPtCorrelation + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 100.};
+auto vecBinsPtCorrelationsDefault = std::vector<double>{binsPtCorrelationsDefault, binsPtCorrelationsDefault + nBinsPtCorrelation + 1};
 
 const double signalRegionLefBoundDefault[nBinsPtCorrelation] = {0.144, 0.144, 0.144, 0.144, 0.144, 0.144, 0.144, 0.144};
 auto vecSignalRegionLefBoundDefault = std::vector<double>{signalRegionLefBoundDefault, signalRegionLefBoundDefault + nBinsPtCorrelation};
@@ -65,26 +63,23 @@ const double sidebandRightOuterDefault[nBinsPtCorrelation] = {0.154, 0.154, 0.15
 auto vecSidebandRightOuterDefault = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + nBinsPtCorrelation};
 
 const int npTBinsEfficiency = o2::analysis::hf_cuts_dstar_to_d0_pi::nBinsPt;
-std::vector<double> efficiencyDstar(npTBinsEfficiency); // line # 76 in taskCorrelationDstarHadron.cxx; why (npTBinsEfficiency+1) ?
-} // namespace o2::dstar::correlation
-
-using namespace o2::dstar;
+std::vector<double> vecEfficiencyDstarDefault(npTBinsEfficiency); // line # 76 in taskCorrelationDstarHadron.cxx; why (npTBinsEfficiency+1) ?
 
 // Dstar-Hadron correlation pair
-struct HfTaskCorrelationDstarHadron {
+struct HfTaskCorrelationDstarHadrons {
 
   Configurable<bool> applyEfficiency{"applyEfficiency", true, "Flag for applying efficiency weights"};
   // pT ranges for correlation plots: the default values are those embedded in hf_cuts_dplus_to_pi_k_pi (i.e. the mass pT bins), but can be redefined via json files
-  Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{correlation::vecBinsPtCorrelations}, "pT bin limits for correlation plots"};
+  Configurable<std::vector<double>> binsPtCorrelations{"binsPtCorrelations", std::vector<double>{vecBinsPtCorrelationsDefault}, "pT bin limits for correlation plots"};
   Configurable<std::vector<double>> binsPtEfficiency{"binsPtEfficiency", std::vector<double>{o2::analysis::hf_cuts_dstar_to_d0_pi::vecBinsPt}, "pT bin limits for efficiency"};
-  Configurable<std::vector<double>> efficiencyDstar{"efficiencyDstar", std::vector<double>{correlation::efficiencyDstar}, "efficiency values for Dstar vs pT bin"};
+  Configurable<std::vector<double>> efficiencyDstar{"efficiencyDstar", std::vector<double>{vecEfficiencyDstarDefault}, "efficiency values for Dstar vs pT bin"};
 
-  Configurable<std::vector<double>> signalRegionLefBound{"signalRegionLefBound", std::vector<double>{correlation::vecSignalRegionLefBoundDefault}, "left boundary of signal region vs pT"};
-  Configurable<std::vector<double>> signalRegionRightBound{"signalRegionRightBound", std::vector<double>{correlation::vecSignalRegionRightBoundDefault}, "right boundary of signal region vs pT"};
-  // Configurable<std::vector<double>> leftSidebandOuterBoundary{"leftSidebandOuterBoundary", std::vector<double>{correlation::vecSidebandLeftOuterDefault}, "left sideband outer boundary vs pT"};
-  // Configurable<std::vector<double>> leftSidebandInnerBoundary{"leftSidebandInnerBoundary", std::vector<double>{correlation::vecSidebandLeftInnerDefault}, "left sideband inner boundary vs pT"};
-  Configurable<std::vector<double>> rightSidebandOuterBoundary{"rightSidebandOuterBoundary", std::vector<double>{correlation::vecSidebandRightOuterDefault}, "right sideband outer baoundary vs pT"};
-  Configurable<std::vector<double>> rightSidebandInnerBoundary{"rightSidebandInnerBoundary", std::vector<double>{correlation::vecSidebandRightInnerDefault}, "right sideband inner boundary"};
+  Configurable<std::vector<double>> signalRegionLefBound{"signalRegionLefBound", std::vector<double>{vecSignalRegionLefBoundDefault}, "left boundary of signal region vs pT"};
+  Configurable<std::vector<double>> signalRegionRightBound{"signalRegionRightBound", std::vector<double>{vecSignalRegionRightBoundDefault}, "right boundary of signal region vs pT"};
+  // Configurable<std::vector<double>> leftSidebandOuterBoundary{"leftSidebandOuterBoundary", std::vector<double>{vecSidebandLeftOuterDefault}, "left sideband outer boundary vs pT"};
+  // Configurable<std::vector<double>> leftSidebandInnerBoundary{"leftSidebandInnerBoundary", std::vector<double>{vecSidebandLeftInnerDefault}, "left sideband inner boundary vs pT"};
+  Configurable<std::vector<double>> rightSidebandOuterBoundary{"rightSidebandOuterBoundary", std::vector<double>{vecSidebandRightOuterDefault}, "right sideband outer baoundary vs pT"};
+  Configurable<std::vector<double>> rightSidebandInnerBoundary{"rightSidebandInnerBoundary", std::vector<double>{vecSidebandRightInnerDefault}, "right sideband inner boundary"};
 
   HistogramRegistry registry{"registry",{},OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -93,15 +88,19 @@ struct HfTaskCorrelationDstarHadron {
 
     auto axisPtDstar = (std::vector<double>)binsPtEfficiency;
     AxisSpec axisSpecPtDstar = {axisPtDstar};
+    AxisSpec axisSpecDeltaPhi = {64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf};
+    AxisSpec axisSpecDeltaEta = {40,-2.,2.};
+    AxisSpec axisSpecPtHadron = {11,0.,11};
+    AxisSpec axisSpecPoolBin = {9,0.,9.};
 
-    registry.add("hCorrel2DVsPtSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {40, -2., 2}, axisSpecPtDstar, {11, 0., 11.}, {9, 0., 9.}}}, true);
-    registry.add("hCorrel2DPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2D, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {40, -2., 2}}}, true);
-    registry.add("hDeltaEtaPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1D, {{40, -2., 2}}}, true);
-    registry.add("hDeltaPhiPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1D, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}}}, true);
-    registry.add("hCorrel2DVsPtSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {40, -2., 2}, axisSpecPtDstar, {11, 0., 11.}, {9, 0., 9.}}}, true);
-    registry.add("hCorrel2DPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2D, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, {40, -2., 2}}}, true);
-    registry.add("hDeltaEtaPtIntSidebands", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1D, {{40, -2., 2}}}, true);
-    registry.add("hDeltaPhiPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1D, {{64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}}}, true);
+    registry.add("hCorrel2DVsPtSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
+    registry.add("hCorrel2DPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2D, {axisSpecDeltaPhi, axisSpecDeltaEta}}, true);
+    registry.add("hDeltaEtaPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1D, {axisSpecDeltaEta}}, true);
+    registry.add("hDeltaPhiPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1D, {axisSpecDeltaPhi}}, true);
+    registry.add("hCorrel2DVsPtSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
+    registry.add("hCorrel2DPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2D, {axisSpecDeltaPhi, axisSpecDeltaEta}}, true);
+    registry.add("hDeltaEtaPtIntSidebands", stringDHadron + stringSideband + stringDeltaEta + "entries", {HistType::kTH1D, {axisSpecDeltaEta}}, true);
+    registry.add("hDeltaPhiPtIntSidebands", stringDHadron + stringSideband + stringDeltaPhi + "entries", {HistType::kTH1D, {axisSpecDeltaPhi}}, true);
   }
 
   void processData(aod::DstarHadronPair const& dstarHPairs)
@@ -115,23 +114,24 @@ struct HfTaskCorrelationDstarHadron {
       float deltaM = dstarHPair.deltaM();
 
       int effBinPtDstar = o2::analysis::findBin(binsPtEfficiency, ptDstar);
-      LOG(info) << "efficiency index " << effBinPtDstar;
+      // LOG(info) << "efficiency index " << effBinPtDstar;
       int corrBinPtDstar = o2::analysis::findBin(binsPtCorrelations, ptDstar);
-      LOG(info) << "correlation index " << corrBinPtDstar;
+      // LOG(info) << "correlation index " << corrBinPtDstar;
 
       // reject candidate if outside pT ranges of interst
       if (corrBinPtDstar < 0 || effBinPtDstar < 0) {
         continue;
       }
-      if (ptTrack > 10.0) {
-        ptTrack = 10.5;
-      }
+      // Why the follwing condition in Dplus task?
+      // if (ptTrack > 10.0) {
+      //   ptTrack = 10.5;
+      // }
       float netEfficiencyWeight = 1.0;
       float efficiencyWeightTracks = 1.0;
 
       if (applyEfficiency) {
         float efficiencyWeightDstar = efficiencyDstar->at(effBinPtDstar);
-        LOG(info)<<"efficiencyWeightDstar "<<efficiencyWeightDstar;
+        // LOG(info)<<"efficiencyWeightDstar "<<efficiencyWeightDstar;
         netEfficiencyWeight = 1.0 / (efficiencyWeightDstar * efficiencyWeightTracks);
       }
 
@@ -150,10 +150,10 @@ struct HfTaskCorrelationDstarHadron {
       }
     }
   }
-  PROCESS_SWITCH(HfTaskCorrelationDstarHadron, processData, " process data only", true);
+  PROCESS_SWITCH(HfTaskCorrelationDstarHadrons, processData, " process data only", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTaskCorrelationDstarHadron>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskCorrelationDstarHadrons>(cfgc)};
 }
