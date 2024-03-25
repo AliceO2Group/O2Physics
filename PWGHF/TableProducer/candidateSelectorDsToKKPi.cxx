@@ -322,17 +322,17 @@ struct HfCandidateSelectorDsToKKPi {
       int pidTrackNegKaon = -1;
 
       if (usePidTpcAndTof) {
-        selectorPion.statusTpcAndTof(trackPos1);
-        selectorKaon.statusTpcAndTof(trackPos1);
-        selectorPion.statusTpcAndTof(trackPos2);
-        selectorKaon.statusTpcAndTof(trackPos2);
-        selectorKaon.statusTpcAndTof(trackNeg);
-      } else {
-        selectorPion.statusTpcOrTof(trackPos1);
-        selectorKaon.statusTpcOrTof(trackPos1);
-        selectorPion.statusTpcOrTof(trackPos2);
-        selectorKaon.statusTpcOrTof(trackPos2);
-        selectorKaon.statusTpcOrTof(trackNeg);
+        pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1);
+        pidTrackPos1Kaon = selectorKaon.statusTpcAndTof(trackPos1);
+        pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2);
+        pidTrackPos2Kaon = selectorKaon.statusTpcAndTof(trackPos2);
+        pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
+      } else{
+        pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
+        pidTrackPos1Kaon = selectorKaon.statusTpcOrTof(trackPos1);
+        pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
+        pidTrackPos2Kaon = selectorKaon.statusTpcOrTof(trackPos2);
+        pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
       }
 
       bool pidDsToKKPi = !(pidTrackPos1Kaon == TrackSelectorPID::Rejected ||
