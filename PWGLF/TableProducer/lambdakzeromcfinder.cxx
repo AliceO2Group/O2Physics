@@ -432,7 +432,7 @@ struct lambdakzeromcfinder {
       for (auto& posMotherParticle : posParticle.mothers_as<aod::McParticles>()) {
         // determine if mother particle satisfies any condition curently being searched for
         for (int ipdg = 0; ipdg < searchedV0PDG.size(); ipdg++)
-          if (searchedV0PDG[ipdg] == posMotherParticle.pdgCode()) {
+          if (searchedV0PDG[ipdg] == posMotherParticle.pdgCode() || fabs(posMotherParticle.y())>yPreFilter) {
             v0pdgIndex = ipdg; // index mapping to desired V0 species
             motherIndex = posMotherParticle.globalIndex();
             continue;
