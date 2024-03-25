@@ -73,40 +73,12 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
 static constexpr TrackSelectionFlags::flagtype trackSelectionDCAXYonly =
   TrackSelectionFlags::kDCAxy;
 
-static constexpr int CentHistArray{15};
-std::array<std::shared_ptr<TH1>, CentHistArray> h1MultHistCentFT0C;
-std::array<std::shared_ptr<TH1>, CentHistArray> h1EtaHistCentFT0C;
-std::array<std::shared_ptr<TH1>, CentHistArray> h1PhiHistCentFT0C;
-std::array<std::shared_ptr<TH1>, CentHistArray> h1DCAXYHistCentFT0C;
-std::array<std::shared_ptr<TH1>, CentHistArray> h1DCAZHistCentFT0C;
-std::array<std::shared_ptr<TH1>, CentHistArray> h1pTHistCentFT0C;
-std::array<std::shared_ptr<TH2>, CentHistArray> h2EtaVsVtxZHistCentFT0C;
-std::array<std::shared_ptr<TH2>, CentHistArray> h2PhiVsEtaHistCentFT0C;
-
-std::array<std::shared_ptr<TH1>, CentHistArray> h1MCRecMultHistCentFT0C;
-std::array<std::shared_ptr<TH1>, CentHistArray> h1MCRecEtaHistCentFT0C;
-std::array<std::shared_ptr<TH1>, CentHistArray> h1MCRecPhiHistCentFT0C;
-std::array<std::shared_ptr<TH1>, CentHistArray> h1MCRecDCAXYHistCentFT0C;
-std::array<std::shared_ptr<TH1>, CentHistArray> h1MCRecDCAZHistCentFT0C;
-std::array<std::shared_ptr<TH1>, CentHistArray> h1MCRecpTHistCentFT0C;
-std::array<std::shared_ptr<TH2>, CentHistArray> h2MCRecEtaVsVtxZHistCentFT0C;
-std::array<std::shared_ptr<TH2>, CentHistArray> h2MCRecPhiVsEtaHistCentFT0C;
-std::array<std::shared_ptr<TH2>, CentHistArray> h2MCGenVsRecMultHistCentFT0C;
-
-std::array<std::shared_ptr<TH1>, CentHistArray> h1MCGenMultHistCentFT0C;
-std::array<std::shared_ptr<TH1>, CentHistArray> h1MCGenEtaHistCentFT0C;
-std::array<std::shared_ptr<TH1>, CentHistArray> h1MCGenPhiHistCentFT0C;
-std::array<std::shared_ptr<TH1>, CentHistArray> h1MCGenpTHistCentFT0C;
-std::array<std::shared_ptr<TH2>, CentHistArray> h2MCGenEtaVsVtxZHistCentFT0C;
-std::array<std::shared_ptr<TH2>, CentHistArray> h2MCGenPhiVsEtaHistCentFT0C;
-
 AxisSpec axisEvent{5, -0.5, 4.5, "#Event"};
-AxisSpec axisCentEvent{15, 0, 15, "#CentEvent"};
-AxisSpec axisVtxZ{800, -20, 20, "Vertex Z"};
+AxisSpec axisVtxZ{40, -20, 20, "Vertex Z"};
 AxisSpec axisDCA = {601, -3.01, 3.01};
-AxisSpec axisPT = {1000, -0.05, 49.95};
-AxisSpec axisEta{200, -5, 5, "#eta"};
+AxisSpec axisEta{40, -2, 2, "#eta"};
 AxisSpec axisPhi{629, 0, 2 * M_PI, "#phi"};
+AxisSpec axisPhi2{{0, M_PI / 2, M_PI, M_PI * 3. / 2, 2 * M_PI}, "#phi"};
 AxisSpec axisMCEvent_ambiguity{10, -0.5, 9.5, "reco collisions per true collision"};
 AxisSpec axisCent{100, 0, 100, "#Cent"};
 
@@ -125,7 +97,8 @@ struct HeavyIonMultiplicity {
   ConfigurableAxis FT0multHistBin{"FT0MultDistBinning", {501, -0.5, 500.5}, ""};
   ConfigurableAxis FT0AmultHistBin{"FT0AMultDistBinning", {501, -0.5, 500.5}, ""};
   ConfigurableAxis FT0CmultHistBin{"FT0CMultDistBinning", {501, -0.5, 500.5}, ""};
-  Configurable<std::vector<float>> CentInterval{"CentInterval", {0., 5., 10., 20., 40., 60., 80., 100.}, "Centrality Intervals"};
+  ConfigurableAxis pTHistBin{"pTHistBin", {VARIABLE_WIDTH, 0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100}, ""};
+  ConfigurableAxis CentralityBinning{"CentralityBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, ""};
 
   void init(InitContext const&)
   {
@@ -135,6 +108,9 @@ struct HeavyIonMultiplicity {
     AxisSpec axisFT0Mult = {FT0multHistBin};
     AxisSpec axisFT0AMult = {FT0AmultHistBin};
     AxisSpec axisFT0CMult = {FT0CmultHistBin};
+    AxisSpec CentAxis = {CentralityBinning, "Centrality"};
+    AxisSpec axisPT = {pTHistBin};
+
     histos.add("EventHist", "EventHist", kTH1D, {axisEvent}, false);
     histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ}, false);
 
@@ -186,42 +162,24 @@ struct HeavyIonMultiplicity {
 
     if (doprocessDataCentFT0C) {
       histos.add("CentPercentileHist", "CentPercentileHist", kTH1D, {axisCent}, false);
-      histos.add("CentEventHist", "CentEventHist", kTH1D, {axisCentEvent}, false);
-      auto centinterval = static_cast<std::vector<float>>(CentInterval);
-      for (auto i = 0U; i < centinterval.size() - 1; ++i) {
-        h1MultHistCentFT0C[i] = histos.add<TH1>(Form("MultHist%d", i + 1), Form("MultHist%d", i + 1), kTH1D, {axisMult}, true);
-        h1EtaHistCentFT0C[i] = histos.add<TH1>(Form("EtaHist%d", i + 1), Form("EtaHist%d", i + 1), kTH1D, {axisEta}, true);
-        h1PhiHistCentFT0C[i] = histos.add<TH1>(Form("PhiHist%d", i + 1), Form("PhiHist%d", i + 1), kTH1D, {axisPhi}, true);
-        h1DCAXYHistCentFT0C[i] = histos.add<TH1>(Form("DCAXYHist%d", i + 1), Form("DCAXYHist%d", i + 1), kTH1D, {axisDCA}, true);
-        h1DCAZHistCentFT0C[i] = histos.add<TH1>(Form("DCAZHist%d", i + 1), Form("DCAZHist%d", i + 1), kTH1D, {axisDCA}, true);
-        h1pTHistCentFT0C[i] = histos.add<TH1>(Form("pTHist%d", i + 1), Form("pTHist%d", i + 1), kTH1D, {axisPT}, true);
-        h2EtaVsVtxZHistCentFT0C[i] = histos.add<TH2>(Form("EtaVsVtxZHist%d", i + 1), Form("EtaVsVtxZHist%d", i + 1), kTH2D, {axisEta, axisVtxZ}, true);
-        h2PhiVsEtaHistCentFT0C[i] = histos.add<TH2>(Form("PhiVsEtaHist%d", i + 1), Form("PhiVsEtaHist%d", i + 1), kTH2D, {axisPhi, axisEta}, true);
-      }
+      histos.add("hdatamult", "hdatamult", kTHnSparseF, {axisVtxZ, axisMult, CentAxis}, false);
+      histos.add("hdatadndeta", "hdatadndeta", kTHnSparseF, {axisVtxZ, axisEta, axisPhi2, CentAxis, axisPT}, false);
+      histos.add("hdatazvtxcent", "hdatazvtxcent", kTH2D, {axisVtxZ, CentAxis}, false);
     }
 
     if (doprocessMCCentFT0C) {
       histos.add("CentPercentileMCRecHist", "CentPercentileMCRecHist", kTH1D, {axisCent}, false);
-      histos.add("MCCentEventHist", "MCCentEventHist", kTH1D, {axisCentEvent}, false);
-      auto centinterval = static_cast<std::vector<float>>(CentInterval);
-      for (auto i = 0U; i < centinterval.size() - 1; ++i) {
-        h1MCRecMultHistCentFT0C[i] = histos.add<TH1>(Form("MCRecMultHist%d", i + 1), Form("MCRecMultHist%d", i + 1), kTH1D, {axisMult}, true);
-        h1MCRecEtaHistCentFT0C[i] = histos.add<TH1>(Form("MCRecEtaHist%d", i + 1), Form("MCRecEtaHist%d", i + 1), kTH1D, {axisEta}, true);
-        h1MCRecPhiHistCentFT0C[i] = histos.add<TH1>(Form("MCRecPhiHist%d", i + 1), Form("MCRecPhiHist%d", i + 1), kTH1D, {axisPhi}, true);
-        h1MCRecDCAXYHistCentFT0C[i] = histos.add<TH1>(Form("DCAXYMCRecHist%d", i + 1), Form("DCAXYMCRecHist%d", i + 1), kTH1D, {axisDCA}, true);
-        h1MCRecDCAZHistCentFT0C[i] = histos.add<TH1>(Form("DCAZMCRecHist%d", i + 1), Form("DCAZMCRecHist%d", i + 1), kTH1D, {axisDCA}, true);
-        h1MCRecpTHistCentFT0C[i] = histos.add<TH1>(Form("pTMCRecHist%d", i + 1), Form("pTMCRecHist%d", i + 1), kTH1D, {axisPT}, true);
-        h2MCRecEtaVsVtxZHistCentFT0C[i] = histos.add<TH2>(Form("EtaVsVtxZMCRecHist%d", i + 1), Form("EtaVsVtxZMCRecHist%d", i + 1), kTH2D, {axisEta, axisVtxZ}, true);
-        h2MCRecPhiVsEtaHistCentFT0C[i] = histos.add<TH2>(Form("MCRecPhiVsEtaHist%d", i + 1), Form("MCRecPhiVsEtaHist%d", i + 1), kTH2D, {axisPhi, axisEta}, true);
-        h2MCGenVsRecMultHistCentFT0C[i] = histos.add<TH2>(Form("MCGenVsRecMultHist%d", i + 1), Form("MCGenVsRecMultHist%d", i + 1), kTH2D, {axisMult, axisMult}, true);
-
-        h1MCGenMultHistCentFT0C[i] = histos.add<TH1>(Form("MCGenMultHist%d", i + 1), Form("MCGenMultHist%d", i + 1), kTH1D, {axisMult}, true);
-        h1MCGenEtaHistCentFT0C[i] = histos.add<TH1>(Form("MCGenEtaHist%d", i + 1), Form("MCGenEtaHist%d", i + 1), kTH1D, {axisEta}, true);
-        h1MCGenPhiHistCentFT0C[i] = histos.add<TH1>(Form("MCGenPhiHist%d", i + 1), Form("MCGenPhiHist%d", i + 1), kTH1D, {axisPhi}, true);
-        h1MCGenpTHistCentFT0C[i] = histos.add<TH1>(Form("pTMCGenHist%d", i + 1), Form("pTMCGenHist%d", i + 1), kTH1D, {axisPT}, true);
-        h2MCGenEtaVsVtxZHistCentFT0C[i] = histos.add<TH2>(Form("EtaVsVtxZMCGenHist%d", i + 1), Form("EtaVsVtxZMCGenHist%d", i + 1), kTH2D, {axisEta, axisVtxZ}, true);
-        h2MCGenPhiVsEtaHistCentFT0C[i] = histos.add<TH2>(Form("MCGenPhiVsEtaHist%d", i + 1), Form("MCGenPhiVsEtaHist%d", i + 1), kTH2D, {axisPhi, axisEta}, true);
-      }
+      histos.add("hmczvtxcent", "hmczvtxcent", kTH2D, {axisVtxZ, CentAxis}, false);
+      histos.add("hrecdndeta_pion", "hrecdndeta_pion", kTHnSparseF, {axisVtxZ, axisEta, axisPhi2, CentAxis, axisPT}, false);
+      histos.add("hrecdndeta_kaon", "hrecdndeta_kaon", kTHnSparseF, {axisVtxZ, axisEta, axisPhi2, CentAxis, axisPT}, false);
+      histos.add("hrecdndeta_proton", "hrecdndeta_proton", kTHnSparseF, {axisVtxZ, axisEta, axisPhi2, CentAxis, axisPT}, false);
+      histos.add("hrecdndeta_other", "hrecdndeta_other", kTHnSparseF, {axisVtxZ, axisEta, axisPhi2, CentAxis, axisPT}, false);
+      histos.add("hrecdndeta_bkg", "hrecdndeta_bkg", kTHnSparseF, {axisVtxZ, axisEta, axisPhi2, CentAxis, axisPT}, false);
+      histos.add("hrecdndeta_NotPrimary", "hrecdndeta_NotPrimary", kTHnSparseF, {axisVtxZ, axisEta, axisPhi2, CentAxis, axisPT}, false);
+      histos.add("hgendndeta_pion", "hgendndeta_pion", kTHnSparseF, {axisVtxZ, axisEta, axisPhi2, CentAxis, axisPT}, false);
+      histos.add("hgendndeta_kaon", "hgendndeta_kaon", kTHnSparseF, {axisVtxZ, axisEta, axisPhi2, CentAxis, axisPT}, false);
+      histos.add("hgendndeta_proton", "hgendndeta_proton", kTHnSparseF, {axisVtxZ, axisEta, axisPhi2, CentAxis, axisPT}, false);
+      histos.add("hgendndeta_other", "hgendndeta_other", kTHnSparseF, {axisVtxZ, axisEta, axisPhi2, CentAxis, axisPT}, false);
     }
 
     if (doprocessCorrelation) {
@@ -374,11 +332,7 @@ struct HeavyIonMultiplicity {
   void processDataCentFT0C(CollisionDataTableCentFT0C::iterator const& collision, FilTrackDataTable const& tracks)
   {
     float cent = -1;
-    auto centinterval = static_cast<std::vector<float>>(CentInterval);
-    int NchTracks[CentHistArray];
-    for (int i = 0; i < CentHistArray; i++) {
-      NchTracks[i] = 0;
-    }
+    auto NchTracks = 0;
     constexpr auto hasCentrality = CollisionDataTableCentFT0C::template contains<aod::CentFT0Cs>();
     histos.fill(HIST("EventHist"), 0);
     if (collision.sel8()) {
@@ -387,31 +341,18 @@ struct HeavyIonMultiplicity {
         histos.fill(HIST("EventHist"), 2);
         if (collision.selection_bit(kNoTimeFrameBorder)) {
           histos.fill(HIST("EventHist"), 3);
-          if (std::abs(collision.posZ()) < VtxRange) {
-            histos.fill(HIST("EventHist"), 4);
-            histos.fill(HIST("VtxZHist"), collision.posZ());
-            if constexpr (hasCentrality) {
-              cent = collision.centFT0C();
-              histos.fill(HIST("CentPercentileHist"), cent);
-              for (auto i = 0U; i < centinterval.size() - 1; ++i) {
-                if (cent > centinterval[i] && cent <= centinterval[i + 1]) {
-                  histos.fill(HIST("CentEventHist"), i + 0.5);
-                  for (auto& track : tracks) {
-                    if (std::abs(track.eta()) < etaRange) {
-                      NchTracks[i]++;
-                      h1EtaHistCentFT0C[i]->Fill(track.eta());
-                      h1PhiHistCentFT0C[i]->Fill(track.phi());
-                      h1DCAXYHistCentFT0C[i]->Fill(track.dcaXY());
-                      h1DCAZHistCentFT0C[i]->Fill(track.dcaZ());
-                      h1pTHistCentFT0C[i]->Fill(track.pt());
-                      h2EtaVsVtxZHistCentFT0C[i]->Fill(track.eta(), collision.posZ());
-                      h2PhiVsEtaHistCentFT0C[i]->Fill(track.phi(), track.eta());
-                    }
-                  }
-                  h1MultHistCentFT0C[i]->Fill(NchTracks[i]);
-                }
+          histos.fill(HIST("VtxZHist"), collision.posZ());
+          if constexpr (hasCentrality) {
+            cent = collision.centFT0C();
+            histos.fill(HIST("CentPercentileHist"), cent);
+            histos.fill(HIST("hdatazvtxcent"), collision.posZ(), cent);
+            for (auto& track : tracks) {
+              if (std::abs(track.eta()) < etaRange) {
+                NchTracks++;
+                histos.fill(HIST("hdatadndeta"), collision.posZ(), track.eta(), track.phi(), cent, track.pt());
               }
             }
+            histos.fill(HIST("hdatamult"), collision.posZ(), NchTracks, cent);
           }
         }
       }
@@ -427,13 +368,6 @@ struct HeavyIonMultiplicity {
     }
 
     float cent = -1;
-    auto centinterval = static_cast<std::vector<float>>(CentInterval);
-    int NchRecTracks[CentHistArray];
-    int NchGenTracks[CentHistArray];
-    for (int i = 0; i < CentHistArray; i++) {
-      NchRecTracks[i] = 0;
-      NchGenTracks[i] = 0;
-    }
     constexpr auto hasCentrality = CollisionMCRecTableCentFT0C::template contains<aod::CentFT0Cs>();
 
     for (auto& RecCollision : RecCollisions) {
@@ -444,54 +378,63 @@ struct HeavyIonMultiplicity {
           histos.fill(HIST("EventHist"), 2);
           if (RecCollision.selection_bit(kNoTimeFrameBorder)) {
             histos.fill(HIST("EventHist"), 3);
-            if (std::abs(RecCollision.posZ()) < VtxRange) {
-              histos.fill(HIST("EventHist"), 4);
-              histos.fill(HIST("VtxZHist"), RecCollision.posZ());
-              if constexpr (hasCentrality) {
-                cent = RecCollision.centFT0C();
-                histos.fill(HIST("CentPercentileMCRecHist"), cent);
-                auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
-                for (auto i = 0U; i < centinterval.size() - 1; ++i) {
-                  if (cent > centinterval[i] && cent <= centinterval[i + 1]) {
-                    histos.fill(HIST("MCCentEventHist"), i + 0.5);
-                    for (auto& Rectrack : Rectrackspart) {
-                      if (std::abs(Rectrack.eta()) < etaRange) {
-                        NchRecTracks[i]++;
-                        h1MCRecEtaHistCentFT0C[i]->Fill(Rectrack.eta());
-                        h1MCRecPhiHistCentFT0C[i]->Fill(Rectrack.phi());
-                        h1MCRecDCAXYHistCentFT0C[i]->Fill(Rectrack.dcaXY());
-                        h1MCRecDCAZHistCentFT0C[i]->Fill(Rectrack.dcaZ());
-                        h1MCRecpTHistCentFT0C[i]->Fill(Rectrack.pt());
-                        h2MCRecEtaVsVtxZHistCentFT0C[i]->Fill(Rectrack.eta(), RecCollision.posZ());
-                        h2MCRecPhiVsEtaHistCentFT0C[i]->Fill(Rectrack.phi(), Rectrack.eta());
-                      }
-                    }
+            histos.fill(HIST("VtxZHist"), RecCollision.posZ());
+            if constexpr (hasCentrality) {
+              cent = RecCollision.centFT0C();
+              histos.fill(HIST("CentPercentileMCRecHist"), cent);
+              histos.fill(HIST("hmczvtxcent"), RecCollision.posZ(), cent);
 
-                    for (auto& particle : GenParticles) {
-                      if (!particle.isPhysicalPrimary()) {
-                        continue;
-                      }
-                      if (!particle.producedByGenerator()) {
-                        continue;
-                      }
-                      auto pdgParticle = pdg->GetParticle(particle.pdgCode());
-                      if (pdgParticle == nullptr) {
-                        continue;
-                      }
-                      if (std::abs(pdgParticle->Charge()) >= 3) {
-                        if (std::abs(particle.eta()) < etaRange) {
-                          NchGenTracks[i]++;
-                          h1MCGenEtaHistCentFT0C[i]->Fill(particle.eta());
-                          h1MCGenPhiHistCentFT0C[i]->Fill(particle.phi());
-                          h1MCGenpTHistCentFT0C[i]->Fill(particle.pt());
-                          h2MCGenEtaVsVtxZHistCentFT0C[i]->Fill(particle.eta(), RecCollision.posZ());
-                          h2MCGenPhiVsEtaHistCentFT0C[i]->Fill(particle.phi(), particle.eta());
-                        }
-                      }
+              auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
+              for (auto& Rectrack : Rectrackspart) {
+                if (std::abs(Rectrack.eta()) > etaRange) {
+                  continue;
+                }
+                if (Rectrack.has_mcParticle()) {
+                  auto mcpart = Rectrack.mcParticle();
+                  if (std::abs(mcpart.eta()) > etaRange) {
+                    continue;
+                  }
+                  if (mcpart.isPhysicalPrimary()) {
+                    if (std::abs(mcpart.pdgCode()) == 211) {
+                      histos.fill(HIST("hrecdndeta_pion"), RecCollision.posZ(), mcpart.eta(), mcpart.phi(), cent, mcpart.pt());
+                    } else if (std::abs(mcpart.pdgCode()) == 321) {
+                      histos.fill(HIST("hrecdndeta_kaon"), RecCollision.posZ(), mcpart.eta(), mcpart.phi(), cent, mcpart.pt());
+                    } else if (std::abs(mcpart.pdgCode()) == 2212) {
+                      histos.fill(HIST("hrecdndeta_proton"), RecCollision.posZ(), mcpart.eta(), mcpart.phi(), cent, mcpart.pt());
+                    } else {
+                      histos.fill(HIST("hrecdndeta_other"), RecCollision.posZ(), mcpart.eta(), mcpart.phi(), cent, mcpart.pt());
                     }
-                    h1MCRecMultHistCentFT0C[i]->Fill(NchRecTracks[i]);
-                    h1MCGenMultHistCentFT0C[i]->Fill(NchGenTracks[i]);
-                    h2MCGenVsRecMultHistCentFT0C[i]->Fill(NchRecTracks[i], NchGenTracks[i]);
+                  } else {
+                    histos.fill(HIST("hrecdndeta_NotPrimary"), RecCollision.posZ(), mcpart.eta(), mcpart.phi(), cent, mcpart.pt());
+                  }
+                } else {
+                  histos.fill(HIST("hrecdndeta_bkg"), RecCollision.posZ(), Rectrack.eta(), Rectrack.phi(), cent, Rectrack.pt());
+                }
+              }
+
+              for (auto& particle : GenParticles) {
+                if (!particle.isPhysicalPrimary()) {
+                  continue;
+                }
+                if (!particle.producedByGenerator()) {
+                  continue;
+                }
+                auto pdgParticle = pdg->GetParticle(particle.pdgCode());
+                if (pdgParticle == nullptr) {
+                  continue;
+                }
+                if (std::abs(pdgParticle->Charge()) >= 3) {
+                  if (std::abs(particle.eta()) > etaRange) {
+                    continue;
+                  }
+                  if (std::abs(particle.pdgCode()) == 211) {
+                    histos.fill(HIST("hgendndeta_pion"), RecCollision.posZ(), particle.eta(), particle.phi(), cent, particle.pt());
+                  } else if (std::abs(particle.pdgCode()) == 321) {
+                    histos.fill(HIST("hgendndeta_kaon"), RecCollision.posZ(), particle.eta(), particle.phi(), cent, particle.pt());
+                  } else if (std::abs(particle.pdgCode()) == 2212) {
+                    histos.fill(HIST("hgendndeta_proton"), RecCollision.posZ(), particle.eta(), particle.phi(), cent, particle.pt());
+                  } else {
+                    histos.fill(HIST("hgendndeta_other"), RecCollision.posZ(), particle.eta(), particle.phi(), cent, particle.pt());
                   }
                 }
               }
