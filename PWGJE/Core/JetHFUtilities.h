@@ -424,7 +424,7 @@ float getTablePDGMass()
 template <typename T, typename U>
 void fillD0CollisionTable(T const& collision, U& D0CollisionTable, int32_t& D0CollisionTableIndex)
 {
-  D0CollisionTable(collision.numContrib(), collision.isEventReject(), collision.runNumber());
+  D0CollisionTable(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFV0A(), collision.multZeqNTracksPV());
   D0CollisionTableIndex = D0CollisionTable.lastIndex();
 }
 
