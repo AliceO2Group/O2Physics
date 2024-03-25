@@ -105,6 +105,8 @@ struct UpcCandProducer {
     const AxisSpec axisTrgCounters{10, 0.5, 10.5, ""};
     histRegistry.add("hCountersTrg", "", kTH1F, {axisTrgCounters});
     histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(1, "TCE");
+    histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(2, "ZNA");
+    histRegistry.get<TH1>(HIST("hCountersTrg"))->GetXaxis()->SetBinLabel(3, "ZNC");
 
     const AxisSpec axisBcDist{201, 0.5, 200.5, ""};
     histRegistry.add("hDistToITSTPC", "", kTH1F, {axisBcDist});
@@ -316,18 +318,16 @@ struct UpcCandProducer {
       int32_t newDaughterIDs[2] = {-1, -1};
       if (mcPart.has_daughters()) {
         const auto& daughterIDs = mcPart.daughtersIds();
-        if (daughterIDs.size() > 0) {
-          int32_t firstDaughter = daughterIDs.front();
-          int32_t lastDaughter = daughterIDs.back();
-          if (firstDaughter >= nMCParticles || lastDaughter >= nMCParticles) {
-            continue;
-          }
-          auto itFirst = fNewPartIDs.find(firstDaughter);
-          auto itLast = fNewPartIDs.find(lastDaughter);
-          if (itFirst != fNewPartIDs.end() && itLast != fNewPartIDs.end()) {
-            newDaughterIDs[0] = fNewPartIDs.at(daughterIDs.front());
-            newDaughterIDs[1] = fNewPartIDs.at(daughterIDs.back());
-          }
+        int32_t firstDaughter = daughterIDs.front();
+        int32_t lastDaughter = daughterIDs.back();
+        if (firstDaughter >= nMCParticles || lastDaughter >= nMCParticles) {
+          continue;
+        }
+        auto itFirst = fNewPartIDs.find(firstDaughter);
+        auto itLast = fNewPartIDs.find(lastDaughter);
+        if (itFirst != fNewPartIDs.end() && itLast != fNewPartIDs.end()) {
+          newDaughterIDs[0] = fNewPartIDs.at(daughterIDs.front());
+          newDaughterIDs[1] = fNewPartIDs.at(daughterIDs.back());
         }
       }
       udMCParticles(newEventID, mcPart.pdgCode(), mcPart.getHepMCStatusCode(), mcPart.flags(), newMotherIDs, newDaughterIDs,
@@ -760,6 +760,10 @@ struct UpcCandProducer {
     for (const auto& zdc : zdcs) {
       if (std::abs(zdc.timeZNA()) > 2.f && std::abs(zdc.timeZNC()) > 2.f)
         continue;
+      if (!(std::abs(zdc.timeZNA()) > 2.f))
+        histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNA", 1);
+      if (!(std::abs(zdc.timeZNC()) > 2.f))
+        histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNC", 1);
       auto globalBC = zdc.bc_as<o2::aod::BCs>().globalBC();
       mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
     }

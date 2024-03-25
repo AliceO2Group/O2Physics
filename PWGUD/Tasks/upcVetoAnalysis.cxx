@@ -24,38 +24,38 @@ using namespace o2::framework::expressions;
 
 struct UpcVetoAnalysis {
   // amplitude axis
-  int nbAmp = 101;
-  double minAmp = 0.;
-  double maxAmp = 1000.;
+  int fNbAmp = 101;
+  double fMinAmp = 0.;
+  double fMaxAmp = 1000;
 
   // bcs axis
-  int nbBcs = 51;
-  double minBcs = 0.;
-  double maxBcs = 50.;
+  int fNbBcs = 52;
+  double fMinBcs = -1.;
+  double fMaxBcs = 50.;
 
   // zdc time axis
-  int nbT = 101;
-  double minT = -10.;
-  double maxT = 10.;
+  int fNbT = 101;
+  double fMinT = -10.;
+  double fMaxT = 10.;
 
   HistogramRegistry hr{"hr", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   OutputObj<TH1D> hCountBCs{TH1D("hCountBCs", "", 10, 0., 10.)};
 
-  OutputObj<TH1D> hTimeZNA{TH1D("hTimeZNA", "", nbT, minT, maxT)};
-  OutputObj<TH1D> hTimeZNC{TH1D("hTimeZNC", "", nbT, minT, maxT)};
+  OutputObj<TH1D> hTimeZNA{TH1D("hTimeZNA", "", fNbT, fMinT, fMaxT)};
+  OutputObj<TH1D> hTimeZNC{TH1D("hTimeZNC", "", fNbT, fMinT, fMaxT)};
 
-  OutputObj<TH2D> hSelBCAmpV0A_Total{TH2D("hSelBCAmpV0A_Total", "", nbAmp, minAmp, maxAmp, nbBcs, minBcs, maxBcs)};
-  OutputObj<TH2D> hSelBCAmpV0A_0n0n{TH2D("hSelBCAmpV0A_0n0n", "", nbAmp, minAmp, maxAmp, nbBcs, minBcs, maxBcs)};
-  OutputObj<TH2D> hSelBCAmpV0A_0nXn{TH2D("hSelBCAmpV0A_0nXn", "", nbAmp, minAmp, maxAmp, nbBcs, minBcs, maxBcs)};
-  OutputObj<TH2D> hSelBCAmpV0A_Xn0n{TH2D("hSelBCAmpV0A_Xn0n", "", nbAmp, minAmp, maxAmp, nbBcs, minBcs, maxBcs)};
-  OutputObj<TH2D> hSelBCAmpV0A_XnXn{TH2D("hSelBCAmpV0A_XnXn", "", nbAmp, minAmp, maxAmp, nbBcs, minBcs, maxBcs)};
+  OutputObj<TH2D> hSelBCAmpV0A_Total{TH2D("hSelBCAmpV0A_Total", "", fNbAmp, fMinAmp, fMaxAmp, fNbBcs, fMinBcs, fMaxBcs)};
+  OutputObj<TH2D> hSelBCAmpV0A_0n0n{TH2D("hSelBCAmpV0A_0n0n", "", fNbAmp, fMinAmp, fMaxAmp, fNbBcs, fMinBcs, fMaxBcs)};
+  OutputObj<TH2D> hSelBCAmpV0A_0nXn{TH2D("hSelBCAmpV0A_0nXn", "", fNbAmp, fMinAmp, fMaxAmp, fNbBcs, fMinBcs, fMaxBcs)};
+  OutputObj<TH2D> hSelBCAmpV0A_Xn0n{TH2D("hSelBCAmpV0A_Xn0n", "", fNbAmp, fMinAmp, fMaxAmp, fNbBcs, fMinBcs, fMaxBcs)};
+  OutputObj<TH2D> hSelBCAmpV0A_XnXn{TH2D("hSelBCAmpV0A_XnXn", "", fNbAmp, fMinAmp, fMaxAmp, fNbBcs, fMinBcs, fMaxBcs)};
 
-  OutputObj<TH2D> hSelBCAmpT0A_Total{TH2D("hSelBCAmpT0A_Total", "", nbAmp, minAmp, maxAmp, nbBcs, minBcs, maxBcs)};
-  OutputObj<TH2D> hSelBCAmpT0A_0n0n{TH2D("hSelBCAmpT0A_0n0n", "", nbAmp, minAmp, maxAmp, nbBcs, minBcs, maxBcs)};
-  OutputObj<TH2D> hSelBCAmpT0A_0nXn{TH2D("hSelBCAmpT0A_0nXn", "", nbAmp, minAmp, maxAmp, nbBcs, minBcs, maxBcs)};
-  OutputObj<TH2D> hSelBCAmpT0A_Xn0n{TH2D("hSelBCAmpT0A_Xn0n", "", nbAmp, minAmp, maxAmp, nbBcs, minBcs, maxBcs)};
-  OutputObj<TH2D> hSelBCAmpT0A_XnXn{TH2D("hSelBCAmpT0A_XnXn", "", nbAmp, minAmp, maxAmp, nbBcs, minBcs, maxBcs)};
+  OutputObj<TH2D> hSelBCAmpT0A_Total{TH2D("hSelBCAmpT0A_Total", "", fNbAmp, fMinAmp, fMaxAmp, fNbBcs, fMinBcs, fMaxBcs)};
+  OutputObj<TH2D> hSelBCAmpT0A_0n0n{TH2D("hSelBCAmpT0A_0n0n", "", fNbAmp, fMinAmp, fMaxAmp, fNbBcs, fMinBcs, fMaxBcs)};
+  OutputObj<TH2D> hSelBCAmpT0A_0nXn{TH2D("hSelBCAmpT0A_0nXn", "", fNbAmp, fMinAmp, fMaxAmp, fNbBcs, fMinBcs, fMaxBcs)};
+  OutputObj<TH2D> hSelBCAmpT0A_Xn0n{TH2D("hSelBCAmpT0A_Xn0n", "", fNbAmp, fMinAmp, fMaxAmp, fNbBcs, fMinBcs, fMaxBcs)};
+  OutputObj<TH2D> hSelBCAmpT0A_XnXn{TH2D("hSelBCAmpT0A_XnXn", "", fNbAmp, fMinAmp, fMaxAmp, fNbBcs, fMinBcs, fMaxBcs)};
 
   TH1* hOrbitTotal;
   TH1* hOrbit0n0n;
@@ -65,19 +65,17 @@ struct UpcVetoAnalysis {
   TH1* hOrbitZNA;
   TH1* hOrbitZNC;
   TH1* hOrbitTCE;
-  TH1* hOrbitV0A;
-  TH1* hOrbitT0A;
 
-  TH1* hSecondsTotal;
-  TH1* hSeconds0n0n;
-  TH1* hSeconds0nXn;
-  TH1* hSecondsXn0n;
-  TH1* hSecondsXnXn;
-  TH1* hSecondsZNA;
-  TH1* hSecondsZNC;
-  TH1* hSecondsTCE;
-  TH1* hSecondsV0A;
-  TH1* hSecondsT0A;
+  TH1* hOrbitV0A_Total;
+  TH1* hOrbitV0A_0n0n;
+  TH1* hOrbitV0A_0nXn;
+  TH1* hOrbitV0A_Xn0n;
+  TH1* hOrbitV0A_XnXn;
+  TH1* hOrbitT0A_Total;
+  TH1* hOrbitT0A_0n0n;
+  TH1* hOrbitT0A_0nXn;
+  TH1* hOrbitT0A_Xn0n;
+  TH1* hOrbitT0A_XnXn;
 
   int32_t fRun{0};
 
@@ -92,6 +90,7 @@ struct UpcVetoAnalysis {
 
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB{};
   int32_t fNBcsB{0};
+  std::vector<int64_t> bbcs{}; // b-mask bcs inside orbit
 
   void init(InitContext&)
   {
@@ -144,89 +143,6 @@ struct UpcVetoAnalysis {
     fNBcsPerTF = fNOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
   }
 
-  void collectVeto(const std::vector<int64_t>& gbcs,
-                   const std::vector<int64_t>& gbcsOrbit,
-                   const std::vector<int64_t>& gbcsTs,
-                   const char* det,
-                   const std::map<int64_t, float>& mapGlobalBcWithFit,
-                   const std::map<int64_t, float>& mapGlobalBcWithZNA,
-                   const std::map<int64_t, float>& mapGlobalBcWithZNC)
-  {
-    TH1* hOrbit = nullptr;
-    TH1* hSeconds = nullptr;
-    TH1* hTotal = nullptr;
-    TH1* h0n0n = nullptr;
-    TH1* h0nXn = nullptr;
-    TH1* hXn0n = nullptr;
-    TH1* hXnXn = nullptr;
-    if (std::strcmp(det, "V0A") == 0) {
-      hOrbit = hOrbitV0A;
-      hSeconds = hSecondsV0A;
-      hTotal = hSelBCAmpV0A_Total.object.get();
-      h0n0n = hSelBCAmpV0A_0n0n.object.get();
-      h0nXn = hSelBCAmpV0A_0nXn.object.get();
-      hXn0n = hSelBCAmpV0A_Xn0n.object.get();
-      hXnXn = hSelBCAmpV0A_XnXn.object.get();
-    }
-    if (std::strcmp(det, "T0A") == 0) {
-      hOrbit = hOrbitT0A;
-      hSeconds = hSecondsT0A;
-      hTotal = hSelBCAmpT0A_Total.object.get();
-      h0n0n = hSelBCAmpT0A_0n0n.object.get();
-      h0nXn = hSelBCAmpT0A_0nXn.object.get();
-      hXn0n = hSelBCAmpT0A_Xn0n.object.get();
-      hXnXn = hSelBCAmpT0A_XnXn.object.get();
-    }
-    for (auto i = 0; i < gbcs.size(); ++i) {
-      auto gbc = gbcs[i];
-      if (gbc == -1)
-        continue;
-      auto orbit = gbcsOrbit[i];
-      auto ts = gbcsTs[i];
-      auto itZNA = mapGlobalBcWithZNA.find(gbc);
-      auto itZNC = mapGlobalBcWithZNC.find(gbc);
-      float timeZNA = -999.f;
-      float timeZNC = -999.f;
-      if (itZNA != mapGlobalBcWithZNA.end())
-        timeZNA = itZNA->second;
-      if (itZNC != mapGlobalBcWithZNC.end())
-        timeZNC = itZNC->second;
-      bool hasZNA = !(std::abs(timeZNA) > 2.f);
-      bool hasZNC = !(std::abs(timeZNC) > 2.f);
-      for (auto r : {1, 5, 10}) {
-        auto maxAmp = -999.f;
-        auto s = gbc - r;
-        auto e = gbc + r;
-        auto it = mapGlobalBcWithFit.lower_bound(s);
-        while (it->first <= e && it != mapGlobalBcWithFit.end()) {
-          auto a = it->second;
-          if (a > maxAmp)
-            maxAmp = a;
-          ++it;
-        }
-        for (auto iamp = 1; iamp <= 100; ++iamp) {
-          float amp = 10.f * iamp;
-          if (maxAmp < amp) {
-            auto bin = hTotal->FindFixBin(amp, r);
-            hTotal->AddBinContent(bin, 1);
-            if (!hasZNA && !hasZNC)
-              h0n0n->AddBinContent(bin, 1);
-            if (!hasZNA && hasZNC)
-              h0nXn->AddBinContent(bin, 1);
-            if (hasZNA && !hasZNC)
-              hXn0n->AddBinContent(bin, 1);
-            if (hasZNA && hasZNC)
-              hXnXn->AddBinContent(bin, 1);
-          }
-        }
-        if (r == 1 && maxAmp < 100.f) {
-          hOrbit->Fill(orbit - fMinOrbit);
-          hSeconds->Fill(ts);
-        }
-      }
-    }
-  }
-
   void process(const o2::aod::BCs& bcs,
                const o2::aod::FT0s& ft0s,
                const o2::aod::FV0As& fv0s,
@@ -241,6 +157,12 @@ struct UpcVetoAnalysis {
     if (fbc.runNumber() != fRun) {
       getBcInfo(fbc);
 
+      for (auto i = 0; i < o2::constants::lhc::LHCMaxBunches; ++i) {
+        if (bcPatternB[i] == 0)
+          continue;
+        bbcs.push_back(i);
+      }
+
       const AxisSpec axisOrbits{fNOrbits / static_cast<int>(fNOrbitsPerTF), 0., static_cast<double>(fNOrbits), ""};
       hOrbitTotal = hr.add<TH1>("hOrbitTotal", "", kTH1D, {axisOrbits}).get();
       hOrbit0n0n = hr.add<TH1>("hOrbit0n0n", "", kTH1D, {axisOrbits}).get();
@@ -250,29 +172,30 @@ struct UpcVetoAnalysis {
       hOrbitZNA = hr.add<TH1>("hOrbitZNA", "", kTH1D, {axisOrbits}).get();
       hOrbitZNC = hr.add<TH1>("hOrbitZNC", "", kTH1D, {axisOrbits}).get();
       hOrbitTCE = hr.add<TH1>("hOrbitTCE", "", kTH1D, {axisOrbits}).get();
-      hOrbitV0A = hr.add<TH1>("hOrbitV0A", "", kTH1D, {axisOrbits}).get();
-      hOrbitT0A = hr.add<TH1>("hOrbitT0A", "", kTH1D, {axisOrbits}).get();
-
-      double minSec = std::floor(fTsSOR / 1000.);
-      double maxSec = std::ceil(fTsEOR / 1000.);
-      const AxisSpec axisSeconds{static_cast<int>(maxSec - minSec), minSec, maxSec, "seconds"};
-      hSecondsTotal = hr.add<TH1>("hSecondsTotal", "", kTH1D, {axisSeconds}).get();
-      hSeconds0n0n = hr.add<TH1>("hSeconds0n0n", "", kTH1D, {axisSeconds}).get();
-      hSeconds0nXn = hr.add<TH1>("hSeconds0nXn", "", kTH1D, {axisSeconds}).get();
-      hSecondsXn0n = hr.add<TH1>("hSecondsXn0n", "", kTH1D, {axisSeconds}).get();
-      hSecondsXnXn = hr.add<TH1>("hSecondsXnXn", "", kTH1D, {axisSeconds}).get();
-      hSecondsZNA = hr.add<TH1>("hSecondsZNA", "", kTH1D, {axisSeconds}).get();
-      hSecondsZNC = hr.add<TH1>("hSecondsZNC", "", kTH1D, {axisSeconds}).get();
-      hSecondsTCE = hr.add<TH1>("hSecondsTCE", "", kTH1D, {axisSeconds}).get();
-      hSecondsV0A = hr.add<TH1>("hSecondsV0A", "", kTH1D, {axisSeconds}).get();
-      hSecondsT0A = hr.add<TH1>("hSecondsT0A", "", kTH1D, {axisSeconds}).get();
+      hOrbitV0A_Total = hr.add<TH1>("hOrbitV0A_Total", "", kTH1D, {axisOrbits}).get();
+      hOrbitV0A_0n0n = hr.add<TH1>("hOrbitV0A_0n0n", "", kTH1D, {axisOrbits}).get();
+      hOrbitV0A_0nXn = hr.add<TH1>("hOrbitV0A_0nXn", "", kTH1D, {axisOrbits}).get();
+      hOrbitV0A_Xn0n = hr.add<TH1>("hOrbitV0A_Xn0n", "", kTH1D, {axisOrbits}).get();
+      hOrbitV0A_XnXn = hr.add<TH1>("hOrbitV0A_XnXn", "", kTH1D, {axisOrbits}).get();
+      hOrbitT0A_Total = hr.add<TH1>("hOrbitT0A_Total", "", kTH1D, {axisOrbits}).get();
+      hOrbitT0A_0n0n = hr.add<TH1>("hOrbitT0A_0n0n", "", kTH1D, {axisOrbits}).get();
+      hOrbitT0A_0nXn = hr.add<TH1>("hOrbitT0A_0nXn", "", kTH1D, {axisOrbits}).get();
+      hOrbitT0A_Xn0n = hr.add<TH1>("hOrbitT0A_Xn0n", "", kTH1D, {axisOrbits}).get();
+      hOrbitT0A_XnXn = hr.add<TH1>("hOrbitT0A_XnXn", "", kTH1D, {axisOrbits}).get();
     }
 
     std::unordered_set<uint64_t> orbitNumbers{}; // non-empty unique orbit numbers
 
     std::vector<int64_t> gbcs(nBcs, -1);
-    std::vector<int64_t> gbcsTs(nBcs, -1);
     std::vector<int64_t> gbcsOrbit(nBcs, -1);
+
+    std::vector<float> vBcIdsWithV0A(nBcs, -999.f);
+    std::vector<float> vBcIdsWithT0A(nBcs, -999.f);
+
+    std::vector<bool> vBcIdsWithZNA(nBcs, false);
+    std::vector<bool> vBcIdsWithZNC(nBcs, false);
+
+    std::unordered_map<int64_t, int64_t> bgbcZdc{}; // fired b-mask bcIds with zdc
 
     int64_t nBCsPat_all = 0;
     int64_t nBCsPat_total = 0;
@@ -290,84 +213,68 @@ struct UpcVetoAnalysis {
         continue;
       gbcs[i] = bc.globalBC();
       uint64_t orbit = bc.globalBC() / o2::constants::lhc::LHCMaxBunches;
-      uint64_t ts = (bc.globalBC() * o2::constants::lhc::LHCBunchSpacingMUS + fTsOrbitReset) / 1000000; // seconds
       gbcsOrbit[i] = orbit;
-      gbcsTs[i] = ts;
       orbitNumbers.insert(orbit);
       hOrbitTotal->Fill(orbit - fMinOrbit);
-      hSecondsTotal->Fill(ts);
       nBCsPat_total++;
     }
 
-    nBCsPat_all = orbitNumbers.size() * o2::constants::lhc::LHCMaxBunches;
+    nBCsPat_all = orbitNumbers.size() * fNBcsB;
 
-    std::map<int64_t, float> mapGlobalBcWithZNA{};
-    std::map<int64_t, float> mapGlobalBcWithZNC{};
     for (auto i = 0; i < nZdcs; ++i) {
       const auto& zdc = zdcs.iteratorAt(i);
       auto bcId = zdc.bcId();
       int64_t globalBC = gbcs[bcId];
       if (globalBC == -1)
         continue;
-      auto orbit = gbcsOrbit[bcId];
-      auto ts = gbcsTs[bcId];
+      auto orbit = gbcsOrbit[bcId] - fMinOrbit;
       float timeA = zdc.timeZNA();
       float timeC = zdc.timeZNC();
       hTimeZNA->Fill(timeA);
       hTimeZNC->Fill(timeC);
       bool hasZNA = !(std::abs(timeA) > 2.f);
       bool hasZNC = !(std::abs(timeC) > 2.f);
-      mapGlobalBcWithZNA[globalBC] = timeA;
-      mapGlobalBcWithZNC[globalBC] = timeC;
+      vBcIdsWithZNA[bcId] = hasZNA;
+      vBcIdsWithZNC[bcId] = hasZNC;
+      bgbcZdc[globalBC] = bcId;
       if (!hasZNA && !hasZNC) {
         nBCsPat_0n0n++;
-        hOrbit0n0n->Fill(orbit - fMinOrbit);
-        hSeconds0n0n->Fill(ts);
+        hOrbit0n0n->Fill(orbit);
       }
       if (!hasZNA && hasZNC) {
         nBCsPat_0nXn++;
-        hOrbit0nXn->Fill(orbit - fMinOrbit);
-        hSeconds0nXn->Fill(ts);
+        hOrbit0nXn->Fill(orbit);
       }
       if (hasZNA && !hasZNC) {
         nBCsPat_Xn0n++;
-        hOrbitXn0n->Fill(orbit - fMinOrbit);
-        hSecondsXn0n->Fill(ts);
+        hOrbitXn0n->Fill(orbit);
       }
       if (hasZNA && hasZNC) {
         nBCsPat_XnXn++;
-        hOrbitXnXn->Fill(orbit - fMinOrbit);
-        hSecondsXnXn->Fill(ts);
+        hOrbitXnXn->Fill(orbit);
       }
       if (hasZNA) {
         nBCsPat_ZNA++;
-        hOrbitZNA->Fill(orbit - fMinOrbit);
-        hSecondsZNA->Fill(ts);
+        hOrbitZNA->Fill(orbit);
       }
       if (hasZNC) {
         nBCsPat_ZNC++;
-        hOrbitZNC->Fill(orbit - fMinOrbit);
-        hSecondsZNC->Fill(ts);
+        hOrbitZNC->Fill(orbit);
       }
     }
 
     // looking for bcs without any zdc signals --> adding to 0n0n
-    for (auto i = 0; i < nBcs; ++i) {
+    for (int32_t i = 0; i < nBcs; ++i) {
       auto globalBC = gbcs[i];
       if (globalBC == -1)
         continue;
-      auto itA = mapGlobalBcWithZNA.find(globalBC);
-      auto itC = mapGlobalBcWithZNC.find(globalBC);
-      if (itA == mapGlobalBcWithZNA.end() && itC == mapGlobalBcWithZNC.end()) {
-        auto orbit = gbcsOrbit[i];
-        auto ts = gbcsTs[i];
-        hOrbit0n0n->Fill(orbit - fMinOrbit);
-        hSeconds0n0n->Fill(ts);
+      if (!vBcIdsWithZNA[i] && !vBcIdsWithZNC[i]) {
+        auto orbit = gbcsOrbit[i] - fMinOrbit;
+        hOrbit0n0n->Fill(orbit);
         nBCsPat_0n0n++;
       }
     }
 
-    std::map<int64_t, float> mapGlobalBcWithV0A{};
     for (auto i = 0; i < nFv0s; ++i) {
       const auto& fv0 = fv0s.iteratorAt(i);
       if (!TESTBIT(fv0.triggerMask(), o2::fit::Triggers::bitA))
@@ -380,19 +287,16 @@ struct UpcVetoAnalysis {
         continue;
       const auto& amps = fv0.amplitude();
       auto amp = std::accumulate(amps.begin(), amps.end(), 0.f);
-      mapGlobalBcWithV0A[globalBC] = amp;
+      vBcIdsWithV0A[bcId] = amp;
     }
 
-    std::map<int64_t, float> mapGlobalBcWithT0A{};
     for (auto i = 0; i < nFt0s; ++i) {
       const auto& ft0 = ft0s.iteratorAt(i);
       if (!TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitVertex))
         continue;
       if (TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitCen)) {
-        auto orbit = gbcsOrbit[i];
-        auto ts = gbcsTs[i];
-        hOrbitTCE->Fill(orbit - fMinOrbit);
-        hSecondsTCE->Fill(ts);
+        auto orbit = gbcsOrbit[i] - fMinOrbit;
+        hOrbitTCE->Fill(orbit);
         nBCsPat_TCE++;
       }
       auto bcId = ft0.bcId();
@@ -403,7 +307,7 @@ struct UpcVetoAnalysis {
         continue;
       const auto& amps = ft0.amplitudeA();
       auto amp = std::accumulate(amps.begin(), amps.end(), 0.f);
-      mapGlobalBcWithT0A[globalBC] = amp;
+      vBcIdsWithT0A[bcId] = amp;
     }
 
     hCountBCs->Fill("All", static_cast<double>(nBCsPat_all));
@@ -416,20 +320,101 @@ struct UpcVetoAnalysis {
     hCountBCs->Fill("ZNC", static_cast<double>(nBCsPat_ZNC));
     hCountBCs->Fill("TCE", static_cast<double>(nBCsPat_TCE));
 
-    hSelBCAmpV0A_Total.object->Fill(0.f, 0.f, static_cast<double>(nBCsPat_total));
-    hSelBCAmpV0A_0n0n.object->Fill(0.f, 0.f, static_cast<double>(nBCsPat_0n0n));
-    hSelBCAmpV0A_0nXn.object->Fill(0.f, 0.f, static_cast<double>(nBCsPat_0nXn));
-    hSelBCAmpV0A_Xn0n.object->Fill(0.f, 0.f, static_cast<double>(nBCsPat_Xn0n));
-    hSelBCAmpV0A_XnXn.object->Fill(0.f, 0.f, static_cast<double>(nBCsPat_XnXn));
+    hSelBCAmpV0A_Total.object->Fill(0.f, -1.f, static_cast<double>(nBCsPat_all));
+    hSelBCAmpV0A_0n0n.object->Fill(0.f, -1.f, static_cast<double>(nBCsPat_0n0n));
+    hSelBCAmpV0A_0nXn.object->Fill(0.f, -1.f, static_cast<double>(nBCsPat_0nXn));
+    hSelBCAmpV0A_Xn0n.object->Fill(0.f, -1.f, static_cast<double>(nBCsPat_Xn0n));
+    hSelBCAmpV0A_XnXn.object->Fill(0.f, -1.f, static_cast<double>(nBCsPat_XnXn));
 
-    hSelBCAmpT0A_Total.object->Fill(0.f, 0.f, static_cast<double>(nBCsPat_total));
-    hSelBCAmpT0A_0n0n.object->Fill(0.f, 0.f, static_cast<double>(nBCsPat_0n0n));
-    hSelBCAmpT0A_0nXn.object->Fill(0.f, 0.f, static_cast<double>(nBCsPat_0nXn));
-    hSelBCAmpT0A_Xn0n.object->Fill(0.f, 0.f, static_cast<double>(nBCsPat_Xn0n));
-    hSelBCAmpT0A_XnXn.object->Fill(0.f, 0.f, static_cast<double>(nBCsPat_XnXn));
+    hSelBCAmpT0A_Total.object->Fill(0.f, -1.f, static_cast<double>(nBCsPat_all));
+    hSelBCAmpT0A_0n0n.object->Fill(0.f, -1.f, static_cast<double>(nBCsPat_0n0n));
+    hSelBCAmpT0A_0nXn.object->Fill(0.f, -1.f, static_cast<double>(nBCsPat_0nXn));
+    hSelBCAmpT0A_Xn0n.object->Fill(0.f, -1.f, static_cast<double>(nBCsPat_Xn0n));
+    hSelBCAmpT0A_XnXn.object->Fill(0.f, -1.f, static_cast<double>(nBCsPat_XnXn));
 
-    collectVeto(gbcs, gbcsOrbit, gbcsTs, "V0A", mapGlobalBcWithV0A, mapGlobalBcWithZNA, mapGlobalBcWithZNC);
-    collectVeto(gbcs, gbcsOrbit, gbcsTs, "T0A", mapGlobalBcWithT0A, mapGlobalBcWithZNA, mapGlobalBcWithZNC);
+    std::shared_ptr<TH2> hSelBCAmpV0A = nullptr;
+    TH1* hOrbitV0A = nullptr;
+    std::shared_ptr<TH2> hSelBCAmpT0A = nullptr;
+    TH1* hOrbitT0A = nullptr;
+    for (auto orb : orbitNumbers) {
+      for (auto bbc : bbcs) {
+        auto orbit = orb - fMinOrbit;
+        auto gbc = orb * o2::constants::lhc::LHCMaxBunches + bbc;
+        auto itBcId = bgbcZdc.find(gbc);
+        bool hasZNA = false;
+        bool hasZNC = false;
+        if (itBcId != bgbcZdc.end()) {
+          auto zdc_idx = itBcId->second;
+          hasZNA = vBcIdsWithZNA[zdc_idx];
+          hasZNC = vBcIdsWithZNC[zdc_idx];
+        }
+        if (!hasZNA && !hasZNC) {
+          hSelBCAmpV0A = hSelBCAmpV0A_0n0n.object;
+          hOrbitV0A = hOrbitV0A_0n0n;
+          hSelBCAmpT0A = hSelBCAmpT0A_0n0n.object;
+          hOrbitT0A = hOrbitT0A_0n0n;
+        }
+        if (!hasZNA && hasZNC) {
+          hSelBCAmpV0A = hSelBCAmpV0A_0nXn.object;
+          hOrbitV0A = hOrbitV0A_0nXn;
+          hSelBCAmpT0A = hSelBCAmpT0A_0nXn.object;
+          hOrbitT0A = hOrbitT0A_0nXn;
+        }
+        if (hasZNA && !hasZNC) {
+          hSelBCAmpV0A = hSelBCAmpV0A_Xn0n.object;
+          hOrbitV0A = hOrbitV0A_Xn0n;
+          hSelBCAmpT0A = hSelBCAmpT0A_Xn0n.object;
+          hOrbitT0A = hOrbitT0A_Xn0n;
+        }
+        if (hasZNA && hasZNC) {
+          hSelBCAmpV0A = hSelBCAmpV0A_XnXn.object;
+          hOrbitV0A = hOrbitV0A_XnXn;
+          hSelBCAmpT0A = hSelBCAmpT0A_XnXn.object;
+          hOrbitT0A = hOrbitT0A_XnXn;
+        }
+        for (auto r = 0; r <= 10; ++r) {
+          auto maxAmpV0A = -999.f;
+          auto maxAmpT0A = -999.f;
+          auto s = gbc - r;
+          auto e = gbc + r;
+          auto lower = std::lower_bound(gbcs.begin(), gbcs.end(), s);
+          if (lower != gbcs.end()) {
+            auto idx = std::distance(gbcs.begin(), lower);
+            while (gbcs[idx] >= s && gbcs[idx] <= e && idx < gbcs.size()) {
+              auto aV0A = vBcIdsWithV0A[idx];
+              auto aT0A = vBcIdsWithT0A[idx];
+              if (aV0A > maxAmpV0A)
+                maxAmpV0A = aV0A;
+              if (aT0A > maxAmpT0A)
+                maxAmpT0A = aT0A;
+              ++idx;
+            }
+          }
+          int biny = r + 2;
+          for (auto iamp = 1; iamp < 101; ++iamp) {
+            float amp = 10.f * iamp;
+            int binx = iamp + 1;
+            int bin = binx + (101 + 2) * biny;
+            if (maxAmpV0A < amp) {
+              hSelBCAmpV0A_Total->AddBinContent(bin);
+              hSelBCAmpV0A->AddBinContent(bin);
+            }
+            if (maxAmpT0A < amp) {
+              hSelBCAmpT0A_Total->AddBinContent(bin);
+              hSelBCAmpT0A->AddBinContent(bin);
+            }
+          }
+          if (r == 0 && maxAmpV0A < 100.f) {
+            hOrbitV0A_Total->Fill(orbit);
+            hOrbitV0A->Fill(orbit);
+          }
+          if (r == 0 && maxAmpT0A < 100.f) {
+            hOrbitT0A_Total->Fill(orbit);
+            hOrbitT0A->Fill(orbit);
+          }
+        }
+      }
+    }
   }
 };
 
