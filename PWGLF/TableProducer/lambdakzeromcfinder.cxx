@@ -424,7 +424,7 @@ struct lambdakzeromcfinder {
     for (auto& posTrack : posTracks) { //<- no grouping, deliberately
       int v0pdgIndex = -1;
       int motherIndex = -1;
-      if (!posTrack.has_mcParticle())
+      if (!posTrack.has_mcParticle() || !posTrack.hasTPC())
         continue;
       auto posParticle = posTrack.mcParticle_as<aod::McParticles>();
       if (!posParticle.has_mothers())
@@ -444,7 +444,7 @@ struct lambdakzeromcfinder {
         for (auto& negTrack : negTracks) { //<- no grouping, deliberately
           if (doSameCollisionOnly && negTrack.collisionId() != posTrack.collisionId())
             continue; // skip if requested to look only at the same collision (fixme: could be better)
-          if (!negTrack.has_mcParticle())
+          if (!negTrack.has_mcParticle() || !negTrack.hasTPC())
             continue;
           auto negParticle = negTrack.mcParticle_as<aod::McParticles>();
           if (!negParticle.has_mothers())
