@@ -433,7 +433,8 @@ struct HfCandidateCreator2Prong {
                        kfNegKaon.GetPx(), kfNegKaon.GetPy(), kfNegKaon.GetPz(),
                        impactParameter0XY, impactParameter1XY,
                        errImpactParameter0XY, errImpactParameter1XY,
-                       0.0, 0.0, 0.0, 0.0,
+                       0.f, 0.f,
+                       0.f, 0.f,
                        rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(), nProngsContributorsPV,
                        rowTrackIndexProng2.hfflag());
       rowCandidateKF(topolChi2PerNdfD0,
