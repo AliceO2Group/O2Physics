@@ -130,9 +130,9 @@ class HfMlResponseLcToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, impactParameterXY0, impactParameter0);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, impactParameterXY1, impactParameter1);
         CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, impactParameterXY2, impactParameter2);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, impactParameterZ0, impactParameterZ0);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, impactParameterZ1, impactParameterZ1);
-        CHECK_AND_FILL_VEC_LCTOPKPI_FULL(candidate, impactParameterZ2, impactParameterZ2);
+        CHECK_AND_FILL_VEC_LCTOPKPI(impactParameterZ0);
+        CHECK_AND_FILL_VEC_LCTOPKPI(impactParameterZ1);
+        CHECK_AND_FILL_VEC_LCTOPKPI(impactParameterZ2);
         CHECK_AND_FILL_VEC_LCTOPKPI(decayLength);
         CHECK_AND_FILL_VEC_LCTOPKPI(decayLengthXY);
         CHECK_AND_FILL_VEC_LCTOPKPI(decayLengthXYNormalised);

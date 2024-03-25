@@ -125,9 +125,9 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, impactParameterXY0, impactParameter0);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, impactParameterXY1, impactParameter1);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, impactParameterXY2, impactParameter2);
-        CHECK_AND_FILL_VEC_XIC_FULL(candidate, impactParameterZ0, impactParameterZ0);
-        CHECK_AND_FILL_VEC_XIC_FULL(candidate, impactParameterZ1, impactParameterZ1);
-        CHECK_AND_FILL_VEC_XIC_FULL(candidate, impactParameterZ2, impactParameterZ2);
+        CHECK_AND_FILL_VEC_XIC(impactParameterZ0);
+        CHECK_AND_FILL_VEC_XIC(impactParameterZ1);
+        CHECK_AND_FILL_VEC_XIC(impactParameterZ2);
         CHECK_AND_FILL_VEC_XIC(decayLength);
         CHECK_AND_FILL_VEC_XIC(decayLengthXY);
         CHECK_AND_FILL_VEC_XIC(decayLengthXYNormalised);

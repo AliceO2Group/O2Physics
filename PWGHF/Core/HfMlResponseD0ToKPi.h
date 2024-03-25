@@ -81,11 +81,11 @@ enum class InputFeaturesD0ToKPi : uint8_t {
   decayLengthXY,
   decayLengthNormalised,
   decayLengthXYNormalised,
-  impactParameterNormalised0,
+  impactParameterXYNormalised0,
   ptProng0,
   ptProng1,
-  impactParameter0,
-  impactParameter1,
+  impactParameterXY0,
+  impactParameterXY1,
   impactParameterZ0,
   impactParameterZ1,
   nSigTpcPi0,
@@ -139,10 +139,10 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_D0(decayLengthXYNormalised);
         CHECK_AND_FILL_VEC_D0(ptProng0);
         CHECK_AND_FILL_VEC_D0(ptProng1);
-        CHECK_AND_FILL_VEC_D0_FULL(candidate, impactParameter0, impactParameter0);
-        CHECK_AND_FILL_VEC_D0_FULL(candidate, impactParameter1, impactParameter1);
-        CHECK_AND_FILL_VEC_D0_FULL(candidate, impactParameterZ0, impactParameterZ0);
-        CHECK_AND_FILL_VEC_D0_FULL(candidate, impactParameterZ1, impactParameterZ1);
+        CHECK_AND_FILL_VEC_D0_FULL(candidate, impactParameterXY0, impactParameter0);
+        CHECK_AND_FILL_VEC_D0_FULL(candidate, impactParameterXY1, impactParameter1);
+        CHECK_AND_FILL_VEC_D0(impactParameterZ0);
+        CHECK_AND_FILL_VEC_D0(impactParameterZ1);
         // TPC PID variables
         CHECK_AND_FILL_VEC_D0_FULL(prong0, nSigTpcPi0, tpcNSigmaPi);
         CHECK_AND_FILL_VEC_D0_FULL(prong0, nSigTpcKa0, tpcNSigmaKa);
@@ -183,8 +183,8 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_D0(decayLengthXYNormalised),
       FILL_MAP_D0(ptProng0),
       FILL_MAP_D0(ptProng1),
-      FILL_MAP_D0(impactParameter0),
-      FILL_MAP_D0(impactParameter1),
+      FILL_MAP_D0(impactParameterXY0),
+      FILL_MAP_D0(impactParameterXY1),
       FILL_MAP_D0(impactParameterZ0),
       FILL_MAP_D0(impactParameterZ1),
       // TPC PID variables
