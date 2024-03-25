@@ -80,6 +80,11 @@ struct HfTaskCorrelationDstarHadrons {
   // Configurable<std::vector<double>> leftSidebandInnerBoundary{"leftSidebandInnerBoundary", std::vector<double>{vecSidebandLeftInnerDefault}, "left sideband inner boundary vs pT"};
   Configurable<std::vector<double>> rightSidebandOuterBoundary{"rightSidebandOuterBoundary", std::vector<double>{vecSidebandRightOuterDefault}, "right sideband outer baoundary vs pT"};
   Configurable<std::vector<double>> rightSidebandInnerBoundary{"rightSidebandInnerBoundary", std::vector<double>{vecSidebandRightInnerDefault}, "right sideband inner boundary"};
+  Configurable<int> nBinsDeltaPhi{"nBinsDeltaPhi",64,"number of bins in delta phi axis"};
+
+  ConfigurableAxis deltaEtaBinEdges{"deltaEtaBinEdges",{40,-2.,2.}," Delta Eta Bins of equal width"};
+  ConfigurableAxis ptHadronBinsEdges{"ptHadronBinsEdges",{11,0.,11.},"pT Bins of equal width for Hadrons"};
+
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -88,9 +93,9 @@ struct HfTaskCorrelationDstarHadrons {
 
     auto axisPtDstar = (std::vector<double>)binsPtEfficiency;
     AxisSpec axisSpecPtDstar = {axisPtDstar};
-    AxisSpec axisSpecDeltaPhi = {64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf};
-    AxisSpec axisSpecDeltaEta = {40,-2.,2.};
-    AxisSpec axisSpecPtHadron = {11,0.,11};
+    AxisSpec axisSpecDeltaPhi = {nBinsDeltaPhi, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf};
+    AxisSpec axisSpecDeltaEta = {deltaEtaBinEdges};
+    AxisSpec axisSpecPtHadron = {ptHadronBinsEdges};
     AxisSpec axisSpecPoolBin = {9,0.,9.};
 
     registry.add("hCorrel2DVsPtSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
