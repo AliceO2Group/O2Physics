@@ -320,6 +320,8 @@ DECLARE_SOA_TABLE(StoredHfD0Bases, "AOD1", "HFD0BASE", //! Table with basic cand
 // normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
 DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR", //! Table with candidate properties used for selection
                   hf_cand::Chi2PCA,
+                  hf_cand_par::Cpa,
+                  hf_cand_par::CpaXY,
                   hf_cand_par::DecayLength,
                   hf_cand_par::DecayLengthXY,
                   hf_cand_par::DecayLengthNormalised,
@@ -342,13 +344,13 @@ DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR", //! Table with candidate propertie
                   hf_cand_par::NSigTofKa1,
                   hf_cand_par::NSigTpcTofPi1,
                   hf_cand_par::NSigTpcTofKa1,
-                  hf_cand_par::Cpa,
-                  hf_cand_par::CpaXY,
                   hf_cand_par::MaxNormalisedDeltaIP,
                   hf_cand_par::ImpactParameterProduct);
 
 DECLARE_SOA_TABLE(StoredHfD0Pars, "AOD1", "HFD0PAR", //! Table with candidate properties used for selection (stored version)
                   hf_cand::Chi2PCA,
+                  hf_cand_par::Cpa,
+                  hf_cand_par::CpaXY,
                   hf_cand_par::DecayLength,
                   hf_cand_par::DecayLengthXY,
                   hf_cand_par::DecayLengthNormalised,
@@ -371,8 +373,6 @@ DECLARE_SOA_TABLE(StoredHfD0Pars, "AOD1", "HFD0PAR", //! Table with candidate pr
                   hf_cand_par::NSigTofKa1,
                   hf_cand_par::NSigTpcTofPi1,
                   hf_cand_par::NSigTpcTofKa1,
-                  hf_cand_par::Cpa,
-                  hf_cand_par::CpaXY,
                   hf_cand_par::MaxNormalisedDeltaIP,
                   hf_cand_par::ImpactParameterProduct,
                   soa::Marker<1>);

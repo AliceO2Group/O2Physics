@@ -455,6 +455,8 @@ void fillD0CandidateTable(T const& candidate, int32_t collisionIndex, U& D0BaseT
 
   D0ParTable(
     candidate.chi2PCA(),
+    candidate.cpa(),
+    candidate.cpaXY(),
     candidate.decayLength(),
     candidate.decayLengthXY(),
     candidate.decayLengthNormalised(),
@@ -477,8 +479,6 @@ void fillD0CandidateTable(T const& candidate, int32_t collisionIndex, U& D0BaseT
     candidate.nSigTofKa1(),
     candidate.nSigTpcTofPi1(),
     candidate.nSigTpcTofKa1(),
-    candidate.cpa(),
-    candidate.cpaXY(),
     candidate.maxNormalisedDeltaIP(),
     candidate.impactParameterProduct());
 

@@ -142,6 +142,8 @@ struct HfDerivedDataCreatorD0ToKPi {
     if (fillCandidatePar) {
       rowCandidatePar(
         candidate.chi2PCA(),
+        candidate.cpa(),
+        candidate.cpaXY(),
         candidate.decayLength(),
         candidate.decayLengthXY(),
         candidate.decayLengthNormalised(),
@@ -164,8 +166,6 @@ struct HfDerivedDataCreatorD0ToKPi {
         prong1.tofNSigmaKa(),
         prong1.tpcTofNSigmaPi(),
         prong1.tpcTofNSigmaKa(),
-        candidate.cpa(),
-        candidate.cpaXY(),
         candidate.maxNormalisedDeltaIP(),
         candidate.impactParameterProduct());
     }
