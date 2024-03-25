@@ -327,7 +327,7 @@ struct HfCandidateSelectorDsToKKPi {
         pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2);
         pidTrackPos2Kaon = selectorKaon.statusTpcAndTof(trackPos2);
         pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
-      } else{
+      } else {
         pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
         pidTrackPos1Kaon = selectorKaon.statusTpcOrTof(trackPos1);
         pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
