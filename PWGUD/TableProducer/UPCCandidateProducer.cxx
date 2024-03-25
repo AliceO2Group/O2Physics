@@ -1240,6 +1240,10 @@ struct UpcCandProducer {
     for (const auto& zdc : zdcs) {
       if (std::abs(zdc.timeZNA()) > 2.f && std::abs(zdc.timeZNC()) > 2.f)
         continue;
+      if (!(std::abs(zdc.timeZNA()) > 2.f))
+        histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNA", 1);
+      if (!(std::abs(zdc.timeZNC()) > 2.f))
+        histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNC", 1);
       auto globalBC = zdc.bc_as<o2::aod::BCs>().globalBC();
       mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
     }
