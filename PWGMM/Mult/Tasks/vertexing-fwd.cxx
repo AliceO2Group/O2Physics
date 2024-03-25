@@ -238,8 +238,7 @@ struct vertexingfwd {
         if (collOrig.mcCollisionId() == mcCollID) { // initially correctly assigned
           registry.fill(HIST("AmbiguousTrackStatus"), 5);
         }
-      } else // the track has a collision and track.collisionId() == bestCol
-      {
+      } else { // the track has a collision and track.collisionId() == bestCol
         if (track.collisionId() != bestCol) {
           printf("------------------- PROBLEM HERE track.collisionId() %d, bestCollid %d\n", track.collisionId(), bestCol);
         }

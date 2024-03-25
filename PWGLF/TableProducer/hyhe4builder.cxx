@@ -111,11 +111,11 @@ struct hyhefourbuilder {
 
   void init(InitContext& context)
   {
-    const AxisSpec axisMassHyHe4{(int)1000, 3.5f, 4.5f, "Hyperhelium4 Mass Distribution (GeV/c^{2})"};
-    const AxisSpec axisNCandidates{(int)100, 0.0f, 100.0f, "Number of 3-body candidates"};
+    const AxisSpec axisMassHyHe4{1000, 3.5f, 4.5f, "Hyperhelium4 Mass Distribution (GeV/c^{2})"};
+    const AxisSpec axisNCandidates{100, 0.0f, 100.0f, "Number of 3-body candidates"};
 
-    const AxisSpec axisEventCounter{(int)1, 0.0f, 1.0f, "Number of events"};
-    const AxisSpec axisPt{(int)1000, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisEventCounter{1, 0.0f, 1.0f, "Number of events"};
+    const AxisSpec axisPt{1000, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
 
     // Base counters
     histos.add("hNEvents", "hNEvents", kTH1F, {axisEventCounter});
@@ -361,7 +361,7 @@ struct hyhefourbuilder {
 
   void process(aod::Collisions const& collisions, soa::Filtered<TaggedHyHe4Candidates> const& d3bodys, FullTracksExtIU const&, aod::BCsWithTimestamps const&)
   {
-    long eventCounter = 0;
+    int64_t eventCounter = 0;
     for (const auto& collision : collisions) {
       eventCounter++;
       // Fire up CCDB
@@ -402,7 +402,7 @@ struct hyHe4Preselector {
 
   void init(InitContext& context)
   {
-    const AxisSpec hEventCounter{(int)1, 0.0f, 1.0f, "Number of events"};
+    const AxisSpec hEventCounter{1, 0.0f, 1.0f, "Number of events"};
     histos.add("hNEvents", "hNEvents", kTH1F, {hEventCounter});
   }
 
@@ -472,7 +472,7 @@ struct hyHe4Preselector {
   /// This process function ensures that all 3 body candidates are built. It will simply tag everything as true.
   void processBuildAll(aod::Collisions const& collisions, aod::Decay3Bodys const& d3bodys, aod::TracksExtra const&)
   {
-    long eventCounter = 0;
+    int64_t eventCounter = 0;
     for (const auto& d3body : d3bodys) {
       eventCounter++;
       bool lIsQualityInteresting = false;
