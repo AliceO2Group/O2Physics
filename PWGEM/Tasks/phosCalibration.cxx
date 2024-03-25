@@ -191,12 +191,8 @@ struct phosCalibration {
     }
 
     if (sorTimestamp == 0) {
-      std::map<std::string, std::string> metadata, headers;
-      const std::string run_path = Form("%s/%i", rctPath.value.data(), runNumber);
-      headers = ccdb_api.retrieveHeaders(run_path, metadata, -1);
-      if (headers.count("SOR") == 0)
-        LOGF(fatal, "Cannot find start-of-run timestamp for run number in path '%s'.", run_path.data());
-      sorTimestamp = atol(headers["SOR"].c_str()); // timestamp of the SOR in ms
+      auto eorsor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdb_api, runNumber);
+      sorTimestamp = eorsor.first;
     }
 
     if (!clusterizer) {

@@ -366,14 +366,13 @@ struct fddQA {
     int localBC = globalBC % nBCsPerOrbit;
 
     if (newRunNumber != oldRunNumber) {
-      std::map<string, string> metadataRCT, headers;
-      headers = ccdbApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", newRunNumber), metadataRCT, -1);
-      ts = atol(headers["SOR"].c_str());
+      auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdbApi, newRunNumber);
+      ts = soreor.first;
 
       LOG(info) << " newRunNumber  " << newRunNumber << " time stamp " << ts;
       oldRunNumber = newRunNumber;
-      std::map<std::string, std::string> mapMetadata;
-      std::map<std::string, std::string> mapHeader;
+      // std::map<std::string, std::string> mapMetadata;
+      // std::map<std::string, std::string> mapHeader;
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
       CollidingBunch = grplhcif->getBunchFilling().getBCPattern();
       for (int i = 0; i < static_cast<int>(CollidingBunch.size()); i++) {
@@ -491,15 +490,14 @@ struct fddQA {
     newRunNumber = bc.runNumber();
 
     if (newRunNumber != oldRunNumber) {
-      uint64_t ts{};
-      std::map<string, string> metadataRCT, headers;
-      headers = ccdbApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", newRunNumber), metadataRCT, -1);
-      ts = atol(headers["SOR"].c_str());
+      // uint64_t ts{};
+      // std::map<string, string> metadataRCT, headers;
+      auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdbApi, newRunNumber);
+      // headers = ccdbApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", newRunNumber), metadataRCT, -1);
+      auto ts = soreor.first; // atol(headers["SOR"].c_str());
 
       LOG(info) << " newRunNumber  " << newRunNumber << " time stamp " << ts;
       oldRunNumber = newRunNumber;
-      std::map<std::string, std::string> mapMetadata;
-      std::map<std::string, std::string> mapHeader;
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
       CollidingBunch = grplhcif->getBunchFilling().getBCPattern();
       for (int i = 0; i < static_cast<int>(CollidingBunch.size()); i++) {

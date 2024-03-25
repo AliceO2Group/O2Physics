@@ -39,11 +39,11 @@ struct UpcVetoAnalysis {
     fRun = bc.runNumber();
     o2::ccdb::CcdbApi ccdb_api;
     ccdb_api.init("http://alice-ccdb.cern.ch");
-    std::map<string, string> metadata, headers;
-    headers = ccdb_api.retrieveHeaders(Form("RCT/Info/RunInformation/%i", fRun), metadata, -1);
-    int64_t ts = std::atol(headers["SOR"].c_str());
+    auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdb_api, fRun);
+    auto ts = soreor.first;
+
     LOGP(info, "ts={}", ts);
-    auto grplhcif = ccdb_api.retrieveFromTFileAny<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", metadata, ts);
+    auto grplhcif = ccdb_api.retrieveFromTFileAny<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", std::map<std::string, std::string>(), ts);
     bcPatternB = grplhcif->getBunchFilling().getBCPattern();
   }
 
