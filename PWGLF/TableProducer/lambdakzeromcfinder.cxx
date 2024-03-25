@@ -48,6 +48,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
 
 #include <TFile.h>
 #include <TLorentzVector.h>
@@ -64,6 +65,7 @@ using std::array;
 using namespace ROOT::Math;
 
 using LabeledTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels>;
+using FullMcParticles = soa::Join<aod::McParticles, aod::ParticlesToTracks>;
 
 struct lambdakzeromcfinder {
   Produces<aod::V0s> v0;
@@ -86,9 +88,7 @@ struct lambdakzeromcfinder {
   Configurable<float> yPreFilter{"yPreFilter", 2.5, "broad y pre-filter for speed"};
   ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
 
-  Configurable<bool> doNotRequireTPC{"doNotRequireTPC", true, "do not require TPC for V0 MC finding"};
-
-  Preslice<aod::McParticle> perMcCollision = aod::mcparticle::mcCollisionId;
+  Preslice<FullMcParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
   std::vector<int> v0collisionId;
   std::vector<int> v0positiveIndex;
@@ -236,39 +236,37 @@ struct lambdakzeromcfinder {
     }
 
     if (mcParticle.has_daughters()) {
-      auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
+      auto const& daughters = mcParticle.template daughters_as<FullMcParticles>();
       if (daughters.size() >= 2) {
         for (auto const& daughter : daughters) { // might be better ways of doing this but ok
-          if ((daughter.getProcess() != 4 && mcParticle.pdgCode() != 22) || daughter.getProcess() != 5)
+          if (daughter.getProcess() != 4)
             continue; // skip deltarays (if ever), stick to decay products only
           if (daughter.pdgCode() == positivePdg) {
-            for (auto const& track : trackList) {
-              if (track.mcParticleId() == daughter.globalIndex()) {
+            auto const& thisDaughterTracks = daughter.template tracks_as<LabeledTracks>();
+            for (auto const& track : thisDaughterTracks) {
+              if (track.hasITS())
+                positiveITS = true;
+              if (track.hasTPC()) {
+                positiveTPC = true;
+                trackIndexPositive = track.globalIndex(); // assign only if TPC present
+                posPt = track.pt();
                 if (track.hasITS())
-                  positiveITS = true;
-                if (track.hasTPC() || doNotRequireTPC) {
-                  positiveTPC = true;
-                  trackIndexPositive = track.globalIndex(); // assign only if TPC present
-                  posPt = track.pt();
-                  if (track.hasITS())
-                    positiveTPCITS = true;
-                }
-              } // end daughter ID check
+                  positiveTPCITS = true;
+              }
             }   // end track list loop
           }     // end positive pdg check
           if (daughter.pdgCode() == negativePdg) {
-            for (auto const& track : trackList) {
-              if (track.mcParticleId() == daughter.globalIndex()) {
+            auto const& thisDaughterTracks = daughter.template tracks_as<LabeledTracks>();
+            for (auto const& track : thisDaughterTracks) {
+              if (track.hasITS())
+                negativeITS = true;
+              if (track.hasTPC()) {
+                negativeTPC = true;
+                trackIndexNegative = track.globalIndex(); // assign only if TPC present
+                negPt = track.pt();
                 if (track.hasITS())
-                  negativeITS = true;
-                if (track.hasTPC() || doNotRequireTPC) {
-                  negativeTPC = true;
-                  trackIndexNegative = track.globalIndex(); // assign only if TPC present
-                  negPt = track.pt();
-                  if (track.hasITS())
-                    negativeTPCITS = true;
-                }
-              } // end daughter ID check
+                  negativeTPCITS = true;
+              }
             }   // end track list loop
           }     // end positive pdg check
         }
@@ -298,7 +296,7 @@ struct lambdakzeromcfinder {
     return reconstructed;
   }
 
-  void processFromMcParticles(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, LabeledTracks const& tracks, aod::McParticles const& allMcParticles)
+  void processFromMcParticles(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, LabeledTracks const& tracks, FullMcParticles const& allMcParticles)
   {
     v0collisionId.clear();
     v0positiveIndex.clear();
