@@ -109,8 +109,7 @@ struct Reducer {
 
   void processFull(BCs::iterator const& bc,
                    MCCollisions const& mccollisions,
-                   Collisions const& collisions
-    )
+                   Collisions const& collisions)
   {
     processGeneric(bc, mccollisions, collisions);
   }
@@ -119,8 +118,7 @@ struct Reducer {
 
   void processLite(BCs::iterator const& bc,
                    MCCollisionsNoHepMC const& mccollisions,
-                   Collisions const& collisions
-                   )
+                   Collisions const& collisions)
   {
     processGeneric(bc, mccollisions, collisions);
   }
@@ -129,8 +127,8 @@ struct Reducer {
 
   template <typename TBCI, typename TMCC, typename TC>
   void processGeneric(TBCI const& bc,
-               TMCC const& mccollisions,
-               TC const& collisions)
+                      TMCC const& mccollisions,
+                      TC const& collisions)
   {
     usedMCCs.clear();
     usedLabels.clear();
