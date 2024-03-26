@@ -60,7 +60,7 @@ using std::array;
 
 // Cores with references and TOF pid
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using V0FullCores = soa::Join<aod::V0Cores, aod::V0Extras, aod::V0CollRefs, aod::V0TOFs, aod::V0TOFNSigmas>;
+using V0FullCores = soa::Join<aod::V0Cores, aod::V0Extras, aod::V0CollRefs, aod::V0TOFs>;
 
 struct lambdakzeropid {
   // TOF pid for strangeness (recalculated with topology)

@@ -289,8 +289,14 @@ struct EventSelectionQaTask {
     histos.add("hBcForMultV0AVsNcontribOutliers", "", kTH1F, {axisBCs}); // bc distribution for V0A-vs-Ncontrib outliers
     histos.add("hBcForMultV0AVsNcontribCut", "", kTH1F, {axisBCs});      // bc distribution for V0A-vs-Ncontrib after ITS-ROF border cut
 
-    histos.add("hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ}); // FT0-vertex vs z-vertex from collisions
-    histos.add("hVtxFT0MinusVtxCol", "", kTH1F, {axisVtxZ});        // FT0-vertex minus z-vertex from collisions
+    histos.add("hVtxFT0VsVtxCol", "", kTH2F, {axisVtxZ, axisVtxZ});                // FT0-vertex vs z-vertex from collisions
+    histos.add("hVtxFT0MinusVtxCol", "", kTH1F, {axisVtxZ});                       // FT0-vertex minus z-vertex from collisions
+    histos.add("hVtxFT0MinusVtxColVsMultT0M", "", kTH2F, {axisVtxZ, axisMultT0M}); // FT0-vertex minus z-vertex from collisions vs multiplicity
+
+    histos.add("hFoundBc", "", kTH1F, {axisBCs});            // distribution of found bcs (for ITS ROF studies)
+    histos.add("hFoundBcTOF", "", kTH1F, {axisBCs});         // distribution of found bcs (TOF-matched vertex)
+    histos.add("hFoundBcNcontrib", "", kTH1F, {axisBCs});    // accumulated distribution of n contributors vs found bc (for ITS ROF studies)
+    histos.add("hFoundBcNcontribTOF", "", kTH1F, {axisBCs}); // accumulated distribution of n contributors vs found bc (TOF-matched vertex)
 
     // MC histograms
     histos.add("hGlobalBcColMC", "", kTH1F, {axisGlobalBCs});
@@ -1097,6 +1103,7 @@ struct EventSelectionQaTask {
       if (foundBC.has_ft0()) {
         histos.fill(HIST("hVtxFT0VsVtxCol"), foundBC.ft0().posZ(), col.posZ());
         histos.fill(HIST("hVtxFT0MinusVtxCol"), foundBC.ft0().posZ() - col.posZ());
+        histos.fill(HIST("hVtxFT0MinusVtxColVsMultT0M"), foundBC.ft0().posZ() - col.posZ(), multT0A + multT0C);
         isGoodVertex = fabs(foundBC.ft0().posZ() - col.posZ()) < 1;
       }
 
@@ -1107,6 +1114,13 @@ struct EventSelectionQaTask {
       if (col.selection_bit(kNoTimeFrameBorder)) {
         histos.fill(HIST("hMultV0AVsNcontribAcc"), multV0A, nContributors);
         histos.fill(HIST("hBcForMultV0AVsNcontribAcc"), foundLocalBC);
+        histos.fill(HIST("hFoundBc"), foundLocalBC);
+        histos.fill(HIST("hFoundBcNcontrib"), foundLocalBC, nContributors);
+        if (nTOFtracks > 0) {
+          histos.fill(HIST("hFoundBcTOF"), foundLocalBC);
+          histos.fill(HIST("hFoundBcNcontribTOF"), foundLocalBC, nContributors);
+        }
+
         if (nContributors < 0.043 * multV0A - 860) {
           histos.fill(HIST("hBcForMultV0AVsNcontribOutliers"), foundLocalBC);
         }

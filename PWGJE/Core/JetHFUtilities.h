@@ -424,7 +424,7 @@ float getTablePDGMass()
 template <typename T, typename U>
 void fillD0CollisionTable(T const& collision, U& D0CollisionTable, int32_t& D0CollisionTableIndex)
 {
-  D0CollisionTable(collision.numContrib(), collision.isEventReject(), collision.runNumber());
+  D0CollisionTable(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.centFT0A(), collision.centFT0C(), collision.centFT0M(), collision.centFV0A(), collision.multZeqNTracksPV());
   D0CollisionTableIndex = D0CollisionTable.lastIndex();
 }
 
@@ -455,6 +455,8 @@ void fillD0CandidateTable(T const& candidate, int32_t collisionIndex, U& D0BaseT
 
   D0ParTable(
     candidate.chi2PCA(),
+    candidate.cpa(),
+    candidate.cpaXY(),
     candidate.decayLength(),
     candidate.decayLengthXY(),
     candidate.decayLengthNormalised(),
@@ -477,8 +479,6 @@ void fillD0CandidateTable(T const& candidate, int32_t collisionIndex, U& D0BaseT
     candidate.nSigTofKa1(),
     candidate.nSigTpcTofPi1(),
     candidate.nSigTpcTofKa1(),
-    candidate.cpa(),
-    candidate.cpaXY(),
     candidate.maxNormalisedDeltaIP(),
     candidate.impactParameterProduct());
 

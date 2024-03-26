@@ -42,17 +42,33 @@ DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float); //! z-equalised b
 
 DECLARE_SOA_TABLE(HfD0CollBases, "AOD", "HFD0COLLBASE", //! Table with basic collision info
                   o2::soa::Index<>,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
                   collision::NumContrib,
-                  hf_coll_base::IsEventReject,
-                  bc::RunNumber);
+                  hf_coll_base::CentFT0A,
+                  hf_coll_base::CentFT0C,
+                  hf_coll_base::CentFT0M,
+                  hf_coll_base::CentFV0A,
+                  hf_coll_base::MultZeqNTracksPV);
+// hf_coll_base::IsEventReject,
+// bc::RunNumber,
 
 using HfD0CollBase = HfD0CollBases::iterator;
 
 DECLARE_SOA_TABLE(StoredHfD0CollBases, "AOD1", "HFD0COLLBASE", //! Table with basic collision info (stored version)
                   o2::soa::Index<>,
+                  collision::PosX,
+                  collision::PosY,
+                  collision::PosZ,
                   collision::NumContrib,
-                  hf_coll_base::IsEventReject,
-                  bc::RunNumber,
+                  hf_coll_base::CentFT0A,
+                  hf_coll_base::CentFT0C,
+                  hf_coll_base::CentFT0M,
+                  hf_coll_base::CentFV0A,
+                  hf_coll_base::MultZeqNTracksPV,
+                  // hf_coll_base::IsEventReject,
+                  // bc::RunNumber,
                   soa::Marker<1>);
 
 using StoredHfD0CollBase = StoredHfD0CollBases::iterator;
@@ -76,9 +92,10 @@ DECLARE_SOA_TABLE(Hf3PCollBases, "AOD", "HF3PCOLLBASE", //! Table with basic col
                   hf_coll_base::CentFT0C,
                   hf_coll_base::CentFT0M,
                   hf_coll_base::CentFV0A,
-                  hf_coll_base::MultZeqNTracksPV);
-// hf_coll_base::IsEventReject,
-// bc::RunNumber,
+                  hf_coll_base::MultZeqNTracksPV,
+                  // hf_coll_base::IsEventReject,
+                  // bc::RunNumber,
+                  soa::Marker<2>);
 
 using Hf3PCollBase = Hf3PCollBases::iterator;
 
@@ -95,7 +112,7 @@ DECLARE_SOA_TABLE(StoredHf3PCollBases, "AOD1", "HF3PCOLLBASE", //! Table with ba
                   hf_coll_base::MultZeqNTracksPV,
                   // hf_coll_base::IsEventReject,
                   // bc::RunNumber,
-                  soa::Marker<1>);
+                  soa::Marker<3>);
 
 using StoredHf3PCollBase = StoredHf3PCollBases::iterator;
 
@@ -303,6 +320,8 @@ DECLARE_SOA_TABLE(StoredHfD0Bases, "AOD1", "HFD0BASE", //! Table with basic cand
 // normalised: DecayLengthNormalised, DecayLengthXYNormalised, ImpactParameterNormalised0
 DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR", //! Table with candidate properties used for selection
                   hf_cand::Chi2PCA,
+                  hf_cand_par::Cpa,
+                  hf_cand_par::CpaXY,
                   hf_cand_par::DecayLength,
                   hf_cand_par::DecayLengthXY,
                   hf_cand_par::DecayLengthNormalised,
@@ -325,13 +344,13 @@ DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR", //! Table with candidate propertie
                   hf_cand_par::NSigTofKa1,
                   hf_cand_par::NSigTpcTofPi1,
                   hf_cand_par::NSigTpcTofKa1,
-                  hf_cand_par::Cpa,
-                  hf_cand_par::CpaXY,
                   hf_cand_par::MaxNormalisedDeltaIP,
                   hf_cand_par::ImpactParameterProduct);
 
 DECLARE_SOA_TABLE(StoredHfD0Pars, "AOD1", "HFD0PAR", //! Table with candidate properties used for selection (stored version)
                   hf_cand::Chi2PCA,
+                  hf_cand_par::Cpa,
+                  hf_cand_par::CpaXY,
                   hf_cand_par::DecayLength,
                   hf_cand_par::DecayLengthXY,
                   hf_cand_par::DecayLengthNormalised,
@@ -354,8 +373,6 @@ DECLARE_SOA_TABLE(StoredHfD0Pars, "AOD1", "HFD0PAR", //! Table with candidate pr
                   hf_cand_par::NSigTofKa1,
                   hf_cand_par::NSigTpcTofPi1,
                   hf_cand_par::NSigTpcTofKa1,
-                  hf_cand_par::Cpa,
-                  hf_cand_par::CpaXY,
                   hf_cand_par::MaxNormalisedDeltaIP,
                   hf_cand_par::ImpactParameterProduct,
                   soa::Marker<1>);
