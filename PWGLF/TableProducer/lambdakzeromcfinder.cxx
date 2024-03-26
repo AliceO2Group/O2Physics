@@ -316,7 +316,7 @@ struct lambdakzeromcfinder {
         continue; // skip unindexed particles
       if (posTrack.detectorMap() == o2::aod::track::TPC && skipTPConly)
         continue;
-      if (!posTrack.hasTPC() && !requireTPC)
+      if (!posTrack.hasTPC() && requireTPC)
         continue; // skip particles without TPC
       auto posParticle = posTrack.mcParticle_as<aod::McParticles>();
       if (posParticle.getProcess() != 4)
@@ -347,7 +347,7 @@ struct lambdakzeromcfinder {
             continue; // skip unindexed particles
           if (negTrack.detectorMap() == o2::aod::track::TPC && skipTPConly)
             continue;
-          if (!negTrack.hasTPC() && !requireTPC)
+          if (!negTrack.hasTPC() && requireTPC)
             continue; // skip particles without TPC
           auto negParticle = negTrack.mcParticle_as<aod::McParticles>();
           if (negParticle.getProcess() != 4)
