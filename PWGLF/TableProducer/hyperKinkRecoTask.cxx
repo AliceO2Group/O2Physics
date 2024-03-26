@@ -271,7 +271,7 @@ struct hyperKinkRecoTask {
       return false;
     }
 
-    if(alwaysAskTOF && !candidate.hasTOF()) {
+    if (alwaysAskTOF && !candidate.hasTOF()) {
       return false;
     }
 
@@ -289,10 +289,9 @@ struct hyperKinkRecoTask {
       return false;
     }
 
-    if(candidate.hasTOF() && abs(nSigmaTOFTrit) > nSigmaTOFCutTrit) {
+    if (candidate.hasTOF() && abs(nSigmaTOFTrit) > nSigmaTOFCutTrit) {
       return false;
     }
-
 
     hNsigmaTritSel->Fill(candidate.pt(), nSigmaTrit);
     hDeDxTritSel->Fill(candidate.tpcInnerParam(), candidate.tpcSignal());
