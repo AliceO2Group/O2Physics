@@ -478,19 +478,19 @@ struct HfCandidateCreatorToXiPiMc {
           debugGenCharmBar = 1;
           ptCharmBaryonGen = particle.pt();
           etaCharmBaryonGen = particle.eta();
-          for(const auto& daughterCharm : particle.daughters_as<aod::McParticles>()){
-            if(std::abs(daughterCharm.pdgCode()) != pdgCodeXiMinus){
+          for (const auto& daughterCharm : particle.daughters_as<aod::McParticles>()) {
+            if (std::abs(daughterCharm.pdgCode()) != pdgCodeXiMinus) {
               continue;
             }
             // Xi -> Lambda pi
             if (RecoDecay::isMatchedMCGen(mcParticles, daughterCharm, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
               debugGenXi = 1;
-              for(const auto& daughterCascade : daughterCharm.daughters_as<aod::McParticles>()){
-                if(std::abs(daughterCascade.pdgCode()) != pdgCodeLambda){
+              for (const auto& daughterCascade : daughterCharm.daughters_as<aod::McParticles>()) {
+                if (std::abs(daughterCascade.pdgCode()) != pdgCodeLambda) {
                   continue;
                 }
                 // Lambda -> p pi
-                if(RecoDecay::isMatchedMCGen(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+                if (RecoDecay::isMatchedMCGen(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
                   debugGenLambda = 1;
                   flag = sign * (1 << aod::hf_cand_toxipi::DecayType::OmegaczeroToXiPi);
                 }
@@ -510,19 +510,19 @@ struct HfCandidateCreatorToXiPiMc {
           debugGenCharmBar = 1;
           ptCharmBaryonGen = particle.pt();
           etaCharmBaryonGen = particle.eta();
-          for(const auto& daughterCharm : particle.daughters_as<aod::McParticles>()){
-            if(std::abs(daughterCharm.pdgCode()) != pdgCodeXiMinus){
+          for (const auto& daughterCharm : particle.daughters_as<aod::McParticles>()) {
+            if (std::abs(daughterCharm.pdgCode()) != pdgCodeXiMinus) {
               continue;
             }
             // Xi -> Lambda pi
             if (RecoDecay::isMatchedMCGen(mcParticles, daughterCharm, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
               debugGenXi = 1;
-              for(const auto& daughterCascade : daughterCharm.daughters_as<aod::McParticles>()){
-                if(std::abs(daughterCascade.pdgCode()) != pdgCodeLambda){
+              for (const auto& daughterCascade : daughterCharm.daughters_as<aod::McParticles>()) {
+                if (std::abs(daughterCascade.pdgCode()) != pdgCodeLambda) {
                   continue;
                 }
                 // Lambda -> p pi
-                if(RecoDecay::isMatchedMCGen(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+                if (RecoDecay::isMatchedMCGen(mcParticles, daughterCascade, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
                   debugGenLambda = 1;
                   flag = sign * (1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi);
                 }
