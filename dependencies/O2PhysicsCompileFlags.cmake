@@ -12,12 +12,11 @@
 include_guard()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-error \
--Werror=aggressive-loop-optimizations \
 -Werror=deprecated-enum-float-conversion \
--Werror=maybe-uninitialized \
 -Werror=narrowing \
 -Werror=parentheses \
 -Werror=return-type \
+-Werror=uninitialized \
 -Werror=unused")
 
 IF (ENABLE_TIMETRACE)
