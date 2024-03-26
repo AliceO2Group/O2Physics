@@ -203,6 +203,8 @@ struct JetDerivedDataProducerTask {
   {
     jD0ParticleIdsTable(D0.mcCollisionId(), D0.mcParticleId());
   }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processD0MC, "produces derived bunch crossing table for D0 particles", false);
+
   void processLc(aod::Hf3PIds::iterator const& Lc, soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::Tracks const& tracks)
   {
     jLcIdsTable(Lc.collisionId(), Lc.prong0Id(), Lc.prong1Id(), Lc.prong2Id());
