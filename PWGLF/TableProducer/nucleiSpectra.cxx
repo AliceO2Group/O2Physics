@@ -254,13 +254,8 @@ struct nucleiSpectra {
   ConfigurableAxis cfgNTPCClusBins{"cfgNTPCClusBins", {3, 89.5, 159.5}, "N TPC clusters binning"};
 
   // CCDB options
-  Configurable<double> cfgBz{"cfgBz", -999, "bz field, -999 is automatic"};
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> cfgCCDBurl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> cfgGRPpath{"cfgGRPpath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> cfgGRPmagPath{"cfgGRPmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> cfgLUTpath{"cfgLUTpath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-  Configurable<std::string> cfgGeoPath{"cfgGeoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   int mRunNumber = 0;
   float mBz = 0.f;
 
@@ -300,25 +295,13 @@ struct nucleiSpectra {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-    auto run3grp_timestamp = bc.timestamp();
+    auto timestamp = bc.timestamp();
     mRunNumber = bc.runNumber();
 
-    if (cfgBz > -990) {
-      mBz = cfgBz;
-    } else {
-      o2::parameters::GRPObject* grpo{ccdb->getForTimeStamp<o2::parameters::GRPObject>(cfgGRPpath, run3grp_timestamp)};
-      o2::parameters::GRPMagField* grpmag{nullptr};
-      if (grpo) {
-        mBz = grpo->getNominalL3Field();
-      } else {
-        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(cfgGRPmagPath, run3grp_timestamp);
-        if (!grpmag) {
-          LOG(fatal) << "Got nullptr from CCDB for path " << cfgGRPmagPath << " of object GRPMagField and " << cfgGRPpath << " of object GRPObject for timestamp " << run3grp_timestamp;
-        }
-        mBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      }
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
-    }
+    o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
+    o2::base::Propagator::initFieldFromGRP(grpmag);
+    mBz = static_cast<float>(grpmag->getNominalL3Field());
+    LOGF(info, "Retrieved GRP for timestamp %ull (%i) with magnetic field of %1.2f kZG", timestamp, mRunNumber, mBz);
   }
 
   void init(o2::framework::InitContext&)
