@@ -842,12 +842,12 @@ struct DQFilterPPTask {
     }
 
     // Loop over collisions
-    int event = 0;
+    // int event = 0;
     int eventsFired = 0;
     for (const auto& collision : collisions) {
       // skip those that do not pass our selection
       if (!collision.isDQEventSelected()) {
-        event++;
+        // event++;
         continue;
       }
       // group the tracks and muons for this collision
@@ -860,7 +860,7 @@ struct DQFilterPPTask {
         filter = runFilterPP<gkEventFillMap, gkTrackFillMap, gkMuonFillMap>(collision, bcs, tracks, muons, groupedTrackIndices, groupedMuonIndices);
       }
       if (filter == 0) {
-        event++;
+        // event++;
         continue;
       }
       eventsFired++;
@@ -947,7 +947,7 @@ struct DQFilterPPTask {
           }
         }
       }
-      event++;
+      // event++;
     }
 
     // At this point, we have all the non-null decisions for all collisions.
