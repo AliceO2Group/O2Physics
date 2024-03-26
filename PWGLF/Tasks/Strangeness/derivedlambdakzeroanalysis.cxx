@@ -481,7 +481,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0, typename TCollision>
-  uint64_t computeReconstructionBitmap(TV0 v0, TCollision collision, float rapidityLambda, float rapidityK0S, float pT)
+  uint64_t computeReconstructionBitmap(TV0 v0, TCollision collision, float rapidityLambda, float rapidityK0Short, float pT)
   // precalculate this information so that a check is one mask operation, not many
   {
     uint64_t bitMap = 0;
@@ -502,7 +502,7 @@ struct derivedlambdakzeroanalysis {
     // rapidity
     if (TMath::Abs(rapidityLambda) < rapidityCut)
       bitset(bitMap, selLambdaRapidity);
-    if (TMath::Abs(rapidityK0s) < rapidityCut)
+    if (TMath::Abs(rapidityK0Short) < rapidityCut)
       bitset(bitMap, selK0ShortRapidity);
 
     auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
