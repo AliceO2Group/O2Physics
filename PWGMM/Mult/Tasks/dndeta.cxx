@@ -836,19 +836,19 @@ struct MultiplicityCounter {
     if (!collision.has_mcCollision()) {
       return;
     }
-    float c_rec = -1;
-    float c_gen = -1;
-    if constexpr (hasRecoCent<C>()) {
-      if constexpr (C::template contains<aod::CentFT0Cs>()) {
-        c_rec = collision.centFT0C();
-      } else if (C::template contains<aod::CentFT0Ms>()) {
-        c_rec = collision.centFT0M();
-      }
-    }
+    // float c_rec = -1;
+    // float c_gen = -1;
+    // if constexpr (hasRecoCent<C>()) {
+    //   if constexpr (C::template contains<aod::CentFT0Cs>()) {
+    //     c_rec = collision.centFT0C();
+    //   } else if (C::template contains<aod::CentFT0Ms>()) {
+    //     c_rec = collision.centFT0M();
+    //   }
+    // }
     auto mcCollision = collision.mcCollision();
-    if constexpr (hasSimCent<MC>()) {
-      c_gen = mcCollision.centrality();
-    }
+    // if constexpr (hasSimCent<MC>()) {
+    //   c_gen = mcCollision.centrality();
+    // }
 
     auto particlesPerCol = particles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
 
@@ -937,19 +937,19 @@ struct MultiplicityCounter {
     if (!collision.has_mcCollision()) {
       return;
     }
-    float c_rec = -1;
-    float c_gen = -1;
-    if constexpr (hasRecoCent<C>()) {
-      if constexpr (C::template contains<aod::CentFT0Cs>()) {
-        c_rec = collision.centFT0C();
-      } else if (C::template contains<aod::CentFT0Ms>()) {
-        c_rec = collision.centFT0M();
-      }
-    }
+    // float c_rec = -1;
+    // float c_gen = -1;
+    // if constexpr (hasRecoCent<C>()) {
+    //   if constexpr (C::template contains<aod::CentFT0Cs>()) {
+    //     c_rec = collision.centFT0C();
+    //   } else if (C::template contains<aod::CentFT0Ms>()) {
+    //     c_rec = collision.centFT0M();
+    //   }
+    // }
     auto mcCollision = collision.mcCollision();
-    if constexpr (hasSimCent<MC>()) {
-      c_gen = mcCollision.centrality();
-    }
+    // if constexpr (hasSimCent<MC>()) {
+    //   c_gen = mcCollision.centrality();
+    // }
 
     auto particlesPerCol = particles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
 

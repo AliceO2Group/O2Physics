@@ -462,13 +462,13 @@ struct MultiplicityCounter {
             if constexpr (MyCollisionsCent::template contains<aod::CentFT0Ms>())
               cent = collision.centFT0M();
 
-            auto Ntrk_rec = 0;
-            auto trackspart = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-            for (auto& track : trackspart) {
-              if (std::abs(track.eta()) < 1) {
-                Ntrk_rec++;
-              }
-            }
+            // auto Ntrk_rec = 0;
+            // auto trackspart = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+            // for (auto& track : trackspart) {
+            //   if (std::abs(track.eta()) < 1) {
+            //     Ntrk_rec++;
+            //   }
+            // }
           }
         }
       }
@@ -529,13 +529,13 @@ struct MultiplicityCounter {
         } else {
           if constexpr (MyCollisionsCent::template contains<aod::CentFT0Ms>())
             cent = collision.centFT0M();
-          auto Ntrk_rec = 0;
-          auto trackspart = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-          for (auto& track : trackspart) {
-            if (std::abs(track.eta()) < 1) {
-              Ntrk_rec++;
-            }
-          }
+          // auto Ntrk_rec = 0;
+          // auto trackspart = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+          // for (auto& track : trackspart) {
+          //   if (std::abs(track.eta()) < 1) {
+          //     Ntrk_rec++;
+          //   }
+          // }
         }
 
         Bool_1d btrigc(kTrigend, false);
