@@ -211,9 +211,9 @@ struct lambdakzeromcfinder {
           if (daughter.pdgCode() == positivePdg) {
             auto const& thisDaughterTracks = daughter.template tracks_as<LabeledTracks>();
             for (auto const& track : thisDaughterTracks) {
-              if(track.detectorMap() == o2::aod::track::TPC && skipTPConly) 
-                  continue;
-              if (track.sign()>0 && (track.hasTPC() || !requireTPC)) {
+              if (track.detectorMap() == o2::aod::track::TPC && skipTPConly)
+                continue;
+              if (track.sign() > 0 && (track.hasTPC() || !requireTPC)) {
                 trackIndexPositive[nPosReco] = track.globalIndex(); // assign only if TPC present
                 nPosReco++;
               }
@@ -222,9 +222,9 @@ struct lambdakzeromcfinder {
           if (daughter.pdgCode() == negativePdg) {
             auto const& thisDaughterTracks = daughter.template tracks_as<LabeledTracks>();
             for (auto const& track : thisDaughterTracks) {
-              if(track.detectorMap() == o2::aod::track::TPC && skipTPConly) 
-                  continue;
-              if (track.sign()<0 && (track.hasTPC() || !requireTPC)) {
+              if (track.detectorMap() == o2::aod::track::TPC && skipTPConly)
+                continue;
+              if (track.sign() < 0 && (track.hasTPC() || !requireTPC)) {
                 trackIndexNegative[nNegReco] = track.globalIndex(); // assign only if TPC present
                 nNegReco++;
               }
@@ -235,8 +235,8 @@ struct lambdakzeromcfinder {
     }
     // account for track duplicates
     int reconstructed = 0;
-    for(int ip=0; ip<nPosReco; ip++){
-      for(int in=0; in<nNegReco; in++){
+    for (int ip = 0; ip < nPosReco; ip++) {
+      for (int in = 0; in < nNegReco; in++) {
         reconstructed++;
         v0collisionId.emplace_back(bestCollisionIndex);
         v0positiveIndex.emplace_back(trackIndexPositive[ip]);
@@ -316,19 +316,19 @@ struct lambdakzeromcfinder {
       int bestCollisionIndex = -1;
       if (!posTrack.has_mcParticle())
         continue; // skip unindexed particles
-      if(posTrack.detectorMap() == o2::aod::track::TPC && skipTPConly) 
+      if (posTrack.detectorMap() == o2::aod::track::TPC && skipTPConly)
         continue;
       if (!posTrack.hasTPC() && !requireTPC)
         continue; // skip particles without TPC
       auto posParticle = posTrack.mcParticle_as<aod::McParticles>();
-      if( posParticle.getProcess() != 4 )
+      if (posParticle.getProcess() != 4)
         continue; // skip particles not coming from a decay
       if (!posParticle.has_mothers())
         continue; // skip particles without decay mothers
       for (auto& posMotherParticle : posParticle.mothers_as<aod::McParticles>()) {
         // determine if mother particle satisfies any condition curently being searched for
         for (int ipdg = 0; ipdg < searchedV0PDG.size(); ipdg++)
-          if (searchedV0PDG[ipdg] == posMotherParticle.pdgCode() && fabs(posMotherParticle.y())<yPreFilter) {
+          if (searchedV0PDG[ipdg] == posMotherParticle.pdgCode() && fabs(posMotherParticle.y()) < yPreFilter) {
             v0pdgIndex = ipdg; // index mapping to desired V0 species
             motherIndex = posMotherParticle.globalIndex();
 
@@ -347,12 +347,12 @@ struct lambdakzeromcfinder {
             continue; // skip if requested to look only at the same collision (fixme: could be better)
           if (!negTrack.has_mcParticle())
             continue; // skip unindexed particles
-          if(negTrack.detectorMap() == o2::aod::track::TPC && skipTPConly) 
+          if (negTrack.detectorMap() == o2::aod::track::TPC && skipTPConly)
             continue;
           if (!negTrack.hasTPC() && !requireTPC)
             continue; // skip particles without TPC
           auto negParticle = negTrack.mcParticle_as<aod::McParticles>();
-          if( negParticle.getProcess() != 4 )
+          if (negParticle.getProcess() != 4)
             continue; // skip particles not coming from a decay
           if (!negParticle.has_mothers())
             continue; // skip particles without decay mothers
