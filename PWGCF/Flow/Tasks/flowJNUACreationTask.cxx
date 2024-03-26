@@ -46,108 +46,119 @@ using namespace o2::analysis::PWGCF;
 using namespace std;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
-                                 aod::FT0sCorrected, aod::CentFT0Ms,
-                                 aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As,
-                                 aod::CentFDDMs, aod::CentNTPVs>;
+                               aod::FT0sCorrected, aod::CentFT0Ms,
+                               aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As,
+                               aod::CentFDDMs, aod::CentNTPVs>;
 
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
 
+struct flowJNUACreationTask {
+  HistogramRegistry qaHistRegistry{"qaHistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  FlowJHistManager histManager;
 
+  // Set Configurables here
+  struct : ConfigurableGroup {
+    Configurable<float> cfgPtMin{"cfgPtMin", 0.2f, "Minimum pT used for track selection."};
+    Configurable<float> cfgPtMax{"cfgPtMax", 5.0f, "Maximum pT used for track selection."};
+    Configurable<float> cfgEtaMax{"cfgEtaMax", 1.f, "Maximum eta used for track selection."};
+  } cfgTrackCuts;
 
-struct flowJNUACreationTask
-{
-    HistogramRegistry qaHistRegistry{"qaHistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-    FlowJHistManager histManager;
+  // The centrality estimators are the ones available for Run 3.
+  enum centEstimators { FT0M,
+                        FT0A,
+                        FT0C,
+                        FDDM,
+                        NTPV };
+  struct : ConfigurableGroup {
+    Configurable<int> cfgCentEst{"cfgCentEst", 2, "Centrality estimator."};
+    Configurable<float> cfgZvtxMax{"cfgZvtxMax", 15.0f, "Maximum primary vertex cut applied for the events."};
+    Configurable<int> cfgMultMin{"cfgMultMin", 10, "Minimum number of particles required for the event to have."};
+  } cfgEventCuts;
 
-    // Set Configurables here
-    struct : ConfigurableGroup {
-        Configurable<float> cfgPtMin{"cfgPtMin", 0.2f, "Minimum pT used for track selection."};
-        Configurable<float> cfgPtMax{"cfgPtMax", 5.0f, "Maximum pT used for track selection."};
-        Configurable<float> cfgEtaMax{"cfgEtaMax", 1.f, "Maximum eta used for track selection."};
-    } cfgTrackCuts;
-
-    // The centrality estimators are the ones available for Run 3.
-    enum centEstimators {FT0M, FT0A, FT0C, FDDM, NTPV};
-    struct : ConfigurableGroup {
-        Configurable<int> cfgCentEst{"cfgCentEst", 2, "Centrality estimator."};
-        Configurable<float> cfgZvtxMax{"cfgZvtxMax", 15.0f, "Maximum primary vertex cut applied for the events."};
-        Configurable<int> cfgMultMin{"cfgMultMin", 10, "Minimum number of particles required for the event to have."};
-    } cfgEventCuts;
-
-    // Set the access to the CCDB for the NUA/NUE weights.
-    struct : ConfigurableGroup {
+  // Set the access to the CCDB for the NUA/NUE weights.
+  struct : ConfigurableGroup {
     Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch",
                                      "Address of the CCDB to get the NUA/NUE."};
     Configurable<long> cfgTime{"ccdb-no-later-than",
-                                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
-                                "Latest acceptable timestamp of creation for the object."};
-    } cfgCCDB;
-    Service<o2::ccdb::BasicCCDBManager> ccdb;
+                               std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
+                               "Latest acceptable timestamp of creation for the object."};
+  } cfgCCDB;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  // // Filters to be applied to the received data.
+  // // The analysis assumes the data has been subjected to a QA of its selection,
+  // // and thus only the final distributions of the data for analysis are saved.
+  Filter collFilter = (nabs(aod::collision::posZ) < cfgEventCuts.cfgZvtxMax);
+  Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (aod::track::pt < cfgTrackCuts.cfgPtMax) && (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax);
 
-    // // Filters to be applied to the received data.
-    // // The analysis assumes the data has been subjected to a QA of its selection,
-    // // and thus only the final distributions of the data for analysis are saved.
-    Filter collFilter = (nabs(aod::collision::posZ) < cfgEventCuts.cfgZvtxMax);
-    Filter trackFilter =  (aod::track::pt > cfgTrackCuts.cfgPtMin) && (aod::track::pt < cfgTrackCuts.cfgPtMax) && (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax);
+  void init(InitContext const&)
+  {
+    // Add histomanager here
+    histManager.SetHistRegistryQA(&qaHistRegistry);
+    histManager.SetDebugLog(false);
+    histManager.SetObtainNUA(true);
+    histManager.CreateHistQA();
 
+    // Add CCDB access here
+    ccdb->setURL(cfgCCDB.cfgURL);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(cfgCCDB.cfgTime.value);
+  }
 
-    void init(InitContext const&) {
-        // Add histomanager here
-        histManager.SetHistRegistryQA(&qaHistRegistry);
-        histManager.SetDebugLog(false);
-        histManager.SetObtainNUA(true);
-        histManager.CreateHistQA();
+  void process(soa::Filtered<MyCollisions>::iterator const& coll, soa::Filtered<MyTracks> const& tracks)
+  {
+    if (tracks.size() < cfgEventCuts.cfgMultMin)
+      return;
+    // Int_t nTracks = tracks.size();
 
-        // Add CCDB access here
-        ccdb->setURL(cfgCCDB.cfgURL);
-        ccdb->setCaching(true);
-        ccdb->setLocalObjectValidityChecking();
-        ccdb->setCreatedNotAfter(cfgCCDB.cfgTime.value);
-
+    float cent = -1.;
+    switch (cfgEventCuts.cfgCentEst) {
+      case FT0M:
+        cent = coll.centFT0M();
+        break;
+      case FT0A:
+        cent = coll.centFT0A();
+        break;
+      case FT0C:
+        cent = coll.centFT0C();
+        break;
+      case FDDM:
+        cent = coll.centFDDM();
+        break;
+      case NTPV:
+        cent = coll.centNTPV();
+        break;
     }
-
-    void process(soa::Filtered<MyCollisions>::iterator const& coll, soa::Filtered<MyTracks> const& tracks) {
-        if (tracks.size() < cfgEventCuts.cfgMultMin) return;
-        // Int_t nTracks = tracks.size();
-
-        float cent = -1.;
-        switch (cfgEventCuts.cfgCentEst) {
-            case FT0M : cent = coll.centFT0M(); break;
-            case FT0A : cent = coll.centFT0A(); break;
-            case FT0C : cent = coll.centFT0C(); break;
-            case FDDM : cent = coll.centFDDM(); break;
-            case NTPV : cent = coll.centNTPV(); break;
-        }
-        if (cent < 0. || cent > 70.) {return;}
-        Int_t cBin = histManager.GetCentBin(cent);
-        // printf("Centrality: %.2f,\tBin: %d\n", cent, cBin);
-        vector<float> trackPhi;
-        int nTracks = 0;
-
-        for (auto& track : tracks) {
-            histManager.FillTrackQA<1>(track, cBin, 1., 1., coll.posZ());
-            trackPhi.push_back(track.phi());
-            // printf("Track phi: %.3f, %.2f\n", track.phi(), cent);
-            // We get the NUE and NUA weight values from the objects fetched earlier
-            // in the CCDB. These weights still need to be inverted to be used in
-            // the computations of the Q-vectors.
-            nTracks++;
-        }
-        histManager.FillEventQA<1>(coll, cBin, cent, nTracks);
-
-        /* Reset the variables for the next collision. */
-        // This ensures no mixing between collision can happen accidentally.
-        trackPhi.clear();
-
-        LOGF(info, "Collision analysed. Next...");
+    if (cent < 0. || cent > 70.) {
+      return;
     }
+    Int_t cBin = histManager.GetCentBin(cent);
+    // printf("Centrality: %.2f,\tBin: %d\n", cent, cBin);
+    vector<float> trackPhi;
+    int nTracks = 0;
+
+    for (auto& track : tracks) {
+      histManager.FillTrackQA<1>(track, cBin, 1., 1., coll.posZ());
+      trackPhi.push_back(track.phi());
+      // printf("Track phi: %.3f, %.2f\n", track.phi(), cent);
+      // We get the NUE and NUA weight values from the objects fetched earlier
+      // in the CCDB. These weights still need to be inverted to be used in
+      // the computations of the Q-vectors.
+      nTracks++;
+    }
+    histManager.FillEventQA<1>(coll, cBin, cent, nTracks);
+
+    /* Reset the variables for the next collision. */
+    // This ensures no mixing between collision can happen accidentally.
+    trackPhi.clear();
+
+    LOGF(info, "Collision analysed. Next...");
+  }
 };
-
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-    return WorkflowSpec{
-        adaptAnalysisTask<flowJNUACreationTask>(cfgc)
-    };
+  return WorkflowSpec{
+    adaptAnalysisTask<flowJNUACreationTask>(cfgc)};
 }

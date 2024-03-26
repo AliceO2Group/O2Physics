@@ -49,10 +49,10 @@ void FlowJHistManager::CreateHistQA()
   AxisSpec axisPt = {60, 0., 6., "#it{p}_{T} [GeV/#it{c}]"};
   if (mUseVariablePtBins) {
     std::vector<double> ptBinning = {0., 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35,
-                                    0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75,
-                                    0.8, 0.85, 0.9, 0.95, 1., 1.1, 1.2, 1.3, 1.4,
-                                    1.5, 1.6, 1.7, 1.8, 1.9, 2., 2.2, 2.4, 2.6,
-                                    2.8, 3., 3.2, 3.4, 3.6, 3.8, 4., 4.5, 5., 6.};
+                                     0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75,
+                                     0.8, 0.85, 0.9, 0.95, 1., 1.1, 1.2, 1.3, 1.4,
+                                     1.5, 1.6, 1.7, 1.8, 1.9, 2., 2.2, 2.4, 2.6,
+                                     2.8, 3., 3.2, 3.4, 3.6, 3.8, 4., 4.5, 5., 6.};
     axisPt = {ptBinning, "#it{p}_{T} [GeV/#it{c}]"};
   }
   mHistRegistryQA->add("Centrality_00-01/After/histPt", "#it{p}_{T} (no NUE)",
@@ -62,7 +62,7 @@ void FlowJHistManager::CreateHistQA()
   mHistRegistryQA->add("Centrality_00-01/After/histEta", "Pseudorapidity",
                        HistType::kTH1F, {axisEta}, true);
 
-  const AxisSpec axisPhi = {100, 0., 2.*M_PI, "#varphi"};
+  const AxisSpec axisPhi = {100, 0., 2. * M_PI, "#varphi"};
   mHistRegistryQA->add("Centrality_00-01/After/histPhi", "Azimuthal angles (no NUA)",
                        HistType::kTH1F, {axisPhi}, true);
 
@@ -160,9 +160,12 @@ int FlowJHistManager::GetCentBin(float cValue)
 {
   const float centClasses[] = {0., 1., 2., 5., 10., 20., 30., 40., 50., 60., 70.};
 
-  for (int i = 0; i < mNcentBins+1; i++) {
-    if (cValue >= centClasses[i]) {continue;}
-    else {return i-1;}
+  for (int i = 0; i < mNcentBins + 1; i++) {
+    if (cValue >= centClasses[i]) {
+      continue;
+    } else {
+      return i - 1;
+    }
   }
 
   // We went through all centrality edges without returning at all.
