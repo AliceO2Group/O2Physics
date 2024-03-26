@@ -1138,7 +1138,7 @@ struct MultiplicityCounter {
     auto mcCollision = collision.mcCollision();
     if constexpr (hasSimCent<MC>()) {
       c_gen = mcCollision.centrality();
-    } else if constexpr(hasRecoCent<C>()) {
+    } else if constexpr (hasRecoCent<C>()) {
       c_gen = c_rec;
     }
 
