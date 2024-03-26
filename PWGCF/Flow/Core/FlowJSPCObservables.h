@@ -12,8 +12,8 @@
 // \brief   Helper class for the SPC-related analyses.
 // \author  Maxim Virta (maxim.virta@cern.fi)
 
-#ifndef PWGCF_FLOW_CORE_FLOWJSPCOBSERVABLES_H
-#define PWGCF_FLOW_CORE_FLOWJSPCOBSERVABLES_H
+#ifndef PWGCF_FLOW_CORE_FLOWJSPCOBSERVABLES_H_
+#define PWGCF_FLOW_CORE_FLOWJSPCOBSERVABLES_H_
 
 // O2 headers. //
 // #include "Framework/AnalysisDataModel.h"
@@ -102,4 +102,4 @@ class FlowJSPCObservables
   ClassDefNV(FlowJSPCObservables, 1);
 };
 } // namespace o2::analysis::PWGCF
-#endif
+#endif // PWGCF_FLOW_CORE_FLOWJSPCOBSERVABLES_H_
