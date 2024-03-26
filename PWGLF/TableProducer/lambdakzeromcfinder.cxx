@@ -81,6 +81,7 @@ struct lambdakzeromcfinder {
   Configurable<bool> findHyperTriton{"findHyperTriton", false, "findHyperTriton"};
   Configurable<bool> findAntiHyperTriton{"findAntiHyperTriton", false, "findAntiHyperTriton"};
   Configurable<bool> requireTPC{"requireTPC", true, "require TPC"};
+  Configurable<bool> skipTPConly{"skipTPConly", false, "skip tracks that are TPC-only"};
   Configurable<bool> doUnassociatedV0s{"doUnassociatedV0s", true, "generate also unassociated V0s (for cascades!)"};
   Configurable<bool> doSameCollisionOnly{"doSameCollisionOnly", false, "stick to decays in which tracks are assoc to same collision"};
   Configurable<int> qaNbins{"qaNbins", 200, "qa plots: binning"};
@@ -92,6 +93,8 @@ struct lambdakzeromcfinder {
   std::vector<int> v0collisionId;
   std::vector<int> v0positiveIndex;
   std::vector<int> v0negativeIndex;
+  std::vector<int> v0positivePdg;
+  std::vector<int> v0negativePdg;
   std::vector<int> v0mcLabel;
 
   std::vector<int> searchedV0PDG;
@@ -176,7 +179,7 @@ struct lambdakzeromcfinder {
   {
     int nPosReco = 0;
     int nNegReco = 0;
-    const int maxReco = 10;
+    const int maxReco = 20;
     int trackIndexPositive[maxReco];
     int trackIndexNegative[maxReco];
 
@@ -208,7 +211,9 @@ struct lambdakzeromcfinder {
           if (daughter.pdgCode() == positivePdg) {
             auto const& thisDaughterTracks = daughter.template tracks_as<LabeledTracks>();
             for (auto const& track : thisDaughterTracks) {
-              if (track.hasTPC() || !requireTPC) {
+              if(track.detectorMap() == o2::aod::track::TPC && skipTPConly) 
+                  continue;
+              if (track.sign()>0 && (track.hasTPC() || !requireTPC)) {
                 trackIndexPositive[nPosReco] = track.globalIndex(); // assign only if TPC present
                 nPosReco++;
               }
@@ -217,7 +222,9 @@ struct lambdakzeromcfinder {
           if (daughter.pdgCode() == negativePdg) {
             auto const& thisDaughterTracks = daughter.template tracks_as<LabeledTracks>();
             for (auto const& track : thisDaughterTracks) {
-              if (track.hasTPC() || !requireTPC) {
+              if(track.detectorMap() == o2::aod::track::TPC && skipTPConly) 
+                  continue;
+              if (track.sign()<0 && (track.hasTPC() || !requireTPC)) {
                 trackIndexNegative[nNegReco] = track.globalIndex(); // assign only if TPC present
                 nNegReco++;
               }
@@ -284,7 +291,7 @@ struct lambdakzeromcfinder {
     // V0 list established, populate
     for (auto ic : sortedIndices) {
       if (v0collisionId[ic] >= 0 || doUnassociatedV0s) {
-        v0(v0collisionId[ic], v0positiveIndex[ic], v0negativeIndex[ic], 1); // type 1 : standard
+        v0(v0collisionId[ic], v0positiveIndex[ic], v0negativeIndex[ic], 1);
         fullv0labels(v0mcLabel[ic]);
       }
     }
@@ -309,6 +316,8 @@ struct lambdakzeromcfinder {
       int bestCollisionIndex = -1;
       if (!posTrack.has_mcParticle())
         continue; // skip unindexed particles
+      if(posTrack.detectorMap() == o2::aod::track::TPC && skipTPConly) 
+        continue;
       if (!posTrack.hasTPC() && !requireTPC)
         continue; // skip particles without TPC
       auto posParticle = posTrack.mcParticle_as<aod::McParticles>();
@@ -338,6 +347,8 @@ struct lambdakzeromcfinder {
             continue; // skip if requested to look only at the same collision (fixme: could be better)
           if (!negTrack.has_mcParticle())
             continue; // skip unindexed particles
+          if(negTrack.detectorMap() == o2::aod::track::TPC && skipTPConly) 
+            continue;
           if (!negTrack.hasTPC() && !requireTPC)
             continue; // skip particles without TPC
           auto negParticle = negTrack.mcParticle_as<aod::McParticles>();
