@@ -43,7 +43,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 using VBracket = o2::math_utils::Bracket<int>;
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullTr>;
+using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCFullTr, aod::pidTOFFullTr>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms>;
 
 namespace
@@ -136,11 +136,11 @@ struct hyperKinkRecoTask {
   Configurable<float> maxZDiff{"maxZDiff", 20., "Max z difference between the kink daughter and the hypertriton"};
   Configurable<float> maxPhiDiff{"maxPhiDiff", 100, "Max phi difference between the kink daughter and the hypertriton"};
   Configurable<float> timeMarginNS{"timeMarginNS", 600, "Additional time res tolerance in ns"};
-
   Configurable<float> etaMax{"eta", 1., "eta daughter"};
   Configurable<float> nSigmaTPCCutTrit{"nSigmaTPCTrit", 5, "triton dEdx cut (n sigma)"};
   Configurable<float> nSigmaTOFCutTrit{"nSigmaTOFTrit", 5, "triton TOF cut (n sigma)"};
   Configurable<float> nTPCClusMinTrit{"nTPCClusMinTrit", 80, "triton NTPC clusters cut"};
+  Configurable<bool> alwaysAskTOF{"alwaysAskTOF", false, "If true, ask for TOF signal"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
@@ -270,14 +270,33 @@ struct hyperKinkRecoTask {
     if (!candidate.hasTPC() || !candidate.hasITS()) {
       return false;
     }
+
+    if (alwaysAskTOF && !candidate.hasTOF()) {
+      return false;
+    }
+
     float nSigmaTrit = computeNSigmaTrit(candidate);
+    float nSigmaTOFTrit = candidate.tofNSigmaTr();
+
+    bool isGoodTPCCand = false;
     if (candidate.itsNClsInnerBarrel() == 0 && candidate.itsNCls() < 4 &&
         candidate.tpcNClsCrossedRows() >= 70 && candidate.tpcChi2NCl() < 4.f &&
         candidate.tpcNClsCrossedRows() > 0.8 * candidate.tpcNClsFindable() && candidate.tpcNClsFound() > 80 && abs(nSigmaTrit) < nSigmaTPCCutTrit) {
-      return true;
+      isGoodTPCCand = true;
     }
 
-    return false;
+    if (!isGoodTPCCand) {
+      return false;
+    }
+
+    if (candidate.hasTOF() && abs(nSigmaTOFTrit) > nSigmaTOFCutTrit) {
+      return false;
+    }
+
+    hNsigmaTritSel->Fill(candidate.pt(), nSigmaTrit);
+    hDeDxTritSel->Fill(candidate.tpcInnerParam(), candidate.tpcSignal());
+
+    return true;
   }
 
   std::array<std::vector<TrackCand>, 4> makeTracksPool(CollisionsFull const& collisions, TracksFull const& tracks, o2::aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const&)
@@ -321,11 +340,14 @@ struct hyperKinkRecoTask {
     constexpr auto bOffsetMax = 241; // 6 mus (ITS)
 
     for (const auto& collision : collisions) {
+
+      hEvents->Fill(0);
       if (!collision.sel8())
         continue;
+      hEvents->Fill(1);
       if (std::abs(collision.posZ()) > 10.)
         continue;
-
+      hEvents->Fill(2);
       hZvtx->Fill(collision.posZ());
       hCentFT0M->Fill(collision.centFT0M());
 
