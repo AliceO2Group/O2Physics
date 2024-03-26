@@ -450,6 +450,7 @@ struct reso2initializer {
                 track.sign(),
                 (uint8_t)track.tpcNClsCrossedRows(),
                 (uint8_t)track.tpcNClsFound(),
+                (uint8_t)track.itsNCls(),
                 track.dcaXY(),
                 track.dcaZ(),
                 track.x(),

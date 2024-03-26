@@ -83,6 +83,10 @@ struct k892analysis {
   Configurable<bool> additionalQAplots{"additionalQAplots", true, "Additional QA plots"};
   Configurable<bool> tof_at_high_pt{"tof_at_high_pt", false, "Use TOF at high pT"};
   Configurable<bool> additionalEvsel{"additionalEvsel", true, "Additional event selcection"};
+  Configurable<bool> manualtrkselcuts{"manualtrkselcuts", false, "Tracks selection cuts (nClusters)"};
+  Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
+  Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
+  Configurable<float> cfgRCRFC{"cfgRCRFC", 0.8f, "Crossed Rows to Findable Clusters"};
 
   // Event selection cuts - Alex (Temporary, need to fix!)
   TF1* fMultPVCutLow = nullptr;
@@ -229,12 +233,17 @@ struct k892analysis {
       return false;
     if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
       return false;
-    if (cfgPrimaryTrack && !track.isPrimaryTrack())
-      return false;
-    if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
-      return false;
     if (cfgPVContributor && !track.isPVContributor())
       return false;
+    if (!manualtrkselcuts) {
+      if (cfgPrimaryTrack && !track.isPrimaryTrack())
+        return false;
+    } else if (manualtrkselcuts) {
+      if (!(track.isGlobalTrackWoDCA() &&
+            track.itsNCls() > cfgITScluster && track.tpcNClsFound() > cfgTPCcluster && track.tpcCrossedRowsOverFindableCls() > cfgRCRFC)) {
+        return false; // condition is like \bar{A.B} = \bar{A} + \bar{B} (+ is or, . is and)
+      }
+    }
 
     return true;
   }
