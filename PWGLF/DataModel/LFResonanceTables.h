@@ -76,6 +76,7 @@ DECLARE_SOA_COLUMN(CascadeIndices, cascIndices, int[3]);             //! Field f
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                              //! Sign of the track charge
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t); //! Number of TPC crossed rows
 DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);             //! Number of TPC clusters found
+DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);                       //! Number of ITS clusters found
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);    //! Is global track without DCA
 DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);              //! Is global track
 DECLARE_SOA_COLUMN(IsPrimaryTrack, isPrimaryTrack, bool);            //! Is primary track
@@ -121,6 +122,7 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
                   resodaughter::Sign,
                   resodaughter::TPCNClsCrossedRows,
                   resodaughter::TPCNClsFound,
+                  resodaughter::ITSNCls,
                   o2::aod::track::DcaXY,
                   o2::aod::track::DcaZ,
                   o2::aod::track::X,
