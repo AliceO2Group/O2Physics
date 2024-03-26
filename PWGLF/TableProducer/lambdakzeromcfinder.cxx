@@ -93,8 +93,6 @@ struct lambdakzeromcfinder {
   std::vector<int> v0collisionId;
   std::vector<int> v0positiveIndex;
   std::vector<int> v0negativeIndex;
-  std::vector<int> v0positivePdg;
-  std::vector<int> v0negativePdg;
   std::vector<int> v0mcLabel;
 
   std::vector<int> searchedV0PDG;
