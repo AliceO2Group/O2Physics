@@ -1283,7 +1283,7 @@ struct RobustFluctuationObservables {
           if (diffWrtPrev >= 10 && diffWrtNext >= 10)
             flagDiffBnBcIs10 = true;
           // if (diffWrtPrev >= 20 && diffWrtNext >= 20)
-            // flagDiffBnBcIs20 = true;
+          // flagDiffBnBcIs20 = true;
           if (diffWrtPrev >= 40 && diffWrtNext >= 40)
             flagDiffBnBcIs40 = true;
         }
