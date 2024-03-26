@@ -79,7 +79,7 @@ struct flowJNUACreationTask {
   struct : ConfigurableGroup {
     Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch",
                                      "Address of the CCDB to get the NUA/NUE."};
-    Configurable<int> cfgTime{"ccdb-no-later-than",
+    Configurable<int64_t> cfgTime{"ccdb-no-later-than",
                                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
                                "Latest acceptable timestamp of creation for the object."};
   } cfgCCDB;
