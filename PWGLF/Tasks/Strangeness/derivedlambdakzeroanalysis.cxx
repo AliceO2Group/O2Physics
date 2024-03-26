@@ -481,7 +481,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0, typename TCollision>
-  uint64_t computeReconstructionBitmap(TV0 v0, TCollision collision)
+  uint64_t computeReconstructionBitmap(TV0 v0, TCollision collision, float rapidityLambda, float rapidityK0Short, float pT)
   // precalculate this information so that a check is one mask operation, not many
   {
     uint64_t bitMap = 0;
@@ -500,9 +500,9 @@ struct derivedlambdakzeroanalysis {
       bitset(bitMap, selDCAV0Dau);
 
     // rapidity
-    if (TMath::Abs(v0.yLambda()) < rapidityCut)
+    if (TMath::Abs(rapidityLambda) < rapidityCut)
       bitset(bitMap, selLambdaRapidity);
-    if (TMath::Abs(v0.yK0Short()) < rapidityCut)
+    if (TMath::Abs(rapidityK0Short) < rapidityCut)
       bitset(bitMap, selK0ShortRapidity);
 
     auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
@@ -606,7 +606,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0>
-  void analyseCandidate(TV0 v0, float centrality, uint64_t selMap)
+  void analyseCandidate(TV0 v0, float pt, float centrality, uint64_t selMap)
   // precalculate this information so that a check is one mask operation, not many
   {
     auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
@@ -628,7 +628,7 @@ struct derivedlambdakzeroanalysis {
     // main analysis
     if (verifyMask(selMap, maskSelectionK0Short) && analyseK0Short) {
       histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), v0.alpha(), v0.qtarm()); // cross-check
-      histos.fill(HIST("h3dMassK0Short"), centrality, v0.pt(), v0.mK0Short());
+      histos.fill(HIST("h3dMassK0Short"), centrality, pt, v0.mK0Short());
       histos.fill(HIST("hMassK0Short"), v0.mK0Short());
       if (doPlainQA) {
         histos.fill(HIST("K0Short/hPosDCAToPV"), v0.dcapostopv());
@@ -641,7 +641,7 @@ struct derivedlambdakzeroanalysis {
       }
     }
     if (verifyMask(selMap, maskSelectionLambda) && analyseLambda) {
-      histos.fill(HIST("h3dMassLambda"), centrality, v0.pt(), v0.mLambda());
+      histos.fill(HIST("h3dMassLambda"), centrality, pt, v0.mLambda());
       if (doPlainQA) {
         histos.fill(HIST("Lambda/hPosDCAToPV"), v0.dcapostopv());
         histos.fill(HIST("Lambda/hNegDCAToPV"), v0.dcanegtopv());
@@ -653,7 +653,7 @@ struct derivedlambdakzeroanalysis {
       }
     }
     if (verifyMask(selMap, maskSelectionAntiLambda) && analyseAntiLambda) {
-      histos.fill(HIST("h3dMassAntiLambda"), centrality, v0.pt(), v0.mAntiLambda());
+      histos.fill(HIST("h3dMassAntiLambda"), centrality, pt, v0.mAntiLambda());
       if (doPlainQA) {
         histos.fill(HIST("AntiLambda/hPosDCAToPV"), v0.dcapostopv());
         histos.fill(HIST("AntiLambda/hNegDCAToPV"), v0.dcanegtopv());
@@ -670,21 +670,21 @@ struct derivedlambdakzeroanalysis {
     if (doCompleteQA) {
       if (analyseK0Short) {
         if (verifyMask(selMap, maskTopoNoV0Radius | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dV0Radius"), centrality, v0.pt(), v0.mK0Short(), v0.v0radius());
+          histos.fill(HIST("K0Short/h4dV0Radius"), centrality, pt, v0.mK0Short(), v0.v0radius());
         if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dPosDCAToPV"), centrality, v0.pt(), v0.mK0Short(), TMath::Abs(v0.dcapostopv()));
+          histos.fill(HIST("K0Short/h4dPosDCAToPV"), centrality, pt, v0.mK0Short(), TMath::Abs(v0.dcapostopv()));
         if (verifyMask(selMap, maskTopoNoDCANegToPV | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dNegDCAToPV"), centrality, v0.pt(), v0.mK0Short(), TMath::Abs(v0.dcanegtopv()));
+          histos.fill(HIST("K0Short/h4dNegDCAToPV"), centrality, pt, v0.mK0Short(), TMath::Abs(v0.dcanegtopv()));
         if (verifyMask(selMap, maskTopoNoCosPA | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dPointingAngle"), centrality, v0.pt(), v0.mK0Short(), TMath::ACos(v0.v0cosPA()));
+          histos.fill(HIST("K0Short/h4dPointingAngle"), centrality, pt, v0.mK0Short(), TMath::ACos(v0.v0cosPA()));
         if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskK0ShortSpecific))
-          histos.fill(HIST("K0Short/h4dDCADaughters"), centrality, v0.pt(), v0.mK0Short(), v0.dcaV0daughters());
+          histos.fill(HIST("K0Short/h4dDCADaughters"), centrality, pt, v0.mK0Short(), v0.dcaV0daughters());
         if (doTPCQA) {
           if (verifyMask(selMap, maskTopological | maskK0ShortSpecific)) {
-            histos.fill(HIST("K0Short/h3dPosNsigmaTPC"), centrality, v0.pt(), posTrackExtra.tpcNSigmaPi());
-            histos.fill(HIST("K0Short/h3dNegNsigmaTPC"), centrality, v0.pt(), negTrackExtra.tpcNSigmaPi());
-            histos.fill(HIST("K0Short/h3dPosTPCsignal"), centrality, v0.pt(), posTrackExtra.tpcSignal());
-            histos.fill(HIST("K0Short/h3dNegTPCsignal"), centrality, v0.pt(), negTrackExtra.tpcSignal());
+            histos.fill(HIST("K0Short/h3dPosNsigmaTPC"), centrality, pt, posTrackExtra.tpcNSigmaPi());
+            histos.fill(HIST("K0Short/h3dNegNsigmaTPC"), centrality, pt, negTrackExtra.tpcNSigmaPi());
+            histos.fill(HIST("K0Short/h3dPosTPCsignal"), centrality, pt, posTrackExtra.tpcSignal());
+            histos.fill(HIST("K0Short/h3dNegTPCsignal"), centrality, pt, negTrackExtra.tpcSignal());
             histos.fill(HIST("K0Short/h3dPosNsigmaTPCvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcNSigmaPi());
             histos.fill(HIST("K0Short/h3dNegNsigmaTPCvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcNSigmaPi());
             histos.fill(HIST("K0Short/h3dPosTPCsignalVsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcSignal());
@@ -697,8 +697,8 @@ struct derivedlambdakzeroanalysis {
         }
         if (doTOFQA) {
           if (verifyMask(selMap, maskTopological | maskK0ShortSpecific)) {
-            histos.fill(HIST("K0Short/h3dPosTOFdeltaT"), centrality, v0.pt(), v0.posTOFDeltaTK0Pi());
-            histos.fill(HIST("K0Short/h3dNegTOFdeltaT"), centrality, v0.pt(), v0.negTOFDeltaTK0Pi());
+            histos.fill(HIST("K0Short/h3dPosTOFdeltaT"), centrality, pt, v0.posTOFDeltaTK0Pi());
+            histos.fill(HIST("K0Short/h3dNegTOFdeltaT"), centrality, pt, v0.negTOFDeltaTK0Pi());
             histos.fill(HIST("K0Short/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), v0.posTOFDeltaTK0Pi());
             histos.fill(HIST("K0Short/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), v0.negTOFDeltaTK0Pi());
             histos.fill(HIST("K0Short/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTK0Pi());
@@ -706,28 +706,28 @@ struct derivedlambdakzeroanalysis {
           }
         }
         if (doIDetectPropQA) {
-          histos.fill(HIST("K0Short/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), v0.pt());
-          histos.fill(HIST("K0Short/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), v0.pt());
+          histos.fill(HIST("K0Short/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pt);
+          histos.fill(HIST("K0Short/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pt);
         }
       }
 
       if (analyseLambda) {
         if (verifyMask(selMap, maskTopoNoV0Radius | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dV0Radius"), centrality, v0.pt(), v0.mLambda(), v0.v0radius());
+          histos.fill(HIST("Lambda/h4dV0Radius"), centrality, pt, v0.mLambda(), v0.v0radius());
         if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dPosDCAToPV"), centrality, v0.pt(), v0.mLambda(), TMath::Abs(v0.dcapostopv()));
+          histos.fill(HIST("Lambda/h4dPosDCAToPV"), centrality, pt, v0.mLambda(), TMath::Abs(v0.dcapostopv()));
         if (verifyMask(selMap, maskTopoNoDCANegToPV | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dNegDCAToPV"), centrality, v0.pt(), v0.mLambda(), TMath::Abs(v0.dcanegtopv()));
+          histos.fill(HIST("Lambda/h4dNegDCAToPV"), centrality, pt, v0.mLambda(), TMath::Abs(v0.dcanegtopv()));
         if (verifyMask(selMap, maskTopoNoCosPA | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dPointingAngle"), centrality, v0.pt(), v0.mLambda(), TMath::ACos(v0.v0cosPA()));
+          histos.fill(HIST("Lambda/h4dPointingAngle"), centrality, pt, v0.mLambda(), TMath::ACos(v0.v0cosPA()));
         if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskLambdaSpecific))
-          histos.fill(HIST("Lambda/h4dDCADaughters"), centrality, v0.pt(), v0.mLambda(), v0.dcaV0daughters());
+          histos.fill(HIST("Lambda/h4dDCADaughters"), centrality, pt, v0.mLambda(), v0.dcaV0daughters());
         if (doTPCQA) {
           if (verifyMask(selMap, maskTopological | maskLambdaSpecific)) {
-            histos.fill(HIST("Lambda/h3dPosNsigmaTPC"), centrality, v0.pt(), posTrackExtra.tpcNSigmaPr());
-            histos.fill(HIST("Lambda/h3dNegNsigmaTPC"), centrality, v0.pt(), negTrackExtra.tpcNSigmaPi());
-            histos.fill(HIST("Lambda/h3dPosTPCsignal"), centrality, v0.pt(), posTrackExtra.tpcSignal());
-            histos.fill(HIST("Lambda/h3dNegTPCsignal"), centrality, v0.pt(), negTrackExtra.tpcSignal());
+            histos.fill(HIST("Lambda/h3dPosNsigmaTPC"), centrality, pt, posTrackExtra.tpcNSigmaPr());
+            histos.fill(HIST("Lambda/h3dNegNsigmaTPC"), centrality, pt, negTrackExtra.tpcNSigmaPi());
+            histos.fill(HIST("Lambda/h3dPosTPCsignal"), centrality, pt, posTrackExtra.tpcSignal());
+            histos.fill(HIST("Lambda/h3dNegTPCsignal"), centrality, pt, negTrackExtra.tpcSignal());
             histos.fill(HIST("Lambda/h3dPosNsigmaTPCvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcNSigmaPr());
             histos.fill(HIST("Lambda/h3dNegNsigmaTPCvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcNSigmaPi());
             histos.fill(HIST("Lambda/h3dPosTPCsignalVsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcSignal());
@@ -740,8 +740,8 @@ struct derivedlambdakzeroanalysis {
         }
         if (doTOFQA) {
           if (verifyMask(selMap, maskTopological | maskLambdaSpecific)) {
-            histos.fill(HIST("Lambda/h3dPosTOFdeltaT"), centrality, v0.pt(), v0.posTOFDeltaTLaPr());
-            histos.fill(HIST("Lambda/h3dNegTOFdeltaT"), centrality, v0.pt(), v0.negTOFDeltaTLaPi());
+            histos.fill(HIST("Lambda/h3dPosTOFdeltaT"), centrality, pt, v0.posTOFDeltaTLaPr());
+            histos.fill(HIST("Lambda/h3dNegTOFdeltaT"), centrality, pt, v0.negTOFDeltaTLaPi());
             histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), v0.posTOFDeltaTLaPr());
             histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), v0.negTOFDeltaTLaPi());
             histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPr());
@@ -749,27 +749,27 @@ struct derivedlambdakzeroanalysis {
           }
         }
         if (doIDetectPropQA) {
-          histos.fill(HIST("Lambda/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), v0.pt());
-          histos.fill(HIST("Lambda/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), v0.pt());
+          histos.fill(HIST("Lambda/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pt);
+          histos.fill(HIST("Lambda/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pt);
         }
       }
       if (analyseAntiLambda) {
         if (verifyMask(selMap, maskTopoNoV0Radius | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dV0Radius"), centrality, v0.pt(), v0.mAntiLambda(), v0.v0radius());
+          histos.fill(HIST("AntiLambda/h4dV0Radius"), centrality, pt, v0.mAntiLambda(), v0.v0radius());
         if (verifyMask(selMap, maskTopoNoDCAPosToPV | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dPosDCAToPV"), centrality, v0.pt(), v0.mAntiLambda(), TMath::Abs(v0.dcapostopv()));
+          histos.fill(HIST("AntiLambda/h4dPosDCAToPV"), centrality, pt, v0.mAntiLambda(), TMath::Abs(v0.dcapostopv()));
         if (verifyMask(selMap, maskTopoNoDCANegToPV | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dNegDCAToPV"), centrality, v0.pt(), v0.mAntiLambda(), TMath::Abs(v0.dcanegtopv()));
+          histos.fill(HIST("AntiLambda/h4dNegDCAToPV"), centrality, pt, v0.mAntiLambda(), TMath::Abs(v0.dcanegtopv()));
         if (verifyMask(selMap, maskTopoNoCosPA | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dPointingAngle"), centrality, v0.pt(), v0.mAntiLambda(), TMath::ACos(v0.v0cosPA()));
+          histos.fill(HIST("AntiLambda/h4dPointingAngle"), centrality, pt, v0.mAntiLambda(), TMath::ACos(v0.v0cosPA()));
         if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskAntiLambdaSpecific))
-          histos.fill(HIST("AntiLambda/h4dDCADaughters"), centrality, v0.pt(), v0.mAntiLambda(), v0.dcaV0daughters());
+          histos.fill(HIST("AntiLambda/h4dDCADaughters"), centrality, pt, v0.mAntiLambda(), v0.dcaV0daughters());
         if (doTPCQA) {
           if (verifyMask(selMap, maskTopological | maskAntiLambdaSpecific)) {
-            histos.fill(HIST("AntiLambda/h3dPosNsigmaTPC"), centrality, v0.pt(), posTrackExtra.tpcNSigmaPi());
-            histos.fill(HIST("AntiLambda/h3dNegNsigmaTPC"), centrality, v0.pt(), negTrackExtra.tpcNSigmaPr());
-            histos.fill(HIST("AntiLambda/h3dPosTPCsignal"), centrality, v0.pt(), posTrackExtra.tpcSignal());
-            histos.fill(HIST("AntiLambda/h3dNegTPCsignal"), centrality, v0.pt(), negTrackExtra.tpcSignal());
+            histos.fill(HIST("AntiLambda/h3dPosNsigmaTPC"), centrality, pt, posTrackExtra.tpcNSigmaPi());
+            histos.fill(HIST("AntiLambda/h3dNegNsigmaTPC"), centrality, pt, negTrackExtra.tpcNSigmaPr());
+            histos.fill(HIST("AntiLambda/h3dPosTPCsignal"), centrality, pt, posTrackExtra.tpcSignal());
+            histos.fill(HIST("AntiLambda/h3dNegTPCsignal"), centrality, pt, negTrackExtra.tpcSignal());
             histos.fill(HIST("AntiLambda/h3dPosNsigmaTPCvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcNSigmaPi());
             histos.fill(HIST("AntiLambda/h3dNegNsigmaTPCvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), negTrackExtra.tpcNSigmaPr());
             histos.fill(HIST("AntiLambda/h3dPosTPCsignalVsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), posTrackExtra.tpcSignal());
@@ -782,8 +782,8 @@ struct derivedlambdakzeroanalysis {
         }
         if (doTOFQA) {
           if (verifyMask(selMap, maskTopological | maskAntiLambdaSpecific)) {
-            histos.fill(HIST("AntiLambda/h3dPosTOFdeltaT"), centrality, v0.pt(), v0.posTOFDeltaTLaPi());
-            histos.fill(HIST("AntiLambda/h3dNegTOFdeltaT"), centrality, v0.pt(), v0.negTOFDeltaTLaPr());
+            histos.fill(HIST("AntiLambda/h3dPosTOFdeltaT"), centrality, pt, v0.posTOFDeltaTLaPi());
+            histos.fill(HIST("AntiLambda/h3dNegTOFdeltaT"), centrality, pt, v0.negTOFDeltaTLaPr());
             histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPtot"), centrality, v0.positivept() * TMath::CosH(v0.positiveeta()), v0.posTOFDeltaTLaPi());
             histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPtot"), centrality, v0.negativept() * TMath::CosH(v0.negativeeta()), v0.negTOFDeltaTLaPr());
             histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPi());
@@ -791,38 +791,38 @@ struct derivedlambdakzeroanalysis {
           }
         }
         if (doIDetectPropQA) {
-          histos.fill(HIST("AntiLambda/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), v0.pt());
-          histos.fill(HIST("AntiLambda/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), v0.pt());
+          histos.fill(HIST("AntiLambda/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), pt);
+          histos.fill(HIST("AntiLambda/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), pt);
         }
       }
     } // end systematics / qa
   }
 
   template <typename TV0>
-  void analyseCollisionAssociation(TV0 v0, int mcNch, bool correctAssociation, uint64_t selMap)
+  void analyseCollisionAssociation(TV0 v0, float pt, int mcNch, bool correctAssociation, uint64_t selMap)
   // analyse collision association
   {
     // __________________________________________
     // main analysis
     if (verifyMask(selMap, maskSelectionK0Short) && analyseK0Short) {
-      histos.fill(HIST("K0Short/h2dPtVsNch"), mcNch, v0.pt());
+      histos.fill(HIST("K0Short/h2dPtVsNch"), mcNch, pt);
       if (!correctAssociation)
-        histos.fill(HIST("K0Short/h2dPtVsNch_BadCollAssig"), mcNch, v0.pt());
+        histos.fill(HIST("K0Short/h2dPtVsNch_BadCollAssig"), mcNch, pt);
     }
     if (verifyMask(selMap, maskSelectionLambda) && analyseLambda) {
-      histos.fill(HIST("Lambda/h2dPtVsNch"), mcNch, v0.pt());
+      histos.fill(HIST("Lambda/h2dPtVsNch"), mcNch, pt);
       if (!correctAssociation)
-        histos.fill(HIST("Lambda/h2dPtVsNch_BadCollAssig"), mcNch, v0.pt());
+        histos.fill(HIST("Lambda/h2dPtVsNch_BadCollAssig"), mcNch, pt);
     }
     if (verifyMask(selMap, maskSelectionAntiLambda) && analyseAntiLambda) {
-      histos.fill(HIST("AntiLambda/h2dPtVsNch"), mcNch, v0.pt());
+      histos.fill(HIST("AntiLambda/h2dPtVsNch"), mcNch, pt);
       if (!correctAssociation)
-        histos.fill(HIST("AntiLambda/h2dPtVsNch_BadCollAssig"), mcNch, v0.pt());
+        histos.fill(HIST("AntiLambda/h2dPtVsNch_BadCollAssig"), mcNch, pt);
     }
   }
 
   template <typename TV0>
-  void fillFeeddownMatrix(TV0 v0, float centrality, uint64_t selMap)
+  void fillFeeddownMatrix(TV0 v0, float pt, float centrality, uint64_t selMap)
   // fill feeddown matrix for Lambdas or AntiLambdas
   // fixme: a potential improvement would be to consider mass windows for the l/al
   {
@@ -837,11 +837,11 @@ struct derivedlambdakzeroanalysis {
     // __________________________________________
     if (verifyMask(selMap, secondaryMaskSelectionLambda) && analyseLambda) {
       if (v0mother.pdgCode() == 3312 && v0mother.isPhysicalPrimary())
-        histos.fill(HIST("h3dLambdaFeeddown"), centrality, v0.pt(), std::hypot(v0mother.px(), v0mother.py()));
+        histos.fill(HIST("h3dLambdaFeeddown"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
     }
     if (verifyMask(selMap, secondaryMaskSelectionAntiLambda) && analyseAntiLambda) {
       if (v0mother.pdgCode() == -3312 && v0mother.isPhysicalPrimary())
-        histos.fill(HIST("h3dAntiLambdaFeeddown"), centrality, v0.pt(), std::hypot(v0mother.px(), v0mother.py()));
+        histos.fill(HIST("h3dAntiLambdaFeeddown"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
     }
   }
 
@@ -889,13 +889,13 @@ struct derivedlambdakzeroanalysis {
       // fill AP plot for all V0s
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
 
-      uint64_t selMap = computeReconstructionBitmap(v0, collision);
+      uint64_t selMap = computeReconstructionBitmap(v0, collision, v0.yLambda(), v0.yK0Short(), v0.pt());
 
       // consider for histograms for all species
       selMap = selMap | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selConsiderAntiLambda);
       selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
 
-      analyseCandidate(v0, centrality, selMap);
+      analyseCandidate(v0, v0.pt(), centrality, selMap);
     } // end v0 loop
   }
 
@@ -943,12 +943,19 @@ struct derivedlambdakzeroanalysis {
       // fill AP plot for all V0s
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
 
-      uint64_t selMap = computeReconstructionBitmap(v0, collision);
+      float ptmc = RecoDecay::sqrtSumOfSquares(v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC());
+      float ymc = 1e-3;
+      if (v0.pdgCode() == 310)
+        ymc = RecoDecay::y(std::array{v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC(), v0.pzPosMC() + v0.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
+      else if (TMath::Abs(v0.pdgCode()) == 3122)
+        ymc = RecoDecay::y(std::array{v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC(), v0.pzPosMC() + v0.pzNegMC()}, o2::constants::physics::MassLambda);
+
+      uint64_t selMap = computeReconstructionBitmap(v0, collision, ymc, ymc, ptmc);
       selMap = selMap | computeMCAssociation(v0);
 
       // feeddown matrix always with association
       if (calculateFeeddownMatrix)
-        fillFeeddownMatrix(v0, centrality, selMap);
+        fillFeeddownMatrix(v0, ptmc, centrality, selMap);
 
       // consider only associated candidates if asked to do so, disregard association
       if (!doMCAssociation) {
@@ -956,7 +963,7 @@ struct derivedlambdakzeroanalysis {
         selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
       }
 
-      analyseCandidate(v0, centrality, selMap);
+      analyseCandidate(v0, ptmc, centrality, selMap);
 
       if (doCollisionAssociationQA) {
         // check collision association explicitly
@@ -967,7 +974,7 @@ struct derivedlambdakzeroanalysis {
           mcNch = mcCollision.multMCNParticlesEta05();
           correctCollision = (v0.straMCCollisionId() == mcCollision.globalIndex());
         }
-        analyseCollisionAssociation(v0, mcNch, correctCollision, selMap);
+        analyseCollisionAssociation(v0, ptmc, mcNch, correctCollision, selMap);
       }
 
     } // end v0 loop
