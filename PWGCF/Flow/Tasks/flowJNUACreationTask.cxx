@@ -49,7 +49,7 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
                                  aod::FT0sCorrected, aod::CentFT0Ms,
                                  aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As,
                                  aod::CentFDDMs, aod::CentNTPVs>;
-                                 
+
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
 
 
@@ -98,13 +98,13 @@ struct flowJNUACreationTask
         histManager.SetDebugLog(false);
         histManager.SetObtainNUA(true);
         histManager.CreateHistQA();
-        
+
         // Add CCDB access here
         ccdb->setURL(cfgCCDB.cfgURL);
         ccdb->setCaching(true);
         ccdb->setLocalObjectValidityChecking();
         ccdb->setCreatedNotAfter(cfgCCDB.cfgTime.value);
-        
+
     }
 
     void process(soa::Filtered<MyCollisions>::iterator const& coll, soa::Filtered<MyTracks> const& tracks) {
@@ -139,7 +139,7 @@ struct flowJNUACreationTask
         /* Reset the variables for the next collision. */
         // This ensures no mixing between collision can happen accidentally.
         trackPhi.clear();
-        
+
         LOGF(info, "Collision analysed. Next...");
     }
 };

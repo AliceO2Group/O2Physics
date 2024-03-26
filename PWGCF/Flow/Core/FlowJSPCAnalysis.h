@@ -53,7 +53,7 @@ public:
         mHistRegistry->add("FullCentrality", "FullCentrality", HistType::kTH1D, {{100, 0., 100.}}, true);
         mHistRegistry->add("Centrality_0/fResults", "Numerators and denominators", {HistType::kTProfile, {{24, 0., 24.}} }, true);
         mHistRegistry->add("Centrality_0/fCovResults", "Covariance N*D", { HistType::kTProfile, {{48, 0., 48.} }}, true);
-        
+
         for (UInt_t i = 1; i<8; i++) {
             mHistRegistry->addClone("Centrality_0/", Form("Centrality_%u/", i));
         }

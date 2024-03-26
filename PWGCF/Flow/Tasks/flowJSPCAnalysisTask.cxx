@@ -51,7 +51,7 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
                                  aod::FT0sCorrected, aod::CentFT0Ms,
                                  aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As,
                                  aod::CentFDDMs, aod::CentNTPVs>;
-                                 
+
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
 
 
@@ -67,8 +67,8 @@ struct flowJSPCAnalysisTask
     FlowJSPCObservables SPCobservables;
 
     // Set Configurables here
-    Configurable<bool> cfgUseNUA{"cfgUseNUA", false, "Use NUA correction"}; 
-    Configurable<bool> cfgUseNUE{"cfgUseNUE", false, "Use NUE correction"}; 
+    Configurable<bool> cfgUseNUA{"cfgUseNUA", false, "Use NUA correction"};
+    Configurable<bool> cfgUseNUE{"cfgUseNUE", false, "Use NUE correction"};
     Configurable<bool> cfgFillQA{"cfgFillQA", true, "Fill QA plots"};
 
     Configurable<Int_t> cfgWhichSPC{"cfgWhichSPC", 0, "Which SPC observables to compute."};
@@ -123,12 +123,12 @@ struct flowJSPCAnalysisTask
 
         // Analysis class initialization
         // blaa blaa spcAnalysis.CreateOutputObjects()
-            
+
         ccdb->setURL(cfgCCDB.cfgURL);
         ccdb->setCaching(true);
         ccdb->setLocalObjectValidityChecking();
         ccdb->setCreatedNotAfter(cfgCCDB.cfgTime.value);
-        
+
         // Add CCDB access here
 
     }
