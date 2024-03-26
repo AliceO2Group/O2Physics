@@ -15,7 +15,7 @@
 
 // O2 Physics headers.
 
-#include "PWGCF/Flow/Core/FlowJSPCAnalysis.h" 
+#include "PWGCF/Flow/Core/FlowJSPCAnalysis.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -24,30 +24,30 @@ using namespace std;
 namespace o2::analysis::PWGCF {
 
 void FlowJSPCAnalysis::CalculateQvectors(const vector<float>& phiAngles, const vector<float>& phiWeights) {
-	for (auto& Qn : cQvectors) {
-		for (auto& Qnp : Qn) {
-			Qnp = TComplex(0,0);
-		}
-	}
+  for (auto& Qn : cQvectors) {
+    for (auto& Qnp : Qn) {
+      Qnp = TComplex(0,0);
+    }
+  }
 
-	for (int iT = 0; iT < phiAngles.size(); ++iT) {
-		float iPhi = phiAngles.at(iT);
-		float iWeight = phiWeights.at(iT);
+  for (int iT = 0; iT < phiAngles.size(); ++iT) {
+    float iPhi = phiAngles.at(iT);
+    float iWeight = phiWeights.at(iT);
 
 
-		for (int iH = 0; iH < mNqHarmos; iH++) {
-			for (int iP = 0; iP < mNqPowers; iP++) {
-				double weightToP = TMath::Power(iWeight, iP);
-				cQvectors[iH][iP] += TComplex(weightToP*TMath::Cos(iH*iPhi), weightToP*TMath::Sin(iH*iPhi));
-			}
-		}
-	}
+    for (int iH = 0; iH < mNqHarmos; iH++) {
+      for (int iP = 0; iP < mNqPowers; iP++) {
+        double weightToP = TMath::Power(iWeight, iP);
+        cQvectors[iH][iP] += TComplex(weightToP*TMath::Cos(iH*iPhi), weightToP*TMath::Sin(iH*iPhi));
+      }
+    }
+  }
 
 } // End of Calculate Q-vectors
 
 TComplex FlowJSPCAnalysis::Q(const Int_t harmN, const Int_t p) {
-	if (harmN>=0) return cQvectors[harmN][p];
-	return TComplex::Conjugate(cQvectors[-harmN][p]);
+  if (harmN>=0) return cQvectors[harmN][p];
+  return TComplex::Conjugate(cQvectors[-harmN][p]);
 } // End of Q
 
 /// \brief Calculate multi-particle correlators using recursion.
@@ -74,14 +74,14 @@ TComplex FlowJSPCAnalysis::Recursion(int n, int *harmonic, int mult=1, int skip=
   Int_t counter2 = n-3;
 
   while (counter2 >= skip) {
-	harmonic[nm2] = harmonic[counter1];
-	harmonic[counter1] = hhold;
-	++counter1;
-	hhold = harmonic[counter1];
-	harmonic[counter1] = harmonic[nm2];
-	harmonic[nm2] = hhold + harmonic[nm1];
-	c2 += Recursion(nm1, harmonic, multp1, counter2);
-	--counter2;
+  harmonic[nm2] = harmonic[counter1];
+  harmonic[counter1] = hhold;
+  ++counter1;
+  hhold = harmonic[counter1];
+  harmonic[counter1] = harmonic[nm2];
+  harmonic[nm2] = hhold + harmonic[nm1];
+  c2 += Recursion(nm1, harmonic, multp1, counter2);
+  --counter2;
   }
   harmonic[nm2] = harmonic[counter1];
   harmonic[counter1] = hhold;
@@ -93,8 +93,8 @@ TComplex FlowJSPCAnalysis::Recursion(int n, int *harmonic, int mult=1, int skip=
 
 
 void FlowJSPCAnalysis::CalculateCorrelators(const Int_t fCentBin) {
-	// Loop over the combinations of harmonics and calculate the corresponding SPC num and den.
-	
+  // Loop over the combinations of harmonics and calculate the corresponding SPC num and den.
+  
     // Declare the arrays to later fill all the needed bins for the correlators
     // and the error terms.
   Double_t *dataCorrelation = new Double_t[3];  // cosine, weight, sine.
@@ -105,50 +105,38 @@ void FlowJSPCAnalysis::CalculateCorrelators(const Int_t fCentBin) {
 
   // Int_t fDebugLevel = 0;
   for (Int_t j = 0; j < 12; j++) {
-		if (fHarmosArray[j][0] == 0) {continue;}  // Skip null correlator list.
+    if (fHarmosArray[j][0] == 0) {continue;}  // Skip null correlator list.
 
-		// Calculate the numerator.
-		// if (fDebugLevel > 5) {printf("Calculating numerator.\n");}
-		Int_t hArrayNum[7] = {0};
-		for (int iH = 0; iH < 7; iH++) {hArrayNum[iH] = fHarmosArray[j][iH+1];}
-		Correlation(fHarmosArray[j][0], 7, hArrayNum, dataCorrelation);
-		correlationNum = dataCorrelation[0];
-		weightCorrelationNum = dataCorrelation[1];
+    // Calculate the numerator.
+    // if (fDebugLevel > 5) {printf("Calculating numerator.\n");}
+    Int_t hArrayNum[7] = {0};
+    for (int iH = 0; iH < 7; iH++) {hArrayNum[iH] = fHarmosArray[j][iH+1];}
+    Correlation(fHarmosArray[j][0], 7, hArrayNum, dataCorrelation);
+    correlationNum = dataCorrelation[0];
+    weightCorrelationNum = dataCorrelation[1];
 
-		// Calculate the denominator.
-		// if (fDebugLevel > 5) {printf("Calculating denominator.\n");}
-		Int_t nPartDen = 2*fHarmosArray[j][0];
-		Int_t hArrayDen[14] = {0};
-		for (int iH = 0; iH < 7; iH++) {
-			hArrayDen[2*iH] = hArrayNum[iH];
-			hArrayDen[2*iH+1] = -1*hArrayNum[iH];
-		}
+    // Calculate the denominator.
+    // if (fDebugLevel > 5) {printf("Calculating denominator.\n");}
+    Int_t nPartDen = 2*fHarmosArray[j][0];
+    Int_t hArrayDen[14] = {0};
+    for (int iH = 0; iH < 7; iH++) {
+      hArrayDen[2*iH] = hArrayNum[iH];
+      hArrayDen[2*iH+1] = -1*hArrayNum[iH];
+    }
 
-		Correlation(nPartDen, 14, hArrayDen, dataCorrelation);
-		correlationDenom = dataCorrelation[0];
-		weightCorrelationDenom = dataCorrelation[1];
+    Correlation(nPartDen, 14, hArrayDen, dataCorrelation);
+    correlationDenom = dataCorrelation[0];
+    weightCorrelationDenom = dataCorrelation[1];
 
-		// Histogram filling
+    // Histogram filling
 
     FillHistograms(fCentBin, j, correlationNum, correlationDenom, weightCorrelationNum, weightCorrelationDenom);
-    
-    // mHistRegistry->fill(HIST(centClass)+HIST("fResults"), 2.*(Float_t)(j)+0.5, correlationNum, weightCorrelationNum);
-		// mHistRegistry->get(HIST(Form("Centrality_%d/fResults", 0)))->Fill(2.*(Float_t)(j)+1.5, correlationDenom, weightCorrelationDenom);
-    // mHistRegistry->fill(HIST("Centrality_0/fResults"), 2.*(Float_t)(j)+1.5, correlationDenom, weightCorrelationDenom);
 
-		// mHistRegistry->get(HIST(Form("Centrality_%d/fCovResults", 0)), 4.*(Float_t)(j)+0.5, 
-		// 	correlationNum*correlationDenom, weightCorrelationNum*weightCorrelationDenom);
-		// mHistRegistry->get(HIST(Form("Centrality_%d/fCovResults", 0)), 4.*(Float_t)(j)+1.5, 
-		// 	weightCorrelationNum*weightCorrelationDenom, 1.);
-		// mHistRegistry->get(HIST(Form("Centrality_%d/fCovResults", 0)), 4.*(Float_t)(j)+2.5, weightCorrelationNum, 1.);
-		// mHistRegistry->get(HIST(Form("Centrality_%d/fCovResults", 0)), 4.*(Float_t)(j)+3.5, weightCorrelationDenom, 1.);
-		///
-
-		correlationNum = 0;
-		weightCorrelationNum = 0;
-		correlationDenom = 0;
-		weightCorrelationDenom = 0;
-	}
+    correlationNum = 0;
+    weightCorrelationNum = 0;
+    correlationDenom = 0;
+    weightCorrelationDenom = 0;
+  }
 }
 
 

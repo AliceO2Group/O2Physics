@@ -109,7 +109,7 @@ void FlowJHistManager::CreateHistQA()
     mHistRegistryQA->add("Centrality_00-01/After/histITSNClsInnerBarrel",
                          "Number of ITS clusters in the Inner Barrel",
                          HistType::kTH1I, {axisITSNcls}, true);
-    
+
     const AxisSpec axisITSChi = {500, -0.5, 50.5, "#chi^{2} per cl"};
     mHistRegistryQA->add("Centrality_00-01/After/histITSChi2NCl",
                          "Chi2 per cluster for the ITS track segment",

@@ -34,62 +34,62 @@ using namespace std;
 namespace o2::analysis::PWGCF {
 class FlowJSPCAnalysis {
 public:
-	FlowJSPCAnalysis() = default;
+    FlowJSPCAnalysis() = default;
 
-	void SetHistRegistry(HistogramRegistry *histReg) {mHistRegistry = histReg;}
-	Int_t GetCentBin(float cValue);
-	void CalculateQvectors(const vector<float>& phiAngles, const vector<float>& phiWeights);
-	void Correlation(Int_t c_nPart, Int_t c_nHarmo, Int_t* harmo, Double_t *correlData);
-	void CalculateCorrelators(const Int_t fCentBin);
-	void FillHistograms(const Int_t fCentBin, Int_t ind, Double_t cNum, Double_t cDenom, Double_t wNum, Double_t wDenom);
-	TComplex Recursion(int n, int *harmonic, int mult, int skip);
-	TComplex Q(const Int_t harmN, const Int_t p);
+    void SetHistRegistry(HistogramRegistry *histReg) {mHistRegistry = histReg;}
+    Int_t GetCentBin(float cValue);
+    void CalculateQvectors(const vector<float>& phiAngles, const vector<float>& phiWeights);
+    void Correlation(Int_t c_nPart, Int_t c_nHarmo, Int_t* harmo, Double_t *correlData);
+    void CalculateCorrelators(const Int_t fCentBin);
+    void FillHistograms(const Int_t fCentBin, Int_t ind, Double_t cNum, Double_t cDenom, Double_t wNum, Double_t wDenom);
+    TComplex Recursion(int n, int *harmonic, int mult, int skip);
+    TComplex Q(const Int_t harmN, const Int_t p);
 
-	void CreateHistos() {
-		if (!mHistRegistry) {
-			LOGF(error, "QA histogram registry missing. Quitting...");
-			return;
-		}
-		mHistRegistry->add("FullCentrality", "FullCentrality", HistType::kTH1D, {{100, 0., 100.}}, true);
-		mHistRegistry->add("Centrality_0/fResults", "Numerators and denominators", {HistType::kTProfile, {{24, 0., 24.}} }, true);
-		mHistRegistry->add("Centrality_0/fCovResults", "Covariance N*D", { HistType::kTProfile, {{48, 0., 48.} }}, true);
-		
-		for (UInt_t i = 1; i<8; i++) {
-			mHistRegistry->addClone("Centrality_0/", Form("Centrality_%u/", i));
-		}
-	}
+    void CreateHistos() {
+        if (!mHistRegistry) {
+            LOGF(error, "QA histogram registry missing. Quitting...");
+            return;
+        }
+        mHistRegistry->add("FullCentrality", "FullCentrality", HistType::kTH1D, {{100, 0., 100.}}, true);
+        mHistRegistry->add("Centrality_0/fResults", "Numerators and denominators", {HistType::kTProfile, {{24, 0., 24.}} }, true);
+        mHistRegistry->add("Centrality_0/fCovResults", "Covariance N*D", { HistType::kTProfile, {{48, 0., 48.} }}, true);
+        
+        for (UInt_t i = 1; i<8; i++) {
+            mHistRegistry->addClone("Centrality_0/", Form("Centrality_%u/", i));
+        }
+    }
 
-	void SetCorrSet(Int_t obsInd, Int_t harmo[8]) {
-		for (int i = 0; i < 8; i++) {fHarmosArray[obsInd][i] = harmo[i];}
-	}
-	void SetFullCorrSet(Int_t harmo[12][8]) {
-		memcpy(fHarmosArray, harmo, sizeof(Int_t)*12*8);
-	}
+    void SetCorrSet(Int_t obsInd, Int_t harmo[8]) {
+        for (int i = 0; i < 8; i++) {fHarmosArray[obsInd][i] = harmo[i];}
+    }
+    void SetFullCorrSet(Int_t harmo[12][8]) {
+        memcpy(fHarmosArray, harmo, sizeof(Int_t)*12*8);
+    }
 
 private:
-	const Int_t mNqHarmos = 113;   ///< Highest harmo for Q(n,p): (v8*14part)+1.
-	const Int_t mNqPowers = 15;   ///< Max power for Q(n,p): 14part+1.
-	// array<array<TComplex, mNqPowers>,mNqHarmos> cQvectors;
-	TComplex cQvectors[113][15];
-	HistogramRegistry *mHistRegistry = nullptr;
+    const Int_t mNqHarmos = 113;   ///< Highest harmo for Q(n,p): (v8*14part)+1.
+    const Int_t mNqPowers = 15;   ///< Max power for Q(n,p): 14part+1.
+    // array<array<TComplex, mNqPowers>,mNqHarmos> cQvectors;
+    TComplex cQvectors[113][15];
+    HistogramRegistry *mHistRegistry = nullptr;
 
-	Int_t fHarmosArray[12][8];
+    Int_t fHarmosArray[12][8];
 
-	Double_t fCorrelDenoms[14];
-	static constexpr std::string_view mCentClasses[] = {
-		"Centrality_0/",
-		"Centrality_1/",
-		"Centrality_2/",
-		"Centrality_3/",
-		"Centrality_4/",
-		"Centrality_5/",
-		"Centrality_6/",
-		"Centrality_7/",
-		"Centrality_8/",
-		"Centrality_9/"
-	};
+    Double_t fCorrelDenoms[14];
+    static constexpr std::string_view mCentClasses[] = {
+        "Centrality_0/",
+        "Centrality_1/",
+        "Centrality_2/",
+        "Centrality_3/",
+        "Centrality_4/",
+        "Centrality_5/",
+        "Centrality_6/",
+        "Centrality_7/",
+        "Centrality_8/",
+        "Centrality_9/"
+    };
 
-	ClassDefNV(FlowJSPCAnalysis, 1);
+    ClassDefNV(FlowJSPCAnalysis, 1);
 };
 }
 #endif
