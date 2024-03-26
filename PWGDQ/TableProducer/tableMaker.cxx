@@ -579,11 +579,11 @@ struct TableMaker {
       trackMFT.reserve(mftTracks.size());
       trackMFTExtra.reserve(mftTracks.size());
       // TODO add cuts on the MFT tracks
-      int nDel = 0;
+      // int nDel = 0;
       for (auto& mft : mftTracks) {
         if (false) // for now no cuts
         {
-          nDel++;
+          // nDel++;
         } else { // it passes the cuts and will be saved in the tables
           newMFTTableSize[mft.index()] = trackMFT.lastIndex();
         }

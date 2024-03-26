@@ -444,7 +444,7 @@ struct strangenessFilter {
     int omegacounter = 0;
     int omegalargeRcounter = 0;
     int triggcounterForEstimates = 0;
-    int triggcounter = 0;
+    // int triggcounter = 0;
 
     for (auto& casc : fullCasc) { // loop over cascades
       triggcounterForEstimates = 0;
@@ -593,7 +593,7 @@ struct strangenessFilter {
         if (isTrackFilter && !mTrackSelector.IsSelected(track)) {
           continue;
         }
-        triggcounter++;
+        // triggcounter++;
         keepEvent[1] = true;
       } // end loop over tracks
     }

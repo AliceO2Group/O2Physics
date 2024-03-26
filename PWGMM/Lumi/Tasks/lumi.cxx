@@ -155,14 +155,14 @@ struct lumiTask {
     std::vector<o2::track::TrackParCov> vec_TrkContributos = {};
 
     int nContrib = 0;
-    int nNonContrib = 0;
+    // int nNonContrib = 0;
     for (const auto& unfiltered_track : unfiltered_tracks) {
       if (!unfiltered_track.hasITS()) {
-        nNonContrib++;
+        // nNonContrib++;
         continue;
       }
       if (unfiltered_track.pt() < 0.8 || unfiltered_track.itsNCls() < 5) {
-        nNonContrib++;
+        // nNonContrib++;
         continue;
       }
       vec_globID_contr.push_back(unfiltered_track.globalIndex());

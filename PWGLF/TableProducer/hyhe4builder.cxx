@@ -472,9 +472,9 @@ struct hyHe4Preselector {
   /// This process function ensures that all 3 body candidates are built. It will simply tag everything as true.
   void processBuildAll(aod::Collisions const& collisions, aod::Decay3Bodys const& d3bodys, aod::TracksExtra const&)
   {
-    int64_t eventCounter = 0;
+    // int64_t eventCounter = 0;
     for (const auto& d3body : d3bodys) {
-      eventCounter++;
+      // eventCounter++;
       bool lIsQualityInteresting = false;
       checkTrackQuality<aod::TracksExtra>(d3body, lIsQualityInteresting);
       hyhetags(lIsQualityInteresting, true, true, true, true);
