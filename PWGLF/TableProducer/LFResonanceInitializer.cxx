@@ -18,7 +18,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
+// #include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
@@ -104,6 +104,7 @@ struct reso2initializer {
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", 8, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", true, "Evt sel: check for offline selection"};
   Configurable<bool> ConfEvtTFBorderCut{"ConfEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
+  Configurable<bool> ConfEvtNoITSROBorderCut{"ConfEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
 
   Configurable<std::string> cfgMultName{"cfgMultName", "FT0M", "The name of multiplicity estimator"};
 
@@ -183,7 +184,7 @@ struct reso2initializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
                                                     || (nabs(aod::mcparticle::pdgCode) == 123324); // Xi(1820)-0
 
-  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As>;
+  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
   using ResoRun2Events = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
   using ResoEventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
   using ResoRun2EventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
@@ -854,6 +855,7 @@ struct reso2initializer {
     }
     colCuts.init(&qaRegistry);
     colCuts.setApplyTFBorderCut(ConfEvtTFBorderCut);
+    colCuts.setApplyNoITSROBorderCut(ConfEvtNoITSROBorderCut);
     if (!ConfBypassCCDB) {
       ccdb->setURL(ccdburl.value);
       ccdb->setCaching(true);
@@ -939,7 +941,7 @@ struct reso2initializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
 
     fillTracks<false>(collision, tracks);
   }
@@ -956,7 +958,7 @@ struct reso2initializer {
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
 
     fillTracks<false>(collision, tracks);
   }
@@ -973,7 +975,7 @@ struct reso2initializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), GetEvtPl(collision), GetEvtPlRes(collision, EvtPlDetId, EvtPlRefAId), GetEvtPlRes(collision, EvtPlDetId, EvtPlRefBId), GetEvtPlRes(collision, EvtPlRefAId, EvtPlRefBId), d_bz, bc.timestamp());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), GetEvtPl(collision), GetEvtPlRes(collision, EvtPlDetId, EvtPlRefAId), GetEvtPlRes(collision, EvtPlDetId, EvtPlRefBId), GetEvtPlRes(collision, EvtPlRefAId, EvtPlRefBId), d_bz, bc.timestamp());
 
     fillTracks<false>(collision, tracks);
   }
@@ -1101,7 +1103,7 @@ struct reso2initializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
 
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
@@ -1120,7 +1122,7 @@ struct reso2initializer {
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
 
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
@@ -1140,7 +1142,7 @@ struct reso2initializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
 
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
@@ -1161,7 +1163,7 @@ struct reso2initializer {
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
 
     fillTracks<false>(collision, tracks);
     fillV0s<false>(collision, V0s, tracks);
@@ -1180,7 +1182,7 @@ struct reso2initializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
@@ -1202,7 +1204,7 @@ struct reso2initializer {
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
@@ -1224,7 +1226,7 @@ struct reso2initializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
@@ -1247,7 +1249,7 @@ struct reso2initializer {
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
@@ -1271,7 +1273,7 @@ struct reso2initializer {
       return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), CentEst(collision), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
@@ -1297,7 +1299,7 @@ struct reso2initializer {
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), ComputeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., d_bz, bc.timestamp());
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);

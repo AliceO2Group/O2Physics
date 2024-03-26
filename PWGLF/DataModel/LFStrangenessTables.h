@@ -88,7 +88,7 @@ namespace dautrack
 {
 //______________________________________________________
 // Daughter track declarations for derived data analysis
-DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t);          //! detector map for reference
+DECLARE_SOA_COLUMN(DetectorMap, detectorMap, uint8_t);          //! detector map for reference (see DetectorMapEnum)
 DECLARE_SOA_COLUMN(ITSClusterSizes, itsClusterSizes, uint32_t); //! ITS cluster sizes per layer
 DECLARE_SOA_COLUMN(TPCClusters, tpcClusters, uint8_t);          //! N TPC clusters
 DECLARE_SOA_COLUMN(TPCCrossedRows, tpcCrossedRows, uint8_t);    //! N TPC clusters

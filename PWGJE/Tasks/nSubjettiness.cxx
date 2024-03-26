@@ -129,12 +129,6 @@ struct NSubjettinessTask {
   std::vector<float> nSub_CA_results;
   std::vector<float> nSub_CASD_results;
 
-  std::vector<fastjet::PseudoJet> dummyVector;
-  fastjet::JetDefinition dummyJetDef{fastjet::antikt_algorithm, 0.1, fastjet::E_scheme, fastjet::Best};
-  fastjet::GhostedAreaSpec ghostareaspec{0.0, 1, 0.05};
-  fastjet::AreaDefinition dummyAreaDef{fastjet::active_area, ghostareaspec};
-  fastjet::ClusterSequenceArea clusterSeq{dummyVector, dummyJetDef, dummyAreaDef};
-
   void init(InitContext const&)
   {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/c)"};
@@ -204,7 +198,7 @@ struct NSubjettinessTask {
 
   // function that converts a jet from the O2Physics jet table into a pseudojet; the fastjet cluster sequence of the jet needs to be given as input and will be modified by the function to save the clustering information
   template <bool isHF, typename T, typename U, typename V>
-  fastjet::PseudoJet jetToPseudoJet(T const& jet, U const& tracks, V const candidates)
+  fastjet::ClusterSequenceArea jetToPseudoJet(T const& jet, U const& tracks, V const candidates, fastjet::PseudoJet& pseudoJet)
   {
     std::vector<fastjet::PseudoJet> jetConstituents;
     for (auto& jetConstituent : jet.template tracks_as<U>()) {
@@ -216,16 +210,19 @@ struct NSubjettinessTask {
       }
     }
     std::vector<fastjet::PseudoJet> jetReclustered;
-    clusterSeq = jetReclusterer.findJets(jetConstituents, jetReclustered);
+    fastjet::ClusterSequenceArea clusterSeq = jetReclusterer.findJets(jetConstituents, jetReclustered);
     jetReclustered = sorted_by_pt(jetReclustered);
-    return jetReclustered[0];
+    pseudoJet = jetReclustered[0];
+    return clusterSeq;
   }
 
   // function that returns the N-subjettiness ratio and the distance betewwen the two axes considered for tau2, in the form of a vector
-  template <typename AxesTypeArg>
-  std::vector<float> getNSubjettiness(fastjet::PseudoJet jet, float const& jetR, AxesTypeArg const& axesType, bool softDrop)
+  template <bool isHF, typename T, typename U, typename V, typename AxesTypeArg>
+  std::vector<float> getNSubjettiness(T const& jet, U const& tracks, V const& candidates, float const& jetR, AxesTypeArg const& axesType, bool softDrop)
   {
-    if (jet.constituents().size() < 2) { // this analsysis requires at least 2 subjets in the jet which in turn requires at least two constituents
+    fastjet::PseudoJet pseudoJet;
+    fastjet::ClusterSequenceArea clusterSeq(jetToPseudoJet<isHF>(jet, tracks, candidates, pseudoJet));
+    if (pseudoJet.constituents().size() < 2) { // this analsysis requires at least 2 subjets in the jet which in turn requires at least two constituents
       return {-1.0, -1.0, -1.0};         // error values
     }
     fastjet::contrib::Nsubjettiness nSub_1(1, axesType, fastjet::contrib::NormalizedMeasure(1.0, jetR));
@@ -233,13 +230,13 @@ struct NSubjettinessTask {
 
     if (softDrop) {
       fastjet::contrib::SoftDrop softdropAlgo(SD_beta, SD_z_cut);
-      jet = softdropAlgo(jet);
-      if (jet.constituents().size() < 2) { // this analsysis requires at least 2 subjets in the jet which in turn requires at least two constituents
+      pseudoJet = softdropAlgo(pseudoJet);
+      if (pseudoJet.constituents().size() < 2) { // this analsysis requires at least 2 subjets in the jet which in turn requires at least two constituents
         return {-2.0, -2.0, -2.0};         // error values
       }
     }
-    float tau1 = nSub_1.result(jet);
-    float tau2 = nSub_2.result(jet);
+    float tau1 = nSub_1.result(pseudoJet);
+    float tau2 = nSub_2.result(pseudoJet);
     std::vector<fastjet::PseudoJet> axes_nSub_2 = nSub_2.currentAxes(); // gets the two axes used in the 2-subjettiness calculation
 
     float DeltaR = axes_nSub_2[0].delta_R(axes_nSub_2[1]); // distance between axes
@@ -253,10 +250,9 @@ struct NSubjettinessTask {
   template <bool isMCP, bool isHF, typename T, typename U, typename V>
   void processJet(T const& jet, U const& tracks, V const& candidates, float weight = 1.0)
   {
-    fastjet::PseudoJet pseudoJet(jetToPseudoJet<isHF>(jet, tracks, candidates));
-    nSub_Kt_results = getNSubjettiness(pseudoJet, jet.r() / 100., fastjet::contrib::KT_Axes(), false);
-    nSub_CA_results = getNSubjettiness(pseudoJet, jet.r() / 100., fastjet::contrib::CA_Axes(), false);
-    nSub_CASD_results = getNSubjettiness(pseudoJet, jet.r() / 100., fastjet::contrib::CA_Axes(), true);
+    nSub_Kt_results = getNSubjettiness<isHF>(jet, tracks, candidates, jet.r() / 100., fastjet::contrib::KT_Axes(), false);
+    nSub_CA_results = getNSubjettiness<isHF>(jet, tracks, candidates, jet.r() / 100., fastjet::contrib::CA_Axes(), false);
+    nSub_CASD_results = getNSubjettiness<isHF>(jet, tracks, candidates, jet.r() / 100., fastjet::contrib::CA_Axes(), true);
 
     if constexpr (isMCP) {
 

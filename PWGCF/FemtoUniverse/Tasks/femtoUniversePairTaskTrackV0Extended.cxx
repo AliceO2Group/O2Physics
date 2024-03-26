@@ -349,7 +349,7 @@ struct femtoUniversePairTaskTrackV0Extended {
 
       const int multCol = collision1.multNtr();
 
-      auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsOne = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
@@ -359,7 +359,7 @@ struct femtoUniversePairTaskTrackV0Extended {
         continue;
       }
 
-      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
         if (ConfIsCPR.value) {
           if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla1, femtoUniverseContainer::EventType::mixed)) {
             continue;

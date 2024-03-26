@@ -1209,8 +1209,7 @@ struct tofSpectra {
     }
 
     //************************************RD**************************************************
-    float multiplicity = 0.f;
-
+    const float multiplicity = getMultiplicity(collision);
     //************************************RD**************************************************
 
     if (mcParticle.pdgCode() != PDGs[i]) {

@@ -26,6 +26,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/Multiplicity.h"
 
 namespace o2::aod
 {
@@ -42,6 +43,7 @@ DECLARE_SOA_COLUMN(BMagField, bMagField, float);   //! Magnetic field
 } // namespace resocollision
 DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOL",
                   o2::soa::Index<>,
+                  o2::aod::mult::MultNTracksPV,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
