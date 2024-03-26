@@ -99,6 +99,7 @@ struct phipbpb {
   ConfigurableAxis configThnAxisPhiminusPsi{"configThnAxisPhiminusPsi", {6, 0.0, TMath::Pi()}, "#phi - #psi"};
   ConfigurableAxis configThnAxisV2{"configThnAxisV2", {200, -1, 1}, "V2"};
   ConfigurableAxis configThnAxisSA{"configThnAxisSA", {200, -1, 1}, "SA"};
+  ConfigurableAxis configThnAxiscosthetaSA{"configThnAxiscosthetaSA", {200, 0, 1}, "costhetaSA"};
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
   Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
   Configurable<bool> isMC{"isMC", false, "use MC"};
@@ -144,6 +145,7 @@ struct phipbpb {
     const AxisSpec thnAxisCentrality{configThnAxisCentrality, "Centrality (%)"};
     const AxisSpec thnAxisV2{configThnAxisV2, "V2"};
     const AxisSpec thnAxisSA{configThnAxisSA, "SA"};
+    const AxisSpec thnAxiscosthetaSA{configThnAxiscosthetaSA, "costhetaSA"};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec resAxis = {400, -2, 2, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
@@ -168,6 +170,7 @@ struct phipbpb {
     histos.add("hSparseV2SASameEvent_costhetastarOP", "hSparseV2SASameEvent_costhetastarOP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
     histos.add("hSparseV2SASameEvent_costhetastarIP", "hSparseV2SASameEvent_costhetastarIP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
     histos.add("hSparseV2SASameEvent_SA", "hSparseV2SASameEvent_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+    histos.add("hSparseV2SASameEvent_costheta_SA", "hSparseV2SASameEvent_costheta_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxiscosthetaSA, thnAxisPhiminusPsi, thnAxisCentrality});
     histos.add("hSparseV2SASameEvent_SA_A0", "hSparseV2SASameEvent_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
     histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
 
@@ -181,6 +184,7 @@ struct phipbpb {
     histos.add("hSparseV2SAMixedEvent_costhetastarOP", "hSparseV2SAMixedEvent_costhetastarOP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
     histos.add("hSparseV2SAMixedEvent_costhetastarIP", "hSparseV2SAMixedEvent_costhetastarIP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
     histos.add("hSparseV2SAMixedEvent_SA", "hSparseV2SAMixedEvent_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+    histos.add("hSparseV2SAMixedEvent_costheta_SA", "hSparseV2SAMixedEvent_costheta_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxiscosthetaSA, thnAxisPhiminusPsi, thnAxisCentrality});
     histos.add("hSparseV2SAMixedEvent_SA_A0", "hSparseV2SAMixedEvent_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
     histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
 
@@ -200,12 +204,14 @@ struct phipbpb {
       histos.add("hSparseV2SASameEvent_costhetastarOP_MCGen", "hSparseV2SASameEvent_costhetastarOP_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
       histos.add("hSparseV2SASameEvent_costhetastarIP_MCGen", "hSparseV2SASameEvent_costhetastarIP_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
       histos.add("hSparseV2SASameEvent_SA_MCGen", "hSparseV2SASameEvent_SA_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SASameEvent_costheta_SA_MCGen", "hSparseV2SASameEvent_costheta_SA_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxiscosthetaSA, thnAxisPhiminusPsi, thnAxisCentrality});
       histos.add("hSparseV2SASameEvent_SA_A0_MCGen", "hSparseV2SASameEvent_SA_A0_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
       histos.add("hSparseV2SASameEvent_V2_MCGen", "hSparseV2SASameEvent_V2_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
 
       histos.add("hSparseV2SASameEvent_costhetastarOP_MCRec", "hSparseV2SASameEvent_costhetastarOP_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
       histos.add("hSparseV2SASameEvent_costhetastarIP_MCRec", "hSparseV2SASameEvent_costhetastarIP_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
       histos.add("hSparseV2SASameEvent_SA_MCRec", "hSparseV2SASameEvent_SA_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SASameEvent_costheta_SA_MCRec", "hSparseV2SASameEvent_costheta_SA_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxiscosthetaSA, thnAxisPhiminusPsi, thnAxisCentrality});
       histos.add("hSparseV2SASameEvent_SA_A0_MCRec", "hSparseV2SASameEvent_SA_A0_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
       histos.add("hSparseV2SASameEvent_V2_MCRec", "hSparseV2SASameEvent_V2_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
     }
@@ -438,6 +444,7 @@ struct phipbpb {
         auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
         histos.fill(HIST("hSparseV2SASameEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
+        histos.fill(HIST("hSparseV2SASameEvent_costheta_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
         histos.fill(HIST("hSparseV2SASameEvent_costhetastarIP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
         histos.fill(HIST("hSparseV2SASameEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
         histos.fill(HIST("hSparseV2SASameEvent_SA_A0"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
@@ -519,6 +526,7 @@ struct phipbpb {
         auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
         histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
+        histos.fill(HIST("hSparseV2SAMixedEvent_costheta_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
         histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarIP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
         histos.fill(HIST("hSparseV2SAMixedEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
         histos.fill(HIST("hSparseV2SAMixedEvent_SA_A0"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
@@ -569,8 +577,14 @@ struct phipbpb {
         if (!selectionPair(track1, track2)) {
           continue;
         }
-        KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
-        KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+        if (track1.sign() > 0 && track2.sign() < 0) {
+          KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+          KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+        } else if (track1.sign() < 0 && track2.sign() > 0) {
+          KaonMinus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+          KaonPlus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+        }
+
         PhiMesonMother = KaonPlus + KaonMinus;
         if (TMath::Abs(PhiMesonMother.Rapidity()) > confRapidity) {
           continue;
@@ -592,6 +606,7 @@ struct phipbpb {
         auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
         histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
+        histos.fill(HIST("hSparseV2MixedEvent_costheta_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
         histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarIP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
         histos.fill(HIST("hSparseV2SAMixedEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
         histos.fill(HIST("hSparseV2SAMixedEvent_SA_A0"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
@@ -704,8 +719,14 @@ struct phipbpb {
                 continue;
               }
               oldindex = mothertrack1.globalIndex();
-              KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
-              KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+              if (track1.sign() > 0 && track2.sign() < 0) {
+                KaonPlus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+                KaonMinus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+              }
+              if (track1.sign() < 0 && track2.sign() > 0) {
+                KaonMinus = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+                KaonPlus = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa);
+              }
               PhiMesonMother = KaonPlus + KaonMinus;
 
               if (TMath::Abs(PhiMesonMother.Rapidity()) > confRapidity) {
@@ -727,6 +748,7 @@ struct phipbpb {
               auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
               auto v2 = TMath::Cos(2.0 * phiminuspsi);
               histos.fill(HIST("hSparseV2SASameEvent_costhetastarOP_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
+              histos.fill(HIST("hSparseV2SASameEvent_costheta_SA_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
               histos.fill(HIST("hSparseV2SASameEvent_costhetastarIP_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
               histos.fill(HIST("hSparseV2SASameEvent_SA_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
               histos.fill(HIST("hSparseV2SASameEvent_SA_A0_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
@@ -777,6 +799,7 @@ struct phipbpb {
           auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
           auto v2 = TMath::Cos(2.0 * phiminuspsi);
           histos.fill(HIST("hSparseV2SASameEvent_costhetastarOP_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
+          histos.fill(HIST("hSparseV2SASameEvent_costheta_SA_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
           histos.fill(HIST("hSparseV2SASameEvent_costhetastarIP_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
           histos.fill(HIST("hSparseV2SASameEvent_SA_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
           histos.fill(HIST("hSparseV2SASameEvent_SA_A0_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
