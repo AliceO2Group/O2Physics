@@ -943,13 +943,13 @@ struct derivedlambdakzeroanalysis {
       // fill AP plot for all V0s
       histos.fill(HIST("GeneralQA/h2dArmenterosAll"), v0.alpha(), v0.qtarm());
 
-      float ptmc = RecoDecay::sqrtSumOfSquares(v0.pxPosMC()+v0.pxNegMC(), v0.pyPosMC()+v0.pyNegMC());
+      float ptmc = RecoDecay::sqrtSumOfSquares(v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC());
       float ymc = 1e-3;
       if (v0.pdgCode() == 310)
-        ymc = RecoDecay::y(std::array{v0.pxPosMC()+v0.pxNegMC(), v0.pyPosMC()+v0.pyNegMC(), v0.pzPosMC()+v0.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
+        ymc = RecoDecay::y(std::array{v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC(), v0.pzPosMC() + v0.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
       else if ( TMath::Abs(v0.pdgCode()) == 3122)
-        ymc = RecoDecay::y(std::array{v0.pxPosMC()+v0.pxNegMC(), v0.pyPosMC()+v0.pyNegMC(), v0.pzPosMC()+v0.pzNegMC()}, o2::constants::physics::MassLambda);
-      
+        ymc = RecoDecay::y(std::array{v0.pxPosMC() + v0.pxNegMC(), v0.pyPosMC() + v0.pyNegMC(), v0.pzPosMC() + v0.pzNegMC()}, o2::constants::physics::MassLambda);
+
       uint64_t selMap = computeReconstructionBitmap(v0, collision, ymc, ymc, ptmc);
       selMap = selMap | computeMCAssociation(v0);
 
