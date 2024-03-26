@@ -211,11 +211,11 @@ struct lambdakzeromcfinder {
             auto const& thisDaughterTracks = daughter.template tracks_as<LabeledTracks>();
             bool tpcOnlyFound = false;
             for (auto const& track : thisDaughterTracks) {
-              if (track.detectorMap() == o2::aod::track::TPC){ 
-                if(tpcOnlyFound==true && storeSingleTPCOnlyProng)
+              if (track.detectorMap() == o2::aod::track::TPC) {
+                if (tpcOnlyFound == true && storeSingleTPCOnlyProng)
                   continue; // in case a previous TPC-only version of this mcParticle was found + we want to store only one copy, skip
-                if(skipTPConly)
-                  continue; 
+                if (skipTPConly)
+                  continue;
                 tpcOnlyFound = true;
               }
               if (track.sign() > 0 && (track.hasTPC() || !requireTPC)) {
@@ -228,11 +228,11 @@ struct lambdakzeromcfinder {
             auto const& thisDaughterTracks = daughter.template tracks_as<LabeledTracks>();
             bool tpcOnlyFound = false;
             for (auto const& track : thisDaughterTracks) {
-              if (track.detectorMap() == o2::aod::track::TPC){ 
-                if(tpcOnlyFound==true && storeSingleTPCOnlyProng)
+              if (track.detectorMap() == o2::aod::track::TPC) {
+                if (tpcOnlyFound == true && storeSingleTPCOnlyProng)
                   continue; // in case a previous TPC-only version of this mcParticle was found + we want to store only one copy, skip
-                if(skipTPConly)
-                  continue; 
+                if (skipTPConly)
+                  continue;
                 tpcOnlyFound = true;
               }
               if (track.sign() < 0 && (track.hasTPC() || !requireTPC)) {
