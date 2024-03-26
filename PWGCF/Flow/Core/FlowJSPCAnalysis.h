@@ -16,6 +16,7 @@
 #define PWGCF_FLOW_CORE_FLOWJSPCANALYSIS_H
 
 /* Header files. */
+#include <iostream>
 #include <array>
 #include <vector>
 #include <TComplex.h>

@@ -16,6 +16,7 @@
 #define PWGCF_FLOW_CORE_FLOWJHISTMANAGER_H_
 
 /* Header files. */
+#include <iostream>
 #include <array>
 #include <string>
 #include <string_view>
