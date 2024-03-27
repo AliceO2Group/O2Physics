@@ -92,6 +92,8 @@ struct derivedlambdakzeroanalysis {
 
   // Track quality
   Configurable<int> minTPCrows{"minTPCrows", 70, "minimum TPC crossed rows"};
+  Configurable<int> minITSclusters{"minITSclusters", -1, "minimum ITS clusters"};
+  Configurable<bool> skipTPConly{"skipTPConly", false, "skip V0s comprised of at least one TPC only prong"};
   Configurable<bool> requirePosITSonly{"requirePosITSonly", false, "require that positive track is ITSonly (overrides TPC quality)"};
   Configurable<bool> requireNegITSonly{"requireNegITSonly", false, "require that negative track is ITSonly (overrides TPC quality)"};
 
@@ -104,7 +106,7 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> doCompleteQA{"doCompleteQA", false, "do topological variable QA histograms"};
   Configurable<bool> doTPCQA{"doTPCQA", false, "do TPC QA histograms"};
   Configurable<bool> doTOFQA{"doTOFQA", false, "do TOF QA histograms"};
-  Configurable<bool> doIDetectPropQA{"doIDetectPropQA", false, "do Detector/ITS map QA"};
+  Configurable<bool> doDetectPropQA{"doDetectPropQA", false, "do Detector/ITS map QA"};
 
   Configurable<bool> doPlainQA{"doPlainQA", true, "do simple 1D QA of candidates"};
   Configurable<float> qaMinPt{"qaMinPt", 0.0f, "minimum pT for QA plots"};
@@ -180,10 +182,14 @@ struct derivedlambdakzeroanalysis {
                               selK0ShortCTau,
                               selLambdaCTau,
                               selK0ShortArmenteros,
-                              selPosGoodTPCTrack,
-                              selNegGoodTPCTrack,
+                              selPosGoodTPCTrack,    // at least min # TPC rows
+                              selNegGoodTPCTrack,    // at least min # TPC rows
+                              selPosGoodITSTrack,    // at least min # ITS clusters
+                              selNegGoodITSTrack,    // at least min # ITS clusters
                               selPosItsOnly,
                               selNegItsOnly,
+                              selPosNotTPCOnly,
+                              selNegNotTPCOnly,
                               selConsiderK0Short,    // for mc tagging
                               selConsiderLambda,     // for mc tagging
                               selConsiderAntiLambda, // for mc tagging
@@ -225,20 +231,19 @@ struct derivedlambdakzeroanalysis {
     maskLambdaSpecific = (uint64_t(1) << selLambdaRapidity) | (uint64_t(1) << selLambdaCTau) | (uint64_t(1) << selConsiderLambda);
     maskAntiLambdaSpecific = (uint64_t(1) << selLambdaRapidity) | (uint64_t(1) << selLambdaCTau) | (uint64_t(1) << selConsiderAntiLambda);
 
-    // ask for specific TPC PID selections
-
+    // ask for specific TPC/TOF PID selections
     maskTrackProperties = 0;
     if (requirePosITSonly) {
-      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selPosItsOnly);
+      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selPosItsOnly) | (uint64_t(1) << selPosGoodITSTrack);
     } else {
-      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selPosGoodTPCTrack);
+      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selPosGoodTPCTrack) | (uint64_t(1) << selPosGoodITSTrack);
       // TPC signal is available: ask for positive track PID
       if (TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDPositivePion);
         maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDPositiveProton);
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDPositivePion);
       }
-
+      // TOF PID 
       if (TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaPositivePionK0Short) | (uint64_t(1) << selTOFDeltaTPositivePionK0Short);
       if (TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
@@ -247,22 +252,28 @@ struct derivedlambdakzeroanalysis {
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaPositivePionLambda) | (uint64_t(1) << selTOFDeltaTPositivePionLambda);
     }
     if (requireNegITSonly) {
-      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selNegItsOnly);
+      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selNegItsOnly) | (uint64_t(1) << selNegGoodITSTrack);
     } else {
-      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selNegGoodTPCTrack);
+      maskTrackProperties = maskTrackProperties | (uint64_t(1) << selNegGoodTPCTrack) | (uint64_t(1) << selNegGoodITSTrack);
       // TPC signal is available: ask for negative track PID
       if (TpcPidNsigmaCut < 1e+5) { // safeguard for no cut
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTPCPIDNegativePion);
         maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDNegativePion);
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDNegativeProton);
       }
-
+      // TOF PID 
       if (TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaNegativePionK0Short) | (uint64_t(1) << selTOFDeltaTNegativePionK0Short);
       if (TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
         maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativePionLambda) | (uint64_t(1) << selTOFDeltaTNegativePionLambda);
       if (TofPidNsigmaCutLaPi < 1e+5) // safeguard for no cut
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativeProtonLambda) | (uint64_t(1) << selTOFDeltaTNegativeProtonLambda);
+    }
+
+    if(skipTPConly){
+        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
+        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
+        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
     }
 
     // Primary particle selection, central to analysis
@@ -423,7 +434,7 @@ struct derivedlambdakzeroanalysis {
           histos.add("K0Short/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
           histos.add("K0Short/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
         }
-        if (doIDetectPropQA) {
+        if (doDetectPropQA) {
           histos.add("K0Short/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
           histos.add("K0Short/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
         }
@@ -440,7 +451,7 @@ struct derivedlambdakzeroanalysis {
           histos.add("Lambda/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
           histos.add("Lambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
         }
-        if (doIDetectPropQA) {
+        if (doDetectPropQA) {
           histos.add("Lambda/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
           histos.add("Lambda/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
         }
@@ -457,7 +468,7 @@ struct derivedlambdakzeroanalysis {
           histos.add("AntiLambda/h2dPtVsNch", "h2dPtVsNch", kTH2F, {axisMonteCarloNch, axisPt});
           histos.add("AntiLambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2F, {axisMonteCarloNch, axisPt});
         }
-        if (doIDetectPropQA) {
+        if (doDetectPropQA) {
           histos.add("AntiLambda/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
           histos.add("AntiLambda/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnF, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
         }
@@ -478,6 +489,9 @@ struct derivedlambdakzeroanalysis {
       histos.add("h2dGenOmegaMinus", "h2dGenOmegaMinus", kTH2D, {axisCentrality, axisPt});
       histos.add("h2dGenOmegaPlus", "h2dGenOmegaPlus", kTH2D, {axisCentrality, axisPt});
     }
+
+    // inspect histogram sizes, please
+    histos.print();
   }
 
   template <typename TV0, typename TCollision>
@@ -507,6 +521,12 @@ struct derivedlambdakzeroanalysis {
 
     auto posTrackExtra = v0.template posTrackExtra_as<dauTracks>();
     auto negTrackExtra = v0.template negTrackExtra_as<dauTracks>();
+
+    // ITS quality flags
+    if (posTrackExtra.itsNCls() >= minITSclusters)
+      bitset(bitMap, selPosGoodITSTrack);
+    if (negTrackExtra.itsNCls() >= minITSclusters)
+      bitset(bitMap, selNegGoodITSTrack);
 
     // TPC quality flags
     if (posTrackExtra.tpcCrossedRows() >= minTPCrows)
@@ -561,6 +581,12 @@ struct derivedlambdakzeroanalysis {
       bitset(bitMap, selPosItsOnly);
     if (negTrackExtra.tpcCrossedRows() < 1)
       bitset(bitMap, selNegItsOnly);
+
+    // TPC only tag
+    if (posTrackExtra.detectorMap() != o2::aod::track::TPC)
+      bitset(bitMap, selPosNotTPCOnly);
+    if (negTrackExtra.detectorMap() != o2::aod::track::TPC)
+      bitset(bitMap, selNegNotTPCOnly);
 
     // proper lifetime
     if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < lifetimecut->get("lifetimecutLambda"))
@@ -705,7 +731,7 @@ struct derivedlambdakzeroanalysis {
             histos.fill(HIST("K0Short/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTK0Pi());
           }
         }
-        if (doIDetectPropQA) {
+        if (doDetectPropQA) {
           histos.fill(HIST("K0Short/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), v0.pt());
           histos.fill(HIST("K0Short/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), v0.pt());
         }
@@ -748,7 +774,7 @@ struct derivedlambdakzeroanalysis {
             histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPi());
           }
         }
-        if (doIDetectPropQA) {
+        if (doDetectPropQA) {
           histos.fill(HIST("Lambda/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), v0.pt());
           histos.fill(HIST("Lambda/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), v0.pt());
         }
@@ -790,7 +816,7 @@ struct derivedlambdakzeroanalysis {
             histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPr());
           }
         }
-        if (doIDetectPropQA) {
+        if (doDetectPropQA) {
           histos.fill(HIST("AntiLambda/h4dPosDetectPropVsCentrality"), centrality, posTrackExtra.detectorMap(), posTrackExtra.itsClusterMap(), v0.pt());
           histos.fill(HIST("AntiLambda/h4dNegDetectPropVsCentrality"), centrality, negTrackExtra.detectorMap(), negTrackExtra.itsClusterMap(), v0.pt());
         }
