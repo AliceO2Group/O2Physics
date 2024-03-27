@@ -74,7 +74,6 @@ struct NucleusCandidate {
   float ITSchi2;
   float TPCchi2;
   uint16_t flags;
-  float absoDecL;
   uint8_t TPCfindableCls;
   uint8_t TPCcrossedRows;
   uint8_t ITSclsMap;
@@ -646,8 +645,8 @@ struct nucleiSpectra {
       } else {
         c.flags |= kIsSecondaryFromMaterial;
       }
-      c.absoDecL = computeAbsoDecL(particle);
-      nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()], c.absoDecL);
+      float absoDecL = computeAbsoDecL(particle);
+      nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()], absoDecL);
     }
 
     int index{0};
