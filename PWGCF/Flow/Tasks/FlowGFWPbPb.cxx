@@ -78,9 +78,7 @@ struct FlowGFWPbPb
 
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;  // collisions filter
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;  // tracks filter
-
-  
-
+ 
   void init(InitContext const&)  // Initialization
   {
     ccdb->setURL(url.value);
@@ -99,16 +97,13 @@ struct FlowGFWPbPb
     registry.add("c26", ";Centrality  (%) ; C_{2}{6}", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("c28", ";Centrality  (%) ; C_{2}{8}", {HistType::kTProfile, {axisMultiplicity}});
 
-
     fGFW->AddRegion("full", -0.8, 0.8, 1, 1);  // eta region -0.8 to 0.8
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 -2 -2}", "ChFull24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 -2 -2 -2}", "ChFull26", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 2  -2 -2 -2 -2}", "ChFull28", kFALSE));
 
-    fGFW->CreateRegions();  // finalize the initialization
-
-    
+    fGFW->CreateRegions();  // finalize the initialization    
   }
 
   template <char... chars>
@@ -155,7 +150,6 @@ struct FlowGFWPbPb
     FillProfile(corrconfigs.at(1), HIST("c24"), cent);
     FillProfile(corrconfigs.at(2), HIST("c26"), cent);
     FillProfile(corrconfigs.at(3), HIST("c28"), cent);
-
   }
 };
 
