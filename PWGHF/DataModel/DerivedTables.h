@@ -665,6 +665,14 @@ DECLARE_SOA_TABLE(StoredHf3PSels, "AOD1", "HF3PSEL", //! Table with candidate se
                   hf_cand_sel::CandidateSelFlag,
                   soa::Marker<3>);
 
+DECLARE_SOA_TABLE(Hf3PMls, "AOD", "HF3PML", //! Table with candidate selection ML scores
+                  hf_cand_mc::MlScores,
+                  soa::Marker<2>);
+
+DECLARE_SOA_TABLE(StoredHf3PMls, "AOD1", "HF3PML", //! Table with candidate selection ML scores (stored version)
+                  hf_cand_mc::MlScores,
+                  soa::Marker<3>);
+
 DECLARE_SOA_TABLE(Hf3PIds, "AOD", "HF3PID", //! Table with global indices for candidates
                   hf_cand::CollisionId,
                   hf_track_index::Prong0Id,

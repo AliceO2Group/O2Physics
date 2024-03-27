@@ -51,7 +51,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   Configurable<bool> fillCandidatePar{"fillCandidatePar", true, "Fill candidate parameters"};
   Configurable<bool> fillCandidateParE{"fillCandidateParE", true, "Fill candidate extended parameters"};
   Configurable<bool> fillCandidateSel{"fillCandidateSel", true, "Fill candidate selection flags"};
-  Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML flags"};
+  Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill candidate indices"};
   Configurable<bool> fillCandidateMc{"fillCandidateMc", true, "Fill candidate MC info"};
   Configurable<bool> fillCollBase{"fillCollBase", true, "Fill collision base properties"};
