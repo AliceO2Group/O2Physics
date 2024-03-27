@@ -36,6 +36,7 @@
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetHFUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -65,6 +66,8 @@ struct JetDerivedDataProducerTask {
   Produces<aod::JD0PIds> jD0ParticleIdsTable;
   Produces<aod::JLcIds> jLcIdsTable;
   Produces<aod::JLcPIds> jLcParticleIdsTable;
+  Produces<aod::JV0Ids> jV0IdsTable;
+  Produces<aod::JV0PIds> jV0ParticleIdsTable;
 
   Preslice<aod::EMCALClusterCells> perClusterCells = aod::emcalclustercell::emcalclusterId;
   Preslice<aod::EMCALMatchedTracks> perClusterTracks = aod::emcalclustercell::emcalclusterId;
@@ -212,29 +215,41 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processClusters, "produces derived cluster tables", false);
 
-  void processD0(aod::HfD0Ids::iterator const& D0, soa::Join<aod::Collisions, aod::EvSels> const&, aod::Tracks const&)
+  void processD0(aod::HfD0Ids::iterator const& D0)
   {
     jD0IdsTable(D0.collisionId(), D0.prong0Id(), D0.prong1Id());
   }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processD0, "produces derived bunch crossing table for D0 candidates", false);
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processD0, "produces derived index for D0 candidates", false);
 
-  void processD0MC(aod::HfD0PIds::iterator const& D0, aod::McCollisions const&, aod::McParticles const&)
+  void processD0MC(aod::HfD0PIds::iterator const& D0)
   {
     jD0ParticleIdsTable(D0.mcCollisionId(), D0.mcParticleId());
   }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processD0MC, "produces derived bunch crossing table for D0 particles", false);
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processD0MC, "produces derived index for D0 particles", false);
 
-  void processLc(aod::Hf3PIds::iterator const& Lc, soa::Join<aod::Collisions, aod::EvSels> const&, aod::Tracks const&)
+  void processLc(aod::Hf3PIds::iterator const& Lc)
   {
     jLcIdsTable(Lc.collisionId(), Lc.prong0Id(), Lc.prong1Id(), Lc.prong2Id());
   }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processLc, "produces derived bunch crossing table for Lc candidates", false);
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processLc, "produces derived index for Lc candidates", false);
 
-  void processLcMC(aod::Hf3PPIds::iterator const& Lc, aod::McCollisions const&, aod::McParticles const&)
+  void processLcMC(aod::Hf3PPIds::iterator const& Lc)
   {
     jLcParticleIdsTable(Lc.mcCollisionId(), Lc.mcParticleId());
   }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processLcMC, "produces derived bunch crossing table for Lc particles", false);
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processLcMC, "produces derived index for Lc particles", false);
+
+  void processV0(aod::V0Indices::iterator const& V0)
+  {
+    jV0IdsTable(V0.collisionId(), V0.posTrackId(), V0.negTrackId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processV0, "produces derived index for V0 candidates", false);
+
+  void processV0MC(aod::JV0McPIs::iterator const& V0)
+  {
+    jV0ParticleIdsTable(V0.mcCollisionParentId(), V0.mcParticleParentId());
+  }
+  PROCESS_SWITCH(JetDerivedDataProducerTask, processV0MC, "produces derived index for V0 particles", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

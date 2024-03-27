@@ -26,6 +26,7 @@ void fastjetutilities::setFastJetUserInfo(std::vector<fastjet::PseudoJet>& const
     if (status == static_cast<int>(JetConstituentStatus::candidateHF)) {
       i = 0;
     }
+    // TODO : add V0s
     constituents.back().set_user_index(i); // FIXME: needed for constituent subtraction, but need to be quite careful to make sure indices dont overlap between tracks, clusters and HF candidates. Current solution might not be optimal
   }
 }
