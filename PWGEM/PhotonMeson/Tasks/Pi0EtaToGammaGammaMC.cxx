@@ -54,6 +54,9 @@ using MyDalitzEE = MyDalitzEEs::iterator;
 using MyDalitzMuMus = soa::Join<aod::DalitzMuMus, aod::DalitzMuMuEMEventIds>;
 using MyDalitzMuMu = MyDalitzMuMus::iterator;
 
+using MyEMCClusters = soa::Join<aod::SkimEMCClusters, aod::EMEMCClusterMCLabels, aod::EMCEMEventIds>;
+using MyEMCCluster = MyEMCClusters::iterator;
+
 struct Pi0EtaToGammaGammaMC {
   using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
   using MyMCElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronMCLabels, aod::EMPrimaryElectronsPrefilterBit>;
@@ -78,6 +81,20 @@ struct Pi0EtaToGammaGammaMC {
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "qc,nocut", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_0_120_tpchadrejortofreq_lowB,mee_120_500_tpchadrejortofreq_lowB,mee_0_500_tpchadrejortofreq_lowB", "Comma separated list of Dalitz ee cuts"};
   Configurable<std::string> fConfigDalitzMuMuCuts{"cfgDalitzMuMuCuts", "mmumu_0_500_tpctof_lowB", "Comma separated list of Dalitz mumu cuts"};
+  Configurable<std::string> fConfigEMCCuts{"cfgEMCCuts", "custom,standard,nocut", "Comma separated list of EMCal photon cuts"};
+
+  // Configurable for EMCal cuts
+  Configurable<float> EMC_minTime{"EMC_minTime", -20., "Minimum cluster time for EMCal time cut"};
+  Configurable<float> EMC_maxTime{"EMC_maxTime", +25., "Maximum cluster time for EMCal time cut"};
+  Configurable<float> EMC_minM02{"EMC_minM02", 0.1, "Minimum M02 for EMCal M02 cut"};
+  Configurable<float> EMC_maxM02{"EMC_maxM02", 0.7, "Maximum M02 for EMCal M02 cut"};
+  Configurable<float> EMC_minE{"EMC_minE", 0.7, "Minimum cluster energy for EMCal energy cut"};
+  Configurable<int> EMC_minNCell{"EMC_minNCell", 1, "Minimum number of cells per cluster for EMCal NCell cut"};
+  Configurable<std::vector<float>> EMC_TM_Eta{"EMC_TM_Eta", {0.01f, 4.07f, -2.5f}, "|eta| <= [0]+(pT+[1])^[2] for EMCal track matching"};
+  Configurable<std::vector<float>> EMC_TM_Phi{"EMC_TM_Phi", {0.015f, 3.65f, -2.f}, "|phi| <= [0]+(pT+[1])^[2] for EMCal track matching"};
+  Configurable<float> EMC_Eoverp{"EMC_Eoverp", 1.75, "Minimum cluster energy over track momentum for EMCal track matching"};
+  Configurable<bool> EMC_UseExoticCut{"EMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
+
   Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "nocut,asym08", "Comma separated list of pair cuts"};
 
   Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
@@ -127,6 +144,7 @@ struct Pi0EtaToGammaGammaMC {
     DefinePCMCuts();
     DefineDalitzEECuts();
     DefineDalitzMuMuCuts();
+    DefineEMCCuts();
     DefinePairCuts();
     addhistograms();
     TString ev_cut_name = fConfigEMEventCut.value;
@@ -266,6 +284,48 @@ struct Pi0EtaToGammaGammaMC {
     LOGF(info, "Number of DalitzMuMu cuts = %d", fDalitzMuMuCuts.size());
   }
 
+  void DefineEMCCuts()
+  {
+    const float a = EMC_TM_Eta->at(0);
+    const float b = EMC_TM_Eta->at(1);
+    const float c = EMC_TM_Eta->at(2);
+
+    const float d = EMC_TM_Phi->at(0);
+    const float e = EMC_TM_Phi->at(1);
+    const float f = EMC_TM_Phi->at(2);
+    LOGF(info, "EMCal track matching parameters : a = %f, b = %f, c = %f, d = %f, e = %f, f = %f", a, b, c, d, e, f);
+
+    TString cutNamesStr = fConfigEMCCuts.value;
+    if (!cutNamesStr.IsNull()) {
+      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
+      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+        const char* cutname = objArray->At(icut)->GetName();
+        LOGF(info, "add cut : %s", cutname);
+        if (std::strcmp(cutname, "custom") == 0) {
+          EMCPhotonCut* custom_cut = new EMCPhotonCut(cutname, cutname);
+          custom_cut->SetMinE(EMC_minE);
+          custom_cut->SetMinNCell(EMC_minNCell);
+          custom_cut->SetM02Range(EMC_minM02, EMC_maxM02);
+          custom_cut->SetTimeRange(EMC_minTime, EMC_maxTime);
+
+          custom_cut->SetTrackMatchingEta([&a, &b, &c](float pT) {
+            return a + pow(pT + b, c);
+          });
+          custom_cut->SetTrackMatchingPhi([&d, &e, &f](float pT) {
+            return d + pow(pT + e, f);
+          });
+
+          custom_cut->SetMinEoverP(EMC_Eoverp);
+          custom_cut->SetUseExoticCut(EMC_UseExoticCut);
+          fEMCCuts.push_back(*custom_cut);
+        } else {
+          fEMCCuts.push_back(*emccuts::GetCut(cutname));
+        }
+      }
+    }
+    LOGF(info, "Number of EMCal cuts = %d", fEMCCuts.size());
+  }
+
   void DefinePairCuts()
   {
     TString cutNamesStr = fConfigPairCuts.value;
@@ -326,6 +386,7 @@ struct Pi0EtaToGammaGammaMC {
   Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::emeventId;
   Preslice<MyDalitzEEs> perCollision_dalitzee = aod::dalitzee::emeventId;
   Preslice<MyDalitzMuMus> perCollision_dalitzmumu = aod::dalitzmumu::emeventId;
+  Preslice<MyEMCClusters> perCollision_emc = aod::emccluster::emeventId;
 
   template <PairType pairtype, typename TEvents, typename TPhotons1, typename TPhotons2, typename TPreslice1, typename TPreslice2, typename TCuts1, typename TCuts2, typename TPairCuts, typename TV0Legs, typename TEMPrimaryElectrons, typename TEMPrimaryMuons, typename TMCEvents, typename TMCParticles>
   void TruePairing(TEvents const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPreslice1 const& perCollision1, TPreslice2 const& perCollision2, TCuts1 const& cuts1, TCuts2 const& cuts2, TPairCuts const& paircuts, TV0Legs const& v0legs, TEMPrimaryElectrons const& emprimaryelectrons, TEMPrimaryMuons const& emprimarymuons, TMCEvents const& mcevents, TMCParticles const& mcparticles)
@@ -339,7 +400,7 @@ struct Pi0EtaToGammaGammaMC {
       if ((pairtype == kPHOSPHOS || pairtype == kPCMPHOS) && !collision.isPHOSCPVreadout()) {
         continue;
       }
-      if ((pairtype == kEMCEMC || pairtype == kPCMEMC) && !collision.isEMCreadout()) {
+      if ((pairtype == kEMCEMC || pairtype == kPCMEMC) && (!collision.isEMCreadout() || collision.ncollsPerBC() != 1)) {
         continue;
       }
 
@@ -394,6 +455,11 @@ struct Pi0EtaToGammaGammaMC {
 
                 auto g1mc = mcparticles.iteratorAt(photonid1);
                 auto g2mc = mcparticles.iteratorAt(photonid2);
+                pi0id = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 111, mcparticles);
+                etaid = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 221, mcparticles);
+              } else if constexpr (pairtype == PairType::kEMCEMC) {
+                auto g1mc = mcparticles.iteratorAt(g1.emmcparticleId());
+                auto g2mc = mcparticles.iteratorAt(g2.emmcparticleId());
                 pi0id = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 111, mcparticles);
                 etaid = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 221, mcparticles);
               }
@@ -626,9 +692,10 @@ struct Pi0EtaToGammaGammaMC {
     runGenInfo<PairType::kPCMPCM>(grouped_collisions, mccollisions, mcparticles);
   }
   void processPHOSPHOS(MyCollisions const& collisions) {}
-  void processEMCEMC(MyCollisions const& collisions, aod::EMMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
+  void processEMCEMC(MyCollisions const& collisions, MyEMCClusters const& emcclusters, aod::EMMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles)
   {
-    runGenInfo<PairType::kEMCEMC>(collisions, mccollisions, mcparticles);
+    TruePairing<PairType::kEMCEMC>(grouped_collisions, emcclusters, emcclusters, perCollision_emc, perCollision_emc, fEMCCuts, fEMCCuts, fPairCuts, nullptr, nullptr, nullptr, mccollisions, mcparticles);
+    runGenInfo<PairType::kEMCEMC>(grouped_collisions, mccollisions, mcparticles);
   }
   void processPCMPHOS(MyCollisions const& collisions) {}
   void processPCMEMC(MyCollisions const& collisions) {}
