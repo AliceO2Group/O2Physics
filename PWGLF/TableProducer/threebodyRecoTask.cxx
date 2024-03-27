@@ -635,7 +635,7 @@ struct threebodyRecoTask {
         continue;
       }
       bool isSurEvSelection = isGoodCollision[mcparticle.mcCollisionId()];
-      std::array<float, 3> posSV;
+      std::array<float, 3> posSV{0.f};
       for (auto& mcDaughter : mcparticle.daughters_as<aod::McParticles>()) {
         if (std::abs(mcDaughter.pdgCode()) == bachelorPdgCode) {
           posSV = {mcDaughter.vx(), mcDaughter.vy(), mcDaughter.vz()};

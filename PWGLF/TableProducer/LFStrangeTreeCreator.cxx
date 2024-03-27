@@ -379,7 +379,7 @@ struct LFStrangeTreeCreator {
 
         if (std::abs(mcPart.pdgCode()) != 3122)
           continue;
-        std::array<float, 3> secVtx;
+        std::array<float, 3> secVtx{0.f};
         std::array<float, 3> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
         std::array<float, 3> momMother = {mcPart.px(), mcPart.py(), mcPart.pz()};
         for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {

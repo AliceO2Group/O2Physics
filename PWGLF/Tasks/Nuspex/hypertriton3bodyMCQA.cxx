@@ -665,12 +665,12 @@ struct hypertriton3bodyMcParticleCount {
         registry.fill(HIST("hMcRecoInvMass"), RecoDecay::m(array{array{dauProtonMom[0], dauProtonMom[1], dauProtonMom[2]}, array{dauPionMom[0], dauPionMom[1], dauPionMom[2]}, array{dauDeuteronMom[0], dauDeuteronMom[1], dauDeuteronMom[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron}));
         registry.fill(HIST("h3dMCDecayedHypertriton"), mcparticle.y(), mcparticle.pt(), MClifetime);
 
-        int daughterPionCount = 0;
-        for (auto& mcparticleDaughter : mcparticle.daughters_as<aod::McParticles>()) {
-          if (std::abs(mcparticleDaughter.pdgCode()) == 211) {
-            daughterPionCount++;
-          }
-        }
+        // int daughterPionCount = 0;
+        // for (auto& mcparticleDaughter : mcparticle.daughters_as<aod::McParticles>()) {
+        //   if (std::abs(mcparticleDaughter.pdgCode()) == 211) {
+        //     daughterPionCount++;
+        //   }
+        // }
 
         // Count for hypertriton N_gen
         if (TMath::Abs(mcparticle.y()) < 1) {

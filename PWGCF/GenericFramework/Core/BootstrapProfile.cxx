@@ -79,7 +79,7 @@ TH1* BootstrapProfile::getHist(Int_t ind)
   if (fPresetWeights && fMultiRebin > 0)
     return getWeightBasedRebin(ind);
   if (ind < 0) {
-    if (reinterpret_cast<TProfile*>(this)) {
+    if (reinterpret_cast<TProfile*>(this)) {                     // FIXME: -Wnonnull-compare
       return getHistRebinned(reinterpret_cast<TProfile*>(this)); //((TProfile*)this)->ProjectionX(Form("%s_hist",this->GetName()));
     } else {
       printf("Empty BootstrapProfile addressed, cannot get a histogram\n");
@@ -102,7 +102,7 @@ TH1* BootstrapProfile::getHist(Int_t ind)
 TProfile* BootstrapProfile::getProfile(Int_t ind)
 {
   if (ind < 0) {
-    if (reinterpret_cast<TProfile*>(this)) {
+    if (reinterpret_cast<TProfile*>(this)) { // FIXME: -Wnonnull-compare
       return reinterpret_cast<TProfile*>(this);
     } else {
       printf("Empty BootstrapProfile addressed, cannot get a histogram\n");
@@ -124,7 +124,7 @@ TProfile* BootstrapProfile::getProfile(Int_t ind)
 Long64_t BootstrapProfile::Merge(TCollection* collist)
 {
   Long64_t nmergedpf = TProfile::Merge(collist);
-  Long64_t nmerged = 0;
+  // Long64_t nmerged = 0;
   BootstrapProfile* l_PBS = 0;
   TIter all_PBS(collist);
   while ((l_PBS = reinterpret_cast<BootstrapProfile*>(all_PBS()))) {
@@ -139,7 +139,7 @@ Long64_t BootstrapProfile::Merge(TCollection* collist)
     }
     for (Int_t i = 0; i < fListOfEntries->GetEntries(); i++)
       reinterpret_cast<TProfile*>(fListOfEntries->At(i))->Add(reinterpret_cast<TProfile*>(tarL->At(i)));
-    nmerged++;
+    // nmerged++;
   }
   return nmergedpf;
 };

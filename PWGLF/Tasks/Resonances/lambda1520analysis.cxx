@@ -404,7 +404,7 @@ struct lambda1520analysis {
         }
       }
     }
-    return false;
+    return isTrk1Selected;
   }
 
   template <typename T>
@@ -450,7 +450,7 @@ struct lambda1520analysis {
         }
       }
     }
-    return false;
+    return isTrk2Selected;
   }
 
   template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>

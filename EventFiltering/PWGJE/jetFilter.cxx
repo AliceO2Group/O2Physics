@@ -129,7 +129,7 @@ struct jetFilter {
 
     auto scalers{std::get<std::shared_ptr<TH1>>(spectra.add(
       "fProcessedEvents", ";;Number of filtered events", HistType::kTH1F,
-      {{kAllObjects, -0.5, kAllObjects - 0.5}}))};
+      {{kAllObjects, -0.5, +kAllObjects - 0.5}}))};
     for (uint32_t iS{1}; iS <= highPtObjectsNames.size(); ++iS) {
       scalers->GetXaxis()->SetBinLabel(iS, highPtObjectsNames[iS - 1].data());
     }
