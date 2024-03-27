@@ -120,10 +120,10 @@ struct HfCandidateCreatorToXiPi {
   }
 
   void processWithCascades(aod::Collisions const&,
-               aod::BCsWithTimestamps const&,
-               TracksWCovDca const&,
-               MyCascTable const&, CascadesLinked const&,
-               MySkimIdx const& candidates)
+                           aod::BCsWithTimestamps const&,
+                           TracksWCovDca const&,
+                           MyCascTable const&, CascadesLinked const&,
+                           MySkimIdx const& candidates)
   {
     double massPionFromPDG = MassPiPlus;    // pdg code 211
     double massLambdaFromPDG = MassLambda0; // pdg code 3122
@@ -337,13 +337,11 @@ struct HfCandidateCreatorToXiPi {
   }   // end of process
   PROCESS_SWITCH(HfCandidateCreatorToXiPi, processWithCascades, "Use regular cascade information", true);
 
-
-
-    void processWithTrackedCascades(aod::Collisions const&,
-               aod::BCsWithTimestamps const&,
-               TracksWCovDca const&,
-               MyTrkCascTable const&, CascadesLinked const&,
-               MySkimIdx const& candidates)
+  void processWithTrackedCascades(aod::Collisions const&,
+                                  aod::BCsWithTimestamps const&,
+                                  TracksWCovDca const&,
+                                  MyTrkCascTable const&, CascadesLinked const&,
+                                  MySkimIdx const& candidates)
   {
     double massPionFromPDG = MassPiPlus;    // pdg code 211
     double massLambdaFromPDG = MassLambda0; // pdg code 3122
@@ -556,8 +554,6 @@ struct HfCandidateCreatorToXiPi {
     } // loop over LF Cascade-bachelor candidates
   }   // end of process
   PROCESS_SWITCH(HfCandidateCreatorToXiPi, processWithTrackedCascades, "Use tracked cascade information", false);
-
-
 
 };    // end of struct
 
