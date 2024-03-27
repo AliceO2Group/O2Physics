@@ -35,12 +35,6 @@ using namespace o2::constants::physics;
 using namespace o2::analysis;
 using namespace o2::framework;
 
-/// Struct to extend TracksPid tables
-struct HfCandidateSelectorDstarToD0PiExpressions {
-  Spawns<aod::TracksPidPiExt> rowTracksPidFullPi;
-  Spawns<aod::TracksPidKaExt> rowTracksPidFullKa;
-};
-
 // Struct to applying Dstar selection cuts
 struct HfCandidateSelectorDstarToD0Pi {
   Produces<aod::HfSelDstarToD0Pi> hfSelDstarCandidate;
@@ -106,7 +100,7 @@ struct HfCandidateSelectorDstarToD0Pi {
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
 
-  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPiExt, aod::TracksPidKaExt>;
+  using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
   // using TracksSel = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa>;
   using HfFullDstarCandidate = soa::Join<aod::HfD0FromDstar, aod::HfCandDstar>;
 
@@ -485,7 +479,5 @@ struct HfCandidateSelectorDstarToD0Pi {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorDstarToD0PiExpressions>(cfgc),
-    adaptAnalysisTask<HfCandidateSelectorDstarToD0Pi>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCandidateSelectorDstarToD0Pi>(cfgc)};
 }

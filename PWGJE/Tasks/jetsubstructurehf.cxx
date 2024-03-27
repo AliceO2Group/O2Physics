@@ -212,7 +212,7 @@ struct JetSubstructureHFTask {
   PROCESS_SWITCH(JetSubstructureHFTask, processChargedJetsMCP, "HF jet substructure on MC particle level", false);
 };
 using JetSubstructureD0 = JetSubstructureHFTask<soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents>, soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents>, soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>, soa::Join<aod::D0ChargedEventWiseSubtractedJets, aod::D0ChargedEventWiseSubtractedJetConstituents>, CandidatesD0Data, CandidatesD0MCP, aod::D0CJetSSs, aod::D0CMCDJetSSs, aod::D0CMCPJetSSs, aod::D0CEWSJetSSs, aod::JTrackD0Subs>;
-// using JetSubstructureLc = JetSubstructureHFTask<soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents>,soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents>,soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents>,soa::Join<aod::LcChargedEventWiseSubtractedJets, aod::LcChargedEventWiseSubtractedJetConstituents>, CandidatesLcData, CandidatesLcMCP, aod::LcCJetSSs,aod::LcCMCDJetSSs,aod::LcCMCPJetSSs, aod::LcCEWSJetSSs, aod::JTrackLcSubs>;
+using JetSubstructureLc = JetSubstructureHFTask<soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents>, soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents>, soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents>, soa::Join<aod::LcChargedEventWiseSubtractedJets, aod::LcChargedEventWiseSubtractedJetConstituents>, CandidatesLcData, CandidatesLcMCP, aod::LcCJetSSs, aod::LcCMCDJetSSs, aod::LcCMCPJetSSs, aod::LcCEWSJetSSs, aod::JTrackLcSubs>;
 // using JetSubstructureBplus = JetSubstructureHFTask<soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents>,soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents>,soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents>,soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents>, CandidatesBplusData, CandidatesBplusMCP, aod::BplusCJetSSs,aod::BplusCMCDJetSSs,aod::BplusCMCPJetSSs, aod::BplusCEWSJetSSs, aod::JTrackBplusSubs>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -221,15 +221,16 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   tasks.emplace_back(adaptAnalysisTask<JetSubstructureD0>(cfgc,
                                                           SetDefaultProcesses{},
-                                                          TaskName{"jet-substructure-D0"}));
-  /*
+                                                          TaskName{"jet-substructure-d0"}));
+
   tasks.emplace_back(adaptAnalysisTask<JetSubstructureLc>(cfgc,
                                                           SetDefaultProcesses{},
-                                                          TaskName{"jet-substructure-Lc"}));
+                                                          TaskName{"jet-substructure-lc"}));
+  /*
 
     tasks.emplace_back(adaptAnalysisTask<JetSubstructureBplus>(cfgc,
                                                                SetDefaultProcesses{},
-                                                               TaskName{"jet-substructure-Bplus"}));
+                                                               TaskName{"jet-substructure-bplus"}));
   */
   return WorkflowSpec{tasks};
 }

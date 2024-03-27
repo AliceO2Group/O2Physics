@@ -34,6 +34,14 @@ struct JetDerivedDataProducerDummyTask {
   Produces<aod::HfD0Mcs> d0McsTable;
   Produces<aod::HfD0PBases> d0ParticlesTable;
 
+  Produces<aod::Hf3PCollBases> LcCollisionsTable;
+  Produces<aod::Hf3PBases> LcsTable;
+  Produces<aod::Hf3PPars> LcParsTable;
+  Produces<aod::Hf3PParEs> LcParExtrasTable;
+  Produces<aod::Hf3PSels> LcSelsTable;
+  Produces<aod::Hf3PMcs> LcMcsTable;
+  Produces<aod::Hf3PPBases> LcParticlesTable;
+
   void init(InitContext const&)
   {
   }

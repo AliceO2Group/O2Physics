@@ -161,7 +161,7 @@ DECLARE_JET_TABLES_LEVELS(Charged, JTrackSub, HfD0Bases, HfD0PBases, "C");
 DECLARE_JET_TABLES_LEVELS(Full, JTrackSub, HfD0Bases, HfD0PBases, "F");
 DECLARE_JET_TABLES_LEVELS(Neutral, JTrackSub, HfD0Bases, HfD0PBases, "N");
 DECLARE_JET_TABLES_LEVELS(D0Charged, JTrackD0Sub, HfD0Bases, HfD0PBases, "D0");
-DECLARE_JET_TABLES_LEVELS(LcCharged, JTrackLcSub, HfCand3Prong, HfD0PBases, "Lc");
+DECLARE_JET_TABLES_LEVELS(LcCharged, JTrackLcSub, Hf3PBases, Hf3PPBases, "Lc");
 DECLARE_JET_TABLES_LEVELS(BplusCharged, JTrackBplusSub, HfCandBplus, HfD0PBases, "BPl");
 
 } // namespace o2::aod
@@ -179,7 +179,7 @@ using JetMcCollision = JetMcCollisions::iterator;
 using JetParticles = o2::aod::JMcParticles;
 
 using CandidatesD0MCP = o2::soa::Join<o2::aod::HfD0PBases, o2::aod::JD0PIds>;
-using CandidatesLcMCP = o2::soa::Join<o2::aod::JMcParticles, o2::aod::HfCand3ProngMcGen>;
+using CandidatesLcMCP = o2::soa::Join<o2::aod::Hf3PPBases, o2::aod::JLcPIds>;
 using CandidatesBplusMCP = o2::soa::Join<o2::aod::JMcParticles, o2::aod::HfCandBplusMcGen>;
 
 using CandidatesD0Data = o2::soa::Join<o2::aod::HfD0Bases, o2::aod::HfD0Pars, o2::aod::HfD0ParEs, o2::aod::HfD0Sels, o2::aod::JD0Ids>;
@@ -190,8 +190,8 @@ using CandidatesBplusData = o2::soa::Join<o2::aod::HfCandBplus, o2::aod::HfSelBp
 using CandidatesBplusMCD = o2::soa::Join<o2::aod::HfCandBplus, o2::aod::HfSelBplusToD0Pi, o2::aod::HfCandBplusMcRec>;
 using JetTracksSubBplus = o2::aod::JTrackBplusSubs;
 
-using CandidatesLcData = o2::soa::Join<o2::aod::HfCand3Prong, o2::aod::HfSelLc>;
-using CandidatesLcMCD = o2::soa::Join<o2::aod::HfCand3Prong, o2::aod::HfSelLc, o2::aod::HfCand3ProngMcRec>;
+using CandidatesLcData = o2::soa::Join<o2::aod::Hf3PBases, o2::aod::Hf3PPars, o2::aod::Hf3PParEs, o2::aod::Hf3PSels, o2::aod::JLcIds>;
+using CandidatesLcMCD = o2::soa::Join<o2::aod::Hf3PBases, o2::aod::Hf3PPars, o2::aod::Hf3PParEs, o2::aod::Hf3PSels, o2::aod::Hf3PMcs, o2::aod::JLcIds>;
 using JetTracksSubLc = o2::aod::JTrackLcSubs;
 
 #endif // PWGJE_DATAMODEL_JET_H_

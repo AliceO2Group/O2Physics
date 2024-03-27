@@ -33,13 +33,6 @@ using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
 
-/// Struct to extend TracksPid tables
-struct HfCandidateSelectorLcExpressions {
-  Spawns<aod::TracksPidPrExt> rowTracksPidFullPr;
-  Spawns<aod::TracksPidKaExt> rowTracksPidFullKa;
-  Spawns<aod::TracksPidPiExt> rowTracksPidFullPi;
-};
-
 /// Struct for applying Lc selection cuts
 struct HfCandidateSelectorLc {
   Produces<aod::HfSelLc> hfSelLcCandidate;
@@ -93,7 +86,7 @@ struct HfCandidateSelectorLc {
   TrackSelectorPr selectorProton;
 
   using TracksSel = soa::Join<aod::TracksWExtra,
-                              aod::TracksPidPiExt, aod::TracksPidKaExt, aod::TracksPidPrExt,
+                              aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr,
                               aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 
   HistogramRegistry registry{"registry"};
@@ -407,7 +400,5 @@ struct HfCandidateSelectorLc {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorLcExpressions>(cfgc),
-    adaptAnalysisTask<HfCandidateSelectorLc>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCandidateSelectorLc>(cfgc)};
 }

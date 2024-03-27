@@ -90,6 +90,8 @@ struct JetFinderHFTask {
   Configurable<std::vector<double>> jetRadius{"jetRadius", {0.4}, "jet resolution parameters"};
   Configurable<float> jetPtMin{"jetPtMin", 0.0, "minimum jet pT"};
   Configurable<float> jetPtMax{"jetPtMax", 1000.0, "maximum jet pT"};
+  Configurable<float> jetEWSPtMin{"jetEWSPtMin", 0.0, "minimum event-wise subtracted jet pT"};
+  Configurable<float> jetEWSPtMax{"jetEWSPtMax", 1000.0, "maximum event-wise subtracted jet pT"};
   Configurable<float> jetEtaMin{"jetEtaMin", -99.0, "minimum jet pseudorapidity"};
   Configurable<float> jetEtaMax{"jetEtaMax", 99.0, "maximum jet pseudorapidity"};
   Configurable<int> jetTypeParticleLevel{"jetTypeParticleLevel", 1, "Type of stored jets. 0 = full, 1 = charged, 2 = neutral"};
@@ -146,7 +148,7 @@ struct JetFinderHFTask {
 
   // function that generalically processes Data and reco level events
   template <bool isEvtWiseSub, typename T, typename U, typename V, typename M, typename N, typename O>
-  void analyseCharged(T const& collision, U const& tracks, V const& candidate, M& jetsTableInput, N& constituentsTableInput, O& originalTracks)
+  void analyseCharged(T const& collision, U const& tracks, V const& candidate, M& jetsTableInput, N& constituentsTableInput, O& originalTracks, float minJetPt, float maxJetPt)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -169,12 +171,12 @@ struct JetFinderHFTask {
     } else {
       jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
     }
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, true);
+    jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, true);
   }
 
   // function that generalically processes gen level events
   template <typename T, typename U, typename V>
-  void analyseMCP(T const& collision, U const& particles, V const& candidate, int jetTypeParticleLevel)
+  void analyseMCP(T const& collision, U const& particles, V const& candidate, int jetTypeParticleLevel, float minJetPt, float maxJetPt)
   {
     if (rejectIncorrectDecaysMCP && !jethfutilities::isMatchedHFCandidate(candidate)) { // is this even needed in the new derived format? it means any simulations run have to force the decay channel
       return;
@@ -185,7 +187,7 @@ struct JetFinderHFTask {
       return;
     }
     jetfindingutilities::analyseParticles(inputParticles, particleSelection, jetTypeParticleLevel, particles, pdgDatabase, std::optional{candidate});
-    jetfindingutilities::findJets(jetFinder, inputParticles, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, true);
+    jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, true);
   }
 
   void processDummy(JetCollisions const& collisions)
@@ -196,7 +198,7 @@ struct JetFinderHFTask {
   void processChargedJetsData(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<JetTracks> const& tracks, CandidateTableData const& candidates)
   {
     for (typename CandidateTableData::iterator const& candidate : candidates) { // why can the type not be auto?  try const auto
-      analyseCharged<false>(collision, tracks, candidate, jetsTable, constituentsTable, tracks);
+      analyseCharged<false>(collision, tracks, candidate, jetsTable, constituentsTable, tracks, jetPtMin, jetPtMax);
     }
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedJetsData, "charged hf jet finding on data", false);
@@ -204,7 +206,7 @@ struct JetFinderHFTask {
   void processChargedEvtWiseSubJetsData(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<JetTracksSubTable> const& tracks, CandidateTableData const& candidates)
   {
     for (typename CandidateTableData::iterator const& candidate : candidates) {
-      analyseCharged<true>(collision, jethfutilities::slicedPerCandidate(tracks, candidate, perD0Candidate, perLcCandidate, perBplusCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, tracks);
+      analyseCharged<true>(collision, jethfutilities::slicedPerCandidate(tracks, candidate, perD0Candidate, perLcCandidate, perBplusCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, tracks, jetEWSPtMin, jetEWSPtMax);
     }
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedEvtWiseSubJetsData, "charged hf jet finding on data with event-wise constituent subtraction", false);
@@ -212,7 +214,7 @@ struct JetFinderHFTask {
   void processChargedJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<JetTracks> const& tracks, CandidateTableMCD const& candidates)
   {
     for (typename CandidateTableMCD::iterator const& candidate : candidates) {
-      analyseCharged<false>(collision, tracks, candidate, jetsTable, constituentsTable, tracks);
+      analyseCharged<false>(collision, tracks, candidate, jetsTable, constituentsTable, tracks, jetPtMin, jetPtMax);
     }
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedJetsMCD, "charged hf jet finding on MC detector level", false);
@@ -220,7 +222,7 @@ struct JetFinderHFTask {
   void processChargedEvtWiseSubJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<JetTracksSubTable> const& tracks, CandidateTableMCD const& candidates)
   {
     for (typename CandidateTableMCD::iterator const& candidate : candidates) {
-      analyseCharged<true>(collision, jethfutilities::slicedPerCandidate(tracks, candidate, perD0Candidate, perLcCandidate, perBplusCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, tracks);
+      analyseCharged<true>(collision, jethfutilities::slicedPerCandidate(tracks, candidate, perD0Candidate, perLcCandidate, perBplusCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, tracks, jetEWSPtMin, jetEWSPtMax);
     }
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedEvtWiseSubJetsMCD, "charged hf jet finding on MC detector level with event-wise constituent subtraction", false);
@@ -230,100 +232,8 @@ struct JetFinderHFTask {
                              CandidateTableMCP const& candidates)
   {
     for (typename CandidateTableMCP::iterator const& candidate : candidates) {
-      analyseMCP(collision, particles, candidate, 1);
+      analyseMCP(collision, particles, candidate, 1, jetPtMin, jetPtMax);
     }
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedJetsMCP, "hf jet finding on MC particle level", false);
 };
-/*
-
-using JetFinderD0DataCharged = JetFinderHFTask<CandidatesD0Data,CandidatesD0MCD,CandidatesD0MCP,JetTracksSubD0, aod::D0ChargedJets, aod::D0ChargedJetConstituents, aod::D0ChargedEventWiseSubtractedJets, aod::D0ChargedEventWiseSubtractedJetConstituents>;
-using JetFinderD0MCDetectorLevelCharged = JetFinderHFTask<CandidatesD0Data,CandidatesD0MCD,CandidatesD0MCP,JetTracksSubD0,aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0ChargedMCDetectorLevelEventWiseSubtractedJets, aod::D0ChargedMCDetectorLevelEventWiseSubtractedJetConstituents>;
-using JetFinderD0MCParticleLevelCharged = JetFinderHFTask<CandidatesD0Data,CandidatesD0MCD,CandidatesD0MCP,JetTracksSubD0,aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0ChargedMCParticleLevelEventWiseSubtractedJets, aod::D0ChargedMCParticleLevelEventWiseSubtractedJetConstituents>;
-
-using JetFinderBplusDataCharged = JetFinderHFTask<CandidatesBplusData,CandidatesBplusMCD,CandidatesBplusMCP,JetTracksSubBplus,aod::BplusChargedJets, aod::BplusChargedJetConstituents, aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents>;
-using JetFinderBplusMCDetectorLevelCharged = JetFinderHFTask<CandidatesBplusData,CandidatesBplusMCD,CandidatesBplusMCP,JetTracksSubBplus,aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents, aod::BplusChargedMCDetectorLevelEventWiseSubtractedJets, aod::BplusChargedMCDetectorLevelEventWiseSubtractedJetConstituents>;
-using JetFinderBplusMCParticleLevelCharged = JetFinderHFTask<CandidatesBplusData,CandidatesBplusMCD,CandidatesBplusMCP,JetTracksSubBplus,aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents, aod::BplusChargedMCParticleLevelEventWiseSubtractedJets, aod::BplusChargedMCParticleLevelEventWiseSubtractedJetConstituents>;
-
-using JetFinderLcDataCharged = JetFinderHFTask<CandidatesLcData,CandidatesLcMCD,CandidatesLcMCP,JetTracksSubLc,aod::LcChargedJets, aod::LcChargedJetConstituents,aod::LcChargedEventWiseSubtractedJets, aod::LcChargedEventWiseSubtractedJetConstituents>;
-using JetFinderLcMCDetectorLevelCharged = JetFinderHFTask<CandidatesLcData,CandidatesLcMCD,CandidatesLcMCP,JetTracksSubLc,aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents, aod::LcChargedMCDetectorLevelEventWiseSubtractedJets, aod::LcChargedMCDetectorLevelEventWiseSubtractedJetConstituents>;
-using JetFinderLcMCParticleLevelCharged = JetFinderHFTask<CandidatesLcData,CandidatesLcMCD,CandidatesLcMCP,JetTracksSubLc,aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents, aod::LcChargedMCParticleLevelEventWiseSubtractedJets, aod::LcChargedMCParticleLevelEventWiseSubtractedJetConstituents>;
-
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  std::vector<o2::framework::DataProcessorSpec> tasks;
-
-  tasks.emplace_back(adaptAnalysisTask<JetFinderD0DataCharged>(cfgc,
-                                                               SetDefaultProcesses{},
-                                                               TaskName{"jet-finder-d0-data-charged"}));
-
-  tasks.emplace_back(adaptAnalysisTask<JetFinderD0MCDetectorLevelCharged>(cfgc,
-                                                                          SetDefaultProcesses{},
-                                                                          TaskName{"jet-finder-d0-mcd-charged"}));
-
-  tasks.emplace_back(adaptAnalysisTask<JetFinderD0MCParticleLevelCharged>(cfgc,
-                                                                          SetDefaultProcesses{},
-                                                                          TaskName{"jet-finder-d0-mcp-charged"}));
-
-  tasks.emplace_back(adaptAnalysisTask<JetFinderBplusDataCharged>(cfgc,
-                                                                  SetDefaultProcesses{},
-                                                                  TaskName{"jet-finder-bplus-data-charged"}));
-
-  tasks.emplace_back(adaptAnalysisTask<JetFinderBplusMCDetectorLevelCharged>(cfgc,
-                                                                             SetDefaultProcesses{},
-                                                                             TaskName{"jet-finder-bplus-mcd-charged"}));
-
-  tasks.emplace_back(adaptAnalysisTask<JetFinderBplusMCParticleLevelCharged>(cfgc,
-                                                                             SetDefaultProcesses{},
-                                                                             TaskName{"jet-finder-bplus-mcp-charged"}));
-
-  tasks.emplace_back(adaptAnalysisTask<JetFinderLcDataCharged>(cfgc,
-                                                               SetDefaultProcesses{},
-                                                               TaskName{"jet-finder-lc-data-charged"}));
-
-  tasks.emplace_back(adaptAnalysisTask<JetFinderLcMCDetectorLevelCharged>(cfgc,
-                                                                          SetDefaultProcesses{},
-                                                                          TaskName{"jet-finder-lc-mcd-charged"}));
-
-  tasks.emplace_back(adaptAnalysisTask<JetFinderLcMCParticleLevelCharged>(cfgc,
-                                                                          SetDefaultProcesses{},
-                                                                          TaskName{"jet-finder-lc-mcp-charged"}));
-
-  return WorkflowSpec{tasks};
-}
-*/
-/*
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  auto workflow = WorkflowSpec{adaptAnalysisTask<JetFinderD0DataCharged>(cfgc)};
-  workflow.clear();
-  if (cfgc.hfjetworkflows().get<int>("d0-data-charged")) {
-    workflow.push_back(adaptAnalysisTask<JetFinderD0DataCharged>(cfgc));
-  }
-  if (cfgc.hfjetworkflows().get<int>("d0-mcd-charged")) {
-    workflow.push_back(adaptAnalysisTask<JetFinderD0MCDetectorLevelCharged>(cfgc));
-  }
-  if (cfgc.hfjetworkflows().get<int>("d0-mcp-charged")) {
-    workflow.push_back(adaptAnalysisTask<JetFinderD0MCParticleLevelCharged>(cfgc));
-  }
-  if (cfgc.hfjetworkflows().get<int>("bplus-data-charged")) {
-    workflow.push_back(adaptAnalysisTask<JetFinderBplusDataCharged>(cfgc));
-  }
-  if (cfgc.hfjetworkflows().get<int>("bplus-mcd-charged")) {
-    workflow.push_back(adaptAnalysisTask<JetFinderBplusMCDetectorLevelCharged>(cfgc));
-  }
-  if (cfgc.hfjetworkflows().get<int>("bplus-mcp-charged")) {
-    workflow.push_back(adaptAnalysisTask<JetFinderBplusMCParticleLevelCharged>(cfgc));
-  }
-  if (cfgc.hfjetworkflows().get<int>("lc-data-charged")) {
-    workflow.push_back(adaptAnalysisTask<JetFinderLcDataCharged>(cfgc));
-  }
-  if (cfgc.hfjetworkflows().get<int>("lc-mcd-charged")) {
-    workflow.push_back(adaptAnalysisTask<JetFinderLcMCDetectorLevelCharged>(cfgc));
-  }
-  if (cfgc.hfjetworkflows().get<int>("lc-mcp-charged")) {
-    workflow.push_back(adaptAnalysisTask<JetFinderLcMCParticleLevelCharged>(cfgc));
-  }
-  return workflow;
-}
-*/

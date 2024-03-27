@@ -19,6 +19,7 @@
 ///
 
 // C++/ROOT includes.
+#include <TH1F.h>
 #include <chrono>
 #include <string>
 #include <vector>
@@ -45,6 +46,7 @@
 #include "FT0Base/Geometry.h"
 #include "FV0Base/Geometry.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "TF1.h"
 
 // #include "Common/Core/EventPlaneHelper.h"
 // #include "Common/DataModel/Qvectors.h"
@@ -78,18 +80,30 @@ struct epvector {
   std::vector<float> qvecIm;
   std::vector<float> qvecAmp;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  // Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
+  // Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentrality{"cfgCutCentrality", 80.0f, "Centrality cut"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.15, "PT cut on daughter track"};
   Configurable<float> cfgCutPTMax{"cfgCutPTMax", 3.0, "Max PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
+  Configurable<float> cfgMinEta{"cfgMinEta", 0.1, "Min Eta cut on daughter track"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<int> cfgITScluster{"cfgITScluster", 4, "Number of ITS cluster"};
+  // Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> useGainCallib{"useGainCallib", true, "use gain calibration"};
   Configurable<bool> useRecentere{"useRecentere", true, "use Recentering"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/s/skundu/My/Object/test100", "Path to gain calibration"};
   Configurable<std::string> ConfRecentere{"ConfRecentere", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for recentere"};
+
+  // Event selection cuts - Alex
+  TF1* fMultPVCutLow = nullptr;
+  TF1* fMultPVCutHigh = nullptr;
+  TF1* fMultCutLow = nullptr;
+  TF1* fMultCutHigh = nullptr;
+  TF1* fMultMultPVCut = nullptr;
+
   void init(o2::framework::InitContext&)
   {
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
@@ -124,6 +138,20 @@ struct epvector {
     histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH2F, {centAxis, resAxis});
     histos.add("ResFT0ATPC", "ResFT0ATPC", kTH2F, {centAxis, resAxis});
 
+    // Event selection cut additional - Alex
+    // if (additionalEvsel) {
+    fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+    fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
+    fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+    fMultPVCutHigh->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
+    fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x)", 0, 100);
+    fMultCutLow->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
+    fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x)", 0, 100);
+    fMultCutHigh->SetParameters(1893.94, -53.86, 0.502913, -0.0015122, 109.625, -1.19253);
+    fMultMultPVCut = new TF1("fMultMultPVCut", "[0]+[1]*x+[2]*x*x", 0, 5000);
+    fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
+    // }
+
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -136,6 +164,21 @@ struct epvector {
     printf("Offset for FT0C: x = %.3f y = %.3f\n", (*offsetFT0)[1].getX(), (*offsetFT0)[1].getY());
     printf("Offset for FV0-left: x = %.3f y = %.3f\n", (*offsetFV0)[0].getX(), (*offsetFV0)[0].getY());
     printf("Offset for FV0-right: x = %.3f y = %.3f\n", (*offsetFV0)[1].getX(), (*offsetFV0)[1].getY());
+  }
+
+  template <typename TCollision>
+  bool eventSelected(TCollision collision, const float& centrality)
+  {
+    if (collision.alias_bit(kTVXinTRD)) {
+      // TRD triggered                                                                                                                                                                                                                                                                                                               // return 0;
+    }
+    auto multNTracksPV = collision.multNTracksPV();
+    if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+      return 0;
+    if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+      return 0;
+
+    return 1;
   }
 
   double GetPhiFT0(int chno, double offsetX, double offsetY)
@@ -172,7 +215,7 @@ struct epvector {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (!(candidate.isGlobalTrack() || candidate.isPVContributor() || candidate.itsNCls() > cfgITScluster)) {
+    if (!(candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster)) {
       return false;
     }
     return true;
@@ -200,7 +243,7 @@ struct epvector {
     float psiTPC = -99;
     float psiTPCL = -99;
     float psiTPCR = -99;
-    if (coll.sel8() && centrality < cfgCutCentrality && TMath::Abs(vz) < cfgCutVertex && coll.has_foundFT0()) {
+    if (coll.sel8() && centrality < cfgCutCentrality && TMath::Abs(vz) < cfgCutVertex && coll.has_foundFT0() && eventSelected(coll, centrality) && coll.selection_bit(aod::evsel::kNoTimeFrameBorder) && coll.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       triggerevent = true;
       if (useGainCallib && (currentRunNumber != lastRunNumber)) {
         gainprofile = ccdb->getForTimeStamp<TProfile>(ConfGainPath.value, bc.timestamp());
@@ -252,7 +295,7 @@ struct epvector {
       auto qyTPCR = 0.0;
 
       for (auto& trk : tracks) {
-        if (!selectionTrack(trk) || abs(trk.eta()) > 0.8 || trk.pt() > cfgCutPTMax) {
+        if (!selectionTrack(trk) || abs(trk.eta()) > 0.8 || trk.pt() > cfgCutPTMax || abs(trk.eta()) < cfgMinEta) {
           continue;
         }
         qxTPC = qxTPC + trk.pt() * TMath::Cos(2.0 * trk.phi());

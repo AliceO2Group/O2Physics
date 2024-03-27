@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <vector>
 #include <bitset>
+#include "TRandom3.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -159,6 +160,7 @@ struct femtoDreamPairTaskTrackTrack {
   ConfigurableAxis ConfMixingBinVztx{"ConfMixingBinVztx", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   Configurable<int> ConfMixingDepth{"ConfMixingDepth", 5, "Number of events for mixing"};
   Configurable<int> ConfMixingPolicy{"ConfMixingBinPolicy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
+  Configurable<bool> ConfOptRandomizePair{"ConfOptRandomizePair", true, "Randomly mix particle 1 and particle 2 in case both are identical"};
 
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{ConfMixingBinVztx, ConfMixingBinMult}, true};
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{ConfMixingBinVztx, ConfMixingBinMultPercentile}, true};
@@ -172,8 +174,13 @@ struct femtoDreamPairTaskTrackTrack {
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
 
+  TRandom3* random;
+
   void init(InitContext& context)
   {
+    if (ConfOptRandomizePair.value) {
+      random = new TRandom3(0);
+    }
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, ConfBinmultTempFit, ConfOptDummy, ConfBinTrackpT, ConfOptDummy, ConfOptDummy, ConfBinTempFitVar, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptDummy, ConfOptIsMC, ConfTrk1_PDGCode);
     if (!ConfOptSameSpecies) {
@@ -269,6 +276,7 @@ struct femtoDreamPairTaskTrackTrack {
     }
 
     /// Now build the combinations
+    float rand = 0.;
     if (ConfOptSameSpecies.value) {
       for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(SliceTrk1, SliceTrk2))) {
         if (ConfOptUseCPR.value) {
@@ -280,7 +288,14 @@ struct femtoDreamPairTaskTrackTrack {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), ConfOptUse4D, ConfOptExtendedPlots, ConfOptsmearingByOrigin);
+        if (ConfOptRandomizePair.value) {
+          rand = random->Rndm();
+        }
+        if (rand <= 0.5) {
+          sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), ConfOptUse4D, ConfOptExtendedPlots, ConfOptsmearingByOrigin);
+        } else {
+          sameEventCont.setPair<isMC>(p2, p1, col.multNtr(), col.multV0M(), ConfOptUse4D, ConfOptExtendedPlots, ConfOptsmearingByOrigin);
+        }
       }
     } else {
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
@@ -391,19 +406,50 @@ struct femtoDreamPairTaskTrackTrack {
   void doMixedEvent_Masked(CollisionType& cols, PartType& parts, PartitionType& part1, PartitionType& part2, BinningType policy)
   {
     Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
-    Partition<CollisionType> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
     PartitionMaskedCol1.bindTable(cols);
-    PartitionMaskedCol2.bindTable(cols);
-    for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockUpperIndexPolicy(policy, ConfMixingDepth.value, -1, PartitionMaskedCol1, PartitionMaskedCol2))) {
-      auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
-      auto SliceTrk2 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
-      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
-        if (ConfOptUseCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, collision1.magField())) {
-            continue;
-          }
+    if (ConfOptSameSpecies.value) {
+      // use *Partition.mFiltered when passing the partition to mixing object
+      // there is an issue when the partition is passed directly
+      // workaround for now, change back once it is fixed
+      for (auto const& [collision1, collision2] : selfCombinations(policy, ConfMixingDepth.value, -1, *PartitionMaskedCol1.mFiltered, *PartitionMaskedCol1.mFiltered)) {
+        // selfCombinations policy should not allow for same events
+        // print a warning to be on the safe side
+        if (collision1.globalIndex() == collision2.globalIndex()) {
+          LOG(warn) << "Global Collision index " << collision1.globalIndex() << " clashing!";
+          continue;
         }
-        mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), ConfOptUse4D, ConfOptExtendedPlots, ConfOptsmearingByOrigin);
+        auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto SliceTrk2 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
+        for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
+          if (ConfOptUseCPR.value) {
+            if (pairCloseRejection.isClosePair(p1, p2, parts, collision1.magField())) {
+              continue;
+            }
+          }
+          mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), ConfOptUse4D, ConfOptExtendedPlots, ConfOptsmearingByOrigin);
+        }
+      }
+    } else {
+      Partition<CollisionType> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
+      PartitionMaskedCol2.bindTable(cols);
+      // use *Partition.mFiltered when passing the partition to mixing object
+      // there is an issue when the partition is passed directly
+      // workaround for now, change back once it is fixed
+      for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockUpperIndexPolicy(policy, ConfMixingDepth.value, -1, *PartitionMaskedCol1.mFiltered, *PartitionMaskedCol2.mFiltered))) {
+        // make sure that tracks in the same events are not mixed
+        if (collision1.globalIndex() == collision2.globalIndex()) {
+          continue;
+        }
+        auto SliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto SliceTrk2 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
+        for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
+          if (ConfOptUseCPR.value) {
+            if (pairCloseRejection.isClosePair(p1, p2, parts, collision1.magField())) {
+              continue;
+            }
+          }
+          mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), ConfOptUse4D, ConfOptExtendedPlots, ConfOptsmearingByOrigin);
+        }
       }
     }
   }
