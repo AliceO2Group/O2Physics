@@ -20,6 +20,8 @@
 #include "Framework/runDataProcessing.h"
 
 #include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
 
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -63,7 +65,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   HfHelper hfHelper;
   SliceCache cache;
 
-  using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::MultZeqs>;
+  using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
   using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
   using SelectedCandidatesKf = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfCand2ProngKF, aod::HfSelD0>>;
@@ -442,7 +444,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     processCandidates<aod::hf_cand::VertexerType::DCAFitter, true, false, false, false>(collisions, candidatesMlAll, tracks, bcs);
   }
-  PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processDataWithDCAFitterNMl, "Process data with DCAFitterN and ML", true);
+  PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processDataWithDCAFitterNMl, "Process data with DCAFitterN and ML", false);
 
   void processDataWithKFParticleMl(CollisionsWCentMult const& collisions,
                                    SelectedCandidatesKfMl const&,
