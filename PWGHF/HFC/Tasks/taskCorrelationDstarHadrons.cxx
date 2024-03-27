@@ -38,7 +38,6 @@ const TString stringSignal = "signal region;";
 const TString stringSideband = "sidebands;";
 const TString stringPoolBin = "Pool Bin Number;";
 
-
 const int nBinsPtCorrelation = 8;
 
 const double binsPtCorrelationsDefault[nBinsPtCorrelation + 1] = {0., 2., 4., 6., 8., 12., 16., 24., 100.};
@@ -80,11 +79,10 @@ struct HfTaskCorrelationDstarHadrons {
   // Configurable<std::vector<double>> leftSidebandInnerBoundary{"leftSidebandInnerBoundary", std::vector<double>{vecSidebandLeftInnerDefault}, "left sideband inner boundary vs pT"};
   Configurable<std::vector<double>> rightSidebandOuterBoundary{"rightSidebandOuterBoundary", std::vector<double>{vecSidebandRightOuterDefault}, "right sideband outer baoundary vs pT"};
   Configurable<std::vector<double>> rightSidebandInnerBoundary{"rightSidebandInnerBoundary", std::vector<double>{vecSidebandRightInnerDefault}, "right sideband inner boundary"};
-  Configurable<int> nBinsDeltaPhi{"nBinsDeltaPhi",64,"number of bins in delta phi axis"};
+  Configurable<int> nBinsDeltaPhi{"nBinsDeltaPhi", 64, "number of bins in delta phi axis"};
 
-  ConfigurableAxis deltaEtaBinEdges{"deltaEtaBinEdges",{40,-2.,2.}," Delta Eta Bins of equal width"};
-  ConfigurableAxis ptHadronBinsEdges{"ptHadronBinsEdges",{11,0.,11.},"pT Bins of equal width for Hadrons"};
-
+  ConfigurableAxis deltaEtaBinEdges{"deltaEtaBinEdges", {40, -2., 2.}, " Delta Eta Bins of equal width"};
+  ConfigurableAxis ptHadronBinsEdges{"ptHadronBinsEdges", {11, 0., 11.}, "pT Bins of equal width for Hadrons"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
@@ -96,7 +94,7 @@ struct HfTaskCorrelationDstarHadrons {
     AxisSpec axisSpecDeltaPhi = {nBinsDeltaPhi, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf};
     AxisSpec axisSpecDeltaEta = {deltaEtaBinEdges};
     AxisSpec axisSpecPtHadron = {ptHadronBinsEdges};
-    AxisSpec axisSpecPoolBin = {9,0.,9.};
+    AxisSpec axisSpecPoolBin = {9, 0., 9.};
 
     registry.add("hCorrel2DVsPtSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + stringPtD + stringPtHadron + stringPoolBin + "entries", {HistType::kTHnSparseD, {axisSpecDeltaPhi, axisSpecDeltaEta, axisSpecPtDstar, axisSpecPtHadron, axisSpecPoolBin}}, true);
     registry.add("hCorrel2DPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2D, {axisSpecDeltaPhi, axisSpecDeltaEta}}, true);
