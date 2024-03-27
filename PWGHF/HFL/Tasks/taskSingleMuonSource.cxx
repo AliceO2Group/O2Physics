@@ -98,7 +98,7 @@ struct HfTaskSingleMuonSource {
     AxisSpec axisDeltaPt{1000, -50., 50., "#Delta #it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisMftNC{10, 0., 11., "Number of clusters in MFT"};
 
-    HistogramConfigSpec h1Pt{HistType::TH1F, {axisPt}};
+    HistogramConfigSpec h1Pt{HistType::kTH1F, {axisPt}};
     HistogramConfigSpec h2PtDCA{HistType::kTH2F, {axisPt, axisDCA}};
     HistogramConfigSpec h2PtChi2{HistType::kTH2F, {axisPt, axisChi2}};
     HistogramConfigSpec h3PtDeltaPtMftNC{HistType::kTH3F, {axisPt, axisDeltaPt, axisMftNC}};
