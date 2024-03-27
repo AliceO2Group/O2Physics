@@ -55,7 +55,7 @@ struct FemtoCorrelations {
   Configurable<int16_t> _tpcNClsFound{"minTpcNClsFound", 0, "minimum allowed number of TPC clasters"};
   Configurable<float> _tpcChi2NCl{"tpcChi2NCl", 100.0, "upper limit for chi2 value of a fit over TPC clasters"};
   Configurable<float> _tpcCrossedRowsOverFindableCls{"tpcCrossedRowsOverFindableCls", 0, "lower limit of TPC CrossedRows/FindableCls value"};
-  Configurable<int> _tpcNClsShared{"maxTpcNClsShared", 100, "maximum allowed number of TPC shared clasters"};
+  Configurable<float> _tpcFractionSharedCls{"maxTpcFractionSharedCls", 0.4, "maximum fraction of TPC shared clasters"};
   Configurable<int> _itsNCls{"minItsNCls", 0, "minimum allowed number of ITS clasters"};
   Configurable<float> _itsChi2NCl{"itsChi2NCl", 100.0, "upper limit for chi2 value of a fit over ITS clasters"};
   Configurable<float> _vertexZ{"VertexZ", 10.0, "abs vertexZ value limit"};
@@ -327,7 +327,7 @@ struct FemtoCorrelations {
     for (auto track : tracks) {
       if (abs(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ()) > _vertexZ)
         continue;
-      if (track.tpcNClsShared() > _tpcNClsShared || track.itsNCls() < _itsNCls)
+      if (track.tpcFractionSharedCls() > _tpcFractionSharedCls || track.itsNCls() < _itsNCls)
         continue;
       if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc() < *_centBins.value.begin() || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc() >= *(_centBins.value.end() - 1))
         continue;
