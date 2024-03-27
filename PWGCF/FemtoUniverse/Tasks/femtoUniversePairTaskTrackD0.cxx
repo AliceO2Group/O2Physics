@@ -544,10 +544,9 @@ struct femtoUniversePairTaskTrackD0 {
     auto thegroupPartsAllD0D0bar = partsAllDmesons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsOnlyD0D0bar = partsOnlyD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
-    if(ConfUseAllD0mesons) {
+    if (ConfUseAllD0mesons) {
       doSameEvent<false>(thegroupPartsTrack, thegroupPartsAllD0D0bar, parts, col.magField(), col.multNtr());
-    }
-    else {
+    } else {
       doSameEvent<false>(thegroupPartsTrack, thegroupPartsOnlyD0D0bar, parts, col.magField(), col.multNtr());
     }
   }
@@ -625,12 +624,11 @@ struct femtoUniversePairTaskTrackD0 {
       /// \todo before mixing we should check whether both collisions contain a pair of particles!
       // if (partsD0.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTrack.size() == 0 ) continue;
 
-      if(ConfUseAllD0mesons) {
+      if (ConfUseAllD0mesons) {
         doMixedEvent<false>(groupPartsTrack, groupPartsAllD0D0bar, parts, magFieldTesla1, multiplicityCol);
-      }
-      else {
+      } else {
         doMixedEvent<false>(groupPartsTrack, groupPartsOnlyD0D0bar, parts, magFieldTesla1, multiplicityCol);
-      } 
+      }
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackD0, processMixedEvent, "Enable processing mixed events", true);
