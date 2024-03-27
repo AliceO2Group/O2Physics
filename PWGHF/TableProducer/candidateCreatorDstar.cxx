@@ -324,7 +324,8 @@ struct HfCandidateCreatorDstar {
                        signSoftPi,
                        impactParameterPi.getY(), std::sqrt(impactParameterPi.getSigmaY2()),
                        pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2],
-                       pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2]);
+                       pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2],
+                       prongD0.prong0Id(), prongD0.prong1Id());
       // Fill candidate Table for D0
       rowCandD0Base(collision.globalIndex(),
                     primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),

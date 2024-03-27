@@ -63,7 +63,7 @@ enum MassHyposLcToPKPi : uint8_t {
 } // namespace o2::aod
 
 struct TaskPolarisationCharmHadrons {
-  using CandDstarWSelFlag = soa::Join<aod::HfCandDstar, aod::HfSelDstarToD0Pi>;
+  using CandDstarWSelFlag = soa::Join<aod::HfCandDstars, aod::HfSelDstarToD0Pi>;
   using CandLcToPKPiWSelFlag = soa::Join<aod::HfCand3Prong, aod::HfSelLc>;
 
   float massPi{0.f};
