@@ -752,6 +752,7 @@ struct nuclei_in_jets {
   PROCESS_SWITCH(nuclei_in_jets, processData, "Process data", true);
 
   // MC
+  SliceCache cache;
   void processMC(soa::Join<SelectedCollisions, aod::McCollisionLabels>::iterator const& collision, MCTracks const& mcTracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
   {
     // Event Counter (before event sel)
@@ -765,7 +766,9 @@ struct nuclei_in_jets {
     registryQC.fill(HIST("number_of_events_mc"), 1.5);
 
     // Generated Particles
-    for (auto& particle : mcParticles) {
+    auto mcParticlesInCollision = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId,
+                                                            collision.mcCollision_as<aod::McCollisions>().globalIndex(), cache);
+    for (auto& particle : mcParticlesInCollision) {
 
       if (!particle.isPhysicalPrimary())
         continue;
