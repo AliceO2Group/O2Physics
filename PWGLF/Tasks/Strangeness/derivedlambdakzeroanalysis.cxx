@@ -182,10 +182,10 @@ struct derivedlambdakzeroanalysis {
                               selK0ShortCTau,
                               selLambdaCTau,
                               selK0ShortArmenteros,
-                              selPosGoodTPCTrack,    // at least min # TPC rows
-                              selNegGoodTPCTrack,    // at least min # TPC rows
-                              selPosGoodITSTrack,    // at least min # ITS clusters
-                              selNegGoodITSTrack,    // at least min # ITS clusters
+                              selPosGoodTPCTrack, // at least min # TPC rows
+                              selNegGoodTPCTrack, // at least min # TPC rows
+                              selPosGoodITSTrack, // at least min # ITS clusters
+                              selNegGoodITSTrack, // at least min # ITS clusters
                               selPosItsOnly,
                               selNegItsOnly,
                               selPosNotTPCOnly,
@@ -243,7 +243,7 @@ struct derivedlambdakzeroanalysis {
         maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDPositiveProton);
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDPositivePion);
       }
-      // TOF PID 
+      // TOF PID
       if (TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaPositivePionK0Short) | (uint64_t(1) << selTOFDeltaTPositivePionK0Short);
       if (TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
@@ -261,7 +261,7 @@ struct derivedlambdakzeroanalysis {
         maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selTPCPIDNegativePion);
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTPCPIDNegativeProton);
       }
-      // TOF PID 
+      // TOF PID
       if (TofPidNsigmaCutK0Pi < 1e+5) // safeguard for no cut
         maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selTOFNSigmaNegativePionK0Short) | (uint64_t(1) << selTOFDeltaTNegativePionK0Short);
       if (TofPidNsigmaCutLaPr < 1e+5) // safeguard for no cut
@@ -270,10 +270,10 @@ struct derivedlambdakzeroanalysis {
         maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selTOFNSigmaNegativeProtonLambda) | (uint64_t(1) << selTOFDeltaTNegativeProtonLambda);
     }
 
-    if(skipTPConly){
-        maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
-        maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
-        maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
+    if (skipTPConly) {
+      maskK0ShortSpecific = maskK0ShortSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
+      maskLambdaSpecific = maskLambdaSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
+      maskAntiLambdaSpecific = maskAntiLambdaSpecific | (uint64_t(1) << selPosNotTPCOnly) | (uint64_t(1) << selNegNotTPCOnly);
     }
 
     // Primary particle selection, central to analysis
