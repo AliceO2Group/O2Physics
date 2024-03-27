@@ -284,6 +284,25 @@ struct nucleiSpectra {
     return result;
   }
 
+  double computeAbsoDecL(aod::McParticles::iterator particle)
+  {
+    if (!particle.has_daughters())
+      return -1.f;
+
+    float mothVtx[3]{particle.vx(), particle.vy(), particle.vz()};
+    float dauVtx[3]{0.f, 0.f, 0.f};
+    auto daughters = particle.daughters_as<aod::McParticles>();
+    for (const auto& dau : daughters) {
+      if (abs(dau.pdgCode()) != 22 && abs(dau.pdgCode()) != 11) {
+        dauVtx[0] = dau.vx();
+        dauVtx[1] = dau.vy();
+        dauVtx[2] = dau.vz();
+        break;
+      }
+    }
+    return std::hypot(mothVtx[0] - dauVtx[0], mothVtx[1] - dauVtx[1], mothVtx[2] - dauVtx[2]);
+  }
+
   template <class collision_t>
   bool eventSelection(collision_t& collision)
   {
@@ -626,7 +645,8 @@ struct nucleiSpectra {
       } else {
         c.flags |= kIsSecondaryFromMaterial;
       }
-      nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()]);
+      float absoDecL = computeAbsoDecL(particle);
+      nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()], absoDecL);
     }
 
     int index{0};
@@ -646,7 +666,8 @@ struct nucleiSpectra {
         }
 
         if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
-          nucleiTableMC(999., 999., 999., 0., 0., 999., 999., 999., -1, -1, -1, flags, 0, 0, 0, 0, 0, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()]);
+          float absDecL = computeAbsoDecL(particle);
+          nucleiTableMC(999., 999., 999., 0., 0., 999., 999., 999., -1, -1, -1, flags, 0, 0, 0, 0, 0, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()], absDecL);
         }
         break;
       }
