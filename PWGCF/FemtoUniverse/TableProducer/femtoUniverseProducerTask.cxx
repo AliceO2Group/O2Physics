@@ -245,6 +245,7 @@ struct femtoUniverseProducerTask {
   // D0/D0bar mesons
   struct : o2::framework::ConfigurableGroup {
     Configurable<float> ConfD0D0barCandMaxY{"ConfD0D0barCandMaxY", -1., "max. cand. rapidity"};
+    Configurable<float> ConfD0D0barCandEtaCut{"ConfD0D0barCandEtaCut", 0.8, "max. cand. pseudorapidity"};
   } ConfD0Selection;
 
   HfHelper hfHelper;
@@ -780,6 +781,10 @@ struct femtoUniverseProducerTask {
       }
 
       if (ConfD0Selection.ConfD0D0barCandMaxY >= 0. && std::abs(hfHelper.yD0(hfCand)) > ConfD0Selection.ConfD0D0barCandMaxY) {
+        continue;
+      }
+
+      if (ConfD0Selection.ConfD0D0barCandEtaCut >= hfCand.eta()) {
         continue;
       }
 
