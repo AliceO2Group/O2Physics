@@ -606,7 +606,7 @@ struct phipbpb {
         auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
         histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
-        histos.fill(HIST("hSparseV2MixedEvent_costheta_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
+        histos.fill(HIST("hSparseV2SAMixedEvent_costheta_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
         histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarIP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
         histos.fill(HIST("hSparseV2SAMixedEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
         histos.fill(HIST("hSparseV2SAMixedEvent_SA_A0"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
