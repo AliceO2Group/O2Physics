@@ -218,7 +218,7 @@ struct qVectorsTable {
       }
 
       fullPath = cfgQvecCalibPath;
-      fullPath += "/FT0C"; // will be corrected
+      fullPath += "/FV0A";
       auto objfv0a = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
       if (!objfv0a) {
         if (cfgFV0ACorr->size() < 48) {

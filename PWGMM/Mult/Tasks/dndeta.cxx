@@ -266,7 +266,7 @@ struct MultiplicityCounter {
       binnedRegistry.add({PtGenNoEtaCut.data(), " ; p_{T} (GeV/c); centrality", {HistType::kTH2F, {PtAxisEff, CentAxis}}});
       binnedRegistry.add({PtEfficiency.data(), " ; p_{T} (GeV/c); centrality", {HistType::kTH2F, {PtAxisEff, CentAxis}}});
       binnedRegistry.add({PtEfficiencyNoEtaCut.data(), " ; p_{T} (GeV/c); centrality", {HistType::kTH2F, {PtAxisEff, CentAxis}}});
-      binnedRegistry.add({PtEfficiencyFakes.data(), " ; p_{T} (GeV/c); centrality", {HistType::kTH1F, {PtAxisEff, CentAxis}}});
+      binnedRegistry.add({PtEfficiencyFakes.data(), " ; p_{T} (GeV/c); centrality", {HistType::kTH2F, {PtAxisEff, CentAxis}}});
       for (auto i = 0u; i < speciesIds.size(); ++i) {
         binnedRegistry.add({fmt::format(PtGenF.data(), species[i]).c_str(), " ; p_{T} (GeV/c); centrality", {HistType::kTH2F, {PtAxisEff, CentAxis}}});
         binnedRegistry.add({fmt::format(PtEfficiencyF.data(), species[i]).c_str(), " ; p_{T} (GeV/c); centrality", {HistType::kTH2F, {PtAxisEff, CentAxis}}});

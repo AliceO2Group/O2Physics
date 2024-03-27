@@ -101,13 +101,13 @@ struct nuclei_in_jets {
   Configurable<float> min_nsigmaTOF{"min_nsigmaTOF", -3.0f, "Minimum nsigma TOF"};
   Configurable<float> max_nsigmaTOF{"max_nsigmaTOF", +3.5f, "Maximum nsigma TOF"};
   Configurable<bool> require_primVtx_contributor{"require_primVtx_contributor", true, "require that the track is a PV contributor"};
-  Configurable<std::vector<float>> param_proton_ref{"param_proton_ref", {0.93827208816, 0.18, 0.5, 1}, "Parameters of Levi-Tsallis fit of Protons from pythia"};
-  Configurable<std::vector<float>> param_proton_jet{"param_proton_jet", {0.93827208816, 0.18, 0.5, 1}, "Parameters for reweighting protons in jets"};
-  Configurable<std::vector<float>> param_deuteron_jet{"param_deuteron_jet", {1.87561294257, 0.18, 0.5, 1}, "Parameters for reweighting deuterons in jets"};
-  Configurable<std::vector<float>> param_helium3_jet{"param_helium3_jet", {2.80839160743, 0.18, 0.5, 1}, "Parameters for reweighting helium3 in jets"};
-  Configurable<std::vector<float>> param_proton_ue{"param_proton_ue", {0.93827208816, 0.18, 0.5, 1}, "Parameters for reweighting protons in ue"};
-  Configurable<std::vector<float>> param_deuteron_ue{"param_deuteron_ue", {1.87561294257, 0.18, 0.5, 1}, "Parameters for reweighting deuterons in ue"};
-  Configurable<std::vector<float>> param_helium3_ue{"param_helium3_ue", {2.80839160743, 0.18, 0.5, 1}, "Parameters for reweighting helium3 in ue"};
+  Configurable<std::vector<float>> param_proton_ref{"param_proton_ref", {0.00007, 984.79694, 0.45856, 0.00036}, "Parameters of Levi-Tsallis fit of Protons from pythia"};
+  Configurable<std::vector<float>> param_proton_jet{"param_proton_jet", {0.00109, 4.27109, 0.51173, 2.26176}, "Parameters for reweighting protons in jets"};
+  Configurable<std::vector<float>> param_deuteron_jet{"param_deuteron_jet", {0.00026, 2.09662, 1.00000, 1.87561}, "Parameters for reweighting deuterons in jets"};
+  Configurable<std::vector<float>> param_helium3_jet{"param_helium3_jet", {0.00026, 2.09662, 1.00000, 1.87561}, "Parameters for reweighting helium3 in jets"};
+  Configurable<std::vector<float>> param_proton_ue{"param_proton_ue", {0.00000, 88.48017, 0.53952, 0.06212}, "Parameters for reweighting protons in ue"};
+  Configurable<std::vector<float>> param_deuteron_ue{"param_deuteron_ue", {0.00000, 25.00000, 0.51497, 1.00000}, "Parameters for reweighting deuterons in ue"};
+  Configurable<std::vector<float>> param_helium3_ue{"param_helium3_ue", {0.00000, 25.00000, 0.51497, 1.00000}, "Parameters for reweighting helium3 in ue"};
 
   // List of Particles
   enum nucleus { proton,
@@ -379,19 +379,14 @@ struct nuclei_in_jets {
     return 1;
   }
 
-  float GetTsallis(float mass, float temp, float q, float norm, float pt)
+  float GetTsallis(float p0, float p1, float p2, float p3, float pt)
   {
 
-    float p0 = norm;
-    float p1 = 1.0 / (q - 1.0);
-    float p2 = temp;
-    float p3 = mass;
-
-    float dNdpt = (pt * p0 * (p1 - 1.0) * (p1 - 2.0)) / (p1 * p2 * (p1 * p2 + p3 * (p1 - 2.0))) * TMath::Power((1.0 + (TMath::Sqrt(p3 * p3 + pt * pt) - p3) / (p1 * p2)), -p1);
-
-    if (dNdpt <= 0) {
-      return 1;
-    }
+    float dNdpt(1);
+    float part1 = p0 * pt * (p1 - 1.0) * (p1 - 2.0);
+    float part2 = part1 * TMath::Power(1.0 + (TMath::Sqrt(p3 * p3 + pt * pt) - p3) / (p1 * p2), -p1);
+    float part3 = part2 / TMath::TwoPi() * (p1 * p2 * (p1 * p2 + p3 * (p1 - 2.0)));
+    dNdpt = part3;
 
     return dNdpt;
   }
@@ -860,7 +855,7 @@ struct nuclei_in_jets {
         continue;
 
       // Antiproton
-      if (particle.pdgCode() != -2212) {
+      if (particle.pdgCode() == -2212) {
         if (pt < 1.0 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC) {
           registryMC.fill(HIST("antiproton_jet_rec_tpc"), pt, wpr_jet);
           registryMC.fill(HIST("antiproton_ue_rec_tpc"), pt, wpr_ue);
@@ -872,7 +867,7 @@ struct nuclei_in_jets {
       }
 
       // Antideuteron
-      if (particle.pdgCode() != -1000010020) {
+      if (particle.pdgCode() == -1000010020) {
         if (pt < 1.0 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC) {
           registryMC.fill(HIST("antideuteron_jet_rec_tpc"), pt, wde_jet);
           registryMC.fill(HIST("antideuteron_ue_rec_tpc"), pt, wde_ue);
@@ -884,7 +879,7 @@ struct nuclei_in_jets {
       }
 
       // Antihelium-3
-      if (particle.pdgCode() != -1000020030) {
+      if (particle.pdgCode() == -1000020030) {
         if (nsigmaTPCHe > min_nsigmaTPC && nsigmaTPCHe < max_nsigmaTPC) {
           registryMC.fill(HIST("antihelium3_jet_rec_tpc"), 2.0 * pt, whe_jet);
           registryMC.fill(HIST("antihelium3_ue_rec_tpc"), 2.0 * pt, whe_ue);
