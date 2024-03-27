@@ -48,9 +48,7 @@ using namespace o2::framework::expressions;
 #define FILL_QA_HIST_1D(cutId, hName, x...)                  \
   if (!mHist1D.count(hName))                                 \
     LOGF(fatal, "AHTUNG! no key %s in mHist1D map!", hName); \
-  \  
-  pHist1D[cutId][mHist1D[hName]]                             \
-    ->Fill(x);
+  pHist1D[cutId][mHist1D[hName]]->Fill(x);
 
 #define FILL_QA_HIST_2D(cutId, hName, x, y...)               \
   if (!mHist2D.count(hName))                                 \
