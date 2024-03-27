@@ -11,7 +11,7 @@
 
 // jet analysis tasks (subscribing to jet finder task)
 //
-/// \author Nima Zardoshti <nima.zardoshti@cern.ch>
+/// Mriganka Mouli Mondal <mriganka.mouli.mondal@cern.ch>    originally modified from  Nima Zardoshti <nima.zardoshti@cern.ch>
 //
 #include <vector>
 #include <TMath.h>
@@ -60,7 +60,6 @@ int ch_nl =0;   // charge next to leading
 
 int ch_mult = 0;   // charge next to leading
 
-
 #include "Framework/runDataProcessing.h"
 
 struct JetChCorr {
@@ -94,10 +93,10 @@ struct JetChCorr {
     registry.add("h2_jet_pt_jet_nsd_eventwiseconstituentsubtracted", ";#it{p}_{T,jet} (GeV/#it{c});#it{n}_{SD}", {HistType::kTH2F, {{200, 0., 200.}, {15, -0.5, 14.5}}});
 
 
- ////  For L and NL particles
+    ////  For L and NL particles
 
-     ////  For L and NL particles
-     registry.add("h_ch_s_pt", ";#it{p}_{T,pair} (GeV/#it{c});N_{ch} (hh)", {HistType::kTH1F, {{50, 0., 50.}}});
+    ////  For L and NL particles
+    registry.add("h_ch_s_pt", ";#it{p}_{T,pair} (GeV/#it{c});N_{ch} (hh)", {HistType::kTH1F, {{50, 0., 50.}}});
     registry.add("h_ch_d_pt", ";#it{p}_{T,pair} (GeV/#it{c});N_{ch} (h#bar{h})", {HistType::kTH1F, {{50, 0., 50.}}});
     registry.add("h_ch_s_kt", ";#it{k}_{T,pair} (GeV/#it{c});N_{ch} (hh)", {HistType::kTH1F, {{50, 0., 5.}}});
     registry.add("h_ch_d_kt", ";#it{k}_{T,pair} (GeV/#it{c});N_{ch} (h#bar{h})", {HistType::kTH1F, {{50, 0., 5.}}});
@@ -184,14 +183,14 @@ struct JetChCorr {
     std::vector<float> ptSubLeadingVec;
     std::vector<float> thetaVec;
 
-      float ptJet = daughterSubJet.pt();
+    float ptJet = daughterSubJet.pt();
       
     while (daughterSubJet.has_parents(parentSubJet1, parentSubJet2)) {
       if (parentSubJet1.perp() < parentSubJet2.perp()) {
         std::swap(parentSubJet1, parentSubJet2);
       }
 
-  vector<fastjet::PseudoJet> constituents1 = parentSubJet1.constituents();
+      vector<fastjet::PseudoJet> constituents1 = parentSubJet1.constituents();
       vector<fastjet::PseudoJet> constituents2 = parentSubJet2.constituents();
       //cout<<"in subJET1 ********************************************* "<<endl;
       int found1 = 0;
@@ -208,7 +207,6 @@ struct JetChCorr {
       }
       // cout<<endl;
 
-
       
       auto z = parentSubJet2.perp() / (parentSubJet1.perp() + parentSubJet2.perp());
       auto theta = parentSubJet1.delta_R(parentSubJet2);
@@ -218,26 +216,26 @@ struct JetChCorr {
       thetaVec.push_back(theta);
 
       if (z >= zCut * TMath::Power(theta / (jet.r() / 100.f), beta)) {
-		if(found1>0&&found2>0){  // found leading and next-to-leading in seperate prongs
-        if (!softDropped) {
-          zg = z;
-          rg = theta;
-          if constexpr (!isSubtracted && !isMCP) {
-            registry.fill(HIST("h2_jet_pt_jet_zg"), jet.pt(), zg);
-            registry.fill(HIST("h2_jet_pt_jet_rg"), jet.pt(), rg);
-          }
-          if constexpr (!isSubtracted && isMCP) {
-            registry.fill(HIST("h2_jet_pt_part_jet_zg_part"), jet.pt(), zg);
-            registry.fill(HIST("h2_jet_pt_part_jet_rg_part"), jet.pt(), rg);
-          }
-          if constexpr (isSubtracted && !isMCP) {
-            registry.fill(HIST("h2_jet_pt_jet_zg_eventwiseconstituentsubtracted"), jet.pt(), zg);
-            registry.fill(HIST("h2_jet_pt_jet_rg_eventwiseconstituentsubtracted"), jet.pt(), rg);
-          }
-          softDropped = true;
+	if(found1>0&&found2>0){  // found leading and next-to-leading in seperate prongs
+	  if (!softDropped) {
+	    zg = z;
+	    rg = theta;
+	    if constexpr (!isSubtracted && !isMCP) {
+	      registry.fill(HIST("h2_jet_pt_jet_zg"), jet.pt(), zg);
+	      registry.fill(HIST("h2_jet_pt_jet_rg"), jet.pt(), rg);
+	    }
+	    if constexpr (!isSubtracted && isMCP) {
+	      registry.fill(HIST("h2_jet_pt_part_jet_zg_part"), jet.pt(), zg);
+	      registry.fill(HIST("h2_jet_pt_part_jet_rg_part"), jet.pt(), rg);
+	    }
+	    if constexpr (isSubtracted && !isMCP) {
+	      registry.fill(HIST("h2_jet_pt_jet_zg_eventwiseconstituentsubtracted"), jet.pt(), zg);
+	      registry.fill(HIST("h2_jet_pt_jet_rg_eventwiseconstituentsubtracted"), jet.pt(), rg);
+	    }
+	    softDropped = true;
 
 
-	   softDropped = true;
+	    softDropped = true;
 	    
 	    v1.SetXYZ(parentSubJet1.px(), parentSubJet1.py(), parentSubJet1.pz());
 	    v2.SetXYZ(parentSubJet2.px(), parentSubJet2.py(), parentSubJet2.pz());
@@ -316,9 +314,8 @@ struct JetChCorr {
 		registry.fill(HIST("hr3_ch_d_lu"), log(1/rg),log(kt_p));
 	      }
 	    }
-	  
-        }
-      }
+	  }
+	}
         nsd++;
       }
       daughterSubJet = parentSubJet1;
@@ -332,7 +329,7 @@ struct JetChCorr {
     if constexpr (isSubtracted && !isMCP) {
       registry.fill(HIST("h2_jet_pt_jet_nsd_eventwiseconstituentsubtracted"), jet.pt(), nsd);
     }
-    outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec);
+    // outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec);
   }
 
   template <bool isSubtracted, typename T, typename U, typename V>
@@ -346,8 +343,8 @@ struct JetChCorr {
     ch_mult = 0;// jet.size();
     ch_mult =  jet.tracksIds().size();
     //for (auto& jetConstituent : jet.template tracks_as<U>()) {
-        for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()){
-	  fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
+    for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()){
+      fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
 
 
       //int tr = jetConstituent.globalIndex();
@@ -367,7 +364,7 @@ struct JetChCorr {
       if(nn==1){
 	//n_leadpt =  p_leading.Perp();
 	n_trackL = jetConstituent.globalIndex();
-	ch_nl = jetConstituent.pt();//signed1Pt();//pt();
+	ch_nl = jetConstituent.sign();//signed1Pt();//pt();
 	v2.SetXYZ(jetConstituent.px(), jetConstituent.py(), jetConstituent.pz());
 
 	vR = v1 + v2; 
@@ -376,7 +373,7 @@ struct JetChCorr {
 	float kt_p  = v1.Perp(vR);
 	//	float th_p  = v1.Angle(v2);
 	//	cout<<z<< " "<<fT<<"  "<<kt_p<<"  "<<th_p<<endl;
-	cout<<ch_l<<"  "<<ch_nl<<endl;
+	//cout<<ch_l<<"  "<<ch_nl<<endl;
 	if(ch_l == ch_nl) {
 	  registry.fill(HIST("h_ch_s_pt"), jet.pt());
 	  registry.fill(HIST("h_ch_s_kt"), kt_p);
@@ -401,13 +398,12 @@ struct JetChCorr {
 
   void processDummy(JetTracks const& tracks)
   {
-
-    
   }
   PROCESS_SWITCH(JetChCorr, processDummy, "Dummy process function turned on by default", true);
 
-   void processChargedJetsData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet, JetTracks const& tracks)
-    // void processChargedJetsData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet,  soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks)
+  
+  void processChargedJetsData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet, JetTracks const& tracks)
+  // void processChargedJetsData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet,  soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks)
   {
     //       cout<<"I am in CHarged Jet Data"<<endl;
     analyseCharged<false>(jet, tracks, jetSubstructureDataTable);
@@ -444,7 +440,9 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
 
   return WorkflowSpec{adaptAnalysisTask<JetChCorr>(
-    cfgc, TaskName{"jet-ch-corr"})};
+						   cfgc, TaskName{"jet-ch-corr"})};
 }
-//	"defineDataProcessing": "jet-ch-corr",
+
+
+//  "defineDataProcessing": "jet-ch-corr",
 //  "processCollisionsWithoutMultiplicityAndCentrality": "true"
