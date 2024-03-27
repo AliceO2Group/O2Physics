@@ -15,6 +15,8 @@
 #ifndef PWGHF_DATAMODEL_DERIVEDTABLES_H_
 #define PWGHF_DATAMODEL_DERIVEDTABLES_H_
 
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
@@ -22,6 +24,7 @@
 #include "Common/Core/RecoDecay.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 namespace o2::aod
 {
@@ -283,6 +286,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
 DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);                  //! ML score for background class
 DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);            //! ML score for prompt class
 DECLARE_SOA_COLUMN(MlScoreNonPrompt, mlScoreNonPrompt, float);      //! ML score for non-prompt class
+DECLARE_SOA_COLUMN(MlScores, mlScores, std::vector<float>);         //! vector of ML scores
 } // namespace hf_cand_mc
 
 // D0
@@ -431,6 +435,13 @@ DECLARE_SOA_TABLE(HfD0Sels, "AOD", "HFD0SEL", //! Table with candidate selection
 
 DECLARE_SOA_TABLE(StoredHfD0Sels, "AOD1", "HFD0SEL", //! Table with candidate selection flags (stored version)
                   hf_cand_sel::CandidateSelFlag,
+                  soa::Marker<1>);
+
+DECLARE_SOA_TABLE(HfD0Mls, "AOD", "HFD0ML", //! Table with candidate selection ML scores
+                  hf_cand_mc::MlScores);
+
+DECLARE_SOA_TABLE(StoredHfD0Mls, "AOD1", "HFD0ML", //! Table with candidate selection ML scores (stored version)
+                  hf_cand_mc::MlScores,
                   soa::Marker<1>);
 
 DECLARE_SOA_TABLE(HfD0Ids, "AOD", "HFD0ID", //! Table with global indices for candidates
@@ -652,6 +663,14 @@ DECLARE_SOA_TABLE(Hf3PSels, "AOD", "HF3PSEL", //! Table with candidate selection
 
 DECLARE_SOA_TABLE(StoredHf3PSels, "AOD1", "HF3PSEL", //! Table with candidate selection flags (stored version)
                   hf_cand_sel::CandidateSelFlag,
+                  soa::Marker<3>);
+
+DECLARE_SOA_TABLE(Hf3PMls, "AOD", "HF3PML", //! Table with candidate selection ML scores
+                  hf_cand_mc::MlScores,
+                  soa::Marker<2>);
+
+DECLARE_SOA_TABLE(StoredHf3PMls, "AOD1", "HF3PML", //! Table with candidate selection ML scores (stored version)
+                  hf_cand_mc::MlScores,
                   soa::Marker<3>);
 
 DECLARE_SOA_TABLE(Hf3PIds, "AOD", "HF3PID", //! Table with global indices for candidates
