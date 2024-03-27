@@ -82,6 +82,7 @@ struct lambdakzeromcfinder {
   Configurable<bool> findAntiHyperTriton{"findAntiHyperTriton", false, "findAntiHyperTriton"};
   Configurable<bool> requireTPC{"requireTPC", true, "require TPC"};
   Configurable<bool> skipTPConly{"skipTPConly", false, "skip tracks that are TPC-only"};
+  Configurable<bool> storeSingleTPCOnlyProng{"storeSingleTPCOnlyProng", false, "in case a TPC-only track is found, do not allow another TPC-only for the same mcParticle. Works only in MC particle path."};
   Configurable<bool> doUnassociatedV0s{"doUnassociatedV0s", true, "generate also unassociated V0s (for cascades!)"};
   Configurable<bool> doSameCollisionOnly{"doSameCollisionOnly", false, "stick to decays in which tracks are assoc to same collision"};
   Configurable<int> qaNbins{"qaNbins", 200, "qa plots: binning"};
@@ -208,9 +209,15 @@ struct lambdakzeromcfinder {
             continue; // skip deltarays (if ever), stick to decay products only
           if (daughter.pdgCode() == positivePdg) {
             auto const& thisDaughterTracks = daughter.template tracks_as<LabeledTracks>();
+            bool tpcOnlyFound = false;
             for (auto const& track : thisDaughterTracks) {
-              if (track.detectorMap() == o2::aod::track::TPC && skipTPConly)
-                continue;
+              if (track.detectorMap() == o2::aod::track::TPC) {
+                if (tpcOnlyFound == true && storeSingleTPCOnlyProng)
+                  continue; // in case a previous TPC-only version of this mcParticle was found + we want to store only one copy, skip
+                if (skipTPConly)
+                  continue;
+                tpcOnlyFound = true;
+              }
               if (track.sign() > 0 && (track.hasTPC() || !requireTPC)) {
                 trackIndexPositive[nPosReco] = track.globalIndex(); // assign only if TPC present
                 nPosReco++;
@@ -219,15 +226,21 @@ struct lambdakzeromcfinder {
           }     // end positive pdg check
           if (daughter.pdgCode() == negativePdg) {
             auto const& thisDaughterTracks = daughter.template tracks_as<LabeledTracks>();
+            bool tpcOnlyFound = false;
             for (auto const& track : thisDaughterTracks) {
-              if (track.detectorMap() == o2::aod::track::TPC && skipTPConly)
-                continue;
+              if (track.detectorMap() == o2::aod::track::TPC) {
+                if (tpcOnlyFound == true && storeSingleTPCOnlyProng)
+                  continue; // in case a previous TPC-only version of this mcParticle was found + we want to store only one copy, skip
+                if (skipTPConly)
+                  continue;
+                tpcOnlyFound = true;
+              }
               if (track.sign() < 0 && (track.hasTPC() || !requireTPC)) {
                 trackIndexNegative[nNegReco] = track.globalIndex(); // assign only if TPC present
                 nNegReco++;
               }
             }   // end track list loop
-          }     // end positive pdg check
+          }     // end negative pdg check
         }
       }
     }
