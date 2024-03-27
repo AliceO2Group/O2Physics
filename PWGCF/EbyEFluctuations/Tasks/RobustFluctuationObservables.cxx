@@ -45,18 +45,16 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // declaratives to orginise initialization and filling of histograms for various sets of cuts
-#define FILL_QA_HIST_1D(cutId, hName, x...)                           \
-  if (!mHist1D.count(hName)) {                                        \
-    cout << "AHTUNG! no key " << hName << " in mHist1D map!" << endl; \
-    return;                                                           \
-  }                                                                   \
-  pHist1D[cutId][mHist1D[hName]]->Fill(x);
+#define FILL_QA_HIST_1D(cutId, hName, x...)                  \
+  if (!mHist1D.count(hName))                                 \
+    LOGF(fatal, "AHTUNG! no key %s in mHist1D map!", hName); \
+  \  
+  pHist1D[cutId][mHist1D[hName]]                             \
+    ->Fill(x);
 
-#define FILL_QA_HIST_2D(cutId, hName, x, y...)                        \
-  if (!mHist2D.count(hName)) {                                        \
-    cout << "AHTUNG! no key " << hName << " in mHist2D map!" << endl; \
-    return;                                                           \
-  }                                                                   \
+#define FILL_QA_HIST_2D(cutId, hName, x, y...)               \
+  if (!mHist2D.count(hName))                                 \
+    LOGF(fatal, "AHTUNG! no key %s in mHist2D map!", hName); \
   pHist2D[cutId][mHist2D[hName]]->Fill(x, y);
 
 #define ADD_QA_HIST_1D(hName, title, axisX...) \
@@ -171,6 +169,8 @@ struct RobustFluctuationObservables {
   TF1* funcCutEventsByMultPVvsV0A;
   TF1* funcCutEventsByMultPVvsT0C;
 
+  TF1* funcCutEventsByMultPVvsV0A_anotherTrend; // Pb-Pb
+
   void init(InitContext const&)
   {
     // naming of the 2D correlation plots
@@ -185,7 +185,7 @@ struct RobustFluctuationObservables {
         "1globalPVcontrib_ITS7hits",
         "1globalPVcontrib_TRDorTOF",
         "diffFoundBC_vs_BC_0",
-        "hasFT0_CorrectedValid",
+        // "hasFT0_CorrectedValid",
         "PV_FT0_diff_cut",
         // "PV_FT0_diff_cut_TIGHT",
         "ALL_CUTS",
@@ -204,6 +204,8 @@ struct RobustFluctuationObservables {
         "antiHandmade_ITSROFcut",
         "ALL_CUTS_Handmade_ITSROFcut",
         "ALL_CUTS_Handmade_ITSROFcut_OnFoundBC",
+        "ALL_CUTS_Handmade_ITSROFcut_anotherCutOnMultV0A",
+        "ALL_CUTS_Handmade_ITSROFcut_kTVXinTRD",
         "Handmade_ITSROF_and_TF_cuts",
 
         "isITSonlyVertex",
@@ -219,6 +221,9 @@ struct RobustFluctuationObservables {
 
     funcCutEventsByMultPVvsT0C = new TF1("funcCutEventsByMultPVvsT0C", "[0]*x+[1]", 0, 10000);
     funcCutEventsByMultPVvsT0C->SetParameters(8. / 1600, -0.2);
+
+    funcCutEventsByMultPVvsV0A_anotherTrend = new TF1("funcCutEventsByMultPVvsV0A_anotherTrend", "[0]*x+[1]", 0, 200000);
+    funcCutEventsByMultPVvsV0A_anotherTrend->SetParameters(3400. / 160000, -410);
 
     AxisSpec axisNcontrib{nBinsContrib, -0.5, nMaxContrib - 0.5, "n vertex contributors"};
     AxisSpec axisNtracks{nBinsTracks, -0.5, nMaxTracks - 0.5, "n tracks"};
@@ -744,11 +749,6 @@ struct RobustFluctuationObservables {
         int ROF_BC_center = nITSROF_BC_offset + iROF * nBCsPerOrbit / nITSROF;
         if (fabs(static_cast<int>(collBC) - ROF_BC_center) <= nITSROF_BC_cutWidth / 2) {
           flagBCisNotInHandmadeBoundariesITSROF = false;
-          // if (TFid < 2)
-          //   LOGF(info, "QA: collBC = %d, nITSROF_BC_offset = %d, ROF_BC_center = %d, nITSROF_BC_cutWidth = %d, fabs(collBC - ROF_BC_center) = %d, (int)collBC - ROF_BC_center = %d",
-          //        collBC, nITSROF_BC_offset, ROF_BC_center,
-          //        nITSROF_BC_cutWidth, fabs(static_cast<int>(collBC) - ROF_BC_center),
-          //        static_cast<int>(collBC) - ROF_BC_center);
           break;
         }
       }
@@ -1525,8 +1525,8 @@ struct RobustFluctuationObservables {
       fillHistForThisCut("diffFoundBC_vs_BC_0", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
 
     // FT0 present
-    if (isFT0)
-      fillHistForThisCut("hasFT0_CorrectedValid", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
+    // if (isFT0)
+    // fillHistForThisCut("hasFT0_CorrectedValid", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
 
     // cut on diff b/n vertex from FT0 and track-based
     if (isFT0 && cutVzTrackT0diffLower < diff_PV_ft0_tracks && diff_PV_ft0_tracks < cutVzTrackT0diffUpper) {
@@ -1562,6 +1562,11 @@ struct RobustFluctuationObservables {
         histosEvent.fill(HIST("hBC_Aft_rejectedByCutOnMultPVvsT0C_AndIfITSonlyPV_ANTI"), collBC);
     }
 
+    // cut the remaining "strange" events just below the main 2D diagonal trend on multPV vs V0A plot
+    bool flagBelowRemainingTrendMultPVvsV0A = false;
+    if (multNTracksPV > funcCutEventsByMultPVvsV0A_anotherTrend->Eval(multV0A))
+      flagBelowRemainingTrendMultPVvsV0A = true;
+
     if (isITSonlyVertex)
       fillHistForThisCut("isITSonlyVertex", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
     else
@@ -1592,6 +1597,11 @@ struct RobustFluctuationObservables {
 
       if (isFT0 && (cutVzTrackT0diffLower < diff_PV_ft0_tracks) && (diff_PV_ft0_tracks < cutVzTrackT0diffUpper) && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && flagNotTheSameFoundBC && !isITSonlyVertex) {
         fillHistForThisCut("ALL_CUTS_Handmade_ITSROFcut", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
+        if (flagBelowRemainingTrendMultPVvsV0A)
+          fillHistForThisCut("ALL_CUTS_Handmade_ITSROFcut_anotherCutOnMultV0A", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
+
+        if (collision.alias_bit(kTVXinTRD))
+          fillHistForThisCut("ALL_CUTS_Handmade_ITSROFcut_kTVXinTRD", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
 
         // study different BC ranges of the orbit:
         if (collBC < vSplitBCpointsOfTheOrbit->at(0))
