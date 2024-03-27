@@ -1956,7 +1956,7 @@ struct RobustFluctuationObservables {
     // registry.get<TH1>(HIST("eta"))->Fill(track.eta());
     // arrPointers[histId][cutId]->Fill(xval, yval, weight);
     if (!mMyCuts.count(cutName)) {
-      cout << "AHTUNG! no key " << cutName << " in mMyCuts map!" << endl;
+      LOGF(fatal, "AHTUNG! no key %s in mMyCuts map!", cutName);
       return;
     }
     // --> key exists
