@@ -166,6 +166,7 @@ class VarManager : public TObject
     kIsNoITSROFBorder, // No ITS read out frame border
     kIsSel8,           // TVX in Run3
     kIsINT7,
+    kIsINT8,
     kIsEMC7,
     kIsINT7inMUON,
     kIsMuonSingleLowPt7,
@@ -1107,6 +1108,9 @@ void VarManager::FillEvent(T const& event, float* values)
     if (fgUsedVars[kIsINT7]) {
       values[kIsINT7] = (event.alias_bit(kINT7) > 0);
     }
+    if (fgUsedVars[kIsINT8]) {
+      values[kIsINT8] = (event.alias_bit(kIsTriggerTVX) > 0);
+    }
     if (fgUsedVars[kIsEMC7]) {
       values[kIsEMC7] = (event.alias_bit(kEMC7) > 0);
     }
@@ -1210,6 +1214,9 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kCentFT0C] = event.centFT0C();
     if (fgUsedVars[kIsINT7]) {
       values[kIsINT7] = (event.alias_bit(kINT7) > 0);
+    }
+    if (fgUsedVars[kIsINT8]) {
+      values[kIsINT8] = (event.triggerAlias() & (uint32_t(1) << kIsTriggerTVX)) > 0;
     }
     if (fgUsedVars[kIsEMC7]) {
       values[kIsEMC7] = (event.alias_bit(kEMC7) > 0);
