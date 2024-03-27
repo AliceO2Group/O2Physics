@@ -78,9 +78,9 @@ struct FlowGFWPbPb
 
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;  // collisions filter
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>>;  // tracks filter
- 
+
   void init(InitContext const&)  // Initialization
-  {
+{
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(nolaterthan.value);
@@ -103,8 +103,8 @@ struct FlowGFWPbPb
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 -2 -2 -2}", "ChFull26", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 2  -2 -2 -2 -2}", "ChFull28", kFALSE));
 
-    fGFW->CreateRegions();  // finalize the initialization    
-  }
+    fGFW->CreateRegions();  // finalize the initialization
+}
 
   template <char... chars>
   void FillProfile(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const double& cent)
@@ -123,7 +123,7 @@ struct FlowGFWPbPb
   }
 
   void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
-  {
+{
     int Ntot = tracks.size();
 
     if (Ntot < 1)  return;
@@ -150,7 +150,7 @@ struct FlowGFWPbPb
     FillProfile(corrconfigs.at(1), HIST("c24"), cent);
     FillProfile(corrconfigs.at(2), HIST("c26"), cent);
     FillProfile(corrconfigs.at(3), HIST("c28"), cent);
-  }
+}
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
