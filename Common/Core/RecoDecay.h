@@ -646,7 +646,7 @@ class RecoDecay
       //   printf(" ");
       // printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, PDGParticle);
       // check if the particle comes from a decay process
-      if(particle.getProcess() == kPDecay){
+      if (particle.getProcess() == kPDecay) {
         list->push_back(particle.globalIndex());
       }
       return;
