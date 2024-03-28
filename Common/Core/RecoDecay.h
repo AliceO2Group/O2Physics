@@ -614,10 +614,6 @@ class RecoDecay
       // Printf("getDaughters: Error: No list!");
       return;
     }
-    // check if the particle comes from a decay process
-    if (particle.getProcess() != kPDecay) {
-      return;
-    }
     bool isFinal = false;                     // Flag to indicate the end of recursion
     if (depthMax > -1 && stage >= depthMax) { // Maximum depth has been reached (or exceeded).
       isFinal = true;
@@ -649,7 +645,10 @@ class RecoDecay
       // for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
       //   printf(" ");
       // printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, PDGParticle);
-      list->push_back(particle.globalIndex());
+      // check if the particle comes from a decay process
+      if(particle.getProcess() == kPDecay){
+        list->push_back(particle.globalIndex());
+      }
       return;
     }
     // If we are here, we have to follow the daughter tree.
