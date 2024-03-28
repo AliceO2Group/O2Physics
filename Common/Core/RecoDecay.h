@@ -24,6 +24,7 @@
 #include <vector>    // std::vector
 
 #include "CommonConstants/MathConstants.h"
+#include "Framework/AnalysisDataModel.h"
 #include "TMCProcess.h" // for VMC Particle Production Process
 
 /// Base class for calculating properties of reconstructed decays
