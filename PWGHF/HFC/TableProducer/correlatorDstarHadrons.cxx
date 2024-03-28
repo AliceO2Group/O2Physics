@@ -134,12 +134,12 @@ struct HfCorrelatorDstarHadrons {
 
   void init(InitContext&)
   {
-    binningScheme = {{binsZVtx, binsMultiplicity}, true};
-
     std::array<bool, 2> processes = {doprocessDataSameEvent, doprocessDataWithMixedEvent};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
+
+    binningScheme = {{binsZVtx, binsMultiplicity}, true};
   }
 
   void processDataSameEvent(FilteredCollisions const& collisions, // only collisions who have altleast one D*
