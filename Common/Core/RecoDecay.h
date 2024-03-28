@@ -734,7 +734,7 @@ class RecoDecay
           return -1;
         }
         // Check that the number of direct daughters coming from the dacay is not larger than the number of expected final daughters.
-        for (const auto& dau : particleMother.daughters_as<aod::McParticles>()) {
+        for (const auto& dau : particleMother.template daughters_as<aod::McParticles>()) {
           if (dau.getProcess() == kPDecay) {
             dauCounter++;
           }
@@ -859,7 +859,7 @@ class RecoDecay
         return false;
       }
       // Check that the number of direct daughters coming from the dacay is not larger than the number of expected final daughters.
-      for (const auto& dau : candidate.daughters_as<aod::McParticles>()) {
+      for (const auto& dau : candidate.template daughters_as<aod::McParticles>()) {
         if (dau.getProcess() == kPDecay) {
           dauCounter++;
         }
