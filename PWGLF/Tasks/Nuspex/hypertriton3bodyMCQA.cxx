@@ -259,7 +259,6 @@ struct hypertriton3bodyTrackMcinfo {
     for (auto& track : tracks) {
 
       ++itrack;
-
       registry.fill(HIST("hParticleCount"), 0.5);
       registry.fill(HIST("hTrackITSNcls"), track.itsNCls());
       registry.fill(HIST("hTPCNCls"), track.tpcNClsFound());
@@ -274,10 +273,14 @@ struct hypertriton3bodyTrackMcinfo {
           registry.fill(HIST("hTestCounter"), i + 3.5);
         }
       }
+
       if (!track.has_mcParticle()) {
         continue;
       }
       registry.fill(HIST("hTestCounter"), 1.5);
+      auto mcparticle = track.mcParticle_as<aod::McParticles>();
+      registry.fill(HIST("hTPCBB"), track.p() * track.sign(), track.tpcSignal());
+
       if (track.hasTOF() && track.hasTPC()) {
         registry.fill(HIST("hTestCounter"), 2.5);
         if (!(track.mcMask() & 1 << 15)) {
@@ -291,8 +294,6 @@ struct hypertriton3bodyTrackMcinfo {
         }
       }
       registry.fill(HIST("hParticleCount"), 1.5);
-      auto mcparticle = track.mcParticle_as<aod::McParticles>();
-      registry.fill(HIST("hTPCBB"), track.p() * track.sign(), track.tpcSignal());
 
       // if (TMath::Abs(mcparticle.y()) > 0.9) {continue;}
       registry.fill(HIST("hParticleCount"), 2.5);
