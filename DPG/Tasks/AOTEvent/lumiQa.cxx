@@ -14,6 +14,8 @@
 #include "Framework/AnalysisDataModel.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/HistogramRegistry.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "DataFormatsFT0/Digit.h"
 #include "TList.h"
 #include "TH1.h"
 
@@ -26,6 +28,8 @@ struct LumiQaTask {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   int lastRunNumber = -1;
   TH1* hCalibT0C = nullptr;
+  static const int nBCsPerOrbit = o2::constants::lhc::LHCMaxBunches;
+  std::bitset<nBCsPerOrbit> bcPatternB;
 
   void init(InitContext&)
   {
@@ -33,18 +37,35 @@ struct LumiQaTask {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     const AxisSpec axisMultT0C{1000, 0., 70000., "T0C multiplicity"};
-    const AxisSpec axisCentT0C{1000, 0., 100., "T0C centrality"};
+    const AxisSpec axisCentT0C{100, 0., 100., "T0C centrality"};
     histos.add("hMultT0C", "", kTH1F, {axisMultT0C});
     histos.add("hCentT0C", "", kTH1F, {axisCentT0C});
+    histos.add("hMultT0CselTCE", "", kTH1F, {axisMultT0C});
+    histos.add("hCentT0CselTCE", "", kTH1F, {axisCentT0C});
+    histos.add("hMultT0CselTVXTCE", "", kTH1F, {axisMultT0C});
+    histos.add("hCentT0CselTVXTCE", "", kTH1F, {axisCentT0C});
+    histos.add("hMultT0CselTVXTCEB", "", kTH1F, {axisMultT0C});
+    histos.add("hCentT0CselTVXTCEB", "", kTH1F, {axisCentT0C});
+
+    histos.add("hCounterTCE", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterZNC", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterZEM", "", kTH1D, {{1, 0., 1.}});
   }
 
   void process(BCsRun3 const& bcs, aod::Zdcs const& zdcs, aod::FT0s const& ft0s)
   {
     int runNumber = bcs.iteratorAt(0).runNumber();
     LOGP(info, "runNumber={}", runNumber);
+    const char* srun = Form("%d", runNumber);
+
     if (runNumber != lastRunNumber) {
-      TList* callst = ccdb->getForTimeStamp<TList>("Centrality/Estimators", bcs.iteratorAt(0).timestamp());
       lastRunNumber = runNumber;
+      int64_t ts = bcs.iteratorAt(0).timestamp();
+
+      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
+      bcPatternB = grplhcif->getBunchFilling().getBCPattern();
+
+      TList* callst = ccdb->getForTimeStamp<TList>("Centrality/Estimators", ts);
       hCalibT0C = reinterpret_cast<TH1*>(callst->FindObject("hCalibZeqFT0C"));
     }
     if (!hCalibT0C) {
@@ -52,6 +73,17 @@ struct LumiQaTask {
     }
 
     for (const auto& bc : bcs) {
+      if (bc.has_zdc()) {
+        float timeZNA = bc.zdc().timeZNA();
+        float timeZNC = bc.zdc().timeZNC();
+        if (fabs(timeZNC) < 2) {
+          histos.get<TH1>(HIST("hCounterZNC"))->Fill(srun, 1);
+        }
+        if (fabs(timeZNA) < 2 || fabs(timeZNC) < 2) {
+          histos.get<TH1>(HIST("hCounterZEM"))->Fill(srun, 1);
+        }
+      }
+
       if (!bc.has_ft0()) {
         continue;
       }
@@ -59,6 +91,26 @@ struct LumiQaTask {
       float centT0C = hCalibT0C->GetBinContent(hCalibT0C->FindFixBin(multT0C));
       histos.fill(HIST("hMultT0C"), multT0C);
       histos.fill(HIST("hCentT0C"), centT0C);
+
+      if (!TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitCen)) { // TCE
+        continue;
+      }
+      histos.fill(HIST("hMultT0CselTCE"), multT0C);
+      histos.fill(HIST("hCentT0CselTCE"), centT0C);
+
+      if (!TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitVertex)) { // TVX
+        continue;
+      }
+      histos.fill(HIST("hMultT0CselTVXTCE"), multT0C);
+      histos.fill(HIST("hCentT0CselTVXTCE"), centT0C);
+
+      if (!bcPatternB[bc.globalBC() % nBCsPerOrbit]) { // B-mask
+        continue;
+      }
+      histos.fill(HIST("hMultT0CselTVXTCEB"), multT0C);
+      histos.fill(HIST("hCentT0CselTVXTCEB"), centT0C);
+
+      histos.get<TH1>(HIST("hCounterTCE"))->Fill(srun, 1);
     }
   }
 };

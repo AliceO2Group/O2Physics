@@ -221,8 +221,6 @@ struct MultiplicityCounter {
       binnedRegistry.add({PtEtaGen.data(), " ; p_{T} (GeV/c) ; #eta; centrality", {HistType::kTHnSparseF, {PtAxis, EtaAxis, CentAxis}}});
 
       binnedRegistry.add({PhiEtaGen.data(), "; #varphi; #eta; tracks", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
-      binnedRegistry.add({PhiEtaGenDuplicates.data(), "; #varphi; #eta; centrality", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
-      binnedRegistry.add({PhiEtaDuplicates.data(), "; #varphi; #eta; centrality", {HistType::kTHnSparseF, {PhiAxis, EtaAxis, CentAxis}}});
       binnedRegistry.add({Efficiency.data(), "; status; centrality; events", {HistType::kTH2F, {{static_cast<int>(EvEffBins::kSelectedPVgt0), 0.5, static_cast<float>(EvEffBins::kSelectedPVgt0) + 0.5}, CentAxis}}});
       binnedRegistry.add({NotFoundZvtx.data(), " ; Z_{vtx} (cm); centrality; events", {HistType::kTH2F, {ZAxis, CentAxis}}});
 
@@ -781,7 +779,7 @@ struct MultiplicityCounter {
       if constexpr (hasRecoCent<C>()) {
         binnedRegistry.fill(HIST(PtGenIdxNoEtaCut), particle.pt(), c_gen);
         if (std::abs(particle.eta()) < estimatorEta) {
-          binnedRegistry.fill(HIST(PtGenIdx), particle.pt());
+          binnedRegistry.fill(HIST(PtGenIdx), particle.pt(), c_gen);
           if (particle.pdgCode() == speciesIds[0]) {
             binnedRegistry.fill(HIST(prefix) + HIST(species[0]) + HIST(PtGenIdxSuff), particle.pt(), c_gen);
           } else if (particle.pdgCode() == speciesIds[1]) {
