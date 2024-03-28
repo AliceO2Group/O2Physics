@@ -165,6 +165,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(ITSChi2NCl, itsChi2NCl,
 DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls,
                            [](binning::rowsOverFindable::binned_t rowsOverFindable_binned) -> float { return singletrackselector::unPack<binning::rowsOverFindable>(rowsOverFindable_binned); });
 
+DECLARE_SOA_DYNAMIC_COLUMN(TPCFractionSharedCls, tpcFractionSharedCls, //! Fraction of shared TPC clusters
+                           [](uint8_t tpcNClsShared, int16_t tpcNClsFound) -> float { return (float)tpcNClsShared / (float)tpcNClsFound; });
+
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPi, tofNSigmaPi,
                            [](binning::nsigma::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma>(nsigma_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPi, tpcNSigmaPi,
@@ -226,6 +229,7 @@ DECLARE_SOA_TABLE_FULL(SingleTrackSels, "SelTracks", "AOD", "SINGLETRACKSEL", //
                        singletrackselector::TPCChi2NCl<singletrackselector::StoredTPCChi2NCl>,
                        singletrackselector::ITSChi2NCl<singletrackselector::StoredITSChi2NCl>,
                        singletrackselector::TPCCrossedRowsOverFindableCls<singletrackselector::StoredTPCCrossedRowsOverFindableCls>,
+                       singletrackselector::TPCFractionSharedCls<singletrackselector::TPCNClsShared, singletrackselector::TPCNClsFound>,
 
                        singletrackselector::TOFNSigmaPi<singletrackselector::StoredTOFNSigmaPi>,
                        singletrackselector::TPCNSigmaPi<singletrackselector::StoredTPCNSigmaPi>,

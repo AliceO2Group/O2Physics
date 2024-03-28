@@ -195,7 +195,7 @@ struct fullJetFilter {
     Float_t kMinEta = -1.;
     Float_t kMaxEta = 1.;
 
-    hProcessedEvents.setObject(new TH1D("hProcessedEvents", ";;Number of filtered events", kCategories, -0.5, kCategories - 0.5));
+    hProcessedEvents.setObject(new TH1D("hProcessedEvents", ";;Number of filtered events", kCategories, -0.5, +kCategories - 0.5));
 
     hEmcClusterPtEta.setObject(new TH2F("hEmcClusterPtEta", Form("Emc Clusters;%s;#eta", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nEtaBins, kMinEta, kMaxEta));
     hEmcClusterPtPhi.setObject(new TH2F("hEmcClusterPtPhi", Form("Emc Clusters;%s;#phi", (f_ObservalbeGammaTrigger == 0) ? "E (GeV)" : "#it{p}_{T}"), nPtBins, kMinPt, kMaxPt / 2, nPhiBins, kMinPhi, kMaxPhi));

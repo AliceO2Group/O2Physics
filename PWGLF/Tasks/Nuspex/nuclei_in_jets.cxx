@@ -101,12 +101,13 @@ struct nuclei_in_jets {
   Configurable<float> min_nsigmaTOF{"min_nsigmaTOF", -3.0f, "Minimum nsigma TOF"};
   Configurable<float> max_nsigmaTOF{"max_nsigmaTOF", +3.5f, "Maximum nsigma TOF"};
   Configurable<bool> require_primVtx_contributor{"require_primVtx_contributor", true, "require that the track is a PV contributor"};
-  Configurable<std::vector<float>> param_proton_jet{"param_proton_jet", {0.93827208816, 0.18, 0.5, 1}, "Parameters for reweighting protons in jets"};
-  Configurable<std::vector<float>> param_deuteron_jet{"param_deuteron_jet", {1.87561294257, 0.18, 0.5, 1}, "Parameters for reweighting deuterons in jets"};
-  Configurable<std::vector<float>> param_helium3_jet{"param_helium3_jet", {2.80839160743, 0.18, 0.5, 1}, "Parameters for reweighting helium3 in jets"};
-  Configurable<std::vector<float>> param_proton_ue{"param_proton_ue", {0.93827208816, 0.18, 0.5, 1}, "Parameters for reweighting protons in ue"};
-  Configurable<std::vector<float>> param_deuteron_ue{"param_deuteron_ue", {1.87561294257, 0.18, 0.5, 1}, "Parameters for reweighting deuterons in ue"};
-  Configurable<std::vector<float>> param_helium3_ue{"param_helium3_ue", {2.80839160743, 0.18, 0.5, 1}, "Parameters for reweighting helium3 in ue"};
+  Configurable<std::vector<float>> param_proton_ref{"param_proton_ref", {0.00007, 984.79694, 0.45856, 0.00036}, "Parameters of Levi-Tsallis fit of Protons from pythia"};
+  Configurable<std::vector<float>> param_proton_jet{"param_proton_jet", {0.00109, 4.27109, 0.51173, 2.26176}, "Parameters for reweighting protons in jets"};
+  Configurable<std::vector<float>> param_deuteron_jet{"param_deuteron_jet", {0.00026, 2.09662, 1.00000, 1.87561}, "Parameters for reweighting deuterons in jets"};
+  Configurable<std::vector<float>> param_helium3_jet{"param_helium3_jet", {0.00026, 2.09662, 1.00000, 1.87561}, "Parameters for reweighting helium3 in jets"};
+  Configurable<std::vector<float>> param_proton_ue{"param_proton_ue", {0.00000, 88.48017, 0.53952, 0.06212}, "Parameters for reweighting protons in ue"};
+  Configurable<std::vector<float>> param_deuteron_ue{"param_deuteron_ue", {0.00000, 25.00000, 0.51497, 1.00000}, "Parameters for reweighting deuterons in ue"};
+  Configurable<std::vector<float>> param_helium3_ue{"param_helium3_ue", {0.00000, 25.00000, 0.51497, 1.00000}, "Parameters for reweighting helium3 in ue"};
 
   // List of Particles
   enum nucleus { proton,
@@ -299,7 +300,7 @@ struct nuclei_in_jets {
   }
 
   template <typename T4>
-  bool isAntiproton(const T4& track)
+  bool isHighPurityAntiproton(const T4& track)
   {
     // Variables
     float nsigmaTPCPr = track.tpcNSigmaPr();
@@ -308,7 +309,7 @@ struct nuclei_in_jets {
 
     if (pt < 0.5 && TMath::Abs(nsigmaTPCPr) < 2.0)
       return true;
-    if (pt > 0.5 && TMath::Abs(nsigmaTPCPr) < 2.0 && track.hasTOF() && TMath::Abs(nsigmaTOFPr) < 2.0)
+    if (pt >= 0.5 && TMath::Abs(nsigmaTPCPr) < 2.0 && track.hasTOF() && TMath::Abs(nsigmaTOFPr) < 2.0)
       return true;
     return false;
   }
@@ -346,6 +347,7 @@ struct nuclei_in_jets {
   float Weight(float pt, int event_region, int nucleus_of_interest)
   {
 
+    auto par_proton_ref = static_cast<std::vector<float>>(param_proton_ref);
     auto par_proton_jet = static_cast<std::vector<float>>(param_proton_jet);
     auto par_deuteron_jet = static_cast<std::vector<float>>(param_deuteron_jet);
     auto par_helium3_jet = static_cast<std::vector<float>>(param_helium3_jet);
@@ -353,6 +355,7 @@ struct nuclei_in_jets {
     auto par_deuteron_ue = static_cast<std::vector<float>>(param_deuteron_ue);
     auto par_helium3_ue = static_cast<std::vector<float>>(param_helium3_ue);
 
+    float dNdpt_proton_ref = GetTsallis(par_proton_ref[0], par_proton_ref[1], par_proton_ref[2], par_proton_ref[3], pt);
     float dNdpt_proton_jet = GetTsallis(par_proton_jet[0], par_proton_jet[1], par_proton_jet[2], par_proton_jet[3], pt);
     float dNdpt_proton_ue = GetTsallis(par_proton_ue[0], par_proton_ue[1], par_proton_ue[2], par_proton_ue[3], pt);
     float dNdpt_deuteron_jet = GetTsallis(par_deuteron_jet[0], par_deuteron_jet[1], par_deuteron_jet[2], par_deuteron_jet[3], pt);
@@ -361,9 +364,9 @@ struct nuclei_in_jets {
     float dNdpt_helium3_ue = GetTsallis(par_helium3_ue[0], par_helium3_ue[1], par_helium3_ue[2], par_helium3_ue[3], pt);
 
     if (nucleus_of_interest == nucleus::proton && event_region == region::jet)
-      return dNdpt_proton_jet;
+      return dNdpt_proton_jet / dNdpt_proton_ref;
     if (nucleus_of_interest == nucleus::proton && event_region == region::underlying_event)
-      return dNdpt_proton_ue;
+      return dNdpt_proton_ue / dNdpt_proton_ref;
     if (nucleus_of_interest == nucleus::deuteron && event_region == region::jet)
       return dNdpt_deuteron_jet;
     if (nucleus_of_interest == nucleus::deuteron && event_region == region::underlying_event)
@@ -376,15 +379,14 @@ struct nuclei_in_jets {
     return 1;
   }
 
-  float GetTsallis(float mass, float temp, float q, float norm, float pt)
+  float GetTsallis(float p0, float p1, float p2, float p3, float pt)
   {
 
-    float p0 = norm;
-    float p1 = 1.0 / (q - 1.0);
-    float p2 = temp;
-    float p3 = mass;
-
-    float dNdpt = (pt * p0 * (p1 - 1.0) * (p1 - 2.0)) / (p1 * p2 * (p1 * p2 + p3 * (p1 - 2.0))) * TMath::Power((1.0 + (TMath::Sqrt(p3 * p3 + pt * pt) - p3) / (p1 * p2)), -p1);
+    float dNdpt(1);
+    float part1 = p0 * pt * (p1 - 1.0) * (p1 - 2.0);
+    float part2 = part1 * TMath::Power(1.0 + (TMath::Sqrt(p3 * p3 + pt * pt) - p3) / (p1 * p2), -p1);
+    float part3 = part2 / TMath::TwoPi() * (p1 * p2 * (p1 * p2 + p3 * (p1 - 2.0)));
+    dNdpt = part3;
 
     return dNdpt;
   }
@@ -662,7 +664,7 @@ struct nuclei_in_jets {
       float pt = jet_track.pt();
 
       // DCA
-      if (isAntiproton(jet_track) && TMath::Abs(jet_track.dcaZ()) < max_dcaz) {
+      if (isHighPurityAntiproton(jet_track) && TMath::Abs(jet_track.dcaZ()) < max_dcaz) {
         registryData.fill(HIST("antiproton_dca_jet"), pt, jet_track.dcaXY(), jet_Nch);
       }
 
@@ -714,7 +716,7 @@ struct nuclei_in_jets {
       float pt = ue_track.pt();
 
       // DCA
-      if (isAntiproton(ue_track) && TMath::Abs(ue_track.dcaZ()) < max_dcaz) {
+      if (isHighPurityAntiproton(ue_track) && TMath::Abs(ue_track.dcaZ()) < max_dcaz) {
         registryData.fill(HIST("antiproton_dca_ue"), pt, ue_track.dcaXY(), jet_Nch);
       }
 
@@ -750,9 +752,9 @@ struct nuclei_in_jets {
   PROCESS_SWITCH(nuclei_in_jets, processData, "Process data", true);
 
   // MC
+  SliceCache cache;
   void processMC(soa::Join<SelectedCollisions, aod::McCollisionLabels>::iterator const& collision, MCTracks const& mcTracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
   {
-
     // Event Counter (before event sel)
     registryQC.fill(HIST("number_of_events_mc"), 0.5);
 
@@ -763,7 +765,10 @@ struct nuclei_in_jets {
     // Event Counter (after event sel)
     registryQC.fill(HIST("number_of_events_mc"), 1.5);
 
-    for (auto& particle : mcParticles) {
+    // Generated Particles
+    auto mcParticlesInCollision = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId,
+                                                            collision.mcCollision_as<aod::McCollisions>().globalIndex(), cache);
+    for (auto& particle : mcParticlesInCollision) {
 
       if (!particle.isPhysicalPrimary())
         continue;
@@ -798,6 +803,7 @@ struct nuclei_in_jets {
       }
     }
 
+    // Reconstructed Tracks
     for (auto track : mcTracks) {
 
       // Get MC Particle
@@ -839,7 +845,7 @@ struct nuclei_in_jets {
       if (particle.pdgCode() == -2212 && particle.isPhysicalPrimary() && TMath::Abs(track.dcaZ()) < max_dcaz)
         registryMC.fill(HIST("antiproton_dca_prim"), pt, track.dcaXY());
 
-      if (particle.pdgCode() == -2212 && !particle.isPhysicalPrimary() && TMath::Abs(track.dcaZ()) < max_dcaz)
+      if (particle.pdgCode() == -2212 && (!particle.isPhysicalPrimary()) && TMath::Abs(track.dcaZ()) < max_dcaz)
         registryMC.fill(HIST("antiproton_dca_sec"), pt, track.dcaXY());
 
       if (!particle.isPhysicalPrimary())
@@ -852,31 +858,31 @@ struct nuclei_in_jets {
         continue;
 
       // Antiproton
-      if (particle.pdgCode() != -2212) {
+      if (particle.pdgCode() == -2212) {
         if (pt < 1.0 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC) {
           registryMC.fill(HIST("antiproton_jet_rec_tpc"), pt, wpr_jet);
           registryMC.fill(HIST("antiproton_ue_rec_tpc"), pt, wpr_ue);
         }
-        if (pt >= 1.0 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF() && nsigmaTOFPr > min_nsigmaTOF && nsigmaTOFPr < max_nsigmaTOF) {
+        if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF() && nsigmaTOFPr > min_nsigmaTOF && nsigmaTOFPr < max_nsigmaTOF) {
           registryMC.fill(HIST("antiproton_jet_rec_tof"), pt, wpr_jet);
           registryMC.fill(HIST("antiproton_ue_rec_tof"), pt, wpr_ue);
         }
       }
 
       // Antideuteron
-      if (particle.pdgCode() != -1000010020) {
+      if (particle.pdgCode() == -1000010020) {
         if (pt < 1.0 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC) {
           registryMC.fill(HIST("antideuteron_jet_rec_tpc"), pt, wde_jet);
           registryMC.fill(HIST("antideuteron_ue_rec_tpc"), pt, wde_ue);
         }
-        if (pt >= 1.0 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF() && nsigmaTOFDe > min_nsigmaTOF && nsigmaTOFDe < max_nsigmaTOF) {
+        if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF() && nsigmaTOFDe > min_nsigmaTOF && nsigmaTOFDe < max_nsigmaTOF) {
           registryMC.fill(HIST("antideuteron_jet_rec_tof"), pt, wde_jet);
           registryMC.fill(HIST("antideuteron_ue_rec_tof"), pt, wde_ue);
         }
       }
 
       // Antihelium-3
-      if (particle.pdgCode() != -1000020030) {
+      if (particle.pdgCode() == -1000020030) {
         if (nsigmaTPCHe > min_nsigmaTPC && nsigmaTPCHe < max_nsigmaTPC) {
           registryMC.fill(HIST("antihelium3_jet_rec_tpc"), 2.0 * pt, whe_jet);
           registryMC.fill(HIST("antihelium3_ue_rec_tpc"), 2.0 * pt, whe_ue);

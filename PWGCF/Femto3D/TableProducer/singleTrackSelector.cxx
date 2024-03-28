@@ -52,6 +52,7 @@ struct singleTrackSelector {
   Configurable<int> centTableToUse{"centTableToUse", 1, "Flag to choose cent./mult.perc. estimator (Run3 only [FTOC for PbPb; FTOM for pp], for Run2 the V0M is used): 0 -> CentFV0As, 1 -> CentFT0Ms, 2 -> CentFT0As, 3 -> CentFT0Cs, 4 -> CentFDDMs, 5 -> CentNTPVs"};
   Configurable<int> multTableToUse{"multTableToUse", 1, "Flag to choose mult. estimator (Run3 only): 0 -> TPCMults, 1 -> MultNTracksPV, 2 -> MultNTracksPVeta1"};
   Configurable<bool> rejectNotPropagatedTrks{"rejectNotPropagatedTrks", true, "rejects tracks that are not propagated to the primary vertex"};
+  Configurable<bool> removeTFBorder{"removeTFBorder", false, "Remove TF border"};
 
   Configurable<std::vector<int>> _particlesToKeep{"particlesToKeepPDGs", std::vector<int>{2212, 1000010020}, "PDG codes of perticles for which the 'singletrackselector' tables will be created (only proton and deurton are supported now)"};
   Configurable<std::vector<float>> keepWithinNsigmaTPC{"keepWithinNsigmaTPC", std::vector<float>{-4.0f, 4.0f}, "TPC range for preselection of particles specified with PDG"};
@@ -260,55 +261,58 @@ struct singleTrackSelector {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
-    float centValue = -100.0f;
+    if (removeTFBorder && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
 
-    switch (centTableToUse) {
-      case 0:
-        centValue = collision.centFV0A();
-        break;
-      case 1:
-        centValue = collision.centFT0M();
-        break;
-      case 2:
-        centValue = collision.centFT0A();
-        break;
-      case 3:
-        centValue = collision.centFT0C();
-        break;
-      case 4:
-        centValue = collision.centFDDM();
-        break;
-      case 5:
-        centValue = collision.centNTPV();
-        break;
-      default:
-        LOGF(fatal, "Invalid flag for cent./mult.perc. estimator has been choosen. Please check.");
-        break;
-    }
-    if (centValue >= _centCut.value.first && centValue <= _centCut.value.second) {
-      int multValue = -1;
+      float centValue = -100.0f;
 
-      switch (multTableToUse) {
+      switch (centTableToUse) {
         case 0:
-          multValue = collision.multTPC();
+          centValue = collision.centFV0A();
           break;
         case 1:
-          multValue = collision.multNTracksPV();
+          centValue = collision.centFT0M();
           break;
         case 2:
-          multValue = collision.multNTracksPVeta1();
+          centValue = collision.centFT0A();
+          break;
+        case 3:
+          centValue = collision.centFT0C();
+          break;
+        case 4:
+          centValue = collision.centFDDM();
+          break;
+        case 5:
+          centValue = collision.centNTPV();
           break;
         default:
-          LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
+          LOGF(fatal, "Invalid flag for cent./mult.perc. estimator has been choosen. Please check.");
           break;
       }
+      if (centValue >= _centCut.value.first && centValue <= _centCut.value.second) {
+        int multValue = -1;
 
-      tableRowColl(multValue,
-                   centValue,
-                   collision.posZ(),
-                   d_bz);
+        switch (multTableToUse) {
+          case 0:
+            multValue = collision.multTPC();
+            break;
+          case 1:
+            multValue = collision.multNTracksPV();
+            break;
+          case 2:
+            multValue = collision.multNTracksPVeta1();
+            break;
+          default:
+            LOGF(fatal, "Invalid flag for mult. estimator has been choosen. Please check.");
+            break;
+        }
 
-      fillTrackTables<false>(tracks);
+        tableRowColl(multValue,
+                     centValue,
+                     collision.posZ(),
+                     d_bz);
+
+        fillTrackTables<false>(tracks);
+      }
     }
   }
   PROCESS_SWITCH(singleTrackSelector, processDataRun3, "process data Run3", true);

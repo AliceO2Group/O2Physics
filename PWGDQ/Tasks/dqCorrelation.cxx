@@ -318,8 +318,6 @@ struct DqCumulantFlow {
         }
       }
 
-      VarManager::fgValues[VarManager::kCentFT0C];
-
       for (auto dilepton : dileptons) {
         registry.fill(HIST("dimuon_mass"), dilepton.mass());
 

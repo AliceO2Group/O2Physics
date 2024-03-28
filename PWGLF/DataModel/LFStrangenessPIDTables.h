@@ -68,12 +68,12 @@ DECLARE_SOA_COLUMN(DeltaDecayTimeAntiLambda, deltaDecayTimeAntiLambda, float); /
 DECLARE_SOA_COLUMN(DeltaDecayTimeK0Short, deltaDecayTimeK0Short, float);       //! delta-decay time estimate from pion/pion from K0Short
 
 // n-sigmas - unused as of now
-DECLARE_SOA_COLUMN(PosNSigmaLaPi, posNSigmaLaPi, float); //! positive track NSigma from pion <- lambda expectation
-DECLARE_SOA_COLUMN(PosNSigmaLaPr, posNSigmaLaPr, float); //! positive track NSigma from proton <- lambda expectation
-DECLARE_SOA_COLUMN(NegNSigmaLaPi, negNSigmaLaPi, float); //! negative track NSigma from pion <- lambda expectation
-DECLARE_SOA_COLUMN(NegNSigmaLaPr, negNSigmaLaPr, float); //! negative track NSigma from proton <- lambda expectation
-DECLARE_SOA_COLUMN(PosNSigmaK0Pi, posNSigmaK0Pi, float); //! positive track NSigma from pion <- k0short expectation
-DECLARE_SOA_COLUMN(NegNSigmaK0Pi, negNSigmaK0Pi, float); //! positive track NSigma from pion <- k0short expectation
+DECLARE_SOA_COLUMN(PosTOFNSigmaLaPi, posTOFNSigmaLaPi, float); //! positive track NSigma from pion <- lambda expectation
+DECLARE_SOA_COLUMN(PosTOFNSigmaLaPr, posTOFNSigmaLaPr, float); //! positive track NSigma from proton <- lambda expectation
+DECLARE_SOA_COLUMN(NegTOFNSigmaLaPi, negTOFNSigmaLaPi, float); //! negative track NSigma from pion <- lambda expectation
+DECLARE_SOA_COLUMN(NegTOFNSigmaLaPr, negTOFNSigmaLaPr, float); //! negative track NSigma from proton <- lambda expectation
+DECLARE_SOA_COLUMN(PosTOFNSigmaK0Pi, posTOFNSigmaK0Pi, float); //! positive track NSigma from pion <- k0short expectation
+DECLARE_SOA_COLUMN(NegTOFNSigmaK0Pi, negTOFNSigmaK0Pi, float); //! positive track NSigma from pion <- k0short expectation
 
 // beta values
 DECLARE_SOA_COLUMN(TofBetaLambda, tofBetaLambda, float);         //! beta value with Lambda hypothesis
@@ -109,6 +109,11 @@ DECLARE_SOA_TABLE(V0TOFDebugs, "AOD", "V0TOFDEBUG", // table with intermediate i
 
 DECLARE_SOA_TABLE(V0TOFBetas, "AOD", "V0TOFBETA", // processed info table (for analysis)
                   v0data::TofBetaLambda, v0data::TofBetaAntiLambda, v0data::TofBetaK0Short);
+
+DECLARE_SOA_TABLE(V0TOFNSigmas, "AOD", "V0TOFNSIGMA", // processed info table (for analysis)
+                  v0data::PosTOFNSigmaLaPi, v0data::PosTOFNSigmaLaPr,
+                  v0data::NegTOFNSigmaLaPi, v0data::NegTOFNSigmaLaPr,
+                  v0data::PosTOFNSigmaK0Pi, v0data::NegTOFNSigmaK0Pi);
 
 namespace cascdata
 {

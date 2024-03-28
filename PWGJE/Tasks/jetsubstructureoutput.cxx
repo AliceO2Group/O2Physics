@@ -168,8 +168,14 @@ struct JetSubstructureOutputTask {
     }
   }
 
-  void processDummy(JetCollisions const& collisions) {}
-  PROCESS_SWITCH(JetSubstructureOutputTask, processDummy, "Dummy process function turned on by default", true);
+  void processClearMaps(JetCollisions const& collisions)
+  {
+    jetMappingData.clear();
+    jetMappingDataSub.clear();
+    jetMappingMCD.clear();
+    jetMappingMCP.clear();
+  }
+  PROCESS_SWITCH(JetSubstructureOutputTask, processClearMaps, "process function that clears all the maps in each dataframe", true);
 
   void processOutputData(JetCollision const& collision,
                          soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::CJetSSs> const& jets)
