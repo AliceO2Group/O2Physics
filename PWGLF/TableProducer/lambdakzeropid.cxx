@@ -116,6 +116,11 @@ struct lambdakzeropid {
   float maxSnp;  // max sine phi for propagation
   float maxStep; // max step size (cm) for propagation
 
+  // enum to keep track of the TOF-related properties for V0s
+  enum tofEnum { kLength = 0,
+                 kHasTOF,
+                 kNEnums };
+
   /// function to calculate track length of this track up to a certain segment of a detector
   /// to be used internally in another funcrtion that calculates length until it finds the proper one
   /// warning: this could be optimised further for speed
@@ -289,6 +294,9 @@ struct lambdakzeropid {
       histos.add("h2dDeltaTimePositiveK0ShortPi", "h2dDeltaTimePositiveK0ShortPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
       histos.add("h2dDeltaTimeNegativeK0ShortPi", "h2dDeltaTimeNegativeK0ShortPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
 
+      histos.add("h2dPositiveTOFProperties", "h2dPositiveTOFProperties", {HistType::kTH2F, {axisPt, {4, -0.5, 3.5f}}});
+      histos.add("h2dNegativeTOFProperties", "h2dNegativeTOFProperties", {HistType::kTH2F, {axisPt, {4, -0.5, 3.5f}}});
+
       if (doQANSigma) {
         // standard NSigma values
         histos.add("h2dNSigmaPositiveLambdaPi", "h2dNSigmaPositiveLambdaPi", {HistType::kTH2F, {axisPt, axisNSigma}});
@@ -411,6 +419,9 @@ struct lambdakzeropid {
         o2::track::TrackPar posTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxpos(), v0.pypos(), v0.pzpos()}, +1);
         o2::track::TrackPar negTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxneg(), v0.pyneg(), v0.pzneg()}, -1);
 
+        auto pTra = v0.posTrackExtra_as<dauTracks>();
+        auto nTra = v0.negTrackExtra_as<dauTracks>();
+
         float deltaTimePositiveLambdaPi = -1e+6;
         float deltaTimeNegativeLambdaPi = -1e+6;
         float deltaTimePositiveLambdaPr = -1e+6;
@@ -437,20 +448,38 @@ struct lambdakzeropid {
         float timeNegativePr = lengthNegative / velocityNegativePr;
         float timeNegativePi = lengthNegative / velocityNegativePi;
 
-        if (v0.posTOFSignal() > 0 && v0.posTOFEventTime() > 0 && lengthPositive > 0) {
+        if (pTra.hasTOF() && lengthPositive > 0) {
           deltaTimePositiveLambdaPr = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeLambda + timePositivePr);
           deltaTimePositiveLambdaPi = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeLambda + timePositivePi);
           deltaTimePositiveK0ShortPi = (v0.posTOFSignal() - v0.posTOFEventTime()) - (timeK0Short + timePositivePi);
         }
-        if (v0.negTOFSignal() > 0 && v0.negTOFEventTime() > 0 && lengthNegative > 0) {
+        if (nTra.hasTOF() && lengthNegative > 0) {
           deltaTimeNegativeLambdaPr = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeLambda + timeNegativePr);
           deltaTimeNegativeLambdaPi = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeLambda + timeNegativePi);
           deltaTimeNegativeK0ShortPi = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeK0Short + timeNegativePi);
         }
+
+        if (doQA) {
+          // calculate and pack properties for QA purposes
+          int posProperties = 0;
+          if (lengthPositive > 0)
+            posProperties = posProperties | (int(1) << kLength);
+          if (pTra.hasTOF())
+            posProperties = posProperties | (int(1) << kHasTOF);
+          int negProperties = 0;
+          if (lengthNegative > 0)
+            negProperties = negProperties | (int(1) << kLength);
+          if (nTra.hasTOF())
+            negProperties = negProperties | (int(1) << kHasTOF);
+
+          histos.fill(HIST("h2dPositiveTOFProperties"), v0.pt(), posProperties);
+          histos.fill(HIST("h2dNegativeTOFProperties"), v0.pt(), negProperties);
+        }
+
         float deltaDecayTimeLambda = -10e+4;
         float deltaDecayTimeAntiLambda = -10e+4;
         float deltaDecayTimeK0Short = -10e+4;
-        if (v0.posTOFSignal() > 0 && v0.negTOFSignal() > 0 && lengthPositive > 0 && lengthNegative > 0) { // does not depend on event time
+        if (nTra.hasTOF() && pTra.hasTOF() > 0 && lengthPositive > 0 && lengthNegative > 0) { // does not depend on event time
           deltaDecayTimeLambda = (v0.posTOFSignal() - timePositivePr) - (v0.negTOFSignal() - timeNegativePi);
           deltaDecayTimeAntiLambda = (v0.posTOFSignal() - timePositivePi) - (v0.negTOFSignal() - timeNegativePr);
           deltaDecayTimeK0Short = (v0.posTOFSignal() - timePositivePi) - (v0.negTOFSignal() - timeNegativePi);
@@ -467,7 +496,7 @@ struct lambdakzeropid {
         float betaAntiLambda = -1e+6;
         float betaK0Short = -1e+6;
 
-        if (v0.posTOFSignal() > 0 && v0.negTOFSignal() > 0 && v0.posTOFEventTime() > 0 && v0.negTOFEventTime() > 0) {
+        if (nTra.hasTOF() && pTra.hasTOF()) {
           betaLambda = (lengthV0 / decayTimeLambda) / 0.0299792458;
           betaAntiLambda = (lengthV0 / decayTimeAntiLambda) / 0.0299792458;
           betaK0Short = (lengthV0 / decayTimeK0Short) / 0.0299792458;
@@ -505,10 +534,7 @@ struct lambdakzeropid {
         }
 
         if (doQA) {
-          auto pTra = v0.posTrackExtra_as<dauTracks>();
-          auto nTra = v0.negTrackExtra_as<dauTracks>();
-
-          if (v0.posTOFSignal() > 0 && v0.posTOFEventTime() > 0) {
+          if (pTra.hasTOF()) {
             histos.fill(HIST("h2dProtonMeasuredVsExpected"),
                         (timeLambda + timePositivePr),
                         (v0.posTOFSignal() - v0.posTOFEventTime()));
@@ -531,7 +557,7 @@ struct lambdakzeropid {
             }
           }
 
-          if (v0.negTOFSignal() > 0 && v0.negTOFEventTime() > 0) {
+          if (nTra.hasTOF()) {
             histos.fill(HIST("h2dPionMeasuredVsExpected"),
                         (timeLambda + timeNegativePi),
                         (v0.negTOFSignal() - v0.negTOFEventTime()));
