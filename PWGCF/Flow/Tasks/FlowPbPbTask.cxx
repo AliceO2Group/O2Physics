@@ -514,8 +514,9 @@ struct FlowPbPbTask {
 
     // track weights
     float weff = 1, wacc = 1;
-    double weffEvent = 0, waccEvent = 0;
-    int TrackNum = 0;
+    double weffEvent = 0;
+    // double waccEvent = 0;
+    // int TrackNum = 0;
     double ptSum = 0., ptSum_Gap08 = 0.;
     double weffEvent_WithinGap08 = 0., weffEventSquare_WithinGap08 = 0.;
     double sum_ptSquare_wSquare_WithinGap08 = 0., sum_pt_wSquare_WithinGap08 = 0.;
@@ -549,9 +550,9 @@ struct FlowPbPbTask {
         registry.fill(HIST("hDCAz"), track.dcaZ());
         registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
         weffEvent += weff;
-        waccEvent += wacc;
+        // waccEvent += wacc;
         ptSum += weff * track.pt();
-        TrackNum++;
+        // TrackNum++;
         if (WithinEtaGap08) {
           ptSum_Gap08 += weff * track.pt();
           sum_pt_wSquare_WithinGap08 += weff * weff * track.pt();

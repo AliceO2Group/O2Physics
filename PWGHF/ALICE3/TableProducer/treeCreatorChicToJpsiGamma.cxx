@@ -150,7 +150,7 @@ struct HfTreeCreatorChicToJpsiGamma {
     }
 
     // Filling candidate properties
-    int indexCand = 0;
+    // int indexCand = 0;
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       std::array<float, 3> pvecChic = {candidate.px(), candidate.py(), candidate.pz()};
@@ -163,7 +163,7 @@ struct HfTreeCreatorChicToJpsiGamma {
       auto alpha = (pl1 - pl2) / (pl1 + pl2);
       auto qt = std::sqrt(pjpsi * pjpsi - pl1 * pl1);
 
-      indexCand++;
+      // indexCand++;
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float FunctionInvMass,

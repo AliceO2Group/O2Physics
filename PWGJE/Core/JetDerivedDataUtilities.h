@@ -238,6 +238,60 @@ uint32_t setFullTriggerSelectionBit(T const& collision)
   return bit;
 }
 
+enum JTrigSelChHF {
+  noChargedHFTigger = 0,
+  chargedD0Low = 1,
+  chargedD0High = 2,
+  chargedLcLow = 3,
+  chargedLcHigh = 4
+};
+
+template <typename T>
+bool selectChargedHFTrigger(T const& collision, int triggerSelection)
+{
+  if (triggerSelection == -1) {
+    return true;
+  }
+  return (collision.chargedHFTriggerSel() & (1 << triggerSelection));
+}
+
+int initialiseChargedHFTriggerSelection(std::string triggerSelection)
+{
+  if (triggerSelection == "chargedD0Low") {
+    return JTrigSelChHF::chargedD0Low;
+  }
+  if (triggerSelection == "chargedD0High") {
+    return JTrigSelChHF::chargedD0High;
+  }
+  if (triggerSelection == "chargedLcLow") {
+    return JTrigSelChHF::chargedLcLow;
+  }
+  if (triggerSelection == "chargedLcHigh") {
+    return JTrigSelChHF::chargedLcHigh;
+  }
+  return -1;
+}
+
+template <typename T>
+uint8_t setChargedHFTriggerSelectionBit(T const& collision)
+{
+
+  uint8_t bit = 0;
+  if (collision.hasJetD0ChLowPt()) {
+    SETBIT(bit, JTrigSelChHF::chargedD0Low);
+  }
+  if (collision.hasJetD0ChHighPt()) {
+    SETBIT(bit, JTrigSelChHF::chargedD0High);
+  }
+  if (collision.hasJetLcChLowPt()) {
+    SETBIT(bit, JTrigSelChHF::chargedLcLow);
+  }
+  if (collision.hasJetLcChHighPt()) {
+    SETBIT(bit, JTrigSelChHF::chargedLcHigh);
+  }
+  return bit;
+}
+
 enum JTrackSel {
   trackSign = 0, // warning : this number is hardcoded in the sign coloumn in the JTracks table so should not be changed without changing it there too
   globalTrack = 1,

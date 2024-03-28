@@ -90,6 +90,7 @@ class VarManager : public TObject
     CollisionCent = BIT(10),
     CollisionMult = BIT(11),
     EventFilter = BIT(12),
+    CollisionQvect = BIT(13),
     Track = BIT(0),
     TrackCov = BIT(1),
     TrackExtra = BIT(2),
@@ -1292,6 +1293,42 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kPsi2A] = getEventPlane(2, event.q2x0a(), event.q2y0a());
     values[kPsi2B] = getEventPlane(2, event.q2x0b(), event.q2y0b());
     values[kPsi2C] = getEventPlane(2, event.q2x0c(), event.q2y0c());
+  }
+
+  if constexpr ((fillMap & CollisionQvect) > 0) {
+    values[kQ1X0A] = -999;
+    values[kQ1Y0A] = -999;
+    values[kQ1X0B] = -999;
+    values[kQ1Y0B] = -999;
+    values[kQ1X0C] = -999;
+    values[kQ1Y0C] = -999;
+    values[kQ2X0A] = event.qvecBPosRe();
+    values[kQ2Y0A] = event.qvecBPosIm();
+    values[kQ2X0APOS] = event.qvecBPosRe();
+    values[kQ2Y0APOS] = event.qvecBPosIm();
+    values[kQ2X0ANEG] = event.qvecBNegRe();
+    values[kQ2Y0ANEG] = event.qvecBNegIm();
+    values[kQ2X0B] = event.qvecFT0ARe();
+    values[kQ2Y0B] = event.qvecFT0AIm();
+    values[kQ2X0C] = event.qvecFT0CRe();
+    values[kQ2Y0C] = event.qvecFT0CIm();
+    values[kMultA] = event.nTrkBPos();
+    values[kMultAPOS] = event.nTrkBPos();
+    values[kMultANEG] = event.nTrkBNeg();
+    values[kMultB] = event.sumAmplFT0A();
+    values[kMultC] = event.sumAmplFT0C();
+    values[kQ3X0A] = -999;
+    values[kQ3Y0A] = -999;
+    values[kQ3X0B] = -999;
+    values[kQ3Y0B] = -999;
+    values[kQ3X0C] = -999;
+    values[kQ3Y0C] = -999;
+    values[kQ4X0A] = -999;
+    values[kQ4Y0A] = -999;
+    values[kQ4X0B] = -999;
+    values[kQ4Y0B] = -999;
+    values[kQ4X0C] = -999;
+    values[kQ4Y0C] = -999;
   }
 
   if constexpr ((fillMap & CollisionMC) > 0) {
