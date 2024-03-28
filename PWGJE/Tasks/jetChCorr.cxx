@@ -106,7 +106,7 @@ struct JetChCorr {
     registry.add("h_ch_d_ft", ";#it{fm}_{time} (GeV/#it{c});N_{ch} (h#bar{h})", {HistType::kTH1F, {{20, -1., 4.}}});
     registry.add("h_ch_s_mult", ";#it{N}_{ch,jet} (GeV/#it{c});N_{ch} (hh)", {HistType::kTH1F, {{15, 0., 30.}}});
     registry.add("h_ch_d_mult", ";#it{N}_{ch,jet} (GeV/#it{c});N_{ch} (h#bar{h})", {HistType::kTH1F, {{15, 0., 30.}}});
-    
+
     registry.add("hr1_ch_s_pt", ";#it{p}_{T,pair} (GeV/#it{c}) {nsd1};N_{ch} (hh)", {HistType::kTH1F, {{50, 0., 50.}}});
     registry.add("hr1_ch_d_pt", ";#it{p}_{T,pair} (GeV/#it{c}) {nsd1};N_{ch} (h#bar{h})", {HistType::kTH1F, {{50, 0., 50.}}});
     registry.add("hr1_ch_s_kt", ";#it{k}_{T,pair} (GeV/#it{c}) {nsd1};N_{ch} (hh)", {HistType::kTH1F, {{50, 0., 5.}}});
@@ -124,7 +124,6 @@ struct JetChCorr {
     registry.add("hr1_ch_s_lu", ";#it{z}_{g} {nsd1};#it{r}_{g}", {HistType::kTH2F, {{20, 0., 5.}, {28, -2., 5.}}});
     registry.add("hr1_ch_d_lu", ";#it{z}_{g} {nsd1};#it{r}_{g}", {HistType::kTH2F, {{20, 0., 5.}, {28, -2., 5.}}});
 
-    
     registry.add("hr2_ch_s_pt", ";#it{p}_{T,pair} (GeV/#it{c}) {nsd2};N_{ch} (hh)", {HistType::kTH1F, {{50, 0., 50.}}});
     registry.add("hr2_ch_d_pt", ";#it{p}_{T,pair} (GeV/#it{c}) {nsd2};N_{ch} (h#bar{h})", {HistType::kTH1F, {{50, 0., 50.}}});
     registry.add("hr2_ch_s_kt", ";#it{k}_{T,pair} (GeV/#it{c}) {nsd2};N_{ch} (hh)", {HistType::kTH1F, {{50, 0., 5.}}});
@@ -141,8 +140,7 @@ struct JetChCorr {
     registry.add("hr2_ch_d_rg", ";#it{r}_{g} (GeV/#it{c}) {nsd2};N_{ch} (h#bar{h})", {HistType::kTH1F, {{20, -2., 0.}}});
     registry.add("hr2_ch_s_lu", ";#it{z}_{g} {nsd2};#it{r}_{g}", {HistType::kTH2F, {{20, 0., 5.}, {28, -2., 5.}}});
     registry.add("hr2_ch_d_lu", ";#it{z}_{g} {nsd2};#it{r}_{g}", {HistType::kTH2F, {{20, 0., 5.}, {28, -2., 5.}}});
-   
-    
+
     registry.add("hr3_ch_s_pt", ";#it{p}_{T,pair} (GeV/#it{c}) {nsd3};N_{ch} (hh)", {HistType::kTH1F, {{50, 0., 50.}}});
     registry.add("hr3_ch_d_pt", ";#it{p}_{T,pair} (GeV/#it{c}) {nsd3};N_{ch} (h#bar{h})", {HistType::kTH1F, {{50, 0., 50.}}});
     registry.add("hr3_ch_s_kt", ";#it{k}_{T,pair} (GeV/#it{c}) {nsd3};N_{ch} (hh)", {HistType::kTH1F, {{50, 0., 5.}}});
@@ -184,7 +182,8 @@ struct JetChCorr {
     std::vector<float> thetaVec;
 
     float ptJet = daughterSubJet.pt();
-      
+
+
     while (daughterSubJet.has_parents(parentSubJet1, parentSubJet2)) {
       if (parentSubJet1.perp() < parentSubJet2.perp()) {
         std::swap(parentSubJet1, parentSubJet2);
@@ -207,7 +206,7 @@ struct JetChCorr {
       }
       // cout<<endl;
 
-      
+
       auto z = parentSubJet2.perp() / (parentSubJet1.perp() + parentSubJet2.perp());
       auto theta = parentSubJet1.delta_R(parentSubJet2);
       energyMotherVec.push_back(daughterSubJet.e());
@@ -236,17 +235,17 @@ struct JetChCorr {
 
 
 	    softDropped = true;
-	    
+
 	    v1.SetXYZ(parentSubJet1.px(), parentSubJet1.py(), parentSubJet1.pz());
 	    v2.SetXYZ(parentSubJet2.px(), parentSubJet2.py(), parentSubJet2.pz());
-	    
-	    vR = v1 + v2; 
+
+	    vR = v1 + v2;
 	    float z =  v2.Perp(vR.Orthogonal())/(v1.Perp(vR.Orthogonal())+v2.Perp(vR.Orthogonal()));
 	    float fT = ((2.*z*(1-z)*vR.Mag())/v1.Perp2(vR))/6.;
 	    float kt_p  = v1.Perp(vR);
 
 	    ////////  for first matched split
-	    if(nsd==0){	 
+	    if(nsd==0){
 	      if(ch_l == ch_nl) {
 		registry.fill(HIST("hr1_ch_s_pt"), ptJet);
 		registry.fill(HIST("hr1_ch_s_kt"), kt_p);
@@ -269,7 +268,7 @@ struct JetChCorr {
 	      }
 	    }
 	    ////////  for 2nd matched split
-	    if(nsd==1){	 
+	    if(nsd==1){
 	      if(ch_l == ch_nl) {
 		registry.fill(HIST("hr2_ch_s_pt"), ptJet);
 		registry.fill(HIST("hr2_ch_s_kt"), kt_p);
@@ -292,7 +291,7 @@ struct JetChCorr {
 	      }
 	    }
 	    ////////  for 3rd marched split
-	    if(nsd>=2){	 
+	    if(nsd>=2){
 	      if(ch_l == ch_nl) {
 		registry.fill(HIST("hr3_ch_s_pt"), ptJet);
 		registry.fill(HIST("hr3_ch_s_kt"), kt_p);
@@ -338,7 +337,7 @@ struct JetChCorr {
     jetConstituents.clear();
 
     //int leadpt =0;
-    //int n_leadpt =0;   
+    //int n_leadpt =0;
     int nn=0;
     ch_mult = 0;// jet.size();
     ch_mult =  jet.tracksIds().size();
@@ -349,10 +348,9 @@ struct JetChCorr {
 
       //int tr = jetConstituent.globalIndex();
       //auto const& trackSel = tracks.iteratorAt(tr);
-     
-	
+
       TVector3 p_leading(jetConstituent.px(), jetConstituent.py(), jetConstituent.pz());
-      
+
       if(nn==0){
 	//leadpt =  p_leading.Perp();
 	trackL = jetConstituent.globalIndex();
@@ -360,14 +358,14 @@ struct JetChCorr {
 	ch_l = jetConstituent.sign();//signed1Pt();//pt();
        	v1.SetXYZ(jetConstituent.pt(), jetConstituent.py(), jetConstituent.pz());
       }
-      
+
       if(nn==1){
 	//n_leadpt =  p_leading.Perp();
 	n_trackL = jetConstituent.globalIndex();
 	ch_nl = jetConstituent.sign();//signed1Pt();//pt();
 	v2.SetXYZ(jetConstituent.px(), jetConstituent.py(), jetConstituent.pz());
 
-	vR = v1 + v2; 
+	vR = v1 + v2;
 	float z =  v2.Perp(vR.Orthogonal())/(v1.Perp(vR.Orthogonal())+v2.Perp(vR.Orthogonal()));
 	float fT = ((2.*z*(1-z)*vR.Mag())/v1.Perp2(vR))/6.;
 	float kt_p  = v1.Perp(vR);
@@ -389,9 +387,9 @@ struct JetChCorr {
 	  registry.fill(HIST("h_ch_d_mult"), ch_mult);
 	}
       }
-    
+
       nn++;
-      
+
     }
     if(nn>1)  jetReclustering<false, isSubtracted>(jet, outputTable);
   }
@@ -401,7 +399,7 @@ struct JetChCorr {
   }
   PROCESS_SWITCH(JetChCorr, processDummy, "Dummy process function turned on by default", true);
 
-  
+
   void processChargedJetsData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet, JetTracks const& tracks)
   // void processChargedJetsData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet,  soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks)
   {
@@ -442,7 +440,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{adaptAnalysisTask<JetChCorr>(
 						   cfgc, TaskName{"jet-ch-corr"})};
 }
-
-
-//  "defineDataProcessing": "jet-ch-corr",
-//  "processCollisionsWithoutMultiplicityAndCentrality": "true"
