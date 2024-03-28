@@ -29,6 +29,7 @@ TString VarManager::fgRunStr = "";
 std::vector<int> VarManager::fgRunList = {0};
 float VarManager::fgCenterOfMassEnergy = 13600;         // GeV
 float VarManager::fgMassofCollidingParticle = 9.382720; // GeV
+float VarManager::fgTPCInterSectorBoundary = 1.0;       // cm
 o2::vertexing::DCAFitterN<2> VarManager::fgFitterTwoProngBarrel;
 o2::vertexing::DCAFitterN<3> VarManager::fgFitterThreeProngBarrel;
 o2::vertexing::FwdDCAFitterN<2> VarManager::fgFitterTwoProngFwd;
@@ -56,29 +57,32 @@ void VarManager::SetVariableDependencies()
   // Set as used variables on which other variables calculation depends
   //
   if (fgUsedVars[kP]) {
-    fgUsedVars[kPt] = kTRUE;
-    fgUsedVars[kEta] = kTRUE;
+    fgUsedVars[kPt] = true;
+    fgUsedVars[kEta] = true;
   }
 
   if (fgUsedVars[kVertexingLxyOverErr]) {
-    fgUsedVars[kVertexingLxy] = kTRUE;
-    fgUsedVars[kVertexingLxyErr] = kTRUE;
+    fgUsedVars[kVertexingLxy] = true;
+    fgUsedVars[kVertexingLxyErr] = true;
   }
   if (fgUsedVars[kVertexingLzOverErr]) {
-    fgUsedVars[kVertexingLz] = kTRUE;
-    fgUsedVars[kVertexingLzErr] = kTRUE;
+    fgUsedVars[kVertexingLz] = true;
+    fgUsedVars[kVertexingLzErr] = true;
   }
   if (fgUsedVars[kVertexingLxyzOverErr]) {
-    fgUsedVars[kVertexingLxyz] = kTRUE;
-    fgUsedVars[kVertexingLxyzErr] = kTRUE;
+    fgUsedVars[kVertexingLxyz] = true;
+    fgUsedVars[kVertexingLxyzErr] = true;
   }
   if (fgUsedVars[kKFTracksDCAxyzMax]) {
-    fgUsedVars[kKFTrack0DCAxyz] = kTRUE;
-    fgUsedVars[kKFTrack1DCAxyz] = kTRUE;
+    fgUsedVars[kKFTrack0DCAxyz] = true;
+    fgUsedVars[kKFTrack1DCAxyz] = true;
   }
   if (fgUsedVars[kKFTracksDCAxyMax]) {
-    fgUsedVars[kKFTrack0DCAxy] = kTRUE;
-    fgUsedVars[kKFTrack1DCAxy] = kTRUE;
+    fgUsedVars[kKFTrack0DCAxy] = true;
+    fgUsedVars[kKFTrack1DCAxy] = true;
+  }
+  if (fgUsedVars[kTrackIsInsideTPCModule]) {
+    fgUsedVars[kPhiTPCOuter] = true;
   }
 }
 
@@ -410,6 +414,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTPCchi2] = "";
   fgVariableNames[kTPCsignal] = "TPC dE/dx";
   fgVariableUnits[kTPCsignal] = "";
+  fgVariableNames[kPhiTPCOuter] = "#varphi_{TPCout}";
+  fgVariableUnits[kPhiTPCOuter] = "rad.";
+  fgVariableNames[kTrackIsInsideTPCModule] = "Track is in TPC module";
+  fgVariableUnits[kTrackIsInsideTPCModule] = "";
   fgVariableNames[kTRDsignal] = "TRD dE/dx";
   fgVariableUnits[kTRDsignal] = "";
   fgVariableNames[kTOFbeta] = "TOF #beta";
