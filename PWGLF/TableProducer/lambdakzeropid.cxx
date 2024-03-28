@@ -294,8 +294,8 @@ struct lambdakzeropid {
       histos.add("h2dDeltaTimePositiveK0ShortPi", "h2dDeltaTimePositiveK0ShortPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
       histos.add("h2dDeltaTimeNegativeK0ShortPi", "h2dDeltaTimeNegativeK0ShortPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
 
-      histos.add("h2dPositiveTOFProperties", "h2dPositiveTOFProperties", {HistType::kTH2F, {axisPt, {4,-0.5,3.5f}}});
-      histos.add("h2dNegativeTOFProperties", "h2dNegativeTOFProperties", {HistType::kTH2F, {axisPt, {4,-0.5,3.5f}}});
+      histos.add("h2dPositiveTOFProperties", "h2dPositiveTOFProperties", {HistType::kTH2F, {axisPt, {4, -0.5, 3.5f}}});
+      histos.add("h2dNegativeTOFProperties", "h2dNegativeTOFProperties", {HistType::kTH2F, {axisPt, {4, -0.5, 3.5f}}});
 
       if (doQANSigma) {
         // standard NSigma values
@@ -459,17 +459,17 @@ struct lambdakzeropid {
           deltaTimeNegativeK0ShortPi = (v0.negTOFSignal() - v0.negTOFEventTime()) - (timeK0Short + timeNegativePi);
         }
 
-        if(doQA){ 
+        if (doQA) {
           // calculate and pack properties for QA purposes
-          int posProperties = 0; 
-          if(lengthPositive>0)
+          int posProperties = 0;
+          if (lengthPositive > 0)
             posProperties = posProperties | (int(1) << kLength);
-          if(pTra.hasTOF())
+          if (pTra.hasTOF())
             posProperties = posProperties | (int(1) << kHasTOF);
-          int negProperties = 0; 
-          if(lengthNegative>0)
+          int negProperties = 0;
+          if (lengthNegative > 0)
             negProperties = negProperties | (int(1) << kLength);
-          if(nTra.hasTOF())
+          if (nTra.hasTOF())
             negProperties = negProperties | (int(1) << kHasTOF);
 
           histos.fill(HIST("h2dPositiveTOFProperties"), v0.pt(), posProperties);
