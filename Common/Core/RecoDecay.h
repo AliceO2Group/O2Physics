@@ -24,7 +24,7 @@
 #include <vector>    // std::vector
 
 #include "CommonConstants/MathConstants.h"
-#include "TMCProcess.h"     // for VMC Particle Production Process
+#include "TMCProcess.h" // for VMC Particle Production Process
 
 /// Base class for calculating properties of reconstructed decays
 ///
@@ -615,7 +615,7 @@ class RecoDecay
       return;
     }
     // check if the particle comes from a decay process
-    if(particle.getProcess() != kPDecay){
+    if (particle.getProcess() != kPDecay) {
       return;
     }
     bool isFinal = false;                     // Flag to indicate the end of recursion
@@ -712,7 +712,7 @@ class RecoDecay
       }
       auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
       // check if the daughter comes from the decay process of the mother
-      if(particleI.getProcess() != kPDecay){
+      if (particleI.getProcess() != kPDecay) {
         continue;
       }
       arrDaughtersIndex[iProng] = particleI.globalIndex();
@@ -728,15 +728,15 @@ class RecoDecay
         }
         // Printf("MC Rec: Good mother: %d", indexMother);
         auto particleMother = particlesMC.rawIteratorAt(indexMother - particlesMC.offset());
-        dauCounter = 0; //reset daughter counter for the new particleMother
+        dauCounter = 0; // reset daughter counter for the new particleMother
         // Check the daughter indices.
         if (!particleMother.has_daughters()) {
           // Printf("MC Rec: Rejected: bad daughter index range: %d-%d", particleMother.daughtersIds().front(), particleMother.daughtersIds().back());
           return -1;
         }
         // Check that the number of direct daughters coming from the dacay is not larger than the number of expected final daughters.
-        for(const auto& dau : particleMother.daughters_as<aod::McParticles>()){
-          if(dau.getProcess() == kPDecay){
+        for (const auto& dau : particleMother.daughters_as<aod::McParticles>()) {
+          if (dau.getProcess() == kPDecay) {
             dauCounter++;
           }
         }
@@ -860,8 +860,8 @@ class RecoDecay
         return false;
       }
       // Check that the number of direct daughters coming from the dacay is not larger than the number of expected final daughters.
-      for(const auto& dau : candidate.daughters_as<aod::McParticles>()){
-        if(dau.getProcess() == kPDecay){
+      for (const auto& dau : candidate.daughters_as<aod::McParticles>()) {
+        if (dau.getProcess() == kPDecay) {
           dauCounter++;
         }
       }
