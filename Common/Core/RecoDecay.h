@@ -710,15 +710,16 @@ class RecoDecay
         return -1;
       }
       auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
-      // check if the daughter comes from the decay process of the mother
+      // check if the daughter candidate comes from a decay process
       if (particleI.getProcess() != kPDecay) {
-        continue;
+        return -1;
       }
       arrDaughtersIndex[iProng] = particleI.globalIndex();
       // Get the list of daughter indices from the mother of the first prong.
       if (iProng == 0) {
         // Get the mother index and its sign.
         // PDG code of the first daughter's mother determines whether the expected mother is a particle or antiparticle.
+        //FIX!
         indexMother = getMother(particlesMC, particleI, PDGMother, acceptAntiParticles, &sgn, depthMax);
         // Check whether mother was found.
         if (indexMother <= -1) {
