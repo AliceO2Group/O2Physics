@@ -811,7 +811,8 @@ class VarManager : public TObject
       return obj->second;
     }
   }
-  static void SetTPCInterSectorBoundary (float boundarySize) {
+  static void SetTPCInterSectorBoundary(float boundarySize)
+  {
     fgTPCInterSectorBoundary = boundarySize;
   }
 
@@ -1434,7 +1435,7 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kPhi] = track.phi();
     values[kCharge] = track.sign();
     if (fgUsedVars[kPhiTPCOuter]) {
-      values[kPhiTPCOuter] = track.phi() - (track.sign() > 0 ? 1.0 : -1.0) * (TMath::PiOver2() - TMath::ACos(0.22*fgMagField/track.pt()));
+      values[kPhiTPCOuter] = track.phi() - (track.sign() > 0 ? 1.0 : -1.0) * (TMath::PiOver2() - TMath::ACos(0.22 * fgMagField / track.pt()));
       if (values[kPhiTPCOuter] > TMath::TwoPi()) {
         values[kPhiTPCOuter] -= TMath::TwoPi();
       }
@@ -1444,8 +1445,8 @@ void VarManager::FillTrack(T const& track, float* values)
     }
     if (fgUsedVars[kTrackIsInsideTPCModule]) {
       float localSectorPhi = values[kPhiTPCOuter] - TMath::Floor(18.0 * values[kPhiTPCOuter] / TMath::TwoPi()) * (TMath::TwoPi() / 18.0);
-      float edge = fgTPCInterSectorBoundary / 2.0 / 246.6;       // minimal inter-sector boundary as angle
-      float curvature = 3.0 * 3.33 * track.pt() / fgMagField * (1.0 - TMath::Sin(TMath::ACos(0.22*fgMagField/track.pt())));
+      float edge = fgTPCInterSectorBoundary / 2.0 / 246.6; // minimal inter-sector boundary as angle
+      float curvature = 3.0 * 3.33 * track.pt() / fgMagField * (1.0 - TMath::Sin(TMath::ACos(0.22 * fgMagField / track.pt())));
       if (curvature / 2.466 > edge) {
         edge = curvature / 2.466;
       }
