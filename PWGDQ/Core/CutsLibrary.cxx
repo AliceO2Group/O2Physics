@@ -31,7 +31,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("Electron2022")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
-    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug5_noCorr"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug5"));
     return cut;
   }
   if (!nameStr.compare("Electron2023")) {
