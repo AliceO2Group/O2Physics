@@ -24,6 +24,7 @@
 #include <vector>    // std::vector
 
 #include "CommonConstants/MathConstants.h"
+#include "TMCProcess.h"     // for VMC Particle Production Process
 
 /// Base class for calculating properties of reconstructed decays
 ///
@@ -613,6 +614,10 @@ class RecoDecay
       // Printf("getDaughters: Error: No list!");
       return;
     }
+    // check if the particle comes from a decay process
+    if(particle.getProcess() != kPDecay){
+      return;
+    }
     bool isFinal = false;                     // Flag to indicate the end of recursion
     if (depthMax > -1 && stage >= depthMax) { // Maximum depth has been reached (or exceeded).
       isFinal = true;
@@ -683,6 +688,7 @@ class RecoDecay
     int indexMother = -1;                  // index of the mother particle
     std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters of the mother of the first provided daughter
     std::array<int, N> arrDaughtersIndex;  // array of indices of provided daughters
+    int dauCounter = 0;                    // counter particleMother's daughters coming from the decay process
     if (sign) {
       *sign = sgn;
     }
@@ -705,6 +711,10 @@ class RecoDecay
         return -1;
       }
       auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
+      // check if the daughter comes from the decay process of the mother
+      if(particleI.getProcess() != kPDecay){
+        continue;
+      }
       arrDaughtersIndex[iProng] = particleI.globalIndex();
       // Get the list of daughter indices from the mother of the first prong.
       if (iProng == 0) {
@@ -718,13 +728,19 @@ class RecoDecay
         }
         // Printf("MC Rec: Good mother: %d", indexMother);
         auto particleMother = particlesMC.rawIteratorAt(indexMother - particlesMC.offset());
+        dauCounter = 0; //reset daughter counter for the new particleMother
         // Check the daughter indices.
         if (!particleMother.has_daughters()) {
           // Printf("MC Rec: Rejected: bad daughter index range: %d-%d", particleMother.daughtersIds().front(), particleMother.daughtersIds().back());
           return -1;
         }
-        // Check that the number of direct daughters is not larger than the number of expected final daughters.
-        if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > static_cast<int>(N)) {
+        // Check that the number of direct daughters coming from the dacay is not larger than the number of expected final daughters.
+        for(const auto& dau : particleMother.daughters_as<aod::McParticles>()){
+          if(dau.getProcess() == kPDecay){
+            dauCounter++;
+          }
+        }
+        if (dauCounter > static_cast<int>(N)) {
           // Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
           return -1;
         }
@@ -819,6 +835,7 @@ class RecoDecay
     // Printf("MC Gen: Expected particle PDG: %d", PDGParticle);
     int8_t coefFlavourOscillation = 1; // 1 if no B0(s) flavour oscillation occured, -1 else
     int8_t sgn = 0; // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGParticle)
+    int dauCounter = 0; // counter candidate's daughters coming from the decay process
     if (sign) {
       *sign = sgn;
     }
@@ -842,8 +859,13 @@ class RecoDecay
         // Printf("MC Gen: Rejected: bad daughter index range: %d-%d", candidate.daughtersIds().front(), candidate.daughtersIds().back());
         return false;
       }
-      // Check that the number of direct daughters is not larger than the number of expected final daughters.
-      if (candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1 > static_cast<int>(N)) {
+      // Check that the number of direct daughters coming from the dacay is not larger than the number of expected final daughters.
+      for(const auto& dau : candidate.daughters_as<aod::McParticles>()){
+        if(dau.getProcess() == kPDecay){
+          dauCounter++;
+        }
+      }
+      if (dauCounter > static_cast<int>(N)) {
         // Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1, N);
         return false;
       }
