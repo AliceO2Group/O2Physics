@@ -196,7 +196,7 @@ struct AnalysisEventSelection {
   template <uint32_t TEventFillMap, typename TEvents>
   void runEventSelection(TEvents const& events)
   {
-    if (events.size()>0 && events.begin().runNumber() != fCurrentRun) {
+    if (events.size() > 0 && events.begin().runNumber() != fCurrentRun) {
       fHeader = fCCDBApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", events.begin().runNumber()), fMetadataRCT, -1);
       uint64_t sor = std::atol(fHeader["SOR"].c_str());
       uint64_t eor = std::atol(fHeader["EOR"].c_str());
@@ -1463,7 +1463,7 @@ struct AnalysisDileptonTrack {
 
   // TODO: The filter expressions seem to always use the default value of configurables, not the values from the actual configuration file
   Filter eventFilter = aod::dqanalysisflags::isEventSelected == uint32_t(1);
-  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonpTCut&& aod::reducedpair::mass > fConfigDileptonLowMass&& aod::reducedpair::mass < fConfigDileptonHighMass && aod::reducedpair::sign == 0 && aod::reducedpair::lxy > fConfigDileptonLxyCut;
+  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonpTCut&& aod::reducedpair::mass > fConfigDileptonLowMass&& aod::reducedpair::mass<fConfigDileptonHighMass && aod::reducedpair::sign == 0 && aod::reducedpair::lxy > fConfigDileptonLxyCut;
   Filter filterBarrel = aod::dqanalysisflags::isBarrelSelected > uint32_t(0);
   Filter filterMuon = aod::dqanalysisflags::isMuonSelected > uint32_t(0);
 
@@ -1538,7 +1538,7 @@ struct AnalysisDileptonTrack {
             fHistNamesDileptonTrack[icut] = Form("DileptonTrack_%s_%s", tempStr.Data(), fConfigTrackCut.value.data());
             fHistNamesDileptons[icut] = Form("DileptonsSelected_%s", tempStr.Data());
             DefineHistograms(fHistMan, fHistNamesDileptonTrack[icut], fConfigHistogramSubgroups.value.data()); // define dilepton-track histograms
-            DefineHistograms(fHistMan, fHistNamesDileptons[icut], "barrel,vertexing");                                    // define dilepton histograms
+            DefineHistograms(fHistMan, fHistNamesDileptons[icut], "barrel,vertexing");                         // define dilepton histograms
             if (isBarrelME || isMuonME) {
               fHistNamesME[icut] = Form("DileptonTrackME_%s", tempStr.Data());
               DefineHistograms(fHistMan, fHistNamesME[icut], "mixedevent"); // define ME histograms

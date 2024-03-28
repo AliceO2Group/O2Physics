@@ -833,7 +833,7 @@ class VarManager : public TObject
   static std::vector<int> fgRunList;      // vector of runs, to be used for histogram axis
   static float fgCenterOfMassEnergy;      // collision energy
   static float fgMassofCollidingParticle; // mass of the colliding particle
-  static float fgTPCInterSectorBoundary;  // TPC inter-sector border size at the TPC outer radius, in cm 
+  static float fgTPCInterSectorBoundary;  // TPC inter-sector border size at the TPC outer radius, in cm
 
   static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
@@ -1447,7 +1447,7 @@ void VarManager::FillTrack(T const& track, float* values)
       float edge = fgTPCInterSectorBoundary / 2.0 / 246.6;       // minimal inter-sector boundary as angle
       float curvature = 3.0 * 3.33 * track.pt() / fgMagField * (1.0 - TMath::Sin(TMath::ACos(0.22*fgMagField/track.pt())));
       if (curvature / 2.466 > edge) {
-        edge = curvature / 2.466;  
+        edge = curvature / 2.466;
       }
       double min = edge;
       double max = TMath::TwoPi() / 18.0 - edge;
