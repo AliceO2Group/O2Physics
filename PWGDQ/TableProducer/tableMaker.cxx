@@ -168,7 +168,7 @@ struct TableMaker {
   Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
   Configurable<bool> fIsAmbiguous{"cfgIsAmbiguous", false, "Whether we enable QA plots for ambiguous tracks"};
   Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "/Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
+  Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas(electrons, pions, protons)"};
   Configurable<bool> fConfigComputeTPCpostCalibKaon{"cfgTPCpostCalibKaon", false, "If true, compute TPC post-calibrated n-sigmas for kaons"};
@@ -239,7 +239,8 @@ struct TableMaker {
                                context.mOptions.get<bool>("processBarrelOnlyWithCov") || context.mOptions.get<bool>("processBarrelOnlyWithEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithMultsAndEventFilter") || context.mOptions.get<bool>("processBarrelOnlyWithCovAndEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits") || context.mOptions.get<bool>("processBarrelOnlyWithV0Bits") || context.mOptions.get<bool>("processBarrelWithDalitzEvent") ||
-                               context.mOptions.get<bool>("processBarrelOnlyWithV0BitsAndMaps") || context.mOptions.get<bool>("processAmbiguousBarrelOnly")) || context.mOptions.get<bool>("processBarrelWithV0AndDalitzEvent");
+                               context.mOptions.get<bool>("processBarrelOnlyWithV0BitsAndMaps") || context.mOptions.get<bool>("processAmbiguousBarrelOnly")) ||
+                              context.mOptions.get<bool>("processBarrelWithV0AndDalitzEvent");
     bool enableMuonHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                              context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCovAndEventFilter") ||
                              context.mOptions.get<bool>("processFullWithCovMultsAndEventFilter") ||
@@ -1298,7 +1299,7 @@ struct TableMaker {
 
   // Produce barrel tables, with DalitzBits, and skip events without dalitz track  ------------------------------------------------------------------------------
   void processBarrelWithDalitzEvent(MyEventsWithMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
-                                        soa::Filtered<MyBarrelTracksWithDalitzBits> const& tracksBarrel)
+                                    soa::Filtered<MyBarrelTracksWithDalitzBits> const& tracksBarrel)
   {
     for (auto const& track : tracksBarrel) {
       if (track.dalitzBits() != uint8_t(0)) {
@@ -1310,7 +1311,7 @@ struct TableMaker {
 
   // Produce barrel only tables, with V0Bits and DalitzBits, and skip event without dalitz/V0 electron -----------------------------------------------------------------
   void processBarrelWithV0AndDalitzEvent(MyEventsWithMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
-                                                  soa::Filtered<MyBarrelTracksWithV0AndDalitzBits> const& tracksBarrel)
+                                         soa::Filtered<MyBarrelTracksWithV0AndDalitzBits> const& tracksBarrel)
   {
     for (auto const& track : tracksBarrel) {
       // check if this event has a Dalitz candidate
