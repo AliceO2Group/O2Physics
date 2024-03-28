@@ -73,13 +73,13 @@ struct LumiQaTask {
     }
 
     for (const auto& bc : bcs) {
-      if (bc.has_zdc()){
+      if (bc.has_zdc()) {
         float timeZNA = bc.zdc().timeZNA();
         float timeZNC = bc.zdc().timeZNC();
-        if (fabs(timeZNC)<2) {
+        if (fabs(timeZNC) < 2) {
           histos.get<TH1>(HIST("hCounterZNC"))->Fill(srun, 1);
         }
-        if (fabs(timeZNA)<2 || fabs(timeZNC)<2) {
+        if (fabs(timeZNA) < 2 || fabs(timeZNC) < 2) {
           histos.get<TH1>(HIST("hCounterZEM"))->Fill(srun, 1);
         }
       }
@@ -92,19 +92,19 @@ struct LumiQaTask {
       histos.fill(HIST("hMultT0C"), multT0C);
       histos.fill(HIST("hCentT0C"), centT0C);
 
-      if (!TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitCen)){ // TCE
+      if (!TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitCen)) { // TCE
         continue;
       }
       histos.fill(HIST("hMultT0CselTCE"), multT0C);
       histos.fill(HIST("hCentT0CselTCE"), centT0C);
 
-      if (!TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitVertex)){ // TVX
+      if (!TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitVertex)) { // TVX
         continue;
       }
       histos.fill(HIST("hMultT0CselTVXTCE"), multT0C);
       histos.fill(HIST("hCentT0CselTVXTCE"), centT0C);
 
-      if (!bcPatternB[bc.globalBC()%nBCsPerOrbit]) { // B-mask
+      if (!bcPatternB[bc.globalBC() % nBCsPerOrbit]) { // B-mask
         continue;
       }
       histos.fill(HIST("hMultT0CselTVXTCEB"), multT0C);
