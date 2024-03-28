@@ -254,9 +254,12 @@ struct hypertriton3bodyTrackMcinfo {
 
     std::vector<int> protons, pions, deuterons;                     // index for daughter tracks
     std::unordered_set<int64_t> set_proton, set_pion, set_deuteron; // check duplicated daughters
-    int itrack = 0;
+    int itrack = -1;
 
     for (auto& track : tracks) {
+
+      ++itrack;
+
       registry.fill(HIST("hParticleCount"), 0.5);
       registry.fill(HIST("hTrackITSNcls"), track.itsNCls());
       registry.fill(HIST("hTPCNCls"), track.tpcNClsFound());
@@ -495,7 +498,6 @@ struct hypertriton3bodyTrackMcinfo {
           }
         }
       }
-      ++itrack;
     }
 
     std::vector<Indexdaughters> set_pair;
