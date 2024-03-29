@@ -353,6 +353,8 @@ class VarManager : public TObject
     kTPCsignal,
     kTPCsignalRandomized,
     kTPCsignalRandomizedDelta,
+    kPhiTPCOuter,
+    kTrackIsInsideTPCModule,
     kTRDsignal,
     kTRDPattern,
     kTOFbeta,
@@ -827,6 +829,10 @@ class VarManager : public TObject
       return obj->second;
     }
   }
+  static void SetTPCInterSectorBoundary(float boundarySize)
+  {
+    fgTPCInterSectorBoundary = boundarySize;
+  }
 
  public:
   VarManager();
@@ -846,6 +852,7 @@ class VarManager : public TObject
   static std::vector<int> fgRunList;      // vector of runs, to be used for histogram axis
   static float fgCenterOfMassEnergy;      // collision energy
   static float fgMassofCollidingParticle; // mass of the colliding particle
+  static float fgTPCInterSectorBoundary;  // TPC inter-sector border size at the TPC outer radius, in cm
 
   static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
@@ -1481,6 +1488,26 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kEta] = track.eta();
     values[kPhi] = track.phi();
     values[kCharge] = track.sign();
+    if (fgUsedVars[kPhiTPCOuter]) {
+      values[kPhiTPCOuter] = track.phi() - (track.sign() > 0 ? 1.0 : -1.0) * (TMath::PiOver2() - TMath::ACos(0.22 * fgMagField / track.pt()));
+      if (values[kPhiTPCOuter] > TMath::TwoPi()) {
+        values[kPhiTPCOuter] -= TMath::TwoPi();
+      }
+      if (values[kPhiTPCOuter] < 0.0) {
+        values[kPhiTPCOuter] += TMath::TwoPi();
+      }
+    }
+    if (fgUsedVars[kTrackIsInsideTPCModule]) {
+      float localSectorPhi = values[kPhiTPCOuter] - TMath::Floor(18.0 * values[kPhiTPCOuter] / TMath::TwoPi()) * (TMath::TwoPi() / 18.0);
+      float edge = fgTPCInterSectorBoundary / 2.0 / 246.6; // minimal inter-sector boundary as angle
+      float curvature = 3.0 * 3.33 * track.pt() / fgMagField * (1.0 - TMath::Sin(TMath::ACos(0.22 * fgMagField / track.pt())));
+      if (curvature / 2.466 > edge) {
+        edge = curvature / 2.466;
+      }
+      double min = edge;
+      double max = TMath::TwoPi() / 18.0 - edge;
+      values[kTrackIsInsideTPCModule] = (localSectorPhi > min && localSectorPhi < max ? 1.0 : 0.0);
+    }
 
     if constexpr ((fillMap & ReducedTrack) > 0 && !((fillMap & Pair) > 0)) {
       // values[kIsGlobalTrack] = track.filteringFlags_bit(0);
