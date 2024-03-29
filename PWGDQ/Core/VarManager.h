@@ -641,7 +641,6 @@ class VarManager : public TObject
   static void SetRunNumbers(int n, int* runs);
   static void SetRunNumbers(std::vector<int> runs);
   static float GetRunIndex(double);
-  static void SetRunlist(TString period);
   static void SetDummyRunlist(int InitRunnumber);
   static int GetDummyFirst();
   static int GetDummyLast();
@@ -1675,6 +1674,16 @@ void VarManager::FillTrack(T const& track, float* values)
     for (int i = 0; i < 8; i++) {
       values[kIsDalitzLeg + i] = static_cast<bool>(track.dalitzBits() & (uint8_t(1) << i));
     }
+  }
+
+  // Quantities based on the V0 selections
+  if constexpr ((fillMap & TrackV0Bits) > 0) {
+    values[kIsLegFromGamma] = static_cast<bool>(track.pidbit() & (uint8_t(1) << VarManager::kIsConversionLeg));
+    values[kIsLegFromK0S] = static_cast<bool>(track.pidbit() & (uint8_t(1) << VarManager::kIsK0sLeg));
+    values[kIsLegFromLambda] = static_cast<bool>(track.pidbit() & (uint8_t(1) << VarManager::kIsLambdaLeg));
+    values[kIsLegFromAntiLambda] = static_cast<bool>(track.pidbit() & (uint8_t(1) << VarManager::kIsALambdaLeg));
+    values[kIsLegFromOmega] = static_cast<bool>(track.pidbit() & (uint8_t(1) << VarManager::kIsOmegaLeg));
+    values[kIsProtonFromLambdaAndAntiLambda] = static_cast<bool>((values[kIsLegFromLambda] * track.sign() > 0) || (values[kIsLegFromAntiLambda] * (-track.sign()) > 0));
   }
 
   // Quantities based on the barrel PID tables
