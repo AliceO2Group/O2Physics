@@ -70,7 +70,6 @@ struct HfTaskDs {
   using THnSparse_ptr = std::shared_ptr<THnSparse>;
   using histTypes = std::variant<TH1_ptr, TH2_ptr, THnSparse_ptr>;
 
-
   using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
   using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using CollisionsWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::CentNTPVs>;
@@ -108,7 +107,7 @@ struct HfTaskDs {
   Partition<CandDsMcRecoWithMl> reconstructedCandDplusBkgWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_cand_3prong::flagMcDecayChanRec == decayChannel;
   Partition<CandDsMcRecoWithMl> reconstructedCandBkgWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi));
 
-  HistogramRegistry registry{"registry",{}};
+  HistogramRegistry registry{"registry", {}};
 
   std::array<std::string, DataType::kDataTypes> folders = {"Data/", "MC/Ds/Prompt/", "MC/Ds/NonPrompt/", "MC/Dplus/Prompt/", "MC/Dplus/NonPrompt/", "MC/Dplus/Bkg/", "MC/Bkg/"};
 
@@ -138,14 +137,12 @@ struct HfTaskDs {
     AxisSpec massbins = {600, 1.67, 2.27, "inv. mass (KK#pi) (GeV/#it{c}^{2})"};
     AxisSpec centralitybins = {100, 0., 100., "Centrality"};
 
-
-
     for (auto i = 0; i < DataType::kDataTypes; ++i) {
       if (doprocessDataWithCentFT0C || doprocessDataWithCentFT0M || doprocessDataWithCentNTracksPV ||
           doprocessMcWithCentFT0C || doprocessMcWithCentFT0M || doprocessMcWithCentNTracksPV) {
         histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins});
       } else if (doprocessDataWithMlAndCentFT0C || doprocessDataWithMlAndCentFT0M || doprocessDataWithMlAndCentNTracksPV ||
-                doprocessMcWithMlAndCentFT0C || doprocessMcWithMlAndCentFT0M || doprocessMcWithMlAndCentNTracksPV) {
+                 doprocessMcWithMlAndCentFT0C || doprocessMcWithMlAndCentFT0M || doprocessMcWithMlAndCentNTracksPV) {
         histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins, axisMlScore0, axisMlScore1, axisMlScore2});
       } else if (doprocessData || doprocessMc) {
         histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins});
@@ -177,15 +174,14 @@ struct HfTaskDs {
       histosPtr[i]["hd0Prong1"] = registry.add<TH2>((folders[i] + "hd0Prong1").c_str(), "3-prong candidates;prong 1 DCA to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, ptbins}});
       histosPtr[i]["hd0Prong2"] = registry.add<TH2>((folders[i] + "hd0Prong2").c_str(), "3-prong candidates;prong 2 DCA to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, ptbins}});
     }
-    
 
     if (doprocessMcWithCentFT0C || doprocessMcWithCentFT0M || doprocessMcWithCentNTracksPV ||
         doprocessMcWithMlAndCentFT0C || doprocessMcWithMlAndCentFT0M || doprocessMcWithMlAndCentNTracksPV ||
         doprocessMc || doprocessMcWithMl) { // processing MC
-      
-      for (auto i = 0; i < DataType::kDataTypes; ++i) { // only signal
+
+      for (auto i = 0; i < DataType::kDataTypes; ++i) {
         if (i == DataType::McDsPrompt || i == DataType::McDsNonPrompt || i == DataType::McDplusPrompt || i == DataType::McDplusNonPrompt || i == DataType::McDplusBkg) {
-          
+
           histosPtr[i]["hEtaGen"] = registry.add<TH1>((folders[i] + "hEtaGen").c_str(), "3-prong candidates (matched);#eta;entries", {HistType::kTH1F, {{100, -2., 2.}}});
           histosPtr[i]["hEtaRecSig"] = registry.add<TH1>((folders[i] + "hEtaRecSig").c_str(), "3-prong candidates (matched);#eta;entries", {HistType::kTH1F, {{100, -2., 2.}}});
           histosPtr[i]["hCPARecSig"] = registry.add<TH1>((folders[i] + "hCPARecSig").c_str(), "3-prong candidates (matched);cos. pointing angle;entries", {HistType::kTH1F, {{100, -1., 1.}}});
@@ -222,28 +218,28 @@ struct HfTaskDs {
   void fillHisto(const T1& candidate, DataType dataType)
   {
     auto pt = candidate.pt();
-    std::get<TH1_ptr>(histosPtr[dataType]["hPt"]) -> Fill(pt);
-    std::get<TH1_ptr>(histosPtr[dataType]["hPtProng0"]) -> Fill(candidate.ptProng0());
-    std::get<TH1_ptr>(histosPtr[dataType]["hPtProng1"]) -> Fill(candidate.ptProng1());
-    std::get<TH1_ptr>(histosPtr[dataType]["hPtProng2"]) -> Fill(candidate.ptProng2());
-    std::get<TH2_ptr>(histosPtr[dataType]["hEta"]) -> Fill(candidate.eta(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hCt"]) -> Fill(hfHelper.ctDs(candidate), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hDecayLength"]) -> Fill(candidate.decayLength(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hDecayLengthXY"]) -> Fill(candidate.decayLengthXY(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hNormalisedDecayLengthXY"]) -> Fill(candidate.decayLengthXYNormalised(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hCPA"]) -> Fill(candidate.cpa(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hCPAxy"]) -> Fill(candidate.cpaXY(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterXY"]) -> Fill(candidate.impactParameterXY(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hMaxNormalisedDeltaIP"]) -> Fill(candidate.maxNormalisedDeltaIP(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterProngSqSum"]) -> Fill(candidate.impactParameterProngSqSum(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hDecayLengthError"]) -> Fill(candidate.errorDecayLength(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hDecayLengthXYError"]) -> Fill(candidate.errorDecayLengthXY(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterError"]) -> Fill(candidate.errorImpactParameter0(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterError"]) -> Fill(candidate.errorImpactParameter1(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterError"]) -> Fill(candidate.errorImpactParameter2(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hd0Prong0"]) -> Fill(candidate.impactParameter0(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hd0Prong1"]) -> Fill(candidate.impactParameter1(), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hd0Prong2"]) -> Fill(candidate.impactParameter2(), pt);    
+    std::get<TH1_ptr>(histosPtr[dataType]["hPt"])->Fill(pt);
+    std::get<TH1_ptr>(histosPtr[dataType]["hPtProng0"])->Fill(candidate.ptProng0());
+    std::get<TH1_ptr>(histosPtr[dataType]["hPtProng1"])->Fill(candidate.ptProng1());
+    std::get<TH1_ptr>(histosPtr[dataType]["hPtProng2"])->Fill(candidate.ptProng2());
+    std::get<TH2_ptr>(histosPtr[dataType]["hEta"])->Fill(candidate.eta(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hCt"])->Fill(hfHelper.ctDs(candidate), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hDecayLength"])->Fill(candidate.decayLength(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hDecayLengthXY"])->Fill(candidate.decayLengthXY(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hNormalisedDecayLengthXY"])->Fill(candidate.decayLengthXYNormalised(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hCPA"])->Fill(candidate.cpa(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hCPAxy"])->Fill(candidate.cpaXY(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterXY"])->Fill(candidate.impactParameterXY(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hMaxNormalisedDeltaIP"])->Fill(candidate.maxNormalisedDeltaIP(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterProngSqSum"])->Fill(candidate.impactParameterProngSqSum(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hDecayLengthError"])->Fill(candidate.errorDecayLength(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hDecayLengthXYError"])->Fill(candidate.errorDecayLengthXY(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterError"])->Fill(candidate.errorImpactParameter0(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterError"])->Fill(candidate.errorImpactParameter1(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hImpactParameterError"])->Fill(candidate.errorImpactParameter2(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hd0Prong0"])->Fill(candidate.impactParameter0(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hd0Prong1"])->Fill(candidate.impactParameter1(), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hd0Prong2"])->Fill(candidate.impactParameter2(), pt);
 
     return;
   }
@@ -261,22 +257,22 @@ struct HfTaskDs {
         outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
       }
       if constexpr (centDetector != CentralityEstimator::None) {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"]) -> Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentrality<centDetector>(candidate), outputMl[0], outputMl[1], outputMl[2]);
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentrality<centDetector>(candidate), outputMl[0], outputMl[1], outputMl[2]);
       } else {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"]) -> Fill(hfHelper.invMassDsToKKPi(candidate), pt, outputMl[0], outputMl[1], outputMl[2]);
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, outputMl[0], outputMl[1], outputMl[2]);
       }
     } else {
       if constexpr (centDetector != CentralityEstimator::None) {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"]) -> Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentrality<centDetector>(candidate));
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt, evaluateCentrality<centDetector>(candidate));
       } else {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"]) -> Fill(hfHelper.invMassDsToKKPi(candidate), pt);
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToKKPi(candidate), pt);
       }
     }
 
-    std::get<TH2_ptr>(histosPtr[dataType]["hCos3PiK"]) -> Fill(hfHelper.cos3PiKDsToKKPi(candidate), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hAbsCos3PiK"]) -> Fill(hfHelper.absCos3PiKDsToKKPi(candidate), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hDeltaMassPhi"]) -> Fill(hfHelper.deltaMassPhiDsToKKPi(candidate), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hMassKK"]) -> Fill(hfHelper.massKKPairDsToKKPi(candidate), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(hfHelper.cos3PiKDsToKKPi(candidate), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(hfHelper.absCos3PiKDsToKKPi(candidate), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hDeltaMassPhi"])->Fill(hfHelper.deltaMassPhiDsToKKPi(candidate), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hMassKK"])->Fill(hfHelper.massKKPairDsToKKPi(candidate), pt);
 
     return;
   }
@@ -294,36 +290,36 @@ struct HfTaskDs {
         outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
       }
       if constexpr (centDetector != CentralityEstimator::None) {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"]) -> Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentrality<centDetector>(candidate), outputMl[0], outputMl[1], outputMl[2]);
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentrality<centDetector>(candidate), outputMl[0], outputMl[1], outputMl[2]);
       } else {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"]) -> Fill(hfHelper.invMassDsToPiKK(candidate), pt, outputMl[0], outputMl[1], outputMl[2]);
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, outputMl[0], outputMl[1], outputMl[2]);
       }
     } else {
       if constexpr (centDetector != CentralityEstimator::None) {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"]) -> Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentrality<centDetector>(candidate));
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt, evaluateCentrality<centDetector>(candidate));
       } else {
-        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"]) -> Fill(hfHelper.invMassDsToPiKK(candidate), pt);
+        std::get<THnSparse_ptr>(histosPtr[dataType]["hSparseMass"])->Fill(hfHelper.invMassDsToPiKK(candidate), pt);
       }
     }
 
-    std::get<TH2_ptr>(histosPtr[dataType]["hCos3PiK"]) -> Fill(hfHelper.cos3PiKDsToPiKK(candidate), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hAbsCos3PiK"]) -> Fill(hfHelper.absCos3PiKDsToPiKK(candidate), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hDeltaMassPhi"]) -> Fill(hfHelper.deltaMassPhiDsToPiKK(candidate), pt);
-    std::get<TH2_ptr>(histosPtr[dataType]["hMassKK"]) -> Fill(hfHelper.massKKPairDsToPiKK(candidate), pt);
-    
+    std::get<TH2_ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(hfHelper.cos3PiKDsToPiKK(candidate), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(hfHelper.absCos3PiKDsToPiKK(candidate), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hDeltaMassPhi"])->Fill(hfHelper.deltaMassPhiDsToPiKK(candidate), pt);
+    std::get<TH2_ptr>(histosPtr[dataType]["hMassKK"])->Fill(hfHelper.massKKPairDsToPiKK(candidate), pt);
+
     return;
   }
 
   /// Fill MC histograms at reconstruction level
   /// \param candidate is candidate
   /// \param mcParticles are particles with MC information
-  /// \param whichSpeciesDecay defines which histograms to fill
+  /// \param whichSpeciesDecay defines which histogram to fill
   template <CentralityEstimator centDetector, bool useMl, typename T1>
   void fillHistoMCRec(const T1& candidate, const CandDsMcGen& mcParticles, SpeciesAndDecay whichSpeciesDecay)
   {
     auto indexMother = RecoDecay::getMother(mcParticles,
                                             candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>(),
-                                            whichSpeciesDecay == SpeciesAndDecay::DsToKKPi ? o2::constants::physics::Pdg::kDS : o2::constants::physics::Pdg::kDPlus , true);
+                                            whichSpeciesDecay == SpeciesAndDecay::DsToKKPi ? o2::constants::physics::Pdg::kDS : o2::constants::physics::Pdg::kDPlus, true);
 
     if (indexMother != -1) {
       if (yCandRecoMax >= 0. && std::abs(whichSpeciesDecay == SpeciesAndDecay::DsToKKPi ? hfHelper.yDs(candidate) : hfHelper.yDplus(candidate)) > yCandRecoMax) {
@@ -333,12 +329,12 @@ struct HfTaskDs {
       auto particleMother = mcParticles.iteratorAt(indexMother);
 
       int flag = candidate.isCandidateSwapped() ? candidate.isSelDsToPiKK() : candidate.isSelDsToKKPi(); // 0 corresponds to KKPi, 1 to PiKK
-      
+
       auto pt = candidate.pt(); // rec. level pT
 
       // Ds
       if (whichSpeciesDecay == SpeciesAndDecay::DsToKKPi) {
-          
+
         auto y = hfHelper.yDs(candidate);
 
         // prompt
@@ -349,16 +345,16 @@ struct HfTaskDs {
           if (candidate.isSelDsToPiKK() >= selectionFlagDs) // PiKK
             fillHistoPiKK<centDetector, useMl>(candidate, DataType::McDsPrompt);
 
-          std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hPtRecSig"]) -> Fill(pt);
-          std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hPtGenSig"]) -> Fill(particleMother.pt()); // gen. level pT
-          std::get<TH2_ptr>(histosPtr[DataType::McDsPrompt]["hPtVsYRecSigRecoSkim"]) -> Fill(pt, y);
-          std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hCPARecSig"]) -> Fill(candidate.cpa());
-          std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hEtaRecSig"]) -> Fill(candidate.eta());
+          std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hPtRecSig"])->Fill(pt);
+          std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hPtGenSig"])->Fill(particleMother.pt()); // gen. level pT
+          std::get<TH2_ptr>(histosPtr[DataType::McDsPrompt]["hPtVsYRecSigRecoSkim"])->Fill(pt, y);
+          std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hCPARecSig"])->Fill(candidate.cpa());
+          std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hEtaRecSig"])->Fill(candidate.eta());
           if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
-            std::get<TH2_ptr>(histosPtr[DataType::McDsPrompt]["hPtVsYRecSigRecoTopol"]) -> Fill(pt, y);
+            std::get<TH2_ptr>(histosPtr[DataType::McDsPrompt]["hPtVsYRecSigRecoTopol"])->Fill(pt, y);
           }
           if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
-            std::get<TH2_ptr>(histosPtr[DataType::McDsPrompt]["hPtVsYRecSigRecoPID"]) -> Fill(pt, y);
+            std::get<TH2_ptr>(histosPtr[DataType::McDsPrompt]["hPtVsYRecSigRecoPID"])->Fill(pt, y);
           }
         }
 
@@ -370,16 +366,16 @@ struct HfTaskDs {
           if (candidate.isSelDsToPiKK() >= selectionFlagDs) // PiKK
             fillHistoPiKK<centDetector, useMl>(candidate, DataType::McDsNonPrompt);
 
-          std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtRecSig"]) -> Fill(pt);
-          std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtGenSig"]) -> Fill(particleMother.pt()); // gen. level pT
-          std::get<TH2_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtVsYRecSigRecoSkim"]) -> Fill(pt, y);
-          std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hCPARecSig"]) -> Fill(candidate.cpa());
-          std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hEtaRecSig"]) -> Fill(candidate.eta());
+          std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtRecSig"])->Fill(pt);
+          std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtGenSig"])->Fill(particleMother.pt()); // gen. level pT
+          std::get<TH2_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtVsYRecSigRecoSkim"])->Fill(pt, y);
+          std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hCPARecSig"])->Fill(candidate.cpa());
+          std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hEtaRecSig"])->Fill(candidate.eta());
           if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
-            std::get<TH2_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtVsYRecSigRecoTopol"]) -> Fill(pt, y);
+            std::get<TH2_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtVsYRecSigRecoTopol"])->Fill(pt, y);
           }
           if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
-            std::get<TH2_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtVsYRecSigRecoPID"]) -> Fill(pt, y);
+            std::get<TH2_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtVsYRecSigRecoPID"])->Fill(pt, y);
           }
         }
         return;
@@ -397,16 +393,16 @@ struct HfTaskDs {
           if (candidate.isSelDsToPiKK() >= selectionFlagDs) // PiKK
             fillHistoPiKK<centDetector, useMl>(candidate, DataType::McDplusPrompt);
 
-          std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hPtRecSig"]) -> Fill(pt);
-          std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hPtGenSig"]) -> Fill(particleMother.pt()); // gen. level pT
-          std::get<TH2_ptr>(histosPtr[DataType::McDplusPrompt]["hPtVsYRecSigRecoSkim"]) -> Fill(pt, y);
-          std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hCPARecSig"]) -> Fill(candidate.cpa());
-          std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hEtaRecSig"]) -> Fill(candidate.eta());
+          std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hPtRecSig"])->Fill(pt);
+          std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hPtGenSig"])->Fill(particleMother.pt()); // gen. level pT
+          std::get<TH2_ptr>(histosPtr[DataType::McDplusPrompt]["hPtVsYRecSigRecoSkim"])->Fill(pt, y);
+          std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hCPARecSig"])->Fill(candidate.cpa());
+          std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hEtaRecSig"])->Fill(candidate.eta());
           if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
-            std::get<TH2_ptr>(histosPtr[DataType::McDplusPrompt]["hPtVsYRecSigRecoTopol"]) -> Fill(pt, y);
+            std::get<TH2_ptr>(histosPtr[DataType::McDplusPrompt]["hPtVsYRecSigRecoTopol"])->Fill(pt, y);
           }
           if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
-            std::get<TH2_ptr>(histosPtr[DataType::McDplusPrompt]["hPtVsYRecSigRecoPID"]) -> Fill(pt, y);
+            std::get<TH2_ptr>(histosPtr[DataType::McDplusPrompt]["hPtVsYRecSigRecoPID"])->Fill(pt, y);
           }
         }
 
@@ -418,16 +414,16 @@ struct HfTaskDs {
           if (candidate.isSelDsToPiKK() >= selectionFlagDs) // PiKK
             fillHistoPiKK<centDetector, useMl>(candidate, DataType::McDplusNonPrompt);
 
-          std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtRecSig"]) -> Fill(pt);
-          std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtGenSig"]) -> Fill(particleMother.pt()); // gen. level pT
-          std::get<TH2_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtVsYRecSigRecoSkim"]) -> Fill(pt, y);
-          std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hCPARecSig"]) -> Fill(candidate.cpa());
-          std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hEtaRecSig"]) -> Fill(candidate.eta());
+          std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtRecSig"])->Fill(pt);
+          std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtGenSig"])->Fill(particleMother.pt()); // gen. level pT
+          std::get<TH2_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtVsYRecSigRecoSkim"])->Fill(pt, y);
+          std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hCPARecSig"])->Fill(candidate.cpa());
+          std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hEtaRecSig"])->Fill(candidate.eta());
           if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
-            std::get<TH2_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtVsYRecSigRecoTopol"]) -> Fill(pt, y);
+            std::get<TH2_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtVsYRecSigRecoTopol"])->Fill(pt, y);
           }
           if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
-            std::get<TH2_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtVsYRecSigRecoPID"]) -> Fill(pt, y);
+            std::get<TH2_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtVsYRecSigRecoPID"])->Fill(pt, y);
           }
         }
 
@@ -446,22 +442,20 @@ struct HfTaskDs {
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) // PiKK
           fillHistoPiKK<centDetector, useMl>(candidate, DataType::McDplusBkg);
 
-        std::get<TH1_ptr>(histosPtr[DataType::McDplusBkg]["hPtRecSig"]) -> Fill(pt);
-        std::get<TH1_ptr>(histosPtr[DataType::McDplusBkg]["hPtGenSig"]) -> Fill(particleMother.pt()); // gen. level pT
-        std::get<TH2_ptr>(histosPtr[DataType::McDplusBkg]["hPtVsYRecSigRecoSkim"]) -> Fill(pt, y);
-        std::get<TH1_ptr>(histosPtr[DataType::McDplusBkg]["hCPARecSig"]) -> Fill(candidate.cpa());
-        std::get<TH1_ptr>(histosPtr[DataType::McDplusBkg]["hEtaRecSig"]) -> Fill(candidate.eta());
+        std::get<TH1_ptr>(histosPtr[DataType::McDplusBkg]["hPtRecSig"])->Fill(pt);
+        std::get<TH1_ptr>(histosPtr[DataType::McDplusBkg]["hPtGenSig"])->Fill(particleMother.pt()); // gen. level pT
+        std::get<TH2_ptr>(histosPtr[DataType::McDplusBkg]["hPtVsYRecSigRecoSkim"])->Fill(pt, y);
+        std::get<TH1_ptr>(histosPtr[DataType::McDplusBkg]["hCPARecSig"])->Fill(candidate.cpa());
+        std::get<TH1_ptr>(histosPtr[DataType::McDplusBkg]["hEtaRecSig"])->Fill(candidate.eta());
         if (TESTBIT(flag, aod::SelectionStep::RecoTopol)) {
-          std::get<TH2_ptr>(histosPtr[DataType::McDplusBkg]["hPtVsYRecSigRecoTopol"]) -> Fill(pt, y);
+          std::get<TH2_ptr>(histosPtr[DataType::McDplusBkg]["hPtVsYRecSigRecoTopol"])->Fill(pt, y);
         }
         if (TESTBIT(flag, aod::SelectionStep::RecoPID)) {
-          std::get<TH2_ptr>(histosPtr[DataType::McDplusBkg]["hPtVsYRecSigRecoPID"]) -> Fill(pt, y);
+          std::get<TH2_ptr>(histosPtr[DataType::McDplusBkg]["hPtVsYRecSigRecoPID"])->Fill(pt, y);
         }
 
         return;
       } // end D+→ π± K∓ π±
-
-      
     }
   }
 
@@ -556,14 +550,14 @@ struct HfTaskDs {
               continue;
             }
             if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
-              std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hPtGen"]) -> Fill(pt); // gen. level pT
-              std::get<TH2_ptr>(histosPtr[DataType::McDsPrompt]["hPtVsYGen"]) -> Fill(pt, y); // gen. level pT
-              std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hEtaGen"]) -> Fill(particle.eta()); // gen. level pT
+              std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hPtGen"])->Fill(pt);              // gen. level pT
+              std::get<TH2_ptr>(histosPtr[DataType::McDsPrompt]["hPtVsYGen"])->Fill(pt, y);        // gen. level pT
+              std::get<TH1_ptr>(histosPtr[DataType::McDsPrompt]["hEtaGen"])->Fill(particle.eta()); // gen. level pT
             }
             if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
-              std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtGen"]) -> Fill(pt); // gen. level pT
-              std::get<TH2_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtVsYGen"]) -> Fill(pt, y); // gen. level pT
-              std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hEtaGen"]) -> Fill(particle.eta()); // gen. level pT
+              std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtGen"])->Fill(pt);              // gen. level pT
+              std::get<TH2_ptr>(histosPtr[DataType::McDsNonPrompt]["hPtVsYGen"])->Fill(pt, y);        // gen. level pT
+              std::get<TH1_ptr>(histosPtr[DataType::McDsNonPrompt]["hEtaGen"])->Fill(particle.eta()); // gen. level pT
             }
           } else if (fillDplusMc) {
             y = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDPlus);
@@ -571,16 +565,15 @@ struct HfTaskDs {
               continue;
             }
             if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
-              std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hPtGen"]) -> Fill(pt); // gen. level pT
-              std::get<TH2_ptr>(histosPtr[DataType::McDplusPrompt]["hPtVsYGen"]) -> Fill(pt, y); // gen. level pT
-              std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hEtaGen"]) -> Fill(particle.eta());
+              std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hPtGen"])->Fill(pt);       // gen. level pT
+              std::get<TH2_ptr>(histosPtr[DataType::McDplusPrompt]["hPtVsYGen"])->Fill(pt, y); // gen. level pT
+              std::get<TH1_ptr>(histosPtr[DataType::McDplusPrompt]["hEtaGen"])->Fill(particle.eta());
             }
             if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
-              std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtGen"]) -> Fill(pt); // gen. level pT
-              std::get<TH2_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtVsYGen"]) -> Fill(pt, y);
-              std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hEtaGen"]) -> Fill(particle.eta());
+              std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtGen"])->Fill(pt); // gen. level pT
+              std::get<TH2_ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtVsYGen"])->Fill(pt, y);
+              std::get<TH1_ptr>(histosPtr[DataType::McDplusNonPrompt]["hEtaGen"])->Fill(particle.eta());
             }
-
           }
         }
       }
