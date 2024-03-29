@@ -101,12 +101,13 @@ struct nuclei_in_jets {
   Configurable<float> min_nsigmaTOF{"min_nsigmaTOF", -3.0f, "Minimum nsigma TOF"};
   Configurable<float> max_nsigmaTOF{"max_nsigmaTOF", +3.5f, "Maximum nsigma TOF"};
   Configurable<bool> require_primVtx_contributor{"require_primVtx_contributor", true, "require that the track is a PV contributor"};
-  Configurable<std::vector<float>> param_proton_ref{"param_proton_ref", {0.00007, 984.79694, 0.45856, 0.00036}, "Parameters of Levi-Tsallis fit of Protons from pythia"};
-  Configurable<std::vector<float>> param_proton_jet{"param_proton_jet", {0.00109, 4.27109, 0.51173, 2.26176}, "Parameters for reweighting protons in jets"};
-  Configurable<std::vector<float>> param_deuteron_jet{"param_deuteron_jet", {0.00026, 2.09662, 1.00000, 1.87561}, "Parameters for reweighting deuterons in jets"};
+  Configurable<bool> applyReweighting{"applyReweighting", true, "apply Reweighting"};
+  Configurable<std::vector<float>> param_proton_ref{"param_proton_ref", {0.000000000151, 984.796940000000, 0.458560000000, 0.000360000000}, "Parameters of Levi-Tsallis fit of Protons from pythia"};
+  Configurable<std::vector<float>> param_proton_jet{"param_proton_jet", {0.025285984480, 4.271090000000, 0.511730000000, 2.261760000000}, "Parameters for reweighting protons in jets"};
+  Configurable<std::vector<float>> param_deuteron_jet{"param_deuteron_jet", {20.121453090900, 2.096620000000, 1.000000000000, 1.875610000000}, "Parameters for reweighting deuterons in jets"};
   Configurable<std::vector<float>> param_helium3_jet{"param_helium3_jet", {0.00026, 2.09662, 1.00000, 1.87561}, "Parameters for reweighting helium3 in jets"};
-  Configurable<std::vector<float>> param_proton_ue{"param_proton_ue", {0.00000, 88.48017, 0.53952, 0.06212}, "Parameters for reweighting protons in ue"};
-  Configurable<std::vector<float>> param_deuteron_ue{"param_deuteron_ue", {0.00000, 25.00000, 0.51497, 1.00000}, "Parameters for reweighting deuterons in ue"};
+  Configurable<std::vector<float>> param_proton_ue{"param_proton_ue", {0.000000977546, 88.480170000000, 0.539520000000, 0.062120000000}, "Parameters for reweighting protons in ue"};
+  Configurable<std::vector<float>> param_deuteron_ue{"param_deuteron_ue", {0.000294563800, 25.000000000000, 0.514970000000, 1.000000000000}, "Parameters for reweighting deuterons in ue"};
   Configurable<std::vector<float>> param_helium3_ue{"param_helium3_ue", {0.00000, 25.00000, 0.51497, 1.00000}, "Parameters for reweighting helium3 in ue"};
 
   // List of Particles
@@ -347,6 +348,9 @@ struct nuclei_in_jets {
   float Weight(float pt, int event_region, int nucleus_of_interest)
   {
 
+    if (!applyReweighting)
+      return 1;
+
     auto par_proton_ref = static_cast<std::vector<float>>(param_proton_ref);
     auto par_proton_jet = static_cast<std::vector<float>>(param_proton_jet);
     auto par_deuteron_jet = static_cast<std::vector<float>>(param_deuteron_jet);
@@ -403,6 +407,9 @@ struct nuclei_in_jets {
 
     // Event Selection
     if (!collision.sel8())
+      return;
+
+    if (abs(collision.posZ()) > 10)
       return;
 
     // Event Counter: after event selection
@@ -751,60 +758,78 @@ struct nuclei_in_jets {
   } // end processData
   PROCESS_SWITCH(nuclei_in_jets, processData, "Process data", true);
 
-  // MC
-  SliceCache cache;
-  void processMC(soa::Join<SelectedCollisions, aod::McCollisionLabels>::iterator const& collision, MCTracks const& mcTracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
+  Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
+  Preslice<aod::Tracks> perCollision = o2::aod::track::collisionId;
+
+  void processGen(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
+    for (const auto& mccollision : mcCollisions) {
+
+      // Event Counter (before event sel)
+      registryQC.fill(HIST("number_of_events_mc"), 0.5);
+
+      auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
+
+      // Generated Particles
+      for (auto& particle : mcParticles_per_coll) {
+
+        if (!particle.isPhysicalPrimary())
+          continue;
+        if ((particle.pdgCode() != -2212) && (particle.pdgCode() != -1000010020) && (particle.pdgCode() != -1000020030))
+          continue;
+        if (particle.y() < min_y || particle.y() > max_y)
+          continue;
+
+        // Reweighting
+        float wpr_jet = Weight(particle.pt(), region::jet, nucleus::proton);
+        float wpr_ue = Weight(particle.pt(), region::underlying_event, nucleus::proton);
+        float wde_jet = Weight(particle.pt(), region::jet, nucleus::deuteron);
+        float wde_ue = Weight(particle.pt(), region::underlying_event, nucleus::deuteron);
+        float whe_jet = Weight(particle.pt(), region::jet, nucleus::helium);
+        float whe_ue = Weight(particle.pt(), region::underlying_event, nucleus::helium);
+
+        // Fill Histograms
+        if (particle.pdgCode() == -2212) {
+          registryMC.fill(HIST("antiproton_input"), particle.pt());
+          registryMC.fill(HIST("antiproton_weighted_jet"), particle.pt(), wpr_jet);
+          registryMC.fill(HIST("antiproton_weighted_ue"), particle.pt(), wpr_ue);
+          registryMC.fill(HIST("antiproton_jet_gen"), particle.pt(), wpr_jet);
+          registryMC.fill(HIST("antiproton_ue_gen"), particle.pt(), wpr_ue);
+        }
+        if (particle.pdgCode() == -1000010020) {
+          registryMC.fill(HIST("antideuteron_jet_gen"), particle.pt(), wde_jet);
+          registryMC.fill(HIST("antideuteron_ue_gen"), particle.pt(), wde_ue);
+        }
+        if (particle.pdgCode() == -1000020030) {
+          registryMC.fill(HIST("antihelium3_jet_gen"), particle.pt(), whe_jet);
+          registryMC.fill(HIST("antihelium3_ue_gen"), particle.pt(), whe_ue);
+        }
+      }
+    }
+  }
+
+  // void processMC(soa::Join<SelectedCollisions, aod::McCollisionLabels>::iterator const& collision, MCTracks const& mcTracks, aod::McParticles& mcParticles, aod::McCollisions const& mcCollisions)
+
+  void processRec(soa::Join<SelectedCollisions, aod::McCollisionLabels>::iterator const& collision, MCTracks const& mcTracks, const o2::aod::McCollisions& mcCollisions, const aod::McParticles& mcParticles)
+  {
+
     // Event Counter (before event sel)
-    registryQC.fill(HIST("number_of_events_mc"), 0.5);
+    registryQC.fill(HIST("number_of_events_mc"), 1.5);
 
     // Event Selection
     if (!collision.sel8())
       return;
 
+    if (abs(collision.posZ()) > 10)
+      return;
+
     // Event Counter (after event sel)
-    registryQC.fill(HIST("number_of_events_mc"), 1.5);
+    registryQC.fill(HIST("number_of_events_mc"), 2.5);
 
-    // Generated Particles
-    auto mcParticlesInCollision = mcParticles.sliceByCached(o2::aod::mcparticle::mcCollisionId,
-                                                            collision.mcCollision_as<aod::McCollisions>().globalIndex(), cache);
-    for (auto& particle : mcParticlesInCollision) {
-
-      if (!particle.isPhysicalPrimary())
-        continue;
-      if ((particle.pdgCode() != -2212) && (particle.pdgCode() != -1000010020) && (particle.pdgCode() != -1000020030))
-        continue;
-      if (particle.y() < min_y || particle.y() > max_y)
-        continue;
-
-      // Reweighting
-      float wpr_jet = Weight(particle.pt(), region::jet, nucleus::proton);
-      float wpr_ue = Weight(particle.pt(), region::underlying_event, nucleus::proton);
-      float wde_jet = Weight(particle.pt(), region::jet, nucleus::deuteron);
-      float wde_ue = Weight(particle.pt(), region::underlying_event, nucleus::deuteron);
-      float whe_jet = Weight(particle.pt(), region::jet, nucleus::helium);
-      float whe_ue = Weight(particle.pt(), region::underlying_event, nucleus::helium);
-
-      // Fill Histograms
-      if (particle.pdgCode() == -2212) {
-        registryMC.fill(HIST("antiproton_input"), particle.pt());
-        registryMC.fill(HIST("antiproton_weighted_jet"), particle.pt(), wpr_jet);
-        registryMC.fill(HIST("antiproton_weighted_ue"), particle.pt(), wpr_ue);
-        registryMC.fill(HIST("antiproton_jet_gen"), particle.pt(), wpr_jet);
-        registryMC.fill(HIST("antiproton_ue_gen"), particle.pt(), wpr_ue);
-      }
-      if (particle.pdgCode() == -1000010020) {
-        registryMC.fill(HIST("antideuteron_jet_gen"), particle.pt(), wde_jet);
-        registryMC.fill(HIST("antideuteron_ue_gen"), particle.pt(), wde_ue);
-      }
-      if (particle.pdgCode() == -1000020030) {
-        registryMC.fill(HIST("antihelium3_jet_gen"), particle.pt(), whe_jet);
-        registryMC.fill(HIST("antihelium3_ue_gen"), particle.pt(), whe_ue);
-      }
-    }
+    auto tracks_per_coll = mcTracks.sliceBy(perCollision, collision.globalIndex());
 
     // Reconstructed Tracks
-    for (auto track : mcTracks) {
+    for (auto track : tracks_per_coll) {
 
       // Get MC Particle
       if (!track.has_mcParticle())
@@ -890,7 +915,9 @@ struct nuclei_in_jets {
       }
     }
   }
-  PROCESS_SWITCH(nuclei_in_jets, processMC, "process MC", false);
+
+  PROCESS_SWITCH(nuclei_in_jets, processGen, "process Gen MC", false);
+  PROCESS_SWITCH(nuclei_in_jets, processRec, "process Rec MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
