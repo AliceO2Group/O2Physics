@@ -47,6 +47,7 @@ enum Tasks {
   kTrackTrack,
   kTrackV0,
   kTrackTrackTrack,
+  kTrackTrackV0,
   kNTasks,
 };
 } // namespace CollisionMasks
@@ -215,6 +216,44 @@ struct femoDreamCollisionMasker {
             FilterPtMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
           }
         }
+      } else if (device.name.find("femto-dream-triplet-task-track-track-v0") != std::string::npos) {
+        LOG(info) << "Matched workflow: " << device.name;
+        TaskFinder = CollisionMasks::kTrackTrackV0;
+        for (auto const& option : device.options) {
+          if (option.name.compare(std::string("ConfCutPart")) == 0) {
+            TrackCutBits.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
+          } else if (option.name.compare(std::string("ConfTPCPIDBit")) == 0) {
+            TrackPIDTPCBits.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
+          } else if (option.name.compare(std::string("ConfTPCTOFPIDBit")) == 0) {
+            TrackPIDTPCTOFBits.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
+          } else if (option.name.compare(std::string("ConfPIDthrMom")) == 0) {
+            TrackPIDThreshold.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("ConfMaxpT")) == 0) {
+            FilterPtMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("ConfCutV0")) == 0) {
+            V0CutBits.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
+          } else if (option.name.compare(std::string("Conf_ChildPos_CutV0")) == 0) {
+            PosChildCutBits.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
+          } else if (option.name.compare(std::string("Conf_ChildPos_TPCBitV0")) == 0) {
+            PosChildPIDTPCBits.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
+          } else if (option.name.compare(std::string("Conf_ChildNeg_CutV0")) == 0) {
+            NegChildCutBits.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
+          } else if (option.name.compare(std::string("Conf_ChildNeg_TPCBitV0")) == 0) {
+            NegChildPIDTPCBits.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
+          } else if (option.name.compare(std::string("Conf_minInvMass_V0")) == 0) {
+            FilterInvMassMin.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("Conf_maxInvMass_V0")) == 0) {
+            FilterInvMassMax.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("Conf_minInvMassAnti_V0")) == 0) {
+            FilterInvMassAntiMin.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("Conf_maxInvMassAnti_V0")) == 0) {
+            FilterInvMassAntiMax.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("Conf_minPt_V0")) == 0) {
+            FilterPtMin.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("Conf_maxPt_V0")) == 0) {
+            FilterPtMax.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<float>());
+          }
+        }
       }
     }
 
@@ -353,6 +392,72 @@ struct femoDreamCollisionMasker {
     }
   }
 
+  // Make bitmask for a V0 for three body task
+  // This function ALWAYS checks V0 P; if howManyVoaToSetInMask is set to more than 1, it also checks how many
+  // V0s there are which pass V0 P selection and accordingly sets the bits in the mask for V0s P+1 or both P+1 and P+2
+  template <typename T>
+  void MaskForV0_ThreeBody(T& BitSet, CollisionMasks::Parts P, FDCollision const& col, FDParticles const& parts, int howManyV0sToSetInMask)
+  {
+    if (howManyV0sToSetInMask == 2) {
+      if (P == 2) {
+        LOG(fatal) << "You are checking third particle out of three but asking to set two new bits, not possible!";
+      }
+    }
+    if (howManyV0sToSetInMask == 3) {
+      if (P >= 1) {
+        LOG(fatal) << "You are checking second or third particle out of three but asking to set three new bits, not possible!";
+      }
+    }
+    for (size_t index = 0; index < V0CutBits.at(P).size(); index++) {
+      int countV0sWhichPassSelection = 0;
+      for (auto const& V0 : parts) {
+        if (V0.partType() != static_cast<uint8_t>(femtodreamparticle::kV0)) {
+          continue;
+        }
+        // check filter cuts for pt
+        if (V0.pt() < FilterPtMin.at(P).at(index) || V0.pt() > FilterPtMax.at(P).at(index)) {
+          continue;
+        }
+        // check filter cuts for Minv
+        if (V0.mLambda() < FilterInvMassMin.at(P).at(index) || V0.mLambda() > FilterInvMassMax.at(P).at(index) ||
+            V0.mAntiLambda() < FilterInvMassAntiMin.at(P).at(index) || V0.mAntiLambda() > FilterInvMassAntiMax.at(P).at(index)) {
+          continue;
+        }
+        // set the bit at the index of the selection equal to one if the track passes all selections
+        // check track cuts
+        if ((V0.cut() & V0CutBits.at(P).at(index)) == V0CutBits.at(P).at(index)) {
+          // check daughter cuts and pid cuts
+          const auto& posChild = parts.iteratorAt(V0.index() - 2);
+          const auto& negChild = parts.iteratorAt(V0.index() - 1);
+          if ((posChild.cut() & PosChildCutBits.at(P).at(index)) == PosChildCutBits.at(P).at(index) &&
+              (posChild.pidcut() & PosChildPIDTPCBits.at(P).at(index)) == PosChildPIDTPCBits.at(P).at(index) &&
+              (negChild.cut() & NegChildCutBits.at(P).at(index)) == NegChildCutBits.at(P).at(index) &&
+              (negChild.pidcut() & NegChildPIDTPCBits.at(P).at(index)) == NegChildPIDTPCBits.at(P).at(index)) {
+            countV0sWhichPassSelection = countV0sWhichPassSelection + 1;
+          }
+        }
+      }
+      if (countV0sWhichPassSelection >= 1)
+        BitSet.at(P).set(index);
+
+      if (howManyV0sToSetInMask == 2) {
+        if (countV0sWhichPassSelection >= 2) {
+          if (P == CollisionMasks::kPartOne)
+            BitSet.at(CollisionMasks::kPartTwo).set(index);
+          if (P == CollisionMasks::kPartTwo)
+            BitSet.at(CollisionMasks::kPartThree).set(index);
+        }
+      }
+
+      if (howManyV0sToSetInMask == 3) {
+        if (countV0sWhichPassSelection >= 2)
+          BitSet.at(CollisionMasks::kPartTwo).set(index);
+        if (countV0sWhichPassSelection >= 3)
+          BitSet.at(CollisionMasks::kPartThree).set(index);
+      }
+    }
+  }
+
   void process(FDCollision const& col, FDParticles const& parts)
   {
     // create a bit mask for particle one, particle two and particle three
@@ -377,9 +482,14 @@ struct femoDreamCollisionMasker {
         break;
       case CollisionMasks::kTrackTrackTrack:
         // triplet-track-track-track task
-        // create mask for all identical tracks, here TrackOne means there is at least on track of interest
-        // TrackTwo means at least two tracks and TrackThree means at least three tracks
+        // this assumes three identical tracks are used in the task
         MaskForTrack_ThreeBody(Mask, CollisionMasks::kPartOne, col, parts, 3);
+        break;
+      case CollisionMasks::kTrackTrackV0:
+        // triplet-track-track-v0 task
+        // this assumes two identical tracks and one V0 is used in the task; V0 is last particle
+        MaskForTrack_ThreeBody(Mask, CollisionMasks::kPartOne, col, parts, 2);
+        MaskForV0_ThreeBody(Mask, CollisionMasks::kPartThree, col, parts, 1);
         break;
       // TODO: add all supported pair/triplet tasks
       default:
