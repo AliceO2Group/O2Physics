@@ -51,6 +51,8 @@ struct lambdaAnalysis_pb {
   Configurable<float> cEtaCut{"cEtaCut", 0.8, "Pseudorapidity cut"};
   Configurable<float> cDcaz{"cDcazMin", 1., "Minimum DCAz"};
   Configurable<float> cDcaxy{"cDcaxyMin", 0.1, "Minimum DCAxy"};
+  Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
+  Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
   Configurable<bool> cKinCuts{"cKinCuts", false, "Kinematic Cuts for p-K pair opening angle"};
   Configurable<bool> cPrimaryTrack{"cPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cGlobalWoDCATrack{"cGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
@@ -79,6 +81,8 @@ struct lambdaAnalysis_pb {
 
   ConfigurableAxis cMixVtxBins{"cMixVtxBins", {VARIABLE_WIDTH, -10.0f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis cMixMultBins{"cMixMultBins", {VARIABLE_WIDTH, 0.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 200.0f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis cMixEPAngle{"cMixEPAngle", {VARIABLE_WIDTH, -1.5708f, -1.25664f, -0.942478f, -0.628319f, 0.f, 0.628319f, 0.942478f, 1.25664f, 1.5708f}, "event plane"};
+
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -99,7 +103,7 @@ struct lambdaAnalysis_pb {
     const AxisSpec axisInvM(nBinsInvM, 1.44, 2.04, {"M_{inv} (GeV/c^{2})"});
 
     histos.add("Event/h1d_ft0_mult_percentile", "FT0 (%)", kTH1F, {axisCent});
-    if (doprocessMix || doprocessMixDF) {
+    if (doprocessMix || doprocessMixDF || doprocessMixepDF) {
       histos.add("Event/mixing_vzVsmultpercentile", "FT0(%)", kTH2F, {axisCent, axisVz});
     }
     // QA Before
@@ -361,6 +365,8 @@ struct lambdaAnalysis_pb {
         continue;
       if (!selectionPIDProton(trkPr, p_ptot) || !selectionPIDKaon(trkKa, k_ptot))
         continue;
+      if (isDeepAngle && TMath::ACos((trkPr.pt() * trkKa.pt() + _pzPr * _pzKa) / (p_ptot * k_ptot)) < cfgDeepAngle)
+        continue;
 
       // Fill QA after track selection.
       if constexpr (!mix) {
@@ -619,7 +625,7 @@ struct lambdaAnalysis_pb {
   void processMixDF(resoColDFs& collisions, resoTrackDFs const& tracks)
   {
     if (doprocessMix)
-      LOG(error) << "Disable processMix() first!";
+      LOG(fatal) << "Disable processMix() first!";
     LOGF(debug, "Event Mixing Started");
 
     BinningTypeDF binningPositions2{{cMixVtxBins, cMixMultBins}, true};
@@ -635,6 +641,27 @@ struct lambdaAnalysis_pb {
   }
 
   PROCESS_SWITCH(lambdaAnalysis_pb, processMixDF, "Process for merged DF  Mixed Events", false);
+
+  using BinningTypeEP = ColumnBinningPolicy<aod::collision::PosZ, aod::resocollisiondf::Cent, aod::resocollisiondf::EvtPl>;
+  void processMixepDF(resoColDFs& collisions, resoTrackDFs const& tracks)
+  {
+    if (doprocessMix || doprocessMixDF)
+      LOG(fatal) << "Disable processMix() or processMixDF() first!";
+    LOGF(debug, "Event Mixing Started");
+
+    BinningTypeEP binningPositions2{{cMixVtxBins, cMixMultBins, cMixEPAngle}, true};
+    auto tracksTuple = std::make_tuple(tracks);
+
+    SameKindPair<resoColDFs, resoTrackDFs, BinningTypeEP> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    for (auto& [c1, t1, c2, t2] : pairs) {
+
+      //  LOGF(info, "processMCMixedDerived: Mixed collisions : %d (%.3f, %.3f,%.3f), %d (%.3f, %.3f, %.3f)",c1.globalIndex(), c1.posZ(), c1.cent(),c1.evtPl(), c2.globalIndex(), c2.posZ(), c2.cent(),c2.evtPl());
+      histos.fill(HIST("Event/mixing_vzVsmultpercentile"), c1.cent(), c1.posZ());
+      fillDataHistos<true, false>(t1, t2, c1.cent());
+    }
+  }
+
+  PROCESS_SWITCH(lambdaAnalysis_pb, processMixepDF, "Process for merged DF  Mixed Events", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
