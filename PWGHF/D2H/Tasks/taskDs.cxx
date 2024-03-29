@@ -44,13 +44,14 @@ enum DataType { Data = 0,
 
 /// Ds± analysis task
 struct HfTaskDs {
+
   Configurable<int> decayChannel{"decayChannel", 1, "Switch between decay channels: 1 for Ds/Dplus->PhiPi->KKpi, 2 for Ds/Dplus->K0*K->KKPi"};
   Configurable<bool> fillDplusMc{"fillDplusMc", true, "Switch to fill Dplus MC information"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2, 3}, "Indexes of ML scores to be stored. Three indexes max."};
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
-  Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits"};
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f}, "axis for pT"};
   ConfigurableAxis axisMlScore0{"axisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
   ConfigurableAxis axisMlScore1{"axisMlScore1", {100, 0., 1.}, "axis for ML output score 1"};
   ConfigurableAxis axisMlScore2{"axisMlScore2", {100, 0., 1.}, "axis for ML output score 2"};
@@ -123,8 +124,7 @@ struct HfTaskDs {
       LOGP(fatal, "No process function enabled");
     }
 
-    auto vbins = (std::vector<double>)binsPt;
-    AxisSpec ptbins = {vbins, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec ptbins{axisPt, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ybins = {100, -5., 5, "#it{y}"};
     AxisSpec massbins = {600, 1.67, 2.27, "inv. mass (KK#pi) (GeV/#it{c}^{2})"};
     AxisSpec centralitybins = {100, 0., 100., "Centrality"};
@@ -137,43 +137,43 @@ struct HfTaskDs {
         histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins});
       } else if (doprocessDataWithMlAndCentFT0C || doprocessDataWithMlAndCentFT0M || doprocessDataWithMlAndCentNTracksPV ||
                 doprocessMcWithMlAndCentFT0C || doprocessMcWithMlAndCentFT0M || doprocessMcWithMlAndCentNTracksPV) {
-        histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins, {axisMlScore0}, {axisMlScore1}, {axisMlScore2}});
+        histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, centralitybins, axisMlScore0, axisMlScore1, axisMlScore2});
       } else if (doprocessData || doprocessMc) {
         histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins});
       } else if (doprocessDataWithMl || doprocessMcWithMl) {
-        histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, {axisMlScore0}, {axisMlScore1}, {axisMlScore2}});
+        histosPtr[i]["hSparseMass"] = registry.add<THnSparse>((folders[i] + "hSparseMass").c_str(), "THn for Ds", HistType::kTHnSparseF, {massbins, ptbins, axisMlScore0, axisMlScore1, axisMlScore2});
       }
       histosPtr[i]["hPt"] = registry.add<TH1>((folders[i] + "hPt").c_str(), "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
       histosPtr[i]["hPtProng0"] = registry.add<TH1>((folders[i] + "hPtProng0").c_str(), "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
       histosPtr[i]["hPtProng1"] = registry.add<TH1>((folders[i] + "hPtProng1").c_str(), "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
       histosPtr[i]["hPtProng2"] = registry.add<TH1>((folders[i] + "hPtProng2").c_str(), "3-prong candidates;prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
-      histosPtr[i]["hEta"] = registry.add<TH2>((folders[i] + "hEta").c_str(), "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hCt"] = registry.add<TH2>((folders[i] + "hCt").c_str(), "3-prong candidates;proper lifetime (D_{s}^{#pm}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 100}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hDecayLength"] = registry.add<TH2>((folders[i] + "hDecayLength").c_str(), "3-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hDecayLengthXY"] = registry.add<TH2>((folders[i] + "hDecayLengthXY").c_str(), "3-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hNormalisedDecayLengthXY"] = registry.add<TH2>((folders[i] + "hNormalisedDecayLengthXY").c_str(), "3-prong candidates;norm. decay length xy;entries", {HistType::kTH2F, {{80, 0., 80.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hCPA"] = registry.add<TH2>((folders[i] + "hCPA").c_str(), "3-prong candidates;cos. pointing angle;entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hCPAxy"] = registry.add<TH2>((folders[i] + "hCPAxy").c_str(), "3-prong candidates;cos. pointing angle xy;entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hImpactParameterXY"] = registry.add<TH2>((folders[i] + "hImpactParameterXY").c_str(), "3-prong candidates;impact parameter xy (cm);entries", {HistType::kTH2F, {{200, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hMaxNormalisedDeltaIP"] = registry.add<TH2>((folders[i] + "hMaxNormalisedDeltaIP").c_str(), "3-prong candidates;norm. IP;entries", {HistType::kTH2F, {{200, -20., 20.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hCos3PiK"] = registry.add<TH2>((folders[i] + "hCos3PiK").c_str(), "3-prong candidates;cos^{3} #theta'(K);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hAbsCos3PiK"] = registry.add<TH2>((folders[i] + "hAbsCos3PiK").c_str(), "3-prong candidates;|cos^{3} #theta'(K)|;entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hDeltaMassPhi"] = registry.add<TH2>((folders[i] + "hDeltaMassPhi").c_str(), "3-prong candidates;|M(KK) - M(#phi)| (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, 0., 0.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hMassKK"] = registry.add<TH2>((folders[i] + "hMassKK").c_str(), "3-prong candidates;M(KK) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, o2::constants::physics::MassPhi - 0.05, o2::constants::physics::MassPhi + 0.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hImpactParameterProngSqSum"] = registry.add<TH2>((folders[i] + "hImpactParameterProngSqSum").c_str(), "3-prong candidates;squared sum of prong imp. par. (cm^{2});entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hDecayLengthError"] = registry.add<TH2>((folders[i] + "hDecayLengthError").c_str(), "3-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hDecayLengthXYError"] = registry.add<TH2>((folders[i] + "hDecayLengthXYError").c_str(), "3-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hImpactParameterError"] = registry.add<TH2>((folders[i] + "hImpactParameterError").c_str(), "3-prong candidates;impact parameter error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hd0Prong0"] = registry.add<TH2>((folders[i] + "hd0Prong0").c_str(), "3-prong candidates;prong 0 DCA to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hd0Prong1"] = registry.add<TH2>((folders[i] + "hd0Prong1").c_str(), "3-prong candidates;prong 1 DCA to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-      histosPtr[i]["hd0Prong2"] = registry.add<TH2>((folders[i] + "hd0Prong2").c_str(), "3-prong candidates;prong 2 DCA to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      histosPtr[i]["hEta"] = registry.add<TH2>((folders[i] + "hEta").c_str(), "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, ptbins}});
+      histosPtr[i]["hCt"] = registry.add<TH2>((folders[i] + "hCt").c_str(), "3-prong candidates;proper lifetime (D_{s}^{#pm}) * #it{c} (cm);entries", {HistType::kTH2F, {{100, 0., 100}, ptbins}});
+      histosPtr[i]["hDecayLength"] = registry.add<TH2>((folders[i] + "hDecayLength").c_str(), "3-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, ptbins}});
+      histosPtr[i]["hDecayLengthXY"] = registry.add<TH2>((folders[i] + "hDecayLengthXY").c_str(), "3-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, ptbins}});
+      histosPtr[i]["hNormalisedDecayLengthXY"] = registry.add<TH2>((folders[i] + "hNormalisedDecayLengthXY").c_str(), "3-prong candidates;norm. decay length xy;entries", {HistType::kTH2F, {{80, 0., 80.}, ptbins}});
+      histosPtr[i]["hCPA"] = registry.add<TH2>((folders[i] + "hCPA").c_str(), "3-prong candidates;cos. pointing angle;entries", {HistType::kTH2F, {{100, -1., 1.}, ptbins}});
+      histosPtr[i]["hCPAxy"] = registry.add<TH2>((folders[i] + "hCPAxy").c_str(), "3-prong candidates;cos. pointing angle xy;entries", {HistType::kTH2F, {{100, -1., 1.}, ptbins}});
+      histosPtr[i]["hImpactParameterXY"] = registry.add<TH2>((folders[i] + "hImpactParameterXY").c_str(), "3-prong candidates;impact parameter xy (cm);entries", {HistType::kTH2F, {{200, -1., 1.}, ptbins}});
+      histosPtr[i]["hMaxNormalisedDeltaIP"] = registry.add<TH2>((folders[i] + "hMaxNormalisedDeltaIP").c_str(), "3-prong candidates;norm. IP;entries", {HistType::kTH2F, {{200, -20., 20.}, ptbins}});
+      histosPtr[i]["hCos3PiK"] = registry.add<TH2>((folders[i] + "hCos3PiK").c_str(), "3-prong candidates;cos^{3} #theta'(K);entries", {HistType::kTH2F, {{100, -1., 1.}, ptbins}});
+      histosPtr[i]["hAbsCos3PiK"] = registry.add<TH2>((folders[i] + "hAbsCos3PiK").c_str(), "3-prong candidates;|cos^{3} #theta'(K)|;entries", {HistType::kTH2F, {{100, 0., 1.}, ptbins}});
+      histosPtr[i]["hDeltaMassPhi"] = registry.add<TH2>((folders[i] + "hDeltaMassPhi").c_str(), "3-prong candidates;|M(KK) - M(#phi)| (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, 0., 0.1}, ptbins}});
+      histosPtr[i]["hMassKK"] = registry.add<TH2>((folders[i] + "hMassKK").c_str(), "3-prong candidates;M(KK) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, o2::constants::physics::MassPhi - 0.05, o2::constants::physics::MassPhi + 0.05}, ptbins}});
+      histosPtr[i]["hImpactParameterProngSqSum"] = registry.add<TH2>((folders[i] + "hImpactParameterProngSqSum").c_str(), "3-prong candidates;squared sum of prong imp. par. (cm^{2});entries", {HistType::kTH2F, {{100, 0., 1.}, ptbins}});
+      histosPtr[i]["hDecayLengthError"] = registry.add<TH2>((folders[i] + "hDecayLengthError").c_str(), "3-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, ptbins}});
+      histosPtr[i]["hDecayLengthXYError"] = registry.add<TH2>((folders[i] + "hDecayLengthXYError").c_str(), "3-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, ptbins}});
+      histosPtr[i]["hImpactParameterError"] = registry.add<TH2>((folders[i] + "hImpactParameterError").c_str(), "3-prong candidates;impact parameter error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, ptbins}});
+      histosPtr[i]["hd0Prong0"] = registry.add<TH2>((folders[i] + "hd0Prong0").c_str(), "3-prong candidates;prong 0 DCA to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, ptbins}});
+      histosPtr[i]["hd0Prong1"] = registry.add<TH2>((folders[i] + "hd0Prong1").c_str(), "3-prong candidates;prong 1 DCA to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, ptbins}});
+      histosPtr[i]["hd0Prong2"] = registry.add<TH2>((folders[i] + "hd0Prong2").c_str(), "3-prong candidates;prong 2 DCA to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, ptbins}});
     }
     
 
     if (doprocessMcWithCentFT0C || doprocessMcWithCentFT0M || doprocessMcWithCentNTracksPV ||
         doprocessMcWithMlAndCentFT0C || doprocessMcWithMlAndCentFT0M || doprocessMcWithMlAndCentNTracksPV ||
         doprocessMc || doprocessMcWithMl) { // processing MC
-      histosPtr[DataType::McBkg]["hPtRecBkg"] = registry.add<TH1>((folders[DataType::McBkg] + "hPtRecBkg").c_str(), "3-prong candidates (unmatched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+      histosPtr[DataType::McBkg]["hPtRecBkg"] = registry.add<TH1>((folders[DataType::McBkg] + "hPtRecBkg").c_str(), "3-prong candidates (unmatched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {ptbins}});
       
       for (auto i = 0; i < DataType::kDataTypes; ++i) { // only signal
         if (i == DataType::McDsPrompt || i == DataType::McDsNonPrompt || i == DataType::McDplusPrompt || i == DataType::McDplusNonPrompt) {
@@ -181,13 +181,13 @@ struct HfTaskDs {
           histosPtr[i]["hEtaGen"] = registry.add<TH1>((folders[i] + "hEtaGen").c_str(), "3-prong candidates (matched);#eta;entries", {HistType::kTH1F, {{100, -2., 2.}}});
           histosPtr[i]["hEtaRecSig"] = registry.add<TH1>((folders[i] + "hEtaRecSig").c_str(), "3-prong candidates (matched);#eta;entries", {HistType::kTH1F, {{100, -2., 2.}}});
           histosPtr[i]["hCPARecSig"] = registry.add<TH1>((folders[i] + "hCPARecSig").c_str(), "3-prong candidates (matched);cos. pointing angle;entries", {HistType::kTH1F, {{100, -1., 1.}}});
-          histosPtr[i]["hPtRecSig"] = registry.add<TH1>((folders[i] + "hPtRecSig").c_str(), "3-prong candidates (matched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-          histosPtr[i]["hPtGenSig"] = registry.add<TH1>((folders[i] + "hPtGenSig").c_str(), "MC particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-          histosPtr[i]["hPtGen"] = registry.add<TH1>((folders[i] + "hPtGen").c_str(), "MC particles (unmatched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-          histosPtr[i]["hPtVsYRecSigRecoPID"] = registry.add<TH2>((folders[i] + "hPtVsYRecSigRecoPID").c_str(), "3-prong candidates (RecoPID - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-          histosPtr[i]["hPtVsYRecSigRecoTopol"] = registry.add<TH2>((folders[i] + "hPtVsYRecSigRecoTopol").c_str(), "3-prong candidates (RecoTopol - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-          histosPtr[i]["hPtVsYRecSigRecoSkim"] = registry.add<TH2>((folders[i] + "hPtVsYRecSigRecoSkim").c_str(), "3-prong candidates (RecoSkim - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
-          histosPtr[i]["hPtVsYGen"] = registry.add<TH2>((folders[i] + "hPtVsYGen").c_str(), "MC particles (unmatched);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {ybins}}});
+          histosPtr[i]["hPtRecSig"] = registry.add<TH1>((folders[i] + "hPtRecSig").c_str(), "3-prong candidates (matched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {ptbins}});
+          histosPtr[i]["hPtGenSig"] = registry.add<TH1>((folders[i] + "hPtGenSig").c_str(), "MC particles (matched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {ptbins}});
+          histosPtr[i]["hPtGen"] = registry.add<TH1>((folders[i] + "hPtGen").c_str(), "MC particles (unmatched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {ptbins}});
+          histosPtr[i]["hPtVsYRecSigRecoPID"] = registry.add<TH2>((folders[i] + "hPtVsYRecSigRecoPID").c_str(), "3-prong candidates (RecoPID - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
+          histosPtr[i]["hPtVsYRecSigRecoTopol"] = registry.add<TH2>((folders[i] + "hPtVsYRecSigRecoTopol").c_str(), "3-prong candidates (RecoTopol - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
+          histosPtr[i]["hPtVsYRecSigRecoSkim"] = registry.add<TH2>((folders[i] + "hPtVsYRecSigRecoSkim").c_str(), "3-prong candidates (RecoSkim - matched);#it{p}_{T}^{rec.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
+          histosPtr[i]["hPtVsYGen"] = registry.add<TH2>((folders[i] + "hPtVsYGen").c_str(), "MC particles (unmatched);#it{p}_{T}^{gen.}; #it{y}", {HistType::kTH2F, {ptbins, {ybins}}});
         }
       }
     }
