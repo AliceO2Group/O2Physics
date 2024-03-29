@@ -21,6 +21,7 @@
 #include <vector>
 #include <string>
 #include <optional>
+#include <algorithm>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
