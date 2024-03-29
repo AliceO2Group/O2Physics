@@ -191,8 +191,8 @@ struct f0980analysis {
                       const TracksType& dTracks)
   {
     double LHpt = 0.;
-    double LHphi;
-    double relPhi;
+    double LHphi = 0.;
+    double relPhi = 0.;
     for (auto& trk : dTracks) {
       if (trk.pt() > LHpt) {
         LHpt = trk.pt();

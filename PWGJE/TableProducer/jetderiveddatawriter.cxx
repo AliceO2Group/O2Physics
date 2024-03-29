@@ -76,6 +76,7 @@ struct JetDerivedDataWriter {
   Produces<aod::StoredHfD0Pars> storedD0ParsTable;
   Produces<aod::StoredHfD0ParEs> storedD0ParExtrasTable;
   Produces<aod::StoredHfD0Sels> storedD0SelsTable;
+  Produces<aod::StoredHfD0Mls> storedD0MlsTable;
   Produces<aod::StoredHfD0Mcs> storedD0McsTable;
   Produces<aod::StoredJD0Ids> storedD0IdsTable;
   Produces<aod::StoredHfD0PBases> storedD0ParticlesTable;
@@ -86,18 +87,18 @@ struct JetDerivedDataWriter {
   Produces<aod::StoredHf3PPars> storedLcParsTable;
   Produces<aod::StoredHf3PParEs> storedLcParExtrasTable;
   Produces<aod::StoredHf3PSels> storedLcSelsTable;
+  Produces<aod::StoredHf3PMls> storedLcMlsTable;
   Produces<aod::StoredHf3PMcs> storedLcMcsTable;
   Produces<aod::StoredJLcIds> storedLcIdsTable;
   Produces<aod::StoredHf3PPBases> storedLcParticlesTable;
   Produces<aod::StoredJLcPIds> storedLcParticleIdsTable;
 
-  PresliceUnsorted<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JChTrigSels, aod::JFullTrigSels, aod::JMcCollisionLbs>>
-    CollisionsPerMcCollision = aod::jmccollisionlb::mcCollisionId;
+  PresliceUnsorted<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JChTrigSels, aod::JFullTrigSels, aod::JChHFTrigSels, aod::JMcCollisionLbs>> CollisionsPerMcCollision = aod::jmccollisionlb::mcCollisionId;
   PresliceUnsorted<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>> ParticlesPerMcCollision = aod::jmcparticle::mcCollisionId;
   Preslice<soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs>> TracksPerCollision = aod::jtrack::collisionId;
   Preslice<soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks>> ClustersPerCollision = aod::jcluster::collisionId;
-  Preslice<soa::Join<aod::HfD0Bases, aod::HfD0Mcs, aod::JD0Ids>> D0sPerCollision = aod::jd0indices::collisionId;
-  Preslice<soa::Join<aod::Hf3PBases, aod::Hf3PMcs, aod::JLcIds>> LcsPerCollision = aod::jlcindices::collisionId;
+  Preslice<CandidatesD0MCD> D0sPerCollision = aod::jd0indices::collisionId;
+  Preslice<CandidatesLcMCD> LcsPerCollision = aod::jlcindices::collisionId;
 
   std::vector<bool> collisionFlag;
   std::vector<bool> McCollisionFlag;
@@ -249,7 +250,7 @@ struct JetDerivedDataWriter {
           nD0InCollision++;
 
           int32_t D0Index = -1;
-          jethfutilities::fillD0CandidateTable<false>(D0, collisionD0Index, storedD0sTable, storedD0ParsTable, storedD0ParExtrasTable, storedD0SelsTable, storedD0McsTable, D0Index);
+          jethfutilities::fillD0CandidateTable<false>(D0, collisionD0Index, storedD0sTable, storedD0ParsTable, storedD0ParExtrasTable, storedD0SelsTable, storedD0MlsTable, storedD0McsTable, D0Index);
 
           int32_t prong0Id = -1;
           int32_t prong1Id = -1;
@@ -275,7 +276,7 @@ struct JetDerivedDataWriter {
           nLcInCollision++;
 
           int32_t LcIndex = -1;
-          jethfutilities::fillLcCandidateTable<false>(Lc, collisionLcIndex, storedLcsTable, storedLcParsTable, storedLcParExtrasTable, storedLcSelsTable, storedLcMcsTable, LcIndex);
+          jethfutilities::fillLcCandidateTable<false>(Lc, collisionLcIndex, storedLcsTable, storedLcParsTable, storedLcParExtrasTable, storedLcSelsTable, storedLcMlsTable, storedLcMcsTable, LcIndex);
 
           int32_t prong0Id = -1;
           int32_t prong1Id = -1;
@@ -479,7 +480,7 @@ struct JetDerivedDataWriter {
               nD0InCollision++;
 
               int32_t D0Index = -1;
-              jethfutilities::fillD0CandidateTable<true>(D0, collisionD0Index, storedD0sTable, storedD0ParsTable, storedD0ParExtrasTable, storedD0SelsTable, storedD0McsTable, D0Index);
+              jethfutilities::fillD0CandidateTable<true>(D0, collisionD0Index, storedD0sTable, storedD0ParsTable, storedD0ParExtrasTable, storedD0SelsTable, storedD0MlsTable, storedD0McsTable, D0Index);
 
               int32_t prong0Id = -1;
               int32_t prong1Id = -1;
@@ -506,7 +507,7 @@ struct JetDerivedDataWriter {
               nLcInCollision++;
 
               int32_t LcIndex = -1;
-              jethfutilities::fillLcCandidateTable<true>(Lc, collisionLcIndex, storedLcsTable, storedLcParsTable, storedLcParExtrasTable, storedLcSelsTable, storedLcMcsTable, LcIndex);
+              jethfutilities::fillLcCandidateTable<true>(Lc, collisionLcIndex, storedLcsTable, storedLcParsTable, storedLcParExtrasTable, storedLcSelsTable, storedLcMlsTable, storedLcMcsTable, LcIndex);
 
               int32_t prong0Id = -1;
               int32_t prong1Id = -1;

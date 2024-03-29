@@ -197,8 +197,8 @@ struct AmbiguousTrackPropagation {
     initCCDB(bcs.begin());
 
     // Minimum only on DCAxy
-    float dcaInfo;
-    float bestDCA, bestDCAx, bestDCAy;
+    float dcaInfo = 0.f;
+    float bestDCA = 0.f, bestDCAx = 0.f, bestDCAy = 0.f;
     o2::track::TrackParCovFwd bestTrackPar;
 
     for (auto& atrack : atracks) {
@@ -283,8 +283,8 @@ struct AmbiguousTrackPropagation {
     }
     initCCDB(bcs.begin());
 
-    float dcaInfo;
-    float bestDCA, bestDCAx, bestDCAy;
+    float dcaInfo = 0.f;
+    float bestDCA = 0.f, bestDCAx = 0.f, bestDCAy = 0.f;
     o2::track::TrackParCovFwd bestTrackPar;
 
     for (auto& track : tracks) {

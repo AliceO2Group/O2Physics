@@ -453,8 +453,8 @@ struct AnalysisSameEventPairing {
 
     // Loop over two track combinations
     uint8_t twoTrackFilter = 0;
-    uint32_t dileptonFilterMap = 0;
-    uint32_t dileptonMcDecision = 0;
+    // uint32_t dileptonFilterMap = 0;
+    // uint32_t dileptonMcDecision = 0;
 
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
       if constexpr (TPairType == VarManager::kDecayToEE) {
@@ -481,8 +481,8 @@ struct AnalysisSameEventPairing {
         }
       } // end loop over MC signals
 
-      dileptonFilterMap = twoTrackFilter;
-      dileptonMcDecision = mcDecision;
+      // dileptonFilterMap = twoTrackFilter;
+      // dileptonMcDecision = mcDecision;
 
       // Loop over all fulfilled cuts and fill pair histograms
       for (unsigned int icut = 0; icut < ncuts; icut++) {

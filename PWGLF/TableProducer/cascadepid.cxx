@@ -383,19 +383,23 @@ struct cascadepid {
         float negDeltaTimeAsOmPi = -1e+6, negDeltaTimeAsOmPr = -1e+6;
         float bachDeltaTimeAsOmKa = -1e+6;
 
-        if (cascade.posTOFSignal() > 0 && cascade.posTOFEventTime() > 0) {
+        auto pTra = cascade.posTrackExtra_as<dauTracks>();
+        auto nTra = cascade.negTrackExtra_as<dauTracks>();
+        auto bTra = cascade.negTrackExtra_as<dauTracks>();
+
+        if (pTra.hasTOF()) {
           posDeltaTimeAsXiPi = (cascade.posTOFSignal() - cascade.posTOFEventTime()) - (xiFlight + lambdaFlight + posFlightPi);
           posDeltaTimeAsXiPr = (cascade.posTOFSignal() - cascade.posTOFEventTime()) - (xiFlight + lambdaFlight + posFlightPr);
           posDeltaTimeAsOmPi = (cascade.posTOFSignal() - cascade.posTOFEventTime()) - (omFlight + lambdaFlight + posFlightPi);
           posDeltaTimeAsOmPr = (cascade.posTOFSignal() - cascade.posTOFEventTime()) - (omFlight + lambdaFlight + posFlightPr);
         }
-        if (cascade.negTOFSignal() > 0 && cascade.negTOFEventTime() > 0) {
+        if (nTra.hasTOF()) {
           negDeltaTimeAsXiPi = (cascade.negTOFSignal() - cascade.negTOFEventTime()) - (xiFlight + lambdaFlight + negFlightPi);
           negDeltaTimeAsXiPr = (cascade.negTOFSignal() - cascade.negTOFEventTime()) - (xiFlight + lambdaFlight + negFlightPr);
           negDeltaTimeAsOmPi = (cascade.negTOFSignal() - cascade.negTOFEventTime()) - (omFlight + lambdaFlight + negFlightPi);
           negDeltaTimeAsOmPr = (cascade.negTOFSignal() - cascade.negTOFEventTime()) - (omFlight + lambdaFlight + negFlightPr);
         }
-        if (cascade.bachTOFSignal() > 0 && cascade.bachTOFEventTime() > 0) {
+        if (bTra.hasTOF()) {
           bachDeltaTimeAsXiPi = (cascade.bachTOFSignal() - cascade.bachTOFEventTime()) - (xiFlight + bachFlightPi);
           bachDeltaTimeAsOmKa = (cascade.bachTOFSignal() - cascade.bachTOFEventTime()) - (omFlight + bachFlightKa);
         }
@@ -407,10 +411,6 @@ struct cascadepid {
         );
 
         if (doQA) {
-          auto pTra = cascade.posTrackExtra_as<dauTracks>();
-          auto nTra = cascade.negTrackExtra_as<dauTracks>();
-          auto bTra = cascade.negTrackExtra_as<dauTracks>();
-
           // fill QA histograms for cross-checking
           histos.fill(HIST("hArcDebug"), cascade.pt(), lengthCascade - d3d); // for debugging purposes
 
