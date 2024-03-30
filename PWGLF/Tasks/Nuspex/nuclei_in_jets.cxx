@@ -760,7 +760,7 @@ struct nuclei_in_jets {
   PROCESS_SWITCH(nuclei_in_jets, processData, "Process data", true);
 
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
-  Preslice<soa::<MCTracks>> perCollision = o2::aod::track::collisionId;
+  Preslice<MCTracks> perCollision = o2::aod::track::collisionId;
 
   void processGen(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
