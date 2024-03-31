@@ -1271,7 +1271,7 @@ struct HfTrackIndexSkimCreator {
   std::array<std::vector<double>, kN3ProngDecays> pTBins3Prong;
 
   // ML response
-  o2::analysis::MlResponse<float> hfMlResponse2Prongs; // only D0
+  o2::analysis::MlResponse<float> hfMlResponse2Prongs;                             // only D0
   std::array<o2::analysis::MlResponse<float>, kN3ProngDecays> hfMlResponse3Prongs; // D+, Lc, Ds, Xic
   std::array<bool, kN3ProngDecays> hasMlModel3Prong{false};
   o2::ccdb::CcdbApi ccdbApi;
@@ -1429,7 +1429,7 @@ struct HfTrackIndexSkimCreator {
       const std::vector<double> ptBinsMl = {0., 1.e10};
       const std::vector<int> cutDirMl = {o2::cuts_ml::CutDirection::CutGreater, o2::cuts_ml::CutDirection::CutSmaller, o2::cuts_ml::CutDirection::CutSmaller};
       const std::array<LabeledArray<double>, kN3ProngDecays> thresholdMlScore3Prongs = {thresholdMlScoreDplusToPiKPi, thresholdMlScoreLcToPiKP, thresholdMlScoreDsToPiKK, thresholdMlScoreXicToPiKP};
-      
+
       // initialise 2-prong ML response
       hfMlResponse2Prongs.configure(ptBinsMl, thresholdMlScoreD0ToKPi, cutDirMl, 3);
       if (loadMlModelsFromCCDB) {
