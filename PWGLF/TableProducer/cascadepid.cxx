@@ -64,7 +64,7 @@ using CascFullCores = soa::Join<aod::CascCores, aod::CascTOFs, aod::CascExtras, 
 
 struct cascadepid {
   // TOF pid for strangeness (recalculated with topology)
-  Produces<aod::CascTOFPIDs> casctofpids; // table with base info
+  Produces<aod::CascTOFPIDs> casctofpids;       // table with base info
   Produces<aod::CascTOFNSigmas> casctofnsigmas; // table with Nsigmas
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -420,8 +420,7 @@ struct cascadepid {
 
         casctofpids(
           posDeltaTimeAsXiPi, posDeltaTimeAsXiPr, negDeltaTimeAsXiPi, negDeltaTimeAsXiPr, bachDeltaTimeAsXiPi,
-          posDeltaTimeAsOmPi, posDeltaTimeAsOmPr, negDeltaTimeAsOmPi, negDeltaTimeAsOmPr, bachDeltaTimeAsOmKa
-        );
+          posDeltaTimeAsOmPi, posDeltaTimeAsOmPr, negDeltaTimeAsOmPi, negDeltaTimeAsOmPr, bachDeltaTimeAsOmKa);
 
         // go for Nsigma values if requested
         if (doNSigmas) {
@@ -433,7 +432,7 @@ struct cascadepid {
           float nSigmaOmKa = -1e+5;
 
           // Xi hypothesis ________________________
-          if (cascade.sign() < 0) { // XiMinus
+          if (cascade.sign() < 0) {         // XiMinus
             if (posDeltaTimeAsXiPr > -1e+5) // proton from Lambda from XiMinus has signal
               nSigmaXiLaPr = (posDeltaTimeAsXiPr - hMeanPosXiPr->Interpolate(cascade.pt())) / hSigmaPosXiPr->Interpolate(cascade.pt());
             if (negDeltaTimeAsXiPi > -1e+5) // pion from Lambda from XiMinus has signal
