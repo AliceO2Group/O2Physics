@@ -44,6 +44,7 @@
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Tools/ML/MlResponse.h"
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
@@ -1156,6 +1157,9 @@ struct HfTrackIndexSkimCreator {
   Produces<aod::HfDstars> rowTrackIndexDstar;
   Produces<aod::HfCutStatusDstar> rowDstarCutStatus;
   Produces<aod::HfPvRefitDstar> rowDstarPVrefit;
+  // Tables with ML scores for HF Filters
+  Produces<aod::Hf2ProngMlProbs> rowTrackIndexMlScoreProng2;
+  Produces<aod::Hf3ProngMlProbs> rowTrackIndexMlScoreProng3;
 
   Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
   Configurable<bool> do3Prong{"do3Prong", 0, "do 3 prong"};
@@ -1216,6 +1220,24 @@ struct HfTrackIndexSkimCreator {
   Configurable<bool> applyProtonPidForXicToPKPi{"applyProtonPidForXicToPKPi", false, "Apply proton PID for Xic->pKpi"};
   Configurable<bool> applyKaonPidIn3Prongs{"applyKaonPidIn3Prongs", false, "Apply kaon PID for opposite-sign track in 3-prong and D* decays"};
 
+  // ML models for triggers
+  Configurable<bool> applyMlForHfFilters{"applyMlForHfFilters", false, "Flag to enable ML application for HF Filters"};
+  Configurable<std::string> mlModelPathCCDB{"mlModelPathCCDB", "EventFiltering/PWGHF/BDTSmeared", "Path on CCDB of ML models for HF Filters"};
+  Configurable<int64_t> timestampCcdbForHfFilters{"timestampCcdbForHfFilters", 1657032422771, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<bool> loadMlModelsFromCCDB{"loadMlModelsFromCCDB", true, "Flag to enable or disable the loading of ML models from CCDB"};
+
+  Configurable<std::string> onnxFileD0ToKPi{"onnxFileD0ToKPi", "ModelHandler_onnx_D0ToKPi.onnx", "ONNX file for ML model for D0 candidates"};
+  Configurable<std::string> onnxFileDplusToPiKPi{"onnxFileDplusToPiKPi", "ModelHandler_onnx_DplusToPiKPi.onnx", "ONNX file for ML model for D+ candidates"};
+  Configurable<std::string> onnxFileDsToPiKK{"onnxFileDsToPiKK", "ModelHandler_onnx_DsToKKPi.onnx", "ONNX file for ML model for Ds+ candidates"};
+  Configurable<std::string> onnxFileLcToPiKP{"onnxFileLcToPiKP", "ModelHandler_onnx_LcToPKPi.onnx", "ONNX file for ML model for Lc+ candidates"};
+  Configurable<std::string> onnxFileXicToPiKP{"onnxFileXicToPiKP", "", "ONNX file for ML model for Xic+ candidates"};
+
+  Configurable<LabeledArray<double>> thresholdMlScoreD0ToKPi{"thresholdMlScoreD0ToKPi", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of D0 candidates"};
+  Configurable<LabeledArray<double>> thresholdMlScoreDplusToPiKPi{"thresholdMlScoreDplusToPiKPi", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of D+ candidates"};
+  Configurable<LabeledArray<double>> thresholdMlScoreDsToPiKK{"thresholdMlScoreDsToPiKK", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of Ds+ candidates"};
+  Configurable<LabeledArray<double>> thresholdMlScoreLcToPiKP{"thresholdMlScoreLcToPiKP", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of Lc+ candidates"};
+  Configurable<LabeledArray<double>> thresholdMlScoreXicToPiKP{"thresholdMlScoreXicToPiKP", {hf_cuts_bdt_multiclass::cuts[0], hf_cuts_bdt_multiclass::nBinsPt, hf_cuts_bdt_multiclass::nCutBdtScores, hf_cuts_bdt_multiclass::labelsPt, hf_cuts_bdt_multiclass::labelsCutBdt}, "Threshold values for Ml output scores of Xic+ candidates"};
+
   SliceCache cache;
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
@@ -1247,6 +1269,12 @@ struct HfTrackIndexSkimCreator {
   std::array<std::vector<double>, kN2ProngDecays> pTBins2Prong;
   std::array<LabeledArray<double>, kN3ProngDecays> cut3Prong;
   std::array<std::vector<double>, kN3ProngDecays> pTBins3Prong;
+
+  // ML response
+  o2::analysis::MlResponse<float> hfMlResponse2Prongs; // only D0
+  std::array<o2::analysis::MlResponse<float>, kN3ProngDecays> hfMlResponse3Prongs; // D+, Lc, Ds, Xic
+  std::array<bool, kN3ProngDecays> hasMlModel3Prong{false};
+  o2::ccdb::CcdbApi ccdbApi;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using TracksWithPVRefitAndDCA = soa::Join<aod::TracksWCovDcaExtra, aod::HfPvRefitTrack>;
@@ -1390,6 +1418,42 @@ struct HfTrackIndexSkimCreator {
         registry.add("PvRefit/hPvRefitZChi2Minus1", "PV refit with #it{#chi}^{2}==#minus1", kTH2F, {axisCollisionZ, axisCollisionZOriginal});
         registry.add("PvRefit/hNContribPvRefitNotDoable", "N. contributors for PV refit not doable", kTH1F, {axisCollisionNContrib});
         registry.add("PvRefit/hNContribPvRefitChi2Minus1", "N. contributors original PV for PV refit #it{#chi}^{2}==#minus1", kTH1F, {axisCollisionNContrib});
+      }
+    }
+
+    if (applyMlForHfFilters) {
+      const std::vector<std::string> onnxFileNames2Prongs = {onnxFileD0ToKPi};
+      const std::array<std::vector<std::string>, kN3ProngDecays> onnxFileNames3Prongs = {std::vector<std::string>{onnxFileDplusToPiKPi}, std::vector<std::string>{onnxFileLcToPiKP}, std::vector<std::string>{onnxFileDsToPiKK}, std::vector<std::string>{onnxFileXicToPiKP}};
+      const std::vector<std::string> mlModelPathCcdb2Prongs = {mlModelPathCCDB.value + "D0"};
+      const std::array<std::vector<std::string>, kN3ProngDecays> mlModelPathCcdb3Prongs = {std::vector<std::string>{mlModelPathCCDB.value + "Dplus"}, std::vector<std::string>{mlModelPathCCDB.value + "Lc"}, std::vector<std::string>{mlModelPathCCDB.value + "Ds"}, std::vector<std::string>{mlModelPathCCDB.value + "Xic"}};
+      const std::vector<double> ptBinsMl = {0., 1.e10};
+      const std::vector<int> cutDirMl = {o2::cuts_ml::CutDirection::CutSmaller, o2::cuts_ml::CutDirection::CutGreater, o2::cuts_ml::CutDirection::CutGreater};
+      const std::array<LabeledArray<double>, kN3ProngDecays> thresholdMlScore3Prongs = {thresholdMlScoreDplusToPiKPi, thresholdMlScoreLcToPiKP, thresholdMlScoreDsToPiKK, thresholdMlScoreXicToPiKP};
+      
+      // initialise 2-prong ML response
+      hfMlResponse2Prongs.configure(ptBinsMl, thresholdMlScoreD0ToKPi, cutDirMl, 3);
+      if (loadMlModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        hfMlResponse2Prongs.setModelPathsCCDB(onnxFileNames2Prongs, ccdbApi, mlModelPathCcdb2Prongs, timestampCcdbForHfFilters);
+      } else {
+        hfMlResponse2Prongs.setModelPathsLocal(onnxFileNames2Prongs);
+      }
+      hfMlResponse2Prongs.init();
+
+      // initialise 3-prong ML responses
+      for (int iDecay3P{0}; iDecay3P < kN3ProngDecays; ++iDecay3P) {
+        if (onnxFileNames3Prongs[iDecay3P][0] == "") { // 3-prong species to be skipped
+          continue;
+        }
+        hasMlModel3Prong[iDecay3P] = true;
+        hfMlResponse3Prongs[iDecay3P].configure(ptBinsMl, thresholdMlScore3Prongs[iDecay3P], cutDirMl, 3);
+        if (loadMlModelsFromCCDB) {
+          ccdbApi.init(ccdbUrl);
+          hfMlResponse3Prongs[iDecay3P].setModelPathsCCDB(onnxFileNames3Prongs[iDecay3P], ccdbApi, mlModelPathCcdb3Prongs[iDecay3P], timestampCcdbForHfFilters);
+        } else {
+          hfMlResponse3Prongs[iDecay3P].setModelPathsLocal(onnxFileNames3Prongs[iDecay3P]);
+        }
+        hfMlResponse3Prongs[iDecay3P].init();
       }
     }
   }
@@ -1627,6 +1691,22 @@ struct HfTrackIndexSkimCreator {
     }
   }
 
+  /// Method to perform ML selections for 2-prong candidates after the rectangular selections
+  /// \param featuresCand is the vector with the candidate features
+  /// \param outputScores is the vector with the output scores to be filled
+  /// \param isSelected ia s bitmap with selection outcome
+  void is2ProngSelectedMlForHfFilters(std::vector<float> featuresCand, std::vector<float>& outputScores, int& isSelected)
+  {
+    if (!TESTBIT(isSelected, hf_cand_2prong::DecayType::D0ToPiK)) {
+      return;
+    }
+    const float ptDummy = 1.; // dummy pT value (only one pT bin)
+    if (!hfMlResponse2Prongs.isSelectedMl(featuresCand, ptDummy, outputScores)) {
+      CLRBIT(isSelected, hf_cand_2prong::DecayType::D0ToPiK);
+      return;
+    }
+  }
+
   /// Method to perform selections for 2-prong candidates after vertex reconstruction
   /// \param secVtx is the secondary vertex
   /// \param primVtx is the primary vertex
@@ -1690,6 +1770,26 @@ struct HfTrackIndexSkimCreator {
               cutStatus[iDecay3P][3] = false;
             }
           }
+        }
+      }
+    }
+  }
+
+  /// Method to perform ML selections for 2-prong candidates after the rectangular selections
+  /// \param featuresCand is the vector with the candidate features
+  /// \param outputScores is the array of vectors with the output scores to be filled
+  /// \param isSelected ia s bitmap with selection outcome
+  void is3ProngSelectedMlForHfFilters(std::vector<float> featuresCand, std::array<std::vector<float>, kN3ProngDecays>& outputScores, int& isSelected)
+  {
+    if (isSelected == 0) {
+      return;
+    }
+
+    const float ptDummy = 1.; // dummy pT value (only one pT bin)
+    for (int iDecay3P{0}; iDecay3P < kN3ProngDecays; ++iDecay3P) {
+      if (TESTBIT(isSelected, iDecay3P) && hasMlModel3Prong[iDecay3P]) {
+        if (!hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCand, ptDummy, outputScores[iDecay3P])) {
+          CLRBIT(isSelected, iDecay3P);
         }
       }
     }
@@ -2126,9 +2226,20 @@ struct HfTrackIndexSkimCreator {
                   is2ProngCandidateGoodFor3Prong = isTwoTrackVertexSelectedFor3Prongs(secondaryVertex2, pvCoord2Prong, df2);
                 }
 
+                std::vector<float> mlScoresD0{};
+                if (applyMlForHfFilters) {
+                  auto trackParVarPcaPos1 = df2.getTrack(0);
+                  auto trackParVarPcaNeg1 = df2.getTrack(1);
+                  std::vector<float> inputFeatures{trackParVarPcaPos1.getPt(), dcaInfoPos1[0], dcaInfoPos1[1], trackParVarPcaNeg1.getPt(), dcaInfoNeg1[0], dcaInfoNeg1[1]};
+                  is2ProngSelectedMlForHfFilters(inputFeatures, mlScoresD0, isSelected2ProngCand);
+                }
+
                 if (isSelected2ProngCand > 0) {
                   // fill table row
                   rowTrackIndexProng2(thisCollId, trackPos1.globalIndex(), trackNeg1.globalIndex(), isSelected2ProngCand);
+                  if (applyMlForHfFilters) {
+                    rowTrackIndexMlScoreProng2(mlScoresD0);
+                  }
                   if (TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK)) {
                     lastFilledD0 = rowTrackIndexProng2.lastIndex();
                   }
@@ -2363,19 +2474,32 @@ struct HfTrackIndexSkimCreator {
               std::array<float, 3> pvec0;
               std::array<float, 3> pvec1;
               std::array<float, 3> pvec2;
-              df3.getTrack(0).getPxPyPzGlo(pvec0);
-              df3.getTrack(1).getPxPyPzGlo(pvec1);
-              df3.getTrack(2).getPxPyPzGlo(pvec2);
+              auto trackParVarPcaPos1 = df3.getTrack(0);
+              auto trackParVarPcaNeg1 = df3.getTrack(1);
+              auto trackParVarPcaPos2 = df3.getTrack(2);
+              trackParVarPcaPos1.getPxPyPzGlo(pvec0);
+              trackParVarPcaNeg1.getPxPyPzGlo(pvec1);
+              trackParVarPcaPos2.getPxPyPzGlo(pvec2);
               auto pVecCandProng3Pos = RecoDecay::pVec(pvec0, pvec1, pvec2);
 
               // 3-prong selections after secondary vertex
               is3ProngSelected(pVecCandProng3Pos, secondaryVertex3, pvRefitCoord3Prong2Pos1Neg, cutStatus3Prong, isSelected3ProngCand);
+
+              std::array<std::vector<float>, kN3ProngDecays> mlScores3Prongs;
+              if (applyMlForHfFilters) {
+                std::vector<float> inputFeatures{trackParVarPcaPos1.getPt(), dcaInfoPos1[0], dcaInfoPos1[1], trackParVarPcaNeg1.getPt(), dcaInfoNeg1[0], dcaInfoNeg1[1], trackParVarPcaPos2.getPt(), dcaInfoPos2[0], dcaInfoPos2[1]};
+                is3ProngSelectedMlForHfFilters(inputFeatures, mlScores3Prongs, isSelected3ProngCand);
+              }
+
               if (!debug && isSelected3ProngCand == 0) {
                 continue;
               }
 
               // fill table row
               rowTrackIndexProng3(thisCollId, trackPos1.globalIndex(), trackNeg1.globalIndex(), trackPos2.globalIndex(), isSelected3ProngCand);
+              if (applyMlForHfFilters) {
+                rowTrackIndexMlScoreProng3(mlScores3Prongs[0], mlScores3Prongs[1], mlScores3Prongs[2], mlScores3Prongs[3]);
+              }
               if constexpr (doPvRefit) {
                 // fill table row of coordinates of PV refit
                 rowProng3PVrefit(pvRefitCoord3Prong2Pos1Neg[0], pvRefitCoord3Prong2Pos1Neg[1], pvRefitCoord3Prong2Pos1Neg[2],
@@ -2594,19 +2718,33 @@ struct HfTrackIndexSkimCreator {
               std::array<float, 3> pvec0;
               std::array<float, 3> pvec1;
               std::array<float, 3> pvec2;
-              df3.getTrack(0).getPxPyPzGlo(pvec0);
-              df3.getTrack(1).getPxPyPzGlo(pvec1);
-              df3.getTrack(2).getPxPyPzGlo(pvec2);
+              auto trackParVarPcaNeg1 = df3.getTrack(0);
+              auto trackParVarPcaPos1 = df3.getTrack(1);
+              auto trackParVarPcaNeg2 = df3.getTrack(2);
+              trackParVarPcaNeg1.getPxPyPzGlo(pvec0);
+              trackParVarPcaPos1.getPxPyPzGlo(pvec1);
+              trackParVarPcaNeg2.getPxPyPzGlo(pvec2);
+
               auto pVecCandProng3Neg = RecoDecay::pVec(pvec0, pvec1, pvec2);
 
               // 3-prong selections after secondary vertex
               is3ProngSelected(pVecCandProng3Neg, secondaryVertex3, pvRefitCoord3Prong1Pos2Neg, cutStatus3Prong, isSelected3ProngCand);
+
+              std::array<std::vector<float>, kN3ProngDecays> mlScores3Prongs;
+              if (applyMlForHfFilters) {
+                std::vector<float> inputFeatures{trackParVarPcaNeg1.getPt(), dcaInfoNeg1[0], dcaInfoNeg1[1], trackParVarPcaPos1.getPt(), dcaInfoPos1[0], dcaInfoPos1[1], trackParVarPcaNeg2.getPt(), dcaInfoNeg2[0], dcaInfoNeg2[1]};
+                is3ProngSelectedMlForHfFilters(inputFeatures, mlScores3Prongs, isSelected3ProngCand);
+              }
+
               if (!debug && isSelected3ProngCand == 0) {
                 continue;
               }
 
               // fill table row
               rowTrackIndexProng3(thisCollId, trackNeg1.globalIndex(), trackPos1.globalIndex(), trackNeg2.globalIndex(), isSelected3ProngCand);
+              if (applyMlForHfFilters) {
+                rowTrackIndexMlScoreProng3(mlScores3Prongs[0], mlScores3Prongs[1], mlScores3Prongs[2], mlScores3Prongs[3]);
+              }
               // fill table row of coordinates of PV refit
               if constexpr (doPvRefit) {
                 rowProng3PVrefit(pvRefitCoord3Prong1Pos2Neg[0], pvRefitCoord3Prong1Pos2Neg[1], pvRefitCoord3Prong1Pos2Neg[2],
