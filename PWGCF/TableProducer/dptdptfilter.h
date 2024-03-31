@@ -211,6 +211,30 @@ inline void initializeTrackSelection(const TrackSelectionTuneCfg& tune)
       dca2Dcut = true;
       trackFilters.push_back(tpcOnly);
     } break;
+    case 30: { /* Run 3 default global track: kAny on 3 IB layers of ITS */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
+    } break;
+    case 31: { /* Run 3 global track: kTwo on 3 IB layers of ITS */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
+    } break;
+    case 32: { /* Run 3 global track: kAny on all 7 layers of ITS */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
+    } break;
+    case 33: { /* Run 3 global track: kAll on all 7 layers of ITS */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
+    } break;
+    case 40: { /* Run 3 global track: kAny on 3 IB layers of ITS, tighter DCAxy */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+    } break;
+    case 41: { /* Run 3 global track: kTwo on 3 IB layers of ITS, tighter DCAxy */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+    } break;
+    case 42: { /* Run 3 global track: kAny on all 7 layers of ITS, tighter DCAxy */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+    } break;
+    case 43: { /* Run 3 global track: kAll on all 7 layers of ITS, tighter DCAxy */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+    } break;
     default:
       break;
   }
