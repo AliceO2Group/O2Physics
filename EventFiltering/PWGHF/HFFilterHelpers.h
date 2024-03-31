@@ -201,8 +201,8 @@ static const std::vector<std::string> labelsColumnsDoubleCharmChannels = {"Doubl
 
 // charm resonances
 constexpr float cutsCharmReso[3][11] = {{0.0, 0.0, 0.0, 0.0, 0.4, 0., 0.21, 0.0, 0.21, 0.0, 0.0},
-                                        {0.155, 0.3, 0.3, 0.88, 0.88, 1.4, 0.18, 0.25, 0.18, 0.25, 0.8},
-                                        {0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 0.0, 0.0, 6.0, 6.0, 0.0}}; // D*+, D*0, Ds*0, Ds1+, Ds2*+, Xic*->D, SigmaC0, SigmaC++, SigmaC(2520)0, SigmaC(2520)++, Xic*->SigmaC
+                                        {0.155, 0.3, 0.3, 0.88, 0.88, 1.4, 0.18, 0.18, 0.25, 0.25, 0.8},
+                                        {0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 0.0, 6.0, 0.0, 6.0, 0.0}}; // D*+, D*0, Ds*0, Ds1+, Ds2*+, Xic*->D, SigmaC0, SigmaC++, SigmaC(2520)0, SigmaC(2520)++, Xic*->SigmaC
 static const std::vector<std::string> labelsColumnsDeltaMassCharmReso = {"DstarPlus", "DstarZero", "DsStarZero", "Ds1Plus", "Ds2StarPlus", "XicResoToD", "SigmaC0", "SigmaC02520", "SigmaCPlusPlus", "SigmaCPlusPlus2520", "XicResoToSigmaC"};
 static const std::vector<std::string> labelsRowsDeltaMassCharmReso = {"deltaMassMin", "deltaMassMax", "ptMin"};
 // V0s for charm resonances
@@ -260,7 +260,7 @@ class HfFilterHelper
     mPtMinSoftPionForSigmaC = minPt;
     mPtMaxSoftPionForSigmaC = maxPt;
   }
-  void setPtDeltaMassRangeSigmaC(float minDeltaMassSigmaCZero, float maxDeltaMassSigmaCZero, float minDeltaMassSigmaC2520Zero, float maxDeltaMassSigmaC2520Zero, float minDeltaMassSigmaCPlusPlus, float maxDeltaMassSigmaCPlusPlus, float minDeltaMassSigmaC2520PlusPlus, float maxDeltaMassSigmaC2520PlusPlus, float minPtSigmaCZero, float minPtSigmaC2520Zero, float minPtSigmaCPlusPlus, float minPtSigmaC2520PlusPlus)
+  void setPtDeltaMassRangeSigmaC(float minDeltaMassSigmaCZero, float maxDeltaMassSigmaCZero, float minDeltaMassSigmaCPlusPlus, float maxDeltaMassSigmaCPlusPlus, float minDeltaMassSigmaC2520Zero, float maxDeltaMassSigmaC2520Zero, float minDeltaMassSigmaC2520PlusPlus, float maxDeltaMassSigmaC2520PlusPlus, float minPtSigmaCZero, float minPtSigmaCPlusPlus, float minPtSigmaC2520Zero, float minPtSigmaC2520PlusPlus)
   {
     mDeltaMassMinSigmaCZero = minDeltaMassSigmaCZero;
     mDeltaMassMaxSigmaCZero = maxDeltaMassSigmaCZero;
