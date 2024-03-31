@@ -64,7 +64,8 @@ using CascFullCores = soa::Join<aod::CascCores, aod::CascTOFs, aod::CascExtras, 
 
 struct cascadepid {
   // TOF pid for strangeness (recalculated with topology)
-  Produces<aod::CascTOFPIDs> casctofpids; // table with Nsigmas
+  Produces<aod::CascTOFPIDs> casctofpids; // table with base info
+  Produces<aod::CascTOFNSigmas> casctofnsigmas; // table with Nsigmas
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -83,6 +84,7 @@ struct cascadepid {
   Configurable<float> qaCascCosPA{"qaCascCosPA", 0.995, "CosPA for QA plots"};
   Configurable<float> qaMassWindow{"qaMassWindow", 0.005, "Mass window around expected (in GeV/c2) for QA plots"};
   Configurable<float> qaTPCNSigma{"qaTPCNSigma", 5, "TPC N-sigma to apply for qa plots"};
+  Configurable<bool> doNSigmas{"doNSigmas", false, "calculate TOF N-sigma"};
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -95,6 +97,18 @@ struct cascadepid {
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {2000, -1000.0f, +1000.0f}, "delta-time (ps)"};
   ConfigurableAxis axisTime{"axisTime", {200, 0.0f, +20000.0f}, "T (ps)"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "p_{T} (GeV/c)"};
+
+  TH1 *hMeanPosXiPi, *hSigmaPosXiPi;
+  TH1 *hMeanPosXiPr, *hSigmaPosXiPr;
+  TH1 *hMeanNegXiPi, *hSigmaNegXiPi;
+  TH1 *hMeanNegXiPr, *hSigmaNegXiPr;
+  TH1 *hMeanBachXiPi, *hSigmaBachXiPi;
+
+  TH1 *hMeanPosOmPi, *hSigmaPosOmPi;
+  TH1 *hMeanPosOmPr, *hSigmaPosOmPr;
+  TH1 *hMeanNegOmPi, *hSigmaNegOmPi;
+  TH1 *hMeanNegOmPr, *hSigmaNegOmPr;
+  TH1 *hMeanBachOmKa, *hSigmaBachOmKa;
 
   int mRunNumber;
   float d_bz;
@@ -406,9 +420,46 @@ struct cascadepid {
 
         casctofpids(
           posDeltaTimeAsXiPi, posDeltaTimeAsXiPr, negDeltaTimeAsXiPi, negDeltaTimeAsXiPr, bachDeltaTimeAsXiPi,
-          posDeltaTimeAsOmPi, posDeltaTimeAsOmPr, negDeltaTimeAsOmPi, negDeltaTimeAsOmPr, bachDeltaTimeAsOmKa,
-          0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f // no Nsigmas yet, note: could be fewer
+          posDeltaTimeAsOmPi, posDeltaTimeAsOmPr, negDeltaTimeAsOmPi, negDeltaTimeAsOmPr, bachDeltaTimeAsOmKa
         );
+
+        // go for Nsigma values if requested
+        if (doNSigmas) {
+          float nSigmaXiLaPr = -1e+5;
+          float nSigmaXiLaPi = -1e+5;
+          float nSigmaXiPi = -1e+5;
+          float nSigmaOmLaPr = -1e+5;
+          float nSigmaOmLaPi = -1e+5;
+          float nSigmaOmKa = -1e+5;
+
+          // Xi hypothesis ________________________
+          if (cascade.sign() < 0) { // XiMinus
+            if (posDeltaTimeAsXiPr > -1e+5) // proton from Lambda from XiMinus has signal
+              nSigmaXiLaPr = (posDeltaTimeAsXiPr - hMeanPosXiPr->Interpolate(cascade.pt())) / hSigmaPosXiPr->Interpolate(cascade.pt());
+            if (negDeltaTimeAsXiPi > -1e+5) // pion from Lambda from XiMinus has signal
+              nSigmaXiLaPi = (negDeltaTimeAsXiPi - hMeanNegXiPi->Interpolate(cascade.pt())) / hSigmaNegXiPi->Interpolate(cascade.pt());
+            if (bachDeltaTimeAsXiPi > -1e+5) // pion from XiMinus has signal
+              nSigmaXiPi = (bachDeltaTimeAsXiPi - hMeanBachXiPi->Interpolate(cascade.pt())) / hSigmaBachXiPi->Interpolate(cascade.pt());
+            if (posDeltaTimeAsOmPr > -1e+5) // proton from Lambda from OmegaMinus has signal
+              nSigmaOmLaPr = (posDeltaTimeAsOmPr - hMeanPosOmPr->Interpolate(cascade.pt())) / hSigmaPosOmPr->Interpolate(cascade.pt());
+            if (negDeltaTimeAsOmPi > -1e+5) // pion from Lambda from OmegaMinus has signal
+              nSigmaOmLaPi = (negDeltaTimeAsOmPi - hMeanNegOmPi->Interpolate(cascade.pt())) / hSigmaNegOmPi->Interpolate(cascade.pt());
+            if (bachDeltaTimeAsOmKa > -1e+5) // kaon from OmegaMinus has signal
+              nSigmaOmKa = (bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.pt())) / hSigmaBachOmKa->Interpolate(cascade.pt());
+          }
+          // if (posDeltaTimeAsXiPi > -1e+5)
+          //   nSigmaPositiveLambdaPi = (deltaTimePositiveLambdaPi - hMeanPosLaPi->Interpolate(v0.pt())) / hSigmaPosLaPi->Interpolate(v0.pt());
+          // if (posDeltaTimeAsXiPr > -1e+5)
+          //   nSigmaPositiveLambdaPr = (deltaTimePositiveLambdaPr - hMeanPosLaPr->Interpolate(v0.pt())) / hSigmaPosLaPr->Interpolate(v0.pt());
+          // if (negDeltaTimeAsXiPi > -1e+5)
+          //   nSigmaNegativeLambdaPi = (deltaTimeNegativeLambdaPi - hMeanNegLaPi->Interpolate(v0.pt())) / hSigmaNegLaPi->Interpolate(v0.pt());
+          // if (negDeltaTimeAsXiPr > -1e+5)
+          //   nSigmaNegativeLambdaPr = (deltaTimeNegativeLambdaPr - hMeanNegLaPr->Interpolate(v0.pt())) / hSigmaNegLaPr->Interpolate(v0.pt());
+          // if (bachDeltaTimeAsXiPi > -1e+5)
+          //   nSigmaPositiveK0ShortPi = (deltaTimePositiveK0ShortPi - hMeanPosK0Pi->Interpolate(v0.pt())) / hSigmaPosK0Pi->Interpolate(v0.pt());
+
+          casctofnsigmas(nSigmaXiLaPi, nSigmaXiLaPr, nSigmaXiPi, nSigmaOmLaPi, nSigmaOmLaPr, nSigmaOmKa);
+        }
 
         if (doQA) {
           // fill QA histograms for cross-checking

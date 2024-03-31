@@ -576,18 +576,18 @@ struct derivedlambdakzeroanalysis {
 
     // TOF PID in NSigma
     // Positive track
-    if (fabs(v0.posTOFNSigmaLaPr()) < TofPidNsigmaCutLaPr)
+    if (fabs(v0.tofNSigmaLaPr()) < TofPidNsigmaCutLaPr)
       bitset(bitMap, selTOFNSigmaPositiveProtonLambda);
-    if (fabs(v0.posTOFNSigmaLaPi()) < TofPidNsigmaCutLaPi)
+    if (fabs(v0.tofNSigmaALaPi()) < TofPidNsigmaCutLaPi)
       bitset(bitMap, selTOFNSigmaPositivePionLambda);
-    if (fabs(v0.posTOFNSigmaK0Pi()) < TofPidNsigmaCutK0Pi)
+    if (fabs(v0.tofNSigmaK0PiPlus()) < TofPidNsigmaCutK0Pi)
       bitset(bitMap, selTOFNSigmaPositivePionK0Short);
     // Negative track
-    if (fabs(v0.negTOFNSigmaLaPr()) < TofPidNsigmaCutLaPr)
+    if (fabs(v0.tofNSigmaALaPr()) < TofPidNsigmaCutLaPr)
       bitset(bitMap, selTOFNSigmaNegativeProtonLambda);
-    if (fabs(v0.negTOFNSigmaLaPi()) < TofPidNsigmaCutLaPi)
+    if (fabs(v0.tofNSigmaLaPi()) < TofPidNsigmaCutLaPi)
       bitset(bitMap, selTOFNSigmaNegativePionLambda);
-    if (fabs(v0.negTOFNSigmaK0Pi()) < TofPidNsigmaCutK0Pi)
+    if (fabs(v0.tofNSigmaK0PiMinus()) < TofPidNsigmaCutK0Pi)
       bitset(bitMap, selTOFNSigmaNegativePionK0Short);
 
     // ITS only tag
