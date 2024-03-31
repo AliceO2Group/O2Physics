@@ -501,7 +501,7 @@ struct cascadepid {
               nSigmaOmLaPi = (negDeltaTimeAsOmPi - hMeanNegOmPi->Interpolate(cascade.pt())) / hSigmaNegOmPi->Interpolate(cascade.pt());
             if (bachDeltaTimeAsOmKa > -1e+5) // kaon from OmegaMinus has signal
               nSigmaOmKa = (bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.pt())) / hSigmaBachOmKa->Interpolate(cascade.pt());
-          }else{
+          } else {
             if (posDeltaTimeAsXiPi > -1e+5) // proton from Lambda from XiMinus has signal
               nSigmaXiLaPi = (posDeltaTimeAsXiPi - hMeanPosXiPi->Interpolate(cascade.pt())) / hSigmaPosXiPi->Interpolate(cascade.pt());
             if (negDeltaTimeAsXiPr > -1e+5) // pion from Lambda from XiMinus has signal
@@ -528,7 +528,7 @@ struct cascadepid {
                 histos.fill(HIST("h2dposDeltaTimeAsXiPr"), cascade.pt(), cascade.eta(), posDeltaTimeAsXiPr);
                 histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), negDeltaTimeAsXiPi);
                 histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), bachDeltaTimeAsXiPi);
-                if(doQANSigma){
+                if (doQANSigma) {
                   histos.fill(HIST("h2dNSigmaXiLaPi"), cascade.pt(), nSigmaXiLaPi);
                   histos.fill(HIST("h2dNSigmaXiLaPr"), cascade.pt(), nSigmaXiLaPr);
                   histos.fill(HIST("h2dNSigmaXiPi"), cascade.pt(), nSigmaXiPi);
@@ -538,7 +538,7 @@ struct cascadepid {
                 histos.fill(HIST("h2dposDeltaTimeAsOmPr"), cascade.pt(), cascade.eta(), posDeltaTimeAsOmPr);
                 histos.fill(HIST("h2dnegDeltaTimeAsOmPi"), cascade.pt(), cascade.eta(), negDeltaTimeAsOmPi);
                 histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), cascade.eta(), bachDeltaTimeAsOmKa);
-                if(doQANSigma){
+                if (doQANSigma) {
                   histos.fill(HIST("h2dNSigmaOmLaPi"), cascade.pt(), nSigmaOmLaPi);
                   histos.fill(HIST("h2dNSigmaOmLaPr"), cascade.pt(), nSigmaOmLaPr);
                   histos.fill(HIST("h2dNSigmaOmKa"), cascade.pt(), nSigmaOmKa);
@@ -549,7 +549,7 @@ struct cascadepid {
                 histos.fill(HIST("h2dposDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), posDeltaTimeAsXiPi);
                 histos.fill(HIST("h2dnegDeltaTimeAsXiPr"), cascade.pt(), cascade.eta(), negDeltaTimeAsXiPr);
                 histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), bachDeltaTimeAsXiPi);
-                if(doQANSigma){
+                if (doQANSigma) {
                   histos.fill(HIST("h2dNSigmaXiLaPi"), cascade.pt(), nSigmaXiLaPi);
                   histos.fill(HIST("h2dNSigmaXiLaPr"), cascade.pt(), nSigmaXiLaPr);
                   histos.fill(HIST("h2dNSigmaXiPi"), cascade.pt(), nSigmaXiPi);
@@ -559,7 +559,7 @@ struct cascadepid {
                 histos.fill(HIST("h2dposDeltaTimeAsOmPi"), cascade.pt(), cascade.eta(), posDeltaTimeAsOmPi);
                 histos.fill(HIST("h2dnegDeltaTimeAsOmPr"), cascade.pt(), cascade.eta(), negDeltaTimeAsOmPr);
                 histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), cascade.eta(), bachDeltaTimeAsOmKa);
-                if(doQANSigma){
+                if (doQANSigma) {
                   histos.fill(HIST("h2dNSigmaOmLaPi"), cascade.pt(), nSigmaOmLaPi);
                   histos.fill(HIST("h2dNSigmaOmLaPr"), cascade.pt(), nSigmaOmLaPr);
                   histos.fill(HIST("h2dNSigmaOmKa"), cascade.pt(), nSigmaOmKa);
