@@ -405,11 +405,6 @@ class HfFilterHelper
   void setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::array<std::string, 6>& ccdbPaths);
   void setTpcRecalibMaps(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::string& ccdbPath);
 
-  // ML
-  Ort::Experimental::Session* initONNXSession(std::string& onnxFile, std::string partName, Ort::Env& env, Ort::SessionOptions& sessionOpt, std::vector<std::vector<int64_t>>& inputShapes, int& dataType, bool loadModelsFromCCDB, o2::ccdb::CcdbApi& ccdbApi, std::string mlModelPathCCDB, int64_t timestampCCDB);
-  template <typename T>
-  std::array<T, 3> predictONNX(std::vector<T>& inputFeatures, std::shared_ptr<Ort::Experimental::Session>& session, std::vector<std::vector<int64_t>>& inputShapes);
-
  private:
   // selections
   template <typename T>
@@ -1446,81 +1441,6 @@ inline int HfFilterHelper::computeNumberOfCandidates(std::vector<std::vector<T>>
   }
 
   return 2;
-}
-
-/// ML helper methods
-
-/// Iinitialisation of ONNX session
-/// \param onnxFile is the onnx file name
-/// \param partName is the particle name
-/// \param env is the ONNX environment
-/// \param sessionOpt is the ONNX session options
-/// \param inputShapes is the input shape
-/// \param dataType is the data type (1=float, 11=double)
-/// \param loadModelsFromCCDB is the flag to decide whether the ONNX file is read from CCDB or not
-/// \param ccdbApi is the CCDB API
-/// \param mlModelPathCCDB is the model path in CCDB
-/// \param timestampCCDB is the CCDB timestamp
-/// \return the pointer to the ONNX Ort::Experimental::Session
-inline Ort::Experimental::Session* HfFilterHelper::initONNXSession(std::string& onnxFile, std::string partName, Ort::Env& env, Ort::SessionOptions& sessionOpt, std::vector<std::vector<int64_t>>& inputShapes, int& dataType, bool loadModelsFromCCDB, o2::ccdb::CcdbApi& ccdbApi, std::string mlModelPathCCDB, int64_t timestampCCDB)
-{
-  // hard coded, we do not let the user change this
-  sessionOpt.SetIntraOpNumThreads(1);
-  sessionOpt.SetInterOpNumThreads(1);
-  Ort::Experimental::Session* session = nullptr;
-
-  std::map<std::string, std::string> metadata;
-  bool retrieveSuccess = true;
-  if (loadModelsFromCCDB) {
-    retrieveSuccess = ccdbApi.retrieveBlob(mlModelPathCCDB + partName, ".", metadata, timestampCCDB, false, onnxFile);
-  }
-  if (retrieveSuccess) {
-    session = new Ort::Experimental::Session{env, onnxFile, sessionOpt};
-    inputShapes = session->GetInputShapes();
-    if (inputShapes[0][0] < 0) {
-      LOGF(warning, Form("Model for %s with negative input shape likely because converted with hummingbird, setting it to 1.", partName.data()));
-      inputShapes[0][0] = 1;
-    }
-
-    Ort::TypeInfo typeInfo = session->GetInputTypeInfo(0);
-    auto tensorInfo = typeInfo.GetTensorTypeAndShapeInfo();
-    dataType = tensorInfo.GetElementType();
-  } else {
-    LOG(fatal) << "Error encountered while fetching/loading the ML model from CCDB! Maybe the ML model doesn't exist yet for this runnumber/timestamp?";
-  }
-
-  return session;
-}
-
-/// Iinitialisation of ONNX session
-/// \param inputFeatures is the vector with input features
-/// \param session is the ONNX Ort::Experimental::Session
-/// \param inputShapes is the input shape
-/// \return the array with the three output scores
-template <typename T>
-inline std::array<T, 3> HfFilterHelper::predictONNX(std::vector<T>& inputFeatures, std::shared_ptr<Ort::Experimental::Session>& session, std::vector<std::vector<int64_t>>& inputShapes)
-{
-  std::array<T, 3> scores{-1., 2., 2.};
-  std::vector<Ort::Value> inputTensor{};
-  inputTensor.push_back(Ort::Experimental::Value::CreateTensor<T>(inputFeatures.data(), inputFeatures.size(), inputShapes[0]));
-
-  // double-check the dimensions of the input tensor
-  if (inputTensor[0].GetTensorTypeAndShapeInfo().GetShape()[0] > 0) { // vectorial models can have negative shape if the shape is unknown
-    assert(inputTensor[0].IsTensor() && inputTensor[0].GetTensorTypeAndShapeInfo().GetShape() == inputShapes[0]);
-  }
-  try {
-    auto outputTensor = session->Run(session->GetInputNames(), inputTensor, session->GetOutputNames());
-    assert(outputTensor.size() == session->GetOutputNames().size() && outputTensor[1].IsTensor());
-    auto typeInfo = outputTensor[1].GetTensorTypeAndShapeInfo();
-    assert(typeInfo.GetElementCount() == 3); // we need multiclass
-    scores[0] = outputTensor[1].GetTensorMutableData<T>()[0];
-    scores[1] = outputTensor[1].GetTensorMutableData<T>()[1];
-    scores[2] = outputTensor[1].GetTensorMutableData<T>()[2];
-  } catch (const Ort::Exception& exception) {
-    LOG(error) << "Error running model inference: " << exception.what();
-  }
-
-  return scores;
 }
 
 /// PID postcalibrations
