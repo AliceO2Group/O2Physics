@@ -107,21 +107,28 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
       list->Add(new TH1F("hPt_Photon_Candidate", "pT of photon candidate;p_{T} (GeV/c)", 2000, 0.0f, 20));                                             // for denominator of purity
       list->Add(new TH2F("hEtaPhi_Photon_Candidate", "#eta vs. #varphi of photon candidate ;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 40, -2.0f, 2.0f)); // for denominator of purity
 
+      // for primary photons
       list->Add(new TH1F("hPt_Photon_Primary", "pT;p_{T} (GeV/c)", 2000, 0.0f, 20));                                            // for MC efficiency
       list->Add(new TH2F("hEtaPhi_Photon_Primary", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 40, -2.0f, 2.0f)); // for MC efficiency
+      list->Add(new TH2F("hCosPA_Rxy_Photon_Primary", "cos PA vs. R_{xy};R_{xy} (cm);cosine pointing angle", 200, 0.f, 100.f, 100, 0.9f, 1.0f));
       list->Add(new TH2F("hXY_Photon_Primary", "X vs. Y of photon rec.;X (cm);Y (cm)", 400, -100.0f, +100, 400, -100, +100));
       list->Add(new TH2F("hXY_Photon_Primary_MC", "X vs. Y of photon gen.;X (cm);Y (cm)", 400, -100.0f, +100, 400, -100, +100));
       list->Add(new TH2F("hRZ_Photon_Primary", "R vs. Z of photon rec.;Z (cm);R_{xy} (cm)", 200, -100.0f, +100, 200, 0, 100));
       list->Add(new TH2F("hRZ_Photon_Primary_MC", "R vs. Z of photon gen;Z (cm);R_{xy} (cm)", 200, -100.0f, +100, 200, 0, 100));
 
+      // for photons from feed down. i.e. weak deay from K0S or Lambda
       list->Add(new TH1F("hPt_Photon_FromWD", "pT;p_{T} (GeV/c)", 2000, 0.0f, 20));                                            // for MC feed down correction
       list->Add(new TH2F("hEtaPhi_Photon_FromWD", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 40, -2.0f, 2.0f)); // for MC feed down correction
+      list->Add(new TH2F("hCosPA_Rxy_Photon_FromWD", "cos PA vs. R_{xy};R_{xy} (cm);cosine pointing angle", 200, 0.f, 100.f, 100, 0.9f, 1.0f));
 
-      list->Add(new TH2F("hRZ_Photon_hs", "R vs. Z of photon from hadronic shower in materials;Z (cm);R_{xy} (cm)", 200, -100.0f, +100, 200, 0, 100));
+      // for photons from hadronic showers in detector materials
       list->Add(new TH1F("hPt_Photon_hs", "pT of photon from hadronic shower in materials;p_{T} (GeV/c)", 1000, 0.0f, 10));
-      list->Add(new TH1F("hEta_Photon_hs", "rapidity of photon from hadronic shower in materials;y", 40, -2.0f, 2.0f));
-      list->Add(new TH1F("hPhi_Photon_hs", "#varphi of photon from hadronic shower in materials;#varphi (rad.);", 72, 0, 2 * M_PI));
+      list->Add(new TH2F("hEtaPhi_Photon_hs", "#eta vs. #varphi;#varphi (rad.);#eta", 180, 0, 2 * M_PI, 40, -2.0f, 2.0f));
+      list->Add(new TH2F("hCosPA_Rxy_Photon_hs", "cos PA vs. R_{xy};R_{xy} (cm);cosine pointing angle", 200, 0.f, 100.f, 100, 0.9f, 1.0f));
+      list->Add(new TH2F("hXY_Photon_hs_MC", "X vs. Y of photon from hadronic shower in materials gen.;Z (cm);R_{xy} (cm)", 400, -100.0f, +100, 400, -100, 100)); // production vertex of photons
+      list->Add(new TH2F("hRZ_Photon_hs_MC", "R vs. Z of photon from hadronic shower in materials gen.;Z (cm);R_{xy} (cm)", 200, -100.0f, +100, 200, 0, 100));    // production vertex of photons
 
+      // all photons
       list->Add(new TH2F("hConvPoint_diffX", "conversion point diff X MC;X_{MC} (cm);X_{rec} - X_{MC} (cm)", 200, -100, +100, 100, -50.0f, 50.0f));
       list->Add(new TH2F("hConvPoint_diffY", "conversion point diff Y MC;Y_{MC} (cm);Y_{rec} - Y_{MC} (cm)", 200, -100, +100, 100, -50.0f, 50.0f));
       list->Add(new TH2F("hConvPoint_diffZ", "conversion point diff Z MC;Z_{MC} (cm);Z_{rec} - Z_{MC} (cm)", 200, -100, +100, 100, -50.0f, 50.0f));
