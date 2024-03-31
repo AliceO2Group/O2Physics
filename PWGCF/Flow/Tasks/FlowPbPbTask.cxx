@@ -456,7 +456,7 @@ struct FlowPbPbTask {
     if (multTrk > fMultCutHigh->Eval(centrality))
       return 0;
 
-    // V0A T0A 5 sigma cut 
+    // V0A T0A 5 sigma cut
     if (abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))
       return 0;
 
