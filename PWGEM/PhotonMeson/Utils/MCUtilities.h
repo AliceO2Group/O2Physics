@@ -22,8 +22,8 @@
 //_______________________________________________________________________
 namespace o2::aod::pwgem::mcutil
 {
-template <typename TCollision, typename TTrack, typename TMCs>
-bool IsPhysicalPrimary(TCollision const& mccollision, TTrack const& mctrack, TMCs const& mcTracks)
+template <typename TTrack>
+bool IsPhysicalPrimary(TTrack const& mctrack)
 {
   // This is to check mctrack is ALICE physical primary.
   if (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) {
