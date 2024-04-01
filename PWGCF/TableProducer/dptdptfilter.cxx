@@ -174,7 +174,7 @@ struct DptDptFilter {
   Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M,CL0,CL1,FV0A,FT0M,FT0A,FT0C,NTPV,NOCM: none. Default V0M"};
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
   Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
-  Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB, None. Default MB"};
+  Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB,VTXTOFMATCHED,VTXTRDMATCHED,VTXTRDTOFMATCHED,None. Default MB"};
   Configurable<std::string> cfgCentSpec{"centralities", "00-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
   Configurable<float> cfgOverallMinP{"overallminp", 0.0f, "The overall minimum momentum for the analysis. Default: 0.0"};
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
@@ -515,7 +515,7 @@ struct DptDptFilterTracks {
   std::string cfgCCDBPeriod{"LHC22o"};
 
   Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
-  Configurable<int> cfgTrackType{"trktype", 4, "Type of selected tracks: 0 = no selection, 1 = Run2 global tracks FB96, 3 = Run3 tracks, 4 = Run3 tracks MM sel, 5 = Run2 TPC only tracks, 7 = Run 3 TPC only tracks. Default 4"};
+  Configurable<int> cfgTrackType{"trktype", 4, "Type of selected tracks: 0 = no selection;1 = Run2 global tracks FB96;3 = Run3 tracks;4 = Run3 tracks MM sel;5 = Run2 TPC only tracks;7 = Run 3 TPC only tracks;30-33 = any/two on 3 ITS,any/all in 7 ITS;40-43 same as 30-33 w tighter DCAxy. Default 4"};
   Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
   Configurable<float> cfgTraceOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
   Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 No PID, 1 PID, 2 mcparticle. Default 0"};
@@ -1092,7 +1092,7 @@ template <typename CollisionObjects, typename TrackObject>
 int8_t DptDptFilterTracks::selectTrackAmbiguousCheck(CollisionObjects const& collisions, TrackObject const& track)
 {
   bool ambiguoustrack = false;
-  int tracktype = 0; /* no ambiguous */
+  int ambtracktype = 0; /* no ambiguous */
   std::vector<double> zvertexes{};
   /* ambiguous tracks checks if required */
   if constexpr (has_type_v<aod::track_association::CollisionIds, typename TrackObject::all_columns>) {
@@ -1102,17 +1102,17 @@ int8_t DptDptFilterTracks::selectTrackAmbiguousCheck(CollisionObjects const& col
           /* ambiguous track! */
           ambiguoustrack = true;
           /* in principle we should not be here because the track is associated to two collisions at least */
-          tracktype = 2;
+          ambtracktype = 2;
           zvertexes.push_back(collisions.iteratorAt(track.collisionId()).posZ());
           zvertexes.push_back(collisions.iteratorAt(track.compatibleCollIds()[0]).posZ());
         } else {
           /* we consider the track as no ambiguous */
-          tracktype = 1;
+          ambtracktype = 1;
         }
       } else {
         /* ambiguous track! */
         ambiguoustrack = true;
-        tracktype = 3;
+        ambtracktype = 3;
         /* the track is associated to more than one collision */
         for (const auto& collIdx : track.compatibleCollIds()) {
           zvertexes.push_back(collisions.iteratorAt(collIdx).posZ());
@@ -1124,10 +1124,10 @@ int8_t DptDptFilterTracks::selectTrackAmbiguousCheck(CollisionObjects const& col
   float multiplicityclass = (track.template collision_as<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>()).centmult();
   if (ambiguoustrack) {
     /* keep track of ambiguous tracks */
-    fhAmbiguousTrackType->Fill(tracktype, multiplicityclass);
+    fhAmbiguousTrackType->Fill(ambtracktype, multiplicityclass);
     fhAmbiguousTrackPt->Fill(track.pt(), multiplicityclass);
     fhAmbiguityDegree->Fill(zvertexes.size(), multiplicityclass);
-    if (tracktype == 2) {
+    if (ambtracktype == 2) {
       fhCompatibleCollisionsZVtxRms->Fill(-computeRMS(zvertexes), multiplicityclass);
     } else {
       fhCompatibleCollisionsZVtxRms->Fill(computeRMS(zvertexes), multiplicityclass);
@@ -1136,7 +1136,7 @@ int8_t DptDptFilterTracks::selectTrackAmbiguousCheck(CollisionObjects const& col
   } else {
     if (checkAmbiguousTracks) {
       /* feedback of no ambiguous tracks only if checks required */
-      fhAmbiguousTrackType->Fill(tracktype, multiplicityclass);
+      fhAmbiguousTrackType->Fill(ambtracktype, multiplicityclass);
     }
     return selectTrack(track);
   }
