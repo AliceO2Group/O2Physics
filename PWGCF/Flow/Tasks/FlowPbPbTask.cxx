@@ -552,10 +552,10 @@ struct FlowPbPbTask {
     for (auto& track : tracks) {
       if (track.tpcNClsFound() < cfgCutTPCclu)
         continue;
-      if (cfgOutputNUAWeights)
-        fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
       if (cfgUseAdditionalTrackCut && !trackSelected(track, Magnetfield))
         continue;
+      if (cfgOutputNUAWeights)
+        fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
       if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
         continue;
       bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
