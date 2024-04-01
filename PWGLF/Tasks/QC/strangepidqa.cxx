@@ -118,7 +118,7 @@ struct strangepidqa {
   void init(InitContext const&)
   {
     // Event counter
-    histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100,0.0f,100.0f}});
+    histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, 100.0f}});
 
     // Presence of negative and positive signals and event time
     auto hPositiveStatus = histos.add<TH1>("hPositiveStatus", "hPositiveStatus", kTH1F, {{4, -0.5f, 3.5f}});
@@ -443,59 +443,58 @@ struct strangepidqa {
     for (auto& casc : Cascades) {
       // major selections here
       if (casc.v0radius() > v0setting_radius &&
-        casc.cascradius() > cascadesetting_cascradius &&
-        casc.v0cosPA(col.posX(), col.posY(), col.posZ()) > v0setting_cospa &&
-        casc.casccosPA(col.posX(), col.posY(), col.posZ()) > cascadesetting_cospa &&
-        casc.dcav0topv(col.posX(), col.posY(), col.posZ()) > cascadesetting_mindcav0topv &&
-        TMath::Abs(casc.mLambda() - 1.115683) < cascadesetting_v0masswindow) 
-        {
-          
+          casc.cascradius() > cascadesetting_cascradius &&
+          casc.v0cosPA(col.posX(), col.posY(), col.posZ()) > v0setting_cospa &&
+          casc.casccosPA(col.posX(), col.posY(), col.posZ()) > cascadesetting_cospa &&
+          casc.dcav0topv(col.posX(), col.posY(), col.posZ()) > cascadesetting_mindcav0topv &&
+          TMath::Abs(casc.mLambda() - 1.115683) < cascadesetting_v0masswindow) {
+
         auto negExtra = casc.negTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>>();
         auto posExtra = casc.posTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>>();
         auto bachExtra = casc.bachTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>>();
 
-        if(negExtra.tpcCrossedRows() < tpcCrossedRows || posExtra.tpcCrossedRows() < tpcCrossedRows || bachExtra.tpcCrossedRows() < tpcCrossedRows)
+        if (negExtra.tpcCrossedRows() < tpcCrossedRows || posExtra.tpcCrossedRows() < tpcCrossedRows || bachExtra.tpcCrossedRows() < tpcCrossedRows)
           continue;
 
-        if(casc.sign()<0){
-          if( TMath::Abs(posExtra.tpcNSigmaPr())<tpcNsigmaProton && TMath::Abs(negExtra.tpcNSigmaPi())<tpcNsigmaPion && TMath::Abs(bachExtra.tpcNSigmaPi())<tpcNsigmaBachelor){
-            if( tofNsigmaXiLaPr<100 && fabs(casc.tofNSigmaXiLaPr()) > tofNsigmaXiLaPr)
+        if (casc.sign() < 0) {
+          if (TMath::Abs(posExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(negExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(bachExtra.tpcNSigmaPi()) < tpcNsigmaBachelor) {
+            if (tofNsigmaXiLaPr < 100 && fabs(casc.tofNSigmaXiLaPr()) > tofNsigmaXiLaPr)
               continue;
-            if( tofNsigmaXiLaPi<100 && fabs(casc.tofNSigmaXiLaPi()) > tofNsigmaXiLaPi)
+            if (tofNsigmaXiLaPi < 100 && fabs(casc.tofNSigmaXiLaPi()) > tofNsigmaXiLaPi)
               continue;
-            if( tofNsigmaXiPi<100 && fabs(casc.tofNSigmaXiPi()) > tofNsigmaXiPi)
+            if (tofNsigmaXiPi < 100 && fabs(casc.tofNSigmaXiPi()) > tofNsigmaXiPi)
               continue;
             histos.fill(HIST("h2dMassXiMinus"), casc.pt(), casc.mXi());
           }
-          if( TMath::Abs(posExtra.tpcNSigmaPr())<tpcNsigmaProton && TMath::Abs(negExtra.tpcNSigmaPi())<tpcNsigmaPion && TMath::Abs(bachExtra.tpcNSigmaKa())<tpcNsigmaBachelor){
-            if( tofNsigmaOmLaPr<100 && fabs(casc.tofNSigmaOmLaPr()) > tofNsigmaOmLaPr)
+          if (TMath::Abs(posExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(negExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(bachExtra.tpcNSigmaKa()) < tpcNsigmaBachelor) {
+            if (tofNsigmaOmLaPr < 100 && fabs(casc.tofNSigmaOmLaPr()) > tofNsigmaOmLaPr)
               continue;
-            if( tofNsigmaOmLaPi<100 && fabs(casc.tofNSigmaOmLaPi()) > tofNsigmaOmLaPi)
+            if (tofNsigmaOmLaPi < 100 && fabs(casc.tofNSigmaOmLaPi()) > tofNsigmaOmLaPi)
               continue;
-            if( tofNsigmaOmKa<100 && fabs(casc.tofNSigmaOmKa()) > tofNsigmaOmKa)
+            if (tofNsigmaOmKa < 100 && fabs(casc.tofNSigmaOmKa()) > tofNsigmaOmKa)
               continue;
             histos.fill(HIST("h2dMassOmegaMinus"), casc.pt(), casc.mOmega());
           }
-        }else{
-          if( TMath::Abs(posExtra.tpcNSigmaPi())<tpcNsigmaPion && TMath::Abs(negExtra.tpcNSigmaPr())<tpcNsigmaProton && TMath::Abs(bachExtra.tpcNSigmaPi())<tpcNsigmaBachelor){
-            if( tofNsigmaXiLaPr<100 && fabs(casc.tofNSigmaXiLaPr()) > tofNsigmaXiLaPr)
+        } else {
+          if (TMath::Abs(posExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(negExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(bachExtra.tpcNSigmaPi()) < tpcNsigmaBachelor) {
+            if (tofNsigmaXiLaPr < 100 && fabs(casc.tofNSigmaXiLaPr()) > tofNsigmaXiLaPr)
               continue;
-            if( tofNsigmaXiLaPi<100 && fabs(casc.tofNSigmaXiLaPi()) > tofNsigmaXiLaPi)
+            if (tofNsigmaXiLaPi < 100 && fabs(casc.tofNSigmaXiLaPi()) > tofNsigmaXiLaPi)
               continue;
-            if( tofNsigmaXiPi<100 && fabs(casc.tofNSigmaXiPi()) > tofNsigmaXiPi)
+            if (tofNsigmaXiPi < 100 && fabs(casc.tofNSigmaXiPi()) > tofNsigmaXiPi)
               continue;
             histos.fill(HIST("h2dMassXiPlus"), casc.pt(), casc.mXi());
           }
-            
-          if( TMath::Abs(posExtra.tpcNSigmaPi())<tpcNsigmaPion && TMath::Abs(negExtra.tpcNSigmaPr())<tpcNsigmaProton && TMath::Abs(bachExtra.tpcNSigmaKa())<tpcNsigmaBachelor){
-            if( tofNsigmaOmLaPr<100 && fabs(casc.tofNSigmaOmLaPr()) > tofNsigmaOmLaPr)
+
+          if (TMath::Abs(posExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(negExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(bachExtra.tpcNSigmaKa()) < tpcNsigmaBachelor) {
+            if (tofNsigmaOmLaPr < 100 && fabs(casc.tofNSigmaOmLaPr()) > tofNsigmaOmLaPr)
               continue;
-            if( tofNsigmaOmLaPi<100 && fabs(casc.tofNSigmaOmLaPi()) > tofNsigmaOmLaPi)
+            if (tofNsigmaOmLaPi < 100 && fabs(casc.tofNSigmaOmLaPi()) > tofNsigmaOmLaPi)
               continue;
-            if( tofNsigmaOmKa<100 && fabs(casc.tofNSigmaOmKa()) > tofNsigmaOmKa)
+            if (tofNsigmaOmKa < 100 && fabs(casc.tofNSigmaOmKa()) > tofNsigmaOmKa)
               continue;
             histos.fill(HIST("h2dMassOmegaPlus"), casc.pt(), casc.mOmega());
-          }    
+          }
         }
       }
     }
