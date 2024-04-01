@@ -528,8 +528,8 @@ struct lambdakzeropid {
             nSigmaNegativeK0ShortPi = (deltaTimeNegativeK0ShortPi - hMeanNegK0Pi->Interpolate(v0.pt())) / hSigmaNegK0Pi->Interpolate(v0.pt());
 
           v0tofnsigmas(
-            nSigmaPositiveLambdaPi, nSigmaPositiveLambdaPr,
-            nSigmaNegativeLambdaPi, nSigmaNegativeLambdaPr,
+            nSigmaPositiveLambdaPr, nSigmaNegativeLambdaPi,
+            nSigmaNegativeLambdaPr, nSigmaPositiveLambdaPi,
             nSigmaPositiveK0ShortPi, nSigmaNegativeK0ShortPi);
         }
 

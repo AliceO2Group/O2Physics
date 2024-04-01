@@ -54,12 +54,17 @@ namespace o2::analysis::dptdptfilter
 using DptDptFullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
 using DptDptFullTracksAmbiguous = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackCompColls>;
 using DptDptTracksPID = soa::Join<aod::pidTPCEl, aod::pidTPCMu, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>;
+using DptDptTracksFullPID = soa::Join<aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 using DptDptFullTracksPID = soa::Join<DptDptFullTracks, DptDptTracksPID>;
 using DptDptFullTracksPIDAmbiguous = soa::Join<DptDptFullTracksAmbiguous, DptDptTracksPID>;
+using DptDptFullTracksFullPID = soa::Join<DptDptFullTracks, DptDptTracksFullPID>;
+using DptDptFullTracksFullPIDAmbiguous = soa::Join<DptDptFullTracksAmbiguous, DptDptTracksFullPID>;
 using DptDptFullTracksDetLevel = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>;
 using DptDptFullTracksDetLevelAmbiguous = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::TrackCompColls>;
 using DptDptFullTracksPIDDetLevel = soa::Join<DptDptFullTracksDetLevel, DptDptTracksPID>;
 using DptDptFullTracksPIDDetLevelAmbiguous = soa::Join<DptDptFullTracksDetLevelAmbiguous, DptDptTracksPID>;
+using DptDptFullTracksFullPIDDetLevel = soa::Join<DptDptFullTracksDetLevel, DptDptTracksFullPID>;
+using DptDptFullTracksFullPIDDetLevelAmbiguous = soa::Join<DptDptFullTracksDetLevelAmbiguous, DptDptTracksFullPID>;
 
 bool fullDerivedData = false; /* produce full derived data for its external storage */
 
@@ -171,6 +176,7 @@ struct DptDptFilter {
   Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
   Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB, None. Default MB"};
   Configurable<std::string> cfgCentSpec{"centralities", "00-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
+  Configurable<float> cfgOverallMinP{"overallminp", 0.0f, "The overall minimum momentum for the analysis. Default: 0.0"};
   Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
                                                            {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
                                                            "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
@@ -204,7 +210,11 @@ struct DptDptFilter {
     zvtxup = cfgBinning->mZVtxmax;
     /* the track types and combinations */
     /* the centrality/multiplicity estimation */
-    fCentMultEstimator = getCentMultEstimator(cfgCentMultEstimator);
+    if (doprocessWithoutCent || doprocessWithoutCentDetectorLevel || doprocessWithoutCentGeneratorLevel) {
+      fCentMultEstimator = kNOCM;
+    } else {
+      fCentMultEstimator = getCentMultEstimator(cfgCentMultEstimator);
+    }
     /* the trigger selection */
     fTriggerSelection = getTriggerSelection(cfgTriggSel);
     traceCollId0 = cfgTraceCollId0;
@@ -284,15 +294,6 @@ struct DptDptFilter {
   void processWithoutCent(aod::CollisionEvSel const& collision, DptDptFullTracks const& ftracks);
   PROCESS_SWITCH(DptDptFilter, processWithoutCent, "Process reco without centrality", false);
 
-  void processWithCentPID(aod::CollisionEvSelCent const& collision, DptDptFullTracksPID const& ftracks);
-  PROCESS_SWITCH(DptDptFilter, processWithCentPID, "Process PID reco with centrality", false);
-
-  void processWithRun2CentPID(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksPID const& ftracks);
-  PROCESS_SWITCH(DptDptFilter, processWithRun2CentPID, "Process PID reco with centrality", false);
-
-  void processWithoutCentPID(aod::CollisionEvSel const& collision, DptDptFullTracksPID const& ftracks);
-  PROCESS_SWITCH(DptDptFilter, processWithoutCentPID, "Process PID reco without centrality", false);
-
   void processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&);
   PROCESS_SWITCH(DptDptFilter, processWithCentDetectorLevel, "Process MC detector level with centrality", false);
 
@@ -301,15 +302,6 @@ struct DptDptFilter {
 
   void processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&);
   PROCESS_SWITCH(DptDptFilter, processWithoutCentDetectorLevel, "Process MC detector level without centrality", false);
-
-  void processWithCentPIDDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&);
-  PROCESS_SWITCH(DptDptFilter, processWithCentPIDDetectorLevel, "Process PID MC detector level with centrality", false);
-
-  void processWithRun2CentPIDDetectorLevel(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&);
-  PROCESS_SWITCH(DptDptFilter, processWithRun2CentPIDDetectorLevel, "Process PID MC detector level with centrality", false);
-
-  void processWithoutCentPIDDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&);
-  PROCESS_SWITCH(DptDptFilter, processWithoutCentPIDDetectorLevel, "Process PID MC detector level without centrality", false);
 
   template <typename CollisionObject, typename ParticlesList>
   void processGenerated(CollisionObject const& mccollision, ParticlesList const& mcparticles, float centormult);
@@ -390,21 +382,6 @@ void DptDptFilter::processWithoutCent(aod::CollisionEvSel const& collision, DptD
   processReconstructed(collision, ftracks, 50.0);
 }
 
-void DptDptFilter::processWithCentPID(aod::CollisionEvSelCent const& collision, DptDptFullTracksPID const& ftracks)
-{
-  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
-}
-
-void DptDptFilter::processWithRun2CentPID(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksPID const& ftracks)
-{
-  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
-}
-
-void DptDptFilter::processWithoutCentPID(aod::CollisionEvSel const& collision, DptDptFullTracksPID const& ftracks)
-{
-  processReconstructed(collision, ftracks, 50.0);
-}
-
 void DptDptFilter::processWithCentDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&)
 {
   processReconstructed(collision, ftracks, getCentMultPercentile(collision));
@@ -416,21 +393,6 @@ void DptDptFilter::processWithRun2CentDetectorLevel(aod::CollisionEvSelRun2Cent 
 }
 
 void DptDptFilter::processWithoutCentDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksDetLevel const& ftracks, aod::McParticles const&)
-{
-  processReconstructed(collision, ftracks, 50.0);
-}
-
-void DptDptFilter::processWithCentPIDDetectorLevel(aod::CollisionEvSelCent const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&)
-{
-  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
-}
-
-void DptDptFilter::processWithRun2CentPIDDetectorLevel(aod::CollisionEvSelRun2Cent const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&)
-{
-  processReconstructed(collision, ftracks, getCentMultPercentile(collision));
-}
-
-void DptDptFilter::processWithoutCentPIDDetectorLevel(aod::CollisionEvSel const& collision, DptDptFullTracksPIDDetLevel const& ftracks, aod::McParticles const&)
 {
   processReconstructed(collision, ftracks, 50.0);
 }
@@ -557,7 +519,7 @@ struct DptDptFilterTracks {
   Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
   Configurable<float> cfgTraceOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
   Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 No PID, 1 PID, 2 mcparticle. Default 0"};
-  Configurable<o2::analysis::TrackSelectionCfg> cfgTrackSelection{"tracksel", {false, false, 0, 70, 0.8, 2.4, 3.2}, "Track selection: {useit: true/false, ongen: true/false, tpccls, tpcxrws, tpcxrfc, dcaxy, dcaz}. Default {false,0.70.0.8,2.4,3.2}"};
+  Configurable<o2::analysis::TrackSelectionTuneCfg> cfgTuneTrackSelection{"tunetracksel", {}, "Track selection: {useit: true/false, tpccls-useit, tpcxrws-useit, tpcxrfc-useit, dcaxy-useit, dcaz-useit}. Default {false,0.70,false,0.8,false,2.4,false,3.2,false}"};
   Configurable<o2::analysis::TrackSelectionPIDCfg> cfgPionPIDSelection{"pipidsel",
                                                                        {},
                                                                        "PID criteria for pions"};
@@ -586,6 +548,7 @@ struct DptDptFilterTracks {
 
     /* update with the configurable values */
     /* self configure the binning */
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "overallminp", overallminp, false);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins, false);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow, false);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmax", zvtxup, false);
@@ -604,39 +567,10 @@ struct DptDptFilterTracks {
 
     /* the track types and combinations */
     tracktype = cfgTrackType.value;
-    initializeTrackSelection();
+    initializeTrackSelection(cfgTuneTrackSelection);
     traceDCAOutliers = cfgTraceDCAOutliers;
     traceOutOfSpeciesParticles = cfgTraceOutOfSpeciesParticles;
     recoIdMethod = cfgRecoIdMethod;
-    if (cfgTrackSelection->mUseIt) {
-      useOwnTrackSelection = true;
-      if (cfgTrackSelection->mOnGen) {
-        useOwnParticleSelection = true;
-        particleMaxDCAxy = cfgTrackSelection->mDCAxy;
-        particleMaxDCAZ = cfgTrackSelection->mDCAz;
-      }
-      ownTrackSelection.ResetITSRequirements();
-      ownTrackSelection.SetMinNClustersTPC(cfgTrackSelection->mTPCclusters);
-      ownTrackSelection.SetMinNCrossedRowsTPC(cfgTrackSelection->mTPCxRows);
-      ownTrackSelection.SetMaxDcaXYPtDep([&](float) { return cfgTrackSelection->mDCAxy; });
-      ownTrackSelection.SetMaxDcaXY(cfgTrackSelection->mDCAxy);
-      ownTrackSelection.SetMaxDcaZ(cfgTrackSelection->mDCAz);
-      o2::aod::track::TrackTypeEnum ttype;
-      switch (tracktype) {
-        case 1:
-          ttype = o2::aod::track::Run2Track;
-          break;
-        case 3:
-          ttype = o2::aod::track::Track;
-          break;
-        default:
-          ttype = o2::aod::track::Track;
-          break;
-      }
-      ownTrackSelection.SetTrackType(ttype);
-    } else {
-      useOwnTrackSelection = false;
-    }
 
     /* self configure system type and data type */
     /* if the system type is not known at this time, we have to put the initialization somewhere else */
@@ -1025,11 +959,23 @@ struct DptDptFilterTracks {
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithPID, "Not stored derived data track filtering", false)
 
+  void filterRecoWithFullPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksFullPID const& tracks)
+  {
+    filterTracks(collisions, tracks);
+  }
+  PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithFullPID, "Not stored derived data track filtering", false)
+
   void filterRecoWithPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDAmbiguous const& tracks)
   {
     filterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithPIDAmbiguous, "Not stored derived data track filtering with ambiguous tracks check", false)
+
+  void filterRecoWithFullPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksFullPIDAmbiguous const& tracks)
+  {
+    filterTracks(collisions, tracks);
+  }
+  PROCESS_SWITCH(DptDptFilterTracks, filterRecoWithFullPIDAmbiguous, "Not stored derived data track filtering with ambiguous tracks check", false)
 
   void filterDetectorLevelWithPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevel const& tracks, aod::McParticles const&)
   {
@@ -1037,11 +983,23 @@ struct DptDptFilterTracks {
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithPID, "Not stored derived data detector level track filtering", false)
 
+  void filterDetectorLevelWithFullPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksFullPIDDetLevel const& tracks, aod::McParticles const&)
+  {
+    filterTracks(collisions, tracks);
+  }
+  PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithFullPID, "Not stored derived data detector level track filtering", false)
+
   void filterDetectorLevelWithPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksPIDDetLevelAmbiguous const& tracks, aod::McParticles const&)
   {
     filterTracks(collisions, tracks);
   }
   PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithPIDAmbiguous, "Not stored derived data detector level track filtering with ambiguous tracks check", false)
+
+  void filterDetectorLevelWithFullPIDAmbiguous(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>& collisions, DptDptFullTracksFullPIDDetLevelAmbiguous const& tracks, aod::McParticles const&)
+  {
+    filterTracks(collisions, tracks);
+  }
+  PROCESS_SWITCH(DptDptFilterTracks, filterDetectorLevelWithFullPIDAmbiguous, "Not stored derived data detector level track filtering with ambiguous tracks check", false)
 
   void filterRecoWithoutPID(soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo> const& collisions, DptDptFullTracks const& tracks)
   {
@@ -1083,7 +1041,7 @@ int8_t DptDptFilterTracks::trackIdentification(TrackObject const& track)
   if (recoIdMethod == 0) {
     sp = 0;
   } else if (recoIdMethod == 1) {
-    if constexpr (framework::has_type_v<aod::pidtpc_tiny::TPCNSigmaStorePi, typename TrackObject::all_columns>) {
+    if constexpr (framework::has_type_v<aod::pidtpc_tiny::TPCNSigmaStorePi, typename TrackObject::all_columns> || framework::has_type_v<aod::pidtpc::TPCNSigmaPi, typename TrackObject::all_columns>) {
       sp = pidselector.whichSpecies(track);
     } else {
       LOGF(fatal, "Track identification required but PID information not present");

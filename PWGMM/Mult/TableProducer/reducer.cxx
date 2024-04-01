@@ -44,7 +44,9 @@ struct Reducer {
   Preslice<aod::McParticles> perMCc = aod::mcparticle::mcCollisionId;
   Preslice<aod::Tracks> perC = aod::track::collisionId;
 
+  std::random_device rd;
   std::mt19937 randomgen;
+  std::uniform_real_distribution<float> dist;
 
   std::vector<int64_t> usedMCCs;
   std::vector<int64_t> usedLabels;
@@ -68,8 +70,7 @@ struct Reducer {
 
   void init(InitContext const&)
   {
-    std::random_device randomdevice;
-    randomgen.seed(randomdevice());
+    randomgen.seed(rd());
     LOGP(debug, ">>> Starting with params: {}, {}, {}, {}, {}, {}, {}", params->get((int)0, int(0)), params->get((int)0, 1), params->get((int)0, 2),
          params->get((int)0, 3), params->get((int)0, 4), params->get((int)0, 5), params->get((int)0, 6));
   }
@@ -90,16 +91,16 @@ struct Reducer {
         weights[i] = 1.f;
         LOGP(debug, ">>> keeping with weight {}", weights[i]);
       } else {
+        auto threshold = reductionFactor / value;
         // if the fraction of events at this multiplicity is greater than the reduction factor, randomly discard it or add with the weight
-        std::uniform_real_distribution<float> d(0, value);
-        auto r = d(randomgen);
+        auto r = dist(randomgen);
         LOGP(debug, ">>> die roll: {}", r);
-        if (r > reductionFactor) {
+        if (r > threshold) {
           // dicard
           LOGP(debug, ">>> discarding");
         } else {
           // keep
-          weights[i] = value / reductionFactor;
+          weights[i] = 1. / threshold;
           LOGP(debug, ">>> keeping with weight {}", weights[i]);
         }
       }

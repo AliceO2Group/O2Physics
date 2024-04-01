@@ -98,6 +98,11 @@ enum TriggerSelectionType {
 };
 
 //============================================================================================
+// The overall minimum momentum
+//============================================================================================
+float overallminp = 0.0f;
+
+//============================================================================================
 // The DptDptFilter configuration objects
 //============================================================================================
 int ptbins = 18;
@@ -156,7 +161,7 @@ inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdat
   return lst;
 }
 
-inline void initializeTrackSelection()
+inline void initializeTrackSelection(const TrackSelectionTuneCfg& tune)
 {
   switch (tracktype) {
     case 1: { /* Run2 global track */
@@ -206,8 +211,51 @@ inline void initializeTrackSelection()
       dca2Dcut = true;
       trackFilters.push_back(tpcOnly);
     } break;
+    case 30: { /* Run 3 default global track: kAny on 3 IB layers of ITS */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
+    } break;
+    case 31: { /* Run 3 global track: kTwo on 3 IB layers of ITS */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
+    } break;
+    case 32: { /* Run 3 global track: kAny on all 7 layers of ITS */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
+    } break;
+    case 33: { /* Run 3 global track: kAll on all 7 layers of ITS */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::Default)));
+    } break;
+    case 40: { /* Run 3 global track: kAny on 3 IB layers of ITS, tighter DCAxy */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+    } break;
+    case 41: { /* Run 3 global track: kTwo on 3 IB layers of ITS, tighter DCAxy */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibTwo, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+    } break;
+    case 42: { /* Run 3 global track: kAny on all 7 layers of ITS, tighter DCAxy */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSallAny, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+    } break;
+    case 43: { /* Run 3 global track: kAll on all 7 layers of ITS, tighter DCAxy */
+      trackFilters.push_back(new TrackSelection(getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::ppPass3)));
+    } break;
     default:
       break;
+  }
+  if (tune.mUseIt) {
+    for (auto filter : trackFilters) {
+      if (tune.mUseTPCclusters) {
+        filter->SetMinNClustersTPC(tune.mTPCclusters);
+      }
+      if (tune.mUseTPCxRows) {
+        filter->SetMinNCrossedRowsTPC(tune.mTPCxRows);
+      }
+      if (tune.mUseTPCXRoFClusters) {
+        filter->SetMinNCrossedRowsOverFindableClustersTPC(tune.mTPCXRoFClusters);
+      }
+      if (tune.mUseDCAxy) {
+        filter->SetMaxDcaXY(tune.mDCAxy);
+      }
+      if (tune.mUseDCAz) {
+        filter->SetMaxDcaZ(tune.mDCAz);
+      }
+    }
   }
 }
 
@@ -220,9 +268,6 @@ TriggerSelectionType fTriggerSelection = kMB;
 analysis::CheckRangeCfg traceDCAOutliers;
 bool traceOutOfSpeciesParticles = false;
 int recoIdMethod = 0;
-bool useOwnTrackSelection = false;
-TrackSelection ownTrackSelection = getGlobalTrackSelection();
-bool useOwnParticleSelection = false;
 float particleMaxDCAxy = 999.9f;
 float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
@@ -686,9 +731,7 @@ inline bool matchTrackType(TrackObject const& track)
 {
   using namespace o2::aod::track;
 
-  if (useOwnTrackSelection) {
-    return ownTrackSelection.IsSelected(track);
-  } else if (tracktype == 4) {
+  if (tracktype == 4) {
     // under tests MM track selection
     // see: https://indico.cern.ch/event/1383788/contributions/5816953/attachments/2805905/4896281/TrackSel_GlobalTracks_vs_MMTrackSel.pdf
     // it should be equivalent to this
@@ -722,6 +765,11 @@ inline bool matchTrackType(TrackObject const& track)
 template <typename TrackObject>
 inline bool InTheAcceptance(TrackObject const& track)
 {
+  /* overall minimum momentum cut for the analysis */
+  if (!(overallminp < track.p())) {
+    return false;
+  }
+
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
     if (track.mcParticleId() < 0) {
       return false;
@@ -779,29 +827,18 @@ inline float getCharge(ParticleObject& particle)
 template <typename ParticleObject, typename MCCollisionObject>
 inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision)
 {
+  /* overall momentum cut */
+  if (!(overallminp < particle.p())) {
+    return false;
+  }
+
   float charge = getCharge(particle);
 
   if (particle.isPhysicalPrimary()) {
     if ((particle.mcCollisionId() == 0) && traceCollId0) {
       LOGF(info, "Particle %d passed isPhysicalPrimary", particle.globalIndex());
     }
-    if (useOwnParticleSelection) {
-      float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
-      float dcaz = TMath::Abs(particle.vz() - collision.posZ());
-      if (!((dcaxy < particleMaxDCAxy) && (dcaz < particleMaxDCAZ))) {
-        if ((particle.mcCollisionId() == 0) && traceCollId0) {
-          LOGF(info, "Rejecting particle with dcaxy: %.2f and dcaz: %.2f", dcaxy, dcaz);
-          LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", particle.mcCollisionId(), collision.globalIndex());
-          LOGF(info, "   Collision x: %.5f, y: %.5f, z: %.5f", collision.posX(), collision.posY(), collision.posZ());
-          LOGF(info, "   Particle x: %.5f, y: %.5f, z: %.5f", particle.vx(), particle.vy(), particle.vz());
-          LOGF(info, "   index: %d, pdg code: %d", particle.globalIndex(), particle.pdgCode());
 
-          exploreMothers(particle, collision);
-        }
-        return false;
-      }
-    }
     if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
       return (charge != 0) ? true : false;
     }

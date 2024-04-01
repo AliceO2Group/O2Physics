@@ -62,6 +62,12 @@ struct AssociateMCInfo {
     hEventCounter->GetXaxis()->SetBinLabel(2, "has mc collision");
     registry.add<TH2>("PCM/hXY", "hRxy;X (cm);Y (cm)", kTH2F, {{400, -100, +100}, {400, -100, +100}});
     registry.add<TH2>("PCM/hRZ", "hRxy;R (cm);Z (cm)", kTH2F, {{400, -100, +100}, {200, 0, +100}});
+    registry.add<TH1>("Generated/hPt_Pi0", "pT distribution of #pi^{0};p_{T} (GeV/c)", kTH1F, {{200, 0, 20}});
+    registry.add<TH1>("Generated/hPt_Eta", "pT distribution of #eta;p_{T} (GeV/c)", kTH1F, {{200, 0, 20}});
+    registry.add<TH1>("Generated/hPt_ChargedPion", "pT distribution of #pi^{#pm};p_{T} (GeV/c)", kTH1F, {{200, 0, 20}});
+    registry.add<TH1>("Generated/hPt_ChargedKaon", "pT distribution of K^{#pm};p_{T} (GeV/c)", kTH1F, {{200, 0, 20}});
+    registry.add<TH1>("Generated/hPt_K0S", "pT distribution of K0S;p_{T} (GeV/c)", kTH1F, {{200, 0, 20}});
+    registry.add<TH1>("Generated/hPt_Lambda", "pT distribution of #Lambda(#bar{#Lambda});p_{T} (GeV/c)", kTH1F, {{200, 0, 20}});
   }
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
@@ -110,6 +116,32 @@ struct AssociateMCInfo {
           continue;
         }
         int pdg = mctrack.pdgCode();
+
+        // fill basic histograms
+        if ((mctrack.isPhysicalPrimary() || mctrack.producedByGenerator()) && abs(mctrack.y()) < 0.5) {
+          switch (abs(pdg)) {
+            case 111:
+              registry.fill(HIST("Generated/hPt_Pi0"), mctrack.pt());
+              break;
+            case 211:
+              registry.fill(HIST("Generated/hPt_ChargedPion"), mctrack.pt());
+              break;
+            case 221:
+              registry.fill(HIST("Generated/hPt_Eta"), mctrack.pt());
+              break;
+            case 310:
+              registry.fill(HIST("Generated/hPt_K0S"), mctrack.pt());
+              break;
+            case 321:
+              registry.fill(HIST("Generated/hPt_ChargedKaon"), mctrack.pt());
+              break;
+            case 3122:
+              registry.fill(HIST("Generated/hPt_Lambda"), mctrack.pt());
+              break;
+            default:
+              break;
+          }
+        }
 
         // Note that pi0 from weak decay gives producedByGenerator() = false
         if (

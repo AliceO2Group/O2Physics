@@ -143,9 +143,9 @@ struct skimmerDalitzEE {
         float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), collision.bz());
         float opangle = getOpeningAngle(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
 
-        if (!std::isfinite(phiv)) {
-          LOGF(info, "t1.px() = %f, t1.py() = %f, t1.pz() = %f, t2.px() = %f, t2.py() = %f, t2.pz() = %f", t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
-        }
+        // if (!std::isfinite(phiv)) {
+        //   LOGF(info, "t1.px() = %f, t1.py() = %f, t1.pz() = %f, t2.px() = %f, t2.py() = %f, t2.pz() = %f", t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
+        // }
 
         if constexpr (isCEFP) {
           dalitzees(collision.globalIndex(), t1.globalIndex(), t2.globalIndex(), v12.Pt(), v12.Eta(), v12.Phi() > 0 ? v12.Phi() : v12.Phi() + TMath::TwoPi(), v12.M(), v12.Rapidity(), phiv, opangle, static_cast<int>(pairtype));

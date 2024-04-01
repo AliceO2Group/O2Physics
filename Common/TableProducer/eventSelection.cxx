@@ -41,7 +41,8 @@ struct BcSelectionTask {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<int> confTriggerBcShift{"triggerBcShift", 999, "set to 294 for apass2/apass3 in LHC22o-t"};
-  Configurable<int> confITSROFrameBorderMargin{"ITSROFrameBorderMargin", 30, "Number of bcs at the end of ITS RO Frame border"};
+  Configurable<int> confITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", 10, "Number of bcs at the start of ITS RO Frame border"};
+  Configurable<int> confITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", 20, "Number of bcs at the end of ITS RO Frame border"};
   Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", 350, "Number of bcs to cut at the start of the Time Frame"};
   Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", 4000, "Number of bcs to cut at the end of the Time Frame"};
 
@@ -339,7 +340,7 @@ struct BcSelectionTask {
       // 2bc margin is also introduced at ehe beginning of ITS RO Frame to account for the uncertainty of the roFrameBiasInBC
       uint16_t bcInITSROF = (globalBC + 3564 - alppar->roFrameBiasInBC) % alppar->roFrameLengthInBC;
       LOGP(debug, "bcInITSROF={}", bcInITSROF);
-      selection |= bcInITSROF > 1 && bcInITSROF < alppar->roFrameLengthInBC - confITSROFrameBorderMargin ? BIT(kNoITSROFrameBorder) : 0;
+      selection |= bcInITSROF > confITSROFrameStartBorderMargin && bcInITSROF < alppar->roFrameLengthInBC - confITSROFrameEndBorderMargin ? BIT(kNoITSROFrameBorder) : 0;
 
       // check if bc is far from the Time Frame borders
       int64_t bcInTF = (globalBC - bcSOR) % nBCsPerTF;
@@ -403,7 +404,7 @@ struct EventSelectionTask {
   Produces<aod::EvSels> evsel;
   Configurable<std::string> syst{"syst", "PbPb", "pp, pPb, Pbp, PbPb, XeXe"}; // TODO determine from AOD metadata or from CCDB
   Configurable<int> muonSelection{"muonSelection", 0, "0 - barrel, 1 - muon selection with pileup cuts, 2 - muon selection without pileup cuts"};
-  Configurable<int> customDeltaBC{"customDeltaBC", 0, "custom BC delta for FIT-collision matching"};
+  Configurable<float> maxDiffZvtxFT0vsPV{"maxDiffZvtxFT0vsPV", 1., "maximum difference (in cm) between z-vertex from FT0 and PV"};
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
   Partition<aod::Tracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
 
@@ -489,16 +490,16 @@ struct EventSelectionTask {
     // apply int7-like selections
     bool sel7 = 1;
     for (int i = 0; i < kNsel; i++) {
-      sel7 &= applySelection[i] ? TESTBIT(selection, i) : 1;
+      sel7 = sel7 && (applySelection[i] ? TESTBIT(selection, i) : 1);
     }
 
     // TODO introduce array of sel[0]... sel[8] or similar?
     bool sel8 = bc.selection_bit(kIsBBT0A) && bc.selection_bit(kIsBBT0C); // TODO apply other cuts for sel8
     bool sel1 = bc.selection_bit(kIsINT1);
-    sel1 &= bc.selection_bit(kNoBGV0A);
-    sel1 &= bc.selection_bit(kNoBGV0C);
-    sel1 &= bc.selection_bit(kNoTPCLaserWarmUp);
-    sel1 &= bc.selection_bit(kNoTPCHVdip);
+    sel1 = sel1 && bc.selection_bit(kNoBGV0A);
+    sel1 = sel1 && bc.selection_bit(kNoBGV0C);
+    sel1 = sel1 && bc.selection_bit(kNoTPCLaserWarmUp);
+    sel1 = sel1 && bc.selection_bit(kNoTPCHVdip);
 
     // INT1 (SPDFO>0 | V0A | V0C) minimum bias trigger logic used in pp2010 and pp2011
     bool isINT1period = bc.runNumber() <= 136377 || (bc.runNumber() >= 144871 && bc.runNumber() <= 159582);
@@ -516,7 +517,7 @@ struct EventSelectionTask {
   PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
   Preslice<FullTracksIU> perCollision = aod::track::collisionId;
-  void processRun3(aod::Collisions const& cols, FullTracksIU const& tracks, BCsWithBcSelsRun3 const& bcs)
+  void processRun3(aod::Collisions const& cols, FullTracksIU const& tracks, BCsWithBcSelsRun3 const& bcs, aod::FT0s const&)
   {
     int run = bcs.iteratorAt(0).runNumber();
     // extract bc pattern from CCDB for data or anchored MC only
@@ -560,6 +561,12 @@ struct EventSelectionTask {
       return;
     }
 
+    std::vector<int> vFoundBCindex(cols.size(), -1);       // indices of found bcs
+    std::vector<bool> vIsVertexITSTPC(cols.size(), 0);     // at least one of vertex contributors is ITS-TPC track
+    std::vector<bool> vIsVertexTOFmatched(cols.size(), 0); // at least one of vertex contributors is matched to TOF
+    std::vector<bool> vIsVertexTRDmatched(cols.size(), 0); // at least one of vertex contributors is matched to TRD
+    std::vector<int> vCollisionsPerBc(bcs.size(), 0);      // counter of collisions per found bc for pileup checks
+    // loop to find nearest bc with FT0 entry -> foundBC index
     for (auto& col : cols) {
       auto bc = col.bc_as<BCsWithBcSelsRun3>();
       int64_t meanBC = bc.globalBC();
@@ -567,10 +574,10 @@ struct EventSelectionTask {
       int64_t deltaBC = std::ceil(col.collisionTimeRes() / bcNS * 4);
 
       // count tracks of different types
-      int nITStracks = 0;
-      int nTPCtracks = 0;
+      int nITSTPCtracks = 0;
       int nTOFtracks = 0;
       int nTRDtracks = 0;
+      int nTRDnotTOFtracks = 0;
       double timeFromTOFtracks = 0;
       double timeFromTRDtracks = 0;
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
@@ -578,10 +585,10 @@ struct EventSelectionTask {
         if (!track.isPVContributor()) {
           continue;
         }
-        nITStracks += track.hasITS();
-        nTPCtracks += track.hasTPC();
+        nITSTPCtracks += track.hasITS() && track.hasTPC();
         nTOFtracks += track.hasTOF();
-        nTRDtracks += track.hasTRD() && !track.hasTOF();
+        nTRDtracks += track.hasTRD();
+        nTRDnotTOFtracks += track.hasTRD() && !track.hasTOF();
         // calculate average time using TOF and TRD tracks
         if (track.hasTOF()) {
           timeFromTOFtracks += track.trackTime();
@@ -589,15 +596,15 @@ struct EventSelectionTask {
           timeFromTRDtracks += track.trackTime();
         }
       }
-      LOGP(debug, "nContrib={} nITStracks={} nTPCtracks={} nTOFtracks={} nTRDtracks={}", col.numContrib(), nITStracks, nTPCtracks, nTOFtracks, nTRDtracks);
+      LOGP(debug, "nContrib={} nITSTPCtracks={} nTOFtracks={} nTRDtracks={} nTRDnotTOFtracks={}", col.numContrib(), nITSTPCtracks, nTOFtracks, nTRDtracks, nTRDnotTOFtracks);
 
-      if (nTRDtracks > 0) {
-        meanBC += TMath::Nint(timeFromTRDtracks / nTRDtracks / bcNS); // assign collision bc using TRD-matched tracks
-        deltaBC = 0;                                                  // use precise bc from TRD-matched tracks
+      if (nTRDnotTOFtracks > 0) {
+        meanBC += TMath::Nint(timeFromTRDtracks / nTRDnotTOFtracks / bcNS); // assign collision bc using TRD-matched tracks
+        deltaBC = 0;                                                        // use precise bc from TRD-matched tracks
       } else if (nTOFtracks > 0) {
         meanBC += TMath::FloorNint(timeFromTOFtracks / nTOFtracks / bcNS); // assign collision bc using TOF-matched tracks
         deltaBC = 4;                                                       // use precise bc from TOF tracks with +/-4 bc margin
-      } else if (nTPCtracks > 0) {
+      } else if (nITSTPCtracks > 0) {
         deltaBC += 30; // extend deltaBC for collisions built with ITS-TPC tracks only
       }
 
@@ -615,20 +622,38 @@ struct EventSelectionTask {
           bc.setCursor(indexClosestTOR);
         }
       }
-
       int32_t foundBC = bc.globalIndex();
+      int32_t colIndex = col.globalIndex();
+      LOGP(debug, "foundBC = {} globalBC = {}", foundBC, bc.globalBC());
+      vFoundBCindex[colIndex] = foundBC;
+      vIsVertexITSTPC[colIndex] = nITSTPCtracks > 0;
+      vIsVertexTOFmatched[colIndex] = nTOFtracks > 0;
+      vIsVertexTRDmatched[colIndex] = nTRDtracks > 0;
+      vCollisionsPerBc[foundBC]++;
+    }
+
+    for (auto& col : cols) {
+      int32_t colIndex = col.globalIndex();
+      int32_t foundBC = vFoundBCindex[colIndex];
+      auto bc = bcs.iteratorAt(foundBC);
       int32_t foundFT0 = bc.foundFT0Id();
       int32_t foundFV0 = bc.foundFV0Id();
       int32_t foundFDD = bc.foundFDDId();
       int32_t foundZDC = bc.foundZDCId();
 
-      LOGP(debug, "foundFT0 = {} globalBC = {}", foundFT0, bc.globalBC());
+      // compare zVtx from FT0 and from PV
+      bool isGoodZvtxFT0vsPV = bc.has_foundFT0() ? fabs(bc.foundFT0().posZ() - col.posZ()) < maxDiffZvtxFT0vsPV : 0;
 
       // copy alias decisions from bcsel table
       uint32_t alias = bc.alias_raw();
 
       // copy selection decisions from bcsel table
       uint64_t selection = bc.selection_raw();
+      selection |= vCollisionsPerBc[foundBC] <= 1 ? BIT(kNoSameBunchPileup) : 0;
+      selection |= vIsVertexITSTPC[colIndex] ? BIT(kIsVertexITSTPC) : 0;
+      selection |= vIsVertexTOFmatched[colIndex] ? BIT(kIsVertexTOFmatched) : 0;
+      selection |= vIsVertexTRDmatched[colIndex] ? BIT(kIsVertexTRDmatched) : 0;
+      selection |= isGoodZvtxFT0vsPV ? BIT(kIsGoodZvtxFT0vsPV) : 0;
 
       // apply int7-like selections
       bool sel7 = 0;

@@ -64,7 +64,7 @@ struct TaggingPi0MC {
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
 
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
-  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis", "Comma separated list of V0 photon cuts"};
+  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "qc", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_0_120_tpchadrejortofreq,mee_0_120_tpchadrejortofreq_lowB", "Comma separated list of Dalitz ee cuts"};
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
   Configurable<std::string> fConfigEMCCuts{"fConfigEMCCuts", "standard", "Comma separated list of EMCal photon cuts"};
@@ -365,7 +365,7 @@ struct TaggingPi0MC {
             int pi0id1 = IsXFromY(mcphoton1, mcparticles, 22, 111);
             if (pi0id1 > 0) {
               auto mcpi01 = mcparticles.iteratorAt(pi0id1);
-              if (IsPhysicalPrimary(mcpi01.emmcevent(), mcpi01, mcparticles)) {
+              if (mcpi01.isPhysicalPrimary() || mcpi01.producedByGenerator()) {
                 reinterpret_cast<TH1F*>(list_pcm->FindObject(Form("%s", cut1.GetName()))->FindObject("hPt_v0photon_Pi0_Primary"))->Fill(g1.pt());
               } else if (IsFromWD(mcpi01.emmcevent(), mcpi01, mcparticles)) {
                 reinterpret_cast<TH1F*>(list_pcm->FindObject(Form("%s", cut1.GetName()))->FindObject("hPt_v0photon_Pi0_FromWD"))->Fill(g1.pt());
@@ -439,7 +439,7 @@ struct TaggingPi0MC {
 
               if (pi0id > 0) {
                 auto mcpi0 = mcparticles.iteratorAt(pi0id);
-                if (IsPhysicalPrimary(mcpi0.emmcevent(), mcpi0, mcparticles)) {
+                if (mcpi0.isPhysicalPrimary() || mcpi0.producedByGenerator()) {
                   reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_Primary"))->Fill(v12.M(), v1.Pt());
                 } else if (IsFromWD(mcpi0.emmcevent(), mcpi0, mcparticles)) {
                   reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_FromWD"))->Fill(v12.M(), v1.Pt());
