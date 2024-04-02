@@ -194,14 +194,14 @@ struct JetChCorr {
       int found1 = 0;
       int found2 = 0;
       for (unsigned int j = 0; j < constituents1.size(); j++) {
-        //cout<<constituents1[j].user_index()-1<<", ";
+        // cout<<constituents1[j].user_index()-1<<", ";
         if ((n_trackL == (constituents1[j].user_index() - 1)) || (trackL == (constituents1[j].user_index() - 1)))
           found1++;
       }
       // cout<<endl;
       // cout<<"in subJET2 ********************************************* "<<endl;
       for (unsigned int j = 0; j < constituents2.size(); j++) {
-        //cout<<constituents2[j].user_index()-1<<", ";
+        // cout<<constituents2[j].user_index()-1<<", ";
         if ((n_trackL == constituents2[j].user_index() - 1) || (trackL == constituents2[j].user_index() - 1))
           found2++;
       }
@@ -367,9 +367,9 @@ struct JetChCorr {
         float z = v2.Perp(vR.Orthogonal()) / (v1.Perp(vR.Orthogonal()) + v2.Perp(vR.Orthogonal()));
         float fT = ((2. * z * (1 - z) * vR.Mag()) / v1.Perp2(vR)) / 6.;
         float kt_p = v1.Perp(vR);
-        //float th_p  = v1.Angle(v2);
-        //cout<<z<< " "<<fT<<"  "<<kt_p<<"  "<<th_p<<endl;
-        //cout<<ch_l<<"  "<<ch_nl<<endl;
+        // float th_p  = v1.Angle(v2);
+        // cout<<z<< " "<<fT<<"  "<<kt_p<<"  "<<th_p<<endl;
+        // cout<<ch_l<<"  "<<ch_nl<<endl;
         if (ch_l == ch_nl) {
           registry.fill(HIST("h_ch_s_pt"), jet.pt());
           registry.fill(HIST("h_ch_s_kt"), kt_p);
