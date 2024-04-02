@@ -20,8 +20,8 @@
 
 #include <vector>
 
-#include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector4D.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisDataModel.h"
