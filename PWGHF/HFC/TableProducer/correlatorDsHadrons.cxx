@@ -170,8 +170,10 @@ struct HfCorrelatorDsHadrons {
 
   enum CandidateStep { kCandidateStepMcGenAll = 0,
                        kCandidateStepMcGenDsToKKPi,
-                       kCandidateStepMcGenInAcceptance,
+                       kCandidateStepMcCandInAcceptance,
+                       kCandidateStepMcDaughtersInAcceptance,
                        kCandidateStepMcReco,
+                       kCandidateStepMcRecoInAcceptance,
                        kCandidateNSteps };
 
   enum AssocTrackStep { kAssocTrackStepMcGen = 0,
@@ -251,7 +253,7 @@ struct HfCorrelatorDsHadrons {
     registry.add("hEtaMcGen", "Ds,Hadron particles - MC Gen", {HistType::kTH1F, {axisEta}});
     registry.add("hPhiMcGen", "Ds,Hadron particles - MC Gen", {HistType::kTH1F, {axisPhi}});
     // Histograms for efficiencies
-    auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPtD, axisMultFT0M, {RecoDecay::OriginType::NonPrompt + 1, RecoDecay::OriginType::None - 0.5, RecoDecay::OriginType::NonPrompt + 0.5}}, kCandidateNSteps});
+    auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPtD, axisMultFT0M, {RecoDecay::OriginType::NonPrompt + 1, +RecoDecay::OriginType::None - 0.5, +RecoDecay::OriginType::NonPrompt + 0.5}}, kCandidateNSteps});
     hCandidates->GetAxis(0)->SetTitle("#it{p}_{T} (GeV/#it{c})");
     hCandidates->GetAxis(1)->SetTitle("multiplicity");
     hCandidates->GetAxis(2)->SetTitle("Charm hadron origin");
@@ -518,6 +520,10 @@ struct HfCorrelatorDsHadrons {
         hCandidates->Fill(kCandidateStepMcGenAll, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
         if (std::abs(mcParticle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) {
           hCandidates->Fill(kCandidateStepMcGenDsToKKPi, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
+          auto yDs = RecoDecay::y(std::array{mcParticle.px(), mcParticle.py(), mcParticle.pz()}, o2::constants::physics::MassDS);
+          if (std::abs(yDs) <= yCandMax) {
+            hCandidates->Fill(kCandidateStepMcCandInAcceptance, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
+          }
           bool inAcceptance = true;
           auto daughters = mcParticle.template daughters_as<CandDsMcGen>();
           for (const auto& daughter : daughters) {
@@ -526,7 +532,7 @@ struct HfCorrelatorDsHadrons {
             }
           }
           if (inAcceptance) {
-            hCandidates->Fill(kCandidateStepMcGenInAcceptance, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
+            hCandidates->Fill(kCandidateStepMcDaughtersInAcceptance, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
             fillHistoMcGen(mcParticle);
           }
         }
@@ -544,6 +550,9 @@ struct HfCorrelatorDsHadrons {
         if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
           registry.fill(HIST("hPtCand"), candidate.pt());
           hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicity, candidate.originMcRec());
+          if (std::abs(hfHelper.yDs(candidate)) <= yCandMax) {
+            hCandidates->Fill(kCandidateStepMcRecoInAcceptance, candidate.pt(), multiplicity, candidate.originMcRec());
+          }
         }
       }
     }

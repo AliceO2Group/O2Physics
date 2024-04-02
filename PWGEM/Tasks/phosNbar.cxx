@@ -438,7 +438,7 @@ struct phosNbar {
       }
       // Find optimal region
       double maxCPA = -1;
-      int iMax;
+      int iMax = -1;
       for (int i = 0; i < npoints; i++) {
         if (st[i].first > maxCPA) {
           maxCPA = st[i].first;

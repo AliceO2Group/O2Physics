@@ -441,6 +441,10 @@ DECLARE_SOA_COLUMN(ImpactParameter0, impactParameter0, float);                  
 DECLARE_SOA_COLUMN(ErrorImpactParameter0, errorImpactParameter0, float);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterNormalised0, impactParameterNormalised0, //!
                            [](float dca, float err) -> float { return dca / err; });
+DECLARE_SOA_COLUMN(ImpactParameterZ0, impactParameterZ0, float);                     //!
+DECLARE_SOA_COLUMN(ErrorImpactParameterZ0, errorImpactParameterZ0, float);           //!
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterZNormalised0, impactParameterZNormalised0, //!
+                           [](float dca, float err) -> float { return dca / err; });
 DECLARE_SOA_COLUMN(PxProng1, pxProng1, float); //!
 DECLARE_SOA_COLUMN(PyProng1, pyProng1, float); //!
 DECLARE_SOA_COLUMN(PzProng1, pzProng1, float); //!
@@ -454,6 +458,10 @@ DECLARE_SOA_COLUMN(ImpactParameter1, impactParameter1, float);                  
 DECLARE_SOA_COLUMN(ErrorImpactParameter1, errorImpactParameter1, float);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterNormalised1, impactParameterNormalised1, //!
                            [](float dca, float err) -> float { return dca / err; });
+DECLARE_SOA_COLUMN(ImpactParameterZ1, impactParameterZ1, float);                     //!
+DECLARE_SOA_COLUMN(ErrorImpactParameterZ1, errorImpactParameterZ1, float);           //!
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterZNormalised1, impactParameterZNormalised1, //!
+                           [](float dca, float err) -> float { return dca / err; });
 DECLARE_SOA_COLUMN(PxProng2, pxProng2, float); //!
 DECLARE_SOA_COLUMN(PyProng2, pyProng2, float); //!
 DECLARE_SOA_COLUMN(PzProng2, pzProng2, float); //!
@@ -466,6 +474,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(PVectorProng2, pVectorProng2, //!
 DECLARE_SOA_COLUMN(ImpactParameter2, impactParameter2, float);                     //!
 DECLARE_SOA_COLUMN(ErrorImpactParameter2, errorImpactParameter2, float);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterNormalised2, impactParameterNormalised2, //!
+                           [](float dca, float err) -> float { return dca / err; });
+DECLARE_SOA_COLUMN(ImpactParameterZ2, impactParameterZ2, float);                     //!
+DECLARE_SOA_COLUMN(ErrorImpactParameterZ2, errorImpactParameterZ2, float);           //!
+DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterZNormalised2, impactParameterZNormalised2, //!
                            [](float dca, float err) -> float { return dca / err; });
 DECLARE_SOA_COLUMN(NProngsContributorsPV, nProngsContributorsPV, uint8_t); //! number of prongs contributing to the primary-vertex reconstruction
 // candidate properties
@@ -583,6 +595,8 @@ DECLARE_SOA_TABLE(HfCand2ProngBase, "AOD", "HFCAND2PBASE", //!
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
+                  hf_cand::ImpactParameterZ0, hf_cand::ImpactParameterZ1,
+                  hf_cand::ErrorImpactParameterZ0, hf_cand::ErrorImpactParameterZ1,
                   hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_cand::NProngsContributorsPV,
                   hf_track_index::HFflag,
                   /* dynamic columns */
@@ -846,6 +860,8 @@ DECLARE_SOA_TABLE(HfCand3ProngBase, "AOD", "HFCAND3PBASE", //!
                   hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1, hf_cand::ImpactParameter2,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1, hf_cand::ErrorImpactParameter2,
+                  hf_cand::ImpactParameterZ0, hf_cand::ImpactParameterZ1, hf_cand::ImpactParameterZ2,
+                  hf_cand::ErrorImpactParameterZ0, hf_cand::ErrorImpactParameterZ1, hf_cand::ErrorImpactParameterZ2,
                   hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_track_index::Prong2Id, hf_cand::NProngsContributorsPV,
                   hf_track_index::HFflag,
                   /* dynamic columns */

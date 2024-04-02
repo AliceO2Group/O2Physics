@@ -21,6 +21,7 @@
 #include <vector>
 #include <string>
 #include <optional>
+#include <algorithm>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -447,8 +448,8 @@ void fillHFCollisionTable(T const& collision, U const& candidates, V& HFCollisio
   }
 }
 
-template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O>
-void fillD0CandidateTable(T const& candidate, int32_t collisionIndex, U& D0BaseTable, V& D0ParTable, M& D0ParETable, N& D0SelectionFlagTable, O& D0MCDTable, int32_t& D0CandidateTableIndex)
+template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O, typename P>
+void fillD0CandidateTable(T const& candidate, int32_t collisionIndex, U& D0BaseTable, V& D0ParTable, M& D0ParETable, N& D0SelectionFlagTable, O& D0MlTable, P& D0MCDTable, int32_t& D0CandidateTableIndex)
 {
 
   D0BaseTable(collisionIndex, candidate.pt(), candidate.eta(), candidate.phi(), candidate.m());
@@ -511,11 +512,16 @@ void fillD0CandidateTable(T const& candidate, int32_t collisionIndex, U& D0BaseT
     D0MCDTable(candidate.flagMcMatchRec(), candidate.originMcRec());
   }
 
+  std::vector<float> mlScoresVector;
+  auto mlScoresSpan = candidate.mlScores();
+  std::copy(mlScoresSpan.begin(), mlScoresSpan.end(), std::back_inserter(mlScoresVector));
+  D0MlTable(mlScoresVector);
+
   D0CandidateTableIndex = D0BaseTable.lastIndex();
 }
 
-template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O>
-void fillLcCandidateTable(T const& candidate, int32_t collisionIndex, U& LcBaseTable, V& LcParTable, M& LcParETable, N& LcSelectionFlagTable, O& LcMCDTable, int32_t& LcCandidateTableIndex)
+template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O, typename P>
+void fillLcCandidateTable(T const& candidate, int32_t collisionIndex, U& LcBaseTable, V& LcParTable, M& LcParETable, N& LcSelectionFlagTable, O& LcMlTable, P& LcMCDTable, int32_t& LcCandidateTableIndex)
 {
 
   LcBaseTable(collisionIndex, candidate.pt(), candidate.eta(), candidate.phi(), candidate.m());
@@ -586,17 +592,22 @@ void fillLcCandidateTable(T const& candidate, int32_t collisionIndex, U& LcBaseT
     LcMCDTable(candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.isCandidateSwapped());
   }
 
+  std::vector<float> mlScoresVector;
+  auto mlScoresSpan = candidate.mlScores();
+  std::copy(mlScoresSpan.begin(), mlScoresSpan.end(), std::back_inserter(mlScoresVector));
+  LcMlTable(mlScoresVector);
+
   LcCandidateTableIndex = LcBaseTable.lastIndex();
 }
 
-template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O>
-void fillCandidateTable(T const& candidate, int32_t collisionIndex, U& HFBaseTable, V& HFParTable, M& HFParETable, N& HFSelectionFlagTable, O& HFMCDTable, int32_t& HFCandidateTableIndex)
+template <bool isMc, typename T, typename U, typename V, typename M, typename N, typename O, typename P>
+void fillCandidateTable(T const& candidate, int32_t collisionIndex, U& HFBaseTable, V& HFParTable, M& HFParETable, N& HFSelectionFlagTable, O& HFMlTable, P& HFMCDTable, int32_t& HFCandidateTableIndex)
 {
   if constexpr (isD0Candidate<T>()) {
-    fillD0CandidateTable<isMc>(candidate, collisionIndex, HFBaseTable, HFParTable, HFParETable, HFSelectionFlagTable, HFMCDTable, HFCandidateTableIndex);
+    fillD0CandidateTable<isMc>(candidate, collisionIndex, HFBaseTable, HFParTable, HFParETable, HFSelectionFlagTable, HFMlTable, HFMCDTable, HFCandidateTableIndex);
   }
   if constexpr (isLcCandidate<T>()) {
-    fillLcCandidateTable<isMc>(candidate, collisionIndex, HFBaseTable, HFParTable, HFParETable, HFSelectionFlagTable, HFMCDTable, HFCandidateTableIndex);
+    fillLcCandidateTable<isMc>(candidate, collisionIndex, HFBaseTable, HFParTable, HFParETable, HFSelectionFlagTable, HFMlTable, HFMCDTable, HFCandidateTableIndex);
   }
 }
 

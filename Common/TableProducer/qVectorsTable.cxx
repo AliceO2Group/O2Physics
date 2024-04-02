@@ -66,9 +66,9 @@ struct qVectorsTable {
   struct : ConfigurableGroup {
     Configurable<std::string> cfgURL{"cfgURL",
                                      "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-    Configurable<int> nolaterthan{"ccdb-no-later-than",
-                                  std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
-                                  "Latest acceptable timestamp of creation for the object"};
+    Configurable<int64_t> nolaterthan{"ccdb-no-later-than",
+                                      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(),
+                                      "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
 
   Configurable<int> cfgCentEsti{"cfgCentEsti",
@@ -218,7 +218,7 @@ struct qVectorsTable {
       }
 
       fullPath = cfgQvecCalibPath;
-      fullPath += "/FT0C"; // will be corrected
+      fullPath += "/FV0A";
       auto objfv0a = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
       if (!objfv0a) {
         if (cfgFV0ACorr->size() < 48) {
