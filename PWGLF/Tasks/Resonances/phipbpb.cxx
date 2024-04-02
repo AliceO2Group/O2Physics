@@ -76,6 +76,7 @@ struct phipbpb {
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentrality{"cfgCutCentrality", 80.0f, "Accepted maximum Centrality"};
   // track
+  Configurable<bool> fillRapidity{"fillRapidity", true, "fill rapidity bin"};
   Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use Global track"};
   Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0, "cut on Charge"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.2, "PT cut on daughter track"};
@@ -98,6 +99,7 @@ struct phipbpb {
   ConfigurableAxis configThnAxisCentrality{"configThnAxisCentrality", {8, 0., 80}, "Centrality"};
   ConfigurableAxis configThnAxisPhiminusPsi{"configThnAxisPhiminusPsi", {6, 0.0, TMath::Pi()}, "#phi - #psi"};
   ConfigurableAxis configThnAxisV2{"configThnAxisV2", {200, -1, 1}, "V2"};
+  ConfigurableAxis configThnAxisRapidity{"configThnAxisRapidity", {8, 0, 0.8}, "Rapidity"};
   ConfigurableAxis configThnAxisSA{"configThnAxisSA", {200, -1, 1}, "SA"};
   ConfigurableAxis configThnAxiscosthetaSA{"configThnAxiscosthetaSA", {200, 0, 1}, "costhetaSA"};
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
@@ -144,6 +146,7 @@ struct phipbpb {
     const AxisSpec thnAxisPhiminusPsi{configThnAxisPhiminusPsi, "#phi - #psi"};
     const AxisSpec thnAxisCentrality{configThnAxisCentrality, "Centrality (%)"};
     const AxisSpec thnAxisV2{configThnAxisV2, "V2"};
+    const AxisSpec thnAxisRapidity{configThnAxisRapidity, "Rapidity"};
     const AxisSpec thnAxisSA{configThnAxisSA, "SA"};
     const AxisSpec thnAxiscosthetaSA{configThnAxiscosthetaSA, "costhetaSA"};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
@@ -166,28 +169,34 @@ struct phipbpb {
     histos.add("hPsiTPC", "PsiTPC", kTH2F, {centAxis, phiAxis});
     histos.add("hPsiTPCR", "PsiTPCR", kTH2F, {centAxis, phiAxis});
     histos.add("hPsiTPCL", "PsiTPCL", kTH2F, {centAxis, phiAxis});
-
-    histos.add("hSparseV2SASameEvent_costhetastarOP", "hSparseV2SASameEvent_costhetastarOP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
-    histos.add("hSparseV2SASameEvent_costhetastarIP", "hSparseV2SASameEvent_costhetastarIP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
-    histos.add("hSparseV2SASameEvent_SA", "hSparseV2SASameEvent_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
-    histos.add("hSparseV2SASameEvent_costheta_SA", "hSparseV2SASameEvent_costheta_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxiscosthetaSA, thnAxisPhiminusPsi, thnAxisCentrality});
-    histos.add("hSparseV2SASameEvent_SA_A0", "hSparseV2SASameEvent_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
-    histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-
-    if (islike) {
-      histos.add("hSparseV2SASameEventlikepp_costhetastarOP", "hSparseV2SASameEventlikepp_costhetastarOP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEventlikepp_costhetastarIP", "hSparseV2SASameEventlikepp_costhetastarIP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEventlikemm_costhetastarOP", "hSparseV2SASameEventlikemm_costhetastarOP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEventlikemm_costhetastarIP", "hSparseV2SASameEventlikemm_costhetastarIP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
+    if (!fillRapidity) {
+      histos.add("hSparseV2SASameEvent_costhetastarOP", "hSparseV2SASameEvent_costhetastarOP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SASameEvent_costhetastarIP", "hSparseV2SASameEvent_costhetastarIP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SASameEvent_SA", "hSparseV2SASameEvent_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SASameEvent_costheta_SA", "hSparseV2SASameEvent_costheta_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxiscosthetaSA, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SASameEvent_SA_A0", "hSparseV2SASameEvent_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEvent_costhetastarOP", "hSparseV2SAMixedEvent_costhetastarOP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEvent_costhetastarIP", "hSparseV2SAMixedEvent_costhetastarIP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEvent_SA", "hSparseV2SAMixedEvent_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEvent_costheta_SA", "hSparseV2SAMixedEvent_costheta_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxiscosthetaSA, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEvent_SA_A0", "hSparseV2SAMixedEvent_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
     }
-
-    histos.add("hSparseV2SAMixedEvent_costhetastarOP", "hSparseV2SAMixedEvent_costhetastarOP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
-    histos.add("hSparseV2SAMixedEvent_costhetastarIP", "hSparseV2SAMixedEvent_costhetastarIP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
-    histos.add("hSparseV2SAMixedEvent_SA", "hSparseV2SAMixedEvent_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
-    histos.add("hSparseV2SAMixedEvent_costheta_SA", "hSparseV2SAMixedEvent_costheta_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxiscosthetaSA, thnAxisPhiminusPsi, thnAxisCentrality});
-    histos.add("hSparseV2SAMixedEvent_SA_A0", "hSparseV2SAMixedEvent_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
-    histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-
+    if (fillRapidity) {
+      histos.add("hSparseV2SASameEvent_costhetastarOP", "hSparseV2SASameEvent_costhetastarOP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2SASameEvent_costhetastarIP", "hSparseV2SASameEvent_costhetastarIP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2SASameEvent_SA", "hSparseV2SASameEvent_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2SASameEvent_costheta_SA", "hSparseV2SASameEvent_costheta_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxiscosthetaSA, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2SASameEvent_SA_A0", "hSparseV2SASameEvent_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEvent_costhetastarOP", "hSparseV2SAMixedEvent_costhetastarOP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEvent_costhetastarIP", "hSparseV2SAMixedEvent_costhetastarIP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEvent_SA", "hSparseV2SAMixedEvent_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEvent_costheta_SA", "hSparseV2SAMixedEvent_costheta_SA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxiscosthetaSA, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEvent_SA_A0", "hSparseV2SAMixedEvent_SA_A0", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+      histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+    }
     // histogram for resolution
     histos.add("ResFT0CTPC", "ResFT0CTPC", kTH2F, {centAxis, resAxis});
     histos.add("ResFT0CTPCR", "ResFT0CTPCR", kTH2F, {centAxis, resAxis});
@@ -201,19 +210,36 @@ struct phipbpb {
       histos.add("hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
       histos.add("h1PhiRecsplit", "Phi meson Rec split", kTH1F, {{100, 0.0f, 10.0f}});
       histos.add("CentPercentileMCRecHist", "MC Centrality", kTH1F, {{100, 0.0f, 100.0f}});
-      histos.add("hSparseV2SASameEvent_costhetastarOP_MCGen", "hSparseV2SASameEvent_costhetastarOP_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEvent_costhetastarIP_MCGen", "hSparseV2SASameEvent_costhetastarIP_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEvent_SA_MCGen", "hSparseV2SASameEvent_SA_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEvent_costheta_SA_MCGen", "hSparseV2SASameEvent_costheta_SA_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxiscosthetaSA, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEvent_SA_A0_MCGen", "hSparseV2SASameEvent_SA_A0_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEvent_V2_MCGen", "hSparseV2SASameEvent_V2_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+      if (!fillRapidity) {
+        histos.add("hSparseV2SASameEvent_costhetastarOP_MCGen", "hSparseV2SASameEvent_costhetastarOP_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_costhetastarIP_MCGen", "hSparseV2SASameEvent_costhetastarIP_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_SA_MCGen", "hSparseV2SASameEvent_SA_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_costheta_SA_MCGen", "hSparseV2SASameEvent_costheta_SA_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxiscosthetaSA, thnAxisPhiminusPsi, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_SA_A0_MCGen", "hSparseV2SASameEvent_SA_A0_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_V2_MCGen", "hSparseV2SASameEvent_V2_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
 
-      histos.add("hSparseV2SASameEvent_costhetastarOP_MCRec", "hSparseV2SASameEvent_costhetastarOP_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEvent_costhetastarIP_MCRec", "hSparseV2SASameEvent_costhetastarIP_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEvent_SA_MCRec", "hSparseV2SASameEvent_SA_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEvent_costheta_SA_MCRec", "hSparseV2SASameEvent_costheta_SA_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxiscosthetaSA, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEvent_SA_A0_MCRec", "hSparseV2SASameEvent_SA_A0_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
-      histos.add("hSparseV2SASameEvent_V2_MCRec", "hSparseV2SASameEvent_V2_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_costhetastarOP_MCRec", "hSparseV2SASameEvent_costhetastarOP_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_costhetastarIP_MCRec", "hSparseV2SASameEvent_costhetastarIP_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisPhiminusPsi, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_SA_MCRec", "hSparseV2SASameEvent_SA_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_costheta_SA_MCRec", "hSparseV2SASameEvent_costheta_SA_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxiscosthetaSA, thnAxisPhiminusPsi, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_SA_A0_MCRec", "hSparseV2SASameEvent_SA_A0_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_V2_MCRec", "hSparseV2SASameEvent_V2_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+      }
+      if (fillRapidity) {
+        histos.add("hSparseV2SASameEvent_costhetastarOP_MCGen", "hSparseV2SASameEvent_costhetastarOP_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisRapidity, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_costhetastarIP_MCGen", "hSparseV2SASameEvent_costhetastarIP_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisRapidity, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_SA_MCGen", "hSparseV2SASameEvent_SA_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_costheta_SA_MCGen", "hSparseV2SASameEvent_costheta_SA_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxiscosthetaSA, thnAxisRapidity, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_SA_A0_MCGen", "hSparseV2SASameEvent_SA_A0_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_V2_MCGen", "hSparseV2SASameEvent_V2_MCGen", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+
+        histos.add("hSparseV2SASameEvent_costhetastarOP_MCRec", "hSparseV2SASameEvent_costhetastarOP_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisRapidity, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_costhetastarIP_MCRec", "hSparseV2SASameEvent_costhetastarIP_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCosThetaStarOP, thnAxisRapidity, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_SA_MCRec", "hSparseV2SASameEvent_SA_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_costheta_SA_MCRec", "hSparseV2SASameEvent_costheta_SA_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxiscosthetaSA, thnAxisRapidity, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_SA_A0_MCRec", "hSparseV2SASameEvent_SA_A0_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisSA, thnAxisRapidity, thnAxisCentrality});
+        histos.add("hSparseV2SASameEvent_V2_MCRec", "hSparseV2SASameEvent_V2_MCRec", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
+      }
     }
     // Event selection cut additional - Alex
     if (additionalEvsel) {
@@ -443,12 +469,23 @@ struct phipbpb {
         auto cosThetaStarIP = eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2());
         auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
-        histos.fill(HIST("hSparseV2SASameEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
-        histos.fill(HIST("hSparseV2SASameEvent_costheta_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
-        histos.fill(HIST("hSparseV2SASameEvent_costhetastarIP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
-        histos.fill(HIST("hSparseV2SASameEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
-        histos.fill(HIST("hSparseV2SASameEvent_SA_A0"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
-        histos.fill(HIST("hSparseV2SASameEvent_V2"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+        if (!fillRapidity) {
+          histos.fill(HIST("hSparseV2SASameEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
+          histos.fill(HIST("hSparseV2SASameEvent_costheta_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
+          histos.fill(HIST("hSparseV2SASameEvent_costhetastarIP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
+          histos.fill(HIST("hSparseV2SASameEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
+          histos.fill(HIST("hSparseV2SASameEvent_SA_A0"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
+          histos.fill(HIST("hSparseV2SASameEvent_V2"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+        }
+
+        if (fillRapidity) {
+          histos.fill(HIST("hSparseV2SASameEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+          histos.fill(HIST("hSparseV2SASameEvent_costheta_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+          histos.fill(HIST("hSparseV2SASameEvent_costhetastarIP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+          histos.fill(HIST("hSparseV2SASameEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+          histos.fill(HIST("hSparseV2SASameEvent_SA_A0"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+          histos.fill(HIST("hSparseV2SASameEvent_V2"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+        }
       }
     }
   }
@@ -525,12 +562,22 @@ struct phipbpb {
         auto cosThetaStarIP = eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2());
         auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
-        histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
-        histos.fill(HIST("hSparseV2SAMixedEvent_costheta_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
-        histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarIP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
-        histos.fill(HIST("hSparseV2SAMixedEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
-        histos.fill(HIST("hSparseV2SAMixedEvent_SA_A0"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
-        histos.fill(HIST("hSparseV2SAMixedEvent_V2"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+        if (!fillRapidity) {
+          histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_costheta_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarIP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_SA_A0"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_V2"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+        }
+        if (fillRapidity) {
+          histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_costheta_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarIP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_SA_A0"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_V2"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+        }
       }
     }
   }
@@ -605,12 +652,22 @@ struct phipbpb {
         auto cosThetaStarIP = eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2());
         auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
-        histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
-        histos.fill(HIST("hSparseV2SAMixedEvent_costheta_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
-        histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarIP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
-        histos.fill(HIST("hSparseV2SAMixedEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
-        histos.fill(HIST("hSparseV2SAMixedEvent_SA_A0"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
-        histos.fill(HIST("hSparseV2SAMixedEvent_V2"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+        if (!fillRapidity) {
+          histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_costheta_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarIP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_SA_A0"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_V2"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+        }
+        if (fillRapidity) {
+          histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarOP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_costheta_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_costhetastarIP"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_SA"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_SA_A0"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+          histos.fill(HIST("hSparseV2SAMixedEvent_V2"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+        }
       }
     }
   }
@@ -747,12 +804,22 @@ struct phipbpb {
               auto cosThetaStarIP = eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2());
               auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
               auto v2 = TMath::Cos(2.0 * phiminuspsi);
-              histos.fill(HIST("hSparseV2SASameEvent_costhetastarOP_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
-              histos.fill(HIST("hSparseV2SASameEvent_costheta_SA_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
-              histos.fill(HIST("hSparseV2SASameEvent_costhetastarIP_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
-              histos.fill(HIST("hSparseV2SASameEvent_SA_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
-              histos.fill(HIST("hSparseV2SASameEvent_SA_A0_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
-              histos.fill(HIST("hSparseV2SASameEvent_V2_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+              if (!fillRapidity) {
+                histos.fill(HIST("hSparseV2SASameEvent_costhetastarOP_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
+                histos.fill(HIST("hSparseV2SASameEvent_costheta_SA_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
+                histos.fill(HIST("hSparseV2SASameEvent_costhetastarIP_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
+                histos.fill(HIST("hSparseV2SASameEvent_SA_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
+                histos.fill(HIST("hSparseV2SASameEvent_SA_A0_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
+                histos.fill(HIST("hSparseV2SASameEvent_V2_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+              }
+              if (fillRapidity) {
+                histos.fill(HIST("hSparseV2SASameEvent_costhetastarOP_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+                histos.fill(HIST("hSparseV2SASameEvent_costheta_SA_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+                histos.fill(HIST("hSparseV2SASameEvent_costhetastarIP_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+                histos.fill(HIST("hSparseV2SASameEvent_SA_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+                histos.fill(HIST("hSparseV2SASameEvent_SA_A0_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+                histos.fill(HIST("hSparseV2SASameEvent_V2_MCRec"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+              }
             }
           }
         }
@@ -798,12 +865,22 @@ struct phipbpb {
           auto cosThetaStarIP = TMath::Abs(eventplaneVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVec.Mag2()));
           auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
           auto v2 = TMath::Cos(2.0 * phiminuspsi);
-          histos.fill(HIST("hSparseV2SASameEvent_costhetastarOP_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
-          histos.fill(HIST("hSparseV2SASameEvent_costheta_SA_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
-          histos.fill(HIST("hSparseV2SASameEvent_costhetastarIP_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
-          histos.fill(HIST("hSparseV2SASameEvent_SA_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
-          histos.fill(HIST("hSparseV2SASameEvent_SA_A0_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
-          histos.fill(HIST("hSparseV2SASameEvent_V2_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+          if (!fillRapidity) {
+            histos.fill(HIST("hSparseV2SASameEvent_costhetastarOP_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, phiminuspsi, centrality);
+            histos.fill(HIST("hSparseV2SASameEvent_costheta_SA_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, phiminuspsi, centrality);
+            histos.fill(HIST("hSparseV2SASameEvent_costhetastarIP_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, phiminuspsi, centrality);
+            histos.fill(HIST("hSparseV2SASameEvent_SA_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, phiminuspsi, centrality);
+            histos.fill(HIST("hSparseV2SASameEvent_SA_A0_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, phiminuspsi, centrality);
+            histos.fill(HIST("hSparseV2SASameEvent_V2_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+          }
+          if (fillRapidity) {
+            histos.fill(HIST("hSparseV2SASameEvent_costhetastarOP_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+            histos.fill(HIST("hSparseV2SASameEvent_costheta_SA_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarOP * cosThetaStarOP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+            histos.fill(HIST("hSparseV2SASameEvent_costhetastarIP_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), cosThetaStarIP, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+            histos.fill(HIST("hSparseV2SASameEvent_SA_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+            histos.fill(HIST("hSparseV2SASameEvent_SA_A0_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), SA_A0, TMath::Abs(PhiMesonMother.Rapidity()), centrality);
+            histos.fill(HIST("hSparseV2SASameEvent_V2_MCGen"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2, centrality);
+          }
         }
       }
     } // rec collision loop

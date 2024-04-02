@@ -179,7 +179,7 @@ struct RobustFluctuationObservables {
         "TFcut",
         "ITSROFcut",
         // "ITSROF_TF_cuts",
-        "1globalPVcontrib",
+        // "1globalPVcontrib",
         "1globalPVcontrib_ITS7hits",
         "1globalPVcontrib_TRDorTOF",
         "diffFoundBC_vs_BC_0",
@@ -208,6 +208,8 @@ struct RobustFluctuationObservables {
 
         "isITSonlyVertex",
         "antiIsITSonlyVertex",
+
+        "kTVXinTRD",
 
         "ALL_CUTS_Handmade_ITSROFcut_Orbit_1_part",
         "ALL_CUTS_Handmade_ITSROFcut_Orbit_2_part",
@@ -451,6 +453,18 @@ struct RobustFluctuationObservables {
       histosEventTracksFoundBC.add("hFoundBC_kTVXinTRD_nITSTPCTRDtracks", "hFoundBC_kTVXinTRD_nITSTPCTRDtracks", kTH1D, {axisBC});
       histosEventTracksFoundBC.add("hFoundBC_kTVXinTRD_nITSTPCTOFtracks", "hFoundBC_kTVXinTRD_nITSTPCTOFtracks", kTH1D, {axisBC});
       histosEventTracksFoundBC.add("hFoundBC_kTVXinTRD_nITSTPCTRDTOFtracks", "hFoundBC_kTVXinTRD_nITSTPCTRDTOFtracks", kTH1D, {axisBC});
+
+      // to study ITS ROF dips vs multiplicity
+      histosEventTracksFoundBC.add("hFoundBC_kTVX_nITSTPCTRDtracks_mult_1_20", "hFoundBC_kTVX_nITSTPCTRDtracks_mult_1_20", kTH1D, {axisBC});
+      histosEventTracksFoundBC.add("hFoundBC_kTVX_nITSTPCTRDtracks_mult_20_100", "hFoundBC_kTVX_nITSTPCTRDtracks_mult_20_100", kTH1D, {axisBC});
+      histosEventTracksFoundBC.add("hFoundBC_kTVX_nITSTPCTRDtracks_mult_100_400", "hFoundBC_kTVX_nITSTPCTRDtracks_mult_100_400", kTH1D, {axisBC});
+      histosEventTracksFoundBC.add("hFoundBC_kTVX_nITSTPCTRDtracks_mult_above_400", "hFoundBC_kTVX_nITSTPCTRDtracks_mult_above_400", kTH1D, {axisBC});
+
+      // bcInTF
+      AxisSpec axisBCinTF32orbits{32 * 3564, -0.5, 32 * 3564, "bcInTF"};
+      histosEventTracksFoundBC.add("hBCinTF_kTVX_nTracksPV", "hBCinTF_kTVX_nTracksPV;bc in TF; n tracks", kTH1D, {axisBCinTF32orbits});
+      histosEventTracksFoundBC.add("hBCinTF_kTVX_nITSTPCTRDtracks", "hBCinTF_kTVX_nITSTPCTRDtracks;bc in TF; n tracks", kTH1D, {axisBCinTF32orbits});
+
     } // end of if flagIncludeQATracksInFoundBC
 
     // #### add QA histos via loop
@@ -764,128 +778,6 @@ struct RobustFluctuationObservables {
       }
     }
 
-    // ### special sub-loop over tracks for numerator of tracks / T0ampl ratios
-    if (collision.has_foundBC() && flagIncludeQATracksInFoundBC) {
-      int nAllTracks = 0;
-      int nTracksPV = 0;
-
-      int nITStracks = 0;
-      int nTPCtracks = 0;
-      int nTPCtracks_HandmadeITSROFcut = 0;
-      int nTOFtracks = 0;
-      int nTOFtracks_HandmadeITSROFcut = 0;
-      int nTRDtracks = 0;
-
-      int nTRDTOFtracks_HandmadeITSROFcut = 0;
-
-      int nTRDTOFtracks = 0;
-      int nITSTPCTRDtracks = 0;
-      int nITSTPCTOFtracks = 0;
-      int nITSTPCTRDTOFtracks = 0;
-
-      int nGlobalTracks = 0;
-
-      double timeFromTOFtracks = 0;
-      double timeFromTRDtracks = 0;
-
-      for (auto& track : tracks) {
-
-        nAllTracks++;
-        if (!track.isPVContributor()) {
-          continue;
-        }
-        nTracksPV++;
-
-        if (track.isGlobalTrack())
-          nGlobalTracks++;
-
-        nITStracks += track.hasITS() && !track.hasTPC();
-        nTPCtracks += track.hasTPC();
-        nTOFtracks += track.hasTOF();
-        nTRDtracks += track.hasTRD() && !track.hasTOF();
-
-        nTRDTOFtracks += track.hasTRD() && track.hasTOF();
-        nITSTPCTRDtracks += track.hasITS() && track.hasTPC() && track.hasTRD();
-        nITSTPCTOFtracks += track.hasITS() && track.hasTPC() && track.hasTOF();
-        nITSTPCTRDTOFtracks += track.hasITS() && track.hasTPC() && track.hasTOF() && track.hasTRD();
-
-        // if (flagBCisNotInHandmadeBoundariesITSROF)
-        if (flagFoundBCisNotInHandmadeBoundariesITSROF) {
-          nTPCtracks_HandmadeITSROFcut += track.hasTPC();
-          nTOFtracks_HandmadeITSROFcut += track.hasTOF();
-          nTRDTOFtracks_HandmadeITSROFcut += track.hasTRD() && track.hasTOF();
-        }
-
-        // calculate average time using TOF and TRD tracks
-        if (track.hasTOF()) {
-          timeFromTOFtracks += track.trackTime();
-        } else if (track.hasTRD()) {
-          timeFromTRDtracks += track.trackTime();
-        }
-      }
-
-      if (TFid < 2 && collBC < 200) {
-        if (nTOFtracks > 0)
-          LOGF(info, "QA: average timeFromTOFtracks = %.f", timeFromTOFtracks / nTOFtracks);
-        if (nTRDtracks > 0)
-          LOGF(info, "QA: average timeFromTRDtracks = %.f", timeFromTRDtracks / nTRDtracks);
-      }
-
-      // all collisions
-      histosEventTracksFoundBC.fill(HIST("hFoundBC_nAllTracks"), globalFoundBC, nAllTracks);
-      histosEventTracksFoundBC.fill(HIST("hFoundBC_nTracksPV"), globalFoundBC, nTracksPV);
-      histosEventTracksFoundBC.fill(HIST("hFoundBC_nGlobalTracks"), globalFoundBC, nGlobalTracks);
-      histosEventTracksFoundBC.fill(HIST("hFoundBC_nITStracks"), globalFoundBC, nITStracks);
-      histosEventTracksFoundBC.fill(HIST("hFoundBC_nTPCtracks"), globalFoundBC, nTPCtracks);
-      histosEventTracksFoundBC.fill(HIST("hFoundBC_nTOFtracks"), globalFoundBC, nTOFtracks);
-      histosEventTracksFoundBC.fill(HIST("hFoundBC_nTRDtracks"), globalFoundBC, nTRDtracks);
-
-      histosEventTracksFoundBC.fill(HIST("hFoundBC_nTPCtracks_HandmadeITSROFcut"), globalFoundBC, nTPCtracks_HandmadeITSROFcut);
-      histosEventTracksFoundBC.fill(HIST("hFoundBC_nTOFtracks_HandmadeITSROFcut"), globalFoundBC, nTOFtracks_HandmadeITSROFcut);
-      histosEventTracksFoundBC.fill(HIST("hFoundBC_nTRDTOFtracks_HandmadeITSROFcut"), globalFoundBC, nTRDTOFtracks_HandmadeITSROFcut);
-
-      histosEventTracksFoundBC.fill(HIST("hFoundBC_nTRDTOFtracks"), globalFoundBC, nTRDTOFtracks);
-      histosEventTracksFoundBC.fill(HIST("hFoundBC_nITSTPCTRDtracks"), globalFoundBC, nITSTPCTRDtracks);
-      histosEventTracksFoundBC.fill(HIST("hFoundBC_nITSTPCTOFtracks"), globalFoundBC, nITSTPCTOFtracks);
-      histosEventTracksFoundBC.fill(HIST("hFoundBC_nITSTPCTRDTOFtracks"), globalFoundBC, nITSTPCTRDTOFtracks);
-
-      // TVX collisions
-      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nAllTracks"), globalFoundBC, nAllTracks);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nTracksPV"), globalFoundBC, nTracksPV);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nGlobalTracks"), globalFoundBC, nGlobalTracks);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nITStracks"), globalFoundBC, nITStracks);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nTPCtracks"), globalFoundBC, nTPCtracks);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nTOFtracks"), globalFoundBC, nTOFtracks);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nTRDtracks"), globalFoundBC, nTRDtracks);
-
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nTPCtracks_HandmadeITSROFcut"), globalFoundBC, nTPCtracks_HandmadeITSROFcut);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nTOFtracks_HandmadeITSROFcut"), globalFoundBC, nTOFtracks_HandmadeITSROFcut);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nTRDTOFtracks_HandmadeITSROFcut"), globalFoundBC, nTRDTOFtracks_HandmadeITSROFcut);
-
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nTRDTOFtracks"), globalFoundBC, nTRDTOFtracks);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nITSTPCTRDtracks"), globalFoundBC, nITSTPCTRDtracks);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nITSTPCTOFtracks"), globalFoundBC, nITSTPCTOFtracks);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nITSTPCTRDTOFtracks"), globalFoundBC, nITSTPCTRDTOFtracks);
-      }
-
-      // TVXinTRD collisions
-      if (collision.alias_bit(kTVXinTRD)) {
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nAllTracks"), globalFoundBC, nAllTracks);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nTracksPV"), globalFoundBC, nTracksPV);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nGlobalTracks"), globalFoundBC, nGlobalTracks);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nITStracks"), globalFoundBC, nITStracks);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nTPCtracks"), globalFoundBC, nTPCtracks);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nTOFtracks"), globalFoundBC, nTOFtracks);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nTRDtracks"), globalFoundBC, nTRDtracks);
-
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nTRDTOFtracks"), globalFoundBC, nTRDTOFtracks);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nITSTPCTRDtracks"), globalFoundBC, nITSTPCTRDtracks);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nITSTPCTOFtracks"), globalFoundBC, nITSTPCTOFtracks);
-        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nITSTPCTRDTOFtracks"), globalFoundBC, nITSTPCTRDTOFtracks);
-      }
-    } // end of if has_foundBC
-
     double vZ = collision.posZ();
 
     // #### values for 2D histogram axes
@@ -1132,6 +1024,142 @@ struct RobustFluctuationObservables {
       histosEventBcInTF.fill(HIST("hNumContrib_vs_bcInTF_BEFORE_SEL8_AND_Vz_ReallyAllContrib"), bcInTF, collision.numContrib());
       histosEventBcInTF.fill(HIST("hIsTriggerTVX_vs_bcInTF_BEFORE_SEL8_AND_Vz"), bcInTF, collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) ? 1 : 0);
     }
+
+    // ### special sub-loop over tracks for numerator of tracks / T0ampl ratios
+    if (collision.has_foundBC() && flagIncludeQATracksInFoundBC) {
+      int nAllTracks = 0;
+      int nTracksPV = 0;
+
+      int nITStracks = 0;
+      int nTPCtracks = 0;
+      int nTPCtracks_HandmadeITSROFcut = 0;
+      int nTOFtracks = 0;
+      int nTOFtracks_HandmadeITSROFcut = 0;
+      int nTRDtracks = 0;
+
+      int nTRDTOFtracks_HandmadeITSROFcut = 0;
+
+      int nTRDTOFtracks = 0;
+      int nITSTPCTRDtracks = 0;
+      int nITSTPCTOFtracks = 0;
+      int nITSTPCTRDTOFtracks = 0;
+
+      int nGlobalTracks = 0;
+
+      double timeFromTOFtracks = 0;
+      double timeFromTRDtracks = 0;
+
+      for (auto& track : tracks) {
+
+        nAllTracks++;
+        if (!track.isPVContributor()) {
+          continue;
+        }
+        nTracksPV++;
+
+        if (track.isGlobalTrack())
+          nGlobalTracks++;
+
+        nITStracks += track.hasITS() && !track.hasTPC();
+        nTPCtracks += track.hasTPC();
+        nTOFtracks += track.hasTOF();
+        nTRDtracks += track.hasTRD() && !track.hasTOF();
+
+        nTRDTOFtracks += track.hasTRD() && track.hasTOF();
+        nITSTPCTRDtracks += track.hasITS() && track.hasTPC() && track.hasTRD();
+        nITSTPCTOFtracks += track.hasITS() && track.hasTPC() && track.hasTOF();
+        nITSTPCTRDTOFtracks += track.hasITS() && track.hasTPC() && track.hasTOF() && track.hasTRD();
+
+        // if (flagBCisNotInHandmadeBoundariesITSROF)
+        if (flagFoundBCisNotInHandmadeBoundariesITSROF) {
+          nTPCtracks_HandmadeITSROFcut += track.hasTPC();
+          nTOFtracks_HandmadeITSROFcut += track.hasTOF();
+          nTRDTOFtracks_HandmadeITSROFcut += track.hasTRD() && track.hasTOF();
+        }
+
+        // calculate average time using TOF and TRD tracks
+        if (track.hasTOF()) {
+          timeFromTOFtracks += track.trackTime();
+        } else if (track.hasTRD()) {
+          timeFromTRDtracks += track.trackTime();
+        }
+      }
+
+      if (TFid < 2 && collBC < 200) {
+        if (nTOFtracks > 0)
+          LOGF(info, "QA: average timeFromTOFtracks = %.f", timeFromTOFtracks / nTOFtracks);
+        if (nTRDtracks > 0)
+          LOGF(info, "QA: average timeFromTRDtracks = %.f", timeFromTRDtracks / nTRDtracks);
+      }
+
+      // all collisions
+      histosEventTracksFoundBC.fill(HIST("hFoundBC_nAllTracks"), globalFoundBC, nAllTracks);
+      histosEventTracksFoundBC.fill(HIST("hFoundBC_nTracksPV"), globalFoundBC, nTracksPV);
+      histosEventTracksFoundBC.fill(HIST("hFoundBC_nGlobalTracks"), globalFoundBC, nGlobalTracks);
+      histosEventTracksFoundBC.fill(HIST("hFoundBC_nITStracks"), globalFoundBC, nITStracks);
+      histosEventTracksFoundBC.fill(HIST("hFoundBC_nTPCtracks"), globalFoundBC, nTPCtracks);
+      histosEventTracksFoundBC.fill(HIST("hFoundBC_nTOFtracks"), globalFoundBC, nTOFtracks);
+      histosEventTracksFoundBC.fill(HIST("hFoundBC_nTRDtracks"), globalFoundBC, nTRDtracks);
+
+      histosEventTracksFoundBC.fill(HIST("hFoundBC_nTPCtracks_HandmadeITSROFcut"), globalFoundBC, nTPCtracks_HandmadeITSROFcut);
+      histosEventTracksFoundBC.fill(HIST("hFoundBC_nTOFtracks_HandmadeITSROFcut"), globalFoundBC, nTOFtracks_HandmadeITSROFcut);
+      histosEventTracksFoundBC.fill(HIST("hFoundBC_nTRDTOFtracks_HandmadeITSROFcut"), globalFoundBC, nTRDTOFtracks_HandmadeITSROFcut);
+
+      histosEventTracksFoundBC.fill(HIST("hFoundBC_nTRDTOFtracks"), globalFoundBC, nTRDTOFtracks);
+      histosEventTracksFoundBC.fill(HIST("hFoundBC_nITSTPCTRDtracks"), globalFoundBC, nITSTPCTRDtracks);
+      histosEventTracksFoundBC.fill(HIST("hFoundBC_nITSTPCTOFtracks"), globalFoundBC, nITSTPCTOFtracks);
+      histosEventTracksFoundBC.fill(HIST("hFoundBC_nITSTPCTRDTOFtracks"), globalFoundBC, nITSTPCTRDTOFtracks);
+
+      // TVX collisions
+      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nAllTracks"), globalFoundBC, nAllTracks);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nTracksPV"), globalFoundBC, nTracksPV);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nGlobalTracks"), globalFoundBC, nGlobalTracks);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nITStracks"), globalFoundBC, nITStracks);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nTPCtracks"), globalFoundBC, nTPCtracks);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nTOFtracks"), globalFoundBC, nTOFtracks);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nTRDtracks"), globalFoundBC, nTRDtracks);
+
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nTPCtracks_HandmadeITSROFcut"), globalFoundBC, nTPCtracks_HandmadeITSROFcut);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nTOFtracks_HandmadeITSROFcut"), globalFoundBC, nTOFtracks_HandmadeITSROFcut);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nTRDTOFtracks_HandmadeITSROFcut"), globalFoundBC, nTRDTOFtracks_HandmadeITSROFcut);
+
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nTRDTOFtracks"), globalFoundBC, nTRDTOFtracks);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nITSTPCTRDtracks"), globalFoundBC, nITSTPCTRDtracks);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nITSTPCTOFtracks"), globalFoundBC, nITSTPCTOFtracks);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nITSTPCTRDTOFtracks"), globalFoundBC, nITSTPCTRDTOFtracks);
+
+        // to study ITS ROF dips vs multiplicity
+        if (nTracksPV >= 1 && nTracksPV < 20)
+          histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nITSTPCTRDtracks_mult_1_20"), globalFoundBC, nITSTPCTRDtracks);
+        else if (nTracksPV >= 20 && nTracksPV < 100)
+          histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nITSTPCTRDtracks_mult_20_100"), globalFoundBC, nITSTPCTRDtracks);
+        else if (nTracksPV >= 100 && nTracksPV < 400)
+          histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nITSTPCTRDtracks_mult_100_400"), globalFoundBC, nITSTPCTRDtracks);
+        else if (nTracksPV >= 400)
+          histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVX_nITSTPCTRDtracks_mult_above_400"), globalFoundBC, nITSTPCTRDtracks);
+
+        // vs bcInTF:
+        histosEventTracksFoundBC.fill(HIST("hBCinTF_kTVX_nTracksPV"), bcInTF, nTracksPV);
+        histosEventTracksFoundBC.fill(HIST("hBCinTF_kTVX_nITSTPCTRDtracks"), bcInTF, nITSTPCTRDtracks);
+      }
+
+      // TVXinTRD collisions
+      if (collision.alias_bit(kTVXinTRD)) {
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nAllTracks"), globalFoundBC, nAllTracks);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nTracksPV"), globalFoundBC, nTracksPV);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nGlobalTracks"), globalFoundBC, nGlobalTracks);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nITStracks"), globalFoundBC, nITStracks);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nTPCtracks"), globalFoundBC, nTPCtracks);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nTOFtracks"), globalFoundBC, nTOFtracks);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nTRDtracks"), globalFoundBC, nTRDtracks);
+
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nTRDTOFtracks"), globalFoundBC, nTRDTOFtracks);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nITSTPCTRDtracks"), globalFoundBC, nITSTPCTRDtracks);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nITSTPCTOFtracks"), globalFoundBC, nITSTPCTOFtracks);
+        histosEventTracksFoundBC.fill(HIST("hFoundBC_kTVXinTRD_nITSTPCTRDTOFtracks"), globalFoundBC, nITSTPCTRDTOFtracks);
+      }
+    } // end of if has_foundBC and && flagIncludeQATracksInFoundBC
 
     // is FT0
     bool isFT0 = false;
@@ -1507,8 +1535,8 @@ struct RobustFluctuationObservables {
     }
 
     // global PV contributors
-    if (nTracksGlobalPVAccepted >= 1) // 2)
-      fillHistForThisCut("1globalPVcontrib", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
+    // if (nTracksGlobalPVAccepted >= 1) // 2)
+    // fillHistForThisCut("1globalPVcontrib", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
 
     // global PV contributors with 7 ITS hits
     if (nTracksGlobalPVwithITS7hits >= 1) // 2)
@@ -1578,6 +1606,9 @@ struct RobustFluctuationObservables {
     //   if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) && collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) && flagNotTheSameFoundBC && !isITSonlyVertex) //&& nTracksGlobalPVAccepted >= 1)
     //     fillHistForThisCut("ALL_CUTS_Tighter", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
     // }
+
+    if (collision.alias_bit(kTVXinTRD))
+      fillHistForThisCut("kTVXinTRD", multNTracksPV, multTrk, nTracksGlobalAccepted, multT0A, multT0C, multV0A, t0cCentr, collBC);
 
     if (flagBCisNotInHandmadeBoundariesITSROF)
       if (multNTracksPV < funcCutEventsByMultPVvsT0C->Eval(multT0C))

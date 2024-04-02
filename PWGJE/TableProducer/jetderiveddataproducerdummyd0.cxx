@@ -31,6 +31,7 @@ struct JetDerivedDataProducerDummyD0Task {
   Produces<aod::Hf3PPars> LcParsTable;
   Produces<aod::Hf3PParEs> LcParExtrasTable;
   Produces<aod::Hf3PSels> LcSelsTable;
+  Produces<aod::Hf3PMls> LcMlsTable;
   Produces<aod::Hf3PMcs> LcMcsTable;
   Produces<aod::Hf3PPBases> LcParticlesTable;
 

@@ -87,6 +87,7 @@ struct k892analysis {
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<float> cfgRCRFC{"cfgRCRFC", 0.8f, "Crossed Rows to Findable Clusters"};
+  Configurable<bool> allmanualcuts{"allmanualcuts", false, "All manual cuts without using track selection table"};
 
   // Event selection cuts - Alex (Temporary, need to fix!)
   TF1* fMultPVCutLow = nullptr;
@@ -235,14 +236,33 @@ struct k892analysis {
       return false;
     if (cfgPVContributor && !track.isPVContributor())
       return false;
-    if (!manualtrkselcuts) {
-      if (cfgPrimaryTrack && !track.isPrimaryTrack())
-        return false;
-    } else if (manualtrkselcuts) {
-      if (!(track.isGlobalTrackWoDCA() &&
-            track.itsNCls() > cfgITScluster && track.tpcNClsFound() > cfgTPCcluster && track.tpcCrossedRowsOverFindableCls() > cfgRCRFC)) {
-        return false; // condition is like \bar{A.B} = \bar{A} + \bar{B} (+ is or, . is and)
+    if (!allmanualcuts) {
+      if (!manualtrkselcuts) {
+        // if (cfgPrimaryTrack && !track.isPrimaryTrack())
+        //   return false;
+        if (!track.isGlobalTrack())
+          return false;
+      } else if (manualtrkselcuts) {
+        if (!(track.isGlobalTrackWoDCA() &&
+              track.itsNCls() > cfgITScluster && track.tpcNClsFound() > cfgTPCcluster && track.tpcCrossedRowsOverFindableCls() > cfgRCRFC)) {
+          return false; // condition is like \bar{A.B} = \bar{A} + \bar{B} (+ is or, . is and)
+        }
       }
+    } else {
+      if (track.itsNCls() < cfgITScluster)
+        return false;
+      if (track.tpcNClsFound() < cfgTPCcluster)
+        return false;
+      if (track.tpcCrossedRowsOverFindableCls() < cfgRCRFC)
+        return false;
+      if (track.itsChi2NCl() >= 36)
+        return false;
+      if (track.tpcChi2NCl() >= 4)
+        return false;
+      if (!track.passedITSRefit())
+        return false;
+      if (!track.passedTPCRefit())
+        return false;
     }
 
     return true;

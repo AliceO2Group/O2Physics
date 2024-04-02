@@ -67,13 +67,13 @@ DECLARE_SOA_COLUMN(DeltaDecayTimeLambda, deltaDecayTimeLambda, float);         /
 DECLARE_SOA_COLUMN(DeltaDecayTimeAntiLambda, deltaDecayTimeAntiLambda, float); //! delta-decay time estimate from pion/proton from AntiLambda
 DECLARE_SOA_COLUMN(DeltaDecayTimeK0Short, deltaDecayTimeK0Short, float);       //! delta-decay time estimate from pion/pion from K0Short
 
-// n-sigmas - unused as of now
-DECLARE_SOA_COLUMN(PosTOFNSigmaLaPi, posTOFNSigmaLaPi, float); //! positive track NSigma from pion <- lambda expectation
-DECLARE_SOA_COLUMN(PosTOFNSigmaLaPr, posTOFNSigmaLaPr, float); //! positive track NSigma from proton <- lambda expectation
-DECLARE_SOA_COLUMN(NegTOFNSigmaLaPi, negTOFNSigmaLaPi, float); //! negative track NSigma from pion <- lambda expectation
-DECLARE_SOA_COLUMN(NegTOFNSigmaLaPr, negTOFNSigmaLaPr, float); //! negative track NSigma from proton <- lambda expectation
-DECLARE_SOA_COLUMN(PosTOFNSigmaK0Pi, posTOFNSigmaK0Pi, float); //! positive track NSigma from pion <- k0short expectation
-DECLARE_SOA_COLUMN(NegTOFNSigmaK0Pi, negTOFNSigmaK0Pi, float); //! positive track NSigma from pion <- k0short expectation
+// n-sigmas
+DECLARE_SOA_COLUMN(TOFNSigmaLaPr, tofNSigmaLaPr, float);           //! positive track NSigma from proton <- lambda expectation
+DECLARE_SOA_COLUMN(TOFNSigmaLaPi, tofNSigmaLaPi, float);           //! negative track NSigma from pion <- lambda expectation
+DECLARE_SOA_COLUMN(TOFNSigmaALaPr, tofNSigmaALaPr, float);         //! negative track NSigma from proton <- antilambda expectation
+DECLARE_SOA_COLUMN(TOFNSigmaALaPi, tofNSigmaALaPi, float);         //! positive track NSigma from pion <- antilambda expectation
+DECLARE_SOA_COLUMN(TOFNSigmaK0PiPlus, tofNSigmaK0PiPlus, float);   //! positive track NSigma from pion <- k0short expectation
+DECLARE_SOA_COLUMN(TOFNSigmaK0PiMinus, tofNSigmaK0PiMinus, float); //! negative track NSigma from pion <- k0short expectation
 
 // beta values
 DECLARE_SOA_COLUMN(TofBetaLambda, tofBetaLambda, float);         //! beta value with Lambda hypothesis
@@ -110,10 +110,10 @@ DECLARE_SOA_TABLE(V0TOFDebugs, "AOD", "V0TOFDEBUG", // table with intermediate i
 DECLARE_SOA_TABLE(V0TOFBetas, "AOD", "V0TOFBETA", // processed info table (for analysis)
                   v0data::TofBetaLambda, v0data::TofBetaAntiLambda, v0data::TofBetaK0Short);
 
-DECLARE_SOA_TABLE(V0TOFNSigmas, "AOD", "V0TOFNSIGMA", // processed info table (for analysis)
-                  v0data::PosTOFNSigmaLaPi, v0data::PosTOFNSigmaLaPr,
-                  v0data::NegTOFNSigmaLaPi, v0data::NegTOFNSigmaLaPr,
-                  v0data::PosTOFNSigmaK0Pi, v0data::NegTOFNSigmaK0Pi);
+DECLARE_SOA_TABLE(V0TOFNSigmas, "AOD", "V0TOFNSIGMA", // processed NSigma table (for analysis)
+                  v0data::TOFNSigmaLaPr, v0data::TOFNSigmaLaPi,
+                  v0data::TOFNSigmaALaPr, v0data::TOFNSigmaALaPi,
+                  v0data::TOFNSigmaK0PiPlus, v0data::TOFNSigmaK0PiMinus);
 
 namespace cascdata
 {
@@ -142,16 +142,12 @@ DECLARE_SOA_COLUMN(NegTOFDeltaTOmPr, negTOFDeltaTOmPr, float);   //! negative tr
 DECLARE_SOA_COLUMN(BachTOFDeltaTOmPi, bachTOFDeltaTOmPi, float); //! bachelor track TOFDeltaT from pion <- omega expectation
 
 // n-sigmas
-DECLARE_SOA_COLUMN(PosNSigmaXiPi, posNSigmaXiPi, float);   //! positive track NSigma from pion <- lambda <- xi expectation
-DECLARE_SOA_COLUMN(PosNSigmaXiPr, posNSigmaXiPr, float);   //! positive track NSigma from proton <- lambda <- xi expectation
-DECLARE_SOA_COLUMN(NegNSigmaXiPi, negNSigmaXiPi, float);   //! negative track NSigma from pion <- lambda <- xi expectation
-DECLARE_SOA_COLUMN(NegNSigmaXiPr, negNSigmaXiPr, float);   //! negative track NSigma from proton <- lambda <- xi expectation
-DECLARE_SOA_COLUMN(BachNSigmaXiPi, bachNSigmaXiPi, float); //! bachelor track NSigma from pion <- xi expectation
-DECLARE_SOA_COLUMN(PosNSigmaOmPi, posNSigmaOmPi, float);   //! positive track NSigma from pion <- lambda <- omega expectation
-DECLARE_SOA_COLUMN(PosNSigmaOmPr, posNSigmaOmPr, float);   //! positive track NSigma from proton <- lambda <- omega expectation
-DECLARE_SOA_COLUMN(NegNSigmaOmPi, negNSigmaOmPi, float);   //! negative track NSigma from pion <- lambda <- omega expectation
-DECLARE_SOA_COLUMN(NegNSigmaOmPr, negNSigmaOmPr, float);   //! negative track NSigma from proton <- lambda <- omega expectation
-DECLARE_SOA_COLUMN(BachNSigmaOmKa, bachNSigmaOmKa, float); //! bachelor track NSigma from kaon <- omega expectation
+DECLARE_SOA_COLUMN(TOFNSigmaXiLaPi, tofNSigmaXiLaPi, float); //! meson track NSigma from pion <- lambda <- xi expectation
+DECLARE_SOA_COLUMN(TOFNSigmaXiLaPr, tofNSigmaXiLaPr, float); //! baryon track NSigma from proton <- lambda <- xi expectation
+DECLARE_SOA_COLUMN(TOFNSigmaXiPi, tofNSigmaXiPi, float);     //! bachelor track NSigma from pion <- xi expectation
+DECLARE_SOA_COLUMN(TOFNSigmaOmLaPi, tofNSigmaOmLaPi, float); //! meson track NSigma from pion <- lambda <- om expectation
+DECLARE_SOA_COLUMN(TOFNSigmaOmLaPr, tofNSigmaOmLaPr, float); //! baryon track NSigma from proton <- lambda <- om expectation
+DECLARE_SOA_COLUMN(TOFNSigmaOmKa, tofNSigmaOmKa, float);     //! bachelor track NSigma from kaon <- om expectation
 } // namespace cascdata
 
 DECLARE_SOA_TABLE(CascTOFs, "AOD", "CascTOF", // raw information table (for debug, etc)
@@ -164,13 +160,10 @@ DECLARE_SOA_TABLE(CascTOFPIDs, "AOD", "CASCTOFPID", // processed information for
                   cascdata::BachTOFDeltaTXiPi,
                   cascdata::PosTOFDeltaTOmPi, cascdata::PosTOFDeltaTOmPr,
                   cascdata::NegTOFDeltaTOmPi, cascdata::NegTOFDeltaTOmPr,
-                  cascdata::BachTOFDeltaTOmPi,
-                  cascdata::PosNSigmaXiPi, cascdata::PosNSigmaXiPr,
-                  cascdata::NegNSigmaXiPi, cascdata::NegNSigmaXiPr,
-                  cascdata::BachNSigmaXiPi,
-                  cascdata::PosNSigmaOmPi, cascdata::PosNSigmaOmPr,
-                  cascdata::NegNSigmaOmPi, cascdata::NegNSigmaOmPr,
-                  cascdata::BachNSigmaOmKa);
+                  cascdata::BachTOFDeltaTOmPi);
+DECLARE_SOA_TABLE(CascTOFNSigmas, "AOD", "CascTOFNSigmas", // Nsigmas for cascades
+                  cascdata::TOFNSigmaXiLaPi, cascdata::TOFNSigmaXiLaPr, cascdata::TOFNSigmaXiPi,
+                  cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmKa);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSTRANGENESSPIDTABLES_H_
