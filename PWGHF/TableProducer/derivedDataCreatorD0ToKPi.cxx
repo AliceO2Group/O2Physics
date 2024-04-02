@@ -323,8 +323,8 @@ struct HfDerivedDataCreatorD0ToKPi {
         }
         std::vector<float> mlScoresD0, mlScoresD0bar;
         if constexpr (isMl) {
-          std::copy(candidate.mlProbD0().begin(), candidate.mlProbD0().end(), mlScoresD0.begin());
-          std::copy(candidate.mlProbD0bar().begin(), candidate.mlProbD0bar().end(), mlScoresD0bar.begin());
+          std::copy(candidate.mlProbD0().begin(), candidate.mlProbD0().end(), std::back_inserter(mlScoresD0));
+          std::copy(candidate.mlProbD0bar().begin(), candidate.mlProbD0bar().end(), std::back_inserter(mlScoresD0bar));
         }
         if (candidate.isSelD0()) {
           fillTablesCandidate(candidate, prong0, prong1, 0, massD0, hfHelper.cosThetaStarD0(candidate), topolChi2PerNdf, ctD, flagMcRec, origin, mlScoresD0);
