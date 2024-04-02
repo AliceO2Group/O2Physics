@@ -304,8 +304,8 @@ struct qaLamMomResolution {
                 tuneV0(v0data, protonTrackIU, pionTrackIU, mcparticles, bcs);
                 std::array<float, 3> pPos{0., 0., 0.};
                 std::array<float, 3> pNeg{0., 0., 0.};
-                mTrackParCovProton.getPxPyPzGlo(pPos);
-                mTrackParCovPion.getPxPyPzGlo(pNeg);
+                mTrackParCovPos.getPxPyPzGlo(pPos);
+                mTrackParCovNeg.getPxPyPzGlo(pNeg);
                 massLambda = RecoDecay::m(std::array{std::array{pPos[0], pPos[1], pPos[2]},
                                     std::array{pNeg[0], pNeg[1], pNeg[2]}},
                                     std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
