@@ -67,7 +67,6 @@ struct HfCandidateSelectorXicToXiPiPi {
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
-
   o2::analysis::HfMlResponse<float> hfMlResponse;
   std::vector<float> outputMl = {};
 
@@ -106,6 +105,7 @@ struct HfCandidateSelectorXicToXiPiPi {
       labels[1 + SelectionStep::RecoSkims] = "Skims selection";
       labels[1 + SelectionStep::RecoTopol] = "Skims & Topological selections";
       labels[1 + SelectionStep::RecoPID] = "Skims & Topological & PID selections";
+      labels[1 + SelectionStep::RecoMl] = "Skims & Topological & PID & ML selections";
       static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
       registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
       for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
@@ -281,7 +281,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
       // ML selections
       if (applyMl) {
-        std::vector<float> inputFeatures{};
+        std::vector<float> inputFeatures{hfCandXic.cpa()};
 
         bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandXic, outputMl);
         hfMlXicToXiPiPiCandidate(outputMl);
