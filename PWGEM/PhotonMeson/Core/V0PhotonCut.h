@@ -299,7 +299,7 @@ class V0PhotonCut : public TNamed
         return v0.pca() <= mMaxPCA;
 
       case V0PhotonCuts::kRZLine:
-        return v0.v0radius() > abs(v0.vz()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-mMaxV0Eta))) - mMaxMarginZ;
+        return v0.v0radius() > abs(v0.vz()) * std::tan(2 * std::atan(std::exp(-mMaxV0Eta))) - mMaxMarginZ;
 
       case V0PhotonCuts::kOnWwireIB: {
         const float margin_xy = 1.0; // cm
@@ -322,7 +322,7 @@ class V0PhotonCut : public TNamed
           return false;
         }
 
-        float dxy = abs(1.0 * y - x * TMath::Tan(-8.52 * TMath::DegToRad())) / sqrt(pow(1.0, 2) + pow(TMath::Tan(-8.52 * TMath::DegToRad()), 2));
+        float dxy = abs(1.0 * y - x * std::tan(-8.52 * TMath::DegToRad())) / sqrt(pow(1.0, 2) + pow(std::tan(-8.52 * TMath::DegToRad()), 2));
         return !(dxy > margin_xy);
       }
       case V0PhotonCuts::kOnWwireOB: {
@@ -408,7 +408,7 @@ class V0PhotonCut : public TNamed
         if (track.x() < 0.1 && abs(track.y()) > 15.f) {
           return false;
         }
-        if (track.x() > 82.9 && abs(track.y()) > abs(track.x() * TMath::Tan(10.f * TMath::DegToRad())) + 5.f) {
+        if (track.x() > 82.9 && abs(track.y()) > abs(track.x() * std::tan(10.f * TMath::DegToRad())) + 5.f) {
           return false;
         }
         if (track.x() > 82.9 && abs(track.y()) < 15.0 && abs(abs(track.z()) - 44.5) < 2.5) {

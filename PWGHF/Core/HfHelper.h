@@ -308,10 +308,22 @@ class HfHelper
   }
 
   template <typename T>
+  auto absCos3PiKDsToKKPi(const T& candidate)
+  {
+    return std::abs(cos3PiKDsToKKPi(candidate));
+  }
+
+  template <typename T>
   auto cos3PiKDsToPiKK(const T& candidate)
   {
     auto cosPiK = cosPiKPhiRestFrame(candidate, 1);
     return cosPiK * cosPiK * cosPiK;
+  }
+
+  template <typename T>
+  auto absCos3PiKDsToPiKK(const T& candidate)
+  {
+    return std::abs(cos3PiKDsToPiKK(candidate));
   }
 
   // Λc± → p± K∓ π±

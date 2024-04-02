@@ -536,7 +536,7 @@ struct DGBCCandProducer {
     }
 
     // run over all BC in bcs and tibcs
-    int64_t lastCollision = 0;
+    // int64_t lastCollision = 0;
     float vpos[3];
     upchelpers::FITInfo fitInfo{};
     auto col = collisions.iteratorAt(0);
@@ -596,7 +596,7 @@ struct DGBCCandProducer {
         if (withCollision) {
           // -> vertex position: col.[posX(), posY(), posZ()]
           SETBIT(bcFlag, 2);
-          lastCollision = col.globalIndex();
+          // lastCollision = col.globalIndex();
 
           ntr1 = col.numContrib();
           auto bcRange = udhelpers::compatibleBCs(bc, bcnum, diffCuts.minNBCs(), bcs);

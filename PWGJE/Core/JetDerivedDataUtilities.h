@@ -47,17 +47,23 @@ int initialiseEventSelection(std::string eventSelection)
 {
   if (eventSelection == "sel8") {
     return JCollisionSel::sel8;
+  } else if (eventSelection == "sel8WithoutTimeFrameBorderCut") {
+    return JCollisionSel::sel8WithoutTimeFrameBorderCut;
   } else if (eventSelection == "sel7") {
     return JCollisionSel::sel7;
+  } else if (eventSelection == "sel7WithoutTimeFrameBorderCut") {
+    return JCollisionSel::sel7WithoutTimeFrameBorderCut;
+  } else if (eventSelection == "WithoutTimeFrameBorderCut") {
+    return JCollisionSel::WithoutTimeFrameBorderCut;
   }
   return -1;
 }
 
 template <typename T>
-uint8_t setEventSelectionBit(T const& collision)
+uint16_t setEventSelectionBit(T const& collision)
 {
 
-  uint8_t bit = 0;
+  uint16_t bit = 0;
 
   if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
     SETBIT(bit, JCollisionSel::WithoutTimeFrameBorderCut);
@@ -190,9 +196,9 @@ int initialiseFullTriggerSelection(std::string triggerSelection)
 }
 
 template <typename T>
-uint8_t setFullTriggerSelectionBit(T const& collision)
+uint32_t setFullTriggerSelectionBit(T const& collision)
 {
-  uint8_t bit = 0;
+  uint32_t bit = 0;
   if (collision.hasJetFullHighPt()) {
     SETBIT(bit, JTrigSelFull::fullHigh);
   }
@@ -228,6 +234,60 @@ uint8_t setFullTriggerSelectionBit(T const& collision)
   }
   if (collision.hasGammaVeryLowPtDCAL()) {
     SETBIT(bit, JTrigSelFull::gammaVeryLowDCAL);
+  }
+  return bit;
+}
+
+enum JTrigSelChHF {
+  noChargedHFTigger = 0,
+  chargedD0Low = 1,
+  chargedD0High = 2,
+  chargedLcLow = 3,
+  chargedLcHigh = 4
+};
+
+template <typename T>
+bool selectChargedHFTrigger(T const& collision, int triggerSelection)
+{
+  if (triggerSelection == -1) {
+    return true;
+  }
+  return (collision.chargedHFTriggerSel() & (1 << triggerSelection));
+}
+
+int initialiseChargedHFTriggerSelection(std::string triggerSelection)
+{
+  if (triggerSelection == "chargedD0Low") {
+    return JTrigSelChHF::chargedD0Low;
+  }
+  if (triggerSelection == "chargedD0High") {
+    return JTrigSelChHF::chargedD0High;
+  }
+  if (triggerSelection == "chargedLcLow") {
+    return JTrigSelChHF::chargedLcLow;
+  }
+  if (triggerSelection == "chargedLcHigh") {
+    return JTrigSelChHF::chargedLcHigh;
+  }
+  return -1;
+}
+
+template <typename T>
+uint8_t setChargedHFTriggerSelectionBit(T const& collision)
+{
+
+  uint8_t bit = 0;
+  if (collision.hasJetD0ChLowPt()) {
+    SETBIT(bit, JTrigSelChHF::chargedD0Low);
+  }
+  if (collision.hasJetD0ChHighPt()) {
+    SETBIT(bit, JTrigSelChHF::chargedD0High);
+  }
+  if (collision.hasJetLcChLowPt()) {
+    SETBIT(bit, JTrigSelChHF::chargedLcLow);
+  }
+  if (collision.hasJetLcChHighPt()) {
+    SETBIT(bit, JTrigSelChHF::chargedLcHigh);
   }
   return bit;
 }
