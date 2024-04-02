@@ -89,8 +89,9 @@ struct cascadeXiAnalysis {
   }
 
   template <typename trackType>
-  bool selBachTracks(trackType const& track) {
-    
+  bool selBachTracks(trackType const& track)
+  {
+
     if (track.pt() < cPtMin)
       return false;
 
@@ -116,7 +117,8 @@ struct cascadeXiAnalysis {
   }
 
   template <typename trackType>
-  bool selPIDPions(trackType const& track) {
+  bool selPIDPions(trackType const& track)
+  {
     bool tpcPIDselFlag{false}, tofPIDselFlag{false};
 
     float tpcNsigmaPi = std::abs(track.tpcNSigmaPi());
@@ -142,26 +144,27 @@ struct cascadeXiAnalysis {
   }
 
   template <bool mix, bool mc, typename cascType, typename trackType>
-  void fillDataHisto(trackType const& bachTrks, cascType const& cascTrks, const float cent) {
+  void fillDataHisto(trackType const& bachTrks, cascType const& cascTrks, const float cent)
+  {
     TLorentzVector p1, p2, p;
     float pi_p_tot = 0;
     // trk1 -> pi
     // trk2 -> Xi
     for (auto const& [trk1, trk2] : soa::combinations(soa::CombinationsFullIndexPolicy(cascTrks, bachTrks))) {
-      if (trk1.index() == trk2.index()){
+      if (trk1.index() == trk2.index()) {
         continue;
       }
 
       // select primary pions (one of the decay daughter of Xi*)
-      if (!selBachTracks(trk2)){
+      if (!selBachTracks(trk2)) {
         continue;
       }
 
-      if (!selPIDPions(trk2)){
+      if (!selPIDPions(trk2)) {
         continue;
       }
 
-      pi_p_tot = TMath::Sqrt(trk2.px()*trk2.px() + trk2.py()*trk2.py() + trk2.pz()*trk2.pz());
+      pi_p_tot = TMath::Sqrt(trk2.px() * trk2.px() + trk2.py() * trk2.py() + trk2.pz() * trk2.pz());
 
       // fill QA for pion selection
       if constexpr (!mix) {
@@ -192,11 +195,13 @@ struct cascadeXiAnalysis {
     }
   }
 
-  void process(aod::ResoCollisions::iterator const& resoCollision, aod::ResoCascades const& cascTracks, aod::ResoTracks const& resoTracks) {
+  void process(aod::ResoCollisions::iterator const& resoCollision, aod::ResoCascades const& cascTracks, aod::ResoTracks const& resoTracks)
+  {
     fillDataHisto<false, false>(resoTracks, cascTracks, resoCollision.cent());
   }
 
-  void processReso(aod::ResoCollisions:: iterator const& col, aod::ResoCascades const& cascTracks) {
+  void processReso(aod::ResoCollisions::iterator const& col, aod::ResoCascades const& cascTracks)
+  {
 
     for (auto const& casc : cascTracks) {
       histos.fill(HIST("QA/CascXi/h1d_mass_Xi"), casc.mXi());
