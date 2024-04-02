@@ -26,7 +26,6 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 
 #include "Common/Core/PID/TPCPIDResponse.h"
@@ -38,13 +37,13 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPr, aod::pidTPCPi>;
+using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::pidTPCPr, aod::pidTPCPi>;
 using TracksFullMC = soa::Join<TracksFull, aod::McTrackLabels>;
+using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos>;
 
 struct CandidateV0 {
   float pt;
   float eta;
-  float centFT0C;
   bool isMatter;
   float mass;
   float ct;
@@ -74,12 +73,13 @@ struct LFStrangeTreeCreator {
   std::vector<CandidateV0> candidateV0s;
   std::vector<int64_t> checkedV0s;
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-
   Configurable<float> downscaleFactor{"downscaleFactor", 1.f, "downscaling factor"};
   Configurable<bool> fillOnlySignal{"fillOnlySignal", true, "toggle table filling of signal-only candidates (for mc)"};
   Configurable<bool> fillNonRecSignal{"fillNonRecSignal", true, "toggle table filling of non-reco signal candidates (for mc)"};
-  Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
+
+  Configurable<bool> kINT7Intervals{"kINT7Intervals", false, "toggle kINT7 trigger selection in the 10-30% and 50-90% centrality intervals (2018 Pb-Pb)"};
+  Configurable<bool> kUseTPCPileUpCut{"kUseTPCPileUpCut", false, "toggle strong correlation cuts (Run 2)"};
+  Configurable<bool> kUseEstimatorsCorrelationCut{"kUseEstimatorsCorrelationCut", false, "toggle cut on the correlation between centrality estimators (2018 Pb-Pb)"};
 
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
   ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.05f, o2::constants::physics::MassLambda0 + 0.05f}, "binning for the lambda invariant-mass"};
@@ -89,15 +89,6 @@ struct LFStrangeTreeCreator {
   ConfigurableAxis radiusAxis{"radiusAxis", {1e3, 0.f, 100.f}, "binning for the radius axis"};
   ConfigurableAxis dcaV0daughAxis{"dcaV0daughAxis", {2e2, 0.f, 2.f}, "binning for the dca of V0 daughters"};
   ConfigurableAxis dcaDaughPvAxis{"dcaDaughPvAxis", {1e3, 0.f, 10.f}, "binning for the dca of positive daughter to PV"};
-
-  // CCDB options
-  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<std::string> pidPath{"pidPath", "", "Path to the PID response object"};
 
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
@@ -111,9 +102,6 @@ struct LFStrangeTreeCreator {
   Configurable<double> v0setting_cospa{"v0setting_cospa", 0.98, "V0 CosPA"};
   Configurable<float> v0setting_radius{"v0setting_radius", 0.5f, "v0radius"};
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.05f, "maximum deviation from PDG mass"};
-
-  int mRunNumber;
-  float d_bz;
 
   uint32_t randomSeed = 0.;
 
@@ -169,7 +157,6 @@ struct LFStrangeTreeCreator {
 
       candV0.pt = v0.pt();
       candV0.eta = v0.eta();
-      candV0.centFT0C = collision.centFT0C();
       candV0.isMatter = matter;
       candV0.mass = matter ? v0.mLambda() : v0.mAntiLambda();
       candV0.ct = ct;
@@ -229,14 +216,6 @@ struct LFStrangeTreeCreator {
 
   void init(o2::framework::InitContext&)
   {
-    ccdb->setURL(ccdburl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false);
-
-    mRunNumber = 0;
-    d_bz = 0;
-
     randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
     histos.add<TH1>("zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
@@ -250,46 +229,8 @@ struct LFStrangeTreeCreator {
     histos.add<TH1>("dcaNegPv", ";dcaNegPv;Entries", {HistType::kTH1F}, {dcaDaughPvAxis});
   }
 
-  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
-  {
-    if (mRunNumber == bc.runNumber()) {
-      return;
-    }
-    auto run3grp_timestamp = bc.timestamp();
-
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (grpo) {
-      o2::base::Propagator::initFieldFromGRP(grpo);
-      if (d_bz_input < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        d_bz = grpo->getNominalL3Field();
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-      } else {
-        d_bz = d_bz_input;
-      }
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      o2::base::Propagator::initFieldFromGRP(grpmag);
-      if (d_bz_input < -990) {
-        // Fetch magnetic field from ccdb for current collision
-        d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-      } else {
-        d_bz = d_bz_input;
-      }
-    }
-    mRunNumber = bc.runNumber();
-  }
-
   void processData(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& collision, TracksFull const& tracks, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
-    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc);
-
     if (!collision.sel8())
       return;
 
@@ -302,13 +243,14 @@ struct LFStrangeTreeCreator {
       return;
     }
 
+    auto centrality = collision.centFT0C();
     fillRecoLambda(collision, V0s, tracks);
     for (auto& candidateV0 : candidateV0s) {
       // LOG(info) << candidateV0.pt;
       lambdaTableML(
         candidateV0.pt,
         candidateV0.eta,
-        candidateV0.centFT0C,
+        centrality,
         candidateV0.isMatter,
         candidateV0.mass,
         candidateV0.ct,
@@ -324,17 +266,58 @@ struct LFStrangeTreeCreator {
   }
   PROCESS_SWITCH(LFStrangeTreeCreator, processData, "process data", false);
 
-  void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, TracksFull const& tracks, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLabels)
+  void processDataRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>::iterator const& collision, TracksFull const& tracks, aod::V0Datas const& V0s, BCsWithRun2Info const&)
+  {
+    if (std::abs(collision.posZ()) > zVtxMax)
+      return;
+
+    auto bc = collision.bc_as<BCsWithRun2Info>();
+    if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
+      return;
+
+    if (kUseTPCPileUpCut && !(bc.eventCuts() & BIT(aod::Run2EventCuts::kTPCPileUp)))
+      return;
+
+    auto centrality = collision.centRun2V0M();
+    if (!collision.alias_bit(kINT7) && (!kINT7Intervals || (kINT7Intervals && ((centrality >= 10 && centrality < 30) || centrality > 50))))
+      return;
+
+    histos.fill(HIST("zVtx"), collision.posZ());
+
+    if (downscaleFactor < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > downscaleFactor) {
+      return;
+    }
+
+    fillRecoLambda(collision, V0s, tracks);
+    for (auto& candidateV0 : candidateV0s) {
+      // LOG(info) << candidateV0.pt;
+      lambdaTableML(
+        candidateV0.pt,
+        candidateV0.eta,
+        centrality,
+        candidateV0.isMatter,
+        candidateV0.mass,
+        candidateV0.ct,
+        candidateV0.radius,
+        candidateV0.dcaV0PV,
+        candidateV0.dcaPiPV,
+        candidateV0.dcaPrPV,
+        candidateV0.dcaV0Tracks,
+        candidateV0.cosPA,
+        candidateV0.tpcNsigmaPi,
+        candidateV0.tpcNsigmaPr);
+    }
+  }
+  PROCESS_SWITCH(LFStrangeTreeCreator, processDataRun2, "process data run 2", false);
+
+  void processMc(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, TracksFull const& tracks, aod::V0Datas const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLabels)
   {
     for (auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-
       if (!collision.sel8())
-        return;
+        continue;
 
       if (std::abs(collision.posZ()) > zVtxMax)
-        return;
+        continue;
 
       const uint64_t collIdx = collision.globalIndex();
       auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
@@ -343,17 +326,18 @@ struct LFStrangeTreeCreator {
       histos.fill(HIST("zVtx"), collision.posZ());
 
       if (downscaleFactor < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > downscaleFactor) {
-        return;
+        continue;
       }
 
       fillMcLambda(collision, V0Table_thisCollision, tracks, mcParticles, mcLabels);
 
+      auto centrality = collision.centFT0C();
       for (auto& candidateV0 : candidateV0s) {
         if ((fillOnlySignal && std::abs(candidateV0.pdgCode) == 3122) || !fillOnlySignal) {
           mcLambdaTableML(
             candidateV0.pt,
             candidateV0.eta,
-            candidateV0.centFT0C,
+            centrality,
             candidateV0.isMatter,
             candidateV0.mass,
             candidateV0.ct,
@@ -421,7 +405,101 @@ struct LFStrangeTreeCreator {
       }
     }
   }
-  PROCESS_SWITCH(LFStrangeTreeCreator, processMC, "process mc", false);
+  PROCESS_SWITCH(LFStrangeTreeCreator, processMc, "process mc", false);
+
+  void processMcRun2(soa::Join<aod::Collisions, aod::CentRun2V0Ms> const& collisions, TracksFull const& tracks, aod::V0Datas const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLabels)
+  {
+    for (auto& collision : collisions) {
+      if (std::abs(collision.posZ()) > zVtxMax)
+        continue;
+
+      const uint64_t collIdx = collision.globalIndex();
+      auto V0Table_thisCollision = V0s.sliceBy(perCollision, collIdx);
+      V0Table_thisCollision.bindExternalIndices(&tracks);
+
+      histos.fill(HIST("zVtx"), collision.posZ());
+
+      if (downscaleFactor < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > downscaleFactor) {
+        continue;
+      }
+
+      fillMcLambda(collision, V0Table_thisCollision, tracks, mcParticles, mcLabels);
+
+      auto centrality = collision.centRun2V0M();
+      for (auto& candidateV0 : candidateV0s) {
+        if ((fillOnlySignal && std::abs(candidateV0.pdgCode) == 3122) || !fillOnlySignal) {
+          mcLambdaTableML(
+            candidateV0.pt,
+            candidateV0.eta,
+            centrality,
+            candidateV0.isMatter,
+            candidateV0.mass,
+            candidateV0.ct,
+            candidateV0.radius,
+            candidateV0.dcaV0PV,
+            candidateV0.dcaPiPV,
+            candidateV0.dcaPrPV,
+            candidateV0.dcaV0Tracks,
+            candidateV0.cosPA,
+            candidateV0.tpcNsigmaPi,
+            candidateV0.tpcNsigmaPr,
+            candidateV0.genPt,
+            candidateV0.genEta,
+            candidateV0.genCt,
+            candidateV0.pdgCode,
+            candidateV0.isReco);
+        }
+      }
+    }
+
+    if (fillNonRecSignal) {
+      for (auto& mcPart : mcParticles) {
+
+        if (std::abs(mcPart.pdgCode()) != 3122)
+          continue;
+        std::array<float, 3> secVtx{0.f};
+        std::array<float, 3> primVtx = {mcPart.vx(), mcPart.vy(), mcPart.vz()};
+        std::array<float, 3> momMother = {mcPart.px(), mcPart.py(), mcPart.pz()};
+        for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
+          if (std::abs(mcDaught.pdgCode()) == 2212) {
+            secVtx = {mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
+            break;
+          }
+        }
+        if (std::find(checkedV0s.begin(), checkedV0s.end(), mcPart.globalIndex()) != std::end(checkedV0s)) {
+          continue;
+        }
+        CandidateV0 candidateV0;
+        auto momV0 = std::sqrt(std::pow(momMother[0], 2) + std::pow(momMother[1], 2) + std::pow(momMother[2], 2));
+        candidateV0.genCt = std::sqrt(std::pow(secVtx[0] - primVtx[0], 2) + std::pow(secVtx[1] - primVtx[1], 2) + std::pow(secVtx[2] - primVtx[2], 2)) / (momV0 + 1e-10) * o2::constants::physics::MassLambda0;
+        candidateV0.isReco = false;
+        candidateV0.genPt = std::sqrt(std::pow(momMother[0], 2) + std::pow(momMother[1], 2));
+        candidateV0.genEta = mcPart.eta();
+        candidateV0.pdgCode = mcPart.pdgCode();
+        mcLambdaTableML(
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          candidateV0.genPt,
+          candidateV0.genEta,
+          candidateV0.genCt,
+          candidateV0.pdgCode,
+          candidateV0.isReco);
+      }
+    }
+  }
+  PROCESS_SWITCH(LFStrangeTreeCreator, processMcRun2, "process mc run 2", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
