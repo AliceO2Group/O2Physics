@@ -1591,7 +1591,7 @@ struct tofSpectra {
         continue;
       }
       static_for<0, 17>([&](auto i) {
-        fillParticleHistograms_MC<i>(mcParticle, collision);
+        fillParticleHistograms_MC<i>(mcParticle, mcCollision);
       });
     }
 
