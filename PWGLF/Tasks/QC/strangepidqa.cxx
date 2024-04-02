@@ -87,10 +87,38 @@ struct strangepidqa {
   Configurable<float> minPtV0{"minPtV0", 1.0, "min pT for integrated mass histograms"};
   Configurable<float> maxPtV0{"maxPtV0", 3.0, "max pT for integrated mass histograms"};
 
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  // Selection criteria for cascade analysis
+  Configurable<double> v0setting_cospa{"v0setting_cospa", 0.95, "v0setting_cospa"};
+  Configurable<float> v0setting_dcav0dau{"v0setting_dcav0dau", 1.0, "v0setting_dcav0dau"};
+  Configurable<float> v0setting_dcapostopv{"v0setting_dcapostopv", 0.1, "v0setting_dcapostopv"};
+  Configurable<float> v0setting_dcanegtopv{"v0setting_dcanegtopv", 0.1, "v0setting_dcanegtopv"};
+  Configurable<float> v0setting_radius{"v0setting_radius", 0.9, "v0setting_radius"};
+  Configurable<double> cascadesetting_cospa{"cascadesetting_cospa", 0.95, "cascadesetting_cospa"};
+  Configurable<float> cascadesetting_dcacascdau{"cascadesetting_dcacascdau", 1.0, "cascadesetting_dcacascdau"};
+  Configurable<float> cascadesetting_dcabachtopv{"cascadesetting_dcabachtopv", 0.1, "cascadesetting_dcabachtopv"};
+  Configurable<float> cascadesetting_cascradius{"cascadesetting_cascradius", 0.5, "cascadesetting_cascradius"};
+  Configurable<float> cascadesetting_v0masswindow{"cascadesetting_v0masswindow", 0.01, "cascadesetting_v0masswindow"};
+  Configurable<float> cascadesetting_mindcav0topv{"cascadesetting_mindcav0topv", 0.01, "cascadesetting_mindcav0topv"};
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+  // Track configurables
+  Configurable<int> tpcCrossedRows{"tpcCrossedRows", 70, "minimum number of TPC rows requirement"};
+  Configurable<float> tpcNsigmaBachelor{"tpcNsigmaBachelor", 4, "TPC NSigma bachelor (>10 is no cut)"};
+  Configurable<float> tpcNsigmaProton{"tpcNsigmaProton", 4, "TPC NSigma proton <- lambda (>10 is no cut)"};
+  Configurable<float> tpcNsigmaPion{"tpcNsigmaPion", 4, "TPC NSigma pion <- lambda (>10 is no cut)"};
+
+  Configurable<float> tofNsigmaXiLaPr{"tpcNsigmaXiLaPr", 1e+5, "TOF NSigma proton <- lambda <- Xi (>10 is no cut)"};
+  Configurable<float> tofNsigmaXiLaPi{"tpcNsigmaXiLaPi", 1e+5, "TOF NSigma pion <- lambda <- Xi (>10 is no cut)"};
+  Configurable<float> tofNsigmaXiPi{"tpcNsigmaXiPi", 1e+5, "TOF NSigma pion <- Xi (>10 is no cut)"};
+  Configurable<float> tofNsigmaOmLaPr{"tpcNsigmaOmLaPr", 1e+5, "TOF NSigma proton <- lambda <- Omega (>10 is no cut)"};
+  Configurable<float> tofNsigmaOmLaPi{"tpcNsigmaOmLaPi", 1e+5, "TOF NSigma pion <- lambda <- Omega (>10 is no cut)"};
+  Configurable<float> tofNsigmaOmKa{"tpcNsigmaOmKa", 1e+5, "TOF NSigma Kaon <- Omega (>10 is no cut)"};
+  //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
+
   void init(InitContext const&)
   {
     // Event counter
-    histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {vertexZ});
+    histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, 100.0f}});
 
     // Presence of negative and positive signals and event time
     auto hPositiveStatus = histos.add<TH1>("hPositiveStatus", "hPositiveStatus", kTH1F, {{4, -0.5f, 3.5f}});
@@ -399,8 +427,82 @@ struct strangepidqa {
     }
   }
 
+  // ____________________________________________________________________________
+  // QA TOF NSigma quantities
+
+  Partition<soa::Join<aod::CascCores, aod::CascExtras>> negCasc = aod::cascdata::sign < 0;
+  Partition<soa::Join<aod::CascCores, aod::CascExtras>> posCasc = aod::cascdata::sign > 0;
+
+  Filter preFilter =
+    nabs(aod::cascdata::dcapostopv) > v0setting_dcapostopv&& nabs(aod::cascdata::dcanegtopv) > v0setting_dcanegtopv&& nabs(aod::cascdata::dcabachtopv) > cascadesetting_dcabachtopv&& aod::cascdata::dcaV0daughters < v0setting_dcav0dau&& aod::cascdata::dcacascdaughters < cascadesetting_dcacascdau;
+
+  void processCascades(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& col, soa::Filtered<soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascTOFNSigmas>> const& Cascades, soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs> const&)
+  {
+    histos.fill(HIST("hEventCentrality"), col.centFT0C());
+
+    for (auto& casc : Cascades) {
+      // major selections here
+      if (casc.v0radius() > v0setting_radius &&
+          casc.cascradius() > cascadesetting_cascradius &&
+          casc.v0cosPA(col.posX(), col.posY(), col.posZ()) > v0setting_cospa &&
+          casc.casccosPA(col.posX(), col.posY(), col.posZ()) > cascadesetting_cospa &&
+          casc.dcav0topv(col.posX(), col.posY(), col.posZ()) > cascadesetting_mindcav0topv &&
+          TMath::Abs(casc.mLambda() - 1.115683) < cascadesetting_v0masswindow) {
+
+        auto negExtra = casc.negTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>>();
+        auto posExtra = casc.posTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>>();
+        auto bachExtra = casc.bachTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>>();
+
+        if (negExtra.tpcCrossedRows() < tpcCrossedRows || posExtra.tpcCrossedRows() < tpcCrossedRows || bachExtra.tpcCrossedRows() < tpcCrossedRows)
+          continue;
+
+        if (casc.sign() < 0) {
+          if (TMath::Abs(posExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(negExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(bachExtra.tpcNSigmaPi()) < tpcNsigmaBachelor) {
+            if (tofNsigmaXiLaPr < 100 && fabs(casc.tofNSigmaXiLaPr()) > tofNsigmaXiLaPr)
+              continue;
+            if (tofNsigmaXiLaPi < 100 && fabs(casc.tofNSigmaXiLaPi()) > tofNsigmaXiLaPi)
+              continue;
+            if (tofNsigmaXiPi < 100 && fabs(casc.tofNSigmaXiPi()) > tofNsigmaXiPi)
+              continue;
+            histos.fill(HIST("h2dMassXiMinus"), casc.pt(), casc.mXi());
+          }
+          if (TMath::Abs(posExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(negExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(bachExtra.tpcNSigmaKa()) < tpcNsigmaBachelor) {
+            if (tofNsigmaOmLaPr < 100 && fabs(casc.tofNSigmaOmLaPr()) > tofNsigmaOmLaPr)
+              continue;
+            if (tofNsigmaOmLaPi < 100 && fabs(casc.tofNSigmaOmLaPi()) > tofNsigmaOmLaPi)
+              continue;
+            if (tofNsigmaOmKa < 100 && fabs(casc.tofNSigmaOmKa()) > tofNsigmaOmKa)
+              continue;
+            histos.fill(HIST("h2dMassOmegaMinus"), casc.pt(), casc.mOmega());
+          }
+        } else {
+          if (TMath::Abs(posExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(negExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(bachExtra.tpcNSigmaPi()) < tpcNsigmaBachelor) {
+            if (tofNsigmaXiLaPr < 100 && fabs(casc.tofNSigmaXiLaPr()) > tofNsigmaXiLaPr)
+              continue;
+            if (tofNsigmaXiLaPi < 100 && fabs(casc.tofNSigmaXiLaPi()) > tofNsigmaXiLaPi)
+              continue;
+            if (tofNsigmaXiPi < 100 && fabs(casc.tofNSigmaXiPi()) > tofNsigmaXiPi)
+              continue;
+            histos.fill(HIST("h2dMassXiPlus"), casc.pt(), casc.mXi());
+          }
+
+          if (TMath::Abs(posExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(negExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(bachExtra.tpcNSigmaKa()) < tpcNsigmaBachelor) {
+            if (tofNsigmaOmLaPr < 100 && fabs(casc.tofNSigmaOmLaPr()) > tofNsigmaOmLaPr)
+              continue;
+            if (tofNsigmaOmLaPi < 100 && fabs(casc.tofNSigmaOmLaPi()) > tofNsigmaOmLaPi)
+              continue;
+            if (tofNsigmaOmKa < 100 && fabs(casc.tofNSigmaOmKa()) > tofNsigmaOmKa)
+              continue;
+            histos.fill(HIST("h2dMassOmegaPlus"), casc.pt(), casc.mOmega());
+          }
+        }
+      }
+    }
+  }
+
   PROCESS_SWITCH(strangepidqa, processReal, "Produce real information", true);
   PROCESS_SWITCH(strangepidqa, processSim, "Produce simulated information", true);
+  PROCESS_SWITCH(strangepidqa, processCascades, "Process real cascades", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
