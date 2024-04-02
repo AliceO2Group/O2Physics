@@ -1418,21 +1418,21 @@ struct HfTrackIndexSkimCreator {
 
       if (applyMlForHfFilters) {
         AxisSpec axisBdtScore{100, 0.f, 1.f};
-        registry.add("ML/hMlScoreBkgD0", "Bkg ML score for D^{0} candidates;Bkg ML score;entries", kTH1F, {axisBdtScore}); 
-        registry.add("ML/hMlScorePromptD0", "Prompt ML score for D^{0} candidates;Prompt ML score;entries", kTH1F, {axisBdtScore}); 
-        registry.add("ML/hMlScoreNonpromptD0", "Non-prompt ML score for D^{0} candidates;Non-prompt ML score;entries", kTH1F, {axisBdtScore}); 
-        registry.add("ML/hMlScoreBkgDplus", "Bkg ML score for D^{#plus} candidates;Bkg ML score;entries", kTH1F, {axisBdtScore}); 
-        registry.add("ML/hMlScorePromptDplus", "Prompt ML score for D^{#plus} candidates;Prompt ML score;entries", kTH1F, {axisBdtScore}); 
-        registry.add("ML/hMlScoreNonpromptDplus", "Non-prompt ML score for D^{#plus} candidates;Non-prompt ML score;entries", kTH1F, {axisBdtScore}); 
-        registry.add("ML/hMlScoreBkgDs", "Bkg ML score for D_{s}^{#plus} candidates;Bkg ML score;entries", kTH1F, {axisBdtScore}); 
-        registry.add("ML/hMlScorePromptDs", "Prompt ML score for D_{s}^{#plus} candidates;Prompt ML score;entries", kTH1F, {axisBdtScore}); 
-        registry.add("ML/hMlScoreNonpromptDs", "Non-prompt ML score for D_{s}^{#plus} candidates;Non-prompt ML score;entries", kTH1F, {axisBdtScore}); 
-        registry.add("ML/hMlScoreBkgLc", "Bkg ML score for #Lambda_{c}^{#plus} candidates;Bkg ML score;entries", kTH1F, {axisBdtScore}); 
-        registry.add("ML/hMlScorePromptLc", "Prompt ML score for #Lambda_{c}^{#plus} candidates;Prompt ML score;entries", kTH1F, {axisBdtScore}); 
-        registry.add("ML/hMlScoreNonpromptLc", "Non-prompt ML score for #Lambda_{c}^{#plus} candidates;Non-prompt ML score;entries", kTH1F, {axisBdtScore}); 
-        registry.add("ML/hMlScoreBkgXic", "Bkg ML score for #Xi_{c}^{#plus} candidates;Bkg ML score;entries", kTH1F, {axisBdtScore}); 
-        registry.add("ML/hMlScorePromptXic", "Prompt ML score for #Xi_{c}^{#plus} candidates;Prompt ML score;entries", kTH1F, {axisBdtScore}); 
-        registry.add("ML/hMlScoreNonpromptXic", "Non-prompt ML score for #Xi_{c}^{#plus} candidates;Non-prompt ML score;entries", kTH1F, {axisBdtScore}); 
+        registry.add("ML/hMlScoreBkgD0", "Bkg ML score for D^{0} candidates;Bkg ML score;entries", kTH1F, {axisBdtScore});
+        registry.add("ML/hMlScorePromptD0", "Prompt ML score for D^{0} candidates;Prompt ML score;entries", kTH1F, {axisBdtScore});
+        registry.add("ML/hMlScoreNonpromptD0", "Non-prompt ML score for D^{0} candidates;Non-prompt ML score;entries", kTH1F, {axisBdtScore});
+        registry.add("ML/hMlScoreBkgDplus", "Bkg ML score for D^{#plus} candidates;Bkg ML score;entries", kTH1F, {axisBdtScore});
+        registry.add("ML/hMlScorePromptDplus", "Prompt ML score for D^{#plus} candidates;Prompt ML score;entries", kTH1F, {axisBdtScore});
+        registry.add("ML/hMlScoreNonpromptDplus", "Non-prompt ML score for D^{#plus} candidates;Non-prompt ML score;entries", kTH1F, {axisBdtScore});
+        registry.add("ML/hMlScoreBkgDs", "Bkg ML score for D_{s}^{#plus} candidates;Bkg ML score;entries", kTH1F, {axisBdtScore});
+        registry.add("ML/hMlScorePromptDs", "Prompt ML score for D_{s}^{#plus} candidates;Prompt ML score;entries", kTH1F, {axisBdtScore});
+        registry.add("ML/hMlScoreNonpromptDs", "Non-prompt ML score for D_{s}^{#plus} candidates;Non-prompt ML score;entries", kTH1F, {axisBdtScore});
+        registry.add("ML/hMlScoreBkgLc", "Bkg ML score for #Lambda_{c}^{#plus} candidates;Bkg ML score;entries", kTH1F, {axisBdtScore});
+        registry.add("ML/hMlScorePromptLc", "Prompt ML score for #Lambda_{c}^{#plus} candidates;Prompt ML score;entries", kTH1F, {axisBdtScore});
+        registry.add("ML/hMlScoreNonpromptLc", "Non-prompt ML score for #Lambda_{c}^{#plus} candidates;Non-prompt ML score;entries", kTH1F, {axisBdtScore});
+        registry.add("ML/hMlScoreBkgXic", "Bkg ML score for #Xi_{c}^{#plus} candidates;Bkg ML score;entries", kTH1F, {axisBdtScore});
+        registry.add("ML/hMlScorePromptXic", "Prompt ML score for #Xi_{c}^{#plus} candidates;Prompt ML score;entries", kTH1F, {axisBdtScore});
+        registry.add("ML/hMlScoreNonpromptXic", "Non-prompt ML score for #Xi_{c}^{#plus} candidates;Non-prompt ML score;entries", kTH1F, {axisBdtScore});
       }
     }
 
@@ -1811,29 +1811,25 @@ struct HfTrackIndexSkimCreator {
         bool isMlSel = hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCand, ptDummy, outputScores[iDecay3P]);
         if (fillHistograms) {
           switch (iDecay3P) {
-            case hf_cand_3prong::DecayType::DplusToPiKPi:
-            {
+            case hf_cand_3prong::DecayType::DplusToPiKPi: {
               registry.fill(HIST("ML/hMlScoreBkgDplus"), outputScores[iDecay3P][0]);
               registry.fill(HIST("ML/hMlScorePromptDplus"), outputScores[iDecay3P][1]);
               registry.fill(HIST("ML/hMlScoreNonpromptDplus"), outputScores[iDecay3P][2]);
               break;
             }
-            case hf_cand_3prong::DecayType::LcToPKPi:
-            {
+            case hf_cand_3prong::DecayType::LcToPKPi: {
               registry.fill(HIST("ML/hMlScoreBkgLc"), outputScores[iDecay3P][0]);
               registry.fill(HIST("ML/hMlScorePromptLc"), outputScores[iDecay3P][1]);
               registry.fill(HIST("ML/hMlScoreNonpromptLc"), outputScores[iDecay3P][2]);
               break;
             }
-            case hf_cand_3prong::DecayType::DsToKKPi:
-            {
+            case hf_cand_3prong::DecayType::DsToKKPi: {
               registry.fill(HIST("ML/hMlScoreBkgDs"), outputScores[iDecay3P][0]);
               registry.fill(HIST("ML/hMlScorePromptDs"), outputScores[iDecay3P][1]);
               registry.fill(HIST("ML/hMlScoreNonpromptDs"), outputScores[iDecay3P][2]);
               break;
             }
-            case hf_cand_3prong::DecayType::XicToPKPi:
-            {
+            case hf_cand_3prong::DecayType::XicToPKPi: {
               registry.fill(HIST("ML/hMlScoreBkgXic"), outputScores[iDecay3P][0]);
               registry.fill(HIST("ML/hMlScorePromptXic"), outputScores[iDecay3P][1]);
               registry.fill(HIST("ML/hMlScoreNonpromptXic"), outputScores[iDecay3P][2]);
