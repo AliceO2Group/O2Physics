@@ -222,6 +222,40 @@ DECLARE_SOA_TABLE(RMCColLabels, "AOD", "RMCCOLLABEL",
                   rlabels::RMCCollisionId, soa::Marker<1>)
 DECLARE_SOA_TABLE(StoredRMCColLabels, "AOD1", "RMCCOLLABEL",
                   rlabels::RMCCollisionId, soa::Marker<2>)
+
+namespace features
+{
+DECLARE_SOA_COLUMN(GeneratedCentralMultiplicity, t, int);
+DECLARE_SOA_COLUMN(ReconstructedCentralMultiplicity, m, int);
+DECLARE_SOA_COLUMN(GeneratedVertexX, vtX, float);
+DECLARE_SOA_COLUMN(GeneratedVertexY, vtY, float);
+DECLARE_SOA_COLUMN(GeneratedVertexZ, vtZ, float);
+DECLARE_SOA_COLUMN(ReconstructedVertexX, vmX, float);
+DECLARE_SOA_COLUMN(ReconstructedVertexY, vmY, float);
+DECLARE_SOA_COLUMN(ReconstructedVertexZ, vmZ, float);
+DECLARE_SOA_COLUMN(TimeRes, tres, float);
+DECLARE_SOA_COLUMN(GeneratedForwardMultiplicityA, tfA, int);
+DECLARE_SOA_COLUMN(GeneratedForwardMultiplicityC, tfC, int);
+DECLARE_SOA_COLUMN(ReconstructedForwardMultiplicityA, mfA, float);
+DECLARE_SOA_COLUMN(ReconstructedForwardMultiplicityC, mfC, float);
+DECLARE_SOA_COLUMN(ImpactParameter, b, float);
+DECLARE_SOA_COLUMN(ProcessId, id, int);
+} // namespace features
+
+DECLARE_SOA_TABLE(RFeatMins, "AOD", "RFEATMIN",
+                  soa::Index<>,
+                  rmccol::Weight,
+                  features::GeneratedCentralMultiplicity,
+                  features::ReconstructedCentralMultiplicity,
+                  features::ReconstructedVertexX,
+                  features::ReconstructedVertexY,
+                  features::ReconstructedVertexZ,
+                  features::TimeRes,
+                  features::ReconstructedForwardMultiplicityA,
+                  features::ReconstructedForwardMultiplicityC,
+                  features::ImpactParameter,
+                  features::ProcessId);
+
 } // namespace o2::aod
 namespace o2::soa
 {

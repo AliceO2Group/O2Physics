@@ -182,16 +182,16 @@ using CandidatesD0MCP = o2::soa::Join<o2::aod::HfD0PBases, o2::aod::JD0PIds>;
 using CandidatesLcMCP = o2::soa::Join<o2::aod::Hf3PPBases, o2::aod::JLcPIds>;
 using CandidatesBplusMCP = o2::soa::Join<o2::aod::JMcParticles, o2::aod::HfCandBplusMcGen>;
 
-using CandidatesD0Data = o2::soa::Join<o2::aod::HfD0Bases, o2::aod::HfD0Pars, o2::aod::HfD0ParEs, o2::aod::HfD0Sels, o2::aod::JD0Ids>;
-using CandidatesD0MCD = o2::soa::Join<o2::aod::HfD0Bases, o2::aod::HfD0Pars, o2::aod::HfD0ParEs, o2::aod::HfD0Sels, o2::aod::HfD0Mcs, o2::aod::JD0Ids>;
+using CandidatesD0Data = o2::soa::Join<o2::aod::HfD0Bases, o2::aod::HfD0Pars, o2::aod::HfD0ParEs, o2::aod::HfD0Sels, o2::aod::HfD0Mls, o2::aod::JD0Ids>;
+using CandidatesD0MCD = o2::soa::Join<o2::aod::HfD0Bases, o2::aod::HfD0Pars, o2::aod::HfD0ParEs, o2::aod::HfD0Sels, o2::aod::HfD0Mls, o2::aod::HfD0Mcs, o2::aod::JD0Ids>;
 using JetTracksSubD0 = o2::aod::JTrackD0Subs;
 
 using CandidatesBplusData = o2::soa::Join<o2::aod::HfCandBplus, o2::aod::HfSelBplusToD0Pi>;
 using CandidatesBplusMCD = o2::soa::Join<o2::aod::HfCandBplus, o2::aod::HfSelBplusToD0Pi, o2::aod::HfCandBplusMcRec>;
 using JetTracksSubBplus = o2::aod::JTrackBplusSubs;
 
-using CandidatesLcData = o2::soa::Join<o2::aod::Hf3PBases, o2::aod::Hf3PPars, o2::aod::Hf3PParEs, o2::aod::Hf3PSels, o2::aod::JLcIds>;
-using CandidatesLcMCD = o2::soa::Join<o2::aod::Hf3PBases, o2::aod::Hf3PPars, o2::aod::Hf3PParEs, o2::aod::Hf3PSels, o2::aod::Hf3PMcs, o2::aod::JLcIds>;
+using CandidatesLcData = o2::soa::Join<o2::aod::Hf3PBases, o2::aod::Hf3PPars, o2::aod::Hf3PParEs, o2::aod::Hf3PSels, o2::aod::Hf3PMls, o2::aod::JLcIds>;
+using CandidatesLcMCD = o2::soa::Join<o2::aod::Hf3PBases, o2::aod::Hf3PPars, o2::aod::Hf3PParEs, o2::aod::Hf3PSels, o2::aod::Hf3PMls, o2::aod::Hf3PMcs, o2::aod::JLcIds>;
 using JetTracksSubLc = o2::aod::JTrackLcSubs;
 
 #endif // PWGJE_DATAMODEL_JET_H_

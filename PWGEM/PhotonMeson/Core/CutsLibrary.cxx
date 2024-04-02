@@ -516,7 +516,7 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
   cut->SetMaxDcaZ(1.0);
 
   if (nameStr.find("lowB") != std::string::npos) {
-    cut->SetMinNCrossedRowsTPC(70);
+    cut->SetMinNCrossedRowsTPC(40);
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
     cut->SetChi2PerClusterTPC(0.0, 4.0);
     cut->SetChi2PerClusterITS(0.0, 5.0);
