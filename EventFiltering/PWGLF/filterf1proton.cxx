@@ -130,8 +130,8 @@ struct filterf1proton {
   Configurable<double> cMaxRelMom{"cMaxRelMom", 0.5, "Relative momentum cut"};
 
   // Histogram
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";; Number of events", 3, 0.0f, 3.0f)};
   HistogramRegistry qaRegistry{"QAHistos", {
-                                             {"hEventstat", "hEventstat", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
                                              {"hInvMassf1", "hInvMassf1", {HistType::kTH2F, {{400, 1.1f, 1.9f}, {100, 0.0f, 10.0f}}}},
                                              {"hInvMassf1Like", "hInvMassf1Like", {HistType::kTH2F, {{400, 1.1f, 1.9f}, {100, 0.0f, 10.0f}}}},
                                              {"hInvMassf1kstar", "hInvMassf1kstar", {HistType::kTH3F, {{400, 1.1f, 1.9f}, {100, 0.0f, 10.0f}, {8, 0.0f, 0.8f}}}},
@@ -158,6 +158,9 @@ struct filterf1proton {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    hProcessedEvents->GetXaxis()->SetBinLabel(1, "All events");
+    hProcessedEvents->GetXaxis()->SetBinLabel(2, "Events with F1");
+    hProcessedEvents->GetXaxis()->SetBinLabel(3, aod::filtering::TriggerEventF1Proton::columnLabel());
   }
 
   template <typename T>
@@ -643,12 +646,12 @@ struct filterf1proton {
         }
       }
     }
-    qaRegistry.fill(HIST("hEventstat"), 0.5);
+    hProcessedEvents->Fill(0.5);
     if (numberF1 > 0) {
-      qaRegistry.fill(HIST("hEventstat"), 1.5);
+      hProcessedEvents->Fill(1.5);
     }
     if (keepEventF1Proton) {
-      qaRegistry.fill(HIST("hEventstat"), 2.5);
+      hProcessedEvents->Fill(2.5);
     }
     tags(keepEventF1Proton);
   }

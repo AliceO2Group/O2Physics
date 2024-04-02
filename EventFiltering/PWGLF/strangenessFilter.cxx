@@ -68,7 +68,7 @@ struct strangenessFilter {
   HistogramRegistry QAHistosTriggerParticles{"QAHistosTriggerParticles", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry QAHistosStrangenessTracking{"QAHistosStrangenessTracking", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry EventsvsMultiplicity{"EventsvsMultiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1F> hProcessedEvents{TH1F("hProcessedEvents", "Strangeness - event filtered; Event counter; Number of events", 13, -1., 12.)};
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", "Strangeness - event filtered;; Number of events", 13, -1., 12.)};
   OutputObj<TH1F> hCandidate{TH1F("hCandidate", "; Candidate pass selection; Number of events", 30, 0., 30.)};
   OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of h-Xi events with pT_h higher than thrd; hadrons with p_{T}>bincenter (GeV/c); Number of events", 11, 0., 11.)};
   OutputObj<TH1F> hhXiPairsvsPt{TH1F("hhXiPairsvsPt", "pt distributions of Xi in events with a trigger particle; #it{p}_{T} (GeV/c); Number of Xi", 100, 0., 10.)};
@@ -180,18 +180,19 @@ struct strangenessFilter {
     mTrackSelector.SetMaxDcaXY(1.f);
     mTrackSelector.SetMaxDcaZ(2.f);
 
-    hProcessedEvents->GetXaxis()->SetBinLabel(2, "Events processed");
+    hProcessedEvents->GetXaxis()->SetBinLabel(1, "Events processed");
+    hProcessedEvents->GetXaxis()->SetBinLabel(2, "Event selection");
     hProcessedEvents->GetXaxis()->SetBinLabel(3, "Events w/ high-#it{p}_{T} hadron");
-    hProcessedEvents->GetXaxis()->SetBinLabel(4, "#Omega");
-    hProcessedEvents->GetXaxis()->SetBinLabel(5, "high-#it{p}_{T} hadron - #Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(6, "2#Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(7, "3#Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(8, "4#Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(9, "#Xi-YN");
-    hProcessedEvents->GetXaxis()->SetBinLabel(10, "#Omega high radius");
+    hProcessedEvents->GetXaxis()->SetBinLabel(4, aod::filtering::Omega::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(5, aod::filtering::hadronXi::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(6, aod::filtering::DoubleXi::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(7, aod::filtering::TripleXi::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(8, aod::filtering::QuadrupleXi::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(9, aod::filtering::SingleXiYN::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(10, aod::filtering::OmegaLargeRadius::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(11, "#Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(12, "trk. #Xi");
-    hProcessedEvents->GetXaxis()->SetBinLabel(13, "trk. #Omega");
+    hProcessedEvents->GetXaxis()->SetBinLabel(12, aod::filtering::TrackedXi::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(13, aod::filtering::TrackedOmega::columnLabel());
 
     hCandidate->GetXaxis()->SetBinLabel(1, "All");
     hCandidate->GetXaxis()->SetBinLabel(2, "Has_V0");
