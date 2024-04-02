@@ -1299,7 +1299,7 @@ struct tofSpectra {
   }
 
   template <std::size_t i, typename ParticleType>
-  void fillParticleHistograms_MC(ParticleType const& mcParticle, CollisionCandidateMC::iterator const& collision)
+  void fillParticleHistograms_MC(ParticleType const& mcParticle, aod::McCollision const& mcCollision)
   {
 
     switch (i) {
@@ -1363,7 +1363,7 @@ struct tofSpectra {
       return;
     }
 
-    const float multiplicity = getMultiplicity(collision);
+    const float multiplicity = getMultiplicity(mcCollision);
     if (!mcParticle.isPhysicalPrimary()) {
       if (mcParticle.getProcess() == 4) {
         if (makeTHnSparseChoice) {
