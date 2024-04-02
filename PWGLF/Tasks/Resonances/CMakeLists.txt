@@ -123,4 +123,3 @@ o2physics_add_dpl_workflow(xi1530analysis
     SOURCES xi1530Analysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
-    
