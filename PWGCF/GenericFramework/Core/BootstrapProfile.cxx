@@ -79,7 +79,7 @@ TH1* BootstrapProfile::getHist(Int_t ind)
   if (fPresetWeights && fMultiRebin > 0)
     return getWeightBasedRebin(ind);
   if (ind < 0) {
-      return getHistRebinned(reinterpret_cast<TProfile*>(this)); //((TProfile*)this)->ProjectionX(Form("%s_hist",this->GetName()));
+    return getHistRebinned(reinterpret_cast<TProfile*>(this)); //((TProfile*)this)->ProjectionX(Form("%s_hist",this->GetName()));
   } else {
     if (!fListOfEntries) {
       printf("No subprofiles exist!\n");
@@ -97,7 +97,7 @@ TH1* BootstrapProfile::getHist(Int_t ind)
 TProfile* BootstrapProfile::getProfile(Int_t ind)
 {
   if (ind < 0) {
-      return reinterpret_cast<TProfile*>(this);
+    return reinterpret_cast<TProfile*>(this);
   } else {
     if (!fListOfEntries) {
       printf("No subprofiles exist!\n");
