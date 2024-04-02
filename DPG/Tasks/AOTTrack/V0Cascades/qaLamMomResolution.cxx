@@ -163,7 +163,6 @@ struct qaLamMomResolution {
     o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCovNeg, 2.f, matCorr, &mDcaInfoCovNeg);
   }
 
-
   template <typename TCollision>
   void fillTable(TCollision const& collision)
   {
@@ -307,8 +306,8 @@ struct qaLamMomResolution {
                 mTrackParCovPos.getPxPyPzGlo(pPos);
                 mTrackParCovNeg.getPxPyPzGlo(pNeg);
                 massLambda = RecoDecay::m(std::array{std::array{pPos[0], pPos[1], pPos[2]},
-                                    std::array{pNeg[0], pNeg[1], pNeg[2]}},
-                                    std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+                                                     std::array{pNeg[0], pNeg[1], pNeg[2]}},
+                                          std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
               }
 
               // fill table
@@ -367,9 +366,9 @@ struct qaLamMomResolution {
                 mTrackParCovPos.getPxPyPzGlo(pPos);
                 mTrackParCovNeg.getPxPyPzGlo(pNeg);
                 massLambda = RecoDecay::m(std::array{std::array{pPos[0], pPos[1], pPos[2]},
-                                          std::array{pNeg[0], pNeg[1], pNeg[2]}},
+                                                     std::array{pNeg[0], pNeg[1], pNeg[2]}},
                                           std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
-              }  
+              }
 
               // fill table
               fillTable(collision);
