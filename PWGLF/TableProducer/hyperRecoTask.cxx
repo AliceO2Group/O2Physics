@@ -10,7 +10,6 @@
 // or submit itself to any jurisdiction.
 //
 // Build hypertriton candidates from V0s and tracks
-// ==============================================================================
 
 #include <array>
 
@@ -78,6 +77,7 @@ struct hyperCandidate {
   float genPhi() const { return std::atan2(gMom[1], gMom[0]); }
   float genEta() const { return std::asinh(gMom[2] / genPt()); }
 
+  int v0ID;
   int posTrackID;
   int negTrackID;
   float dcaV0dau = -10;
@@ -165,6 +165,7 @@ struct hyperRecoTask {
   // vector to keep track of the collisions passing the event selection in the MC
   std::vector<bool> isRecoCollision;
   std::vector<bool> isSurvEvSelCollision;
+  std::vector<bool> isTracked;
 
   Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
 
@@ -414,6 +415,7 @@ struct hyperRecoTask {
       hDeDx3HeSel->Fill(chargeFactor * hypCand.momHe3TPC, he3track.tpcSignal());
       hNsigma3HeSel->Fill(chargeFactor * hypCand.momHe3TPC, hypCand.nSigmaHe3);
 
+      hypCand.v0ID = v0.globalIndex();
       hyperCandidates.push_back(hypCand);
     }
   }
@@ -456,9 +458,18 @@ struct hyperRecoTask {
     }
   }
 
+  void processDataTracked(CollisionsFull const& collisions, aod::V0s const& V0s, aod::TrackedV0s const& tV0s, TracksFull const& tracks, aod::BCsWithTimestamps const& bcs) {
+    isTracked.clear();
+    isTracked.resize(V0s.size(), false);
+    for (const auto& tV0 : tV0s) {
+      isTracked[tV0.v0Id()] = true;
+    }
+    processData(collisions, V0s, tracks, bcs);
+  }
+  PROCESS_SWITCH(hyperRecoTask, processDataTracked, "Data analysis wit tracked V0s information", false);
+
   void processData(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::BCsWithTimestamps const&)
   {
-
     for (const auto& collision : collisions) {
       hyperCandidates.clear();
 
@@ -491,7 +502,7 @@ struct hyperRecoTask {
                         hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                         hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                         hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
-                        hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags);
+                        hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, !isTracked.empty() && isTracked[hypCand.v0ID]);
       }
     }
   }
@@ -535,7 +546,7 @@ struct hyperRecoTask {
                                 hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                                 hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                                 hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
-                                hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags);
+                                hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, !isTracked.empty() && isTracked[hypCand.v0ID]);
       }
     }
   }
@@ -592,7 +603,7 @@ struct hyperRecoTask {
                       hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                       hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                       hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi,
-                      hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags,
+                      hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, !isTracked.empty() && isTracked[hypCand.v0ID],
                       chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                       hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
                       hypCand.isReco, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection);
@@ -657,13 +668,24 @@ struct hyperRecoTask {
                     -1, -1, -1,
                     -1, -1, -1,
                     -1, -1, -1, -1,
-                    -1, -1, -1,
+                    -1, -1, -1, false,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
                     hypCand.isReco, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection);
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processMC, "MC analysis", false);
+
+  void processMCTracked(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, aod::TrackedV0s const& tV0s, TracksFull const& tracks, aod::BCsWithTimestamps const& bcs, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC) {
+    isTracked.clear();
+    isTracked.resize(V0s.size(), false);
+    for (const auto& tV0 : tV0s) {
+      isTracked[tV0.v0Id()] = true;
+    }
+    processMC(collisions, mcCollisions, V0s, tracks, bcs, trackLabelsMC, particlesMC);
+  }
+  PROCESS_SWITCH(hyperRecoTask, processMCTracked, "MC analysis with tracked V0s", false);
+
 };
 
 WorkflowSpec
