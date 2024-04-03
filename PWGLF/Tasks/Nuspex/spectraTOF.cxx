@@ -1363,7 +1363,7 @@ struct tofSpectra {
       return;
     }
 
-    const float multiplicity = getMultiplicity(collision);
+    const float multiplicity = collision.FT0C();
     if (!mcParticle.isPhysicalPrimary()) {
       if (mcParticle.getProcess() == 4) {
         if (makeTHnSparseChoice) {
