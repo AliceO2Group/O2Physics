@@ -39,9 +39,10 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
+using namespace o2::aod::pwgem::photon;
 using std::array;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
 struct emcalQC {
@@ -71,23 +72,31 @@ struct emcalQC {
     fMainList->SetName("fMainList");
 
     // create sub lists first.
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Event");
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Event");
     THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
-    o2::aod::emphotonhistograms::DefineHistograms(list_ev, "Event");
+    o2::aod::pwgem::photon::histogram::DefineHistograms(list_ev, "Event");
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Cluster");
+    list_ev->Add(new TH1F("hNEvents", "hNEvents", 6, 0.5f, 6.5f));
+    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(1, "all cols");
+    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
+    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(3, "emc readout");
+    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(4, "1+ Contributor");
+    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(5, "z<10cm");
+    reinterpret_cast<TH2F*>(list_ev->FindObject("hNEvents"))->GetXaxis()->SetBinLabel(6, "unique col");
+
+    o2::aod::pwgem::photon::histogram::AddHistClass(fMainList, "Cluster");
     THashList* list_cluster = reinterpret_cast<THashList*>(fMainList->FindObject("Cluster"));
 
     for (const auto& cut : fEMCCuts) {
       const char* cutname = cut.GetName();
-      o2::aod::emphotonhistograms::AddHistClass(list_cluster, cutname);
+      o2::aod::pwgem::photon::histogram::AddHistClass(list_cluster, cutname);
     }
 
     // for Clusters
     for (auto& cut : fEMCCuts) {
       std::string_view cutname = cut.GetName();
       THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("Cluster")->FindObject(cutname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list, "Cluster", fDo2DQC ? "2D_EMC" : "EMC");
+      o2::aod::pwgem::photon::histogram::DefineHistograms(list, "Cluster", fDo2DQC ? "2D_EMC" : "EMC");
     }
   }
 
@@ -126,7 +135,7 @@ struct emcalQC {
           custom_cut->SetUseExoticCut(EMC_UseExoticCut);
           fEMCCuts.push_back(*custom_cut);
         } else {
-          fEMCCuts.push_back(*aod::emccuts::GetCut(cutname));
+          fEMCCuts.push_back(*emccuts::GetCut(cutname));
         }
       }
     }
@@ -137,12 +146,6 @@ struct emcalQC {
   {
     DefineCuts();
     addhistograms(); // please call this after DefinCuts();
-
-    reinterpret_cast<TH2F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(1, "all cols");
-    reinterpret_cast<TH2F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(2, "sel8 + readout");
-    reinterpret_cast<TH2F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(3, "1+ Contributor");
-    reinterpret_cast<TH2F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(4, "z<10cm");
-    reinterpret_cast<TH2F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(5, "unique col");
 
     fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
     fOutputCluster.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Cluster")));
@@ -156,30 +159,33 @@ struct emcalQC {
     THashList* list_cluster = static_cast<THashList*>(fMainList->FindObject("Cluster"));
 
     for (auto& collision : collisions) {
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_before"))->Fill(collision.posZ());
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(1.0);
-      if (!collision.sel8() || collision.isEMCreadout() == 0) { // Check sel8 and whether EMC was read out
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hNEvents"))->Fill(1.0);
+      if (!collision.sel8()) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(2.0);
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hNEvents"))->Fill(2.0);
+      if (collision.isEMCreadout() == 0) {
+        continue;
+      }
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hNEvents"))->Fill(3.0);
 
       if (collision.numContrib() < 0.5) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(3.0);
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hNEvents"))->Fill(4.0);
 
       if (abs(collision.posZ()) > 10.0) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(4.0);
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_after"))->Fill(collision.posZ());
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hNEvents"))->Fill(5.0);
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx"))->Fill(collision.posZ());
 
       if (collision.ncollsPerBC() != 1) { // Check that the collision is unique (the only one in the bc)
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(5.0);
+      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hNEvents"))->Fill(6.0);
 
-      o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev, "", collision); // Fill event histograms
+      o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEvent>(list_ev, "", collision); // Fill event histograms
 
       auto clusters_per_coll = clusters.sliceBy(perCollision, collision.collisionId());
       for (const auto& cut : fEMCCuts) {
@@ -209,7 +215,7 @@ struct emcalQC {
           }
 
           if (survivesIsSelectedCuts) {
-            o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEMCCluster>(list_cluster_cut, fDo2DQC ? "2D" : "1D", cluster);
+            o2::aod::pwgem::photon::histogram::FillHistClass<EMHistType::kEMCCluster>(list_cluster_cut, fDo2DQC ? "2D" : "1D", cluster);
             reinterpret_cast<TH2F*>(fMainList->FindObject("Cluster")->FindObject(cut.GetName())->FindObject("hClusterQualityCuts"))->Fill(7., cluster.e());
             ng++;
           }

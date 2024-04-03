@@ -154,9 +154,15 @@ struct PolarisationRho {
     registry.add("hMassFourPionsRightSign", "Raw Inv.M;#it{m_{4#pi}}, GeV/c^{2};", kTH1D, {{600, 0., 6.}});
     registry.add("hMassSixPionsRightSign", "Raw Inv.M;#it{m_{6#pi}}, GeV/c^{2};", kTH1D, {{600, 0., 6.}});
     registry.add("hPhiEtaSixPionsRightSign", "Phi vs Eta;#it{#phi};#it{#eta};", kTH2F, {{100, 0. * TMath::Pi(), 2. * TMath::Pi()}, {120, -2, 2}});
-    registry.add("hMassPhi", "Raw Inv.M;#it{m_{#mu#mu}}, GeV/c^{2};", kTH1D, {{400, 0., 4.}});
-    registry.add("hMassPhiWithoutPID", "Raw Inv.M;#it{m_{#mu#mu}}, GeV/c^{2};", kTH1D, {{400, 0., 4.}});
-    registry.add("hMassPhiWithoutPIDPionHypothesis", "Raw Inv.M;#it{m_{#mu#mu}}, GeV/c^{2};", kTH1D, {{400, 0., 4.}});
+    registry.add("hMassPhi", "Raw Inv.M;#it{m_{KK}}, GeV/c^{2};", kTH1D, {{400, 0., 4.}});
+    registry.add("hMassPhiWithoutPID", "Raw Inv.M;#it{m_{KK}}, GeV/c^{2};", kTH1D, {{400, 0., 4.}});
+    registry.add("hMassPhiWrongMomentumWithoutPID", "Raw Inv.M;#it{m_{KK}}, GeV/c^{2};", kTH1D, {{400, 0., 4.}});
+    registry.add("hRapidityPhiWithoutPID", "Rapidity;#it{y_{KK}};", kTH1D, {{100, -2., 2.}});
+    registry.add("hCosThetaPhiWithoutPID", "CosTheta;cos(#theta);", kTH1D, {{100, -2., 2.}});
+    registry.add("hPhiPhiWithoutPID", "Phi;#varphi;", kTH1D, {{100, -2. * TMath::Pi(), 2. * TMath::Pi()}});
+    registry.add("hPtKaonVsKaon", "Pt1 vs Pt2;p_{T};p_{T};", kTH2F, {{100, 0., 3.}, {100, 0., 3.}});
+    registry.add("hMassPhiWrongMomentaWithoutPID", "Raw Inv.M;#it{m_{KK}}, GeV/c^{2};", kTH1D, {{400, 0., 4.}});
+    registry.add("hMassPhiWithoutPIDPionHypothesis", "Raw Inv.M;#it{m_{KK}}, GeV/c^{2};", kTH1D, {{400, 0., 4.}});
     registry.add("hMass1", "Raw Inv.M;#it{m_{#mu#mu}}, GeV/c^{2};", kTH1D, {{100, 0., 2.}});
     registry.add("hMass2", "Raw Inv.M;#it{m_{#mu#mu}}, GeV/c^{2};", kTH1D, {{100, 0., 2.}});
 
@@ -215,7 +221,7 @@ struct PolarisationRho {
   {
     registry.fill(HIST("hSelectionCounter"), 0);
 
-    TLorentzVector p, phi, phiWithoutPID, phiWithoutPIDPionHypothesis; // lorentz vectors of tracks and the mother
+    TLorentzVector p, phi, phiWithoutPID, phiWrongMomentaWithoutPID, phiWithoutPIDPionHypothesis; // lorentz vectors of tracks and the mother
 
     //_____________________________________
     // Create kaons and apply TPC Ka PID
@@ -254,7 +260,9 @@ struct PolarisationRho {
     //_____________________________________
     // Create kaons WITHOUT PID
     std::vector<TLorentzVector> allTracksAreKaons;
+    std::vector<TLorentzVector> allTracksAreKaonsWrongMomentum;
     std::vector<TLorentzVector> allTracksArePions;
+    int counter = 0;
     for (auto t : tracks) {
       if (!t.isPVContributor()) {
         continue;
@@ -269,8 +277,16 @@ struct PolarisationRho {
       a.SetXYZM(t.px(), t.py(), t.pz(), mkaon);
       TLorentzVector b;
       b.SetXYZM(t.px(), t.py(), t.pz(), mpion);
+      TLorentzVector a2;
+      a2.SetXYZM(-1. * t.px(), -1. * t.py(), -1. * t.pz(), mkaon);
       allTracksAreKaons.push_back(a);
       allTracksArePions.push_back(b);
+      if (counter < 1) {
+        allTracksAreKaonsWrongMomentum.push_back(a);
+      } else {
+        allTracksAreKaonsWrongMomentum.push_back(a2);
+      }
+      counter += 1;
     }
     //_____________________________________
     // Creating phis
@@ -278,15 +294,25 @@ struct PolarisationRho {
       for (auto kaon : allTracksAreKaons) {
         phiWithoutPID += kaon;
       }
+      for (auto kaon : allTracksAreKaonsWrongMomentum) {
+        phiWrongMomentaWithoutPID += kaon;
+      }
       for (auto pion : allTracksArePions) {
         phiWithoutPIDPionHypothesis += pion;
       }
-      if (phiWithoutPID.M() < 1.1) {
+      if (phiWithoutPID.M() < 1.05) {
+        auto costhetaPhi = CosThetaHelicityFrame(allTracksAreKaons[0], allTracksAreKaons[1], phiWithoutPID);
+        auto phiPhi = 1. * TMath::Pi() + PhiHelicityFrame(allTracksAreKaons[0], allTracksAreKaons[1], phiWithoutPID);
         registry.fill(HIST("hPtPhiWithoutPID"), phiWithoutPID.Pt());
+        registry.fill(HIST("hCosThetaPhiWithoutPID"), costhetaPhi);
+        registry.fill(HIST("hPhiPhiWithoutPID"), phiPhi);
         registry.fill(HIST("hPtPhiWithoutPIDPionHypothesis"), phiWithoutPIDPionHypothesis.Pt());
         registry.fill(HIST("hMassPhiWithoutPIDPionHypothesis"), phiWithoutPIDPionHypothesis.M());
+        registry.fill(HIST("hRapidityPhiWithoutPID"), phiWithoutPID.Rapidity());
+        registry.fill(HIST("hPtKaonVsKaon"), allTracksAreKaons[0].Pt(), allTracksAreKaons[1].Pt());
       }
       registry.fill(HIST("hMassPhiWithoutPID"), phiWithoutPID.M());
+      registry.fill(HIST("hMassPhiWrongMomentumWithoutPID"), phiWrongMomentaWithoutPID.M());
     }
 
     //_____________________________________

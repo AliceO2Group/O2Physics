@@ -17,9 +17,10 @@ o2physics_add_dpl_workflow(tpcpid
                     SOURCES lfTPCPID.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(zdcsp
                     SOURCES zdcSP.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
 
 # Strangeness
@@ -126,6 +127,11 @@ o2physics_add_dpl_workflow(hypertriton-reco-task
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(hyper-kink-reco-task
+                    SOURCES hyperKinkRecoTask.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(hyhefour-builder
                     SOURCES hyhe4builder.cxx
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
@@ -146,9 +152,19 @@ o2physics_add_dpl_workflow(hypertriton3bodyfinder
                     PUBLIC_LINK_LIBRARIES  O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(threebody-reco-task
+                    SOURCES threebodyRecoTask.cxx
+                    PUBLIC_LINK_LIBRARIES  O2::DCAFitter O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 # Resonances
 o2physics_add_dpl_workflow(reso2initializer
                     SOURCES LFResonanceInitializer.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(reso2mergedf
+                    SOURCES LFResonanceMergeDF.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
                     COMPONENT_NAME Analysis)
 
@@ -179,7 +195,7 @@ o2physics_add_dpl_workflow(cascqaanalysis
 
 o2physics_add_dpl_workflow(cascadeflow
                     SOURCES cascadeflow.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 # Spectra

@@ -50,6 +50,9 @@ struct v0cascadesQA {
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
   Configurable<bool> doextraanalysis{"doextraanalysis", 0, "Add extra histograms"};
 
+  // configurable track properties
+  Configurable<bool> checkDauTPC{"checkDauTPC", false, "check if daughter tracks have TPC match"};
+
   // configurable binning of histograms
   ConfigurableAxis binPt{"binPt", {100, 0.0f, 10.0f}, ""};
   ConfigurableAxis binPtsmall{"binPtsmall", {50, 0.0f, 10.0f}, ""};
@@ -382,6 +385,11 @@ struct v0cascadesQA {
         dauEtaFlag = 0;
       }
 
+      // check TPC
+      if (checkDauTPC && (!posdau.hasTPC() || !negdau.hasTPC())) {
+        continue;
+      }
+
       Int_t posITSNhits = 0, negITSNhits = 0;
       for (unsigned int i = 0; i < 7; i++) {
         if (posdau.itsClusterMap() & (1 << i)) {
@@ -580,6 +588,11 @@ struct v0cascadesQA {
         dauEtaFlag = 1;
       } else {
         dauEtaFlag = 0;
+      }
+
+      // check TPC
+      if (checkDauTPC && (!posdau.hasTPC() || !negdau.hasTPC() || !bachelor.hasTPC())) {
+        continue;
       }
 
       // histos_Casc.fill(HIST("XiProgSelections"), );

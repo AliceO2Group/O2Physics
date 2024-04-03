@@ -44,6 +44,7 @@ static constexpr std::array<int, nNuclei> charges{1, 1, 2};
 static const std::vector<std::string> matterOrNot{"Matter", "Antimatter"};
 static const std::vector<std::string> nucleiNames{"H2", "H3", "Helium"};
 static const std::vector<std::string> hypernucleiNames{"H3L"}; // 3-body decay case
+static const std::vector<std::string> columnsNames{"fH2", "fH3", o2::aod::filtering::He::columnLabel(), o2::aod::filtering::H3L3Body::columnLabel()};
 static const std::vector<std::string> cutsNames{
   "TPCnSigmaMin", "TPCnSigmaMax", "TOFnSigmaMin", "TOFnSigmaMax", "TOFpidStartPt"};
 constexpr double betheBlochDefault[nNuclei][6]{
@@ -106,12 +107,13 @@ struct nucleiFilter {
   Configurable<float> minDeuteronPUseTOF{"minDeuteronPUseTOF", 1, "minDeuteronPt Enable TOF PID"};
   Configurable<float> h3LMassLowerlimit{"h3LMassLowerlimit", 2.96, "Hypertriton mass lower limit"};
   Configurable<float> h3LMassUpperlimit{"h3LMassUpperlimit", 3.04, "Hypertriton mass upper limit"};
-  Configurable<int> mincrossedrowsproton{"mincrossedrowsproton", 90, "min tpc crossed rows for pion"};
-  Configurable<int> mincrossedrowspion{"mincrossedrowspion", 70, "min tpc crossed rows"};
-  Configurable<int> mincrossedrowsdeuteron{"mincrossedrowsdeuteron", 100, "min tpc crossed rows for deuteron"};
+  Configurable<int> mintpcNClsproton{"mintpcNClsproton", 90, "min tpc Nclusters for proton"};
+  Configurable<int> mintpcNClspion{"mintpcNClspion", 70, "min tpc Nclusters for pion"};
+  Configurable<int> mintpcNClsdeuteron{"mintpcNClsdeuteron", 100, "min tpc Nclusters for deuteron"};
   Configurable<bool> fixTPCinnerParam{"fixTPCinnerParam", false, "Fix TPC inner param"};
 
   HistogramRegistry qaHists{"qaHists", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";;Number of filtered events", nNuclei + nHyperNuclei + 1, -0.5, nNuclei + nHyperNuclei + 0.5)};
 
   void init(o2::framework::InitContext&)
   {
@@ -120,6 +122,7 @@ struct nucleiFilter {
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
 
     qaHists.add("fCollZpos", "collision z position", HistType::kTH1F, {{600, -20., +20., "z position (cm)"}});
+    qaHists.add("fTPCsignalAll", "Specific energy loss (before filter)", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     qaHists.add("fTPCsignal", "Specific energy loss", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     qaHists.add("fDeuTOFNsigma", "Deuteron TOF Nsigma distribution", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {2000, -100, 100, "TOF n#sigma"}});
     qaHists.add("fH3LMassVsPt", "Hypertrion mass Vs pT", HistType::kTH2F, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {80, 2.96, 3.04, "Inv. Mass (GeV/c^{2})"}});
@@ -129,26 +132,27 @@ struct nucleiFilter {
       h2TPCnSigma[iN] = qaHists.add<TH2>(Form("fTPCcounts_%s", nucleiNames[iN].data()), "n-sigma TPC", HistType::kTH2F, {{100, -5, 5, "#it{p} /Z (GeV/#it{c})"}, {200, -10., +10., "n#sigma_{He} (a. u.)"}});
     }
 
-    auto scalers{std::get<std::shared_ptr<TH1>>(qaHists.add("fProcessedEvents", ";;Number of filtered events", HistType::kTH1F, {{nNuclei + nHyperNuclei + 1, -0.5, nNuclei + nHyperNuclei + 0.5}}))};
-    scalers->GetXaxis()->SetBinLabel(1, "Processed events");
-    for (uint32_t iS{0}; iS < nucleiNames.size(); ++iS) {
-      scalers->GetXaxis()->SetBinLabel(iS + 2, nucleiNames[iS].data());
-    }
-    for (uint32_t iS{0}; iS < hypernucleiNames.size(); ++iS) {
-      scalers->GetXaxis()->SetBinLabel(iS + nucleiNames.size() + 2, hypernucleiNames[iS].data());
+    hProcessedEvents->GetXaxis()->SetBinLabel(1, "Processed events");
+    for (uint32_t iS{0}; iS < columnsNames.size(); ++iS) {
+      hProcessedEvents->GetXaxis()->SetBinLabel(iS + 2, columnsNames[iS].data());
     }
   }
 
   // Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta);
   // using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl>;
-  void process(aod::Collisions::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, TrackCandidates const& tracks)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, TrackCandidates const& tracks)
   {
     // collision process loop
     bool keepEvent[nNuclei + nHyperNuclei]{false};
     //
     qaHists.fill(HIST("fCollZpos"), collision.posZ());
-    qaHists.fill(HIST("fProcessedEvents"), 0);
+    hProcessedEvents->Fill(0);
+    //
+    if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      tags(keepEvent[2], keepEvent[3]);
+      return;
+    }
     //
     const double bgScalings[nNuclei][2]{
       {charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / masses[0], charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / masses[0]},
@@ -177,6 +181,9 @@ struct nucleiFilter {
       const int iC{track.sign() < 0};
 
       float fixTPCrigidity{(fixTPCinnerParam && (track.pidForTracking() == track::PID::Helium3 || track.pidForTracking() == track::PID::Alpha)) ? 0.5f : 1.f};
+
+      // fill QA hist: dEdx for all charged tracks
+      qaHists.fill(HIST("fTPCsignalAll"), track.sign() * track.tpcInnerParam() * fixTPCrigidity, track.tpcSignal());
 
       for (int iN{0}; iN < nNuclei; ++iN) {
         /// Cheap checks first
@@ -230,7 +237,7 @@ struct nucleiFilter {
         continue;
       }
       if (std::abs(track0.tpcNSigmaPr()) < TpcPidNsigmaCut && std::abs(track1.tpcNSigmaPi()) < TpcPidNsigmaCut && std::abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mHypertriton() > h3LMassLowerlimit && vtx.mHypertriton() < h3LMassUpperlimit) {
-        if (track0.tpcNClsCrossedRows() > mincrossedrowsproton && track1.tpcNClsCrossedRows() > mincrossedrowspion && track2.tpcNClsCrossedRows() > mincrossedrowsdeuteron) {
+        if (track0.tpcNClsFound() >= mintpcNClsproton && track1.tpcNClsFound() >= mintpcNClspion && track2.tpcNClsFound() >= mintpcNClsdeuteron) {
           if (std::abs(vtx.dcatrack1topv()) > dcapiontopv) {
             keepEvent[3] = true;
             qaHists.fill(HIST("fH3LMassVsPt"), vtx.pt(), vtx.mHypertriton());
@@ -238,7 +245,7 @@ struct nucleiFilter {
         }
       }
       if (std::abs(track0.tpcNSigmaPi()) < TpcPidNsigmaCut && std::abs(track1.tpcNSigmaPr()) < TpcPidNsigmaCut && std::abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mAntiHypertriton() > h3LMassLowerlimit && vtx.mAntiHypertriton() < h3LMassUpperlimit) {
-        if (track0.tpcNClsCrossedRows() > mincrossedrowspion && track1.tpcNClsCrossedRows() > mincrossedrowsproton && track2.tpcNClsCrossedRows() > mincrossedrowsdeuteron) {
+        if (track0.tpcNClsFound() >= mintpcNClspion && track1.tpcNClsFound() >= mintpcNClsproton && track2.tpcNClsFound() >= mintpcNClsdeuteron) {
           if (std::abs(vtx.dcatrack0topv()) > dcapiontopv) {
             keepEvent[3] = true;
             qaHists.fill(HIST("fH3LMassVsPt"), vtx.pt(), vtx.mAntiHypertriton());
@@ -249,7 +256,7 @@ struct nucleiFilter {
 
     for (int iDecision{0}; iDecision < nNuclei + nHyperNuclei; ++iDecision) {
       if (keepEvent[iDecision]) {
-        qaHists.fill(HIST("fProcessedEvents"), iDecision + 1);
+        hProcessedEvents->Fill(iDecision + 1);
       }
     }
     tags(keepEvent[2], keepEvent[3]);

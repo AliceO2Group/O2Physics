@@ -26,10 +26,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMReducedEventIds>;
+using MyTracks = soa::Join<aod::EMPrimaryMuons, aod::EMPrimaryMuonEMEventIds>;
 using MyTrack = MyTracks::iterator;
 
 struct skimmerDalitzMuMu {
@@ -40,12 +40,16 @@ struct skimmerDalitzMuMu {
   };
 
   SliceCache cache;
-  Preslice<MyTracks> perCol = o2::aod::emprimarymuon::emreducedeventId;
+  Preslice<MyTracks> perCol = o2::aod::emprimarymuon::emeventId;
   Produces<aod::DalitzMuMus> dalitzmumus;
-  Produces<o2::aod::DalitzMuMuEMReducedEventIds> dalitz_mumu_eventid;
-  Produces<o2::aod::EMReducedEventsNmumu> event_nmumu;
+  Produces<o2::aod::DalitzMuMuEMEventIds> dalitz_mumu_eventid;
+  Produces<o2::aod::EMEventsNmumu> event_nmumu;
 
   // Configurables
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
+  Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
+
   Configurable<float> maxMmumu{"maxMmumu", 1.1, "max. mmumu to store mumu pairs"};
   Configurable<bool> storeLS{"storeLS", false, "flag to store LS pairs"};
   Configurable<float> minpt{"minpt", 0.05, "min pt for track"};
@@ -169,8 +173,14 @@ struct skimmerDalitzMuMu {
   void process(MyCollisions const& collisions, MyTracks const& tracks)
   {
     for (auto& collision : collisions) {
-      auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimarymuon::emreducedeventId, collision.globalIndex(), cache);
-      auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimarymuon::emreducedeventId, collision.globalIndex(), cache);
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        event_nmumu(0, 0, 0);
+        continue;
+      }
+
+      auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimarymuon::emeventId, collision.globalIndex(), cache);
+      auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimarymuon::emeventId, collision.globalIndex(), cache);
 
       int npair_uls = 0, npair_lspp = 0, npair_lsmm = 0;
       npair_uls = fillPairTable<EM_MuMuPairType::kULS>(collision, posTracks_per_coll, negTracks_per_coll); // ULS

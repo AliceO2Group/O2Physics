@@ -29,11 +29,6 @@ o2physics_add_dpl_workflow(correlator-d-meson-pairs
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(correlator-d-meson-pairs-testing
-                    SOURCES correlatorDMesonPairsTesting.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(correlator-dplus-dminus
                     SOURCES correlatorDplusDminus.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -48,6 +43,12 @@ o2physics_add_dpl_workflow(correlator-ds-hadrons
                     SOURCES correlatorDsHadrons.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(correlator-dstar-hadrons
+                    SOURCES correlatorDstarHadrons.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 
 o2physics_add_dpl_workflow(correlator-lc-hadrons
                     SOURCES correlatorLcHadrons.cxx

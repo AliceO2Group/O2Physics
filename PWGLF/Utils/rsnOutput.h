@@ -17,8 +17,12 @@
 ///
 /// \author Veronika Barbasova <vbarbaso@cern.ch>
 
-#ifndef PWGLF_RSNOUTPUT_H_
-#define PWGLF_RSNOUTPUT_H_
+#ifndef PWGLF_UTILS_RSNOUTPUT_H_
+#define PWGLF_UTILS_RSNOUTPUT_H_
+
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
@@ -100,7 +104,7 @@ class Output
     mFillPoint = new double[mCurrentAxisTypes.size()];
 
     LOGF(info, "Number of axis added: %d", mCurrentAxes.size());
-    mPairHisto = new HistogramConfigSpec({HistType::kTHnSparseF}, mCurrentAxes);
+    mPairHisto = new HistogramConfigSpec(HistType::kTHnSparseF, mCurrentAxes);
   };
 
   template <typename T>
@@ -243,4 +247,4 @@ class OutputSparse : public Output
 } // namespace rsn
 } // namespace o2::analysis
 
-#endif
+#endif // PWGLF_UTILS_RSNOUTPUT_H_

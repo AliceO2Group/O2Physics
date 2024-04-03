@@ -48,6 +48,8 @@ struct cascqaanalysis {
   // Event selection criteria
   Configurable<float> cutzvertex{"cutzvertex", 20.0f, "Accepted z-vertex range (cm)"};
   Configurable<bool> sel8{"sel8", 1, "Apply sel8 event selection"};
+  Configurable<bool> isTimeFrameBorderCut{"isTimeFrameBorderCut", 1, "Apply timeframe border cut"};
+  Configurable<bool> isITSROFrameBorderCut{"isITSROFrameBorderCut", 1, "Apply ITS frame border cut"};
 
   // Cascade selection criteria
   Configurable<float> scalefactor{"scalefactor", 1.0, "Scaling factor"};
@@ -108,9 +110,9 @@ struct cascqaanalysis {
 
     TString hCandidateCounterLabels[5] = {"All candidates", "v0data exists", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
     TString hNEventsMCLabels[6] = {"All", "z vrtx", "INEL", "INEL>0", "INEL>1", "Associated with rec. collision"};
-    TString hNEventsLabels[6] = {"All", "sel8", "z vrtx", "INEL", "INEL>0", "INEL>1"};
+    TString hNEventsLabels[8] = {"All", "sel8", "TimeFrame cut", "ITS ROF cut", "z vrtx", "INEL", "INEL>0", "INEL>1"};
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1F, {{6, 0.f, 6.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1F, {{8, 0.f, 8.f}}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
     }
@@ -125,7 +127,7 @@ struct cascqaanalysis {
       registry.add("hNchFT0MPVContr", "hNchFT0MPVContr", {HistType::kTH3F, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
       registry.add("hNchFV0APVContr", "hNchFV0APVContr", {HistType::kTH3F, {nChargedFV0AGenAxis, multNTracksAxis, eventTypeAxis}});
       // Gen. lvl
-      registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{6, 0.0f, 6.0f}}});
+      registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{7, 0.0f, 7.0f}}});
       for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
         registry.get<TH1>(HIST("hNEventsMC"))->GetXaxis()->SetBinLabel(n, hNEventsMCLabels[n - 1]);
       }
@@ -237,14 +239,14 @@ struct cascqaanalysis {
   {
     // 0 - INEL, 1 - INEL > 0, 2 - INEL>1
     int evFlag = 0;
-    registry.fill(HIST("hNEvents"), 3.5); // INEL
+    registry.fill(HIST("hNEvents"), 5.5); // INEL
     if (collision.multNTracksPVeta1() > 0) {
       evFlag += 1;
-      registry.fill(HIST("hNEvents"), 4.5); // INEL>0
+      registry.fill(HIST("hNEvents"), 6.5); // INEL>0
     }
     if (collision.multNTracksPVeta1() > 1) {
       evFlag += 1;
-      registry.fill(HIST("hNEvents"), 5.5); // INEL>1
+      registry.fill(HIST("hNEvents"), 7.5); // INEL>1
     }
     return evFlag;
   }
@@ -263,12 +265,28 @@ struct cascqaanalysis {
       registry.fill(HIST("hNEvents"), 1.5);
     }
 
+    // kNoTimeFrameBorder selection
+    if (isTimeFrameBorderCut && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+    if (isFillEventSelectionQA) {
+      registry.fill(HIST("hNEvents"), 2.5);
+    }
+
+    // kNoITSROFrameBorder selection
+    if (isITSROFrameBorderCut && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
+    if (isFillEventSelectionQA) {
+      registry.fill(HIST("hNEvents"), 3.5);
+    }
+
     // Z vertex selection
     if (TMath::Abs(collision.posZ()) > cutzvertex) {
       return false;
     }
     if (isFillEventSelectionQA) {
-      registry.fill(HIST("hNEvents"), 2.5);
+      registry.fill(HIST("hNEvents"), 4.5);
       registry.fill(HIST("hZCollision"), collision.posZ());
     }
 

@@ -26,7 +26,7 @@
 #include <memory>
 
 #include "FT0Base/Geometry.h"
-// #include "FV0Base/Geometry.h"
+#include "FV0Base/Geometry.h"
 
 #include "TMath.h"
 #include "TVector3.h"
@@ -52,14 +52,10 @@ double EventPlaneHelper::GetPhiFV0(int chno)
     offsetY = mOffsetFV0rightY;
   }
 
-  // const auto fv0Det = o2::fv0::Geometry::instance(o2::fv0::Geometry::eFull);
+  auto fv0geom = o2::fv0::Geometry::instance(o2::fv0::Geometry::eUninitialized);
+  auto chPos = fv0geom->getReadoutCenter(chno);
 
-  // TODO: Get position of the readout center with getReadoutCenter(chno) in a Point3Dsimple
-  // and extract the x and y positions.
-
-  float x = 0.;
-  float y = 0.;
-  return TMath::ATan2(y + offsetY, x + offsetX);
+  return TMath::ATan2(chPos.y + offsetY, chPos.x + offsetX);
 }
 
 double EventPlaneHelper::GetPhiFT0(int chno)

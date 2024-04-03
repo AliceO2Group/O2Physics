@@ -25,6 +25,7 @@
 #include <ctime>
 
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -33,6 +34,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/RunningWorkflowInfo.h"
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 #include "PWGCF/Core/PairCuts.h"
 #include "PWGCF/DataModel/DptDptFiltered.h"
@@ -667,6 +669,10 @@ struct DptDptCorrelationsTask {
   /* the input file structure from CCDB */
   TList* ccdblst = nullptr;
   bool loadfromccdb = false;
+  std::string cfgCCDBUrl{"http://ccdb-test.cern.ch:8080"};
+  std::string cfgCCDBPathName{""};
+  std::string cfgCCDBDate{"20220307"};
+  std::string cfgCCDBPeriod{"LHC22o"};
 
   /* pair conversion suppression defaults */
   static constexpr float cfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
@@ -675,47 +681,58 @@ struct DptDptCorrelationsTask {
   Configurable<float> cfgTwoTrackCut{"twotrackcut", -1, "Two-tracks cut: -1 = off; >0 otherwise distance value (suggested: 0.02"};
   Configurable<float> cfgTwoTrackCutMinRadius{"twotrackcutminradius", 0.8f, "Two-tracks cut: radius in m from which two-tracks cut is applied"};
 
-  Configurable<std::string> cfgSpecies{"species", "Ha", "The species to analyze: Ha, Pi, Ka, Pr, separated by commas. Default: Ha"};
   Configurable<bool> cfgSmallDCE{"smalldce", true, "Use small data collecting engine for singles processing, true = yes. Default = true"};
   Configurable<bool> cfgProcessPairs{"processpairs", false, "Process pairs: false = no, just singles, true = yes, process pairs"};
   Configurable<bool> cfgProcessME{"processmixedevents", false, "Process mixed events: false = no, just same event, true = yes, also process mixed events"};
-  Configurable<std::string> cfgCentSpec{"centralities", "00-05,05-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
-
-  Configurable<o2::analysis::DptDptBinningCuts> cfgBinning{"binning",
-                                                           {28, -7.0, 7.0, 18, 0.2, 2.0, 16, -0.8, 0.8, 72, 0.5},
-                                                           "triplets - nbins, min, max - for z_vtx, pT, eta and phi, binning plus bin fraction of phi origin shift"};
   Configurable<bool> cfgPtOrder{"ptorder", false, "enforce pT_1 < pT_2. Defalut: false"};
-  struct : ConfigurableGroup {
-    Configurable<std::string> cfgCCDBUrl{"input_ccdburl", "http://ccdb-test.cern.ch:8080", "The CCDB url for the input file"};
-    Configurable<std::string> cfgCCDBPathName{"input_ccdbpath", "", "The CCDB path for the input file. Default \"\", i.e. don't load from CCDB"};
-    Configurable<std::string> cfgCCDBDate{"input_ccdbdate", "20220307", "The CCDB date for the input file"};
-  } cfginputfile;
-
   OutputObj<TList> fOutput{"DptDptCorrelationsData", OutputObjHandlingPolicy::AnalysisObject, OutputObjSourceType::OutputObjSource};
 
-  void init(InitContext const&)
+  void init(InitContext& initContext)
   {
     using namespace correlationstask;
     using namespace o2::analysis::dptdptfilter;
 
-    /* update with the configurable values */
-    ptbins = cfgBinning->mPTbins;
-    ptlow = cfgBinning->mPTmin;
-    ptup = cfgBinning->mPTmax;
-    etabins = cfgBinning->mEtabins;
-    etalow = cfgBinning->mEtamin;
-    etaup = cfgBinning->mEtamax;
-    zvtxbins = cfgBinning->mZVtxbins;
-    zvtxlow = cfgBinning->mZVtxmin;
-    zvtxup = cfgBinning->mZVtxmax;
-    phibins = cfgBinning->mPhibins;
+    /* create the output directory which will own the task output */
+    TList* fGlobalOutputList = new TList();
+    fGlobalOutputList->SetOwner(true);
+    fOutput.setObject(fGlobalOutputList);
+
+    /* check consistency and if there is something to do */
+    if (doprocessCleaner) {
+      if (doprocessGenLevel || doprocessGenLevelNotStored || doprocessGenLevelMixed || doprocessGenLevelMixedNotStored ||
+          doprocessRecLevel || doprocessRecLevelNotStored || doprocessRecLevelMixed || doprocessRecLevelMixedNotStored) {
+        LOGF(fatal, "Cleaner process is activated with other processes. Please, fix it!");
+      } else {
+        /* do nothing. This task will not run! */
+        return;
+      }
+    }
+
+    /* self configure the binning */
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmax", zvtxup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTbins", ptbins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmin", ptlow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPTmax", ptup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtabins", etabins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamin", etalow, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mEtamax", etaup, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibins", phibins, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mPhibinshift", phibinshift, false);
     philow = 0.0f;
     phiup = constants::math::TwoPI;
-    phibinshift = cfgBinning->mPhibinshift;
     processpairs = cfgProcessPairs.value;
     processmixedevents = cfgProcessME.value;
     ptorder = cfgPtOrder.value;
-    loadfromccdb = cfginputfile.cfgCCDBPathName->length() > 0;
+
+    /* self configure the CCDB access to the input file */
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdburl", cfgCCDBUrl, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbpath", cfgCCDBPathName, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbdate", cfgCCDBDate, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdbperiod", cfgCCDBPeriod, false);
+    loadfromccdb = cfgCCDBPathName.length() > 0;
+
     /* update the potential binning change */
     etabinwidth = (etaup - etalow) / static_cast<float>(etabins);
     phibinwidth = (phiup - philow) / static_cast<float>(phibins);
@@ -728,11 +745,6 @@ struct DptDptCorrelationsTask {
     deltaphibinwidth = constants::math::TwoPI / deltaphibins;
     deltaphilow = 0.0 - deltaphibinwidth / 2.0;
     deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
-
-    /* create the output directory which will own the task output */
-    TList* fGlobalOutputList = new TList();
-    fGlobalOutputList->SetOwner(true);
-    fOutput.setObject(fGlobalOutputList);
 
     /* incorporate configuration parameters to the output */
     fGlobalOutputList->Add(new TParameter<int>("NoBinsPt", ptbins, 'f'));
@@ -757,16 +769,41 @@ struct DptDptCorrelationsTask {
 
     /* create the data collecting engine instances according to the configured centrality/multiplicity ranges */
     {
-      /* configuring the desired species */
-      TObjArray* tokens = TString(cfgSpecies.value.c_str()).Tokenize(",");
-      int nspecies = tokens->GetEntries();
-      for (int isp = 0; isp < nspecies; ++isp) {
-        poinames.push_back(std::string(tokens->At(isp)->GetName()));
-        tnames.push_back(std::string(TString::Format("%sP", tokens->At(isp)->GetName()).Data()));
-        tnames.push_back(std::string(TString::Format("%sM", tokens->At(isp)->GetName()).Data()));
-        LOGF(info, "Incorporated species name %s to the analysis", poinames[isp].c_str());
+      /* self configure the desired species */
+      o2::analysis::dptdptfilter::PIDSpeciesSelection pidselector;
+      std::vector<std::string> cfgnames = {"elpidsel", "mupidsel", "pipidsel", "kapidsel", "prpidsel"};
+      std::vector<uint8_t> spids = {0, 1, 2, 3, 4};
+      for (uint i = 0; i < cfgnames.size(); ++i) {
+        auto includeIt = [&pidselector, &initContext](int spid, auto name) {
+          bool mUseIt = false;
+          bool mExcludeIt = false;
+          if (getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mUseIt", name.c_str()).Data(), mUseIt, false) &&
+              getTaskOptionValue(initContext, "dpt-dpt-filter-tracks", TString::Format("%s.mExclude", name.c_str()).Data(), mExcludeIt, false)) {
+            if (mUseIt && !mExcludeIt) {
+              auto cfg = new o2::analysis::TrackSelectionPIDCfg();
+              cfg->mUseIt = true;
+              cfg->mExclude = false;
+              pidselector.Add(spid, cfg);
+            }
+          }
+        };
+        includeIt(spids[i], cfgnames[i]);
       }
-      delete tokens;
+      uint nspecies = pidselector.getNSpecies();
+      if (nspecies == 0) {
+        /* unidentified analysis */
+        poinames.push_back(pidselector.getHadFName());
+        tnames.push_back(std::string(TString::Format("%sP", pidselector.getHadFName()).Data()));
+        tnames.push_back(std::string(TString::Format("%sM", pidselector.getHadFName()).Data()));
+        LOGF(info, "Incorporated species name %s to the analysis", poinames[0].c_str());
+      } else {
+        for (uint8_t ix = 0; ix < nspecies; ++ix) {
+          poinames.push_back(std::string(pidselector.getSpeciesFName(ix)));
+          tnames.push_back(std::string(TString::Format("%sP", pidselector.getSpeciesFName(ix)).Data()));
+          tnames.push_back(std::string(TString::Format("%sM", pidselector.getSpeciesFName(ix)).Data()));
+          LOGF(info, "Incorporated species name %s to the analysis", poinames[ix].c_str());
+        }
+      }
       uint ntracknames = tnames.size();
       for (uint isp = 0; isp < ntracknames; ++isp) {
         trackPairsNames.push_back(std::vector<std::string>());
@@ -776,11 +813,30 @@ struct DptDptCorrelationsTask {
         }
       }
 
-      /* the centrality/multiplicity ranges */
-      tokens = TString(cfgCentSpec.value.c_str()).Tokenize(",");
-      ncmranges = tokens->GetEntries();
-      fCentMultMin = new float[ncmranges];
-      fCentMultMax = new float[ncmranges];
+      /* self configure the centrality/multiplicity ranges */
+      std::string centspec;
+      if (getTaskOptionValue(initContext, "dpt-dpt-filter", "centralities", centspec, false)) {
+        LOGF(info, "Got the centralities specification: %s", centspec.c_str());
+        auto tokens = TString(centspec.c_str()).Tokenize(",");
+        ncmranges = tokens->GetEntries();
+        fCentMultMin = new float[ncmranges];
+        fCentMultMax = new float[ncmranges];
+        for (int i = 0; i < ncmranges; ++i) {
+          float cmmin = 0.0f;
+          float cmmax = 0.0f;
+          sscanf(tokens->At(i)->GetName(), "%f-%f", &cmmin, &cmmax);
+          fCentMultMin[i] = cmmin;
+          fCentMultMax[i] = cmmax;
+        }
+        delete tokens;
+      } else {
+        LOGF(info, "No centralities specification. Setting it to: 0-100");
+        ncmranges = 1;
+        fCentMultMin = new float[ncmranges];
+        fCentMultMax = new float[ncmranges];
+        fCentMultMin[0] = 0.0f;
+        fCentMultMax[0] = 100.0f;
+      }
       dataCE = new DataCollectingEngine<false>*[ncmranges];
       if (cfgSmallDCE) {
         dataCE_small = new DataCollectingEngine<true>*[ncmranges];
@@ -811,30 +867,25 @@ struct DptDptCorrelationsTask {
           initializeCEInstance(dce, TString::Format("DptDptCorrelationsData%s-%s", me ? "ME" : "", rg));
           return dce;
         };
-        float cmmin = 0.0f;
-        float cmmax = 0.0f;
-        sscanf(tokens->At(i)->GetName(), "%f-%f", &cmmin, &cmmax);
-        fCentMultMin[i] = cmmin;
-        fCentMultMax[i] = cmmax;
+        TString range = TString::Format("%d-%d", static_cast<int>(fCentMultMin[i]), static_cast<int>(fCentMultMax[i]));
         if (cfgSmallDCE.value) {
           if (processpairs) {
             LOGF(fatal, "Processing pairs cannot be used with the small DCE, please configure properly!!");
           }
-          dataCE_small[i] = builSmallDCEInstance(tokens->At(i)->GetName());
+          dataCE_small[i] = builSmallDCEInstance(range.Data());
         } else {
-          dataCE[i] = buildCEInstance(tokens->At(i)->GetName());
+          dataCE[i] = buildCEInstance(range.Data());
         }
         if (processmixedevents) {
           /* consistency check */
           if (cfgSmallDCE.value) {
             LOGF(fatal, "Mixed events cannot be used with the small DCE, please configure properly!!");
           }
-          dataCEME[i] = buildCEInstance(tokens->At(i)->GetName(), true);
+          dataCEME[i] = buildCEInstance(range.Data(), true);
         }
       }
-      delete tokens;
       for (int i = 0; i < ncmranges; ++i) {
-        LOGF(info, " centrality/multipliicty range: %d, low limit: %f, up limit: %f", i, fCentMultMin[i], fCentMultMax[i]);
+        LOGF(info, " centrality/multipliicty range: %d, low limit: %0.2f, up limit: %0.2f", i, fCentMultMin[i], fCentMultMax[i]);
       }
     }
     /* two-track cut and conversion suppression */
@@ -853,7 +904,7 @@ struct DptDptCorrelationsTask {
     }
 
     /* initialize access to the CCDB */
-    ccdb->setURL(cfginputfile.cfgCCDBUrl);
+    ccdb->setURL(cfgCCDBUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
   }
@@ -878,23 +929,6 @@ struct DptDptCorrelationsTask {
     return ixDCE;
   }
 
-  TList* getCCDBInput(const char* ccdbpath, const char* ccdbdate)
-  {
-    std::tm cfgtm = {};
-    std::stringstream ss(ccdbdate);
-    ss >> std::get_time(&cfgtm, "%Y%m%d");
-    cfgtm.tm_hour = 12;
-    int64_t timestamp = std::mktime(&cfgtm) * 1000;
-
-    TList* lst = ccdb->getForTimeStamp<TList>(ccdbpath, timestamp);
-    if (lst != nullptr) {
-      LOGF(info, "Correctly loaded CCDB input object");
-    } else {
-      LOGF(error, "CCDB input object could not be loaded");
-    }
-    return lst;
-  }
-
   int getMagneticField(uint64_t timestamp)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
@@ -917,14 +951,35 @@ struct DptDptCorrelationsTask {
 
     if (ccdblst == nullptr) {
       if (loadfromccdb) {
-        ccdblst = getCCDBInput(cfginputfile.cfgCCDBPathName->c_str(), cfginputfile.cfgCCDBDate->c_str());
+        ccdblst = getCCDBInput(ccdb, cfgCCDBPathName.c_str(), cfgCCDBDate.c_str());
       }
     }
 
     /* locate the data collecting engine for the collision centrality/multiplicity */
     int ixDCE = getDCEindex(collision);
     if (!(ixDCE < 0)) {
-      if (ccdblst != nullptr && !(dataCE[ixDCE]->isCCDBstored())) {
+      auto isCCDBstored = [&]() {
+        if (cfgSmallDCE.value) {
+          return dataCE_small[ixDCE]->isCCDBstored();
+        } else {
+          return dataCE[ixDCE]->isCCDBstored();
+        }
+      };
+      auto storePtAverages = [&](auto& ptavgs) {
+        if (cfgSmallDCE.value) {
+          dataCE_small[ixDCE]->storePtAverages(ptavgs);
+        } else {
+          dataCE[ixDCE]->storePtAverages(ptavgs);
+        }
+      };
+      auto storeTrackCorrections = [&](auto& corrs) {
+        if (cfgSmallDCE.value) {
+          dataCE_small[ixDCE]->storeTrackCorrections(corrs);
+        } else {
+          dataCE[ixDCE]->storeTrackCorrections(corrs);
+        }
+      };
+      if (ccdblst != nullptr && !(isCCDBstored())) {
         if constexpr (gen) {
           std::vector<TH2*> ptavgs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
@@ -935,11 +990,7 @@ struct DptDptCorrelationsTask {
                               tnames[isp].c_str())
                 .Data()));
           }
-          if (cfgSmallDCE.value) {
-            dataCE_small[ixDCE]->storePtAverages(ptavgs);
-          } else {
-            dataCE[ixDCE]->storePtAverages(ptavgs);
-          }
+          storePtAverages(ptavgs);
         } else {
           std::vector<TH3*> corrs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
@@ -950,12 +1001,7 @@ struct DptDptCorrelationsTask {
                               tnames[isp].c_str())
                 .Data()));
           }
-          if (cfgSmallDCE.value) {
-            dataCE_small[ixDCE]->storeTrackCorrections(corrs);
-          } else {
-            dataCE[ixDCE]->storeTrackCorrections(corrs);
-          }
-
+          storeTrackCorrections(corrs);
           std::vector<TH2*> ptavgs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
             ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
@@ -965,11 +1011,7 @@ struct DptDptCorrelationsTask {
                               tnames[isp].c_str())
                 .Data()));
           }
-          if (cfgSmallDCE.value) {
-            dataCE_small[ixDCE]->storePtAverages(ptavgs);
-          } else {
-            dataCE[ixDCE]->storePtAverages(ptavgs);
-          }
+          storePtAverages(ptavgs);
         }
       }
 
@@ -1004,7 +1046,7 @@ struct DptDptCorrelationsTask {
 
     if (ccdblst == nullptr) {
       if (loadfromccdb) {
-        ccdblst = getCCDBInput(cfginputfile.cfgCCDBPathName->c_str(), cfginputfile.cfgCCDBDate->c_str());
+        ccdblst = getCCDBInput(ccdb, cfgCCDBPathName.c_str(), cfgCCDBDate.c_str());
       }
     }
 
@@ -1034,7 +1076,6 @@ struct DptDptCorrelationsTask {
                 .Data()));
           }
           dataCEME[ixDCE]->storeTrackCorrections(corrs);
-
           std::vector<TH2*> ptavgs{tnames.size(), nullptr};
           for (uint isp = 0; isp < tnames.size(); ++isp) {
             ptavgs[isp] = reinterpret_cast<TH2*>(ccdblst->FindObject(
@@ -1339,6 +1380,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
     adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskRec"}, SetDefaultProcesses{{{"processRecLevel", true}, {"processRecLevelMixed", false}, {"processCleaner", false}}}),
-    adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", true}, {"processGenLevelMixed", false}, {"processCleaner", false}}})};
+    adaptAnalysisTask<DptDptCorrelationsTask>(cfgc, TaskName{"DptDptCorrelationsTaskGen"}, SetDefaultProcesses{{{"processGenLevel", false}, {"processGenLevelMixed", false}, {"processCleaner", true}}})};
   return workflow;
 }

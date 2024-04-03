@@ -129,7 +129,7 @@ struct jetFilter {
 
     auto scalers{std::get<std::shared_ptr<TH1>>(spectra.add(
       "fProcessedEvents", ";;Number of filtered events", HistType::kTH1F,
-      {{kAllObjects, -0.5, kAllObjects - 0.5}}))};
+      {{kAllObjects, -0.5, +kAllObjects - 0.5}}))};
     for (uint32_t iS{1}; iS <= highPtObjectsNames.size(); ++iS) {
       scalers->GetXaxis()->SetBinLabel(iS, highPtObjectsNames[iS - 1].data());
     }
@@ -149,6 +149,11 @@ struct jetFilter {
 
     // collision process loop
     bool keepEvent[kHighPtObjects]{false};
+    if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt]);
+      return;
+    }
+
     spectra.fill(HIST("fCollZpos"), collision.posZ());
     spectra.fill(HIST("fProcessedEvents"), kAllMBEvents); // all minimum bias events
 
@@ -201,16 +206,17 @@ struct jetFilter {
         spectra.fill(HIST("fProcessedEvents"), iDecision);
       }
     }
+
     tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt]);
   }
 
-  void processWithoutRho(JetCollision const& collision, o2::aod::ChargedJets const& jets) // FK//
+  void processWithoutRho(soa::Join<JetCollisions, aod::EvSels>::iterator const& collision, o2::aod::ChargedJets const& jets) // FK//
   {
     doTriggering<false>(collision, jets);
   }
   PROCESS_SWITCH(jetFilter, processWithoutRho, "Do charged jet triggering without background estimation for filling histograms", true);
 
-  void processWithRho(soa::Join<JetCollisions, aod::BkgChargedRhos>::iterator const& collision, o2::aod::ChargedJets const& jets) // FK//
+  void processWithRho(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::EvSels>::iterator const& collision, o2::aod::ChargedJets const& jets) // FK//
   {
     doTriggering<true>(collision, jets);
   }

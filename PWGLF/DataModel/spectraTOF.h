@@ -312,6 +312,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(MultTracklets, multTracklets, //! Dummy
                            [](bool v) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(MultTPC, multTPC, //! Dummy
                            [](bool v) -> float { return 0.f; });
+DECLARE_SOA_DYNAMIC_COLUMN(SelectionBit, selection_bit, //! Dummy
+                           [](aod::evsel::EventSelectionFlags v) -> bool { return true; });
 
 // Track info
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                  //! Index to the collision
@@ -399,9 +401,8 @@ DECLARE_SOA_TABLE(SpColls, "AOD", "SPCOLLS",
                   spectra::MultZeqFDDC<spectra::Sel8>,
                   spectra::MultZeqNTracksPV<spectra::Sel8>,
                   spectra::MultTracklets<spectra::Sel8>,
-                  spectra::MultTPC<spectra::Sel8>
-
-);
+                  spectra::MultTPC<spectra::Sel8>,
+                  spectra::SelectionBit<>);
 using SpColl = SpColls::iterator;
 
 DECLARE_SOA_TABLE(SpTracks, "AOD", "SPTRACKS",

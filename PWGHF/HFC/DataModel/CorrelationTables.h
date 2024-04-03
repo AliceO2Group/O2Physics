@@ -16,7 +16,12 @@
 #ifndef PWGHF_HFC_DATAMODEL_CORRELATIONTABLES_H_
 #define PWGHF_HFC_DATAMODEL_CORRELATIONTABLES_H_
 
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisDataModel.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 namespace o2::aod
 {
@@ -199,6 +204,55 @@ DECLARE_SOA_TABLE(DplusHadronPair, "AOD", "DPLUSHPAIR", //! D+-Hadrons pairs Inf
 DECLARE_SOA_TABLE(DplusHadronRecoInfo, "AOD", "DPLUSHRECOINFO", //! D+-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_dplus_hadron::MD,
                   aod::hf_correlation_dplus_hadron::SignalStatus);
+
+// definition of columns and tables for Dstar-Hadron correlation pair
+namespace hf_correlation_dstar_hadron
+{
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);
+// Dstar candidate properties
+DECLARE_SOA_INDEX_COLUMN(HfCandDstar, hfCandDstar);
+DECLARE_SOA_COLUMN(PhiDstar, phiDstar, float);
+DECLARE_SOA_COLUMN(EtaDstar, etaDstar, float);
+DECLARE_SOA_COLUMN(PtDstar, ptDstar, float);
+DECLARE_SOA_COLUMN(MDstar, mDstar, float);
+DECLARE_SOA_COLUMN(MD0, mD0, float);
+// DECLARE_SOA_COLUMN(IsPrompt,isPrompt,bool); // although this also defined in (HfCandDstarMcRec HfCandDstarMcRec) tables
+// DECLARE_SOA_COLUMN(MatchingStatus, matchingStatus, bool); // although this also defined in (HfCandDstarMcRec HfCandDstarMcRec) tables
+// Track properties
+DECLARE_SOA_INDEX_COLUMN(Track, track);
+DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);
+DECLARE_SOA_COLUMN(EtaTrack, etaTrack, float);
+DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);
+// common
+DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);
+// Dynamic columns
+DECLARE_SOA_DYNAMIC_COLUMN(DeltaEta, deltaEta, [](float etaTrack, float etaCandidate) -> float { return (etaTrack - etaCandidate); });
+DECLARE_SOA_DYNAMIC_COLUMN(DeltaPhi, deltaPhi, [](float phiCandidate, float phiTrack) -> float { return RecoDecay::constrainAngle(phiTrack - phiCandidate, -o2::constants::math::PIHalf); });
+DECLARE_SOA_DYNAMIC_COLUMN(DeltaM, deltaM, [](float massDstar, float massD0) -> float { return (massDstar - massD0); });
+} // namespace hf_correlation_dstar_hadron
+
+DECLARE_SOA_TABLE(DstarHadronPair, "AOD", "DSTRHPAIR", // D* Hadrons pairs Informations
+                  hf_correlation_dstar_hadron::CollisionId,
+                  // D* only properties
+                  hf_correlation_dstar_hadron::HfCandDstarId,
+                  hf_correlation_dstar_hadron::PhiDstar,
+                  hf_correlation_dstar_hadron::EtaDstar,
+                  hf_correlation_dstar_hadron::PtDstar,
+                  hf_correlation_dstar_hadron::MDstar,
+                  hf_correlation_dstar_hadron::MD0,
+                  // Track only properties
+                  hf_correlation_dstar_hadron::TrackId,
+                  hf_correlation_dstar_hadron::PhiTrack,
+                  hf_correlation_dstar_hadron::EtaTrack,
+                  hf_correlation_dstar_hadron::PtTrack,
+                  // common
+                  hf_correlation_dstar_hadron::TimeStamp,
+                  hf_correlation_dstar_hadron::PoolBin,
+                  // common Dynamic
+                  hf_correlation_dstar_hadron::DeltaPhi<hf_correlation_dstar_hadron::PhiDstar, hf_correlation_dstar_hadron::PhiTrack>,
+                  hf_correlation_dstar_hadron::DeltaEta<hf_correlation_dstar_hadron::EtaDstar, hf_correlation_dstar_hadron::EtaTrack>,
+                  hf_correlation_dstar_hadron::DeltaM<hf_correlation_dstar_hadron::MDstar, hf_correlation_dstar_hadron::MD0>);
 
 // Note: Table for selection of Lc in a collision
 namespace hf_selection_lc_collision
