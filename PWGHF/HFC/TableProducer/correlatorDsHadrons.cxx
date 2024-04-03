@@ -409,7 +409,7 @@ struct HfCorrelatorDsHadrons {
           entryDsHadronGenInfo(false, false);
         }
       } // end track loop
-    } // end candidate loop
+    }   // end candidate loop
   }
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processData, "Process data", true);
 
@@ -420,121 +420,121 @@ struct HfCorrelatorDsHadrons {
                     aod::McParticles const&)
   {
     BinningType corrBinning{{zPoolBins, multPoolBins}, true};
-      registry.fill(HIST("hZVtx"), collision.posZ());
-      registry.fill(HIST("hMultFT0M"), collision.multFT0M());
-      int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
-      registry.fill(HIST("hCollisionPoolBin"), poolBin);
+    registry.fill(HIST("hZVtx"), collision.posZ());
+    registry.fill(HIST("hMultFT0M"), collision.multFT0M());
+    int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
+    registry.fill(HIST("hCollisionPoolBin"), poolBin);
 
-      // MC reco level
-      bool isDsPrompt = false;
-      bool isDsSignal = false;
-      bool isAlreadyFilledEvent = false;
-      float multiplicityFT0M = collision.multFT0M();
-      for (const auto& candidate : candidates) {
-        // prompt and non-prompt division
-        isDsPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
-        // Ds Signal
-        isDsSignal = std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi;
+    // MC reco level
+    bool isDsPrompt = false;
+    bool isDsSignal = false;
+    bool isAlreadyFilledEvent = false;
+    float multiplicityFT0M = collision.multFT0M();
+    for (const auto& candidate : candidates) {
+      // prompt and non-prompt division
+      isDsPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
+      // Ds Signal
+      isDsSignal = std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi;
 
-        if (std::abs(hfHelper.yDs(candidate)) > yCandMax || candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
+      if (std::abs(hfHelper.yDs(candidate)) > yCandMax || candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
+        continue;
+      }
+
+      double efficiencyWeightD = 1.;
+      if (applyEfficiency) {
+        efficiencyWeightD = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, candidate.pt()));
+      }
+      if (isDsSignal) {
+        fillHistoMcRecSig(candidate, multiplicityFT0M);
+        // DsToKKPi and DsToPiKK division
+        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
+          registry.fill(HIST("hMassDsMCRec"), hfHelper.invMassDsToKKPi(candidate), efficiencyWeightD);
+          registry.fill(HIST("hMassDsMCRecSig"), hfHelper.invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
+          registry.fill(HIST("hMassDsVsPtMCRec"), hfHelper.invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
+          registry.fill(HIST("hSelectionStatusDsToKKPi"), candidate.isSelDsToKKPi());
+        }
+        if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
+          registry.fill(HIST("hMassDsMCRec"), hfHelper.invMassDsToPiKK(candidate), efficiencyWeightD);
+          registry.fill(HIST("hMassDsMCRecSig"), hfHelper.invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
+          registry.fill(HIST("hMassDsVsPtMCRec"), hfHelper.invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
+          registry.fill(HIST("hSelectionStatusDsToPiKK"), candidate.isSelDsToPiKK());
+        }
+        if (candidate.isSelDsToKKPi() >= selectionFlagDs && candidate.isSelDsToPiKK() >= selectionFlagDs) {
+          registry.fill(HIST("hCountSelectionStatusDsToKKPiAndToPiKK"), 0.);
+        }
+      } else {
+        fillHistoMcRecBkg(candidate);
+        // DsToKKPi and DsToPiKK division
+        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
+          registry.fill(HIST("hMassDsMCRec"), hfHelper.invMassDsToKKPi(candidate), efficiencyWeightD);
+          registry.fill(HIST("hMassDsMCRecBkg"), hfHelper.invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
+          registry.fill(HIST("hMassDsVsPtMCRec"), hfHelper.invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
+          registry.fill(HIST("hSelectionStatusDsToKKPiMcRec"), candidate.isSelDsToKKPi());
+        } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
+          registry.fill(HIST("hMassDsMCRec"), hfHelper.invMassDsToPiKK(candidate), efficiencyWeightD);
+          registry.fill(HIST("hMassDsMCRecBkg"), hfHelper.invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
+          registry.fill(HIST("hMassDsVsPtMCRec"), hfHelper.invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
+          registry.fill(HIST("hSelectionStatusDsToPiKKMcRec"), candidate.isSelDsToPiKK());
+        }
+      }
+
+      // Ds-Hadron correlation dedicated section
+      // if the candidate is selected as Ds, search for Hadron and evaluate correlations
+      for (const auto& track : tracks) {
+        // Removing Ds daughters by checking track indices
+        if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
           continue;
         }
-
-        double efficiencyWeightD = 1.;
-        if (applyEfficiency) {
-          efficiencyWeightD = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, candidate.pt()));
+        bool isPhysicalPrimary = false;
+        // DsToKKPi and DsToPiKK division
+        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
+          entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
+                            track.eta() - candidate.eta(),
+                            candidate.pt(),
+                            track.pt(),
+                            poolBin);
+          entryDsHadronRecoInfo(hfHelper.invMassDsToKKPi(candidate), isDsSignal);
+          if (track.has_mcParticle()) {
+            auto mcParticle = track.template mcParticle_as<aod::McParticles>();
+            isPhysicalPrimary = mcParticle.isPhysicalPrimary();
+            entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary);
+          } else {
+            entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary);
+            registry.fill(HIST("hFakeTracksMcRec"), track.pt());
+          }
+          // for secondary particle fraction estimation
+          if (!isAlreadyFilledEvent) {
+            registry.fill(HIST("hPtParticleAssocVsCandMcRec"), track.pt(), candidate.pt());
+            if (isPhysicalPrimary) {
+              registry.fill(HIST("hPtPrimaryParticleAssocVsCandMcRec"), track.pt(), candidate.pt());
+            }
+          }
+        } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
+          entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
+                            track.eta() - candidate.eta(),
+                            candidate.pt(),
+                            track.pt(),
+                            poolBin);
+          entryDsHadronRecoInfo(hfHelper.invMassDsToPiKK(candidate), isDsSignal);
+          if (track.has_mcParticle()) {
+            auto mcParticle = track.template mcParticle_as<aod::McParticles>();
+            isPhysicalPrimary = mcParticle.isPhysicalPrimary();
+            entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary);
+          } else {
+            entryDsHadronGenInfo(isDsPrompt, false);
+            registry.fill(HIST("hFakeTracksMcRec"), track.pt());
+          }
+          // for secondary particle fraction estimation
+          if (!isAlreadyFilledEvent) {
+            registry.fill(HIST("hPtParticleAssocVsCandMcRec"), track.pt(), candidate.pt());
+            if (isPhysicalPrimary) {
+              registry.fill(HIST("hPtPrimaryParticleAssocVsCandMcRec"), track.pt(), candidate.pt());
+            }
+          }
         }
-        if (isDsSignal) {
-          fillHistoMcRecSig(candidate, multiplicityFT0M);
-          // DsToKKPi and DsToPiKK division
-          if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-            registry.fill(HIST("hMassDsMCRec"), hfHelper.invMassDsToKKPi(candidate), efficiencyWeightD);
-            registry.fill(HIST("hMassDsMCRecSig"), hfHelper.invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
-            registry.fill(HIST("hMassDsVsPtMCRec"), hfHelper.invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
-            registry.fill(HIST("hSelectionStatusDsToKKPi"), candidate.isSelDsToKKPi());
-          }
-          if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-            registry.fill(HIST("hMassDsMCRec"), hfHelper.invMassDsToPiKK(candidate), efficiencyWeightD);
-            registry.fill(HIST("hMassDsMCRecSig"), hfHelper.invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
-            registry.fill(HIST("hMassDsVsPtMCRec"), hfHelper.invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
-            registry.fill(HIST("hSelectionStatusDsToPiKK"), candidate.isSelDsToPiKK());
-          }
-          if (candidate.isSelDsToKKPi() >= selectionFlagDs && candidate.isSelDsToPiKK() >= selectionFlagDs) {
-            registry.fill(HIST("hCountSelectionStatusDsToKKPiAndToPiKK"), 0.);
-          }
-        } else {
-          fillHistoMcRecBkg(candidate);
-          // DsToKKPi and DsToPiKK division
-          if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-            registry.fill(HIST("hMassDsMCRec"), hfHelper.invMassDsToKKPi(candidate), efficiencyWeightD);
-            registry.fill(HIST("hMassDsMCRecBkg"), hfHelper.invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
-            registry.fill(HIST("hMassDsVsPtMCRec"), hfHelper.invMassDsToKKPi(candidate), candidate.pt(), efficiencyWeightD);
-            registry.fill(HIST("hSelectionStatusDsToKKPiMcRec"), candidate.isSelDsToKKPi());
-          } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-            registry.fill(HIST("hMassDsMCRec"), hfHelper.invMassDsToPiKK(candidate), efficiencyWeightD);
-            registry.fill(HIST("hMassDsMCRecBkg"), hfHelper.invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
-            registry.fill(HIST("hMassDsVsPtMCRec"), hfHelper.invMassDsToPiKK(candidate), candidate.pt(), efficiencyWeightD);
-            registry.fill(HIST("hSelectionStatusDsToPiKKMcRec"), candidate.isSelDsToPiKK());
-          }
-        }
-
-        // Ds-Hadron correlation dedicated section
-        // if the candidate is selected as Ds, search for Hadron and evaluate correlations
-        for (const auto& track : tracks) {
-          // Removing Ds daughters by checking track indices
-          if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
-            continue;
-          }
-          bool isPhysicalPrimary = false;
-          // DsToKKPi and DsToPiKK division
-          if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-            entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
-                              track.eta() - candidate.eta(),
-                              candidate.pt(),
-                              track.pt(),
-                              poolBin);
-            entryDsHadronRecoInfo(hfHelper.invMassDsToKKPi(candidate), isDsSignal);
-            if (track.has_mcParticle()) {
-              auto mcParticle = track.template mcParticle_as<aod::McParticles>();
-              isPhysicalPrimary = mcParticle.isPhysicalPrimary();
-              entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary);
-            } else {
-              entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary);
-              registry.fill(HIST("hFakeTracksMcRec"), track.pt());
-            }
-            // for secondary particle fraction estimation
-            if (!isAlreadyFilledEvent) {
-              registry.fill(HIST("hPtParticleAssocVsCandMcRec"), track.pt(), candidate.pt());
-              if (isPhysicalPrimary) {
-               registry.fill(HIST("hPtPrimaryParticleAssocVsCandMcRec"), track.pt(), candidate.pt()); 
-              }             
-            }
-          } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-            entryDsHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
-                              track.eta() - candidate.eta(),
-                              candidate.pt(),
-                              track.pt(),
-                              poolBin);
-            entryDsHadronRecoInfo(hfHelper.invMassDsToPiKK(candidate), isDsSignal);
-            if (track.has_mcParticle()) {
-              auto mcParticle = track.template mcParticle_as<aod::McParticles>();
-              isPhysicalPrimary = mcParticle.isPhysicalPrimary();
-              entryDsHadronGenInfo(isDsPrompt, isPhysicalPrimary);
-            } else {
-              entryDsHadronGenInfo(isDsPrompt, false);
-              registry.fill(HIST("hFakeTracksMcRec"), track.pt());
-            }
-            // for secondary particle fraction estimation
-            if (!isAlreadyFilledEvent) {
-              registry.fill(HIST("hPtParticleAssocVsCandMcRec"), track.pt(), candidate.pt());
-              if (isPhysicalPrimary) {
-               registry.fill(HIST("hPtPrimaryParticleAssocVsCandMcRec"), track.pt(), candidate.pt()); 
-              }             
-            }
-          }
-        } // end track loop
-        isAlreadyFilledEvent = true;
-      } // end candidate loop
+      } // end track loop
+      isAlreadyFilledEvent = true;
+    } // end candidate loop
   }
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcRec, "Process MC Reco mode", false);
 
