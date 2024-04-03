@@ -242,13 +242,12 @@ struct strangepidqa {
       histos.add("h2dAssocLambdaDeltaDecayTime_MassSelected", "h2dAssocLambdaDeltaDecayTime_MassSelected", {HistType::kTH2F, {axisPt, axisDeltaTime}});
     }
 
-    if(doprocessCascades){ 
+    if (doprocessCascades) {
       histos.add("h3dMassXiMinus", "h3dMassXiMinus", {HistType::kTH3F, {centAxis, axisPt, massAxisXi}});
       histos.add("h3dMassXiPlus", "h3dMassXiPlus", {HistType::kTH3F, {centAxis, axisPt, massAxisXi}});
       histos.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", {HistType::kTH3F, {centAxis, axisPt, massAxisOmega}});
       histos.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", {HistType::kTH3F, {centAxis, axisPt, massAxisOmega}});
     }
-
   }
 
   void processReal(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFs, aod::V0TOFPIDs, aod::V0TOFBetas, aod::V0TOFDebugs> const& v0s)
