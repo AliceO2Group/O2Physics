@@ -1583,7 +1583,10 @@ struct tofSpectra {
       });
     }
 
-    for (const auto& mcCollision : mcCollisions) {
+    for (const auto& collision : collisions) {
+    if (!collision.has_mcCollision()) {
+        continue;
+      }
       const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
       for (const auto& mcParticle : particlesInCollision) {
 
