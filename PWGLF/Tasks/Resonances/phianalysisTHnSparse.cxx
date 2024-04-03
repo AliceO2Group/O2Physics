@@ -97,7 +97,7 @@ struct phianalysisTHnSparse {
   AxisSpec zv2Axis = {posZ, "Z vx (cm)", "zv2"};
 
   // All axes has to have same order as defined enum o2::analysis::rsn::PairAxisType (name from AxisSpec is taken to compare in o2::analysis::rsn::Output::init())
-  std::vector<AxisSpec> allAxes = {invAxis, ptAxis, mu1Axis, mu2Axis, nsigmatrackaxisPos, nsigmatrackaxisNeg, yAxis, zv1Axis, zv2Axis};
+  std::vector<AxisSpec> allAxes = {invAxis, ptAxis, mu1Axis, nsigmatrackaxisPos, nsigmatrackaxisNeg, yAxis, zv1Axis, mu2Axis, zv2Axis};
   HistogramRegistry registry{"registry"};
   o2::analysis::rsn::Output* rsnOutput = nullptr;
 
@@ -246,6 +246,9 @@ struct phianalysisTHnSparse {
       pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
       pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
       pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv1)] = collision.posZ();
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu2)] = multiplicity;
+      pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv2)] = collision.posZ();
 
       rsnOutput->fillUnlikepm(pointPair);
     }
@@ -270,6 +273,9 @@ struct phianalysisTHnSparse {
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv1)] = collision.posZ();
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu2)] = multiplicity;
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv2)] = collision.posZ();
 
         rsnOutput->fillLikepp(pointPair);
       }
@@ -292,6 +298,9 @@ struct phianalysisTHnSparse {
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv1)] = collision.posZ();
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu2)] = multiplicity;
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv2)] = collision.posZ();
 
         rsnOutput->fillLikemm(pointPair);
       }
@@ -375,6 +384,9 @@ struct phianalysisTHnSparse {
           pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
           pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
           pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv1)] = collision.posZ();
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu2)] = multiplicity;
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv2)] = collision.posZ();
 
           rsnOutput->fillUnliketrue(pointPair);
         }
@@ -433,6 +445,9 @@ struct phianalysisTHnSparse {
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(tpcnSigmaPos / 2.0);
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(tpcnSigmaNeg / 2.0);
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv1)] = mcCollision.posZ();
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu2)] = multiplicity;
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv2)] = mcCollision.posZ();
 
         rsnOutput->fillUnlikegen(pointPair);
 
@@ -455,8 +470,6 @@ struct phianalysisTHnSparse {
     if (!eventMixing)
       return;
 
-    float multiplicity;
-
     auto tracksTuple = std::make_tuple(tracks);
 
     SameKindPair<EventCandidates, TrackCandidates, BinningType> pair{binning, numberofMixedEvents, -1, collisions, tracksTuple, &cache};
@@ -467,9 +480,6 @@ struct phianalysisTHnSparse {
       if (!c2.sel8()) {
         continue;
       }
-      posz1 = c1.posZ();
-      posz2 = c2.posZ();
-      multiplicity = GetMultiplicity(c1);
 
       auto posDauthersc1 = positive->sliceByCached(aod::track::collisionId, c1.globalIndex(), cache);
       auto posDauthersc2 = positive->sliceByCached(aod::track::collisionId, c2.globalIndex(), cache);
@@ -490,11 +500,11 @@ struct phianalysisTHnSparse {
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::im)] = mother.Mag();
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::pt)] = mother.Pt();
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu1)] = GetMultiplicity(c1);
-        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu2)] = GetMultiplicity(c2);
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv1)] = posz1;
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu2)] = GetMultiplicity(c2);
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv2)] = posz2;
 
         rsnOutput->fillMixingpm(pointPair);
@@ -518,10 +528,13 @@ struct phianalysisTHnSparse {
 
           pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::im)] = mother.Mag();
           pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::pt)] = mother.Pt();
-          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu1)] = multiplicity;
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu1)] = GetMultiplicity(c1);
           pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
           pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
           pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv1)] = c1.posZ();
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu2)] = GetMultiplicity(c2);
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv2)] = c2.posZ();
 
           rsnOutput->fillMixingpp(pointPair);
         }
@@ -539,10 +552,13 @@ struct phianalysisTHnSparse {
 
           pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::im)] = mother.Mag();
           pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::pt)] = mother.Pt();
-          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu1)] = multiplicity;
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu1)] = GetMultiplicity(c1);
           pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
           pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
           pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv1)] = c1.posZ();
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu2)] = GetMultiplicity(c2);
+          pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv2)] = c2.posZ();
 
           rsnOutput->fillMixingmm(pointPair);
         }
@@ -561,10 +577,13 @@ struct phianalysisTHnSparse {
 
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::im)] = mother.Mag();
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::pt)] = mother.Pt();
-        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu1)] = multiplicity;
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu1)] = GetMultiplicity(c1);
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = std::abs(track1.tpcNSigmaKa());
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = std::abs(track2.tpcNSigmaKa());
         pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = mother.Rapidity();
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv1)] = c1.posZ();
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu2)] = GetMultiplicity(c2);
+        pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::zv2)] = c2.posZ();
 
         rsnOutput->fillMixingmp(pointPair);
       }

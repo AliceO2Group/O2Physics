@@ -58,17 +58,17 @@ enum class PairAxisType {
   im,
   pt,
   mu1,
-  mu2,
   ns1,
   ns2,
   y,
   zv1,
+  mu2,
   zv2,
   unknown
 };
 namespace PariAxis
 {
-std::vector<std::string> names{"im", "pt", "mu1", "mu2", "ns1", "ns2", "y", "zv1", "zv2"};
+std::vector<std::string> names{"im", "pt", "mu1", "ns1", "ns2", "y", "zv1", "mu2", "zv2"};
 }
 class Output
 {
