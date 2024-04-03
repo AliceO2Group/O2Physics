@@ -1299,7 +1299,7 @@ struct tofSpectra {
   }
 
   template <std::size_t i, typename ParticleType>
-  void fillParticleHistograms_MC(aod::McCollision const& collision, ParticleType const& mcParticle)
+  void fillParticleHistograms_MC(CollisionCandidateMC::iterator const& collision, ParticleType const& mcParticle)
   {
 
     switch (i) {
@@ -1591,7 +1591,7 @@ struct tofSpectra {
           continue;
         }
         static_for<0, 17>([&](auto i) {
-          fillParticleHistograms_MC<i>(mcCollision, mcParticle);
+          fillParticleHistograms_MC<i>(collision, mcParticle);
         });
       }
     }
