@@ -299,4 +299,4 @@ class OutputSparse : public Output
 } // namespace rsn
 } // namespace o2::analysis
 
-#endif
+#endif // PWGLF_UTILS_RSNOUTPUT_H_
