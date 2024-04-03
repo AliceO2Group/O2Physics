@@ -309,8 +309,8 @@ struct HfDerivedDataCreatorLcToPKPi {
         float massLcToPiKP = hfHelper.invMassLcToPiKP(candidate);
         std::vector<float> mlScoresLcToPKPi, mlScoresLcToPiKP;
         if constexpr (isMl) {
-          std::copy(candidate.mlProbLcToPKPi().begin(), candidate.mlProbLcToPKPi().end(), mlScoresLcToPKPi.begin());
-          std::copy(candidate.mlProbLcToPiKP().begin(), candidate.mlProbLcToPiKP().end(), mlScoresLcToPiKP.begin());
+          std::copy(candidate.mlProbLcToPKPi().begin(), candidate.mlProbLcToPKPi().end(), std::back_inserter(mlScoresLcToPKPi));
+          std::copy(candidate.mlProbLcToPiKP().begin(), candidate.mlProbLcToPiKP().end(), std::back_inserter(mlScoresLcToPiKP));
         }
         if (candidate.isSelLcToPKPi()) {
           fillTablesCandidate(candidate, prong0, prong1, prong2, 0, massLcToPKPi, ct, flagMcRec, origin, swapping, mlScoresLcToPKPi);

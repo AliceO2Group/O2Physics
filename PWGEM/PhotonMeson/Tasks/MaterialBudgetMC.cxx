@@ -262,7 +262,7 @@ struct MaterialBudgetMC {
           bool is_photon_physical_primary = false;
           if (photonid > 0) {
             auto mcphoton = mcparticles.iteratorAt(photonid);
-            is_photon_physical_primary = IsPhysicalPrimary(mcphoton.emmcevent(), mcphoton, mcparticles);
+            is_photon_physical_primary = mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator();
           }
           if (!is_photon_physical_primary) {
             continue;
@@ -345,7 +345,7 @@ struct MaterialBudgetMC {
                   continue;
                 }
                 auto pi0mc = mcparticles.iteratorAt(pi0id);
-                if (!IsPhysicalPrimary(pi0mc.emmcevent(), pi0mc, mcparticles)) {
+                if (!(pi0mc.isPhysicalPrimary() || pi0mc.producedByGenerator())) {
                   continue;
                 }
 

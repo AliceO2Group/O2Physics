@@ -476,7 +476,7 @@ struct Pi0EtaToGammaGammaMC {
 
               if (pi0id > 0) {
                 auto pi0mc = mcparticles.iteratorAt(pi0id);
-                if (IsPhysicalPrimary(pi0mc.emmcevent(), pi0mc, mcparticles)) {
+                if (pi0mc.isPhysicalPrimary() || pi0mc.producedByGenerator()) {
                   reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_Primary"))->Fill(v12.M(), v12.Pt());
                 } else if (IsFromWD(pi0mc.emmcevent(), pi0mc, mcparticles)) {
                   reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut.GetName(), cut.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_FromWD"))->Fill(v12.M(), v12.Pt());
@@ -584,7 +584,7 @@ struct Pi0EtaToGammaGammaMC {
                 }
                 if (pi0id > 0) {
                   auto pi0mc = mcparticles.iteratorAt(pi0id);
-                  if (IsPhysicalPrimary(pi0mc.emmcevent(), pi0mc, mcparticles)) {
+                  if (pi0mc.isPhysicalPrimary() || pi0mc.producedByGenerator()) {
                     reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_Primary"))->Fill(v12.M(), v12.Pt());
                   } else if (IsFromWD(pi0mc.emmcevent(), pi0mc, mcparticles)) {
                     reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_FromWD"))->Fill(v12.M(), v12.Pt());
@@ -661,7 +661,7 @@ struct Pi0EtaToGammaGammaMC {
         }
         int pdg = mctrack.pdgCode();
 
-        if (abs(pdg) == 111 && IsPhysicalPrimary(mctrack.emmcevent(), mctrack, mcparticles)) {
+        if (abs(pdg) == 111 && (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
           reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hPt_Pi0"))->Fill(mctrack.pt());
           reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hY_Pi0"))->Fill(mctrack.y());
           reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hPhi_Pi0"))->Fill(mctrack.phi());
@@ -670,7 +670,7 @@ struct Pi0EtaToGammaGammaMC {
             reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hY_Pi0_Acc"))->Fill(mctrack.y());
             reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hPhi_Pi0_Acc"))->Fill(mctrack.phi());
           }
-        } else if (abs(pdg) == 221 && IsPhysicalPrimary(mctrack.emmcevent(), mctrack, mcparticles)) {
+        } else if (abs(pdg) == 221 && (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
           reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hPt_Eta"))->Fill(mctrack.pt());
           reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hY_Eta"))->Fill(mctrack.y());
           reinterpret_cast<TH1F*>(list_gen_pair->FindObject("hPhi_Eta"))->Fill(mctrack.phi());

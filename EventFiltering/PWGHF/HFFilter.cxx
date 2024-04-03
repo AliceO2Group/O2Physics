@@ -88,7 +88,7 @@ struct HfFilter { // Main struct for HF triggers
 
   // parameters for V0 + charm triggers
   Configurable<LabeledArray<float>> cutsGammaK0sLambda{"cutsGammaK0sLambda", {cutsV0s[0], 1, 6, labelsEmpty, labelsColumnsV0s}, "Selections for V0s (gamma, K0s, Lambda) for D+V0 triggers"};
-  Configurable<LabeledArray<float>> cutsPtDeltaMassCharmReso{"cutsPtDeltaMassCharmReso", {cutsCharmReso[0], 3, 9, labelsRowsDeltaMassCharmReso, labelsColumnsDeltaMassCharmReso}, "pt (GeV/c) and invariant-mass delta (GeV/c2) for charm hadron resonances"};
+  Configurable<LabeledArray<float>> cutsPtDeltaMassCharmReso{"cutsPtDeltaMassCharmReso", {cutsCharmReso[0], 3, 11, labelsRowsDeltaMassCharmReso, labelsColumnsDeltaMassCharmReso}, "pt (GeV/c) and invariant-mass delta (GeV/c2) for charm hadron resonances"};
   Configurable<bool> keepAlsoWrongDmesLambdaPairs{"keepAlsoWrongDmesLambdaPairs", true, "flat go keep also wrong sign D+Lambda pairs"};
 
   // parameters for charm baryons to Xi bachelor
@@ -198,7 +198,7 @@ struct HfFilter { // Main struct for HF triggers
     helper.setMassResolParametrisation(paramCharmMassShape);
     helper.setNumSigmaForDeltaMassCharmHadCut(numSigmaDeltaMassCharmHad);
     helper.setPtRangeSoftPiSigmaC(ptCuts->get(0u, 4u), ptCuts->get(1u, 4u));
-    helper.setPtDeltaMassRangeSigmaC(cutsPtDeltaMassCharmReso->get(0u, 6u), cutsPtDeltaMassCharmReso->get(1u, 6u), cutsPtDeltaMassCharmReso->get(0u, 7u), cutsPtDeltaMassCharmReso->get(1u, 7u), cutsPtDeltaMassCharmReso->get(2u, 6u), cutsPtDeltaMassCharmReso->get(2u, 7u));
+    helper.setPtDeltaMassRangeSigmaC(cutsPtDeltaMassCharmReso->get(0u, 6u), cutsPtDeltaMassCharmReso->get(1u, 6u), cutsPtDeltaMassCharmReso->get(0u, 7u), cutsPtDeltaMassCharmReso->get(1u, 7u), cutsPtDeltaMassCharmReso->get(0u, 8u), cutsPtDeltaMassCharmReso->get(1u, 8u), cutsPtDeltaMassCharmReso->get(0u, 9u), cutsPtDeltaMassCharmReso->get(1u, 9u), cutsPtDeltaMassCharmReso->get(2u, 6u), cutsPtDeltaMassCharmReso->get(2u, 7u), cutsPtDeltaMassCharmReso->get(2u, 8u), cutsPtDeltaMassCharmReso->get(2u, 9u));
     helper.setPtRangeSoftKaonXicResoToSigmaC(ptCuts->get(0u, 5u), ptCuts->get(1u, 5u));
 
     hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;counts", HistType::kTH1F, {{kNtriggersHF + 2, -0.5, +kNtriggersHF + 1.5}});
@@ -987,7 +987,7 @@ struct HfFilter { // Main struct for HF triggers
                 // check the mass of the SigmaC++ candidate
                 auto pVecSigmaC = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird, pVecSoftPi);
                 auto ptSigmaC = RecoDecay::pt(pVecSigmaC);
-                int8_t whichSigmaC = helper.isSelectedSigmaCInDeltaMassRange(pVecFirst, pVecThird, pVecSecond, pVecSoftPi, ptSigmaC, is3Prong[2], hMassVsPtC[kNCharmParticles + 9], activateQA);
+                int8_t whichSigmaC = helper.isSelectedSigmaCInDeltaMassRange<2>(pVecFirst, pVecThird, pVecSecond, pVecSoftPi, ptSigmaC, is3Prong[2], hMassVsPtC[kNCharmParticles + 9], activateQA);
                 if (whichSigmaC > 0) {
                   /// let's build a candidate SigmaC++K- pair
                   /// and keep it only if:
@@ -1003,7 +1003,7 @@ struct HfFilter { // Main struct for HF triggers
                   float massSigmaCPKPi{-999.}, massSigmaCPiKP{-999.}, deltaMassXicResoPKPi{-999.}, deltaMassXicResoPiKP{-999.};
                   float ptSigmaCKaon = RecoDecay::pt(pVecSigmaC, pVecFourth);
 
-                  if (ptSigmaCKaon > cutsPtDeltaMassCharmReso->get(2u, 8u)) {
+                  if (ptSigmaCKaon > cutsPtDeltaMassCharmReso->get(2u, 10u)) {
                     if (TESTBIT(whichSigmaC, 0)) {
                       massSigmaCPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi}, std::array{massProton, massKa, massPi, massPi});
                       deltaMassXicResoPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi, pVecFourth}, std::array{massProton, massKa, massPi, massPi, massKa}) - massSigmaCPKPi;
@@ -1012,8 +1012,8 @@ struct HfFilter { // Main struct for HF triggers
                       massSigmaCPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi}, std::array{massPi, massKa, massProton, massPi});
                       deltaMassXicResoPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi, pVecFourth}, std::array{massPi, massKa, massProton, massPi, massKa}) - massSigmaCPiKP;
                     }
-                    bool isPKPiOk = (cutsPtDeltaMassCharmReso->get(0u, 8u) < deltaMassXicResoPKPi && deltaMassXicResoPKPi < cutsPtDeltaMassCharmReso->get(1u, 8u));
-                    bool isPiKPOk = (cutsPtDeltaMassCharmReso->get(0u, 8u) < deltaMassXicResoPiKP && deltaMassXicResoPiKP < cutsPtDeltaMassCharmReso->get(1u, 8u));
+                    bool isPKPiOk = (cutsPtDeltaMassCharmReso->get(0u, 10u) < deltaMassXicResoPKPi && deltaMassXicResoPKPi < cutsPtDeltaMassCharmReso->get(1u, 10u));
+                    bool isPiKPOk = (cutsPtDeltaMassCharmReso->get(0u, 10u) < deltaMassXicResoPiKP && deltaMassXicResoPiKP < cutsPtDeltaMassCharmReso->get(1u, 10u));
                     if (isPKPiOk || isPiKPOk) {
                       /// This is a good SigmaC++K- event
                       /// Let's flag it together with SigmaC0K0s
@@ -1196,7 +1196,7 @@ struct HfFilter { // Main struct for HF triggers
                   // check the mass of the SigmaC0 candidate
                   auto pVecSigmaC = RecoDecay::pVec(pVecFirst, pVecSecond, pVecThird, pVecSoftPi);
                   auto ptSigmaC = RecoDecay::pt(pVecSigmaC);
-                  int8_t whichSigmaC = helper.isSelectedSigmaCInDeltaMassRange(pVecFirst, pVecThird, pVecSecond, pVecSoftPi, ptSigmaC, is3Prong[2], hMassVsPtC[kNCharmParticles + 10], activateQA);
+                  int8_t whichSigmaC = helper.isSelectedSigmaCInDeltaMassRange<0>(pVecFirst, pVecThird, pVecSecond, pVecSoftPi, ptSigmaC, is3Prong[2], hMassVsPtC[kNCharmParticles + 10], activateQA);
                   if (whichSigmaC > 0) {
                     /// let's build a candidate SigmaC0K0s pair
                     /// and keep it only if it is in the correct mass range
@@ -1205,7 +1205,7 @@ struct HfFilter { // Main struct for HF triggers
                     std::array<float, 3> pVecPiPosK0s = {posTrack.px(), posTrack.py(), posTrack.pz()};
                     std::array<float, 3> pVecPiNegK0s = {negTrack.px(), negTrack.py(), negTrack.pz()};
                     float ptSigmaCKaon = RecoDecay::pt(pVecSigmaC, pVecPiPosK0s, pVecPiNegK0s);
-                    if (ptSigmaCKaon > cutsPtDeltaMassCharmReso->get(2u, 8u)) {
+                    if (ptSigmaCKaon > cutsPtDeltaMassCharmReso->get(2u, 10u)) {
                       if (TESTBIT(whichSigmaC, 0)) {
                         massSigmaCPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi}, std::array{massProton, massKa, massPi, massPi});
                         deltaMassXicResoPKPi = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi, pVecPiPosK0s, pVecPiNegK0s}, std::array{massProton, massKa, massPi, massPi, massPi, massPi}) - massSigmaCPKPi;
@@ -1215,8 +1215,8 @@ struct HfFilter { // Main struct for HF triggers
                         deltaMassXicResoPiKP = RecoDecay::m(std::array{pVecFirst, pVecSecond, pVecThird, pVecSoftPi, pVecPiPosK0s, pVecPiNegK0s}, std::array{massPi, massKa, massProton, massPi, massPi, massPi}) - massSigmaCPiKP;
                       }
 
-                      bool isPKPiOk = (cutsPtDeltaMassCharmReso->get(0u, 8u) < deltaMassXicResoPKPi && deltaMassXicResoPKPi < cutsPtDeltaMassCharmReso->get(1u, 8u));
-                      bool isPiKPOk = (cutsPtDeltaMassCharmReso->get(0u, 8u) < deltaMassXicResoPiKP && deltaMassXicResoPiKP < cutsPtDeltaMassCharmReso->get(1u, 8u));
+                      bool isPKPiOk = (cutsPtDeltaMassCharmReso->get(0u, 10u) < deltaMassXicResoPKPi && deltaMassXicResoPKPi < cutsPtDeltaMassCharmReso->get(1u, 10u));
+                      bool isPiKPOk = (cutsPtDeltaMassCharmReso->get(0u, 10u) < deltaMassXicResoPiKP && deltaMassXicResoPiKP < cutsPtDeltaMassCharmReso->get(1u, 10u));
                       if (isPKPiOk || isPiKPOk) {
                         /// This is a good SigmaC0K0s event
                         keepEvent[kV0Charm3P] = true;

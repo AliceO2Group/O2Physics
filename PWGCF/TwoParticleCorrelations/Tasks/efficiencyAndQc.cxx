@@ -649,6 +649,7 @@ struct DptDptEfficiencyAndQc {
     /* Self configuration: requires dptdptfilter task in the workflow */
     {
       /* the binning */
+      getTaskOptionValue(initContext, "dpt-dpt-filter", "overallminp", overallminp, false);
       getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxbins", zvtxbins, false);
       getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmin", zvtxlow, false);
       getTaskOptionValue(initContext, "dpt-dpt-filter", "binning.mZVtxmax", zvtxup, false);
