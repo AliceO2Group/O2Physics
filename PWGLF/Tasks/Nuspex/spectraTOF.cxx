@@ -1582,37 +1582,37 @@ struct tofSpectra {
         fillTrackHistograms_MC<i>(track, mcParticle, track.collision_as<CollisionCandidateMC>());
       });
     }
-if (makeTHnSparseChoice) {
-    for (const auto& collision : collisions) {
-    if (!collision.has_mcCollision()) {
-        continue;
-      }
-      const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache);
-      for (const auto& mcParticle : particlesInCollision) {
-
-        if (std::abs(mcParticle.y()) > cfgCutY) {
+    if (makeTHnSparseChoice) {
+      for (const auto& collision : collisions) {
+        if (!collision.has_mcCollision()) {
           continue;
         }
-        static_for<0, 17>([&](auto i) {
-          fillParticleHistograms_MC<i>(collision, mcParticle);
-        });
+        const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache);
+        for (const auto& mcParticle : particlesInCollision) {
+
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            continue;
+          }
+          static_for<0, 17>([&](auto i) {
+            fillParticleHistograms_MC<i>(collision, mcParticle);
+          });
+        }
+      }
+    } else {
+      for (const auto& collision : collisions) {
+        for (const auto& mcParticle : mcParticles) {
+          // if (std::abs(mcParticle.eta()) > cfgCutEta) {
+          //   continue;
+          // }
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            continue;
+          }
+          static_for<0, 17>([&](auto i) {
+            fillParticleHistograms_MC<i>(collision, mcParticle);
+          });
+        }
       }
     }
-} else {
-for (const auto& collision : collisions) {
-for (const auto& mcParticle : mcParticles) {
-      // if (std::abs(mcParticle.eta()) > cfgCutEta) {
-      //   continue;
-      // }
-      if (std::abs(mcParticle.y()) > cfgCutY) {
-        continue;
-      }
-      static_for<0, 17>([&](auto i) {
-        fillParticleHistograms_MC<i>(collision, mcParticle);
-      });
-    }
-  }
-}
     // Loop on reconstructed collisions
     for (const auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
