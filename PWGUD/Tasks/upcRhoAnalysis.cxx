@@ -22,11 +22,12 @@
 
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h" // has some useful funtions for stuff not available from the tables
+#include "PWGUD/Core/DGPIDSelector.h" // possibly useful
 
 // ROOT headers
-//#include "TLorentzVector.h"
-#include "TEfficiency.h"
+//#include "TLorentzVector.h" // legacy class
 #include <Math/Vector4D.h> // this should apparently be used instead of TLorentzVector, e.g. "ROOT::Math::PxPyPzMVector vector;"
+//#include "TEfficiency.h" // for eventual MC studies
 
 using namespace o2;
 using namespace o2::framework;
@@ -40,15 +41,17 @@ struct upcRhoAnalysis {
     double PcEtaCut = 0.9; // cut on track eta as per physics coordination recommendation
     // configurables
     //Configurable<bool> verbosity{"verbosity", true, "verbosity"};
-    Configurable<bool> requireTOF{"requireTOF", false, "requireTOF"};
-    Configurable<double> tpcNSigmaPiCut{"tpcNSigmaPiCut", 3.0, "tpcNSigmaPiCut"};
-    Configurable<double> tofNSigmaPiCut{"tofNSigmaPiCut", 3.0, "tofNSigmaPiCut"};
-    Configurable<double> ptMaxCut{"ptMaxCut", 2.0, "ptMaxCut"};
+    Configurable<bool> tracksRequireTOF{"tracksRequireTOF", false, "requireTOF"};
+    Configurable<double> tracksTpcNSigmaPiCut{"treacksTpcNSigmaPiCut", 3.0, "tpcNSigmaPiCut"};
+    Configurable<double> tracksTofNSigmaPiCut{"treacksTofNSigmaPiCut", 3.0, "tofNSigmaPiCut"};
+    Configurable<double> tracksPtMaxCut{"tracksPtMaxCut", 2.0, "ptMaxCut"};
 
-    ConfigurableAxis mAxis{"mAxis", {500, 0.0, 5.0}, "m (GeV/#it{c}^{2})"};
+    Configurable<double> systemYMaxCut{"systemYMaxCut", 0.9, "yMaxCut"};
+
+    ConfigurableAxis mAxis{"mAxis", {50, 0.0, 2.5}, "m (GeV/#it{c}^{2})"};
     ConfigurableAxis ptAxis{"ptAxis", {25, 0.0, 2.5}, "#it{p}_{T} (GeV/#it{c})"};
-    ConfigurableAxis etaAxis{"etaAxis", {90, -0.9, 0.9}, "#eta"};
-    ConfigurableAxis phiAxis{"phiAxis", {120, 0.0, 2.0*o2::constants::math::PI}, "#phi"};
+    ConfigurableAxis etaAxis{"etaAxis", {18, -0.9, 0.9}, "#eta"};
+    ConfigurableAxis phiAxis{"phiAxis", {36, 0.0, 2.0*o2::constants::math::PI}, "#phi"};
     ConfigurableAxis nTracksAxis{"nTracksAxis", {101, -0.5, 100.5}, "N_{tracks}"};
     ConfigurableAxis tpcNSigmaPiAxis{"tpcNSigmaPiAxis", {100, -5.0, 5.0}, "TPC n#sigma_{#pi}"};
     ConfigurableAxis tofNSigmaPiAxis{"tofNSigmaPiAxis", {100, -5.0, 5.0}, "TOF n#sigma_{#pi}"};
@@ -74,17 +77,30 @@ struct upcRhoAnalysis {
         registry.add("QC/cutTracks/hTofNSigmaPi", ";TOF n#sigma_{#pi};counts", kTH1D, {tofNSigmaPiAxis});
 
         registry.add("reco/pions/hNRecoPions", ";N_{#pi};counts", kTH1D, {{11, -0.5, 10.5}});
+        registry.add("reco/pions/hPt", ";p_{T}(#pi^{+}) (GeV/#it{c});p_{T}(#pi^{-}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
+        registry.add("reco/pions/hEta", ";#eta(#pi^{+});#eta(#pi^{-});counts", kTH2D, {etaAxis, etaAxis});
+        registry.add("reco/pions/hPhi", ";#phi(#pi^{+});#phi(#pi^{-});counts", kTH2D, {phiAxis, phiAxis});
+        // look at some rho properties
         registry.add("reco/rho/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+        registry.add("reco/rho/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+        registry.add("reco/rho/hEta", ";#eta;counts", kTH1D, {etaAxis});
+        registry.add("reco/rho/hPhi", ";#phi;counts", kTH1D, {phiAxis});
     }
 
     template <typename T>
-    bool passesCuts(T const& track) {
+    bool trackPassesCuts(T const& track) {
         if (!track.isPVContributor()) return false;
-        if (requireTOF && !track.hasTOF()) return false;
+        if (tracksRequireTOF && !track.hasTOF()) return false;
         if (std::abs(eta(track.px(), track.py(), track.pz())) > PcEtaCut) return false;
-        if (std::abs(track.pt()) > ptMaxCut) return false;
-        if (std::abs(track.tpcNSigmaPi()) > tpcNSigmaPiCut) return false;
-        if (track.hasTOF() && std::abs(track.tofNSigmaPi()) > tofNSigmaPiCut) return false;
+        if (std::abs(track.pt()) > tracksPtMaxCut) return false;
+        if (std::abs(track.tpcNSigmaPi()) > tracksTpcNSigmaPiCut) return false;
+        if (track.hasTOF() && std::abs(track.tofNSigmaPi()) > tracksTofNSigmaPiCut) return false;
+        else return true;
+    }
+
+    template <typename T>
+    bool systemPassesCuts(T const& vec) {
+        if (std::abs(vec.Rapidity()) > systemYMaxCut) return false;
         else return true;
     }
 
@@ -92,8 +108,8 @@ struct upcRhoAnalysis {
         //if (collision.netCharge() != 0) return; // only consider events with net charge 0
 
         // create some vectors for storing track info
-        std::vector<int> charges;
-        std::vector<ROOT::Math::PxPyPzMVector> pions;
+        std::vector<ROOT::Math::PxPyPzMVector> piPos;
+        std::vector<ROOT::Math::PxPyPzMVector> piNeg;
         ROOT::Math::PxPyPzMVector rho;
 
         int nTracks = 0;
@@ -106,7 +122,7 @@ struct upcRhoAnalysis {
             registry.get<TH1>(HIST("QC/allTracks/hTpcNSigmaPi"))->Fill(track.tpcNSigmaPi());
             registry.get<TH1>(HIST("QC/allTracks/hTofNSigmaPi"))->Fill(track.tofNSigmaPi());
 
-            if (!passesCuts(track)) continue;
+            if (!trackPassesCuts(track)) continue;
             nTracks++;
             // fill histograms for cut tracks
             registry.get<TH1>(HIST("QC/cutTracks/hPt"))->Fill(track.pt());
@@ -116,17 +132,24 @@ struct upcRhoAnalysis {
             registry.get<TH1>(HIST("QC/cutTracks/hTpcNSigmaPi"))->Fill(track.tpcNSigmaPi());
             registry.get<TH1>(HIST("QC/cutTracks/hTofNSigmaPi"))->Fill(track.tofNSigmaPi());
 
-            charges.push_back(track.sign());
-            pions.push_back(ROOT::Math::PxPyPzMVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged)); // assume pion mass
+            if (track.sign() == 1) piPos.push_back(ROOT::Math::PxPyPzMVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged)); // assume pion mass
+            if (track.sign() == -1) piNeg.push_back(ROOT::Math::PxPyPzMVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged)); // assume pion mass
         }
         registry.get<TH1>(HIST("QC/allTracks/hNTracks"))->Fill(tracks.size());
         registry.get<TH1>(HIST("QC/cutTracks/hNTracks"))->Fill(nTracks);
 
-        registry.get<TH1>(HIST("reco/pions/hNRecoPions"))->Fill(pions.size());
+        registry.get<TH1>(HIST("reco/pions/hNRecoPions"))->Fill(piPos.size()+piNeg.size());
 
-        if (pions.size() == 2 && charges[0] != charges[1]) {
-            rho = pions[0] + pions[1];
+        if (piNeg.size() == 1 && piPos.size() == 1) {
+            rho = piPos[0] + piNeg[0];
+            registry.get<TH2>(HIST("reco/pions/hPt"))->Fill(piPos[0].Pt(), piNeg[0].Pt());
+            registry.get<TH2>(HIST("reco/pions/hEta"))->Fill(piPos[0].Rapidity(), piNeg[0].Rapidity());
+            registry.get<TH2>(HIST("reco/pions/hPhi"))->Fill(piPos[0].Phi()+o2::constants::math::PI, piNeg[0].Phi()+o2::constants::math::PI); // shift by pi to get to the range [0, 2pi]
+
             registry.get<TH1>(HIST("reco/rho/hM"))->Fill(rho.M());
+            registry.get<TH1>(HIST("reco/rho/hPt"))->Fill(rho.Pt());
+            registry.get<TH1>(HIST("reco/rho/hEta"))->Fill(rho.Rapidity());
+            registry.get<TH1>(HIST("reco/rho/hPhi"))->Fill(rho.Phi()+o2::constants::math::PI); // shift by pi to get to the range [0, 2pi]
         }
     }
 };
