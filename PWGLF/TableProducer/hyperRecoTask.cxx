@@ -458,7 +458,8 @@ struct hyperRecoTask {
     }
   }
 
-  void processDataTracked(CollisionsFull const& collisions, aod::V0s const& V0s, aod::TrackedV0s const& tV0s, TracksFull const& tracks, aod::BCsWithTimestamps const& bcs) {
+  void processDataTracked(CollisionsFull const& collisions, aod::V0s const& V0s, aod::TrackedV0s const& tV0s, TracksFull const& tracks, aod::BCsWithTimestamps const& bcs)
+  {
     isTracked.clear();
     isTracked.resize(V0s.size(), false);
     for (const auto& tV0 : tV0s) {
@@ -676,7 +677,8 @@ struct hyperRecoTask {
   }
   PROCESS_SWITCH(hyperRecoTask, processMC, "MC analysis", false);
 
-  void processMCTracked(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, aod::TrackedV0s const& tV0s, TracksFull const& tracks, aod::BCsWithTimestamps const& bcs, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC) {
+  void processMCTracked(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, aod::TrackedV0s const& tV0s, TracksFull const& tracks, aod::BCsWithTimestamps const& bcs, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
+  {
     isTracked.clear();
     isTracked.resize(V0s.size(), false);
     for (const auto& tV0 : tV0s) {
@@ -685,7 +687,6 @@ struct hyperRecoTask {
     processMC(collisions, mcCollisions, V0s, tracks, bcs, trackLabelsMC, particlesMC);
   }
   PROCESS_SWITCH(hyperRecoTask, processMCTracked, "MC analysis with tracked V0s", false);
-
 };
 
 WorkflowSpec
