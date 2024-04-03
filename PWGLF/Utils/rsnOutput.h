@@ -12,8 +12,12 @@
 /// \author Veronika Barbasova (veronika.barbasova@cern.ch)
 /// \since April 3, 2024
 
-#ifndef PWGLF_RSNOUTPUT_H_
-#define PWGLF_RSNOUTPUT_H_
+#ifndef PWGLF_UTILS_RSNOUTPUT_H_
+#define PWGLF_UTILS_RSNOUTPUT_H_
+
+#include <utility>
+#include <string>
+#include <vector>
 
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"

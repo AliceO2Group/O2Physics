@@ -72,9 +72,9 @@ struct phianalysisTHnSparse {
 
   // mixing
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
-  ConfigurableAxis axisVertex{"axisVertex", {1, -10, 10}, "vertex axis for bin"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {10, 0, 5000}, "TPC multiplicity  for bin"};
-  BinningType binning{{axisVertex, axisMultiplicity}, true};
+  ConfigurableAxis axisVertexMixing{"axisVertexMixing", {1, -10, 10}, "vertex axis for bin"};
+  ConfigurableAxis axisMultiplicityMixing{"axisMultiplicityMixing", {10, 0, 5000}, "TPC multiplicity  for bin"};
+  BinningType binning{{axisVertexMixing, axisMultiplicityMixing}, true};
 
   // defined in DataFormats/Reconstruction/include/ReconstructionDataFormats/PID.h
   float massPos = o2::track::PID::getMass(dautherPos);
@@ -152,7 +152,7 @@ struct phianalysisTHnSparse {
       registry.add("QATrack/unlikepm/TPCPID/h2TracknSigma", "", kTH2F, {{120, -tpcnSigmaPos, tpcnSigmaPos}, {120, -tpcnSigmaNeg, tpcnSigmaNeg}});
 
       // Mixing QA
-      registry.add("QAMixing/s4Multiplicity", "", kTHnSparseF, {axisMultiplicity, axisMultiplicity, axisVertex, axisVertex});
+      registry.add("QAMixing/s4Multiplicity", "", kTHnSparseF, {axisMultiplicityMixing, axisMultiplicityMixing, axisVertexMixing, axisVertexMixing});
     }
   }
 
