@@ -1583,16 +1583,17 @@ struct tofSpectra {
       });
     }
 
-    for (const auto& mcParticle : mcParticles) {
-      // if (std::abs(mcParticle.eta()) > cfgCutEta) {
-      //   continue;
-      // }
-      if (std::abs(mcParticle.y()) > cfgCutY) {
-        continue;
+    for (const auto& mcCollision : mcCollisions) {
+      const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
+      for (const auto& mcParticle : particlesInCollision) {
+
+        if (std::abs(mcParticle.y()) > cfgCutY) {
+          continue;
+        }
+        static_for<0, 17>([&](auto i) {
+          fillParticleHistograms_MC<i>(mcCollision, mcParticle);
+        });
       }
-      static_for<0, 17>([&](auto i) {
-        fillParticleHistograms_MC<i>(collisions, mcParticle);
-      });
     }
 
     // Loop on reconstructed collisions
