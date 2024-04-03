@@ -195,7 +195,7 @@ struct HfTaskDplus {
     }
   }
 
-  // Fill histograms of quantities for the reconstructed Dplus candidates, with MC matching 
+  // Fill histograms of quantities for the reconstructed Dplus candidates with MC matching 
   /// \param candidate is candidate
   /// \param mcParticles are particles with MC information
   template <typename T1, typename T2>
