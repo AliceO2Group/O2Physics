@@ -110,8 +110,8 @@ struct epvector {
     AxisSpec multiplicity = {5000, -500, 500, "TPC Multiplicity"};
     AxisSpec amplitudeFT0 = {5000, 0, 10000, "FT0 amplitude"};
     AxisSpec channelFT0Axis = {220, 0.0, 220.0, "FT0 channel"};
-    AxisSpec qxFT0Axis = {2000, -100.0, 100.0, "Qx"};
-    AxisSpec qyFT0Axis = {2000, -100.0, 100.0, "Qy"};
+    AxisSpec qxFT0Axis = {80000, -10000.0, 10000.0, "Qx"};
+    AxisSpec qyFT0Axis = {80000, -10000.0, 10000.0, "Qy"};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec vzAxis = {400, -20, 20, "vz"};
     AxisSpec resAxis = {400, -2, 2, "vz"};
