@@ -137,7 +137,7 @@ struct HfTaskDplus {
     // not possible in Filter since expressions do not support binary operators
     if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
       return;
-      }
+    }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax) {
         return;
       }
@@ -204,7 +204,7 @@ struct HfTaskDplus {
     // not possible in Filter since expressions do not support binary operators
     if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
       return;
-      }
+    }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax) {
         return;
       }
