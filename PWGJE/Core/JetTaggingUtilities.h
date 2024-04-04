@@ -31,7 +31,6 @@
 #include "Framework/Logger.h"
 #include "Common/Core/RecoDecay.h"
 #include "PWGJE/Core/JetUtilities.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 enum JetTaggingSpecies {
   none = 0,
