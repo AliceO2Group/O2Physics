@@ -54,7 +54,6 @@ struct cascqaanalysis {
   Configurable<bool> isNoSameBunchPileupCut{"isNoSameBunchPileupCut", 1, "Reject collisions which are associated with the same found-by-T0 bunch crossing"};
   Configurable<bool> isGoodZvtxFT0vsPVCut{"isGoodZvtxFT0vsPVCut", 1, "Reject collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference"};
 
-
   // Cascade selection criteria
   Configurable<float> scalefactor{"scalefactor", 1.0, "Scaling factor"};
   Configurable<double> casccospa{"casccospa", 0.97, "Casc CosPA"};
