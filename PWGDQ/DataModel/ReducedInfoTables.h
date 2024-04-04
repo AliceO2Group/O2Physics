@@ -40,39 +40,39 @@ namespace reducedevent
 {
 
 // basic event information
-DECLARE_SOA_BITMAP_COLUMN(Tag, tag, 64);   //!  Bit-field for storing event information (e.g. high level info, cut decisions)
-DECLARE_SOA_COLUMN(Q1X0A, q1x0a, float);   //!  Q-vector x component, with event eta gap A (harmonic 1 and power 0)
-DECLARE_SOA_COLUMN(Q1Y0A, q1y0a, float);   //!  Q-vector y component, with event eta gap A (harmonic 1 and power 0)
-DECLARE_SOA_COLUMN(Q1X0B, q1x0b, float);   //!  Q-vector x component, with event eta gap B (harmonic 1 and power 0)
-DECLARE_SOA_COLUMN(Q1Y0B, q1y0b, float);   //!  Q-vector y component, with event eta gap B (harmonic 1 and power 0)
-DECLARE_SOA_COLUMN(Q1X0C, q1x0c, float);   //!  Q-vector x component, with event eta gap C (harmonic 1 and power 0)
-DECLARE_SOA_COLUMN(Q1Y0C, q1y0c, float);   //!  Q-vector y component, with event eta gap C (harmonic 1 and power 0)
-DECLARE_SOA_COLUMN(Q2X0A, q2x0a, float);   //!  Q-vector x component, with event eta gap A (harmonic 2 and power 0)
-DECLARE_SOA_COLUMN(Q2Y0A, q2y0a, float);   //!  Q-vector y component, with event eta gap A (harmonic 2 and power 0)
-DECLARE_SOA_COLUMN(Q2X0B, q2x0b, float);   //!  Q-vector x component, with event eta gap B (harmonic 2 and power 0)
-DECLARE_SOA_COLUMN(Q2Y0B, q2y0b, float);   //!  Q-vector y component, with event eta gap B (harmonic 2 and power 0)
-DECLARE_SOA_COLUMN(Q2X0C, q2x0c, float);   //!  Q-vector x component, with event eta gap C (harmonic 2 and power 0)
-DECLARE_SOA_COLUMN(Q2Y0C, q2y0c, float);   //!  Q-vector y component, with event eta gap C (harmonic 2 and power 0)
-DECLARE_SOA_COLUMN(MultA, multa, float);   //!  Event multiplicity eta gap A
-DECLARE_SOA_COLUMN(MultB, multb, float);   //!  Event multiplicity eta gap B
-DECLARE_SOA_COLUMN(MultC, multc, float);   //!  Event multiplicity eta gap C
-DECLARE_SOA_COLUMN(Q3X0A, q3x0a, float);   //!  Q-vector x component, with event eta gap A (harmonic 3 and power 0)
-DECLARE_SOA_COLUMN(Q3Y0A, q3y0a, float);   //!  Q-vector y component, with event eta gap A (harmonic 3 and power 0)
-DECLARE_SOA_COLUMN(Q3X0B, q3x0b, float);   //!  Q-vector x component, with event eta gap B (harmonic 3 and power 0)
-DECLARE_SOA_COLUMN(Q3Y0B, q3y0b, float);   //!  Q-vector y component, with event eta gap B (harmonic 3 and power 0)
-DECLARE_SOA_COLUMN(Q3X0C, q3x0c, float);   //!  Q-vector x component, with event eta gap C (harmonic 3 and power 0)
-DECLARE_SOA_COLUMN(Q3Y0C, q3y0c, float);   //!  Q-vector y component, with event eta gap C (harmonic 3 and power 0)
-DECLARE_SOA_COLUMN(Q4X0A, q4x0a, float);   //!  Q-vector x component, with event eta gap A (harmonic 4 and power 0)
-DECLARE_SOA_COLUMN(Q4Y0A, q4y0a, float);   //!  Q-vector y component, with event eta gap A (harmonic 4 and power 0)
-DECLARE_SOA_COLUMN(Q4X0B, q4x0b, float);   //!  Q-vector x component, with event eta gap B (harmonic 4 and power 0)
-DECLARE_SOA_COLUMN(Q4Y0B, q4y0b, float);   //!  Q-vector y component, with event eta gap B (harmonic 4 and power 0)
-DECLARE_SOA_COLUMN(Q4X0C, q4x0c, float);   //!  Q-vector x component, with event eta gap C (harmonic 4 and power 0)
-DECLARE_SOA_COLUMN(Q4Y0C, q4y0c, float);   //!  Q-vector y component, with event eta gap C (harmonic 4 and power 0)
+DECLARE_SOA_BITMAP_COLUMN(Tag, tag, 64);       //!  Bit-field for storing event information (e.g. high level info, cut decisions)
+DECLARE_SOA_COLUMN(Q1X0A, q1x0a, float);       //!  Q-vector x component, with event eta gap A (harmonic 1 and power 0)
+DECLARE_SOA_COLUMN(Q1Y0A, q1y0a, float);       //!  Q-vector y component, with event eta gap A (harmonic 1 and power 0)
+DECLARE_SOA_COLUMN(Q1X0B, q1x0b, float);       //!  Q-vector x component, with event eta gap B (harmonic 1 and power 0)
+DECLARE_SOA_COLUMN(Q1Y0B, q1y0b, float);       //!  Q-vector y component, with event eta gap B (harmonic 1 and power 0)
+DECLARE_SOA_COLUMN(Q1X0C, q1x0c, float);       //!  Q-vector x component, with event eta gap C (harmonic 1 and power 0)
+DECLARE_SOA_COLUMN(Q1Y0C, q1y0c, float);       //!  Q-vector y component, with event eta gap C (harmonic 1 and power 0)
+DECLARE_SOA_COLUMN(Q2X0A, q2x0a, float);       //!  Q-vector x component, with event eta gap A (harmonic 2 and power 0)
+DECLARE_SOA_COLUMN(Q2Y0A, q2y0a, float);       //!  Q-vector y component, with event eta gap A (harmonic 2 and power 0)
+DECLARE_SOA_COLUMN(Q2X0B, q2x0b, float);       //!  Q-vector x component, with event eta gap B (harmonic 2 and power 0)
+DECLARE_SOA_COLUMN(Q2Y0B, q2y0b, float);       //!  Q-vector y component, with event eta gap B (harmonic 2 and power 0)
+DECLARE_SOA_COLUMN(Q2X0C, q2x0c, float);       //!  Q-vector x component, with event eta gap C (harmonic 2 and power 0)
+DECLARE_SOA_COLUMN(Q2Y0C, q2y0c, float);       //!  Q-vector y component, with event eta gap C (harmonic 2 and power 0)
+DECLARE_SOA_COLUMN(MultA, multa, float);       //!  Event multiplicity eta gap A
+DECLARE_SOA_COLUMN(MultB, multb, float);       //!  Event multiplicity eta gap B
+DECLARE_SOA_COLUMN(MultC, multc, float);       //!  Event multiplicity eta gap C
+DECLARE_SOA_COLUMN(Q3X0A, q3x0a, float);       //!  Q-vector x component, with event eta gap A (harmonic 3 and power 0)
+DECLARE_SOA_COLUMN(Q3Y0A, q3y0a, float);       //!  Q-vector y component, with event eta gap A (harmonic 3 and power 0)
+DECLARE_SOA_COLUMN(Q3X0B, q3x0b, float);       //!  Q-vector x component, with event eta gap B (harmonic 3 and power 0)
+DECLARE_SOA_COLUMN(Q3Y0B, q3y0b, float);       //!  Q-vector y component, with event eta gap B (harmonic 3 and power 0)
+DECLARE_SOA_COLUMN(Q3X0C, q3x0c, float);       //!  Q-vector x component, with event eta gap C (harmonic 3 and power 0)
+DECLARE_SOA_COLUMN(Q3Y0C, q3y0c, float);       //!  Q-vector y component, with event eta gap C (harmonic 3 and power 0)
+DECLARE_SOA_COLUMN(Q4X0A, q4x0a, float);       //!  Q-vector x component, with event eta gap A (harmonic 4 and power 0)
+DECLARE_SOA_COLUMN(Q4Y0A, q4y0a, float);       //!  Q-vector y component, with event eta gap A (harmonic 4 and power 0)
+DECLARE_SOA_COLUMN(Q4X0B, q4x0b, float);       //!  Q-vector x component, with event eta gap B (harmonic 4 and power 0)
+DECLARE_SOA_COLUMN(Q4Y0B, q4y0b, float);       //!  Q-vector y component, with event eta gap B (harmonic 4 and power 0)
+DECLARE_SOA_COLUMN(Q4X0C, q4x0c, float);       //!  Q-vector x component, with event eta gap C (harmonic 4 and power 0)
+DECLARE_SOA_COLUMN(Q4Y0C, q4y0c, float);       //!  Q-vector y component, with event eta gap C (harmonic 4 and power 0)
 DECLARE_SOA_COLUMN(CORR2REF, corr2ref, float); //!  Ref Flow correlator <2>
 DECLARE_SOA_COLUMN(CORR4REF, corr4ref, float); //!  Ref Flow correlator <4>
-DECLARE_SOA_COLUMN(MCPosX, mcPosX, float); //!
-DECLARE_SOA_COLUMN(MCPosY, mcPosY, float); //!
-DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float); //!
+DECLARE_SOA_COLUMN(MCPosX, mcPosX, float);     //!
+DECLARE_SOA_COLUMN(MCPosY, mcPosY, float);     //!
+DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float);     //!
 } // namespace reducedevent
 
 DECLARE_SOA_TABLE(ReducedEvents, "AOD", "REDUCEDEVENT", //!   Main event information table

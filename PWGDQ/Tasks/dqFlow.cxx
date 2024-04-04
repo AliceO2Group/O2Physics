@@ -423,9 +423,6 @@ struct DQEventQvector {
       eventRefFlow(VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], centrality);
     }
 
-
-
-
     if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0) {
       VarManager::FillQVectorFromCentralFW(collision);
 
@@ -436,11 +433,10 @@ struct DQEventQvector {
           eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecBPosRe(), collision.qvecBPosIm(), collision.qvecBNegRe(), collision.qvecBNegIm(),
                             collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkBPos(), collision.nTrkBNeg());
 
-                      // Fill the tree for the reduced event table with RefFlow quantities
-            if (fEventCut->IsSelected(VarManager::fgValues)) {
-              eventRefFlow(VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], centrality);
-            }
-
+          // Fill the tree for the reduced event table with RefFlow quantities
+          if (fEventCut->IsSelected(VarManager::fgValues)) {
+            eventRefFlow(VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], centrality);
+          }
         }
       }
     }
