@@ -122,7 +122,7 @@ struct nuclei_in_jets {
   void init(InitContext const&)
   {
     // Global Properties and QC
-    registryQC.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "counter"}});
+    registryQC.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{15, 0, 15, "counter"}});
     registryQC.add("number_of_events_mc", "number of events in mc", HistType::kTH1F, {{10, 0, 10, "counter"}});
     registryQC.add("jet_plus_ue_multiplicity", "jet + underlying-event multiplicity", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
     registryQC.add("jet_multiplicity", "jet multiplicity", HistType::kTH1F, {{100, 0, 100, "#it{N}_{ch}"}});
@@ -467,11 +467,15 @@ struct nuclei_in_jets {
     if (!collision.sel8())
       return;
 
-    if (abs(collision.posZ()) > 10)
+    // Event Counter: after event selection sel8
+    registryQC.fill(HIST("number_of_events_data"), 1.5);
+
+    // Cut on Zvertex
+    if (abs(collision.posZ()) > 10.0)
       return;
 
-    // Event Counter: after event selection
-    registryQC.fill(HIST("number_of_events_data"), 1.5);
+    // Event Counter: after |z|<10 cm cut
+    registryQC.fill(HIST("number_of_events_data"), 2.5);
 
     // Reduced Event
     std::vector<int> particle_ID;
@@ -513,7 +517,7 @@ struct nuclei_in_jets {
     // Event Counter: Skip Events with no trigger Particle (pmax=0)
     if (pt_max == 0)
       return;
-    registryQC.fill(HIST("number_of_events_data"), 2.5);
+    registryQC.fill(HIST("number_of_events_data"), 3.5);
 
     // Histogram with pt_leading
     registryQC.fill(HIST("pt_leading"), pt_max);
@@ -521,7 +525,7 @@ struct nuclei_in_jets {
     // Event Counter: Skip Events with pt<pt_leading_min
     if (pt_max < min_pt_leading)
       return;
-    registryQC.fill(HIST("number_of_events_data"), 3.5);
+    registryQC.fill(HIST("number_of_events_data"), 4.5);
 
     // Number of Stored Particles
     int nParticles = static_cast<int>(particle_ID.size());
@@ -529,7 +533,7 @@ struct nuclei_in_jets {
     // Event Counter: Skip Events with 0 Particles
     if (nParticles < 1)
       return;
-    registryQC.fill(HIST("number_of_events_data"), 4.5);
+    registryQC.fill(HIST("number_of_events_data"), 5.5);
 
     // Momentum of the Leading Particle
     auto const& leading_track = tracks.iteratorAt(leading_ID);
@@ -539,7 +543,7 @@ struct nuclei_in_jets {
     // Event Counter: Skip Events with no Particle of Interest
     if (!containsParticleOfInterest)
       return;
-    registryQC.fill(HIST("number_of_events_data"), 5.5);
+    registryQC.fill(HIST("number_of_events_data"), 6.5);
 
     // Array of Particles inside Jet
     std::vector<int> jet_particle_ID;
@@ -639,10 +643,7 @@ struct nuclei_in_jets {
         Rmax = R;
     }
 
-    // Event Counter: Skip Events with Rmax=0
-    if (Rmax == 0)
-      return;
-    registryQC.fill(HIST("number_of_events_data"), 6.5);
+    // Rmax Distribution
     registryQC.fill(HIST("r_max_jet"), Rmax);
 
     // Event Counter: Skip Events with jet not fully inside acceptance
@@ -665,6 +666,8 @@ struct nuclei_in_jets {
       return;
     if (ue_axis2.X() == 0 && ue_axis2.Y() == 0 && ue_axis2.Z() == 0)
       return;
+
+    registryQC.fill(HIST("number_of_events_data"), 8.5);
 
     // Store UE
     std::vector<int> ue_particle_ID;
@@ -702,10 +705,10 @@ struct nuclei_in_jets {
 
     // UE Multiplicity
     int nParticlesUE = static_cast<int>(ue_particle_ID.size());
-    registryQC.fill(HIST("ue_multiplicity"), static_cast<float> nParticlesUE / 2.0);
+    registryQC.fill(HIST("ue_multiplicity"), static_cast<float>(nParticlesUE) / 2.0);
 
     // Jet Multiplicity
-    float jet_Nch = static_cast<float> nParticlesJetAndUE - static_cast<float> nParticlesUE / 2.0;
+    float jet_Nch = static_cast<float>(nParticlesJetAndUE) - static_cast<float>(nParticlesUE) / 2.0;
     registryQC.fill(HIST("jet_multiplicity"), jet_Nch);
 
     // Loop over particles inside Jet
