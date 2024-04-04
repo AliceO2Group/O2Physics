@@ -69,6 +69,7 @@ struct reso2dfmerged {
 
   void init(InitContext const&)
   {
+
     const AxisSpec axisCent(110, 0, 110, "FT0 (%)");
     histos.add("Event/h1d_ft0_mult_percentile", "FT0 (%)", kTH1F, {axisCent});
   }
@@ -76,7 +77,7 @@ struct reso2dfmerged {
   Produces<aod::ResoTrackDFs> reso2trksdf;
   int df = 0;
 
-  std::vector<std::tuple<resoCols::iterator, float, float, float, float, float, float, resoTracks>> vecOfTuples;
+  std::vector<std::tuple<float, float, float, float, float, float>> vecOfTuples;
   std::vector<std::vector<std::tuple<float, float, float, float,
                                      float, float, signed char, unsigned char,
                                      float, float, float, float,
@@ -89,7 +90,7 @@ struct reso2dfmerged {
   {
 
     int nCollisions = nDF;
-    vecOfTuples.push_back(std::make_tuple(collision, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), tracks));
+    vecOfTuples.push_back(std::make_tuple(collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl()));
     std::vector<std::tuple<float, float, float, float,
                            float, float, signed char, unsigned char,
                            float, float, float, float,
@@ -141,8 +142,8 @@ struct reso2dfmerged {
       const auto& tuple = vecOfTuples[i];
       const auto& innerVector = vecOfVecOfTuples[i];
 
-      histos.fill(HIST("Event/h1d_ft0_mult_percentile"), std::get<4>(tuple));
-      resoCollisionsdf(std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple), std::get<6>(tuple), 0., 0., 0., 0, 0);
+      histos.fill(HIST("Event/h1d_ft0_mult_percentile"), std::get<3>(tuple));
+      resoCollisionsdf(std::get<0>(tuple), std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple), 0., 0., 0., 0, 0);
       //  LOGF(info, "collisions: Index = %d ) %f - %f - %f %f %d -- %d", std::get<0>(tuple).globalIndex(),std::get<1>(tuple),std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple).size(),resoCollisionsdf.lastIndex());
 
       for (const auto& tuple : innerVector) {
