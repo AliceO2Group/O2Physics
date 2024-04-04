@@ -95,7 +95,7 @@ struct JetPlanarFlowTask {
   void fillHistograms(T const& jet, U const& tracks)
   {
 
-    std::vector<float> nSubCASDResults = jetsubstructureutilities::getNSubjettiness(jet, tracks, tracks, tracks, 2 , fastjet::contrib::CA_Axes(), true, zCutSD, betaSD);
+    std::vector<float> nSubCASDResults = jetsubstructureutilities::getNSubjettiness(jet, tracks, tracks, tracks, 2, fastjet::contrib::CA_Axes(), true, zCutSD, betaSD);
 
     float thetaTrack = -1.0;
     float phiTrack = -1.0;

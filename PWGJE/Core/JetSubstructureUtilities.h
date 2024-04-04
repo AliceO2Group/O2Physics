@@ -52,7 +52,6 @@ namespace jetsubstructureutilities
  * @param candidates vector of constituent candidates
  * @param pseudoJet converted pseudoJet object which is passed by reference
  */
-// function that converts a jet from the O2Physics jet table into a pseudojet; the fastjet cluster sequence of the jet needs to be given as input and will be modified by the function to save the clustering information
 template <typename T, typename U, typename V, typename O>
 fastjet::ClusterSequenceArea jetToPseudoJet(T const& jet, U const& tracks, V const& clusters, O const& candidates, fastjet::PseudoJet& pseudoJet)
 {
@@ -67,7 +66,7 @@ fastjet::ClusterSequenceArea jetToPseudoJet(T const& jet, U const& tracks, V con
   }
   if constexpr (jethfutilities::isHFTable<O>() || jethfutilities::isHFMcTable<O>()) {
     for (auto& jetHFConstituent : jet.template hfcandidates_as<O>()) {
-      fastjetutilities::fillTracks(jetHFConstituent, jetConstituents, jetHFConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), jethfutilities::getTablePDGMass<O>);
+      fastjetutilities::fillTracks(jetHFConstituent, jetConstituents, jetHFConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), jethfutilities::getTablePDGMass<O>());
     }
   }
   std::vector<fastjet::PseudoJet> jetReclustered;
@@ -108,7 +107,7 @@ std::vector<float> getNSubjettiness(T const& jet, U const& tracks, V const& clus
   }
 
   for (auto n = 0; n < nMax + 1; n++) {
-    result.push_back(-1.0 * (n+1));
+    result.push_back(-1.0 * (n + 1));
   }
 
   for (auto n = 1; n < nMax + 1; n++) {

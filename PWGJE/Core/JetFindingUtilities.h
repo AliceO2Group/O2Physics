@@ -177,7 +177,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
       std::vector<int> candconst;
       std::vector<int> clusterconst;
       jetsTable(collision.globalIndex(), jet.pt(), jet.eta(), jet.phi(),
-                jet.E(), jet.m(), jet.has_area() ? jet.area() : 0., std::round(R * 100));
+                jet.E(), jet.rapidity(), jet.m(), jet.has_area() ? jet.area() : 0., std::round(R * 100));
       for (const auto& constituent : sorted_by_pt(jet.constituents())) {
         if (constituent.template user_info<fastjetutilities::fastjet_user_info>().getStatus() == static_cast<int>(JetConstituentStatus::track)) {
           trackconst.push_back(constituent.template user_info<fastjetutilities::fastjet_user_info>().getIndex());
