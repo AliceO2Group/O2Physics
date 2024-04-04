@@ -98,7 +98,7 @@ struct femtoDreamPairTaskTrackTrack {
 
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> PartitionMCTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                                             (ncheckbit(aod::femtodreamparticle::cut, ConfTrk1_CutBit)) &&
-                                                                            ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk1_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCTOFBit)) &&
+                                                                            ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk1_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCBit) && ((aod::femtodreamparticle::pidcut & ConfTrk1_TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCTOFBit)) &&
                                                                             (aod::femtodreamparticle::pt > ConfTrk1_minPt) &&
                                                                             (aod::femtodreamparticle::pt < ConfTrk1_maxPt) &&
                                                                             (aod::femtodreamparticle::eta > ConfTrk1_minEta) &&
@@ -130,7 +130,7 @@ struct femtoDreamPairTaskTrackTrack {
 
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> PartitionMCTrk2 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                                             (ncheckbit(aod::femtodreamparticle::cut, ConfTrk2_CutBit)) &&
-                                                                            ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk2_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk2_TPCBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk2_TPCTOFBit)) &&
+                                                                            ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk2_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk2_TPCBit) && ((aod::femtodreamparticle::pidcut & ConfTrk2_TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk2_TPCTOFBit)) &&
                                                                             (aod::femtodreamparticle::pt > ConfTrk2_minPt) &&
                                                                             (aod::femtodreamparticle::pt < ConfTrk2_maxPt) &&
                                                                             (aod::femtodreamparticle::eta > ConfTrk2_minEta) &&
