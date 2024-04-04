@@ -351,13 +351,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("JpsiPWGSkimmedCuts2")) {
-    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
-    cut->AddCut(GetAnalysisCut("electronTrackQualitySkimmed"));
-    cut->AddCut(GetAnalysisCut("electronPIDLooseSkimmed2"));
-    return cut;
-  }
-
   if (!nameStr.compare("jpsiO2MCdebugCuts13_Corr")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityTPCOnly")); // no cut on ITS clusters
@@ -1962,6 +1955,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("PrimaryTrack_looseDCA"));
     return cut;
   }
+  
+  if (!nameStr.compare("testCut_chic")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine5"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigma"));
+    return cut;
+  }
 
   if (!nameStr.compare("lmee_GlobalTrackRun3_lowPt")) {
     cut->AddCut(GetAnalysisCut("lmeeLowBKine"));
@@ -2670,6 +2670,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("eventStandardtest")) {
+        cut->AddCut(VarManager::kVtxZ, -30.0, 30.0);
+        return cut;
+  }
+
   if (!nameStr.compare("eventStandardSel8")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
@@ -3320,14 +3325,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("electronPIDLooseSkimmed2")) {
-    cut->AddCut(VarManager::kTPCnSigmaEl, -4.0, 4.0);
-    cut->AddCut(VarManager::kTPCnSigmaPi, 2.5, 999, false, VarManager::kPin, 0, 3.0);
-    cut->AddCut(VarManager::kTPCnSigmaPi, 1.5, 999, false, VarManager::kPin, 3.0, 999);
-    cut->AddCut(VarManager::kTPCnSigmaPr, 2.5, 999, false, VarManager::kPin, 0, 3.0);
-    cut->AddCut(VarManager::kTPCnSigmaPr, 1.5, 999, false, VarManager::kPin, 3.0, 999);
-    return cut;
-  }
   if (!nameStr.compare("jpsi_TPCPID_debug6")) {
     cut->AddCut(VarManager::kTPCnSigmaEl, -2.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPi, 3.0, 999);
