@@ -415,6 +415,8 @@ struct UpcTauCentralBarrelRL {
     histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWideITS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
     histos.add("EventTwoTracks/MuonsSelection/hInvariantMassPtCut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
     histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSposEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
     histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
     histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutLS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
     histos.add("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSITScut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -431,6 +433,8 @@ struct UpcTauCentralBarrelRL {
 	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
 	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutLS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
 	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSITScut", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSposEta", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
 	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSeta12", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
 	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSeta10", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
 	  histos.add("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSeta08", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -460,6 +464,10 @@ struct UpcTauCentralBarrelRL {
     histos.add("EventTwoTracks/MuonsSelection/hDaughtersPtvsDcaXYPtCut", ";Daughter #it{p_{T}} (GeV/c);Daughter DCA_{XY} (cm)", HistType::kTH2D, {axisPt, axisDCA});
     histos.add("EventTwoTracks/MuonsSelection/hDaughtersPvsITSclusterSize", ";Average ITS cluster size;Daughter #it{p} (GeV/c)", HistType::kTH2D, {axisAvgITSclsSizes, axisMomSigned});
     histos.add("EventTwoTracks/MuonsSelection/hDaughtersPvsITSclusterSizeXcos", ";Average ITS cluster size x cos(#lambda);Daughter #it{p} (GeV/c)", HistType::kTH2D, {axisAvgITSclsSizes, axisMomSigned});
+
+	  histos.add("EventTwoTracks/MuonsSelection/Run2Cuts/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/Run2Cuts/hInvariantMassWidePtFitPlot", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+	  histos.add("EventTwoTracks/MuonsSelection/Run2Cuts/hInvariantMassWideCS", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
 
     histos.add("EventFourTracks/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
     histos.add("EventFourTracks/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -613,60 +621,62 @@ struct UpcTauCentralBarrelRL {
     return true;
   }
 
-
-		Configurable<float> cutMyGTptMin{"cutMyGTptMin", 0.1f, {"MyGlobalTrack cut"}};
-		Configurable<float> cutMyGTptMax{"cutMyGTptMax", 1e10f, {"MyGlobalTrack cut"}};
-		Configurable<float> cutMyGTetaMin{"cutMyGTetaMin", -0.8f, {"MyGlobalTrack cut"}};
-		Configurable<float> cutMyGTetaMax{"cutMyGTetaMax", 0.8f, {"MyGlobalTrack cut"}};
-		Configurable<float> cutMyGTdcaZmax{"cutMyGTdcaZmax", 2.f, {"MyGlobalTrack cut"}};
-		Configurable<float> cutMyGTdcaXYmax{"cutMyGTdcaXYmax", 1e10f, {"MyGlobalTrack cut"}};
-		Configurable<bool> cutMyGTdcaXYusePt{"cutMyGTdcaXYusePt", false, {"MyGlobalTrack cut"}};
-		Configurable<bool> cutMyHasITS{"cutMyHasITS", true, {"MyGlobalTrack cut"}};
-		Configurable<int> cutMyGTitsNClsMin{"cutMyGTitsNClsMin", 1, {"MyGlobalTrack cut"}};
-		Configurable<float> cutMyGTitsChi2NclMax{"cutMyGTitsChi2NclMax", 36.f, {"MyGlobalTrack cut"}};
-		Configurable<int> cutMyGTitsHitsRule{"cutMyGTitsHitsRule", 0, {"MyGlobalTrack cut"}};
-		Configurable<bool> cutMyHasTPC{"cutMyHasTPC", true, {"MyGlobalTrack cut"}};
-		Configurable<int> cutMyGTtpcNClsMin{"cutMyGTtpcNClsMin", 1, {"MyGlobalTrack cut"}};
-		Configurable<int> cutMyGTtpcNClsCrossedRowsMin{"cutMyGTtpcNClsCrossedRowsMin", 70, {"MyGlobalTrack cut"}};
-		Configurable<float> cutMyGTtpcNClsCrossedRowsOverNClsMin{"cutMyGTtpcNClsCrossedRowsOverNClsMin", 0.8f, {"MyGlobalTrack cut"}};
-		Configurable<float> cutMyGTtpcChi2NclMax{"cutMyGTtpcChi2NclMax", 4.f, {"MyGlobalTrack cut"}};
-
 	template<typename T>
-	void ReinstallRun2JpsiSelection(T const& track){
-		// save initial GT selection parameters
-		auto savecutMyGTptMin = cutMyGTptMin;
-		auto savecutMyGTptMax = cutMyGTptMax;
-		auto savecutMyGTetaMin = cutMyGTetaMin;
-		auto savecutMyGTetaMax = cutMyGTetaMax;
-		auto savecutMyGTdcaZmax = cutMyGTdcaZmax;
-		auto savecutMyGTdcaXYmax = cutMyGTdcaXYmax;
-		auto savecutMyGTdcaXYusePt = cutMyGTdcaXYusePt;
-		auto savecutMyHasITS = cutMyHasITS;
-		auto savecutMyGTitsNClsMin = cutMyGTitsNClsMin;
-		auto savecutMyGTitsChi2NclMax = cutMyGTitsChi2NclMax;
-		auto savecutMyGTitsHitsRule = cutMyGTitsHitsRule;
-		auto savecutMyHasTPC = cutMyHasTPC;
-		auto savecutMyGTtpcNClsMin = cutMyGTtpcNClsMin;
-		auto savecutMyGTtpcNClsCrossedRowsMin = cutMyGTtpcNClsCrossedRowsMin;
-		auto savecutMyGTtpcNClsCrossedRowsOverNClsMin = cutMyGTtpcNClsCrossedRowsOverNClsMin;
-		auto savecutMyGTtpcChi2NclMax = cutMyGTtpcChi2NclMax;
-		// restore initial GT selection parameters
-		cutMyGTptMin = savecutMyGTptMin;
-		cutMyGTptMax = savecutMyGTptMax;
-		cutMyGTetaMin = savecutMyGTetaMin;
-		cutMyGTetaMax = savecutMyGTetaMax;
-		cutMyGTdcaZmax = savecutMyGTdcaZmax;
-		cutMyGTdcaXYmax = savecutMyGTdcaXYmax;
-		cutMyGTdcaXYusePt = savecutMyGTdcaXYusePt;
-		cutMyHasITS = savecutMyHasITS;
-		cutMyGTitsNClsMin = savecutMyGTitsNClsMin;
-		cutMyGTitsChi2NclMax = savecutMyGTitsChi2NclMax;
-		cutMyGTitsHitsRule = savecutMyGTitsHitsRule;
-		cutMyHasTPC = savecutMyHasTPC;
-		cutMyGTtpcNClsMin = savecutMyGTtpcNClsMin;
-		cutMyGTtpcNClsCrossedRowsMin = savecutMyGTtpcNClsCrossedRowsMin;
-		cutMyGTtpcNClsCrossedRowsOverNClsMin = savecutMyGTtpcNClsCrossedRowsOverNClsMin;
-		cutMyGTtpcChi2NclMax = savecutMyGTtpcChi2NclMax;
+	bool reinstallRun2JpsiTrackSelection(T const& track){
+		// kInAcceptance copy
+		if (eta(track.px(), track.py(), track.pz()) < -0.8 || eta(track.px(), track.py(), track.pz()) > 0.8)
+			return false;
+		// kPrimaryTracks
+		if (abs(track.dcaZ()) > 2.0)
+			return false;
+		float maxDCA = 0.0105f + 0.0350f / pow(track.pt(), 1.1f);
+		if (abs(track.dcaXY()) > maxDCA)
+			return false;
+		// kQualityTrack
+		// ITS
+		if (!track.hasITS())
+			return false; // ITS refit
+		if (track.itsChi2NCl() > 36.)
+			return false;
+		if (!isFulfillsITSHitRequirementsReinstatement(track.itsClusterMap()))
+			return false;
+		// TPC
+		if (!track.hasTPC())
+			return false; // TPC refit
+		if ((track.tpcNClsFindable() - track.tpcNClsFindableMinusFound()) < 70)
+			return false; // tpcNClsFound()
+		if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < 0.8)
+			return false;
+		if (track.tpcChi2NCl() > 4.)
+			return false;
+		// TOF
+		if (!track.hasTOF())
+			return false;
+
+		return true;
+	}
+
+	template<typename C, typename T>
+	bool reinstallRun2JpsiEventSelection(C const& collision, T const& trk1, T const& trk2, float rapMother, flaot aco){
+		//tracks
+		if (!reinstallRun2JpsiTrackSelection(trk1))
+			return false;
+		if (!reinstallRun2JpsiTrackSelection(trk2))
+			return false;
+		if (trk1.sign()*trk2.sign() > 0)
+			return false; // opposite sign
+		if ((trk1.tpcNSigmaMu() * trk1.tpcNSigmaMu() + trk2.tpcNSigmaMu() * trk2.tpcNSigmaMu()) >
+		    (trk1.tpcNSigmaEl() * trk1.tpcNSigmaEl() + trk2.tpcNSigmaEl() * trk2.tpcNSigmaEl()))
+			return false; // definitely muon than electron
+		//event
+		if (collision.posZ() > 15.)
+			return false;
+		if (rapMother < -0.8 || rapMother > 0.8)
+			return false;
+		if (aco > 4*o2::constants::math::PI/5) // max opening angle 144 degrees (I hope, check)
+			return false;
+
+		return true;
 	}
 
   template <typename C, typename Ts>
@@ -1253,6 +1263,10 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hDaughtersPtvsDcaXYPtCut"))->Fill(trkDaug2.pt(), trkDaug2.dcaXY());
           if (sign < 0) {
 	          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUS"))->Fill(motherOfMuons.M());
+	          if (motherOfMuons.Rapidity() < 0.0)
+		          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSnegEta"))->Fill(motherOfMuons.M());
+	          if (motherOfMuons.Rapidity() > 0.0)
+		          histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSposEta"))->Fill(motherOfMuons.M());
 						if (std::abs(motherOfMuons.Rapidity()) < 1.2)
 							histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWidePtCutUSeta12"))->Fill(motherOfMuons.M());
 	          if (std::abs(motherOfMuons.Rapidity()) < 1.0)
@@ -1277,6 +1291,10 @@ struct UpcTauCentralBarrelRL {
           if (countTOFtracks == 2) {
             if (sign < 0) {
 	            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUS"))->Fill(motherOfMuons.M());
+	            if (motherOfMuons.Rapidity() < 0.0)
+		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSnegEta"))->Fill(motherOfMuons.M());
+	            if (motherOfMuons.Rapidity() > 0.0)
+		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSposEta"))->Fill(motherOfMuons.M());
 	            if (std::abs(motherOfMuons.Rapidity()) < 1.2)
 		            histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hInvariantMassWidePtCutUSeta12"))->Fill(motherOfMuons.M());
 	            if (std::abs(motherOfMuons.Rapidity()) < 1.0)
@@ -1315,6 +1333,15 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhi"))->Fill(muon[0].Pt(), std::fmod(muon[0].Phi(), o2::constants::math::PI / 9));
           histos.get<TH2>(HIST("EventTwoTracks/MuonsSelection/hasTOF/hDaughtersPtvsModPhi"))->Fill(muon[1].Pt(), std::fmod(muon[1].Phi(), o2::constants::math::PI / 9));
         }
+				if (reinstallRun2JpsiEventSelection(reconstructedCollision, trkDaug1, trkDaug2, motherOfMuons.Rapidity(), acoplanarity)){
+					histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Run2Cuts/hInvariantMassWide"))->Fill(motherOfMuons.M());
+					if (motherOfMuons.Pt() < 2.0) {
+						histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Run2Cuts/hInvariantMassWidePtFitPlot"))->Fill(motherOfMuons.M());
+					}
+					if (motherOfMuons.Pt() < 0.11) {
+						histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/Run2Cuts/hInvariantMassWideCS"))->Fill(motherOfMuons.M());
+					}
+				}
         if (passAvgITSclsSizesCut) {
           histos.get<TH1>(HIST("EventTwoTracks/MuonsSelection/hInvariantMassWideITS"))->Fill(motherOfMuons.M());
         }
