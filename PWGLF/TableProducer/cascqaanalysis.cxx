@@ -51,8 +51,8 @@ struct cascqaanalysis {
   Configurable<bool> isTimeFrameBorderCut{"isTimeFrameBorderCut", 1, "Apply timeframe border cut"};
   Configurable<bool> isITSROFrameBorderCut{"isITSROFrameBorderCut", 1, "Apply ITS frame border cut"};
   Configurable<bool> isVertexITSTPCCut{"isVertexITSTPCCut", 1, "Select collisions with at least one ITS-TPC track"};
-  Configurable<bool> isNoSameBunchPileupCut{"isNoSameBunchPileupCut", 1, "Reject collisions which are associated with the same found-by-T0 bunch crossing"};
-  Configurable<bool> isGoodZvtxFT0vsPVCut{"isGoodZvtxFT0vsPVCut", 1, "Reject collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference"};
+  Configurable<bool> isNoSameBunchPileupCut{"isNoSameBunchPileupCut", 1, "Same found-by-T0 bunch crossing rejection"};
+  Configurable<bool> isGoodZvtxFT0vsPVCut{"isGoodZvtxFT0vsPVCut", 1, "z of PV by tracks and z of PV from FT0 A-C time difference cut"};
 
   // Cascade selection criteria
   Configurable<float> scalefactor{"scalefactor", 1.0, "Scaling factor"};
