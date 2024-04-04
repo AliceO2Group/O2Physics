@@ -296,7 +296,8 @@ enum JTrackSel {
   trackSign = 0, // warning : this number is hardcoded in the sign coloumn in the JTracks table so should not be changed without changing it there too
   globalTrack = 1,
   qualityTrack = 2,
-  hybridTrack = 3
+  hybridTrack = 3,
+  globalTrackWoDCA = 4
 };
 
 template <typename T>
@@ -321,6 +322,8 @@ int initialiseTrackSelection(std::string trackSelection)
 {
   if (trackSelection == "globalTracks") {
     return JTrackSel::globalTrack;
+  } else if (trackSelection == "globalTracksWoDCA") {
+    return JTrackSel::globalTrackWoDCA;
   } else if (trackSelection == "QualityTracks") {
     return JTrackSel::qualityTrack;
   } else if (trackSelection == "hybridTracksJE") {
@@ -340,6 +343,9 @@ uint8_t setTrackSelectionBit(T const& track)
   }
   if (track.isGlobalTrackWoPtEta()) {
     SETBIT(bit, JTrackSel::globalTrack);
+  }
+  if (track.isGlobalTrackWoDCA()) {
+    SETBIT(bit, JTrackSel::globalTrackWoDCA);
   }
   if (track.isQualityTrack()) {
     SETBIT(bit, JTrackSel::qualityTrack);
