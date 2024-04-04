@@ -139,22 +139,15 @@ struct phosNonlin {
   }
 
   /// \brief Process PHOS data
-  void process(BCsWithBcSels::iterator const& bc,
-               SelCollisions const& collisions,
+  void process(SelCollisions::iterator const& col,
                aod::CaloClusters const& clusters)
   {
-
-    // Select clear sample with one collision per BC
-    if (collisions.size() != 1) {
-      return;
-    }
-
     // Fill number of events of different kind
-    if (!collisions.begin().alias_bit(mEvSelTrig)) {
+    if (!col.alias_bit(mEvSelTrig)) {
       return;
     }
 
-    mixedEventBin = findMixedEventBin(collisions.begin().posZ());
+    mixedEventBin = findMixedEventBin(col.posZ());
 
     mCurEvent.clear();
     int i, j, k, l;
@@ -169,9 +162,6 @@ struct phosNonlin {
       // Mix with other photons added to stack
       for (auto ph2 : mCurEvent) {
         double m = (ph1 + ph2).M();
-        if (m > 0) {
-          m = sqrt(m);
-        }
         double pt1 = ph1.Pt();
         double pt2 = ph2.Pt();
 
@@ -215,9 +205,6 @@ struct phosNonlin {
       for (auto mixEvent : mMixedEvents[mixedEventBin]) {
         for (auto ph2 : mixEvent) {
           double m = (ph1 + ph2).M();
-          if (m > 0) {
-            m = sqrt(m);
-          }
           double pt1 = ph1.Pt();
           double pt2 = ph2.Pt();
 

@@ -95,11 +95,9 @@ struct phosPi0 {
 
   int mPrevMCColId = -1; // mark MC collissions already scanned
   // fast access to histos
-  TH3 *hReMod, *hMiMod, *hAmbReMod, *hAmbMiMod;
+  TH3 *hReMod, *hMiMod;
   TH2 *hReAll, *hReDisp, *hReCPV, *hReBoth, *hSignalAll, *hPi0SignalAll, *hPi0SignalCPV, *hPi0SignalDisp,
-    *hPi0SignalBoth, *hMiAll, *hMiDisp, *hMiCPV, *hMiBoth,
-    *hAmbReAll, *hAmbReDisp, *hAmbReCPV, *hAmbReBoth, *hAmbSignalAll, *hAmbPi0SignalAll, *hAmbPi0SignalCPV, *hAmbPi0SignalDisp, *hAmbPi0SignalBoth,
-    *hAmbMiAll, *hAmbMiDisp, *hAmbMiCPV, *hAmbMiBoth;
+    *hPi0SignalBoth, *hMiAll, *hMiDisp, *hMiCPV, *hMiBoth;
 
   std::vector<double> pt = {0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2,
                             1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.5, 5.0,
@@ -166,21 +164,6 @@ struct phosPi0 {
       mHistManager.add("cluCPVOcc", "Cluster with CPV occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
       mHistManager.add("cluDispOcc", "Cluster with Disp occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
       mHistManager.add("cluBothOcc", "Cluster with Both occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
-
-      // QC for Amb collisions
-      mHistManager.add("hAmbcluSp", "Amb. Cluster spectrum per module", HistType::kTH2F, {ptAxis, modAxis});
-      mHistManager.add("hAmbcluSpDisp", "Amb. Cluster spectrum per module", HistType::kTH2F, {ptAxis, modAxis});
-      mHistManager.add("hAmbcluSpCPV", "Amb. Cluster spectrum per module", HistType::kTH2F, {ptAxis, modAxis});
-      mHistManager.add("hAmbCluSpBoth", "Amb. Cluster spectrum per module", HistType::kTH2F, {ptAxis, modAxis});
-      mHistManager.add("hAmbM02Clu", "M02 in amb clusters", HistType::kTH2F, {ptAxis, M02Axis});
-      mHistManager.add("hAmbM20Clu", "M20 in amb clusters", HistType::kTH2F, {ptAxis, M20Axis});
-      mHistManager.add("hAmbNcellClu", "Number of cells in amb clusters", HistType::kTH3F, {nCellsAxis, ptAxis, modAxis});
-      mHistManager.add("hAmbcluETime", "Amb. cluster time vs E",
-                       HistType::kTH3F, {ptAxis, timeAxis, modAxis});
-      mHistManager.add("hAmbcluOcc", "Cluster occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
-      mHistManager.add("hAmbcluOccCPV", "Cluster with CPV occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
-      mHistManager.add("hAmbcluOccDisp", "Cluster with Disp occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
-      mHistManager.add("hAmbcluOccBoth", "Cluster with Both occupancy", HistType::kTH3F, {phiAxis, zAxis, modAxis});
     }
 
     hReMod = std::get<std::shared_ptr<TH3>>(mHistManager.add("mggReModComb", "inv mass per module",
@@ -232,57 +215,6 @@ struct phosPi0 {
     hMiBoth = std::get<std::shared_ptr<TH2>>(mHistManager.add("mggMiBoth", "inv mass for centrality",
                                                               HistType::kTH2F, {mggAxis, ptAxis}))
                 .get();
-
-    hAmbReMod = std::get<std::shared_ptr<TH3>>(mHistManager.add("AmbmggReModComb", "inv mass per module",
-                                                                HistType::kTH3F, {mggAxis, ptAxis, modCombAxis}))
-                  .get();
-    hAmbReAll = std::get<std::shared_ptr<TH2>>(mHistManager.add("AmbmggReAll", "inv mass for centrality",
-                                                                HistType::kTH2F, {mggAxis, ptAxis}))
-                  .get();
-    hAmbReCPV = std::get<std::shared_ptr<TH2>>(mHistManager.add("AmbmggReCPV", "inv mass for centrality",
-                                                                HistType::kTH2F, {mggAxis, ptAxis}))
-                  .get();
-    hAmbReDisp = std::get<std::shared_ptr<TH2>>(mHistManager.add("AmbmggReDisp", "inv mass for centrality",
-                                                                 HistType::kTH2F, {mggAxis, ptAxis}))
-                   .get();
-    hAmbReBoth = std::get<std::shared_ptr<TH2>>(mHistManager.add("AmbmggReBoth", "inv mass for centrality",
-                                                                 HistType::kTH2F, {mggAxis, ptAxis}))
-                   .get();
-
-    if (mIsMC) {
-      hAmbSignalAll = std::get<std::shared_ptr<TH2>>(mHistManager.add("AmbmggSignal", "inv mass for correlated pairs",
-                                                                      HistType::kTH2F, {mggAxis, ptAxis}))
-                        .get();
-      hAmbPi0SignalAll = std::get<std::shared_ptr<TH2>>(mHistManager.add("AmbmggPi0SignalAll", "inv mass for pi0 pairs",
-                                                                         HistType::kTH2F, {mggAxis, ptAxis}))
-                           .get();
-      hAmbPi0SignalCPV = std::get<std::shared_ptr<TH2>>(mHistManager.add("AmbmggPi0SignalCPV", "inv mass for pi0 pairs",
-                                                                         HistType::kTH2F, {mggAxis, ptAxis}))
-                           .get();
-      hAmbPi0SignalDisp = std::get<std::shared_ptr<TH2>>(mHistManager.add("AmbmggPi0SignalDisp", "inv mass for pi0 pairs",
-                                                                          HistType::kTH2F, {mggAxis, ptAxis}))
-                            .get();
-      hAmbPi0SignalBoth = std::get<std::shared_ptr<TH2>>(mHistManager.add("AmbmggPi0SignalBoth", "inv mass for pi0 pairs",
-                                                                          HistType::kTH2F, {mggAxis, ptAxis}))
-                            .get();
-    }
-
-    hAmbMiMod = std::get<std::shared_ptr<TH3>>(mHistManager.add("AmbmggMiModComb", "inv mass for centrality",
-                                                                HistType::kTH3F, {mggAxis, ptAxis, modCombAxis}))
-                  .get();
-    hAmbMiAll = std::get<std::shared_ptr<TH2>>(mHistManager.add("AmbmggMiAll", "inv mass for centrality",
-                                                                HistType::kTH2F, {mggAxis, ptAxis}))
-                  .get();
-    hAmbMiCPV = std::get<std::shared_ptr<TH2>>(mHistManager.add("AmbmggMiCPV", "inv mass for centrality",
-                                                                HistType::kTH2F, {mggAxis, ptAxis}))
-                  .get();
-    hAmbMiDisp = std::get<std::shared_ptr<TH2>>(mHistManager.add("AmbmggMiDisp", "inv mass for centrality",
-                                                                 HistType::kTH2F, {mggAxis, ptAxis}))
-                   .get();
-    hAmbMiBoth = std::get<std::shared_ptr<TH2>>(mHistManager.add("AmbmggMiBoth", "inv mass for centrality",
-                                                                 HistType::kTH2F, {mggAxis, ptAxis}))
-                   .get();
-
     if (mIsMC) {
       mHistManager.add("hMCPi0SpAll", "pi0 spectrum inclusive", HistType::kTH1F, {ptAxis});
       mHistManager.add("hMCPi0SpPrim", "pi0 spectrum Primary", HistType::kTH1F, {ptAxis});
@@ -293,96 +225,25 @@ struct phosPi0 {
   }
 
   /// \brief Process PHOS data
-  void processData(BCsWithBcSels::iterator const& bc,
-                   SelCollisions const& collisions,
-                   aod::CaloClusters const& clusters,
-                   aod::CaloAmbiguousClusters const& ambclusters)
+  void processData(SelCollisions::iterator const& col,
+                   aod::CaloClusters const& clusters)
   {
-
-    int nColPerBC = 0;
-    for (const auto& col : collisions) {
-      mHistManager.fill(HIST("contributors"), static_cast<float>(nColPerBC), col.numContrib());
-      mHistManager.fill(HIST("vertex"), static_cast<float>(nColPerBC), col.posZ());
-      ++nColPerBC;
-    }
-
-    if (mSelectOneCollPerBC) {
-      if (nColPerBC > 1) {
-        return;
-      }
-    }
-
-    // Fill number of events of different kind
-    bool isBCSelected = false;
-    mHistManager.fill(HIST("eventsBC"), 0);
-    if (bc.selection_bit(kIsBBT0A) || bc.selection_bit(kIsBBT0C)) {
-      mHistManager.fill(HIST("eventsBC"), 1);
-    }
-    if (bc.selection_bit(kIsBBT0A) && bc.selection_bit(kIsBBT0C)) {
-      mHistManager.fill(HIST("eventsBC"), 2);
-    }
-    if (bc.alias_bit(kTVXinPHOS)) {
-      mHistManager.fill(HIST("eventsBC"), 3.);
-    }
-    if (bc.selection_bit(kIsTriggerTVX)) {
-      mHistManager.fill(HIST("eventsBC"), 4);
-    }
-    if (bc.alias_bit(kTVXinPHOS)) {
-      mHistManager.fill(HIST("eventsBC"), 5);
-    }
-    if (clusters.size() > 0 || ambclusters.size() > 0) {
-      mHistManager.fill(HIST("eventsBC"), 6);
-      if (bc.alias_bit(kTVXinPHOS)) {
-        mHistManager.fill(HIST("eventsBC"), 7);
-      }
-    }
-
-    bool isColSelected = false;
-    mixedEventBin = 0;
-
-    for (const auto& col : collisions) {
-      mHistManager.fill(HIST("eventsCol"), 0.);
-      if (col.selection_bit(kIsBBT0A) || col.selection_bit(kIsBBT0C)) {
-        mHistManager.fill(HIST("eventsCol"), 1.);
-      }
-      if (col.selection_bit(kIsBBT0A) && col.selection_bit(kIsBBT0C)) {
-        mHistManager.fill(HIST("eventsCol"), 2.);
-      }
-      if (col.alias_bit(kTVXinPHOS)) {
-        mHistManager.fill(HIST("eventsCol"), 3.);
-      }
-      if (col.selection_bit(kIsTriggerTVX)) {
-        mHistManager.fill(HIST("eventsCol"), 4.);
-      }
-      if (col.alias_bit(kTVXinPHOS)) {
-        mHistManager.fill(HIST("eventsCol"), 5.);
-      }
-      if (clusters.size() > 0 || ambclusters.size() > 0) {
-        mHistManager.fill(HIST("eventsCol"), 6);
-        if (col.alias_bit(kTVXinPHOS)) {
-          mHistManager.fill(HIST("eventsCol"), 7);
-        }
-      }
-      isColSelected = col.alias_bit(mEvSelTrig);
-      double vtxZ = col.posZ();
-      int mult = 1.; // multiplicity
-      mixedEventBin = findMixedEventBin(vtxZ, mult);
-    }
-
-    if (isColSelected) {
-      fillReMi<false>(clusters, static_cast<aod::McParticles const*>(nullptr));
-    }
-    if (isBCSelected) {
-      fillAmbReMi<false>(ambclusters, static_cast<aod::McParticles const*>(nullptr));
-    }
+    aod::McParticles const* mcPart = nullptr;
+    processAll<false>(col, clusters, mcPart);
   }
   PROCESS_SWITCH(phosPi0, processData, "process data", true);
+  void processMC(SelCollisions::iterator const& col,
+                 mcClusters const& clusters,
+                 aod::McParticles const& mcPart)
+  {
+    processAll<true>(col, clusters, &mcPart);
+  }
+  PROCESS_SWITCH(phosPi0, processMC, "process MC", false);
 
-  void processMC(
-    SelCollisions::iterator const& col,
-    mcClusters const& clusters,
-    mcAmbClusters const& ambclusters,
-    aod::McParticles const& mcPart)
+  template <bool isMC, typename TCollision, typename TClusters>
+  void processAll(TCollision& col,
+                  TClusters& clusters,
+                  aod::McParticles const* mcPart)
   {
     bool isColSelected = false;
     mixedEventBin = 0;
@@ -403,7 +264,7 @@ struct phosPi0 {
     if (col.alias_bit(kTVXinPHOS)) {
       mHistManager.fill(HIST("eventsCol"), 5.);
     }
-    if (clusters.size() > 0 || ambclusters.size() > 0) {
+    if (clusters.size() > 0) {
       mHistManager.fill(HIST("eventsCol"), 6);
       if (col.alias_bit(kTVXinPHOS)) {
         mHistManager.fill(HIST("eventsCol"), 7);
@@ -411,21 +272,25 @@ struct phosPi0 {
     }
     isColSelected = col.alias_bit(mEvSelTrig);
     double vtxZ = col.posZ();
-    int mult = 1.; // multiplicity
+    int mult = 1.; // multiplicity TODO!!!
     mixedEventBin = findMixedEventBin(vtxZ, mult);
 
-    if (mIsMC) {
+    if constexpr (isMC) {
       isColSelected = true; // aliaces do not work in MC???
+    }
+
+    if (!isColSelected) {
+      return;
     }
 
     // Fill MC distributions
     // pion rapidity, pt, phi
     // secondary pi0s
-    if (mIsMC) {
-      if (mcPart.begin() != mcPart.end()) {
-        if (mcPart.begin().mcCollisionId() != mPrevMCColId) {
-          mPrevMCColId = mcPart.begin().mcCollisionId(); // to avoid scanning full MC table each BC
-          for (auto part : mcPart) {
+    if constexpr (isMC) {
+      if (mcPart->begin() != mcPart->end()) {
+        if (mcPart->begin().mcCollisionId() != mPrevMCColId) {
+          mPrevMCColId = mcPart->begin().mcCollisionId(); // to avoid scanning full MC table each BC
+          for (auto part : *mcPart) {
             if (part.pdgCode() == 111) {
               double pt = part.pt();
               mHistManager.fill(HIST("hMCPi0SpAll"), pt);
@@ -443,16 +308,7 @@ struct phosPi0 {
       }
     }
 
-    if (isColSelected) {
-      fillReMi<true>(clusters, &mcPart);
-    }
-  }
-  PROCESS_SWITCH(phosPi0, processMC, "process MC", false);
-
-  // Fill invariant mass distributions
-  template <bool isMC, typename TClusters>
-  void fillReMi(TClusters const& clusters, aod::McParticles const* mcParticles)
-  {
+    // Fill invariant mass distributions
     mCurEvent.clear();
     for (const auto& clu : clusters) {
       // Fill QC histos
@@ -509,7 +365,7 @@ struct phosPi0 {
         hReAll->Fill(m, pt);
         bool isPi0 = false;
         if constexpr (isMC) { // test parent
-          int cp = commonParentPDG(ph1.label, ph2.label, mcParticles);
+          int cp = commonParentPDG(ph1.label, ph2.label, mcPart);
           if (cp != 0) {
             hSignalAll->Fill(m, pt);
             if (cp == 111) {
@@ -575,138 +431,6 @@ struct phosPi0 {
       mMixedEvents[mixedEventBin].emplace_back(mCurEvent);
       if (mMixedEvents[mixedEventBin].size() > static_cast<size_t>(mNMixedEvents)) {
         mMixedEvents[mixedEventBin].pop_front();
-      }
-    }
-  }
-
-  // same for amb clusters
-  template <bool isMC, typename TClusters>
-  void fillAmbReMi(TClusters const& clusters, aod::McParticles const* mcParticles)
-  {
-    mCurEvent.clear();
-    for (const auto& clu : clusters) {
-
-      // Fill QC histos
-      if (mFillQC) {
-        mHistManager.fill(HIST("hAmbM02Clu"), clu.e(), clu.m02());
-        mHistManager.fill(HIST("hAmbM20Clu"), clu.e(), clu.m20());
-        mHistManager.fill(HIST("hAmbNcellClu"), clu.e(), clu.ncell(), clu.mod());
-        mHistManager.fill(HIST("hAmbcluETime"), clu.e(), clu.time(), clu.mod());
-      }
-      if (clu.e() < mMinCluE ||
-          clu.ncell() < mMinCluNcell ||
-          clu.time() > mMaxCluTime || clu.time() < mMinCluTime ||
-          clu.m02() < mMinM02) {
-        continue;
-      }
-
-      if (mFillQC) {
-        mHistManager.fill(HIST("hAmbcluSp"), clu.e(), clu.mod());
-        if (clu.e() > mOccE) {
-          mHistManager.fill(HIST("hAmbcluOcc"), clu.x(), clu.z(), clu.mod());
-          if (clu.trackdist() > 2.) {
-            mHistManager.fill(HIST("hAmbcluOccCPV"), clu.x(), clu.z(), clu.mod());
-            mHistManager.fill(HIST("hAmbcluSpCPV"), clu.e(), clu.mod());
-            if (TestLambda(clu.e(), clu.m02(), clu.m20())) {
-              mHistManager.fill(HIST("hAmbcluOccBoth"), clu.x(), clu.z(), clu.mod());
-              mHistManager.fill(HIST("hAmbcluSpBoth"), clu.e(), clu.mod());
-            }
-          }
-          if (TestLambda(clu.e(), clu.m02(), clu.m20())) {
-            mHistManager.fill(HIST("hAmbcluOccDisp"), clu.x(), clu.z(), clu.mod());
-            mHistManager.fill(HIST("hAmbcluSpDisp"), clu.e(), clu.mod());
-          }
-        }
-      }
-
-      int mcLabel = -1;
-      if constexpr (isMC) {         // test parent
-        auto mcList = clu.labels(); // const std::vector<int>
-        if (mcList.size() > 0) {
-          mcLabel = mcList[0];
-        }
-      }
-      photon ph1(clu.px(), clu.py(), clu.pz(), clu.e(), clu.mod(), TestLambda(clu.e(), clu.m02(), clu.m20()), clu.trackdist() > mCPVCut, mcLabel);
-      // Mix with other photons added to stack
-      for (auto ph2 : mCurEvent) {
-        double m = pow(ph1.e + ph2.e, 2) - pow(ph1.px + ph2.px, 2) -
-                   pow(ph1.py + ph2.py, 2) - pow(ph1.pz + ph2.pz, 2);
-        if (m > 0) {
-          m = sqrt(m);
-        }
-        double pt = sqrt(pow(ph1.px + ph2.px, 2) +
-                         pow(ph1.py + ph2.py, 2));
-        int modComb = ModuleCombination(ph1.mod, ph2.mod);
-        hAmbReMod->Fill(m, pt, modComb);
-        hAmbReAll->Fill(m, pt);
-        bool isPi0 = false;
-        if constexpr (isMC) { // test parent
-          int cp = commonParentPDG(ph1.label, ph2.label, mcParticles);
-          if (cp != 0) {
-            hAmbSignalAll->Fill(m, pt);
-            if (cp == 111) {
-              isPi0 = true;
-              hAmbPi0SignalAll->Fill(m, pt);
-            }
-          }
-        }
-
-        if (ph1.isCPVOK() && ph2.isCPVOK()) {
-          hAmbReCPV->Fill(m, pt);
-          if (isPi0) {
-            hAmbPi0SignalCPV->Fill(m, pt);
-          }
-        }
-        if (ph1.isDispOK() && ph2.isDispOK()) {
-          hAmbReDisp->Fill(m, pt);
-          if (isPi0) {
-            hAmbPi0SignalDisp->Fill(m, pt);
-          }
-          if (ph1.isCPVOK() && ph2.isCPVOK()) {
-            hAmbReBoth->Fill(m, pt);
-            if (isPi0) {
-              hAmbPi0SignalBoth->Fill(m, pt);
-            }
-          }
-        }
-      }
-
-      // Add photon to stack
-      mCurEvent.emplace_back(ph1);
-    }
-
-    // Mixed
-    for (auto ph1 : mCurEvent) {
-      for (auto mixEvent : mAmbMixedEvents[mixedEventBin]) {
-        for (auto ph2 : mixEvent) {
-          double m = pow(ph1.e + ph2.e, 2) - pow(ph1.px + ph2.px, 2) -
-                     pow(ph1.py + ph2.py, 2) - pow(ph1.pz + ph2.pz, 2);
-          if (m > 0) {
-            m = sqrt(m);
-          }
-          double pt = sqrt(pow(ph1.px + ph2.px, 2) +
-                           pow(ph1.py + ph2.py, 2));
-          int modComb = ModuleCombination(ph1.mod, ph2.mod);
-          hAmbMiMod->Fill(m, pt, modComb);
-          hAmbMiAll->Fill(m, pt);
-          if (ph1.isCPVOK() && ph2.isCPVOK()) {
-            hAmbMiCPV->Fill(m, pt);
-          }
-          if (ph1.isDispOK() && ph2.isDispOK()) {
-            hAmbMiDisp->Fill(m, pt);
-            if (ph1.isCPVOK() && ph2.isCPVOK()) {
-              hAmbMiBoth->Fill(m, pt);
-            }
-          }
-        }
-      }
-    }
-
-    // Fill events to store and remove oldest to keep buffer size
-    if (mCurEvent.size() > 0) {
-      mAmbMixedEvents[mixedEventBin].emplace_back(mCurEvent);
-      if (mAmbMixedEvents[mixedEventBin].size() > static_cast<size_t>(mNMixedEvents)) {
-        mAmbMixedEvents[mixedEventBin].pop_front();
       }
     }
   }
