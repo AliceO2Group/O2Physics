@@ -275,12 +275,12 @@ struct cascadeAnalysis {
     bool lCompatiblePID_Xi = (lPIDvalue >> 0 & 1);
     bool lCompatiblePID_Om = (lPIDvalue >> 1 & 1);
 
-      if (casc.v0radius() > v0setting_radius &&
-          casc.cascradius() > cascadesetting_cascradius &&
-          casc.v0cosPA(pvx, pvy, pvz) > v0setting_cospa &&
-          casc.casccosPA(pvx, pvy, pvz) > cascadesetting_cospa &&
-          casc.dcav0topv(pvx, pvy, pvz) > cascadesetting_mindcav0topv &&
-          TMath::Abs(casc.mLambda() - 1.115683) < cascadesetting_v0masswindow) {
+    if (casc.v0radius() > v0setting_radius &&
+        casc.cascradius() > cascadesetting_cascradius &&
+        casc.v0cosPA(pvx, pvy, pvz) > v0setting_cospa &&
+        casc.casccosPA(pvx, pvy, pvz) > cascadesetting_cospa &&
+        casc.dcav0topv(pvx, pvy, pvz) > cascadesetting_mindcav0topv &&
+        TMath::Abs(casc.mLambda() - 1.115683) < cascadesetting_v0masswindow) {
       registry.fill(HIST("hCandidateCounter"), 3.5); // pass cascade selections
       if (casc.sign() < 0) {                         // FIXME: could be done better...
         if (TMath::Abs(casc.yXi()) < 0.5 && lCompatiblePID_Xi) {

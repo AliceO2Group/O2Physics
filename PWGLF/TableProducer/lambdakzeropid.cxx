@@ -64,7 +64,7 @@ using TracksWithAllExtras = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidT
 
 // For derived data analysis
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs, aod::DauTrackTOFPIDs>;
-using V0DerivedDatas = soa::Join<aod::V0Cores, aod::V0Extras, aod::V0CollRefs>; 
+using V0DerivedDatas = soa::Join<aod::V0Cores, aod::V0Extras, aod::V0CollRefs>;
 
 struct lambdakzeropid {
   // TOF pid for strangeness (recalculated with topology)
@@ -76,7 +76,8 @@ struct lambdakzeropid {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // For manual sliceBy
-  Preslice<V0OriginalDatas> perCollisionOriginal = o2::aod::v0data::collisionId;;
+  Preslice<V0OriginalDatas> perCollisionOriginal = o2::aod::v0data::collisionId;
+  ;
   Preslice<V0DerivedDatas> perCollisionDerived = o2::aod::v0data::straCollisionId;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -403,9 +404,10 @@ struct lambdakzeropid {
     return 0.0299792458 * TMath::Sqrt(lA / (1 + lA));
   }
 
-  // templatized process function for symmetric operation in derived and original AO2D 
+  // templatized process function for symmetric operation in derived and original AO2D
   template <class TCollision, typename TV0, typename TTrack>
-  void processV0Candidate(TCollision const& collision, TV0 const& v0, TTrack const& pTra, TTrack const &nTra) { 
+  void processV0Candidate(TCollision const& collision, TV0 const& v0, TTrack const& pTra, TTrack const& nTra)
+  {
     // time of V0 segment
     float lengthV0 = std::hypot(v0.x() - collision.posX(), v0.y() - collision.posY(), v0.z() - collision.posZ());
     float velocityK0Short = velocity(v0.p(), o2::constants::physics::MassKaonNeutral);
@@ -497,10 +499,10 @@ struct lambdakzeropid {
       betaK0Short = (lengthV0 / decayTimeK0Short) / 0.0299792458;
     }
 
-    v0tofpid( deltaTimePositiveLambdaPi, deltaTimePositiveLambdaPr,
-              deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr,
-              deltaTimePositiveK0ShortPi, deltaTimeNegativeK0ShortPi,
-              deltaDecayTimeLambda, deltaDecayTimeAntiLambda, deltaDecayTimeK0Short);
+    v0tofpid(deltaTimePositiveLambdaPi, deltaTimePositiveLambdaPr,
+             deltaTimeNegativeLambdaPi, deltaTimeNegativeLambdaPr,
+             deltaTimePositiveK0ShortPi, deltaTimeNegativeK0ShortPi,
+             deltaDecayTimeLambda, deltaDecayTimeAntiLambda, deltaDecayTimeK0Short);
     v0tofbeta(betaLambda, betaAntiLambda, betaK0Short);
     v0tofdebugs(timeLambda, timeK0Short, timePositivePr, timePositivePi, timeNegativePr, timeNegativePi);
 
@@ -594,8 +596,8 @@ struct lambdakzeropid {
         // de-reference interlinks by hand for derived data
         auto pTra = v0.posTrack_as<TracksWithAllExtras>();
         auto nTra = v0.negTrack_as<TracksWithAllExtras>();
-        
-        processV0Candidate(collision, v0, pTra, nTra); 
+
+        processV0Candidate(collision, v0, pTra, nTra);
       }
     }
   }
@@ -614,8 +616,8 @@ struct lambdakzeropid {
         // de-reference interlinks by hand for derived data
         auto pTra = v0.posTrackExtra_as<dauTracks>();
         auto nTra = v0.negTrackExtra_as<dauTracks>();
-        
-        processV0Candidate(collision, v0, pTra, nTra); 
+
+        processV0Candidate(collision, v0, pTra, nTra);
       }
     }
   }

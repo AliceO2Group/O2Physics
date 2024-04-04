@@ -25,7 +25,7 @@ namespace o2::aod
 namespace dautrack
 {
 // ==== TPC INFORMATION ===
-DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float); //! track TPC signal
+DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);     //! track TPC signal
 DECLARE_SOA_COLUMN(TPCNSigmaEl, tpcNSigmaEl, float); //! Nsigma proton
 DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float); //! Nsigma proton
 DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float); //! Nsigma proton
@@ -35,7 +35,7 @@ DECLARE_SOA_COLUMN(TPCNSigmaHe, tpcNSigmaHe, float); //! Nsigma proton
 // ==== TOF INFORMATION ===
 DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float); //! track TOF signal
 DECLARE_SOA_COLUMN(TOFEvTime, tofEvTime, float); //! track TOF signal
-DECLARE_SOA_COLUMN(Length, length, float); //! track TOF signal
+DECLARE_SOA_COLUMN(Length, length, float);       //! track TOF signal
 } // namespace dautrack
 
 DECLARE_SOA_TABLE(DauTrackTPCPIDs, "AOD", "DAUTRACKTPCPID", // nsigma table (for analysis)

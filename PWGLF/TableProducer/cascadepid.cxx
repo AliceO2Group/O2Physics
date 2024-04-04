@@ -59,7 +59,7 @@ using namespace o2::framework::expressions;
 using std::array;
 
 // For original data loops
-using CascOriginalDatas = soa::Join<aod::CascIndices, aod::CascCores>; 
+using CascOriginalDatas = soa::Join<aod::CascIndices, aod::CascCores>;
 using TracksWithAllExtras = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::TOFEvTime, aod::TOFSignal>;
 
 // Cores with references and TOF pid
@@ -74,7 +74,8 @@ struct cascadepid {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // For manual sliceBy
-  Preslice<CascOriginalDatas> perCollisionOriginal = o2::aod::cascdata::collisionId;;
+  Preslice<CascOriginalDatas> perCollisionOriginal = o2::aod::cascdata::collisionId;
+  ;
   Preslice<CascDerivedDatas> perCollisionDerived = o2::aod::cascdata::straCollisionId;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -383,7 +384,8 @@ struct cascadepid {
   }
 
   template <class TCollision, typename TCascade, typename TTrack>
-  void processCascadeCandidate(TCollision const& collision, TCascade const& cascade, TTrack const& pTra, TTrack const &nTra, TTrack const &bTra) { 
+  void processCascadeCandidate(TCollision const& collision, TCascade const& cascade, TTrack const& pTra, TTrack const& nTra, TTrack const& bTra)
+  {
     // initialize from positions and momenta as needed
     o2::track::TrackPar posTrack = o2::track::TrackPar({cascade.xlambda(), cascade.ylambda(), cascade.zlambda()}, {cascade.pxpos(), cascade.pypos(), cascade.pzpos()}, +1);
     o2::track::TrackPar negTrack = o2::track::TrackPar({cascade.xlambda(), cascade.ylambda(), cascade.zlambda()}, {cascade.pxneg(), cascade.pyneg(), cascade.pzneg()}, -1);
@@ -580,8 +582,8 @@ struct cascadepid {
         auto pTra = cascade.posTrack_as<TracksWithAllExtras>();
         auto nTra = cascade.negTrack_as<TracksWithAllExtras>();
         auto bTra = cascade.bachelor_as<TracksWithAllExtras>();
-        
-        processCascadeCandidate(collision, cascade, pTra, nTra, bTra); 
+
+        processCascadeCandidate(collision, cascade, pTra, nTra, bTra);
       }
     }
   }
@@ -600,8 +602,8 @@ struct cascadepid {
         auto pTra = cascade.posTrackExtra_as<dauTracks>();
         auto nTra = cascade.negTrackExtra_as<dauTracks>();
         auto bTra = cascade.bachTrackExtra_as<dauTracks>();
-        
-        processCascadeCandidate(collision, cascade, pTra, nTra, bTra); 
+
+        processCascadeCandidate(collision, cascade, pTra, nTra, bTra);
       }
     }
   }

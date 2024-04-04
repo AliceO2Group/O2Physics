@@ -67,8 +67,8 @@ struct strangeDerivedConverter {
     auto nTra = casc.negTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTOFPIDs>>();
     auto bTra = casc.bachTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTOFPIDs>>();
     casctofs(pTra.length(), nTra.length(), bTra.length(),
-           pTra.tofSignal(), nTra.tofSignal(), bTra.tofSignal(),
-           pTra.tofEvTime(), nTra.tofEvTime(), bTra.tofEvTime());
+             pTra.tofSignal(), nTra.tofSignal(), bTra.tofSignal(),
+             pTra.tofEvTime(), nTra.tofEvTime(), bTra.tofEvTime());
   }
 
   PROCESS_SWITCH(strangeDerivedConverter, processStraRawCents000to001, "from StraRawCents 000 to 001", false);
