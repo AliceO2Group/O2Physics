@@ -762,7 +762,7 @@ struct nuclei_in_jets {
           registryData.fill(HIST("antiproton_jet_tof"), pt, nsigmaTOFPr, jet_Nch);
         if (pt < 1.0 && TMath::Abs(nsigmaTPCPr) < 2.0)
           registryData.fill(HIST("antip_tpc_jet_eta_pt"), pt, eta);
-        if (pt >= 0.5 && TMath::Abs(nsigmaTPCPr) < 2.0 && jet_track.hasTOF() && &&TMath::Abs(nsigmaTOFPr) < 2.0)
+        if (pt >= 0.5 && TMath::Abs(nsigmaTPCPr) < 2.0 && jet_track.hasTOF() && TMath::Abs(nsigmaTOFPr) < 2.0)
           registryData.fill(HIST("antip_tof_jet_eta_pt"), pt, eta);
       }
 
@@ -819,7 +819,7 @@ struct nuclei_in_jets {
           registryData.fill(HIST("antiproton_ue_tof"), pt, nsigmaTOFPr, jet_Nch);
         if (pt < 1.0 && TMath::Abs(nsigmaTPCPr) < 2.0)
           registryData.fill(HIST("antip_tpc_ue_eta_pt"), pt, eta);
-        if (pt >= 0.5 && TMath::Abs(nsigmaTPCPr) < 2.0 && jet_track.hasTOF() && &&TMath::Abs(nsigmaTOFPr) < 2.0)
+        if (pt >= 0.5 && TMath::Abs(nsigmaTPCPr) < 2.0 && ue_track.hasTOF() && TMath::Abs(nsigmaTOFPr) < 2.0)
           registryData.fill(HIST("antip_tof_ue_eta_pt"), pt, eta);
       }
 
