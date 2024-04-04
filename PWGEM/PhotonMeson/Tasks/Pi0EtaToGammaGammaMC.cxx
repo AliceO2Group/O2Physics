@@ -433,6 +433,8 @@ struct Pi0EtaToGammaGammaMC {
                 continue;
               }
 
+              int photonid1 = -1;
+              int photonid2 = -1;
               if constexpr (pairtype == PairType::kPCMPCM) { // check 2 legs
                 auto pos1 = g1.template posTrack_as<MyMCV0Legs>();
                 auto ele1 = g1.template negTrack_as<MyMCV0Legs>();
@@ -445,24 +447,25 @@ struct Pi0EtaToGammaGammaMC {
                 auto ele2mc = ele2.template emmcparticle_as<aod::EMMCParticles>();
                 // LOGF(info,"pos1mc.globalIndex() = %d , ele1mc.globalIndex() = %d , pos2mc.globalIndex() = %d , ele2mc.globalIndex() = %d", pos1mc.globalIndex(), ele1mc.globalIndex(), pos2mc.globalIndex(), ele2mc.globalIndex());
 
-                int photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles);
-                int photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles);
-
-                // LOGF(info,"photonid1 = %d , photonid2 = %d", photonid1, photonid2);
-                if (photonid1 < 0 || photonid2 < 0) {
-                  continue;
-                }
-
-                auto g1mc = mcparticles.iteratorAt(photonid1);
-                auto g2mc = mcparticles.iteratorAt(photonid2);
-                pi0id = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 111, mcparticles);
-                etaid = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 221, mcparticles);
+                photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles);
+                photonid2 = FindCommonMotherFrom2Prongs(pos2mc, ele2mc, -11, 11, 22, mcparticles);
               } else if constexpr (pairtype == PairType::kEMCEMC) {
-                auto g1mc = mcparticles.iteratorAt(g1.emmcparticleId());
-                auto g2mc = mcparticles.iteratorAt(g2.emmcparticleId());
-                pi0id = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 111, mcparticles);
-                etaid = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 221, mcparticles);
+                auto cluster1mcparticle = mcparticles.iteratorAt(g1.emmcparticleId());
+                auto cluster2mcparticle = mcparticles.iteratorAt(g2.emmcparticleId());
+
+                photonid1 = FindMotherInChain(cluster1mcparticle, mcparticles, std::vector<int>{111, 221});
+                photonid2 = FindMotherInChain(cluster2mcparticle, mcparticles, std::vector<int>{111, 221});
               }
+
+              if (photonid1 < 0 || photonid2 < 0) {
+                continue;
+              }
+
+              auto g1mc = mcparticles.iteratorAt(photonid1);
+              auto g2mc = mcparticles.iteratorAt(photonid2);
+              pi0id = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 111, mcparticles);
+              etaid = FindCommonMotherFrom2Prongs(g1mc, g2mc, 22, 22, 221, mcparticles);
+
               if (pi0id < 0 && etaid < 0) {
                 continue;
               }
