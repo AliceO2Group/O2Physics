@@ -68,6 +68,8 @@ DECLARE_SOA_COLUMN(Q4X0B, q4x0b, float);   //!  Q-vector x component, with event
 DECLARE_SOA_COLUMN(Q4Y0B, q4y0b, float);   //!  Q-vector y component, with event eta gap B (harmonic 4 and power 0)
 DECLARE_SOA_COLUMN(Q4X0C, q4x0c, float);   //!  Q-vector x component, with event eta gap C (harmonic 4 and power 0)
 DECLARE_SOA_COLUMN(Q4Y0C, q4y0c, float);   //!  Q-vector y component, with event eta gap C (harmonic 4 and power 0)
+DECLARE_SOA_COLUMN(CORR2REF, corr2ref, float); //!  Ref Flow correlator <2>
+DECLARE_SOA_COLUMN(CORR4REF, corr4ref, float); //!  Ref Flow correlator <4>
 DECLARE_SOA_COLUMN(MCPosX, mcPosX, float); //!
 DECLARE_SOA_COLUMN(MCPosY, mcPosY, float); //!
 DECLARE_SOA_COLUMN(MCPosZ, mcPosZ, float); //!
@@ -100,6 +102,9 @@ DECLARE_SOA_TABLE(ReducedEventsQvectorCentr, "AOD", "REQVECTORCTR", //!    Event
                   qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::QvecFT0MRe, qvec::QvecFT0MIm, qvec::QvecFV0ARe, qvec::QvecFV0AIm, qvec::QvecBPosRe, qvec::QvecBPosIm, qvec::QvecBNegRe, qvec::QvecBNegIm,
                   qvec::SumAmplFT0A, qvec::SumAmplFT0C, qvec::SumAmplFT0M, qvec::SumAmplFV0A, qvec::NTrkBPos, qvec::NTrkBNeg);
 
+DECLARE_SOA_TABLE(ReducedEventsRefFlow, "AOD", "REREFFLOW", //!    Event Ref Flow information
+                  reducedevent::MultA, reducedevent::CORR2REF, reducedevent::CORR4REF, cent::CentFT0C);
+
 // TODO and NOTE: This table is just an extension of the ReducedEvents table
 //       There is no explicit accounting for MC events which were not reconstructed!!!
 //       However, for analysis which will require these events, a special skimming process function
@@ -114,6 +119,7 @@ using ReducedEventExtended = ReducedEventsExtended::iterator;
 using ReducedEventVtxCov = ReducedEventsVtxCov::iterator;
 using ReducedEventQvector = ReducedEventsQvector::iterator;
 using ReducedEventQvectorCentr = ReducedEventsQvectorCentr::iterator;
+using ReducedEventRefFlow = ReducedEventsRefFlow::iterator;
 using ReducedMCEvent = ReducedMCEvents::iterator;
 
 namespace reducedeventlabel

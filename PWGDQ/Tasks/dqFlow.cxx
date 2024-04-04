@@ -95,6 +95,7 @@ struct DQEventQvector {
 
   Produces<ReducedEventsQvector> eventQvector;
   Produces<ReducedEventsQvectorCentr> eventQvectorCentr;
+  Produces<ReducedEventsRefFlow> eventRefFlow;
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill QA histograms"};
@@ -417,6 +418,14 @@ struct DQEventQvector {
       eventQvector(VarManager::fgValues[VarManager::kQ1X0A], VarManager::fgValues[VarManager::kQ1Y0A], VarManager::fgValues[VarManager::kQ1X0B], VarManager::fgValues[VarManager::kQ1Y0B], VarManager::fgValues[VarManager::kQ1X0C], VarManager::fgValues[VarManager::kQ1Y0C], VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kQ3X0A], VarManager::fgValues[VarManager::kQ3Y0A], VarManager::fgValues[VarManager::kQ3X0B], VarManager::fgValues[VarManager::kQ3Y0B], VarManager::fgValues[VarManager::kQ3X0C], VarManager::fgValues[VarManager::kQ3Y0C], VarManager::fgValues[VarManager::kQ4X0A], VarManager::fgValues[VarManager::kQ4Y0A], VarManager::fgValues[VarManager::kQ4X0B], VarManager::fgValues[VarManager::kQ4Y0B], VarManager::fgValues[VarManager::kQ4X0C], VarManager::fgValues[VarManager::kQ4Y0C]);
     }
 
+    // Fill the tree for the reduced event table with RefFlow quantities
+    if (fEventCut->IsSelected(VarManager::fgValues)) {
+      eventRefFlow(VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], centrality);
+    }
+
+
+
+
     if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0) {
       VarManager::FillQVectorFromCentralFW(collision);
 
@@ -426,6 +435,12 @@ struct DQEventQvector {
           fHistMan->FillHistClass("Event_AfterCuts_centralFW", VarManager::fgValues);
           eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecBPosRe(), collision.qvecBPosIm(), collision.qvecBNegRe(), collision.qvecBNegIm(),
                             collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkBPos(), collision.nTrkBNeg());
+
+                      // Fill the tree for the reduced event table with RefFlow quantities
+            if (fEventCut->IsSelected(VarManager::fgValues)) {
+              eventRefFlow(VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], centrality);
+            }
+
         }
       }
     }
