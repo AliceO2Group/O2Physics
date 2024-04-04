@@ -286,7 +286,7 @@ struct cascadepid {
       histos.add("h2dNSigmaXiPi", "h2dNSigmaXiPi", {HistType::kTH2F, {axisPt, axisNSigma}});
       histos.add("h2dNSigmaOmLaPi", "h2dNSigmaOmLaPi", {HistType::kTH2F, {axisPt, axisNSigma}});
       histos.add("h2dNSigmaOmLaPr", "h2dNSigmaOmLaPr", {HistType::kTH2F, {axisPt, axisNSigma}});
-      histos.add("h2dNSigmaOmPi", "h2dNSigmaOmPi", {HistType::kTH2F, {axisPt, axisNSigma}});
+      histos.add("h2dNSigmaOmKa", "h2dNSigmaOmKa", {HistType::kTH2F, {axisPt, axisNSigma}});
     }
   }
 

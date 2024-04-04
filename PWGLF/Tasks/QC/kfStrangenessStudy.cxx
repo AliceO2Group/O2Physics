@@ -200,7 +200,7 @@ struct kfStrangenessStudy {
   void getCascDatas(TCollision const& collision, TCascade const& cascade, TCascDatas const&, TKFCascDatas const&, TV0 const&, TV0Datas const&, TV0fCDatas const&)
   {
     if (cascade.has_cascData()) {
-      LOG(info) << "Cascade has CascData!";
+      LOG(debug) << "Cascade has CascData!";
       // check aod::Cascades -> aod::CascData link
       // if present: this candidate was accepted by default DCAfitter building
       isDCAfitter = 1;
@@ -262,7 +262,7 @@ struct kfStrangenessStudy {
     }
 
     if (cascade.has_kfCascData()) {
-      LOG(info) << "Cascade has KFcascData!";
+      LOG(debug) << "Cascade has KFcascData!";
       // check aod::Cascades -> aod::KFCascData link
       // if present: this candidate was accepted by KF building
       isKF = 1;
@@ -350,7 +350,7 @@ struct kfStrangenessStudy {
       auto MCcascade = cascdata.mcParticle();
 
       if (MCcascade.has_daughters()) {
-        LOG(info) << "MC cascade has daughters, getting MC info.";
+        LOG(debug) << "MC cascade has daughters, getting MC info.";
         LOG(debug) << "MCcascade.has_daughters() = " << MCcascade.has_daughters();
         // get MC V0
         for (auto const& MCv0 : MCcascade.template daughters_as<aod::McParticles>()) {
@@ -546,7 +546,7 @@ struct kfStrangenessStudy {
               isDCAfitter, isKF,
               isTrueCasc,
               source);
-    LOG(info) << "CascMCTable filled!";
+    LOG(debug) << "CascMCTable filled!";
     histos.fill(HIST("hCase"), recocase);
   }
 
@@ -679,8 +679,8 @@ struct kfStrangenessStudy {
       } else if (charge == +1) {
         posTrackParCov.getPxPyPzGlo(momPionRecIU);
         negTrackParCov.getPxPyPzGlo(momProtonRecIU);
-        posTrackParCov.getCovXYZPxPyPzGlo(cvproton);
-        negTrackParCov.getCovXYZPxPyPzGlo(cvpion);
+        posTrackParCov.getCovXYZPxPyPzGlo(cvpion);
+        negTrackParCov.getCovXYZPxPyPzGlo(cvproton);
         etaProton = negTrack.eta();
         etaPion = posTrack.eta();
         tpcNClsProton = negTrack.tpcNClsFound();
@@ -761,8 +761,8 @@ struct kfStrangenessStudy {
         negTrackParCov.getXYZGlo(posProtonRecIU);
         posTrackParCov.getPxPyPzGlo(momPionRecIU);
         negTrackParCov.getPxPyPzGlo(momProtonRecIU);
-        posTrackParCov.getCovXYZPxPyPzGlo(cvproton);
-        negTrackParCov.getCovXYZPxPyPzGlo(cvpion);
+        posTrackParCov.getCovXYZPxPyPzGlo(cvpion);
+        negTrackParCov.getCovXYZPxPyPzGlo(cvproton);
         etaProton = negTrack.eta();
         etaPion = posTrack.eta();
         tpcNClsProton = negTrack.tpcNClsFound();
@@ -782,19 +782,19 @@ struct kfStrangenessStudy {
 
       // ========== get cascade MC information ===========
       if (cascade.has_kfCascData() && cascade.has_cascData()) {
-        LOG(info) << "Both fitters were successful!";
+        LOG(debug) << "Both fitters were successful!";
         recocase = 1;
         auto cascdata = cascade.cascData_as<CascDataLabeled>();
         getCascMCdata(collision, cascdata, TracksIU, mcParticles);
       }
       if (cascade.has_kfCascData() && !cascade.has_cascData()) {
-        LOG(info) << "Only KF was successful!";
+        LOG(debug) << "Only KF was successful!";
         recocase = 2;
         auto cascdata = cascade.kfCascData_as<KFCascDataLabeled>();
         getCascMCdata(collision, cascdata, TracksIU, mcParticles);
       }
       if (!cascade.has_kfCascData() && cascade.has_cascData()) {
-        LOG(info) << "Only DCA fitter was successful!";
+        LOG(debug) << "Only DCA fitter was successful!";
         recocase = 3;
         auto cascdata = cascade.cascData_as<CascDataLabeled>();
         getCascMCdata(collision, cascdata, TracksIU, mcParticles);

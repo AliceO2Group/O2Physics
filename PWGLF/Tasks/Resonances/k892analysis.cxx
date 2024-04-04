@@ -350,7 +350,7 @@ struct k892analysis {
     }
 
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
-    for (auto& [trk1, trk2] : combinations(CombinationsUpperIndexPolicy(dTracks1, dTracks2))) {
+    for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
 
       // Full index policy is needed to consider all possible combinations
       if (trk1.index() == trk2.index())
@@ -435,7 +435,7 @@ struct k892analysis {
       lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
       lResonance = lDecayDaughter1 + lDecayDaughter2;
       // Rapidity cut
-      if (abs(lResonance.Rapidity()) > 0.5)
+      if (abs(lResonance.Rapidity()) >= 0.5)
         continue;
       //// Un-like sign pair only
       if (trk1.sign() * trk2.sign() < 0) {
@@ -468,7 +468,7 @@ struct k892analysis {
           histos.fill(HIST("QAMCTrue/trkDCAz_ka"), trk2.dcaZ());
 
           // MC histograms
-          if (trk1.motherPDG() > 0) {
+          if (trk1.motherPDG() < 0) {
             histos.fill(HIST("k892Rec"), lResonance.Pt(), multiplicity);
             histos.fill(HIST("k892Recinvmass"), lResonance.M());
             histos.fill(HIST("h3Reck892invmass"), multiplicity, lResonance.Pt(), lResonance.M());
@@ -513,7 +513,7 @@ struct k892analysis {
     for (auto& part : resoParents) {  // loop over all pre-filtered MC particles
       if (abs(part.pdgCode()) != 313) // K892(0)
         continue;
-      if (abs(part.y()) > 0.5) { // rapidity cut
+      if (abs(part.y()) >= 0.5) { // rapidity cut
         continue;
       }
       bool pass1 = false;
