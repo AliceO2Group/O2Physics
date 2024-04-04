@@ -18,6 +18,7 @@
 #define PWGJE_DATAMODEL_JETTAGGING_H_
 
 #include <cmath>
+#include <vector>
 #include "Framework/AnalysisDataModel.h"
 #include "PWGJE/DataModel/Jet.h"
 

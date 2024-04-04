@@ -24,6 +24,8 @@
 #include <tuple>
 #include <vector>
 #include <algorithm>
+#include <functional>
+#include <memory>
 
 #include "TF1.h"
 #include "Framework/Logger.h"
