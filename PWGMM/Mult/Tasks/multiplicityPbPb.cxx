@@ -137,7 +137,7 @@ struct multiplicityPbPb {
     }
 
     histos.fill(HIST("Multiplicity"), trackCounter);
-    histos.fill(HIST("Multiplicity_01"), trackCounter_01);
+    histos.fill(HIST("Multiplicity_01"), trackCounter_01); // to be deleted
     histos.fill(HIST("Multiplicity_01_10"), trackCounter_01_10);
 
     histos.fill(HIST("NtrkZvtxEvents"), trackCounter, collision.posZ());
