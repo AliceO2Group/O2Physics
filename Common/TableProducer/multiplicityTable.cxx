@@ -56,7 +56,7 @@ static const std::vector<std::string> tableNames{"FV0Mults",       // 0
                                                  "PVMultZeqs",     // 12
                                                  "MultsExtraMC"};  // 13
 static const std::vector<std::string> parameterNames{"Enable"};
-static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
+static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
 struct MultiplicityTable {
   SliceCache cache;
