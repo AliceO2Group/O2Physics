@@ -87,7 +87,7 @@ struct HfTaskSingleMuonSource {
       "NonpromptCharmMu",
       "PromptCharmMu",
       "LightDecayMu",
-      "BeautyToLightDeacayMu",
+      "BeautyToLightDecayMu",
       "CharmToLightDecayMu",
       "SecondaryMu",
       "Hadron",
