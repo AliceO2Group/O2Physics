@@ -117,7 +117,6 @@ struct ChJetTriggerQATask {
       spectra.add("jetAreaFidVol", "area of all jets in fiducial volume", {HistType::kTH2F, {{100, 0., +100.}, {50, 0., 2.}}});
       spectra.add("fLeadJetChPtVsLeadingTrack", "inclusive charged jet pT in TPC volume", {HistType::kTH2F, {{100, 0., +100.}, {100, 0., +100.}}});
     }
-
   }
 
   // declare filters on collisions
@@ -133,13 +132,13 @@ struct ChJetTriggerQATask {
 
   void
     process(soa::Filtered<soa::Join<JetCollisions,
-				    aod::JChTrigSels, aod::EvSels>>::iterator const& collision,
+                                    aod::JChTrigSels, aod::EvSels>>::iterator const& collision,
             soa::Filtered<JetTracks> const& tracks, o2::soa::Filtered<soa::Join<o2::aod::ChargedJets, aod::ChargedJetConstituents>> const& jets)
   {
 
     if (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-      return; 
-    }	    
+      return;
+    }
 
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
