@@ -52,7 +52,7 @@ struct strangeDerivedConverter {
   void processGenerateDauTracksTOFPIDs(soa::Join<aod::V0Cores, aod::V0Extras, aod::V0TOFs> const& v0s, soa::Join<aod::CascCores, aod::CascExtras, aod::CascTOFs> const& cascs, aod::DauTrackExtras const& dauTracks)
   {
     // prepare arrays with the relevant information
-    std::vector<float> lLengths, lTOFSignals, lTOFEvTimes; 
+    std::vector<float> lLengths, lTOFSignals, lTOFEvTimes;
     lLengths.reserve(dauTracks.size());
     lTOFSignals.reserve(dauTracks.size());
     lTOFEvTimes.reserve(dauTracks.size());
@@ -62,23 +62,23 @@ struct strangeDerivedConverter {
       lTOFEvTimes[ii] = -1e+3f;
     }
     for (auto& v0 : v0s) {
-      lLengths[v0.posTrackExtraId()] = v0.posTOFLengthToPV(); 
-      lTOFSignals[v0.posTrackExtraId()] = v0.posTOFSignal(); 
-      lTOFEvTimes[v0.posTrackExtraId()] = v0.posTOFEventTime(); 
-      lLengths[v0.negTrackExtraId()] = v0.negTOFLengthToPV(); 
-      lTOFSignals[v0.negTrackExtraId()] = v0.negTOFSignal(); 
-      lTOFEvTimes[v0.negTrackExtraId()] = v0.negTOFEventTime(); 
+      lLengths[v0.posTrackExtraId()] = v0.posTOFLengthToPV();
+      lTOFSignals[v0.posTrackExtraId()] = v0.posTOFSignal();
+      lTOFEvTimes[v0.posTrackExtraId()] = v0.posTOFEventTime();
+      lLengths[v0.negTrackExtraId()] = v0.negTOFLengthToPV();
+      lTOFSignals[v0.negTrackExtraId()] = v0.negTOFSignal();
+      lTOFEvTimes[v0.negTrackExtraId()] = v0.negTOFEventTime();
     }
     for (auto& casc : cascs) {
-      lLengths[casc.posTrackExtraId()] = casc.posTOFLengthToPV(); 
-      lTOFSignals[casc.posTrackExtraId()] = casc.posTOFSignal(); 
-      lTOFEvTimes[casc.posTrackExtraId()] = casc.posTOFEventTime(); 
-      lLengths[casc.negTrackExtraId()] = casc.negTOFLengthToPV(); 
-      lTOFSignals[casc.negTrackExtraId()] = casc.negTOFSignal(); 
-      lTOFEvTimes[casc.negTrackExtraId()] = casc.negTOFEventTime(); 
-      lLengths[casc.bachTrackExtraId()] = casc.bachTOFLengthToPV(); 
-      lTOFSignals[casc.bachTrackExtraId()] = casc.bachTOFSignal(); 
-      lTOFEvTimes[casc.bachTrackExtraId()] = casc.bachTOFEventTime(); 
+      lLengths[casc.posTrackExtraId()] = casc.posTOFLengthToPV();
+      lTOFSignals[casc.posTrackExtraId()] = casc.posTOFSignal();
+      lTOFEvTimes[casc.posTrackExtraId()] = casc.posTOFEventTime();
+      lLengths[casc.negTrackExtraId()] = casc.negTOFLengthToPV();
+      lTOFSignals[casc.negTrackExtraId()] = casc.negTOFSignal();
+      lTOFEvTimes[casc.negTrackExtraId()] = casc.negTOFEventTime();
+      lLengths[casc.bachTrackExtraId()] = casc.bachTOFLengthToPV();
+      lTOFSignals[casc.bachTrackExtraId()] = casc.bachTOFSignal();
+      lTOFEvTimes[casc.bachTrackExtraId()] = casc.bachTOFEventTime();
     }
     for (int ii = 0; ii < dauTracks.size(); ii++) {
       dautracktofpids(lLengths[ii], lTOFSignals[ii], lTOFEvTimes[ii]);
