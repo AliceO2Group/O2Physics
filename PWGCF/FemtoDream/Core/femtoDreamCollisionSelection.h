@@ -94,7 +94,9 @@ class FemtoDreamCollisionSelection
         return false;
       }
       // all checks additional to sel8 are pending to be included in sel8, check them explicitly now and remove them once they have been added to sel8
-      if (mAddCheckOffline && (!col.selection_bit(aod::evsel::kNoTimeFrameBorder) || !col.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup) || !col.selection_bit(o2::aod::evsel::kIsVertexITSTPC))) {
+      // kIsGoodZvtxFT0vsPV can be a dangerous cut because the default event selection value is rather tight
+      // Remeber to open the cut (~4cm) with custom event selection task on hyperloop
+      if (mAddCheckOffline && (!col.selection_bit(aod::evsel::kNoTimeFrameBorder) || !col.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) || !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup) || !col.selection_bit(o2::aod::evsel::kIsVertexITSTPC) || !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         return false;
       }
     } else {
