@@ -52,20 +52,19 @@ struct HfTaskDplus {
 
   Filter filterDplusFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi))) != static_cast<uint8_t>(0);
 
-  //data
+  // data
   Partition<CandDplusData> selectedDPlusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Partition<CandDplusDataWithMl> selectedDPlusCandidatesWithMl = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-  
-  //Matched MC
+
+  // Matched MC
   Partition<CandDplusMcReco> recoDPlusCandidates = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Partition<CandDplusMcRecoWithMl> recoDPlusCandidatesWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-  
-  //MC Bkg
+
+  // MC Bkg
   Partition<CandDplusMcReco> recoBkgCandidates = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
   Partition<CandDplusMcRecoWithMl> recoBkgCandidatesWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
-  //Generated particles
-
+  // Generated particles
 
   HistogramRegistry registry{
     "registry",
@@ -169,22 +168,22 @@ struct HfTaskDplus {
   // Fill THnSparses for the ML analysis
   /// \param candidate is a particle candidate
   template <bool isMc, bool isMatched, typename T1>
-  void fillSparseML (const T1& candidate)
+  void fillSparseML(const T1& candidate)
   {
     std::vector<float> outputMl = {-999., -999., -999.};
     for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
       outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
     }
-    if constexpr(isMc){
-      if constexpr(isMatched){
+    if constexpr (isMc) {
+      if constexpr (isMatched) {
         if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hSparseMassPrompt"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
         } else if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
           registry.fill(HIST("hSparseMassFD"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
-        } 
-      }else{
+        }
+      } else {
         registry.fill(HIST("hSparseMassBkg"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
-      }  
+      }
     } else {
       registry.fill(HIST("hSparseMass"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
     }
@@ -194,8 +193,8 @@ struct HfTaskDplus {
   /// \param candidate is candidate
   template <bool isMatched, typename T1>
   void fillHistoMCRec(const T1& candidate)
-  {   
-    if constexpr (isMatched){
+  {
+    if constexpr (isMatched) {
       auto ptRec = candidate.pt();
       auto yRec = hfHelper.yDplus(candidate);
       registry.fill(HIST("hPtVsYRecSig_RecoSkim"), ptRec, yRec);
@@ -259,19 +258,19 @@ struct HfTaskDplus {
     registry.fill(HIST("hEtaGen"), particle.eta());
   }
 
-  // Run analysis for the reconstructed Dplus candidates from data 
+  // Run analysis for the reconstructed Dplus candidates from data
   /// \param candidates are reconstructed candidates
   template <bool fillMl, typename T1>
   void runDataAnalysis(const T1& candidates)
   {
-    if constexpr (!fillMl){
+    if constexpr (!fillMl) {
       for (const auto& candidate : selectedDPlusCandidates) {
         if ((yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax)) {
           continue;
         }
-          fillHisto(candidate);
+        fillHisto(candidate);
       }
-    } else{
+    } else {
       for (const auto& candidate : selectedDPlusCandidatesWithMl) {
         if ((yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax)) {
           continue;
@@ -280,14 +279,14 @@ struct HfTaskDplus {
       }
     }
   }
-  // Run analysis for the reconstructed Dplus candidates with MC matching 
+  // Run analysis for the reconstructed Dplus candidates with MC matching
   /// \param candidates are reconstructed candidates
   /// \param mcParticles are particles with MC information
   template <bool fillMl, typename T1, typename T2>
   void runMCAnalysis(const T1& recoCandidates, const T2& mcParticles)
   {
     // MC rec. w/o Ml
-    if constexpr (!fillMl){
+    if constexpr (!fillMl) {
       for (const auto& candidate : recoDPlusCandidates) {
         if ((yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax)) {
           continue;
@@ -295,7 +294,7 @@ struct HfTaskDplus {
         fillHisto(candidate);
         fillHistoMCRec<true>(candidate);
       }
-      //Bkg
+      // Bkg
       for (const auto& candidate : recoBkgCandidates) {
         if ((yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax)) {
           continue;
@@ -311,7 +310,7 @@ struct HfTaskDplus {
         fillHistoMCRec<true>(candidate);
         fillSparseML<true, true>(candidate);
       }
-      //Bkg
+      // Bkg
       for (const auto& candidate : recoBkgCandidatesWithMl) {
         if ((yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax)) {
           continue;
@@ -324,7 +323,7 @@ struct HfTaskDplus {
     for (const auto& particle : mcParticles) {
       auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassDPlus);
       if ((yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) || (std::abs(particle.flagMcMatchGen()) != 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
-          continue;
+        continue;
       }
       fillHistoMCGen(particle);
     }
@@ -351,9 +350,9 @@ struct HfTaskDplus {
   PROCESS_SWITCH(HfTaskDplus, processMc, "Process MC w/o ML", false);
 
   void processMcWithMl(CandDplusMcRecoWithMl const& candidates,
-                 McParticles const& mcParticles)
+                       McParticles const& mcParticles)
   {
-   runMCAnalysis<true>(candidates, mcParticles);
+    runMCAnalysis<true>(candidates, mcParticles);
   }
   PROCESS_SWITCH(HfTaskDplus, processMcWithMl, "Process MC with ML", false);
 };
