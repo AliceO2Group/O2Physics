@@ -1496,46 +1496,62 @@ struct qaMatchEff {
         //
         //    WARNING !!!     MIND the order of lines below, pions are preferred over kaons which are preferred over protons
         specind = -9999;
-        if (isProton && !(isKaon || isPion))
-          if (positiveTrack)
+        if (isProton && !(isKaon || isPion)) {
+          if (positiveTrack) {
             specind = 4;
-          else
+          } else {
             specind = -4; // protons ONLY
-        if (isKaon && !(isPion || isProton))
-          if (positiveTrack)
+          }
+        }
+        if (isKaon && !(isPion || isProton)) {
+          if (positiveTrack) {
             specind = 3;
-          else
+          } else {
             specind = -3; // kaons ONLY
-        if (isPion && !(isKaon || isProton))
-          if (positiveTrack)
+          }
+        }
+        if (isPion && !(isKaon || isProton)) { // pions ONLY
+          if (positiveTrack) {
             specind = 2;
-          else
-            specind = -2; // pions ONLY
-        if (isPion && isKaon && !isProton)
-          if (positiveTrack)
+          } else {
+            specind = -2;
+          }
+        }
+        if (isPion && isKaon && !isProton) { // maybe pion, maybe kaon
+          if (positiveTrack) {
             specind = 5;
-          else
-            specind = -5; // maybe pion, maybe kaon
-        if (isPion && isProton && !isKaon)
-          if (positiveTrack)
+          } else {
+            specind = -5;
+          }
+        }
+        if (isPion && isProton && !isKaon) { // maybe pion, maybe proton
+          if (positiveTrack) {
             specind = 6;
-          else
-            specind = -6; // maybe pion, maybe proton
-        if (isKaon && isProton && !isPion)
-          if (positiveTrack)
+          } else {
+            specind = -6;
+          }
+        }
+        if (isKaon && isProton && !isPion) { // maybe proton, maybe kaon
+          if (positiveTrack) {
             specind = 7;
-          else
-            specind = -7; // maybe proton, maybe kaon
-        if (isPion && isKaon && isProton)
-          if (positiveTrack)
+          } else {
+            specind = -7;
+          }
+        }
+        if (isPion && isKaon && isProton) { // maybe pion, maybe kaon, maybe proton
+          if (positiveTrack) {
             specind = 9;
-          else
-            specind = -9; // maybe pion, maybe kaon, maybe proton
-        if (!isPion && !isKaon && !isProton)
-          if (positiveTrack)
+          } else {
+            specind = -9;
+          }
+        }
+        if (!isPion && !isKaon && !isProton) { // PID is NOT pion or kaon or proton
+          if (positiveTrack) {
             specind = 1;
-          else
-            specind = -1; // PID is NOT pion or kaon or proton
+          } else {
+            specind = -1;
+          }
+        }
       }
       //
       //***************************************************************************************************************************************************************************
