@@ -113,7 +113,7 @@ struct cascqaanalysis {
 
     TString hCandidateCounterLabels[5] = {"All candidates", "v0data exists", "passed topo cuts", "has associated MC particle", "associated with Xi(Omega)"};
     TString hNEventsMCLabels[6] = {"All", "z vrtx", "INEL", "INEL>0", "INEL>1", "Associated with rec. collision"};
-    TString hNEventsLabels[11] = {"All", "sel8", "kIsVertexITSTPC", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "TimeFrame cut", "ITS ROF cut", "z vrtx", "INEL", "INEL>0", "INEL>1"};
+    TString hNEventsLabels[11] = {"All", "sel8", "TimeFrame cut", "ITS ROF cut", "kIsVertexITSTPC", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "z vrtx", "INEL", "INEL>0", "INEL>1"};
 
     registry.add("hNEvents", "hNEvents", {HistType::kTH1F, {{11, 0.f, 11.f}}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
@@ -130,7 +130,7 @@ struct cascqaanalysis {
       registry.add("hNchFT0MPVContr", "hNchFT0MPVContr", {HistType::kTH3F, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
       registry.add("hNchFV0APVContr", "hNchFV0APVContr", {HistType::kTH3F, {nChargedFV0AGenAxis, multNTracksAxis, eventTypeAxis}});
       // Gen. lvl
-      registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{7, 0.0f, 7.0f}}});
+      registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{6, 0.0f, 6.0f}}});
       for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
         registry.get<TH1>(HIST("hNEventsMC"))->GetXaxis()->SetBinLabel(n, hNEventsMCLabels[n - 1]);
       }
