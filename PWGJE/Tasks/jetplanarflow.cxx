@@ -36,8 +36,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-#include "Framework/runDataProcessing.h"
-
 struct JetPlanarFlowTask {
 
   HistogramRegistry registry;
@@ -102,7 +100,7 @@ struct JetPlanarFlowTask {
     float rotationMatrix[3][3];
     float rotationMatrix2D[2][2];
 
-    float jetUnitVector[3] = {float(TMath::Cos(jet.phi()) / TMath::CosH(jet.eta())), float(TMath::Sin(jet.phi()) / TMath::CosH(jet.eta())), float(TMath::SinH(jet.eta()) / TMath::CosH(jet.eta()))};
+    float jetUnitVector[3] = {static_cast<float>(TMath::Cos(jet.phi()) / TMath::CosH(jet.eta())), static_cast<float>(TMath::Sin(jet.phi()) / TMath::CosH(jet.eta())), static_cast<float>(TMath::SinH(jet.eta()) / TMath::CosH(jet.eta()))};
     float magPt = TMath::Sqrt((jetUnitVector[0] * jetUnitVector[0]) + (jetUnitVector[1] * jetUnitVector[1]));
     float cosTheta = jetUnitVector[2];
     float sinTheta = magPt;
