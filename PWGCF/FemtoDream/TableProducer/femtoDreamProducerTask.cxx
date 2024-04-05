@@ -85,7 +85,6 @@ struct femtoDreamProducerTask {
 
   /// Event cuts
   FemtoDreamCollisionSelection colCuts;
-  Configurable<bool> ConfEvtUseTPCmult{"ConfEvtUseTPCmult", false, "Use multiplicity based on the number of tracks with TPC information"};
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
@@ -373,9 +372,6 @@ struct femtoDreamProducerTask {
     } else {
       mult = 1; // multiplicity percentile is know in Run 2
       multNtr = col.multTracklets();
-    }
-    if (ConfEvtUseTPCmult) {
-      multNtr = col.multTPC();
     }
 
     colCuts.fillQA(col, mult);
