@@ -21,8 +21,7 @@ using namespace o2::framework;
 struct strangeDerivedConverter {
   Produces<aod::StraRawCents_001> straRawCents_001;
   Produces<aod::StraRawCents_003> straRawCents_003;
-  Produces<aod::V0TOFs> v0tofs;
-  Produces<aod::CascTOFs> casctofs;
+  Produces<aod::DauTrackTOFPIDs> dautracktofpids;
 
   void processStraRawCents000to001(aod::StraRawCents_000 const& straRawCents_000)
   {
@@ -50,31 +49,45 @@ struct strangeDerivedConverter {
     }
   }
 
-  void processGenerateV0TOFs(soa::Join<aod::V0Cores, aod::V0Extras>::iterator const& v0, soa::Join<aod::DauTrackExtras, aod::DauTrackTOFPIDs> const&)
+  void processGenerateDauTracksTOFPIDs(soa::Join<aod::V0Cores, aod::V0Extras, aod::V0TOFs> const& v0s, soa::Join<aod::CascCores, aod::CascExtras, aod::CascTOFs> const& cascs, aod::DauTrackExtras const& dauTracks)
   {
-    // de-reference interlink and populate V0-joinable table (legacy storage)
-    auto pTra = v0.posTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTOFPIDs>>();
-    auto nTra = v0.negTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTOFPIDs>>();
-    v0tofs(pTra.length(), nTra.length(),
-           pTra.tofSignal(), nTra.tofSignal(),
-           pTra.tofEvTime(), nTra.tofEvTime());
-  }
-
-  void processGenerateCascTOFs(soa::Join<aod::CascCores, aod::CascExtras>::iterator const& casc, soa::Join<aod::DauTrackExtras, aod::DauTrackTOFPIDs> const&)
-  {
-    // de-reference interlink and populate V0-joinable table (legacy storage)
-    auto pTra = casc.posTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTOFPIDs>>();
-    auto nTra = casc.negTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTOFPIDs>>();
-    auto bTra = casc.bachTrackExtra_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTOFPIDs>>();
-    casctofs(pTra.length(), nTra.length(), bTra.length(),
-             pTra.tofSignal(), nTra.tofSignal(), bTra.tofSignal(),
-             pTra.tofEvTime(), nTra.tofEvTime(), bTra.tofEvTime());
+    // prepare arrays with the relevant information
+    std::vector<float> lLengths, lTOFSignals, lTOFEvTimes; 
+    lLengths.reserve(dauTracks.size());
+    lTOFSignals.reserve(dauTracks.size());
+    lTOFEvTimes.reserve(dauTracks.size());
+    for (int ii = 0; ii < dauTracks.size(); ii++) {
+      lLengths[ii] = 1e+6;
+      lTOFSignals[ii] = -1e+3f;
+      lTOFEvTimes[ii] = -1e+3f;
+    }
+    for (auto& v0 : v0s) {
+      lLengths[v0.posTrackExtraId()] = v0.posTOFLengthToPV(); 
+      lTOFSignals[v0.posTrackExtraId()] = v0.posTOFSignal(); 
+      lTOFEvTimes[v0.posTrackExtraId()] = v0.posTOFEventTime(); 
+      lLengths[v0.negTrackExtraId()] = v0.negTOFLengthToPV(); 
+      lTOFSignals[v0.negTrackExtraId()] = v0.negTOFSignal(); 
+      lTOFEvTimes[v0.negTrackExtraId()] = v0.negTOFEventTime(); 
+    }
+    for (auto& casc : cascs) {
+      lLengths[casc.posTrackExtraId()] = casc.posTOFLengthToPV(); 
+      lTOFSignals[casc.posTrackExtraId()] = casc.posTOFSignal(); 
+      lTOFEvTimes[casc.posTrackExtraId()] = casc.posTOFEventTime(); 
+      lLengths[casc.negTrackExtraId()] = casc.negTOFLengthToPV(); 
+      lTOFSignals[casc.negTrackExtraId()] = casc.negTOFSignal(); 
+      lTOFEvTimes[casc.negTrackExtraId()] = casc.negTOFEventTime(); 
+      lLengths[casc.bachTrackExtraId()] = casc.bachTOFLengthToPV(); 
+      lTOFSignals[casc.bachTrackExtraId()] = casc.bachTOFSignal(); 
+      lTOFEvTimes[casc.bachTrackExtraId()] = casc.bachTOFEventTime(); 
+    }
+    for (int ii = 0; ii < dauTracks.size(); ii++) {
+      dautracktofpids(lLengths[ii], lTOFSignals[ii], lTOFEvTimes[ii]);
+    }
   }
 
   PROCESS_SWITCH(strangeDerivedConverter, processStraRawCents000to001, "from StraRawCents 000 to 001", false);
   PROCESS_SWITCH(strangeDerivedConverter, processStraRawCents002to003, "from StraRawCents 002 to 003", false);
-  PROCESS_SWITCH(strangeDerivedConverter, processGenerateV0TOFs, "from DauTrackTOFPIDs to V0TOFs", false);
-  PROCESS_SWITCH(strangeDerivedConverter, processGenerateCascTOFs, "from DauTrackTOFPIDs to CascTOFs", false);
+  PROCESS_SWITCH(strangeDerivedConverter, processGenerateDauTracksTOFPIDs, "from DauTrackTOFPIDs to V0TOFs/CascTOFs", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
