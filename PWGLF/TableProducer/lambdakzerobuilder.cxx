@@ -136,6 +136,7 @@ struct lambdakzeroBuilder {
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
   Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
+  Configurable<bool> d_UseCollinearFit{"d_UseCollinearFit", false, "Fit V0s via the collinear Method in DCAFitter"};
   Configurable<float> d_maxDZIni{"d_maxDZIni", 1e9, "Dont consider a seed (circles intersection) if Z distance exceeds this"};
   Configurable<float> d_maxDXYIni{"d_maxDXYIni", 4, "Dont consider a seed (circles intersection) if XY distance exceeds this"};
   Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
@@ -664,6 +665,7 @@ struct lambdakzeroBuilder {
     //---/---/---/
     // Move close to minima
     int nCand = 0;
+    fitter.setCollinear(d_UseCollinearFit || V0.isCollinearV0());
     try {
       nCand = fitter.process(lPositiveTrack, lNegativeTrack);
     } catch (...) {
