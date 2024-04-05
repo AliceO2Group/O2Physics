@@ -179,7 +179,7 @@ using CfFilter = CFFilters::iterator;
 DECLARE_SOA_TABLE(JetFilters, "AOD", "JetFilters", //!
                   filtering::JetChLowPt,
                   filtering::JetChHighPt,
-		  filtering::TrackHighPt);
+                  filtering::TrackHighPt);
 
 using JetFilter = JetFilters::iterator;
 
