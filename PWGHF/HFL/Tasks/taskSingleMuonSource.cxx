@@ -87,6 +87,8 @@ struct HfTaskSingleMuonSource {
       "NonpromptCharmMu",
       "PromptCharmMu",
       "LightDecayMu",
+      "BeautyToLightDecayMu",
+      "CharmToLightDecayMu",
       "SecondaryMu",
       "Hadron",
       "Unidentified"};
@@ -214,7 +216,19 @@ struct HfTaskSingleMuonSource {
   // this muon comes from light flavor quark decay
   bool isLightDecayMu(const uint8_t& mask)
   {
-    return (isMuon(mask) && TESTBIT(mask, HasLightParent) && (!TESTBIT(mask, IsSecondary)) && (!TESTBIT(mask, HasQuarkoniumParent)));
+    return (isMuon(mask) && TESTBIT(mask, HasLightParent) && (!TESTBIT(mask, IsSecondary)) && (!TESTBIT(mask, HasQuarkoniumParent)) && (!TESTBIT(mask, HasBeautyParent)) && (!TESTBIT(mask, HasCharmParent)));
+  }
+
+  // this muon comes from beauty to light flavor decay
+  bool isBeautyToLightDecayMu(const uint8_t& mask)
+  {
+    return (isMuon(mask) && TESTBIT(mask, HasLightParent) && (TESTBIT(mask, HasBeautyParent)) && (!TESTBIT(mask, IsSecondary)) && (!TESTBIT(mask, HasQuarkoniumParent)));
+  }
+
+  // this muon comes from charm to light flavor decay
+  bool isCharmToLightDecayMu(const uint8_t& mask)
+  {
+    return (isMuon(mask) && TESTBIT(mask, HasLightParent) && (TESTBIT(mask, HasCharmParent)) && (!TESTBIT(mask, IsSecondary)) && (!TESTBIT(mask, HasQuarkoniumParent)));
   }
 
   // this muon comes from transport
@@ -273,6 +287,14 @@ struct HfTaskSingleMuonSource {
         registry.fill(HIST("h2LightDecayMuPtDCA"), pt, dca);
         registry.fill(HIST("h2LightDecayMuPtChi2"), pt, chi2);
         registry.fill(HIST("h3LightDecayMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
+      } else if (isBeautyToLightDecayMu(mask)) {
+        registry.fill(HIST("h2BeautyToLightDecayMuPtDCA"), pt, dca);
+        registry.fill(HIST("h2BeautyToLightDecayMuPtChi2"), pt, chi2);
+        registry.fill(HIST("h3BeautyToLightDecayMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
+      } else if (isCharmToLightDecayMu(mask)) {
+        registry.fill(HIST("h2CharmToLightDecayMuPtDCA"), pt, dca);
+        registry.fill(HIST("h2CharmToLightDecayMuPtChi2"), pt, chi2);
+        registry.fill(HIST("h3CharmToLightDecayMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
       } else if (isSecondaryMu(mask)) {
         registry.fill(HIST("h2SecondaryMuPtDCA"), pt, dca);
         registry.fill(HIST("h2SecondaryMuPtChi2"), pt, chi2);
@@ -295,6 +317,10 @@ struct HfTaskSingleMuonSource {
         registry.fill(HIST("h1PromptCharmMuPt"), pt);
       } else if (isLightDecayMu(mask)) {
         registry.fill(HIST("h1LightDecayMuPt"), pt);
+      } else if (isBeautyToLightDecayMu(mask)) {
+        registry.fill(HIST("h1BeautyToLightDecayMuPt"), pt);
+      } else if (isCharmToLightDecayMu(mask)) {
+        registry.fill(HIST("h1CharmToLightDecayMuPt"), pt);
       } else if (isSecondaryMu(mask)) {
         registry.fill(HIST("h1SecondaryMuPt"), pt);
       } else if (isHadron(mask)) {
