@@ -205,16 +205,7 @@
         "fatalOnPassNotAvailable": "true",
         "enableTOFParams": "false"
     },
-    "ml-model-gen-hists": {
-        "detector": "2",
-        "pid": "-2212",
-        "certainty": "0.95",
-        "ccdb-path": "Users\/m\/mkabus\/PIDML",
-        "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
-        "useCCDB": "true",
-        "local-path": "\/home\/mkabus\/PIDML",
-        "use-fixed-timestamp": "false",
-        "timestamp": "1524176895000"
+    "pid-eff-and-pur-producer": {
     },
     "internal-dpl-aod-writer": "",
     "internal-dpl-injected-dummy-sink": ""

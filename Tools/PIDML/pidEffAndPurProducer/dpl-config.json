@@ -7,10 +7,16 @@
         "start-value-enumeration": "0",
         "end-value-enumeration": "-1",
         "step-value-enumeration": "1",
-        "aod-file": "/root/alice/AO2Ds/AO2D_18G4_run285064_023.root"
+        "aod-file": "\/root\/alice\/AO2Ds\/AO2D_18G4_run285064_023.root"
     },
     "internal-dpl-aod-spawner": "",
-    "fdd-converter": "",
+    "collision-converter": {
+        "doNotSwap": "false",
+        "debug": "false",
+        "nbins": "1",
+        "tolerance": "0.00100000005"
+    },
+    "bc-converter": "",
     "timestamp-task": {
         "verbose": "false",
         "rct-path": "RCT\/Info\/RunInformation",
@@ -18,8 +24,9 @@
         "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
         "isRun2MC": "true"
     },
-    "internal-dpl-aod-index-builder": "",
     "tracks-extra-converter": "",
+    "zdc-converter": "",
+    "internal-dpl-aod-index-builder": "",
     "tracks-extra-spawner": "",
     "multiplicity-table": {
         "doVertexZeq": "1",
@@ -76,6 +83,19 @@
         "processRun2": "true",
         "processRun3": "false"
     },
+    "pid-multiplicity": {
+        "processIU": "false",
+        "processStandard": "true"
+    },
+    "tof-signal": {
+        "processRun3": "false",
+        "processRun2": "true"
+    },
+    "track-extension": {
+        "compatibilityIU": "false",
+        "processRun2": "true",
+        "processRun3": "false"
+    },
     "tpc-pid-full": {
         "param-file": "",
         "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
@@ -98,14 +118,6 @@
         "pid-tr": "-1",
         "pid-he": "-1",
         "pid-al": "-1"
-    },
-    "tof-signal": {
-        "processRun3": "false",
-        "processRun2": "true"
-    },
-    "track-extension":  {
-        "processRun3": "false",
-        "processRun2": "true"
     },
     "tof-event-time": {
         "minMomentum": "0.5",
@@ -205,17 +217,76 @@
         "fatalOnPassNotAvailable": "true",
         "enableTOFParams": "false"
     },
-    "ml-model-gen-hists": {
+    "pid-eff-and-pur-producer-o-n-n-x-interface": {
         "detector": "2",
-        "pid": "-2212",
-        "certainty": "0.95",
+        "n-sigma-cut": "3",
+        "tof-pt-cut": "0.5",
+        "pT_cuts": {
+            "labels_rows": [
+                "211",
+                "321",
+                "2212",
+                "0211",
+                "0321",
+                "02212"
+            ],
+            "labels_cols": [
+                "TPC",
+                "TPC + TOF",
+                "TPC + TOF + TRD"
+            ],
+            "values": [
+                [
+                    "0",
+                    "0.5",
+                    "0.80000000000000004"
+                ],
+                [
+                    "0",
+                    "0.5",
+                    "0.80000000000000004"
+                ],
+                [
+                    "0",
+                    "0.5",
+                    "0.80000000000000004"
+                ],
+                [
+                    "0",
+                    "0.5",
+                    "0.80000000000000004"
+                ],
+                [
+                    "0",
+                    "0.5",
+                    "0.80000000000000004"
+                ],
+                [
+                    "0",
+                    "0.5",
+                    "0.80000000000000004"
+                ]
+            ]
+        },
+        "pids": {
+            "values": [
+                "211",
+                "321",
+                "2212",
+                "-211",
+                "-321",
+                "-2212"
+            ]
+        },
+        "autoMode": "true",
         "ccdb-path": "Users\/m\/mkabus\/PIDML",
         "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
         "useCCDB": "true",
-        "local-path": "\/home\/mkabus\/PIDML",
+        "local-path": "\/home\/mkabus\/PIDML\/",
         "use-fixed-timestamp": "false",
         "timestamp": "1524176895000"
     },
     "internal-dpl-aod-writer": "",
+    "internal-dpl-aod-global-analysis-file-sink": "",
     "internal-dpl-injected-dummy-sink": ""
 }
