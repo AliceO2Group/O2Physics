@@ -358,9 +358,9 @@ struct DQEventQvector {
     }
 
     // Define quantities needed for the different eta regions
-    uint8_t nentriesN = 0.0;
-    uint8_t nentriesP = 0.0;
-    uint8_t nentriesFull = 0.0;
+    int nentriesN = 0;
+    int nentriesP = 0;
+    int nentriesFull = 0;
     complex<double> Q1vecN;
     complex<double> Q1vecP;
     complex<double> Q1vecFull;
