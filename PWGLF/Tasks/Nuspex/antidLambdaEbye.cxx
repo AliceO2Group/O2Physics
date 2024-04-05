@@ -191,12 +191,14 @@ struct antidLambdaEbye {
   Configurable<bool> v0requireITSrefit{"v0requireITSrefit", false, "require ITS refit for V0 daughter"};
   Configurable<float> vetoMassK0Short{"vetoMassK0Short", -999.f, "veto for V0 compatible with K0s mass"};
 
-  Configurable<float> antidNsigmaTpcCut{"antidNsigmaTpcCut", 4.f, "TPC PID cut"};
+  Configurable<float> antidNsigmaTpcCutLow{"antidNsigmaTpcCutLow", 4.f, "TPC PID cut low"};
+  Configurable<float> antidNsigmaTpcCutUp{"antidNsigmaTpcCutUp", 4.f, "TPC PID cut up"};
   Configurable<float> antidNsigmaTofCut{"antidNsigmaTofCut", 4.f, "TOF PID cut"};
   Configurable<float> antidTpcInnerParamMax{"tpcInnerParamMax", 0.6f, "(temporary) tpc inner param cut"};
   Configurable<float> antidTofMassMax{"tofMassMax", 0.3f, "(temporary) tof mass cut"};
 
-  Configurable<float> antipNsigmaTpcCut{"antipNsigmaTpcCut", 4.f, "TPC PID cut"};
+  Configurable<float> antipNsigmaTpcCutLow{"antipNsigmaTpcCutLow", 4.f, "TPC PID cut low"};
+  Configurable<float> antipNsigmaTpcCutUp{"antipNsigmaTpcCutUp", 4.f, "TPC PID cut up"};
   Configurable<float> antipNsigmaTofCut{"antipNsigmaTofCut", 4.f, "TOF PID cut"};
   Configurable<float> antipTpcInnerParamMax{"antipTpcInnerParamMax", 0.6f, "(temporary) tpc inner param cut"};
   Configurable<float> antipTofMassMax{"antipTofMassMax", 0.3f, "(temporary) tof mass cut"};
@@ -216,7 +218,8 @@ struct antidLambdaEbye {
   std::array<float, kNpart> ptMin;
   std::array<float, kNpart> ptTof;
   std::array<float, kNpart> ptMax;
-  std::array<float, kNpart> nSigmaTpcCut;
+  std::array<float, kNpart> nSigmaTpcCutLow;
+  std::array<float, kNpart> nSigmaTpcCutHigh;
   std::array<float, kNpart> nSigmaTofCut;
   std::array<float, kNpart> tpcInnerParamMax;
   std::array<float, kNpart> tofMassMax;
@@ -453,7 +456,8 @@ struct antidLambdaEbye {
     ptMax = std::array<float, kNpart>{antipPtMax, antidPtMax};
     ptTof = std::array<float, kNpart>{antipPtTof, antidPtTof};
 
-    nSigmaTpcCut = std::array<float, kNpart>{antipNsigmaTpcCut, antidNsigmaTpcCut};
+    nSigmaTpcCutLow = std::array<float, kNpart>{antipNsigmaTpcCutLow, antidNsigmaTpcCutUp};
+    nSigmaTpcCutUp = std::array<float, kNpart>{antipNsigmaTpcCutLow, antidNsigmaTpcCutUp};
     nSigmaTofCut = std::array<float, kNpart>{antipNsigmaTofCut, antidNsigmaTofCut};
     tpcInnerParamMax = std::array<float, kNpart>{antipTpcInnerParamMax, antidTpcInnerParamMax};
     tofMassMax = std::array<float, kNpart>{antipTofMassMax, antidTofMassMax};
@@ -514,12 +518,12 @@ struct antidLambdaEbye {
 
         if (track.pt() <= ptTof[iP] || (track.pt() > ptTof[iP] && hasTof && std::abs(mass - partMass[iP]) < tofMassMaxQA)) { // for QA histograms
           tpcNsigmaGlo[iP]->Fill(centrality, track.pt(), nSigmaTPC);
-          if (std::abs(nSigmaTPC) < nSigmaTpcCut[iP]) {
+          if (nSigmaTPC > nSigmaTpcCutLow[iP] && nSigmaTPC < nSigmaTpcCutUp[iP]) {
             tofMass[iP]->Fill(centrality, track.pt(), mass);
           }
         }
 
-        if (std::abs(nSigmaTPC) > nSigmaTpcCut[iP]) {
+        if (nSigmaTPC < nSigmaTpcCutLow[iP] || nSigmaTPC > nSigmaTpcCutUp[iP]) {
           continue;
         }
 
