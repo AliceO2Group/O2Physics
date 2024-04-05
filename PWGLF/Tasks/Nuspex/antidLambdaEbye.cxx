@@ -219,7 +219,7 @@ struct antidLambdaEbye {
   std::array<float, kNpart> ptTof;
   std::array<float, kNpart> ptMax;
   std::array<float, kNpart> nSigmaTpcCutLow;
-  std::array<float, kNpart> nSigmaTpcCutHigh;
+  std::array<float, kNpart> nSigmaTpcCutUp;
   std::array<float, kNpart> nSigmaTofCut;
   std::array<float, kNpart> tpcInnerParamMax;
   std::array<float, kNpart> tofMassMax;
@@ -456,8 +456,8 @@ struct antidLambdaEbye {
     ptMax = std::array<float, kNpart>{antipPtMax, antidPtMax};
     ptTof = std::array<float, kNpart>{antipPtTof, antidPtTof};
 
-    nSigmaTpcCutLow = std::array<float, kNpart>{antipNsigmaTpcCutLow, antidNsigmaTpcCutUp};
-    nSigmaTpcCutUp = std::array<float, kNpart>{antipNsigmaTpcCutLow, antidNsigmaTpcCutUp};
+    nSigmaTpcCutLow = std::array<float, kNpart>{antipNsigmaTpcCutLow, antidNsigmaTpcCutLow};
+    nSigmaTpcCutUp = std::array<float, kNpart>{antipNsigmaTpcCutUp, antidNsigmaTpcCutUp};
     nSigmaTofCut = std::array<float, kNpart>{antipNsigmaTofCut, antidNsigmaTofCut};
     tpcInnerParamMax = std::array<float, kNpart>{antipTpcInnerParamMax, antidTpcInnerParamMax};
     tofMassMax = std::array<float, kNpart>{antipTofMassMax, antidTofMassMax};
