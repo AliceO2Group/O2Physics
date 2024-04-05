@@ -162,6 +162,8 @@ struct antidLambdaEbye {
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
 
+  Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "fill histograms only for true signal candidates (MC)"};
+
   Configurable<bool> kINT7Intervals{"kINT7Intervals", false, "toggle kINT7 trigger selection in the 10-30% and 50-90% centrality intervals (2018 Pb-Pb)"};
   Configurable<bool> kUseTPCPileUpCut{"kUseTPCPileUpCut", false, "toggle strong correlation cuts (Run 2)"};
   Configurable<bool> kUseEstimatorsCorrelationCut{"kUseEstimatorsCorrelationCut", false, "toggle cut on the correlation between centrality estimators (2018 Pb-Pb)"};
@@ -181,6 +183,13 @@ struct antidLambdaEbye {
   Configurable<float> trackNclusItsCut{"trackNclusITScut", 5, "Minimum number of ITS clusters"};
   Configurable<float> trackNclusTpcCut{"trackNclusTPCcut", 70, "Minimum number of TPC clusters"};
   Configurable<float> trackDcaCut{"trackDcaCut", 0.1f, "DCA antid to PV"};
+
+  Configurable<float> v0trackNcrossedRows{"v0trackNcrossedRows", 70, "Minimum number of crossed TPC rows for V0 daughter"};
+  Configurable<float> v0trackNclusItsCut{"v0trackNclusITScut", 1, "Minimum number of ITS clusters for V0 daughter"};
+  Configurable<float> v0trackNclusTpcCut{"v0trackNclusTPCcut", 70, "Minimum number of TPC clusters for V0 daughter"};
+  Configurable<float> v0trackNsharedClusTpc{"v0trackNsharedClusTpc", 10, "Maximum number of shared TPC clusters for V0 daughter"};
+  Configurable<bool> v0requireITSrefit{"v0requireITSrefit", false, "require ITS refit for V0 daughter"};
+  Configurable<float> vetoMassK0Short{"vetoMassK0Short", -999.f, "veto for V0 compatible with K0s mass"};
 
   Configurable<float> antidNsigmaTpcCut{"antidNsigmaTpcCut", 4.f, "TPC PID cut"};
   Configurable<float> antidNsigmaTofCut{"antidNsigmaTofCut", 4.f, "TOF PID cut"};
@@ -231,6 +240,32 @@ struct antidLambdaEbye {
         v0.v0radius() < v0setting_radius) {
       return false;
     }
+    if (std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < vetoMassK0Short)
+      return false;
+    return true;
+  }
+
+  template <class T>
+  bool selectV0Daughter(T const& track)
+  {
+    if (std::abs(track.eta()) > etaMax) {
+      return false;
+    }
+    if (track.itsNCls() < v0trackNclusItsCut ||
+        track.tpcNClsFound() < v0trackNclusTpcCut ||
+        track.tpcNClsCrossedRows() < v0trackNclusTpcCut ||
+        track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
+        track.tpcNClsShared() > v0trackNsharedClusTpc) {
+      return false;
+    }
+    if (doprocessRun2 || doprocessMcRun2) {
+      if (!(track.flags() & o2::aod::track::TrackFlagsRun2Enum::TPCrefit)) {
+        return false;
+      }
+      if (v0requireITSrefit && !(track.flags() & o2::aod::track::TrackFlagsRun2Enum::ITSrefit)) {
+        return false;
+      }
+    }
     return true;
   }
 
@@ -252,8 +287,8 @@ struct antidLambdaEbye {
       return false;
     }
     if (doprocessRun2 || doprocessMcRun2) {
-      if (!(track.flags() & o2::aod::track::TPCrefit) ||
-          !(track.flags() & o2::aod::track::ITSrefit)) {
+      if (!(track.flags() & o2::aod::track::TrackFlagsRun2Enum::TPCrefit) ||
+          !(track.flags() & o2::aod::track::TrackFlagsRun2Enum::ITSrefit)) {
         return false;
       }
     }
@@ -424,7 +459,7 @@ struct antidLambdaEbye {
     tofMassMax = std::array<float, kNpart>{antipTofMassMax, antidTofMassMax};
   }
 
-  void fillRecoEvent(TracksFull const& tracks, aod::V0Datas const& V0s, float const& centrality)
+  int fillRecoEvent(TracksFull const& tracks, aod::V0Datas const& V0s, float const& centrality)
   {
     candidateTracks[0].clear();
     candidateTracks[1].clear();
@@ -536,6 +571,11 @@ struct antidLambdaEbye {
         continue;
       }
 
+      bool selectPos = selectV0Daughter(pos);
+      bool selectNeg = selectV0Daughter(neg);
+      if (!selectPos || !selectNeg)
+        continue;
+
       if (doprocessRun2 || doprocessMcRun2) {
         bool checkPosPileUp = pos.hasTOF() || (pos.flags() & o2::aod::track::TrackFlagsRun2Enum::ITSrefit);
         bool checkNegPileUp = neg.hasTOF() || (neg.flags() & o2::aod::track::TrackFlagsRun2Enum::ITSrefit);
@@ -589,10 +629,13 @@ struct antidLambdaEbye {
       candV0.globalIndexPos = -999;
       candV0.globalIndexNeg = -999;
       candidateV0s.push_back(candV0);
-      return;
+      return -1;
     }
 
     histos.fill(HIST("nEv"), subsample, centrality);
+
+    if ((doprocessMcRun3 || doprocessMcRun2) && fillOnlySignal)
+      return subsample;
 
     fillHistoN(nAntip, tempTracks[0], subsample, centrality);
     fillHistoN(nAntid, tempTracks[1], subsample, centrality);
@@ -613,14 +656,24 @@ struct antidLambdaEbye {
     histos.fill(HIST("QA/nRecPerEvAntid"), centrality, tempTracks[1]->GetEntries());
     histos.fill(HIST("QA/nRecPerEvAntiL"), centrality, tempAntiLambda->GetEntries());
     histos.fill(HIST("QA/nRecPerEvL"), centrality, tempLambda->GetEntries());
+
+    return 0;
   }
 
   void fillMcEvent(TracksFull const& tracks, aod::V0Datas const& V0s, float const& centrality, aod::McParticles const&, aod::McTrackLabels const& mcLabels)
   {
-    fillRecoEvent(tracks, V0s, centrality);
+    int subsample = fillRecoEvent(tracks, V0s, centrality);
     if (candidateV0s.size() == 1 && candidateV0s[0].pt < -998.f && candidateV0s[0].eta < -998.f && candidateV0s[0].globalIndexPos == -999 && candidateV0s[0].globalIndexPos == -999) {
       return;
     }
+
+    if (fillOnlySignal) {
+      tempTracks[0]->Reset();
+      tempTracks[1]->Reset();
+      tempLambda->Reset();
+      tempAntiLambda->Reset();
+    }
+
     for (int iP{0}; iP < kNpart; ++iP) {
       for (auto& candidateTrack : candidateTracks[iP]) {
         auto mcLab = mcLabels.rawIteratorAt(candidateTrack.globalIndex);
@@ -628,12 +681,16 @@ struct antidLambdaEbye {
           auto mcTrack = mcLab.template mcParticle_as<aod::McParticles>();
           if (std::abs(mcTrack.pdgCode()) != partPdg[iP])
             continue;
+          if (mcTrack.flags() & 0x8)
+            continue;
           if (!mcTrack.isPhysicalPrimary())
             continue;
           if (mcTrack.pdgCode() > 0) {
             recTracks[iP]->Fill(centrality, candidateTrack.pt, candidateTrack.eta);
           } else {
             recAntiTracks[iP]->Fill(centrality, candidateTrack.pt, candidateTrack.eta);
+            if (fillOnlySignal)
+              tempTracks[iP]->Fill(std::abs(candidateTrack.eta), candidateTrack.pt);
           }
         }
       }
@@ -656,16 +713,43 @@ struct antidLambdaEbye {
                 continue;
               if (!posMother.isPhysicalPrimary())
                 continue;
-
+              if (posMother.flags() & 0x8)
+                continue;
               if (posMother.pdgCode() > 0) {
                 histos.fill(HIST("recL"), centrality, candidateV0.pt, candidateV0.eta);
+                if (fillOnlySignal)
+                  tempLambda->Fill(std::abs(candidateV0.eta), candidateV0.pt);
               } else {
                 histos.fill(HIST("recAntiL"), centrality, candidateV0.pt, candidateV0.eta);
+                if (fillOnlySignal)
+                  tempAntiLambda->Fill(std::abs(candidateV0.eta), candidateV0.pt);
               }
             }
           }
         }
       }
+    }
+
+    if (fillOnlySignal) {
+      fillHistoN(nAntip, tempTracks[0], subsample, centrality);
+      fillHistoN(nAntid, tempTracks[1], subsample, centrality);
+      fillHistoN(nAntiL, tempAntiLambda, subsample, centrality);
+      fillHistoN(nL, tempLambda, subsample, centrality);
+
+      fillHistoN(nSqAntip, tempTracks[0], tempTracks[0], subsample, centrality);
+      fillHistoN(nSqAntid, tempTracks[1], tempTracks[1], subsample, centrality);
+      fillHistoN(nSqAntiL, tempAntiLambda, tempAntiLambda, subsample, centrality);
+      fillHistoN(nSqL, tempLambda, tempLambda, subsample, centrality);
+
+      fillHistoN(nAntipAntid, tempTracks[0], tempTracks[1], subsample, centrality);
+      fillHistoN(nLantid, tempLambda, tempTracks[1], subsample, centrality);
+      fillHistoN(nLantiL, tempLambda, tempAntiLambda, subsample, centrality);
+      fillHistoN(nAntiLantid, tempAntiLambda, tempTracks[1], subsample, centrality);
+
+      histos.fill(HIST("QA/nRecPerEvAntip"), centrality, tempTracks[0]->GetEntries());
+      histos.fill(HIST("QA/nRecPerEvAntid"), centrality, tempTracks[1]->GetEntries());
+      histos.fill(HIST("QA/nRecPerEvAntiL"), centrality, tempAntiLambda->GetEntries());
+      histos.fill(HIST("QA/nRecPerEvL"), centrality, tempLambda->GetEntries());
     }
   }
 
@@ -690,7 +774,8 @@ struct antidLambdaEbye {
         if (std::abs(genEta) > etaMax) {
           continue;
         }
-
+        if (mcPart.flags() & 0x8)
+          continue;
         auto pdgCode = mcPart.pdgCode();
         if (std::abs(pdgCode) == 3122) {
           if (!mcPart.isPhysicalPrimary())
