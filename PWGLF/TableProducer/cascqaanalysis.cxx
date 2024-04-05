@@ -130,7 +130,7 @@ struct cascqaanalysis {
       registry.add("hNchFT0MPVContr", "hNchFT0MPVContr", {HistType::kTH3F, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
       registry.add("hNchFV0APVContr", "hNchFV0APVContr", {HistType::kTH3F, {nChargedFV0AGenAxis, multNTracksAxis, eventTypeAxis}});
       // Gen. lvl
-      registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{7, 0.0f, 7.0f}}});
+      registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{6, 0.0f, 6.0f}}});
       for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
         registry.get<TH1>(HIST("hNEventsMC"))->GetXaxis()->SetBinLabel(n, hNEventsMCLabels[n - 1]);
       }
