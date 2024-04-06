@@ -83,6 +83,9 @@ struct LumiQaTask {
       if (bc.has_zdc()) {
         float timeZNA = bc.zdc().timeZNA();
         float timeZNC = bc.zdc().timeZNC();
+        if (fabs(timeZNA) < 2) {
+          histos.get<TH1>(HIST("hCounterZNA"))->Fill(srun, 1);
+        }
         if (fabs(timeZNC) < 2) {
           histos.get<TH1>(HIST("hCounterZNC"))->Fill(srun, 1);
         }
