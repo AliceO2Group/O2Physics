@@ -363,7 +363,7 @@ struct skimmerPrimaryElectron {
   // ============================ FUNCTION DEFINITIONS ====================================================
   std::vector<uint64_t> stored_trackIds;
 
-  Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& nabs(o2::aod::track::dcaXY) < dca_xy_max&& nabs(o2::aod::track::dcaZ) < dca_z_max&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its;
+  Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& nabs(o2::aod::track::dcaXY) < dca_xy_max&& nabs(o2::aod::track::dcaZ) < dca_z_max&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
   Filter pidFilter = minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < maxTPCNsigmaEl && ((0.95f < o2::aod::pidtofbeta::beta && o2::aod::pidtofbeta::beta < 1.05f) || o2::aod::pidtofbeta::beta < 0.f);
   using MyFilteredTracks = soa::Filtered<MyTracks>;
 
@@ -572,10 +572,10 @@ struct prefilterPrimaryElectron {
     }
   }
 
-  Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& min_dcatopv < nabs(o2::aod::track::dcaXY);
+  Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& min_dcatopv < nabs(o2::aod::track::dcaXY) && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
   using MyFilteredTracks = soa::Filtered<MyTracks>;
-  Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f && ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
-  Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f && ncheckbit(aod::track::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
+  Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
+  Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
 
   std::map<int, uint8_t> pfb_map; // map track.globalIndex -> prefilter bit
 
