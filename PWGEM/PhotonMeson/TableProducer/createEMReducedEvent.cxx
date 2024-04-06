@@ -42,8 +42,6 @@ struct CreateEMEvent {
   Produces<o2::aod::EMEventsMult> event_mult;
   Produces<o2::aod::EMEventsCent> event_cent;
 
-  Configurable<bool> requireCaloReadout{"requireCaloReadout", true, "Require calorimeters readout when analyzing EMCal/PHOS"};
-
   enum class EMEventType : int {
     kEvent = 0,
     kEvent_Cent = 1,
@@ -82,16 +80,12 @@ struct CreateEMEvent {
       // LOGF(info, "collision-loop | bc.globalIndex() = %d, ncolls_per_bc = %d", bc.globalIndex(), map_ncolls_per_bc[bc.globalIndex()]);
       registry.fill(HIST("hEventCounter"), 1);
 
-      bool is_phoscpv_readout = (!requireCaloReadout || collision.alias_bit(kTVXinPHOS));
-      bool is_emc_readout = (!requireCaloReadout || collision.alias_bit(kTVXinEMC));
-
       if (collision.sel8()) {
         registry.fill(HIST("hEventCounter"), 2);
       }
 
       // uint64_t tag = collision.selection_raw();
-      event(collision.globalIndex(), bc.globalBC(), bc.runNumber(), collision.sel8(), collision.alias_raw(), collision.selection_raw(),
-            is_phoscpv_readout, is_emc_readout, map_ncolls_per_bc[bc.globalIndex()],
+      event(collision.globalIndex(), bc.globalBC(), bc.runNumber(), collision.sel8(), collision.alias_raw(), collision.selection_raw(), map_ncolls_per_bc[bc.globalIndex()],
             collision.posX(), collision.posY(), collision.posZ(),
             collision.numContrib(), collision.collisionTime(), collision.collisionTimeRes());
 
