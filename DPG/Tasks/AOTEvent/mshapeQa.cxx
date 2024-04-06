@@ -77,6 +77,9 @@ struct MshapeQaTask {
       histos.add("hSecondsSumDcaZ", "", kTH1F, {axisSeconds});
       histos.add("hSecondsTracks", "", kTH1F, {axisSeconds});
       histos.add("hSecondsTracksMshape", "", kTH1F, {axisSeconds});
+      histos.add("hSecondsAsideITSTPCcontrib", "", kTH1F, {axisSeconds});
+      histos.add("hSecondsCsideITSTPCcontrib", "", kTH1F, {axisSeconds});
+      histos.add("hSecondsCollisions", "", kTH1F, {axisSeconds});
     }
 
     int64_t ts = col.bc_as<BCsRun3>().timestamp();
@@ -86,6 +89,8 @@ struct MshapeQaTask {
 
     double secFromSOR = ts / 1000. - minSec;
 
+    int nAsideITSTPCContrib = 0;
+    int nCsideITSTPCContrib = 0;
     for (const auto& track : tracks) {
       if (!track.hasTPC() || !track.hasITS()) {
         continue;
@@ -119,7 +124,17 @@ struct MshapeQaTask {
       if (isMshape) {
         histos.fill(HIST("hSecondsTracksMshape"), secFromSOR);
       }
+      if (track.isPVContributor()) {
+        if (track.tgl() > 0.) {
+          nAsideITSTPCContrib++;
+        } else {
+          nCsideITSTPCContrib++;
+        }
+      }
     }
+    histos.fill(HIST("hSecondsCollisions"), secFromSOR);
+    histos.fill(HIST("hSecondsAsideITSTPCcontrib"), secFromSOR, nAsideITSTPCContrib);
+    histos.fill(HIST("hSecondsCsideITSTPCcontrib"), secFromSOR, nCsideITSTPCContrib);
   }
 };
 
