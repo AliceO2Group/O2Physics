@@ -65,11 +65,17 @@ void FillHistClass(THashList* list, const char* subGroup, T const& obj, const fl
     if (obj.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("No ITS ROF border", 1.f);
     }
-    if (obj.sel8()) {
-      reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("FT0AND", 1.f);
+    if (obj.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("No Same Bunch Pileup", 1.f);
     }
-    if (obj.numContrib() > 0.5) {
-      reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("N_{contrib}^{PV} > 0", 1.f);
+    if (obj.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("Is Vertex ITSTPC", 1.f);
+    }
+    if (obj.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("Is Good Zvtx FT0vsPV", 1.f);
+    }
+    if (obj.sel8()) {
+      reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("sel8", 1.f);
     }
     if (abs(obj.posZ()) < 10.0) {
       reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->Fill("|Z_{vtx}| < 10 cm", 1.f);
