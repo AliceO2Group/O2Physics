@@ -685,14 +685,14 @@ struct antidLambdaEbye {
           auto mcTrack = mcLab.template mcParticle_as<aod::McParticles>();
           if (std::abs(mcTrack.pdgCode()) != partPdg[iP])
             continue;
-          if (mcTrack.flags() & 0x8)
+          if ((mcTrack.flags() & 0x8) || (mcTrack.flags() & 0x2) || (mcTrack.flags() & 0x1))
             continue;
           if (!mcTrack.isPhysicalPrimary())
             continue;
           if (mcTrack.pdgCode() > 0) {
-            recTracks[iP]->Fill(centrality, candidateTrack.pt, candidateTrack.eta);
+            recTracks[iP]->Fill(centrality, candidateTrack.pt, std::abs(candidateTrack.eta));
           } else {
-            recAntiTracks[iP]->Fill(centrality, candidateTrack.pt, candidateTrack.eta);
+            recAntiTracks[iP]->Fill(centrality, candidateTrack.pt, std::abs(candidateTrack.eta));
             if (fillOnlySignal)
               tempTracks[iP]->Fill(std::abs(candidateTrack.eta), candidateTrack.pt);
           }
@@ -717,14 +717,14 @@ struct antidLambdaEbye {
                 continue;
               if (!posMother.isPhysicalPrimary())
                 continue;
-              if (posMother.flags() & 0x8)
+              if ((posMother.flags() & 0x8) || (posMother.flags() & 0x2) || (posMother.flags() & 0x1))
                 continue;
               if (posMother.pdgCode() > 0) {
-                histos.fill(HIST("recL"), centrality, candidateV0.pt, candidateV0.eta);
+                histos.fill(HIST("recL"), centrality, candidateV0.pt, std::abs(candidateV0.eta));
                 if (fillOnlySignal)
                   tempLambda->Fill(std::abs(candidateV0.eta), candidateV0.pt);
               } else {
-                histos.fill(HIST("recAntiL"), centrality, candidateV0.pt, candidateV0.eta);
+                histos.fill(HIST("recAntiL"), centrality, candidateV0.pt, std::abs(candidateV0.eta));
                 if (fillOnlySignal)
                   tempAntiLambda->Fill(std::abs(candidateV0.eta), candidateV0.pt);
               }
@@ -778,8 +778,8 @@ struct antidLambdaEbye {
         if (std::abs(genEta) > etaMax) {
           continue;
         }
-        if (mcPart.flags() & 0x8)
-          continue;
+        if ((mcPart.flags() & 0x8) || (mcPart.flags() & 0x2) || (mcPart.flags() & 0x1))
+         continue;
         auto pdgCode = mcPart.pdgCode();
         if (std::abs(pdgCode) == 3122) {
           if (!mcPart.isPhysicalPrimary())
@@ -945,11 +945,15 @@ struct antidLambdaEbye {
   }
   PROCESS_SWITCH(antidLambdaEbye, processMcRun3, "process MC (Run 3)", false);
 
-  void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentRun2V0Ms> const& collisions, aod::McCollisions const& mcCollisions, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab)
+  void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentRun2V0Ms> const& collisions, aod::McCollisions const& mcCollisions, TracksFull const& tracks, soa::Filtered<aod::V0Datas> const& V0s, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
   {
     std::vector<std::pair<bool, float>> goodCollisions(mcCollisions.size(), std::make_pair(false, -999.));
     for (auto& collision : collisions) {
       if (std::abs(collision.posZ()) > zVtxMax)
+        continue;
+
+      auto bc = collision.bc_as<BCsWithRun2Info>();
+      if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
         continue;
 
       auto centrality = collision.centRun2V0M();
