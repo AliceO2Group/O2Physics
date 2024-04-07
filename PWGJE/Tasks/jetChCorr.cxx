@@ -43,7 +43,9 @@
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 
-#include "PWGLF/DataModel/LFResonanceTables.h"
+// #include "PWGLF/DataModel/LFResonanceTables.h"
+
+#include "Framework/runDataProcessing.h"
 
 using namespace std;
 using namespace o2;
@@ -61,13 +63,11 @@ int ch_nl = 0;       // charge next to leading
 
 int ch_mult = 0; // charge next to leading
 
-#include "Framework/runDataProcessing.h"
-
 struct JetChCorr {
-  Produces<aod::CJetSSs> jetSubstructureDataTable;
-  Produces<aod::CMCDJetSSs> jetSubstructureMCDTable;
-  Produces<aod::CMCPJetSSs> jetSubstructureMCPTable;
-  Produces<aod::CEWSJetSSs> jetSubstructureDataSubTable;
+  // Produces<aod::CJetSSs> jetSubstructureDataTable;
+  // Produces<aod::CMCDJetSSs> jetSubstructureMCDTable;
+  // Produces<aod::CMCPJetSSs> jetSubstructureMCPTable;
+  // Produces<aod::CEWSJetSSs> jetSubstructureDataSubTable;
 
   Configurable<float> zCut{"zCut", 0.05, "soft drop z cut"};
   Configurable<float> beta{"beta", 0.1, "soft drop beta"};
@@ -163,8 +163,10 @@ struct JetChCorr {
   }
 
   // template <typename JetTable, typename JetTableMCP, typename SubstructureTable>
-  template <bool isMCP, bool isSubtracted, typename T, typename U>
-  void jetReclustering(T const& jet, U& outputTable)
+  //  template <bool isMCP, bool isSubtracted, typename T, typename U>
+  //  void jetReclustering(T const& jet, U& outputTable)
+  template <bool isMCP, bool isSubtracted, typename T>
+  void jetReclustering(T const& jet)
   {
     jetReclustered.clear();
     fastjet::ClusterSequenceArea clusterSeq(jetReclusterer.findJets(jetConstituents, jetReclustered));
@@ -191,19 +193,20 @@ struct JetChCorr {
       vector<fastjet::PseudoJet> constituents1 = parentSubJet1.constituents();
       vector<fastjet::PseudoJet> constituents2 = parentSubJet2.constituents();
       // cout<<"in subJET1 ********************************************* "<<endl;
-      int found1 = 0;
-      int found2 = 0;
+      bool found1 = false;
+      bool found2 = false;
+
       for (unsigned int j = 0; j < constituents1.size(); j++) {
         // cout<<constituents1[j].user_index()-1<<", ";
         if ((n_trackL == (constituents1[j].user_index() - 1)) || (trackL == (constituents1[j].user_index() - 1)))
-          found1++;
+          found1 = true;
       }
       // cout<<endl;
       // cout<<"in subJET2 ********************************************* "<<endl;
       for (unsigned int j = 0; j < constituents2.size(); j++) {
         // cout<<constituents2[j].user_index()-1<<", ";
         if ((n_trackL == constituents2[j].user_index() - 1) || (trackL == constituents2[j].user_index() - 1))
-          found2++;
+          found2 = true;
       }
       // cout<<endl;
 
@@ -215,7 +218,7 @@ struct JetChCorr {
       thetaVec.push_back(theta);
 
       if (z >= zCut * TMath::Power(theta / (jet.r() / 100.f), beta)) {
-        if (found1 > 0 && found2 > 0) { // found leading and next-to-leading in seperate prongs
+        if (found1 == true && found2 == true) { // found leading and next-to-leading in seperate prongs
           if (!softDropped) {
             zg = z;
             rg = theta;
@@ -231,8 +234,6 @@ struct JetChCorr {
               registry.fill(HIST("h2_jet_pt_jet_zg_eventwiseconstituentsubtracted"), jet.pt(), zg);
               registry.fill(HIST("h2_jet_pt_jet_rg_eventwiseconstituentsubtracted"), jet.pt(), rg);
             }
-            softDropped = true;
-
             softDropped = true;
 
             v1.SetXYZ(parentSubJet1.px(), parentSubJet1.py(), parentSubJet1.pz());
@@ -313,6 +314,7 @@ struct JetChCorr {
               }
             }
           }
+          break;
         }
         nsd++;
       }
@@ -330,15 +332,24 @@ struct JetChCorr {
     // outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec);
   }
 
-  template <bool isSubtracted, typename T, typename U, typename V>
-  void analyseCharged(T const& jet, U const& tracks, V& outputTable)
+  //  template <bool isSubtracted, typename T, typename U, typename V>
+  //  void analyseCharged(T const& jet, U const& tracks, V& outputTable)
+  template <bool isSubtracted, typename T, typename U>
+  void analyseCharged(T const& jet, U const& tracks)
   {
     jetConstituents.clear();
 
-    // int leadpt =0;
-    // int n_leadpt =0;
     int nn = 0;
-    ch_mult = 0; // jet.size();
+    int iord[50];
+    float ptc[50];
+    for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()) {
+      TVector3 p_leading(jetConstituent.px(), jetConstituent.py(), jetConstituent.pz());
+      ptc[nn] = p_leading.Perp();
+      nn++;
+    }
+    TMath::Sort(nn, ptc, iord);
+
+    nn = 0;
     ch_mult = jet.tracksIds().size();
     // for (auto& jetConstituent : jet.template tracks_as<U>()) {
     for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()) {
@@ -349,7 +360,7 @@ struct JetChCorr {
 
       TVector3 p_leading(jetConstituent.px(), jetConstituent.py(), jetConstituent.pz());
 
-      if (nn == 0) {
+      if (iord[nn] == 0) {
         // leadpt =  p_leading.Perp();
         trackL = jetConstituent.globalIndex();
         // ch_l = trackSel.sign();
@@ -357,7 +368,7 @@ struct JetChCorr {
         v1.SetXYZ(jetConstituent.pt(), jetConstituent.py(), jetConstituent.pz());
       }
 
-      if (nn == 1) {
+      if (iord[nn] == 1) {
         // n_leadpt =  p_leading.Perp();
         n_trackL = jetConstituent.globalIndex();
         ch_nl = jetConstituent.sign(); // signed1Pt();//pt();
@@ -389,7 +400,7 @@ struct JetChCorr {
       nn++;
     }
     if (nn > 1)
-      jetReclustering<false, isSubtracted>(jet, outputTable);
+      jetReclustering<false, isSubtracted>(jet);
   }
 
   void processDummy(JetTracks const& tracks)
@@ -401,21 +412,24 @@ struct JetChCorr {
   // void processChargedJetsData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet,  soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks)
   {
     //       cout<<"I am in CHarged Jet Data"<<endl;
-    analyseCharged<false>(jet, tracks, jetSubstructureDataTable);
+    //    analyseCharged<false>(jet, tracks, jetSubstructureDataTable);
+    analyseCharged<false>(jet, tracks);
   }
   PROCESS_SWITCH(JetChCorr, processChargedJetsData, "charged jet substructure", false);
 
   void processChargedJetsEventWiseSubData(soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents>::iterator const& jet,
                                           JetTracksSub const& tracks)
   {
-    analyseCharged<true>(jet, tracks, jetSubstructureDataSubTable);
+    //    analyseCharged<true>(jet, tracks, jetSubstructureDataSubTable);
+    analyseCharged<true>(jet, tracks);
   }
   PROCESS_SWITCH(JetChCorr, processChargedJetsEventWiseSubData, "eventwise-constituent subtracted charged jet substructure", false);
 
   void processChargedJetsMCD(typename soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>::iterator const& jet,
                              JetTracks const& tracks)
   {
-    analyseCharged<false>(jet, tracks, jetSubstructureMCDTable);
+    // analyseCharged<false>(jet, tracks, jetSubstructureMCDTable);
+    analyseCharged<false>(jet, tracks);
   }
   PROCESS_SWITCH(JetChCorr, processChargedJetsMCD, "charged jet substructure", false);
 
@@ -426,7 +440,8 @@ struct JetChCorr {
     for (auto& jetConstituent : jet.template tracks_as<JetParticles>()) {
       fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdg->Mass(jetConstituent.pdgCode()));
     }
-    jetReclustering<true, false>(jet, jetSubstructureMCPTable);
+    //    jetReclustering<true, false>(jet, jetSubstructureMCPTable);
+    jetReclustering<true, false>(jet);
   }
   PROCESS_SWITCH(JetChCorr, processChargedJetsMCP, "charged jet substructure on MC particle level", false);
 };
