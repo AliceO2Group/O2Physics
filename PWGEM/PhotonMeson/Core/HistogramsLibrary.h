@@ -34,7 +34,6 @@
 #include <TIterator.h>
 #include <TClass.h>
 #include "Common/CCDB/EventSelectionParams.h"
-#include "Common/CCDB/TriggerAliases.h"
 
 enum class EMHistType : int {
   kEvent = 0,

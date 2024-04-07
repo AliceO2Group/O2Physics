@@ -40,8 +40,6 @@ DECLARE_SOA_COLUMN(NeeLSmm, neelsmm, int);
 DECLARE_SOA_COLUMN(NmumuULS, nmumuuls, int);
 DECLARE_SOA_COLUMN(NmumuLSpp, nmumulspp, int);
 DECLARE_SOA_COLUMN(NmumuLSmm, nmumulsmm, int);
-DECLARE_SOA_COLUMN(IsPHOSCPVReadout, isPHOSCPVreadout, bool);
-DECLARE_SOA_COLUMN(IsEMCReadout, isEMCreadout, bool);
 DECLARE_SOA_COLUMN(NcollsPerBC, ncollsPerBC, int);
 DECLARE_SOA_COLUMN(Bz, bz, float);                       //! kG
 DECLARE_SOA_COLUMN(Q2xTPCPosEta, q2xtpcposeta, float);   //! Qx for 2nd harmonics in TPC positive eta region
@@ -70,8 +68,7 @@ DECLARE_SOA_COLUMN(Q3xFV0A, q3xfv0a, float);             //! Qx for 3rd harmonic
 DECLARE_SOA_COLUMN(Q3yFV0A, q3yfv0a, float);             //! Qy for 3rd harmonics in FV0A (i.e. positive eta)
 } // namespace emevent
 DECLARE_SOA_TABLE(EMEvents, "AOD", "EMEVENT", //!   Main event information table
-                  o2::soa::Index<>, emevent::CollisionId, bc::GlobalBC, bc::RunNumber, evsel::Sel8, evsel::Alias, evsel::Selection,
-                  emevent::IsPHOSCPVReadout, emevent::IsEMCReadout, emevent::NcollsPerBC,
+                  o2::soa::Index<>, emevent::CollisionId, bc::GlobalBC, bc::RunNumber, evsel::Sel8, evsel::Alias, evsel::Selection, emevent::NcollsPerBC,
                   collision::PosX, collision::PosY, collision::PosZ,
                   collision::NumContrib, collision::CollisionTime, collision::CollisionTimeRes);
 using EMEvent = EMEvents::iterator;
