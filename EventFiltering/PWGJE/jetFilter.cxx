@@ -50,11 +50,10 @@ struct jetFilter {
          };
 
   enum { kBinAllEvents=0,
-	 kBinEventsVz=1,
-	 kBinJetChLowPt = 2,
-         kBinJetChHighPt = 3,
-         kBinTrackPt = 4,
-         kBins = 5 
+	 kBinJetChLowPt = 1,
+         kBinJetChHighPt = 2,
+         kBinTrackPt = 3,
+         kBins = 4 
          };
 
 
@@ -161,10 +160,9 @@ struct jetFilter {
                 {{200, 0., +20., "#rho (GeV/#it{c})"}});
 
     hProcessedEvents->GetXaxis()->SetBinLabel(kBinAllEvents+1, "Processed events");
-    hProcessedEvents->GetXaxis()->SetBinLabel(kBinEventsVz+1, "Processed events with |vz| < 10 cm");
-    hProcessedEvents->GetXaxis()->SetBinLabel(kBinJetChLowPt+1, "JetChLowPt");
-    hProcessedEvents->GetXaxis()->SetBinLabel(kBinJetChHighPt+1, "JetChHighPt");
-    hProcessedEvents->GetXaxis()->SetBinLabel(kBinTrackPt+1, "TrackPt");
+    hProcessedEvents->GetXaxis()->SetBinLabel(kBinJetChLowPt+1, o2::aod::filtering::JetChLowPt::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(kBinJetChHighPt+1, o2::aod::filtering::JetChLowPt::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(kBinTrackPt+1, o2::aod::filtering::TrackHighPt::columnLabel());
   }
 
 
@@ -180,11 +178,10 @@ struct jetFilter {
     }
 
     spectra.fill(HIST("fCollZpos"), collision.posZ());
-    hProcessedEvents->Fill(((float) kBinAllEvents) + 1e-5); // all minimum bias events
+    hProcessedEvents->Fill(static_cast<float>(kBinAllEvents) + 0.1f); // all minimum bias events
 
     // FILL SPECTRA OF INCLUSIVE JETS IN FIDUCIAL VOLUME
     if (TMath::Abs(collision.posZ()) < cfgZvtx) {
-      hProcessedEvents->Fill(((float) kBinEventsVz) + 1e-5); // minimum bias events |z_vtx|<10 cm
       if constexpr (withRho) {
         spectra.fill(HIST("hRho"), collision.rho());
       }
@@ -248,9 +245,9 @@ struct jetFilter {
       spectra.fill(HIST("ptetaTrackSelected_trackpttrigger"),leadingTrackPt,leadingTrackEta);
     }
 
-    if(keepEvent[kJetChLowPt]) hProcessedEvents->Fill(((float) kBinJetChLowPt) + 1e-5);
-    if(keepEvent[kJetChHighPt]) hProcessedEvents->Fill(((float) kBinJetChHighPt) + 1e-5);
-    if(keepEvent[kTrackPt]) hProcessedEvents->Fill(((float) kBinTrackPt) + 1e-5);
+    if(keepEvent[kJetChLowPt]) hProcessedEvents->Fill(static_cast<float>(kBinJetChLowPt) + 0.1f);
+    if(keepEvent[kJetChHighPt]) hProcessedEvents->Fill(static_cast<float>(kBinJetChHighPt) + 0.1f);
+    if(keepEvent[kTrackPt]) hProcessedEvents->Fill(static_cast<float>(kBinTrackPt) + 0.1f);
 
     tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt], keepEvent[kTrackPt]);
   }
