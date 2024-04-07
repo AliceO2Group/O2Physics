@@ -779,7 +779,7 @@ struct antidLambdaEbye {
           continue;
         }
         if ((mcPart.flags() & 0x8) || (mcPart.flags() & 0x2) || (mcPart.flags() & 0x1))
-         continue;
+          continue;
         auto pdgCode = mcPart.pdgCode();
         if (std::abs(pdgCode) == 3122) {
           if (!mcPart.isPhysicalPrimary())
