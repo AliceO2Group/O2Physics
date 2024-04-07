@@ -41,21 +41,19 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-
 struct jetFilter {
   enum { kJetChLowPt = 0,
          kJetChHighPt = 1,
          kTrackPt = 2,
          kTriggerObjects = 3
-         };
+  };
 
-  enum { kBinAllEvents=0,
-	 kBinJetChLowPt = 1,
+  enum { kBinAllEvents = 0,
+         kBinJetChLowPt = 1,
          kBinJetChHighPt = 2,
          kBinTrackPt = 3,
-         kBins = 4 
-         };
-
+         kBins = 4
+  };
 
   Produces<aod::JetFilters> tags;
 
@@ -125,8 +123,6 @@ struct jetFilter {
                 {{150, 0., +150., "track #it{p}_{T} (GeV/#it{c})"},
                  {40, -1.0, 1.0, "#eta"}});
 
-
-
     AxisSpec jetRadiiAxis = {cfgJetRadii, "AKT jet resolution parameters"};
     const AxisSpec axisTrackPt{200, 0., +200., "#it{p}_{T,track} (GeV/#it{c})"};
     const AxisSpec axisJetPt{1020, -20., +1000., "#it{p}_{T,jet} (GeV/#it{c})"};
@@ -159,12 +155,11 @@ struct jetFilter {
     spectra.add("hRho", "Underlying event density #rho", HistType::kTH1F,
                 {{200, 0., +20., "#rho (GeV/#it{c})"}});
 
-    hProcessedEvents->GetXaxis()->SetBinLabel(kBinAllEvents+1, "Processed events");
-    hProcessedEvents->GetXaxis()->SetBinLabel(kBinJetChLowPt+1, o2::aod::filtering::JetChLowPt::columnLabel());
-    hProcessedEvents->GetXaxis()->SetBinLabel(kBinJetChHighPt+1, o2::aod::filtering::JetChLowPt::columnLabel());
-    hProcessedEvents->GetXaxis()->SetBinLabel(kBinTrackPt+1, o2::aod::filtering::TrackHighPt::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(kBinAllEvents + 1, "Processed events");
+    hProcessedEvents->GetXaxis()->SetBinLabel(kBinJetChLowPt + 1, o2::aod::filtering::JetChLowPt::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(kBinJetChHighPt + 1, o2::aod::filtering::JetChLowPt::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(kBinTrackPt + 1, o2::aod::filtering::TrackHighPt::columnLabel());
   }
-
 
   template <bool withRho, typename T, typename U, typename D>
   void doTriggering(T const& collision, U const& jets, D const& tracks)
@@ -223,42 +218,45 @@ struct jetFilter {
       break; // only looks at the highest pT jet in the event
     }
 
-    float leadingTrackPt  = -1.;
+    float leadingTrackPt = -1.;
     float leadingTrackPhi = -100.;
     float leadingTrackEta = -100.;
-    for (const auto& track : tracks) { //search for the leading track
+    for (const auto& track : tracks) { // search for the leading track
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
       }
 
       spectra.fill(HIST("hPhiVsPtTracksInclusive"), track.pt(), track.phi());
       spectra.fill(HIST("hEtaVsPtTracksInclusive"), track.pt(), track.eta());
-      if(track.pt() > leadingTrackPt){
-	leadingTrackPt = track.pt();
+      if (track.pt() > leadingTrackPt) {
+        leadingTrackPt = track.pt();
         leadingTrackPhi = track.phi();
         leadingTrackEta = track.eta();
       }
     }
-    if(leadingTrackPt > trackPtTriggerThreshold){
+    if (leadingTrackPt > trackPtTriggerThreshold) {
       keepEvent[kTrackPt] = true;
-      spectra.fill(HIST("ptphiTrackSelected_trackpttrigger"),leadingTrackPt,leadingTrackPhi);
-      spectra.fill(HIST("ptetaTrackSelected_trackpttrigger"),leadingTrackPt,leadingTrackEta);
+      spectra.fill(HIST("ptphiTrackSelected_trackpttrigger"), leadingTrackPt, leadingTrackPhi);
+      spectra.fill(HIST("ptetaTrackSelected_trackpttrigger"), leadingTrackPt, leadingTrackEta);
     }
 
-    if(keepEvent[kJetChLowPt]) hProcessedEvents->Fill(static_cast<float>(kBinJetChLowPt) + 0.1f);
-    if(keepEvent[kJetChHighPt]) hProcessedEvents->Fill(static_cast<float>(kBinJetChHighPt) + 0.1f);
-    if(keepEvent[kTrackPt]) hProcessedEvents->Fill(static_cast<float>(kBinTrackPt) + 0.1f);
+    if (keepEvent[kJetChLowPt])
+      hProcessedEvents->Fill(static_cast<float>(kBinJetChLowPt) + 0.1f);
+    if (keepEvent[kJetChHighPt])
+      hProcessedEvents->Fill(static_cast<float>(kBinJetChHighPt) + 0.1f);
+    if (keepEvent[kTrackPt])
+      hProcessedEvents->Fill(static_cast<float>(kBinTrackPt) + 0.1f);
 
     tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt], keepEvent[kTrackPt]);
   }
 
-  void processWithoutRho(soa::Join<JetCollisions, aod::EvSels>::iterator const& collision, o2::aod::ChargedJets const& jets, soa::Filtered<JetTracks> const& tracks) 
+  void processWithoutRho(soa::Join<JetCollisions, aod::EvSels>::iterator const& collision, o2::aod::ChargedJets const& jets, soa::Filtered<JetTracks> const& tracks)
   {
     doTriggering<false>(collision, jets, tracks);
   }
   PROCESS_SWITCH(jetFilter, processWithoutRho, "Do charged jet triggering without background estimation for filling histograms", true);
 
-  void processWithRho(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::EvSels>::iterator const& collision, o2::aod::ChargedJets const& jets, soa::Filtered<JetTracks> const& tracks) 
+  void processWithRho(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::EvSels>::iterator const& collision, o2::aod::ChargedJets const& jets, soa::Filtered<JetTracks> const& tracks)
   {
     doTriggering<true>(collision, jets, tracks);
   }
