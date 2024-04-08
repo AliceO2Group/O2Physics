@@ -281,7 +281,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
       // ML selections
       if (applyMl) {
-        std::vector<float> inputFeatures{hfCandXic.cpa()};
+        std::vector<float> inputFeatures{};
 
         bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandXic, outputMl);
         hfMlXicToXiPiPiCandidate(outputMl);
