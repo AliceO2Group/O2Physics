@@ -85,6 +85,22 @@ int IsXFromY(T const& mctrack, TMCs const& mcTracks, const int pdgX, const int p
   return -1;
 }
 //_______________________________________________________________________
+// Go up the decay chain of a mcparticle looking for a mother with the given pdg codes, if found return this mothers daughter
+// E.g. Find the gamma that was created in a pi0 or eta decay
+template <typename T, typename TMCs, typename TTargetPDGs>
+int FindMotherInChain(T const& mcparticle, TMCs const& mcparticles, TTargetPDGs const& motherpdgs, const int Depth = 50)
+{
+  if (!mcparticle.has_mothers() || Depth < 1)
+    return -1;
+
+  int motherid = mcparticle.mothersIds()[0];
+  auto mother = mcparticles.iteratorAt(motherid);
+  if (std::find(motherpdgs.begin(), motherpdgs.end(), mother.pdgCode()) != motherpdgs.end())
+    return mcparticle.globalIndex(); // The mother has the required pdg code, so return its daughters global mc particle code.
+  else
+    return FindMotherInChain(mother, mcparticles, motherpdgs, Depth - 1);
+}
+//_______________________________________________________________________
 template <typename T, typename TMCs>
 int IsEleFromPC(T const& mctrack, TMCs const& mcTracks)
 {

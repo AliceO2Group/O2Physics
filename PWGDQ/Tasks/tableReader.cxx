@@ -638,6 +638,10 @@ struct AnalysisEventMixing {
         if constexpr (eventHasQvector) {
           VarManager::FillPairVn<TPairType>(track1, track2);
         }
+        constexpr bool eventHasQvectorCentr = (VarManager::ObjTypes::CollisionQvect > 0);
+        if constexpr (eventHasQvectorCentr) {
+          VarManager::FillPairVn<TPairType>(track1, track2);
+        }
 
         for (unsigned int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (uint32_t(1) << icut)) {
@@ -1033,6 +1037,7 @@ struct AnalysisSameEventPairing {
         continue;
       }
       constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
+      constexpr bool eventHasQvectorCentr = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
 
       // TODO: FillPair functions need to provide a template argument to discriminate between cases when cov matrix is available or not
       VarManager::FillPair<TPairType, TTrackFillMap>(t1, t2);
@@ -1041,6 +1046,9 @@ struct AnalysisSameEventPairing {
           VarManager::FillPairVertexing<TPairType, TEventFillMap, TTrackFillMap>(event, t1, t2, fPropToPCA);
         }
         if constexpr (eventHasQvector) {
+          VarManager::FillPairVn<TPairType>(t1, t2);
+        }
+        if constexpr (eventHasQvectorCentr) {
           VarManager::FillPairVn<TPairType>(t1, t2);
         }
       }

@@ -1114,6 +1114,16 @@ struct PIDSpeciesSelection {
     }
   }
 
+  template <typename ParticleObject>
+  int8_t whichTruthPrimarySpecies(ParticleObject part)
+  {
+    if (part.isPhysicalPrimary()) {
+      return whichTruthSpecies(part);
+    } else {
+      return -127;
+    }
+  }
+
   std::vector<const o2::analysis::TrackSelectionPIDCfg*> config;        ///< the PID selection configuration of the species to include in the analysis
   std::vector<uint8_t> species;                                         ///< the species index of the species to include in the analysis
   std::vector<const o2::analysis::TrackSelectionPIDCfg*> configexclude; ///< the PID selection configuration of the species to exclude from the analysis

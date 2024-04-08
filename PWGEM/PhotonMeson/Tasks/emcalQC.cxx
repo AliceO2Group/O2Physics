@@ -47,6 +47,7 @@ using MyCollision = MyCollisions::iterator;
 
 struct emcalQC {
 
+  Configurable<bool> requireCaloReadout{"requireCaloReadout", true, "Require calorimeters readout when analyzing EMCal/PHOS"};
   Configurable<std::string> fConfigEMCCuts{"cfgEMCCuts", "custom,standard,nocut", "Comma separated list of EMCal photon cuts"};
   Configurable<float> EMC_minTime{"EMC_minTime", -20., "Minimum cluster time for EMCal time cut"};
   Configurable<float> EMC_maxTime{"EMC_maxTime", +25., "Maximum cluster time for EMCal time cut"};
@@ -164,7 +165,7 @@ struct emcalQC {
         continue;
       }
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hNEvents"))->Fill(2.0);
-      if (collision.isEMCreadout() == 0) {
+      if (collision.alias_bit(triggerAliases::kTVXinEMC) == 0 && requireCaloReadout) {
         continue;
       }
       reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hNEvents"))->Fill(3.0);

@@ -13,7 +13,7 @@
 
 o2physics_add_dpl_workflow(track-index-skim-creator
                     SOURCES trackIndexSkimCreator.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing O2::DCAFitter O2Physics::AnalysisCCDB
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsVertexing O2::DCAFitter O2Physics::AnalysisCCDB O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 # Helpers

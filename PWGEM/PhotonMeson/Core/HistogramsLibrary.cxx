@@ -39,10 +39,12 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
     reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(1, "all");
     reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(2, "No TF border");
     reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(3, "No ITS ROF border");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(4, "FT0AND");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(5, "N_{contrib}^{PV} > 0");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(6, "|Z_{vtx}| < 10 cm");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(7, "accepted");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(4, "No Same Bunch Pileup");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(5, "Is Vertex ITSTPC");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(6, "Is Good Zvtx FT0vsPV");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(7, "sel8");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(8, "|Z_{vtx}| < 10 cm");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(9, "accepted");
 
     list->Add(new TH1F("hZvtx", "vertex z; Z_{vtx} (cm)", 100, -50, +50));
     list->Add(new TH1F("hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", 6001, -0.5, 6000.5));
@@ -252,9 +254,9 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
         list->Add(new TH2F("hMvsPhiV_Eta", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", 72, 0, M_PI, 100, 0.0f, 0.1f));    // ee from eta dalitz decay
         list->Add(new TH2F("hMvsPhiV_Photon", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", 72, 0, M_PI, 100, 0.0f, 0.1f)); // ee from photon conversion
 
-        list->Add(new TH2F("hMvsOPA_Pi0", "m_{ee} vs. opening angle;opening angle (rad.);m_{ee} (GeV/c^{2})", 200, 0, 0.2, 100, 0.0f, 0.1f));    // ee from pi0 dalitz decay
-        list->Add(new TH2F("hMvsOPA_Eta", "m_{ee} vs. opening angle;opening angle (rad.);m_{ee} (GeV/c^{2})", 200, 0, 0.2, 100, 0.0f, 0.1f));    // ee from eta dalitz decay
-        list->Add(new TH2F("hMvsOPA_Photon", "m_{ee} vs. opening angle;opening angle (rad.);m_{ee} (GeV/c^{2})", 200, 0, 0.2, 100, 0.0f, 0.1f)); // ee from photon conversion
+        list->Add(new TH2F("hMvsOPA_Pi0", "m_{ee} vs. opening angle;opening angle (rad.);m_{ee} (GeV/c^{2})", 500, 0, 0.5, 100, 0.0f, 0.1f));    // ee from pi0 dalitz decay
+        list->Add(new TH2F("hMvsOPA_Eta", "m_{ee} vs. opening angle;opening angle (rad.);m_{ee} (GeV/c^{2})", 500, 0, 0.5, 100, 0.0f, 0.1f));    // ee from eta dalitz decay
+        list->Add(new TH2F("hMvsOPA_Photon", "m_{ee} vs. opening angle;opening angle (rad.);m_{ee} (GeV/c^{2})", 500, 0, 0.5, 100, 0.0f, 0.1f)); // ee from photon conversion
       }                                                                                                                                          // end of mc
     } else if (TString(histClass).Contains("MuMu")) {
       const int ndim = 4; // m, pt, dca, phiv
