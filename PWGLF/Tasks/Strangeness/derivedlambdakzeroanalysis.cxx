@@ -720,8 +720,7 @@ struct derivedlambdakzeroanalysis {
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS : x  x  x  x
       bitMap = 1;
-    }
-    else {
+    } else {
       // ITS : other configurations
       bitMap = 0;
     }
