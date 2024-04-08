@@ -388,10 +388,8 @@ struct lambdakzeroBuilder {
 
   void init(InitContext& context)
   {
-    LOGF(info, "Initializing lambdakzerobuilder...");
     prng.SetSeed(0);
     resetHistos();
-    LOGF(info, "Creating histo registry basics...");
     auto h = registry.add<TH1>("hV0Criteria", "hV0Criteria", kTH1D, {{10, -0.5f, 9.5f}});
     h->GetXaxis()->SetBinLabel(1, "All sel");
     h->GetXaxis()->SetBinLabel(2, "TPC requirement");
@@ -403,12 +401,10 @@ struct lambdakzeroBuilder {
     h->GetXaxis()->SetBinLabel(8, "Count: Standard V0");
     h->GetXaxis()->SetBinLabel(9, "Count: V0 exc. for casc");
 
-    LOGF(info, "Initializing randomSeed...");
     randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
     // Optionally, add extra QA histograms to processing chain
     if (d_doQA) {
-      LOGF(info, "Initializing QA histos...");
       // Basic histograms containing invariant masses of all built candidates
       const AxisSpec axisVsPtCoarse{static_cast<int32_t>(dQANBinsPtCoarse), 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
       const AxisSpec axisGammaMass{static_cast<int32_t>(dQANBinsMass), 0.000f, 0.400f, "Inv. Mass (GeV/c^{2})"};
@@ -467,13 +463,11 @@ struct lambdakzeroBuilder {
     maxSnp = 0.85f;  // could be changed later
     maxStep = 2.00f; // could be changed later
 
-    LOGF(info, "Initializing ccdb...");
     ccdb->setURL(ccdbConfigurations.ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    LOGF(info, "Initializing material correction...");
     if (useMatCorrType == 1) {
       LOGF(info, "TGeo correction requested, loading geometry");
       if (!o2::base::GeometryManager::isGeometryLoaded()) {
@@ -494,7 +488,6 @@ struct lambdakzeroBuilder {
     }
 
     if (d_UseAutodetectMode) {
-      LOGF(info, "Doing autodetect...");
       double loosest_v0cospa = 100;
       float loosest_dcav0dau = -100;
       float loosest_dcapostopv = 100;
@@ -580,7 +573,7 @@ struct lambdakzeroBuilder {
       dcav0dau.value = loosest_dcav0dau;
       v0radius.value = loosest_radius;
     }
-    LOGF(info, "Printing message...");
+
     //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
     LOGF(info, " -+*> process call configuration:");
     if (doprocessRun2 == true) {
@@ -598,7 +591,6 @@ struct lambdakzeroBuilder {
     //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
     // initialize O2 2-prong fitter (only once)
-    LOGF(info, "DCAFitter config...");
     fitter.setPropagateToPCA(true);
     fitter.setMaxR(200.);
     fitter.setMinParamChange(1e-3);
@@ -610,7 +602,6 @@ struct lambdakzeroBuilder {
     fitter.setWeightedFinalPCA(d_UseWeightedPCA);
 
     // Material correction in the DCA fitter
-    LOGF(info, "DCAFitter matCorr setup...");
     o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
     if (useMatCorrType == 1)
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
