@@ -12,6 +12,8 @@
 #ifndef PWGUD_CORE_DGSELECTOR_H_
 #define PWGUD_CORE_DGSELECTOR_H_
 
+#include <vector>
+
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "Framework/Logger.h"
