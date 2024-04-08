@@ -644,7 +644,7 @@ class RecoDecay
       // printf("getDaughters: ");
       // for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
       //   printf(" ");
-      // printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, PDGParticle); 
+      // printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, PDGParticle);
       list->push_back(particle.globalIndex());
       return;
     }
@@ -743,8 +743,8 @@ class RecoDecay
         // Get the list of actual final daughters.
         getDaughters(particleMother, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
         // remove daughters not coming from the decay process
-        for(int j=0; j<static_cast<int>(arrAllDaughtersIndex.size()); j++){
-          if(particlesMC.rawIteratorAt(arrAllDaughtersIndex[j] - particlesMC.offset()).getProcess() != TMCProcess::kPDecay){
+        for (int j = 0; j < static_cast<int>(arrAllDaughtersIndex.size()); j++) {
+          if (particlesMC.rawIteratorAt(arrAllDaughtersIndex[j] - particlesMC.offset()).getProcess() != TMCProcess::kPDecay) {
             arrAllDaughtersIndex.erase(arrAllDaughtersIndex.begin() + j);
           }
         }
@@ -863,7 +863,7 @@ class RecoDecay
       }
       // Check that the number of direct daughters coming from the dacay is not larger than the number of expected final daughters.
       for (const auto& dau : candidate.template daughters_as<T>()) {
-        //printf("Daughter production process is %i", dau.getProcess());
+        // printf("Daughter production process is %i", dau.getProcess());
         if (dau.getProcess() == TMCProcess::kPDecay) {
           dauCounter++;
         }
@@ -875,8 +875,8 @@ class RecoDecay
       // Get the list of actual final daughters.
       getDaughters(candidate, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
       // remove daughters not coming from the decay process
-      for(int j=0; j<static_cast<int>(arrAllDaughtersIndex.size()); j++){
-        if(particlesMC.rawIteratorAt(arrAllDaughtersIndex[j] - particlesMC.offset()).getProcess() != TMCProcess::kPDecay){
+      for (int j = 0; j < static_cast<int>(arrAllDaughtersIndex.size()); j++) {
+        if (particlesMC.rawIteratorAt(arrAllDaughtersIndex[j] - particlesMC.offset()).getProcess() != TMCProcess::kPDecay) {
           arrAllDaughtersIndex.erase(arrAllDaughtersIndex.begin() + j);
         }
       }
