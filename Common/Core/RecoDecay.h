@@ -646,7 +646,7 @@ class RecoDecay
       //   printf(" ");
       // printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, PDGParticle);
       // check if the particle comes from a decay process
-      if (particle.getProcess() == kPDecay) {
+      if (particle.getProcess() == TMCProcess::kPDecay) {
         list->push_back(particle.globalIndex());
       }
       return;
@@ -711,7 +711,7 @@ class RecoDecay
       }
       auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
       // check if the daughter candidate comes from a decay process
-      if (particleI.getProcess() != kPDecay) {
+      if (particleI.getProcess() != TMCProcess::kPDecay) {
         return -1;
       }
       arrDaughtersIndex[iProng] = particleI.globalIndex();
@@ -733,9 +733,9 @@ class RecoDecay
           // Printf("MC Rec: Rejected: bad daughter index range: %d-%d", particleMother.daughtersIds().front(), particleMother.daughtersIds().back());
           return -1;
         }
-        // Check that the number of direct daughters coming from the dacay is not larger than the number of expected final daughters.
-        for (const auto& dau : particleMother.template daughters_as<o2::aod::McParticles>()) {
-          if (dau.getProcess() == kPDecay) {
+        // Check that the number of direct daughters coming from the decay is not larger than the number of expected final daughters.
+        for (const auto& dau : particleMother.template daughters_as<T>()) {
+          if (dau.getProcess() == TMCProcess::kPDecay) {
             dauCounter++;
           }
         }
@@ -859,8 +859,8 @@ class RecoDecay
         return false;
       }
       // Check that the number of direct daughters coming from the dacay is not larger than the number of expected final daughters.
-      for (const auto& dau : candidate.template daughters_as<o2::aod::McParticles>()) {
-        if (dau.getProcess() == kPDecay) {
+      for (const auto& dau : candidate.template daughters_as<T>()) {
+        if (dau.getProcess() == TMCProcess::kPDecay) {
           dauCounter++;
         }
       }
