@@ -543,7 +543,7 @@ bool FITveto(T const& bc, DGCutparHolder const& diffCuts)
 // -----------------------------------------------------------------------------
 
 template <typename T>
-bool cutNoTimeFrameBorder(T& coll)
+bool cutNoTimeFrameBorder(T const& coll)
 // Reject collisions close to TF borders due to incomplete TPC drift volume.
 // https://its.cern.ch/jira/browse/O2-4623
 // Return true when event is good.
@@ -554,7 +554,7 @@ bool cutNoTimeFrameBorder(T& coll)
 // -----------------------------------------------------------------------------
 
 template <typename T>
-bool cutNoSameBunchPileup(T& coll)
+bool cutNoSameBunchPileup(T const& coll)
 // Rejects collisions which are associated with the same "found-by-T0" bunch crossing.
 // Could be partially due to the pileup with another collision in the same foundBC.
 // See more in slides 12-14 of https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof.
@@ -566,7 +566,7 @@ bool cutNoSameBunchPileup(T& coll)
 // -----------------------------------------------------------------------------
 
 template <typename T>
-bool cutNoITSROFrameBorder(T& coll)
+bool cutNoITSROFrameBorder(T const& coll)
 // Reject events affected by the ITS ROF border.
 // https://its.cern.ch/jira/browse/O2-4309
 // Return true when event is good.
@@ -577,7 +577,7 @@ bool cutNoITSROFrameBorder(T& coll)
 // -----------------------------------------------------------------------------
 
 template <typename T>
-bool cutIsGoodZvtxFT0vsPV(T& coll)
+bool cutIsGoodZvtxFT0vsPV(T const& coll)
 // Removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference.
 // The large vertexZ difference can be due to the in-bunch pileup or wrong BC assigned to a collision.
 // Return true when event is good.
@@ -588,7 +588,7 @@ bool cutIsGoodZvtxFT0vsPV(T& coll)
 // -----------------------------------------------------------------------------
 
 template <typename T>
-bool cutIsVertexITSTPC(T& coll)
+bool cutIsVertexITSTPC(T const& coll)
 // Selects collisions with at least one ITS-TPC track, and thus rejects vertices built from ITS-only tracks.
 // Has an effect only on the pp data, in Pb-Pb ITS-only vertices are already rejected by default.
 // Return true when event is good.
