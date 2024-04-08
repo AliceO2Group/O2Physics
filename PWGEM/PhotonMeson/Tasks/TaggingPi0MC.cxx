@@ -64,6 +64,9 @@ struct TaggingPi0MC {
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
 
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
+  Configurable<float> maxRgen{"maxRgen", 100.f, "maximum radius for generated particles"};
+  Configurable<float> margin_z_mc{"margin_z_mc", 7.0, "margin for z cut in cm for MC"};
+
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "qc", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_0_120_tpchadrejortofreq,mee_0_120_tpchadrejortofreq_lowB", "Comma separated list of Dalitz ee cuts"};
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
@@ -360,6 +363,9 @@ struct TaggingPi0MC {
             continue;
           }
           auto mcphoton1 = mcparticles.iteratorAt(photonid1);
+          if (!IsConversionPointInAcceptance(mcphoton1, maxRgen, maxY, margin_z_mc, mcparticles)) {
+            continue;
+          }
 
           int pi0id1 = IsXFromY(mcphoton1, mcparticles, 22, 111);
           if (pi0id1 < 0) { // photon from pi0 decay
@@ -415,9 +421,13 @@ struct TaggingPi0MC {
                 }
               }
 
+              auto g1mc = mcparticles.iteratorAt(photonid1);
+              if (!IsConversionPointInAcceptance(g1mc, maxRgen, maxY, margin_z_mc, mcparticles)) {
+                continue;
+              }
+
               int pi0id = -1;
               if constexpr (pairtype == PairType::kPCMDalitzEE) {
-                auto g1mc = mcparticles.iteratorAt(photonid1);
                 auto pos2 = g2.template posTrack_as<MyMCTracks>();
                 auto ele2 = g2.template negTrack_as<MyMCTracks>();
                 if (pos1.trackId() == pos2.trackId() || ele1.trackId() == ele2.trackId()) {

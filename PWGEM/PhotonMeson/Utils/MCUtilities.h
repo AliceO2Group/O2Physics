@@ -257,6 +257,34 @@ bool IsInAcceptance(TMCParticle const& mcparticle, TMCParticles const& mcparticl
   }
   return true;
 }
+//_______________________________________________________________________
+template <typename TMCPhoton, typename TMCParticles>
+bool IsConversionPointInAcceptance(TMCPhoton const& mcphoton, const float max_r_gen, const float max_eta_gen, const float margin_z_mc, TMCParticles const& mcparticles)
+{
+  if (abs(mcphoton.pdgCode()) != 22) {
+    return false;
+  }
+
+  auto daughtersIds = mcphoton.daughtersIds(); // always size = 2. first and last index. one should run loop from the first index to the last index.
+  if (daughtersIds[0] < 0 || daughtersIds[1] < 0) {
+    return false;
+  }
+
+  for (int idau = daughtersIds[0]; idau <= daughtersIds[1]; idau++) {
+    auto daughter = mcparticles.iteratorAt(idau);
+    if (abs(daughter.pdgCode()) != 11) {
+      return false;
+    }
+
+    float rxy_gen_e = sqrt(pow(daughter.vx(), 2) + pow(daughter.vy(), 2));
+    if (rxy_gen_e > max_r_gen || rxy_gen_e < abs(daughter.vz()) * std::tan(2 * std::atan(std::exp(-max_eta_gen))) - margin_z_mc) {
+      return false;
+    }
+  } // end of daughter loop
+
+  return true;
+}
+//_______________________________________________________________________
 } // namespace o2::aod::pwgem::mcutil
 //_______________________________________________________________________
 //_______________________________________________________________________
