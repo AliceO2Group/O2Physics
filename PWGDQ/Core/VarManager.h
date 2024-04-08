@@ -163,13 +163,13 @@ class VarManager : public TObject
     kCollisionTimeRes,
     kBC,
     kIsPhysicsSelection,
-    kIsNoTFBorder,     // No time frame border
-    kIsNoITSROFBorder, // No ITS read out frame border
-    kIsNoSameBunch,    // No collisions with same T0 BC
-    kIsGoodZvtxFT0vsPV,// No collisions w/ difference between z_ {PV, tracks} and z_{PV FT0A-C}
-    kIsVertexITSTPC,   // At least one ITS-TPC track
-    kIsVertexTOFmatched,// At least one TOF-matched track
-    kIsSel8,           // TVX in Run3
+    kIsNoTFBorder,       // No time frame border
+    kIsNoITSROFBorder,   // No ITS read out frame border
+    kIsNoSameBunch,      // No collisions with same T0 BC
+    kIsGoodZvtxFT0vsPV,  // No collisions w/ difference between z_ {PV, tracks} and z_{PV FT0A-C}
+    kIsVertexITSTPC,     // At least one ITS-TPC track
+    kIsVertexTOFmatched, // At least one TOF-matched track
+    kIsSel8,             // TVX in Run3
     kIsINT7,
     kIsEMC7,
     kIsINT7inMUON,
