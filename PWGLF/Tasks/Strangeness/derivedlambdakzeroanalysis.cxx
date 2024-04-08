@@ -656,77 +656,66 @@ struct derivedlambdakzeroanalysis {
 <<<<<<< HEAD
 =======
   uint computeITSclusBitmap(uint8_t itsClusMap)
-  //Focus on the 12 dominant ITS cluster configurations
+  // Focus on the 12 dominant ITS cluster configurations
   {
     uint bitMap = 0;
 
-    if(verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+    if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS : x  x  x  x  x  x  x
       bitMap = 12;
-    }
-    else if (verifyMask(itsClusMap, ((uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :    x  x  x  x  x  x
       bitMap = 11;
-    }
-    else if (verifyMask(itsClusMap, ((uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :       x  x  x  x  x
       bitMap = 10;
-    }
-    else if (verifyMask(itsClusMap, ((uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :          x  x  x  x
       bitMap = 9;
-    }
-    else if (verifyMask(itsClusMap, ((uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :             x  x  x
       bitMap = 8;
-    }
-    else if (verifyMask(itsClusMap, ((uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :                x  x
       bitMap = 7;
-    }
-    else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS : x  x  x  x  x  x
       bitMap = 6;
-    }
-    else if (verifyMask(itsClusMap, ((uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :    x  x  x  x  x
       bitMap = 5;
-    }
-    else if (verifyMask(itsClusMap, ((uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :       x  x  x  x
       bitMap = 4;
-    }
-    else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4)))) {
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS : x  x  x  x  x
       bitMap = 3;
-    }
-    else if (verifyMask(itsClusMap, ((uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4)))) {
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :    x  x  x  x
       bitMap = 2;
-    }
-    else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3)))) {
+    } else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3)))) {
       // ITS :    IB         OB
       // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS : x  x  x  x
@@ -741,27 +730,24 @@ struct derivedlambdakzeroanalysis {
   }
 
   uint computeDetBitmap(uint8_t detMap)
-  //Focus on the 4 dominant track configurations :
-  // ITS-TPC
-  // ITS-TPC-TRD
-  // ITS-TPC-TOF
-  // ITS-TPC-TRD-TOF
+  // Focus on the 4 dominant track configurations :
+  //  ITS-TPC
+  //  ITS-TPC-TRD
+  //  ITS-TPC-TOF
+  //  ITS-TPC-TRD-TOF
   {
     uint bitMap = 0;
 
     if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD | o2::aod::track::TOF))) {
       // ITS-TPC-TRD-TOF
       bitMap = 3;
-    }
-    else if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TOF))) {
+    } else if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TOF))) {
       // ITS-TPC-TOF
       bitMap = 2;
-    }
-    else if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD))) {
+    } else if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC | o2::aod::track::TRD))) {
       // ITS-TPC-TRD
       bitMap = 1;
-    }
-    else if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC))) {
+    } else if (verifyMask(detMap, (o2::aod::track::ITS | o2::aod::track::TPC))) {
       // ITS-TPC
       bitMap = 0;
     }
