@@ -186,6 +186,8 @@ struct TreeCreatorElectronMLDDA {
   Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
   Configurable<float> intercept{"intercept", -0.0380, "intercept for m vs. phiv"};
   Configurable<float> max_mee_pi0{"max_mee_pi0", -1, "max mee to tag ee from pi0"}; // 0.04 GeV/c2
+  Configurable<float> downscaling_primary_electron{"downscaling_primary_electron", 0.1, "down scaling factor to store electron"};
+  Configurable<float> downscaling_secondary_electron{"downscaling_secondary_electron", 0.1, "down scaling factor to store electron"};
 
   // for cascade
   Configurable<float> minv0cospa_casc{"minv0cospa_casc", 0.97, "minimum V0 CosPA in cascade"};
@@ -943,8 +945,10 @@ struct TreeCreatorElectronMLDDA {
         float phiv = getPhivPair(pos.px(), pos.py(), pos.pz(), ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
         registry.fill(HIST("hMvsPhiV"), phiv, v12.M());
         if (v12.M() < slope * phiv + intercept) { // photon conversion is found.
-          fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
           stored_secondary_electronIds.emplace_back(pos.globalIndex());
+          if (dist01(engine) < downscaling_secondary_electron) {
+            fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
+          }
         }
       } // end of pairing loop
 
@@ -963,8 +967,10 @@ struct TreeCreatorElectronMLDDA {
         float phiv = getPhivPair(pos.px(), pos.py(), pos.pz(), ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
         registry.fill(HIST("hMvsPhiV"), phiv, v12.M());
         if (v12.M() < slope * phiv + intercept) { // photon conversion is found.
-          fillTrackTable(collision, ele, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
           stored_secondary_electronIds.emplace_back(ele.globalIndex());
+          if (dist01(engine) < downscaling_secondary_electron) {
+            fillTrackTable(collision, ele, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kSecondary));
+          }
         }
       } // end of pairing loop
 
@@ -987,7 +993,7 @@ struct TreeCreatorElectronMLDDA {
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
         float phiv = getPhivPair(pos.px(), pos.py(), pos.pz(), ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
         registry.fill(HIST("hMvsPhiV_primary"), phiv, v12.M());
-        if (v12.M() < max_mee_pi0) { // e from pi0 dalitz decay is found.
+        if (v12.M() < max_mee_pi0 && dist01(engine) < downscaling_primary_electron) { // e from pi0 dalitz decay is found.
           fillTrackTable(collision, pos, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary));
         }
       } // end of pairing loop
@@ -1010,7 +1016,7 @@ struct TreeCreatorElectronMLDDA {
         ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
         float phiv = getPhivPair(pos.px(), pos.py(), pos.pz(), ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
         registry.fill(HIST("hMvsPhiV_primary"), phiv, v12.M());
-        if (v12.M() < max_mee_pi0) { // e from pi0 dalitz decay is found.
+        if (v12.M() < max_mee_pi0 && dist01(engine) < downscaling_primary_electron) { // e from pi0 dalitz decay is found.
           fillTrackTable(collision, ele, static_cast<int>(o2::aod::pwgem::dilepton::PID_Label::kElectron), static_cast<int>(o2::aod::pwgem::dilepton::Track_Type::kPrimary));
         }
       } // end of pairing loop
