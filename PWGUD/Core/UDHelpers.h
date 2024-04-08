@@ -548,7 +548,7 @@ bool cutNoTimeFrameBorder(T const& coll)
 // https://its.cern.ch/jira/browse/O2-4623
 // Return true when event is good.
 {
-	return coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
+  return coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
 }
 
 // -----------------------------------------------------------------------------
@@ -582,7 +582,7 @@ bool cutIsGoodZvtxFT0vsPV(T const& coll)
 // The large vertexZ difference can be due to the in-bunch pileup or wrong BC assigned to a collision.
 // Return true when event is good.
 {
-	return coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
+  return coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
 }
 
 // -----------------------------------------------------------------------------
@@ -604,11 +604,16 @@ bool goodCollision(T const& coll, DGCutparHolder const& diffCuts)
 {
   bool accepted = true;
   std::vector<int> sels = diffCuts.collisionSel();
-  if (sels[0]) accepted = cutNoTimeFrameBorder(coll);
-  if (sels[1]) accepted = cutNoSameBunchPileup(coll);
-  if (sels[2]) accepted = cutNoITSROFrameBorder(coll);
-  if (sels[3]) accepted = cutIsGoodZvtxFT0vsPV(coll);
-  if (sels[4]) accepted = cutIsVertexITSTPC(coll);
+  if (sels[0])
+    accepted = cutNoTimeFrameBorder(coll);
+  if (sels[1])
+    accepted = cutNoSameBunchPileup(coll);
+  if (sels[2])
+    accepted = cutNoITSROFrameBorder(coll);
+  if (sels[3])
+    accepted = cutIsGoodZvtxFT0vsPV(coll);
+  if (sels[4])
+    accepted = cutIsVertexITSTPC(coll);
 
   return accepted;
 }
