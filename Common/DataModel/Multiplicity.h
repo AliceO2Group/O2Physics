@@ -8,8 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#ifndef O2_ANALYSIS_MULTIPLICITY_H_
-#define O2_ANALYSIS_MULTIPLICITY_H_
+#ifndef COMMON_DATAMODEL_MULTIPLICITY_H_
+#define COMMON_DATAMODEL_MULTIPLICITY_H_
 
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
@@ -121,27 +121,31 @@ using MultExtraMC = MultsExtraMC::iterator;
 
 namespace multZeq
 {
-DECLARE_SOA_COLUMN(MultZeqFV0A, multZeqFV0A, float);           //!
-DECLARE_SOA_COLUMN(MultZeqFT0A, multZeqFT0A, float);           //!
-DECLARE_SOA_COLUMN(MultZeqFT0C, multZeqFT0C, float);           //!
-DECLARE_SOA_COLUMN(MultZeqFDDA, multZeqFDDA, float);           //!
-DECLARE_SOA_COLUMN(MultZeqFDDC, multZeqFDDC, float);           //!
-DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float); //!
+DECLARE_SOA_COLUMN(MultZeqFV0A, multZeqFV0A, float);           //! Multiplicity equalized for the vertex position with the FV0A detector
+DECLARE_SOA_COLUMN(MultZeqFT0A, multZeqFT0A, float);           //! Multiplicity equalized for the vertex position with the FT0A detector
+DECLARE_SOA_COLUMN(MultZeqFT0C, multZeqFT0C, float);           //! Multiplicity equalized for the vertex position with the FT0C detector
+DECLARE_SOA_COLUMN(MultZeqFDDA, multZeqFDDA, float);           //! Multiplicity equalized for the vertex position with the FDDA detector
+DECLARE_SOA_COLUMN(MultZeqFDDC, multZeqFDDC, float);           //! Multiplicity equalized for the vertex position with the FDDC detector
+DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float); //! Multiplicity equalized for the vertex position from the PV contributors
 } // namespace multZeq
-DECLARE_SOA_TABLE(MultZeqs, "AOD", "MULTZEQ", //!
-                  multZeq::MultZeqFV0A,
-                  multZeq::MultZeqFT0A, multZeq::MultZeqFT0C,
-                  multZeq::MultZeqFDDA, multZeq::MultZeqFDDC,
+DECLARE_SOA_TABLE(FV0MultZeqs, "AOD", "FV0MULTZEQ", //! Multiplicity equalized for the vertex position with the FV0 detector
+                  multZeq::MultZeqFV0A);
+DECLARE_SOA_TABLE(FT0MultZeqs, "AOD", "FT0MULTZEQ", //! Multiplicity equalized for the vertex position with the FT0 detector
+                  multZeq::MultZeqFT0A, multZeq::MultZeqFT0C);
+DECLARE_SOA_TABLE(FDDMultZeqs, "AOD", "FDDMULTZEQ", //! Multiplicity equalized for the vertex position with the FDD detector
+                  multZeq::MultZeqFDDA, multZeq::MultZeqFDDC);
+DECLARE_SOA_TABLE(PVMultZeqs, "AOD", "PVMULTZEQ", //! Multiplicity equalized for the vertex position from the PV contributors
                   multZeq::MultZeqNTracksPV);
+using MultZeqs = soa::Join<FV0MultZeqs, FT0MultZeqs, FDDMultZeqs, PVMultZeqs>;
 using MultZeq = MultZeqs::iterator;
 
 namespace multBC
 {
-DECLARE_SOA_COLUMN(MultBCFT0A, multBCFT0A, float);                     //!
-DECLARE_SOA_COLUMN(MultBCFT0C, multBCFT0C, float);                     //!
-DECLARE_SOA_COLUMN(MultBCFV0A, multBCFV0A, float);                     //!
-DECLARE_SOA_COLUMN(MultBCFDDA, multBCFDDA, float);                     //!
-DECLARE_SOA_COLUMN(MultBCFDDC, multBCFDDC, float);                     //!
+DECLARE_SOA_COLUMN(MultBCFT0A, multBCFT0A, float); //!
+DECLARE_SOA_COLUMN(MultBCFT0C, multBCFT0C, float); //!
+DECLARE_SOA_COLUMN(MultBCFV0A, multBCFV0A, float); //!
+DECLARE_SOA_COLUMN(MultBCFDDA, multBCFDDA, float); //!
+DECLARE_SOA_COLUMN(MultBCFDDC, multBCFDDC, float); //!
 
 DECLARE_SOA_COLUMN(MultBCFZNA, multBCFZNA, float);   //!
 DECLARE_SOA_COLUMN(MultBCFZNC, multBCFZNC, float);   //!
@@ -150,13 +154,13 @@ DECLARE_SOA_COLUMN(MultBCFZEM2, multBCFZEM2, float); //!
 DECLARE_SOA_COLUMN(MultBCFZPA, multBCFZPA, float);   //!
 DECLARE_SOA_COLUMN(MultBCFZPC, multBCFZPC, float);   //!
 
-DECLARE_SOA_COLUMN(MultBCTVX, multBCTVX, bool);                        //!
-DECLARE_SOA_COLUMN(MultBCFV0OrA, multBCFV0OrA, bool);                  //!
-DECLARE_SOA_COLUMN(MultBCV0triggerBits, multBCV0triggerBits, uint8_t); //!
-DECLARE_SOA_COLUMN(MultBCT0triggerBits, multBCT0triggerBits, uint8_t); //!
+DECLARE_SOA_COLUMN(MultBCTVX, multBCTVX, bool);                          //!
+DECLARE_SOA_COLUMN(MultBCFV0OrA, multBCFV0OrA, bool);                    //!
+DECLARE_SOA_COLUMN(MultBCV0triggerBits, multBCV0triggerBits, uint8_t);   //!
+DECLARE_SOA_COLUMN(MultBCT0triggerBits, multBCT0triggerBits, uint8_t);   //!
 DECLARE_SOA_COLUMN(MultBCFDDtriggerBits, multBCFDDtriggerBits, uint8_t); //!
-DECLARE_SOA_COLUMN(MultBCTriggerMask, multBCTriggerMask, uint64_t);    //! CTP trigger mask
-DECLARE_SOA_COLUMN(MultBCColliding, multBCColliding, bool);            //! CTP trigger mask
+DECLARE_SOA_COLUMN(MultBCTriggerMask, multBCTriggerMask, uint64_t);      //! CTP trigger mask
+DECLARE_SOA_COLUMN(MultBCColliding, multBCColliding, bool);              //! CTP trigger mask
 } // namespace multBC
 DECLARE_SOA_TABLE(MultsBC, "AOD", "MULTBC", //!
                   multBC::MultBCFT0A,
@@ -181,4 +185,4 @@ using MultBC = MultsBC::iterator;
 
 } // namespace o2::aod
 
-#endif // O2_ANALYSIS_MULTIPLICITY_H_
+#endif // COMMON_DATAMODEL_MULTIPLICITY_H_

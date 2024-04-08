@@ -106,6 +106,9 @@ struct kfStrangenessStudy {
   std::array<float, 3> posPionRec;
   std::array<float, 3> posProtonRecErr;
   std::array<float, 3> posPionRecErr;
+  std::array<float, 3> posProtonRecIU;
+  std::array<float, 3> posPionRecIU;
+  std::array<float, 3> posBachRecIU;
 
   /// Additional cascade MC data
   int isTrueCasc = 0;
@@ -122,6 +125,8 @@ struct kfStrangenessStudy {
   int recocase = 0;
 
   o2::dataformats::VertexBase mV0vtx;
+  // o2::dataformats::VertexBase prodVtxV0;
+  // o2::dataformats::VertexBase prodVtxCasc;
   o2::dataformats::DCA mPosDcaInfoCov;
   o2::dataformats::DCA mNegDcaInfoCov;
 
@@ -195,7 +200,7 @@ struct kfStrangenessStudy {
   void getCascDatas(TCollision const& collision, TCascade const& cascade, TCascDatas const&, TKFCascDatas const&, TV0 const&, TV0Datas const&, TV0fCDatas const&)
   {
     if (cascade.has_cascData()) {
-      LOG(info) << "Cascade has CascData!";
+      LOG(debug) << "Cascade has CascData!";
       // check aod::Cascades -> aod::CascData link
       // if present: this candidate was accepted by default DCAfitter building
       isDCAfitter = 1;
@@ -257,7 +262,7 @@ struct kfStrangenessStudy {
     }
 
     if (cascade.has_kfCascData()) {
-      LOG(info) << "Cascade has KFcascData!";
+      LOG(debug) << "Cascade has KFcascData!";
       // check aod::Cascades -> aod::KFCascData link
       // if present: this candidate was accepted by KF building
       isKF = 1;
@@ -345,7 +350,7 @@ struct kfStrangenessStudy {
       auto MCcascade = cascdata.mcParticle();
 
       if (MCcascade.has_daughters()) {
-        LOG(info) << "MC cascade has daughters, getting MC info.";
+        LOG(debug) << "MC cascade has daughters, getting MC info.";
         LOG(debug) << "MCcascade.has_daughters() = " << MCcascade.has_daughters();
         // get MC V0
         for (auto const& MCv0 : MCcascade.template daughters_as<aod::McParticles>()) {
@@ -407,29 +412,41 @@ struct kfStrangenessStudy {
             o2::base::Propagator::Instance()->propagateToDCABxByBz(mV0vtx, posTrackParCov, 2.f, matCorr);
             o2::base::Propagator::Instance()->propagateToDCABxByBz(mV0vtx, negTrackParCov, 2.f, matCorr);
 
-            // get new daughter track position and uncertainties
+            // get new parameters and covariance matrix
+            std::array<float, 21> covpos, covneg;
+            std::array<float, 3> xyzpos, xyzneg;
+            posTrackParCov.getCovXYZPxPyPzGlo(covpos);
+            negTrackParCov.getCovXYZPxPyPzGlo(covneg);
+            posTrackParCov.getXYZGlo(xyzpos);
+            negTrackParCov.getXYZGlo(xyzneg);
+
+            // fill new daughter track position and uncertainties
             if (charge == -1) {
-              posProtonRec[0] = posTrackParCov.getX();
-              posProtonRec[1] = posTrackParCov.getY();
-              posProtonRec[2] = posTrackParCov.getZ();
-              posProtonRecErr[1] = sqrt(posTrackParCov.getSigmaY2());
-              posProtonRecErr[2] = sqrt(posTrackParCov.getSigmaZ2());
-              posPionRec[0] = negTrackParCov.getX();
-              posPionRec[1] = negTrackParCov.getY();
-              posPionRec[2] = negTrackParCov.getZ();
-              posPionRecErr[1] = sqrt(negTrackParCov.getSigmaY2());
-              posPionRecErr[2] = sqrt(negTrackParCov.getSigmaZ2());
+              posProtonRec[0] = xyzpos[0];
+              posProtonRec[1] = xyzpos[1];
+              posProtonRec[2] = xyzpos[2];
+              posProtonRecErr[0] = sqrt(covpos[0]);
+              posProtonRecErr[1] = sqrt(covpos[2]);
+              posProtonRecErr[2] = sqrt(covpos[5]);
+              posPionRec[0] = xyzneg[0];
+              posPionRec[1] = xyzneg[1];
+              posPionRec[2] = xyzneg[2];
+              posPionRecErr[0] = sqrt(covneg[0]);
+              posPionRecErr[1] = sqrt(covneg[2]);
+              posPionRecErr[2] = sqrt(covneg[5]);
             } else if (charge == +1) {
-              posProtonRec[0] = negTrackParCov.getX();
-              posProtonRec[1] = negTrackParCov.getY();
-              posProtonRec[2] = negTrackParCov.getZ();
-              posProtonRecErr[1] = sqrt(negTrackParCov.getSigmaY2());
-              posProtonRecErr[2] = sqrt(negTrackParCov.getSigmaZ2());
-              posPionRec[0] = posTrackParCov.getX();
-              posPionRec[1] = posTrackParCov.getY();
-              posPionRec[2] = posTrackParCov.getZ();
-              posPionRecErr[1] = sqrt(posTrackParCov.getSigmaY2());
-              posPionRecErr[2] = sqrt(posTrackParCov.getSigmaZ2());
+              posProtonRec[0] = xyzneg[0];
+              posProtonRec[1] = xyzneg[1];
+              posProtonRec[2] = xyzneg[2];
+              posProtonRecErr[0] = sqrt(covneg[0]);
+              posProtonRecErr[1] = sqrt(covneg[2]);
+              posProtonRecErr[2] = sqrt(covneg[5]);
+              posPionRec[0] = xyzpos[0];
+              posPionRec[1] = xyzpos[1];
+              posPionRec[2] = xyzpos[2];
+              posPionRecErr[0] = sqrt(covpos[0]);
+              posPionRecErr[1] = sqrt(covpos[2]);
+              posPionRecErr[2] = sqrt(covpos[5]);
             }
 
             // fill cascade table
@@ -478,6 +495,9 @@ struct kfStrangenessStudy {
             momPionRecIU[0], momPionRecIU[1], momPionRecIU[2], momPionRecIUErr[0], momPionRecIUErr[1], momPionRecIUErr[2],
             momProtonRec[0], momProtonRec[1], momProtonRec[2], momProtonRecErr[0], momProtonRecErr[1], momProtonRecErr[2],
             momPionRec[0], momPionRec[1], momPionRec[2], momPionRecErr[0], momPionRecErr[1], momPionRecErr[2],
+            posProtonRecIU[0], posProtonRecIU[1], posProtonRecIU[2],
+            posPionRecIU[0], posPionRecIU[1], posPionRecIU[2],
+            posBachRecIU[0], posBachRecIU[1], posBachRecIU[2],
             etaProton, etaPion,
             tpcNClsProton, tpcNClsPion,
             isDCAfitter, isKF);
@@ -518,12 +538,15 @@ struct kfStrangenessStudy {
               momPionGen[0], momPionGen[1], momPionGen[2],
               posProtonRec[0], posProtonRec[1], posProtonRec[2], posProtonRecErr[0], posProtonRecErr[1], posProtonRecErr[2],
               posPionRec[0], posPionRec[1], posPionRec[2], posPionRecErr[0], posPionRecErr[1], posPionRecErr[2],
+              posProtonRecIU[0], posProtonRecIU[1], posProtonRecIU[2],
+              posPionRecIU[0], posPionRecIU[1], posPionRecIU[2],
+              posBachRecIU[0], posBachRecIU[1], posBachRecIU[2],
               etaProton, etaPion,
               tpcNClsProton, tpcNClsPion,
               isDCAfitter, isKF,
               isTrueCasc,
               source);
-    LOG(info) << "CascMCTable filled!";
+    LOG(debug) << "CascMCTable filled!";
     histos.fill(HIST("hCase"), recocase);
   }
 
@@ -587,6 +610,9 @@ struct kfStrangenessStudy {
       posPionRec[i] = -1.0f;
       posProtonRecErr[i] = -1.0f;
       posPionRecErr[i] = -1.0f;
+      posProtonRecIU[i] = -1.0f;
+      posPionRecIU[i] = -1.0f;
+      posBachRecIU[i] = -1.0f;
 
       // Additional cascade MC data
       vtxGen[i] = -1.0f;
@@ -653,8 +679,8 @@ struct kfStrangenessStudy {
       } else if (charge == +1) {
         posTrackParCov.getPxPyPzGlo(momPionRecIU);
         negTrackParCov.getPxPyPzGlo(momProtonRecIU);
-        posTrackParCov.getCovXYZPxPyPzGlo(cvproton);
-        negTrackParCov.getCovXYZPxPyPzGlo(cvpion);
+        posTrackParCov.getCovXYZPxPyPzGlo(cvpion);
+        negTrackParCov.getCovXYZPxPyPzGlo(cvproton);
         etaProton = negTrack.eta();
         etaPion = posTrack.eta();
         tpcNClsProton = negTrack.tpcNClsFound();
@@ -717,8 +743,11 @@ struct kfStrangenessStudy {
       auto negTrack = v0.negTrack_as<FullTracksIU>();
       o2::track::TrackParCov posTrackParCov = getTrackParCov(posTrack);
       o2::track::TrackParCov negTrackParCov = getTrackParCov(negTrack);
+      o2::track::TrackParCov bachTrackParCov = getTrackParCov(bachTrack);
       std::array<float, 21> cvproton, cvpion;
       if (charge == -1) {
+        posTrackParCov.getXYZGlo(posProtonRecIU);
+        negTrackParCov.getXYZGlo(posPionRecIU);
         posTrackParCov.getPxPyPzGlo(momProtonRecIU);
         negTrackParCov.getPxPyPzGlo(momPionRecIU);
         posTrackParCov.getCovXYZPxPyPzGlo(cvproton);
@@ -728,15 +757,19 @@ struct kfStrangenessStudy {
         tpcNClsProton = posTrack.tpcNClsFound();
         tpcNClsPion = negTrack.tpcNClsFound();
       } else if (charge == +1) {
+        posTrackParCov.getXYZGlo(posPionRecIU);
+        negTrackParCov.getXYZGlo(posProtonRecIU);
         posTrackParCov.getPxPyPzGlo(momPionRecIU);
         negTrackParCov.getPxPyPzGlo(momProtonRecIU);
-        posTrackParCov.getCovXYZPxPyPzGlo(cvproton);
-        negTrackParCov.getCovXYZPxPyPzGlo(cvpion);
+        posTrackParCov.getCovXYZPxPyPzGlo(cvpion);
+        negTrackParCov.getCovXYZPxPyPzGlo(cvproton);
         etaProton = negTrack.eta();
         etaPion = posTrack.eta();
         tpcNClsProton = negTrack.tpcNClsFound();
         tpcNClsPion = posTrack.tpcNClsFound();
       }
+      bachTrackParCov.getXYZGlo(posBachRecIU);
+
       momProtonRecIUErr[0] = sqrt(cvproton[9]);
       momProtonRecIUErr[1] = sqrt(cvproton[14]);
       momProtonRecIUErr[2] = sqrt(cvproton[20]);
@@ -749,19 +782,19 @@ struct kfStrangenessStudy {
 
       // ========== get cascade MC information ===========
       if (cascade.has_kfCascData() && cascade.has_cascData()) {
-        LOG(info) << "Both fitters were successful!";
+        LOG(debug) << "Both fitters were successful!";
         recocase = 1;
         auto cascdata = cascade.cascData_as<CascDataLabeled>();
         getCascMCdata(collision, cascdata, TracksIU, mcParticles);
       }
       if (cascade.has_kfCascData() && !cascade.has_cascData()) {
-        LOG(info) << "Only KF was successful!";
+        LOG(debug) << "Only KF was successful!";
         recocase = 2;
         auto cascdata = cascade.kfCascData_as<KFCascDataLabeled>();
         getCascMCdata(collision, cascdata, TracksIU, mcParticles);
       }
       if (!cascade.has_kfCascData() && cascade.has_cascData()) {
-        LOG(info) << "Only DCA fitter was successful!";
+        LOG(debug) << "Only DCA fitter was successful!";
         recocase = 3;
         auto cascdata = cascade.cascData_as<CascDataLabeled>();
         getCascMCdata(collision, cascdata, TracksIU, mcParticles);

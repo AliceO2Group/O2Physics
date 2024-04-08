@@ -346,7 +346,7 @@ struct centralEventFilterTask {
 
     int64_t nEvents{collTabPtr->num_rows()};
     std::vector<uint64_t> outTrigger, outDecision;
-    int64_t nSelected{0};
+    // int64_t nSelected{0};
     for (auto& tableName : mDownscaling) {
       if (!pc.inputs().isValid(tableName.first)) {
         LOG(fatal) << tableName.first << " table is not valid.";
@@ -382,7 +382,7 @@ struct centralEventFilterTask {
                 if (mUniformGenerator(mGeneratorEngine) < downscaling) {
                   mFiltered->Fill(binCenter);
                   outDecision[entry] |= triggerBit;
-                  nSelected++;
+                  // nSelected++;
                 }
               }
               entry++;

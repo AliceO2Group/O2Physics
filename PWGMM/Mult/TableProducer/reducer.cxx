@@ -25,6 +25,7 @@ static constexpr float defparams[1][7] = {{0.142664, 1.40302, 2.61158, 1.20139, 
 struct Reducer {
   using BCs = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
   using MCCollisions = soa::Join<aod::McCollisions, aod::HepMCXSections, aod::HepMCPdfInfos, aod::MultsExtraMC>;
+  using MCCollisionsNoHepMC = soa::Join<aod::McCollisions, aod::MultsExtraMC>;
   using Collisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::FT0Mults, aod::FDDMults, aod::ZDCMults, aod::PVMults>;
   using Particles = aod::McParticles;
   using Tracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>;
@@ -43,7 +44,9 @@ struct Reducer {
   Preslice<aod::McParticles> perMCc = aod::mcparticle::mcCollisionId;
   Preslice<aod::Tracks> perC = aod::track::collisionId;
 
+  std::random_device rd;
   std::mt19937 randomgen;
+  std::uniform_real_distribution<float> dist;
 
   std::vector<int64_t> usedMCCs;
   std::vector<int64_t> usedLabels;
@@ -67,8 +70,7 @@ struct Reducer {
 
   void init(InitContext const&)
   {
-    std::random_device randomdevice;
-    randomgen.seed(randomdevice());
+    randomgen.seed(rd());
     LOGP(debug, ">>> Starting with params: {}, {}, {}, {}, {}, {}, {}", params->get((int)0, int(0)), params->get((int)0, 1), params->get((int)0, 2),
          params->get((int)0, 3), params->get((int)0, 4), params->get((int)0, 5), params->get((int)0, 6));
   }
@@ -89,16 +91,16 @@ struct Reducer {
         weights[i] = 1.f;
         LOGP(debug, ">>> keeping with weight {}", weights[i]);
       } else {
+        auto threshold = reductionFactor / value;
         // if the fraction of events at this multiplicity is greater than the reduction factor, randomly discard it or add with the weight
-        std::uniform_real_distribution<float> d(0, value);
-        auto r = d(randomgen);
+        auto r = dist(randomgen);
         LOGP(debug, ">>> die roll: {}", r);
-        if (r > reductionFactor) {
+        if (r > threshold) {
           // dicard
           LOGP(debug, ">>> discarding");
         } else {
           // keep
-          weights[i] = value / reductionFactor;
+          weights[i] = 1. / threshold;
           LOGP(debug, ">>> keeping with weight {}", weights[i]);
         }
       }
@@ -106,9 +108,28 @@ struct Reducer {
     }
   }
 
-  void process(BCs::iterator const& bc,
-               MCCollisions const& mccollisions,
-               Collisions const& collisions)
+  void processFull(BCs::iterator const& bc,
+                   MCCollisions const& mccollisions,
+                   Collisions const& collisions)
+  {
+    processGeneric(bc, mccollisions, collisions);
+  }
+
+  PROCESS_SWITCH(Reducer, processFull, "Full process with HepMC", false);
+
+  void processLite(BCs::iterator const& bc,
+                   MCCollisionsNoHepMC const& mccollisions,
+                   Collisions const& collisions)
+  {
+    processGeneric(bc, mccollisions, collisions);
+  }
+
+  PROCESS_SWITCH(Reducer, processLite, "Process without HepMC", true);
+
+  template <typename TBCI, typename TMCC, typename TC>
+  void processGeneric(TBCI const& bc,
+                      TMCC const& mccollisions,
+                      TC const& collisions)
   {
     usedMCCs.clear();
     usedLabels.clear();
@@ -133,7 +154,9 @@ struct Reducer {
         continue;
       }
       rmcc(bcId, weights[i], mcc.posX(), mcc.posY(), mcc.posZ(), mcc.impactParameter(), mcc.multMCFT0A(), mcc.multMCFT0C(), mcc.multMCNParticlesEta05(), mcc.multMCNParticlesEta10());
-      rhepmci(rmcc.lastIndex(), mcc.xsectGen(), mcc.ptHard(), mcc.nMPI(), mcc.processId(), mcc.id1(), mcc.id2(), mcc.pdfId1(), mcc.pdfId2(), mcc.x1(), mcc.x2(), mcc.scalePdf(), mcc.pdf1(), mcc.pdf2());
+      if constexpr (TMCC::template contains<aod::HepMCXSections>() && TMCC::template contains<aod::HepMCPdfInfos>()) {
+        rhepmci(rmcc.lastIndex(), mcc.xsectGen(), mcc.ptHard(), mcc.nMPI(), mcc.processId(), mcc.id1(), mcc.id2(), mcc.pdfId1(), mcc.pdfId2(), mcc.x1(), mcc.x2(), mcc.scalePdf(), mcc.pdf1(), mcc.pdf2());
+      }
       // remember used events so that the index relation can be preserved
       usedMCCs.push_back(mcc.globalIndex());
       usedLabels.push_back(rmcc.lastIndex());
@@ -164,18 +187,22 @@ struct ReducerTest {
   HistogramRegistry r{
     "Common",
     {
-      {"ReconstructedMultiplicity", " ; N_{trk}", {HistType::kTH1F, {{301, -0.5, 300.5}}}},  //
-      {"GeneratedMultiplicity", " ; N_{particles}", {HistType::kTH1F, {{301, -0.5, 300.5}}}} //
-    }                                                                                        //
+      {"ReconstructedMultiplicity", " ; N_{trk}", {HistType::kTH1F, {{301, -0.5, 300.5}}}},            //
+      {"GeneratedMultiplicity", " ; N_{particles}", {HistType::kTH1F, {{301, -0.5, 300.5}}}},          //
+      {"ReconstructedMultiplicityUnweighted", " ; N_{trk}", {HistType::kTH1F, {{301, -0.5, 300.5}}}},  //
+      {"GeneratedMultiplicityUnweighted", " ; N_{particles}", {HistType::kTH1F, {{301, -0.5, 300.5}}}} //
+    }                                                                                                  //
   };
 
   void process(aod::StoredRMCCollisions const& mccollisions, soa::Join<aod::StoredRCollisions, aod::StoredRMCColLabels> const& collisions)
   {
     for (auto& c : collisions) {
       r.fill(HIST("ReconstructedMultiplicity"), c.multNTracksPVeta1(), c.rmccollision_as<aod::StoredRMCCollisions>().weight());
+      r.fill(HIST("ReconstructedMultiplicityUnweighted"), c.multNTracksPVeta1());
     }
     for (auto& c : mccollisions) {
       r.fill(HIST("GeneratedMultiplicity"), c.multMCNParticlesEta10(), c.weight());
+      r.fill(HIST("GeneratedMultiplicityUnweighted"), c.multMCNParticlesEta10());
     }
   }
 };

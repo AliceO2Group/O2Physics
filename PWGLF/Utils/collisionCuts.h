@@ -48,6 +48,7 @@ class CollisonCuts
     mCheckOffline = checkOffline;
     mCheckIsRun3 = checkRun3;
     mApplyTFBorderCut = false;
+    mApplyNoITSROBorderCut = false;
   }
 
   /// Initializes histograms for the task
@@ -81,6 +82,9 @@ class CollisonCuts
   /// Set the time frame border cut
   void setApplyTFBorderCut(bool applyTFBorderCut) { mApplyTFBorderCut = applyTFBorderCut; }
 
+  /// Set the NoITSRO frame border cut
+  void setApplyNoITSROBorderCut(bool applyNoITSROBorderCut) { mApplyNoITSROBorderCut = applyNoITSROBorderCut; }
+
   /// Check whether the collisions fulfills the specified selections
   /// \tparam T type of the collision
   /// \param col Collision
@@ -99,6 +103,10 @@ class CollisonCuts
       }
       if (!col.selection_bit(aod::evsel::kNoTimeFrameBorder) && mApplyTFBorderCut) {
         LOGF(debug, "Time frame border cut failed");
+        return false;
+      }
+      if (!col.selection_bit(aod::evsel::kNoITSROFrameBorder) && mApplyNoITSROBorderCut) {
+        LOGF(debug, "NoITSRO frame border cut failed");
         return false;
       }
     } else { // Run2 case
@@ -158,6 +166,7 @@ class CollisonCuts
   bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
   bool mInitialTriggerScan = false;                ///< Check trigger when the event is first selected
   bool mApplyTFBorderCut = false;                  ///< Apply time frame border cut
+  bool mApplyNoITSROBorderCut = false;             ///< Apply NoITSRO frame border cut
   int mTrigger = kINT7;                            ///< Trigger to check for
   float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
 };

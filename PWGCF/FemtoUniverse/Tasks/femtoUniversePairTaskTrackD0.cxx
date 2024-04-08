@@ -14,7 +14,7 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Katarzyna Gwiździel, WUT Warsaw, katarzyna.gwizdziel@cern.ch
 
 #include <vector>
@@ -117,6 +117,7 @@ struct femtoUniversePairTaskTrackD0 {
   } ConfD0D0barSideBand;
 
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
+  Configurable<bool> ConfUseAllD0mesons{"ConfUseAllD0mesons", false, "Include cand. which are both D0 and D0bar cand."};
 
   /// Partitions for particle 1
   Partition<FemtoFullParticles> partsTrack = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == int8_t(ConfTrack.ConfTrackSign));
@@ -166,10 +167,9 @@ struct femtoUniversePairTaskTrackD0 {
 
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<float> ConfCPRdeltaPhiMax{"ConfCPRdeltaPhiMax", 0.01, "Max. Delta Phi for Close Pair Rejection"};
-  Configurable<float> ConfCPRdeltaEtaMax{"ConfCPRdeltaEtaMax", 0.01, "Max. Delta Eta for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaPhiCut{"ConfCPRdeltaPhiCut", 0.0, "Delta Phi cut for Close Pair Rejection"};
   Configurable<float> ConfCPRdeltaEtaCut{"ConfCPRdeltaEtaCut", 0.0, "Delta Eta cut for Close Pair Rejection"};
+  Configurable<float> ConfCPRChosenRadii{"ConfCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
 
   FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::same, femtoUniverseFemtoContainer::Observable::kstar> sameEventFemtoCont;
   FemtoUniverseFemtoContainer<femtoUniverseFemtoContainer::EventType::mixed, femtoUniverseFemtoContainer::Observable::kstar> mixedEventFemtoCont;
@@ -342,7 +342,7 @@ struct femtoUniversePairTaskTrackD0 {
 
     pairCleaner.init(&qaRegistry);
     if (ConfIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiMax.value, ConfCPRdeltaEtaMax.value, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRPlotPerRadii.value);
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiCut.value, ConfCPRdeltaEtaCut.value, ConfCPRChosenRadii.value, ConfCPRPlotPerRadii.value);
     }
 
     vPIDTrack = ConfTrack.ConfPIDTrack.value;
@@ -541,9 +541,14 @@ struct femtoUniversePairTaskTrackD0 {
     fillCollision(col);
 
     auto thegroupPartsTrack = partsTrack->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    auto thegroupPartsD0 = partsAllDmesons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsAllD0D0bar = partsAllDmesons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsOnlyD0D0bar = partsOnlyD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
-    doSameEvent<false>(thegroupPartsTrack, thegroupPartsD0, parts, col.magField(), col.multNtr());
+    if (ConfUseAllD0mesons) {
+      doSameEvent<false>(thegroupPartsTrack, thegroupPartsAllD0D0bar, parts, col.magField(), col.multNtr());
+    } else {
+      doSameEvent<false>(thegroupPartsTrack, thegroupPartsOnlyD0D0bar, parts, col.magField(), col.multNtr());
+    }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackD0, processSameEvent, "Enable processing same event", true);
 
@@ -607,7 +612,8 @@ struct femtoUniversePairTaskTrackD0 {
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
 
       auto groupPartsTrack = partsTrack->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
-      auto groupPartsD0 = partsAllDmesons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsAllD0D0bar = partsAllDmesons->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsOnlyD0D0bar = partsOnlyD0D0bar->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
@@ -618,7 +624,11 @@ struct femtoUniversePairTaskTrackD0 {
       /// \todo before mixing we should check whether both collisions contain a pair of particles!
       // if (partsD0.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTrack.size() == 0 ) continue;
 
-      doMixedEvent<false>(groupPartsTrack, groupPartsD0, parts, magFieldTesla1, multiplicityCol);
+      if (ConfUseAllD0mesons) {
+        doMixedEvent<false>(groupPartsTrack, groupPartsAllD0D0bar, parts, magFieldTesla1, multiplicityCol);
+      } else {
+        doMixedEvent<false>(groupPartsTrack, groupPartsOnlyD0D0bar, parts, magFieldTesla1, multiplicityCol);
+      }
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackD0, processMixedEvent, "Enable processing mixed events", true);

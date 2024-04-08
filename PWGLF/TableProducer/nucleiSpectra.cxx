@@ -200,7 +200,7 @@ struct nucleiSpectra {
     kHasTOF = BIT(5),
     kHasTRD = BIT(6),
     kIsAmbiguous = BIT(7), /// just a placeholder now
-    kPositive = BIT(8),
+    kITSrof = BIT(8),
     kIsPhysicalPrimary = BIT(9), /// MC flags starting from the second half of the short
     kIsSecondaryFromMaterial = BIT(10),
     kIsSecondaryFromWeakDecay = BIT(11) /// the last 4 bits are reserved for the PID in tracking
@@ -254,13 +254,8 @@ struct nucleiSpectra {
   ConfigurableAxis cfgNTPCClusBins{"cfgNTPCClusBins", {3, 89.5, 159.5}, "N TPC clusters binning"};
 
   // CCDB options
-  Configurable<double> cfgBz{"cfgBz", -999, "bz field, -999 is automatic"};
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> cfgCCDBurl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> cfgGRPpath{"cfgGRPpath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> cfgGRPmagPath{"cfgGRPmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> cfgLUTpath{"cfgLUTpath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-  Configurable<std::string> cfgGeoPath{"cfgGeoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   int mRunNumber = 0;
   float mBz = 0.f;
 
@@ -289,6 +284,25 @@ struct nucleiSpectra {
     return result;
   }
 
+  double computeAbsoDecL(aod::McParticles::iterator particle)
+  {
+    if (!particle.has_daughters())
+      return -1.f;
+
+    float mothVtx[3]{particle.vx(), particle.vy(), particle.vz()};
+    float dauVtx[3]{0.f, 0.f, 0.f};
+    auto daughters = particle.daughters_as<aod::McParticles>();
+    for (const auto& dau : daughters) {
+      if (abs(dau.pdgCode()) != 22 && abs(dau.pdgCode()) != 11) {
+        dauVtx[0] = dau.vx();
+        dauVtx[1] = dau.vy();
+        dauVtx[2] = dau.vz();
+        break;
+      }
+    }
+    return std::hypot(mothVtx[0] - dauVtx[0], mothVtx[1] - dauVtx[1], mothVtx[2] - dauVtx[2]);
+  }
+
   template <class collision_t>
   bool eventSelection(collision_t& collision)
   {
@@ -300,25 +314,13 @@ struct nucleiSpectra {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-    auto run3grp_timestamp = bc.timestamp();
+    auto timestamp = bc.timestamp();
     mRunNumber = bc.runNumber();
 
-    if (cfgBz > -990) {
-      mBz = cfgBz;
-    } else {
-      o2::parameters::GRPObject* grpo{ccdb->getForTimeStamp<o2::parameters::GRPObject>(cfgGRPpath, run3grp_timestamp)};
-      o2::parameters::GRPMagField* grpmag{nullptr};
-      if (grpo) {
-        mBz = grpo->getNominalL3Field();
-      } else {
-        grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(cfgGRPmagPath, run3grp_timestamp);
-        if (!grpmag) {
-          LOG(fatal) << "Got nullptr from CCDB for path " << cfgGRPmagPath << " of object GRPMagField and " << cfgGRPpath << " of object GRPObject for timestamp " << run3grp_timestamp;
-        }
-        mBz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      }
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << mBz << " kZG";
-    }
+    o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", timestamp);
+    o2::base::Propagator::initFieldFromGRP(grpmag);
+    mBz = static_cast<float>(grpmag->getNominalL3Field());
+    LOGF(info, "Retrieved GRP for timestamp %ull (%i) with magnetic field of %1.2f kZG", timestamp, mRunNumber, mBz);
   }
 
   void init(o2::framework::InitContext&)
@@ -335,7 +337,7 @@ struct nucleiSpectra {
     const AxisSpec v2Axis{cfgV2Bins, "cos(2(#phi - #Psi_{2}))"};
     const AxisSpec nITSClusAxis{cfgNITSClusBins, "N ITS clusters"};
     const AxisSpec nTPCClusAxis{cfgNTPCClusBins, "N TPC clusters"};
-    const AxisSpec matterAxis{2, -0.5, 1.5, "Matter/Antimatter"};
+    const AxisSpec hasTRDAxis{2, -0.5, 1.5, "Has TRD"};
 
     const AxisSpec ptAxes[5]{
       {cfgPtBinsProtons, "#it{p}_{T} (GeV/#it{c})"},
@@ -358,6 +360,7 @@ struct nucleiSpectra {
     const AxisSpec etaAxis{40, -1., 1., "#eta"};
 
     spectra.add("hRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
+    spectra.add("hRecVtxZDataITSrof", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
     spectra.add("hTpcSignalData", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTpcSignalDataSelected", "Specific energy loss for selected particles", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTofSignalData", "TOF beta", HistType::kTH2F, {{500, 0., 5., "#it{p} (GeV/#it{c})"}, {750, 0, 1.5, "TOF #beta"}});
@@ -381,7 +384,7 @@ struct nucleiSpectra {
         }
         if (doprocessDataFlow) {
           if (cfgFlowHist->get(iS)) {
-            nuclei::hFlowHists[iC][iS] = spectra.add<THnSparse>(fmt::format("hFlowHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Flow histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnSparseF, {centAxis, ptAxes[iS], nSigmaAxes[0], tofMassAxis, v2Axis, nITSClusAxis, nTPCClusAxis});
+            nuclei::hFlowHists[iC][iS] = spectra.add<THnSparse>(fmt::format("hFlowHists{}_{}", nuclei::matter[iC], nuclei::names[iS]).data(), fmt::format("Flow histograms {} {}", nuclei::matter[iC], nuclei::names[iS]).data(), HistType::kTHnSparseF, {centAxis, ptAxes[iS], nSigmaAxes[0], tofMassAxis, v2Axis, nITSClusAxis, nTPCClusAxis, hasTRDAxis});
           }
         }
       }
@@ -425,6 +428,10 @@ struct nucleiSpectra {
     gRandom->SetSeed(bc.timestamp());
 
     spectra.fill(HIST("hRecVtxZData"), collision.posZ());
+
+    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      spectra.fill(HIST("hRecVtxZDataITSrof"), collision.posZ());
+    }
 
     const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
 
@@ -494,8 +501,8 @@ struct nucleiSpectra {
       if (track.hasTRD()) {
         flag |= kHasTRD;
       }
-      if (!iC) {
-        flag |= kPositive;
+      if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        flag |= kITSrof;
       }
       for (int iS{0}; iS < nuclei::species; ++iS) {
         bool selectedTOF{false};
@@ -531,7 +538,7 @@ struct nucleiSpectra {
                   if constexpr (std::is_same<Tcoll, CollWithEP>::value) {
                     auto deltaPhiInRange = getPhiInRange(fvector.phi() - collision.psiFT0C());
                     auto v2 = TMath::Cos(2.0 * deltaPhiInRange);
-                    nuclei::hFlowHists[iC][iS]->Fill(collision.centFT0C(), fvector.pt(), nSigma[0][iS], tofMass, v2, track.itsNCls(), track.tpcNClsFound());
+                    nuclei::hFlowHists[iC][iS]->Fill(collision.centFT0C(), fvector.pt(), nSigma[0][iS], tofMass, v2, track.itsNCls(), track.tpcNClsFound(), track.hasTRD());
                   }
                 }
               }
@@ -549,7 +556,7 @@ struct nucleiSpectra {
           flag |= BIT(iS);
         }
       }
-      if (flag & (kProton | kDeuteron | kTriton | kHe3 | kHe4)) {
+      if (flag & (kProton | kDeuteron | kTriton | kHe3 | kHe4) || doprocessMC) { /// ignore PID pre-selections for the MC
         if constexpr (std::is_same<Tcoll, CollWithEP>::value) {
           nuclei::candidates_flow.emplace_back(NucleusCandidateFlow{
             collision.centFV0A(),
@@ -624,6 +631,17 @@ struct nucleiSpectra {
         continue;
       }
       auto particle = particlesMC.iteratorAt(label.mcParticleId());
+      bool storeIt{false};
+      for (int iS{0}; iS < nuclei::species; ++iS) {
+        if (std::abs(particle.pdgCode()) == nuclei::codes[iS]) {
+          nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt * nuclei::charges[iS]), 1. - std::abs(c.pt * nuclei::charges[iS]) / particle.pt());
+          storeIt = cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u); /// store only the particles of interest
+          break;
+        }
+      }
+      if (!storeIt) {
+        continue;
+      }
       isReconstructed[particle.globalIndex()] = true;
       if (particle.isPhysicalPrimary()) {
         c.flags |= kIsPhysicalPrimary;
@@ -632,14 +650,8 @@ struct nucleiSpectra {
       } else {
         c.flags |= kIsSecondaryFromMaterial;
       }
-
-      nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()]);
-      for (int iS{0}; iS < nuclei::species; ++iS) {
-        if (std::abs(particle.pdgCode()) == nuclei::codes[iS]) {
-          nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt * nuclei::charges[iS]), 1. - std::abs(c.pt * nuclei::charges[iS]) / particle.pt());
-          break;
-        }
-      }
+      float absoDecL = computeAbsoDecL(particle);
+      nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.clusterSizesITS, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()], absoDecL);
     }
 
     int index{0};
@@ -649,20 +661,18 @@ struct nucleiSpectra {
         if (pdg != nuclei::codes[iS]) {
           continue;
         }
-        uint16_t flags{0u};
+        uint16_t flags{kIsPhysicalPrimary};
         if (particle.isPhysicalPrimary()) {
-          flags |= kIsPhysicalPrimary;
           if (particle.y() > cfgCutRapidityMin && particle.y() < cfgCutRapidityMax) {
             nuclei::hGenNuclei[iS][particle.pdgCode() < 0]->Fill(1., particle.pt());
           }
-        } else if (particle.has_mothers()) {
-          flags |= kIsSecondaryFromWeakDecay;
         } else {
-          flags |= kIsSecondaryFromMaterial;
+          continue; /// for not-reconstructed particles we store only the primaries
         }
 
-        if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u)) && particle.isPhysicalPrimary()) {
-          nucleiTableMC(999., 999., 999., 0., 0., 999., 999., 999., -1, -1, -1, flags, 0, 0, 0, 0, 0, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()]);
+        if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
+          float absDecL = computeAbsoDecL(particle);
+          nucleiTableMC(999., 999., 999., 0., 0., 999., 999., 999., -1, -1, -1, flags, 0, 0, 0, 0, 0, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()], absDecL);
         }
         break;
       }

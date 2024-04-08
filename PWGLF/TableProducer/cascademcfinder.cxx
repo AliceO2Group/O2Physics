@@ -82,10 +82,6 @@ struct cascademcfinder {
   // For manual sliceBy
   Preslice<aod::McParticle> perMcCollision = aod::mcparticle::mcCollisionId;
 
-  // declarative filtering for particles of interest
-  // pre-filter on PDG and on very broad rapidity window
-  Filter mcParticleFilter = nabs(o2::aod::mcparticle::y) < yPreFilter && (nabs(o2::aod::mcparticle::pdgCode) == 3312 || nabs(o2::aod::mcparticle::pdgCode) == 3334);
-
   std::vector<int> casccollisionId;
   std::vector<int> cascv0Index;
   std::vector<int> cascbachelorIndex;
@@ -251,7 +247,7 @@ struct cascademcfinder {
     return reconstructed;
   }
 
-  void process(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, LabeledTracks const& tracks, soa::Filtered<aod::McParticles> const& allMcParticles, LabeledFullV0s const& v0s)
+  void process(soa::Join<aod::McCollisions, aod::McCollsExtra> const& mcCollisions, LabeledTracks const& tracks, aod::McParticles const& allMcParticles, LabeledFullV0s const& v0s)
   {
     casccollisionId.clear();
     cascbachelorIndex.clear();
@@ -275,6 +271,9 @@ struct cascademcfinder {
       bool bachelorTPCITS = false;
       bool reconstructed = false;
       for (auto& mcParticle : mcParticles) {
+        if (fabs(mcParticle.y()) > yPreFilter)
+          continue; // non-declarative skip necessary
+
         if (mcParticle.pdgCode() == 3312 && findXiMinus) {
           reconstructed = ProcessCascade(mcParticle, tracks, v0s, bestCollisionIndex, positiveITS, negativeITS, bachelorITS, positiveTPC, negativeTPC, bachelorTPC, positiveTPCITS, negativeTPCITS, bachelorTPCITS);
           if (fabs(mcParticle.y()) < 0.5) {

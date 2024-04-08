@@ -276,10 +276,10 @@ struct SinglePhotonMC {
     THashList* list_photon_det = static_cast<THashList*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data()));
 
     for (auto& collision : collisions) {
-      if (photontype == EMDetType::kPHOS && !collision.isPHOSCPVreadout()) {
+      if (photontype == EMDetType::kPHOS && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
         continue;
       }
-      if (photontype == EMDetType::kEMC && !collision.isEMCreadout()) {
+      if (photontype == EMDetType::kEMC && !collision.alias_bit(triggerAliases::kTVXinEMC)) {
         continue;
       }
 
@@ -325,7 +325,7 @@ struct SinglePhotonMC {
           }
 
           auto mcphoton = mcparticles.iteratorAt(photonid);
-          if (IsPhysicalPrimary(mcphoton.emmcevent(), mcphoton, mcparticles)) {
+          if (mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator()) {
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt_Photon_Primary"))->Fill(v1.Pt());
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hY_Photon_Primary"))->Fill(v1.Rapidity());
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi_Photon_Primary"))->Fill(v1.Phi() < 0.0 ? v1.Phi() + TMath::TwoPi() : v1.Phi());
@@ -397,14 +397,7 @@ struct SinglePhotonMC {
           continue;
         }
 
-        int photonid = IsEleFromPC(mctrack, mcparticles);
-        if (photonid > 0) {
-          auto mcphoton = mcparticles.iteratorAt(photonid);
-          if (!IsPhysicalPrimary(mcphoton.emmcevent(), mcphoton, mcparticles)) {
-            continue;
-          }
-        }
-        if (abs(mctrack.pdgCode()) == 22 && IsPhysicalPrimary(mctrack.emmcevent(), mctrack, mcparticles)) {
+        if (abs(mctrack.pdgCode()) == 22 && (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPt_Photon"))->Fill(mctrack.pt());
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hY_Photon"))->Fill(mctrack.y());
           reinterpret_cast<TH1F*>(fMainList->FindObject("Generated")->FindObject("hPhi_Photon"))->Fill(mctrack.phi());
