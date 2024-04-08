@@ -55,6 +55,11 @@ enum EventSelectionFlags {
   kIsINT1,             // SPDGFO >= 1 || V0A || V0C
   kNoITSROFrameBorder, // bunch crossing is far from ITS RO Frame border
   kNoTimeFrameBorder,  // bunch crossing is far from Time Frame borders
+  kNoSameBunchPileup,  // reject collisions in case of pileup with another collision in the same foundBC
+  kIsGoodZvtxFT0vsPV,  // small difference between z-vertex from PV and from FT0
+  kIsVertexITSTPC,     // at least one ITS-TPC track (reject vertices built from ITS-only tracks)
+  kIsVertexTOFmatched, // at least one of vertex contributors is matched to TOF
+  kIsVertexTRDmatched, // at least one of vertex contributors is matched to TRD
   kNsel                // counter
 };
 

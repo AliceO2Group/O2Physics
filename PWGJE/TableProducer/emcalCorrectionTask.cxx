@@ -340,6 +340,8 @@ struct EmcalCorrectionTask {
 
     int nBCsProcessed = 0;
     int nCellsProcessed = 0;
+    std::unordered_map<uint64_t, int> numberCollsInBC; // Number of collisions mapped to the global BC index of all BCs
+    std::unordered_map<uint64_t, int> numberCellsInBC; // Number of cells mapped to the global BC index of all BCs to check whether EMCal was readout
     for (auto bc : bcs) {
       LOG(debug) << "Next BC";
       // Convert aod::Calo to o2::emcal::Cell which can be used with the clusterizer.
@@ -348,6 +350,9 @@ struct EmcalCorrectionTask {
       // Get the collisions matched to the BC using foundBCId of the collision
       auto collisionsInFoundBC = collisions.sliceBy(collisionsPerFoundBC, bc.globalIndex());
       auto cellsInBC = cells.sliceBy(mcCellsPerFoundBC, bc.globalIndex());
+
+      numberCollsInBC.insert(std::pair<uint64_t, int>(bc.globalIndex(), collisionsInFoundBC.size()));
+      numberCellsInBC.insert(std::pair<uint64_t, int>(bc.globalIndex(), cellsInBC.size()));
 
       if (!cellsInBC.size()) {
         LOG(debug) << "No cells found for BC";
@@ -430,6 +435,19 @@ struct EmcalCorrectionTask {
       LOG(debug) << "Done with process BC.";
       nBCsProcessed++;
     } // end of bc loop
+
+    // Loop through all collisions and fill emcalcollisionmatch with a boolean stating, whether the collision was ambiguous (not the only collision in its BC)
+    for (const auto& collision : collisions) {
+      auto globalbcid = collision.foundBC_as<bcEvSels>().globalIndex();
+      auto foundColls = numberCollsInBC.find(globalbcid);
+      auto foundCells = numberCellsInBC.find(globalbcid);
+      if (foundColls != numberCollsInBC.end() && foundCells != numberCellsInBC.end()) {
+        emcalcollisionmatch(collision.globalIndex(), foundColls->second != 1, foundCells->second > 0);
+      } else {
+        LOG(warning) << "BC not found in map of number of collisions.";
+      }
+    } // end of collision loop
+
     LOG(detail) << "Processed " << nBCsProcessed << " BCs with " << nCellsProcessed << " cells";
   }
   PROCESS_SWITCH(EmcalCorrectionTask, processMCFull, "run full analysis with MC info", false);

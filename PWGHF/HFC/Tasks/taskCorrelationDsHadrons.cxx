@@ -32,9 +32,9 @@ using namespace o2::framework::expressions;
 struct HfTaskCorrelationDsHadrons {
   Configurable<bool> applyEfficiency{"applyEfficiency", false, "Flag for applying efficiency weights"};
   Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
-  Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{VARIABLE_WIDTH, 0., 2., 4., 8., 12., 50.}, "pT bin limits for assoc particle efficiency"};
+  Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for assoc particle efficiency"};
   Configurable<std::vector<double>> binsPtEfficiencyD{"binsPtEfficiencyD", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for D-meson efficiency"};
-  Configurable<std::vector<double>> binsPtEfficiencyHad{"binsPtEfficiencyHad", std::vector<double>{VARIABLE_WIDTH, 0., 2., 4., 8., 12., 50.}, "pT bin limits for associated particle efficiency"};
+  Configurable<std::vector<double>> binsPtEfficiencyHad{"binsPtEfficiencyHad", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for associated particle efficiency"};
   Configurable<std::vector<double>> efficiencyD{"efficiencyD", {1., 1., 1., 1., 1., 1.}, "efficiency values for Ds meson"};
   Configurable<std::vector<double>> efficiencyHad{"efficiencyHad", {1., 1., 1., 1., 1., 1.}, "efficiency values for associated particles"};
   Configurable<std::vector<double>> signalRegionInner{"signalRegionInner", {1.9440, 1.9440, 1.9440, 1.9440, 1.9440, 1.9440, 1.9440, 1.9440}, "Inner values of signal region vs pT"};
@@ -71,6 +71,7 @@ struct HfTaskCorrelationDsHadrons {
     registry.add("hDeltaEtaPtIntSignalRegionMcRec", "Ds-h deltaEta signal region MC reco", {HistType::kTH1F, {axisDetlaEta}});
     registry.add("hDeltaPhiPtIntSignalRegionMcRec", "Ds-h deltaPhi signal region MC reco", {HistType::kTH1F, {axisDetlaPhi}});
     registry.add("hCorrel2DVsPtSignalRegionMcRec", "Ds-h correlations signal region MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}});
+    registry.add("hCorrel2DVsPtPhysicalPrimaryMcRec", "Ds-h correlations signal region (only true primary particles) MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}}});
     registry.add("hCorrel2DVsPtSignalRegionMcRecPromptDivision", "Ds-h correlations signal region Prompt-NonPrompt MC reco", {HistType::kTHnSparseD, {{axisDetlaPhi}, {axisDetlaEta}, {axisPtD}, {axisPtHadron}, {axisDsPrompt}, {axisPoolBin}}});
     registry.add("hDeltaEtaPtIntSidebandsMcRec", "Ds-h deltaEta sideband region MC reco", {HistType::kTH1F, {axisDetlaEta}});
     registry.add("hDeltaPhiPtIntSidebandsMcRec", "Ds-h deltaPhi sideband region MC reco", {HistType::kTH1F, {axisDetlaPhi}});
@@ -135,6 +136,7 @@ struct HfTaskCorrelationDsHadrons {
       int poolBin = pairEntry.poolBin();
       double massD = pairEntry.mD();
       int statusDsPrompt = static_cast<int>(pairEntry.isPrompt());
+      bool isPhysicalPrimary = pairEntry.isPhysicalPrimary();
       int ptBinD = o2::analysis::findBin(binsPtD, ptD);
 
       double efficiencyWeight = 1.;
@@ -146,6 +148,9 @@ struct HfTaskCorrelationDsHadrons {
         registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSignalRegionMcRec"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSignalRegionMcRec"), deltaPhi, efficiencyWeight);
+        if (isPhysicalPrimary) {
+          registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
+        }
         // prompt and non-prompt division
         if (pairEntry.isSignal()) {
           registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRecPromptDivision"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);

@@ -130,8 +130,8 @@ struct EmcVertexSelectionQA {
         std::vector<int> nVtxContributors;
         for (auto& col : colsinbc) { // Loop over all collisions/vertices
           int ivtxquality = 0;       // 0: TPC/ITS contributor, 1: TRD contributor , 2: TOF contributor
-          int nITStracks = 0;
-          int nTPCtracks = 0;
+          // int nITStracks = 0;
+          // int nTPCtracks = 0;
           int nTOFtracks = 0;
           int nTRDtracks = 0;
           int nPVContributorTracks = 0;
@@ -142,8 +142,8 @@ struct EmcVertexSelectionQA {
             if (!track.isPVContributor()) {
               continue;
             }
-            nITStracks += track.hasITS();
-            nTPCtracks += track.hasTPC();
+            // nITStracks += track.hasITS();
+            // nTPCtracks += track.hasTPC();
             nTOFtracks += track.hasTOF();
             nTRDtracks += track.hasTRD() && !track.hasTOF();
             TrackDCA.push_back(track.dcaXY());

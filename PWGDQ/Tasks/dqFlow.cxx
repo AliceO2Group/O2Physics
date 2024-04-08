@@ -40,11 +40,11 @@
 #include "PWGCF/GenericFramework/Core/GFWCumulant.h"
 #include "PWGCF/GenericFramework/Core/FlowContainer.h"
 #include "PWGCF/GenericFramework/Core/GFWWeights.h"
+#include "PWGCF/GenericFramework/Core/GFWConfig.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
-
 #include "Common/DataModel/Qvectors.h"
 
 using std::complex;
@@ -56,6 +56,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod;
+using namespace o2::analysis;
 
 // Declarations of various short names
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
@@ -79,16 +80,27 @@ using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCentRun2;
 constexpr static uint32_t gkEventFillMapRun3 = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
+constexpr static uint32_t gkEventFillMapRun3Qvect = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::ObjTypes::CollisionQvect;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
 
 struct DQEventQvector {
+
+  std::vector<double> ptbinning = {
+    0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55,
+    0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95,
+    1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9,
+    2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
+
   Produces<ReducedEventsQvector> eventQvector;
+  Produces<ReducedEventsQvectorCentr> eventQvectorCentr;
+  Produces<ReducedEventsRefFlow> eventRefFlow;
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill QA histograms"};
   Configurable<bool> fConfigFlow{"cfgFlow", true, "If true, fill Flow histograms"};
+  Configurable<bool> fConfigFillWeights{"cfgFillWeights", false, "If true, fill histogram for weights"};
   Configurable<float> fConfigCutPtMin{"cfgCutPtMin", 0.2f, "Minimal pT for tracks"};
   Configurable<float> fConfigCutPtMax{"cfgCutPtMax", 12.0f, "Maximal pT for tracks"};
   Configurable<float> fConfigCutEtaMin{"cfgCutEtaMin", -0.8f, "Eta min range for tracks"};
@@ -96,6 +108,7 @@ struct DQEventQvector {
   Configurable<float> fConfigEtaLimitMin{"cfgEtaLimitMin", -0.4f, "Eta gap min separation, only if using subEvents"};
   Configurable<float> fConfigEtaLimitMax{"cfgEtaLimitMax", 0.4f, "Eta gap max separation, only if using subEvents"};
   Configurable<uint8_t> fConfigNPow{"cfgNPow", 0, "Power of weights for Q vector"};
+  // Configurable<GFWBinningCuts> cfgGFWBinning{"cfgGFWBinning", {40, 16, 72, 300, 0, 3000, 0.2, 10.0, 0.2, 3.0, {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10}, {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}}, "Configuration for binning"};
 
   // Access to the efficiencies and acceptances from CCDB
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -115,6 +128,7 @@ struct DQEventQvector {
   struct Config {
     TH1D* mEfficiency = nullptr;
     GFWWeights* mAcceptance = nullptr;
+    bool correctionsLoaded = false;
   } cfg;
 
   // Define output
@@ -122,11 +136,13 @@ struct DQEventQvector {
   AnalysisCompositeCut* fEventCut;
   OutputObj<THashList> fOutputList{"outputQA"};
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
+  OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
 
   // Define global variables for generic framework
   GFW* fGFW = new GFW();
   std::vector<GFW::CorrConfig> corrconfigs;
   TRandom3* fRndm = new TRandom3(0);
+  TAxis* fPtAxis;
 
   // Initialize CCDB, efficiencies and acceptances from CCDB, histograms, GFW, FlowContainer
   void init(o2::framework::InitContext&)
@@ -153,19 +169,17 @@ struct DQEventQvector {
       fHistMan->SetUseDefaultVariableNames(kTRUE);
       fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
 
-      DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts"); // define all histograms
+      DefineHistograms(fHistMan, "Event_BeforeCuts;Event_AfterCuts;Event_BeforeCuts_centralFW;Event_AfterCuts_centralFW"); // define all histograms
       VarManager::SetUseVars(fHistMan->GetUsedVars());
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
 
-    // Global effiencies
-    if (fConfigEfficiency.value.empty() == false) {
-      cfg.mEfficiency = ccdb->getForTimeStamp<TH1D>(fConfigEfficiency.value, fConfigNoLaterThan.value);
-    }
-
-    // Global acceptance or GFWeights to correct for NUA in the track loop
-    if (fConfigAcceptance.value.empty() == false) {
-      cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(fConfigAcceptance.value, fConfigNoLaterThan.value);
+    // Weights for acceptance
+    int ptbins = ptbinning.size() - 1;
+    fPtAxis = new TAxis(ptbins, &ptbinning[0]);
+    if (fConfigFillWeights) {
+      // fWeights->SetPtBins(ptbins, &ptbinning[0]); // in the default case, it will accept everything
+      fWeights->Init(true, false); // true for data, false for MC
     }
 
     // Reference flow
@@ -176,6 +190,7 @@ struct DQEventQvector {
     oba->Add(new TNamed("ChFull24", "ChFull24")); // no-gap case
     oba->Add(new TNamed("ChGap32", "ChGap32"));   // gap-case
     fFC->SetName("FlowContainer");
+    // fFC->SetXAxis(fPtAxis); // For Robin's first version, there was no configuration of axis for flow container
     fFC->Initialize(oba, axisMultiplicity, 10);
     delete oba;
 
@@ -191,6 +206,29 @@ struct DQEventQvector {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP {3} refN {-3}", "ChGap32", kFALSE));
 
     fGFW->CreateRegions();
+  }
+
+  void loadCorrections(uint64_t timestamp)
+  {
+    if (cfg.correctionsLoaded) {
+      return;
+    }
+    if (fConfigAcceptance.value.empty() == false) {
+      cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(fConfigAcceptance, timestamp);
+      if (cfg.mAcceptance) {
+        LOGF(info, "Loaded acceptance weights from %s (%p)", fConfigAcceptance.value.c_str(), (void*)cfg.mAcceptance);
+      } else {
+        LOGF(warning, "Could not load acceptance weights from %s (%p)", fConfigAcceptance.value.c_str(), (void*)cfg.mAcceptance);
+      }
+    }
+    if (fConfigEfficiency.value.empty() == false) {
+      cfg.mEfficiency = ccdb->getForTimeStamp<TH1D>(fConfigEfficiency, timestamp);
+      if (cfg.mEfficiency == nullptr) {
+        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", fConfigAcceptance.value.c_str());
+      }
+      LOGF(info, "Loaded efficiency histogram from %s (%p)", fConfigAcceptance.value.c_str(), (void*)cfg.mEfficiency);
+    }
+    cfg.correctionsLoaded = true;
   }
 
   // Fill the FlowContainer
@@ -239,15 +277,16 @@ struct DQEventQvector {
     VarManager::FillQVectorFromCentralFW(collision);
 
     if (fConfigQA) {
-      fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues);
+      fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
       if (fEventCut->IsSelected(VarManager::fgValues)) {
-        fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+        fHistMan->FillHistClass("Event_AfterCuts_centralFW", VarManager::fgValues);
       }
     }
 
     // Fill the tree for the reduced event table with Q vector quantities
     if (fEventCut->IsSelected(VarManager::fgValues)) {
-      eventQvector(VarManager::fgValues[VarManager::kQ1X0A], VarManager::fgValues[VarManager::kQ1Y0A], VarManager::fgValues[VarManager::kQ1X0B], VarManager::fgValues[VarManager::kQ1Y0B], VarManager::fgValues[VarManager::kQ1X0C], VarManager::fgValues[VarManager::kQ1Y0C], VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kQ3X0A], VarManager::fgValues[VarManager::kQ3Y0A], VarManager::fgValues[VarManager::kQ3X0B], VarManager::fgValues[VarManager::kQ3Y0B], VarManager::fgValues[VarManager::kQ3X0C], VarManager::fgValues[VarManager::kQ3Y0C], VarManager::fgValues[VarManager::kQ4X0A], VarManager::fgValues[VarManager::kQ4Y0A], VarManager::fgValues[VarManager::kQ4X0B], VarManager::fgValues[VarManager::kQ4Y0B], VarManager::fgValues[VarManager::kQ4X0C], VarManager::fgValues[VarManager::kQ4Y0C]);
+      eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecBPosRe(), collision.qvecBPosIm(), collision.qvecBNegRe(), collision.qvecBNegIm(),
+                        collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkBPos(), collision.nTrkBNeg());
     }
   }
 
@@ -264,15 +303,32 @@ struct DQEventQvector {
     // if (fConfigAcceptance.value.empty() == false) { cfg.mAcceptance = ccdb->getForTimeStamp<GFWWeights>(fConfigAcceptance.value, bc.timestamp());}
 
     fGFW->Clear();
-
+    float centrality;
+    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    // Load weights from CCDB
+    loadCorrections(bc.timestamp());
     constexpr bool eventHasCentRun2 = ((TEventFillMap & VarManager::ObjTypes::CollisionCentRun2) > 0);
     constexpr bool eventHasCentRun3 = ((TEventFillMap & VarManager::ObjTypes::CollisionCent) > 0);
+
+    // Get centrality for current collision
+    if constexpr (eventHasCentRun2) {
+      centrality = VarManager::fgValues[VarManager::kCentVZERO];
+    }
+    if constexpr (eventHasCentRun3) {
+      centrality = VarManager::fgValues[VarManager::kCentFT0C];
+    }
 
     // Acceptance and efficiency weights
     float weff = 1.0, wacc = 1.0;
 
     // Fill the GFW object in the track loop
     for (auto& track : tracks1) {
+
+      // Fill weights for Q-vector correction: this should be enabled for a first run to get weights
+      if (fConfigFillWeights) {
+        fWeights->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), centrality, 0);
+      }
+
       if (cfg.mEfficiency) {
         weff = cfg.mEfficiency->GetBinContent(cfg.mEfficiency->FindBin(track.pt()));
       } else {
@@ -303,9 +359,9 @@ struct DQEventQvector {
     }
 
     // Define quantities needed for the different eta regions
-    uint8_t nentriesN = 0.0;
-    uint8_t nentriesP = 0.0;
-    uint8_t nentriesFull = 0.0;
+    int nentriesN = 0;
+    int nentriesP = 0;
+    int nentriesFull = 0;
     complex<double> Q1vecN;
     complex<double> Q1vecP;
     complex<double> Q1vecFull;
@@ -361,6 +417,29 @@ struct DQEventQvector {
     if (fEventCut->IsSelected(VarManager::fgValues)) {
       eventQvector(VarManager::fgValues[VarManager::kQ1X0A], VarManager::fgValues[VarManager::kQ1Y0A], VarManager::fgValues[VarManager::kQ1X0B], VarManager::fgValues[VarManager::kQ1Y0B], VarManager::fgValues[VarManager::kQ1X0C], VarManager::fgValues[VarManager::kQ1Y0C], VarManager::fgValues[VarManager::kQ2X0A], VarManager::fgValues[VarManager::kQ2Y0A], VarManager::fgValues[VarManager::kQ2X0B], VarManager::fgValues[VarManager::kQ2Y0B], VarManager::fgValues[VarManager::kQ2X0C], VarManager::fgValues[VarManager::kQ2Y0C], VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kMultC], VarManager::fgValues[VarManager::kQ3X0A], VarManager::fgValues[VarManager::kQ3Y0A], VarManager::fgValues[VarManager::kQ3X0B], VarManager::fgValues[VarManager::kQ3Y0B], VarManager::fgValues[VarManager::kQ3X0C], VarManager::fgValues[VarManager::kQ3Y0C], VarManager::fgValues[VarManager::kQ4X0A], VarManager::fgValues[VarManager::kQ4Y0A], VarManager::fgValues[VarManager::kQ4X0B], VarManager::fgValues[VarManager::kQ4Y0B], VarManager::fgValues[VarManager::kQ4X0C], VarManager::fgValues[VarManager::kQ4Y0C]);
     }
+
+    // Fill the tree for the reduced event table with RefFlow quantities
+    if (fEventCut->IsSelected(VarManager::fgValues)) {
+      eventRefFlow(VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], centrality);
+    }
+
+    if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0) {
+      VarManager::FillQVectorFromCentralFW(collision);
+
+      if (fConfigQA) {
+        fHistMan->FillHistClass("Event_BeforeCuts_centralFW", VarManager::fgValues);
+        if (fEventCut->IsSelected(VarManager::fgValues)) {
+          fHistMan->FillHistClass("Event_AfterCuts_centralFW", VarManager::fgValues);
+          eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecBPosRe(), collision.qvecBPosIm(), collision.qvecBNegRe(), collision.qvecBNegIm(),
+                            collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkBPos(), collision.nTrkBNeg());
+
+          // Fill the tree for the reduced event table with RefFlow quantities
+          if (fEventCut->IsSelected(VarManager::fgValues)) {
+            eventRefFlow(VarManager::fgValues[VarManager::kMultA], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], centrality);
+          }
+        }
+      }
+    }
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 2
@@ -373,6 +452,12 @@ struct DQEventQvector {
   void processBarrelQvector(MyEventsWithCentRun3::iterator const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
   {
     runFillQvector<gkEventFillMapRun3, gkTrackFillMap>(collisions, bcs, tracks);
+  }
+
+  // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
+  void processAllQvector(MyEventsWithCentQvectRun3::iterator const& collisions, aod::BCsWithTimestamps const& bcs, soa::Filtered<MyBarrelTracks> const& tracks)
+  {
+    runFillQvector<gkEventFillMapRun3Qvect, gkTrackFillMap>(collisions, bcs, tracks);
   }
 
   // Process to fill Q vector using barrel tracks in a reduced event table for barrel/muon tracks flow related analyses Run 3
@@ -395,6 +480,7 @@ struct DQEventQvector {
 
   PROCESS_SWITCH(DQEventQvector, processBarrelQvectorRun2, "Run q-vector task on barrel tracks for Run2", false);
   PROCESS_SWITCH(DQEventQvector, processBarrelQvector, "Run q-vector task on barrel tracks for Run3", false);
+  PROCESS_SWITCH(DQEventQvector, processAllQvector, "Run q-vector task on barrel tracks for Run3 and using central q-vector", false);
   PROCESS_SWITCH(DQEventQvector, processCentralQvector, "Run q-vector task using central q-vector", false);
   PROCESS_SWITCH(DQEventQvector, processForwardQvector, "Run q-vector task on forward tracks for Run3", false);
   PROCESS_SWITCH(DQEventQvector, processDummy, "Dummy function", false);

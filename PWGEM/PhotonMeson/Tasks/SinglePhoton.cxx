@@ -45,10 +45,10 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMReducedEventIds>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct SinglePhoton {
@@ -236,7 +236,7 @@ struct SinglePhoton {
     LOGF(info, "Number of EMCal cuts = %d", fEMCCuts.size());
   }
 
-  Preslice<MyV0Photons> perCollision = aod::v0photonkf::emreducedeventId;
+  Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;
   // Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   // Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
 
@@ -264,10 +264,10 @@ struct SinglePhoton {
     THashList* list_photon_det = static_cast<THashList*>(fMainList->FindObject("Photon")->FindObject(detnames[photontype].data()));
 
     for (auto& collision : collisions) {
-      if (photontype == EMDetType::kPHOS && !collision.isPHOSCPVreadout()) {
+      if (photontype == EMDetType::kPHOS && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
         continue;
       }
-      if (photontype == EMDetType::kEMC && !collision.isEMCreadout()) {
+      if (photontype == EMDetType::kEMC && !collision.alias_bit(triggerAliases::kTVXinEMC)) {
         continue;
       }
 

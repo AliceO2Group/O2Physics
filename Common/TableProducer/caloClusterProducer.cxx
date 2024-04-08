@@ -1048,12 +1048,14 @@ struct caloClusterProducerTask {
         float trackDx = 9999., trackDz = 9999.;
         int trackindex = -1;
         for (int indx : regions) {
-          if (indx >= 0 && indx < kCpvCells) {
-            for (int ii = cpvPoints->mStart[indx]; ii < cpvPoints->mEnd[indx]; ii++) {
-              auto p = cpvMatchPoints[indx][ii];
-              float d = pow((p.first - posX) * sigmaX, 2) + pow((p.second - posZ) * sigmaZ, 2);
-              if (d < cpvdist) {
-                cpvdist = d;
+          if (cpvPoints != cpvNMatchPoints.end()) {
+            if (indx >= 0 && indx < kCpvCells) {
+              for (int ii = cpvPoints->mStart[indx]; ii < cpvPoints->mEnd[indx]; ii++) {
+                auto p = cpvMatchPoints[indx][ii];
+                float d = pow((p.first - posX) * sigmaX, 2) + pow((p.second - posZ) * sigmaZ, 2);
+                if (d < cpvdist) {
+                  cpvdist = d;
+                }
               }
             }
           }
@@ -1129,7 +1131,6 @@ struct caloClusterProducerTask {
                      o2::aod::CPVClusters const& cpvs,
                      o2::aod::FullTracks const& tracks)
   {
-
     int64_t timestamp = 0;
     if (bcs.begin() != bcs.end()) {
       timestamp = bcs.begin().timestamp(); // timestamp for CCDB object retrieval
@@ -1244,7 +1245,6 @@ struct caloClusterProducerTask {
     if (phosCellTRs.size() > 0) {
       phosCellTRs.back().setNumberOfObjects(phosCells.size() - phosCellTRs.back().getFirstEntry());
     }
-
     // clusterize
     o2::dataformats::MCTruthContainer<o2::phos::MCLabel> outputTruthCont;
     clusterizerPHOS->processCells(phosCells, phosCellTRs, &cellTruth,
@@ -1273,7 +1273,7 @@ struct caloClusterProducerTask {
           cpvNMatchPoints.back().mEnd[i] = cpvMatchPoints[i].size();
         }
         curBC = cpvclu.bc_as<aod::BCsWithTimestamps>().globalBC();
-        cpvNMatchPoints.back() = cpvNMatchPoints.emplace_back();
+        cpvNMatchPoints.emplace_back();
         cpvNMatchPoints.back().mTR = curBC;
         for (int i = kCpvCells; i--;) {
           cpvNMatchPoints.back().mStart[i] = cpvMatchPoints[i].size();
@@ -1296,7 +1296,7 @@ struct caloClusterProducerTask {
     std::vector<trackTrigRec> trackNMatchPoints;
     trackNMatchPoints.reserve(outputPHOSClusterTrigRecs.size());
 
-    curBC = 0;
+    curBC = -1;
     for (const auto& track : tracks) {
       if (track.has_collision()) { // ignore orphan tracks without collision
         curBC = track.collision().bc_as<aod::BCsWithTimestamps>().globalBC();
@@ -1390,7 +1390,6 @@ struct caloClusterProducerTask {
         }
         cpvPoints++;
       }
-
       // find cpvTR for this BC
       auto trackPoints = trackNMatchPoints.begin();
       while (trackPoints != trackNMatchPoints.end()) {
@@ -1428,7 +1427,6 @@ struct caloClusterProducerTask {
         e = Nonlinearity(e);
 
         mom.SetMag(e);
-
         // CPV and track match
         const float cellSizeX = 2 * cpvMaxX / kCpvX;
         const float cellSizeZ = 2 * cpvMaxZ / kCpvZ;
@@ -1467,16 +1465,17 @@ struct caloClusterProducerTask {
         float trackDx = 9999., trackDz = 9999.;
         int trackindex = -1;
         for (int indx : regions) {
-          if (indx >= 0 && indx < kCpvCells) {
-            for (int ii = cpvPoints->mStart[indx]; ii < cpvPoints->mEnd[indx]; ii++) {
-              auto p = cpvMatchPoints[indx][ii];
-              float d = pow((p.first - posX) * sigmaX, 2) + pow((p.second - posZ) * sigmaZ, 2);
-              if (d < cpvdist) {
-                cpvdist = d;
+          if (cpvPoints != cpvNMatchPoints.end()) {
+            if (indx >= 0 && indx < kCpvCells) {
+              for (int ii = cpvPoints->mStart[indx]; ii < cpvPoints->mEnd[indx]; ii++) {
+                auto p = cpvMatchPoints[indx][ii];
+                float d = pow((p.first - posX) * sigmaX, 2) + pow((p.second - posZ) * sigmaZ, 2);
+                if (d < cpvdist) {
+                  cpvdist = d;
+                }
               }
             }
           }
-
           // same for tracks
           if (trackPoints != trackNMatchPoints.end()) {
             for (int ii = trackPoints->mStart[indx]; ii < trackPoints->mEnd[indx]; ii++) {

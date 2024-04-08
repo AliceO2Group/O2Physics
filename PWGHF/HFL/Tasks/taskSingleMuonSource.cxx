@@ -87,6 +87,8 @@ struct HfTaskSingleMuonSource {
       "NonpromptCharmMu",
       "PromptCharmMu",
       "LightDecayMu",
+      "BeautyToLightDecayMu",
+      "CharmToLightDecayMu",
       "SecondaryMu",
       "Hadron",
       "Unidentified"};
@@ -98,11 +100,13 @@ struct HfTaskSingleMuonSource {
     AxisSpec axisDeltaPt{1000, -50., 50., "#Delta #it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisMftNC{10, 0., 11., "Number of clusters in MFT"};
 
+    HistogramConfigSpec h1Pt{HistType::kTH1F, {axisPt}};
     HistogramConfigSpec h2PtDCA{HistType::kTH2F, {axisPt, axisDCA}};
     HistogramConfigSpec h2PtChi2{HistType::kTH2F, {axisPt, axisChi2}};
     HistogramConfigSpec h3PtDeltaPtMftNC{HistType::kTH3F, {axisPt, axisDeltaPt, axisMftNC}};
 
     for (const auto& src : muonSources) {
+      registry.add(Form("h1%sPt", src.Data()), "", h1Pt);
       registry.add(Form("h2%sPtDCA", src.Data()), "", h2PtDCA);
       registry.add(Form("h2%sPtChi2", src.Data()), "", h2PtChi2);
       registry.add(Form("h3%sPtDeltaPtMftNC", src.Data()), "", h3PtDeltaPtMftNC);
@@ -212,7 +216,19 @@ struct HfTaskSingleMuonSource {
   // this muon comes from light flavor quark decay
   bool isLightDecayMu(const uint8_t& mask)
   {
-    return (isMuon(mask) && TESTBIT(mask, HasLightParent) && (!TESTBIT(mask, IsSecondary)) && (!TESTBIT(mask, HasQuarkoniumParent)));
+    return (isMuon(mask) && TESTBIT(mask, HasLightParent) && (!TESTBIT(mask, IsSecondary)) && (!TESTBIT(mask, HasQuarkoniumParent)) && (!TESTBIT(mask, HasBeautyParent)) && (!TESTBIT(mask, HasCharmParent)));
+  }
+
+  // this muon comes from beauty to light flavor decay
+  bool isBeautyToLightDecayMu(const uint8_t& mask)
+  {
+    return (isMuon(mask) && TESTBIT(mask, HasLightParent) && (TESTBIT(mask, HasBeautyParent)) && (!TESTBIT(mask, IsSecondary)) && (!TESTBIT(mask, HasQuarkoniumParent)));
+  }
+
+  // this muon comes from charm to light flavor decay
+  bool isCharmToLightDecayMu(const uint8_t& mask)
+  {
+    return (isMuon(mask) && TESTBIT(mask, HasLightParent) && (TESTBIT(mask, HasCharmParent)) && (!TESTBIT(mask, IsSecondary)) && (!TESTBIT(mask, HasQuarkoniumParent)));
   }
 
   // this muon comes from transport
@@ -240,48 +256,78 @@ struct HfTaskSingleMuonSource {
     const auto pt(muon.pt()), chi2(muon.chi2MatchMCHMFT());
     const auto dca(RecoDecay::sqrtSumOfSquares(muon.fwdDcaX(), muon.fwdDcaY()));
 
-    if (!muon.has_matchMCHTrack()) {
-      return;
-    }
-    const auto muonType3 = muon.matchMCHTrack_as<McMuons>();
-    const auto deltaPt = muonType3.pt() - pt;
+    if (trackType == 0 || trackType == 2) {
+      if (!muon.has_matchMCHTrack()) {
+        return;
+      }
+      const auto muonType3 = muon.matchMCHTrack_as<McMuons>();
+      const auto deltaPt = muonType3.pt() - pt;
 
-    if (!muon.has_matchMFTTrack()) {
-      return;
-    }
-    const auto mft = muon.matchMFTTrack_as<McMFTs>();
-    const auto mftNC = mft.nClusters();
+      if (!muon.has_matchMFTTrack()) {
+        return;
+      }
+      const auto mft = muon.matchMFTTrack_as<McMFTs>();
+      const auto mftNC = mft.nClusters();
 
-    singleMuonSource(pt, dca, mask);
+      singleMuonSource(pt, dca, mask);
 
-    if (isBeautyDecayMu(mask)) {
-      registry.fill(HIST("h2BeautyDecayMuPtDCA"), pt, dca);
-      registry.fill(HIST("h2BeautyDecayMuPtChi2"), pt, chi2);
-      registry.fill(HIST("h3BeautyDecayMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
-    } else if (isNonpromptCharmMu(mask)) {
-      registry.fill(HIST("h2NonpromptCharmMuPtDCA"), pt, dca);
-      registry.fill(HIST("h2NonpromptCharmMuPtChi2"), pt, chi2);
-      registry.fill(HIST("h3NonpromptCharmMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
-    } else if (isPromptCharmMu(mask)) {
-      registry.fill(HIST("h2PromptCharmMuPtDCA"), pt, dca);
-      registry.fill(HIST("h2PromptCharmMuPtChi2"), pt, chi2);
-      registry.fill(HIST("h3PromptCharmMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
-    } else if (isLightDecayMu(mask)) {
-      registry.fill(HIST("h2LightDecayMuPtDCA"), pt, dca);
-      registry.fill(HIST("h2LightDecayMuPtChi2"), pt, chi2);
-      registry.fill(HIST("h3LightDecayMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
-    } else if (isSecondaryMu(mask)) {
-      registry.fill(HIST("h2SecondaryMuPtDCA"), pt, dca);
-      registry.fill(HIST("h2SecondaryMuPtChi2"), pt, chi2);
-      registry.fill(HIST("h3SecondaryMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
-    } else if (isHadron(mask)) {
-      registry.fill(HIST("h2HadronPtDCA"), pt, dca);
-      registry.fill(HIST("h2HadronPtChi2"), pt, chi2);
-      registry.fill(HIST("h3HadronPtDeltaPtMftNC"), pt, deltaPt, mftNC);
-    } else if (isUnidentified(mask)) {
-      registry.fill(HIST("h2UnidentifiedPtDCA"), pt, dca);
-      registry.fill(HIST("h2UnidentifiedPtChi2"), pt, chi2);
-      registry.fill(HIST("h3UnidentifiedPtDeltaPtMftNC"), pt, deltaPt, mftNC);
+      if (isBeautyDecayMu(mask)) {
+        registry.fill(HIST("h2BeautyDecayMuPtDCA"), pt, dca);
+        registry.fill(HIST("h2BeautyDecayMuPtChi2"), pt, chi2);
+        registry.fill(HIST("h3BeautyDecayMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
+      } else if (isNonpromptCharmMu(mask)) {
+        registry.fill(HIST("h2NonpromptCharmMuPtDCA"), pt, dca);
+        registry.fill(HIST("h2NonpromptCharmMuPtChi2"), pt, chi2);
+        registry.fill(HIST("h3NonpromptCharmMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
+      } else if (isPromptCharmMu(mask)) {
+        registry.fill(HIST("h2PromptCharmMuPtDCA"), pt, dca);
+        registry.fill(HIST("h2PromptCharmMuPtChi2"), pt, chi2);
+        registry.fill(HIST("h3PromptCharmMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
+      } else if (isLightDecayMu(mask)) {
+        registry.fill(HIST("h2LightDecayMuPtDCA"), pt, dca);
+        registry.fill(HIST("h2LightDecayMuPtChi2"), pt, chi2);
+        registry.fill(HIST("h3LightDecayMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
+      } else if (isBeautyToLightDecayMu(mask)) {
+        registry.fill(HIST("h2BeautyToLightDecayMuPtDCA"), pt, dca);
+        registry.fill(HIST("h2BeautyToLightDecayMuPtChi2"), pt, chi2);
+        registry.fill(HIST("h3BeautyToLightDecayMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
+      } else if (isCharmToLightDecayMu(mask)) {
+        registry.fill(HIST("h2CharmToLightDecayMuPtDCA"), pt, dca);
+        registry.fill(HIST("h2CharmToLightDecayMuPtChi2"), pt, chi2);
+        registry.fill(HIST("h3CharmToLightDecayMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
+      } else if (isSecondaryMu(mask)) {
+        registry.fill(HIST("h2SecondaryMuPtDCA"), pt, dca);
+        registry.fill(HIST("h2SecondaryMuPtChi2"), pt, chi2);
+        registry.fill(HIST("h3SecondaryMuPtDeltaPtMftNC"), pt, deltaPt, mftNC);
+      } else if (isHadron(mask)) {
+        registry.fill(HIST("h2HadronPtDCA"), pt, dca);
+        registry.fill(HIST("h2HadronPtChi2"), pt, chi2);
+        registry.fill(HIST("h3HadronPtDeltaPtMftNC"), pt, deltaPt, mftNC);
+      } else if (isUnidentified(mask)) {
+        registry.fill(HIST("h2UnidentifiedPtDCA"), pt, dca);
+        registry.fill(HIST("h2UnidentifiedPtChi2"), pt, chi2);
+        registry.fill(HIST("h3UnidentifiedPtDeltaPtMftNC"), pt, deltaPt, mftNC);
+      }
+    } else {
+      if (isBeautyDecayMu(mask)) {
+        registry.fill(HIST("h1BeautyDecayMuPt"), pt);
+      } else if (isNonpromptCharmMu(mask)) {
+        registry.fill(HIST("h1NonpromptCharmMuPt"), pt);
+      } else if (isPromptCharmMu(mask)) {
+        registry.fill(HIST("h1PromptCharmMuPt"), pt);
+      } else if (isLightDecayMu(mask)) {
+        registry.fill(HIST("h1LightDecayMuPt"), pt);
+      } else if (isBeautyToLightDecayMu(mask)) {
+        registry.fill(HIST("h1BeautyToLightDecayMuPt"), pt);
+      } else if (isCharmToLightDecayMu(mask)) {
+        registry.fill(HIST("h1CharmToLightDecayMuPt"), pt);
+      } else if (isSecondaryMu(mask)) {
+        registry.fill(HIST("h1SecondaryMuPt"), pt);
+      } else if (isHadron(mask)) {
+        registry.fill(HIST("h1HadronPt"), pt);
+      } else if (isUnidentified(mask)) {
+        registry.fill(HIST("h1UnidentifiedPt"), pt);
+      }
     }
   }
 
@@ -303,7 +349,7 @@ struct HfTaskSingleMuonSource {
       if (muon.trackType() != trackType) {
         continue;
       }
-      if (muon.mcMask() != mcMaskSelection) {
+      if (trackType == 0 && muon.mcMask() != mcMaskSelection) {
         continue;
       }
       const auto eta(muon.eta()), pDca(muon.pDca()), rAbs(muon.rAtAbsorberEnd());

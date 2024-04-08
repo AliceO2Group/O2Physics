@@ -43,6 +43,7 @@
 #include <iterator>
 #include <utility>
 
+#include "TRandom3.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/AnalysisTask.h"
@@ -94,9 +95,12 @@ struct lambdakzeroBuilder {
   Produces<aod::V0Indices> v0indices;
   Produces<aod::StoredV0Cores> v0cores;
   Produces<aod::V0TrackXs> v0trackXs;
-  Produces<aod::V0Covs> v0covs;                 // covariances
-  Produces<aod::V0DauCovs> v0daucovs;           // covariances of daughter tracks
-  Produces<aod::V0TraPosAtDCAs> v0dauPositions; // auxiliary debug information
+  Produces<aod::V0Covs> v0covs;                  // covariances
+  Produces<aod::V0DauCovs> v0daucovs;            // covariances of daughter tracks
+  Produces<aod::V0DauCovIUs> v0daucovIUs;        // covariances of daughter tracks
+  Produces<aod::V0TraPosAtDCAs> v0dauPositions;  // auxiliary debug information
+  Produces<aod::V0TraPosAtIUs> v0dauPositionsIU; // auxiliary debug information
+  Produces<aod::V0Ivanovs> v0ivanovs;
 
   Produces<aod::V0fCIndices> v0fcindices;
   Produces<aod::StoredV0fCCores> v0fccores;
@@ -109,6 +113,7 @@ struct lambdakzeroBuilder {
   Configurable<int> createV0CovMats{"createV0CovMats", -1, {"Produces V0 cov matrices. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> createV0DauCovMats{"createV0DauCovMats", -1, {"Produces V0 cov matrices for daughter tracks. -1: auto, 0: don't, 1: yes. Default: auto (-1)"}};
   Configurable<int> createV0PosAtDCAs{"createV0PosAtDCAs", 0, {"Produces V0 track positions at minima. 0: don't, 1: yes. Default: no (0)"}};
+  Configurable<int> createV0PosAtIUs{"createV0PosAtIUs", 0, {"Produces V0 track positions at IU. 0: don't, 1: yes. Default: no (0)"}};
 
   Configurable<bool> storePhotonCandidates{"storePhotonCandidates", false, "store photon candidates (yes/no)"};
 
@@ -116,8 +121,18 @@ struct lambdakzeroBuilder {
   Configurable<bool> d_UseAutodetectMode{"d_UseAutodetectMode", false, "Autodetect requested topo sels"};
 
   // downscaling for testing
-  Configurable<float> downscaleFactor{"downscaleFactor", 2, "Downcale factor (0: build nothing, 1: build all)"};
+  Configurable<float> downscaleFactor{"downscaleFactor", 2, "Downscale factor (0: build nothing, 1: build all)"};
   unsigned int randomSeed = 0;
+
+  // downscaling for Marian Ivanov -> different strategies
+  TRandom3 prng;
+  Configurable<bool> downscale_adaptive{"downscale_adaptive", false, "Downscale: use pT-dependent techniques"};
+  Configurable<float> downscale_mass{"downscale_mass", .139, "Downscale: Tsallis Mass"};
+  Configurable<float> downscale_sqrts{"downscale_sqrts", 13.6, "Downscale: Tsallis sqrts"};
+  Configurable<float> downscale_factorPt{"downscale_factorPt", 1.0, "Downscale: factor Pt"};
+  Configurable<float> downscale_factor1Pt{"downscale_factor1Pt", 1.0, "Downscale: factor 1/Pt"};
+  Configurable<float> downscale_factorUniform{"downscale_factorPt", 1e-3, "Downscale: factor Pt"};
+  Configurable<int> downscale_triggerMaskSelection{"downscale_triggerMaskSelection", 0, "Downscale: trigger mask selection"};
 
   Configurable<float> dcanegtopv{"dcanegtopv", .1, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", .1, "DCA Pos To PV"};
@@ -136,6 +151,7 @@ struct lambdakzeroBuilder {
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
   Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
+  Configurable<bool> d_UseCollinearFit{"d_UseCollinearFit", false, "Fit V0s via the collinear Method in DCAFitter"};
   Configurable<float> d_maxDZIni{"d_maxDZIni", 1e9, "Dont consider a seed (circles intersection) if Z distance exceeds this"};
   Configurable<float> d_maxDXYIni{"d_maxDXYIni", 4, "Dont consider a seed (circles intersection) if XY distance exceeds this"};
   Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
@@ -279,6 +295,38 @@ struct lambdakzeroBuilder {
      {"hPositiveITSClusters", "hPositiveITSClusters", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}},
      {"hNegativeITSClusters", "hNegativeITSClusters", {HistType::kTH1D, {{10, -0.5f, 9.5f}}}}}};
 
+  // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
+  // tools for downsampling (Marian)
+  float TsallisCharged(float pt)
+  {
+    const float a = 6.81, b = 59.24;
+    const float c = 0.082, d = 0.151;
+    float mt = TMath::Sqrt(downscale_mass * downscale_mass + pt * pt);
+    float n = a + b / downscale_sqrts;
+    float T = c + d / downscale_sqrts;
+    float p0 = n * T;
+    float result = TMath::Power((1. + mt / p0), -n);
+    result *= pt;
+    return result;
+  }
+
+  int DownsampleMap(float pt)
+  {
+    float prob = TsallisCharged(pt);
+    float probNorm = TsallisCharged(1.);
+    int triggerMask = 0;
+    if (prng.Rndm() * prob / probNorm < downscale_factorPt)
+      triggerMask |= 1;
+    if ((prng.Rndm() * ((prob / probNorm) * pt * pt)) < downscale_factor1Pt)
+      triggerMask |= 2;
+    if (prng.Rndm() < downscale_factorPt)
+      triggerMask |= 4;
+    if (prng.Rndm() < downscale_factorUniform)
+      triggerMask |= 8;
+    return triggerMask;
+  }
+  // +-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+-~-+
+
   float CalculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
   {
     return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
@@ -329,9 +377,12 @@ struct lambdakzeroBuilder {
 
   o2::track::TrackParCov lPositiveTrack;
   o2::track::TrackParCov lNegativeTrack;
+  o2::track::TrackParCov lPositiveTrackIU;
+  o2::track::TrackParCov lNegativeTrackIU;
 
   void init(InitContext& context)
   {
+    prng.SetSeed(0);
     resetHistos();
 
     auto h = registry.add<TH1>("hV0Criteria", "hV0Criteria", kTH1D, {{10, -0.5f, 9.5f}});
@@ -660,10 +711,13 @@ struct lambdakzeroBuilder {
     // Change strangenessBuilder tracks
     lPositiveTrack = getTrackParCov(posTrack);
     lNegativeTrack = getTrackParCov(negTrack);
+    lPositiveTrackIU = getTrackParCov(posTrack);
+    lNegativeTrackIU = getTrackParCov(negTrack);
 
     //---/---/---/
     // Move close to minima
     int nCand = 0;
+    fitter.setCollinear(d_UseCollinearFit || V0.isCollinearV0());
     try {
       nCand = fitter.process(lPositiveTrack, lNegativeTrack);
     } catch (...) {
@@ -919,6 +973,14 @@ struct lambdakzeroBuilder {
         continue; // doesn't pass selections
       }
 
+      int ivanovMap = 0;
+      if (downscale_adaptive) {
+        float pt = RecoDecay::sqrtSumOfSquares(v0candidate.posP[0] + v0candidate.negP[0], v0candidate.posP[1] + v0candidate.negP[1]);
+        ivanovMap = DownsampleMap(pt);
+        if (ivanovMap == 0)
+          continue; // skip this V0, passes nothing
+      }
+
       // round the DCA variables to a certain precision if asked
       if (roundDCAVariables)
         roundV0CandidateVariables();
@@ -945,6 +1007,17 @@ struct lambdakzeroBuilder {
         if (createV0PosAtDCAs)
           v0dauPositions(v0candidate.posPosition[0], v0candidate.posPosition[1], v0candidate.posPosition[2],
                          v0candidate.negPosition[0], v0candidate.negPosition[1], v0candidate.negPosition[2]);
+        if (createV0PosAtDCAs) {
+          std::array<float, 3> posPositionIU;
+          std::array<float, 3> negPositionIU;
+          lPositiveTrackIU.getXYZGlo(posPositionIU);
+          lNegativeTrackIU.getXYZGlo(negPositionIU);
+          v0dauPositionsIU(posPositionIU[0], posPositionIU[1], posPositionIU[2],
+                           negPositionIU[0], negPositionIU[1], negPositionIU[2]);
+        }
+        if (downscale_adaptive) {
+          v0ivanovs(ivanovMap);
+        }
       } else {
         // place V0s built exclusively for the sake of cascades
         // in a fully independent table (though identical) to make
@@ -980,10 +1053,14 @@ struct lambdakzeroBuilder {
         positionCovariance[5] = covVtxV(2, 2);
         std::array<float, 21> covTpositive = {0.};
         std::array<float, 21> covTnegative = {0.};
+        std::array<float, 21> covTpositiveIU = {0.};
+        std::array<float, 21> covTnegativeIU = {0.};
         // std::array<float, 6> momentumCovariance;
         float momentumCovariance[6];
         lPositiveTrack.getCovXYZPxPyPzGlo(covTpositive);
         lNegativeTrack.getCovXYZPxPyPzGlo(covTnegative);
+        lPositiveTrackIU.getCovXYZPxPyPzGlo(covTpositiveIU);
+        lNegativeTrackIU.getCovXYZPxPyPzGlo(covTnegativeIU);
         constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
         for (int i = 0; i < 6; i++) {
           momentumCovariance[i] = covTpositive[MomInd[i]] + covTnegative[MomInd[i]];
@@ -996,11 +1073,16 @@ struct lambdakzeroBuilder {
             // store momentum covariance matrix
             float covariancePosTrack[21];
             float covarianceNegTrack[21];
+            float covariancePosTrackIU[21];
+            float covarianceNegTrackIU[21];
             for (int i = 0; i < 21; i++) {
               covariancePosTrack[i] = covTpositive[i];
               covarianceNegTrack[i] = covTnegative[i];
+              covariancePosTrackIU[i] = covTpositiveIU[i];
+              covarianceNegTrackIU[i] = covTnegativeIU[i];
             }
             v0daucovs(covariancePosTrack, covarianceNegTrack);
+            v0daucovIUs(covariancePosTrackIU, covarianceNegTrackIU);
           }
         } else {
           v0fccovs(positionCovariance, momentumCovariance);

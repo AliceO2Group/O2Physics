@@ -35,9 +35,7 @@ using namespace o2::framework::expressions;
 using std::array;
 
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using CollEventPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0AQVs, aod::StraFT0CQVs, aod::StraFT0MQVs>::iterator;
-
-ROOT::Math::XYZVector eventplaneVecT0A, eventplaneVecT0C, cascphiVec;
+using CollEventPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs>::iterator;
 
 namespace cascadev2
 {
@@ -50,6 +48,14 @@ constexpr double massSigmaParameters[4][2]{
   {1.03468e-1, 0.1898}};
 static const std::vector<std::string> massSigmaParameterNames{"p0", "p1", "p2", "p3"};
 static const std::vector<std::string> speciesNames{"Xi", "Omega"};
+
+std::shared_ptr<TH2> hMassBeforeSelVsPt[2];
+std::shared_ptr<TH2> hMassAfterSelVsPt[2];
+std::shared_ptr<TH1> hSignalScoreBeforeSel[2];
+std::shared_ptr<TH1> hBkgScoreBeforeSel[2];
+std::shared_ptr<TH1> hSignalScoreAfterSel[2];
+std::shared_ptr<TH1> hBkgScoreAfterSel[2];
+std::shared_ptr<THnSparse> hSparseV2C[2];
 } // namespace cascadev2
 
 namespace cascade_flow_cuts_ml
@@ -80,19 +86,19 @@ auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 static const std::vector<std::string> modelPaths = {""};
 
 // default values for the cut directions
-constexpr int cutDir[nCutScores] = {CutGreater, CutNot};
+constexpr int cutDir[nCutScores] = {CutSmaller, CutNot}; // CutSmaller selects values > fixed value to signal BDT score, CutNot does not apply any selection to the background BDT score
 auto vecCutDir = std::vector<int>{cutDir, cutDir + nCutScores};
 
 // default values for the cuts
-constexpr double cuts[nBinsPt][nCutScores] = {
-  {0.5, 0.5},
-  {0.5, 0.5},
-  {0.5, 0.5},
-  {0.5, 0.5},
-  {0.5, 0.5},
-  {0.5, 0.5},
-  {0.5, 0.5},
-  {0.5, 0.5}};
+constexpr double cuts[nBinsPt][nCutScores] = { // background, signal
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9},
+  {0., 0.9}};
 
 // row labels
 static const std::vector<std::string> labelsPt = {
@@ -106,43 +112,41 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 7"};
 
 // column labels
-static const std::vector<std::string> labelsCutScore = {"score class 1", "score class 2"};
-static const std::vector<std::string> labelsDmesCutScore = {"ML score signal", "ML score bkg"};
+static const std::vector<std::string> labelsCutScore = {"Background score", "Signal score"};
 } // namespace cascade_flow_cuts_ml
 
 struct cascadeFlow {
 
-  Configurable<bool> isOmega{"isOmega", 0, "Xi or Omega"};
   Configurable<float> MinPt{"MinPt", 0.6, "Min pt of cascade"};
   Configurable<float> MaxPt{"MaxPt", 10, "Max pt of cascade"};
-  Configurable<bool> isApplyML{"isApplyML", 1, ""};
   Configurable<double> sideBandStart{"sideBandStart", 5, "Start of the sideband region in number of sigmas"};
   Configurable<double> sideBandEnd{"sideBandEnd", 7, "End of the sideband region in number of sigmas"};
   Configurable<double> downsample{"downsample", 1., "Downsample training output tree"};
   Configurable<bool> doNTPCSigmaCut{"doNTPCSigmaCut", 1, "doNtpcSigmaCut"};
   Configurable<float> nsigmatpcPr{"nsigmatpcPr", 5, "nsigmatpcPr"};
   Configurable<float> nsigmatpcPi{"nsigmatpcPi", 5, "nsigmatpcPi"};
-  Configurable<float> mintpccrrows{"mintpccrrows", 3, "mintpccrrows"};
+  Configurable<float> mintpccrrows{"mintpccrrows", 70, "mintpccrrows"};
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
-  Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<std::vector<std::string>> modelPathsCCDBXi{"modelPathsCCDBXi", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> modelPathsCCDBOmega{"modelPathsCCDBOmega", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
+  Configurable<std::vector<std::string>> onnxFileNamesXi{"onnxFileNamesXi", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
+  Configurable<std::vector<std::string>> onnxFileNamesOmega{"onnxFileNamesOmega", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
-  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", true, "Flag to enable or disable the loading of models from CCDB"};
 
   // ML inference
-  Configurable<bool> applyMl{"applyMl", true, "Flag to apply ML selections"};
+  Configurable<bool> isApplyML{"isApplyML", 1, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{cascade_flow_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{cascade_flow_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {cascade_flow_cuts_ml::cuts[0], cascade_flow_cuts_ml::nBinsPt, cascade_flow_cuts_ml::nCutScores, cascade_flow_cuts_ml::labelsPt, cascade_flow_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)cascade_flow_cuts_ml::nCutScores, "Number of classes in ML model"};
-  //  Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
 
   o2::ccdb::CcdbApi ccdbApi;
 
   // Add objects needed for ML inference
-  o2::analysis::MlResponse<float> mlResponse;
-  std::vector<float> outputMl = {};
+  o2::analysis::MlResponse<float> mlResponseXi;
+  o2::analysis::MlResponse<float> mlResponseOmega;
 
   template <typename TCascade, typename TDaughter>
   bool IsCascAccepted(TCascade casc, TDaughter negExtra, TDaughter posExtra, TDaughter bachExtra, int& counter) // loose cuts on topological selections of cascades
@@ -168,14 +172,13 @@ struct cascadeFlow {
 
   double GetPhiInRange(double phi)
   {
-    double result = phi;
-    while (result < 0) {
-      result = result + 2. * TMath::Pi() / 2;
+    while (phi < 0) {
+      phi += TMath::Pi();
     }
-    while (result > 2. * TMath::Pi() / 2) {
-      result = result - 2. * TMath::Pi() / 2;
+    while (phi > TMath::Pi()) {
+      phi -= TMath::Pi();
     }
-    return result;
+    return phi;
   }
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -198,7 +201,7 @@ struct cascadeFlow {
   template <class collision_t, class cascade_t>
   void fillTrainingTable(collision_t coll, cascade_t casc, int pdgCode)
   {
-    trainingSample(coll.centFT0M(),
+    trainingSample(coll.centFT0C(),
                    casc.sign(),
                    casc.pt(),
                    casc.eta(),
@@ -222,65 +225,62 @@ struct cascadeFlow {
 
   template <class collision_t, class cascade_t>
   //  void fillAnalisedTable(collision_t coll, cascade_t casc, float BDTresponse)
-  void fillAnalysedTable(collision_t coll, cascade_t casc, float v2A, float v2C, float BDTresponse)
+  void fillAnalysedTable(collision_t coll, cascade_t casc, float v2C, float BDTresponseXi, float BDTresponseOmega)
   {
-    analysisSample(coll.centFT0M(),
+    analysisSample(coll.centFT0C(),
                    casc.sign(),
                    casc.pt(),
                    casc.eta(),
                    casc.mXi(),
                    casc.mOmega(),
-                   v2A,
                    v2C,
-                   BDTresponse);
+                   BDTresponseXi,
+                   BDTresponseOmega);
   }
 
   void init(InitContext const&)
   {
 
-    float MinMass = 1.28;
-    if (isOmega)
-      MinMass = 1.6;
-    float MaxMass = 1.36;
-    if (isOmega)
-      MaxMass = 1.73;
-    ConfigurableAxis vertexZ{"vertexZ", {20, -10, 10}, "vertex axis for histograms"};
-    ConfigurableAxis massCascAxis{"massCascAxis", {100, MinMass, MaxMass}, ""};
-    ConfigurableAxis ptAxis{"ptAxis", {100, 0, 10}, ""};
-    histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {vertexZ});
+    float minMass[2]{1.28, 1.6};
+    float maxMass[2]{1.36, 1.73};
+    const AxisSpec massCascAxis[2]{{static_cast<int>((maxMass[0] - minMass[0]) / 0.001f), minMass[0], maxMass[0], "#Xi candidate mass (GeV/c^{2})"},
+                                   {static_cast<int>((maxMass[1] - minMass[1]) / 0.001f), minMass[1], maxMass[1], "#Omega candidate mass (GeV/c^{2})"}};
+    const AxisSpec ptAxis{static_cast<int>((MaxPt - MinPt) / 0.2), MinPt, MaxPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec v2Axis{200, -1., 1., "#it{v}_{2}"};
+    const AxisSpec CentAxis{18, 0., 90., "FT0C centrality percentile"};
+    histos.add("hEventVertexZ", "hEventVertexZ", kTH1F, {{120, -12., 12.}});
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{101, 0, 101}});
-    histos.add("hCandidate", "hCandidate", HistType::kTH1D, {{22, -0.5, 21.5}});
-    histos.add("hCascadeSignal", "hCascadeSignal", HistType::kTH1D, {{6, -0.5, 5.5}});
-    histos.add("hCascade", "hCascade", HistType::kTH1D, {{6, -0.5, 5.5}});
-    histos.add("hCascadePhi", "hCascadePhi", HistType::kTH1D, {{100, 0, 2 * TMath::Pi()}});
-    histos.add("hcascminuspsiT0A", "hcascminuspsiT0A", HistType::kTH1D, {{100, 0, 2 * TMath::Pi()}});
-    histos.add("hcascminuspsiT0C", "hcascminuspsiT0C", HistType::kTH1D, {{100, 0, 2 * TMath::Pi()}});
-    histos.add("hPsiT0A", "hPsiT0A", HistType::kTH1D, {{100, 0, 2 * TMath::Pi()}});
     histos.add("hPsiT0C", "hPsiT0C", HistType::kTH1D, {{100, 0, 2 * TMath::Pi()}});
-    histos.add("hFT0ARe", "hFT0ARe", HistType::kTH1D, {{100, -1, 1}});
-    histos.add("hFT0AIm", "hFT0AIm", HistType::kTH1D, {{100, -1, 1}});
-    histos.add("hFT0A", "hFT0A", HistType::kTH2D, {{100, -1, 1}, {100, -1, 1}});
-    histos.add("hv2Norm", "hv2Norm", HistType::kTH1D, {{100, 0, 1}});
-    histos.add("hMassBeforeSel", "hMassBeforeSel", HistType::kTH1F, {massCascAxis});
-    histos.add("hMassAfterSel", "hMassAfterSel", HistType::kTH1F, {massCascAxis});
-    histos.add("hMassBeforeSelVsPt", "hMassBeforeSelVsPt", HistType::kTH2F, {{massCascAxis}, {ptAxis}});
-    histos.add("hMassAfterSelVsPt", "hMassAfterSelVsPt", HistType::kTH2F, {{massCascAxis}, {ptAxis}});
-    histos.add("hSignalScoreBeforeSel", "Signal score before selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
-    histos.add("hBkgScoreBeforeSel", "Bkg score before selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
-    histos.add("hSignalScoreAfterSel", "Signal score after selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
-    histos.add("hBkgScoreAfterSel", "Bkg score after selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
 
+    histos.add("hCandidate", "hCandidate", HistType::kTH1F, {{22, -0.5, 21.5}});
+    histos.add("hCascadeSignal", "hCascadeSignal", HistType::kTH1F, {{6, -0.5, 5.5}});
+    histos.add("hCascade", "hCascade", HistType::kTH1F, {{6, -0.5, 5.5}});
+    histos.add("hCascadePhi", "hCascadePhi", HistType::kTH1F, {{100, 0, 2 * TMath::Pi()}});
+    histos.add("hcascminuspsiT0C", "hcascminuspsiT0C", HistType::kTH1F, {{100, 0, 2 * TMath::Pi()}});
+    for (int iS{0}; iS < 2; ++iS) {
+      cascadev2::hMassBeforeSelVsPt[iS] = histos.add<TH2>(Form("hMassBeforeSelVsPt%s", cascadev2::speciesNames[iS].data()), "hMassBeforeSelVsPt", HistType::kTH2F, {massCascAxis[iS], ptAxis});
+      cascadev2::hMassAfterSelVsPt[iS] = histos.add<TH2>(Form("hMassAfterSelVsPt%s", cascadev2::speciesNames[iS].data()), "hMassAfterSelVsPt", HistType::kTH2F, {massCascAxis[iS], ptAxis});
+      cascadev2::hSignalScoreBeforeSel[iS] = histos.add<TH1>(Form("hSignalScoreBeforeSel%s", cascadev2::speciesNames[iS].data()), "Signal score before selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
+      cascadev2::hBkgScoreBeforeSel[iS] = histos.add<TH1>(Form("hBkgScoreBeforeSel%s", cascadev2::speciesNames[iS].data()), "Bkg score before selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
+      cascadev2::hSignalScoreAfterSel[iS] = histos.add<TH1>(Form("hSignalScoreAfterSel%s", cascadev2::speciesNames[iS].data()), "Signal score after selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
+      cascadev2::hBkgScoreAfterSel[iS] = histos.add<TH1>(Form("hBkgScoreAfterSel%s", cascadev2::speciesNames[iS].data()), "Bkg score after selection;BDT first score;entries", HistType::kTH1F, {{100, 0., 1.}});
+      cascadev2::hSparseV2C[iS] = histos.add<THnSparse>(Form("hSparseV2C%s", cascadev2::speciesNames[iS].data()), "hSparseV2C", HistType::kTHnSparseF, {massCascAxis[iS], ptAxis, v2Axis, CentAxis});
+    }
     if (isApplyML) {
       // Configure and initialise the ML class
-      mlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      mlResponseXi.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      mlResponseOmega.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       // Bonus: retrieve the model from CCDB (needed for ML application on the GRID)
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
-        mlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        mlResponseXi.setModelPathsCCDB(onnxFileNamesXi, ccdbApi, modelPathsCCDBXi, timestampCCDB);
+        mlResponseOmega.setModelPathsCCDB(onnxFileNamesOmega, ccdbApi, modelPathsCCDBOmega, timestampCCDB); // TODO: use different model for Xi and Omega
       } else {
-        mlResponse.setModelPathsLocal(onnxFileNames);
+        mlResponseXi.setModelPathsLocal(onnxFileNamesXi);
+        mlResponseOmega.setModelPathsLocal(onnxFileNamesOmega);
       }
-      mlResponse.init();
+      mlResponseXi.init();
+      mlResponseOmega.init();
     }
   }
 
@@ -292,6 +292,8 @@ struct cascadeFlow {
     if (!coll.sel8() || std::abs(coll.posZ()) > 10.) {
       return;
     }
+    histos.fill(HIST("hEventCentrality"), coll.centFT0C());
+    histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
     for (auto& casc : Cascades) {
       if (gRandom->Uniform() > downsample) {
@@ -323,9 +325,9 @@ struct cascadeFlow {
             continue;
           histos.fill(HIST("hCandidate"), ++counter);
         }
-      } else
+      } else {
         ++counter;
-
+      }
       if (posExtra.tpcCrossedRows() < mintpccrrows || negExtra.tpcCrossedRows() < mintpccrrows || bachExtra.tpcCrossedRows() < mintpccrrows)
         continue;
       histos.fill(HIST("hCandidate"), ++counter);
@@ -340,6 +342,8 @@ struct cascadeFlow {
     if (!coll.sel8() || std::abs(coll.posZ()) > 10.) {
       return;
     }
+    histos.fill(HIST("hEventCentrality"), coll.centFT0C());
+    histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
     for (auto& casc : Cascades) {
       int pdgCode{casc.pdgCode()};
@@ -363,38 +367,19 @@ struct cascadeFlow {
   void processAnalyseData(CollEventPlane const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
   {
 
-    // std::cout << "onnxFileNames " << onnxFileNames.value[0] << std::endl;
-
     if (!coll.sel8() || std::abs(coll.posZ()) > 10.) {
       return;
     }
 
-    histos.fill(HIST("hEventCentrality"), coll.centFT0M());
+    histos.fill(HIST("hEventCentrality"), coll.centFT0C());
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
-    eventplaneVecT0A = ROOT::Math::XYZVector(coll.qvecFT0ARe(), coll.qvecFT0AIm(), 0);
-    eventplaneVecT0C = ROOT::Math::XYZVector(coll.qvecFT0CRe(), coll.qvecFT0CIm(), 0);
-    float eventplaneVecT0ANorm = sqrt(eventplaneVecT0A.Dot(eventplaneVecT0A));
-    float eventplaneVecT0CNorm = sqrt(eventplaneVecT0C.Dot(eventplaneVecT0C));
-    //    float v2Norm = eventplaneVecT0A.Dot(eventplaneVecT0C)/coll.sumAmplFT0A()/coll.sumAmplFT0C();
-    float v2Norm = eventplaneVecT0A.Dot(eventplaneVecT0C) / eventplaneVecT0ANorm / eventplaneVecT0CNorm;
-    // std::cout << "eventplaneVecT0ANorm: " << eventplaneVecT0ANorm <<  " = " << sqrt(pow(coll.qvecFT0ARe(), 2) + pow(coll.qvecFT0AIm(), 2)) << std::endl; //these two are equal
-    // std::cout << "stored norm value: " << coll.sumAmplFT0A() << std::endl;
-    histos.fill(HIST("hv2Norm"), v2Norm);
+    ROOT::Math::XYZVector eventplaneVecT0C{coll.qvecFT0CRe(), coll.qvecFT0CIm(), 0};
 
-    float PsiT0A = TMath::ACos(coll.qvecFT0ARe()) / 2;
-    float PsiT0C = TMath::ACos(coll.qvecFT0CRe()) / 2;
-    if (coll.qvecFT0AIm() < 0)
-      PsiT0A = -PsiT0A + TMath::Pi() / 2; // to get dstribution between 0 and Pi
-    if (coll.qvecFT0CIm() < 0)
-      PsiT0C = -PsiT0C + TMath::Pi() / 2; // to get dstribution between 0 and Pi
-
-    histos.fill(HIST("hFT0ARe"), coll.qvecFT0ARe());
-    histos.fill(HIST("hFT0AIm"), coll.qvecFT0AIm());
-    histos.fill(HIST("hFT0A"), coll.qvecFT0ARe(), coll.qvecFT0AIm());
-    histos.fill(HIST("hPsiT0A"), PsiT0A);
+    const float PsiT0C = std::atan2(coll.qvecFT0CIm(), coll.qvecFT0CRe()) * 0.5f;
     histos.fill(HIST("hPsiT0C"), PsiT0C);
 
+    std::vector<float> bdtScore[2];
     for (auto& casc : Cascades) {
 
       /// Add some minimal cuts for single track variables (min number of TPC clusters)
@@ -407,7 +392,7 @@ struct cascadeFlow {
       histos.fill(HIST("hCascade"), counter);
 
       // ML selections
-      bool isSelectedCasc = false;
+      bool isSelectedCasc[2]{false, false};
 
       std::vector<float> inputFeaturesCasc{casc.cascradius(),
                                            casc.v0radius(),
@@ -422,67 +407,60 @@ struct cascadeFlow {
                                            casc.bachBaryonCosPA(),
                                            casc.bachBaryonDCAxyToPV()};
 
-      float massCasc = casc.mXi();
-      if (isOmega)
-        massCasc = casc.mOmega();
+      float massCasc[2]{casc.mXi(), casc.mOmega()};
 
       // inv mass loose cut
-      if (casc.pt() < MinPt)
+      if (casc.pt() < MinPt || casc.pt() > MaxPt) {
         continue;
-      if (casc.pt() > MaxPt)
-        continue;
-      if (isOmega) {
-        if (massCasc < 1.6 || massCasc > 1.73)
-          continue;
-      } else {
-        if (massCasc < 1.28 || massCasc > 1.36)
-          continue;
       }
 
-      histos.fill(HIST("hMassBeforeSel"), massCasc);
-      histos.fill(HIST("hMassBeforeSelVsPt"), massCasc, casc.pt());
+      cascadev2::hMassBeforeSelVsPt[0]->Fill(massCasc[0], casc.pt());
+      cascadev2::hMassBeforeSelVsPt[1]->Fill(massCasc[1], casc.pt());
 
       if (isApplyML) {
         // Retrieve model output and selection outcome
-        isSelectedCasc = mlResponse.isSelectedMl(inputFeaturesCasc, casc.pt(), outputMl);
-        // Fill BDT score histograms before selection
-        histos.fill(HIST("hSignalScoreBeforeSel"), outputMl[0]);
-        histos.fill(HIST("hBkgScoreBeforeSel"), outputMl[1]);
+        isSelectedCasc[0] = mlResponseXi.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[0]);
+        isSelectedCasc[1] = mlResponseOmega.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[1]);
 
-        // Fill histograms for selected candidates
-        if (isSelectedCasc) {
-          histos.fill(HIST("hSignalScoreAfterSel"), outputMl[0]);
-          histos.fill(HIST("hBkgScoreAfterSel"), outputMl[1]);
+        for (int iS{0}; iS < 2; ++iS) {
+          // Fill BDT score histograms before selection
+          cascadev2::hSignalScoreBeforeSel[iS]->Fill(bdtScore[0][1]);
+          cascadev2::hBkgScoreBeforeSel[iS]->Fill(bdtScore[1][0]);
+
+          // Fill histograms for selected candidates
+          if (isSelectedCasc[iS]) {
+            cascadev2::hSignalScoreAfterSel[iS]->Fill(bdtScore[0][1]);
+            cascadev2::hBkgScoreAfterSel[iS]->Fill(bdtScore[1][0]);
+            cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
+          }
         }
-
-        outputMl.clear(); // not necessary in this case but for good measure
       } else {
-        isSelectedCasc = true;
+        isSelectedCasc[0] = true;
+        isSelectedCasc[1] = true;
       }
 
-      if (isSelectedCasc) {
-        histos.fill(HIST("hMassAfterSel"), massCasc);
-        histos.fill(HIST("hMassAfterSelVsPt"), massCasc, casc.pt());
-      }
-
-      cascphiVec = ROOT::Math::XYZVector(cos(2 * casc.phi()), sin(2 * casc.phi()), 0);
-      auto v2A = cascphiVec.Dot(eventplaneVecT0A) / sqrt(eventplaneVecT0A.Dot(eventplaneVecT0A));
-      auto v2C = cascphiVec.Dot(eventplaneVecT0C) / sqrt(eventplaneVecT0C.Dot(eventplaneVecT0C));
-      auto cascminuspsiT0A = GetPhiInRange(casc.phi() - PsiT0A);
+      ROOT::Math::XYZVector cascQvec{std::cos(2 * casc.phi()), std::sin(2 * casc.phi()), 0};
+      auto v2C = cascQvec.Dot(eventplaneVecT0C) / std::sqrt(eventplaneVecT0C.mag2());
       auto cascminuspsiT0C = GetPhiInRange(casc.phi() - PsiT0C);
-      // float v2A_diff =  TMath::Cos(2.0 * cascminuspsiT0A);
-      // float v2C_diff =  TMath::Cos(2.0 * cascminuspsiT0C);
-      // std::cout << "v2A: " << v2A << " v2C " << v2C << std::endl;
-      // std::cout << "v2A_diff: " << v2A_diff << " v2C_diff " << v2C_diff << std::endl;
-      histos.fill(HIST("hCascadePhi"), casc.phi());
-      histos.fill(HIST("hcascminuspsiT0A"), cascminuspsiT0A);
-      histos.fill(HIST("hcascminuspsiT0C"), cascminuspsiT0C);
 
-      float BDTresponse = 0;
-      if (isApplyML)
-        BDTresponse = outputMl[0];
-      if (isSelectedCasc)
-        fillAnalysedTable(coll, casc, v2A, v2C, BDTresponse);
+      histos.fill(HIST("hCascadePhi"), casc.phi());
+      histos.fill(HIST("hcascminuspsiT0C"), cascminuspsiT0C);
+      double values[4]{casc.mXi(), casc.pt(), v2C, coll.centFT0C()};
+      if (isSelectedCasc[0]) {
+        cascadev2::hSparseV2C[0]->Fill(values);
+      }
+      if (isSelectedCasc[1]) {
+        values[0] = casc.mOmega();
+        cascadev2::hSparseV2C[0]->Fill(values);
+      }
+
+      float BDTresponse[2]{0.f, 0.f};
+      if (isApplyML) {
+        BDTresponse[0] = bdtScore[0][1];
+        BDTresponse[1] = bdtScore[1][1];
+      }
+      if (isSelectedCasc[0] || isSelectedCasc[1])
+        fillAnalysedTable(coll, casc, v2C, BDTresponse[0], BDTresponse[1]);
     }
   }
 

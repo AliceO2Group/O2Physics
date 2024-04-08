@@ -46,13 +46,13 @@ using namespace o2::aod::photonpair;
 using namespace o2::aod::pwgem::mcutil;
 using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMMCEventLabels>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>;
 using MyCollision = MyCollisions::iterator;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMReducedEventIds>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
-using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
+using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMEventIds>;
 using MyDalitzEE = MyDalitzEEs::iterator;
 
 struct TaggingPi0MC {
@@ -64,7 +64,7 @@ struct TaggingPi0MC {
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
 
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
-  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis", "Comma separated list of V0 photon cuts"};
+  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "qc", "Comma separated list of V0 photon cuts"};
   Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_0_120_tpchadrejortofreq,mee_0_120_tpchadrejortofreq_lowB", "Comma separated list of Dalitz ee cuts"};
   Configurable<std::string> fConfigPHOSCuts{"cfgPHOSCuts", "test02,test03", "Comma separated list of PHOS photon cuts"};
   Configurable<std::string> fConfigEMCCuts{"fConfigEMCCuts", "standard", "Comma separated list of EMCal photon cuts"};
@@ -317,10 +317,10 @@ struct TaggingPi0MC {
     THashList* list_pcm = static_cast<THashList*>(fMainList->FindObject("PCM"));
 
     for (auto& collision : collisions) {
-      if ((pairtype == kPHOSPHOS || pairtype == kPCMPHOS) && !collision.isPHOSCPVreadout()) {
+      if ((pairtype == kPHOSPHOS || pairtype == kPCMPHOS) && !collision.alias_bit(triggerAliases::kTVXinPHOS)) {
         continue;
       }
-      if ((pairtype == kEMCEMC || pairtype == kPCMEMC) && !collision.isEMCreadout()) {
+      if ((pairtype == kEMCEMC || pairtype == kPCMEMC) && !collision.alias_bit(triggerAliases::kTVXinEMC)) {
         continue;
       }
 
@@ -356,23 +356,27 @@ struct TaggingPi0MC {
           auto ele1mc = ele1.template emmcparticle_as<aod::EMMCParticles>();
 
           int photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, -11, 11, 22, mcparticles);
-          // if (photonid1 < 0) { // check swap, true electron is reconstructed as positron and vice versa.
-          //   photonid1 = FindCommonMotherFrom2Prongs(pos1mc, ele1mc, 11, -11, 22, mcparticles);
-          // }
+          if (photonid1 < 0) {
+            continue;
+          }
+          auto mcphoton1 = mcparticles.iteratorAt(photonid1);
 
-          if (photonid1 > 0) {
-            auto mcphoton1 = mcparticles.iteratorAt(photonid1);
-            int pi0id1 = IsXFromY(mcphoton1, mcparticles, 22, 111);
-            if (pi0id1 > 0) {
-              auto mcpi01 = mcparticles.iteratorAt(pi0id1);
-              if (IsPhysicalPrimary(mcpi01.emreducedmcevent(), mcpi01, mcparticles)) {
-                reinterpret_cast<TH1F*>(list_pcm->FindObject(Form("%s", cut1.GetName()))->FindObject("hPt_v0photon_Pi0_Primary"))->Fill(g1.pt());
-              } else if (IsFromWD(mcpi01.emreducedmcevent(), mcpi01, mcparticles)) {
-                reinterpret_cast<TH1F*>(list_pcm->FindObject(Form("%s", cut1.GetName()))->FindObject("hPt_v0photon_Pi0_FromWD"))->Fill(g1.pt());
-              } else {
-                reinterpret_cast<TH1F*>(list_pcm->FindObject(Form("%s", cut1.GetName()))->FindObject("hPt_v0photon_Pi0_hs"))->Fill(g1.pt());
-              }
-            }
+          int pi0id1 = IsXFromY(mcphoton1, mcparticles, 22, 111);
+          if (pi0id1 < 0) { // photon from pi0 decay
+            continue;
+          }
+          auto mcpi01 = mcparticles.iteratorAt(pi0id1);
+
+          // // check if pi0 is physical primary or produced by generator, photon should be physical primary or produced by generator.
+          // LOGF(info, "mcphoton1.isPhysicalPrimary() = %d, mcphoton1.producedByGenerator() = %d, mcpi01.isPhysicalPrimary() = %d, mcpi01.producedByGenerator() = %d",
+          //     mcphoton1.isPhysicalPrimary(), mcphoton1.producedByGenerator(), mcpi01.isPhysicalPrimary(), mcpi01.producedByGenerator());
+
+          if (mcpi01.isPhysicalPrimary() || mcpi01.producedByGenerator()) {
+            reinterpret_cast<TH1F*>(list_pcm->FindObject(cut1.GetName())->FindObject("hPt_v0photon_Pi0_Primary"))->Fill(g1.pt());
+          } else if (IsFromWD(mcpi01.emmcevent(), mcpi01, mcparticles)) {
+            reinterpret_cast<TH1F*>(list_pcm->FindObject(cut1.GetName())->FindObject("hPt_v0photon_Pi0_FromWD"))->Fill(g1.pt());
+          } else {
+            reinterpret_cast<TH1F*>(list_pcm->FindObject(cut1.GetName())->FindObject("hPt_v0photon_Pi0_hs"))->Fill(g1.pt());
           }
 
         } // end of pcm photon loop
@@ -439,9 +443,9 @@ struct TaggingPi0MC {
 
               if (pi0id > 0) {
                 auto mcpi0 = mcparticles.iteratorAt(pi0id);
-                if (IsPhysicalPrimary(mcpi0.emreducedmcevent(), mcpi0, mcparticles)) {
+                if (mcpi0.isPhysicalPrimary() || mcpi0.producedByGenerator()) {
                   reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_Primary"))->Fill(v12.M(), v1.Pt());
-                } else if (IsFromWD(mcpi0.emreducedmcevent(), mcpi0, mcparticles)) {
+                } else if (IsFromWD(mcpi0.emmcevent(), mcpi0, mcparticles)) {
                   reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_FromWD"))->Fill(v12.M(), v1.Pt());
                 } else {
                   reinterpret_cast<TH2F*>(list_pair_ss->FindObject(Form("%s_%s", cut1.GetName(), cut2.GetName()))->FindObject(paircut.GetName())->FindObject("hMggPt_Pi0_hs"))->Fill(v12.M(), v1.Pt());
@@ -457,8 +461,8 @@ struct TaggingPi0MC {
   Filter DalitzEEFilter = o2::aod::dalitzee::sign == 0; // analyze only uls
   using MyFilteredDalitzEEs = soa::Filtered<MyDalitzEEs>;
 
-  Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::emreducedeventId;
-  Preslice<MyDalitzEEs> perCollision_dalitz = aod::dalitzee::emreducedeventId;
+  Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::emeventId;
+  Preslice<MyDalitzEEs> perCollision_dalitz = aod::dalitzee::emeventId;
   Preslice<aod::PHOSClusters> perCollision_phos = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollision_emc = aod::skimmedcluster::collisionId;
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.

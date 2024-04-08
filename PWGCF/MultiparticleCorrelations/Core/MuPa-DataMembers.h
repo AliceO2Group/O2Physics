@@ -135,7 +135,7 @@ struct Qvector {
   Bool_t fCalculateQvectors = kTRUE;                                                                                                 // to calculate or not to calculate Q-vectors, that's a Boolean...
   TComplex fQ[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}};                                         //! generic Q-vector
   TComplex fQvector[gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{TComplex(0., 0.)}};                                   //! "integrated" Q-vector
-  TComplex fqvector[eqvectorKine_N][gMaxNoBinsKine][gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{{TComplex(0., 0.)}}}; //! "differenttial" q-vector [kine var.][binNo][fMaxHarmonic*fMaxCorrelator+1][fMaxCorrelator+1] = [6*12+1][12+1]
+  TComplex fqvector[eqvectorKine_N][gMaxNoBinsKine][gMaxHarmonic * gMaxCorrelator + 1][gMaxCorrelator + 1] = {{{{TComplex(0., 0.)}}}}; //! "differenttial" q-vector [kine var.][binNo][fMaxHarmonic*fMaxCorrelator+1][fMaxCorrelator+1] = [6*12+1][12+1]
   Int_t fqVectorEntries[eqvectorKine_N][gMaxNoBinsKine] = {{0}};                                                                     // count number of entries in each differential q-vector
 } qv;                                                                                                                                // "qv" is a common label for objects in this struct
 

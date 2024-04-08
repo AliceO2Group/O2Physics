@@ -1209,8 +1209,7 @@ struct tofSpectra {
     }
 
     //************************************RD**************************************************
-    float multiplicity = 0.f;
-
+    const float multiplicity = getMultiplicity(collision);
     //************************************RD**************************************************
 
     if (mcParticle.pdgCode() != PDGs[i]) {
@@ -1300,7 +1299,7 @@ struct tofSpectra {
   }
 
   template <std::size_t i, typename ParticleType>
-  void fillParticleHistograms_MC(ParticleType const& mcParticle)
+  void fillParticleHistograms_MC(CollisionCandidateMC::iterator const& collision, ParticleType const& mcParticle)
   {
 
     switch (i) {
@@ -1364,7 +1363,7 @@ struct tofSpectra {
       return;
     }
 
-    const float multiplicity = 0.f;
+    const float multiplicity = collision.centFT0C();
     if (!mcParticle.isPhysicalPrimary()) {
       if (mcParticle.getProcess() == 4) {
         if (makeTHnSparseChoice) {
@@ -1583,19 +1582,37 @@ struct tofSpectra {
         fillTrackHistograms_MC<i>(track, mcParticle, track.collision_as<CollisionCandidateMC>());
       });
     }
+    if (makeTHnSparseChoice) {
+      for (const auto& collision : collisions) {
+        if (!collision.has_mcCollision()) {
+          continue;
+        }
+        const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache);
+        for (const auto& mcParticle : particlesInCollision) {
 
-    for (const auto& mcParticle : mcParticles) {
-      // if (std::abs(mcParticle.eta()) > cfgCutEta) {
-      //   continue;
-      // }
-      if (std::abs(mcParticle.y()) > cfgCutY) {
-        continue;
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            continue;
+          }
+          static_for<0, 17>([&](auto i) {
+            fillParticleHistograms_MC<i>(collision, mcParticle);
+          });
+        }
       }
-      static_for<0, 17>([&](auto i) {
-        fillParticleHistograms_MC<i>(mcParticle);
-      });
+    } else {
+      for (const auto& collision : collisions) {
+        for (const auto& mcParticle : mcParticles) {
+          // if (std::abs(mcParticle.eta()) > cfgCutEta) {
+          //   continue;
+          // }
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            continue;
+          }
+          static_for<0, 17>([&](auto i) {
+            fillParticleHistograms_MC<i>(collision, mcParticle);
+          });
+        }
+      }
     }
-
     // Loop on reconstructed collisions
     for (const auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
