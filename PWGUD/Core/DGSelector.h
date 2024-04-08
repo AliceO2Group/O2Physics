@@ -155,6 +155,33 @@ class DGSelector
       return 12;
     }
 
+    // good collision selection according to event-selection task
+    /* if (!goodCollision(collision, diffCuts)){
+      return 13;
+    }*/
+    // good collision selection per-partes
+    std::vector<int> sels = diffCuts.collisionSel();
+    // timeframe border
+    if (sels[0] && !cutNoTimeFrameBorder(collision)){
+      return 13;
+    }
+    // same bunch pileup
+    if (sels[1] && !cutNoSameBunchPileup(collision)){
+      return 14;
+    }
+    // ITS ROF border
+    if (sels[2] && !cutNoITSROFrameBorder(collision)){
+      return 15;
+    }
+    // z-vtx from PV and FT0 agrees
+    if (sels[3] && !cutIsGoodZvtxFT0vsPV(collision)){
+      return 16;
+    }
+    // is ITS-TPC track
+    if (sels[4] && !cutIsVertexITSTPC(collision)){
+      return 17;
+    }
+
     // if we arrive here then the event is good!
     return 0;
   };
