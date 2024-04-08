@@ -26,7 +26,7 @@ DISABLE_ERRORS_LINTERS: # If errors are found by these linters, they will be con
 SHOW_ELAPSED_TIME: true
 FILEIO_REPORTER: false
 GITHUB_COMMENT_REPORTER: false
-UPDATED_SOURCES_REPORTER: false
+UPDATED_SOURCES_REPORTER: true
 PRINT_ALPACA: false # Don't print ASCII alpaca in the log
 PRINT_ALL_FILES: true # Print all processed files
 FLAVOR_SUGGESTIONS: false # Don't show suggestions about different MegaLinter flavors
