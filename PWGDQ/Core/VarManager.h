@@ -27,6 +27,7 @@
 #include <cmath>
 #include <iostream>
 #include <utility>
+#include <complex>
 
 #include <TObject.h>
 #include <TString.h>
@@ -62,6 +63,7 @@
 
 #include "Common/Core/EventPlaneHelper.h"
 
+using std::complex;
 using std::cout;
 using std::endl;
 
@@ -209,39 +211,39 @@ class VarManager : public TObject
     kMCEventTime,
     kMCEventWeight,
     kMCEventImpParam,
-    kQ1X0A, // q-vector (e.g. from TPC) with x component (harmonic 1 and power 0), sub-event A
-    kQ1Y0A, // q-vector (e.g. from TPC) with y component (harmonic 1 and power 0), sub-event A
-    kQ1X0B,
-    kQ1Y0B,
-    kQ1X0C,
-    kQ1Y0C,
-    kQ2X0A,    // q-vector (e.g. from TPC) with x component (harmonic 2 and power 0), sub-event A
-    kQ2Y0A,    // q-vector (e.g. from TPC) with y component (harmonic 2 and power 0), sub-event A
-    kQ2X0APOS, // q-vector (e.g. from TPC) with x component (harmonic 2 and power 0), Pos. TPC
-    kQ2Y0APOS, // q-vector (e.g. from TPC) with y component (harmonic 2 and power 0), Pos. TPC
-    kQ2X0ANEG, // q-vector (e.g. from TPC) with x component (harmonic 2 and power 0), Neg. TPC
-    kQ2Y0ANEG, // q-vector (e.g. from TPC) with y component (harmonic 2 and power 0), Neg. TPC
-    kQ2X0B,
-    kQ2Y0B,
-    kQ2X0C,
-    kQ2Y0C,
+    kQ11XA, // q-vector (e.g. from TPC) with x component (harmonic 1 and power 0), sub-event A
+    kQ11YA, // q-vector (e.g. from TPC) with y component (harmonic 1 and power 0), sub-event A
+    kQ11XB,
+    kQ11YB,
+    kQ11XC,
+    kQ11YC,
+    kQ21XA,    // q-vector (e.g. from TPC) with x component (harmonic 2 and power 0), sub-event A
+    kQ21YA,    // q-vector (e.g. from TPC) with y component (harmonic 2 and power 0), sub-event A
+    kQ21XAPOS, // q-vector (e.g. from TPC) with x component (harmonic 2 and power 1), Pos. TPC
+    kQ21YAPOS, // q-vector (e.g. from TPC) with y component (harmonic 2 and power 1), Pos. TPC
+    kQ21XANEG, // q-vector (e.g. from TPC) with x component (harmonic 2 and power 1), Neg. TPC
+    kQ21YANEG, // q-vector (e.g. from TPC) with y component (harmonic 2 and power 1), Neg. TPC
+    kQ21XB,
+    kQ21YB,
+    kQ21XC,
+    kQ21YC,
     kMultA,    // Multiplicity of the sub-event A
     kMultAPOS, // Multiplicity of the sub-event A
     kMultANEG, // Multiplicity of the sub-event A
     kMultB,
     kMultC,
-    kQ3X0A, // q-vector (e.g. from TPC) with x component (harmonic 3 and power 0), sub-event A
-    kQ3Y0A, // q-vector (e.g. from TPC) with y component (harmonic 3 and power 0), sub-event A
-    kQ3X0B,
-    kQ3Y0B,
-    kQ3X0C,
-    kQ3Y0C,
-    kQ4X0A, // q-vector (e.g. from TPC) with x component (harmonic 4 and power 0), sub-event A
-    kQ4Y0A, // q-vector (e.g. from TPC) with y component (harmonic 4 and power 0), sub-event A
-    kQ4X0B,
-    kQ4Y0B,
-    kQ4X0C,
-    kQ4Y0C,
+    kQ31XA, // q-vector (e.g. from TPC) with x component (harmonic 3 and power 0), sub-event A
+    kQ31YA, // q-vector (e.g. from TPC) with y component (harmonic 3 and power 0), sub-event A
+    kQ31XB,
+    kQ31YB,
+    kQ31XC,
+    kQ31YC,
+    kQ41XA, // q-vector (e.g. from TPC) with x component (harmonic 4 and power 0), sub-event A
+    kQ41YA, // q-vector (e.g. from TPC) with y component (harmonic 4 and power 0), sub-event A
+    kQ41XB,
+    kQ41YB,
+    kQ41XC,
+    kQ41YC,
     kR2SP,
     kR2SP_FT0CFT0A,
     kR2SP_FT0CTPCPOS,
@@ -504,6 +506,18 @@ class VarManager : public TObject
     kDCATrackVtxProd,
     kU2Q2,
     kU3Q3,
+    kQ42XA,
+    kQ42YA,
+    kQ23XA,
+    kQ23YA,
+    kS11A,
+    kS12A,
+    kS13A,
+    kS31A,
+    kM11REF,
+    kM01POI,
+    kM1111REF,
+    kM0111POI,
     kCORR2REF,
     kCORR2POI,
     kCORR4REF,
@@ -794,7 +808,7 @@ class VarManager : public TObject
   template <int partTypeCharmHad, typename DQ, typename HF, typename H, typename T>
   static void FillDileptonCharmHadron(DQ const& dilepton, HF const& charmHadron, H hfHelper, T& bdtScoreCharmHad, float* values = nullptr);
   template <typename C, typename A>
-  static void FillQVectorFromGFW(C const& collision, A const& compA1, A const& compB1, A const& compC1, A const& compA2, A const& compB2, A const& compC2, A const& compA3, A const& compB3, A const& compC3, A const& compA4, A const& compB4, A const& compC4, float normA = 1.0, float normB = 1.0, float normC = 1.0, float* values = nullptr);
+  static void FillQVectorFromGFW(C const& collision, A const& compA11, A const& compB11, A const& compC11, A const& compA21, A const& compB21, A const& compC21, A const& compA31, A const& compB31, A const& compC31, A const& compA41, A const& compB41, A const& compC41, A const& compA23, A const& compA42, float S10A = 1.0, float S10B = 1.0, float S10C = 1.0, float S11A = 1.0, float S11B = 1.0, float S11C = 1.0, float S12A = 1.0, float S13A = 1.0, float S14A = 1.0, float S21A = 1.0, float S22A = 1.0, float S31A = 1.0, float S41A = 1.0, float* values = nullptr);
   template <typename C>
   static void FillQVectorFromCentralFW(C const& collision, float* values = nullptr);
   template <int pairType, typename T1, typename T2>
@@ -1261,80 +1275,89 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   if constexpr ((fillMap & ReducedEventQvector) > 0) {
-    values[kQ1X0A] = event.q1x0a();
-    values[kQ1Y0A] = event.q1y0a();
-    values[kQ1X0B] = event.q1x0b();
-    values[kQ1Y0B] = event.q1y0b();
-    values[kQ1X0C] = event.q1x0c();
-    values[kQ1Y0C] = event.q1y0c();
-    values[kQ2X0A] = event.q2x0a();
-    values[kQ2Y0A] = event.q2y0a();
-    values[kQ2X0B] = event.q2x0b();
-    values[kQ2Y0B] = event.q2y0b();
-    values[kQ2X0C] = event.q2x0c();
-    values[kQ2Y0C] = event.q2y0c();
+    values[kQ11XA] = event.q11xa();
+    values[kQ11YA] = event.q11ya();
+    values[kQ11XB] = event.q11xb();
+    values[kQ11YB] = event.q11yb();
+    values[kQ11XC] = event.q11xc();
+    values[kQ11YC] = event.q11yc();
+    values[kQ21XA] = event.q21xa();
+    values[kQ21YA] = event.q21ya();
+    values[kQ21XB] = event.q21xb();
+    values[kQ21YB] = event.q21yb();
+    values[kQ21XC] = event.q21xc();
+    values[kQ21YC] = event.q21yc();
     values[kMultA] = event.multa();
     values[kMultB] = event.multb();
     values[kMultC] = event.multc();
-    values[kQ3X0A] = event.q3x0a();
-    values[kQ3Y0A] = event.q3y0a();
-    values[kQ3X0B] = event.q3x0b();
-    values[kQ3Y0B] = event.q3y0b();
-    values[kQ3X0C] = event.q3x0c();
-    values[kQ3Y0C] = event.q3y0c();
-    values[kQ4X0A] = event.q4x0a();
-    values[kQ4Y0A] = event.q4y0a();
-    values[kQ4X0B] = event.q4x0b();
-    values[kQ4Y0B] = event.q4y0b();
-    values[kQ4X0C] = event.q4x0c();
-    values[kQ4Y0C] = event.q4y0c();
-    values[kR2SP] = (event.q2x0b() * event.q2x0c() + event.q2y0b() * event.q2y0c());
-    values[kR3SP] = (event.q3x0b() * event.q3x0c() + event.q3y0b() * event.q3y0c());
-    if (event.q2y0b() * event.q2y0c() != 0.0) {
-      values[kR2EP] = TMath::Cos(2 * (getEventPlane(2, event.q2x0b(), event.q2y0b()) - getEventPlane(2, event.q2x0c(), event.q2y0c())));
+    values[kQ31XA] = event.q31xa();
+    values[kQ31YA] = event.q31ya();
+    values[kQ31XB] = event.q31xb();
+    values[kQ31YB] = event.q31yb();
+    values[kQ31XC] = event.q31xc();
+    values[kQ31YC] = event.q31yc();
+    values[kQ41XA] = event.q41xa();
+    values[kQ41YA] = event.q41ya();
+    values[kQ41XB] = event.q41xb();
+    values[kQ41YB] = event.q41yb();
+    values[kQ41XC] = event.q41xc();
+    values[kQ41YC] = event.q41yc();
+    values[kQ42XA] = event.q42xa();
+    values[kQ42YA] = event.q42ya();
+    values[kQ23XA] = event.q23xa();
+    values[kQ23YA] = event.q23ya();
+    values[kS11A] = event.s11a();
+    values[kS12A] = event.s12a();
+    values[kS13A] = event.s13a();
+    values[kS31A] = event.s31a();
+
+    values[kR2SP] = (event.q21xb() * event.q21xc() + event.q21yb() * event.q21yc());
+    values[kR3SP] = (event.q31xb() * event.q31xc() + event.q31yb() * event.q31yc());
+    if (event.q21yb() * event.q21yc() != 0.0) {
+      values[kR2EP] = TMath::Cos(2 * (getEventPlane(2, event.q21xb(), event.q21yb()) - getEventPlane(2, event.q21xc(), event.q21yc())));
     }
-    if (event.q3y0b() * event.q3y0c() != 0.0) {
-      values[kR3EP] = TMath::Cos(3 * (getEventPlane(3, event.q3x0b(), event.q3y0b()) - getEventPlane(3, event.q3x0c(), event.q3y0c())));
+    if (event.q31yb() * event.q31yc() != 0.0) {
+      values[kR3EP] = TMath::Cos(3 * (getEventPlane(3, event.q31xb(), event.q31yb()) - getEventPlane(3, event.q31xc(), event.q31yc())));
     }
-    values[kPsi2A] = getEventPlane(2, event.q2x0a(), event.q2y0a());
-    values[kPsi2B] = getEventPlane(2, event.q2x0b(), event.q2y0b());
-    values[kPsi2C] = getEventPlane(2, event.q2x0c(), event.q2y0c());
+    values[kPsi2A] = getEventPlane(2, event.q21xa(), event.q21ya());
+    values[kPsi2B] = getEventPlane(2, event.q21xb(), event.q21yb());
+    values[kPsi2C] = getEventPlane(2, event.q21xc(), event.q21yc());
   }
 
   if constexpr ((fillMap & CollisionQvect) > 0) {
-    values[kQ1X0A] = -999;
-    values[kQ1Y0A] = -999;
-    values[kQ1X0B] = -999;
-    values[kQ1Y0B] = -999;
-    values[kQ1X0C] = -999;
-    values[kQ1Y0C] = -999;
-    values[kQ2X0A] = event.qvecBPosRe();
-    values[kQ2Y0A] = event.qvecBPosIm();
-    values[kQ2X0APOS] = event.qvecBPosRe();
-    values[kQ2Y0APOS] = event.qvecBPosIm();
-    values[kQ2X0ANEG] = event.qvecBNegRe();
-    values[kQ2Y0ANEG] = event.qvecBNegIm();
-    values[kQ2X0B] = event.qvecFT0ARe();
-    values[kQ2Y0B] = event.qvecFT0AIm();
-    values[kQ2X0C] = event.qvecFT0CRe();
-    values[kQ2Y0C] = event.qvecFT0CIm();
+    values[kQ11XA] = -999;
+    values[kQ11YA] = -999;
+    values[kQ11XB] = -999;
+    values[kQ11YB] = -999;
+    values[kQ11XC] = -999;
+    values[kQ11YC] = -999;
+    values[kQ21XA] = event.qvecBPosRe();
+    values[kQ21YA] = event.qvecBPosIm();
+    values[kQ21XAPOS] = event.qvecBPosRe();
+    values[kQ21YAPOS] = event.qvecBPosIm();
+    values[kQ21XANEG] = event.qvecBNegRe();
+    values[kQ21YANEG] = event.qvecBNegIm();
+    values[kQ21XB] = event.qvecFT0ARe();
+    values[kQ21YB] = event.qvecFT0AIm();
+    values[kQ21XC] = event.qvecFT0CRe();
+    values[kQ21YC] = event.qvecFT0CIm();
     values[kMultA] = event.nTrkBPos();
     values[kMultAPOS] = event.nTrkBPos();
     values[kMultANEG] = event.nTrkBNeg();
     values[kMultB] = event.sumAmplFT0A();
     values[kMultC] = event.sumAmplFT0C();
-    values[kQ3X0A] = -999;
-    values[kQ3Y0A] = -999;
-    values[kQ3X0B] = -999;
-    values[kQ3Y0B] = -999;
-    values[kQ3X0C] = -999;
-    values[kQ3Y0C] = -999;
-    values[kQ4X0A] = -999;
-    values[kQ4Y0A] = -999;
-    values[kQ4X0B] = -999;
-    values[kQ4Y0B] = -999;
-    values[kQ4X0C] = -999;
-    values[kQ4Y0C] = -999;
+    values[kQ31XA] = -999;
+    values[kQ31YA] = -999;
+    values[kQ31XB] = -999;
+    values[kQ31YB] = -999;
+    values[kQ31XC] = -999;
+    values[kQ31YC] = -999;
+    values[kQ41XA] = -999;
+    values[kQ41YA] = -999;
+    values[kQ41XB] = -999;
+    values[kQ41YB] = -999;
+    values[kQ41XC] = -999;
+    values[kQ41YC] = -999;
   }
 
   if constexpr ((fillMap & CollisionMC) > 0) {
@@ -1414,21 +1437,21 @@ void VarManager::FillTwoMixEvents(T1 const& ev1, T1 const& ev2, T2 const& tracks
     for (auto& track2 : tracks2) { Track2Filter = uint32_t(track2.isMuonSelected());}
    */
   if constexpr ((fillMap & ReducedEventQvector) > 0) {
-    values[kTwoR2SP1] = (ev1.q2x0b() * ev1.q2x0c() + ev1.q2y0b() * ev1.q2y0c());
-    values[kTwoR2SP2] = (ev2.q2x0b() * ev2.q2x0c() + ev2.q2y0b() * ev2.q2y0c());
+    values[kTwoR2SP1] = (ev1.q21xb() * ev1.q21xc() + ev1.q21yb() * ev1.q21yc());
+    values[kTwoR2SP2] = (ev2.q21xb() * ev2.q21xc() + ev2.q21yb() * ev2.q21yc());
 
-    if (ev1.q2y0b() * ev1.q2y0c() != 0.0) {
-      values[kTwoR2EP1] = TMath::Cos(2 * (getEventPlane(2, ev1.q2x0b(), ev1.q2y0b()) - getEventPlane(2, ev1.q2x0c(), ev1.q2y0c())));
+    if (ev1.q21yb() * ev1.q21yc() != 0.0) {
+      values[kTwoR2EP1] = TMath::Cos(2 * (getEventPlane(2, ev1.q21xb(), ev1.q21yb()) - getEventPlane(2, ev1.q21xc(), ev1.q21yc())));
     }
 
-    if (ev2.q2y0b() * ev2.q2y0c() != 0.0) {
-      values[kTwoR2EP2] = TMath::Cos(2 * (getEventPlane(2, ev2.q2x0b(), ev2.q2y0b()) - getEventPlane(2, ev2.q2x0c(), ev2.q2y0c())));
+    if (ev2.q21yb() * ev2.q21yc() != 0.0) {
+      values[kTwoR2EP2] = TMath::Cos(2 * (getEventPlane(2, ev2.q21xb(), ev2.q21yb()) - getEventPlane(2, ev2.q21xc(), ev2.q21yc())));
     }
     // Tobe used for the calculation of u1q1 and u2q2
-    values[kQ2X0A1] = ev1.q2x0a();
-    values[kQ2X0A2] = ev2.q2x0a();
-    values[kQ2Y0A1] = ev1.q2y0a();
-    values[kQ2Y0A2] = ev2.q2y0a();
+    values[kQ2X0A1] = ev1.q21xa();
+    values[kQ2X0A2] = ev2.q21xa();
+    values[kQ2Y0A1] = ev1.q21ya();
+    values[kQ2Y0A2] = ev2.q21ya();
   }
 
   if (isnan(VarManager::fgValues[VarManager::kTwoR2SP1]) == true || isnan(VarManager::fgValues[VarManager::kTwoR2EP1]) == true) {
@@ -2902,63 +2925,76 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
 }
 
 template <typename C, typename A>
-void VarManager::FillQVectorFromGFW(C const& collision, A const& compA1, A const& compB1, A const& compC1, A const& compA2, A const& compB2, A const& compC2, A const& compA3, A const& compB3, A const& compC3, A const& compA4, A const& compB4, A const& compC4, float normA, float normB, float normC, float* values)
+void VarManager::FillQVectorFromGFW(C const& collision, A const& compA11, A const& compB11, A const& compC11, A const& compA21, A const& compB21, A const& compC21, A const& compA31, A const& compB31, A const& compC31, A const& compA41, A const& compB41, A const& compC41, A const& compA23, A const& compA42, float S10A, float S10B, float S10C, float S11A, float S11B, float S11C, float S12A, float S13A, float S14A, float S21A, float S22A, float S31A, float S41A, float* values)
 {
   if (!values) {
     values = fgValues;
   }
 
-  // Fill Qn vectors from generic flow framework for different eta gap A, B, C (n=1,2,3,4)
-  values[kQ1X0A] = compA1.real() / normA;
-  values[kQ1Y0A] = compA1.imag() / normA;
-  values[kQ1X0B] = compB1.real() / normB;
-  values[kQ1Y0B] = compB1.imag() / normB;
-  values[kQ1X0C] = compC1.real() / normC;
-  values[kQ1Y0C] = compC1.imag() / normC;
-  values[kQ2X0A] = compA2.real() / normA;
-  values[kQ2Y0A] = compA2.imag() / normA;
-  values[kQ2X0B] = compB2.real() / normB;
-  values[kQ2Y0B] = compB2.imag() / normB;
-  values[kQ2X0C] = compC2.real() / normC;
-  values[kQ2Y0C] = compC2.imag() / normC;
-  values[kQ3X0A] = compA3.real() / normA;
-  values[kQ3Y0A] = compA3.imag() / normA;
-  values[kQ3X0B] = compB3.real() / normB;
-  values[kQ3Y0B] = compB3.imag() / normB;
-  values[kQ3X0C] = compC3.real() / normC;
-  values[kQ3Y0C] = compC3.imag() / normC;
-  values[kQ4X0A] = compA4.real() / normA;
-  values[kQ4Y0A] = compA4.imag() / normA;
-  values[kQ4X0B] = compB4.real() / normB;
-  values[kQ4Y0B] = compB4.imag() / normB;
-  values[kQ4X0C] = compC4.real() / normC;
-  values[kQ4Y0C] = compC4.imag() / normC;
-  values[kMultA] = normA;
-  values[kMultB] = normB;
-  values[kMultC] = normC;
+  // Fill Qn vectors from generic flow framework for different eta gap A, B, C (n=1,2,3,4) with proper normalisation
+  // Use normalized Q-vectors for SP and EP
+  values[kQ11XA] = compA11.real() / S11A;
+  values[kQ11YA] = compA11.imag() / S11A;
+  values[kQ11XB] = compB11.real() / S11B;
+  values[kQ11YB] = compB11.imag() / S11B;
+  values[kQ11XC] = compC11.real() / S11C;
+  values[kQ11YC] = compC11.imag() / S11C;
+  values[kQ21XA] = compA21.real() / S11A;
+  values[kQ21YA] = compA21.imag() / S11A;
+  values[kQ21XB] = compB21.real() / S11B;
+  values[kQ21YB] = compB21.imag() / S11B;
+  values[kQ21XC] = compC21.real() / S11C;
+  values[kQ21YC] = compC21.imag() / S11C;
+  values[kQ31XA] = compA31.real() / S11A;
+  values[kQ31YA] = compA31.imag() / S11A;
+  values[kQ31XB] = compB31.real() / S11B;
+  values[kQ31YB] = compB31.imag() / S11B;
+  values[kQ31XC] = compC31.real() / S11C;
+  values[kQ31YC] = compC31.imag() / S11C;
+  values[kQ41XA] = compA41.real() / S11A;
+  values[kQ41YA] = compA41.imag() / S11A;
+  values[kQ41XB] = compB41.real() / S11B;
+  values[kQ41YB] = compB41.imag() / S11B;
+  values[kQ41XC] = compC41.real() / S11C;
+  values[kQ41YC] = compC41.imag() / S11C;
+  values[kQ42XA] = compA42.real(); // Only being used by cumulants, no need for normalization
+  values[kQ42YA] = compA42.imag(); // Only being used by cumulants, no need for normalization
+  values[kQ23XA] = compA23.real(); // Only being used by cumulants, no need for normalization
+  values[kQ23YA] = compA23.imag(); // Only being used by cumulants, no need for normalization
+  values[kS11A] = S11A;
+  values[kS12A] = S12A;
+  values[kS13A] = S13A;
+  values[kS31A] = S31A;
 
-  // kC2REF, kC4REF etc.
-  values[kCORR2REF] = (values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A] - values[kMultA]) / (values[kMultA] * (values[kMultA] - 1));
-  values[kCORR4REF] = (std::pow((values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A]), 2.0) + values[kQ4X0A] * values[kQ4X0A] + values[kQ4Y0A] * values[kQ4Y0A] - 2 * (values[kQ4X0A] * values[kQ2X0A] * values[kQ2X0A] - values[kQ4X0A] * values[kQ2Y0A] * values[kQ2Y0A] + 2 * values[kQ4Y0A] * values[kQ2Y0A] * values[kQ2X0A])) / (values[kMultA] * (values[kMultA] - 1) * (values[kMultA] - 2) * (values[kMultA] - 3)) - 2 * (2 * (values[kMultA] - 2) * (values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A]) - values[kMultA] * (values[kMultA] - 3)) / (values[kMultA] * (values[kMultA] - 1) * (values[kMultA] - 2) * (values[kMultA] - 3));
+  // Fill event multiplicities
+  values[kMultA] = S10A;
+  values[kMultB] = S10B;
+  values[kMultC] = S10C;
+
+  // Fill necessary quantities for cumulant calculations with weighted Q-vectors
+  values[kM11REF] = S21A - S12A;
+  values[kM1111REF] = S41A - 6. * S12A * S21A + 8. * S13A * S11A + 3. * S22A - 6. * S14A;
+  values[kCORR2REF] = (norm(compA21) - S12A) / values[kM11REF];
+  values[kCORR4REF] = (pow(norm(compA21), 2) + norm(compA42) - 2. * (compA42 * conj(compA21) * conj(compA21)).real() + 8. * (compA23 * conj(compA21)).real() - 4. * S12A * norm(compA21) - 6. * S14A - 2. * S22A) / values[kM1111REF];
 
   // TODO: provide different computations for R
   // Compute the R factor using the 2 sub-events technique for second and third harmonic
   // Compute event planes
-  auto Psi2B = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
-  auto Psi3B = getEventPlane(3, values[kQ3X0B], values[kQ3Y0B]);
-  auto Psi2C = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
-  auto Psi3C = getEventPlane(3, values[kQ3X0C], values[kQ3Y0C]);
-  values[kR2SP] = (values[kQ2X0B] * values[kQ2X0C] + values[kQ2Y0B] * values[kQ2Y0C]);
-  values[kR3SP] = (values[kQ3X0B] * values[kQ3X0C] + values[kQ3Y0B] * values[kQ3Y0C]);
-  if (values[kQ2Y0B] * values[kQ2Y0C] != 0.0) {
+  auto Psi2B = getEventPlane(2, values[kQ21XB], values[kQ21YB]);
+  auto Psi3B = getEventPlane(3, values[kQ31XB], values[kQ31YB]);
+  auto Psi2C = getEventPlane(2, values[kQ21XC], values[kQ21YC]);
+  auto Psi3C = getEventPlane(3, values[kQ31XC], values[kQ31YC]);
+  values[kR2SP] = (values[kQ21XB] * values[kQ21XC] + values[kQ21YB] * values[kQ21YC]);
+  values[kR3SP] = (values[kQ31XB] * values[kQ31XC] + values[kQ31YB] * values[kQ31YC]);
+  if (values[kQ21YB] * values[kQ21YC] != 0.0) {
     values[kR2EP] = TMath::Cos(2 * (Psi2B - Psi2C));
   }
-  if (values[kQ3Y0B] * values[kQ3Y0C] != 0.0) {
+  if (values[kQ31YB] * values[kQ31YC] != 0.0) {
     values[kR3EP] = TMath::Cos(3 * (Psi3B - Psi3C));
   }
-  values[kPsi2A] = getEventPlane(2, values[kQ2X0A], values[kQ2Y0A]);
-  values[kPsi2B] = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
-  values[kPsi2C] = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
+  values[kPsi2A] = getEventPlane(2, values[kQ21XA], values[kQ21YA]);
+  values[kPsi2B] = getEventPlane(2, values[kQ21XB], values[kQ21YB]);
+  values[kPsi2C] = getEventPlane(2, values[kQ21XC], values[kQ21YC]);
 }
 
 template <typename C>
@@ -2968,41 +3004,41 @@ void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
     values = fgValues;
   }
 
-  float xQVecFT0a = collision.qvecFT0ARe();
-  float yQVecFT0a = collision.qvecFT0AIm();
-  float xQVecFT0c = collision.qvecFT0CRe();
-  float yQVecFT0c = collision.qvecFT0CIm();
-  float xQVecFT0m = collision.qvecFT0MRe();
-  float yQVecFT0m = collision.qvecFT0MIm();
-  float xQVecFV0a = collision.qvecFV0ARe();
-  float yQVecFV0a = collision.qvecFV0AIm();
-  float xQVecBPos = collision.qvecBPosRe();
-  float yQVecBPos = collision.qvecBPosIm();
-  float xQVecBNeg = collision.qvecBNegRe();
-  float yQVecBNeg = collision.qvecBNegIm();
+  float xQVecFT0a = collision.qvecFT0ARe(); // already normalised
+  float yQVecFT0a = collision.qvecFT0AIm(); // already normalised
+  float xQVecFT0c = collision.qvecFT0CRe(); // already normalised
+  float yQVecFT0c = collision.qvecFT0CIm(); // already normalised
+  float xQVecFT0m = collision.qvecFT0MRe(); // already normalised
+  float yQVecFT0m = collision.qvecFT0MIm(); // already normalised
+  float xQVecFV0a = collision.qvecFV0ARe(); // already normalised
+  float yQVecFV0a = collision.qvecFV0AIm(); // already normalised
+  float xQVecBPos = collision.qvecBPosRe(); // already normalised
+  float yQVecBPos = collision.qvecBPosIm(); // already normalised
+  float xQVecBNeg = collision.qvecBNegRe(); // already normalised
+  float yQVecBNeg = collision.qvecBNegIm(); // already normalised
 
-  values[kQ2X0A] = xQVecBPos; // WARNING: to be updated with full TPC tracks
-  values[kQ2Y0A] = yQVecBPos; // WARNING: to be updated with full TPC tracks
-  values[kQ2X0APOS] = xQVecBPos;
-  values[kQ2Y0APOS] = yQVecBPos;
-  values[kQ2X0ANEG] = xQVecBNeg;
-  values[kQ2Y0ANEG] = yQVecBNeg;
-  values[kQ2X0B] = xQVecFT0a;
-  values[kQ2Y0B] = yQVecFT0a;
-  values[kQ2X0C] = xQVecFT0c;
-  values[kQ2Y0C] = yQVecFT0c;
-  values[kMultA] = collision.nTrkBPos(); // WARNING: to be updated with full TPC tracks
+  values[kQ21XA] = (collision.nTrkBPos() * xQVecBPos + collision.nTrkBNeg() * xQVecBNeg) / (collision.nTrkBPos() + collision.nTrkBNeg());
+  values[kQ21YA] = (collision.nTrkBPos() * yQVecBPos + collision.nTrkBNeg() * yQVecBNeg) / (collision.nTrkBPos() + collision.nTrkBNeg());
+  values[kQ21XAPOS] = xQVecBPos;
+  values[kQ21YAPOS] = yQVecBPos;
+  values[kQ21XANEG] = xQVecBNeg;
+  values[kQ21YANEG] = yQVecBNeg;
+  values[kQ21XB] = xQVecFT0a;
+  values[kQ21YB] = yQVecFT0a;
+  values[kQ21XC] = xQVecFT0c;
+  values[kQ21YC] = yQVecFT0c;
+  values[kMultA] = collision.nTrkBPos() + collision.nTrkBNeg();
   values[kMultAPOS] = collision.nTrkBPos();
   values[kMultANEG] = collision.nTrkBNeg();
-  values[kMultB] = collision.sumAmplFT0A();
-  values[kMultC] = collision.sumAmplFT0C();
+  values[kMultB] = collision.sumAmplFT0A(); // Be careful, this is weighted sum of multiplicity
+  values[kMultC] = collision.sumAmplFT0C(); // Be careful, this is weighted sum of multiplicity
 
   EventPlaneHelper epHelper;
-  float Psi2A = epHelper.GetEventPlane(values[kQ2X0APOS], values[kQ2Y0APOS], 2); // WARNING: to be updated with full TPC tracks
-  float Psi2APOS = epHelper.GetEventPlane(values[kQ2X0APOS], values[kQ2Y0APOS], 2);
-  float Psi2ANEG = epHelper.GetEventPlane(values[kQ2X0ANEG], values[kQ2Y0ANEG], 2);
-  float Psi2B = epHelper.GetEventPlane(values[kQ2X0B], values[kQ2Y0B], 2);
-  float Psi2C = epHelper.GetEventPlane(values[kQ2X0C], values[kQ2Y0C], 2);
+  float Psi2A = epHelper.GetEventPlane(values[kQ21XA], values[kQ21YA], 2);
+  float Psi2APOS = epHelper.GetEventPlane(values[kQ21XAPOS], values[kQ21YAPOS], 2);
+  float Psi2ANEG = epHelper.GetEventPlane(values[kQ21XANEG], values[kQ21YANEG], 2);
+  float Psi2B = epHelper.GetEventPlane(values[kQ21XB], values[kQ21YB], 2);
+  float Psi2C = epHelper.GetEventPlane(values[kQ21XC], values[kQ21YC], 2);
 
   values[kPsi2A] = Psi2A;
   values[kPsi2APOS] = Psi2APOS;
@@ -3021,16 +3057,15 @@ void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
   values[kR2SP_FV0ATPCPOS] = (xQVecFV0a * xQVecBPos + yQVecFV0a * yQVecBPos);
   values[kR2SP_FV0ATPCNEG] = (xQVecFV0a * xQVecBNeg + yQVecFV0a * yQVecBNeg);
 
-  float epTpcPos = epHelper.GetEventPlane(xQVecBPos, yQVecBPos, 2);
-  float epTpcNeg = epHelper.GetEventPlane(xQVecBNeg, yQVecBNeg, 2);
   float epFT0a = epHelper.GetEventPlane(xQVecFT0a, yQVecFT0a, 2);
   float epFT0c = epHelper.GetEventPlane(xQVecFT0c, yQVecFT0c, 2);
   float epFT0m = epHelper.GetEventPlane(xQVecFT0m, yQVecFT0m, 2);
   float epFV0a = epHelper.GetEventPlane(xQVecFV0a, yQVecFV0a, 2);
   float epBPoss = epHelper.GetEventPlane(xQVecBPos, yQVecBPos, 2);
   float epBNegs = epHelper.GetEventPlane(xQVecBNeg, yQVecBNeg, 2);
+  // float epTPCFull = epHelper.GetEventPlane(values[kQ21XA], values[kQ21YA]);
 
-  values[kR2EP] = std::cos(2 * getDeltaPsiInRange(epTpcPos, epTpcNeg, 2));
+  values[kR2EP] = std::cos(2 * getDeltaPsiInRange(epBPoss, epBNegs, 2));
   values[kR2EP_FT0CFT0A] = std::cos(2 * getDeltaPsiInRange(epFT0c, epFT0a, 2));
   values[kR2EP_FT0CTPCPOS] = std::cos(2 * getDeltaPsiInRange(epFT0c, epBPoss, 2));
   values[kR2EP_FT0CTPCNEG] = std::cos(2 * getDeltaPsiInRange(epFT0c, epBNegs, 2));
@@ -3074,21 +3109,21 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   // TODO: provide different computations for vn
   // Compute the scalar product UQ using Q-vector from A, for second and third harmonic
   // Dilepton vn could be accessible after dividing this product with the R factor
-  values[kU2Q2] = values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi());
-  values[kU3Q3] = values[kQ3X0A] * std::cos(3 * v12.Phi()) + values[kQ3Y0A] * std::sin(3 * v12.Phi());
-  values[kCos2DeltaPhi] = std::cos(2 * (v12.Phi() - getEventPlane(2, values[kQ2X0A], values[kQ2Y0A])));
-  values[kCos3DeltaPhi] = std::cos(3 * (v12.Phi() - getEventPlane(3, values[kQ3X0A], values[kQ3Y0A])));
+  values[kU2Q2] = values[kQ21XA] * std::cos(2 * v12.Phi()) + values[kQ21YA] * std::sin(2 * v12.Phi());
+  values[kU3Q3] = values[kQ31XA] * std::cos(3 * v12.Phi()) + values[kQ31YA] * std::sin(3 * v12.Phi());
+  values[kCos2DeltaPhi] = std::cos(2 * (v12.Phi() - getEventPlane(2, values[kQ21XA], values[kQ21YA])));
+  values[kCos3DeltaPhi] = std::cos(3 * (v12.Phi() - getEventPlane(3, values[kQ31XA], values[kQ31YA])));
 
-  float Psi2B = getEventPlane(2, values[kQ2X0B], values[kQ2Y0B]);
-  float Psi3B = getEventPlane(3, values[kQ3X0B], values[kQ3Y0B]);
-  float Psi2C = getEventPlane(2, values[kQ2X0C], values[kQ2Y0C]);
-  float Psi3C = getEventPlane(3, values[kQ3X0C], values[kQ3Y0C]);
-  values[kR2SP] = (values[kQ2X0B] * values[kQ2X0C] + values[kQ2Y0B] * values[kQ2Y0C]);
-  values[kR3SP] = (values[kQ3X0B] * values[kQ3X0C] + values[kQ3Y0B] * values[kQ3Y0C]);
-  if (values[kQ2Y0B] * values[kQ2Y0C] != 0.0) {
+  float Psi2B = getEventPlane(2, values[kQ21XB], values[kQ21YB]);
+  float Psi3B = getEventPlane(3, values[kQ31XB], values[kQ31YB]);
+  float Psi2C = getEventPlane(2, values[kQ21XC], values[kQ21YC]);
+  float Psi3C = getEventPlane(3, values[kQ31XC], values[kQ31YC]);
+  values[kR2SP] = (values[kQ21XB] * values[kQ21XC] + values[kQ21YB] * values[kQ21YC]);
+  values[kR3SP] = (values[kQ31XB] * values[kQ31XC] + values[kQ31YB] * values[kQ31YC]);
+  if (values[kQ21YB] * values[kQ21YC] != 0.0) {
     values[kR2EP] = TMath::Cos(2 * (Psi2B - Psi2C));
   }
-  if (values[kQ3Y0B] * values[kQ3Y0C] != 0.0) {
+  if (values[kQ31YB] * values[kQ31YC] != 0.0) {
     values[kR3EP] = TMath::Cos(3 * (Psi3B - Psi3C));
   }
 
@@ -3104,20 +3139,15 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kPsi2C] = -999.;
   }
 
-  // QVector without Normalisation for Cumulants
-  values[kQ2X0A] = values[kQ2X0A] * values[kMultA];
-  values[kQ2Y0A] = values[kQ2Y0A] * values[kMultA];
-  values[kQ4X0A] = values[kQ4X0A] * values[kMultA];
-  values[kQ4Y0A] = values[kQ4Y0A] * values[kMultA];
-
   //  kV4, kC4POI, kC4REF etc.
-  values[kCORR2REF] = (values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A] - values[kMultA]) / (values[kMultA] * (values[kMultA] - 1));
-  values[kCORR2POI] = (values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi())) / (values[kMultA] * values[kMultDimuons]);
-  values[kCORR4REF] = (std::pow((values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A]), 2.0) + values[kQ4X0A] * values[kQ4X0A] + values[kQ4Y0A] * values[kQ4Y0A] - 2 * (values[kQ4X0A] * values[kQ2X0A] * values[kQ2X0A] - values[kQ4X0A] * values[kQ2Y0A] * values[kQ2Y0A] + 2 * values[kQ4Y0A] * values[kQ2Y0A] * values[kQ2X0A])) / (values[kMultA] * (values[kMultA] - 1) * (values[kMultA] - 2) * (values[kMultA] - 3)) - 2 * (2 * (values[kMultA] - 2) * (values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A]) - values[kMultA] * (values[kMultA] - 3)) / (values[kMultA] * (values[kMultA] - 1) * (values[kMultA] - 2) * (values[kMultA] - 3));
-  values[kCORR4POI] = (values[kQ2X0A] * values[kQ2X0A] * values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * values[kQ2Y0A] * values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2X0A] * values[kQ2X0A] * values[kQ2Y0A] * std::sin(2 * v12.Phi()) + values[kQ2Y0A] * values[kQ2Y0A] * values[kQ2Y0A] * std::sin(2 * v12.Phi()) - std::cos(2 * v12.Phi()) * (values[kQ2X0A] * values[kQ4X0A] + values[kQ2Y0A] * values[kQ4Y0A]) + std::sin(2 * v12.Phi()) * (values[kQ2Y0A] * values[kQ4X0A] - values[kQ2X0A] * values[kQ4Y0A]) - 2 * values[kMultA] * (values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi())) + 2 * (values[kQ2X0A] * std::cos(2 * v12.Phi()) + values[kQ2Y0A] * std::sin(2 * v12.Phi()))) / (values[kMultA] * values[kMultDimuons] * (values[kMultA] - 1) * (values[kMultA] - 2));
-  values[kC4REF] = values[kCORR4REF] - 2 * std::pow(values[kCORR2REF], 2.0);
-  values[kC4POI] = values[kCORR4POI] - 2 * values[kCORR2REF] * values[kCORR2POI];
-  values[kV4] = -values[kC4POI] / std::pow(-values[kC4REF], 0.75);
+  complex<double> Q21(values[kQ21XA], values[kQ21YA]);
+  complex<double> Q42(values[kQ42XA], values[kQ42YA]);
+  complex<double> Q23(values[kQ23XA], values[kQ23YA]);
+  complex<double> P2(std::cos(2 * v12.Phi()), std::sin(2 * v12.Phi()));
+  values[kM01POI] = values[kMultDimuons] * values[kS11A];
+  values[kM0111POI] = values[kMultDimuons] * (values[kS31A] - 3. * values[kS11A] * values[kS12A] + 2. * values[kS13A]);
+  values[kCORR2POI] = (P2 * conj(Q21)).real() / values[kM01POI];
+  values[kCORR4POI] = (P2 * Q21 * conj(Q21) * conj(Q21) - P2 * Q21 * conj(Q42) - 2. * values[kS12A] * P2 * conj(Q21) + 2. * P2 * conj(Q23)).real() / values[kM0111POI];
 }
 
 template <typename T1, typename T2>
