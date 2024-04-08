@@ -644,8 +644,7 @@ class RecoDecay
       // printf("getDaughters: ");
       // for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
       //   printf(" ");
-      // printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, PDGParticle);
-      // check if the particle comes from a decay process   
+      // printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, PDGParticle); 
       list->push_back(particle.globalIndex());
       return;
     }
