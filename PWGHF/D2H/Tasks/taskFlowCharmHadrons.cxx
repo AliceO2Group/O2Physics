@@ -300,18 +300,18 @@ struct HfTaskFlowCharmHadrons {
       float massCand = 0.;
       std::vector<float> outputMl = {-999., -999.};
 
-      if constexpr (std::is_same<T1, CandDsData>::value || std::is_same<T1, CandDsDataWMl>::value) {
+      if constexpr (std::is_same_v<T1, CandDsData> || std::is_same_v<T1, CandDsDataWMl>) {
         switch (channel) {
           case DecayChannel::DsToKKPi:
             massCand = hfHelper.invMassDsToKKPi(candidate);
-            if constexpr (std::is_same<T1, CandDsDataWMl>::value) {
+            if constexpr (std::is_same_v<T1, CandDsDataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
                 outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
             }
             break;
           case DecayChannel::DsToPiKK:
             massCand = hfHelper.invMassDsToPiKK(candidate);
-            if constexpr (std::is_same<T1, CandDsDataWMl>::value) {
+            if constexpr (std::is_same_v<T1, CandDsDataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
                 outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
             }
@@ -319,25 +319,25 @@ struct HfTaskFlowCharmHadrons {
           default:
             break;
         }
-      } else if constexpr (std::is_same<T1, CandDplusData>::value || std::is_same<T1, CandDplusDataWMl>::value) {
+      } else if constexpr (std::is_same_v<T1, CandDplusData> || std::is_same_v<T1, CandDplusDataWMl>) {
         massCand = hfHelper.invMassDplusToPiKPi(candidate);
-        if constexpr (std::is_same<T1, CandDplusDataWMl>::value) {
+        if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
             outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
         }
-      } else if constexpr (std::is_same<T1, CandD0Data>::value || std::is_same<T1, CandD0DataWMl>::value) {
+      } else if constexpr (std::is_same_v<T1, CandD0Data> || std::is_same_v<T1, CandD0DataWMl>) {
         nProngs = 2;
         switch (channel) {
           case DecayChannel::D0ToPiK:
             massCand = hfHelper.invMassD0ToPiK(candidate);
-            if constexpr (std::is_same<T1, CandD0DataWMl>::value) {
+            if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
                 outputMl[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
             }
             break;
           case DecayChannel::D0ToKPi:
             massCand = hfHelper.invMassD0barToKPi(candidate);
-            if constexpr (std::is_same<T1, CandD0DataWMl>::value) {
+            if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
               for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
                 outputMl[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
             }
@@ -378,8 +378,8 @@ struct HfTaskFlowCharmHadrons {
   {
     auto candsDsToKKPiWMl = selectedDsToKKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsDsToPiKKWMl = selectedDsToPiKKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    runFlowAnalysis<DecayChannel::DsToKKPi, CandDsDataWMl>(collision, candsDsToKKPiWMl);
-    runFlowAnalysis<DecayChannel::DsToPiKK, CandDsDataWMl>(collision, candsDsToPiKKWMl);
+    runFlowAnalysis<DecayChannel::DsToKKPi>(collision, candsDsToKKPiWMl);
+    runFlowAnalysis<DecayChannel::DsToPiKK>(collision, candsDsToPiKKWMl);
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDsMl, "Process Ds candidates with ML", false);
 
@@ -389,8 +389,8 @@ struct HfTaskFlowCharmHadrons {
   {
     auto candsDsToKKPi = selectedDsToKKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsDsToPiKK = selectedDsToPiKK->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    runFlowAnalysis<DecayChannel::DsToKKPi, CandDsData>(collision, candsDsToKKPi);
-    runFlowAnalysis<DecayChannel::DsToPiKK, CandDsData>(collision, candsDsToPiKK);
+    runFlowAnalysis<DecayChannel::DsToKKPi>(collision, candsDsToKKPi);
+    runFlowAnalysis<DecayChannel::DsToPiKK>(collision, candsDsToPiKK);
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDs, "Process Ds candidates", false);
 
@@ -398,7 +398,7 @@ struct HfTaskFlowCharmHadrons {
   void processDplusMl(CollsWithQvecs::iterator const& collision,
                       CandDplusDataWMl const& candidatesDplus)
   {
-    runFlowAnalysis<DecayChannel::DplusToPiKPi, CandDplusDataWMl>(collision, candidatesDplus);
+    runFlowAnalysis<DecayChannel::DplusToPiKPi>(collision, candidatesDplus);
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplusMl, "Process Dplus candidates with ML", false);
 
@@ -406,7 +406,7 @@ struct HfTaskFlowCharmHadrons {
   void processDplus(CollsWithQvecs::iterator const& collision,
                     CandDplusData const& candidatesDplus)
   {
-    runFlowAnalysis<DecayChannel::DplusToPiKPi, CandDplusData>(collision, candidatesDplus);
+    runFlowAnalysis<DecayChannel::DplusToPiKPi>(collision, candidatesDplus);
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processDplus, "Process Dplus candidates", true);
 
@@ -416,8 +416,8 @@ struct HfTaskFlowCharmHadrons {
   {
     auto candsD0ToPiKWMl = selectedD0ToPiKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsD0ToKPiWMl = selectedD0ToKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    runFlowAnalysis<DecayChannel::D0ToPiK, CandD0DataWMl>(collision, candsD0ToPiKWMl);
-    runFlowAnalysis<DecayChannel::D0ToKPi, CandD0DataWMl>(collision, candsD0ToKPiWMl);
+    runFlowAnalysis<DecayChannel::D0ToPiK>(collision, candsD0ToPiKWMl);
+    runFlowAnalysis<DecayChannel::D0ToKPi>(collision, candsD0ToKPiWMl);
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processD0Ml, "Process D0 candidates with ML", false);
 
@@ -427,8 +427,8 @@ struct HfTaskFlowCharmHadrons {
   {
     auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
     auto candsD0ToKPi = selectedD0ToKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
-    runFlowAnalysis<DecayChannel::D0ToPiK, CandD0Data>(collision, candsD0ToPiK);
-    runFlowAnalysis<DecayChannel::D0ToKPi, CandD0Data>(collision, candsD0ToKPi);
+    runFlowAnalysis<DecayChannel::D0ToPiK>(collision, candsD0ToPiK);
+    runFlowAnalysis<DecayChannel::D0ToKPi>(collision, candsD0ToKPi);
   }
   PROCESS_SWITCH(HfTaskFlowCharmHadrons, processD0, "Process D0 candidates", false);
 
