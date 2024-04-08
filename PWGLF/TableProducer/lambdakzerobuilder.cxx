@@ -124,7 +124,6 @@ struct lambdakzeroBuilder {
   Configurable<float> downscaleFactor{"downscaleFactor", 2, "Downscale factor (0: build nothing, 1: build all)"};
   unsigned int randomSeed = 0;
 
-  
   TRandom3 prng;
   // downscaling for Marian Ivanov -> different strategies
   struct : ConfigurableGroup {
@@ -172,7 +171,6 @@ struct lambdakzeroBuilder {
     Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
     Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   } ccdbConfigurations;
-
 
   // round some V0 core variables up to a certain level of precision if requested
   // useful to keep derived data sizes under control
