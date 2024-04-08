@@ -231,7 +231,7 @@ struct HfTaskXicToXiPiPi {
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
 
         registry.fill(HIST("hPtGenSig"), particleMother.pt());
-        registry.fill(HIST("hPtCandRecSig"), ptCandXic);
+        registry.fill(HIST("hPtRecSig"), ptCandXic);
         registry.fill(HIST("hPtProng0RecSig"), candidate.ptProng0());
         registry.fill(HIST("hPtProng1RecSig"), candidate.ptProng1());
         registry.fill(HIST("hPtProng2RecSig"), candidate.ptProng2());
@@ -260,7 +260,7 @@ struct HfTaskXicToXiPiPi {
           registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xictoxipipi::DecayType::XicToXiPiPi, candidate.invMassXic(), ptCandXic);
         }
       } else {
-        registry.fill(HIST("hPtCandRecBg"), ptCandXic);
+        registry.fill(HIST("hPtRecBg"), ptCandXic);
         registry.fill(HIST("hPtProng0RecBg"), candidate.ptProng0());
         registry.fill(HIST("hPtProng1RecBg"), candidate.ptProng1());
         registry.fill(HIST("hPtProng2RecBg"), candidate.ptProng2());
@@ -286,11 +286,6 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hCPAxyLambdaRecBg"), candidate.cosPaLambda(), ptCandXic);
         if (checkDecayTypeMc) {
           registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xictoxipipi::DecayType::NDecayType, candidate.invMassXic(), ptCandXic);
-          /*if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
-            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::PartlyRecoDecay, invMassCandBs, ptCandXic);
-          //} else {
-            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::NDecayTypeMc, invMassCandBs, ptCandXic);
-          }*/
         }
       }
     } // rec
