@@ -654,80 +654,80 @@ struct derivedlambdakzeroanalysis {
   }
 
   uint computeITSclusBitmap(uint8_t itsClusMap)
-  //Focus on the 12 dominant ITS cluster configurations 
+  //Focus on the 12 dominant ITS cluster configurations
   {
     uint bitMap = 0;
 
     if(verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
-      // ITS : L0 L1 L2 L3 L4 L5 L6 
-      // ITS : x  x  x  x  x  x  x 
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS : x  x  x  x  x  x  x
       bitMap = 12;
     }
     else if (verifyMask(itsClusMap, ((uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
-      // ITS : L0 L1 L2 L3 L4 L5 L6 
-      // ITS :    x  x  x  x  x  x 
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS :    x  x  x  x  x  x
       bitMap = 11;
     }
     else if (verifyMask(itsClusMap, ((uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
-      // ITS : L0 L1 L2 L3 L4 L5 L6 
-      // ITS :       x  x  x  x  x 
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS :       x  x  x  x  x
       bitMap = 10;
     }
     else if (verifyMask(itsClusMap, ((uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
-      // ITS : L0 L1 L2 L3 L4 L5 L6 
-      // ITS :          x  x  x  x 
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS :          x  x  x  x
       bitMap = 9;
     }
     else if (verifyMask(itsClusMap, ((uint8_t(1) << 4) | (uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
-      // ITS : L0 L1 L2 L3 L4 L5 L6 
-      // ITS :             x  x  x 
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS :             x  x  x
       bitMap = 8;
     }
     else if (verifyMask(itsClusMap, ((uint8_t(1) << 5) | (uint8_t(1) << 6)))) {
       // ITS :    IB         OB
-      // ITS : L0 L1 L2 L3 L4 L5 L6 
-      // ITS :                x  x 
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS :                x  x
       bitMap = 7;
     }
     else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
       // ITS :    IB         OB
-      // ITS : L0 L1 L2 L3 L4 L5 L6 
+      // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS : x  x  x  x  x  x
       bitMap = 6;
     }
     else if (verifyMask(itsClusMap, ((uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
       // ITS :    IB         OB
-      // ITS : L0 L1 L2 L3 L4 L5 L6 
+      // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :    x  x  x  x  x
       bitMap = 5;
     }
     else if (verifyMask(itsClusMap, ((uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4) | (uint8_t(1) << 5)))) {
       // ITS :    IB         OB
-      // ITS : L0 L1 L2 L3 L4 L5 L6 
+      // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :       x  x  x  x
       bitMap = 4;
     }
     else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4)))) {
       // ITS :    IB         OB
-      // ITS : L0 L1 L2 L3 L4 L5 L6 
+      // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS : x  x  x  x  x
       bitMap = 3;
     }
     else if (verifyMask(itsClusMap, ((uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3) | (uint8_t(1) << 4)))) {
       // ITS :    IB         OB
-      // ITS : L0 L1 L2 L3 L4 L5 L6 
+      // ITS : L0 L1 L2 L3 L4 L5 L6
       // ITS :    x  x  x  x
       bitMap = 2;
     }
     else if (verifyMask(itsClusMap, ((uint8_t(1) << 0) | (uint8_t(1) << 1) | (uint8_t(1) << 2) | (uint8_t(1) << 3)))) {
       // ITS :    IB         OB
-      // ITS : L0 L1 L2 L3 L4 L5 L6 
-      // ITS : x  x  x  x  
+      // ITS : L0 L1 L2 L3 L4 L5 L6
+      // ITS : x  x  x  x
       bitMap = 1;
     }
     else {
