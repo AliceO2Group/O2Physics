@@ -82,8 +82,6 @@ struct TreeCreatorElectronMLDDA {
       {"hMassAntiLambda", "V0 mass AntiLambda", {HistType::kTH1F, {{100, 1.05, 1.15}}}},
       {"hMvsPhiV", "mee vs. phiv", {HistType::kTH2F, {{72, 0, M_PI}, {100, 0, 0.1}}}},
       {"hMvsPhiV_primary", "mee vs. phiv for primary e candidate", {HistType::kTH2F, {{72, 0, M_PI}, {100, 0, 0.1}}}},
-      {"hMKK", "mKK vs. pTK;m_{KK} (GeV/c^{2});p_{T,K} (GeV/c)", {HistType::kTH2F, {{100, 0.98, 1.08}, {100, 0, 10}}}},
-      {"hMKK_pair", "mKK vs. pTKK;m_{KK} (GeV/c^{2});p_{T,KK} (GeV/c)", {HistType::kTH2F, {{100, 0.98, 1.08}, {100, 0, 10}}}},
 
       {"hTPCdEdx_P", "TPC dEdx vs. p;p^{ITS-TPC} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0, 5}, {200, 0, 200}}}},
       {"hTOFbeta_P", "TOF beta vs. p;p^{ITS-TPC} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0, 5}, {220, 0, 1.1}}}},
