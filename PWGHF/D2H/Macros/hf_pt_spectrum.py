@@ -79,10 +79,7 @@ def load_inputs(input_cfg):
 
     frac_method = input_cfg["fraction"]
     if frac_method not in ["Nb", "fc"]:
-        print(
-            f"\033[91mERROR: method to subtract nonprompt"
-            f" {frac_method} not supported. Exit\033[0m"
-        )
+        print(f"\033[91mERROR: method to subtract nonprompt" f" {frac_method} not supported. Exit\033[0m")
         sys.exit(5)
 
     rawy_file_name = input_cfg["rawyield"]["filename"]
@@ -100,18 +97,12 @@ def load_inputs(input_cfg):
     infile_rawy = TFile.Open(rawy_file_name)
     histos["rawyields"] = infile_rawy.Get(rawy_hist_name)
     if not histos["rawyields"]:
-        print(
-            f"\033[91mERROR: raw-yield histo {rawy_hist_name}"
-            f" not found in {rawy_file_name}. Exit\033[0m"
-        )
+        print(f"\033[91mERROR: raw-yield histo {rawy_hist_name}" f" not found in {rawy_file_name}. Exit\033[0m")
         sys.exit(6)
     histos["rawyields"].SetDirectory(0)
     h_events = infile_rawy.Get(norm_hist_name)
     if not h_events:
-        print(
-            f"\033[91mERROR: normalisation histo {norm_hist_name}"
-            f" not found in {rawy_file_name}. Exit\033[0m"
-        )
+        print(f"\033[91mERROR: normalisation histo {norm_hist_name}" f" not found in {rawy_file_name}. Exit\033[0m")
         sys.exit(7)
     h_events.SetDirectory(0)
     infile_rawy.Close()
@@ -146,14 +137,10 @@ def load_inputs(input_cfg):
     histos["FONLL"] = {"prompt": {}, "nonprompt": {}}
     infile_fonll = TFile.Open(pred_file_name)
     for pred in ("central", "min", "max"):
-        histos["FONLL"]["nonprompt"][pred] = infile_fonll.Get(
-            f"{fonll_hist_name[channel]}fromBpred_{pred}_corr"
-        )
+        histos["FONLL"]["nonprompt"][pred] = infile_fonll.Get(f"{fonll_hist_name[channel]}fromBpred_{pred}_corr")
         histos["FONLL"]["nonprompt"][pred].SetDirectory(0)
         if frac_method == "fc":
-            histos["FONLL"]["prompt"][pred] = infile_fonll.Get(
-                f"{fonll_hist_name[channel]}pred_{pred}"
-            )
+            histos["FONLL"]["prompt"][pred] = infile_fonll.Get(f"{fonll_hist_name[channel]}pred_{pred}")
             histos["FONLL"]["prompt"][pred].SetDirectory(0)
     infile_fonll.Close()
 
@@ -163,9 +150,7 @@ def load_inputs(input_cfg):
         norm_db = yaml.safe_load(yml_norm_db)
     norm["BR"] = norm_db["BR"][channel]["value"]
     norm["events"] = h_events.GetBinContent(1)
-    norm["sigmaMB"] = (
-        norm_db["sigma"]["Run2"][system][energy] if observable == "dsigmadpt" else 1.0
-    )
+    norm["sigmaMB"] = norm_db["sigma"]["Run2"][system][energy] if observable == "dsigmadpt" else 1.0
 
     return histos, norm
 
@@ -182,16 +167,14 @@ def main():
         default="config_Dplus_pp5TeV.yml",
         help="input yaml config file",
     )
-    parser.add_argument(
-        "--batch", action="store_true", default=False, help="suppress video output"
-    )
+    parser.add_argument("--batch", action="store_true", default=False, help="suppress video output")
     args = parser.parse_args()
 
     if args.batch:
         gROOT.SetBatch(True)
 
     # final plots style settings
-    style_hist = TStyle('style_hist','Histo graphics style')
+    style_hist = TStyle("style_hist", "Histo graphics style")
     style_hist.SetOptStat("n")
     style_hist.SetMarkerColor(kAzure + 4)
     style_hist.SetMarkerStyle(kFullCircle)
@@ -217,10 +200,7 @@ def main():
     ptlims = {}
     for histo in ["rawyields", "acceffp", "acceffnp"]:
         ptlims[histo] = get_hist_binlimits(histos[histo])
-        if (
-            histo != "rawyields"
-            and not np.equal(ptlims[histo], ptlims["rawyields"]).all()
-        ):
+        if histo != "rawyields" and not np.equal(ptlims[histo], ptlims["rawyields"]).all():
             print("\033[91mERROR: histo binning not consistent. Exit\033[0m")
             sys.exit(10)
 
@@ -245,31 +225,22 @@ def main():
         ptlims["rawyields"],
     )
 
-    for i_pt, (ptmin, ptmax) in enumerate(
-        zip(ptlims["rawyields"][:-1], ptlims["rawyields"][1:])
-    ):
+    for i_pt, (ptmin, ptmax) in enumerate(zip(ptlims["rawyields"][:-1], ptlims["rawyields"][1:])):
         pt_cent = (ptmax + ptmin) / 2
         pt_delta = ptmax - ptmin
         rawy = histos["rawyields"].GetBinContent(i_pt + 1)
         rawy_unc = histos["rawyields"].GetBinError(i_pt + 1)
         eff_times_acc_prompt = histos["acceffp"].GetBinContent(i_pt + 1)
         eff_times_acc_nonprompt = histos["acceffnp"].GetBinContent(i_pt + 1)
-        ptmin_fonll = (
-            histos["FONLL"]["nonprompt"]["central"].GetXaxis().FindBin(ptmin * 1.0001)
-        )
-        ptmax_fonll = (
-            histos["FONLL"]["nonprompt"]["central"].GetXaxis().FindBin(ptmax * 0.9999)
-        )
+        ptmin_fonll = histos["FONLL"]["nonprompt"]["central"].GetXaxis().FindBin(ptmin * 1.0001)
+        ptmax_fonll = histos["FONLL"]["nonprompt"]["central"].GetXaxis().FindBin(ptmax * 0.9999)
         crosssec_nonprompt_fonll = [
-            histos["FONLL"]["nonprompt"][pred].Integral(
-                ptmin_fonll, ptmax_fonll, "width"
-            )
-            / (ptmax - ptmin)
+            histos["FONLL"]["nonprompt"][pred].Integral(ptmin_fonll, ptmax_fonll, "width") / (ptmax - ptmin)
             for pred in histos["FONLL"]["nonprompt"]
         ]
 
         # compute prompt fraction
-        frac = [0., 0., 0.]
+        frac = [0.0, 0.0, 0.0]
         if frac_method == "Nb":
             frac = compute_fraction_nb(  # BR already included in FONLL prediction
                 rawy,
@@ -284,10 +255,7 @@ def main():
             )
         elif frac_method == "fc":
             crosssec_prompt_fonll = [
-                histos["FONLL"]["prompt"][pred].Integral(
-                    ptmin_fonll, ptmax_fonll, "width"
-                )
-                / (ptmax - ptmin)
+                histos["FONLL"]["prompt"][pred].Integral(ptmin_fonll, ptmax_fonll, "width") / (ptmax - ptmin)
                 for pred in histos["FONLL"]["prompt"]
             ]
             frac, _ = compute_fraction_fc(
@@ -316,12 +284,10 @@ def main():
         hptspectrum_wo_br.SetBinContent(i_pt + 1, crosssec)
         hptspectrum_wo_br.SetBinError(i_pt + 1, crosssec_unc)
         gfraction.SetPoint(i_pt, pt_cent, frac[0])
-        gfraction.SetPointError(
-            i_pt, pt_delta / 2, pt_delta / 2, frac[0] - frac[1], frac[2] - frac[0]
-        )
+        gfraction.SetPointError(i_pt, pt_delta / 2, pt_delta / 2, frac[0] - frac[1], frac[2] - frac[0])
 
     c = TCanvas("c", "c", 600, 800)
-    c.Divide (1, 2)
+    c.Divide(1, 2)
     c.cd(1)
     gPad.SetLogy(True)
     hptspectrum.Draw()
@@ -336,9 +302,7 @@ def main():
     c.Print(os.path.join(output_dir, f'{cfg["output"]["filename"]}.pdf'))
 
     # save output file
-    output_file = TFile(
-        os.path.join(output_dir, f'{cfg["output"]["filename"]}.root'), "recreate"
-    )
+    output_file = TFile(os.path.join(output_dir, f'{cfg["output"]["filename"]}.root'), "recreate")
     hptspectrum.Write()
     hptspectrum_wo_br.Write()
     gfraction.Write()
