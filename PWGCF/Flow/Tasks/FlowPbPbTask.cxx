@@ -8,6 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+// code author: Zhiyong Lu (zhiyong.lu@cern.ch)
+// jira: PWGCF-254
 
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPMagField.h>
@@ -435,6 +438,22 @@ struct FlowPbPbTask {
     }
     if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       // reject collisions close to Time Frame borders
+      // https://its.cern.ch/jira/browse/O2-4623
+      return 0;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      // reject events affected by the ITS ROF border
+      // https://its.cern.ch/jira/browse/O2-4309
+      return 0;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      // rejects collisions which are associated with the same "found-by-T0" bunch crossing
+      // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
+      return 0;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
+      // use this cut at low multiplicities with caution
       return 0;
     }
     float vtxz = -999;

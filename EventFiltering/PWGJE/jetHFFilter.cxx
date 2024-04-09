@@ -41,8 +41,6 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-static const std::vector<std::string> highPtObjectsNames = {"JetD0ChLowPt", "JetD0ChHighPt", "JetLcChLowPt", "JetLcChHighPt"};
-
 struct JetHFFilterTask {
 
   HistogramRegistry registry;
@@ -75,7 +73,6 @@ struct JetHFFilterTask {
     } else {
       jetRadiiPlotBins.push_back(jetRadiiPlotBins[jetRadiiPlotBins.size() - 1] + 0.1);
     }
-
     registry.add("h_d0jet_pt", "D^{0} - tagged jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
     registry.add("h_d0jet_pt_lowpt", "D^{0} - tagged jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
     registry.add("h_d0jet_pt_highpt", "D^{0} - tagged jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});

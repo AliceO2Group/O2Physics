@@ -54,6 +54,10 @@ struct strangepidqa {
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "p_{T} (GeV/c)"};
   ConfigurableAxis axisRadius{"axisRadius", {200, 0.0f, 100.0f}, "V0 radius (cm)"};
 
+  AxisSpec centAxis = {100, 0.0f, 100.0f, "mult percentile"};
+  AxisSpec massAxisXi = {200, 1.222f, 1.422f, "Inv. Mass (GeV/c^{2})"};
+  AxisSpec massAxisOmega = {200, 1.572f, 1.772f, "Inv. Mass (GeV/c^{2})"};
+
   // Invariant Mass
   ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.08f, 1.16f}, "M_{#Lambda} (GeV/c^{2})"};
 
@@ -237,9 +241,16 @@ struct strangepidqa {
       histos.add("h2dAssocLambdaDeltaDecayTime", "h2dAssocLambdaDeltaDecayTime", {HistType::kTH2F, {axisPt, axisDeltaTime}});
       histos.add("h2dAssocLambdaDeltaDecayTime_MassSelected", "h2dAssocLambdaDeltaDecayTime_MassSelected", {HistType::kTH2F, {axisPt, axisDeltaTime}});
     }
+
+    if (doprocessCascades) {
+      histos.add("h3dMassXiMinus", "h3dMassXiMinus", {HistType::kTH3F, {centAxis, axisPt, massAxisXi}});
+      histos.add("h3dMassXiPlus", "h3dMassXiPlus", {HistType::kTH3F, {centAxis, axisPt, massAxisXi}});
+      histos.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", {HistType::kTH3F, {centAxis, axisPt, massAxisOmega}});
+      histos.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", {HistType::kTH3F, {centAxis, axisPt, massAxisOmega}});
+    }
   }
 
-  void processReal(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFs, aod::V0TOFPIDs, aod::V0TOFBetas, aod::V0TOFDebugs> const& v0s)
+  void processReal(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFBetas, aod::V0TOFDebugs> const& v0s)
   {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
@@ -251,70 +262,16 @@ struct strangepidqa {
       if (TMath::Abs(lambda.eta()) > 0.5)
         continue;
 
-      if (TMath::Abs(lambda.mLambda() - 1.115683) < 0.01 && lambda.v0cosPA() > minCosPA) {
-        histos.fill(HIST("hPositiveStatus"), 0.0f);
-        if (lambda.posTOFSignal() > 1e-5 && lambda.posTOFEventTime() < 0.0f)
-          histos.fill(HIST("hPositiveStatus"), 1.0f);
-        if (lambda.posTOFSignal() < 0.0f && lambda.posTOFEventTime() > 1e-5)
-          histos.fill(HIST("hPositiveStatus"), 2.0f);
-        if (lambda.posTOFSignal() > 1e-5 && lambda.posTOFEventTime() > 1e-5)
-          histos.fill(HIST("hPositiveStatus"), 3.0f);
-
-        histos.fill(HIST("hNegativeStatus"), 0.0f);
-        if (lambda.negTOFSignal() > 1e-5 && lambda.negTOFEventTime() < 0.0f)
-          histos.fill(HIST("hNegativeStatus"), 1.0f);
-        if (lambda.negTOFSignal() < 0.0f && lambda.negTOFEventTime() > 1e-5)
-          histos.fill(HIST("hNegativeStatus"), 2.0f);
-        if (lambda.negTOFSignal() > 1e-5 && lambda.negTOFEventTime() > 1e-5)
-          histos.fill(HIST("hNegativeStatus"), 3.0f);
-
-        if (lambda.posTOFLength() > 0.0f) {
-          histos.fill(HIST("hPositiveStatusReachedTOF"), 0.0f);
-          if (lambda.posTOFSignal() > 1e-5 && lambda.posTOFEventTime() < 0.0f)
-            histos.fill(HIST("hPositiveStatusReachedTOF"), 1.0f);
-          if (lambda.posTOFSignal() < 0.0f && lambda.posTOFEventTime() > 1e-5)
-            histos.fill(HIST("hPositiveStatusReachedTOF"), 2.0f);
-          if (lambda.posTOFSignal() > 1e-5 && lambda.posTOFEventTime() > 1e-5)
-            histos.fill(HIST("hPositiveStatusReachedTOF"), 3.0f);
-        }
-
-        if (lambda.negTOFLength() > 0.0f) {
-          histos.fill(HIST("hNegativeStatusReachedTOF"), 0.0f);
-          if (lambda.negTOFSignal() > 1e-5 && lambda.negTOFEventTime() < 0.0f)
-            histos.fill(HIST("hNegativeStatusReachedTOF"), 1.0f);
-          if (lambda.negTOFSignal() < 0.0f && lambda.negTOFEventTime() > 1e-5)
-            histos.fill(HIST("hNegativeStatusReachedTOF"), 2.0f);
-          if (lambda.negTOFSignal() > 1e-5 && lambda.negTOFEventTime() > 1e-5)
-            histos.fill(HIST("hNegativeStatusReachedTOF"), 3.0f);
-        }
-
-        // properties of the positive and negative prongs / debug
-        histos.fill(HIST("h2dTimeVsLengthProtonProng"), lambda.posTOFLength(), lambda.posLifetimePr());
-        histos.fill(HIST("h2dTimeVsLengthPionProng"), lambda.negTOFLength(), lambda.negLifetimePr());
-      }
-
       histos.fill(HIST("h2dLambdaMassVsTOFCut"), lambda.mLambda(), TMath::Abs(lambda.posTOFDeltaTLaPr()));
       histos.fill(HIST("h2dLambdaMassVsTOFCutMeson"), lambda.mLambda(), TMath::Abs(lambda.negTOFDeltaTLaPi()));
 
       if (lambda.v0radius() < minV0Radius)
-        continue;
-      if (lambda.posTOFSignal() < 0 && requireTOFsignalProton)
-        continue;
-      if (lambda.negTOFSignal() < 0 && requireTOFsignalPion)
         continue;
 
       histos.fill(HIST("h2dLambdaDeltaDecayTime"), lambda.pt(), lambda.deltaDecayTimeLambda());
       if (TMath::Abs(lambda.mLambda() - 1.115683) < 0.01 && lambda.v0cosPA() > minCosPA) {
         histos.fill(HIST("h2dLambdaDeltaDecayTime_MassSelected"), lambda.pt(), lambda.deltaDecayTimeLambda());
       }
-
-      if (lambda.posTOFEventTime() < 0 && requireTOFEventTimeProton)
-        continue;
-      if (lambda.negTOFEventTime() < 0 && requireTOFEventTimePion)
-        continue;
-
-      histos.fill(HIST("h2dLambdaMassVsTOFCutWithSignals"), lambda.mLambda(), TMath::Abs(lambda.posTOFDeltaTLaPr()));
-      histos.fill(HIST("h2dLambdaMassVsTOFCutMesonWithSignals"), lambda.mLambda(), TMath::Abs(lambda.negTOFDeltaTLaPi()));
 
       if (lambda.pt() > minPtV0 && lambda.pt() < maxPtV0)
         histos.fill(HIST("hLambdaMass"), lambda.mLambda());
@@ -335,12 +292,6 @@ struct strangepidqa {
         histos.fill(HIST("h2dPionDeltaTimeVsRadius_MassSelected"), lambda.v0radius(), lambda.negTOFDeltaTLaPi());
         histos.fill(HIST("h2dLambdaBeta_MassSelected"), lambda.p(), lambda.tofBetaLambda());
       }
-
-      histos.fill(HIST("h2dProtonLengthVsRadius"), lambda.v0radius(), lambda.posTOFLength());
-      histos.fill(HIST("h2dPionLengthVsRadius"), lambda.v0radius(), lambda.negTOFLength());
-
-      histos.fill(HIST("h2dProtonLengthVsLengthToPV"), lambda.posTOFLengthToPV(), lambda.posTOFLength());
-      histos.fill(HIST("h2dPionLengthVsLengthToPV"), lambda.negTOFLengthToPV(), lambda.negTOFLength());
 
       // Standard selection of time
       if (TMath::Abs(lambda.deltaDecayTimeLambda()) < maxDeltaTimeDecay) {
@@ -388,7 +339,7 @@ struct strangepidqa {
     }
   }
 
-  void processSim(aod::StraCollision const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0MCDatas, aod::V0TOFs, aod::V0TOFPIDs, aod::V0TOFBetas> const& v0s)
+  void processSim(aod::StraCollision const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0MCDatas, aod::V0TOFPIDs, aod::V0TOFBetas> const& v0s)
   {
     for (auto& lambda : v0s) { // selecting photons from Sigma0
       if (lambda.pdgCode() != 3122)
@@ -402,12 +353,6 @@ struct strangepidqa {
 
       histos.fill(HIST("hAssocLambdaMass"), lambda.mLambda());
 
-      if (TMath::Abs(lambda.negTOFDeltaTLaPi()) > 800) {
-        histos.fill(HIST("hAssocLambdaMassGoodTime"), lambda.mLambda());
-      } else {
-        histos.fill(HIST("hAssocLambdaMassBadTime"), lambda.mLambda());
-      }
-
       histos.fill(HIST("h2dAssocLambdaRadiusVsPt"), lambda.pt(), lambda.v0radius());
       histos.fill(HIST("h2dAssocLambdaMassVsPt"), lambda.pt(), lambda.mLambda());
 
@@ -415,12 +360,6 @@ struct strangepidqa {
       histos.fill(HIST("h2dAssocProtonDeltaTimeVsRadius"), lambda.v0radius(), lambda.posTOFDeltaTLaPr());
       histos.fill(HIST("h2dAssocPionDeltaTimeVsPt"), lambda.pt(), lambda.negTOFDeltaTLaPi());
       histos.fill(HIST("h2dAssocPionDeltaTimeVsRadius"), lambda.v0radius(), lambda.negTOFDeltaTLaPi());
-
-      histos.fill(HIST("h2dAssocProtonLengthVsRadius"), lambda.v0radius(), lambda.posTOFLength());
-      histos.fill(HIST("h2dAssocPionLengthVsRadius"), lambda.v0radius(), lambda.negTOFLength());
-
-      histos.fill(HIST("h2dAssocProtonLengthVsLengthToPV"), lambda.posTOFLengthToPV(), lambda.posTOFLength());
-      histos.fill(HIST("h2dAssocPionLengthVsLengthToPV"), lambda.negTOFLengthToPV(), lambda.negTOFLength());
 
       // delta lambda decay time
       histos.fill(HIST("h2dAssocLambdaDeltaDecayTime"), lambda.pt(), lambda.deltaDecayTimeLambda());
@@ -464,7 +403,7 @@ struct strangepidqa {
               continue;
             if (tofNsigmaXiPi < 100 && fabs(casc.tofNSigmaXiPi()) > tofNsigmaXiPi)
               continue;
-            histos.fill(HIST("h2dMassXiMinus"), casc.pt(), casc.mXi());
+            histos.fill(HIST("h3dMassXiMinus"), col.centFT0C(), casc.pt(), casc.mXi());
           }
           if (TMath::Abs(posExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(negExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(bachExtra.tpcNSigmaKa()) < tpcNsigmaBachelor) {
             if (tofNsigmaOmLaPr < 100 && fabs(casc.tofNSigmaOmLaPr()) > tofNsigmaOmLaPr)
@@ -473,7 +412,7 @@ struct strangepidqa {
               continue;
             if (tofNsigmaOmKa < 100 && fabs(casc.tofNSigmaOmKa()) > tofNsigmaOmKa)
               continue;
-            histos.fill(HIST("h2dMassOmegaMinus"), casc.pt(), casc.mOmega());
+            histos.fill(HIST("h3dMassOmegaMinus"), col.centFT0C(), casc.pt(), casc.mOmega());
           }
         } else {
           if (TMath::Abs(posExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(negExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(bachExtra.tpcNSigmaPi()) < tpcNsigmaBachelor) {
@@ -483,7 +422,7 @@ struct strangepidqa {
               continue;
             if (tofNsigmaXiPi < 100 && fabs(casc.tofNSigmaXiPi()) > tofNsigmaXiPi)
               continue;
-            histos.fill(HIST("h2dMassXiPlus"), casc.pt(), casc.mXi());
+            histos.fill(HIST("h3dMassXiPlus"), col.centFT0C(), casc.pt(), casc.mXi());
           }
 
           if (TMath::Abs(posExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(negExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(bachExtra.tpcNSigmaKa()) < tpcNsigmaBachelor) {
@@ -493,7 +432,7 @@ struct strangepidqa {
               continue;
             if (tofNsigmaOmKa < 100 && fabs(casc.tofNSigmaOmKa()) > tofNsigmaOmKa)
               continue;
-            histos.fill(HIST("h2dMassOmegaPlus"), casc.pt(), casc.mOmega());
+            histos.fill(HIST("h3dMassOmegaPlus"), col.centFT0C(), casc.pt(), casc.mOmega());
           }
         }
       }

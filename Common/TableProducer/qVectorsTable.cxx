@@ -345,8 +345,8 @@ struct qVectorsTable {
 
   void process(MyCollisions::iterator const& coll, aod::BCsWithTimestamps const&, aod::FT0s const& ft0s, aod::FV0As const& fv0s, MyTracks const& tracks)
   {
+    auto bc = coll.bc_as<aod::BCsWithTimestamps>();
     if (IsFirstRun) {
-      auto bc = coll.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       IsFirstRun = false;
     }
@@ -463,7 +463,6 @@ struct qVectorsTable {
       for (std::size_t iCh = 0; iCh < fv0.channel().size(); iCh++) {
         float ampl = fv0.amplitude()[iCh];
         int FV0AchId = fv0.channel()[iCh];
-
         histosQA.fill(HIST("FV0Amp"), ampl, FV0AchId);
         histosQA.fill(HIST("FV0AmpCor"), ampl / FV0RelGainConst[FV0AchId], FV0AchId);
 

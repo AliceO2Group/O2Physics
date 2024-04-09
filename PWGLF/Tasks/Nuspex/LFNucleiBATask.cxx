@@ -89,7 +89,6 @@ struct LFNucleiBATask {
 
   // Set additional cuts (used for debug)
   Configurable<float> ProtonNsigmaTPCcutInTOFbeta{"ProtonNsigmaTPCcutInTOFbeta", 3.5f, "Value of the Nsigma TPC cut (proton) for TOF beta distribution"};
-  Configurable<float> nsigmaTPCStrongCut{"nsigmaTPCStrongCut", 3.f, "Value of the Nsigma TPC (Strong) proton cut, if enabled"};
   Configurable<float> betaCut{"betaCut", 0.4f, "Value of the beta selection for TOF cut (default 0.4)"};
 
   // Set the axis used in this task
@@ -130,7 +129,6 @@ struct LFNucleiBATask {
   Configurable<bool> usenITSLayer{"usenITSLayer", false, "Flag to enable ITS layer hit"};
   Configurable<int> useHasTRDConfig{"useHasTRDConfig", 0, "No selections on TRD (0); With TRD (1); Without TRD (2)"};
   Configurable<int> massTOFConfig{"massTOFConfig", 0, "Estimate massTOF using beta with (0) TPC momentum (1) TOF expected momentum (2) p momentum."};
-  // Configurable<int> tritonSelConfig{"tritonSelConfig", 0, "Select tritons using (0) 3Sigma TPC triton (1) additional 3sigma TPC pi,K,p veto cut"};
   Configurable<int> helium3Pt{"helium3Pt", 0, "Select use default pT (0) or use instead 2*pT (1) for helium-3"};
   Configurable<int> DeuteronPt{"DeuteronPt", 0, "Select (0) to apply deuteron pT shift or (1) to use default pT."};
   Configurable<int> antiDeuteronPt{"antiDeuteronPt", 0, "Select (0) to apply antideuteron pT shift or (1) to use default pT."};

@@ -39,10 +39,12 @@ void o2::aod::pwgem::photon::histogram::DefineHistograms(THashList* list, const 
     reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(1, "all");
     reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(2, "No TF border");
     reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(3, "No ITS ROF border");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(4, "FT0AND");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(5, "N_{contrib}^{PV} > 0");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(6, "|Z_{vtx}| < 10 cm");
-    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(7, "accepted");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(4, "No Same Bunch Pileup");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(5, "Is Vertex ITSTPC");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(6, "Is Good Zvtx FT0vsPV");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(7, "sel8");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(8, "|Z_{vtx}| < 10 cm");
+    reinterpret_cast<TH1F*>(list->FindObject("hCollisionCounter"))->GetXaxis()->SetBinLabel(9, "accepted");
 
     list->Add(new TH1F("hZvtx", "vertex z; Z_{vtx} (cm)", 100, -50, +50));
     list->Add(new TH1F("hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", 6001, -0.5, 6000.5));

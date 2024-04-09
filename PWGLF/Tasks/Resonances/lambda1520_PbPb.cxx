@@ -48,6 +48,7 @@ struct lambdaAnalysis_pb {
 
   // Tracks
   Configurable<float> cPtMin{"cPtMin", 0.15, "Minimum Track pT"};
+  Configurable<float> cPMin{"cPMin", 0., "Minimum Track p"};
   Configurable<float> cEtaCut{"cEtaCut", 0.8, "Pseudorapidity cut"};
   Configurable<float> cDcaz{"cDcazMin", 1., "Minimum DCAz"};
   Configurable<float> cDcaxy{"cDcaxyMin", 0.1, "Minimum DCAxy"};
@@ -65,17 +66,21 @@ struct lambdaAnalysis_pb {
   Configurable<float> cRejNsigmaTpc{"cRejNsigmaTpc", 3.0, "Reject tracks to improve purity of TPC PID"};      // Reject missidentified particles when tpc bands merge
   Configurable<float> cRejNsigmaTof{"cRejNsigmaTof", 3.0, "Reject tracks to improve purity of TOF PID"};      // Reject missidentified particles when tpc bands merge
   // Proton
-  Configurable<double> cMaxTPCnSigmaProton{"cMaxTPCnSigmaProton", 3.0, "TPC nSigma cut for Proton"};              // TPC
-  Configurable<double> cMaxTOFnSigmaProton{"cMaxTOFnSigmaProton", 3.0, "TOF nSigma cut for Proton"};              // TOF
+  Configurable<double> cMaxTPCnSigmaProton{"cMaxTPCnSigmaProton", 3.0, "TPC nSigma cut for Proton"}; // TPC
+  //  Configurable<double> cMaxTOFnSigmaProton{"cMaxTOFnSigmaProton", 3.0, "TOF nSigma cut for Proton"};              // TOF
   Configurable<double> nsigmaCutCombinedProton{"nsigmaCutCombinedProton", 3.0, "Combined nSigma cut for Proton"}; // Combined
   Configurable<std::vector<float>> protonTPCPIDp{"protonTPCPIDp", {0, 0.5, 0.7, 0.8}, "p dependent TPC cuts protons"};
   Configurable<std::vector<float>> protonTPCPIDcut{"protonTPCPIDcut", {5., 3.5, 2.5}, "TPC nsigma cuts protons"};
+  Configurable<std::vector<float>> protonTOFPIDp{"protonTOFPIDp", {0., 999.}, "p dependent TOF cuts protons"};
+  Configurable<std::vector<float>> protonTOFPIDcut{"protonTOFPIDcut", {3.0}, "TOF nsigma cuts protons"};
   // Kaon
-  Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"};              // TPC
-  Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"};              // TOF
+  Configurable<double> cMaxTPCnSigmaKaon{"cMaxTPCnSigmaKaon", 3.0, "TPC nSigma cut for Kaon"}; // TPC
+  // Configurable<double> cMaxTOFnSigmaKaon{"cMaxTOFnSigmaKaon", 3.0, "TOF nSigma cut for Kaon"};              // TOF
   Configurable<double> nsigmaCutCombinedKaon{"nsigmaCutCombinedKaon", 3.0, "Combined nSigma cut for Kaon"}; // Combined
   Configurable<std::vector<float>> kaonTPCPIDp{"kaonTPCPIDp", {0., 0.25, 0.3, 0.45}, "pT dependent TPC cuts kaons"};
   Configurable<std::vector<float>> kaonTPCPIDcut{"kaonTPCPIDcut", {6, 3.5, 2.5}, "TPC nsigma cuts kaons"};
+  Configurable<std::vector<float>> kaonTOFPIDp{"kaonTOFPIDp", {0., 999.}, "p dependent TOF cuts kaons"};
+  Configurable<std::vector<float>> kaonTOFPIDcut{"kaonTOFPIDcut", {3.0}, "TOF nsigma cuts kaons"};
   // Event Mixing.
   Configurable<int> cNumMixEv{"cNumMixEv", 20, "Number of Events to be mixed"};
 
@@ -208,7 +213,10 @@ struct lambdaAnalysis_pb {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
     auto tpcPIDp = static_cast<std::vector<float>>(protonTPCPIDp);
     auto tpcPIDcut = static_cast<std::vector<float>>(protonTPCPIDcut);
+    auto tofPIDp = static_cast<std::vector<float>>(protonTOFPIDp);
+    auto tofPIDcut = static_cast<std::vector<float>>(protonTOFPIDcut);
     int nitr = static_cast<int>(tpcPIDp.size());
+    int nitrtof = static_cast<int>(tofPIDp.size());
 
     float tpcNsigmaPi = std::abs(candidate.tpcNSigmaPi());
     float tpcNsigmaKa = std::abs(candidate.tpcNSigmaKa());
@@ -224,29 +232,31 @@ struct lambdaAnalysis_pb {
     float combinedRejCut = cRejNsigmaTof * cRejNsigmaTpc;
 
     if (!cUseTpcOnly && candidate.hasTOF()) {
-      if (tofNsigmaPr < cMaxTOFnSigmaProton && tofNsigmaPi > cRejNsigmaTof && tofNsigmaKa > cRejNsigmaTof) {
-        tofPIDPassed = true;
+      if (nsigmaCutCombinedProton < 0 && p >= cPMin) {
+        for (int i = 0; i < nitrtof - 1; ++i) {
+          if (p >= tofPIDp[i] && p < tofPIDp[i + 1] && (tofNsigmaPr < tofPIDcut[i] && tofNsigmaPi > cRejNsigmaTof && tofNsigmaKa > cRejNsigmaTof))
+            tofPIDPassed = true;
+        }
+        if (tpcNsigmaPr < cMaxTPCnSigmaProton)
+          tpcPIDPassed = true;
       }
-      // square cut
-      if ((nsigmaCutCombinedProton < 0) && (tpcNsigmaPr < cMaxTPCnSigmaProton)) {
+
+      // circular cut
+      if ((nsigmaCutCombinedProton > 0) && p >= cPMin && (tpcTofNsigmaPr < combinedCut && tpcTofNsigmaPi > combinedRejCut && tpcTofNsigmaKa > combinedRejCut)) {
+        tofPIDPassed = true;
         tpcPIDPassed = true;
       }
-      // circular cut
-      if ((nsigmaCutCombinedProton > 0) && (tpcTofNsigmaPr < combinedCut && tpcTofNsigmaPi > combinedRejCut && tpcTofNsigmaKa > combinedRejCut)) {
+
+      if (p < cPMin && tpcNsigmaPr < cMaxTPCnSigmaProton) {
+
         tofPIDPassed = true;
         tpcPIDPassed = true;
       }
     } else {
       tofPIDPassed = true;
-      if (cUseTpcOnly) {
-        if (tpcNsigmaPr < cMaxTPCnSigmaProton && tpcNsigmaPi > cRejNsigmaTpc && tpcNsigmaKa > cRejNsigmaTpc) {
+      for (int i = 0; i < nitr - 1; ++i) {
+        if (p >= tpcPIDp[i] && p < tpcPIDp[i + 1] && (tpcNsigmaPr < tpcPIDcut[i] && tpcNsigmaPi > cRejNsigmaTpc && tpcNsigmaKa > cRejNsigmaTpc)) {
           tpcPIDPassed = true;
-        }
-      } else {
-        for (int i = 0; i < nitr - 1; ++i) {
-          if (p >= tpcPIDp[i] && p < tpcPIDp[i + 1] && (tpcNsigmaPr < tpcPIDcut[i] && tpcNsigmaPi > cRejNsigmaTpc && tpcNsigmaKa > cRejNsigmaTpc)) {
-            tpcPIDPassed = true;
-          }
         }
       }
     }
@@ -261,7 +271,10 @@ struct lambdaAnalysis_pb {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
     auto tpcPIDp = static_cast<std::vector<float>>(kaonTPCPIDp);
     auto tpcPIDcut = static_cast<std::vector<float>>(kaonTPCPIDcut);
+    auto tofPIDp = static_cast<std::vector<float>>(kaonTOFPIDp);
+    auto tofPIDcut = static_cast<std::vector<float>>(kaonTOFPIDcut);
     int nitr = static_cast<int>(tpcPIDp.size());
+    int nitrtof = static_cast<int>(tofPIDp.size());
 
     float tpcNsigmaPi = std::abs(candidate.tpcNSigmaPi());
     float tpcNsigmaKa = std::abs(candidate.tpcNSigmaKa());
@@ -278,29 +291,32 @@ struct lambdaAnalysis_pb {
     float combinedRejCut = cRejNsigmaTpc * cRejNsigmaTof;
 
     if (!cUseTpcOnly && candidate.hasTOF()) {
-      if (tofNsigmaKa < cMaxTOFnSigmaKaon && tofNsigmaPi > cRejNsigmaTof && tofNsigmaPr > cRejNsigmaTof) {
-        tofPIDPassed = true;
+      if (nsigmaCutCombinedKaon < 0 && p >= cPMin) {
+        for (int i = 0; i < nitrtof - 1; ++i) {
+          if (p >= tofPIDp[i] && p < tofPIDp[i + 1] && (tofNsigmaKa < tofPIDcut[i] && tofNsigmaPi > cRejNsigmaTof && tofNsigmaPr > cRejNsigmaTof))
+            tofPIDPassed = true;
+        }
+        if (tpcNsigmaKa < cMaxTPCnSigmaKaon)
+          tpcPIDPassed = true;
       }
-      // square cut
-      if ((nsigmaCutCombinedKaon < 0) && (tpcNsigmaKa < cMaxTPCnSigmaKaon)) {
-        tpcPIDPassed = true;
-      }
+
       // circular
-      if ((nsigmaCutCombinedKaon > 0) && (tpcTofNsigmaKa < combinedCut && tpcTofNsigmaPi > combinedRejCut && tpcTofNsigmaPr > combinedRejCut)) {
+      if ((nsigmaCutCombinedKaon > 0) && p >= cPMin && (tpcTofNsigmaKa < combinedCut && tpcTofNsigmaPi > combinedRejCut && tpcTofNsigmaPr > combinedRejCut)) {
         tofPIDPassed = true;
         tpcPIDPassed = true;
       }
+
+      if (p < cPMin && tpcNsigmaKa < cMaxTPCnSigmaKaon) {
+
+        tofPIDPassed = true;
+        tpcPIDPassed = true;
+      }
+
     } else {
       tofPIDPassed = true;
-      if (cUseTpcOnly) {
-        if (tpcNsigmaKa < cMaxTPCnSigmaKaon && tpcNsigmaPi > cRejNsigmaTpc && tpcNsigmaPr > cRejNsigmaTpc) {
+      for (int i = 0; i < nitr - 1; ++i) {
+        if (p >= tpcPIDp[i] && p < tpcPIDp[i + 1] && (tpcNsigmaKa < tpcPIDcut[i] && tpcNsigmaPi > cRejNsigmaTpc && tpcNsigmaPr > cRejNsigmaTpc)) {
           tpcPIDPassed = true;
-        }
-      } else {
-        for (int i = 0; i < nitr - 1; ++i) {
-          if (p >= tpcPIDp[i] && p < tpcPIDp[i + 1] && (tpcNsigmaKa < tpcPIDcut[i] && tpcNsigmaPi > cRejNsigmaTpc && tpcNsigmaPr > cRejNsigmaTpc)) {
-            tpcPIDPassed = true;
-          }
         }
       }
     }

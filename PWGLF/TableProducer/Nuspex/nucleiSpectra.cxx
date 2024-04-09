@@ -200,7 +200,7 @@ struct nucleiSpectra {
     kHasTOF = BIT(5),
     kHasTRD = BIT(6),
     kIsAmbiguous = BIT(7), /// just a placeholder now
-    kPositive = BIT(8),
+    kITSrof = BIT(8),
     kIsPhysicalPrimary = BIT(9), /// MC flags starting from the second half of the short
     kIsSecondaryFromMaterial = BIT(10),
     kIsSecondaryFromWeakDecay = BIT(11) /// the last 4 bits are reserved for the PID in tracking
@@ -360,6 +360,7 @@ struct nucleiSpectra {
     const AxisSpec etaAxis{40, -1., 1., "#eta"};
 
     spectra.add("hRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
+    spectra.add("hRecVtxZDataITSrof", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
     spectra.add("hTpcSignalData", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTpcSignalDataSelected", "Specific energy loss for selected particles", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTofSignalData", "TOF beta", HistType::kTH2F, {{500, 0., 5., "#it{p} (GeV/#it{c})"}, {750, 0, 1.5, "TOF #beta"}});
@@ -427,6 +428,10 @@ struct nucleiSpectra {
     gRandom->SetSeed(bc.timestamp());
 
     spectra.fill(HIST("hRecVtxZData"), collision.posZ());
+
+    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      spectra.fill(HIST("hRecVtxZDataITSrof"), collision.posZ());
+    }
 
     const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
 
@@ -496,8 +501,8 @@ struct nucleiSpectra {
       if (track.hasTRD()) {
         flag |= kHasTRD;
       }
-      if (!iC) {
-        flag |= kPositive;
+      if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        flag |= kITSrof;
       }
       for (int iS{0}; iS < nuclei::species; ++iS) {
         bool selectedTOF{false};
