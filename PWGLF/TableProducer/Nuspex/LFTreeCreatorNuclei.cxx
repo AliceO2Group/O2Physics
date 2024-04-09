@@ -317,7 +317,7 @@ struct LfTreeCreatorNuclei {
       hEvents.fill(HIST("eventSelection"), 3);
 
       if (collision.posZ() < 10 && collision.posZ() > -10) { // Fill a coloumn that counts the total number
-        hEvents.fill(HIST("eventSelection"), 4);            // of good events with |z| < 10 cm
+        hEvents.fill(HIST("eventSelection"), 4);             // of good events with |z| < 10 cm
       } // before the skimming
 
       if (doSkim && (trackSelType.value == 3) && !checkQuality<false>(collision, tracksInCollision))
@@ -346,8 +346,8 @@ struct LfTreeCreatorNuclei {
       hEvents.fill(HIST("eventSelection"), 2);
 
       if (collision.posZ() < 10 && collision.posZ() > -10) { // Fill a coloumn that counts the total number
-        hEvents.fill(HIST("eventSelection"), 4);            // of good events with |z| < 10 cm
-      }                                                     // before the skimming
+        hEvents.fill(HIST("eventSelection"), 4);             // of good events with |z| < 10 cm
+      } // before the skimming
 
       const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
       fillForOneEvent<true>(collision, tracksInCollision);
