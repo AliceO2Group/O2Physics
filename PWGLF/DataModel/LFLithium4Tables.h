@@ -25,8 +25,6 @@ namespace o2::aod
 namespace Lithium4TablesNS
 {
 
-//DECLARE_SOA_COLUMN(IsMatter, isMatter, bool);
-
 DECLARE_SOA_COLUMN(PtHe3, ptHe3, float);
 DECLARE_SOA_COLUMN(EtaHe3, etaHe3, float);
 DECLARE_SOA_COLUMN(PhiHe3, phiHe3, float);

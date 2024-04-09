@@ -89,7 +89,7 @@ struct lithium4Candidate {
 
   bool isMatter = false;
 
-  uint32_t PIDtrkHe3 = 0xFFFFF;   // PID in tracking
+  uint32_t PIDtrkHe3 = 0xFFFFF; // PID in tracking
   uint32_t PIDtrkPr = 0xFFFFF;
 
   float nSigmaHe3 = -10;
@@ -109,7 +109,6 @@ struct lithium4Candidate {
 
   uint32_t itsClSizeHe3 = 0u;
   uint32_t itsClSizePr = 0u;
-  
   uint8_t nTPCClustersHe3 = 0u;
 
   float momHe3MC = -99.f;
@@ -184,7 +183,7 @@ struct lithium4analysis {
   {
 
     if (candidate.itsNCls() < 5 ||
-        candidate.tpcNClsFound() < 100 || //candidate.tpcNClsFound() < 70 ||
+        candidate.tpcNClsFound() < 100 || // candidate.tpcNClsFound() < 70 ||
         candidate.tpcNClsCrossedRows() < 70 ||
         candidate.tpcNClsCrossedRows() < 0.8 * candidate.tpcNClsFindable() ||
         candidate.tpcChi2NCl() > 4.f ||
@@ -390,11 +389,11 @@ struct lithium4analysis {
       outputDataTable(l4Cand.recoPtHe3(), l4Cand.recoEtaHe3(), l4Cand.recoPhiHe3(),
                       l4Cand.recoPtPr(), l4Cand.recoEtaPr(), l4Cand.recoPhiPr(),
                       l4Cand.DCAxyHe3, l4Cand.DCAzHe3, l4Cand.DCAxyPr, l4Cand.DCAzPr,
-                      l4Cand.tpcSignalHe3, l4Cand.momHe3TPC, l4Cand.tpcSignalPr, l4Cand.momPrTPC, 
-                      l4Cand.nTPCClustersHe3, 
-                      l4Cand.nSigmaHe3, l4Cand.nSigmaPr, l4Cand.massTOFHe3, l4Cand.massTOFPr, 
-                      l4Cand.PIDtrkHe3, l4Cand.PIDtrkPr, l4Cand.itsClSizeHe3, l4Cand.itsClSizePr, 
-                      l4Cand.sharedClustersHe3, l4Cand.sharedClustersPr, 
+                      l4Cand.tpcSignalHe3, l4Cand.momHe3TPC, l4Cand.tpcSignalPr, l4Cand.momPrTPC,
+                      l4Cand.nTPCClustersHe3,
+                      l4Cand.nSigmaHe3, l4Cand.nSigmaPr, l4Cand.massTOFHe3, l4Cand.massTOFPr,
+                      l4Cand.PIDtrkHe3, l4Cand.PIDtrkPr, l4Cand.itsClSizeHe3, l4Cand.itsClSizePr,
+                      l4Cand.sharedClustersHe3, l4Cand.sharedClustersPr,
                       l4Cand.isBkgUS, l4Cand.isBkgEM);
     }
   }
@@ -468,11 +467,11 @@ struct lithium4analysis {
       outputDataTable(l4Cand.recoPtHe3(), l4Cand.recoEtaHe3(), l4Cand.recoPhiHe3(),
                       l4Cand.recoPtPr(), l4Cand.recoEtaPr(), l4Cand.recoPhiPr(),
                       l4Cand.DCAxyHe3, l4Cand.DCAzHe3, l4Cand.DCAxyPr, l4Cand.DCAzPr,
-                      l4Cand.tpcSignalHe3, l4Cand.momHe3TPC, l4Cand.tpcSignalPr, l4Cand.momPrTPC, 
-                      l4Cand.nTPCClustersHe3, 
-                      l4Cand.nSigmaHe3, l4Cand.nSigmaPr, l4Cand.massTOFHe3, l4Cand.massTOFPr, 
-                      l4Cand.PIDtrkHe3, l4Cand.PIDtrkPr, l4Cand.itsClSizeHe3, l4Cand.itsClSizePr, 
-                      l4Cand.sharedClustersHe3, l4Cand.sharedClustersPr, 
+                      l4Cand.tpcSignalHe3, l4Cand.momHe3TPC, l4Cand.tpcSignalPr, l4Cand.momPrTPC,
+                      l4Cand.nTPCClustersHe3,
+                      l4Cand.nSigmaHe3, l4Cand.nSigmaPr, l4Cand.massTOFHe3, l4Cand.massTOFPr,
+                      l4Cand.PIDtrkHe3, l4Cand.PIDtrkPr, l4Cand.itsClSizeHe3, l4Cand.itsClSizePr,
+                      l4Cand.sharedClustersHe3, l4Cand.sharedClustersPr,
                       l4Cand.isBkgUS, l4Cand.isBkgEM);
     }
   }
@@ -573,7 +572,7 @@ struct lithium4analysis {
                 float beta = responseBetaMC.GetBeta(track2);
                 beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
                 cand.massTOFPr = track2.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
-              }    
+              }
 
               cand.momHe3MC = mctrackHe3.pt() * (mctrackHe3.pdgCode() > 0 ? 1 : -1);
               cand.momPrMC = mctrackPr.pt() * (mctrackPr.pdgCode() > 0 ? 1 : -1);
@@ -636,12 +635,12 @@ struct lithium4analysis {
       outputMCTable(l4Cand.recoPtHe3(), l4Cand.recoEtaHe3(), l4Cand.recoPhiHe3(),
                     l4Cand.recoPtPr(), l4Cand.recoEtaPr(), l4Cand.recoPhiPr(),
                     l4Cand.DCAxyHe3, l4Cand.DCAzHe3, l4Cand.DCAxyPr, l4Cand.DCAzPr,
-                    l4Cand.tpcSignalHe3, l4Cand.momHe3TPC, l4Cand.tpcSignalPr, l4Cand.momPrTPC, 
-                    l4Cand.nTPCClustersHe3, 
-                    l4Cand.nSigmaHe3, l4Cand.nSigmaPr, l4Cand.massTOFHe3, l4Cand.massTOFPr, 
-                    l4Cand.PIDtrkHe3, l4Cand.PIDtrkPr, l4Cand.itsClSizeHe3, l4Cand.itsClSizePr, 
-                    l4Cand.sharedClustersHe3, l4Cand.sharedClustersPr, 
-                    l4Cand.isBkgUS, l4Cand.isBkgEM, 
+                    l4Cand.tpcSignalHe3, l4Cand.momHe3TPC, l4Cand.tpcSignalPr, l4Cand.momPrTPC,
+                    l4Cand.nTPCClustersHe3,
+                    l4Cand.nSigmaHe3, l4Cand.nSigmaPr, l4Cand.massTOFHe3, l4Cand.massTOFPr,
+                    l4Cand.PIDtrkHe3, l4Cand.PIDtrkPr, l4Cand.itsClSizeHe3, l4Cand.itsClSizePr,
+                    l4Cand.sharedClustersHe3, l4Cand.sharedClustersPr,
+                    l4Cand.isBkgUS, l4Cand.isBkgEM,
                     l4Cand.momHe3MC, l4Cand.momPrMC,
                     l4Cand.l4PtMC, l4Cand.l4MassMC);
     }
