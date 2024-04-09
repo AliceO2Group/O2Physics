@@ -818,9 +818,8 @@ struct femtoUniverseProducerTask {
         isD0D0bar = false;
       }
 
-      if(ConfD0Selection.ConfStoreD0D0barWithinTheMassRange) {
-        if((invMassD0 > ConfD0Selection.ConfStoreD0D0barInvMassLowLimit && invMassD0 < ConfD0Selection.ConfStoreD0D0barInvMassUpLimit)
-          || (invMassD0bar > ConfD0Selection.ConfStoreD0D0barInvMassLowLimit && invMassD0bar < ConfD0Selection.ConfStoreD0D0barInvMassUpLimit))
+      if (ConfD0Selection.ConfStoreD0D0barWithinTheMassRange) {
+        if ((invMassD0 > ConfD0Selection.ConfStoreD0D0barInvMassLowLimit && invMassD0 < ConfD0Selection.ConfStoreD0D0barInvMassUpLimit) || (invMassD0bar > ConfD0Selection.ConfStoreD0D0barInvMassLowLimit && invMassD0bar < ConfD0Selection.ConfStoreD0D0barInvMassUpLimit))
           continue;
       }
 
