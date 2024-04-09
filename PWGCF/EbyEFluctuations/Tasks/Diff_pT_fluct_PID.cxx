@@ -21,7 +21,6 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RunningWorkflowInfo.h"
@@ -616,10 +615,7 @@ struct Diff_pT_fluct_PID {
             histos.fill(HIST("QA/Proton/h2_TpcTofNsigma1"), track.pt(), combNSigmaPr2);
           }
 
-        }
-
-        else if (track.eta() > etaMin) {
-
+        } else if (track.eta() > etaMin) {
           pT_sum_etaGreaterEtamin += pt_Ch;
           N_sum_etaGreaterEtamin++;
         }
