@@ -178,11 +178,11 @@ struct JetChCorr {
     auto nsd = 0.0;
     auto zg = -1.0;
     auto rg = -1.0;
-    
-    //std::vector<float> energyMotherVec;
-    //std::vector<float> ptLeadingVec;
-    //std::vector<float> ptSubLeadingVec;
-    //std::vector<float> thetaVec;
+
+    // std::vector<float> energyMotherVec;
+    // std::vector<float> ptLeadingVec;
+    // std::vector<float> ptSubLeadingVec;
+    // std::vector<float> thetaVec;
 
     float ptJet = daughterSubJet.pt();
 
@@ -216,7 +216,7 @@ struct JetChCorr {
       // energyMotherVec.push_back(daughterSubJet.e());
       // ptLeadingVec.push_back(parentSubJet1.pt());
       // ptSubLeadingVec.push_back(parentSubJet2.pt());
-      //thetaVec.push_back(theta);
+      // thetaVec.push_back(theta);
 
       if (z >= zCut * TMath::Power(theta / (jet.r() / 100.f), beta)) {
         if (found1 == true && found2 == true) { // found leading and next-to-leading in seperate prongs
@@ -350,7 +350,8 @@ struct JetChCorr {
     nn = 0;
     ch_mult = jet.tracksIds().size();
     for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()) {
-      if(iord[nn] != 0 || iord[nn] != 1) continue;
+      if (iord[nn] != 0 || iord[nn] != 1)
+        continue;
 
       if (iord[nn] == 0) {
         trackL = jetConstituent.globalIndex();
@@ -367,7 +368,7 @@ struct JetChCorr {
         float z = v2.Perp(vR.Orthogonal()) / (v1.Perp(vR.Orthogonal()) + v2.Perp(vR.Orthogonal()));
         float fT = ((2. * z * (1 - z) * vR.Mag()) / v1.Perp2(vR)) / 6.;
         float kt_p = v1.Perp(vR);
-	
+
         if (ch_l == ch_nl) {
           registry.fill(HIST("h_ch_s_pt"), jet.pt());
           registry.fill(HIST("h_ch_s_kt"), kt_p);
