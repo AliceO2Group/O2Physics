@@ -68,9 +68,9 @@ using V0DerivedDatas = soa::Join<aod::V0Cores, aod::V0Extras, aod::V0CollRefs>;
 
 struct lambdakzeropid {
   // TOF pid for strangeness (recalculated with topology)
-  Produces<aod::V0TOFPIDs> v0tofpid; // table with Nsigmas
-  Produces<aod::V0TOFBetas> v0tofbeta;    // table with betas
-  Produces<aod::V0TOFDebugs> v0tofdebugs; // table with extra debug information
+  Produces<aod::V0TOFPIDs> v0tofpid;        // table with Nsigmas
+  Produces<aod::V0TOFBetas> v0tofbeta;      // table with betas
+  Produces<aod::V0TOFDebugs> v0tofdebugs;   // table with extra debug information
   Produces<aod::V0TOFNSigmas> v0tofnsigmas; // table with nsigmas
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;

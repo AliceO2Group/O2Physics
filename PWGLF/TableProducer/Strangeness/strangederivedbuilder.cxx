@@ -68,20 +68,20 @@ struct strangederivedbuilder {
 
   //__________________________________________________
   // fundamental building blocks of derived data
-  Produces<aod::StraCollision> strangeColl;      // characterises collisions
+  Produces<aod::StraCollision> strangeColl;        // characterises collisions
   Produces<aod::StraCollLabels> strangeCollLabels; // characterises collisions
   Produces<aod::StraMCCollisions> strangeMCColl;   // characterises collisions / MC
   Produces<aod::StraMCCollMults> strangeMCMults;   // characterises collisions / MC mults
-  Produces<aod::StraCents> strangeCents;         // characterises collisions / centrality
-  Produces<aod::StraRawCents> strangeRawCents;   // characterises collisions / centrality
-  Produces<aod::StraEvSels> strangeEvSels;       // characterises collisions / sel8 selection
-  Produces<aod::StraStamps> strangeStamps;       // provides timestamps, run numbers
-  Produces<aod::V0CollRefs> v0collref;           // references collisions from V0s
-  Produces<aod::V0MCCollRefs> v0mccollref;       // references collisions from V0s
-  Produces<aod::CascCollRefs> casccollref;       // references collisions from cascades
-  Produces<aod::CascMCCollRefs> cascmccollref;   // references collisions from V0s
-  Produces<aod::KFCascCollRefs> kfcasccollref;   // references collisions from KF cascades
-  Produces<aod::TraCascCollRefs> tracasccollref; // references collisions from tracked cascades
+  Produces<aod::StraCents> strangeCents;           // characterises collisions / centrality
+  Produces<aod::StraRawCents> strangeRawCents;     // characterises collisions / centrality
+  Produces<aod::StraEvSels> strangeEvSels;         // characterises collisions / sel8 selection
+  Produces<aod::StraStamps> strangeStamps;         // provides timestamps, run numbers
+  Produces<aod::V0CollRefs> v0collref;             // references collisions from V0s
+  Produces<aod::V0MCCollRefs> v0mccollref;         // references collisions from V0s
+  Produces<aod::CascCollRefs> casccollref;         // references collisions from cascades
+  Produces<aod::CascMCCollRefs> cascmccollref;     // references collisions from V0s
+  Produces<aod::KFCascCollRefs> kfcasccollref;     // references collisions from KF cascades
+  Produces<aod::TraCascCollRefs> tracasccollref;   // references collisions from tracked cascades
 
   //__________________________________________________
   // track extra references
