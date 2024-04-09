@@ -55,7 +55,7 @@ struct TriggerCorrelationsTask {
 
   void init(o2::framework::InitContext&)
   {
-    std::vector<std::string> trigSelChLabels = {"chargedLow", "chargedHigh"};
+    std::vector<std::string> trigSelChLabels = {"chargedLow", "chargedHigh", "trackPt"};
     std::vector<std::string> trigSelFullLabels = {"fullHigh", "fullLow", "neutralHigh", "neutralLow", "gammaVeryHighEMCAL", "gammaHighEMCAL", "gammaLowEMCAL", "gammaVeryLowEMCAL", "gammaVeryHighDCAL", "gammaHighDCAL", "gammaLowDCAL", "gammaVeryLowDCAL"};
     std::vector<std::string> trigSelChHFLabels = {"chargedD0Low", "chargedD0High", "chargedLcLow", "chargedLcHigh"};
     nChTrigs = trigSelChLabels.size();

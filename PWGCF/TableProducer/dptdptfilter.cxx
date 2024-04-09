@@ -515,10 +515,10 @@ struct DptDptFilterTracks {
   std::string cfgCCDBPeriod{"LHC22o"};
 
   Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
-  Configurable<int> cfgTrackType{"trktype", 4, "Type of selected tracks: 0 = no selection;1 = Run2 global tracks FB96;3 = Run3 tracks;4 = Run3 tracks MM sel;5 = Run2 TPC only tracks;7 = Run 3 TPC only tracks;30-33 = any/two on 3 ITS,any/all in 7 ITS;40-43 same as 30-33 w tighter DCAxy. Default 4"};
+  Configurable<int> cfgTrackType{"trktype", 4, "Type of selected tracks: 0 = no selection;1 = Run2 global tracks FB96;3 = Run3 tracks;4 = Run3 tracks MM sel;5 = Run2 TPC only tracks;7 = Run 3 TPC only tracks;30-33 = any/two on 3 ITS,any/all in 7 ITS;40-43 same as 30-33 w tighter DCAxy;50-53 w tighter pT DCAz. Default 4"};
   Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
   Configurable<float> cfgTraceOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
-  Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 No PID, 1 PID, 2 mcparticle. Default 0"};
+  Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 No PID, 1 PID, 2 mcparticle, 3 mcparticle only primaries. Default 0"};
   Configurable<o2::analysis::TrackSelectionTuneCfg> cfgTuneTrackSelection{"tunetracksel", {}, "Track selection: {useit: true/false, tpccls-useit, tpcxrws-useit, tpcxrfc-useit, dcaxy-useit, dcaz-useit}. Default {false,0.70,false,0.8,false,2.4,false,3.2,false}"};
   Configurable<o2::analysis::TrackSelectionPIDCfg> cfgPionPIDSelection{"pipidsel",
                                                                        {},
@@ -836,6 +836,8 @@ struct DptDptFilterTracks {
   int8_t selectTrackAmbiguousCheck(CollisionObjects const& collisions, TrackObject const& track);
   template <typename ParticleObject>
   int8_t identifyParticle(ParticleObject const& particle);
+  template <typename ParticleObject>
+  int8_t identifyPrimaryParticle(ParticleObject const& particle);
   template <typename ParticleObject, typename MCCollisionObject>
   int8_t selectParticle(ParticleObject const& particle, MCCollisionObject const& mccollision);
   template <typename TrackObject>
@@ -1046,9 +1048,13 @@ int8_t DptDptFilterTracks::trackIdentification(TrackObject const& track)
     } else {
       LOGF(fatal, "Track identification required but PID information not present");
     }
-  } else if (recoIdMethod == 2) {
+  } else if (recoIdMethod == 2 || recoIdMethod == 3) {
     if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
-      sp = identifyParticle(track.template mcParticle_as<aod::McParticles>());
+      if (recoIdMethod == 2) {
+        sp = identifyParticle(track.template mcParticle_as<aod::McParticles>());
+      } else {
+        sp = identifyPrimaryParticle(track.template mcParticle_as<aod::McParticles>());
+      }
     } else {
       LOGF(fatal, "Track identification required from MC particle but MC information not present");
     }
@@ -1185,6 +1191,13 @@ inline int8_t DptDptFilterTracks::identifyParticle(ParticleObject const& particl
 {
   using namespace dptdptfilter;
   return pidselector.whichTruthSpecies(particle);
+}
+
+template <typename ParticleObject>
+inline int8_t DptDptFilterTracks::identifyPrimaryParticle(ParticleObject const& particle)
+{
+  using namespace dptdptfilter;
+  return pidselector.whichTruthPrimarySpecies(particle);
 }
 
 template <typename ParticleObject, typename MCCollisionObject>

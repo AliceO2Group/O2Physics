@@ -151,7 +151,7 @@ struct skimmerGammaCalo {
         continue;
       }
       std::vector<int32_t> mcLabels;
-      for (int64_t iCont = 0; iCont < emccluster.amplitudeA().size(); iCont++) {
+      for (size_t iCont = 0; iCont < emccluster.amplitudeA().size(); iCont++) {
         mcLabels.push_back(emccluster.mcParticleIds()[iCont]);
       }
       // LOGF(info, "---- New Cluster ---");

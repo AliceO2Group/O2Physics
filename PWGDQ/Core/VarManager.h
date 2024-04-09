@@ -163,9 +163,13 @@ class VarManager : public TObject
     kCollisionTimeRes,
     kBC,
     kIsPhysicsSelection,
-    kIsNoTFBorder,     // No time frame border
-    kIsNoITSROFBorder, // No ITS read out frame border
-    kIsSel8,           // TVX in Run3
+    kIsNoTFBorder,       // No time frame border
+    kIsNoITSROFBorder,   // No ITS read out frame border
+    kIsNoSameBunch,      // No collisions with same T0 BC
+    kIsGoodZvtxFT0vsPV,  // No collisions w/ difference between z_ {PV, tracks} and z_{PV FT0A-C}
+    kIsVertexITSTPC,     // At least one ITS-TPC track
+    kIsVertexTOFmatched, // At least one TOF-matched track
+    kIsSel8,             // TVX in Run3
     kIsINT7,
     kIsEMC7,
     kIsINT7inMUON,
@@ -1108,6 +1112,18 @@ void VarManager::FillEvent(T const& event, float* values)
     if (fgUsedVars[kIsNoTFBorder]) {
       values[kIsNoTFBorder] = event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
     }
+    if (fgUsedVars[kIsNoSameBunch]) {
+      values[kIsNoSameBunch] = event.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+    }
+    if (fgUsedVars[kIsGoodZvtxFT0vsPV]) {
+      values[kIsGoodZvtxFT0vsPV] = event.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
+    }
+    if (fgUsedVars[kIsVertexITSTPC]) {
+      values[kIsVertexITSTPC] = event.selection_bit(o2::aod::evsel::kIsVertexITSTPC);
+    }
+    if (fgUsedVars[kIsVertexTOFmatched]) {
+      values[kIsVertexTOFmatched] = event.selection_bit(o2::aod::evsel::kIsVertexTOFmatched);
+    }
     if (fgUsedVars[kIsSel8]) {
       values[kIsSel8] = event.selection_bit(o2::aod::evsel::kIsTriggerTVX);
     }
@@ -1194,6 +1210,18 @@ void VarManager::FillEvent(T const& event, float* values)
     }
     if (fgUsedVars[kIsNoTFBorder]) {
       values[kIsNoTFBorder] = (event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) > 0);
+    }
+    if (fgUsedVars[kIsNoSameBunch]) {
+      values[kIsNoSameBunch] = (event.selection_bit(o2::aod::evsel::kNoSameBunchPileup) > 0);
+    }
+    if (fgUsedVars[kIsGoodZvtxFT0vsPV]) {
+      values[kIsGoodZvtxFT0vsPV] = (event.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) > 0);
+    }
+    if (fgUsedVars[kIsVertexITSTPC]) {
+      values[kIsVertexITSTPC] = (event.selection_bit(o2::aod::evsel::kIsVertexITSTPC) > 0);
+    }
+    if (fgUsedVars[kIsVertexTOFmatched]) {
+      values[kIsVertexTOFmatched] = (event.selection_bit(o2::aod::evsel::kIsVertexTOFmatched) > 0);
     }
     if (fgUsedVars[kIsSel8]) {
       values[kIsSel8] = (event.selection_bit(o2::aod::evsel::kIsTriggerTVX) > 0);
@@ -2936,6 +2964,10 @@ void VarManager::FillQVectorFromGFW(C const& collision, A const& compA1, A const
   values[kMultA] = normA;
   values[kMultB] = normB;
   values[kMultC] = normC;
+
+  // kC2REF, kC4REF etc.
+  values[kCORR2REF] = (values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A] - values[kMultA]) / (values[kMultA] * (values[kMultA] - 1));
+  values[kCORR4REF] = (std::pow((values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A]), 2.0) + values[kQ4X0A] * values[kQ4X0A] + values[kQ4Y0A] * values[kQ4Y0A] - 2 * (values[kQ4X0A] * values[kQ2X0A] * values[kQ2X0A] - values[kQ4X0A] * values[kQ2Y0A] * values[kQ2Y0A] + 2 * values[kQ4Y0A] * values[kQ2Y0A] * values[kQ2X0A])) / (values[kMultA] * (values[kMultA] - 1) * (values[kMultA] - 2) * (values[kMultA] - 3)) - 2 * (2 * (values[kMultA] - 2) * (values[kQ2X0A] * values[kQ2X0A] + values[kQ2Y0A] * values[kQ2Y0A]) - values[kMultA] * (values[kMultA] - 3)) / (values[kMultA] * (values[kMultA] - 1) * (values[kMultA] - 2) * (values[kMultA] - 3));
 
   // TODO: provide different computations for R
   // Compute the R factor using the 2 sub-events technique for second and third harmonic
