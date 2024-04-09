@@ -111,15 +111,15 @@ struct qVectorsTable {
   // Enable access to the CCDB for the offset and correction constants and save them
   // in dedicated variables.
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  std::vector<o2::detectors::AlignParam>* offsetFT0;
-  std::vector<o2::detectors::AlignParam>* offsetFV0;
+  std::shared_ptr<std::vector<o2::detectors::AlignParam>> offsetFT0;
+  std::shared_ptr<std::vector<o2::detectors::AlignParam>> offsetFV0;
 
   std::vector<int> TrkBPosLabel;
   std::vector<int> TrkBNegLabel;
   std::vector<float> qvecRe;
   std::vector<float> qvecIm;
   std::vector<float> qvecAmp;
-  std::vector<std::vector<float>> cfgCorr;
+  std::vector<std::shared_ptr<std::vector<float>>> cfgCorr;
 
   std::vector<float> FT0RelGainConst;
   std::vector<float> FV0RelGainConst;
@@ -159,8 +159,8 @@ struct qVectorsTable {
   {
     auto timestamp = bc.timestamp();
 
-    offsetFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", timestamp);
-    offsetFV0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align", timestamp);
+    offsetFT0 = std::make_shared<std::vector<o2::detectors::AlignParam>>(*ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", timestamp));
+    offsetFV0 = std::make_shared<std::vector<o2::detectors::AlignParam>>(*ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align", timestamp));
 
     if (offsetFT0 != nullptr) {
       helperEP.SetOffsetFT0A((*offsetFT0)[0].getX(), (*offsetFT0)[0].getY());
@@ -185,10 +185,10 @@ struct qVectorsTable {
         if (cfgFT0CCorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for FT0C");
         } else {
-          cfgCorr.push_back(cfgFT0CCorr);
+          cfgCorr.push_back(std::make_shared<std::vector<float>>(cfgFT0CCorr));
         }
       } else {
-        cfgCorr.push_back(*(objft0c));
+        cfgCorr.push_back(std::make_shared<std::vector<float>>(*(objft0c)));
       }
 
       fullPath = cfgQvecCalibPath;
@@ -198,10 +198,10 @@ struct qVectorsTable {
         if (cfgFT0ACorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for FT0A");
         } else {
-          cfgCorr.push_back(cfgFT0ACorr);
+          cfgCorr.push_back(std::make_shared<std::vector<float>>(cfgFT0ACorr));
         }
       } else {
-        cfgCorr.push_back(*(objft0a));
+        cfgCorr.push_back(std::make_shared<std::vector<float>>(*(objft0a)));
       }
 
       fullPath = cfgQvecCalibPath;
@@ -211,10 +211,10 @@ struct qVectorsTable {
         if (cfgFT0MCorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for FT0M");
         } else {
-          cfgCorr.push_back(cfgFT0MCorr);
+          cfgCorr.push_back(std::make_shared<std::vector<float>>(cfgFT0MCorr));
         }
       } else {
-        cfgCorr.push_back(*(objft0m));
+        cfgCorr.push_back(std::make_shared<std::vector<float>>(*(objft0m)));
       }
 
       fullPath = cfgQvecCalibPath;
@@ -224,10 +224,10 @@ struct qVectorsTable {
         if (cfgFV0ACorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for FV0A");
         } else {
-          cfgCorr.push_back(cfgFV0ACorr);
+          cfgCorr.push_back(std::make_shared<std::vector<float>>(cfgFV0ACorr));
         }
       } else {
-        cfgCorr.push_back(*(objfv0a));
+        cfgCorr.push_back(std::make_shared<std::vector<float>>(*(objfv0a)));
       }
 
       fullPath = cfgQvecCalibPath;
@@ -237,10 +237,10 @@ struct qVectorsTable {
         if (cfgBPosCorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for BPos");
         } else {
-          cfgCorr.push_back(cfgBPosCorr);
+          cfgCorr.push_back(std::make_shared<std::vector<float>>(cfgBPosCorr));
         }
       } else {
-        cfgCorr.push_back(*(objbpos));
+        cfgCorr.push_back(std::make_shared<std::vector<float>>(*(objbpos)));
       }
 
       fullPath = cfgQvecCalibPath;
@@ -250,10 +250,10 @@ struct qVectorsTable {
         if (cfgBNegCorr->size() < 48) {
           LOGF(fatal, "No proper correction factor assigned for BNeg");
         } else {
-          cfgCorr.push_back(cfgBNegCorr);
+          cfgCorr.push_back(std::make_shared<std::vector<float>>(cfgBNegCorr));
         }
       } else {
-        cfgCorr.push_back(*(objbneg));
+        cfgCorr.push_back(std::make_shared<std::vector<float>>(*(objbneg)));
       }
     } else if (cfgCCDBConst == 2) {
       if (cfgFT0CCorr->size() < 48) {
@@ -275,12 +275,12 @@ struct qVectorsTable {
         LOGF(fatal, "No proper correction factor assigned for negative TPC tracks");
       } // will be replaced with method that call constants from CCDB
 
-      cfgCorr.push_back(cfgFT0CCorr);
-      cfgCorr.push_back(cfgFT0ACorr);
-      cfgCorr.push_back(cfgFT0MCorr);
-      cfgCorr.push_back(cfgFV0ACorr);
-      cfgCorr.push_back(cfgBPosCorr);
-      cfgCorr.push_back(cfgBNegCorr);
+      cfgCorr.push_back(std::make_shared<std::vector<float>>(cfgFT0CCorr));
+      cfgCorr.push_back(std::make_shared<std::vector<float>>(cfgFT0ACorr));
+      cfgCorr.push_back(std::make_shared<std::vector<float>>(cfgFT0MCorr));
+      cfgCorr.push_back(std::make_shared<std::vector<float>>(cfgFV0ACorr));
+      cfgCorr.push_back(std::make_shared<std::vector<float>>(cfgBPosCorr));
+      cfgCorr.push_back(std::make_shared<std::vector<float>>(cfgBNegCorr));
     }
 
     if (cfgGainCor == 0) {
@@ -563,14 +563,14 @@ struct qVectorsTable {
 
     if (cBin != -1) {
       for (int i = 0; i < 6; i++) {
-        helperEP.DoRecenter(qvecRe[i * 4 + 1], qvecIm[i * 4 + 1], cfgCorr[i][cBin * 6], cfgCorr[i][cBin * 6 + 1]);
+        helperEP.DoRecenter(qvecRe[i * 4 + 1], qvecIm[i * 4 + 1], (*cfgCorr[i])[cBin * 6], (*cfgCorr[i])[cBin * 6 + 1]);
 
-        helperEP.DoRecenter(qvecRe[i * 4 + 2], qvecIm[i * 4 + 2], cfgCorr[i][cBin * 6], cfgCorr[i][cBin * 6 + 1]);
-        helperEP.DoTwist(qvecRe[i * 4 + 2], qvecIm[i * 4 + 2], cfgCorr[i][cBin * 6 + 2], cfgCorr[i][cBin * 6 + 3]);
+        helperEP.DoRecenter(qvecRe[i * 4 + 2], qvecIm[i * 4 + 2], (*cfgCorr[i])[cBin * 6], (*cfgCorr[i])[cBin * 6 + 1]);
+        helperEP.DoTwist(qvecRe[i * 4 + 2], qvecIm[i * 4 + 2], (*cfgCorr[i])[cBin * 6 + 2], (*cfgCorr[i])[cBin * 6 + 3]);
 
-        helperEP.DoRecenter(qvecRe[i * 4 + 3], qvecIm[i * 4 + 3], cfgCorr[i][cBin * 6], cfgCorr[i][cBin * 6 + 1]);
-        helperEP.DoTwist(qvecRe[i * 4 + 3], qvecIm[i * 4 + 3], cfgCorr[i][cBin * 6 + 2], cfgCorr[i][cBin * 6 + 3]);
-        helperEP.DoRescale(qvecRe[i * 4 + 3], qvecIm[i * 4 + 3], cfgCorr[i][cBin * 6 + 4], cfgCorr[i][cBin * 6 + 5]);
+        helperEP.DoRecenter(qvecRe[i * 4 + 3], qvecIm[i * 4 + 3], (*cfgCorr[i])[cBin * 6], (*cfgCorr[i])[cBin * 6 + 1]);
+        helperEP.DoTwist(qvecRe[i * 4 + 3], qvecIm[i * 4 + 3], (*cfgCorr[i])[cBin * 6 + 2], (*cfgCorr[i])[cBin * 6 + 3]);
+        helperEP.DoRescale(qvecRe[i * 4 + 3], qvecIm[i * 4 + 3], (*cfgCorr[i])[cBin * 6 + 4], (*cfgCorr[i])[cBin * 6 + 5]);
       }
     }
 
