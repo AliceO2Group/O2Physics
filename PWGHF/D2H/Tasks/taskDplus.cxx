@@ -275,6 +275,7 @@ struct HfTaskDplus {
         if ((yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax)) {
           continue;
         }
+        fillHisto(candidate);
         fillSparseML<false, false>(candidate);
       }
     }
