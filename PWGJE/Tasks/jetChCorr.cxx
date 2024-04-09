@@ -178,10 +178,11 @@ struct JetChCorr {
     auto nsd = 0.0;
     auto zg = -1.0;
     auto rg = -1.0;
-    std::vector<float> energyMotherVec;
-    std::vector<float> ptLeadingVec;
-    std::vector<float> ptSubLeadingVec;
-    std::vector<float> thetaVec;
+    
+    //std::vector<float> energyMotherVec;
+    //std::vector<float> ptLeadingVec;
+    //std::vector<float> ptSubLeadingVec;
+    //std::vector<float> thetaVec;
 
     float ptJet = daughterSubJet.pt();
 
@@ -212,10 +213,10 @@ struct JetChCorr {
 
       auto z = parentSubJet2.perp() / (parentSubJet1.perp() + parentSubJet2.perp());
       auto theta = parentSubJet1.delta_R(parentSubJet2);
-      energyMotherVec.push_back(daughterSubJet.e());
-      ptLeadingVec.push_back(parentSubJet1.pt());
-      ptSubLeadingVec.push_back(parentSubJet2.pt());
-      thetaVec.push_back(theta);
+      // energyMotherVec.push_back(daughterSubJet.e());
+      // ptLeadingVec.push_back(parentSubJet1.pt());
+      // ptSubLeadingVec.push_back(parentSubJet2.pt());
+      //thetaVec.push_back(theta);
 
       if (z >= zCut * TMath::Power(theta / (jet.r() / 100.f), beta)) {
         if (found1 == true && found2 == true) { // found leading and next-to-leading in seperate prongs
@@ -329,11 +330,8 @@ struct JetChCorr {
     if constexpr (isSubtracted && !isMCP) {
       registry.fill(HIST("h2_jet_pt_jet_nsd_eventwiseconstituentsubtracted"), jet.pt(), nsd);
     }
-    // outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec);
   }
 
-  //  template <bool isSubtracted, typename T, typename U, typename V>
-  //  void analyseCharged(T const& jet, U const& tracks, V& outputTable)
   template <bool isSubtracted, typename T, typename U>
   void analyseCharged(T const& jet, U const& tracks)
   {
@@ -343,44 +341,33 @@ struct JetChCorr {
     int iord[50];
     float ptc[50];
     for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()) {
-      TVector3 p_leading(jetConstituent.px(), jetConstituent.py(), jetConstituent.pz());
-      ptc[nn] = p_leading.Perp();
+      fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
+      ptc[nn] = jetConstituent.pt();
       nn++;
     }
     TMath::Sort(nn, ptc, iord);
 
     nn = 0;
     ch_mult = jet.tracksIds().size();
-    // for (auto& jetConstituent : jet.template tracks_as<U>()) {
     for (auto& jetConstituent : jet.template tracks_as<aod::JTracks>()) {
-      fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
-
-      // int tr = jetConstituent.globalIndex();
-      // auto const& trackSel = tracks.iteratorAt(tr);
-
-      TVector3 p_leading(jetConstituent.px(), jetConstituent.py(), jetConstituent.pz());
+      if(iord[nn] != 0 || iord[nn] != 1) continue;
 
       if (iord[nn] == 0) {
-        // leadpt =  p_leading.Perp();
         trackL = jetConstituent.globalIndex();
-        // ch_l = trackSel.sign();
-        ch_l = jetConstituent.sign(); // signed1Pt();//pt();
+        ch_l = jetConstituent.sign();
         v1.SetXYZ(jetConstituent.pt(), jetConstituent.py(), jetConstituent.pz());
       }
 
       if (iord[nn] == 1) {
-        // n_leadpt =  p_leading.Perp();
         n_trackL = jetConstituent.globalIndex();
-        ch_nl = jetConstituent.sign(); // signed1Pt();//pt();
+        ch_nl = jetConstituent.sign();
         v2.SetXYZ(jetConstituent.px(), jetConstituent.py(), jetConstituent.pz());
 
         vR = v1 + v2;
         float z = v2.Perp(vR.Orthogonal()) / (v1.Perp(vR.Orthogonal()) + v2.Perp(vR.Orthogonal()));
         float fT = ((2. * z * (1 - z) * vR.Mag()) / v1.Perp2(vR)) / 6.;
         float kt_p = v1.Perp(vR);
-        // float th_p  = v1.Angle(v2);
-        // cout<<z<< " "<<fT<<"  "<<kt_p<<"  "<<th_p<<endl;
-        // cout<<ch_l<<"  "<<ch_nl<<endl;
+	
         if (ch_l == ch_nl) {
           registry.fill(HIST("h_ch_s_pt"), jet.pt());
           registry.fill(HIST("h_ch_s_kt"), kt_p);
@@ -409,10 +396,7 @@ struct JetChCorr {
   PROCESS_SWITCH(JetChCorr, processDummy, "Dummy process function turned on by default", true);
 
   void processChargedJetsData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet, JetTracks const& tracks)
-  // void processChargedJetsData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet,  soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks)
   {
-    //       cout<<"I am in CHarged Jet Data"<<endl;
-    //    analyseCharged<false>(jet, tracks, jetSubstructureDataTable);
     analyseCharged<false>(jet, tracks);
   }
   PROCESS_SWITCH(JetChCorr, processChargedJetsData, "charged jet substructure", false);
@@ -420,7 +404,6 @@ struct JetChCorr {
   void processChargedJetsEventWiseSubData(soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents>::iterator const& jet,
                                           JetTracksSub const& tracks)
   {
-    //    analyseCharged<true>(jet, tracks, jetSubstructureDataSubTable);
     analyseCharged<true>(jet, tracks);
   }
   PROCESS_SWITCH(JetChCorr, processChargedJetsEventWiseSubData, "eventwise-constituent subtracted charged jet substructure", false);
@@ -428,7 +411,6 @@ struct JetChCorr {
   void processChargedJetsMCD(typename soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>::iterator const& jet,
                              JetTracks const& tracks)
   {
-    // analyseCharged<false>(jet, tracks, jetSubstructureMCDTable);
     analyseCharged<false>(jet, tracks);
   }
   PROCESS_SWITCH(JetChCorr, processChargedJetsMCD, "charged jet substructure", false);
@@ -440,7 +422,6 @@ struct JetChCorr {
     for (auto& jetConstituent : jet.template tracks_as<JetParticles>()) {
       fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdg->Mass(jetConstituent.pdgCode()));
     }
-    //    jetReclustering<true, false>(jet, jetSubstructureMCPTable);
     jetReclustering<true, false>(jet);
   }
   PROCESS_SWITCH(JetChCorr, processChargedJetsMCP, "charged jet substructure on MC particle level", false);
