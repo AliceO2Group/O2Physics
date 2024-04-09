@@ -52,7 +52,7 @@ struct tofSpectra {
   Configurable<bool> enableTrackCutHistograms{"enableTrackCutHistograms", true, "Enables track cut histograms, before and after the cut"};
   Configurable<bool> enableDeltaHistograms{"enableDeltaHistograms", true, "Enables the delta TPC and TOF histograms"};
   Configurable<bool> enableTPCTOFHistograms{"enableTPCTOFHistograms", true, "Enables TPC TOF histograms"};
-  Configurable<bool> enableDCAxyzHistograms{"enableDCAxyzHistograms", true, "Enables DCAxyz correlation histograms"};
+  Configurable<bool> enableDCAxyzHistograms{"enableDCAxyzHistograms", false, "Enables DCAxyz correlation histograms"};
   Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", 5, "Last cluster to require in TRD for track selection. -1 does not require any TRD cluster"};
   Configurable<bool> requireTrdOnly{"requireTrdOnly", false, "Require only tracks from TRD"};
   Configurable<bool> requireNoTrd{"requireNoTrd", false, "Require tracks without TRD"};
