@@ -51,23 +51,20 @@ DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(E, e, float);
 DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);
-DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);
 DECLARE_SOA_COLUMN(NSigTpcPr0, nSigTpcPr0, float);
 DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float);
-DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);
 DECLARE_SOA_COLUMN(NSigTofPr0, nSigTofPr0, float);
-DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);
 DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float);
-DECLARE_SOA_COLUMN(NSigTpcPr1, nSigTpcPr1, float);
-DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);
 DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);
-DECLARE_SOA_COLUMN(NSigTofPr1, nSigTofPr1, float);
 DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float);
-DECLARE_SOA_COLUMN(NSigTpcKa2, nSigTpcKa2, float);
 DECLARE_SOA_COLUMN(NSigTpcPr2, nSigTpcPr2, float);
 DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float);
-DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float);
 DECLARE_SOA_COLUMN(NSigTofPr2, nSigTofPr2, float);
+DECLARE_SOA_COLUMN(NSigTpcTofPr0, nSigTpcTofPi0, float);
+DECLARE_SOA_COLUMN(NSigTpcTofPi0, nSigTpcTofPr0, float);
+DECLARE_SOA_COLUMN(NSigTpcTofKa1, nSigTpcTofKa1, float);
+DECLARE_SOA_COLUMN(NSigTpcTofPr2, nSigTpcTofPi2, float);
+DECLARE_SOA_COLUMN(NSigTpcTofPi2, nSigTpcTofPr2, float);
 DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
@@ -96,23 +93,20 @@ DECLARE_SOA_TABLE(HfCandXicLites, "AOD", "HFCANDXICLITE",
                   hf_cand::ImpactParameter1,
                   hf_cand::ImpactParameter2,
                   full::NSigTpcPi0,
-                  full::NSigTpcKa0,
                   full::NSigTpcPr0,
                   full::NSigTofPi0,
-                  full::NSigTofKa0,
                   full::NSigTofPr0,
-                  full::NSigTpcPi1,
                   full::NSigTpcKa1,
-                  full::NSigTpcPr1,
-                  full::NSigTofPi1,
                   full::NSigTofKa1,
-                  full::NSigTofPr1,
                   full::NSigTpcPi2,
-                  full::NSigTpcKa2,
                   full::NSigTpcPr2,
                   full::NSigTofPi2,
-                  full::NSigTofKa2,
                   full::NSigTofPr2,
+                  full::NSigTpcTofPi0,
+                  full::NSigTpcTofPr0,
+                  full::NSigTpcTofKa1,
+                  full::NSigTpcTofPi2,
+                  full::NSigTpcTofPr2,
                   hf_sel_candidate_xic::IsSelXicToPKPi,
                   hf_sel_candidate_xic::IsSelXicToPiKP,
                   full::M,
@@ -164,23 +158,20 @@ DECLARE_SOA_TABLE(HfCandXicFulls, "AOD", "HFCANDXICFULL",
                   hf_cand::ErrorImpactParameter1,
                   hf_cand::ErrorImpactParameter2,
                   full::NSigTpcPi0,
-                  full::NSigTpcKa0,
                   full::NSigTpcPr0,
                   full::NSigTofPi0,
-                  full::NSigTofKa0,
                   full::NSigTofPr0,
-                  full::NSigTpcPi1,
                   full::NSigTpcKa1,
-                  full::NSigTpcPr1,
-                  full::NSigTofPi1,
                   full::NSigTofKa1,
-                  full::NSigTofPr1,
                   full::NSigTpcPi2,
-                  full::NSigTpcKa2,
                   full::NSigTpcPr2,
                   full::NSigTofPi2,
-                  full::NSigTofKa2,
                   full::NSigTofPr2,
+                  full::NSigTpcTofPi0,
+                  full::NSigTpcTofPr0,
+                  full::NSigTpcTofKa1,
+                  full::NSigTpcTofPi2,
+                  full::NSigTpcTofPr2,
                   hf_sel_candidate_xic::IsSelXicToPKPi,
                   hf_sel_candidate_xic::IsSelXicToPiKP,
                   full::M,
@@ -234,7 +225,7 @@ struct HfTreeCreatorXicToPKPi {
   using CandXicData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>>;
   using CandXicMcReco = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi, aod::HfCand3ProngMcRec>>;
   using CandXicMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::TracksPidKa, aod::TracksPidPr>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_xic::isSelXicToPKPi >= selectionFlagXic || aod::hf_sel_candidate_xic::isSelXicToPiKP >= selectionFlagXic;
   Filter filterMcGenMatching = nabs(o2::aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::XicToPKPi));
@@ -300,23 +291,20 @@ struct HfTreeCreatorXicToPKPi {
         candidate.impactParameter1(),
         candidate.impactParameter2(),
         trackPos1.tpcNSigmaPi(),
-        trackPos1.tpcNSigmaKa(),
         trackPos1.tpcNSigmaPr(),
         trackPos1.tofNSigmaPi(),
-        trackPos1.tofNSigmaKa(),
         trackPos1.tofNSigmaPr(),
-        trackNeg.tpcNSigmaPi(),
         trackNeg.tpcNSigmaKa(),
-        trackNeg.tpcNSigmaPr(),
-        trackNeg.tofNSigmaPi(),
         trackNeg.tofNSigmaKa(),
-        trackNeg.tofNSigmaPr(),
         trackPos2.tpcNSigmaPi(),
-        trackPos2.tpcNSigmaKa(),
         trackPos2.tpcNSigmaPr(),
         trackPos2.tofNSigmaPi(),
-        trackPos2.tofNSigmaKa(),
         trackPos2.tofNSigmaPr(),
+        trackPos1.tpcTofNSigmaPi(),
+        trackPos1.tpcTofNSigmaPr(),
+        trackNeg.tpcTofNSigmaKa(),
+        trackPos2.tpcTofNSigmaPi(),
+        trackPos2.tpcTofNSigmaPr(),
         candidate.isSelXicToPKPi(),
         candidate.isSelXicToPiKP(),
         invMassXic,
@@ -369,23 +357,20 @@ struct HfTreeCreatorXicToPKPi {
         candidate.errorImpactParameter1(),
         candidate.errorImpactParameter2(),
         trackPos1.tpcNSigmaPi(),
-        trackPos1.tpcNSigmaKa(),
         trackPos1.tpcNSigmaPr(),
         trackPos1.tofNSigmaPi(),
-        trackPos1.tofNSigmaKa(),
         trackPos1.tofNSigmaPr(),
-        trackNeg.tpcNSigmaPi(),
         trackNeg.tpcNSigmaKa(),
-        trackNeg.tpcNSigmaPr(),
-        trackNeg.tofNSigmaPi(),
         trackNeg.tofNSigmaKa(),
-        trackNeg.tofNSigmaPr(),
         trackPos2.tpcNSigmaPi(),
-        trackPos2.tpcNSigmaKa(),
         trackPos2.tpcNSigmaPr(),
         trackPos2.tofNSigmaPi(),
-        trackPos2.tofNSigmaKa(),
         trackPos2.tofNSigmaPr(),
+        trackPos1.tpcTofNSigmaPi(),
+        trackPos1.tpcTofNSigmaPr(),
+        trackNeg.tpcTofNSigmaKa(),
+        trackPos2.tpcTofNSigmaPi(),
+        trackPos2.tpcTofNSigmaPr(),
         candidate.isSelXicToPKPi(),
         candidate.isSelXicToPiKP(),
         invMassXic,

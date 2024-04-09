@@ -79,6 +79,8 @@ struct deltaAnalysis {
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
   Configurable<float> nsigmaCutTOF{"nsigmaCutTOF", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
+  Configurable<float> cfgCutPtProtonTPC{"cfgCutPtProtonTPC", 0.8, "Pt cut of proton in TPC"};
+  Configurable<float> cfgCutPtPionTPC{"cfgCutPtPionTPC", 0.8, "Pt cut of pion in TPC"};
 
   // Histogram axes
   AxisSpec nSigmaTPCaxis = {100, -5., 5., "n#sigma_{TPC}"};
@@ -148,6 +150,15 @@ struct deltaAnalysis {
 
       histos.add("hDeltaZeroInvMassGen", "Invariant mass distribution for #Delta^{0} - generated", kTH2F, {ptAxis, deltaZeroAxis});
       histos.add("hAntiDeltaZeroInvMassGen", "Invariant mass distribution for #bar{#Delta^{0}} - generated", kTH2F, {ptAxis, antiDeltaZeroAxis});
+
+      histos.add("hRecProtonAntiDeltaPlusPlus", "Proton from #bar{#Delta^{++}}", kTH1F, {ptAxis});
+      histos.add("hRecProtonDeltaPlusPlus", "Proton from #Delta^{++}", kTH1F, {ptAxis});
+      histos.add("hRecProtonAntiDeltaZero", "Proton from #bar{#Delta^{0}}", kTH1F, {ptAxis});
+      histos.add("hRecProtonDeltaZero", "Proton from #Delta^{0}", kTH1F, {ptAxis});
+      histos.add("hRecPionAntiDeltaPlusPlus", "Pion from #bar{#Delta^{++}}", kTH1F, {ptAxis});
+      histos.add("hRecPionDeltaPlusPlus", "Pion from #Delta^{++}", kTH1F, {ptAxis});
+      histos.add("hRecPionAntiDeltaZero", "Pion from #bar{#Delta^{0}}", kTH1F, {ptAxis});
+      histos.add("hRecPionDeltaZero", "Pion from #Delta^{0}", kTH1F, {ptAxis});
     }
   }
 
@@ -211,7 +222,9 @@ struct deltaAnalysis {
         histos.fill(HIST("hPiMinusDCAxy"), track.dcaXY());
         histos.fill(HIST("hPiMinusDCAz"), track.dcaZ());
       }
-      return true;
+      if (track.pt() < cfgCutPtPionTPC) {
+        return true;
+      }
     }
     return false;
   }
@@ -246,7 +259,9 @@ struct deltaAnalysis {
         histos.fill(HIST("hPrMinusDCAxy"), track.dcaXY());
         histos.fill(HIST("hPrMinusDCAz"), track.dcaZ());
       }
-      return true;
+      if (track.pt() < cfgCutPtProtonTPC) {
+        return true;
+      }
     }
     return false;
   }
@@ -398,6 +413,56 @@ struct deltaAnalysis {
       const uint64_t collIdx = collision.globalIndex();
       auto perColTracks = tracks.sliceBy(perColMC, collIdx);
       perColTracks.bindExternalIndices(&tracks);
+
+      for (auto& t0 : perColTracks) {
+
+        if (!selectionTrack(t0)) {
+          continue;
+        }
+        if (!t0.has_mcParticle()) {
+          continue;
+        }
+
+        const auto mcTrack = t0.mcParticle();
+
+        if (std::abs(mcTrack.pdgCode()) == protonPDG) {
+          if (selectionPIDProton(t0)) {
+            for (auto& motherTrackProton : mcTrack.mothers_as<aod::McParticles>()) {
+              if (std::abs(motherTrackProton.pdgCode()) == deltaPlusPlusPDG) {
+                if (t0.sign() < 0) {
+                  histos.fill(HIST("hRecProtonAntiDeltaPlusPlus"), t0.pt());
+                } else {
+                  histos.fill(HIST("hRecProtonDeltaPlusPlus"), t0.pt());
+                }
+              } else if (std::abs(motherTrackProton.pdgCode()) == deltaZeroPDG) {
+                if (t0.sign() < 0) {
+                  histos.fill(HIST("hRecProtonAntiDeltaZero"), t0.pt());
+                } else {
+                  histos.fill(HIST("hRecProtonDeltaZero"), t0.pt());
+                }
+              }
+            }
+          }
+        } else if (std::abs(mcTrack.pdgCode()) == pionPDG) {
+          if (selectionPIDPion(t0)) {
+            for (auto& motherTrackPion : mcTrack.mothers_as<aod::McParticles>()) {
+              if (std::abs(motherTrackPion.pdgCode()) == deltaPlusPlusPDG) {
+                if (t0.sign() < 0) {
+                  histos.fill(HIST("hRecPionAntiDeltaPlusPlus"), t0.pt());
+                } else {
+                  histos.fill(HIST("hRecPionDeltaPlusPlus"), t0.pt());
+                }
+              } else if (std::abs(motherTrackPion.pdgCode()) == deltaZeroPDG) {
+                if (t0.sign() < 0) {
+                  histos.fill(HIST("hRecPionDeltaZero"), t0.pt());
+                } else {
+                  histos.fill(HIST("hRecPionAntiDeltaZero"), t0.pt());
+                }
+              }
+            }
+          }
+        }
+      }
 
       for (auto& [t0, t1] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(perColTracks, perColTracks))) {
 

@@ -27,6 +27,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/Core/TrackSelection.h"
 #include "Framework/StaticFor.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -51,6 +52,7 @@ struct tofSpectra {
   Configurable<bool> enableTrackCutHistograms{"enableTrackCutHistograms", true, "Enables track cut histograms, before and after the cut"};
   Configurable<bool> enableDeltaHistograms{"enableDeltaHistograms", true, "Enables the delta TPC and TOF histograms"};
   Configurable<bool> enableTPCTOFHistograms{"enableTPCTOFHistograms", true, "Enables TPC TOF histograms"};
+  Configurable<bool> enableDCAxyzHistograms{"enableDCAxyzHistograms", false, "Enables DCAxyz correlation histograms"};
   Configurable<int> lastRequiredTrdCluster{"lastRequiredTrdCluster", 5, "Last cluster to require in TRD for track selection. -1 does not require any TRD cluster"};
   Configurable<bool> requireTrdOnly{"requireTrdOnly", false, "Require only tracks from TRD"};
   Configurable<bool> requireNoTrd{"requireNoTrd", false, "Require tracks without TRD"};
@@ -466,10 +468,14 @@ struct tofSpectra {
           }
         }
       }
-
-      histos.add(hdcaxy[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
-      histos.add(hdcaz[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
-      histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH2D, {phiAxis, dcaXyAxis});
+      if (enableDCAxyzHistograms) {
+        histos.add(hdcaxy[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
+        histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH3D, {phiAxis, dcaXyAxis, dcaZAxis});
+      } else {
+        histos.add(hdcaxy[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+        histos.add(hdcaz[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
+        histos.add(hdcaxyphi[i].data(), Form("%s -- 0.9 < #it{p}_{T} < 1.1 GeV/#it{c}", pTCharge[i]), kTH2D, {phiAxis, dcaXyAxis});
+      }
 
       if (doprocessMC) {
         if (makeTHnSparseChoice) {
@@ -487,35 +493,56 @@ struct tofSpectra {
           histos.add(hpt_den_str[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, etaAxis});
           histos.add(hpt_den_mat[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, etaAxis});
 
+          histos.add(hpt_den_prm_recoev[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, etaAxis});
+          histos.add(hpt_den_prm_evsel[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, etaAxis});
+          histos.add(hpt_den_prm_goodev[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, etaAxis});
+          histos.add(hpt_den_prm_mcgoodev[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, etaAxis});
+          histos.add(hpt_den_prm_mcbadev[i].data(), pTCharge[i], kTHnSparseD, {ptAxis, multAxis, etaAxis});
           //***************************************************************************************
         } else {
           histos.add(hpt_num_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
+          histos.add(hpt_num_str[i].data(), pTCharge[i], kTH1D, {ptAxis});
+          histos.add(hpt_num_mat[i].data(), pTCharge[i], kTH1D, {ptAxis});
+
           histos.add(hpt_numtof_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
           histos.add(hpt_numtof_str[i].data(), pTCharge[i], kTH1D, {ptAxis});
           histos.add(hpt_numtof_mat[i].data(), pTCharge[i], kTH1D, {ptAxis});
-          histos.add(hpt_num_str[i].data(), pTCharge[i], kTH1D, {ptAxis});
-          histos.add(hpt_num_mat[i].data(), pTCharge[i], kTH1D, {ptAxis});
+
           histos.add(hpt_den_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
           histos.add(hpt_den_str[i].data(), pTCharge[i], kTH1D, {ptAxis});
           histos.add(hpt_den_mat[i].data(), pTCharge[i], kTH1D, {ptAxis});
+
+          histos.add(hpt_den_prm_recoev[i].data(), pTCharge[i], kTH1D, {ptAxis});
+          histos.add(hpt_den_prm_evsel[i].data(), pTCharge[i], kTH1D, {ptAxis});
+          histos.add(hpt_den_prm_goodev[i].data(), pTCharge[i], kTH1D, {ptAxis});
+          histos.add(hpt_den_prm_mcgoodev[i].data(), pTCharge[i], kTH1D, {ptAxis});
+          histos.add(hpt_den_prm_mcbadev[i].data(), pTCharge[i], kTH1D, {ptAxis});
+        }
+        if (enableDCAxyzHistograms) {
+          histos.add(hdcaxyprm[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
+          histos.add(hdcaxystr[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
+          histos.add(hdcaxymat[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
+          if (enableDcaGoodEvents) {
+            histos.add(hdcaxyprmgoodevs[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
+          }
+        } else {
+          histos.add(hdcaxyprm[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+          histos.add(hdcazprm[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
+          histos.add(hdcaxystr[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+          histos.add(hdcazstr[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
+          histos.add(hdcaxymat[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+          histos.add(hdcazmat[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
+          if (enableDcaGoodEvents) {
+            histos.add(hdcaxyprmgoodevs[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+            histos.add(hdcazprmgoodevs[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
+          }
         }
 
-        histos.add(hpt_den_prm_recoev[i].data(), pTCharge[i], kTH1D, {ptAxis});
-        histos.add(hpt_den_prm_evsel[i].data(), pTCharge[i], kTH1D, {ptAxis});
-        histos.add(hpt_den_prm_goodev[i].data(), pTCharge[i], kTH1D, {ptAxis});
-        histos.add(hpt_den_prm_mcgoodev[i].data(), pTCharge[i], kTH1D, {ptAxis});
-        histos.add(hpt_den_prm_mcbadev[i].data(), pTCharge[i], kTH1D, {ptAxis});
-
-        histos.add(hdcaxyprm[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
-        histos.add(hdcazprm[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
-        histos.add(hdcaxystr[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
-        histos.add(hdcazstr[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
-        histos.add(hdcaxymat[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
-        histos.add(hdcazmat[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
-        if (enableDcaGoodEvents) {
-          histos.add(hdcaxyprmgoodevs[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
-          histos.add(hdcazprmgoodevs[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
-        }
+        // Mismatched info
+        histos.add(hpt_mism_its_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
+        histos.add(hpt_mism_tpc_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
+        histos.add(hpt_mism_trd_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
+        histos.add(hpt_mism_tof_prm[i].data(), pTCharge[i], kTH1D, {ptAxis});
       }
     }
     // Print output histograms statistics
@@ -730,21 +757,32 @@ struct tofSpectra {
       isDCAPureSample = (nsigmaTPC < 1.f);
     }
     if (isDCAPureSample) {
-      if (track.sign() > 0) {
-        histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY());
-      } else {
-        histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY());
-      }
-      if (track.sign() > 0) {
-        histos.fill(HIST(hdcaz[id]), track.pt(), track.dcaZ());
-      } else {
-        histos.fill(HIST(hdcaz[id + Np]), track.pt(), track.dcaZ());
-      }
-      if (track.pt() < 1.1 && track.pt() > 0.9) {
+      const bool isInPtRangeForPhi = track.pt() < 1.1f && track.pt() > 0.9f;
+      if (enableDCAxyzHistograms) {
         if (track.sign() > 0) {
-          histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY());
+          histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY(), track.dcaZ());
+          if (isInPtRangeForPhi) {
+            histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY(), track.dcaZ());
+          }
         } else {
-          histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY());
+          histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY(), track.dcaZ());
+          if (isInPtRangeForPhi) {
+            histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY(), track.dcaZ());
+          }
+        }
+      } else {
+        if (track.sign() > 0) {
+          histos.fill(HIST(hdcaxy[id]), track.pt(), track.dcaXY());
+          histos.fill(HIST(hdcaz[id]), track.pt(), track.dcaZ());
+          if (isInPtRangeForPhi) {
+            histos.fill(HIST(hdcaxyphi[id]), track.phi(), track.dcaXY());
+          }
+        } else {
+          histos.fill(HIST(hdcaxy[id + Np]), track.pt(), track.dcaXY());
+          histos.fill(HIST(hdcaz[id + Np]), track.pt(), track.dcaZ());
+          if (isInPtRangeForPhi) {
+            histos.fill(HIST(hdcaxyphi[id + Np]), track.phi(), track.dcaXY());
+          }
         }
       }
     }
@@ -1017,6 +1055,46 @@ struct tofSpectra {
     return true;
   }
 
+  template <typename ParticleType>
+  bool isMismatchedTrack(const ParticleType& track, const int detector)
+  {
+    switch (detector) {
+      case 0: // ITS
+        for (int i = 0; i < 7; i++) {
+          if (track.mcMask() & 1 << i) {
+            return true;
+          }
+        }
+        return false;
+        break;
+      case 1: // TPC
+        for (int i = 7; i < 10; i++) {
+          if (track.mcMask() & 1 << i) {
+            return true;
+          }
+        }
+        break;
+      case 2: // TRD
+        if (track.mcMask() & 1 << 10) {
+          return true;
+        }
+        return false;
+        break;
+      case 3: // TOF
+        if (track.mcMask() & 1 << 11) {
+          return true;
+        }
+        return false;
+        break;
+      default: // All
+        if (track.mcMask() & 1 << 15) {
+          return true;
+        }
+        return false;
+    }
+    return false;
+  }
+
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                     aod::pidEvTimeFlags, aod::TrackSelection, aod::TOFSignal>;
@@ -1209,8 +1287,7 @@ struct tofSpectra {
     }
 
     //************************************RD**************************************************
-    float multiplicity = 0.f;
-
+    const float multiplicity = getMultiplicity(collision);
     //************************************RD**************************************************
 
     if (mcParticle.pdgCode() != PDGs[i]) {
@@ -1225,18 +1302,33 @@ struct tofSpectra {
     }
     if (!mcParticle.isPhysicalPrimary()) {
       if (mcParticle.getProcess() == 4) {
-        histos.fill(HIST(hdcaxystr[i]), track.pt(), track.dcaXY());
-        histos.fill(HIST(hdcazstr[i]), track.pt(), track.dcaZ());
+        if (enableDCAxyzHistograms) {
+          histos.fill(HIST(hdcaxystr[i]), track.pt(), track.dcaXY(), track.dcaZ());
+        } else {
+          histos.fill(HIST(hdcaxystr[i]), track.pt(), track.dcaXY());
+          histos.fill(HIST(hdcazstr[i]), track.pt(), track.dcaZ());
+        }
       } else {
-        histos.fill(HIST(hdcaxymat[i]), track.pt(), track.dcaXY());
-        histos.fill(HIST(hdcazmat[i]), track.pt(), track.dcaZ());
+        if (enableDCAxyzHistograms) {
+          histos.fill(HIST(hdcaxymat[i]), track.pt(), track.dcaXY(), track.dcaZ());
+        } else {
+          histos.fill(HIST(hdcaxymat[i]), track.pt(), track.dcaXY());
+          histos.fill(HIST(hdcazmat[i]), track.pt(), track.dcaZ());
+        }
       }
     } else {
-      histos.fill(HIST(hdcaxyprm[i]), track.pt(), track.dcaXY());
-      histos.fill(HIST(hdcazprm[i]), track.pt(), track.dcaZ());
-      if (enableDcaGoodEvents.value && collision.has_mcCollision()) {
-        histos.fill(HIST(hdcaxyprmgoodevs[i]), track.pt(), track.dcaXY());
-        histos.fill(HIST(hdcazprmgoodevs[i]), track.pt(), track.dcaZ());
+      if (enableDCAxyzHistograms) {
+        histos.fill(HIST(hdcaxyprm[i]), track.pt(), track.dcaXY(), track.dcaZ());
+        if (enableDcaGoodEvents.value && collision.has_mcCollision()) {
+          histos.fill(HIST(hdcaxyprmgoodevs[i]), track.pt(), track.dcaXY(), track.dcaZ());
+        }
+      } else {
+        histos.fill(HIST(hdcaxyprm[i]), track.pt(), track.dcaXY());
+        histos.fill(HIST(hdcazprm[i]), track.pt(), track.dcaZ());
+        if (enableDcaGoodEvents.value && collision.has_mcCollision()) {
+          histos.fill(HIST(hdcaxyprmgoodevs[i]), track.pt(), track.dcaXY());
+          histos.fill(HIST(hdcazprmgoodevs[i]), track.pt(), track.dcaZ());
+        }
       }
     }
 
@@ -1296,11 +1388,25 @@ struct tofSpectra {
           histos.fill(HIST(hpt_numtof_prm[i]), track.pt());
         }
       }
+
+      // Filling mismatched info for primary tracks
+      if (isMismatchedTrack(track, 0)) {
+        histos.fill(HIST(hpt_mism_its_prm[i]), track.pt());
+      }
+      if (isMismatchedTrack(track, 1)) {
+        histos.fill(HIST(hpt_mism_tpc_prm[i]), track.pt());
+      }
+      if (isMismatchedTrack(track, 2)) {
+        histos.fill(HIST(hpt_mism_trd_prm[i]), track.pt());
+      }
+      if (isMismatchedTrack(track, 3)) {
+        histos.fill(HIST(hpt_mism_tof_prm[i]), track.pt());
+      }
     }
   }
 
   template <std::size_t i, typename ParticleType>
-  void fillParticleHistograms_MC(ParticleType const& mcParticle)
+  void fillParticleHistograms_MC(CollisionCandidateMC::iterator const& collision, ParticleType const& mcParticle)
   {
 
     switch (i) {
@@ -1364,7 +1470,7 @@ struct tofSpectra {
       return;
     }
 
-    const float multiplicity = 0.f;
+    const float multiplicity = getMultiplicity(collision);
     if (!mcParticle.isPhysicalPrimary()) {
       if (mcParticle.getProcess() == 4) {
         if (makeTHnSparseChoice) {
@@ -1453,15 +1559,29 @@ struct tofSpectra {
       return;
     }
 
+    const float multiplicity = getMultiplicity(collision);
+
     if (mcParticle.isPhysicalPrimary()) {
       if (collision.sel8()) {
         if (abs(collision.posZ()) < cfgCutVertex) {
-          histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt());
+          if (makeTHnSparseChoice) {
+            histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
+          } else {
+            histos.fill(HIST(hpt_den_prm_goodev[i]), mcParticle.pt());
+          }
         } else {
-          histos.fill(HIST(hpt_den_prm_evsel[i]), mcParticle.pt());
+          if (makeTHnSparseChoice) {
+            histos.fill(HIST(hpt_den_prm_evsel[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
+          } else {
+            histos.fill(HIST(hpt_den_prm_evsel[i]), mcParticle.pt());
+          }
         }
       } else {
-        histos.fill(HIST(hpt_den_prm_recoev[i]), mcParticle.pt());
+        if (makeTHnSparseChoice) {
+          histos.fill(HIST(hpt_den_prm_recoev[i]), mcParticle.pt(), multiplicity, mcParticle.eta());
+        } else {
+          histos.fill(HIST(hpt_den_prm_recoev[i]), mcParticle.pt());
+        }
       }
     }
   }
@@ -1566,6 +1686,9 @@ struct tofSpectra {
       if (!track.collision_as<CollisionCandidateMC>().sel8()) {
         continue;
       }
+      if (removeTFBorder && !track.collision_as<CollisionCandidateMC>().selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        continue;
+      }
       if (!passesCutWoDCA(track)) {
         continue;
       }
@@ -1583,19 +1706,37 @@ struct tofSpectra {
         fillTrackHistograms_MC<i>(track, mcParticle, track.collision_as<CollisionCandidateMC>());
       });
     }
+    if (makeTHnSparseChoice) {
+      for (const auto& collision : collisions) {
+        if (!collision.has_mcCollision()) {
+          continue;
+        }
+        const auto& particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, collision.mcCollision().globalIndex(), cache);
+        for (const auto& mcParticle : particlesInCollision) {
 
-    for (const auto& mcParticle : mcParticles) {
-      // if (std::abs(mcParticle.eta()) > cfgCutEta) {
-      //   continue;
-      // }
-      if (std::abs(mcParticle.y()) > cfgCutY) {
-        continue;
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            continue;
+          }
+          static_for<0, 17>([&](auto i) {
+            fillParticleHistograms_MC<i>(collision, mcParticle);
+          });
+        }
       }
-      static_for<0, 17>([&](auto i) {
-        fillParticleHistograms_MC<i>(mcParticle);
-      });
+    } else {
+      for (const auto& collision : collisions) {
+        for (const auto& mcParticle : mcParticles) {
+          // if (std::abs(mcParticle.eta()) > cfgCutEta) {
+          //   continue;
+          // }
+          if (std::abs(mcParticle.y()) > cfgCutY) {
+            continue;
+          }
+          static_for<0, 17>([&](auto i) {
+            fillParticleHistograms_MC<i>(collision, mcParticle);
+          });
+        }
+      }
     }
-
     // Loop on reconstructed collisions
     for (const auto& collision : collisions) {
       if (!collision.has_mcCollision()) {

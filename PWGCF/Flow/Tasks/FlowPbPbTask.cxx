@@ -8,6 +8,9 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+// code author: Zhiyong Lu (zhiyong.lu@cern.ch)
+// jira: PWGCF-254
 
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPMagField.h>
@@ -121,6 +124,8 @@ struct FlowPbPbTask {
   TF1* fMultCutLow = nullptr;
   TF1* fMultCutHigh = nullptr;
   TF1* fMultMultPVCut = nullptr;
+  TF1* fT0AV0AMean = nullptr;
+  TF1* fT0AV0ASigma = nullptr;
 
   void init(InitContext const&)
   {
@@ -136,29 +141,37 @@ struct FlowPbPbTask {
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "after strict Pile-up cut");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "after additional event cut");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "after correction loads");
-    registry.add("hVtxZ", "", {HistType::kTH1D, {axisVertex}});
-    registry.add("hMult", "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
-    registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
-    registry.add("globalTracks_centT0C", " ;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
-    registry.add("PVTracks_centT0C", " ;Centrality T0C;mulplicity PV tracks", {HistType::kTH2D, {axisCentForQA, axisNchPV}});
-    registry.add("globalTracks_PVTracks", " ;mulplicity PV tracks;mulplicity global tracks", {HistType::kTH2D, {axisNchPV, axisNch}});
-    registry.add("globalTracks_multT0A", " ;mulplicity T0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
-    registry.add("globalTracks_multV0A", " ;mulplicity V0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
-    registry.add("multV0A_multT0A", " ;mulplicity T0A;mulplicity V0A", {HistType::kTH2D, {axisT0A, axisT0A}});
-    registry.add("multT0C_centT0C", " ;Centrality T0C;mulplicity T0C", {HistType::kTH2D, {axisCentForQA, axisT0C}});
+    registry.add("hVtxZ", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
+    registry.add("hMult", "Multiplicity distribution", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
+    registry.add("hCent", "Centrality distribution", {HistType::kTH1D, {{90, 0, 90}}});
+    registry.add("BeforeCut_globalTracks_centT0C", "before cut;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
+    registry.add("BeforeCut_PVTracks_centT0C", "before cut;Centrality T0C;mulplicity PV tracks", {HistType::kTH2D, {axisCentForQA, axisNchPV}});
+    registry.add("BeforeCut_globalTracks_PVTracks", "before cut;mulplicity PV tracks;mulplicity global tracks", {HistType::kTH2D, {axisNchPV, axisNch}});
+    registry.add("BeforeCut_globalTracks_multT0A", "before cut;mulplicity T0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
+    registry.add("BeforeCut_globalTracks_multV0A", "before cut;mulplicity V0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
+    registry.add("BeforeCut_multV0A_multT0A", "before cut;mulplicity T0A;mulplicity V0A", {HistType::kTH2D, {axisT0A, axisT0A}});
+    registry.add("BeforeCut_multT0C_centT0C", "before cut;Centrality T0C;mulplicity T0C", {HistType::kTH2D, {axisCentForQA, axisT0C}});
+    registry.add("globalTracks_centT0C", "after cut;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
+    registry.add("PVTracks_centT0C", "after cut;Centrality T0C;mulplicity PV tracks", {HistType::kTH2D, {axisCentForQA, axisNchPV}});
+    registry.add("globalTracks_PVTracks", "after cut;mulplicity PV tracks;mulplicity global tracks", {HistType::kTH2D, {axisNchPV, axisNch}});
+    registry.add("globalTracks_multT0A", "after cut;mulplicity T0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
+    registry.add("globalTracks_multV0A", "after cut;mulplicity V0A;mulplicity global tracks", {HistType::kTH2D, {axisT0A, axisNch}});
+    registry.add("multV0A_multT0A", "after cut;mulplicity T0A;mulplicity V0A", {HistType::kTH2D, {axisT0A, axisT0A}});
+    registry.add("multT0C_centT0C", "after cut;Centrality T0C;mulplicity T0C", {HistType::kTH2D, {axisCentForQA, axisT0C}});
     // Track QA
-    registry.add("hPhi", "", {HistType::kTH1D, {axisPhi}});
-    registry.add("hPhiWeighted", "", {HistType::kTH1D, {axisPhi}});
-    registry.add("hEta", "", {HistType::kTH1D, {axisEta}});
-    registry.add("hPt", "", {HistType::kTH1D, {axisPtHist}});
-    registry.add("hPtRef", "", {HistType::kTH1D, {axisPtHist}});
-    registry.add("pt_phi_bef", "", {HistType::kTH2D, {axisPt, axisPhiMod}});
-    registry.add("pt_phi_aft", "", {HistType::kTH2D, {axisPt, axisPhiMod}});
-    registry.add("hChi2prTPCcls", "", {HistType::kTH1D, {{100, 0., 5.}}});
-    registry.add("hnTPCClu", "", {HistType::kTH1D, {{100, 40, 180}}});
-    registry.add("hnTPCCrossedRow", "", {HistType::kTH1D, {{100, 40, 180}}});
-    registry.add("hDCAz", "", {HistType::kTH1D, {{100, -3, 3}}});
+    registry.add("hPhi", "#phi distribution", {HistType::kTH1D, {axisPhi}});
+    registry.add("hPhiWeighted", "corrected #phi distribution", {HistType::kTH1D, {axisPhi}});
+    registry.add("hEta", "#eta distribution", {HistType::kTH1D, {axisEta}});
+    registry.add("hPt", "p_{T} distribution before cut", {HistType::kTH1D, {axisPtHist}});
+    registry.add("hPtRef", "p_{T} distribution after cut", {HistType::kTH1D, {axisPtHist}});
+    registry.add("pt_phi_bef", "before cut;p_{T};#phi_{modn}", {HistType::kTH2D, {axisPt, axisPhiMod}});
+    registry.add("pt_phi_aft", "after cut;p_{T};#phi_{modn}", {HistType::kTH2D, {axisPt, axisPhiMod}});
+    registry.add("hChi2prTPCcls", "#chi^{2}/cluster for the TPC track segment", {HistType::kTH1D, {{100, 0., 5.}}});
+    registry.add("hnTPCClu", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
+    registry.add("hnTPCCrossedRow", "Number of crossed TPC Rows", {HistType::kTH1D, {{100, 40, 180}}});
+    registry.add("hDCAz", "DCAz after cuts", {HistType::kTH1D, {{100, -3, 3}}});
     registry.add("hDCAxy", "DCAxy after cuts; DCAxy (cm); Pt", {HistType::kTH2D, {{50, -1, 1}, {50, 0, 10}}});
+    registry.add("hTrackCorrection2d", "Correlation table for number of tracks table; uncorrected track; corrected track", {HistType::kTH2D, {axisNch, axisNch}});
     // additional Output histograms
     registry.add("hMeanPt", "", {HistType::kTProfile, {axisCentrality}});
     registry.add("hMeanPtWithinGap08", "", {HistType::kTProfile, {axisCentrality}});
@@ -289,6 +302,11 @@ struct FlowPbPbTask {
       fMultCutLow->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
       fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
       fMultCutHigh->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
+
+      fT0AV0AMean = new TF1("fT0AV0AMean", "[0]+[1]*x", 0, 200000);
+      fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
+      fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
+      fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
     }
 
     if (cfgUseAdditionalTrackCut) {
@@ -420,6 +438,22 @@ struct FlowPbPbTask {
     }
     if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       // reject collisions close to Time Frame borders
+      // https://its.cern.ch/jira/browse/O2-4623
+      return 0;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      // reject events affected by the ITS ROF border
+      // https://its.cern.ch/jira/browse/O2-4309
+      return 0;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      // rejects collisions which are associated with the same "found-by-T0" bunch crossing
+      // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
+      return 0;
+    }
+    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
+      // use this cut at low multiplicities with caution
       return 0;
     }
     float vtxz = -999;
@@ -440,6 +474,10 @@ struct FlowPbPbTask {
     if (multTrk < fMultCutLow->Eval(centrality))
       return 0;
     if (multTrk > fMultCutHigh->Eval(centrality))
+      return 0;
+
+    // V0A T0A 5 sigma cut
+    if (abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))
       return 0;
 
     return 1;
@@ -486,6 +524,13 @@ struct FlowPbPbTask {
       return;
     if (tracks.size() < 1)
       return;
+    registry.fill(HIST("BeforeCut_globalTracks_centT0C"), collision.centFT0C(), tracks.size());
+    registry.fill(HIST("BeforeCut_PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV());
+    registry.fill(HIST("BeforeCut_globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size());
+    registry.fill(HIST("BeforeCut_globalTracks_multT0A"), collision.multFT0A(), tracks.size());
+    registry.fill(HIST("BeforeCut_globalTracks_multV0A"), collision.multFV0A(), tracks.size());
+    registry.fill(HIST("BeforeCut_multV0A_multT0A"), collision.multFT0A(), collision.multFV0A());
+    registry.fill(HIST("BeforeCut_multT0C_centT0C"), collision.centFT0C(), collision.multFT0C());
     registry.fill(HIST("hEventCount"), 1.5);
     // place holder for pile-up rejection
     registry.fill(HIST("hEventCount"), 2.5);
@@ -514,12 +559,12 @@ struct FlowPbPbTask {
 
     // track weights
     float weff = 1, wacc = 1;
-    double weffEvent = 0, waccEvent = 0;
-    int TrackNum = 0;
+    double weffEvent = 0;
     double ptSum = 0., ptSum_Gap08 = 0.;
     double weffEvent_WithinGap08 = 0., weffEventSquare_WithinGap08 = 0.;
     double sum_ptSquare_wSquare_WithinGap08 = 0., sum_pt_wSquare_WithinGap08 = 0.;
     int Magnetfield = 0;
+    double NTracksCorrected = 0;
     if (cfgUseAdditionalTrackCut) {
       // magnet field dependence cut
       Magnetfield = getMagneticField(bc.timestamp());
@@ -528,10 +573,10 @@ struct FlowPbPbTask {
     for (auto& track : tracks) {
       if (track.tpcNClsFound() < cfgCutTPCclu)
         continue;
-      if (cfgOutputNUAWeights)
-        fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
       if (cfgUseAdditionalTrackCut && !trackSelected(track, Magnetfield))
         continue;
+      if (cfgOutputNUAWeights)
+        fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
       if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
         continue;
       bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
@@ -549,9 +594,8 @@ struct FlowPbPbTask {
         registry.fill(HIST("hDCAz"), track.dcaZ());
         registry.fill(HIST("hDCAxy"), track.dcaXY(), track.pt());
         weffEvent += weff;
-        waccEvent += wacc;
         ptSum += weff * track.pt();
-        TrackNum++;
+        NTracksCorrected += weff;
         if (WithinEtaGap08) {
           ptSum_Gap08 += weff * track.pt();
           sum_pt_wSquare_WithinGap08 += weff * weff * track.pt();
@@ -567,6 +611,7 @@ struct FlowPbPbTask {
       if (WithinPtPOI && WithinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 4);
     }
+    registry.fill(HIST("hTrackCorrection2d"), tracks.size(), NTracksCorrected);
 
     double WeffEvent_diff_WithGap08 = weffEvent_WithinGap08 * weffEvent_WithinGap08 - weffEventSquare_WithinGap08;
     // Filling TProfile

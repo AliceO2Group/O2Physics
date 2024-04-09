@@ -44,7 +44,7 @@ EMEventCut* o2::aod::pwgem::photon::eventcuts::GetCut(const char* cutName)
   if (!nameStr.compare("minbias")) {
     cut->SetRequireFT0AND(true);
     cut->SetZvtxRange(-10.f, +10.f);
-    cut->SetRequireNoTFB(true);
+    cut->SetRequireNoTFB(false);
     cut->SetRequireNoITSROFB(false);
     return cut;
   }
@@ -54,6 +54,22 @@ EMEventCut* o2::aod::pwgem::photon::eventcuts::GetCut(const char* cutName)
     cut->SetZvtxRange(-1e+10, +1e+10);
     cut->SetRequireNoTFB(false);
     cut->SetRequireNoITSROFB(false);
+    return cut;
+  }
+
+  if (!nameStr.compare("minbias_notfb")) {
+    cut->SetRequireFT0AND(true);
+    cut->SetZvtxRange(-10.f, +10.f);
+    cut->SetRequireNoTFB(true);
+    cut->SetRequireNoITSROFB(false);
+    return cut;
+  }
+
+  if (!nameStr.compare("minbias_notfb_noitsrofb")) {
+    cut->SetRequireFT0AND(true);
+    cut->SetZvtxRange(-10.f, +10.f);
+    cut->SetRequireNoTFB(true);
+    cut->SetRequireNoITSROFB(true);
     return cut;
   }
 
@@ -500,7 +516,7 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
   cut->SetMaxDcaZ(1.0);
 
   if (nameStr.find("lowB") != std::string::npos) {
-    cut->SetMinNCrossedRowsTPC(70);
+    cut->SetMinNCrossedRowsTPC(40);
     cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
     cut->SetChi2PerClusterTPC(0.0, 4.0);
     cut->SetChi2PerClusterITS(0.0, 5.0);

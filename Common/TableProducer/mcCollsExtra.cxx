@@ -97,6 +97,7 @@ struct mcCollisionExtra {
       if (biggestNContribs < collision.numContrib()) {
         biggestNContribs = collision.numContrib();
         bestCollisionIndex = collision.globalIndex();
+        bestCollisionCentFT0C = collision.centFT0C();
       }
     }
     mcCollsExtra(collisions.size(), bestCollisionIndex, bestCollisionCentFT0C);

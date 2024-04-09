@@ -38,7 +38,8 @@ class DGCutparHolder
                  bool TCE = false,
                  bool TOR = true,
                  float maxFITtime = 4,
-                 std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mWithFwdTracks{withFwdTracks}, mGlobalTracksOnly{globalTracksOnly}, mITSOnlyTracks{ITSonlyTracks}, mMinRgtrwTOF{minrgtrwTOF}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mNetCharges{NetCharges}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mTVX{TVX}, mTSC{TSC}, mTCE{TCE}, mTOR{TOR}, mMaxFITtime{maxFITtime}, mFITAmpLimits{FITAmpLimits}
+                 std::vector<float> FITAmpLimits = {0., 0., 0., 0., 0.},
+                 std::vector<int> collisionSel = {0, 0, 0, 0, 0}) : mNDtcoll{ndtcoll}, mMinNBCs{nMinBCs}, mWithFwdTracks{withFwdTracks}, mGlobalTracksOnly{globalTracksOnly}, mITSOnlyTracks{ITSonlyTracks}, mMinRgtrwTOF{minrgtrwTOF}, mMinNTracks{MinNTracks}, mMaxNTracks{MaxNTracks}, mNetCharges{NetCharges}, mPidHypo{pidHypo}, mMinVertexPosz{MinPosz}, mMaxVertexPosz{MaxPosz}, mMinPt{minPt}, mMaxPt{maxPt}, mMinEta{minEta}, mMaxEta{maxEta}, mMinIVM{minIVM}, mMaxIVM{maxIVM}, mMaxNSigmaTPC{maxNSigmaTPC}, mMaxNSigmaTOF{maxNSigmaTOF}, mTVX{TVX}, mTSC{TSC}, mTCE{TCE}, mTOR{TOR}, mMaxFITtime{maxFITtime}, mFITAmpLimits{FITAmpLimits}, mCollisionSel{collisionSel}
   {
   }
 
@@ -64,6 +65,7 @@ class DGCutparHolder
   void SetTOR(bool tor);
   void SetMaxFITtime(float maxFITtime);
   void SetFITAmpLimits(std::vector<float> FITAmpLimits);
+  void SetCollisionSel(std::vector<int> collisionSel);
 
   // getter
   int NDtcoll() const;
@@ -92,6 +94,7 @@ class DGCutparHolder
   bool withTOR() const;
   float maxFITtime() const;
   std::vector<float> FITAmpLimits() const;
+  std::vector<int> collisionSel() const;
 
  private:
   // number of collision time resolutions to consider
@@ -140,6 +143,9 @@ class DGCutparHolder
 
   // lower limits for FIT signals
   std::vector<float> mFITAmpLimits;
+
+  // collision selections to consider from event selection task
+  std::vector<int> mCollisionSel;
 
   ClassDefNV(DGCutparHolder, 1);
 };
