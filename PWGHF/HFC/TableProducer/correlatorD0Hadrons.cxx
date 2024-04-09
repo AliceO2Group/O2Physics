@@ -187,7 +187,7 @@ struct HfCorrelatorD0Hadrons {
   Configurable<int> findLeadingParticleSwitch{"FindLeadingParticleSwitch", 0, "Find Leading Particle Switch"};
   Configurable<int> correlationD0LeadingParticle{"CorrelationD0LeadingParticle", 0, "Correlation D0 Leading Particle witch"};
   HfHelper hfHelper;
-  
+
   int leadingIndex = 0;
   double massD0{0.};
   double massPi{0.};
@@ -264,11 +264,11 @@ struct HfCorrelatorD0Hadrons {
     // mass histogram for D0bar background candidates only
     registry.add("hMassD0barRecBg", "D0bar background candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCountD0TriggersGen", "D0 trigger particles - MC gen;;N of trigger D0", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    // leading partical information 
+    // leading partical information
     registry.add("hLeadingParticalD0","deltaPhi deltaEta leadingPt D0Pt poolbin",{HistType::kTHnF,{{32,0.,o2::constants::math::TwoPI},{100,-2.,2.},{180,0.,18.},{180,0.,18.},{1000,0,1000}}});
   }
   //Find Leading Particle
-  int findLeadingParticle(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision, 
+  int findLeadingParticle(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
                                   aod::TracksWDca const& tracks)
   {
    auto leadingParticle = tracks.begin();
@@ -294,7 +294,7 @@ struct HfCorrelatorD0Hadrons {
       return;
     }
     //find leading particle
-    if(findLeadingParticleSwitch){                    
+    if(findLeadingParticleSwitch){
       leadingIndex = findLeadingParticle( collision , tracks);
     }
 
