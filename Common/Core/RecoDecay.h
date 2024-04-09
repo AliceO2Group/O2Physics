@@ -862,8 +862,8 @@ class RecoDecay
         return false;
       }
       // Check that the number of direct daughters coming from the dacay is not larger than the number of expected final daughters.
-      for (const auto& dau : candidate.template daughters_as<T>()) {
-        // printf("Daughter production process is %i", dau.getProcess());
+      for (const auto& dau : candidate.template daughters_as<typename std::decay_t<U>::parent_t>()) {
+        printf("Daughter production process is %i", dau.getProcess());
         if (dau.getProcess() == TMCProcess::kPDecay) {
           dauCounter++;
         }
