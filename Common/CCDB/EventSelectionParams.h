@@ -140,7 +140,14 @@ class EventSelectionParams
   float fV0CasymA = -25.f;
   float fV0CasymB = 0.15f;
 
-  ClassDefNV(EventSelectionParams, 4)
+  int fTimeFrameOrbitShift = 0;          // shift of first orbit in TF wrt (SOR-OrbitReset)%TFDuration (in orbits)
+  int fTimeFrameStartBorderMargin = 300; // number of bcs to cut in the beginning of TF
+  int fTimeFrameEndBorderMargin = 4000;  // number of bcs to cut at the end of TF
+
+  int fITSROFrameStartBorderMargin = 10; // number of bcs to cut in the beginning of ITS readout frame
+  int fITSROFrameEndBorderMargin = 20;   // number of bcs to cut in the end of ITS readout frame
+
+  ClassDefNV(EventSelectionParams, 5)
 };
 
 #endif // COMMON_CCDB_EVENTSELECTIONPARAMS_H_
