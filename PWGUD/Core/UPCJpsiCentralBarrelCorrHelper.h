@@ -56,7 +56,7 @@ float* correlation(TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
   // Accoplanarity angle
   Float_t deltaPhi;
   deltaPhi = lv1->Phi() - lv2->Phi();
-  float accoplCut = 1. - abs(deltaPhi) / o2::constants::math::PI;
+  float accoplCut = 1. - std::abs(deltaPhi) / o2::constants::math::PI;
   // z
   TLorentzVector z;
   Float_t part1, part2;
@@ -83,7 +83,7 @@ float* correlation(TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
   z = part3 - part4;
 
   // Normalized z
-  Float_t normz = TMath::Sqrt(-z * z);
+  Float_t normz = std::sqrt(-z * z);
   Float_t znx = z.X() / normz;
   Float_t zny = z.Y() / normz;
   Float_t znz = z.Z() / normz;
@@ -115,7 +115,7 @@ float* correlation(TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
   // Un-normalized x
   x = *lv - comp1 - comp2;
   // normalize x
-  Float_t normx = TMath::Sqrt(-x * x);
+  Float_t normx = std::sqrt(-x * x);
   Float_t xnx = x.X() / normx;
   Float_t xny = x.Y() / normx;
   Float_t xnz = x.Z() / normx;
@@ -135,7 +135,7 @@ float* correlation(TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
   TLorentzVector y(TVector3(yone, ytwo, ythree), yfour);
 
   // normalize y
-  Float_t normy = TMath::Sqrt(-y * y);
+  Float_t normy = std::sqrt(-y * y);
   Float_t ynx = y.X() / normy;
   Float_t yny = y.Y() / normy;
   Float_t ynz = y.Z() / normy;
@@ -154,7 +154,7 @@ float* correlation(TLorentzVector* lv1, TLorentzVector* lv2, TLorentzVector* lv)
   TLorentzVector diff2(TVector3(diff2x, diff2y, diff2z), diff2e);
 
   // Normalize diff2
-  Float_t norm2 = TMath::Sqrt(-diff2 * diff2);
+  Float_t norm2 = std::sqrt(-diff2 * diff2);
   Float_t diff3x = diff2.X() / norm2;
   Float_t diff3y = diff2.Y() / norm2;
   Float_t diff3z = diff2.Z() / norm2;
