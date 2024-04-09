@@ -162,8 +162,9 @@ struct HeavyIonMultiplicity {
 
     if (doprocessDataCentFT0C) {
       histos.add("CentPercentileHist", "CentPercentileHist", kTH1D, {axisCent}, false);
+      histos.add("CentHistInsideTrackloop", "CentHistInsideTrackloop", kTH1D, {axisCent}, false);
       histos.add("hdatamult", "hdatamult", kTHnSparseF, {axisVtxZ, axisMult, CentAxis}, false);
-      histos.add("hdatadndeta", "hdatadndeta", kTHnSparseF, {axisVtxZ, axisEta, axisPhi2, CentAxis, axisPT}, false);
+      histos.add("hdatadndeta", "hdatadndeta", kTHnSparseF, {axisVtxZ, CentAxis, axisEta, axisPhi2}, false);
       histos.add("hdatazvtxcent", "hdatazvtxcent", kTH2D, {axisVtxZ, CentAxis}, false);
     }
 
@@ -341,15 +342,20 @@ struct HeavyIonMultiplicity {
         histos.fill(HIST("EventHist"), 2);
         if (collision.selection_bit(kNoTimeFrameBorder)) {
           histos.fill(HIST("EventHist"), 3);
-          histos.fill(HIST("VtxZHist"), collision.posZ());
           if constexpr (hasCentrality) {
             cent = collision.centFT0C();
+            if (cent < 0.0 || cent > 100.0) {
+              return;
+            }
+            histos.fill(HIST("EventHist"), 4);
+            histos.fill(HIST("VtxZHist"), collision.posZ());
             histos.fill(HIST("CentPercentileHist"), cent);
             histos.fill(HIST("hdatazvtxcent"), collision.posZ(), cent);
             for (auto& track : tracks) {
               if (std::abs(track.eta()) < etaRange) {
                 NchTracks++;
-                histos.fill(HIST("hdatadndeta"), collision.posZ(), track.eta(), track.phi(), cent, track.pt());
+                histos.fill(HIST("CentHistInsideTrackloop"), cent);
+                histos.fill(HIST("hdatadndeta"), collision.posZ(), cent, track.eta(), track.phi());
               }
             }
             histos.fill(HIST("hdatamult"), collision.posZ(), NchTracks, cent);
@@ -378,9 +384,13 @@ struct HeavyIonMultiplicity {
           histos.fill(HIST("EventHist"), 2);
           if (RecCollision.selection_bit(kNoTimeFrameBorder)) {
             histos.fill(HIST("EventHist"), 3);
-            histos.fill(HIST("VtxZHist"), RecCollision.posZ());
             if constexpr (hasCentrality) {
               cent = RecCollision.centFT0C();
+              if (cent < 0.0 || cent > 100.0) {
+                continue;
+              }
+              histos.fill(HIST("EventHist"), 4);
+              histos.fill(HIST("VtxZHist"), RecCollision.posZ());
               histos.fill(HIST("CentPercentileMCRecHist"), cent);
               histos.fill(HIST("hmczvtxcent"), RecCollision.posZ(), cent);
 

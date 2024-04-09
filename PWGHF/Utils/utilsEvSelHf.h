@@ -171,6 +171,7 @@ void monitorCollision(Coll const& collision, const uint16_t rejectionMask, Hist&
 
   hPosXAfterEvSel->Fill(collision.posX());
   hPosYAfterEvSel->Fill(collision.posY());
+  hPosZAfterEvSel->Fill(posZ);
   hNumContributors->Fill(collision.numContrib());
 }
 } // namespace o2::hf_evsel

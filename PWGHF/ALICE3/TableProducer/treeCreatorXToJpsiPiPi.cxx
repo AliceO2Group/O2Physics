@@ -173,13 +173,13 @@ struct HfTreeCreatorXToJpsiPiPi {
     }
 
     // Filling candidate properties
-    int indexCand = 0;
+    // int indexCand = 0;
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       if (!candidate.isSelXToJpsiToMuMuPiPi()) {
         continue;
       }
-      indexCand++;
+      // indexCand++;
       auto fillTable = [&](int CandFlag,
                            int FunctionSelection,
                            float FunctionInvMass,

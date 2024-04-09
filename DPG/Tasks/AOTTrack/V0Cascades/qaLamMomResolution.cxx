@@ -27,6 +27,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/Tools/TrackTuner.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -39,9 +40,30 @@ struct qaLamMomResolution {
 
   Produces<aod::LamDaughters> lamdaughters;
 
-  Configurable<bool> collSelection{"collSelection", true, "collision selection"};
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::parameters::GRPMagField* grpmag = nullptr;
+  o2::base::MatLayerCylSet* lut = nullptr;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  OutputObj<TH1D> trackTunedTracks{TH1D("trackTunedTracks", "", 4, 0.5, 4.5), OutputObjHandlingPolicy::AnalysisObject};
+
+  TrackTuner trackTuner;
+
+  Configurable<bool> collSelection{"collSelection", true, "Apply collision selection"};
+  Configurable<bool> useTrackTuner{"useTrackTuner", false, "Apply pT/DCA corrections to MC"};
+  Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackCovMat=0|updateCurvature=1|updatePulls=0|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/PbPb2022|nameInputFile=trackTuner_DataLHC22sPass5_McLHC22l1b2_run529397.root|usePvRefitCorrections=0|oneOverPtCurrent=1|oneOverPtUpgr=1.2", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
   HistogramRegistry hist{"Histograms"};
+
+  o2::dataformats::VertexBase mVtx;
+  o2::dataformats::DCA mDcaInfoCovPos;
+  o2::dataformats::DCA mDcaInfoCovNeg;
+  o2::track::TrackParametrizationWithError<float> mTrackParCovPos;
+  o2::track::TrackParametrizationWithError<float> mTrackParCovNeg;
+
+  int runNumber = 0;
 
   int LambdaPDG = 3122;
   int AntiLambdaPDG = -3122;
@@ -82,6 +104,63 @@ struct qaLamMomResolution {
     auto hEventSelectionFlow = hist.add<TH1>("hEventSelectionFlow", "Event selection flow", kTH1F, {{2, 0.5f, 2.5f}});
     hEventSelectionFlow->GetXaxis()->SetBinLabel(hEventSelectionFlow->FindBin(1), "Sel8");
     hEventSelectionFlow->GetXaxis()->SetBinLabel(hEventSelectionFlow->FindBin(2), "|Vtx_{z}|<10cm");
+
+    if (useTrackTuner) {
+      ccdb->setURL(ccdburl);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setFatalWhenNull(false);
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+      std::string outputStringParams = trackTuner.configParams(trackTunerParams);
+      trackTuner.getDcaGraphs();
+      // QA is done in tuneTrackParams method
+      trackTunedTracks->SetTitle(outputStringParams.c_str());
+      trackTunedTracks->GetXaxis()->SetBinLabel(1, "all tracks");
+      trackTunedTracks->GetXaxis()->SetBinLabel(2, "tracks tuned (no negative detXY)");
+      trackTunedTracks->GetXaxis()->SetBinLabel(3, "untouched tracks due to negative detXY");
+      trackTunedTracks->GetXaxis()->SetBinLabel(4, "original detXY<0");
+    }
+  }
+
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (runNumber == bc.runNumber()) {
+      return;
+    }
+    grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, bc.timestamp());
+    if (!grpmag) {
+      LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath;
+    }
+    LOG(info) << "Setting magnetic field to current " << grpmag->getL3Current() << " A for run " << bc.runNumber() << " from its GRPMagField CCDB object";
+    o2::base::Propagator::initFieldFromGRP(grpmag);
+    o2::base::Propagator::Instance()->setMatLUT(lut);
+    runNumber = bc.runNumber();
+  }
+
+  template <typename TV0, typename TV0Track>
+  void tuneV0(TV0 const& v0,
+              TV0Track const& posTrack,
+              TV0Track const& negTrack,
+              aod::McParticles const&,
+              aod::BCsWithTimestamps const& bcs)
+  {
+    initCCDB(bcs.begin());
+    trackTunedTracks->Fill(1, 2); // tune 2 tracks
+    setTrackParCov(posTrack, mTrackParCovPos);
+    setTrackParCov(negTrack, mTrackParCovNeg);
+    mTrackParCovPos.setPID(posTrack.pidForTracking());
+    mTrackParCovNeg.setPID(negTrack.pidForTracking());
+    mDcaInfoCovPos.set(999, 999, 999, 999, 999);
+    mDcaInfoCovNeg.set(999, 999, 999, 999, 999);
+    auto mcParticlePos = posTrack.mcParticle();
+    auto mcParticleNeg = negTrack.mcParticle();
+
+    trackTuner.tuneTrackParams(mcParticlePos, mTrackParCovPos, matCorr, &mDcaInfoCovPos, trackTunedTracks);
+    trackTuner.tuneTrackParams(mcParticleNeg, mTrackParCovNeg, matCorr, &mDcaInfoCovNeg, trackTunedTracks);
+    mVtx.setPos({v0.x(), v0.y(), v0.z()});
+    mVtx.setCov(v0.positionCovMat()[0], v0.positionCovMat()[1], v0.positionCovMat()[2], v0.positionCovMat()[3], v0.positionCovMat()[4], v0.positionCovMat()[5]);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCovPos, 2.f, matCorr, &mDcaInfoCovPos);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, mTrackParCovNeg, 2.f, matCorr, &mDcaInfoCovNeg);
   }
 
   template <typename TCollision>
@@ -158,7 +237,8 @@ struct qaLamMomResolution {
   void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
                  V0DatasLabeled const& V0Datas,
                  aod::McParticles const& mcparticles,
-                 MyTracks const&)
+                 MyTracks const&,
+                 aod::BCsWithTimestamps const& bcs)
   {
 
     // event selection
@@ -218,6 +298,18 @@ struct qaLamMomResolution {
               // get daughter momenta at IU, charge, eta, nTPCclusters
               getTrackInfo(protonTrackIU, pionTrackIU);
 
+              // use track tuner to tune daughter tracks' pT
+              if (useTrackTuner) {
+                tuneV0(v0data, protonTrackIU, pionTrackIU, mcparticles, bcs);
+                std::array<float, 3> pPos{0., 0., 0.};
+                std::array<float, 3> pNeg{0., 0., 0.};
+                mTrackParCovPos.getPxPyPzGlo(pPos);
+                mTrackParCovNeg.getPxPyPzGlo(pNeg);
+                massLambda = RecoDecay::m(std::array{std::array{pPos[0], pPos[1], pPos[2]},
+                                                     std::array{pNeg[0], pNeg[1], pNeg[2]}},
+                                          std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+              }
+
               // fill table
               fillTable(collision);
             }
@@ -265,6 +357,18 @@ struct qaLamMomResolution {
 
               // get daughter momenta at IU, charge, eta, nTPCclusters
               getTrackInfo(protonTrackIU, pionTrackIU);
+
+              // use track tuner to tune daughter tracks' pT
+              if (useTrackTuner) {
+                tuneV0(v0data, pionTrackIU, protonTrackIU, mcparticles, bcs);
+                std::array<float, 3> pPos{0., 0., 0.};
+                std::array<float, 3> pNeg{0., 0., 0.};
+                mTrackParCovPos.getPxPyPzGlo(pPos);
+                mTrackParCovNeg.getPxPyPzGlo(pNeg);
+                massLambda = RecoDecay::m(std::array{std::array{pPos[0], pPos[1], pPos[2]},
+                                                     std::array{pNeg[0], pNeg[1], pNeg[2]}},
+                                          std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton});
+              }
 
               // fill table
               fillTable(collision);

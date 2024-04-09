@@ -87,6 +87,7 @@ struct k892analysis {
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<float> cfgRCRFC{"cfgRCRFC", 0.8f, "Crossed Rows to Findable Clusters"};
+  Configurable<bool> allmanualcuts{"allmanualcuts", false, "All manual cuts without using track selection table"};
 
   // Event selection cuts - Alex (Temporary, need to fix!)
   TF1* fMultPVCutLow = nullptr;
@@ -235,14 +236,33 @@ struct k892analysis {
       return false;
     if (cfgPVContributor && !track.isPVContributor())
       return false;
-    if (!manualtrkselcuts) {
-      if (cfgPrimaryTrack && !track.isPrimaryTrack())
-        return false;
-    } else if (manualtrkselcuts) {
-      if (!(track.isGlobalTrackWoDCA() &&
-            track.itsNCls() > cfgITScluster && track.tpcNClsFound() > cfgTPCcluster && track.tpcCrossedRowsOverFindableCls() > cfgRCRFC)) {
-        return false; // condition is like \bar{A.B} = \bar{A} + \bar{B} (+ is or, . is and)
+    if (!allmanualcuts) {
+      if (!manualtrkselcuts) {
+        // if (cfgPrimaryTrack && !track.isPrimaryTrack())
+        //   return false;
+        if (!track.isGlobalTrack())
+          return false;
+      } else if (manualtrkselcuts) {
+        if (!(track.isGlobalTrackWoDCA() &&
+              track.itsNCls() > cfgITScluster && track.tpcNClsFound() > cfgTPCcluster && track.tpcCrossedRowsOverFindableCls() > cfgRCRFC)) {
+          return false; // condition is like \bar{A.B} = \bar{A} + \bar{B} (+ is or, . is and)
+        }
       }
+    } else {
+      if (track.itsNCls() < cfgITScluster)
+        return false;
+      if (track.tpcNClsFound() < cfgTPCcluster)
+        return false;
+      if (track.tpcCrossedRowsOverFindableCls() < cfgRCRFC)
+        return false;
+      if (track.itsChi2NCl() >= 36)
+        return false;
+      if (track.tpcChi2NCl() >= 4)
+        return false;
+      if (!track.passedITSRefit())
+        return false;
+      if (!track.passedTPCRefit())
+        return false;
     }
 
     return true;
@@ -330,7 +350,7 @@ struct k892analysis {
     }
 
     TLorentzVector lDecayDaughter1, lDecayDaughter2, lResonance;
-    for (auto& [trk1, trk2] : combinations(CombinationsUpperIndexPolicy(dTracks1, dTracks2))) {
+    for (auto& [trk1, trk2] : combinations(CombinationsFullIndexPolicy(dTracks1, dTracks2))) {
 
       // Full index policy is needed to consider all possible combinations
       if (trk1.index() == trk2.index())
@@ -415,7 +435,7 @@ struct k892analysis {
       lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massKa);
       lResonance = lDecayDaughter1 + lDecayDaughter2;
       // Rapidity cut
-      if (abs(lResonance.Rapidity()) > 0.5)
+      if (abs(lResonance.Rapidity()) >= 0.5)
         continue;
       //// Un-like sign pair only
       if (trk1.sign() * trk2.sign() < 0) {
@@ -448,7 +468,7 @@ struct k892analysis {
           histos.fill(HIST("QAMCTrue/trkDCAz_ka"), trk2.dcaZ());
 
           // MC histograms
-          if (trk1.motherPDG() > 0) {
+          if (trk1.motherPDG() < 0) {
             histos.fill(HIST("k892Rec"), lResonance.Pt(), multiplicity);
             histos.fill(HIST("k892Recinvmass"), lResonance.M());
             histos.fill(HIST("h3Reck892invmass"), multiplicity, lResonance.Pt(), lResonance.M());
@@ -493,7 +513,7 @@ struct k892analysis {
     for (auto& part : resoParents) {  // loop over all pre-filtered MC particles
       if (abs(part.pdgCode()) != 313) // K892(0)
         continue;
-      if (abs(part.y()) > 0.5) { // rapidity cut
+      if (abs(part.y()) >= 0.5) { // rapidity cut
         continue;
       }
       bool pass1 = false;

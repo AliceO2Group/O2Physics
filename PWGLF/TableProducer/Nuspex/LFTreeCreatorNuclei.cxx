@@ -61,18 +61,19 @@ struct LfTreeCreatorNuclei {
       LOGF(fatal, "Cannot enable processData and processMC at the same time. Please choose one.");
     }
 
-    hEvents.add("eventSelection", "eventSelection", kTH1D, {{5, -0.5, 4.5}});
+    hEvents.add("eventSelection", "eventSelection", kTH1D, {{6, -0.5, 5.5}});
     auto h = hEvents.get<TH1>(HIST("eventSelection"));
     h->GetXaxis()->SetBinLabel(1, "total");
     h->GetXaxis()->SetBinLabel(2, "sel8");
-    h->GetXaxis()->SetBinLabel(3, "z-vertex");
-    h->GetXaxis()->SetBinLabel(4, "not empty");
-    h->GetXaxis()->SetBinLabel(5, "With a good track");
+    h->GetXaxis()->SetBinLabel(3, "TFborder");
+    h->GetXaxis()->SetBinLabel(4, "z-vertex");
+    h->GetXaxis()->SetBinLabel(5, "not empty");
+    h->GetXaxis()->SetBinLabel(6, "With a good track");
     customTrackSelection = myTrackSelection();
   }
 
   // track
-  Configurable<float> yCut{"yMin", 1.f, "Rapidity cut"};
+  Configurable<float> yCut{"yCut", 1.f, "Rapidity cut"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8f, "Eta range for tracks"};
@@ -89,6 +90,7 @@ struct LfTreeCreatorNuclei {
   Configurable<float> cfgHighCutVertex{"cfgHighCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgLowCutVertex{"cfgLowCutVertex", -10.0f, "Accepted z-vertex range"};
   Configurable<bool> useEvsel{"useEvsel", true, "Use sel8 for run3 Event Selection"};
+  Configurable<bool> removeTFBorder{"removeTFBorder", true, "Remove TimeFrame border"};
   Configurable<bool> doSkim{"doSkim", false, "Save events that contains only selected tracks (for filtered mode)"};
 
   // custom track cut
@@ -303,17 +305,20 @@ struct LfTreeCreatorNuclei {
         continue;
       }
       hEvents.fill(HIST("eventSelection"), 1);
-      if (collision.posZ() >= cfgHighCutVertex && collision.posZ() <= cfgLowCutVertex)
+      if (removeTFBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         continue;
       hEvents.fill(HIST("eventSelection"), 2);
+      if (collision.posZ() >= cfgHighCutVertex && collision.posZ() <= cfgLowCutVertex)
+        continue;
+      hEvents.fill(HIST("eventSelection"), 3);
       const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
       if (doSkim && tracksInCollision.size() == 0)
         continue;
-      hEvents.fill(HIST("eventSelection"), 3);
+      hEvents.fill(HIST("eventSelection"), 4);
       if (doSkim && (trackSelType.value == 3) && !checkQuality<false>(collision, tracksInCollision))
         continue;
       fillForOneEvent<false>(collision, tracksInCollision);
-      hEvents.fill(HIST("eventSelection"), 4);
+      hEvents.fill(HIST("eventSelection"), 5);
     }
   }
 
@@ -328,9 +333,12 @@ struct LfTreeCreatorNuclei {
         continue;
       }
       hEvents.fill(HIST("eventSelection"), 1);
-      if (collision.posZ() >= cfgHighCutVertex && collision.posZ() <= cfgLowCutVertex)
+      if (removeTFBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
         continue;
       hEvents.fill(HIST("eventSelection"), 2);
+      if (collision.posZ() >= cfgHighCutVertex && collision.posZ() <= cfgLowCutVertex)
+        continue;
+      hEvents.fill(HIST("eventSelection"), 3);
       const auto& tracksInCollision = tracks.sliceBy(perCollision, collision.globalIndex());
       fillForOneEvent<true>(collision, tracksInCollision);
     }

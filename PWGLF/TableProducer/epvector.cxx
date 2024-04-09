@@ -66,7 +66,7 @@ struct epvector {
   // Configurables.
   struct : ConfigurableGroup {
     Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-    Configurable<int> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
+    Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
 
   // Enable access to the CCDB for the offset and correction constants and save them in dedicated variables.
@@ -94,8 +94,10 @@ struct epvector {
   // Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> useGainCallib{"useGainCallib", true, "use gain calibration"};
   Configurable<bool> useRecentere{"useRecentere", true, "use Recentering"};
+  Configurable<bool> useShift{"useShift", false, "use Shift"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/s/skundu/My/Object/test100", "Path to gain calibration"};
   Configurable<std::string> ConfRecentere{"ConfRecentere", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for recentere"};
+  Configurable<std::string> ConfShift{"ConfShift", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for Shift"};
 
   // Event selection cuts - Alex
   TF1* fMultPVCutLow = nullptr;
@@ -110,11 +112,13 @@ struct epvector {
     AxisSpec multiplicity = {5000, -500, 500, "TPC Multiplicity"};
     AxisSpec amplitudeFT0 = {5000, 0, 10000, "FT0 amplitude"};
     AxisSpec channelFT0Axis = {220, 0.0, 220.0, "FT0 channel"};
-    AxisSpec qxFT0Axis = {2000, -100.0, 100.0, "Qx"};
-    AxisSpec qyFT0Axis = {2000, -100.0, 100.0, "Qy"};
+    AxisSpec qxFT0Axis = {80000, -10000.0, 10000.0, "Qx"};
+    AxisSpec qyFT0Axis = {80000, -10000.0, 10000.0, "Qy"};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec vzAxis = {400, -20, 20, "vz"};
     AxisSpec resAxis = {400, -2, 2, "vz"};
+    AxisSpec shiftAxis = {10, 0, 10, "shift"};
+    AxisSpec basisAxis = {2, 0, 2, "basis"};
 
     histos.add("hCentrality", "hCentrality", kTH1F, {{8, 0, 80.0}});
     histos.add("Vz", "Vz", kTH1F, {{400, -20.0, 20.0}});
@@ -137,6 +141,8 @@ struct epvector {
     histos.add("ResFT0CTPC", "ResFT0CTPC", kTH2F, {centAxis, resAxis});
     histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH2F, {centAxis, resAxis});
     histos.add("ResFT0ATPC", "ResFT0ATPC", kTH2F, {centAxis, resAxis});
+
+    histos.add("ShiftFT0C", "ShiftFT0C", kTProfile3D, {centAxis, basisAxis, shiftAxis});
 
     // Event selection cut additional - Alex
     // if (additionalEvsel) {
@@ -224,6 +230,7 @@ struct epvector {
   int lastRunNumber = -999;
   TProfile* gainprofile;
   TH2D* hrecentere;
+  TProfile3D* shiftprofile;
 
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
@@ -329,6 +336,19 @@ struct epvector {
       psiTPC = 0.5 * TMath::ATan2(qyTPC, qxTPC);
       psiTPCL = 0.5 * TMath::ATan2(qyTPCL, qxTPCL);
       psiTPCR = 0.5 * TMath::ATan2(qyTPCR, qxTPCR);
+
+      if (useShift && (currentRunNumber != lastRunNumber)) {
+        shiftprofile = ccdb->getForTimeStamp<TProfile3D>(ConfShift.value, bc.timestamp());
+      }
+      if (useShift) {
+        auto deltapsiFT0C = 0.0;
+        for (int ishift = 1; ishift <= 10; ishift++) {
+          auto coeffshiftxFT0C = shiftprofile->GetBinContent(shiftprofile->FindBin(centrality, 0.5, ishift - 0.5));
+          auto coeffshiftyFT0C = shiftprofile->GetBinContent(shiftprofile->FindBin(centrality, 1.5, ishift - 0.5));
+          deltapsiFT0C = deltapsiFT0C + ((1 / (1.0 * ishift)) * (-coeffshiftxFT0C * TMath::Cos(ishift * 2.0 * psiFT0C) + coeffshiftyFT0C * TMath::Sin(ishift * 2.0 * psiFT0C)));
+        }
+        psiFT0C = psiFT0C + deltapsiFT0C;
+      }
       histos.fill(HIST("QxFT0C"), centrality, qxFT0C);
       histos.fill(HIST("QyFT0C"), centrality, qyFT0C);
       histos.fill(HIST("QxFT0A"), centrality, qxFT0A);
@@ -348,6 +368,11 @@ struct epvector {
       histos.fill(HIST("ResFT0CTPC"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPC)));
       histos.fill(HIST("ResFT0CFT0A"), centrality, TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
       histos.fill(HIST("ResFT0ATPC"), centrality, TMath::Cos(2.0 * (psiTPC - psiFT0A)));
+
+      for (int ishift = 1; ishift <= 10; ishift++) {
+        histos.fill(HIST("ShiftFT0C"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * psiFT0C));
+        histos.fill(HIST("ShiftFT0C"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 2.0 * psiFT0C));
+      }
       lastRunNumber = currentRunNumber;
     }
     epcalibrationtable(triggerevent, centrality, psiFT0C, psiFT0A, psiTPC, psiTPCL, psiTPCR);

@@ -45,34 +45,34 @@ void BookBaseList()
                                     Form("fRunNumber = %s", tc.fRunNumber.Data()));
 
   fBasePro->GetXaxis()->SetBinLabel(eDryRun, "fDryRun");
-  fBasePro->Fill(eDryRun - 0.5, (Int_t)tc.fDryRun);
+  fBasePro->Fill(+eDryRun - 0.5, (Int_t)tc.fDryRun);
 
   fBasePro->GetXaxis()->SetBinLabel(eVerbose, "fVerbose");
-  fBasePro->Fill(eVerbose - 0.5, (Int_t)tc.fVerbose);
+  fBasePro->Fill(+eVerbose - 0.5, (Int_t)tc.fVerbose);
 
   fBasePro->GetXaxis()->SetBinLabel(eVerboseForEachParticle, "fVerboseForEachParticle");
-  fBasePro->Fill(eVerboseForEachParticle - 0.5, (Int_t)tc.fVerboseForEachParticle);
+  fBasePro->Fill(+eVerboseForEachParticle - 0.5, (Int_t)tc.fVerboseForEachParticle);
 
   fBasePro->GetXaxis()->SetBinLabel(eDoAdditionalInsanityChecks, "fDoAdditionalInsanityChecks");
-  fBasePro->Fill(eDoAdditionalInsanityChecks - 0.5, (Int_t)tc.fDoAdditionalInsanityChecks);
+  fBasePro->Fill(+eDoAdditionalInsanityChecks - 0.5, (Int_t)tc.fDoAdditionalInsanityChecks);
 
   fBasePro->GetXaxis()->SetBinLabel(eUseCCDB, "fUseCCDB");
-  fBasePro->Fill(eUseCCDB - 0.5, (Int_t)tc.fUseCCDB);
+  fBasePro->Fill(+eUseCCDB - 0.5, (Int_t)tc.fUseCCDB);
 
   fBasePro->GetXaxis()->SetBinLabel(eWhichProcess,
                                     Form("WhichProcess = %s", tc.fWhichProcess.Data()));
 
   fBasePro->GetXaxis()->SetBinLabel(eRandomSeed, "fRandomSeed");
-  fBasePro->Fill(eRandomSeed - 0.5, (Int_t)tc.fRandomSeed);
+  fBasePro->Fill(+eRandomSeed - 0.5, (Int_t)tc.fRandomSeed);
 
   fBasePro->GetXaxis()->SetBinLabel(eUseFisherYates, "fUseFisherYates");
-  fBasePro->Fill(eUseFisherYates - 0.5, (Int_t)tc.fUseFisherYates);
+  fBasePro->Fill(+eUseFisherYates - 0.5, (Int_t)tc.fUseFisherYates);
 
   fBasePro->GetXaxis()->SetBinLabel(eFixedNumberOfRandomlySelectedTracks, "fFixedNumberOfRandomlySelectedTracks");
-  fBasePro->Fill(eFixedNumberOfRandomlySelectedTracks - 0.5, (Int_t)tc.fFixedNumberOfRandomlySelectedTracks);
+  fBasePro->Fill(+eFixedNumberOfRandomlySelectedTracks - 0.5, (Int_t)tc.fFixedNumberOfRandomlySelectedTracks);
 
   fBasePro->GetXaxis()->SetBinLabel(eUseStopwatch, "fUseStopwatch");
-  fBasePro->Fill(eUseStopwatch - 0.5, (Int_t)tc.fUseStopwatch);
+  fBasePro->Fill(+eUseStopwatch - 0.5, (Int_t)tc.fUseStopwatch);
 
   fBaseList->Add(fBasePro);
 
@@ -870,11 +870,11 @@ void BookEventCutsHistograms()
 
   ec.fEventCutsPro->GetXaxis()->SetBinLabel(eTrigger, Form("fTrigger = %s", ec.fTrigger.Data()));
   ec.fEventCutsPro->GetXaxis()->SetBinLabel(eUseTrigger, "fUseTrigger");
-  ec.fEventCutsPro->Fill(eUseTrigger - 0.5, (Int_t)ec.fUseTrigger);
+  ec.fEventCutsPro->Fill(+eUseTrigger - 0.5, (Int_t)ec.fUseTrigger);
   ec.fEventCutsPro->GetXaxis()->SetBinLabel(eUseSel7, "fUseSel7");
-  ec.fEventCutsPro->Fill(eUseSel7 - 0.5, (Int_t)ec.fUseSel7);
+  ec.fEventCutsPro->Fill(+eUseSel7 - 0.5, (Int_t)ec.fUseSel7);
   ec.fEventCutsPro->GetXaxis()->SetBinLabel(eUseSel8, "fUseSel8");
-  ec.fEventCutsPro->Fill(eUseSel8 - 0.5, (Int_t)ec.fUseSel8);
+  ec.fEventCutsPro->Fill(+eUseSel8 - 0.5, (Int_t)ec.fUseSel8);
   ec.fEventCutsPro->GetXaxis()->SetBinLabel(eCentralityEstimator, Form("fCentralityEstimator = %s", ec.fCentralityEstimator.Data()));
 
   ec.fEventCutsList->Add(ec.fEventCutsPro);

@@ -540,6 +540,7 @@ struct reso2initializer {
                     casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
                     casc.dcaXYCascToPV(),
                     casc.dcaZCascToPV(),
+                    casc.sign(),
                     casc.mXi(),
                     casc.v0radius(), casc.cascradius(), casc.x(), casc.y(), casc.z());
       if constexpr (isMC) {
@@ -879,7 +880,7 @@ struct reso2initializer {
     }
     // MC histograms
     if (doprocessMCGenCount) {
-      AxisSpec EvtClassAxis = {kECend - 1, kECbegin + 0.5, kECend - 0.5, "", "event class"};
+      AxisSpec EvtClassAxis = {kECend - 1, +kECbegin + 0.5, +kECend - 0.5, "", "event class"};
       AxisSpec ZAxis = {CfgVtxBins, "zaxis"};
       AxisSpec CentAxis = {binsCent, "centrality"};
       qaRegistry.add("Event/totalEventGenMC", "totalEventGenMC", {HistType::kTHnSparseF, {EvtClassAxis}});

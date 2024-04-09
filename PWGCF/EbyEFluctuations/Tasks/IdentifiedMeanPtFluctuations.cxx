@@ -254,10 +254,10 @@ struct IdentifiedMeanPtFluctuations {
     double Q1pi = 0, Q2pi = 0;
     double Q1k = 0, Q2k = 0;
     double Q1p = 0, Q2p = 0;
-    double var1, var2, twopar_allcharge;
-    double var1pi, var2pi;
-    double var1k, var2k;
-    double var1p, var2p;
+    double var1 = 0, var2 = 0, twopar_allcharge = 0;
+    double var1pi = 0, var2pi = 0;
+    double var1k = 0, var2k = 0;
+    double var1p = 0, var2p = 0;
     //  cent = 0;
 
     // sampling

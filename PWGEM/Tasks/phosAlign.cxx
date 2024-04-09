@@ -129,12 +129,13 @@ struct phosAlign {
     mHistManager.add("hdXvsX", "dx(x), all tracks", HistType::kTH3F, {axisdX, axisX, axisModes});
     mHistManager.add("hdZvsZ_plus", "dz(z), pos tracks", HistType::kTH3F, {axisdZ, axisZ, axisModes});
     mHistManager.add("hdXvsX_plus", "dx(x), pos tracks", HistType::kTH3F, {axisdX, axisX, axisModes});
-    mHistManager.add("hdZvsZ_minus", "dz(z), neg tracks", HistType::kTH3F, {axisdZ, axisdZ, axisModes});
+    mHistManager.add("hdZvsZ_minus", "dz(z), neg tracks", HistType::kTH3F, {axisdZ, axisZ, axisModes});
     mHistManager.add("hdXvsX_minus", "dx(x), neg tracks", HistType::kTH3F, {axisdX, axisX, axisModes});
     mHistManager.add("hdZvsZEl", "dz(z), el tracks", HistType::kTH3F, {axisdZ, axisZ, axisModes});
     mHistManager.add("hdXvsXEl", "dx(x), el tracks", HistType::kTH3F, {axisdX, axisX, axisModes});
     mHistManager.add("hdXdZE", "dx,dz,E_{clu}", HistType::kTH3F, {axisdX, axisdX, axisEpEclu});
     mHistManager.add("hdXdZp", "dx,dz,p_{tr}", HistType::kTH3F, {axisdX, axisdX, axisP});
+    mHistManager.add("hXYZ", "xyz", HistType::kTH3F, {{200, -300., 300.}, {100, -500, -250.}, {200, -150., 150.}});
 
     // mHistManager.add("hdXvsXvsEElM1", "dz(z), el tracks", HistType::kTH3F, {axisdX, axisX, axisEpEclu});
     // mHistManager.add("hdXvsXvsEElM2", "dz(z), el tracks", HistType::kTH3F, {axisdX, axisX, axisEpEclu});
@@ -408,6 +409,7 @@ struct phosAlign {
     posG[1] = trackPar.getY() * ca + trackPar.getX() * sa;
     posG[2] = trackPar.getZ();
 
+    mHistManager.fill(HIST("hXYZ"), posG[0], posG[1], posG[2]);
     geomPHOS->getAlignmentMatrix(module)->MasterToLocal(posG, posL);
     trackX = posL[0];
     trackZ = posL[1];
