@@ -184,9 +184,11 @@ struct HfCorrelatorD0Hadrons {
   Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<float> ptSoftPionMax{"ptSoftPionMax", 3 * 800. * pow(10., -6.), "max. pT cut for soft pion identification"};
-
+  Configurable<int> findLeadingParticleSwitch{"FindLeadingParticleSwitch", 0, "Find Leading Particle Switch"};
+  Configurable<int> correlationD0LeadingParticle{"CorrelationD0LeadingParticle", 0, "Correlation D0 Leading Particle witch"};
   HfHelper hfHelper;
-
+  
+  int leadingIndex = 0;
   double massD0{0.};
   double massPi{0.};
   double massK{0.};
@@ -262,8 +264,24 @@ struct HfCorrelatorD0Hadrons {
     // mass histogram for D0bar background candidates only
     registry.add("hMassD0barRecBg", "D0bar background candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCountD0TriggersGen", "D0 trigger particles - MC gen;;N of trigger D0", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    // leading partical information 
+    registry.add("hLeadingParticalD0","deltaPhi deltaEta leadingPt D0Pt poolbin",{HistType::kTHnF,{{32,0.,o2::constants::math::TwoPI},{100,-2.,2.},{180,0.,18.},{180,0.,18.},{1000,0,1000}}});
   }
-
+  //Find Leading Particle
+  int findLeadingParticle(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision, 
+                                  aod::TracksWDca const& tracks)
+  {
+   auto leadingParticle = tracks.begin();
+   for (auto const& track : tracks) {
+      if (std::abs(track.dcaXY()) >= 1. || std::abs(track.dcaZ()) >= 1.)
+          continue;
+      if (track.pt() > leadingParticle.pt()) {
+        leadingParticle = track;
+      }
+   }
+   int leadingIndex = leadingParticle.globalIndex();
+   return leadingIndex;
+  }  
   // =======  Process starts for Data, Same event ============
 
   /// D0-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
@@ -275,6 +293,11 @@ struct HfCorrelatorD0Hadrons {
     if (selectedD0Candidates.size() == 0) {
       return;
     }
+    //find leading particle
+    if(findLeadingParticleSwitch){                    
+      leadingIndex = findLeadingParticle( collision , tracks);
+    }
+
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFV0M()));
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -337,7 +360,14 @@ struct HfCorrelatorD0Hadrons {
       registry.fill(HIST("hY"), hfHelper.yD0(candidate1));
       registry.fill(HIST("hSelectionStatus"), candidate1.isSelD0bar() + (candidate1.isSelD0() * 2));
       registry.fill(HIST("hD0Bin"), poolBin);
-
+      //====================correlation D0 leading particle===============================
+      if(correlationD0LeadingParticle){
+        for (auto const& track : tracks){
+          if(track.globalIndex() == leadingIndex ){
+            registry.fill(HIST("hLeadingParticalD0"), getDeltaPhi(track.phi(), candidate1.phi()),track.eta() - candidate1.eta(),track.pt(),candidate1.pt(),poolBin);
+          }
+        }
+      }
       // ============ D-h correlation dedicated section ==================================
 
       // ========================== track loop starts here ================================
