@@ -102,6 +102,16 @@ struct tpcPidFull {
   Configurable<int> pidTr{"pid-tr", -1, {"Produce PID information for the Triton mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidHe{"pid-he", -1, {"Produce PID information for the Helium3 mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
   Configurable<int> pidAl{"pid-al", -1, {"Produce PID information for the Alpha mass hypothesis, overrides the automatic setup: the corresponding table can be set off (0) or on (1)"}};
+  Configurable<int> useNetworkEl{"useNetworkEl", 1, {"Switch for applying neural network on the electron mass hypothesis (if network enabled) (set to 0 to disable)"}};
+  Configurable<int> useNetworkMu{"useNetworkMu", 1, {"Switch for applying neural network on the muon mass hypothesis (if network enabled) (set to 0 to disable)"}};
+  Configurable<int> useNetworkPi{"useNetworkPi", 1, {"Switch for applying neural network on the pion mass hypothesis (if network enabled) (set to 0 to disable)"}};
+  Configurable<int> useNetworkKa{"useNetworkKa", 1, {"Switch for applying neural network on the kaon mass hypothesis (if network enabled) (set to 0 to disable)"}};
+  Configurable<int> useNetworkPr{"useNetworkPr", 1, {"Switch for applying neural network on the proton mass hypothesis (if network enabled) (set to 0 to disable)"}};
+  Configurable<int> useNetworkDe{"useNetworkDe", 1, {"Switch for applying neural network on the deuteron mass hypothesis (if network enabled) (set to 0 to disable)"}};
+  Configurable<int> useNetworkTr{"useNetworkTr", 1, {"Switch for applying neural network on the triton mass hypothesis (if network enabled) (set to 0 to disable)"}};
+  Configurable<int> useNetworkHe{"useNetworkHe", 1, {"Switch for applying neural network on the helium3 mass hypothesis (if network enabled) (set to 0 to disable)"}};
+  Configurable<int> useNetworkAl{"useNetworkAl", 1, {"Switch for applying neural network on the alpha mass hypothesis (if network enabled) (set to 0 to disable)"}};
+  Configurable<float> networkBetaGammaCutoff{"networkBetaGammaCutoff", 0.45, {"Lower value of beta-gamma to override the NN application"}};
 
   // Paramatrization configuration
   bool useCCDBParam = false;
@@ -207,7 +217,7 @@ struct tpcPidFull {
   Partition<Trks> tracksWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
 
   void process(Coll const& collisions, Trks const& tracks,
-               aod::BCsWithTimestamps const&)
+               aod::BCsWithTimestamps const& bcs)
   {
 
     const uint64_t outTable_size = tracks.size();
@@ -235,7 +245,7 @@ struct tpcPidFull {
 
       auto start_network_total = std::chrono::high_resolution_clock::now();
       if (autofetchNetworks) {
-        auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
+        auto bc = bcs.begin();
         // Initialise correct TPC response object before NN setup (for NCl normalisation)
         if (useCCDBParam && ccdbTimestamp.value == 0 && !ccdb->isCachedObjectValid(ccdbPath.value, bc.timestamp())) { // Updating parametrisation only if the initial timestamp is 0
           if (recoPass.value == "") {
@@ -298,7 +308,7 @@ struct tpcPidFull {
           track_properties[counter_track_props + 1] = trk.tgl();
           track_properties[counter_track_props + 2] = trk.signed1Pt();
           track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
-          track_properties[counter_track_props + 4] = collisions.iteratorAt(trk.collisionId()).multTPC() / 11000.;
+          track_properties[counter_track_props + 4] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).multTPC() / 11000. : 1.; // Dummy value in case no associated collision
           track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
           counter_track_props += input_dimensions;
         }
@@ -347,7 +357,7 @@ struct tpcPidFull {
         }
       }
       // Check and fill enabled tables
-      auto makeTable = [&trk, &collisions, &network_prediction, &count_tracks, &tracksForNet_size, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid) {
+      auto makeTable = [&trk, &collisions, &network_prediction, &count_tracks, &tracksForNet_size, this](const Configurable<int>& flag, auto& table, const o2::track::PID::ID pid, bool speciesApplicationFlag) {
         if (flag.value != 1) {
           return;
         }
@@ -362,13 +372,14 @@ struct tpcPidFull {
           }
         }
         auto expSignal = response->GetExpectedSignal(trk, pid);
-        auto expSigma = response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid);
-        if (expSignal < 0. || expSigma < 0.) { // skip if expected signal invalid
+        auto expSigma = trk.has_collision() ? response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid) : 0.07 * expSignal; // use default sigma value of 7% if no collision information to estimate resolution
+        if (expSignal < 0. || expSigma < 0.) {                                                                                                   // skip if expected signal invalid
           table(-999.f, -999.f);
           return;
         }
+        float bg = trk.tpcInnerParam() / o2::track::pid_constants::sMasses[pid]; // estimated beta-gamma for network cutoff
 
-        if (useNetworkCorrection) {
+        if (useNetworkCorrection && speciesApplicationFlag && trk.has_collision() && bg > networkBetaGammaCutoff) {
 
           // Here comes the application of the network. The output--dimensions of the network dtermine the application: 1: mean, 2: sigma, 3: sigma asymmetric
           // For now only the option 2: sigma will be used. The other options are kept if there would be demand later on
@@ -395,15 +406,15 @@ struct tpcPidFull {
         }
       };
 
-      makeTable(pidEl, tablePIDEl, o2::track::PID::Electron);
-      makeTable(pidMu, tablePIDMu, o2::track::PID::Muon);
-      makeTable(pidPi, tablePIDPi, o2::track::PID::Pion);
-      makeTable(pidKa, tablePIDKa, o2::track::PID::Kaon);
-      makeTable(pidPr, tablePIDPr, o2::track::PID::Proton);
-      makeTable(pidDe, tablePIDDe, o2::track::PID::Deuteron);
-      makeTable(pidTr, tablePIDTr, o2::track::PID::Triton);
-      makeTable(pidHe, tablePIDHe, o2::track::PID::Helium3);
-      makeTable(pidAl, tablePIDAl, o2::track::PID::Alpha);
+      makeTable(pidEl, tablePIDEl, o2::track::PID::Electron, useNetworkEl);
+      makeTable(pidMu, tablePIDMu, o2::track::PID::Muon, useNetworkMu);
+      makeTable(pidPi, tablePIDPi, o2::track::PID::Pion, useNetworkPi);
+      makeTable(pidKa, tablePIDKa, o2::track::PID::Kaon, useNetworkKa);
+      makeTable(pidPr, tablePIDPr, o2::track::PID::Proton, useNetworkPr);
+      makeTable(pidDe, tablePIDDe, o2::track::PID::Deuteron, useNetworkDe);
+      makeTable(pidTr, tablePIDTr, o2::track::PID::Triton, useNetworkTr);
+      makeTable(pidHe, tablePIDHe, o2::track::PID::Helium3, useNetworkHe);
+      makeTable(pidAl, tablePIDAl, o2::track::PID::Alpha, useNetworkAl);
 
       if (trk.hasTPC() && (!skipTPCOnly || trk.hasITS() || trk.hasTRD() || trk.hasTOF())) {
         count_tracks++; // Increment network track counter only if track has TPC, and (not skipping TPConly) or (is not TPConly)
