@@ -243,14 +243,14 @@ struct femtoUniversePairTaskTrackV0Extended {
 
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+      // track cleaning
+      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+        continue;
+      }
       if (ConfIsCPR.value) {
         if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
           continue;
         }
-      }
-      // track cleaning
-      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-        continue;
       }
       /// PID using stored binned nsigma
       if (!IsParticleCombined(p1, ConfTrackChoicePartOne))
@@ -299,14 +299,14 @@ struct femtoUniversePairTaskTrackV0Extended {
 
     /// Now build the combinations
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+      // track cleaning
+      if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
+        continue;
+      }
       if (ConfIsCPR.value) {
         if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
           continue;
         }
-      }
-      // track cleaning
-      if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
-        continue;
       }
       const auto& posChild1 = parts.iteratorAt(p1.index() - 2);
       const auto& negChild1 = parts.iteratorAt(p1.index() - 1);
@@ -346,14 +346,14 @@ struct femtoUniversePairTaskTrackV0Extended {
       }
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        // track cleaning
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
         if (ConfIsCPR.value) {
           if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femtoUniverseContainer::EventType::mixed)) {
             continue;
           }
-        }
-        // track cleaning
-        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-          continue;
         }
         /// PID using stored binned nsigma
         if (!IsParticleCombined(p1, ConfTrackChoicePartOne))
@@ -391,14 +391,14 @@ struct femtoUniversePairTaskTrackV0Extended {
       }
 
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        // track cleaning
+        if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
         if (ConfIsCPR.value) {
           if (pairCloseRejectionV0.isClosePair(p1, p2, parts, magFieldTesla1, femtoUniverseContainer::EventType::mixed)) {
             continue;
           }
-        }
-        // track cleaning
-        if (!pairCleanerV0.isCleanPair(p1, p2, parts)) {
-          continue;
         }
         const auto& posChild1 = parts.iteratorAt(p1.index() - 2);
         const auto& negChild1 = parts.iteratorAt(p1.index() - 1);
