@@ -285,15 +285,15 @@ struct femtoUniversePairTaskTrackV0Extended {
 
       /// Check daughters of first V0 particle
       if (IsParticleTPC(posChild, V0ChildTable[ConfV0Type1][0]) && IsParticleTPC(negChild, V0ChildTable[ConfV0Type1][1])) {
-        trackHistoV0Type1.fillQA2<false, false>(part, HIST("V0Type1"));
-        posChildV0Type1.fillQA2<false, false>(posChild, HIST("posChildV0Type1"));
-        negChildV0Type1.fillQA2<false, false>(negChild, HIST("negChildV0Type1"));
+        trackHistoV0Type1.fillQABase<false, false>(part, HIST("V0Type1"));
+        posChildV0Type1.fillQABase<false, false>(posChild, HIST("posChildV0Type1"));
+        negChildV0Type1.fillQABase<false, false>(negChild, HIST("negChildV0Type1"));
       }
       /// Check daughters of second V0 particle
       if (IsParticleTPC(posChild, V0ChildTable[ConfV0Type2][0]) && IsParticleTPC(negChild, V0ChildTable[ConfV0Type2][1])) {
-        trackHistoV0Type2.fillQA2<false, false>(part, HIST("V0Type2"));
-        posChildV0Type2.fillQA2<false, false>(posChild, HIST("posChildV0Type2"));
-        negChildV0Type2.fillQA2<false, false>(negChild, HIST("negChildV0Type2"));
+        trackHistoV0Type2.fillQABase<false, false>(part, HIST("V0Type2"));
+        posChildV0Type2.fillQABase<false, false>(posChild, HIST("posChildV0Type2"));
+        negChildV0Type2.fillQABase<false, false>(negChild, HIST("negChildV0Type2"));
       }
     }
 
