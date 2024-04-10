@@ -179,7 +179,10 @@ struct HfFilter { // Main struct for HF triggers
 
     hProcessedEvents = registry.add<TH1>("fProcessedEvents", "HF - event filtered;;counts", HistType::kTH1F, {{kNtriggersHF + 2, -0.5, +kNtriggersHF + 1.5}});
     for (auto iBin = 0; iBin < kNtriggersHF + 2; ++iBin) {
-      hProcessedEvents->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
+      if (iBin < 2)
+        hProcessedEvents->GetXaxis()->SetBinLabel(iBin + 1, eventTitles[iBin].data());
+      else
+        hProcessedEvents->GetXaxis()->SetBinLabel(iBin + 1, Form("o2::aod::filtering::%s::columnLabel()", hfTriggerNames[iBin - 2].data()));
     }
 
     if (activateQA) {
