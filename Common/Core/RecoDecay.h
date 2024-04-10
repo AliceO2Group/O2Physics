@@ -24,7 +24,6 @@
 #include <vector>    // std::vector
 
 #include "CommonConstants/MathConstants.h"
-#include "TMCProcess.h" // for VMC Particle Production Process
 
 /// Base class for calculating properties of reconstructed decays
 ///
@@ -645,9 +644,8 @@ class RecoDecay
       // for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
       //   printf(" ");
       // printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, PDGParticle);
-      printf("Daughter production process is %i\n", particle.getProcess());
-      printf("Daughter pdg code is %i\n", particle.pdgCode());
-      if(particle.getProcess() == TMCProcess::kPDecay){
+
+      if(particle.getProcess() == 4){
         list->push_back(particle.globalIndex());
       }
       
@@ -712,7 +710,7 @@ class RecoDecay
       }
       auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
       // check if the daughter candidate comes from a decay process
-      if (particleI.getProcess() != TMCProcess::kPDecay) {
+      if (particleI.getProcess() != 4) {
         return -1;
       }
       arrDaughtersIndex[iProng] = particleI.globalIndex();
