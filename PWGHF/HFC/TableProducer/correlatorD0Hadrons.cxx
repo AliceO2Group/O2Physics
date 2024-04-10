@@ -281,7 +281,7 @@ struct HfCorrelatorD0Hadrons {
    }
    int leadingIndex = leadingParticle.globalIndex();
    return leadingIndex;
-  }  
+  }
   // =======  Process starts for Data, Same event ============
 
   /// D0-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
