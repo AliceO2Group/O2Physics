@@ -112,10 +112,10 @@ struct JetPlanarFlowTask {
   uint32_t precisionMask;
 
   std::vector<float> trackPtVector;
-    std::vector<float> trackThetaRotVector;
-    std::vector<float> trackPhiRotVector;
-    std::vector<float> trackDRVector;
-    std::vector<uint8_t> trackIsInJetVector;
+  std::vector<float> trackThetaRotVector;
+  std::vector<float> trackPhiRotVector;
+  std::vector<float> trackDRVector;
+  std::vector<uint8_t> trackIsInJetVector;
 
   void init(o2::framework::InitContext&)
   {
@@ -210,7 +210,7 @@ struct JetPlanarFlowTask {
     trackPtVector.clear();
     trackThetaRotVector.clear();
     trackPhiRotVector.clear();
-   trackDRVector.clear();
+    trackDRVector.clear();
     trackIsInJetVector.clear();
 
     for (auto const& track : tracks) {
@@ -218,7 +218,7 @@ struct JetPlanarFlowTask {
       if (track.pt() < trackPtMin || track.pt() >= trackPtMax || track.eta() < trackEtaMin || track.eta() > trackEtaMax) {
         continue;
       }
-      auto  trackDR = jetutilities::deltaR(jet, track);
+      auto trackDR = jetutilities::deltaR(jet, track);
       if (trackDR > trackDRMax) {
         continue;
       }
@@ -261,15 +261,15 @@ struct JetPlanarFlowTask {
     }
 
     if (isMc) {
-        jetTableMC(o2::math_utils::detail::truncateFloatFraction(jet.pt(), precisionMask), o2::math_utils::detail::truncateFloatFraction(planarFlow, precisionMask), o2::math_utils::detail::truncateFloatFraction(nSubCASDResults[2] / nSubCASDResults[1], precisionMask), o2::math_utils::detail::truncateFloatFraction(nSubCASDResults[0], precisionMask), trackPtVector, trackPhiRotVector, trackThetaRotVector, trackDRVector, trackIsInJetVector);
+      jetTableMC(o2::math_utils::detail::truncateFloatFraction(jet.pt(), precisionMask), o2::math_utils::detail::truncateFloatFraction(planarFlow, precisionMask), o2::math_utils::detail::truncateFloatFraction(nSubCASDResults[2] / nSubCASDResults[1], precisionMask), o2::math_utils::detail::truncateFloatFraction(nSubCASDResults[0], precisionMask), trackPtVector, trackPhiRotVector, trackThetaRotVector, trackDRVector, trackIsInJetVector);
     } else {
-        float jetPt = 0.0;
-        if constexpr (isAreaSubtracted) {
+      float jetPt = 0.0;
+      if constexpr (isAreaSubtracted) {
         jetPt = jet.pt() - (jet.area() * collision.rho());
-        } else {
+      } else {
         jetPt = jet.pt();
-        }
-jetTable(o2::math_utils::detail::truncateFloatFraction(jetPt, precisionMask), o2::math_utils::detail::truncateFloatFraction(planarFlow, precisionMask), o2::math_utils::detail::truncateFloatFraction(nSubCASDResults[2] / nSubCASDResults[1], precisionMask), o2::math_utils::detail::truncateFloatFraction(nSubCASDResults[0], precisionMask), trackPtVector, trackPhiRotVector, trackThetaRotVector, trackDRVector, trackIsInJetVector);
+      }
+      jetTable(o2::math_utils::detail::truncateFloatFraction(jetPt, precisionMask), o2::math_utils::detail::truncateFloatFraction(planarFlow, precisionMask), o2::math_utils::detail::truncateFloatFraction(nSubCASDResults[2] / nSubCASDResults[1], precisionMask), o2::math_utils::detail::truncateFloatFraction(nSubCASDResults[0], precisionMask), trackPtVector, trackPhiRotVector, trackThetaRotVector, trackDRVector, trackIsInJetVector);
     }
   }
 
