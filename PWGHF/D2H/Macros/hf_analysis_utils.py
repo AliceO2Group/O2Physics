@@ -6,7 +6,14 @@ brief: script with miscellanea utils methods for the HF analyses
 author: Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 """
 
-import numpy as np
+import numpy as np  # pylint: disable=import-error
+
+
+def make_list(object) -> list:
+    """
+    Returns the object as a list if it is not a list already.
+    """
+    return object if isinstance(object, list) else list(object)
 
 
 # pylint: disable=too-many-arguments
@@ -63,7 +70,7 @@ def compute_fraction_fc(
     cross_sec_fd,
     raa_prompt=1.0,
     raa_fd=1.0,
-):
+) -> "tuple[list[float], list[float]]":
     """
     Method to get fraction of prompt / FD fraction with fc method
 
@@ -84,16 +91,13 @@ def compute_fraction_fc(
     - frac_fd: list of fraction of non-prompt D (central, min, max)
     """
 
-    if not isinstance(cross_sec_prompt, list) and isinstance(cross_sec_prompt, float):
-        cross_sec_prompt = [cross_sec_prompt]
-    if not isinstance(cross_sec_fd, list) and isinstance(cross_sec_fd, float):
-        cross_sec_fd = [cross_sec_fd]
-    if not isinstance(raa_prompt, list) and isinstance(raa_prompt, float):
-        raa_prompt = [raa_prompt]
-    if not isinstance(raa_fd, list) and isinstance(raa_fd, float):
-        raa_fd = [raa_fd]
+    cross_sec_prompt = make_list(cross_sec_prompt)
+    cross_sec_fd = make_list(cross_sec_fd)
+    raa_prompt = make_list(raa_prompt)
+    raa_fd = make_list(raa_fd)
 
-    frac_prompt, frac_fd = [], []
+    frac_prompt: list[float] = []
+    frac_fd: list[float] = []
     if acc_eff_prompt == 0:
         frac_fd_cent = 1.0
         frac_prompt_cent = 0.0
@@ -141,7 +145,7 @@ def compute_fraction_nb(
     sigma_mb,
     raa_ratio=1.0,
     taa=1.0,
-):
+) -> "list[float]":
     """
     Method to get fraction of prompt / FD fraction with Nb method
 
@@ -165,13 +169,10 @@ def compute_fraction_nb(
     - frac: list of fraction of prompt (non-prompt) D (central, min, max)
     """
 
-    if not isinstance(crosssection, list) and isinstance(crosssection, float):
-        crosssection = [crosssection]
+    crosssection = make_list(crosssection)
+    raa_ratio = make_list(raa_ratio)
 
-    if not isinstance(raa_ratio, list) and isinstance(raa_ratio, float):
-        raa_ratio = [raa_ratio]
-
-    frac = []
+    frac: list[float] = []
     for i_sigma, sigma in enumerate(crosssection):
         for i_raa_ratio, raa_rat in enumerate(raa_ratio):
             raa_other = 1.0
