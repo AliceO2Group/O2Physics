@@ -81,7 +81,7 @@ struct strangeDerivedConverter {
       lTOFEvTimes[casc.bachTrackExtraId()] = casc.bachTOFEventTime();
     }
     for (int ii = 0; ii < dauTracks.size(); ii++) {
-      dautracktofpids(lLengths[ii], lTOFSignals[ii], lTOFEvTimes[ii]);
+      dautracktofpids(lTOFSignals[ii], lTOFEvTimes[ii], lLengths[ii]);
     }
   }
 
