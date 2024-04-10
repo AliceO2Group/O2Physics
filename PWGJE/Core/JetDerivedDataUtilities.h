@@ -48,7 +48,7 @@ int initialiseEventSelection(std::string eventSelection)
   }
   if (eventSelection == "sel8Full") {
     return JCollisionSel::sel8Full;
-  } 
+  }
   if (eventSelection == "sel7") {
     return JCollisionSel::sel7;
   }
@@ -61,7 +61,7 @@ uint8_t setEventSelectionBit(T const& collision)
   uint8_t bit = 0;
   if (collision.sel8()) {
     SETBIT(bit, JCollisionSel::sel8);
-    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)){
+    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       SETBIT(bit, JCollisionSel::sel8Full);
     }
   }
