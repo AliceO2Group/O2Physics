@@ -17,6 +17,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 // O2Physics headers
 #include "Common/DataModel/PIDResponse.h"
@@ -26,7 +27,6 @@
 #include "PWGUD/Core/UPCJpsiCentralBarrelCorrHelper.h"
 
 // ROOT headers
-#include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 
 using namespace o2;
@@ -58,8 +58,6 @@ struct upcJpsiCentralBarrel {
   Configurable<int> ITSChi2NClsCut{"ITSChi2NClsCut", 36, "minimal Chi2/cluster for the ITS track"};
   Configurable<int> TPCNClsCrossedRowsCut{"TPCNClsCrossedRowsCut", 70, "minimal number of crossed TPC rows"};
   Configurable<int> TPCChi2NCls{"TPCChi2NCls", 4, "minimal Chi2/cluster for the TPC track"};
-
-  TDatabasePDG* pdg = nullptr;
 
   // initialize histogram registry
   HistogramRegistry Statistics{
@@ -125,7 +123,6 @@ struct upcJpsiCentralBarrel {
 
   void init(InitContext&)
   {
-    pdg = TDatabasePDG::Instance();
 
     const AxisSpec axisIVM{IVMAxis, "IVM axis"};
     const AxisSpec axispt{ptAxis, "pt axis"};
@@ -365,16 +362,6 @@ struct upcJpsiCentralBarrel {
     Asymmetry.add("Asymmetry/Electron/Incoherent/DeltaPhi", "DeltaPhi", {HistType::kTH1F, {{180, -PI, PI}}});
   }
 
-  float particleMass(TDatabasePDG* pdg, int pid)
-  {
-    auto mass = 0.;
-    TParticlePDG* pdgparticle = pdg->GetParticle(pid);
-    if (pdgparticle != nullptr) {
-      mass = pdgparticle->Mass();
-    }
-    return mass;
-  }
-
   template <typename T>
   bool GoodTrackCuts(T const& track)
   {
@@ -521,9 +508,9 @@ struct upcJpsiCentralBarrel {
     Statistics.get<TH1>(HIST("Statistics/hNumberGTmu"))->Fill(countGTmu);
     Statistics.get<TH1>(HIST("Statistics/hNumberGTp"))->Fill(countGTp);
 
-    float massEl = 0.000510998950;
-    float massMu = 0.10565837;
-    float massPr = 0.93827208816;
+    float massEl = o2::constants::physics::MassElectron;
+    float massMu = o2::constants::physics::MassMuonMinus;
+    float massPr = o2::constants::physics::MassProton;
 
     if (countGT == 2) {
       TLorentzVector mom, daughter[2];
