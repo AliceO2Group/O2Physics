@@ -774,6 +774,7 @@ struct HfCorrelatorDsHadrons {
         if (!pAssoc.isGlobalTrackWoDCA()) {
           continue;
         }
+        std::vector<float> outputMl = {-1., -1., -1.};
         // DsToKKPi and DsToPiKK division
         if (cand.isSelDsToKKPi() >= selectionFlagDs) {
           // LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d), KKPi", cand.index(), pAssoc.index(), c1.index(), c2.index(), cand.collision().index(), pAssoc.collision().index());
@@ -784,6 +785,12 @@ struct HfCorrelatorDsHadrons {
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToKKPi(cand), false);
           entryDsHadronGenInfo(false, false);
+          if (fillSystematics) {
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = cand.mlProbDsToKKPi()[classMl->at(iclass)];
+            }
+            registry.fill(HIST("hCorrelSystematics"), getDeltaPhi(pAssoc.phi(), cand.phi()), pAssoc.eta() - cand.eta(), cand.pt(), pAssoc.pt(), hfHelper.invMassDsToKKPi(cand), outputMl[0], outputMl[2]);
+          }
         } else if (cand.isSelDsToPiKK() >= selectionFlagDs) {
           // LOGF(info, "Mixed event tracks pair: (%d, %d) from events (%d, %d), track event: (%d, %d), PiKK", cand.index(), pAssoc.index(), c1.index(), c2.index(), cand.collision().index(), pAssoc.collision().index());
           entryDsHadronPair(getDeltaPhi(pAssoc.phi(), cand.phi()),
@@ -793,6 +800,12 @@ struct HfCorrelatorDsHadrons {
                             poolBin);
           entryDsHadronRecoInfo(hfHelper.invMassDsToPiKK(cand), false);
           entryDsHadronGenInfo(false, false);
+          if (fillSystematics) {
+            for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+              outputMl[iclass] = cand.mlProbDsToPiKK()[classMl->at(iclass)];
+            }
+            registry.fill(HIST("hCorrelSystematics"), getDeltaPhi(pAssoc.phi(), cand.phi()), pAssoc.eta() - cand.eta(), cand.pt(), pAssoc.pt(), hfHelper.invMassDsToPiKK(cand), outputMl[0], outputMl[2]);
+          }
         }
       }
     }
