@@ -79,6 +79,7 @@ struct femtoDreamPairTaskTrackTrack {
   Configurable<int> ConfTrk1_PDGCode{"ConfTrk1_PDGCode", 2212, "PDG code of particle 1 (Track)"};
   Configurable<femtodreamparticle::cutContainerType> ConfTrk1_CutBit{"ConfTrk1_CutBit", 3191978, "Selection bit from cutCulator for particle 1 (Track)"};
   Configurable<femtodreamparticle::cutContainerType> ConfTrk1_TPCBit{"ConfTrk1_TPCBit", 4, "PID TPC bit from cutCulator for particle 1 (Track)"};
+  Configurable<femtodreamparticle::cutContainerType> ConfTrk1_TPCBit_Reject{"ConfTrk1_TPCBit_Reject", 0, "PID TPC bit from cutCulator to reject a particle hypothesis for particle 1 (set to 0 to ignore)"};
   Configurable<femtodreamparticle::cutContainerType> ConfTrk1_TPCTOFBit{"ConfTrk1_TPCTOFBit", 2, "PID TPCTOF bit from cutCulator for particle 1 (Track)"};
   Configurable<float> ConfTrk1_PIDThres{"ConfTrk1_PIDThres", 0.75, "Momentum threshold for PID selection for particle 1 (Track)"};
   Configurable<float> ConfTrk1_minPt{"ConfTrk1_minPt", 0., "Minimum pT of partricle 1 (Track)"};
@@ -89,7 +90,7 @@ struct femtoDreamPairTaskTrackTrack {
   /// Partition for particle 1
   Partition<aod::FDParticles> PartitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                               (ncheckbit(aod::femtodreamparticle::cut, ConfTrk1_CutBit)) &&
-                                              ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk1_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCTOFBit)) &&
+                                              ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk1_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCBit) && ((aod::femtodreamparticle::pidcut & ConfTrk1_TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCTOFBit)) &&
                                               (aod::femtodreamparticle::pt > ConfTrk1_minPt) &&
                                               (aod::femtodreamparticle::pt < ConfTrk1_maxPt) &&
                                               (aod::femtodreamparticle::eta > ConfTrk1_minEta) &&
@@ -97,7 +98,7 @@ struct femtoDreamPairTaskTrackTrack {
 
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> PartitionMCTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                                             (ncheckbit(aod::femtodreamparticle::cut, ConfTrk1_CutBit)) &&
-                                                                            ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk1_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCTOFBit)) &&
+                                                                            ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk1_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCBit) && ((aod::femtodreamparticle::pidcut & ConfTrk1_TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk1_TPCTOFBit)) &&
                                                                             (aod::femtodreamparticle::pt > ConfTrk1_minPt) &&
                                                                             (aod::femtodreamparticle::pt < ConfTrk1_maxPt) &&
                                                                             (aod::femtodreamparticle::eta > ConfTrk1_minEta) &&
@@ -110,6 +111,7 @@ struct femtoDreamPairTaskTrackTrack {
   Configurable<int> ConfTrk2_PDGCode{"ConfTrk2_PDGCode", 2212, "PDG code of particle 2 (Track)"};
   Configurable<femtodreamparticle::cutContainerType> ConfTrk2_CutBit{"ConfTrk2_CutBit", 3191978, "Selection bit from cutCulator for particle 2 (Track)"};
   Configurable<femtodreamparticle::cutContainerType> ConfTrk2_TPCBit{"ConfTrk2_TPCBit", 4, "PID TPC bit from cutCulator for particle 2 (Track)"};
+  Configurable<femtodreamparticle::cutContainerType> ConfTrk2_TPCBit_Reject{"ConfTrk2_TPCBit_Reject", 0, "PID TPC bit from cutCulator to reject a particle hypothesis for particle 2 (set to 0 to ignore)"};
   Configurable<femtodreamparticle::cutContainerType> ConfTrk2_TPCTOFBit{"ConfTrk2_TPCTOFBit", 2, "PID TPCTOF bit from cutCulator for particle 2 (Track)"};
   Configurable<float> ConfTrk2_PIDThres{"ConfTrk2_PIDThres", 0.75, "Momentum threshold for PID selection for particle 2 (Track)"};
   Configurable<float> ConfTrk2_minPt{"ConfTrk2_minPt", 0., "Minimum pT of partricle 2 (Track)"};
@@ -120,7 +122,7 @@ struct femtoDreamPairTaskTrackTrack {
   /// Partition for track 2
   Partition<aod::FDParticles> PartitionTrk2 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                               (ncheckbit(aod::femtodreamparticle::cut, ConfTrk2_CutBit)) &&
-                                              ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk2_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk2_TPCBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk2_TPCTOFBit)) &&
+                                              ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk2_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk2_TPCBit) && ((aod::femtodreamparticle::pidcut & ConfTrk2_TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk2_TPCTOFBit)) &&
                                               (aod::femtodreamparticle::pt > ConfTrk2_minPt) &&
                                               (aod::femtodreamparticle::pt < ConfTrk2_maxPt) &&
                                               (aod::femtodreamparticle::eta > ConfTrk2_minEta) &&
@@ -128,7 +130,7 @@ struct femtoDreamPairTaskTrackTrack {
 
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> PartitionMCTrk2 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                                             (ncheckbit(aod::femtodreamparticle::cut, ConfTrk2_CutBit)) &&
-                                                                            ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk2_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk2_TPCBit), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk2_TPCTOFBit)) &&
+                                                                            ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= ConfTrk2_PIDThres, ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk2_TPCBit) && ((aod::femtodreamparticle::pidcut & ConfTrk2_TPCBit_Reject) == 0u), ncheckbit(aod::femtodreamparticle::pidcut, ConfTrk2_TPCTOFBit)) &&
                                                                             (aod::femtodreamparticle::pt > ConfTrk2_minPt) &&
                                                                             (aod::femtodreamparticle::pt < ConfTrk2_maxPt) &&
                                                                             (aod::femtodreamparticle::eta > ConfTrk2_minEta) &&

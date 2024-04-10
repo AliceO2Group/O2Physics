@@ -103,7 +103,8 @@ bool eventEMCAL(T const& collision)
 enum JTrigSelCh {
   noChargedTigger = 0,
   chargedLow = 1,
-  chargedHigh = 2
+  chargedHigh = 2,
+  trackPt = 3
 };
 
 template <typename T>
@@ -123,6 +124,9 @@ int initialiseChargedTriggerSelection(std::string triggerSelection)
   if (triggerSelection == "chargedHigh") {
     return JTrigSelCh::chargedHigh;
   }
+  if (triggerSelection == "trackPt") {
+    return JTrigSelCh::trackPt;
+  }
   return -1;
 }
 
@@ -136,6 +140,9 @@ uint8_t setChargedTriggerSelectionBit(T const& collision)
   }
   if (collision.hasJetChHighPt()) {
     SETBIT(bit, JTrigSelCh::chargedHigh);
+  }
+  if (collision.hasTrackHighPt()) {
+    SETBIT(bit, JTrigSelCh::trackPt);
   }
   return bit;
 }

@@ -485,14 +485,17 @@ void DhCorrelationExtraction::NormalizeMEplot(TH2D*& histoME, TH2D*& histoMEsoft
 
   // evaluate the normalization (from ALL tracks, including possible fake softpions) -> **histoME indeed includes bin1+bin2 of THnSparse, i.e. all the tracks**
   Double_t factorNorm = 0;
-  for (int in = -1; in <= 0; in++)
-    factorNorm += histoME->GetBinContent(bin0phi + in, bin0eta);
-  for (int in = -1; in <= 0; in++)
-    factorNorm += histoME->GetBinContent(bin0phi + in, bin0eta - 1);
+  for (int in = -1; in <= 0; in++) {
+    factorNorm += histoME->GetBinContent(bin0eta, bin0phi + in);
+  }
+  for (int in = -1; in <= 0; in++) {
+    factorNorm += histoME->GetBinContent(bin0eta - 1, bin0phi + in);
+  }
   factorNorm /= 4.;
 
-  if (fSubtractSoftPiME)
+  if (fSubtractSoftPiME) {
     histoME->Add(histoMEsoftPi, -1); // remove the tracks compatible with soft pion (if requested)
+  }
 
   // apply the normalization
   histoME->Scale(1. / factorNorm);

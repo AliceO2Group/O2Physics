@@ -39,15 +39,36 @@ struct JetTaggerHFTask {
   Produces<JetTaggingTableData> taggingTableData;
   Produces<JetTaggingTableMCD> taggingTableMCD;
 
+  Configurable<float> maxDeltaR{"maxDeltaR", 0.25, "maximum distance of jet axis from flavour initiating parton"};
   Configurable<bool> doWShower{"doWShower", false, "find jet origin included gluon spliting"}; // true:: remove gluon spliting
   Configurable<bool> doTC{"doTC", false, "fill table for track counting algorithm"};
   Configurable<bool> doSV{"doSV", false, "fill table for secondary vertex algorithm"};
-  Configurable<float> maxDeltaR{"maxDeltaR", 0.25, "maximum distance of jet axis from flavour initiating parton"};
+  Configurable<int> numCount{"numCount", 3, "number of track counting"};
+  Configurable<std::vector<float>> paramsResoFunc{"paramsResoFunc", std::vector<float>{1117853.376, -0.092, 0.838, 9.209, 0.408, 9.209, 0.408, 13.501, 1.035}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7))"};
+  Configurable<std::vector<float>> paramsResoFuncMC{"paramsResoFuncMC", std::vector<float>{53473, -0.044, 0.649, 10.152, 1.274, 5.264, 0.438, 6.326, 0.438454, 53473, -0.044, 0.649}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
+  Configurable<float> minSignImpXYSig{"minsIPs", -10.0, "minimum of signed impact parameter significance"};
+  Configurable<float> tagPoint{"tagPoint", 1.0, "tagging working point"};
 
   using JetTagTracksData = soa::Join<JetTracks, aod::JTrackPIs, aod::JTracksTag>;
   using JetTagTracksMCD = soa::Join<JetTracksMCD, aod::JTrackPIs, aod::JTracksTag>;
   using OriTracksData = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection>;
   using OriTracksMCD = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksDCACov, aod::TrackSelection, aod::McTrackLabels>;
+
+  std::unique_ptr<TF1> fSignImpXYSig = nullptr;
+  std::vector<float> vecParams;
+  // TF1* fSignImpXYSig = nullptr;
+  int maxOrder = -1;
+  void init(InitContext const&)
+  {
+    maxOrder = numCount + 1; // 0: untagged, >1 : N ordering
+    if (doprocessData) {
+      vecParams = (std::vector<float>)paramsResoFunc;
+    }
+    if (doprocessMCD) {
+      vecParams = (std::vector<float>)paramsResoFuncMC;
+    }
+    fSignImpXYSig = jettaggingutilities::setResolutionFunction(vecParams);
+  }
 
   void processDummy(JetCollisions const& collision)
   {
@@ -57,12 +78,13 @@ struct JetTaggerHFTask {
   void processData(JetCollision const& collision, JetTableData const& jets, JetTagTracksData const& jtracks, OriTracksData const& tracks)
   {
     for (auto& jet : jets) {
-      float jetProb = 0;
+      std::vector<float> jetProb;
       int algorithm2 = 0;
       int algorithm3 = 0;
-      std::unique_ptr<TF1> fSignImpXYSig(jettaggingutilities::getResolutionFunction(0));
       if (doTC) {
-        jetProb = jettaggingutilities::getJetProbability(fSignImpXYSig, collision, jet, jtracks, tracks);
+        for (int order = 0; order < maxOrder; order++) {
+          jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSig, collision, jet, jtracks, tracks, order, tagPoint, minSignImpXYSig));
+        }
       }
       // if (doSV) algorithm2 = jettaggingutilities::Algorithm2((mcdjet, tracks);
       taggingTableData(0, jetProb, algorithm2, algorithm3);
@@ -79,12 +101,13 @@ struct JetTaggerHFTask {
         origin = jettaggingutilities::mcdJetFromHFShower(mcdjet, jtracks, particles, maxDeltaR);
       else
         origin = jettaggingutilities::jetTrackFromHFShower(mcdjet, jtracks, particles, hftrack);
-      float jetProb = 0;
+      std::vector<float> jetProb;
       int algorithm2 = 0;
       int algorithm3 = 0;
-      std::unique_ptr<TF1> fSignImpXYSig(jettaggingutilities::getResolutionFunction(origin));
       if (doTC) {
-        jetProb = jettaggingutilities::getJetProbability(fSignImpXYSig, collision, mcdjet, jtracks, tracks);
+        for (int order = 0; order < maxOrder; order++) {
+          jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSig, collision, mcdjet, jtracks, tracks, order, tagPoint, minSignImpXYSig));
+        }
       }
       // if (doSV) algorithm2 = jettaggingutilities::Algorithm2((mcdjet, tracks);
       taggingTableMCD(origin, jetProb, algorithm2, algorithm3);
@@ -109,10 +132,9 @@ struct JetTaggerHFExtTask {
 
   void processTracks(soa::Join<aod::Tracks, aod::TracksCov, aod::TrackSelection, aod::TracksDCA, aod::TracksDCACov>::iterator const& track)
   {
-    float dcaXYZ = 0;
     float sigmaDcaXYZ2 = 0;
+    float dcaXYZ = getDcaXYZ(track, &sigmaDcaXYZ2);
 
-    jettaggingutilities::calculateDcaXYZ(dcaXYZ, sigmaDcaXYZ2, track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(), track.sigmaDcaXY2(), track.sigmaDcaZ2());
     jTracksTagTable(dcaXYZ, sigmaDcaXYZ2);
   }
   PROCESS_SWITCH(JetTaggerHFExtTask, processTracks, "produces derived track table for tagging", true);

@@ -195,6 +195,10 @@ struct PCMQCMC {
               continue;
             }
             auto mcphoton = mcparticles.iteratorAt(photonid);
+            if (!IsConversionPointInAcceptance(mcphoton, maxRgen, maxY, margin_z_mc, mcparticles)) {
+              continue;
+            }
+
             float rxy_rec = sqrt(v0.vx() * v0.vx() + v0.vy() * v0.vy());
             float rxy_mc = sqrt(posmc.vx() * posmc.vx() + posmc.vy() * posmc.vy());
             float eta_cp = std::atanh(v0.vz() / sqrt(pow(v0.vx(), 2) + pow(v0.vy(), 2) + pow(v0.vz(), 2)));
