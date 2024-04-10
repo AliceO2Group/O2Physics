@@ -48,6 +48,11 @@ struct tofSpectra {
   Configurable<float> cfgCutEtaMin{"cfgCutEtaMin", -0.8f, "Min eta range for tracks"};
   Configurable<float> cfgCutY{"cfgCutY", 0.5f, "Y range for tracks"};
   Configurable<int> cfgINELCut{"cfgINELCut", 0, "INEL event selection: 0 no sel, 1 INEL>0, 2 INEL>1"};
+  Configurable<bool> removeITSROFrameBorder{"removeITSROFrameBorder", false, "Remove TF border"};
+  Configurable<bool> removeNoSameBunchPileup{"removeNoSameBunchPileup", false, "Remove TF border"};
+  Configurable<bool> requireIsGoodZvtxFT0vsPV{"requireIsGoodZvtxFT0vsPV", false, "Remove TF border"};
+  Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "Remove TF border"};
+  Configurable<bool> removeNoTimeFrameBorder{"removeNoTimeFrameBorder", false, "Remove TF border"};
   Configurable<bool> enableDcaGoodEvents{"enableDcaGoodEvents", true, "Enables the MC plots with the correct match between data and MC"};
   Configurable<bool> enableTrackCutHistograms{"enableTrackCutHistograms", true, "Enables track cut histograms, before and after the cut"};
   Configurable<bool> enableDeltaHistograms{"enableDeltaHistograms", true, "Enables the delta TPC and TOF histograms"};
@@ -85,7 +90,6 @@ struct tofSpectra {
   Configurable<bool> makeTHnSparseChoice{"makeTHnSparseChoice", false, "choose if produce thnsparse"}; // RD
   Configurable<bool> includeCentralityMC{"includeCentralityMC", true, "choose if include Centrality to MC"};
   Configurable<bool> tpctofVsMult{"tpctofVsMult", false, "Produce TPC-TOF plots vs multiplicity"};
-  Configurable<bool> removeTFBorder{"removeTFBorder", false, "Remove TF border"};
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -185,24 +189,21 @@ struct tofSpectra {
     const AxisSpec etaAxis{binsEta, "#eta"};
 
     histos.add("event/vertexz", "", HistType::kTH1D, {vtxZAxis});
-    auto h = histos.add<TH1>("evsel", "evsel", HistType::kTH1D, {{10, 0.5, 10.5}});
+    auto h = histos.add<TH1>("evsel", "evsel", HistType::kTH1D, {{20, 0.5, 20.5}});
     h->GetXaxis()->SetBinLabel(1, "Events read");
     h->GetXaxis()->SetBinLabel(2, "INEL>0 (fraction)");
     h->GetXaxis()->SetBinLabel(3, "INEL>1 (fraction)");
     h->GetXaxis()->SetBinLabel(4, "Ev. sel. passed");
-    h->GetXaxis()->SetBinLabel(5, "INEL>0 (fraction)");
-    h->GetXaxis()->SetBinLabel(6, "INEL>1 (fraction)");
-    h->GetXaxis()->SetBinLabel(7, "posZ passed");
-    if (cfgINELCut.value == 1) {
-      h->GetXaxis()->SetBinLabel(8, "INEL>0");
-    } else {
-      h->GetXaxis()->SetBinLabel(8, "INEL>0 (fraction)");
-    }
-    if (cfgINELCut.value == 2) {
-      h->GetXaxis()->SetBinLabel(9, "INEL>1");
-    } else {
-      h->GetXaxis()->SetBinLabel(9, "INEL>1 (fraction)");
-    }
+    h->GetXaxis()->SetBinLabel(5, "NoITSROFrameBorder");
+    h->GetXaxis()->SetBinLabel(6, "NoSameBunchPileup");
+    h->GetXaxis()->SetBinLabel(7, "IsGoodZvtxFT0vsPV");
+    h->GetXaxis()->SetBinLabel(8, "IsVertexITSTPC");
+    h->GetXaxis()->SetBinLabel(9, "NoTimeFrameBorder");
+    h->GetXaxis()->SetBinLabel(10, "INEL>0 (fraction)");
+    h->GetXaxis()->SetBinLabel(11, "INEL>1 (fraction)");
+    h->GetXaxis()->SetBinLabel(12, "posZ passed");
+    h->GetXaxis()->SetBinLabel(13, cfgINELCut.value == 1 ? "INEL>0" : "INEL>0 (fraction)");
+    h->GetXaxis()->SetBinLabel(14, cfgINELCut.value == 2 ? "INEL>1" : "INEL>1 (fraction)");
 
     h = histos.add<TH1>("tracksel", "tracksel", HistType::kTH1D, {{10, 0.5, 10.5}});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
@@ -812,30 +813,57 @@ struct tofSpectra {
     if (!collision.sel8()) {
       return false;
     }
-    if (removeTFBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 4.f);
+    }
+    if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("evsel"), 5.f);
+    }
+    if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("evsel"), 6.f);
+    }
+    if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
+      return false;
+    }
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("evsel"), 7.f);
+    }
+    if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("evsel"), 8.f);
+    }
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("evsel"), 9.f);
       if (collision.multNTracksPVeta1() >= 1) {
-        histos.fill(HIST("evsel"), 5.f);
+        histos.fill(HIST("evsel"), 10.f);
       }
       if (collision.multNTracksPVeta1() >= 2) {
-        histos.fill(HIST("evsel"), 6.f);
+        histos.fill(HIST("evsel"), 11.f);
       }
     }
     if (abs(collision.posZ()) > cfgCutVertex) {
       return false;
     }
     if constexpr (fillHistograms) {
-      histos.fill(HIST("evsel"), 7.f);
+      histos.fill(HIST("evsel"), 12.f);
       if (collision.multNTracksPVeta1() >= 1) {
-        histos.fill(HIST("evsel"), 8.f);
+        histos.fill(HIST("evsel"), 13.f);
       } else if (cfgINELCut == 1) {
         return false;
       }
       if (collision.multNTracksPVeta1() >= 2) {
-        histos.fill(HIST("evsel"), 9.f);
+        histos.fill(HIST("evsel"), 14.f);
       } else if (cfgINELCut == 2) {
         return false;
       }
@@ -1683,11 +1711,8 @@ struct tofSpectra {
           histos.fill(HIST("MC/no_collision/neg"), track.pt());
         }
         continue;
-      }
-      if (!track.collision_as<CollisionCandidateMC>().sel8()) {
-        continue;
-      }
-      if (removeTFBorder && !track.collision_as<CollisionCandidateMC>().selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      };
+      if (!isEventSelected<false, false>(track.collision_as<CollisionCandidateMC>(), tracks)) {
         continue;
       }
       if (!passesCutWoDCA(track)) {
