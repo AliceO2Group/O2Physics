@@ -28,7 +28,8 @@ static constexpr float mPion = 0.139; // TDatabasePDG::Instance()->GetParticle(2
 
 enum JCollisionSel {
   sel8 = 0,
-  sel7 = 1
+  sel8Full = 1,
+  sel7 = 2
 };
 
 template <typename T>
@@ -44,7 +45,11 @@ int initialiseEventSelection(std::string eventSelection)
 {
   if (eventSelection == "sel8") {
     return JCollisionSel::sel8;
-  } else if (eventSelection == "sel7") {
+  }
+  if (eventSelection == "sel8Full") {
+    return JCollisionSel::sel8Full;
+  } 
+  if (eventSelection == "sel7") {
     return JCollisionSel::sel7;
   }
   return -1;
@@ -56,6 +61,9 @@ uint8_t setEventSelectionBit(T const& collision)
   uint8_t bit = 0;
   if (collision.sel8()) {
     SETBIT(bit, JCollisionSel::sel8);
+    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) && collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)){
+      SETBIT(bit, JCollisionSel::sel8Full);
+    }
   }
   if (collision.sel7()) {
     SETBIT(bit, JCollisionSel::sel7);
