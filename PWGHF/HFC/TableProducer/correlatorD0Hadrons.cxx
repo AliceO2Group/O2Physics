@@ -265,7 +265,7 @@ struct HfCorrelatorD0Hadrons {
     registry.add("hMassD0barRecBg", "D0bar background candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCountD0TriggersGen", "D0 trigger particles - MC gen;;N of trigger D0", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     // leading partical information
-    registry.add("hLeadingParticalD0","deltaPhi deltaEta leadingPt D0Pt poolbin",{HistType::kTHnF,{{32,0.,o2::constants::math::TwoPI},{100,-2.,2.},{180,0.,18.},{180,0.,18.},{1000,0,1000}}});
+    registry.add("hLeadingParticalD0","deltaPhi deltaEta leadingPt D0Pt poolbin",{HistType::kTHnF,{{32,0.,o2::constants::math::TwoPI},{100,-2.,2.},{180,0.,18.},{180,0.,18.},{10,0,10}}});
   }
   //Find Leading Particle
   int findLeadingParticle(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
