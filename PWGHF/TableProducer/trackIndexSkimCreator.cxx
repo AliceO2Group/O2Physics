@@ -458,27 +458,6 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     return flag;
   }
 
-  /// Single-track cuts for 2-prongs, 3-prongs, bachelor+V0, bachelor+cascade decays
-  /// \param trackPt is the track pt
-  /// \param dca is a 2-element array with dca in transverse and longitudinal directions
-  /// \param candType is the flag to decide which cuts to be applied (either for 2-prong, 3-prong, bachelor+V0 or bachelor+cascade decays)
-  /// \return true if track passes all cuts
-  bool isSelectedTrackDCA(const float& trackPt, const std::array<float, 2>& dca, const int candType)
-  {
-    auto pTBinTrack = findBin(binsPtTrack, trackPt);
-    if (pTBinTrack == -1) {
-      return false;
-    }
-
-    if (std::abs(dca[0]) < cutsSingleTrack[candType].get(pTBinTrack, "min_dcaxytoprimary")) {
-      return false; // minimum DCAxy
-    }
-    if (std::abs(dca[0]) > cutsSingleTrack[candType].get(pTBinTrack, "max_dcaxytoprimary")) {
-      return false; // maximum DCAxy
-    }
-    return true;
-  }
-
   /// Single-track cuts for 2-prongs or 3-prongs
   /// \param hfTrack is a track
   /// \param trackPt is the track pt
@@ -657,7 +636,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     iCut = 5;
     if (statusProng > 0) {
       for (int iCandType = 0; iCandType < CandidateType::NCandidateTypes; ++iCandType) {
-        if (TESTBIT(statusProng, iCandType) && !isSelectedTrackDCA(trackPt, dca, iCandType)) {
+        if (TESTBIT(statusProng, iCandType) && !isSelectedTrackDcaXY(binsPtTrack, &cutsSingleTrack[iCandType], trackPt, dca[0])) {
           CLRBIT(statusProng, iCandType);
           if (fillHistograms) {
             registry.fill(HIST("hRejTracks"), (nCuts + 1) * iCandType + iCut);
