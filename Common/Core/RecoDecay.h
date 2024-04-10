@@ -645,7 +645,12 @@ class RecoDecay
       // for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
       //   printf(" ");
       // printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, PDGParticle);
-      list->push_back(particle.globalIndex());
+      printf("Daughter production process is %i\n", particle.getProcess());
+      printf("Daughter pdg code is %i\n", particle.pdgCode());
+      if(particle.getProcess() == TMCProcess::kPDecay){
+        list->push_back(particle.globalIndex());
+      }
+      
       return;
     }
     // If we are here, we have to follow the daughter tree.
@@ -684,7 +689,6 @@ class RecoDecay
     int indexMother = -1;                  // index of the mother particle
     std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters of the mother of the first provided daughter
     std::array<int, N> arrDaughtersIndex;  // array of indices of provided daughters
-    int dauCounter = 0;                    // counter particleMother's daughters coming from the decay process
     if (sign) {
       *sign = sgn;
     }
@@ -724,30 +728,13 @@ class RecoDecay
         }
         // Printf("MC Rec: Good mother: %d", indexMother);
         auto particleMother = particlesMC.rawIteratorAt(indexMother - particlesMC.offset());
-        dauCounter = 0; // reset daughter counter for the new particleMother
         // Check the daughter indices.
         if (!particleMother.has_daughters()) {
           // Printf("MC Rec: Rejected: bad daughter index range: %d-%d", particleMother.daughtersIds().front(), particleMother.daughtersIds().back());
           return -1;
         }
-        // Check that the number of direct daughters coming from the decay is not larger than the number of expected final daughters.
-        for (const auto& dau : particleMother.template daughters_as<T>()) {
-          if (dau.getProcess() == TMCProcess::kPDecay) {
-            dauCounter++;
-          }
-        }
-        if (dauCounter > static_cast<int>(N)) {
-          // Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
-          return -1;
-        }
         // Get the list of actual final daughters.
         getDaughters(particleMother, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
-        // remove daughters not coming from the decay process
-        for (int j = 0; j < static_cast<int>(arrAllDaughtersIndex.size()); j++) {
-          if (particlesMC.rawIteratorAt(arrAllDaughtersIndex[j] - particlesMC.offset()).getProcess() != TMCProcess::kPDecay) {
-            arrAllDaughtersIndex.erase(arrAllDaughtersIndex.begin() + j);
-          }
-        }
         // printf("MC Rec: Mother %d has %d final daughters:", indexMother, arrAllDaughtersIndex.size());
         // for (auto i : arrAllDaughtersIndex) {
         //   printf(" %d", i);
@@ -837,7 +824,6 @@ class RecoDecay
     // Printf("MC Gen: Expected particle PDG: %d", PDGParticle);
     int8_t coefFlavourOscillation = 1; // 1 if no B0(s) flavour oscillation occured, -1 else
     int8_t sgn = 0; // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGParticle)
-    int dauCounter = 0; // counter candidate's daughters coming from the decay process
     if (sign) {
       *sign = sgn;
     }
@@ -861,25 +847,8 @@ class RecoDecay
         // Printf("MC Gen: Rejected: bad daughter index range: %d-%d", candidate.daughtersIds().front(), candidate.daughtersIds().back());
         return false;
       }
-      // Check that the number of direct daughters coming from the dacay is not larger than the number of expected final daughters.
-      for (const auto& dau : candidate.template daughters_as<typename std::decay_t<U>::parent_t>()) {
-        printf("Daughter production process is %i", dau.getProcess());
-        if (dau.getProcess() == TMCProcess::kPDecay) {
-          dauCounter++;
-        }
-      }
-      if (dauCounter > static_cast<int>(N)) {
-        // Printf("MC Gen: Rejected: too many direct daughters: %d (expected %ld final)", candidate.daughtersIds().back() - candidate.daughtersIds().front() + 1, N);
-        return false;
-      }
       // Get the list of actual final daughters.
       getDaughters(candidate, &arrAllDaughtersIndex, arrPDGDaughters, depthMax);
-      // remove daughters not coming from the decay process
-      for (int j = 0; j < static_cast<int>(arrAllDaughtersIndex.size()); j++) {
-        if (particlesMC.rawIteratorAt(arrAllDaughtersIndex[j] - particlesMC.offset()).getProcess() != TMCProcess::kPDecay) {
-          arrAllDaughtersIndex.erase(arrAllDaughtersIndex.begin() + j);
-        }
-      }
       // printf("MC Gen: Mother %ld has %ld final daughters:", candidate.globalIndex(), arrAllDaughtersIndex.size());
       // for (auto i : arrAllDaughtersIndex) {
       //   printf(" %d", i);
