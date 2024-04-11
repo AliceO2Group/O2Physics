@@ -84,7 +84,7 @@ struct mcdata {
   }
 
   // void process(aod::Collision const& collision, soa::Filtered<myCompleteTracks> const& tracks, aod::McParticles const&)
-  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<myCompleteTracks> const& tracks)
+  void processREC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<myCompleteTracks> const& tracks)
   {
     if (!collision.sel8()) {
       return;
@@ -127,6 +127,7 @@ struct mcdata {
       histos.fill(HIST("FakeDataMultiplicity"), faketrackCounter);
     }
   }
+  PROCESS_SWITCH(mcdata, processREC, "process for REC MC data", true);
 
   void processMCGEN(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
