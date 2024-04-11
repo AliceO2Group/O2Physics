@@ -54,7 +54,12 @@ struct LFNucleiBATask {
   Configurable<bool> enableAl{"enableAl", true, "Flag to enable alpha analysis."};
 
   Configurable<bool> enableTrackingEff{"enableTrackingEff", 0, "Flag to enable tracking efficiency hitos."};
-  // Configurable<bool> enableTrackingEffWithTPCPID{"enableTrackingEffWithTPCPID", 0, "Flag to enable tracking efficiency hitos with TPC PID selection."};
+
+  // Set the event selection cuts
+  Configurable<bool> useSel8{"useSel8", true, "Use Sel8 for run3 Event Selection"};
+  Configurable<bool> TVXtrigger{"TVXtrigger", false, "Use TVX for Event Selection (default w/ Sel8)"};
+  Configurable<bool> removeTFBorder{"removeTFBorder", false, "Remove TimeFrame border (default w/ Sel8)"};
+  Configurable<bool> removeITSROFBorder{"removeITSROFBorder", false, "Remove ITS Read-Out Frame border (default w/ Sel8)"};
 
   // Set the multiplity event limits
   Configurable<float> cfgLowMultCut{"cfgLowMultCut", 0.0f, "Accepted multiplicity percentage lower limit"};
@@ -88,7 +93,6 @@ struct LFNucleiBATask {
   Configurable<float> nsigmaTPCAl{"nsigmaTPCAl", 3.f, "Value of the Nsigma TPC cut for alpha"};
 
   // Set additional cuts (used for debug)
-  Configurable<float> ProtonNsigmaTPCcutInTOFbeta{"ProtonNsigmaTPCcutInTOFbeta", 3.5f, "Value of the Nsigma TPC cut (proton) for TOF beta distribution"};
   Configurable<float> betaCut{"betaCut", 0.4f, "Value of the beta selection for TOF cut (default 0.4)"};
 
   // Set the axis used in this task
@@ -115,7 +119,6 @@ struct LFNucleiBATask {
   // Enable output histograms
   Configurable<bool> makeDCABeforeCutPlots{"makeDCABeforeCutPlots", false, "Flag to enable plots of DCA before cuts"};
   Configurable<bool> makeDCAAfterCutPlots{"makeDCAAfterCutPlots", false, "Flag to enable plots of DCA after cuts"};
-  Configurable<bool> doTPCcalib{"doTPCcalib", false, "Flag to stop task after dEdX. Please set to 'processData'."};
   Configurable<bool> doTOFplots{"doTOFplots", true, "Flag to export plots of tracks with 1 hit on TOF."};
   Configurable<bool> enableExpSignalTPC{"enableExpSignalTPC", true, "Flag to export dEdX - dEdX(exp) plots."};
   Configurable<bool> enableExpSignalTOF{"enableExpSignalTOF", false, "Flag to export T - T(exp) plots."};
@@ -157,7 +160,6 @@ struct LFNucleiBATask {
   Configurable<std::vector<float>> parShiftPtAntiD{"parShiftPtAntiD", {-0.0955412, 0.798164, -0.536111, 0.0887876, -1.11022e-13}, "Parameters for Pt shift (if enabled)."};
   Configurable<std::vector<float>> parShiftPtD{"parShiftPtD", {-0.0955412, 0.798164, -0.536111, 0.0887876, -1.11022e-13}, "Parameters for Pt shift (if enabled)."};
   Configurable<bool> enableCentrality{"enableCentrality", true, "Flag to enable centrality 3D histos)"};
-  Configurable<bool> removeTFBorder{"removeTFBorder", false, "Remove TimeFrame border"};
 
   // PDG codes and masses used in this analysis
   static constexpr int PDGPion = 211;
@@ -196,8 +198,10 @@ struct LFNucleiBATask {
 
     if (enableDebug) {
       debugHistos.add<TH1>("qa/h1VtxZ_nocut", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}});
-      debugHistos.add<TH1>("qa/h1VtxZ_sel8", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}});
+      debugHistos.add<TH1>("qa/h1VtxZ_TVXtrigger", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}});
       debugHistos.add<TH1>("qa/h1VtxZ_TFrameBorder", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}});
+      debugHistos.add<TH1>("qa/h1VtxZ_ITSROFBorder", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}});
+      debugHistos.add<TH1>("qa/h1VtxZ_sel8", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}});
       debugHistos.add<TH1>("qa/h1VtxZ_Centrality", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}});
 
       if (enableCentrality) {
@@ -206,6 +210,15 @@ struct LFNucleiBATask {
       }
     }
 
+    histos.add<TH1>("event/eventSelection", "eventSelection", HistType::kTH1D, {{7, -0.5, 6.5}});
+    auto h = histos.get<TH1>(HIST("event/eventSelection"));
+    h->GetXaxis()->SetBinLabel(1, "Total");
+    h->GetXaxis()->SetBinLabel(2, "TVX trigger cut");
+    h->GetXaxis()->SetBinLabel(3, "TF border cut");
+    h->GetXaxis()->SetBinLabel(4, "ITS ROF cut");
+    h->GetXaxis()->SetBinLabel(5, "TVX + TF + ITS ROF");
+    h->GetXaxis()->SetBinLabel(6, "Sel8 cut");
+    h->GetXaxis()->SetBinLabel(7, "Z-vert Cut");
     histos.add<TH1>("event/h1VtxZ", "V_{z};V_{z} (in cm); counts", HistType::kTH1F, {{1500, -15, 15}});
 
     histos.add<TH1>("tracks/h1pT", "Track #it{p}_{T}; #it{p}_{T} (GeV/#it{c}); counts", HistType::kTH1F, {{500, 0., 10.}});
@@ -1078,7 +1091,6 @@ struct LFNucleiBATask {
     if (doTOFplots) {
       histos.add<TH2>("tracks/h2TPCsignVsBetaGamma", "TPC <-dE/dX> vs #beta#gamma/Z; Signed #beta#gamma; TPC <-dE/dx> (a.u.)", HistType::kTH2F, {{600, -6.f, 6.f}, {dedxAxis}});
       histos.add<TH2>("tracks/h2TOFbetaVsP", "TOF #beta vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta", HistType::kTH2F, {{500, -5.f, 5.f}, {betaAxis}});
-      histos.add<TH2>("tracks/h2withTPCProtonCutTOFbetaVsP", "TOF #beta (with N#sigma_{TPC}(p)) cut) vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta (with N#sigma_{TPC}(p)) cut)", HistType::kTH2F, {{500, -5.f, 5.f}, {betaAxis}});
       if (enableBetaCut)
         histos.add<TH2>("tracks/h2TOFbetaVsP_BetaCut", "TOF #beta vs #it{p}/Z; Signed #it{p} (GeV/#it{c}); TOF #beta", HistType::kTH2F, {{500, -5.f, 5.f}, {betaAxis}});
     }
@@ -1600,33 +1612,63 @@ struct LFNucleiBATask {
                       const ParticleType& particles)
   {
     // Event histos fill
+    histos.fill(HIST("event/eventSelection"), 0);
     if (enableDebug)
       debugHistos.fill(HIST("qa/h1VtxZ_nocut"), event.posZ());
 
     if constexpr (!IsFilteredData) {
-      if (!event.sel8()) {
-        return;
+      if (!event.selection_bit(aod::evsel::kIsTriggerTVX)) {
+        if (TVXtrigger)
+          return;
+      } else {
+        histos.fill(HIST("event/eventSelection"), 1);
+        if (enableDebug)
+          debugHistos.fill(HIST("qa/h1VtxZ_TVXtrigger"), event.posZ());
       }
+
+      if (!event.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        if (removeTFBorder)
+          return;
+      } else {
+        histos.fill(HIST("event/eventSelection"), 2);
+        if (enableDebug)
+          debugHistos.fill(HIST("qa/h1VtxZ_TFrameBorder"), event.posZ());
+      }
+
+      if (!event.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+        if (removeITSROFBorder)
+          return;
+      } else {
+        histos.fill(HIST("event/eventSelection"), 3);
+        if (enableDebug)
+          debugHistos.fill(HIST("qa/h1VtxZ_ITSROFBorder"), event.posZ());
+      }
+
+      if ((event.selection_bit(aod::evsel::kNoITSROFrameBorder)) &&
+          (event.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
+          (event.selection_bit(aod::evsel::kIsTriggerTVX))) {
+        histos.fill(HIST("event/eventSelection"), 4);
+      }
+
+      if (useSel8 && !event.sel8())
+        return;
+      histos.fill(HIST("event/eventSelection"), 5);
       if (enableDebug)
         debugHistos.fill(HIST("qa/h1VtxZ_sel8"), event.posZ());
-
-      if (removeTFBorder && !event.selection_bit(aod::evsel::kNoTimeFrameBorder))
-        return;
-      if (enableDebug)
-        debugHistos.fill(HIST("qa/h1VtxZ_TFrameBorder"), event.posZ());
 
       if (enableCentrality) {
         if (event.centFT0M() < cfgLowMultCut || event.centFT0M() > cfgHighMultCut) {
           return;
         }
+        if (enableDebug)
+          debugHistos.fill(HIST("event/h1VtxZ_Centrality"), event.posZ());
       }
-      if (enableDebug)
-        debugHistos.fill(HIST("event/h1VtxZ_Centrality"), event.posZ());
 
       if (event.posZ() < cfgLowCutVertex || event.posZ() > cfgHighCutVertex)
         return;
-    } else {
+      histos.fill(HIST("event/eventSelection"), 6);
 
+    } else {
       if (event.posZ() < cfgLowCutVertex || event.posZ() > cfgHighCutVertex)
         return;
       if (removeTFBorder && !event.selection_bit(aod::evsel::kNoTimeFrameBorder))
@@ -2424,9 +2466,6 @@ struct LFNucleiBATask {
       // p,d,t,He
       histos.fill(HIST("tracks/h2TPCsignVsTPCmomentum"), track.tpcInnerParam() / (1.f * track.sign()), track.tpcSignal());
 
-      if (doTPCcalib)
-        return;
-
       if (track.sign() > 0) {
         if (enablePr && prRapCut) {
           if (enableExpSignalTPC)
@@ -3061,9 +3100,6 @@ struct LFNucleiBATask {
                 histos.fill(HIST("tracks/h2TOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
               }
               break;
-          }
-          if (track.tpcNSigmaPr() + 3 > ProtonNsigmaTPCcutInTOFbeta) {
-            histos.fill(HIST("tracks/h2withTPCProtonCutTOFbetaVsP"), track.p() / (1.f * track.sign()), track.beta());
           }
 
           if (enablePtSpectra)
