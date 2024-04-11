@@ -102,13 +102,15 @@ struct multiplicityPbPb {
   }
 
   // void process(aod::Collision const& collision, soa::Filtered<myCompleteTracks> const& tracks, aod::McParticles const&)
-  void processREC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<myCompleteTracks> const& tracks)
+  void process(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<myCompleteTracks> const& tracks)
   {
     if (!collision.sel8()) {
       return;
     }
 
     int trackCounter = 0;
+    int trackCounter_01 = 0;
+    int trackCounter_01_10 = 0;
 
     histos.fill(HIST("eventCounter"), 0.5);
 
@@ -128,17 +130,24 @@ struct multiplicityPbPb {
       histos.fill(HIST("EtaZvtxTracks"), track.eta(), collision.posZ());
       histos.fill(HIST("PhiEtaTracks"), track.phi(), track.eta());
 
+      if (std::abs(track.eta()) < 0.1)
+        ++trackCounter_01;
+      if (std::abs(track.eta()) < 0.1 && std::abs(collision.posZ()) < 10)
+        ++trackCounter_01_10;
     }
 
     histos.fill(HIST("Multiplicity"), trackCounter);
+    histos.fill(HIST("Multiplicity_01"), trackCounter_01); // to be deleted
+    histos.fill(HIST("Multiplicity_01_10"), trackCounter_01_10);
 
     histos.fill(HIST("NtrkZvtxEvents"), trackCounter, collision.posZ());
   }
-  PROCESS_SWITCH(multiplicityPbPb, processREC, "process for REC or real data", true);
 
   void processMCGEN(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
     int MCparticleCounter = 0;
+    int MCparticleCounter_01 = 0;
+    int MCparticleCounter_01_10 = 0;
 
     histos.fill(HIST("MCGENeventCounter"), 0.5);
     histos.fill(HIST("MCGENZvtxEvents"), mcCollision.posZ());
@@ -156,9 +165,16 @@ struct multiplicityPbPb {
 
         histos.fill(HIST("MCGENEtaZvtxTracks"), mcParticle.eta(), mcCollision.posZ());
         histos.fill(HIST("MCGENPhiEtaTracks"), mcParticle.phi(), mcParticle.eta());
+
+        if (std::abs(mcParticle.eta()) < 0.1)
+          ++MCparticleCounter_01;
+        if (std::abs(mcParticle.eta()) < 0.1 && std::abs(mcCollision.posZ()) < 10)
+          ++MCparticleCounter_01_10;
       }
     }
     histos.fill(HIST("MCGENMultiplicity"), MCparticleCounter);
+    histos.fill(HIST("MCGENMultiplicity_01"), MCparticleCounter_01);
+    histos.fill(HIST("MCGENMultiplicity_01_10"), MCparticleCounter_01_10);
 
     histos.fill(HIST("MCGENNtrkZvtxEvents"), MCparticleCounter, mcCollision.posZ());
   }
