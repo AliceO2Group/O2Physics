@@ -1094,43 +1094,49 @@ struct lambdakzeroBuilder {
       if (roundDCAVariables)
         roundV0CandidateVariables();
 
+      // evaluate machine-learning scores
+      float gammaScore = -1.0f, lambdaScore = -1.0f, antiLambdaScore = -1.0f, k0ShortScore = -1.0f;
+
+      if (mlConfigurations.calculateK0ShortScores || 
+            mlConfigurations.calculateLambdaScores || 
+            mlConfigurations.calculateAntiLambdaScores || 
+            mlConfigurations.calculateGammaScores)
+      { 
+        // machine learning is on, go for calculation of thresholds
+        // FIXME THIS NEEDS ADJUSTING
+        std::vector<float> inputFeatures{pt, 0.0f, 
+                                        0.0f, v0candidate.V0radius, 
+                                        v0candidate.cosPA, v0candidate.dcaV0dau, 
+                                        v0candidate.posDCAxy, v0candidate.negDCAxy};
+
+        // calculate classifier
+        float* lambdaProbability = mlModelLambda.evalModel(inputFeatures);
+        float* gammaProbability = mlModelGamma.evalModel(inputFeatures);
+
+        // save score
+        gammaScore = gammaProbability[1];
+        lambdaScore = lambdaProbability[1];
+
+        // Skip anything that doesn't fulfull any of the desired conditions 
+        if( gammaScore < mlConfigurations.thresholdGamma.value && 
+            lambdaScore < mlConfigurations.thresholdLambda.value &&
+            antiLambdaScore < mlConfigurations.thresholdAntiLambda.value && 
+            k0ShortScore < mlConfigurations.thresholdK0Short.value){
+              continue; // skipped as uninteresting in any hypothesis considered
+            }
+      }
+
       // V0 logic reminder
       // 0: v0 saved for the only due to the cascade, 1: standalone v0, 3: standard v0 with photon-only test
       if (V0.v0Type() > 0) {
         if (V0.v0Type() > 1 && !storePhotonCandidates)
           continue;
-
-        float gammaScore = -1.0f, lambdaScore = -1.0f, antiLambdaScore = -1.0f, k0ShortScore = -1.0f;
-
-        // evaluate machine learning at this point: check if requested 
+        
         if (mlConfigurations.calculateK0ShortScores || 
             mlConfigurations.calculateLambdaScores || 
             mlConfigurations.calculateAntiLambdaScores || 
             mlConfigurations.calculateGammaScores)
         { 
-          // machine learning is on, go for calculation of thresholds
-          // FIXME THIS NEEDS ADJUSTING
-          std::vector<float> inputFeatures{pt, 0.0f, 
-                                           0.0f, v0candidate.V0radius, 
-                                           v0candidate.cosPA, v0candidate.dcaV0dau, 
-                                           v0candidate.posDCAxy, v0candidate.negDCAxy};
-
-          // calculate classifier
-          float* lambdaProbability = mlModelLambda.evalModel(inputFeatures);
-          float* gammaProbability = mlModelGamma.evalModel(inputFeatures);
-
-          // save score
-          gammaScore = gammaProbability[1];
-          lambdaScore = lambdaProbability[1];
-
-          // Skip anything that doesn't fulfull any of the desired conditions 
-          if( gammaScore < mlConfigurations.thresholdGamma.value && 
-              lambdaScore < mlConfigurations.thresholdLambda.value &&
-              antiLambdaScore < mlConfigurations.thresholdAntiLambda.value && 
-              k0ShortScore < mlConfigurations.thresholdK0Short.value){
-                continue; // skipped as uninteresting in any hypothesis considered
-              }
-
           // at this stage, the candidate is interesting -> populate table 
           gammaMLSelections(gammaScore);
           lambdaMLSelections(lambdaScore);
