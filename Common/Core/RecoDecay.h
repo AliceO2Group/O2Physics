@@ -751,9 +751,9 @@ class RecoDecay
       // Check daughter's PDG code.
       auto PDGParticleI = particleI.pdgCode(); // PDG code of the ith daughter
       // Printf("MC Rec: Daughter %d PDG: %d", iProng, PDGParticleI);
-      if(checkProcess && particleI.getProcess() != TMCProcess::kPDecay){                                   // production process of the ith daughter
+      if (checkProcess && particleI.getProcess() != TMCProcess::kPDecay) { // production process of the ith daughter
         continue;
-      }   
+      }
       bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
       for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
         if (PDGParticleI == coefFlavourOscillation * sgn * arrPDGDaughters[iProngCp]) {
@@ -862,10 +862,10 @@ class RecoDecay
       // Check daughters' PDG codes.
       for (auto indexDaughterI : arrAllDaughtersIndex) {
         auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset()); // ith daughter particle
-        auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();                                  // PDG code of the ith daughter   
-        if(checkProcess && candidateDaughterI.getProcess() != TMCProcess::kPDecay){                                   // production process of the ith daughter
+        auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();                                  // PDG code of the ith daughter
+        if (checkProcess && candidateDaughterI.getProcess() != TMCProcess::kPDecay) {               // production process of the ith daughter
           continue;
-        }                       
+        }
         // Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, PDGCandidateDaughterI);
         bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
         for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
