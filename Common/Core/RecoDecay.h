@@ -644,9 +644,7 @@ class RecoDecay
       // for (int i = 0; i < stage; i++) // Indent to make the tree look nice.
       //   printf(" ");
       // printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, PDGParticle);
-
       list->push_back(particle.globalIndex());
-      
       return;
     }
     // If we are here, we have to follow the daughter tree.
@@ -738,15 +736,6 @@ class RecoDecay
         //   printf(" %d", i);
         // }
         // printf("\n");
-        //  Check whether the number of actual final daughters is equal to the number of expected final daughters (i.e. the number of provided prongs).
-
-        /*
-        if (arrAllDaughtersIndex.size() != N) {
-          // Printf("MC Rec: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
-          return -1;
-        }
-        */
-
       }
       // Check that the daughter is in the list of final daughters.
       // (Check that the daughter is not a stepdaughter, i.e. particle pointing to the mother while not being its daughter.)
@@ -860,15 +849,6 @@ class RecoDecay
       //   printf(" %d", i);
       // }
       // printf("\n");
-      //  Check whether the number of final daughters is equal to the required number.
-
-      /*
-      if (arrAllDaughtersIndex.size() != N) {
-        // Printf("MC Gen: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
-        return false;
-      }
-      */
-
       if constexpr (acceptFlavourOscillation) {
         // Loop over decay candidate prongs to spot possible oscillation decay product
         for (auto indexDaughterI : arrAllDaughtersIndex) {
