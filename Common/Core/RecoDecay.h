@@ -645,9 +645,7 @@ class RecoDecay
       //   printf(" ");
       // printf("Stage %d: Adding %d (PDG %d) as final daughter.\n", stage, index, PDGParticle);
 
-      if(particle.getProcess() == 4){
-        list->push_back(particle.globalIndex());
-      }
+      list->push_back(particle.globalIndex());
       
       return;
     }
@@ -671,6 +669,7 @@ class RecoDecay
   /// \param acceptAntiParticles  switch to accept the antiparticle version of the expected decay
   /// \param sign  antiparticle indicator of the found mother w.r.t. PDGMother; 1 if particle, -1 if antiparticle, 0 if mother not found
   /// \param depthMax  maximum decay tree level to check; Daughters up to this level will be considered. If -1, all levels are considered.
+  /// \param checkProcess switch on to check the daughter production process
   /// \return index of the mother particle if the mother and daughters are correct, -1 otherwise
   template <bool acceptFlavourOscillation = false, std::size_t N, typename T, typename U>
   static int getMatchedMCRec(const T& particlesMC,
@@ -679,7 +678,8 @@ class RecoDecay
                              std::array<int, N> arrPDGDaughters,
                              bool acceptAntiParticles = false,
                              int8_t* sign = nullptr,
-                             int depthMax = 1)
+                             int depthMax = 1,
+                             bool checkProcess = true)
   {
     // Printf("MC Rec: Expected mother PDG: %d", PDGMother);
     int8_t coefFlavourOscillation = 1;     // 1 if no B0(s) flavour oscillation occured, -1 else
@@ -710,7 +710,7 @@ class RecoDecay
       }
       auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
       // check if the daughter candidate comes from a decay process
-      if (particleI.getProcess() != 4) {
+      if (checkProcess && particleI.getProcess() != 4) {
         return -1;
       }
       arrDaughtersIndex[iProng] = particleI.globalIndex();
@@ -739,10 +739,14 @@ class RecoDecay
         // }
         // printf("\n");
         //  Check whether the number of actual final daughters is equal to the number of expected final daughters (i.e. the number of provided prongs).
+
+        /*
         if (arrAllDaughtersIndex.size() != N) {
           // Printf("MC Rec: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
           return -1;
         }
+        */
+
       }
       // Check that the daughter is in the list of final daughters.
       // (Check that the daughter is not a stepdaughter, i.e. particle pointing to the mother while not being its daughter.)
@@ -787,16 +791,18 @@ class RecoDecay
   /// \param PDGParticle  expected particle PDG code
   /// \param acceptAntiParticles  switch to accept the antiparticle
   /// \param sign  antiparticle indicator of the candidate w.r.t. PDGParticle; 1 if particle, -1 if antiparticle, 0 if not matched
+  /// \param checkProcess switch on to check the daughter production process
   /// \return true if PDG code of the particle is correct, false otherwise
   template <bool acceptFlavourOscillation = false, typename T, typename U>
   static int isMatchedMCGen(const T& particlesMC,
                             const U& candidate,
                             int PDGParticle,
                             bool acceptAntiParticles = false,
-                            int8_t* sign = nullptr)
+                            int8_t* sign = nullptr,
+                            bool checkProcess = true)
   {
     std::array<int, 0> arrPDGDaughters;
-    return isMatchedMCGen<acceptFlavourOscillation>(particlesMC, candidate, PDGParticle, std::move(arrPDGDaughters), acceptAntiParticles, sign);
+    return isMatchedMCGen<acceptFlavourOscillation>(particlesMC, candidate, PDGParticle, std::move(arrPDGDaughters), acceptAntiParticles, sign, checkProcess);
   }
 
   /// Check whether the MC particle is the expected one and whether it decayed via the expected decay channel.
@@ -808,6 +814,7 @@ class RecoDecay
   /// \param sign  antiparticle indicator of the candidate w.r.t. PDGParticle; 1 if particle, -1 if antiparticle, 0 if not matched
   /// \param depthMax  maximum decay tree level to check; Daughters up to this level will be considered. If -1, all levels are considered.
   /// \param listIndexDaughters  vector of indices of found daughter
+  /// \param checkProcess switch on to check the daughter production process
   /// \return true if PDG codes of the particle and its daughters are correct, false otherwise
   template <bool acceptFlavourOscillation = false, std::size_t N, typename T, typename U>
   static bool isMatchedMCGen(const T& particlesMC,
@@ -817,7 +824,8 @@ class RecoDecay
                              bool acceptAntiParticles = false,
                              int8_t* sign = nullptr,
                              int depthMax = 1,
-                             std::vector<int>* listIndexDaughters = nullptr)
+                             std::vector<int>* listIndexDaughters = nullptr,
+                             bool checkProcess = true)
   {
     // Printf("MC Gen: Expected particle PDG: %d", PDGParticle);
     int8_t coefFlavourOscillation = 1; // 1 if no B0(s) flavour oscillation occured, -1 else
@@ -853,10 +861,14 @@ class RecoDecay
       // }
       // printf("\n");
       //  Check whether the number of final daughters is equal to the required number.
+
+      /*
       if (arrAllDaughtersIndex.size() != N) {
         // Printf("MC Gen: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
         return false;
       }
+      */
+
       if constexpr (acceptFlavourOscillation) {
         // Loop over decay candidate prongs to spot possible oscillation decay product
         for (auto indexDaughterI : arrAllDaughtersIndex) {
@@ -870,7 +882,10 @@ class RecoDecay
       // Check daughters' PDG codes.
       for (auto indexDaughterI : arrAllDaughtersIndex) {
         auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset()); // ith daughter particle
-        auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();                                  // PDG code of the ith daughter
+        auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();                                  // PDG code of the ith daughter   
+        if(checkProcess && candidateDaughterI.getProcess() != 4){                                   // production process of the ith daughter
+          continue;
+        }                       
         // Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, PDGCandidateDaughterI);
         bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
         for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
