@@ -24,6 +24,7 @@
 #include <vector>    // std::vector
 
 #include "CommonConstants/MathConstants.h"
+#include "TMCProcess.h" // for VMC Particle Production Process
 
 /// Base class for calculating properties of reconstructed decays
 ///
@@ -677,7 +678,7 @@ class RecoDecay
                              bool acceptAntiParticles = false,
                              int8_t* sign = nullptr,
                              int depthMax = 1,
-                             bool checkProcess = true)
+                             bool checkProcess = false)
   {
     // Printf("MC Rec: Expected mother PDG: %d", PDGMother);
     int8_t coefFlavourOscillation = 1;     // 1 if no B0(s) flavour oscillation occured, -1 else
@@ -707,10 +708,6 @@ class RecoDecay
         return -1;
       }
       auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
-      // check if the daughter candidate comes from a decay process
-      if (checkProcess && particleI.getProcess() != 4) {
-        return -1;
-      }
       arrDaughtersIndex[iProng] = particleI.globalIndex();
       // Get the list of daughter indices from the mother of the first prong.
       if (iProng == 0) {
@@ -754,6 +751,9 @@ class RecoDecay
       // Check daughter's PDG code.
       auto PDGParticleI = particleI.pdgCode(); // PDG code of the ith daughter
       // Printf("MC Rec: Daughter %d PDG: %d", iProng, PDGParticleI);
+      if(checkProcess && particleI.getProcess() != TMCProcess::kPDecay){                                   // production process of the ith daughter
+        continue;
+      }   
       bool isPDGFound = false; // Is the PDG code of this daughter among the remaining expected PDG codes?
       for (std::size_t iProngCp = 0; iProngCp < N; ++iProngCp) {
         if (PDGParticleI == coefFlavourOscillation * sgn * arrPDGDaughters[iProngCp]) {
@@ -788,7 +788,7 @@ class RecoDecay
                             int PDGParticle,
                             bool acceptAntiParticles = false,
                             int8_t* sign = nullptr,
-                            bool checkProcess = true)
+                            bool checkProcess = false)
   {
     std::array<int, 0> arrPDGDaughters;
     return isMatchedMCGen<acceptFlavourOscillation>(particlesMC, candidate, PDGParticle, std::move(arrPDGDaughters), acceptAntiParticles, sign, checkProcess);
@@ -814,7 +814,7 @@ class RecoDecay
                              int8_t* sign = nullptr,
                              int depthMax = 1,
                              std::vector<int>* listIndexDaughters = nullptr,
-                             bool checkProcess = true)
+                             bool checkProcess = false)
   {
     // Printf("MC Gen: Expected particle PDG: %d", PDGParticle);
     int8_t coefFlavourOscillation = 1; // 1 if no B0(s) flavour oscillation occured, -1 else
@@ -863,7 +863,7 @@ class RecoDecay
       for (auto indexDaughterI : arrAllDaughtersIndex) {
         auto candidateDaughterI = particlesMC.rawIteratorAt(indexDaughterI - particlesMC.offset()); // ith daughter particle
         auto PDGCandidateDaughterI = candidateDaughterI.pdgCode();                                  // PDG code of the ith daughter   
-        if(checkProcess && candidateDaughterI.getProcess() != 4){                                   // production process of the ith daughter
+        if(checkProcess && candidateDaughterI.getProcess() != TMCProcess::kPDecay){                                   // production process of the ith daughter
           continue;
         }                       
         // Printf("MC Gen: Daughter %d PDG: %d", indexDaughterI, PDGCandidateDaughterI);
