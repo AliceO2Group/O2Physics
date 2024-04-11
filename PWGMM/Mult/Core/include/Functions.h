@@ -17,18 +17,20 @@ namespace pwgmm::mult
 {
 using namespace o2;
 
+// clang-format off
 template <typename T>
-concept hasSimCent = (T*)
+concept hasSimCent = (T*) //NOLINT
 {
   requires {T::template contains<aod::HepMCHeavyIons>();}
 };
 
 template <typename T>
-concept hasRecoCent = (T*)
+concept hasRecoCent = (T*) //NOLINT
 {
   requires {T::template contains<aod::CentFT0Cs>() || T::template contains<aod::CentFT0Ms>();}
 };
 
+//clang-format on
 } // namespace pwgmm::mult
 
 #endif // PWGMM_MULT_CORE_INCLUDE_FUNCTIONS_H_
